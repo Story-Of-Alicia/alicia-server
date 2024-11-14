@@ -1,3 +1,6 @@
 [submodule "3rd-party/spdlog"]
 	path = 3rd-party/spdlog
 	url = https://github.com/gabime/spdlog.git
+[submodule "3rd-party/libpqxx"]
+	path = 3rd-party/libpqxx
+	url = https://github.com/jtv/libpqxx.git

@@ -8,3 +8,6 @@ Testing/
 # Jetbrains
 .cache/
 .idea/
+
+#DS Store
+.DS_Store
