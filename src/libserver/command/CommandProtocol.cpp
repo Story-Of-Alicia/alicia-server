@@ -37,6 +37,11 @@ const std::unordered_map<CommandId, std::string_view> commands = {
   // Heartbeat
   {CommandId::LobbyHeartbeat, "LobbyHeartbeat"},
 
+  // CreateNickname
+  {CommandId::LobbyCreateNicknameNotify, "LobbyCreateNicknameNotify"},
+  {CommandId::LobbyCreateNickname, "LobbyCreateNickname"},
+  {CommandId::LobbyCreateNicknameCancel, "LobbyCreateNicknameCancel"},
+
   // Inventory
   {CommandId::LobbyShowInventory, "LobbyShowInventory"},
   {CommandId::LobbyShowInventoryOK, "LobbyShowInventoryOK"},

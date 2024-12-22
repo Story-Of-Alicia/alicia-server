@@ -268,6 +268,59 @@ struct LobbyCommandShowInventoryOK
     LobbyCommandShowInventoryOK& command, SourceStream& buffer);
 };
 
+//! Clientbound create nickname command.
+struct LobbyCommandCreateNicknameNotify
+{
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const LobbyCommandCreateNicknameNotify& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    LobbyCommandCreateNicknameNotify& command, SourceStream& buffer);
+};
+
+//! Serverbound create nickname ok command.
+struct LobbyCommandCreateNicknameOK
+{
+  std::string nickname{};
+  Character character{};
+
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const LobbyCommandCreateNicknameOK& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    LobbyCommandCreateNicknameOK& command, SourceStream& buffer);
+};
+
+//! Serverbound create nickname cancel command.
+struct LobbyCommandCreateNicknameCancel
+{
+  uint8_t error{};
+
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const LobbyCommandCreateNicknameCancel& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    LobbyCommandCreateNicknameCancel& command, SourceStream& buffer);
+};
+
 //! Clientbound show inventory cancel response.
 struct LobbyCommandShowInventoryCancel
 {

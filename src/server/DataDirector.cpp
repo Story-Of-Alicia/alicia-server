@@ -33,7 +33,7 @@ namespace alicia
 
 DataDirector::DataDirector()
 {
-  _users["rgnt"].value = {
+  _users["rgnter"].value = {
     .characterUid = 1
   };
   _users["laith"].value = {

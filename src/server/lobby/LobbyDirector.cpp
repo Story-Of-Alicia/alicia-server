@@ -156,6 +156,8 @@ void LobbyDirector::HandleUserLogin(ClientId clientId, const LobbyCommandLogin& 
   const auto user = _dataDirector.GetUser(
     login.loginId);
 
+  // todo handle character that doesn't exist
+
   // Get the character & mount data of the user.
   const auto character = _dataDirector.GetCharacter(
     user->characterUid);
