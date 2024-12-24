@@ -19,6 +19,7 @@ add_library(alicia-libserver STATIC
         src/libserver/Alicia.cpp
         src/libserver/Util.cpp
         src/server/Settings.cpp
+        src/libserver/Executor.cpp
         src/libserver/base/Server.cpp
         src/libserver/command/CommandProtocol.cpp
         src/libserver/command/CommandServer.cpp
