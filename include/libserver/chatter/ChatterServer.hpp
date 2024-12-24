@@ -20,4 +20,37 @@
 #ifndef CHATTER_SERVER_HPP
 #define CHATTER_SERVER_HPP
 
+#include "libserver/base/PacketServer.hpp"
+#include "libserver/base/Server.hpp"
+
+namespace alicia
+{
+
+// TODO: Define ChatterId
+enum class ChatterId
+  : uint16_t
+{
+    TODO = 0
+};
+
+//! A Chatter client.
+class ChatterClient : PacketClient
+{
+};
+
+//! A Chatter server.
+class ChatterServer : public PacketServer<ChatterId, ChatterClient>
+{
+public:
+  ChatterServer(std::string name);
+
+protected:
+  std::tuple<ChatterId, size_t, std::array<std::byte, MaxPayloadDataSize>> PreprocessReceivedPacket(ClientId clientId, ChatterClient& client, SourceStream& packetStream) override;
+  size_t WriteOutgoingPacket(ChatterId packetId, PacketSupplier supplier, SinkStream& packetSink) override;
+  std::string_view GetPacketName(ChatterId packetId) override;
+  bool IsMuted(ChatterId id) override;
+};
+
+}
+
 #endif //CHATTER_SERVER_HPP

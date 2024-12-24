@@ -24,11 +24,12 @@ add_library(alicia-libserver STATIC
         src/libserver/command/CommandServer.cpp
         src/libserver/command/proto/LobbyMessageDefines.cpp
         src/libserver/command/proto/RanchMessageDefines.cpp
+        src/libserver/chatter/ChatterServer.cpp
         include/libserver/command/proto/DataDefines.hpp)
 target_include_directories(alicia-libserver
         PUBLIC include/)
 target_link_libraries(alicia-libserver
-        PUBLIC project-properties Boost::headers spdlog::spdlog nlohmann_json::nlohmann_json)
+        PUBLIC project-properties Boost::headers spdlog::spdlog nlohmann_json::nlohmann_json pqxx)
 
 # Alicia server executable
 add_executable(alicia-server

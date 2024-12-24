@@ -21,6 +21,8 @@
 #define COMMAND_SERVER_HPP
 
 #include "CommandProtocol.hpp"
+
+#include "libserver/base/PacketServer.hpp"
 #include "libserver/base/Server.hpp"
 
 #include <unordered_map>
@@ -29,14 +31,8 @@
 namespace alicia
 {
 
-//! A command handler.
-using RawCommandHandler = std::function<void(ClientId, SourceStream&)>;
-
-//! A command supplier.
-using CommandSupplier = std::function<void(SinkStream&)>;
-
 //! A command client.
-class CommandClient
+class CommandClient : PacketClient
 {
 public:
   void SetCode(XorCode code);
@@ -46,78 +42,22 @@ public:
   [[nodiscard]] int32_t GetRollingCodeInt() const;
 
 private:
-  std::queue<CommandSupplier> _commandQueue;
   XorCode _rollingCode{};
 };
 
 //! A command server.
-class CommandServer
+class CommandServer : public PacketServer<CommandId, CommandClient>
 {
 public:
-  //! Default constructor;
   CommandServer(std::string name);
-
-  //! Hosts the command server on the specified interface with the provided port.
-  //! Runs the processing loop and blocks until exception or stopped.
-  //! @param interface Interface address.
-  //! @param port Port.
-  void Host(const asio::ip::address& address, uint16_t port);
-
-  //! Registers a command handler.
-  //!
-  //! @param commandId ID of the command to register the handler for.
-  //! @param handler Handler function.
-  void RegisterCommandHandler(
-    CommandId commandId,
-    RawCommandHandler handler);
-
-  //! Registers a command handler.
-  //!
-  //! @param commandId ID of the command to register the handler for.
-  //! @param handler Handler function.
-  template<typename T>
-  void RegisterCommandHandler(
-    CommandId commandId,
-    std::function<void(ClientId clientId, const T&)> handler)
-  {
-    RegisterCommandHandler(
-      commandId,
-      [=](ClientId clientId, SourceStream& source)
-      {
-        T command;
-        T::Read(command, source);
-        handler(clientId, command);
-      });
-  }
 
   void SetCode(ClientId client, XorCode code);
 
-  //!
-  void QueueCommand(
-    ClientId client,
-    CommandId command,
-    CommandSupplier supplier);
-
-private:
-  //!
-  void HandleClientConnect(ClientId clientId);
-  //!
-  void HandleClientDisconnect(ClientId clientId);
-  //!
-  void HandleClientRead(
-    ClientId clientId,
-    asio::streambuf& readBuffer);
-  //!
-  void HandleClientWrite(
-    ClientId clientId,
-    asio::streambuf& writeBuffer);
-
-  std::string _name;
-
-  std::unordered_map<CommandId, RawCommandHandler> _handlers{};
-  std::unordered_map<ClientId, CommandClient> _clients{};
-
-  Server _server;
+protected:
+  std::tuple<CommandId, size_t, std::array<std::byte, MaxPayloadDataSize>> PreprocessReceivedPacket(ClientId clientId, CommandClient& client, SourceStream& packetStream) override;
+  size_t WriteOutgoingPacket(CommandId packetId, PacketSupplier supplier, SinkStream& packetSink) override;
+  std::string_view GetPacketName(CommandId packetId) override;
+  bool IsMuted(CommandId id) override;
 };
 
 } // namespace alicia

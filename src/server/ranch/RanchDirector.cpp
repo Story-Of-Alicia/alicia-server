@@ -21,7 +21,7 @@ RanchDirector::RanchDirector(
   // Handlers
 
   // EnterRanch handler
-  _server.RegisterCommandHandler<RanchCommandEnterRanch>(
+  _server.RegisterPacketHandler<RanchCommandEnterRanch>(
     CommandId::RanchEnterRanch,
     [this](ClientId clientId, const auto& message)
     {
@@ -29,7 +29,7 @@ RanchDirector::RanchDirector(
     });
 
   // Snapshot handler
-  _server.RegisterCommandHandler<RanchCommandRanchSnapshot>(
+  _server.RegisterPacketHandler<RanchCommandRanchSnapshot>(
     CommandId::RanchSnapshot,
     [this](ClientId clientId, const auto& message)
     {
@@ -37,7 +37,7 @@ RanchDirector::RanchDirector(
     });
 
   // RanchCmdAction handler
-  _server.RegisterCommandHandler<RanchCommandRanchCmdAction>(
+  _server.RegisterPacketHandler<RanchCommandRanchCmdAction>(
     CommandId::RanchCmdAction,
     [this](ClientId clientId, const auto& message)
     {
@@ -45,49 +45,49 @@ RanchDirector::RanchDirector(
     });
 
   // RanchStuff handler
-  _server.RegisterCommandHandler<RanchCommandRanchStuff>(
+  _server.RegisterPacketHandler<RanchCommandRanchStuff>(
     CommandId::RanchStuff,
     [this](ClientId clientId, const auto& message)
     {
       HandleRanchStuff(clientId, message);
     });
 
-  _server.RegisterCommandHandler<RanchCommandUpdateBusyState>(
+  _server.RegisterPacketHandler<RanchCommandUpdateBusyState>(
     CommandId::RanchUpdateBusyState,
     [this](ClientId clientId, auto& command)
     {
       HandleUpdateBusyState(clientId, command); 
     });
   
-  _server.RegisterCommandHandler<RanchCommandSearchStallion>(
+  _server.RegisterPacketHandler<RanchCommandSearchStallion>(
     CommandId::RanchSearchStallion,
     [this](ClientId clientId, auto& command)
     {
       HandleSearchStallion(clientId, command); 
     });
 
-  _server.RegisterCommandHandler<RanchCommandEnterBreedingMarket>(
+  _server.RegisterPacketHandler<RanchCommandEnterBreedingMarket>(
     CommandId::RanchEnterBreedingMarket,
     [this](ClientId clientId, auto& command)
     {
       HandleEnterBreedingMarket(clientId, command); 
     });
 
-  _server.RegisterCommandHandler<RanchCommandTryBreeding>(
+  _server.RegisterPacketHandler<RanchCommandTryBreeding>(
     CommandId::RanchTryBreeding,
     [this](ClientId clientId, auto& command)
     {
       HandleTryBreeding(clientId, command); 
     });
 
-  _server.RegisterCommandHandler<RanchCommandBreedingWishlist>(
+  _server.RegisterPacketHandler<RanchCommandBreedingWishlist>(
     CommandId::RanchBreedingWishlist,
     [this](ClientId clientId, auto& command)
     {
       HandleBreedingWishlist(clientId, command); 
     });
 
-  _server.RegisterCommandHandler<RanchCommandUpdateMountNickname>(
+  _server.RegisterPacketHandler<RanchCommandUpdateMountNickname>(
     CommandId::RanchUpdateMountNickname,
     [this](ClientId clientId, auto& command)
     {
@@ -314,7 +314,7 @@ void RanchDirector::HandleEnterRanch(
   // Todo: Roll the code for the connecting client.
   // Todo: The response contains the code, somewhere.
   _server.SetCode(clientId, {});
-  _server.QueueCommand(
+  _server.QueuePacket(
     clientId,
     CommandId::RanchEnterRanchOK,
     [response](auto& sink)
@@ -345,7 +345,7 @@ void RanchDirector::HandleEnterRanch(
       continue;
     }
 
-    _server.QueueCommand(
+    _server.QueuePacket(
       clientId,
       CommandId::RanchEnterRanchNotify,
       [&](auto& sink){
@@ -387,7 +387,7 @@ void RanchDirector::HandleSnapshot(
       continue;
     }
 
-    _server.QueueCommand(
+    _server.QueuePacket(
       clientId,
       CommandId::RanchSnapshotNotify,
       [&](auto& sink)
@@ -400,7 +400,7 @@ void RanchDirector::HandleSnapshot(
 void RanchDirector::HandleCmdAction(ClientId clientId, const RanchCommandRanchCmdAction& action)
 {
   // TODO: Actual implementation of it
-  _server.QueueCommand(
+  _server.QueuePacket(
     clientId,
     CommandId::RanchCmdActionNotify,
     [action](auto& sink)
@@ -423,7 +423,7 @@ void RanchDirector::HandleRanchStuff(ClientId clientId, const RanchCommandRanchS
   character->carrots += command.value;
   const auto totalCarrots = character->carrots;
 
-  _server.QueueCommand(
+  _server.QueuePacket(
     clientId,
     CommandId::RanchStuffOK,
     [command, totalCarrots](auto& sink)
@@ -454,7 +454,7 @@ void RanchDirector::HandleUpdateBusyState(ClientId clientId, const RanchCommandU
       continue;
     }
     
-    _server.QueueCommand(
+    _server.QueuePacket(
       clientId,
       CommandId::RanchSnapshotNotify,
       [&](auto& sink) { RanchCommandUpdateBusyStateNotify::Write(response, sink); });
@@ -463,7 +463,7 @@ void RanchDirector::HandleUpdateBusyState(ClientId clientId, const RanchCommandU
 
 void RanchDirector::HandleSearchStallion(ClientId clientId, const RanchCommandSearchStallion& command)
 {
-  _server.QueueCommand(
+  _server.QueuePacket(
     clientId,
     CommandId::RanchSearchStallionOK,
     [command](auto& sink)
@@ -518,7 +518,7 @@ void RanchDirector::HandleEnterBreedingMarket(ClientId clientId, const RanchComm
 {
   const DatumUid characterUid = _clientCharacters[clientId];
   auto character = _dataDirector.GetCharacter(characterUid);
-  _server.QueueCommand(
+  _server.QueuePacket(
     clientId,
     CommandId::RanchEnterBreedingMarketOK,
     [&](auto& sink)
@@ -545,7 +545,7 @@ void RanchDirector::HandleEnterBreedingMarket(ClientId clientId, const RanchComm
 void RanchDirector::HandleTryBreeding(ClientId clientId, const RanchCommandTryBreeding& command)
 {
   // TODO: Actually do something
-  _server.QueueCommand(
+  _server.QueuePacket(
     clientId,
     CommandId::RanchTryBreedingOK,
     [&](auto& sink)
@@ -595,7 +595,7 @@ void RanchDirector::HandleTryBreeding(ClientId clientId, const RanchCommandTryBr
 void RanchDirector::HandleBreedingWishlist(ClientId clientId, const RanchCommandBreedingWishlist& command)
 {
   // TODO: Actually do something
-  _server.QueueCommand(
+  _server.QueuePacket(
     clientId,
     CommandId::RanchBreedingWishlistOK,
     [&](auto& sink)
@@ -608,7 +608,7 @@ void RanchDirector::HandleBreedingWishlist(ClientId clientId, const RanchCommand
 void RanchDirector::HandleUpdateMountNickname(ClientId clientId, const RanchCommandUpdateMountNickname& command)
 {
   // TODO: Actually do something
-  _server.QueueCommand(
+  _server.QueuePacket(
     clientId,
     CommandId::RanchUpdateMountNicknameOK,
     [&](auto& sink)

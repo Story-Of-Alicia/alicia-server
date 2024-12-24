@@ -5,6 +5,7 @@
 
 #include <libserver/base/Server.hpp>
 #include <libserver/command/CommandServer.hpp>
+#include <libserver/chatter/ChatterServer.hpp>
 #include <libserver/Util.hpp>
 #include <server/Settings.hpp>
 
@@ -70,13 +71,13 @@ int main()
         settings._ranchSettings);
     });
 
-  // Messenger thread.
-  std::jthread messengerThread(
+  // Chatter thread.
+  std::jthread chatterThread(
     [&settings]()
     {
-      alicia::CommandServer messengerServer("Messenger");
-      // TODO: Messenger
-      messengerServer.Host(boost::asio::ip::address_v4::any(), 10032);
+      alicia::ChatterServer chatterServer("Chatter");
+      // TODO: Chatter Director
+      chatterServer.Host(boost::asio::ip::address_v4::any(), 10032);
     });
 
   return 0;

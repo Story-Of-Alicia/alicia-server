@@ -30,7 +30,7 @@ LobbyDirector::LobbyDirector(
   // Handlers
 
   // Login handler
-  _server.RegisterCommandHandler<LobbyCommandLogin>(
+  _server.RegisterPacketHandler<LobbyCommandLogin>(
     CommandId::LobbyLogin,
     [this](ClientId clientId, const auto& message)
     {
@@ -38,7 +38,7 @@ LobbyDirector::LobbyDirector(
     });
 
   // Heartbeat handler
-  _server.RegisterCommandHandler<LobbyCommandHeartbeat>(
+  _server.RegisterPacketHandler<LobbyCommandHeartbeat>(
     CommandId::LobbyHeartbeat,
     [this](ClientId clientId, const auto& message)
     {
@@ -46,7 +46,7 @@ LobbyDirector::LobbyDirector(
     });
 
   // ShowInventory handler
-  _server.RegisterCommandHandler<LobbyCommandShowInventory>(
+  _server.RegisterPacketHandler<LobbyCommandShowInventory>(
     CommandId::LobbyShowInventory,
     [this](ClientId clientId, const auto& message)
     {
@@ -54,7 +54,7 @@ LobbyDirector::LobbyDirector(
     });
 
   // AchievementCompleteList handler
-  _server.RegisterCommandHandler<LobbyCommandAchievementCompleteList>(
+  _server.RegisterPacketHandler<LobbyCommandAchievementCompleteList>(
     CommandId::LobbyAchievementCompleteList,
     [this](ClientId clientId, const auto& message)
     {
@@ -62,7 +62,7 @@ LobbyDirector::LobbyDirector(
     });
 
   // RequestLeagueInfo
-  _server.RegisterCommandHandler<LobbyCommandRequestLeagueInfo>(
+  _server.RegisterPacketHandler<LobbyCommandRequestLeagueInfo>(
     CommandId::LobbyRequestLeagueInfo,
     [this](ClientId clientId, const auto& message)
     {
@@ -70,7 +70,7 @@ LobbyDirector::LobbyDirector(
     });
 
   // RequestQuestList handler
-  _server.RegisterCommandHandler<LobbyCommandRequestQuestList>(
+  _server.RegisterPacketHandler<LobbyCommandRequestQuestList>(
     CommandId::LobbyRequestQuestList,
     [this](ClientId clientId, const auto& message)
     {
@@ -78,7 +78,7 @@ LobbyDirector::LobbyDirector(
     });
 
   // RequestSpecialEventList
-  _server.RegisterCommandHandler<LobbyCommandRequestSpecialEventList>(
+  _server.RegisterPacketHandler<LobbyCommandRequestSpecialEventList>(
     CommandId::LobbyRequestSpecialEventList,
     [this](ClientId clientId, const auto& message)
     {
@@ -86,7 +86,7 @@ LobbyDirector::LobbyDirector(
     });
 
   // EnterRanch
-  _server.RegisterCommandHandler<LobbyCommandEnterRanch>(
+  _server.RegisterPacketHandler<LobbyCommandEnterRanch>(
     CommandId::LobbyEnterRanch,
     [this](ClientId clientId, const auto& message)
     {
@@ -94,7 +94,7 @@ LobbyDirector::LobbyDirector(
     });
 
   // GetMessengerInfo
-  _server.RegisterCommandHandler<LobbyCommandGetMessengerInfo>(
+  _server.RegisterPacketHandler<LobbyCommandGetMessengerInfo>(
     CommandId::LobbyGetMessengerInfo,
     [this](ClientId clientId, const auto& message)
     {
@@ -129,7 +129,7 @@ void LobbyDirector::HandleUserLogin(ClientId clientId, const LobbyCommandLogin& 
   {
     // The user has failed authentication.
     // Cancel the login.
-    _server.QueueCommand(
+    _server.QueuePacket(
       clientId,
       CommandId::LobbyLoginCancel,
       [](SinkStream& buffer)
@@ -317,7 +317,7 @@ void LobbyDirector::HandleUserLogin(ClientId clientId, const LobbyCommandLogin& 
       .val19 = 0x38e,
       .val20 = 0x1c6};
 
-  _server.QueueCommand(clientId, CommandId::LobbyLoginOK, [command](SinkStream& sink)
+  _server.QueuePacket(clientId, CommandId::LobbyLoginOK, [command](SinkStream& sink)
   {
     LobbyCommandLoginOK::Write(command, sink);
   });
@@ -342,7 +342,7 @@ void LobbyDirector::HandleShowInventory(
   ClientId clientId,
   const LobbyCommandShowInventory& showInventory)
 {
-  _server.QueueCommand(
+  _server.QueuePacket(
     clientId,
     CommandId::LobbyShowInventoryOK,
     [&](auto& sink)
@@ -356,7 +356,7 @@ void LobbyDirector::HandleAchievementCompleteList(
   ClientId clientId,
   const LobbyCommandAchievementCompleteList& achievementCompleteList)
 {
-  _server.QueueCommand(
+  _server.QueuePacket(
     clientId,
     CommandId::LobbyAchievementCompleteListOK,
     [&](auto& sink)
@@ -370,7 +370,7 @@ void LobbyDirector::HandleRequestLeagueInfo(
   ClientId clientId,
   const LobbyCommandRequestLeagueInfo& requestLeagueInfo)
 {
-  _server.QueueCommand(
+  _server.QueuePacket(
     clientId,
     CommandId::LobbyRequestLeagueInfoOK,
     [&](auto& sink)
@@ -384,7 +384,7 @@ void LobbyDirector::HandleRequestQuestList(
   ClientId clientId,
   const LobbyCommandRequestQuestList& requestQuestList)
 {
-  _server.QueueCommand(
+  _server.QueuePacket(
     clientId,
     CommandId::LobbyRequestQuestListOK,
     [&](auto& sink)
@@ -398,7 +398,7 @@ void LobbyDirector::HandleRequestSpecialEventList(
   ClientId clientId,
   const LobbyCommandRequestSpecialEventList& requestSpecialEventList)
 {
-  _server.QueueCommand(
+  _server.QueuePacket(
     clientId,
     CommandId::LobbyRequestSpecialEventListOK,
     [&](auto& sink)
@@ -416,7 +416,7 @@ void LobbyDirector::HandleEnterRanch(
 {
   const auto [_, characterUid] = *_clientCharacters.find(clientId);
 
-  _server.QueueCommand(
+  _server.QueuePacket(
     clientId,
     CommandId::LobbyEnterRanchOK,
     [characterUid, this](auto& sink)
@@ -437,7 +437,7 @@ void LobbyDirector::HandleGetMessengerInfo(
   ClientId clientId,
   const LobbyCommandGetMessengerInfo& getMessengerInfo)
 {
-  _server.QueueCommand(
+  _server.QueuePacket(
     clientId,
     CommandId::LobbyGetMessengerInfoOK,
     [&](auto& sink)
