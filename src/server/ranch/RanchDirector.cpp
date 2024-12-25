@@ -211,19 +211,7 @@ void RanchDirector::HandleEnterRanch(
       .unk0 = 1,
       .unk1 = 1,
       .description = ranchCharacter->status,
-      .character = {
-        .parts = {
-          .charId = static_cast<uint8_t>(ranchCharacter->gender == Gender::Boy ? 10 : 20),
-          .mouthSerialId = 0x01,
-          .faceSerialId = 0x2,
-          .val0 = 0x01},
-       .appearance =
-         {.val0 = 0xFFFF,
-          .headSize = 0x01,
-          .height = 0x01,
-          .thighVolume = 0x01,
-          .legVolume = 0x01,
-          .val1 = 0xFF}},
+      .character = ranchCharacter->looks.value(),
       .horse = {
         .uid = ranchCharacter->mountUid,
         .tid = ranchCharacterMount->tid,

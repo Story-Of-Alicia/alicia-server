@@ -42,7 +42,7 @@ DataDirector::DataDirector()
 
   _characters[1].value = {
     .nickName = "rgnt",
-    .gender = Gender::Boy,
+    .gender = Gender::Unspecified,
     .level = 60,
     .carrots = 5000,
     .characterEquipment = {Item{.uid = 100, .tid = 30035, .val = 0, .count = 1}},
@@ -52,10 +52,10 @@ DataDirector::DataDirector()
   };
   _characters[2].value = {
     .nickName = "laith",
-    .gender = Gender::Boy,
+    .gender = Gender::Unspecified,
     .level = 60,
     .carrots = 5000,
-    .characterEquipment = {Item{.uid = 100, .tid = 30035, .val = 0, .count = 1}},
+    .characterEquipment = {},
     .mountUid = 4,
     .ranchUid = 100,
     .horses = {4}

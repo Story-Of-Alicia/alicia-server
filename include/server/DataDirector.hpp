@@ -44,6 +44,7 @@ struct User
     uint16_t level{};
     int32_t carrots{};
     AgeGroup ageGroup = AgeGroup::Kid;
+    std::optional<alicia::Character> looks{};
 
     std::string status;
 

@@ -29,6 +29,11 @@ private:
     const LobbyCommandLogin& login);
 
   //!
+  void HandleCreateNickname(
+    ClientId clientId,
+    const LobbyCommandCreateNickname& createNickname);
+
+  //!
   void HandleHeartbeat(
     ClientId clientId,
     const LobbyCommandHeartbeat& heartbeat);

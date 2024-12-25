@@ -285,22 +285,23 @@ struct LobbyCommandCreateNicknameNotify
 };
 
 //! Serverbound create nickname ok command.
-struct LobbyCommandCreateNicknameOK
+struct LobbyCommandCreateNickname
 {
   std::string nickname{};
   Character character{};
+  uint32_t unk0 {};
 
   //! Writes the command to a provided sink buffer.
   //! @param command Command.
   //! @param buffer Sink buffer.
   static void Write(
-    const LobbyCommandCreateNicknameOK& command, SinkStream& buffer);
+    const LobbyCommandCreateNickname& command, SinkStream& buffer);
 
   //! Reader a command from a provided source buffer.
   //! @param command Command.
   //! @param buffer Source buffer.
   static void Read(
-    LobbyCommandCreateNicknameOK& command, SourceStream& buffer);
+    LobbyCommandCreateNickname& command, SourceStream& buffer);
 };
 
 //! Serverbound create nickname cancel command.
