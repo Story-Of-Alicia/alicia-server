@@ -81,7 +81,7 @@ enum class CommandId
   LobbyHeartbeat = 0x12,
 
   LobbyCreateNicknameNotify = 0x6b,
-  LobbyCreateNickname = 0x6c,
+  LobbyCreateNicknameOK = 0x6c,
   LobbyCreateNicknameCancel = 0x6e,
 
   LobbyShowInventory = 0x007e,

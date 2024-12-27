@@ -34,11 +34,11 @@ LobbyDirector::LobbyDirector(
       HandleUserLogin(clientId, message);
     });
 
-  _server.RegisterCommandHandler<LobbyCommandCreateNickname>(
-    CommandId::LobbyCreateNickname,
+  _server.RegisterCommandHandler<LobbyCommandCreateNicknameOK>(
+    CommandId::LobbyCreateNicknameOK,
     [this](ClientId clientId, const auto& message)
     {
-      HandleCreateNickname(clientId, message);
+      HandleCreateNicknameOK(clientId, message);
     });
 
   _server.RegisterCommandHandler<LobbyCommandHeartbeat>(
@@ -317,15 +317,15 @@ void LobbyDirector::HandleUserLogin(ClientId clientId, const LobbyCommandLogin& 
   }
 }
 
-void LobbyDirector::HandleCreateNickname(
+void LobbyDirector::HandleCreateNicknameOK(
   ClientId clientId,
-  const LobbyCommandCreateNickname& createNickname)
+  const LobbyCommandCreateNicknameOK& createNicknameOK)
 {
   const auto characterUid = _clientCharacters[clientId];
   const auto character = _dataDirector.GetCharacter(characterUid);
-  character->nickName = createNickname.nickname;
-  character->looks = std::optional(createNickname.character);
-  character->gender = createNickname.character.parts.charId == 10 ? Gender::Boy : Gender::Girl;
+  character->nickName = createNicknameOK.nickname;
+  character->looks = std::optional(createNicknameOK.character);
+  character->gender = createNicknameOK.character.parts.charId == 10 ? Gender::Boy : Gender::Girl;
 
   _server.QueueCommand(
     clientId,

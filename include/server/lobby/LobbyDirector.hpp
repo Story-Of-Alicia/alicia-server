@@ -29,9 +29,9 @@ private:
     const LobbyCommandLogin& login);
 
   //!
-  void HandleCreateNickname(
+  void HandleCreateNicknameOK(
     ClientId clientId,
-    const LobbyCommandCreateNickname& createNickname);
+    const LobbyCommandCreateNicknameOK& createNickname);
 
   //!
   void HandleHeartbeat(

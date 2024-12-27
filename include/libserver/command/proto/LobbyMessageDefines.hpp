@@ -285,7 +285,7 @@ struct LobbyCommandCreateNicknameNotify
 };
 
 //! Serverbound create nickname ok command.
-struct LobbyCommandCreateNickname
+struct LobbyCommandCreateNicknameOK
 {
   std::string nickname{};
   Character character{};
@@ -295,13 +295,13 @@ struct LobbyCommandCreateNickname
   //! @param command Command.
   //! @param buffer Sink buffer.
   static void Write(
-    const LobbyCommandCreateNickname& command, SinkStream& buffer);
+    const LobbyCommandCreateNicknameOK& command, SinkStream& buffer);
 
   //! Reader a command from a provided source buffer.
   //! @param command Command.
   //! @param buffer Source buffer.
   static void Read(
-    LobbyCommandCreateNickname& command, SourceStream& buffer);
+    LobbyCommandCreateNicknameOK& command, SourceStream& buffer);
 };
 
 //! Serverbound create nickname cancel command.

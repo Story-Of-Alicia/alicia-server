@@ -437,15 +437,15 @@ void LobbyCommandCreateNicknameNotify::Read(
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandCreateNickname::Write(
-  const LobbyCommandCreateNickname& command,
+void LobbyCommandCreateNicknameOK::Write(
+  const LobbyCommandCreateNicknameOK& command,
   SinkStream& buffer)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandCreateNickname::Read(
-  LobbyCommandCreateNickname& command,
+void LobbyCommandCreateNicknameOK::Read(
+  LobbyCommandCreateNicknameOK& command,
   SourceStream& buffer)
 {
   buffer.Read(command.nickname);
