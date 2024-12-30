@@ -149,11 +149,34 @@ void LobbyDirector::HandleUserLogin(ClientId clientId, const LobbyCommandLogin& 
 
   _clientCharacters[clientId] = user->characterUid;
 
+  // Set XOR scrambler code
+  uint32_t scramblingConstant = rd(); // TODO: Use something more secure
+  XorCode code;
+  *((uint32_t*) code.data()) = scramblingConstant;
+  _server.SetCode(clientId, code);
+
   // If the character has no appearance set.
-  // Send LobbyCommandCreateNicknameNotify instead of LobbyCommandLoginOK
+  // Send a mostly empty LobbyCommandLoginOK alongside a LobbyCommandCreateNicknameNotify
   if (!character->looks.has_value())
   {
-    LobbyCommandCreateNicknameNotify createNicknameNotify;
+    const WinFileTime time = UnixTimeToFileTime(
+      std::chrono::system_clock::now());
+
+    const LobbyCommandLoginOK command{
+      .lobbyTime =
+        {.dwLowDateTime = static_cast<uint32_t>(time.dwLowDateTime),
+        .dwHighDateTime = static_cast<uint32_t>(time.dwHighDateTime)},
+
+      .address = _settings.ranchAdvAddress.to_uint(),
+      .port = _settings.ranchAdvPort,
+
+      .scramblingConstant = scramblingConstant};
+    _server.QueueCommand(clientId, CommandId::LobbyLoginOK, [command](SinkStream& sink)
+    {
+      LobbyCommandLoginOK::Write(command, sink);
+    });
+
+    const LobbyCommandCreateNicknameNotify createNicknameNotify {};
     _server.QueueCommand(clientId, CommandId::LobbyCreateNicknameNotify, [createNicknameNotify](SinkStream& sink)
     {
       LobbyCommandCreateNicknameNotify::Write(createNicknameNotify, sink);
@@ -161,12 +184,6 @@ void LobbyDirector::HandleUserLogin(ClientId clientId, const LobbyCommandLogin& 
   }
   else
   {
-    // Set XOR scrambler code
-    uint32_t scramblingConstant = rd(); // TODO: Use something more secure
-    XorCode code;
-    *((uint32_t*) code.data()) = scramblingConstant;
-    _server.SetCode(clientId, code);
-
     // Get the mount data of the user.
     const auto mount = _dataDirector.GetMount(
       character->mountUid);
@@ -327,6 +344,8 @@ void LobbyDirector::HandleCreateNicknameOK(
   character->looks = std::optional(createNicknameOK.character);
   character->gender = createNicknameOK.character.parts.charId == 10 ? Gender::Boy : Gender::Girl;
 
+  // Not sure why but this seems to be the correct reply to send after creating a nickname.
+  // After all, it's the packet that goes right after LoginOK.
   _server.QueueCommand(
     clientId,
     CommandId::LobbyShowInventoryOK,
