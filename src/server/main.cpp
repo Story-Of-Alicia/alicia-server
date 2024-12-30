@@ -1,6 +1,7 @@
 #include "Version.hpp"
 
 #include "server/lobby/LobbyDirector.hpp"
+#include "server/race/RaceDirector.hpp"
 #include "server/ranch/RanchDirector.hpp"
 
 #include <libserver/base/Server.hpp>
@@ -22,6 +23,7 @@ namespace
 std::unique_ptr<alicia::DataDirector> g_dataDirector;
 std::unique_ptr<alicia::LobbyDirector> g_loginDirector;
 std::unique_ptr<alicia::RanchDirector> g_ranchDirector;
+std::unique_ptr<alicia::RaceDirector> g_raceDirector;
 
 } // namespace
 
@@ -77,6 +79,15 @@ int main()
       alicia::CommandServer messengerServer("Messenger");
       // TODO: Messenger
       messengerServer.Host(boost::asio::ip::address_v4::any(), 10032);
+    });
+
+  // Race director thread.
+  std::jthread raceThread(
+    [&settings]()
+    {
+      g_raceDirector = std::make_unique<alicia::RaceDirector>(
+        *g_dataDirector,
+        settings._raceSettings);
     });
 
   return 0;

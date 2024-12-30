@@ -23,6 +23,7 @@ add_library(alicia-libserver STATIC
         src/libserver/command/CommandProtocol.cpp
         src/libserver/command/CommandServer.cpp
         src/libserver/command/proto/LobbyMessageDefines.cpp
+        src/libserver/command/proto/RaceMessageDefines.cpp
         src/libserver/command/proto/RanchMessageDefines.cpp
         include/libserver/command/proto/DataDefines.hpp)
 target_include_directories(alicia-libserver
@@ -51,6 +52,7 @@ target_sources(alicia-server PRIVATE
         src/server/tracker/WorldTracker.cpp
         src/server/lobby/LobbyDirector.cpp
         src/server/lobby/LoginHandler.cpp
+        src/server/race/RaceDirector.cpp
         src/server/ranch/RanchDirector.cpp)
 target_include_directories(alicia-server PRIVATE
         include/)
