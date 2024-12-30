@@ -9,7 +9,7 @@ ARG BUILDER_REPO_PATH
 ARG BUILD_TYPE=Release
 
 WORKDIR ${BUILDER_REPO_PATH}
-ADD . .
+COPY . .
 RUN git submodule update --init --recursive
 
 RUN cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -S ${BUILDER_REPO_PATH} -B ${BUILDER_REPO_PATH}/build && \
@@ -17,11 +17,15 @@ RUN cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -S ${BUILDER_REPO_PATH} -B ${BUILDER_
 
 FROM ubuntu:latest
 ARG BUILDER_REPO_PATH
+
+RUN groupadd -r alicia && useradd --no-log-init -r -g alicia alicia
+USER alicia
+
 WORKDIR /server
 COPY --from=builder ${BUILDER_REPO_PATH}/build/alicia-server .
 
 WORKDIR /game/resources
-COPY --from=builder ${BUILDER_REPO_PATH}/resources/* .
+COPY --from=builder ${BUILDER_REPO_PATH}/build/resources/* .
 WORKDIR /game
 
 VOLUME [ "/game" ]
