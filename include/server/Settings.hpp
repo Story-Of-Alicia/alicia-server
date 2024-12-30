@@ -33,6 +33,12 @@ public:
      asio::ip::make_address_v4("127.0.0.1")
     };
     uint16_t messengerAdvPort = 10032;
+
+    // Advertised address and port of the race host.
+    asio::ip::address_v4 raceAdvAddress {
+      asio::ip::make_address_v4("127.0.0.1")
+    };
+    uint16_t raceAdvPort = 10033;
   } _lobbySettings;
 
   // Bind address and port of the ranch host.
@@ -52,6 +58,15 @@ public:
     };
     uint16_t port = 10032;
   } _messengerSettings;
+
+  // Bind address and port of the race host.
+  struct RaceSettings
+  {
+    asio::ip::address_v4 address{
+      asio::ip::address_v4::any()
+    };
+    uint16_t port = 10033;
+  } _raceSettings;
 
   // Updates settings from json configuration file
   void LoadFromFile(const std::filesystem::path& filePath);

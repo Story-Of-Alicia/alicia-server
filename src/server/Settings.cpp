@@ -71,6 +71,18 @@ void Settings::LoadFromFile(const std::filesystem::path& filePath)
             _lobbySettings.messengerAdvPort = port;
           }
         }
+
+        if (advertisement.contains("race"))
+        {
+          // Advertised address and port of the race host
+          auto [address, port] = ParseAddressAndPort(advertisement["race"]);
+          // If parsing succeeded, update values
+          if (!address.is_unspecified() && port != 0)
+          {
+            _lobbySettings.raceAdvAddress = address;
+            _lobbySettings.raceAdvPort = port;
+          }
+        }
       }
     }
     // Extract ranch settings
@@ -100,6 +112,21 @@ void Settings::LoadFromFile(const std::filesystem::path& filePath)
         {
           _messengerSettings.address = address;
           _messengerSettings.port = port;
+        }
+      }
+    }
+    // Extract race settings
+    if (jsonConfig.contains("race"))
+    {
+      const auto& race = jsonConfig["race"];
+      if (race.contains("bind"))
+      {
+        auto [address, port] = ParseAddressAndPort(race["bind"]);
+        // If parsing succeeded, update values
+        if (!address.is_unspecified() && port != 0)
+        {
+          _raceSettings.address = address;
+          _raceSettings.port = port;
         }
       }
     }
