@@ -12,10 +12,8 @@ WORKDIR ${BUILDER_REPO_PATH}
 ADD . .
 RUN git submodule update --init --recursive
 
-RUN mkdir build && \
-    cd build && \
-    cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} .. && \
-    cmake --build . --parallel
+RUN cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -S ${BUILDER_REPO_PATH} -B ${BUILDER_REPO_PATH}/build && \
+    cmake --build ${BUILDER_REPO_PATH}/build --parallel
 
 FROM ubuntu:latest
 ARG BUILDER_REPO_PATH
