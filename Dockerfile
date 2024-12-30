@@ -28,5 +28,6 @@ WORKDIR /game/resources
 COPY --from=builder ${BUILDER_REPO_PATH}/build/resources/* .
 WORKDIR /game
 
+EXPOSE 10030/tcp 10031/tcp 10032/tcp
 VOLUME [ "/game" ]
 ENTRYPOINT ["/server/alicia-server"]
