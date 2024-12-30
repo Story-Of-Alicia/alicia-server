@@ -41,6 +41,20 @@ LobbyDirector::LobbyDirector(
       HandleCreateNicknameOK(clientId, message);
     });
 
+  _server.RegisterCommandHandler<LobbyCommandEnterChannel>(
+    CommandId::LobbyEnterChannel,
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleEnterChannel(clientId, message);
+    });
+
+  _server.RegisterCommandHandler<LobbyCommandMakeRoom>(
+    CommandId::LobbyMakeRoom,
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleMakeRoom(clientId, message);
+    });
+
   _server.RegisterCommandHandler<LobbyCommandHeartbeat>(
     CommandId::LobbyHeartbeat,
     [this](ClientId clientId, const auto& message)
@@ -353,6 +367,41 @@ void LobbyDirector::HandleCreateNicknameOK(
     {
       LobbyCommandShowInventoryOK response{};
       LobbyCommandShowInventoryOK::Write(response, sink);
+    });
+}
+
+void LobbyDirector::HandleEnterChannel(
+  ClientId clientId,
+  const LobbyCommandEnterChannel& enterChannel)
+{
+  LobbyCommandEnterChannelOK response{};
+  _server.QueueCommand(
+    clientId,
+    CommandId::LobbyEnterChannelOK,
+    [&](auto& sink)
+    {
+      LobbyCommandEnterChannelOK::Write(response, sink);
+    });
+}
+
+void LobbyDirector::HandleMakeRoom(
+  ClientId clientId,
+  const LobbyCommandMakeRoom& makeRoom)
+{
+  const auto characterUid = _clientCharacters[clientId];
+  LobbyCommandMakeRoomOK response{
+    .unk0 = characterUid,
+    .unk1 = 0x44332211,
+    .ip = htonl(_settings.raceAdvAddress.to_uint()),
+    .port = _settings.raceAdvPort,
+    .unk2 = 0
+  };
+  _server.QueueCommand(
+    clientId,
+    CommandId::LobbyMakeRoomOK,
+    [&](auto& sink)
+    {
+      LobbyCommandMakeRoomOK::Write(response, sink);
     });
 }
 

@@ -42,6 +42,16 @@ const std::unordered_map<CommandId, std::string_view> commands = {
   {CommandId::LobbyCreateNicknameOK, "LobbyCreateNicknameOK"},
   {CommandId::LobbyCreateNicknameCancel, "LobbyCreateNicknameCancel"},
 
+  // EnterChannel
+  {CommandId::LobbyEnterChannel, "LobbyEnterChannel"},
+  {CommandId::LobbyEnterChannelOK, "LobbyEnterChannelOK"},
+  {CommandId::LobbyEnterChannelCancel, "LobbyEnterChannelCancel"},
+
+  // Make Room
+  {CommandId::LobbyMakeRoom, "LobbyMakeRoom"},
+  {CommandId::LobbyMakeRoomOK, "LobbyMakeRoomOK"},
+  {CommandId::LobbyMakeRoomCancel, "LobbyMakeRoomCancel"},
+
   // Inventory
   {CommandId::LobbyShowInventory, "LobbyShowInventory"},
   {CommandId::LobbyShowInventoryOK, "LobbyShowInventoryOK"},

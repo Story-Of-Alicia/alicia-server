@@ -84,6 +84,14 @@ enum class CommandId
   LobbyCreateNicknameOK = 0x6c,
   LobbyCreateNicknameCancel = 0x6e,
 
+  LobbyEnterChannel = 0x2b,
+  LobbyEnterChannelOK = 0x2c,
+  LobbyEnterChannelCancel = 0x2d,
+
+  LobbyMakeRoom = 0x13,
+  LobbyMakeRoomOK = 0x14,
+  LobbyMakeRoomCancel = 0x15,
+
   LobbyShowInventory = 0x007e,
   LobbyShowInventoryOK = 0x007f,
   LobbyShowInventoryCancel = 0x0080,

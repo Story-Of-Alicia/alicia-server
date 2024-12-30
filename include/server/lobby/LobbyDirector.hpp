@@ -34,6 +34,16 @@ private:
     const LobbyCommandCreateNicknameOK& createNickname);
 
   //!
+  void HandleEnterChannel(
+    ClientId clientId,
+    const LobbyCommandEnterChannel& enterChannel);
+
+  //!
+  void HandleMakeRoom(
+    ClientId clientId,
+    const LobbyCommandMakeRoom& makeRoom);
+
+  //!
   void HandleHeartbeat(
     ClientId clientId,
     const LobbyCommandHeartbeat& heartbeat);
