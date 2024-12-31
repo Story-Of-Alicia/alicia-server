@@ -16,7 +16,6 @@ RUN git submodule update --init --recursive
 RUN cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} . -B ./build
 RUN cmake --build ./build --parallel
 RUN cmake --install ./build --prefix .
-RUN ls -lsail ${BUILDER_REPO_PATH}/dist
 
 FROM ubuntu:latest
 ARG BUILDER_REPO_PATH
