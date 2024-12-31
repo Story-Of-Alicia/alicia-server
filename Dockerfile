@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 ARG BUILDER_REPO_PATH=/builder/alicia-server
 
 FROM ubuntu:latest AS builder
@@ -12,22 +13,22 @@ WORKDIR ${BUILDER_REPO_PATH}
 COPY . .
 RUN git submodule update --init --recursive
 
-RUN cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -S ${BUILDER_REPO_PATH} -B ${BUILDER_REPO_PATH}/build && \
-    cmake --build ${BUILDER_REPO_PATH}/build --parallel
+RUN cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} . -B ./build
+RUN cmake --build ./build --parallel
+RUN cmake --install ./build --prefix .
+RUN ls -lsail ${BUILDER_REPO_PATH}/dist
 
 FROM ubuntu:latest
 ARG BUILDER_REPO_PATH
 
+LABEL author="Serkan Sahin" maintainer="dev@storyofalicia.com"
+
 RUN groupadd -r alicia && useradd --no-log-init -r -g alicia alicia
 USER alicia
 
-WORKDIR /server
-COPY --from=builder ${BUILDER_REPO_PATH}/build/alicia-server .
-
-WORKDIR /game/resources
-COPY --from=builder ${BUILDER_REPO_PATH}/build/resources/* .
-WORKDIR /game
+WORKDIR /opt/alicia-server  
+COPY --from=builder ${BUILDER_REPO_PATH}/dist .
 
 EXPOSE 10030/tcp 10031/tcp 10032/tcp
-VOLUME [ "/game" ]
-ENTRYPOINT ["/server/alicia-server"]
+VOLUME [ "/opt/alicia-server" ]  
+ENTRYPOINT ["/opt/alicia-server/alicia-server"]  
