@@ -13,7 +13,7 @@ WORKDIR ${BUILDER_REPO_PATH}
 COPY . .
 RUN git submodule update --init --recursive
 
-RUN cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} . -B ./build
+RUN cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DBUILD_TESTS=False . -B ./build
 RUN cmake --build ./build --parallel
 RUN cmake --install ./build --prefix .
 
