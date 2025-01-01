@@ -226,10 +226,7 @@ struct RanchCommandEnterRanchOK
   
   std::array<Unk10, 3> unk10;
 
-  struct Unk11 {
-    uint8_t unk0{};
-    uint8_t unk1{};
-  } unk11{};
+  RanchUnk11 unk11{};
 
   uint32_t unk12{};
 

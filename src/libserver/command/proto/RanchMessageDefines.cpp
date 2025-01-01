@@ -262,8 +262,7 @@ void RanchCommandEnterRanchOK::Write(
       .Write(unk.unk7);
   }
 
-  buffer.Write(command.unk11.unk0)
-    .Write(command.unk11.unk1);
+  buffer.Write(command.unk11);
 
   buffer.Write(command.unk12);
 }

@@ -180,6 +180,14 @@ enum class CommandId
   RanchRequestStorageOK = 0x29a,
   RanchRequestStorageCancel = 0x29b,
 
+  RaceEnterRoom = 0x30,
+  RaceEnterRoomNotify = 0x31,
+  RaceEnterRoomOK = 0x32,
+  RaceEnterRoomCancel = 0x33,
+
+  RaceChangeRoomOptions = 0x54,
+  RaceChangeRoomOptionsNotify = 0x55,
+
   Count = 0xFFFF
 };
 
