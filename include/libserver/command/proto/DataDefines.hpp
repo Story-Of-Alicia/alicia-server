@@ -367,6 +367,14 @@ struct Quest
   static void Read(Quest& value, SourceStream& buffer);
 };
 
+struct RanchUnk11 {
+  uint8_t unk0{};
+  uint8_t unk1{};
+
+  static void Write(const RanchUnk11& value, SinkStream& buffer);
+  static void Read(RanchUnk11& value, SourceStream& buffer);
+};
+
 } // namespace alicia
 
 #endif

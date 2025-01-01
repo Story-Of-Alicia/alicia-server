@@ -485,9 +485,9 @@ struct LobbyCommandMakeRoom
   uint8_t unk0;
   uint8_t unk1;
   uint8_t unk2;
-  uint16_t unk3;
+  uint16_t missionId;
   uint8_t unk4;
-  uint16_t unk5;
+  uint16_t bitset;
   uint8_t unk6;
 
   //! Writes the command to a provided sink buffer.
@@ -506,8 +506,8 @@ struct LobbyCommandMakeRoom
 //! Clientbound make room response.
 struct LobbyCommandMakeRoomOK
 {
-  uint32_t unk0;
-  uint32_t unk1;
+  uint32_t characterUid;
+  uint32_t otp;
   uint32_t ip;
   uint16_t port;
   uint8_t unk2;

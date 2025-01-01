@@ -148,6 +148,26 @@ const std::unordered_map<CommandId, std::string_view> commands = {
   {CommandId::RanchRequestStorage, "RanchRequestStorage"},
   {CommandId::RanchRequestStorageOK, "RanchRequestStorageOK"},
   {CommandId::RanchRequestStorageCancel, "RanchRequestStorageCancel"},
+
+  {CommandId::RanchRequestNpcDressList, "RaceRequestNpcDressList"},
+  {CommandId::RanchRequestNpcDressListCancel, "RaceRequestNpcDressListCancel"},
+  {CommandId::RanchRequestNpcDressListOK, "RaceRequestNpcDressListOK"},
+
+
+  {CommandId::RaceEnterRoom, "RaceEnterRoom"},
+  {CommandId::RaceEnterRoomNotify, "RaceEnterRoomNotify"},
+  {CommandId::RaceEnterRoomOK, "RaceEnterRoomOK"},
+  {CommandId::RaceEnterRoomCancel, "RaceEnterRoomCancel"},
+
+  {CommandId::RaceChangeRoomOptions, "AcCmdCRChangeRoomOptions"},
+  {CommandId::RaceChangeRoomOptionsNotify, "AcCmdCRChangeRoomOptionsNotify"},
+
+  {CommandId::RaceStartRace, "RaceStartRace"},
+  {CommandId::RaceStartRaceNotify, "RaceStartRaceNotify"},
+  {CommandId::RaceStartRaceCancel, "RaceStartRaceCancel"},
+
+  {CommandId::UserRaceTimer, "UserRaceTimer"},
+  {CommandId::UserRaceTimerOK, "UserRaceTimerOK"},
 };
 
 } // namespace anon

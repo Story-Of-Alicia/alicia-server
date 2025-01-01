@@ -183,6 +183,26 @@ enum class CommandId
   RanchRequestStorageOK = 0x29a,
   RanchRequestStorageCancel = 0x29b,
 
+  RanchRequestNpcDressList = 0x44c,
+  RanchRequestNpcDressListCancel = 0x44e,
+  RanchRequestNpcDressListOK = 0x44d,
+
+
+  RaceEnterRoom = 0x30,
+  RaceEnterRoomNotify = 0x31,
+  RaceEnterRoomOK = 0x32,
+  RaceEnterRoomCancel = 0x33,
+
+  RaceChangeRoomOptions = 0x54,
+  RaceChangeRoomOptionsNotify = 0x55,
+
+  RaceStartRace = 0x5a,
+  RaceStartRaceNotify = 0x5b,
+  RaceStartRaceCancel = 0x5c,
+
+  UserRaceTimer = 0x1024,
+  UserRaceTimerOK = 0x1025,
+
   Count = 0xFFFF
 };
 

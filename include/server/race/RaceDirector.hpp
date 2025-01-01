@@ -10,6 +10,8 @@
 #include "libserver/data/DataDirector.hpp"
 #include "libserver/command/CommandServer.hpp"
 
+#include "libserver/command/proto/RaceMessageDefines.hpp"
+
 namespace alicia
 {
 
@@ -26,6 +28,25 @@ public:
   void Tick();
 
 private:
+  //!
+  void HandleEnterRoom(
+      ClientId clientId,
+      const RaceCommandEnterRoom& enterRoom);
+
+  //!
+  void HandleChangeRoomOptions(
+      ClientId clientId,
+      const RaceCommandChangeRoomOptions& changeRoomOptions);
+
+  //!
+  void HandleStartRace(
+      ClientId clientId,
+      const RaceCommandStartRace& startRace);
+
+  //!
+  void HandleRaceTimer(
+      ClientId clientId,
+      const UserRaceTimer& raceTimer);
 
   //!
   Settings::RaceSettings _settings;

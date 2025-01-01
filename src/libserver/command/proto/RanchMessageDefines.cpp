@@ -262,8 +262,7 @@ void RanchCommandEnterRanchOK::Write(
       .Write(unk.unk7);
   }
 
-  buffer.Write(command.unk11.unk0)
-    .Write(command.unk11.unk1);
+  buffer.Write(command.unk11);
 
   buffer.Write(command.unk12);
 }
@@ -822,5 +821,48 @@ void RanchCommandRequestStorageCancel::Read(
 {
   throw std::logic_error("Not implemented.");
 }
+
+void RanchCommandRequestNpcDressList::Write(
+  const RanchCommandRequestNpcDressList& command, SinkStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void RanchCommandRequestNpcDressList::Read(
+  RanchCommandRequestNpcDressList& command, SourceStream& buffer)
+{
+  buffer.Read(command.unk0);
+}
+
+void RanchCommandRequestNpcDressListOK::Write(
+  const RanchCommandRequestNpcDressListOK& command, SinkStream& buffer)
+{
+  buffer.Write(command.unk0);
+  buffer.Write(static_cast<uint8_t>(command.dressList.size()));
+  for (const auto& item : command.dressList)
+  {
+    buffer.Write(item);
+  }
+}
+
+void RanchCommandRequestNpcDressListOK::Read(
+  RanchCommandRequestNpcDressListOK& command, SourceStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+
+void RanchCommandRequestNpcDressListCancel::Write(
+  const RanchCommandRequestNpcDressListCancel& command, SinkStream& buffer)
+{
+  // Empty
+}
+
+void RanchCommandRequestNpcDressListCancel::Read(
+  RanchCommandRequestNpcDressListCancel& command, SourceStream& buffer)
+{
+  // Empty
+}
+
 
 } // namespace alicia

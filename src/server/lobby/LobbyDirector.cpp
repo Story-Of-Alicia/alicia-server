@@ -177,7 +177,9 @@ void LobbyDirector::HandleEnterChannel(
   ClientId clientId,
   const LobbyCommandEnterChannel& enterChannel)
 {
-  LobbyCommandEnterChannelOK response{};
+  LobbyCommandEnterChannelOK response{
+      .unk0 = enterChannel.channel // potentially
+  };
 
   _server.QueueCommand<decltype(response)>(
     clientId,
@@ -192,21 +194,36 @@ void LobbyDirector::HandleMakeRoom(
   ClientId clientId,
   const LobbyCommandMakeRoom& makeRoom)
 {
-  // const LobbyCommandMakeRoomOK response{
-  //   .unk0 = characterUid,
-  //   .unk1 = 0x44332211,
-  //   .ip = htonl(_settings.raceAdvAddress.to_uint()),
-  //   .port = _settings.raceAdvPort,
-  //   .unk2 = 0
-  // };
-  //
-  // _server.QueueCommand(
-  //   clientId,
-  //   CommandId::LobbyMakeRoomOK,
-  //   [response](auto& sink)
-  //   {
-  //     LobbyCommandMakeRoomOK::Write(response, sink);
-  //   });
+  /*const auto characterUid = _clientCharacters[clientId];
+  const auto character = _dataDirector.GetCharacter(characterUid);
+  character->roomUid = 123; // TODO: Generate somehow
+
+  const auto room = _dataDirector.GetRoom(character->roomUid.value());
+  room->name = makeRoom.name;
+  room->description = makeRoom.description;
+  room->unk0 = makeRoom.unk0;
+  room->unk1 = makeRoom.unk1;
+  room->unk2 = makeRoom.unk2;
+  room->missionId = makeRoom.missionId;
+  room->unk4 = makeRoom.unk4;
+  room->bitset = makeRoom.bitset;
+  room->unk6 = makeRoom.unk6;
+
+  LobbyCommandMakeRoomOK response{
+    .characterUid = characterUid,
+    .otp = 0x44332211,
+    .ip = htonl(_settings.raceAdvAddress.to_uint()),
+    .port = _settings.raceAdvPort,
+    .unk2 = 0
+  };
+
+  _server.QueueCommand(
+    clientId,
+    CommandId::LobbyMakeRoomOK,
+    [response](auto& sink)
+    {
+      LobbyCommandMakeRoomOK::Write(response, sink);
+    });*/
 }
 
 void LobbyDirector::HandleHeartbeat(

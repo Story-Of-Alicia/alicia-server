@@ -460,4 +460,16 @@ void Quest::Read(Quest& value, SourceStream& buffer)
         .Read(value.unk4);
 }
 
+void RanchUnk11::Write(const RanchUnk11& value, SinkStream& buffer)
+{
+  buffer.Write(value.unk0)
+      .Write(value.unk1);
+}
+
+void RanchUnk11::Read(RanchUnk11& value, SourceStream& buffer)
+{
+  buffer.Read(value.unk0)
+      .Read(value.unk1);
+}
+
 } // namespace alicia
