@@ -635,8 +635,8 @@ void LobbyCommandMakeRoomOK::Write(
   const LobbyCommandMakeRoomOK& command,
   SinkStream& buffer)
 {
-  buffer.Write(command.unk0)
-    .Write(command.unk1)
+  buffer.Write(command.characterUid)
+    .Write(command.otp)
     .Write(command.ip)
     .Write(command.port)
     .Write(command.unk2);
