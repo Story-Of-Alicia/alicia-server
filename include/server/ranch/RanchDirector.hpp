@@ -19,7 +19,7 @@ class RanchDirector
 {
 public:
   //!
-  explicit RanchDirector(
+  RanchDirector(
     DataDirector& dataDirector,
     Settings::RanchSettings settings = {});
 

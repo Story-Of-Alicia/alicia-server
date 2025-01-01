@@ -18,7 +18,7 @@ class LobbyDirector
 {
 public:
   //!
-  explicit LobbyDirector(
+  LobbyDirector(
     DataDirector& dataDirector,
     Settings::LobbySettings settings = {});
 
