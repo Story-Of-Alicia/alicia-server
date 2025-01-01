@@ -40,7 +40,7 @@ void RaceDirector::HandleEnterRoom(ClientId clientId, const RaceCommandEnterRoom
   // TODO: Send RaceEnterRoomNotify to all clients in the room
 
   // TODO: Actually do something
-  
+
   // Todo: Roll the code for the connecting client.
   // Todo: The response contains the code, somewhere.
   _server.SetCode(clientId, {});
@@ -56,13 +56,13 @@ void RaceDirector::HandleEnterRoom(ClientId clientId, const RaceCommandEnterRoom
           Racer {
             .unk0 = 1,
             .unk1 = 1,
-            .unk2 = enterRoom.characterUid,
-            .unk3 = enterRoom.characterUid,
-            .unk4 = enterRoom.characterUid,
+            .level = character->level,
+            .exp = 0,
+            .uid = enterRoom.characterUid,
             .name = character->nickName,
-            .unk5 = (uint8_t) character->gender,
-            .unk6 = enterRoom.characterUid,
-            .unk7 = 1, // index?
+            .unk5 = 0,
+            .unk6 = 0,
+            .bitset = 0,
             .isNPC = false,
             .playerRacer = PlayerRacer {
               .characterEquipment = character->characterEquipment,
@@ -175,7 +175,15 @@ void RaceDirector::HandleChangeRoomOptions(ClientId clientId, const RaceCommandC
     CommandId::RaceChangeRoomOptionsNotify,
     [&](auto& sink)
     {
-      RaceCommandChangeRoomOptionsNotify response {};
+      RaceCommandChangeRoomOptionsNotify response {
+        .optionsBitfield = changeRoomOptions.optionsBitfield,
+        .option0 = changeRoomOptions.option0,
+        .option1 = changeRoomOptions.option1,
+        .option2 = changeRoomOptions.option2,
+        .option3 = changeRoomOptions.option3,
+        .option4 = changeRoomOptions.option4,
+        .option5 = changeRoomOptions.option5
+      };
       RaceCommandChangeRoomOptionsNotify::Write(response, sink);
     });
 }

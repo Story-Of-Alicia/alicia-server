@@ -55,13 +55,13 @@ struct Racer
 {
   uint8_t unk0{};
   uint8_t unk1{};
-  uint32_t unk2{};
-  uint32_t unk3{};
-  uint32_t unk4{};
+  uint32_t level{};
+  uint32_t exp{};
+  uint32_t uid{};
   std::string name{};
   uint8_t unk5{};
   uint32_t unk6{};
-  uint8_t unk7{};
+  uint8_t bitset{};
   bool isNPC{};
 
   std::optional<PlayerRacer> playerRacer{};
