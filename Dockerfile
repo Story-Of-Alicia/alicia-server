@@ -26,7 +26,7 @@ RUN groupadd -r alicia && useradd --no-log-init -r -g alicia alicia
 USER alicia
 
 WORKDIR /opt/alicia-server  
-COPY --from=builder ${BUILDER_REPO_PATH}/dist .
+COPY --from=builder --chown=alicia ${BUILDER_REPO_PATH}/dist .
 
 EXPOSE 10030/tcp 10031/tcp 10032/tcp
 VOLUME [ "/opt/alicia-server" ]  
