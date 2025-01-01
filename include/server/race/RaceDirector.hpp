@@ -16,28 +16,28 @@ namespace alicia
 class RaceDirector
 {
 public:
-    //!
-    explicit RaceDirector(
-        DataDirector& dataDirector,
-        Settings::RaceSettings settings = {});
+  //!
+  RaceDirector(
+      DataDirector& dataDirector,
+      Settings::RaceSettings settings = {});
 
 private:
 
-    //!
-    Settings::RaceSettings _settings;
-    //!
-    DataDirector& _dataDirector;
-    //!
-    CommandServer _server;
+  //!
+  Settings::RaceSettings _settings;
+  //!
+  DataDirector& _dataDirector;
+  //!
+  CommandServer _server;
 
-    //!
-    std::unordered_map<ClientId, DatumUid> _clientCharacters;
+  //!
+  std::unordered_map<ClientId, DatumUid> _clientCharacters;
 
-    struct RoomInstance
-    {
-        // Add race-specific data here
-    };
-    std::unordered_map<DatumUid, RoomInstance> _rooms;
+  struct RoomInstance
+  {
+    // Add race-specific data here
+  };
+  std::unordered_map<DatumUid, RoomInstance> _rooms;
 };
 
 }
