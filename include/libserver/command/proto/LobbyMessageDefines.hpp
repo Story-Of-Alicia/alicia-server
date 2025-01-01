@@ -532,8 +532,8 @@ struct LobbyCommandMakeRoom
 //! Clientbound make room response.
 struct LobbyCommandMakeRoomOK
 {
-  uint32_t unk0;
-  uint32_t unk1;
+  uint32_t characterUid;
+  uint32_t otp;
   uint32_t ip;
   uint16_t port;
   uint8_t unk2;

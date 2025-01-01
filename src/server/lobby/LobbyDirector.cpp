@@ -405,9 +405,9 @@ void LobbyDirector::HandleMakeRoom(
   const LobbyCommandMakeRoom& makeRoom)
 {
   const auto characterUid = _clientCharacters[clientId];
-  const LobbyCommandMakeRoomOK response{
-    .unk0 = characterUid,
-    .unk1 = 0x44332211,
+  LobbyCommandMakeRoomOK response{
+    .characterUid = characterUid,
+    .otp = 0x44332211,
     .ip = htonl(_settings.raceAdvAddress.to_uint()),
     .port = _settings.raceAdvPort,
     .unk2 = 0
