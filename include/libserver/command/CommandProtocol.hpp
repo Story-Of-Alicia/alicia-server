@@ -174,6 +174,14 @@ enum class CommandId
   RanchUpdateMountNicknameCancel = 0x199,
 
 
+  RaceEnterRoom = 0x30,
+  RaceEnterRoomNotify = 0x31,
+  RaceEnterRoomOK = 0x32,
+  RaceEnterRoomCancel = 0x33,
+
+  RaceChangeRoomOptions = 0x54,
+  RaceChangeRoomOptionsNotify = 0x55,
+
   Count = 0xFFFF
 };
 
