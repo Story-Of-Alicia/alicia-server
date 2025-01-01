@@ -43,13 +43,13 @@ void WriteRacer(SinkStream& buf, const Racer& racer)
 {
   buf.Write(racer.unk0)
     .Write(racer.unk1)
-    .Write(racer.unk2)
-    .Write(racer.unk3)
-    .Write(racer.unk4)
+    .Write(racer.level)
+    .Write(racer.exp)
+    .Write(racer.uid)
     .Write(racer.name)
     .Write(racer.unk5)
     .Write(racer.unk6)
-    .Write(racer.unk7)
+    .Write(racer.bitset)
     .Write(racer.isNPC);
 
   if (racer.isNPC)
