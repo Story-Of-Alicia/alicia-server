@@ -3,7 +3,7 @@ ARG BUILDER_REPO_PATH=/builder/alicia-server
 
 FROM ubuntu:latest AS builder
 RUN apt-get update
-RUN apt-get install -y --no-install-recommends build-essential git cmake libboost-dev libpq-dev ca-certificates
+RUN apt-get install -y --no-install-recommends build-essential git cmake libboost-dev libpq-dev
 RUN apt-get clean
 
 ARG BUILDER_REPO_PATH
