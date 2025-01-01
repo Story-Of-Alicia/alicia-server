@@ -21,6 +21,8 @@
 
 #include "spdlog/spdlog.h"
 
+#include <chrono>
+
 namespace alicia
 {
 
@@ -28,6 +30,22 @@ namespace
 {
 
 constexpr size_t MaxBufferSize = 4092;
+
+class MicroProfiler {
+public:
+    MicroProfiler(const std::string& operation)
+        : _operationName(operation), _startTime(std::chrono::high_resolution_clock::now()) {}
+
+    ~MicroProfiler() {
+        auto endTime = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - _startTime).count();
+        spdlog::info("Operation [{}] took {} microseconds.", _operationName, duration);
+    }
+
+private:
+    std::string _operationName;
+    std::chrono::high_resolution_clock::time_point _startTime;
+};
 
 } // anon namespace
 
@@ -78,39 +96,43 @@ void Client::QueueWrite(WriteSupplier writeSupplier)
     return;
   }
 
-  // ToDo: Consider frame-based write loop instead of real-time writes.
-  // Call the supplier.
-  writeSupplier(_writeBuffer);
-  _writeHandler(_writeBuffer);
+  {
+    MicroProfiler profiler("Write & Send");
 
-  // Send the whole buffer.
-  asio::async_write(
-    _socket,
-    _writeBuffer.data(),
-    [&](boost::system::error_code error, std::size_t size)
-    {
-      try
+    // ToDo: Consider frame-based write loop instead of real-time writes.
+    // Call the supplier.
+    writeSupplier(_writeBuffer);
+    _writeHandler(_writeBuffer);
+
+    // Send the whole buffer.
+    asio::async_write(
+      _socket,
+      _writeBuffer.data(),
+      [&](boost::system::error_code error, std::size_t size)
       {
-        if (error)
+        try
         {
-          throw std::runtime_error(
-            fmt::format("Network error (0x{}): {}",
-              error.value(),
-              error.what()));
-        }
+          if (error)
+          {
+            throw std::runtime_error(
+              fmt::format("Network error (0x{}): {}",
+                error.value(),
+                error.what()));
+          }
 
-        // Consume the sent bytes.
-        _writeBuffer.consume(size);
-      }
-      catch (const std::exception& x)
-      {
-        End();
-        spdlog::error(
-          "Error in the client write loop: {}",
-          x.what());
-        _socket.close();
-      }
-    });
+          // Consume the sent bytes.
+          _writeBuffer.consume(size);
+        }
+        catch (const std::exception& x)
+        {
+          End();
+          spdlog::error(
+            "Error in the client write loop: {}",
+            x.what());
+          _socket.close();
+        }
+      });
+  }
 }
 
 void Client::ReadLoop() noexcept
@@ -122,34 +144,38 @@ void Client::ReadLoop() noexcept
     return;
   }
 
-  // Chain the asynchronous functions.
-  _socket.async_read_some(
-    _readBuffer.prepare(MaxBufferSize),
-    [&](boost::system::error_code error, std::size_t size)
-    {
-      try
+  {
+    MicroProfiler profiler("Read & Receive");
+
+    // Chain the asynchronous functions.
+    _socket.async_read_some(
+      _readBuffer.prepare(MaxBufferSize),
+      [&](boost::system::error_code error, std::size_t size)
       {
-        if (error)
+        try
         {
-          throw std::runtime_error(
-            fmt::format("Network error (0x{}): {}", error.value(), error.what()));
+          if (error)
+          {
+            throw std::runtime_error(
+              fmt::format("Network error (0x{}): {}", error.value(), error.what()));
+          }
+
+          // Commit the received bytes, so they can be read by the handler.
+          _readBuffer.commit(size);
+          _readHandler(_readBuffer);
+
+          // Continue the read loop.
+          ReadLoop();
         }
+        catch (const std::exception& x)
+        {
+          End();
 
-        // Commit the received bytes, so they can be read by the handler.
-        _readBuffer.commit(size);
-        _readHandler(_readBuffer);
-
-        // Continue the read loop.
-        ReadLoop();
-      }
-      catch (const std::exception& x)
-      {
-        End();
-
-        spdlog::error("Error in the client read loop: {}", x.what());
-        _socket.close();
-      }
-    });
+          spdlog::error("Error in the client read loop: {}", x.what());
+          _socket.close();
+        }
+      });
+  }
 }
 
 Server::Server(
