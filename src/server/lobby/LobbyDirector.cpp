@@ -199,7 +199,7 @@ void LobbyDirector::HandleUserLogin(ClientId clientId, const LobbyCommandLogin& 
   else
   {
     // Get the mount data of the user.
-    const auto mount = _dataDirector.GetMount(
+    const auto mount = _dataDirector.GetHorse(
       character->mountUid);
 
     const WinFileTime time = UnixTimeToFileTime(

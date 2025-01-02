@@ -85,23 +85,26 @@ struct MacroOptions
   std::array<std::string, 8> macros;
 };
 
+//!
 struct Character
 {
   //! Used to build character from the _ClientCharDefaultPartInfo table.
-  struct CharacterParts
+  struct Parts
   {
+    //!
     uint8_t charId{};
     //! FaceId
     uint8_t mouthSerialId{};
     //! EyeId
     uint8_t faceSerialId{};
-
+    //!
     uint8_t val0{};
   } parts{};
 
-  //! Seems to not be based on any physical units...
-  struct CharacterAppearance
+  //!
+  struct Appearance
   {
+    //!
     uint16_t val0{};
     //! FigFace
     uint16_t headSize{};
@@ -111,41 +114,60 @@ struct Character
     uint16_t thighVolume{};
     //! FigShape
     uint16_t legVolume{};
-
+    //!
     uint16_t val1{};
   } appearance{};
 };
 
+//!
 struct Horse
 {
+  //!
   uint32_t uid{};
+  //!
   uint32_t tid{};
+  //! Max length is 255.
   std::string name{};
 
+  //!
   struct Parts
   {
+    //!
     uint8_t skinId{};
+    //!
     uint8_t maneId{};
+    //!
     uint8_t tailId{};
+    //!
     uint8_t faceId{};
   } parts{};
 
   //! Figure
   struct Appearance
   {
+    //!
     uint8_t scale{};
+    //!
     uint8_t legLength{};
+    //!
     uint8_t legVolume{};
+    //!
     uint8_t bodyLength{};
+    //!
     uint8_t bodyVolume{};
   } appearance{};
 
   struct Stats
   {
+    //!
     uint32_t agility{};
+    //!
     uint32_t spirit{};
+    //!
     uint32_t speed{};
+    //!
     uint32_t strength{};
+    //!
     uint32_t ambition{};
   } stats{};
 

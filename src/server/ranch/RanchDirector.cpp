@@ -131,7 +131,7 @@ void RanchDirector::HandleEnterRanch(
   // Add the ranch mounts.
   for (auto [mountUid, mountEntityId] : ranchInstance._worldTracker.GetMountEntities())
   {
-    const auto& mount = _dataDirector.GetMount(mountUid);
+    const auto& mount = _dataDirector.GetHorse(mountUid);
     response.horses.push_back({
       .ranchIndex = mountEntityId,
       .horse = {
@@ -202,7 +202,7 @@ void RanchDirector::HandleEnterRanch(
   for (auto [characterUid, characterEntityId] : ranchInstance._worldTracker.GetCharacterEntities())
   {
     auto ranchCharacter = _dataDirector.GetCharacter(characterUid);
-    auto ranchCharacterMount = _dataDirector.GetMount(ranchCharacter->mountUid);
+    auto ranchCharacterMount = _dataDirector.GetHorse(ranchCharacter->mountUid);
 
     const RanchPlayer ranchPlayer{
       .userUid = characterUid,
@@ -514,7 +514,7 @@ void RanchDirector::HandleEnterBreedingMarket(ClientId clientId, const RanchComm
       RanchCommandEnterBreedingMarketOK response;
       for(DatumUid horseId : character->horses)
       {
-        auto horse = _dataDirector.GetMount(horseId);
+        auto horse = _dataDirector.GetHorse(horseId);
         RanchCommandEnterBreedingMarketOK::AvailableHorse availableHorse
         {
           .uid = horseId,

@@ -21,8 +21,6 @@ LoginHandler::LoginHandler(DataDirector& dataDirector)
 
 bool LoginHandler::Authenticate(const std::string& userName, const std::string& userToken)
 {
-  return true;
-
   // Both strings must be valid.
   if (userName.empty() || userToken.empty())
   {
