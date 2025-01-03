@@ -90,7 +90,7 @@ struct RoomDescription
   uint8_t unk2{};
   uint16_t unk3{}; // map?
   uint8_t unk4{}; // 0 waiting room, 1 race started?
-  uint16_t unk5{};
+  uint16_t missionId{}; // idk but probably important, first value checked in RaceCommandEnterRoomOK handler
   uint8_t unk6{};
   uint8_t unk7{}; // 0: 3lv, 1: 12lv, 2 and beyond: nothing? 
 };

@@ -92,7 +92,7 @@ void WriteRoomDescription(SinkStream& buf, const RoomDescription& roomDescriptio
     .Write(roomDescription.unk2)
     .Write(roomDescription.unk3)
     .Write(roomDescription.unk4)
-    .Write(roomDescription.unk5)
+    .Write(roomDescription.missionId)
     .Write(roomDescription.unk6)
     .Write(roomDescription.unk7);
 }
