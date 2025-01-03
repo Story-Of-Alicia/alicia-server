@@ -34,11 +34,11 @@ namespace alicia
 enum class RoomOptionType : uint16_t
 {
   Unk0 = 1 << 0,
-  Unk1 = 1 << 3,
-  Unk2 = 1 << 4,
-  Unk3 = 1 << 5,
-  Unk4 = 1 << 6,
-  Unk5 = 1 << 7,
+  Unk1 = 1 << 1,
+  Unk2 = 1 << 2,
+  Unk3 = 1 << 3,
+  Unk4 = 1 << 4,
+  Unk5 = 1 << 5,
 };
 
 struct PlayerRacer
