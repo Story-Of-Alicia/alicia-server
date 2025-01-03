@@ -54,8 +54,8 @@ void RaceDirector::HandleEnterRoom(ClientId clientId, const RaceCommandEnterRoom
         .racers =
         {
           Racer {
-            .unk0 = 1,
-            .unk1 = 1,
+            .unk0 = 0,
+            .unk1 = 0,
             .level = character->level,
             .exp = 0,
             .uid = enterRoom.characterUid,
@@ -152,15 +152,15 @@ void RaceDirector::HandleEnterRoom(ClientId clientId, const RaceCommandEnterRoom
         .unk1 = 0,
         .roomDescription = {
           .name = "Room",
-          .unk0 = 1,
+          .unk0 = 0,
           .description = "Room description",
-          .unk1 = 1,
-          .unk2 = 1,
-          .unk3 = 1,
-          .unk4 = 1,
-          .unk5 = 1,
-          .unk6 = 1,
-          .unk7 = 1
+          .unk1 = 0,
+          .unk2 = 0,
+          .unk3 = 0,
+          .unk4 = 0,
+          .missionId = 24,
+          .unk6 = 0,
+          .unk7 = 0
         }
       };
       RaceCommandEnterRoomOK::Write(response, sink);
