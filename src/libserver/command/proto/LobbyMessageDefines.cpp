@@ -889,12 +889,104 @@ void LobbyCommandHeartbeat::Write(
   const LobbyCommandHeartbeat& command,
   SinkStream& buffer)
 {
+  throw std::logic_error("Not implemented.");
 }
 
 void LobbyCommandHeartbeat::Read(
   LobbyCommandHeartbeat& command,
   SourceStream& buffer)
 {
+  // Empty.
+}
+
+void LobbyCommandGoodsShopList::Write(
+  const LobbyCommandGoodsShopList& command,
+  SinkStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void LobbyCommandGoodsShopList::Read(
+  LobbyCommandGoodsShopList& command,
+  SourceStream& buffer)
+{
+  for (auto& data : command.data)
+  {
+    buffer.Read(data);
+  }
+}
+
+void LobbyCommandGoodsShopListOK::Write(
+  const LobbyCommandGoodsShopListOK& command,
+  SinkStream& buffer)
+{
+  for (const auto& data : command.data)
+  {
+    buffer.Write(data);
+  }
+}
+
+void LobbyCommandGoodsShopListOK::Read(
+  LobbyCommandGoodsShopListOK& command,
+  SourceStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void LobbyCommandGoodsShopListCancel::Write(
+  const LobbyCommandGoodsShopListCancel&
+  command, SinkStream& buffer)
+{
+  // Empty.
+}
+
+void LobbyCommandGoodsShopListCancel::Read(
+  LobbyCommandGoodsShopListCancel& command,
+  SourceStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void LobbyCommandInquiryTreecash::Write(
+  const LobbyCommandInquiryTreecash& command,
+  SinkStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void LobbyCommandInquiryTreecash::Read(
+  LobbyCommandInquiryTreecash& command,
+  SourceStream& buffer)
+{
+  // Empty.
+}
+
+void LobbyCommandInquiryTreecashOK::Write(
+  const LobbyCommandInquiryTreecashOK& command,
+  SinkStream& buffer)
+{
+  buffer.Write(command.cash);
+}
+
+void LobbyCommandInquiryTreecashOK::Read(
+  LobbyCommandInquiryTreecashOK& command,
+  SourceStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void LobbyCommandInquiryTreecashCancel::Write(
+  const LobbyCommandInquiryTreecashCancel& command,
+  SinkStream& buffer)
+{
+  // Empty.
+}
+
+void LobbyCommandInquiryTreecashCancel::Read(
+  LobbyCommandInquiryTreecashCancel& command,
+  SourceStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
 }
 
 } // namespace alicia::proto

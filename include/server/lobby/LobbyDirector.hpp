@@ -65,23 +65,33 @@ private:
 
   //!
   void HandleRequestQuestList(
-    ClientId clientId, const
-    LobbyCommandRequestQuestList& requestQuestList);
+    ClientId clientId,
+    const LobbyCommandRequestQuestList& requestQuestList);
 
   //!
   void HandleRequestSpecialEventList(
-    ClientId clientId, const
-    LobbyCommandRequestSpecialEventList& requestQuestList);
+    ClientId clientId,
+    const LobbyCommandRequestSpecialEventList& requestQuestList);
 
   //!
   void HandleEnterRanch(
-    ClientId clientId, const
-    LobbyCommandEnterRanch& requestEnterRanch);
+    ClientId clientId,
+    const LobbyCommandEnterRanch& requestEnterRanch);
 
   //!
   void HandleGetMessengerInfo(
-    ClientId clientId, const
-    LobbyCommandGetMessengerInfo& requestMessengerInfo);
+    ClientId clientId,
+    const LobbyCommandGetMessengerInfo& requestMessengerInfo);
+
+  //!
+  void HandleGoodsShopList(
+    ClientId clientId,
+    const LobbyCommandGoodsShopList& message);
+
+  //!
+  void HandleInquiryTreecash(
+    ClientId clientId,
+    const LobbyCommandInquiryTreecash& message);
 
   //!
   Settings::LobbySettings _settings;

@@ -126,6 +126,14 @@ enum class CommandId
 
   LobbyClientNotify = 0x309,
 
+  LobbyGoodsShopList = 0xB2,
+  LobbyGoodsShopListOK = 0xB3,
+  LobbyGoodsShopListCancel = 0xB4,
+
+  LobbyInquiryTreecash = 0x2b1,
+  LobbyInquiryTreecashOK = 0x2b2,
+  LobbyInquiryTreecashCancel = 0x2b3,
+
   RanchEnterRanch = 0x12b,
   RanchEnterRanchCancel = 0x12d,
   RanchEnterRanchNotify = 0x12e,
@@ -164,6 +172,7 @@ enum class CommandId
   RanchUpdateMountNickname = 0x197,
   RanchUpdateMountNicknameOK = 0x198,
   RanchUpdateMountNicknameCancel = 0x199,
+
 
   Count = 0xFFFF
 };

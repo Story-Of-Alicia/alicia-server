@@ -111,6 +111,20 @@ LobbyDirector::LobbyDirector(
       HandleGetMessengerInfo(clientId, message);
     });
 
+  _server.RegisterCommandHandler<LobbyCommandGoodsShopList>(
+    CommandId::LobbyGoodsShopList,
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleGoodsShopList(clientId, message);
+    });
+
+  _server.RegisterCommandHandler<LobbyCommandInquiryTreecash>(
+    CommandId::LobbyInquiryTreecash,
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleInquiryTreecash(clientId, message);
+    });
+
   spdlog::debug("Advertising ranch server on {}:{}",
     _settings.ranchAdvAddress.to_string(), _settings.ranchAdvPort);
   spdlog::debug("Advertising messenger server on {}:{}",
@@ -483,7 +497,7 @@ void LobbyDirector::HandleRequestSpecialEventList(
   _server.QueueCommand(
     clientId,
     CommandId::LobbyRequestSpecialEventListOK,
-    [&](auto& sink)
+    [=](auto& sink)
     {
       LobbyCommandRequestSpecialEventListOK response{
         .unk0 = requestSpecialEventList.unk0
@@ -530,6 +544,34 @@ void LobbyDirector::HandleGetMessengerInfo(
         .port = _settings.messengerAdvPort,
       };
       LobbyCommandGetMessengerInfoOK::Write(response, sink);
+    });
+}
+
+void LobbyDirector::HandleGoodsShopList(
+  ClientId clientId,
+  const LobbyCommandGoodsShopList& message)
+{
+  _server.QueueCommand(
+    clientId,
+    CommandId::LobbyGoodsShopListOK,
+    [=](SinkStream& sink)
+    {
+      LobbyCommandGoodsShopListOK response{.data = message.data};
+      LobbyCommandGoodsShopListOK::Write(response, sink);
+    });
+}
+
+void LobbyDirector::HandleInquiryTreecash(
+  ClientId clientId,
+  const LobbyCommandInquiryTreecash& message)
+{
+  _server.QueueCommand(
+    clientId,
+    CommandId::LobbyInquiryTreecashOK,
+    [=](SinkStream& sink)
+    {
+      LobbyCommandInquiryTreecashOK response{.cash = 1000};
+      LobbyCommandInquiryTreecashOK::Write(response, sink);
     });
 }
 

@@ -45,6 +45,7 @@ DataDirector::DataDirector()
     .gender = Gender::Unspecified,
     .level = 60,
     .carrots = 5000,
+    .looks = alicia::Character{},
     .characterEquipment = {Item{.uid = 100, .tid = 30035, .val = 0, .count = 1}},
     .mountUid = 3,
     .ranchUid = 100,

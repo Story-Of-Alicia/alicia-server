@@ -90,7 +90,7 @@ struct Character
   //! Used to build character from the _ClientCharDefaultPartInfo table.
   struct CharacterParts
   {
-    uint8_t charId{};
+    uint8_t charId{ 10 };
     //! FaceId
     uint8_t mouthSerialId{};
     //! EyeId
