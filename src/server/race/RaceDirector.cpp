@@ -36,10 +36,9 @@ void RaceDirector::HandleEnterRoom(ClientId clientId, const RaceCommandEnterRoom
   _clientCharacters[clientId] = enterRoom.characterUid;
   auto character = _dataDirector.GetCharacter(enterRoom.characterUid);
   auto mount = _dataDirector.GetMount(character->mountUid);
+  auto room = _dataDirector.GetRoom(character->roomUid.value());
 
-  // TODO: Send RaceEnterRoomNotify to all clients in the room
-
-  // TODO: Actually do something
+  // TODO: Send RaceEnterRoomNotify to all clients in the room  
 
   // Todo: Roll the code for the connecting client.
   // Todo: The response contains the code, somewhere.
@@ -54,14 +53,14 @@ void RaceDirector::HandleEnterRoom(ClientId clientId, const RaceCommandEnterRoom
         .racers =
         {
           Racer {
-            .unk0 = 0,
-            .unk1 = 0,
+            .unk0 = 1,
+            .unk1 = 1,
             .level = character->level,
-            .exp = 0,
+            .exp = 1,
             .uid = enterRoom.characterUid,
             .name = character->nickName,
-            .unk5 = 0,
-            .unk6 = 0,
+            .unk5 = 1,
+            .unk6 = 1,
             .bitset = 0,
             .isNPC = false,
             .playerRacer = PlayerRacer {
@@ -148,19 +147,19 @@ void RaceDirector::HandleEnterRoom(ClientId clientId, const RaceCommandEnterRoom
             .unk9 = {.unk0 = 1, .unk1 = 1}
           }
         },
-        .unk0 = 0,
-        .unk1 = 0,
+        .unk0 = 1,
+        .unk1 = 1,
         .roomDescription = {
-          .name = "Room",
-          .unk0 = 0,
-          .description = "Room description",
-          .unk1 = 0,
-          .unk2 = 0,
-          .unk3 = 0,
-          .unk4 = 0,
-          .missionId = 24,
-          .unk6 = 0,
-          .unk7 = 0
+          .name = room->name,
+          .val_between_name_and_desc = (uint8_t) character->roomUid.value(), // ?
+          .description = room->description,
+          .unk1 = room->unk0,
+          .unk2 = room->unk1,
+          .unk3 = 20004,
+          .unk4 = room->unk2,
+          .missionId = room->missionId,
+          .unk6 = room->unk4,
+          .unk7 = room->unk6
         }
       };
       RaceCommandEnterRoomOK::Write(response, sink);

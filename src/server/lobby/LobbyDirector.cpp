@@ -406,6 +406,20 @@ void LobbyDirector::HandleMakeRoom(
   const LobbyCommandMakeRoom& makeRoom)
 {
   const auto characterUid = _clientCharacters[clientId];
+  const auto character = _dataDirector.GetCharacter(characterUid);
+  character->roomUid = 123; // TODO: Generate somehow
+
+  const auto room = _dataDirector.GetRoom(character->roomUid.value());
+  room->name = makeRoom.name;
+  room->description = makeRoom.description;
+  room->unk0 = makeRoom.unk0;
+  room->unk1 = makeRoom.unk1;
+  room->unk2 = makeRoom.unk2;
+  room->missionId = makeRoom.missionId;
+  room->unk4 = makeRoom.unk4;
+  room->bitset = makeRoom.bitset;
+  room->unk6 = makeRoom.unk6;
+
   LobbyCommandMakeRoomOK response{
     .characterUid = characterUid,
     .otp = 0x44332211,
