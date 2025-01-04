@@ -511,9 +511,9 @@ struct LobbyCommandMakeRoom
   uint8_t unk0;
   uint8_t unk1;
   uint8_t unk2;
-  uint16_t unk3;
+  uint16_t missionId;
   uint8_t unk4;
-  uint16_t unk5;
+  uint16_t bitset;
   uint8_t unk6;
 
   //! Writes the command to a provided sink buffer.
