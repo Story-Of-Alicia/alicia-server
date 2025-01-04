@@ -174,6 +174,10 @@ enum class CommandId
   RaceChangeRoomOptions = 0x54,
   RaceChangeRoomOptionsNotify = 0x55,
 
+  RaceStartRace = 0x5a,
+  RaceStartRaceNotify = 0x5b,
+  RaceStartRaceCancel = 0x5c,
+
   Count = 0xFFFF
 };
 
