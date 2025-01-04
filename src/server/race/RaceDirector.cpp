@@ -25,6 +25,12 @@ RaceDirector::RaceDirector(DataDirector& dataDirector, Settings settings)
       HandleChangeRoomOptions(clientId, message);
     });
 
+  _server.RegisterCommandHandler<RaceCommandStartRace>(
+    CommandId::RaceStartRace,
+    [this](ClientId clientId, const auto& message) {
+      HandleStartRace(clientId, message);
+    });
+
   // Host the server
   _server.Host(_settings._raceSettings.address, _settings._raceSettings.port);
 }
@@ -186,6 +192,37 @@ void RaceDirector::HandleChangeRoomOptions(ClientId clientId, const RaceCommandC
         .option5 = changeRoomOptions.raceStarted
       };
       RaceCommandChangeRoomOptionsNotify::Write(response, sink);
+    });
+}
+
+void RaceDirector::HandleStartRace(ClientId clientId, const RaceCommandStartRace& startRace)
+{
+  auto characterUid = _clientCharacters[clientId];
+  auto character = _dataDirector.GetCharacter(characterUid);
+  auto mount = _dataDirector.GetMount(character->mountUid);
+  auto room = _dataDirector.GetRoom(character->roomUid.value());
+
+  // TODO: Send to all clients in the room
+  _server.QueueCommand(
+    clientId,
+    CommandId::RaceStartRaceNotify,
+    [&](auto& sink)
+    {
+      RaceCommandStartRaceNotify response {
+        .gamemode = 1,
+        .unk3 = character->roomUid.value(),
+        .map = 20004,
+        .racers = {
+          {
+            .name = character->nickName,
+            .unk5 = characterUid,
+            .unk6 = 1
+          }
+        },
+        .ip = htonl(_settings._lobbySettings.raceAdvAddress.to_uint()),
+        .port = _settings._lobbySettings.raceAdvPort
+      };
+      RaceCommandStartRaceNotify::Write(response, sink);
     });
 }
 
