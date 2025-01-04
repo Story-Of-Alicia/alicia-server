@@ -84,7 +84,7 @@ struct Racer
 struct RoomDescription
 {
   std::string name{};
-  uint8_t unk0{}; // room id?
+  uint8_t val_between_name_and_desc{}; // room id?
   std::string description{};
   uint8_t unk1{};
   uint8_t unk2{};
@@ -195,12 +195,12 @@ struct RaceCommandChangeRoomOptions
   //  if  & 16 != 0: short
   //  if  & 32 != 0: byte
   RoomOptionType optionsBitfield{};
-  std::string option0{};
-  uint8_t option1{};
-  std::string option2{};
+  std::string name{};
+  uint8_t val_between_name_and_desc{};
+  std::string description{};
   uint8_t option3{};
-  uint16_t option4{};
-  uint8_t option5{};
+  uint16_t map{};
+  uint8_t raceStarted{};
 
   //! Writes the command to a provided sink buffer.
   //! @param command Command.

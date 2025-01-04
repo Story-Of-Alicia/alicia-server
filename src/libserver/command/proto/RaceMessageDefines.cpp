@@ -87,7 +87,7 @@ void WriteRacer(SinkStream& buf, const Racer& racer)
 void WriteRoomDescription(SinkStream& buf, const RoomDescription& roomDescription)
 {
   buf.Write(roomDescription.name)
-    .Write(roomDescription.unk0)
+    .Write(roomDescription.val_between_name_and_desc)
     .Write(roomDescription.description)
     .Write(roomDescription.unk1)
     .Write(roomDescription.unk2)
@@ -200,15 +200,15 @@ void RaceCommandChangeRoomOptions::Read(
   buffer.Read(command.optionsBitfield);
   if ((uint16_t) command.optionsBitfield & (uint16_t) RoomOptionType::Unk0)
   {
-    buffer.Read(command.option0);
+    buffer.Read(command.name);
   }
   if ((uint16_t) command.optionsBitfield & (uint16_t) RoomOptionType::Unk1)
   {
-    buffer.Read(command.option1);
+    buffer.Read(command.val_between_name_and_desc);
   }
   if ((uint16_t) command.optionsBitfield & (uint16_t) RoomOptionType::Unk2)
   {
-    buffer.Read(command.option2);
+    buffer.Read(command.description);
   }
   if ((uint16_t) command.optionsBitfield & (uint16_t) RoomOptionType::Unk3)
   {
@@ -216,11 +216,11 @@ void RaceCommandChangeRoomOptions::Read(
   }
   if ((uint16_t) command.optionsBitfield & (uint16_t) RoomOptionType::Unk4)
   {
-    buffer.Read(command.option4);
+    buffer.Read(command.map);
   }
   if ((uint16_t) command.optionsBitfield & (uint16_t) RoomOptionType::Unk5)
   {
-    buffer.Read(command.option5);
+    buffer.Read(command.raceStarted);
   }
 }
 
