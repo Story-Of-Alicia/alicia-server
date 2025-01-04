@@ -85,6 +85,7 @@ void Settings::LoadFromFile(const std::filesystem::path& filePath)
         }
       }
     }
+
     // Extract ranch settings
     if (jsonConfig.contains("ranch"))
     {
@@ -100,6 +101,7 @@ void Settings::LoadFromFile(const std::filesystem::path& filePath)
         }
       }
     }
+
     // Extract messenger settings
     if (jsonConfig.contains("messenger"))
     {
@@ -115,6 +117,7 @@ void Settings::LoadFromFile(const std::filesystem::path& filePath)
         }
       }
     }
+
     // Extract race settings
     if (jsonConfig.contains("race"))
     {
@@ -128,6 +131,16 @@ void Settings::LoadFromFile(const std::filesystem::path& filePath)
           _raceSettings.address = address;
           _raceSettings.port = port;
         }
+      }
+    }
+
+    // Extract data source settings.
+    if (jsonConfig.contains("data_source"))
+    {
+      const auto& dataSource = jsonConfig["data_source"];
+      if (dataSource.contains("connection_string"))
+      {
+        _dataSourceSettings.connectionString = dataSource["connection_string"];
       }
     }
   }

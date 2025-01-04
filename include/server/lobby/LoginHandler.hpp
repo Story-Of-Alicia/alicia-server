@@ -7,8 +7,6 @@
 
 #include "server/DataDirector.hpp"
 
-#include <unordered_map>
-
 namespace alicia
 {
 
@@ -21,14 +19,11 @@ public:
   //!
   bool Authenticate(
     const std::string& userName,
-    const std::string& userToken);
+    const std::string& providedUserToken);
 
 private:
   //!
   DataDirector& _dataDirector;
-
-  //!
-  std::unordered_map<std::string, std::string> _userTokens;
 };
 
 } // namespace alicia

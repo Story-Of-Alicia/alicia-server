@@ -4,10 +4,7 @@
 
 #include "server/lobby/LoginHandler.hpp"
 
-namespace
-{
-
-} // anon namespace
+#include <pqxx/pqxx>
 
 namespace alicia
 {
@@ -15,29 +12,54 @@ namespace alicia
 LoginHandler::LoginHandler(DataDirector& dataDirector)
     : _dataDirector(_dataDirector)
 {
-  _userTokens["rgnt"] = "test";
-  _userTokens["laith"] = "another test";
 }
 
-bool LoginHandler::Authenticate(const std::string& userName, const std::string& userToken)
+bool LoginHandler::Authenticate(const std::string& userName, const std::string& providedUserToken)
 {
   // Both strings must be valid.
-  if (userName.empty() || userToken.empty())
+  if (userName.empty() || providedUserToken.empty())
   {
     return false;
   }
 
-  // Find token for the specified user.
-  // ToDo: Fetch token from data director.
-  const auto& userTokenItr = _userTokens.find(userName);
-  if (userTokenItr == _userTokens.cend())
+  DatumUid userUid = InvalidDatumUid;
+  std::string validUserToken;
+
+  try
   {
+    std::scoped_lock connectionLock(_connectionMtx);
+
+    pqxx::transaction tx(_connection);
+    const auto result = tx.exec(
+      pqxx::prepped(QueryUserStatementId),
+      userName);
+
+    tx.commit();
+
+    if (result.size() <= 0)
+    {
+      return false;
+    }
+
+    // extract the data
+    std::tie(validUserToken, userUid) = result.one_row().as<
+      std::string, DatumUid>();
+  }
+  catch (std::exception& x)
+  {
+    spdlog::error("Database issue: {}", x.what());
     return false;
   }
 
-  const auto& token = userTokenItr->second;
-  // The tokens must match.
-  return token == userToken;
+  if (userUid == InvalidDatumUid
+    || validUserToken.empty())
+  {
+    spdlog::warn("Invalid data retrieved from the database for user '{}'", userName);
+    assert(false);
+    return false;
+  }
+
+  return providedUserToken == validUserToken;
 }
 
 }

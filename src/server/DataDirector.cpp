@@ -6,51 +6,40 @@
 
 #include <spdlog/spdlog.h>
 
+namespace
+{
+
+//!
+const std::string QueryUserTokenStatementId = "queryUserToken";
+
+} // anon namespace
+
+
 namespace alicia
 {
 
-DataDirector::DataDirector()
+DataDirector::DataDirector(Settings::DataSource settings)
+  : _settings(std::move(settings))
 {
-  // _users["rgnter"].value = {
-  //   .characterUid = 1
-  // };
-  // _users["laith"].value = {
-  //   .characterUid = 2
-  // };
-  //
-  // _characters[1].value = {
-  //   .nickName = "rgnt",
-  //   .gender = Gender::Unspecified,
-  //   .level = 60,
-  //   .carrots = 5000,
-  //   .characterEquipment = {Item{.uid = 100, .tid = 30035, .val = 0, .count = 1}},
-  //   .mountUid = 3,
-  //   .ranchUid = 100,
-  //   .horses = {3}
-  // };
-  // _characters[2].value = {
-  //   .nickName = "laith",
-  //   .gender = Gender::Unspecified,
-  //   .level = 60,
-  //   .carrots = 5000,
-  //   .characterEquipment = {},
-  //   .mountUid = 4,
-  //   .ranchUid = 100,
-  //   .horses = {4}
-  // };
-  //
-  // _horses[3].value = {
-  //   .tid = 0x4E21, .name = "idontunderstand"
-  // };
-  // _horses[4].value = {
-  //   .tid = 0x4E21, .name = "Ramon"
-  // };
-  //
-  // _ranches[100].value = {
-  //   .ranchName = "SoA Ranch"
-  // };
-}
+  try
+  {
+    _connection = pqxx::connection(
+      _settings.connectionString);
 
+    _connection.prepare(
+      QueryUserTokenStatementId,
+      "SELECT token, user_uid FROM token WHERE login=$1");
+  }
+  catch (std::exception& x)
+  {
+    spdlog::error(
+      "Failed to initialize the data source with connection string '{}' because: {}",
+      settings.connectionString,
+      x.what());
+
+    throw;
+  }
+}
 
 DataDirector::DatumAccess<data::User> DataDirector::GetUser(
   const std::string& name)

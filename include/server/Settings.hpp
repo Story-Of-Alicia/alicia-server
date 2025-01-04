@@ -14,6 +14,7 @@ namespace asio = boost::asio;
 class Settings
 {
 public:
+  //! Lobby settings.
   struct LobbySettings
   {
     // Bind address and port of the lobby host.
@@ -41,7 +42,7 @@ public:
     uint16_t raceAdvPort = 10033;
   } _lobbySettings;
 
-  // Bind address and port of the ranch host.
+  //! Ranch settings.
   struct RanchSettings
   {
     asio::ip::address_v4 address{
@@ -50,7 +51,7 @@ public:
     uint16_t port = 10031;
   } _ranchSettings;
 
-  // Bind address and port of the messenger host.
+  //! Messenger settings.
   struct MessengerSettings
   {
     asio::ip::address_v4 address{
@@ -59,7 +60,7 @@ public:
     uint16_t port = 10032;
   } _messengerSettings;
 
-  // Bind address and port of the race host.
+  //! Race settings.
   struct RaceSettings
   {
     asio::ip::address_v4 address{
@@ -67,6 +68,12 @@ public:
     };
     uint16_t port = 10033;
   } _raceSettings;
+
+  //! Data source settings.
+  struct DataSource
+  {
+    std::string connectionString;
+  } _dataSourceSettings;
 
   // Updates settings from json configuration file
   void LoadFromFile(const std::filesystem::path& filePath);

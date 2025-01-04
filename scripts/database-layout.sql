@@ -76,7 +76,6 @@ create table if not exists item
 create table if not exists "user"
 (
     uid           integer PRIMARY KEY,
-    name          text,
     character_uid integer
         REFERENCES character (uid)
 );

@@ -5,13 +5,14 @@
 #ifndef DATADIRECTOR_HPP
 #define DATADIRECTOR_HPP
 
-#include "spdlog/spdlog.h"
+#include "server/Settings.hpp"
 
-#include <chrono>
 #include <cstdint>
 #include <functional>
 #include <mutex>
 #include <unordered_map>
+
+#include <pqxx/pqxx>
 
 namespace alicia
 {
@@ -233,7 +234,12 @@ public:
     std::unique_lock<std::mutex> _accessLock;
   };
 
-  DataDirector();
+  explicit DataDirector(
+    Settings::DataSource settings = {});
+
+  //!
+  DatumAccess<data::User::Token> GetToken(
+    const std::string& name);
 
   //!
   DatumAccess<data::User> GetUser(
@@ -257,6 +263,14 @@ private:
   std::unordered_map<DatumUid, Datum<data::Horse>> _horses;
   //!
   std::unordered_map<DatumUid, Datum<data::Ranch>> _ranches;
+
+  //!
+  Settings::DataSource _settings;
+
+  //!
+  std::mutex _connectionMtx;
+  //!
+  pqxx::connection _connection;
 };
 
 }

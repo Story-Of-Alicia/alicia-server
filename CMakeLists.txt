@@ -33,8 +33,13 @@ target_link_libraries(alicia-libserver
 
 # Alicia server executable
 add_executable(alicia-server
-        src/server/tracker/WorldTracker.cpp)
-
+        src/server/main.cpp
+        src/server/DataDirector.cpp
+        src/server/tracker/WorldTracker.cpp
+        src/server/lobby/LobbyDirector.cpp
+        src/server/lobby/LoginHandler.cpp
+        src/server/race/RaceDirector.cpp
+        src/server/ranch/RanchDirector.cpp)
 # Version variables
 set(AliciaServerBuildName alpha)
 set(AliciaServerBuildVersionMajor ${CMAKE_PROJECT_VERSION_MAJOR})
@@ -46,18 +51,10 @@ configure_file(
         include/server/Version.hpp.in
         generated/Version.hpp)
 
-target_sources(alicia-server PRIVATE
-        src/server/main.cpp
-        src/server/DataDirector.cpp
-        src/server/tracker/WorldTracker.cpp
-        src/server/lobby/LobbyDirector.cpp
-        src/server/lobby/LoginHandler.cpp
-        src/server/race/RaceDirector.cpp
-        src/server/ranch/RanchDirector.cpp)
 target_include_directories(alicia-server PRIVATE
         include/)
 target_link_libraries(alicia-server
-        PRIVATE project-properties alicia-libserver)
+        PRIVATE project-properties alicia-libserver libpqxx::pqxx)
 
 target_include_directories(alicia-server PUBLIC
         "${PROJECT_BINARY_DIR}/generated")

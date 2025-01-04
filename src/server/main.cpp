@@ -6,7 +6,6 @@
 
 #include <libserver/base/Server.hpp>
 #include <libserver/command/CommandServer.hpp>
-#include <libserver/Util.hpp>
 #include <server/Settings.hpp>
 
 #include <spdlog/sinks/daily_file_sink.h>
@@ -16,7 +15,7 @@
 #include <memory>
 #include <thread>
 
-#include <iostream>
+
 namespace
 {
 
@@ -52,7 +51,7 @@ int main()
   alicia::Settings settings;
   settings.LoadFromFile("resources/settings.json");
 
-  g_dataDirector = std::make_unique<alicia::DataDirector>();
+  g_dataDirector = std::make_unique<alicia::DataDirector>(settings._dataSourceSettings);
 
   // Lobby director thread.
   std::jthread lobbyThread(

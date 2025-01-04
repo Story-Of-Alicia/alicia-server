@@ -204,99 +204,99 @@ void RanchDirector::HandleEnterRanch(
     auto ranchCharacter = _dataDirector.GetCharacter(characterUid);
     auto ranchCharacterMount = _dataDirector.GetHorse(ranchCharacter->mountUid);
 
-    const RanchPlayer ranchPlayer{
-      .userUid = characterUid,
-      .name = ranchCharacter->nickName,
-      .gender = ranchCharacter->gender,
-      .unk0 = 1,
-      .unk1 = 1,
-      .description = ranchCharacter->status,
-      .character = ranchCharacter->looks.value(),
-      .horse = {
-        .uid = ranchCharacter->mountUid,
-        .tid = ranchCharacterMount->tid,
-        .name = ranchCharacterMount->name,
-        .parts = {.skinId = 0x2, .maneId = 0x3, .tailId = 0x3, .faceId = 0x3},
-        .appearance =
-          {.scale = 0x4,
-            .legLength = 0x4,
-            .legVolume = 0x5,
-            .bodyLength = 0x3,
-            .bodyVolume = 0x4},
-        .stats =
-          {
-            .agility = 9,
-            .spirit = 9,
-            .speed = 9,
-            .strength = 9,
-            .ambition = 0x13
-          },
-        .rating = 0,
-        .clazz = 0x15,
-        .val0 = 1,
-        .grade = 5,
-        .growthPoints = 2,
-        .vals0 =
-          {
-            .stamina = 0x7d0,
-            .attractiveness = 0x3c,
-            .hunger = 0x21c,
-            .val0 = 0x00,
-            .val1 = 0x03E8,
-            .val2 = 0x00,
-            .val3 = 0x00,
-            .val4 = 0x00,
-            .val5 = 0x03E8,
-            .val6 = 0x1E,
-            .val7 = 0x0A,
-            .val8 = 0x0A,
-            .val9 = 0x0A,
-            .val10 = 0x00,
-          },
-        .vals1 =
-          {
-            .val0 = 0x00,
-            .val1 = 0x00,
-            .val2 = 0xb8a167e4,
-            .val3 = 0x02,
-            .val4 = 0x00,
-            .classProgression = 0x32e7d,
-            .val5 = 0x00,
-            .val6 = 0x00,
-            .val7 = 0x00,
-            .val8 = 0x00,
-            .val9 = 0x00,
-            .val10 = 0x04,
-            .val11 = 0x00,
-            .val12 = 0x00,
-            .val13 = 0x00,
-            .val14 = 0x00,
-            .val15 = 0x01
-          },
-        .mastery =
-          {
-            .magic = 0x1fe,
-            .jumping = 0x421,
-            .sliding = 0x5f8,
-            .gliding = 0xcfa4,
-          },
-        .val16 = 0xb8a167e4,
-        .val17 = 0
-      },
-      .characterEquipment = ranchCharacter->characterEquipment,
-      .playerRelatedThing = {
-        .val1 = 1
-      },
-      .ranchIndex = characterEntityId,
-      .anotherPlayerRelatedThing = {.mountUid = ranchCharacter->mountUid, .val1 = 0x12}
-    };
-
-    if (enterRanch.characterUid == characterUid)
-    {
-      enteringRanchPlayer = ranchPlayer;
-    }
-
-    response.users.push_back(ranchPlayer);
+    // const RanchPlayer ranchPlayer{
+    //   .userUid = characterUid,
+    //   .name = ranchCharacter->nickName,
+    //   .gender = ranchCharacter->gender,
+    //   .unk0 = 1,
+    //   .unk1 = 1,
+    //   .description = ranchCharacter->status,
+    //   .character = ranchCharacter->looks.value(),
+    //   .horse = {
+    //     .uid = ranchCharacter->mountUid,
+    //     .tid = ranchCharacterMount->tid,
+    //     .name = ranchCharacterMount->name,
+    //     .parts = {.skinId = 0x2, .maneId = 0x3, .tailId = 0x3, .faceId = 0x3},
+    //     .appearance =
+    //       {.scale = 0x4,
+    //         .legLength = 0x4,
+    //         .legVolume = 0x5,
+    //         .bodyLength = 0x3,
+    //         .bodyVolume = 0x4},
+    //     .stats =
+    //       {
+    //         .agility = 9,
+    //         .spirit = 9,
+    //         .speed = 9,
+    //         .strength = 9,
+    //         .ambition = 0x13
+    //       },
+    //     .rating = 0,
+    //     .clazz = 0x15,
+    //     .val0 = 1,
+    //     .grade = 5,
+    //     .growthPoints = 2,
+    //     .vals0 =
+    //       {
+    //         .stamina = 0x7d0,
+    //         .attractiveness = 0x3c,
+    //         .hunger = 0x21c,
+    //         .val0 = 0x00,
+    //         .val1 = 0x03E8,
+    //         .val2 = 0x00,
+    //         .val3 = 0x00,
+    //         .val4 = 0x00,
+    //         .val5 = 0x03E8,
+    //         .val6 = 0x1E,
+    //         .val7 = 0x0A,
+    //         .val8 = 0x0A,
+    //         .val9 = 0x0A,
+    //         .val10 = 0x00,
+    //       },
+    //     .vals1 =
+    //       {
+    //         .val0 = 0x00,
+    //         .val1 = 0x00,
+    //         .val2 = 0xb8a167e4,
+    //         .val3 = 0x02,
+    //         .val4 = 0x00,
+    //         .classProgression = 0x32e7d,
+    //         .val5 = 0x00,
+    //         .val6 = 0x00,
+    //         .val7 = 0x00,
+    //         .val8 = 0x00,
+    //         .val9 = 0x00,
+    //         .val10 = 0x04,
+    //         .val11 = 0x00,
+    //         .val12 = 0x00,
+    //         .val13 = 0x00,
+    //         .val14 = 0x00,
+    //         .val15 = 0x01
+    //       },
+    //     .mastery =
+    //       {
+    //         .magic = 0x1fe,
+    //         .jumping = 0x421,
+    //         .sliding = 0x5f8,
+    //         .gliding = 0xcfa4,
+    //       },
+    //     .val16 = 0xb8a167e4,
+    //     .val17 = 0
+    //   },
+    //   .characterEquipment = ranchCharacter->characterEquipment,
+    //   .playerRelatedThing = {
+    //     .val1 = 1
+    //   },
+    //   .ranchIndex = characterEntityId,
+    //   .anotherPlayerRelatedThing = {.mountUid = ranchCharacter->mountUid, .val1 = 0x12}
+    // };
+    //
+    // if (enterRanch.characterUid == characterUid)
+    // {
+    //   enteringRanchPlayer = ranchPlayer;
+    // }
+    //
+    // response.users.push_back(ranchPlayer);
   }
 
   // Todo: Roll the code for the connecting client.
