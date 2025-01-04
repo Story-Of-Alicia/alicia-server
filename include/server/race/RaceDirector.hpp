@@ -21,7 +21,7 @@ public:
   //!
   RaceDirector(
       DataDirector& dataDirector,
-      Settings::RaceSettings settings = {});
+      Settings settings = {});
 
 private:
   //!
@@ -35,7 +35,12 @@ private:
       const RaceCommandChangeRoomOptions& changeRoomOptions);
 
   //!
-  Settings::RaceSettings _settings;
+  void HandleStartRace(
+      ClientId clientId,
+      const RaceCommandStartRace& startRace);
+
+  //!
+  Settings _settings;
   //!
   DataDirector& _dataDirector;
   //!
