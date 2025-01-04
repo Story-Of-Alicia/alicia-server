@@ -169,6 +169,8 @@ void RaceDirector::HandleEnterRoom(ClientId clientId, const RaceCommandEnterRoom
 
 void RaceDirector::HandleChangeRoomOptions(ClientId clientId, const RaceCommandChangeRoomOptions& changeRoomOptions)
 {
+  // TODO: Actually do something
+
   // TODO: Send to all clients in the room
   _server.QueueCommand(
     clientId,
@@ -177,12 +179,12 @@ void RaceDirector::HandleChangeRoomOptions(ClientId clientId, const RaceCommandC
     {
       RaceCommandChangeRoomOptionsNotify response {
         .optionsBitfield = changeRoomOptions.optionsBitfield,
-        .option0 = changeRoomOptions.option0,
-        .option1 = changeRoomOptions.option1,
-        .option2 = changeRoomOptions.option2,
+        .option0 = changeRoomOptions.name,
+        .option1 = changeRoomOptions.val_between_name_and_desc,
+        .option2 = changeRoomOptions.description,
         .option3 = changeRoomOptions.option3,
-        .option4 = changeRoomOptions.option4,
-        .option5 = changeRoomOptions.option5
+        .option4 = changeRoomOptions.map,
+        .option5 = changeRoomOptions.raceStarted
       };
       RaceCommandChangeRoomOptionsNotify::Write(response, sink);
     });

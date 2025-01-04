@@ -479,9 +479,9 @@ void LobbyCommandMakeRoom::Read(
     .Read(command.unk0)
     .Read(command.unk1)
     .Read(command.unk2)
-    .Read(command.unk3)
+    .Read(command.missionId)
     .Read(command.unk4)
-    .Read(command.unk5)
+    .Read(command.bitset)
     .Read(command.unk6);
 }
 

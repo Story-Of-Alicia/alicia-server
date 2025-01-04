@@ -396,8 +396,9 @@ void LobbyDirector::HandleEnterChannel(
   ClientId clientId,
   const LobbyCommandEnterChannel& enterChannel)
 {
-  const LobbyCommandEnterChannelOK response{};
-
+  const LobbyCommandEnterChannelOK response{
+    .unk0 = enterChannel.channel // potentially
+  };
   _server.QueueCommand(
     clientId,
     CommandId::LobbyEnterChannelOK,
