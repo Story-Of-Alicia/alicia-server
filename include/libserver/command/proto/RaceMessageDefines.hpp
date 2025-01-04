@@ -245,6 +245,136 @@ struct RaceCommandChangeRoomOptionsNotify
     RaceCommandChangeRoomOptionsNotify& command, SourceStream& buffer);
 };
 
+
+struct RaceCommandStartRace
+{
+  // List size specified with a byte. Max size 10 (potentially)
+  std::vector<uint16_t> unk0{};
+  
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const RaceCommandStartRace& command, SinkStream& buffer);
+
+//! Reader a command from a provided source buffer.
+//! @param command Command.
+//! @param buffer Source buffer.
+  static void Read(
+    RaceCommandStartRace& command, SourceStream& buffer);
+};
+
+struct RaceCommandStartRaceNotify
+{
+  uint8_t gamemode{};
+  uint8_t unk1{}; // Weird bonus UI
+  uint16_t unk2{};
+  uint32_t unk3{}; // Room ID?
+  uint16_t map{};
+  
+  // List size specified with a uint8_t. Max size 10
+  struct Racer
+  {
+    uint16_t unk0{};
+    std::string name{};
+    uint8_t unk2{};
+    uint8_t unk3{};
+    uint16_t unk4{};
+    uint32_t unk5{};
+    uint16_t unk6{}; // Index?
+    uint32_t unk7{};
+  };
+  std::vector<Racer> racers{};
+
+  uint32_t ip{};
+  uint16_t port{};
+
+  uint8_t unk6{};
+
+  struct
+  {
+    uint16_t unk0{};
+    uint8_t unk1{};
+    uint8_t unk2{};
+    uint32_t unk3{};
+    // List size specified with a uint8_t. Max size 20
+    std::vector<uint32_t> unk4{};
+
+    // If unk2 == 3?
+    uint16_t unk5{};
+    uint16_t unk6{};
+    uint16_t unk7{};
+    uint16_t unk8{};
+    uint16_t unk9{};
+    
+    uint8_t unk10{};
+    uint32_t unk11{};
+  } unk9{};
+
+  struct
+  {
+    uint32_t unk0{};
+    uint32_t unk1{};
+    uint32_t unk2{};
+    uint32_t unk3{};
+  } unk10{};
+
+  uint16_t unk11{};
+  uint8_t unk12{};
+
+  struct
+  {
+    uint8_t unk0{};
+    uint32_t unk1{};
+    // List size specified with a byte. Max size 3
+    std::vector<uint16_t> unk2{};
+  } unk13{};
+
+  uint8_t unk14{};
+  uint32_t unk15{};
+  uint32_t unk16{};
+  uint8_t unk17{};
+
+  // List size specified with a byte. Max size 8
+  struct Unk18Element
+  {
+    uint16_t unk0{};
+    // List size specified with a byte. Max size 3
+    std::vector<uint32_t> unk1{};
+  };
+  std::vector<Unk18Element> unk18{};
+
+
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const RaceCommandStartRaceNotify& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    RaceCommandStartRaceNotify& command, SourceStream& buffer);
+};
+
+struct RaceCommandStartRaceCancel
+{
+  uint8_t reason{};
+
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const RaceCommandStartRaceCancel& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    RaceCommandStartRaceCancel& command, SourceStream& buffer);
+};
+
 } // namespace alicia
 
 #endif // RACE_MESSAGE_DEFINES_HPP

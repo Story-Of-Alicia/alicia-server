@@ -260,4 +260,119 @@ void RaceCommandChangeRoomOptionsNotify::Read(
   throw std::logic_error("Not implemented.");
 }
 
+
+void RaceCommandStartRace::Write(
+  const RaceCommandStartRace& command, SinkStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void RaceCommandStartRace::Read(
+  RaceCommandStartRace& command, SourceStream& buffer)
+{
+  uint8_t size;
+  buffer.Read(size);
+  command.unk0.resize(size);
+  for (auto& element : command.unk0)
+  {
+    buffer.Read(element);
+  }
+}
+
+void RaceCommandStartRaceNotify::Write(
+  const RaceCommandStartRaceNotify& command, SinkStream& buffer)
+{
+  buffer.Write(command.gamemode)
+    .Write(command.unk1)
+    .Write(command.unk2)
+    .Write(command.unk3)
+    .Write(command.map);
+
+  buffer.Write(static_cast<uint8_t>(command.racers.size()));
+  for (const auto& element : command.racers)
+  {
+    buffer.Write(element.unk0)
+      .Write(element.name)
+      .Write(element.unk2)
+      .Write(element.unk3)
+      .Write(element.unk4)
+      .Write(element.unk5)
+      .Write(element.unk6)
+      .Write(element.unk7);
+  }
+
+  buffer.Write(command.ip)
+    .Write(command.port)
+    .Write(command.unk6)
+    .Write(command.unk9.unk0)
+    .Write(command.unk9.unk1)
+    .Write(command.unk9.unk2)
+    .Write(command.unk9.unk3);
+
+  buffer.Write(static_cast<uint8_t>(command.unk9.unk4.size()));
+  for (const auto& element : command.unk9.unk4)
+  {
+    buffer.Write(element);
+  }
+
+  buffer.Write(command.unk9.unk5)
+    .Write(command.unk9.unk6)
+    .Write(command.unk9.unk7)
+    .Write(command.unk9.unk8)
+    .Write(command.unk9.unk9)
+    .Write(command.unk9.unk10)
+    .Write(command.unk9.unk11);
+
+  buffer.Write(command.unk10.unk0)
+    .Write(command.unk10.unk1)
+    .Write(command.unk10.unk2)
+    .Write(command.unk10.unk3);
+
+  buffer.Write(command.unk11)
+    .Write(command.unk12);
+
+  buffer.Write(command.unk13.unk0)
+    .Write(command.unk13.unk1);
+
+  buffer.Write(static_cast<uint8_t>(command.unk13.unk2.size()));
+  for (const auto& element : command.unk13.unk2)
+  {
+    buffer.Write(element);
+  }
+
+  buffer.Write(command.unk14)
+    .Write(command.unk15)
+    .Write(command.unk16)
+    .Write(command.unk17);
+
+  buffer.Write(static_cast<uint8_t>(command.unk18.size()));
+  for (const auto& element : command.unk18)
+  {
+    buffer.Write(element.unk0)
+      .Write(static_cast<uint8_t>(element.unk1.size()));
+    for (const auto& subElement : element.unk1)
+    {
+      buffer.Write(subElement);
+    }
+  }
+}
+
+void RaceCommandStartRaceNotify::Read(
+  RaceCommandStartRaceNotify& command, SourceStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void RaceCommandStartRaceCancel::Write(
+  const RaceCommandStartRaceCancel& command, SinkStream& buffer)
+{
+  buffer.Write(command.reason);
+}
+
+void RaceCommandStartRaceCancel::Read(
+  RaceCommandStartRaceCancel& command, SourceStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
 } // namespace alicia
