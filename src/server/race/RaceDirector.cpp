@@ -8,8 +8,8 @@
 namespace alicia
 {
 
-RaceDirector::RaceDirector(DataDirector& dataDirector, Settings::RaceSettings settings)
-    : _settings(std::move(settings))
+RaceDirector::RaceDirector(DataDirector& dataDirector, Settings settings)
+    : _settings(settings)
     , _dataDirector(dataDirector)
     , _server("Race")
 {
@@ -26,7 +26,7 @@ RaceDirector::RaceDirector(DataDirector& dataDirector, Settings::RaceSettings se
     });
 
   // Host the server
-  _server.Host(_settings.address, _settings.port);
+  _server.Host(_settings._raceSettings.address, _settings._raceSettings.port);
 }
 
 void RaceDirector::HandleEnterRoom(ClientId clientId, const RaceCommandEnterRoom& enterRoom)
