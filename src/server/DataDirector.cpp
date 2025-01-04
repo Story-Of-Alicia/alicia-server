@@ -129,4 +129,18 @@ DataDirector::DatumAccess<User::Ranch> DataDirector::GetRanch(
   return DatumAccess(datum);
 }
 
+void DataDirector::GetRoom(
+  DatumUid roomUid,
+  DatumConsumer<User::Room&> consumer)
+{
+  ProvideLockedDatumAccess(_rooms[roomUid], consumer);
+}
+
+DataDirector::DatumAccess<User::Room> DataDirector::GetRoom(
+  DatumUid roomUid)
+{
+  auto& datum = _rooms[roomUid];
+  return DatumAccess(datum);
+}
+
 } // namespace alicia

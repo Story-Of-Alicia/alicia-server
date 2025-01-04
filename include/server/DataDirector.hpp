@@ -53,6 +53,7 @@ struct User
 
     DatumUid mountUid{};
     DatumUid ranchUid{};
+    std::optional<DatumUid> roomUid{};
 
     std::vector<DatumUid> horses{};
   };
@@ -68,6 +69,19 @@ struct User
   struct Ranch
   {
     std::string ranchName;
+  };
+
+  struct Room
+  {
+    std::string name;
+    std::string description;
+    uint8_t unk0;
+    uint8_t unk1;
+    uint8_t unk2;
+    uint16_t missionId;
+    uint8_t unk4;
+    uint16_t bitset;
+    uint8_t unk6;
   };
 };
 
@@ -150,6 +164,12 @@ public:
   DatumAccess<User::Ranch> GetRanch(
     DatumUid ranchUid);
 
+  void GetRoom(
+    DatumUid roomUid,
+    DatumConsumer<User::Room&> consumer);
+  DatumAccess<User::Room> GetRoom(
+    DatumUid roomUid);
+
 private:
   //!
   std::unordered_map<std::string, Datum<User>> _users;
@@ -159,6 +179,8 @@ private:
   std::unordered_map<DatumUid, Datum<User::Mount>> _mounts;
   //!
   std::unordered_map<DatumUid, Datum<User::Ranch>> _ranches;
+  //!
+  std::unordered_map<DatumUid, Datum<User::Room>> _rooms;
 };
 
 }
