@@ -221,9 +221,14 @@ void RaceDirector::HandleStartRace(ClientId clientId, const RaceCommandStartRace
         .map = 20004,
         .racers = {
           {
+            .oid = 1,
             .name = character->nickName,
-            .unk5 = characterUid,
-            .unk6 = 1
+            .unk2 = 1,
+            .unk3 = 1,
+            .unk4 = 1,
+            .p2dId = 1,
+            .unk6 = 1,
+            .unk7 = 1,
           }
         },
         .ip = htonl(_settings._lobbySettings.raceAdvAddress.to_uint()),
