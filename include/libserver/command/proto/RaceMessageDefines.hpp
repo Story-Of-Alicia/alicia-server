@@ -375,6 +375,42 @@ struct RaceCommandStartRaceCancel
     RaceCommandStartRaceCancel& command, SourceStream& buffer);
 };
 
+
+struct UserRaceTimer
+{
+  uint64_t timestamp{}; // potentially
+
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const UserRaceTimer& command, SinkStream& buffer);
+
+//! Reader a command from a provided source buffer.
+//! @param command Command.
+//! @param buffer Source buffer.
+  static void Read(
+    UserRaceTimer& command, SourceStream& buffer);
+};
+
+struct UserRaceTimerOK
+{
+  uint64_t unk0{};
+  uint64_t unk1{};
+  
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const UserRaceTimerOK& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    UserRaceTimerOK& command, SourceStream& buffer);
+};
+
 } // namespace alicia
 
 #endif // RACE_MESSAGE_DEFINES_HPP

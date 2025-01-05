@@ -40,6 +40,11 @@ private:
       const RaceCommandStartRace& startRace);
 
   //!
+  void HandleRaceTimer(
+      ClientId clientId,
+      const UserRaceTimer& raceTimer);
+
+  //!
   Settings _settings;
   //!
   DataDirector& _dataDirector;
