@@ -275,12 +275,12 @@ struct RaceCommandStartRaceNotify
   // List size specified with a uint8_t. Max size 10
   struct Racer
   {
-    uint16_t unk0{};
+    uint16_t oid{};
     std::string name{};
     uint8_t unk2{};
     uint8_t unk3{};
     uint16_t unk4{};
-    uint32_t unk5{};
+    uint32_t p2dId{};
     uint16_t unk6{}; // Index?
     uint32_t unk7{};
   };

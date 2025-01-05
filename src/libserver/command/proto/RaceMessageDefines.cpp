@@ -292,12 +292,12 @@ void RaceCommandStartRaceNotify::Write(
   buffer.Write(static_cast<uint8_t>(command.racers.size()));
   for (const auto& element : command.racers)
   {
-    buffer.Write(element.unk0)
+    buffer.Write(element.oid)
       .Write(element.name)
       .Write(element.unk2)
       .Write(element.unk3)
       .Write(element.unk4)
-      .Write(element.unk5)
+      .Write(element.p2dId)
       .Write(element.unk6)
       .Write(element.unk7);
   }
