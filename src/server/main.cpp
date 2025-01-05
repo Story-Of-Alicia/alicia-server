@@ -1,6 +1,6 @@
 #include "Version.hpp"
 
-#include "Scheduler.hpp"
+#include "server/Scheduler.hpp"
 
 #include "lobby/LobbyDirector.hpp"
 #include "ranch/RanchDirector.hpp"

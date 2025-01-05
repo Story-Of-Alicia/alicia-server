@@ -1,54 +1,24 @@
-/**
- * Alicia Server - dedicated server software
- * Copyright (C) 2024 Story Of Alicia
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- **/
-
-#ifndef SERVER_SCHEDULER_HPP
-#define SERVER_SCHEDULER_HPP
+#ifndef SCHEDULER_HPP
+#define SCHEDULER_HPP
 
 #include <functional>
-
-namespace server
-{
+#include <queue>
+#include <mutex>
+#include <condition_variable>
 
 class Scheduler
 {
 public:
-  /**
-   * Starts the execution loop
-   */
-  Scheduler();
+    // Adds a task to the queue
+    void EnqueueTask(std::function<void()> task);
 
-  /**
-   * Stops the execution loop, cancels unfinished tasks
-   */
-  ~Scheduler();
-
-  /**
-   * Executes the provided function either in the Scheduler's
-   * execution queue or outside of it.
-   */
-  void schedule(std::function<void()> function, bool queue = false);
+    // Starts processing tasks
+    void ProcessTasks();
 
 private:
-  std::atomic<bool> _shouldRun;
-  std::mutex _mutex;
-  std::queue<std::function<void()>> _queue;
+    std::queue<std::function<void()>> taskQueue; // Task queue to hold lambdas
+    std::mutex queueMutex;                      // Mutex for queue access
+    std::condition_variable queueCondition;     // For notifying the processing thread
 };
-} // namespace server
 
-#endif SERVER_SCHEDULER_HPP
+#endif // SCHEDULER_HPP
