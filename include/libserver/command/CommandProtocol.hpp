@@ -80,6 +80,18 @@ enum class CommandId
 
   LobbyHeartbeat = 0x12,
 
+  LobbyCreateNicknameNotify = 0x6b,
+  LobbyCreateNicknameOK = 0x6c,
+  LobbyCreateNicknameCancel = 0x6e,
+
+  LobbyEnterChannel = 0x2b,
+  LobbyEnterChannelOK = 0x2c,
+  LobbyEnterChannelCancel = 0x2d,
+
+  LobbyMakeRoom = 0x13,
+  LobbyMakeRoomOK = 0x14,
+  LobbyMakeRoomCancel = 0x15,
+
   LobbyShowInventory = 0x007e,
   LobbyShowInventoryOK = 0x007f,
   LobbyShowInventoryCancel = 0x0080,
@@ -112,6 +124,8 @@ enum class CommandId
   LobbyGetMessengerInfoOK = 0x187,
   LobbyGetMessengerInfoCancel = 0x188,
 
+  LobbyClientNotify = 0x309,
+
   RanchEnterRanch = 0x12b,
   RanchEnterRanchCancel = 0x12d,
   RanchEnterRanchNotify = 0x12e,
@@ -127,6 +141,29 @@ enum class CommandId
 
   RanchStuff = 0x1af,
   RanchStuffOK = 0x1b0,
+
+  RanchUpdateBusyState = 0x1a8,
+  RanchUpdateBusyStateNotify = 0x1a9,
+
+  RanchSearchStallion = 0x145,
+  RanchSearchStallionOK = 0x146,
+  RanchSearchStallionCancel = 0x147,
+
+  RanchEnterBreedingMarket = 0x13f,
+  RanchEnterBreedingMarketOK = 0x140,
+  RanchEnterBreedingMarketCancel = 0x141,
+
+  RanchTryBreeding = 0x156,
+  RanchTryBreedingOK = 0x157,
+  RanchTryBreedingCancel = 0x158,
+
+  RanchBreedingWishlist = 0x1e8,
+  RanchBreedingWishlistCancel = 0x1ea,
+  RanchBreedingWishlistOK = 0x1e9,
+
+  RanchUpdateMountNickname = 0x197,
+  RanchUpdateMountNicknameOK = 0x198,
+  RanchUpdateMountNicknameCancel = 0x199,
 
   Count = 0xFFFF
 };

@@ -38,28 +38,33 @@ using ClientId = std::size_t;
 //! A write handler.
 using WriteSupplier = std::function<void(asio::streambuf&)>;
 
-//! A read handler.
-//! todo: comment about cyclic buffer
-using ReadHandler = std::function<void(asio::streambuf&)>;
-
-//! A client handler.
-using OnConnectHandler = std::function<void(ClientId)>;
-//! A client handler.
-using OnDisconnectHandler = std::function<void(ClientId)>;
-
 //! Client with event driven reads and writes
 //! to the underlying socket connection.
 class Client
 {
 public:
+  //! Client IO begin handler.
+  using BeginHandler = std::function<void()>;
+  //! Client IO end handler.
+  using EndHandler = std::function<void()>;
+
+  //! Client write handler.
+  using WriteHandler = std::function<void(asio::streambuf&)>;
+  //! Client read handler.
+  using ReadHandler = std::function<void(asio::streambuf&)>;
+
   //! Default constructor.
   //! @param socket Underlying socket.
-  explicit Client(asio::ip::tcp::socket&& socket) noexcept;
+  explicit Client(
+    asio::ip::tcp::socket&& socket,
+    BeginHandler beginHandler,
+    EndHandler endHandler,
+    ReadHandler readHandler,
+    WriteHandler writeHandler) noexcept;
 
-  //! Sets the read handler of the client.
-  void SetReadHandler(ReadHandler readHandler);
-
+  //!
   void Begin();
+  //!
   void End();
 
   //! Queues a write.
@@ -70,21 +75,21 @@ private:
   void ReadLoop() noexcept;
 
   //! Indicates whether the client should process I/O.
-  std::atomic<bool> _shouldProcess = false;
+  std::atomic<bool> _processIo = false;
 
   //! A read buffer.
   asio::streambuf _readBuffer{};
-  //! A read mutex.
-  std::mutex _readMutex;
-  //! A read handler.
-  ReadHandler _readHandler;
-
   //! A write buffer.
   asio::streambuf _writeBuffer{};
-  //! A write mutex.
-  std::mutex _writeMutex;
-  // //! A write handler.
-  // WriteHandler _writeHandler;
+
+  //! A begin handler.
+  BeginHandler _beginHandler;
+  //! An end handler.
+  EndHandler _endHandler;
+  //! A read handler.
+  ReadHandler _readHandler;
+  //! A write handler.
+  WriteHandler _writeHandler;
 
   //! A client socket.
   asio::ip::tcp::socket _socket;
@@ -94,21 +99,30 @@ private:
 class Server
 {
 public:
+  //! Client write handler.
+  using ClientWriteHandler = std::function<void(ClientId, asio::streambuf&)>;
+  //! Client read handler.
+  using ClientReadHandler = std::function<void(ClientId, asio::streambuf&)>;
+
+  //! Client connect handler.
+  using ClientConnectHandler = std::function<void(ClientId)>;
+  //! Client disconnect handler.
+  using ClientDisconnectHandler = std::function<void(ClientId)>;
+
   //! Default constructor.
-  explicit Server() noexcept;
+  explicit Server(
+    ClientConnectHandler clientConnectHandler,
+    ClientDisconnectHandler clientDisconnectHandler,
+    ClientReadHandler clientReadHandler,
+    ClientWriteHandler clientWriteHandler) noexcept;
 
   //! Hosts the server.
   //!
   //! @param interface Address of the interface to bind to.
   //! @param port Port to bind to.
   void Host(
-    const std::string_view& interface,
+    const asio::ip::address& address,
     uint16_t port);
-
-  //! Set the connect handler.
-  void SetOnConnectHandler(OnConnectHandler handler);
-  //! Set the disconnect handler.
-  void SetOnDisconnectHandler(OnDisconnectHandler handler);
 
   //! Get client.
   Client& GetClient(ClientId clientId);
@@ -116,10 +130,14 @@ public:
 private:
   void AcceptLoop() noexcept;
 
-  //! A client connection handler.
-  OnConnectHandler _onConnectHandler;
-  //! A client disconnection handler.
-  OnDisconnectHandler _onDisconnectHandler;
+  //! A client connect handler.
+  ClientConnectHandler _clientConnectHandler;
+  //! A client disconnect handler.
+  ClientDisconnectHandler _clientDisconnectHandler;
+  //! A client read handler.
+  ClientReadHandler _clientReadHandler;
+  //! A client write handler.
+  ClientWriteHandler _clientWriteHandler;
 
   asio::io_context _io_ctx;
   asio::ip::tcp::acceptor _acceptor;

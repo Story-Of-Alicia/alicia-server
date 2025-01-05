@@ -207,7 +207,7 @@ void RanchCommandEnterRanch::Write(
 void RanchCommandEnterRanch::Read(
   RanchCommandEnterRanch& command, SourceStream& buffer)
 {
-  buffer.Read(command.userUid)
+  buffer.Read(command.characterUid)
     .Read(command.code)
     .Read(command.ranchUid);
 }
@@ -450,6 +450,320 @@ void RanchCommandRanchStuffOK::Write(
 void RanchCommandRanchStuffOK::Read(
   RanchCommandRanchStuffOK& command,
   SourceStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void RanchCommandSearchStallion::Write(
+  const RanchCommandSearchStallion& command, SinkStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void RanchCommandSearchStallion::Read(
+  RanchCommandSearchStallion& command, SourceStream& buffer)
+{
+  buffer.Read(command.unk0)
+    .Read(command.unk1)
+    .Read(command.unk2)
+    .Read(command.unk3)
+    .Read(command.unk4)
+    .Read(command.unk5)
+    .Read(command.unk6)
+    .Read(command.unk7)
+    .Read(command.unk8);
+
+  for (size_t i = 0; i < 3; i++)
+  {
+    uint8_t listSize;
+    buffer.Read(listSize);
+    for (size_t j = 0; j < listSize; j++)
+    {
+      uint32_t value;
+      buffer.Read(value);
+      command.unk9[i].push_back(value);
+    }
+  }
+
+  buffer.Read(command.unk10);
+}
+
+void RanchCommandSearchStallionCancel::Write(
+  const RanchCommandSearchStallionCancel& command, SinkStream& buffer)
+{
+}
+
+void RanchCommandSearchStallionCancel::Read(
+  RanchCommandSearchStallionCancel& command, SourceStream& buffer)
+{
+}
+
+void RanchCommandSearchStallionOK::Write(
+  const RanchCommandSearchStallionOK& command, SinkStream& buffer)
+{
+  buffer.Write(command.unk0)
+    .Write(command.unk1);
+
+  buffer.Write(static_cast<uint8_t>(command.stallions.size()));
+  for (auto& unk : command.stallions)
+  {
+    buffer.Write(unk.unk0)
+      .Write(unk.unk1)
+      .Write(unk.unk2)
+      .Write(unk.name)
+      .Write(unk.grade)
+      .Write(unk.chance)
+      .Write(unk.price)
+      .Write(unk.unk7)
+      .Write(unk.unk8)
+      .Write(unk.stats.agility)
+      .Write(unk.stats.spirit)
+      .Write(unk.stats.speed)
+      .Write(unk.stats.strength)
+      .Write(unk.stats.ambition)
+      .Write(unk.parts.skinId)
+      .Write(unk.parts.maneId)
+      .Write(unk.parts.tailId)
+      .Write(unk.parts.faceId)
+      .Write(unk.appearance.scale)
+      .Write(unk.appearance.legLength)
+      .Write(unk.appearance.legVolume)
+      .Write(unk.appearance.bodyLength)
+      .Write(unk.appearance.bodyVolume)
+      .Write(unk.unk11)
+      .Write(unk.coatBonus);
+  }
+}
+
+void RanchCommandSearchStallionOK::Read(
+  RanchCommandSearchStallionOK& command, SourceStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+
+void RanchCommandEnterBreedingMarket::Write(
+  const RanchCommandEnterBreedingMarket& command, SinkStream& buffer)
+{
+}
+
+void RanchCommandEnterBreedingMarket::Read(
+  RanchCommandEnterBreedingMarket& command, SourceStream& buffer)
+{
+}
+
+
+void RanchCommandEnterBreedingMarketCancel::Write(
+  const RanchCommandEnterBreedingMarketCancel& command, SinkStream& buffer)
+{
+}
+
+void RanchCommandEnterBreedingMarketCancel::Read(
+  RanchCommandEnterBreedingMarketCancel& command, SourceStream& buffer)
+{
+}
+
+
+void RanchCommandEnterBreedingMarketOK::Write(
+  const RanchCommandEnterBreedingMarketOK& command, SinkStream& buffer)
+{
+  buffer.Write(static_cast<uint8_t>(command.availableHorses.size()));
+  for (auto& availableHorse : command.availableHorses)
+  {
+    buffer.Write(availableHorse.uid)
+      .Write(availableHorse.tid)
+      .Write(availableHorse.unk0)
+      .Write(availableHorse.unk1)
+      .Write(availableHorse.unk2)
+      .Write(availableHorse.unk3);
+  }
+}
+
+void RanchCommandEnterBreedingMarketOK::Read(
+  RanchCommandEnterBreedingMarketOK& command, SourceStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+
+void RanchCommandTryBreeding::Write(
+  const RanchCommandTryBreeding& command, SinkStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void RanchCommandTryBreeding::Read(
+  RanchCommandTryBreeding& command, SourceStream& buffer)
+{
+  buffer.Read(command.unk0)
+    .Read(command.unk1);
+}
+
+
+void RanchCommandTryBreedingCancel::Write(
+  const RanchCommandTryBreedingCancel& command, SinkStream& buffer)
+{
+  buffer.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.unk2)
+    .Write(command.unk3)
+    .Write(command.unk4)
+    .Write(command.unk5);
+}
+
+void RanchCommandTryBreedingCancel::Read(
+  RanchCommandTryBreedingCancel& command, SourceStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+
+void RanchCommandTryBreedingOK::Write(
+  const RanchCommandTryBreedingOK& command, SinkStream& buffer)
+{
+  buffer.Write(command.uid)
+    .Write(command.tid)
+    .Write(command.val)
+    .Write(command.count)
+    .Write(command.unk0)
+    .Write(command.parts.skinId)
+    .Write(command.parts.maneId)
+    .Write(command.parts.tailId)
+    .Write(command.parts.faceId)
+    .Write(command.appearance.scale)
+    .Write(command.appearance.legLength)
+    .Write(command.appearance.legVolume)
+    .Write(command.appearance.bodyLength)
+    .Write(command.appearance.bodyVolume)
+    .Write(command.stats.agility)
+    .Write(command.stats.spirit)
+    .Write(command.stats.speed)
+    .Write(command.stats.strength)
+    .Write(command.stats.ambition)
+    .Write(command.unk1)
+    .Write(command.unk2)
+    .Write(command.unk3)
+    .Write(command.unk4)
+    .Write(command.unk5)
+    .Write(command.unk6)
+    .Write(command.unk7)
+    .Write(command.unk8)
+    .Write(command.unk9)
+    .Write(command.unk10);
+}
+
+void RanchCommandTryBreedingOK::Read(
+  RanchCommandTryBreedingOK& command, SourceStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+
+void RanchCommandBreedingWishlist::Write(
+  const RanchCommandBreedingWishlist& command, SinkStream& buffer)
+{
+}
+
+void RanchCommandBreedingWishlist::Read(
+  RanchCommandBreedingWishlist& command, SourceStream& buffer)
+{
+}
+
+
+void RanchCommandBreedingWishlistCancel::Write(
+  const RanchCommandBreedingWishlistCancel& command, SinkStream& buffer)
+{
+}
+
+void RanchCommandBreedingWishlistCancel::Read(
+  RanchCommandBreedingWishlistCancel& command, SourceStream& buffer)
+{
+}
+
+
+void RanchCommandBreedingWishlistOK::Write(
+  const RanchCommandBreedingWishlistOK& command, SinkStream& buffer)
+{
+  buffer.Write(static_cast<uint8_t>(command.wishlist.size()));
+  for (auto& wishlistElement : command.wishlist)
+  {
+    buffer.Write(wishlistElement.unk0)
+      .Write(wishlistElement.uid)
+      .Write(wishlistElement.tid)
+      .Write(wishlistElement.unk1)
+      .Write(wishlistElement.unk2)
+      .Write(wishlistElement.unk3)
+      .Write(wishlistElement.unk4)
+      .Write(wishlistElement.unk5)
+      .Write(wishlistElement.unk6)
+      .Write(wishlistElement.unk7)
+      .Write(wishlistElement.unk8)
+      .Write(wishlistElement.stats.agility)
+      .Write(wishlistElement.stats.spirit)
+      .Write(wishlistElement.stats.speed)
+      .Write(wishlistElement.stats.strength)
+      .Write(wishlistElement.stats.ambition)
+      .Write(wishlistElement.parts.skinId)
+      .Write(wishlistElement.parts.maneId)
+      .Write(wishlistElement.parts.tailId)
+      .Write(wishlistElement.parts.faceId)
+      .Write(wishlistElement.appearance.scale)
+      .Write(wishlistElement.appearance.legLength)
+      .Write(wishlistElement.appearance.legVolume)
+      .Write(wishlistElement.appearance.bodyLength)
+      .Write(wishlistElement.appearance.bodyVolume)
+      .Write(wishlistElement.unk9)
+      .Write(wishlistElement.unk10)
+      .Write(wishlistElement.unk11);
+  }
+}
+
+void RanchCommandBreedingWishlistOK::Read(
+  RanchCommandBreedingWishlistOK& command, SourceStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+
+void RanchCommandUpdateMountNickname::Write(
+  const RanchCommandUpdateMountNickname& command, SinkStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void RanchCommandUpdateMountNickname::Read(
+  RanchCommandUpdateMountNickname& command, SourceStream& buffer)
+{
+  buffer.Read(command.unk0)
+    .Read(command.nickname)
+    .Read(command.unk1);
+}
+
+
+void RanchCommandUpdateMountNicknameCancel::Write(
+  const RanchCommandUpdateMountNicknameCancel& command, SinkStream& buffer)
+{
+  buffer.Write(command.unk0);
+}
+
+void RanchCommandUpdateMountNicknameCancel::Read(
+  RanchCommandUpdateMountNicknameCancel& command, SourceStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+
+void RanchCommandUpdateMountNicknameOK::Write(
+  const RanchCommandUpdateMountNicknameOK& command, SinkStream& buffer)
+{
+  buffer.Write(command.unk0)
+    .Write(command.nickname)
+    .Write(command.unk1)
+    .Write(command.unk2);
+}
+
+void RanchCommandUpdateMountNicknameOK::Read(
+  RanchCommandUpdateMountNicknameOK& command, SourceStream& buffer)
 {
   throw std::logic_error("Not implemented.");
 }

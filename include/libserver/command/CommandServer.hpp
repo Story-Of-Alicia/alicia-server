@@ -61,7 +61,7 @@ public:
   //! Runs the processing loop and blocks until exception or stopped.
   //! @param interface Interface address.
   //! @param port Port.
-  void Host(const std::string& interface, uint16_t port);
+  void Host(const asio::ip::address& address, uint16_t port);
 
   //! Registers a command handler.
   //!
@@ -99,6 +99,19 @@ public:
     CommandSupplier supplier);
 
 private:
+  //!
+  void HandleClientConnect(ClientId clientId);
+  //!
+  void HandleClientDisconnect(ClientId clientId);
+  //!
+  void HandleClientRead(
+    ClientId clientId,
+    asio::streambuf& readBuffer);
+  //!
+  void HandleClientWrite(
+    ClientId clientId,
+    asio::streambuf& writeBuffer);
+
   std::string _name;
 
   std::unordered_map<CommandId, RawCommandHandler> _handlers{};

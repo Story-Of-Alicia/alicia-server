@@ -1,3 +1,5 @@
 add_subdirectory(spdlog)
 add_subdirectory(json)
-add_subdirectory(libpqxx)
+
+set(PostgreSQL_ADDITIONAL_VERSIONS "17")
+#add_subdirectory(libpqxx)

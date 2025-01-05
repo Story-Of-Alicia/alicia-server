@@ -1,198 +1,298 @@
 //
-// Created by rgnter on 10/11/2024.
+// Created by rgnter on 25/11/2024.
 //
+
+#include "server/lobby/LobbyDirector.hpp"
+#include "server/DataDirector.hpp"
 
 #include <random>
 
-#include "LobbyDirector.hpp"
+#include <spdlog/spdlog.h>
 
-#include "spdlog/spdlog.h"
-
-namespace alicia
+namespace
 {
 
 std::random_device rd;
 
-LoginDirector::LoginDirector(CommandServer& lobbyServer, Settings settings) noexcept
-    : _lobbyServer(lobbyServer)
-    , _settings(std::move(settings))
+} // anon namespace
+
+namespace alicia
 {
-  // TODO: Dummy data
-  _userTokens[1] = "test";
-  _users[1] = {
-    .nickName = "rgnt",
-    .gender = alicia::Gender::Boy,
-    .level = 60,
-    .carrots = 5000,
-    .characterEquipment = {Item{.uid = 100, .tid = 30035, .val = 0, .count = 1}},
-    .mountUid = 2,
-    .horses = {2, 3},
-    .ranchUid = 100};
 
-  _userTokens[4] = "another test";
-  _users[4] = {
-    .nickName = "Laith",
-    .gender = alicia::Gender::Unspecified,
-    .level = 1,
-    .carrots = 0,
-    .characterEquipment = {Item{.uid = 100, .tid = 30035, .val = 0, .count = 1}},
-    .mountUid = 5,
-    .horses = {5, 6},
-    .ranchUid = 100};
+LobbyDirector::LobbyDirector(
+  DataDirector& dataDirector,
+  Settings::LobbySettings settings)
+  : _settings(std::move(settings))
+  , _dataDirector(dataDirector)
+  , _loginHandler(dataDirector)
+  , _server("Lobby")
+{
+  _server.RegisterCommandHandler<LobbyCommandLogin>(
+    CommandId::LobbyLogin,
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleUserLogin(clientId, message);
+    });
 
-  _horses[2] = {.tid = 0x4E21, .name = "idontunderstand"};
-  _horses[3] = {.tid = 0x4E21, .name = "iunderstand"};
-  _horses[5] = {.tid = 0x4E21, .name = "youdontseemtounderstand"};
-  _horses[6] = {.tid = 0x4E21, .name = "Ramon"};
+  _server.RegisterCommandHandler<LobbyCommandCreateNicknameOK>(
+    CommandId::LobbyCreateNicknameOK,
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleCreateNicknameOK(clientId, message);
+    });
+
+  _server.RegisterCommandHandler<LobbyCommandEnterChannel>(
+    CommandId::LobbyEnterChannel,
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleEnterChannel(clientId, message);
+    });
+
+  _server.RegisterCommandHandler<LobbyCommandMakeRoom>(
+    CommandId::LobbyMakeRoom,
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleMakeRoom(clientId, message);
+    });
+
+  _server.RegisterCommandHandler<LobbyCommandHeartbeat>(
+    CommandId::LobbyHeartbeat,
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleHeartbeat(clientId, message);
+    });
+
+  _server.RegisterCommandHandler<LobbyCommandShowInventory>(
+    CommandId::LobbyShowInventory,
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleShowInventory(clientId, message);
+    });
+
+  _server.RegisterCommandHandler<LobbyCommandAchievementCompleteList>(
+    CommandId::LobbyAchievementCompleteList,
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleAchievementCompleteList(clientId, message);
+    });
+
+  _server.RegisterCommandHandler<LobbyCommandRequestLeagueInfo>(
+    CommandId::LobbyRequestLeagueInfo,
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleRequestLeagueInfo(clientId, message);
+    });
+
+  _server.RegisterCommandHandler<LobbyCommandRequestQuestList>(
+    CommandId::LobbyRequestQuestList,
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleRequestQuestList(clientId, message);
+    });
+
+  _server.RegisterCommandHandler<LobbyCommandRequestSpecialEventList>(
+    CommandId::LobbyRequestSpecialEventList,
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleRequestSpecialEventList(clientId, message);
+    });
+
+  _server.RegisterCommandHandler<LobbyCommandEnterRanch>(
+    CommandId::LobbyEnterRanch,
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleEnterRanch(clientId, message);
+    });
+
+  _server.RegisterCommandHandler<LobbyCommandGetMessengerInfo>(
+    CommandId::LobbyGetMessengerInfo,
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleGetMessengerInfo(clientId, message);
+    });
+
+  spdlog::debug("Advertising ranch server on {}:{}",
+    _settings.ranchAdvAddress.to_string(), _settings.ranchAdvPort);
+  spdlog::debug("Advertising messenger server on {}:{}",
+    _settings.messengerAdvAddress.to_string(), _settings.messengerAdvPort);
+
+  _server.Host(_settings.address, _settings.port);
 }
 
-void LoginDirector::HandleUserLogin(ClientId clientId, const LobbyCommandLogin& login)
+void LobbyDirector::HandleUserLogin(ClientId clientId, const LobbyCommandLogin& login)
 {
   assert(login.constant0 == 50);
   assert(login.constant1 == 281);
 
-  // ToDo: Treat input.
-  const auto& userTokenItr = _userTokens.find(login.memberNo);
-
-  // Cancel the login if the user token doesn't exist.
-  if (userTokenItr == _userTokens.cend() || login.authKey != userTokenItr->second)
+  if (_queuedClientLogins.contains(clientId))
   {
-    _lobbyServer.QueueCommand(
+    spdlog::warn(
+      "Login from Client Id {} already queued, but received another attempt. "
+      "Certainly not a vanilla behaviour!",
+      clientId);
+    return;
+  }
+
+  // Authenticate the user.
+  if (!_loginHandler.Authenticate(login.loginId, login.authKey))
+  {
+    // The user has failed authentication.
+    // Cancel the login.
+    _server.QueueCommand(
       clientId,
       CommandId::LobbyLoginCancel,
       [](SinkStream& buffer)
       {
-        const LobbyCommandLoginCancel command{.reason = LoginCancelReason::InvalidLoginId};
-
+        const LobbyCommandLoginCancel command{
+          .reason = LoginCancelReason::InvalidLoginId};
         LobbyCommandLoginCancel::Write(command, buffer);
       });
+
+    spdlog::info("User '{}' failed to authenticate", login.loginId);
 
     return;
   }
 
-  // Cancel the login if the user doesn't exist.
-  const auto& userItr = _users.find(login.memberNo);
-  if (userItr == _users.cend())
-  {
-    _lobbyServer.QueueCommand(
-      clientId,
-      CommandId::LobbyLoginCancel,
-      [](SinkStream& buffer)
-      {
-        const LobbyCommandLoginCancel command{.reason = LoginCancelReason::InvalidUser};
+  spdlog::info("User '{}' ({}) authenticated", login.loginId, login.memberNo);
 
-        LobbyCommandLoginCancel::Write(command, buffer);
-      });
+  // Get the character
+  const auto user = _dataDirector.GetUser(
+    login.loginId);
+  const auto character = _dataDirector.GetCharacter(
+    user->characterUid);
 
-    return;
-  }
-
-  auto& [userId, user] = *userItr;
-  // Login succeeded, assign the active user to client.
-  _clients[clientId] = userId;
+  _clientCharacters[clientId] = user->characterUid;
 
   // Set XOR scrambler code
   uint32_t scramblingConstant = rd(); // TODO: Use something more secure
   XorCode code;
-  *((uint32_t*)code.data()) = scramblingConstant;
-  _lobbyServer.SetCode(clientId, code);
+  *((uint32_t*) code.data()) = scramblingConstant;
+  _server.SetCode(clientId, code);
 
-  _lobbyServer.QueueCommand(
-    clientId,
-    CommandId::LobbyLoginOK,
-    [this, &user, userId, scramblingConstant](SinkStream& sink)
+  // If the character has no appearance set.
+  // Send a mostly empty LobbyCommandLoginOK alongside a LobbyCommandCreateNicknameNotify
+  if (!character->looks.has_value())
+  {
+    const WinFileTime time = UnixTimeToFileTime(
+      std::chrono::system_clock::now());
+
+    const LobbyCommandLoginOK command{
+      .lobbyTime =
+        {.dwLowDateTime = static_cast<uint32_t>(time.dwLowDateTime),
+        .dwHighDateTime = static_cast<uint32_t>(time.dwHighDateTime)},
+
+      .address = _settings.ranchAdvAddress.to_uint(),
+      .port = _settings.ranchAdvPort,
+
+      .scramblingConstant = scramblingConstant};
+    _server.QueueCommand(clientId, CommandId::LobbyLoginOK, [command](SinkStream& sink)
     {
-      const WinFileTime time = UnixTimeToFileTime(std::chrono::system_clock::now());
+      LobbyCommandLoginOK::Write(command, sink);
+    });
 
-      const LobbyCommandLoginOK command{
-        .lobbyTime =
-          {.dwLowDateTime = static_cast<uint32_t>(time.dwLowDateTime),
-           .dwHighDateTime = static_cast<uint32_t>(time.dwHighDateTime)},
-        .val0 = 0xCA794,
+    const LobbyCommandCreateNicknameNotify createNicknameNotify {};
+    _server.QueueCommand(clientId, CommandId::LobbyCreateNicknameNotify, [createNicknameNotify](SinkStream& sink)
+    {
+      LobbyCommandCreateNicknameNotify::Write(createNicknameNotify, sink);
+    });
+  }
+  else
+  {
+    // Get the mount data of the user.
+    const auto mount = _dataDirector.GetMount(
+      character->mountUid);
 
-        .selfUid = userId,
-        .nickName = user.nickName,
-        .motd = "Welcome to SoA!",
-        .profileGender = user.gender,
-        .status = "Mentally unstable",
+    const WinFileTime time = UnixTimeToFileTime(
+      std::chrono::system_clock::now());
 
-        //.characterEquipment = user.characterEquipment,
-        .horseEquipment = {},
+    const LobbyCommandLoginOK command{
+      .lobbyTime =
+        {.dwLowDateTime = static_cast<uint32_t>(time.dwLowDateTime),
+        .dwHighDateTime = static_cast<uint32_t>(time.dwHighDateTime)},
+      .val0 = 0xCA794,
 
-        .level = user.level,
-        .carrots = user.carrots,
-        .val1 = 0x6130,
-        .val2 = 0xFF,
-        .val3 = 0xFF,
+      .selfUid = user->characterUid,
+      .nickName = character->nickName,
+      .motd = "Welcome to SoA!",
+      .profileGender = character->gender,
+      .status = character->status,
 
-        .optionType = OptionType::Value,
-        .valueOptions = 0x64,
+      .characterEquipment = character->characterEquipment,
+      .horseEquipment = character->horseEquipment,
 
-        .ageGroup = AgeGroup::Adult,
-        .val4 = 0,
+      .level = character->level,
+      .carrots = character->carrots,
+      .val1 = 0x6130,
+      .val2 = 0xFF,
+      .val3 = 0xFF,
 
-        .val5 =
-          {{0x18, {{2, 1}}},
-           {0x1F, {{2, 1}}},
-           {0x23, {{2, 1}}},
-           {0x29, {{2, 1}}},
-           {0x2A, {{2, 1}}},
-           {0x2B, {{2, 1}}},
-           {0x2E, {{2, 1}}}},
+      .optionType = OptionType::Value,
+      .valueOptions = 0x64,
 
-        .val6 = "val6",
+      .ageGroup = AgeGroup::Adult,
+      .val4 = 0,
 
-        // TODO: Move somewhere configurable
-        .address = 2130706433, // 127.0.0.1
-        .port = 10031,         // 10031
+      .val5 =
+        {{0x18, {{2, 1}}},
+        {0x1F, {{2, 1}}},
+        {0x23, {{2, 1}}},
+        {0x29, {{2, 1}}},
+        {0x2A, {{2, 1}}},
+        {0x2B, {{2, 1}}},
+        {0x2E, {{2, 1}}}},
 
-        .scramblingConstant = scramblingConstant,
+      .val6 = "val6",
 
-        .character =
-          {.parts = {.charId = 10, .mouthSerialId = 0, .faceSerialId = 0, .val0 = 255},
-           .appearance =
-             {.val0 = 0xFFFF,
-              .headSize = 1,
-              .height = 2,
-              .thighVolume = 2,
-              .legVolume = 2,
-              .val1 = 0xFF}},
-        .horse =
-          {.uid = user.mountUid,
-           .tid = this->_horses[user.mountUid].tid,
-           .name = this->_horses[user.mountUid].name,
-           .parts = {.skinId = 0x2, .maneId = 0x3, .tailId = 0x3, .faceId = 0x3},
-           .appearance =
-             {.scale = 0x4,
+      .address = _settings.ranchAdvAddress.to_uint(),
+      .port = _settings.ranchAdvPort,
+
+      .scramblingConstant = scramblingConstant,
+
+      .character = character->looks.value(),
+      .horse =
+        {.uid = character->mountUid,
+        .tid = mount->tid,
+        .name = mount->name,
+        .parts = {.skinId = 0x2, .maneId = 0x3, .tailId = 0x3, .faceId = 0x3},
+          .appearance =
+            {.scale = 0x4,
               .legLength = 0x4,
               .legVolume = 0x5,
               .bodyLength = 0x3,
               .bodyVolume = 0x4},
-           .stats = {.agility = 9, .spirit = 9, .speed = 9, .strength = 9, .ambition = 0x13},
-           .rating = 0,
-           .clazz = 0x15,
-           .val0 = 1,
-           .grade = 5,
-           .growthPoints = 2,
-           .vals0 =
-             {
-               .stamina = 0x7d0,
-               .attractiveness = 0x3c,
-               .hunger = 0x21c,
-               .val0 = 0x00,
-               .val1 = 0x03E8,
-               .val2 = 0x00,
-               .val3 = 0x00,
-               .val4 = 0x00,
-               .val5 = 0x03E8,
-               .val6 = 0x1E,
-               .val7 = 0x0A,
-               .val8 = 0x0A,
-               .val9 = 0x0A,
-               .val10 = 0x00,
-             },
-           .vals1 =
-             {.val0 = 0x00,
+          .stats =
+            {
+              .agility = 9,
+              .spirit = 9,
+              .speed = 9,
+              .strength = 9,
+              .ambition = 0x13
+            },
+          .rating = 0,
+          .clazz = 0x15,
+          .val0 = 1,
+          .grade = 5,
+          .growthPoints = 2,
+          .vals0 =
+            {
+              .stamina = 0x7d0,
+              .attractiveness = 0x3c,
+              .hunger = 0x21c,
+              .val0 = 0x00,
+              .val1 = 0x03E8,
+              .val2 = 0x00,
+              .val3 = 0x00,
+              .val4 = 0x00,
+              .val5 = 0x03E8,
+              .val6 = 0x1E,
+              .val7 = 0x0A,
+              .val8 = 0x0A,
+              .val9 = 0x0A,
+              .val10 = 0x00,
+            },
+          .vals1 =
+            {
+              .val0 = 0x00,
               .val1 = 0x00,
               .val2 = 0xb8a167e4,
               .val3 = 0x02,
@@ -208,19 +308,20 @@ void LoginDirector::HandleUserLogin(ClientId clientId, const LobbyCommandLogin& 
               .val12 = 0x00,
               .val13 = 0x00,
               .val14 = 0x00,
-              .val15 = 0x01},
-           .mastery =
-             {
-               .magic = 0x1fe,
-               .jumping = 0x421,
-               .sliding = 0x5f8,
-               .gliding = 0xcfa4,
-             },
-           .val16 = 0xb8a167e4,
-           .val17 = 0},
+              .val15 = 0x01
+            },
+          .mastery =
+            {
+              .magic = 0x1fe,
+              .jumping = 0x421,
+              .sliding = 0x5f8,
+              .gliding = 0xcfa4,
+            },
+          .val16 = 0xb8a167e4,
+          .val17 = 0},
         .val7 =
           {.values =
-             {{0x6, 0x0},
+            {{0x6, 0x0},
               {0xF, 0x4},
               {0x1B, 0x2},
               {0x1E, 0x0},
@@ -235,40 +336,31 @@ void LoginDirector::HandleUserLogin(ClientId clientId, const LobbyCommandLogin& 
         .val14 = 0xca1b87db,
         .val15 = {.val1 = 1},
         .val16 = 4,
-        .val17 = {.mountUid = user.mountUid, .val1 = 0x12, .val2 = 0x16e67e4},
+        .val17 = {.mountUid = character->mountUid, .val1 = 0x12, .val2 = 0x16e67e4},
         .val18 = 0x3a,
         .val19 = 0x38e,
         .val20 = 0x1c6};
-
+    
+    _server.QueueCommand(clientId, CommandId::LobbyLoginOK, [command](SinkStream& sink)
+    {
       LobbyCommandLoginOK::Write(command, sink);
     });
-}
-
-void LoginDirector::HandleHeartbeat(ClientId clientId, const LobbyCommandHeartbeat& heartbeat)
-{
-  auto userItr = _clients.find(clientId);
-  if (userItr == _clients.cend())
-  {
-    return;
   }
-
-  auto& [userId, user] = *_users.find(userItr->second);
-  user.lastHeartbeat = std::chrono::system_clock::now();
 }
 
-void LoginDirector::HandleShowInventory(
+void LobbyDirector::HandleCreateNicknameOK(
   ClientId clientId,
-  const LobbyCommandShowInventory& showInventory)
+  const LobbyCommandCreateNicknameOK& createNicknameOK)
 {
-  auto userItr = _clients.find(clientId);
-  if (userItr == _clients.cend())
-  {
-    return;
-  }
+  const auto characterUid = _clientCharacters[clientId];
+  const auto character = _dataDirector.GetCharacter(characterUid);
+  character->nickName = createNicknameOK.nickname;
+  character->looks = std::optional(createNicknameOK.character);
+  character->gender = createNicknameOK.character.parts.charId == 10 ? Gender::Boy : Gender::Girl;
 
-  auto& [userId, user] = *_users.find(userItr->second);
-
-  _lobbyServer.QueueCommand(
+  // Not sure why but this seems to be the correct reply to send after creating a nickname.
+  // After all, it's the packet that goes right after LoginOK.
+  _server.QueueCommand(
     clientId,
     CommandId::LobbyShowInventoryOK,
     [&](auto& sink)
@@ -278,18 +370,75 @@ void LoginDirector::HandleShowInventory(
     });
 }
 
-void LoginDirector::HandleAchievementCompleteList(
+void LobbyDirector::HandleEnterChannel(
+  ClientId clientId,
+  const LobbyCommandEnterChannel& enterChannel)
+{
+  LobbyCommandEnterChannelOK response{};
+  _server.QueueCommand(
+    clientId,
+    CommandId::LobbyEnterChannelOK,
+    [&](auto& sink)
+    {
+      LobbyCommandEnterChannelOK::Write(response, sink);
+    });
+}
+
+void LobbyDirector::HandleMakeRoom(
+  ClientId clientId,
+  const LobbyCommandMakeRoom& makeRoom)
+{
+  const auto characterUid = _clientCharacters[clientId];
+  LobbyCommandMakeRoomOK response{
+    .unk0 = characterUid,
+    .unk1 = 0x44332211,
+    .ip = htonl(_settings.raceAdvAddress.to_uint()),
+    .port = _settings.raceAdvPort,
+    .unk2 = 0
+  };
+  _server.QueueCommand(
+    clientId,
+    CommandId::LobbyMakeRoomOK,
+    [&](auto& sink)
+    {
+      LobbyCommandMakeRoomOK::Write(response, sink);
+    });
+}
+
+void LobbyDirector::HandleHeartbeat(
+  ClientId clientId,
+  const LobbyCommandHeartbeat& heartbeat)
+{
+  // Todo
+  // auto userItr = _clientUsers.find(clientId);
+  // if (userItr == _clientUsers.cend())
+  // {
+  //   return;
+  // }
+  //
+  // auto& [userId, user] = *_users.find(userItr->second);
+  // user.lastHeartbeat = std::chrono::system_clock::now();
+}
+
+void LobbyDirector::HandleShowInventory(
+  ClientId clientId,
+  const LobbyCommandShowInventory& showInventory)
+{
+  _server.QueueCommand(
+    clientId,
+    CommandId::LobbyShowInventoryOK,
+    [&](auto& sink)
+    {
+      LobbyCommandShowInventoryOK response{};
+      LobbyCommandShowInventoryOK::Write(response, sink);
+    });
+}
+
+void LobbyDirector::HandleAchievementCompleteList(
   ClientId clientId,
   const LobbyCommandAchievementCompleteList& achievementCompleteList)
 {
-  auto userItr = _clients.find(clientId);
-  if (userItr == _clients.cend())
-  {
-    return;
-  }
-
-  auto& [userId, user] = *_users.find(userItr->second);
-  _lobbyServer.QueueCommand(
+  _server.QueueCommand(
     clientId,
     CommandId::LobbyAchievementCompleteListOK,
     [&](auto& sink)
@@ -299,18 +448,11 @@ void LoginDirector::HandleAchievementCompleteList(
     });
 }
 
-void LoginDirector::HandleRequestLeagueInfo(
+void LobbyDirector::HandleRequestLeagueInfo(
   ClientId clientId,
   const LobbyCommandRequestLeagueInfo& requestLeagueInfo)
 {
-  auto userItr = _clients.find(clientId);
-  if (userItr == _clients.cend())
-  {
-    return;
-  }
-
-  auto& [userId, user] = *_users.find(userItr->second);
-  _lobbyServer.QueueCommand(
+  _server.QueueCommand(
     clientId,
     CommandId::LobbyRequestLeagueInfoOK,
     [&](auto& sink)
@@ -320,18 +462,11 @@ void LoginDirector::HandleRequestLeagueInfo(
     });
 }
 
-void LoginDirector::HandleRequestQuestList(
+void LobbyDirector::HandleRequestQuestList(
   ClientId clientId,
   const LobbyCommandRequestQuestList& requestQuestList)
 {
-  auto userItr = _clients.find(clientId);
-  if (userItr == _clients.cend())
-  {
-    return;
-  }
-
-  auto& [userId, user] = *_users.find(userItr->second);
-  _lobbyServer.QueueCommand(
+  _server.QueueCommand(
     clientId,
     CommandId::LobbyRequestQuestListOK,
     [&](auto& sink)
@@ -341,61 +476,59 @@ void LoginDirector::HandleRequestQuestList(
     });
 }
 
-void LoginDirector::HandleRequestSpecialEventList(
+void LobbyDirector::HandleRequestSpecialEventList(
   ClientId clientId,
   const LobbyCommandRequestSpecialEventList& requestSpecialEventList)
 {
-  _lobbyServer.QueueCommand(
+  _server.QueueCommand(
     clientId,
     CommandId::LobbyRequestSpecialEventListOK,
     [&](auto& sink)
     {
-      LobbyCommandRequestSpecialEventListOK response{.unk0 = requestSpecialEventList.unk0};
+      LobbyCommandRequestSpecialEventListOK response{
+        .unk0 = requestSpecialEventList.unk0
+      };
       LobbyCommandRequestSpecialEventListOK::Write(response, sink);
     });
 }
 
-void LoginDirector::HandleEnterRanch(ClientId clientId, const LobbyCommandEnterRanch& enterRanch)
+void LobbyDirector::HandleEnterRanch(
+  ClientId clientId,
+  const LobbyCommandEnterRanch& enterRanch)
 {
-  const auto [_, userId] = *_clients.find(clientId);
+  const auto [_, characterUid] = *_clientCharacters.find(clientId);
 
-  _lobbyServer.QueueCommand(
+  _server.QueueCommand(
     clientId,
     CommandId::LobbyEnterRanchOK,
-    [userId, this](auto& sink)
+    [characterUid, this](auto& sink)
     {
-      auto& [_, user] = *_users.find(userId);
-
-      // TODO: Move somewhere configurable
-      struct in_addr addr;
-      inet_pton(AF_INET, _settings._lobbySettings.ranchAdvAddress.c_str(), &addr);
+      auto character = _dataDirector.GetCharacter(characterUid);
 
       LobbyCommandEnterRanchOK response{
-        .ranchUid = user.ranchUid,
+        .ranchUid = character->ranchUid,
         .code = 0x44332211, // TODO: Generate and store in the ranch server instance
-        .ip = (uint32_t)addr.s_addr,
-        .port = _settings._lobbySettings.ranchAdvPort};
+        .ip = htonl(_settings.ranchAdvAddress.to_uint()),
+        .port = _settings.ranchAdvPort,
+      };
       LobbyCommandEnterRanchOK::Write(response, sink);
     });
 }
 
-void LoginDirector::HandleGetMessengerInfo(
+void LobbyDirector::HandleGetMessengerInfo(
   ClientId clientId,
   const LobbyCommandGetMessengerInfo& getMessengerInfo)
 {
-  _lobbyServer.QueueCommand(
+  _server.QueueCommand(
     clientId,
     CommandId::LobbyGetMessengerInfoOK,
     [&](auto& sink)
     {
-      // TODO: Move somewhere configurable
-      struct in_addr addr;
-      inet_pton(AF_INET, _settings._lobbySettings.messengerAdvAddress.c_str(), &addr);
-
       LobbyCommandGetMessengerInfoOK response{
-        .unk0 = 0, // TODO: Generate and store in the messenger server instance
-        .ip = (uint32_t)addr.s_addr,
-        .port = _settings._lobbySettings.messengerAdvPort};
+        .code = 0xDEAD, // TODO: Generate and store in the messenger server instance
+        .ip = htonl(_settings.messengerAdvAddress.to_uint()),
+        .port = _settings.messengerAdvPort,
+      };
       LobbyCommandGetMessengerInfoOK::Write(response, sink);
     });
 }

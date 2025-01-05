@@ -137,213 +137,37 @@ int32_t CommandClient::GetRollingCodeInt() const
 }
 
 CommandServer::CommandServer(std::string name)
+  : _server(
+    [this](ClientId clientId)
+    {
+      HandleClientConnect(clientId);
+    },
+    [this](ClientId clientId)
+    {
+      HandleClientDisconnect(clientId);
+    },
+    [this](
+      ClientId clientId,
+      asio::streambuf& readBuffer)
+    {
+      HandleClientRead(clientId, readBuffer);
+    },
+    [this](
+      ClientId clientId,
+      asio::streambuf& writeBuffer)
+    {
+      HandleClientWrite(clientId, writeBuffer);
+    })
 {
   _name = std::move(name);
-  _server.SetOnConnectHandler([&](ClientId clientId)
-  {
-    spdlog::info("Client {} connected to {}", clientId, this->_name);
-    auto& client = _server.GetClient(clientId);
-    auto& commandClient = _clients[clientId];
-
-    // Set the read handler for the new client.
-    client.SetReadHandler(
-      [this, clientId, &commandClient](asio::streambuf& readBuffer)
-      {
-        SourceStream commandStream({
-          static_cast<const std::byte*>(readBuffer.data().data()),
-          readBuffer.data().size()
-        });
-
-        // Flag indicates whether to consume the bytes
-        // when the read handler exits.
-        bool consumeBytesOnExit = true;
-
-        // Defer the consumption of the bytes from the read buffer,
-        // until the end of the function.
-        const Deferred deferredConsume([&]()
-        {
-          if (!consumeBytesOnExit)
-            return;
-
-          // Consume the amount of bytes that were
-          // read from the command stream.
-          readBuffer.consume(commandStream.GetCursor());
-        });
-
-        // Read the message magic.
-        uint32_t magicValue{};
-        commandStream.Read(magicValue);
-
-        const MessageMagic magic = decode_message_magic(
-          magicValue);
-
-        // Command ID must be within the valid range.
-        if (magic.id > static_cast<uint16_t>(CommandId::Count))
-        {
-          throw std::runtime_error(
-            std::format(
-              "Invalid command magic: Bad command ID '{}'.",
-              magic.id).c_str());
-        }
-
-        const auto commandId = static_cast<CommandId>(magic.id);
-
-        // The provided payload length must be at least the size
-        // of the magic itself and smaller than the max command size.
-        if (magic.length < sizeof(MessageMagic)
-          || magic.length > MaxCommandSize)
-        {
-          throw std::runtime_error(
-            std::format(
-              "Invalid command magic: Bad command data size '{}'.",
-              magic.length).c_str());
-        }
-
-        // Size of the data portion of the command.
-        const size_t commandDataSize = static_cast<size_t>(magic.length) - commandStream.GetCursor();
-
-        // If all the required command data are not buffered,
-        // wait for them to arrive.
-        if (commandDataSize > readBuffer.in_avail())
-        {
-          // Indicate that the bytes read until now
-          // shouldn't be consumed, as we expect more data to arrive.
-          consumeBytesOnExit = false;
-
-          return;
-        }
-
-        if(!IsMuted(commandId))
-        {
-          spdlog::debug("Received command '{}', ID: 0x{:x}, Length: {},",
-            GetCommandName(commandId),
-            magic.id,
-            magic.length);
-        }
-
-        // Buffer for the command data.
-        std::array<std::byte, MaxCommandDataSize> commandDataBuffer{};
-
-        // Read the command data.
-        commandStream.Read(
-          commandDataBuffer.data(), commandDataSize);
-
-        SourceStream commandDataStream(nullptr);
-
-        // Validate and process the command data.
-        if (commandDataSize > 0)
-        {
-          if (UseXorAlgorithm)
-          {
-            commandClient.RollCode();
-
-            const uint32_t code = commandClient.GetRollingCodeInt();
-
-            // Extract the padding from the code.
-            const auto padding = code & 7;
-
-            // The command is malformed, if the provided command data
-            // size is smaller or equal to the generated padding.
-            if (padding >= commandDataSize)
-            {
-              throw std::runtime_error(
-                std::format(
-                  "Malformed command: Bad command data size '{}', padding is {}.",
-                  magic.length,
-                  padding).c_str());
-            }
-
-            const auto actualCommandDataSize = commandDataSize - padding;
-
-            // Source stream of the command data.
-            SourceStream dataSourceStream(
-              {commandDataBuffer.begin(), commandDataSize});
-            // Sink stream of the command data.
-            // Correctly points to the same buffer.
-            SinkStream dataSinkStream(
-              {commandDataBuffer.begin(), commandDataBuffer.end()});
-
-            // Apply XOR algorithm to the data.
-            XorAlgorithm(
-              commandClient.GetRollingCode(),
-              dataSourceStream,
-              dataSinkStream);
-
-            commandDataStream = std::move(SourceStream(
-              {commandDataBuffer.begin(), actualCommandDataSize}));
-
-            if(!IsMuted(commandId))
-            {
-              spdlog::debug("Data for command '{}' (0x{:X}), Code: {:#X}, Data Size: {} (padding: {}), Actual Data Size: {}",
-                GetCommandName(commandId),
-                magic.id,
-                code,
-                commandDataSize,
-                padding,
-                actualCommandDataSize);
-
-              LogBytes({commandDataBuffer.data(), commandDataSize});
-            }
-          }
-          else
-          {
-            commandDataStream = std::move(SourceStream(
-              {commandDataBuffer.begin(), commandDataSize}));
-
-            if(!IsMuted(commandId))
-            {
-              spdlog::debug("Data for command '{}' (0x{:X}), Data Size: {}",
-                GetCommandName(commandId),
-                magic.id,
-                commandDataSize);
-
-              LogBytes({commandDataBuffer.data(), commandDataSize});
-            }
-          }
-        }
-
-        // Find the handler of the command.
-        const auto handlerIter = _handlers.find(commandId);
-        if (handlerIter == _handlers.cend())
-        {
-          if(!IsMuted(commandId))
-          {
-            spdlog::warn("Unhandled command '{}', ID: 0x{:x}, Length: {}",
-              GetCommandName(commandId),
-              magic.id,
-              magic.length);
-          }
-        }
-        else
-        {
-          const auto& handler = handlerIter->second;
-          // Handler validity is checked when registering.
-          assert(handler);
-
-          // Call the handler.
-          handler(clientId, commandDataStream);
-        
-          // There shouldn't be any left-over data in the stream.
-          assert(commandDataStream.GetCursor() == commandDataStream.Size());
-
-          if(!IsMuted(commandId))
-          {
-            spdlog::debug("Handled command '{}', ID: 0x{:x}, Length: {}",
-                GetCommandName(commandId),
-                magic.id,
-                magic.length);
-          }
-        }
-      });
-  });
 }
 
 void CommandServer::Host(
-  const std::string& interface,
+  const asio::ip::address& address,
   uint16_t port)
 {
-  _server.Host(interface, port);
-  spdlog::debug("{} server hosted on %s:%d", this->_name, interface, port);
+  spdlog::debug("{} server hosted on {}:{}", this->_name, address.to_string(), port);
+  _server.Host(address, port);
 }
 
 void CommandServer::RegisterCommandHandler(
@@ -363,19 +187,15 @@ void CommandServer::SetCode(ClientId client, XorCode code)
   _clients[client].SetCode(code);
 }
 
-void CommandServer::QueueCommand(
-  ClientId client,
-  CommandId command,
-  CommandSupplier supplier)
+void CommandServer::QueueCommand(ClientId client, CommandId command, CommandSupplier supplier)
 {
   // ToDo: Actual queue.
   _server.GetClient(client).QueueWrite(
     [client, command, supplier = std::move(supplier)](asio::streambuf& writeBuffer)
     {
       const auto mutableBuffer = writeBuffer.prepare(MaxCommandSize);
-      const auto writeBufferView = std::span(
-        static_cast<std::byte*>(mutableBuffer.data()),
-        mutableBuffer.size());
+      const auto writeBufferView =
+        std::span(static_cast<std::byte*>(mutableBuffer.data()), mutableBuffer.size());
 
       SinkStream commandSink(writeBufferView);
 
@@ -394,23 +214,232 @@ void CommandServer::QueueCommand(
       commandSink.Seek(streamOrigin);
 
       // Write the message magic.
-      const MessageMagic magic{
-        .id = static_cast<uint16_t>(command),
-        .length = payloadSize};
+      const MessageMagic magic{.id = static_cast<uint16_t>(command), .length = payloadSize};
 
       commandSink.Write(encode_message_magic(magic));
       writeBuffer.commit(magic.length);
 
-      if(!IsMuted(command))
+      if (!IsMuted(command))
       {
-        spdlog::debug("Sent to client {} command '{}' (0x{:X}), Data Size: {}",
+        spdlog::debug(
+          "Sent to client {} command '{}' (0x{:X}), Data Size: {}",
           client,
           GetCommandName(command),
           magic.id,
-          streamOrigin);
-        LogBytes({ (std::byte *) mutableBuffer.data() + 4, payloadSize });
+          payloadSize);
+        LogBytes({(std::byte*)mutableBuffer.data() + 4, payloadSize});
       }
     });
+}
+
+void CommandServer::HandleClientConnect(ClientId clientId)
+{
+  spdlog::info("Client {} connected to {}", clientId, _name);
+}
+
+void CommandServer::HandleClientDisconnect(ClientId clientId)
+{
+  spdlog::info("Client {} disconnected from {}", clientId, _name);
+}
+
+void CommandServer::HandleClientRead(
+  ClientId clientId,
+  asio::streambuf& readBuffer)
+{
+  SourceStream commandStream({
+    static_cast<const std::byte*>(readBuffer.data().data()),
+    readBuffer.data().size()
+  });
+
+  // Flag indicates whether to consume the bytes
+  // when the read handler exits.
+  bool consumeBytesOnExit = true;
+
+  // Defer the consumption of the bytes from the read buffer,
+  // until the end of the function.
+  const Deferred deferredConsume([&]()
+  {
+    if (!consumeBytesOnExit)
+      return;
+
+    // Consume the amount of bytes that were
+    // read from the command stream.
+    readBuffer.consume(commandStream.GetCursor());
+  });
+
+  // Read the message magic.
+  uint32_t magicValue{};
+  commandStream.Read(magicValue);
+
+  const MessageMagic magic = decode_message_magic(
+    magicValue);
+
+  // Command ID must be within the valid range.
+  if (magic.id > static_cast<uint16_t>(CommandId::Count))
+  {
+    throw std::runtime_error(
+      std::format(
+        "Invalid command magic: Bad command ID '{}'.",
+        magic.id).c_str());
+  }
+
+  const auto commandId = static_cast<CommandId>(magic.id);
+
+  // The provided payload length must be at least the size
+  // of the magic itself and smaller than the max command size.
+  if (magic.length < sizeof(MessageMagic)
+    || magic.length > MaxCommandSize)
+  {
+    throw std::runtime_error(
+      std::format(
+        "Invalid command magic: Bad command data size '{}'.",
+        magic.length).c_str());
+  }
+
+  // Size of the data portion of the command.
+  const size_t commandDataSize = static_cast<size_t>(magic.length) - commandStream.GetCursor();
+
+  // If all the required command data are not buffered,
+  // wait for them to arrive.
+  if (commandDataSize > readBuffer.in_avail())
+  {
+    // Indicate that the bytes read until now
+    // shouldn't be consumed, as we expect more data to arrive.
+    consumeBytesOnExit = false;
+
+    return;
+  }
+
+  if(!IsMuted(commandId))
+  {
+    spdlog::debug("Received command '{}', ID: 0x{:x}, Length: {},",
+      GetCommandName(commandId),
+      magic.id,
+      magic.length);
+  }
+
+  // Buffer for the command data.
+  std::array<std::byte, MaxCommandDataSize> commandDataBuffer{};
+
+  // Read the command data.
+  commandStream.Read(
+    commandDataBuffer.data(), commandDataSize);
+
+  SourceStream commandDataStream(nullptr);
+
+  auto& client = _clients[clientId];
+
+  // Validate and process the command data.
+  if (commandDataSize > 0)
+  {
+    if (UseXorAlgorithm)
+    {
+      client.RollCode();
+
+      const uint32_t code = client.GetRollingCodeInt();
+
+      // Extract the padding from the code.
+      const auto padding = code & 7;
+
+      // The command is malformed, if the provided command data
+      // size is smaller or equal to the generated padding.
+      if (padding >= commandDataSize)
+      {
+        throw std::runtime_error(
+          std::format(
+            "Malformed command: Bad command data size '{}', padding is {}.",
+            magic.length,
+            padding).c_str());
+      }
+
+      const auto actualCommandDataSize = commandDataSize - padding;
+
+      // Source stream of the command data.
+      SourceStream dataSourceStream(
+        {commandDataBuffer.begin(), commandDataSize});
+      // Sink stream of the command data.
+      // Correctly points to the same buffer.
+      SinkStream dataSinkStream(
+        {commandDataBuffer.begin(), commandDataBuffer.end()});
+
+      // Apply XOR algorithm to the data.
+      XorAlgorithm(
+        client.GetRollingCode(),
+        dataSourceStream,
+        dataSinkStream);
+
+      commandDataStream = std::move(SourceStream(
+        {commandDataBuffer.begin(), actualCommandDataSize}));
+
+      if(!IsMuted(commandId))
+      {
+        spdlog::debug("Data for command '{}' (0x{:X}), Code: {:#X}, Data Size: {} (padding: {}), Actual Data Size: {}",
+          GetCommandName(commandId),
+          magic.id,
+          code,
+          commandDataSize,
+          padding,
+          actualCommandDataSize);
+
+        LogBytes({commandDataBuffer.data(), commandDataSize});
+      }
+    }
+    else
+    {
+      commandDataStream = std::move(SourceStream(
+        {commandDataBuffer.begin(), commandDataSize}));
+
+      if(!IsMuted(commandId))
+      {
+        spdlog::debug("Data for command '{}' (0x{:X}), Data Size: {}",
+          GetCommandName(commandId),
+          magic.id,
+          commandDataSize);
+
+        LogBytes({commandDataBuffer.data(), commandDataSize});
+      }
+    }
+  }
+
+  // Find the handler of the command.
+  const auto handlerIter = _handlers.find(commandId);
+  if (handlerIter == _handlers.cend())
+  {
+    if(!IsMuted(commandId))
+    {
+      spdlog::warn("Unhandled command '{}', ID: 0x{:x}, Length: {}",
+        GetCommandName(commandId),
+        magic.id,
+        magic.length);
+    }
+  }
+  else
+  {
+    const auto& handler = handlerIter->second;
+    // Handler validity is checked when registering.
+    assert(handler);
+
+    // Call the handler.
+    handler(clientId, commandDataStream);
+
+    // There shouldn't be any left-over data in the stream.
+    assert(commandDataStream.GetCursor() == commandDataStream.Size());
+
+    if(!IsMuted(commandId))
+    {
+      spdlog::debug("Handled command '{}', ID: 0x{:x}, Length: {}",
+          GetCommandName(commandId),
+          magic.id,
+          magic.length);
+    }
+  }
+}
+
+void CommandServer::HandleClientWrite(
+  ClientId clientId,
+  asio::streambuf& writeBuffer)
+{
+
 }
 
 } // namespace alicia

@@ -3,21 +3,26 @@
     // The bind address and port of the lobby host.
     "bind": {
       // An IPv4 address or a domain
-      "address": "localhost",
+      "address": "127.0.0.1",
       "port": 10030
     },
     "advertisement": {
       // The advertised address and port of the ranch host.
       "ranch": {
         // An IPv4 address or a domain
-        "address": "localhost",
+        "address": "127.0.0.1",
         "port": 10031
       },
       // The advertised address and port of the messenger host.
       "messenger": {
         // An IPv4 address or a domain
-        "address": "localhost",
+        "address": "127.0.0.1",
         "port": 10032
+      },
+      "race": {
+        // An IPv4 address or a domain
+        "address": "127.0.0.1",
+        "port": 10033
       }
     }
   },
@@ -25,7 +30,7 @@
     // The bind address and port of the ranch host
     "bind": {
       // An IPv4 address or a domain
-      "address": "localhost",
+      "address": "127.0.0.1",
       "port": 10031
     }
   },
@@ -33,8 +38,16 @@
     // The bind address and port of the ranch host
     "bind": {
       // An IPv4 address or a domain
-      "address": "localhost",
+      "address": "127.0.0.1",
       "port": 10032
+    }
+  },
+  "race": {
+    // The bind address and port of the race host
+    "bind": {
+      // An IPv4 address or a domain
+      "address": "127.0.0.1",
+      "port": 10033
     }
   }
 }

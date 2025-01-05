@@ -2,8 +2,9 @@
 
 #include "server/Scheduler.hpp"
 
-#include "lobby/LobbyDirector.hpp"
-#include "ranch/RanchDirector.hpp"
+#include "server/lobby/LobbyDirector.hpp"
+#include "server/race/RaceDirector.hpp"
+#include "server/ranch/RanchDirector.hpp"
 
 #include <libserver/base/Server.hpp>
 #include <libserver/command/CommandServer.hpp>
@@ -21,8 +22,10 @@
 namespace
 {
 
-std::unique_ptr<alicia::LoginDirector> g_loginDirector;
+std::unique_ptr<alicia::DataDirector> g_dataDirector;
+std::unique_ptr<alicia::LobbyDirector> g_loginDirector;
 std::unique_ptr<alicia::RanchDirector> g_ranchDirector;
+std::unique_ptr<alicia::RaceDirector> g_raceDirector;
 
 } // namespace
 
@@ -46,8 +49,10 @@ int main()
   const auto consoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 
   // Initialize the application logger with file sink and console sink.
-  auto applicationLogger =
-    std::make_shared<spdlog::logger>("abc", spdlog::sinks_init_list{fileSink, consoleSink});
+  auto applicationLogger = std::make_shared<spdlog::logger>(
+    "abc",
+    spdlog::sinks_init_list{fileSink, consoleSink});
+
   applicationLogger->set_level(spdlog::level::debug);
   applicationLogger->set_pattern("%H:%M:%S:%e [%^%l%$] [Thread %t] %v");
 
@@ -58,9 +63,11 @@ int main()
 
   // Parsing settings file
   alicia::Settings settings;
-  settings.LoadFromFile("../../resources/settings.json");
+  settings.LoadFromFile("resources/settings.json");
 
-  // Lobby thread.
+  g_dataDirector = std::make_unique<alicia::DataDirector>();
+
+  // Lobby director thread.
   std::jthread lobbyThread(
     [&settings]()
     {
@@ -182,7 +189,7 @@ int main()
       lobbyServer.Host(settings._lobbySettings.address, settings._lobbySettings.port);
     });
 
-  // Ranch thread.
+  // Ranch director thread.
   std::jthread ranchThread(
     [&settings]()
     {
@@ -245,7 +252,16 @@ int main()
     {
       alicia::CommandServer messengerServer("Messenger");
       // TODO: Messenger
-      messengerServer.Host("0.0.0.0", 10032);
+      messengerServer.Host(boost::asio::ip::address_v4::any(), 10032);
+    });
+
+  // Race director thread.
+  std::jthread raceThread(
+    [&settings]()
+    {
+      g_raceDirector = std::make_unique<alicia::RaceDirector>(
+        *g_dataDirector,
+        settings._raceSettings);
     });
 
   taskProcessorThread.join();
