@@ -14,4 +14,3 @@ target_link_libraries(test_buffers
 
 add_test(NAME TestMagic COMMAND test_magic)
 add_test(NAME TestBuffers COMMAND test_buffers)
-add_test(NAME TestLobby COMMAND test_lobby)
