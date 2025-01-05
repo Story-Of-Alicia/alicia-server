@@ -143,6 +143,9 @@ const std::unordered_map<CommandId, std::string_view> commands = {
   {CommandId::RaceStartRace, "RaceStartRace"},
   {CommandId::RaceStartRaceNotify, "RaceStartRaceNotify"},
   {CommandId::RaceStartRaceCancel, "RaceStartRaceCancel"},
+
+  {CommandId::UserRaceTimer, "UserRaceTimer"},
+  {CommandId::UserRaceTimerOK, "UserRaceTimerOK"},
 };
 
 } // namespace anon

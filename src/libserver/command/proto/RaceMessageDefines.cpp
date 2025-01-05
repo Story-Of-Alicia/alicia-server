@@ -376,4 +376,31 @@ void RaceCommandStartRaceCancel::Read(
   throw std::logic_error("Not implemented.");
 }
 
+
+void UserRaceTimer::Write(
+  const UserRaceTimer& command, SinkStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void UserRaceTimer::Read(
+  UserRaceTimer& command, SourceStream& buffer)
+{
+  buffer.Read(command.timestamp);
+}
+
+
+void UserRaceTimerOK::Write(
+  const UserRaceTimerOK& command, SinkStream& buffer)
+{
+  buffer.Write(command.unk0)
+    .Write(command.unk1);
+}
+
+void UserRaceTimerOK::Read(
+  UserRaceTimerOK& command, SourceStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
 } // namespace alicia
