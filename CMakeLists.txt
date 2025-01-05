@@ -24,6 +24,7 @@ add_library(alicia-libserver STATIC
         src/libserver/command/CommandServer.cpp
         src/libserver/command/proto/LobbyMessageDefines.cpp
         src/libserver/command/proto/RanchMessageDefines.cpp
+        src/server/Scheduler.cpp
         include/libserver/command/proto/DataDefines.hpp)
 target_include_directories(alicia-libserver
         PUBLIC include/)
