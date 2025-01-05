@@ -31,6 +31,13 @@ RaceDirector::RaceDirector(DataDirector& dataDirector, Settings settings)
       HandleStartRace(clientId, message);
     });
 
+  _server.RegisterCommandHandler<UserRaceTimer>(
+    CommandId::UserRaceTimer,
+    [this](ClientId clientId, const auto& message) {
+      HandleRaceTimer(clientId, message);
+    });
+    
+
   // Host the server
   _server.Host(_settings._raceSettings.address, _settings._raceSettings.port);
 }
@@ -223,6 +230,21 @@ void RaceDirector::HandleStartRace(ClientId clientId, const RaceCommandStartRace
         .port = _settings._lobbySettings.raceAdvPort
       };
       RaceCommandStartRaceNotify::Write(response, sink);
+    });
+}
+
+void RaceDirector::HandleRaceTimer(ClientId clientId, const UserRaceTimer& raceTimer)
+{
+  _server.QueueCommand(
+    clientId,
+    CommandId::UserRaceTimer,
+    [&](auto& sink)
+    {
+      UserRaceTimerOK response {
+        //.unk0 = raceTimer.timestamp + 1000 * 60,
+        .unk1 = raceTimer.timestamp + 1000 * 60
+      };
+      UserRaceTimerOK::Write(response, sink);
     });
 }
 

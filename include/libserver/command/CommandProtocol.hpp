@@ -186,6 +186,9 @@ enum class CommandId
   RaceStartRaceNotify = 0x5b,
   RaceStartRaceCancel = 0x5c,
 
+  UserRaceTimer = 0x1024,
+  UserRaceTimerOK = 0x1025,
+
   Count = 0xFFFF
 };
 
