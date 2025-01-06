@@ -87,7 +87,7 @@ int main()
     {
       g_raceDirector = std::make_unique<alicia::RaceDirector>(
         *g_dataDirector,
-        settings._raceSettings);
+        settings);
     });
 
   return 0;

@@ -280,6 +280,11 @@ struct RanchPlayer
   uint8_t unk5{};
 };
 
+struct RanchUnk11 {
+  uint8_t unk0{};
+  uint8_t unk1{};
+};
+
 
 } // namespace alicia
 
