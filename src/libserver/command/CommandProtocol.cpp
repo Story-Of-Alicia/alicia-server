@@ -141,6 +141,10 @@ const std::unordered_map<CommandId, std::string_view> commands = {
   {CommandId::RanchUpdateMountNicknameOK, "RanchUpdateMountNicknameOK"},
   {CommandId::RanchUpdateMountNicknameCancel, "RanchUpdateMountNicknameCancel"},
 
+  {CommandId::RanchRequestNpcDressList, "RaceRequestNpcDressList"},
+  {CommandId::RanchRequestNpcDressListCancel, "RaceRequestNpcDressListCancel"},
+  {CommandId::RanchRequestNpcDressListOK, "RaceRequestNpcDressListOK"},
+
 
   {CommandId::RaceEnterRoom, "RaceEnterRoom"},
   {CommandId::RaceEnterRoomNotify, "RaceEnterRoomNotify"},

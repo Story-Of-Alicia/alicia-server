@@ -768,4 +768,49 @@ void RanchCommandUpdateMountNicknameOK::Read(
   throw std::logic_error("Not implemented.");
 }
 
+
+void RanchCommandRequestNpcDressList::Write(
+  const RanchCommandRequestNpcDressList& command, SinkStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void RanchCommandRequestNpcDressList::Read(
+  RanchCommandRequestNpcDressList& command, SourceStream& buffer)
+{
+  buffer.Read(command.unk0);
+}
+
+
+void RanchCommandRequestNpcDressListOK::Write(
+  const RanchCommandRequestNpcDressListOK& command, SinkStream& buffer)
+{
+  buffer.Write(command.unk0);
+  buffer.Write(static_cast<uint8_t>(command.dressList.size()));
+  for (const auto& item : command.dressList)
+  {
+    WriteItem(buffer, item);
+  }
+}
+
+void RanchCommandRequestNpcDressListOK::Read(
+  RanchCommandRequestNpcDressListOK& command, SourceStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+
+void RanchCommandRequestNpcDressListCancel::Write(
+  const RanchCommandRequestNpcDressListCancel& command, SinkStream& buffer)
+{
+  // Empty
+}
+
+void RanchCommandRequestNpcDressListCancel::Read(
+  RanchCommandRequestNpcDressListCancel& command, SourceStream& buffer)
+{
+  // Empty
+}
+
+
 } // namespace alicia

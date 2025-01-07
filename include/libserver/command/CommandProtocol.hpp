@@ -173,6 +173,10 @@ enum class CommandId
   RanchUpdateMountNicknameOK = 0x198,
   RanchUpdateMountNicknameCancel = 0x199,
 
+  RanchRequestNpcDressList = 0x44c,
+  RanchRequestNpcDressListCancel = 0x44e,
+  RanchRequestNpcDressListOK = 0x44d,
+
 
   RaceEnterRoom = 0x30,
   RaceEnterRoomNotify = 0x31,

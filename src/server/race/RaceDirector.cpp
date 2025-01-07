@@ -209,31 +209,32 @@ void RaceDirector::HandleStartRace(ClientId clientId, const RaceCommandStartRace
   auto mount = _dataDirector.GetMount(character->mountUid);
   auto room = _dataDirector.GetRoom(character->roomUid.value());
 
+  const RaceCommandStartRaceNotify response {
+    .gamemode = 1,
+    .unk3 = character->roomUid.value(),
+    .map = 20004,
+    .racers = {
+      {
+        .oid = 1,
+        .name = character->nickName,
+        .unk2 = 1,
+        .unk3 = 1,
+        .unk4 = 1,
+        .p2dId = 1,
+        .unk6 = 1,
+        .unk7 = 1,
+      }
+    },
+    .ip = htonl(_settings._lobbySettings.raceAdvAddress.to_uint()),
+    .port = _settings._lobbySettings.raceAdvPort
+  };
+
   // TODO: Send to all clients in the room
   _server.QueueCommand(
     clientId,
     CommandId::RaceStartRaceNotify,
-    [&](auto& sink)
+    [response](auto& sink)
     {
-      RaceCommandStartRaceNotify response {
-        .gamemode = 1,
-        .unk3 = character->roomUid.value(),
-        .map = 20004,
-        .racers = {
-          {
-            .oid = 1,
-            .name = character->nickName,
-            .unk2 = 1,
-            .unk3 = 1,
-            .unk4 = 1,
-            .p2dId = 1,
-            .unk6 = 1,
-            .unk7 = 1,
-          }
-        },
-        .ip = htonl(_settings._lobbySettings.raceAdvAddress.to_uint()),
-        .port = _settings._lobbySettings.raceAdvPort
-      };
       RaceCommandStartRaceNotify::Write(response, sink);
     });
 }
