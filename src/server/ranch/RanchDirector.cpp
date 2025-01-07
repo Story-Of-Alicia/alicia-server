@@ -101,6 +101,12 @@ RanchDirector::RanchDirector(
       HandleRequestStorage(clientId, command);
     });
 
+  _server.RegisterCommandHandler<RanchCommandRequestNpcDressList>(
+    CommandId::RanchRequestNpcDressList,
+    [this](ClientId clientId, const auto& message) {
+      HandleRequestNpcDressList(clientId, message);
+    });
+
   // Host the server.
   _server.Host(_settings.address, _settings.port);
 }
@@ -605,13 +611,19 @@ void RanchDirector::HandleUpdateMountNickname(
   const RanchCommandUpdateMountNickname& command)
 {
   // TODO: Actually do something
+  RanchCommandUpdateMountNicknameOK response
+  {
+    .unk0 = command.unk0,
+    .nickname = command.nickname,
+    .unk1 = command.unk1,
+    .unk2 = 0
+  };
+
   _server.QueueCommand(
     clientId,
     CommandId::RanchUpdateMountNicknameOK,
-    [&](auto& sink)
+    [response](auto& sink)
     {
-      RanchCommandUpdateMountNicknameOK response{
-        .unk0 = command.unk0, .nickname = command.nickname, .unk1 = command.unk1, .unk2 = 0};
       RanchCommandUpdateMountNicknameOK::Write(response, sink);
     });
 }
@@ -630,6 +642,22 @@ void RanchDirector::HandleRequestStorage(
     [response](auto& sink)
     {
       RanchCommandRequestStorageOK::Write(response, sink);
+    });
+}
+
+void RanchDirector::HandleRequestNpcDressList(ClientId clientId, const RanchCommandRequestNpcDressList& requestNpcDressList)
+{
+  RanchCommandRequestNpcDressListOK response {
+    .unk0 = requestNpcDressList.unk0,
+    .dressList = {} // TODO: Fetch dress list from somewhere
+  };
+  
+  _server.QueueCommand(
+    clientId,
+    CommandId::RanchRequestNpcDressListOK,
+    [response](auto& sink)
+    {
+      RanchCommandRequestNpcDressListOK::Write(response, sink);
     });
 }
 

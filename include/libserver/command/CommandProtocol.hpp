@@ -180,6 +180,11 @@ enum class CommandId
   RanchRequestStorageOK = 0x29a,
   RanchRequestStorageCancel = 0x29b,
 
+  RanchRequestNpcDressList = 0x44c,
+  RanchRequestNpcDressListCancel = 0x44e,
+  RanchRequestNpcDressListOK = 0x44d,
+
+
   RaceEnterRoom = 0x30,
   RaceEnterRoomNotify = 0x31,
   RaceEnterRoomOK = 0x32,
