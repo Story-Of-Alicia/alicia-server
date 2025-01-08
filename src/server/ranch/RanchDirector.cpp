@@ -102,7 +102,7 @@ void RanchDirector::HandleEnterRanch(
   ClientId clientId,
   const RanchCommandEnterRanch& enterRanch)
 {
-  // Todo: Validate the recieved data and the code.
+  // Todo: Validate the received data and the code.
   // ( so you cant pretend to be someone else :) )
 
   // Character that is entering the ranch.

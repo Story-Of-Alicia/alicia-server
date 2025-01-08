@@ -961,7 +961,13 @@ struct LobbyCommandInquiryTreecashCancel
 
 struct LobbyClientNotify
 {
+  // Scene state
+  // 1 - success
+  // 2 - first cancel
+  // 3 - repeated cancel
   uint16_t val0{};
+  // Additional payload, for the success its always zero.
+  // For the cancel it is the retry count
   uint32_t val1{};
 
   //! Writes the command to a provided sink buffer.
