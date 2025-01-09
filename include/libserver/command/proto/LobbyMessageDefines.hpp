@@ -421,20 +421,11 @@ struct LobbyCommandAchievementCompleteList
     LobbyCommandAchievementCompleteList& command, SourceStream& buffer);
 };
 
-struct CompletedAchievement
-{
-  uint16_t unk0{};
-  uint8_t unk1{};
-  uint32_t unk2{};
-  uint8_t unk3{};
-  uint8_t unk4{};
-};
-
 //! Clientbound achievement complete list response.
 struct LobbyCommandAchievementCompleteListOK
 {
   uint32_t unk0{};
-  std::vector<CompletedAchievement> achievements;
+  std::vector<Quest> achievements;
 
   //! Writes the command to a provided sink buffer.
   //! @param command Command.
@@ -587,15 +578,6 @@ struct LobbyCommandRequestQuestList
     LobbyCommandRequestQuestList& command, SourceStream& buffer);
 };
 
-struct Quest
-{
-  uint16_t unk0{};
-  uint8_t unk1{};
-  uint32_t unk2{};
-  uint8_t unk3{};
-  uint8_t unk4{};
-};
-
 //! Clientbound request quest list response.
 struct LobbyCommandRequestQuestListOK
 {
@@ -613,6 +595,52 @@ struct LobbyCommandRequestQuestListOK
   //! @param buffer Source buffer.
   static void Read(
     LobbyCommandRequestQuestListOK& command, SourceStream& buffer);
+};
+
+struct LobbyCommandRequestDailyQuestList
+{
+  uint32_t val0{};
+
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const LobbyCommandRequestDailyQuestList& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    LobbyCommandRequestDailyQuestList& command, SourceStream& buffer);
+};
+
+struct LobbyCommandRequestDailyQuestListOK
+{
+  uint32_t val0{};
+  //! Size specified with uint16
+  std::vector<Quest> quests;
+
+  struct Unk
+  {
+    uint16_t val0{};
+    uint32_t val1{};
+    uint8_t val2{};
+    uint8_t val3{};
+  };
+  //! Size specified with uint16
+  std::vector<Unk> val1;
+
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const LobbyCommandRequestDailyQuestListOK& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    LobbyCommandRequestDailyQuestListOK& command, SourceStream& buffer);
 };
 
 //! Serverbound enter ranch command.
@@ -808,26 +836,17 @@ struct LobbyCommandRequestSpecialEventList
     LobbyCommandRequestSpecialEventList& command, SourceStream& buffer);
 };
 
-struct RequetSpecialEvenListOKUnk1 {
-  uint16_t unk0;
-  uint32_t unk1;
-  uint8_t unk2;
-  uint32_t unk3;
-  uint8_t unk4;
-  uint8_t unk5;
-};
-
-struct RequetSpecialEvenListOKUnk2 {
-  uint16_t unk0;
-  uint32_t unk1;
+struct Event {
+  uint16_t unk0{};
+  uint32_t unk1{};
 };
 
 //! Clientbound request special event list response.
 struct LobbyCommandRequestSpecialEventListOK
 {
   uint32_t unk0;
-  std::vector<RequetSpecialEvenListOKUnk1> unk1;
-  std::vector<RequetSpecialEvenListOKUnk2> unk2;
+  std::vector<Quest> unk1;
+  std::vector<Event> unk2;
 
   //! Writes the command to a provided sink buffer.
   //! @param command Command.

@@ -63,9 +63,9 @@ const std::unordered_map<CommandId, std::string_view> commands = {
   {CommandId::LobbyAchievementCompleteListCancel, "LobbyAchievementCompleteListCancel"},
 
   // RequestDailyQuestList
-  {CommandId::LobbyRequestDailyQuestList, "RequestDailyQuestList"},
-  {CommandId::LobbyRequestDailyQuestListOK, "RequestDailyQuestListOK"},
-  {CommandId::LobbyRequestDailyQuestListCancel, "RequestDailyQuestListCancel"},
+  {CommandId::LobbyRequestDailyQuestList, "LobbyRequestDailyQuestList"},
+  {CommandId::LobbyRequestDailyQuestListOK, "LobbyRequestDailyQuestListOK"},
+  {CommandId::LobbyRequestDailyQuestListCancel, "LobbyRequestDailyQuestListCancel"},
 
   // RequestLeagueInfo
   {CommandId::LobbyRequestLeagueInfo, "LobbyRequestLeagueInfo"},

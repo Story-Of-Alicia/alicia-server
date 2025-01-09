@@ -69,6 +69,11 @@ private:
     const LobbyCommandRequestQuestList& requestQuestList);
 
   //!
+  void HandleRequestDailyQuestList(
+    ClientId clientId,
+    const LobbyCommandRequestDailyQuestList& requestQuestList);
+
+  //!
   void HandleRequestSpecialEventList(
     ClientId clientId,
     const LobbyCommandRequestSpecialEventList& requestQuestList);

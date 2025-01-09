@@ -90,6 +90,13 @@ LobbyDirector::LobbyDirector(
       HandleRequestQuestList(clientId, message);
     });
 
+  _server.RegisterCommandHandler<LobbyCommandRequestDailyQuestList>(
+    CommandId::LobbyRequestDailyQuestList,
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleRequestDailyQuestList(clientId, message);
+    });
+
   _server.RegisterCommandHandler<LobbyCommandRequestSpecialEventList>(
     CommandId::LobbyRequestSpecialEventList,
     [this](ClientId clientId, const auto& message)
@@ -455,12 +462,14 @@ void LobbyDirector::HandleAchievementCompleteList(
   ClientId clientId,
   const LobbyCommandAchievementCompleteList& achievementCompleteList)
 {
+  auto character = _clientCharacters[clientId];
   _server.QueueCommand(
     clientId,
     CommandId::LobbyAchievementCompleteListOK,
-    [&](auto& sink)
+    [character](auto& sink)
     {
-      LobbyCommandAchievementCompleteListOK response{};
+      LobbyCommandAchievementCompleteListOK response{
+      .unk0 = character};
       LobbyCommandAchievementCompleteListOK::Write(response, sink);
     });
 }
@@ -490,6 +499,20 @@ void LobbyDirector::HandleRequestQuestList(
     {
       LobbyCommandRequestQuestListOK response{};
       LobbyCommandRequestQuestListOK::Write(response, sink);
+    });
+}
+
+void LobbyDirector::HandleRequestDailyQuestList(
+  ClientId clientId,
+  const LobbyCommandRequestDailyQuestList& requestQuestList)
+{
+  _server.QueueCommand(
+    clientId,
+    CommandId::LobbyRequestDailyQuestListOK,
+    [&](auto& sink)
+    {
+      LobbyCommandRequestDailyQuestListOK response{};
+      LobbyCommandRequestDailyQuestListOK::Write(response, sink);
     });
 }
 
