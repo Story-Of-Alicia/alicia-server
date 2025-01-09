@@ -85,9 +85,9 @@ int main()
   std::jthread messengerThread(
     [&settings]()
     {
-      // alicia::CommandServer messengerServer("Messenger");
-      // // TODO: Messenger
-      // messengerServer.Host(boost::asio::ip::address_v4::any(), 10032);
+      alicia::CommandServer messengerServer("Messenger");
+      // TODO: Messenger
+      messengerServer.Host(boost::asio::ip::address_v4::any(), 10032);
     });
 
   return 0;
