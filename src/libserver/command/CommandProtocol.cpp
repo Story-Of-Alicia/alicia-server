@@ -102,6 +102,10 @@ const std::unordered_map<CommandId, std::string_view> commands = {
   {CommandId::LobbyInquiryTreecashOK, "LobbyInquiryTreecashOK"},
   {CommandId::LobbyInquiryTreecashCancel, "LobbyInquiryTreecashCancel"},
 
+  // GuildPartyList
+  {CommandId::LobbyGuildPartyList, "LobbyGuildPartyList"},
+  {CommandId::LobbyGuildPartyListOK, "LobbyGuildPartyListOK"},
+
   {CommandId::RanchEnterRanch, "RanchEnterRanch"},
   {CommandId::RanchEnterRanchCancel, "RanchEnterRanchCancel"},
   {CommandId::RanchEnterRanchNotify, "RanchEnterRanchNotify"},
@@ -140,6 +144,10 @@ const std::unordered_map<CommandId, std::string_view> commands = {
   {CommandId::RanchUpdateMountNickname, "RanchUpdateMountNickname"},
   {CommandId::RanchUpdateMountNicknameOK, "RanchUpdateMountNicknameOK"},
   {CommandId::RanchUpdateMountNicknameCancel, "RanchUpdateMountNicknameCancel"},
+
+  {CommandId::RanchRequestStorage, "RanchRequestStorage"},
+  {CommandId::RanchRequestStorageOK, "RanchRequestStorageOK"},
+  {CommandId::RanchRequestStorageCancel, "RanchRequestStorageCancel"},
 };
 
 } // namespace anon

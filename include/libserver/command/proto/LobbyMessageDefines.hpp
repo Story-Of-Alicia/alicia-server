@@ -1002,6 +1002,50 @@ struct LobbyClientNotify
     LobbyCommandInquiryTreecashCancel& command, SourceStream& buffer);
 };
 
+struct LobbyCommandGuildPartyList
+{
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const LobbyCommandGuildPartyList& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    LobbyCommandGuildPartyList& command, SourceStream& buffer);
+};
+
+struct LobbyCommandGuildPartyListOK
+{
+  struct Member
+  {
+    uint32_t val0{};
+    uint32_t val1{};
+    std::string val3{};
+    uint32_t val4{};
+    uint32_t val5{};
+    uint32_t val6{};
+    uint32_t val7{};
+    uint8_t val8{};
+    uint32_t val9{};
+  };
+  std::vector<Member> members;
+
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const LobbyCommandGuildPartyListOK& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    LobbyCommandGuildPartyListOK& command, SourceStream& buffer);
+};
+
 // TODO: AcCmdCLRequestPersonalInfo, others
 
 } // namespace alica

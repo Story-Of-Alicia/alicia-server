@@ -94,6 +94,13 @@ RanchDirector::RanchDirector(
       HandleUpdateMountNickname(clientId, command); 
     });
 
+  _server.RegisterCommandHandler<RanchCommandRequestStorage>(
+    CommandId::RanchRequestStorage,
+    [this](ClientId clientId, auto& command)
+    {
+      HandleRequestStorage(clientId, command);
+    });
+
   // Host the server.
   _server.Host(_settings.address, _settings.port);
 }
@@ -593,7 +600,9 @@ void RanchDirector::HandleBreedingWishlist(ClientId clientId, const RanchCommand
     });
 }
 
-void RanchDirector::HandleUpdateMountNickname(ClientId clientId, const RanchCommandUpdateMountNickname& command)
+void RanchDirector::HandleUpdateMountNickname(
+  ClientId clientId,
+  const RanchCommandUpdateMountNickname& command)
 {
   // TODO: Actually do something
   _server.QueueCommand(
@@ -601,14 +610,26 @@ void RanchDirector::HandleUpdateMountNickname(ClientId clientId, const RanchComm
     CommandId::RanchUpdateMountNicknameOK,
     [&](auto& sink)
     {
-      RanchCommandUpdateMountNicknameOK response
-      {
-        .unk0 = command.unk0,
-        .nickname = command.nickname,
-        .unk1 = command.unk1,
-        .unk2 = 0
-      };
+      RanchCommandUpdateMountNicknameOK response{
+        .unk0 = command.unk0, .nickname = command.nickname, .unk1 = command.unk1, .unk2 = 0};
       RanchCommandUpdateMountNicknameOK::Write(response, sink);
+    });
+}
+
+void RanchDirector::HandleRequestStorage(
+  ClientId clientId,
+  const RanchCommandRequestStorage& command)
+{
+  // TODO: Actually do something
+  const RanchCommandRequestStorageOK response{
+    .val0 = command.val0};
+
+  _server.QueueCommand(
+    clientId,
+    CommandId::RanchRequestStorageOK,
+    [response](auto& sink)
+    {
+      RanchCommandRequestStorageOK::Write(response, sink);
     });
 }
 

@@ -593,14 +593,30 @@ void LobbyDirector::HandleInquiryTreecash(
   ClientId clientId,
   const LobbyCommandInquiryTreecash& message)
 {
-  const LobbyCommandInquiryTreecashOK response{.cash = 1000};
+  const LobbyCommandInquiryTreecashOK response{
+    .cash = 1000};
 
   _server.QueueCommand(
     clientId,
     CommandId::LobbyInquiryTreecashOK,
-    [=](SinkStream& sink)
+    [response](SinkStream& sink)
     {
       LobbyCommandInquiryTreecashOK::Write(response, sink);
+    });
+}
+
+void LobbyDirector::HandleGuildPartyList(
+  ClientId clientId,
+  const LobbyCommandGuildPartyList& message)
+{
+  const LobbyCommandGuildPartyListOK response{};
+
+  _server.QueueCommand(
+    clientId,
+    CommandId::LobbyGuildPartyListOK,
+    [response](SinkStream& sink)
+    {
+      LobbyCommandGuildPartyListOK::Write(response, sink);
     });
 }
 

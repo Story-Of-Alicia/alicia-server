@@ -1035,4 +1035,32 @@ void LobbyCommandInquiryTreecashCancel::Read(
   throw std::logic_error("Not implemented.");
 }
 
+void LobbyCommandGuildPartyList::Write(
+  const LobbyCommandGuildPartyList& command,
+  SinkStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void LobbyCommandGuildPartyList::Read(LobbyCommandGuildPartyList& command, SourceStream& buffer)
+{
+  // Empty.
+}
+
+void LobbyCommandGuildPartyListOK::Write(
+  const LobbyCommandGuildPartyListOK& command,
+  SinkStream& buffer)
+{
+  assert(command.members.empty());
+  // todo: Write members
+  buffer.Write(static_cast<uint8_t>(command.members.size()));
+}
+
+void LobbyCommandGuildPartyListOK::Read(
+  LobbyCommandGuildPartyListOK& command,
+  SourceStream& buffer)
+{
+  throw std::logic_error("Not implemented");
+}
+
 } // namespace alicia::proto

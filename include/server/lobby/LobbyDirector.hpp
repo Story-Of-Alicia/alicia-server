@@ -99,6 +99,11 @@ private:
     const LobbyCommandInquiryTreecash& message);
 
   //!
+  void HandleGuildPartyList(
+    ClientId clientId,
+    const LobbyCommandGuildPartyList& message);
+
+  //!
   Settings::LobbySettings _settings;
 
   //!
