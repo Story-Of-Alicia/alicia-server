@@ -24,152 +24,6 @@
 namespace alicia
 {
 
-//! Writes item data to the buffer.
-//! @param buf Sink buffer.
-//! @param item Item data to write.
-void WriteItem(SinkStream& buf, const Item& item)
-{
-  buf.Write(item.uid)
-    .Write(item.tid)
-    .Write(item.val)
-    .Write(item.count);
-}
-
-//! Writes character data to the buffer.
-//! @param buf Sink buffer.
-//! @param character Character data to write.
-void WriteCharacter(
-  SinkStream& buf,
-  const Character& character)
-{
-  const auto& [parts, appearance] = character;
-
-  // Write the character parts.
-  buf.Write(parts.charId)
-    .Write(parts.mouthSerialId)
-    .Write(parts.faceSerialId)
-    .Write(parts.val0);
-
-  // Write the character appearance.
-  buf.Write(appearance.val0)
-    .Write(appearance.headSize)
-    .Write(appearance.height)
-    .Write(appearance.thighVolume)
-    .Write(appearance.legVolume)
-    .Write(appearance.val1);
-}
-
-//! Reads character data from the buffer.
-//! @param buf Source buffer.
-//! @param character Character data to read.
-void ReadCharacter(
-  SourceStream& buf,
-  Character& character)
-{
-  auto& [parts, appearance] = character;
-
-  // Write the character parts.
-  buf.Read(parts.charId)
-    .Read(parts.mouthSerialId)
-    .Read(parts.faceSerialId)
-    .Read(parts.val0);
-
-  // Write the character appearance.
-  buf.Read(appearance.val0)
-    .Read(appearance.headSize)
-    .Read(appearance.height)
-    .Read(appearance.thighVolume)
-    .Read(appearance.legVolume)
-    .Read(appearance.val1);
-}
-
-//! Writes horse data to the buffer.
-//! @param buf Sink buffer.
-//! @param horse Horse data to write.
-void WriteHorse(
-  SinkStream& buf,
-  const Horse& horse)
-{
-  // Horse identifiers.
-  buf.Write(horse.uid)
-    .Write(horse.tid)
-    .Write(horse.name);
-
-  // Horse parts.
-  const auto& parts = horse.parts;
-  buf.Write(parts.skinId)
-    .Write(parts.maneId)
-    .Write(parts.tailId)
-    .Write(parts.faceId);
-
-  // Horse appearance.
-  const auto& appearance = horse.appearance;
-  buf.Write(appearance.scale)
-    .Write(appearance.legLength)
-    .Write(appearance.legVolume)
-    .Write(appearance.bodyLength)
-    .Write(appearance.bodyVolume);
-
-  // Horse stats.
-  const auto& stats = horse.stats;
-  buf.Write(stats.agility)
-    .Write(stats.spirit)
-    .Write(stats.speed)
-    .Write(stats.strength)
-    .Write(stats.ambition);
-
-  buf.Write(horse.rating)
-    .Write(horse.clazz)
-    .Write(horse.val0)
-    .Write(horse.grade)
-    .Write(horse.growthPoints);
-
-  const auto& vals0 = horse.vals0;
-  buf.Write(vals0.stamina)
-    .Write(vals0.attractiveness)
-    .Write(vals0.hunger)
-    .Write(vals0.val0)
-    .Write(vals0.val1)
-    .Write(vals0.val2)
-    .Write(vals0.val3)
-    .Write(vals0.val4)
-    .Write(vals0.val5)
-    .Write(vals0.val6)
-    .Write(vals0.val7)
-    .Write(vals0.val8)
-    .Write(vals0.val9)
-    .Write(vals0.val10);
-
-  const auto& vals1 = horse.vals1;
-  buf.Write(vals1.val0)
-    .Write(vals1.val1)
-    .Write(vals1.val2)
-    .Write(vals1.val3)
-    .Write(vals1.val4)
-    .Write(vals1.classProgression)
-    .Write(vals1.val5)
-    .Write(vals1.val6)
-    .Write(vals1.val7)
-    .Write(vals1.val8)
-    .Write(vals1.val9)
-    .Write(vals1.val10)
-    .Write(vals1.val11)
-    .Write(vals1.val12)
-    .Write(vals1.val13)
-    .Write(vals1.val14)
-    .Write(vals1.val15);
-
-  // Horse mastery.
-  const auto& mastery = horse.mastery;
-  buf.Write(mastery.magic)
-    .Write(mastery.jumping)
-    .Write(mastery.sliding)
-    .Write(mastery.gliding);
-
-  buf.Write(horse.val16)
-    .Write(horse.val17);
-}
-
 void LobbyCommandLogin::Write(
   const LobbyCommandLogin& command, SinkStream& buffer)
 {
@@ -206,7 +60,7 @@ void LobbyCommandLoginOK::Write(
     command.characterEquipment.size()));
   for (const Item& item : command.characterEquipment)
   {
-    WriteItem(buffer, item);
+    buffer.Write(item);
   }
 
   // Horse equipment
@@ -214,7 +68,7 @@ void LobbyCommandLoginOK::Write(
     command.horseEquipment.size()));
   for (const Item& item : command.horseEquipment)
   {
-    WriteItem(buffer, item);
+    buffer.Write(item);
   }
 
   //
@@ -289,8 +143,8 @@ void LobbyCommandLoginOK::Write(
     .Write(command.port)
     .Write(command.scramblingConstant);
 
-  WriteCharacter(buffer, command.character);
-  WriteHorse(buffer, command.horse);
+  buffer.Write(command.character)
+    .Write(command.horse);
 
   // Struct1
   const auto& struct0 = command.val7;
@@ -409,13 +263,13 @@ void LobbyCommandShowInventoryOK::Write(
   buffer.Write(static_cast<uint8_t>(command.items.size()));
   for (const auto& item : command.items)
   {
-    WriteItem(buffer, item);
+    buffer.Write(item);
   }
 
   buffer.Write(static_cast<uint8_t>(command.horses.size()));
   for (const auto& horse : command.horses)
   {
-    WriteHorse(buffer, horse);
+    buffer.Write(horse);
   }
 }
 
@@ -448,9 +302,9 @@ void LobbyCommandCreateNicknameOK::Read(
   LobbyCommandCreateNicknameOK& command,
   SourceStream& buffer)
 {
-  buffer.Read(command.nickname);
-  ReadCharacter(buffer, command.character);
-  buffer.Read(command.unk0);
+  buffer.Read(command.nickname)
+    .Read(command.character)
+    .Read(command.unk0);
 }
 
 void LobbyCommandCreateNicknameCancel::Write(

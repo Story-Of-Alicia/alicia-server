@@ -56,8 +56,8 @@ void WriteMountFamilyTreeItem(
 void WriteRanchHorse(
   SinkStream& buf, const RanchHorse& ranchHorse)
 {
-  buf.Write(ranchHorse.ranchIndex);
-  WriteHorse(buf, ranchHorse.horse);
+  buf.Write(ranchHorse.ranchIndex)
+    .Write(ranchHorse.horse);
 }
 
 void WriteRanchPlayer(
@@ -70,14 +70,14 @@ void WriteRanchPlayer(
     .Write(ranchPlayer.unk1)
     .Write(ranchPlayer.description);
 
-  WriteCharacter(buf, ranchPlayer.character);
-  WriteHorse(buf, ranchPlayer.horse);
+  buf.Write(ranchPlayer.character)
+    .Write(ranchPlayer.horse);
 
   buf.Write(static_cast<uint8_t>(
     ranchPlayer.characterEquipment.size()));
   for (const Item& item : ranchPlayer.characterEquipment)
   {
-    WriteItem(buf, item);
+    buf.Write(item);
   }
 
   // Struct5

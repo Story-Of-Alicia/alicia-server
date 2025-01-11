@@ -22,6 +22,7 @@ add_library(alicia-libserver STATIC
         src/libserver/base/Server.cpp
         src/libserver/command/CommandProtocol.cpp
         src/libserver/command/CommandServer.cpp
+        src/libserver/command/proto/DataDefines.cpp
         src/libserver/command/proto/LobbyMessageDefines.cpp
         src/libserver/command/proto/RaceMessageDefines.cpp
         src/libserver/command/proto/RanchMessageDefines.cpp
