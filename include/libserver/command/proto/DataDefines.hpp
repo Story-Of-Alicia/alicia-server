@@ -90,7 +90,7 @@ struct Character
   //! Used to build character from the _ClientCharDefaultPartInfo table.
   struct CharacterParts
   {
-    uint8_t charId{};
+    uint8_t charId{ 10 };
     //! FaceId
     uint8_t mouthSerialId{};
     //! EyeId
@@ -280,6 +280,14 @@ struct RanchPlayer
   uint8_t unk5{};
 };
 
+struct Quest
+{
+  uint16_t unk0{};
+  uint8_t unk1{};
+  uint32_t unk2{};
+  uint8_t unk3{};
+  uint8_t unk4{};
+};
 
 } // namespace alicia
 

@@ -90,6 +90,13 @@ LobbyDirector::LobbyDirector(
       HandleRequestQuestList(clientId, message);
     });
 
+  _server.RegisterCommandHandler<LobbyCommandRequestDailyQuestList>(
+    CommandId::LobbyRequestDailyQuestList,
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleRequestDailyQuestList(clientId, message);
+    });
+
   _server.RegisterCommandHandler<LobbyCommandRequestSpecialEventList>(
     CommandId::LobbyRequestSpecialEventList,
     [this](ClientId clientId, const auto& message)
@@ -109,6 +116,20 @@ LobbyDirector::LobbyDirector(
     [this](ClientId clientId, const auto& message)
     {
       HandleGetMessengerInfo(clientId, message);
+    });
+
+  _server.RegisterCommandHandler<LobbyCommandGoodsShopList>(
+    CommandId::LobbyGoodsShopList,
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleGoodsShopList(clientId, message);
+    });
+
+  _server.RegisterCommandHandler<LobbyCommandInquiryTreecash>(
+    CommandId::LobbyInquiryTreecash,
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleInquiryTreecash(clientId, message);
     });
 
   spdlog::debug("Advertising ranch server on {}:{}",
@@ -358,14 +379,15 @@ void LobbyDirector::HandleCreateNicknameOK(
   character->looks = std::optional(createNicknameOK.character);
   character->gender = createNicknameOK.character.parts.charId == 10 ? Gender::Boy : Gender::Girl;
 
+  LobbyCommandShowInventoryOK response{};
+
   // Not sure why but this seems to be the correct reply to send after creating a nickname.
   // After all, it's the packet that goes right after LoginOK.
   _server.QueueCommand(
     clientId,
     CommandId::LobbyShowInventoryOK,
-    [&](auto& sink)
+    [response](auto& sink)
     {
-      LobbyCommandShowInventoryOK response{};
       LobbyCommandShowInventoryOK::Write(response, sink);
     });
 }
@@ -374,11 +396,12 @@ void LobbyDirector::HandleEnterChannel(
   ClientId clientId,
   const LobbyCommandEnterChannel& enterChannel)
 {
-  LobbyCommandEnterChannelOK response{};
+  const LobbyCommandEnterChannelOK response{};
+
   _server.QueueCommand(
     clientId,
     CommandId::LobbyEnterChannelOK,
-    [&](auto& sink)
+    [response](auto& sink)
     {
       LobbyCommandEnterChannelOK::Write(response, sink);
     });
@@ -389,17 +412,18 @@ void LobbyDirector::HandleMakeRoom(
   const LobbyCommandMakeRoom& makeRoom)
 {
   const auto characterUid = _clientCharacters[clientId];
-  LobbyCommandMakeRoomOK response{
+  const LobbyCommandMakeRoomOK response{
     .unk0 = characterUid,
     .unk1 = 0x44332211,
     .ip = htonl(_settings.raceAdvAddress.to_uint()),
     .port = _settings.raceAdvPort,
     .unk2 = 0
   };
+
   _server.QueueCommand(
     clientId,
     CommandId::LobbyMakeRoomOK,
-    [&](auto& sink)
+    [response](auto& sink)
     {
       LobbyCommandMakeRoomOK::Write(response, sink);
     });
@@ -438,12 +462,14 @@ void LobbyDirector::HandleAchievementCompleteList(
   ClientId clientId,
   const LobbyCommandAchievementCompleteList& achievementCompleteList)
 {
+  auto character = _clientCharacters[clientId];
   _server.QueueCommand(
     clientId,
     CommandId::LobbyAchievementCompleteListOK,
-    [&](auto& sink)
+    [character](auto& sink)
     {
-      LobbyCommandAchievementCompleteListOK response{};
+      LobbyCommandAchievementCompleteListOK response{
+      .unk0 = character};
       LobbyCommandAchievementCompleteListOK::Write(response, sink);
     });
 }
@@ -476,18 +502,33 @@ void LobbyDirector::HandleRequestQuestList(
     });
 }
 
+void LobbyDirector::HandleRequestDailyQuestList(
+  ClientId clientId,
+  const LobbyCommandRequestDailyQuestList& requestQuestList)
+{
+  _server.QueueCommand(
+    clientId,
+    CommandId::LobbyRequestDailyQuestListOK,
+    [&](auto& sink)
+    {
+      LobbyCommandRequestDailyQuestListOK response{};
+      LobbyCommandRequestDailyQuestListOK::Write(response, sink);
+    });
+}
+
 void LobbyDirector::HandleRequestSpecialEventList(
   ClientId clientId,
   const LobbyCommandRequestSpecialEventList& requestSpecialEventList)
 {
+  const LobbyCommandRequestSpecialEventListOK response{
+    .unk0 = requestSpecialEventList.unk0
+  };
+
   _server.QueueCommand(
     clientId,
     CommandId::LobbyRequestSpecialEventListOK,
-    [&](auto& sink)
+    [response](auto& sink)
     {
-      LobbyCommandRequestSpecialEventListOK response{
-        .unk0 = requestSpecialEventList.unk0
-      };
       LobbyCommandRequestSpecialEventListOK::Write(response, sink);
     });
 }
@@ -530,6 +571,52 @@ void LobbyDirector::HandleGetMessengerInfo(
         .port = _settings.messengerAdvPort,
       };
       LobbyCommandGetMessengerInfoOK::Write(response, sink);
+    });
+}
+
+void LobbyDirector::HandleGoodsShopList(
+  ClientId clientId,
+  const LobbyCommandGoodsShopList& message)
+{
+  const LobbyCommandGoodsShopListOK response{.data = message.data};
+
+  _server.QueueCommand(
+    clientId,
+    CommandId::LobbyGoodsShopListOK,
+    [response](SinkStream& sink)
+    {
+      LobbyCommandGoodsShopListOK::Write(response, sink);
+    });
+}
+
+void LobbyDirector::HandleInquiryTreecash(
+  ClientId clientId,
+  const LobbyCommandInquiryTreecash& message)
+{
+  const LobbyCommandInquiryTreecashOK response{
+    .cash = 1000};
+
+  _server.QueueCommand(
+    clientId,
+    CommandId::LobbyInquiryTreecashOK,
+    [response](SinkStream& sink)
+    {
+      LobbyCommandInquiryTreecashOK::Write(response, sink);
+    });
+}
+
+void LobbyDirector::HandleGuildPartyList(
+  ClientId clientId,
+  const LobbyCommandGuildPartyList& message)
+{
+  const LobbyCommandGuildPartyListOK response{};
+
+  _server.QueueCommand(
+    clientId,
+    CommandId::LobbyGuildPartyListOK,
+    [response](SinkStream& sink)
+    {
+      LobbyCommandGuildPartyListOK::Write(response, sink);
     });
 }
 

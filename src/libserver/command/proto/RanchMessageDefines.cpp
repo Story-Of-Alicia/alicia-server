@@ -747,11 +747,11 @@ void RanchCommandUpdateMountNicknameCancel::Write(
 }
 
 void RanchCommandUpdateMountNicknameCancel::Read(
-  RanchCommandUpdateMountNicknameCancel& command, SourceStream& buffer)
+  RanchCommandUpdateMountNicknameCancel& command,
+  SourceStream& buffer)
 {
   throw std::logic_error("Not implemented.");
 }
-
 
 void RanchCommandUpdateMountNicknameOK::Write(
   const RanchCommandUpdateMountNicknameOK& command, SinkStream& buffer)
@@ -764,6 +764,48 @@ void RanchCommandUpdateMountNicknameOK::Write(
 
 void RanchCommandUpdateMountNicknameOK::Read(
   RanchCommandUpdateMountNicknameOK& command, SourceStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void RanchCommandRequestStorage::Write(
+  const RanchCommandRequestStorage& command,
+  SinkStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void RanchCommandRequestStorage::Read(RanchCommandRequestStorage& command, SourceStream& buffer)
+{
+  buffer.Read(command.val0).Read(command.val1);
+}
+
+void RanchCommandRequestStorageOK::Write(
+  const RanchCommandRequestStorageOK& command,
+  SinkStream& buffer)
+{
+  buffer.Write(command.val0).Write(command.val1).Write(command.val2);
+
+  assert(command.val3.size() == 0);
+  buffer.Write(static_cast<uint8_t>(command.val3.size()));
+  // todo: write entries
+}
+
+void RanchCommandRequestStorageOK::Read(RanchCommandRequestStorageOK& command, SourceStream& buffer)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void RanchCommandRequestStorageCancel::Write(
+  const RanchCommandRequestStorageCancel& command,
+  SinkStream& buffer)
+{
+  buffer.Write(command.val0).Write(command.val1);
+}
+
+void RanchCommandRequestStorageCancel::Read(
+  RanchCommandRequestStorageCancel& command,
+  SourceStream& buffer)
 {
   throw std::logic_error("Not implemented.");
 }

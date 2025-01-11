@@ -421,20 +421,11 @@ struct LobbyCommandAchievementCompleteList
     LobbyCommandAchievementCompleteList& command, SourceStream& buffer);
 };
 
-struct CompletedAchievement
-{
-  uint16_t unk0{};
-  uint8_t unk1{};
-  uint32_t unk2{};
-  uint8_t unk3{};
-  uint8_t unk4{};
-};
-
 //! Clientbound achievement complete list response.
 struct LobbyCommandAchievementCompleteListOK
 {
   uint32_t unk0{};
-  std::vector<CompletedAchievement> achievements;
+  std::vector<Quest> achievements;
 
   //! Writes the command to a provided sink buffer.
   //! @param command Command.
@@ -587,15 +578,6 @@ struct LobbyCommandRequestQuestList
     LobbyCommandRequestQuestList& command, SourceStream& buffer);
 };
 
-struct Quest
-{
-  uint16_t unk0{};
-  uint8_t unk1{};
-  uint32_t unk2{};
-  uint8_t unk3{};
-  uint8_t unk4{};
-};
-
 //! Clientbound request quest list response.
 struct LobbyCommandRequestQuestListOK
 {
@@ -613,6 +595,52 @@ struct LobbyCommandRequestQuestListOK
   //! @param buffer Source buffer.
   static void Read(
     LobbyCommandRequestQuestListOK& command, SourceStream& buffer);
+};
+
+struct LobbyCommandRequestDailyQuestList
+{
+  uint32_t val0{};
+
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const LobbyCommandRequestDailyQuestList& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    LobbyCommandRequestDailyQuestList& command, SourceStream& buffer);
+};
+
+struct LobbyCommandRequestDailyQuestListOK
+{
+  uint32_t val0{};
+  //! Size specified with uint16
+  std::vector<Quest> quests;
+
+  struct Unk
+  {
+    uint16_t val0{};
+    uint32_t val1{};
+    uint8_t val2{};
+    uint8_t val3{};
+  };
+  //! Size specified with uint16
+  std::vector<Unk> val1;
+
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const LobbyCommandRequestDailyQuestListOK& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    LobbyCommandRequestDailyQuestListOK& command, SourceStream& buffer);
 };
 
 //! Serverbound enter ranch command.
@@ -808,26 +836,17 @@ struct LobbyCommandRequestSpecialEventList
     LobbyCommandRequestSpecialEventList& command, SourceStream& buffer);
 };
 
-struct RequetSpecialEvenListOKUnk1 {
-  uint16_t unk0;
-  uint32_t unk1;
-  uint8_t unk2;
-  uint32_t unk3;
-  uint8_t unk4;
-  uint8_t unk5;
-};
-
-struct RequetSpecialEvenListOKUnk2 {
-  uint16_t unk0;
-  uint32_t unk1;
+struct Event {
+  uint16_t unk0{};
+  uint32_t unk1{};
 };
 
 //! Clientbound request special event list response.
 struct LobbyCommandRequestSpecialEventListOK
 {
   uint32_t unk0;
-  std::vector<RequetSpecialEvenListOKUnk1> unk1;
-  std::vector<RequetSpecialEvenListOKUnk2> unk2;
+  std::vector<Quest> unk1;
+  std::vector<Event> unk2;
 
   //! Writes the command to a provided sink buffer.
   //! @param command Command.
@@ -856,6 +875,175 @@ struct LobbyCommandHeartbeat
   //! @param buffer Source buffer.
   static void Read(
     LobbyCommandHeartbeat& command, SourceStream& buffer);
+};
+
+//! Serverboud goods message
+struct LobbyCommandGoodsShopList
+{
+  std::array<uint8_t, 12> data;
+
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const LobbyCommandGoodsShopList& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    LobbyCommandGoodsShopList& command, SourceStream& buffer);
+};
+
+//! Clientbound shop goods message
+struct LobbyCommandGoodsShopListOK
+{
+  std::array<uint8_t, 12> data;
+
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const LobbyCommandGoodsShopListOK& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    LobbyCommandGoodsShopListOK& command, SourceStream& buffer);
+};
+
+//! Clientbound shop goods message
+struct LobbyCommandGoodsShopListCancel
+{
+  std::array<uint8_t, 12> data;
+
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const LobbyCommandGoodsShopListCancel& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    LobbyCommandGoodsShopListCancel& command, SourceStream& buffer);
+};
+
+struct LobbyCommandInquiryTreecash
+{
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const LobbyCommandInquiryTreecash& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    LobbyCommandInquiryTreecash& command, SourceStream& buffer);
+};
+
+struct LobbyCommandInquiryTreecashOK
+{
+  uint32_t cash{};
+
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const LobbyCommandInquiryTreecashOK& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    LobbyCommandInquiryTreecashOK& command, SourceStream& buffer);
+};
+
+struct LobbyCommandInquiryTreecashCancel
+{
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const LobbyCommandInquiryTreecashCancel& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    LobbyCommandInquiryTreecashCancel& command, SourceStream& buffer);
+};
+
+struct LobbyClientNotify
+{
+  // Scene state
+  // 1 - success
+  // 2 - first cancel
+  // 3 - repeated cancel
+  uint16_t val0{};
+  // Additional payload, for the success its always zero.
+  // For the cancel it is the retry count
+  uint32_t val1{};
+
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const LobbyCommandInquiryTreecashCancel& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    LobbyCommandInquiryTreecashCancel& command, SourceStream& buffer);
+};
+
+struct LobbyCommandGuildPartyList
+{
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const LobbyCommandGuildPartyList& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    LobbyCommandGuildPartyList& command, SourceStream& buffer);
+};
+
+struct LobbyCommandGuildPartyListOK
+{
+  struct Member
+  {
+    uint32_t val0{};
+    uint32_t val1{};
+    std::string val3{};
+    uint32_t val4{};
+    uint32_t val5{};
+    uint32_t val6{};
+    uint32_t val7{};
+    uint8_t val8{};
+    uint32_t val9{};
+  };
+  std::vector<Member> members;
+
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const LobbyCommandGuildPartyListOK& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    LobbyCommandGuildPartyListOK& command, SourceStream& buffer);
 };
 
 // TODO: AcCmdCLRequestPersonalInfo, others
