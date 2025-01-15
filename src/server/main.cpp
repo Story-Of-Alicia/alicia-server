@@ -246,15 +246,6 @@ int main()
       ranchServer.Host(settings._ranchSettings.address, settings._ranchSettings.port);
     });
 
-  // Messenger thread.
-  std::jthread messengerThread(
-    [&settings]()
-    {
-      alicia::CommandServer messengerServer("Messenger");
-      // TODO: Messenger
-      messengerServer.Host(boost::asio::ip::address_v4::any(), 10032);
-    });
-
   // Race director thread.
   std::jthread raceThread(
     [&settings]()
@@ -264,7 +255,16 @@ int main()
         settings._raceSettings);
     });
 
-  taskProcessorThread.join();
+  // Messenger thread.
+  std::jthread messengerThread(
+    [&settings]()
+    {
+      alicia::CommandServer messengerServer("Messenger");
+      // TODO: Messenger
+      messengerServer.Host(boost::asio::ip::address_v4::any(), 10032);
+    });
+
+taskProcessorThread.join();
   
   return 0;
 }

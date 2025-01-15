@@ -863,6 +863,78 @@ struct RanchCommandUpdateMountNicknameCancel
     RanchCommandUpdateMountNicknameCancel& command, SourceStream& buffer);
 };
 
+struct RanchCommandRequestStorage
+{
+  uint8_t val0{};
+  uint16_t val1{};
+
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const RanchCommandRequestStorage& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    RanchCommandRequestStorage& command, SourceStream& buffer);
+};
+
+struct RanchCommandRequestStorageOK
+{
+  uint8_t val0{};
+  uint16_t val1{};
+  uint16_t val2{};
+
+  struct Unk
+  {
+    uint32_t uid{};
+    uint32_t val1{};
+    uint8_t val2{};
+    uint32_t val3{};
+    uint32_t val4{};
+    uint32_t val5{};
+    uint32_t val6{};
+    std::string val7;
+    std::string val8;
+    uint32_t val9{};
+  };
+  //! Max 33 elements.
+  std::vector<Unk> val3{};
+
+
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const RanchCommandRequestStorageOK& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    RanchCommandRequestStorageOK& command, SourceStream& buffer);
+};
+
+struct RanchCommandRequestStorageCancel
+{
+  uint8_t val0{};
+  uint8_t val1{};
+
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const RanchCommandRequestStorageCancel& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    RanchCommandRequestStorageCancel& command, SourceStream& buffer);
+};
+
 // TODO Quest commands: RanchCommandUpdateDailyQuest, RanchCommandEmblemList, RanchCommandRequestNpcDressList, etc.
 // TODO Race commands: RanchCommandEnterRoom, RanchCommandChangeRoomOptions, RanchCommandStartRace, RanchCommandLoadingComplete, etc.
 

@@ -74,6 +74,11 @@ private:
     ClientId clientId, 
     const RanchCommandUpdateMountNickname& command);
 
+  //!
+  void HandleRequestStorage(
+    ClientId clientId,
+    const RanchCommandRequestStorage& command);
+
 
   //!
   Settings::RanchSettings _settings;
