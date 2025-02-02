@@ -49,6 +49,7 @@ configure_file(
 
 target_sources(alicia-server PRIVATE
         src/server/main.cpp
+        src/server/Scheduler.cpp
         src/server/DataDirector.cpp
         src/server/tracker/WorldTracker.cpp
         src/server/lobby/LobbyDirector.cpp
