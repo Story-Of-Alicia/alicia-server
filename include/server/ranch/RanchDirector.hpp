@@ -79,6 +79,11 @@ private:
     ClientId clientId,
     const RanchCommandRequestStorage& command);
 
+  //!
+  void HandleRequestNpcDressList(
+      ClientId clientId,
+      const RanchCommandRequestNpcDressList& requestNpcDressList);
+
 
   //!
   Settings::RanchSettings _settings;
