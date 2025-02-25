@@ -184,33 +184,11 @@ void LobbyDirector::HandleUserLogin(ClientId clientId, const LobbyCommandLogin& 
 
   _clientCharacters[clientId] = user->characterUid;
 
-  // Set XOR scrambler code
-  uint32_t scramblingConstant = rd(); // TODO: Use something more secure
-  XorCode code;
-  *((uint32_t*) code.data()) = scramblingConstant;
-  _server.SetCode(clientId, code);
 
   // If the character has no appearance set.
-  // Send a mostly empty LobbyCommandLoginOK alongside a LobbyCommandCreateNicknameNotify
+  // Send LobbyCommandCreateNicknameNotify instead
   if (!character->looks.has_value())
   {
-    const WinFileTime time = UnixTimeToFileTime(
-      std::chrono::system_clock::now());
-
-    const LobbyCommandLoginOK command{
-      .lobbyTime =
-        {.dwLowDateTime = static_cast<uint32_t>(time.dwLowDateTime),
-        .dwHighDateTime = static_cast<uint32_t>(time.dwHighDateTime)},
-
-      .address = _settings.ranchAdvAddress.to_uint(),
-      .port = _settings.ranchAdvPort,
-
-      .scramblingConstant = scramblingConstant};
-    _server.QueueCommand(clientId, CommandId::LobbyLoginOK, [command](SinkStream& sink)
-    {
-      LobbyCommandLoginOK::Write(command, sink);
-    });
-
     const LobbyCommandCreateNicknameNotify createNicknameNotify {};
     _server.QueueCommand(clientId, CommandId::LobbyCreateNicknameNotify, [createNicknameNotify](SinkStream& sink)
     {
@@ -222,6 +200,12 @@ void LobbyDirector::HandleUserLogin(ClientId clientId, const LobbyCommandLogin& 
     // Get the mount data of the user.
     const auto mount = _dataDirector.GetMount(
       character->mountUid);
+
+    // Set XOR scrambler code
+    uint32_t scramblingConstant = rd(); // TODO: Use something more secure
+    XorCode code;
+    *((uint32_t*) code.data()) = scramblingConstant;
+    _server.SetCode(clientId, code);
 
     const WinFileTime time = UnixTimeToFileTime(
       std::chrono::system_clock::now());
@@ -379,16 +363,103 @@ void LobbyDirector::HandleCreateNicknameOK(
   character->looks = std::optional(createNicknameOK.character);
   character->gender = createNicknameOK.character.parts.charId == 10 ? Gender::Boy : Gender::Girl;
 
-  LobbyCommandShowInventoryOK response{};
+      // Get the mount data of the user.
+    const auto mount = _dataDirector.GetMount(
+      character->mountUid);
 
-  // Not sure why but this seems to be the correct reply to send after creating a nickname.
-  // After all, it's the packet that goes right after LoginOK.
-  _server.QueueCommand(
-    clientId,
-    CommandId::LobbyShowInventoryOK,
-    [response](auto& sink)
+    // Set XOR scrambler code
+    uint32_t scramblingConstant = rd(); // TODO: Use something more secure
+    XorCode code;
+    *((uint32_t*) code.data()) = scramblingConstant;
+    _server.SetCode(clientId, code);
+
+    const WinFileTime time = UnixTimeToFileTime(
+      std::chrono::system_clock::now());
+      
+    const LobbyCommandLoginOK command{
+      .lobbyTime =
+        {.dwLowDateTime = static_cast<uint32_t>(time.dwLowDateTime),
+        .dwHighDateTime = static_cast<uint32_t>(time.dwHighDateTime)},
+
+      .address = _settings.ranchAdvAddress.to_uint(),
+      .port = _settings.ranchAdvPort,
+
+      .scramblingConstant = scramblingConstant,
+      .horse =
+        {.uid = character->mountUid,
+        .tid = mount->tid,
+        .name = mount->name,
+        .parts = {.skinId = 0x2, .maneId = 0x3, .tailId = 0x3, .faceId = 0x3},
+          .appearance =
+            {.scale = 0x4,
+              .legLength = 0x4,
+              .legVolume = 0x5,
+              .bodyLength = 0x3,
+              .bodyVolume = 0x4},
+          .stats =
+            {
+              .agility = 9,
+              .spirit = 9,
+              .speed = 9,
+              .strength = 9,
+              .ambition = 0x13
+            },
+          .rating = 0,
+          .clazz = 0x15,
+          .val0 = 1,
+          .grade = 5,
+          .growthPoints = 2,
+          .vals0 =
+            {
+              .stamina = 0x7d0,
+              .attractiveness = 0x3c,
+              .hunger = 0x21c,
+              .val0 = 0x00,
+              .val1 = 0x03E8,
+              .val2 = 0x00,
+              .val3 = 0x00,
+              .val4 = 0x00,
+              .val5 = 0x03E8,
+              .val6 = 0x1E,
+              .val7 = 0x0A,
+              .val8 = 0x0A,
+              .val9 = 0x0A,
+              .val10 = 0x00,
+            },
+          .vals1 =
+            {
+              .val0 = 0x00,
+              .val1 = 0x00,
+              .val2 = 0xb8a167e4,
+              .val3 = 0x02,
+              .val4 = 0x00,
+              .classProgression = 0x32e7d,
+              .val5 = 0x00,
+              .val6 = 0x00,
+              .val7 = 0x00,
+              .val8 = 0x00,
+              .val9 = 0x00,
+              .val10 = 0x04,
+              .val11 = 0x00,
+              .val12 = 0x00,
+              .val13 = 0x00,
+              .val14 = 0x00,
+              .val15 = 0x01
+            },
+          .mastery =
+            {
+              .magic = 0x1fe,
+              .jumping = 0x421,
+              .sliding = 0x5f8,
+              .gliding = 0xcfa4,
+            },
+          .val16 = 0xb8a167e4,
+          .val17 = 0},
+    };
+    
+    _server.QueueCommand(clientId, CommandId::LobbyLoginOK, [command](SinkStream& sink)
     {
-      LobbyCommandShowInventoryOK::Write(response, sink);
+      LobbyCommandLoginOK::Write(command, sink);
     });
 }
 
@@ -396,8 +467,9 @@ void LobbyDirector::HandleEnterChannel(
   ClientId clientId,
   const LobbyCommandEnterChannel& enterChannel)
 {
-  const LobbyCommandEnterChannelOK response{};
-
+  const LobbyCommandEnterChannelOK response{
+    .unk0 = enterChannel.channel // potentially
+  };
   _server.QueueCommand(
     clientId,
     CommandId::LobbyEnterChannelOK,
@@ -412,9 +484,23 @@ void LobbyDirector::HandleMakeRoom(
   const LobbyCommandMakeRoom& makeRoom)
 {
   const auto characterUid = _clientCharacters[clientId];
-  const LobbyCommandMakeRoomOK response{
-    .unk0 = characterUid,
-    .unk1 = 0x44332211,
+  const auto character = _dataDirector.GetCharacter(characterUid);
+  character->roomUid = 123; // TODO: Generate somehow
+
+  const auto room = _dataDirector.GetRoom(character->roomUid.value());
+  room->name = makeRoom.name;
+  room->description = makeRoom.description;
+  room->unk0 = makeRoom.unk0;
+  room->unk1 = makeRoom.unk1;
+  room->unk2 = makeRoom.unk2;
+  room->missionId = makeRoom.missionId;
+  room->unk4 = makeRoom.unk4;
+  room->bitset = makeRoom.bitset;
+  room->unk6 = makeRoom.unk6;
+
+  LobbyCommandMakeRoomOK response{
+    .characterUid = characterUid,
+    .otp = 0x44332211,
     .ip = htonl(_settings.raceAdvAddress.to_uint()),
     .port = _settings.raceAdvPort,
     .unk2 = 0

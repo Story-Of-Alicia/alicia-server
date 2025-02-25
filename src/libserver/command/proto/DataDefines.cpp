@@ -514,4 +514,19 @@ void Quest::Read(Quest& value, SourceStream& buffer)
 DEFINE_WRITER_READER(Quest, Quest::Write, Quest::Read)
 
 
+void RanchUnk11::Write(const RanchUnk11& value, SinkStream& buffer)
+{
+    buffer.Write(value.unk0)
+        .Write(value.unk1);
+}
+
+void RanchUnk11::Read(RanchUnk11& value, SourceStream& buffer)
+{
+    buffer.Read(value.unk0)
+        .Read(value.unk1);
+}
+
+DEFINE_WRITER_READER(RanchUnk11, RanchUnk11::Write, RanchUnk11::Read)
+
+
 } // namespace alicia

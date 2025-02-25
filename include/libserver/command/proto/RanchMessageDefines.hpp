@@ -226,10 +226,7 @@ struct RanchCommandEnterRanchOK
   
   std::array<Unk10, 3> unk10;
 
-  struct Unk11 {
-    uint8_t unk0{};
-    uint8_t unk1{};
-  } unk11{};
+  RanchUnk11 unk11{};
 
   uint32_t unk12{};
 
@@ -935,8 +932,61 @@ struct RanchCommandRequestStorageCancel
     RanchCommandRequestStorageCancel& command, SourceStream& buffer);
 };
 
-// TODO Quest commands: RanchCommandUpdateDailyQuest, RanchCommandEmblemList, RanchCommandRequestNpcDressList, etc.
-// TODO Race commands: RanchCommandEnterRoom, RanchCommandChangeRoomOptions, RanchCommandStartRace, RanchCommandLoadingComplete, etc.
+
+struct RanchCommandRequestNpcDressList
+{
+  uint32_t unk0{}; // NPC ID?
+
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const RanchCommandRequestNpcDressList& command, SinkStream& buffer);
+
+//! Reader a command from a provided source buffer.
+//! @param command Command.
+//! @param buffer Source buffer.
+  static void Read(
+    RanchCommandRequestNpcDressList& command, SourceStream& buffer);
+};
+
+struct RanchCommandRequestNpcDressListOK
+{
+  uint32_t unk0{}; // NPC ID?
+
+  // List size specified with a uint8_t. Max size 10
+  std::vector<Item> dressList{};
+
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const RanchCommandRequestNpcDressListOK& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    RanchCommandRequestNpcDressListOK& command, SourceStream& buffer);
+};
+
+
+struct RanchCommandRequestNpcDressListCancel
+{
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const RanchCommandRequestNpcDressListCancel& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    RanchCommandRequestNpcDressListCancel& command, SourceStream& buffer);
+};
+
+// TODO Quest commands: RanchCommandUpdateDailyQuest, RanchCommandEmblemList, etc.
 
 } // namespace alicia
 

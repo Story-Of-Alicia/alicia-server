@@ -8,7 +8,6 @@
         "prefix": ["command"],
         "scope": "cpp",
         "body": [
-            "//! Serverbound get messenger info command.",
             "struct $1",
             "{",
             "  $2",
@@ -25,7 +24,6 @@
             "    $1& command, SourceStream& buffer);",
             "};",
             "",
-            "//! Clientbound get messenger info response.",
             "struct $1OK",
             "{",
             "  $3",
@@ -42,7 +40,6 @@
             "    $1OK& command, SourceStream& buffer);",
             "};",
             "",
-            "//! Serverbound get messenger info command.",
             "struct $1Cancel",
             "{",
             "  $4",
