@@ -63,9 +63,9 @@ const std::unordered_map<CommandId, std::string_view> commands = {
   {CommandId::LobbyAchievementCompleteListCancel, "LobbyAchievementCompleteListCancel"},
 
   // RequestDailyQuestList
-  {CommandId::LobbyRequestDailyQuestList, "RequestDailyQuestList"},
-  {CommandId::LobbyRequestDailyQuestListOK, "RequestDailyQuestListOK"},
-  {CommandId::LobbyRequestDailyQuestListCancel, "RequestDailyQuestListCancel"},
+  {CommandId::LobbyRequestDailyQuestList, "LobbyRequestDailyQuestList"},
+  {CommandId::LobbyRequestDailyQuestListOK, "LobbyRequestDailyQuestListOK"},
+  {CommandId::LobbyRequestDailyQuestListCancel, "LobbyRequestDailyQuestListCancel"},
 
   // RequestLeagueInfo
   {CommandId::LobbyRequestLeagueInfo, "LobbyRequestLeagueInfo"},
@@ -91,6 +91,20 @@ const std::unordered_map<CommandId, std::string_view> commands = {
   {CommandId::LobbyGetMessengerInfoCancel, "LobbyGetMessengerInfoCancel"},
 
   {CommandId::LobbyClientNotify, "LobbyClientNotify"},
+
+  // GoodsShop
+  {CommandId::LobbyGoodsShopList, "LobbyGoodsShopList"},
+  {CommandId::LobbyGoodsShopListOK, "LobbyGoodsShopListOK"},
+  {CommandId::LobbyGoodsShopListCancel, "LobbyGoodsShopListCancel"},
+
+  // InquiryTreecash
+  {CommandId::LobbyInquiryTreecash, "LobbyInquiryTreecash"},
+  {CommandId::LobbyInquiryTreecashOK, "LobbyInquiryTreecashOK"},
+  {CommandId::LobbyInquiryTreecashCancel, "LobbyInquiryTreecashCancel"},
+
+  // GuildPartyList
+  {CommandId::LobbyGuildPartyList, "LobbyGuildPartyList"},
+  {CommandId::LobbyGuildPartyListOK, "LobbyGuildPartyListOK"},
 
   {CommandId::RanchEnterRanch, "RanchEnterRanch"},
   {CommandId::RanchEnterRanchCancel, "RanchEnterRanchCancel"},
@@ -130,6 +144,10 @@ const std::unordered_map<CommandId, std::string_view> commands = {
   {CommandId::RanchUpdateMountNickname, "RanchUpdateMountNickname"},
   {CommandId::RanchUpdateMountNicknameOK, "RanchUpdateMountNicknameOK"},
   {CommandId::RanchUpdateMountNicknameCancel, "RanchUpdateMountNicknameCancel"},
+
+  {CommandId::RanchRequestStorage, "RanchRequestStorage"},
+  {CommandId::RanchRequestStorageOK, "RanchRequestStorageOK"},
+  {CommandId::RanchRequestStorageCancel, "RanchRequestStorageCancel"},
 };
 
 } // namespace anon

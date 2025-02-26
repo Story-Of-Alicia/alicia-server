@@ -3,6 +3,7 @@
 #include "server/lobby/LobbyDirector.hpp"
 #include "server/race/RaceDirector.hpp"
 #include "server/ranch/RanchDirector.hpp"
+#include "server/Scheduler.hpp"
 
 #include <libserver/base/Server.hpp>
 #include <libserver/command/CommandServer.hpp>
@@ -18,6 +19,7 @@
 
 namespace
 {
+  
 
 std::unique_ptr<alicia::DataDirector> g_dataDirector;
 std::unique_ptr<alicia::LobbyDirector> g_loginDirector;
@@ -25,6 +27,14 @@ std::unique_ptr<alicia::RanchDirector> g_ranchDirector;
 std::unique_ptr<alicia::RaceDirector> g_raceDirector;
 
 } // namespace
+
+// Adds task to queue
+
+Scheduler g_scheduler;
+void EnqueueTask(std::function<void()> task)
+{
+    g_scheduler.EnqueueTask(std::move(task));
+}
 
 int main()
 {
@@ -71,15 +81,6 @@ int main()
         settings._ranchSettings);
     });
 
-  // Messenger thread.
-  std::jthread messengerThread(
-    [&settings]()
-    {
-      alicia::CommandServer messengerServer("Messenger");
-      // TODO: Messenger
-      messengerServer.Host(boost::asio::ip::address_v4::any(), 10032);
-    });
-
   // Race director thread.
   std::jthread raceThread(
     [&settings]()
@@ -89,5 +90,15 @@ int main()
         settings._raceSettings);
     });
 
+  // Messenger thread.
+  std::jthread messengerThread(
+    [&settings]()
+    {
+      alicia::CommandServer messengerServer("Messenger");
+      // TODO: Messenger
+      messengerServer.Host(boost::asio::ip::address_v4::any(), 10032);
+    });
+
   return 0;
 }
+

@@ -19,9 +19,11 @@ add_library(alicia-libserver STATIC
         src/libserver/Alicia.cpp
         src/libserver/Util.cpp
         src/server/Settings.cpp
+        src/libserver/Executor.cpp
         src/libserver/base/Server.cpp
         src/libserver/command/CommandProtocol.cpp
         src/libserver/command/CommandServer.cpp
+        src/libserver/command/proto/DataDefines.cpp
         src/libserver/command/proto/LobbyMessageDefines.cpp
         src/libserver/command/proto/RaceMessageDefines.cpp
         src/libserver/command/proto/RanchMessageDefines.cpp
@@ -34,12 +36,14 @@ target_link_libraries(alicia-libserver
 # Alicia server executable
 add_executable(alicia-server
         src/server/main.cpp
+        src/server/Scheduler.cpp
         src/server/DataDirector.cpp
         src/server/tracker/WorldTracker.cpp
         src/server/lobby/LobbyDirector.cpp
         src/server/lobby/LoginHandler.cpp
         src/server/race/RaceDirector.cpp
         src/server/ranch/RanchDirector.cpp)
+        
 # Version variables
 set(AliciaServerBuildName alpha)
 set(AliciaServerBuildVersionMajor ${CMAKE_PROJECT_VERSION_MAJOR})
@@ -50,7 +54,7 @@ set(AliciaServerBuildVersion ${CMAKE_PROJECT_VERSION}-${AliciaServerBuildName})
 configure_file(
         include/server/Version.hpp.in
         generated/Version.hpp)
-
+        
 target_include_directories(alicia-server PRIVATE
         include/)
 target_link_libraries(alicia-server
