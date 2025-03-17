@@ -76,15 +76,8 @@ create table if not exists data.item
 
 create table if not exists data.user
 (
-    uid           integer PRIMARY KEY,
+    username      varchar(32) PRIMARY KEY,
+    token         text,
     character_uid integer
         REFERENCES data.character (uid)
-);
-
-create table if not exists data.token
-(
-    login    text UNIQUE PRIMARY KEY,
-    token    text,
-    user_uid integer UNIQUE
-        REFERENCES data.user (uid)
 );

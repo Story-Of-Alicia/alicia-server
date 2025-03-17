@@ -34,31 +34,19 @@ void DataDirector::EstablishConnection()
 {
   try
   {
-    _connection = std::make_unique<pqxx::connection>(
-      _settings.connectionString.c_str());
+    _connection = std::make_unique<pqxx::connection>(_settings.connectionString.c_str());
 
     _connection->prepare(
-      QueryUserTokenRecordStatementId,
-      "SELECT token, user_uid FROM data.token WHERE login=$1");
+      QueryUserTokenRecordStatementId, "SELECT token, user_uid FROM data.token WHERE login=$1");
+    _connection->prepare(QueryUserRecordStatementId, "SELECT * FROM data.user WHERE username=$1");
     _connection->prepare(
-      QueryUserRecordStatementId,
-      "SELECT * FROM data.user WHERE uid=$1");
-    _connection->prepare(
-      QueryCharacterRecordStatementId,
-      "SELECT * FROM data.character WHERE uid=$1");
-    _connection->prepare(
-      QueryHorseRecordStatementId,
-      "SELECT * FROM data.horse WHERE uid=$1");
-    _connection->prepare(
-      QueryRanchRecordStatementId,
-      "SELECT * FROM data.ranch WHERE uid=$1");
-    _connection->prepare(
-      QueryItemRecordStatementId,
-      "SELECT * FROM data.item WHERE uid=$1");
+      QueryCharacterRecordStatementId, "SELECT * FROM data.character WHERE uid=$1");
+    _connection->prepare(QueryHorseRecordStatementId, "SELECT * FROM data.horse WHERE uid=$1");
+    _connection->prepare(QueryRanchRecordStatementId, "SELECT * FROM data.ranch WHERE uid=$1");
+    _connection->prepare(QueryItemRecordStatementId, "SELECT * FROM data.item WHERE uid=$1");
 
     spdlog::info(
-      "Initialized the data source with the connection string '{}'",
-      _settings.connectionString);
+      "Initialized the data source with the connection string '{}'", _settings.connectionString);
   }
   catch (const std::exception& x)
   {
@@ -69,78 +57,37 @@ void DataDirector::EstablishConnection()
   }
 }
 
-void DataDirector::GetToken(
-  const std::string& user,
-  const std::function<void(View<data::Token>&&)>& consumer,
-  const std::function<void()>& errorConsumer)
+std::future<data::User> DataDirector::GetUser(std::string const& username)
 {
-  if (not _connection)
+  const auto [iterator, inserted] = _users.try_emplace(username);
+  if (inserted)
   {
-    errorConsumer();
-    return;
+    _taskLoop.Queue(
+     [this, username]()
+     {
+       try
+       {
+         pqxx::work query(*_connection);
+
+         // Query and find the user login and the token.
+         const auto result = query.exec_prepared1(
+           QueryUserRecordStatementId, username
+         );
+
+         _users[username].set_value(data::User{
+           .username = username,
+           .token = result["token"].as<std::string>({}), // ¯\_(ツ)_/¯
+           .characterUid = result["characterUid"].as(InvalidDatumUid),
+         });
+       }
+       catch (std::exception& x)
+       {
+         spdlog::error("DataDirector error: {}", x.what());
+         //TODO: pass exception to future
+       }
+     });
   }
 
-  _taskLoop.Queue(
-    [this, user, consumer, errorConsumer]()
-    {
-      try
-      {
-        pqxx::work query(*_connection);
-
-        // Query and find the user login and the token.
-        const auto result = query.exec_prepared1(
-          QueryUserTokenRecordStatementId, user.c_str());
-
-        data::Token token{};
-        if (result.num())
-        {
-          token = {
-            .userUid = result["user_uid"].as<uint32_t>(),
-            .token = result["token"].as<std::string>()};
-        }
-
-        consumer(View(token));
-      }
-      catch (std::exception& x)
-      {
-        spdlog::error("DataDirector error: {}", x.what());
-        errorConsumer();
-      }
-    });
+  return iterator->second.get_future();
 }
-
-void DataDirector::GetUser(
-  uint32_t userUid,
-  const std::function<void(View<data::User>&&)>& consumer,
-  const std::function<void()>& errorConsumer)
-{
-  // Return the user from the cache if possible.
-  if (const auto userIter = _users.find(userUid);
-      userIter != _users.cend())
-  {
-    consumer(View(userIter->second.value));
-    return;
-  }
-
-  _taskLoop.Queue(
-    [this, userUid, consumer, errorConsumer]()
-    {
-      try
-      {
-        pqxx::work query(*_connection);
-
-        // Query and find the user login and the token.
-        const auto result = query.exec_prepared1(QueryUserRecordStatementId, userUid);
-
-        auto& userRecord = _users[userUid];
-        consumer(View(userRecord.value));
-      }
-      catch (std::exception& x)
-      {
-        spdlog::error("DataDirector error: {}", x.what());
-        errorConsumer();
-      }
-    });
-}
-
 } // namespace alicia
