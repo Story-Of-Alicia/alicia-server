@@ -76,7 +76,7 @@ create table if not exists data.item
 
 create table if not exists data.user
 (
-    username      varchar(32) PRIMARY KEY,
+    name      varchar(32) PRIMARY KEY,
     token         text,
     character_uid integer
         REFERENCES data.character (uid)

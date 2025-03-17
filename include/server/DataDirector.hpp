@@ -42,13 +42,15 @@ struct Item
 struct Character
 {
   //!
-  std::string nickName;
+  std::string name;
+  //!
+  std::string status;
   //!
   uint16_t level{};
   //!
   int32_t carrots{};
   //!
-  std::string status;
+  int32_t cash{};
 
   //!
   enum class AgeGroup
@@ -86,7 +88,7 @@ struct Character
     uint16_t legVolume{};
   } appearance{};
 
-  //!
+  //! TODO in db
   std::vector<Item> characterEquipment;
   //!
   std::vector<Item> horseEquipment;
@@ -96,7 +98,7 @@ struct Character
   //!
   DatumUid ranchUid{};
 
-  //!
+  //! TODO in db
   std::vector<DatumUid> horses{};
 };
 
@@ -177,7 +179,7 @@ struct Ranch
 struct User
 {
   DatumUid characterUid;
-  std::string username;
+  std::string name;
   std::string token;
 };
 
@@ -232,9 +234,10 @@ public:
   void EstablishConnection();
 
   //! Neviem este
-  std::future<data::User> GetUser(std::string const &username);
+  std::future<data::User> GetUser(std::string const &name);
 
-  std::future<d
+  //! Ani tu este neviem
+  std::future<data::Character> GetCharacter(DatumUid uid);
 private:
   template<typename T>
   struct Record
@@ -246,6 +249,9 @@ private:
 
   //! username, promise
   std::unordered_map<std::string, std::promise<data::User>> _users;
+
+  //! uid, promise
+  std::unordered_map<DatumUid, std::promise<data::Character>> _characters;
 
   //!
   Settings::DataSource _settings;
