@@ -36,6 +36,7 @@ private:
   };
 
   void QueueUserLoginAccepted(ClientId clientId, const std::string& userName);
+  void QueueUserCreateNickname(ClientId clientId, const std::string& userName);
   void QueueUserLoginRejected(ClientId clientId);
 
   std::unordered_map<ClientId, LoginContext> _clientLogins;

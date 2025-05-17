@@ -35,6 +35,7 @@ LobbyDirector::LobbyDirector(
         && message.constant1 == 281
         && "Game version mismatch");
 
+      _clientCharacters[clientId] = message.loginId;
       _loginHandler.HandleUserLogin(clientId, message);
     });
 
@@ -125,6 +126,31 @@ void LobbyDirector::HandleCreateNicknameOK(
   ClientId clientId,
   const LobbyCommandCreateNicknameOK& createNickname)
 {
+  const auto userName = _clientCharacters[clientId];
+  auto user = _dataDirector.GetUsers().Get(userName);
+
+  if (not user)
+  {
+    return;
+  }
+
+  (*user)().characterUid = 1;
+  auto character = _dataDirector.GetCharacters().Create(1);
+  character->Mutable([&](auto& character)
+  {
+    character.name = createNickname.nickname;
+    character.parts = soa::data::Character::Parts{
+      .modelId = createNickname.character.parts.charId,
+      .mouthId = createNickname.character.parts.mouthSerialId,
+      .faceId = createNickname.character.parts.faceSerialId};
+    character.appearance = soa::data::Character::Appearance{
+      .headSize = createNickname.character.appearance.headSize,
+      .height = createNickname.character.appearance.height,
+      .thighVolume = createNickname.character.appearance.thighVolume,
+      .legVolume = createNickname.character.appearance.legVolume,};
+  });
+
+  _dataDirector.GetCharacters().Save(1);
 }
 
 void LobbyDirector::HandleEnterChannel(

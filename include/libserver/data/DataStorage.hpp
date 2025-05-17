@@ -139,6 +139,19 @@ public:
     return true;
   }
 
+  std::optional<Record<Data>> Create(const Key& key)
+  {
+    auto [recordIter, created] = _entries.try_emplace(key);
+    auto& record = recordIter->second;
+
+    if (not created)
+    {
+      return std::nullopt;
+    }
+
+    return  Record(record.value, record.mutex);
+  }
+
   std::optional<Record<Data>> Get(const Key& key)
   {
     auto [recordIter, created] = _entries.try_emplace(key);
@@ -167,6 +180,11 @@ public:
     }
 
     return records;
+  }
+
+  void Save(const Key& key)
+  {
+    RequestStore(key);
   }
 
   void Tick()

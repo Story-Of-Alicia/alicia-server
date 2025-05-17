@@ -120,7 +120,7 @@ private:
   LoginHandler _loginHandler;
 
   //!
-  std::unordered_map<ClientId, soa::data::Uid> _clientCharacters;
+  std::unordered_map<ClientId, std::string> _clientCharacters;
 };
 
 }
