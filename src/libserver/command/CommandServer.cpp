@@ -159,8 +159,16 @@ void CommandServer::Host(
   const asio::ip::address& address,
   uint16_t port)
 {
-  spdlog::debug("{} server hosted on {}:{}", this->_name, address.to_string(), port);
-  _server.Begin(address, port);
+  _serverThread = std::thread([this, address, port]()
+  {
+    spdlog::debug(
+      "{} server hosted on {}:{}",
+      this->_name,
+      address.to_string(),
+      port);
+
+    _server.Begin(address, port);
+  });
 }
 
 void CommandServer::RegisterCommandHandler(

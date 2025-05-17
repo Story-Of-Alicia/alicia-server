@@ -8,7 +8,6 @@
 #include <libserver/data/DataDefinitions.hpp>
 #include <libserver/data/DataSource.hpp>
 
-#include <pqxx/pqxx>
 
 namespace soa
 {
@@ -20,25 +19,16 @@ public:
   void Initialize(const std::filesystem::path& path);
   void Terminate();
 
-  void RetrieveUser(data::User& user) override;
-
-  void StoreUser(const data::User& user) override;
-
-  void RetrieveCharacter(data::Character& character) override;
-
-  void StoreCharacter(const data::Character& character) override;
-
-  void RetrieveItem(data::Item& item) override;
-
-  void StoreItem(const data::Item& item) override;
-
-  void RetrieveHorse(data::Horse& horse) override;
-
-  void StoreHorse(const data::Horse& horse) override;
-
-  void RetrieveRanch(data::Ranch& ranch) override;
-
-  void StoreRanch(const data::Ranch& ranch) override;
+  void RetrieveUser(std::string name, data::User& user) override;
+  void StoreUser(std::string name, const data::User& user) override;
+  void RetrieveCharacter(data::Uid uid, data::Character& character) override;
+  void StoreCharacter(data::Uid uid, const data::Character& character) override;
+  void RetrieveItem(data::Uid uid, data::Item& item) override;
+  void StoreItem(data::Uid uid, const data::Item& item) override;
+  void RetrieveHorse(data::Uid uid, data::Horse& horse) override;
+  void StoreHorse(data::Uid uid, const data::Horse& horse) override;
+  void RetrieveRanch(data::Uid uid, data::Ranch& ranch) override;
+  void StoreRanch(data::Uid uid, const data::Ranch& ranch) override;
 
 private:
   std::filesystem::path _path;

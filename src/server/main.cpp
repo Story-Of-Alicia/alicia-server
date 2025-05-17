@@ -48,15 +48,15 @@ void TickLoop(
 
     lastTick = timeNow;
 
-    try
+    //try
     {
       task();
     }
-    catch (const std::exception& x)
-    {
-      spdlog::error("Exception in tick loop: {}", x.what());
-      break;
-    }
+    //catch (const std::exception& x)
+    //{
+    //  spdlog::error("Exception in tick loop: {}", x.what());
+    //  break;
+    //}
   }
 }
 
@@ -89,11 +89,11 @@ int main()
   alicia::Settings settings;
   settings.LoadFromFile("resources/settings.json5");
 
+  // Data director.
+  g_dataDirector = std::make_unique<soa::DataDirector>();
+
   const std::jthread dataThread([]()
   {
-    // Data director.
-    g_dataDirector = std::make_unique<soa::DataDirector>();
-
     TickLoop(50, []()
     {
       g_dataDirector->Tick();

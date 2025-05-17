@@ -24,7 +24,7 @@ LobbyDirector::LobbyDirector(
     : _settings(std::move(settings))
     , _server("Lobby")
     , _dataDirector(dataDirector)
-    , _loginHandler(dataDirector, _server)
+    , _loginHandler(*this, _server)
 {
   // LobbyCommandLogin
   _server.RegisterCommandHandler<LobbyCommandLogin>(
@@ -109,9 +109,16 @@ LobbyDirector::LobbyDirector(
   _server.Host(_settings.address, _settings.port);
 }
 
-void LobbyDirector::Tick()
+void LobbyDirector::Tick() { _loginHandler.Tick(); }
+
+soa::DataDirector& LobbyDirector::GetDataDirector()
 {
-  _loginHandler.Tick();
+  return _dataDirector;
+}
+
+Settings::LobbySettings& LobbyDirector::GetSettings()
+{
+  return _settings;
 }
 
 void LobbyDirector::HandleCreateNicknameOK(
@@ -144,14 +151,12 @@ void LobbyDirector::HandleShowInventory(
   ClientId clientId,
   const LobbyCommandShowInventory& showInventory)
 {
-  // _dataDirector.GetUserInventory([](const auto& itemsView)
-  // {
-  //   const auto items = itemsView.Get();
-  //   _queuedInventoryResponses.emplace_back(InventoryResponse{
-  //   .message = LobbyCommandShowInventoryOK {
-  //     .horses = {},
-  //     .items = {}}});
-  // });
+  _server.QueueCommand<LobbyCommandShowInventoryOK>(clientId, CommandId::LobbyShowInventoryOK, []()
+  {
+    return LobbyCommandShowInventoryOK {
+      .items = {},
+      .horses = {}};
+  });
 }
 
 void LobbyDirector::HandleAchievementCompleteList(

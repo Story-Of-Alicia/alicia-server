@@ -29,6 +29,8 @@ public:
   LobbyDirector& operator=(LobbyDirector&&) = delete;
 
   void Tick();
+  soa::DataDirector& GetDataDirector();
+  Settings::LobbySettings& GetSettings();
 
 private:
   //!

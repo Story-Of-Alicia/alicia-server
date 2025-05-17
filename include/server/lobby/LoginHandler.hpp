@@ -10,13 +10,14 @@
 
 namespace alicia
 {
+class LobbyDirector;
 
 //! Login handler.
 class LoginHandler
 {
 public:
   LoginHandler(
-    soa::DataDirector& dataDirector,
+    LobbyDirector& lobbyDirector,
     CommandServer& server);
 
   void Tick();
@@ -44,6 +45,7 @@ private:
   //!
   CommandServer& _server;
   //!
+  LobbyDirector& _lobbyDirector;
   soa::DataDirector& _dataDirector;
 };
 

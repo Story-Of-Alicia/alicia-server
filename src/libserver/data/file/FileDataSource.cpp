@@ -13,7 +13,7 @@ std::filesystem::path ProduceDataPath(
 {
   if (not std::filesystem::exists(root))
     std::filesystem::create_directories(root);
-  return root / filename / ".json";
+  return root / (filename + ".json");
 }
 
 } // namespace anon
@@ -56,10 +56,10 @@ void soa::FileDataSource::Terminate()
   metaFile << meta.dump(2);
 }
 
-void soa::FileDataSource::RetrieveUser(data::User& user)
+void soa::FileDataSource::RetrieveUser(std::string name, data::User& user)
 {
   const std::filesystem::path dataFilePath = ProduceDataPath(
-    _usersPath, user.name());
+    _usersPath, name);
 
   std::ifstream file(dataFilePath);
   if (not file.is_open())
@@ -70,10 +70,10 @@ void soa::FileDataSource::RetrieveUser(data::User& user)
   user.characterUid = json["characterUid"].get<data::Uid>();
 }
 
-void soa::FileDataSource::StoreUser(const data::User& user)
+void soa::FileDataSource::StoreUser(std::string name, const data::User& user)
 {
   const std::filesystem::path userFilePath = ProduceDataPath(
-    _usersPath, user.name());
+    _usersPath, name);
 
   std::ofstream file(userFilePath);
   if (not file.is_open())
@@ -86,10 +86,10 @@ void soa::FileDataSource::StoreUser(const data::User& user)
   file << json.dump(2);
 }
 
-void soa::FileDataSource::RetrieveCharacter(data::Character& character)
+void soa::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& character)
 {
   const std::filesystem::path dataFilePath = ProduceDataPath(
-    _charactersPath, std::format("{}", character.uid()));
+    _charactersPath, std::format("{}", uid));
 
   std::ifstream file(dataFilePath);
   if (not file.is_open())
@@ -98,21 +98,23 @@ void soa::FileDataSource::RetrieveCharacter(data::Character& character)
   const auto json = nlohmann::json::parse(file);
 
   character.name = json["name"].get<std::string>();
+  auto parts = json["parts"];
   character.parts = data::Character::Parts{
-    .modelId = json["modelId"].get<data::Uid>(),
-    .mouthId = json["mouthId"].get<data::Uid>(),
-    .faceId = json["faceId"].get<data::Uid>()};
+    .modelId = parts["modelId"].get<data::Uid>(),
+    .mouthId = parts["mouthId"].get<data::Uid>(),
+    .faceId = parts["faceId"].get<data::Uid>()};
+  auto appearance = json["appearance"];
   character.appearance = data::Character::Appearance{
-    .headSize = json["headSize"].get<uint32_t>(),
-    .height = json["height"].get<uint32_t>(),
-    .thighVolume = json["thighVolume"].get<uint32_t>(),
-    .legVolume = json["legVolume"].get<uint32_t>()};
+    .headSize = appearance["headSize"].get<uint32_t>(),
+    .height = appearance["height"].get<uint32_t>(),
+    .thighVolume = appearance["thighVolume"].get<uint32_t>(),
+    .legVolume = appearance["legVolume"].get<uint32_t>()};
 }
 
-void soa::FileDataSource::StoreCharacter(const data::Character& character)
+void soa::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
 {
   const std::filesystem::path userFilePath = ProduceDataPath(
-    _charactersPath, std::format("{}", character.uid()));
+    _charactersPath, std::format("{}", uid));
 
   std::ofstream file(userFilePath);
   if (not file.is_open())
@@ -139,32 +141,32 @@ void soa::FileDataSource::StoreCharacter(const data::Character& character)
   file << json.dump(2);
 }
 
-void soa::FileDataSource::RetrieveItem(data::Item& item)
+void soa::FileDataSource::RetrieveItem(data::Uid uid, data::Item& item)
 {
 
 }
 
-void soa::FileDataSource::StoreItem(const data::Item& item)
+void soa::FileDataSource::StoreItem(data::Uid uid, const data::Item& item)
 {
 
 }
 
-void soa::FileDataSource::RetrieveHorse(data::Horse& horse)
+void soa::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
 {
 
 }
 
-void soa::FileDataSource::StoreHorse(const data::Horse& horse)
+void soa::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
 {
 
 }
 
-void soa::FileDataSource::RetrieveRanch(data::Ranch& ranch)
+void soa::FileDataSource::RetrieveRanch(data::Uid uid, data::Ranch& ranch)
 {
 
 }
 
-void soa::FileDataSource::StoreRanch(const data::Ranch& ranch)
+void soa::FileDataSource::StoreRanch(data::Uid uid, const data::Ranch& ranch)
 {
 
 }

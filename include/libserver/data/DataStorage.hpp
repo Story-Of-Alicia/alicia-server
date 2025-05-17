@@ -22,15 +22,19 @@ class Record
 public:
   Record(Data& value, std::shared_mutex& mutex)
     : _mutex(mutex)
-    , _exclusiveLock(_mutex)
-    , _sharedLock(_mutex)
+    , _exclusiveLock(_mutex, std::defer_lock)
+    , _sharedLock(_mutex, std::defer_lock)
     , _value(value)
   {}
 
   ~Record()
   {
-    _exclusiveLock.unlock();
+    if (_exclusiveLock.owns_lock())
+      _exclusiveLock.unlock();
+    if (_sharedLock.owns_lock())
+      _sharedLock.unlock();
   }
+
 
   //! Deleted copy constructor.
   Record(const Record&) = delete;
@@ -62,7 +66,8 @@ public:
   //! @return Reference to the data.
   Data& operator()()
   {
-    _exclusiveLock.lock();
+    if (not _exclusiveLock.owns_lock())
+      _exclusiveLock.lock();
     return _value;
   };
 
@@ -98,8 +103,8 @@ class DataStorage
 public:
   using MultipleKeys = std::span<Key>;
 
-  using DataSourceRetrieveListener = std::function<void(Data& data)>;
-  using DataSourceStoreListener = std::function<void(Data& data)>;
+  using DataSourceRetrieveListener = std::function<void(const Key& key, Data& data)>;
+  using DataSourceStoreListener = std::function<void(const Key& key, Data& data)>;
 
   DataStorage(
     const DataSourceRetrieveListener& data_source_retrieve_listener,
@@ -170,7 +175,7 @@ public:
     for (const auto& key : _retrieveQueue)
     {
       auto& entry = _entries[key];
-      _dataSourceRetrieveListener(entry.value);
+      _dataSourceRetrieveListener(key, entry.value);
       entry.available = true;
     }
     _retrieveQueue.clear();
@@ -179,7 +184,7 @@ public:
     for (const auto& key : _storeQueue)
     {
       auto& entry = _entries[key];
-      _dataSourceStoreListener(entry.value);
+      _dataSourceStoreListener(key, entry.value);
     }
     _storeQueue.clear();
   }

@@ -8,7 +8,7 @@
 #include "DataDefinitions.hpp"
 #include "DataStorage.hpp"
 
-#include "pq/PqDataSource.hpp"
+//#include "pq/PqDataSource.hpp"
 #include "file/FileDataSource.hpp"
 
 namespace soa

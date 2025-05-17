@@ -27,15 +27,15 @@ add_library(alicia-libserver STATIC
         src/libserver/command/proto/RaceMessageDefines.cpp
         src/libserver/command/proto/RanchMessageDefines.cpp
         src/libserver/data/DataDirector.cpp
-        src/libserver/data/pq/PqDataSource.cpp
-        src/libserver/data/pq/SqlUtils.cpp
+        #src/libserver/data/pq/PqDataSource.cpp
+        #src/libserver/data/pq/SqlUtils.cpp
         src/libserver/data/file/FileDataSource.cpp
         src/libserver/data/file/FileDataSource.cpp)
 
 target_include_directories(alicia-libserver
         PUBLIC include/)
 target_link_libraries(alicia-libserver
-        PUBLIC project-properties Boost::headers spdlog::spdlog nlohmann_json::nlohmann_json  libpqxx::pqxx)
+        PUBLIC project-properties Boost::headers spdlog::spdlog nlohmann_json::nlohmann_json)
 
 # Alicia server executable
 add_executable(alicia-server

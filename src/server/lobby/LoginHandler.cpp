@@ -4,16 +4,18 @@
 
 #include "server/lobby/LoginHandler.hpp"
 
+#include "server/lobby/LobbyDirector.hpp"
 #include "spdlog/spdlog.h"
 
 namespace alicia
 {
 
 LoginHandler::LoginHandler(
-  soa::DataDirector& dataDirector,
+  LobbyDirector& lobbyDirector,
   CommandServer& server)
   : _server(server)
-  , _dataDirector(dataDirector)
+  , _lobbyDirector(lobbyDirector)
+  , _dataDirector(_lobbyDirector.GetDataDirector())
 {
 }
 
@@ -61,34 +63,37 @@ void LoginHandler::Tick()
     const ClientId clientId = _clientLoginResponseQueue.front();
     const auto& loginContext = _clientLogins[clientId];
 
-    // Load the character.
-
-    auto user = *_dataDirector.GetUsers().Get(loginContext.userName);
-    auto character = _dataDirector.GetCharacters().Get(user().characterUid());
-    if (not character)
     {
-      continue;
+      // Load the character.
+
+      auto user = *_dataDirector.GetUsers().Get(loginContext.userName);
+      auto character = _dataDirector.GetCharacters().Get(user().characterUid());
+      if (not character)
+      {
+        continue;
+      }
+
+      // Load the character's equipment, horses and ranch.
+
+      const auto characterEquipment = _dataDirector.GetItems().Get(
+        (*character)().characterEquipment());
+      const auto horseEquipment = _dataDirector.GetItems().Get(
+        (*character)().horseEquipment());
+
+      const auto horses = _dataDirector.GetHorses().Get((*character)().horses());
+
+      const auto ranch = _dataDirector.GetRanches().Get((*character)().ranchUid());
+
+      if (not characterEquipment
+        || not horseEquipment
+        || not horses
+        || not ranch)
+      {
+        continue;
+      }
     }
 
-    // Load the character's equipment, horses and ranch.
-
-    const auto characterEquipment = _dataDirector.GetItems().Get(
-      (*character)().characterEquipment());
-    const auto horseEquipment = _dataDirector.GetItems().Get(
-      (*character)().horseEquipment());
-
-    const auto horses = _dataDirector.GetHorses().Get((*character)().horses());
-
-    const auto ranch = _dataDirector.GetRanches().Get((*character)().ranchUid());
-
-    if (not characterEquipment
-      || not horseEquipment
-      || not horses
-      || not ranch)
-    {
-      continue;
-    }
-
+    _clientLoginResponseQueue.pop();
     QueueUserLoginAccepted(clientId, loginContext.userName);
   }
 }
@@ -139,7 +144,7 @@ void LoginHandler::QueueUserLoginAccepted(
   _server.QueueCommand<LobbyCommandLoginOK>(
     clientId,
     CommandId::LobbyLoginOK,
-    [userName, this]()
+    [userName, clientId, this]()
     {
       auto user = *_dataDirector.GetUsers().Get(userName);
       auto character = *_dataDirector.GetCharacters().Get(user().characterUid());
@@ -153,9 +158,158 @@ void LoginHandler::QueueUserLoginAccepted(
 
       auto ranch = *_dataDirector.GetRanches().Get(character().ranchUid());
 
+      const auto time = UnixTimeToFileTime(std::chrono::system_clock::now());
+
+      _server.SetCode(clientId, {});
+
       // Transform the server data to alicia protocol data.
       return LobbyCommandLoginOK{
-      };
+        .lobbyTime = {
+          .dwLowDateTime = static_cast<uint32_t>(time.dwLowDateTime),
+          .dwHighDateTime = static_cast<uint32_t>(time.dwHighDateTime)},
+        .val0 = 0xCA794,
+
+        .selfUid = user().characterUid(),
+        .nickName = character().name(),
+        .motd = "Welcome to SoA!",
+        .profileGender = Gender::Unspecified,
+        .status = "",
+
+        .characterEquipment = {},
+        .horseEquipment = {},
+
+        .level = 0,
+        .carrots = 0,
+        .val1 = 0x6130,
+        .val2 = 0xFF,
+        .val3 = 0xFF,
+
+        .optionType = OptionType::Value,
+        .valueOptions = 0x64,
+
+        .ageGroup = AgeGroup::Adult,
+        .val4 = 0,
+
+        .val5 =
+          {{0x18, {{2, 1}}},
+           {0x1F, {{2, 1}}},
+           {0x23, {{2, 1}}},
+           {0x29, {{2, 1}}},
+           {0x2A, {{2, 1}}},
+           {0x2B, {{2, 1}}},
+           {0x2E, {{2, 1}}}},
+
+        .val6 = "val6",
+
+        .address = _lobbyDirector.GetSettings().ranchAdvAddress.to_uint(),
+        .port = _lobbyDirector.GetSettings().ranchAdvPort,
+
+        .scramblingConstant = 0,
+
+        .character = {
+          .parts = {
+            .charId = static_cast<uint8_t>(character().parts.modelId()),
+            .mouthSerialId = static_cast<uint8_t>(character().parts.mouthId()),
+            .faceSerialId = static_cast<uint8_t>(character().parts.faceId()),
+            .val0 = 255},
+           .appearance = {
+            .val0 = 0xFFFF,
+            .headSize = 1,
+            .height = 2,
+            .thighVolume = 2,
+            .legVolume = 2,
+            .val1 = 0xFF}},
+          .horse =
+            {.uid = 2,
+             .tid = 0x4e21,
+             .name = "default",
+             .parts = {.skinId = 0x2, .maneId = 0x3, .tailId = 0x3, .faceId = 0x3},
+              .appearance =
+                {.scale = 0x4,
+                  .legLength = 0x4,
+                  .legVolume = 0x5,
+                  .bodyLength = 0x3,
+                  .bodyVolume = 0x4},
+              .stats =
+                {
+                  .agility = 9,
+                  .spirit = 9,
+                  .speed = 9,
+                  .strength = 9,
+                  .ambition = 0x13
+                },
+              .rating = 0,
+              .clazz = 0x15,
+              .val0 = 1,
+              .grade = 5,
+              .growthPoints = 2,
+              .vals0 =
+                {
+                  .stamina = 0x7d0,
+                  .attractiveness = 0x3c,
+                  .hunger = 0x21c,
+                  .val0 = 0x00,
+                  .val1 = 0x03E8,
+                  .val2 = 0x00,
+                  .val3 = 0x00,
+                  .val4 = 0x00,
+                  .val5 = 0x03E8,
+                  .val6 = 0x1E,
+                  .val7 = 0x0A,
+                  .val8 = 0x0A,
+                  .val9 = 0x0A,
+                  .val10 = 0x00,
+                },
+              .vals1 =
+                {
+                  .val0 = 0x00,
+                  .val1 = 0x00,
+                  .val2 = 0xb8a167e4,
+                  .val3 = 0x02,
+                  .val4 = 0x00,
+                  .classProgression = 0x32e7d,
+                  .val5 = 0x00,
+                  .val6 = 0x00,
+                  .val7 = 0x00,
+                  .val8 = 0x00,
+                  .val9 = 0x00,
+                  .val10 = 0x04,
+                  .val11 = 0x00,
+                  .val12 = 0x00,
+                  .val13 = 0x00,
+                  .val14 = 0x00,
+                  .val15 = 0x01
+                },
+              .mastery =
+                {
+                  .magic = 0x1fe,
+                  .jumping = 0x421,
+                  .sliding = 0x5f8,
+                  .gliding = 0xcfa4,
+                },
+              .val16 = 0xb8a167e4,
+              .val17 = 0},
+          .val7 =
+            {.values =
+               {{0x6, 0x0},
+                {0xF, 0x4},
+                {0x1B, 0x2},
+                {0x1E, 0x0},
+                {0x1F, 0x0},
+                {0x25, 0x7530},
+                {0x35, 0x4},
+                {0x42, 0x2},
+                {0x43, 0x4},
+                {0x45, 0x0}}},
+          .val8 = 0xE06,
+          .val11 = {4, 0x2B, 4},
+          .val14 = 0xca1b87db,
+          .val15 = {.val1 = 1},
+          .val16 = 4,
+          .val17 = {.mountUid = 2, .val1 = 0x12, .val2 = 0x16e67e4},
+          .val18 = 0x3a,
+          .val19 = 0x38e,
+          .val20 = 0x1c6};
     });
 }
 

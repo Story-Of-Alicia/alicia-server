@@ -9,23 +9,53 @@ namespace soa
 
 DataDirector::DataDirector()
     : _userStorage(
-        [&](auto& user) { _dataSource->StoreUser(user); },
-        [&](auto& user) { _dataSource->RetrieveUser(user); })
+        [&](const auto& key, auto& user)
+        {
+          _dataSource->RetrieveUser(key, user);
+        },
+        [&](const auto& key, auto& user)
+        {
+          _dataSource->StoreUser(key, user);
+        })
     , _characterStorage(
-        [&](auto& character) { _dataSource->StoreCharacter(character); },
-        [&](auto& character) { _dataSource->RetrieveCharacter(character); })
+        [&](const auto& key, auto& character)
+        {
+          _dataSource->RetrieveCharacter(key, character);
+        },
+        [&](const auto& key, auto& character)
+        {
+          _dataSource->StoreCharacter(key, character);
+        })
     , _itemStorage(
-        [&](auto& item) { _dataSource->StoreItem(item); },
-        [&](auto& item) { _dataSource->RetrieveItem(item); })
+        [&](const auto& key, auto& item)
+        {
+          _dataSource->RetrieveItem(key, item);
+        },
+        [&](const auto& key, auto& item)
+        {
+          _dataSource->StoreItem(key, item);
+        })
     , _horseStorage(
-        [&](auto& horse) { _dataSource->StoreHorse(horse); },
-        [&](auto& horse) { _dataSource->RetrieveHorse(horse); })
+        [&](const auto& key, auto& horse)
+        {
+          _dataSource->RetrieveHorse(key, horse);
+        },
+        [&](const auto& key, auto& horse)
+        {
+          _dataSource->StoreHorse(key, horse);
+        })
     , _ranchStorage(
-        [&](auto& ranch) { _dataSource->StoreRanch(ranch); },
-        [&](auto& ranch) { _dataSource->RetrieveRanch(ranch); })
+        [&](const auto& key, auto& ranch)
+        {
+          _dataSource->RetrieveRanch(key, ranch);
+        },
+        [&](const auto& key, auto& ranch)
+        {
+          _dataSource->StoreRanch(key, ranch);
+        })
 {
   _dataSource = std::make_unique<FileDataSource>();
-  _dataSource->Initialize("./");
+  _dataSource->Initialize(".");
 }
 
 DataDirector::~DataDirector()
@@ -37,6 +67,9 @@ void DataDirector::Tick()
 {
   _userStorage.Tick();
   _characterStorage.Tick();
+  _itemStorage.Tick();
+  _horseStorage.Tick();
+  _ranchStorage.Tick();
 }
 
 DataDirector::UserStorage& DataDirector::GetUsers()
