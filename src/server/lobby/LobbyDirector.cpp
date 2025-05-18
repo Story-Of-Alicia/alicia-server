@@ -29,7 +29,7 @@ LobbyDirector::LobbyDirector(soa::DataDirector& dataDirector, Settings::LobbySet
     CommandId::LobbyLogin,
     [this](ClientId clientId, const auto& message)
     {
-      assert(message.constant0 == 50 && message.constant1 == 281 && "Game version mismatch");
+      //assert(message.constant0 == 50 && message.constant1 == 281 && "Game version mismatch");
 
       _clientUsers[clientId] = message.loginId;
       _loginHandler.HandleUserLogin(clientId, message);
@@ -150,15 +150,6 @@ void LobbyDirector::HandleCreateNicknameOK(
   character->Mutable([&](auto& character)
   {
     character.name = createNickname.nickname;
-    character.parts = soa::data::Character::Parts{
-      .modelId = createNickname.character.parts.charId,
-      .mouthId = createNickname.character.parts.mouthSerialId,
-      .faceId = createNickname.character.parts.faceSerialId};
-    character.appearance = soa::data::Character::Appearance{
-      .headSize = createNickname.character.appearance.headSize,
-      .height = createNickname.character.appearance.height,
-      .thighVolume = createNickname.character.appearance.thighVolume,
-      .legVolume = createNickname.character.appearance.legVolume,};
   });
 
   _dataDirector.GetCharacters().Save(1);

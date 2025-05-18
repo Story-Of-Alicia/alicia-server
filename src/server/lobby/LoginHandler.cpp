@@ -42,7 +42,7 @@ void LoginHandler::Tick()
     user->Immutable([&isAuthenticated, &hasCharacter, &loginContext](auto& user)
     {
       isAuthenticated = user.token() == loginContext.userToken;
-      hasCharacter = user.characterUid() != soa::data::InvalidUid;
+      //hasCharacter = user.characterUid() != soa::data::InvalidUid;
     });
 
     // If the user succeeds in authentication queue user for further processing.
@@ -209,19 +209,7 @@ void LoginHandler::QueueUserLoginAccepted(const ClientId clientId, const std::st
 
         .scramblingConstant = 0,
 
-        .character =
-          {.parts =
-             {.charId = static_cast<uint8_t>(character().parts.modelId()),
-              .mouthSerialId = static_cast<uint8_t>(character().parts.mouthId()),
-              .faceSerialId = static_cast<uint8_t>(character().parts.faceId()),
-              .val0 = 255},
-           .appearance =
-             {.val0 = 0xFFFF,
-              .headSize = 1,
-              .height = 2,
-              .thighVolume = 2,
-              .legVolume = 2,
-              .val1 = 0xFF}},
+        .character ={},
         .horse =
           {.uid = 2,
            .tid = 0x4e21,

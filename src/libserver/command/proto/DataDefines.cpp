@@ -100,58 +100,23 @@ void MacroOptions::Read(MacroOptions& value, SourceStream& buffer)
 DEFINE_WRITER_READER(MacroOptions, MacroOptions::Write, MacroOptions::Read)
 
 
-void Character::Parts::Write(const Parts& value, SinkStream& buffer)
-{
-    buffer.Write(value.charId)
-        .Write(value.mouthSerialId)
-        .Write(value.faceSerialId)
-        .Write(value.val0);
-}
-
-void Character::Parts::Read(Parts& value, SourceStream& buffer)
-{
-    buffer.Read(value.charId)
-        .Read(value.mouthSerialId)
-        .Read(value.faceSerialId)
-        .Read(value.val0);
-}
-
-DEFINE_WRITER_READER(Character::Parts, Character::Parts::Write, Character::Parts::Read)
-
-
-void Character::Appearance::Write(const Appearance& value, SinkStream& buffer)
-{
-    buffer.Write(value.val0)
-        .Write(value.headSize)
-        .Write(value.height)
-        .Write(value.thighVolume)
-        .Write(value.legVolume)
-        .Write(value.val1);
-}
-
-void Character::Appearance::Read(Appearance& value, SourceStream& buffer)
-{
-    buffer.Read(value.val0)
-        .Read(value.headSize)
-        .Read(value.height)
-        .Read(value.thighVolume)
-        .Read(value.legVolume)
-        .Read(value.val1);
-}
-
-DEFINE_WRITER_READER(Character::Appearance, Character::Appearance::Write, Character::Appearance::Read)
-
 
 void Character::Write(const Character& value, SinkStream& buffer)
 {
-    buffer.Write(value.parts)
-        .Write(value.appearance);
+  buffer.Write(value.member0)
+    .Write(value.member1)
+    .Write(value.member2)
+    .Write(value.member3)
+    .Write(value.member4);
 }
 
 void Character::Read(Character& value, SourceStream& buffer)
 {
-    buffer.Read(value.parts)
-        .Read(value.appearance);
+  buffer.Read(value.member0)
+    .Read(value.member1)
+    .Read(value.member2)
+    .Read(value.member3)
+    .Read(value.member4);
 }
 
 DEFINE_WRITER_READER(Character, Character::Write, Character::Read)

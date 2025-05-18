@@ -109,48 +109,22 @@ DECLARE_WRITER_READER(MacroOptions);
 //!
 struct Character
 {
-  //! Used to build character from the _ClientCharDefaultPartInfo table.
-  struct Parts
-  {
-    //!
-    uint8_t charId{ 10 };
-    //! FaceId
-    uint8_t mouthSerialId{};
-    //! EyeId
-    uint8_t faceSerialId{};
-    //!
-    uint8_t val0{};
-
-    static void Write(const Parts& value, SinkStream& buffer);
-    static void Read(Parts& value, SourceStream& buffer);
-  } parts{};
-
   //!
-  struct Appearance
-  {
-    //!
-    uint16_t val0{};
-    //! FigFace
-    uint16_t headSize{};
-    //! FigTall
-    uint16_t height{};
-    //! FigVolume
-    uint16_t thighVolume{};
-    //! FigShape
-    uint16_t legVolume{};
-    //!
-    uint16_t val1{};
+  uint32_t member0{0};
+  //!
+  uint32_t member1{0};
+  //!
+  uint8_t member2{0};
+  //!
+  uint32_t member3{0};
+  //!
+  uint16_t member4{0};
 
-    static void Write(const Appearance& value, SinkStream& buffer);
-    static void Read(Appearance& value, SourceStream& buffer);
-  } appearance{};
 
   static void Write(const Character& value, SinkStream& buffer);
   static void Read(Character& value, SourceStream& buffer);
 };
 
-DECLARE_WRITER_READER(Character::Parts);
-DECLARE_WRITER_READER(Character::Appearance);
 DECLARE_WRITER_READER(Character);
 
 //!
