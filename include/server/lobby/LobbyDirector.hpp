@@ -122,7 +122,7 @@ private:
   LoginHandler _loginHandler;
 
   //!
-  std::unordered_map<ClientId, std::string> _clientCharacters;
+  std::unordered_map<ClientId, std::string> _clientUsers;
 };
 
 }

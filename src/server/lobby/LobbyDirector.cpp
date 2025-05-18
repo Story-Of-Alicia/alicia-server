@@ -31,7 +31,7 @@ LobbyDirector::LobbyDirector(soa::DataDirector& dataDirector, Settings::LobbySet
     {
       assert(message.constant0 == 50 && message.constant1 == 281 && "Game version mismatch");
 
-      _clientCharacters[clientId] = message.loginId;
+      _clientUsers[clientId] = message.loginId;
       _loginHandler.HandleUserLogin(clientId, message);
     });
 
@@ -137,7 +137,7 @@ void LobbyDirector::HandleCreateNicknameOK(
   ClientId clientId,
   const LobbyCommandCreateNicknameOK& createNickname)
 {
-  const auto userName = _clientCharacters[clientId];
+  const auto userName = _clientUsers[clientId];
   auto user = _dataDirector.GetUsers().Get(userName);
 
   if (not user)
@@ -197,9 +197,22 @@ void LobbyDirector::HandleShowInventory(
 }
 
 void LobbyDirector::HandleAchievementCompleteList(
-  ClientId clientId,
-  const LobbyCommandAchievementCompleteList& achievementCompleteList)
+ ClientId clientId,
+ const LobbyCommandAchievementCompleteList& achievementCompleteList)
 {
+  const auto& userName = _clientUsers[clientId];
+  auto user = *_dataDirector.GetUsers().Get(userName);
+
+  const LobbyCommandAchievementCompleteListOK response{
+    .unk0 = user().characterUid()};
+
+ _server.QueueCommand<LobbyCommandAchievementCompleteListOK>(
+   clientId,
+   CommandId::LobbyAchievementCompleteListOK,
+   [response]()
+   {
+     return response;
+   });
 }
 
 void LobbyDirector::HandleRequestLeagueInfo(
@@ -212,18 +225,56 @@ void LobbyDirector::HandleRequestQuestList(
   ClientId clientId,
   const LobbyCommandRequestQuestList& requestQuestList)
 {
+  const auto& userName = _clientUsers[clientId];
+  auto user = *_dataDirector.GetUsers().Get(userName);
+
+  const LobbyCommandRequestQuestListOK response{
+    .unk0 = user().characterUid()};
+
+  _server.QueueCommand<decltype(response)>(
+    clientId,
+    CommandId::LobbyAchievementCompleteListOK,
+    [response]()
+    {
+      return response;
+    });
 }
 
 void LobbyDirector::HandleRequestDailyQuestList(
   ClientId clientId,
   const LobbyCommandRequestDailyQuestList& requestQuestList)
 {
+  const auto& userName = _clientUsers[clientId];
+  auto user = *_dataDirector.GetUsers().Get(userName);
 
+  const LobbyCommandRequestDailyQuestListOK response{
+    .val0 = user().characterUid()};
+
+  _server.QueueCommand<decltype(response)>(
+    clientId,
+    CommandId::LobbyAchievementCompleteListOK,
+    [response]()
+    {
+      return response;
+    });
 }
 void LobbyDirector::HandleRequestSpecialEventList(
   ClientId clientId,
   const LobbyCommandRequestSpecialEventList& requestQuestList)
 {
+  const auto& userName = _clientUsers[clientId];
+  auto user = *_dataDirector.GetUsers().Get(userName);
+
+  const LobbyCommandRequestSpecialEventListOK response{
+    .unk0 = user().characterUid()};
+
+  _server.QueueCommand<decltype(response)>(
+    clientId,
+    CommandId::LobbyAchievementCompleteListOK,
+    [response]()
+    {
+      return response;
+    });
 }
 
 void LobbyDirector::HandleEnterRanch(

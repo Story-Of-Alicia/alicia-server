@@ -132,10 +132,10 @@ void soa::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& c
 
   // character appearance
   nlohmann::json appearance;
-  parts["headSize"] = character.appearance.headSize();
-  parts["height"] = character.appearance.height();
-  parts["thighVolume"] = character.appearance.thighVolume();
-  parts["legVolume"] = character.appearance.legVolume();
+  appearance["headSize"] = character.appearance.headSize();
+  appearance["height"] = character.appearance.height();
+  appearance["thighVolume"] = character.appearance.thighVolume();
+  appearance["legVolume"] = character.appearance.legVolume();
   json["appearance"] = appearance;
 
   file << json.dump(2);
