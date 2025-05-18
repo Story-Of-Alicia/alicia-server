@@ -217,10 +217,10 @@ void LoginHandler::QueueUserLoginAccepted(const ClientId clientId, const std::st
               .val0 = 255},
            .appearance =
              {.val0 = 0xFFFF,
-              .headSize = 1,
-              .height = 2,
-              .thighVolume = 2,
-              .legVolume = 2,
+              .headSize = static_cast<uint8_t>(character().appearance.headSize()),
+              .height = static_cast<uint8_t>(character().appearance.height()),
+              .thighVolume = static_cast<uint8_t>(character().appearance.legVolume()),
+              .legVolume = static_cast<uint8_t>(character().appearance.thighVolume()),
               .val1 = 0xFF}},
         .horse =
           {.uid = 2,
@@ -295,7 +295,7 @@ void LoginHandler::QueueUserLoginAccepted(const ClientId clientId, const std::st
               {0x42, 0x2},
               {0x43, 0x4},
               {0x45, 0x0}}},
-        .val8 = 0xE06,
+        .val8 = 0b0000'0000'0000'0000'0000'0000'0000'0010,
         .val11 = {4, 0x2B, 4},
         .val14 = 0xca1b87db,
         .val15 = {.val1 = 1},

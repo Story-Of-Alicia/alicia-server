@@ -118,6 +118,7 @@ struct LobbyCommandLoginOK
   } val7{};
 
   // std::bitset
+  //! Bit 2: Has played before
   uint32_t val8{};
 
   struct Struct1

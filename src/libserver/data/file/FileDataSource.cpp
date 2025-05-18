@@ -25,6 +25,12 @@ void soa::FileDataSource::Initialize(const std::filesystem::path& path)
   create_directories(_usersPath);
   _charactersPath = _path / "characters";
   create_directories(_charactersPath);
+  _horsesPath = _path / "horses";
+  create_directories(_horsesPath);
+  _ranchesPath = _path / "ranches";
+  create_directories(_ranchesPath);
+  _itemsPath = _path / "items";
+  create_directories(_itemsPath);
   _metaFilePath = _path/ "meta.json";
 
   const std::filesystem::path metaFilePath = ProduceDataPath(
@@ -143,30 +149,91 @@ void soa::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& c
 
 void soa::FileDataSource::RetrieveItem(data::Uid uid, data::Item& item)
 {
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _itemsPath, std::format("{}", uid));
+
+  std::ifstream file(dataFilePath);
+  if (not file.is_open())
+    return;
+
+  const auto json = nlohmann::json::parse(file);
+
+  item.uid = json["uid"].get<data::Uid>();
+  item.tid = json["tid"].get<data::Tid>();
+  item.count = json["count"].get<uint32_t>();
+  item.slot = static_cast<soa::data::Item::Slot>(json["slot"].get<int32_t>());
 
 }
 
 void soa::FileDataSource::StoreItem(data::Uid uid, const data::Item& item)
 {
+  const std::filesystem::path userFilePath = ProduceDataPath(
+  _itemsPath, std::format("{}", uid));
 
+  std::ofstream file(userFilePath);
+  if (not file.is_open())
+    return;
+
+  nlohmann::json json;
+  json["uid"] = item.uid();
+  json["tid"] = item.tid();
+  json["count"] = item.count();
+  json["slot"] = item.slot();
+  file<<json.dump(2);
 }
 
 void soa::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
 {
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _horsesPath, std::format("{}", uid));
 
+  std::ifstream file(dataFilePath);
+  if (not file.is_open())
+    return;
+
+  const auto json = nlohmann::json::parse(file);
+
+  horse.name = json["name"].get<std::string>();
 }
 
 void soa::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
 {
+  const std::filesystem::path userFilePath = ProduceDataPath(
+    _horsesPath, std::format("{}", uid));
 
+  std::ofstream file(userFilePath);
+  if (not file.is_open())
+    return;
+
+  nlohmann::json json;
+  json["name"] = horse.name();
+  file<<json.dump(2);
 }
 
 void soa::FileDataSource::RetrieveRanch(data::Uid uid, data::Ranch& ranch)
 {
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _ranchesPath, std::format("{}", uid));
 
+  std::ifstream file(dataFilePath);
+  if (not file.is_open())
+    return;
+
+  const auto json = nlohmann::json::parse(file);
+
+  ranch.name = json["name"].get<std::string>();
 }
 
 void soa::FileDataSource::StoreRanch(data::Uid uid, const data::Ranch& ranch)
 {
+  const std::filesystem::path userFilePath = ProduceDataPath(
+  _ranchesPath, std::format("{}", uid));
 
+  std::ofstream file(userFilePath);
+  if (not file.is_open())
+    return;
+
+  nlohmann::json json;
+  json["name"] = ranch.name();
+  file<<json.dump(2);
 }

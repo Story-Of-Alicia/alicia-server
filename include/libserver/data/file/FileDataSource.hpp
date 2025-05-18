@@ -34,6 +34,9 @@ private:
   std::filesystem::path _path;
   std::filesystem::path _usersPath;
   std::filesystem::path _charactersPath;
+  std::filesystem::path _horsesPath;
+  std::filesystem::path _ranchesPath;
+  std::filesystem::path _itemsPath;
   std::filesystem::path _metaFilePath;
 
   uint32_t _sequentialUid = 0;
