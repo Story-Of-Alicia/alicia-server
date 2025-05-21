@@ -219,8 +219,8 @@ void LoginHandler::QueueUserLoginAccepted(const ClientId clientId, const std::st
              {.val0 = 0xFFFF,
               .headSize = static_cast<uint8_t>(character().appearance.headSize()),
               .height = static_cast<uint8_t>(character().appearance.height()),
-              .thighVolume = static_cast<uint8_t>(character().appearance.legVolume()),
-              .legVolume = static_cast<uint8_t>(character().appearance.thighVolume()),
+              .thighVolume = static_cast<uint8_t>(character().appearance.thighVolume()),
+              .legVolume = static_cast<uint8_t>(character().appearance.legVolume()),
               .val1 = 0xFF}},
         .horse =
           {.uid = 2,
