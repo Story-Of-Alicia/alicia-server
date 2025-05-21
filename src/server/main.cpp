@@ -15,6 +15,8 @@
 
 #ifdef WIN32
 #include <windows.h>
+#else
+#include <signal.h>
 #endif
 
 namespace
@@ -87,6 +89,17 @@ BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
       return FALSE;
   }
 }
+#else
+
+void
+handler(int sig, siginfo_t *info, void *ucontext)
+{
+  if (sig == SIGTERM)
+  {
+    spdlog::debug("SIGTERM caught, exiting");
+    shouldRun = false;
+  }
+}
 
 #endif
 
@@ -97,6 +110,15 @@ int main()
 #ifdef WIN32
   // Register the control handler.
   SetConsoleCtrlHandler(CtrlHandler, TRUE);
+#else
+  struct sigaction act {};
+
+  act.sa_flags = SA_SIGINFO;
+  act.sa_sigaction = &handler;
+  if (sigaction(SIGTERM, &act, nullptr) == -1) {
+    perror("sigaction");
+    exit(EXIT_FAILURE);
+  }
 #endif
 
   serverStartupTime = std::chrono::steady_clock::now();
