@@ -12,7 +12,7 @@ add_subdirectory(3rd-party SYSTEM)
 # Project properties interface library
 add_library(project-properties INTERFACE)
 target_compile_features(project-properties
-        INTERFACE cxx_std_20)
+        INTERFACE cxx_std_23)
 
 # Alicia server library
 add_library(alicia-libserver STATIC
