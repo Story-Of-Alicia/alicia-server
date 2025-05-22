@@ -242,16 +242,16 @@ void Horse::Write(const Horse& value, SinkStream& buffer)
         .Write(value.vals1.val4)
         .Write(value.vals1.classProgression)
         .Write(value.vals1.val5)
-        .Write(value.vals1.val6)
-        .Write(value.vals1.val7)
-        .Write(value.vals1.val8)
+        .Write(value.vals1.potentialLevel)
+        .Write(value.vals1.potentialState)
+        .Write(value.vals1.potentialValue)
         .Write(value.vals1.val9)
-        .Write(value.vals1.val10)
-        .Write(value.vals1.val11)
+        .Write(value.vals1.luck)
+        .Write(value.vals1.luckState)
         .Write(value.vals1.val12)
-        .Write(value.vals1.val13)
+        .Write(value.vals1.fatigue)
         .Write(value.vals1.val14)
-        .Write(value.vals1.val15);
+        .Write(value.vals1.emblem);
 
     buffer.Write(value.mastery);
 
@@ -297,16 +297,16 @@ void Horse::Read(Horse& value, SourceStream& buffer)
         .Read(value.vals1.val4)
         .Read(value.vals1.classProgression)
         .Read(value.vals1.val5)
-        .Read(value.vals1.val6)
-        .Read(value.vals1.val7)
-        .Read(value.vals1.val8)
+        .Read(value.vals1.potentialLevel)
+        .Read(value.vals1.potentialState)
+        .Read(value.vals1.potentialValue)
         .Read(value.vals1.val9)
-        .Read(value.vals1.val10)
-        .Read(value.vals1.val11)
+        .Read(value.vals1.luck)
+        .Read(value.vals1.luckState)
         .Read(value.vals1.val12)
-        .Read(value.vals1.val13)
+        .Read(value.vals1.fatigue)
         .Read(value.vals1.val14)
-        .Read(value.vals1.val15);
+        .Read(value.vals1.emblem);
 
     buffer.Read(value.mastery);
 

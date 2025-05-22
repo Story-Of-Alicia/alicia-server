@@ -244,18 +244,18 @@ struct Horse
     uint32_t classProgression{};
     uint32_t val5{};
 
-    uint8_t val6{};
-    uint8_t val7{};
-    uint8_t val8{};
+    uint8_t potentialLevel{};
+    uint8_t potentialState{};
+    uint8_t potentialValue{};
     uint8_t val9{};
 
-    uint8_t val10{};
-    uint8_t val11{};
+    uint8_t luck{};
+    uint8_t luckState{};
     uint8_t val12{};
 
-    uint16_t val13{};
+    uint16_t fatigue{};
     uint16_t val14{};
-    uint16_t val15{};
+    uint16_t emblem{};
   } vals1{};
 
   struct Mastery

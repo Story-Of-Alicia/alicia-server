@@ -244,16 +244,16 @@ void RanchDirector::HandleEnterRanch(
             .val4 = 0x00,
             .classProgression = 0x32e7d,
             .val5 = 0x00,
-            .val6 = 0x00,
-            .val7 = 0x00,
-            .val8 = 0x00,
+            .potentialLevel = 0x00,
+            .potentialState = 0x00,
+            .potentialValue = 0x00,
             .val9 = 0x00,
-            .val10 = 0x04,
-            .val11 = 0x00,
+            .luck = 0x04,
+            .luckState = 0x00,
             .val12 = 0x00,
-            .val13 = 0x00,
+            .fatigue = 0x00,
             .val14 = 0x00,
-            .val15 = 0x01
+            .emblem = 0x01
           },
         .mastery =
           {
@@ -263,7 +263,7 @@ void RanchDirector::HandleEnterRanch(
             .gliding = 0xcfa4,
           },
         .val16 = 0xb8a167e4,
-        .val17 = 0
+        .val17 = 0x186A0
       },
       .characterEquipment = {},
       .playerRelatedThing = {
