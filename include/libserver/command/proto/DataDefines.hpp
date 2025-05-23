@@ -245,12 +245,12 @@ struct Horse
     uint32_t val5{};
 
     uint8_t potentialLevel{};
-    uint8_t potentialState{};
+    uint8_t hasPotential{};
     uint8_t potentialValue{};
     uint8_t val9{};
 
     uint8_t luck{};
-    uint8_t luckState{};
+    uint8_t hasLuck{};
     uint8_t val12{};
 
     uint16_t fatigue{};
