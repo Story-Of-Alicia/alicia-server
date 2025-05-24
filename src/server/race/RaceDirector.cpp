@@ -57,6 +57,25 @@ void RaceDirector::Terminate()
 
 void RaceDirector::Tick() {}
 
+/*
+
+Rooms will not be in data director.
+
+  struct Room
+  {
+    std::string name;
+    std::string description;
+    uint8_t unk0;
+    uint8_t unk1;
+    uint8_t unk2;
+    uint16_t missionId;
+    uint8_t unk4;
+    uint16_t bitset;
+    uint8_t unk6;
+  };
+
+*/
+
 void RaceDirector::HandleEnterRoom(ClientId clientId, const RaceCommandEnterRoom& enterRoom)
 {
   /*assert(enterRoom.otp == 0x44332211);
