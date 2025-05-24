@@ -21,6 +21,8 @@ FROM ubuntu:latest
 ARG BUILDER_REPO_PATH
 
 LABEL author="Serkan Sahin" maintainer="dev@storyofalicia.com"
+LABEL org.opencontainers.image.source=https://github.com/Story-Of-Alicia/alicia-server
+LABEL org.opencontainers.image.description="Dedicated server implementation for the Alicia game series"
 
 RUN groupadd -r alicia && useradd --no-log-init -r -g alicia alicia
 USER alicia
