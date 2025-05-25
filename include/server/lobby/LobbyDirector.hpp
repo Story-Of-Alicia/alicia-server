@@ -1,33 +1,56 @@
-//
-// Created by rgnter on 25/11/2024.
-//
+/**
+ * Alicia Server - dedicated server software
+ * Copyright (C) 2024 Story Of Alicia
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ **/
 
 #ifndef LOBBYDIRECTOR_HPP
 #define LOBBYDIRECTOR_HPP
 
 #include "LoginHandler.hpp"
-#include "server/DataDirector.hpp"
 #include "server/Settings.hpp"
 
-#include "libserver/command/CommandServer.hpp"
+#include "libserver/data/DataDirector.hpp"
+#include "libserver/network/command/CommandServer.hpp"
+#include "libserver/network/command/proto/LobbyMessageDefinitions.hpp"
 
 namespace alicia
 {
 
-class LobbyDirector
+class LobbyDirector final
 {
 public:
   //!
-  LobbyDirector(
-    DataDirector& dataDirector,
+  explicit LobbyDirector(
+    soa::DataDirector& dataDirector,
     Settings::LobbySettings settings = {});
 
-private:
-  //!
-  void HandleUserLogin(
-    ClientId clientId,
-    const LobbyCommandLogin& login);
+  LobbyDirector(const LobbyDirector&) = delete;
+  LobbyDirector& operator=(const LobbyDirector&) = delete;
 
+  LobbyDirector(LobbyDirector&&) = delete;
+  LobbyDirector& operator=(LobbyDirector&&) = delete;
+
+  void Initialize();
+  void Terminate();
+  void Tick();
+  soa::DataDirector& GetDataDirector();
+  Settings::LobbySettings& GetSettings();
+
+private:
   //!
   void HandleCreateNicknameOK(
     ClientId clientId,
@@ -107,28 +130,17 @@ private:
   Settings::LobbySettings _settings;
 
   //!
-  DataDirector& _dataDirector;
+  CommandServer _server;
+
+  //!
+  soa::DataDirector& _dataDirector;
   //!
   LoginHandler _loginHandler;
 
   //!
-  CommandServer _server;
-  //!
-  std::unordered_map<ClientId, DatumUid> _clientCharacters;
-
-  //!
-  struct ClientLoginContext
-  {
-    std::string userName;
-
-    DatumUid characterUid{InvalidDatumUid};
-    LobbyCommandLoginOK response{};
-  };
-
-  //!
-  std::unordered_map<ClientId, ClientLoginContext> _queuedClientLogins;
+  std::unordered_map<ClientId, std::string> _clientUsers;
 };
 
-}
+} // namespace alicia
 
-#endif //LOBBYDIRECTOR_HPP
+#endif // LOBBYDIRECTOR_HPP

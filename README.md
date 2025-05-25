@@ -1,6 +1,10 @@
 # Alicia Server
 Server, yippie!
 
+## Community
+If you're a user please feel free to join [the official community of Story Of Alicia](https://discord.gg/storyofalicia) and follow our progress there. 
+If you're a programmer and want to talk about the code [join the dedicated developer](https://discord.gg/bP4pNWvVHM) community on Discord.
+
 ## Requirements
 
 - Git

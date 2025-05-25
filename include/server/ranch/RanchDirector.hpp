@@ -1,16 +1,31 @@
-//
-// Created by alborrajo on 16/11/2024.
-//
+/**
+ * Alicia Server - dedicated server software
+ * Copyright (C) 2024 Story Of Alicia
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ **/
 
 #ifndef RANCHDIRECTOR_HPP
 #define RANCHDIRECTOR_HPP
 
-#include "server/DataDirector.hpp"
 #include "server/Settings.hpp"
+#include "server/tracker/WorldTracker.hpp"
 
-#include "libserver/command/CommandServer.hpp"
-
-#include <server/tracker/WorldTracker.hpp>
+#include "libserver/data/DataDirector.hpp"
+#include "libserver/network/command/CommandServer.hpp"
+#include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
 
 namespace alicia
 {
@@ -19,9 +34,13 @@ class RanchDirector
 {
 public:
   //!
-  RanchDirector(
-    DataDirector& dataDirector,
+  explicit RanchDirector(
+    soa::DataDirector& dataDirector,
     Settings::RanchSettings settings = {});
+
+  void Initialize();
+  void Terminate();
+  void Tick();
 
 private:
   //!
@@ -46,32 +65,32 @@ private:
 
   //!
   void HandleUpdateBusyState(
-    ClientId clientId, 
-    const RanchCommandUpdateBusyState& command);   
-    
+    ClientId clientId,
+    const RanchCommandUpdateBusyState& command);
+
   //!
   void HandleSearchStallion(
-    ClientId clientId, 
+    ClientId clientId,
     const RanchCommandSearchStallion& command);
 
   //!
   void HandleEnterBreedingMarket(
-    ClientId clientId, 
+    ClientId clientId,
     const RanchCommandEnterBreedingMarket& command);
 
   //!
   void HandleTryBreeding(
-    ClientId clientId, 
+    ClientId clientId,
     const RanchCommandTryBreeding& command);
 
   //!
   void HandleBreedingWishlist(
-    ClientId clientId, 
+    ClientId clientId,
     const RanchCommandBreedingWishlist& command);
 
   //!
   void HandleUpdateMountNickname(
-    ClientId clientId, 
+    ClientId clientId,
     const RanchCommandUpdateMountNickname& command);
 
   //!
@@ -79,24 +98,28 @@ private:
     ClientId clientId,
     const RanchCommandRequestStorage& command);
 
+  //!
+  void HandleRequestNpcDressList(
+    ClientId clientId,
+    const RanchCommandRequestNpcDressList& requestNpcDressList);
 
   //!
   Settings::RanchSettings _settings;
   //!
-  DataDirector& _dataDirector;
+  soa::DataDirector& _dataDirector;
   //!
   CommandServer _server;
 
   //!
-  std::unordered_map<ClientId, DatumUid> _clientCharacters;
+  std::unordered_map<ClientId, std::string> _clientUsers;
 
   struct RanchInstance
   {
     WorldTracker _worldTracker;
   };
-  std::unordered_map<DatumUid, RanchInstance> _ranches;
+  std::unordered_map<soa::data::Uid, RanchInstance> _ranches;
 };
 
-}
+} // namespace alicia
 
-#endif //RANCHDIRECTOR_HPP
+#endif // RANCHDIRECTOR_HPP

@@ -4,7 +4,10 @@ Language: Cpp
 UseTab: Never
 IndentWidth: 2
 PPIndentWidth: 2
+IndentPPDirectives: BeforeHash
 ContinuationIndentWidth: 2
+LambdaBodyIndentation: Signature
+ConstructorInitializerIndentWidth: 2
 IndentCaseBlocks: true
 IndentCaseLabels: true
 NamespaceIndentation: None
@@ -33,6 +36,7 @@ PackConstructorInitializers: Never
 BreakConstructorInitializersBeforeComma: true
 BinPackParameters: false
 BinPackArguments: false
+ExperimentalAutoDetectBinPacking: true
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowAllArgumentsOnNextLine: true
 AlignConsecutiveDeclarations: None
@@ -41,5 +45,5 @@ InsertNewlineAtEOF: true
 PointerAlignment: Left
 ReferenceAlignment: Left
 SortIncludes: CaseInsensitive
-ColumnLimit: 100
+ColumnLimit: 0
 SpaceBeforeParens: ControlStatements

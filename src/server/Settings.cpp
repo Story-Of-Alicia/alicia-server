@@ -1,9 +1,30 @@
-#include "spdlog/spdlog.h"
+/**
+ * Alicia Server - dedicated server software
+ * Copyright (C) 2024 Story Of Alicia
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ **/
+
+#include "server/Settings.hpp"
+
+#include <libserver/util/Util.hpp>
 
 #include <fstream>
 #include <iostream>
-#include <libserver/Util.hpp>
-#include <server/Settings.hpp>
+
+#include <spdlog/spdlog.h>
 
 namespace alicia
 {
@@ -37,8 +58,7 @@ void Settings::LoadFromFile(const std::filesystem::path& filePath)
       {
         auto [address, port] = ParseAddressAndPort(lobby["bind"]);
         // If parsing succeeded, update values
-        if (!address.is_unspecified()
-          && port != 0)
+        if (!address.is_unspecified() && port != 0)
         {
           _lobbySettings.address = address;
           _lobbySettings.port = port;
@@ -85,6 +105,7 @@ void Settings::LoadFromFile(const std::filesystem::path& filePath)
         }
       }
     }
+
     // Extract ranch settings
     if (jsonConfig.contains("ranch"))
     {
@@ -100,6 +121,7 @@ void Settings::LoadFromFile(const std::filesystem::path& filePath)
         }
       }
     }
+
     // Extract messenger settings
     if (jsonConfig.contains("messenger"))
     {
@@ -115,6 +137,7 @@ void Settings::LoadFromFile(const std::filesystem::path& filePath)
         }
       }
     }
+
     // Extract race settings
     if (jsonConfig.contains("race"))
     {
@@ -128,6 +151,16 @@ void Settings::LoadFromFile(const std::filesystem::path& filePath)
           _raceSettings.address = address;
           _raceSettings.port = port;
         }
+      }
+    }
+
+    // Extract data source settings.
+    if (jsonConfig.contains("data_source"))
+    {
+      const auto& dataSource = jsonConfig["data_source"];
+      if (dataSource.contains("connection_string"))
+      {
+        _dataSourceSettings.connectionString = dataSource["connection_string"];
       }
     }
   }
