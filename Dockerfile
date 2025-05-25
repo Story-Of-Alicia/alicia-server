@@ -24,9 +24,9 @@ RUN apk add --no-cache libstdc++
 RUN addgroup -S alicia && adduser -S alicia -G alicia
 USER alicia:alicia
 
-WORKDIR /opt/alicia-server  
+WORKDIR /opt/alicia-server
 COPY --from=builder --chown=alicia ${BUILDER_REPO_PATH}/dist .
 
 EXPOSE 10030/tcp 10031/tcp 10032/tcp
-VOLUME [ "/opt/alicia-server" ]  
-ENTRYPOINT ["/opt/alicia-server/alicia-server"]  
+VOLUME [ "/opt/alicia-server" ]
+ENTRYPOINT ["/opt/alicia-server/alicia-server"]
