@@ -24,7 +24,6 @@
 #include <span>
 #include <stdexcept>
 #include <type_traits>
-#include <cstddef>
 
 namespace alicia
 {

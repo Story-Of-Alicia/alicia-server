@@ -24,7 +24,6 @@
 #include <cstdint>
 #include <functional>
 #include <string>
-#include <cstddef>
 
 namespace soa
 {
