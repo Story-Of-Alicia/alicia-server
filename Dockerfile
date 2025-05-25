@@ -27,6 +27,6 @@ USER alicia:alicia
 WORKDIR /opt/alicia-server
 COPY --from=builder --chown=alicia ${BUILDER_REPO_PATH}/dist .
 
-EXPOSE 10030/tcp 10031/tcp 10032/tcp
+EXPOSE 10030/tcp 10031/tcp 10032/tcp 10033/tcp
 VOLUME [ "/opt/alicia-server" ]
 ENTRYPOINT ["/opt/alicia-server/alicia-server"]
