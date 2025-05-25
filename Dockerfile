@@ -1,10 +1,8 @@
 # syntax=docker/dockerfile:1
 ARG BUILDER_REPO_PATH=/builder/alicia-server
 
-FROM ubuntu:latest AS builder
-RUN apt-get update
-RUN apt-get install -y --no-install-recommends build-essential git cmake libboost-dev libpq-dev
-RUN apt-get clean
+FROM alpine:3 AS builder
+RUN apk add --no-cache boost-dev build-base cmake git
 
 ARG BUILDER_REPO_PATH
 ARG BUILD_TYPE=Release
@@ -17,13 +15,14 @@ RUN cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DBUILD_TESTS=False . -B ./build
 RUN cmake --build ./build --parallel
 RUN cmake --install ./build --prefix .
 
-FROM ubuntu:latest
+FROM alpine:3
 ARG BUILDER_REPO_PATH
 
 LABEL author="Serkan Sahin" maintainer="dev@storyofalicia.com"
 
-RUN groupadd -r alicia && useradd --no-log-init -r -g alicia alicia
-USER alicia
+RUN apk add --no-cache libstdc++
+RUN addgroup -S alicia && adduser -S alicia -G alicia
+USER alicia:alicia
 
 WORKDIR /opt/alicia-server  
 COPY --from=builder --chown=alicia ${BUILDER_REPO_PATH}/dist .

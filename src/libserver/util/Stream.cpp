@@ -12,7 +12,7 @@ SourceStream::SourceStream(Storage buffer)
 {
 }
 
-SourceStream::SourceStream(nullptr_t)
+SourceStream::SourceStream(std::nullptr_t)
   : StreamBase(nullptr)
 {
 }
@@ -35,7 +35,7 @@ SinkStream::SinkStream(Storage buffer) noexcept
 {
 }
 
-SinkStream::SinkStream(nullptr_t) noexcept
+SinkStream::SinkStream(std::nullptr_t) noexcept
   : StreamBase(nullptr)
 {
 }
