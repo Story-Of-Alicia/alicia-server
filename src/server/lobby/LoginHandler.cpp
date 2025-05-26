@@ -237,7 +237,7 @@ void LoginHandler::QueueUserLoginAccepted(const ClientId clientId, const std::st
           .vals1 = {
             .val0 = 0x00,
             .val1 = 0x00,
-            .val2 = 0xb8a167e4,
+            .dateOfBirth = 0xb8a167e4,
             .val3 = 0x02,
             .val4 = 0x00,
             .classProgression = 0x32e7d,
@@ -299,7 +299,7 @@ void LoginHandler::QueueUserLoginAccepted(const ClientId clientId, const std::st
         .valueOptions = 0x64,
 
         .ageGroup = AgeGroup::Adult,
-        .val4 = 0,
+        .hideAge = 0,
 
         .address = _lobbyDirector.GetSettings().ranchAdvAddress.to_uint(),
         .port = _lobbyDirector.GetSettings().ranchAdvPort,

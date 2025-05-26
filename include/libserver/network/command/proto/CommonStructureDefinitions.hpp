@@ -237,7 +237,7 @@ struct Horse
   {
     uint8_t val0{};
     uint32_t val1{};
-    uint32_t val2{};
+    uint32_t dateOfBirth{};
 
     uint8_t val3{};
     uint8_t val4{};

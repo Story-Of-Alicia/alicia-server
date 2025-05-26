@@ -167,7 +167,7 @@ void RanchDirector::HandleEnterRanch(
                                                                                                                                                                                                                                                                                                                                                                                                                                                             .val9 = 0x0A,
                                                                                                                                                                                                                                                                                                                                                                                                                                                             .val10 = 0x00,
                                                                                                                                                                                                                                                                                                                                                                                                                                                           },
-                                                                      .vals1 = {.val0 = 0x00, .val1 = 0x00, .val2 = 0xb8a167e4, .val3 = 0x02, .val4 = 0x00, .classProgression = 0x32e7d, .val5 = 0x00, .potentialLevel = 0x40, .hasPotential = 0x1, .potentialValue = 0x64, .val9 = 0x00, .luck = 0x05, .hasLuck = 0x00, .val12 = 0x00, .fatigue = 0x00, .val14 = 0x00, .emblem = 0xA},
+                                                                      .vals1 = {.val0 = 0x00, .val1 = 0x00, .dateOfBirth = 0xb8a167e4, .val3 = 0x02, .val4 = 0x00, .classProgression = 0x32e7d, .val5 = 0x00, .potentialLevel = 0x40, .hasPotential = 0x1, .potentialValue = 0x64, .val9 = 0x00, .luck = 0x05, .hasLuck = 0x00, .val12 = 0x00, .fatigue = 0x00, .val14 = 0x00, .emblem = 0xA},
                                                                       .mastery = {
                                                                         .magic = 0x1fe,
                                                                         .jumping = 0x421,
@@ -233,7 +233,7 @@ void RanchDirector::HandleEnterRanch(
           {
             .val0 = 0x00,
             .val1 = 0x00,
-            .val2 = 0xb8a167e4,
+            .dateOfBirth = 0xb8a167e4,
             .val3 = 0x02,
             .val4 = 0x00,
             .classProgression = 0x32e7d,

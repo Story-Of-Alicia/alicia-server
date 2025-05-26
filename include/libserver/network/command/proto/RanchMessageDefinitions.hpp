@@ -960,9 +960,9 @@ struct RanchCommandRequestStorageOK
     uint32_t val4{};
     uint32_t val5{};
     uint32_t val6{};
-    std::string val7;
-    std::string val8;
-    uint32_t val9{};
+    std::string from;
+    std::string message;
+    uint32_t datetime{};
   };
   //! Max 33 elements.
   std::vector<Unk> val3{};

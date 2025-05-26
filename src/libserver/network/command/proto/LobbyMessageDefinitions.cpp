@@ -117,7 +117,7 @@ void LobbyCommandLoginOK::Write(
   // ToDo: Write the gamepad options.
 
   stream.Write(static_cast<uint8_t>(command.ageGroup))
-    .Write(command.val4);
+    .Write(command.hideAge);
 
   //
   stream.Write(static_cast<uint8_t>(command.val5.size()));

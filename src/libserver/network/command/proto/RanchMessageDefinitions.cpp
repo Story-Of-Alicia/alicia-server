@@ -855,9 +855,9 @@ void RanchCommandRequestStorageOK::Write(
       .Write(item.val4)
       .Write(item.val5)
       .Write(item.val6)
-      .Write(item.val7)
-      .Write(item.val8)
-      .Write(item.val9);
+      .Write(item.from)
+      .Write(item.message)
+      .Write(item.datetime);
   }
 }
 
