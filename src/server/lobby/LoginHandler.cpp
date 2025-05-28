@@ -301,6 +301,15 @@ void LoginHandler::QueueUserLoginAccepted(const ClientId clientId, const std::st
         .ageGroup = AgeGroup::Adult,
         .hideAge = 0,
 
+        .val5 = {
+          {0x18, {{2, 1}}},
+          {0x1F, {{2, 1}}},
+          {0x23, {{2, 1}}},
+          {0x29, {{2, 1}}},
+          {0x2A, {{2, 1}}},
+          {0x2B, {{2, 1}}},
+          {0x2E, {{2, 1}}}},
+
         .address = _lobbyDirector.GetSettings().ranchAdvAddress.to_uint(),
         .port = _lobbyDirector.GetSettings().ranchAdvPort,
 
