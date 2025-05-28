@@ -960,7 +960,7 @@ struct RanchCommandRequestStorageOK
     uint32_t val4{};
     uint32_t val5{};
     uint32_t val6{};
-    std::string from;
+    std::string sender;
     std::string message;
     uint32_t datetime{};
   };
