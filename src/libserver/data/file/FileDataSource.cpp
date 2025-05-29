@@ -281,7 +281,7 @@ void soa::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.potentialType = json["potentialType"].get<uint32_t>();
   horse.potentialLevel = json["potentialLevel"].get<uint32_t>();
 
-  horse.luckState = json["emblem"].get<uint32_t>();
+  horse.luckState = json["luckState"].get<uint32_t>();
   horse.emblem = json["emblem"].get<uint32_t>();
 }
 
