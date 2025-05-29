@@ -304,7 +304,6 @@ void soa::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   parts["faceId"] = horse.parts.faceId();
   json["parts"] = parts;
 
-
   nlohmann::json appearance;
   appearance["scale"] = horse.appearance.scale();
   appearance["legLength"] = horse.appearance.legLength();
