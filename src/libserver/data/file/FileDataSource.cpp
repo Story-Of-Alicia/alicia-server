@@ -131,17 +131,29 @@ void soa::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& char
   const auto json = nlohmann::json::parse(file);
 
   character.name = json["name"].get<std::string>();
+  character.level = json["level"].get<uint32_t>();
+  character.carrots = json["carrots"].get<uint32_t>();
+  character.cash = json["cash"].get<uint32_t>();
+
   auto parts = json["parts"];
   character.parts = data::Character::Parts{
     .modelId = parts["modelId"].get<data::Uid>(),
     .mouthId = parts["mouthId"].get<data::Uid>(),
     .faceId = parts["faceId"].get<data::Uid>()};
+
   auto appearance = json["appearance"];
   character.appearance = data::Character::Appearance{
     .headSize = appearance["headSize"].get<uint32_t>(),
     .height = appearance["height"].get<uint32_t>(),
     .thighVolume = appearance["thighVolume"].get<uint32_t>(),
     .legVolume = appearance["legVolume"].get<uint32_t>()};
+
+  character.characterEquipment = json["characterEquipment"].get<std::vector<data::Uid>>();
+  character.horseEquipment = json["horseEquipment"].get<std::vector<data::Uid>>();
+
+  character.horseUids = json["horseUids"].get<std::vector<data::Uid>>();
+  character.mountUid = json["mountUid"].get<data::Uid>();
+
 }
 
 void soa::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
@@ -155,6 +167,9 @@ void soa::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& c
 
   nlohmann::json json;
   json["name"] = character.name();
+  json["level"] = character.level();
+  json["carrots"] = character.carrots();
+  json["cash"] = character.cash();
 
   // character parts
   nlohmann::json parts;
@@ -170,6 +185,13 @@ void soa::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& c
   appearance["thighVolume"] = character.appearance.thighVolume();
   appearance["legVolume"] = character.appearance.legVolume();
   json["appearance"] = appearance;
+
+
+  json["characterEquipment"] = character.characterEquipment();
+  json["horseEquipment"] = character.horseEquipment();
+
+  json["horseUids"] = character.horseUids();
+  json["mountUid"] = character.mountUid();
 
   file << json.dump(2);
 }
@@ -218,8 +240,49 @@ void soa::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
     return;
 
   const auto json = nlohmann::json::parse(file);
-
   horse.name = json["name"].get<std::string>();
+
+  auto parts = json["parts"];
+  horse.parts = data::Horse::Parts{
+    .skinId = parts["skinId"].get<uint32_t>(),
+    .maneId = parts["maneId"].get<uint32_t>(),
+    .tailId = parts["tailId"].get<uint32_t>(),
+    .faceId = parts["faceId"].get<uint32_t>()};
+
+  auto appearance = json["appearance"];
+  horse.appearance = data::Horse::Appearance{
+    .scale = appearance["scale"].get<uint32_t>(),
+    .legLength = appearance["legLength"].get<uint32_t>(),
+    .legVolume = appearance["legVolume"].get<uint32_t>(),
+    .bodyLength = appearance["bodyLength"].get<uint32_t>(),
+    .bodyVolume = appearance["bodyVolume"].get<uint32_t>()};
+
+  auto stats = json["stats"];
+  horse.stats = data::Horse::Stats{
+    .agility = stats["agility"].get<uint32_t>(),
+    .control = stats["control"].get<uint32_t>(),
+    .speed = stats["speed"].get<uint32_t>(),
+    .strength = stats["strength"].get<uint32_t>(),
+    .spirit = stats["spirit"].get<uint32_t>()};
+
+  auto mastery = json["mastery"];
+  horse.mastery = data::Horse::Mastery{
+    .spurMagicCount = mastery["spurMagicCount"].get<uint32_t>(),
+    .jumpCount = mastery["jumpCount"].get<uint32_t>(),
+    .slidingTime = mastery["slidingTime"].get<uint32_t>(),
+    .glidingDistance = mastery["glidingDistance"].get<uint32_t>()};
+
+  horse.rating = json["rating"].get<uint32_t>();
+  horse.clazz = json["clazz"].get<uint32_t>();
+  horse.clazzProgress = json["clazzProgress"].get<uint32_t>();
+  horse.grade = json["grade"].get<uint32_t>();
+  horse.growthPoints = json["growthPoints"].get<uint32_t>();
+
+  horse.potentialType = json["potentialType"].get<uint32_t>();
+  horse.potentialLevel = json["potentialLevel"].get<uint32_t>();
+
+  horse.luckState = json["emblem"].get<uint32_t>();
+  horse.emblem = json["emblem"].get<uint32_t>();
 }
 
 void soa::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
@@ -233,6 +296,50 @@ void soa::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
 
   nlohmann::json json;
   json["name"] = horse.name();
+
+  nlohmann::json parts;
+  parts["skinId"] = horse.parts.skinId();
+  parts["maneId"] = horse.parts.maneId();
+  parts["tailId"] = horse.parts.tailId();
+  parts["faceId"] = horse.parts.faceId();
+  json["parts"] = parts;
+
+
+  nlohmann::json appearance;
+  appearance["scale"] = horse.appearance.scale();
+  appearance["legLength"] = horse.appearance.legLength();
+  appearance["legVolume"] = horse.appearance.legVolume();
+  appearance["bodyLength"] = horse.appearance.bodyLength();
+  appearance["bodyVolume"] = horse.appearance.bodyVolume();
+  json["appearance"] = appearance;
+
+  nlohmann::json stats;
+  stats["agility"] = horse.stats.agility();
+  stats["control"] = horse.stats.control();
+  stats["speed"] = horse.stats.speed();
+  stats["strength"] = horse.stats.strength();
+  stats["spirit"] = horse.stats.spirit();
+  json["stats"] = stats;
+
+  nlohmann::json mastery;
+  mastery["spurMagicCount"] = horse.mastery.spurMagicCount();
+  mastery["jumpCount"] = horse.mastery.jumpCount();
+  mastery["slidingTime"] = horse.mastery.slidingTime();
+  mastery["glidingDistance"] = horse.mastery.glidingDistance();
+  json["mastery"] = mastery;
+
+  json["rating"] = horse.rating();
+  json["clazz"] = horse.clazz();
+  json["clazzProgress"] = horse.clazzProgress();
+  json["grade"] = horse.grade();
+  json["growthPoints"] = horse.growthPoints();
+
+  json["potentialType"] = horse.potentialType();
+  json["potentialLevel"] = horse.potentialLevel();
+
+  json["luckState"] = horse.luckState();
+  json["emblem"] = horse.emblem();
+
   file << json.dump(2);
 }
 
