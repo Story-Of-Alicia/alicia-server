@@ -202,7 +202,7 @@ MessageMagic decode_message_magic(uint32_t value)
 
 uint32_t encode_message_magic(MessageMagic magic)
 {
-  // `IgnoreWaitLock & 0xFFFF`
+  // `ResolveSceneLockBit & 0xFFFF`
   const uint16_t id = magic.id & 0xFFFF;
   const uint32_t length = BufferSize << 16 | magic.length;
 

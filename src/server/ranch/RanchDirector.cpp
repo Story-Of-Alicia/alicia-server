@@ -105,8 +105,6 @@ void RanchDirector::Initialize()
     _settings.address.to_string(),
     _settings.port);
 
-  _dataDirector.GetCharacters().Get(100);
-
   _server.RegisterCommandHandler<RanchCommandRequestNpcDressList>(
     CommandId::RanchRequestNpcDressList,
     [this](ClientId clientId, const auto& message)
@@ -164,8 +162,6 @@ void RanchDirector::HandleEnterRanch(
   // Add the character to the ranch.
   ranchInstance._worldTracker.AddCharacter(
     enterRanch.characterUid);
-  if (ranchInstance._worldTracker.GetCharacterEntityId(100) == InvalidEntityId)
-    ranchInstance._worldTracker.AddCharacter(100);
 
   RanchCharacter enteringRanchPlayer;
 
@@ -301,8 +297,6 @@ void RanchDirector::HandleEnterRanch(
   ranchInstance._clients.emplace(clientId);
 }
 
-static uint16_t toFollow = 1;
-
 void RanchDirector::HandleSnapshot(
   ClientId clientId,
   const RanchCommandRanchSnapshot& snapshot)
@@ -333,8 +327,8 @@ void RanchDirector::HandleSnapshot(
   for (const auto& ranchClient : ranchInstance._clients)
   {
     // Do not broadcast to the client that sent the snapshot.
-    // if (ranchClient == clientId)
-    //   continue;
+    if (ranchClient == clientId)
+      continue;
 
     if (snapshot.type == RanchCommandRanchSnapshot::Full)
     {
@@ -359,26 +353,12 @@ void RanchDirector::HandleSnapshot(
     }
 
     _server.QueueCommand<decltype(response)>(
-      clientId,
+      ranchClient,
       CommandId::RanchSnapshotNotify,
       [response]()
       {
         return response;
       });
-
-    if (response.ranchIndex == toFollow)
-    {
-      _server.QueueCommand<decltype(response)>(
-        clientId,
-        CommandId::RanchSnapshotNotify,
-        [response]() mutable
-        {
-          response.ranchIndex = 2;
-          response.full.ranchIndex = 2;
-          response.full.time += 5000;
-          return response;
-        });
-    }
   }
 }
 
@@ -654,8 +634,6 @@ void RanchDirector::HandleChat(
   {
     response.author = character.name();
   });
-
-  toFollow = std::atoi(command.message.c_str());
 
   for (const auto ranchClientId : ranchInstance._clients)
   {
