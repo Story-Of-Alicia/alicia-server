@@ -105,6 +105,8 @@ void RanchDirector::Initialize()
     _settings.address.to_string(),
     _settings.port);
 
+  _dataDirector.GetCharacters().Get(100);
+
   _server.RegisterCommandHandler<RanchCommandRequestNpcDressList>(
     CommandId::RanchRequestNpcDressList,
     [this](ClientId clientId, const auto& message)
@@ -113,12 +115,12 @@ void RanchDirector::Initialize()
     });
 
   // Host the server.
-  _server.Host(_settings.address, _settings.port);
+  _server.BeginHost(_settings.address, _settings.port);
 }
 
 void RanchDirector::Terminate()
 {
-  _server.Stop();
+  _server.EndHost();
 }
 
 void RanchDirector::Tick()
@@ -162,6 +164,8 @@ void RanchDirector::HandleEnterRanch(
   // Add the character to the ranch.
   ranchInstance._worldTracker.AddCharacter(
     enterRanch.characterUid);
+  if (ranchInstance._worldTracker.GetCharacterEntityId(100) == InvalidEntityId)
+    ranchInstance._worldTracker.AddCharacter(100);
 
   RanchCharacter enteringRanchPlayer;
 
@@ -180,7 +184,7 @@ void RanchDirector::HandleEnterRanch(
 
     horseRecord->Immutable([&ranchHorse](const soa::data::Horse& horse)
     {
-       protocol::BuildProtocolHorse(ranchHorse.horse, horse);
+      protocol::BuildProtocolHorse(ranchHorse.horse, horse);
     });
   }
 
@@ -240,6 +244,7 @@ void RanchDirector::HandleEnterRanch(
           .mountUid = horse.uid(),
           .val1 = 0x12};
       });
+      spdlog::info("aa");
     });
 
     if (enterRanch.characterUid == characterUid)
@@ -296,6 +301,8 @@ void RanchDirector::HandleEnterRanch(
   ranchInstance._clients.emplace(clientId);
 }
 
+static uint16_t toFollow = 1;
+
 void RanchDirector::HandleSnapshot(
   ClientId clientId,
   const RanchCommandRanchSnapshot& snapshot)
@@ -326,16 +333,22 @@ void RanchDirector::HandleSnapshot(
   for (const auto& ranchClient : ranchInstance._clients)
   {
     // Do not broadcast to the client that sent the snapshot.
-    if (ranchClient == clientId)
-      continue;
+    // if (ranchClient == clientId)
+    //   continue;
 
     if (snapshot.type == RanchCommandRanchSnapshot::Full)
     {
       spdlog::debug(
-        "Full update from {} sent to {}. [x: {}, y: {}, z: {}]",
+        "Full update from {} sent to {}. [ranchIndex: {}, time: {}, {}, {}, velX: {}, velY: {}, velZ: {}]",
         clientContext.characterUid,
         _clientContext[ranchClient].characterUid,
-        snapshot.full.x, snapshot.full.y, snapshot.full.z);
+        snapshot.full.ranchIndex,
+        snapshot.full.time,
+        snapshot.full.action,
+        snapshot.full.timer,
+        snapshot.full.velocityX,
+        snapshot.full.velocityY,
+        snapshot.full.velocityZ);
     }
     else
     {
@@ -352,23 +365,37 @@ void RanchDirector::HandleSnapshot(
       {
         return response;
       });
+
+    if (response.ranchIndex == toFollow)
+    {
+      _server.QueueCommand<decltype(response)>(
+        clientId,
+        CommandId::RanchSnapshotNotify,
+        [response]() mutable
+        {
+          response.ranchIndex = 2;
+          response.full.ranchIndex = 2;
+          response.full.time += 5000;
+          return response;
+        });
+    }
   }
 }
 
 void RanchDirector::HandleCmdAction(ClientId clientId, const RanchCommandRanchCmdAction& action)
 {
+  RanchCommandRanchCmdActionNotify response{
+    .unk0 = 2,
+    .unk1 = 3,
+    .unk2 = 1,};
+
   // TODO: Actual implementation of it
-  _server.QueueCommand(
+  _server.QueueCommand<decltype(response)>(
     clientId,
     CommandId::RanchCmdActionNotify,
-    [action](auto& sink)
+    [response]()
     {
-      RanchCommandRanchCmdActionNotify response{
-        .unk0 = 2,
-        .unk1 = 3,
-        .unk2 = 1,
-      };
-      RanchCommandRanchCmdActionNotify::Write(response, sink);
+      return response;
     });
 }
 
@@ -433,43 +460,43 @@ void RanchDirector::HandleSearchStallion(
   ClientId clientId,
   const RanchCommandSearchStallion& command)
 {
-  _server.QueueCommand(
+  // TODO: Fetch data from DB according to the filters in the request
+  RanchCommandSearchStallionOK response{
+    .unk0 = 0,
+    .unk1 = 0,
+    .stallions = {
+      RanchCommandSearchStallionOK::Stallion{
+        .unk0 = "test",
+        .unk1 = 0x3004e21,
+        .unk2 = 0x4e21,
+        .name = "Juan",
+        .grade = 4,
+        .chance = 0,
+        .price = 1,
+        .unk7 = 0xFFFFFFFF,
+        .unk8 = 0xFFFFFFFF,
+        .stats = {
+          .agility = 9,
+          .control = 9,
+          .speed = 9,
+          .strength = 9,
+          .spirit = 9},
+        .parts = {
+          .skinId = 1,
+          .maneId = 4,
+          .tailId = 4,
+          .faceId = 5,
+        },
+        .appearance = {.scale = 4, .legLength = 4, .legVolume = 5, .bodyLength = 3, .bodyVolume = 4},
+        .unk11 = 5,
+        .coatBonus = 0}}};
+
+  _server.QueueCommand<decltype(response)>(
     clientId,
     CommandId::RanchSearchStallionOK,
-    [command](auto& sink)
+    [response]()
     {
-      // TODO: Fetch data from DB according to the filters in the request
-      RanchCommandSearchStallionOK response{
-        .unk0 = 0,
-        .unk1 = 0,
-        .stallions = {
-          RanchCommandSearchStallionOK::Stallion{
-            .unk0 = "test",
-            .unk1 = 0x3004e21,
-            .unk2 = 0x4e21,
-            .name = "Juan",
-            .grade = 4,
-            .chance = 0,
-            .price = 1,
-            .unk7 = 0xFFFFFFFF,
-            .unk8 = 0xFFFFFFFF,
-            .stats = {
-              .agility = 9,
-              .control = 9,
-              .speed = 9,
-              .strength = 9,
-              .spirit = 9},
-            .parts = {
-              .skinId = 1,
-              .maneId = 4,
-              .tailId = 4,
-              .faceId = 5,
-            },
-            .appearance = {.scale = 4, .legLength = 4, .legVolume = 5, .bodyLength = 3, .bodyVolume = 4},
-            .unk11 = 5,
-            .coatBonus = 0}}};
-
-      RanchCommandSearchStallionOK::Write(response, sink);
+      return response;
     });
 }
 
@@ -505,37 +532,38 @@ void RanchDirector::HandleTryBreeding(
   ClientId clientId,
   const RanchCommandTryBreeding& command)
 {
+  RanchCommandTryBreedingOK response{
+    .uid = command.unk0, // wild guess
+    .tid = command.unk1, // lmao
+    .val = 0,
+    .count = 0,
+    .unk0 = 0,
+    .parts = {
+      .skinId = 1,
+      .maneId = 4,
+      .tailId = 4,
+      .faceId = 5},
+    .appearance = {.scale = 4, .legLength = 4, .legVolume = 5, .bodyLength = 3, .bodyVolume = 4},
+    .stats = {.agility = 9, .control = 9, .speed = 9, .strength = 9, .spirit = 9},
+    .unk1 = 0,
+    .unk2 = 0,
+    .unk3 = 0,
+    .unk4 = 0,
+    .unk5 = 0,
+    .unk6 = 0,
+    .unk7 = 0,
+    .unk8 = 0,
+    .unk9 = 0,
+    .unk10 = 0,
+  };
+
   // TODO: Actually do something
-  _server.QueueCommand(
+  _server.QueueCommand<decltype(response)>(
     clientId,
     CommandId::RanchTryBreedingOK,
-    [&](auto& sink)
+    [response]()
     {
-      RanchCommandTryBreedingOK response{
-        .uid = command.unk0, // wild guess
-        .tid = command.unk1, // lmao
-        .val = 0,
-        .count = 0,
-        .unk0 = 0,
-        .parts = {
-          .skinId = 1,
-          .maneId = 4,
-          .tailId = 4,
-          .faceId = 5},
-        .appearance = {.scale = 4, .legLength = 4, .legVolume = 5, .bodyLength = 3, .bodyVolume = 4},
-        .stats = {.agility = 9, .control = 9, .speed = 9, .strength = 9, .spirit = 9},
-        .unk1 = 0,
-        .unk2 = 0,
-        .unk3 = 0,
-        .unk4 = 0,
-        .unk5 = 0,
-        .unk6 = 0,
-        .unk7 = 0,
-        .unk8 = 0,
-        .unk9 = 0,
-        .unk10 = 0,
-      };
-      RanchCommandTryBreedingOK::Write(response, sink);
+      return response;
     });
 }
 
@@ -543,14 +571,15 @@ void RanchDirector::HandleBreedingWishlist(
   ClientId clientId,
   const RanchCommandBreedingWishlist& command)
 {
+  RanchCommandBreedingWishlistOK response{};
+
   // TODO: Actually do something
-  _server.QueueCommand(
+  _server.QueueCommand<decltype(response)>(
     clientId,
     CommandId::RanchBreedingWishlistOK,
-    [&](auto& sink)
+    [response]()
     {
-      RanchCommandBreedingWishlistOK response{};
-      RanchCommandBreedingWishlistOK::Write(response, sink);
+      return response;
     });
 }
 
@@ -565,12 +594,12 @@ void RanchDirector::HandleUpdateMountNickname(
     .unk1 = command.unk1,
     .unk2 = 0};
 
-  _server.QueueCommand(
+  _server.QueueCommand<decltype(response)>(
     clientId,
     CommandId::RanchUpdateMountNicknameOK,
-    [response](auto& sink)
+    [response]()
     {
-      RanchCommandUpdateMountNicknameOK::Write(response, sink);
+      return response;
     });
 }
 
@@ -583,12 +612,12 @@ void RanchDirector::HandleRequestStorage(
     .val0 = command.val0,
     .val1 = command.val1};
 
-  _server.QueueCommand(
+  _server.QueueCommand<decltype(response)>(
     clientId,
     CommandId::RanchRequestStorageOK,
-    [response](auto& sink)
+    [response]()
     {
-      RanchCommandRequestStorageOK::Write(response, sink);
+      return response;
     });
 }
 
@@ -599,13 +628,13 @@ void RanchDirector::HandleRequestNpcDressList(ClientId clientId, const RanchComm
     .dressList = {} // TODO: Fetch dress list from somewhere
   };
 
-  _server.QueueCommand(
+  _server.QueueCommand<decltype(response)>(
     clientId,
     CommandId::RanchRequestNpcDressListOK,
-    [response](auto& sink)
+    [response]()
     {
-      RanchCommandRequestNpcDressListOK::Write(response, sink);
-    });
+      return response;
+    });;
 }
 
 void RanchDirector::HandleChat(
@@ -626,12 +655,17 @@ void RanchDirector::HandleChat(
     response.author = character.name();
   });
 
+  toFollow = std::atoi(command.message.c_str());
+
   for (const auto ranchClientId : ranchInstance._clients)
   {
-    _server.QueueCommand<decltype(response)>(ranchClientId, CommandId::RanchChatNotify, [response]()
-    {
-      return response;
-    });
+    _server.QueueCommand<decltype(response)>(
+      ranchClientId,
+      CommandId::RanchChatNotify,
+      [response]()
+      {
+        return response;
+      });
   }
 }
 

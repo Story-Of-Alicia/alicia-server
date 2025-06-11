@@ -82,12 +82,12 @@ void RaceDirector::Initialize()
     _settings.port);
 
   // Host the server
-  _server.Host(_settings.address, _settings.port);
+  _server.BeginHost(_settings.address, _settings.port);
 }
 
 void RaceDirector::Terminate()
 {
-  _server.Stop();
+  _server.EndHost();
 }
 
 void RaceDirector::Tick() {}
@@ -120,91 +120,93 @@ void RaceDirector::HandleEnterRoom(ClientId clientId, const RaceCommandEnterRoom
   // Todo: Roll the code for the connecting client.
   // Todo: The response contains the code, somewhere.
   _server.SetCode(clientId, {});
-  _server.QueueCommand(
+
+  auto& roomRegistry = soa::RoomRegistry::Get();
+  auto& room = roomRegistry.GetRoom(enterRoom.roomUid);
+
+  RaceCommandEnterRoomOK response{
+    .racers = {
+      Racer {
+        .unk0 = 1,
+        .unk1 = 1,
+        .level = 0,
+        .exp = 1,
+        .uid = enterRoom.characterUid,
+        .name = "racer",
+        .unk5 = 1,
+        .unk6 = 1,
+        .bitset = 0,
+        .isNPC = false,
+        .playerRacer = PlayerRacer {
+          .characterEquipment = {},
+          .character = {},
+          .horse = {
+            .uid = 2,
+            .tid = 0x4e21,
+            .name = "default",
+            .parts = {.skinId = 0x2, .maneId = 0x3, .tailId = 0x3, .faceId = 0x3},
+              .appearance =
+                {.scale = 0x4,
+                  .legLength = 0x4,
+                  .legVolume = 0x5,
+                  .bodyLength = 0x3,
+                  .bodyVolume = 0x4},
+              .stats =
+                {
+                  .agility = 9,
+                  .control = 9,
+                  .speed = 9,
+                  .strength = 9,
+                  .spirit = 0x13
+                },
+              .rating = 0,
+              .clazz = 0x15,
+              .val0 = 1,
+              .grade = 5,
+              .growthPoints = 2,
+              .mastery =
+                {
+                  .spurMagicCount = 0x1fe,
+                  .jumpCount = 0x421,
+                  .slidingTime = 0x5f8,
+                  .glidingDistance = 0xcfa4,
+                },
+              .val16 = 0xb8a167e4,
+              .val17 = 0},
+          .unk0 = 0
+          // Horse equipment?
+        },
+        .unk8 = {
+          .unk0 = 0,
+          //.anotherPlayerRelatedThing = {.mountUid = character->mountUid, .val1 = 0x12}
+        },
+        .yetAnotherPlayerRelatedThing = {},
+        .playerRelatedThing = {.val1 = 1},
+        .unk9 = {.unk0 = 1, .unk1 = 1}
+      }
+    },
+    .nowPlaying = 1,
+    .unk1 = 1,
+    .roomDescription = {
+      .name = room.name,
+      .val_between_name_and_desc = static_cast<uint8_t>(room.uid), // ?
+      .description = room.description,
+      .unk1 = room.unk0,
+      .unk2 = room.unk1,
+      .unk3 = 20004,
+      .unk4 = room.unk2,
+      .missionId = room.missionId,
+      .unk6 = room.unk3,
+      .unk7 = room.unk4
+    }
+  };
+
+  _server.QueueCommand<decltype(response)>(
     clientId,
     CommandId::RaceEnterRoomOK,
-    [&](auto& sink)
+    [response]()
     {
-      auto& roomRegistry = soa::RoomRegistry::Get();
-      auto& room = roomRegistry.GetRoom(enterRoom.roomUid);
-
-      RaceCommandEnterRoomOK response{
-        .racers = {
-          Racer {
-            .unk0 = 1,
-            .unk1 = 1,
-            .level = 0,
-            .exp = 1,
-            .uid = enterRoom.characterUid,
-            .name = "racer",
-            .unk5 = 1,
-            .unk6 = 1,
-            .bitset = 0,
-            .isNPC = false,
-            .playerRacer = PlayerRacer {
-              .characterEquipment = {},
-              .character = {},
-              .horse = {
-                .uid = 2,
-                .tid = 0x4e21,
-                .name = "default",
-                .parts = {.skinId = 0x2, .maneId = 0x3, .tailId = 0x3, .faceId = 0x3},
-                  .appearance =
-                    {.scale = 0x4,
-                      .legLength = 0x4,
-                      .legVolume = 0x5,
-                      .bodyLength = 0x3,
-                      .bodyVolume = 0x4},
-                  .stats =
-                    {
-                      .agility = 9,
-                      .control = 9,
-                      .speed = 9,
-                      .strength = 9,
-                      .spirit = 0x13
-                    },
-                  .rating = 0,
-                  .clazz = 0x15,
-                  .val0 = 1,
-                  .grade = 5,
-                  .growthPoints = 2,
-                  .mastery =
-                    {
-                      .spurMagicCount = 0x1fe,
-                      .jumpCount = 0x421,
-                      .slidingTime = 0x5f8,
-                      .glidingDistance = 0xcfa4,
-                    },
-                  .val16 = 0xb8a167e4,
-                  .val17 = 0},
-              .unk0 = 0
-              // Horse equipment?
-            },
-            .unk8 = {
-              .unk0 = 0,
-              //.anotherPlayerRelatedThing = {.mountUid = character->mountUid, .val1 = 0x12}
-            },
-            .yetAnotherPlayerRelatedThing = {},
-            .playerRelatedThing = {.val1 = 1},
-            .unk9 = {.unk0 = 1, .unk1 = 1}
-          }
-        },
-        .nowPlaying = 1,
-        .unk1 = 1,
-        .roomDescription = {
-          .name = room.name,
-          .val_between_name_and_desc = static_cast<uint8_t>(room.uid), // ?
-          .description = room.description,
-          .unk1 = room.unk0,
-          .unk2 = room.unk1,
-          .unk3 = 20004,
-          .unk4 = room.unk2,
-          .missionId = room.missionId,
-          .unk6 = room.unk3,
-          .unk7 = room.unk4
-        }
-      };
-      RaceCommandEnterRoomOK::Write(response, sink);
+      return response;
     });
 }
 
@@ -212,21 +214,22 @@ void RaceDirector::HandleChangeRoomOptions(ClientId clientId, const RaceCommandC
 {
   // TODO: Actually do something
 
+  RaceCommandChangeRoomOptionsNotify response{
+    .optionsBitfield = changeRoomOptions.optionsBitfield,
+    .option0 = changeRoomOptions.name,
+    .option1 = changeRoomOptions.val_between_name_and_desc,
+    .option2 = changeRoomOptions.description,
+    .option3 = changeRoomOptions.option3,
+    .option4 = changeRoomOptions.map,
+    .option5 = changeRoomOptions.raceStarted};
+
   // TODO: Send to all clients in the room
-  _server.QueueCommand(
+  _server.QueueCommand<decltype(response)>(
     clientId,
     CommandId::RaceChangeRoomOptionsNotify,
-    [&](auto& sink)
+    [response]()
     {
-      RaceCommandChangeRoomOptionsNotify response{
-        .optionsBitfield = changeRoomOptions.optionsBitfield,
-        .option0 = changeRoomOptions.name,
-        .option1 = changeRoomOptions.val_between_name_and_desc,
-        .option2 = changeRoomOptions.description,
-        .option3 = changeRoomOptions.option3,
-        .option4 = changeRoomOptions.map,
-        .option5 = changeRoomOptions.raceStarted};
-      RaceCommandChangeRoomOptionsNotify::Write(response, sink);
+      return response;
     });
 }
 
@@ -254,26 +257,27 @@ void RaceDirector::HandleStartRace(ClientId clientId, const RaceCommandStartRace
   };
 
   // TODO: Send to all clients in the room
-  _server.QueueCommand(
+  _server.QueueCommand<decltype(response)>(
     clientId,
     CommandId::RaceStartRaceNotify,
-    [response](auto& sink)
+    [response]()
     {
-      RaceCommandStartRaceNotify::Write(response, sink);
+      return response;
     });
 }
 
 void RaceDirector::HandleRaceTimer(ClientId clientId, const UserRaceTimer& raceTimer)
 {
-  _server.QueueCommand(
+  UserRaceTimerOK response{
+    .unk0 = raceTimer.timestamp + 10000,
+    .unk1 = raceTimer.timestamp + 20000};
+
+  _server.QueueCommand<decltype(response)>(
     clientId,
     CommandId::UserRaceTimerOK,
-    [&](auto& sink)
+    [response]()
     {
-      UserRaceTimerOK response{
-        .unk0 = raceTimer.timestamp + 10000,
-        .unk1 = raceTimer.timestamp + 20000};
-      UserRaceTimerOK::Write(response, sink);
+      return response;
     });
 }
 

@@ -379,35 +379,53 @@ void RanchHorse::Read(RanchHorse& value, SourceStream& stream)
     .Read(value.horse);
 }
 
-void RanchCharacter::Write(const RanchCharacter& value, SinkStream& stream)
+void RanchCharacter::Write(const RanchCharacter& ranchCharacter, SinkStream& stream)
 {
-  stream.Write(value.uid)
-    .Write(value.name)
-    .Write(static_cast<uint8_t>(value.gender))
-    .Write(value.unk0)
-    .Write(value.unk1)
-    .Write(value.description);
+  stream.Write(ranchCharacter.uid)
+    .Write(ranchCharacter.name)
+    .Write(ranchCharacter.gender)
+    .Write(ranchCharacter.unk0)
+    .Write(ranchCharacter.unk1)
+    .Write(ranchCharacter.description);
 
-  stream.Write(value.character)
-    .Write(value.mount);
+  stream.Write(ranchCharacter.character)
+    .Write(ranchCharacter.mount);
 
-  stream.Write(static_cast<uint8_t>(value.characterEquipment.size()));
-  for (const auto& item : value.characterEquipment)
+  stream.Write(static_cast<uint8_t>(ranchCharacter.characterEquipment.size()));
+  for (const Item& item : ranchCharacter.characterEquipment)
   {
     stream.Write(item);
   }
 
-  stream.Write(value.playerRelatedThing);
+  // Struct5
+  const auto& struct5 = ranchCharacter.playerRelatedThing;
+  stream.Write(struct5.val0)
+    .Write(struct5.val1)
+    .Write(struct5.val2)
+    .Write(struct5.val3)
+    .Write(struct5.val4)
+    .Write(struct5.val5)
+    .Write(struct5.val6);
 
-  stream.Write(value.ranchIndex)
-    .Write(value.unk2)
-    .Write(value.unk3);
+  stream.Write(ranchCharacter.ranchIndex)
+    .Write(ranchCharacter.unk2)
+    .Write(ranchCharacter.unk3);
 
-  stream.Write(value.anotherPlayerRelatedThing)
-    .Write(value.yetAnotherPlayerRelatedThing);
+  // Struct6
+  const auto& struct6 = ranchCharacter.anotherPlayerRelatedThing;
+  stream.Write(struct6.mountUid)
+    .Write(struct6.val1)
+    .Write(struct6.val2);
 
-  stream.Write(value.unk4)
-    .Write(value.unk5);
+  // Struct7
+  const auto& struct7 = ranchCharacter.yetAnotherPlayerRelatedThing;
+  stream.Write(struct7.val0)
+    .Write(struct7.val1)
+    .Write(struct7.val2)
+    .Write(struct7.val3);
+
+  stream.Write(ranchCharacter.unk4)
+    .Write(ranchCharacter.unk5);
 }
 
 void RanchCharacter::Read(RanchCharacter& value, SourceStream& stream)

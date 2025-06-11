@@ -298,19 +298,22 @@ struct RanchCommandRanchSnapshot
 {
   enum Type : uint8_t
   {
-    Full = 0, Partial = 1
+    Full = 0,
+    Partial = 1
   };
 
   struct FullSpatial
   {
-    uint16_t member0{};
-    uint32_t member1{};
-    uint16_t member2{};
-    std::array<std::byte, 12> member3{};
-    std::array<std::byte, 16> member4{};
-    float x{};
-    float y{};
-    float z{};
+    uint16_t ranchIndex{};
+    uint32_t time{};
+    //! A bitset.
+    uint64_t action{};
+    uint16_t timer{};
+    std::array<std::byte, 12> member4{};
+    std::array<std::byte, 16> matrix{};
+    float velocityX{};
+    float velocityY{};
+    float velocityZ{};
 
     static void Write(const FullSpatial& structure, SinkStream& stream);
     static void Read(FullSpatial& structure, SourceStream& stream);
@@ -318,22 +321,21 @@ struct RanchCommandRanchSnapshot
 
   struct PartialSpatial
   {
-    uint16_t member0{};
-    uint32_t member1{};
-    uint16_t member2{};
-    std::array<std::byte, 12> member3{};
-    std::array<std::byte, 16> member4{};
+    uint16_t ranchIndex{};
+    uint32_t time{};
+    //! A bitset.
+    uint64_t action{};
+    uint16_t timer{};
+    std::array<std::byte, 12> member4{};
+    std::array<std::byte, 16> matrix{};
 
     static void Write(const PartialSpatial& structure, SinkStream& stream);
     static void Read(PartialSpatial& structure, SourceStream& stream);
   };
 
   Type type{};
-  union
-  {
-    FullSpatial full{};
-    PartialSpatial partial;
-  };
+  FullSpatial full{};
+  PartialSpatial partial{};
 
   //! Writes the command to a provided sink stream.
   //! @param command Command.
@@ -356,11 +358,8 @@ struct RanchCommandRanchSnapshotNotify
   uint16_t ranchIndex{};
 
   RanchCommandRanchSnapshot::Type type{};
-  union
-  {
-    RanchCommandRanchSnapshot::FullSpatial full;
-    RanchCommandRanchSnapshot::PartialSpatial partial;
-  };
+  RanchCommandRanchSnapshot::FullSpatial full{};
+  RanchCommandRanchSnapshot::PartialSpatial partial{};
 
   //! Writes the command to a provided sink stream.
   //! @param command Command.

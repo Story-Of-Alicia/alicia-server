@@ -181,12 +181,12 @@ void LobbyDirector::Initialize()
     _settings.address.to_string(),
     _settings.port);
 
-  _server.Host(_settings.address, _settings.port);
+  _server.BeginHost(_settings.address, _settings.port);
 }
 
 void LobbyDirector::Terminate()
 {
-  _server.Stop();
+  _server.EndHost();
 }
 
 void LobbyDirector::Tick()

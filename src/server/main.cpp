@@ -98,7 +98,7 @@ void handler(int sig, siginfo_t* info, void* ucontext)
 
 #endif
 
-} // namespace
+} // anon namespace
 
 int main()
 {

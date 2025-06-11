@@ -352,7 +352,7 @@ struct RanchCharacter
   uint8_t unk4{};
   uint8_t unk5{};
 
-  static void Write(const RanchCharacter& value, SinkStream& buffer);
+  static void Write(const RanchCharacter& ranchCharacter, SinkStream& buffer);
   static void Read(RanchCharacter& value, SourceStream& buffer);
 };
 

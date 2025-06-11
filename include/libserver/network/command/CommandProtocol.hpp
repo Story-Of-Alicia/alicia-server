@@ -75,9 +75,9 @@ uint32_t encode_message_magic(MessageMagic magic);
 //! IDs of the commands in the protocol.
 enum class CommandId : uint16_t
 {
-  LobbyLogin = 0x0007,
-  LobbyLoginOK = 0x0008,
-  LobbyLoginCancel = 0x0009,
+  LobbyLogin = 0x7,
+  LobbyLoginOK = 0x8,
+  LobbyLoginCancel = 0x9,
 
   LobbyHeartbeat = 0x12,
 

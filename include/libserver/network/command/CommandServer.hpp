@@ -59,59 +59,46 @@ public:
   explicit CommandServer();
   ~CommandServer();
 
-  //! Hosts the command server on the specified interface with the provided port.
-  //! Runs the processing loop and blocks until exception or stopped.
-  //! @param interface Interface address.
+  //! Begins the server.
+  //! @param address Address.
   //! @param port Port.
-  void Host(const asio::ip::address& address, uint16_t port);
+  void BeginHost(const asio::ip::address& address, uint16_t port);
 
-  void Stop();
-
-  //! Registers a command handler.
-  //!
-  //! @param commandId ID of the command to register the handler for.
-  //! @param handler Handler function.
-  void RegisterCommandHandler(
-    CommandId commandId,
-    RawCommandHandler handler);
+  //! Ends the server.
+  void EndHost();
 
   //! Registers a command handler.
-  //!
   //! @param commandId ID of the command to register the handler for.
-  //! @param handler Handler function.
-  template <typename T>
+  //! @param handler Handler of the command.
+  template <ReadableStruct C>
   void RegisterCommandHandler(
     CommandId commandId,
-    std::function<void(ClientId clientId, const T&)> handler)
+    std::function<void(ClientId clientId, const C& command)> handler)
   {
-    RegisterCommandHandler(
-      commandId,
-      [=](ClientId clientId, SourceStream& source)
-      {
-        T command;
-        T::Read(command, source);
-        handler(clientId, command);
-      });
+    _handlers[commandId] = [handler](ClientId clientId, SourceStream& source)
+    {
+      C command;
+      C::Read(command, source);
+      handler(clientId, command);
+    };
   }
 
-  void SetCode(ClientId client, XorCode code);
-
-  template <typename T>
+  //! Queues a command for sending.
+  //! @param clientId ID of the client to send the command to.
+  //! @param commandId ID of the command.
+  //! @param supplier Supplier of the command.
+  template <WritableStruct C>
   void QueueCommand(
     ClientId clientId,
     CommandId commandId,
-    std::function<T()> supplier)
+    std::function<C()> supplier)
   {
-    QueueCommand(clientId, commandId, [supplier](auto& sink){
-      sink.Write(supplier());
+    SendCommand(clientId, commandId, [supplier](SinkStream& sink){
+      C::Write(supplier(), sink);
     });
   }
 
-  //!
-  void QueueCommand(
-    ClientId client,
-    CommandId command,
-    CommandSupplier supplier);
+  void SetCode(ClientId client, XorCode code);
 
 private:
   //!
@@ -126,6 +113,12 @@ private:
   void HandleClientWrite(
     ClientId clientId,
     asio::streambuf& writeBuffer);
+
+  //!
+  void SendCommand(
+    ClientId client,
+    CommandId command,
+    CommandSupplier supplier);
 
   std::unordered_map<CommandId, RawCommandHandler> _handlers{};
   std::unordered_map<ClientId, CommandClient> _clients{};

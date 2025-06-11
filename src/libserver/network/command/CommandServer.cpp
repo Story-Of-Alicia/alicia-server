@@ -120,10 +120,10 @@ CommandServer::CommandServer()
 
 CommandServer::~CommandServer()
 {
-  Stop();
+  EndHost();
 }
 
-void CommandServer::Host(const asio::ip::address& address, uint16_t port)
+void CommandServer::BeginHost(const asio::ip::address& address, uint16_t port)
 {
   _serverThread = std::thread(
     [this, address, port]()
@@ -132,7 +132,7 @@ void CommandServer::Host(const asio::ip::address& address, uint16_t port)
     });
 }
 
-void CommandServer::Stop()
+void CommandServer::EndHost()
 {
   _server.End();
   if (_serverThread.joinable())
@@ -141,24 +141,12 @@ void CommandServer::Stop()
   }
 }
 
-void CommandServer::RegisterCommandHandler(
-  CommandId command,
-  RawCommandHandler handler)
-{
-  if (!handler)
-  {
-    return;
-  }
-
-  _handlers[command] = std::move(handler);
-}
-
 void CommandServer::SetCode(ClientId client, XorCode code)
 {
   _clients[client].SetCode(code);
 }
 
-void CommandServer::QueueCommand(ClientId client, CommandId command, CommandSupplier supplier)
+void CommandServer::SendCommand(ClientId client, CommandId command, CommandSupplier supplier)
 {
   // ToDo: Actual queue.
   _server.GetClient(client).QueueWrite(
@@ -373,7 +361,7 @@ void CommandServer::HandleClientRead(
       handler(clientId, commandDataStream);
 
       // There shouldn't be any left-over data in the stream.
-      /*assert(commandDataStream.GetCursor() == commandDataStream.Size());*/
+      assert(commandDataStream.GetCursor() == commandDataStream.Size());
 
       if (!IsMuted(commandId))
       {

@@ -66,58 +66,7 @@ void WriteRanchHorse(
     .Write(ranchHorse.horse);
 }
 
-void WriteRanchPlayer(
-  SinkStream& stream,
-  const RanchCharacter& ranchPlayer)
-{
-  stream.Write(ranchPlayer.uid)
-    .Write(ranchPlayer.name)
-    .Write(ranchPlayer.gender)
-    .Write(ranchPlayer.unk0)
-    .Write(ranchPlayer.unk1)
-    .Write(ranchPlayer.description);
-
-  stream.Write(ranchPlayer.character)
-    .Write(ranchPlayer.mount);
-
-  stream.Write(static_cast<uint8_t>(ranchPlayer.characterEquipment.size()));
-  for (const Item& item : ranchPlayer.characterEquipment)
-  {
-    stream.Write(item);
-  }
-
-  // Struct5
-  const auto& struct5 = ranchPlayer.playerRelatedThing;
-  stream.Write(struct5.val0)
-    .Write(struct5.val1)
-    .Write(struct5.val2)
-    .Write(struct5.val3)
-    .Write(struct5.val4)
-    .Write(struct5.val5)
-    .Write(struct5.val6);
-
-  stream.Write(ranchPlayer.ranchIndex)
-    .Write(ranchPlayer.unk2)
-    .Write(ranchPlayer.unk3);
-
-  // Struct6
-  const auto& struct6 = ranchPlayer.anotherPlayerRelatedThing;
-  stream.Write(struct6.mountUid)
-    .Write(struct6.val1)
-    .Write(struct6.val2);
-
-  // Struct7
-  const auto& struct7 = ranchPlayer.yetAnotherPlayerRelatedThing;
-  stream.Write(struct7.val0)
-    .Write(struct7.val1)
-    .Write(struct7.val2)
-    .Write(struct7.val3);
-
-  stream.Write(ranchPlayer.unk4)
-    .Write(ranchPlayer.unk5);
-}
-
-} // namespace
+} // anon namespace
 
 void RanchCommandUseItem::Write(
   const RanchCommandUseItem& command,
@@ -245,9 +194,9 @@ void RanchCommandEnterRanchOK::Write(
   }
 
   stream.Write(static_cast<uint8_t>(command.characters.size()));
-  for (auto& player : command.characters)
+  for (auto& character : command.characters)
   {
-    WriteRanchPlayer(stream, player);
+    stream.Write(character);
   }
 
   stream.Write(command.unk1)
@@ -309,7 +258,7 @@ void RanchCommandEnterRanchNotify::Write(
   const RanchCommandEnterRanchNotify& command,
   SinkStream& stream)
 {
-  WriteRanchPlayer(stream, command.character);
+  stream.Write(command.character);
 }
 
 void RanchCommandEnterRanchNotify::Read(
@@ -323,62 +272,65 @@ void RanchCommandRanchSnapshot::FullSpatial::Write(
   const FullSpatial& structure,
   SinkStream& stream)
 {
-  stream.Write(structure.member0)
-    .Write(structure.member1)
-    .Write(structure.member2);
-
-  for (const auto& byte : structure.member3)
-  {
-    stream.Write(byte);
-  }
+  stream.Write(structure.ranchIndex)
+    .Write(structure.time)
+    .Write(structure.action)
+    .Write(structure.timer);
 
   for (const auto& byte : structure.member4)
   {
     stream.Write(byte);
   }
 
-  stream.Write(structure.x)
-    .Write(structure.y)
-    .Write(structure.z);
+  for (const auto& byte : structure.matrix)
+  {
+    stream.Write(byte);
+  }
+
+  stream.Write(structure.velocityX)
+    .Write(structure.velocityY)
+    .Write(structure.velocityZ);
 }
 
 void RanchCommandRanchSnapshot::FullSpatial::Read(
   FullSpatial& structure,
   SourceStream& stream)
 {
-  stream.Read(structure.member0)
-    .Read(structure.member1)
-    .Read(structure.member2);
-
-  for (auto& byte : structure.member3)
-  {
-    stream.Read(byte);
-  }
+  stream.Read(structure.ranchIndex)
+    .Read(structure.time)
+    .Read(structure.action)
+    .Read(structure.timer);
 
   for (auto& byte : structure.member4)
   {
     stream.Read(byte);
   }
 
-  stream.Read(structure.x)
-    .Read(structure.y)
-    .Read(structure.z);
+  for (auto& byte : structure.matrix)
+  {
+    stream.Read(byte);
+  }
+
+  stream.Read(structure.velocityX)
+    .Read(structure.velocityY)
+    .Read(structure.velocityZ);
 }
 
 void RanchCommandRanchSnapshot::PartialSpatial::Write(
   const PartialSpatial& structure,
   SinkStream& stream)
 {
-  stream.Write(structure.member0)
-    .Write(structure.member1)
-    .Write(structure.member2);
+  stream.Write(structure.ranchIndex)
+    .Write(structure.time)
+    .Write(structure.action)
+    .Write(structure.timer);
 
-  for (const auto& byte : structure.member3)
+  for (const auto& byte : structure.member4)
   {
     stream.Write(byte);
   }
 
-  for (const auto& byte : structure.member4)
+  for (const auto& byte : structure.matrix)
   {
     stream.Write(byte);
   }
@@ -388,16 +340,17 @@ void RanchCommandRanchSnapshot::PartialSpatial::Read(
   PartialSpatial& structure,
   SourceStream& stream)
 {
-  stream.Read(structure.member0)
-    .Read(structure.member1)
-    .Read(structure.member2);
+  stream.Read(structure.ranchIndex)
+    .Read(structure.time)
+    .Read(structure.action)
+    .Read(structure.timer);
 
-  for (auto& byte : structure.member3)
+  for (auto& byte : structure.member4)
   {
     stream.Read(byte);
   }
 
-  for (auto& byte : structure.member4)
+  for (auto& byte : structure.matrix)
   {
     stream.Read(byte);
   }
@@ -431,7 +384,9 @@ void RanchCommandRanchSnapshot::Read(
     default:
     {
       throw std::runtime_error(
-        std::format("Update type {} not implemented", static_cast<uint32_t>(command.type)));
+        std::format(
+          "Update type {} not implemented",
+          static_cast<uint32_t>(command.type)));
     }
   }
 }
