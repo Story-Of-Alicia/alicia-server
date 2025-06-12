@@ -23,11 +23,7 @@ LABEL org.opencontainers.image.source=https://github.com/Story-Of-Alicia/alicia-
 LABEL org.opencontainers.image.description="Dedicated server implementation for the Alicia game series"
 
 RUN apk add --no-cache libstdc++
-RUN addgroup -S alicia && adduser -S alicia -G alicia
-USER alicia:alicia
-
 WORKDIR /opt/alicia-server
-COPY --from=builder --chown=alicia ${BUILDER_REPO_PATH}/dist .
+COPY --from=builder ${BUILDER_REPO_PATH}/dist .
 
-VOLUME [ "/opt/alicia-server" ]
 ENTRYPOINT ["/opt/alicia-server/alicia-server"]
