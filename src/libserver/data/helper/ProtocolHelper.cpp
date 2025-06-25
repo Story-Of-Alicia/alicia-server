@@ -56,11 +56,11 @@ void BuildProtocolHorse(
   };
 
   protocolHorse.vals1 = {
-    .val0 = 0x00,
+    .type = Horse::HorseType::Adult,
     .val1 = 0x00,
     .dateOfBirth = 0xb8a167e4,
-    .val3 = 0x02,
-    .val4 = 0x00,
+    .personality = 0x02,
+    .spirit = 0x00,
     .classProgression = static_cast<uint32_t>(horse.clazzProgress()),
     .val5 = 0x00,
     .potentialLevel = static_cast<uint8_t>(horse.potentialLevel()),
