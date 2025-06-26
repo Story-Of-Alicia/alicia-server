@@ -267,7 +267,8 @@ struct Horse
     uint32_t val1{};
     uint32_t dateOfBirth{};
 
-    uint8_t personality{};
+    //! The different horse tendencies can be found in the Tendency table
+    uint8_t tendency{};
     uint8_t spirit{};
     uint32_t classProgression{};
     uint32_t val5{};
