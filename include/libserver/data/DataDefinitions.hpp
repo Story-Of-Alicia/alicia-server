@@ -206,10 +206,14 @@ struct Character
 
   struct Appearance
   {
+    //! An ID of the Voice model.
+    dao::Field<uint32_t> voiceId{0u};
     dao::Field<uint32_t> headSize{0u};
     dao::Field<uint32_t> height{0u};
     dao::Field<uint32_t> thighVolume{0u};
     dao::Field<uint32_t> legVolume{0u};
+    //! An ID of the emblem.
+    dao::Field<uint32_t> emblem{0u};
   } appearance{};
 
   dao::Field<Uid> petUid;

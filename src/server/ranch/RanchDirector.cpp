@@ -278,9 +278,9 @@ void RanchDirector::HandleRanchEnter(
   protocol::RanchCommandEnterRanchOK response{
     .ranchId = command.ranchUid,
     .unk0 = "unk0",
-    .unk11 = {
-      .unk0 = 1,
-      .unk1 = 1}};
+    .league = {
+      .type = League::Type::Platinum,
+      .rankingPercentile = 50}};
 
   // Get the ranch the user is connecting to.
   const auto ranchRecord = GetServerInstance().GetDataDirector().GetRanches().Get(
@@ -330,7 +330,7 @@ void RanchDirector::HandleRanchEnter(
     auto& ranchCharacter = response.characters.emplace_back();
     ranchCharacter.ranchIndex = characterEntityId;
     ranchCharacter.guild = {
-      .val1 = 1};
+      .val1 = 0};
 
     auto characterRecord = GetServerInstance().GetDataDirector().GetCharacters().Get(characterUid);
     if (not characterRecord)

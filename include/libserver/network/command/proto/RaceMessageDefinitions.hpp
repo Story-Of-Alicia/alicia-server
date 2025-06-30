@@ -75,7 +75,7 @@ struct Racer
 
   Pet pet{};
   Guild guild{};
-  RanchUnk11 unk9{};
+  League unk9{};
   uint8_t unk10{5};
   uint8_t unk11{6};
   uint8_t unk12{7};

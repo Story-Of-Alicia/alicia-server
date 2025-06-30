@@ -259,7 +259,7 @@ void RanchCommandEnterRanchOK::Write(
       .Write(unk.unk7);
   }
 
-  stream.Write(command.unk11);
+  stream.Write(command.league);
 
   stream.Write(command.unk12);
 }

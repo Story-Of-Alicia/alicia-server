@@ -142,7 +142,7 @@ struct Character
   struct Appearance
   {
     //!
-    uint16_t val0{};
+    uint16_t voiceId{};
     //! FigFace
     uint16_t headSize{};
     //! FigTall
@@ -152,7 +152,7 @@ struct Character
     //! FigShape
     uint16_t legVolume{};
     //!
-    uint16_t val1{};
+    uint16_t emblem{};
 
     static void Write(const Appearance& value, SinkStream& stream);
     static void Read(Appearance& value, SourceStream& stream);
@@ -428,13 +428,23 @@ struct Quest
 };
 
 //!
-struct RanchUnk11
+struct League
 {
-  uint8_t unk0{};
-  uint8_t unk1{};
+  enum class Type : uint8_t
+  {
+    None = 0,
+    Bronze = 1,
+    Silver = 2,
+    Gold = 3,
+    Platinum = 4
+  };
 
-  static void Write(const RanchUnk11& value, SinkStream& stream);
-  static void Read(RanchUnk11& value, SourceStream& stream);
+  Type type{};
+  //! League rank percentile expressed as a whole number in an interval <0, 100>.
+  uint8_t rankingPercentile{};
+
+  static void Write(const League& value, SinkStream& stream);
+  static void Read(League& value, SourceStream& stream);
 };
 
 enum class GameMode : uint8_t

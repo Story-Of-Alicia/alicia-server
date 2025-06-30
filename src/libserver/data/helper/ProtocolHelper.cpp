@@ -25,10 +25,12 @@ void BuildProtocolCharacter(
 
   // Set the character appearance.
   protocolCharacter.appearance = {
+    .voiceId = 5,
     .headSize = static_cast<uint8_t>(character.appearance.headSize()),
     .height = static_cast<uint8_t>(character.appearance.height()),
     .thighVolume = static_cast<uint8_t>(character.appearance.thighVolume()),
     .legVolume = static_cast<uint8_t>(character.appearance.legVolume()),
+    .emblem = 3
   };
 }
 

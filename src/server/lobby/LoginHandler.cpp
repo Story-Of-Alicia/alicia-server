@@ -277,10 +277,12 @@ void LoginHandler::HandleUserCreateCharacter(
         .mouthId = command.character.parts.mouthSerialId,
         .faceId = command.character.parts.faceSerialId};
       character.appearance = data::Character::Appearance{
+        .voiceId = command.character.appearance.voiceId,
         .headSize = command.character.appearance.headSize,
         .height = command.character.appearance.height,
         .thighVolume = command.character.appearance.thighVolume,
         .legVolume = command.character.appearance.legVolume,
+        .emblem = command.character.appearance.emblem,
       };
 
       character.mountUid() = characterMountUid;
@@ -344,9 +346,9 @@ void LoginHandler::QueueUserLoginAccepted(
     .val14 = 0xca1b87db,
     .guild = {.val1 = 1},
     .val16 = 4,
-    .val18 = 0x3a,
-    .val19 = 0x38e,
-    .val20 = 0x1c6};
+    .val18 = 0x2a,
+    .val19 = 0x38d,
+    .val20 = 0x1c7};
 
   // Get the character UID of the user.
   data::Uid userCharacterUid{data::InvalidUid};

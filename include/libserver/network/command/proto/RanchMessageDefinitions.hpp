@@ -305,7 +305,7 @@ struct RanchCommandEnterRanchOK
 
   std::array<Unk10, 3> unk10;
 
-  RanchUnk11 unk11{};
+  League league{};
 
   uint32_t unk12{};
 

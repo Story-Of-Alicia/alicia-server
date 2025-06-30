@@ -136,22 +136,22 @@ void Character::Parts::Read(Parts& value, SourceStream& stream)
 
 void Character::Appearance::Write(const Appearance& value, SinkStream& stream)
 {
-  stream.Write(value.val0)
+  stream.Write(value.voiceId)
     .Write(value.headSize)
     .Write(value.height)
     .Write(value.thighVolume)
     .Write(value.legVolume)
-    .Write(value.val1);
+    .Write(value.emblem);
 }
 
 void Character::Appearance::Read(Appearance& value, SourceStream& stream)
 {
-  stream.Read(value.val0)
+  stream.Read(value.voiceId)
     .Read(value.headSize)
     .Read(value.height)
     .Read(value.thighVolume)
     .Read(value.legVolume)
-    .Read(value.val1);
+    .Read(value.emblem);
 }
 
 void Character::Write(const Character& value, SinkStream& stream)
@@ -540,16 +540,16 @@ void Quest::Read(Quest& value, SourceStream& stream)
     .Read(value.member4);
 }
 
-void RanchUnk11::Write(const RanchUnk11& value, SinkStream& stream)
+void League::Write(const League& value, SinkStream& stream)
 {
-  stream.Write(value.unk0)
-    .Write(value.unk1);
+  stream.Write(value.type)
+    .Write(value.rankingPercentile);
 }
 
-void RanchUnk11::Read(RanchUnk11& value, SourceStream& stream)
+void League::Read(League& value, SourceStream& stream)
 {
-  stream.Read(value.unk0)
-    .Read(value.unk1);
+  stream.Read(value.type)
+    .Read(value.rankingPercentile);
 }
 
 } // namespace server
