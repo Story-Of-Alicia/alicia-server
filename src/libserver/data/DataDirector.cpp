@@ -307,7 +307,7 @@ void DataDirector::RequestLoadUserData(const std::string& userName)
     const Deferred requestLoadAgain(
       [this, &userDataContext, &userName]()
       {
-        if (userDataContext.timeout > Clock::now())
+        if (Clock::now() > userDataContext.timeout)
         {
           spdlog::warn(
             "Loading of the user '{}' has reached a timeout: {}",
