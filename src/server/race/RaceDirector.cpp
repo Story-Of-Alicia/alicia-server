@@ -137,18 +137,18 @@ void RaceDirector::HandleEnterRoom(
 
   protocol::RaceCommandEnterRoomOK response{
     .nowPlaying = 1,
-    .unk1 = 1,
+    .unk1 = 1, // Room code
     .roomDescription = {
       .name = room.name,
       .val_between_name_and_desc = static_cast<uint8_t>(room.uid), // ?
       .description = room.description,
       .unk1 = room.unk0,
       .gameMode = room.gameMode,
-      .unk3 = 8,
+      .unk3 = 8, // Currently selected map, can be both ADV or normal map
       .teamMode = room.teamMode,
       .missionId = room.missionId,
       .unk6 = room.unk3,
-      .unk7 = room.unk4}};
+      .unk7 = room.unk4}}; // 0 = Shows room above your skill bracket warning, 1 and above = hides the warning
 
   protocol::Racer joiningRacer;
 
