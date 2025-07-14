@@ -270,14 +270,14 @@ struct RanchCommandEnterRanchOK
 
   uint64_t unk1{0};
   uint32_t scramblingConstant{0};
-  uint32_t unk3{0};
+  uint32_t ranchProgress{100000};
 
   // List size as a byte. Max length 13
   std::vector<Housing> housing{};
 
-  uint8_t unk5{};
+  uint8_t horseSlots{5};
   uint32_t unk6{};
-  uint32_t unk7{}; // bitset
+  uint32_t isLocked{0}; // bitset
 
   uint32_t incubatorSlotOne{2};
   uint32_t incubatorSlotTwo{1};

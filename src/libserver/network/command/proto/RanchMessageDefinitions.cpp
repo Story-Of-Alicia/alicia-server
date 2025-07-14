@@ -222,7 +222,7 @@ void RanchCommandEnterRanchOK::Write(
 
   stream.Write(command.unk1)
     .Write(command.scramblingConstant)
-    .Write(command.unk3);
+    .Write(command.ranchProgress);
 
   stream.Write(static_cast<uint8_t>(command.housing.size()));
   for (auto& housing : command.housing)
@@ -230,9 +230,9 @@ void RanchCommandEnterRanchOK::Write(
     stream.Write(housing);
   }
 
-  stream.Write(command.unk5)
+  stream.Write(command.horseSlots)
     .Write(command.unk6)
-    .Write(command.unk7)
+    .Write(command.isLocked)
     .Write(command.incubatorSlotOne)
     .Write(command.incubatorSlotTwo);
 
