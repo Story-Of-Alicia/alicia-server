@@ -45,6 +45,6 @@ private:
   std::unique_ptr<pqxx::connection> _connection;
 };
 
-} // namespace soa
+} // namespace server
 
 #endif // PQDATASOURCE_HPP

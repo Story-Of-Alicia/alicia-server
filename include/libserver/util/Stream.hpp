@@ -25,7 +25,7 @@
 #include <stdexcept>
 #include <type_traits>
 
-namespace alicia
+namespace server
 {
 
 template <typename StorageType>
@@ -37,11 +37,11 @@ public:
 
   //! Default constructor.
   explicit StreamBase(Storage storage) noexcept
-    : _storage(storage) {};
+    : _storage(storage) {}
 
   //! Empty constructor.
   explicit StreamBase(std::nullptr_t) noexcept
-    : _storage() {};
+    : _storage() {}
 
   //! Virtual destructor.
   virtual ~StreamBase() = default;
@@ -202,6 +202,6 @@ public:
   }
 };
 
-} // namespace alicia
+} // namespace server
 
 #endif // STREAM_HPP

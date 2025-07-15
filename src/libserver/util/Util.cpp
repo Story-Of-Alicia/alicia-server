@@ -21,18 +21,13 @@
 
 #include <ranges>
 
-#define Int32x32To64(a, b) ((uint16_t)(((uint64_t)((long)(a))) * ((long)(b))))
-
-namespace alicia
+namespace server::util
 {
 
-// Sources:
-//  https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-int32x32to64
-//  https://gist.github.com/JamesMenetrey/d3f494262bcab48af1d617c3d39f34cf#file-winnt-h-L944
 WinFileTime UnixTimeToFileTime(const std::chrono::system_clock::time_point& timePoint)
 {
   const uint64_t unixTime = timePoint.time_since_epoch().count();
-  const uint64_t convertedUnixTime = Int32x32To64(unixTime, 10000000) + 116444736000000000;
+  const uint64_t convertedUnixTime = unixTime * 10'000'000ull + 116444736000000000;
   return WinFileTime{
     .dwLowDateTime = static_cast<uint32_t>(convertedUnixTime),
     .dwHighDateTime = static_cast<uint32_t>(convertedUnixTime >> 32)};
@@ -40,10 +35,15 @@ WinFileTime UnixTimeToFileTime(const std::chrono::system_clock::time_point& time
 
 asio::ip::address_v4 ResolveHostName(const std::string& host)
 {
-  const auto address = asio::ip::make_address(host);
-  // If host is an IP address, parse that directly.
-  if (address.is_v4())
+  try
+  {
+    // Try to parse the address directly.
+    const auto address = asio::ip::make_address(host);
     return address.to_v4();
+  }
+  catch (const std::exception& ignored)
+  {
+  }
 
   asio::io_context ioContext;
   asio::ip::tcp::resolver resolver(ioContext);
@@ -105,4 +105,4 @@ std::vector<std::string> TokenizeString(const std::string& value, char delimiter
   return tokens;
 }
 
-} // namespace alicia
+} // namespace server

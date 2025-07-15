@@ -135,6 +135,6 @@ private:
   std::unordered_map<std::string, Value> _parameters;
 };
 
-} // namespace soa
+} // namespace server
 
 #endif // SQLUTILS_HPP

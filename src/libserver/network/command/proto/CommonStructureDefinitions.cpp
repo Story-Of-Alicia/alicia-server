@@ -19,7 +19,7 @@
 
 #include "libserver/network/command/proto/CommonStructureDefinitions.hpp"
 
-namespace alicia
+namespace server
 {
 
 void Item::Write(const Item& item, SinkStream& stream)
@@ -36,6 +36,34 @@ void Item::Read(Item& item, SourceStream& stream)
     .Read(item.tid)
     .Read(item.val)
     .Read(item.count);
+}
+
+void StoredItem::Write(const StoredItem& item, SinkStream& stream)
+{
+  stream.Write(item.uid)
+    .Write(item.val1)
+    .Write(item.val2)
+    .Write(item.val3)
+    .Write(item.val4)
+    .Write(item.val5)
+    .Write(item.val6)
+    .Write(item.sender)
+    .Write(item.message)
+    .Write(item.dateAndTime);
+}
+
+void StoredItem::Read(StoredItem& item, SourceStream& stream)
+{
+  stream.Read(item.uid)
+    .Read(item.val1)
+    .Read(item.val2)
+    .Read(item.val3)
+    .Read(item.val4)
+    .Read(item.val5)
+    .Read(item.val6)
+    .Read(item.sender)
+    .Read(item.message)
+    .Read(item.dateAndTime);
 }
 
 void KeyboardOptions::Option::Write(const Option& option, SinkStream& stream)
@@ -108,22 +136,22 @@ void Character::Parts::Read(Parts& value, SourceStream& stream)
 
 void Character::Appearance::Write(const Appearance& value, SinkStream& stream)
 {
-  stream.Write(value.val0)
+  stream.Write(value.voiceId)
     .Write(value.headSize)
     .Write(value.height)
     .Write(value.thighVolume)
     .Write(value.legVolume)
-    .Write(value.val1);
+    .Write(value.emblemId);
 }
 
 void Character::Appearance::Read(Appearance& value, SourceStream& stream)
 {
-  stream.Read(value.val0)
+  stream.Read(value.voiceId)
     .Read(value.headSize)
     .Read(value.height)
     .Read(value.thighVolume)
     .Read(value.legVolume)
-    .Read(value.val1);
+    .Read(value.emblemId);
 }
 
 void Character::Write(const Character& value, SinkStream& stream)
@@ -237,11 +265,11 @@ void Horse::Write(const Horse& value, SinkStream& stream)
     .Write(value.vals0.val9)
     .Write(value.vals0.val10);
 
-  stream.Write(value.vals1.val0)
+  stream.Write(value.vals1.type)
     .Write(value.vals1.val1)
     .Write(value.vals1.dateOfBirth)
-    .Write(value.vals1.val3)
-    .Write(value.vals1.val4)
+    .Write(value.vals1.tendency)
+    .Write(value.vals1.spirit)
     .Write(value.vals1.classProgression)
     .Write(value.vals1.val5)
     .Write(value.vals1.potentialLevel)
@@ -291,11 +319,11 @@ void Horse::Read(Horse& value, SourceStream& stream)
     .Read(value.vals0.val9)
     .Read(value.vals0.val10);
 
-  stream.Read(value.vals1.val0)
+  stream.Read(value.vals1.type)
     .Read(value.vals1.val1)
     .Read(value.vals1.dateOfBirth)
-    .Read(value.vals1.val3)
-    .Read(value.vals1.val4)
+    .Read(value.vals1.tendency)
+    .Read(value.vals1.spirit)
     .Read(value.vals1.classProgression)
     .Read(value.vals1.val5)
     .Read(value.vals1.potentialLevel)
@@ -315,56 +343,114 @@ void Horse::Read(Horse& value, SourceStream& stream)
     .Read(value.val17);
 }
 
-void Struct5::Write(const Struct5& value, SinkStream& stream)
+void Guild::Write(const Guild& value, SinkStream& stream)
 {
-  stream.Write(value.val0)
+  stream.Write(value.uid)
     .Write(value.val1)
     .Write(value.val2)
-    .Write(value.val3)
+    .Write(value.name)
     .Write(value.val4)
     .Write(value.val5)
     .Write(value.val6);
 }
 
-void Struct5::Read(Struct5& value, SourceStream& stream)
+void Guild::Read(Guild& value, SourceStream& stream)
 {
-  stream.Read(value.val0)
+  stream.Read(value.uid)
     .Read(value.val1)
     .Read(value.val2)
-    .Read(value.val3)
+    .Read(value.name)
     .Read(value.val4)
     .Read(value.val5)
     .Read(value.val6);
 }
 
-void Struct6::Write(const Struct6& value, SinkStream& stream)
+void Rent::Write(const Rent& value, SinkStream& stream)
 {
   stream.Write(value.mountUid)
     .Write(value.val1)
     .Write(value.val2);
 }
 
-void Struct6::Read(Struct6& value, SourceStream& stream)
+void Rent::Read(Rent& value, SourceStream& stream)
 {
   stream.Read(value.mountUid)
     .Read(value.val1)
     .Read(value.val2);
 }
 
-void Struct7::Write(const Struct7& value, SinkStream& stream)
+void Pet::Write(const Pet& value, SinkStream& stream)
 {
-  stream.Write(value.val0)
-    .Write(value.val1)
-    .Write(value.val2)
+  stream.Write(value.uid)
+    .Write(value.tid)
+    .Write(value.name)
     .Write(value.val3);
 }
 
-void Struct7::Read(Struct7& value, SourceStream& stream)
+void Pet::Read(Pet& value, SourceStream& stream)
 {
-  stream.Read(value.val0)
-    .Read(value.val1)
-    .Read(value.val2)
+  stream.Read(value.uid)
+    .Read(value.tid)
+    .Read(value.name)
     .Read(value.val3);
+}
+
+void Egg::Write(const Egg& value, SinkStream& stream)
+{
+  stream.Write(value.uid)
+    .Write(value.tid)
+    .Write(value.petTid)
+    .Write(value.member4)
+    .Write(value.member5)
+    .Write(value.timeRemaining)
+    .Write(value.timeElapsed)
+    .Write(value.totalHatchingTime)
+    .Write(value.member9);
+}
+
+void Egg::Read(Egg& value, SourceStream& stream)
+{
+  stream.Read(value.uid)
+    .Read(value.tid)
+    .Read(value.petTid)
+    .Read(value.member4)
+    .Read(value.member5)
+    .Read(value.timeRemaining)
+    .Read(value.timeElapsed)
+    .Read(value.totalHatchingTime)
+    .Read(value.member9);
+}
+
+void PetInfo::Write(const PetInfo& value, SinkStream& stream)
+{
+  stream.Write(value.member1)
+    .Write(value.itemUid)
+    .Write(value.pet)
+    .Write(value.member4);
+}
+
+void PetInfo::Read(PetInfo& value, SourceStream& stream)
+{
+  stream.Read(value.member1)
+    .Read(value.itemUid)
+    .Read(value.pet)
+    .Read(value.member4);
+}
+
+void PetBirthInfo::Write(const PetBirthInfo& value, SinkStream& stream)
+{
+  stream.Write(value.eggItem)
+    .Write(value.member2)
+    .Write(value.member3)
+    .Write(value.petInfo);
+}
+
+void PetBirthInfo::Read(PetBirthInfo& value, SourceStream& stream)
+{
+  stream.Read(value.eggItem)
+    .Read(value.member2)
+    .Read(value.member3)
+    .Read(value.petInfo);
 }
 
 void RanchHorse::Write(const RanchHorse& value, SinkStream& stream)
@@ -383,10 +469,10 @@ void RanchCharacter::Write(const RanchCharacter& ranchCharacter, SinkStream& str
 {
   stream.Write(ranchCharacter.uid)
     .Write(ranchCharacter.name)
-    .Write(ranchCharacter.gender)
-    .Write(ranchCharacter.unk0)
-    .Write(ranchCharacter.unk1)
-    .Write(ranchCharacter.description);
+    .Write(ranchCharacter.profileIcon)
+    .Write(ranchCharacter.age)
+    .Write(ranchCharacter.hideGenderAndAge)
+    .Write(ranchCharacter.introduction);
 
   stream.Write(ranchCharacter.character)
     .Write(ranchCharacter.mount);
@@ -397,31 +483,31 @@ void RanchCharacter::Write(const RanchCharacter& ranchCharacter, SinkStream& str
     stream.Write(item);
   }
 
-  // Struct5
-  const auto& struct5 = ranchCharacter.playerRelatedThing;
-  stream.Write(struct5.val0)
+  // Guild
+  const auto& struct5 = ranchCharacter.guild;
+  stream.Write(struct5.uid)
     .Write(struct5.val1)
     .Write(struct5.val2)
-    .Write(struct5.val3)
+    .Write(struct5.name)
     .Write(struct5.val4)
     .Write(struct5.val5)
     .Write(struct5.val6);
 
   stream.Write(ranchCharacter.ranchIndex)
-    .Write(ranchCharacter.unk2)
+    .Write(ranchCharacter.isBusy)
     .Write(ranchCharacter.unk3);
 
-  // Struct6
-  const auto& struct6 = ranchCharacter.anotherPlayerRelatedThing;
+  // Rent
+  const auto& struct6 = ranchCharacter.rent;
   stream.Write(struct6.mountUid)
     .Write(struct6.val1)
     .Write(struct6.val2);
 
-  // Struct7
-  const auto& struct7 = ranchCharacter.yetAnotherPlayerRelatedThing;
-  stream.Write(struct7.val0)
-    .Write(struct7.val1)
-    .Write(struct7.val2)
+  // Pet
+  const auto& struct7 = ranchCharacter.pet;
+  stream.Write(struct7.uid)
+    .Write(struct7.tid)
+    .Write(struct7.name)
     .Write(struct7.val3);
 
   stream.Write(ranchCharacter.unk4)
@@ -432,10 +518,10 @@ void RanchCharacter::Read(RanchCharacter& value, SourceStream& stream)
 {
   stream.Read(value.uid)
     .Read(value.name)
-    .Read(reinterpret_cast<uint8_t&>(value.gender))
-    .Read(value.unk0)
-    .Read(value.unk1)
-    .Read(value.description);
+    .Read(reinterpret_cast<uint8_t&>(value.profileIcon))
+    .Read(value.age)
+    .Read(value.hideGenderAndAge)
+    .Read(value.introduction);
 
   stream.Read(value.character).Read(value.mount);
 
@@ -447,14 +533,14 @@ void RanchCharacter::Read(RanchCharacter& value, SourceStream& stream)
     stream.Read(item);
   }
 
-  stream.Read(value.playerRelatedThing);
+  stream.Read(value.guild);
 
   stream.Read(value.ranchIndex)
-    .Read(value.unk2)
+    .Read(value.isBusy)
     .Read(value.unk3);
 
-  stream.Read(value.anotherPlayerRelatedThing)
-    .Read(value.yetAnotherPlayerRelatedThing);
+  stream.Read(value.rent)
+    .Read(value.pet);
 
   stream.Read(value.unk4)
     .Read(value.unk5);
@@ -480,16 +566,30 @@ void Quest::Read(Quest& value, SourceStream& stream)
     .Read(value.member4);
 }
 
-void RanchUnk11::Write(const RanchUnk11& value, SinkStream& stream)
+void Housing::Write(const Housing& value, SinkStream& stream)
 {
-  stream.Write(value.unk0)
-    .Write(value.unk1);
+  stream.Write(value.uid)
+    .Write(value.tid)
+    .Write(value.durability);
 }
 
-void RanchUnk11::Read(RanchUnk11& value, SourceStream& stream)
+void Housing::Read(Housing& value, SourceStream& stream)
 {
-  stream.Read(value.unk0)
-    .Read(value.unk1);
+  stream.Read(value.uid)
+    .Read(value.tid)
+    .Read(value.durability);
 }
 
-} // namespace alicia
+void League::Write(const League& value, SinkStream& stream)
+{
+  stream.Write(value.type)
+    .Write(value.rankingPercentile);
+}
+
+void League::Read(League& value, SourceStream& stream)
+{
+  stream.Read(value.type)
+    .Read(value.rankingPercentile);
+}
+
+} // namespace server

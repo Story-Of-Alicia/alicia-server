@@ -1,0 +1,13 @@
+emblems:
+  rating-chances:
+    1:
+      chance: 77
+    2:
+      chance: 13
+    3:
+      chance: 2
+  collection:
+    - tid: 1
+      rating: 1
+    - tid: 2
+      rating: 1

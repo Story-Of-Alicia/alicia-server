@@ -21,24 +21,29 @@
 #define LOBBYDIRECTOR_HPP
 
 #include "LoginHandler.hpp"
+
 #include "server/Settings.hpp"
 
-#include "libserver/data/DataDirector.hpp"
+#include "libserver/data/DataDefinitions.hpp"
 #include "libserver/network/command/CommandServer.hpp"
 #include "libserver/network/command/proto/LobbyMessageDefinitions.hpp"
 
-namespace alicia
+#include <unordered_map>
+
+namespace server
 {
 
+class ServerInstance;
+class Settings;
+
 class LobbyDirector final
+  : public CommandServer::EventHandlerInterface
 {
   friend LoginHandler;
 
 public:
   //!
-  explicit LobbyDirector(
-    soa::DataDirector& dataDirector,
-    Settings::LobbySettings settings = {});
+  explicit LobbyDirector(ServerInstance& serverInstance);
 
   LobbyDirector(const LobbyDirector&) = delete;
   LobbyDirector& operator=(const LobbyDirector&) = delete;
@@ -50,106 +55,134 @@ public:
   void Terminate();
   void Tick();
 
-  soa::DataDirector& GetDataDirector();
+  void HandleClientConnected(ClientId clientId) override;
+  void HandleClientDisconnected(ClientId clientId) override;
+
+  ServerInstance& GetServerInstance();
   Settings::LobbySettings& GetSettings();
 
+  void UpdateVisitPreference(data::Uid characterUid, data::Uid visitingCharacterUid);
+
 private:
-  //!
   void HandleEnterChannel(
     ClientId clientId,
-    const LobbyCommandEnterChannel& enterChannel);
+    const protocol::LobbyCommandEnterChannel& command);
 
-  //!
+  void HandleRoomList(
+    ClientId,
+    const protocol::LobbyCommandRoomList& command);
+
   void HandleMakeRoom(
     ClientId clientId,
-    const LobbyCommandMakeRoom& makeRoom);
+    const protocol::LobbyCommandMakeRoom& command);
+
+  void HandleEnterRoom(
+    ClientId clientId,
+    const protocol::LobbyCommandEnterRoom& command);
 
   //!
   void HandleHeartbeat(
     ClientId clientId,
-    const LobbyCommandHeartbeat& heartbeat);
+    const protocol::LobbyCommandHeartbeat& command);
 
   //!
   void HandleShowInventory(
     ClientId clientId,
-    const LobbyCommandShowInventory& showInventory);
+    const protocol::LobbyCommandShowInventory& command);
+
+  void QueueShowInventory(
+    ClientId clientId);
 
   //!
   void HandleAchievementCompleteList(
     ClientId clientId,
-    const LobbyCommandAchievementCompleteList& achievementCompleteList);
+    const protocol::LobbyCommandAchievementCompleteList& command);
 
   //!
   void HandleRequestLeagueInfo(
     ClientId clientId,
-    const LobbyCommandRequestLeagueInfo& requestLeagueInfo);
+    const protocol::LobbyCommandRequestLeagueInfo& command);
 
   //!
   void HandleRequestQuestList(
     ClientId clientId,
-    const LobbyCommandRequestQuestList& requestQuestList);
+    const protocol::LobbyCommandRequestQuestList& command);
 
   //!
   void HandleRequestDailyQuestList(
     ClientId clientId,
-    const LobbyCommandRequestDailyQuestList& requestQuestList);
+    const protocol::LobbyCommandRequestDailyQuestList& command);
 
   //!
   void HandleRequestSpecialEventList(
     ClientId clientId,
-    const LobbyCommandRequestSpecialEventList& requestQuestList);
+    const protocol::LobbyCommandRequestSpecialEventList& command);
+
+  //!
+  void HandleRequestPersonalInfo(
+    ClientId clientId,
+    const protocol::LobbyCommandRequestPersonalInfo& command);
+
+  void HandleSetIntroduction(
+    ClientId clientId,
+    const protocol::LobbyCommandSetIntroduction& command);
 
   //!
   void HandleEnterRanch(
     ClientId clientId,
-    const LobbyCommandEnterRanch& requestEnterRanch);
+    const protocol::LobbyCommandEnterRanch& command);
 
   void QueueEnterRanchOK(
     ClientId clientId,
-    soa::data::Uid ranchUid);
+    data::Uid rancherUid);
 
   //!
   void HandleGetMessengerInfo(
     ClientId clientId,
-    const LobbyCommandGetMessengerInfo& requestMessengerInfo);
+    const protocol::LobbyCommandGetMessengerInfo& command);
 
   //!
   void HandleGoodsShopList(
     ClientId clientId,
-    const LobbyCommandGoodsShopList& message);
+    const protocol::LobbyCommandGoodsShopList& command);
 
   //!
   void HandleInquiryTreecash(
     ClientId clientId,
-    const LobbyCommandInquiryTreecash& message);
+    const protocol::LobbyCommandInquiryTreecash& command);
 
   //!
   void HandleGuildPartyList(
     ClientId clientId,
-    const LobbyCommandGuildPartyList& message);
+    const protocol::LobbyCommandGuildPartyList& command);
+
+  void HandleUpdateSystemContent(
+    ClientId clientId,
+    const protocol::LobbyCommandUpdateSystemContent& command);
 
   //!
-  Settings::LobbySettings _settings;
-
+  ServerInstance& _serverInstance;
   //!
-  CommandServer _server;
-
-  //!
-  soa::DataDirector& _dataDirector;
+  CommandServer _commandServer;
   //!
   LoginHandler _loginHandler;
 
 protected:
   struct ClientContext
   {
-    bool authorized;
-    soa::data::Uid characterUid = soa::data::InvalidUid;
+    //! Whether the client is authorized.
+    bool isAuthorized{false};
+    data::Uid characterUid = data::InvalidUid;
+    data::Uid rancherVisitPreference = data::InvalidUid;
   };
+
+  protocol::LobbyCommandLoginOK::SystemContent _systemContent{
+    .values = {{4, 0}, {16, 1}}};
   
   //!
   std::unordered_map<ClientId, ClientContext> _clientContext;
 };
 
-} // namespace alicia
+} // namespace server
 
 #endif // LOBBYDIRECTOR_HPP

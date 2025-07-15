@@ -22,63 +22,84 @@
 
 #include "server/Settings.hpp"
 
-#include "libserver/data/DataDirector.hpp"
 #include "libserver/network/command/CommandServer.hpp"
 #include "libserver/network/command/proto/RaceMessageDefinitions.hpp"
+#include "server/tracker/WorldTracker.hpp"
 
-namespace alicia
+#include <unordered_map>
+#include <vector>
+
+namespace server
+{
+class ServerInstance;
+} // namespace server
+
+namespace server
 {
 
-class RaceDirector
+class RaceDirector final
+  : public CommandServer::EventHandlerInterface
 {
 public:
   //!
-  RaceDirector(
-    soa::DataDirector& dataDirector,
-    Settings::RaceSettings settings = {});
+  explicit RaceDirector(ServerInstance& serverInstance);
 
   void Initialize();
   void Terminate();
   void Tick();
 
+  void HandleClientConnected(ClientId clientId) override;
+  void HandleClientDisconnected(ClientId clientId) override;
+
+  ServerInstance& GetServerInstance();
+  Settings::RaceSettings& GetSettings();
+
 private:
   //!
   void HandleEnterRoom(
     ClientId clientId,
-    const RaceCommandEnterRoom& enterRoom);
+    const protocol::RaceCommandEnterRoom& command);
 
   //!
   void HandleChangeRoomOptions(
     ClientId clientId,
-    const RaceCommandChangeRoomOptions& changeRoomOptions);
+    const protocol::RaceCommandChangeRoomOptions& command);
 
   //!
   void HandleStartRace(
     ClientId clientId,
-    const RaceCommandStartRace& startRace);
+    const protocol::RaceCommandStartRace& command);
 
   //!
   void HandleRaceTimer(
     ClientId clientId,
-    const UserRaceTimer& raceTimer);
+    const protocol::RaceCommandUserRaceTimer& command);
+
+  void HandleReadyRace(
+    ClientId clientId,
+    const protocol::RaceCommandReadyRace& command);
 
   //!
-  Settings::RaceSettings _settings;
+  ServerInstance& _serverInstance;
   //!
-  soa::DataDirector& _dataDirector;
-  //!
-  CommandServer _server;
+  CommandServer _commandServer;
 
-  //!
-  std::unordered_map<ClientId, soa::data::Uid> _clientCharacters;
-
-  struct RoomInstance
+  struct ClientContext
   {
-    // Add race-specific data here
+    data::Uid characterUid{data::InvalidUid};
+    data::Uid roomUid{data::InvalidUid};
+    bool ready = false;
   };
-  std::unordered_map<soa::data::Uid, RoomInstance> _rooms;
+  std::unordered_map<ClientId, ClientContext> _clientContexts;
+
+  struct Room
+  {
+    std::vector<ClientId> clients;
+    WorldTracker worldTracker;
+  };
+  std::unordered_map<uint32_t, Room> _roomInstances;
 };
 
-} // namespace alicia
+} // namespace server
 
 #endif // RACEDIRECTOR_HPP

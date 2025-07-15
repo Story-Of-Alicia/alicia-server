@@ -24,7 +24,10 @@
 #include <chrono>
 #include <span>
 
-namespace alicia
+namespace server
+{
+
+namespace util
 {
 
 namespace asio = boost::asio;
@@ -47,6 +50,8 @@ std::string GenerateByteDump(std::span<const std::byte> data);
 
 std::vector<std::string> TokenizeString(const std::string& value, char delimiter);
 
-} // namespace alicia
+} // namespace util
+
+} // namespace server
 
 #endif // UTIL_HPP

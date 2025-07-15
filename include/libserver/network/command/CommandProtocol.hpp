@@ -24,7 +24,7 @@
 #include <cstdint>
 #include <string_view>
 
-namespace alicia
+namespace server::protocol
 {
 
 //! A constant buffer size for message magic.
@@ -47,8 +47,7 @@ constexpr int32_t XorControl{
   static_cast<int32_t>(0xA20191CB)};
 
 //! XOR rolling key algorithm constant
-constexpr int32_t XorMultiplier{
-  0x20080825};
+constexpr int32_t XorMultiplier{0x20080825};
 
 //! Message magic with which all messages are prefixed.
 struct MessageMagic
@@ -73,11 +72,22 @@ MessageMagic decode_message_magic(uint32_t value);
 uint32_t encode_message_magic(MessageMagic magic);
 
 //! IDs of the commands in the protocol.
-enum class CommandId : uint16_t
+enum class Command : uint16_t
 {
   LobbyLogin = 0x7,
   LobbyLoginOK = 0x8,
   LobbyLoginCancel = 0x9,
+
+  LobbyRoomList = 0x10,
+  LobbyRoomListOK = 0x11,
+
+  LobbyMakeRoom = 0x13,
+  LobbyMakeRoomOK = 0x14,
+  LobbyMakeRoomCancel = 0x15,
+
+  LobbyEnterRoom = 0x1c,
+  LobbyEnterRoomOK = 0x1d,
+  LobbyEnterRoomCancel = 0x1e,
 
   LobbyHeartbeat = 0x12,
 
@@ -88,10 +98,6 @@ enum class CommandId : uint16_t
   LobbyEnterChannel = 0x2b,
   LobbyEnterChannelOK = 0x2c,
   LobbyEnterChannelCancel = 0x2d,
-
-  LobbyMakeRoom = 0x13,
-  LobbyMakeRoomOK = 0x14,
-  LobbyMakeRoomCancel = 0x15,
 
   LobbyShowInventory = 0x007e,
   LobbyShowInventoryOK = 0x007f,
@@ -138,12 +144,27 @@ enum class CommandId : uint16_t
   LobbyGuildPartyList = 0x3c2,
   LobbyGuildPartyListOK = 0x3c3,
 
+  LobbyGuildPartyNotify = 0x3c7,
+
   LobbyEnterRandomRanch = 0x109,
 
+  LobbyRequestPersonalInfo = 0xeb,
+  LobbyPersonalInfo = 0xec,
+
+  LobbySetIntroduction = 0x171,
+
+  LobbyUpdateSystemContent = 0x1bd,
+  LobbyUpdateSystemContentNotify = 0x1c1,
+
   RanchEnterRanch = 0x12b,
-  RanchEnterRanchCancel = 0x12d,
-  RanchEnterRanchNotify = 0x12e,
   RanchEnterRanchOK = 0x12c,
+  RanchEnterRanchCancel = 0x12d,
+
+  RanchEnterRanchNotify = 0x12e,
+
+  RanchLeaveRanch = 0x12f,
+  RanchLeaveRanchOK = 0x130,
+  RanchLeaveRanchNotify = 0x132,
 
   RanchHeartbeat = 0x9e,
 
@@ -179,9 +200,15 @@ enum class CommandId : uint16_t
   RanchUpdateMountNicknameOK = 0x198,
   RanchUpdateMountNicknameCancel = 0x199,
 
+  RanchUpdateMountInfoNotify = 0x1e7,
+
   RanchRequestStorage = 0x299,
   RanchRequestStorageOK = 0x29a,
   RanchRequestStorageCancel = 0x29b,
+
+  RanchGetItemFromStorage = 0x29e,
+  RanchGetItemFromStorageOK = 0x29f,
+  RanchGetItemFromStorageCancel = 0x2a0,
 
   RanchRequestNpcDressList = 0x44c,
   RanchRequestNpcDressListCancel = 0x44e,
@@ -189,6 +216,11 @@ enum class CommandId : uint16_t
 
   RanchChat = 0x137,
   RanchChatNotify = 0x138,
+
+  RanchKickRanch = 0x45a,
+  RanchKickRanchOK = 0x45b,
+  RanchKickRanchCancel = 0x45c,
+  RanchKickRanchNotify = 0x45d,
 
   RanchWearEquipment = 0x81,
   RanchWearEquipmentOK = 0x82,
@@ -202,6 +234,49 @@ enum class CommandId : uint16_t
   RanchUseItemOK = 0x1e1,
   RanchUseItemCancel = 0x1e2,
 
+  RanchUpdateEquipmentNotify = 0x14e,
+
+  RanchSetIntroductionNotify = 0x174,
+
+  RanchCreateGuild = 0x2be,
+  RanchCreateGuildOK = 0x2bf,
+  RanchCreateGuildCancel = 0x2c0,
+
+  RanchRequestGuildInfo = 0x2e2,
+  RanchRequestGuildInfoOK = 0x2e3,
+  RanchRequestGuildInfoCancel = 0x2e4,
+
+  RanchIncubateEgg = 0x39f,
+  RanchIncubateEggOK = 0x3a0,
+  RanchIncubateEggCancel = 0x3a1,
+  RanchIncubateEggNotify = 0x3a2,
+
+  RanchUpdatePet = 0x392,
+  RanchUpdatePetCancel = 0x439,
+
+  RanchRequestPetBirth = 0x39a,
+  RanchRequestPetBirthOK = 0x39b,
+  RanchRequestPetBirthCancel = 0x39c,
+
+  RanchPetBirthNotify = 0x39d,
+
+  RanchAchievementUpdateProperty = 0x16b,
+
+  RanchHousingBuild = 0x25b,
+  RanchHousingBuildOK = 0x25c,
+  RanchHousingBuildCancel = 0x25d,
+  RanchHousingBuildNotify = 0x25e,
+
+  RanchHousingRepair = 0x262,
+  RanchHousingRepairOK = 0x263,
+  RanchHousingRepairCancel = 0x264,
+  RanchHousingRepairNotify = 0x265,
+
+  RanchMissionEvent = 0xe0,
+
+  RanchOpCmd = 0x28e,
+  RanchOpCmdOK = 0x28f,
+
   RaceEnterRoom = 0x30,
   RaceEnterRoomNotify = 0x31,
   RaceEnterRoomOK = 0x32,
@@ -214,14 +289,19 @@ enum class CommandId : uint16_t
   RaceStartRaceNotify = 0x5b,
   RaceStartRaceCancel = 0x5c,
 
-  UserRaceTimer = 0x1024,
-  UserRaceTimerOK = 0x1025,
+  RaceUserRaceTimer = 0x1024,
+  RaceUserRaceTimerOK = 0x1025,
 
   RaceLoadingComplete = 0x1b6,
   RaceLoadingCompleteNotify = 0x1b7,
 
   RaceChat = 0x52,
   RaceChatNotify = 0x53,
+
+  RaceReadyRace = 0x58,
+  RaceReadyRaceNotify = 0x59,
+
+  RaceCountdown = 0x102d,
 
   Count = 0xFFFF
 };
@@ -230,8 +310,8 @@ enum class CommandId : uint16_t
 //! @param command ID of the command to retrieve the name for.
 //! @returns If command is registered, name of the command.
 //!          Otherwise, returns "n/a".
-std::string_view GetCommandName(CommandId command);
+std::string_view GetCommandName(Command command);
 
-} // namespace alicia
+} // namespace server
 
 #endif // COMMAND_PROTOCOL_HPP

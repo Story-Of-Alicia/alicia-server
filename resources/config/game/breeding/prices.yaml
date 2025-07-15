@@ -1,0 +1,122 @@
+breeding:
+  costs:
+    - grade: 1
+      registrationFee: 500
+      commissionFee: 10
+      minPrice: 1000
+      maxPrice: 4000
+    - grade: 2
+      registrationFee: 500
+      commissionFee: 10
+      minPrice: 1000
+      maxPrice: 4000
+    - grade: 3
+      registrationFee: 500
+      commissionFee: 10
+      minPrice: 1000
+      maxPrice: 4000
+    - grade: 4
+      registrationFee: 1000
+      commissionFee: 10
+      minPrice: 4000
+      maxPrice: 12000
+    - grade: 5
+      registrationFee: 1500
+      commissionFee: 10
+      minPrice: 5000
+      maxPrice: 15000
+    - grade: 6
+      registrationFee: 2000
+      commissionFee: 10
+      minPrice: 6000
+      maxPrice: 18000
+    - grade: 7
+      registrationFee: 3000
+      commissionFee: 10
+      minPrice: 8000
+      maxPrice: 24000
+    - grade: 8
+      registrationFee: 4000
+      commissionFee: 10
+      minPrice: 10000
+      maxPrice: 30000
+    - grade: 9
+      registrationFee: 5000
+      commissionFee: 10
+      minPrice: 13000
+      maxPrice: 39000
+    - grade: 10
+      registrationFee: 6000
+      commissionFee: 10
+      minPrice: 13000
+      maxPrice: 39000
+    - grade: 11
+      registrationFee: 8000
+      commissionFee: 10
+      minPrice: 13000
+      maxPrice: 39000
+    - grade: 12
+      registrationFee: 9500
+      commissionFee: 10
+      minPrice: 17000
+      maxPrice: 51000
+    - grade: 13
+      registrationFee: 11000
+      commissionFee: 10
+      minPrice: 21000
+      maxPrice: 63000
+    - grade: 14
+      registrationFee: 13500
+      commissionFee: 10
+      minPrice: 25000
+      maxPrice: 75000
+    - grade: 15
+      registrationFee: 16000
+      commissionFee: 10
+      minPrice: 31000
+      maxPrice: 93000
+    - grade: 16
+      registrationFee: 19000
+      commissionFee: 10
+      minPrice: 34000
+      maxPrice: 102000
+    - grade: 17
+      registrationFee: 21000
+      commissionFee: 10
+      minPrice: 41000
+      maxPrice: 123000
+    - grade: 18
+      registrationFee: 24500
+      commissionFee: 10
+      minPrice: 42000
+      maxPrice: 126000
+    - grade: 19
+      registrationFee: 26000
+      commissionFee: 10
+      minPrice: 46000
+      maxPrice: 138000
+    - grade: 20
+      registrationFee: 27500
+      commissionFee: 10
+      minPrice: 49000
+      maxPrice: 138000
+    - grade: 21
+      registrationFee: 27500
+      commissionFee: 10
+      minPrice: 50000
+      maxPrice: 150000
+    - grade: 22
+      registrationFee: 27500
+      commissionFee: 10
+      minPrice: 50000
+      maxPrice: 150000
+    - grade: 23
+      registrationFee: 27500
+      commissionFee: 10
+      minPrice: 50000
+      maxPrice: 150000
+    - grade: 24
+      registrationFee: 27500
+      commissionFee: 10
+      minPrice: 50000
+      maxPrice: 150000

@@ -1,5 +1,5 @@
 /**
- * Alicia Server - dedicated server software
+* Alicia Server - dedicated server software
  * Copyright (C) 2024 Story Of Alicia
  *
  * This program is free software; you can redistribute it and/or modify
@@ -17,42 +17,31 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
-#ifndef SERVER_SCHEDULER_HPP
-#define SERVER_SCHEDULER_HPP
+#ifndef LOCALE_HPP
+#define LOCALE_HPP
 
-#include <atomic>
-#include <condition_variable>
-#include <functional>
-#include <queue>
-#include <thread>
+#include <string>
 
 namespace server
 {
 
-using Task = std::function<void()>;
-
-//!
-class TaskLoop final
+namespace locale
 {
-public:
-  //! Begin the task loop.
-  void Begin();
-  //! End the task loop.
-  void End();
-  //! Queue a task.
-  void Queue(const Task& task);
 
-protected:
-  //! Task queue mutex.
-  std::mutex _queueMutex;
-  //! Task queue notification.
-  std::condition_variable _queueNotification;
-  //! Task queue.
-  std::queue<Task> _queue;
-  //! A flag indicating whether the task loop should run.
-  std::atomic<bool> _shouldRun;
-};
+//! Converts EUC-KR encoded string into a UTF-8 encoded string.
+//! @param input Input string in the EUC-KR encoding.
+//! @returns Output string encoded in UTF8 encoding.
+//! @throws std::runtime_error If the conversion fails for any reason.
+[[nodiscard]] const std::string ToUtf8(const std::string& input);
+
+//! Converts UTF-8 encoded string into a EUC-KR encoded string.
+//! @param input Input string in the UTF8 encoding.
+//! @returns Output string encoded in EUC-KR encoding.
+//! @throws std::runtime_error If the conversion fails for any reason.
+[[nodiscard]] const std::string FromUtf8(const std::string& input);
+
+} // namespace locale
 
 } // namespace server
 
-#endif // SERVER_SCHEDULER_HPP
+#endif //LOCALE_HPP

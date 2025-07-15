@@ -23,124 +23,180 @@
 #include "server/Settings.hpp"
 #include "server/tracker/WorldTracker.hpp"
 
-#include "libserver/data/DataDirector.hpp"
 #include "libserver/network/command/CommandServer.hpp"
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
 
-namespace alicia
+#include <unordered_map>
+#include <unordered_set>
+
+namespace server
 {
 
-class RanchDirector
+class ServerInstance;
+
+class RanchDirector final
+  : public CommandServer::EventHandlerInterface
 {
 public:
   //!
-  explicit RanchDirector(
-    soa::DataDirector& dataDirector,
-    Settings::RanchSettings settings = {});
+  explicit RanchDirector(ServerInstance& serverInstance);
 
   void Initialize();
   void Terminate();
   void Tick();
 
-private:
+  void HandleClientConnected(ClientId clientId) override;
+  void HandleClientDisconnected(ClientId client) override;
+
   //!
-  void HandleEnterRanch(
+  void BroadcastSetIntroductionNotify(
+    uint32_t characterUid,
+    const std::string& introduction);
+
+  //!
+  void BroadcastUpdateMountInfoNotify(
+    data::Uid characterUid,
+    data::Uid horseUid);
+
+  ServerInstance& GetServerInstance();
+  Settings::RanchSettings& GetSettings();
+
+private:
+  struct ClientContext
+  {
+    data::Uid characterUid{data::InvalidUid};
+    data::Uid rancherUid{data::InvalidUid};
+    uint8_t busyState{0};
+  };
+
+  ClientContext& GetClientContextByCharacterUid(data::Uid characterUid);
+
+  //!
+  void HandleRanchEnter(
     ClientId clientId,
-    const RanchCommandEnterRanch& enterRanch);
+    const protocol::RanchCommandRanchEnter& command);
+
+  //!
+  void HandleRanchLeave(
+    ClientId clientId);
 
   //!
   void HandleSnapshot(
     ClientId clientId,
-    const RanchCommandRanchSnapshot& snapshot);
+    const protocol::RanchCommandRanchSnapshot& command);
 
   //!
   void HandleCmdAction(
     ClientId clientId,
-    const RanchCommandRanchCmdAction& action);
+    const protocol::RanchCommandRanchCmdAction& command);
 
   //!
   void HandleRanchStuff(
     ClientId clientId,
-    const RanchCommandRanchStuff& command);
+    const protocol::RanchCommandRanchStuff& command);
 
   //!
   void HandleUpdateBusyState(
     ClientId clientId,
-    const RanchCommandUpdateBusyState& command);
+    const protocol::RanchCommandUpdateBusyState& command);
 
   //!
   void HandleSearchStallion(
     ClientId clientId,
-    const RanchCommandSearchStallion& command);
+    const protocol::RanchCommandSearchStallion& command);
 
   //!
   void HandleEnterBreedingMarket(
     ClientId clientId,
-    const RanchCommandEnterBreedingMarket& command);
+    const protocol::RanchCommandEnterBreedingMarket& command);
 
   //!
   void HandleTryBreeding(
     ClientId clientId,
-    const RanchCommandTryBreeding& command);
+    const protocol::RanchCommandTryBreeding& command);
 
   //!
   void HandleBreedingWishlist(
     ClientId clientId,
-    const RanchCommandBreedingWishlist& command);
+    const protocol::RanchCommandBreedingWishlist& command);
 
   //!
   void HandleUpdateMountNickname(
     ClientId clientId,
-    const RanchCommandUpdateMountNickname& command);
+    const protocol::RanchCommandUpdateMountNickname& command);
 
   //!
   void HandleRequestStorage(
     ClientId clientId,
-    const RanchCommandRequestStorage& command);
+    const protocol::RanchCommandRequestStorage& command);
+
+  //!
+  void HandleGetItemFromStorage(
+    ClientId clientId,
+    const protocol::RanchCommandGetItemFromStorage& command);
 
   //!
   void HandleRequestNpcDressList(
     ClientId clientId,
-    const RanchCommandRequestNpcDressList& requestNpcDressList);
+    const protocol::RanchCommandRequestNpcDressList& requestNpcDressList);
 
   void HandleChat(
     ClientId clientId,
-    const RanchCommandChat& command);
+    const protocol::RanchCommandChat& command);
 
-  std::string HandleCommand(
+  std::vector<std::string> HandleCommand(
     ClientId clientId,
     const std::string& message);
 
   void SendChat(
     ClientId clientId,
-    const RanchCommandChatNotify& chat);
+    const protocol::RanchCommandChatNotify& chat);
 
   void HandleWearEquipment(
     ClientId clientId,
-    const RanchCommandWearEquipment& command);
+    const protocol::RanchCommandWearEquipment& command);
 
   void HandleRemoveEquipment(
     ClientId clientId,
-    const RanchCommandRemoveEquipment& command);
+    const protocol::RanchCommandRemoveEquipment& command);
+
+  void HandleCreateGuild(
+    ClientId clientId,
+    const protocol::RanchCommandCreateGuild& command);
+
+  void HandleRequestGuildInfo(
+    ClientId clientId,
+    const protocol::RanchCommandRequestGuildInfo& command);
+
+  void HandleUpdatePet(
+    ClientId clientId,
+    const protocol::RanchCommandUpdatePet& command);
+
+  void HandleRequestPetBirth(
+    ClientId clientId,
+    const protocol::RanchCommandRequestPetBirth& command);
+
+  //! Broadcasts an equipment update of the character owned by the client
+  //! to the currently connected ranch.
+  //! @param clientId ID of the client.
+  void BroadcastEquipmentUpdate(
+    ClientId clientId);
 
   void HandleUseItem(
     ClientId clientId,
-    const RanchCommandUseItem& command);
+    const protocol::RanchCommandUseItem& command);
+
+  void HandleHousingBuild(
+    ClientId clientId,
+    const protocol::RanchCommandHousingBuild& command);
+
+  void HandleOpCmd(ClientId clientId,
+    const protocol::RanchCommandOpCmd& command);
 
   //!
-  Settings::RanchSettings _settings;
+  ServerInstance& _serverInstance;
   //!
-  soa::DataDirector& _dataDirector;
-  //!
-  CommandServer _server;
-
-  struct ClientContext
-  {
-    soa::data::Uid characterUid;
-    soa::data::Uid ranchUid;
-    uint8_t busyState{0};
-  };
-
+  CommandServer _commandServer;
   //!
   std::unordered_map<ClientId, ClientContext> _clientContext;
 
@@ -149,9 +205,9 @@ private:
     WorldTracker _worldTracker;
     std::unordered_set<ClientId> _clients;
   };
-  std::unordered_map<soa::data::Uid, RanchInstance> _ranches;
+  std::unordered_map<data::Uid, RanchInstance> _ranches;
 };
 
-} // namespace alicia
+} // namespace server
 
 #endif // RANCHDIRECTOR_HPP

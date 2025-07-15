@@ -22,10 +22,11 @@
 
 #include <functional>
 #include <unordered_map>
+#include <span>
 
 #include <boost/asio.hpp>
 
-namespace alicia
+namespace server::network
 {
 
 namespace asio = boost::asio;
@@ -36,29 +37,28 @@ using ClientId = std::size_t;
 //! A write handler.
 using WriteSupplier = std::function<void(asio::streambuf&)>;
 
+//!
+class EventHandlerInterface
+{
+public:
+  virtual ~EventHandlerInterface() = default;
+
+  virtual void OnClientConnected(ClientId clientId) = 0;
+  virtual void OnClientDisconnected(ClientId clientId) = 0;
+  virtual size_t OnClientData(ClientId clientId, const std::span<const std::byte>& data) = 0;
+};
+
 //! Client with event driven reads and writes
 //! to the underlying socket connection.
 class Client
 {
 public:
-  //! Client IO begin handler.
-  using BeginHandler = std::function<void()>;
-  //! Client IO end handler.
-  using EndHandler = std::function<void()>;
-
-  //! Client write handler.
-  using WriteHandler = std::function<void(asio::streambuf&)>;
-  //! Client read handler.
-  using ReadHandler = std::function<void(asio::streambuf&)>;
-
   //! Default constructor.
   //! @param socket Underlying socket.
   explicit Client(
+    ClientId clientId,
     asio::ip::tcp::socket&& socket,
-    BeginHandler beginHandler,
-    EndHandler endHandler,
-    ReadHandler readHandler,
-    WriteHandler writeHandler) noexcept;
+    EventHandlerInterface& networkEventHandler) noexcept;
 
   //!
   void Begin();
@@ -77,42 +77,26 @@ private:
 
   //! A read buffer.
   asio::streambuf _readBuffer{};
+  //! A send mutex.
+  std::mutex _send_mutex;
   //! A write buffer.
   asio::streambuf _writeBuffer{};
 
-  //! A begin handler.
-  BeginHandler _beginHandler;
-  //! An end handler.
-  EndHandler _endHandler;
-  //! A read handler.
-  ReadHandler _readHandler;
-  //! A write handler.
-  WriteHandler _writeHandler;
-
+  //! A unique-identifier of the client.
+  ClientId _clientId;
   //! A client socket.
   asio::ip::tcp::socket _socket;
+  //! A network event handling interface
+  EventHandlerInterface& _networkEventHandler;
 };
 
 //! Server with event-driven acceptor, reads and writes.
 class Server
 {
 public:
-  //! Client write handler.
-  using ClientWriteHandler = std::function<void(ClientId, asio::streambuf&)>;
-  //! Client read handler.
-  using ClientReadHandler = std::function<void(ClientId, asio::streambuf&)>;
-
-  //! Client connect handler.
-  using ClientConnectHandler = std::function<void(ClientId)>;
-  //! Client disconnect handler.
-  using ClientDisconnectHandler = std::function<void(ClientId)>;
-
   //! Default constructor.
   explicit Server(
-    ClientConnectHandler clientConnectHandler,
-    ClientDisconnectHandler clientDisconnectHandler,
-    ClientReadHandler clientReadHandler,
-    ClientWriteHandler clientWriteHandler) noexcept;
+    EventHandlerInterface& networkEventHandler) noexcept;
 
   //! Begins the server on the current thread.
   //! Blocks the current thread until stopped.
@@ -132,18 +116,6 @@ public:
 private:
   void AcceptLoop() noexcept;
 
-  //! A client connect handler.
-  ClientConnectHandler _clientConnectHandler;
-  //! A client disconnect handler.
-  ClientDisconnectHandler _clientDisconnectHandler;
-  //! A client read handler.
-  ClientReadHandler _clientReadHandler;
-  //! A client write handler.
-  ClientWriteHandler _clientWriteHandler;
-
-  //! A flag indicating whether the server should run.
-  std::atomic<bool> _shouldRun = false;
-
   asio::io_context _io_ctx;
   asio::ip::tcp::acceptor _acceptor;
 
@@ -151,8 +123,11 @@ private:
   ClientId _client_id = 0;
   //! Map of clients.
   std::unordered_map<ClientId, Client> _clients;
+
+  //! A network event handler.
+  EventHandlerInterface& _networkEventHandler;
 };
 
-} // namespace alicia
+} // namespace server
 
 #endif // SERVER_HPP

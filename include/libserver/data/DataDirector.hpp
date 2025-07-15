@@ -22,11 +22,11 @@
 
 #include "DataDefinitions.hpp"
 #include "DataStorage.hpp"
-
 // #include "pq/PqDataSource.hpp"
 #include "file/FileDataSource.hpp"
+#include "libserver/util/Scheduler.hpp"
 
-namespace soa
+namespace server
 {
 
 class DataDirector
@@ -34,80 +34,131 @@ class DataDirector
 public:
   using UserStorage = DataStorage<std::string, data::User>;
   using CharacterStorage = DataStorage<data::Uid, data::Character>;
-  using ItemStorage = DataStorage<data::Uid, data::Item>;
   using HorseStorage = DataStorage<data::Uid, data::Horse>;
-  using RanchStorage = DataStorage<data::Uid, data::Ranch>;
+  using ItemStorage = DataStorage<data::Uid, data::Item>;
+  using EggStorage = DataStorage<data::Uid, data::Egg>;
+  using PetStorage = DataStorage<data::Uid, data::Pet>;
+  using StorageItemStorage = DataStorage<data::Uid, data::StorageItem>;
+  using HousingStorage = DataStorage<data::Uid, data::Housing>;
+  using GuildStorage = DataStorage<data::Uid, data::Guild>;
 
   //! Default constructor.
   explicit DataDirector();
+  //! Default destructor.
   ~DataDirector();
 
+  //! Initializes the director.
   void Initialize();
+  //!  Terminates the director.
   void Terminate();
 
-  //! Ticks the data director.
+  //! Ticks the director.
   void Tick();
 
-  UserStorage& GetUsers();
+  //! Requests a load of user data.
+  //! @param userName Name of the user.
+  void RequestLoadUserData(const std::string& userName);
+  //! Requests a load of character data.
+  //! @param userName Name of the user.
+  //! @param characterUid UID of the character.
+  void RequestLoadCharacterData(const std::string& userName, data::Uid characterUid);
 
-  Record<data::Character> CreateCharacter()
-  {
-    return _characterStorage.Create([this]() {
-      data::Character character;
-      _dataSource->CreateCharacter(character);
+  //! Returns whether the data of a user (either user data or character data) are being loaded.
+  //! @param userName name of the user.
+  bool AreDataBeingLoaded(const std::string& userName);
+  //! Returns whether the data of a user are fully loaded.
+  //! @param userName name of the user.
+  bool AreUserDataLoaded(const std::string& userName);
+  //! Returns whether the data of a character are fully loaded.
+  //! @param userName name of the user.
+  bool AreCharacterDataLoaded(const std::string& userName);
 
-      return std::make_pair(character.uid(), std::move(character));
-    });
-  }
+  [[nodiscard]] Record<data::User> GetUser(const std::string& userName);
+  [[nodiscard]] UserStorage& GetUsers();
 
-  CharacterStorage& GetCharacters();
+  //! Gets a character.
+  //! @param characterUid UID of the character.
+  //! @returns The character record.
+  [[nodiscard]] Record<data::Character> GetCharacter(data::Uid characterUid) noexcept;
+  [[nodiscard]] Record<data::Character> CreateCharacter() noexcept;
+  [[nodiscard]] CharacterStorage& GetCharacters();
 
-  Record<data::Horse> CreateHorse()
-  {
-    return _horseStorage.Create([this]() {
-      data::Horse horse;
-      _dataSource->CreateHorse(horse);
+  [[nodiscard]] Record<data::Horse> GetHorse(data::Uid horseUid) noexcept;
+  [[nodiscard]] Record<data::Horse> CreateHorse() noexcept;
+  [[nodiscard]] HorseStorage& GetHorses();
 
-      return std::make_pair(horse.uid(), std::move(horse));
-    });
-  }
+  [[nodiscard]] Record<data::Item> GetItem(data::Uid itemUid) noexcept;
+  [[nodiscard]] Record<data::Item> CreateItem() noexcept;
+  [[nodiscard]] ItemStorage& GetItems();
 
-  ItemStorage& GetItems();
 
-  Record<data::Item> CreateItem()
-  {
-    return _itemStorage.Create([this]() {
-      data::Item item;
-      _dataSource->CreateItem(item);
+  [[nodiscard]] Record<data::StorageItem> GetStorageItem(data::Uid storedItemUid) noexcept;
+  [[nodiscard]] Record<data::StorageItem> CreateStorageItem() noexcept;
+  [[nodiscard]] StorageItemStorage& GetStorageItem();
 
-      return std::make_pair(item.uid(), std::move(item));
-    });
-  }
+  [[nodiscard]] Record<data::Egg> GetEgg(data::Uid eggUid) noexcept;
+  [[nodiscard]] Record<data::Egg> CreateEgg() noexcept;
+  [[nodiscard]] EggStorage& GetEggs();
 
-  HorseStorage& GetHorses();
+  [[nodiscard]] Record<data::Pet> GetPet(data::Uid petUid) noexcept;
+  [[nodiscard]] Record<data::Pet> CreatePet() noexcept;
+  [[nodiscard]] PetStorage& GetPets();
 
-  Record<data::Ranch> CreateRanch()
-  {
-    return _ranchStorage.Create([this]() {
-      data::Ranch ranch;
-      _dataSource->CreateRanch(ranch);
+  [[nodiscard]] Record<data::Guild> GetGuild(data::Uid guildUid) noexcept;
+  [[nodiscard]] Record<data::Guild> CreateGuild() noexcept;
+  [[nodiscard]] GuildStorage& GetGuilds();
 
-      return std::make_pair(ranch.uid(), std::move(ranch));
-    });
-  }
-
-  RanchStorage& GetRanches();
+  [[nodiscard]] Record<data::Housing> GetHousing(data::Uid housingUid) noexcept;
+  [[nodiscard]] Record<data::Housing> CreateHousing() noexcept;
+  [[nodiscard]] HousingStorage& GetHousing();
 
 private:
-  std::unique_ptr<FileDataSource> _dataSource;
+  //! An underlying data source of the data director.
+  std::unique_ptr<FileDataSource> _primaryDataSource;
 
+  Scheduler _scheduler;
+
+  struct UserDataContext
+  {
+    //! A flag indicating whether a load is in progress.
+    std::atomic_bool isBeingLoaded = false;
+    //! A flag indicating whether an unload is in progress.
+    std::atomic_bool isBeingUnloaded = false;
+
+    //! A flag indicating whether the user data are loaded.
+    std::atomic_bool isUserDataLoaded = false;
+    //! A flag indicating whether the user character data are loaded.
+    std::atomic_bool isCharacterDataLoaded = false;
+
+    std::string debugMessage;
+    //! The time point when loading or unloading times out.
+    Scheduler::Clock::time_point timeout;
+  };
+  std::unordered_map<std::string, UserDataContext> _userDataContext;
+
+  void ScheduleUserLoad(UserDataContext& userDataContext, const std::string& userName);
+  void ScheduleCharacterLoad(UserDataContext& userDataContext, data::Uid characterUid);
+
+  //! An user storage.
   UserStorage _userStorage;
+  //! A character storage.
   CharacterStorage _characterStorage;
+  //! A horse storage.
   HorseStorage _horseStorage;
-  RanchStorage _ranchStorage;
+  //! An item storage.
   ItemStorage _itemStorage;
+  //! A storage item storage.
+  StorageItemStorage _storageItemStorage;
+  //! An egg storage.
+  EggStorage _eggStorage;
+  //! A pet storage.
+  PetStorage _petStorage;
+  //! A housing storage.
+  HousingStorage _housingStorage;
+  //! A guild storage.
+  GuildStorage _guildStorage;
 };
 
-} // namespace soa
+} // namespace server
 
 #endif // DATADIRECTOR_HPP

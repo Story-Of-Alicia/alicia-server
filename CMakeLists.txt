@@ -25,6 +25,20 @@ add_library(project-properties INTERFACE)
 target_compile_features(project-properties
         INTERFACE cxx_std_23)
 
+# Platform properties interface library
+add_library(platform-properties INTERFACE)
+if (${MSVC})
+    target_compile_definitions(platform-properties INTERFACE
+            _WIN32_WINNT=_WIN32_WINNT_WIN10
+            NTDDI_VERSION=NTDDI_WIN10_19H1)
+    target_link_libraries(platform-properties INTERFACE
+            icu.lib)
+    target_compile_options(platform-properties INTERFACE
+            /utf-8)
+else()
+
+endif()
+
 # alicia-libserver target
 add_library(alicia-libserver STATIC
         src/libserver/data/DataDirector.cpp
@@ -39,18 +53,26 @@ add_library(alicia-libserver STATIC
         src/libserver/network/command/proto/LobbyMessageDefinitions.cpp
         src/libserver/network/command/proto/RaceMessageDefinitions.cpp
         src/libserver/network/command/proto/RanchMessageDefinitions.cpp
+        src/libserver/registry/HorseRegistry.cpp
         src/libserver/registry/RoomRegistry.cpp
+        src/libserver/util/Locale.cpp
+        src/libserver/util/Scheduler.cpp
         src/libserver/util/Stream.cpp
         src/libserver/util/Util.cpp)
-target_include_directories(alicia-libserver
-        PUBLIC include/)
-target_link_libraries(alicia-libserver
-        PUBLIC project-properties Boost::headers spdlog::spdlog nlohmann_json::nlohmann_json)
+target_include_directories(alicia-libserver PUBLIC
+        include/)
+target_link_libraries(alicia-libserver PUBLIC
+        project-properties
+        platform-properties
+        spdlog::spdlog
+        Boost::headers
+        nlohmann_json::nlohmann_json
+        yaml-cpp::yaml-cpp)
 
 # alicia-server target
 add_executable(alicia-server
         src/server/main.cpp
-        src/server/Scheduler.cpp
+        src/server/ServerInstance.cpp
         src/server/Settings.cpp
         src/server/lobby/LobbyDirector.cpp
         src/server/lobby/LoginHandler.cpp
@@ -59,15 +81,11 @@ add_executable(alicia-server
         src/server/tracker/WorldTracker.cpp)
 target_include_directories(alicia-server
         PRIVATE include/)
-target_link_libraries(alicia-server
-        PRIVATE project-properties alicia-libserver)
+target_link_libraries(alicia-server PRIVATE
+        project-properties
+        alicia-libserver)
 target_include_directories(alicia-server PUBLIC
         "${PROJECT_BINARY_DIR}/generated")
-
-if (${MSVC})
-    target_compile_options(alicia-server
-            PRIVATE /utf-8)
-endif ()
 
 if (BUILD_TESTS)
     enable_testing()

@@ -21,175 +21,246 @@
 
 #include <unordered_map>
 
-namespace alicia
+namespace server::protocol
 {
 
 namespace
 {
 
 //! Commands IDs mapped to the command names.
-const std::unordered_map<CommandId, std::string_view> commands = {
-  // Login
-  {CommandId::LobbyLogin, "LobbyLogin"},
-  {CommandId::LobbyLoginOK, "LobbyLoginOK"},
-  {CommandId::LobbyLoginCancel, "LobbyLoginCancel"},
+const std::unordered_map<Command, std::string_view> commands = {
+  {Command::LobbyLogin, "LobbyLogin"},
+  {Command::LobbyLoginOK, "LobbyLoginOK"},
+  {Command::LobbyLoginCancel, "LobbyLoginCancel"},
 
-  // Heartbeat
-  {CommandId::LobbyHeartbeat, "LobbyHeartbeat"},
+  {Command::LobbyRoomList, "LobbyRoomList"},
+  {Command::LobbyRoomListOK, "LobbyRoomListOK"},
 
-  // CreateNickname
-  {CommandId::LobbyCreateNicknameNotify, "LobbyCreateNicknameNotify"},
-  {CommandId::LobbyCreateNickname, "LobbyCreateNicknameOK"},
-  {CommandId::LobbyCreateNicknameCancel, "LobbyCreateNicknameCancel"},
+  {Command::LobbyMakeRoom, "LobbyMakeRoom"},
+  {Command::LobbyMakeRoomOK, "LobbyMakeRoomOK"},
+  {Command::LobbyMakeRoomCancel, "LobbyMakeRoomCancel"},
 
-  // EnterChannel
-  {CommandId::LobbyEnterChannel, "LobbyEnterChannel"},
-  {CommandId::LobbyEnterChannelOK, "LobbyEnterChannelOK"},
-  {CommandId::LobbyEnterChannelCancel, "LobbyEnterChannelCancel"},
+  {Command::LobbyEnterRoom, "LobbyEnterRoom"},
+  {Command::LobbyEnterRoomOK, "LobbyEnterRoomOK"},
+  {Command::LobbyEnterRoomCancel, "LobbyEnterRoomCancel"},
 
-  // Make Room
-  {CommandId::LobbyMakeRoom, "LobbyMakeRoom"},
-  {CommandId::LobbyMakeRoomOK, "LobbyMakeRoomOK"},
-  {CommandId::LobbyMakeRoomCancel, "LobbyMakeRoomCancel"},
+  {Command::LobbyHeartbeat, "LobbyHeartbeat"},
+
+  {Command::LobbyCreateNicknameNotify, "LobbyCreateNicknameNotify"},
+  {Command::LobbyCreateNickname, "LobbyCreateNicknameOK"},
+  {Command::LobbyCreateNicknameCancel, "LobbyCreateNicknameCancel"},
+
+  {Command::LobbyEnterChannel, "LobbyEnterChannel"},
+  {Command::LobbyEnterChannelOK, "LobbyEnterChannelOK"},
+  {Command::LobbyEnterChannelCancel, "LobbyEnterChannelCancel"},
+
+  {Command::LobbyShowInventory, "LobbyShowInventory"},
+  {Command::LobbyShowInventoryOK, "LobbyShowInventoryOK"},
+  {Command::LobbyShowInventoryCancel, "LobbyShowInventoryCancel"},
 
   // Inventory
-  {CommandId::LobbyShowInventory, "LobbyShowInventory"},
-  {CommandId::LobbyShowInventoryOK, "LobbyShowInventoryOK"},
-  {CommandId::LobbyShowInventoryCancel, "LobbyShowInventoryCancel"},
-
-  // Inventory
-  {CommandId::LobbyAchievementCompleteList, "LobbyAchievementCompleteList"},
-  {CommandId::LobbyAchievementCompleteListOK, "LobbyAchievementCompleteListOK"},
-  {CommandId::LobbyAchievementCompleteListCancel, "LobbyAchievementCompleteListCancel"},
+  {Command::LobbyAchievementCompleteList, "LobbyAchievementCompleteList"},
+  {Command::LobbyAchievementCompleteListOK, "LobbyAchievementCompleteListOK"},
+  {Command::LobbyAchievementCompleteListCancel, "LobbyAchievementCompleteListCancel"},
 
   // RequestDailyQuestList
-  {CommandId::LobbyRequestDailyQuestList, "LobbyRequestDailyQuestList"},
-  {CommandId::LobbyRequestDailyQuestListOK, "LobbyRequestDailyQuestListOK"},
-  {CommandId::LobbyRequestDailyQuestListCancel, "LobbyRequestDailyQuestListCancel"},
+  {Command::LobbyRequestDailyQuestList, "LobbyRequestDailyQuestList"},
+  {Command::LobbyRequestDailyQuestListOK, "LobbyRequestDailyQuestListOK"},
+  {Command::LobbyRequestDailyQuestListCancel, "LobbyRequestDailyQuestListCancel"},
 
   // RequestLeagueInfo
-  {CommandId::LobbyRequestLeagueInfo, "LobbyRequestLeagueInfo"},
-  {CommandId::LobbyRequestLeagueInfoOK, "LobbyRequestLeagueInfoOK"},
-  {CommandId::LobbyRequestLeagueInfoCancel, "LobbyRequestLeagueInfoCancel"},
+  {Command::LobbyRequestLeagueInfo, "LobbyRequestLeagueInfo"},
+  {Command::LobbyRequestLeagueInfoOK, "LobbyRequestLeagueInfoOK"},
+  {Command::LobbyRequestLeagueInfoCancel, "LobbyRequestLeagueInfoCancel"},
 
   // RequestQuestList
-  {CommandId::LobbyRequestQuestList, "LobbyRequestQuestList"},
-  {CommandId::LobbyRequestQuestListOK, "LobbyRequestQuestListOK"},
-  {CommandId::LobbyRequestQuestListCancel, "LobbyRequestQuestListCancel"},
+  {Command::LobbyRequestQuestList, "LobbyRequestQuestList"},
+  {Command::LobbyRequestQuestListOK, "LobbyRequestQuestListOK"},
+  {Command::LobbyRequestQuestListCancel, "LobbyRequestQuestListCancel"},
 
   // RequestSpecialEventList
-  {CommandId::LobbyRequestSpecialEventList, "LobbyRequestSpecialEventList"},
-  {CommandId::LobbyRequestSpecialEventListOK, "LobbyRequestSpecialEventListOK"},
+  {Command::LobbyRequestSpecialEventList, "LobbyRequestSpecialEventList"},
+  {Command::LobbyRequestSpecialEventListOK, "LobbyRequestSpecialEventListOK"},
 
   // EnterRanch
-  {CommandId::LobbyEnterRanch, "LobbyEnterRanch"},
-  {CommandId::LobbyEnterRanchOK, "LobbyEnterRanchOK"},
-  {CommandId::LobbyEnterRanchCancel, "LobbyEnterRanchCancel"},
+  {Command::LobbyEnterRanch, "LobbyEnterRanch"},
+  {Command::LobbyEnterRanchOK, "LobbyEnterRanchOK"},
+  {Command::LobbyEnterRanchCancel, "LobbyEnterRanchCancel"},
 
-  {CommandId::LobbyGetMessengerInfo, "LobbyGetMessengerInfo"},
-  {CommandId::LobbyGetMessengerInfoOK, "LobbyGetMessengerInfoOK"},
-  {CommandId::LobbyGetMessengerInfoCancel, "LobbyGetMessengerInfoCancel"},
+  {Command::LobbyGetMessengerInfo, "LobbyGetMessengerInfo"},
+  {Command::LobbyGetMessengerInfoOK, "LobbyGetMessengerInfoOK"},
+  {Command::LobbyGetMessengerInfoCancel, "LobbyGetMessengerInfoCancel"},
 
-  {CommandId::LobbyClientNotify, "LobbyClientNotify"},
+  {Command::LobbyClientNotify, "LobbyClientNotify"},
 
   // GoodsShop
-  {CommandId::LobbyGoodsShopList, "LobbyGoodsShopList"},
-  {CommandId::LobbyGoodsShopListOK, "LobbyGoodsShopListOK"},
-  {CommandId::LobbyGoodsShopListCancel, "LobbyGoodsShopListCancel"},
+  {Command::LobbyGoodsShopList, "LobbyGoodsShopList"},
+  {Command::LobbyGoodsShopListOK, "LobbyGoodsShopListOK"},
+  {Command::LobbyGoodsShopListCancel, "LobbyGoodsShopListCancel"},
 
   // InquiryTreecash
-  {CommandId::LobbyInquiryTreecash, "LobbyInquiryTreecash"},
-  {CommandId::LobbyInquiryTreecashOK, "LobbyInquiryTreecashOK"},
-  {CommandId::LobbyInquiryTreecashCancel, "LobbyInquiryTreecashCancel"},
+  {Command::LobbyInquiryTreecash, "LobbyInquiryTreecash"},
+  {Command::LobbyInquiryTreecashOK, "LobbyInquiryTreecashOK"},
+  {Command::LobbyInquiryTreecashCancel, "LobbyInquiryTreecashCancel"},
 
   // GuildPartyList
-  {CommandId::LobbyGuildPartyList, "LobbyGuildPartyList"},
-  {CommandId::LobbyGuildPartyListOK, "LobbyGuildPartyListOK"},
+  {Command::LobbyGuildPartyList, "LobbyGuildPartyList"},
+  {Command::LobbyGuildPartyListOK, "LobbyGuildPartyListOK"},
 
-  {CommandId::LobbyEnterRandomRanch, "LobbyEnterRandomRanch"},
+  {Command::LobbyEnterRandomRanch, "LobbyEnterRandomRanch"},
 
-  {CommandId::RanchEnterRanch, "RanchEnterRanch"},
-  {CommandId::RanchEnterRanchCancel, "RanchEnterRanchCancel"},
-  {CommandId::RanchEnterRanchNotify, "RanchEnterRanchNotify"},
-  {CommandId::RanchEnterRanchOK, "RanchEnterRanchOK"},
+  {Command::LobbyRequestPersonalInfo, "LobbyRequestPersonalInfo"},
+  {Command::LobbyPersonalInfo, "LobbyPersonalInfo"},
 
-  {CommandId::RanchHeartbeat, "RanchHeartbeat"},
+  {Command::LobbySetIntroduction, "LobbySetIntroduction"},
 
-  {CommandId::RanchSnapshot, "RanchSnapshot"},
-  {CommandId::RanchSnapshotNotify, "RanchSnapshotNotify"},
+  {Command::LobbyUpdateSystemContent, "LobbyUpdateSystemContent"},
+  {Command::LobbyUpdateSystemContentNotify, "LobbyUpdateSystemContentNotify"},
 
-  {CommandId::RanchCmdAction, "RanchCmdAction"},
-  {CommandId::RanchCmdActionNotify, "RanchCmdActionNotify"},
+  {Command::RanchEnterRanch, "RanchEnter"},
+  {Command::RanchEnterRanchCancel, "RanchEnterCancel"},
+  {Command::RanchEnterRanchNotify, "RanchEnterNotify"},
+  {Command::RanchEnterRanchOK, "RanchEnterRanchOK"},
 
-  {CommandId::RanchStuff, "RanchStuff"},
-  {CommandId::RanchStuffOK, "RanchStuffOK"},
+  {Command::RanchLeaveRanch, "RanchLeave"},
+  {Command::RanchLeaveRanchOK, "RanchLeave"},
 
-  {CommandId::RanchUpdateBusyState, "RanchUpdateBusyState"},
-  {CommandId::RanchUpdateBusyStateNotify, "RanchUpdateBusyStateNotify"},
+  {Command::RanchLeaveRanchNotify, "RanchLeaveNotify"},
 
-  {CommandId::RanchSearchStallion, "RanchSearchStallion"},
-  {CommandId::RanchSearchStallionOK, "RanchSearchStallionOK"},
-  {CommandId::RanchSearchStallionCancel, "RanchSearchStallionCancel"},
+  {Command::RanchHeartbeat, "RanchHeartbeat"},
 
-  {CommandId::RanchEnterBreedingMarket, "RanchEnterBreedingMarket"},
-  {CommandId::RanchEnterBreedingMarketOK, "RanchEnterBreedingMarketOK"},
-  {CommandId::RanchEnterBreedingMarketCancel, "RanchEnterBreedingMarketCancel"},
+  {Command::RanchSnapshot, "RanchSnapshot"},
+  {Command::RanchSnapshotNotify, "RanchSnapshotNotify"},
 
-  {CommandId::RanchTryBreeding, "RanchTryBreeding"},
-  {CommandId::RanchTryBreedingOK, "RanchTryBreedingOK"},
-  {CommandId::RanchTryBreedingCancel, "RanchTryBreedingCancel"},
+  {Command::RanchCmdAction, "RanchCmdAction"},
+  {Command::RanchCmdActionNotify, "RanchCmdActionNotify"},
 
-  {CommandId::RanchBreedingWishlist, "RanchBreedingWishlist"},
-  {CommandId::RanchBreedingWishlistCancel, "RanchBreedingWishlistCancel"},
-  {CommandId::RanchBreedingWishlistOK, "RanchBreedingWishlistOK"},
+  {Command::RanchStuff, "RanchStuff"},
+  {Command::RanchStuffOK, "RanchStuffOK"},
 
-  {CommandId::RanchUpdateMountNickname, "RanchUpdateMountNickname"},
-  {CommandId::RanchUpdateMountNicknameOK, "RanchUpdateMountNicknameOK"},
-  {CommandId::RanchUpdateMountNicknameCancel, "RanchUpdateMountNicknameCancel"},
+  {Command::RanchUpdateBusyState, "RanchUpdateBusyState"},
+  {Command::RanchUpdateBusyStateNotify, "RanchUpdateBusyStateNotify"},
 
-  {CommandId::RanchRequestStorage, "RanchRequestStorage"},
-  {CommandId::RanchRequestStorageOK, "RanchRequestStorageOK"},
-  {CommandId::RanchRequestStorageCancel, "RanchRequestStorageCancel"},
+  {Command::RanchSearchStallion, "RanchSearchStallion"},
+  {Command::RanchSearchStallionOK, "RanchSearchStallionOK"},
+  {Command::RanchSearchStallionCancel, "RanchSearchStallionCancel"},
 
-  {CommandId::RanchRequestNpcDressList, "RaceRequestNpcDressList"},
-  {CommandId::RanchRequestNpcDressListCancel, "RaceRequestNpcDressListCancel"},
-  {CommandId::RanchRequestNpcDressListOK, "RaceRequestNpcDressListOK"},
+  {Command::RanchEnterBreedingMarket, "RanchEnterBreedingMarket"},
+  {Command::RanchEnterBreedingMarketOK, "RanchEnterBreedingMarketOK"},
+  {Command::RanchEnterBreedingMarketCancel, "RanchEnterBreedingMarketCancel"},
 
-  {CommandId::RanchChat, "RanchChat"},
-  {CommandId::RanchChatNotify, "RanchChatNotify"},
+  {Command::RanchTryBreeding, "RanchTryBreeding"},
+  {Command::RanchTryBreedingOK, "RanchTryBreedingOK"},
+  {Command::RanchTryBreedingCancel, "RanchTryBreedingCancel"},
 
-  {CommandId::RanchWearEquipment, "RanchWearEquipment"},
-  {CommandId::RanchWearEquipmentOK, "RanchWearEquipmentOK"},
-  {CommandId::RanchWearEquipmentCancel, "RanchWearEquipmentCancel"},
+  {Command::RanchBreedingWishlist, "RanchBreedingWishlist"},
+  {Command::RanchBreedingWishlistCancel, "RanchBreedingWishlistCancel"},
+  {Command::RanchBreedingWishlistOK, "RanchBreedingWishlistOK"},
 
-  {CommandId::RanchRemoveEquipment, "RanchWearEquipment"},
-  {CommandId::RanchRemoveEquipmentOK, "RanchWearEquipmentOK"},
-  {CommandId::RanchRemoveEquipmentCancel, "RanchWearEquipmentCancel"},
+  {Command::RanchUpdateMountNickname, "RanchUpdateMountNickname"},
+  {Command::RanchUpdateMountNicknameOK, "RanchUpdateMountNicknameOK"},
+  {Command::RanchUpdateMountNicknameCancel, "RanchUpdateMountNicknameCancel"},
 
-  {CommandId::RanchUseItem, "RanchUseItem"},
-  {CommandId::RanchUseItemOK, "RanchUseItemOK"},
-  {CommandId::RanchUseItemCancel, "RanchUseItemCancel"},
+  {Command::RanchUpdateMountInfoNotify, "RanchUpdateMountInfoNotify"},
 
-  {CommandId::RaceEnterRoom, "RaceEnterRoom"},
-  {CommandId::RaceEnterRoomNotify, "RaceEnterRoomNotify"},
-  {CommandId::RaceEnterRoomOK, "RaceEnterRoomOK"},
-  {CommandId::RaceEnterRoomCancel, "RaceEnterRoomCancel"},
+  {Command::RanchRequestStorage, "RanchRequestStorage"},
+  {Command::RanchRequestStorageOK, "RanchRequestStorageOK"},
+  {Command::RanchRequestStorageCancel, "RanchRequestStorageCancel"},
 
-  {CommandId::RaceChangeRoomOptions, "RaceChangeRoomOptions"},
-  {CommandId::RaceChangeRoomOptionsNotify, "RaceChangeRoomOptionsNotify"},
+  {Command::RanchGetItemFromStorage, "RanchRequestStorage"},
+  {Command::RanchGetItemFromStorageOK, "RanchGetItemFromStorageOK"},
+  {Command::RanchGetItemFromStorageCancel, "RanchGetItemFromStorageCancel"},
 
-  {CommandId::RaceStartRace, "RaceStartRace"},
-  {CommandId::RaceStartRaceNotify, "RaceStartRaceNotify"},
-  {CommandId::RaceStartRaceCancel, "RaceStartRaceCancel"},
+  {Command::RanchRequestNpcDressList, "RanchRequestNpcDressList"},
+  {Command::RanchRequestNpcDressListCancel, "RanchRequestNpcDressListCancel"},
+  {Command::RanchRequestNpcDressListOK, "RanchRequestNpcDressListOK"},
 
-  {CommandId::UserRaceTimer, "UserRaceTimer"},
-  {CommandId::UserRaceTimerOK, "UserRaceTimerOK"},
+  {Command::RanchChat, "RanchChat"},
+  {Command::RanchChatNotify, "RanchChatNotify"},
 
-  {CommandId::RaceLoadingComplete, "RaceLoadingComplete"},
-  {CommandId::RaceLoadingCompleteNotify, "RaceLoadingCompleteNotify"},
+  {Command::RanchKickRanch, "RanchChat"},
+  {Command::RanchKickRanchOK, "RanchChatNotify"},
+  {Command::RanchKickRanchCancel, "RanchChat"},
+  {Command::RanchKickRanchNotify, "RanchChatNotify"},
 
-  {CommandId::RaceChat, "RaceChat"},
-  {CommandId::RaceChatNotify, "RaceChatNotify"},
+  {Command::RanchWearEquipment, "RanchWearEquipment"},
+  {Command::RanchWearEquipmentOK, "RanchWearEquipmentOK"},
+  {Command::RanchWearEquipmentCancel, "RanchWearEquipmentCancel"},
+
+  {Command::RanchRemoveEquipment, "RanchWearEquipment"},
+  {Command::RanchRemoveEquipmentOK, "RanchWearEquipmentOK"},
+  {Command::RanchRemoveEquipmentCancel, "RanchWearEquipmentCancel"},
+
+  {Command::RanchUseItem, "RanchUseItem"},
+  {Command::RanchUseItemOK, "RanchUseItemOK"},
+  {Command::RanchUseItemCancel, "RanchUseItemCancel"},
+
+  {Command::RanchUpdateEquipmentNotify, "RanchUpdateEquipmentNotify"},
+
+  {Command::RanchSetIntroductionNotify, "RanchSetIntroductionNotify"},
+
+  {Command::RanchCreateGuild, "RanchCreateGuild"},
+  {Command::RanchCreateGuildOK, "RanchCreateGuildOK"},
+  {Command::RanchCreateGuildCancel, "RanchCreateGuildCancel"},
+
+  {Command::RanchRequestGuildInfo, "RanchRequestGuildInfo"},
+  {Command::RanchRequestGuildInfoOK, "RanchRequestGuildInfoOK"},
+  {Command::RanchRequestGuildInfoCancel, "RanchRequestGuildInfoCancel"},
+
+  {Command::RanchIncubateEgg, "RanchIncubateEgg"},
+  {Command::RanchIncubateEggOK, "RanchIncubateEggOK"},
+  {Command::RanchIncubateEggCancel, "RanchIncubateEggCancel"},
+  {Command::RanchIncubateEggNotify, "RanchIncubateEggNotify"},
+
+  {Command::RanchUpdatePet, "RanchUpdatePet"},
+  {Command::RanchUpdatePetCancel, "RanchUpdatePetCancel"},
+
+  {Command::RanchRequestPetBirth, "RanchRequestPetBirth"},
+  {Command::RanchRequestPetBirthOK, "RanchRequestPetBirthOK"},
+  {Command::RanchRequestPetBirthCancel, "RanchRequestPetBirthCancel"},
+
+  {Command::RanchPetBirthNotify, "RanchPetBirthNotify"},
+
+  {Command::RanchAchievementUpdateProperty, "RanchAchievementUpdateProperty"},
+
+  {Command::RanchHousingBuild, "RanchHousingBuild"},
+  {Command::RanchHousingBuildOK, "RanchHousingBuildOK"},
+  {Command::RanchHousingBuildCancel, "RanchHousingBuildCancel"},
+
+  {Command::RanchHousingRepair, "RanchHousingRepair"},
+  {Command::RanchHousingRepairOK, "RanchHousingRepairOK"},
+  {Command::RanchHousingRepairCancel, "RanchHousingRepairCancel"},
+
+  {Command::RanchMissionEvent, "RanchMissionEvent"},
+
+  {Command::RanchOpCmd, "RanchOpCmd"},
+  {Command::RanchOpCmdOK, "RanchOpCmdOK"},
+
+  {Command::RaceEnterRoom, "RaceEnterRoom"},
+  {Command::RaceEnterRoomNotify, "RaceEnterRoomNotify"},
+  {Command::RaceEnterRoomOK, "RaceEnterRoomOK"},
+  {Command::RaceEnterRoomCancel, "RaceEnterRoomCancel"},
+
+  {Command::RaceChangeRoomOptions, "RaceChangeRoomOptions"},
+  {Command::RaceChangeRoomOptionsNotify, "RaceChangeRoomOptionsNotify"},
+
+  {Command::RaceStartRace, "RaceStartRace"},
+  {Command::RaceStartRaceNotify, "RaceStartRaceNotify"},
+  {Command::RaceStartRaceCancel, "RaceStartRaceCancel"},
+
+  {Command::RaceUserRaceTimer, "UserRaceTimer"},
+  {Command::RaceUserRaceTimerOK, "UserRaceTimerOK"},
+
+  {Command::RaceLoadingComplete, "RaceLoadingComplete"},
+  {Command::RaceLoadingCompleteNotify, "RaceLoadingCompleteNotify"},
+
+  {Command::RaceChat, "RaceChat"},
+  {Command::RaceChatNotify, "RaceChatNotify"},
+
+  {Command::RaceReadyRace, "RaceReadyRace"},
+  {Command::RaceReadyRaceNotify, "RaceReadyRaceNotify"},
+
+  {Command::RaceCountdown, "RaceCountdown"},
 };
 
 } // namespace
@@ -225,10 +296,10 @@ uint32_t encode_message_magic(MessageMagic magic)
   return encoded;
 }
 
-std::string_view GetCommandName(CommandId command)
+std::string_view GetCommandName(Command command)
 {
   const auto commandIter = commands.find(command);
   return commandIter == commands.cend() ? "n/a" : commandIter->second;
 }
 
-} // namespace alicia
+} // namespace server

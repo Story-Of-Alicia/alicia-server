@@ -22,19 +22,19 @@
 
 #include <functional>
 
-namespace alicia
+namespace server
 {
 
 //! Performs deferred call on destruction.
 struct Deferred final
 {
   //! Function.
-  using Fnc = std::function<void(void)>;
+  using Fnc = std::function<void()>;
 
   //! Construct deferred call that invokes
   //! the provided function on destruction of this object.
   explicit Deferred(Fnc func) noexcept
-    : _func(std::move(func)) {};
+    : _func(std::move(func)) {}
 
   //! Deleted copy constructor.
   Deferred(const Deferred&) noexcept = delete;
@@ -49,6 +49,6 @@ private:
   Fnc _func;
 };
 
-} // namespace alicia
+} // namespace server
 
 #endif // DEFERRED_HPP

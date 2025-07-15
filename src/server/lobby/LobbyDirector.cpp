@@ -21,6 +21,7 @@
 
 #include "libserver/data/helper/ProtocolHelper.hpp"
 #include "libserver/registry/RoomRegistry.hpp"
+#include "server/ServerInstance.hpp"
 
 #include <random>
 
@@ -33,141 +34,171 @@ std::random_device rd;
 
 } // namespace
 
-namespace alicia
+namespace server
 {
 
-LobbyDirector::LobbyDirector(soa::DataDirector& dataDirector, Settings::LobbySettings settings)
-  : _settings(std::move(settings))
-  , _server()
-  , _dataDirector(dataDirector)
-  , _loginHandler(*this, _server)
+LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
+  : _serverInstance(serverInstance)
+  , _commandServer(*this)
+  , _loginHandler(*this, _commandServer)
 {
-  _server.RegisterCommandHandler<LobbyCommandLogin>(
-    CommandId::LobbyLogin,
-    [this](ClientId clientId, const auto& message)
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandLogin>(
+    [this](ClientId clientId, const auto& command)
     {
-      assert(message.constant0 == 50
-        && message.constant1 == 281
-        && "Game version mismatch");
+      assert(command.constant0 == 50 && command.constant1 == 281 && "Game version mismatch");
 
-      _loginHandler.HandleUserLogin(clientId, message);
+      spdlog::info("Handling user login for '{}'", command.loginId);
+
+      _loginHandler.HandleUserLogin(clientId, command);
     });
 
-  _server.RegisterCommandHandler<LobbyCommandCreateNickname>(
-    CommandId::LobbyCreateNickname,
-    [this](ClientId clientId, const auto& message)
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandCreateNickname>(
+    [this](ClientId clientId, const auto& command)
     {
-      _loginHandler.HandleUserCreateCharacter(clientId, message);
+      _loginHandler.HandleUserCreateCharacter(clientId, command);
     });
 
-  _server.RegisterCommandHandler<LobbyCommandEnterChannel>(
-    CommandId::LobbyEnterChannel,
-    [this](ClientId clientId, const auto& message)
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandEnterChannel>(
+    [this](ClientId clientId, const auto& command)
     {
-      HandleEnterChannel(clientId, message);
+      HandleEnterChannel(clientId, command);
     });
 
-  _server.RegisterCommandHandler<LobbyCommandMakeRoom>(
-    CommandId::LobbyMakeRoom,
-    [this](ClientId clientId, const auto& message)
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandRoomList>(
+    [this](ClientId clientId, const auto& command)
     {
-      HandleMakeRoom(clientId, message);
+      HandleRoomList(clientId, command);
     });
 
-  _server.RegisterCommandHandler<LobbyCommandHeartbeat>(
-    CommandId::LobbyHeartbeat,
-    [this](ClientId clientId, const auto& message)
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandMakeRoom>(
+    [this](ClientId clientId, const auto& command)
     {
-      HandleHeartbeat(clientId, message);
+      HandleMakeRoom(clientId, command);
     });
 
-  _server.RegisterCommandHandler<LobbyCommandShowInventory>(
-    CommandId::LobbyShowInventory,
-    [this](ClientId clientId, const auto& message)
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandEnterRoom>(
+    [this](ClientId clientId, const auto& command)
     {
-      HandleShowInventory(clientId, message);
+      HandleEnterRoom(clientId, command);
     });
 
-  _server.RegisterCommandHandler<LobbyCommandAchievementCompleteList>(
-    CommandId::LobbyAchievementCompleteList,
-    [this](ClientId clientId, const auto& message)
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandHeartbeat>(
+    [this](ClientId clientId, const auto& command)
     {
-      HandleAchievementCompleteList(clientId, message);
+      HandleHeartbeat(clientId, command);
     });
 
-  _server.RegisterCommandHandler<LobbyCommandRequestLeagueInfo>(
-    CommandId::LobbyRequestLeagueInfo,
-    [this](ClientId clientId, const auto& message)
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandShowInventory>(
+    [this](ClientId clientId, const auto& command)
     {
-      HandleRequestLeagueInfo(clientId, message);
+      HandleShowInventory(clientId, command);
     });
 
-  _server.RegisterCommandHandler<LobbyCommandRequestQuestList>(
-    CommandId::LobbyRequestQuestList,
-    [this](ClientId clientId, const auto& message)
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandAchievementCompleteList>(
+    [this](ClientId clientId, const auto& command)
     {
-      HandleRequestQuestList(clientId, message);
+      HandleAchievementCompleteList(clientId, command);
     });
 
-  _server.RegisterCommandHandler<LobbyCommandRequestDailyQuestList>(
-    CommandId::LobbyRequestDailyQuestList,
-    [this](ClientId clientId, const auto& message)
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandRequestLeagueInfo>(
+    [this](ClientId clientId, const auto& command)
     {
-      HandleRequestDailyQuestList(clientId, message);
+      HandleRequestLeagueInfo(clientId, command);
     });
 
-  _server.RegisterCommandHandler<LobbyCommandRequestSpecialEventList>(
-    CommandId::LobbyRequestSpecialEventList,
-    [this](ClientId clientId, const auto& message)
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandRequestQuestList>(
+    [this](ClientId clientId, const auto& command)
     {
-      HandleRequestSpecialEventList(clientId, message);
+      HandleRequestQuestList(clientId, command);
     });
 
-  _server.RegisterCommandHandler<LobbyCommandEnterRanch>(
-    CommandId::LobbyEnterRanch,
-    [this](ClientId clientId, const auto& message)
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandRequestDailyQuestList>(
+    [this](ClientId clientId, const auto& command)
     {
-      HandleEnterRanch(clientId, message);
+      HandleRequestDailyQuestList(clientId, command);
     });
 
-  _server.RegisterCommandHandler<LobbyCommandGetMessengerInfo>(
-    CommandId::LobbyGetMessengerInfo,
-    [this](ClientId clientId, const auto& message)
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandRequestSpecialEventList>(
+    [this](ClientId clientId, const auto& command)
     {
-      HandleGetMessengerInfo(clientId, message);
+      HandleRequestSpecialEventList(clientId, command);
     });
 
-  _server.RegisterCommandHandler<LobbyCommandGoodsShopList>(
-    CommandId::LobbyGoodsShopList,
-    [this](ClientId clientId, const auto& message)
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandRequestPersonalInfo>(
+    [this](ClientId clientId, const auto& command)
     {
-      HandleGoodsShopList(clientId, message);
+      HandleRequestPersonalInfo(clientId, command);
     });
 
-  _server.RegisterCommandHandler<LobbyCommandInquiryTreecash>(
-    CommandId::LobbyInquiryTreecash,
-    [this](ClientId clientId, const auto& message)
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandSetIntroduction>(
+    [this](ClientId clientId, const auto& command)
     {
-      HandleInquiryTreecash(clientId, message);
+      HandleSetIntroduction(clientId, command);
     });
 
-  _server.RegisterCommandHandler<LobbyCommandClientNotify>(
-    CommandId::LobbyClientNotify,
-    [this](ClientId clientId, const auto& message)
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandEnterRanch>(
+    [this](ClientId clientId, const auto& command)
     {
-      if (message.val0 != 1)
-        spdlog::error("Client error notification: state[{}], value[{}]", message.val0, message.val1);
+      HandleEnterRanch(clientId, command);
     });
 
-  _server.RegisterCommandHandler<LobbyCommandEnterRandomRanch>(
-    CommandId::LobbyEnterRandomRanch,
-    [this](ClientId clientId, auto& command)
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandGetMessengerInfo>(
+    [this](ClientId clientId, const auto& command)
     {
-      const auto randomRanchUids = _dataDirector.GetRanches().GetKeys();
-      std::uniform_int_distribution<soa::data::Uid> uidDistribution(
-        0, randomRanchUids.size() - 1);
+      HandleGetMessengerInfo(clientId, command);
+    });
 
-      QueueEnterRanchOK(clientId, randomRanchUids[uidDistribution(rd)]);
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandGoodsShopList>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleGoodsShopList(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandInquiryTreecash>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleInquiryTreecash(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandClientNotify>(
+    [this](ClientId clientId, const auto& command)
+    {
+      if (command.val0 != 1)
+        spdlog::error("Client error notification: state[{}], value[{}]", command.val0, command.val1);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandEnterRandomRanch>(
+    [this](ClientId clientId, const auto& command)
+    {
+      // this is just for prototype, it can suck
+      auto& clientContext = _clientContext[clientId];
+
+      data::Uid rancherUid = data::InvalidUid;
+
+      // If the user has a visit preference apply it.
+      if (clientContext.rancherVisitPreference != data::InvalidUid)
+      {
+        rancherUid = clientContext.rancherVisitPreference;
+        clientContext.rancherVisitPreference = data::InvalidUid;
+      }
+
+      // If the rancher's uid is invalid randomize it.
+      if (rancherUid == data::InvalidUid)
+      {
+        auto randomCharacterUid = GetServerInstance().GetDataDirector().GetCharacters().GetKeys();
+        std::uniform_int_distribution<data::Uid> uidDistribution(
+          0, randomCharacterUid.size() - 1);
+
+        rancherUid = randomCharacterUid[uidDistribution(rd)];
+      }
+
+      QueueEnterRanchOK(clientId, rancherUid);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandUpdateSystemContent>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleUpdateSystemContent(clientId, command);
     });
 }
 
@@ -175,24 +206,24 @@ void LobbyDirector::Initialize()
 {
   spdlog::debug(
     "Lobby is advertising ranch server on {}:{}",
-    _settings.ranchAdvAddress.to_string(),
-    _settings.ranchAdvPort);
+    GetSettings().ranchAdvAddress.to_string(),
+    GetSettings().ranchAdvPort);
   spdlog::debug(
     "Lobby is advertising messenger server on {}:{}",
-    _settings.messengerAdvAddress.to_string(),
-    _settings.messengerAdvPort);
+    GetSettings().messengerAdvAddress.to_string(),
+    GetSettings().messengerAdvPort);
 
   spdlog::debug(
     "Lobby server listening on {}:{}",
-    _settings.address.to_string(),
-    _settings.port);
+    GetSettings().address.to_string(),
+    GetSettings().port);
 
-  _server.BeginHost(_settings.address, _settings.port);
+  _commandServer.BeginHost(GetSettings().address, GetSettings().port);
 }
 
 void LobbyDirector::Terminate()
 {
-  _server.EndHost();
+  _commandServer.EndHost();
 }
 
 void LobbyDirector::Tick()
@@ -200,27 +231,78 @@ void LobbyDirector::Tick()
   _loginHandler.Tick();
 }
 
-soa::DataDirector& LobbyDirector::GetDataDirector()
+void LobbyDirector::HandleClientConnected(ClientId clientId)
 {
-  return _dataDirector;
+  spdlog::info("Client {} connected to the lobby", clientId);
+}
+
+void LobbyDirector::HandleClientDisconnected(ClientId clientId)
+{
+  spdlog::info("Client {} disconnected from the lobby", clientId);
+  _clientContext.erase(clientId);
+}
+
+ServerInstance& LobbyDirector::GetServerInstance()
+{
+  return _serverInstance;
 }
 
 Settings::LobbySettings& LobbyDirector::GetSettings()
 {
-  return _settings;
+  return GetServerInstance().GetSettings()._lobbySettings;
 }
+
+void LobbyDirector::UpdateVisitPreference(data::Uid characterUid, data::Uid visitingCharacterUid)
+{
+  const auto clientContextIter = std::ranges::find_if(_clientContext, [characterUid](const auto pair)
+  {
+    const auto& [clientId, ctx] = pair;
+    return ctx.characterUid == characterUid;
+  });
+
+  if (clientContextIter == _clientContext.cend())
+    return;
+
+  clientContextIter->second.rancherVisitPreference = visitingCharacterUid;
+}
+
 
 void LobbyDirector::HandleEnterChannel(
   ClientId clientId,
-  const LobbyCommandEnterChannel& enterChannel)
+  const protocol::LobbyCommandEnterChannel& command)
 {
-  LobbyCommandEnterChannelOK response{
-    .unk0 = enterChannel.channel // potentially
+  protocol::LobbyCommandEnterChannelOK response{
+    .unk0 = command.channel // potentially
   };
 
-  _server.QueueCommand<decltype(response)>(
+  _commandServer.QueueCommand<decltype(response)>(
     clientId,
-    CommandId::LobbyEnterChannelOK,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void LobbyDirector::HandleRoomList(
+  ClientId clientId,
+  const protocol::LobbyCommandRoomList& command)
+{
+  protocol::LobbyCommandRoomListOK response;
+  response.page = command.page;
+  response.unk1 = 1;
+  response.unk2 = 1;
+
+  for (const auto& room : RoomRegistry::Get().GetRooms() | std::views::values)
+  {
+    auto& roomResponse = response.rooms.emplace_back();
+    roomResponse.id = room.uid;
+    roomResponse.playerCount = 1;
+    roomResponse.maxPlayers = 8;
+    roomResponse.level = 2;
+  }
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
     [response]()
     {
       return response;
@@ -229,30 +311,50 @@ void LobbyDirector::HandleEnterChannel(
 
 void LobbyDirector::HandleMakeRoom(
   ClientId clientId,
-  const LobbyCommandMakeRoom& makeRoom)
+  const protocol::LobbyCommandMakeRoom& command)
 {
-  auto& roomRegistry = soa::RoomRegistry::Get();
+  auto& roomRegistry = RoomRegistry::Get();
   auto& room = roomRegistry.CreateRoom();
 
-  room.name = makeRoom.name;
-  room.description = makeRoom.description;
-  room.missionId = makeRoom.missionId;
-  room.unk0 = makeRoom.unk0;
-  room.unk1 = makeRoom.unk1;
-  room.unk2 = makeRoom.unk2;
-  room.unk3 = makeRoom.unk3;
-  room.bitset = makeRoom.bitset;
-  room.unk4 = makeRoom.unk4;
+  room.name = command.name;
+  room.description = command.password;
+  room.missionId = command.missionId;
+  room.playerCount = command.playerCount;
+  room.gameMode = command.gameMode;
+  room.teamMode = command.teamMode;
+  room.unk3 = command.unk3;
+  room.bitset = static_cast<uint16_t>(command.bitset);
+  room.unk4 = command.unk4;
 
-  LobbyCommandMakeRoomOK response{
+  protocol::LobbyCommandMakeRoomOK response{
     .roomUid = room.uid,
     .otp = 0xBAAD,
-    .ip = htonl(_settings.raceAdvAddress.to_uint()),
-    .port = _settings.raceAdvPort};
+    .address = GetSettings().raceAdvAddress.to_uint(),
+    .port = GetSettings().raceAdvPort};
 
-  _server.QueueCommand<decltype(response)>(
+  _commandServer.QueueCommand<decltype(response)>(
     clientId,
-    CommandId::LobbyMakeRoomOK,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void LobbyDirector::HandleEnterRoom(
+  ClientId clientId,
+  const protocol::LobbyCommandEnterRoom& command)
+{
+  auto& roomRegistry = RoomRegistry::Get();
+
+  protocol::LobbyCommandEnterRoomOK response{
+    .roomUid = command.roomUid,
+    .otp = 0xBAAD,
+    .address = GetSettings().raceAdvAddress.to_uint(),
+    .port = GetSettings().raceAdvPort,
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
     [response]()
     {
       return response;
@@ -261,35 +363,45 @@ void LobbyDirector::HandleMakeRoom(
 
 void LobbyDirector::HandleHeartbeat(
   ClientId clientId,
-  const LobbyCommandHeartbeat& heartbeat)
+  const protocol::LobbyCommandHeartbeat& command)
 {
   // TODO: Statistics for the heartbeat.
 }
 
 void LobbyDirector::HandleShowInventory(
   ClientId clientId,
-  const LobbyCommandShowInventory& showInventory)
+  const protocol::LobbyCommandShowInventory& command)
+{
+  QueueShowInventory(clientId);
+}
+
+void LobbyDirector::QueueShowInventory(ClientId clientId)
 {
   const auto& clientContext = _clientContext[clientId];
-  auto characterRecord = _dataDirector.GetCharacters().Get(
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  LobbyCommandShowInventoryOK response{
+  if (not characterRecord)
+    throw std::runtime_error("Character record unavailable");
+
+  protocol::LobbyCommandShowInventoryOK response{
     .items = {},
     .horses = {}};
 
-  characterRecord->Immutable([this, &response](const soa::data::Character& character)
-  {
-    auto itemRecords = _dataDirector.GetItems().Get(character.inventory());
-    protocol::BuildProtocolItems(response.items, *itemRecords);
+  characterRecord.Immutable(
+    [this, &response](const data::Character& character)
+    {
+      const auto itemRecords = GetServerInstance().GetDataDirector().GetItems().Get(
+        character.items());
+      protocol::BuildProtocolItems(response.items, *itemRecords);
 
-    auto horseRecords = _dataDirector.GetHorses().Get(character.horses());
-    protocol::BuildProtocolHorses(response.horses, *horseRecords);
-  });
+      const auto horseRecords = GetServerInstance().GetDataDirector().GetHorses().Get(
+        character.horses());
+      protocol::BuildProtocolHorses(response.horses, *horseRecords);
+    });
 
-  _server.QueueCommand<decltype(response)>(
+  _commandServer.QueueCommand<decltype(response)>(
     clientId,
-    CommandId::LobbyShowInventoryOK,
     [response]()
     {
       return response;
@@ -298,25 +410,29 @@ void LobbyDirector::HandleShowInventory(
 
 void LobbyDirector::HandleAchievementCompleteList(
   ClientId clientId,
-  const LobbyCommandAchievementCompleteList& achievementCompleteList)
+  const protocol::LobbyCommandAchievementCompleteList& command)
 {
   const auto& clientContext = _clientContext[clientId];
-  auto characterRecord = _dataDirector.GetCharacters().Get(
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  LobbyCommandAchievementCompleteListOK response{};
+  protocol::LobbyCommandAchievementCompleteListOK response{};
 
-  characterRecord->Immutable([&response](const soa::data::Character& character)
-  {
-    response.unk0 = character.uid();
-  });
+  characterRecord.Immutable(
+    [&response](const data::Character& character)
+    {
+      response.unk0 = character.uid();
+    });
 
-  response.achievements.emplace_back().tid = 20'008;
-  response.achievements.emplace_back().tid = 20'004;
+  // These are the level-up achievements from the `Achievement` table with the event id 75.
+  response.achievements.emplace_back().tid = 20008;
+  response.achievements.emplace_back().tid = 20009;
+  response.achievements.emplace_back().tid = 20010;
+  response.achievements.emplace_back().tid = 20011;
+  response.achievements.emplace_back().tid = 20012;
 
-  _server.QueueCommand<decltype(response)>(
+  _commandServer.QueueCommand<decltype(response)>(
     clientId,
-    CommandId::LobbyAchievementCompleteListOK,
     [response]()
     {
       return response;
@@ -325,13 +441,12 @@ void LobbyDirector::HandleAchievementCompleteList(
 
 void LobbyDirector::HandleRequestLeagueInfo(
   ClientId clientId,
-  const LobbyCommandRequestLeagueInfo& requestLeagueInfo)
+  const protocol::LobbyCommandRequestLeagueInfo& command)
 {
-  LobbyCommandRequestLeagueInfoOK response{};
+  protocol::LobbyCommandRequestLeagueInfoOK response{};
 
-  _server.QueueCommand<decltype(response)>(
+  _commandServer.QueueCommand<decltype(response)>(
     clientId,
-    CommandId::LobbyRequestLeagueInfoOK,
     [response]()
     {
       return response;
@@ -340,38 +455,22 @@ void LobbyDirector::HandleRequestLeagueInfo(
 
 void LobbyDirector::HandleRequestQuestList(
   ClientId clientId,
-  const LobbyCommandRequestQuestList& requestQuestList)
+  const protocol::LobbyCommandRequestQuestList& command)
 {
   const auto& clientContext = _clientContext[clientId];
-  auto characterRecord = _dataDirector.GetCharacters().Get(
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  LobbyCommandRequestQuestListOK response{};
+  protocol::LobbyCommandRequestQuestListOK response{};
 
-  characterRecord->Immutable([&response](const soa::data::Character& character)
-  {
-    response.unk0 = character.uid();
-  });
+  characterRecord.Immutable(
+    [&response](const data::Character& character)
+    {
+      response.unk0 = character.uid();
+    });
 
-  response.quests.emplace_back(Quest{
-    .tid = 11'039,
-    .member1 = 1,
-    .member2 = 0xA,
-    .member4 = 3});
-  response.quests.emplace_back(Quest{
-    .tid = 12'012,
-    .member1 = 1,
-    .member2 = 3,
-    .member4 = 3});
-  response.quests.emplace_back(Quest{
-    .tid = 13'010,
-    .member1 = 1,
-    .member2 = 0x14,
-    .member4 = 3});
-
-  _server.QueueCommand<decltype(response)>(
+  _commandServer.QueueCommand<decltype(response)>(
     clientId,
-    CommandId::LobbyAchievementCompleteListOK,
     [response]()
     {
       return response;
@@ -380,82 +479,117 @@ void LobbyDirector::HandleRequestQuestList(
 
 void LobbyDirector::HandleRequestDailyQuestList(
   ClientId clientId,
-  const LobbyCommandRequestDailyQuestList& requestQuestList)
+  const protocol::LobbyCommandRequestDailyQuestList& command)
 {
   const auto& clientContext = _clientContext[clientId];
-  auto characterRecord = _dataDirector.GetCharacters().Get(
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  LobbyCommandRequestDailyQuestListOK response{};
+  protocol::LobbyCommandRequestDailyQuestListOK response{};
 
-  characterRecord->Immutable([&response](const soa::data::Character& character)
-  {
-    response.val0 = character.uid();
-  });
+  characterRecord.Immutable(
+    [&response](const data::Character& character)
+    {
+      response.val0 = character.uid();
+    });
 
-  _server.QueueCommand<decltype(response)>(
+  _commandServer.QueueCommand<decltype(response)>(
     clientId,
-    CommandId::LobbyRequestDailyQuestListOK,
     [response]()
     {
       return response;
     });
 }
+
 void LobbyDirector::HandleRequestSpecialEventList(
   ClientId clientId,
-  const LobbyCommandRequestSpecialEventList& requestQuestList)
+  const protocol::LobbyCommandRequestSpecialEventList& command)
 {
   const auto& clientContext = _clientContext[clientId];
-  auto characterRecord = _dataDirector.GetCharacters().Get(
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  LobbyCommandRequestSpecialEventListOK response{};
+  protocol::LobbyCommandRequestSpecialEventListOK response{};
 
-  _server.QueueCommand<decltype(response)>(
+  _commandServer.QueueCommand<decltype(response)>(
     clientId,
-    CommandId::LobbyAchievementCompleteListOK,
     [response]()
     {
       return response;
     });
+}
+
+void LobbyDirector::HandleRequestPersonalInfo(
+  ClientId clientId,
+  const protocol::LobbyCommandRequestPersonalInfo& command)
+{
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    command.characterUid);
+
+  protocol::LobbyCommandPersonalInfo response{
+    .characterUid = command.characterUid,
+    .type = command.type,
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void LobbyDirector::HandleSetIntroduction(ClientId clientId, const protocol::LobbyCommandSetIntroduction& command)
+{
+  const auto& clientContext = _clientContext[clientId];
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  characterRecord.Mutable(
+    [&command](data::Character& character)
+    {
+      character.introduction() = command.introduction;
+    });
+
+  GetServerInstance().GetRanchDirector().BroadcastSetIntroductionNotify(
+    clientContext.characterUid, command.introduction);
 }
 
 void LobbyDirector::HandleEnterRanch(
   ClientId clientId,
-  const LobbyCommandEnterRanch& requestEnterRanch)
+  const protocol::LobbyCommandEnterRanch& command)
 {
   const auto& clientContext = _clientContext[clientId];
-  auto characterRecord = _dataDirector.GetCharacters().Get(
-    clientContext.characterUid);
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    command.characterUid);
 
   if (not characterRecord)
   {
-    throw std::runtime_error(
-      std::format("Character [{}] not available", clientContext.characterUid));
+    protocol::LobbyCommandEnterRanchCancel response{};
+
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId, [response]()
+      {
+        return response;
+      });
   }
 
-  auto ranchUid = soa::data::InvalidUid;
-  characterRecord->Immutable([&ranchUid](const soa::data::Character& character)
-  {
-    ranchUid = character.ranchUid();
-  });
-
-  QueueEnterRanchOK(clientId, ranchUid);
+  QueueEnterRanchOK(clientId, clientContext.characterUid);
 }
 
 void LobbyDirector::QueueEnterRanchOK(
   ClientId clientId,
-  soa::data::Uid ranchUid)
+  data::Uid rancherUid)
 {
-  LobbyCommandEnterRanchOK response{
-    .ranchUid =  ranchUid,
-    .code = 0x44332211,
-    .ip = static_cast<uint32_t>(htonl(_settings.ranchAdvAddress.to_uint())),
-    .port = _settings.ranchAdvPort};
+  protocol::LobbyCommandEnterRanchOK response{
+    .rancherUid = rancherUid,
+    .otp = 0x44332211,
+    .ip = static_cast<uint32_t>(htonl(
+      GetSettings().ranchAdvAddress.to_uint())),
+    .port = GetSettings().ranchAdvPort};
 
-  _server.QueueCommand<decltype(response)>(
+  _commandServer.QueueCommand<decltype(response)>(
     clientId,
-    CommandId::LobbyEnterRanchOK,
     [response]()
     {
       return response;
@@ -464,17 +598,16 @@ void LobbyDirector::QueueEnterRanchOK(
 
 void LobbyDirector::HandleGetMessengerInfo(
   ClientId clientId,
-  const LobbyCommandGetMessengerInfo& requestMessengerInfo)
+  const protocol::LobbyCommandGetMessengerInfo& command)
 {
-  LobbyCommandGetMessengerInfoOK response{
+  protocol::LobbyCommandGetMessengerInfoOK response{
     .code = 0xDEAD,
-    .ip = static_cast<uint32_t>(htonl(_settings.messengerAdvAddress.to_uint())),
-    .port = _settings.messengerAdvPort,
+    .ip = static_cast<uint32_t>(htonl(GetSettings().messengerAdvAddress.to_uint())),
+    .port = GetSettings().messengerAdvPort,
   };
 
-  _server.QueueCommand<decltype(response)>(
+  _commandServer.QueueCommand<decltype(response)>(
     clientId,
-    CommandId::LobbyGetMessengerInfoOK,
     [response]()
     {
       return response;
@@ -483,14 +616,13 @@ void LobbyDirector::HandleGetMessengerInfo(
 
 void LobbyDirector::HandleGoodsShopList(
   ClientId clientId,
-  const LobbyCommandGoodsShopList& message)
+  const protocol::LobbyCommandGoodsShopList& command)
 {
-  LobbyCommandGoodsShopListOK response{
-    .data = message.data};
+  protocol::LobbyCommandGoodsShopListOK response{
+    .data = command.data};
 
-  _server.QueueCommand<decltype(response)>(
+  _commandServer.QueueCommand<decltype(response)>(
     clientId,
-    CommandId::LobbyGoodsShopListOK,
     [response]()
     {
       return response;
@@ -499,14 +631,22 @@ void LobbyDirector::HandleGoodsShopList(
 
 void LobbyDirector::HandleInquiryTreecash(
   ClientId clientId,
-  const LobbyCommandInquiryTreecash& message)
+  const protocol::LobbyCommandInquiryTreecash& command)
 {
-  LobbyCommandInquiryTreecashOK response{
-    .cash = 1'000};
+  const auto& clientContext = _clientContext[clientId];
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
 
-  _server.QueueCommand<decltype(response)>(
+  protocol::LobbyCommandInquiryTreecashOK response{};
+
+  characterRecord.Immutable(
+    [&response](const data::Character& character)
+    {
+      response.cash = character.cash();
+    });
+
+  _commandServer.QueueCommand<decltype(response)>(
     clientId,
-    CommandId::LobbyInquiryTreecashOK,
     [response]()
     {
       return response;
@@ -515,38 +655,48 @@ void LobbyDirector::HandleInquiryTreecash(
 
 void LobbyDirector::HandleGuildPartyList(
   ClientId clientId,
-  const LobbyCommandGuildPartyList& message)
+  const protocol::LobbyCommandGuildPartyList& command)
 {
+  const protocol::LobbyCommandGuildPartyListOK response{};
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
-//
-// void LobbyDirector::HandleGuildPartyList(
-//   ClientId clientId,
-//   const LobbyCommandGuildPartyList& message)
-// {
-//   const LobbyCommandGuildPartyListOK response{};
-//
-//   _server.QueueCommand(
-//     clientId,
-//     CommandId::LobbyGuildPartyListOK,
-//     [response](SinkStream& sink)
-//     {
-//       LobbyCommandGuildPartyListOK::Write(response, sink);
-//     });
-// }
-
-void LobbyCommandEnterRandomRanch::Write(
-  const LobbyCommandEnterRandomRanch& command,
-  SinkStream& stream)
+void LobbyDirector::HandleUpdateSystemContent(
+  ClientId clientId,
+  const protocol::LobbyCommandUpdateSystemContent& command)
 {
-  throw std::runtime_error("Not implemented");
+  const auto& clientContext = _clientContext[clientId];
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  bool hasPermission = false;
+  characterRecord.Immutable([&hasPermission](const data::Character& character)
+  {
+    hasPermission = character.role() != data::Character::Role::User;
+  });
+
+  if (not hasPermission)
+    return;
+
+  _systemContent.values[command.key] = command.value;
+
+  protocol::LobbyCommandUpdateSystemContentNotify notify{
+    .systemContent = _systemContent};
+
+  for (const auto& connectedClientId : _clientContext | std::views::keys)
+  {
+    _commandServer.QueueCommand<decltype(notify)>(
+      connectedClientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
 }
 
-void LobbyCommandEnterRandomRanch::Read(
-  LobbyCommandEnterRandomRanch& command,
-  SourceStream& stream)
-{
-  // Empty.
-}
-
-} // namespace alicia
+} // namespace server

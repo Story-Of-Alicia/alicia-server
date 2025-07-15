@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <cassert>
 
-namespace soa
+namespace server
 {
 
 Room& RoomRegistry::CreateRoom()
@@ -28,4 +28,4 @@ Room& RoomRegistry::GetRoom(uint32_t uid)
   return it->second;
 }
 
-} // namespace soa
+} // namespace server

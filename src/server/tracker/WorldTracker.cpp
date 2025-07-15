@@ -19,45 +19,50 @@
 
 #include "server/tracker/WorldTracker.hpp"
 
-namespace alicia
+namespace server
 {
 
-EntityId WorldTracker::AddCharacter(soa::data::Uid character)
+Oid WorldTracker::AddCharacter(data::Uid character)
 {
-  _characters[character] = _nextEntityId;
-  return _nextEntityId++;
+  _characters[character] = _nextObjectId;
+  return _nextObjectId++;
 }
 
-EntityId WorldTracker::GetCharacterEntityId(soa::data::Uid character)
+void WorldTracker::RemoveCharacter(data::Uid character)
+{
+  _characters.erase(character);
+}
+
+Oid WorldTracker::GetCharacterEntityId(data::Uid character)
 {
   const auto itr = _characters.find(character);
   if (itr == _characters.cend())
-    return InvalidEntityId;
+    return InvalidEntityOid;
   return itr->second;
 }
 
-EntityId WorldTracker::AddHorse(soa::data::Uid mount)
+Oid WorldTracker::AddHorse(data::Uid mount)
 {
-  _mounts[mount] = _nextEntityId;
-  return _nextEntityId++;
+  _horses[mount] = _nextObjectId;
+  return _nextObjectId++;
 }
 
-EntityId WorldTracker::GetHorseEntityId(soa::data::Uid mount)
+Oid WorldTracker::GetHorseEntityId(data::Uid mount)
 {
-  const auto itr = _mounts.find(mount);
-  if (itr == _mounts.cend())
-    return InvalidEntityId;
+  const auto itr = _horses.find(mount);
+  if (itr == _horses.cend())
+    return InvalidEntityOid;
   return itr->second;
 }
 
-const WorldTracker::EntityMap& WorldTracker::GetHorseEntities()
+const WorldTracker::ObjectMap& WorldTracker::GetHorseEntities()
 {
-  return _mounts;
+  return _horses;
 }
 
-const WorldTracker::EntityMap& WorldTracker::GetCharacterEntities()
+const WorldTracker::ObjectMap& WorldTracker::GetCharacterEntities()
 {
   return _characters;
 }
 
-} // namespace alicia
+} // namespace server

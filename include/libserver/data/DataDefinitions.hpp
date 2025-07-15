@@ -22,11 +22,11 @@
 
 #include <atomic>
 #include <cstdint>
-#include <functional>
-#include <unordered_set>
+#include <chrono>
 #include <string>
+#include <vector>
 
-namespace soa
+namespace server
 {
 
 namespace dao
@@ -42,8 +42,15 @@ struct Field
   {
   }
 
-  Field(const Field& field) = delete;
+  //! Constructs field with an initialized value.
+  Field()
+    : _value()
+  {
+  }
 
+  //! Deleted copy constructor.
+  Field(const Field& field) = delete;
+  //!  Deleted copy assignment operator.
   Field& operator=(const Field& field) = delete;
 
   Field(Field&& field) noexcept
@@ -60,16 +67,6 @@ struct Field
     return *this;
   }
 
-  //! Constructs field with an initialized value.
-  Field()
-    : _value()
-  {
-  }
-
-  //! Constructs a field with an uninitialized value.
-  explicit Field(std::nullptr_t t)
-  {
-  }
 
   [[nodiscard]] bool IsModified() const noexcept
   {
@@ -119,6 +116,8 @@ constexpr Uid InvalidUid = 0;
 //! Value of an invalid type identifier.
 constexpr Tid InvalidTid = 0;
 
+using Clock = std::chrono::steady_clock;
+
 //! User
 struct User
 {
@@ -135,22 +134,42 @@ struct User
 //! Item
 struct Item
 {
-  //! Slot type of the item.
-  enum class Slot
-  {
-    CharacterEquipment,
-    HorseEquipment,
-    Storage,
-  };
-
   //! A unique identifier.
   dao::Field<Uid> uid{InvalidUid};
   //! A type identifier.
   dao::Field<Tid> tid{InvalidTid};
   //! Amount of an item.
   dao::Field<uint32_t> count{};
-  //! Slot of the item.
-  dao::Field<Slot> slot{Slot::Storage};
+};
+
+//! Pet
+struct Pet
+{
+  //! A unique identifier.
+  dao::Field<Uid> uid{InvalidUid};
+  //! A type identifier.
+  dao::Field<Tid> tid{InvalidTid};
+  //!
+  dao::Field<std::string> name{};
+};
+
+//! Stored item
+struct StorageItem
+{
+  //! A unique identifier.
+  dao::Field<Uid> uid{InvalidUid};
+  dao::Field<std::vector<Uid>> items{};
+  dao::Field<std::string> sender{};
+  dao::Field<std::string> message{};
+  dao::Field<bool> checked{false};
+  dao::Field<bool> expired{false};
+};
+
+//! Guild
+struct Guild
+{
+  dao::Field<Uid> uid{InvalidUid};
+  dao::Field<std::string> name{};
 };
 
 //! User
@@ -161,9 +180,19 @@ struct Character
   //! A name of the character.
   dao::Field<std::string> name{};
 
+  dao::Field<std::string> introduction{};
+
   dao::Field<uint32_t> level{};
   dao::Field<int32_t> carrots{};
   dao::Field<uint32_t> cash{};
+
+  enum class Role
+  {
+    User,
+    Op,
+    Gm
+  };
+  dao::Field<Role> role{};
 
   struct Parts
   {
@@ -177,34 +206,46 @@ struct Character
 
   struct Appearance
   {
+    //! An ID of the Voice model.
+    dao::Field<uint32_t> voiceId{0u};
     dao::Field<uint32_t> headSize{0u};
     dao::Field<uint32_t> height{0u};
     dao::Field<uint32_t> thighVolume{0u};
     dao::Field<uint32_t> legVolume{0u};
+    //! An ID of the emblem.
+    dao::Field<uint32_t> emblemId{0u};
   } appearance{};
 
-  dao::Field<std::vector<Uid>> inventory;
-  dao::Field<std::vector<Uid>> characterEquipment;
-  dao::Field<std::vector<Uid>> mountEquipment;
+  dao::Field<Uid> petUid{InvalidUid};
+  dao::Field<Uid> guildUid{InvalidUid};
 
-  dao::Field<std::vector<Uid>> horses;
+  dao::Field<std::vector<Uid>> gifts{};
+  dao::Field<std::vector<Uid>> purchases{};
+
+  dao::Field<std::vector<Uid>> items{};
+  dao::Field<std::vector<Uid>> characterEquipment{};
+  dao::Field<std::vector<Uid>> mountEquipment{};
+
+  dao::Field<std::vector<Uid>> horses{};
   dao::Field<Uid> mountUid{InvalidUid};
 
-  dao::Field<Uid> ranchUid{InvalidUid};
+  dao::Field<std::vector<Uid>> eggs{};
+
+  dao::Field<std::vector<Uid>> housing{};
 };
 
 struct Horse
 {
   dao::Field<Uid> uid{InvalidUid};
-  dao::Field<Uid> tid{InvalidTid};
+  dao::Field<Tid> tid{InvalidTid};
   dao::Field<std::string> name{};
 
   struct Parts
   {
-    dao::Field<uint32_t> skinId{0u};
-    dao::Field<uint32_t> maneId{0u};
-    dao::Field<uint32_t> tailId{0u};
-    dao::Field<uint32_t> faceId{0u};
+    dao::Field<Tid> skinTid{0u};
+    dao::Field<Tid> faceTid{0u};
+    dao::Field<Tid> maneTid{0u};
+    dao::Field<Tid> tailTid{0u};
   } parts{};
 
   struct Appearance
@@ -239,21 +280,30 @@ struct Horse
   dao::Field<uint32_t> grade{0u};
   dao::Field<uint32_t> growthPoints{0u};
 
-  dao::Field<uint32_t> potentialType{0u};
+  dao::Field<Tid> potentialType{0u};
   dao::Field<uint32_t> potentialLevel{0u};
 
   dao::Field<uint32_t> luckState{0u};
-  dao::Field<uint32_t> emblem{0u};
+  dao::Field<uint32_t> emblemUid{0u};
 };
 
-struct Ranch
+struct Housing
 {
   dao::Field<Uid> uid{InvalidUid};
-  dao::Field<std::string> name{};
+  dao::Field<uint16_t> housingId{};
+};
+
+struct Egg
+{
+  dao::Field<Uid> uid{InvalidUid};
+  dao::Field<Tid> tid{InvalidTid};
+  dao::Field<Tid> petTid{InvalidTid};
+
+  dao::Field<Clock::time_point> hatchTimestamp{};
 };
 
 } // namespace data
 
-} // namespace soa
+} // namespace server
 
 #endif // DATADEFINITIONS_HPP

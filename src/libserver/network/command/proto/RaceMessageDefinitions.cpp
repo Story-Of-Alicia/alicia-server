@@ -19,10 +19,10 @@
 
 #include "libserver/network/command/proto/RaceMessageDefinitions.hpp"
 
-namespace alicia
+namespace server::protocol
 {
 
-void WritePlayerRacer(SinkStream& stream, const PlayerRacer& playerRacer)
+void WritePlayerRacer(SinkStream& stream, const Avatar& playerRacer)
 {
   stream.Write(static_cast<uint8_t>(playerRacer.characterEquipment.size()));
 
@@ -32,47 +32,47 @@ void WritePlayerRacer(SinkStream& stream, const PlayerRacer& playerRacer)
   }
 
   stream.Write(playerRacer.character)
-    .Write(playerRacer.horse)
+    .Write(playerRacer.mount)
     .Write(playerRacer.unk0);
 }
 
 void WriteRacer(SinkStream& stream, const Racer& racer)
 {
-  stream.Write(racer.unk0)
-    .Write(racer.unk1)
+  stream.Write(racer.member1)
+    .Write(racer.member2)
     .Write(racer.level)
-    .Write(racer.exp)
+    .Write(racer.oid)
     .Write(racer.uid)
     .Write(racer.name)
     .Write(racer.unk5)
     .Write(racer.unk6)
-    .Write(racer.bitset)
+    .Write(racer.isHidden)
     .Write(racer.isNPC);
 
   if (racer.isNPC)
   {
-    stream.Write(racer.npcRacer.value());
+    stream.Write(racer.npcTid.value());
   }
   else
   {
-    WritePlayerRacer(stream, racer.playerRacer.value());
+    WritePlayerRacer(stream, racer.avatar.value());
   }
 
   stream.Write(racer.unk8.unk0)
-    .Write(racer.unk8.anotherPlayerRelatedThing.mountUid)
-    .Write(racer.unk8.anotherPlayerRelatedThing.val1)
-    .Write(racer.unk8.anotherPlayerRelatedThing.val2);
-  stream.Write(racer.yetAnotherPlayerRelatedThing.val0)
-    .Write(racer.yetAnotherPlayerRelatedThing.val1)
-    .Write(racer.yetAnotherPlayerRelatedThing.val2)
-    .Write(racer.yetAnotherPlayerRelatedThing.val3);
-  stream.Write(racer.playerRelatedThing.val0)
-    .Write(racer.playerRelatedThing.val1)
-    .Write(racer.playerRelatedThing.val2)
-    .Write(racer.playerRelatedThing.val3)
-    .Write(racer.playerRelatedThing.val4)
-    .Write(racer.playerRelatedThing.val5)
-    .Write(racer.playerRelatedThing.val6);
+    .Write(racer.unk8.rent.mountUid)
+    .Write(racer.unk8.rent.val1)
+    .Write(racer.unk8.rent.val2);
+  stream.Write(racer.pet.uid)
+    .Write(racer.pet.tid)
+    .Write(racer.pet.name)
+    .Write(racer.pet.val3);
+  stream.Write(racer.guild.uid)
+    .Write(racer.guild.val1)
+    .Write(racer.guild.val2)
+    .Write(racer.guild.name)
+    .Write(racer.guild.val4)
+    .Write(racer.guild.val5)
+    .Write(racer.guild.val6);
   stream.Write(racer.unk9);
   stream.Write(racer.unk10)
     .Write(racer.unk11)
@@ -83,15 +83,15 @@ void WriteRacer(SinkStream& stream, const Racer& racer)
 void WriteRoomDescription(SinkStream& stream, const RoomDescription& roomDescription)
 {
   stream.Write(roomDescription.name)
-    .Write(roomDescription.val_between_name_and_desc)
+    .Write(roomDescription.playerCount)
     .Write(roomDescription.description)
     .Write(roomDescription.unk1)
-    .Write(roomDescription.unk2)
-    .Write(roomDescription.unk3)
-    .Write(roomDescription.unk4)
+    .Write(roomDescription.gameMode)
+    .Write(roomDescription.mapBlockId)
+    .Write(roomDescription.teamMode)
     .Write(roomDescription.missionId)
     .Write(roomDescription.unk6)
-    .Write(roomDescription.unk7);
+    .Write(roomDescription.skillBracket);
 }
 
 void RaceCommandEnterRoom::Write(
@@ -105,9 +105,9 @@ void RaceCommandEnterRoom::Read(
   RaceCommandEnterRoom& command,
   SourceStream& stream)
 {
-  stream.Read(command.roomUid)
+  stream.Read(command.characterUid)
     .Read(command.otp)
-    .Read(command.characterUid);
+    .Read(command.roomUid);
 }
 
 void RaceCommandEnterRoomOK::Write(
@@ -126,7 +126,7 @@ void RaceCommandEnterRoomOK::Write(
   }
 
   stream.Write(command.nowPlaying)
-    .Write(command.unk1);
+    .Write(command.uid);
 
   WriteRoomDescription(stream, command.roomDescription);
 
@@ -177,7 +177,7 @@ void RaceCommandEnterRoomNotify::Write(
   SinkStream& stream)
 {
   WriteRacer(stream, command.racer);
-  stream.Write(command.unk0);
+  stream.Write(command.averageTimeRecord);
 }
 
 void RaceCommandEnterRoomNotify::Read(
@@ -205,7 +205,7 @@ void RaceCommandChangeRoomOptions::Read(
   }
   if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk1)
   {
-    stream.Read(command.val_between_name_and_desc);
+    stream.Read(command.playerCount);
   }
   if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk2)
   {
@@ -217,11 +217,11 @@ void RaceCommandChangeRoomOptions::Read(
   }
   if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk4)
   {
-    stream.Read(command.map);
+    stream.Read(command.mapBlockId);
   }
   if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk5)
   {
-    stream.Read(command.raceStarted);
+    stream.Read(command.hasRaceStarted);
   }
 }
 
@@ -232,15 +232,15 @@ void RaceCommandChangeRoomOptionsNotify::Write(
   stream.Write(command.optionsBitfield);
   if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk0)
   {
-    stream.Write(command.option0);
+    stream.Write(command.name);
   }
   if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk1)
   {
-    stream.Write(command.option1);
+    stream.Write(command.playerCount);
   }
   if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk2)
   {
-    stream.Write(command.option2);
+    stream.Write(command.description);
   }
   if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk3)
   {
@@ -248,11 +248,11 @@ void RaceCommandChangeRoomOptionsNotify::Write(
   }
   if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk4)
   {
-    stream.Write(command.option4);
+    stream.Write(command.mapBlockId);
   }
   if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk5)
   {
-    stream.Write(command.option5);
+    stream.Write(command.hasRaceStarted);
   }
 }
 
@@ -287,11 +287,11 @@ void RaceCommandStartRaceNotify::Write(
   const RaceCommandStartRaceNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.gamemode)
-    .Write(command.unk1)
-    .Write(command.unk2)
-    .Write(command.unk3)
-    .Write(command.map);
+  stream.Write(command.gameMode)
+    .Write(command.skills)
+    .Write(command.someonesOid)
+    .Write(command.member4)
+    .Write(command.mapBlockId);
 
   stream.Write(static_cast<uint8_t>(command.racers.size()));
   for (const auto& element : command.racers)
@@ -383,30 +383,30 @@ void RaceCommandStartRaceCancel::Read(
   throw std::logic_error("Not implemented.");
 }
 
-void UserRaceTimer::Write(
-  const UserRaceTimer& command,
+void RaceCommandUserRaceTimer::Write(
+  const RaceCommandUserRaceTimer& command,
   SinkStream& stream)
 {
   throw std::logic_error("Not implemented.");
 }
 
-void UserRaceTimer::Read(
-  UserRaceTimer& command,
+void RaceCommandUserRaceTimer::Read(
+  RaceCommandUserRaceTimer& command,
   SourceStream& stream)
 {
   stream.Read(command.timestamp);
 }
 
-void UserRaceTimerOK::Write(
-  const UserRaceTimerOK& command,
+void RaceCommandUserRaceTimerOK::Write(
+  const RaceCommandUserRaceTimerOK& command,
   SinkStream& stream)
 {
   stream.Write(command.unk0)
     .Write(command.unk1);
 }
 
-void UserRaceTimerOK::Read(
-  UserRaceTimerOK& command,
+void RaceCommandUserRaceTimerOK::Read(
+  RaceCommandUserRaceTimerOK& command,
   SourceStream& stream)
 {
   throw std::logic_error("Not implemented.");
@@ -430,7 +430,7 @@ void RaceCommandLoadingCompleteNotify::Write(
   const RaceCommandLoadingCompleteNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.member0);
+  stream.Write(command.oid);
 }
 
 void RaceCommandLoadingCompleteNotify::Read(
@@ -471,4 +471,79 @@ void RaceCommandChatNotify::Read(
   throw std::runtime_error("Not implemented");
 }
 
-} // namespace alicia
+void RaceCommandUpdatePet::Write(
+  const RaceCommandUpdatePet& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void RaceCommandUpdatePet::Read(
+  RaceCommandUpdatePet& command,
+  SourceStream& stream)
+{
+  stream.Read(command.petInfo);
+  if (stream.GetCursor() - stream.Size() > 4)
+    stream.Read(command.member2);
+}
+
+void RaceCommandUpdatePetCancel::Write(
+  const RaceCommandUpdatePetCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.petInfo)
+    .Write(command.member2)
+    .Write(command.member3);
+}
+
+void RaceCommandUpdatePetCancel::Read(
+  RaceCommandUpdatePetCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void RaceCommandReadyRace::Write(
+  const RaceCommandReadyRace& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void RaceCommandReadyRace::Read(
+  RaceCommandReadyRace& command,
+  SourceStream& stream)
+{
+  // Empty.
+}
+
+void RaceCommandReadyRaceNotify::Write(
+  const RaceCommandReadyRaceNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.ready);
+}
+
+void RaceCommandReadyRaceNotify::Read(
+  RaceCommandReadyRaceNotify& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void RaceCommandCountdown::Write(
+  const RaceCommandCountdown& command,
+  SinkStream& stream)
+{
+  stream.Write(command.timestamp);
+}
+
+void RaceCommandCountdown::Read(
+  RaceCommandCountdown& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+} // namespace server::protocol

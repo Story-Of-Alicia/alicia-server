@@ -13,13 +13,14 @@
         "address": "127.0.0.1",
         "port": 10031
       },
-      // The advertised address and port of the messenger host.
-      "messenger": {
+      // The advertised address and port of the race host.
+      "race": {
         // An IPv4 address or a domain
         "address": "127.0.0.1",
         "port": 10032
       },
-      "race": {
+      // The advertised address and port of the messenger host.
+      "messenger": {
         // An IPv4 address or a domain
         "address": "127.0.0.1",
         "port": 10033
@@ -34,16 +35,16 @@
       "port": 10031
     }
   },
-  "messenger": {
-    // The bind address and port of the ranch host
+  "race": {
+    // The bind address and port of the race host
     "bind": {
       // An IPv4 address or a domain
       "address": "0.0.0.0",
       "port": 10032
     }
   },
-  "race": {
-    // The bind address and port of the race host
+  "messenger": {
+    // The bind address and port of the ranch host
     "bind": {
       // An IPv4 address or a domain
       "address": "0.0.0.0",

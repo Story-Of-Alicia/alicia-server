@@ -19,6 +19,8 @@
 
 #include "libserver/data/file/FileDataSource.hpp"
 
+#include <algorithm>
+#include <format>
 #include <fstream>
 
 #include <nlohmann/json.hpp>
@@ -37,22 +39,31 @@ std::filesystem::path ProduceDataPath(
 
 } // namespace
 
-void soa::FileDataSource::Initialize(const std::filesystem::path& path)
+void server::FileDataSource::Initialize(const std::filesystem::path& path)
 {
-  _path = path;
-  _usersPath = _path / "users";
-  create_directories(_usersPath);
-  _charactersPath = _path / "characters";
-  create_directories(_charactersPath);
-  _horsesPath = _path / "horses";
-  create_directories(_horsesPath);
-  _ranchesPath = _path / "ranches";
-  create_directories(_ranchesPath);
-  _itemsPath = _path / "items";
-  create_directories(_itemsPath);
-  _metaFilePath = _path;
-  create_directories(_metaFilePath);
+  _dataPath = path;
+  _metaFilePath = _dataPath;
 
+  const auto prepareDataPath = [this](const std::filesystem::path& folder)
+  {
+    const auto path = _dataPath / folder;
+    create_directories(path);
+
+    return path;
+  };
+
+  // Prepare the data paths.
+  _userDataPath = prepareDataPath("users");
+  _characterDataPath = prepareDataPath("characters");
+  _itemDataPath = prepareDataPath("characters/equipment/items");
+  _horseDataPath = prepareDataPath("characters/equipment/horses");
+  _storageItemPath = prepareDataPath("storage");
+  _eggDataPath = prepareDataPath("eggs");
+  _petDataPath = prepareDataPath("pets");
+  _housingDataPath = prepareDataPath("housing");
+  _guildDataPath = prepareDataPath("guilds");
+
+  // Read the meta-data file and parse the sequential UIDs.
   const std::filesystem::path metaFilePath = ProduceDataPath(
     _metaFilePath, "meta");
   std::ifstream metaFile(metaFilePath);
@@ -62,10 +73,16 @@ void soa::FileDataSource::Initialize(const std::filesystem::path& path)
   }
 
   const auto meta = nlohmann::json::parse(metaFile);
-  _sequentialUid = meta["sequentialUid"].get<uint32_t>();
+  _characterSequentialUid = meta["characterSequentialUid"].get<uint32_t>();
+  _equipmentSequentialUid = meta["equipmentSequentialUid"].get<uint32_t>();
+  _storageItemSequentialUid = meta["storageItemSequentialUid"].get<uint32_t>();
+  _eggSequentialUid = meta["eggSequentialUid"].get<uint32_t>();
+  _petSequentialUid = meta["petSequentialUid"].get<uint32_t>();
+  _housingSequentialUid = meta["housingSequentialUid"].get<uint32_t>();
+  _guildSequentialId = meta["guildSequentialId"].get<uint32_t>();
 }
 
-void soa::FileDataSource::Terminate()
+void server::FileDataSource::Terminate()
 {
   const std::filesystem::path metaFilePath = ProduceDataPath(
     _metaFilePath, "meta");
@@ -77,67 +94,92 @@ void soa::FileDataSource::Terminate()
   }
 
   nlohmann::json meta;
-  meta["sequentialUid"] = _sequentialUid;
+  meta["characterSequentialUid"] = _characterSequentialUid.load();
+  meta["equipmentSequentialUid"] = _equipmentSequentialUid.load();
+  meta["storageItemSequentialUid"] = _storageItemSequentialUid.load();
+  meta["eggSequentialUid"] = _eggSequentialUid.load();
+  meta["petSequentialUid"] = _petSequentialUid.load();
+  meta["housingSequentialUid"] = _housingSequentialUid.load();
+  meta["guildSequentialId"] = _guildSequentialId.load();
 
   metaFile << meta.dump(2);
 }
 
-void soa::FileDataSource::RetrieveUser(std::string name, data::User& user)
+void server::FileDataSource::RetrieveUser(std::string name, data::User& user)
 {
   const std::filesystem::path dataFilePath = ProduceDataPath(
-    _usersPath, name);
+    _userDataPath, name);
 
   user.name = name;
 
-  std::ifstream file(dataFilePath);
-  if (not file.is_open())
-    return;
+  std::ifstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("User file '{}' not accessible", dataFilePath.string()));
+  }
 
-  const auto json = nlohmann::json::parse(file);
+  const auto json = nlohmann::json::parse(dataFile);
   user.name = json["name"].get<std::string>();
   user.token = json["token"].get<std::string>();
   user.characterUid = json["characterUid"].get<data::Uid>();
 }
 
-void soa::FileDataSource::StoreUser(std::string name, const data::User& user)
+void server::FileDataSource::StoreUser(std::string name, const data::User& user)
 {
-  const std::filesystem::path userFilePath = ProduceDataPath(
-    _usersPath, name);
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _userDataPath, name);
 
-  std::ofstream file(userFilePath);
-  if (not file.is_open())
-    return;
+  std::ofstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("User file '{}' not accessible", dataFilePath.string()));
+  }
 
   nlohmann::json json;
   json["name"] = user.name();
   json["token"] = user.token();
   json["characterUid"] = user.characterUid();
 
-  file << json.dump(2);
+  dataFile << json.dump(2);
 }
 
-void soa::FileDataSource::CreateCharacter(data::Character& character)
+void server::FileDataSource::CreateCharacter(data::Character& character)
 {
-  _sequentialUid++;
-  character.uid = _sequentialUid;
+  character.uid = ++_characterSequentialUid;
 }
 
-void soa::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& character)
+void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& character)
 {
   const std::filesystem::path dataFilePath = ProduceDataPath(
-    _charactersPath, std::format("{}", uid));
+    _characterDataPath, std::format("{}", uid));
 
-  std::ifstream file(dataFilePath);
-  if (not file.is_open())
-    return;
+  std::ifstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Character file '{}' not accessible", dataFilePath.string()));
+  }
 
-  const auto json = nlohmann::json::parse(file);
+  const auto json = nlohmann::json::parse(dataFile);
 
   character.uid = json["uid"].get<data::Uid>();
-  character.name = json["name"].get<std::string>();
+
+  // Read the name directly as bytes
+  const auto nameBytes = json["name"].get<std::vector<uint8_t>>();
+  character.name = std::string(
+    reinterpret_cast<const char*>(nameBytes.data()),
+    nameBytes.size());
+
+  character.introduction = json["introduction"].get<std::string>();
+
   character.level = json["level"].get<uint32_t>();
   character.carrots = json["carrots"].get<int32_t>();
   character.cash = json["cash"].get<uint32_t>();
+
+  character.role = static_cast<data::Character::Role>(
+    json["role"].get<uint32_t>());
 
   auto parts = json["parts"];
   character.parts = data::Character::Parts{
@@ -147,35 +189,58 @@ void soa::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& char
 
   auto appearance = json["appearance"];
   character.appearance = data::Character::Appearance{
+    .voiceId = appearance["voiceId"].get<uint32_t>(),
     .headSize = appearance["headSize"].get<uint32_t>(),
     .height = appearance["height"].get<uint32_t>(),
     .thighVolume = appearance["thighVolume"].get<uint32_t>(),
-    .legVolume = appearance["legVolume"].get<uint32_t>()};
+    .legVolume = appearance["legVolume"].get<uint32_t>(),
+    .emblemId = appearance["emblemId"].get<uint32_t>()};
 
-  character.inventory = json["inventory"].get<std::vector<data::Uid>>();
+  character.petUid = json["petUid"].get<data::Uid>();
+  character.guildUid = json["guildUid"].get<data::Uid>();
+
+  character.gifts = json["gifts"].get<std::vector<data::Uid>>();
+  character.purchases = json["purchases"].get<std::vector<data::Uid>>();
+
+  character.items = json["inventory"].get<std::vector<data::Uid>>();
   character.characterEquipment = json["characterEquipment"].get<std::vector<data::Uid>>();
   character.mountEquipment = json["horseEquipment"].get<std::vector<data::Uid>>();
 
-  character.horses = json["horseUids"].get<std::vector<data::Uid>>();
+  character.horses = json["horses"].get<std::vector<data::Uid>>();
   character.mountUid = json["mountUid"].get<data::Uid>();
-  character.ranchUid = json["ranchUid"].get<data::Uid>();
+
+  character.eggs = json["eggs"].get<std::vector<data::Uid>>();
+
+  character.housing = json["housing"].get<std::vector<data::Uid>>();
 }
 
-void soa::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
+void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
 {
-  const std::filesystem::path userFilePath = ProduceDataPath(
-    _charactersPath, std::format("{}", uid));
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _characterDataPath, std::format("{}", uid));
 
-  std::ofstream file(userFilePath);
-  if (not file.is_open())
-    return;
+  std::ofstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Character file '{}' not accessible", dataFilePath.string()));
+  }
 
   nlohmann::json json;
   json["uid"] = character.uid();
-  json["name"] = character.name();
+
+  // Store the name as bytes for now.
+  json["name"] = std::span(
+    reinterpret_cast<const uint8_t*>(character.name().data()),
+    character.name().length());
+
+  json["introduction"] = character.introduction();
+
   json["level"] = character.level();
   json["carrots"] = character.carrots();
   json["cash"] = character.cash();
+
+  json["role"] = character.role();
 
   // Character parts
   nlohmann::json parts;
@@ -186,87 +251,69 @@ void soa::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& c
 
   // Character appearance
   nlohmann::json appearance;
+  appearance["voiceId"] = character.appearance.voiceId();
   appearance["headSize"] = character.appearance.headSize();
   appearance["height"] = character.appearance.height();
   appearance["thighVolume"] = character.appearance.thighVolume();
   appearance["legVolume"] = character.appearance.legVolume();
+  appearance["emblemId"] = character.appearance.emblemId();
   json["appearance"] = appearance;
 
-  json["inventory"] = character.inventory();
+  json["petUid"] = character.petUid();
+  json["guildUid"] = character.guildUid();
+
+  json["gifts"] = character.gifts();
+  json["purchases"] = character.purchases();
+
+  json["inventory"] = character.items();
   json["characterEquipment"] = character.characterEquipment();
   json["horseEquipment"] = character.mountEquipment();
 
-  json["horseUids"] = character.horses();
+  json["horses"] = character.horses();
   json["mountUid"] = character.mountUid();
-  json["ranchUid"] = character.ranchUid();
 
-  file << json.dump(2);
+  json["eggs"] = character.eggs();
+
+  json["housing"] = character.housing();
+
+  dataFile << json.dump(2);
 }
 
-void soa::FileDataSource::CreateItem(data::Item& item)
+
+void server::FileDataSource::CreateHorse(data::Horse& horse)
 {
-  _sequentialUid++;
-  item.uid = _sequentialUid;
+  // can be standalone
+  horse.uid = ++_equipmentSequentialUid;
 }
 
-void soa::FileDataSource::RetrieveItem(data::Uid uid, data::Item& item)
-{
-  const std::filesystem::path dataFilePath = ProduceDataPath(
-    _itemsPath, std::format("{}", uid));
-
-  std::ifstream file(dataFilePath);
-  if (not file.is_open())
-    return;
-
-  const auto json = nlohmann::json::parse(file);
-
-  item.uid = json["uid"].get<data::Uid>();
-  item.tid = json["tid"].get<data::Tid>();
-  item.count = json["count"].get<uint32_t>();
-}
-
-void soa::FileDataSource::StoreItem(data::Uid uid, const data::Item& item)
-{
-  const std::filesystem::path userFilePath = ProduceDataPath(
-    _itemsPath, std::format("{}", uid));
-
-  std::ofstream file(userFilePath);
-  if (not file.is_open())
-    return;
-
-  nlohmann::json json;
-  json["uid"] = item.uid();
-  json["tid"] = item.tid();
-  json["count"] = item.count();
-  file << json.dump(2);
-}
-
-void soa::FileDataSource::CreateHorse(data::Horse& horse)
-{
-  _sequentialUid++;
-  horse.uid = _sequentialUid;
-}
-
-void soa::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
+void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
 {
   const std::filesystem::path dataFilePath = ProduceDataPath(
-    _horsesPath, std::format("{}", uid));
+    _horseDataPath, std::format("{}", uid));
 
-  std::ifstream file(dataFilePath);
-  if (not file.is_open())
-    return;
+  std::ifstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Horse file '{}' not accessible", dataFilePath.string()));
+  }
 
-  const auto json = nlohmann::json::parse(file);
+  const auto json = nlohmann::json::parse(dataFile);
   horse.uid = json["uid"].get<data::Uid>();
   horse.tid = json["tid"].get<data::Tid>();
-  horse.name = json["name"].get<std::string>();
+
+  // Read the horse name directly as bytes for now
+  const auto nameBytes = json["name"].get<std::vector<uint8_t>>();
+  horse.name = std::string(
+    reinterpret_cast<const char*>(nameBytes.data()),
+    nameBytes.size());
 
   auto parts = json["parts"];
   horse.parts = data::Horse::Parts{
-    .skinId = parts["skinId"].get<uint32_t>(),
-    .maneId = parts["maneId"].get<uint32_t>(),
-    .tailId = parts["tailId"].get<uint32_t>(),
-    .faceId = parts["faceId"].get<uint32_t>()};
+    .skinTid = parts["skinId"].get<uint32_t>(),
+    .faceTid = parts["faceId"].get<uint32_t>(),
+    .maneTid = parts["maneId"].get<uint32_t>(),
+    .tailTid = parts["tailId"].get<uint32_t>()};
 
   auto appearance = json["appearance"];
   horse.appearance = data::Horse::Appearance{
@@ -301,28 +348,35 @@ void soa::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.potentialLevel = json["potentialLevel"].get<uint32_t>();
 
   horse.luckState = json["luckState"].get<uint32_t>();
-  horse.emblem = json["emblem"].get<uint32_t>();
+  horse.emblemUid = json["emblem"].get<uint32_t>();
 }
 
-void soa::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
+void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
 {
-  const std::filesystem::path userFilePath = ProduceDataPath(
-    _horsesPath, std::format("{}", uid));
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _horseDataPath, std::format("{}", uid));
 
-  std::ofstream file(userFilePath);
-  if (not file.is_open())
-    return;
+  std::ofstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Horse file '{}' not accessible", dataFilePath.string()));
+  }
 
   nlohmann::json json;
   json["uid"] = horse.uid();
   json["tid"] = horse.tid();
-  json["name"] = horse.name();
+
+  // Store the horse name as bytes for now.
+  json["name"] = std::span(
+    reinterpret_cast<const uint8_t*>(horse.name().data()),
+    horse.name().length());
 
   nlohmann::json parts;
-  parts["skinId"] = horse.parts.skinId();
-  parts["maneId"] = horse.parts.maneId();
-  parts["tailId"] = horse.parts.tailId();
-  parts["faceId"] = horse.parts.faceId();
+  parts["skinId"] = horse.parts.skinTid();
+  parts["faceId"] = horse.parts.faceTid();
+  parts["maneId"] = horse.parts.maneTid();
+  parts["tailId"] = horse.parts.tailTid();
   json["parts"] = parts;
 
   nlohmann::json appearance;
@@ -358,43 +412,278 @@ void soa::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["potentialLevel"] = horse.potentialLevel();
 
   json["luckState"] = horse.luckState();
-  json["emblem"] = horse.emblem();
+  json["emblem"] = horse.emblemUid();
 
-  file << json.dump(2);
+  dataFile << json.dump(2);
 }
 
-void soa::FileDataSource::CreateRanch(data::Ranch& ranch)
+void server::FileDataSource::CreateItem(data::Item& item)
 {
-  _sequentialUid++;
-  ranch.uid = _sequentialUid;
+  item.uid = ++_equipmentSequentialUid;
 }
 
-void soa::FileDataSource::RetrieveRanch(data::Uid uid, data::Ranch& ranch)
+void server::FileDataSource::RetrieveItem(data::Uid uid, data::Item& item)
 {
   const std::filesystem::path dataFilePath = ProduceDataPath(
-    _ranchesPath, std::format("{}", uid));
+    _itemDataPath, std::format("{}", uid));
 
-  std::ifstream file(dataFilePath);
-  if (not file.is_open())
-    return;
+  std::ifstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Item file '{}' not accessible", dataFilePath.string()));
+  }
 
-  const auto json = nlohmann::json::parse(file);
+  const auto json = nlohmann::json::parse(dataFile);
 
-  ranch.uid = json["uid"].get<data::Uid>();
-  ranch.name = json["name"].get<std::string>();
+  item.uid = json["uid"].get<data::Uid>();
+  item.tid = json["tid"].get<data::Tid>();
+  item.count = json["count"].get<uint32_t>();
 }
 
-void soa::FileDataSource::StoreRanch(data::Uid uid, const data::Ranch& ranch)
+void server::FileDataSource::StoreItem(data::Uid uid, const data::Item& item)
 {
-  const std::filesystem::path userFilePath = ProduceDataPath(
-    _ranchesPath, std::format("{}", uid));
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _itemDataPath, std::format("{}", uid));
 
-  std::ofstream file(userFilePath);
-  if (not file.is_open())
-    return;
+  std::ofstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Item file '{}' not accessible", dataFilePath.string()));
+  }
 
   nlohmann::json json;
-  json["uid"] = ranch.uid();
-  json["name"] = ranch.name();
-  file << json.dump(2);
+  json["uid"] = item.uid();
+  json["tid"] = item.tid();
+  json["count"] = item.count();
+  dataFile << json.dump(2);
+}
+
+void server::FileDataSource::CreateStorageItem(data::StorageItem& item)
+{
+  item.uid = ++_storageItemSequentialUid;
+}
+
+void server::FileDataSource::RetrieveStorageItem(data::Uid uid, data::StorageItem& item)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _storageItemPath, std::format("{}", uid));
+
+  std::ifstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Storage item file '{}' not accessible", dataFilePath.string()));
+  }
+
+  const auto json = nlohmann::json::parse(dataFile);
+
+  item.uid = json["uid"].get<data::Uid>();
+  item.items = json["items"].get<std::vector<data::Uid>>();
+  item.sender = json["sender"].get<std::string>();
+  item.message = json["message"].get<std::string>();
+  item.checked = json["checked"].get<bool>();
+  item.expired = json["expired"].get<bool>();
+}
+
+void server::FileDataSource::StoreStorageItem(data::Uid uid, const data::StorageItem& item)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _storageItemPath, std::format("{}", uid));
+
+  std::ofstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Storage item file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json;
+  json["uid"] = item.uid();
+  json["items"] = item.items();
+  json["sender"] = item.sender();
+  json["message"] = item.message();
+  json["checked"] = item.checked();
+  json["expired"] = item.expired();
+
+  dataFile << json.dump(2);
+}
+
+void server::FileDataSource::CreateEgg(data::Egg& egg)
+{
+  egg.uid = ++_eggSequentialUid;
+}
+
+void server::FileDataSource::RetrieveEgg(data::Uid uid, data::Egg& egg)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _eggDataPath, std::format("{}", uid));
+
+  std::ifstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Egg file '{}' not accessible", dataFilePath.string()));
+  }
+
+  const auto json = nlohmann::json::parse(dataFile);
+
+  egg.uid = json["uid"].get<data::Uid>();
+  egg.tid = json["tid"].get<data::Tid>();
+  egg.petTid = json["petTid"].get<data::Tid>();
+
+  egg.hatchTimestamp = data::Clock::time_point(
+    std::chrono::seconds(
+      json["hatchTimestamp"].get<uint64_t>()));
+}
+
+void server::FileDataSource::StoreEgg(data::Uid uid, const data::Egg& egg)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _eggDataPath, std::format("{}", uid));
+
+  std::ofstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Egg file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json;
+  json["uid"] = egg.uid();
+  json["tid"] = egg.tid();
+  json["petTid"] = egg.petTid();
+
+  json["hatchTimestamp"] = std::chrono::duration_cast<std::chrono::seconds>(
+    egg.hatchTimestamp().time_since_epoch()).count();
+
+  dataFile << json.dump(2);
+}
+
+void server::FileDataSource::CreatePet(data::Pet& pet)
+{
+  pet.uid = ++_petSequentialUid;
+}
+
+void server::FileDataSource::RetrievePet(data::Uid uid, data::Pet& pet)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _petDataPath, std::format("{}", uid));
+
+  std::ifstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Pet file '{}' not accessible", dataFilePath.string()));
+  }
+
+  const auto json = nlohmann::json::parse(dataFile);
+
+  pet.uid = json["uid"].get<data::Uid>();
+  pet.tid = json["tid"].get<data::Tid>();
+  pet.name = json["name"].get<std::string>();
+}
+
+void server::FileDataSource::StorePet(data::Uid uid, const data::Pet& pet)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _petDataPath, std::format("{}", uid));
+
+  std::ofstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Pet file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json;
+  json["uid"] = pet.uid();
+  json["tid"] = pet.tid();
+  json["name"] = pet.name();
+
+  dataFile << json.dump(2);
+}
+
+void server::FileDataSource::CreateHousing(data::Housing& housing)
+{
+  housing.uid = ++_housingSequentialUid;
+}
+
+void server::FileDataSource::RetrieveHousing(data::Uid uid, data::Housing& housing)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _housingDataPath, std::format("{}", uid));
+
+  std::ifstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Housing file '{}' not accessible", dataFilePath.string()));
+  }
+
+  const auto json = nlohmann::json::parse(dataFile);
+  housing.uid = json["uid"].get<data::Uid>();
+  housing.housingId = json["housingId"].get<uint16_t>();
+}
+
+void server::FileDataSource::StoreHousing(data::Uid uid, const data::Housing& housing)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _housingDataPath, std::format("{}", uid));
+
+  std::ofstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Housing file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json;
+  json["uid"] = housing.uid();
+  json["housingId"] = housing.housingId();
+
+  dataFile << json.dump(2);
+}
+
+void server::FileDataSource::CreateGuild(data::Guild& guild)
+{
+  guild.uid = ++_guildSequentialId;
+}
+
+void server::FileDataSource::RetrieveGuild(data::Uid uid, data::Guild& guild)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _guildDataPath, std::format("{}", uid));
+
+  std::ifstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Guild file '{}' not accessible", dataFilePath.string()));
+  }
+
+  const auto json = nlohmann::json::parse(dataFile);
+
+  guild.uid = json["uid"].get<data::Uid>();
+  guild.name = json["name"].get<std::string>();
+}
+
+void server::FileDataSource::StoreGuild(data::Uid uid, const data::Guild& guild)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _guildDataPath, std::format("{}", uid));
+
+  std::ofstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Guild file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json;
+  json["uid"] = guild.uid();
+  json["name"] = guild.name();
+
+  dataFile << json.dump(2);
 }

@@ -7,3 +7,6 @@
 [submodule "3rd-party/libpqxx"]
 	path = 3rd-party/libpqxx
 	url = https://github.com/jtv/libpqxx.git
+[submodule "3rd-party/yaml-cpp"]
+	path = 3rd-party/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git

@@ -4,15 +4,14 @@
 
 #include "libserver/data/helper/ProtocolHelper.hpp"
 
-namespace alicia
+namespace server
 {
 
 namespace protocol
 {
-
 void BuildProtocolCharacter(
   Character& protocolCharacter,
-  const soa::data::Character& character)
+  const data::Character& character)
 {
   // Set the character parts.
   // These serial ID's can be found in the `_ClientCharDefaultPartInfo` table.
@@ -25,16 +24,18 @@ void BuildProtocolCharacter(
 
   // Set the character appearance.
   protocolCharacter.appearance = {
-    .headSize = static_cast<uint8_t>(character.appearance.headSize()),
-    .height = static_cast<uint8_t>(character.appearance.height()),
-    .thighVolume = static_cast<uint8_t>(character.appearance.thighVolume()),
-    .legVolume = static_cast<uint8_t>(character.appearance.legVolume()),
+    .voiceId = static_cast<uint16_t>(character.appearance.voiceId()),
+    .headSize = static_cast<uint16_t>(character.appearance.headSize()),
+    .height = static_cast<uint16_t>(character.appearance.height()),
+    .thighVolume = static_cast<uint16_t>(character.appearance.thighVolume()),
+    .legVolume = static_cast<uint16_t>(character.appearance.legVolume()),
+    .emblemId = static_cast<uint16_t>(character.appearance.emblemId())
   };
 }
 
 void BuildProtocolHorse(
   Horse& protocolHorse,
-  const soa::data::Horse& horse)
+  const data::Horse& horse)
 {
   protocolHorse.uid = horse.uid();
   protocolHorse.tid = horse.tid();
@@ -50,28 +51,17 @@ void BuildProtocolHorse(
   protocolHorse.val17 = 0;
 
   protocolHorse.vals0 = {
-    .stamina = 0x7d0,
-    .attractiveness = 0x3c,
-    .hunger = 0x21c,
-    .val0 = 0x00,
-    .val1 = 0x03E8,
-    .val2 = 0x00,
-    .val3 = 0x00,
-    .val4 = 0x00,
-    .val5 = 0x03E8,
-    .val6 = 0x1E,
-    .val7 = 0x0A,
-    .val8 = 0x0A,
-    .val9 = 0x0A,
-    .val10 = 0x00,
+    .stamina = 0xFFFF,
+    .attractiveness = 0xFFFF,
+    .hunger = 0xFFFF,
   };
 
   protocolHorse.vals1 = {
-    .val0 = 0x00,
+    .type = Horse::HorseType::Adult,
     .val1 = 0x00,
     .dateOfBirth = 0xb8a167e4,
-    .val3 = 0x02,
-    .val4 = 0x00,
+    .tendency = 0x02,
+    .spirit = 0x00,
     .classProgression = static_cast<uint32_t>(horse.clazzProgress()),
     .val5 = 0x00,
     .potentialLevel = static_cast<uint8_t>(horse.potentialLevel()),
@@ -83,39 +73,64 @@ void BuildProtocolHorse(
     .val12 = 0x00,
     .fatigue = 0x00,
     .val14 = 0x00,
-    .emblem = static_cast<uint16_t>(horse.emblem())};
+    .emblem = static_cast<uint16_t>(horse.emblemUid())};
 
-  protocolHorse.parts = {
-    .skinId = static_cast<uint8_t>(horse.parts.skinId()),
-    .maneId = static_cast<uint8_t>(horse.parts.maneId()),
-    .tailId = static_cast<uint8_t>(horse.parts.tailId()),
-    .faceId = static_cast<uint8_t>(horse.parts.faceId())};
+  BuildProtocolHorseParts(protocolHorse.parts, horse.parts);
+  BuildProtocolHorseAppearance(protocolHorse.appearance, horse.appearance);
+  BuildProtocolHorseStats(protocolHorse.stats, horse.stats);
+  BuildProtocolHorseMastery(protocolHorse.mastery, horse.mastery);
+}
 
-  protocolHorse.appearance = {
-    .scale = static_cast<uint8_t>(horse.appearance.scale()),
-    .legLength = static_cast<uint8_t>(horse.appearance.legLength()),
-    .legVolume = static_cast<uint8_t>(horse.appearance.legVolume()),
-    .bodyLength = static_cast<uint8_t>(horse.appearance.bodyLength()),
-    .bodyVolume = static_cast<uint8_t>(horse.appearance.bodyVolume())};
+void BuildProtocolHorseParts(
+  Horse::Parts& protocolHorseParts,
+  const data::Horse::Parts& parts)
+{
+  protocolHorseParts = {
+    .skinId = static_cast<uint8_t>(parts.skinTid()),
+    .maneId = static_cast<uint8_t>(parts.maneTid()),
+    .tailId = static_cast<uint8_t>(parts.tailTid()),
+    .faceId = static_cast<uint8_t>(parts.faceTid())};
+}
 
-  protocolHorse.stats = {
-    .agility = horse.stats.agility(),
-    .control = horse.stats.control(),
-    .speed = horse.stats.speed(),
-    .strength = horse.stats.strength(),
-    .spirit = horse.stats.spirit()};
+void BuildProtocolHorseAppearance(
+  Horse::Appearance& protocolHorseAppearance,
+  const data::Horse::Appearance& appearance)
+{
+  protocolHorseAppearance = {
+    .scale = static_cast<uint8_t>(appearance.scale()),
+    .legLength = static_cast<uint8_t>(appearance.legLength()),
+    .legVolume = static_cast<uint8_t>(appearance.legVolume()),
+    .bodyLength = static_cast<uint8_t>(appearance.bodyLength()),
+    .bodyVolume = static_cast<uint8_t>(appearance.bodyVolume())};
+}
 
-  protocolHorse.mastery = {
-    .spurMagicCount = horse.mastery.spurMagicCount(),
-    .jumpCount = horse.mastery.jumpCount(),
-    .slidingTime = horse.mastery.slidingTime(),
-    .glidingDistance = horse.mastery.glidingDistance(),
+void BuildProtocolHorseStats(
+  Horse::Stats& protocolHorseStats,
+  const data::Horse::Stats& stats)
+{
+  protocolHorseStats = {
+    .agility = stats.agility(),
+    .control = stats.control(),
+    .speed = stats.speed(),
+    .strength = stats.strength(),
+    .spirit = stats.spirit()};
+}
+
+void BuildProtocolHorseMastery(
+  Horse::Mastery& protocolHorseMastery,
+  const data::Horse::Mastery& mastery)
+{
+  protocolHorseMastery = {
+    .spurMagicCount = mastery.spurMagicCount(),
+    .jumpCount = mastery.jumpCount(),
+    .slidingTime = mastery.slidingTime(),
+    .glidingDistance = mastery.glidingDistance(),
   };
 }
 
 void BuildProtocolHorses(
   std::vector<Horse>& protocolHorses,
-  const std::vector<soa::Record<soa::data::Horse>>& horses)
+  const std::vector<Record<data::Horse>>& horses)
 {
   for (const auto& horse : horses)
   {
@@ -129,7 +144,7 @@ void BuildProtocolHorses(
 
 void BuildProtocolItem(
   Item& protocolItem,
-  const soa::data::Item& item)
+  const data::Item& item)
 {
   protocolItem.uid = item.uid();
   protocolItem.tid = item.tid();
@@ -138,7 +153,7 @@ void BuildProtocolItem(
 
 void BuildProtocolItems(
   std::vector<Item>& protocolItems,
-  const std::vector<soa::Record<soa::data::Item>>& items)
+  const std::vector<Record<data::Item>>& items)
 {
   for (const auto& item : items)
   {
@@ -150,6 +165,39 @@ void BuildProtocolItems(
   }
 }
 
+void BuildProtocolStoredItem(StoredItem& protocolStoredItem, const data::StorageItem& storedItem)
+{
+  protocolStoredItem.uid = storedItem.uid();
+  protocolStoredItem.sender = storedItem.sender();
+  protocolStoredItem.message = storedItem.message();
+}
+
+void BuildProtocolStoredItems(
+  std::vector<StoredItem>& protocolStoredItems,
+  const std::span<const Record<data::StorageItem>>& storedItems)
+{
+  for (const auto& storedItem : storedItems)
+  {
+    auto& protocolStoredItem = protocolStoredItems.emplace_back();
+    storedItem.Immutable([&protocolStoredItem](const auto& storedItem)
+      {
+        BuildProtocolStoredItem(protocolStoredItem, storedItem);
+      });
+  }
+}
+
+void BuildProtocolGuild(Guild& protocolGuild, const data::Guild& guildRecord)
+{
+  protocolGuild.name = guildRecord.name();
+  protocolGuild.uid = guildRecord.uid();
+}
+
+void BuildProtocolPet(Pet& protocolPet, const data::Pet& petRecord)
+{
+  protocolPet.name = petRecord.name();
+  protocolPet.uid = petRecord.uid();
+}
+
 } // namespace protocol
 
-} // namespace alicia
+} // namespace server

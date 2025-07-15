@@ -37,7 +37,7 @@ void PqDataSource::Establish(const std::string& url)
 bool PqDataSource::IsConnectionFine()
 {
   return _connection and _connection->is_open();
-};
+}
 
 void PqDataSource::RetrieveUser(data::User& user)
 {
@@ -82,4 +82,4 @@ void PqDataSource::StoreUser(const data::User& user)
   }
 }
 
-} // namespace soa
+} // namespace server

@@ -22,7 +22,7 @@
 
 #include <string_view>
 
-namespace alicia
+namespace server
 {
 
 constexpr unsigned int BuildVersionMajor = @AliciaServerBuildVersionMajor@;

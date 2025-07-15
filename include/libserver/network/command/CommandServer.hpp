@@ -21,14 +21,18 @@
 #define COMMAND_SERVER_HPP
 
 #include "CommandProtocol.hpp"
+#include "libserver/Constants.hpp"
 #include "libserver/network/Server.hpp"
 #include "libserver/util/Stream.hpp"
 
 #include <queue>
 #include <unordered_map>
 
-namespace alicia
+namespace server
 {
+
+namespace asio = server::network::asio;
+using ClientId = server::network::ClientId;
 
 //! A command handler.
 using RawCommandHandler = std::function<void(ClientId, SourceStream&)>;
@@ -40,23 +44,44 @@ using CommandSupplier = std::function<void(SinkStream&)>;
 class CommandClient
 {
 public:
-  void SetCode(XorCode code);
+  void SetCode(protocol::XorCode code);
   void RollCode();
 
-  [[nodiscard]] const XorCode& GetRollingCode() const;
+  [[nodiscard]] const protocol::XorCode& GetRollingCode() const;
   [[nodiscard]] int32_t GetRollingCodeInt() const;
 
 private:
   std::queue<CommandSupplier> _commandQueue;
-  XorCode _rollingCode{};
+  protocol::XorCode _rollingCode{};
+};
+
+template <typename T>
+concept ReadableCommandStruct = ReadableStruct<T> and requires
+{
+  {T::GetCommand()};
+};
+
+template <typename T>
+concept WritableCommandStruct = WritableStruct<T> and requires
+{
+  {T::GetCommand()};
 };
 
 //! A command server.
-class CommandServer
+class CommandServer final
 {
 public:
+  class EventHandlerInterface
+  {
+  public:
+    virtual ~EventHandlerInterface() = default;
+    virtual void HandleClientConnected(ClientId clientId) = 0;
+    virtual void HandleClientDisconnected(ClientId clientId) = 0;
+  };
+
   //! Default constructor;
-  explicit CommandServer();
+  explicit CommandServer(
+    EventHandlerInterface& events);
   ~CommandServer();
 
   //! Begins the server.
@@ -70,12 +95,11 @@ public:
   //! Registers a command handler.
   //! @param commandId ID of the command to register the handler for.
   //! @param handler Handler of the command.
-  template <ReadableStruct C>
+  template <ReadableCommandStruct C>
   void RegisterCommandHandler(
-    CommandId commandId,
     std::function<void(ClientId clientId, const C& command)> handler)
   {
-    _handlers[commandId] = [handler](ClientId clientId, SourceStream& source)
+    _handlers[C::GetCommand()] = [handler](ClientId clientId, SourceStream& source)
     {
       C command;
       C::Read(command, source);
@@ -90,43 +114,50 @@ public:
   template <WritableStruct C>
   void QueueCommand(
     ClientId clientId,
-    CommandId commandId,
     std::function<C()> supplier)
   {
-    SendCommand(clientId, commandId, [supplier](SinkStream& sink){
+    SendCommand(clientId, C::GetCommand(), [supplier](SinkStream& sink){
       C::Write(supplier(), sink);
     });
   }
 
-  void SetCode(ClientId client, XorCode code);
+  void SetCode(ClientId client, protocol::XorCode code);
 
 private:
-  //!
-  void HandleClientConnect(ClientId clientId);
-  //!
-  void HandleClientDisconnect(ClientId clientId);
-  //!
-  void HandleClientRead(
-    ClientId clientId,
-    asio::streambuf& streamBuf);
-  //!
-  void HandleClientWrite(
-    ClientId clientId,
-    asio::streambuf& writeBuffer);
+  class NetworkEventHandler
+    : public server::network::EventHandlerInterface
+  {
+  public:
+    NetworkEventHandler(CommandServer& commandServer);
+
+    void OnClientConnected(server::network::ClientId clientId) override;
+    void OnClientDisconnected(server::network::ClientId clientId) override;
+    size_t OnClientData(server::network::ClientId clientId, const std::span<const std::byte>& data) override;
+
+  private:
+    CommandServer& _commandServer;
+  };
 
   //!
   void SendCommand(
-    ClientId client,
-    CommandId command,
+    ClientId clientId,
+    protocol::Command commandId,
     CommandSupplier supplier);
 
-  std::unordered_map<CommandId, RawCommandHandler> _handlers{};
+  bool debugIncomingCommandData = constants::DebugCommands;
+  bool debugOutgoingCommandData = constants::DebugCommands;
+  bool debugCommands = constants::DebugCommands;
+
+  std::unordered_map<protocol::Command, RawCommandHandler> _handlers{};
   std::unordered_map<ClientId, CommandClient> _clients{};
 
-  Server _server;
+  EventHandlerInterface& _eventHandler;
+  NetworkEventHandler _serverNetworkEventHandler;
+
+  server::network::Server _server;
   std::thread _serverThread;
 };
 
-} // namespace alicia
+} // namespace server
 
 #endif // COMMAND_SERVER_HPP

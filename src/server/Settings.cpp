@@ -21,13 +21,102 @@
 
 #include <libserver/util/Util.hpp>
 
+#include <stdlib.h>
+#include <charconv>
+#include <format>
 #include <fstream>
 #include <iostream>
 
 #include <spdlog/spdlog.h>
 
-namespace alicia
+namespace server
 {
+
+void Settings::LoadFromEnvironment()
+{
+  const auto getEnvValue = [](const std::string& key)
+  {
+    std::string value;
+    // muslc does not support getenv_s,
+    // we need it for Alpine :(
+    const char* envValue = getenv(key.data());
+    if (envValue == nullptr)
+      return value;
+
+    value = std::string_view(envValue);
+    return value;
+  };
+
+  const auto getAddressAndPortVariables = [&getEnvValue](
+    const std::string& addressVariableName,
+    const std::string& portVariableName,
+    asio::ip::address_v4& address,
+    uint16_t& port)
+  {
+    try
+    {
+      // Get the address.
+      const auto addressValue = getEnvValue(addressVariableName);
+      if (not addressValue.empty())
+      {
+        address = util::ResolveHostName(addressValue);
+      }
+    }
+    catch (const std::exception& x)
+    {
+      spdlog::error(" Couldn't resolve the host for '{}'", addressVariableName);
+    }
+
+    // Get the port.
+    const std::string portValue = getEnvValue(portVariableName);
+    if (not portValue.empty())
+    {
+      const auto result = std::from_chars(
+        portValue.c_str(),
+        portValue.c_str() + portValue.length(),
+        port);
+      if (result.ec != std::errc{})
+      {
+        spdlog::error("Couldn't resolve the port for '{}'.", portVariableName);
+      }
+    }
+  };
+
+  // Lobby address and port.
+  getAddressAndPortVariables(
+        std::format("LOBBY_SERVER_ADDRESS"),
+        std::format("LOBBY_SERVER_PORT"),
+        _lobbySettings.address,
+        _lobbySettings.port);
+
+  // Lobby advertised address and port for ranch.
+  getAddressAndPortVariables(
+      std::format("LOBBY_ADVERTISED_RANCH_ADDRESS"),
+      std::format("LOBBY_ADVERTISED_RANCH_PORT"),
+      _lobbySettings.ranchAdvAddress,
+      _lobbySettings.ranchAdvPort);
+
+  // Lobby advertised address and port for race.
+  getAddressAndPortVariables(
+      std::format("LOBBY_ADVERTISED_RACE_ADDRESS"),
+      std::format("LOBBY_ADVERTISED_RACE_PORT"),
+      _lobbySettings.ranchAdvAddress,
+      _lobbySettings.ranchAdvPort);
+
+  // Ranch address and port.
+  getAddressAndPortVariables(
+        std::format("RANCH_SERVER_ADDRESS"),
+        std::format("RANCH_SERVER_PORT"),
+        _ranchSettings.address,
+        _ranchSettings.port);
+
+  // Race address and port.
+  getAddressAndPortVariables(
+        std::format("RACE_SERVER_ADDRESS"),
+        std::format("RACE_SERVER_PORT"),
+        _raceSettings.address,
+        _raceSettings.port);
+}
 
 void Settings::LoadFromFile(const std::filesystem::path& filePath)
 {
@@ -190,7 +279,7 @@ std::pair<asio::ip::address_v4, uint16_t> Settings::ParseAddressAndPort(const nl
     const std::string address = jsonObject.at("address").get<std::string>();
     const uint16_t port = jsonObject.at("port").get<uint16_t>();
 
-    const auto resolvedAddress = ResolveHostName(address);
+    const auto resolvedAddress = util::ResolveHostName(address);
     return std::make_pair(
       resolvedAddress,
       port);
@@ -202,4 +291,4 @@ std::pair<asio::ip::address_v4, uint16_t> Settings::ParseAddressAndPort(const nl
   }
 }
 
-} // namespace alicia
+} // namespace server

@@ -27,16 +27,16 @@ namespace
 //! Perform test of magic encoding/decoding.
 void TestMagic()
 {
-  const alicia::MessageMagic magic{
+  const server::protocol::MessageMagic magic{
     .id = 7,
     .length = 29};
 
   // Test encoding of the magic.
-  const auto encoded_magic = alicia::encode_message_magic(magic);
+  const auto encoded_magic = server::protocol::encode_message_magic(magic);
   assert(encoded_magic == 0x8D06CD01);
 
   // Test decoding of the magic.
-  const auto decoded_magic = alicia::decode_message_magic(encoded_magic);
+  const auto decoded_magic = server::protocol::decode_message_magic(encoded_magic);
   assert(decoded_magic.id == magic.id);
   assert(decoded_magic.length == magic.length);
 }

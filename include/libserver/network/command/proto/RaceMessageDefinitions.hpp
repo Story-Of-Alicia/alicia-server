@@ -21,13 +21,14 @@
 #define RACE_MESSAGE_DEFINES_HPP
 
 #include "CommonStructureDefinitions.hpp"
+#include "libserver/network/command/CommandProtocol.hpp"
 
 #include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
 
-namespace alicia
+namespace server::protocol
 {
 
 enum class RoomOptionType : uint16_t
@@ -40,65 +41,74 @@ enum class RoomOptionType : uint16_t
   Unk5 = 1 << 5,
 };
 
-struct PlayerRacer
+struct Avatar
 {
   // List length specified with a uint8_t
   std::vector<Item> characterEquipment{};
   Character character{};
-  Horse horse{};
+  Horse mount{};
   uint32_t unk0{};
 };
 
 //! Racer
 struct Racer
 {
-  uint8_t unk0{};
-  uint8_t unk1{};
+  uint8_t member1{1};
+  uint8_t member2{2};
   uint32_t level{};
-  uint32_t exp{};
+  uint32_t oid{};
   uint32_t uid{};
   std::string name{};
-  uint8_t unk5{};
-  uint32_t unk6{};
-  uint8_t bitset{};
+  uint8_t unk5{3};
+  uint32_t unk6{4};
+  bool isHidden{};
   bool isNPC{};
 
-  std::optional<PlayerRacer> playerRacer{};
-  std::optional<uint32_t> npcRacer{};
+  std::optional<Avatar> avatar{};
+  std::optional<uint32_t> npcTid{};
 
   struct
   {
     uint8_t unk0{};
-    Struct6 anotherPlayerRelatedThing{};
+    Rent rent{};
   } unk8{};
-  Struct7 yetAnotherPlayerRelatedThing{};
-  Struct5 playerRelatedThing{};
-  RanchUnk11 unk9{};
-  uint8_t unk10{};
-  uint8_t unk11{};
-  uint8_t unk12{};
-  uint8_t unk13{};
+
+  Pet pet{};
+  Guild guild{};
+  League unk9{};
+  uint8_t unk10{5};
+  uint8_t unk11{6};
+  uint8_t unk12{7};
+  uint8_t unk13{8};
 };
 
 struct RoomDescription
 {
   std::string name{};
-  uint8_t val_between_name_and_desc{}; // room id?
+  uint8_t playerCount{};
   std::string description{};
   uint8_t unk1{};
-  uint8_t unk2{};
-  uint16_t unk3{};      // map?
-  uint8_t unk4{};       // 0 waiting room, 1 race started?
-  uint16_t missionId{}; // idk but probably important, first value checked in RaceCommandEnterRoomOK handler
+  GameMode gameMode{};
+  //! From the table `MapBlockInfo`.
+  uint16_t mapBlockId{};
+  // 0 waiting room, 1 race started?
+  TeamMode teamMode{};
+  uint16_t missionId{};
   uint8_t unk6{};
-  uint8_t unk7{}; // 0: 3lv, 1: 12lv, 2 and beyond: nothing?
+  // 0: 3lv, 1: 12lv, 2 and beyond: nothing?
+  uint8_t skillBracket{};
 };
 
 struct RaceCommandEnterRoom
 {
-  uint32_t roomUid{};
-  uint32_t otp{};
   uint32_t characterUid{};
+  uint32_t otp{};
+  uint32_t roomUid{};
+
+  static Command GetCommand()
+  {
+    return Command::RaceEnterRoom;
+  }
 
   //! Writes the command to a provided sink stream.
   //! @param command Command.
@@ -115,8 +125,9 @@ struct RaceCommandEnterRoomOK
 {
   // List size specified with a uint32_t. Max size 10
   std::vector<Racer> racers{};
+
   uint8_t nowPlaying{};
-  uint32_t unk1{};
+  uint32_t uid{};
   RoomDescription roomDescription{};
 
   uint32_t unk2{};
@@ -142,6 +153,11 @@ struct RaceCommandEnterRoomOK
   uint32_t unk12{};
   uint32_t unk13{};
 
+  static Command GetCommand()
+  {
+    return Command::RaceEnterRoomOK;
+  }
+
   //! Writes the command to a provided sink stream.
   //! @param command Command.
   //! @param stream Sink stream.
@@ -155,6 +171,10 @@ struct RaceCommandEnterRoomOK
 
 struct RaceCommandEnterRoomCancel
 {
+  static Command GetCommand()
+  {
+    return Command::RaceEnterRoomCancel;
+  }
 
   //! Writes the command to a provided sink stream.
   //! @param command Command.
@@ -170,7 +190,12 @@ struct RaceCommandEnterRoomCancel
 struct RaceCommandEnterRoomNotify
 {
   Racer racer{};
-  uint32_t unk0{};
+  uint32_t averageTimeRecord{};
+
+  static Command GetCommand()
+  {
+    return Command::RaceEnterRoomNotify;
+  }
 
   //! Writes the command to a provided sink stream.
   //! @param command Command.
@@ -194,11 +219,16 @@ struct RaceCommandChangeRoomOptions
   //  if  & 32 != 0: byte
   RoomOptionType optionsBitfield{};
   std::string name{};
-  uint8_t val_between_name_and_desc{};
+  uint8_t playerCount{};
   std::string description{};
   uint8_t option3{};
-  uint16_t map{};
-  uint8_t raceStarted{};
+  uint16_t mapBlockId{};
+  uint8_t hasRaceStarted{};
+
+  static Command GetCommand()
+  {
+    return Command::RaceChangeRoomOptions;
+  }
 
   //! Writes the command to a provided sink stream.
   //! @param command Command.
@@ -225,12 +255,17 @@ struct RaceCommandChangeRoomOptionsNotify
   //  if  & 16 != 0: short
   //  if  & 32 != 0: byte
   RoomOptionType optionsBitfield{};
-  std::string option0{};
-  uint8_t option1{};
-  std::string option2{};
+  std::string name{};
+  uint8_t playerCount{};
+  std::string description{};
   uint8_t option3{};
-  uint16_t option4{};
-  uint8_t option5{};
+  uint16_t mapBlockId{};
+  uint8_t hasRaceStarted{};
+
+  static Command GetCommand()
+  {
+    return Command::RaceChangeRoomOptionsNotify;
+  }
 
   //! Writes the command to a provided sink stream.
   //! @param command Command.
@@ -252,6 +287,11 @@ struct RaceCommandStartRace
   // List size specified with a byte. Max size 10 (potentially)
   std::vector<uint16_t> unk0{};
 
+  static Command GetCommand()
+  {
+    return Command::RaceStartRace;
+  }
+
   //! Writes the command to a provided sink stream.
   //! @param command Command.
   //! @param stream Sink stream.
@@ -269,11 +309,12 @@ struct RaceCommandStartRace
 
 struct RaceCommandStartRaceNotify
 {
-  uint8_t gamemode{};
-  uint8_t unk1{}; // Weird bonus UI
-  uint16_t unk2{};
-  uint32_t unk3{}; // Room ID?
-  uint16_t map{};
+  GameMode gameMode{};
+  bool skills{};
+  // this is an oid of a special player
+  uint16_t someonesOid{};
+  uint32_t member4{}; // Room ID?
+  uint16_t mapBlockId{};
 
   // List size specified with a uint8_t. Max size 10
   struct Racer
@@ -303,7 +344,7 @@ struct RaceCommandStartRaceNotify
     // List size specified with a uint8_t. Max size 20
     std::vector<uint32_t> unk4{};
 
-    // If unk2 == 3?
+    // If isBusy == 3?
     uint16_t unk5{};
     uint16_t unk6{};
     uint16_t unk7{};
@@ -347,6 +388,11 @@ struct RaceCommandStartRaceNotify
   };
   std::vector<Unk18Element> unk18{};
 
+  static Command GetCommand()
+  {
+    return Command::RaceStartRaceNotify;
+  }
+
   //! Writes the command to a provided sink stream.
   //! @param command Command.
   //! @param stream Sink stream.
@@ -366,6 +412,11 @@ struct RaceCommandStartRaceCancel
 {
   uint8_t reason{};
 
+  static Command GetCommand()
+  {
+    return Command::RaceStartRaceCancel;
+  }
+
   //! Writes the command to a provided sink stream.
   //! @param command Command.
   //! @param stream Sink stream.
@@ -381,47 +432,63 @@ struct RaceCommandStartRaceCancel
     SourceStream& stream);
 };
 
-struct UserRaceTimer
+struct RaceCommandUserRaceTimer
 {
+  // count of 100ns intervals since the system start
   uint64_t timestamp{}; // potentially
+
+  static Command GetCommand()
+  {
+    return Command::RaceUserRaceTimer;
+  }
 
   //! Writes the command to a provided sink stream.
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const UserRaceTimer& command,
+    const RaceCommandUserRaceTimer& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    UserRaceTimer& command,
+    RaceCommandUserRaceTimer& command,
     SourceStream& stream);
 };
 
-struct UserRaceTimerOK
+struct RaceCommandUserRaceTimerOK
 {
   uint64_t unk0{};
   uint64_t unk1{};
 
+  static Command GetCommand()
+  {
+    return Command::RaceUserRaceTimerOK;
+  }
+
   //! Writes the command to a provided sink stream.
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const UserRaceTimerOK& command,
+    const RaceCommandUserRaceTimerOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    UserRaceTimerOK& command,
+    RaceCommandUserRaceTimerOK& command,
     SourceStream& stream);
 };
 
 struct RaceCommandLoadingComplete
 {
+  static Command GetCommand()
+  {
+    return Command::RaceLoadingComplete;
+  }
+
   //! Writes the command to a provided sink stream.
   //! @param command Command.
   //! @param stream Sink stream.
@@ -439,7 +506,12 @@ struct RaceCommandLoadingComplete
 
 struct RaceCommandLoadingCompleteNotify
 {
-  uint16_t member0{};
+  uint16_t oid{};
+
+  static Command GetCommand()
+  {
+    return Command::RaceLoadingCompleteNotify;
+  }
 
   //! Writes the command to a provided sink stream.
   //! @param command Command.
@@ -460,6 +532,11 @@ struct RaceCommandChat
 {
   std::string message;
   uint8_t unknown{};
+
+  static Command GetCommand()
+  {
+    return Command::RaceChat;
+  }
 
   //! Writes the command to a provided sink stream.
   //! @param command Command.
@@ -482,6 +559,11 @@ struct RaceCommandChatNotify
   std::string message;
   uint8_t unknown{};
 
+  static Command GetCommand()
+  {
+    return Command::RaceChatNotify;
+  }
+
   //! Writes the command to a provided sink stream.
   //! @param command Command.
   //! @param stream Sink stream.
@@ -497,6 +579,119 @@ struct RaceCommandChatNotify
     SourceStream& stream);
 };
 
-} // namespace alicia
+struct RaceCommandUpdatePet
+{
+  PetInfo petInfo{};
+  //! optional
+  uint32_t member2{};
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RaceCommandUpdatePet& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RaceCommandUpdatePet& command,
+    SourceStream& stream);
+};
+
+struct RaceCommandUpdatePetCancel
+{
+  PetInfo petInfo{};
+  uint32_t member2{};
+  uint8_t member3{};
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RaceCommandUpdatePetCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RaceCommandUpdatePetCancel& command,
+    SourceStream& stream);
+};
+
+struct RaceCommandReadyRace
+{
+  static Command GetCommand()
+  {
+    return Command::RaceReadyRace;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RaceCommandReadyRace& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RaceCommandReadyRace& command,
+    SourceStream& stream);
+};
+
+struct RaceCommandReadyRaceNotify
+{
+  uint32_t characterUid{};
+  uint8_t ready{};
+
+  static Command GetCommand()
+  {
+    return Command::RaceReadyRaceNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RaceCommandReadyRaceNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RaceCommandReadyRaceNotify& command,
+    SourceStream& stream);
+};
+
+struct RaceCommandCountdown
+{
+  int64_t timestamp{}; // potentially
+
+  static Command GetCommand()
+  {
+    return Command::RaceCountdown;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RaceCommandCountdown& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RaceCommandCountdown& command,
+    SourceStream& stream);
+};
+
+} // namespace server::protocol
 
 #endif // RACE_MESSAGE_DEFINES_HPP

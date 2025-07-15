@@ -6,7 +6,7 @@
 #include <nlohmann/json.hpp>
 #include <boost/asio/ip/address.hpp>
 
-namespace alicia
+namespace server
 {
 
 namespace asio = boost::asio;
@@ -51,23 +51,23 @@ public:
     uint16_t port = 10031;
   } _ranchSettings;
 
-  //! Messenger settings.
-  struct MessengerSettings
-  {
-    asio::ip::address_v4 address{
-      asio::ip::address_v4::any()
-    };
-    uint16_t port = 10032;
-  } _messengerSettings;
-
   //! Race settings.
   struct RaceSettings
   {
     asio::ip::address_v4 address{
       asio::ip::address_v4::any()
     };
-    uint16_t port = 10033;
+    uint16_t port = 10032;
   } _raceSettings;
+
+  //! Messenger settings.
+  struct MessengerSettings
+  {
+    asio::ip::address_v4 address{
+      asio::ip::address_v4::any()
+    };
+    uint16_t port = 10033;
+  } _messengerSettings;
 
   //! Data source settings.
   struct DataSource
@@ -75,6 +75,8 @@ public:
     std::string connectionString;
   } _dataSourceSettings;
 
+  //
+  void LoadFromEnvironment();
   // Updates settings from json configuration file
   void LoadFromFile(const std::filesystem::path& filePath);
 
@@ -82,6 +84,6 @@ public:
   std::pair<asio::ip::address_v4, uint16_t> ParseAddressAndPort(const nlohmann::json& jsonObject);
 };
 
-} // namespace alicia
+} // namespace server
 
 #endif // SETTINGS_HPP

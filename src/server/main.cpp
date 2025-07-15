@@ -1,11 +1,6 @@
 #include "Version.hpp"
 
-#include "server/lobby/LobbyDirector.hpp"
-#include "server/race/RaceDirector.hpp"
-#include "server/ranch/RanchDirector.hpp"
-#include "server/Settings.hpp"
-
-#include "libserver/network/chatter/ChatterServer.hpp"
+#include "server/ServerInstance.hpp"
 
 #include <spdlog/sinks/daily_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -13,7 +8,6 @@
 
 #include <iostream>
 #include <memory>
-#include <thread>
 
 #ifdef WIN32
   #include <windows.h>
@@ -26,46 +20,10 @@ namespace
 
 using Clock = std::chrono::steady_clock;
 
-std::atomic_bool shouldRun = true;
+std::atomic_bool shouldProgramRun = true;
 
 std::shared_ptr<spdlog::logger> g_logger;
 Clock::time_point serverStartupTime;
-
-void TickLoop(
-  const uint64_t ticksPerSecond,
-  const std::function<void(void)>& task)
-{
-  Clock::time_point lastTick;
-  const uint64_t millisPerTick = 1000ull / ticksPerSecond;
-
-  while (shouldRun)
-  {
-    const auto timeNow = Clock::now();
-    // Time delta between ticks [ms].
-    const auto tickDelta = std::chrono::duration_cast<
-      std::chrono::milliseconds>(timeNow - lastTick);
-
-    if (tickDelta < std::chrono::milliseconds(millisPerTick))
-    {
-      const auto sleepMs = millisPerTick - tickDelta.count();
-      std::this_thread::sleep_for(
-        std::chrono::milliseconds(sleepMs));
-      continue;
-    }
-
-    lastTick = timeNow;
-
-    try
-    {
-      task();
-    }
-    catch (const std::exception& x)
-    {
-      spdlog::error("Exception in tick loop: {}", x.what());
-      break;
-    }
-  }
-}
 
 #ifdef WIN32
 
@@ -77,7 +35,7 @@ BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
     case CTRL_CLOSE_EVENT:
       {
         spdlog::debug("Shutting down because of CTRL+C");
-        shouldRun = false;
+        shouldProgramRun.store(false, std::memory_order::relaxed);
         return TRUE;
       }
 
@@ -92,7 +50,7 @@ void handler(int sig, siginfo_t* info, void* ucontext)
   if (sig == SIGTERM)
   {
     spdlog::debug("Shutting down because of SIGTERM");
-    shouldRun = false;
+    shouldProgramRun.store(false, std::memory_order::relaxed);
   }
 }
 
@@ -145,75 +103,10 @@ int main()
   // Set is as the default logger for the application.
   spdlog::set_default_logger(g_logger);
 
-  spdlog::info("Running Alicia server v{}.", alicia::BuildVersion);
+  spdlog::info("Running dedicated Alicia server v{}.", server::BuildVersion);
 
-  // Parsing settings file
-  alicia::Settings settings;
-  settings.LoadFromFile("config/config.json5");
-
-  // Data director.
-  soa::DataDirector dataDirector;
-
-  // Lobby director.
-  alicia::LobbyDirector lobbyDirector(
-    dataDirector,
-    settings._lobbySettings);
-
-  // Ranch director.
-  alicia::RanchDirector ranchDirector(
-    dataDirector,
-    settings._ranchSettings);
-
-  // Race director.
-  alicia::RaceDirector raceDirector(
-    dataDirector,
-    settings._raceSettings);
-
-  const std::jthread dataThread([&dataDirector]()
-  {
-    dataDirector.Initialize();
-    TickLoop(50, [&dataDirector]()
-    {
-      dataDirector.Tick();
-    });
-    dataDirector.Terminate();
-  });
-
-  const std::jthread lobbyThread([&lobbyDirector]()
-  {
-    lobbyDirector.Initialize();
-    TickLoop(50, [&lobbyDirector]()
-    {
-      lobbyDirector.Tick();
-    });
-    lobbyDirector.Terminate();
-  });
-
-  const std::jthread ranchThread([&ranchDirector]
-  {
-    ranchDirector.Initialize();
-    TickLoop(50, [&ranchDirector]()
-    {
-      ranchDirector.Tick();
-    });
-    ranchDirector.Terminate();
-  });
-
-  const std::jthread raceThread([&raceDirector]()
-  {
-    raceDirector.Initialize();
-    TickLoop(50, [&raceDirector]()
-    {
-      raceDirector.Tick();
-    });
-    raceDirector.Terminate();
-  });
-
-  const std::jthread messengerThread([]()
-  {
-    alicia::ChatterServer chatter;
-    chatter.Host();
-  });
+  server::ServerInstance serverInstance;
+  serverInstance.Initialize();
 
   spdlog::info(
     "Server started up in {}ms",
@@ -221,17 +114,17 @@ int main()
       Clock::now() - serverStartupTime)
       .count());
 
-  while (shouldRun)
+  while (shouldProgramRun)
   {
     std::string commandLine;
     std::getline(std::cin, commandLine);
 
-    const auto command = alicia::TokenizeString(
+    const auto command = server::util::TokenizeString(
       commandLine, ' ');
 
     if (command[0] == "exit")
     {
-      shouldRun = false;
+      shouldProgramRun.exchange(false, std::memory_order::relaxed);
     }
     else if (command[0] == "register")
     {
@@ -242,6 +135,8 @@ int main()
       }
     }
   }
+
+  serverInstance.Terminate();
 
   return 0;
 }

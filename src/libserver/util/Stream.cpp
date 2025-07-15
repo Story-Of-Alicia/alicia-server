@@ -4,7 +4,7 @@
 
 #include "libserver/util/Stream.hpp"
 
-namespace alicia
+namespace server
 {
 
 SourceStream::SourceStream(Storage buffer)
@@ -114,4 +114,4 @@ SourceStream& SourceStream::Read(std::string& value)
   return *this;
 }
 
-} // namespace alicia
+} // namespace server

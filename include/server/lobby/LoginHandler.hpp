@@ -20,11 +20,12 @@
 #ifndef LOGINHANDLER_HPP
 #define LOGINHANDLER_HPP
 
-#include "libserver/data/DataDirector.hpp"
 #include "libserver/network/command/CommandServer.hpp"
 #include "libserver/network/command/proto/LobbyMessageDefinitions.hpp"
 
-namespace alicia
+#include <chrono>
+
+namespace server
 {
 class LobbyDirector;
 
@@ -41,23 +42,32 @@ public:
   //!
   void HandleUserLogin(
     ClientId clientId,
-    const LobbyCommandLogin& login);
+    const protocol::LobbyCommandLogin& login);
 
   //!
   void HandleUserCreateCharacter(
     ClientId clientId,
-    const LobbyCommandCreateNickname& command);
+    const protocol::LobbyCommandCreateNickname& command);
 
   void QueueUserLoginAccepted(ClientId clientId, const std::string& userName);
   void QueueUserCreateNickname(ClientId clientId, const std::string& userName);
-  void QueueUserLoginRejected(ClientId clientId);
+  void QueueUserLoginRejected(ClientId clientId, bool invalidUser = false);
 
 private:
+  using Clock = std::chrono::steady_clock;
+
   struct LoginContext
   {
     ClientId clientId;
     std::string userName;
     std::string userToken;
+
+    //! Whether the load of the user was requested.
+    bool userLoadRequested{false};
+    //! Whether the load of the user's character was requested.
+    bool userCharacterLoadRequested{false};
+    //! Whether we're waiting for character creator.
+    bool waitingForCharacterCreator{false};
   };
 
   std::unordered_map<ClientId, LoginContext> _clientLogins;
@@ -68,9 +78,8 @@ private:
   CommandServer& _server;
   //!
   LobbyDirector& _lobbyDirector;
-  soa::DataDirector& _dataDirector;
 };
 
-} // namespace alicia
+} // namespace server
 
 #endif // LOGINHANDLER_HPP

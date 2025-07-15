@@ -1,6 +1,6 @@
 /**
- * Alicia Server - dedicated server software
- * Copyright (C) 2024 Story Of Alicia
+ * server Server - dedicated server software
+ * Copyright (C) 2024 Story Of server
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ struct Datum
 
   static void Write(
     const Datum& value,
-    alicia::SinkStream& stream)
+    server::SinkStream& stream)
   {
     stream.Write(value.val0)
       .Write(value.val1);
@@ -41,7 +41,7 @@ struct Datum
 
   static void Read(
     Datum& value,
-    alicia::SourceStream& stream)
+    server::SourceStream& stream)
   {
     stream.Read(value.val0)
       .Read(value.val1);
@@ -49,11 +49,11 @@ struct Datum
 };
 
 //! Perform test of magic encoding/decoding.
-void TestBuffers()
+void TestStreams()
 {
   boost::asio::streambuf buf;
   auto mutableBuffer = buf.prepare(16);
-  alicia::SinkStream sink(std::span(static_cast<std::byte*>(mutableBuffer.data()), mutableBuffer.size()));
+  server::SinkStream sink(std::span(static_cast<std::byte*>(mutableBuffer.data()), mutableBuffer.size()));
 
   sink.Write(0xCAFE);
   sink.Write(0xBABE);
@@ -67,7 +67,7 @@ void TestBuffers()
   buf.commit(sink.GetCursor());
 
   auto constBuffer = buf.data();
-  alicia::SourceStream source(std::span(static_cast<const std::byte*>(constBuffer.data()), constBuffer.size()));
+  server::SourceStream source(std::span(static_cast<const std::byte*>(constBuffer.data()), constBuffer.size()));
 
   uint32_t cafe{};
   uint32_t babe{};
@@ -85,12 +85,11 @@ void TestBuffers()
   while (true)
   {
     auto mutableBuffer2 = buf.prepare(16);
-    alicia::SinkStream sink2(std::span(static_cast<std::byte*>(mutableBuffer2.data()), mutableBuffer2.size()));
+    server::SinkStream sink2(std::span(static_cast<std::byte*>(mutableBuffer2.data()), mutableBuffer2.size()));
 
     sink2.Write(0x5757'5757);
     buf.commit(16);
     buf.consume(16);
-    printf("abc");
   }
 }
 
@@ -98,5 +97,5 @@ void TestBuffers()
 
 int main()
 {
-  TestBuffers();
+  TestStreams();
 }
