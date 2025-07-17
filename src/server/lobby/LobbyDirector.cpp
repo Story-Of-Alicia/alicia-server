@@ -581,9 +581,10 @@ void LobbyDirector::QueueEnterRanchOK(
   ClientId clientId,
   data::Uid rancherUid)
 {
+  const auto& clientContext = _clientContext[clientId];
   protocol::LobbyCommandEnterRanchOK response{
     .rancherUid = rancherUid,
-    .otp = GetServerInstance().GetOtpRegistry().GrantCode(rancherUid),
+    .otp = GetServerInstance().GetOtpRegistry().GrantCode(clientContext.characterUid),
     .ip = static_cast<uint32_t>(htonl(
       GetSettings().ranchAdvAddress.to_uint())),
     .port = GetSettings().ranchAdvPort};
