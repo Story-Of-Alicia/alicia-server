@@ -31,36 +31,39 @@ Example of a user file (`rgnter.json`):
 
 ## Client
 ### Client
-To connect to the server, you'll need patched version of the client. This is because we had to patch some undesirable behaviour. See patches section.
+[You can download the production game version installer from here]([https://drive.proton.me/urls/XX1GHBQGEW#WXILQk8JS08f](https://drive.proton.me/urls/37WM215Q1R#NlzxAZSg7VFC))([gdrive mirror](https://drive.google.com/file/d/1FMt4C1AmpP_8_1aItuYphvxWec9o2w6N/view)). Game contains some required patches (see Patches section).
 
-[You can download the production version from here](https://drive.proton.me/urls/XX1GHBQGEW#WXILQk8JS08f).
+The installator contains launcher and the game itself. The default installation directory is `%appdata%/Story of Alicia`. 
 
-### Configuring game
-There's two game available game configurations in the production version:
-- **development**
+### Game configuration
+There's three available game configurations in the production version:
+- **development** (ID: `2`)
   - lobby server address: `aliciadev`
   - lobby server port: `10030`
-- **production**
+- **prototype** (ID: `3`)
+  - lobby server address: `prototype.storyofalicia.com`
+  - lobby server port: `10030`
+- **production** (ID: `4`)
   - lobby server address: `system.storyofalicia.com`
   - lobby server port: `10030`
 
-Please notice the development server's configuration uses `aliciadev` hostname. You must add this hostname to your hosts file (`C:\Windows\System32\drivers\etc\hosts`) and point it to an IP where the server is listening on. Usually that is going to be `127.0.0.1` (loopback).
+Development configuration is meant for connecting to a server that is hosted hosted locally. Please notice the development configuration uses `aliciadev` hostname. You must add this hostname to your hosts file (`C:\Windows\System32\drivers\etc\hosts`) on the computer you're running the client on, and point it to an IP where the server is listening on. Usually that is going to be `127.0.0.1` (loopback).
 
-You can't configure the game directly, unless you have the development version of the game. Todo tutorial.
+Prototype configuration is meant for connecting to the online prototype. Currently hosted by @Chrommd, more information available at the [prototype's website](https://bruhvrum.github.io/registertest/).
 
-### Launching game
-To launch the game:
+Production configuration is meant for connecting to the officialy released server. Not available yet.
 
-- You must tell the client the game configuration.
-  - Configure the game configuration in the launcher's `settings.json` (located in the game folder). 
-  - To launch the game in development, use the `-GameID 3` switch.
-  - To launch the game in production, use the `-GameID 4` switch.
-- You must tell the client your credentials.
-  - Configure these game credentials in the launcher's `settings.json` (located in the game folder).
-  - Change `webInfoContent.LoginId` to your username.
-  - Change `webInfoContent.AuthKey` to your password.
+### Launching game in development configuration
 
-Once all of this is set, you can simply run the launcher as Administrator and enjoy your game!
+Locate the launcher's configuration file ( `settings.json`). If the installer was used, this is usually `%appdata%/Story of Alicia` unless explicitly changed. If different path was used in the installer, you can consult the `HKCU\Software\Story Of Alicia\Default` registry key as it points to the location where the game was installed.
+
+Modify the `executableArguments` field in the configuration file, specify the development game configuration and specify your user's credentials. This is done through `ID` and `OP` program arguments which indicate username and token respectively. Example:
+
+```bash
+game/Alicia.exe =GameID 3 -ID [<username>] -OP [<password>]
+```
+
+After saving the settings, simply launch the `alicia-launcher-cli.exe`
 
 ### Patches
 - Disable hackshield
