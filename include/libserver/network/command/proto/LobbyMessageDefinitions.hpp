@@ -433,20 +433,23 @@ struct LobbyCommandRequestLeagueInfo
 //! Clientbound request league info response.
 struct LobbyCommandRequestLeagueInfoOK
 {
-  uint8_t unk0;
-  uint8_t unk1;
-  uint32_t unk2;
-  uint32_t unk3;
-  uint8_t unk4;
-  uint8_t unk5;
-  uint32_t unk6;
-  uint32_t unk7;
-  uint8_t unk8;
-  uint8_t unk9;
-  uint32_t unk10;
-  uint8_t unk11;
-  uint8_t unk12;
-  uint8_t unk13;
+  //! Table LeagueSeasonInfo
+  uint8_t season{};
+  uint8_t league{};
+  uint32_t unk2{0};
+  uint32_t unk3{0};
+  uint8_t rankingPercentile{};
+  uint8_t unk5{0};
+  uint32_t unk6{};
+  uint32_t unk7{};
+  uint8_t unk8{};
+  //! Table LeagueItemInfo Row GradeType
+  uint8_t leagueReward{};
+  uint32_t place{};
+  uint8_t rank{};
+  //! 1 - ready to claim, 2 - claimed
+  uint8_t claimedReward{};
+  uint8_t unk13{};
 
   static Command GetCommand()
   {

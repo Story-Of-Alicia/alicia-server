@@ -356,19 +356,19 @@ void LobbyCommandRequestLeagueInfoOK::Write(
   const LobbyCommandRequestLeagueInfoOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0)
-    .Write(command.unk1)
+  stream.Write(command.season)
+    .Write(command.league)
     .Write(command.unk2)
     .Write(command.unk3)
-    .Write(command.unk4)
+    .Write(command.rankingPercentile)
     .Write(command.unk5)
     .Write(command.unk6)
     .Write(command.unk7)
     .Write(command.unk8)
-    .Write(command.unk9)
-    .Write(command.unk10)
-    .Write(command.unk11)
-    .Write(command.unk12)
+    .Write(command.leagueReward)
+    .Write(command.place)
+    .Write(command.rank)
+    .Write(command.claimedReward)
     .Write(command.unk13);
 }
 
