@@ -436,10 +436,10 @@ struct LobbyCommandRequestLeagueInfoOK
   //! Table LeagueSeasonInfo
   uint8_t season{};
   uint8_t league{};
-  uint32_t unk2{0};
-  uint32_t unk3{0};
+  uint32_t unk2{};
+  uint32_t unk3{};
   uint8_t rankingPercentile{};
-  uint8_t unk5{0};
+  uint8_t unk5{};
   uint32_t unk6{};
   uint32_t unk7{};
   uint8_t unk8{};

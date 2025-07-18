@@ -203,6 +203,13 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleOpCmd(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::RanchCommandRequestLeagueTeamList>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleRequestLeagueTeamList(clientId, command);
+    });
+
 }
 
 void RanchDirector::Initialize()
@@ -1799,6 +1806,41 @@ void RanchDirector::HandleOpCmd(
     .observerState = protocol::RanchCommandOpCmdOK::Observer::Enabled};
 
   _commandServer.QueueCommand<decltype(response)>(clientId, [response](){return response;});
+}
+
+void RanchDirector::HandleRequestLeagueTeamList(
+  ClientId clientId,
+  const protocol::RanchCommandRequestLeagueTeamList& command)
+{
+  protocol::RanchCommandRequestLeagueTeamListOK response{
+    .season = 46,
+    .league = 0,
+    .group = 1,
+    .points = 4,
+    .rank = 10,
+    .previousRank = 200,
+    .breakPoints = 0,
+    .unk7 = 0,
+    .unk8 = 0,
+    .lastWeekLeague = 1,
+    .lastWeekGroup = 100,
+    .lastWeekRank = 4,
+    .lastWeekAvailable = 1,
+    .unk13 = 1,
+    .members = {
+      protocol::RanchCommandRequestLeagueTeamListOK::Member{
+        .uid = 1,
+        .points = 4000,
+        .name = "test"
+      }}
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 } // namespace server

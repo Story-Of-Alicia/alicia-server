@@ -261,6 +261,10 @@ const std::unordered_map<Command, std::string_view> commands = {
   {Command::RaceReadyRaceNotify, "RaceReadyRaceNotify"},
 
   {Command::RaceCountdown, "RaceCountdown"},
+
+  {Command::RanchRequestLeagueTeamList, "RanchRequestLeagueTeamList"},
+  {Command::RanchRequestLeagueTeamListOK, "RanchRequestLeagueTeamListOK"},
+  {Command::RanchRequestLeagueTeamListCancel, "RanchRequestLeagueTeamListCancel"},
 };
 
 } // namespace

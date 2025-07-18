@@ -2388,6 +2388,77 @@ struct RanchCommandOpCmdOK
     SourceStream& stream);
 };
 
+struct RanchCommandRequestLeagueTeamList
+{
+
+  static Command GetCommand()
+  {
+    return Command::RanchRequestLeagueTeamList;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RanchCommandRequestLeagueTeamList& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RanchCommandRequestLeagueTeamList& command,
+    SourceStream& stream);
+};
+
+struct RanchCommandRequestLeagueTeamListOK
+{
+  //! Table LeagueSeasonInfo
+  uint8_t season{};
+  //! 0 - no league info available
+  uint8_t league{};
+  uint32_t group{};
+  uint32_t points{};
+  uint8_t rank{};
+  uint8_t previousRank{};
+  uint32_t breakPoints{};
+  uint32_t unk7{};
+  uint8_t unk8{};
+  uint8_t lastWeekLeague{};
+  uint32_t lastWeekGroup{};
+  uint8_t lastWeekRank{};
+  //! 0 - last week info unavailable, 1 - item ready to claim, 2 - already claimed
+  uint8_t lastWeekAvailable{};
+  uint8_t unk13{};
+
+  struct Member {
+    uint32_t uid{};
+    uint32_t points{};
+    std::string name{};
+  };
+  //! Max 100 elements
+  std::vector<Member> members;
+
+  static Command GetCommand()
+  {
+    return Command::RanchRequestLeagueTeamListOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RanchCommandRequestLeagueTeamListOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RanchCommandRequestLeagueTeamListOK& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RANCH_MESSAGE_DEFINES_HPP

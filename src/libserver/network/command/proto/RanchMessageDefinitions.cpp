@@ -1648,4 +1648,47 @@ void RanchCommandOpCmdOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void RanchCommandRequestLeagueTeamList::Write(
+  const RanchCommandRequestLeagueTeamList& command,
+  SinkStream& stream)
+{
+}
+
+void RanchCommandRequestLeagueTeamList::Read(
+  RanchCommandRequestLeagueTeamList& command,
+  SourceStream& stream)
+{
+  // Empty
+}
+
+void RanchCommandRequestLeagueTeamListOK::Write(
+  const RanchCommandRequestLeagueTeamListOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.season);
+  stream.Write(command.league);
+  stream.Write(command.group);
+  stream.Write(command.points);
+  stream.Write(command.rank);
+  stream.Write(command.previousRank);
+  stream.Write(command.breakPoints);
+  stream.Write(command.unk7);
+  stream.Write(command.unk8);
+  stream.Write(command.lastWeekLeague);
+  stream.Write(command.lastWeekGroup);
+  stream.Write(command.lastWeekRank);
+  stream.Write(command.lastWeekAvailable);
+  stream.Write(command.unk13);
+
+  stream.Write(static_cast<uint8_t>(command.members.size()));
+
+  for (const auto& member : command.members)
+  {
+    stream.Write(member.uid)
+      .Write(member.points)
+      .Write(member.name);
+  }
+
+}
+
 } // namespace server::protocol

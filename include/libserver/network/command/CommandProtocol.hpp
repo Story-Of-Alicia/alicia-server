@@ -303,7 +303,11 @@ enum class Command : uint16_t
 
   RaceCountdown = 0x102d,
 
-  Count = 0xFFFF
+  Count = 0xFFFF,
+
+  RanchRequestLeagueTeamList = 0x37c,
+  RanchRequestLeagueTeamListOK = 0x37d,
+  RanchRequestLeagueTeamListCancel = 0x37e
 };
 
 //! Get the name of the command from its ID.

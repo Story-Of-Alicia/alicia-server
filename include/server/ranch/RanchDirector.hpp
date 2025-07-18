@@ -193,6 +193,9 @@ private:
   void HandleOpCmd(ClientId clientId,
     const protocol::RanchCommandOpCmd& command);
 
+  void HandleRequestLeagueTeamList(ClientId clientId,
+    const protocol::RanchCommandRequestLeagueTeamList& command);
+
   //!
   ServerInstance& _serverInstance;
   //!
