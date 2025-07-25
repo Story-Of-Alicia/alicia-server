@@ -267,7 +267,6 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
     std::remove(roomInstance.clients.begin(), roomInstance.clients.end(), clientId),
     roomInstance.clients.end());
   protocol::RaceCommandLeaveRoomOK response{};
-  //TO DO: implement the deletion of rooms
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()

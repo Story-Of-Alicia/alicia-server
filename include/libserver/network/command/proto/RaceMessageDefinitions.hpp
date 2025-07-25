@@ -282,6 +282,71 @@ struct RaceCommandChangeRoomOptionsNotify
     SourceStream& stream);
 };
 
+struct RaceCommandLeaveRoom
+{
+    static Command GetCommand()
+    {
+      return Command::AcCmdCRLeaveRoom;
+    }
+
+    //! Writes the command to a provided sink stream.
+    //! @param command Command.
+    //! @param stream Sink stream.
+    static void Write(
+      const RaceCommandLeaveRoom& command,
+      SinkStream& stream);
+
+    //! Reader a command from a provided source stream.
+    //! @param command Command.
+    //! @param stream Source stream.
+    static void Read(
+      RaceCommandLeaveRoom& command,
+      SourceStream& stream);
+};
+struct RaceCommandLeaveRoomOK
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRLeaveRoomOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RaceCommandLeaveRoomOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RaceCommandLeaveRoomOK& command,
+    SourceStream& stream);
+};
+struct RaceCommandLeaveRoomNotify
+{
+  uint32_t characterId{};
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRLeaveRoomNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RaceCommandLeaveRoomNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RaceCommandLeaveRoomNotify& command,
+    SourceStream& stream);
+};
+
 struct RaceCommandStartRace
 {
   // List size specified with a byte. Max size 10 (potentially)
