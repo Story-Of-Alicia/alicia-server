@@ -11,3 +11,6 @@ Testing/
 
 #DS Store
 .DS_Store
+
+# vs
+.vs/
