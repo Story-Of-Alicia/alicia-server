@@ -117,6 +117,7 @@ void RaceDirector::HandleClientDisconnected(ClientId clientId)
 {
   spdlog::info("Client {} disconnected from the race", clientId);
   HandleLeaveRoom(clientId);
+  _clientContexts.erase(clientId);
 }
 
 ServerInstance& RaceDirector::GetServerInstance()
