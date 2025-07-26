@@ -256,27 +256,29 @@ void RaceDirector::HandleChangeRoomOptions(
 
 void RaceDirector::HandleLeaveRoom(ClientId clientId)
 {
-    const auto& clientContext = _clientContexts[clientId];
+  const auto& clientContext = _clientContexts[clientId];
   if (clientContext.roomUid == data::InvalidUid)
   {
     spdlog::warn("Client {} is not in a room", clientId);
     return;
   }
+  
   auto& roomInstance = _roomInstances[clientContext.roomUid];
   roomInstance.clients.erase(
     std::remove(roomInstance.clients.begin(), roomInstance.clients.end(), clientId),
     roomInstance.clients.end());
+    
   protocol::RaceCommandLeaveRoomOK response{};
-  //TO DO: implement the deletion of rooms
+  
+  // todo: implement the deletion of rooms
+  
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
     {
       return response;
     });
-  _clientContexts.erase(clientId);
 }
-
 void RaceDirector::HandleStartRace(
   ClientId clientId,
   const protocol::RaceCommandStartRace& command)
