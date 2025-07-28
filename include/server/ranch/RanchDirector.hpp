@@ -20,7 +20,7 @@
 #ifndef RANCHDIRECTOR_HPP
 #define RANCHDIRECTOR_HPP
 
-#include "server/Settings.hpp"
+#include "server/Config.hpp"
 #include "server/tracker/WorldTracker.hpp"
 
 #include "libserver/network/command/CommandServer.hpp"
@@ -59,19 +59,35 @@ public:
     data::Uid horseUid);
 
   ServerInstance& GetServerInstance();
-  Settings::RanchSettings& GetSettings();
+  Config::Ranch& GetConfig();
 
 private:
   struct ClientContext
   {
+    //! Unique ID of the client's character.
     data::Uid characterUid{data::InvalidUid};
+    //! Unique ID of the owner of the ranch the client is visiting.
     data::Uid rancherUid{data::InvalidUid};
+
     uint8_t busyState{0};
   };
 
+  struct RanchInstance
+  {
+    //! A world tracker of the ranch.
+    WorldTracker worldTracker;
+    //! A set of clients connected to the ranch.
+    std::unordered_set<ClientId> clients;
+  };
+
+  //! Get the client context by the character's unique ID.
+  //! @param characterUid UID of the character.
+  //! @returns Client context.
   ClientContext& GetClientContextByCharacterUid(data::Uid characterUid);
 
-  //!
+  //! Handles the ranch enter command.
+  //! @param clientId ID of the client
+  //! @param command Command
   void HandleRanchEnter(
     ClientId clientId,
     const protocol::RanchCommandRanchEnter& command);
@@ -193,18 +209,17 @@ private:
   void HandleOpCmd(ClientId clientId,
     const protocol::RanchCommandOpCmd& command);
 
+  void HandleRequestLeagueTeamList(ClientId clientId,
+    const protocol::RanchCommandRequestLeagueTeamList& command);
+
   //!
   ServerInstance& _serverInstance;
   //!
   CommandServer _commandServer;
-  //!
-  std::unordered_map<ClientId, ClientContext> _clientContext;
 
-  struct RanchInstance
-  {
-    WorldTracker _worldTracker;
-    std::unordered_set<ClientId> _clients;
-  };
+  //!
+  std::unordered_map<ClientId, ClientContext> _clients;
+  //!
   std::unordered_map<data::Uid, RanchInstance> _ranches;
 };
 

@@ -29,14 +29,15 @@ target_compile_features(project-properties
 add_library(platform-properties INTERFACE)
 if (${MSVC})
     target_compile_definitions(platform-properties INTERFACE
-            _WIN32_WINNT=_WIN32_WINNT_WIN10
+            #_WIN32_WINNT=_WIN32_WINNT_WIN10
             NTDDI_VERSION=NTDDI_WIN10_19H1)
     target_link_libraries(platform-properties INTERFACE
             icu.lib)
     target_compile_options(platform-properties INTERFACE
             /utf-8)
 else()
-
+    target_link_libraries(platform-properties INTERFACE
+            icuuc)
 endif()
 
 # alicia-libserver target
@@ -54,6 +55,7 @@ add_library(alicia-libserver STATIC
         src/libserver/network/command/proto/RaceMessageDefinitions.cpp
         src/libserver/network/command/proto/RanchMessageDefinitions.cpp
         src/libserver/registry/HorseRegistry.cpp
+        src/libserver/registry/OtpRegistry.cpp
         src/libserver/registry/RoomRegistry.cpp
         src/libserver/util/Locale.cpp
         src/libserver/util/Scheduler.cpp
@@ -73,7 +75,7 @@ target_link_libraries(alicia-libserver PUBLIC
 add_executable(alicia-server
         src/server/main.cpp
         src/server/ServerInstance.cpp
-        src/server/Settings.cpp
+        src/server/Config.cpp
         src/server/lobby/LobbyDirector.cpp
         src/server/lobby/LoginHandler.cpp
         src/server/race/RaceDirector.cpp
@@ -105,6 +107,4 @@ add_custom_command(
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/resources
         ${CMAKE_CURRENT_BINARY_DIR})
-
-install(TARGETS alicia-server DESTINATION dist)
-install(DIRECTORY resources DESTINATION dist)  
+install(TARGETS alicia-server)

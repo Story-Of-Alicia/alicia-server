@@ -455,13 +455,13 @@ void PetBirthInfo::Read(PetBirthInfo& value, SourceStream& stream)
 
 void RanchHorse::Write(const RanchHorse& value, SinkStream& stream)
 {
-  stream.Write(value.ranchIndex)
+  stream.Write(value.horseOid)
     .Write(value.horse);
 }
 
 void RanchHorse::Read(RanchHorse& value, SourceStream& stream)
 {
-  stream.Read(value.ranchIndex)
+  stream.Read(value.horseOid)
     .Read(value.horse);
 }
 
@@ -493,7 +493,7 @@ void RanchCharacter::Write(const RanchCharacter& ranchCharacter, SinkStream& str
     .Write(struct5.val5)
     .Write(struct5.val6);
 
-  stream.Write(ranchCharacter.ranchIndex)
+  stream.Write(ranchCharacter.oid)
     .Write(ranchCharacter.isBusy)
     .Write(ranchCharacter.unk3);
 
@@ -535,7 +535,7 @@ void RanchCharacter::Read(RanchCharacter& value, SourceStream& stream)
 
   stream.Read(value.guild);
 
-  stream.Read(value.ranchIndex)
+  stream.Read(value.oid)
     .Read(value.isBusy)
     .Read(value.unk3);
 

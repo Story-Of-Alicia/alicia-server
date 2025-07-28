@@ -32,13 +32,13 @@ namespace locale
 //! @param input Input string in the EUC-KR encoding.
 //! @returns Output string encoded in UTF8 encoding.
 //! @throws std::runtime_error If the conversion fails for any reason.
-[[nodiscard]] const std::string ToUtf8(const std::string& input);
+[[nodiscard]] std::string ToUtf8(const std::string& input);
 
 //! Converts UTF-8 encoded string into a EUC-KR encoded string.
 //! @param input Input string in the UTF8 encoding.
 //! @returns Output string encoded in EUC-KR encoding.
 //! @throws std::runtime_error If the conversion fails for any reason.
-[[nodiscard]] const std::string FromUtf8(const std::string& input);
+[[nodiscard]] std::string FromUtf8(const std::string& input);
 
 } // namespace locale
 

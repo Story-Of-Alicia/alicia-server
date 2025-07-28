@@ -20,7 +20,7 @@
 #ifndef RACEDIRECTOR_HPP
 #define RACEDIRECTOR_HPP
 
-#include "server/Settings.hpp"
+#include "server/Config.hpp"
 
 #include "libserver/network/command/CommandServer.hpp"
 #include "libserver/network/command/proto/RaceMessageDefinitions.hpp"
@@ -52,7 +52,7 @@ public:
   void HandleClientDisconnected(ClientId clientId) override;
 
   ServerInstance& GetServerInstance();
-  Settings::RaceSettings& GetSettings();
+  Config::Race& GetConfig();
 
 private:
   //!
@@ -65,6 +65,8 @@ private:
     ClientId clientId,
     const protocol::RaceCommandChangeRoomOptions& command);
 
+  void HandleLeaveRoom(
+    ClientId clientId);
   //!
   void HandleStartRace(
     ClientId clientId,

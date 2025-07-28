@@ -25,18 +25,14 @@
 namespace server
 {
 
-namespace
-{
-
-} // anon namespace
-
-DataDirector::DataDirector()
+DataDirector::DataDirector(const std::filesystem::path& basePath)
   : _userStorage(
       [&](const auto& key, auto& user)
       {
         try
         {
           _primaryDataSource->RetrieveUser(key, user);
+          return true;
         }
         catch (const std::exception& x)
         {
@@ -45,18 +41,23 @@ DataDirector::DataDirector()
             key,
             x.what());
         }
+
+        return false;
       },
       [&](const auto& key, auto& user)
       {
         try
         {
           _primaryDataSource->StoreUser(key, user);
+          return true;
         }
         catch (const std::exception& x)
         {
           spdlog::error(
             "Exception storing user '{}' on the primary data source: {}", key, x.what());
         }
+
+        return false;
       })
   , _characterStorage(
       [&](const auto& key, auto& character)
@@ -64,24 +65,30 @@ DataDirector::DataDirector()
         try
         {
           _primaryDataSource->RetrieveCharacter(key, character);
+          return true;
         }
         catch (const std::exception& x)
         {
           spdlog::error(
             "Exception retrieving character {} from the primary data source: {}", key, x.what());
         }
+
+        return false;
       },
       [&](const auto& key, auto& character)
       {
         try
         {
           _primaryDataSource->StoreCharacter(key, character);
+          return true;
         }
         catch (const std::exception& x)
         {
           spdlog::error(
             "Exception storing character {} on the primary data source: {}", key, x.what());
         }
+
+        return false;
       })
   , _horseStorage(
       [&](const auto& key, auto& horse)
@@ -89,24 +96,30 @@ DataDirector::DataDirector()
         try
         {
           _primaryDataSource->RetrieveHorse(key, horse);
+          return true;
         }
         catch (const std::exception& x)
         {
           spdlog::error(
             "Exception retrieving horse {} from the primary data source: {}", key, x.what());
         }
+
+        return false;
       },
       [&](const auto& key, auto& horse)
       {
         try
         {
           _primaryDataSource->StoreHorse(key, horse);
+          return true;
         }
         catch (const std::exception& x)
         {
           spdlog::error(
             "Exception storing horse {} on the primary data source: {}", key, x.what());
         }
+
+        return false;
       })
   , _itemStorage(
       [&](const auto& key, auto& item)
@@ -114,24 +127,30 @@ DataDirector::DataDirector()
         try
         {
           _primaryDataSource->RetrieveItem(key, item);
+          return true;
         }
         catch (const std::exception& x)
         {
           spdlog::error(
             "Exception retrieving item {} from the primary data source: {}", key, x.what());
         }
+
+        return false;
       },
       [&](const auto& key, auto& item)
       {
         try
         {
           _primaryDataSource->StoreItem(key, item);
+          return true;
         }
         catch (const std::exception& x)
         {
           spdlog::error(
             "Exception storing item {} on the primary data source: {}", key, x.what());
         }
+
+        return false;
       })
   , _storageItemStorage(
       [&](const auto& key, auto& storedItem)
@@ -139,24 +158,30 @@ DataDirector::DataDirector()
         try
         {
           _primaryDataSource->RetrieveStorageItem(key, storedItem);
+          return true;
         }
         catch (const std::exception& x)
         {
           spdlog::error(
             "Exception retrieving storage item {} from the primary data source: {}", key, x.what());
         }
+
+        return false;
       },
       [&](const auto& key, auto& storedItem)
       {
         try
         {
           _primaryDataSource->StoreStorageItem(key, storedItem);
+          return true;
         }
         catch (const std::exception& x)
         {
           spdlog::error(
             "Exception storing storage item {} on the primary data source: {}", key, x.what());
         }
+
+        return false;
       })
   , _eggStorage(
       [&](const auto& key, auto& egg)
@@ -164,24 +189,30 @@ DataDirector::DataDirector()
         try
         {
           _primaryDataSource->RetrieveEgg(key, egg);
+          return true;
         }
         catch (const std::exception& x)
         {
           spdlog::error(
             "Exception retrieving egg {} from the primary data source: {}", key, x.what());
         }
+
+        return false;
       },
       [&](const auto& key, auto& egg)
       {
         try
         {
           _primaryDataSource->StoreEgg(key, egg);
+          return true;
         }
         catch (const std::exception& x)
         {
           spdlog::error(
             "Exception storing egg {} on the primary data source: {}", key, x.what());
         }
+
+        return false;
       })
   , _petStorage(
       [&](const auto& key, auto& pet)
@@ -189,24 +220,30 @@ DataDirector::DataDirector()
         try
         {
           _primaryDataSource->RetrievePet(key, pet);
+          return true;
         }
         catch (const std::exception& x)
         {
           spdlog::error(
             "Exception retrieving pet {} from the primary data source: {}", key, x.what());
         }
+
+        return false;
       },
       [&](const auto& key, auto& pet)
       {
         try
         {
           _primaryDataSource->StorePet(key, pet);
+          return true;
         }
         catch (const std::exception& x)
         {
           spdlog::error(
             "Exception storing pet {} on the primary data source: {}", key, x.what());
         }
+
+        return false;
       })
   , _housingStorage(
       [&](const auto& key, auto& housing)
@@ -214,24 +251,30 @@ DataDirector::DataDirector()
         try
         {
           _primaryDataSource->RetrieveHousing(key, housing);
+          return true;
         }
         catch (const std::exception& x)
         {
           spdlog::error(
             "Exception retrieving housing {} from the primary data source: {}", key, x.what());
         }
+
+        return false;
       },
       [&](const auto& key, auto& housing)
       {
         try
         {
           _primaryDataSource->StoreHousing(key, housing);
+          return true;
         }
         catch (const std::exception& x)
         {
           spdlog::error(
             "Exception storing housing {} on the primary data source: {}", key, x.what());
         }
+
+        return false;
       })
   , _guildStorage(
      [&](const auto& key, auto& guild)
@@ -239,28 +282,34 @@ DataDirector::DataDirector()
        try
        {
          _primaryDataSource->RetrieveGuild(key, guild);
+         return true;
        }
        catch (const std::exception& x)
        {
          spdlog::error(
            "Exception retrieving guild {} from the primary data source: {}", key, x.what());
        }
+
+       return false;
      },
      [&](const auto& key, auto& guild)
      {
        try
        {
          _primaryDataSource->StoreGuild(key, guild);
+         return true;
        }
        catch (const std::exception& x)
        {
          spdlog::error(
            "Exception storing guild {} on the primary data source: {}", key, x.what());
        }
+
+       return false;
      })
 {
   _primaryDataSource = std::make_unique<FileDataSource>();
-  _primaryDataSource->Initialize("./data");
+  _primaryDataSource->Initialize(basePath);
 }
 
 DataDirector::~DataDirector()
@@ -781,7 +830,7 @@ void DataDirector::ScheduleCharacterLoad(
       return;
     }
 
-    userDataContext.isCharacterDataLoaded.store(true, std::memory_order::relaxed);
+    userDataContext.isCharacterDataLoaded.store(true, std::memory_order::release);
   });
 }
 

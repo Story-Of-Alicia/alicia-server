@@ -10,6 +10,7 @@
 #include "libserver/network/command/proto/CommonStructureDefinitions.hpp"
 #include "libserver/network/command/proto/LobbyMessageDefinitions.hpp"
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
+#include "server/ServerInstance.hpp"
 
 namespace server
 {
@@ -43,7 +44,7 @@ void BuildProtocolHorseMastery(
 
 void BuildProtocolHorses(
     std::vector<Horse>& protocolHorses,
-    const std::vector<Record<data::Horse>>& horses);
+    const std::vector<Record<data::Horse>>& horseRecords);
 
 void BuildProtocolItem(
   Item& protocolItem,
@@ -51,7 +52,7 @@ void BuildProtocolItem(
 
 void BuildProtocolItems(
   std::vector<Item>& protocolItems,
-  const std::vector<Record<data::Item>>& items);
+  const std::vector<Record<data::Item>>& itemRecords);
 
 void BuildProtocolStoredItem(
   StoredItem& protocolStoredItem,
@@ -59,7 +60,7 @@ void BuildProtocolStoredItem(
 
 void BuildProtocolStoredItems(
   std::vector<StoredItem>& protocolStoredItems,
-  const std::span<const Record<data::StorageItem>>& storedItems);
+  const std::span<const Record<data::StorageItem>>& storedItemRecords);
 
 void BuildProtocolGuild(
   Guild& protocolGuild,
@@ -68,6 +69,15 @@ void BuildProtocolGuild(
 void BuildProtocolPet(
   Pet& protocolPet,
   const data::Pet& petRecord);
+
+void BuildProtocolHousing(
+  Housing& protocolHousing,
+  const data::Housing& housingRecord);
+
+void BuildProtocolHousing(
+  std::vector<Housing>& protocolHousing,
+  const std::vector<Record<data::Housing>>& housingRecords);
+
 
 } // namespace protocol
 

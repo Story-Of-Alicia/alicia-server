@@ -206,19 +206,23 @@ void LobbyDirector::Initialize()
 {
   spdlog::debug(
     "Lobby is advertising ranch server on {}:{}",
-    GetSettings().ranchAdvAddress.to_string(),
-    GetSettings().ranchAdvPort);
+    GetConfig().advertisement.ranch.address.to_string(),
+    GetConfig().advertisement.ranch.port);
+  spdlog::debug(
+    "Lobby is advertising race server on {}:{}",
+    GetConfig().advertisement.race.address.to_string(),
+    GetConfig().advertisement.race.port);
   spdlog::debug(
     "Lobby is advertising messenger server on {}:{}",
-    GetSettings().messengerAdvAddress.to_string(),
-    GetSettings().messengerAdvPort);
+    GetConfig().advertisement.messenger.address.to_string(),
+    GetConfig().advertisement.messenger.port);
 
   spdlog::debug(
     "Lobby server listening on {}:{}",
-    GetSettings().address.to_string(),
-    GetSettings().port);
+    GetConfig().listen.address.to_string(),
+    GetConfig().listen.port);
 
-  _commandServer.BeginHost(GetSettings().address, GetSettings().port);
+  _commandServer.BeginHost(GetConfig().listen.address, GetConfig().listen.port);
 }
 
 void LobbyDirector::Terminate()
@@ -247,9 +251,9 @@ ServerInstance& LobbyDirector::GetServerInstance()
   return _serverInstance;
 }
 
-Settings::LobbySettings& LobbyDirector::GetSettings()
+Config::Lobby& LobbyDirector::GetConfig()
 {
-  return GetServerInstance().GetSettings()._lobbySettings;
+  return GetServerInstance().GetSettings().lobby;
 }
 
 void LobbyDirector::UpdateVisitPreference(data::Uid characterUid, data::Uid visitingCharacterUid)
@@ -329,8 +333,8 @@ void LobbyDirector::HandleMakeRoom(
   protocol::LobbyCommandMakeRoomOK response{
     .roomUid = room.uid,
     .otp = 0xBAAD,
-    .address = GetSettings().raceAdvAddress.to_uint(),
-    .port = GetSettings().raceAdvPort};
+    .address = GetConfig().advertisement.race.address.to_uint(),
+    .port = GetConfig().advertisement.race.port};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -349,9 +353,8 @@ void LobbyDirector::HandleEnterRoom(
   protocol::LobbyCommandEnterRoomOK response{
     .roomUid = command.roomUid,
     .otp = 0xBAAD,
-    .address = GetSettings().raceAdvAddress.to_uint(),
-    .port = GetSettings().raceAdvPort,
-  };
+    .address = GetConfig().advertisement.race.address.to_uint(),
+    .port = GetConfig().advertisement.race.port};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -560,7 +563,7 @@ void LobbyDirector::HandleEnterRanch(
   const protocol::LobbyCommandEnterRanch& command)
 {
   const auto& clientContext = _clientContext[clientId];
-  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     command.characterUid);
 
   if (not characterRecord)
@@ -581,12 +584,12 @@ void LobbyDirector::QueueEnterRanchOK(
   ClientId clientId,
   data::Uid rancherUid)
 {
+  const auto& clientContext = _clientContext[clientId];
   protocol::LobbyCommandEnterRanchOK response{
     .rancherUid = rancherUid,
-    .otp = 0x44332211,
-    .ip = static_cast<uint32_t>(htonl(
-      GetSettings().ranchAdvAddress.to_uint())),
-    .port = GetSettings().ranchAdvPort};
+    .otp = GetServerInstance().GetOtpRegistry().GrantCode(clientContext.characterUid),
+    .ranchAddress = GetConfig().advertisement.ranch.address.to_uint(),
+    .ranchPort = GetConfig().advertisement.ranch.port};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -602,8 +605,8 @@ void LobbyDirector::HandleGetMessengerInfo(
 {
   protocol::LobbyCommandGetMessengerInfoOK response{
     .code = 0xDEAD,
-    .ip = static_cast<uint32_t>(htonl(GetSettings().messengerAdvAddress.to_uint())),
-    .port = GetSettings().messengerAdvPort,
+    .ip = static_cast<uint32_t>(htonl(GetConfig().advertisement.messenger.address.to_uint())),
+    .port = GetConfig().advertisement.messenger.port,
   };
 
   _commandServer.QueueCommand<decltype(response)>(

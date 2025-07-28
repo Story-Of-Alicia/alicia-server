@@ -138,8 +138,8 @@ class DataStorage
 public:
   using KeySpan = std::span<const Key>;
 
-  using DataSourceRetrieveListener = std::function<void(const Key& key, Data& data)>;
-  using DataSourceStoreListener = std::function<void(const Key& key, Data& data)>;
+  using DataSourceRetrieveListener = std::function<bool(const Key& key, Data& data)>;
+  using DataSourceStoreListener = std::function<bool(const Key& key, Data& data)>;
 
   DataStorage(
     const DataSourceRetrieveListener& data_source_retrieve_listener,
@@ -266,15 +266,8 @@ public:
     {
       auto& entry = _entries[key];
 
-      try
-      {
-        _dataSourceRetrieveListener(key, entry.value);
-        entry.available.store(true, std::memory_order_release);
-      }
-      catch (std::exception& x)
-      {
-        throw x;
-      }
+      if (_dataSourceRetrieveListener(key, entry.value))
+        entry.available.store(true, std::memory_order::relaxed);
     }
     _retrieveQueue.clear();
 
@@ -284,7 +277,8 @@ public:
       auto& entry = _entries[key];
 
       if (entry.available)
-        _dataSourceStoreListener(key, entry.value);
+        if (_dataSourceStoreListener(key, entry.value))
+          entry.available.store(false, std::memory_order::relaxed);
     }
     _storeQueue.clear();
   }

@@ -19,25 +19,12 @@
 
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
 
+#include <cassert>
+#include <algorithm>
 #include <format>
 
 namespace server::protocol
 {
-
-namespace
-{
-
-void WriteMountFamilyTreeItem(
-  SinkStream& stream,
-  const MountFamilyTreeItem& mountFamilyTreeItem)
-{
-  stream.Write(mountFamilyTreeItem.unk0)
-    .Write(mountFamilyTreeItem.unk1)
-    .Write(mountFamilyTreeItem.unk2)
-    .Write(mountFamilyTreeItem.unk3);
-}
-
-} // namespace
 
 void RanchCommandUseItem::Write(
   const RanchCommandUseItem& command,
@@ -161,7 +148,10 @@ void RanchCommandMountFamilyTreeOK::Write(
   stream.Write(static_cast<uint8_t>(command.items.size()));
   for (auto& item : command.items)
   {
-    WriteMountFamilyTreeItem(stream, item);
+    stream.Write(item.unk0)
+      .Write(item.unk1)
+      .Write(item.unk2)
+      .Write(item.unk3);
   }
 }
 
@@ -204,35 +194,51 @@ void RanchCommandEnterRanchOK::Write(
   const RanchCommandEnterRanchOK& command,
   SinkStream& stream)
 {
+  assert(command.rancherUid != 0
+    && command.rancherName.length() <= 16
+    && command.ranchName.size() <= 60);
+
   stream.Write(command.rancherUid)
-    .Write(command.unk0)
+    .Write(command.rancherName)
     .Write(command.ranchName);
 
-  stream.Write(static_cast<uint8_t>(command.horses.size()));
-  for (auto& horse : command.horses)
+  // Write the ranch horses
+  assert(command.horses.size() <= 10);
+  const auto ranchHorseCount = std::min(command.horses.size(), size_t{10});
+
+  stream.Write(static_cast<uint8_t>(ranchHorseCount));
+  for (std::size_t idx = 0; idx < ranchHorseCount; ++idx)
   {
-    stream.Write(horse);
+    stream.Write(command.horses[idx]);
   }
 
-  stream.Write(static_cast<uint8_t>(command.characters.size()));
-  for (auto& character : command.characters)
+  // Write the ranch characters
+  assert(command.characters.size() <= 20);
+  const auto ranchCharacterCount = std::min(command.characters.size(), size_t{20});
+
+  stream.Write(static_cast<uint8_t>(ranchCharacterCount));
+  for (std::size_t idx = 0; idx < ranchCharacterCount; ++idx)
   {
-    stream.Write(character);
+    stream.Write(command.characters[idx]);
   }
 
-  stream.Write(command.unk1)
+  stream.Write(command.member6)
     .Write(command.scramblingConstant)
-    .Write(command.unk3);
+    .Write(command.ranchProgress);
 
-  stream.Write(static_cast<uint8_t>(command.housing.size()));
-  for (auto& housing : command.housing)
+  // Write the ranch housing
+  assert(command.housing.size() <= 13);
+  const auto housingCount = std::min(command.housing.size(), size_t{13});
+
+  stream.Write(static_cast<uint8_t>(housingCount));
+  for (std::size_t idx = 0; idx < housingCount; ++idx)
   {
-    stream.Write(housing);
+    stream.Write(command.housing[idx]);
   }
 
-  stream.Write(command.unk5)
-    .Write(command.unk6)
-    .Write(command.unk7)
+  stream.Write(command.horseSlots)
+    .Write(command.member11)
+    .Write(command.bitset)
     .Write(command.incubatorSlotOne)
     .Write(command.incubatorSlotTwo);
 
@@ -242,7 +248,7 @@ void RanchCommandEnterRanchOK::Write(
   }
 
   stream.Write(command.league)
-    .Write(command.unk12);
+    .Write(command.member17);
 }
 
 void RanchCommandEnterRanchOK::Read(
@@ -487,7 +493,7 @@ void RanchCommandUpdateBusyStateNotify::Write(
   const RanchCommandUpdateBusyStateNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.characterId)
+  stream.Write(command.characterUid)
     .Write(command.busyState);
 }
 
@@ -1625,6 +1631,56 @@ void RanchCommandOpCmdOK::Write(
 
 void RanchCommandOpCmdOK::Read(
   RanchCommandOpCmdOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void RanchCommandRequestLeagueTeamList::Write(
+  const RanchCommandRequestLeagueTeamList& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void RanchCommandRequestLeagueTeamList::Read(
+  RanchCommandRequestLeagueTeamList& command,
+  SourceStream& stream)
+{
+  // Empty.
+}
+
+void RanchCommandRequestLeagueTeamListOK::Write(
+  const RanchCommandRequestLeagueTeamListOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.season);
+  stream.Write(command.league);
+  stream.Write(command.group);
+  stream.Write(command.points);
+  stream.Write(command.rank);
+  stream.Write(command.previousRank);
+  stream.Write(command.breakPoints);
+  stream.Write(command.unk7);
+  stream.Write(command.unk8);
+  stream.Write(command.lastWeekLeague);
+  stream.Write(command.lastWeekGroup);
+  stream.Write(command.lastWeekRank);
+  stream.Write(command.lastWeekAvailable);
+  stream.Write(command.unk13);
+
+  stream.Write(static_cast<uint8_t>(command.members.size()));
+
+  for (const auto& member : command.members)
+  {
+    stream.Write(member.uid)
+      .Write(member.points)
+      .Write(member.name);
+  }
+}
+
+void RanchCommandRequestLeagueTeamListOK::Read(
+  RanchCommandRequestLeagueTeamListOK& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");

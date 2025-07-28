@@ -44,16 +44,16 @@ public:
   //!
   void RemoveCharacter(data::Uid character);
   //!
-  [[nodiscard]] Oid GetCharacterEntityId(data::Uid character);
+  [[nodiscard]] Oid GetCharacterOid(data::Uid character);
   //!
   Oid AddHorse(data::Uid mount);
   //!
-  [[nodiscard]] Oid GetHorseEntityId(data::Uid mount);
+  [[nodiscard]] Oid GetHorseOid(data::Uid mount);
 
   //!
-  [[nodiscard]] const ObjectMap& GetHorseEntities();
+  [[nodiscard]] const ObjectMap& GetHorses();
   //!
-  [[nodiscard]] const ObjectMap& GetCharacterEntities();
+  [[nodiscard]] const ObjectMap& GetCharacters();
 
 private:
   //! The next entity ID.

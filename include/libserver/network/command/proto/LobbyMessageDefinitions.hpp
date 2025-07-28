@@ -32,7 +32,6 @@
 namespace server::protocol
 {
 
-//! Serverbound login command.
 struct LobbyCommandLogin
 {
   uint16_t constant0{0x00};
@@ -44,7 +43,7 @@ struct LobbyCommandLogin
 
   static Command GetCommand()
   {
-    return Command::LobbyLogin;
+    return Command::AcCmdCLLogin;
   }
 
   //! Writes the command to a provided sink stream.
@@ -62,7 +61,6 @@ struct LobbyCommandLogin
     SourceStream& stream);
 };
 
-//! Clientbound login OK command.
 struct LobbyCommandLoginOK
 {
   // filetime
@@ -125,8 +123,8 @@ struct LobbyCommandLoginOK
   // 256 characters max
   std::string val6{};
 
-  uint32_t address{};
-  uint16_t port{};
+  uint32_t ranchAddress{};
+  uint16_t ranchport{};
   uint32_t scramblingConstant{};
 
   Character character{};
@@ -145,9 +143,13 @@ struct LobbyCommandLoginOK
       SourceStream& stream);
   } systemContent{};
 
+  enum AvatarBitset : uint32_t
+  {
+    HasPlayerBefore = 2,
+  };
   // std::bitset
   //! Bit 2: Has played before
-  uint32_t bitfield{};
+  AvatarBitset bitfield{};
 
   struct Struct1
   {
@@ -158,13 +160,13 @@ struct LobbyCommandLoginOK
 
   uint32_t val10{};
 
-  struct ManagmentSkills
+  struct ManagementSkills
   {
     uint8_t val0{};
     //Can be found in table CareSkillLevel, max 2675
     uint32_t progress{};
     uint16_t points{};
-  } managmentSkills{};
+  } managementSkills{};
 
   struct SkillRanks
   {
@@ -205,7 +207,7 @@ struct LobbyCommandLoginOK
 
   static Command GetCommand()
   {
-    return Command::LobbyLoginOK;
+    return Command::AcCmdCLLoginOK;
   }
 
   //! Writes the command to a provided sink stream.
@@ -242,7 +244,7 @@ struct LobbyCommandLoginCancel
 
   static Command GetCommand()
   {
-    return Command::LobbyLoginCancel;
+    return Command::AcCmdCLLoginCancel;
   }
 
   //! Writes the command to a provided sink stream.
@@ -265,7 +267,7 @@ struct LobbyCommandShowInventory
 {
   static Command GetCommand()
   {
-    return Command::LobbyShowInventory;
+    return Command::AcCmdCLShowInventory;
   }
 
   //! Writes the command to a provided sink stream.
@@ -291,7 +293,7 @@ struct LobbyCommandShowInventoryOK
 
   static Command GetCommand()
   {
-    return Command::LobbyShowInventoryOK;
+    return Command::AcCmdCLShowInventoryOK;
   }
 
   //! Writes the command to a provided sink stream.
@@ -314,7 +316,7 @@ struct LobbyCommandShowInventoryCancel
 {
   static Command GetCommand()
   {
-    return Command::LobbyShowInventoryCancel;
+    return Command::AcCmdCLShowInventoryCancel;
   }
 
   //! Writes the command to a provided sink stream.
@@ -337,7 +339,7 @@ struct LobbyCommandCreateNicknameNotify
 {
   static Command GetCommand()
   {
-    return Command::LobbyCreateNicknameNotify;
+    return Command::AcCmdCLCreateNicknameNotify;
   }
 
   //! Writes the command to a provided sink stream.
@@ -364,7 +366,7 @@ struct LobbyCommandCreateNickname
 
   static Command GetCommand()
   {
-    return Command::LobbyCreateNickname;
+    return Command::AcCmdCLCreateNickname;
   }
 
   //! Writes the command to a provided sink stream.
@@ -389,7 +391,7 @@ struct LobbyCommandCreateNicknameCancel
 
   static Command GetCommand()
   {
-    return Command::LobbyCreateNicknameCancel;
+    return Command::AcCmdCLCreateNicknameCancel;
   }
 
   //! Writes the command to a provided sink stream.
@@ -412,7 +414,7 @@ struct LobbyCommandRequestLeagueInfo
 {
   static Command GetCommand()
   {
-    return Command::LobbyRequestLeagueInfo;
+    return Command::AcCmdCLRequestLeagueInfo;
   }
 
   //! Writes the command to a provided sink stream.
@@ -433,24 +435,27 @@ struct LobbyCommandRequestLeagueInfo
 //! Clientbound request league info response.
 struct LobbyCommandRequestLeagueInfoOK
 {
-  uint8_t unk0;
-  uint8_t unk1;
-  uint32_t unk2;
-  uint32_t unk3;
-  uint8_t unk4;
-  uint8_t unk5;
-  uint32_t unk6;
-  uint32_t unk7;
-  uint8_t unk8;
-  uint8_t unk9;
-  uint32_t unk10;
-  uint8_t unk11;
-  uint8_t unk12;
-  uint8_t unk13;
+  //! Table LeagueSeasonInfo
+  uint8_t season{};
+  uint8_t league{};
+  uint32_t unk2{};
+  uint32_t unk3{};
+  uint8_t rankingPercentile{};
+  uint8_t unk5{};
+  uint32_t unk6{};
+  uint32_t unk7{};
+  uint8_t unk8{};
+  //! Table LeagueItemInfo Row GradeType
+  uint8_t leagueReward{};
+  uint32_t place{};
+  uint8_t rank{};
+  //! 1 - ready to claim, 2 - claimed
+  uint8_t claimedReward{};
+  uint8_t unk13{};
 
   static Command GetCommand()
   {
-    return Command::LobbyRequestLeagueInfoOK;
+    return Command::AcCmdCLRequestLeagueInfoOK;
   }
 
   //! Writes the command to a provided sink stream.
@@ -473,7 +478,7 @@ struct LobbyCommandRequestLeagueInfoCancel
 {
   static Command GetCommand()
   {
-    return Command::LobbyRequestLeagueInfoCancel;
+    return Command::AcCmdCLRequestLeagueInfoCancel;
   }
 
   //! Writes the command to a provided sink stream.
@@ -498,7 +503,7 @@ struct LobbyCommandAchievementCompleteList
 
   static Command GetCommand()
   {
-    return Command::LobbyAchievementCompleteList;
+    return Command::AcCmdCLAchievementCompleteList;
   }
 
   //! Writes the command to a provided sink stream.
@@ -524,7 +529,7 @@ struct LobbyCommandAchievementCompleteListOK
 
   static Command GetCommand()
   {
-    return Command::LobbyAchievementCompleteListOK;
+    return Command::AcCmdCLAchievementCompleteListOK;
   }
 
   //! Writes the command to a provided sink stream.
@@ -549,7 +554,7 @@ struct LobbyCommandEnterChannel
 
   static Command GetCommand()
   {
-    return Command::LobbyEnterChannel;
+    return Command::AcCmdCLEnterChannel;
   }
 
   //! Writes the command to a provided sink stream.
@@ -575,7 +580,7 @@ struct LobbyCommandEnterChannelOK
 
   static Command GetCommand()
   {
-    return Command::LobbyEnterChannelOK;
+    return Command::AcCmdCLEnterChannelOK;
   }
 
   //! Writes the command to a provided sink stream.
@@ -598,7 +603,7 @@ struct LobbyCommandEnterChannelCancel
 {
   static Command GetCommand()
   {
-    return Command::LobbyEnterChannelCancel;
+    return Command::AcCmdCLEnterChannelCancel;
   }
 
   //! Writes the command to a provided sink stream.
@@ -626,7 +631,7 @@ struct LobbyCommandRoomList
 
   static Command GetCommand()
   {
-    return Command::LobbyRoomList;
+    return Command::AcCmdCLRoomList;
   }
 
   //! Writes the command to a provided sink stream.
@@ -682,7 +687,7 @@ struct LobbyCommandRoomListOK
 
   static Command GetCommand()
   {
-    return Command::LobbyRoomListOK;
+    return Command::AcCmdCLRoomListOK;
   }
 
   //! Writes the command to a provided sink stream.
@@ -724,7 +729,7 @@ struct LobbyCommandMakeRoom
 
   static Command GetCommand()
   {
-    return Command::LobbyMakeRoom;
+    return Command::AcCmdCLMakeRoom;
   }
 
   //! Writes the command to a provided sink stream.
@@ -753,7 +758,7 @@ struct LobbyCommandMakeRoomOK
 
   static Command GetCommand()
   {
-    return Command::LobbyMakeRoomOK;
+    return Command::AcCmdCLMakeRoomOK;
   }
 
   //! Writes the command to a provided sink stream.
@@ -778,7 +783,7 @@ struct LobbyCommandMakeRoomCancel
 
   static Command GetCommand()
   {
-    return Command::LobbyMakeRoomCancel;
+    return Command::AcCmdCLMakeRoomCancel;
   }
 
   //! Writes the command to a provided sink stream.
@@ -804,7 +809,7 @@ struct LobbyCommandEnterRoom
 
   static Command GetCommand()
   {
-    return Command::LobbyEnterRoom;
+    return Command::AcCmdCLEnterRoom;
   }
 
   //! Writes the command to a provided sink stream.
@@ -832,7 +837,7 @@ struct LobbyCommandEnterRoomOK
 
   static Command GetCommand()
   {
-    return Command::LobbyEnterRoomOK;
+    return Command::AcCmdCLEnterRoomOK;
   }
 
   //! Writes the command to a provided sink stream.
@@ -856,7 +861,7 @@ struct LobbyCommandEnterRoomCancel
 
   static Command GetCommand()
   {
-    return Command::LobbyEnterRoomCancel;
+    return Command::AcCmdCLEnterRoomCancel;
   }
 
   //! Writes the command to a provided sink stream.
@@ -881,7 +886,7 @@ struct LobbyCommandRequestQuestList
 
   static Command GetCommand()
   {
-    return Command::LobbyRequestQuestList;
+    return Command::AcCmdCLRequestQuestList;
   }
 
   //! Writes the command to a provided sink stream.
@@ -907,7 +912,7 @@ struct LobbyCommandRequestQuestListOK
 
   static Command GetCommand()
   {
-    return Command::LobbyRequestQuestListOK;
+    return Command::AcCmdCLRequestQuestListOK;
   }
 
   //! Writes the command to a provided sink stream.
@@ -931,7 +936,7 @@ struct LobbyCommandRequestDailyQuestList
 
   static Command GetCommand()
   {
-    return Command::LobbyRequestDailyQuestList;
+    return Command::AcCmdCLRequestDailyQuestList;
   }
 
   //! Writes the command to a provided sink stream.
@@ -967,7 +972,7 @@ struct LobbyCommandRequestDailyQuestListOK
 
   static Command GetCommand()
   {
-    return Command::LobbyRequestDailyQuestListOK;
+    return Command::AcCmdCLRequestDailyQuestListOK;
   }
 
   //! Writes the command to a provided sink stream.
@@ -994,7 +999,7 @@ struct LobbyCommandEnterRanch
 
   static Command GetCommand()
   {
-    return Command::LobbyEnterRanch;
+    return Command::AcCmdCLEnterRanch;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1017,12 +1022,12 @@ struct LobbyCommandEnterRanchOK
 {
   uint32_t rancherUid{};
   uint32_t otp{};
-  uint32_t ip{};
-  uint16_t port{};
+  uint32_t ranchAddress{};
+  uint16_t ranchPort{};
 
   static Command GetCommand()
   {
-    return Command::LobbyEnterRanchOK;
+    return Command::AcCmdCLEnterRanchOK;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1047,7 +1052,7 @@ struct LobbyCommandEnterRanchCancel
 
   static Command GetCommand()
   {
-    return Command::LobbyEnterRanchCancel;
+    return Command::AcCmdCLEnterRanchCancel;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1070,7 +1075,7 @@ struct LobbyCommandGetMessengerInfo
 {
   static Command GetCommand()
   {
-    return Command::LobbyGetMessengerInfo;
+    return Command::AcCmdCLGetMessengerInfo;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1097,7 +1102,7 @@ struct LobbyCommandGetMessengerInfoOK
 
   static Command GetCommand()
   {
-    return Command::LobbyGetMessengerInfoOK;
+    return Command::AcCmdCLGetMessengerInfoOK;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1120,7 +1125,7 @@ struct LobbyCommandGetMessengerInfoCancel
 {
   static Command GetCommand()
   {
-    return Command::LobbyGetMessengerInfoCancel;
+    return Command::AcCmdCLGetMessengerInfoCancel;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1145,7 +1150,7 @@ struct LobbyCommandRequestSpecialEventList
 
   static Command GetCommand()
   {
-    return Command::LobbyRequestSpecialEventList;
+    return Command::AcCmdCLRequestSpecialEventList;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1178,7 +1183,7 @@ struct LobbyCommandRequestSpecialEventListOK
 
   static Command GetCommand()
   {
-    return Command::LobbyRequestSpecialEventListOK;
+    return Command::AcCmdCLRequestSpecialEventListOK;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1201,7 +1206,7 @@ struct LobbyCommandHeartbeat
 {
   static Command GetCommand()
   {
-    return Command::LobbyHeartbeat;
+    return Command::AcCmdCLHeartbeat;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1226,7 +1231,7 @@ struct LobbyCommandGoodsShopList
 
   static Command GetCommand()
   {
-    return Command::LobbyGoodsShopList;
+    return Command::AcCmdCLGoodsShopList;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1251,7 +1256,7 @@ struct LobbyCommandGoodsShopListOK
 
   static Command GetCommand()
   {
-    return Command::LobbyGoodsShopListOK;
+    return Command::AcCmdCLGoodsShopListOK;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1274,7 +1279,7 @@ struct LobbyCommandGoodsShopListCancel
 {
   static Command GetCommand()
   {
-    return Command::LobbyGoodsShopListCancel;
+    return Command::AcCmdCLGoodsShopListCancel;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1296,7 +1301,7 @@ struct LobbyCommandInquiryTreecash
 {
   static Command GetCommand()
   {
-    return Command::LobbyInquiryTreecash;
+    return Command::AcCmdCLInquiryTreecash;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1320,7 +1325,7 @@ struct LobbyCommandInquiryTreecashOK
 
   static Command GetCommand()
   {
-    return Command::LobbyInquiryTreecashOK;
+    return Command::AcCmdCLInquiryTreecashOK;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1342,7 +1347,7 @@ struct LobbyCommandInquiryTreecashCancel
 {
   static Command GetCommand()
   {
-    return Command::LobbyInquiryTreecashCancel;
+    return Command::AcCmdCLInquiryTreecashCancel;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1373,7 +1378,7 @@ struct LobbyCommandClientNotify
 
   static Command GetCommand()
   {
-    return Command::LobbyClientNotify;
+    return Command::AcCmdClientNotify;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1395,7 +1400,7 @@ struct LobbyCommandGuildPartyList
 {
   static Command GetCommand()
   {
-    return Command::LobbyGuildPartyList;
+    return Command::AcCmdCLGuildPartyList;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1431,7 +1436,7 @@ struct LobbyCommandGuildPartyListOK
 
   static Command GetCommand()
   {
-    return Command::LobbyGuildPartyListOK;
+    return Command::AcCmdCLGuildPartyListOK;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1453,7 +1458,7 @@ struct LobbyCommandEnterRandomRanch
 {
   static Command GetCommand()
   {
-    return Command::LobbyEnterRandomRanch;
+    return Command::AcCmdCLEnterRanchRandomly;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1485,7 +1490,7 @@ struct LobbyCommandRequestPersonalInfo
 
   static Command GetCommand()
   {
-    return Command::LobbyRequestPersonalInfo;
+    return Command::AcCmdCLRequestPersonalInfo;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1582,7 +1587,7 @@ struct LobbyCommandPersonalInfo
 
   static Command GetCommand()
   {
-    return Command::LobbyPersonalInfo;
+    return Command::AcCmdLCPersonalInfo;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1606,7 +1611,7 @@ struct LobbyCommandSetIntroduction
 
   static Command GetCommand()
   {
-    return Command::LobbySetIntroduction;
+    return Command::AcCmdCLSetIntroduction;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1632,7 +1637,7 @@ struct LobbyCommandUpdateSystemContent
 
   static Command GetCommand()
   {
-    return Command::LobbyUpdateSystemContent;
+    return Command::AcCmdCLUpdateSystemContent;
   }
 
   //! Writes the command to a provided sink stream.
@@ -1656,7 +1661,7 @@ struct LobbyCommandUpdateSystemContentNotify
 
   static Command GetCommand()
   {
-    return Command::LobbyUpdateSystemContentNotify;
+    return Command::AcCmdLCUpdateSystemContent;
   }
 
   //! Writes the command to a provided sink stream.

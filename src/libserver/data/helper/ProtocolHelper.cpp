@@ -130,9 +130,9 @@ void BuildProtocolHorseMastery(
 
 void BuildProtocolHorses(
   std::vector<Horse>& protocolHorses,
-  const std::vector<Record<data::Horse>>& horses)
+  const std::vector<Record<data::Horse>>& horseRecords)
 {
-  for (const auto& horse : horses)
+  for (const auto& horse : horseRecords)
   {
     auto& protocolHorse = protocolHorses.emplace_back();
     horse.Immutable([&protocolHorse](const auto& horse)
@@ -148,14 +148,15 @@ void BuildProtocolItem(
 {
   protocolItem.uid = item.uid();
   protocolItem.tid = item.tid();
+  protocolItem.val = 0xFF;
   protocolItem.count = item.count();
 }
 
 void BuildProtocolItems(
   std::vector<Item>& protocolItems,
-  const std::vector<Record<data::Item>>& items)
+  const std::vector<Record<data::Item>>& itemRecords)
 {
-  for (const auto& item : items)
+  for (const auto& item : itemRecords)
   {
     auto& protocolItem = protocolItems.emplace_back();
     item.Immutable([&protocolItem](const auto& item)
@@ -165,7 +166,9 @@ void BuildProtocolItems(
   }
 }
 
-void BuildProtocolStoredItem(StoredItem& protocolStoredItem, const data::StorageItem& storedItem)
+void BuildProtocolStoredItem(
+  StoredItem& protocolStoredItem,
+  const data::StorageItem& storedItem)
 {
   protocolStoredItem.uid = storedItem.uid();
   protocolStoredItem.sender = storedItem.sender();
@@ -174,9 +177,9 @@ void BuildProtocolStoredItem(StoredItem& protocolStoredItem, const data::Storage
 
 void BuildProtocolStoredItems(
   std::vector<StoredItem>& protocolStoredItems,
-  const std::span<const Record<data::StorageItem>>& storedItems)
+  const std::span<const Record<data::StorageItem>>& storedItemRecords)
 {
-  for (const auto& storedItem : storedItems)
+  for (const auto& storedItem : storedItemRecords)
   {
     auto& protocolStoredItem = protocolStoredItems.emplace_back();
     storedItem.Immutable([&protocolStoredItem](const auto& storedItem)
@@ -196,6 +199,30 @@ void BuildProtocolPet(Pet& protocolPet, const data::Pet& petRecord)
 {
   protocolPet.name = petRecord.name();
   protocolPet.uid = petRecord.uid();
+}
+
+void BuildProtocolHousing(
+  Housing& protocolHousing,
+  const data::Housing& housingRecord)
+{
+  protocolHousing.uid = housingRecord.uid();
+  protocolHousing.tid = housingRecord.housingId();
+  protocolHousing.durability = 0xFFFFFFFF;
+}
+
+void BuildProtocolHousing(
+  std::vector<Housing>& protocolHousings,
+  const std::vector<Record<data::Housing>>& housingRecords)
+{
+  for (const auto& housingRecord : housingRecords)
+  {
+    auto& protocolHousing = protocolHousings.emplace_back();
+    housingRecord.Immutable(
+      [&protocolHousing](const auto& housingRecord)
+      {
+        BuildProtocolHousing(protocolHousing, housingRecord);
+      });
+  }
 }
 
 } // namespace protocol

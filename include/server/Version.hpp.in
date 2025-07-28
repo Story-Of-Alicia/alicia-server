@@ -29,6 +29,6 @@ constexpr unsigned int BuildVersionMajor = @AliciaServerBuildVersionMajor@;
 constexpr unsigned int BuildVersionMinor = @AliciaServerBuildVersionMinor@;
 constexpr std::string_view BuildVersion = "@AliciaServerBuildVersion@";
 
-}
+} // namespace server
 
 #endif // VERSION_HPP

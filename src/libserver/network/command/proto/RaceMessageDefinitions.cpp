@@ -263,6 +263,47 @@ void RaceCommandChangeRoomOptionsNotify::Read(
   throw std::logic_error("Not implemented.");
 }
 
+void RaceCommandLeaveRoom::Write(
+  const RaceCommandLeaveRoom& command,
+  SinkStream& stream)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void RaceCommandLeaveRoom::Read(
+    RaceCommandLeaveRoom& command,
+    SourceStream& stream)
+{
+    //Empty
+}
+void RaceCommandLeaveRoomOK::Write(
+  const RaceCommandLeaveRoomOK& command,
+  SinkStream& stream)
+{
+   //Empty
+}
+
+void RaceCommandLeaveRoomOK::Read(
+  RaceCommandLeaveRoomOK& command,
+  SourceStream& stream)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void RaceCommandLeaveRoomNotify::Write(
+  const RaceCommandLeaveRoomNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterId);
+}
+
+void RaceCommandLeaveRoomNotify::Read(
+  RaceCommandLeaveRoomNotify& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
 void RaceCommandStartRace::Write(
   const RaceCommandStartRace& command,
   SinkStream& stream)

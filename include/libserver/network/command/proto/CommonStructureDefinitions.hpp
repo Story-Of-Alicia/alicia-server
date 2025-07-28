@@ -381,7 +381,7 @@ struct PetBirthInfo
 //!
 struct RanchHorse
 {
-  uint16_t ranchIndex{};
+  uint16_t horseOid{};
   Horse horse{};
 
   static void Write(const RanchHorse& value, SinkStream& stream);
@@ -409,7 +409,8 @@ struct RanchCharacter
 
   Guild guild{};
 
-  uint16_t ranchIndex{};
+  //! Unique ranch object identifier.
+  uint16_t oid{};
   uint8_t isBusy{0};
   uint8_t unk3{0};
 

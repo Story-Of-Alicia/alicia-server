@@ -5,12 +5,14 @@
 #ifndef INSTANCE_HPP
 #define INSTANCE_HPP
 
+#include "server/Config.hpp"
 #include "server/lobby/LobbyDirector.hpp"
 #include "server/race/RaceDirector.hpp"
 #include "server/ranch/RanchDirector.hpp"
-#include "server/Settings.hpp"
 
-#include "libserver/data/DataDirector.hpp"
+#include <libserver/data/DataDirector.hpp>
+#include <libserver/registry/HorseRegistry.hpp>
+#include <libserver/registry/OtpRegistry.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -20,7 +22,9 @@ namespace server
 class ServerInstance final
 {
 public:
-  ServerInstance();
+  //! Constructor.
+  //! @param resourceDirectory Directory for server resources.
+  explicit ServerInstance(const std::filesystem::path& resourceDirectory);
   ~ServerInstance();
 
   //! Initializes the server instance.
@@ -46,7 +50,11 @@ public:
 
   //! Returns reference to the settings.
   //! @returns Reference to the settings.
-  Settings& GetSettings();
+  Config& GetSettings();
+
+  //! Returns reference to the OTP registry.
+  //! @returns Reference to the OTP registry.
+  OtpRegistry& GetOtpRegistry();
 
 private:
 
@@ -91,6 +99,11 @@ private:
   //! Atomic flag indicating whether the server should run.
   std::atomic_bool _shouldRun{false};
 
+  //! A path to the resource directory.
+  std::filesystem::path _resourceDirectory;
+  //! A config.
+  Config _config;
+
   //! A thread of the data director.
   std::thread _dataDirectorThread;
   //! A data director.
@@ -111,8 +124,8 @@ private:
   //! A race director.
   RaceDirector _raceDirector;
 
-  //! Settings.
-  Settings _settings;
+  //! Registry of OTP codes.
+  OtpRegistry _otpRegistry;
 };
 
 } // namespace server

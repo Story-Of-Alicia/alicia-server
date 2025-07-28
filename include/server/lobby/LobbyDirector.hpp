@@ -22,7 +22,7 @@
 
 #include "LoginHandler.hpp"
 
-#include "server/Settings.hpp"
+#include "server/Config.hpp"
 
 #include "libserver/data/DataDefinitions.hpp"
 #include "libserver/network/command/CommandServer.hpp"
@@ -34,7 +34,7 @@ namespace server
 {
 
 class ServerInstance;
-class Settings;
+class Config;
 
 class LobbyDirector final
   : public CommandServer::EventHandlerInterface
@@ -59,7 +59,7 @@ public:
   void HandleClientDisconnected(ClientId clientId) override;
 
   ServerInstance& GetServerInstance();
-  Settings::LobbySettings& GetSettings();
+  Config::Lobby& GetConfig();
 
   void UpdateVisitPreference(data::Uid characterUid, data::Uid visitingCharacterUid);
 

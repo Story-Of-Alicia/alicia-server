@@ -72,16 +72,28 @@ void LobbyCommandLoginOK::Write(
     .Write(command.introduction);
 
   // Character equipment
-  stream.Write(static_cast<uint8_t>(command.characterEquipment.size()));
-  for (const Item& item : command.characterEquipment)
+  assert(command.characterEquipment.size() <= 16);
+  const uint8_t characterEquipmentCount = std::min(
+    command.characterEquipment.size(),
+    size_t{16});
+
+  stream.Write(characterEquipmentCount);
+  for (size_t idx = 0; idx < characterEquipmentCount; ++idx)
   {
+    const auto& item = command.characterEquipment[idx];
     stream.Write(item);
   }
 
-  // Horse equipment
-  stream.Write(static_cast<uint8_t>(command.mountEquipment.size()));
-  for (const Item& item : command.mountEquipment)
+  // Mount equipment
+  assert(command.mountEquipment.size() <= 16);
+  const uint8_t mountEquipmentCount = std::min(
+    command.mountEquipment.size(),
+    size_t{16});
+
+  stream.Write(mountEquipmentCount);
+  for (size_t idx = 0; idx < mountEquipmentCount; ++idx)
   {
+    const auto& item = command.mountEquipment[idx];
     stream.Write(item);
   }
 
@@ -150,8 +162,8 @@ void LobbyCommandLoginOK::Write(
 
   stream.Write(command.val6);
 
-  stream.Write(command.address)
-    .Write(command.port)
+  stream.Write(command.ranchAddress)
+    .Write(command.ranchport)
     .Write(command.scramblingConstant);
 
   stream.Write(command.character)
@@ -168,7 +180,7 @@ void LobbyCommandLoginOK::Write(
 
   stream.Write(command.val10);
 
-  const auto& managementSkills = command.managmentSkills;
+  const auto& managementSkills = command.managementSkills;
   stream.Write(managementSkills.val0)
     .Write(managementSkills.progress)
     .Write(managementSkills.points);
@@ -356,19 +368,19 @@ void LobbyCommandRequestLeagueInfoOK::Write(
   const LobbyCommandRequestLeagueInfoOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0)
-    .Write(command.unk1)
+  stream.Write(command.season)
+    .Write(command.league)
     .Write(command.unk2)
     .Write(command.unk3)
-    .Write(command.unk4)
+    .Write(command.rankingPercentile)
     .Write(command.unk5)
     .Write(command.unk6)
     .Write(command.unk7)
     .Write(command.unk8)
-    .Write(command.unk9)
-    .Write(command.unk10)
-    .Write(command.unk11)
-    .Write(command.unk12)
+    .Write(command.leagueReward)
+    .Write(command.place)
+    .Write(command.rank)
+    .Write(command.claimedReward)
     .Write(command.unk13);
 }
 
@@ -731,8 +743,8 @@ void LobbyCommandEnterRanchOK::Write(
 {
   stream.Write(command.rancherUid)
     .Write(command.otp)
-    .Write(command.ip)
-    .Write(command.port);
+    .Write(htonl(command.ranchAddress))
+    .Write(command.ranchPort);
 }
 
 void LobbyCommandEnterRanchOK::Read(

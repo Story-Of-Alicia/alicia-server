@@ -21,7 +21,7 @@
 #define DATASOURCE_HPP
 
 #include "libserver/data/DataDefinitions.hpp"
-#include "server/Settings.hpp"
+#include "server/Config.hpp"
 
 namespace server
 {

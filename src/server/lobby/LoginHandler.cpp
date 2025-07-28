@@ -148,7 +148,7 @@ void LoginHandler::Tick()
     // If the user does not have a character send them to the character creator.
     if (not hasCharacter)
     {
-      spdlog::debug("User '{}' sent to character creator", loginContext.userName);
+      spdlog::debug("User '{}' sent to the character creator", loginContext.userName);
       QueueUserCreateNickname(clientId, loginContext.userName);
       return;
     }
@@ -331,13 +331,13 @@ void LoginHandler::QueueUserLoginAccepted(
       {0x2B, {{2, 1}}},
       {0x2E, {{2, 1}}}},
 
-    .address = _lobbyDirector.GetSettings().ranchAdvAddress.to_uint(),
-    .port = _lobbyDirector.GetSettings().ranchAdvPort,
+    .ranchAddress = _lobbyDirector.GetConfig().advertisement.ranch.address.to_uint(),
+    .ranchport = _lobbyDirector.GetConfig().advertisement.ranch.port,
     .scramblingConstant = 0,
 
     .systemContent = _lobbyDirector._systemContent,
 
-    .managmentSkills = {4, 0x2B, 4},
+    .managementSkills = {4, 0x2B, 4},
     .skillRanks = {.values = {{1,1}}},
     .val14 = 0xca1b87db,
     .guild = {.val1 = 1},
@@ -381,7 +381,7 @@ void LoginHandler::QueueUserLoginAccepted(
       response.age = 18;
       response.hideAge = false;
 
-      response.bitfield = 2;
+      response.bitfield = protocol::LobbyCommandLoginOK::HasPlayerBefore;
 
       // Character equipment.
       const auto characterEquipmentItems = _lobbyDirector.GetServerInstance().GetDataDirector().GetItems().Get(

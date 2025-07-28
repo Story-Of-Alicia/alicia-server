@@ -107,7 +107,7 @@ struct RaceCommandEnterRoom
 
   static Command GetCommand()
   {
-    return Command::RaceEnterRoom;
+    return Command::AcCmdCREnterRoom;
   }
 
   //! Writes the command to a provided sink stream.
@@ -155,7 +155,7 @@ struct RaceCommandEnterRoomOK
 
   static Command GetCommand()
   {
-    return Command::RaceEnterRoomOK;
+    return Command::AcCmdCREnterRoomOK;
   }
 
   //! Writes the command to a provided sink stream.
@@ -173,7 +173,7 @@ struct RaceCommandEnterRoomCancel
 {
   static Command GetCommand()
   {
-    return Command::RaceEnterRoomCancel;
+    return Command::AcCmdCREnterRoomCancel;
   }
 
   //! Writes the command to a provided sink stream.
@@ -194,7 +194,7 @@ struct RaceCommandEnterRoomNotify
 
   static Command GetCommand()
   {
-    return Command::RaceEnterRoomNotify;
+    return Command::AcCmdCREnterRoomNotify;
   }
 
   //! Writes the command to a provided sink stream.
@@ -227,7 +227,7 @@ struct RaceCommandChangeRoomOptions
 
   static Command GetCommand()
   {
-    return Command::RaceChangeRoomOptions;
+    return Command::AcCmdCRChangeRoomOptions;
   }
 
   //! Writes the command to a provided sink stream.
@@ -264,7 +264,7 @@ struct RaceCommandChangeRoomOptionsNotify
 
   static Command GetCommand()
   {
-    return Command::RaceChangeRoomOptionsNotify;
+    return Command::AcCmdCRChangeRoomOptionsNotify;
   }
 
   //! Writes the command to a provided sink stream.
@@ -282,6 +282,71 @@ struct RaceCommandChangeRoomOptionsNotify
     SourceStream& stream);
 };
 
+struct RaceCommandLeaveRoom
+{
+    static Command GetCommand()
+    {
+      return Command::AcCmdCRLeaveRoom;
+    }
+
+    //! Writes the command to a provided sink stream.
+    //! @param command Command.
+    //! @param stream Sink stream.
+    static void Write(
+      const RaceCommandLeaveRoom& command,
+      SinkStream& stream);
+
+    //! Reader a command from a provided source stream.
+    //! @param command Command.
+    //! @param stream Source stream.
+    static void Read(
+      RaceCommandLeaveRoom& command,
+      SourceStream& stream);
+};
+struct RaceCommandLeaveRoomOK
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRLeaveRoomOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RaceCommandLeaveRoomOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RaceCommandLeaveRoomOK& command,
+    SourceStream& stream);
+};
+struct RaceCommandLeaveRoomNotify
+{
+  uint32_t characterId{};
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRLeaveRoomNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RaceCommandLeaveRoomNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RaceCommandLeaveRoomNotify& command,
+    SourceStream& stream);
+};
+
 struct RaceCommandStartRace
 {
   // List size specified with a byte. Max size 10 (potentially)
@@ -289,7 +354,7 @@ struct RaceCommandStartRace
 
   static Command GetCommand()
   {
-    return Command::RaceStartRace;
+    return Command::AcCmdCRStartRace;
   }
 
   //! Writes the command to a provided sink stream.
@@ -390,7 +455,7 @@ struct RaceCommandStartRaceNotify
 
   static Command GetCommand()
   {
-    return Command::RaceStartRaceNotify;
+    return Command::AcCmdCRStartRaceNotify;
   }
 
   //! Writes the command to a provided sink stream.
@@ -414,7 +479,7 @@ struct RaceCommandStartRaceCancel
 
   static Command GetCommand()
   {
-    return Command::RaceStartRaceCancel;
+    return Command::AcCmdCRStartRaceCancel;
   }
 
   //! Writes the command to a provided sink stream.
@@ -439,7 +504,7 @@ struct RaceCommandUserRaceTimer
 
   static Command GetCommand()
   {
-    return Command::RaceUserRaceTimer;
+    return Command::AcCmdUserRaceTimer;
   }
 
   //! Writes the command to a provided sink stream.
@@ -464,7 +529,7 @@ struct RaceCommandUserRaceTimerOK
 
   static Command GetCommand()
   {
-    return Command::RaceUserRaceTimerOK;
+    return Command::AcCmdUserRaceTimerOK;
   }
 
   //! Writes the command to a provided sink stream.
@@ -486,7 +551,7 @@ struct RaceCommandLoadingComplete
 {
   static Command GetCommand()
   {
-    return Command::RaceLoadingComplete;
+    return Command::AcCmdCRLoadingComplete;
   }
 
   //! Writes the command to a provided sink stream.
@@ -510,7 +575,7 @@ struct RaceCommandLoadingCompleteNotify
 
   static Command GetCommand()
   {
-    return Command::RaceLoadingCompleteNotify;
+    return Command::AcCmdCRLoadingCompleteNotify;
   }
 
   //! Writes the command to a provided sink stream.
@@ -535,7 +600,7 @@ struct RaceCommandChat
 
   static Command GetCommand()
   {
-    return Command::RaceChat;
+    return Command::AcCmdCRChat;
   }
 
   //! Writes the command to a provided sink stream.
@@ -561,7 +626,7 @@ struct RaceCommandChatNotify
 
   static Command GetCommand()
   {
-    return Command::RaceChatNotify;
+    return Command::AcCmdCRChatNotify;
   }
 
   //! Writes the command to a provided sink stream.
@@ -625,7 +690,7 @@ struct RaceCommandReadyRace
 {
   static Command GetCommand()
   {
-    return Command::RaceReadyRace;
+    return Command::AcCmdCRReadyRace;
   }
 
   //! Writes the command to a provided sink stream.
@@ -650,7 +715,7 @@ struct RaceCommandReadyRaceNotify
 
   static Command GetCommand()
   {
-    return Command::RaceReadyRaceNotify;
+    return Command::AcCmdCRReadyRaceNotify;
   }
 
   //! Writes the command to a provided sink stream.
@@ -674,7 +739,7 @@ struct RaceCommandCountdown
 
   static Command GetCommand()
   {
-    return Command::RaceCountdown;
+    return Command::AcCmdUserRaceCountdown;
   }
 
   //! Writes the command to a provided sink stream.

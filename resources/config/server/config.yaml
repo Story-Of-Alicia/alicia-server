@@ -1,0 +1,76 @@
+server:
+  # Configuration section of the lobby server.
+  lobby:
+    # Whether the lobby server is enabled.
+    enabled: true
+    # Address and port listened to by the lobby server.
+    listen:
+      # The IPv4 address or a domain the server listens on.
+      # Additionally configurable through environment variable LOBBY_SERVER_ADDRESS.
+      address: "0.0.0.0"
+      # The port the server listens on.
+      # Additionally configurable through environment variable LOBBY_SERVER_PORT.
+      port: 10030
+    # Addresses and ports advertised by the lobby server.
+    advertisement:
+      ranch:
+        # The IPv4 address or a domain of the advertised ranch server.
+        # Additionally configurable through environment variable LOBBY_ADVERTISED_RANCH_ADDRESS.
+        address: "127.0.0.1"
+        # The port of the advertised ranch server.
+        # Additionally configurable through environment variablesLOBBY_ADVERTISED_RANCH_PORT.
+        port: 10031
+      race:
+        # The IPv4 address or a domain of the advertised race server.
+        # Additionally configurable through environment variable LOBBY_ADVERTISED_RACE_ADDRESS.
+        address: "127.0.0.1"
+        # The port of the advertised race server.
+        # Additionally configurable through environment variable LOBBY_ADVERTISED_RACE_PORT.
+        port: 10032
+      messenger:
+        # The IPv4 address or a domain of the advertised messenger server.
+        # Additionally configurable through environment variable LOBBY_ADVERTISED_MESSENGER_ADDRESS.
+        address: "127.0.0.1"
+        # The port of the advertised messenger server.
+        # Additionally configurable through environment variable LOBBY_ADVERTISED_MESSENGER_PORT.
+        port: 10033
+  # Configuration section of the ranch server.
+  ranch:
+    # Whether the ranch server is enabled.
+    enabled: true
+    # Address and port listened to by the ranch server.
+    listen:
+      # The IPv4 address or a domain the server listens on.
+      # Additionally configurable through environment variable RANCH_SERVER_ADDRESS.
+      address: "0.0.0.0"
+      # The port the server listens on.
+      # Additionally configurable through environment variable RANCH_SERVER_PORT.
+      port: 10031
+  # Configuration section of the race server.
+  race:
+    # Whether the race server is enabled.
+    enabled: true
+    # Address and port listened to by the race server.
+    listen:
+      # The IPv4 address or a domain the server listens on.
+      # Additionally configurable through environment variable RACE_SERVER_ADDRESS.
+      address: "0.0.0.0"
+      # The port the server listens on.
+      # Additionally configurable through environment variable RACE_SERVER_PORT.
+      port: 10032
+  # Configuration section of the messenger server.
+  messenger:
+    # Whether the messenger server is enabled.
+    enabled: false
+    # Address and port listened to by the messenger server.
+    listen:
+      # The IPv4 address or a domain the server listens on.
+      # Additionally configurable through environment variable MESSENGER_SERVER_ADDRESS.
+      address: "0.0.0.0"
+      # The port the server listens on.
+      # Additionally configurable through environment variabl MESSENGER_SERVER_PORT.
+      port: 10033
+  data:
+    source: file
+    file:
+      basePath: "./data"

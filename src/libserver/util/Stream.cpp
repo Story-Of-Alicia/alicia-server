@@ -4,6 +4,8 @@
 
 #include "libserver/util/Stream.hpp"
 
+#include "libserver/util/Locale.hpp"
+
 namespace server
 {
 
@@ -69,7 +71,9 @@ void SinkStream::Write(const void* data, std::size_t size)
 
 SinkStream& SinkStream::Write(const std::string& value)
 {
-  for (char b : value)
+  const std::string buffer = locale::FromUtf8(value);
+
+  for (char b : buffer)
   {
     Write(b);
   }
@@ -94,7 +98,8 @@ void SourceStream::Read(void* data, std::size_t size)
 
 SourceStream& SourceStream::Read(std::string& value)
 {
-  value.reserve(512);
+  std::string buffer;
+  buffer.reserve(512);
 
   bool readNext = true;
   do
@@ -108,9 +113,11 @@ SourceStream& SourceStream::Read(std::string& value)
     }
     else
     {
-      value += read;
+      buffer += read;
     }
   } while (readNext);
+
+  value = locale::ToUtf8(buffer);
   return *this;
 }
 

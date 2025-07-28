@@ -7,8 +7,11 @@
 namespace server
 {
 
-ServerInstance::ServerInstance()
-  : _lobbyDirector(*this)
+ServerInstance::ServerInstance(
+  const std::filesystem::path& resourceDirectory)
+  : _resourceDirectory(resourceDirectory)
+  , _dataDirector(resourceDirectory / "data")
+  , _lobbyDirector(*this)
   , _ranchDirector(*this)
   , _raceDirector(*this)
 {
@@ -36,8 +39,8 @@ void ServerInstance::Initialize()
 {
   _shouldRun.store(true, std::memory_order::release);
 
-  _settings.LoadFromFile("config/config.json5");
-  _settings.LoadFromEnvironment();
+  _config.LoadFromFile(_resourceDirectory / "config/server/config.yaml");
+  _config.LoadFromEnvironment();
 
   // Initialize the directors and tick them on their own threads.
   // Directors will terminate their tick loop once `_shouldRun` flag is set to false.
@@ -102,9 +105,14 @@ RaceDirector& ServerInstance::GetRaceDirector()
   return _raceDirector;
 }
 
-Settings& ServerInstance::GetSettings()
+Config& ServerInstance::GetSettings()
 {
-  return _settings;
+  return _config;
+}
+
+OtpRegistry& ServerInstance::GetOtpRegistry()
+{
+  return _otpRegistry;
 }
 
 } // namespace server

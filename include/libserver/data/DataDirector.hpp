@@ -43,7 +43,7 @@ public:
   using GuildStorage = DataStorage<data::Uid, data::Guild>;
 
   //! Default constructor.
-  explicit DataDirector();
+  explicit DataDirector(const std::filesystem::path& basePath);
   //! Default destructor.
   ~DataDirector();
 

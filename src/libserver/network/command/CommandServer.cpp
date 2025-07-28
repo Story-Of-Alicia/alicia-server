@@ -66,10 +66,10 @@ void XorAlgorithm(
 
 bool IsMuted(protocol::Command id)
 {
-  return id == protocol::Command::LobbyHeartbeat
-    || id == protocol::Command::RanchHeartbeat
-    || id == protocol::Command::RanchSnapshot
-    || id == protocol::Command::RanchSnapshotNotify;
+  return id == protocol::Command::AcCmdCLHeartbeat
+    || id == protocol::Command::AcCmdCRHeartbeat
+    || id == protocol::Command::AcCmdCRRanchSnapshot
+    || id == protocol::Command::AcCmdCRRanchSnapshotNotify;
 }
 
 } // namespace
