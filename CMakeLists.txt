@@ -37,7 +37,7 @@ if (${MSVC})
             /utf-8)
 else()
     target_link_libraries(platform-properties INTERFACE
-            iconv)
+            icuuc)
 endif()
 
 # alicia-libserver target

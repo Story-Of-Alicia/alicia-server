@@ -2,22 +2,9 @@
 FROM alpine:3 AS build
 
 # Setup the build environment
-RUN apk add --no-cache cmake make git build-base boost-dev
+RUN apk add --no-cache cmake make git build-base boost-dev icu-dev
 
 ARG SERVER_BUILD_TYPE=RelWithDebInfo
-ARG LIBICONV_VERSION=1.18
-
-WORKDIR /build/libiconv
-# Build GNU libiconv
-
-# Download and extract the source
-RUN wget https://ftp.gnu.org/pub/gnu/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz && \
-    tar -xzf libiconv-${LIBICONV_VERSION}.tar.gz
-
-# Build the binary and install it
-RUN cd libiconv-${LIBICONV_VERSION} && \
-    ./configure --prefix=/usr/local && \
-    make && make install
 
 # Build the server
 WORKDIR /build/alicia-server
@@ -45,7 +32,7 @@ LABEL org.opencontainers.image.source=https://github.com/Story-Of-Alicia/alicia-
 LABEL org.opencontainers.image.description="Dedicated server implementation for the Alicia game series"
 
 # Setup the runtime environent
-RUN apk add --no-cache libstdc++
+RUN apk add --no-cache libstdc++ icu icu-data-full
 
 WORKDIR /opt/alicia-server
 
