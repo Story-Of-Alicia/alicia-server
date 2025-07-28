@@ -206,6 +206,10 @@ private:
     ClientId clientId,
     const protocol::RanchCommandHousingBuild& command);
 
+  void HandleHousingRepair(
+    ClientId clientId,
+    const protocol::RanchCommandHousingRepair& command);
+  
   void HandleOpCmd(ClientId clientId,
     const protocol::RanchCommandOpCmd& command);
 

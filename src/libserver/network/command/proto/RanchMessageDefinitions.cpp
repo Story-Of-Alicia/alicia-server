@@ -1533,6 +1533,65 @@ void RanchCommandHousingBuildNotify::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void RanchCommandHousingRepair::Write(
+  const RanchCommandHousingRepair& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void RanchCommandHousingRepair::Read(
+  RanchCommandHousingRepair& command,
+  SourceStream& stream)
+{
+  stream.Read(command.housingUid);
+}
+
+void RanchCommandHousingRepairOK::Write(
+  const RanchCommandHousingRepairOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.housingUid)
+    .Write(command.member2);
+}
+
+void RanchCommandHousingRepairOK::Read(
+  RanchCommandHousingRepairOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void RanchCommandHousingRepairCancel::Write(
+  const RanchCommandHousingRepairCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.status);
+}
+
+void RanchCommandHousingRepairCancel::Read(
+  RanchCommandHousingRepairCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void RanchCommandHousingRepairNotify::Write(
+  const RanchCommandHousingRepairNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1)
+    .Write(command.housingTid);
+}
+
+void RanchCommandHousingRepairNotify::Read(
+  RanchCommandHousingRepairNotify& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+
 void RanchCommandMissionEvent::Write(
   const RanchCommandMissionEvent& command,
   SinkStream& stream)

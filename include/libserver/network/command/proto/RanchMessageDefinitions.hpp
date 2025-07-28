@@ -2159,7 +2159,6 @@ struct RanchCommandIncubateEggOK
     SourceStream& stream);
 };
 
-
 struct RanchCommandHousingBuild
 {
   uint16_t housingTid{};
@@ -2259,6 +2258,103 @@ struct RanchCommandHousingBuildNotify
     SourceStream& stream);
 };
 
+struct RanchCommandHousingRepair
+{
+  uint32_t housingUid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRHousingRepair;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RanchCommandHousingRepair& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RanchCommandHousingRepair& command,
+    SourceStream& stream);
+};
+
+struct RanchCommandHousingRepairOK
+{
+  uint32_t housingUid{};
+  uint32_t member2{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRHousingRepairOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RanchCommandHousingRepairOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RanchCommandHousingRepairOK& command,
+    SourceStream& stream);
+};
+
+struct RanchCommandHousingRepairCancel
+{
+  uint8_t status{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRHousingRepairCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RanchCommandHousingRepairCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RanchCommandHousingRepairCancel& command,
+    SourceStream& stream);
+};
+
+struct RanchCommandHousingRepairNotify
+{
+  uint32_t member1{};
+  uint16_t housingTid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRHousingRepairNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RanchCommandHousingRepairNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RanchCommandHousingRepairNotify& command,
+    SourceStream& stream);
+};
 struct RanchCommandMissionEvent
 {
   enum class Event : uint32_t
