@@ -607,6 +607,7 @@ void server::FileDataSource::RetrieveHousing(data::Uid uid, data::Housing& housi
   const auto json = nlohmann::json::parse(dataFile);
   housing.uid = json["uid"].get<data::Uid>();
   housing.housingId = json["housingId"].get<uint16_t>();
+  housing.durability = json["durability"].get<uint32_t>();
 }
 
 void server::FileDataSource::StoreHousing(data::Uid uid, const data::Housing& housing)
@@ -624,6 +625,7 @@ void server::FileDataSource::StoreHousing(data::Uid uid, const data::Housing& ho
   nlohmann::json json;
   json["uid"] = housing.uid();
   json["housingId"] = housing.housingId();
+  json["durability"] = housing.durability();
 
   dataFile << json.dump(2);
 }

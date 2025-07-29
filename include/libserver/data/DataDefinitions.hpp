@@ -291,6 +291,7 @@ struct Housing
 {
   dao::Field<Uid> uid{InvalidUid};
   dao::Field<uint16_t> housingId{};
+  dao::Field<uint32_t> durability{};
 };
 
 struct Egg

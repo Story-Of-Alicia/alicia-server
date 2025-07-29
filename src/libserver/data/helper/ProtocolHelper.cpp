@@ -207,7 +207,7 @@ void BuildProtocolHousing(
 {
   protocolHousing.uid = housingRecord.uid();
   protocolHousing.tid = housingRecord.housingId();
-  protocolHousing.durability = 0xFFFFFFFF;
+  protocolHousing.durability = housingRecord.durability();
 }
 
 void BuildProtocolHousing(
