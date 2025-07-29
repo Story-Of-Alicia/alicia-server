@@ -2333,6 +2333,7 @@ struct RanchCommandHousingRepairCancel
 
 struct RanchCommandHousingRepairNotify
 {
+  //! Ignored by the client.
   uint32_t member1{};
   uint16_t housingTid{};
 
