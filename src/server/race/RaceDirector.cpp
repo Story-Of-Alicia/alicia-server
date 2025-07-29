@@ -296,7 +296,6 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
   }
 
   roomInstance.worldTracker.RemoveCharacter(clientContext.characterUid);
-  _clientContexts.erase(clientId);
 
   spdlog::info("Client {} left the room {}", clientId, clientContext.roomUid);
 }
