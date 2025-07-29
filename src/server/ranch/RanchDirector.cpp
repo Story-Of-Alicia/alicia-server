@@ -18,7 +18,7 @@
  **/
 
 #include "server/ranch/RanchDirector.hpp"
-#include "server/ServerInstance.hpp"
+#include  "server/ServerInstance.hpp"
 
 #include "libserver/data/helper/ProtocolHelper.hpp"
 #include "libserver/registry/HorseRegistry.hpp"
@@ -38,7 +38,7 @@ constexpr size_t MaxRanchHorseCount = 10;
 constexpr size_t MaxRanchCharacterCount = 20;
 constexpr size_t MaxRanchHousingCount = 13;
 
-} // namespace
+}
 
 RanchDirector::RanchDirector(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
@@ -169,6 +169,7 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleHousingBuild(clientId, command);
     });
+
   _commandServer.RegisterCommandHandler<protocol::RanchCommandHousingRepair>(
     [this](ClientId clientId, auto& command)
     {
@@ -178,26 +179,21 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
   _commandServer.RegisterCommandHandler<protocol::RanchCommandMissionEvent>(
     [this](ClientId clientId, auto& command)
     {
-      protocol::RanchCommandMissionEvent event{
+      protocol::RanchCommandMissionEvent event
+      {
         .event = protocol::RanchCommandMissionEvent::Event::EVENT_CALL_NPC_RESULT,
         .callerOid = command.callerOid,
         .calledOid = 0x40'00'00'00,
       };
 
-      _commandServer.QueueCommand<decltype(event)>(clientId, [event]()
-        {
-          return event;
-        });
+      _commandServer.QueueCommand<decltype(event)>(clientId, [event](){return event;});
     });
 
   _commandServer.RegisterCommandHandler<protocol::RanchCommandKickRanch>(
     [this](ClientId clientId, auto& command)
     {
       protocol::RanchCommandKickRanchOK response{};
-      _commandServer.QueueCommand<decltype(response)>(clientId, [response]()
-        {
-          return response;
-        });
+      _commandServer.QueueCommand<decltype(response)>(clientId, [response](){return response;});
 
       protocol::RanchCommandKickRanchNotify notify{
         .characterUid = command.characterUid};
@@ -225,6 +221,7 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleRequestLeagueTeamList(clientId, command);
     });
+
 }
 
 void RanchDirector::Initialize()
@@ -294,9 +291,9 @@ void RanchDirector::BroadcastUpdateMountInfoNotify(
 
   protocol::RanchCommandUpdateMountInfoNotify notify{};
   horseRecord->Immutable([&notify](const data::Horse& horse)
-    {
-      protocol::BuildProtocolHorse(notify.horse, horse);
-    });
+  {
+    protocol::BuildProtocolHorse(notify.horse, horse);
+  });
 
   for (const ClientId& ranchClientId : _ranches[clientContext.rancherUid].clients)
   {
@@ -352,7 +349,7 @@ void RanchDirector::HandleRanchEnter(
   if (clientCreated)
   {
     if (GetServerInstance().GetOtpRegistry().AuthorizeCode(
-          command.characterUid, command.otp))
+      command.characterUid, command.otp))
     {
       clientContext.characterUid = command.characterUid;
       clientContext.rancherUid = command.rancherUid;
@@ -395,35 +392,35 @@ void RanchDirector::HandleRanchEnter(
   rancherRecord->Immutable(
     [this, &response, ranchInstance, ranchCreated](
       const data::Character& character) mutable
+  {
+    const auto& rancherName = character.name();
+    const bool endsWithPlural = rancherName.ends_with("s") || rancherName.ends_with("S");
+    const std::string possessiveSuffix = endsWithPlural ? "'" : "'s";
+
+    response.rancherName = rancherName;
+    response.ranchName = std::format("{}{} ranch", rancherName, possessiveSuffix);
+
+    // If the ranch was just created add the horses to the world tracker.
+    if (ranchCreated)
     {
-      const auto& rancherName = character.name();
-      const bool endsWithPlural = rancherName.ends_with("s") || rancherName.ends_with("S");
-      const std::string possessiveSuffix = endsWithPlural ? "'" : "'s";
-
-      response.rancherName = rancherName;
-      response.ranchName = std::format("{}{} ranch", rancherName, possessiveSuffix);
-
-      // If the ranch was just created add the horses to the world tracker.
-      if (ranchCreated)
+      for (const auto& horseUid : character.horses())
       {
-        for (const auto& horseUid : character.horses())
-        {
-          ranchInstance.worldTracker.AddHorse(horseUid);
-        }
+        ranchInstance.worldTracker.AddHorse(horseUid);
       }
+    }
 
-      // Fill the housing info.
-      const auto housingRecords = GetServerInstance().GetDataDirector().GetHousing().Get(
-        character.housing());
-      if (housingRecords)
-      {
-        protocol::BuildProtocolHousing(response.housing, *housingRecords);
-      }
-      else
-      {
-        spdlog::warn("Housing records not available for rancher {} ({})", rancherName, character.uid());
-      }
-    });
+    // Fill the housing info.
+    const auto housingRecords = GetServerInstance().GetDataDirector().GetHousing().Get(
+      character.housing());
+    if (housingRecords)
+    {
+      protocol::BuildProtocolHousing(response.housing, *housingRecords);
+    }
+    else
+    {
+      spdlog::warn("Housing records not available for rancher {} ({})", rancherName, character.uid());
+    }
+  });
 
   // Add the character to the ranch.
   ranchInstance.worldTracker.AddCharacter(
@@ -444,9 +441,9 @@ void RanchDirector::HandleRanchEnter(
         std::format("Ranch horse [{}] not available", horseUid));
 
     horseRecord->Immutable([&ranchHorse](const data::Horse& horse)
-      {
-        protocol::BuildProtocolHorse(ranchHorse.horse, horse);
-      });
+    {
+      protocol::BuildProtocolHorse(ranchHorse.horse, horse);
+    });
   }
 
   // Add the ranch characters.
@@ -461,98 +458,98 @@ void RanchDirector::HandleRanchEnter(
         std::format("Ranch character [{}] not available", characterUid));
 
     characterRecord.Immutable([this, &protocolCharacter](const data::Character& character)
+    {
+      protocolCharacter.uid = character.uid();
+      protocolCharacter.name = character.name();
+      protocolCharacter.profileIcon = character.role() == data::Character::Role::Gm
+        ? RanchCharacter::ProfileIcon::GameMaster
+        : character.parts.modelId() == 10
+          ? RanchCharacter::ProfileIcon::Boy
+          : RanchCharacter::ProfileIcon::Girl;
+      protocolCharacter.age = 19;
+      protocolCharacter.hideGenderAndAge = 0;
+
+      protocolCharacter.introduction = character.introduction();
+
+      protocol::BuildProtocolCharacter(protocolCharacter.character, character);
+
+      // Character's equipment.
+      const auto equipment = GetServerInstance().GetDataDirector().GetItems().Get(
+        character.characterEquipment());
+      if (not equipment)
       {
-        protocolCharacter.uid = character.uid();
-        protocolCharacter.name = character.name();
-        protocolCharacter.profileIcon = character.role() == data::Character::Role::Gm
-                                          ? RanchCharacter::ProfileIcon::GameMaster
-                                        : character.parts.modelId() == 10
-                                          ? RanchCharacter::ProfileIcon::Boy
-                                          : RanchCharacter::ProfileIcon::Girl;
-        protocolCharacter.age = 19;
-        protocolCharacter.hideGenderAndAge = 0;
+        throw std::runtime_error(
+          std::format(
+            "Ranch character's [{} ({})] equipment is not available",
+            character.name(),
+            character.uid()));
+      }
 
-        protocolCharacter.introduction = character.introduction();
+      protocol::BuildProtocolItems(protocolCharacter.characterEquipment, *equipment);
 
-        protocol::BuildProtocolCharacter(protocolCharacter.character, character);
+      // Character's mount.
+      const auto mountRecord = GetServerInstance().GetDataDirector().GetHorses().Get(
+        character.mountUid());
+      if (not mountRecord)
+      {
+        throw std::runtime_error(
+          std::format(
+            "Ranch character's [{} ({})] mount [{}] is not available",
+            character.name(),
+            character.uid(),
+            character.mountUid()));
+      }
 
-        // Character's equipment.
-        const auto equipment = GetServerInstance().GetDataDirector().GetItems().Get(
-          character.characterEquipment());
-        if (not equipment)
+      mountRecord->Immutable([&protocolCharacter](const data::Horse& horse)
+      {
+        protocol::BuildProtocolHorse(protocolCharacter.mount, horse);
+        protocolCharacter.rent = {
+          .mountUid = horse.uid(),
+          .val1 = 0x12};
+      });
+
+      // Character's guild
+      if (character.guildUid() != data::InvalidUid)
+      {
+        const auto guildRecord =  GetServerInstance().GetDataDirector().GetGuild(
+          character.guildUid());
+        if (not guildRecord)
         {
           throw std::runtime_error(
             std::format(
-              "Ranch character's [{} ({})] equipment is not available",
-              character.name(),
-              character.uid()));
-        }
-
-        protocol::BuildProtocolItems(protocolCharacter.characterEquipment, *equipment);
-
-        // Character's mount.
-        const auto mountRecord = GetServerInstance().GetDataDirector().GetHorses().Get(
-          character.mountUid());
-        if (not mountRecord)
-        {
-          throw std::runtime_error(
-            std::format(
-              "Ranch character's [{} ({})] mount [{}] is not available",
+              "Ranch character's [{} ({})] guild [{}] is not available",
               character.name(),
               character.uid(),
-              character.mountUid()));
+              character.guildUid()));
         }
 
-        mountRecord->Immutable([&protocolCharacter](const data::Horse& horse)
-          {
-            protocol::BuildProtocolHorse(protocolCharacter.mount, horse);
-            protocolCharacter.rent = {
-              .mountUid = horse.uid(),
-              .val1 = 0x12};
-          });
-
-        // Character's guild
-        if (character.guildUid() != data::InvalidUid)
+        guildRecord.Immutable([&protocolCharacter](const data::Guild& guild)
         {
-          const auto guildRecord = GetServerInstance().GetDataDirector().GetGuild(
-            character.guildUid());
-          if (not guildRecord)
-          {
-            throw std::runtime_error(
-              std::format(
-                "Ranch character's [{} ({})] guild [{}] is not available",
-                character.name(),
-                character.uid(),
-                character.guildUid()));
-          }
+          protocol::BuildProtocolGuild(protocolCharacter.guild, guild);
+        });
+      }
 
-          guildRecord.Immutable([&protocolCharacter](const data::Guild& guild)
-            {
-              protocol::BuildProtocolGuild(protocolCharacter.guild, guild);
-            });
-        }
-
-        // Character's pet
-        if (character.petUid() != data::InvalidUid)
+      // Character's pet
+      if (character.petUid() != data::InvalidUid)
+      {
+        const auto petRecord =  GetServerInstance().GetDataDirector().GetPet(
+          character.petUid());
+        if (not petRecord)
         {
-          const auto petRecord = GetServerInstance().GetDataDirector().GetPet(
-            character.petUid());
-          if (not petRecord)
-          {
-            throw std::runtime_error(
-              std::format(
-                "Ranch character's [{} ({})] pet [{}] is not available",
-                character.name(),
-                character.uid(),
-                character.petUid()));
-          }
-
-          petRecord.Immutable([&protocolCharacter](const data::Pet& pet)
-            {
-              protocol::BuildProtocolPet(protocolCharacter.pet, pet);
-            });
+          throw std::runtime_error(
+            std::format(
+              "Ranch character's [{} ({})] pet [{}] is not available",
+              character.name(),
+              character.uid(),
+              character.petUid()));
         }
-      });
+
+        petRecord.Immutable([&protocolCharacter](const data::Pet& pet)
+        {
+          protocol::BuildProtocolPet(protocolCharacter.pet, pet);
+        });
+      }
+    });
 
     if (command.characterUid == characterUid)
     {
@@ -579,8 +576,7 @@ void RanchDirector::HandleRanchEnter(
   {
     _commandServer.QueueCommand<decltype(ranchJoinNotification)>(
       ranchClient,
-      [ranchJoinNotification]()
-      {
+      [ranchJoinNotification](){
         return ranchJoinNotification;
       });
   }
@@ -617,7 +613,7 @@ void RanchDirector::HandleSnapshot(
   const auto& clientContext = _clients[clientId];
   auto& ranchInstance = _ranches[clientContext.rancherUid];
 
-  protocol::RanchCommandRanchSnapshotNotify response{
+  protocol::RanchCommandRanchSnapshotNotify response {
     .ranchIndex = ranchInstance.worldTracker.GetCharacterOid(
       clientContext.characterUid),
     .type = command.type,
@@ -626,15 +622,15 @@ void RanchDirector::HandleSnapshot(
   switch (command.type)
   {
     case protocol::RanchCommandRanchSnapshot::Full:
-      {
-        response.full = command.full;
-        break;
-      }
+    {
+      response.full = command.full;
+      break;
+    }
     case protocol::RanchCommandRanchSnapshot::Partial:
-      {
-        response.partial = command.partial;
-        break;
-      }
+    {
+      response.partial = command.partial;
+      break;
+    }
   }
 
   for (const auto& ranchClient : ranchInstance.clients)
@@ -659,8 +655,7 @@ void RanchDirector::HandleCmdAction(
   protocol::RanchCommandRanchCmdActionNotify response{
     .unk0 = 2,
     .unk1 = 3,
-    .unk2 = 1,
-  };
+    .unk2 = 1,};
 
   // TODO: Actual implementation of it
   _commandServer.QueueCommand<decltype(response)>(
@@ -691,10 +686,10 @@ void RanchDirector::HandleRanchStuff(
 
   // Todo: needs validation
   characterRecord.Mutable([&command, &response](data::Character& character)
-    {
-      character.carrots() += command.value;
-      response.totalMoney = character.carrots();
-    });
+  {
+    character.carrots() += command.value;
+    response.totalMoney = character.carrots();
+  });
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -711,7 +706,7 @@ void RanchDirector::HandleUpdateBusyState(
   auto& clientContext = _clients[clientId];
   auto& ranchInstance = _ranches[clientContext.rancherUid];
 
-  protocol::RanchCommandUpdateBusyStateNotify response{
+  protocol::RanchCommandUpdateBusyStateNotify response {
     .characterUid = clientContext.characterUid,
     .busyState = command.busyState};
 
@@ -744,23 +739,23 @@ void RanchDirector::HandleSearchStallion(
 
     auto& stallion = response.stallions.emplace_back();
     horseRecord->Immutable([&stallion](const data::Horse& horse)
-      {
-        stallion.unk0 = "unk";
-        stallion.uid = horse.uid();
-        stallion.tid = horse.tid();
+    {
+      stallion.unk0 = "unk";
+      stallion.uid = horse.uid();
+      stallion.tid = horse.tid();
 
-        stallion.chance = 0xFF;
-        stallion.unk7 = 0xFF;
-        stallion.unk8 = 0xFF;
+      stallion.chance = 0xFF;
+      stallion.unk7 = 0xFF;
+      stallion.unk8 = 0xFF;
 
-        stallion.name = horse.name();
-        stallion.grade = horse.grade();
-        stallion.unk11 = 0xFF;
+      stallion.name = horse.name();
+      stallion.grade = horse.grade();
+      stallion.unk11 = 0xFF;
 
-        protocol::BuildProtocolHorseStats(stallion.stats, horse.stats);
-        protocol::BuildProtocolHorseParts(stallion.parts, horse.parts);
-        protocol::BuildProtocolHorseAppearance(stallion.appearance, horse.appearance);
-      });
+      protocol::BuildProtocolHorseStats(stallion.stats, horse.stats);
+      protocol::BuildProtocolHorseParts(stallion.parts, horse.parts);
+      protocol::BuildProtocolHorseAppearance(stallion.appearance, horse.appearance);
+    });
   }
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -782,22 +777,22 @@ void RanchDirector::HandleEnterBreedingMarket(
   protocol::RanchCommandEnterBreedingMarketOK response;
 
   characterRecord.Immutable([this, &response](const data::Character& character)
+  {
+    const auto horseRecords = GetServerInstance().GetDataDirector().GetHorses().Get(
+      character.horses());
+
+    for (const auto& horseRecord : *horseRecords)
     {
-      const auto horseRecords = GetServerInstance().GetDataDirector().GetHorses().Get(
-        character.horses());
-
-      for (const auto& horseRecord : *horseRecords)
+      auto& protocolHorse = response.availableHorses.emplace_back();
+      horseRecord.Immutable([&protocolHorse](const data::Horse& horse)
       {
-        auto& protocolHorse = response.availableHorses.emplace_back();
-        horseRecord.Immutable([&protocolHorse](const data::Horse& horse)
-          {
-            protocolHorse.uid = horse.uid();
-            protocolHorse.tid = horse.tid();
+        protocolHorse.uid = horse.uid();
+        protocolHorse.tid = horse.tid();
 
-            // todo figure out the rest
-          });
-      }
-    });
+        // todo figure out the rest
+      });
+    }
+  });
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -874,59 +869,60 @@ void RanchDirector::HandleUpdateMountNickname(
   bool canRenameHorse = false;
 
   characterRecord.Mutable([this, &canRenameHorse, horseUid = command.horseUid](data::Character& character)
+  {
+    const bool ownsHorse =  character.mountUid() == horseUid
+      || std::ranges::contains(character.horses(), horseUid);
+
+    if (not ownsHorse)
+      return;
+
+    const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(horseUid);
+    if (not horseRecord)
+      return;
+
+    // If the horse does not have a name, allow them to rename it.
+    horseRecord.Immutable([&canRenameHorse](const data::Horse& horse)
     {
-      const bool ownsHorse = character.mountUid() == horseUid || std::ranges::contains(character.horses(), horseUid);
-
-      if (not ownsHorse)
-        return;
-
-      const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(horseUid);
-      if (not horseRecord)
-        return;
-
-      // If the horse does not have a name, allow them to rename it.
-      horseRecord.Immutable([&canRenameHorse](const data::Horse& horse)
-        {
-          canRenameHorse = horse.name().empty();
-        });
-
-      if (canRenameHorse)
-        return;
-
-      constexpr data::Tid HorseRenameItem = 45003;
-      const auto itemRecords = GetServerInstance().GetDataDirector().GetItems().Get(
-        character.items());
-
-      // Find the horse rename item.
-      auto horseRenameItemUid = data::InvalidUid;
-      for (const auto& itemRecord : *itemRecords)
-      {
-        itemRecord.Immutable([&horseRenameItemUid](const data::Item& item)
-          {
-            if (item.tid() == HorseRenameItem)
-            {
-              horseRenameItemUid = item.uid();
-            }
-          });
-
-        // Break early if the item was found.
-        if (horseRenameItemUid != data::InvalidUid)
-          break;
-      }
-
-      if (horseRenameItemUid == data::InvalidUid)
-      {
-        return;
-      }
-
-      // Find the item in the inventory.
-      const auto itemInventoryIter = std::ranges::find(
-        character.items(), horseRenameItemUid);
-
-      // Remove the item from the inventory.
-      character.items().erase(itemInventoryIter);
-      canRenameHorse = true;
+      canRenameHorse = horse.name().empty();
     });
+
+    if (canRenameHorse)
+      return;
+
+    constexpr data::Tid HorseRenameItem = 45003;
+    const auto itemRecords = GetServerInstance().GetDataDirector().GetItems().Get(
+      character.items());
+
+    // Find the horse rename item.
+    auto horseRenameItemUid = data::InvalidUid;
+    for (const auto& itemRecord : *itemRecords)
+    {
+      itemRecord.Immutable([&horseRenameItemUid](const data::Item& item)
+      {
+        if (item.tid() == HorseRenameItem)
+        {
+          horseRenameItemUid = item.uid();
+        }
+      });
+
+      // Break early if the item was found.
+      if (horseRenameItemUid != data::InvalidUid)
+        break;
+    }
+
+    if (horseRenameItemUid == data::InvalidUid)
+    {
+      return;
+    }
+
+    // Find the item in the inventory.
+    const auto itemInventoryIter = std::ranges::find(
+      character.items(), horseRenameItemUid);
+
+    // Remove the item from the inventory.
+    character.items().erase(itemInventoryIter);
+    canRenameHorse = true;
+  });
 
   if (not canRenameHorse)
   {
@@ -944,9 +940,9 @@ void RanchDirector::HandleUpdateMountNickname(
     command.horseUid);
 
   horseRecord->Mutable([horseName = command.name](data::Horse& horse)
-    {
-      horse.name() = horseName;
-    });
+  {
+    horse.name() = horseName;
+  });
 
   protocol::RanchCommandUpdateMountNicknameOK response{
     .horseUid = command.horseUid,
@@ -1062,7 +1058,7 @@ void RanchDirector::HandleGetItemFromStorage(
 
   // Get the items assigned to the stored item and fill the protocol command.
   characterRecord.Mutable([this, &response](
-                            data::Character& character)
+    data::Character& character)
     {
       const auto storedItemRecord = GetServerInstance().GetDataDirector().GetStorageItem().Get(
         response.storedItemUid);
@@ -1071,13 +1067,13 @@ void RanchDirector::HandleGetItemFromStorage(
       std::vector<data::Uid> items;
 
       storedItemRecord->Immutable([this, &items, &response](const data::StorageItem& storedItem)
-        {
-          items = storedItem.items();
-          const auto itemRecords = GetServerInstance().GetDataDirector().GetItems().Get(
-            items);
+      {
+        items = storedItem.items();
+        const auto itemRecords = GetServerInstance().GetDataDirector().GetItems().Get(
+          items);
 
-          protocol::BuildProtocolItems(response.items, *itemRecords);
-        });
+        protocol::BuildProtocolItems(response.items, *itemRecords);
+      });
 
       // Add the items to the character's inventory.
       character.items().insert(
@@ -1128,8 +1124,7 @@ void RanchDirector::HandleChat(
       protocol::RanchCommandChatNotify notify{
         .author = "system",
         .message = response,
-        .isBlue = true,
-      };
+        .isBlue = true,};
       SendChat(clientId, notify);
     }
 
@@ -1140,9 +1135,9 @@ void RanchDirector::HandleChat(
     .message = chat.message};
 
   characterRecord.Immutable([&response](const data::Character& character)
-    {
-      response.author = character.name();
-    });
+  {
+    response.author = character.name();
+  });
 
   for (const auto ranchClientId : ranchInstance.clients)
   {
@@ -1205,13 +1200,14 @@ std::vector<std::string> RanchDirector::HandleCommand(
       "Note: to ignore any parameter,\n"
       "       simply specify 0 as the value.",
 
+
       "//horse randomize\n"
       "  Randomizes your horse appearance and parts."
 
       "//model <modelId>\n"
       "Sets your character's model",
 
-    };
+      };
   }
 
   if (command[0] == "emblem")
@@ -1221,9 +1217,9 @@ std::vector<std::string> RanchDirector::HandleCommand(
 
     const uint32_t emblemId = std::atoi(command[1].c_str());
     characterRecord.Mutable([emblemId](data::Character& character)
-      {
-        character.appearance.emblemId = emblemId;
-      });
+    {
+      character.appearance.emblemId = emblemId;
+    });
     return {std::format("Set your emblem, restart your game.")};
   }
 
@@ -1234,9 +1230,9 @@ std::vector<std::string> RanchDirector::HandleCommand(
 
     const uint32_t modelId = std::atoi(command[1].c_str());
     characterRecord.Mutable([modelId](data::Character& character)
-      {
-        character.parts.modelId = modelId;
-      });
+    {
+      character.parts.modelId = modelId;
+    });
     return {std::format("Set your model id, restart your game.")};
   }
 
@@ -1258,10 +1254,10 @@ std::vector<std::string> RanchDirector::HandleCommand(
         continue;
 
       onlineCharacterRecord->Immutable([&visitingCharacterUid, &characterName](const data::Character& character)
-        {
-          if (characterName == character.name())
-            visitingCharacterUid = character.uid();
-        });
+      {
+        if (characterName == character.name())
+          visitingCharacterUid = character.uid();
+      });
 
       if (visitingCharacterUid != data::InvalidUid)
         break;
@@ -1290,10 +1286,10 @@ std::vector<std::string> RanchDirector::HandleCommand(
       const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
         clientContext.second.characterUid);
       characterRecord.Immutable([&response, &clientContext, clientId](const data::Character& character)
-        {
-          response.emplace_back() = std::format(
-            "{}{}", character.name(), clientContext.first == clientId ? " (you)" : "");
-        });
+      {
+        response.emplace_back() = std::format(
+          "{}{}", character.name(), clientContext.first == clientId ? " (you)" : "");
+      });
     }
     return response;
   }
@@ -1316,21 +1312,21 @@ std::vector<std::string> RanchDirector::HandleCommand(
         .tailTid = static_cast<uint32_t>(std::atoi(command[5].c_str()))};
 
       characterRecord.Immutable([this, &mountUid, &parts](const data::Character& character)
+      {
+        GetServerInstance().GetDataDirector().GetHorses().Get(character.mountUid())->Mutable([&parts](data::Horse& horse)
         {
-          GetServerInstance().GetDataDirector().GetHorses().Get(character.mountUid())->Mutable([&parts](data::Horse& horse)
-            {
-              if (parts.faceTid() != 0)
-                horse.parts.faceTid() = parts.faceTid();
-              if (parts.maneTid() != 0)
-                horse.parts.maneTid() = parts.maneTid();
-              if (parts.skinTid() != 0)
-                horse.parts.skinTid() = parts.skinTid();
-              if (parts.tailTid() != 0)
-                horse.parts.tailTid() = parts.tailTid();
-            });
-
-          mountUid = character.mountUid();
+          if (parts.faceTid() != 0)
+            horse.parts.faceTid() = parts.faceTid();
+          if (parts.maneTid() != 0)
+            horse.parts.maneTid() = parts.maneTid();
+          if (parts.skinTid() != 0)
+            horse.parts.skinTid() = parts.skinTid();
+          if (parts.tailTid() != 0)
+            horse.parts.tailTid() = parts.tailTid();
         });
+
+        mountUid = character.mountUid();
+      });
 
       BroadcastUpdateMountInfoNotify(clientContext.characterUid, mountUid);
       return {"Parts set! Restart the client."};
@@ -1348,22 +1344,23 @@ std::vector<std::string> RanchDirector::HandleCommand(
         .bodyVolume = static_cast<uint32_t>(std::atoi(command[6].c_str()))};
 
       characterRecord.Immutable([this, &mountUid, &appearance](const data::Character& character)
+      {
+        GetServerInstance().GetDataDirector().GetHorses().Get(character.mountUid())->Mutable([&appearance](
+          data::Horse& horse)
         {
-          GetServerInstance().GetDataDirector().GetHorses().Get(character.mountUid())->Mutable([&appearance](data::Horse& horse)
-            {
-              if (appearance.scale() != 0)
-                horse.appearance.scale() = appearance.scale();
-              if (appearance.legLength() != 0)
-                horse.appearance.legLength() = appearance.legLength();
-              if (appearance.legVolume() != 0)
-                horse.appearance.legVolume() = appearance.legVolume();
-              if (appearance.bodyLength() != 0)
-                horse.appearance.bodyLength() = appearance.bodyLength();
-              if (appearance.bodyVolume() != 0)
-                horse.appearance.bodyVolume() = appearance.bodyVolume();
-            });
-          mountUid = character.mountUid();
+          if (appearance.scale() != 0)
+            horse.appearance.scale() = appearance.scale();
+          if (appearance.legLength() != 0)
+            horse.appearance.legLength() = appearance.legLength();
+          if (appearance.legVolume() != 0)
+            horse.appearance.legVolume() = appearance.legVolume();
+          if (appearance.bodyLength() != 0)
+            horse.appearance.bodyLength() = appearance.bodyLength();
+          if (appearance.bodyVolume() != 0)
+            horse.appearance.bodyVolume() = appearance.bodyVolume();
         });
+        mountUid = character.mountUid();
+      });
 
       BroadcastUpdateMountInfoNotify(clientContext.characterUid, mountUid);
       return {"Appearance set! Restart the client."};
@@ -1372,13 +1369,13 @@ std::vector<std::string> RanchDirector::HandleCommand(
     if (command[1] == "randomize")
     {
       characterRecord.Immutable([this, &mountUid](const data::Character& character)
+      {
+        GetServerInstance().GetDataDirector().GetHorses().Get(character.mountUid())->Mutable([](data::Horse& horse)
         {
-          GetServerInstance().GetDataDirector().GetHorses().Get(character.mountUid())->Mutable([](data::Horse& horse)
-            {
-              HorseRegistry::Get().BuildRandomHorse(horse.parts, horse.appearance);
-            });
-          mountUid = character.mountUid();
+          HorseRegistry::Get().BuildRandomHorse(horse.parts, horse.appearance);
         });
+        mountUid = character.mountUid();
+      });
       return {"Appearance and parts randomized! Restart the client."};
     }
   }
@@ -1399,31 +1396,31 @@ std::vector<std::string> RanchDirector::HandleCommand(
       auto createdItemUid = data::InvalidUid;
       const auto createdItemRecord = GetServerInstance().GetDataDirector().CreateItem();
       createdItemRecord.Mutable([createdItemTid, itemCount, &createdItemUid](data::Item& item)
-        {
-          item.tid() = createdItemTid;
-          item.count() = itemCount;
+      {
+        item.tid() = createdItemTid;
+        item.count() = itemCount;
 
-          createdItemUid = item.uid();
-        });
+        createdItemUid = item.uid();
+      });
 
       // Create the stored item.
       auto giftUid = data::InvalidUid;
       const auto storedItem = GetServerInstance().GetDataDirector().CreateStorageItem();
       storedItem.Mutable([this, &giftUid, createdItemUid, createdItemTid](data::StorageItem& storedItem)
-        {
-          storedItem.items().emplace_back(createdItemUid);
-          storedItem.sender() = "System";
-          storedItem.message() = std::format("Item '{}'", createdItemTid);
+      {
+        storedItem.items().emplace_back(createdItemUid);
+        storedItem.sender() = "System";
+        storedItem.message() = std::format("Item '{}'", createdItemTid);
 
-          giftUid = storedItem.uid();
-        });
+        giftUid = storedItem.uid();
+      });
 
       // Add the stored item as a gift.
 
       characterRecord.Mutable([giftUid](data::Character& character)
-        {
-          character.gifts().emplace_back(giftUid);
-        });
+      {
+        character.gifts().emplace_back(giftUid);
+      });
 
       return {"Item given. Check your gifts in inventory!"};
     }
@@ -1462,34 +1459,34 @@ void RanchDirector::HandleWearEquipment(
 
   bool equipSuccessful = false;
   characterRecord.Mutable([&command, &equipSuccessful](data::Character& character)
+  {
+    const bool hasEquippedItem = std::ranges::contains(
+      character.items(), command.itemUid);
+    const bool hasMountedHorse = std::ranges::contains(
+      character.horses(), command.itemUid);
+
+    // Make sure the equip UID is either a valid item or a horse.
+    equipSuccessful = hasEquippedItem || hasMountedHorse;
+
+    if (hasMountedHorse)
     {
-      const bool hasEquippedItem = std::ranges::contains(
-        character.items(), command.itemUid);
-      const bool hasMountedHorse = std::ranges::contains(
-        character.horses(), command.itemUid);
+      // Add the mount back to the horse list.
+      character.horses().emplace_back(character.mountUid());
+      character.mountUid() = command.itemUid;
 
-      // Make sure the equip UID is either a valid item or a horse.
-      equipSuccessful = hasEquippedItem || hasMountedHorse;
-
-      if (hasMountedHorse)
+      // Remove the new mount from the horse list.
+      character.horses().erase(std::ranges::find(character.horses(), command.itemUid));
+    }
+    else if (hasEquippedItem)
+    {
+      const bool isItemAlreadyEquipped = std::ranges::contains(
+        character.characterEquipment(), command.itemUid);
+      if (not isItemAlreadyEquipped)
       {
-        // Add the mount back to the horse list.
-        character.horses().emplace_back(character.mountUid());
-        character.mountUid() = command.itemUid;
-
-        // Remove the new mount from the horse list.
-        character.horses().erase(std::ranges::find(character.horses(), command.itemUid));
+        character.characterEquipment().emplace_back(command.itemUid);
       }
-      else if (hasEquippedItem)
-      {
-        const bool isItemAlreadyEquipped = std::ranges::contains(
-          character.characterEquipment(), command.itemUid);
-        if (not isItemAlreadyEquipped)
-        {
-          character.characterEquipment().emplace_back(command.itemUid);
-        }
-      }
-    });
+    }
+  });
 
   if (equipSuccessful)
   {
@@ -1529,20 +1526,20 @@ void RanchDirector::HandleRemoveEquipment(
     clientContext.characterUid);
 
   characterRecord.Mutable([&command](data::Character& character)
+  {
+    const bool ownsItem = std::ranges::contains(
+      character.items(), command.itemUid);
+
+    // You can't really unequip a horse. You can only switch to a different one.
+    // At least in Alicia 1.0.
+
+    if (ownsItem)
     {
-      const bool ownsItem = std::ranges::contains(
-        character.items(), command.itemUid);
-
-      // You can't really unequip a horse. You can only switch to a different one.
-      // At least in Alicia 1.0.
-
-      if (ownsItem)
-      {
-        const auto range = std::ranges::remove(
-          character.characterEquipment(), command.itemUid);
-        character.characterEquipment().erase(range.begin(), range.end());
-      }
-    });
+      const auto range = std::ranges::remove(
+        character.characterEquipment(), command.itemUid);
+      character.characterEquipment().erase(range.begin(), range.end());
+    }
+  });
 
   // We really don't need to cancel the unequip.
   // Always respond with OK.
@@ -1569,11 +1566,11 @@ void RanchDirector::HandleCreateGuild(
 
   bool canCreateGuild = false;
   characterRecord.Mutable([&command, &canCreateGuild](data::Character& character)
-    {
-      // todo money check
-      // todo name check
-      canCreateGuild = true;
-    });
+  {
+    // todo money check
+    // todo name check
+    canCreateGuild = true;
+  });
 
   if (not canCreateGuild)
   {
@@ -1595,16 +1592,16 @@ void RanchDirector::HandleCreateGuild(
 
   const auto guildRecord = GetServerInstance().GetDataDirector().CreateGuild();
   guildRecord.Mutable([&response, &command](data::Guild& guild)
-    {
-      guild.name = command.name;
+  {
+    guild.name = command.name;
 
-      response.uid = guild.uid();
-    });
+    response.uid = guild.uid();
+  });
 
   characterRecord.Mutable([&response](data::Character& character)
-    {
-      character.guildUid = response.uid;
-    });
+  {
+    character.guildUid = response.uid;
+  });
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -1674,26 +1671,26 @@ void RanchDirector::BroadcastEquipmentUpdate(ClientId clientId)
     .characterUid = clientContext.characterUid};
 
   characterRecord.Immutable([this, &notify](const data::Character& character)
+  {
+    // Character equipment
+    const auto characterEquipment = GetServerInstance().GetDataDirector().GetItems().Get(
+      character.characterEquipment());
+    protocol::BuildProtocolItems(notify.characterEquipment, *characterEquipment);
+
+    // Mount equipment
+    const auto mountEquipment = GetServerInstance().GetDataDirector().GetItems().Get(
+      character.mountEquipment());
+    protocol::BuildProtocolItems(notify.mountEquipment, *mountEquipment);
+
+    // Mount
+    const auto mountRecord = GetServerInstance().GetDataDirector().GetHorses().Get(
+      character.mountUid());
+
+    mountRecord->Immutable([&notify](const data::Horse& mount)
     {
-      // Character equipment
-      const auto characterEquipment = GetServerInstance().GetDataDirector().GetItems().Get(
-        character.characterEquipment());
-      protocol::BuildProtocolItems(notify.characterEquipment, *characterEquipment);
-
-      // Mount equipment
-      const auto mountEquipment = GetServerInstance().GetDataDirector().GetItems().Get(
-        character.mountEquipment());
-      protocol::BuildProtocolItems(notify.mountEquipment, *mountEquipment);
-
-      // Mount
-      const auto mountRecord = GetServerInstance().GetDataDirector().GetHorses().Get(
-        character.mountUid());
-
-      mountRecord->Immutable([&notify](const data::Horse& mount)
-        {
-          protocol::BuildProtocolHorse(notify.mount, mount);
-        });
+      protocol::BuildProtocolHorse(notify.mount, mount);
     });
+  });
 
   // Broadcast to all the ranch clients.
   const auto& ranchInstance = _ranches[clientContext.rancherUid];
@@ -1735,11 +1732,11 @@ void RanchDirector::HandleUseItem(
     command.always1too,
     command.play == protocol::RanchCommandUseItem::Play::Bad
       ? "Bad"
-    : command.play == protocol::RanchCommandUseItem::Play::Good
-      ? "Good"
-    : command.play == protocol::RanchCommandUseItem::Play::CriticalGood
-      ? "Critical good"
-      : "Perfect");
+      : command.play == protocol::RanchCommandUseItem::Play::Good
+        ? "Good"
+        : command.play == protocol::RanchCommandUseItem::Play::CriticalGood
+          ? "Critical good"
+          : "Perfect");
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -1842,10 +1839,7 @@ void RanchDirector::HandleOpCmd(
     .feedback = "test",
     .observerState = protocol::RanchCommandOpCmdOK::Observer::Enabled};
 
-  _commandServer.QueueCommand<decltype(response)>(clientId, [response]()
-    {
-      return response;
-    });
+  _commandServer.QueueCommand<decltype(response)>(clientId, [response](){return response;});
 }
 
 void RanchDirector::HandleRequestLeagueTeamList(
@@ -1871,7 +1865,9 @@ void RanchDirector::HandleRequestLeagueTeamList(
       protocol::RanchCommandRequestLeagueTeamListOK::Member{
         .uid = 1,
         .points = 4000,
-        .name = "test"}}};
+        .name = "test"
+      }}
+  };
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
