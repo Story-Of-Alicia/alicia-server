@@ -80,8 +80,8 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
         {
           return protocol::RaceCommandCountdown{
             .timestamp = std::chrono::duration_cast<std::chrono::seconds>(
-              (std::chrono::steady_clock::now() + std::chrono::seconds(10)).time_since_epoch())
-              .count()};
+              (std::chrono::steady_clock::now() + std::chrono::seconds(10))
+                .time_since_epoch()).count()};
         });
     });
 
