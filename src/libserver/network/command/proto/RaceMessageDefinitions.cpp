@@ -271,16 +271,16 @@ void RaceCommandLeaveRoom::Write(
 }
 
 void RaceCommandLeaveRoom::Read(
-    RaceCommandLeaveRoom& command,
-    SourceStream& stream)
+  RaceCommandLeaveRoom& command,
+  SourceStream& stream)
 {
-    //Empty
+  // Empty
 }
 void RaceCommandLeaveRoomOK::Write(
   const RaceCommandLeaveRoomOK& command,
   SinkStream& stream)
 {
-   //Empty
+  // Empty
 }
 
 void RaceCommandLeaveRoomOK::Read(
@@ -295,6 +295,7 @@ void RaceCommandLeaveRoomNotify::Write(
   SinkStream& stream)
 {
   stream.Write(command.characterId);
+  stream.Write(command.unk0);
 }
 
 void RaceCommandLeaveRoomNotify::Read(
@@ -489,7 +490,7 @@ void RaceCommandChat::Write(
 }
 
 void RaceCommandChat::Read(
-RaceCommandChat& command,
+  RaceCommandChat& command,
   SourceStream& stream)
 {
   stream.Read(command.message)

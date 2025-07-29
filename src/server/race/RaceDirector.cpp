@@ -80,7 +80,8 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
         {
           return protocol::RaceCommandCountdown{
             .timestamp = std::chrono::duration_cast<std::chrono::seconds>(
-              (std::chrono::steady_clock::now() + std::chrono::seconds(10)).time_since_epoch()).count()};
+              (std::chrono::steady_clock::now() + std::chrono::seconds(10)).time_since_epoch())
+              .count()};
         });
     });
 
@@ -263,22 +264,41 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
     spdlog::warn("Client {} is not in a room", clientId);
     return;
   }
-  
+
   auto& roomInstance = _roomInstances[clientContext.roomUid];
   roomInstance.clients.erase(
     std::remove(roomInstance.clients.begin(), roomInstance.clients.end(), clientId),
     roomInstance.clients.end());
-    
+
   protocol::RaceCommandLeaveRoomOK response{};
-  
-  // todo: implement the deletion of rooms
-  
+
+  // todo: implement the deletion of rooms if the last player leaves
+
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
     {
       return response;
     });
+
+  protocol::RaceCommandLeaveRoomNotify notify{
+    .characterId = clientContext.characterUid,
+    .unk0 = 1};
+  // Notify other clients in the room
+  for (const ClientId& roomClientId : roomInstance.clients)
+  {
+    _commandServer.QueueCommand<protocol::RaceCommandLeaveRoomNotify>(
+      roomClientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
+
+  roomInstance.worldTracker.RemoveCharacter(clientContext.characterUid);
+  _clientContexts.erase(clientId);
+
+  spdlog::info("Client {} left the room {}", clientId, clientContext.roomUid);
 }
 void RaceDirector::HandleStartRace(
   ClientId clientId,
@@ -306,7 +326,7 @@ void RaceDirector::HandleStartRace(
         .unk7 = 3,
       }},
     .ip = GetConfig().listen.address.to_uint(),
-    .port = htons( GetConfig().listen.port),
+    .port = htons(GetConfig().listen.port),
   };
 
   // TODO: Send to all clients in the room

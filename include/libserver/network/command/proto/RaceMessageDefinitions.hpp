@@ -284,24 +284,24 @@ struct RaceCommandChangeRoomOptionsNotify
 
 struct RaceCommandLeaveRoom
 {
-    static Command GetCommand()
-    {
-      return Command::AcCmdCRLeaveRoom;
-    }
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRLeaveRoom;
+  }
 
-    //! Writes the command to a provided sink stream.
-    //! @param command Command.
-    //! @param stream Sink stream.
-    static void Write(
-      const RaceCommandLeaveRoom& command,
-      SinkStream& stream);
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RaceCommandLeaveRoom& command,
+    SinkStream& stream);
 
-    //! Reader a command from a provided source stream.
-    //! @param command Command.
-    //! @param stream Source stream.
-    static void Read(
-      RaceCommandLeaveRoom& command,
-      SourceStream& stream);
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RaceCommandLeaveRoom& command,
+    SourceStream& stream);
 };
 struct RaceCommandLeaveRoomOK
 {
@@ -327,6 +327,7 @@ struct RaceCommandLeaveRoomOK
 struct RaceCommandLeaveRoomNotify
 {
   uint32_t characterId{};
+  uint32_t unk0{};
   static Command GetCommand()
   {
     return Command::AcCmdCRLeaveRoomNotify;
