@@ -1590,8 +1590,6 @@ void RanchCommandHousingRepairNotify::Read(
 {
   throw std::runtime_error("Not implemented");
 }
-
-
 void RanchCommandMissionEvent::Write(
   const RanchCommandMissionEvent& command,
   SinkStream& stream)
