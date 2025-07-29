@@ -158,6 +158,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       HandleRequestGuildInfo(clientId, command);
     });
 
+  _commandServer.RegisterCommandHandler<protocol::RanchCommandUpdatePet>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleUpdatePet(clientId, command);
+    });
+
   _commandServer.RegisterCommandHandler<protocol::RanchCommandRequestNpcDressList>(
     [this](ClientId clientId, const auto& message)
     {
@@ -1653,7 +1659,15 @@ void RanchDirector::HandleUpdatePet(
   ClientId clientId,
   const protocol::RanchCommandUpdatePet& command)
 {
-}
+  const auto& clientContext = _clients[clientId];
+  server::data::Uid charUid = clientContext.characterUid;
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+characterRecord.Mutable([&command](data::Character& character)
+  {
+    character.petUid=command.petInfo.itemUid;
+  });}
 
 void RanchDirector::HandleRequestPetBirth(
   ClientId clientId,
