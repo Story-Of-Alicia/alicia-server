@@ -1459,6 +1459,40 @@ void RanchCommandIncubateEggOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void RanchCommandUserPetInfos::Write(
+  const RanchCommandUserPetInfos& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void RanchCommandUserPetInfos::Read(
+  RanchCommandUserPetInfos& command,
+  SourceStream& stream)
+{
+  // Empty.
+}
+
+void RanchCommandUserPetInfosOK::Write(
+  const RanchCommandUserPetInfosOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1)
+  .Write(command.petCount)
+  .Write(command.member3);
+  for (const auto& pet : command.pets)
+  {
+    stream.Write(pet);
+  }
+}
+
+void RanchCommandUserPetInfosOK::Read(
+  RanchCommandUserPetInfosOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void RanchCommandAchievementUpdateProperty::Write(
   const RanchCommandAchievementUpdateProperty& command,
   SinkStream& stream)

@@ -216,18 +216,19 @@ struct Character
     dao::Field<uint32_t> emblemId{0u};
   } appearance{};
 
-  dao::Field<Uid> petUid{InvalidUid};
   dao::Field<Uid> guildUid{InvalidUid};
-
+  
   dao::Field<std::vector<Uid>> gifts{};
   dao::Field<std::vector<Uid>> purchases{};
-
+  
   dao::Field<std::vector<Uid>> items{};
   dao::Field<std::vector<Uid>> characterEquipment{};
   dao::Field<std::vector<Uid>> mountEquipment{};
-
+  
   dao::Field<std::vector<Uid>> horses{};
+  dao::Field<std::vector<Uid>> pets{};
   dao::Field<Uid> mountUid{InvalidUid};
+  dao::Field<Uid> petUid{InvalidUid};
 
   dao::Field<std::vector<Uid>> eggs{};
 

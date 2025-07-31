@@ -199,6 +199,21 @@ void BuildProtocolPet(Pet& protocolPet, const data::Pet& petRecord)
 {
   protocolPet.name = petRecord.name();
   protocolPet.uid = petRecord.uid();
+  protocolPet.tid = petRecord.tid();
+}
+
+void BuildProtocolPets(
+  std::vector<Pet>& protocolPets,
+  const std::span<const Record<data::Pet>>& storedPets)
+{
+  for (const auto& storedPet : storedPets)
+  {
+    auto& protocolPet = protocolPets.emplace_back();
+    storedPet.Immutable([&protocolPet](const auto& storedPet)
+    {
+      BuildProtocolPet(protocolPet, storedPet);
+    });
+  }
 }
 
 void BuildProtocolHousing(

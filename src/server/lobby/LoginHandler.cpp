@@ -421,6 +421,18 @@ void LoginHandler::QueueUserLoginAccepted(
       }
 
       characterMountUid = character.mountUid();
+      if (character.petUid() != data::InvalidUid)
+        {
+          const auto petRecord = _lobbyDirector.GetServerInstance().GetDataDirector().GetPet(
+            character.petUid());
+          if (not petRecord)
+            throw std::runtime_error("Character pet not available");
+
+          petRecord.Immutable([&response](const data::Pet& pet)
+          {
+            protocol::BuildProtocolPet(response.pet, pet);
+          });
+        }
     });
 
   // Get the mounted horse record and fill the protocol data.

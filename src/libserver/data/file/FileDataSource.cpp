@@ -191,18 +191,19 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
     .legVolume = appearance["legVolume"].get<uint32_t>(),
     .emblemId = appearance["emblemId"].get<uint32_t>()};
 
-  character.petUid = json["petUid"].get<data::Uid>();
-  character.guildUid = json["guildUid"].get<data::Uid>();
-
-  character.gifts = json["gifts"].get<std::vector<data::Uid>>();
-  character.purchases = json["purchases"].get<std::vector<data::Uid>>();
-
-  character.items = json["inventory"].get<std::vector<data::Uid>>();
-  character.characterEquipment = json["characterEquipment"].get<std::vector<data::Uid>>();
-  character.mountEquipment = json["horseEquipment"].get<std::vector<data::Uid>>();
-
-  character.horses = json["horses"].get<std::vector<data::Uid>>();
-  character.mountUid = json["mountUid"].get<data::Uid>();
+    character.guildUid = json["guildUid"].get<data::Uid>();
+    
+    character.gifts = json["gifts"].get<std::vector<data::Uid>>();
+    character.purchases = json["purchases"].get<std::vector<data::Uid>>();
+    
+    character.items = json["inventory"].get<std::vector<data::Uid>>();
+    character.characterEquipment = json["characterEquipment"].get<std::vector<data::Uid>>();
+    character.mountEquipment = json["horseEquipment"].get<std::vector<data::Uid>>();
+    
+    character.horses = json["horses"].get<std::vector<data::Uid>>();
+    character.pets = json["pets"].get<std::vector<data::Uid>>();
+    character.mountUid = json["mountUid"].get<data::Uid>();
+    character.petUid = json["petUid"].get<data::Uid>();
 
   character.eggs = json["eggs"].get<std::vector<data::Uid>>();
 
@@ -250,19 +251,20 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   appearance["emblemId"] = character.appearance.emblemId();
   json["appearance"] = appearance;
 
-  json["petUid"] = character.petUid();
   json["guildUid"] = character.guildUid();
-
+  
   json["gifts"] = character.gifts();
   json["purchases"] = character.purchases();
-
+  
   json["inventory"] = character.items();
   json["characterEquipment"] = character.characterEquipment();
   json["horseEquipment"] = character.mountEquipment();
-
+  
   json["horses"] = character.horses();
+  json["pets"] = character.pets();
   json["mountUid"] = character.mountUid();
-
+  json["petUid"] = character.petUid();
+  
   json["eggs"] = character.eggs();
 
   json["housing"] = character.housing();

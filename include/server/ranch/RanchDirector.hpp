@@ -192,6 +192,10 @@ private:
     ClientId clientId,
     const protocol::RanchCommandRequestPetBirth& command);
 
+  void HandleUserPetInfos(
+    ClientId clientId,
+    const protocol::RanchCommandUserPetInfos& command);
+
   //! Broadcasts an equipment update of the character owned by the client
   //! to the currently connected ranch.
   //! @param clientId ID of the client.

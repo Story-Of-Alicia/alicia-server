@@ -70,6 +70,10 @@ void BuildProtocolPet(
   Pet& protocolPet,
   const data::Pet& petRecord);
 
+void BuildProtocolPets(
+  std::vector<Pet>& protocolPets,
+  const std::span<const Record<data::Pet>>& storedPets);
+
 void BuildProtocolHousing(
   Housing& protocolHousing,
   const data::Housing& housingRecord);

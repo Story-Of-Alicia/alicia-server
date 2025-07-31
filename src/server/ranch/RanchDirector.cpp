@@ -164,6 +164,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       HandleUpdatePet(clientId, command);
     });
 
+  _commandServer.RegisterCommandHandler<protocol::RanchCommandUserPetInfos>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleUserPetInfos(clientId, command);
+    });
+
   _commandServer.RegisterCommandHandler<protocol::RanchCommandRequestNpcDressList>(
     [this](ClientId clientId, const auto& message)
     {
@@ -1664,10 +1670,43 @@ void RanchDirector::HandleUpdatePet(
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-characterRecord.Mutable([&command](data::Character& character)
+  characterRecord.Mutable([&command](data::Character& character)
   {
     character.petUid=command.petInfo.itemUid;
-  });}
+  });
+}
+
+void RanchDirector::HandleUserPetInfos(
+  ClientId clientId,
+  const protocol::RanchCommandUserPetInfos& command)
+{
+  const auto& clientContext = _clients[clientId];
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+    
+  protocol::RanchCommandUserPetInfosOK response{
+    .member1 = 0,
+    .member3 = 0
+  };
+
+  characterRecord.Mutable([this,&command,&response](data::Character& character)
+  {
+    response.petCount=character.pets().size();
+
+    auto storedPetRecords = GetServerInstance().GetDataDirector().GetPets().Get(character.pets());
+    if(!storedPetRecords || storedPetRecords->empty())
+      return;
+
+    protocol::BuildProtocolPets(response.pets,
+      storedPetRecords.value());
+  });
+  
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response](){
+      return response;
+    });
+}
 
 void RanchDirector::HandleRequestPetBirth(
   ClientId clientId,

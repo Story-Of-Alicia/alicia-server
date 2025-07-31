@@ -2159,6 +2159,56 @@ struct RanchCommandIncubateEggOK
     SourceStream& stream);
 };
 
+struct RanchCommandUserPetInfos
+{
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUserPetInfos;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RanchCommandUserPetInfos& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RanchCommandUserPetInfos& command,
+    SourceStream& stream);
+};
+
+struct RanchCommandUserPetInfosOK
+{
+  uint32_t member1;
+  uint16_t petCount;
+  uint16_t member3;
+  std::vector<Pet> pets{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUserPetInfosOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RanchCommandUserPetInfosOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RanchCommandUserPetInfosOK& command,
+    SourceStream& stream);
+};
+
 struct RanchCommandHousingBuild
 {
   uint16_t housingTid{};
