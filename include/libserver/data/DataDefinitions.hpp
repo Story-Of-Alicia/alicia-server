@@ -232,6 +232,8 @@ struct Character
   dao::Field<std::vector<Uid>> eggs{};
 
   dao::Field<std::vector<Uid>> housing{};
+
+  dao::Field<bool> isLocked{true};
 };
 
 struct Horse

@@ -1184,4 +1184,22 @@ void LobbyCommandUpdateSystemContentNotify::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void LobbyCommandChangeRanchOption::Read(
+  LobbyCommandChangeRanchOption& command,
+  SourceStream& stream)
+{
+  stream.Read(command.unk0);
+  stream.Read(command.unk1);
+  stream.Read(command.unk2);
+}
+
+void LobbyCommandChangeRanchOptionOK::Write(
+  const LobbyCommandChangeRanchOptionOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0);
+  stream.Write(command.unk1);
+  stream.Write(command.unk2);
+}
+
 } // namespace server::protocol

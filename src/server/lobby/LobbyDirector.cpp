@@ -185,20 +185,48 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
       // If the rancher's uid is invalid randomize it.
       if (rancherUid == data::InvalidUid)
       {
-        auto randomCharacterUid = GetServerInstance().GetDataDirector().GetCharacters().GetKeys();
-        std::uniform_int_distribution<data::Uid> uidDistribution(
-          0, randomCharacterUid.size() - 1);
+        std::vector<data::Uid> availableRanches;
+        auto& characters = GetServerInstance().GetDataDirector().GetCharacters();
+        const auto& characterKeys = characters.GetKeys();
 
-        rancherUid = randomCharacterUid[uidDistribution(rd)];
+        for (const auto& uid : characterKeys)
+        {
+          const auto character = characters.Get(uid);
+          character->Immutable([&availableRanches, uid](const data::Character& character)
+          {
+            if (!character.isLocked())
+            {
+              availableRanches.push_back(uid);
+            }
+          });
+        }
+
+
+        if (!availableRanches.empty())
+        {
+          std::uniform_int_distribution<size_t> uidDistribution(0, availableRanches.size() - 1);
+          rancherUid = availableRanches[uidDistribution(rd)];
+        }
+        // If there are no unlocked ranches go back to user's ranch
+        else
+        {
+          rancherUid = clientContext.characterUid;
+        }
       }
 
-      QueueEnterRanchOK(clientId, rancherUid);
-    });
+    QueueEnterRanchOK(clientId, rancherUid);
+  });
 
   _commandServer.RegisterCommandHandler<protocol::LobbyCommandUpdateSystemContent>(
     [this](ClientId clientId, const auto& command)
     {
       HandleUpdateSystemContent(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandChangeRanchOption>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleChangeRanchOption(clientId, command);
     });
 }
 
@@ -700,6 +728,30 @@ void LobbyDirector::HandleUpdateSystemContent(
         return notify;
       });
   }
+}
+
+void LobbyDirector::HandleChangeRanchOption(
+  ClientId clientId,
+  const protocol::LobbyCommandChangeRanchOption& command)
+{
+  const auto& clientContext = _clientContext[clientId];
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+  clientContext.characterUid);
+  protocol::LobbyCommandChangeRanchOptionOK response{
+    .unk0 = command.unk0,
+    .unk1 = command.unk1,
+    .unk2 = command.unk2
+  };
+  characterRecord.Mutable([](data::Character& character){
+     character.isLocked() = !character.isLocked();
+  });
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 } // namespace server
