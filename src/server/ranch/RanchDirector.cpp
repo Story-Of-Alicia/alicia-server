@@ -1669,10 +1669,10 @@ void RanchDirector::HandleUpdatePet(
   server::data::Uid charUid = clientContext.characterUid;
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
-
+    
   characterRecord.Mutable([&command](data::Character& character)
   {
-    character.petUid=command.petInfo.itemUid;
+    character.petUid=command.petInfo.pet.uid;
   });
 }
 
