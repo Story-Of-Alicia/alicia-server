@@ -186,32 +186,29 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
       if (rancherUid == data::InvalidUid)
       {
         std::vector<data::Uid> availableRanches;
+
         auto& characters = GetServerInstance().GetDataDirector().GetCharacters();
         const auto& characterKeys = characters.GetKeys();
-
         for (const auto& uid : characterKeys)
         {
           const auto character = characters.Get(uid);
           character->Immutable([&availableRanches, uid](const data::Character& character)
           {
-            if (!character.isLocked())
-            {
-              availableRanches.push_back(uid);
-            }
+            // Only consider ranches that are unlocked,
+            // or the ranch the requesting character is the owner of.
+            if (character.isRanchLocked() && character.uid() != uid)
+              return;
+
+            availableRanches.emplace_back(character.uid());
           });
         }
 
+        // There is at least the ranch the requesting character is the owner of.
+        assert(availableRanches.empty());
 
-        if (!availableRanches.empty())
-        {
-          std::uniform_int_distribution<size_t> uidDistribution(0, availableRanches.size() - 1);
-          rancherUid = availableRanches[uidDistribution(rd)];
-        }
-        // If there are no unlocked ranches go back to user's ranch
-        else
-        {
-          rancherUid = clientContext.characterUid;
-        }
+        // Pick a random character from the available list to join the ranch of.
+        std::uniform_int_distribution<size_t> uidDistribution(0, availableRanches.size() - 1);
+        rancherUid = availableRanches[uidDistribution(rd)];
       }
 
     QueueEnterRanchOK(clientId, rancherUid);
@@ -743,7 +740,7 @@ void LobbyDirector::HandleChangeRanchOption(
     .unk2 = command.unk2
   };
   characterRecord.Mutable([](data::Character& character){
-     character.isLocked() = !character.isLocked();
+     character.isRanchLocked() = !character.isRanchLocked();
   });
 
   _commandServer.QueueCommand<decltype(response)>(

@@ -1731,7 +1731,6 @@ struct LobbyCommandChangeRanchOptionOK
     SourceStream& stream);
 };
 
-
 } // namespace server::protocol
 
 #endif // LOBBY_MESSAGE_DEFINES_HPP

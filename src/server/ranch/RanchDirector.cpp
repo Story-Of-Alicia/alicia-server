@@ -421,7 +421,7 @@ void RanchDirector::HandleRanchEnter(
       spdlog::warn("Housing records not available for rancher {} ({})", rancherName, character.uid());
     }
 
-    if (character.isLocked())
+    if (character.isRanchLocked())
     {
       response.bitset = protocol::RanchCommandEnterRanchOK::Bitset::IsLocked;
     }
@@ -1249,7 +1249,7 @@ std::vector<std::string> RanchDirector::HandleCommand(
     const std::string characterName = command[1];
 
     auto visitingCharacterUid = data::InvalidUid;
-    bool ranchLocked = false;
+    bool ranchLocked = true;
 
     const auto onlineCharacters = GetServerInstance().GetDataDirector().GetCharacters().GetKeys();
     for (const data::Uid onlineCharacterUid : onlineCharacters)
@@ -1263,16 +1263,12 @@ std::vector<std::string> RanchDirector::HandleCommand(
       {
         if (characterName == character.name())
         {
-          if (!character.isLocked())
+          if (not character.isRanchLocked())
           {
             visitingCharacterUid = character.uid();
-          } else
-          {
-            ranchLocked = true;
+            ranchLocked = false;
           }
-
         }
-
       });
 
       if (visitingCharacterUid != data::InvalidUid)
@@ -1286,6 +1282,7 @@ std::vector<std::string> RanchDirector::HandleCommand(
 
       return {std::format("Next time you enter the portal, you'll visit {}", characterName)};
     }
+
     if (ranchLocked)
     {
       return {std::format("This player's ranch is locked.", characterName)};
