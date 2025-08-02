@@ -514,7 +514,8 @@ void RaceCommandUpdatePet::Write(
   const RaceCommandUpdatePet& command,
   SinkStream& stream)
 {
-  throw std::runtime_error("Not implemented");
+  stream.Write(command.petInfo)
+   .Write(command.member2);
 }
 
 void RaceCommandUpdatePet::Read(
