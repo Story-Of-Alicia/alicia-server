@@ -204,7 +204,7 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
         }
 
         // There is at least the ranch the requesting character is the owner of.
-        assert(availableRanches.empty());
+        assert(!availableRanches.empty());
 
         // Pick a random character from the available list to join the ranch of.
         std::uniform_int_distribution<size_t> uidDistribution(0, availableRanches.size() - 1);
