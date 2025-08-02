@@ -18,7 +18,7 @@
  **/
 
 #include "server/ranch/RanchDirector.hpp"
-#include  "server/ServerInstance.hpp"
+#include "server/ServerInstance.hpp"
 
 #include "libserver/data/helper/ProtocolHelper.hpp"
 #include "libserver/registry/HorseRegistry.hpp"

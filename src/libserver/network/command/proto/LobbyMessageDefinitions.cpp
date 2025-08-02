@@ -229,11 +229,7 @@ void LobbyCommandLoginOK::Write(
     .Write(command.val20);
 
   // Pet
-  const auto& struct7 = command.pet;
-  stream.Write(struct7.uid)
-    .Write(struct7.tid)
-    .Write(struct7.name)
-    .Write(struct7.val3);
+  stream.Write(command.pet);
 }
 
 void LobbyCommandLoginOK::Read(

@@ -62,10 +62,7 @@ void WriteRacer(SinkStream& stream, const Racer& racer)
     .Write(racer.unk8.rent.mountUid)
     .Write(racer.unk8.rent.val1)
     .Write(racer.unk8.rent.val2);
-  stream.Write(racer.pet.uid)
-    .Write(racer.pet.tid)
-    .Write(racer.pet.name)
-    .Write(racer.pet.val3);
+  stream.Write(racer.pet);
   stream.Write(racer.guild.uid)
     .Write(racer.guild.val1)
     .Write(racer.guild.val2)
