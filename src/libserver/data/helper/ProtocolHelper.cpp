@@ -197,9 +197,11 @@ void BuildProtocolGuild(Guild& protocolGuild, const data::Guild& guildRecord)
 
 void BuildProtocolPet(Pet& protocolPet, const data::Pet& petRecord)
 {
+  protocolPet.petId = petRecord.petId();
+  protocolPet.member2 = 0; // Unused
   protocolPet.name = petRecord.name();
-  protocolPet.uid = petRecord.uid();
-  protocolPet.tid = petRecord.tid();
+  protocolPet.member4 = 0; // Unused
+
 }
 
 void BuildProtocolPets(

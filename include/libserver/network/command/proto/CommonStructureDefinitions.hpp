@@ -323,10 +323,10 @@ struct Rent
 //!
 struct Pet
 {
-  uint32_t uid{};
-  uint32_t tid{};
+  uint32_t petId{};
+  uint32_t member2{};
   std::string name{};
-  uint32_t val3{};
+  uint32_t member4{};
 
   static void Write(const Pet& value, SinkStream& stream);
   static void Read(Pet& value, SourceStream& stream);
@@ -353,7 +353,7 @@ struct Egg
 //!
 struct PetInfo
 {
-  uint32_t member1{};
+  uint32_t characterUid{};
   uint32_t itemUid{};
   Pet pet{};
   uint32_t member4{};

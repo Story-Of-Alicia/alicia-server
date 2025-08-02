@@ -147,9 +147,11 @@ struct Pet
 {
   //! A unique identifier.
   dao::Field<Uid> uid{InvalidUid};
-  //! A type identifier.
-  dao::Field<Tid> tid{InvalidTid};
-  //!
+  //! A Item tied to the pet.
+  dao::Field<Uid> ItemUid{InvalidUid};
+  //! A pet identifier.
+  dao::Field<Uid> petId{0};
+  //! A name of the pet.
   dao::Field<std::string> name{};
 };
 

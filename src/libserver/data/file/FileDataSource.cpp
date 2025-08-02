@@ -565,7 +565,8 @@ void server::FileDataSource::RetrievePet(data::Uid uid, data::Pet& pet)
   const auto json = nlohmann::json::parse(dataFile);
 
   pet.uid = json["uid"].get<data::Uid>();
-  pet.tid = json["tid"].get<data::Tid>();
+  pet.ItemUid = json["ItemUid"].get<data::Uid>();
+  pet.petId = json["petId"].get<data::Uid>();
   pet.name = json["name"].get<std::string>();
 }
 
@@ -583,7 +584,8 @@ void server::FileDataSource::StorePet(data::Uid uid, const data::Pet& pet)
 
   nlohmann::json json;
   json["uid"] = pet.uid();
-  json["tid"] = pet.tid();
+  json["ItemUid"] = pet.ItemUid();
+  json["petId"] = pet.petId();
   json["name"] = pet.name();
 
   dataFile << json.dump(2);

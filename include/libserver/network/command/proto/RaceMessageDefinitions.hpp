@@ -650,7 +650,10 @@ struct RaceCommandUpdatePet
   PetInfo petInfo{};
   //! optional
   uint32_t member2{};
-
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdatePet;
+  }
   //! Writes the command to a provided sink stream.
   //! @param command Command.
   //! @param stream Sink stream.

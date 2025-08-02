@@ -162,6 +162,10 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, auto& command)
     {
       HandleUpdatePet(clientId, command);
+      protocol::RaceCommandUpdatePet response;
+      response.petInfo = command.petInfo;
+      response.petInfo.characterUid = _clients[clientId].characterUid;
+      _commandServer.QueueCommand<decltype(response)>(clientId, [response](){return response;});
     });
 
   _commandServer.RegisterCommandHandler<protocol::RanchCommandUserPetInfos>(
@@ -1669,11 +1673,42 @@ void RanchDirector::HandleUpdatePet(
   server::data::Uid charUid = clientContext.characterUid;
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
-    
-  characterRecord.Mutable([&command](data::Character& character)
-  {
-    character.petUid=command.petInfo.pet.uid;
-  });
+  characterRecord.Mutable([this, &command, &charUid](data::Character& character)
+    {
+      auto storedPetRecords = GetServerInstance().GetDataDirector().GetPets().Get(character.pets());
+      auto petUid = data::InvalidUid;
+
+      if (not storedPetRecords || storedPetRecords->empty())
+      {
+        // If there are no pets, we can't update anything.
+        spdlog::warn("No pets found for character {}", charUid);
+        return;
+      }
+
+      for (const auto& record : *storedPetRecords)
+      {
+        record.Immutable([&command, &petUid](const data::Pet& pet)
+          {
+            if (pet.ItemUid() == command.petInfo.itemUid)
+            {
+              petUid = pet.uid();
+            }
+          }); 
+      }
+      if (petUid == data::InvalidUid)
+      {
+        auto petRecord = GetServerInstance().GetDataDirector().CreatePet();
+        petRecord.Mutable([&command, &petUid](data::Pet& pet)
+          {
+            pet.petId = command.petInfo.pet.petId;
+            pet.name = command.petInfo.pet.name;
+            pet.ItemUid = command.petInfo.itemUid;
+            petUid = pet.uid();
+          });
+          character.pets().emplace_back(petUid);
+      }
+      character.petUid = petUid;
+    });
 }
 
 void RanchDirector::HandleUserPetInfos(
@@ -1689,18 +1724,19 @@ void RanchDirector::HandleUserPetInfos(
     .member3 = 0
   };
 
-  characterRecord.Mutable([this,&command,&response](data::Character& character)
-  {
-    response.petCount=character.pets().size();
+  characterRecord.Mutable([this, &command, &response](data::Character& character)
+    {
+      
+      response.petCount = character.pets().size();
+      auto storedPetRecords = GetServerInstance().GetDataDirector().GetPets().Get(
+        character.pets());
+      if (!storedPetRecords || storedPetRecords->empty())
+        return;
 
-    auto storedPetRecords = GetServerInstance().GetDataDirector().GetPets().Get(character.pets());
-    if(!storedPetRecords || storedPetRecords->empty())
-      return;
+      protocol::BuildProtocolPets(response.pets,
+        storedPetRecords.value());
+    });
 
-    protocol::BuildProtocolPets(response.pets,
-      storedPetRecords.value());
-  });
-  
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response](){
