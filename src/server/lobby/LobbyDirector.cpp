@@ -185,20 +185,45 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
       // If the rancher's uid is invalid randomize it.
       if (rancherUid == data::InvalidUid)
       {
-        auto randomCharacterUid = GetServerInstance().GetDataDirector().GetCharacters().GetKeys();
-        std::uniform_int_distribution<data::Uid> uidDistribution(
-          0, randomCharacterUid.size() - 1);
+        std::vector<data::Uid> availableRanches;
 
-        rancherUid = randomCharacterUid[uidDistribution(rd)];
+        auto& characters = GetServerInstance().GetDataDirector().GetCharacters();
+        const auto& characterKeys = characters.GetKeys();
+        for (const auto& uid : characterKeys)
+        {
+          const auto character = characters.Get(uid);
+          character->Immutable([&availableRanches, uid](const data::Character& character)
+          {
+            // Only consider ranches that are unlocked,
+            // or the ranch the requesting character is the owner of.
+            if (character.isRanchLocked() && character.uid() != uid)
+              return;
+
+            availableRanches.emplace_back(character.uid());
+          });
+        }
+
+        // There is at least the ranch the requesting character is the owner of.
+        assert(!availableRanches.empty());
+
+        // Pick a random character from the available list to join the ranch of.
+        std::uniform_int_distribution<size_t> uidDistribution(0, availableRanches.size() - 1);
+        rancherUid = availableRanches[uidDistribution(rd)];
       }
 
-      QueueEnterRanchOK(clientId, rancherUid);
-    });
+    QueueEnterRanchOK(clientId, rancherUid);
+  });
 
   _commandServer.RegisterCommandHandler<protocol::LobbyCommandUpdateSystemContent>(
     [this](ClientId clientId, const auto& command)
     {
       HandleUpdateSystemContent(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandChangeRanchOption>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleChangeRanchOption(clientId, command);
     });
 }
 
@@ -700,6 +725,30 @@ void LobbyDirector::HandleUpdateSystemContent(
         return notify;
       });
   }
+}
+
+void LobbyDirector::HandleChangeRanchOption(
+  ClientId clientId,
+  const protocol::LobbyCommandChangeRanchOption& command)
+{
+  const auto& clientContext = _clientContext[clientId];
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+  clientContext.characterUid);
+  protocol::LobbyCommandChangeRanchOptionOK response{
+    .unk0 = command.unk0,
+    .unk1 = command.unk1,
+    .unk2 = command.unk2
+  };
+  characterRecord.Mutable([](data::Character& character){
+     character.isRanchLocked() = !character.isRanchLocked();
+  });
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 } // namespace server

@@ -160,6 +160,10 @@ private:
     ClientId clientId,
     const protocol::LobbyCommandUpdateSystemContent& command);
 
+  void HandleChangeRanchOption(
+    ClientId clientId,
+    const protocol::LobbyCommandChangeRanchOption& command);
+
   //!
   ServerInstance& _serverInstance;
   //!

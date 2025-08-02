@@ -1679,6 +1679,58 @@ struct LobbyCommandUpdateSystemContentNotify
     SourceStream& stream);
 };
 
+struct LobbyCommandChangeRanchOption
+{
+  uint32_t unk0{};
+  uint16_t unk1{};
+  uint8_t unk2{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLChangeRanchOption;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const LobbyCommandChangeRanchOption& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    LobbyCommandChangeRanchOption& command,
+    SourceStream& stream);
+};
+
+struct LobbyCommandChangeRanchOptionOK
+{
+  uint32_t unk0{};
+  uint16_t unk1{};
+  uint8_t unk2{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLChangeRanchOptionOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const LobbyCommandChangeRanchOptionOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    LobbyCommandChangeRanchOptionOK& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // LOBBY_MESSAGE_DEFINES_HPP

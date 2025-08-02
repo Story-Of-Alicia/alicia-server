@@ -102,8 +102,8 @@ struct RanchCommandEnterRanchOK
 
   enum class Bitset : uint32_t
   {
-    IsLocked = 1,
-  } bitset{0};
+    IsLocked = 2,
+  } bitset{};
 
   uint32_t incubatorSlotOne{2};
   uint32_t incubatorSlotTwo{1};

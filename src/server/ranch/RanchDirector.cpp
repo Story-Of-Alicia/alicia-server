@@ -420,6 +420,11 @@ void RanchDirector::HandleRanchEnter(
     {
       spdlog::warn("Housing records not available for rancher {} ({})", rancherName, character.uid());
     }
+
+    if (character.isRanchLocked())
+    {
+      response.bitset = protocol::RanchCommandEnterRanchOK::Bitset::IsLocked;
+    }
   });
 
   // Add the character to the ranch.
@@ -1244,6 +1249,7 @@ std::vector<std::string> RanchDirector::HandleCommand(
     const std::string characterName = command[1];
 
     auto visitingCharacterUid = data::InvalidUid;
+    bool ranchLocked = true;
 
     const auto onlineCharacters = GetServerInstance().GetDataDirector().GetCharacters().GetKeys();
     for (const data::Uid onlineCharacterUid : onlineCharacters)
@@ -1253,10 +1259,16 @@ std::vector<std::string> RanchDirector::HandleCommand(
       if (not onlineCharacterRecord)
         continue;
 
-      onlineCharacterRecord->Immutable([&visitingCharacterUid, &characterName](const data::Character& character)
+      onlineCharacterRecord->Immutable([&visitingCharacterUid, &characterName, &ranchLocked](const data::Character& character)
       {
         if (characterName == character.name())
-          visitingCharacterUid = character.uid();
+        {
+          if (not character.isRanchLocked())
+          {
+            visitingCharacterUid = character.uid();
+            ranchLocked = false;
+          }
+        }
       });
 
       if (visitingCharacterUid != data::InvalidUid)
@@ -1269,6 +1281,11 @@ std::vector<std::string> RanchDirector::HandleCommand(
         clientContext.characterUid, visitingCharacterUid);
 
       return {std::format("Next time you enter the portal, you'll visit {}", characterName)};
+    }
+
+    if (ranchLocked)
+    {
+      return {std::format("This player's ranch is locked.", characterName)};
     }
 
     return {std::format("Nobody with name '{}' online. Use //online to view online player.", characterName)};
