@@ -162,10 +162,6 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, auto& command)
     {
       HandleUpdatePet(clientId, command);
-      protocol::RaceCommandUpdatePet response;
-      response.petInfo = command.petInfo;
-      response.petInfo.characterUid = _clients[clientId].characterUid;
-      _commandServer.QueueCommand<decltype(response)>(clientId, [response](){return response;});
     });
 
   _commandServer.RegisterCommandHandler<protocol::RanchCommandUserPetInfos>(
@@ -1670,10 +1666,10 @@ void RanchDirector::HandleUpdatePet(
   const protocol::RanchCommandUpdatePet& command)
 {
   const auto& clientContext = _clients[clientId];
-  server::data::Uid charUid = clientContext.characterUid;
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
-  characterRecord.Mutable([this, &command, &charUid](data::Character& character)
+
+  characterRecord.Mutable([this, &command](data::Character& character)
     {
       auto storedPetRecords = GetServerInstance().GetDataDirector().GetPets().Get(character.pets());
       auto petUid = data::InvalidUid;
@@ -1681,7 +1677,7 @@ void RanchDirector::HandleUpdatePet(
       if (not storedPetRecords || storedPetRecords->empty())
       {
         // If there are no pets, we can't update anything.
-        spdlog::warn("No pets found for character {}", charUid);
+        spdlog::warn("No pets found for character {}", command.petInfo.characterUid);
         return;
       }
 
@@ -1689,7 +1685,7 @@ void RanchDirector::HandleUpdatePet(
       {
         record.Immutable([&command, &petUid](const data::Pet& pet)
           {
-            if (pet.ItemUid() == command.petInfo.itemUid)
+            if (pet.itemUid() == command.petInfo.itemUid)
             {
               petUid = pet.uid();
             }
@@ -1702,12 +1698,19 @@ void RanchDirector::HandleUpdatePet(
           {
             pet.petId = command.petInfo.pet.petId;
             pet.name = command.petInfo.pet.name;
-            pet.ItemUid = command.petInfo.itemUid;
+            pet.itemUid = command.petInfo.itemUid;
             petUid = pet.uid();
           });
           character.pets().emplace_back(petUid);
       }
       character.petUid = petUid;
+    });
+  protocol::RaceCommandUpdatePet response;
+  response.petInfo = command.petInfo;
+  response.petInfo.characterUid = _clients[clientId].characterUid;
+  _commandServer.QueueCommand<decltype(response)>(clientId, [response]()
+    {
+      return response;
     });
 }
 

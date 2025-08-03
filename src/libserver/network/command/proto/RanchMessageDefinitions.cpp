@@ -1478,8 +1478,8 @@ void RanchCommandUserPetInfosOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.member1)
-  .Write(command.petCount)
-  .Write(command.member3);
+    .Write(command.petCount)
+    .Write(command.member3);
   for (const auto& pet : command.pets)
   {
     stream.Write(pet);

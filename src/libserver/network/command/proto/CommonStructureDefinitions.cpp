@@ -505,13 +505,7 @@ void RanchCharacter::Write(const RanchCharacter& ranchCharacter, SinkStream& str
 
   // Pet
   const auto& struct7 = ranchCharacter.pet;
-  stream.Write(struct7.petId)
-    .Write(struct7.member2)
-    .Write(struct7.name)
-    .Write(struct7.member4);
-
-  stream.Write(ranchCharacter.unk4)
-    .Write(ranchCharacter.unk5);
+  stream.Write(ranchCharacter.pet);
 }
 
 void RanchCharacter::Read(RanchCharacter& value, SourceStream& stream)

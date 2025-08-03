@@ -148,7 +148,7 @@ struct Pet
   //! A unique identifier.
   dao::Field<Uid> uid{InvalidUid};
   //! A Item tied to the pet.
-  dao::Field<Uid> ItemUid{InvalidUid};
+  dao::Field<Uid> itemUid{InvalidUid};
   //! A pet identifier.
   dao::Field<Uid> petId{0};
   //! A name of the pet.
