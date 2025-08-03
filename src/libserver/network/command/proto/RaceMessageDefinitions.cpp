@@ -515,7 +515,7 @@ void RaceCommandUpdatePet::Write(
   SinkStream& stream)
 {
   stream.Write(command.petInfo)
-   .Write(command.member2);
+   .Write(command.actionBitset);
 }
 
 void RaceCommandUpdatePet::Read(
@@ -524,7 +524,7 @@ void RaceCommandUpdatePet::Read(
 {
   stream.Read(command.petInfo);
   if (stream.GetCursor() - stream.Size() > 4)
-    stream.Read(command.member2);
+    stream.Read(command.actionBitset);
 }
 
 void RaceCommandUpdatePetCancel::Write(

@@ -1987,7 +1987,7 @@ struct RanchCommandUpdatePet
 {
   PetInfo petInfo{};
   //! optional
-  uint32_t member2{};
+  uint32_t actionBitset{}; // 7 - rename
 
   static Command GetCommand()
   {

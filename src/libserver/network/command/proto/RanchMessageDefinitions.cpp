@@ -1368,7 +1368,7 @@ void RanchCommandUpdatePet::Read(
 {
   stream.Read(command.petInfo);
   if (stream.GetCursor() - stream.Size() > 4)
-    stream.Read(command.member2);
+    stream.Read(command.actionBitset);
 }
 
 void RanchCommandRequestPetBirth::Write(
