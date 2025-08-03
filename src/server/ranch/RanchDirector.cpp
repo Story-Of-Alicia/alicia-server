@@ -1679,7 +1679,6 @@ void RanchDirector::HandleUpdatePet(
       {
         // No pets found for the character.
         spdlog::warn("No pets found for character {}", command.petInfo.characterUid);
-        return;
       }
 
       for (const auto& record : *storedPetRecords)
