@@ -1669,21 +1669,23 @@ void RanchDirector::HandleUpdatePet(
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  characterRecord.Mutable([this, &command](data::Character& character)
+  characterRecord.Mutable(
+    [this, &command](data::Character& character)
     {
       auto storedPetRecords = GetServerInstance().GetDataDirector().GetPets().Get(character.pets());
       auto petUid = data::InvalidUid;
 
       if (not storedPetRecords || storedPetRecords->empty())
       {
-        // If there are no pets, we can't update anything.
+        // No pets found for the character.
         spdlog::warn("No pets found for character {}", command.petInfo.characterUid);
         return;
       }
 
       for (const auto& record : *storedPetRecords)
       {
-        record.Immutable([&command, &petUid](const data::Pet& pet)
+        record.Immutable(
+          [&command, &petUid](const data::Pet& pet)
           {
             if (pet.itemUid() == command.petInfo.itemUid)
             {
@@ -1691,18 +1693,23 @@ void RanchDirector::HandleUpdatePet(
             }
           }); 
       }
+
       if (petUid == data::InvalidUid)
       {
         auto petRecord = GetServerInstance().GetDataDirector().CreatePet();
-        petRecord.Mutable([&command, &petUid](data::Pet& pet)
+        petRecord.Mutable(
+          [&command, &petUid](data::Pet& pet)
           {
             pet.petId = command.petInfo.pet.petId;
             pet.name = command.petInfo.pet.name;
             pet.itemUid = command.petInfo.itemUid;
+
             petUid = pet.uid();
           });
+
           character.pets().emplace_back(petUid);
       }
+
       character.petUid = petUid;
     });
   protocol::RaceCommandUpdatePet response;
@@ -1727,9 +1734,9 @@ void RanchDirector::HandleUserPetInfos(
     .member3 = 0
   };
 
-  characterRecord.Mutable([this, &command, &response](data::Character& character)
+  characterRecord.Mutable(
+    [this, &command, &response](data::Character& character)
     {
-      
       response.petCount = character.pets().size();
       auto storedPetRecords = GetServerInstance().GetDataDirector().GetPets().Get(
         character.pets());
