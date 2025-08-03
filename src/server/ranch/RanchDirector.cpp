@@ -663,12 +663,20 @@ void RanchDirector::HandleChat(
 
   const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
 
-  const auto& sender = characterRecord.Immutable();
-  const auto& rancher = clientContext.characterUid == clientContext.visitingRancherUid
-    ? sender
-    : rancherRecord.Immutable();
+  const std::string message = chat.message;
+  std::string sendersName;
+  bool isSenderOp = false;
 
-  spdlog::debug("[{}'s ranch] {}: {}", rancher.name(), sender.name(), chat.message);
+  characterRecord.Immutable([&sendersName, &isSenderOp](const data::Character& character)
+  {
+    sendersName = character.name();
+    isSenderOp = character.role() == data::Character::Role::GameMaster;
+  });
+
+  rancherRecord.Immutable([&sendersName, &message](const data::Character& rancher)
+  {
+    spdlog::debug("[{}'s ranch] {}: {}", rancher.name(), sendersName, message);
+  });
 
   if (chat.message.starts_with("//"))
   {
@@ -686,9 +694,9 @@ void RanchDirector::HandleChat(
   }
 
   protocol::AcCmdCRRanchChatNotify response{
-    .author = sender.name(),
-    .message = chat.message,
-    .isBlue = sender.role() == data::Character::Role::GameMaster};
+    .author = sendersName,
+    .message = message,
+    .isBlue = isSenderOp};
 
   for (const auto ranchClientId : ranchInstance.clients)
   {
