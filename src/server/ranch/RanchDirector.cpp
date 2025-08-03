@@ -1679,6 +1679,7 @@ void RanchDirector::HandleUpdatePet(
       {
         // No pets found for the character.
         spdlog::warn("No pets found for character {}", command.petInfo.characterUid);
+        // TODO: When Handle Pet Birth exists, this should have a return 
       }
 
       for (const auto& record : *storedPetRecords)
@@ -1695,6 +1696,7 @@ void RanchDirector::HandleUpdatePet(
 
       if (petUid == data::InvalidUid)
       {
+        // Only for Prototype purposes, later will be handled by HandlePetBirth.
         auto petRecord = GetServerInstance().GetDataDirector().CreatePet();
         petRecord.Mutable(
           [&command, &petUid](data::Pet& pet)
