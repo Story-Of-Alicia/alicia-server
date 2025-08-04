@@ -229,11 +229,7 @@ void LobbyCommandLoginOK::Write(
     .Write(command.val20);
 
   // Pet
-  const auto& struct7 = command.pet;
-  stream.Write(struct7.uid)
-    .Write(struct7.tid)
-    .Write(struct7.name)
-    .Write(struct7.val3);
+  stream.Write(command.pet);
 }
 
 void LobbyCommandLoginOK::Read(
@@ -732,7 +728,7 @@ void LobbyCommandEnterRanch::Read(
   LobbyCommandEnterRanch& command,
   SourceStream& stream)
 {
-  stream.Read(command.characterUid)
+  stream.Read(command.rancherUid)
     .Read(command.unk1)
     .Read(command.unk2);
 }
@@ -1182,6 +1178,24 @@ void LobbyCommandUpdateSystemContentNotify::Read(
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
+}
+
+void LobbyCommandChangeRanchOption::Read(
+  LobbyCommandChangeRanchOption& command,
+  SourceStream& stream)
+{
+  stream.Read(command.unk0)
+    .Read(command.unk1)
+    .Read(command.unk2);
+}
+
+void LobbyCommandChangeRanchOptionOK::Write(
+  const LobbyCommandChangeRanchOptionOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.unk2);
 }
 
 } // namespace server::protocol

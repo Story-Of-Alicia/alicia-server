@@ -56,6 +56,7 @@ public:
   //!
   void BroadcastUpdateMountInfoNotify(
     data::Uid characterUid,
+    data::Uid rancherUid,
     data::Uid horseUid);
 
   ServerInstance& GetServerInstance();
@@ -64,11 +65,13 @@ public:
 private:
   struct ClientContext
   {
+    bool isAuthorized{false};
     //! Unique ID of the client's character.
     data::Uid characterUid{data::InvalidUid};
     //! Unique ID of the owner of the ranch the client is visiting.
-    data::Uid rancherUid{data::InvalidUid};
+    data::Uid visitingRancherUid{data::InvalidUid};
 
+    
     uint8_t busyState{0};
   };
 
@@ -80,6 +83,10 @@ private:
     std::unordered_set<ClientId> clients;
   };
 
+  //! Get client context.
+  //! @returns Client context.
+  ClientContext& GetAuthorizedClientContext(ClientId clientId);
+
   //! Get the client context by the character's unique ID.
   //! @param characterUid UID of the character.
   //! @returns Client context.
@@ -88,23 +95,33 @@ private:
   //! Handles the ranch enter command.
   //! @param clientId ID of the client
   //! @param command Command
-  void HandleRanchEnter(
+  void HandleEnterRanch(
     ClientId clientId,
-    const protocol::RanchCommandRanchEnter& command);
+    const protocol::AcCmdCREnterRanch& command);
 
-  //!
   void HandleRanchLeave(
     ClientId clientId);
 
-  //!
+  void HandleChat(
+    ClientId clientId,
+    const protocol::AcCmdCRRanchChat& command);
+
+  std::vector<std::string> HandleCommand(
+    ClientId clientId,
+    const std::string& message);
+
+  void SendChat(
+    ClientId clientId,
+    const protocol::AcCmdCRRanchChatNotify& chat);
+
   void HandleSnapshot(
     ClientId clientId,
-    const protocol::RanchCommandRanchSnapshot& command);
+    const protocol::AcCmdCRRanchSnapshot& command);
 
   //!
   void HandleCmdAction(
     ClientId clientId,
-    const protocol::RanchCommandRanchCmdAction& command);
+    const protocol::AcCmdCRRanchCmdAction& command);
 
   //!
   void HandleRanchStuff(
@@ -156,18 +173,6 @@ private:
     ClientId clientId,
     const protocol::RanchCommandRequestNpcDressList& requestNpcDressList);
 
-  void HandleChat(
-    ClientId clientId,
-    const protocol::RanchCommandChat& command);
-
-  std::vector<std::string> HandleCommand(
-    ClientId clientId,
-    const std::string& message);
-
-  void SendChat(
-    ClientId clientId,
-    const protocol::RanchCommandChatNotify& chat);
-
   void HandleWearEquipment(
     ClientId clientId,
     const protocol::RanchCommandWearEquipment& command);
@@ -186,11 +191,15 @@ private:
 
   void HandleUpdatePet(
     ClientId clientId,
-    const protocol::RanchCommandUpdatePet& command);
+    const protocol::AcCmdCRUpdatePet& command);
 
   void HandleRequestPetBirth(
     ClientId clientId,
     const protocol::RanchCommandRequestPetBirth& command);
+
+  void HandleUserPetInfos(
+    ClientId clientId,
+    const protocol::RanchCommandUserPetInfos& command);
 
   //! Broadcasts an equipment update of the character owned by the client
   //! to the currently connected ranch.

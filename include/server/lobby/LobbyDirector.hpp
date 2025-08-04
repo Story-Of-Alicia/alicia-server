@@ -160,6 +160,10 @@ private:
     ClientId clientId,
     const protocol::LobbyCommandUpdateSystemContent& command);
 
+  void HandleChangeRanchOption(
+    ClientId clientId,
+    const protocol::LobbyCommandChangeRanchOption& command);
+
   //!
   ServerInstance& _serverInstance;
   //!
@@ -177,7 +181,7 @@ protected:
   };
 
   protocol::LobbyCommandLoginOK::SystemContent _systemContent{
-    .values = {{4, 0}, {16, 1}}};
+    .values = {{4, 0}, {16, 0}, {21, 0}, {22, 0}}};
   
   //!
   std::unordered_map<ClientId, ClientContext> _clientContext;

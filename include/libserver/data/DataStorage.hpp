@@ -57,6 +57,7 @@ public:
   //! @param mutex Pointer to value's mutex.
   Record(Data* const value, std::shared_mutex* const mutex)
     : _mutex(mutex)
+    , _lock(*_mutex, std::defer_lock)
     , _value(value)
   {
   }
@@ -72,6 +73,7 @@ public:
   //! Move constructor.
   Record(Record&& other) noexcept
     : _mutex(other._mutex)
+    , _lock(std::move(other._lock))
     , _value(other._value)
   {
   }
@@ -80,6 +82,7 @@ public:
   Record& operator=(Record&& other) noexcept
   {
     _mutex = other._mutex;
+    _lock = std::move(other._lock);
     _value = other._value;
 
     return *this;
@@ -125,9 +128,20 @@ public:
     consumer(*_value);
   }
 
+  const Data& Immutable() const
+  {
+    if (not IsAvailable())
+      throw std::runtime_error("Value of the record is unavailable");
+
+    _lock.lock();
+    return *_value;
+  }
+
 private:
   //! An access mutex of the value.
   mutable std::shared_mutex* _mutex;
+  //! A unique lock.
+  mutable std::unique_lock<std::shared_mutex> _lock;
   //! A value.
   Data* _value;
 };

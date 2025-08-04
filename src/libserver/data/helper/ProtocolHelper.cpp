@@ -197,8 +197,25 @@ void BuildProtocolGuild(Guild& protocolGuild, const data::Guild& guildRecord)
 
 void BuildProtocolPet(Pet& protocolPet, const data::Pet& petRecord)
 {
+  protocolPet.petId = petRecord.petId();
+  protocolPet.member2 = 0; // Unused
   protocolPet.name = petRecord.name();
-  protocolPet.uid = petRecord.uid();
+  protocolPet.member4 = 0; // Unused
+
+}
+
+void BuildProtocolPets(
+  std::vector<Pet>& protocolPets,
+  const std::span<const Record<data::Pet>>& storedPets)
+{
+  for (const auto& storedPet : storedPets)
+  {
+    auto& protocolPet = protocolPets.emplace_back();
+    storedPet.Immutable([&protocolPet](const auto& storedPet)
+    {
+      BuildProtocolPet(protocolPet, storedPet);
+    });
+  }
 }
 
 void BuildProtocolHousing(

@@ -412,11 +412,24 @@ void LoginHandler::QueueUserLoginAccepted(
         const auto guildRecord = _lobbyDirector.GetServerInstance().GetDataDirector().GetGuild(
           character.guildUid());
         if (not guildRecord)
-          throw std::runtime_error("Character guild not available");
+          throw std::runtime_error("Character's guild not available");
 
         guildRecord.Immutable([&response](const data::Guild& guild)
         {
           protocol::BuildProtocolGuild(response.guild, guild);
+        });
+      }
+
+      if (character.petUid() != data::InvalidUid)
+      {
+        const auto petRecord =  _lobbyDirector.GetServerInstance().GetDataDirector().GetPet(
+          character.petUid());
+        if (not petRecord)
+          throw std::runtime_error("Character's pet not available");
+
+        petRecord.Immutable([&response](const data::Pet& pet)
+        {
+          protocol::BuildProtocolPet(response.pet, pet);
         });
       }
 

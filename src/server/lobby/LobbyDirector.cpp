@@ -172,6 +172,7 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
     {
       // this is just for prototype, it can suck
       auto& clientContext = _clientContext[clientId];
+      const auto requestingCharacterUid = clientContext.characterUid;
 
       data::Uid rancherUid = data::InvalidUid;
 
@@ -185,20 +186,49 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
       // If the rancher's uid is invalid randomize it.
       if (rancherUid == data::InvalidUid)
       {
-        auto randomCharacterUid = GetServerInstance().GetDataDirector().GetCharacters().GetKeys();
-        std::uniform_int_distribution<data::Uid> uidDistribution(
-          0, randomCharacterUid.size() - 1);
+        std::vector<data::Uid> availableRanches;
 
-        rancherUid = randomCharacterUid[uidDistribution(rd)];
+        auto& characters = GetServerInstance().GetDataDirector().GetCharacters();
+        const auto& characterKeys = characters.GetKeys();
+
+        for (const auto& randomRancherUid : characterKeys)
+        {
+          const auto character = characters.Get(randomRancherUid);
+          character->Immutable([&availableRanches, requestingCharacterUid](const data::Character& character)
+          {
+            // Only consider ranches that are unlocked and that
+            // do not belong to the character that requested the random ranch.
+            if (character.isRanchLocked() || character.uid() == requestingCharacterUid)
+              return;
+
+            availableRanches.emplace_back(character.uid());
+          });
+        }
+
+        // There must be at least the ranch the requesting character is the owner of.
+        if (availableRanches.empty())
+        {
+          availableRanches.emplace_back(clientContext.characterUid);
+        }
+
+        // Pick a random character from the available list to join the ranch of.
+        std::uniform_int_distribution<size_t> uidDistribution(0, availableRanches.size() - 1);
+        rancherUid = availableRanches[uidDistribution(rd)];
       }
 
-      QueueEnterRanchOK(clientId, rancherUid);
-    });
+    QueueEnterRanchOK(clientId, rancherUid);
+  });
 
   _commandServer.RegisterCommandHandler<protocol::LobbyCommandUpdateSystemContent>(
     [this](ClientId clientId, const auto& command)
     {
       HandleUpdateSystemContent(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::LobbyCommandChangeRanchOption>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleChangeRanchOption(clientId, command);
     });
 }
 
@@ -269,7 +299,6 @@ void LobbyDirector::UpdateVisitPreference(data::Uid characterUid, data::Uid visi
 
   clientContextIter->second.rancherVisitPreference = visitingCharacterUid;
 }
-
 
 void LobbyDirector::HandleEnterChannel(
   ClientId clientId,
@@ -563,10 +592,21 @@ void LobbyDirector::HandleEnterRanch(
   const protocol::LobbyCommandEnterRanch& command)
 {
   const auto& clientContext = _clientContext[clientId];
-  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
-    command.characterUid);
+  const auto rancherRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    command.rancherUid);
 
-  if (not characterRecord)
+  bool isRanchLocked = true;
+  if (rancherRecord)
+  {
+    rancherRecord.Immutable([&isRanchLocked](const data::Character& rancher)
+    {
+      isRanchLocked = rancher.isRanchLocked();
+    });
+  }
+
+  const bool isEnteringOwnRanch = command.rancherUid == clientContext.characterUid;
+
+  if (isRanchLocked && not isEnteringOwnRanch)
   {
     protocol::LobbyCommandEnterRanchCancel response{};
 
@@ -577,7 +617,7 @@ void LobbyDirector::HandleEnterRanch(
       });
   }
 
-  QueueEnterRanchOK(clientId, clientContext.characterUid);
+  QueueEnterRanchOK(clientId, command.rancherUid);
 }
 
 void LobbyDirector::QueueEnterRanchOK(
@@ -700,6 +740,30 @@ void LobbyDirector::HandleUpdateSystemContent(
         return notify;
       });
   }
+}
+
+void LobbyDirector::HandleChangeRanchOption(
+  ClientId clientId,
+  const protocol::LobbyCommandChangeRanchOption& command)
+{
+  const auto& clientContext = _clientContext[clientId];
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+  clientContext.characterUid);
+  protocol::LobbyCommandChangeRanchOptionOK response{
+    .unk0 = command.unk0,
+    .unk1 = command.unk1,
+    .unk2 = command.unk2
+  };
+  characterRecord.Mutable([](data::Character& character){
+     character.isRanchLocked() = !character.isRanchLocked();
+  });
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 } // namespace server

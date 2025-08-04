@@ -287,7 +287,7 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
   // Notify other clients in the room
   for (const ClientId& roomClientId : roomInstance.clients)
   {
-    _commandServer.QueueCommand<protocol::RaceCommandLeaveRoomNotify>(
+    _commandServer.QueueCommand<decltype(notify)>(
       roomClientId,
       [notify]()
       {

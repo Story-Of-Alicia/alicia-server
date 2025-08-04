@@ -43,9 +43,21 @@ class EventHandlerInterface
 public:
   virtual ~EventHandlerInterface() = default;
 
+  //! Handler of client connection event.
+  //! @param clientId ID of the client connected.
   virtual void OnClientConnected(ClientId clientId) = 0;
+
+  //! Handler of client disconnection event.
+  //! @param clientId ID of the client disconnected.
   virtual void OnClientDisconnected(ClientId clientId) = 0;
-  virtual size_t OnClientData(ClientId clientId, const std::span<const std::byte>& data) = 0;
+
+  //! Handler of client data event.
+  //! @param clientId ID of the client that sent the data.
+  //! @param data Byte buffer of the data sent.
+  //! @returns Count of bytes consumed from the byte buffer.
+  virtual size_t OnClientData(
+    ClientId clientId,
+    const std::span<const std::byte>& data) = 0;
 };
 
 //! Client with event driven reads and writes
@@ -60,11 +72,10 @@ public:
     asio::ip::tcp::socket&& socket,
     EventHandlerInterface& networkEventHandler) noexcept;
 
-  //!
+  //! Begins the client's asynchronous read loop.
   void Begin();
-  //!
+  //! Ends the client's asynchronous read loop.
   void End();
-
   //! Queues a write.
   void QueueWrite(WriteSupplier writeSupplier);
 
@@ -91,7 +102,8 @@ private:
 };
 
 //! Server with event-driven acceptor, reads and writes.
-class Server
+class Server :
+  public EventHandlerInterface
 {
 public:
   //! Default constructor.
@@ -112,6 +124,10 @@ public:
 
   //! Get client.
   Client& GetClient(ClientId clientId);
+
+  void OnClientConnected(ClientId clientId) override;
+  void OnClientDisconnected(ClientId clientId) override;
+  size_t OnClientData(ClientId clientId, const std::span<const std::byte>& data) override;
 
 private:
   void AcceptLoop() noexcept;

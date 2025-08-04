@@ -62,10 +62,7 @@ void WriteRacer(SinkStream& stream, const Racer& racer)
     .Write(racer.unk8.rent.mountUid)
     .Write(racer.unk8.rent.val1)
     .Write(racer.unk8.rent.val2);
-  stream.Write(racer.pet.uid)
-    .Write(racer.pet.tid)
-    .Write(racer.pet.name)
-    .Write(racer.pet.val3);
+  stream.Write(racer.pet);
   stream.Write(racer.guild.uid)
     .Write(racer.guild.val1)
     .Write(racer.guild.val2)
@@ -508,38 +505,6 @@ void RaceCommandChatNotify::Write(
 
 void RaceCommandChatNotify::Read(
   RaceCommandChatNotify& command,
-  SourceStream& stream)
-{
-  throw std::runtime_error("Not implemented");
-}
-
-void RaceCommandUpdatePet::Write(
-  const RaceCommandUpdatePet& command,
-  SinkStream& stream)
-{
-  throw std::runtime_error("Not implemented");
-}
-
-void RaceCommandUpdatePet::Read(
-  RaceCommandUpdatePet& command,
-  SourceStream& stream)
-{
-  stream.Read(command.petInfo);
-  if (stream.GetCursor() - stream.Size() > 4)
-    stream.Read(command.member2);
-}
-
-void RaceCommandUpdatePetCancel::Write(
-  const RaceCommandUpdatePetCancel& command,
-  SinkStream& stream)
-{
-  stream.Write(command.petInfo)
-    .Write(command.member2)
-    .Write(command.member3);
-}
-
-void RaceCommandUpdatePetCancel::Read(
-  RaceCommandUpdatePetCancel& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");

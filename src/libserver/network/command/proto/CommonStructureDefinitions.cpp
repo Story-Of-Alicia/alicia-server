@@ -381,18 +381,18 @@ void Rent::Read(Rent& value, SourceStream& stream)
 
 void Pet::Write(const Pet& value, SinkStream& stream)
 {
-  stream.Write(value.uid)
-    .Write(value.tid)
+  stream.Write(value.petId)
+    .Write(value.member2)
     .Write(value.name)
-    .Write(value.val3);
+    .Write(value.member4);
 }
 
 void Pet::Read(Pet& value, SourceStream& stream)
 {
-  stream.Read(value.uid)
-    .Read(value.tid)
+  stream.Read(value.petId)
+    .Read(value.member2)
     .Read(value.name)
-    .Read(value.val3);
+    .Read(value.member4);
 }
 
 void Egg::Write(const Egg& value, SinkStream& stream)
@@ -423,7 +423,7 @@ void Egg::Read(Egg& value, SourceStream& stream)
 
 void PetInfo::Write(const PetInfo& value, SinkStream& stream)
 {
-  stream.Write(value.member1)
+  stream.Write(value.characterUid)
     .Write(value.itemUid)
     .Write(value.pet)
     .Write(value.member4);
@@ -431,7 +431,7 @@ void PetInfo::Write(const PetInfo& value, SinkStream& stream)
 
 void PetInfo::Read(PetInfo& value, SourceStream& stream)
 {
-  stream.Read(value.member1)
+  stream.Read(value.characterUid)
     .Read(value.itemUid)
     .Read(value.pet)
     .Read(value.member4);
@@ -505,12 +505,8 @@ void RanchCharacter::Write(const RanchCharacter& ranchCharacter, SinkStream& str
 
   // Pet
   const auto& struct7 = ranchCharacter.pet;
-  stream.Write(struct7.uid)
-    .Write(struct7.tid)
-    .Write(struct7.name)
-    .Write(struct7.val3);
-
-  stream.Write(ranchCharacter.unk4)
+  stream.Write(ranchCharacter.pet)
+    .Write(ranchCharacter.unk4)
     .Write(ranchCharacter.unk5);
 }
 

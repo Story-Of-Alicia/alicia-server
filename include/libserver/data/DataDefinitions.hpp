@@ -147,9 +147,11 @@ struct Pet
 {
   //! A unique identifier.
   dao::Field<Uid> uid{InvalidUid};
-  //! A type identifier.
-  dao::Field<Tid> tid{InvalidTid};
-  //!
+  //! A Item tied to the pet.
+  dao::Field<Uid> itemUid{InvalidUid};
+  //! A pet identifier.
+  dao::Field<Uid> petId{0};
+  //! A name of the pet.
   dao::Field<std::string> name{};
 };
 
@@ -190,7 +192,7 @@ struct Character
   {
     User,
     Op,
-    Gm
+    GameMaster
   };
   dao::Field<Role> role{};
 
@@ -216,22 +218,25 @@ struct Character
     dao::Field<uint32_t> emblemId{0u};
   } appearance{};
 
-  dao::Field<Uid> petUid{InvalidUid};
   dao::Field<Uid> guildUid{InvalidUid};
-
+  
   dao::Field<std::vector<Uid>> gifts{};
   dao::Field<std::vector<Uid>> purchases{};
-
+  
   dao::Field<std::vector<Uid>> items{};
   dao::Field<std::vector<Uid>> characterEquipment{};
   dao::Field<std::vector<Uid>> mountEquipment{};
-
+  
   dao::Field<std::vector<Uid>> horses{};
+  dao::Field<std::vector<Uid>> pets{};
   dao::Field<Uid> mountUid{InvalidUid};
+  dao::Field<Uid> petUid{InvalidUid};
 
   dao::Field<std::vector<Uid>> eggs{};
 
   dao::Field<std::vector<Uid>> housing{};
+
+  dao::Field<bool> isRanchLocked{true};
 };
 
 struct Horse

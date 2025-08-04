@@ -37,7 +37,8 @@ Client::Client(
 
 void Client::Begin()
 {
-  _shouldRun = true;
+  if (_shouldRun.exchange(true, std::memory_order::acq_rel))
+    return;
 
   _networkEventHandler.OnClientConnected(_clientId);
   ReadLoop();
@@ -45,7 +46,8 @@ void Client::Begin()
 
 void Client::End()
 {
-  _shouldRun = false;
+  if (not _shouldRun.exchange(false, std::memory_order::acq_rel))
+    return;
 
   try
   {
@@ -65,7 +67,7 @@ void Client::End()
 
 void Client::QueueWrite(WriteSupplier writeSupplier)
 {
-  if (not _shouldRun.load(std::memory_order::relaxed))
+  if (not _shouldRun.load(std::memory_order::acquire))
     return;
 
   // Write the bytes to the write buffer that is being sent to the client.
@@ -113,7 +115,7 @@ void Client::QueueWrite(WriteSupplier writeSupplier)
 
 void Client::ReadLoop() noexcept
 {
-  if (!_shouldRun)
+  if (not _shouldRun.load(std::memory_order::acquire))
     return;
 
   _socket.async_read_some(
@@ -214,10 +216,30 @@ Client& Server::GetClient(ClientId clientId)
   const auto clientItr = _clients.find(clientId);
   if (clientItr == _clients.end())
   {
-    throw std::runtime_error("Invalid client Id");
+    throw std::runtime_error("Invalid client");
   }
 
   return clientItr->second;
+}
+
+void Server::OnClientConnected(
+  ClientId clientId)
+{
+  _networkEventHandler.OnClientConnected(clientId);
+}
+
+void Server::OnClientDisconnected(
+  ClientId clientId)
+{
+  _networkEventHandler.OnClientDisconnected(clientId);
+  _clients.erase(clientId);
+}
+
+size_t Server::OnClientData(
+  ClientId clientId,
+  const std::span<const std::byte>& data)
+{
+  return _networkEventHandler.OnClientData(clientId, data);
 }
 
 void Server::AcceptLoop() noexcept
@@ -241,7 +263,7 @@ void Server::AcceptLoop() noexcept
           clientId,
           clientId,
           std::move(client_socket),
-          _networkEventHandler);
+          *this);
 
         // Id is sequential so emplacement should never fail.
         assert(emplaced);

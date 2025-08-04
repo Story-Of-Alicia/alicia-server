@@ -191,7 +191,6 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
     .legVolume = appearance["legVolume"].get<uint32_t>(),
     .emblemId = appearance["emblemId"].get<uint32_t>()};
 
-  character.petUid = json["petUid"].get<data::Uid>();
   character.guildUid = json["guildUid"].get<data::Uid>();
 
   character.gifts = json["gifts"].get<std::vector<data::Uid>>();
@@ -202,11 +201,15 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.mountEquipment = json["horseEquipment"].get<std::vector<data::Uid>>();
 
   character.horses = json["horses"].get<std::vector<data::Uid>>();
+  character.pets = json["pets"].get<std::vector<data::Uid>>();
   character.mountUid = json["mountUid"].get<data::Uid>();
+  character.petUid = json["petUid"].get<data::Uid>();
 
   character.eggs = json["eggs"].get<std::vector<data::Uid>>();
 
   character.housing = json["housing"].get<std::vector<data::Uid>>();
+
+  character.isRanchLocked = json["isRanchLocked"].get<bool>();
 }
 
 void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
@@ -250,7 +253,6 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   appearance["emblemId"] = character.appearance.emblemId();
   json["appearance"] = appearance;
 
-  json["petUid"] = character.petUid();
   json["guildUid"] = character.guildUid();
 
   json["gifts"] = character.gifts();
@@ -261,15 +263,18 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["horseEquipment"] = character.mountEquipment();
 
   json["horses"] = character.horses();
+  json["pets"] = character.pets();
   json["mountUid"] = character.mountUid();
+  json["petUid"] = character.petUid();
 
   json["eggs"] = character.eggs();
 
   json["housing"] = character.housing();
 
+  json["isRanchLocked"] = character.isRanchLocked();
+
   dataFile << json.dump(2);
 }
-
 
 void server::FileDataSource::CreateHorse(data::Horse& horse)
 {
@@ -538,7 +543,8 @@ void server::FileDataSource::StoreEgg(data::Uid uid, const data::Egg& egg)
   json["petTid"] = egg.petTid();
 
   json["hatchTimestamp"] = std::chrono::duration_cast<std::chrono::seconds>(
-    egg.hatchTimestamp().time_since_epoch()).count();
+    egg.hatchTimestamp().time_since_epoch())
+                             .count();
 
   dataFile << json.dump(2);
 }
@@ -563,7 +569,8 @@ void server::FileDataSource::RetrievePet(data::Uid uid, data::Pet& pet)
   const auto json = nlohmann::json::parse(dataFile);
 
   pet.uid = json["uid"].get<data::Uid>();
-  pet.tid = json["tid"].get<data::Tid>();
+  pet.itemUid = json["itemUid"].get<data::Uid>();
+  pet.petId = json["petId"].get<data::Uid>();
   pet.name = json["name"].get<std::string>();
 }
 
@@ -581,7 +588,8 @@ void server::FileDataSource::StorePet(data::Uid uid, const data::Pet& pet)
 
   nlohmann::json json;
   json["uid"] = pet.uid();
-  json["tid"] = pet.tid();
+  json["itemUid"] = pet.itemUid();
+  json["petId"] = pet.petId();
   json["name"] = pet.name();
 
   dataFile << json.dump(2);

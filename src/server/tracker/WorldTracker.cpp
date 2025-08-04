@@ -33,7 +33,7 @@ void WorldTracker::RemoveCharacter(data::Uid character)
   _characters.erase(character);
 }
 
-Oid WorldTracker::GetCharacterOid(data::Uid character)
+Oid WorldTracker::GetCharacterOid(data::Uid character) const
 {
   const auto itr = _characters.find(character);
   if (itr == _characters.cend())
@@ -47,7 +47,7 @@ Oid WorldTracker::AddHorse(data::Uid mount)
   return _nextObjectId++;
 }
 
-Oid WorldTracker::GetHorseOid(data::Uid mount)
+Oid WorldTracker::GetHorseOid(data::Uid mount) const
 {
   const auto itr = _horses.find(mount);
   if (itr == _horses.cend())
@@ -55,12 +55,12 @@ Oid WorldTracker::GetHorseOid(data::Uid mount)
   return itr->second;
 }
 
-const WorldTracker::ObjectMap& WorldTracker::GetHorses()
+const WorldTracker::ObjectMap& WorldTracker::GetHorses() const
 {
   return _horses;
 }
 
-const WorldTracker::ObjectMap& WorldTracker::GetCharacters()
+const WorldTracker::ObjectMap& WorldTracker::GetCharacters() const
 {
   return _characters;
 }
