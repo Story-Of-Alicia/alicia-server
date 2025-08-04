@@ -895,7 +895,7 @@ std::vector<std::string> RanchDirector::HandleCommand(
         mountUid = character.mountUid();
       });
 
-      BroadcastUpdateMountInfoNotify(clientContext.characterUid, mountUid);
+      BroadcastUpdateMountInfoNotify(clientContext.characterUid, clientContext.visitingRancherUid, mountUid);
       return {"Parts set! Restart the client."};
     }
 
@@ -929,7 +929,7 @@ std::vector<std::string> RanchDirector::HandleCommand(
         mountUid = character.mountUid();
       });
 
-      BroadcastUpdateMountInfoNotify(clientContext.characterUid, mountUid);
+      BroadcastUpdateMountInfoNotify(clientContext.characterUid, clientContext.visitingRancherUid, mountUid);
       return {"Appearance set! Restart the client."};
     }
 
@@ -1777,15 +1777,9 @@ void RanchDirector::HandleUpdatePet(
         character.pets().emplace_back(petUid);
       }
 
-      const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
-      petRecord.Mutable(
-        [&command](data::Pet& pet)
-        {
-          pet.name() = command.petInfo.pet.name;
-        });
-
       if (command.actionBitset == protocol::AcCmdCRUpdatePet::Action::Rename)
       {
+        const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
         petRecord.Mutable(
           [&command](data::Pet& pet)
           {
