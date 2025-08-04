@@ -728,7 +728,7 @@ void LobbyCommandEnterRanch::Read(
   LobbyCommandEnterRanch& command,
   SourceStream& stream)
 {
-  stream.Read(command.characterUid)
+  stream.Read(command.rancherUid)
     .Read(command.unk1)
     .Read(command.unk2);
 }

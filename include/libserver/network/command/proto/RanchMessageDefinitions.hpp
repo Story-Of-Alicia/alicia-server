@@ -1983,11 +1983,14 @@ struct RanchCommandRequestGuildInfoCancel
     SourceStream& stream);
 };
 
-struct RanchCommandUpdatePet
+struct AcCmdCRUpdatePet
 {
   PetInfo petInfo{};
-  //! optional
-  uint32_t member2{};
+  enum class Action
+  {
+    Rename = 7,
+  };
+  Action actionBitset{}; // 7 - rename
 
   static Command GetCommand()
   {
@@ -1998,14 +2001,64 @@ struct RanchCommandUpdatePet
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandUpdatePet& command,
+    const AcCmdCRUpdatePet& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandUpdatePet& command,
+    AcCmdCRUpdatePet& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCUpdatePet
+{
+  PetInfo petInfo{};
+  //! optional
+  uint32_t actionBitset{}; // 7 - rename
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCUpdatePet;
+  }
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCUpdatePet& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCUpdatePet& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCUpdatePetCancel
+{
+  PetInfo petInfo{};
+  uint32_t member2{};
+  uint8_t member3{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCUpdatePetCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCUpdatePetCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCUpdatePetCancel& command,
     SourceStream& stream);
 };
 

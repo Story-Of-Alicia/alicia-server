@@ -993,7 +993,7 @@ struct LobbyCommandRequestDailyQuestListOK
 //! Serverbound enter ranch command.
 struct LobbyCommandEnterRanch
 {
-  uint32_t characterUid;
+  uint32_t rancherUid;
   std::string unk1;
   uint8_t unk2;
 

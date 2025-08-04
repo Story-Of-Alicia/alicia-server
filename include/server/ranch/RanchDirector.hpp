@@ -56,6 +56,7 @@ public:
   //!
   void BroadcastUpdateMountInfoNotify(
     data::Uid characterUid,
+    data::Uid rancherUid,
     data::Uid horseUid);
 
   ServerInstance& GetServerInstance();
@@ -190,7 +191,7 @@ private:
 
   void HandleUpdatePet(
     ClientId clientId,
-    const protocol::RanchCommandUpdatePet& command);
+    const protocol::AcCmdCRUpdatePet& command);
 
   void HandleRequestPetBirth(
     ClientId clientId,

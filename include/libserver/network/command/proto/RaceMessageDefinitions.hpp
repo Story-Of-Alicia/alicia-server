@@ -645,51 +645,6 @@ struct RaceCommandChatNotify
     SourceStream& stream);
 };
 
-struct RaceCommandUpdatePet
-{
-  PetInfo petInfo{};
-  //! optional
-  uint32_t member2{};
-  static Command GetCommand()
-  {
-    return Command::AcCmdRCUpdatePet;
-  }
-  //! Writes the command to a provided sink stream.
-  //! @param command Command.
-  //! @param stream Sink stream.
-  static void Write(
-    const RaceCommandUpdatePet& command,
-    SinkStream& stream);
-
-  //! Reader a command from a provided source stream.
-  //! @param command Command.
-  //! @param stream Source stream.
-  static void Read(
-    RaceCommandUpdatePet& command,
-    SourceStream& stream);
-};
-
-struct RaceCommandUpdatePetCancel
-{
-  PetInfo petInfo{};
-  uint32_t member2{};
-  uint8_t member3{};
-
-  //! Writes the command to a provided sink stream.
-  //! @param command Command.
-  //! @param stream Sink stream.
-  static void Write(
-    const RaceCommandUpdatePetCancel& command,
-    SinkStream& stream);
-
-  //! Reader a command from a provided source stream.
-  //! @param command Command.
-  //! @param stream Source stream.
-  static void Read(
-    RaceCommandUpdatePetCancel& command,
-    SourceStream& stream);
-};
-
 struct RaceCommandReadyRace
 {
   static Command GetCommand()

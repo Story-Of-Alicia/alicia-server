@@ -158,7 +158,7 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       HandleRequestGuildInfo(clientId, command);
     });
 
-  _commandServer.RegisterCommandHandler<protocol::RanchCommandUpdatePet>(
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRUpdatePet>(
     [this](ClientId clientId, auto& command)
     {
       HandleUpdatePet(clientId, command);
@@ -295,9 +295,9 @@ void RanchDirector::BroadcastSetIntroductionNotify(
 
 void RanchDirector::BroadcastUpdateMountInfoNotify(
   const data::Uid characterUid,
+  const data::Uid rancherUid,
   const data::Uid horseUid)
 {
-  const auto& clientContext = GetClientContextByCharacterUid(characterUid);
   const auto horseRecord = GetServerInstance().GetDataDirector().GetHorses().Get(
     horseUid);
 
@@ -307,10 +307,12 @@ void RanchDirector::BroadcastUpdateMountInfoNotify(
     protocol::BuildProtocolHorse(notify.horse, horse);
   });
 
-  for (const ClientId& ranchClientId : _ranches[clientContext.visitingRancherUid].clients)
+  for (const ClientId& ranchClientId : _ranches[rancherUid].clients)
   {
+    const auto& ranchClientContext = GetAuthorizedClientContext(ranchClientId);
+
     // Prevent broadcast to self.
-    if (ranchClientId == clientContext.characterUid)
+    if (ranchClientContext.characterUid == characterUid)
       continue;
 
     _commandServer.QueueCommand<decltype(notify)>(
@@ -370,16 +372,8 @@ void RanchDirector::HandleEnterRanch(
     throw std::runtime_error(
       std::format("Rancher's character [{}] not available", command.rancherUid));
 
-  if (not clientContext.isAuthorized)
-  {
-    clientContext.isAuthorized = GetServerInstance().GetOtpRegistry().AuthorizeCode(
-      command.characterUid, command.otp);
-
-    if (clientContext.isAuthorized)
-    {
-      clientContext.characterUid = command.characterUid;
-    }
-  }
+  clientContext.isAuthorized = GetServerInstance().GetOtpRegistry().AuthorizeCode(
+    command.characterUid, command.otp);
 
   bool isRanchLocked = false;
   if (command.rancherUid != command.characterUid)
@@ -410,6 +404,8 @@ void RanchDirector::HandleEnterRanch(
     return;
   }
 
+  if (clientCreated)
+    clientContext.characterUid = command.characterUid;
   clientContext.visitingRancherUid = command.rancherUid;
 
   protocol::AcCmdCREnterRanchOK response{
@@ -1375,7 +1371,7 @@ void RanchDirector::HandleUpdateMountNickname(
       return response;
     });
 
-  BroadcastUpdateMountInfoNotify(clientContext.characterUid, response.horseUid);
+  BroadcastUpdateMountInfoNotify(clientContext.characterUid, clientContext.visitingRancherUid, response.horseUid);
 }
 
 void RanchDirector::HandleRequestStorage(
@@ -1727,41 +1723,46 @@ void RanchDirector::HandleRequestGuildInfo(
 
 void RanchDirector::HandleUpdatePet(
   ClientId clientId,
-  const protocol::RanchCommandUpdatePet& command)
+  const protocol::AcCmdCRUpdatePet& command)
 {
   const auto& clientContext = GetAuthorizedClientContext(clientId);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
+  auto petUid = data::InvalidUid;
+
   characterRecord.Mutable(
-    [this, &command](data::Character& character)
+    [this, &command, &petUid](data::Character& character)
     {
+      // The pets of the character.
       const auto storedPetRecords = GetServerInstance().GetDataDirector().GetPets().Get(
         character.pets());
-      auto petUid = data::InvalidUid;
 
       if (not storedPetRecords || storedPetRecords->empty())
       {
         // No pets found for the character.
-        spdlog::warn("No pets found for character {}", command.petInfo.characterUid);
-        // TODO: When Handle Pet Birth exists, this should have a return 
+        spdlog::warn("No pets found for character {}", character.uid());
+        // TODO: When Handle Pet Birth exists, this should have a return
       }
 
-      for (const auto& record : *storedPetRecords)
+      // Find the pet record based on the item used.
+      for (const auto& petRecord : *storedPetRecords)
       {
-        record.Immutable(
+        petRecord.Immutable(
           [&command, &petUid](const data::Pet& pet)
           {
             if (pet.itemUid() == command.petInfo.itemUid)
             {
               petUid = pet.uid();
             }
-          }); 
+          });
       }
 
-      if (petUid == data::InvalidUid)
+      // If pet record does not exist, create it.
+      // For prototype purposes only.
+      if (petUid == data::InvalidUid
+        && command.petInfo.pet.petId != 0)
       {
-        // Only for Prototype purposes, later will be handled by HandlePetBirth.
         const auto petRecord = GetServerInstance().GetDataDirector().CreatePet();
         petRecord.Mutable(
           [&command, &petUid](data::Pet& pet)
@@ -1773,17 +1774,43 @@ void RanchDirector::HandleUpdatePet(
             petUid = pet.uid();
           });
 
-          character.pets().emplace_back(petUid);
+        character.pets().emplace_back(petUid);
       }
 
-      character.petUid = petUid;
+      const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
+      petRecord.Mutable(
+        [&command](data::Pet& pet)
+        {
+          pet.name() = command.petInfo.pet.name;
+        });
+
+      if (command.actionBitset == protocol::AcCmdCRUpdatePet::Action::Rename)
+      {
+        petRecord.Mutable(
+          [&command](data::Pet& pet)
+          {
+            pet.name() = command.petInfo.pet.name;
+          });
+      }
+      else
+      {
+        character.petUid = petUid;
+      }
     });
 
   const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
 
-  protocol::RaceCommandUpdatePet response;
+  protocol::AcCmdRCUpdatePet response;
   response.petInfo = command.petInfo;
-  response.petInfo.characterUid = GetAuthorizedClientContext(clientId).characterUid;
+
+  const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
+  petRecord.Immutable(
+    [&response](const data::Pet& pet)
+    {
+      response.petInfo.pet.name = pet.name();
+    });
+
+  response.petInfo.characterUid = clientContext.characterUid;
 
   for (const ClientId ranchClientId : ranchInstance.clients)
   {

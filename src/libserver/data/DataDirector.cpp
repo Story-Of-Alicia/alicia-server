@@ -723,8 +723,10 @@ void DataDirector::ScheduleCharacterLoad(
 
     std::vector<data::Uid> housing;
 
+    std::vector<data::Uid> pets;
+
     characterRecord.Immutable(
-      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing](
+      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets](
         const data::Character& character)
       {
         guildUid = character.guildUid();
@@ -739,6 +741,8 @@ void DataDirector::ScheduleCharacterLoad(
         eggs = character.eggs();
 
         housing = character.housing();
+
+        pets = character.pets();
 
         // Add the mount to the horses list,
         // so that it is loaded with all the horses.
@@ -757,6 +761,8 @@ void DataDirector::ScheduleCharacterLoad(
 
     const auto housingRecords = GetHousing().Get(housing);
 
+    const auto petRecords = GetPets().Get(pets);
+
     // Only require guild if the UID is not invalid.
     if (not guildRecord && guildUid != data::InvalidUid)
     {
@@ -769,7 +775,7 @@ void DataDirector::ScheduleCharacterLoad(
     if (not petRecord && petUid != data::InvalidUid)
     {
       userDataContext.debugMessage = std::format(
-        "Pet '{}' not available", guildUid);
+        "Pet '{}' not available", petUid);
       return;
     }
 
@@ -827,6 +833,14 @@ void DataDirector::ScheduleCharacterLoad(
     {
       userDataContext.debugMessage = std::format(
         "Housing not available");
+      return;
+    }
+
+    // Require pet records.
+    if (not petRecords)
+    {
+      userDataContext.debugMessage = std::format(
+        "Pets not available");
       return;
     }
 

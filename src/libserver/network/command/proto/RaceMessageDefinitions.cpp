@@ -510,39 +510,6 @@ void RaceCommandChatNotify::Read(
   throw std::runtime_error("Not implemented");
 }
 
-void RaceCommandUpdatePet::Write(
-  const RaceCommandUpdatePet& command,
-  SinkStream& stream)
-{
-  stream.Write(command.petInfo)
-   .Write(command.member2);
-}
-
-void RaceCommandUpdatePet::Read(
-  RaceCommandUpdatePet& command,
-  SourceStream& stream)
-{
-  stream.Read(command.petInfo);
-  if (stream.GetCursor() - stream.Size() > 4)
-    stream.Read(command.member2);
-}
-
-void RaceCommandUpdatePetCancel::Write(
-  const RaceCommandUpdatePetCancel& command,
-  SinkStream& stream)
-{
-  stream.Write(command.petInfo)
-    .Write(command.member2)
-    .Write(command.member3);
-}
-
-void RaceCommandUpdatePetCancel::Read(
-  RaceCommandUpdatePetCancel& command,
-  SourceStream& stream)
-{
-  throw std::runtime_error("Not implemented");
-}
-
 void RaceCommandReadyRace::Write(
   const RaceCommandReadyRace& command,
   SinkStream& stream)

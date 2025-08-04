@@ -1355,20 +1355,53 @@ void RanchCommandRequestGuildInfoCancel::Read(
   throw std::runtime_error("Not implemented");
 }
 
-void RanchCommandUpdatePet::Write(
-  const RanchCommandUpdatePet& command,
+void AcCmdCRUpdatePet::Write(
+  const AcCmdCRUpdatePet& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void RanchCommandUpdatePet::Read(
-  RanchCommandUpdatePet& command,
+void AcCmdCRUpdatePet::Read(
+  AcCmdCRUpdatePet& command,
   SourceStream& stream)
 {
   stream.Read(command.petInfo);
   if (stream.GetCursor() - stream.Size() > 4)
-    stream.Read(command.member2);
+    stream.Read(command.actionBitset);
+}
+
+void AcCmdRCUpdatePet::Write(
+  const AcCmdRCUpdatePet& command,
+  SinkStream& stream)
+{
+  stream.Write(command.petInfo)
+   .Write(command.actionBitset);
+}
+
+void AcCmdRCUpdatePet::Read(
+  AcCmdRCUpdatePet& command,
+  SourceStream& stream)
+{
+  stream.Read(command.petInfo);
+  if (stream.GetCursor() - stream.Size() > 4)
+    stream.Read(command.actionBitset);
+}
+
+void AcCmdRCUpdatePetCancel::Write(
+  const AcCmdRCUpdatePetCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.petInfo)
+    .Write(command.member2)
+    .Write(command.member3);
+}
+
+void AcCmdRCUpdatePetCancel::Read(
+  AcCmdRCUpdatePetCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
 }
 
 void RanchCommandRequestPetBirth::Write(
