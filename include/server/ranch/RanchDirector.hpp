@@ -84,13 +84,15 @@ private:
   };
 
   //! Get client context.
+  //! @param clientId Id of the client.
+  //! @param requireAuthorized Require the client to be authorized.
   //! @returns Client context.
-  ClientContext& GetAuthorizedClientContext(ClientId clientId);
+  [[nodiscard]] ClientContext& GetClientContext(ClientId clientId, bool requireAuthorized = true);
 
   //! Get the client context by the character's unique ID.
   //! @param characterUid UID of the character.
   //! @returns Client context.
-  ClientContext& GetClientContextByCharacterUid(data::Uid characterUid);
+  [[nodiscard]] ClientContext& GetClientContextByCharacterUid(data::Uid characterUid);
 
   //! Handles the ranch enter command.
   //! @param clientId ID of the client
