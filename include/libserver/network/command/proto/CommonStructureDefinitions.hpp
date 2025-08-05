@@ -229,7 +229,7 @@ struct Horse
     uint16_t stamina{};
     uint16_t attractiveness{};
 
-    uint16_t hunger{};
+    uint16_t intimacy{};
     uint16_t val0{};
 
     uint16_t val1{};

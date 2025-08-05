@@ -52,8 +52,8 @@ void BuildProtocolHorse(
 
   protocolHorse.vals0 = {
     .stamina = 0xFFFF,
-    .attractiveness = 0xFFFF,
-    .hunger = 0xFFFF,
+    .attractiveness = 0x03DE, // min 0 max 0x3E8 (1000)
+    .intimacy = 0x03DE, // min 0 max 0x3E8 (1000) 
   };
 
   protocolHorse.vals1 = {
@@ -63,7 +63,7 @@ void BuildProtocolHorse(
     .tendency = 0x02,
     .spirit = 0x00,
     .classProgression = static_cast<uint32_t>(horse.clazzProgress()),
-    .val5 = 0x00,
+    .val5 = 0xff,
     .potentialLevel = static_cast<uint8_t>(horse.potentialLevel()),
     .hasPotential = static_cast<uint8_t>(horse.potentialType() != 0),
     .potentialValue = static_cast<uint8_t>(horse.potentialLevel()),
@@ -72,7 +72,7 @@ void BuildProtocolHorse(
     .hasLuck = static_cast<uint8_t>(horse.luckState() != 0),
     .val12 = 0x00,
     .fatigue = 0x00,
-    .val14 = 0x00,
+    .val14 = 0x0,
     .emblem = static_cast<uint16_t>(horse.emblemUid())};
 
   BuildProtocolHorseParts(protocolHorse.parts, horse.parts);
