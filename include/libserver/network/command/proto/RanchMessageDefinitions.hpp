@@ -1989,6 +1989,8 @@ struct AcCmdCRUpdatePet
   enum class Action
   {
     Rename = 7,
+    // maybe a different action? Updated pet name and summon? 
+    RenameToo = 17 // needs more testing
   };
   Action actionBitset{}; // 7 - rename
 

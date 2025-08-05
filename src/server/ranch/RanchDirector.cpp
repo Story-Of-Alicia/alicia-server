@@ -1777,7 +1777,8 @@ void RanchDirector::HandleUpdatePet(
         character.pets().emplace_back(petUid);
       }
 
-      if (command.actionBitset == protocol::AcCmdCRUpdatePet::Action::Rename)
+      if (command.actionBitset == protocol::AcCmdCRUpdatePet::Action::Rename || 
+          command.actionBitset == protocol::AcCmdCRUpdatePet::Action::RenameToo)
       {
         const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
         petRecord.Mutable(
