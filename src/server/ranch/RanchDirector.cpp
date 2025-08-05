@@ -1443,9 +1443,9 @@ void RanchDirector::HandleGetItemFromStorage(
       }
 
       const auto storedPurchaseIter = std::ranges::find(character.purchases(), storedItemUid);
-      if (storedGiftIter != character.purchases().cend())
+      if (storedPurchaseIter != character.purchases().cend())
       {
-        character.purchases().erase(storedGiftIter);
+        character.purchases().erase(storedPurchaseIter);
         return;
       }
 
