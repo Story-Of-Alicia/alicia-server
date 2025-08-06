@@ -234,6 +234,13 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       HandleRequestLeagueTeamList(clientId, command);
     });
 
+  _commandServer.RegisterCommandHandler<protocol::RanchCommandMountFamilyTree>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleMountFamilyTree(clientId, command);
+    });
+
+
 }
 
 void RanchDirector::Initialize()
@@ -2072,4 +2079,53 @@ void RanchDirector::HandleRequestLeagueTeamList(
     });
 }
 
+
+void RanchDirector::HandleMountFamilyTree(
+  ClientId clientId,
+  const protocol::RanchCommandMountFamilyTree& command)
+{
+  protocol::RanchCommandMountFamilyTreeOK response{
+    .ancestors = {
+      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
+        .id = 1,
+        .name = "1",
+        .grade = 1,
+        .skinId = 1
+      },
+      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
+        .id = 2,
+        .name = "2",
+        .grade = 4,
+        .skinId = 1
+      },protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
+        .id = 3,
+        .name = "3",
+        .grade = 1,
+        .skinId = 1
+      },protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
+        .id = 4,
+        .name = "4",
+        .grade = 1,
+        .skinId = 1
+      },
+      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
+        .id = 5,
+        .name = "5",
+        .grade = 1,
+        .skinId = 1
+      },protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
+        .id = 6,
+        .name = "6",
+        .grade = 1,
+        .skinId = 1
+      }}
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
 } // namespace server

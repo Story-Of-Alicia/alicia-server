@@ -227,6 +227,9 @@ private:
   void HandleRequestLeagueTeamList(ClientId clientId,
     const protocol::RanchCommandRequestLeagueTeamList& command);
 
+  void HandleMountFamilyTree(ClientId clientId,
+    const protocol::RanchCommandMountFamilyTree& command);
+
   //!
   ServerInstance& _serverInstance;
   //!

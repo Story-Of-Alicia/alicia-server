@@ -2922,15 +2922,15 @@ struct RanchCommandMountFamilyTreeOK
 
   struct MountFamilyTreeItem
   {
-    uint8_t unk0{};
-    std::string unk1{};
-    uint8_t unk2{};
-    uint16_t unk3{};
+    uint8_t id{};
+    std::string name{};
+    uint8_t grade{};
+    uint16_t skinId{};
   };
 
   // In the packet, the length is specified as a byte
   // max size 6
-  std::vector<MountFamilyTreeItem> items;
+  std::vector<MountFamilyTreeItem> ancestors;
 
   static Command GetCommand()
   {
