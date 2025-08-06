@@ -52,8 +52,8 @@ void BuildProtocolHorse(
 
   protocolHorse.vals0 = {
     .stamina = 0xFFFF,
-    .attractiveness = 0x3DE, // min 0 max 0x3E8 (1000)
-    .intimacy = 0x3DE, // min 0 max 0x3E8 (1000) 
+    .attractiveness = 0x3DE,
+    .intimacy = 0x3DE, 
   };
 
   protocolHorse.vals1 = {

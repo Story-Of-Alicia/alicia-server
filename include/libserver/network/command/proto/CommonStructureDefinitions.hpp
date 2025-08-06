@@ -227,8 +227,9 @@ struct Horse
   struct
   {
     uint16_t stamina{};
+    //! An attractiveness (beauty) value in a range of <0, 1000>. 
     uint16_t attractiveness{};
-
+    //! An intimacy value in a range of <0, 1000>. 
     uint16_t intimacy{};
     uint16_t val0{};
 

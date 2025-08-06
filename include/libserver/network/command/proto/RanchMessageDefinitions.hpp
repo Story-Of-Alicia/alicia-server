@@ -1988,11 +1988,9 @@ struct AcCmdCRUpdatePet
   PetInfo petInfo{};
   enum class Action
   {
-    Rename = 7,
-    // maybe a different action? Updated pet name and summon? 
-    RenameToo = 17 // needs more testing
+    Rename = 1
   };
-  Action actionBitset{}; // 7 - rename
+  Action actionBitset{}; // 
 
   static Command GetCommand()
   {
