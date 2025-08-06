@@ -2097,12 +2097,14 @@ void RanchDirector::HandleMountFamilyTree(
         .name = "2",
         .grade = 4,
         .skinId = 1
-      },protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
+      },
+      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
         .id = 3,
         .name = "3",
         .grade = 1,
         .skinId = 1
-      },protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
+      },
+      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
         .id = 4,
         .name = "4",
         .grade = 1,
@@ -2113,7 +2115,8 @@ void RanchDirector::HandleMountFamilyTree(
         .name = "5",
         .grade = 1,
         .skinId = 1
-      },protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
+      },
+      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
         .id = 6,
         .name = "6",
         .grade = 1,
