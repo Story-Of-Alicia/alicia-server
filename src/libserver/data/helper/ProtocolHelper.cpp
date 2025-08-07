@@ -57,7 +57,7 @@ void BuildProtocolHorse(
     .hunger = 0x400, 
     .bodyDirty = 0x0, 
     .maneDirty = 0x0, 
-    .tailDirty= 0x10,
+    .tailDirty = 0x10,
     .play = 0x15,
   };
 
