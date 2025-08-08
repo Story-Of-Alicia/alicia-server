@@ -243,7 +243,8 @@ struct Horse
     uint16_t tailDirty{};
 
     //! A trust value is hidden in the client. Used for play
-    //! range to be determined.
+    //! 111 Rod unlocked,
+    //! 501 Bow unlocked
     uint16_t trust{};  
     //! A play value in a range of <0, 21>.
     //! 0 is bored
