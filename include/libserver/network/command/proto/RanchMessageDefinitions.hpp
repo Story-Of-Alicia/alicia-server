@@ -1988,9 +1988,9 @@ struct AcCmdCRUpdatePet
   PetInfo petInfo{};
   enum class Action
   {
-    Rename = 7,
+    Rename = 1
   };
-  Action actionBitset{}; // 7 - rename
+  Action actionBitset{}; // 
 
   static Command GetCommand()
   {
