@@ -391,7 +391,7 @@ struct RanchCommandRanchSnapshotNotify
     SourceStream& stream);
 };
 
-struct RanchCommandEnterBreedingMarket
+struct AcCmdCREnterBreedingMarket
 {
   static Command GetCommand()
   {
@@ -402,21 +402,20 @@ struct RanchCommandEnterBreedingMarket
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandEnterBreedingMarket& command,
+    const AcCmdCREnterBreedingMarket& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandEnterBreedingMarket& command,
+    AcCmdCREnterBreedingMarket& command,
     SourceStream& stream);
 };
 
 struct RanchCommandEnterBreedingMarketOK
 {
-  // List size specified with a uint8_t. Max size 10
-  struct AvailableHorse
+  struct Stallion
   {
     uint32_t uid{};
     uint32_t tid{};
@@ -431,7 +430,9 @@ struct RanchCommandEnterBreedingMarketOK
     // while the horse itself adds 1.
     uint8_t lineage{};
   };
-  std::vector<AvailableHorse> availableHorses{};
+
+  //! Max 10 elements.
+  std::vector<Stallion> stallions{};
 
   static Command GetCommand()
   {
@@ -497,7 +498,7 @@ struct RanchCommandLeaveBreedingMarket
     SourceStream& stream);
 };
 
-struct RanchCommandSearchStallion
+struct AcCmdCRSearchStallion
 {
   uint32_t unk0{};
   uint8_t unk1{};
@@ -523,14 +524,14 @@ struct RanchCommandSearchStallion
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandSearchStallion& command,
+    const AcCmdCRSearchStallion& command,
     SinkStream& stream);
 
   //! Reads a command from the provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandSearchStallion& command,
+    AcCmdCRSearchStallion& command,
     SourceStream& stream);
 };
 
@@ -604,7 +605,7 @@ struct RanchCommandSearchStallionCancel
     SourceStream& stream);
 };
 
-struct RanchCommandRegisterStallion
+struct AcCmdCRRegisterStallion
 {
   uint32_t horseUid{};
 
@@ -617,18 +618,18 @@ struct RanchCommandRegisterStallion
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandRegisterStallion& command,
+    const AcCmdCRRegisterStallion& command,
     SinkStream& stream);
 
   //! Reads a command from the provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandRegisterStallion& command,
+    AcCmdCRRegisterStallion& command,
     SourceStream& stream);
 };
 
-struct RanchCommandRegisterStallionOK
+struct AcCmdCRRegisterStallionOK
 {
   uint32_t horseUid{};
 
@@ -641,14 +642,14 @@ struct RanchCommandRegisterStallionOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandRegisterStallionOK& command,
+    const AcCmdCRRegisterStallionOK& command,
     SinkStream& stream);
 
   //! Reads a command from the provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandRegisterStallionOK& command,
+    AcCmdCRRegisterStallionOK& command,
     SourceStream& stream);
 };
 
@@ -674,7 +675,7 @@ struct RanchCommandRegisterStallionCancel
     SourceStream& stream);
 };
 
-struct RanchCommandUnregisterStallion
+struct AcCmdCRUnregisterStallion
 {
   uint32_t horseUid{};
 
@@ -687,18 +688,18 @@ struct RanchCommandUnregisterStallion
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandUnregisterStallion& command,
+    const AcCmdCRUnregisterStallion& command,
     SinkStream& stream);
 
   //! Reads a command from the provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandUnregisterStallion& command,
+    AcCmdCRUnregisterStallion& command,
     SourceStream& stream);
 };
 
-struct RanchCommandUnregisterStallionOK
+struct AcCmdCRUnregisterStallionOK
 {
   static Command GetCommand()
   {
@@ -709,14 +710,14 @@ struct RanchCommandUnregisterStallionOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandUnregisterStallionOK& command,
+    const AcCmdCRUnregisterStallionOK& command,
     SinkStream& stream);
 
   //! Reads a command from the provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandUnregisterStallionOK& command,
+    AcCmdCRUnregisterStallionOK& command,
     SourceStream& stream);
 };
 
@@ -742,7 +743,7 @@ struct RanchCommandUnregisterStallionCancel
     SourceStream& stream);
 };
 
-struct RanchCommandUpdateEquipmentNotify
+struct AcCmdCRUpdateEquipmentNotify
 {
   uint32_t characterUid{};
   std::vector<Item> characterEquipment;
@@ -758,14 +759,14 @@ struct RanchCommandUpdateEquipmentNotify
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandUpdateEquipmentNotify& command,
+    const AcCmdCRUpdateEquipmentNotify& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandUpdateEquipmentNotify& command,
+    AcCmdCRUpdateEquipmentNotify& command,
     SourceStream& stream);
 };
 
@@ -838,7 +839,7 @@ struct RanchCommandStatusPointApplyCancel
     SourceStream& stream);
 };
 
-struct RanchCommandTryBreeding
+struct AcCmdCRTryBreeding
 {
   uint32_t unk0{};
   uint32_t unk1{};
@@ -852,14 +853,14 @@ struct RanchCommandTryBreeding
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandTryBreeding& command,
+    const AcCmdCRTryBreeding& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandTryBreeding& command,
+    AcCmdCRTryBreeding& command,
     SourceStream& stream);
 };
 
@@ -936,7 +937,7 @@ struct RanchCommandTryBreedingCancel
     SourceStream& stream);
 };
 
-struct RanchCommandBreedingAbandon
+struct AcCmdCRBreedingAbandon
 {
   uint32_t horseUid{};
 
@@ -949,14 +950,14 @@ struct RanchCommandBreedingAbandon
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandBreedingAbandon& command,
+    const AcCmdCRBreedingAbandon& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandBreedingAbandon& command,
+    AcCmdCRBreedingAbandon& command,
     SourceStream& stream);
 };
 
@@ -971,14 +972,14 @@ struct RanchCommandBreedingAbandonOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandBreedingAbandon& command,
+    const AcCmdCRBreedingAbandon& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandBreedingAbandon& command,
+    AcCmdCRBreedingAbandon& command,
     SourceStream& stream);
 };
 
@@ -993,14 +994,14 @@ struct RanchCommandBreedingAbandonCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandBreedingAbandon& command,
+    const AcCmdCRBreedingAbandon& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandBreedingAbandon& command,
+    AcCmdCRBreedingAbandon& command,
     SourceStream& stream);
 };
 
@@ -1643,7 +1644,7 @@ struct RanchCommandRequestNpcDressListCancel
     SourceStream& stream);
 };
 
-struct RanchCommandWearEquipment
+struct AcCmdCRWearEquipment
 {
   uint32_t itemUid{};
   uint8_t member{};
@@ -1657,18 +1658,18 @@ struct RanchCommandWearEquipment
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandWearEquipment& command,
+    const AcCmdCRWearEquipment& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandWearEquipment& command,
+    AcCmdCRWearEquipment& command,
     SourceStream& stream);
 };
 
-struct RanchCommandWearEquipmentOK
+struct AcCmdCRWearEquipmentOK
 {
   uint32_t itemUid{};
   uint8_t member{};
@@ -1682,18 +1683,18 @@ struct RanchCommandWearEquipmentOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandWearEquipmentOK& command,
+    const AcCmdCRWearEquipmentOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandWearEquipmentOK& command,
+    AcCmdCRWearEquipmentOK& command,
     SourceStream& stream);
 };
 
-struct RanchCommandWearEquipmentCancel
+struct AcCmdCRWearEquipmentCancel
 {
   uint32_t itemUid{};
   uint8_t member{};
@@ -1707,18 +1708,18 @@ struct RanchCommandWearEquipmentCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandWearEquipmentCancel& command,
+    const AcCmdCRWearEquipmentCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandWearEquipmentCancel& command,
+    AcCmdCRWearEquipmentCancel& command,
     SourceStream& stream);
 };
 
-struct RanchCommandRemoveEquipment
+struct AcCmdCRRemoveEquipment
 {
   uint32_t itemUid{};
 
@@ -1731,18 +1732,18 @@ struct RanchCommandRemoveEquipment
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandRemoveEquipment& command,
+    const AcCmdCRRemoveEquipment& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandRemoveEquipment& command,
+    AcCmdCRRemoveEquipment& command,
     SourceStream& stream);
 };
 
-struct RanchCommandRemoveEquipmentOK
+struct AcCmdCRRemoveEquipmentOK
 {
   uint32_t uid{};
 
@@ -1755,18 +1756,18 @@ struct RanchCommandRemoveEquipmentOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandRemoveEquipmentOK& command,
+    const AcCmdCRRemoveEquipmentOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandRemoveEquipmentOK& command,
+    AcCmdCRRemoveEquipmentOK& command,
     SourceStream& stream);
 };
 
-struct RanchCommandRemoveEquipmentCancel
+struct AcCmdCRRemoveEquipmentCancel
 {
   uint32_t itemUid{};
   uint8_t member{};
@@ -1780,14 +1781,14 @@ struct RanchCommandRemoveEquipmentCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandRemoveEquipmentCancel& command,
+    const AcCmdCRRemoveEquipmentCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandRemoveEquipmentCancel& command,
+    AcCmdCRRemoveEquipmentCancel& command,
     SourceStream& stream);
 };
 

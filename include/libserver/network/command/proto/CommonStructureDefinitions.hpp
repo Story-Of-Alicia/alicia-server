@@ -233,14 +233,25 @@ struct Horse
     uint16_t intimacy{};
     uint16_t val0{};
 
-    uint16_t val1{};
-    uint16_t val2{};
+    //! A hunger value in a range of <0, 1200>.
+    //! 910 is a little full, 1200 is full
+    uint16_t hunger{};
+    //! A dirty value in a range of <0, 600>. for all body parts.
+    //! 600 is fully dirty, 0 is clean.
+    uint16_t bodyDirty{};
+    uint16_t maneDirty{};
+    uint16_t tailDirty{};
 
-    uint16_t val3{};
-    uint16_t val4{};
-
-    uint16_t val5{};
-    uint16_t val6{};
+    //! A trust value is hidden in the client. Used for play
+    //! 111 Rod unlocked,
+    //! 501 Bow unlocked
+    uint16_t trust{};  
+    //! A play value in a range of <0, 21>.
+    //! 0 is bored
+    //! 1 is a little bored
+    //! 11 wants to play a little
+    //! 21 wants to play.
+    uint16_t play{};
 
     uint16_t val7{};
     uint16_t val8{};

@@ -120,6 +120,35 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRRanchSnapshot& command);
 
+  void HandleEnterBreedingMarket(
+    ClientId clientId,
+    const protocol::AcCmdCREnterBreedingMarket& command);
+
+  void HandleSearchStallion(
+    ClientId clientId,
+    const protocol::AcCmdCRSearchStallion& command);
+
+  void HandleRegisterStallion(
+    ClientId clientId,
+    const protocol::AcCmdCRRegisterStallion& command);
+
+  void HandleUnregisterStallion(
+    ClientId clientId,
+    const protocol::AcCmdCRUnregisterStallion& command);
+
+  void HandleTryBreeding(
+    ClientId clientId,
+    const protocol::AcCmdCRTryBreeding& command);
+
+  void HandleBreedingAbandon(
+    ClientId clientId,
+    const protocol::AcCmdCRBreedingAbandon& command);
+
+  //!
+  void HandleBreedingWishlist(
+    ClientId clientId,
+    const protocol::RanchCommandBreedingWishlist& command);
+
   //!
   void HandleCmdAction(
     ClientId clientId,
@@ -134,26 +163,6 @@ private:
   void HandleUpdateBusyState(
     ClientId clientId,
     const protocol::RanchCommandUpdateBusyState& command);
-
-  //!
-  void HandleSearchStallion(
-    ClientId clientId,
-    const protocol::RanchCommandSearchStallion& command);
-
-  //!
-  void HandleEnterBreedingMarket(
-    ClientId clientId,
-    const protocol::RanchCommandEnterBreedingMarket& command);
-
-  //!
-  void HandleTryBreeding(
-    ClientId clientId,
-    const protocol::RanchCommandTryBreeding& command);
-
-  //!
-  void HandleBreedingWishlist(
-    ClientId clientId,
-    const protocol::RanchCommandBreedingWishlist& command);
 
   //!
   void HandleUpdateMountNickname(
@@ -177,11 +186,11 @@ private:
 
   void HandleWearEquipment(
     ClientId clientId,
-    const protocol::RanchCommandWearEquipment& command);
+    const protocol::AcCmdCRWearEquipment& command);
 
   void HandleRemoveEquipment(
     ClientId clientId,
-    const protocol::RanchCommandRemoveEquipment& command);
+    const protocol::AcCmdCRRemoveEquipment& command);
 
   void HandleCreateGuild(
     ClientId clientId,
