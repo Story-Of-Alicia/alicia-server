@@ -232,6 +232,7 @@ struct Horse
     //! An intimacy value in a range of <0, 1000>. 
     uint16_t intimacy{};
     uint16_t val0{};
+
     //! A hunger value in a range of <0, 1200>.
     //! 910 is a little full, 1200 is full
     uint16_t hunger{};
@@ -241,7 +242,9 @@ struct Horse
     uint16_t maneDirty{};
     uint16_t tailDirty{};
 
-    uint16_t val5{};
+    //! A trust value is hidden in the client. Used for play
+    //! range to be determined.
+    uint16_t trust{};  
     //! A play value in a range of <0, 21>.
     //! 0 is bored
     //! 1 is a little bored
