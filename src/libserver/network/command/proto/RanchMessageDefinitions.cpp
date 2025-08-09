@@ -47,7 +47,7 @@ void RanchCommandUseItemOK::ActionTwoBytes::Write(
   const ActionTwoBytes& action,
   SinkStream& stream)
 {
-  stream.Write(action.unk0)
+  stream.Write(action.xpReward)
     .Write(action.play);
 }
 

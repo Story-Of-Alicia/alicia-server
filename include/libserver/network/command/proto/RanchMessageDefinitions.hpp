@@ -2821,7 +2821,10 @@ struct RanchCommandUseItemOK
 
   struct ActionTwoBytes
   {
-    uint8_t unk0{};
+    // Gives less % as the player levels up but the unit remains the same
+    // Likely means that the max percentage per level is increased
+    // E.g. level 100 = 100 points, level 200 = 200 points etc (arbitrary example)
+    uint8_t xpReward{};
     RanchCommandUseItem::PlayResponse play{};
 
     static void Write(
@@ -2845,8 +2848,8 @@ struct RanchCommandUseItemOK
   };
 
   uint32_t itemUid{};
-  // Consume item? Setting to 0 makes the item disappear on the client
-  uint16_t unk1{};
+  // Directly reflects on the client. Setting to 0 will not show the item
+  uint16_t itemCount{};
 
   // Action points to different structures depending on type
   ActionType type{};
