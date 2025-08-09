@@ -233,6 +233,10 @@ private:
     const protocol::RanchCommandUseItem& command,
     protocol::RanchCommandUseItemOK& response);
 
+  void HandleUseCureItem(
+    const protocol::RanchCommandUseItem& command,
+    protocol::RanchCommandUseItemOK& response);
+
   void HandleUseItem(
     ClientId clientId,
     const protocol::RanchCommandUseItem& command);

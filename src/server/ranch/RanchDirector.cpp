@@ -2027,7 +2027,35 @@ void RanchDirector::HandleUsePlayItem(
       break;
   }
 
+  spdlog::info("Play - itemUid: {}, mem1: {}, mem2: {}, {} hit, {} play",
+    command.itemUid,
+    command.always1,
+    command.always1too,
+    command.play == protocol::RanchCommandUseItem::Play::Bad
+      ? "Bad"
+      : command.play == protocol::RanchCommandUseItem::Play::Good
+        ? "Good"
+        : "Perfect",
+    response.actionTwoBytes.play == protocol::RanchCommandUseItem::PlayResponse::Bad
+      ? "Bad"
+      : response.actionTwoBytes.play == protocol::RanchCommandUseItem::PlayResponse::Good
+        ? "Good"
+        : response.actionTwoBytes.play == protocol::RanchCommandUseItem::PlayResponse::CriticalGood
+          ? "Critical Good"
+          : response.actionTwoBytes.play == protocol::RanchCommandUseItem::PlayResponse::Perfect
+            ? "Perfect"
+            : "Critical Perfect");
+
   // TODO: Update the horse's stats based on the play item used.
+}
+
+void RanchDirector::HandleUseCureItem(
+  const protocol::RanchCommandUseItem& command,
+  protocol::RanchCommandUseItemOK& response)
+{
+  // No info
+
+  // TODO: Update the horse's stats based on the cure item used.
 }
 
 void RanchDirector::HandleUseItem(
@@ -2080,16 +2108,11 @@ void RanchDirector::HandleUseItem(
     // Carrot on a stick or bow and arrow respectively.
     HandleUsePlayItem(command, response);
   }
-
-  spdlog::info("Play - itemUid: {}, mem1: {}, mem2: {}, {} play",
-    command.itemUid,
-    command.always1,
-    command.always1too,
-    command.play == protocol::RanchCommandUseItem::Play::Bad
-      ? "Bad"
-      : command.play == protocol::RanchCommandUseItem::Play::Good
-        ? "Good"
-        : "Perfect");
+  else if (itemTid > 44000 && itemTid < 44007)
+  {
+    // Cure items
+    HandleUseCureItem(command, response);
+  }
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
