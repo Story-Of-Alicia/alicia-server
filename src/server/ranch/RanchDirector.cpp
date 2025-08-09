@@ -2077,12 +2077,6 @@ void RanchDirector::HandleUseItem(
     response.itemUid = command.itemUid,
     response.itemCount = command.always1,
     response.type = protocol::RanchCommandUseItemOK::ActionType::Empty};
-  
-    spdlog::debug("HandleUseItem - itemUid: {}, always1: {}, horseUid: {}, play: {}",
-      command.itemUid,
-      command.always1,
-      command.horseUid,
-      (uint32_t)command.play);
 
   const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
@@ -2109,6 +2103,13 @@ void RanchDirector::HandleUseItem(
   {
     itemTid = item.tid();
   });
+
+  spdlog::debug("HandleUseItem - itemUid: {}, itemTid: {}, always1: {}, horseUid: {}, play: {}",
+    command.itemUid,
+    itemTid,
+    command.always1,
+    command.horseUid,
+    (uint32_t)command.play);
 
   if (itemTid > 41000 && itemTid < 41008)
   {
