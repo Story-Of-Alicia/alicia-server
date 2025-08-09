@@ -1993,16 +1993,18 @@ void RanchDirector::HandleUseItem(
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
+  std::string characterName;
   std::vector<data::Uid> items;
-  characterRecord.Immutable([&items](const data::Character& character)
+  characterRecord.Immutable([&characterName, &items](const data::Character& character)
   {
+    characterName = character.name();
     items = character.items();
   });
   
   if (not std::ranges::contains(items, command.itemUid))
   {
-    spdlog::warn("Client {} tried to use item {} that is not in their inventory",
-      clientId, command.itemUid);
+    spdlog::warn("Character {} tried to use item {} that is not in their inventory",
+      characterName, command.itemUid);
     return;
   }
 
