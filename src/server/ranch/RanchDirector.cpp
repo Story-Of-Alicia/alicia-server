@@ -1990,11 +1990,21 @@ void RanchDirector::HandleUseItem(
   //   success - Action empty
 
   const auto& clientContext = GetClientContext(clientId);
-  // TODO: check if the item is valid for the character.
-  // For now, we assume the item is valid and exists in the character's inventory.
-  // This should be checked against the character's items.
-  //auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
-  //  clientContext.characterUid);
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  std::vector<data::Uid> items;
+  characterRecord.Immutable([&items](const data::Character& character)
+  {
+    items = character.items();
+  });
+  
+  if (not std::ranges::contains(items, command.itemUid))
+  {
+    spdlog::warn("Client {} tried to use item {} that is not in their inventory",
+      clientId, command.itemUid);
+    return;
+  }
 
   auto itemRecord = GetServerInstance().GetDataDirector().GetItem(command.itemUid);
   auto itemTid = data::InvalidTid;
