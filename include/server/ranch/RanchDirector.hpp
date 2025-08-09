@@ -26,6 +26,7 @@
 #include "libserver/network/command/CommandServer.hpp"
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
 
+#include <random>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -63,6 +64,8 @@ public:
   Config::Ranch& GetConfig();
 
 private:
+  std::random_device _randomDevice;
+
   struct ClientContext
   {
     bool isAuthorized{false};

@@ -1989,6 +1989,51 @@ void RanchDirector::HandleUseItem(
   // brushes, always empty response
   //   success - Action empty
 
+  const auto& clientContext = GetClientContext(clientId);
+  // TODO: check if the item is valid for the character.
+  // For now, we assume the item is valid and exists in the character's inventory.
+  // This should be checked against the character's items.
+  //auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+  //  clientContext.characterUid);
+
+  auto itemRecord = GetServerInstance().GetDataDirector().GetItem(command.itemUid);
+  auto itemTid = data::InvalidTid;
+  itemRecord.Immutable([&itemTid](const data::Item& item)
+  {
+    itemTid = item.tid();
+  });
+
+  // Carrot on a stick or bow and arrow respectively.
+  if (itemTid == 42001 || itemTid == 42002)
+  {
+    // TODO: Make critical chance configurable. Currently 0->1 is 50% chance.
+    std::uniform_int_distribution<uint32_t> critRandomDist(0, 1);
+    auto crit = critRandomDist(_randomDevice);
+
+    // TODO: Handle feed item usage by adjusting the horse's stats.
+    // TODO: Action 1, 2 and 3 are valid.
+    // Assuming action 3 = play following the tab order.
+    response.type = protocol::RanchCommandUseItemOK::ActionType::Action3;
+    if (command.play == protocol::RanchCommandUseItem::Play::Bad)
+    {
+      response.actionTwoBytes.play = protocol::RanchCommandUseItem::Play::Bad;
+    }
+    else if (command.play == (protocol::RanchCommandUseItem::Play)1)
+    {
+      if (!crit)
+        response.actionTwoBytes.play = protocol::RanchCommandUseItem::Play::Good;
+      else
+        response.actionTwoBytes.play = protocol::RanchCommandUseItem::Play::CriticalGood;
+    }
+    else if (command.play == (protocol::RanchCommandUseItem::Play)2)
+    {
+      if (!crit)
+        response.actionTwoBytes.play = protocol::RanchCommandUseItem::Play::Perfect;
+      else
+        response.actionTwoBytes.play = protocol::RanchCommandUseItem::Play::CriticalPerfect;
+    }
+  }
+
   spdlog::info("Play - itemUid: {}, mem1: {}, mem2: {}, {} play",
     command.itemUid,
     command.always1,

@@ -2776,6 +2776,7 @@ struct RanchCommandUseItem
     Good = 1,
     CriticalGood = 2,
     Perfect = 3,
+    CriticalPerfect = 4
   };
   Play play{};
 
