@@ -2113,6 +2113,12 @@ void RanchDirector::HandleUseItem(
     // Cure items
     HandleUseCureItem(command, response);
   }
+  else
+  {
+    throw std::runtime_error(
+      std::format("Unknown use of item tid {} for item uid {}", itemTid, command.itemUid));
+    return;
+  }
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
