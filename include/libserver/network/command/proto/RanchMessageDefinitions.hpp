@@ -2845,6 +2845,7 @@ struct RanchCommandUseItemOK
   };
 
   uint32_t itemUid{};
+  // Consume item? Setting to 0 makes the item disappear on the client
   uint16_t unk1{};
 
   // Action points to different structures depending on type
