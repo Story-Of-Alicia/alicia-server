@@ -221,6 +221,14 @@ private:
   void BroadcastEquipmentUpdate(
     ClientId clientId);
 
+  void HandleUseFeedItem(
+    const protocol::RanchCommandUseItem& command,
+    protocol::RanchCommandUseItemOK& response);
+  
+  void HandleUsePlayItem(
+    const protocol::RanchCommandUseItem& command,
+    protocol::RanchCommandUseItemOK& response);
+
   void HandleUseItem(
     ClientId clientId,
     const protocol::RanchCommandUseItem& command);

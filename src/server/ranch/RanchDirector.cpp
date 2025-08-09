@@ -1972,6 +1972,54 @@ void RanchDirector::BroadcastEquipmentUpdate(ClientId clientId)
   }
 }
 
+void RanchDirector::HandleUseFeedItem(
+  const protocol::RanchCommandUseItem& command,
+  protocol::RanchCommandUseItemOK& response)
+{
+    // feed, Action 1 through 3
+    //   success - both bytes zero
+    //   failure - Action empty
+
+    // Food tab is the first tab, hence the use of RanchCommandUseItemOK::ActionType::Action1
+    response.type = protocol::RanchCommandUseItemOK::ActionType::Action1;
+
+    // TODO: Update the horse's stats based on the feed item used.
+}
+
+void RanchDirector::HandleUsePlayItem(
+  const protocol::RanchCommandUseItem& command,
+  protocol::RanchCommandUseItemOK& response)
+{
+  // toys, always Action 1 to Action 3,
+  //   play success indicated by the second byte
+
+  // TODO: Make critical chance configurable. Currently 0->1 is 50% chance.
+  std::uniform_int_distribution<uint32_t> critRandomDist(0, 1);
+  auto crit = critRandomDist(_randomDevice);
+
+  // TODO: Action 1, 2 and 3 are valid.
+  // Assuming action 3 = play following the tab order.
+  response.type = protocol::RanchCommandUseItemOK::ActionType::Action3;
+  switch (command.play)
+  {
+    case protocol::RanchCommandUseItem::Play::Bad:
+      response.actionTwoBytes.play = protocol::RanchCommandUseItem::PlayResponse::Bad;
+      break;
+    case protocol::RanchCommandUseItem::Play::Good:
+      response.actionTwoBytes.play = crit ?
+        protocol::RanchCommandUseItem::PlayResponse::CriticalGood :
+        protocol::RanchCommandUseItem::PlayResponse::Good;
+      break;
+    case protocol::RanchCommandUseItem::Play::Perfect:
+      response.actionTwoBytes.play = crit ?
+        protocol::RanchCommandUseItem::PlayResponse::CriticalPerfect :
+        protocol::RanchCommandUseItem::PlayResponse::Perfect;
+      break;
+  }
+
+  // TODO: Update the horse's stats based on the play item used.
+}
+
 void RanchDirector::HandleUseItem(
   ClientId clientId,
   const protocol::RanchCommandUseItem& command)
@@ -1981,11 +2029,6 @@ void RanchDirector::HandleUseItem(
     response.unk1 = command.always1,
     response.type = protocol::RanchCommandUseItemOK::ActionType::Empty};
 
-  // feed, Action 1 through 3
-  //   success - both bytes zero
-  //   failure - Action empty
-  // toys, always Action 1 to Action 3,
-  //   play success indicated by the second byte
   // brushes, always empty response
   //   success - Action empty
 
@@ -2015,35 +2058,15 @@ void RanchDirector::HandleUseItem(
     itemTid = item.tid();
   });
 
-  // Carrot on a stick or bow and arrow respectively.
-  if (itemTid == 42001 || itemTid == 42002)
+  if (itemTid > 41000 && itemTid < 41008)
   {
-    // TODO: Make critical chance configurable. Currently 0->1 is 50% chance.
-    std::uniform_int_distribution<uint32_t> critRandomDist(0, 1);
-    auto crit = critRandomDist(_randomDevice);
-
-    // TODO: Handle feed item usage by adjusting the horse's stats.
-    // TODO: Action 1, 2 and 3 are valid.
-    // Assuming action 3 = play following the tab order.
-    response.type = protocol::RanchCommandUseItemOK::ActionType::Action3;
-    if (command.play == protocol::RanchCommandUseItem::Play::Bad)
-    {
-      response.actionTwoBytes.play = protocol::RanchCommandUseItem::PlayResponse::Bad;
-    }
-    else if (command.play == protocol::RanchCommandUseItem::Play::Good)
-    {
-      if (!crit)
-        response.actionTwoBytes.play = protocol::RanchCommandUseItem::PlayResponse::Good;
-      else
-        response.actionTwoBytes.play = protocol::RanchCommandUseItem::PlayResponse::CriticalGood;
-    }
-    else if (command.play == protocol::RanchCommandUseItem::Play::Perfect)
-    {
-      if (!crit)
-        response.actionTwoBytes.play = protocol::RanchCommandUseItem::PlayResponse::Perfect;
-      else
-        response.actionTwoBytes.play = protocol::RanchCommandUseItem::PlayResponse::CriticalPerfect;
-    }
+    // Food items
+    HandleUseFeedItem(command, response);
+  }
+  else if (itemTid == 42001 || itemTid == 42002)
+  {
+    // Carrot on a stick or bow and arrow respectively.
+    HandleUsePlayItem(command, response);
   }
 
   spdlog::info("Play - itemUid: {}, mem1: {}, mem2: {}, {} play",
