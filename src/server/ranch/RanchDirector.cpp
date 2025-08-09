@@ -256,6 +256,13 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       HandleRequestLeagueTeamList(clientId, command);
     });
 
+  _commandServer.RegisterCommandHandler<protocol::RanchCommandMountFamilyTree>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleMountFamilyTree(clientId, command);
+    });
+
+
 }
 
 void RanchDirector::Initialize()
@@ -1972,6 +1979,92 @@ void RanchDirector::BroadcastEquipmentUpdate(ClientId clientId)
   }
 }
 
+void RanchDirector::HandleUseFeedItem(
+  const protocol::RanchCommandUseItem& command,
+  protocol::RanchCommandUseItemOK& response)
+{
+  // feed, Action 1 through 3
+  //   success - both bytes zero
+  //   failure - Action empty
+
+  // Food tab is the first tab, hence the use of RanchCommandUseItemOK::ActionType::Action1
+  response.type = protocol::RanchCommandUseItemOK::ActionType::Action1;
+
+  // TODO: Update the horse's stats based on the feed item used.
+}
+
+void RanchDirector::HandleUseCleanItem(
+  const protocol::RanchCommandUseItem& command,
+  protocol::RanchCommandUseItemOK& response)
+{
+  // brushes, always empty response
+  //   success - Action empty
+
+  // TODO: Update the horse's stats based on the clean item used.
+}
+
+void RanchDirector::HandleUsePlayItem(
+  const protocol::RanchCommandUseItem& command,
+  protocol::RanchCommandUseItemOK& response)
+{
+  // toys, always Action 1 to Action 3,
+  //   play success indicated by the second byte
+
+  // TODO: Make critical chance configurable. Currently 0->1 is 50% chance.
+  std::uniform_int_distribution<uint32_t> critRandomDist(0, 1);
+  auto crit = critRandomDist(_randomDevice);
+
+  // TODO: Action 1, 2 and 3 are valid.
+  // Assuming action 3 = play following the tab order.
+  response.type = protocol::RanchCommandUseItemOK::ActionType::Action3;
+  switch (command.play)
+  {
+    case protocol::RanchCommandUseItem::Play::Bad:
+      response.actionTwoBytes.play = protocol::RanchCommandUseItem::PlayResponse::Bad;
+      break;
+    case protocol::RanchCommandUseItem::Play::Good:
+      response.actionTwoBytes.play = crit ?
+        protocol::RanchCommandUseItem::PlayResponse::CriticalGood :
+        protocol::RanchCommandUseItem::PlayResponse::Good;
+      break;
+    case protocol::RanchCommandUseItem::Play::Perfect:
+      response.actionTwoBytes.play = crit ?
+        protocol::RanchCommandUseItem::PlayResponse::CriticalPerfect :
+        protocol::RanchCommandUseItem::PlayResponse::Perfect;
+      break;
+  }
+
+  spdlog::info("Play - itemUid: {}, horseUid: {}, mem1: {}, {} hit, {} play",
+    command.itemUid,
+    command.horseUid,
+    command.always1,
+    command.play == protocol::RanchCommandUseItem::Play::Bad
+      ? "Bad"
+      : command.play == protocol::RanchCommandUseItem::Play::Good
+        ? "Good"
+        : "Perfect",
+    response.actionTwoBytes.play == protocol::RanchCommandUseItem::PlayResponse::Bad
+      ? "Bad"
+      : response.actionTwoBytes.play == protocol::RanchCommandUseItem::PlayResponse::Good
+        ? "Good"
+        : response.actionTwoBytes.play == protocol::RanchCommandUseItem::PlayResponse::CriticalGood
+          ? "Critical Good"
+          : response.actionTwoBytes.play == protocol::RanchCommandUseItem::PlayResponse::Perfect
+            ? "Perfect"
+            : "Critical Perfect");
+
+  // TODO: Update the horse's stats based on the play item used.
+}
+
+void RanchDirector::HandleUseCureItem(
+  const protocol::RanchCommandUseItem& command,
+  protocol::RanchCommandUseItemOK& response)
+{
+  // No info
+
+  // TODO: Update the horse's stats based on the cure item used.
+}
+
 void RanchDirector::HandleUseItem(
   ClientId clientId,
   const protocol::RanchCommandUseItem& command)
@@ -1981,25 +2074,58 @@ void RanchDirector::HandleUseItem(
     response.unk1 = command.always1,
     response.type = protocol::RanchCommandUseItemOK::ActionType::Empty};
 
-  // feed, Action 1 through 3
-  //   success - both bytes zero
-  //   failure - Action empty
-  // toys, always Action 1 to Action 3,
-  //   play success indicated by the second byte
-  // brushes, always empty response
-  //   success - Action empty
+  const auto& clientContext = GetClientContext(clientId);
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
 
-  spdlog::info("Play - itemUid: {}, mem1: {}, mem2: {}, {} play",
-    command.itemUid,
-    command.always1,
-    command.always1too,
-    command.play == protocol::RanchCommandUseItem::Play::Bad
-      ? "Bad"
-      : command.play == protocol::RanchCommandUseItem::Play::Good
-        ? "Good"
-        : command.play == protocol::RanchCommandUseItem::Play::CriticalGood
-          ? "Critical good"
-          : "Perfect");
+  std::string characterName;
+  std::vector<data::Uid> items;
+  characterRecord.Immutable([&characterName, &items](const data::Character& character)
+  {
+    characterName = character.name();
+    items = character.items();
+  });
+  
+  if (not std::ranges::contains(items, command.itemUid))
+  {
+    spdlog::warn("Character {} tried to use item {} that is not in their inventory",
+      characterName, command.itemUid);
+    return;
+  }
+
+  auto itemRecord = GetServerInstance().GetDataDirector().GetItem(command.itemUid);
+  auto itemTid = data::InvalidTid;
+  itemRecord.Immutable([&itemTid](const data::Item& item)
+  {
+    itemTid = item.tid();
+  });
+
+  if (itemTid > 41000 && itemTid < 41008)
+  {
+    // Food items
+    HandleUseFeedItem(command, response);
+  }
+  else if (itemTid == 40002 || itemTid == 41008 || itemTid == 41009)
+  {
+    // Clean items
+    HandleUseCleanItem(command, response);
+  }
+  else if (itemTid == 42001 || itemTid == 42002)
+  {
+    // Carrot on a stick or bow and arrow respectively.
+    HandleUsePlayItem(command, response);
+  }
+  else if (itemTid > 44000 && itemTid < 44007)
+  {
+    // Cure items
+    HandleUseCureItem(command, response);
+  }
+  else
+  {
+    throw std::runtime_error(
+      std::format("Unknown use of item tid {} for item uid {}", itemTid, command.itemUid));
+    return;
+  }
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -2140,4 +2266,56 @@ void RanchDirector::HandleRequestLeagueTeamList(
     });
 }
 
+
+void RanchDirector::HandleMountFamilyTree(
+  ClientId clientId,
+  const protocol::RanchCommandMountFamilyTree& command)
+{
+  protocol::RanchCommandMountFamilyTreeOK response{
+    .ancestors = {
+      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
+        .id = 1,
+        .name = "1",
+        .grade = 1,
+        .skinId = 1
+      },
+      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
+        .id = 2,
+        .name = "2",
+        .grade = 4,
+        .skinId = 1
+      },
+      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
+        .id = 3,
+        .name = "3",
+        .grade = 1,
+        .skinId = 1
+      },
+      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
+        .id = 4,
+        .name = "4",
+        .grade = 1,
+        .skinId = 1
+      },
+      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
+        .id = 5,
+        .name = "5",
+        .grade = 1,
+        .skinId = 1
+      },
+      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
+        .id = 6,
+        .name = "6",
+        .grade = 1,
+        .skinId = 1
+      }}
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
 } // namespace server

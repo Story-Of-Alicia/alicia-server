@@ -2768,16 +2768,24 @@ struct RanchCommandUseItem
 {
   uint32_t itemUid{};
   uint16_t always1{};
-  uint32_t always1too{};
+  uint32_t horseUid{};
 
   enum class Play : uint32_t
   {
     Bad = 0,
     Good = 1,
-    CriticalGood = 2,
-    Perfect = 3,
+    Perfect = 2
   };
   Play play{};
+
+  enum class PlayResponse : uint32_t
+  {
+    Bad = 0,
+    Good = 1,
+    CriticalGood = 2,
+    Perfect = 3,
+    CriticalPerfect = 4
+  };
 
   static Command GetCommand()
   {
@@ -2814,7 +2822,7 @@ struct RanchCommandUseItemOK
   struct ActionTwoBytes
   {
     uint8_t unk0{};
-    RanchCommandUseItem::Play play{};
+    RanchCommandUseItem::PlayResponse play{};
 
     static void Write(
       const ActionTwoBytes& action,
@@ -2837,6 +2845,7 @@ struct RanchCommandUseItemOK
   };
 
   uint32_t itemUid{};
+  // Consume item? Setting to 0 makes the item disappear on the client
   uint16_t unk1{};
 
   // Action points to different structures depending on type
@@ -2919,19 +2928,17 @@ struct RanchCommandMountFamilyTree
 //!
 struct RanchCommandMountFamilyTreeOK
 {
-  uint32_t unk0{};
-
   struct MountFamilyTreeItem
   {
-    uint8_t unk0{};
-    std::string unk1{};
-    uint8_t unk2{};
-    uint16_t unk3{};
+    uint8_t id{};
+    std::string name{};
+    uint8_t grade{};
+    uint16_t skinId{};
   };
 
   // In the packet, the length is specified as a byte
   // max size 6
-  std::vector<MountFamilyTreeItem> items;
+  std::vector<MountFamilyTreeItem> ancestors;
 
   static Command GetCommand()
   {
