@@ -224,6 +224,10 @@ private:
   void HandleUseFeedItem(
     const protocol::RanchCommandUseItem& command,
     protocol::RanchCommandUseItemOK& response);
+
+  void HandleUseCleanItem(
+    const protocol::RanchCommandUseItem& command,
+    protocol::RanchCommandUseItemOK& response);
   
   void HandleUsePlayItem(
     const protocol::RanchCommandUseItem& command,

@@ -1976,14 +1976,24 @@ void RanchDirector::HandleUseFeedItem(
   const protocol::RanchCommandUseItem& command,
   protocol::RanchCommandUseItemOK& response)
 {
-    // feed, Action 1 through 3
-    //   success - both bytes zero
-    //   failure - Action empty
+  // feed, Action 1 through 3
+  //   success - both bytes zero
+  //   failure - Action empty
 
-    // Food tab is the first tab, hence the use of RanchCommandUseItemOK::ActionType::Action1
-    response.type = protocol::RanchCommandUseItemOK::ActionType::Action1;
+  // Food tab is the first tab, hence the use of RanchCommandUseItemOK::ActionType::Action1
+  response.type = protocol::RanchCommandUseItemOK::ActionType::Action1;
 
-    // TODO: Update the horse's stats based on the feed item used.
+  // TODO: Update the horse's stats based on the feed item used.
+}
+
+void RanchDirector::HandleUseCleanItem(
+  const protocol::RanchCommandUseItem& command,
+  protocol::RanchCommandUseItemOK& response)
+{
+  // brushes, always empty response
+  //   success - Action empty
+
+  // TODO: Update the horse's stats based on the clean item used.
 }
 
 void RanchDirector::HandleUsePlayItem(
@@ -2029,9 +2039,6 @@ void RanchDirector::HandleUseItem(
     response.unk1 = command.always1,
     response.type = protocol::RanchCommandUseItemOK::ActionType::Empty};
 
-  // brushes, always empty response
-  //   success - Action empty
-
   const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
@@ -2062,6 +2069,11 @@ void RanchDirector::HandleUseItem(
   {
     // Food items
     HandleUseFeedItem(command, response);
+  }
+  else if (itemTid == 40002 || itemTid == 41008 || itemTid == 41009)
+  {
+    // Clean items
+    HandleUseCleanItem(command, response);
   }
   else if (itemTid == 42001 || itemTid == 42002)
   {
