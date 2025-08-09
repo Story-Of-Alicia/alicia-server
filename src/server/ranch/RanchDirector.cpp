@@ -2016,21 +2016,21 @@ void RanchDirector::HandleUseItem(
     response.type = protocol::RanchCommandUseItemOK::ActionType::Action3;
     if (command.play == protocol::RanchCommandUseItem::Play::Bad)
     {
-      response.actionTwoBytes.play = protocol::RanchCommandUseItem::Play::Bad;
+      response.actionTwoBytes.play = protocol::RanchCommandUseItem::PlayResponse::Bad;
     }
-    else if (command.play == (protocol::RanchCommandUseItem::Play)1)
+    else if (command.play == protocol::RanchCommandUseItem::Play::Good)
     {
       if (!crit)
-        response.actionTwoBytes.play = protocol::RanchCommandUseItem::Play::Good;
+        response.actionTwoBytes.play = protocol::RanchCommandUseItem::PlayResponse::Good;
       else
-        response.actionTwoBytes.play = protocol::RanchCommandUseItem::Play::CriticalGood;
+        response.actionTwoBytes.play = protocol::RanchCommandUseItem::PlayResponse::CriticalGood;
     }
-    else if (command.play == (protocol::RanchCommandUseItem::Play)2)
+    else if (command.play == protocol::RanchCommandUseItem::Play::Perfect)
     {
       if (!crit)
-        response.actionTwoBytes.play = protocol::RanchCommandUseItem::Play::Perfect;
+        response.actionTwoBytes.play = protocol::RanchCommandUseItem::PlayResponse::Perfect;
       else
-        response.actionTwoBytes.play = protocol::RanchCommandUseItem::Play::CriticalPerfect;
+        response.actionTwoBytes.play = protocol::RanchCommandUseItem::PlayResponse::CriticalPerfect;
     }
   }
 
@@ -2042,9 +2042,7 @@ void RanchDirector::HandleUseItem(
       ? "Bad"
       : command.play == protocol::RanchCommandUseItem::Play::Good
         ? "Good"
-        : command.play == protocol::RanchCommandUseItem::Play::CriticalGood
-          ? "Critical good"
-          : "Perfect");
+        : "Perfect");
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,

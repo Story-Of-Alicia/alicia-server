@@ -2774,11 +2774,18 @@ struct RanchCommandUseItem
   {
     Bad = 0,
     Good = 1,
+    Perfect = 2
+  };
+  Play play{};
+
+  enum class PlayResponse : uint32_t
+  {
+    Bad = 0,
+    Good = 1,
     CriticalGood = 2,
     Perfect = 3,
     CriticalPerfect = 4
   };
-  Play play{};
 
   static Command GetCommand()
   {
@@ -2815,7 +2822,7 @@ struct RanchCommandUseItemOK
   struct ActionTwoBytes
   {
     uint8_t unk0{};
-    RanchCommandUseItem::Play play{};
+    RanchCommandUseItem::PlayResponse play{};
 
     static void Write(
       const ActionTwoBytes& action,
