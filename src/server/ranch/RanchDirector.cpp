@@ -2027,10 +2027,10 @@ void RanchDirector::HandleUsePlayItem(
       break;
   }
 
-  spdlog::info("Play - itemUid: {}, mem1: {}, mem2: {}, {} hit, {} play",
+  spdlog::info("Play - itemUid: {}, horseUid: {}, mem1: {}, {} hit, {} play",
     command.itemUid,
+    command.horseUid,
     command.always1,
-    command.always1too,
     command.play == protocol::RanchCommandUseItem::Play::Bad
       ? "Bad"
       : command.play == protocol::RanchCommandUseItem::Play::Good

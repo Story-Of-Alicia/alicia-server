@@ -39,7 +39,7 @@ void RanchCommandUseItem::Read(
 {
   stream.Read(command.itemUid)
     .Read(command.always1)
-    .Read(command.always1too)
+    .Read(command.horseUid)
     .Read(command.play);
 }
 

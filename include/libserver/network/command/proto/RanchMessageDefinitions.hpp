@@ -2768,7 +2768,7 @@ struct RanchCommandUseItem
 {
   uint32_t itemUid{};
   uint16_t always1{};
-  uint32_t always1too{};
+  uint32_t horseUid{};
 
   enum class Play : uint32_t
   {
