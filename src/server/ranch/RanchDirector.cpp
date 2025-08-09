@@ -2000,6 +2000,10 @@ void RanchDirector::HandleUseCleanItem(
   // brushes, always empty response
   //   success - Action empty
 
+  // Clean tab is the second tab, hence the use of RanchCommandUseItemOK::ActionType::Action2
+  response.type = protocol::RanchCommandUseItemOK::ActionType::Action2;
+  response.actionTwoBytes.play = protocol::RanchCommandUseItem::PlayResponse::CriticalGood; // 2
+
   // TODO: Update the horse's stats based on the clean item used.
 }
 
@@ -2071,7 +2075,7 @@ void RanchDirector::HandleUseItem(
 {
   protocol::RanchCommandUseItemOK response{
     response.itemUid = command.itemUid,
-    response.unk1 = command.always1,
+    response.itemCount = command.always1,
     response.type = protocol::RanchCommandUseItemOK::ActionType::Empty};
 
   const auto& clientContext = GetClientContext(clientId);
