@@ -2918,8 +2918,6 @@ struct RanchCommandMountFamilyTree
 //!
 struct RanchCommandMountFamilyTreeOK
 {
-  uint32_t unk0{};
-
   struct MountFamilyTreeItem
   {
     uint8_t id{};

@@ -143,8 +143,6 @@ void RanchCommandMountFamilyTreeOK::Write(
   const RanchCommandMountFamilyTreeOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0);
-
   stream.Write(static_cast<uint8_t>(command.ancestors.size()));
   for (auto& item : command.ancestors)
   {
