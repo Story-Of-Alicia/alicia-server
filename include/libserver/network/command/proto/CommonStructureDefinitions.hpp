@@ -278,7 +278,7 @@ struct Horse
     uint8_t val9{};
 
     uint8_t luck{};
-    uint8_t hasLuck{};
+    uint8_t injury{};
     uint8_t val12{};
 
     uint16_t fatigue{};
