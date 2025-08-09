@@ -2778,15 +2778,6 @@ struct RanchCommandUseItem
   };
   Play play{};
 
-  enum class PlayResponse : uint32_t
-  {
-    Bad = 0,
-    Good = 1,
-    CriticalGood = 2,
-    Perfect = 3,
-    CriticalPerfect = 4
-  };
-
   static Command GetCommand()
   {
     return Command::AcCmdCRUseItem;
@@ -2819,13 +2810,22 @@ struct RanchCommandUseItemOK
     Action4
   };
 
+  enum class PlayResponse : uint32_t
+  {
+    Bad = 0,
+    Good = 1,
+    CriticalGood = 2,
+    Perfect = 3,
+    CriticalPerfect = 4
+  };
+
   struct ActionTwoBytes
   {
     // Gives less % as the player levels up but the unit remains the same
     // Likely means that the max percentage per level is increased
     // E.g. level 100 = 100 points, level 200 = 200 points etc (arbitrary example)
     uint8_t xpReward{};
-    RanchCommandUseItem::PlayResponse play{};
+    RanchCommandUseItemOK::PlayResponse play{};
 
     static void Write(
       const ActionTwoBytes& action,
