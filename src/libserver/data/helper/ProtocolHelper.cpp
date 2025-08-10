@@ -50,16 +50,21 @@ void BuildProtocolHorse(
   protocolHorse.val16 = 0xb8a167e4,
   protocolHorse.val17 = 0;
 
-  protocolHorse.vals0 = {
+  protocolHorse.mountCondition = {
     .stamina = 0xFFFF,
-    .attractiveness = 0x3DE,
-    .intimacy = 0x3DE,
-    .hunger = 0x500, 
-    .bodyDirty = 0x160, 
-    .maneDirty = 0x160, 
-    .tailDirty = 0x160,
-    .trust = 0x1F5, 
-    .play = 0x15,
+    .charmPoint = 0x3DE,
+    .friendlyPoint = 0x3DE,
+    .injuryPoint = 0x0000,
+    .plenitude = 0x500, 
+    .bodyDirtiness = 0x160, 
+    .maneDirtiness = 0x160, 
+    .tailDirtiness = 0x160,
+    .attachment = 0x1F5, 
+    .boredom = 0x15,
+    .bodyPolish = 0x2710, //does nothing rn?? 
+    .manePolish = 0xA,
+    .tailPolish = 0xA,
+    .stopAmendsPoint = 0x0000
   };
 
   protocolHorse.vals1 = {
@@ -116,10 +121,10 @@ void BuildProtocolHorseStats(
 {
   protocolHorseStats = {
     .agility = stats.agility(),
-    .control = stats.control(),
-    .speed = stats.speed(),
-    .strength = stats.strength(),
-    .spirit = stats.spirit()};
+    .ambitious = stats.control(),
+    .rush = stats.speed(),
+    .endurance = stats.strength(),
+    .courage = stats.spirit()};
 }
 
 void BuildProtocolHorseMastery(
