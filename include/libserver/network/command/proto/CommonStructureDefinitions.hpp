@@ -259,16 +259,18 @@ struct Horse
     uint16_t val9{};
     uint16_t val10{};
   } vals0{};
-   enum class Injury : uint8_t
-    {
-      None = 0,
-      MinorMuscleStrain = 17,
-      SevereMuscleStrain = 18,
-      MinorWounds = 33,
-      SevereWounds = 34,
-      MinorFracture = 65,
-      SevereFracture = 66,
-    } injury;
+
+  enum class Injury : uint8_t
+  {
+    None = 0,
+    MinorMuscleStrain = 17,
+    SevereMuscleStrain = 18,
+    MinorWounds = 33,
+    SevereWounds = 34,
+    MinorFracture = 65,
+    SevereFracture = 66,
+  };
+
   struct
   {
     HorseType type{};

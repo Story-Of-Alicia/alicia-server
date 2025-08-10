@@ -646,7 +646,8 @@ void AcCmdCRRegisterStallion::Read(
   AcCmdCRRegisterStallion& command,
   SourceStream& stream)
 {
-  stream.Read(command.horseUid);
+  stream.Read(command.horseUid)
+    .Read(command.carrots);
 }
 
 void AcCmdCRRegisterStallionOK::Write(
@@ -719,6 +720,52 @@ void RanchCommandUnregisterStallionCancel::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRUnregisterStallionEstimateInfo::Write(
+  const AcCmdCRUnregisterStallionEstimateInfo& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRUnregisterStallionEstimateInfo::Read(
+  AcCmdCRUnregisterStallionEstimateInfo& command,
+  SourceStream& stream)
+{
+  stream.Read(command.horseUid);
+}
+
+void AcCmdCRUnregisterStallionEstimateInfoOK::Write(
+  const AcCmdCRUnregisterStallionEstimateInfoOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1)
+    .Write(command.timesMated)
+    .Write(command.matingCompensation)
+    .Write(command.member4)
+    .Write(command.matingPrice);
+}
+
+void AcCmdCRUnregisterStallionEstimateInfoOK::Read(
+  AcCmdCRUnregisterStallionEstimateInfoOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRUnregisterStallionEstimateInfoCancel::Write(
+  const AcCmdCRUnregisterStallionEstimateInfoCancel& command,
+  SinkStream& stream)
+{
+  // Empty.
+}
+
+void AcCmdCRUnregisterStallionEstimateInfoCancel::Read(
+  AcCmdCRUnregisterStallionEstimateInfoCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void RanchCommandSearchStallionOK::Write(
   const RanchCommandSearchStallionOK& command,
   SinkStream& stream)
@@ -726,34 +773,26 @@ void RanchCommandSearchStallionOK::Write(
   stream.Write(command.unk0)
     .Write(command.unk1);
 
-  stream.Write(static_cast<uint8_t>(command.stallions.size()));
-  for (auto& unk : command.stallions)
+  stream.Write(
+    static_cast<uint8_t>(command.stallions.size()));
+  for (auto& stallion : command.stallions)
   {
-    stream.Write(unk.unk0)
-      .Write(unk.uid)
-      .Write(unk.tid)
-      .Write(unk.name)
-      .Write(unk.grade)
-      .Write(unk.chance)
-      .Write(unk.price)
-      .Write(unk.unk7)
-      .Write(unk.unk8)
-      .Write(unk.stats.agility)
-      .Write(unk.stats.control)
-      .Write(unk.stats.speed)
-      .Write(unk.stats.strength)
-      .Write(unk.stats.spirit)
-      .Write(unk.parts.skinId)
-      .Write(unk.parts.maneId)
-      .Write(unk.parts.tailId)
-      .Write(unk.parts.faceId)
-      .Write(unk.appearance.scale)
-      .Write(unk.appearance.legLength)
-      .Write(unk.appearance.legVolume)
-      .Write(unk.appearance.bodyLength)
-      .Write(unk.appearance.bodyVolume)
-      .Write(unk.unk11)
-      .Write(unk.coatBonus);
+    static uint32_t time = 0xF;
+    time = time << 1;
+    stream.Write(stallion.member1)
+      .Write(stallion.uid)
+      .Write(stallion.tid)
+      .Write(stallion.name)
+      .Write(stallion.grade)
+      .Write(stallion.chance)
+      .Write(stallion.matePrice)
+      .Write(stallion.unk7)
+      .Write(time)
+      .Write(stallion.stats)
+      .Write(stallion.parts)
+      .Write(stallion.appearance)
+      .Write(stallion.unk11)
+      .Write(stallion.lineage);
   }
 }
 
@@ -827,8 +866,8 @@ void AcCmdCRTryBreeding::Read(
   AcCmdCRTryBreeding& command,
   SourceStream& stream)
 {
-  stream.Read(command.unk0)
-    .Read(command.unk1);
+  stream.Read(command.mareUid)
+    .Read(command.stallionUid);
 }
 
 void RanchCommandTryBreedingCancel::Write(
@@ -901,20 +940,9 @@ void RanchCommandTryBreedingOK::Write(
     .Write(command.val)
     .Write(command.count)
     .Write(command.unk0)
-    .Write(command.parts.skinId)
-    .Write(command.parts.maneId)
-    .Write(command.parts.tailId)
-    .Write(command.parts.faceId)
-    .Write(command.appearance.scale)
-    .Write(command.appearance.legLength)
-    .Write(command.appearance.legVolume)
-    .Write(command.appearance.bodyLength)
-    .Write(command.appearance.bodyVolume)
-    .Write(command.stats.agility)
-    .Write(command.stats.control)
-    .Write(command.stats.speed)
-    .Write(command.stats.strength)
-    .Write(command.stats.spirit)
+    .Write(command.parts)
+    .Write(command.appearance)
+    .Write(command.stats)
     .Write(command.unk1)
     .Write(command.unk2)
     .Write(command.unk3)

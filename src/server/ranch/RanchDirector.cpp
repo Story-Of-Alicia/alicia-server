@@ -92,6 +92,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       HandleUnregisterStallion(clientId, command);
     });
 
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRUnregisterStallionEstimateInfo>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleUnregisterStallionEstimateInfo(clientId, command);
+    });
+
   // AcCmdCRStatusPointApply
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRTryBreeding>(
@@ -1145,17 +1151,12 @@ void RanchDirector::HandleSearchStallion(
     auto& protocolStallion = response.stallions.emplace_back();
     stallionRecord->Immutable([&protocolStallion](const data::Horse& stallion)
       {
-        protocolStallion.unk0 = "unk";
+        protocolStallion.member1 = "unknown";
         protocolStallion.uid = stallion.uid();
         protocolStallion.tid = stallion.tid();
 
-        protocolStallion.chance = 0xFF;
-        protocolStallion.unk7 = 0xFF;
-        protocolStallion.unk8 = 0xFF;
-
         protocolStallion.name = stallion.name();
         protocolStallion.grade = stallion.grade();
-        protocolStallion.unk11 = 0xFF;
 
         protocol::BuildProtocolHorseStats(protocolStallion.stats, stallion.stats);
         protocol::BuildProtocolHorseParts(protocolStallion.parts, stallion.parts);
@@ -1204,13 +1205,32 @@ void RanchDirector::HandleUnregisterStallion(
     });
 }
 
+void RanchDirector::HandleUnregisterStallionEstimateInfo(
+  ClientId clientId,
+  const protocol::AcCmdCRUnregisterStallionEstimateInfo& command)
+{
+  protocol::AcCmdCRUnregisterStallionEstimateInfoOK response{
+    .member1 = 0xFFFF'FFFF,
+    .timesMated = 0,
+    .matingCompensation = 0,
+    .member4 = 0xFFFF'FFFF,
+    .matingPrice = 0};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
 void RanchDirector::HandleTryBreeding(
   ClientId clientId,
   const protocol::AcCmdCRTryBreeding& command)
 {
   protocol::RanchCommandTryBreedingOK response{
-    .uid = command.unk0, // wild guess
-    .tid = command.unk1, // lmao
+    .uid = command.mareUid,
+    .tid = command.stallionUid,
     .val = 0,
     .count = 0,
     .unk0 = 0,

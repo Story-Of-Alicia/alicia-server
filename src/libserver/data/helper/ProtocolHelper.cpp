@@ -75,7 +75,7 @@ void BuildProtocolHorse(
     .potentialValue = static_cast<uint8_t>(horse.potentialLevel()),
     .val9 = 0x00,
     .luck = static_cast<uint8_t>(horse.luckState()),
-    .injury = decltype(protocolHorse.injury)::None,
+    .injury = Horse::Injury::None,
     .val12 = 0x00,
     .fatigue = 0x00,
     .val14 = 0x00,

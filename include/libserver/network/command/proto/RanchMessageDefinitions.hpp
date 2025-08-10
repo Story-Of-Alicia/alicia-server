@@ -544,20 +544,21 @@ struct RanchCommandSearchStallionOK
 
   struct Stallion
   {
-    std::string unk0{};
+    std::string member1{};
     uint32_t uid{};
     uint32_t tid{};
     std::string name{};
     uint8_t grade{};
     uint8_t chance{};
-    uint32_t price{};
+    uint32_t matePrice{};
     uint32_t unk7{};
-    uint32_t unk8{};
+    // 1304
+    uint32_t time{};
     Horse::Stats stats{};
     Horse::Parts parts{};
     Horse::Appearance appearance{};
     uint8_t unk11{};
-    uint8_t coatBonus{};
+    uint8_t lineage{};
   };
 
   // List size specified with a uint8_t. Max size 10
@@ -608,6 +609,7 @@ struct RanchCommandSearchStallionCancel
 struct AcCmdCRRegisterStallion
 {
   uint32_t horseUid{};
+  uint32_t carrots{};
 
   static Command GetCommand()
   {
@@ -743,6 +745,83 @@ struct RanchCommandUnregisterStallionCancel
     SourceStream& stream);
 };
 
+struct AcCmdCRUnregisterStallionEstimateInfo
+{
+  uint32_t horseUid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUnregisterStallionEstimateInfo;
+  }
+
+  //! Writes the command to the provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUnregisterStallionEstimateInfo& command,
+    SinkStream& stream);
+
+  //! Reads a command from the provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUnregisterStallionEstimateInfo& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUnregisterStallionEstimateInfoOK
+{
+  uint32_t member1{};
+  //! A count of times the stallion mated.
+  uint32_t timesMated{};
+  //! An amount of carrots collected for mating.
+  uint32_t matingCompensation{};
+  uint32_t member4{};
+  //! A price for mating.
+  uint32_t matingPrice{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUnregisterStallionEstimateInfoOK;
+  }
+
+  //! Writes the command to the provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUnregisterStallionEstimateInfoOK& command,
+    SinkStream& stream);
+
+  //! Reads a command from the provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUnregisterStallionEstimateInfoOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUnregisterStallionEstimateInfoCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUnregisterStallionEstimateInfoCancel;
+  }
+
+  //! Writes the command to the provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUnregisterStallionEstimateInfoCancel& command,
+    SinkStream& stream);
+
+  //! Reads a command from the provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUnregisterStallionEstimateInfoCancel& command,
+    SourceStream& stream);
+};
+
 struct AcCmdCRUpdateEquipmentNotify
 {
   uint32_t characterUid{};
@@ -841,8 +920,8 @@ struct RanchCommandStatusPointApplyCancel
 
 struct AcCmdCRTryBreeding
 {
-  uint32_t unk0{};
-  uint32_t unk1{};
+  uint32_t mareUid{};
+  uint32_t stallionUid{};
 
   static Command GetCommand()
   {

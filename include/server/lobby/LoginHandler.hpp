@@ -49,6 +49,9 @@ public:
     ClientId clientId,
     const protocol::LobbyCommandCreateNickname& command);
 
+  //!
+  void HandleUserDisconnect(ClientId clientId);
+
   void QueueUserLoginAccepted(ClientId clientId, const std::string& userName);
   void QueueUserCreateNickname(ClientId clientId, const std::string& userName);
   void QueueUserLoginRejected(ClientId clientId, bool invalidUser = false);
@@ -69,7 +72,10 @@ private:
   };
 
   std::unordered_map<ClientId, LoginContext> _clientLogins;
+
+  std::mutex _clientLoginRequestQueueMutex;
   std::queue<ClientId> _clientLoginRequestQueue;
+  std::mutex _clientLoginResponseQueueMutex;
   std::queue<ClientId> _clientLoginResponseQueue;
 
   //!
