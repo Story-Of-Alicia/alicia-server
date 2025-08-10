@@ -2823,7 +2823,7 @@ struct RanchCommandUseItemOK
   {
     // Gives less % as the player levels up but the unit remains the same
     // Likely means that the max percentage per level is increased
-    // E.g. level 100 = 100 points, level 200 = 200 points etc (arbitrary example)
+    // E.g. level 1 = 100 points, level 2 = 200 points etc (arbitrary example)
     uint8_t xpReward{};
     RanchCommandUseItemOK::PlayResponse play{};
 
