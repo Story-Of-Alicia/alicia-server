@@ -2927,8 +2927,9 @@ struct RanchCommandUseItemOK
   };
 
   uint32_t itemUid{};
-  // Directly reflects on the client. Setting to 0 will not show the item
-  uint16_t itemCount{};
+  //! Updates the client-side count of the item used for care.
+  //! Setting it to 0 removes the item completely.
+  uint16_t updatedItemCount{};
 
   // Action points to different structures depending on type
   ActionType type{};
