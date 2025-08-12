@@ -2857,15 +2857,6 @@ struct RanchCommandUseItem
   };
   Play play{};
 
-  enum class PlayResponse : uint32_t
-  {
-    Bad = 0,
-    Good = 1,
-    CriticalGood = 2,
-    Perfect = 3,
-    CriticalPerfect = 4
-  };
-
   static Command GetCommand()
   {
     return Command::AcCmdCRUseItem;
@@ -2898,10 +2889,22 @@ struct RanchCommandUseItemOK
     Action4
   };
 
+  enum class PlayResponse : uint32_t
+  {
+    Bad = 0,
+    Good = 1,
+    CriticalGood = 2,
+    Perfect = 3,
+    CriticalPerfect = 4
+  };
+
   struct ActionTwoBytes
   {
-    uint8_t unk0{};
-    RanchCommandUseItem::PlayResponse play{};
+    // Gives less % as the player levels up but the unit remains the same
+    // Likely means that the max percentage per level is increased
+    // E.g. level 1 = 100 points, level 2 = 200 points etc (arbitrary example)
+    uint8_t xpReward{};
+    RanchCommandUseItemOK::PlayResponse play{};
 
     static void Write(
       const ActionTwoBytes& action,
@@ -2924,8 +2927,9 @@ struct RanchCommandUseItemOK
   };
 
   uint32_t itemUid{};
-  // Consume item? Setting to 0 makes the item disappear on the client
-  uint16_t unk1{};
+  //! Updates the client-side count of the item used for care.
+  //! Setting it to 0 removes the item completely.
+  uint16_t updatedItemCount{};
 
   // Action points to different structures depending on type
   ActionType type{};
