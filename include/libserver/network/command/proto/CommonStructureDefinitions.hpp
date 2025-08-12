@@ -257,8 +257,8 @@ struct Horse
 
     uint16_t bodyPolish{};
     uint16_t manePolish{};
-
     uint16_t tailPolish{};
+    
     uint16_t stopAmendsPoint{};
   } mountCondition{};
 
