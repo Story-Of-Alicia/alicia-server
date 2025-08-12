@@ -77,7 +77,7 @@ void RanchCommandUseItemOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.itemUid)
-    .Write(command.itemCount);
+    .Write(command.updatedItemCount);
 
   stream.Write(command.type);
   switch (command.type)

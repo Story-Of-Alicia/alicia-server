@@ -2095,7 +2095,7 @@ void RanchDirector::HandleUseItem(
 {
   protocol::RanchCommandUseItemOK response{
     response.itemUid = command.itemUid,
-    response.itemCount = command.always1,
+    response.updatedItemCount = command.always1,
     response.type = protocol::RanchCommandUseItemOK::ActionType::Empty};
 
   const auto& clientContext = GetClientContext(clientId);
