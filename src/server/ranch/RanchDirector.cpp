@@ -2017,8 +2017,6 @@ void RanchDirector::HandleUseCleanItem(
   const protocol::RanchCommandUseItem& command,
   protocol::RanchCommandUseItemOK& response)
 {
-  response.type = protocol::RanchCommandUseItemOK::ActionType::Action2;
-  response.actionTwoBytes.play = protocol::RanchCommandUseItem::PlayResponse::CriticalGood;
   // brushes, always empty response
   //   success - Action empty
 
