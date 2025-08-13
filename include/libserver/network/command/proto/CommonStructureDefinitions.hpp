@@ -227,9 +227,9 @@ struct Horse
   struct mountCondition
   {
     uint16_t stamina{};
-    //! charmPoint value in a range of <0, 1000>. 
+    //! Charm (attractiveness, beauty) value in a range of <0, 1000>. 
     uint16_t charmPoint{};
-    //! friendlyPoint value in a range of <0, 1000>. 
+    //! Friendliness (intimacy) value in a range of <0, 1000>. 
     uint16_t friendlyPoint{};
     uint16_t injuryPoint{};
 
