@@ -203,7 +203,7 @@ void Horse::Appearance::Read(Appearance& value, SourceStream& stream)
 void Horse::Stats::Write(const Stats& value, SinkStream& stream)
 {
   stream.Write(value.agility)
-    .Write(value.ambitious)
+    .Write(value.ambition)
     .Write(value.rush)
     .Write(value.endurance)
     .Write(value.courage);
@@ -212,7 +212,7 @@ void Horse::Stats::Write(const Stats& value, SinkStream& stream)
 void Horse::Stats::Read(Stats& value, SourceStream& stream)
 {
   stream.Read(value.agility)
-    .Read(value.ambitious)
+    .Read(value.ambition)
     .Read(value.rush)
     .Read(value.endurance)
     .Read(value.courage);
