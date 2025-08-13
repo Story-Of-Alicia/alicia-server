@@ -224,7 +224,7 @@ struct Horse
   uint8_t grade{};
   uint16_t growthPoints{};
 
-  struct mountCondition
+  struct MountCondition
   {
     uint16_t stamina{};
     //! Charm (attractiveness, beauty) value in a range of <0, 1000>. 
