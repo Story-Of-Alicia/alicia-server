@@ -244,7 +244,9 @@ struct Horse
     //! Referred to as `TailTwisted` by the client.
     uint16_t tailDirtiness{};
 
-    //! A attachment value is hidden in the client. Used for play
+    //! An attachment (trust) value with a possibly RNG thresholds for certain play activities.
+    //! >111 - Fish on a rod play activity unlocked
+    //! >501 - Bow play activity unlocked
     //! 111 Rod unlocked,
     //! 501 Bow unlocked
     uint16_t attachment{};  
