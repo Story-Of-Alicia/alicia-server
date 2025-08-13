@@ -205,13 +205,13 @@ struct Horse
   {
     //!
     uint32_t agility{};
-    //! named control in the client
-    uint32_t ambitious{};
-    //! named speed in the client
+    //! Ambition (control) value. 
+    uint32_t ambition{};
+    //! Rush (speed) value.
     uint32_t rush{};
-    //! named strength in the client
+    //! Endurance (strength) value.
     uint32_t endurance{};
-    //! named spirit in the client
+    //! Courage (spirit) value.
     uint32_t courage{};
 
     static void Write(const Stats& value, SinkStream& stream);
