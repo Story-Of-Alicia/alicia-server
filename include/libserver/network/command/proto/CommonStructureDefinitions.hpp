@@ -239,9 +239,9 @@ struct Horse
     //! A dirty value in a range of <0, 600>. for all body parts.
     //! 600 is fully dirty, 0 is clean.
     uint16_t bodyDirtiness{};
-    //! actually named ManeTwisted in the client files.
+    //! Referred to as `ManeTwisted` by the client.
     uint16_t maneDirtiness{};
-    //! actually named TailTwisted in the client files. 
+    //! Referred to as `TailTwisted` by the client.
     uint16_t tailDirtiness{};
 
     //! A attachment value is hidden in the client. Used for play
