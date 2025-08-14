@@ -343,61 +343,68 @@ void CommandServer::SendCommand(
   protocol::Command commandId,
   CommandSupplier supplier)
 {
-  // ToDo: Actual queue.
-  _server.GetClient(clientId).QueueWrite(
-    [this, commandId, supplier = std::move(supplier)](asio::streambuf& writeBuffer)
-    {
-      const auto mutableBuffer = writeBuffer.prepare(MaxCommandSize);
-      const auto writeBufferView = std::span(
-        static_cast<std::byte*>(mutableBuffer.data()),
-        mutableBuffer.size());
-
-      SinkStream commandSink(writeBufferView);
-
-      const auto streamOrigin = commandSink.GetCursor();
-      commandSink.Seek(streamOrigin + sizeof(protocol::MessageMagic));
-
-      // Write the message data.
-      supplier(commandSink);
-
-      // Command size is the size of the whole command.
-      const uint16_t commandSize = commandSink.GetCursor();
-
-      if (debugOutgoingCommandData
-        && not IsMuted(commandId))
+  try
+  {
+    // ToDo: Actual queue.
+    _server.GetClient(clientId).QueueWrite(
+      [this, commandId, supplier = std::move(supplier)](asio::streambuf& writeBuffer)
       {
-        spdlog::debug("Write data for command '{}' (0x{:X}),\n\n"
-          "Command data size: {} \n"
-          "Data dump: \n\n{}\n",
+        const auto mutableBuffer = writeBuffer.prepare(MaxCommandSize);
+        const auto writeBufferView = std::span(
+          static_cast<std::byte*>(mutableBuffer.data()),
+          mutableBuffer.size());
+
+        SinkStream commandSink(writeBufferView);
+
+        const auto streamOrigin = commandSink.GetCursor();
+        commandSink.Seek(streamOrigin + sizeof(protocol::MessageMagic));
+
+        // Write the message data.
+        supplier(commandSink);
+
+        // Command size is the size of the whole command.
+        const uint16_t commandSize = commandSink.GetCursor();
+
+        if (debugOutgoingCommandData
+          && not IsMuted(commandId))
+        {
+          spdlog::debug("Write data for command '{}' (0x{:X}),\n\n"
+            "Command data size: {} \n"
+            "Data dump: \n\n{}\n",
+            GetCommandName(commandId),
+            static_cast<uint32_t>(commandId),
+            commandSize,
+            util::GenerateByteDump(
+              std::span(
+                static_cast<std::byte*>(mutableBuffer.data()) + sizeof(protocol::MessageMagic),
+                commandSize - sizeof(protocol::MessageMagic))));
+        }
+
+        // Traverse back the stream before the message data,
+        // and write the message magic.
+        commandSink.Seek(streamOrigin);
+
+        // Write the message magic.
+        const protocol::MessageMagic magic{
+          .id = static_cast<uint16_t>(commandId),
+          .length = commandSize};
+
+        commandSink.Write(encode_message_magic(magic));
+        writeBuffer.commit(magic.length);
+
+        if (debugCommands
+          && not IsMuted(commandId))
+        {
+          spdlog::debug("Sent command message '{}' (0x{:X})",
           GetCommandName(commandId),
-          static_cast<uint32_t>(commandId),
-          commandSize,
-          util::GenerateByteDump(
-            std::span(
-              static_cast<std::byte*>(mutableBuffer.data()) + sizeof(protocol::MessageMagic),
-              commandSize - sizeof(protocol::MessageMagic))));
-      }
-
-      // Traverse back the stream before the message data,
-      // and write the message magic.
-      commandSink.Seek(streamOrigin);
-
-      // Write the message magic.
-      const protocol::MessageMagic magic{
-        .id = static_cast<uint16_t>(commandId),
-        .length = commandSize};
-
-      commandSink.Write(encode_message_magic(magic));
-      writeBuffer.commit(magic.length);
-
-      if (debugCommands
-        && not IsMuted(commandId))
-      {
-        spdlog::debug("Sent command message '{}' (0x{:X})",
-        GetCommandName(commandId),
-        static_cast<uint32_t>(commandId));
-      }
-    });
+          static_cast<uint32_t>(commandId));
+        }
+      });
+  }
+  catch (std::exception& x)
+  {
+    // the client disconnected, todo dont use client ids, or dont
+  }
 }
 
 } // namespace server

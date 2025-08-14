@@ -213,6 +213,7 @@ void LoginHandler::HandleUserLogin(
         .userToken = login.authKey});
   assert(inserted && "Duplicate client login request.");
 
+  std::scoped_lock lock(_clientLoginRequestQueueMutex);
   _clientLoginRequestQueue.emplace(clientId);
 }
 
@@ -259,9 +260,9 @@ void LoginHandler::HandleUserCreateCharacter(
 
   characterRecord.Mutable(
     [&userCharacterUid,
-     &horses,
-     &characterMountUid,
-     &command](data::Character& character)
+      &horses,
+      &characterMountUid,
+      &command](data::Character& character)
     {
       userCharacterUid = character.uid();
 
@@ -295,6 +296,11 @@ void LoginHandler::HandleUserCreateCharacter(
 
   // Queue the processing of the login response.
   _clientLoginResponseQueue.emplace(clientId);
+}
+
+void LoginHandler::HandleUserDisconnect(ClientId clientId)
+{
+  // todo handle disconnect
 }
 
 void LoginHandler::QueueUserLoginAccepted(

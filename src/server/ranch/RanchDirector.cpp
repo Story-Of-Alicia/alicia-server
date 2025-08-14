@@ -92,6 +92,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       HandleUnregisterStallion(clientId, command);
     });
 
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRUnregisterStallionEstimateInfo>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleUnregisterStallionEstimateInfo(clientId, command);
+    });
+
   // AcCmdCRStatusPointApply
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRTryBreeding>(
@@ -1145,17 +1151,12 @@ void RanchDirector::HandleSearchStallion(
     auto& protocolStallion = response.stallions.emplace_back();
     stallionRecord->Immutable([&protocolStallion](const data::Horse& stallion)
       {
-        protocolStallion.unk0 = "unk";
+        protocolStallion.member1 = "unknown";
         protocolStallion.uid = stallion.uid();
         protocolStallion.tid = stallion.tid();
 
-        protocolStallion.chance = 0xFF;
-        protocolStallion.unk7 = 0xFF;
-        protocolStallion.unk8 = 0xFF;
-
         protocolStallion.name = stallion.name();
         protocolStallion.grade = stallion.grade();
-        protocolStallion.unk11 = 0xFF;
 
         protocol::BuildProtocolHorseStats(protocolStallion.stats, stallion.stats);
         protocol::BuildProtocolHorseParts(protocolStallion.parts, stallion.parts);
@@ -1204,13 +1205,32 @@ void RanchDirector::HandleUnregisterStallion(
     });
 }
 
+void RanchDirector::HandleUnregisterStallionEstimateInfo(
+  ClientId clientId,
+  const protocol::AcCmdCRUnregisterStallionEstimateInfo& command)
+{
+  protocol::AcCmdCRUnregisterStallionEstimateInfoOK response{
+    .member1 = 0xFFFF'FFFF,
+    .timesMated = 0,
+    .matingCompensation = 0,
+    .member4 = 0xFFFF'FFFF,
+    .matingPrice = 0};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
 void RanchDirector::HandleTryBreeding(
   ClientId clientId,
   const protocol::AcCmdCRTryBreeding& command)
 {
   protocol::RanchCommandTryBreedingOK response{
-    .uid = command.unk0, // wild guess
-    .tid = command.unk1, // lmao
+    .uid = command.mareUid,
+    .tid = command.stallionUid,
     .val = 0,
     .count = 0,
     .unk0 = 0,
@@ -1220,7 +1240,7 @@ void RanchDirector::HandleTryBreeding(
       .tailId = 4,
       .faceId = 5},
     .appearance = {.scale = 4, .legLength = 4, .legVolume = 5, .bodyLength = 3, .bodyVolume = 4},
-    .stats = {.agility = 9, .control = 9, .speed = 9, .strength = 9, .spirit = 9},
+    .stats = {.agility = 9, .ambition = 9, .rush = 9, .endurance = 9, .courage = 9},
     .unk1 = 0,
     .unk2 = 0,
     .unk3 = 0,
@@ -2000,6 +2020,10 @@ void RanchDirector::HandleUseCleanItem(
   // brushes, always empty response
   //   success - Action empty
 
+  // Clean tab is the second tab, hence the use of RanchCommandUseItemOK::ActionType::Action2
+  response.type = protocol::RanchCommandUseItemOK::ActionType::Action2;
+  response.actionTwoBytes.play = protocol::RanchCommandUseItemOK::PlayResponse::CriticalGood; // 2
+
   // TODO: Update the horse's stats based on the clean item used.
 }
 
@@ -2020,17 +2044,17 @@ void RanchDirector::HandleUsePlayItem(
   switch (command.play)
   {
     case protocol::RanchCommandUseItem::Play::Bad:
-      response.actionTwoBytes.play = protocol::RanchCommandUseItem::PlayResponse::Bad;
+      response.actionTwoBytes.play = protocol::RanchCommandUseItemOK::PlayResponse::Bad;
       break;
     case protocol::RanchCommandUseItem::Play::Good:
       response.actionTwoBytes.play = crit ?
-        protocol::RanchCommandUseItem::PlayResponse::CriticalGood :
-        protocol::RanchCommandUseItem::PlayResponse::Good;
+        protocol::RanchCommandUseItemOK::PlayResponse::CriticalGood :
+        protocol::RanchCommandUseItemOK::PlayResponse::Good;
       break;
     case protocol::RanchCommandUseItem::Play::Perfect:
       response.actionTwoBytes.play = crit ?
-        protocol::RanchCommandUseItem::PlayResponse::CriticalPerfect :
-        protocol::RanchCommandUseItem::PlayResponse::Perfect;
+        protocol::RanchCommandUseItemOK::PlayResponse::CriticalPerfect :
+        protocol::RanchCommandUseItemOK::PlayResponse::Perfect;
       break;
   }
 
@@ -2043,13 +2067,13 @@ void RanchDirector::HandleUsePlayItem(
       : command.play == protocol::RanchCommandUseItem::Play::Good
         ? "Good"
         : "Perfect",
-    response.actionTwoBytes.play == protocol::RanchCommandUseItem::PlayResponse::Bad
+    response.actionTwoBytes.play == protocol::RanchCommandUseItemOK::PlayResponse::Bad
       ? "Bad"
-      : response.actionTwoBytes.play == protocol::RanchCommandUseItem::PlayResponse::Good
+      : response.actionTwoBytes.play == protocol::RanchCommandUseItemOK::PlayResponse::Good
         ? "Good"
-        : response.actionTwoBytes.play == protocol::RanchCommandUseItem::PlayResponse::CriticalGood
+        : response.actionTwoBytes.play == protocol::RanchCommandUseItemOK::PlayResponse::CriticalGood
           ? "Critical Good"
-          : response.actionTwoBytes.play == protocol::RanchCommandUseItem::PlayResponse::Perfect
+          : response.actionTwoBytes.play == protocol::RanchCommandUseItemOK::PlayResponse::Perfect
             ? "Perfect"
             : "Critical Perfect");
 
@@ -2071,7 +2095,7 @@ void RanchDirector::HandleUseItem(
 {
   protocol::RanchCommandUseItemOK response{
     response.itemUid = command.itemUid,
-    response.unk1 = command.always1,
+    response.updatedItemCount = command.always1,
     response.type = protocol::RanchCommandUseItemOK::ActionType::Empty};
 
   const auto& clientContext = GetClientContext(clientId);
@@ -2099,6 +2123,13 @@ void RanchDirector::HandleUseItem(
   {
     itemTid = item.tid();
   });
+
+  spdlog::debug("HandleUseItem - itemUid: {}, itemTid: {}, always1: {}, horseUid: {}, play: {}",
+    command.itemUid,
+    itemTid,
+    command.always1,
+    command.horseUid,
+    (uint32_t)command.play);
 
   if (itemTid > 41000 && itemTid < 41008)
   {

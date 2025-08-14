@@ -203,19 +203,19 @@ void Horse::Appearance::Read(Appearance& value, SourceStream& stream)
 void Horse::Stats::Write(const Stats& value, SinkStream& stream)
 {
   stream.Write(value.agility)
-    .Write(value.control)
-    .Write(value.speed)
-    .Write(value.strength)
-    .Write(value.spirit);
+    .Write(value.ambition)
+    .Write(value.rush)
+    .Write(value.endurance)
+    .Write(value.courage);
 }
 
 void Horse::Stats::Read(Stats& value, SourceStream& stream)
 {
   stream.Read(value.agility)
-    .Read(value.control)
-    .Read(value.speed)
-    .Read(value.strength)
-    .Read(value.spirit);
+    .Read(value.ambition)
+    .Read(value.rush)
+    .Read(value.endurance)
+    .Read(value.courage);
 }
 
 void Horse::Mastery::Write(const Mastery& value, SinkStream& stream)
@@ -250,20 +250,20 @@ void Horse::Write(const Horse& value, SinkStream& stream)
     .Write(value.grade)
     .Write(value.growthPoints);
 
-  stream.Write(value.vals0.stamina)
-    .Write(value.vals0.attractiveness)
-    .Write(value.vals0.intimacy)
-    .Write(value.vals0.val0)
-    .Write(value.vals0.hunger)
-    .Write(value.vals0.bodyDirty)
-    .Write(value.vals0.maneDirty)
-    .Write(value.vals0.tailDirty)
-    .Write(value.vals0.trust)
-    .Write(value.vals0.play)
-    .Write(value.vals0.val7)
-    .Write(value.vals0.val8)
-    .Write(value.vals0.val9)
-    .Write(value.vals0.val10);
+  stream.Write(value.mountCondition.stamina)
+    .Write(value.mountCondition.charmPoint)
+    .Write(value.mountCondition.friendlyPoint)
+    .Write(value.mountCondition.injuryPoint)
+    .Write(value.mountCondition.plenitude)
+    .Write(value.mountCondition.bodyDirtiness)
+    .Write(value.mountCondition.maneDirtiness)
+    .Write(value.mountCondition.tailDirtiness)
+    .Write(value.mountCondition.attachment)
+    .Write(value.mountCondition.boredom)
+    .Write(value.mountCondition.bodyPolish)
+    .Write(value.mountCondition.manePolish)
+    .Write(value.mountCondition.tailPolish)
+    .Write(value.mountCondition.stopAmendsPoint);
 
   stream.Write(value.vals1.type)
     .Write(value.vals1.val1)
@@ -304,20 +304,20 @@ void Horse::Read(Horse& value, SourceStream& stream)
     .Read(value.grade)
     .Read(value.growthPoints);
 
-  stream.Read(value.vals0.stamina)
-    .Read(value.vals0.attractiveness)
-    .Read(value.vals0.intimacy)
-    .Read(value.vals0.val0)
-    .Read(value.vals0.hunger)
-    .Read(value.vals0.bodyDirty)
-    .Read(value.vals0.maneDirty)
-    .Read(value.vals0.tailDirty)
-    .Read(value.vals0.trust)
-    .Read(value.vals0.play)
-    .Read(value.vals0.val7)
-    .Read(value.vals0.val8)
-    .Read(value.vals0.val9)
-    .Read(value.vals0.val10);
+  stream.Read(value.mountCondition.stamina)
+    .Read(value.mountCondition.charmPoint)
+    .Read(value.mountCondition.friendlyPoint)
+    .Read(value.mountCondition.injuryPoint)
+    .Read(value.mountCondition.plenitude)
+    .Read(value.mountCondition.bodyDirtiness)
+    .Read(value.mountCondition.maneDirtiness)
+    .Read(value.mountCondition.tailDirtiness)
+    .Read(value.mountCondition.attachment)
+    .Read(value.mountCondition.boredom)
+    .Read(value.mountCondition.bodyPolish)
+    .Read(value.mountCondition.manePolish)
+    .Read(value.mountCondition.tailPolish)
+    .Read(value.mountCondition.stopAmendsPoint);
 
   stream.Read(value.vals1.type)
     .Read(value.vals1.val1)

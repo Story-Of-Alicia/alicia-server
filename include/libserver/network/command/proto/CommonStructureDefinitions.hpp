@@ -205,14 +205,14 @@ struct Horse
   {
     //!
     uint32_t agility{};
-    //!
-    uint32_t control{};
-    //!
-    uint32_t speed{};
-    //!
-    uint32_t strength{};
-    //!
-    uint32_t spirit{};
+    //! Ambition (control) value. 
+    uint32_t ambition{};
+    //! Rush (speed) value.
+    uint32_t rush{};
+    //! Endurance (strength) value.
+    uint32_t endurance{};
+    //! Courage (spirit) value.
+    uint32_t courage{};
 
     static void Write(const Stats& value, SinkStream& stream);
     static void Read(Stats& value, SourceStream& stream);
@@ -224,51 +224,55 @@ struct Horse
   uint8_t grade{};
   uint16_t growthPoints{};
 
-  struct
+  struct MountCondition
   {
     uint16_t stamina{};
-    //! An attractiveness (beauty) value in a range of <0, 1000>. 
-    uint16_t attractiveness{};
-    //! An intimacy value in a range of <0, 1000>. 
-    uint16_t intimacy{};
-    uint16_t val0{};
+    //! Charm (attractiveness, beauty) value in a range of <0, 1000>. 
+    uint16_t charmPoint{};
+    //! Friendliness (intimacy) value in a range of <0, 1000>. 
+    uint16_t friendlyPoint{};
+    uint16_t injuryPoint{};
 
-    //! A hunger value in a range of <0, 1200>.
+    //! A plenitude value in a range of <0, 1200>.
     //! 910 is a little full, 1200 is full
-    uint16_t hunger{};
+    uint16_t plenitude{};
     //! A dirty value in a range of <0, 600>. for all body parts.
     //! 600 is fully dirty, 0 is clean.
-    uint16_t bodyDirty{};
-    uint16_t maneDirty{};
-    uint16_t tailDirty{};
+    uint16_t bodyDirtiness{};
+    //! Referred to as `ManeTwisted` by the client.
+    uint16_t maneDirtiness{};
+    //! Referred to as `TailTwisted` by the client.
+    uint16_t tailDirtiness{};
 
-    //! A trust value is hidden in the client. Used for play
-    //! 111 Rod unlocked,
-    //! 501 Bow unlocked
-    uint16_t trust{};  
-    //! A play value in a range of <0, 21>.
+    //! An attachment (trust) value with a possibly RNG thresholds for certain play activities.
+    //! >111 - Fish on a rod play activity unlocked
+    //! >501 - Bow play activity unlocked
+    uint16_t attachment{};  
+    //! A boredom value in a range of <0, 21>.
     //! 0 is bored
     //! 1 is a little bored
     //! 11 wants to play a little
     //! 21 wants to play.
-    uint16_t play{};
+    uint16_t boredom{};
 
-    uint16_t val7{};
-    uint16_t val8{};
+    uint16_t bodyPolish{};
+    uint16_t manePolish{};
+    uint16_t tailPolish{};
+    
+    uint16_t stopAmendsPoint{};
+  } mountCondition{};
 
-    uint16_t val9{};
-    uint16_t val10{};
-  } vals0{};
-   enum class Injury : uint8_t
-    {
-      None = 0,
-      MinorMuscleStrain = 17,
-      SevereMuscleStrain = 18,
-      MinorWounds = 33,
-      SevereWounds = 34,
-      MinorFracture = 65,
-      SevereFracture = 66,
-    } injury;
+  enum class Injury : uint8_t
+  {
+    None = 0,
+    MinorMuscleStrain = 17,
+    SevereMuscleStrain = 18,
+    MinorWounds = 33,
+    SevereWounds = 34,
+    MinorFracture = 65,
+    SevereFracture = 66,
+  };
+
   struct
   {
     HorseType type{};
