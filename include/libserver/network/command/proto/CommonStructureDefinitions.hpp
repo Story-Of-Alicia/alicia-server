@@ -205,13 +205,13 @@ struct Horse
   {
     //!
     uint32_t agility{};
-    //! named control in the client
-    uint32_t ambitious{};
-    //! named speed in the client
+    //! Ambition (control) value. 
+    uint32_t ambition{};
+    //! Rush (speed) value.
     uint32_t rush{};
-    //! named strength in the client
+    //! Endurance (strength) value.
     uint32_t endurance{};
-    //! named spirit in the client
+    //! Courage (spirit) value.
     uint32_t courage{};
 
     static void Write(const Stats& value, SinkStream& stream);
@@ -224,12 +224,12 @@ struct Horse
   uint8_t grade{};
   uint16_t growthPoints{};
 
-  struct mountCondition
+  struct MountCondition
   {
     uint16_t stamina{};
-    //! charmPoint value in a range of <0, 1000>. 
+    //! Charm (attractiveness, beauty) value in a range of <0, 1000>. 
     uint16_t charmPoint{};
-    //! friendlyPoint value in a range of <0, 1000>. 
+    //! Friendliness (intimacy) value in a range of <0, 1000>. 
     uint16_t friendlyPoint{};
     uint16_t injuryPoint{};
 
@@ -239,14 +239,14 @@ struct Horse
     //! A dirty value in a range of <0, 600>. for all body parts.
     //! 600 is fully dirty, 0 is clean.
     uint16_t bodyDirtiness{};
-    //! actually named ManeTwisted in the client files.
+    //! Referred to as `ManeTwisted` by the client.
     uint16_t maneDirtiness{};
-    //! actually named TailTwisted in the client files. 
+    //! Referred to as `TailTwisted` by the client.
     uint16_t tailDirtiness{};
 
-    //! A attachment value is hidden in the client. Used for play
-    //! 111 Rod unlocked,
-    //! 501 Bow unlocked
+    //! An attachment (trust) value with a possibly RNG thresholds for certain play activities.
+    //! >111 - Fish on a rod play activity unlocked
+    //! >501 - Bow play activity unlocked
     uint16_t attachment{};  
     //! A boredom value in a range of <0, 21>.
     //! 0 is bored

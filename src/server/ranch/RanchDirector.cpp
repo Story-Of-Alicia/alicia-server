@@ -1240,7 +1240,7 @@ void RanchDirector::HandleTryBreeding(
       .tailId = 4,
       .faceId = 5},
     .appearance = {.scale = 4, .legLength = 4, .legVolume = 5, .bodyLength = 3, .bodyVolume = 4},
-    .stats = {.agility = 9, .ambitious = 9, .rush = 9, .endurance = 9, .courage = 9},
+    .stats = {.agility = 9, .ambition = 9, .rush = 9, .endurance = 9, .courage = 9},
     .unk1 = 0,
     .unk2 = 0,
     .unk3 = 0,
@@ -2022,6 +2022,10 @@ void RanchDirector::HandleUseCleanItem(
   // brushes, always empty response
   //   success - Action empty
 
+  // Clean tab is the second tab, hence the use of RanchCommandUseItemOK::ActionType::Action2
+  response.type = protocol::RanchCommandUseItemOK::ActionType::Action2;
+  response.actionTwoBytes.play = protocol::RanchCommandUseItemOK::PlayResponse::CriticalGood; // 2
+
   // TODO: Update the horse's stats based on the clean item used.
 }
 
@@ -2042,17 +2046,17 @@ void RanchDirector::HandleUsePlayItem(
   switch (command.play)
   {
     case protocol::RanchCommandUseItem::Play::Bad:
-      response.actionTwoBytes.play = protocol::RanchCommandUseItem::PlayResponse::Bad;
+      response.actionTwoBytes.play = protocol::RanchCommandUseItemOK::PlayResponse::Bad;
       break;
     case protocol::RanchCommandUseItem::Play::Good:
       response.actionTwoBytes.play = crit ?
-        protocol::RanchCommandUseItem::PlayResponse::CriticalGood :
-        protocol::RanchCommandUseItem::PlayResponse::Good;
+        protocol::RanchCommandUseItemOK::PlayResponse::CriticalGood :
+        protocol::RanchCommandUseItemOK::PlayResponse::Good;
       break;
     case protocol::RanchCommandUseItem::Play::Perfect:
       response.actionTwoBytes.play = crit ?
-        protocol::RanchCommandUseItem::PlayResponse::CriticalPerfect :
-        protocol::RanchCommandUseItem::PlayResponse::Perfect;
+        protocol::RanchCommandUseItemOK::PlayResponse::CriticalPerfect :
+        protocol::RanchCommandUseItemOK::PlayResponse::Perfect;
       break;
   }
 
@@ -2065,13 +2069,13 @@ void RanchDirector::HandleUsePlayItem(
       : command.play == protocol::RanchCommandUseItem::Play::Good
         ? "Good"
         : "Perfect",
-    response.actionTwoBytes.play == protocol::RanchCommandUseItem::PlayResponse::Bad
+    response.actionTwoBytes.play == protocol::RanchCommandUseItemOK::PlayResponse::Bad
       ? "Bad"
-      : response.actionTwoBytes.play == protocol::RanchCommandUseItem::PlayResponse::Good
+      : response.actionTwoBytes.play == protocol::RanchCommandUseItemOK::PlayResponse::Good
         ? "Good"
-        : response.actionTwoBytes.play == protocol::RanchCommandUseItem::PlayResponse::CriticalGood
+        : response.actionTwoBytes.play == protocol::RanchCommandUseItemOK::PlayResponse::CriticalGood
           ? "Critical Good"
-          : response.actionTwoBytes.play == protocol::RanchCommandUseItem::PlayResponse::Perfect
+          : response.actionTwoBytes.play == protocol::RanchCommandUseItemOK::PlayResponse::Perfect
             ? "Perfect"
             : "Critical Perfect");
 
@@ -2093,7 +2097,7 @@ void RanchDirector::HandleUseItem(
 {
   protocol::RanchCommandUseItemOK response{
     response.itemUid = command.itemUid,
-    response.unk1 = command.always1,
+    response.updatedItemCount = command.always1,
     response.type = protocol::RanchCommandUseItemOK::ActionType::Empty};
 
   const auto& clientContext = GetClientContext(clientId);
@@ -2121,6 +2125,13 @@ void RanchDirector::HandleUseItem(
   {
     itemTid = item.tid();
   });
+
+  spdlog::debug("HandleUseItem - itemUid: {}, itemTid: {}, always1: {}, horseUid: {}, play: {}",
+    command.itemUid,
+    itemTid,
+    command.always1,
+    command.horseUid,
+    (uint32_t)command.play);
 
   if (itemTid > 41000 && itemTid < 41008)
   {
