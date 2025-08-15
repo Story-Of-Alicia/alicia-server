@@ -117,7 +117,6 @@ void RaceDirector::HandleClientConnected(ClientId clientId)
 void RaceDirector::HandleClientDisconnected(ClientId clientId)
 {
   spdlog::info("Client {} disconnected from the race", clientId);
-  HandleLeaveRoom(clientId);
   _clientContexts.erase(clientId);
 }
 
@@ -296,8 +295,14 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
   }
 
   roomInstance.worldTracker.RemoveCharacter(clientContext.characterUid);
-
   spdlog::info("Client {} left the room {}", clientId, clientContext.roomUid);
+  
+  if (roomInstance.clients.empty())
+  {
+    RoomRegistry::Get().DeleteRoom(clientContext.roomUid);
+    _roomInstances.erase(clientContext.roomUid);
+    spdlog::info("Room {} deleted as it is now empty", clientContext.roomUid);
+  }
 }
 void RaceDirector::HandleStartRace(
   ClientId clientId,

@@ -41,6 +41,7 @@ class RoomRegistry
 public:
   Room& CreateRoom();
   Room& GetRoom(uint32_t uid);
+  void DeleteRoom(uint32_t uid);
   const std::unordered_map<uint32_t, Room>& GetRooms()
   {
     return _rooms;
