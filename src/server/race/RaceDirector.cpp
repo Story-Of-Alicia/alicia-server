@@ -116,8 +116,45 @@ void RaceDirector::HandleClientConnected(ClientId clientId)
 
 void RaceDirector::HandleClientDisconnected(ClientId clientId)
 {
-  spdlog::info("Client {} disconnected from the race", clientId);
+  const auto& clientContext = _clientContexts[clientId];
+  if (clientContext.roomUid == data::InvalidUid)
+  {
+    spdlog::warn("Client {} is not in a room", clientId);
+  }
+
+  else
+  {
+    auto& roomInstance = _roomInstances[clientContext.roomUid];
+    roomInstance.clients.erase(
+      std::remove(roomInstance.clients.begin(), roomInstance.clients.end(), clientId),
+      roomInstance.clients.end());
+    
+    protocol::RaceCommandLeaveRoomNotify notify{
+      .characterId = clientContext.characterUid,
+      .unk0 = 1};
+    // Notify other clients in the room
+    for (const ClientId& roomClientId : roomInstance.clients)
+    {
+      _commandServer.QueueCommand<decltype(notify)>(
+        roomClientId,
+        [notify]()
+        {
+          return notify;
+        });
+    }
+
+    roomInstance.worldTracker.RemoveCharacter(clientContext.characterUid);
+    spdlog::info("Client {} left the room {}", clientId, clientContext.roomUid);
+
+    if (roomInstance.clients.empty())
+    {
+      RoomRegistry::Get().DeleteRoom(clientContext.roomUid);
+      _roomInstances.erase(clientContext.roomUid);
+      spdlog::info("Room {} deleted as it is now empty", clientContext.roomUid);
+    }
+  }
   _clientContexts.erase(clientId);
+  spdlog::info("Client {} disconnected from the race", clientId);
 }
 
 ServerInstance& RaceDirector::GetServerInstance()
@@ -279,30 +316,6 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
     {
       return response;
     });
-
-  protocol::RaceCommandLeaveRoomNotify notify{
-    .characterId = clientContext.characterUid,
-    .unk0 = 1};
-  // Notify other clients in the room
-  for (const ClientId& roomClientId : roomInstance.clients)
-  {
-    _commandServer.QueueCommand<decltype(notify)>(
-      roomClientId,
-      [notify]()
-      {
-        return notify;
-      });
-  }
-
-  roomInstance.worldTracker.RemoveCharacter(clientContext.characterUid);
-  spdlog::info("Client {} left the room {}", clientId, clientContext.roomUid);
-  
-  if (roomInstance.clients.empty())
-  {
-    RoomRegistry::Get().DeleteRoom(clientContext.roomUid);
-    _roomInstances.erase(clientContext.roomUid);
-    spdlog::info("Room {} deleted as it is now empty", clientContext.roomUid);
-  }
 }
 void RaceDirector::HandleStartRace(
   ClientId clientId,
