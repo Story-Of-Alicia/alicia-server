@@ -294,21 +294,7 @@ void RaceDirector::HandleChangeRoomOptions(
 
 void RaceDirector::HandleLeaveRoom(ClientId clientId)
 {
-  const auto& clientContext = _clientContexts[clientId];
-  if (clientContext.roomUid == data::InvalidUid)
-  {
-    spdlog::warn("Client {} is not in a room", clientId);
-    return;
-  }
-
-  auto& roomInstance = _roomInstances[clientContext.roomUid];
-  roomInstance.clients.erase(
-    std::remove(roomInstance.clients.begin(), roomInstance.clients.end(), clientId),
-    roomInstance.clients.end());
-
   protocol::RaceCommandLeaveRoomOK response{};
-
-  // todo: implement the deletion of rooms if the last player leaves
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
