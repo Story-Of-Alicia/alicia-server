@@ -340,6 +340,8 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
 
   horse.luckState = json["luckState"].get<uint32_t>();
   horse.emblemUid = json["emblem"].get<uint32_t>();
+
+  horse.dateOfBirth = json["dateOfBirth"].get<uint32_t>();
 }
 
 void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
@@ -401,6 +403,7 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["luckState"] = horse.luckState();
   json["emblem"] = horse.emblemUid();
 
+  json["dateOfBirth"] = horse.dateOfBirth();
   dataFile << json.dump(2);
 }
 
