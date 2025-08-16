@@ -242,6 +242,7 @@ void LoginHandler::HandleUserCreateCharacter(
         // The TID of the horse specifies which body mesh is used for that horse.
         // Can be found in the `MountPartInfo` table.
         horse.tid() = 20002;
+        horse.dateOfBirth() = data::Clock::now();
 
         HorseRegistry::Get().BuildRandomHorse(
           horse.parts,

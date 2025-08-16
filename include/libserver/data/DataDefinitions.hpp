@@ -26,7 +26,6 @@
 #include <string>
 #include <vector>
 
-#include "libserver/util/Util.hpp"
 
 namespace server
 {
@@ -295,7 +294,7 @@ struct Horse
 
   dao::Field<uint32_t> luckState{0u};
   dao::Field<uint32_t> emblemUid{0u};
-  dao::Field<Clock::time_point> dateOfBirth{Clock::now()};;
+  dao::Field<Clock::time_point> dateOfBirth{};
 };
 
 struct Housing
