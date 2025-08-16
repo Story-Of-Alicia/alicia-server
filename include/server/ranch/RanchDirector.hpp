@@ -179,12 +179,12 @@ private:
   //!
   void HandleRequestStorage(
     ClientId clientId,
-    const protocol::RanchCommandRequestStorage& command);
+    const protocol::AcCmdCRRequestStorage& command);
 
   //!
   void HandleGetItemFromStorage(
     ClientId clientId,
-    const protocol::RanchCommandGetItemFromStorage& command);
+    const protocol::AcCmdCRGetItemFromStorage& command);
 
   //!
   void HandleRequestNpcDressList(
@@ -226,24 +226,24 @@ private:
     ClientId clientId);
 
   void HandleUseFeedItem(
-    const protocol::RanchCommandUseItem& command,
-    protocol::RanchCommandUseItemOK& response);
+    const protocol::AcCmdCRUseItem& command,
+    protocol::AcCmdCRUseItemOK& response);
 
   void HandleUseCleanItem(
-    const protocol::RanchCommandUseItem& command,
-    protocol::RanchCommandUseItemOK& response);
+    const protocol::AcCmdCRUseItem& command,
+    protocol::AcCmdCRUseItemOK& response);
   
   void HandleUsePlayItem(
-    const protocol::RanchCommandUseItem& command,
-    protocol::RanchCommandUseItemOK& response);
+    const protocol::AcCmdCRUseItem& command,
+    protocol::AcCmdCRUseItemOK& response);
 
   void HandleUseCureItem(
-    const protocol::RanchCommandUseItem& command,
-    protocol::RanchCommandUseItemOK& response);
+    const protocol::AcCmdCRUseItem& command,
+    protocol::AcCmdCRUseItemOK& response);
 
   void HandleUseItem(
     ClientId clientId,
-    const protocol::RanchCommandUseItem& command);
+    const protocol::AcCmdCRUseItem& command);
 
   void HandleHousingBuild(
     ClientId clientId,

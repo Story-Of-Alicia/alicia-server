@@ -28,4 +28,12 @@ Room& RoomRegistry::GetRoom(uint32_t uid)
   return it->second;
 }
 
+void RoomRegistry::DeleteRoom(uint32_t uid)
+{
+  const auto it = _rooms.find(uid);
+  if (it == _rooms.end())
+    throw std::runtime_error("room does not exist");
+  _rooms.erase(it);
+}
+
 } // namespace server

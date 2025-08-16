@@ -553,7 +553,7 @@ struct RanchCommandSearchStallionOK
     uint32_t matePrice{};
     uint32_t unk7{};
     // 1304
-    uint32_t time{};
+    uint32_t expiresAt{};
     Horse::Stats stats{};
     Horse::Parts parts{};
     Horse::Appearance appearance{};
@@ -1469,7 +1469,7 @@ struct RanchCommandUpdateMountInfoNotify
     SourceStream& stream);
 };
 
-struct RanchCommandRequestStorage
+struct AcCmdCRRequestStorage
 {
   enum class Category : uint8_t
   {
@@ -1489,20 +1489,20 @@ struct RanchCommandRequestStorage
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandRequestStorage& command,
+    const AcCmdCRRequestStorage& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandRequestStorage& command,
+    AcCmdCRRequestStorage& command,
     SourceStream& stream);
 };
 
-struct RanchCommandRequestStorageOK
+struct AcCmdCRRequestStorageOK
 {
-  RanchCommandRequestStorage::Category category{};
+  AcCmdCRRequestStorage::Category category{};
   uint16_t page{};
   // First bit indicates whether there's new items
   // in the storage. Other bits somehow indicate the page count.
@@ -1520,20 +1520,20 @@ struct RanchCommandRequestStorageOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandRequestStorageOK& command,
+    const AcCmdCRRequestStorageOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandRequestStorageOK& command,
+    AcCmdCRRequestStorageOK& command,
     SourceStream& stream);
 };
 
-struct RanchCommandRequestStorageCancel
+struct AcCmdCRRequestStorageCancel
 {
-  RanchCommandRequestStorage category{};
+  AcCmdCRRequestStorage category{};
   uint8_t val1{};
 
   static Command GetCommand()
@@ -1545,18 +1545,18 @@ struct RanchCommandRequestStorageCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandRequestStorageCancel& command,
+    const AcCmdCRRequestStorageCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandRequestStorageCancel& command,
+    AcCmdCRRequestStorageCancel& command,
     SourceStream& stream);
 };
 
-struct RanchCommandGetItemFromStorage
+struct AcCmdCRGetItemFromStorage
 {
   uint32_t storedItemUid{};
 
@@ -1569,18 +1569,18 @@ struct RanchCommandGetItemFromStorage
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandGetItemFromStorage& command,
+    const AcCmdCRGetItemFromStorage& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandGetItemFromStorage& command,
+    AcCmdCRGetItemFromStorage& command,
     SourceStream& stream);
 };
 
-struct RanchCommandGetItemFromStorageOK
+struct AcCmdCRGetItemFromStorageOK
 {
   uint32_t storedItemUid{};
   std::vector<Item> items{};
@@ -1595,18 +1595,18 @@ struct RanchCommandGetItemFromStorageOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandGetItemFromStorageOK& command,
+    const AcCmdCRGetItemFromStorageOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandGetItemFromStorageOK& command,
+    AcCmdCRGetItemFromStorageOK& command,
     SourceStream& stream);
 };
 
-struct RanchCommandGetItemFromStorageCancel
+struct AcCmdCRGetItemFromStorageCancel
 {
   uint32_t storedItemUid{};
   uint8_t status{};
@@ -1620,14 +1620,14 @@ struct RanchCommandGetItemFromStorageCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandGetItemFromStorageCancel& command,
+    const AcCmdCRGetItemFromStorageCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandGetItemFromStorageCancel& command,
+    AcCmdCRGetItemFromStorageCancel& command,
     SourceStream& stream);
 };
 
@@ -1639,14 +1639,14 @@ struct RanchCommandCheckStorageItem
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandGetItemFromStorage& command,
+    const AcCmdCRGetItemFromStorage& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandGetItemFromStorage& command,
+    AcCmdCRGetItemFromStorage& command,
     SourceStream& stream);
 };
 
@@ -2843,19 +2843,19 @@ struct RanchCommandRequestLeagueTeamListCancel
     SourceStream& stream);
 };
 
-struct RanchCommandUseItem
+struct AcCmdCRUseItem
 {
   uint32_t itemUid{};
   uint16_t always1{};
   uint32_t horseUid{};
 
-  enum class Play : uint32_t
+  enum class PlaySuccessLevel : uint32_t
   {
     Bad = 0,
     Good = 1,
     Perfect = 2
   };
-  Play play{};
+  PlaySuccessLevel playSuccessLevel{};
 
   static Command GetCommand()
   {
@@ -2866,30 +2866,29 @@ struct RanchCommandUseItem
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandUseItem& command,
+    const AcCmdCRUseItem& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandUseItem& command,
+    AcCmdCRUseItem& command,
     SourceStream& stream);
 };
 
-//!
-struct RanchCommandUseItemOK
+struct AcCmdCRUseItemOK
 {
   enum class ActionType : uint32_t
   {
-    Empty,
-    Action1,
-    Action2,
-    Action3,
-    Action4
+    Generic,
+    Feed,
+    Wash,
+    Play,
+    Cure
   };
 
-  enum class PlayResponse : uint32_t
+  enum class PlaySuccessLevel : uint32_t
   {
     Bad = 0,
     Good = 1,
@@ -2898,44 +2897,19 @@ struct RanchCommandUseItemOK
     CriticalPerfect = 4
   };
 
-  struct ActionTwoBytes
-  {
-    // Gives less % as the player levels up but the unit remains the same
-    // Likely means that the max percentage per level is increased
-    // E.g. level 1 = 100 points, level 2 = 200 points etc (arbitrary example)
-    uint8_t xpReward{};
-    RanchCommandUseItemOK::PlayResponse play{};
-
-    static void Write(
-      const ActionTwoBytes& action,
-      SinkStream& stream);
-    static void Read(
-      ActionTwoBytes& action,
-      SourceStream& stream);
-  };
-
-  struct ActionOneByte
-  {
-    uint8_t unk0{};
-
-    static void Write(
-      const ActionOneByte& action,
-      SinkStream& stream);
-    static void Read(
-      ActionOneByte& action,
-      SourceStream& stream);
-  };
-
+  //! The UID of the item used.
   uint32_t itemUid{};
   //! Updates the client-side count of the item used for care.
   //! Setting it to 0 removes the item completely.
   uint16_t updatedItemCount{};
-
-  // Action points to different structures depending on type
+  //! Action type.
   ActionType type{};
-
-  ActionTwoBytes actionTwoBytes{};
-  ActionOneByte actionOneByte{};
+  //! An optional reward of experience points,
+  //! only applied to `ActionType::Feed`, `ActionType::Wash`, `ActionType::Play` and `ActionType::Cure` actions.
+  uint8_t experiencePoints{};
+  //! An optional play success level,
+  //! only applied to `ActionType::Feed`, `ActionType::Wash` and `ActionType::Play` actions.
+  PlaySuccessLevel playSuccessLevel{};
 
   static Command GetCommand()
   {
@@ -2946,22 +2920,22 @@ struct RanchCommandUseItemOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandUseItemOK& command,
+    const AcCmdCRUseItemOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandUseItemOK& command,
+    AcCmdCRUseItemOK& command,
     SourceStream& stream);
 };
 
 //!
-struct RanchCommandUseItemCancel
+struct AcCmdCRUseItemCancel
 {
-  uint32_t unk0{};
-  uint8_t unk1{};
+  uint32_t itemUid{};
+  uint8_t rewardExperience{};
 
   static Command GetCommand()
   {
@@ -2972,14 +2946,14 @@ struct RanchCommandUseItemCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandUseItemCancel& command,
+    const AcCmdCRUseItemCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandUseItemCancel& command,
+    AcCmdCRUseItemCancel& command,
     SourceStream& stream);
 };
 

@@ -24,13 +24,12 @@
 #include <chrono>
 #include <span>
 
-namespace server
-{
-
-namespace util
+namespace server::util
 {
 
 namespace asio = boost::asio;
+
+using Clock = std::chrono::system_clock;
 
 //! Windows file-time represents number of 100 nanosecond intervals since January 1, 1601 (UTC).
 struct WinFileTime
@@ -39,10 +38,35 @@ struct WinFileTime
   uint32_t dwHighDateTime = 0;
 };
 
+//! A zero-cost struct to represent a date and a time.
+struct DateTime
+{
+  int32_t years = 0;
+  uint32_t months = 0;
+  uint32_t days = 0;
+  int32_t hours = 0;
+  int32_t minutes = 0;
+};
+
 //! Converts a time point to the Windows file time.
 //! @param timePoint Point in time.
 //! @return Windows file time representing specified point in time.
-WinFileTime UnixTimeToFileTime(const std::chrono::system_clock::time_point& timePoint);
+WinFileTime TimePointToFileTime(const Clock::time_point& timePoint);
+
+//! Converts date time to alicia time.
+//! @param dateTime Date and time.
+//! @returns Alicia time representing the date and time.
+uint32_t DateTimeToAliciaTime(const DateTime& dateTime);
+
+//! Converts time point to alicia time.
+//! @param timePoint Time point.
+//! @returns Alicia time representing the date and time of the time point.
+uint32_t TimePointToAliciaTime(const Clock::time_point& timePoint);
+
+//! Converts duration to alicia time.
+//! @param duration Duration.
+//! @returns Alicia time representing the duration.
+uint32_t DurationToAliciaTime(const Clock::duration& duration);
 
 asio::ip::address_v4 ResolveHostName(const std::string& host);
 
@@ -50,8 +74,6 @@ std::string GenerateByteDump(std::span<const std::byte> data);
 
 std::vector<std::string> TokenizeString(const std::string& value, char delimiter);
 
-} // namespace util
-
-} // namespace server
+} // namespace server::util
 
 #endif // UTIL_HPP

@@ -9,6 +9,7 @@ namespace server
 
 namespace protocol
 {
+
 void BuildProtocolCharacter(
   Character& protocolCharacter,
   const data::Character& character)
@@ -70,7 +71,7 @@ void BuildProtocolHorse(
   protocolHorse.vals1 = {
     .type = Horse::HorseType::Adult,
     .val1 = 0x00,
-    .dateOfBirth = 0xb8a167e4,
+    .dateOfBirth = util::TimePointToAliciaTime(horse.dateOfBirth()),
     .tendency = 0x02,
     .spirit = 0x00,
     .classProgression = static_cast<uint32_t>(horse.clazzProgress()),
@@ -159,7 +160,7 @@ void BuildProtocolItem(
 {
   protocolItem.uid = item.uid();
   protocolItem.tid = item.tid();
-  protocolItem.val = 0xFF;
+  protocolItem.expiresAt = util::TimePointToAliciaTime(item.expiresAt());
   protocolItem.count = item.count();
 }
 
@@ -184,6 +185,7 @@ void BuildProtocolStoredItem(
   protocolStoredItem.uid = storedItem.uid();
   protocolStoredItem.sender = storedItem.sender();
   protocolStoredItem.message = storedItem.message();
+  protocolStoredItem.dateAndTime = util::TimePointToAliciaTime(storedItem.created());
 }
 
 void BuildProtocolStoredItems(
@@ -212,7 +214,6 @@ void BuildProtocolPet(Pet& protocolPet, const data::Pet& petRecord)
   protocolPet.member2 = 0; // Unused
   protocolPet.name = petRecord.name();
   protocolPet.member4 = 0; // Unused
-
 }
 
 void BuildProtocolPets(

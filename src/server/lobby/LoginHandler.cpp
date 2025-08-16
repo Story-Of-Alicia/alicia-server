@@ -242,6 +242,7 @@ void LoginHandler::HandleUserCreateCharacter(
         // The TID of the horse specifies which body mesh is used for that horse.
         // Can be found in the `MountPartInfo` table.
         horse.tid() = 20002;
+        horse.dateOfBirth() = data::Clock::now();
 
         HorseRegistry::Get().BuildRandomHorse(
           horse.parts,
@@ -312,13 +313,8 @@ void LoginHandler::QueueUserLoginAccepted(
   if (not userRecord)
     throw std::runtime_error("User record unavailable");
 
-  const auto lobbyServerTime = util::UnixTimeToFileTime(
-    std::chrono::system_clock::now());
-
   protocol::LobbyCommandLoginOK response{
-    .lobbyTime =
-      {.dwLowDateTime = static_cast<uint32_t>(lobbyServerTime.dwLowDateTime),
-       .dwHighDateTime = static_cast<uint32_t>(lobbyServerTime.dwHighDateTime)},
+    .lobbyTime = util::TimePointToFileTime(util::Clock::now()),
     .member0 = 0xCA794,
     .motd = std::format(
       "Welcome to Story of Alicia. Players online: {}",

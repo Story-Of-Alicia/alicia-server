@@ -43,7 +43,7 @@ struct Item
 {
   uint32_t uid{};
   uint32_t tid{};
-  uint32_t val{};
+  uint32_t expiresAt{};
   uint32_t count{};
 
   static void Write(const Item& item, SinkStream& stream);

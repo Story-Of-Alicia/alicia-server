@@ -26,7 +26,7 @@ void Item::Write(const Item& item, SinkStream& stream)
 {
   stream.Write(item.uid)
     .Write(item.tid)
-    .Write(item.val)
+    .Write(item.expiresAt)
     .Write(item.count);
 }
 
@@ -34,7 +34,7 @@ void Item::Read(Item& item, SourceStream& stream)
 {
   stream.Read(item.uid)
     .Read(item.tid)
-    .Read(item.val)
+    .Read(item.expiresAt)
     .Read(item.count);
 }
 

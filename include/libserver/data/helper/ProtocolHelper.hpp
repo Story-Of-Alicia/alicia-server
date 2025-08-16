@@ -82,7 +82,6 @@ void BuildProtocolHousing(
   std::vector<Housing>& protocolHousing,
   const std::vector<Record<data::Housing>>& housingRecords);
 
-
 } // namespace protocol
 
 } // namespace server

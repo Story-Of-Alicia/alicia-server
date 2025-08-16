@@ -24,13 +24,96 @@
 namespace server::util
 {
 
-WinFileTime UnixTimeToFileTime(const std::chrono::system_clock::time_point& timePoint)
+WinFileTime TimePointToFileTime(const std::chrono::system_clock::time_point& timePoint)
 {
-  const uint64_t unixTime = timePoint.time_since_epoch().count();
-  const uint64_t convertedUnixTime = unixTime * 10'000'000ull + 116444736000000000;
+  // The time difference between 1970 and 1601 in seconds.
+  constexpr uint64_t EpochDifference = 11'644'473'600ULL;
+  // The transformation constant to convert seconds to 100ns intervals.
+  constexpr uint64_t FileTimeIntervalToSecondsConstant = 10'000'000ull;
+
+  // The total time in seconds since the FILETIME epoch.
+  const uint64_t totalTime = std::chrono::ceil<std::chrono::seconds>(
+    timePoint.time_since_epoch()).count() + EpochDifference;
+  const uint64_t fileTime = totalTime * FileTimeIntervalToSecondsConstant;
+
   return WinFileTime{
-    .dwLowDateTime = static_cast<uint32_t>(convertedUnixTime),
-    .dwHighDateTime = static_cast<uint32_t>(convertedUnixTime >> 32)};
+    .dwLowDateTime = static_cast<uint32_t>(fileTime),
+    .dwHighDateTime = static_cast<uint32_t>(fileTime >> 32)};
+}
+
+uint32_t DateTimeToAliciaTime(const DateTime& dateTime)
+{
+  // [0000'00] [0[0]'000] [0'0000] [0000]  [0000'0000'0000]
+  // [minute]  [hour]     [day]   [month]  [year]
+  // <0-63>    <0-15>     <0-31>  <0-15>  <0-4095>
+  const uint32_t value = 0
+    | std::min(dateTime.years, int32_t{4095}) << 0
+    | std::min(dateTime.months, uint32_t{15}) << 12
+    | std::min(dateTime.days, uint32_t{31}) << (12 + 4)
+    | std::min(dateTime.hours, int32_t{31}) << (12 + 4 + 5)
+    | std::min(dateTime.minutes, int32_t{63}) << (12 + 4 + 5 + 5);
+
+  return value;
+}
+
+uint32_t TimePointToAliciaTime(const Clock::time_point& timePoint)
+{
+  const std::chrono::year_month_day date{
+    std::chrono::floor<std::chrono::days>(timePoint)};
+  const std::chrono::hh_mm_ss time{
+    timePoint - std::chrono::floor<std::chrono::days>(timePoint)};
+
+  const DateTime dateTime{
+    .years = static_cast<int32_t>(date.year()),
+    .months = static_cast<uint32_t>(date.month()),
+    .days = static_cast<uint32_t>(date.day()),
+    .hours = time.hours().count(),
+    .minutes = time.minutes().count()};
+  return DateTimeToAliciaTime(dateTime);
+}
+
+uint32_t DurationToAliciaTime(const Clock::duration& duration)
+{
+  // The extracted date time from the duration.
+  DateTime dateTime{};
+  // Total time of the duration in seconds.
+  uint32_t timeLeft = std::chrono::duration_cast<
+    std::chrono::seconds>(duration).count();
+
+  // Convert the remaining time to time unit, subtract equivalent of the time unit in seconds from the time left
+  // and store the time unit value.
+
+  // Years
+  const auto years = std::chrono::floor<std::chrono::years>(
+    std::chrono::seconds(timeLeft));
+  timeLeft -= std::chrono::duration_cast<std::chrono::seconds>(years).count();
+  dateTime.years = years.count();
+
+  // Months
+  const auto months = std::chrono::floor<std::chrono::months>(
+    std::chrono::seconds(timeLeft));
+  timeLeft -= std::chrono::duration_cast<std::chrono::seconds>(months).count();
+  dateTime.months = months.count();
+
+  // Days
+  const auto days = std::chrono::floor<std::chrono::days>(
+    std::chrono::seconds(timeLeft));
+  timeLeft -= std::chrono::duration_cast<std::chrono::seconds>(days).count();
+  dateTime.days = days.count();
+
+  // Hours
+  const auto hours = std::chrono::floor<std::chrono::hours>(
+    std::chrono::seconds(timeLeft));
+  timeLeft -= std::chrono::duration_cast<std::chrono::seconds>(hours).count();
+  dateTime.hours = hours.count();
+
+  // Minutes
+  const auto minutes = std::chrono::floor<std::chrono::minutes>(
+    std::chrono::seconds(timeLeft));
+  timeLeft -= std::chrono::duration_cast<std::chrono::seconds>(minutes).count();
+  dateTime.minutes = minutes.count();
+
+  return DateTimeToAliciaTime(dateTime);
 }
 
 asio::ip::address_v4 ResolveHostName(const std::string& host)
