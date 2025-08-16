@@ -295,7 +295,7 @@ struct Horse
 
   dao::Field<uint32_t> luckState{0u};
   dao::Field<uint32_t> emblemUid{0u};
-  dao::Field<uint32_t> dateOfBirth{server::util::TimePointToAliciaTime(data::Clock::now())};
+  dao::Field<Clock::time_point> dateOfBirth{Clock::now()};;
 };
 
 struct Housing
