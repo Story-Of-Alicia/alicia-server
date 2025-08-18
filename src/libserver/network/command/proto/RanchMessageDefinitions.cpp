@@ -1585,17 +1585,19 @@ void RanchCommandPetBirthNotify::Read(
 }
 
 void RanchCommandIncubateEgg::Write(
-  const RanchCommandPetBirthNotify& command,
+  const RanchCommandIncubateEgg& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void RanchCommandIncubateEgg::Read(
-  RanchCommandPetBirthNotify& command,
+  RanchCommandIncubateEgg& command,
   SourceStream& stream)
 {
-  stream.Read(command.petBirthInfo);
+  stream.Read(command.itemUid)
+    .Read(command.itemTid)
+    .Read(command.member3);
 }
 
 void RanchCommandIncubateEggOK::Write(
@@ -1603,6 +1605,23 @@ void RanchCommandIncubateEggOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.itemUid)
+  .Write(command.egg)
+  .Write(command.member3);
+}
+
+void RanchCommandIncubateEggOK::Read(
+  RanchCommandIncubateEggOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void RanchCommandIncubateEggNotify::Write(
+  const RanchCommandIncubateEggNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.itemUid)
     .Write(command.egg)
     .Write(command.member3);
 }

@@ -197,6 +197,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleUserPetInfos(clientId, command);
     });
+  
+  _commandServer.RegisterCommandHandler<protocol::RanchCommandIncubateEgg>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleIncubateEgg(clientId, command);
+    });
 
   _commandServer.RegisterCommandHandler<protocol::RanchCommandRequestNpcDressList>(
     [this](ClientId clientId, const auto& message)
@@ -1826,6 +1832,7 @@ void RanchDirector::HandleUpdatePet(
   ClientId clientId,
   const protocol::AcCmdCRUpdatePet& command)
 {
+  spdlog::info("actionBitset: '{}'", static_cast<std::underlying_type_t<decltype(command.actionBitset)>>(command.actionBitset));
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
@@ -1897,14 +1904,14 @@ void RanchDirector::HandleUpdatePet(
 
   protocol::AcCmdRCUpdatePet response;
   response.petInfo = command.petInfo;
-
-  const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
-  petRecord.Immutable(
-    [&response](const data::Pet& pet)
-    {
-      response.petInfo.pet.name = pet.name();
-    });
-
+  if (petUid != 0){
+    const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
+    petRecord.Immutable(
+      [&response](const data::Pet& pet)
+      {
+        response.petInfo.pet.name = pet.name();
+      });
+  }
   response.petInfo.characterUid = clientContext.characterUid;
 
   for (const ClientId ranchClientId : ranchInstance.clients)
@@ -1945,6 +1952,42 @@ void RanchDirector::HandleUserPetInfos(
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response](){
+      return response;
+    });
+}
+void RanchDirector::HandleIncubateEgg(
+  ClientId clientId,
+  const protocol::RanchCommandIncubateEgg& command)
+{
+  // This is a prototype egg
+  // the fields are just placeholders and guesses
+  Egg egg;
+  egg.uid = 0x905;
+  egg.tid = 0;
+  egg.petTid = 0;
+  egg.member4 = 0;
+  egg.member5 = 0;
+  //the time fields are probably not correct
+  egg.timeRemaining = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
+    (data::Clock::now() + std::chrono::hours(41)).time_since_epoch())
+      .count());
+  egg.timeElapsed = 0;
+  egg.totalHatchingTime = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>
+    (std::chrono::hours(41)).count());
+  egg.member9 = 0;
+
+  //! TODO: implement the logic that places the egg in the incubator on the ranch
+
+  protocol::RanchCommandIncubateEggOK response{
+    .itemUid = 1,
+    .egg = egg,
+    .member3 = 1,
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
       return response;
     });
 }

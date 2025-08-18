@@ -210,6 +210,10 @@ private:
   void HandleUpdatePet(
     ClientId clientId,
     const protocol::AcCmdCRUpdatePet& command);
+  
+  void HandleIncubateEgg(
+    ClientId clientId,
+    const protocol::RanchCommandIncubateEgg& command);
 
   void HandleRequestPetBirth(
     ClientId clientId,

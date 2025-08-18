@@ -303,6 +303,7 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
       return response;
     });
 }
+
 void RaceDirector::HandleStartRace(
   ClientId clientId,
   const protocol::RaceCommandStartRace& command)

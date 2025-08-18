@@ -105,6 +105,13 @@ struct AcCmdCREnterRanchOK
     IsLocked = 2,
   } bitset{};
 
+  //! Incubator logic:
+  //! slot 1 : 0, slot 2 : anything   - no incubator, also the egg hatching is locked
+  //! slot 1 : 1, slot 2 : anything   - incubator exists(must not have the incubator in housing)
+  //! slot 1 : 2, slot 2 : 0          - incubator spawns in, if wasnt there before (probably some expiration logic with double incubator)
+  //! slot 1 : 2, slot 2 : 1          - double incubator exists (must not have the incubator in housing)
+
+  //! most likely those have to be set after building the single/double incubator
   uint32_t incubatorSlotOne{2};
   uint32_t incubatorSlotTwo{1};
 
@@ -2243,6 +2250,8 @@ struct RanchCommandPetBirthNotify
 struct RanchCommandIncubateEgg
 {
   uint32_t itemUid{};
+  uint32_t itemTid{};
+  uint32_t member3{};
 
   static Command GetCommand()
   {
@@ -2253,14 +2262,14 @@ struct RanchCommandIncubateEgg
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandPetBirthNotify& command,
+    const RanchCommandIncubateEgg& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandPetBirthNotify& command,
+    RanchCommandIncubateEgg& command,
     SourceStream& stream);
 };
 
@@ -2288,6 +2297,34 @@ struct RanchCommandIncubateEggOK
   //! @param stream Source stream.
   static void Read(
     RanchCommandIncubateEggOK& command,
+    SourceStream& stream);
+};
+
+struct RanchCommandIncubateEggNotify
+{
+  uint32_t characterUid{}; // needs confirmation
+  uint32_t itemUid{};
+  Egg egg{};
+  // optional
+  uint32_t member3{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRIncubateEggNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RanchCommandIncubateEggNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RanchCommandIncubateEggNotify& command,
     SourceStream& stream);
 };
 
