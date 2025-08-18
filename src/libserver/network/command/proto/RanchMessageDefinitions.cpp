@@ -1626,8 +1626,8 @@ void RanchCommandIncubateEggNotify::Write(
     .Write(command.member3);
 }
 
-void RanchCommandIncubateEggOK::Read(
-  RanchCommandIncubateEggOK& command,
+void RanchCommandIncubateEggNotify::Read(
+  RanchCommandIncubateEggNotify& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
