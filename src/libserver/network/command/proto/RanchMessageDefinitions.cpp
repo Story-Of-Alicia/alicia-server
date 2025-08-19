@@ -1605,8 +1605,8 @@ void RanchCommandIncubateEggOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.itemUid)
-  .Write(command.egg)
-  .Write(command.member3);
+    .Write(command.egg)
+    .Write(command.member3);
 }
 
 void RanchCommandIncubateEggOK::Read(
