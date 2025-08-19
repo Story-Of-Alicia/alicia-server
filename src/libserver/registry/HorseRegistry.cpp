@@ -147,7 +147,7 @@ void HorseRegistry::BuildRandomHorse(
 {
   // Pick a random coat.
   std::uniform_int_distribution<data::Tid> coatRandomDist(
-    0, _coats.size() - 1);
+    1, _coats.size());
 
   const Coat& coat = _coats[coatRandomDist(_randomDevice)];
   parts.skinTid = coat.tid;
@@ -156,7 +156,7 @@ void HorseRegistry::BuildRandomHorse(
   if (coat.faceType != 0)
   {
     std::uniform_int_distribution<data::Tid> faceRandomDist(
-      0, _faces.size() - 1);
+      1, _faces.size());
 
     const Face& face = _faces[faceRandomDist(_randomDevice)];
     parts.faceTid = face.tid;
@@ -165,7 +165,7 @@ void HorseRegistry::BuildRandomHorse(
   {
     // Pick a random mane.
     std::uniform_int_distribution<data::Tid> maneRandomDist(
-      0, _manes.size() - 1);
+      1, _manes.size());
 
     const Mane& mane = _manes[maneRandomDist(_randomDevice)];
     parts.maneTid = mane.tid;
@@ -174,7 +174,7 @@ void HorseRegistry::BuildRandomHorse(
   {
     // Pick a random tail.
     std::uniform_int_distribution<data::Tid> tailRandomDist(
-      0, _tails.size() - 1);
+      1, _tails.size());
 
     const Tail& tail = _tails[tailRandomDist(_randomDevice)];
     parts.tailTid = tail.tid;
