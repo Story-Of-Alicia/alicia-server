@@ -112,8 +112,8 @@ struct AcCmdCREnterRanchOK
   //! slot 1 : 2, slot 2 : 1          - double incubator exists (must not have the incubator in housing)
 
   //! most likely those have to be set after building the single/double incubator
-  uint32_t incubatorSlotOne{2};
-  uint32_t incubatorSlotTwo{1};
+  uint32_t incubatorSlotOne{1};
+  uint32_t incubatorSlotTwo{0};
 
   std::array<Egg, 3> incubator;
 

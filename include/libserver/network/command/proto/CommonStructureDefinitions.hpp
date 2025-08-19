@@ -366,7 +366,7 @@ struct Egg
   uint8_t member4{};
   uint32_t member5{};
   uint32_t timeRemaining{};
-  uint32_t timeElapsed{};
+  uint32_t timeElapsed{}; //needs renaming, interacts with boosting
   uint32_t totalHatchingTime{};
   uint32_t member9{};
 

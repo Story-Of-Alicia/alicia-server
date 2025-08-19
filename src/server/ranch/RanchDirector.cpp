@@ -627,6 +627,18 @@ void RanchDirector::HandleEnterRanch(
       characterEnteringRanch = protocolCharacter;
     }
   }
+  Egg egg;
+  egg.uid = 90005;
+  egg.tid = 90005;
+  egg.petTid = 90005;
+  egg.member4 = 0;
+  egg.member5 = 0;
+  //the time fields are probably not correct
+  egg.timeRemaining = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::hours(10)).count());
+  egg.timeElapsed = 1000; //0x10000;
+  egg.totalHatchingTime = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::hours(10)).count());
+  egg.member9 = 0;
+  response.incubator[0] = egg;
 
   // Todo: Roll the code for the connecting client.
   _commandServer.SetCode(clientId, {});
