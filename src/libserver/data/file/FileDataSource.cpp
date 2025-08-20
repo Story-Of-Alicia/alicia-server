@@ -527,11 +527,11 @@ void server::FileDataSource::RetrieveEgg(data::Uid uid, data::Egg& egg)
 
   egg.uid = json["uid"].get<data::Uid>();
   egg.tid = json["tid"].get<data::Tid>();
-  egg.petTid = json["petTid"].get<data::Tid>();
+  egg.hatchDuration = json["hatchDuration"].get<uint32_t>();
 
-  egg.hatchTimestamp = data::Clock::time_point(
+  egg.incubateTimestamp = data::Clock::time_point(
     std::chrono::seconds(
-      json["hatchTimestamp"].get<uint64_t>()));
+      json["incubateTimestamp"].get<uint64_t>()));
 }
 
 void server::FileDataSource::StoreEgg(data::Uid uid, const data::Egg& egg)
@@ -549,10 +549,10 @@ void server::FileDataSource::StoreEgg(data::Uid uid, const data::Egg& egg)
   nlohmann::json json;
   json["uid"] = egg.uid();
   json["tid"] = egg.tid();
-  json["petTid"] = egg.petTid();
+  json["hatchDuration"] = egg.hatchDuration();
 
-  json["hatchTimestamp"] = std::chrono::duration_cast<std::chrono::seconds>(
-    egg.hatchTimestamp().time_since_epoch())
+  json["incubateTimestamp"] = std::chrono::duration_cast<std::chrono::seconds>(
+    egg.incubateTimestamp().time_since_epoch())
                              .count();
 
   dataFile << json.dump(2);

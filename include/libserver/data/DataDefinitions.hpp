@@ -307,9 +307,8 @@ struct Egg
 {
   dao::Field<Uid> uid{InvalidUid};
   dao::Field<Tid> tid{InvalidTid};
-  dao::Field<Tid> petTid{InvalidTid};
-
-  dao::Field<Clock::time_point> hatchTimestamp{};
+  dao::Field<uint32_t> hatchDuration{};
+  dao::Field<Clock::time_point> incubateTimestamp{};
 };
 
 } // namespace data
