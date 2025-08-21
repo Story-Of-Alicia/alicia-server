@@ -737,7 +737,7 @@ void RanchDirector::HandleChat(
     const std::vector<std::string>& messages)
   {
     protocol::AcCmdCRRanchChatNotify notify{
-      .author = sender,
+      .author = not isSystem ? sender : "",
       .isSystem = isSystem};
 
     for (const auto& resultMessage : messages)

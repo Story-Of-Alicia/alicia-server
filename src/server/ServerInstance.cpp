@@ -78,6 +78,11 @@ void ServerInstance::Initialize()
     _raceDirector.Terminate();
   });
 
+  _messengerThread = std::thread([this]()
+  {
+    _chatterServer.BeginHost();
+  });
+
   // todo: Messenger
 }
 
