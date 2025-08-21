@@ -149,23 +149,29 @@ size_t server::ChatterServer::OnClientData(
         std::vector<Category> categories = {
           {100, "category 1"},
           {200, "category 2"},
-          {300, "category 2"},
+          {300, "category 3"},
           {0, "default"},};
 
         struct Ranch
         {
           uint32_t uid = 1;
-          uint32_t categoryUid = 1;
+          uint32_t categoryUid = 0;
           std::string name = "default";
-          uint8_t member4 = 2;
-          uint8_t member5 = 1;
-          uint32_t member6 = 0;
-          uint32_t otherUid = 1;
+          enum class Status : uint8_t
+          {
+            Offline = 1,
+            Online = 2
+          } status = Status::Online;
+          uint8_t member5 = 0;
+          //! UID of the current room.
+          uint32_t roomUid = 0;
+          //! UID of the current ranch.
+          uint32_t ranchUid = 1;
         };
         std::vector<Ranch> ranches = {
           {},
-          {.uid = 2, .categoryUid = 100, .name = "ranch 2", .otherUid = 2},
-          {.uid = 3, .categoryUid = 200, .name = "ranch 3", .otherUid = 3}};
+          {.uid = 2, .categoryUid = 100, .name = "ranch 2", .ranchUid = 2},
+          {.uid = 3, .categoryUid = 200, .name = "ranch 3", .ranchUid = 3}};
 
       } chatter;
 
@@ -190,10 +196,10 @@ size_t server::ChatterServer::OnClientData(
         stream.Write(ranch.uid)
           .Write(ranch.categoryUid)
           .Write(ranch.name)
-          .Write(ranch.member4)
+          .Write(ranch.status)
           .Write(ranch.member5)
-          .Write(ranch.member6)
-          .Write(ranch.otherUid);
+          .Write(ranch.roomUid)
+          .Write(ranch.ranchUid);
       }
 
       chatter.header.size = stream.GetCursor();
