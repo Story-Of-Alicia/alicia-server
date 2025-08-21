@@ -203,9 +203,9 @@ struct Horse
 
   struct Stats
   {
-    //! Agility value
+    //! Agility value.
     uint32_t agility{};
-    //! Ambition (spirit) value. 
+    //! Ambition (spirit) value.
     uint32_t ambition{};
     //! Rush (speed) value.
     uint32_t rush{};

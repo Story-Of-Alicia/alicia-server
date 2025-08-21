@@ -35,7 +35,7 @@ constexpr uint16_t BufferSize = 4096;
 //! When switching between scenes due to user interaction,
 //! a client may request blocking until it receives a specific response from the server.
 //! Setting this bit prevents the client from resolving the scene lock when
-//! the message is receieved.
+//! the message is received.
 constexpr uint16_t ResolveSceneLockBit = 1 << 15;
 
 //! XOR code.

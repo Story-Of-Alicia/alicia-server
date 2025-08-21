@@ -47,6 +47,7 @@ add_library(alicia-libserver STATIC
         src/libserver/data/file/FileDataSource.cpp
         #src/libserver/data/pq/PqDataSource.cpp
         src/libserver/network/Server.cpp
+        src/libserver/network/chatter/proto/ChatterMessageDefinitions.cpp
         src/libserver/network/chatter/ChatterServer.cpp
         src/libserver/network/command/CommandProtocol.cpp
         src/libserver/network/command/CommandServer.cpp
@@ -78,6 +79,7 @@ add_executable(alicia-server
         src/server/Config.cpp
         src/server/lobby/LobbyDirector.cpp
         src/server/lobby/LoginHandler.cpp
+        src/server/messenger/MessengerDirector.cpp
         src/server/race/RaceDirector.cpp
         src/server/ranch/RanchDirector.cpp
         src/server/system/ChatSystem.cpp
