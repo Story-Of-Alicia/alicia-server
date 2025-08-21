@@ -254,6 +254,35 @@ void BuildProtocolHousing(
   }
 }
 
+void BuildProtocolEgg(
+  Egg& protocolEgg,
+  const data::Egg& eggRecord)
+{
+  protocolEgg.uid = eggRecord.uid();
+  protocolEgg.itemTid = eggRecord.itemTid();
+  protocolEgg.itemTid = eggRecord.itemTid();
+  protocolEgg.totalHatchingTime = eggRecord.hatchDuration();
+  protocolEgg.timeRemaining = eggRecord.hatchDuration() -
+                              std::chrono::duration_cast<std::chrono::seconds>(
+                                std::chrono::system_clock::now() - eggRecord.incubatedAt())
+                                .count();
+  protocolEgg.boost = 200000;
+}
+
+void BuildProtocolEggs(
+  std::vector<Egg>& protocolEggs,
+  const std::span<const Record<data::Egg>>& eggRecords)
+{
+  for (const auto& eggRecord : eggRecords)
+  {
+    auto& protocolEgg = protocolEggs.emplace_back();
+    eggRecord.Immutable([&protocolEgg](const auto& egg)
+      {
+        BuildProtocolEgg(protocolEgg, egg);
+      });
+  }
+}
+
 } // namespace protocol
 
 } // namespace server

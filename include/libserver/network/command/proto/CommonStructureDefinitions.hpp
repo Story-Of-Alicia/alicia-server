@@ -361,12 +361,12 @@ struct Pet
 struct Egg
 {
   uint32_t uid{};
-  uint32_t tid{};
-  uint32_t petTid{};
+  uint32_t itemTid{};
+  uint32_t member3{};
   uint8_t member4{};
   uint32_t member5{};
   uint32_t timeRemaining{};
-  uint32_t timeElapsed{}; //needs renaming, interacts with boosting
+  uint32_t boost{}; //needs further investigation and possibly a rename
   uint32_t totalHatchingTime{};
   uint32_t member9{};
 

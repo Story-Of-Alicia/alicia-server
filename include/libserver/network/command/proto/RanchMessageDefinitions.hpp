@@ -112,8 +112,8 @@ struct AcCmdCREnterRanchOK
   //! slot 1 : 2, slot 2 : 1          - double incubator exists (must not have the incubator in housing)
 
   //! most likely those have to be set after building the single/double incubator
-  uint32_t incubatorSlotOne{1};
-  uint32_t incubatorSlotTwo{0};
+  uint32_t incubatorSlotOne{2};
+  uint32_t incubatorSlotTwo{1};
 
   std::array<Egg, 3> incubator;
 
@@ -2251,7 +2251,7 @@ struct RanchCommandIncubateEgg
 {
   uint32_t itemUid{};
   uint32_t itemTid{};
-  uint32_t member3{};
+  uint32_t incubatorSlot{};
 
   static Command GetCommand()
   {
@@ -2275,7 +2275,7 @@ struct RanchCommandIncubateEgg
 
 struct RanchCommandIncubateEggOK
 {
-  uint32_t itemUid{};
+  uint32_t incubatorSlot{};
   Egg egg{};
   // optional
   uint32_t member3{};
@@ -2303,7 +2303,7 @@ struct RanchCommandIncubateEggOK
 struct RanchCommandIncubateEggNotify
 {
   uint32_t characterUid{}; // needs confirmation
-  uint32_t itemUid{};
+  uint32_t incubatorSlot{};
   Egg egg{};
   // optional
   uint32_t member3{};
@@ -2355,7 +2355,9 @@ struct AcCmdCRBoostIncubateInfoList
 
 struct AcCmdCRBoostIncubateInfoListOK
 {
-  // some object belong here or something
+  uint32_t member1{};
+  uint16_t count{};
+  //here belongs some vector 2 uint32_t
 
   static Command GetCommand()
   {
@@ -2379,8 +2381,8 @@ struct AcCmdCRBoostIncubateInfoListOK
 
 struct AcCmdCRBoostIncubateEgg
 {
-  uint32_t member1{};
-  uint32_t member2{};
+  uint32_t itemUid{}; //crystal item id
+  uint32_t incubatorSlot{};
 
   static Command GetCommand()
   {
@@ -2404,7 +2406,9 @@ struct AcCmdCRBoostIncubateEgg
 
 struct AcCmdCRBoostIncubateEggOK
 {
-  //figure out the fields
+  Item item{};
+  uint32_t member2{};
+  Egg egg{};         
 
   static Command GetCommand()
   {

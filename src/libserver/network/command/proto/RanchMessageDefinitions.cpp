@@ -1526,6 +1526,69 @@ void AcCmdRCUpdatePetCancel::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRBoostIncubateInfoList::Write(
+  const AcCmdCRBoostIncubateInfoList& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBoostIncubateInfoList::Read(
+  AcCmdCRBoostIncubateInfoList& command,
+  SourceStream& stream)
+{
+  stream.Read(command.member1)
+    .Read(command.member2);
+}
+
+void AcCmdCRBoostIncubateInfoListOK::Write(
+  const AcCmdCRBoostIncubateInfoListOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1)
+    .Write(command.count);
+  // for loop to write vector of 2 uint32_t
+  
+}
+
+void AcCmdCRBoostIncubateInfoListOK::Read(
+  AcCmdCRBoostIncubateInfoListOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBoostIncubateEgg::Write(
+  const AcCmdCRBoostIncubateEgg& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBoostIncubateEgg::Read(
+  AcCmdCRBoostIncubateEgg& command,
+  SourceStream& stream)
+{
+  stream.Read(command.itemUid)
+    .Read(command.incubatorSlot);
+}
+
+void AcCmdCRBoostIncubateEggOK::Write(
+  const AcCmdCRBoostIncubateEggOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.item)
+    .Write(command.member2)
+    .Write(command.egg);
+}
+
+void AcCmdCRBoostIncubateEggOK::Read(
+  AcCmdCRBoostIncubateEggOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void RanchCommandRequestPetBirth::Write(
   const RanchCommandRequestPetBirth& command,
   SinkStream& stream)
@@ -1597,14 +1660,14 @@ void RanchCommandIncubateEgg::Read(
 {
   stream.Read(command.itemUid)
     .Read(command.itemTid)
-    .Read(command.member3);
+    .Read(command.incubatorSlot);
 }
 
 void RanchCommandIncubateEggOK::Write(
   const RanchCommandIncubateEggOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.itemUid)
+  stream.Write(command.incubatorSlot)
     .Write(command.egg)
     .Write(command.member3);
 }
@@ -1621,7 +1684,7 @@ void RanchCommandIncubateEggNotify::Write(
   SinkStream& stream)
 {
   stream.Write(command.characterUid)
-    .Write(command.itemUid)
+    .Write(command.incubatorSlot)
     .Write(command.egg)
     .Write(command.member3);
 }

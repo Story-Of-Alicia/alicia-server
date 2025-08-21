@@ -82,6 +82,14 @@ void BuildProtocolHousing(
   std::vector<Housing>& protocolHousing,
   const std::vector<Record<data::Housing>>& housingRecords);
 
+void BuildProtocolEgg(
+  Egg& protocolEgg,
+  const data::Egg& eggRecord);
+
+void BuildProtocolEggs(
+  std::vector<Egg>& protocolEggs,
+  const std::span<const Record<data::Egg>>& eggRecords);
+  
 } // namespace protocol
 
 } // namespace server

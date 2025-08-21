@@ -203,6 +203,11 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleIncubateEgg(clientId, command);
     });
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRBoostIncubateInfoList>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleBoostIncubateInfoList(clientId, command);
+    });
 
   _commandServer.RegisterCommandHandler<protocol::RanchCommandRequestNpcDressList>(
     [this](ClientId clientId, const auto& message)
@@ -491,6 +496,20 @@ void RanchDirector::HandleEnterRanch(
 
       if (rancher.isRanchLocked())
         response.bitset = protocol::AcCmdCREnterRanchOK::Bitset::IsLocked;
+      
+      const auto eggRecords = GetServerInstance().GetDataDirector().GetEggs().Get(
+        rancher.eggs());
+      if (eggRecords)
+      {
+        for (auto& eggRecord : *eggRecords)
+        {
+          eggRecord.Immutable(
+            [&response](const data::Egg& egg)
+            {
+              protocol::BuildProtocolEgg(response.incubator[egg.incubatorSlot()], egg);
+            });
+        }
+      }
     });
 
   // Add the character to the ranch.
@@ -627,18 +646,6 @@ void RanchDirector::HandleEnterRanch(
       characterEnteringRanch = protocolCharacter;
     }
   }
-  Egg egg;
-  egg.uid = 90005;
-  egg.tid = 90005;
-  egg.petTid = 90005;
-  egg.member4 = 0;
-  egg.member5 = 0;
-  //the time fields are probably not correct
-  egg.timeRemaining = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::hours(10)).count());
-  egg.timeElapsed = 1000; //0x10000;
-  egg.totalHatchingTime = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::hours(10)).count());
-  egg.member9 = 0;
-  response.incubator[0] = egg;
 
   // Todo: Roll the code for the connecting client.
   _commandServer.SetCode(clientId, {});
@@ -1971,31 +1978,63 @@ void RanchDirector::HandleIncubateEgg(
   ClientId clientId,
   const protocol::RanchCommandIncubateEgg& command)
 {
-  // This is a prototype egg
-  // the fields are just placeholders and guesses
-  Egg egg;
-  egg.uid = 0x905;
-  egg.tid = 0;
-  egg.petTid = 0;
-  egg.member4 = 0;
-  egg.member5 = 0;
-  //the time fields are probably not correct
-  egg.timeRemaining = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
-    (data::Clock::now() + std::chrono::hours(41)).time_since_epoch())
-      .count());
-  egg.timeElapsed = 0;
-  egg.totalHatchingTime = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>
-    (std::chrono::hours(41)).count());
-  egg.member9 = 0;
-
-  //! TODO: implement the logic that places the egg in the incubator on the ranch
+  const auto& clientContext = GetClientContext(clientId);
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
 
   protocol::RanchCommandIncubateEggOK response{
-    .itemUid = 1,
-    .egg = egg,
-    .member3 = 1,
+    response.incubatorSlot = command.incubatorSlot,
   };
 
+  characterRecord.Mutable(
+    [this, &command, &response](data::Character& character)
+    {
+      const auto eggRecord = GetServerInstance().GetDataDirector().CreateEgg();
+      eggRecord.Mutable([&command, &response, &character](data::Egg& egg) 
+      { 
+        egg.itemUid = command.itemUid;
+        egg.itemTid() = command.itemTid;
+        egg.hatchDuration = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::hours(41)).count());
+        egg.incubatorSlot = command.incubatorSlot;
+        egg.incubatedAt = data::Clock::now();
+
+        character.eggs().emplace_back(egg.uid());
+
+        // Explicitly capture egg.uid(), egg.itemTid(), egg.hatchDuration()
+        auto eggUid = egg.uid();
+        auto eggItemTid = egg.itemTid();
+        auto eggHatchDuration = egg.hatchDuration();
+
+        response.egg.uid = eggUid;
+        response.egg.itemTid = eggItemTid;
+        response.egg.timeRemaining = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::hours(41)).count());
+        response.egg.boost = 0xffffffff;
+        response.egg.totalHatchingTime = eggHatchDuration;
+      });
+    });
+
+  //! TODO: implement the logic that places the correct hours into the timeRemaining and totalHatchingTime
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void RanchDirector::HandleBoostIncubateInfoList(
+  ClientId clientId,
+  const protocol::AcCmdCRBoostIncubateInfoList& command)
+{
+  protocol::AcCmdCRBoostIncubateInfoListOK response{
+    .member1 = 0,
+    .count = 0
+  // for loop with a vector
+  };
+  
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
