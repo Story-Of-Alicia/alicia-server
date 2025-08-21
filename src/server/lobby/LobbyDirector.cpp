@@ -305,7 +305,8 @@ void LobbyDirector::HandleEnterChannel(
   const protocol::LobbyCommandEnterChannel& command)
 {
   protocol::LobbyCommandEnterChannelOK response{
-    .unk0 = command.channel // potentially
+    .unk0 = command.channel,
+    .unk1 = 557,
   };
 
   _commandServer.QueueCommand<decltype(response)>(

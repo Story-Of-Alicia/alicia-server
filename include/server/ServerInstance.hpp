@@ -5,6 +5,7 @@
 #ifndef INSTANCE_HPP
 #define INSTANCE_HPP
 
+#include "libserver/network/chatter/ChatterServer.hpp"
 #include "server/Config.hpp"
 #include "server/lobby/LobbyDirector.hpp"
 #include "server/race/RaceDirector.hpp"
@@ -128,6 +129,9 @@ private:
   std::thread _raceDirectorThread;
   //! A race director.
   RaceDirector _raceDirector;
+
+  std::thread _messengerThread;
+  ChatterServer _chatterServer;
 
   ChatSystem _chatSystem;
 
