@@ -134,8 +134,8 @@ size_t server::ChatterServer::OnClientData(
         // something with letter alarm
         struct Something0
         {
-          uint32_t member1 = 1;
-          uint8_t member2 = 1;
+          uint32_t member1 = 0;
+          uint8_t member2 = 0;
         } member2;
 
         struct Category
@@ -144,18 +144,28 @@ size_t server::ChatterServer::OnClientData(
           std::string member2 = "";
         };
 
-        std::vector<Category> categories = {};
+        uint16_t smth;
+
+        std::vector<Category> categories = {
+          {100, "category 1"},
+          {200, "category 2"},
+          {300, "category 2"},
+          {0, "default"},};
 
         struct Ranch
         {
-          uint32_t uid = 500000001;
-          uint32_t categoryUid = 0;
+          uint32_t uid = 1;
+          uint32_t categoryUid = 1;
           std::string name = "default";
-          uint32_t member4 = 258;
-          uint32_t member5 = 1694564352;
-          uint16_t type = 7629;
-        } ranch;
-        std::vector<Ranch> ranches = {{}};
+          uint8_t member4 = 2;
+          uint8_t member5 = 1;
+          uint32_t member6 = 0;
+          uint32_t otherUid = 1;
+        };
+        std::vector<Ranch> ranches = {
+          {},
+          {.uid = 2, .categoryUid = 100, .name = "ranch 2", .otherUid = 2},
+          {.uid = 3, .categoryUid = 200, .name = "ranch 3", .otherUid = 3}};
 
       } chatter;
 
@@ -166,22 +176,24 @@ size_t server::ChatterServer::OnClientData(
         .Write(chatter.member2.member1)
         .Write(chatter.member2.member2);
 
-      stream.Write(chatter.categories.size());
+      stream.Write(static_cast<uint32_t>(chatter.categories.size()));
+
       for (const auto& category : chatter.categories)
       {
         stream.Write(category.member1)
           .Write(category.member2);
       }
 
-      stream.Write(chatter.ranches.size());
+      stream.Write(static_cast<uint32_t>(chatter.ranches.size()));
       for (const auto& ranch : chatter.ranches)
       {
-        stream.Write(chatter.ranch.uid)
+        stream.Write(ranch.uid)
           .Write(ranch.categoryUid)
           .Write(ranch.name)
           .Write(ranch.member4)
           .Write(ranch.member5)
-          .Write(ranch.type);
+          .Write(ranch.member6)
+          .Write(ranch.otherUid);
       }
 
       chatter.header.size = stream.GetCursor();
