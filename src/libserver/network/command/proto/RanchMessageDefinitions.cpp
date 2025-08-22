@@ -1600,8 +1600,8 @@ void RanchCommandRequestPetBirth::Read(
   RanchCommandRequestPetBirth& command,
   SourceStream& stream)
 {
-  stream.Read(command.member1)
-    .Read(command.member2)
+  stream.Read(command.eggLevel)
+    .Read(command.incubatorSlot)
     .Read(command.petInfo);
 }
 

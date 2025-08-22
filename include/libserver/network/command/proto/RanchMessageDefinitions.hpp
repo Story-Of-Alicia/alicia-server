@@ -2151,8 +2151,8 @@ struct AcCmdRCUpdatePetCancel
 
 struct RanchCommandRequestPetBirth
 {
-  uint32_t member1{};
-  uint32_t member2{};
+  uint32_t eggLevel{};
+  uint32_t incubatorSlot{};
   PetInfo petInfo{};
 
   static Command GetCommand()
