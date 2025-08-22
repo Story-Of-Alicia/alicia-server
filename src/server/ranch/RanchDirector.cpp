@@ -267,6 +267,24 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleMountFamilyTree(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRecoverMount>(
+    [this](ClientId clientId, const auto& command)
+    {
+      protocol::AcCmdCRRecoverMountOK response
+      {
+        .horseUid = command.horseUid,
+        .stamina = 4000, // TODO: customisable? max is 4k from manual findings
+        .updatedCarrotCount = 1234,
+      };
+
+      _commandServer.QueueCommand<decltype(response)>(
+        clientId,
+        [response]()
+        {
+          return response;
+        });
+    });
 }
 
 void RanchDirector::Initialize()

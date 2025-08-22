@@ -1932,4 +1932,35 @@ void RanchCommandRequestLeagueTeamListOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRRecoverMount::Write(
+  const AcCmdCRRecoverMount& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdCRRecoverMount::Read(
+  AcCmdCRRecoverMount& command,
+  SourceStream& stream)
+{
+  stream.Read(command.horseUid);
+}
+
+void AcCmdCRRecoverMountOK::Write(
+  const AcCmdCRRecoverMountOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.horseUid)
+    .Write(command.stamina)
+    .Write(command.updatedCarrotCount);
+}
+
+void AcCmdCRRecoverMountOK::Read(
+  AcCmdCRRecoverMountOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
 } // namespace server::protocol
+
