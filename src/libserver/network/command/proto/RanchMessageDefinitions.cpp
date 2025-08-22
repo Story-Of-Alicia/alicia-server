@@ -1578,7 +1578,7 @@ void AcCmdCRBoostIncubateEggOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.item)
-    .Write(command.member2)
+    .Write(command.incubatorSlot)
     .Write(command.egg);
 }
 

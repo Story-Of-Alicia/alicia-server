@@ -2088,7 +2088,9 @@ void RanchDirector::HandleBoostIncubateEgg(
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  protocol::AcCmdCRBoostIncubateEggOK response{};
+  protocol::AcCmdCRBoostIncubateEggOK response{
+    .incubatorSlot = command.incubatorSlot
+  };
 
   characterRecord.Mutable(
     [this, &command, &response](data::Character& character)

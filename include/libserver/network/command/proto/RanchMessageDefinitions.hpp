@@ -2407,7 +2407,7 @@ struct AcCmdCRBoostIncubateEgg
 struct AcCmdCRBoostIncubateEggOK
 {
   Item item{};
-  uint32_t member2{};
+  uint32_t incubatorSlot{};
   Egg egg{};         
 
   static Command GetCommand()
