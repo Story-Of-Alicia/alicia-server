@@ -256,6 +256,10 @@ private:
   void HandleMountFamilyTree(ClientId clientId,
     const protocol::RanchCommandMountFamilyTree& command);
 
+  void HandleRecoverMount(
+    ClientId clientId,
+    const protocol::AcCmdCRRecoverMount command);
+
   //!
   ServerInstance& _serverInstance;
   //!
