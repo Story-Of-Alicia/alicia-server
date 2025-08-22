@@ -311,6 +311,7 @@ struct Egg
   dao::Field<uint32_t> hatchDuration{};
   dao::Field<Clock::time_point> incubatedAt{};
   dao::Field<uint32_t> incubatorSlot{};
+  dao::Field<uint32_t> boostsUsed;
 };
 
 } // namespace data

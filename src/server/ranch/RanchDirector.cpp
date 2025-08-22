@@ -203,6 +203,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleIncubateEgg(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRBoostIncubateEgg>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleBoostIncubateEgg(clientId, command);
+    });
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRBoostIncubateInfoList>(
     [this](ClientId clientId, auto& command)
     {
@@ -1989,33 +1995,66 @@ void RanchDirector::HandleIncubateEgg(
   characterRecord.Mutable(
     [this, &command, &response](data::Character& character)
     {
+      enum class EggLevel : uint32_t
+      {
+        Level1 = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
+          std::chrono::hours(9))
+            .count()),
+        Level2 = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
+          std::chrono::hours(41))
+            .count()),
+        Level3 = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
+          std::chrono::hours(73))
+            .count()),
+        Level4 = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
+          std::chrono::hours(105))
+            .count())
+      };
+
       const auto eggRecord = GetServerInstance().GetDataDirector().CreateEgg();
-      eggRecord.Mutable([&command, &response, &character](data::Egg& egg) 
-      { 
-        egg.itemUid = command.itemUid;
-        egg.itemTid() = command.itemTid;
-        egg.hatchDuration = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
-            std::chrono::hours(41)).count());
-        egg.incubatorSlot = command.incubatorSlot;
-        egg.incubatedAt = data::Clock::now();
+      eggRecord.Mutable([&command, &response, &character](data::Egg& egg)
+        {
+          // Egg Levels based on item TIDs.
+          const uint32_t level1Uids[] = {90006, 90001, 90004, 90017, 90013};
+          const uint32_t level2Uids[] = {90007, 90002, 90005, 90018, 90014};
+          const uint32_t level3Uids[] = {90008, 90003, 90011, 90019, 90015};
+          const uint32_t level4Uids[] = {90009, 90010, 90012, 90020, 90016};
 
-        character.eggs().emplace_back(egg.uid());
+          egg.itemUid = command.itemUid;
+          egg.itemTid() = command.itemTid;
+          if (std::ranges::contains(level1Uids, command.itemTid))
+            egg.hatchDuration = static_cast<uint32_t>(EggLevel::Level1);
+          else if (std::ranges::contains(level2Uids, command.itemTid))
+            egg.hatchDuration = static_cast<uint32_t>(EggLevel::Level2);
+          else if (std::ranges::contains(level3Uids, command.itemTid))
+            egg.hatchDuration = static_cast<uint32_t>(EggLevel::Level3);
+          else
+            egg.hatchDuration = static_cast<uint32_t>(EggLevel::Level4);
 
-        // Explicitly capture egg.uid(), egg.itemTid(), egg.hatchDuration()
-        auto eggUid = egg.uid();
-        auto eggItemTid = egg.itemTid();
-        auto eggHatchDuration = egg.hatchDuration();
+          egg.incubatorSlot = command.incubatorSlot;
+          egg.incubatedAt = data::Clock::now();
+          egg.boostsUsed = 0;
 
-        response.egg.uid = eggUid;
-        response.egg.itemTid = eggItemTid;
-        response.egg.timeRemaining = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
-            std::chrono::hours(41)).count());
-        response.egg.boost = 0xffffffff;
-        response.egg.totalHatchingTime = eggHatchDuration;
-      });
+          character.eggs().emplace_back(egg.uid());
+
+          // Fill the response with egg information.
+          auto eggUid = egg.uid();
+          auto eggItemTid = egg.itemTid();
+          auto eggHatchDuration = egg.hatchDuration();
+
+          response.egg.uid = eggUid;
+          response.egg.itemTid = eggItemTid;
+          response.egg.timeRemaining = eggHatchDuration;
+          response.egg.boost = 400000;
+          response.egg.totalHatchingTime = eggHatchDuration;
+        });
     });
 
-  //! TODO: implement the logic that places the correct hours into the timeRemaining and totalHatchingTime
+    protocol::RanchCommandIncubateEggNotify notify{
+      .characterUid = clientContext.characterUid,
+      .incubatorSlot = command.incubatorSlot,
+      .egg = response.egg,
+      };
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -2023,7 +2062,86 @@ void RanchDirector::HandleIncubateEgg(
     {
       return response;
     });
+
+  const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+  // Broadcast the egg incubation to all ranch clients.
+  for (ClientId ranchClient : ranchInstance.clients)
+  {
+    // Prevent broadcasting to self.
+    if (ranchClient == clientId)
+      continue;
+
+    _commandServer.QueueCommand<decltype(notify)>(
+      ranchClient,
+      [notify]()
+      {
+        return notify;
+      });
+  }
 }
+
+void RanchDirector::HandleBoostIncubateEgg(
+  ClientId clientId,
+  const protocol::AcCmdCRBoostIncubateEgg& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  protocol::AcCmdCRBoostIncubateEggOK response{};
+
+  characterRecord.Mutable(
+    [this, &command, &response](data::Character& character)
+    {
+      // find the Item record for Crystal
+      const auto itemRecord = GetServerInstance().GetDataDirector().GetItems().Get(
+        command.itemUid);
+      if (not itemRecord)
+        throw std::runtime_error("Item not found");
+      
+      itemRecord->Immutable([&command, &response](const data::Item& item)
+      {
+        response.item = {
+          .uid = item.uid(),
+          .tid = item.tid(),
+          .count = item.count()};
+      });
+
+      // Find the Egg record through the incubater slot.
+      const auto eggRecord = GetServerInstance().GetDataDirector().GetEggs().Get(
+        character.eggs());
+      if (not eggRecord)
+        throw std::runtime_error("Egg not found");
+
+      for (const auto& egg : *eggRecord)
+      {
+        egg.Mutable([&command, &response](data::Egg& eggData)
+          {
+            if (eggData.incubatorSlot() == command.incubatorSlot)
+            {
+              eggData.boostsUsed() += 1;
+              response.egg = {
+                .uid = eggData.uid(),
+                .itemTid = eggData.itemTid(),
+                .timeRemaining = static_cast<uint32_t>(
+                  eggData.hatchDuration() -
+                  std::chrono::duration_cast<std::chrono::seconds>(
+                    std::chrono::system_clock::now() - eggData.incubatedAt() +
+                    (eggData.boostsUsed()) * std::chrono::hours(8))
+                    .count()),
+                .boost = 400000,
+                .totalHatchingTime = eggData.hatchDuration()};
+            };
+          });
+      };
+    });
+    _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+};
 
 void RanchDirector::HandleBoostIncubateInfoList(
   ClientId clientId,

@@ -534,6 +534,7 @@ void server::FileDataSource::RetrieveEgg(data::Uid uid, data::Egg& egg)
     std::chrono::seconds(
       json["incubatedAt"].get<uint64_t>()));
   egg.incubatorSlot = json["incubatorSlot"].get<uint32_t>();
+  egg.boostsUsed = json["boostsUsed"].get<uint32_t>();
 }
 
 void server::FileDataSource::StoreEgg(data::Uid uid, const data::Egg& egg)
@@ -557,6 +558,7 @@ void server::FileDataSource::StoreEgg(data::Uid uid, const data::Egg& egg)
     egg.incubatedAt().time_since_epoch())
                              .count();
   json["incubatorSlot"] = egg.incubatorSlot();
+  json["boostsUsed"] = egg.boostsUsed();
   dataFile << json.dump(2);
 }
 

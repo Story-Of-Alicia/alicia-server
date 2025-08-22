@@ -264,9 +264,10 @@ void BuildProtocolEgg(
   protocolEgg.totalHatchingTime = eggRecord.hatchDuration();
   protocolEgg.timeRemaining = eggRecord.hatchDuration() -
                               std::chrono::duration_cast<std::chrono::seconds>(
-                                std::chrono::system_clock::now() - eggRecord.incubatedAt())
+                                std::chrono::system_clock::now() - eggRecord.incubatedAt() + 
+                                (eggRecord.boostsUsed() * std::chrono::hours(8)))
                                 .count();
-  protocolEgg.boost = 200000;
+  protocolEgg.boost = 400000;
 }
 
 void BuildProtocolEggs(
