@@ -19,6 +19,8 @@
 
 #include "libserver/network/Server.hpp"
 
+#include "libserver/util/Deferred.hpp"
+
 #include <ranges>
 #include <spdlog/spdlog.h>
 
@@ -41,6 +43,7 @@ void Client::Begin()
     return;
 
   _networkEventHandler.OnClientConnected(_clientId);
+
   ReadLoop();
 }
 
@@ -70,19 +73,46 @@ void Client::QueueWrite(WriteSupplier writeSupplier)
   if (not _shouldRun.load(std::memory_order::acquire))
     return;
 
-  // Write the bytes to the write buffer that is being sent to the client.
   {
-    std::scoped_lock lock(_send_mutex);
-    writeSupplier(_writeBuffer);
+    std::scoped_lock lock(_writeMutex);
+    _writeQueue.emplace(writeSupplier);
   }
+
+  WriteLoop();
+}
+
+void Client::WriteLoop() noexcept
+{
+  // todo: forgive me for this, its not clean, its not pretty and i'm pretty sure there some side effects
+  //       i'll nuke it in the future
+
+  if (not _shouldRun.load(std::memory_order::acquire))
+    return;
+
+  if (_isSending.load(std::memory_order::acquire))
+    return;
+
+  std::scoped_lock lock(_writeMutex);
+  if (_writeQueue.empty())
+  {
+    return;
+  }
+
+  // Write the suppliers to the write buffer.
+  while (not _writeQueue.empty())
+  {
+    const auto& supplier = _writeQueue.front();
+    supplier(_writeBuffer);
+    _writeQueue.pop();
+  }
+
+  _isSending.store(true, std::memory_order::release);
 
   // Asynchronously write the data to the socket.
   _socket.async_write_some(
     _writeBuffer.data(),
     [this](const boost::system::error_code& error, const std::size_t size)
     {
-      std::scoped_lock lock(_send_mutex);
-
       try
       {
         if (error)
@@ -100,7 +130,10 @@ void Client::QueueWrite(WriteSupplier writeSupplier)
         }
 
         // Consume the sent bytes.
-        _writeBuffer.consume(size);
+        {
+          std::scoped_lock lock(_writeMutex);
+          _writeBuffer.consume(size);
+        }
       }
       catch (const std::exception& x)
       {
@@ -110,6 +143,9 @@ void Client::QueueWrite(WriteSupplier writeSupplier)
           x.what());
         End();
       }
+
+      _isSending.store(false, std::memory_order::release);
+      WriteLoop();
     });
 }
 

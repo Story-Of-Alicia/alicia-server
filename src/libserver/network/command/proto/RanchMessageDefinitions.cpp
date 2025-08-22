@@ -1224,7 +1224,7 @@ void AcCmdCRRanchChatNotify::Write(
 {
   stream.Write(command.author)
     .Write(command.message)
-    .Write(command.isBlue)
+    .Write(command.isSystem)
     .Write(command.unknown2);
 }
 

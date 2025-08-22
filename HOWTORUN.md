@@ -45,7 +45,7 @@ There's three available game configurations in the production version:
   - lobby server address: `system.storyofalicia.com`
   - lobby server port: `10030`
 
-Development configuration is meant for connecting to a server that is hosted hosted locally. Please notice the development configuration uses `aliciadev` hostname. You must add this hostname to your hosts file (`C:\Windows\System32\drivers\etc\hosts`) on the computer you're running the client on, and point it to an IP where the server is listening on. Usually that is going to be `127.0.0.1` (loopback).
+Development configuration is meant for connecting to a server that is hosted locally. Please notice the development configuration uses `aliciadev` hostname. You must add this hostname to your hosts file (`C:\Windows\System32\drivers\etc\hosts`) on the computer you're running the client on, and point it to an IP where the server is listening on. Usually that is going to be `127.0.0.1` (loopback).
 
 Prototype configuration is meant for connecting to the online prototype. Currently hosted by @Chrommd, more information available at the [prototype's website](https://bruhvrum.github.io/registertest/).
 
@@ -58,7 +58,9 @@ Locate the launcher's configuration file ( `settings.json`). If the installer wa
 Modify the `executableArguments` field in the configuration file, specify the development game configuration and specify your user's credentials. This is done through `ID` and `OP` program arguments which indicate username and token respectively. Example:
 
 ```bash
-game/Alicia.exe =GameID 3 -ID [<username>] -OP [<password>]
+game/Alicia.exe =
+-GameID 3
+2 -ID [<username>] -OP [<password>]
 ```
 
 After saving the settings, simply launch the `alicia-launcher-cli.exe`

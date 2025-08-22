@@ -1,5 +1,5 @@
 /**
-* Alicia Server - dedicated server software
+ * Alicia Server - dedicated server software
  * Copyright (C) 2024 Story Of Alicia
  *
  * This program is free software; you can redistribute it and/or modify

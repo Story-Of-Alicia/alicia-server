@@ -267,8 +267,6 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleMountFamilyTree(clientId, command);
     });
-
-
 }
 
 void RanchDirector::Initialize()
@@ -290,6 +288,20 @@ void RanchDirector::Tick()
 {
 }
 
+std::vector<data::Uid> RanchDirector::GetOnlineCharacters()
+{
+  std::vector<data::Uid> onlineCharacterUids;
+
+  for (const auto& clientContext : _clients | std::views::values)
+  {
+    if (not clientContext.isAuthorized)
+      continue;
+    onlineCharacterUids.emplace_back(clientContext.characterUid);
+  }
+
+  return onlineCharacterUids;
+}
+
 void RanchDirector::HandleClientConnected(ClientId clientId)
 {
   spdlog::info("Client {} connected to the ranch", clientId);
@@ -301,9 +313,12 @@ void RanchDirector::HandleClientDisconnected(ClientId clientId)
   spdlog::info("Client {} disconnected from the ranch", clientId);
 
   const auto& clientContext = GetClientContext(clientId, false);
-  if (not clientContext.isAuthorized)
-    return;
-  HandleRanchLeave(clientId);
+  if (clientContext.isAuthorized)
+  {
+    HandleRanchLeave(clientId);
+  }
+
+  _clients.erase(clientId);
 }
 
 void RanchDirector::BroadcastSetIntroductionNotify(
@@ -696,363 +711,55 @@ void RanchDirector::HandleChat(
 
   const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
 
-  const std::string message = chat.message;
   std::string sendersName;
-  bool isSenderOp = false;
-
-  characterRecord.Immutable([&sendersName, &isSenderOp](const data::Character& character)
+  characterRecord.Immutable([&sendersName](const data::Character& character)
   {
     sendersName = character.name();
-    isSenderOp = character.role() == data::Character::Role::GameMaster;
   });
 
-  rancherRecord.Immutable([&sendersName, &message](const data::Character& rancher)
+  std::string ranchersName;
+  rancherRecord.Immutable([&ranchersName](const data::Character& rancher)
   {
-    spdlog::debug("[{}'s ranch] {}: {}", rancher.name(), sendersName, message);
+    ranchersName = rancher.name();
   });
 
-  if (chat.message.starts_with("//"))
+  const std::string message = chat.message;
+  spdlog::debug("[{}'s ranch] {}: {}", ranchersName, sendersName, message);
+
+  const auto verdict = _serverInstance.GetChatSystem().ProcessChatMessage(
+    clientContext.characterUid,
+    message);
+
+  const auto sendAllMessages = [this](
+    const ClientId clientId,
+    const std::string& sender,
+    const bool isSystem,
+    const std::vector<std::string>& messages)
   {
-    for (const auto& response : HandleCommand(clientId, chat.message))
+    protocol::AcCmdCRRanchChatNotify notify{
+      .author = sender,
+      .isSystem = isSystem};
+
+    for (const auto& resultMessage : messages)
     {
-      protocol::AcCmdCRRanchChatNotify notify{
-        .author = "system",
-        .message = response,
-        .isBlue = true,
-      };
-      SendChat(clientId, notify);
+      notify.message = resultMessage;
+      _commandServer.QueueCommand<decltype(notify)>(
+        clientId,
+        [notify](){ return notify; });
     }
+  };
 
-    return;
-  }
-
-  protocol::AcCmdCRRanchChatNotify response{
-    .author = sendersName,
-    .message = message,
-    .isBlue = isSenderOp};
-
-  for (const auto ranchClientId : ranchInstance.clients)
+  if (verdict.isBroadcast)
   {
-    SendChat(ranchClientId, response);
-  }
-}
-
-std::vector<std::string> RanchDirector::HandleCommand(
-  ClientId clientId,
-  const std::string& message)
-{
-  const auto& clientContext = GetClientContext(clientId);
-  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
-    clientContext.characterUid);
-
-  const auto command = util::TokenizeString(
-    message.substr(2), ' ');
-
-  if (command.empty())
-    return {"No command provided."};
-
-  if (command[0] == "help")
-  {
-    return {
-      "List of available commands:",
-
-      "//online\n"
-      "Lists online players",
-
-      "//emblem <ID>\n"
-      "Sets your character's emblem",
-
-      "//give item <count> <tid>\n"
-      "  - count - Count of items\n"
-      "  - tid - TID of item",
-
-      "//horse parts <skinId>\n"
-      "              <faceId>\n"
-      "              <maneId>\n"
-      "              <tailId>\n"
-      "  - skinId - ID of the coat\n"
-      "  - faceId - ID of the face\n"
-      "  - maneId - ID of the mane\n"
-      "  - tailId - ID of the tail",
-
-      "Note: to ignore any parameter,\n"
-      "       simply specify 0 as the value.",
-
-      "//horse appearance <scale>\n"
-      "                   <legLength>\n"
-      "                   <legVolume>\n"
-      "                   <bodyLength>\n"
-      "                   <bodyVolume>\n"
-      "  - scale - Defaults to 5\n"
-      "  - legLength - Defaults to 5\n"
-      "  - legVolume - Defaults to 5\n"
-      "  - bodyLength - Defaults to 5\n"
-      "  - bodyVolume - Defaults to 5",
-
-      "Note: to ignore any parameter,\n"
-      "       simply specify 0 as the value.",
-
-
-      "//horse randomize\n"
-      "  Randomizes your horse appearance and parts."
-
-      "//model <modelId>\n"
-      "Sets your character's model",
-
-      };
-  }
-
-  if (command[0] == "emblem")
-  {
-    if (command.size() < 2)
-      return {"Invalid command argument. (//emblem <ID>)"};
-
-    const uint32_t emblemId = std::atoi(command[1].c_str());
-    characterRecord.Mutable([emblemId](data::Character& character)
+    for (const auto& ranchClientId : ranchInstance.clients)
     {
-      character.appearance.emblemId = emblemId;
-    });
-    return {std::format("Set your emblem, restart your game.")};
-  }
-
-  if (command[0] == "model")
-  {
-    if (command.size() < 2)
-      return {"Invalid command argument. (//model <ID>)"};
-
-    const uint32_t modelId = std::atoi(command[1].c_str());
-    characterRecord.Mutable([modelId](data::Character& character)
-    {
-      character.parts.modelId = modelId;
-    });
-    return {std::format("Set your model id, restart your game.")};
-  }
-
-  if (command[0] == "visit")
-  {
-    if (command.size() < 2)
-      return {"Invalid command argument. (//visit <name>)"};
-
-    const std::string characterName = command[1];
-
-    auto visitingCharacterUid = data::InvalidUid;
-    bool ranchLocked = true;
-
-    const auto onlineCharacters = GetServerInstance().GetDataDirector().GetCharacters().GetKeys();
-    for (const data::Uid onlineCharacterUid : onlineCharacters)
-    {
-      const auto onlineCharacterRecord = GetServerInstance().GetDataDirector().GetCharacters().Get(
-        onlineCharacterUid, false);
-      if (not onlineCharacterRecord)
-        continue;
-
-      onlineCharacterRecord->Immutable([&visitingCharacterUid, &characterName, &ranchLocked](const data::Character& character)
-      {
-        if (characterName == character.name())
-        {
-          if (not character.isRanchLocked())
-          {
-            visitingCharacterUid = character.uid();
-            ranchLocked = false;
-          }
-        }
-      });
-
-      if (visitingCharacterUid != data::InvalidUid)
-        break;
-    }
-
-    if (visitingCharacterUid != data::InvalidUid)
-    {
-      GetServerInstance().GetLobbyDirector().UpdateVisitPreference(
-        clientContext.characterUid, visitingCharacterUid);
-
-      return {std::format("Next time you enter the portal, you'll visit {}", characterName)};
-    }
-
-    if (ranchLocked)
-    {
-      return {std::format("This player's ranch is locked.", characterName)};
-    }
-
-    return {std::format("Nobody with name '{}' online. Use //online to view online player.", characterName)};
-  }
-
-  if (command[0] == "online")
-  {
-    std::vector<std::string> response;
-    response.emplace_back() = std::format(
-      "Players online ({}):",
-      _clients.size());
-
-    for (const auto& clientContext : _clients)
-    {
-      const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
-        clientContext.second.characterUid);
-      characterRecord.Immutable([&response, &clientContext, clientId](const data::Character& character)
-      {
-        response.emplace_back() = std::format(
-          "{}{}", character.name(), clientContext.first == clientId ? " (you)" : "");
-      });
-    }
-    return response;
-  }
-
-  if (command[0] == "horse")
-  {
-    if (command.size() < 2)
-      return {"Invalid command sub-literal. (//horse <appearance/parts/randomize>)"};
-
-    auto mountUid = data::InvalidUid;
-
-    if (command[1] == "parts")
-    {
-      if (command.size() < 6)
-        return {"Invalid command arguments. (//horse parts <skinId> <faceId> <maneId> <tailId>)"};
-      data::Horse::Parts parts{
-        .skinTid = static_cast<uint32_t>(std::atoi(command[2].c_str())),
-        .faceTid = static_cast<uint32_t>(std::atoi(command[3].c_str())),
-        .maneTid = static_cast<uint32_t>(std::atoi(command[4].c_str())),
-        .tailTid = static_cast<uint32_t>(std::atoi(command[5].c_str()))};
-
-      characterRecord.Immutable([this, &mountUid, &parts](const data::Character& character)
-      {
-        GetServerInstance().GetDataDirector().GetHorses().Get(character.mountUid())->Mutable([&parts](data::Horse& horse)
-        {
-          if (parts.faceTid() != 0)
-            horse.parts.faceTid() = parts.faceTid();
-          if (parts.maneTid() != 0)
-            horse.parts.maneTid() = parts.maneTid();
-          if (parts.skinTid() != 0)
-            horse.parts.skinTid() = parts.skinTid();
-          if (parts.tailTid() != 0)
-            horse.parts.tailTid() = parts.tailTid();
-        });
-
-        mountUid = character.mountUid();
-      });
-
-      BroadcastUpdateMountInfoNotify(clientContext.characterUid, clientContext.visitingRancherUid, mountUid);
-      return {"Parts set! Restart the client."};
-    }
-
-    if (command[1] == "appearance")
-    {
-      if (command.size() < 7)
-        return {"Invalid command arguments. (//horse appearance <scale> <legLength> <legVolume> <bodyLength> <bodyVolume>)"};
-      data::Horse::Appearance appearance{
-        .scale = static_cast<uint32_t>(std::atoi(command[2].c_str())),
-        .legLength = static_cast<uint32_t>(std::atoi(command[3].c_str())),
-        .legVolume = static_cast<uint32_t>(std::atoi(command[4].c_str())),
-        .bodyLength = static_cast<uint32_t>(std::atoi(command[5].c_str())),
-        .bodyVolume = static_cast<uint32_t>(std::atoi(command[6].c_str()))};
-
-      characterRecord.Immutable([this, &mountUid, &appearance](const data::Character& character)
-      {
-        GetServerInstance().GetDataDirector().GetHorses().Get(character.mountUid())->Mutable([&appearance](
-          data::Horse& horse)
-        {
-          if (appearance.scale() != 0)
-            horse.appearance.scale() = appearance.scale();
-          if (appearance.legLength() != 0)
-            horse.appearance.legLength() = appearance.legLength();
-          if (appearance.legVolume() != 0)
-            horse.appearance.legVolume() = appearance.legVolume();
-          if (appearance.bodyLength() != 0)
-            horse.appearance.bodyLength() = appearance.bodyLength();
-          if (appearance.bodyVolume() != 0)
-            horse.appearance.bodyVolume() = appearance.bodyVolume();
-        });
-        mountUid = character.mountUid();
-      });
-
-      BroadcastUpdateMountInfoNotify(clientContext.characterUid, clientContext.visitingRancherUid, mountUid);
-      return {"Appearance set! Restart the client."};
-    }
-
-    if (command[1] == "randomize")
-    {
-      characterRecord.Immutable([this, &mountUid](const data::Character& character)
-      {
-        GetServerInstance().GetDataDirector().GetHorses().Get(character.mountUid())->Mutable([](data::Horse& horse)
-        {
-          HorseRegistry::Get().BuildRandomHorse(horse.parts, horse.appearance);
-        });
-        mountUid = character.mountUid();
-      });
-      return {"Appearance and parts randomized! Restart the client."};
+      sendAllMessages(ranchClientId, sendersName, verdict.isSystem, verdict.result);
     }
   }
-  if (command[0] == "give")
+  else
   {
-    if (command.size() < 2)
-      return {"Invalid command sub-literal. (//give <item/horse>)"};
-
-    if (command[1] == "item")
-    {
-      if (command.size() < 4)
-        return {"Invalid command arguments. (//give item <count> <tid>)"};
-
-      uint32_t itemCount = std::atoi(command[2].c_str());
-      data::Uid createdItemTid = std::atoi(command[3].c_str());
-
-      // Create the item.
-      auto createdItemUid = data::InvalidUid;
-      const auto createdItemRecord = GetServerInstance().GetDataDirector().CreateItem();
-      createdItemRecord.Mutable([createdItemTid, itemCount, &createdItemUid](data::Item& item)
-      {
-        item.tid() = createdItemTid;
-        item.count() = itemCount;
-        item.expiresAt() = data::Clock::now() + std::chrono::days(10);
-
-        createdItemUid = item.uid();
-      });
-
-      // Create the stored item.
-      auto giftUid = data::InvalidUid;
-      const auto storedItem = GetServerInstance().GetDataDirector().CreateStorageItem();
-      storedItem.Mutable([this, &giftUid, createdItemUid, createdItemTid](data::StorageItem& storedItem)
-      {
-        storedItem.items().emplace_back(createdItemUid);
-        storedItem.sender() = "System";
-        storedItem.message() = std::format("Item '{}'", createdItemTid);
-        storedItem.created() = data::Clock::now();
-
-        giftUid = storedItem.uid();
-      });
-
-      // Add the stored item as a gift.
-
-      characterRecord.Mutable([giftUid](data::Character& character)
-      {
-        character.gifts().emplace_back(giftUid);
-      });
-
-      return {"Item given. Check your gifts in inventory!"};
-    }
-
-    if (command[1] == "horse")
-    {
-      if (command.size() < 3)
-      {
-        return {"Not implemented"};
-      }
-    }
+    sendAllMessages(clientId, sendersName, verdict.isSystem, verdict.result);
   }
-
-  return {"Invalid command"};
-}
-
-void RanchDirector::SendChat(
-  ClientId clientId,
-  const protocol::AcCmdCRRanchChatNotify& chat)
-{
-  _commandServer.QueueCommand<protocol::AcCmdCRRanchChatNotify>(
-    clientId,
-    [chat]()
-    {
-      return chat;
-    });
 }
 
 void RanchDirector::HandleSnapshot(

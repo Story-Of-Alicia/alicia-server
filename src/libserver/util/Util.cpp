@@ -171,6 +171,7 @@ std::vector<std::string> TokenizeString(const std::string& value, char delimiter
   std::vector<std::string> tokens;
   size_t position = 0;
   size_t idx = std::string::npos;
+
   while (true)
   {
     idx = value.find(delimiter, position);
@@ -185,6 +186,7 @@ std::vector<std::string> TokenizeString(const std::string& value, char delimiter
       value.substr(position, idx - position));
     position = idx + 1;
   }
+
   return tokens;
 }
 

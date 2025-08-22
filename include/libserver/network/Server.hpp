@@ -23,6 +23,7 @@
 #include <functional>
 #include <unordered_map>
 #include <span>
+#include <queue>
 
 #include <boost/asio.hpp>
 
@@ -35,7 +36,7 @@ namespace asio = boost::asio;
 using ClientId = std::size_t;
 
 //! A write handler.
-using WriteSupplier = std::function<void(asio::streambuf&)>;
+using WriteSupplier = std::function<size_t(asio::streambuf&)>;
 
 //!
 class EventHandlerInterface
@@ -80,18 +81,24 @@ public:
   void QueueWrite(WriteSupplier writeSupplier);
 
 private:
+  void WriteLoop() noexcept;
   //! Read loop.
   void ReadLoop() noexcept;
 
   //! Indicates whether the client should process I/O.
   std::atomic<bool> _shouldRun = false;
 
-  //! A read buffer.
-  asio::streambuf _readBuffer{};
-  //! A send mutex.
-  std::mutex _send_mutex;
+  //! A mutex for write buffer.
+  std::mutex _writeMutex;
+  //! A queue of write suppliers.
+  std::queue<WriteSupplier> _writeQueue{};
+  std::condition_variable _writeCv{};
   //! A write buffer.
   asio::streambuf _writeBuffer{};
+  std::atomic<bool> _isSending = false;
+
+  //! A read buffer.
+  asio::streambuf _readBuffer{};
 
   //! A unique-identifier of the client.
   ClientId _clientId;

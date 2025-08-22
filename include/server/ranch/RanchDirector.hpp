@@ -46,6 +46,8 @@ public:
   void Terminate();
   void Tick();
 
+  std::vector<data::Uid> GetOnlineCharacters();
+
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId client) override;
 
@@ -110,14 +112,6 @@ private:
   void HandleChat(
     ClientId clientId,
     const protocol::AcCmdCRRanchChat& command);
-
-  std::vector<std::string> HandleCommand(
-    ClientId clientId,
-    const std::string& message);
-
-  void SendChat(
-    ClientId clientId,
-    const protocol::AcCmdCRRanchChatNotify& chat);
 
   void HandleSnapshot(
     ClientId clientId,

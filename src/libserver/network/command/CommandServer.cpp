@@ -345,7 +345,6 @@ void CommandServer::SendCommand(
 {
   try
   {
-    // ToDo: Actual queue.
     _server.GetClient(clientId).QueueWrite(
       [this, commandId, supplier = std::move(supplier)](asio::streambuf& writeBuffer)
       {
@@ -399,6 +398,8 @@ void CommandServer::SendCommand(
           GetCommandName(commandId),
           static_cast<uint32_t>(commandId));
         }
+
+        return commandSize;
       });
   }
   catch (std::exception& x)

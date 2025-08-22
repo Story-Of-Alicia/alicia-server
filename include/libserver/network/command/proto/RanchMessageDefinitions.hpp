@@ -277,7 +277,7 @@ struct AcCmdCRRanchChatNotify
 {
   std::string author;
   std::string message;
-  uint8_t isBlue{};
+  uint8_t isSystem{};
   uint8_t unknown2{};
 
   static Command GetCommand()
