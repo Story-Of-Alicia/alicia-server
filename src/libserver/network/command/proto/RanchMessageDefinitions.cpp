@@ -1952,7 +1952,7 @@ void AcCmdCRRecoverMountOK::Write(
 {
   stream.Write(command.horseUid)
     .Write(command.stamina)
-    .Write(command.updatedCarrotCount);
+    .Write(command.updatedCarrots);
 }
 
 void AcCmdCRRecoverMountOK::Read(

@@ -2088,7 +2088,7 @@ void RanchDirector::HandleRecoverMount(
         }
 
         response.stamina = horse.mountCondition.stamina();
-        response.updatedCarrotCount = character.carrots();
+        response.updatedCarrots = character.carrots();
       });
     });
 

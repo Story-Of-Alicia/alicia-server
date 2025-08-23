@@ -877,7 +877,7 @@ struct AcCmdCRRecoverMountOK
 {
   uint32_t horseUid{};
   uint16_t stamina{};
-  uint32_t updatedCarrotCount{};
+  uint32_t updatedCarrots{};
 
   static Command GetCommand()
   {
