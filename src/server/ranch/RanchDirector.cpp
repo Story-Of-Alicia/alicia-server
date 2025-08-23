@@ -1277,8 +1277,7 @@ void RanchDirector::HandleGetItemFromStorage(
   }
 
   protocol::AcCmdCRGetItemFromStorageOK response{
-    .storedItemUid = command.storedItemUid,
-    .updatedCarrots = 0};
+    .storedItemUid = command.storedItemUid};
 
   // Get the items assigned to the stored item and fill the protocol command.
   characterRecord.Mutable([this, &response](
@@ -1305,6 +1304,8 @@ void RanchDirector::HandleGetItemFromStorage(
         items.begin(),
         items.end());
     });
+
+  // TODO: check if carrots need updating (response.updatedCarrots)
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
