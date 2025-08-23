@@ -899,6 +899,30 @@ struct AcCmdCRRecoverMountOK
     SourceStream& stream);
 };
 
+struct AcCmdCRRecoverMountCancel
+{
+  uint32_t horseUid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRecoverMountCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRecoverMountCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRecoverMountCancel& command,
+    SourceStream& stream);
+};
+
 struct RanchCommandStatusPointApply
 {
   uint32_t horseUid{};

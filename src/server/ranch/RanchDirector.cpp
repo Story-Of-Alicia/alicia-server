@@ -2032,7 +2032,8 @@ void RanchDirector::HandleRecoverMount(
 
   // Do we need this?
   data::Uid commandHorseUid = data::InvalidUid;
-  GetServerInstance().GetDataDirector().GetHorse(commandHorseUid).Immutable([&commandHorseUid](const data::Horse& commandHorse)
+  GetServerInstance().GetDataDirector().GetHorse(command.horseUid)
+    .Immutable([&commandHorseUid](const data::Horse& commandHorse)
   {
     commandHorseUid = commandHorse.uid();
   });
@@ -2065,12 +2066,29 @@ void RanchDirector::HandleRecoverMount(
     }
   });
 
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [response]()
+  if (horseFound)
+  {
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]()
+      {
+        return response;
+      });
+  }
+  else
+  {
+    protocol::AcCmdCRRecoverMountCancel cancelResponse
     {
-      return response;
-    });
+      .horseUid = command.horseUid
+    };
+
+    _commandServer.QueueCommand<decltype(cancelResponse)>(
+      clientId,
+      [cancelResponse]()
+      {
+        return cancelResponse;
+      });
+  }
 }
 
 void RanchDirector::HandleMountFamilyTree(

@@ -1962,5 +1962,19 @@ void AcCmdCRRecoverMountOK::Read(
   throw std::runtime_error("Not implemented.");
 }
 
+void AcCmdCRRecoverMountCancel::Write(
+  const AcCmdCRRecoverMountCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.horseUid);
+}
+
+void AcCmdCRRecoverMountCancel::Read(
+  AcCmdCRRecoverMountCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
 } // namespace server::protocol
 
