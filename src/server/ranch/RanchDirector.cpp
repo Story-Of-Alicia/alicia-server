@@ -2030,7 +2030,7 @@ void RanchDirector::HandleRecoverMount(
     .updatedCarrotCount = 1234,
   };
 
-  // Do we need this?
+  // Check if the horse even exists in the data director
   data::Uid commandHorseUid = data::InvalidUid;
   GetServerInstance().GetDataDirector().GetHorse(command.horseUid)
     .Immutable([&commandHorseUid](const data::Horse& commandHorse)
@@ -2040,29 +2040,17 @@ void RanchDirector::HandleRecoverMount(
 
   bool horseFound = false;
   const auto& characterUid = GetClientContext(clientId).characterUid;
-  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(characterUid);
-  characterRecord.Immutable([this, &commandHorseUid, &horseFound](const data::Character& character)
+  GetServerInstance().GetDataDirector().GetCharacter(characterUid)
+    .Immutable([&commandHorseUid, &horseFound](const data::Character& character)
   {
-    // Loop through each of character's horses
-    for (const auto& characterHorseUid : character.horses())
-    {
-      // Get character horse record by UID
-      auto characterHorseRecord = GetServerInstance().GetDataDirector().GetHorse(characterHorseUid);
-      characterHorseRecord.Immutable([&commandHorseUid, &horseFound](const data::Horse& characterHorse)
-      {
-        // Check if character owns the horse specified in the command
-        if (commandHorseUid == characterHorse.uid())
-        {
-          horseFound = true;
-          // character.carrots() -= (4000 - horse.stamina()); // Check if balance < 4000
-          // horse.stamina() = 4000;
-        }
-      });
+    // Ownership check
+    horseFound = character.mountUid() == commandHorseUid ||
+      std::ranges::contains(character.horses(), commandHorseUid);
 
-      if (horseFound)
-      {
-        break;
-      }
+    if (horseFound)
+    {
+      // character.carrots() -= (4000 - horse.stamina()); // Check if balance < 4000
+      // horse.stamina() = 4000;
     }
   });
 
