@@ -2085,7 +2085,7 @@ void RanchDirector::HandleRecoverMount(
         {
           // Character has enough carrots to max stamina
           character.carrots() -= staminaNeeded;
-          horse.mountCondition.stamina() = maxStamina;
+          horse.mountCondition.stamina() += staminaNeeded;
         }
 
         response.stamina = horse.mountCondition.stamina();
