@@ -1490,7 +1490,7 @@ void AcCmdCRUpdatePet::Read(
 {
   stream.Read(command.petInfo);
   if (stream.GetCursor() - stream.Size() > 4)
-    stream.Read(command.actionBitset);
+    stream.Read(command.itemUid);
 }
 
 void AcCmdRCUpdatePet::Write(
@@ -1498,7 +1498,7 @@ void AcCmdRCUpdatePet::Write(
   SinkStream& stream)
 {
   stream.Write(command.petInfo)
-   .Write(command.actionBitset);
+   .Write(command.itemUid);
 }
 
 void AcCmdRCUpdatePet::Read(
@@ -1507,7 +1507,7 @@ void AcCmdRCUpdatePet::Read(
 {
   stream.Read(command.petInfo);
   if (stream.GetCursor() - stream.Size() > 4)
-    stream.Read(command.actionBitset);
+    stream.Read(command.itemUid);
 }
 
 void AcCmdRCUpdatePetCancel::Write(

@@ -2073,11 +2073,7 @@ struct RanchCommandRequestGuildInfoCancel
 struct AcCmdCRUpdatePet
 {
   PetInfo petInfo{};
-  enum class Action
-  {
-    Rename = 1
-  };
-  Action actionBitset{}; // 
+  uint32_t itemUid; // 
 
   static Command GetCommand()
   {
@@ -2103,7 +2099,7 @@ struct AcCmdRCUpdatePet
 {
   PetInfo petInfo{};
   //! optional
-  uint32_t actionBitset{}; // 7 - rename
+  uint32_t itemUid{};
   static Command GetCommand()
   {
     return Command::AcCmdRCUpdatePet;

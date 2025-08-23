@@ -1863,7 +1863,6 @@ void RanchDirector::HandleUpdatePet(
   ClientId clientId,
   const protocol::AcCmdCRUpdatePet& command)
 {
-  spdlog::info("actionBitset: '{}'", static_cast<std::underlying_type_t<decltype(command.actionBitset)>>(command.actionBitset));
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
@@ -1899,8 +1898,7 @@ void RanchDirector::HandleUpdatePet(
 
       // If pet record does not exist, create it.
       // For prototype purposes only.
-      if (petUid == data::InvalidUid
-        && command.petInfo.pet.petId != 0)
+      if (petUid == data::InvalidUid && command.petInfo.pet.petId != 0)
       {
         const auto petRecord = GetServerInstance().GetDataDirector().CreatePet();
         petRecord.Mutable(
@@ -1915,9 +1913,16 @@ void RanchDirector::HandleUpdatePet(
 
         character.pets().emplace_back(petUid);
       }
-
-      if (command.actionBitset == protocol::AcCmdCRUpdatePet::Action::Rename)
+      auto itemRecords = GetServerInstance().GetDataDirector().GetItems().Get(
+        character.items());
+      if (not itemRecords || itemRecords->empty())
       {
+        spdlog::warn("No items found for character {}", character.uid());
+        return;
+      }
+      if (std::ranges::contains(character.items(), command.itemUid))
+      {
+        // TODO: actually reduce the item count or remove it
         const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
         petRecord.Mutable(
           [&command](data::Pet& pet)
@@ -2181,7 +2186,7 @@ void RanchDirector::HandleRequestPetBirth(
       .member3 = 0,
       .petInfo = {
         .characterUid = clientContext.characterUid,
-        .itemUid = command.incubatorSlot + 1,
+        .itemUid = command.incubatorSlot + 1, //represents the incubator slot (this time the +1 bc ntreev is weird)
         .pet = {// example pet
           .petId = 186,
           .member2 = 0,
