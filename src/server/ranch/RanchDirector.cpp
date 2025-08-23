@@ -2017,6 +2017,8 @@ void RanchDirector::HandleRequestLeagueTeamList(
     });
 }
 
+//! Recover horse stamina with carrots
+//! 1 carrot = 1 stamina
 void RanchDirector::HandleRecoverMount(
   ClientId clientId,
   const protocol::AcCmdCRRecoverMount command)
@@ -2027,6 +2029,41 @@ void RanchDirector::HandleRecoverMount(
     .stamina = 4000, // TODO: customisable? max is 4k from manual findings
     .updatedCarrotCount = 1234,
   };
+
+  // Do we need this?
+  data::Uid commandHorseUid = data::InvalidUid;
+  GetServerInstance().GetDataDirector().GetHorse(commandHorseUid).Immutable([&commandHorseUid](const data::Horse& commandHorse)
+  {
+    commandHorseUid = commandHorse.uid();
+  });
+
+  bool horseFound = false;
+  const auto& characterUid = GetClientContext(clientId).characterUid;
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(characterUid);
+  characterRecord.Immutable([this, &commandHorseUid, &horseFound](const data::Character& character)
+  {
+    // Loop through each of character's horses
+    for (const auto& characterHorseUid : character.horses())
+    {
+      // Get character horse record by UID
+      auto characterHorseRecord = GetServerInstance().GetDataDirector().GetHorse(characterHorseUid);
+      characterHorseRecord.Immutable([&commandHorseUid, &horseFound](const data::Horse& characterHorse)
+      {
+        // Check if character owns the horse specified in the command
+        if (commandHorseUid == characterHorse.uid())
+        {
+          horseFound = true;
+          // character.carrots() -= (4000 - horse.stamina()); // Check if balance < 4000
+          // horse.stamina() = 4000;
+        }
+      });
+
+      if (horseFound)
+      {
+        break;
+      }
+    }
+  });
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
