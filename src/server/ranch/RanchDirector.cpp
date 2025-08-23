@@ -209,6 +209,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleBoostIncubateEgg(clientId, command);
     });
+  
+  _commandServer.RegisterCommandHandler<protocol::RanchCommandRequestPetBirth>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleRequestPetBirth(clientId, command);
+    });
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRBoostIncubateInfoList>(
     [this](ClientId clientId, auto& command)
     {
@@ -2167,7 +2173,23 @@ void RanchDirector::HandleRequestPetBirth(
   ClientId clientId,
   const protocol::RanchCommandRequestPetBirth& command)
 {
-}
+  protocol::RanchCommandRequestPetBirthOK response{
+    .petBirthInfo = {
+      .eggItem = {
+        .uid = 1,
+        .tid = 41001,
+        .count = 1},
+      .member2 = 0,
+      .member3 = 0,
+      .petInfo = {.characterUid = 3, .itemUid = 1, .pet = {.petId = 139, .member2 = 0, .name = "", .member4 = 0}}},
+  };
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+};
 
 void RanchDirector::BroadcastEquipmentUpdate(ClientId clientId)
 {
