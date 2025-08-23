@@ -1116,7 +1116,7 @@ void AcCmdCRGetItemFromStorageOK::Write(
   {
     stream.Write(item);
   }
-  stream.Write(command.member0);
+  stream.Write(command.updatedCarrots);
 }
 
 void AcCmdCRGetItemFromStorageOK::Read(
