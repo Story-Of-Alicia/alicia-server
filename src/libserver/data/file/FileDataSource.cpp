@@ -329,6 +329,23 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
     .slidingTime = mastery["slidingTime"].get<uint32_t>(),
     .glidingDistance = mastery["glidingDistance"].get<uint32_t>()};
 
+  auto mountCondition = json["mountCondition"];
+  horse.mountCondition = data::Horse::MountCondition{
+    .stamina = mountCondition["stamina"].get<uint16_t>(),
+    .charm = mountCondition["charm"].get<uint16_t>(),
+    .friendliness = mountCondition["friendliness"].get<uint16_t>(),
+    .injury = mountCondition["injury"].get<uint16_t>(),
+    .plenitude = mountCondition["plenitude"].get<uint16_t>(),
+    .bodyDirtiness = mountCondition["bodyDirtiness"].get<uint16_t>(),
+    .maneDirtiness = mountCondition["maneDirtiness"].get<uint16_t>(),
+    .tailDirtiness = mountCondition["tailDirtiness"].get<uint16_t>(),
+    .bodyPolish = mountCondition["bodyPolish"].get<uint16_t>(),
+    .manePolish = mountCondition["manePolish"].get<uint16_t>(),
+    .tailPolish = mountCondition["tailPolish"].get<uint16_t>(),
+    .attachment = mountCondition["attachment"].get<uint16_t>(),
+    .boredom = mountCondition["boredom"].get<uint16_t>(),
+    .stopAmendsPoint = mountCondition["stopAmendsPoint"].get<uint16_t>()};
+
   horse.rating = json["rating"].get<uint32_t>();
   horse.clazz = json["clazz"].get<uint32_t>();
   horse.clazzProgress = json["clazzProgress"].get<uint32_t>();
@@ -391,6 +408,23 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   mastery["slidingTime"] = horse.mastery.slidingTime();
   mastery["glidingDistance"] = horse.mastery.glidingDistance();
   json["mastery"] = mastery;
+
+  nlohmann::json mountCondition;
+  mountCondition["stamina"] = horse.mountCondition.stamina();
+  mountCondition["charm"] = horse.mountCondition.charm();
+  mountCondition["friendliness"] = horse.mountCondition.friendliness();
+  mountCondition["injury"] = horse.mountCondition.injury();
+  mountCondition["plenitude"] = horse.mountCondition.plenitude();
+  mountCondition["bodyDirtiness"] = horse.mountCondition.bodyDirtiness();
+  mountCondition["maneDirtiness"] = horse.mountCondition.maneDirtiness();
+  mountCondition["tailDirtiness"] = horse.mountCondition.tailDirtiness();
+  mountCondition["bodyPolish"] = horse.mountCondition.bodyPolish();
+  mountCondition["manePolish"] = horse.mountCondition.manePolish();
+  mountCondition["tailPolish"] = horse.mountCondition.tailPolish();
+  mountCondition["attachment"] = horse.mountCondition.attachment();
+  mountCondition["boredom"] = horse.mountCondition.boredom();
+  mountCondition["stopAmendsPoint"] = horse.mountCondition.stopAmendsPoint();
+  json["mountCondition"] = mountCondition;
 
   json["rating"] = horse.rating();
   json["clazz"] = horse.clazz();

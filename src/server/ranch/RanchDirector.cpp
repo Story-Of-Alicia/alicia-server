@@ -2023,39 +2023,76 @@ void RanchDirector::HandleRecoverMount(
   ClientId clientId,
   const protocol::AcCmdCRRecoverMount command)
 {
+  spdlog::debug("HandleRecoverMount - horseUid: {}", command.horseUid);
+
   protocol::AcCmdCRRecoverMountOK response
   {
-    .horseUid = command.horseUid,
-    .stamina = 4000, // TODO: customisable? max is 4k from manual findings
-    .updatedCarrotCount = 1234,
+    .horseUid = command.horseUid
   };
 
   // Check if the horse even exists in the data director
-  data::Uid commandHorseUid = data::InvalidUid;
-  GetServerInstance().GetDataDirector().GetHorse(command.horseUid)
-    .Immutable([&commandHorseUid](const data::Horse& commandHorse)
+  data::Uid horseUidFromCommand = data::InvalidUid;
+  const auto horseRecordFromCommand = GetServerInstance().GetDataDirector().GetHorse(command.horseUid);
+  horseRecordFromCommand.Immutable([&horseUidFromCommand](const data::Horse& horse)
   {
-    commandHorseUid = commandHorse.uid();
+    horseUidFromCommand = horse.uid();
   });
 
   bool horseFound = false;
+  auto carrots = 0;
+
   const auto& characterUid = GetClientContext(clientId).characterUid;
-  GetServerInstance().GetDataDirector().GetCharacter(characterUid)
-    .Immutable([&commandHorseUid, &horseFound](const data::Character& character)
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(characterUid);
+  characterRecord.Immutable([&horseUidFromCommand, &horseFound, &carrots](const data::Character& character)
   {
     // Ownership check
-    horseFound = character.mountUid() == commandHorseUid ||
-      std::ranges::contains(character.horses(), commandHorseUid);
-
-    if (horseFound)
-    {
-      // character.carrots() -= (4000 - horse.stamina()); // Check if balance < 4000
-      // horse.stamina() = 4000;
-    }
+    horseFound = character.mountUid() == horseUidFromCommand ||
+      std::ranges::contains(character.horses(), horseUidFromCommand);
+    
+    carrots = character.carrots();
+    spdlog::debug("HandleRecoverMount - horseUid {}, character {}, horseFound {}, carrots {}",
+      horseUidFromCommand, character.uid(), horseFound, carrots);
   });
 
-  if (horseFound)
+  if (horseFound && carrots > 0)
   {
+    horseRecordFromCommand.Mutable([&response, &characterRecord](data::Horse& horse)
+    {
+      characterRecord.Mutable([&response, &horse](data::Character& character)
+      {
+        // Check if horse is already max stamina
+        if (horse.mountCondition.stamina() >= 4000)
+        {
+          spdlog::warn("HandleRecoverMount - character {} tried to recover a horse {} that was already max stamina",
+            character.uid(), horse.uid());
+          return;
+        }
+
+        // Scenarios
+        // When recovering the horse stamina, the game always attempts
+        // to max restore, never by a user-set amount.
+        auto maxStamina = 4000; // Seems to be static to 4000 always in game
+        auto staminaNeeded = maxStamina - horse.mountCondition.stamina();
+        if (character.carrots() < staminaNeeded)
+        {
+          // Character does not have enough carrots to max stamina
+          // Recover stamina only by the amount of carrots the character has
+          horse.mountCondition.stamina() += character.carrots();
+          character.carrots() = 0;
+        }
+        else
+        {
+          // Character has enough carrots to max stamina
+          character.carrots() -= staminaNeeded;
+          horse.mountCondition.stamina() = maxStamina;
+        }
+
+        response.stamina = horse.mountCondition.stamina();
+        response.updatedCarrotCount = character.carrots();
+      });
+    });
+
+
     _commandServer.QueueCommand<decltype(response)>(
       clientId,
       [response]()
