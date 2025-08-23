@@ -380,7 +380,7 @@ struct Egg
 struct PetInfo
 {
   uint32_t characterUid{};
-  uint32_t itemUid{}; //can also be an eggUid
+  uint32_t itemUid{}; //can also be an eggUid //also a slot indicator apperantly
   Pet pet{};
   uint32_t member4{};
 

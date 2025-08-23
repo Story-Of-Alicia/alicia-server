@@ -2173,16 +2173,62 @@ void RanchDirector::HandleRequestPetBirth(
   ClientId clientId,
   const protocol::RanchCommandRequestPetBirth& command)
 {
+  const auto& clientContext = GetClientContext(clientId);
+
   protocol::RanchCommandRequestPetBirthOK response{
     .petBirthInfo = {
-      .eggItem = {
-        .uid = 1,
-        .tid = 41001,
-        .count = 1},
       .member2 = 0,
       .member3 = 0,
-      .petInfo = {.characterUid = 3, .itemUid = 1, .pet = {.petId = 139, .member2 = 0, .name = "", .member4 = 0}}},
+      .petInfo = {
+        .characterUid = clientContext.characterUid,
+        .itemUid = command.incubatorSlot + 1,
+        .pet = {// example pet
+          .petId = 186,
+          .member2 = 0,
+          .name = "",
+          .member4 = 0},
+        .member4 = 0}},
   };
+
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+  characterRecord.Mutable(
+    [this, &command, &response](data::Character& character)
+    {
+      auto eggRecord = GetServerInstance().GetDataDirector().GetEggs().Get(
+        character.eggs());
+      if (not eggRecord)
+        throw std::runtime_error("Egg not found");
+      for (const auto& egg : *eggRecord)
+      {
+        egg.Mutable([&command, &character](data::Egg& eggData)
+          {
+            if (eggData.incubatorSlot() == command.incubatorSlot)
+            {
+              character.eggs().erase(
+                std::ranges::find(character.eggs(), eggData.uid()));
+            };
+          });
+      }
+
+      auto bornItem = GetServerInstance().GetDataDirector().CreateItem();
+      bornItem.Mutable([&command, &response, &character](data::Item& item)
+        {
+          // TODO: randomize the item based on egg Level and type
+
+          item.tid() = 41001; // 99186; //example pet item TID
+          item.count() = 1;
+
+          // Fill the response with the born item information.
+          response.petBirthInfo.eggItem = {
+            .uid = item.uid(),
+            .tid = item.tid(),
+            .count = item.count()};
+          character.items().emplace_back(item.uid());
+        });
+    });
+  ;
+
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
