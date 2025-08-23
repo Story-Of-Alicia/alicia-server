@@ -1303,9 +1303,10 @@ void RanchDirector::HandleGetItemFromStorage(
         character.items().end(),
         items.begin(),
         items.end());
-    });
 
-  // TODO: check if carrots need updating (response.updatedCarrots)
+      // TODO: Update carrots as needed
+      response.updatedCarrots = character.carrots();
+    });
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
