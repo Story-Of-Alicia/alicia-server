@@ -25,18 +25,31 @@
 namespace server
 {
 
-class ChatterServer final : network::EventHandlerInterface
+class ChatterServer final
 {
 public:
+  class ClientHandler
+  {
+
+  };
+
   ChatterServer();
   ~ChatterServer();
 
   void BeginHost();
   void EndHost();
 
-  void OnClientConnected(network::ClientId clientId) override;
-  void OnClientDisconnected(network::ClientId clientId) override;
-  size_t OnClientData(network::ClientId clientId, const std::span<const std::byte>& data) override;
+private:
+  class NetworkEventHandler final
+    : public network::EventHandlerInterface
+  {
+  public:
+    ~NetworkEventHandler() override;
+
+    void OnClientConnected(network::ClientId clientId) override;
+    void OnClientDisconnected(network::ClientId clientId) override;
+    size_t OnClientData(network::ClientId clientId, const std::span<const std::byte>& data) override;
+  };
 
   network::Server _server;
   std::thread _serverThread;
