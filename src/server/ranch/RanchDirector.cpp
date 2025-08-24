@@ -2051,31 +2051,31 @@ void RanchDirector::HandleRecoverMount(
     const bool ownsHorse = character.mountUid() == horseUidFromCommand ||
       std::ranges::contains(character.horses(), horseUidFromCommand);
       
-     if (not ownsHorse || character.carrots() == 0)
-       return;
-     
-     GetServerInstance().GetDataDirector().GetHorse(horseUidFromCommand).Mutable([&character, &response](data::Horse& horse)
-     {
-        // Seems to always be 4000.
-        constexpr uint16_t MaxHorseStamina = 4'000;
-        // Each stamina point costs one carrot.
-        constexpr int32_t StaminaPointPrice = 1;
-        
-        // The stamina points the horse needs to recover to reach maximum stamina.
-        const int32_t recoverableStamina = MaxHorseStamina - horse.mountCondition.stamina();
-        
-        // Recover as much required stamina as the user can afford with
-        // the threshold being the max recoverable stamina.
-        const int32_t staminaToRecover = std::min(
-          recoverableStamina,
-          character.carrots() / StaminaPointPrice);
-        
-        horse.mountCondition.stamina() += staminaToRecover;
-        character.carrots() -= staminaToRecover * StaminaPointPrice;
+    if (not ownsHorse || character.carrots() == 0)
+      return;
     
-        response.stamina = horse.mountCondition.stamina();
-        response.updatedCarrots = character.carrots();
-     });
+    GetServerInstance().GetDataDirector().GetHorse(horseUidFromCommand).Mutable([&character, &response](data::Horse& horse)
+    {
+      // Seems to always be 4000.
+      constexpr uint16_t MaxHorseStamina = 4'000;
+      // Each stamina point costs one carrot.
+      constexpr int32_t StaminaPointPrice = 1;
+      
+      // The stamina points the horse needs to recover to reach maximum stamina.
+      const int32_t recoverableStamina = MaxHorseStamina - horse.mountCondition.stamina();
+      
+      // Recover as much required stamina as the user can afford with
+      // the threshold being the max recoverable stamina.
+      const int32_t staminaToRecover = std::min(
+        recoverableStamina,
+        character.carrots() / StaminaPointPrice);
+      
+      horse.mountCondition.stamina() += staminaToRecover;
+      character.carrots() -= staminaToRecover * StaminaPointPrice;
+  
+      response.stamina = horse.mountCondition.stamina();
+      response.updatedCarrots = character.carrots();
+    });
   });
   
   _commandServer.QueueCommand<decltype(response)>(
