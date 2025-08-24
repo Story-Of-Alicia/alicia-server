@@ -2032,11 +2032,11 @@ void RanchDirector::HandleRecoverMount(
     .horseUid = command.horseUid
   };
 
-  bool horseFound = false;
+  bool horseInvalid = false;
   const auto& characterUid = GetClientContext(clientId).characterUid;
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(characterUid);
   
-  characterRecord.Mutable([this, &response, &horseFound](data::Character& character)
+  characterRecord.Mutable([this, &response, &horseInvalid](data::Character& character)
   {
     const bool ownsHorse = character.mountUid() == response.horseUid ||
       std::ranges::contains(character.horses(), response.horseUid);
@@ -2045,10 +2045,12 @@ void RanchDirector::HandleRecoverMount(
     // Check if the character owns the horse or exists in the data director
     if (not ownsHorse || character.carrots() == 0 || not horseRecord.IsAvailable())
     {
+      spdlog::warn("Character {} unsuccessfully tried to recover horse {} stamina with {} carrots",
+        character.name(), response.horseUid, character.carrots());
       return;
     }
 
-    horseFound = true;
+    horseInvalid = true;
     horseRecord.Mutable([&character, &response](data::Horse& horse)
     {
       // Seems to always be 4000.
@@ -2074,7 +2076,7 @@ void RanchDirector::HandleRecoverMount(
     });
   });
 
-  if (not horseFound)
+  if (not horseInvalid)
   {
     const protocol::AcCmdCRRecoverMountCancel cancelResponse{
       .horseUid = command.horseUid};
