@@ -2046,7 +2046,7 @@ void RanchDirector::HandleRecoverMount(
   const auto& characterUid = GetClientContext(clientId).characterUid;
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(characterUid);
   
-  characterRecord.Immutable([this, &response, horseUidFromCommand](const data::Character& character)
+  characterRecord.Mutable([this, &response, horseUidFromCommand](data::Character& character)
   {
     const bool ownsHorse = character.mountUid() == horseUidFromCommand ||
       std::ranges::contains(character.horses(), horseUidFromCommand);
@@ -2054,7 +2054,7 @@ void RanchDirector::HandleRecoverMount(
      if (not ownsHorse || character.carrots() == 0)
        return;
      
-     GetServerInstance().GetDataDirector().GetHorse(horseUidFromCommand).Mutable([&response](data::Horse& horse)
+     GetServerInstance().GetDataDirector().GetHorse(horseUidFromCommand).Mutable([&character, &response](data::Horse& horse)
      {
         // Seems to always be 4000.
         constexpr uint16_t MaxHorseStamina = 4'000;
@@ -2065,9 +2065,9 @@ void RanchDirector::HandleRecoverMount(
         const int32_t recoverableStamina = MaxHorseStamina - horse.mountCondition.stamina();
         
         // Recover as much required stamina as the user can afford with
-        // the treshold being the max recoverable stamina.
-        const int32_t staminaToRecover = std::max(
-          recoverableStamina, 
+        // the threshold being the max recoverable stamina.
+        const int32_t staminaToRecover = std::min(
+          recoverableStamina,
           character.carrots() / StaminaPointPrice);
         
         horse.mountCondition.stamina() += staminaToRecover;
