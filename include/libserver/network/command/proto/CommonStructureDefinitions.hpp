@@ -203,15 +203,15 @@ struct Horse
 
   struct Stats
   {
-    //!
+    //! Agility value
     uint32_t agility{};
-    //! Ambition (control) value. 
+    //! Ambition (spirit) value. 
     uint32_t ambition{};
     //! Rush (speed) value.
     uint32_t rush{};
     //! Endurance (strength) value.
     uint32_t endurance{};
-    //! Courage (spirit) value.
+    //! Courage (control) value.
     uint32_t courage{};
 
     static void Write(const Stats& value, SinkStream& stream);

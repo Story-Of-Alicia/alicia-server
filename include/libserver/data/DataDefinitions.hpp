@@ -282,10 +282,10 @@ struct Horse
   struct Stats
   {
     dao::Field<uint32_t> agility{0u};
-    dao::Field<uint32_t> control{0u};
-    dao::Field<uint32_t> speed{0u};
-    dao::Field<uint32_t> strength{0u};
-    dao::Field<uint32_t> spirit{0u};
+    dao::Field<uint32_t> courage{0u};
+    dao::Field<uint32_t> rush{0u};
+    dao::Field<uint32_t> endurance{0u};
+    dao::Field<uint32_t> ambition{0u};
   } stats{};
 
   struct Mastery

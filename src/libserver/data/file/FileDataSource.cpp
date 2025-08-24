@@ -317,10 +317,10 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   auto stats = json["stats"];
   horse.stats = data::Horse::Stats{
     .agility = stats["agility"].get<uint32_t>(),
-    .control = stats["control"].get<uint32_t>(),
-    .speed = stats["speed"].get<uint32_t>(),
-    .strength = stats["strength"].get<uint32_t>(),
-    .spirit = stats["spirit"].get<uint32_t>()};
+    .courage = stats["courage"].get<uint32_t>(),
+    .rush = stats["rush"].get<uint32_t>(),
+    .endurance = stats["endurance"].get<uint32_t>(),
+    .ambition = stats["ambition"].get<uint32_t>()};
 
   auto mastery = json["mastery"];
   horse.mastery = data::Horse::Mastery{
@@ -379,10 +379,10 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
 
   nlohmann::json stats;
   stats["agility"] = horse.stats.agility();
-  stats["control"] = horse.stats.control();
-  stats["speed"] = horse.stats.speed();
-  stats["strength"] = horse.stats.strength();
-  stats["spirit"] = horse.stats.spirit();
+  stats["courage"] = horse.stats.courage();
+  stats["rush"] = horse.stats.rush();
+  stats["endurance"] = horse.stats.endurance();
+  stats["ambition"] = horse.stats.ambition();
   json["stats"] = stats;
 
   nlohmann::json mastery;

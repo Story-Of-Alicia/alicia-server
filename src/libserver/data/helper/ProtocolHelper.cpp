@@ -122,10 +122,10 @@ void BuildProtocolHorseStats(
 {
   protocolHorseStats = {
     .agility = stats.agility(),
-    .ambition = stats.control(),
-    .rush = stats.speed(),
-    .endurance = stats.strength(),
-    .courage = stats.spirit()};
+    .ambition = stats.ambition(),
+    .rush = stats.rush(),
+    .endurance = stats.endurance(),
+    .courage = stats.courage()};
 }
 
 void BuildProtocolHorseMastery(
