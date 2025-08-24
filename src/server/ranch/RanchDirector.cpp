@@ -2046,13 +2046,17 @@ void RanchDirector::HandleRecoverMount(
   const auto& characterUid = GetClientContext(clientId).characterUid;
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(characterUid);
   
-  characterRecord.Mutable([this, &response, horseUidFromCommand](data::Character& character)
+  bool insufficientCarrots;
+  characterRecord.Mutable([this, &response, horseUidFromCommand, &insufficientCarrots](data::Character& character)
   {
     const bool ownsHorse = character.mountUid() == horseUidFromCommand ||
       std::ranges::contains(character.horses(), horseUidFromCommand);
       
     if (not ownsHorse || character.carrots() == 0)
+    {
+      insufficientCarrots = true;
       return;
+    }
     
     GetServerInstance().GetDataDirector().GetHorse(horseUidFromCommand).Mutable([&character, &response](data::Horse& horse)
     {
@@ -2077,6 +2081,21 @@ void RanchDirector::HandleRecoverMount(
       response.updatedCarrots = character.carrots();
     });
   });
+
+  if (insufficientCarrots)
+  {
+    const protocol::AcCmdCRRecoverMountCancel cancelResponse{
+      .horseUid = command.horseUid};
+
+    _commandServer.QueueCommand<decltype(cancelResponse)>(
+      clientId,
+      [cancelResponse]()
+      {
+        return cancelResponse;
+      });
+    
+    return;
+  }
   
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
