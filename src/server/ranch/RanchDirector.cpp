@@ -2063,7 +2063,7 @@ void RanchDirector::HandleRecoverMount(
       // Seems to always be 4000.
       constexpr uint16_t MaxHorseStamina = 4'000;
       // Each stamina point costs one carrot.
-      constexpr int32_t StaminaPointPrice = 1;
+      constexpr double StaminaPointPrice = 1.0;
       
       // The stamina points the horse needs to recover to reach maximum stamina.
       const int32_t recoverableStamina = MaxHorseStamina - horse.mountCondition.stamina();
@@ -2072,10 +2072,11 @@ void RanchDirector::HandleRecoverMount(
       // the threshold being the max recoverable stamina.
       const int32_t staminaToRecover = std::min(
         recoverableStamina,
-        character.carrots() / StaminaPointPrice);
+        static_cast<int32_t>(std::floor(character.carrots() / StaminaPointPrice)));
       
       horse.mountCondition.stamina() += staminaToRecover;
-      character.carrots() -= staminaToRecover * StaminaPointPrice;
+      character.carrots() -= static_cast<int32_t>(
+        std::floor(staminaToRecover * StaminaPointPrice));
   
       response.stamina = horse.mountCondition.stamina();
       response.updatedCarrots = character.carrots();
