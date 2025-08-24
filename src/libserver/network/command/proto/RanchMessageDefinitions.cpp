@@ -1619,6 +1619,20 @@ void RanchCommandRequestPetBirthOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRRequestPetBirthNotify::Write(
+  const AcCmdCRRequestPetBirthNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.petBirthInfo);
+}
+
+void AcCmdCRRequestPetBirthNotify::Read(
+  AcCmdCRRequestPetBirthNotify& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void RanchCommandRequestPetBirthCancel::Write(
   const RanchCommandRequestPetBirthCancel& command,
   SinkStream& stream)

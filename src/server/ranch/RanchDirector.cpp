@@ -2221,7 +2221,7 @@ void RanchDirector::HandleRequestPetBirth(
         {
           // TODO: randomize the item based on egg Level and type
 
-          item.tid() = 41001; // 99186; //example pet item TID
+          item.tid() = 99043; // 99186; //example pet item TID
           item.count() = 1;
 
           // Fill the response with the born item information.
@@ -2232,7 +2232,10 @@ void RanchDirector::HandleRequestPetBirth(
           character.items().emplace_back(item.uid());
         });
     });
-  ;
+
+  protocol::AcCmdCRRequestPetBirthNotify notify{
+    .petBirthInfo = response.petBirthInfo
+  };
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -2240,6 +2243,22 @@ void RanchDirector::HandleRequestPetBirth(
     {
       return response;
     });
+  
+  const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+  // Broadcast the egg hatching to all ranch clients.
+  for (ClientId ranchClient : ranchInstance.clients)
+  {
+    // Prevent broadcasting to self.
+    if (ranchClient == clientId)
+      continue;
+
+    _commandServer.QueueCommand<decltype(notify)>(
+      ranchClient,
+      [notify]()
+      {
+        return notify;
+      });
+  }
 };
 
 void RanchDirector::BroadcastEquipmentUpdate(ClientId clientId)
