@@ -2045,77 +2045,45 @@ void RanchDirector::HandleRecoverMount(
 
   const auto& characterUid = GetClientContext(clientId).characterUid;
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(characterUid);
-  characterRecord.Immutable([&horseUidFromCommand, &horseFound, &carrots](const data::Character& character)
+  
+  characterRecord.Immutable([this, &response, horseUidFromCommand](const data::Character& character)
   {
-    // Ownership check
-    horseFound = character.mountUid() == horseUidFromCommand ||
+    const bool ownsHorse = character.mountUid() == horseUidFromCommand ||
       std::ranges::contains(character.horses(), horseUidFromCommand);
+      
+     if (not ownsHorse || character.carrots() == 0)
+       return;
+     
+     GetServerInstance().GetDataDirector().GetHorse(horseUidFromCommand).Mutable([&response](data::Horse& horse)
+     {
+        // Seems to always be 4000.
+        constexpr uint16_t MaxHorseStamina = 4'000;
+        // Each stamina point costs one carrot.
+        constexpr int32_t StaminaPointPrice = 1;
+        
+        // The stamina points the horse needs to recover to reach maximum stamina.
+        const int32_t recoverableStamina = MaxHorseStamina - horse.mountCondition.stamina();
+        
+        // Recover as much required stamina as the user can afford with
+        // the treshold being the max recoverable stamina.
+        const int32_t staminaToRecover = std::max(
+          recoverableStamina, 
+          character.carrots() / StaminaPointPrice);
+        
+        horse.mountCondition.stamina() += staminaToRecover;
+        character.carrots() -= staminaToRecover * StaminaPointPrice;
     
-    carrots = character.carrots();
-    spdlog::debug("HandleRecoverMount - horseUid {}, character {}, horseFound {}, carrots {}",
-      horseUidFromCommand, character.uid(), horseFound, carrots);
-  });
-
-  if (horseFound && carrots > 0)
-  {
-    horseRecordFromCommand.Mutable([&response, &characterRecord](data::Horse& horse)
-    {
-      characterRecord.Mutable([&response, &horse](data::Character& character)
-      {
-        // Check if horse is already max stamina
-        if (horse.mountCondition.stamina() >= 4000)
-        {
-          spdlog::warn("HandleRecoverMount - character {} tried to recover a horse {} that was already max stamina",
-            character.uid(), horse.uid());
-          return;
-        }
-
-        // Scenarios
-        // When recovering the horse stamina, the game always attempts
-        // to max restore, never by a user-set amount.
-        auto maxStamina = 4000; // Seems to be static to 4000 always in game
-        auto staminaNeeded = maxStamina - horse.mountCondition.stamina();
-        if (character.carrots() < staminaNeeded)
-        {
-          // Character does not have enough carrots to max stamina
-          // Recover stamina only by the amount of carrots the character has
-          horse.mountCondition.stamina() += character.carrots();
-          character.carrots() = 0;
-        }
-        else
-        {
-          // Character has enough carrots to max stamina
-          character.carrots() -= staminaNeeded;
-          horse.mountCondition.stamina() += staminaNeeded;
-        }
-
         response.stamina = horse.mountCondition.stamina();
         response.updatedCarrots = character.carrots();
-      });
-    });
-
-
-    _commandServer.QueueCommand<decltype(response)>(
-      clientId,
-      [response]()
-      {
-        return response;
-      });
-  }
-  else
-  {
-    protocol::AcCmdCRRecoverMountCancel cancelResponse
+     });
+  });
+  
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
     {
-      .horseUid = command.horseUid
-    };
-
-    _commandServer.QueueCommand<decltype(cancelResponse)>(
-      clientId,
-      [cancelResponse]()
-      {
-        return cancelResponse;
-      });
-  }
+      return response;
+    });
 }
 
 void RanchDirector::HandleMountFamilyTree(
