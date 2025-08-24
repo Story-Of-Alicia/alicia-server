@@ -2046,7 +2046,7 @@ void RanchDirector::HandleRecoverMount(
   const auto& characterUid = GetClientContext(clientId).characterUid;
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(characterUid);
   
-  bool insufficientCarrots;
+  bool insufficientCarrots = false;
   characterRecord.Mutable([this, &response, horseUidFromCommand, &insufficientCarrots](data::Character& character)
   {
     const bool ownsHorse = character.mountUid() == horseUidFromCommand ||
