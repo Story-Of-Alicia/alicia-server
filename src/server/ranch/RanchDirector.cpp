@@ -2043,7 +2043,7 @@ void RanchDirector::HandleRecoverMount(
 
     const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(response.horseUid);
     // Check if the character owns the horse or exists in the data director
-    if (not ownsHorse || character.carrots() == 0 || not horseRecord.IsAvailable())
+    if (not ownsHorse || character.carrots() <= 0 || not horseRecord.IsAvailable())
     {
       spdlog::warn("Character {} unsuccessfully tried to recover horse {} stamina with {} carrots",
         character.name(), response.horseUid, character.carrots());
