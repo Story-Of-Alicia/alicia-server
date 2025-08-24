@@ -2032,11 +2032,11 @@ void RanchDirector::HandleRecoverMount(
     .horseUid = command.horseUid
   };
 
-  bool horseInvalid = false;
+  bool horseValid = false;
   const auto& characterUid = GetClientContext(clientId).characterUid;
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(characterUid);
   
-  characterRecord.Mutable([this, &response, &horseInvalid](data::Character& character)
+  characterRecord.Mutable([this, &response, &horseValid](data::Character& character)
   {
     const bool ownsHorse = character.mountUid() == response.horseUid ||
       std::ranges::contains(character.horses(), response.horseUid);
@@ -2050,7 +2050,7 @@ void RanchDirector::HandleRecoverMount(
       return;
     }
 
-    horseInvalid = true;
+    horseValid = true;
     horseRecord.Mutable([&character, &response](data::Horse& horse)
     {
       // Seems to always be 4000.
@@ -2076,7 +2076,7 @@ void RanchDirector::HandleRecoverMount(
     });
   });
 
-  if (not horseInvalid)
+  if (not horseValid)
   {
     const protocol::AcCmdCRRecoverMountCancel cancelResponse{
       .horseUid = command.horseUid};
