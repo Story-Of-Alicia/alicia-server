@@ -2032,33 +2032,26 @@ void RanchDirector::HandleRecoverMount(
     .horseUid = command.horseUid
   };
 
-  // Check if the horse even exists in the data director
-  data::Uid horseUidFromCommand = data::InvalidUid;
-  const auto horseRecordFromCommand = GetServerInstance().GetDataDirector().GetHorse(command.horseUid);
-  horseRecordFromCommand.Immutable([&horseUidFromCommand](const data::Horse& horse)
-  {
-    horseUidFromCommand = horse.uid();
-  });
-
   bool horseFound = false;
   auto carrots = 0;
 
   const auto& characterUid = GetClientContext(clientId).characterUid;
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(characterUid);
   
-  bool insufficientCarrots = false;
-  characterRecord.Mutable([this, &response, horseUidFromCommand, &insufficientCarrots](data::Character& character)
+  characterRecord.Mutable([this, &response, &horseFound](data::Character& character)
   {
-    const bool ownsHorse = character.mountUid() == horseUidFromCommand ||
-      std::ranges::contains(character.horses(), horseUidFromCommand);
-      
-    if (not ownsHorse || character.carrots() == 0)
+    const bool ownsHorse = character.mountUid() == response.horseUid ||
+      std::ranges::contains(character.horses(), response.horseUid);
+
+    const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(response.horseUid);
+    // Check if the character owns the horse or exists in the data director
+    if (not ownsHorse || character.carrots() == 0 || not horseRecord.IsAvailable())
     {
-      insufficientCarrots = true;
       return;
     }
-    
-    GetServerInstance().GetDataDirector().GetHorse(horseUidFromCommand).Mutable([&character, &response](data::Horse& horse)
+
+    horseFound = true;
+    horseRecord.Mutable([&character, &response](data::Horse& horse)
     {
       // Seems to always be 4000.
       constexpr uint16_t MaxHorseStamina = 4'000;
@@ -2083,7 +2076,7 @@ void RanchDirector::HandleRecoverMount(
     });
   });
 
-  if (insufficientCarrots)
+  if (not horseFound)
   {
     const protocol::AcCmdCRRecoverMountCancel cancelResponse{
       .horseUid = command.horseUid};
