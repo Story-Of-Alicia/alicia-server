@@ -2033,8 +2033,6 @@ void RanchDirector::HandleRecoverMount(
   };
 
   bool horseFound = false;
-  auto carrots = 0;
-
   const auto& characterUid = GetClientContext(clientId).characterUid;
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(characterUid);
   
