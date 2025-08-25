@@ -52,20 +52,20 @@ void BuildProtocolHorse(
   protocolHorse.val17 = 0;
 
   protocolHorse.mountCondition = {
-    .stamina = 0xFFFF,
-    .charmPoint = 0x3DE,
-    .friendlyPoint = 0x3DE,
-    .injuryPoint = 0x0000,
-    .plenitude = 0x500, 
-    .bodyDirtiness = 0x160, 
-    .maneDirtiness = 0x160, 
-    .tailDirtiness = 0x160,
-    .attachment = 0x1F5, 
-    .boredom = 0x15,
-    .bodyPolish = 0x2710, //does nothing rn?? 
-    .manePolish = 0xA,
-    .tailPolish = 0xA,
-    .stopAmendsPoint = 0x0000
+    .stamina = horse.mountCondition.stamina(),
+    .charmPoint = horse.mountCondition.charm(),
+    .friendlyPoint = horse.mountCondition.friendliness(),
+    .injuryPoint = horse.mountCondition.injury(),
+    .plenitude = horse.mountCondition.plenitude(),
+    .bodyDirtiness = horse.mountCondition.bodyDirtiness(),
+    .maneDirtiness = horse.mountCondition.maneDirtiness(),
+    .tailDirtiness = horse.mountCondition.tailDirtiness(),
+    .attachment = horse.mountCondition.attachment(),
+    .boredom = horse.mountCondition.boredom(),
+    .bodyPolish = horse.mountCondition.bodyPolish(),
+    .manePolish = horse.mountCondition.manePolish(),
+    .tailPolish = horse.mountCondition.tailPolish(),
+    .stopAmendsPoint = horse.mountCondition.stopAmendsPoint()
   };
 
   protocolHorse.vals1 = {

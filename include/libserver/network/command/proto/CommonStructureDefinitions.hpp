@@ -226,6 +226,7 @@ struct Horse
 
   struct MountCondition
   {
+    //! Stamina: range <0, 4000>
     uint16_t stamina{};
     //! Charm (attractiveness, beauty) value in a range of <0, 1000>. 
     uint16_t charmPoint{};
@@ -294,6 +295,7 @@ struct Horse
     Injury injury{};
     uint8_t val12{};
 
+    //! Fatigue: range <0, 1500>
     uint16_t fatigue{};
     uint16_t val14{};
     uint16_t emblem{};

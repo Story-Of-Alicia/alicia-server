@@ -267,6 +267,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleMountFamilyTree(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRecoverMount>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleRecoverMount(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -1271,8 +1277,7 @@ void RanchDirector::HandleGetItemFromStorage(
   }
 
   protocol::AcCmdCRGetItemFromStorageOK response{
-    .storedItemUid = command.storedItemUid,
-    .member0 = 0};
+    .storedItemUid = command.storedItemUid};
 
   // Get the items assigned to the stored item and fill the protocol command.
   characterRecord.Mutable([this, &response](
@@ -1298,6 +1303,9 @@ void RanchDirector::HandleGetItemFromStorage(
         character.items().end(),
         items.begin(),
         items.end());
+
+      // TODO: Update carrots as needed
+      response.updatedCarrots = character.carrots();
     });
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -2011,6 +2019,85 @@ void RanchDirector::HandleRequestLeagueTeamList(
     });
 }
 
+//! Recover horse stamina with carrots
+//! 1 carrot = 1 stamina
+void RanchDirector::HandleRecoverMount(
+  ClientId clientId,
+  const protocol::AcCmdCRRecoverMount command)
+{
+  spdlog::debug("HandleRecoverMount - horseUid: {}", command.horseUid);
+
+  protocol::AcCmdCRRecoverMountOK response
+  {
+    .horseUid = command.horseUid
+  };
+
+  bool horseValid = false;
+  const auto& characterUid = GetClientContext(clientId).characterUid;
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(characterUid);
+  
+  characterRecord.Mutable([this, &response, &horseValid](data::Character& character)
+  {
+    const bool ownsHorse = character.mountUid() == response.horseUid ||
+      std::ranges::contains(character.horses(), response.horseUid);
+
+    const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(response.horseUid);
+    // Check if the character owns the horse or exists in the data director
+    if (not ownsHorse || character.carrots() <= 0 || not horseRecord.IsAvailable())
+    {
+      spdlog::warn("Character {} unsuccessfully tried to recover horse {} stamina with {} carrots",
+        character.name(), response.horseUid, character.carrots());
+      return;
+    }
+
+    horseValid = true;
+    horseRecord.Mutable([&character, &response](data::Horse& horse)
+    {
+      // Seems to always be 4000.
+      constexpr uint16_t MaxHorseStamina = 4'000;
+      // Each stamina point costs one carrot.
+      constexpr double StaminaPointPrice = 1.0;
+      
+      // The stamina points the horse needs to recover to reach maximum stamina.
+      const int32_t recoverableStamina = MaxHorseStamina - horse.mountCondition.stamina();
+      
+      // Recover as much required stamina as the user can afford with
+      // the threshold being the max recoverable stamina.
+      const int32_t staminaToRecover = std::min(
+        recoverableStamina,
+        static_cast<int32_t>(std::floor(character.carrots() / StaminaPointPrice)));
+      
+      horse.mountCondition.stamina() += staminaToRecover;
+      character.carrots() -= static_cast<int32_t>(
+        std::floor(staminaToRecover * StaminaPointPrice));
+  
+      response.stamina = horse.mountCondition.stamina();
+      response.updatedCarrots = character.carrots();
+    });
+  });
+
+  if (not horseValid)
+  {
+    const protocol::AcCmdCRRecoverMountCancel cancelResponse{
+      .horseUid = command.horseUid};
+
+    _commandServer.QueueCommand<decltype(cancelResponse)>(
+      clientId,
+      [cancelResponse]()
+      {
+        return cancelResponse;
+      });
+    
+    return;
+  }
+  
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
 
 void RanchDirector::HandleMountFamilyTree(
   ClientId clientId,

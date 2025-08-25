@@ -1116,7 +1116,7 @@ void AcCmdCRGetItemFromStorageOK::Write(
   {
     stream.Write(item);
   }
-  stream.Write(command.member0);
+  stream.Write(command.updatedCarrots);
 }
 
 void AcCmdCRGetItemFromStorageOK::Read(
@@ -1932,4 +1932,49 @@ void RanchCommandRequestLeagueTeamListOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRRecoverMount::Write(
+  const AcCmdCRRecoverMount& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdCRRecoverMount::Read(
+  AcCmdCRRecoverMount& command,
+  SourceStream& stream)
+{
+  stream.Read(command.horseUid);
+}
+
+void AcCmdCRRecoverMountOK::Write(
+  const AcCmdCRRecoverMountOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.horseUid)
+    .Write(command.stamina)
+    .Write(command.updatedCarrots);
+}
+
+void AcCmdCRRecoverMountOK::Read(
+  AcCmdCRRecoverMountOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdCRRecoverMountCancel::Write(
+  const AcCmdCRRecoverMountCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.horseUid);
+}
+
+void AcCmdCRRecoverMountCancel::Read(
+  AcCmdCRRecoverMountCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
 } // namespace server::protocol
+

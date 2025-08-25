@@ -849,6 +849,80 @@ struct AcCmdCRUpdateEquipmentNotify
     SourceStream& stream);
 };
 
+struct AcCmdCRRecoverMount
+{
+  uint32_t horseUid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRecoverMount;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRecoverMount& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRecoverMount& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRecoverMountOK
+{
+  uint32_t horseUid{};
+  uint16_t stamina{};
+  uint32_t updatedCarrots{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRecoverMountOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRecoverMountOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRecoverMountOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRecoverMountCancel
+{
+  uint32_t horseUid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRecoverMountCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRecoverMountCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRecoverMountCancel& command,
+    SourceStream& stream);
+};
+
 struct RanchCommandStatusPointApply
 {
   uint32_t horseUid{};
@@ -1584,7 +1658,8 @@ struct AcCmdCRGetItemFromStorageOK
 {
   uint32_t storedItemUid{};
   std::vector<Item> items{};
-  uint32_t member0{};
+  //! Updates carrots as displayed on game client
+  uint32_t updatedCarrots{};
 
   static Command GetCommand()
   {

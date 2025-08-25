@@ -308,6 +308,24 @@ struct Horse
   dao::Field<uint32_t> luckState{0u};
   dao::Field<uint32_t> emblemUid{0u};
   dao::Field<Clock::time_point> dateOfBirth{};
+
+  struct MountCondition
+  {
+    dao::Field<uint16_t> stamina{};
+    dao::Field<uint16_t> charm{};
+    dao::Field<uint16_t> friendliness{};
+    dao::Field<uint16_t> injury{};
+    dao::Field<uint16_t> plenitude{};
+    dao::Field<uint16_t> bodyDirtiness{};
+    dao::Field<uint16_t> maneDirtiness{};
+    dao::Field<uint16_t> tailDirtiness{};
+    dao::Field<uint16_t> bodyPolish{};
+    dao::Field<uint16_t> manePolish{};
+    dao::Field<uint16_t> tailPolish{};
+    dao::Field<uint16_t> attachment{};
+    dao::Field<uint16_t> boredom{};
+    dao::Field<uint16_t> stopAmendsPoint{};
+  } mountCondition{};
 };
 
 struct Housing
