@@ -1074,8 +1074,8 @@ void LobbyCommandPersonalInfo::Courses::Write(const Courses& command, SinkStream
   for (const auto& entry : command.member4)
   {
     stream.Write(entry.courseId)
-      .Write(entry.recordTime)
-      .Write(entry.timesRaced);
+      .Write(entry.timesRaced)
+      .Write(entry.recordTime);
 
     for (const auto& byte : entry.member4)
     {
