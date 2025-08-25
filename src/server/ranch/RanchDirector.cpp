@@ -2182,7 +2182,6 @@ void RanchDirector::HandleRequestPetBirth(
   ClientId clientId,
   const protocol::RanchCommandRequestPetBirth& command)
 {
-  std::vector<std::pair<uint32_t, uint16_t>> dran2hatchables = {{99137, 137}, {99138, 138}, {99139, 139}, {99030, 30}, {99031, 31}, {99032, 32}, {99033, 33}, {99113, 113}, {99114, 114}, {99115, 115}}; // eggTid = 90005
 
   const auto& clientContext = GetClientContext(clientId);
 
