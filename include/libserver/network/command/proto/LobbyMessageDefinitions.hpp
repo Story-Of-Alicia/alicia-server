@@ -1552,13 +1552,13 @@ struct LobbyCommandPersonalInfo
     static void Read(Basic& command, SourceStream& stream);
   } basic{};
 
-  struct Courses
+  struct CourseInformation
   {
     uint32_t totalGames{};
     uint32_t totalSpeedGames{};
     uint32_t totalMagicGames{};
 
-    struct Unk
+    struct Course
     {
       uint16_t courseId{};
       //! Measured in milliseconds
@@ -1568,11 +1568,11 @@ struct LobbyCommandPersonalInfo
       std::array<std::byte, 12> member4{};
     };
     // max 255
-    std::vector<Unk> member4{};
+    std::vector<Course> courses{};
 
-    static void Write(const Courses& command, SinkStream& stream);
-    static void Read(Courses& command, SourceStream& stream);
-  } courses{};
+    static void Write(const CourseInformation& command, SinkStream& stream);
+    static void Read(CourseInformation& command, SourceStream& stream);
+  } courseInformation{};
 
   struct Eight
   {
