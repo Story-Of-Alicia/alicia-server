@@ -1882,18 +1882,24 @@ void RanchDirector::HandleUpdatePet(
         spdlog::warn("No pets found for character {}", character.uid());
         return;
       }
-
+      bool petExists = false;
       // Find the pet record based on the item used.
       for (const auto& petRecord : *storedPetRecords)
       {
         petRecord.Immutable(
-          [&command, &petUid](const data::Pet& pet)
+          [&command, &petUid,&petExists](const data::Pet& pet)
           {
             if (pet.itemUid() == command.petInfo.itemUid)
             {
               petUid = pet.uid();
+              petExists = true;
             }
           });
+      }
+      if (!petExists)
+      {
+        spdlog::warn("Character {} has no pet with petId {}", character.uid(), command.petInfo.pet.petId);
+        return;
       }
 
       auto itemRecords = GetServerInstance().GetDataDirector().GetItems().Get(
