@@ -1976,5 +1976,89 @@ void AcCmdCRRecoverMountCancel::Read(
   throw std::runtime_error("Not implemented.");
 }
 
+void RanchCommandRequestGuildRankingInfoList::Write(
+  const RanchCommandRequestGuildRankingInfoList& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk1);
+  stream.Write(command.unk2);
+}
+
+void RanchCommandRequestGuildRankingInfoList::Read(
+  RanchCommandRequestGuildRankingInfoList& command,
+  SourceStream& stream)
+{
+  stream.Read(command.unk1);
+  stream.Read(command.unk2);
+}
+
+void RanchCommandRequestGuildRankingInfoListOK::Write(
+  const RanchCommandRequestGuildRankingInfoListOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.guildCount);
+  for (const auto& member : command.guilds)
+  {
+    stream.Write(member.rank)
+      .Write(member.unk1)
+      .Write(member.unk2)
+      .Write(member.unk3)
+      .Write(member.unk4)
+      .Write(member.score)
+      .Write(member.unk6)
+      .Write(member.name)
+      .Write(member.unk8)
+      .Write(member.unk9);
+  }
+}
+
+void RanchCommandRequestGuildRankingInfoListOK::Read(
+  RanchCommandRequestGuildRankingInfoListOK& command,
+  SourceStream& stream)
+{
+}
+
+void RanchCommandRequestGuildRankingInfo::Write(
+  const RanchCommandRequestGuildRankingInfo& command,
+  SinkStream& stream)
+{
+  stream.Write(command.name);
+}
+
+void RanchCommandRequestGuildRankingInfo::Read(
+  RanchCommandRequestGuildRankingInfo& command,
+  SourceStream& stream)
+{
+  stream.Read(command.name);
+}
+
+void RanchCommandRequestGuildRankingInfoOK::Write(
+  const RanchCommandRequestGuildRankingInfoOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.hasLeagueInfo);
+  stream.Write(command.creationDate);
+  stream.Write(command.members);
+  stream.Write(command.name);
+  stream.Write(command.unk3);
+  stream.Write(command.ranking);
+  stream.Write(command.totalWins);
+  stream.Write(command.totalLosses);
+  stream.Write(command.unk7);
+  stream.Write(command.unk8);
+  stream.Write(command.unk9);
+  stream.Write(command.seasonalWins);
+  stream.Write(command.seasonalLosses);
+  stream.Write(command.unk12);
+  stream.Write(command.guildLeader);
+
+}
+
+void RanchCommandRequestGuildRankingInfoOK::Read(
+  RanchCommandRequestGuildRankingInfoOK& command,
+  SourceStream& stream)
+{
+}
+
 } // namespace server::protocol
 

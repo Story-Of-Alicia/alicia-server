@@ -273,6 +273,18 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleRecoverMount(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::RanchCommandRequestGuildRankingInfoList>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleRequestGuildRankingInfoList(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::RanchCommandRequestGuildRankingInfo>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleRequestGuildRankingInfo(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -2150,4 +2162,89 @@ void RanchDirector::HandleMountFamilyTree(
       return response;
     });
 }
+
+void RanchDirector::HandleRequestGuildRankingInfoList(
+  ClientId clientId,
+  const protocol::RanchCommandRequestGuildRankingInfoList& command)
+{
+  protocol::RanchCommandRequestGuildRankingInfoListOK response{
+    .guilds = {
+      protocol::RanchCommandRequestGuildRankingInfoListOK::Guild{
+        .rank = 1,
+        .unk1 = 2,
+        .unk2 = 3,
+        .unk3 = 4,
+        .unk4 = 5,
+        .score = 6,
+        .unk6 = 7,
+        .name = "Work",
+        .unk8 = 8,
+        .unk9 = 9
+      },
+      protocol::RanchCommandRequestGuildRankingInfoListOK::Guild{
+        .rank = 2,
+        .unk1 = 2,
+        .unk2 = 3,
+        .unk3 = 4,
+        .unk4 = 0,
+        .score = 0,
+        .unk6 = 7,
+        .name = "In",
+        .unk8 = 8,
+        .unk9 = 9
+      },
+      protocol::RanchCommandRequestGuildRankingInfoListOK::Guild{
+        .rank = 3,
+        .unk1 = 2,
+        .unk2 = 3,
+        .unk3 = 4,
+        .unk4 = 0,
+        .score = 0,
+        .unk6 = 7,
+        .name = "Progress",
+        .unk8 = 8,
+        .unk9 = 9
+      }
+    }
+  };
+  response.guildCount = static_cast<uint8_t>(response.guilds.size());
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void RanchDirector::HandleRequestGuildRankingInfo(
+  ClientId clientId,
+  const protocol::RanchCommandRequestGuildRankingInfo& command)
+{
+  protocol::RanchCommandRequestGuildRankingInfoOK response{
+    .hasLeagueInfo = 1,
+    .creationDate = 100000,
+    .members = 1,
+    .name = command.name,
+    .unk3 = 2,
+    .ranking = 3,
+    .totalWins = 4,
+    .totalLosses = 5,
+    .unk7 = 6,
+    .unk8 = 7,
+    .unk9 = 8,
+    .seasonalWins = 9,
+    .seasonalLosses = 10,
+    .unk12 = 11,
+    .guildLeader = "Guild Leader"
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
 } // namespace server

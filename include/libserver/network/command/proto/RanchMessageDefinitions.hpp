@@ -3115,6 +3115,137 @@ struct RanchCommandMountFamilyTreeCancel
     SourceStream& stream);
 };
 
+struct RanchCommandRequestGuildRankingInfoList
+{
+
+  uint32_t unk1{};
+  uint32_t unk2{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestGuildRankingInfoList;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RanchCommandRequestGuildRankingInfoList& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RanchCommandRequestGuildRankingInfoList& command,
+    SourceStream& stream);
+};
+
+struct RanchCommandRequestGuildRankingInfoListOK
+{
+  uint8_t guildCount; // array size, max 128
+
+  struct Guild
+  {
+    uint32_t rank;
+    uint32_t unk1;
+    uint32_t unk2;
+    uint32_t unk3;
+    uint32_t unk4;
+    uint32_t score;
+    uint32_t unk6;
+    std::string name; // max 24 characters
+    uint32_t unk8;
+    uint32_t unk9;
+  };
+
+  std::vector<Guild> guilds;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestGuildRankingInfoListOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RanchCommandRequestGuildRankingInfoListOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RanchCommandRequestGuildRankingInfoListOK& command,
+    SourceStream& stream);
+};
+
+struct RanchCommandRequestGuildRankingInfo
+{
+  std::string name;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestGuildRankingInfo;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RanchCommandRequestGuildRankingInfo& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    RanchCommandRequestGuildRankingInfo& command,
+    SourceStream& stream);
+};
+
+struct RanchCommandRequestGuildRankingInfoOK
+{
+
+  uint32_t hasLeagueInfo;
+  uint32_t creationDate;
+  uint32_t members;
+  std::string name;
+  uint16_t unk3;
+  uint32_t ranking;
+  uint32_t totalWins;
+  uint32_t totalLosses;
+  uint32_t unk7;
+  uint32_t unk8;
+  uint32_t unk9;
+  uint32_t seasonalWins;
+  uint32_t seasonalLosses;
+  uint32_t unk12;
+  uint32_t unk13;
+  std::string guildLeader;
+
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestGuildRankingInfoOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const RanchCommandRequestGuildRankingInfoOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+     RanchCommandRequestGuildRankingInfoOK& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RANCH_MESSAGE_DEFINES_HPP

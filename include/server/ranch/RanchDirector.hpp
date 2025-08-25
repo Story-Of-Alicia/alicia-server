@@ -260,6 +260,12 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRRecoverMount command);
 
+  void HandleRequestGuildRankingInfoList(ClientId clientId,
+    const protocol::RanchCommandRequestGuildRankingInfoList& command);
+
+  void HandleRequestGuildRankingInfo(ClientId clientId,
+    const protocol::RanchCommandRequestGuildRankingInfo& command);
+
   //!
   ServerInstance& _serverInstance;
   //!
