@@ -1515,34 +1515,35 @@ struct LobbyCommandPersonalInfo
 
   struct Basic
   {
-    uint32_t member1{};
+    //! Store in metres, displayed in kilometres
+    uint32_t distanceTravelled{};
     //! Whole number, divided by 10 for the floating point.
     uint32_t topSpeed{};
     //! Whole number, divided by 10 for the floating point.
     uint32_t longestGlidingDistance{};
-    uint32_t member4{};
-    uint32_t member5{};
+    float member4{};
+    float member5{};
     uint16_t speedSingleWinCombo{};
     uint16_t speedTeamWinCombo{};
     uint16_t magicSingleWinCombo{};
     uint16_t magicTeamWinCombo{};
     float averageRank{};
-    uint32_t member11{};
-    uint32_t member12{};
+    float member11{};
+    float member12{};
     uint32_t highestCarnivalPrize{};
-    uint32_t member14{};
-    uint32_t member15{};
-    uint32_t member16{};
+    uint16_t member14{};
+    uint16_t member15{};
+    uint16_t member16{};
     std::string introduction{};
-    uint32_t level{18};
-    uint32_t member19{};
-    std::string member20{"twenty"};
+    uint32_t level{};
+    uint32_t member19{}; //level progress table in li
+    std::string member20{};
     uint16_t perfectBoostCombo{};
     uint16_t perfectJumpCombo{};
     uint16_t magicDefenseCombo{};
-    uint32_t member24{};
-    uint32_t member25{};
-    uint32_t member26{};
+    float member24{};
+    float member25{};
+    float member26{};
     std::string guildName{};
     uint8_t member28{};
     uint8_t member29{};

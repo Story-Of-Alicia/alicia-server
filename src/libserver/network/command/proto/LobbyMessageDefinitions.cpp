@@ -1028,7 +1028,7 @@ void LobbyCommandRequestPersonalInfo::Read(
 
 void LobbyCommandPersonalInfo::Basic::Write(const Basic& command, SinkStream& stream)
 {
-  stream.Write(command.member1)
+  stream.Write(command.mileage)
     .Write(command.topSpeed)
     .Write(command.longestGlidingDistance)
     .Write(command.member4)
