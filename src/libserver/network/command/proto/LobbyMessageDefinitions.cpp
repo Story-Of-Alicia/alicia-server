@@ -1066,16 +1066,16 @@ void LobbyCommandPersonalInfo::Basic::Read(Basic& command, SourceStream& stream)
 
 void LobbyCommandPersonalInfo::Courses::Write(const Courses& command, SinkStream& stream)
 {
-  stream.Write(command.member1)
-    .Write(command.member2)
-    .Write(command.member3);
+  stream.Write(command.totalGames)
+    .Write(command.totalSpeedGames)
+    .Write(command.totalMagicGames);
 
   stream.Write(static_cast<uint8_t>(command.member4.size()));
   for (const auto& entry : command.member4)
   {
-    stream.Write(entry.member1)
-      .Write(entry.member2)
-      .Write(entry.member3);
+    stream.Write(entry.courseId)
+      .Write(entry.recordTime)
+      .Write(entry.timesRaced);
 
     for (const auto& byte : entry.member4)
     {

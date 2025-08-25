@@ -1554,15 +1554,17 @@ struct LobbyCommandPersonalInfo
 
   struct Courses
   {
-    uint32_t member1{};
-    uint32_t member2{};
-    uint32_t member3{};
+    uint32_t totalGames{};
+    uint32_t totalSpeedGames{};
+    uint32_t totalMagicGames{};
 
     struct Unk
     {
-      uint16_t member1{};
-      uint32_t member2{};
-      uint32_t member3{};
+      uint16_t courseId{};
+      //! Measured in milliseconds
+      uint32_t recordTime{};
+      //! Unclear if times raced or times won, needs confirming/fact checking
+      uint32_t timesRaced{};
       std::array<std::byte, 12> member4{};
     };
     // max 255
