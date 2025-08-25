@@ -1046,7 +1046,7 @@ void LobbyCommandPersonalInfo::Basic::Write(const Basic& command, SinkStream& st
     .Write(command.member16)
     .Write(command.introduction)
     .Write(command.level)
-    .Write(command.member19)
+    .Write(command.levelProgress)
     .Write(command.member20)
     .Write(command.perfectBoostCombo)
     .Write(command.perfectJumpCombo)

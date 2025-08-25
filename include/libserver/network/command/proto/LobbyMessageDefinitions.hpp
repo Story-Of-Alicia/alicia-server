@@ -1536,7 +1536,8 @@ struct LobbyCommandPersonalInfo
     uint16_t member16{};
     std::string introduction{};
     uint32_t level{};
-    uint32_t member19{}; //level progress table in li
+    //! Level progress as dictated by LevelInfo table in libconfig
+    uint32_t levelProgress{};
     std::string member20{};
     uint16_t perfectBoostCombo{};
     uint16_t perfectJumpCombo{};
