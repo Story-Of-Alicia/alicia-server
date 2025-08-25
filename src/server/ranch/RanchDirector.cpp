@@ -1896,23 +1896,6 @@ void RanchDirector::HandleUpdatePet(
           });
       }
 
-      // If pet record does not exist, create it.
-      // For prototype purposes only.
-      if (petUid == data::InvalidUid && command.petInfo.pet.petId != 0)
-      {
-        const auto petRecord = GetServerInstance().GetDataDirector().CreatePet();
-        petRecord.Mutable(
-          [&command, &petUid](data::Pet& pet)
-          {
-            pet.petId = command.petInfo.pet.petId;
-            pet.name = command.petInfo.pet.name;
-            pet.itemUid = command.petInfo.itemUid;
-
-            petUid = pet.uid();
-          });
-
-        
-      }
       auto itemRecords = GetServerInstance().GetDataDirector().GetItems().Get(
         character.items());
       if (not itemRecords || itemRecords->empty())
