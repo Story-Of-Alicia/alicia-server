@@ -353,6 +353,7 @@ struct Pet
   uint32_t petId{};
   uint32_t member2{};
   std::string name{};
+  //has some Info for ReqPetBirth with a structure of 00 C0 <PetTid> 04/02
   uint32_t member4{};
 
   static void Write(const Pet& value, SinkStream& stream);
@@ -363,12 +364,12 @@ struct Pet
 struct Egg
 {
   uint32_t uid{};
-  uint32_t tid{};
-  uint32_t petTid{};
+  uint32_t itemTid{};
+  uint32_t member3{};
   uint8_t member4{};
   uint32_t member5{};
   uint32_t timeRemaining{};
-  uint32_t timeElapsed{};
+  uint32_t boost{}; //needs further investigation and possibly a rename
   uint32_t totalHatchingTime{};
   uint32_t member9{};
 
@@ -381,7 +382,7 @@ struct Egg
 struct PetInfo
 {
   uint32_t characterUid{};
-  uint32_t itemUid{};
+  uint32_t itemUid{}; //can also be an eggUid //also a slot indicator apperantly
   Pet pet{};
   uint32_t member4{};
 
