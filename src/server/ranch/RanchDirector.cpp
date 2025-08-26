@@ -1584,8 +1584,7 @@ void RanchDirector::HandleLeaveGuild(
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  cosnt bool isUserValid = clientContext.characterUid == command.characterUid;
-
+  const bool isUserValid = clientContext.characterUid == command.characterUid;
   if (not isUserValid)
   {
     protocol::AcCmdCRWithdrawGuildMemberCancel response{
