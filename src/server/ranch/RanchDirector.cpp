@@ -277,7 +277,7 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
   _commandServer.RegisterCommandHandler<protocol::RanchCommandLeaveGuild>(
     [this](ClientId clientId, const auto& command)
     {
-      HandleWithdrawGuildMember(clientId, command);
+      HandleLeaveGuild(clientId, command);
     });
 }
 
@@ -1554,11 +1554,10 @@ void RanchDirector::HandleRequestGuildInfo(
     });
 }
 
-void RanchDirector::HandleWithdrawGuildMember(
+void RanchDirector::HandleLeaveGuild(
   ClientId clientId,
   const protocol::RanchCommandLeaveGuild& command)
 {
-  // TODO: Implement guild member withdrawal logic.
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
