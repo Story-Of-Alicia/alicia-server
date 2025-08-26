@@ -1386,7 +1386,7 @@ void RanchCommandCreateGuildOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.uid)
-    .Write(command.member2);
+    .Write(command.updatedCarrots);
 }
 
 void RanchCommandCreateGuildOK::Read(

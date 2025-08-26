@@ -1999,7 +1999,7 @@ struct RanchCommandCreateGuild
 struct RanchCommandCreateGuildOK
 {
   uint32_t uid{};
-  uint32_t member2{};
+  uint32_t updatedCarrots{};
 
   static Command GetCommand()
   {
@@ -2023,6 +2023,7 @@ struct RanchCommandCreateGuildOK
 
 struct RanchCommandCreateGuildCancel
 {
+  //! See CDATA[ERROR_FAIL_SYSTEMERROR]
   uint8_t status{};
   uint32_t member2{};
 

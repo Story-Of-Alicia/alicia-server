@@ -1453,18 +1453,26 @@ void RanchDirector::HandleCreateGuild(
     clientContext.characterUid);
 
   bool canCreateGuild = false;
-  characterRecord.Mutable([&command, &canCreateGuild](data::Character& character)
+  auto guildCreationCost = 3000;
+  characterRecord.Mutable([&command, &canCreateGuild, guildCreationCost](data::Character& character)
   {
-    // todo money check
-    // todo name check
+    // Check if character has sufficient carrots
+    if (character.carrots() < guildCreationCost)
+    {
+      canCreateGuild = false;
+      return;
+    }
+
+    // TODO: name check
     canCreateGuild = true;
   });
 
+  // If guild cannot be created, send cancel to client
   if (not canCreateGuild)
   {
     protocol::RanchCommandCreateGuildCancel response{
       .status = 0,
-      .member2 = 0};
+      .member2 = 0}; // TODO: Unidentified
 
     _commandServer.QueueCommand<decltype(response)>(
       clientId,
@@ -1472,11 +1480,12 @@ void RanchDirector::HandleCreateGuild(
       {
         return response;
       });
+    
+    return;
   }
 
   protocol::RanchCommandCreateGuildOK response{
-    .uid = 0,
-    .member2 = 0};
+    .uid = 0};
 
   const auto guildRecord = GetServerInstance().GetDataDirector().CreateGuild();
   guildRecord.Mutable([&response, &command](data::Guild& guild)
@@ -1486,8 +1495,10 @@ void RanchDirector::HandleCreateGuild(
     response.uid = guild.uid();
   });
 
-  characterRecord.Mutable([&response](data::Character& character)
+  characterRecord.Mutable([&response, guildCreationCost](data::Character& character)
   {
+    character.carrots() -= guildCreationCost;
+    response.updatedCarrots = character.carrots();
     character.guildUid = response.uid;
   });
 
