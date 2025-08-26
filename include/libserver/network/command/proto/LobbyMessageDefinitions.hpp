@@ -1521,14 +1521,14 @@ struct LobbyCommandPersonalInfo
     uint32_t topSpeed{};
     //! Whole number, divided by 10 for the floating point.
     uint32_t longestGlidingDistance{};
-    float member4{};
-    float member5{};
+    float jumpSuccessRate{};
+    float perfectJumpSuccessRate{};
     uint16_t speedSingleWinCombo{};
     uint16_t speedTeamWinCombo{};
     uint16_t magicSingleWinCombo{};
     uint16_t magicTeamWinCombo{};
     float averageRank{};
-    float member11{};
+    float completionRate{};
     float member12{};
     uint32_t highestCarnivalPrize{};
     uint16_t member14{};
