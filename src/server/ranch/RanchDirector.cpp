@@ -1459,7 +1459,8 @@ void RanchDirector::HandleCreateGuild(
     clientContext.characterUid);
 
   bool canCreateGuild = true;
-  auto guildCreationCost = 3000;
+  // todo: configurable
+  constexpr int32_t GuildCost = 3000;
   characterRecord.Immutable([&command, &canCreateGuild, guildCreationCost](const data::Character& character)
   {
     // Check if character has sufficient carrots
