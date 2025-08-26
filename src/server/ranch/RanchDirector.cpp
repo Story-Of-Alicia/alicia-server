@@ -273,6 +273,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleRecoverMount(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRWithdrawGuildMember>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleLeaveGuild(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -1452,19 +1458,49 @@ void RanchDirector::HandleCreateGuild(
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  bool canCreateGuild = false;
-  characterRecord.Mutable([&command, &canCreateGuild](data::Character& character)
+  bool canCreateGuild = true;
+  // todo: configurable
+  constexpr int32_t GuildCost = 3000;
+  characterRecord.Immutable([&command, &canCreateGuild, GuildCost](const data::Character& character)
   {
-    // todo money check
-    // todo name check
-    canCreateGuild = true;
+    // Check if character has sufficient carrots
+    if (character.carrots() < GuildCost)
+    {
+      canCreateGuild = false;
+    }
   });
 
+  // todo: disabled guild name duplicate check (real guild system needs implementing)
+  if (false)
+  {
+    const auto& guildKeys = GetServerInstance().GetDataDirector().GetGuilds().GetKeys();
+    
+    // todo: This actually needs to retrieve all guilds from data source, 
+    //       so that even offline guilds (guilds that have no members online) are checked.
+    //       This is not yet implemented in the data source interface api.
+    
+    // Loop through each guild and check their names for deduplication
+    for (const auto guildKey : guildKeys)
+    {
+      // Break early if character does not have enough carrots
+      // or if new guild has duplicate name
+      if (not canCreateGuild)
+        break;
+
+      const auto& guildRecord = GetServerInstance().GetDataDirector().GetGuilds().Get(guildKey);
+      guildRecord.value().Immutable([&canCreateGuild, command](const data::Guild& guild)
+      {
+        canCreateGuild = command.name != guild.name();
+      });
+    }
+  }
+
+  // If guild cannot be created, send cancel to client
   if (not canCreateGuild)
   {
     protocol::RanchCommandCreateGuildCancel response{
       .status = 0,
-      .member2 = 0};
+      .member2 = 0}; // TODO: Unidentified
 
     _commandServer.QueueCommand<decltype(response)>(
       clientId,
@@ -1472,11 +1508,12 @@ void RanchDirector::HandleCreateGuild(
       {
         return response;
       });
+    
+    return;
   }
 
   protocol::RanchCommandCreateGuildOK response{
-    .uid = 0,
-    .member2 = 0};
+    .uid = 0};
 
   const auto guildRecord = GetServerInstance().GetDataDirector().CreateGuild();
   guildRecord.Mutable([&response, &command](data::Guild& guild)
@@ -1486,8 +1523,10 @@ void RanchDirector::HandleCreateGuild(
     response.uid = guild.uid();
   });
 
-  characterRecord.Mutable([&response](data::Character& character)
+  characterRecord.Mutable([&response, GuildCost](data::Character& character)
   {
+    character.carrots() -= GuildCost;
+    response.updatedCarrots = character.carrots();
     character.guildUid = response.uid;
   });
 
@@ -1529,6 +1568,48 @@ void RanchDirector::HandleRequestGuildInfo(
     });
   }
 
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void RanchDirector::HandleLeaveGuild(
+  ClientId clientId,
+  const protocol::AcCmdCRWithdrawGuildMember& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  const bool isUserValid = clientContext.characterUid == command.characterUid;
+  if (not isUserValid)
+  {
+    protocol::AcCmdCRWithdrawGuildMemberCancel response{
+      .status = 0
+    };
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]()
+      {
+        return response;
+      });
+    
+    return;
+  }
+
+  characterRecord.Mutable([&command](data::Character& character)
+  {
+    character.guildUid() = data::InvalidUid;
+    // TODO: check if player is the last player in the guild
+    // otherwise guild stays soft locked forever if not deleted
+  });
+
+  protocol::AcCmdCRWithdrawGuildMemberOK response{
+    .unk0 = 0
+  };
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()

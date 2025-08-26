@@ -1999,7 +1999,7 @@ struct RanchCommandCreateGuild
 struct RanchCommandCreateGuildOK
 {
   uint32_t uid{};
-  uint32_t member2{};
+  uint32_t updatedCarrots{};
 
   static Command GetCommand()
   {
@@ -2023,6 +2023,7 @@ struct RanchCommandCreateGuildOK
 
 struct RanchCommandCreateGuildCancel
 {
+  //! See CDATA[ERROR_FAIL_SYSTEMERROR]
   uint8_t status{};
   uint32_t member2{};
 
@@ -2135,6 +2136,81 @@ struct RanchCommandRequestGuildInfoCancel
   //! @param stream Source stream.
   static void Read(
     RanchCommandRequestGuildInfoCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRWithdrawGuildMember
+{
+  uint32_t characterUid{};
+  uint8_t member1{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRWithdrawGuildMember;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRWithdrawGuildMember& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRWithdrawGuildMember& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRWithdrawGuildMemberOK
+{
+  uint8_t unk0{};
+  
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRWithdrawGuildMemberOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRWithdrawGuildMemberOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRWithdrawGuildMemberOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRWithdrawGuildMemberCancel
+{
+  //! See GuildStrings table in libconfig
+  //! 0 from CDATA[ERROR_FAIL_SYSTEMERROR]
+  uint8_t status{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRWithdrawGuildMemberCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRWithdrawGuildMemberCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRWithdrawGuildMemberCancel& command,
     SourceStream& stream);
 };
 

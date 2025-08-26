@@ -1028,17 +1028,17 @@ void LobbyCommandRequestPersonalInfo::Read(
 
 void LobbyCommandPersonalInfo::Basic::Write(const Basic& command, SinkStream& stream)
 {
-  stream.Write(command.member1)
+  stream.Write(command.distanceTravelled)
     .Write(command.topSpeed)
     .Write(command.longestGlidingDistance)
-    .Write(command.member4)
-    .Write(command.member5)
+    .Write(command.jumpSuccessRate)
+    .Write(command.perfectJumpSuccessRate)
     .Write(command.speedSingleWinCombo)
     .Write(command.speedTeamWinCombo)
     .Write(command.magicSingleWinCombo)
     .Write(command.magicTeamWinCombo)
     .Write(command.averageRank)
-    .Write(command.member11)
+    .Write(command.completionRate)
     .Write(command.member12)
     .Write(command.highestCarnivalPrize)
     .Write(command.member14)
@@ -1046,7 +1046,7 @@ void LobbyCommandPersonalInfo::Basic::Write(const Basic& command, SinkStream& st
     .Write(command.member16)
     .Write(command.introduction)
     .Write(command.level)
-    .Write(command.member19)
+    .Write(command.levelProgress)
     .Write(command.member20)
     .Write(command.perfectBoostCombo)
     .Write(command.perfectJumpCombo)
@@ -1064,18 +1064,18 @@ void LobbyCommandPersonalInfo::Basic::Read(Basic& command, SourceStream& stream)
   throw std::runtime_error("Not implemented");
 }
 
-void LobbyCommandPersonalInfo::Courses::Write(const Courses& command, SinkStream& stream)
+void LobbyCommandPersonalInfo::CourseInformation::Write(const CourseInformation& command, SinkStream& stream)
 {
-  stream.Write(command.member1)
-    .Write(command.member2)
-    .Write(command.member3);
+  stream.Write(command.totalGames)
+    .Write(command.totalSpeedGames)
+    .Write(command.totalMagicGames);
 
-  stream.Write(static_cast<uint8_t>(command.member4.size()));
-  for (const auto& entry : command.member4)
+  stream.Write(static_cast<uint8_t>(command.courses.size()));
+  for (const auto& entry : command.courses)
   {
-    stream.Write(entry.member1)
-      .Write(entry.member2)
-      .Write(entry.member3);
+    stream.Write(entry.courseId)
+      .Write(entry.timesRaced)
+      .Write(entry.recordTime);
 
     for (const auto& byte : entry.member4)
     {
@@ -1084,7 +1084,7 @@ void LobbyCommandPersonalInfo::Courses::Write(const Courses& command, SinkStream
   }
 }
 
-void LobbyCommandPersonalInfo::Courses::Read(Courses& command, SourceStream& stream)
+void LobbyCommandPersonalInfo::CourseInformation::Read(CourseInformation& command, SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1118,7 +1118,7 @@ void LobbyCommandPersonalInfo::Write(const LobbyCommandPersonalInfo& command, Si
       }
     case LobbyCommandRequestPersonalInfo::Type::Courses:
       {
-        stream.Write(command.courses);
+        stream.Write(command.courseInformation);
         break;
       }
     case LobbyCommandRequestPersonalInfo::Type::Eight:

@@ -201,6 +201,10 @@ private:
     ClientId clientId,
     const protocol::RanchCommandRequestGuildInfo& command);
 
+  void HandleLeaveGuild(
+    ClientId clientId,
+    const protocol::AcCmdCRWithdrawGuildMember& command);
+
   void HandleUpdatePet(
     ClientId clientId,
     const protocol::AcCmdCRUpdatePet& command);
