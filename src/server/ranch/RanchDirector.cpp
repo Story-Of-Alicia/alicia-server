@@ -204,13 +204,13 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       HandleRequestNpcDressList(clientId, message);
     });
 
-  _commandServer.RegisterCommandHandler<protocol::RanchCommandHousingBuild>(
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRHousingBuild>(
     [this](ClientId clientId, auto& command)
     {
       HandleHousingBuild(clientId, command);
     });
 
-  _commandServer.RegisterCommandHandler<protocol::RanchCommandHousingRepair>(
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRHousingRepair>(
     [this](ClientId clientId, auto& command)
     {
       HandleHousingRepair(clientId, command);
@@ -1890,7 +1890,7 @@ void RanchDirector::HandleUseItem(
 
 void RanchDirector::HandleHousingBuild(
   ClientId clientId,
-  const protocol::RanchCommandHousingBuild& command)
+  const protocol::AcCmdCRHousingBuild& command)
 {
   const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
@@ -1898,10 +1898,10 @@ void RanchDirector::HandleHousingBuild(
 
   // todo catalogue housing uids and handle transaction
 
-  protocol::RanchCommandHousingBuildOK response{
+  protocol::AcCmdCRHousingBuildOK response{
     .member1 = clientContext.characterUid,
     .housingTid = command.housingTid,
-    .member3 = 1,
+    .member3 = 10,
   };
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -1915,11 +1915,20 @@ void RanchDirector::HandleHousingBuild(
 
   const auto housingRecord = GetServerInstance().GetDataDirector().CreateHousing();
   housingRecord.Mutable([housingId = command.housingTid, &housingUid](data::Housing& housing)
-  {
-    housing.housingId = housingId;
-
-    housingUid = housing.uid();
-  });
+    {
+      housing.housingId = housingId;
+      housingUid = housing.uid();
+      housing.incubatorFlag = 0;
+      if (housingId == 52) // housingId of the double incubator
+      {
+        housing.incubatorFlag = 1;
+        housing.durability = 10;
+      }
+      else
+      {
+        housing.expiresAt = std::chrono::system_clock::now() + std::chrono::days(20);
+      }
+    });
 
   characterRecord.Mutable([&housingUid](data::Character& character)
   {
@@ -1928,7 +1937,7 @@ void RanchDirector::HandleHousingBuild(
 
   assert(clientContext.visitingRancherUid == clientContext.characterUid);
 
-  protocol::RanchCommandHousingBuildNotify notify{
+  protocol::AcCmdCRHousingBuildNotify notify{
     .member1 = 1,
     .housingTid = command.housingTid,
   };
@@ -1952,13 +1961,20 @@ void RanchDirector::HandleHousingBuild(
 
 void RanchDirector::HandleHousingRepair(
   ClientId clientId,
-  const protocol::RanchCommandHousingRepair& command)
+  const protocol::AcCmdCRHousingRepair& command)
 {
   const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
-  // todo catalogue housing uids and handle transaction
-  protocol::RanchCommandHousingRepairOK response{
+  
+  uint16_t housingTid;
+  const auto housingRecord = GetServerInstance().GetDataDirector().GetHousing(command.housingUid);
+  housingRecord.Mutable([&housingTid](data::Housing& housing){
+    housing.expiresAt = std::chrono::system_clock::now() + std::chrono::days(20);
+    housingTid = housing.housingId();
+  });
+
+  protocol::AcCmdCRHousingRepairOK response{
     .housingUid = command.housingUid,
     .member2 = 1,
   };
@@ -1968,6 +1984,28 @@ void RanchDirector::HandleHousingRepair(
     {
       return response;
     });
+  assert(clientContext.visitingRancherUid == clientContext.characterUid);
+
+  protocol::AcCmdCRHousingBuildNotify notify{
+    .member1 = 1,
+    .housingTid = housingTid,
+  };
+
+  // Broadcast to all the ranch clients.
+  const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+  for (ClientId ranchClientId : ranchInstance.clients)
+  {
+    // Prevent broadcasting to self.
+    if (ranchClientId == clientId)
+      continue;
+
+    _commandServer.QueueCommand<decltype(notify)>(
+      ranchClientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
 };
 
 void RanchDirector::HandleOpCmd(

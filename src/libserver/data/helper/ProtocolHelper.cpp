@@ -236,7 +236,12 @@ void BuildProtocolHousing(
 {
   protocolHousing.uid = housingRecord.uid();
   protocolHousing.tid = housingRecord.housingId();
-  protocolHousing.durability = housingRecord.durability();
+  if (housingRecord.incubatorFlag() == 1){
+    protocolHousing.durability = housingRecord.durability();
+  }
+  else{
+    protocolHousing.durability = util::TimePointToAliciaTime(housingRecord.expiresAt());
+  }
 }
 
 void BuildProtocolHousing(
