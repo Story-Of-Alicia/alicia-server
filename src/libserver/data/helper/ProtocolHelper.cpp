@@ -232,16 +232,14 @@ void BuildProtocolPets(
 
 void BuildProtocolHousing(
   Housing& protocolHousing,
-  const data::Housing& housingRecord)
+  const data::Housing& housingRecord,
+  bool hasDurability)
 {
   protocolHousing.uid = housingRecord.uid();
   protocolHousing.tid = housingRecord.housingId();
-  if (housingRecord.incubatorFlag() == 1){
-    protocolHousing.durability = housingRecord.durability();
-  }
-  else{
-    protocolHousing.durability = util::TimePointToAliciaTime(housingRecord.expiresAt());
-  }
+  protocolHousing.durability = hasDurability 
+    ? housingRecord.durability() 
+    : util::TimePointToAliciaTime(housingRecord.expiresAt());
 }
 
 void BuildProtocolHousing(

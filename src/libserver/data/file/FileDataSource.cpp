@@ -683,6 +683,7 @@ void server::FileDataSource::StoreHousing(data::Uid uid, const data::Housing& ho
     housing.expiresAt().time_since_epoch()).count();
   json["incubatorFlag"] = housing.incubatorFlag();
   json["durability"] = housing.durability();
+  
   dataFile << json.dump(2);
 }
 
