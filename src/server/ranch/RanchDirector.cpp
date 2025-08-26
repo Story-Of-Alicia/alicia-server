@@ -1470,7 +1470,7 @@ void RanchDirector::HandleCreateGuild(
     }
   });
 
-  // Disable guild name duplicate check (real guild system needs implementing)
+  // todo: disabled guild name duplicate check (real guild system needs implementing)
   if (false)
   {
     auto& guildRecords = GetServerInstance().GetDataDirector().GetGuilds();
