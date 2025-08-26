@@ -203,7 +203,7 @@ private:
 
   void HandleLeaveGuild(
     ClientId clientId,
-    const protocol::RanchCommandLeaveGuild& command);
+    const protocol::AcCmdCRWithdrawGuildMember& command);
 
   void HandleUpdatePet(
     ClientId clientId,

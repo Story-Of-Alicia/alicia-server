@@ -274,7 +274,7 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       HandleRecoverMount(clientId, command);
     });
 
-  _commandServer.RegisterCommandHandler<protocol::RanchCommandLeaveGuild>(
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRWithdrawGuildMember>(
     [this](ClientId clientId, const auto& command)
     {
       HandleLeaveGuild(clientId, command);
@@ -1572,7 +1572,7 @@ void RanchDirector::HandleRequestGuildInfo(
 
 void RanchDirector::HandleLeaveGuild(
   ClientId clientId,
-  const protocol::RanchCommandLeaveGuild& command)
+  const protocol::AcCmdCRWithdrawGuildMember& command)
 {
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
@@ -1587,7 +1587,7 @@ void RanchDirector::HandleLeaveGuild(
 
   if (not isUserValid)
   {
-    protocol::RanchCommandLeaveGuildCancel response{
+    protocol::AcCmdCRWithdrawGuildMemberCancel response{
       .status = 0
     };
     _commandServer.QueueCommand<decltype(response)>(
@@ -1607,7 +1607,7 @@ void RanchDirector::HandleLeaveGuild(
     // otherwise guild stays soft locked forever if not deleted
   });
 
-  protocol::RanchCommandLeaveGuildOK response{
+  protocol::AcCmdCRWithdrawGuildMemberOK response{
     .unk0 = 0
   };
   _commandServer.QueueCommand<decltype(response)>(

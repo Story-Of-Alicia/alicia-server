@@ -2139,7 +2139,7 @@ struct RanchCommandRequestGuildInfoCancel
     SourceStream& stream);
 };
 
-struct RanchCommandLeaveGuild
+struct AcCmdCRWithdrawGuildMember
 {
   uint32_t characterUid{};
   uint8_t member1{};
@@ -2153,18 +2153,18 @@ struct RanchCommandLeaveGuild
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandLeaveGuild& command,
+    const AcCmdCRWithdrawGuildMember& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandLeaveGuild& command,
+    AcCmdCRWithdrawGuildMember& command,
     SourceStream& stream);
 };
 
-struct RanchCommandLeaveGuildOK
+struct AcCmdCRWithdrawGuildMemberOK
 {
   uint8_t unk0{};
   
@@ -2177,18 +2177,18 @@ struct RanchCommandLeaveGuildOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandLeaveGuildOK& command,
+    const AcCmdCRWithdrawGuildMemberOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandLeaveGuildOK& command,
+    AcCmdCRWithdrawGuildMemberOK& command,
     SourceStream& stream);
 };
 
-struct RanchCommandLeaveGuildCancel
+struct AcCmdCRWithdrawGuildMemberCancel
 {
   //! See GuildStrings table in libconfig
   //! 0 from CDATA[ERROR_FAIL_SYSTEMERROR]
@@ -2203,14 +2203,14 @@ struct RanchCommandLeaveGuildCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandLeaveGuildCancel& command,
+    const AcCmdCRWithdrawGuildMemberCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandLeaveGuildCancel& command,
+    AcCmdCRWithdrawGuildMemberCancel& command,
     SourceStream& stream);
 };
 
