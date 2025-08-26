@@ -1473,7 +1473,8 @@ void RanchDirector::HandleCreateGuild(
   // Loop through each guild and check their names for deduplication
   for (const auto guildRecordKey : guildRecords.GetKeys())
   {
-    // Break if new guild has duplicate name
+    // Break early if character does not have enough carrots
+    // or if new guild has duplicate name
     if (not canCreateGuild)
       break;
 
