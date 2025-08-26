@@ -1584,12 +1584,7 @@ void RanchDirector::HandleLeaveGuild(
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  auto isUserValid = false;
-  characterRecord.Immutable([&command, &isUserValid](const data::Character& character)
-  {
-    // If command character UID is the command calling client character UID
-    isUserValid = character.uid() == command.characterUid;
-  });
+  cosnt bool isUserValid = clientContext.characterUid == command.characterUid;
 
   if (not isUserValid)
   {
