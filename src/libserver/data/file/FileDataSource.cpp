@@ -680,8 +680,7 @@ void server::FileDataSource::StoreHousing(data::Uid uid, const data::Housing& ho
   json["uid"] = housing.uid();
   json["housingId"] = housing.housingId();
   json["expiresAt"] = std::chrono::duration_cast<std::chrono::seconds>(
-                        housing.expiresAt().time_since_epoch())
-                        .count();
+    housing.expiresAt().time_since_epoch()).count();
   json["incubatorFlag"] = housing.incubatorFlag();
   json["durability"] = housing.durability();
   dataFile << json.dump(2);
