@@ -273,6 +273,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleRecoverMount(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRWithdrawGuildMember>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleWithdrawGuildMember(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -1540,6 +1546,55 @@ void RanchDirector::HandleRequestGuildInfo(
     });
   }
 
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void RanchDirector::HandleWithdrawGuildMember(
+  ClientId clientId,
+  const protocol::AcCmdCRWithdrawGuildMember& command)
+{
+  // TODO: Implement guild member withdrawal logic.
+  const auto& clientContext = GetClientContext(clientId);
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  auto isUserValid = false;
+  characterRecord.Immutable([&command, &isUserValid](const data::Character& character)
+  {
+    // If command character UID is the command calling client character UID
+    isUserValid = character.uid() == command.characterUid;
+  });
+
+  if (not isUserValid)
+  {
+    protocol::AcCmdCRWithdrawGuildMemberCancel response{
+      .status = 0
+    };
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]()
+      {
+        return response;
+      });
+    
+    return;
+  }
+
+  characterRecord.Mutable([&command](data::Character& character)
+  {
+    character.guildUid() = data::InvalidUid;
+    // TODO: check if player is the last player in the guild
+    // otherwise guild stays soft locked forever if not deleted
+  });
+
+  protocol::AcCmdCRWithdrawGuildMemberOK response{
+    .unk0 = 0
+  };
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()

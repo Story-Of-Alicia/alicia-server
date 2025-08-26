@@ -1976,5 +1976,48 @@ void AcCmdCRRecoverMountCancel::Read(
   throw std::runtime_error("Not implemented.");
 }
 
+void AcCmdCRWithdrawGuildMember::Write(
+  const AcCmdCRWithdrawGuildMember& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRWithdrawGuildMember::Read(
+  AcCmdCRWithdrawGuildMember& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterUid)
+    .Read(command.member1);
+}
+
+void AcCmdCRWithdrawGuildMemberOK::Write(
+  const AcCmdCRWithdrawGuildMemberOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0);
+}
+
+void AcCmdCRWithdrawGuildMemberOK::Read(
+  AcCmdCRWithdrawGuildMemberOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRWithdrawGuildMemberCancel::Write(
+  const AcCmdCRWithdrawGuildMemberCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.status);
+}
+
+void AcCmdCRWithdrawGuildMemberCancel::Read(
+  AcCmdCRWithdrawGuildMemberCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
 
