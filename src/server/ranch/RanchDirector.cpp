@@ -1461,10 +1461,10 @@ void RanchDirector::HandleCreateGuild(
   bool canCreateGuild = true;
   // todo: configurable
   constexpr int32_t GuildCost = 3000;
-  characterRecord.Immutable([&command, &canCreateGuild, guildCreationCost](const data::Character& character)
+  characterRecord.Immutable([&command, &canCreateGuild, GuildCost](const data::Character& character)
   {
     // Check if character has sufficient carrots
-    if (character.carrots() < guildCreationCost)
+    if (character.carrots() < GuildCost)
     {
       canCreateGuild = false;
     }
@@ -1487,7 +1487,7 @@ void RanchDirector::HandleCreateGuild(
       if (not canCreateGuild)
         break;
 
-      const auto& guildRecord = guildRecords.Get(guildKey );
+      const auto& guildRecord = GetServerInstance().GetDataDirector().GetGuilds().Get(guildKey);
       guildRecord.value().Immutable([&canCreateGuild, command](const data::Guild& guild)
       {
         canCreateGuild = command.name != guild.name();
@@ -1523,9 +1523,9 @@ void RanchDirector::HandleCreateGuild(
     response.uid = guild.uid();
   });
 
-  characterRecord.Mutable([&response, guildCreationCost](data::Character& character)
+  characterRecord.Mutable([&response, GuildCost](data::Character& character)
   {
-    character.carrots() -= guildCreationCost;
+    character.carrots() -= GuildCost;
     response.updatedCarrots = character.carrots();
     character.guildUid = response.uid;
   });
