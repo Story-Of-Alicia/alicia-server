@@ -1458,7 +1458,7 @@ void RanchDirector::HandleCreateGuild(
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  bool canCreateGuild = false;
+  bool canCreateGuild = true;
   auto guildCreationCost = 3000;
   characterRecord.Immutable([&command, &canCreateGuild, guildCreationCost](const data::Character& character)
   {
@@ -1466,12 +1466,23 @@ void RanchDirector::HandleCreateGuild(
     if (character.carrots() < guildCreationCost)
     {
       canCreateGuild = false;
-      return;
     }
-
-    // TODO: name check
-    canCreateGuild = true;
   });
+
+  auto& guildRecords = GetServerInstance().GetDataDirector().GetGuilds();
+  // Loop through each guild and check their names for deduplication
+  for (const auto guildRecordKey : guildRecords.GetKeys())
+  {
+    // Break if new guild has duplicate name
+    if (not canCreateGuild)
+      break;
+
+    const auto& guildRecord = guildRecords.Get(guildRecordKey);
+    guildRecord.value().Immutable([&canCreateGuild, command](const data::Guild& guild)
+    {
+      canCreateGuild = command.name != guild.name();
+    });
+  }
 
   // If guild cannot be created, send cancel to client
   if (not canCreateGuild)
