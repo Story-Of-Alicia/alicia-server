@@ -2139,7 +2139,7 @@ struct RanchCommandRequestGuildInfoCancel
     SourceStream& stream);
 };
 
-struct AcCmdCRWithdrawGuildMember
+struct RanchCommandLeaveGuild
 {
   uint32_t characterUid{};
   uint8_t member1{};
@@ -2153,18 +2153,18 @@ struct AcCmdCRWithdrawGuildMember
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const AcCmdCRWithdrawGuildMember& command,
+    const RanchCommandLeaveGuild& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    AcCmdCRWithdrawGuildMember& command,
+    RanchCommandLeaveGuild& command,
     SourceStream& stream);
 };
 
-struct AcCmdCRWithdrawGuildMemberOK
+struct RanchCommandLeaveGuildOK
 {
   uint8_t unk0{};
   
@@ -2177,18 +2177,18 @@ struct AcCmdCRWithdrawGuildMemberOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const AcCmdCRWithdrawGuildMemberOK& command,
+    const RanchCommandLeaveGuildOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    AcCmdCRWithdrawGuildMemberOK& command,
+    RanchCommandLeaveGuildOK& command,
     SourceStream& stream);
 };
 
-struct AcCmdCRWithdrawGuildMemberCancel
+struct RanchCommandLeaveGuildCancel
 {
   //! See GuildStrings table in libconfig
   //! 0 from CDATA[ERROR_FAIL_SYSTEMERROR]
@@ -2203,14 +2203,14 @@ struct AcCmdCRWithdrawGuildMemberCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const AcCmdCRWithdrawGuildMemberCancel& command,
+    const RanchCommandLeaveGuildCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    AcCmdCRWithdrawGuildMemberCancel& command,
+    RanchCommandLeaveGuildCancel& command,
     SourceStream& stream);
 };
 

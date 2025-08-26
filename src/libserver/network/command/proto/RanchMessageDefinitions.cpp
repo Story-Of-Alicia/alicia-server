@@ -1976,44 +1976,44 @@ void AcCmdCRRecoverMountCancel::Read(
   throw std::runtime_error("Not implemented.");
 }
 
-void AcCmdCRWithdrawGuildMember::Write(
-  const AcCmdCRWithdrawGuildMember& command,
+void RanchCommandLeaveGuild::Write(
+  const RanchCommandLeaveGuild& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void AcCmdCRWithdrawGuildMember::Read(
-  AcCmdCRWithdrawGuildMember& command,
+void RanchCommandLeaveGuild::Read(
+  RanchCommandLeaveGuild& command,
   SourceStream& stream)
 {
   stream.Read(command.characterUid)
     .Read(command.member1);
 }
 
-void AcCmdCRWithdrawGuildMemberOK::Write(
-  const AcCmdCRWithdrawGuildMemberOK& command,
+void RanchCommandLeaveGuildOK::Write(
+  const RanchCommandLeaveGuildOK& command,
   SinkStream& stream)
 {
   stream.Write(command.unk0);
 }
 
-void AcCmdCRWithdrawGuildMemberOK::Read(
-  AcCmdCRWithdrawGuildMemberOK& command,
+void RanchCommandLeaveGuildOK::Read(
+  RanchCommandLeaveGuildOK& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void AcCmdCRWithdrawGuildMemberCancel::Write(
-  const AcCmdCRWithdrawGuildMemberCancel& command,
+void RanchCommandLeaveGuildCancel::Write(
+  const RanchCommandLeaveGuildCancel& command,
   SinkStream& stream)
 {
   stream.Write(command.status);
 }
 
-void AcCmdCRWithdrawGuildMemberCancel::Read(
-  AcCmdCRWithdrawGuildMemberCancel& command,
+void RanchCommandLeaveGuildCancel::Read(
+  RanchCommandLeaveGuildCancel& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
