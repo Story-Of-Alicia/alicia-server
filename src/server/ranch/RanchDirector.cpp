@@ -1473,16 +1473,21 @@ void RanchDirector::HandleCreateGuild(
   // todo: disabled guild name duplicate check (real guild system needs implementing)
   if (false)
   {
-    auto& guildRecords = GetServerInstance().GetDataDirector().GetGuilds();
+    const auto& guildKeys = GetServerInstance().GetDataDirector().GetGuilds().GetKeys();
+    
+    // todo: This actually needs to retrieve all guilds from data source, 
+    //       so that even offline guilds (guilds that have no members online) are checked.
+    //       This is not yet implemented in the data source interface api.
+    
     // Loop through each guild and check their names for deduplication
-    for (const auto guildRecordKey : guildRecords.GetKeys())
+    for (const auto guildKey : guildKeys)
     {
       // Break early if character does not have enough carrots
       // or if new guild has duplicate name
       if (not canCreateGuild)
         break;
 
-      const auto& guildRecord = guildRecords.Get(guildRecordKey);
+      const auto& guildRecord = guildRecords.Get(guildKey );
       guildRecord.value().Immutable([&canCreateGuild, command](const data::Guild& guild)
       {
         canCreateGuild = command.name != guild.name();
