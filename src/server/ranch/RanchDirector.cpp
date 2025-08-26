@@ -1469,20 +1469,24 @@ void RanchDirector::HandleCreateGuild(
     }
   });
 
-  auto& guildRecords = GetServerInstance().GetDataDirector().GetGuilds();
-  // Loop through each guild and check their names for deduplication
-  for (const auto guildRecordKey : guildRecords.GetKeys())
+  // Disable guild name duplicate check (real guild system needs implementing)
+  if (false)
   {
-    // Break early if character does not have enough carrots
-    // or if new guild has duplicate name
-    if (not canCreateGuild)
-      break;
-
-    const auto& guildRecord = guildRecords.Get(guildRecordKey);
-    guildRecord.value().Immutable([&canCreateGuild, command](const data::Guild& guild)
+    auto& guildRecords = GetServerInstance().GetDataDirector().GetGuilds();
+    // Loop through each guild and check their names for deduplication
+    for (const auto guildRecordKey : guildRecords.GetKeys())
     {
-      canCreateGuild = command.name != guild.name();
-    });
+      // Break early if character does not have enough carrots
+      // or if new guild has duplicate name
+      if (not canCreateGuild)
+        break;
+
+      const auto& guildRecord = guildRecords.Get(guildRecordKey);
+      guildRecord.value().Immutable([&canCreateGuild, command](const data::Guild& guild)
+      {
+        canCreateGuild = command.name != guild.name();
+      });
+    }
   }
 
   // If guild cannot be created, send cancel to client
