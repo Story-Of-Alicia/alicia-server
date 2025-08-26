@@ -1460,7 +1460,7 @@ void RanchDirector::HandleCreateGuild(
 
   bool canCreateGuild = false;
   auto guildCreationCost = 3000;
-  characterRecord.Mutable([&command, &canCreateGuild, guildCreationCost](data::Character& character)
+  characterRecord.Immutable([&command, &canCreateGuild, guildCreationCost](const data::Character& character)
   {
     // Check if character has sufficient carrots
     if (character.carrots() < guildCreationCost)
