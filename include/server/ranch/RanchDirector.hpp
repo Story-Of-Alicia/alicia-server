@@ -213,7 +213,7 @@ private:
   
   void HandleIncubateEgg(
     ClientId clientId,
-    const protocol::RanchCommandIncubateEgg& command);
+    const protocol::AcCmdCRIncubateEgg& command);
 
   void HandleBoostIncubateInfoList(
     ClientId clientId,
@@ -225,7 +225,7 @@ private:
 
   void HandleRequestPetBirth(
     ClientId clientId,
-    const protocol::RanchCommandRequestPetBirth& command);
+    const protocol::AcCmdCRRequestPetBirth& command);
 
   void HandleUserPetInfos(
     ClientId clientId,

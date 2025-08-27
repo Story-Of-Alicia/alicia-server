@@ -2145,7 +2145,7 @@ struct AcCmdRCUpdatePetCancel
     SourceStream& stream);
 };
 
-struct RanchCommandRequestPetBirth
+struct AcCmdCRRequestPetBirth
 {
   uint32_t eggLevel{};
   uint32_t incubatorSlot{};
@@ -2160,18 +2160,18 @@ struct RanchCommandRequestPetBirth
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandRequestPetBirth& command,
+    const AcCmdCRRequestPetBirth& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandRequestPetBirth& command,
+    AcCmdCRRequestPetBirth& command,
     SourceStream& stream);
 };
 
-struct RanchCommandRequestPetBirthOK
+struct AcCmdCRRequestPetBirthOK
 {
   PetBirthInfo petBirthInfo{};
 
@@ -2184,14 +2184,14 @@ struct RanchCommandRequestPetBirthOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandRequestPetBirthOK& command,
+    const AcCmdCRRequestPetBirthOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandRequestPetBirthOK& command,
+    AcCmdCRRequestPetBirthOK& command,
     SourceStream& stream);
 };
 
@@ -2219,7 +2219,7 @@ struct AcCmdCRRequestPetBirthNotify
     SourceStream& stream);
 };
 
-struct RanchCommandRequestPetBirthCancel
+struct AcCmdCRRequestPetBirthCancel
 {
   PetInfo petInfo{};
 
@@ -2232,14 +2232,14 @@ struct RanchCommandRequestPetBirthCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandRequestPetBirthCancel& command,
+    const AcCmdCRRequestPetBirthCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandRequestPetBirthCancel& command,
+    AcCmdCRRequestPetBirthCancel& command,
     SourceStream& stream);
 };
 
@@ -2267,7 +2267,7 @@ struct RanchCommandPetBirthNotify
     SourceStream& stream);
 };
 
-struct RanchCommandIncubateEgg
+struct AcCmdCRIncubateEgg
 {
   uint32_t itemUid{};
   uint32_t itemTid{};
@@ -2282,18 +2282,18 @@ struct RanchCommandIncubateEgg
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandIncubateEgg& command,
+    const AcCmdCRIncubateEgg& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandIncubateEgg& command,
+    AcCmdCRIncubateEgg& command,
     SourceStream& stream);
 };
 
-struct RanchCommandIncubateEggOK
+struct AcCmdCRIncubateEggOK
 {
   uint32_t incubatorSlot{};
   Egg egg{};
@@ -2309,18 +2309,18 @@ struct RanchCommandIncubateEggOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandIncubateEggOK& command,
+    const AcCmdCRIncubateEggOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandIncubateEggOK& command,
+    AcCmdCRIncubateEggOK& command,
     SourceStream& stream);
 };
 
-struct RanchCommandIncubateEggNotify
+struct AcCmdCRIncubateEggNotify
 {
   uint32_t characterUid{}; // needs confirmation
   uint32_t incubatorSlot{};
@@ -2337,14 +2337,14 @@ struct RanchCommandIncubateEggNotify
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandIncubateEggNotify& command,
+    const AcCmdCRIncubateEggNotify& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandIncubateEggNotify& command,
+    AcCmdCRIncubateEggNotify& command,
     SourceStream& stream);
 };
 

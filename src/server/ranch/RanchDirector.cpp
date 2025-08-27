@@ -199,7 +199,7 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       HandleUserPetInfos(clientId, command);
     });
   
-  _commandServer.RegisterCommandHandler<protocol::RanchCommandIncubateEgg>(
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRIncubateEgg>(
     [this](ClientId clientId, auto& command)
     {
       HandleIncubateEgg(clientId, command);
@@ -211,7 +211,7 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       HandleBoostIncubateEgg(clientId, command);
     });
   
-  _commandServer.RegisterCommandHandler<protocol::RanchCommandRequestPetBirth>(
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestPetBirth>(
     [this](ClientId clientId, auto& command)
     {
       HandleRequestPetBirth(clientId, command);
@@ -1993,13 +1993,13 @@ void RanchDirector::HandleUserPetInfos(
 }
 void RanchDirector::HandleIncubateEgg(
   ClientId clientId,
-  const protocol::RanchCommandIncubateEgg& command)
+  const protocol::AcCmdCRIncubateEgg& command)
 {
   const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  protocol::RanchCommandIncubateEggOK response{
+  protocol::AcCmdCRIncubateEggOK response{
     response.incubatorSlot = command.incubatorSlot,
   };
 
@@ -2065,7 +2065,7 @@ void RanchDirector::HandleIncubateEgg(
         });
     });
 
-    protocol::RanchCommandIncubateEggNotify notify{
+    protocol::AcCmdCRIncubateEggNotify notify{
       .characterUid = clientContext.characterUid,
       .incubatorSlot = command.incubatorSlot,
       .egg = response.egg,
@@ -2180,12 +2180,12 @@ void RanchDirector::HandleBoostIncubateInfoList(
 
 void RanchDirector::HandleRequestPetBirth(
   ClientId clientId,
-  const protocol::RanchCommandRequestPetBirth& command)
+  const protocol::AcCmdCRRequestPetBirth& command)
 {
 
   const auto& clientContext = GetClientContext(clientId);
 
-  protocol::RanchCommandRequestPetBirthOK response{
+  protocol::AcCmdCRRequestPetBirthOK response{
     .petBirthInfo = {
       .petInfo = {
         .characterUid = clientContext.characterUid,
@@ -2315,25 +2315,6 @@ void RanchDirector::HandleRequestPetBirth(
           .name = pet.name()
         };
       });
-      }
-
-      //remove the egg from the incubator & the character items
-      auto eggRecord = GetServerInstance().GetDataDirector().GetEggs().Get(
-        character.eggs());
-      if (not eggRecord)
-        throw std::runtime_error("Egg not found");
-      for (const auto& egg : *eggRecord)
-      {
-        egg.Mutable([&command, &character](data::Egg& eggData)
-          {
-            if (eggData.incubatorSlot() == command.incubatorSlot)
-            {
-              character.eggs().erase(
-                std::ranges::find(character.eggs(), eggData.uid()));
-              //character.items().erase(
-                //std::ranges::find(character.items(),eggData.itemUid()));
-            };
-          });
       }
     });
 
