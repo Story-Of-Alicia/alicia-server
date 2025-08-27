@@ -1928,18 +1928,18 @@ void RanchDirector::HandleHousingBuild(
 
   const auto housingRecord = GetServerInstance().GetDataDirector().CreateHousing();
   housingRecord.Mutable([housingId = command.housingTid, &housingUid](data::Housing& housing)
+  {
+    housing.housingId = housingId;
+    housingUid = housing.uid();
+    if (housingId == 52) // housingId of the double incubator
     {
-      housing.housingId = housingId;
-      housingUid = housing.uid();
-      if (housingId == 52) // housingId of the double incubator
-      {
-        housing.durability = 10;
-      }
-      else
-      {
-        housing.expiresAt = std::chrono::system_clock::now() + std::chrono::days(20);
-      }
-    });
+      housing.durability = 10;
+    }
+    else
+    {
+      housing.expiresAt = std::chrono::system_clock::now() + std::chrono::days(20);
+    }
+  });
 
   characterRecord.Mutable([&housingUid](data::Character& character)
   {
