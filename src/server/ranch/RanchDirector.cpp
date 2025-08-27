@@ -501,10 +501,10 @@ void RanchDirector::HandleEnterRanch(
         {
           housingRecord.Immutable([&response](const data::Housing& housing){
             constexpr uint16_t IncubatorHousingId = 52;
-          // Certain types of housing have durability instead of expiration time.
-          const bool hasDurability = (housing.housingId() == IncubatorHousingId) ;
+            // Certain types of housing have durability instead of expiration time.
+            const bool hasDurability = (housing.housingId() == IncubatorHousingId) ;
 
-          protocol::BuildProtocolHousing(response.housing.emplace_back(), housing, hasDurability);
+            protocol::BuildProtocolHousing(response.housing.emplace_back(), housing, hasDurability);
           });
         }
       }
