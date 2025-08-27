@@ -22,6 +22,7 @@
 
 #include "libserver/data/helper/ProtocolHelper.hpp"
 #include "libserver/registry/HorseRegistry.hpp"
+#include "libserver/registry/PetRegistry.hpp"
 #include "libserver/util/Util.hpp"
 
 #include <ranges>
@@ -2197,14 +2198,38 @@ void RanchDirector::HandleRequestPetBirth(
   characterRecord.Mutable(
     [this, &command, &response](data::Character& character)
     {
-      // my example of how i would do the hatching tables per egg
-      std::vector<std::pair<uint32_t, uint32_t>> dran2hatchables = {{99137, 137}, {99138, 138}, {99139, 139}, {99030, 30}, {99031, 31}, {99032, 32}, {99033, 33}, {99113, 113}, {99114, 114}, {99115, 115}}; // eggTid = 90005
+      uint32_t eggTid;
 
-      std::uniform_int_distribution<size_t> dist(0, dran2hatchables.size() - 1);
-      auto& pet = dran2hatchables[dist(_randomDevice)];
+      //remove the egg from the incubator & the character items
+      //fetch th eggTid to create the hatchTable
+      auto eggRecord = GetServerInstance().GetDataDirector().GetEggs().Get(
+        character.eggs());
+      if (not eggRecord)
+        throw std::runtime_error("Egg not found");
+      for (const auto& egg : *eggRecord)
+      {
+        egg.Mutable([&command, &character, &eggTid](data::Egg& eggData)
+          {
+            if (eggData.incubatorSlot() == command.incubatorSlot)
+            {
+              eggTid = eggData.itemTid();
+              character.eggs().erase(
+                std::ranges::find(character.eggs(), eggData.uid()));
+              //character.items().erase(
+                //std::ranges::find(character.items(),eggData.itemUid()));
+            };
+          });
+      }
+
+      // fill the hatchTable with all the possible pets that can hatch from the egg
+      std::vector<std::pair<uint32_t, uint32_t>> hatchTable = PetRegistry::Get().BuildHatchTable(eggTid);
+
+      std::uniform_int_distribution<size_t> dist(0, hatchTable.size() - 1);
+      auto& pet = hatchTable[dist(_randomDevice)];
       uint32_t petItemTid = pet.first;
       uint32_t petId = pet.second;
 
+      // create the itemRecord and (if applicable) petRecord
       auto petRecords = GetServerInstance().GetDataDirector().GetPets().Get(character.pets());
       auto itemRecords = GetServerInstance().GetDataDirector().GetItems().Get(character.items());
       bool foundPet = false;
