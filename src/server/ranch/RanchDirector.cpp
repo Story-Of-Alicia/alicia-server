@@ -2182,6 +2182,7 @@ void RanchDirector::HandleRequestPetBirth(
   ClientId clientId,
   const protocol::AcCmdCRRequestPetBirth& command)
 {
+  // TODO: implement pity based on egg level provided by the client
 
   const auto& clientContext = GetClientContext(clientId);
 
@@ -2200,8 +2201,8 @@ void RanchDirector::HandleRequestPetBirth(
     {
       uint32_t eggTid;
 
-      //remove the egg from the incubator & the character items
-      //fetch th eggTid to create the hatchTable
+      // remove the egg from the incubator & the character items
+      // fetch th eggTid to create the hatchTable
       auto eggRecord = GetServerInstance().GetDataDirector().GetEggs().Get(
         character.eggs());
       if (not eggRecord)
@@ -2215,8 +2216,8 @@ void RanchDirector::HandleRequestPetBirth(
               eggTid = eggData.itemTid();
               character.eggs().erase(
                 std::ranges::find(character.eggs(), eggData.uid()));
-              //character.items().erase(
-                //std::ranges::find(character.items(),eggData.itemUid()));
+              // character.items().erase(
+              // std::ranges::find(character.items(),eggData.itemUid()));
             };
           });
       }
@@ -2268,14 +2269,13 @@ void RanchDirector::HandleRequestPetBirth(
             item.tid() = 46019;
             item.count() = 1;
 
-            //write Pity item into response
+            // write Pity item into response
             response.petBirthInfo.eggItem = {
               .uid = item.uid(),
               .tid = item.tid(),
-              .count = item.count()
-            };
+              .count = item.count()};
 
-            //write the item into the character items
+            // write the item into the character items
             character.items().emplace_back(item.uid());
           });
       }
@@ -2286,7 +2286,7 @@ void RanchDirector::HandleRequestPetBirth(
         auto bornPet = GetServerInstance().GetDataDirector().CreatePet();
         bornItem.Mutable([&response, &character, petItemTid, &itemUid](data::Item& item)
           {
-            item.tid() = petItemTid; 
+            item.tid() = petItemTid;
             item.count() = 1;
 
             character.items().emplace_back(item.uid());
@@ -2296,25 +2296,24 @@ void RanchDirector::HandleRequestPetBirth(
               .uid = item.uid(),
               .tid = item.tid(),
               .count = item.count()};
-            
+
             // save the itemUid for the creation of the pet
             itemUid = item.uid();
           });
-        
-        bornPet.Mutable([&response, &character, petId, itemUid](data::Pet& pet)
-      {
-        std::string name = "";
-        pet.itemUid = itemUid;
-        pet.name = name;
-        pet.petId = petId;
-        character.pets().emplace_back(pet.uid());
 
-        //Fill the response with the born pet.
-        response.petBirthInfo.petInfo.pet = {
-          .petId = pet.petId(),
-          .name = pet.name()
-        };
-      });
+        bornPet.Mutable([&response, &character, petId, itemUid](data::Pet& pet)
+          {
+            std::string name = "";
+            pet.itemUid = itemUid;
+            pet.name = name;
+            pet.petId = petId;
+            character.pets().emplace_back(pet.uid());
+
+            // Fill the response with the born pet.
+            response.petBirthInfo.petInfo.pet = {
+              .petId = pet.petId(),
+              .name = pet.name()};
+          });
       }
     });
 
