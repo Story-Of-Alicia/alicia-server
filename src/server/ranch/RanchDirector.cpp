@@ -1901,6 +1901,10 @@ void RanchDirector::HandleHousingBuild(
   ClientId clientId,
   const protocol::AcCmdCRHousingBuild& command)
 {
+  //! The double incubator does not utilize the HousingRepair,
+  //! instead it just creates a new double incubator
+  //! TODO: make the check if the incubator already exists and set the durability back to 10
+
   const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
@@ -1927,10 +1931,8 @@ void RanchDirector::HandleHousingBuild(
     {
       housing.housingId = housingId;
       housingUid = housing.uid();
-      housing.incubatorFlag = 0;
       if (housingId == 52) // housingId of the double incubator
       {
-        housing.incubatorFlag = 1;
         housing.durability = 10;
       }
       else

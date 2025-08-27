@@ -660,7 +660,6 @@ void server::FileDataSource::RetrieveHousing(data::Uid uid, data::Housing& housi
   housing.housingId = json["housingId"].get<uint16_t>();
   housing.expiresAt = data::Clock::time_point(
     std::chrono::seconds(json["expiresAt"].get<uint64_t>()));
-  housing.incubatorFlag = json["incubatorFlag"].get<uint8_t>();
   housing.durability = json["durability"].get<uint32_t>();
 }
 
@@ -681,9 +680,8 @@ void server::FileDataSource::StoreHousing(data::Uid uid, const data::Housing& ho
   json["housingId"] = housing.housingId();
   json["expiresAt"] = std::chrono::duration_cast<std::chrono::seconds>(
     housing.expiresAt().time_since_epoch()).count();
-  json["incubatorFlag"] = housing.incubatorFlag();
   json["durability"] = housing.durability();
-  
+
   dataFile << json.dump(2);
 }
 

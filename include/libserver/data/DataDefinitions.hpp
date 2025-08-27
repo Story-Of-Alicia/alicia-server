@@ -333,7 +333,6 @@ struct Housing
   dao::Field<Uid> uid{InvalidUid};
   dao::Field<uint16_t> housingId{};
   dao::Field<Clock::time_point> expiresAt{};
-  dao::Field<uint8_t> incubatorFlag{}; // can be 0 or 1 , 1 is for the double incubator
   dao::Field<uint32_t> durability{};
 };
 
