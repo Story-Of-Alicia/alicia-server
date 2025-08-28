@@ -2006,14 +2006,25 @@ void RanchDirector::HandleIncubateEgg(
   };
 
   characterRecord.Mutable(
-    [this, &command, &response](data::Character& character)
+    [this, &command, &response, clientId](data::Character& character)
     {
       const std::optional<registry::Egg> eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
         command.itemTid);
       if (not eggTemplate)
       {
-        //prob something like cancel incubate
-        // warn: User tried to incubate something that is not an egg, good luck with that
+        //not tested
+        protocol::AcCmdCRIncubateEggCancel cancel{
+          cancel.itemUid = command.itemUid,
+          cancel.itemTid = command.itemUid,
+          cancel.incubatorSlot = command.incubatorSlot};
+
+        _commandServer.QueueCommand<decltype(cancel)>(
+          clientId,
+          [cancel]()
+          {
+            return cancel;
+          });
+        spdlog::warn("User tried to incubate something that is not an egg");
         return;
       }
 
@@ -2208,10 +2219,23 @@ void RanchDirector::HandleRequestPetBirth(
       }
 
       // Remove the hatched egg from the incubator and from the character's inventory.
-      character.eggs().erase(
-        std::ranges::find(character.eggs(), hatchingEggUid));
-      character.items().erase(
-        std::ranges::find(character.items(),hatchingEggUid));
+      if (!character.eggs().empty())
+      {
+        if (auto it = std::ranges::find(character.eggs(), hatchingEggUid);
+          it != character.eggs().end())
+        {
+          character.eggs().erase(it);
+        }
+      }
+
+      if (!character.items().empty())
+      {
+        if (auto it = std::ranges::find(character.items(), hatchingEggUid);
+          it != character.items().end())
+        {
+          character.items().erase(it);
+        }
+      }
 
       const std::optional<registry::Egg> eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
         hatchingEggTid);

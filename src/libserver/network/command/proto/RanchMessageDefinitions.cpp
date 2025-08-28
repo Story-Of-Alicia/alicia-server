@@ -1710,6 +1710,23 @@ void AcCmdCRIncubateEggNotify::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRIncubateEggCancel::Write(
+  const AcCmdCRIncubateEggCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.cancel)
+  .Write(command.itemUid)
+  .Write(command.itemTid)
+  .Write(command.incubatorSlot);
+}
+
+void AcCmdCRIncubateEggCancel::Read(
+  AcCmdCRIncubateEggCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void RanchCommandUserPetInfos::Write(
   const RanchCommandUserPetInfos& command,
   SinkStream& stream)

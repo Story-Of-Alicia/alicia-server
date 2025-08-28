@@ -2348,6 +2348,33 @@ struct AcCmdCRIncubateEggNotify
     SourceStream& stream);
 };
 
+struct AcCmdCRIncubateEggCancel
+{
+  uint8_t cancel{};
+  uint32_t itemUid{};
+  uint32_t itemTid{};
+  uint32_t incubatorSlot{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRIncubateEggCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRIncubateEggCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRIncubateEggCancel& command,
+    SourceStream& stream);
+};
+
 struct AcCmdCRBoostIncubateInfoList
 {
   uint32_t member1{};
