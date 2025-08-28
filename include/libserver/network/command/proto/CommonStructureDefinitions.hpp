@@ -351,7 +351,6 @@ struct Pet
   uint32_t petId{};
   uint32_t member2{};
   std::string name{};
-  //has some Info for ReqPetBirth with a structure of 00 C0 <PetTid> 04/02
   uint32_t member4{};
 
   static void Write(const Pet& value, SinkStream& stream);
@@ -380,7 +379,7 @@ struct Egg
 struct PetInfo
 {
   uint32_t characterUid{};
-  uint32_t itemUid{}; //can also be an eggUid //also a slot indicator apperantly
+  uint32_t itemUid{}; //can also be an eggUid
   Pet pet{};
   uint32_t member4{};
 

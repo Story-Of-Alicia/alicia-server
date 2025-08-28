@@ -2014,6 +2014,7 @@ void RanchDirector::HandleIncubateEgg(
       {
         //not tested
         protocol::AcCmdCRIncubateEggCancel cancel{
+          cancel.cancel = 0,
           cancel.itemUid = command.itemUid,
           cancel.itemTid = command.itemUid,
           cancel.incubatorSlot = command.incubatorSlot};
