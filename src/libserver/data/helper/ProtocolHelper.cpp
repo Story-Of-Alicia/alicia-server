@@ -232,11 +232,14 @@ void BuildProtocolPets(
 
 void BuildProtocolHousing(
   Housing& protocolHousing,
-  const data::Housing& housingRecord)
+  const data::Housing& housingRecord,
+  bool hasDurability)
 {
   protocolHousing.uid = housingRecord.uid();
   protocolHousing.tid = housingRecord.housingId();
-  protocolHousing.durability = housingRecord.durability();
+  protocolHousing.durability = hasDurability 
+    ? housingRecord.durability() 
+    : util::TimePointToAliciaTime(housingRecord.expiresAt());
 }
 
 void BuildProtocolHousing(

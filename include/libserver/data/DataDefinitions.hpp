@@ -332,6 +332,7 @@ struct Housing
 {
   dao::Field<Uid> uid{InvalidUid};
   dao::Field<uint16_t> housingId{};
+  dao::Field<Clock::time_point> expiresAt{};
   dao::Field<uint32_t> durability{};
 };
 

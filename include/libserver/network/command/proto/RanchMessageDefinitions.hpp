@@ -2492,7 +2492,7 @@ struct RanchCommandUserPetInfosOK
     SourceStream& stream);
 };
 
-struct RanchCommandHousingBuild
+struct AcCmdCRHousingBuild
 {
   uint16_t housingTid{};
 
@@ -2505,18 +2505,18 @@ struct RanchCommandHousingBuild
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandHousingBuild& command,
+    const AcCmdCRHousingBuild& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandHousingBuild& command,
+    AcCmdCRHousingBuild& command,
     SourceStream& stream);
 };
 
-struct RanchCommandHousingBuildOK
+struct AcCmdCRHousingBuildOK
 {
   uint32_t member1{};
   uint16_t housingTid{};
@@ -2531,18 +2531,18 @@ struct RanchCommandHousingBuildOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandHousingBuildOK& command,
+    const AcCmdCRHousingBuildOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandHousingBuildOK& command,
+    AcCmdCRHousingBuildOK& command,
     SourceStream& stream);
 };
 
-struct RanchCommandHousingBuildCancel
+struct AcCmdCRHousingBuildCancel
 {
   uint8_t status{};
 
@@ -2555,18 +2555,18 @@ struct RanchCommandHousingBuildCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandHousingBuildCancel& command,
+    const AcCmdCRHousingBuildCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandHousingBuildCancel& command,
+    AcCmdCRHousingBuildCancel& command,
     SourceStream& stream);
 };
 
-struct RanchCommandHousingBuildNotify
+struct AcCmdCRHousingBuildNotify
 {
   uint32_t member1{};
   uint16_t housingTid{};
@@ -2580,18 +2580,18 @@ struct RanchCommandHousingBuildNotify
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandHousingBuildNotify& command,
+    const AcCmdCRHousingBuildNotify& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandHousingBuildNotify& command,
+    AcCmdCRHousingBuildNotify& command,
     SourceStream& stream);
 };
 
-struct RanchCommandHousingRepair
+struct AcCmdCRHousingRepair
 {
   uint32_t housingUid{};
 
@@ -2604,18 +2604,18 @@ struct RanchCommandHousingRepair
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandHousingRepair& command,
+    const AcCmdCRHousingRepair& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandHousingRepair& command,
+    AcCmdCRHousingRepair& command,
     SourceStream& stream);
 };
 
-struct RanchCommandHousingRepairOK
+struct AcCmdCRHousingRepairOK
 {
   uint32_t housingUid{};
   uint32_t member2{};
@@ -2629,18 +2629,18 @@ struct RanchCommandHousingRepairOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandHousingRepairOK& command,
+    const AcCmdCRHousingRepairOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandHousingRepairOK& command,
+    AcCmdCRHousingRepairOK& command,
     SourceStream& stream);
 };
 
-struct RanchCommandHousingRepairCancel
+struct AcCmdCRHousingRepairCancel
 {
   uint8_t status{};
 
@@ -2653,18 +2653,18 @@ struct RanchCommandHousingRepairCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandHousingRepairCancel& command,
+    const AcCmdCRHousingRepairCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandHousingRepairCancel& command,
+    AcCmdCRHousingRepairCancel& command,
     SourceStream& stream);
 };
 
-struct RanchCommandHousingRepairNotify
+struct AcCmdCRHousingRepairNotify
 {
   //! Ignored by the client.
   uint32_t member1{};
@@ -2679,14 +2679,14 @@ struct RanchCommandHousingRepairNotify
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandHousingRepairNotify& command,
+    const AcCmdCRHousingRepairNotify& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandHousingRepairNotify& command,
+    AcCmdCRHousingRepairNotify& command,
     SourceStream& stream);
 };
 struct RanchCommandMissionEvent

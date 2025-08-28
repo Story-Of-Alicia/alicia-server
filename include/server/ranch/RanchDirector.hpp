@@ -245,11 +245,11 @@ private:
 
   void HandleHousingBuild(
     ClientId clientId,
-    const protocol::RanchCommandHousingBuild& command);
+    const protocol::AcCmdCRHousingBuild& command);
 
   void HandleHousingRepair(
     ClientId clientId,
-    const protocol::RanchCommandHousingRepair& command);
+    const protocol::AcCmdCRHousingRepair& command);
   
   void HandleOpCmd(ClientId clientId,
     const protocol::RanchCommandOpCmd& command);

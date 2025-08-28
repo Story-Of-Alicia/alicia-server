@@ -1663,22 +1663,22 @@ void RanchCommandAchievementUpdateProperty::Read(
     .Read(command.member2);
 }
 
-void RanchCommandHousingBuild::Write(
-  const RanchCommandHousingBuild& command,
+void AcCmdCRHousingBuild::Write(
+  const AcCmdCRHousingBuild& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void RanchCommandHousingBuild::Read(
-  RanchCommandHousingBuild& command,
+void AcCmdCRHousingBuild::Read(
+  AcCmdCRHousingBuild& command,
   SourceStream& stream)
 {
   stream.Read(command.housingTid);
 }
 
-void RanchCommandHousingBuildOK::Write(
-  const RanchCommandHousingBuildOK& command,
+void AcCmdCRHousingBuildOK::Write(
+  const AcCmdCRHousingBuildOK& command,
   SinkStream& stream)
 {
   stream.Write(command.member1)
@@ -1686,95 +1686,95 @@ void RanchCommandHousingBuildOK::Write(
     .Write(command.member3);
 }
 
-void RanchCommandHousingBuildOK::Read(
-  RanchCommandHousingBuildOK& command,
+void AcCmdCRHousingBuildOK::Read(
+  AcCmdCRHousingBuildOK& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void RanchCommandHousingBuildCancel::Write(
-  const RanchCommandHousingBuildCancel& command,
+void AcCmdCRHousingBuildCancel::Write(
+  const AcCmdCRHousingBuildCancel& command,
   SinkStream& stream)
 {
   stream.Write(command.status);
 }
 
-void RanchCommandHousingBuildCancel::Read(
-  RanchCommandHousingBuildCancel& command,
+void AcCmdCRHousingBuildCancel::Read(
+  AcCmdCRHousingBuildCancel& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void RanchCommandHousingBuildNotify::Write(
-  const RanchCommandHousingBuildNotify& command,
+void AcCmdCRHousingBuildNotify::Write(
+  const AcCmdCRHousingBuildNotify& command,
   SinkStream& stream)
 {
   stream.Write(command.member1)
     .Write(command.housingTid);
 }
 
-void RanchCommandHousingBuildNotify::Read(
-  RanchCommandHousingBuildNotify& command,
+void AcCmdCRHousingBuildNotify::Read(
+  AcCmdCRHousingBuildNotify& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void RanchCommandHousingRepair::Write(
-  const RanchCommandHousingRepair& command,
+void AcCmdCRHousingRepair::Write(
+  const AcCmdCRHousingRepair& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void RanchCommandHousingRepair::Read(
-  RanchCommandHousingRepair& command,
+void AcCmdCRHousingRepair::Read(
+  AcCmdCRHousingRepair& command,
   SourceStream& stream)
 {
   stream.Read(command.housingUid);
 }
 
-void RanchCommandHousingRepairOK::Write(
-  const RanchCommandHousingRepairOK& command,
+void AcCmdCRHousingRepairOK::Write(
+  const AcCmdCRHousingRepairOK& command,
   SinkStream& stream)
 {
   stream.Write(command.housingUid)
     .Write(command.member2);
 }
 
-void RanchCommandHousingRepairOK::Read(
-  RanchCommandHousingRepairOK& command,
+void AcCmdCRHousingRepairOK::Read(
+  AcCmdCRHousingRepairOK& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void RanchCommandHousingRepairCancel::Write(
-  const RanchCommandHousingRepairCancel& command,
+void AcCmdCRHousingRepairCancel::Write(
+  const AcCmdCRHousingRepairCancel& command,
   SinkStream& stream)
 {
   stream.Write(command.status);
 }
 
-void RanchCommandHousingRepairCancel::Read(
-  RanchCommandHousingRepairCancel& command,
+void AcCmdCRHousingRepairCancel::Read(
+  AcCmdCRHousingRepairCancel& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void RanchCommandHousingRepairNotify::Write(
-  const RanchCommandHousingRepairNotify& command,
+void AcCmdCRHousingRepairNotify::Write(
+  const AcCmdCRHousingRepairNotify& command,
   SinkStream& stream)
 {
   stream.Write(command.member1)
     .Write(command.housingTid);
 }
 
-void RanchCommandHousingRepairNotify::Read(
-  RanchCommandHousingRepairNotify& command,
+void AcCmdCRHousingRepairNotify::Read(
+  AcCmdCRHousingRepairNotify& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");

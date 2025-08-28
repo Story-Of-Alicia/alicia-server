@@ -76,7 +76,8 @@ void BuildProtocolPets(
 
 void BuildProtocolHousing(
   Housing& protocolHousing,
-  const data::Housing& housingRecord);
+  const data::Housing& housingRecord,
+  bool hasDurability = false);
 
 void BuildProtocolHousing(
   std::vector<Housing>& protocolHousing,
