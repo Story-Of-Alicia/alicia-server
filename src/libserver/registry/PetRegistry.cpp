@@ -202,22 +202,22 @@ PetRegistry::PetRegistry()
 
 Egg PetRegistry::GetEgg(server::data::Tid tid)
 {
-  auto it = _eggs.find(tid); 
-        if (it != _eggs.end())
-        {
-            return it->second;
-        }
+  auto it = _eggs.find(tid);
+  if (it != _eggs.end())
+  {
+    return it->second;
+  }
 
-        throw std::runtime_error("Egg with given TID not found.");
+  throw std::runtime_error("Egg with given TID not found.");
 }
 
 Pet PetRegistry::GetPet(server::data::Tid tid)
 {
-   auto it = _pets.find(tid);
-    if (it != _pets.end())
-        return it->second;
+  auto it = _pets.find(tid);
+  if (it != _pets.end())
+    return it->second;
 
-    throw std::runtime_error("Pet with given TID not found");
+  throw std::runtime_error("Pet with given TID not found");
 }
 
-}
+} // namespace registry
