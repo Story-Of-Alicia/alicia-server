@@ -1874,6 +1874,8 @@ void RanchDirector::HandleUpdatePet(
   characterRecord.Mutable(
     [this, &command, &petUid, &response](data::Character& character)
     {
+      
+      response.petInfo.characterUid = character.uid();
       // The pets of the character.
       const auto storedPetRecords = GetServerInstance().GetDataDirector().GetPets().Get(
         character.pets());
@@ -1898,6 +1900,7 @@ void RanchDirector::HandleUpdatePet(
             }
           });
       }
+      
       if (!petExists)
       {
         spdlog::warn("Character {} has no pet with petId {}", character.uid(), command.petInfo.pet.petId);
@@ -1945,7 +1948,6 @@ void RanchDirector::HandleUpdatePet(
             response.petInfo.pet.name = pet.name();
           });
       }
-      response.petInfo.characterUid = character.uid();
     });
 
   const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
@@ -2006,70 +2008,39 @@ void RanchDirector::HandleIncubateEgg(
   characterRecord.Mutable(
     [this, &command, &response](data::Character& character)
     {
-      enum class EggLevel : uint32_t
+      const std::optional<registry::Egg> eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
+        command.itemTid);
+      if (not eggTemplate)
       {
-        Level1 = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
-          std::chrono::hours(9))
-            .count()),
-        Level2 = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
-          std::chrono::hours(41))
-            .count()),
-        Level3 = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
-          std::chrono::hours(73))
-            .count()),
-        Level4 = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
-          std::chrono::hours(105))
-            .count())
-      };
+        //prob something like cancel incubate
+        // warn: User tried to incubate something that is not an egg, good luck with that
+        return;
+      }
 
       const auto eggRecord = GetServerInstance().GetDataDirector().CreateEgg();
-      eggRecord.Mutable([&command, &response, &character](data::Egg& egg)
+      eggRecord.Mutable([&command, &response, &character, &eggTemplate](data::Egg& egg)
         {
-          // Egg Levels based on item TIDs.
-          const uint32_t level1Uids[] = {90006, 90001, 90004, 90017, 90013};
-          const uint32_t level2Uids[] = {90007, 90002, 90005, 90018, 90014};
-          const uint32_t level3Uids[] = {90008, 90003, 90011, 90019, 90015};
-          const uint32_t level4Uids[] = {90009, 90010, 90012, 90020, 90016};
-
-          egg.itemUid = command.itemUid;
-          egg.itemTid() = command.itemTid;
-          if (std::ranges::contains(level1Uids, command.itemTid))
-            egg.hatchDuration = static_cast<uint32_t>(EggLevel::Level1);
-          else if (std::ranges::contains(level2Uids, command.itemTid))
-            egg.hatchDuration = static_cast<uint32_t>(EggLevel::Level2);
-          else if (std::ranges::contains(level3Uids, command.itemTid))
-            egg.hatchDuration = static_cast<uint32_t>(EggLevel::Level3);
-          else if (std::ranges::contains(level4Uids, command.itemTid))
-            egg.hatchDuration = static_cast<uint32_t>(EggLevel::Level4);
-          else
-          {
-            spdlog::warn("Item {} is not an egg.", command.itemTid);
-            return;
-          }
+          
           egg.incubatorSlot = command.incubatorSlot;
           egg.incubatedAt = data::Clock::now();
           egg.boostsUsed = 0;
+          egg.itemTid = command.itemTid;
+          egg.itemUid = command.itemUid;
 
           character.eggs().emplace_back(egg.uid());
 
           // Fill the response with egg information.
           auto eggUid = egg.uid();
           auto eggItemTid = egg.itemTid();
-          auto eggHatchDuration = egg.hatchDuration();
+          auto eggHatchDuration = eggTemplate.value().hatchDuration;
 
           response.egg.uid = eggUid;
           response.egg.itemTid = eggItemTid;
-          response.egg.timeRemaining = eggHatchDuration;
+          response.egg.timeRemaining = std::chrono::duration_cast<std::chrono::seconds>(eggHatchDuration).count();
           response.egg.boost = 400000;
-          response.egg.totalHatchingTime = eggHatchDuration;
+          response.egg.totalHatchingTime = std::chrono::duration_cast<std::chrono::seconds>(eggHatchDuration).count();
         });
     });
-
-    protocol::AcCmdCRIncubateEggNotify notify{
-      .characterUid = clientContext.characterUid,
-      .incubatorSlot = command.incubatorSlot,
-      .egg = response.egg,
-      };
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -2077,6 +2048,12 @@ void RanchDirector::HandleIncubateEgg(
     {
       return response;
     });
+
+   protocol::AcCmdCRIncubateEggNotify notify{
+    .characterUid = clientContext.characterUid,
+    .incubatorSlot = command.incubatorSlot,
+    .egg = response.egg,
+  };
 
   const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
   // Broadcast the egg incubation to all ranch clients.
@@ -2132,22 +2109,27 @@ void RanchDirector::HandleBoostIncubateEgg(
 
       for (const auto& egg : *eggRecord)
       {
+
         egg.Mutable([&command, &response](data::Egg& eggData)
           {
             if (eggData.incubatorSlot() == command.incubatorSlot)
             {
+              // retrieve egg template for the hatchDuration
+              const registry::Egg eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
+                eggData.itemTid());
+
               eggData.boostsUsed() += 1;
               response.egg = {
                 .uid = eggData.uid(),
                 .itemTid = eggData.itemTid(),
                 .timeRemaining = static_cast<uint32_t>(
-                  eggData.hatchDuration() -
                   std::chrono::duration_cast<std::chrono::seconds>(
-                    std::chrono::system_clock::now() - eggData.incubatedAt() +
-                    (eggData.boostsUsed()) * std::chrono::hours(8))
-                    .count()),
+                                    eggTemplate.hatchDuration -
+                                    (std::chrono::system_clock::now() - eggData.incubatedAt()) -
+                                    (eggData.boostsUsed() * std::chrono::hours(8))).count()),
                 .boost = 400000,
-                .totalHatchingTime = eggData.hatchDuration()};
+                .totalHatchingTime = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
+                                    eggTemplate.hatchDuration).count())};
             };
           });
       };
@@ -2190,7 +2172,6 @@ void RanchDirector::HandleRequestPetBirth(
     .petBirthInfo = {
       .petInfo = {
         .characterUid = clientContext.characterUid,
-        .itemUid = command.incubatorSlot + 1, // represents the incubator slot (this time the +1 bc ntreev is weird)
         }},
   };
 
@@ -2199,122 +2180,118 @@ void RanchDirector::HandleRequestPetBirth(
   characterRecord.Mutable(
     [this, &command, &response](data::Character& character)
     {
-      uint32_t eggTid;
+      auto hatchingEggUid{data::InvalidUid};
+      auto hatchingEggItemUid{data::InvalidUid};
+      auto hatchingEggTid{data::InvalidTid};
 
       // remove the egg from the incubator & the character items
       // fetch th eggTid to create the hatchTable
-      auto eggRecord = GetServerInstance().GetDataDirector().GetEggs().Get(
+      const auto eggRecord = GetServerInstance().GetDataDirector().GetEggs().Get(
         character.eggs());
       if (not eggRecord)
         throw std::runtime_error("Egg not found");
+
+      //find the Egg that has hatched
       for (const auto& egg : *eggRecord)
       {
-        egg.Mutable([&command, &character, &eggTid](data::Egg& eggData)
+        egg.Mutable([&command, &response, &hatchingEggTid, &hatchingEggItemUid, &hatchingEggUid](data::Egg& eggData)
           {
             if (eggData.incubatorSlot() == command.incubatorSlot)
             {
-              eggTid = eggData.itemTid();
-              character.eggs().erase(
-                std::ranges::find(character.eggs(), eggData.uid()));
-              // character.items().erase(
-              // std::ranges::find(character.items(),eggData.itemUid()));
+              hatchingEggUid = eggData.uid();
+              hatchingEggTid = eggData.itemTid();
+              hatchingEggItemUid = eggData.itemUid();
+
+              response.petBirthInfo.petInfo.itemUid = hatchingEggUid;
             };
           });
       }
 
-      // fill the hatchTable with all the possible pets that can hatch from the egg
-      std::vector<std::pair<uint32_t, uint32_t>> hatchTable = PetRegistry::Get().BuildHatchTable(eggTid);
+      // Remove the hatched egg from the incubator and from the character's inventory.
+      character.eggs().erase(
+        std::ranges::find(character.eggs(), hatchingEggUid));
+      character.items().erase(
+        std::ranges::find(character.items(),hatchingEggUid));
 
-      std::uniform_int_distribution<size_t> dist(0, hatchTable.size() - 1);
-      auto& pet = hatchTable[dist(_randomDevice)];
-      uint32_t petItemTid = pet.first;
-      uint32_t petId = pet.second;
+      const std::optional<registry::Egg> eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
+        hatchingEggTid);
+      if (not eggTemplate)
+        return;
+      const auto& hatchablePets = eggTemplate.value().hatchablePets;
+      std::uniform_int_distribution<size_t> dist(0, hatchablePets.size() - 1);
+      const data::Tid petItemTid = hatchablePets[dist(_randomDevice)];
+      const registry::Pet petTemplate = registry::PetRegistry::GetInstance().GetPet(petItemTid);
+
+      auto petId = petTemplate.petId;
+
+      bool petAlreadyExists = false;
+      //for adding count  if they already exist in the inventory
+      bool foundCrystalItem = false;
+
 
       // create the itemRecord and (if applicable) petRecord
       auto petRecords = GetServerInstance().GetDataDirector().GetPets().Get(character.pets());
       auto itemRecords = GetServerInstance().GetDataDirector().GetItems().Get(character.items());
-      bool foundPet = false;
-      bool foundCrystalItem = false;
-      for (const auto& pet : *petRecords)
+
+
+      for (const auto& petRecord : *petRecords)
       {
-        pet.Mutable([&petId, &itemRecords, &foundPet, &foundCrystalItem](data::Pet& petData)
+        petRecord.Immutable([&petAlreadyExists, petId](const data::Pet& pet)
           {
-            if (petData.petId() == petId)
-            {
-              foundPet = true;
-              for (const auto& item : *itemRecords)
-              {
-                item.Mutable([&foundCrystalItem](data::Item& itemData)
-                  {
-                    if (itemData.tid() == 46019) // crystal Tid
-                    {
-                      itemData.count() += 1;
-                      foundCrystalItem = true;
-                    }
-                  });
-                if (foundCrystalItem)
-                {
-                  break;
-                }
-              }
-            }
+            petAlreadyExists = (pet.petId() == petId);
           });
+        if (petAlreadyExists == true)
+          break;
       }
 
-      if (foundPet && !foundCrystalItem)
+      if (petAlreadyExists)
       {
-        auto pityItem = GetServerInstance().GetDataDirector().CreateItem();
+        const auto pityItem = GetServerInstance().GetDataDirector().CreateItem();
         pityItem.Mutable([&character, &response](data::Item& item)
           {
             item.tid() = 46019;
             item.count() = 1;
-
             // write Pity item into response
             response.petBirthInfo.eggItem = {
               .uid = item.uid(),
               .tid = item.tid(),
               .count = item.count()};
-
             // write the item into the character items
             character.items().emplace_back(item.uid());
           });
+        return;
       }
-      else
+
+      auto petUid = data::InvalidUid;
+      auto petItemUid = data::InvalidUid;
+      auto petItem = GetServerInstance().GetDataDirector().CreateItem();
+      auto bornPet = GetServerInstance().GetDataDirector().CreatePet();
+      petItem.Mutable([&response, &petItemUid, petId, petTemplate](data::Item& item)
       {
-        auto itemUid = data::InvalidUid;
-        auto bornItem = GetServerInstance().GetDataDirector().CreateItem();
-        auto bornPet = GetServerInstance().GetDataDirector().CreatePet();
-        bornItem.Mutable([&response, &character, petItemTid, &itemUid](data::Item& item)
-          {
-            item.tid() = petItemTid;
-            item.count() = 1;
-
-            character.items().emplace_back(item.uid());
-
-            // Fill the response with the born item information.
-            response.petBirthInfo.eggItem = {
-              .uid = item.uid(),
-              .tid = item.tid(),
-              .count = item.count()};
-
-            // save the itemUid for the creation of the pet
-            itemUid = item.uid();
-          });
-
-        bornPet.Mutable([&response, &character, petId, itemUid](data::Pet& pet)
-          {
-            std::string name = "";
-            pet.itemUid = itemUid;
-            pet.name = name;
-            pet.petId = petId;
-            character.pets().emplace_back(pet.uid());
-
-            // Fill the response with the born pet.
-            response.petBirthInfo.petInfo.pet = {
-              .petId = pet.petId(),
-              .name = pet.name()};
-          });
-      }
+        item.tid() = petTemplate.petTid;
+        item.count() = 1;
+        // Fill the response with the born item information.
+        response.petBirthInfo.eggItem = {
+          .uid = item.uid(),
+          .tid = item.tid(),
+          .count = item.count()};
+        petItemUid = item.uid();
+      });
+      bornPet.Mutable([&response, &character, &petUid, &petItemUid, petId](data::Pet& pet)
+      {
+        std::string name = "";
+        pet.itemUid = petItemUid;
+        pet.name = name;
+        pet.petId = petId;
+    
+        // Fill the response with the born pet.
+        response.petBirthInfo.petInfo.pet = {
+          .petId = pet.petId(),
+          .name = pet.name()};
+        petUid = pet.uid();
+      });
+      character.items().emplace_back(petItemUid);
+      character.pets().emplace_back(petUid);
     });
 
   protocol::AcCmdCRRequestPetBirthNotify notify{

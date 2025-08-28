@@ -528,7 +528,6 @@ void server::FileDataSource::RetrieveEgg(data::Uid uid, data::Egg& egg)
   egg.uid = json["uid"].get<data::Uid>();
   egg.itemUid = json["itemUid"].get<data::Uid>();
   egg.itemTid = json["itemTid"].get<data::Tid>();
-  egg.hatchDuration = json["hatchDuration"].get<uint32_t>();
 
   egg.incubatedAt = data::Clock::time_point(
     std::chrono::seconds(
@@ -553,10 +552,8 @@ void server::FileDataSource::StoreEgg(data::Uid uid, const data::Egg& egg)
   json["uid"] = egg.uid();
   json["itemUid"] = egg.itemUid();
   json["itemTid"] = egg.itemTid();
-  json["hatchDuration"] = egg.hatchDuration();
   json["incubatedAt"] = std::chrono::duration_cast<std::chrono::seconds>(
-    egg.incubatedAt().time_since_epoch())
-                             .count();
+    egg.incubatedAt().time_since_epoch()).count();
   json["incubatorSlot"] = egg.incubatorSlot();
   json["boostsUsed"] = egg.boostsUsed();
   dataFile << json.dump(2);

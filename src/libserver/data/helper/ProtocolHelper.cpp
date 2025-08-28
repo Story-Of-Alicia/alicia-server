@@ -3,6 +3,7 @@
 //
 
 #include "libserver/data/helper/ProtocolHelper.hpp"
+#include "libserver/registry/PetRegistry.hpp"
 
 namespace server
 {
@@ -260,13 +261,18 @@ void BuildProtocolEgg(
 {
   protocolEgg.uid = eggRecord.uid();
   protocolEgg.itemTid = eggRecord.itemTid();
-  protocolEgg.itemTid = eggRecord.itemTid();
-  protocolEgg.totalHatchingTime = eggRecord.hatchDuration();
-  protocolEgg.timeRemaining = eggRecord.hatchDuration() -
-                              std::chrono::duration_cast<std::chrono::seconds>(
-                                std::chrono::system_clock::now() - eggRecord.incubatedAt() + 
-                                (eggRecord.boostsUsed() * std::chrono::hours(8)))
-                                .count();
+
+  // retrieve hatchDuration
+  const registry::Egg eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
+    eggRecord.itemTid());
+
+  protocolEgg.totalHatchingTime = std::chrono::duration_cast<std::chrono::seconds>(
+                                    eggTemplate.hatchDuration).count();
+                                    
+  protocolEgg.timeRemaining = std::chrono::duration_cast<std::chrono::seconds>(
+                                    eggTemplate.hatchDuration -
+                                    (std::chrono::system_clock::now() - eggRecord.incubatedAt()) -
+                                    (eggRecord.boostsUsed() * std::chrono::hours(8))).count();
   protocolEgg.boost = 400000;
 }
 
