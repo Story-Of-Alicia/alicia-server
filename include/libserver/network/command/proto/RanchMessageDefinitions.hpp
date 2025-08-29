@@ -106,14 +106,13 @@ struct AcCmdCREnterRanchOK
   } bitset{};
 
   //! Incubator logic:
-  //! slot 1 : 0, slot 2 : anything   - no incubator, also the egg hatching is locked
-  //! slot 1 : 1, slot 2 : anything   - incubator exists(must not have the incubator in housing)
-  //! slot 1 : 2, slot 2 : 0          - incubator spawns in, if wasnt there before (probably some expiration logic with double incubator)
-  //! slot 1 : 2, slot 2 : 1          - double incubator exists (must not have the incubator in housing)
+  //! icubator slots from 0 to 3, 0 = locked, 1 = single, 2 = double, 3 = triple
+  //! incubator use count should count down to 0, if broken transform into single incubator
 
-  //! most likely those have to be set after building the single/double incubator
-  uint32_t incubatorSlotOne{2};
-  uint32_t incubatorSlotTwo{1};
+  //! TODO: implement the Logic in Ranchdirector for RanchEnter & HousingBuild
+  //! Add the fields to character save 
+  uint32_t incubatorSlots{2};
+  uint32_t incubatorUseCount{10};
 
   std::array<Egg, 3> incubator;
 

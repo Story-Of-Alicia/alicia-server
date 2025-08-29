@@ -198,8 +198,8 @@ void AcCmdCREnterRanchOK::Write(
   stream.Write(command.horseSlots)
     .Write(command.member11)
     .Write(command.bitset)
-    .Write(command.incubatorSlotOne)
-    .Write(command.incubatorSlotTwo);
+    .Write(command.incubatorSlots)
+    .Write(command.incubatorUseCount);
 
   for (const auto& egg : command.incubator)
   {
