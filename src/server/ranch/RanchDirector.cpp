@@ -509,7 +509,8 @@ void RanchDirector::HandleEnterRanch(
 
       if (rancher.isRanchLocked())
         response.bitset = protocol::AcCmdCREnterRanchOK::Bitset::IsLocked;
-      
+
+      // Fill the incubator info.
       const auto eggRecords = GetServerInstance().GetDataDirector().GetEggs().Get(
         rancher.eggs());
       if (eggRecords)
@@ -519,7 +520,11 @@ void RanchDirector::HandleEnterRanch(
           eggRecord.Immutable(
             [&response](const data::Egg& egg)
             {
-              protocol::BuildProtocolEgg(response.incubator[egg.incubatorSlot()], egg);
+              // retrieve hatchDuration
+              const registry::Egg eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
+                egg.itemTid());
+              const auto hatchingDuration = eggTemplate.hatchDuration;
+              protocol::BuildProtocolEgg(response.incubator[egg.incubatorSlot()], egg, hatchingDuration );
             });
         }
       }

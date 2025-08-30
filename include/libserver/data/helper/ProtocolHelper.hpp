@@ -84,7 +84,8 @@ void BuildProtocolHousing(
 
 void BuildProtocolEgg(
   Egg& protocolEgg,
-  const data::Egg& eggRecord);
+  const data::Egg& eggRecord,
+  const data::Clock::duration hatchDuration);
 
 void BuildProtocolEggs(
   std::vector<Egg>& protocolEggs,

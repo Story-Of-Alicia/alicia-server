@@ -3,7 +3,6 @@
 //
 
 #include "libserver/data/helper/ProtocolHelper.hpp"
-#include "libserver/registry/PetRegistry.hpp"
 
 namespace server
 {
@@ -257,37 +256,24 @@ void BuildProtocolHousing(
 
 void BuildProtocolEgg(
   Egg& protocolEgg,
-  const data::Egg& eggRecord)
+  const data::Egg& eggRecord,
+  const data::Clock::duration hatchDuration)
 {
   protocolEgg.uid = eggRecord.uid();
   protocolEgg.itemTid = eggRecord.itemTid();
 
-  // retrieve hatchDuration
-  const registry::Egg eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
-    eggRecord.itemTid());
-
   protocolEgg.totalHatchingTime = std::chrono::duration_cast<std::chrono::seconds>(
-                                    eggTemplate.hatchDuration).count();
-                                    
-  protocolEgg.timeRemaining = std::chrono::duration_cast<std::chrono::seconds>(
-                                    eggTemplate.hatchDuration -
-                                    (std::chrono::system_clock::now() - eggRecord.incubatedAt()) -
-                                    (eggRecord.boostsUsed() * std::chrono::hours(8))).count();
-  protocolEgg.boost = 400000;
-}
+    hatchDuration).count();
 
-void BuildProtocolEggs(
-  std::vector<Egg>& protocolEggs,
-  const std::span<const Record<data::Egg>>& eggRecords)
-{
-  for (const auto& eggRecord : eggRecords)
-  {
-    auto& protocolEgg = protocolEggs.emplace_back();
-    eggRecord.Immutable([&protocolEgg](const auto& egg)
-      {
-        BuildProtocolEgg(protocolEgg, egg);
-      });
-  }
+  const auto totalHatchingDuration = std::chrono::system_clock::now() - eggRecord.incubatedAt();
+  const auto totalBoostedDuration = eggRecord.boostsUsed() * std::chrono::hours(8);
+  const auto hatchTimeRemaining = hatchDuration - totalHatchingDuration - totalBoostedDuration;
+
+  protocolEgg.timeRemaining = std::max(
+    std::chrono::duration_cast<std::chrono::seconds>(hatchTimeRemaining).count(),
+    int64_t{0});
+  
+  protocolEgg.boost = 400000;
 }
 
 } // namespace protocol
