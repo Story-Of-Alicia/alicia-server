@@ -86,10 +86,6 @@ void BuildProtocolEgg(
   Egg& protocolEgg,
   const data::Egg& eggRecord,
   const data::Clock::duration hatchDuration);
-
-void BuildProtocolEggs(
-  std::vector<Egg>& protocolEggs,
-  const std::span<const Record<data::Egg>>& eggRecords);
   
 } // namespace protocol
 
