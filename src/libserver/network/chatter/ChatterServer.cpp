@@ -23,65 +23,100 @@
 
 #include <spdlog/spdlog.h>
 
-constexpr bool Debug = false;
-
-struct ChatterCommandLogin
+namespace server
 {
-  uint32_t val0{};
-  std::string characterName{};
-  uint32_t code{};
-  uint32_t val1{};
-};
 
-server::ChatterServer::ChatterServer()
-  // : _server(
-  //     [](ClientId clientId) {},
-  //     [](ClientId clientId) {},
-  //     [](ClientId clientId, asio::streambuf& readBuffer)
-  //     {
-  //       const auto buffer = readBuffer.data();
-  //
-  //       alicia::SourceStream stream({static_cast<const std::byte*>(buffer.data()), buffer.size()});
-  //
-  //       std::array<std::byte, 4092> dataBuffer;
-  //       SinkStream dataSinkStream(
-  //         {dataBuffer.begin(), dataBuffer.end()});
-  //
-  //       constexpr std::array XorCode{
-  //         static_cast<std::byte>(0x2B),
-  //         static_cast<std::byte>(0xFE),
-  //         static_cast<std::byte>(0xB8),
-  //         static_cast<std::byte>(0x02)};
-  //       while (stream.GetCursor() != stream.Size())
-  //       {
-  //         std::byte val;
-  //         stream.Read(val);
-  //         val ^= XorCode[(stream.GetCursor() - 1) % 4];
-  //         dataSinkStream.Write(val);
-  //       }
-  //
-  //       spdlog::debug(
-  //         "Chatter message:\n\n"
-  //         "Size: {}\n"
-  //         "Dump: \n\n{}\n\n",
-  //         buffer.size(),
-  //         soa::util::GenerateByteDump({dataBuffer.begin(), stream.GetCursor()}));
-  //
-  //       readBuffer.consume(buffer.size());
-  //     },
-  //     [](ClientId clientId, asio::streambuf& writeBuffer) {})
+namespace
+{
+
+// todo: de/serializer map, handler map
+
+} // anon namespace
+
+ChatterServer::ChatterServer(
+  IChatterServerEventsHandler& chatterServerEventsHandler,
+  IChatterCommandHandler& chatterCommandHandler)
+  : _chatterServerEventsHandler(chatterServerEventsHandler)
+  , _chatterCommandHandler(chatterCommandHandler)
+  , _server(*this)
 {
 }
 
-server::ChatterServer::~ChatterServer()
+ChatterServer::~ChatterServer()
 {
-  // _server.End();
-  // if (_serverThread.joinable())
-  //   _serverThread.join();
+  _server.End();
+  if (_serverThread.joinable())
+    _serverThread.join();
 }
 
-void server::ChatterServer::Host()
+void ChatterServer::BeginHost(network::asio::ip::address_v4 address, uint16_t port)
 {
-  /*_serverThread = std::thread([this]()
-                              { _server.Begin(boost::asio::ip::address_v4::any(), 10032); });*/
+  _serverThread = std::thread([this, address, port]()
+  {
+    _server.Begin(address, port);
+  });
 }
+
+void ChatterServer::EndHost()
+{
+  if (_serverThread.joinable())
+  {
+    _server.End();
+    _serverThread.join();
+  }
+}
+
+void ChatterServer::OnClientConnected(network::ClientId clientId)
+{
+  _chatterServerEventsHandler.HandleClientConnected(clientId);
+}
+
+void ChatterServer::OnClientDisconnected(network::ClientId clientId)
+{
+  _chatterServerEventsHandler.HandleClientDisconnected(clientId);
+}
+
+size_t ChatterServer::OnClientData(
+  network::ClientId clientId,
+  const std::span<const std::byte>& data)
+{
+  SourceStream commandStream{data};
+
+  // The base XOR scrambling constant, which seems to not roll.
+  constexpr std::array XorCode{
+    static_cast<std::byte>(0x2B),
+    static_cast<std::byte>(0xFE),
+    static_cast<std::byte>(0xB8),
+    static_cast<std::byte>(0x02)};
+
+  protocol::ChatterCommandHeader header;
+  commandStream.Read(header.length)
+    .Read(header.commandId);
+  header.length ^= *reinterpret_cast<const uint16_t*>(XorCode.data());
+  header.commandId ^= *reinterpret_cast<const uint16_t*>(XorCode.data() + 2);
+
+  if (header.commandId == static_cast<uint16_t>(
+    protocol::ChatterCommand::ChatCmdLogin))
+  {
+    std::vector<std::byte> commandData(header.length);
+    SinkStream commandDataSink({commandData.begin(), commandData.end()});
+
+    for (uint16_t idx = 0; idx < header.length - sizeof(protocol::ChatterCommandHeader); ++idx)
+    {
+      std::byte& val = commandData[idx];
+      commandStream.Read(val);
+      val ^= XorCode[(commandStream.GetCursor() - 1) % 4];
+    }
+
+    SourceStream commandDataSource({commandData.begin(), commandData.end()});
+
+    // todo: deserialization and handler call
+    protocol::ChatCmdLogin command;
+    commandDataSource.Read(command);
+    _chatterCommandHandler.HandleChatterLogin(clientId, command);
+  }
+
+  return commandStream.GetCursor();
+}
+
+} // namespace server

@@ -31,8 +31,8 @@
 namespace server
 {
 
-namespace asio = server::network::asio;
-using ClientId = server::network::ClientId;
+namespace asio = network::asio;
+using ClientId = network::ClientId;
 
 //! A command handler.
 using RawCommandHandler = std::function<void(ClientId, SourceStream&)>;
@@ -125,14 +125,14 @@ public:
 
 private:
   class NetworkEventHandler
-    : public server::network::EventHandlerInterface
+    : public network::EventHandlerInterface
   {
   public:
     NetworkEventHandler(CommandServer& commandServer);
 
-    void OnClientConnected(server::network::ClientId clientId) override;
-    void OnClientDisconnected(server::network::ClientId clientId) override;
-    size_t OnClientData(server::network::ClientId clientId, const std::span<const std::byte>& data) override;
+    void OnClientConnected(network::ClientId clientId) override;
+    void OnClientDisconnected(network::ClientId clientId) override;
+    size_t OnClientData(network::ClientId clientId, const std::span<const std::byte>& data) override;
 
   private:
     CommandServer& _commandServer;
@@ -154,7 +154,7 @@ private:
   EventHandlerInterface& _eventHandler;
   NetworkEventHandler _serverNetworkEventHandler;
 
-  server::network::Server _server;
+  network::Server _server;
   std::thread _serverThread;
 };
 

@@ -371,7 +371,7 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
           "Check your inventory!"};
       }
 
-      return {"Un sub-literal"};
+      return {"Unknown sub-literal"};
     });
 }
 

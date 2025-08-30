@@ -177,18 +177,15 @@ void LoginHandler::HandleUserLogin(
   const protocol::LobbyCommandLogin& login)
 {
   // Validate the command fields.
-  if (login.loginId.empty())
+  if (login.loginId.empty() || login.authKey.empty())
   {
-    if (login.authKey.empty() && not constants::IsDevelopmentMode)
-    {
-      spdlog::debug(
-        "LoginHandler::HandleUserLogin - Rejecting login for client {}."
-        " User name or user token empty.",
-        clientId);
+    spdlog::debug(
+      "LoginHandler::HandleUserLogin - Rejecting login for client {}."
+      " User name or user token empty.",
+      clientId);
 
-      QueueUserLoginRejected(clientId, true);
-      return;
-    }
+    QueueUserLoginRejected(clientId, true);
+    return;
   }
 
   // The login request must be unique for the client.
