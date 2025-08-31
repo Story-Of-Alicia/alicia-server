@@ -515,6 +515,8 @@ void server::FileDataSource::RetrieveStorageItem(data::Uid uid, data::StorageIte
   item.message = json["message"].get<std::string>();
   item.checked = json["checked"].get<bool>();
   item.expired = json["expired"].get<bool>();
+  item.created = data::Clock::time_point(std::chrono::seconds(
+    json["created"].get<uint64_t>()));
 }
 
 void server::FileDataSource::StoreStorageItem(data::Uid uid, const data::StorageItem& item)
@@ -536,6 +538,8 @@ void server::FileDataSource::StoreStorageItem(data::Uid uid, const data::Storage
   json["message"] = item.message();
   json["checked"] = item.checked();
   json["expired"] = item.expired();
+  json["created"] = std::chrono::ceil<std::chrono::seconds>(
+    item.created().time_since_epoch()).count();
 
   dataFile << json.dump(2);
 }
