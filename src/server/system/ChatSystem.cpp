@@ -51,7 +51,7 @@ std::vector<std::string> CommandManager::HandleCommand(
   catch (const std::exception& x)
   {
     spdlog::error("Exception executing command handler for '{}': {}", literal, x.what());
-    return {"Sever error, contact administrators."};
+    return {"Server error, contact administrators."};
   }
 }
 
