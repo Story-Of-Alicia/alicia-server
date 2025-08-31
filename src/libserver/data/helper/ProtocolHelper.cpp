@@ -183,6 +183,9 @@ void BuildProtocolStoredItem(
   const data::StorageItem& storedItem)
 {
   protocolStoredItem.uid = storedItem.uid();
+  protocolStoredItem.status = 
+    storedItem.expired() ? StoredItem::Status::Expired :
+    storedItem.checked() ? StoredItem::Status::Read : StoredItem::Status::Unread;
   protocolStoredItem.sender = storedItem.sender();
   protocolStoredItem.message = storedItem.message();
   protocolStoredItem.dateAndTime = util::TimePointToAliciaTime(storedItem.created());
