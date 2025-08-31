@@ -349,11 +349,11 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
         // Create the stored item.
         auto giftUid = data::InvalidUid;
         const auto storedItem = _serverInstance.GetDataDirector().CreateStorageItem();
-        storedItem.Mutable([this, &giftUid, createdItemUid, createdItemTid](data::StorageItem& storedItem)
+        storedItem.Mutable([this, &giftUid, itemCount, createdItemUid, createdItemTid](data::StorageItem& storedItem)
         {
           storedItem.items().emplace_back(createdItemUid);
           storedItem.sender() = "System";
-          storedItem.message() = std::format("Item '{}'", createdItemTid);
+          storedItem.message() = std::format("{}x Item '{}'", itemCount, createdItemTid);
           storedItem.created() = data::Clock::now();
 
           giftUid = storedItem.uid();
