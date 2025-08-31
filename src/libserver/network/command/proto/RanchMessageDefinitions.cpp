@@ -2132,5 +2132,19 @@ void AcCmdCRWithdrawGuildMemberCancel::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRCheckStorageItem::Read(
+  AcCmdCRCheckStorageItem& command,
+  SourceStream& stream)
+{
+  stream.Read(command.storedItemUid);
+}
+
+void AcCmdCRCheckStorageItem::Write(
+  const AcCmdCRCheckStorageItem& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
 
