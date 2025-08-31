@@ -80,7 +80,9 @@ void MessengerDirector::HandleChatterLogin(
     onlineCharacterRecord.Immutable([&friendo](const data::Character& onlineCharacter)
     {
       friendo.name = onlineCharacter.name();
-      friendo.status = protocol::ChatCmdLoginAckOK::Friend::Status::Online;
+      friendo.status = onlineCharacter.isRanchLocked()
+        ? protocol::ChatCmdLoginAckOK::Friend::Status::Offline
+        : protocol::ChatCmdLoginAckOK::Friend::Status::Online;
       friendo.uid = onlineCharacter.uid();
       friendo.categoryUid = OnlinePlayersCategoryUid;
 

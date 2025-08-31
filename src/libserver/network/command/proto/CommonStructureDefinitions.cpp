@@ -398,12 +398,12 @@ void Pet::Read(Pet& value, SourceStream& stream)
 void Egg::Write(const Egg& value, SinkStream& stream)
 {
   stream.Write(value.uid)
-    .Write(value.tid)
-    .Write(value.petTid)
+    .Write(value.itemTid)
+    .Write(value.member3)
     .Write(value.member4)
     .Write(value.member5)
     .Write(value.timeRemaining)
-    .Write(value.timeElapsed)
+    .Write(value.boost)
     .Write(value.totalHatchingTime)
     .Write(value.member9);
 }
@@ -411,12 +411,12 @@ void Egg::Write(const Egg& value, SinkStream& stream)
 void Egg::Read(Egg& value, SourceStream& stream)
 {
   stream.Read(value.uid)
-    .Read(value.tid)
-    .Read(value.petTid)
+    .Read(value.itemTid)
+    .Read(value.member3)
     .Read(value.member4)
     .Read(value.member5)
     .Read(value.timeRemaining)
-    .Read(value.timeElapsed)
+    .Read(value.boost)
     .Read(value.totalHatchingTime)
     .Read(value.member9);
 }

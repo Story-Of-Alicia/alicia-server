@@ -198,8 +198,8 @@ void AcCmdCREnterRanchOK::Write(
   stream.Write(command.horseSlots)
     .Write(command.member11)
     .Write(command.bitset)
-    .Write(command.incubatorSlotOne)
-    .Write(command.incubatorSlotTwo);
+    .Write(command.incubatorSlots)
+    .Write(command.incubatorUseCount);
 
   for (const auto& egg : command.incubator)
   {
@@ -1490,7 +1490,7 @@ void AcCmdCRUpdatePet::Read(
 {
   stream.Read(command.petInfo);
   if (stream.GetCursor() - stream.Size() > 4)
-    stream.Read(command.actionBitset);
+    stream.Read(command.itemUid);
 }
 
 void AcCmdRCUpdatePet::Write(
@@ -1498,7 +1498,7 @@ void AcCmdRCUpdatePet::Write(
   SinkStream& stream)
 {
   stream.Write(command.petInfo)
-   .Write(command.actionBitset);
+   .Write(command.itemUid);
 }
 
 void AcCmdRCUpdatePet::Read(
@@ -1507,7 +1507,7 @@ void AcCmdRCUpdatePet::Read(
 {
   stream.Read(command.petInfo);
   if (stream.GetCursor() - stream.Size() > 4)
-    stream.Read(command.actionBitset);
+    stream.Read(command.itemUid);
 }
 
 void AcCmdRCUpdatePetCancel::Write(
@@ -1526,45 +1526,122 @@ void AcCmdRCUpdatePetCancel::Read(
   throw std::runtime_error("Not implemented");
 }
 
-void RanchCommandRequestPetBirth::Write(
-  const RanchCommandRequestPetBirth& command,
+void AcCmdCRBoostIncubateInfoList::Write(
+  const AcCmdCRBoostIncubateInfoList& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void RanchCommandRequestPetBirth::Read(
-  RanchCommandRequestPetBirth& command,
+void AcCmdCRBoostIncubateInfoList::Read(
+  AcCmdCRBoostIncubateInfoList& command,
   SourceStream& stream)
 {
   stream.Read(command.member1)
-    .Read(command.member2)
+    .Read(command.member2);
+}
+
+void AcCmdCRBoostIncubateInfoListOK::Write(
+  const AcCmdCRBoostIncubateInfoListOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1)
+    .Write(command.count);
+  // for loop to write vector of 2 uint32_t
+  
+}
+
+void AcCmdCRBoostIncubateInfoListOK::Read(
+  AcCmdCRBoostIncubateInfoListOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBoostIncubateEgg::Write(
+  const AcCmdCRBoostIncubateEgg& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBoostIncubateEgg::Read(
+  AcCmdCRBoostIncubateEgg& command,
+  SourceStream& stream)
+{
+  stream.Read(command.itemUid)
+    .Read(command.incubatorSlot);
+}
+
+void AcCmdCRBoostIncubateEggOK::Write(
+  const AcCmdCRBoostIncubateEggOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.item)
+    .Write(command.incubatorSlot)
+    .Write(command.egg);
+}
+
+void AcCmdCRBoostIncubateEggOK::Read(
+  AcCmdCRBoostIncubateEggOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRequestPetBirth::Write(
+  const AcCmdCRRequestPetBirth& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRequestPetBirth::Read(
+  AcCmdCRRequestPetBirth& command,
+  SourceStream& stream)
+{
+  stream.Read(command.eggLevel)
+    .Read(command.incubatorSlot)
     .Read(command.petInfo);
 }
 
-void RanchCommandRequestPetBirthOK::Write(
-  const RanchCommandRequestPetBirthOK& command,
+void AcCmdCRRequestPetBirthOK::Write(
+  const AcCmdCRRequestPetBirthOK& command,
   SinkStream& stream)
 {
   stream.Write(command.petBirthInfo);
 }
 
-void RanchCommandRequestPetBirthOK::Read(
-  RanchCommandRequestPetBirthOK& command,
+void AcCmdCRRequestPetBirthOK::Read(
+  AcCmdCRRequestPetBirthOK& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void RanchCommandRequestPetBirthCancel::Write(
-  const RanchCommandRequestPetBirthCancel& command,
+void AcCmdCRRequestPetBirthNotify::Write(
+  const AcCmdCRRequestPetBirthNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.petBirthInfo);
+}
+
+void AcCmdCRRequestPetBirthNotify::Read(
+  AcCmdCRRequestPetBirthNotify& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRequestPetBirthCancel::Write(
+  const AcCmdCRRequestPetBirthCancel& command,
   SinkStream& stream)
 {
   stream.Write(command.petInfo);
 }
 
-void RanchCommandRequestPetBirthCancel::Read(
-  RanchCommandRequestPetBirthCancel& command,
+void AcCmdCRRequestPetBirthCancel::Read(
+  AcCmdCRRequestPetBirthCancel& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
@@ -1584,31 +1661,67 @@ void RanchCommandPetBirthNotify::Read(
   throw std::runtime_error("Not implemented");
 }
 
-void RanchCommandIncubateEgg::Write(
-  const RanchCommandPetBirthNotify& command,
+void AcCmdCRIncubateEgg::Write(
+  const AcCmdCRIncubateEgg& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void RanchCommandIncubateEgg::Read(
-  RanchCommandPetBirthNotify& command,
+void AcCmdCRIncubateEgg::Read(
+  AcCmdCRIncubateEgg& command,
   SourceStream& stream)
 {
-  stream.Read(command.petBirthInfo);
+  stream.Read(command.itemUid)
+    .Read(command.itemTid)
+    .Read(command.incubatorSlot);
 }
 
-void RanchCommandIncubateEggOK::Write(
-  const RanchCommandIncubateEggOK& command,
+void AcCmdCRIncubateEggOK::Write(
+  const AcCmdCRIncubateEggOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.itemUid)
+  stream.Write(command.incubatorSlot)
     .Write(command.egg)
     .Write(command.member3);
 }
 
-void RanchCommandIncubateEggOK::Read(
-  RanchCommandIncubateEggOK& command,
+void AcCmdCRIncubateEggOK::Read(
+  AcCmdCRIncubateEggOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRIncubateEggNotify::Write(
+  const AcCmdCRIncubateEggNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.incubatorSlot)
+    .Write(command.egg)
+    .Write(command.member3);
+}
+
+void AcCmdCRIncubateEggNotify::Read(
+  AcCmdCRIncubateEggNotify& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRIncubateEggCancel::Write(
+  const AcCmdCRIncubateEggCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.cancel)
+  .Write(command.itemUid)
+  .Write(command.itemTid)
+  .Write(command.incubatorSlot);
+}
+
+void AcCmdCRIncubateEggCancel::Read(
+  AcCmdCRIncubateEggCancel& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
@@ -1712,7 +1825,7 @@ void AcCmdCRHousingBuildNotify::Write(
   SinkStream& stream)
 {
   stream.Write(command.member1)
-    .Write(command.housingTid);
+    .Write(command.housingId);
 }
 
 void AcCmdCRHousingBuildNotify::Read(

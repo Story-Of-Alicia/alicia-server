@@ -560,12 +560,14 @@ void server::FileDataSource::RetrieveEgg(data::Uid uid, data::Egg& egg)
   const auto json = nlohmann::json::parse(dataFile);
 
   egg.uid = json["uid"].get<data::Uid>();
-  egg.tid = json["tid"].get<data::Tid>();
-  egg.petTid = json["petTid"].get<data::Tid>();
+  egg.itemUid = json["itemUid"].get<data::Uid>();
+  egg.itemTid = json["itemTid"].get<data::Tid>();
 
-  egg.hatchTimestamp = data::Clock::time_point(
+  egg.incubatedAt = data::Clock::time_point(
     std::chrono::seconds(
-      json["hatchTimestamp"].get<uint64_t>()));
+      json["incubatedAt"].get<uint64_t>()));
+  egg.incubatorSlot = json["incubatorSlot"].get<uint32_t>();
+  egg.boostsUsed = json["boostsUsed"].get<uint32_t>();
 }
 
 void server::FileDataSource::StoreEgg(data::Uid uid, const data::Egg& egg)
@@ -582,13 +584,12 @@ void server::FileDataSource::StoreEgg(data::Uid uid, const data::Egg& egg)
 
   nlohmann::json json;
   json["uid"] = egg.uid();
-  json["tid"] = egg.tid();
-  json["petTid"] = egg.petTid();
-
-  json["hatchTimestamp"] = std::chrono::duration_cast<std::chrono::seconds>(
-    egg.hatchTimestamp().time_since_epoch())
-                             .count();
-
+  json["itemUid"] = egg.itemUid();
+  json["itemTid"] = egg.itemTid();
+  json["incubatedAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+    egg.incubatedAt().time_since_epoch()).count();
+  json["incubatorSlot"] = egg.incubatorSlot();
+  json["boostsUsed"] = egg.boostsUsed();
   dataFile << json.dump(2);
 }
 

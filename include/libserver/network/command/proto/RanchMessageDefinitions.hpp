@@ -105,8 +105,14 @@ struct AcCmdCREnterRanchOK
     IsLocked = 2,
   } bitset{};
 
-  uint32_t incubatorSlotOne{2};
-  uint32_t incubatorSlotTwo{1};
+  //! Incubator logic:
+  //! icubator slots from 0 to 3, 0 = locked, 1 = single, 2 = double, 3 = triple
+  //! incubator use count should count down to 0, if broken transform into single incubator
+
+  //! TODO: implement the Logic in Ranchdirector for RanchEnter & HousingBuild
+  //! Add the fields to character save 
+  uint32_t incubatorSlots{2};
+  uint32_t incubatorUseCount{10};
 
   std::array<Egg, 3> incubator;
 
@@ -2217,11 +2223,7 @@ struct AcCmdCRWithdrawGuildMemberCancel
 struct AcCmdCRUpdatePet
 {
   PetInfo petInfo{};
-  enum class Action
-  {
-    Rename = 1
-  };
-  Action actionBitset{}; // 
+  uint32_t itemUid; // 
 
   static Command GetCommand()
   {
@@ -2247,7 +2249,7 @@ struct AcCmdRCUpdatePet
 {
   PetInfo petInfo{};
   //! optional
-  uint32_t actionBitset{}; // 7 - rename
+  uint32_t itemUid{};
   static Command GetCommand()
   {
     return Command::AcCmdRCUpdatePet;
@@ -2293,10 +2295,10 @@ struct AcCmdRCUpdatePetCancel
     SourceStream& stream);
 };
 
-struct RanchCommandRequestPetBirth
+struct AcCmdCRRequestPetBirth
 {
-  uint32_t member1{};
-  uint32_t member2{};
+  uint32_t eggLevel{};
+  uint32_t incubatorSlot{};
   PetInfo petInfo{};
 
   static Command GetCommand()
@@ -2308,18 +2310,18 @@ struct RanchCommandRequestPetBirth
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandRequestPetBirth& command,
+    const AcCmdCRRequestPetBirth& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandRequestPetBirth& command,
+    AcCmdCRRequestPetBirth& command,
     SourceStream& stream);
 };
 
-struct RanchCommandRequestPetBirthOK
+struct AcCmdCRRequestPetBirthOK
 {
   PetBirthInfo petBirthInfo{};
 
@@ -2332,18 +2334,42 @@ struct RanchCommandRequestPetBirthOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandRequestPetBirthOK& command,
+    const AcCmdCRRequestPetBirthOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandRequestPetBirthOK& command,
+    AcCmdCRRequestPetBirthOK& command,
     SourceStream& stream);
 };
 
-struct RanchCommandRequestPetBirthCancel
+struct AcCmdCRRequestPetBirthNotify
+{
+  PetBirthInfo petBirthInfo{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestPetBirthNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestPetBirthNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestPetBirthNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestPetBirthCancel
 {
   PetInfo petInfo{};
 
@@ -2356,14 +2382,14 @@ struct RanchCommandRequestPetBirthCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandRequestPetBirthCancel& command,
+    const AcCmdCRRequestPetBirthCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandRequestPetBirthCancel& command,
+    AcCmdCRRequestPetBirthCancel& command,
     SourceStream& stream);
 };
 
@@ -2391,9 +2417,11 @@ struct RanchCommandPetBirthNotify
     SourceStream& stream);
 };
 
-struct RanchCommandIncubateEgg
+struct AcCmdCRIncubateEgg
 {
   uint32_t itemUid{};
+  uint32_t itemTid{};
+  uint32_t incubatorSlot{};
 
   static Command GetCommand()
   {
@@ -2404,20 +2432,20 @@ struct RanchCommandIncubateEgg
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandPetBirthNotify& command,
+    const AcCmdCRIncubateEgg& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandPetBirthNotify& command,
+    AcCmdCRIncubateEgg& command,
     SourceStream& stream);
 };
 
-struct RanchCommandIncubateEggOK
+struct AcCmdCRIncubateEggOK
 {
-  uint32_t itemUid{};
+  uint32_t incubatorSlot{};
   Egg egg{};
   // optional
   uint32_t member3{};
@@ -2431,14 +2459,171 @@ struct RanchCommandIncubateEggOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandIncubateEggOK& command,
+    const AcCmdCRIncubateEggOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandIncubateEggOK& command,
+    AcCmdCRIncubateEggOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRIncubateEggNotify
+{
+  uint32_t characterUid{}; // needs confirmation
+  uint32_t incubatorSlot{};
+  Egg egg{};
+  // optional
+  uint32_t member3{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRIncubateEggNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRIncubateEggNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRIncubateEggNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRIncubateEggCancel
+{
+  uint8_t cancel{};
+  uint32_t itemUid{};
+  uint32_t itemTid{};
+  uint32_t incubatorSlot{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRIncubateEggCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRIncubateEggCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRIncubateEggCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBoostIncubateInfoList
+{
+  uint32_t member1{};
+  uint32_t member2{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBoostIncubateInfoList;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBoostIncubateInfoList& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBoostIncubateInfoList& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBoostIncubateInfoListOK
+{
+  uint32_t member1{};
+  uint16_t count{};
+  //here belongs some vector 2 uint32_t
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBoostIncubateInfoListOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBoostIncubateInfoListOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBoostIncubateInfoListOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBoostIncubateEgg
+{
+  uint32_t itemUid{}; //crystal item id
+  uint32_t incubatorSlot{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBoostIncubateEgg;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBoostIncubateEgg& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBoostIncubateEgg& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBoostIncubateEggOK
+{
+  Item item{};
+  uint32_t incubatorSlot{};
+  Egg egg{};         
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBoostIncubateEggOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBoostIncubateEggOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBoostIncubateEggOK& command,
     SourceStream& stream);
 };
 
@@ -2569,7 +2754,7 @@ struct AcCmdCRHousingBuildCancel
 struct AcCmdCRHousingBuildNotify
 {
   uint32_t member1{};
-  uint16_t housingTid{};
+  uint16_t housingId{};
 
   static Command GetCommand()
   {

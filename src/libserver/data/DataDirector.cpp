@@ -843,6 +843,13 @@ void DataDirector::ScheduleCharacterLoad(
         "Pets not available");
       return;
     }
+    
+    if (not eggRecords)
+    {
+      userDataContext.debugMessage = std::format(
+        "Eggs not available");
+      return;
+    }
 
     userDataContext.isCharacterDataLoaded.store(true, std::memory_order::release);
   });

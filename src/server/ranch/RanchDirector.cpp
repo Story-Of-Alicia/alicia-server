@@ -22,6 +22,7 @@
 
 #include "libserver/data/helper/ProtocolHelper.hpp"
 #include "libserver/registry/HorseRegistry.hpp"
+#include "libserver/registry/PetRegistry.hpp"
 #include "libserver/util/Util.hpp"
 
 #include <ranges>
@@ -196,6 +197,29 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, auto& command)
     {
       HandleUserPetInfos(clientId, command);
+    });
+  
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRIncubateEgg>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleIncubateEgg(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRBoostIncubateEgg>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleBoostIncubateEgg(clientId, command);
+    });
+  
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestPetBirth>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleRequestPetBirth(clientId, command);
+    });
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRBoostIncubateInfoList>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleBoostIncubateInfoList(clientId, command);
     });
 
   _commandServer.RegisterCommandHandler<protocol::RanchCommandRequestNpcDressList>(
@@ -521,6 +545,25 @@ void RanchDirector::HandleEnterRanch(
 
       if (rancher.isRanchLocked())
         response.bitset = protocol::AcCmdCREnterRanchOK::Bitset::IsLocked;
+
+      // Fill the incubator info.
+      const auto eggRecords = GetServerInstance().GetDataDirector().GetEggs().Get(
+        rancher.eggs());
+      if (eggRecords)
+      {
+        for (auto& eggRecord : *eggRecords)
+        {
+          eggRecord.Immutable(
+            [&response](const data::Egg& egg)
+            {
+              // retrieve hatchDuration
+              const registry::Egg eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
+                egg.itemTid());
+              const auto hatchingDuration = eggTemplate.hatchDuration;
+              protocol::BuildProtocolEgg(response.incubator[egg.incubatorSlot()], egg, hatchingDuration );
+            });
+        }
+      }
     });
 
   // Add the character to the ranch.
@@ -1631,6 +1674,7 @@ void RanchDirector::HandleUpdatePet(
   ClientId clientId,
   const protocol::AcCmdCRUpdatePet& command)
 {
+  protocol::AcCmdRCUpdatePet response;
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
@@ -1638,8 +1682,10 @@ void RanchDirector::HandleUpdatePet(
   auto petUid = data::InvalidUid;
 
   characterRecord.Mutable(
-    [this, &command, &petUid](data::Character& character)
+    [this, &command, &petUid, &response](data::Character& character)
     {
+      
+      response.petInfo.characterUid = character.uid();
       // The pets of the character.
       const auto storedPetRecords = GetServerInstance().GetDataDirector().GetPets().Get(
         character.pets());
@@ -1648,43 +1694,39 @@ void RanchDirector::HandleUpdatePet(
       {
         // No pets found for the character.
         spdlog::warn("No pets found for character {}", character.uid());
-        // TODO: When Handle Pet Birth exists, this should have a return
+        return;
       }
-
+      bool petExists = false;
       // Find the pet record based on the item used.
       for (const auto& petRecord : *storedPetRecords)
       {
         petRecord.Immutable(
-          [&command, &petUid](const data::Pet& pet)
+          [&command, &petUid, &petExists](const data::Pet& pet)
           {
             if (pet.itemUid() == command.petInfo.itemUid)
             {
               petUid = pet.uid();
+              petExists = true;
             }
           });
       }
-
-      // If pet record does not exist, create it.
-      // For prototype purposes only.
-      if (petUid == data::InvalidUid
-        && command.petInfo.pet.petId != 0)
+      
+      if (!petExists)
       {
-        const auto petRecord = GetServerInstance().GetDataDirector().CreatePet();
-        petRecord.Mutable(
-          [&command, &petUid](data::Pet& pet)
-          {
-            pet.petId = command.petInfo.pet.petId;
-            pet.name = command.petInfo.pet.name;
-            pet.itemUid = command.petInfo.itemUid;
-
-            petUid = pet.uid();
-          });
-
-        character.pets().emplace_back(petUid);
+        spdlog::warn("Character {} has no pet with petId {}", character.uid(), command.petInfo.pet.petId);
+        return;
       }
 
-      if (command.actionBitset == protocol::AcCmdCRUpdatePet::Action::Rename)
+      auto itemRecords = GetServerInstance().GetDataDirector().GetItems().Get(
+        character.items());
+      if (not itemRecords || itemRecords->empty())
       {
+        spdlog::warn("No items found for character {}", character.uid());
+        return;
+      }
+      if (std::ranges::contains(character.items(), command.itemUid))
+      {
+        // TODO: actually reduce the item count or remove it
         const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
         petRecord.Mutable(
           [&command](data::Pet& pet)
@@ -1696,28 +1738,36 @@ void RanchDirector::HandleUpdatePet(
       {
         character.petUid = petUid;
       }
+      response.petInfo = command.petInfo;
+      if (petUid != 0)
+      {
+        const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
+        petRecord.Immutable(
+          [&response](const data::Pet& pet)
+          {
+            response.petInfo.pet.name = pet.name();
+          });
+      }
+      response.petInfo = command.petInfo;
+      if (petUid != 0)
+      {
+        const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
+        petRecord.Immutable(
+          [&response](const data::Pet& pet)
+          {
+            response.petInfo.pet.name = pet.name();
+          });
+      }
     });
 
   const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
 
-  protocol::AcCmdRCUpdatePet response;
-  response.petInfo = command.petInfo;
-
-  const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
-  petRecord.Immutable(
-    [&response](const data::Pet& pet)
-    {
-      response.petInfo.pet.name = pet.name();
-    });
-
-  response.petInfo.characterUid = clientContext.characterUid;
-
   for (const ClientId ranchClientId : ranchInstance.clients)
   {
     _commandServer.QueueCommand<decltype(response)>(ranchClientId, [response]()
-    {
-      return response;
-    });
+      {
+        return response;
+      });
   }
 }
 
@@ -1753,12 +1803,355 @@ void RanchDirector::HandleUserPetInfos(
       return response;
     });
 }
+void RanchDirector::HandleIncubateEgg(
+  ClientId clientId,
+  const protocol::AcCmdCRIncubateEgg& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  protocol::AcCmdCRIncubateEggOK response{
+    response.incubatorSlot = command.incubatorSlot,
+  };
+
+  characterRecord.Mutable(
+    [this, &command, &response, clientId](data::Character& character)
+    {
+      const std::optional<registry::Egg> eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
+        command.itemTid);
+      if (not eggTemplate)
+      {
+        //not tested
+        protocol::AcCmdCRIncubateEggCancel cancel{
+          cancel.cancel = 0,
+          cancel.itemUid = command.itemUid,
+          cancel.itemTid = command.itemUid,
+          cancel.incubatorSlot = command.incubatorSlot};
+
+        _commandServer.QueueCommand<decltype(cancel)>(
+          clientId,
+          [cancel]()
+          {
+            return cancel;
+          });
+        spdlog::warn("User tried to incubate something that is not an egg");
+        return;
+      }
+
+      const auto eggRecord = GetServerInstance().GetDataDirector().CreateEgg();
+      eggRecord.Mutable([&command, &response, &character, &eggTemplate](data::Egg& egg)
+        {
+          
+          egg.incubatorSlot = command.incubatorSlot;
+          egg.incubatedAt = data::Clock::now();
+          egg.boostsUsed = 0;
+          egg.itemTid = command.itemTid;
+          egg.itemUid = command.itemUid;
+
+          character.eggs().emplace_back(egg.uid());
+
+          // Fill the response with egg information.
+          auto eggUid = egg.uid();
+          auto eggItemTid = egg.itemTid();
+          auto eggHatchDuration = eggTemplate.value().hatchDuration;
+
+          response.egg.uid = eggUid;
+          response.egg.itemTid = eggItemTid;
+          response.egg.timeRemaining = std::chrono::duration_cast<std::chrono::seconds>(eggHatchDuration).count();
+          response.egg.boost = 400000;
+          response.egg.totalHatchingTime = std::chrono::duration_cast<std::chrono::seconds>(eggHatchDuration).count();
+        });
+    });
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+
+   protocol::AcCmdCRIncubateEggNotify notify{
+    .characterUid = clientContext.characterUid,
+    .incubatorSlot = command.incubatorSlot,
+    .egg = response.egg,
+  };
+
+  const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+  // Broadcast the egg incubation to all ranch clients.
+  for (ClientId ranchClient : ranchInstance.clients)
+  {
+    // Prevent broadcasting to self.
+    if (ranchClient == clientId)
+      continue;
+
+    _commandServer.QueueCommand<decltype(notify)>(
+      ranchClient,
+      [notify]()
+      {
+        return notify;
+      });
+  }
+}
+
+void RanchDirector::HandleBoostIncubateEgg(
+  ClientId clientId,
+  const protocol::AcCmdCRBoostIncubateEgg& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  protocol::AcCmdCRBoostIncubateEggOK response{
+    .incubatorSlot = command.incubatorSlot
+  };
+
+  characterRecord.Mutable(
+    [this, &command, &response](data::Character& character)
+    {
+      // find the Item record for Crystal
+      const auto itemRecord = GetServerInstance().GetDataDirector().GetItems().Get(
+        command.itemUid);
+      if (not itemRecord)
+        throw std::runtime_error("Item not found");
+      
+      itemRecord->Immutable([&command, &response](const data::Item& item)
+      {
+        response.item = {
+          .uid = item.uid(),
+          .tid = item.tid(),
+          .count = item.count()};
+      });
+
+      // Find the Egg record through the incubater slot.
+      const auto eggRecord = GetServerInstance().GetDataDirector().GetEggs().Get(
+        character.eggs());
+      if (not eggRecord)
+        throw std::runtime_error("Egg not found");
+
+      for (const auto& egg : *eggRecord)
+      {
+
+        egg.Mutable([&command, &response](data::Egg& eggData)
+          {
+            if (eggData.incubatorSlot() == command.incubatorSlot)
+            {
+              // retrieve egg template for the hatchDuration
+              const registry::Egg eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
+                eggData.itemTid());
+
+              eggData.boostsUsed() += 1;
+              response.egg = {
+                .uid = eggData.uid(),
+                .itemTid = eggData.itemTid(),
+                .timeRemaining = static_cast<uint32_t>(
+                  std::chrono::duration_cast<std::chrono::seconds>(
+                                    eggTemplate.hatchDuration -
+                                    (std::chrono::system_clock::now() - eggData.incubatedAt()) -
+                                    (eggData.boostsUsed() * std::chrono::hours(8))).count()),
+                .boost = 400000,
+                .totalHatchingTime = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
+                                    eggTemplate.hatchDuration).count())};
+            };
+          });
+      };
+    });
+    _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+};
+
+void RanchDirector::HandleBoostIncubateInfoList(
+  ClientId clientId,
+  const protocol::AcCmdCRBoostIncubateInfoList& command)
+{
+  protocol::AcCmdCRBoostIncubateInfoListOK response{
+    .member1 = 0,
+    .count = 0
+  // for loop with a vector
+  };
+  
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
 
 void RanchDirector::HandleRequestPetBirth(
   ClientId clientId,
-  const protocol::RanchCommandRequestPetBirth& command)
+  const protocol::AcCmdCRRequestPetBirth& command)
 {
-}
+  // TODO: implement pity based on egg level provided by the client
+
+  const auto& clientContext = GetClientContext(clientId);
+
+  protocol::AcCmdCRRequestPetBirthOK response{
+    .petBirthInfo = {
+      .petInfo = {
+        .characterUid = clientContext.characterUid,}
+    },
+  };
+
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+  characterRecord.Mutable(
+    [this, &command, &response](data::Character& character)
+    {
+      auto hatchingEggUid{data::InvalidUid};
+      auto hatchingEggItemUid{data::InvalidUid};
+      auto hatchingEggTid{data::InvalidTid};
+
+      const auto eggRecord = GetServerInstance().GetDataDirector().GetEggs().Get(
+        character.eggs());
+      if (not eggRecord)
+        throw std::runtime_error("Egg records not available");
+
+      // Find the egg that has hatched.
+      for (const auto& egg : *eggRecord)
+      {
+        egg.Immutable(
+          [&command, &response, &hatchingEggTid, &hatchingEggItemUid, &hatchingEggUid](
+            const data::Egg& eggData)
+          {
+            if (eggData.incubatorSlot() == command.incubatorSlot)
+            {
+              hatchingEggUid = eggData.uid();
+              hatchingEggTid = eggData.itemTid();
+              hatchingEggItemUid = eggData.itemUid();
+
+              response.petBirthInfo.petInfo.itemUid = hatchingEggUid;
+            };
+          });
+      }
+
+      // Remove the hatched egg from the incubator and from the character's inventory.
+      if (auto it = std::ranges::find(character.eggs(), hatchingEggUid);
+        it != character.eggs().end())
+      {
+        character.eggs().erase(it);
+      }
+
+      if (auto it = std::ranges::find(character.items(), hatchingEggUid);
+        it != character.items().end())
+      {
+        character.items().erase(it);
+      }
+
+      const registry::Egg eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
+        hatchingEggTid);
+
+      const auto& hatchablePets = eggTemplate.hatchablePets;
+      std::uniform_int_distribution<size_t> dist(0, hatchablePets.size() - 1);
+      const data::Tid petItemTid = hatchablePets[dist(_randomDevice)];
+
+      const registry::Pet petTemplate = registry::PetRegistry::GetInstance().GetPet(
+        petItemTid);
+      const auto petId = petTemplate.petId;
+
+      bool petAlreadyExists = false;
+
+      const auto petRecords = GetServerInstance().GetDataDirector().GetPets().Get(
+        character.pets());
+
+      // Figure out whether the character already has this pet
+      for (const auto& petRecord : *petRecords)
+      {
+        petRecord.Immutable([&petAlreadyExists, petId](const data::Pet& pet)
+        {
+          petAlreadyExists = (pet.petId() == petId);
+        });
+
+        if (petAlreadyExists == true)
+          break;
+      }
+
+      if (petAlreadyExists)
+      {
+        // todo: stacking
+        const auto pityItem = GetServerInstance().GetDataDirector().CreateItem();
+        pityItem.Mutable([&character, &response](data::Item& item)
+        {
+          item.tid() = 46019;
+          item.count() = 1;
+          // write Pity item into response
+          response.petBirthInfo.eggItem = {
+            .uid = item.uid(),
+            .tid = item.tid(),
+            .count = item.count()};
+          // write the item into the character items
+          character.items().emplace_back(item.uid());
+        });
+        return;
+      }
+
+      auto petUid = data::InvalidUid;
+      auto petItemUid = data::InvalidUid;
+
+      // Create the pet and the associated item.
+      const auto petItem = GetServerInstance().GetDataDirector().CreateItem();
+      const auto bornPet = GetServerInstance().GetDataDirector().CreatePet();
+
+      petItem.Mutable([&response, &petItemUid, petId, petTemplate](data::Item& item)
+      {
+        item.tid() = petTemplate.petTid;
+        item.count() = 1;
+        // Fill the response with the born item information.
+        response.petBirthInfo.eggItem = {
+          .uid = item.uid(),
+          .tid = item.tid(),
+          .count = item.count()};
+        petItemUid = item.uid();
+      });
+
+      bornPet.Mutable([&response, &character, &petUid, &petItemUid, petId](data::Pet& pet)
+      {
+        pet.itemUid() = petItemUid;
+        pet.name() = "";
+        pet.petId() = petId;
+    
+        // Fill the response with the born pet.
+        response.petBirthInfo.petInfo.pet = {
+          .petId = pet.petId(),
+          .name = pet.name()};
+        petUid = pet.uid();
+      });
+
+      character.items().emplace_back(petItemUid);
+      character.pets().emplace_back(petUid);
+    });
+
+  protocol::AcCmdCRRequestPetBirthNotify notify{
+    .petBirthInfo = response.petBirthInfo
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+  
+  const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+  // Broadcast the egg hatching to all ranch clients.
+  for (ClientId ranchClient : ranchInstance.clients)
+  {
+    // Prevent broadcasting to self.
+    if (ranchClient == clientId)
+      continue;
+
+    _commandServer.QueueCommand<decltype(notify)>(
+      ranchClient,
+      [notify]()
+      {
+        return notify;
+      });
+  }
+};
 
 void RanchDirector::BroadcastEquipmentUpdate(ClientId clientId)
 {
@@ -1990,7 +2383,7 @@ void RanchDirector::HandleHousingBuild(
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  // todo catalogue housing uids and handle transaction
+  // todo: catalogue housing uids and handle transaction
 
   protocol::AcCmdCRHousingBuildOK response{
     .member1 = clientContext.characterUid,
@@ -2012,14 +2405,12 @@ void RanchDirector::HandleHousingBuild(
   {
     housing.housingId = housingId;
     housingUid = housing.uid();
-    if (housingId == 52) // housingId of the double incubator
-    {
+
+    constexpr int16_t HousingDoubleIncubatorId = 52;
+    if (housingId == HousingDoubleIncubatorId)
       housing.durability = 10;
-    }
     else
-    {
       housing.expiresAt = std::chrono::system_clock::now() + std::chrono::days(20);
-    }
   });
 
   characterRecord.Mutable([&housingUid](data::Character& character)
@@ -2031,7 +2422,7 @@ void RanchDirector::HandleHousingBuild(
 
   protocol::AcCmdCRHousingBuildNotify notify{
     .member1 = 1,
-    .housingTid = command.housingTid,
+    .housingId = command.housingTid,
   };
 
   // Broadcast to all the ranch clients.
@@ -2059,28 +2450,34 @@ void RanchDirector::HandleHousingRepair(
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
   
-  uint16_t housingTid;
-  const auto housingRecord = GetServerInstance().GetDataDirector().GetHousing(command.housingUid);
-  housingRecord.Mutable([&housingTid](data::Housing& housing){
+  uint16_t housingId;
+  const auto housingRecord = GetServerInstance().GetDataDirector().GetHousing(
+    command.housingUid);
+
+  housingRecord.Mutable([&housingId](data::Housing& housing){
     housing.expiresAt = std::chrono::system_clock::now() + std::chrono::days(20);
-    housingTid = housing.housingId();
+    housingId = housing.housingId();
   });
+
+  // todo: implement transaction for the repair
 
   protocol::AcCmdCRHousingRepairOK response{
     .housingUid = command.housingUid,
     .member2 = 1,
   };
+
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
     {
       return response;
     });
+
   assert(clientContext.visitingRancherUid == clientContext.characterUid);
 
   protocol::AcCmdCRHousingBuildNotify notify{
     .member1 = 1,
-    .housingTid = housingTid,
+    .housingId = housingId,
   };
 
   // Broadcast to all the ranch clients.
@@ -2149,18 +2546,12 @@ void RanchDirector::HandleRequestLeagueTeamList(
     });
 }
 
-//! Recover horse stamina with carrots
-//! 1 carrot = 1 stamina
 void RanchDirector::HandleRecoverMount(
   ClientId clientId,
   const protocol::AcCmdCRRecoverMount command)
 {
-  spdlog::debug("HandleRecoverMount - horseUid: {}", command.horseUid);
-
-  protocol::AcCmdCRRecoverMountOK response
-  {
-    .horseUid = command.horseUid
-  };
+  protocol::AcCmdCRRecoverMountOK response{
+    .horseUid = command.horseUid};
 
   bool horseValid = false;
   const auto& characterUid = GetClientContext(clientId).characterUid;
@@ -2171,7 +2562,9 @@ void RanchDirector::HandleRecoverMount(
     const bool ownsHorse = character.mountUid() == response.horseUid ||
       std::ranges::contains(character.horses(), response.horseUid);
 
-    const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(response.horseUid);
+    const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(
+      response.horseUid);
+
     // Check if the character owns the horse or exists in the data director
     if (not ownsHorse || character.carrots() <= 0 || not horseRecord.IsAvailable())
     {
@@ -2233,6 +2626,8 @@ void RanchDirector::HandleMountFamilyTree(
   ClientId clientId,
   const protocol::RanchCommandMountFamilyTree& command)
 {
+  // todo: implement horse family tree
+
   protocol::RanchCommandMountFamilyTreeOK response{
     .ancestors = {
       protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
@@ -2280,4 +2675,5 @@ void RanchDirector::HandleMountFamilyTree(
       return response;
     });
 }
+
 } // namespace server
