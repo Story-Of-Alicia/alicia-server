@@ -331,8 +331,13 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
             "Invalid command arguments.",
             "(//give item <count> <tid>)"};
 
-        const uint32_t itemCount = std::atoi(arguments[1].c_str());
+        const int32_t itemCount = std::atoi(arguments[1].c_str());
         const data::Uid createdItemTid = std::atoi(arguments[2].c_str());
+
+        if (itemCount < 1)
+        {
+          return {"Invalid item count"};
+        }
 
         // Create the item.
         auto createdItemUid = data::InvalidUid;
@@ -382,10 +387,15 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
             "(//give preset <all|feed|clean|play|cure|construct> [<count>])"};
 
         const auto selectedPreset = arguments[1];
-        uint32_t itemCount = 1;
+        int32_t itemCount = 1;
         // Check if <count> is supplied
         if (arguments.size() > 2)
           itemCount = std::atoi(arguments[2].c_str());
+
+        if (itemCount < 1)
+        {
+          return {"Invalid item count"};
+        }
 
         std::map<std::string, std::vector<data::Tid>> presets
         {
