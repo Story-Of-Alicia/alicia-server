@@ -430,30 +430,14 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
             createdItemUid = item.uid();
           });
 
-          // Create the stored item.
-          auto giftUid = data::InvalidUid;
-          const auto storedItem = _serverInstance.GetDataDirector().CreateStorageItem();
-          storedItem.Mutable([this, &giftUid, createdItemUid, itemCount, selectedItemTid](data::StorageItem& storedItem)
-          {
-            storedItem.items().emplace_back(createdItemUid);
-            storedItem.sender() = "System";
-            storedItem.message() = std::format("{}x Item '{}'", itemCount, selectedItemTid);
-            storedItem.created() = data::Clock::now();
-
-            giftUid = storedItem.uid();
-          });
-
           // Add the stored item as a gift.
-          characterRecord.Mutable([giftUid](data::Character& character)
+          characterRecord.Mutable([createdItemUid](data::Character& character)
           {
-            character.gifts().emplace_back(giftUid);
+            character.items().emplace_back(createdItemUid);
           });
         }
 
-        _serverInstance.GetRanchDirector().SendStorageNotification(
-          characterUid, protocol::AcCmdCRRequestStorage::Category::Gifts);
-
-        return {"Preset gifted. Check your inventory!"};
+        return {"Preset added to character inventory. Please restart your game to apply changes!"};
       }
 
       return {"Unknown sub-literal"};
