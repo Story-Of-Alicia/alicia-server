@@ -62,6 +62,11 @@ public:
     data::Uid rancherUid,
     data::Uid horseUid);
 
+  //! New item in gift storage popup for a character registered in ranch director
+  void SendStorageNotification(
+    data::Uid characterUid,
+    protocol::AcCmdCRRequestStorage::Category category);
+
   ServerInstance& GetServerInstance();
   Config::Ranch& GetConfig();
 

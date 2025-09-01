@@ -318,7 +318,7 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
       if (arguments.size() < 1)
         return {
           "Invalid command sub-literal.",
-          " (//give <item/horse>)"};
+          " (//give <item/horse/preset>)"};
 
       const auto& subLiteral = arguments[0];
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
@@ -365,6 +365,9 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
         {
           character.gifts().emplace_back(giftUid);
         });
+
+        _serverInstance.GetRanchDirector().SendStorageNotification(
+          characterUid, protocol::AcCmdCRRequestStorage::Category::Gifts);
 
         return {
           "Item stored in your gift storage.",
@@ -446,6 +449,9 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
             character.gifts().emplace_back(giftUid);
           });
         }
+
+        _serverInstance.GetRanchDirector().SendStorageNotification(
+          characterUid, protocol::AcCmdCRRequestStorage::Category::Gifts);
 
         return {"Preset gifted. Check your inventory!"};
       }

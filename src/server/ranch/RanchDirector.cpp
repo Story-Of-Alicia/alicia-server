@@ -413,6 +413,38 @@ void RanchDirector::BroadcastUpdateMountInfoNotify(
   }
 }
 
+void RanchDirector::SendStorageNotification(
+  data::Uid characterUid,
+  protocol::AcCmdCRRequestStorage::Category category)
+{
+  ClientId clientId = -1;
+  for (auto& clientContext : _clients)
+  {
+    if (clientContext.second.characterUid == characterUid
+      && clientContext.second.isAuthorized)
+      clientId = clientContext.first;
+  }
+
+  if (clientId == -1)
+  {
+    spdlog::error("Tried to send storage notification to unknown client {} with character uid {}",
+      clientId, characterUid);
+    return;
+  }
+
+  // Setting pageCountAndNotification to 0b1 and category is enough
+  protocol::AcCmdCRRequestStorageOK response{
+    .category = category,
+    .pageCountAndNotification = 0b1};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
 ServerInstance& RanchDirector::GetServerInstance()
 {
   return _serverInstance;
