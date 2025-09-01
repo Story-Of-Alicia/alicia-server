@@ -430,7 +430,7 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
             createdItemUid = item.uid();
           });
 
-          // Add the stored item as a gift.
+          // Add the item directly to character's inventory.
           characterRecord.Mutable([createdItemUid](data::Character& character)
           {
             character.items().emplace_back(createdItemUid);
