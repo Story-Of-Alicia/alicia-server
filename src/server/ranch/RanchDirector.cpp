@@ -2701,7 +2701,6 @@ void RanchDirector::HandleCheckStorageItem(
 
   if (not characterHasStoredItem)
   {
-    // TODO: silent fail? throw some warning?
     spdlog::warn("Character {} tried to check a stored item {} they do not have",
       characterUid, command.storedItemUid);
     return;
