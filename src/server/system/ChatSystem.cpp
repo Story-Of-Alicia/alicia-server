@@ -410,9 +410,12 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
         if (selectedPreset == "all")
         {
           // Add all items from the entire preset range
-          for (const auto preset : presets)
+          for (const auto& preset : presets | std::views::values)
           {
-            selectedItems.append_range(preset.second);
+            selectedItems.insert(
+              selectedItems.end(),
+              preset.begin(),
+              preset.end());
           }
         }
         else if (presets.contains(selectedPreset))
