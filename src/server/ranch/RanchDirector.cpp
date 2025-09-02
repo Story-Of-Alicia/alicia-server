@@ -303,6 +303,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleLeaveGuild(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRCheckStorageItem>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleCheckStorageItem(clientId, command);
+    });  
 }
 
 void RanchDirector::Initialize()
@@ -2674,6 +2680,37 @@ void RanchDirector::HandleMountFamilyTree(
     {
       return response;
     });
+}
+
+void RanchDirector::HandleCheckStorageItem(
+  ClientId clientId,
+  const protocol::AcCmdCRCheckStorageItem command)
+{
+  // No need to respond, only indicate to the server that
+  // a stored item has been viewed
+  const auto& characterUid = GetClientContext(clientId).characterUid;
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(characterUid);
+
+  bool characterHasStoredItem = false;
+  characterRecord.Immutable([&characterHasStoredItem, command](const data::Character& character)
+  {
+    characterHasStoredItem = 
+      std::ranges::contains(character.purchases(), command.storedItemUid) ||
+      std::ranges::contains(character.gifts(), command.storedItemUid);
+  });
+
+  if (not characterHasStoredItem)
+  {
+    spdlog::warn("Character {} tried to check a stored item {} they do not have",
+      characterUid, command.storedItemUid);
+    return;
+  }
+
+  const auto& storedItemRecord = GetServerInstance().GetDataDirector().GetStorageItem(command.storedItemUid);
+  storedItemRecord.Mutable([](data::StorageItem& storedItem)
+  {
+    storedItem.checked() = true;
+  });
 }
 
 } // namespace server

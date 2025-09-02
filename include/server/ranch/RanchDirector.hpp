@@ -276,6 +276,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRRecoverMount command);
 
+  void HandleCheckStorageItem(
+    ClientId clientId,
+    const protocol::AcCmdCRCheckStorageItem command);
+
   //!
   ServerInstance& _serverInstance;
   //!

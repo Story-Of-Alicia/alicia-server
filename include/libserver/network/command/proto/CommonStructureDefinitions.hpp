@@ -52,9 +52,15 @@ struct Item
 
 struct StoredItem
 {
+  enum class Status : uint8_t {
+    Unread = 0,
+    Expired = 1,
+    Read = 2
+  };
+
   uint32_t uid{};
   uint32_t val1{};
-  uint8_t val2{};
+  Status status{};
   // hide sender and message.
   uint32_t val3{};
   uint32_t val4{};
