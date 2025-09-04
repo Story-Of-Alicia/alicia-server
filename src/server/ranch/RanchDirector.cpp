@@ -466,6 +466,62 @@ void RanchDirector::SendStorageNotification(
     });
 }
 
+void RanchDirector::BroadcastChangeAgeNotify(
+  data::Uid characterUid,
+  const data::Uid rancherUid,
+  protocol::AcCmdCRChangeAge::Age age
+)
+{
+  protocol::AcCmdRCChangeAgeNotify notify{
+    .characterUid = characterUid,
+    .age = age
+  };
+
+  for (const ClientId& ranchClientId : _ranches[rancherUid].clients)
+  {
+    const auto& ranchClientContext = GetClientContext(ranchClientId);
+
+    // Prevent broadcast to self.
+    if (ranchClientContext.characterUid == characterUid)
+      continue;
+
+    _commandServer.QueueCommand<decltype(notify)>(
+      ranchClientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
+}
+
+void RanchDirector::BroadcastHideAgeNotify(
+  data::Uid characterUid,
+  const data::Uid rancherUid,
+  protocol::AcCmdCRHideAge::Option option
+)
+{
+  protocol::AcCmdRCHideAgeNotify notify{
+    .characterUid = characterUid,
+    .option = option
+  };
+
+  for (const ClientId& ranchClientId : _ranches[rancherUid].clients)
+  {
+    const auto& ranchClientContext = GetClientContext(ranchClientId);
+
+    // Prevent broadcast to self.
+    if (ranchClientContext.characterUid == characterUid)
+      continue;
+
+    _commandServer.QueueCommand<decltype(notify)>(
+      ranchClientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
+}
+
 ServerInstance& RanchDirector::GetServerInstance()
 {
   return _serverInstance;
@@ -2787,6 +2843,12 @@ void RanchDirector::HandleChangeAge(
     {
       return response;
     });
+
+  BroadcastChangeAgeNotify(
+    clientContext.characterUid,
+    clientContext.visitingRancherUid,
+    command.age
+  );
 }
 
 void RanchDirector::HandleHideAge(
@@ -2809,6 +2871,12 @@ void RanchDirector::HandleHideAge(
     {
       return response;
     });
+
+  BroadcastHideAgeNotify(
+    clientContext.characterUid,
+    clientContext.visitingRancherUid,
+    command.option
+  );
 }
 
 } // namespace server

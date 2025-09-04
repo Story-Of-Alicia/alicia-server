@@ -2174,6 +2174,21 @@ void AcCmdCRChangeAgeOK::Write(
   stream.Write(command.age);
 }
 
+void AcCmdRCChangeAgeNotify::Read(
+  AcCmdRCChangeAgeNotify& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCChangeAgeNotify::Write(
+  const AcCmdRCChangeAgeNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.age);
+}
+
 void AcCmdCRHideAge::Read(
   AcCmdCRHideAge& command,
   SourceStream& stream)
@@ -2213,6 +2228,21 @@ void AcCmdCRHideAgeOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.option);
+}
+
+void AcCmdRCHideAgeNotify::Read(
+  AcCmdRCHideAgeNotify& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCHideAgeNotify::Write(
+  const AcCmdRCHideAgeNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.option);
 }
 
 } // namespace server::protocol

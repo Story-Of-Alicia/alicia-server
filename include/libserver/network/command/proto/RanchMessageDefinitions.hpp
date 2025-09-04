@@ -3450,6 +3450,31 @@ struct AcCmdCRChangeAgeOK
     SourceStream& stream);
 };
 
+struct AcCmdRCChangeAgeNotify
+{
+  uint32_t characterUid;
+  protocol::AcCmdCRChangeAge::Age age;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCChangeAgeNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCChangeAgeNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCChangeAgeNotify& command,
+    SourceStream& stream);
+};
+
 struct AcCmdCRHideAge
 {
   enum class Option : uint8_t {
@@ -3520,6 +3545,31 @@ struct AcCmdCRHideAgeOK
   //! @param stream Source stream.
   static void Read(
     AcCmdCRHideAgeOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCHideAgeNotify
+{
+  uint32_t characterUid;
+  protocol::AcCmdCRHideAge::Option option;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCHideAgeNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCHideAgeNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCHideAgeNotify& command,
     SourceStream& stream);
 };
 
