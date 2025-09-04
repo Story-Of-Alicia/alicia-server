@@ -3397,6 +3397,28 @@ struct AcCmdCRCheckStorageItem
     SourceStream& stream);
 };
 
+struct AcCmdCRChangeAgeCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeAgeCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeAgeCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeAgeCancel& command,
+    SourceStream& stream);
+};
+
 struct AcCmdCRChangeAge
 {
   enum class Age : uint8_t {

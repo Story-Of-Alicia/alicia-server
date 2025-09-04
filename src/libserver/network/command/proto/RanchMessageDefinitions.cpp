@@ -2160,6 +2160,19 @@ void AcCmdCRChangeAge::Write(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRChangeAgeCancel::Read(
+  AcCmdCRChangeAgeCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRChangeAgeCancel::Write(
+  const AcCmdCRChangeAgeCancel& command,
+  SinkStream& stream)
+{
+}
+
 void AcCmdCRChangeAgeOK::Read(
   AcCmdCRChangeAgeOK& command,
   SourceStream& stream)
