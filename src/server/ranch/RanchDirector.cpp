@@ -311,7 +311,19 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& command)
     {
       HandleCheckStorageItem(clientId, command);
-    });  
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRChangeAge>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleChangeAge(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRHideAge>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleHideAge(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -656,8 +668,8 @@ void RanchDirector::HandleEnterRanch(
         : character.parts.modelId() == 10
           ? RanchCharacter::ProfileIcon::Boy
           : RanchCharacter::ProfileIcon::Girl;
-      protocolCharacter.age = 19;
-      protocolCharacter.hideGenderAndAge = 0;
+      protocolCharacter.age = character.age();
+      protocolCharacter.hideGenderAndAge = character.hideGenderAndAge();
 
       protocolCharacter.introduction = character.introduction();
 
@@ -2753,6 +2765,50 @@ void RanchDirector::HandleCheckStorageItem(
   {
     storedItem.checked() = true;
   });
+}
+
+void RanchDirector::HandleChangeAge(
+  ClientId clientId,
+  const protocol::AcCmdCRChangeAge command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable([age = command.age](data::Character& character)
+  {
+    character.age() = static_cast<uint8_t>(age);
+  });
+
+  protocol::AcCmdCRChangeAgeOK response {
+    .age = command.age
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void RanchDirector::HandleHideAge(
+  ClientId clientId,
+  const protocol::AcCmdCRHideAge command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable([option = command.option](data::Character& character)
+  {
+    character.hideGenderAndAge() = option == protocol::AcCmdCRHideAge::Option::Hidden;
+  });
+
+  protocol::AcCmdCRHideAgeOK response {
+    .option = command.option
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 } // namespace server

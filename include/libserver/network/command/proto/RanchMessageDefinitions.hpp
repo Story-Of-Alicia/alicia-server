@@ -3397,6 +3397,132 @@ struct AcCmdCRCheckStorageItem
     SourceStream& stream);
 };
 
+struct AcCmdCRChangeAge
+{
+  enum class Age : uint8_t {
+    ElementarySchoolStudent = 12,
+    MiddleSchoolStudent = 13,
+    HighSchoolStudent = 16,
+    Adult = 19
+  } age;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeAge;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeAge& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeAge& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRChangeAgeOK
+{
+  protocol::AcCmdCRChangeAge::Age age; // age? status?
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeAgeOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeAgeOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeAgeOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRHideAge
+{
+  enum class Option : uint8_t {
+    Shown = 0,
+    Hidden = 1
+  } option;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRHideAge;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRHideAge& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRHideAge& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRHideAgeCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRHideAgeCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRHideAgeCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRHideAgeCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRHideAgeOK
+{
+  protocol::AcCmdCRHideAge::Option option;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRHideAgeOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRHideAgeOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRHideAgeOK& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RANCH_MESSAGE_DEFINES_HPP

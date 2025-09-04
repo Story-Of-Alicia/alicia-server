@@ -285,6 +285,14 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRCheckStorageItem command);
 
+  void HandleChangeAge(
+    ClientId clientId,
+    const protocol::AcCmdCRChangeAge command);
+
+  void HandleHideAge(
+    ClientId clientId,
+    const protocol::AcCmdCRHideAge command);
+
   //!
   ServerInstance& _serverInstance;
   //!

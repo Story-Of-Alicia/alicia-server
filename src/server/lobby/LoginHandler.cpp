@@ -378,8 +378,8 @@ void LoginHandler::QueueUserLoginAccepted(
       response.carrots = character.carrots();
       response.role = std::bit_cast<protocol::LobbyCommandLoginOK::Role>(
         character.role());
-      response.age = 18;
-      response.hideAge = false;
+      response.age = character.age();
+      response.hideGenderAndAge = character.hideGenderAndAge();
 
       response.bitfield = protocol::LobbyCommandLoginOK::HasPlayerBefore;
 
