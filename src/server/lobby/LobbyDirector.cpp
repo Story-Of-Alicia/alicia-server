@@ -566,10 +566,7 @@ void LobbyDirector::HandleRequestPersonalInfo(
 
   characterRecord.Immutable([this, &response](const data::Character& character)
   {
-    const auto& characterGuildUid = character.guildUid();
-    const auto& guildRecords = GetServerInstance().GetDataDirector().GetGuilds();
-    
-    const auto& guildRecord = GetServerInstance().GetDataDirector().GetGuild(character.uid());
+    const auto& guildRecord = GetServerInstance().GetDataDirector().GetGuild(character.guildUid());
     if (guildRecord.IsAvailable())
     {
       guildRecord.Immutable([&response](const data::Guild& guild)
