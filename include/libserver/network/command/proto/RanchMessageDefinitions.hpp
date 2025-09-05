@@ -108,11 +108,8 @@ struct AcCmdCREnterRanchOK
   //! Incubator logic:
   //! icubator slots from 0 to 3, 0 = locked, 1 = single, 2 = double, 3 = triple
   //! incubator use count should count down to 0, if broken transform into single incubator
-
-  //! TODO: implement the Logic in Ranchdirector for RanchEnter & HousingBuild
-  //! Add the fields to character save 
   uint32_t incubatorSlots{2};
-  uint32_t incubatorUseCount{10};
+  uint32_t incubatorUseCount{};
 
   std::array<Egg, 3> incubator;
 

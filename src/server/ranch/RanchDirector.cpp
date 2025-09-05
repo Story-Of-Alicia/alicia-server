@@ -39,6 +39,9 @@ constexpr size_t MaxRanchHorseCount = 10;
 constexpr size_t MaxRanchCharacterCount = 20;
 constexpr size_t MaxRanchHousingCount = 13;
 
+constexpr int16_t DoubleIncubatorId = 52;
+constexpr int16_t SingleIncubatorId = 51;
+
 } // namespace anon
 
 RanchDirector::RanchDirector(ServerInstance& serverInstance)
@@ -419,6 +422,38 @@ void RanchDirector::BroadcastUpdateMountInfoNotify(
   }
 }
 
+void RanchDirector::SendStorageNotification(
+  data::Uid characterUid,
+  protocol::AcCmdCRRequestStorage::Category category)
+{
+  ClientId clientId = -1;
+  for (auto& clientContext : _clients)
+  {
+    if (clientContext.second.characterUid == characterUid
+      && clientContext.second.isAuthorized)
+      clientId = clientContext.first;
+  }
+
+  if (clientId == -1)
+  {
+    spdlog::error("Tried to send storage notification to unknown client {} with character uid {}",
+      clientId, characterUid);
+    return;
+  }
+
+  // Setting pageCountAndNotification to 0b1 and category is enough
+  protocol::AcCmdCRRequestStorageOK response{
+    .category = category,
+    .pageCountAndNotification = 0b1};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
 ServerInstance& RanchDirector::GetServerInstance()
 {
   return _serverInstance;
@@ -536,9 +571,14 @@ void RanchDirector::HandleEnterRanch(
         for (const auto& housingRecord : *housingRecords)
         {
           housingRecord.Immutable([&response](const data::Housing& housing){
-            constexpr uint16_t IncubatorHousingId = 52;
+
             // Certain types of housing have durability instead of expiration time.
-            const bool hasDurability = (housing.housingId() == IncubatorHousingId) ;
+            const bool hasDurability = (housing.housingId() == SingleIncubatorId || housing.housingId() == DoubleIncubatorId);
+            if (hasDurability) 
+            {
+              response.incubatorUseCount = housing.durability();
+              response.incubatorSlots = housing.housingId() == DoubleIncubatorId ? 2 : 1;
+            }
 
             protocol::BuildProtocolHousing(response.housing.emplace_back(), housing, hasDurability);
           });
@@ -2035,6 +2075,8 @@ void RanchDirector::HandleRequestPetBirth(
           });
       }
 
+      // TODO: reduce the incubator durability (if it is a double incubator)
+
       // Remove the hatched egg from the incubator and from the character's inventory.
       if (auto it = std::ranges::find(character.eggs(), hatchingEggUid);
         it != character.eggs().end())
@@ -2406,14 +2448,14 @@ void RanchDirector::HandleHousingBuild(
 
   auto housingUid = data::InvalidUid;
 
+  // TODO: add a duplication check for double incubator, since rebuilding triggers HousingBuild and not HousingRepair
   const auto housingRecord = GetServerInstance().GetDataDirector().CreateHousing();
   housingRecord.Mutable([housingId = command.housingTid, &housingUid](data::Housing& housing)
   {
     housing.housingId = housingId;
     housingUid = housing.uid();
 
-    constexpr int16_t HousingDoubleIncubatorId = 52;
-    if (housingId == HousingDoubleIncubatorId)
+    if (housingId == DoubleIncubatorId)
       housing.durability = 10;
     else
       housing.expiresAt = std::chrono::system_clock::now() + std::chrono::days(20);

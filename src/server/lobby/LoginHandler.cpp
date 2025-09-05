@@ -240,6 +240,7 @@ void LoginHandler::HandleUserCreateCharacter(
         // Can be found in the `MountPartInfo` table.
         horse.tid() = 20002;
         horse.dateOfBirth() = data::Clock::now();
+        horse.mountCondition.stamina = 3500;
 
         HorseRegistry::Get().BuildRandomHorse(
           horse.parts,

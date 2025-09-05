@@ -221,20 +221,6 @@ struct Character
     dao::Field<uint32_t> emblemId{0u};
   } appearance{};
 
-  struct MountCondition
-  {
-    dao::Field<uint32_t> stamina{};
-    dao::Field<uint32_t> charm{};
-    dao::Field<uint32_t> friendliness{};
-    dao::Field<uint32_t> injury{};
-    dao::Field<uint32_t> plenitude{};
-    dao::Field<uint32_t> bodyDirtiness{};
-    dao::Field<uint32_t> maneDirtiness{};
-    dao::Field<uint32_t> tailDirtiness{};
-    dao::Field<uint32_t> attachment{};
-    dao::Field<uint32_t> boredom{};
-  };
-
   dao::Field<Uid> guildUid{InvalidUid};
   
   dao::Field<std::vector<Uid>> gifts{};

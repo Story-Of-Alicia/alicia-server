@@ -51,7 +51,7 @@ std::vector<std::string> CommandManager::HandleCommand(
   catch (const std::exception& x)
   {
     spdlog::error("Exception executing command handler for '{}': {}", literal, x.what());
-    return {"Sever error, contact administrators."};
+    return {"Server error, contact administrators."};
   }
 }
 
@@ -318,7 +318,7 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
       if (arguments.size() < 1)
         return {
           "Invalid command sub-literal.",
-          " (//give <item/horse>)"};
+          " (//give <item/horse/preset>)"};
 
       const auto& subLiteral = arguments[0];
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
@@ -331,8 +331,13 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
             "Invalid command arguments.",
             "(//give item <count> <tid>)"};
 
-        const uint32_t itemCount = std::atoi(arguments[1].c_str());
+        const int32_t itemCount = std::atoi(arguments[1].c_str());
         const data::Uid createdItemTid = std::atoi(arguments[2].c_str());
+
+        if (itemCount < 1)
+        {
+          return {"Invalid item count"};
+        }
 
         // Create the item.
         auto createdItemUid = data::InvalidUid;
@@ -349,11 +354,11 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
         // Create the stored item.
         auto giftUid = data::InvalidUid;
         const auto storedItem = _serverInstance.GetDataDirector().CreateStorageItem();
-        storedItem.Mutable([this, &giftUid, createdItemUid, createdItemTid](data::StorageItem& storedItem)
+        storedItem.Mutable([this, &giftUid, itemCount, createdItemUid, createdItemTid](data::StorageItem& storedItem)
         {
           storedItem.items().emplace_back(createdItemUid);
           storedItem.sender() = "System";
-          storedItem.message() = std::format("Item '{}'", createdItemTid);
+          storedItem.message() = std::format("{}x Item '{}'", itemCount, createdItemTid);
           storedItem.created() = data::Clock::now();
 
           giftUid = storedItem.uid();
@@ -366,9 +371,86 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
           character.gifts().emplace_back(giftUid);
         });
 
+        _serverInstance.GetRanchDirector().SendStorageNotification(
+          characterUid, protocol::AcCmdCRRequestStorage::Category::Gifts);
+
         return {
           "Item stored in your gift storage.",
           "Check your inventory!"};
+      }
+      else if (subLiteral == "preset")
+      {
+        // //give preset <care> [<count>]
+        if (arguments.size() < 1)
+          return {
+            "Invalid command arguments.",
+            "(//give preset <all|feed|clean|play|cure|construct> [<count>])"};
+
+        const auto selectedPreset = arguments[1];
+        int32_t itemCount = 1;
+        // Check if <count> is supplied
+        if (arguments.size() > 2)
+          itemCount = std::atoi(arguments[2].c_str());
+
+        if (itemCount < 1)
+        {
+          return {"Invalid item count"};
+        }
+
+        std::map<std::string, std::vector<data::Tid>> presets
+        {
+          {"feed", {41001,41002,41003,41004,41005,41006,41007}},
+          {"clean", {40002,41008,41009}},
+          {"play", {42001,42002}},
+          {"cure", {44001,44002,44003,44004,44005,44006}},
+          {"construct", {45001,46018,45004,70002}}
+        };
+
+        std::vector<data::Tid> selectedItems{};
+        if (selectedPreset == "all")
+        {
+          // Add all items from the entire preset range
+          for (const auto& preset : presets | std::views::values)
+          {
+            selectedItems.insert(
+              selectedItems.end(),
+              preset.begin(),
+              preset.end());
+          }
+        }
+        else if (presets.contains(selectedPreset))
+        {
+          // Pick from presets list
+          selectedItems = presets[selectedPreset];
+        }
+        else
+        {
+          // Preset not found
+          return {"Unknown preset"};
+        }
+
+        for (const auto& selectedItemTid : selectedItems)
+        {
+          // Create the item.
+          auto createdItemUid = data::InvalidUid;
+          const auto createdItemRecord = _serverInstance.GetDataDirector().CreateItem();
+          createdItemRecord.Mutable([selectedItemTid, itemCount, &createdItemUid](data::Item& item)
+          {
+            item.tid() = selectedItemTid;
+            item.count() = itemCount;
+            item.expiresAt() = data::Clock::now() + std::chrono::days(10);
+
+            createdItemUid = item.uid();
+          });
+
+          // Add the item directly to character's inventory.
+          characterRecord.Mutable([createdItemUid](data::Character& character)
+          {
+            character.items().emplace_back(createdItemUid);
+          });
+        }
+
+        return {"Preset added to character inventory. Please restart your game to apply changes!"};
       }
 
       return {"Unknown sub-literal"};
