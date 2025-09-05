@@ -118,6 +118,10 @@ private:
     ClientId clientId,
     const protocol::LobbyCommandRequestSpecialEventList& command);
 
+  void BuildPersonalInfoBasicResponse(
+    const data::Character& character,
+    protocol::LobbyCommandPersonalInfo& response);
+
   //!
   void HandleRequestPersonalInfo(
     ClientId clientId,
@@ -163,6 +167,7 @@ private:
   void HandleChangeRanchOption(
     ClientId clientId,
     const protocol::LobbyCommandChangeRanchOption& command);
+
 
   //!
   ServerInstance& _serverInstance;

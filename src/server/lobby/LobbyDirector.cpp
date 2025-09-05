@@ -552,6 +552,25 @@ void LobbyDirector::HandleRequestSpecialEventList(
     });
 }
 
+void LobbyDirector::BuildPersonalInfoBasicResponse(
+  const data::Character& character,
+  protocol::LobbyCommandPersonalInfo& response
+)
+{
+  const auto& guildRecord = GetServerInstance().GetDataDirector().GetGuild(character.guildUid());
+  if (guildRecord.IsAvailable())
+  {
+    guildRecord.Immutable([&response](const data::Guild& guild)
+    {
+      response.basic.guildName = guild.name();
+    });
+  }
+  
+  response.basic.introduction = character.introduction();
+  response.basic.level = character.level();
+  // TODO: implement other stats
+}
+
 void LobbyDirector::HandleRequestPersonalInfo(
   ClientId clientId,
   const protocol::LobbyCommandRequestPersonalInfo& command)
@@ -566,17 +585,24 @@ void LobbyDirector::HandleRequestPersonalInfo(
 
   characterRecord.Immutable([this, &response](const data::Character& character)
   {
-    const auto& guildRecord = GetServerInstance().GetDataDirector().GetGuild(character.guildUid());
-    if (guildRecord.IsAvailable())
+    switch (response.type)
     {
-      guildRecord.Immutable([&response](const data::Guild& guild)
+      case protocol::LobbyCommandRequestPersonalInfo::Type::Basic:
       {
-        response.basic.guildName = guild.name();
-      });
+        BuildPersonalInfoBasicResponse(character, response);
+        break;
+      }
+      case protocol::LobbyCommandRequestPersonalInfo::Type::Courses:
+      {
+        // TODO: implement
+        break;
+      }
+      case protocol::LobbyCommandRequestPersonalInfo::Type::Eight:
+      {
+        // TODO: (what on earth uses "Eight")
+        break;
+      }
     }
-    
-    response.basic.introduction = character.introduction();
-    response.basic.level = character.level();
   });
 
   _commandServer.QueueCommand<decltype(response)>(
