@@ -564,6 +564,24 @@ void LobbyDirector::HandleRequestPersonalInfo(
     .type = command.type,
   };
 
+  characterRecord.Immutable([this, &response](const data::Character& character)
+  {
+    const auto& characterGuildUid = character.guildUid();
+    const auto& guildRecords = GetServerInstance().GetDataDirector().GetGuilds();
+    
+    const auto& guildRecord = GetServerInstance().GetDataDirector().GetGuild(character.uid());
+    if (guildRecord.IsAvailable())
+    {
+      guildRecord.Immutable([&response](const data::Guild& guild)
+      {
+        response.basic.guildName = guild.name();
+      });
+    }
+    
+    response.basic.introduction = character.introduction();
+    response.basic.level = character.level();
+  });
+
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
