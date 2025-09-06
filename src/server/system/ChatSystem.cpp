@@ -381,7 +381,7 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
       else if (subLiteral == "preset")
       {
         // //give preset <care> [<count>]
-        if (arguments.size() < 1)
+        if (arguments.size() < 2)
           return {
             "Invalid command arguments.",
             "(//give preset <all|feed|clean|play|cure|construct> [<count>])"};
