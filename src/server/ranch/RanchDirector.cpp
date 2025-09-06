@@ -311,7 +311,13 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& command)
     {
       HandleCheckStorageItem(clientId, command);
-    });  
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRGuildMemberList>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleGetGuildMemberList(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -1614,11 +1620,13 @@ void RanchDirector::HandleCreateGuild(
     .uid = 0};
 
   const auto guildRecord = GetServerInstance().GetDataDirector().CreateGuild();
-  guildRecord.Mutable([&response, &command](data::Guild& guild)
+  guildRecord.Mutable([&response, command, characterUid = clientContext.characterUid](data::Guild& guild)
   {
-    guild.name = command.name;
-
     response.uid = guild.uid();
+    guild.name = command.name;
+    guild.description = command.description;
+    guild.owner = characterUid;
+    guild.members().emplace_back(characterUid);
   });
 
   characterRecord.Mutable([&response, GuildCost](data::Character& character)
@@ -1662,7 +1670,18 @@ void RanchDirector::HandleRequestGuildInfo(
     {
       response.guildInfo = {
         .uid = guild.uid(),
-        .name = guild.name()};
+        .member1 = 0,
+        .member2 = 0,
+        .member3 = 0,
+        .member4 = 0,
+        .member5 = 0,
+        .name = guild.name(),
+        .description = guild.description(),
+        .inviteCooldown = 1,
+        .member9 = 0,
+        .member10 = 0,
+        .member11 = 0
+      };
     });
   }
 
@@ -2753,6 +2772,86 @@ void RanchDirector::HandleCheckStorageItem(
   {
     storedItem.checked() = true;
   });
+}
+
+void RanchDirector::HandleGetGuildMemberList(
+  ClientId clientId,
+  const protocol::AcCmdCRGuildMemberList& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
+
+  // Get requesting character's guild
+  auto guildUid = data::InvalidUid;
+  characterRecord.Immutable([&guildUid](const data::Character& character)
+  {
+    guildUid = character.guildUid();
+  });
+
+  // Get and confirm guild exists
+  const auto& guildRecord = GetServerInstance().GetDataDirector().GetGuild(guildUid);
+  if (not guildRecord.IsAvailable())
+  {
+    protocol::AcCmdCRGuildMemberListCancel cancelResponse{
+      .status = 2 // ERROR_FAIL_NOGUILD
+    };
+
+    _commandServer.QueueCommand<decltype(cancelResponse)>(
+      clientId,
+      [cancelResponse]()
+      {
+        return cancelResponse;
+      });
+    return;
+  }
+
+  // Build guild member list response
+  protocol::AcCmdCRGuildMemberListOK response{};
+  guildRecord.Immutable([this, &response](const data::Guild& guild)
+  {
+    for (const auto& member : guild.members())
+    {
+      const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacter(member);
+      if (not characterRecord.IsAvailable())
+      {
+        spdlog::warn("Character {} is not available but is guild {} member", 
+          member, guild.uid());
+        continue;
+      }
+
+      characterRecord.Immutable([&guild, &response](const data::Character& character)
+      {
+        protocol::AcCmdCRGuildMemberListOK::MemberInfo memberInfo{
+          .memberUid = character.uid(),
+          .nickname = character.name(),
+          .unk0 = 1,
+          .unk2 = 3
+        };
+
+        if (guild.owner() == character.uid())
+        {
+          memberInfo.guildRole = protocol::AcCmdCRGuildMemberListOK::GuildRole::Owner;
+        }
+        else if (std::ranges::contains(guild.officers(), character.uid()))
+        {
+          memberInfo.guildRole = protocol::AcCmdCRGuildMemberListOK::GuildRole::Officer;
+        }
+        else
+        {
+          memberInfo.guildRole = protocol::AcCmdCRGuildMemberListOK::GuildRole::Member;
+        }
+
+        response.members.emplace_back(memberInfo);
+      });
+    }
+  });
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 } // namespace server

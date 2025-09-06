@@ -175,6 +175,10 @@ struct Guild
 {
   dao::Field<Uid> uid{InvalidUid};
   dao::Field<std::string> name{};
+  dao::Field<std::string> description{};
+  dao::Field<Uid> owner{};
+  dao::Field<std::vector<Uid>> officers{};
+  dao::Field<std::vector<Uid>> members{};
 };
 
 //! User

@@ -1436,7 +1436,7 @@ void RanchCommandRequestGuildInfoOK::GuildInfo::Write(
     .Write(command.member5)
     .Write(command.name)
     .Write(command.description)
-    .Write(command.member8)
+    .Write(command.inviteCooldown)
     .Write(command.member9)
     .Write(command.member10)
     .Write(command.member11);
@@ -2144,6 +2144,55 @@ void AcCmdCRCheckStorageItem::Write(
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRGuildMemberList::Read(
+  AcCmdCRGuildMemberList& command,
+  SourceStream& stream)
+{
+}
+
+void AcCmdCRGuildMemberList::Write(
+  const AcCmdCRGuildMemberList& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRGuildMemberListCancel::Read(
+  AcCmdCRGuildMemberListCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRGuildMemberListCancel::Write(
+  const AcCmdCRGuildMemberListCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.status);
+}
+
+void AcCmdCRGuildMemberListOK::Read(
+  AcCmdCRGuildMemberListOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRGuildMemberListOK::Write(
+  const AcCmdCRGuildMemberListOK& command,
+  SinkStream& stream)
+{
+  stream.Write(static_cast<uint8_t>(command.members.size()));
+  for (const auto& member : command.members)
+  {
+    stream.Write(member.memberUid)
+      .Write(member.nickname)
+      .Write(member.unk0)
+      .Write(member.guildRole)
+      .Write(member.unk2);
+  }
 }
 
 } // namespace server::protocol

@@ -711,6 +711,10 @@ void server::FileDataSource::RetrieveGuild(data::Uid uid, data::Guild& guild)
 
   guild.uid = json["uid"].get<data::Uid>();
   guild.name = json["name"].get<std::string>();
+  guild.description = json["description"].get<std::string>();
+  guild.owner = json["owner"].get<data::Uid>();
+  guild.officers = json["officers"].get<std::vector<data::Uid>>();
+  guild.members = json["members"].get<std::vector<data::Uid>>();
 }
 
 void server::FileDataSource::StoreGuild(data::Uid uid, const data::Guild& guild)
@@ -728,6 +732,10 @@ void server::FileDataSource::StoreGuild(data::Uid uid, const data::Guild& guild)
   nlohmann::json json;
   json["uid"] = guild.uid();
   json["name"] = guild.name();
+  json["description"] = guild.description();
+  json["owner"] = guild.owner();
+  json["officers"] = guild.officers();
+  json["members"] = guild.members();
 
   dataFile << json.dump(2);
 }

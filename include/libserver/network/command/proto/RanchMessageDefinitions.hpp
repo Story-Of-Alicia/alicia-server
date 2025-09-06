@@ -2084,7 +2084,9 @@ struct RanchCommandRequestGuildInfoOK
     uint32_t member5{};
     std::string name{};
     std::string description{};
-    uint32_t member8{};
+    // Cooldown for invite in hours (TOOLTIP_INVITE_COOLTIME).
+    // Essentially behaves like a boolean. 1 = disables the guild invite button
+    uint32_t inviteCooldown{};
     uint32_t member9{};
     uint32_t member10{};
     uint32_t member11{};
@@ -3394,6 +3396,90 @@ struct AcCmdCRCheckStorageItem
   //! @param stream Source stream.
   static void Read(
     AcCmdCRCheckStorageItem& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRGuildMemberList
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRGuildMemberList;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRGuildMemberList& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRGuildMemberList& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRGuildMemberListCancel
+{
+  uint8_t status; // status?
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRGuildMemberListCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRGuildMemberListCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRGuildMemberListCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRGuildMemberListOK
+{
+  enum class GuildRole : uint8_t {
+    Owner = 0,
+    Officer = 100,
+    Member = 200    
+  };
+
+  struct MemberInfo {
+    uint32_t memberUid;
+    std::string nickname;
+    uint32_t unk0;
+    GuildRole guildRole;
+    uint8_t unk2;
+  };
+
+  std::vector<MemberInfo> members{};
+  
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRGuildMemberListOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRGuildMemberListOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRGuildMemberListOK& command,
     SourceStream& stream);
 };
 

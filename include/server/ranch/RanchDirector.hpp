@@ -285,6 +285,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRCheckStorageItem command);
 
+  void HandleGetGuildMemberList(
+    ClientId clientId,
+    const protocol::AcCmdCRGuildMemberList& command);
+
   //!
   ServerInstance& _serverInstance;
   //!
