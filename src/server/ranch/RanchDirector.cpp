@@ -2882,20 +2882,24 @@ void RanchDirector::HandleRequestGuildMatchInfo(
   }
 
   protocol::AcCmdCRRequestGuildMatchInfoOK response{
-    .unk0 = command.guildUid,
-    .unk1 = "yeet",
     .unk2 = 2,
     .unk3 = 3,
     .unk4 = 4,
     .unk5 = 5,
-    .totalWins = 6,
-    .totalLosses = 7,
     .unk8 = 8,
-    .guildRank = 9,
-    .unk10 = 10,
-    .seasonalWins = 11,
-    .seasonalLosses = 12
+    .unk10 = 10
   };
+
+  guildRecord.Immutable([&response](const data::Guild& guild)
+  {
+    response.guildUid = guild.uid();
+    response.name = guild.name(); 
+    response.rank = guild.rank();
+    response.totalWins = guild.totalWins();
+    response.totalLosses = guild.totalLosses();
+    response.seasonalWins = guild.seasonalWins();
+    response.seasonalLosses = guild.seasonalLosses();
+  });
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,

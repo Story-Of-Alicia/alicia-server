@@ -3531,9 +3531,10 @@ struct AcCmdCRRequestGuildMatchInfoCancel
 
 struct AcCmdCRRequestGuildMatchInfoOK
 {
-  // sub_4dadc0
-  uint32_t unk0; // guildUid?
-  std::string unk1;
+  // Guild Uid?
+  uint32_t guildUid;
+  // Guild name?
+  std::string name;
   uint32_t unk2;
   uint32_t unk3;
   uint32_t unk4;
@@ -3541,7 +3542,7 @@ struct AcCmdCRRequestGuildMatchInfoOK
   uint32_t totalWins;
   uint32_t totalLosses;
   uint32_t unk8;
-  uint32_t unk9;
+  uint32_t rank;
   uint32_t unk10;
   uint32_t seasonalWins;
   uint32_t seasonalLosses;

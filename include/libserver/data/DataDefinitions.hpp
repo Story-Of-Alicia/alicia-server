@@ -179,6 +179,12 @@ struct Guild
   dao::Field<Uid> owner{};
   dao::Field<std::vector<Uid>> officers{};
   dao::Field<std::vector<Uid>> members{};
+
+  dao::Field<uint32_t> rank{};
+  dao::Field<uint32_t> totalWins{};
+  dao::Field<uint32_t> totalLosses{};
+  dao::Field<uint32_t> seasonalWins{};
+  dao::Field<uint32_t> seasonalLosses{};
 };
 
 //! User

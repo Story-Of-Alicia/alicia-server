@@ -715,6 +715,12 @@ void server::FileDataSource::RetrieveGuild(data::Uid uid, data::Guild& guild)
   guild.owner = json["owner"].get<data::Uid>();
   guild.officers = json["officers"].get<std::vector<data::Uid>>();
   guild.members = json["members"].get<std::vector<data::Uid>>();
+
+  guild.rank = json["rank"].get<uint32_t>();
+  guild.totalWins = json["totalWins"].get<uint32_t>();
+  guild.totalLosses = json["totalLosses"].get<uint32_t>();
+  guild.seasonalWins = json["seasonalWins"].get<uint32_t>();
+  guild.seasonalLosses = json["seasonalLosses"].get<uint32_t>();
 }
 
 void server::FileDataSource::StoreGuild(data::Uid uid, const data::Guild& guild)
@@ -736,6 +742,12 @@ void server::FileDataSource::StoreGuild(data::Uid uid, const data::Guild& guild)
   json["owner"] = guild.owner();
   json["officers"] = guild.officers();
   json["members"] = guild.members();
+
+  json["rank"] = guild.rank();
+  json["totalWins"] = guild.totalWins();
+  json["totalLosses"] = guild.totalLosses();
+  json["seasonalWins"] = guild.seasonalWins();
+  json["seasonalLosses"] = guild.seasonalLosses();
 
   dataFile << json.dump(2);
 }
