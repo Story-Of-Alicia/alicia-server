@@ -69,7 +69,7 @@ void ServerInstance::Initialize()
   {
     _messengerDirector.Initialize();
     RunDirectorTaskLoop(_messengerDirector);
-    _raceDirector.Terminate();
+    _messengerDirector.Terminate();
   });
 
   // Ranch director
