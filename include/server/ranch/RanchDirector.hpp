@@ -289,6 +289,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRGuildMemberList& command);
 
+  void HandleRequestGuildMatchInfo(
+    ClientId clientId,
+    const protocol::AcCmdCRRequestGuildMatchInfo& command);
+
   //!
   ServerInstance& _serverInstance;
   //!

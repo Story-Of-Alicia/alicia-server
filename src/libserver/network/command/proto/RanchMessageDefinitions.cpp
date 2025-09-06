@@ -2195,5 +2195,58 @@ void AcCmdCRGuildMemberListOK::Write(
   }
 }
 
+void AcCmdCRRequestGuildMatchInfo::Read(
+  AcCmdCRRequestGuildMatchInfo& command,
+  SourceStream& stream)
+{
+  stream.Read(command.guildUid);
+}
+
+void AcCmdCRRequestGuildMatchInfo::Write(
+  const AcCmdCRRequestGuildMatchInfo& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRequestGuildMatchInfoCancel::Read(
+  AcCmdCRRequestGuildMatchInfoCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRequestGuildMatchInfoCancel::Write(
+  const AcCmdCRRequestGuildMatchInfoCancel& command,
+  SinkStream& stream)
+{
+}
+
+void AcCmdCRRequestGuildMatchInfoOK::Read(
+  AcCmdCRRequestGuildMatchInfoOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRequestGuildMatchInfoOK::Write(
+  const AcCmdCRRequestGuildMatchInfoOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.unk2)
+    .Write(command.unk3)
+    .Write(command.unk4)
+    .Write(command.unk5)
+    .Write(command.totalWins)
+    .Write(command.totalLosses)
+    .Write(command.unk8)
+    .Write(command.guildRank)
+    .Write(command.unk10)
+    .Write(command.seasonalWins)
+    .Write(command.seasonalLosses);
+}
+
 } // namespace server::protocol
 

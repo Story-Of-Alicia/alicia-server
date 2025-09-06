@@ -3483,6 +3483,89 @@ struct AcCmdCRGuildMemberListOK
     SourceStream& stream);
 };
 
+struct AcCmdCRRequestGuildMatchInfo
+{
+  uint32_t guildUid;
+  
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestGuildMatchInfo;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestGuildMatchInfo& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestGuildMatchInfo& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestGuildMatchInfoCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestGuildMatchInfoCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestGuildMatchInfoCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestGuildMatchInfoCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestGuildMatchInfoOK
+{
+  // sub_4dadc0
+  uint32_t unk0; // guildUid?
+  std::string unk1;
+  uint32_t unk2;
+  uint32_t unk3;
+  uint32_t unk4;
+  uint32_t unk5;
+  uint32_t totalWins;
+  uint32_t totalLosses;
+  uint32_t unk8;
+  uint32_t unk9;
+  uint32_t unk10;
+  uint32_t seasonalWins;
+  uint32_t seasonalLosses;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestGuildMatchInfoOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestGuildMatchInfoOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestGuildMatchInfoOK& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RANCH_MESSAGE_DEFINES_HPP

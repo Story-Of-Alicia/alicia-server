@@ -318,6 +318,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleGetGuildMemberList(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestGuildMatchInfo>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleRequestGuildMatchInfo(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -2845,6 +2851,51 @@ void RanchDirector::HandleGetGuildMemberList(
       });
     }
   });
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void RanchDirector::HandleRequestGuildMatchInfo(
+  ClientId clientId,
+  const protocol::AcCmdCRRequestGuildMatchInfo& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto& guildRecord = GetServerInstance().GetDataDirector().GetGuild(command.guildUid);
+  if (not guildRecord.IsAvailable())
+  {
+    spdlog::warn("Character {} tried to request guild match info for guild {} that does not exist",
+      clientContext.characterUid, command.guildUid);
+
+    protocol::AcCmdCRRequestGuildMatchInfoCancel cancelResponse{};
+    _commandServer.QueueCommand<decltype(cancelResponse)>(
+      clientId,
+      [cancelResponse]()
+      {
+        return cancelResponse;
+      });
+    return;
+  }
+
+  protocol::AcCmdCRRequestGuildMatchInfoOK response{
+    .unk0 = command.guildUid,
+    .unk1 = "yeet",
+    .unk2 = 2,
+    .unk3 = 3,
+    .unk4 = 4,
+    .unk5 = 5,
+    .totalWins = 6,
+    .totalLosses = 7,
+    .unk8 = 8,
+    .guildRank = 9,
+    .unk10 = 10,
+    .seasonalWins = 11,
+    .seasonalLosses = 12
+  };
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
