@@ -433,7 +433,11 @@ struct RanchCharacter
     GameMaster = 0x2
   } profileIcon{ProfileIcon::Boy};
   uint8_t age{};
-  uint8_t hideGenderAndAge{};
+  enum class Gender : uint8_t
+  {
+    Girl = 0,
+    Boy = 1
+  } gender{Gender::Girl};
   std::string introduction{};
 
   Character character{};

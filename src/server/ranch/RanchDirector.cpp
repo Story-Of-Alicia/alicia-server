@@ -749,7 +749,9 @@ void RanchDirector::HandleEnterRanch(
           ? RanchCharacter::ProfileIcon::Boy
           : RanchCharacter::ProfileIcon::Girl;
       protocolCharacter.age = character.age();
-      protocolCharacter.hideGenderAndAge = character.hideGenderAndAge();
+      protocolCharacter.gender = character.parts.modelId() == 10
+          ? RanchCharacter::Gender::Boy
+          : RanchCharacter::Gender::Girl;
 
       protocolCharacter.introduction = character.introduction();
 
