@@ -748,7 +748,7 @@ void RanchDirector::HandleEnterRanch(
         : character.role() == data::Character::Role::Op
         ? RanchCharacter::Role::Op // Assumed, tried but no visual change
         : RanchCharacter::Role::User; 
-      protocolCharacter.age = character.age();
+      protocolCharacter.age = character.hideGenderAndAge() ? 0 : character.age();
       protocolCharacter.gender = character.parts.modelId() == 10
           ? RanchCharacter::Gender::Boy
           : RanchCharacter::Gender::Girl;
