@@ -743,11 +743,11 @@ void RanchDirector::HandleEnterRanch(
     {
       protocolCharacter.uid = character.uid();
       protocolCharacter.name = character.name();
-      protocolCharacter.profileIcon = character.role() == data::Character::Role::GameMaster
-        ? RanchCharacter::ProfileIcon::GameMaster
-        : character.parts.modelId() == 10
-          ? RanchCharacter::ProfileIcon::Boy
-          : RanchCharacter::ProfileIcon::Girl;
+      protocolCharacter.role = character.role() == data::Character::Role::GameMaster
+        ? RanchCharacter::Role::GameMaster
+        : character.role() == data::Character::Role::Op
+        ? RanchCharacter::Role::Op // Assumed, tried but no visual change
+        : RanchCharacter::Role::User; 
       protocolCharacter.age = character.age();
       protocolCharacter.gender = character.parts.modelId() == 10
           ? RanchCharacter::Gender::Boy

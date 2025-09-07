@@ -469,7 +469,7 @@ void RanchCharacter::Write(const RanchCharacter& ranchCharacter, SinkStream& str
 {
   stream.Write(ranchCharacter.uid)
     .Write(ranchCharacter.name)
-    .Write(ranchCharacter.profileIcon)
+    .Write(ranchCharacter.role)
     .Write(ranchCharacter.age)
     .Write(ranchCharacter.gender)
     .Write(ranchCharacter.introduction);
@@ -514,7 +514,7 @@ void RanchCharacter::Read(RanchCharacter& value, SourceStream& stream)
 {
   stream.Read(value.uid)
     .Read(value.name)
-    .Read(reinterpret_cast<uint8_t&>(value.profileIcon))
+    .Read(reinterpret_cast<uint8_t&>(value.role))
     .Read(value.age)
     .Read(value.gender)
     .Read(value.introduction);
