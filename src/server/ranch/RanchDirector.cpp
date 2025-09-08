@@ -1660,9 +1660,9 @@ void RanchDirector::HandleRequestGuildInfo(
 
   auto guildUid = data::InvalidUid;
   characterRecord.Immutable([&guildUid](const data::Character& character)
-    {
-      guildUid = character.guildUid();
-    });
+  {
+    guildUid = character.guildUid();
+  });
 
   protocol::RanchCommandRequestGuildInfoOK response{};
 
