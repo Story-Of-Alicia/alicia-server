@@ -1664,32 +1664,44 @@ void RanchDirector::HandleRequestGuildInfo(
     guildUid = character.guildUid();
   });
 
+  if (guildUid == data::InvalidUid)
+  {
+    protocol::RanchCommandRequestGuildInfoCancel response{
+      .status = 2 // ERROR_FAIL_NOGUILD
+    };
+
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]()
+      {
+        return response;
+      });
+    return;
+  }
+
   protocol::RanchCommandRequestGuildInfoOK response{};
 
-  if (guildUid != data::InvalidUid)
-  {
-    const auto guildRecord = GetServerInstance().GetDataDirector().GetGuild(guildUid);
-    if (not guildRecord)
-      throw std::runtime_error("Guild unavailable");
+  const auto guildRecord = GetServerInstance().GetDataDirector().GetGuild(guildUid);
+  if (not guildRecord)
+    throw std::runtime_error("Guild unavailable");
 
-    guildRecord.Immutable([&response](const data::Guild& guild)
-    {
-      response.guildInfo = {
-        .uid = guild.uid(),
-        .member1 = 0,
-        .member2 = 0,
-        .member3 = 0,
-        .member4 = 0,
-        .member5 = 0,
-        .name = guild.name(),
-        .description = guild.description(),
-        .inviteCooldown = 0,
-        .member9 = 0,
-        .member10 = 0,
-        .member11 = 0
-      };
-    });
-  }
+  guildRecord.Immutable([&response](const data::Guild& guild)
+  {
+    response.guildInfo = {
+      .uid = guild.uid(),
+      .member1 = 0,
+      .member2 = 0,
+      .member3 = 0,
+      .member4 = 0,
+      .member5 = 0,
+      .name = guild.name(),
+      .description = guild.description(),
+      .inviteCooldown = 0,
+      .member9 = 0,
+      .member10 = 0,
+      .member11 = 0
+    };
+  });
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
