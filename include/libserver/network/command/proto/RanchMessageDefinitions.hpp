@@ -3454,12 +3454,6 @@ struct AcCmdCRGuildMemberListCancel
 
 struct AcCmdCRGuildMemberListOK
 {
-  enum class GuildRole : uint8_t {
-    Owner = 0,
-    Officer = 100,
-    Member = 200    
-  };
-
   struct MemberInfo {
     uint32_t memberUid;
     std::string nickname;
@@ -3571,6 +3565,105 @@ struct AcCmdCRRequestGuildMatchInfoOK
   //! @param stream Source stream.
   static void Read(
     AcCmdCRRequestGuildMatchInfoOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUpdateGuildMemberGrade
+{
+  uint32_t characterUid;
+  GuildRole guildRole;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdateGuildMemberGrade;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUpdateGuildMemberGrade& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUpdateGuildMemberGrade& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUpdateGuildMemberGradeCancel
+{
+  uint8_t unk0;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdateGuildMemberGradeCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUpdateGuildMemberGradeCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUpdateGuildMemberGradeCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUpdateGuildMemberGradeOK
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdateGuildMemberGradeOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUpdateGuildMemberGradeOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUpdateGuildMemberGradeOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCUpdateGuildMemberGradeNotify
+{
+  uint32_t unk0;
+  uint32_t unk1;
+  uint32_t unk2;
+  uint8_t guildRole;
+  uint8_t unk4;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCUpdateGuildMemberGradeNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCUpdateGuildMemberGradeNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCUpdateGuildMemberGradeNotify& command,
     SourceStream& stream);
 };
 

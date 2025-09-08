@@ -67,6 +67,11 @@ public:
     data::Uid characterUid,
     protocol::AcCmdCRRequestStorage::Category category);
 
+  void BroadcastUpdateGuildMemberGradeNotify(
+    data::Uid guildUid,
+    data::Uid characterUid,
+    GuildRole guildRole);
+
   ServerInstance& GetServerInstance();
   Config::Ranch& GetConfig();
 
@@ -292,6 +297,10 @@ private:
   void HandleRequestGuildMatchInfo(
     ClientId clientId,
     const protocol::AcCmdCRRequestGuildMatchInfo& command);
+  
+  void HandleUpdateGuildMemberGrade(
+    ClientId clientId,
+    const protocol::AcCmdCRUpdateGuildMemberGrade& command);
 
   //!
   ServerInstance& _serverInstance;

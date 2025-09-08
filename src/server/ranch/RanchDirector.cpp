@@ -324,6 +324,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleRequestGuildMatchInfo(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRUpdateGuildMemberGrade>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleUpdateGuildMemberGrade(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -464,6 +470,44 @@ void RanchDirector::SendStorageNotification(
     {
       return response;
     });
+}
+
+void RanchDirector::BroadcastUpdateGuildMemberGradeNotify(
+  data::Uid guildUid,
+  data::Uid characterUid,
+  GuildRole guildRole)
+{
+  // TODO: Identify fields
+  protocol::AcCmdRCUpdateGuildMemberGradeNotify notify{
+    .unk0 = guildUid,
+    .unk1 = characterUid,
+    .guildRole = static_cast<uint8_t>(guildRole)
+  };
+
+  // Notify all (online) guild members
+  GetServerInstance().GetDataDirector().GetGuild(guildUid).Immutable([this, &notify](const data::Guild& guild)
+  {
+    for (const auto& guildMember : guild.members())
+    {
+      // Self broadcast is needed, OK response is not sufficient
+      for (auto& client : _clients)
+      {
+        const auto& clientId = client.first;
+        const auto& clientContext = client.second;
+
+        // Client is not a guild member
+        if (clientContext.characterUid != guildMember)
+          continue;
+
+        _commandServer.QueueCommand<decltype(notify)>(
+          clientId,
+          [notify]()
+          {
+            return notify;
+          });
+      }
+    }
+  });
 }
 
 ServerInstance& RanchDirector::GetServerInstance()
@@ -2848,15 +2892,15 @@ void RanchDirector::HandleGetGuildMemberList(
 
         if (guild.owner() == character.uid())
         {
-          memberInfo.guildRole = protocol::AcCmdCRGuildMemberListOK::GuildRole::Owner;
+          memberInfo.guildRole = GuildRole::Owner;
         }
         else if (std::ranges::contains(guild.officers(), character.uid()))
         {
-          memberInfo.guildRole = protocol::AcCmdCRGuildMemberListOK::GuildRole::Officer;
+          memberInfo.guildRole = GuildRole::Officer;
         }
         else
         {
-          memberInfo.guildRole = protocol::AcCmdCRGuildMemberListOK::GuildRole::Member;
+          memberInfo.guildRole = GuildRole::Member;
         }
 
         response.members.emplace_back(memberInfo);
@@ -2919,6 +2963,155 @@ void RanchDirector::HandleRequestGuildMatchInfo(
     {
       return response;
     });
+}
+
+void RanchDirector::HandleUpdateGuildMemberGrade(
+  ClientId clientId,
+  const protocol::AcCmdCRUpdateGuildMemberGrade& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
+  
+  // Get requesting character's guild
+  auto guildUid = data::InvalidUid;
+  characterRecord.Immutable([&guildUid](const data::Character& character)
+  {
+    guildUid = character.guildUid();
+  });
+
+  protocol::AcCmdCRUpdateGuildMemberGradeCancel response{};
+  if (guildUid == data::InvalidUid)
+  {
+    response.unk0 = 2; // ERROR_FAIL_NOGUILD
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]()
+      {
+        return response;
+      });
+    return;
+  }
+
+  const auto& guildRecord = GetServerInstance().GetDataDirector().GetGuild(guildUid);
+  if (not guildRecord.IsAvailable())
+  {
+    response.unk0 = 0; // ERROR_FAIL_SYSTEMERROR
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]()
+      {
+        return response;
+      });
+    return;
+  }
+
+  bool fail = true;
+  uint8_t status = 0;
+  guildRecord.Mutable([&command, callingCharacterUid = clientContext.characterUid, &fail, &status](data::Guild& guild)
+  {
+    // Check if calling character is owner
+    if (guild.owner() != callingCharacterUid)
+    {
+      status = 7; // ERROR_FAIL_NOAUTHORITY
+      spdlog::warn("Character {}, who is not the owner of guild {}, tried to update member {} guild role to {}",
+        callingCharacterUid, guild.uid(), command.characterUid, static_cast<uint8_t>(command.guildRole));
+      return;
+    }
+
+    // Check if target character is in guild
+    if (not std::ranges::contains(guild.members(), command.characterUid))
+    {
+      status = 1; // ERROR_FAIL_NOUSER
+      spdlog::warn("Character {} tried to update character {} guild role to {} but they are not in guild {}",
+        callingCharacterUid, command.characterUid, static_cast<uint8_t>(command.guildRole), guild.uid());
+      return;
+    }
+
+    // TODO: make this configurable
+    constexpr uint8_t MaxOfficers = 2;
+
+    // If promoting, check if there is enough space for officers to promote
+    if (command.guildRole == GuildRole::Officer && guild.officers().size() >= MaxOfficers)
+    {
+      // TODO: Write in guild chat that max officer count has been reached
+      spdlog::warn("Character {} tried to update character {} guild role to officer but there are already max officers of {}",
+        callingCharacterUid, command.characterUid, MaxOfficers);
+      return;
+    }
+
+    // If promoting, check if target member is already an officer
+    if (command.guildRole == GuildRole::Officer && std::ranges::contains(guild.officers(), command.characterUid))
+    {
+      // TODO: Write in guild chat that max officer count has been reached
+      spdlog::warn("Character {} tried to update character {} guild role to officer but they are already an officer",
+        command.characterUid, static_cast<uint8_t>(command.guildRole));
+      return;
+    }
+
+    // If currently owner, set new owner and ensure not present in officers list
+    // If currently officer, get erased from the officers list
+    // If currently member, get placed in officers list
+    switch (command.guildRole)
+    {
+      case GuildRole::Owner:
+      {
+        // Transfer of ownership - swap roles (owner becomes member)
+        guild.owner() = command.characterUid;
+        // Ensure previous owner is not somehow in officers list
+        const auto& index = std::ranges::find(guild.officers(), guild.owner());
+        if (index != guild.officers().end())
+          guild.officers().erase(index);
+        // Fall through to the member case
+      }
+      case GuildRole::Member:
+      {
+        // Demotion - Find and erase officer from list of officers
+        // Ensure an officer being transferred ownership is removed from officers list
+        const auto& index = std::ranges::find(guild.officers(), command.characterUid);
+        if (index != guild.officers().end())
+          guild.officers().erase(index);
+        break;
+      }
+      case GuildRole::Officer:
+      {
+        // Promotion - Previously checked if there is enough space for a new officer
+        guild.officers().emplace_back(command.characterUid);
+        break;
+      }
+    }
+
+    fail = false;
+  });
+
+  if (fail)
+  {
+    response.unk0 = status;
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]()
+      {
+        return response;
+      });
+    return;
+  }
+  
+  // Broadcast to all online guild clients
+  BroadcastUpdateGuildMemberGradeNotify(
+    guildUid,
+    command.characterUid,
+    command.guildRole
+  );
+
+  // If ownership transfer
+  if (command.guildRole == GuildRole::Owner)
+  {
+    // Broadcast owner's new member guild role status
+    BroadcastUpdateGuildMemberGradeNotify(
+      guildUid,
+      clientContext.characterUid,
+      GuildRole::Member
+    );
+  }
 }
 
 } // namespace server

@@ -2248,5 +2248,66 @@ void AcCmdCRRequestGuildMatchInfoOK::Write(
     .Write(command.seasonalLosses);
 }
 
+void AcCmdCRUpdateGuildMemberGrade::Read(
+  AcCmdCRUpdateGuildMemberGrade& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterUid)
+    .Read(command.guildRole);
+}
+
+void AcCmdCRUpdateGuildMemberGrade::Write(
+  const AcCmdCRUpdateGuildMemberGrade& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRUpdateGuildMemberGradeCancel::Read(
+  AcCmdCRUpdateGuildMemberGradeCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRUpdateGuildMemberGradeCancel::Write(
+  const AcCmdCRUpdateGuildMemberGradeCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0);
+}
+
+void AcCmdCRUpdateGuildMemberGradeOK::Read(
+  AcCmdCRUpdateGuildMemberGradeOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRUpdateGuildMemberGradeOK::Write(
+  const AcCmdCRUpdateGuildMemberGradeOK& command,
+  SinkStream& stream)
+{
+  // Empty return
+}
+
+void AcCmdRCUpdateGuildMemberGradeNotify::Read(
+  AcCmdRCUpdateGuildMemberGradeNotify& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCUpdateGuildMemberGradeNotify::Write(
+  const AcCmdRCUpdateGuildMemberGradeNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.unk2)
+    .Write(command.guildRole)
+    .Write(command.unk4);
+}
+
 } // namespace server::protocol
 

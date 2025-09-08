@@ -331,7 +331,7 @@ struct Guild
 {
   uint32_t uid{};
   uint8_t val1{};
-  uint32_t val2{};
+  uint32_t val2{}; // emblem uid?
   std::string name{};
   uint8_t val4{};
   uint32_t val5{};
@@ -514,6 +514,12 @@ enum class TeamMode : uint8_t
 {
   Single = 1,
   Team = 2
+};
+
+enum class GuildRole : uint8_t {
+  Owner = 10,
+  Officer = 100,
+  Member = 200    
 };
 
 } // namespace server
