@@ -1432,7 +1432,7 @@ void RanchCommandRequestGuildInfoOK::GuildInfo::Write(
     .Write(command.member1)
     .Write(command.member2)
     .Write(command.member3)
-    .Write(command.member4)
+    .Write(command.hasMembers)
     .Write(command.member5)
     .Write(command.name)
     .Write(command.description)
@@ -2101,7 +2101,7 @@ void AcCmdCRWithdrawGuildMember::Read(
   SourceStream& stream)
 {
   stream.Read(command.characterUid)
-    .Read(command.member1);
+    .Read(command.option);
 }
 
 void AcCmdCRWithdrawGuildMemberOK::Write(

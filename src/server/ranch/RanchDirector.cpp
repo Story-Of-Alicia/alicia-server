@@ -1692,7 +1692,9 @@ void RanchDirector::HandleRequestGuildInfo(
       .member1 = 0,
       .member2 = 0,
       .member3 = 0,
-      .member4 = 0,
+      .hasMembers = guild.members().size() > 0 ?
+        protocol::RanchCommandRequestGuildInfoOK::GuildInfo::Occupancy::HasMembers :
+        protocol::RanchCommandRequestGuildInfoOK::GuildInfo::Occupancy::Empty,
       .member5 = 0,
       .name = guild.name(),
       .description = guild.description(),
@@ -1720,7 +1722,7 @@ void RanchDirector::HandleLeaveGuild(
     clientContext.characterUid);
 
   const bool isUserValid = clientContext.characterUid == command.characterUid;
-  if (not isUserValid)
+  if (not isUserValid && command.option != protocol::AcCmdCRWithdrawGuildMember::Option::Kicked)
   {
     protocol::AcCmdCRWithdrawGuildMemberCancel response{
       .status = 0

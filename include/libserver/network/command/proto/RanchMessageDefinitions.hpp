@@ -2080,7 +2080,11 @@ struct RanchCommandRequestGuildInfoOK
     uint8_t member1{};
     uint32_t member2{};
     uint32_t member3{};
-    uint8_t member4{};
+    enum class Occupancy : uint8_t 
+    {
+      Empty = 0,
+      HasMembers = 1
+    } hasMembers{};
     uint32_t member5{};
     std::string name{};
     std::string description{};
@@ -2147,7 +2151,11 @@ struct RanchCommandRequestGuildInfoCancel
 struct AcCmdCRWithdrawGuildMember
 {
   uint32_t characterUid{};
-  uint8_t member1{};
+  enum class Option : uint8_t
+  {
+    Leave = 0,
+    Kicked = 1
+  } option{};
 
   static Command GetCommand()
   {
