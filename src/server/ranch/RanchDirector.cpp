@@ -3056,6 +3056,7 @@ void RanchDirector::HandleUpdateGuildMemberGrade(
       case GuildRole::Owner:
       {
         // Transfer of ownership - swap roles (owner becomes member)
+        // Since owner is already a member, just overwrite owner with new owner
         guild.owner() = command.characterUid;
         // Ensure previous owner is not somehow in officers list
         const auto& index = std::ranges::find(guild.officers(), guild.owner());
