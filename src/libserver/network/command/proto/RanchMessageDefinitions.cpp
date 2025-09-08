@@ -1432,7 +1432,7 @@ void RanchCommandRequestGuildInfoOK::GuildInfo::Write(
     .Write(command.member1)
     .Write(command.member2)
     .Write(command.member3)
-    .Write(command.hasMembers)
+    .Write(command.memberCount)
     .Write(command.member5)
     .Write(command.name)
     .Write(command.description)

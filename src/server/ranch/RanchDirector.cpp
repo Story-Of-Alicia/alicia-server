@@ -1692,9 +1692,7 @@ void RanchDirector::HandleRequestGuildInfo(
       .member1 = 0,
       .member2 = 0,
       .member3 = 0,
-      .hasMembers = guild.members().size() > 0 ?
-        protocol::RanchCommandRequestGuildInfoOK::GuildInfo::Occupancy::HasMembers :
-        protocol::RanchCommandRequestGuildInfoOK::GuildInfo::Occupancy::Empty,
+      .memberCount = static_cast<uint8_t>(guild.members().size()),
       .member5 = 0,
       .name = guild.name(),
       .description = guild.description(),

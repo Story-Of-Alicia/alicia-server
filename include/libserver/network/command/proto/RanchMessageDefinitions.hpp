@@ -2080,11 +2080,10 @@ struct RanchCommandRequestGuildInfoOK
     uint8_t member1{};
     uint32_t member2{};
     uint32_t member3{};
-    enum class Occupancy : uint8_t 
-    {
-      Empty = 0,
-      HasMembers = 1
-    } hasMembers{};
+    // 0  = Does not request member list
+    // 0  > Requests member list
+    // 29 > Disables guild invite
+    uint8_t memberCount{};
     uint32_t member5{};
     std::string name{};
     std::string description{};
