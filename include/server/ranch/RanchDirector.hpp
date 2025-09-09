@@ -67,6 +67,18 @@ public:
     data::Uid characterUid,
     protocol::AcCmdCRRequestStorage::Category category);
 
+  void BroadcastChangeAgeNotify(
+    data::Uid characterUid,
+    const data::Uid rancherUid,
+    protocol::AcCmdCRChangeAge::Age age
+  );
+
+  void BroadcastHideAgeNotify(
+    data::Uid characterUid,
+    const data::Uid rancherUid,
+    protocol::AcCmdCRHideAge::Option option
+  );
+
   ServerInstance& GetServerInstance();
   Config::Ranch& GetConfig();
 
@@ -284,6 +296,14 @@ private:
   void HandleCheckStorageItem(
     ClientId clientId,
     const protocol::AcCmdCRCheckStorageItem command);
+
+  void HandleChangeAge(
+    ClientId clientId,
+    const protocol::AcCmdCRChangeAge command);
+
+  void HandleHideAge(
+    ClientId clientId,
+    const protocol::AcCmdCRHideAge command);
 
   //!
   ServerInstance& _serverInstance;

@@ -2146,5 +2146,117 @@ void AcCmdCRCheckStorageItem::Write(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRChangeAge::Read(
+  AcCmdCRChangeAge& command,
+  SourceStream& stream)
+{
+  stream.Read(command.age);
+}
+
+void AcCmdCRChangeAge::Write(
+  const AcCmdCRChangeAge& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRChangeAgeCancel::Read(
+  AcCmdCRChangeAgeCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRChangeAgeCancel::Write(
+  const AcCmdCRChangeAgeCancel& command,
+  SinkStream& stream)
+{
+}
+
+void AcCmdCRChangeAgeOK::Read(
+  AcCmdCRChangeAgeOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRChangeAgeOK::Write(
+  const AcCmdCRChangeAgeOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.age);
+}
+
+void AcCmdRCChangeAgeNotify::Read(
+  AcCmdRCChangeAgeNotify& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCChangeAgeNotify::Write(
+  const AcCmdRCChangeAgeNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.age);
+}
+
+void AcCmdCRHideAge::Read(
+  AcCmdCRHideAge& command,
+  SourceStream& stream)
+{
+  stream.Read(command.option);
+}
+
+void AcCmdCRHideAge::Write(
+  const AcCmdCRHideAge& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRHideAgeCancel::Read(
+  AcCmdCRHideAgeCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRHideAgeCancel::Write(
+  const AcCmdCRHideAgeCancel& command,
+  SinkStream& stream)
+{
+}
+
+void AcCmdCRHideAgeOK::Read(
+  AcCmdCRHideAgeOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRHideAgeOK::Write(
+  const AcCmdCRHideAgeOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.option);
+}
+
+void AcCmdRCHideAgeNotify::Read(
+  AcCmdRCHideAgeNotify& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCHideAgeNotify::Write(
+  const AcCmdRCHideAgeNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.option);
+}
+
 } // namespace server::protocol
 

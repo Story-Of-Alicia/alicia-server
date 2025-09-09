@@ -186,6 +186,8 @@ struct Character
   dao::Field<std::string> name{};
 
   dao::Field<std::string> introduction{};
+  dao::Field<uint8_t> age{18};
+  dao::Field<bool> hideGenderAndAge{true};
 
   dao::Field<uint32_t> level{};
   dao::Field<int32_t> carrots{};
