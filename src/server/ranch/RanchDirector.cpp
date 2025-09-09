@@ -494,6 +494,9 @@ void RanchDirector::BroadcastUpdateGuildMemberGradeNotify(
       {
         const auto& clientId = client.first;
         const auto& clientContext = client.second;
+        // Skip offline clients
+        if (not clientContext.isAuthorized)
+          continue;
 
         // Client is not a guild member
         if (clientContext.characterUid != guildMember)
