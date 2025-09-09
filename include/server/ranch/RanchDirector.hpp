@@ -84,6 +84,11 @@ public:
     data::Uid characterUid,
     GuildRole guildRole);
 
+  void BroadcastWithdrawGuildMemberNotify(
+    data::Uid guildUid,
+    data::Uid characterUid,
+    protocol::AcCmdCRWithdrawGuildMember::Option option);
+
   ServerInstance& GetServerInstance();
   Config::Ranch& GetConfig();
 
@@ -224,7 +229,7 @@ private:
     ClientId clientId,
     const protocol::RanchCommandRequestGuildInfo& command);
 
-  void HandleLeaveGuild(
+  void HandleWithdrawGuild(
     ClientId clientId,
     const protocol::AcCmdCRWithdrawGuildMember& command);
 

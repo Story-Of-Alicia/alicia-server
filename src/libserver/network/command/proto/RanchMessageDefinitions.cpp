@@ -2108,7 +2108,7 @@ void AcCmdCRWithdrawGuildMemberOK::Write(
   const AcCmdCRWithdrawGuildMemberOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0);
+  stream.Write(command.option);
 }
 
 void AcCmdCRWithdrawGuildMemberOK::Read(
@@ -2127,6 +2127,23 @@ void AcCmdCRWithdrawGuildMemberCancel::Write(
 
 void AcCmdCRWithdrawGuildMemberCancel::Read(
   AcCmdCRWithdrawGuildMemberCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCWithdrawGuildMemberNotify::Write(
+  const AcCmdRCWithdrawGuildMemberNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.unk2)
+    .Write(command.option);
+}
+
+void AcCmdRCWithdrawGuildMemberNotify::Read(
+  AcCmdRCWithdrawGuildMemberNotify& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
@@ -2419,6 +2436,20 @@ void AcCmdRCUpdateGuildMemberGradeNotify::Write(
     .Write(command.unk2)
     .Write(command.guildRole)
     .Write(command.unk4);
+}
+
+void AcCmdCRInviteGuildJoin::Read(
+  AcCmdCRInviteGuildJoin& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterName);
+}
+
+void AcCmdCRInviteGuildJoin::Write(
+  const AcCmdCRInviteGuildJoin& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
 }
 
 } // namespace server::protocol

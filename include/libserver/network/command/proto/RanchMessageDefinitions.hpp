@@ -2153,7 +2153,8 @@ struct AcCmdCRWithdrawGuildMember
   enum class Option : uint8_t
   {
     Leave = 0,
-    Kicked = 1
+    Kicked = 1,
+    Unk2 = 2
   } option{};
 
   static Command GetCommand()
@@ -2178,7 +2179,7 @@ struct AcCmdCRWithdrawGuildMember
 
 struct AcCmdCRWithdrawGuildMemberOK
 {
-  uint8_t unk0{};
+  AcCmdCRWithdrawGuildMember::Option option;
   
   static Command GetCommand()
   {
@@ -2223,6 +2224,33 @@ struct AcCmdCRWithdrawGuildMemberCancel
   //! @param stream Source stream.
   static void Read(
     AcCmdCRWithdrawGuildMemberCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCWithdrawGuildMemberNotify
+{
+  uint32_t unk0;
+  uint32_t unk1;
+  uint32_t unk2;
+  AcCmdCRWithdrawGuildMember::Option option; // 1 - expelled
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCWithdrawGuildMemberNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCWithdrawGuildMemberNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCWithdrawGuildMemberNotify& command,
     SourceStream& stream);
 };
 
@@ -3864,6 +3892,32 @@ struct AcCmdRCUpdateGuildMemberGradeNotify
     AcCmdRCUpdateGuildMemberGradeNotify& command,
     SourceStream& stream);
 };
+
+struct AcCmdCRInviteGuildJoin
+{
+  std::string characterName;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRInviteGuildJoin;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRInviteGuildJoin& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRInviteGuildJoin& command,
+    SourceStream& stream);
+};
+
+// TODO: AcCmdCRInviteGuildJoinCancel
 
 } // namespace server::protocol
 
