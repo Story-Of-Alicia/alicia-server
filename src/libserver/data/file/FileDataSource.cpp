@@ -168,6 +168,8 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.name = json["name"].get<std::string>();
 
   character.introduction = json["introduction"].get<std::string>();
+  character.age = json["age"].get<uint8_t>();
+  character.hideGenderAndAge = json["hideGenderAndAge"].get<bool>();
 
   character.level = json["level"].get<uint32_t>();
   character.carrots = json["carrots"].get<int32_t>();
@@ -229,6 +231,8 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["name"] = character.name();
 
   json["introduction"] = character.introduction();
+  json["age"] = character.age();
+  json["hideGenderAndAge"] = character.hideGenderAndAge();
 
   json["level"] = character.level();
   json["carrots"] = character.carrots();

@@ -104,7 +104,7 @@ struct LobbyCommandLoginOK
   // GamepadOptions gamepadOptions{};
 
   uint8_t age{};
-  uint8_t hideAge{};
+  uint8_t hideGenderAndAge{};
 
   struct Unk1
   {
