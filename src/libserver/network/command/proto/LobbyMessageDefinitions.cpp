@@ -163,7 +163,7 @@ void LobbyCommandLoginOK::Write(
   stream.Write(command.val6);
 
   stream.Write(command.ranchAddress)
-    .Write(command.ranchport)
+    .Write(command.ranchPort)
     .Write(command.scramblingConstant);
 
   stream.Write(command.character)

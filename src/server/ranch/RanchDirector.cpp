@@ -369,7 +369,7 @@ std::vector<data::Uid> RanchDirector::GetOnlineCharacters()
 
   for (const auto& clientContext : _clients | std::views::values)
   {
-    if (not clientContext.isAuthorized)
+    if (not clientContext.isAuthenticated)
       continue;
     onlineCharacterUids.emplace_back(clientContext.characterUid);
   }
@@ -388,7 +388,7 @@ void RanchDirector::HandleClientDisconnected(ClientId clientId)
   spdlog::info("Client {} disconnected from the ranch", clientId);
 
   const auto& clientContext = GetClientContext(clientId, false);
-  if (clientContext.isAuthorized)
+  if (clientContext.isAuthenticated)
   {
     HandleRanchLeave(clientId);
   }
@@ -459,15 +459,15 @@ void RanchDirector::SendStorageNotification(
   ClientId clientId = -1;
   for (auto& clientContext : _clients)
   {
-    if (clientContext.second.characterUid == characterUid
-      && clientContext.second.isAuthorized)
+    if (clientContext.second.characterUid == characterUid && clientContext.second.isAuthenticated)
       clientId = clientContext.first;
   }
 
   if (clientId == -1)
   {
     spdlog::error("Tried to send storage notification to unknown client {} with character uid {}",
-      clientId, characterUid);
+      clientId,
+      characterUid);
     return;
   }
 
@@ -591,15 +591,17 @@ Config::Ranch& RanchDirector::GetConfig()
   return GetServerInstance().GetSettings().ranch;
 }
 
-RanchDirector::ClientContext& RanchDirector::GetClientContext(ClientId clientId, bool requireAuthorized)
+RanchDirector::ClientContext& RanchDirector::GetClientContext(
+  const ClientId clientId,
+  const bool requireAuthentication)
 {
   const auto clientIter = _clients.find(clientId);
   if (clientIter == _clients.cend())
     throw std::runtime_error("Client context not available");
 
   auto& clientContext = clientIter->second;
-  if (not clientContext.isAuthorized && requireAuthorized)
-    throw std::runtime_error("Client unauthorized");
+  if (requireAuthentication && not clientContext.isAuthenticated)
+    throw std::runtime_error("Client is not authenticated");
 
   return clientContext;
 }
@@ -610,7 +612,7 @@ RanchDirector::ClientContext& RanchDirector::GetClientContextByCharacterUid(
   for (auto& clientContext : _clients | std::views::values)
   {
     if (clientContext.characterUid == characterUid
-      && clientContext.isAuthorized)
+      && clientContext.isAuthenticated)
       return clientContext;
   }
 
@@ -629,7 +631,7 @@ void RanchDirector::HandleEnterRanch(
     throw std::runtime_error(
       std::format("Rancher's character [{}] not available", command.rancherUid));
 
-  clientContext.isAuthorized = GetServerInstance().GetOtpRegistry().AuthorizeCode(
+  clientContext.isAuthenticated = GetServerInstance().GetOtpRegistry().AuthorizeCode(
     command.characterUid, command.otp);
 
   bool isRanchLocked = false;
@@ -647,7 +649,7 @@ void RanchDirector::HandleEnterRanch(
 
   const bool isRanchFull = ranchInstance.clients.size() > MaxRanchCharacterCount;
 
-  if (not clientContext.isAuthorized
+  if (not clientContext.isAuthenticated
     || isRanchLocked
     || isRanchFull)
   {

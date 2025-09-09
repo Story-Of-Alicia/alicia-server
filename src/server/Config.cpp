@@ -153,6 +153,17 @@ void Config::LoadFromFile(const std::filesystem::path& filePath)
     const YAML::Node yamlConfig = YAML::Load(file);
     const auto serverYaml = yamlConfig["server"];
 
+    // General config
+    try
+    {
+      const auto generalYaml = serverYaml["general"];
+      general.brand = generalYaml["brand"].as<std::string>("<not set>");
+    }
+    catch (const std::exception& e)
+    {
+      spdlog::error("Unhandled exception parsing the general config: {}", e.what());
+    }
+
     // Lobby config
     try
     {

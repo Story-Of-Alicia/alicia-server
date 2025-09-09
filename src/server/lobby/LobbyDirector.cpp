@@ -45,7 +45,10 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
   _commandServer.RegisterCommandHandler<protocol::LobbyCommandLogin>(
     [this](ClientId clientId, const auto& command)
     {
-      assert(command.constant0 == 50 && command.constant1 == 281 && "Game version mismatch");
+      // Alicia 1.0
+      assert(command.constant0 == 50
+        && command.constant1 == 281
+        && "Game version mismatch");
 
       spdlog::info("Handling user login for '{}'", command.loginId);
 
@@ -171,7 +174,7 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& command)
     {
       // this is just for prototype, it can suck
-      auto& clientContext = _clientContext[clientId];
+      auto& clientContext = GetClientContext(clientId);
       const auto requestingCharacterUid = clientContext.characterUid;
 
       data::Uid rancherUid = data::InvalidUid;
@@ -268,12 +271,13 @@ void LobbyDirector::Tick()
 void LobbyDirector::HandleClientConnected(ClientId clientId)
 {
   spdlog::info("Client {} connected to the lobby", clientId);
+  _clients.try_emplace(clientId);
 }
 
 void LobbyDirector::HandleClientDisconnected(ClientId clientId)
 {
   spdlog::info("Client {} disconnected from the lobby", clientId);
-  _clientContext.erase(clientId);
+  _clients.erase(clientId);
 }
 
 ServerInstance& LobbyDirector::GetServerInstance()
@@ -286,15 +290,22 @@ Config::Lobby& LobbyDirector::GetConfig()
   return GetServerInstance().GetSettings().lobby;
 }
 
+void LobbyDirector::RequestCharacterCreator(data::Uid characterUid)
+{
+  _forcedCharacterCreator.emplace(characterUid);
+}
+
 void LobbyDirector::UpdateVisitPreference(data::Uid characterUid, data::Uid visitingCharacterUid)
 {
-  const auto clientContextIter = std::ranges::find_if(_clientContext, [characterUid](const auto pair)
-  {
-    const auto& [clientId, ctx] = pair;
-    return ctx.characterUid == characterUid;
-  });
+  const auto clientContextIter = std::ranges::find_if(
+    _clients,
+    [characterUid](const auto pair)
+    {
+      const auto& [clientId, ctx] = pair;
+      return ctx.characterUid == characterUid;
+    });
 
-  if (clientContextIter == _clientContext.cend())
+  if (clientContextIter == _clients.cend())
     return;
 
   clientContextIter->second.rancherVisitPreference = visitingCharacterUid;
@@ -410,7 +421,7 @@ void LobbyDirector::HandleShowInventory(
 
 void LobbyDirector::QueueShowInventory(ClientId clientId)
 {
-  const auto& clientContext = _clientContext[clientId];
+  const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
@@ -445,7 +456,7 @@ void LobbyDirector::HandleAchievementCompleteList(
   ClientId clientId,
   const protocol::LobbyCommandAchievementCompleteList& command)
 {
-  const auto& clientContext = _clientContext[clientId];
+  const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
@@ -490,7 +501,7 @@ void LobbyDirector::HandleRequestQuestList(
   ClientId clientId,
   const protocol::LobbyCommandRequestQuestList& command)
 {
-  const auto& clientContext = _clientContext[clientId];
+  const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
@@ -514,7 +525,7 @@ void LobbyDirector::HandleRequestDailyQuestList(
   ClientId clientId,
   const protocol::LobbyCommandRequestDailyQuestList& command)
 {
-  const auto& clientContext = _clientContext[clientId];
+  const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
@@ -538,7 +549,7 @@ void LobbyDirector::HandleRequestSpecialEventList(
   ClientId clientId,
   const protocol::LobbyCommandRequestSpecialEventList& command)
 {
-  const auto& clientContext = _clientContext[clientId];
+  const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
@@ -615,7 +626,7 @@ void LobbyDirector::HandleRequestPersonalInfo(
 
 void LobbyDirector::HandleSetIntroduction(ClientId clientId, const protocol::LobbyCommandSetIntroduction& command)
 {
-  const auto& clientContext = _clientContext[clientId];
+  const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
@@ -633,7 +644,7 @@ void LobbyDirector::HandleEnterRanch(
   ClientId clientId,
   const protocol::LobbyCommandEnterRanch& command)
 {
-  const auto& clientContext = _clientContext[clientId];
+  const auto& clientContext = GetClientContext(clientId);
   const auto rancherRecord = GetServerInstance().GetDataDirector().GetCharacter(
     command.rancherUid);
 
@@ -666,7 +677,7 @@ void LobbyDirector::QueueEnterRanchOK(
   ClientId clientId,
   data::Uid rancherUid)
 {
-  const auto& clientContext = _clientContext[clientId];
+  const auto& clientContext = GetClientContext(clientId);
   protocol::LobbyCommandEnterRanchOK response{
     .rancherUid = rancherUid,
     .otp = GetServerInstance().GetOtpRegistry().GrantCode(clientContext.characterUid),
@@ -718,7 +729,7 @@ void LobbyDirector::HandleInquiryTreecash(
   ClientId clientId,
   const protocol::LobbyCommandInquiryTreecash& command)
 {
-  const auto& clientContext = _clientContext[clientId];
+  const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
@@ -755,7 +766,7 @@ void LobbyDirector::HandleUpdateSystemContent(
   ClientId clientId,
   const protocol::LobbyCommandUpdateSystemContent& command)
 {
-  const auto& clientContext = _clientContext[clientId];
+  const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
@@ -773,7 +784,7 @@ void LobbyDirector::HandleUpdateSystemContent(
   protocol::LobbyCommandUpdateSystemContentNotify notify{
     .systemContent = _systemContent};
 
-  for (const auto& connectedClientId : _clientContext | std::views::keys)
+  for (const auto& connectedClientId : _clients | std::views::keys)
   {
     _commandServer.QueueCommand<decltype(notify)>(
       connectedClientId,
@@ -788,17 +799,17 @@ void LobbyDirector::HandleChangeRanchOption(
   ClientId clientId,
   const protocol::LobbyCommandChangeRanchOption& command)
 {
-  const auto& clientContext = _clientContext[clientId];
+  const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
-  clientContext.characterUid);
+    clientContext.characterUid);
   protocol::LobbyCommandChangeRanchOptionOK response{
     .unk0 = command.unk0,
     .unk1 = command.unk1,
-    .unk2 = command.unk2
-  };
-  characterRecord.Mutable([](data::Character& character){
-     character.isRanchLocked() = !character.isRanchLocked();
-  });
+    .unk2 = command.unk2};
+  characterRecord.Mutable([](data::Character& character)
+    {
+      character.isRanchLocked() = !character.isRanchLocked();
+    });
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -806,6 +817,21 @@ void LobbyDirector::HandleChangeRanchOption(
     {
       return response;
     });
+}
+
+LobbyDirector::ClientContext& LobbyDirector::GetClientContext(
+  const ClientId clientId,
+  const bool requireAuthentication)
+{
+  auto clientContextIter = _clients.find(clientId);
+  if (clientContextIter == _clients.end())
+    throw std::runtime_error("Client context not available");
+
+  auto& clientContext = clientContextIter->second;
+  if (requireAuthentication && not clientContext.isAuthenticated)
+    throw std::runtime_error("Client is not authenticated");
+
+  return clientContext;
 }
 
 } // namespace server

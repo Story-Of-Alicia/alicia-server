@@ -23,11 +23,19 @@ public:
   };
 
   //!
+  struct General
+  {
+    std::string brand;
+  } general{};
+
+  //!
   struct Lobby
   {
     bool enabled{true};
     Listen listen{
       .port = 10030};
+
+    std::string motd;
 
     struct Advertisement
     {

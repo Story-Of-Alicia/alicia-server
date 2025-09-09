@@ -20,6 +20,7 @@
 #include "server/system/ChatSystem.hpp"
 
 #include "server/ServerInstance.hpp"
+#include "Version.hpp"
 
 #include <libserver/util/Util.hpp>
 
@@ -58,6 +59,58 @@ std::vector<std::string> CommandManager::HandleCommand(
 ChatSystem::ChatSystem(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
 {
+  // about command
+  _commandManager.RegisterCommand(
+    "about",
+    [this](
+      const std::span<const std::string>& arguments,
+      data::Uid characterUid) -> std::vector<std::string>
+    {
+      const std::string brandName = _serverInstance.GetSettings().general.brand;
+
+      return {
+        "Story of Alicia dedicated server software",
+        " available under the GPL-2.0 license",
+        "",
+        std::format("Running alicia-server@v{}", BuildVersion),
+        std::format("Hosted by {}", brandName)};
+    });
+
+  // help command
+  _commandManager.RegisterCommand(
+    "help",
+    [this](
+      const std::span<const std::string>& arguments,
+      data::Uid characterUid) -> std::vector<std::string>
+    {
+      return {
+        "Command are a subject of the prototype.",
+        "For command reference, ask the community ",
+        " or browse the code online.",
+        "",
+        "Official command reference:",
+        " //create - Send you to the character creator",
+        " //about - Information about the server"
+        "",
+        "More commands available over at: ",
+        " https://bruhvrum.github.io/registertest/commands"};
+    });
+
+  // create command
+  _commandManager.RegisterCommand(
+    "create",
+    [this](
+      const std::span<const std::string>& arguments,
+      data::Uid characterUid) -> std::vector<std::string>
+    {
+      _serverInstance.GetLobbyDirector().RequestCharacterCreator(characterUid);
+      return {
+        "Once you restart your game,",
+        " you'll enter the character creator.",
+        "You may not change your name there,",
+        " please use the dedicated item instead"};
+    });
+
   // online command
   _commandManager.RegisterCommand(
     "online",

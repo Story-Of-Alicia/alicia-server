@@ -29,6 +29,7 @@
 #include "libserver/network/command/proto/LobbyMessageDefinitions.hpp"
 
 #include <unordered_map>
+#include <unordered_set>
 
 namespace server
 {
@@ -42,28 +43,44 @@ class LobbyDirector final
   friend LoginHandler;
 
 public:
-  //!
+  //! Constructor
+  //! @param serverInstance Instance of the server.
   explicit LobbyDirector(ServerInstance& serverInstance);
 
+  //! Deleted copy constructor.
   LobbyDirector(const LobbyDirector&) = delete;
+  //! Deleted copy assignment.
   LobbyDirector& operator=(const LobbyDirector&) = delete;
 
+  //! Deleted move constructor.
   LobbyDirector(LobbyDirector&&) = delete;
+  //! Deleted move assignment.
   LobbyDirector& operator=(LobbyDirector&&) = delete;
 
+  //! Initialize the director.
   void Initialize();
+  //! Terminate the director.
   void Terminate();
+  //! Tick the director.
   void Tick();
 
+  ServerInstance& GetServerInstance();
+
+  //! Get lobby config.
+  //! @return Lobby config.
+  Config::Lobby& GetConfig();
+
+  void RequestCharacterCreator(data::Uid characterUid);
+
+  // prototype function
+  [[deprecated]] void UpdateVisitPreference(
+    data::Uid characterUid,
+    data::Uid visitingCharacterUid);
+
+private:
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId clientId) override;
 
-  ServerInstance& GetServerInstance();
-  Config::Lobby& GetConfig();
-
-  void UpdateVisitPreference(data::Uid characterUid, data::Uid visitingCharacterUid);
-
-private:
   void HandleEnterChannel(
     ClientId clientId,
     const protocol::LobbyCommandEnterChannel& command);
@@ -179,11 +196,16 @@ private:
 protected:
   struct ClientContext
   {
-    //! Whether the client is authorized.
-    bool isAuthorized{false};
+    //! Whether the client is authenticated.
+    bool isAuthenticated{false};
     data::Uid characterUid = data::InvalidUid;
     data::Uid rancherVisitPreference = data::InvalidUid;
   };
+
+  //!
+  ClientContext& GetClientContext(
+    ClientId clientId,
+    bool requireAuthentication = true);
 
   protocol::LobbyCommandLoginOK::SystemContent _systemContent{
     .values = {
@@ -194,7 +216,9 @@ protected:
       {30, 0}}};
   
   //!
-  std::unordered_map<ClientId, ClientContext> _clientContext;
+  std::unordered_map<ClientId, ClientContext> _clients;
+  //!
+  std::unordered_set<data::Uid> _forcedCharacterCreator;
 };
 
 } // namespace server

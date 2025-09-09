@@ -22,7 +22,6 @@
 #include "server/lobby/LobbyDirector.hpp"
 #include "server/ServerInstance.hpp"
 
-#include "libserver/Constants.hpp"
 #include "libserver/data/helper/ProtocolHelper.hpp"
 #include "libserver/registry/HorseRegistry.hpp"
 
@@ -102,7 +101,7 @@ void LoginHandler::Tick()
   while (not _clientLoginResponseQueue.empty())
   {
     const ClientId clientId = _clientLoginResponseQueue.front();
-    auto& clientContext = _lobbyDirector._clientContext[clientId];
+    auto& clientContext = _lobbyDirector.GetClientContext(clientId, false);
     auto& loginContext = _clientLogins[clientId];
 
     // If the user character load was already requested wait for the load to complete.
@@ -120,7 +119,6 @@ void LoginHandler::Tick()
     assert(userRecord.IsAvailable());
 
     auto characterUid = data::InvalidUid;
-
     userRecord.Immutable(
       [&characterUid](const data::User& user)
       {
@@ -145,8 +143,11 @@ void LoginHandler::Tick()
 
     _clientLoginResponseQueue.pop();
 
+    const bool forcedCharacterCreator = _lobbyDirector._forcedCharacterCreator.erase(
+      characterUid) > 0;
+
     // If the user does not have a character send them to the character creator.
-    if (not hasCharacter)
+    if (not hasCharacter || forcedCharacterCreator)
     {
       spdlog::debug("User '{}' sent to the character creator", loginContext.userName);
       QueueUserCreateNickname(clientId, loginContext.userName);
@@ -166,6 +167,7 @@ void LoginHandler::Tick()
     QueueUserLoginAccepted(clientId, loginContext.userName);
 
     clientContext.characterUid = characterUid;
+    clientContext.isAuthenticated = true;
 
     // Only one response per tick.
     break;
@@ -225,16 +227,22 @@ void LoginHandler::HandleUserCreateCharacter(
   if (not userRecord)
     throw std::runtime_error("User record does not exist");
 
-  std::vector<data::Uid> horses;
-
-  // Create the character's horses.
-  for (uint32_t i = 0; i < 3; ++i)
+  auto userCharacterUid{data::InvalidUid};
+  userRecord->Immutable([&userCharacterUid](const data::User& user)
   {
-    // Create a new horse for the character.
-    const auto horseRecord = _lobbyDirector.GetServerInstance().GetDataDirector().CreateHorse();
+    userCharacterUid = user.characterUid();
+  });
 
-    horseRecord.Mutable(
-      [&horses](data::Horse& horse)
+  std::optional<Record<data::Character>> userCharacter;
+
+  if (userCharacterUid == data::InvalidUid)
+  {
+    // Create a new mount for the character.
+    const auto mountRecord = _lobbyDirector.GetServerInstance().GetDataDirector().CreateHorse();
+
+    auto mountUid = data::InvalidUid;
+    mountRecord.Mutable(
+      [&mountUid](data::Horse& horse)
       {
         // The TID of the horse specifies which body mesh is used for that horse.
         // Can be found in the `MountPartInfo` table.
@@ -246,29 +254,48 @@ void LoginHandler::HandleUserCreateCharacter(
           horse.parts,
           horse.appearance);
 
-        horses.emplace_back(horse.uid());
+        mountUid = horse.uid();
+      });
+
+    // Create the new character.
+    userCharacter = _lobbyDirector.GetServerInstance().GetDataDirector().CreateCharacter();
+    userCharacter->Mutable(
+      [&userCharacterUid,
+        &mountUid,
+        &command](data::Character& character)
+      {
+        character.name = command.nickname;
+
+        // todo: default level configured
+        character.level = 60;
+        // todo: default carrots configured
+        character.carrots = 10'000;
+
+        character.mountUid() = mountUid;
+
+        userCharacterUid = character.uid();
+      });
+
+    // Assign the character to the user.
+    userRecord->Mutable(
+      [&userCharacterUid](data::User& user)
+      {
+        user.characterUid() = userCharacterUid;
       });
   }
+  else
+  {
+    // Retrieve the existing character.
+    userCharacter = _lobbyDirector.GetServerInstance().GetDataDirector().GetCharacter(
+      userCharacterUid);
+  }
 
-  // Pick the first horse to be a mount.
-  const data::Uid characterMountUid = horses.front();
+  assert(userCharacter.has_value());
 
-  // Create the character.
-  const auto characterRecord = _lobbyDirector.GetServerInstance().GetDataDirector().CreateCharacter();
-  auto userCharacterUid{data::InvalidUid};
-
-  characterRecord.Mutable(
-    [&userCharacterUid,
-      &horses,
-      &characterMountUid,
-      &command](data::Character& character)
+  // Update the character's parts and appearance.
+  userCharacter->Mutable(
+    [&command](data::Character& character)
     {
-      userCharacterUid = character.uid();
-
-      character.level = 60;
-      character.carrots = 5000;
-
-      character.name = command.nickname;
       character.parts = data::Character::Parts{
         .modelId = command.character.parts.charId,
         .mouthId = command.character.parts.mouthSerialId,
@@ -281,16 +308,6 @@ void LoginHandler::HandleUserCreateCharacter(
         .legVolume = command.character.appearance.legVolume,
         .emblemId = command.character.appearance.emblemId,
       };
-
-      character.horses = horses;
-      character.mountUid() = characterMountUid;
-    });
-
-  // Assign the character to the user.
-  userRecord->Mutable(
-    [&userCharacterUid](data::User& user)
-    {
-      user.characterUid() = userCharacterUid;
     });
 
   // Queue the processing of the login response.
@@ -316,7 +333,7 @@ void LoginHandler::QueueUserLoginAccepted(
     .member0 = 0xCA794,
     .motd = std::format(
       "Welcome to Story of Alicia. Players online: {}",
-      _lobbyDirector._clientContext.size()),
+      _lobbyDirector._clients.size()),
     .val1 = 0x0,
     .val3 = 0x0,
     .optionType = OptionType::Value,
@@ -332,7 +349,7 @@ void LoginHandler::QueueUserLoginAccepted(
       {0x2E, {{2, 1}}}},
 
     .ranchAddress = _lobbyDirector.GetConfig().advertisement.ranch.address.to_uint(),
-    .ranchport = _lobbyDirector.GetConfig().advertisement.ranch.port,
+    .ranchPort = _lobbyDirector.GetConfig().advertisement.ranch.port,
     .scramblingConstant = 0,
 
     .systemContent = _lobbyDirector._systemContent,

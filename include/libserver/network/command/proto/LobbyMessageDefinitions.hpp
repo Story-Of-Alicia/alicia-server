@@ -124,7 +124,7 @@ struct LobbyCommandLoginOK
   std::string val6{};
 
   uint32_t ranchAddress{};
-  uint16_t ranchport{};
+  uint16_t ranchPort{};
   uint32_t scramblingConstant{};
 
   Character character{};

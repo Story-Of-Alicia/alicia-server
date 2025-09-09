@@ -24,9 +24,11 @@
 #include "libserver/network/command/proto/LobbyMessageDefinitions.hpp"
 
 #include <chrono>
+#include <unordered_map>
 
 namespace server
 {
+
 class LobbyDirector;
 
 //! Login handler.

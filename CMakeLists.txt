@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(alicia-server
-        VERSION 1.0.0)
+project(alicia-server)
 
 option(BUILD_TESTS "Build tests" ON)
 
@@ -9,11 +8,11 @@ find_package(Boost 1.80.0 MODULE)
 
 add_subdirectory(3rd-party SYSTEM)
 
+include(cmake/Versioning.cmake)
+get_semver()
+
 # Version variables
-set(AliciaServerBuildName alpha)
-set(AliciaServerBuildVersionMajor ${CMAKE_PROJECT_VERSION_MAJOR})
-set(AliciaServerBuildVersionMinor ${CMAKE_PROJECT_VERSION_MINOR})
-set(AliciaServerBuildVersion ${CMAKE_PROJECT_VERSION}-${AliciaServerBuildName})
+set(AliciaServerBuildVersion ${ServerSemver})
 
 # Generated version header.
 configure_file(
