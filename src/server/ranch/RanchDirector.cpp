@@ -547,8 +547,8 @@ void RanchDirector::BroadcastUpdateGuildMemberGradeNotify(
 {
   // TODO: Identify fields
   protocol::AcCmdRCUpdateGuildMemberGradeNotify notify{
-    .unk0 = guildUid,
-    .unk1 = characterUid,
+    .guildUid = guildUid,
+    .targetCharacterUid = characterUid,
     .guildRole = static_cast<uint8_t>(guildRole)
   };
 

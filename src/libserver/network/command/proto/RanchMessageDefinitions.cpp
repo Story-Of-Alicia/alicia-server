@@ -2431,8 +2431,8 @@ void AcCmdRCUpdateGuildMemberGradeNotify::Write(
   const AcCmdRCUpdateGuildMemberGradeNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0)
-    .Write(command.unk1)
+  stream.Write(command.guildUid)
+    .Write(command.targetCharacterUid)
     .Write(command.unk2)
     .Write(command.guildRole)
     .Write(command.unk4);

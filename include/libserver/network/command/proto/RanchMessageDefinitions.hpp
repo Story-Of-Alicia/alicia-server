@@ -3867,8 +3867,8 @@ struct AcCmdCRUpdateGuildMemberGradeOK
 
 struct AcCmdRCUpdateGuildMemberGradeNotify
 {
-  uint32_t unk0;
-  uint32_t unk1;
+  uint32_t guildUid;
+  uint32_t targetCharacterUid;
   uint32_t unk2;
   uint8_t guildRole;
   uint8_t unk4;
