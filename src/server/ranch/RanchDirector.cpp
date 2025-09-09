@@ -601,29 +601,11 @@ void RanchDirector::BroadcastWithdrawGuildMemberNotify(
     {
       // TODO: Identify fields
       protocol::AcCmdRCWithdrawGuildMemberNotify notify{
-        .unk2 = characterUid
+        .unk0 = guildUid,
+        .unk1 = character.uid(),
+        .unk2 = characterUid,
+        .option = option
       };
-
-      bool emit = false;
-      if (option == protocol::AcCmdCRWithdrawGuildMember::Option::Kicked && character.uid() == characterUid)
-      {
-        // Notify the guild member that they have been kicked
-        notify.unk0 = guildUid;
-        notify.unk2 = character.uid();
-        notify.option = option;
-        emit = true;
-      }
-      else if (character.guildUid() == guildUid)
-      {
-        // Notify other guild members that a member has been kicked??
-        notify.unk0 = character.guildUid();
-        notify.unk1 = character.uid();
-        notify.option = protocol::AcCmdCRWithdrawGuildMember::Option::Unk2; // Leave removes ex-member from list
-        emit = true;
-      }
-
-      if (not emit)
-        return;
 
       _commandServer.QueueCommand<decltype(notify)>(
         clientId,
