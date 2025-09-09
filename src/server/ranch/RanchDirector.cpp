@@ -324,18 +324,6 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleHideAge(clientId, command);
     });
-
-  _commandServer.RegisterCommandHandler<protocol::AcCmdCRHideAgeCancel>(
-    [this](ClientId clientId, const auto& command)
-    {
-      protocol::AcCmdCRHideAgeCancel response;
-      _commandServer.QueueCommand<decltype(response)>(
-        clientId,
-        [response]()
-        {
-          return response;
-        });
-    });
 }
 
 void RanchDirector::Initialize()
