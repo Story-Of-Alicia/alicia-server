@@ -54,11 +54,61 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
         catch (const std::exception& x)
         {
           spdlog::error(
-            "Exception storing user '{}' on the primary data source: {}", key, x.what());
+            "Exception storing user '{}' from the primary data source: {}", key, x.what());
         }
 
         return false;
+      },
+      [&](const auto& key)
+      {
+        spdlog::error("Invalid delete operation on user '{}' from the primary data source", key);
+        return false;
       })
+  , _infractionStorage(
+    [&](const auto& key, auto& infraction)
+    {
+      try
+      {
+        _primaryDataSource->RetrieveInfraction(key, infraction);
+        return true;
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error(
+          "Exception retrieving infraction {} from the primary data source: {}", key, x.what());
+      }
+
+      return false;
+    },
+    [&](const auto& key, auto& infraction)
+    {
+      try
+      {
+        _primaryDataSource->StoreInfraction(key, infraction);
+        return true;
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error(
+          "Exception storing infraction {} on the primary data source: {}", key, x.what());
+      }
+
+      return false;
+    },
+    [&](const auto& key)
+    {
+      try
+      {
+        _primaryDataSource->DeleteInfraction(key);
+        return true;
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error(
+          "Exception deleting infraction {} from the primary data source: {}", key, x.what());
+      }
+      return false;
+    })
   , _characterStorage(
       [&](const auto& key, auto& character)
       {
@@ -88,6 +138,20 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
             "Exception storing character {} on the primary data source: {}", key, x.what());
         }
 
+        return false;
+      },
+      [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteCharacter(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting character {} from the primary data source: {}", key, x.what());
+        }
         return false;
       })
   , _horseStorage(
@@ -120,6 +184,20 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
         }
 
         return false;
+      },
+      [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteHorse(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting horse {} from the primary data source: {}", key, x.what());
+        }
+        return false;
       })
   , _itemStorage(
       [&](const auto& key, auto& item)
@@ -150,6 +228,20 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
             "Exception storing item {} on the primary data source: {}", key, x.what());
         }
 
+        return false;
+      },
+      [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteItem(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting item {} from the primary data source: {}", key, x.what());
+        }
         return false;
       })
   , _storageItemStorage(
@@ -182,6 +274,20 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
         }
 
         return false;
+      },
+      [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteStorageItem(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting storage item {} from the primary data source: {}", key, x.what());
+        }
+        return false;
       })
   , _eggStorage(
       [&](const auto& key, auto& egg)
@@ -212,6 +318,20 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
             "Exception storing egg {} on the primary data source: {}", key, x.what());
         }
 
+        return false;
+      },
+      [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteEgg(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting egg {} from the primary data source: {}", key, x.what());
+        }
         return false;
       })
   , _petStorage(
@@ -244,6 +364,20 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
         }
 
         return false;
+      },
+      [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeletePet(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting pet {} from the primary data source: {}", key, x.what());
+        }
+        return false;
       })
   , _housingStorage(
       [&](const auto& key, auto& housing)
@@ -274,6 +408,20 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
             "Exception storing housing {} on the primary data source: {}", key, x.what());
         }
 
+        return false;
+      },
+      [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteHousing(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting housing {} from the primary data source: {}", key, x.what());
+        }
         return false;
       })
   , _guildStorage(
@@ -306,7 +454,21 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
        }
 
        return false;
-     })
+     },
+     [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteGuild(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting guild {} from the primary data source: {}", key, x.what());
+        }
+        return false;
+      })
 {
   _primaryDataSource = std::make_unique<FileDataSource>();
   _primaryDataSource->Initialize(basePath);
@@ -325,6 +487,7 @@ void DataDirector::Terminate()
   try
   {
     _userStorage.Terminate();
+    _infractionStorage.Terminate();
     _characterStorage.Terminate();
     _horseStorage.Terminate();
     _itemStorage.Terminate();
@@ -347,6 +510,7 @@ void DataDirector::Tick()
   try
   {
     _userStorage.Tick();
+    _infractionStorage.Tick();
     _characterStorage.Tick();
     _horseStorage.Tick();
     _itemStorage.Tick();
@@ -439,7 +603,7 @@ Record<data::User> DataDirector::GetUser(const std::string& userName)
   return _userStorage.Get(userName).value_or(Record<data::User>{});
 }
 
-DataDirector::UserStorage& DataDirector::GetUsers()
+DataDirector::UserStorage& DataDirector::GetUserCache()
 {
   return _userStorage;
 }
@@ -463,9 +627,26 @@ Record<data::Character> DataDirector::CreateCharacter() noexcept
     });
 }
 
-DataDirector::CharacterStorage& DataDirector::GetCharacters()
+DataDirector::CharacterStorage& DataDirector::GetCharacterCache()
 {
   return _characterStorage;
+}
+
+Record<data::Infraction> DataDirector::CreateInfraction() noexcept
+{
+  return _infractionStorage.Create(
+    [this]()
+    {
+      data::Infraction infraction;
+      _primaryDataSource->CreateInfraction(infraction);
+
+      return std::make_pair(infraction.uid(), std::move(infraction));
+    });
+}
+
+DataDirector::InfractionStorage& DataDirector::GetInfractionCache()
+{
+  return _infractionStorage;
 }
 
 Record<data::Horse> DataDirector::GetHorse(data::Uid horseUid) noexcept
@@ -487,7 +668,7 @@ Record<data::Horse> DataDirector::CreateHorse() noexcept
     });
 }
 
-DataDirector::HorseStorage& DataDirector::GetHorses()
+DataDirector::HorseStorage& DataDirector::GetHorseCache()
 {
   return _horseStorage;
 }
@@ -511,12 +692,12 @@ Record<data::Item> DataDirector::CreateItem() noexcept
     });
 }
 
-DataDirector::ItemStorage& DataDirector::GetItems()
+DataDirector::ItemStorage& DataDirector::GetItemCache()
 {
   return _itemStorage;
 }
 
-Record<data::StorageItem> DataDirector::GetStorageItem(data::Uid storedItemUid) noexcept
+Record<data::StorageItem> DataDirector::GetStorageItemCache(data::Uid storedItemUid) noexcept
 {
   if (storedItemUid == data::InvalidUid)
     return {};
@@ -535,7 +716,7 @@ Record<data::StorageItem> DataDirector::CreateStorageItem() noexcept
     });
 }
 
-DataDirector::StorageItemStorage& DataDirector::GetStorageItem()
+DataDirector::StorageItemStorage& DataDirector::GetStorageItemCache()
 {
   return _storageItemStorage;
 }
@@ -559,7 +740,7 @@ Record<data::Egg> DataDirector::CreateEgg() noexcept
     });
 }
 
-DataDirector::EggStorage& DataDirector::GetEggs()
+DataDirector::EggStorage& DataDirector::GetEggCache()
 {
   return _eggStorage;
 }
@@ -583,12 +764,12 @@ Record<data::Pet> DataDirector::CreatePet() noexcept
     });
 }
 
-DataDirector::PetStorage& DataDirector::GetPets()
+DataDirector::PetStorage& DataDirector::GetPetCache()
 {
   return _petStorage;
 }
 
-Record<data::Housing> DataDirector::GetHousing(data::Uid housingUid) noexcept
+Record<data::Housing> DataDirector::GetHousingCache(data::Uid housingUid) noexcept
 {
   if (housingUid == data::InvalidUid)
     return {};
@@ -607,7 +788,7 @@ Record<data::Housing> DataDirector::CreateHousing() noexcept
     });
 }
 
-DataDirector::HousingStorage& DataDirector::GetHousing()
+DataDirector::HousingStorage& DataDirector::GetHousingCache()
 {
   return _housingStorage;
 }
@@ -646,6 +827,20 @@ void DataDirector::ScheduleUserLoad(
       return;
     }
 
+    std::vector<data::Uid> infractions;
+    userRecord.Immutable([&infractions](const data::User& user)
+    {
+      infractions = user.infractions();
+    });
+
+    const auto infractionRecords = GetInfractionCache().Get(infractions);
+    if (not infractionRecords)
+    {
+      userDataContext.debugMessage = std::format(
+        "Infractions are not available");
+      return;
+    }
+
     userDataContext.isUserDataLoaded.store(true, std::memory_order::relaxed);
   });
 }
@@ -669,7 +864,7 @@ Record<data::Guild> DataDirector::CreateGuild() noexcept
     });
 }
 
-DataDirector::GuildStorage& DataDirector::GetGuilds()
+DataDirector::GuildStorage& DataDirector::GetGuildCache()
 {
   return _guildStorage;
 }
@@ -752,16 +947,16 @@ void DataDirector::ScheduleCharacterLoad(
     const auto guildRecord = GetGuild(guildUid);
     const auto petRecord = GetPet(petUid);
 
-    const auto giftRecords = GetStorageItem().Get(gifts);
-    const auto purchaseRecords = GetStorageItem().Get(purchases);
+    const auto giftRecords = GetStorageItemCache().Get(gifts);
+    const auto purchaseRecords = GetStorageItemCache().Get(purchases);
 
-    const auto horseRecords = GetHorses().Get(horses);
+    const auto horseRecords = GetHorseCache().Get(horses);
 
-    const auto eggRecords = GetEggs().Get(eggs);
+    const auto eggRecords = GetEggCache().Get(eggs);
 
-    const auto housingRecords = GetHousing().Get(housing);
+    const auto housingRecords = GetHousingCache().Get(housing);
 
-    const auto petRecords = GetPets().Get(pets);
+    const auto petRecords = GetPetCache().Get(pets);
 
     // Only require guild if the UID is not invalid.
     if (not guildRecord && guildUid != data::InvalidUid)
@@ -811,7 +1006,7 @@ void DataDirector::ScheduleCharacterLoad(
       });
     }
 
-    const auto itemRecords = GetItems().Get(items);
+    const auto itemRecords = GetItemCache().Get(items);
     if (not itemRecords)
     {
       userDataContext.debugMessage = std::format(

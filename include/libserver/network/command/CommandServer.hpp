@@ -92,6 +92,8 @@ public:
   //! Ends the server.
   void EndHost();
 
+  void DisconnectClient(ClientId clientId);
+
   //! Registers a command handler.
   //! @param commandId ID of the command to register the handler for.
   //! @param handler Handler of the command.

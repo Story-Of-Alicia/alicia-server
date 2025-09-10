@@ -191,7 +191,7 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
       {
         std::vector<data::Uid> availableRanches;
 
-        auto& characters = GetServerInstance().GetDataDirector().GetCharacters();
+        auto& characters = GetServerInstance().GetDataDirector().GetCharacterCache();
         const auto& characterKeys = characters.GetKeys();
 
         for (const auto& randomRancherUid : characterKeys)
@@ -295,6 +295,68 @@ void LobbyDirector::RequestCharacterCreator(data::Uid characterUid)
   _forcedCharacterCreator.emplace(characterUid);
 }
 
+void LobbyDirector::Disconnect(data::Uid characterUid)
+{
+  protocol::AcCmdLCOpKick kick{};
+  for (const auto& [clientId, clientContext] : _clients)
+  {
+    if (not clientContext.isAuthenticated)
+      continue;
+
+    if (clientContext.characterUid == characterUid)
+    {
+      _commandServer.DisconnectClient(clientId);
+      return;
+    }
+  }
+}
+
+void LobbyDirector::Mute(data::Uid characterUid, data::Clock::time_point expiration)
+{
+  protocol::AcCmdLCOpMute mute{
+    .duration = util::DurationToAliciaTime(std::chrono::seconds(10))};
+
+  for (const auto& [clientId, clientContext] : _clients)
+  {
+    if (not clientContext.isAuthenticated)
+      continue;
+
+    if (clientContext.characterUid == characterUid)
+    {
+      _commandServer.QueueCommand<decltype(mute)>(
+        clientId,
+        [mute]()
+        {
+          return mute;
+        });
+      return;
+    }
+  }
+}
+
+void LobbyDirector::Notice(data::Uid characterUid, const std::string& message)
+{
+  protocol::AcCmdLCNotice notice{
+    .notice = message};
+
+  for (const auto& [clientId, clientContext] : _clients)
+  {
+    if (not clientContext.isAuthenticated)
+      continue;
+
+    if (clientContext.characterUid == characterUid)
+    {
+      _commandServer.QueueCommand<decltype(notice)>(
+        clientId,
+        [notice]()
+        {
+          return notice;
+        });
+      return;
+    }
+  }
+}
+
 void LobbyDirector::InviteGuildJoin(std::string characterName, data::Uid guildUid, data::Uid inviterCharacterUid)
 {
   // Inviter character name
@@ -372,6 +434,34 @@ void LobbyDirector::InviteGuildJoin(std::string characterName, data::Uid guildUi
     // Found client and sent invite command, no need to process the rest of the clients
     break;
   }
+}
+
+std::vector<std::string> LobbyDirector::GetOnlineUsers()
+{
+  std::vector<std::string> userName;
+
+  for (const auto& [clientId, clientContext] : _clients)
+  {
+    if (not clientContext.isAuthenticated)
+      continue;
+    userName.emplace_back(clientContext.userName);
+  }
+
+  return userName;
+}
+
+std::vector<data::Uid> LobbyDirector::GetOnlineCharacters()
+{
+  std::vector<data::Uid> characters;
+
+  for (const auto& [clientId, clientContext] : _clients)
+  {
+    if (not clientContext.isAuthenticated)
+      continue;
+    characters.emplace_back(clientContext.characterUid);
+  }
+
+  return characters;
 }
 
 void LobbyDirector::UpdateVisitPreference(data::Uid characterUid, data::Uid visitingCharacterUid)
@@ -514,11 +604,11 @@ void LobbyDirector::QueueShowInventory(ClientId clientId)
   characterRecord.Immutable(
     [this, &response](const data::Character& character)
     {
-      const auto itemRecords = GetServerInstance().GetDataDirector().GetItems().Get(
+      const auto itemRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(
         character.items());
       protocol::BuildProtocolItems(response.items, *itemRecords);
 
-      const auto horseRecords = GetServerInstance().GetDataDirector().GetHorses().Get(
+      const auto horseRecords = GetServerInstance().GetDataDirector().GetHorseCache().Get(
         character.horses());
       protocol::BuildProtocolHorses(response.horses, *horseRecords);
     });

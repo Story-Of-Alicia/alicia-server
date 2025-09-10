@@ -24,6 +24,7 @@
 
 #include <libserver/util/Util.hpp>
 
+#include <regex>
 #include <format>
 
 namespace server
@@ -59,6 +60,53 @@ std::vector<std::string> CommandManager::HandleCommand(
 ChatSystem::ChatSystem(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
 {
+  RegisterUserCommands();
+  RegisterAdminCommands();
+}
+
+ChatSystem::~ChatSystem()
+{
+}
+
+ChatSystem::ChatVerdict ChatSystem::ProcessChatMessage(
+  data::Uid characterUid,
+  const std::string& message) noexcept
+{
+  ChatVerdict verdict;
+
+  if (message.starts_with("//"))
+  {
+    verdict.commandVerdict = ProcessCommandMessage(
+      characterUid, message.substr(2));
+  }
+  else
+  {
+    // todo: moderation
+    verdict.message = message;
+  }
+
+  return verdict;
+}
+
+ChatSystem::CommandVerdict ChatSystem::ProcessCommandMessage(
+  data::Uid characterUid,
+  const std::string& message)
+{
+  CommandVerdict verdict;
+
+  const auto command = util::TokenizeString(
+    message, ' ');
+
+  verdict.result = _commandManager.HandleCommand(
+    command[0],
+    characterUid,
+    std::span(command.begin() + 1, command.end()));
+
+  return verdict;
+}
+
+void ChatSystem::RegisterUserCommands()
+{
   // about command
   _commandManager.RegisterCommand(
     "about",
@@ -87,11 +135,19 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
         "Command are a subject of the prototype.",
         "For command reference, ask the community ",
         " or browse the code online.",
-        "",
-        "Official command reference:",
+        " ",
+        "Official user command reference:",
         " //create - Send you to the character creator",
-        " //about - Information about the server"
-        "",
+        " //about - Information about the server",
+        " //online - Information about players",
+        " ",
+        "Official admin command reference:",
+        " //infraction - Infraction management",
+        " //promote - Promotes user to Game Master role",
+        " //demote - Demotes user to User role",
+        " //notice - Sends notice to character",
+        " //users - Detailed information about players",
+        " ",
         "More commands available over at: ",
         " https://bruhvrum.github.io/registertest/commands"};
     });
@@ -171,7 +227,7 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
 
       for (const data::Uid onlineCharacterUid : onlineCharacters)
       {
-        const auto onlineCharacterRecord = _serverInstance.GetDataDirector().GetCharacters().Get(
+        const auto onlineCharacterRecord = _serverInstance.GetDataDirector().GetCharacterCache().Get(
           onlineCharacterUid, false);
 
         if (not onlineCharacterRecord)
@@ -233,9 +289,9 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
         characterUid);
       characterRecord.Mutable([emblemId](data::Character& character)
-      {
-        character.appearance.emblemId = emblemId;
-      });
+        {
+          character.appearance.emblemId = emblemId;
+        });
 
       return {std::format("Set your emblem, restart your game.")};
     });
@@ -274,26 +330,24 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
           .tailTid = static_cast<uint32_t>(std::atoi(arguments[4].c_str()))};
 
         characterRecord.Immutable([this, &mountUid, &parts](const data::Character& character)
-        {
-          _serverInstance.GetDataDirector().GetHorses().Get(character.mountUid())->Mutable(
-            [&parts](
-              data::Horse& horse)
-            {
-              if (parts.faceTid() != 0)
-                horse.parts.faceTid() = parts.faceTid();
-              if (parts.maneTid() != 0)
-                horse.parts.maneTid() = parts.maneTid();
-              if (parts.skinTid() != 0)
-                horse.parts.skinTid() = parts.skinTid();
-              if (parts.tailTid() != 0)
-                horse.parts.tailTid() = parts.tailTid();
-            });
+          {
+            _serverInstance.GetDataDirector().GetHorseCache().Get(character.mountUid())->Mutable([&parts](data::Horse& horse)
+              {
+                if (parts.faceTid() != 0)
+                  horse.parts.faceTid() = parts.faceTid();
+                if (parts.maneTid() != 0)
+                  horse.parts.maneTid() = parts.maneTid();
+                if (parts.skinTid() != 0)
+                  horse.parts.skinTid() = parts.skinTid();
+                if (parts.tailTid() != 0)
+                  horse.parts.tailTid() = parts.tailTid();
+              });
 
-          mountUid = character.mountUid();
-        });
+            mountUid = character.mountUid();
+          });
 
         // todo: fix the broadcast
-        //BroadcastUpdateMountInfoNotify(clientContext.characterUid, clientContext.visitingRancherUid, mountUid);
+        // BroadcastUpdateMountInfoNotify(clientContext.characterUid, clientContext.visitingRancherUid, mountUid);
         return {
           "Parts set!",
           "Restart the client."};
@@ -316,9 +370,7 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
           [this, &mountUid, &appearance](
             const data::Character& character)
           {
-            _serverInstance.GetDataDirector().GetHorses().Get(character.mountUid())->Mutable(
-              [&appearance](
-                data::Horse& horse)
+            _serverInstance.GetDataDirector().GetHorseCache().Get(character.mountUid())->Mutable([&appearance](data::Horse& horse)
               {
                 if (appearance.scale() != 0)
                   horse.appearance.scale() = appearance.scale();
@@ -331,11 +383,11 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
                 if (appearance.bodyVolume() != 0)
                   horse.appearance.bodyVolume() = appearance.bodyVolume();
               });
-              mountUid = character.mountUid();
-            });
+            mountUid = character.mountUid();
+          });
 
         // todo: fix the broadcast
-        //BroadcastUpdateMountInfoNotify(clientContext.characterUid, clientContext.visitingRancherUid, mountUid);
+        // BroadcastUpdateMountInfoNotify(clientContext.characterUid, clientContext.visitingRancherUid, mountUid);
         return {
           "Appearance set!",
           "Restart the client."};
@@ -344,18 +396,17 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
       if (subLiteral == "randomize")
       {
         characterRecord.Immutable([this, &mountUid](const data::Character& character)
-        {
-          _serverInstance.GetDataDirector().GetHorses().Get(character.mountUid())->Mutable(
-            [](data::Horse& horse)
-            {
-              HorseRegistry::Get().BuildRandomHorse(horse.parts, horse.appearance);
-            });
-          mountUid = character.mountUid();
-        });
+          {
+            _serverInstance.GetDataDirector().GetHorseCache().Get(character.mountUid())->Mutable([](data::Horse& horse)
+              {
+                HorseRegistry::Get().BuildRandomHorse(horse.parts, horse.appearance);
+              });
+            mountUid = character.mountUid();
+          });
 
         // todo: fix the broadcast
         return {"Appearance and parts randomized!",
-                "Restart the client."};
+          "Restart the client."};
       }
 
       return {"Unknown sub-literal"};
@@ -396,33 +447,33 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
         auto createdItemUid = data::InvalidUid;
         const auto createdItemRecord = _serverInstance.GetDataDirector().CreateItem();
         createdItemRecord.Mutable([createdItemTid, itemCount, &createdItemUid](data::Item& item)
-        {
-          item.tid() = createdItemTid;
-          item.count() = itemCount;
-          item.expiresAt() = data::Clock::now() + std::chrono::days(10);
+          {
+            item.tid() = createdItemTid;
+            item.count() = itemCount;
+            item.expiresAt() = data::Clock::now() + std::chrono::days(10);
 
-          createdItemUid = item.uid();
-        });
+            createdItemUid = item.uid();
+          });
 
         // Create the stored item.
         auto giftUid = data::InvalidUid;
         const auto storedItem = _serverInstance.GetDataDirector().CreateStorageItem();
         storedItem.Mutable([this, &giftUid, itemCount, createdItemUid, createdItemTid](data::StorageItem& storedItem)
-        {
-          storedItem.items().emplace_back(createdItemUid);
-          storedItem.sender() = "System";
-          storedItem.message() = std::format("{}x Item '{}'", itemCount, createdItemTid);
-          storedItem.created() = data::Clock::now();
+          {
+            storedItem.items().emplace_back(createdItemUid);
+            storedItem.sender() = "System";
+            storedItem.message() = std::format("{}x Item '{}'", itemCount, createdItemTid);
+            storedItem.created() = data::Clock::now();
 
-          giftUid = storedItem.uid();
-        });
+            giftUid = storedItem.uid();
+          });
 
         // Add the stored item as a gift.
 
         characterRecord.Mutable([giftUid](data::Character& character)
-        {
-          character.gifts().emplace_back(giftUid);
-        });
+          {
+            character.gifts().emplace_back(giftUid);
+          });
 
         _serverInstance.GetRanchDirector().SendStorageNotification(
           characterUid, protocol::AcCmdCRRequestStorage::Category::Gifts);
@@ -450,14 +501,12 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
           return {"Invalid item count"};
         }
 
-        std::map<std::string, std::vector<data::Tid>> presets
-        {
-          {"feed", {41001,41002,41003,41004,41005,41006,41007}},
-          {"clean", {40002,41008,41009}},
-          {"play", {42001,42002}},
-          {"cure", {44001,44002,44003,44004,44005,44006}},
-          {"construct", {45001,46018,45004,70002}}
-        };
+        std::map<std::string, std::vector<data::Tid>> presets{
+          {"feed", {41001, 41002, 41003, 41004, 41005, 41006, 41007}},
+          {"clean", {40002, 41008, 41009}},
+          {"play", {42001, 42002}},
+          {"cure", {44001, 44002, 44003, 44004, 44005, 44006}},
+          {"construct", {45001, 46018, 45004, 70002}}};
 
         std::vector<data::Tid> selectedItems{};
         if (selectedPreset == "all")
@@ -488,19 +537,19 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
           auto createdItemUid = data::InvalidUid;
           const auto createdItemRecord = _serverInstance.GetDataDirector().CreateItem();
           createdItemRecord.Mutable([selectedItemTid, itemCount, &createdItemUid](data::Item& item)
-          {
-            item.tid() = selectedItemTid;
-            item.count() = itemCount;
-            item.expiresAt() = data::Clock::now() + std::chrono::days(10);
+            {
+              item.tid() = selectedItemTid;
+              item.count() = itemCount;
+              item.expiresAt() = data::Clock::now() + std::chrono::days(10);
 
-            createdItemUid = item.uid();
-          });
+              createdItemUid = item.uid();
+            });
 
           // Add the item directly to character's inventory.
           characterRecord.Mutable([createdItemUid](data::Character& character)
-          {
-            character.items().emplace_back(createdItemUid);
-          });
+            {
+              character.items().emplace_back(createdItemUid);
+            });
         }
 
         return {"Preset added to character inventory. Please restart your game to apply changes!"};
@@ -510,36 +559,470 @@ ChatSystem::ChatSystem(ServerInstance& serverInstance)
     });
 }
 
-ChatSystem::~ChatSystem()
+void ChatSystem::RegisterAdminCommands()
 {
-}
+  // users command
+  _commandManager.RegisterCommand(
+    "users",
+    [this](
+      const std::span<const std::string>& arguments,
+      data::Uid characterUid) -> std::vector<std::string>
+    {
+      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+      if (not invokerRecord)
+        return {"Server error"};
 
-ChatSystem::Verdict ChatSystem::ProcessChatMessage(
-  data::Uid characterUid,
-  const std::string& message) noexcept
-{
-  Verdict verdict;
+      bool isAdmin = false;
+      invokerRecord.Immutable([&isAdmin](const data::Character& character)
+      {
+        isAdmin = character.role() != data::Character::Role::User;
+      });
 
-  if (message.starts_with("//"))
-  {
-    const auto command = util::TokenizeString(
-      message.substr(2), ' ');
+      if (not isAdmin)
+        return {};
 
-    verdict.isBroadcast = false;
-    verdict.isSystem = true;
-    verdict.result = _commandManager.HandleCommand(
-      command[0],
-      characterUid,
-      std::span(command.begin()+1, command.end()));
-  }
-  else
-  {
-    // todo: moderation
-    verdict.isBroadcast = true;
-    verdict.result = {message};
-  }
+      // todo: implement only local check
+      bool onlyLocal = false;
+      if (arguments.size() > 0)
+      {
+        onlyLocal = arguments[0] == "local";
+      }
 
-  return verdict;
+      std::vector<std::string> userList;
+      const std::vector<std::string> users = _serverInstance.GetLobbyDirector()
+        .GetOnlineUsers();
+
+      userList.emplace_back("Users:");
+      constexpr std::string_view UserLine = "  - {}, user: {}, uid: {}{}";
+
+      for (const auto& userName : users)
+      {
+        bool hasInfractions = false;
+        std::string onlineCharacterName = "xxx";
+        data::Uid onlineCharacterUid{data::InvalidUid};
+
+        const auto userRecord = _serverInstance.GetDataDirector().GetUser(userName);
+        if (userRecord)
+        {
+          userRecord.Immutable([&onlineCharacterUid, &hasInfractions](const data::User& user)
+          {
+            onlineCharacterUid = user.characterUid();
+            hasInfractions = not user.infractions().empty();
+          });
+
+          const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(onlineCharacterUid);
+          if (characterRecord)
+          {
+            characterRecord.Immutable([&onlineCharacterName](const data::Character& character)
+            {
+              onlineCharacterName = character.name();
+            });
+          }
+        }
+
+        userList.emplace_back(std::format(
+          UserLine,
+          onlineCharacterName,
+          userName,
+          onlineCharacterUid,
+          hasInfractions ? " <font color=\"#FF0000\">(!)</font>" : ""));
+      }
+
+      return userList;
+    });
+
+  // notice command
+  _commandManager.RegisterCommand(
+    "notice",
+    [this](
+      const std::span<const std::string>& arguments,
+      data::Uid characterUid) -> std::vector<std::string>
+    {
+      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+      if (not invokerRecord)
+        return {"Server error"};
+
+      bool isAdmin = false;
+      invokerRecord.Immutable([&isAdmin](const data::Character& character)
+      {
+        isAdmin = character.role() != data::Character::Role::User;
+      });
+
+      if (not isAdmin)
+        return {};
+
+      if (arguments.size() < 2)
+      {
+        return {"notice",
+        "  [character UID]",
+        "  - Specify 0 to send to all"
+        "  [message]"};
+      }
+
+      std::string message;
+      for (const auto& word : arguments.subspan(1))
+      {
+        message += word;
+        message += " ";
+      }
+
+      const data::Uid specifiedCharacterUid = std::atoi(arguments[0].data());
+      if (specifiedCharacterUid != data::InvalidUid)
+      {
+        const auto onlineCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(
+          specifiedCharacterUid);
+        if (not onlineCharacterRecord)
+        {
+          return {"Character unavailable or offline"};
+        }
+
+        _serverInstance.GetLobbyDirector().Notice(specifiedCharacterUid, message);
+        return {"Notice sent to character"};
+      }
+
+      for (const auto& onlineCharacterUid : _serverInstance.GetLobbyDirector().GetOnlineCharacters())
+      {
+        _serverInstance.GetLobbyDirector().Notice(onlineCharacterUid, message);
+      }
+      return {"Notice sent to all characters"};
+    });
+
+  // promote command
+  _commandManager.RegisterCommand(
+    "promote",
+    [this](
+      const std::span<const std::string>& arguments,
+      data::Uid characterUid) -> std::vector<std::string>
+    {
+      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+      if (not invokerRecord)
+        return {"Server error"};
+
+      bool isAdmin = false;
+      invokerRecord.Immutable([&isAdmin](const data::Character& character)
+      {
+        isAdmin = character.role() != data::Character::Role::User;
+      });
+
+      if (not isAdmin)
+        return {};
+
+      if (arguments.empty())
+      {
+        return {"Specify UID"};
+      }
+
+      const data::Uid onlineCharacterUid = std::atoi(arguments[0].data());
+      const auto onlineCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(
+        onlineCharacterUid);
+      if (not onlineCharacterRecord)
+      {
+        return {"Character unavailable or offline"};
+      }
+
+      std::string characterName;
+      onlineCharacterRecord.Mutable([&characterName](data::Character& character)
+      {
+        character.role() = data::Character::Role::GameMaster;
+        characterName = character.name();
+      });
+
+      return {std::format("Character '{}' promoted to GM", characterName)};
+    });
+
+  // demote command
+  _commandManager.RegisterCommand(
+    "demote",
+    [this](
+      const std::span<const std::string>& arguments,
+      data::Uid characterUid) -> std::vector<std::string>
+    {
+      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+      if (not invokerRecord)
+        return {"Server error"};
+
+      bool isAdmin = false;
+      invokerRecord.Immutable([&isAdmin](const data::Character& character)
+      {
+        isAdmin = character.role() != data::Character::Role::User;
+      });
+
+      if (not isAdmin)
+        return {};
+
+      if (arguments.empty())
+      {
+        return {"Specify UID"};
+      }
+
+      const data::Uid onlineCharacterUid = std::atoi(arguments[0].data());
+      const auto onlineCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(
+        onlineCharacterUid);
+      if (not onlineCharacterRecord)
+      {
+        return {"Character unavailable or offline"};
+      }
+
+      std::string characterName;
+      onlineCharacterRecord.Mutable([&characterName](data::Character& character)
+      {
+        character.role() = data::Character::Role::User;
+        characterName = character.name();
+      });
+
+      return {std::format("Character '{}' demoted to User", characterName)};
+    });
+
+  // infraction command
+  _commandManager.RegisterCommand(
+    "infraction",
+    [this](
+      const std::span<const std::string>& arguments,
+      data::Uid characterUid) -> std::vector<std::string>
+    {
+      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+      if (not invokerRecord)
+        return {"Server error"};
+
+      bool isAdmin = false;
+      invokerRecord.Immutable([&isAdmin](const data::Character& character)
+      {
+        isAdmin = character.role() != data::Character::Role::User;
+      });
+
+      if (not isAdmin)
+        return {};
+
+      if (arguments.empty())
+        return {"infraction",
+          "  [add/remove/list]"};
+
+      const std::string subLiteral = arguments[0];
+
+      if (subLiteral == "add")
+      {
+        if (arguments.size() < 4)
+        {
+          return {
+            "infraction add",
+            "  [user name]",
+            "  [none/mute/ban]",
+            "  [duration (XXmXXhXXd)]",
+            "  [optional: description]"};
+        }
+
+        const std::string userName = arguments[1];
+        const auto userRecord = _serverInstance.GetDataDirector().GetUser(userName);
+        if (not userRecord)
+        {
+          return {"User not available"};
+        }
+
+        const std::string type = arguments[2];
+        data::Infraction::Punishment punishmentType;
+        if (type == "mute")
+          punishmentType = data::Infraction::Punishment::Mute;
+        else if (type == "ban")
+          punishmentType = data::Infraction::Punishment::Ban;
+        else
+          punishmentType = data::Infraction::Punishment::None;
+
+        const std::string durationInput = arguments[3];
+        data::Clock::duration duration = std::chrono::seconds::zero();
+
+        const std::regex minutePattern(R"((\d+)m)");
+        const std::regex hourPattern(R"((\d+)h)");
+        const std::regex dayPattern(R"((\d+)d)");
+        std::smatch match;
+
+        if (durationInput == "infinite")
+        {
+          duration = data::Clock::duration::max();
+        }
+        else
+        {
+          if (std::regex_search(durationInput, match, minutePattern)) {
+            duration += std::chrono::minutes(std::stoi(match[1].str()));
+          }
+          if (std::regex_search(durationInput, match, hourPattern)) {
+            duration += std::chrono::hours(std::stoi(match[1].str()));
+          }
+          if (std::regex_search(durationInput, match, dayPattern)) {
+            duration += std::chrono::days(std::stoi(match[1].str()));
+          }
+        }
+
+        if (duration == duration.zero())
+        {
+          return {"Invalid duration, format example: 20m10h1d"};
+        }
+
+        std::string description;
+        if (arguments.size() > 4)
+        {
+          for (const std::string& word : arguments.subspan(4))
+          {
+            description += word;
+            description += " ";
+          }
+        }
+
+        auto infractionUid{data::InvalidUid};
+        const auto infractionRecord = _serverInstance.GetDataDirector().CreateInfraction();
+        infractionRecord.Mutable(
+          [&infractionUid, punishmentType, duration, description](
+            data::Infraction& infraction)
+          {
+            infraction.punishment = punishmentType;
+            infraction.duration = duration;
+            infraction.description = description;
+            infraction.createdAt = data::Clock::now();
+
+            infractionUid = infraction.uid();
+          });
+
+        auto userCharacterUid{data::InvalidUid};
+        userRecord.Mutable([infractionUid, &userCharacterUid](data::User& user)
+        {
+          user.infractions().emplace_back(infractionUid);
+
+          userCharacterUid = user.characterUid();
+        });
+
+        if (punishmentType == data::Infraction::Punishment::Ban)
+        {
+          _serverInstance.GetLobbyDirector().Disconnect(userCharacterUid);
+          _serverInstance.GetRanchDirector().Disconnect(userCharacterUid);
+          // todo: race
+        }
+        else if (punishmentType == data::Infraction::Punishment::Mute)
+        {
+          _serverInstance.GetLobbyDirector().Mute(userCharacterUid, data::Clock::now() + duration);
+        }
+
+        return {std::format("Infraction added to '{}'", userName)};
+      }
+      else if (subLiteral == "remove")
+      {
+        if (arguments.size() < 3)
+        {
+          return {"infraction remove",
+            "  [user name]",
+            "  [infraction UID]"};
+        }
+
+        const std::string userName = arguments[1];
+        const auto userRecord = _serverInstance.GetDataDirector().GetUser(userName);
+        if (not userRecord)
+        {
+          return {"User not available"};
+        }
+
+        const data::Uid infractionUid = std::atoi(arguments[2].c_str());
+        bool hasInfraction = false;
+
+        userRecord.Mutable([infractionUid, &hasInfraction](data::User& user)
+        {
+          hasInfraction = std::ranges::contains(user.infractions(), infractionUid);
+
+          if (hasInfraction)
+          {
+            const auto range = std::ranges::remove(user.infractions(), infractionUid);
+            user.infractions().erase(range.begin(), range.end());
+          }
+        });
+
+        if (not hasInfraction)
+          return {"No such infraction exists"};
+
+        return {std::format("Infraction removed from '{}'", userName)};
+      }
+      else if (subLiteral == "list")
+      {
+        if (arguments.size() < 2)
+        {
+          return {"infraction list",
+            "  [user name]"};
+        }
+
+        const std::string userName = arguments[1];
+        const auto userRecord = _serverInstance.GetDataDirector().GetUser(userName);
+        if (not userRecord)
+        {
+          return {"User not available"};
+        }
+
+        std::vector<std::string> list;
+        list.emplace_back(std::format("Infractions of '{}':", userName));
+
+        userRecord.Immutable([this, &list](const data::User& user)
+        {
+          const auto infractionRecords = _serverInstance.GetDataDirector().GetInfractionCache().Get(
+            user.infractions());
+          if (not infractionRecords)
+          {
+            list.emplace_back("Infractions unavailable");
+            return;
+          }
+
+          for (const auto& infractionRecord : *infractionRecords)
+          {
+            infractionRecord.Immutable([&list](const data::Infraction& infraction)
+            {
+              list.emplace_back(std::format(
+                " - UID: #{} - {}", infraction.uid(), infraction.description()));
+
+              std::string type;
+              if (infraction.punishment() == data::Infraction::Punishment::None)
+                type = "none";
+              else if (infraction.punishment() == data::Infraction::Punishment::Mute)
+                type = "<font color=\"#FF0000\">mute</font>";
+              else if (infraction.punishment() == data::Infraction::Punishment::Ban)
+                type = "<font color=\"#FF0000\">ban</font>";
+
+              list.emplace_back(std::format(
+                "   punishment: {}", type));
+
+              {
+                const auto expires = infraction.createdAt() + infraction.duration();
+
+                const std::chrono::year_month_day date{
+                  std::chrono::floor<std::chrono::days>(expires)};
+                const std::chrono::hh_mm_ss time{
+                  expires - std::chrono::floor<std::chrono::days>(expires)};
+
+                list.emplace_back(std::format(
+                  "   expires: {}/{}/{} - {:02}:{:02} (UTC)",
+                  date.day(),
+                  date.month(),
+                  date.year(),
+                  time.hours().count(),
+                  time.minutes().count()));
+              }
+
+              {
+                const std::chrono::year_month_day date{std::chrono::floor<std::chrono::days>(
+                  infraction.createdAt())};
+                const std::chrono::hh_mm_ss time{
+                  infraction.createdAt() - std::chrono::floor<std::chrono::days>(infraction.createdAt())};
+
+                list.emplace_back(std::format(
+                  "   created: {}/{}/{} - {:02}:{:02} (UTC)",
+                  date.day(),
+                  date.month(),
+                  date.year(),
+                  time.hours().count(),
+                  time.minutes().count()));
+              }
+            });
+          }
+        });
+
+        return list;
+      }
+
+      return {"Unknown sub literal"};
+    });
 }
 
 void ChatSystem::Broadcast(

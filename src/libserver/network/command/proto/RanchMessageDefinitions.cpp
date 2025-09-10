@@ -1110,7 +1110,7 @@ void AcCmdCRGetItemFromStorageOK::Write(
   const AcCmdCRGetItemFromStorageOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.storedItemUid);
+  stream.Write(command.storageItemUid);
   stream.Write(static_cast<uint8_t>(command.items.size()));
   for (const auto& item : command.items)
   {

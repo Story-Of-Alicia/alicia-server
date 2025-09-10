@@ -16,6 +16,7 @@ ServerInstance::ServerInstance(
   , _ranchDirector(*this)
   , _raceDirector(*this)
   , _chatSystem(*this)
+  , _infractionSystem(*this)
 {
 }
 
@@ -117,6 +118,11 @@ RaceDirector& ServerInstance::GetRaceDirector()
 ChatSystem& ServerInstance::GetChatSystem()
 {
   return _chatSystem;
+}
+
+InfractionSystem& ServerInstance::GetInfractionSystem()
+{
+  return _infractionSystem;
 }
 
 Config& ServerInstance::GetSettings()

@@ -65,7 +65,7 @@ public:
   template<typename T>
   void QueueCommand(network::ClientId clientId, std::function<T()> commandSupplier)
   {
-    _server.GetClient(clientId).QueueWrite([commandSupplier = std::move(commandSupplier)](
+    _server.GetClient(clientId)->QueueWrite([commandSupplier = std::move(commandSupplier)](
       network::asio::streambuf& buf)
     {
       // todo: this templated function should just write the bytes to the buffer,

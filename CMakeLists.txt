@@ -83,6 +83,7 @@ add_executable(alicia-server
         src/server/race/RaceDirector.cpp
         src/server/ranch/RanchDirector.cpp
         src/server/system/ChatSystem.cpp
+        src/server/system/InfractionSystem.cpp
         src/server/tracker/WorldTracker.cpp)
 target_include_directories(alicia-server
         PRIVATE include/)

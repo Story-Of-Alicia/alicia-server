@@ -1198,6 +1198,36 @@ void LobbyCommandChangeRanchOptionOK::Write(
     .Write(command.unk2);
 }
 
+void AcCmdLCOpKick::Write(const AcCmdLCOpKick& command, SinkStream& stream)
+{
+  // Empty.
+}
+
+void AcCmdLCOpKick::Read(AcCmdLCOpKick& command, SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdLCOpMute::Write(const AcCmdLCOpMute& command, SinkStream& stream)
+{
+  stream.Write(command.duration);
+}
+
+void AcCmdLCOpMute::Read(AcCmdLCOpMute& command, SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdLCNotice::Write(const AcCmdLCNotice& command, SinkStream& stream)
+{
+  stream.Write(command.notice);
+}
+
+void AcCmdLCNotice::Read(AcCmdLCNotice& command, SourceStream& stream)
+{
+    throw std::runtime_error("Not implemented");
+}
+
 void AcCmdLCInviteGuildJoin::Read(
   AcCmdLCInviteGuildJoin& command,
   SourceStream& stream)

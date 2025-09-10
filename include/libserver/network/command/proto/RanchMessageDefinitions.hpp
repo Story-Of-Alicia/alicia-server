@@ -1659,7 +1659,7 @@ struct AcCmdCRGetItemFromStorage
 
 struct AcCmdCRGetItemFromStorageOK
 {
-  uint32_t storedItemUid{};
+  uint32_t storageItemUid{};
   std::vector<Item> items{};
   //! Updates carrots as displayed on game client
   uint32_t updatedCarrots{};

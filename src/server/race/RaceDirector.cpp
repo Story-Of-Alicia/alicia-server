@@ -227,7 +227,7 @@ void RaceDirector::HandleEnterRoom(
 
         protocol::BuildProtocolCharacter(protocolRacer.avatar->character, character);
 
-        const auto mountRecord = GetServerInstance().GetDataDirector().GetHorses().Get(
+        const auto mountRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
           character.mountUid());
         mountRecord->Immutable(
           [&protocolRacer](const data::Horse& mount)

@@ -63,7 +63,7 @@ public:
 
 //! Client with event driven reads and writes
 //! to the underlying socket connection.
-class Client
+class Client : public std::enable_shared_from_this<Client>
 {
 public:
   //! Default constructor.
@@ -130,7 +130,7 @@ public:
   void End();
 
   //! Get client.
-  Client& GetClient(ClientId clientId);
+  std::shared_ptr<Client> GetClient(ClientId clientId);
 
   void OnClientConnected(ClientId clientId) override;
   void OnClientDisconnected(ClientId clientId) override;
@@ -145,7 +145,7 @@ private:
   //! Sequential client ID.
   ClientId _client_id = 0;
   //! Map of clients.
-  std::unordered_map<ClientId, Client> _clients;
+  std::unordered_map<ClientId, std::shared_ptr<Client>> _clients;
 
   //! A network event handler.
   EventHandlerInterface& _networkEventHandler;

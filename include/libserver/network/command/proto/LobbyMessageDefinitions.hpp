@@ -1735,6 +1735,77 @@ struct LobbyCommandChangeRanchOptionOK
     SourceStream& stream);
 };
 
+//! Unfortunately not implemented by the client.
+struct AcCmdLCOpKick
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCOpKick;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCOpKick& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCOpKick& command,
+    SourceStream& stream);
+};
+
+struct AcCmdLCOpMute
+{
+  uint32_t duration{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCOpMute;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCOpMute& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCOpMute& command,
+    SourceStream& stream);
+};
+
+struct AcCmdLCNotice
+{
+  std::string notice;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCNotice;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCNotice& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCNotice& command,
+    SourceStream& stream);
+};
+
 struct AcCmdLCInviteGuildJoin
 {
   uint32_t characterUid;

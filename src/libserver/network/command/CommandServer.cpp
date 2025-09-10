@@ -108,7 +108,6 @@ CommandServer::CommandServer(
 
 CommandServer::~CommandServer()
 {
-  EndHost();
 }
 
 void CommandServer::BeginHost(const asio::ip::address& address, uint16_t port)
@@ -127,6 +126,11 @@ void CommandServer::EndHost()
 
   _server.End();
   _serverThread.join();
+}
+
+void CommandServer::DisconnectClient(ClientId clientId)
+{
+  _server.GetClient(clientId)->End();
 }
 
 void CommandServer::SetCode(ClientId client, protocol::XorCode code)
@@ -345,7 +349,7 @@ void CommandServer::SendCommand(
 {
   try
   {
-    _server.GetClient(clientId).QueueWrite(
+    _server.GetClient(clientId)->QueueWrite(
       [this, commandId, supplier = std::move(supplier)](asio::streambuf& writeBuffer)
       {
         const auto mutableBuffer = writeBuffer.prepare(MaxCommandSize);
