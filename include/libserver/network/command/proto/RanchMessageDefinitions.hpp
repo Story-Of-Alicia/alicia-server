@@ -3917,7 +3917,33 @@ struct AcCmdCRInviteGuildJoin
     SourceStream& stream);
 };
 
-// TODO: AcCmdCRInviteGuildJoinCancel
+struct AcCmdCRInviteGuildJoinCancel
+{
+  uint32_t unk0;
+  uint32_t unk1;
+  std::string unk2;
+  GuildError error;
+  uint32_t unk4;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRInviteGuildJoinCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRInviteGuildJoinCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRInviteGuildJoinCancel& command,
+    SourceStream& stream);
+};
 
 } // namespace server::protocol
 

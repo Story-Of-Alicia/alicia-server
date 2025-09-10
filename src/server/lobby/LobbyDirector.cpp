@@ -913,4 +913,13 @@ LobbyDirector::ClientContext& LobbyDirector::GetClientContext(
   return clientContext;
 }
 
+void LobbyDirector::HandleInviteGuildJoinCancel(
+  ClientId clientId,
+  const protocol::AcCmdLCInviteGuildJoinCancel& command)
+{
+  // Send AcCmdCRInviteGuildJoinCancel?
+
+  // TODO: santiy check on received vars
+}
+
 } // namespace server

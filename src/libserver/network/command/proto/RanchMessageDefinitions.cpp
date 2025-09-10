@@ -2452,5 +2452,23 @@ void AcCmdCRInviteGuildJoin::Write(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRInviteGuildJoinCancel::Read(
+  AcCmdCRInviteGuildJoinCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRInviteGuildJoinCancel::Write(
+  const AcCmdCRInviteGuildJoinCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.unk2)
+    .Write(command.error)
+    .Write(command.unk4);
+}
+
 } // namespace server::protocol
 

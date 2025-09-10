@@ -186,6 +186,9 @@ private:
     ClientId clientId,
     const protocol::LobbyCommandChangeRanchOption& command);
 
+  void HandleInviteGuildJoinCancel(
+    ClientId clientId,
+    const protocol::AcCmdLCInviteGuildJoinCancel& command);
 
   //!
   ServerInstance& _serverInstance;

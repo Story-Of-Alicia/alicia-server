@@ -1216,4 +1216,23 @@ void AcCmdLCInviteGuildJoin::Write(
     .Write(command.guild);
 }
 
+void AcCmdLCInviteGuildJoinCancel::Read(
+  AcCmdLCInviteGuildJoinCancel& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterUid)
+    .Read(command.inviterCharacterUid)
+    .Read(command.inviterCharacterName)
+    .Read(command.unk3)
+    .Read(command.guild)
+    .Read(command.error);
+}
+
+void AcCmdLCInviteGuildJoinCancel::Write(
+  const AcCmdLCInviteGuildJoinCancel& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol

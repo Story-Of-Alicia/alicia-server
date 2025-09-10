@@ -526,6 +526,19 @@ enum class GuildRole : uint8_t {
   Member = 200    
 };
 
+// As described by GuildStrings table
+enum class GuildError : uint8_t {
+  SystemError = 0,
+  NoUserOrOffline = 1,
+  NoGuild = 2,
+  BadGuildName = 3,
+  GuildNameAlreadyExists = 4,
+  GuildAlreadyCreated = 5,
+  JoinedGuild = 6,
+  NoAuthority = 7,
+  Unknown = 8
+};
+
 } // namespace server
 
 #endif
