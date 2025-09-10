@@ -379,7 +379,7 @@ void LobbyDirector::InviteGuildJoin(std::string characterName, data::Uid guildUi
     }
     
     // Ensure character record exists (do not retrieve)
-    const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacters().Get(
+    const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacterCache().Get(
       clientContext.characterUid, false);
     if (not characterRecord.has_value())
     {
