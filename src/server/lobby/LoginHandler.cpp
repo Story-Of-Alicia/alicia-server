@@ -166,6 +166,7 @@ void LoginHandler::Tick()
     spdlog::debug("User '{}' succeeded in authentication", loginContext.userName);
     QueueUserLoginAccepted(clientId, loginContext.userName);
 
+    clientContext.userName = loginContext.userName;
     clientContext.characterUid = characterUid;
     clientContext.isAuthenticated = true;
 
@@ -222,7 +223,7 @@ void LoginHandler::HandleUserCreateCharacter(
 {
   const auto& loginContext = _clientLogins[clientId];
 
-  const auto userRecord = _lobbyDirector.GetServerInstance().GetDataDirector().GetUsers().Get(
+  const auto userRecord = _lobbyDirector.GetServerInstance().GetDataDirector().GetUserCache().Get(
     loginContext.userName);
   if (not userRecord)
     throw std::runtime_error("User record does not exist");
@@ -323,7 +324,7 @@ void LoginHandler::QueueUserLoginAccepted(
   const ClientId clientId,
   const std::string& userName)
 {
-  const auto userRecord = _lobbyDirector.GetServerInstance().GetDataDirector().GetUsers().Get(
+  const auto userRecord = _lobbyDirector.GetServerInstance().GetDataDirector().GetUserCache().Get(
     userName);
   if (not userRecord)
     throw std::runtime_error("User record unavailable");
@@ -401,7 +402,7 @@ void LoginHandler::QueueUserLoginAccepted(
       response.bitfield = protocol::LobbyCommandLoginOK::HasPlayerBefore;
 
       // Character equipment.
-      const auto characterEquipmentItems = _lobbyDirector.GetServerInstance().GetDataDirector().GetItems().Get(
+      const auto characterEquipmentItems = _lobbyDirector.GetServerInstance().GetDataDirector().GetItemCache().Get(
         character.characterEquipment());
       if (not characterEquipmentItems)
         throw std::runtime_error("Character equipment items unavailable");
@@ -411,7 +412,7 @@ void LoginHandler::QueueUserLoginAccepted(
         *characterEquipmentItems);
 
       // Mount equipment.
-      const auto mountEquipmentItems = _lobbyDirector.GetServerInstance().GetDataDirector().GetItems().Get(
+      const auto mountEquipmentItems = _lobbyDirector.GetServerInstance().GetDataDirector().GetItemCache().Get(
         character.mountEquipment());
       if (not mountEquipmentItems)
         throw std::runtime_error("Character equipment items unavailable");
@@ -454,7 +455,7 @@ void LoginHandler::QueueUserLoginAccepted(
     });
 
   // Get the mounted horse record and fill the protocol data.
-  const auto mountRecord = _lobbyDirector.GetServerInstance().GetDataDirector().GetHorses().Get(characterMountUid);
+  const auto mountRecord = _lobbyDirector.GetServerInstance().GetDataDirector().GetHorseCache().Get(characterMountUid);
   if (not mountRecord)
     throw std::runtime_error("Horse mount record unavailable");
 

@@ -33,6 +33,7 @@ class DataDirector
 {
 public:
   using UserStorage = DataStorage<std::string, data::User>;
+  using InfractionStorage = DataStorage<data::Uid, data::Infraction>;
   using CharacterStorage = DataStorage<data::Uid, data::Character>;
   using HorseStorage = DataStorage<data::Uid, data::Horse>;
   using ItemStorage = DataStorage<data::Uid, data::Item>;
@@ -74,43 +75,45 @@ public:
   bool AreCharacterDataLoaded(const std::string& userName);
 
   [[nodiscard]] Record<data::User> GetUser(const std::string& userName);
-  [[nodiscard]] UserStorage& GetUsers();
+  [[nodiscard]] UserStorage& GetUserCache();
 
   //! Gets a character.
   //! @param characterUid UID of the character.
   //! @returns The character record.
   [[nodiscard]] Record<data::Character> GetCharacter(data::Uid characterUid) noexcept;
   [[nodiscard]] Record<data::Character> CreateCharacter() noexcept;
-  [[nodiscard]] CharacterStorage& GetCharacters();
+  [[nodiscard]] CharacterStorage& GetCharacterCache();
+
+  [[nodiscard]] Record<data::Infraction> CreateInfraction() noexcept;
+  [[nodiscard]] InfractionStorage& GetInfractionCache();
 
   [[nodiscard]] Record<data::Horse> GetHorse(data::Uid horseUid) noexcept;
   [[nodiscard]] Record<data::Horse> CreateHorse() noexcept;
-  [[nodiscard]] HorseStorage& GetHorses();
+  [[nodiscard]] HorseStorage& GetHorseCache();
 
   [[nodiscard]] Record<data::Item> GetItem(data::Uid itemUid) noexcept;
   [[nodiscard]] Record<data::Item> CreateItem() noexcept;
-  [[nodiscard]] ItemStorage& GetItems();
+  [[nodiscard]] ItemStorage& GetItemCache();
 
-
-  [[nodiscard]] Record<data::StorageItem> GetStorageItem(data::Uid storedItemUid) noexcept;
+  [[nodiscard]] Record<data::StorageItem> GetStorageItemCache(data::Uid storedItemUid) noexcept;
   [[nodiscard]] Record<data::StorageItem> CreateStorageItem() noexcept;
-  [[nodiscard]] StorageItemStorage& GetStorageItem();
+  [[nodiscard]] StorageItemStorage& GetStorageItemCache();
 
   [[nodiscard]] Record<data::Egg> GetEgg(data::Uid eggUid) noexcept;
   [[nodiscard]] Record<data::Egg> CreateEgg() noexcept;
-  [[nodiscard]] EggStorage& GetEggs();
+  [[nodiscard]] EggStorage& GetEggCache();
 
   [[nodiscard]] Record<data::Pet> GetPet(data::Uid petUid) noexcept;
   [[nodiscard]] Record<data::Pet> CreatePet() noexcept;
-  [[nodiscard]] PetStorage& GetPets();
+  [[nodiscard]] PetStorage& GetPetCache();
 
   [[nodiscard]] Record<data::Guild> GetGuild(data::Uid guildUid) noexcept;
   [[nodiscard]] Record<data::Guild> CreateGuild() noexcept;
-  [[nodiscard]] GuildStorage& GetGuilds();
+  [[nodiscard]] GuildStorage& GetGuildCache();
 
-  [[nodiscard]] Record<data::Housing> GetHousing(data::Uid housingUid) noexcept;
+  [[nodiscard]] Record<data::Housing> GetHousingCache(data::Uid housingUid) noexcept;
   [[nodiscard]] Record<data::Housing> CreateHousing() noexcept;
-  [[nodiscard]] HousingStorage& GetHousing();
+  [[nodiscard]] HousingStorage& GetHousingCache();
 
 private:
   //! An underlying data source of the data director.
@@ -141,6 +144,8 @@ private:
 
   //! An user storage.
   UserStorage _userStorage;
+  //! An infraction storage.
+  InfractionStorage _infractionStorage;
   //! A character storage.
   CharacterStorage _characterStorage;
   //! A horse storage.

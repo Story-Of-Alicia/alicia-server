@@ -135,7 +135,6 @@ private:
   //! A race director.
   RaceDirector _raceDirector;
 
-
   ChatSystem _chatSystem;
 
   //! Registry of OTP codes.

@@ -51,6 +51,10 @@ public:
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId client) override;
 
+
+  //!
+  void Disconnect(data::Uid characterUid);
+
   //!
   void BroadcastSetIntroductionNotify(
     uint32_t characterUid,
@@ -70,14 +74,12 @@ public:
   void BroadcastChangeAgeNotify(
     data::Uid characterUid,
     const data::Uid rancherUid,
-    protocol::AcCmdCRChangeAge::Age age
-  );
+    protocol::AcCmdCRChangeAge::Age age);
 
   void BroadcastHideAgeNotify(
     data::Uid characterUid,
     const data::Uid rancherUid,
-    protocol::AcCmdCRHideAge::Option option
-  );
+    protocol::AcCmdCRHideAge::Option option);
 
   ServerInstance& GetServerInstance();
   Config::Ranch& GetConfig();
