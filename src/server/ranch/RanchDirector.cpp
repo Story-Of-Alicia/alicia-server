@@ -3357,7 +3357,18 @@ void RanchDirector::HandleInviteToGuild(
 
   if (guildUid == data::InvalidUid)
   {
-    // TODO: log/return response appropriately
+    spdlog::warn("Character {} tried to invite {} to guild but inviter is not in a guild",
+      clientContext.characterUid, command.characterName);
+    protocol::AcCmdCRInviteGuildJoinCancel cancel{
+      .error = GuildError::NoGuild
+    };
+
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
     return;
   }
 
@@ -3384,7 +3395,6 @@ void RanchDirector::HandleInviteToGuild(
   if (not isInviteeFoundAndOnline)
   {
     protocol::AcCmdCRInviteGuildJoinCancel cancel{
-      .unk2 = command.characterName,
       .error = GuildError::NoUserOrOffline
     };
 
