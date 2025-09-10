@@ -1737,9 +1737,9 @@ struct LobbyCommandChangeRanchOptionOK
 
 struct AcCmdLCInviteGuildJoin
 {
-  uint32_t unk0;
-  uint32_t unk1;
-  std::string unk2; // guild name?
+  uint32_t characterUid;
+  uint32_t inviterCharacterUid;
+  std::string inviterCharacterName;
   std::string unk3; // guild description?
 
   // sub_4be7a0

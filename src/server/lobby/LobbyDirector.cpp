@@ -297,6 +297,14 @@ void LobbyDirector::RequestCharacterCreator(data::Uid characterUid)
 
 void LobbyDirector::InviteGuildJoin(std::string characterName, data::Uid guildUid, data::Uid inviterCharacterUid)
 {
+  // Inviter character name
+  std::string inviterCharacterName;
+  GetServerInstance().GetDataDirector().GetCharacter(inviterCharacterUid).Immutable(
+    [&inviterCharacterName](const data::Character& character)
+  {
+    inviterCharacterName = character.name();
+  });
+
   // For all clients
   for (const auto& client : _clients)
   {
@@ -339,15 +347,15 @@ void LobbyDirector::InviteGuildJoin(std::string characterName, data::Uid guildUi
     });
 
     protocol::AcCmdLCInviteGuildJoin command{
-      .unk0 = guildUid,
-      .unk1 = clientContext.characterUid,
-      .unk2 = guildName,
+      .characterUid = clientContext.characterUid,
+      .inviterCharacterUid = inviterCharacterUid, // clientContext.characterUid?
+      .inviterCharacterName = inviterCharacterName,
       .unk3 = guildDescription,
       .guild = {
-        .uid = 1,
+        .uid = guildUid,
         .val1 = 1,
         .val2 = 2,
-        .name = "yeet",
+        .name = guildName,
         .val4 = 4,
         .val5 = 5,
         .val6 = 6

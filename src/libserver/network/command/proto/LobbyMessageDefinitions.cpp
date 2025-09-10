@@ -1209,9 +1209,9 @@ void AcCmdLCInviteGuildJoin::Write(
   const AcCmdLCInviteGuildJoin& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0)
-    .Write(command.unk1)
-    .Write(command.unk2)
+  stream.Write(command.characterUid)
+    .Write(command.inviterCharacterUid)
+    .Write(command.inviterCharacterName)
     .Write(command.unk3)
     .Write(command.guild);
 }
