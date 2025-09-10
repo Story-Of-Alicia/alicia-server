@@ -1198,4 +1198,22 @@ void LobbyCommandChangeRanchOptionOK::Write(
     .Write(command.unk2);
 }
 
+void AcCmdLCInviteGuildJoin::Read(
+  AcCmdLCInviteGuildJoin& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdLCInviteGuildJoin::Write(
+  const AcCmdLCInviteGuildJoin& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.unk2)
+    .Write(command.unk3)
+    .Write(command.guild);
+}
+
 } // namespace server::protocol

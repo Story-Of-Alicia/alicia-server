@@ -1735,6 +1735,36 @@ struct LobbyCommandChangeRanchOptionOK
     SourceStream& stream);
 };
 
+struct AcCmdLCInviteGuildJoin
+{
+  uint32_t unk0;
+  uint32_t unk1;
+  std::string unk2; // guild name?
+  std::string unk3; // guild description?
+
+  // sub_4be7a0
+  Guild guild;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCInviteGuildJoin;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCInviteGuildJoin& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCInviteGuildJoin& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // LOBBY_MESSAGE_DEFINES_HPP

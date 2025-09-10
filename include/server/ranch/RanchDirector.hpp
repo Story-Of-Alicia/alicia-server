@@ -328,6 +328,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRUpdateGuildMemberGrade& command);
 
+  void HandleInviteToGuild(
+    ClientId clientId,
+    const protocol::AcCmdCRInviteGuildJoin& command);
+
   //!
   ServerInstance& _serverInstance;
   //!

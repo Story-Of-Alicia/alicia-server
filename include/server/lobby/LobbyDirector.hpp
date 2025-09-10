@@ -71,6 +71,7 @@ public:
   Config::Lobby& GetConfig();
 
   void RequestCharacterCreator(data::Uid characterUid);
+  void InviteGuildJoin(std::string characterName, data::Uid guildUid, data::Uid inviterCharacterUid);
 
   // prototype function
   [[deprecated]] void UpdateVisitPreference(

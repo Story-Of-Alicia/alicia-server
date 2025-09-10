@@ -295,6 +295,68 @@ void LobbyDirector::RequestCharacterCreator(data::Uid characterUid)
   _forcedCharacterCreator.emplace(characterUid);
 }
 
+void LobbyDirector::InviteGuildJoin(std::string characterName, data::Uid guildUid, data::Uid inviterCharacterUid)
+{
+  // For all clients
+  for (const auto& client : _clients)
+  {
+    const auto& clientId = client.first;
+    const auto& clientContext = client.second;
+    // Skip disconnected clients
+    if (not clientContext.isAuthenticated)
+    {
+      continue;
+    }
+    
+    // Ensure character record exists (do not retrieve)
+    const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacters().Get(
+      clientContext.characterUid, false);
+    if (not characterRecord.has_value())
+    {
+      continue;
+    };
+
+    bool found = false;
+    characterRecord.value().Immutable([&found, characterName, guildUid](const data::Character& character)
+    {
+      // If character record with matching invite name
+      if (character.name() == characterName)
+      {
+        found = true;
+      }
+    });
+
+    if (not found)
+    {
+      continue;
+    }
+
+    std::string guildName, guildDescription;
+    GetServerInstance().GetDataDirector().GetGuild(guildUid).Immutable([&guildName, &guildDescription](const data::Guild& guild)
+    {
+      guildName = guild.name();
+      guildDescription = guild.description();
+    });
+
+    protocol::AcCmdLCInviteGuildJoin command{
+      .unk0 = guildUid,
+      .unk1 = clientContext.characterUid,
+      .unk2 = guildName,
+      .unk3 = guildDescription
+    };
+
+    _commandServer.QueueCommand<decltype(command)>(
+      clientId,
+      [command]()
+      {
+        return command;
+      });
+    
+    // Found client and sent invite command, no need to process the rest of the clients
+    break;
+  }
+}
+
 void LobbyDirector::UpdateVisitPreference(data::Uid characterUid, data::Uid visitingCharacterUid)
 {
   const auto clientContextIter = std::ranges::find_if(

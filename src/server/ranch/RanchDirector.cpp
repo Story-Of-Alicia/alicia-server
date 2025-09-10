@@ -342,6 +342,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleHideAge(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRInviteGuildJoin>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleInviteToGuild(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -3304,6 +3310,28 @@ void RanchDirector::HandleUpdateGuildMemberGrade(
       GuildRole::Member
     );
   }
+}
+
+void RanchDirector::HandleInviteToGuild(
+  ClientId clientId,
+  const protocol::AcCmdCRInviteGuildJoin& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  auto guildUid = data::InvalidUid;
+  const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
+  characterRecord.Immutable([&guildUid](const data::Character& character)
+  {
+    guildUid = character.guildUid();
+  });
+
+  if (guildUid == data::InvalidUid)
+  {
+    // TODO: log/return response appropriately
+    return;
+  }
+
+  GetServerInstance().GetLobbyDirector().InviteGuildJoin(command.characterName, guildUid, clientContext.characterUid);
 }
 
 } // namespace server
