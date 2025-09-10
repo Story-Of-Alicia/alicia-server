@@ -334,11 +334,34 @@ void LobbyDirector::Mute(data::Uid characterUid, data::Clock::time_point expirat
   }
 }
 
+void LobbyDirector::Notice(data::Uid characterUid, const std::string& message)
+{
+  protocol::AcCmdLCNotice notice{
+    .notice = message};
+
+  for (const auto& [clientId, clientContext] : _clients)
+  {
+    if (not clientContext.isAuthenticated)
+      continue;
+
+    if (clientContext.characterUid == characterUid)
+    {
+      _commandServer.QueueCommand<decltype(notice)>(
+        clientId,
+        [notice]()
+        {
+          return notice;
+        });
+      return;
+    }
+  }
+}
+
 std::vector<std::string> LobbyDirector::GetOnlineUsers()
 {
   std::vector<std::string> userName;
 
-  for (const auto & [clientId, clientContext] : _clients)
+  for (const auto& [clientId, clientContext] : _clients)
   {
     if (not clientContext.isAuthenticated)
       continue;
@@ -346,6 +369,20 @@ std::vector<std::string> LobbyDirector::GetOnlineUsers()
   }
 
   return userName;
+}
+
+std::vector<data::Uid> LobbyDirector::GetOnlineCharacters()
+{
+  std::vector<data::Uid> characters;
+
+  for (const auto& [clientId, clientContext] : _clients)
+  {
+    if (not clientContext.isAuthenticated)
+      continue;
+    characters.emplace_back(clientContext.characterUid);
+  }
+
+  return characters;
 }
 
 void LobbyDirector::UpdateVisitPreference(data::Uid characterUid, data::Uid visitingCharacterUid)

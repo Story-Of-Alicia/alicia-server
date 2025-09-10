@@ -135,11 +135,19 @@ void ChatSystem::RegisterUserCommands()
         "Command are a subject of the prototype.",
         "For command reference, ask the community ",
         " or browse the code online.",
-        "",
-        "Official command reference:",
+        " ",
+        "Official user command reference:",
         " //create - Send you to the character creator",
-        " //about - Information about the server"
-        "",
+        " //about - Information about the server",
+        " //online - Information about players",
+        " ",
+        "Official admin command reference:",
+        " //infraction - Infraction management",
+        " //promote - Promotes user to Game Master role",
+        " //demote - Demotes user to User role",
+        " //notice - Sends notice to character",
+        " //users - Detailed information about players",
+        " ",
         "More commands available over at: ",
         " https://bruhvrum.github.io/registertest/commands"};
     });
@@ -623,6 +631,62 @@ void ChatSystem::RegisterAdminCommands()
       return userList;
     });
 
+  // notice command
+  _commandManager.RegisterCommand(
+    "notice",
+    [this](
+      const std::span<const std::string>& arguments,
+      data::Uid characterUid) -> std::vector<std::string>
+    {
+      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+      if (not invokerRecord)
+        return {"Server error"};
+
+      bool isAdmin = false;
+      invokerRecord.Immutable([&isAdmin](const data::Character& character)
+      {
+        isAdmin = character.role() != data::Character::Role::User;
+      });
+
+      if (not isAdmin)
+        return {};
+
+      if (arguments.size() < 2)
+      {
+        return {"notice",
+        "  [character UID]",
+        "  - Specify 0 to send to all"
+        "  [message]"};
+      }
+
+      std::string message;
+      for (const auto& word : arguments.subspan(1))
+      {
+        message += word;
+        message += " ";
+      }
+
+      const data::Uid specifiedCharacterUid = std::atoi(arguments[0].data());
+      if (specifiedCharacterUid != data::InvalidUid)
+      {
+        const auto onlineCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(
+          specifiedCharacterUid);
+        if (not onlineCharacterRecord)
+        {
+          return {"Character unavailable or offline"};
+        }
+
+        _serverInstance.GetLobbyDirector().Notice(specifiedCharacterUid, message);
+        return {"Notice sent to character"};
+      }
+
+      for (const auto& onlineCharacterUid : _serverInstance.GetLobbyDirector().GetOnlineCharacters())
+      {
+        _serverInstance.GetLobbyDirector().Notice(onlineCharacterUid, message);
+      }
+      return {"Notice sent to all characters"};
+    });
+
   // promote command
   _commandManager.RegisterCommand(
     "promote",
@@ -838,11 +902,47 @@ void ChatSystem::RegisterAdminCommands()
 
         return {std::format("Infraction added to '{}'", userName)};
       }
+      else if (subLiteral == "remove")
+      {
+        if (arguments.size() < 3)
+        {
+          return {"infraction remove",
+            "  [user name]",
+            "  [infraction UID]"};
+        }
+
+        const std::string userName = arguments[1];
+        const auto userRecord = _serverInstance.GetDataDirector().GetUser(userName);
+        if (not userRecord)
+        {
+          return {"User not available"};
+        }
+
+        const data::Uid infractionUid = std::atoi(arguments[2].c_str());
+        bool hasInfraction = false;
+
+        userRecord.Mutable([infractionUid, &hasInfraction](data::User& user)
+        {
+          hasInfraction = std::ranges::contains(user.infractions(), infractionUid);
+
+          if (hasInfraction)
+          {
+            const auto range = std::ranges::remove(user.infractions(), infractionUid);
+            user.infractions().erase(range.begin(), range.end());
+          }
+        });
+
+        if (not hasInfraction)
+          return {"No such infraction exists"};
+
+        return {std::format("Infraction removed from '{}'", userName)};
+      }
       else if (subLiteral == "list")
       {
         if (arguments.size() < 2)
         {
-          return {"infraction list [user name]"};
+          return {"infraction list",
+            "  [user name]"};
         }
 
         const std::string userName = arguments[1];
@@ -870,7 +970,7 @@ void ChatSystem::RegisterAdminCommands()
             infractionRecord.Immutable([&list](const data::Infraction& infraction)
             {
               list.emplace_back(std::format(
-                " - #{} - {}", infraction.uid(), infraction.description()));
+                " - UID: #{} - {}", infraction.uid(), infraction.description()));
 
               std::string type;
               if (infraction.punishment() == data::Infraction::Punishment::None)

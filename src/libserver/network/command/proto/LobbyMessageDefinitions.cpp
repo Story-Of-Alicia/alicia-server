@@ -1218,4 +1218,14 @@ void AcCmdLCOpMute::Read(AcCmdLCOpMute& command, SourceStream& stream)
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdLCNotice::Write(const AcCmdLCNotice& command, SinkStream& stream)
+{
+  stream.Write(command.notice);
+}
+
+void AcCmdLCNotice::Read(AcCmdLCNotice& command, SourceStream& stream)
+{
+    throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
