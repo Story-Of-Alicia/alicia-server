@@ -3363,25 +3363,25 @@ void RanchDirector::HandleInviteToGuild(
 
   // TODO: check online characters in ranch? can invite to guild only in ranch?
   // Check if invitee is online
-  bool isInviteeOnline = false;
+  bool isInviteeFoundAndOnline = false;
   for (const auto& onlineCharacterUid : GetOnlineCharacters())
   {
     GetServerInstance().GetDataDirector().GetCharacter(onlineCharacterUid).Immutable(
-      [&isInviteeOnline, characterName = command.characterName](const data::Character& character)
+      [&isInviteeFoundAndOnline, characterName = command.characterName](const data::Character& character)
     {
       if (character.name() == characterName)
       {
-        isInviteeOnline = true;
+        isInviteeFoundAndOnline = true;
       }
     });
 
-    if (isInviteeOnline)
+    if (isInviteeFoundAndOnline)
     {
       break;
     }
   }
 
-  if (not isInviteeOnline)
+  if (not isInviteeFoundAndOnline)
   {
     protocol::AcCmdCRInviteGuildJoinCancel cancel{
       .unk2 = command.characterName,
