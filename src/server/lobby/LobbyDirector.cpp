@@ -342,7 +342,16 @@ void LobbyDirector::InviteGuildJoin(std::string characterName, data::Uid guildUi
       .unk0 = guildUid,
       .unk1 = clientContext.characterUid,
       .unk2 = guildName,
-      .unk3 = guildDescription
+      .unk3 = guildDescription,
+      .guild = {
+        .uid = 1,
+        .val1 = 1,
+        .val2 = 2,
+        .name = "yeet",
+        .val4 = 4,
+        .val5 = 5,
+        .val6 = 6
+      }
     };
 
     _commandServer.QueueCommand<decltype(command)>(
