@@ -3355,7 +3355,7 @@ void RanchDirector::HandleInviteToGuild(
   {
     protocol::AcCmdCRInviteGuildJoinCancel cancel{
       .unk2 = command.characterName,
-      .error = GuildError::NoUser
+      .error = GuildError::NoUserOrOffline
     };
 
     _commandServer.QueueCommand<decltype(cancel)>(
