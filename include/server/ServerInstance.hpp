@@ -11,6 +11,7 @@
 #include "server/race/RaceDirector.hpp"
 #include "server/ranch/RanchDirector.hpp"
 #include "server/system/ChatSystem.hpp"
+#include "server/system/InfractionSystem.hpp"
 
 #include <libserver/data/DataDirector.hpp>
 #include <libserver/registry/HorseRegistry.hpp>
@@ -53,6 +54,10 @@ public:
   //! Returns reference to the chat system.
   //! @returns Reference to the chat system.
   ChatSystem& GetChatSystem();
+
+  //! Returns reference to the infraction system.
+  //! @returns Reference to the infraction system.
+  InfractionSystem& GetInfractionSystem();
 
   //! Returns reference to the settings.
   //! @returns Reference to the settings.
@@ -135,8 +140,8 @@ private:
   //! A race director.
   RaceDirector _raceDirector;
 
-
   ChatSystem _chatSystem;
+  InfractionSystem _infractionSystem;
 
   //! Registry of OTP codes.
   OtpRegistry _otpRegistry;

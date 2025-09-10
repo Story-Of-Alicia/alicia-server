@@ -61,21 +61,32 @@ public:
   explicit ChatSystem(ServerInstance& dataDirector);
   ~ChatSystem();
 
-  struct Verdict
+  struct CommandVerdict
   {
-    bool isBroadcast = false;
-    bool isSystem = false;
     std::vector<std::string> result;
+  };
+
+  struct ChatVerdict
+  {
+    std::string message;
+    std::optional<CommandVerdict> commandVerdict;
   };
 
   //! Handles a chat message sent by the client.
   //! @param characterUid UID of the character.
   //! @param message Message that was sent.
-  [[nodiscard]] Verdict ProcessChatMessage(
+  [[nodiscard]] ChatVerdict ProcessChatMessage(
     data::Uid characterUid,
     const std::string& message) noexcept;
 
+  [[nodiscard]] CommandVerdict ProcessCommandMessage(
+    data::Uid characterUid,
+    const std::string& message);
+
 private:
+  void RegisterUserCommands();
+  void RegisterAdminCommands();
+
   void Broadcast(std::string message);
 
   //! A server instance.

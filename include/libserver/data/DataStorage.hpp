@@ -154,12 +154,15 @@ public:
 
   using DataSourceRetrieveListener = std::function<bool(const Key& key, Data& data)>;
   using DataSourceStoreListener = std::function<bool(const Key& key, Data& data)>;
+  using DataSourceDeleteListener = std::function<bool(const Key& key)>;
 
   DataStorage(
-    const DataSourceRetrieveListener& data_source_retrieve_listener,
-    const DataSourceStoreListener& data_source_store_listener)
-    : _dataSourceRetrieveListener(data_source_retrieve_listener)
-    , _dataSourceStoreListener(data_source_store_listener)
+    const DataSourceRetrieveListener& retrieveListener,
+    const DataSourceStoreListener& storeListener,
+    const DataSourceDeleteListener& deleteListener)
+    : _dataSourceRetrieveListener(retrieveListener)
+    , _dataSourceStoreListener(storeListener)
+    , _dataSourceDeleteListener(deleteListener)
   {
   }
 
@@ -258,6 +261,17 @@ public:
     return std::nullopt;
   }
 
+  void Invalidate(const Key& key)
+  {
+    _entries.erase(key);
+  }
+
+  void Delete(const Key& key)
+  {
+    Invalidate(key);
+    RequestDelete(key);
+  }
+
   std::vector<Key> GetKeys()
   {
     std::vector<Key> keys;
@@ -295,6 +309,17 @@ public:
           entry.available.store(false, std::memory_order::relaxed);
     }
     _storeQueue.clear();
+
+    // Perform delete operations.
+    for (const auto& key : _deleteQueue)
+    {
+      auto& entry = _entries[key];
+
+      if (entry.available)
+        if (_dataSourceDeleteListener(key))
+          entry.available.store(false, std::memory_order::relaxed);
+    }
+    _deleteQueue.clear();
   }
 
 private:
@@ -308,6 +333,11 @@ private:
     _storeQueue.insert(key);
   }
 
+  void RequestDelete(const Key& key)
+  {
+    _deleteQueue.insert(key);
+  }
+
   struct Entry
   {
     std::atomic_bool available{false};
@@ -318,10 +348,12 @@ private:
 
   std::unordered_set<Key> _retrieveQueue;
   std::unordered_set<Key> _storeQueue;
+  std::unordered_set<Key> _deleteQueue;
   std::unordered_map<Key, Entry> _entries{};
 
   DataSourceRetrieveListener _dataSourceRetrieveListener;
   DataSourceStoreListener _dataSourceStoreListener;
+  DataSourceDeleteListener _dataSourceDeleteListener;
 };
 
 } // namespace server

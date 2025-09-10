@@ -49,7 +49,7 @@ void Client::Begin()
 
 void Client::End()
 {
-  if (not _shouldRun.exchange(false, std::memory_order::acq_rel))
+  if (not _shouldRun.exchange(false, std::memory_order::seq_cst))
     return;
 
   try
@@ -62,7 +62,7 @@ void Client::End()
   }
   catch (const std::exception& x)
   {
-    spdlog::error("Client ", x.what());
+    spdlog::error("Exception ending client: {}", x.what());
   }
 
   _networkEventHandler.OnClientDisconnected(_clientId);
@@ -111,7 +111,7 @@ void Client::WriteLoop() noexcept
   // Asynchronously write the data to the socket.
   _socket.async_write_some(
     _writeBuffer.data(),
-    [this](const boost::system::error_code& error, const std::size_t size)
+    [clientPtr = this->shared_from_this()](const boost::system::error_code& error, const std::size_t size)
     {
       try
       {
@@ -131,21 +131,22 @@ void Client::WriteLoop() noexcept
 
         // Consume the sent bytes.
         {
-          std::scoped_lock lock(_writeMutex);
-          _writeBuffer.consume(size);
+          std::scoped_lock lock(clientPtr->_writeMutex);
+          clientPtr->_writeBuffer.consume(size);
         }
       }
       catch (const std::exception& x)
       {
         spdlog::error(
           "Exception in the write chain of client {}: {}",
-          _clientId,
+          clientPtr->_clientId,
           x.what());
-        End();
+
+        clientPtr->End();
       }
 
-      _isSending.store(false, std::memory_order::release);
-      WriteLoop();
+      clientPtr->_isSending.store(false, std::memory_order::release);
+      clientPtr->WriteLoop();
     });
 }
 
@@ -156,7 +157,7 @@ void Client::ReadLoop() noexcept
 
   _socket.async_read_some(
     _readBuffer.prepare(1024),
-    [this](boost::system::error_code error, std::size_t size)
+    [clientPtr = this->shared_from_this()](boost::system::error_code error, std::size_t size)
     {
       try
       {
@@ -175,29 +176,29 @@ void Client::ReadLoop() noexcept
           }
         }
 
-        _readBuffer.commit(size);
+        clientPtr->_readBuffer.commit(size);
 
         const std::span receivedData{
-          static_cast<const std::byte*>(_readBuffer.data().data()),
-          _readBuffer.data().size()};
+          static_cast<const std::byte*>(clientPtr->_readBuffer.data().data()),
+          clientPtr->_readBuffer.data().size()};
 
-        const auto consumedBytes = _networkEventHandler.OnClientData(
-          _clientId,
+        const auto consumedBytes = clientPtr->_networkEventHandler.OnClientData(
+          clientPtr->_clientId,
           receivedData);
 
-        _readBuffer.consume(consumedBytes);
+        clientPtr->_readBuffer.consume(consumedBytes);
 
         // Continue the read loop.
-        ReadLoop();
+        clientPtr->ReadLoop();
       }
       catch (const std::exception& x)
       {
         spdlog::error(
           "Exception in the read chain of client {}: {}",
-          _clientId,
+          clientPtr->_clientId,
           x.what());
 
-        End();
+        clientPtr->End();
       }
     });
 }
@@ -237,17 +238,11 @@ void Server::Begin(const asio::ip::address& address, uint16_t port)
 
 void Server::End()
 {
-  // Disconnect all the clients.
-  for (auto& client : _clients | std::views::values)
-  {
-    client.End();
-  }
-
   _acceptor.close();
   _io_ctx.stop();
 }
 
-Client& Server::GetClient(ClientId clientId)
+std::shared_ptr<Client> Server::GetClient(ClientId clientId)
 {
   const auto clientItr = _clients.find(clientId);
   if (clientItr == _clients.end())
@@ -255,7 +250,7 @@ Client& Server::GetClient(ClientId clientId)
     throw std::runtime_error("Invalid client");
   }
 
-  return clientItr->second;
+  return clientItr->second->shared_from_this();
 }
 
 void Server::OnClientConnected(
@@ -297,14 +292,14 @@ void Server::AcceptLoop() noexcept
         // Create the client.
         const auto [itr, emplaced] = _clients.try_emplace(
           clientId,
-          clientId,
-          std::move(client_socket),
-          *this);
+          std::make_shared<Client>(clientId,
+            std::move(client_socket),
+            *this));
 
         // Id is sequential so emplacement should never fail.
         assert(emplaced);
 
-        itr->second.Begin();
+        itr->second->Begin();
 
         // Continue the accept loop.
         AcceptLoop();

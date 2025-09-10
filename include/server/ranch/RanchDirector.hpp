@@ -51,6 +51,10 @@ public:
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId client) override;
 
+
+  //!
+  void Disconnect(data::Uid characterUid);
+
   //!
   void BroadcastSetIntroductionNotify(
     uint32_t characterUid,
@@ -70,14 +74,12 @@ public:
   void BroadcastChangeAgeNotify(
     data::Uid characterUid,
     const data::Uid rancherUid,
-    protocol::AcCmdCRChangeAge::Age age
-  );
+    protocol::AcCmdCRChangeAge::Age age);
 
   void BroadcastHideAgeNotify(
     data::Uid characterUid,
     const data::Uid rancherUid,
-    protocol::AcCmdCRHideAge::Option option
-  );
+    protocol::AcCmdCRHideAge::Option option);
 
   ServerInstance& GetServerInstance();
   Config::Ranch& GetConfig();
@@ -87,7 +89,8 @@ private:
 
   struct ClientContext
   {
-    bool isAuthorized{false};
+    //! Whether the client is authenticated.
+    bool isAuthenticated{false};
     //! Unique ID of the client's character.
     data::Uid characterUid{data::InvalidUid};
     //! Unique ID of the owner of the ranch the client is visiting.
@@ -107,9 +110,9 @@ private:
 
   //! Get client context.
   //! @param clientId Id of the client.
-  //! @param requireAuthorized Require the client to be authorized.
+  //! @param requireAuthentication Require the client to be authorized.
   //! @returns Client context.
-  [[nodiscard]] ClientContext& GetClientContext(ClientId clientId, bool requireAuthorized = true);
+  [[nodiscard]] ClientContext& GetClientContext(ClientId clientId, bool requireAuthentication = true);
 
   //! Get the client context by the character's unique ID.
   //! @param characterUid UID of the character.

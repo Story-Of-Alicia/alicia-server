@@ -54,6 +54,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
 
   // Prepare the data paths.
   _userDataPath = prepareDataPath("users");
+  _infractionDataPath = prepareDataPath("infractions");
   _characterDataPath = prepareDataPath("characters");
   _itemDataPath = prepareDataPath("characters/equipment/items");
   _horseDataPath = prepareDataPath("characters/equipment/horses");
@@ -73,6 +74,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   }
 
   const auto meta = nlohmann::json::parse(metaFile);
+  _infractionSequentialUid = meta["infractionSequentialUid"].get<uint32_t>();
   _characterSequentialUid = meta["characterSequentialUid"].get<uint32_t>();
   _equipmentSequentialUid = meta["equipmentSequentialUid"].get<uint32_t>();
   _storageItemSequentialUid = meta["storageItemSequentialUid"].get<uint32_t>();
@@ -94,6 +96,7 @@ void server::FileDataSource::Terminate()
   }
 
   nlohmann::json meta;
+  meta["infractionSequentialUid"] = _infractionSequentialUid.load();
   meta["characterSequentialUid"] = _characterSequentialUid.load();
   meta["equipmentSequentialUid"] = _equipmentSequentialUid.load();
   meta["storageItemSequentialUid"] = _storageItemSequentialUid.load();
@@ -123,6 +126,7 @@ void server::FileDataSource::RetrieveUser(std::string name, data::User& user)
   user.name = json["name"].get<std::string>();
   user.token = json["token"].get<std::string>();
   user.characterUid = json["characterUid"].get<data::Uid>();
+  user.infractions = json["infractions"].get<std::vector<data::Uid>>();
 }
 
 void server::FileDataSource::StoreUser(std::string name, const data::User& user)
@@ -141,8 +145,67 @@ void server::FileDataSource::StoreUser(std::string name, const data::User& user)
   json["name"] = user.name();
   json["token"] = user.token();
   json["characterUid"] = user.characterUid();
+  json["infractions"] = user.infractions();
 
   dataFile << json.dump(2);
+}
+
+void server::FileDataSource::CreateInfraction(data::Infraction& infraction)
+{
+  infraction.uid = ++_infractionSequentialUid;
+}
+
+void server::FileDataSource::RetrieveInfraction(data::Uid uid, data::Infraction& infraction)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+   _infractionDataPath, std::format("{}", uid));
+
+  std::ifstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Infraction file '{}' not accessible", dataFilePath.string()));
+  }
+
+  const auto json = nlohmann::json::parse(dataFile);
+  infraction.uid = json["uid"].get<data::Uid>();
+  infraction.description = json["description"].get<std::string>();
+  infraction.punishment = json["punishment"].get<data::Infraction::Punishment>();
+  infraction.duration = data::Clock::duration(std::chrono::seconds(
+    json["duration"].get<uint64_t>()));
+  infraction.createdAt = data::Clock::time_point(std::chrono::seconds(
+    json["createdAt"].get<uint64_t>()));
+}
+
+void server::FileDataSource::StoreInfraction(data::Uid uid, const data::Infraction& infraction)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _infractionDataPath, std::format("{}", uid));
+
+  std::ofstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Infraction file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json;
+  json["uid"] = infraction.uid();
+  json["description"] = infraction.description();
+  json["punishment"] = infraction.punishment();
+  json["duration"] = std::chrono::duration_cast<std::chrono::seconds>(
+    infraction.duration()).count();
+  json["createdAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+    infraction.createdAt().time_since_epoch()).count();
+
+  dataFile << json.dump(2);
+}
+
+void server::FileDataSource::DeleteInfraction(data::Uid uid)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _infractionDataPath, std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
 }
 
 void server::FileDataSource::CreateCharacter(data::Character& character)
@@ -278,6 +341,13 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["isRanchLocked"] = character.isRanchLocked();
 
   dataFile << json.dump(2);
+}
+
+void server::FileDataSource::DeleteCharacter(data::Uid uid)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _characterDataPath, std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
 }
 
 void server::FileDataSource::CreateHorse(data::Horse& horse)
@@ -447,6 +517,13 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   dataFile << json.dump(2);
 }
 
+void server::FileDataSource::DeleteHorse(data::Uid uid)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _horseDataPath, std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
+}
+
 void server::FileDataSource::CreateItem(data::Item& item)
 {
   item.uid = ++_equipmentSequentialUid;
@@ -492,6 +569,13 @@ void server::FileDataSource::StoreItem(data::Uid uid, const data::Item& item)
     item.expiresAt().time_since_epoch()).count();
   json["count"] = item.count();
   dataFile << json.dump(2);
+}
+
+void server::FileDataSource::DeleteItem(data::Uid uid)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _itemDataPath, std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
 }
 
 void server::FileDataSource::CreateStorageItem(data::StorageItem& item)
@@ -548,6 +632,13 @@ void server::FileDataSource::StoreStorageItem(data::Uid uid, const data::Storage
   dataFile << json.dump(2);
 }
 
+void server::FileDataSource::DeleteStorageItem(data::Uid uid)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _storageItemPath, std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
+}
+
 void server::FileDataSource::CreateEgg(data::Egg& egg)
 {
   egg.uid = ++_eggSequentialUid;
@@ -601,6 +692,13 @@ void server::FileDataSource::StoreEgg(data::Uid uid, const data::Egg& egg)
   dataFile << json.dump(2);
 }
 
+void server::FileDataSource::DeleteEgg(data::Uid uid)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _eggDataPath, std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
+}
+
 void server::FileDataSource::CreatePet(data::Pet& pet)
 {
   pet.uid = ++_petSequentialUid;
@@ -645,6 +743,13 @@ void server::FileDataSource::StorePet(data::Uid uid, const data::Pet& pet)
   json["name"] = pet.name();
 
   dataFile << json.dump(2);
+}
+
+void server::FileDataSource::DeletePet(data::Uid uid)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _petDataPath, std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
 }
 
 void server::FileDataSource::CreateHousing(data::Housing& housing)
@@ -694,6 +799,13 @@ void server::FileDataSource::StoreHousing(data::Uid uid, const data::Housing& ho
   dataFile << json.dump(2);
 }
 
+void server::FileDataSource::DeleteHousing(data::Uid uid)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _housingDataPath, std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
+}
+
 void server::FileDataSource::CreateGuild(data::Guild& guild)
 {
   guild.uid = ++_guildSequentialId;
@@ -734,4 +846,11 @@ void server::FileDataSource::StoreGuild(data::Uid uid, const data::Guild& guild)
   json["name"] = guild.name();
 
   dataFile << json.dump(2);
+}
+
+void server::FileDataSource::DeleteGuild(data::Uid uid)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _guildDataPath, std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
 }

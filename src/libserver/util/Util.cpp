@@ -67,8 +67,8 @@ uint32_t TimePointToAliciaTime(const Clock::time_point& timePoint)
     .years = static_cast<int32_t>(date.year()),
     .months = static_cast<uint32_t>(date.month()),
     .days = static_cast<uint32_t>(date.day()),
-    .hours = time.hours().count(),
-    .minutes = time.minutes().count()};
+    .hours = static_cast<int32_t>(time.hours().count()),
+    .minutes = static_cast<int32_t>(time.minutes().count())};
   return DateTimeToAliciaTime(dateTime);
 }
 

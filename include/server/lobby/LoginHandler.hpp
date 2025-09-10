@@ -24,9 +24,11 @@
 #include "libserver/network/command/proto/LobbyMessageDefinitions.hpp"
 
 #include <chrono>
+#include <unordered_map>
 
 namespace server
 {
+
 class LobbyDirector;
 
 //! Login handler.
@@ -54,7 +56,7 @@ public:
 
   void QueueUserLoginAccepted(ClientId clientId, const std::string& userName);
   void QueueUserCreateNickname(ClientId clientId, const std::string& userName);
-  void QueueUserLoginRejected(ClientId clientId, bool invalidUser = false);
+  void QueueUserLoginRejected(ClientId clientId, protocol::LobbyCommandLoginCancel::Reason reason);
 
 private:
   using Clock = std::chrono::steady_clock;

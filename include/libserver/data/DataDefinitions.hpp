@@ -127,8 +127,25 @@ struct User
   dao::Field<std::string> name{};
   //! An authorization token of the user.
   dao::Field<std::string> token{};
+  //! Infractions.
+  dao::Field<std::vector<Uid>> infractions{};
   //! A character UID of the user.
   dao::Field<Uid> characterUid{InvalidUid};
+};
+
+//! Infraction
+struct Infraction
+{
+  enum class Punishment
+  {
+    None, Mute, Ban
+  };
+
+  dao::Field<Uid> uid{InvalidUid};
+  dao::Field<std::string> description;
+  dao::Field<Punishment> punishment{Punishment::None};
+  dao::Field<Clock::duration> duration;
+  dao::Field<Clock::time_point> createdAt;
 };
 
 //! Item

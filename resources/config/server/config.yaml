@@ -1,4 +1,8 @@
 server:
+  # General configuration section
+  general:
+    # The name of the group or an individual running and managing this instance of the server.
+    brand: "dev"
   # Configuration section of the lobby server.
   lobby:
     # Whether the lobby server is enabled.
