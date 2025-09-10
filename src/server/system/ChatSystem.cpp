@@ -617,7 +617,7 @@ void ChatSystem::RegisterAdminCommands()
           onlineCharacterName,
           userName,
           onlineCharacterUid,
-          hasInfractions ? " (!)" : ""));
+          hasInfractions ? " <font color=\"#FF0000\">(!)</font>" : ""));
       }
 
       return userList;
@@ -730,7 +730,8 @@ void ChatSystem::RegisterAdminCommands()
         return {};
 
       if (arguments.empty())
-        return {"infraction [add/remove/list]"};
+        return {"infraction",
+          "  [add/remove/list]"};
 
       const std::string subLiteral = arguments[0];
 
@@ -875,7 +876,7 @@ void ChatSystem::RegisterAdminCommands()
               if (infraction.punishment() == data::Infraction::Punishment::None)
                 type = "none";
               else if (infraction.punishment() == data::Infraction::Punishment::Mute)
-                type = "<font color=\"#FFFF00\">mute</font>";
+                type = "<font color=\"#FF0000\">mute</font>";
               else if (infraction.punishment() == data::Infraction::Punishment::Ban)
                 type = "<font color=\"#FF0000\">ban</font>";
 

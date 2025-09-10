@@ -67,7 +67,7 @@ void LoginHandler::Tick()
       loginContext.userName))
     {
       spdlog::error("User data for '{}' not available", loginContext.userName);
-      QueueUserLoginRejected(clientId);
+      QueueUserLoginRejected(clientId, protocol::LobbyCommandLoginCancel::Reason::Generic);
       break;
     }
 
@@ -86,12 +86,27 @@ void LoginHandler::Tick()
     if (not isAuthenticated)
     {
       spdlog::debug("User '{}' failed in authentication", loginContext.userName);
-      QueueUserLoginRejected(clientId, true);
+      QueueUserLoginRejected(
+        clientId,
+        protocol::LobbyCommandLoginCancel::Reason::InvalidUser);
     }
     else
     {
-      // Queue the user response.
-      _clientLoginResponseQueue.emplace(clientId);
+      // Check for any infractions preventing the user from joining.
+      const auto infractionVerdict = _lobbyDirector.GetServerInstance().GetInfractionSystem().CheckOutstandingPunishments(
+        loginContext.userName);
+
+      if (infractionVerdict.preventServerJoining)
+      {
+        QueueUserLoginRejected(
+          clientId,
+          protocol::LobbyCommandLoginCancel::Reason::DisconnectYourself);
+      }
+      else
+      {
+        // Queue the user response.
+        _clientLoginResponseQueue.emplace(clientId);
+      }
     }
 
     // Only one request per tick.
@@ -159,7 +174,7 @@ void LoginHandler::Tick()
       loginContext.userName))
     {
       spdlog::error("User character data for '{}' not available", loginContext.userName);
-      QueueUserLoginRejected(clientId);
+      QueueUserLoginRejected(clientId, protocol::LobbyCommandLoginCancel::Reason::Generic);
       break;
     }
 
@@ -187,7 +202,7 @@ void LoginHandler::HandleUserLogin(
       " User name or user token empty.",
       clientId);
 
-    QueueUserLoginRejected(clientId, true);
+    QueueUserLoginRejected(clientId, protocol::LobbyCommandLoginCancel::Reason::InvalidUser);
     return;
   }
 
@@ -200,7 +215,7 @@ void LoginHandler::HandleUserLogin(
       clientId,
       login.loginId);
 
-    QueueUserLoginRejected(clientId, true);
+    QueueUserLoginRejected(clientId, protocol::LobbyCommandLoginCancel::Reason::InvalidUser);
     return;
   }
 
@@ -490,14 +505,14 @@ void LoginHandler::QueueUserCreateNickname(ClientId clientId, const std::string&
     });
 }
 
-void LoginHandler::QueueUserLoginRejected(ClientId clientId, bool invalidUser)
+void LoginHandler::QueueUserLoginRejected(ClientId clientId, protocol::LobbyCommandLoginCancel::Reason reason)
 {
   _server.QueueCommand<protocol::LobbyCommandLoginCancel>(
     clientId,
-    [invalidUser]()
+    [reason]()
     {
       return protocol::LobbyCommandLoginCancel{
-      .reason = invalidUser ? protocol::LobbyCommandLoginCancel::Reason::InvalidUser : protocol::LobbyCommandLoginCancel::Reason::Generic };
+      .reason = reason };
     });
 }
 

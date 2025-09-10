@@ -56,7 +56,7 @@ public:
 
   void QueueUserLoginAccepted(ClientId clientId, const std::string& userName);
   void QueueUserCreateNickname(ClientId clientId, const std::string& userName);
-  void QueueUserLoginRejected(ClientId clientId, bool invalidUser = false);
+  void QueueUserLoginRejected(ClientId clientId, protocol::LobbyCommandLoginCancel::Reason reason);
 
 private:
   using Clock = std::chrono::steady_clock;

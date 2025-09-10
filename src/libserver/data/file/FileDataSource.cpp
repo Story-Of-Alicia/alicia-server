@@ -197,6 +197,8 @@ void server::FileDataSource::StoreInfraction(data::Uid uid, const data::Infracti
     infraction.duration()).count();
   json["createdAt"] = std::chrono::duration_cast<std::chrono::seconds>(
     infraction.createdAt().time_since_epoch()).count();
+
+  dataFile << json.dump(2);
 }
 
 void server::FileDataSource::DeleteInfraction(data::Uid uid)
