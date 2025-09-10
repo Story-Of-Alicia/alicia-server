@@ -62,7 +62,7 @@ void Client::End()
   }
   catch (const std::exception& x)
   {
-    spdlog::error("Client ", x.what());
+    spdlog::error("Exception ending client: {}", x.what());
   }
 
   _networkEventHandler.OnClientDisconnected(_clientId);
@@ -141,6 +141,7 @@ void Client::WriteLoop() noexcept
           "Exception in the write chain of client {}: {}",
           _clientId,
           x.what());
+
         End();
       }
 
@@ -237,12 +238,6 @@ void Server::Begin(const asio::ip::address& address, uint16_t port)
 
 void Server::End()
 {
-  // Disconnect all the clients.
-  for (auto& client : _clients | std::views::values)
-  {
-    client.End();
-  }
-
   _acceptor.close();
   _io_ctx.stop();
 }
