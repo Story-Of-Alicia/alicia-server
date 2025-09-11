@@ -2258,5 +2258,42 @@ void AcCmdRCHideAgeNotify::Write(
     .Write(command.option);
 }
 
+void AcCmdCROpenRandomBox::Read(
+  AcCmdCROpenRandomBox& command,
+  SourceStream& stream)
+{
+  stream.Read(command.unk0)
+    .Read(command.unk1);
+}
+
+void AcCmdCROpenRandomBox::Write(
+  const AcCmdCROpenRandomBox& command,
+  SinkStream& stream)
+{
+}
+
+void AcCmdCROpenRandomBoxOK::Read(
+  AcCmdCROpenRandomBoxOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCROpenRandomBoxOK::Write(
+  const AcCmdCROpenRandomBoxOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+  .Write(command.unk1)
+  .Write(command.unk2)
+  .Write(command.unk3)
+  .Write(command.unk4);
+  stream.Write(static_cast<uint8_t>(command.items.size()));
+
+  for (const auto& item : command.items) {
+    stream.Write(item);
+  }
+}
+
 } // namespace server::protocol
 

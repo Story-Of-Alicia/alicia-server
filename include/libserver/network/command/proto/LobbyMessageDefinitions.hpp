@@ -1806,6 +1806,50 @@ struct AcCmdLCNotice
     SourceStream& stream);
 };
 
+struct AcCmdCLEnterRoomQuickStop
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLEnterRoomQuickStop;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLEnterRoomQuickStop& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLEnterRoomQuickStop& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLEnterRoomQuickStopOK
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLEnterRoomQuickStopOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLEnterRoomQuickStopOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLEnterRoomQuickStopOK& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // LOBBY_MESSAGE_DEFINES_HPP

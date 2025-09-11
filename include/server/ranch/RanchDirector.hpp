@@ -308,6 +308,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRHideAge command);
 
+  void HandleOpenRandomBox(
+    ClientId clientId,
+    const protocol::AcCmdCROpenRandomBox command);
+
   //!
   ServerInstance& _serverInstance;
   //!
