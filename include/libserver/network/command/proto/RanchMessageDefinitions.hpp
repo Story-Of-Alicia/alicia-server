@@ -3595,6 +3595,61 @@ struct AcCmdRCHideAgeNotify
     SourceStream& stream);
 };
 
+struct AcCmdCROpenRandomBox
+{
+  uint32_t unk0;
+  uint32_t unk1;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCROpenRandomBox;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCROpenRandomBox& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCROpenRandomBox& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCROpenRandomBoxOK
+{
+
+  uint32_t unk0;
+  uint32_t unk1;
+  uint32_t unk2;
+  uint32_t unk3;
+  uint32_t unk4;
+  std::vector <Item> items;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCROpenRandomBoxOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCROpenRandomBoxOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCROpenRandomBoxOK& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RANCH_MESSAGE_DEFINES_HPP

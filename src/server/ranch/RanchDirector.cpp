@@ -324,6 +324,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleHideAge(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCROpenRandomBox>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleOpenRandomBox(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -2912,5 +2918,31 @@ void RanchDirector::HandleHideAge(
     command.option
   );
 }
+
+void RanchDirector::HandleOpenRandomBox(
+  ClientId clientId,
+  const protocol::AcCmdCROpenRandomBox command)
+{
+
+  protocol::AcCmdCROpenRandomBoxOK response{
+    .unk0 = 100,
+    .unk1 = 100,
+    .unk2 = 100,
+    .unk3 = 100,
+    .unk4 = 100,
+    .items = {
+      Item{
+        .uid = 50,
+        .tid = 10002,
+        .count = 1,
+      }}};
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
 
 } // namespace server
