@@ -567,8 +567,10 @@ void RanchDirector::BroadcastUpdateGuildMemberGradeNotify(
   // TODO: Identify fields
   protocol::AcCmdRCUpdateGuildMemberGradeNotify notify{
     .guildUid = guildUid,
+    .unk1 = data::InvalidUid,
     .targetCharacterUid = characterUid,
-    .guildRole = static_cast<uint8_t>(guildRole)
+    .unk3 = GuildRole::Member,
+    .guildRole = guildRole
   };
 
   // Notify all (online) guild members
@@ -588,12 +590,20 @@ void RanchDirector::BroadcastUpdateGuildMemberGradeNotify(
         // Client is not a guild member
         if (clientContext.characterUid != guildMember)
           continue;
-
-        _commandServer.QueueCommand<decltype(notify)>(
-          clientId,
-          [notify]()
+        
+        GetServerInstance().GetDataDirector().GetCharacter(guildMember).Immutable(
+          [this, clientId, &guild, &notify](const data::Character& character)
           {
-            return notify;
+            notify.unk1 = character.uid();
+            notify.unk3 = guild.owner() == character.uid() ? GuildRole::Owner :
+              std::ranges::contains(guild.officers(), character.uid()) ? GuildRole::Officer :
+              GuildRole::Member;
+            _commandServer.QueueCommand<decltype(notify)>(
+              clientId,
+              [notify]()
+              {
+                return notify;
+              });
           });
       }
     }

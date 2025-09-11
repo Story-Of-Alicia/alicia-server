@@ -2432,10 +2432,10 @@ void AcCmdRCUpdateGuildMemberGradeNotify::Write(
   SinkStream& stream)
 {
   stream.Write(command.guildUid)
+    .Write(command.unk1)
     .Write(command.targetCharacterUid)
-    .Write(command.unk2)
-    .Write(command.guildRole)
-    .Write(command.unk4);
+    .Write(command.unk3)
+    .Write(command.guildRole);
 }
 
 void AcCmdCRInviteGuildJoin::Read(
