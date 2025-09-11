@@ -636,11 +636,10 @@ void RanchDirector::BroadcastWithdrawGuildMemberNotify(
   }
 }
 
-void RanchDirector::NotifyGuildInviteStatus(
+void RanchDirector::SendGuildInviteDecline(
   data::Uid characterUid,
   data::Uid inviterCharacterUid,
   std::string inviterCharacterName,
-  GuildError error,
   data::Uid guildUid)
 {
   // Send AcCmdCRInviteGuildJoinCancel?
@@ -648,7 +647,7 @@ void RanchDirector::NotifyGuildInviteStatus(
     .unk0 = characterUid,
     .unk1 = inviterCharacterUid,
     .unk2 = inviterCharacterName,
-    .error = error, // is this true?
+    .error = GuildError::InviteRejected,
     .unk4 = guildUid // is this true?
   };
 
@@ -3397,11 +3396,13 @@ void RanchDirector::HandleInviteToGuild(
 {
   const auto& clientContext = GetClientContext(clientId);
 
+  std::string characterName;
   auto guildUid = data::InvalidUid;
   const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
-  characterRecord.Immutable([&guildUid](const data::Character& character)
+  characterRecord.Immutable([&guildUid, &characterName](const data::Character& character)
   {
     guildUid = character.guildUid();
+    characterName = character.name();
   });
 
   if (guildUid == data::InvalidUid)
@@ -3410,6 +3411,22 @@ void RanchDirector::HandleInviteToGuild(
       clientContext.characterUid, command.characterName);
     protocol::AcCmdCRInviteGuildJoinCancel cancel{
       .error = GuildError::NoGuild
+    };
+
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  // Check if player is trying to invite themselves to the guild
+  if (command.characterName == characterName)
+  {
+    protocol::AcCmdCRInviteGuildJoinCancel cancel{
+      .error = GuildError::CannotInviteSelf
     };
 
     _commandServer.QueueCommand<decltype(cancel)>(

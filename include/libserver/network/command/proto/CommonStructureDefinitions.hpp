@@ -536,7 +536,9 @@ enum class GuildError : uint8_t {
   GuildAlreadyCreated = 5,
   JoinedGuild = 6,
   NoAuthority = 7,
-  Unknown = 8
+  InviteRejected = 8,
+  CannotInviteSelf = 9,
+  Unknown = 255
 };
 
 } // namespace server

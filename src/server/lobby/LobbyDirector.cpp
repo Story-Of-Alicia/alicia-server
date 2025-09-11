@@ -1013,12 +1013,11 @@ void LobbyDirector::HandleDeclineInviteToGuild(
   ClientId clientId,
   const protocol::AcCmdLCInviteGuildJoinCancel& command)
 {
-  //const auto& clientContext = GetClientContext(clientId);
-  GetServerInstance().GetRanchDirector().NotifyGuildInviteStatus(
+  // TODO: command data check
+  GetServerInstance().GetRanchDirector().SendGuildInviteDecline(
     command.characterUid,
     command.inviterCharacterUid,
     command.inviterCharacterName,
-    command.error,
     command.guild.uid
   );
 
