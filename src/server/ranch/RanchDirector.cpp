@@ -636,6 +636,55 @@ void RanchDirector::BroadcastWithdrawGuildMemberNotify(
   }
 }
 
+void RanchDirector::NotifyGuildInviteStatus(
+  data::Uid characterUid,
+  data::Uid inviterCharacterUid,
+  std::string inviterCharacterName,
+  GuildError error,
+  data::Uid guildUid)
+{
+  // Send AcCmdCRInviteGuildJoinCancel?
+  protocol::AcCmdCRInviteGuildJoinCancel reply{
+    .unk0 = characterUid,
+    .unk1 = inviterCharacterUid,
+    .unk2 = inviterCharacterName,
+    .error = error, // is this true?
+    .unk4 = guildUid // is this true?
+  };
+
+  for (const auto& client : _clients)
+  {
+    const auto& clientContext = client.second;
+    // Notify online characters only
+    if (not clientContext.isAuthenticated)
+    {
+      continue;
+    }
+
+    const auto& clientId = client.first;
+    bool foundInviter = false;
+    GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+      [&foundInviter, inviterCharacterUid](const data::Character& character){
+        if (character.uid() == inviterCharacterUid)
+        {
+          foundInviter = true;
+        }
+      }
+    );
+
+    if (foundInviter)
+    {
+      _commandServer.QueueCommand<decltype(reply)>(
+        clientId,
+        [reply]()
+        {
+          return reply;
+        });
+      break;
+    }
+  }
+}
+
 ServerInstance& RanchDirector::GetServerInstance()
 {
   return _serverInstance;

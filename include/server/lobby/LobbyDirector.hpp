@@ -194,7 +194,7 @@ private:
     ClientId clientId,
     const protocol::LobbyCommandChangeRanchOption& command);
 
-  void HandleInviteGuildJoinCancel(
+  void HandleDeclineInviteToGuild(
     ClientId clientId,
     const protocol::AcCmdLCInviteGuildJoinCancel& command);
 

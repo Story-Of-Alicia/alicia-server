@@ -233,6 +233,12 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
     {
       HandleChangeRanchOption(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdLCInviteGuildJoinCancel>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleDeclineInviteToGuild(clientId, command);
+    });
 }
 
 void LobbyDirector::Initialize()
@@ -1003,11 +1009,21 @@ LobbyDirector::ClientContext& LobbyDirector::GetClientContext(
   return clientContext;
 }
 
-void LobbyDirector::HandleInviteGuildJoinCancel(
+void LobbyDirector::HandleDeclineInviteToGuild(
   ClientId clientId,
   const protocol::AcCmdLCInviteGuildJoinCancel& command)
 {
-  // Send AcCmdCRInviteGuildJoinCancel?
+  //const auto& clientContext = GetClientContext(clientId);
+  GetServerInstance().GetRanchDirector().NotifyGuildInviteStatus(
+    command.characterUid,
+    command.inviterCharacterUid,
+    command.inviterCharacterName,
+    command.error,
+    command.guild.uid
+  );
+
+  //GetServerInstance().GetRanchDirector().GetClientContextByCharacterUid()
+  //if ()
 
   // TODO: santiy check on received vars
 }

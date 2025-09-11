@@ -91,6 +91,13 @@ public:
     data::Uid characterUid,
     protocol::AcCmdCRWithdrawGuildMember::Option option);
 
+  void NotifyGuildInviteStatus(
+    data::Uid characterUid,
+    data::Uid inviterCharacterUid,
+    std::string inviterCharacterName,
+    GuildError error,
+    data::Uid guildUid);
+
   ServerInstance& GetServerInstance();
   Config::Ranch& GetConfig();
 
