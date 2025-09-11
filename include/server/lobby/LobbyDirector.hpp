@@ -189,6 +189,10 @@ private:
     ClientId clientId,
     const protocol::LobbyCommandChangeRanchOption& command);
 
+  void HandleEnterRoomQuickStop(
+    ClientId clientId,
+    const protocol::AcCmdCLEnterRoomQuickStop& command);
+
   //!
   ServerInstance& _serverInstance;
   //!
