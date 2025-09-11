@@ -2923,7 +2923,6 @@ void RanchDirector::HandleOpenRandomBox(
   ClientId clientId,
   const protocol::AcCmdCROpenRandomBox command)
 {
-
   protocol::AcCmdCROpenRandomBoxOK response{
     .unk0 = 100,
     .unk1 = 100,

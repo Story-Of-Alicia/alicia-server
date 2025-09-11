@@ -3622,7 +3622,6 @@ struct AcCmdCROpenRandomBox
 
 struct AcCmdCROpenRandomBoxOK
 {
-
   uint32_t unk0;
   uint32_t unk1;
   uint32_t unk2;
