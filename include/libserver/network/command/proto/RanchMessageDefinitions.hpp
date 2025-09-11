@@ -2229,9 +2229,9 @@ struct AcCmdCRWithdrawGuildMemberCancel
 
 struct AcCmdRCWithdrawGuildMemberNotify
 {
-  uint32_t unk0;
-  uint32_t unk1;
-  uint32_t unk2;
+  uint32_t guildUid;
+  uint32_t guildMemberCharacterUid;
+  uint32_t withdrawnCharacterUid;
   AcCmdCRWithdrawGuildMember::Option option; // 1 - expelled
 
   static Command GetCommand()
@@ -3947,8 +3947,8 @@ struct AcCmdCRInviteGuildJoinCancel
 
 struct AcCmdRCAcceptGuildJoinNotify
 {
-  uint32_t unk0;
-  uint32_t unk1;
+  uint32_t guildMemberCharacterUid;
+  uint32_t newMemberCharacterUid;
   std::string newMemberCharacterName;
 
   static Command GetCommand()

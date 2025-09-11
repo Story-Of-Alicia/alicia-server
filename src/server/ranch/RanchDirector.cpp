@@ -618,11 +618,10 @@ void RanchDirector::BroadcastWithdrawGuildMemberNotify(
     const auto& clientRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
     clientRecord.Immutable([this, clientId, guildUid, option, characterUid](const data::Character& character)
     {
-      // TODO: Identify fields
       protocol::AcCmdRCWithdrawGuildMemberNotify notify{
-        .unk0 = guildUid,
-        .unk1 = character.uid(),
-        .unk2 = characterUid,
+        .guildUid = guildUid,
+        .guildMemberCharacterUid = character.uid(),
+        .withdrawnCharacterUid = characterUid,
         .option = option
       };
 
@@ -690,11 +689,11 @@ void RanchDirector::AcceptGuildJoinNotify(
   std::string newMemberCharacterName)
 {
   protocol::AcCmdRCAcceptGuildJoinNotify notify{
-    .unk1 = characterUid,
+    .newMemberCharacterUid = characterUid,
     .newMemberCharacterName = newMemberCharacterName
   };
   
-  // TODO: notify (online) guild members that a new member is in
+  // Notify (online) guild members that a new member is in
   for (const auto& client : _clients)
   {
     const auto& clientContext = client.second;
@@ -711,7 +710,7 @@ void RanchDirector::AcceptGuildJoinNotify(
     {
       if (character.guildUid() == guildUid)
       {
-        notify.unk0 = character.uid();
+        notify.guildMemberCharacterUid = character.uid();
         isCharacterInGuild = true;
       }
     });

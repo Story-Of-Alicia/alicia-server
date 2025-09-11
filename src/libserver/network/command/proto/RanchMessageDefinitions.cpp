@@ -2136,9 +2136,9 @@ void AcCmdRCWithdrawGuildMemberNotify::Write(
   const AcCmdRCWithdrawGuildMemberNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0)
-    .Write(command.unk1)
-    .Write(command.unk2)
+  stream.Write(command.guildUid)
+    .Write(command.guildMemberCharacterUid)
+    .Write(command.withdrawnCharacterUid)
     .Write(command.option);
 }
 
@@ -2481,8 +2481,8 @@ void AcCmdRCAcceptGuildJoinNotify::Write(
   const AcCmdRCAcceptGuildJoinNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0)
-    .Write(command.unk1)
+  stream.Write(command.guildMemberCharacterUid)
+    .Write(command.newMemberCharacterUid)
     .Write(command.newMemberCharacterName);
 }
 
