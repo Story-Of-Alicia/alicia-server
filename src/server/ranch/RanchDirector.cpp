@@ -684,6 +684,52 @@ void RanchDirector::SendGuildInviteDecline(
   }
 }
 
+void RanchDirector::AcceptGuildJoinNotify(
+  data::Uid guildUid,
+  data::Uid characterUid,
+  std::string newMemberCharacterName)
+{
+  protocol::AcCmdRCAcceptGuildJoinNotify notify{
+    .unk1 = characterUid,
+    .newMemberCharacterName = newMemberCharacterName
+  };
+  
+  // TODO: notify (online) guild members that a new member is in
+  for (const auto& client : _clients)
+  {
+    const auto& clientContext = client.second;
+    // Notify online characters only
+    if (not clientContext.isAuthenticated)
+    {
+      continue;
+    }
+    
+    const auto& clientId = client.first;
+    bool isCharacterInGuild = false;
+    GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+      [guildUid, &isCharacterInGuild, &notify](const data::Character& character)
+    {
+      if (character.guildUid() == guildUid)
+      {
+        notify.unk0 = character.uid();
+        isCharacterInGuild = true;
+      }
+    });
+
+    if (not isCharacterInGuild)
+    {
+      continue;
+    }
+
+    _commandServer.QueueCommand<decltype(notify)>(
+      clientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
+}
+
 ServerInstance& RanchDirector::GetServerInstance()
 {
   return _serverInstance;
@@ -3460,6 +3506,8 @@ void RanchDirector::HandleInviteToGuild(
 
   if (not isInviteeFoundAndOnline)
   {
+    // TODO: add invitee to pending invites for the guild for security
+    // to ensure rogue guild joins are not possible
     protocol::AcCmdCRInviteGuildJoinCancel cancel{
       .error = GuildError::NoUserOrOffline
     };

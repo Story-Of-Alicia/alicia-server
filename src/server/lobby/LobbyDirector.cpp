@@ -239,6 +239,12 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
     {
       HandleDeclineInviteToGuild(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdLCInviteGuildJoinOK>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleAcceptInviteToGuild(clientId, command);
+    }); 
 }
 
 void LobbyDirector::Initialize()
@@ -1020,11 +1026,64 @@ void LobbyDirector::HandleDeclineInviteToGuild(
     command.inviterCharacterName,
     command.guild.uid
   );
+}
 
-  //GetServerInstance().GetRanchDirector().GetClientContextByCharacterUid()
-  //if ()
+void LobbyDirector::HandleAcceptInviteToGuild(
+  ClientId clientId,
+  const protocol::AcCmdLCInviteGuildJoinOK& command)
+{
+  // TODO: command data check
 
-  // TODO: santiy check on received vars
+  const auto& clientContext = GetClientContext(clientId);
+
+  bool hasValidGuildInvite = false;
+  std::string inviteeCharacterName;
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+    [&inviteeCharacterName, &hasValidGuildInvite, guildUid = command.guild.uid](data::Character& character)
+  {
+    inviteeCharacterName = character.name();
+
+    // TODO: check if pending guild invite
+    hasValidGuildInvite = true;
+    character.guildUid() = guildUid;
+  });
+
+  if (not hasValidGuildInvite)
+  {
+    spdlog::warn("Character {} tried to join a guild {} but does not have a valid invite",
+      clientContext.characterUid, command.guild.uid);
+    return;
+  }
+
+  bool guildAddSuccess = false;
+  GetServerInstance().GetDataDirector().GetGuild(command.guild.uid).Mutable(
+    [&guildAddSuccess, inviteeCharacterUid = command.characterUid](data::Guild& guild)
+    {
+      // Check if invitee who accepted is in the guild
+      if (std::ranges::contains(guild.members(), inviteeCharacterUid) ||
+          std::ranges::contains(guild.officers(), inviteeCharacterUid) ||
+          guild.owner() == inviteeCharacterUid)
+      {
+        spdlog::warn("Character {} tried to join guild {} that they are already a part of",
+          inviteeCharacterUid, guild.uid());
+        return;
+      }
+
+      guild.members().emplace_back(inviteeCharacterUid);
+      guildAddSuccess = true;
+    });
+
+  if (not guildAddSuccess)
+  {
+    // TODO: return some response to the accepting client?
+    return;
+  }
+
+  GetServerInstance().GetRanchDirector().AcceptGuildJoinNotify(
+    command.guild.uid,
+    command.characterUid,
+    inviteeCharacterName
+  );
 }
 
 } // namespace server

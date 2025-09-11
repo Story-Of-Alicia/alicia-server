@@ -1846,7 +1846,7 @@ struct AcCmdLCInviteGuildJoinCancel
   // sub_4be7a0
   Guild guild;
 
-  GuildError error; // TODO: confirm this
+  GuildError error;
 
   static Command GetCommand()
   {
@@ -1865,6 +1865,36 @@ struct AcCmdLCInviteGuildJoinCancel
   //! @param stream Source stream.
   static void Read(
     AcCmdLCInviteGuildJoinCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdLCInviteGuildJoinOK
+{
+  uint32_t characterUid;
+  uint32_t inviterCharacterUid;
+  std::string inviterCharacterName;
+  std::string unk3; // guild description?
+
+  // sub_4be7a0
+  Guild guild;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCInviteGuildJoinOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCInviteGuildJoinOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCInviteGuildJoinOK& command,
     SourceStream& stream);
 };
 

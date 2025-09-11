@@ -97,6 +97,11 @@ public:
     std::string inviterCharacterName,
     data::Uid guildUid);
 
+  void AcceptGuildJoinNotify(
+    data::Uid guildUid,
+    data::Uid characterUid,
+    std::string newMemberCharacterName);
+
   ServerInstance& GetServerInstance();
   Config::Ranch& GetConfig();
 

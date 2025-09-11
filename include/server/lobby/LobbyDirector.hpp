@@ -198,6 +198,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdLCInviteGuildJoinCancel& command);
 
+  void HandleAcceptInviteToGuild(
+    ClientId clientId,
+    const protocol::AcCmdLCInviteGuildJoinOK& command);
+
   //!
   ServerInstance& _serverInstance;
   //!

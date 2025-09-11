@@ -1265,4 +1265,23 @@ void AcCmdLCInviteGuildJoinCancel::Write(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdLCInviteGuildJoinOK::Read(
+  AcCmdLCInviteGuildJoinOK& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterUid)
+    .Read(command.inviterCharacterUid)
+    .Read(command.inviterCharacterName)
+    .Read(command.unk3)
+    .Read(command.guild);
+}
+
+void AcCmdLCInviteGuildJoinOK::Write(
+  const AcCmdLCInviteGuildJoinOK& command,
+  SinkStream& stream)
+{
+  // TODO: Return this back to the client to confirm join?
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
