@@ -3504,17 +3504,18 @@ void RanchDirector::HandleInviteToGuild(
     return;
   }
 
-  // TODO: check online characters in ranch? can invite to guild only in ranch?
   // Check if invitee is online
   bool isInviteeFoundAndOnline = false;
+  data::Uid inviteeGuildUid = data::InvalidUid;
   for (const auto& onlineCharacterUid : GetOnlineCharacters())
   {
     GetServerInstance().GetDataDirector().GetCharacter(onlineCharacterUid).Immutable(
-      [&isInviteeFoundAndOnline, characterName = command.characterName](const data::Character& character)
+      [&isInviteeFoundAndOnline, &inviteeGuildUid, characterName = command.characterName](const data::Character& character)
     {
       if (character.name() == characterName)
       {
         isInviteeFoundAndOnline = true;
+        inviteeGuildUid = character.guildUid();
       }
     });
 
@@ -3524,10 +3525,24 @@ void RanchDirector::HandleInviteToGuild(
     }
   }
 
+  // If character is already in the guild or is already in another guild
+  if (inviteeGuildUid != data::InvalidUid)
+  {
+    protocol::AcCmdCRInviteGuildJoinCancel cancel{
+      .error = GuildError::JoinedGuild
+    };
+
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return; 
+  }
+
   if (not isInviteeFoundAndOnline)
   {
-    // TODO: add invitee to pending invites for the guild for security
-    // to ensure rogue guild joins are not possible
     protocol::AcCmdCRInviteGuildJoinCancel cancel{
       .error = GuildError::NoUserOrOffline
     };
