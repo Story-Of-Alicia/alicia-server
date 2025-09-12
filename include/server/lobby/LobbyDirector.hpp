@@ -71,7 +71,7 @@ public:
   Config::Lobby& GetConfig();
 
   void RequestCharacterCreator(data::Uid characterUid);
-  void InviteGuildJoin(std::string characterName, data::Uid guildUid, data::Uid inviterCharacterUid);
+  void InviteToGuild(std::string characterName, data::Uid guildUid, data::Uid inviterCharacterUid);
 
   void Disconnect(data::Uid characterUid);
   void Mute(data::Uid characterUid, data::Clock::time_point expiration);

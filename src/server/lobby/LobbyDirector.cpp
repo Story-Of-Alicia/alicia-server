@@ -369,7 +369,7 @@ void LobbyDirector::Notice(data::Uid characterUid, const std::string& message)
   }
 }
 
-void LobbyDirector::InviteGuildJoin(std::string characterName, data::Uid guildUid, data::Uid inviterCharacterUid)
+void LobbyDirector::InviteToGuild(std::string characterName, data::Uid guildUid, data::Uid inviterCharacterUid)
 {
   // Inviter character name
   std::string inviterCharacterName;
@@ -441,6 +441,13 @@ void LobbyDirector::InviteGuildJoin(std::string characterName, data::Uid guildUi
       [command]()
       {
         return command;
+      });
+
+    GetServerInstance().GetDataDirector().GetGuild(guildUid).Mutable(
+      [characterUid = clientContext.characterUid](data::Guild& guild)
+      {
+        // Add character UID to invites set 
+        guild.invites().emplace(characterUid);
       });
     
     // Found client and sent invite command, no need to process the rest of the clients
@@ -1036,24 +1043,31 @@ void LobbyDirector::HandleAcceptInviteToGuild(
 
   const auto& clientContext = GetClientContext(clientId);
 
-  bool hasValidGuildInvite = false;
-  std::string inviteeCharacterName;
-  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
-    [&inviteeCharacterName, &hasValidGuildInvite, guildUid = command.guild.uid](data::Character& character)
-  {
-    inviteeCharacterName = character.name();
+  // Check if character has guild invite
+  bool hasGuildInvite = false;
+  GetServerInstance().GetDataDirector().GetGuild(command.guild.uid).Mutable(
+    [&hasGuildInvite, characterUid = clientContext.characterUid](data::Guild& guild)
+    {
+      hasGuildInvite = guild.invites().contains(characterUid);
+      // Delete invite from guild if found
+      if (hasGuildInvite)
+        guild.invites().erase(characterUid);
+    });
 
-    // TODO: check if pending guild invite
-    hasValidGuildInvite = true;
-    character.guildUid() = guildUid;
-  });
-
-  if (not hasValidGuildInvite)
+  if (not hasGuildInvite)
   {
     spdlog::warn("Character {} tried to join a guild {} but does not have a valid invite",
       clientContext.characterUid, command.guild.uid);
     return;
   }
+
+  std::string inviteeCharacterName;
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+    [&inviteeCharacterName, guildUid = command.guild.uid](data::Character& character)
+  {
+    inviteeCharacterName = character.name();
+    character.guildUid() = guildUid;
+  });
 
   bool guildAddSuccess = false;
   GetServerInstance().GetDataDirector().GetGuild(command.guild.uid).Mutable(
@@ -1075,7 +1089,7 @@ void LobbyDirector::HandleAcceptInviteToGuild(
 
   if (not guildAddSuccess)
   {
-    // TODO: return some response to the accepting client?
+    // TODO: return some error to the accepting client?
     return;
   }
 

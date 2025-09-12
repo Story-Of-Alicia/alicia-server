@@ -624,6 +624,11 @@ void RanchDirector::BroadcastWithdrawGuildMemberNotify(
       continue;
     }
 
+    if (clientContext.characterUid == characterUid)
+    {
+      continue;
+    }
+
     const auto& clientId = client.first;
     const auto& clientRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
     clientRecord.Immutable([this, clientId, guildUid, option, characterUid](const data::Character& character)
@@ -3530,7 +3535,11 @@ void RanchDirector::HandleInviteToGuild(
     return;
   }
 
-  GetServerInstance().GetLobbyDirector().InviteGuildJoin(command.characterName, guildUid, clientContext.characterUid);
+  GetServerInstance().GetLobbyDirector().InviteToGuild(
+    command.characterName,
+    guildUid,
+    clientContext.characterUid
+  );
 }
 
 } // namespace server
