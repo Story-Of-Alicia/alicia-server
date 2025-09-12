@@ -326,6 +326,12 @@ struct Horse
   static void Read(Horse& value, SourceStream& stream);
 };
 
+enum class GuildRole : uint8_t {
+  Owner = 10,
+  Officer = 100,
+  Member = 200    
+};
+
 //!
 struct Guild
 {
@@ -333,7 +339,7 @@ struct Guild
   uint8_t val1{};
   uint32_t val2{}; // emblem uid?
   std::string name{};
-  uint8_t val4{};
+  GuildRole guildRole{};
   uint32_t val5{};
   // ignored by the client?
   uint8_t val6{};
@@ -518,12 +524,6 @@ enum class TeamMode : uint8_t
 {
   Single = 1,
   Team = 2
-};
-
-enum class GuildRole : uint8_t {
-  Owner = 10,
-  Officer = 100,
-  Member = 200    
 };
 
 // As described by GuildStrings table

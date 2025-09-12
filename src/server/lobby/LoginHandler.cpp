@@ -450,6 +450,10 @@ void LoginHandler::QueueUserLoginAccepted(
         guildRecord.Immutable([&response](const data::Guild& guild)
         {
           protocol::BuildProtocolGuild(response.guild, guild);
+          response.guild.guildRole = guild.owner() == response.uid ?
+            GuildRole::Owner : std::ranges::contains(guild.officers(), response.uid) ?
+            GuildRole::Officer : std::ranges::contains(guild.members(), response.uid) ?
+            GuildRole::Member : throw std::runtime_error("Character is in a guild but not a member");
         });
       }
 

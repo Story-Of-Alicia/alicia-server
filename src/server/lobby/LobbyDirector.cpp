@@ -430,7 +430,7 @@ void LobbyDirector::InviteToGuild(std::string characterName, data::Uid guildUid,
         .val1 = 1,
         .val2 = 2,
         .name = guildName,
-        .val4 = 4,
+        .guildRole = GuildRole::Member,
         .val5 = 5,
         .val6 = 6
       }

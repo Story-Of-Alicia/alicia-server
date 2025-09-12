@@ -212,7 +212,7 @@ void LobbyCommandLoginOK::Write(
     .Write(struct5.val1)
     .Write(struct5.val2)
     .Write(struct5.name)
-    .Write(struct5.val4)
+    .Write(struct5.guildRole)
     .Write(struct5.val5)
     .Write(struct5.val6);
 
