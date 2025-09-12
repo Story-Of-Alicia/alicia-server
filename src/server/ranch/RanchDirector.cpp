@@ -348,6 +348,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleInviteToGuild(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCREmblemList>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleGetEmblemList(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -3540,6 +3546,47 @@ void RanchDirector::HandleInviteToGuild(
     guildUid,
     clientContext.characterUid
   );
+}
+
+void RanchDirector::HandleGetEmblemList(
+  ClientId clientId,
+  const protocol::AcCmdCREmblemList& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  
+  auto guildUid = data::InvalidUid;
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [&guildUid](const data::Character& character)
+    {
+      guildUid = character.guildUid();
+    }
+  );
+
+  if (guildUid == data::InvalidUid)
+  {
+    protocol::AcCmdCREmblemListCancel cancel{};
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  protocol::AcCmdCREmblemListOK response{};
+  GetServerInstance().GetDataDirector().GetGuild(guildUid).Immutable(
+    [&response](const data::Guild& guild)
+    {
+      
+    });
+  
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 } // namespace server

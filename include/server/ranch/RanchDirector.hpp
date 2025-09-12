@@ -344,6 +344,10 @@ private:
   void HandleInviteToGuild(
     ClientId clientId,
     const protocol::AcCmdCRInviteGuildJoin& command);
+    
+  void HandleGetEmblemList(
+    ClientId clientId,
+    const protocol::AcCmdCREmblemList& command);
 
   //!
   ServerInstance& _serverInstance;

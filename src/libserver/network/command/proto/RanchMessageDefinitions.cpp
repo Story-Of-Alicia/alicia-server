@@ -2486,5 +2486,51 @@ void AcCmdRCAcceptGuildJoinNotify::Write(
     .Write(command.newMemberCharacterName);
 }
 
+void AcCmdCREmblemList::Read(
+  AcCmdCREmblemList& command,
+  SourceStream& stream)
+{
+  // Empty
+}
+
+void AcCmdCREmblemList::Write(
+  const AcCmdCREmblemList& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCREmblemListCancel::Read(
+  AcCmdCREmblemListCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCREmblemListCancel::Write(
+  const AcCmdCREmblemListCancel& command,
+  SinkStream& stream)
+{
+  // Empty
+}
+
+void AcCmdCREmblemListOK::Read(
+  AcCmdCREmblemListOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCREmblemListOK::Write(
+  const AcCmdCREmblemListOK& command,
+  SinkStream& stream)
+{
+  stream.Write(static_cast<uint8_t>(command.unk0.size()));
+  for (const auto& val : command.unk0)
+  {
+    stream.Write(val);
+  }
+}
+
 } // namespace server::protocol
 

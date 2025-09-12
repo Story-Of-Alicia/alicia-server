@@ -3971,6 +3971,74 @@ struct AcCmdRCAcceptGuildJoinNotify
     SourceStream& stream);
 };
 
+struct AcCmdCREmblemList
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCREmblemList;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCREmblemList& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCREmblemList& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCREmblemListCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCREmblemListCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCREmblemListCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCREmblemListCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCREmblemListOK
+{
+  std::vector<uint16_t> unk0{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCREmblemListOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCREmblemListOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCREmblemListOK& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RANCH_MESSAGE_DEFINES_HPP
