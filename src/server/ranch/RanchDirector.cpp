@@ -630,7 +630,7 @@ void RanchDirector::BroadcastWithdrawGuildMemberNotify(
       continue;
     }
 
-    if (clientContext.characterUid == characterUid)
+    if (option == protocol::AcCmdCRWithdrawGuildMember::Option::Leave && clientContext.characterUid == characterUid)
     {
       continue;
     }
@@ -3578,7 +3578,7 @@ void RanchDirector::HandleGetEmblemList(
   GetServerInstance().GetDataDirector().GetGuild(guildUid).Immutable(
     [&response](const data::Guild& guild)
     {
-      
+      // TODO: compile emblem list
     });
   
   _commandServer.QueueCommand<decltype(response)>(
