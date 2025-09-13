@@ -3503,7 +3503,8 @@ void RanchDirector::HandleInviteToGuild(
   // Check if invitee is online
   bool isInviteeFoundAndOnline = false;
   data::Uid inviteeGuildUid = data::InvalidUid;
-  for (const auto& onlineCharacterUid : GetOnlineCharacters())
+  // Get online characters from the lobby director
+  for (const auto& onlineCharacterUid : GetServerInstance().GetLobbyDirector().GetOnlineCharacters())
   {
     GetServerInstance().GetDataDirector().GetCharacter(onlineCharacterUid).Immutable(
       [&isInviteeFoundAndOnline, &inviteeGuildUid, characterName = command.characterName](const data::Character& character)
