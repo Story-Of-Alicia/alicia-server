@@ -616,46 +616,6 @@ void RanchDirector::BroadcastUpdateGuildMemberGradeNotify(
   });
 }
 
-void RanchDirector::BroadcastWithdrawGuildMemberNotify(
-  data::Uid guildUid,
-  data::Uid characterUid,
-  protocol::AcCmdCRWithdrawGuildMember::Option option)
-{
-  for (const auto& client : _clients)
-  {
-    const auto& clientContext = client.second;
-    // Notify online characters only
-    if (not clientContext.isAuthenticated)
-    {
-      continue;
-    }
-
-    if (option == protocol::AcCmdCRWithdrawGuildMember::Option::Leave && clientContext.characterUid == characterUid)
-    {
-      continue;
-    }
-
-    const auto& clientId = client.first;
-    const auto& clientRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
-    clientRecord.Immutable([this, clientId, guildUid, option, characterUid](const data::Character& character)
-    {
-      protocol::AcCmdRCWithdrawGuildMemberNotify notify{
-        .guildUid = guildUid,
-        .guildMemberCharacterUid = character.uid(),
-        .withdrawnCharacterUid = characterUid,
-        .option = option
-      };
-
-      _commandServer.QueueCommand<decltype(notify)>(
-        clientId,
-        [notify]()
-        {
-          return notify;
-        });
-    });
-  }
-}
-
 void RanchDirector::SendGuildInviteDecline(
   data::Uid characterUid,
   data::Uid inviterCharacterUid,
@@ -2065,7 +2025,43 @@ void RanchDirector::HandleWithdrawGuild(
       return response;
     });
 
-  BroadcastWithdrawGuildMemberNotify(guildUid, characterUid, command.option);
+  const auto& authorityCharacterUid = clientContext.characterUid;
+  for (const auto& client : _clients)
+  {
+    const auto& clientContext = client.second;
+    // Notify online characters only
+    if (not clientContext.isAuthenticated)
+    {
+      continue;
+    }
+
+    if (command.option == protocol::AcCmdCRWithdrawGuildMember::Option::Leave &&
+        clientContext.characterUid == characterUid)
+    {
+      continue;
+    }
+
+    const auto& clientId = client.first;
+    const auto& clientRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
+    clientRecord.Immutable([this, clientId, guildUid, option = command.option, characterUid, authorityCharacterUid]
+      (const data::Character& character)
+    {
+      protocol::AcCmdRCWithdrawGuildMemberNotify notify{
+        .guildUid = guildUid,
+        .guildMemberCharacterUid = option == protocol::AcCmdCRWithdrawGuildMember::Option::Kicked ?
+          authorityCharacterUid : character.uid(),
+        .withdrawnCharacterUid = characterUid,
+        .option = option
+      };
+
+      _commandServer.QueueCommand<decltype(notify)>(
+        clientId,
+        [notify]()
+        {
+          return notify;
+        });
+    });
+  }
 }
 
 void RanchDirector::HandleUpdatePet(

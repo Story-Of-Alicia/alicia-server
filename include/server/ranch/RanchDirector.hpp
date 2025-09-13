@@ -86,11 +86,6 @@ public:
     data::Uid characterUid,
     GuildRole guildRole);
 
-  void BroadcastWithdrawGuildMemberNotify(
-    data::Uid guildUid,
-    data::Uid characterUid,
-    protocol::AcCmdCRWithdrawGuildMember::Option option);
-
   void SendGuildInviteDecline(
     data::Uid characterUid,
     data::Uid inviterCharacterUid,
