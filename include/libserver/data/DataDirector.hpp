@@ -42,6 +42,7 @@ public:
   using StorageItemStorage = DataStorage<data::Uid, data::StorageItem>;
   using HousingStorage = DataStorage<data::Uid, data::Housing>;
   using GuildStorage = DataStorage<data::Uid, data::Guild>;
+  using SettingsStorage = DataStorage<data::Uid, data::Settings>;
 
   //! Default constructor.
   explicit DataDirector(const std::filesystem::path& basePath);
@@ -162,6 +163,8 @@ private:
   HousingStorage _housingStorage;
   //! A guild storage.
   GuildStorage _guildStorage;
+  //! A character Keybind settings storage.
+  SettingsStorage _settingsStorage;
 };
 
 } // namespace server
