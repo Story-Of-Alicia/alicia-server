@@ -384,7 +384,7 @@ void Pet::Write(const Pet& value, SinkStream& stream)
   stream.Write(value.petId)
     .Write(value.member2)
     .Write(value.name)
-    .Write(value.member4);
+    .Write(value.birthDate);
 }
 
 void Pet::Read(Pet& value, SourceStream& stream)
@@ -392,7 +392,7 @@ void Pet::Read(Pet& value, SourceStream& stream)
   stream.Read(value.petId)
     .Read(value.member2)
     .Read(value.name)
-    .Read(value.member4);
+    .Read(value.birthDate);
 }
 
 void Egg::Write(const Egg& value, SinkStream& stream)

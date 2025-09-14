@@ -443,6 +443,11 @@ void ChatSystem::RegisterUserCommands()
           return {"Invalid item count"};
         }
 
+        if (createdItemTid >= 99000 && createdItemTid <= 99200)
+        {
+          return {"Please give yourself eggs to hatch pets."};
+        }
+
         // Create the item.
         auto createdItemUid = data::InvalidUid;
         const auto createdItemRecord = _serverInstance.GetDataDirector().CreateItem();

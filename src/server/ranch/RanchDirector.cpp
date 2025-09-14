@@ -2068,7 +2068,10 @@ void RanchDirector::HandleUpdatePet(
   ClientId clientId,
   const protocol::AcCmdCRUpdatePet& command)
 {
-  protocol::AcCmdRCUpdatePet response;
+  protocol::AcCmdRCUpdatePet response{
+    .petInfo = command.petInfo
+  };
+
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
@@ -2108,6 +2111,7 @@ void RanchDirector::HandleUpdatePet(
       if (!petExists)
       {
         spdlog::warn("Character {} has no pet with petId {}", character.uid(), command.petInfo.pet.petId);
+        //probably should send a cancel here
         return;
       }
 
@@ -2118,6 +2122,7 @@ void RanchDirector::HandleUpdatePet(
         spdlog::warn("No items found for character {}", character.uid());
         return;
       }
+      // Pet rename, find item in inventory
       if (std::ranges::contains(character.items(), command.itemUid))
       {
         // TODO: actually reduce the item count or remove it
@@ -2128,11 +2133,11 @@ void RanchDirector::HandleUpdatePet(
             pet.name() = command.petInfo.pet.name;
           });
       }
+      //just summoning the pet
       else
       {
         character.petUid = petUid;
       }
-      response.petInfo = command.petInfo;
       if (petUid != 0)
       {
         const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
@@ -2140,16 +2145,7 @@ void RanchDirector::HandleUpdatePet(
           [&response](const data::Pet& pet)
           {
             response.petInfo.pet.name = pet.name();
-          });
-      }
-      response.petInfo = command.petInfo;
-      if (petUid != 0)
-      {
-        const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
-        petRecord.Immutable(
-          [&response](const data::Pet& pet)
-          {
-            response.petInfo.pet.name = pet.name();
+            response.petInfo.pet.birthDate = util::TimePointToAliciaTime(pet.birthDate());
           });
       }
     });
@@ -2432,11 +2428,15 @@ void RanchDirector::HandleRequestPetBirth(
         character.eggs().erase(it);
       }
 
-      if (auto it = std::ranges::find(character.items(), hatchingEggUid);
+      if (auto it = std::ranges::find(character.items(), hatchingEggItemUid);
         it != character.items().end())
       {
         character.items().erase(it);
       }
+
+      //Delete the Item and Egg records
+      GetServerInstance().GetDataDirector().GetEggCache().Delete(hatchingEggUid);
+      GetServerInstance().GetDataDirector().GetItemCache().Delete(hatchingEggItemUid);
 
       const registry::Egg eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
         hatchingEggTid);
@@ -2509,11 +2509,13 @@ void RanchDirector::HandleRequestPetBirth(
         pet.itemUid() = petItemUid;
         pet.name() = "";
         pet.petId() = petId;
+        pet.birthDate() = data::Clock::now();
     
         // Fill the response with the born pet.
         response.petBirthInfo.petInfo.pet = {
           .petId = pet.petId(),
-          .name = pet.name()};
+          .name = pet.name(),
+          .birthDate = util::TimePointToAliciaTime(pet.birthDate())};
         petUid = pet.uid();
       });
 

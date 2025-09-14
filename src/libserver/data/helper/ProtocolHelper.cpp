@@ -223,7 +223,7 @@ void BuildProtocolPet(Pet& protocolPet, const data::Pet& petRecord)
   protocolPet.petId = petRecord.petId();
   protocolPet.member2 = 0; // Unused
   protocolPet.name = petRecord.name();
-  protocolPet.member4 = 0; // Unused
+  protocolPet.birthDate = util::TimePointToAliciaTime(petRecord.birthDate());
 }
 
 void BuildProtocolPets(
