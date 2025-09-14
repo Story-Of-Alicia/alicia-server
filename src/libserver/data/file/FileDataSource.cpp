@@ -63,6 +63,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _petDataPath = prepareDataPath("pets");
   _housingDataPath = prepareDataPath("housing");
   _guildDataPath = prepareDataPath("guilds");
+  _settingsDataPath = prepareDataPath("settings");
 
   // Read the meta-data file and parse the sequential UIDs.
   const std::filesystem::path metaFilePath = ProduceDataPath(
@@ -104,6 +105,7 @@ void server::FileDataSource::Terminate()
   meta["petSequentialUid"] = _petSequentialUid.load();
   meta["housingSequentialUid"] = _housingSequentialUid.load();
   meta["guildSequentialId"] = _guildSequentialId.load();
+  meta["settingsSequentialId"] = _settingsSequentialId.load();
 
   metaFile << meta.dump(2);
 }
@@ -357,6 +359,8 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
 
   json["isRanchLocked"] = character.isRanchLocked();
 
+  json["settings"] = character.settings();
+
   // Construct gamemode skills from skill sets
   const auto& writeSkills = [](const data::Character::Skills::Sets& sets)
   {
@@ -575,7 +579,7 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
 
   json["dateOfBirth"] = std::chrono::ceil<std::chrono::seconds>(
     horse.dateOfBirth().time_since_epoch()).count();
-  
+
   nlohmann::json mountInfo;
   mountInfo["boostsInARow"] = horse.mountInfo.boostsInARow();
   mountInfo["winsSpeedSingle"] = horse.mountInfo.winsSpeedSingle();
@@ -931,5 +935,82 @@ void server::FileDataSource::DeleteGuild(data::Uid uid)
 {
   const std::filesystem::path dataFilePath = ProduceDataPath(
     _guildDataPath, std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
+}
+
+void server::FileDataSource::CreateSettings(data::Settings& settings)
+{
+  settings.uid = ++_settingsSequentialId;
+}
+
+void server::FileDataSource::RetrieveSettings(data::Uid uid, data::Settings& settings)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _settingsDataPath, std::format("{}", uid));
+
+  std::ifstream dataFile(dataFilePath);
+  if (!dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Settings file '{}' not accessible", dataFilePath.string()));
+  }
+
+  const auto json = nlohmann::json::parse(dataFile);
+  settings.uid = json["uid"].get<data::Uid>();
+
+  // Keyboard bindings
+  auto keyboardJson = json["keyboard"];
+  auto& bindings = settings.keyboard().bindings();
+
+  for (const auto& item : keyboardJson["bindings"])
+  {
+    bindings.emplace_back(data::Settings::Keyboard::Option{
+      .primaryKey = item["primaryKey"].get<uint8_t>(),
+      .type = item["type"].get<uint8_t>(),
+      .secondaryKey = item["secondaryKey"].get<uint8_t>()
+    });
+  }
+
+  // Macros
+  settings.macros() = json["macros"].get<std::array<std::string, 8>>();
+}
+
+void server::FileDataSource::StoreSettings(data::Uid uid, const data::Settings& settings)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _settingsDataPath, std::format("{}", uid));
+
+  std::ofstream dataFile(dataFilePath);
+  if (!dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Settings file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json;
+  json["uid"] = settings.uid();
+
+  // Keyboard bindings
+  nlohmann::json keyboard;
+  for (const auto& option : settings.keyboard().bindings())
+  {
+    keyboard["bindings"].push_back({
+      {"primaryKey", option.primaryKey()},
+      {"type", option.type()},
+      {"secondaryKey", option.secondaryKey()}
+    });
+  }
+  json["keyboard"] = keyboard;
+
+  // Macros
+  json["macros"] = settings.macros();
+
+  dataFile << json.dump(2);
+}
+
+void server::FileDataSource::DeleteSettings(data::Uid uid)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _settingsDataPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
 }

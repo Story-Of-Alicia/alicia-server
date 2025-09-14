@@ -1956,6 +1956,60 @@ struct AcCmdLCSkillCardPresetList
     SourceStream& stream);
 };
 
+struct AcCmdCLUpdateUserSettings
+{
+  OptionType type{};
+  KeyboardOptions keyboardOptions{};
+  MacroOptions macroOptions{};
+
+  //sent every time at the closure of the settings window
+  uint32_t valueSetting{};
+  uint8_t option1{};
+  uint8_t option2{};
+
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLUpdateUserSettings;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLUpdateUserSettings& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLUpdateUserSettings& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLUpdateUserSettingsOK
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLUpdateUserSettingsOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLUpdateUserSettingsOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLUpdateUserSettingsOK& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // LOBBY_MESSAGE_DEFINES_HPP

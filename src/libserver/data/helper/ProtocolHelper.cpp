@@ -289,6 +289,29 @@ void BuildProtocolEgg(
   protocolEgg.boost = 400000;
 }
 
+void BuildProtocolKeyboardOptions(
+  KeyboardOptions& protocolKeyboardOptions,
+  const data::Settings& settingsRecord)
+{
+  protocolKeyboardOptions.bindings.clear();
+  for (const auto& binding : settingsRecord.keyboard().bindings())
+  {
+    KeyboardOptions::Option option;
+    option.primaryKey = binding.primaryKey();
+    option.type = binding.type();
+    option.secondaryKey = binding.secondaryKey();
+    option.unused = 0; // Unused
+    protocolKeyboardOptions.bindings.push_back(option);
+  }
+}
+
+void BuildProtocolMacroOptions(
+  MacroOptions& protocolMacros,
+  const data::Settings& settingsRecord)
+{
+  protocolMacros.macros = settingsRecord.macros();
+}
+
 } // namespace protocol
 
 } // namespace server

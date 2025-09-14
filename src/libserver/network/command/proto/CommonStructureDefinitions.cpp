@@ -70,16 +70,18 @@ void StoredItem::Read(StoredItem& item, SourceStream& stream)
 
 void KeyboardOptions::Option::Write(const Option& option, SinkStream& stream)
 {
-  stream.Write(option.index)
+  stream.Write(option.secondaryKey)
     .Write(option.type)
-    .Write(option.key);
+    .Write(option.unused)
+    .Write(option.primaryKey);
 }
 
 void KeyboardOptions::Option::Read(Option& option, SourceStream& stream)
 {
-  stream.Read(option.index)
+  stream.Read(option.secondaryKey)
     .Read(option.type)
-    .Read(option.key);
+    .Read(option.unused)
+    .Read(option.primaryKey);
 }
 
 void KeyboardOptions::Write(const KeyboardOptions& value, SinkStream& stream)

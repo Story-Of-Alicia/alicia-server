@@ -469,6 +469,49 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
         }
         return false;
       })
+  , _settingsStorage(
+      [&](const auto& key, auto& settings)
+      {
+        try
+        {
+          _primaryDataSource->RetrieveSettings(key, settings);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception retrieving settings {} from the primary data source: {}", key, x.what());
+        }
+        return false;
+      },
+      [&](const auto& key, auto& settings)
+      {
+        try
+        {
+          _primaryDataSource->StoreSettings(key, settings);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception storing settings {} on the primary data source: {}", key, x.what());
+        }
+        return false;
+      },
+      [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteSettings(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting settings {} from the primary data source: {}", key, x.what());
+        }
+        return false;
+      })
 {
   _primaryDataSource = std::make_unique<FileDataSource>();
   _primaryDataSource->Initialize(basePath);
@@ -496,6 +539,7 @@ void DataDirector::Terminate()
     _petStorage.Terminate();
     _guildStorage.Terminate();
     _housingStorage.Terminate();
+    _settingsStorage.Terminate();
   }
   catch (const std::exception& x)
   {
@@ -519,6 +563,7 @@ void DataDirector::Tick()
     _petStorage.Tick();
     _guildStorage.Tick();
     _housingStorage.Tick();
+    _settingsStorage.Tick();
   }
   catch (const std::exception& x)
   {

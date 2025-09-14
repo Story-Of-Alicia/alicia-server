@@ -118,9 +118,10 @@ void LobbyCommandLoginOK::Write(
 
     for (const auto& binding : keyboard.bindings)
     {
-      stream.Write(binding.index)
+      stream.Write(binding.secondaryKey)
         .Write(binding.type)
-        .Write(binding.key);
+        .Write(binding.unused)
+        .Write(binding.primaryKey);
     }
   }
 
@@ -1253,6 +1254,47 @@ void AcCmdLCNotice::Read(AcCmdLCNotice& command, SourceStream& stream)
     throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCLUpdateUserSettings::Write(
+  const AcCmdCLUpdateUserSettings& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLUpdateUserSettings::Read(
+  AcCmdCLUpdateUserSettings& command,
+  SourceStream& stream)
+{
+  stream.Read(command.type);
+  if (command.type == OptionType::Keyboard)
+  {
+    KeyboardOptions::Read(command.keyboardOptions, stream);
+  }
+  if (command.type == OptionType::Macros)
+  {
+    MacroOptions::Read(command.macroOptions, stream);
+  }
+  if (command.type == OptionType::Value)
+  {
+    stream.Read(command.valueSetting);
+  }
+  stream.Read(command.option1)
+    .Read(command.option2);
+}
+
+void AcCmdCLUpdateUserSettingsOK::Write(
+  const AcCmdCLUpdateUserSettingsOK& command,
+  SinkStream& stream)
+{
+  // Empty.
+}
+
+void AcCmdCLUpdateUserSettingsOK::Read(
+  AcCmdCLUpdateUserSettingsOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
 void AcCmdCLRequestMountInfo::Write(
   const AcCmdCLRequestMountInfo& command,
   SinkStream& stream)

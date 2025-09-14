@@ -87,7 +87,15 @@ void BuildProtocolEgg(
   Egg& protocolEgg,
   const data::Egg& eggRecord,
   const data::Clock::duration hatchDuration);
-  
+
+void BuildProtocolKeyboardOptions(
+  KeyboardOptions& protocolKeyboardOptions,
+  const data::Settings& settingsRecord);
+
+void BuildProtocolMacroOptions(
+  MacroOptions& protocolMacros,
+  const data::Settings& settingsRecord);
+
 } // namespace protocol
 
 } // namespace server

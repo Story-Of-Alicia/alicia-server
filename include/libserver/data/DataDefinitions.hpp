@@ -20,9 +20,10 @@
 #ifndef DATADEFINITIONS_HPP
 #define DATADEFINITIONS_HPP
 
+#include <array>
 #include <atomic>
-#include <cstdint>
 #include <chrono>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -196,6 +197,28 @@ struct Guild
   dao::Field<std::string> name{};
 };
 
+//! Settings
+struct Settings
+{
+  dao::Field<Uid> uid{InvalidUid};
+
+  struct Keyboard
+  {
+    struct Option
+    {
+      dao::Field<uint8_t> primaryKey{0};
+      dao::Field<uint8_t> type{0};
+      dao::Field<uint8_t> secondaryKey{0};
+    };
+
+    dao::Field<std::vector<Option>> bindings{};
+  };
+
+  dao::Field<Keyboard> keyboard{};
+
+  dao::Field<std::array<std::string, 8>> macros{};
+};
+
 //! User
 struct Character
 {
@@ -261,6 +284,8 @@ struct Character
   dao::Field<std::vector<Uid>> housing{};
 
   dao::Field<bool> isRanchLocked{};
+
+  dao::Field<Uid> settings{InvalidUid};
 
   struct Skills
   {
