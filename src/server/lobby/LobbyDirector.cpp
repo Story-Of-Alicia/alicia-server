@@ -233,6 +233,7 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
     {
       HandleChangeRanchOption(clientId, command);
     });
+
   _commandServer.RegisterCommandHandler<protocol::AcCmdCLEnterRoomQuickStop>(
     [this](ClientId clientId, const auto& command)
     {
