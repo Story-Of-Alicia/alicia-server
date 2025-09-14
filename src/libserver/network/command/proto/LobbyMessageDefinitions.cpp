@@ -1246,7 +1246,7 @@ void AcCmdCLEnterRoomQuickStopOK::Read(
   AcCmdCLEnterRoomQuickStopOK& command,
   SourceStream& stream)
 {
-  // Empty.
+  throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCLEnterRoomQuickStopOK::Write(
