@@ -602,10 +602,6 @@ void RanchDirector::BroadcastUpdateGuildMemberGradeNotify(
         GetServerInstance().GetDataDirector().GetCharacter(guildMember).Immutable(
           [this, clientId, &guild, &notify](const data::Character& character)
           {
-            notify.unk1 = character.uid();
-            notify.unk3 = guild.owner() == character.uid() ? GuildRole::Owner :
-              std::ranges::contains(guild.officers(), character.uid()) ? GuildRole::Officer :
-              GuildRole::Member;
             _commandServer.QueueCommand<decltype(notify)>(
               clientId,
               [notify]()
