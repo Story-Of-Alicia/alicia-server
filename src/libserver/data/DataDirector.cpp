@@ -914,6 +914,30 @@ DataDirector::GuildStorage& DataDirector::GetGuildCache()
   return _guildStorage;
 }
 
+Record<data::Settings> DataDirector::GetSettings(data::Uid settingsUid) noexcept
+{
+  if (settingsUid == data::InvalidUid)
+    return {};
+  return _settingsStorage.Get(settingsUid).value_or(Record<data::Settings>{});
+}
+
+Record<data::Settings> DataDirector::CreateSettings() noexcept
+{
+  return _settingsStorage.Create(
+    [this]()
+    {
+      data::Settings settings;
+      _primaryDataSource->CreateSettings(settings);
+
+      return std::make_pair(settings.uid(), std::move(settings));
+    });
+}
+
+DataDirector::SettingsStorage& DataDirector::GetSettingsCache()
+{
+  return _settingsStorage;
+}
+
 void DataDirector::ScheduleCharacterLoad(
   UserDataContext& userDataContext,
   data::Uid characterUid)
@@ -952,6 +976,7 @@ void DataDirector::ScheduleCharacterLoad(
 
     auto guildUid = data::InvalidUid;
     auto petUid = data::InvalidUid;
+    auto settingsUid = data::InvalidUid;
 
     std::vector<data::Uid> gifts;
     std::vector<data::Uid> purchases;
@@ -966,11 +991,12 @@ void DataDirector::ScheduleCharacterLoad(
     std::vector<data::Uid> pets;
 
     characterRecord.Immutable(
-      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets](
+      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets, &settingsUid](
         const data::Character& character)
       {
         guildUid = character.guildUid();
         petUid = character.petUid();
+        settingsUid = character.settingsUid();
 
         gifts = character.gifts();
         purchases = character.purchases();
@@ -994,6 +1020,7 @@ void DataDirector::ScheduleCharacterLoad(
 
     const auto guildRecord = GetGuild(guildUid);
     const auto petRecord = GetPet(petUid);
+    const auto settingsRecord = GetSettings(settingsUid);
 
     const auto giftRecords = GetStorageItemCache().Get(gifts);
     const auto purchaseRecords = GetStorageItemCache().Get(purchases);
@@ -1019,6 +1046,14 @@ void DataDirector::ScheduleCharacterLoad(
     {
       userDataContext.debugMessage = std::format(
         "Pet '{}' not available", petUid);
+      return;
+    }
+
+    // Only require settings if the UID is not invalid.
+    if (not settingsRecord && settingsUid != data::InvalidUid)
+    {
+      userDataContext.debugMessage = std::format(
+        "Settings '{}' not available", settingsUid);
       return;
     }
 

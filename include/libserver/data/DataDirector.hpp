@@ -116,6 +116,10 @@ public:
   [[nodiscard]] Record<data::Housing> CreateHousing() noexcept;
   [[nodiscard]] HousingStorage& GetHousingCache();
 
+  [[nodiscard]] Record<data::Settings> GetSettings(data::Uid settingsUid) noexcept;
+  [[nodiscard]] Record<data::Settings> CreateSettings() noexcept;
+  [[nodiscard]] SettingsStorage& GetSettingsCache();
+
 private:
   //! An underlying data source of the data director.
   std::unique_ptr<FileDataSource> _primaryDataSource;

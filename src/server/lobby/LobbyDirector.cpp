@@ -236,7 +236,13 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
     {
       HandleChangeRanchOption(clientId, command);
     });
-  
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLUpdateUserSettings>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleUpdateUserSettings(clientId, command);
+    });
+
     _commandServer.RegisterCommandHandler<protocol::AcCmdCLRequestMountInfo>(
     [this](ClientId clientId, const auto& command)
     {
@@ -1163,6 +1169,69 @@ LobbyDirector::ClientContext& LobbyDirector::GetClientContext(
     throw std::runtime_error("Lobby client is not authenticated");
 
   return clientContext;
+}
+
+void LobbyDirector::HandleUpdateUserSettings(
+  ClientId clientId,
+  const protocol::AcCmdCLUpdateUserSettings& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  characterRecord.Mutable([&command, this](data::Character& character)
+    {
+      if (character.settings() == 0)
+      {
+        auto settingsUid = data::InvalidUid;
+        auto settingsRecord = GetServerInstance().GetDataDirector().CreateSettings();
+        settingsRecord.Mutable([&settingsUid](data::Settings& settings)
+          {
+            settingsUid = settings.uid();
+          });
+        character.settings() = settingsUid;
+      }
+
+      const auto settingsUid = character.settings();
+      auto settingsRecord = GetServerInstance().GetDataDirector().GetSettings(settingsUid);
+
+      settingsRecord.Mutable([&command](data::Settings& settings)
+        {
+          const auto optionTypeMask = static_cast<uint32_t>(
+            command.optionType);
+          // Copy keyboard bindings if present
+          if (optionTypeMask & static_cast<uint32_t>(protocol::OptionType::Keyboard))
+          {
+            std::vector<data::Settings::Keyboard::Option> copiedBindings;
+
+            for (const auto& binding : command.keyboardOptions.bindings)
+            {
+              data::Settings::Keyboard::Option option;
+              option.primaryKey = binding.primaryKey;
+              option.secondaryKey = binding.secondaryKey;
+              option.type = binding.type;
+              copiedBindings.push_back(std::move(option));
+            }
+
+            settings.keyboard() = data::Settings::Keyboard{std::move(copiedBindings)};
+          }
+
+          // Copy macros if present
+          if (optionTypeMask & static_cast<uint32_t>(protocol::OptionType::Macros))
+          {
+            settings.macros() = command.macroOptions.macros;
+          }
+        });
+    });
+
+  protocol::AcCmdCLUpdateUserSettingsOK response{};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 void LobbyDirector::HandleRequestMountInfo(

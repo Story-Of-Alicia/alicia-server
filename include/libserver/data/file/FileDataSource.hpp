@@ -83,10 +83,10 @@ public:
   void StoreGuild(data::Uid uid, const data::Guild& guild) override;
   void DeleteGuild(data::Uid uid) override;
 
-  void CreateSettings(data::Settings& settings);
-  void RetrieveSettings(data::Uid uid, data::Settings& settings);
-  void StoreSettings(data::Uid uid, const data::Settings& settings);
-  void DeleteSettings(data::Uid uid);
+  void CreateSettings(data::Settings& settings) override;
+  void RetrieveSettings(data::Uid uid, data::Settings& settings) override;
+  void StoreSettings(data::Uid uid, const data::Settings& settings) override;
+  void DeleteSettings(data::Uid uid) override;
 private:
   //! A root data path.
   std::filesystem::path _dataPath;

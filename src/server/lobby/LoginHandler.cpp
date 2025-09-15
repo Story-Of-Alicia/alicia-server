@@ -366,6 +366,8 @@ void LoginHandler::QueueUserLoginAccepted(
       _lobbyDirector._clients.size()),
     .val1 = 0x0,
     .val3 = 0x0,
+    .optionType = 25,
+    .valueOptions = 0x64,
 
     .missions = {
       protocol::LobbyCommandLoginOK::Mission{
@@ -537,6 +539,20 @@ void LoginHandler::QueueUserLoginAccepted(
         petRecord.Immutable([&response](const data::Pet& pet)
         {
           protocol::BuildProtocolPet(response.pet, pet);
+        });
+      }
+
+      if (character.settings() != data::InvalidUid)
+      {
+        const auto settingsRecord = _lobbyDirector.GetServerInstance().GetDataDirector().GetSettingsCache().Get(
+          character.settings());
+        if (not settingsRecord)
+          throw std::runtime_error("Character's settings not available");
+
+        settingsRecord->Immutable([&response](const data::Settings& settings)
+        {
+          protocol::BuildProtocolKeyboardOptions(response.keyboardOptions, settings);
+          protocol::BuildProtocolMacroOptions(response.macroOptions, settings);
         });
       }
 

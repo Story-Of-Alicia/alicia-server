@@ -97,7 +97,7 @@ struct LobbyCommandLoginOK
   uint8_t val3{};
 
   //! Option type mask.
-  OptionType optionType{};
+  uint32_t optionType{};
   KeyboardOptions keyboardOptions{};
   MacroOptions macroOptions{};
   uint32_t valueOptions{};
@@ -1958,7 +1958,7 @@ struct AcCmdLCSkillCardPresetList
 
 struct AcCmdCLUpdateUserSettings
 {
-  OptionType type{};
+  OptionType optionType{};
   KeyboardOptions keyboardOptions{};
   MacroOptions macroOptions{};
 
