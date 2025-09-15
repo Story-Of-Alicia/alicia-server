@@ -189,6 +189,10 @@ private:
     ClientId clientId,
     const protocol::LobbyCommandChangeRanchOption& command);
 
+  void HandleUpdateUserSettings(
+    ClientId clientId,
+    const protocol::AcCmdCLUpdateUserSettings& command);
+
   //!
   ServerInstance& _serverInstance;
   //!

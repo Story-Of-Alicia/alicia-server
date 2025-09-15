@@ -49,10 +49,19 @@ struct Field
   {
   }
 
-  //! Deleted copy constructor.
-  Field(const Field& field) = delete;
-  //!  Deleted copy assignment operator.
-  Field& operator=(const Field& field) = delete;
+  //! Copy constructor.
+  Field(const Field& field) noexcept
+    : _modified(field._modified.load())
+    , _value(field._value)
+  {
+  }
+  //! Copy assignment operator.
+  Field& operator=(const Field& field) noexcept
+  {
+    _modified = field._modified.load();
+    _value = field._value;
+    return *this;
+  }
 
   Field(Field&& field) noexcept
     : _modified(field.IsModified())
@@ -284,7 +293,7 @@ struct Character
 
   dao::Field<bool> isRanchLocked{};
 
-  dao::Field<Uid> settings{InvalidUid};
+  dao::Field<Uid> settingsUid{InvalidUid};
 };
 
 struct Horse

@@ -90,11 +90,11 @@ struct KeyboardOptions
 {
   struct Option
   {
-    uint8_t secondaryKey{};
     uint8_t type{};
     //always 0
     uint8_t unused{};
     uint8_t primaryKey{};
+    uint8_t secondaryKey{};
 
     static void Write(const Option& option, SinkStream& stream);
     static void Read(Option& option, SourceStream& stream);

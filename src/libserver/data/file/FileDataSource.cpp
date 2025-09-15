@@ -277,6 +277,8 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.housing = json["housing"].get<std::vector<data::Uid>>();
 
   character.isRanchLocked = json["isRanchLocked"].get<bool>();
+
+  character.settingsUid = json["settingsUid"].get<data::Uid>();
 }
 
 void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
@@ -342,7 +344,7 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
 
   json["isRanchLocked"] = character.isRanchLocked();
 
-  json["settings"] = character.settings();
+  json["settingsUid"] = character.settingsUid();
 
   dataFile << json.dump(2);
 }
