@@ -14,6 +14,7 @@
 #include "server/system/InfractionSystem.hpp"
 
 #include <libserver/data/DataDirector.hpp>
+#include <libserver/registry/ItemRegistry.hpp>
 #include <libserver/registry/HorseRegistry.hpp>
 #include <libserver/registry/OtpRegistry.hpp>
 
@@ -51,6 +52,14 @@ public:
   //! @returns Reference to the race director.
   RaceDirector& GetRaceDirector();
 
+  //! Returns reference to the Item registry.
+  //! @returns Reference to the Item registry.
+  registry::ItemRegistry& GetItemRegistry();
+
+  //! Returns reference to the OTP registry.
+  //! @returns Reference to the OTP registry.
+  OtpRegistry& GetOtpRegistry();
+
   //! Returns reference to the chat system.
   //! @returns Reference to the chat system.
   ChatSystem& GetChatSystem();
@@ -62,10 +71,6 @@ public:
   //! Returns reference to the settings.
   //! @returns Reference to the settings.
   Config& GetSettings();
-
-  //! Returns reference to the OTP registry.
-  //! @returns Reference to the OTP registry.
-  OtpRegistry& GetOtpRegistry();
 
 private:
 
@@ -140,11 +145,13 @@ private:
   //! A race director.
   RaceDirector _raceDirector;
 
-  ChatSystem _chatSystem;
-  InfractionSystem _infractionSystem;
-
   //! Registry of OTP codes.
   OtpRegistry _otpRegistry;
+  //! Registry of items.
+  registry::ItemRegistry _itemRegistry;
+
+  ChatSystem _chatSystem;
+  InfractionSystem _infractionSystem;
 };
 
 } // namespace server

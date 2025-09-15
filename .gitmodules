@@ -10,3 +10,6 @@
 [submodule "3rd-party/yaml-cpp"]
 	path = 3rd-party/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "3rd-party/zlib"]
+	path = 3rd-party/zlib
+	url = https://github.com/madler/zlib.git

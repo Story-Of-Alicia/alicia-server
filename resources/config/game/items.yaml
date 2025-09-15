@@ -1,2 +1,4548 @@
 items:
-  collection: {}
+  collection:
+    - tid: 10004
+      name: '베이비돌 쉬폰 원피스'
+      level: 5
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10005
+      name: '전통 리비안 스타일'
+      level: 25
+      characterPartInfo:
+        characterId: 20
+        slot: 2
+    - tid: 20001
+      name: '목장 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 2
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20004
+      name: '레인저 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20008
+      name: 'Protected forest area'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20002
+      name: '레드브라운마'
+      level: 1
+      mountPartSetInfo:
+        skinId: 4
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20003
+      name: '텍사스마'
+      level: 1
+      mountPartSetInfo:
+        skinId: 11
+        maneId: 1
+        tailId: 1
+        faceId: 99
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20005
+      name: '레인저 장신구'
+      level: 1
+      mountPartInfo:
+        slot: 16
+    - tid: 20009
+      name: '포레스트 장신구'
+      level: 1
+      mountPartInfo:
+        slot: 16
+    - tid: 20007
+      name: '레인저 보조장비'
+      level: 1
+      mountPartInfo:
+        slot: 32
+    - tid: 20006
+      name: '레인저 편자'
+      level: 1
+      mountPartInfo:
+        slot: 8
+    - tid: 20010
+      name: '포레스트 편자'
+      level: 1
+      mountPartInfo:
+        slot: 8
+    - tid: 10002
+      name: '스쿨룩 블라우스'
+      level: 5
+      characterPartInfo:
+        characterId: 20
+        slot: 16
+    - tid: 10003
+      name: '스쿨룩 스커트'
+      level: 5
+      characterPartInfo:
+        characterId: 20
+        slot: 32
+    - tid: 20011
+      name: '포레스트 보조장비'
+      level: 1
+      mountPartInfo:
+        slot: 32
+    - tid: 10006
+      name: '리비안 민속 원피스'
+      level: 5
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10007
+      name: '블랙캣 경갑 원피스'
+      level: 25
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10008
+      name: '래빗 테일 코트'
+      level: 15
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10009
+      name: '미니 치파오'
+      level: 5
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 20012
+      name: '블랙스톤 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20013
+      name: '블랙스톤 장신구'
+      level: 1
+      mountPartInfo:
+        slot: 16
+    - tid: 20014
+      name: '블랙스톤 편자'
+      level: 1
+      mountPartInfo:
+        slot: 8
+    - tid: 20015
+      name: '유령기사의 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20016
+      name: '유령기사의 장신구'
+      level: 1
+      mountPartInfo:
+        slot: 16
+    - tid: 20018
+      name: '블루드래곤 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20019
+      name: '블루드래곤 장신구'
+      level: 1
+      mountPartInfo:
+        slot: 16
+    - tid: 20020
+      name: '블루드래곤 편자'
+      level: 1
+      mountPartInfo:
+        slot: 8
+    - tid: 20021
+      name: '블루드래곤 보조장비'
+      level: 1
+      mountPartInfo:
+        slot: 32
+    - tid: 10010
+      name: '레드 뿔테 안경'
+      level: 1
+    # Not implemented: CharPartInfo
+    - tid: 10011
+      name: '견습기사 블라우스'
+      level: 5
+      characterPartInfo:
+        characterId: 20
+        slot: 16
+    - tid: 10012
+      name: '견습기사 체크 스커트'
+      level: 5
+      characterPartInfo:
+        characterId: 20
+        slot: 32
+    - tid: 10013
+      name: '스포티 후드 티셔츠'
+      level: 5
+      characterPartInfo:
+        characterId: 20
+        slot: 16
+    - tid: 10014
+      name: '스포티 미니 스커트'
+      level: 5
+      characterPartInfo:
+        characterId: 20
+        slot: 32
+    - tid: 10015
+      name: '에이프릴 메이드 블라우스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 16
+    - tid: 10016
+      name: '에이프릴 메이드 스커트'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 32
+    - tid: 10017
+      name: '블루진 카우걸 재킷'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 16
+    - tid: 10018
+      name: '블루진 카우걸 반바지'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 32
+    - tid: 10019
+      name: '견습기사 가죽 블라우스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 16
+    - tid: 10020
+      name: '견습기사 가죽 스커트'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 32
+    - tid: 10021
+      name: '메이그린 체크 재킷'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 16
+    - tid: 10022
+      name: '메이그린 심플 스커트'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 32
+    - tid: 10023
+      name: '블랙캣 헬름'
+      level: 25
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 20022
+      name: '레드 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 10024
+      name: '래빗 헤어 밴드'
+      level: 15
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10025
+      name: '실버캣 헬름'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10026
+      name: '세일러 베레모'
+      level: 15
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10027
+      name: '스포티 캡'
+      level: 5
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10028
+      name: '샹프리네 튜닉'
+      level: 25
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10029
+      name: '실버캣 중갑 원피스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10031
+      name: '블루진 멜빵 원피스'
+      level: 15
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10032
+      name: '어쌔신 원피스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10033
+      name: '무희의 밸리 탑'
+      level: 15
+      characterPartInfo:
+        characterId: 20
+        slot: 16
+    - tid: 10034
+      name: '무희의 하램 바지'
+      level: 15
+      characterPartInfo:
+        characterId: 20
+        slot: 32
+    - tid: 10035
+      name: '세일러 블라우스'
+      level: 15
+      characterPartInfo:
+        characterId: 20
+        slot: 16
+    - tid: 10036
+      name: '세일러 스커트'
+      level: 15
+      characterPartInfo:
+        characterId: 20
+        slot: 32
+    - tid: 20023
+      name: '블랙스톤 보조장비'
+      level: 1
+      mountPartInfo:
+        slot: 32
+    - tid: 20024
+      name: '유령기사의 보조장비'
+      level: 1
+      mountPartInfo:
+        slot: 32
+    - tid: 30001
+      name: '프레피룩 재킷'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 16
+    - tid: 30002
+      name: '프레피룩 팬츠'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 32
+    - tid: 30003
+      name: '테일 코트'
+      level: 15
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30004
+      name: '블랙캣 투구'
+      level: 25
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 20025
+      name: '레이디 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20026
+      name: '패치워크 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20027
+      name: '스틸 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20028
+      name: '나이트 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20029
+      name: '나이트 장신구'
+      level: 1
+      mountPartInfo:
+        slot: 16
+    - tid: 20030
+      name: '나이트 편자'
+      level: 1
+      mountPartInfo:
+        slot: 8
+    - tid: 20031
+      name: '나이트 보조장비'
+      level: 1
+      mountPartInfo:
+        slot: 32
+    - tid: 20032
+      name: '레드헌터 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20033
+      name: '레드헌터 장신구'
+      level: 1
+      mountPartInfo:
+        slot: 16
+    - tid: 20034
+      name: '레드헌터 편자'
+      level: 1
+      mountPartInfo:
+        slot: 8
+    - tid: 20035
+      name: '레드헌터 보조장비'
+      level: 1
+      mountPartInfo:
+        slot: 32
+    - tid: 10037
+      name: '링귀걸이'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 64
+    - tid: 10038
+      name: '산타 원피스'
+      level: 5
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10039
+      name: '샤먼의 중갑 상의'
+      level: 25
+      characterPartInfo:
+        characterId: 20
+        slot: 16
+    - tid: 10040
+      name: '슬리크 백 포니테일'
+      level: 25
+      characterPartInfo:
+        characterId: 20
+        slot: 2
+    - tid: 10041
+      name: '레트로 볼륨 단발'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 2
+    - tid: 10043
+      name: '붉은 꽃 머리'
+      level: 5
+      characterPartInfo:
+        characterId: 20
+        slot: 2
+    - tid: 10044
+      name: '오리엔탈 테일'
+      level: 15
+      characterPartInfo:
+        characterId: 20
+        slot: 2
+    - tid: 10045
+      name: '무희 머리'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 2
+    - tid: 10046
+      name: '플렛 웨이브 펌'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 2
+    - tid: 10047
+      name: '머리띠 머리'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 2
+    - tid: 10048
+      name: '보브 컷'
+      level: 5
+      characterPartInfo:
+        characterId: 20
+        slot: 2
+    - tid: 10049
+      name: '아이타 머리'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 2
+    - tid: 10050
+      name: '블루진 카우걸 모자'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10051
+      name: '샹프리네 베일'
+      level: 25
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10052
+      name: '레드캣 산타모'
+      level: 5
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10053
+      name: '샤먼의 중갑 하의'
+      level: 25
+      characterPartInfo:
+        characterId: 20
+        slot: 32
+    - tid: 20036
+      name: '레이스스폿마'
+      level: 1
+      mountPartSetInfo:
+        skinId: 8
+        maneId: 1
+        tailId: 1
+        faceId: 99
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20037
+      name: '3등급 갈색말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 7
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20038
+      name: '꼬리갈기3번말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 3
+        maneId: 6
+        tailId: 6
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20039
+      name: '6등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 6
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20040
+      name: '7등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 7
+        maneId: 2
+        tailId: 2
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20041
+      name: '8등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 8
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 30005
+      name: '데님 재킷'
+      level: 5
+      characterPartInfo:
+        characterId: 10
+        slot: 16
+    - tid: 30006
+      name: '블루진 카우보이 재킷'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 16
+    - tid: 30007
+      name: '견습기사 가죽재킷'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 16
+    - tid: 30008
+      name: '블랙캣 경갑 슈트'
+      level: 25
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30009
+      name: '용무늬 창파오'
+      level: 5
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30010
+      name: '스쿨룩 셔츠'
+      level: 5
+      characterPartInfo:
+        characterId: 10
+        slot: 16
+    - tid: 30011
+      name: '포레스트 중갑 상의'
+      level: 5
+      characterPartInfo:
+        characterId: 10
+        slot: 16
+    - tid: 30013
+      name: '블랙 실크해트'
+      level: 15
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30014
+      name: '그린체크 베레모'
+      level: 5
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30015
+      name: '견습기사 팬츠'
+      level: 5
+      characterPartInfo:
+        characterId: 10
+        slot: 32
+    - tid: 30017
+      name: '빈티지 블랙 팬츠'
+      level: 15
+      characterPartInfo:
+        characterId: 10
+        slot: 32
+    - tid: 30018
+      name: '카고 팬츠'
+      level: 5
+      characterPartInfo:
+        characterId: 10
+        slot: 32
+    - tid: 30019
+      name: '블루진 카우보이 팬츠'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 32
+    - tid: 30020
+      name: '견습기사 가죽 팬츠'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 32
+    - tid: 30016
+      name: '스쿨룩 팬츠'
+      level: 5
+      characterPartInfo:
+        characterId: 10
+        slot: 32
+    - tid: 30021
+      name: '포레스트 중갑 하의'
+      level: 5
+      characterPartInfo:
+        characterId: 10
+        slot: 32
+    - tid: 30022
+      name: '산타 슈트'
+      level: 5
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30023
+      name: '루돌프 산타모'
+      level: 5
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30024
+      name: '용사의 중갑 상의'
+      level: 25
+      characterPartInfo:
+        characterId: 10
+        slot: 16
+    - tid: 30025
+      name: '용사의 중갑 하의'
+      level: 25
+      characterPartInfo:
+        characterId: 10
+        slot: 32
+    - tid: 30028
+      name: '울프컷 머리'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 2
+    - tid: 30029
+      name: '견습기사 후드 티셔츠'
+      level: 5
+      characterPartInfo:
+        characterId: 10
+        slot: 16
+    - tid: 30032
+      name: '모히칸 컷'
+      level: 15
+      characterPartInfo:
+        characterId: 10
+        slot: 2
+    - tid: 30035
+      name: '레이어 볼륨'
+      level: 5
+      characterPartInfo:
+        characterId: 10
+        slot: 2
+    - tid: 30026
+      name: '블루진 카우보이 모자'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30030
+      name: '와일드 테일'
+      level: 15
+      characterPartInfo:
+        characterId: 10
+        slot: 2
+    - tid: 30031
+      name: '네츄럴 웨이브 펌'
+      level: 25
+      characterPartInfo:
+        characterId: 10
+        slot: 2
+    - tid: 30027
+      name: '머쉬룸 댄디'
+      level: 5
+      characterPartInfo:
+        characterId: 10
+        slot: 2
+    - tid: 10054
+      name: '신비의 투명머리'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 2
+    - tid: 10055
+      name: '신비의 투명상의'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 16
+    - tid: 10056
+      name: '신비의 투명하의'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 32
+    - tid: 29010
+      name: 'AI 1등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 2
+        maneId: 2
+        tailId: 2
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29020
+      name: 'AI 2등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 3
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29030
+      name: 'AI 3등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 4
+        maneId: 4
+        tailId: 4
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29040
+      name: 'AI 4등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 2
+        maneId: 11
+        tailId: 5
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29050
+      name: 'AI 5등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 8
+        maneId: 11
+        tailId: 6
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29060
+      name: 'AI 6등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 11
+        maneId: 11
+        tailId: 7
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29070
+      name: 'AI 7등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 2
+        maneId: 11
+        tailId: 8
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29080
+      name: 'AI 8등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 8
+        maneId: 11
+        tailId: 9
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29090
+      name: 'AI 9등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 11
+        maneId: 11
+        tailId: 10
+        faceId: 1
+        scale: 6
+        legLength: 5
+        legVolume: 4
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29100
+      name: 'AI 10등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 11
+        maneId: 11
+        tailId: 11
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29110
+      name: 'AI 11등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 12
+        maneId: 12
+        tailId: 12
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29120
+      name: 'AI 12등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 13
+        maneId: 13
+        tailId: 13
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29130
+      name: 'AI 13등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 14
+        maneId: 14
+        tailId: 14
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29140
+      name: 'AI 14등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 2
+        maneId: 3
+        tailId: 15
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29150
+      name: 'AI 15등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 5
+        maneId: 3
+        tailId: 16
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29160
+      name: 'AI 16등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 8
+        maneId: 3
+        tailId: 17
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29170
+      name: 'AI 17등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 11
+        maneId: 3
+        tailId: 18
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29180
+      name: 'AI 18등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 15
+        maneId: 3
+        tailId: 19
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29190
+      name: 'AI 19등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 19
+        maneId: 3
+        tailId: 20
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29200
+      name: 'AI 20등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 2
+        maneId: 21
+        tailId: 21
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29210
+      name: 'AI 21등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 5
+        maneId: 22
+        tailId: 22
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29220
+      name: 'AI 22등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 8
+        maneId: 23
+        tailId: 23
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29230
+      name: 'AI 23등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 11
+        maneId: 24
+        tailId: 24
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29240
+      name: 'AI 24등급 말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 15
+        maneId: 25
+        tailId: 25
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 28000
+      name: '교배용말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 0
+        legLength: 0
+        legVolume: 0
+        bodyLength: 0
+        bodyVolume: 0
+        emblemId: 1
+    - tid: 30036
+      name: '어쌔신 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30037
+      name: '샹프리네 슈트'
+      level: 25
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30038
+      name: '블랙 가죽 자켓'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 16
+    - tid: 30039
+      name: '블랙 가죽 바지'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 32
+    - tid: 10057
+      name: 'AI여자전용상의'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 16
+    - tid: 10058
+      name: 'AI여자전용하의'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 32
+    - tid: 30040
+      name: 'AI남성전용상의'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 16
+    - tid: 30041
+      name: 'AI남성전용하의'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 32
+    - tid: 40002
+      name: 'Tail brush'
+      level: 2
+      careParameters:
+        cleanPoints: 20
+        polishPoints: 0
+        parts: 2
+    - tid: 41001
+      name: 'Corn'
+      level: 2
+      foodParameters:
+        feedType: 0
+        friendlinessPoints: 30
+        plenitudePoints: 200
+        preferenceType: 80
+    - tid: 41002
+      name: 'Beans'
+      level: 2
+      foodParameters:
+        feedType: 1
+        friendlinessPoints: 40
+        plenitudePoints: 500
+        preferenceType: 9
+    - tid: 41003
+      name: 'Barley'
+      level: 2
+      foodParameters:
+        feedType: 1
+        friendlinessPoints: 40
+        plenitudePoints: 300
+        preferenceType: 224
+    - tid: 41004
+      name: 'Hay'
+      level: 2
+      foodParameters:
+        feedType: 1
+        friendlinessPoints: 50
+        plenitudePoints: 350
+        preferenceType: 20
+    - tid: 41005
+      name: 'Grass'
+      level: 2
+      foodParameters:
+        feedType: 1
+        friendlinessPoints: 50
+        plenitudePoints: 300
+        preferenceType: 3
+    - tid: 41006
+      name: 'Carrot'
+      level: 2
+      foodParameters:
+        feedType: 0
+        friendlinessPoints: 30
+        plenitudePoints: 130
+        preferenceType: 11
+    - tid: 41007
+      name: 'Sugar cubes'
+      level: 2
+      foodParameters:
+        feedType: 0
+        friendlinessPoints: 10
+        plenitudePoints: 50
+        preferenceType: 36
+    - tid: 20042
+      name: '체형0/0/0/0/0'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 0
+        legLength: 0
+        legVolume: 0
+        bodyLength: 0
+        bodyVolume: 0
+        emblemId: 1
+    - tid: 20043
+      name: '체형2/2/2/2/2'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 2
+        legLength: 2
+        legVolume: 2
+        bodyLength: 2
+        bodyVolume: 2
+        emblemId: 1
+    - tid: 20044
+      name: '체형4/4/4/4/4'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 4
+        legLength: 4
+        legVolume: 4
+        bodyLength: 4
+        bodyVolume: 4
+        emblemId: 1
+    - tid: 20045
+      name: '체형6/6/6/6/6'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 6
+        legLength: 6
+        legVolume: 6
+        bodyLength: 6
+        bodyVolume: 6
+        emblemId: 1
+    - tid: 20046
+      name: '체형8/8/8/8/8'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 8
+        legLength: 8
+        legVolume: 8
+        bodyLength: 8
+        bodyVolume: 8
+        emblemId: 1
+    - tid: 20047
+      name: '체형10/5/10/5/10'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 10
+        legLength: 5
+        legVolume: 10
+        bodyLength: 5
+        bodyVolume: 10
+        emblemId: 1
+    - tid: 20048
+      name: '체형0/2/4/6/8'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 0
+        legLength: 2
+        legVolume: 4
+        bodyLength: 6
+        bodyVolume: 8
+        emblemId: 1
+    - tid: 20049
+      name: '체형2/4/6/8/10'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 2
+        legLength: 4
+        legVolume: 6
+        bodyLength: 8
+        bodyVolume: 10
+        emblemId: 1
+    - tid: 20050
+      name: '체형4/6/8/10/0'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 4
+        legLength: 6
+        legVolume: 8
+        bodyLength: 10
+        bodyVolume: 0
+        emblemId: 1
+    - tid: 20051
+      name: '체형6/8/10/0/2'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 6
+        legLength: 8
+        legVolume: 10
+        bodyLength: 0
+        bodyVolume: 2
+        emblemId: 1
+    - tid: 20052
+      name: '체형8/10/0/2/4'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 8
+        legLength: 10
+        legVolume: 0
+        bodyLength: 2
+        bodyVolume: 4
+        emblemId: 1
+    - tid: 20053
+      name: '체형10/0/2/4/6'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 10
+        legLength: 0
+        legVolume: 2
+        bodyLength: 4
+        bodyVolume: 6
+        emblemId: 1
+    - tid: 20054
+      name: '체형10/0/0/0/0'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 10
+        legLength: 0
+        legVolume: 0
+        bodyLength: 0
+        bodyVolume: 0
+        emblemId: 1
+    - tid: 20055
+      name: '체형0/10/0/0/0'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 0
+        legLength: 10
+        legVolume: 0
+        bodyLength: 0
+        bodyVolume: 0
+        emblemId: 1
+    - tid: 20056
+      name: '체형0/0/10/0/0'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 0
+        legLength: 0
+        legVolume: 10
+        bodyLength: 0
+        bodyVolume: 0
+        emblemId: 1
+    - tid: 20057
+      name: '체형0/0/0/10/0'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 0
+        legLength: 0
+        legVolume: 0
+        bodyLength: 10
+        bodyVolume: 0
+        emblemId: 1
+    - tid: 20058
+      name: '체형0/0/0/0/10'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 0
+        legLength: 0
+        legVolume: 0
+        bodyLength: 0
+        bodyVolume: 10
+        emblemId: 1
+    - tid: 20059
+      name: '체형8/2/2/2/2'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 8
+        legLength: 2
+        legVolume: 2
+        bodyLength: 2
+        bodyVolume: 2
+        emblemId: 1
+    - tid: 20060
+      name: '체형2/8/2/2/2'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 2
+        legLength: 8
+        legVolume: 2
+        bodyLength: 2
+        bodyVolume: 2
+        emblemId: 1
+    - tid: 20061
+      name: '체형2/2/8/2/2'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 2
+        legLength: 2
+        legVolume: 8
+        bodyLength: 2
+        bodyVolume: 2
+        emblemId: 1
+    - tid: 20062
+      name: '체형2/2/2/8/2'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 2
+        legLength: 2
+        legVolume: 2
+        bodyLength: 8
+        bodyVolume: 2
+        emblemId: 1
+    - tid: 20063
+      name: '체형2/2/2/2/8'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 2
+        legLength: 2
+        legVolume: 2
+        bodyLength: 2
+        bodyVolume: 8
+        emblemId: 1
+    - tid: 20064
+      name: '체형6/4/4/6/4'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 6
+        legLength: 4
+        legVolume: 4
+        bodyLength: 6
+        bodyVolume: 4
+        emblemId: 1
+    - tid: 20065
+      name: '체형4/6/4/4/6'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 4
+        legLength: 6
+        legVolume: 4
+        bodyLength: 4
+        bodyVolume: 6
+        emblemId: 1
+    - tid: 20066
+      name: '체형4/4/6/4/4'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 4
+        legLength: 4
+        legVolume: 6
+        bodyLength: 4
+        bodyVolume: 4
+        emblemId: 1
+    - tid: 20067
+      name: '체형10/10/10/10/10'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 10
+        legLength: 10
+        legVolume: 10
+        bodyLength: 10
+        bodyVolume: 10
+        emblemId: 1
+    - tid: 30042
+      name: '세일러 셔츠'
+      level: 15
+      characterPartInfo:
+        characterId: 10
+        slot: 16
+    - tid: 30043
+      name: '세일러 팬츠'
+      level: 15
+      characterPartInfo:
+        characterId: 10
+        slot: 32
+    - tid: 30044
+      name: '세일러 모자'
+      level: 15
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 41008
+      name: 'Dry cloth'
+      level: 2
+      careParameters:
+        cleanPoints: 20
+        polishPoints: 0
+        parts: 0
+    - tid: 41009
+      name: 'Mane brush'
+      level: 2
+      careParameters:
+        cleanPoints: 20
+        polishPoints: 0
+        parts: 1
+    - tid: 28001
+      name: '망아지'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 1
+        tailId: 1
+        faceId: 1
+        scale: 0
+        legLength: 0
+        legVolume: 0
+        bodyLength: 0
+        bodyVolume: 0
+        emblemId: 1
+    - tid: 43001
+      name: '성장의 비약'
+      level: 10
+    - tid: 10059
+      name: '블랙 메탈 재킷'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 16
+    - tid: 10060
+      name: '치어리더 원피스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10061
+      name: '파이어릿 블라우스'
+      level: 25
+      characterPartInfo:
+        characterId: 20
+        slot: 16
+    - tid: 10062
+      name: '아이비 정글 비키니'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10063
+      name: '노멀 타잔복'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10064
+      name: '블랙 메탈 핫팬츠'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 32
+    - tid: 10066
+      name: '파이어릿 핫팬츠'
+      level: 25
+      characterPartInfo:
+        characterId: 20
+        slot: 32
+    - tid: 30045
+      name: '응원단장 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30046
+      name: '파이어릿 셔츠'
+      level: 25
+      characterPartInfo:
+        characterId: 10
+        slot: 16
+    - tid: 30047
+      name: '댄서의 밸리 탑'
+      level: 15
+      characterPartInfo:
+        characterId: 10
+        slot: 16
+    - tid: 30049
+      name: '파이어릿 팬츠'
+      level: 25
+      characterPartInfo:
+        characterId: 10
+        slot: 32
+    - tid: 30050
+      name: '댄서의 하램 팬츠'
+      level: 15
+      characterPartInfo:
+        characterId: 10
+        slot: 32
+    - tid: 10067
+      name: '화랑복'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 30051
+      name: '화랑 복장'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 10068
+      name: '롱 스트레이트'
+      level: 15
+      characterPartInfo:
+        characterId: 20
+        slot: 2
+    - tid: 42002
+      name: 'Bow'
+      level: 2
+      playParameters:
+        friendlinessPoints: 230
+        friendlinessPointsOnFailure: 10
+        charmPoints: 0
+        charmPointsOnFailure: 0
+        minAttachment: 260
+        maxAttachment: 500
+    - tid: 44001
+      name: 'Muscle relaxant'
+      level: 3
+      cureParameters:
+        injury: 17
+    - tid: 44002
+      name: 'Cold compress set'
+      level: 3
+      cureParameters:
+        injury: 18
+    - tid: 44003
+      name: 'Antibacterial cream'
+      level: 3
+      cureParameters:
+        injury: 33
+    - tid: 44004
+      name: 'Crystal disinfection set'
+      level: 3
+      cureParameters:
+        injury: 34
+    - tid: 44005
+      name: 'Temporary splint'
+      level: 3
+      cureParameters:
+        injury: 65
+    - tid: 44006
+      name: 'All-around splint'
+      level: 3
+      cureParameters:
+        injury: 66
+    - tid: 45001
+      name: '재료용 크리스털'
+      level: 12
+    - tid: 10069
+      name: '체이서 원피스'
+      level: 15
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10070
+      name: '기마병 모자'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10071
+      name: '기마병 제복'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10073
+      name: '엔젤 캡'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10074
+      name: '엔젤 원피스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10075
+      name: '매지션 캡'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10076
+      name: '매지션 원피스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 30052
+      name: '블루진 멜빵 슈트'
+      level: 15
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30053
+      name: '타잔 복장'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30054
+      name: '기마병 투구'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30055
+      name: '기마병 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30057
+      name: '위자드캡'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30058
+      name: '위자드 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30059
+      name: '레드라인 수영복'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30060
+      name: '하와이안 수영복'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30061
+      name: '노출 적은 타잔 복장'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 42001
+      name: 'Carrot on a stick'
+      level: 2
+      playParameters:
+        friendlinessPoints: 170
+        friendlinessPointsOnFailure: 10
+        charmPoints: 0
+        charmPointsOnFailure: 0
+        minAttachment: 50
+        maxAttachment: 250
+    - tid: 30064
+      name: '리비안 민속 슈트'
+      level: 5
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30065
+      name: '샹프리네 모관'
+      level: 25
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 20068
+      name: '레드실버 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20069
+      name: '레드실버 장신구'
+      level: 1
+      mountPartInfo:
+        slot: 16
+    - tid: 20070
+      name: '레드실버 보조장비'
+      level: 1
+      mountPartInfo:
+        slot: 32
+    - tid: 20071
+      name: '레드실버 편자'
+      level: 1
+      mountPartInfo:
+        slot: 8
+    - tid: 20072
+      name: '그린리브 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20073
+      name: '그린리브 장신구'
+      level: 1
+      mountPartInfo:
+        slot: 16
+    - tid: 20074
+      name: '그린리브 보조장비'
+      level: 1
+      mountPartInfo:
+        slot: 32
+    - tid: 20075
+      name: '그린리브 편자'
+      level: 1
+      mountPartInfo:
+        slot: 8
+    - tid: 20076
+      name: '리브 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20077
+      name: '스파인 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20078
+      name: '스파인 편자'
+      level: 1
+      mountPartInfo:
+        slot: 8
+    - tid: 20079
+      name: '레드스톤 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20080
+      name: '레드스톤 편자'
+      level: 1
+      mountPartInfo:
+        slot: 8
+    - tid: 20081
+      name: '레더 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20082
+      name: '블루해츨링 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20083
+      name: '블루해츨링 장신구'
+      level: 1
+      mountPartInfo:
+        slot: 16
+    - tid: 20084
+      name: '블루해츨링 보조장비'
+      level: 1
+      mountPartInfo:
+        slot: 32
+    - tid: 20085
+      name: '블루해츨링 편자'
+      level: 1
+      mountPartInfo:
+        slot: 8
+    - tid: 10077
+      name: '파이어릿 트리콘'
+      level: 25
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10078
+      name: '퍼플 어쌔신 플라워'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10079
+      name: '치어리더 베레모'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10080
+      name: '스카이 윙 캡'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10081
+      name: '골드캣 헬름'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10082
+      name: '근위대 모자'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10083
+      name: '시크릿 엔젤 캡'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10084
+      name: '다크 매지션 캡'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10085
+      name: '와일드 윙 캡'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10086
+      name: '다크 치어리더 베레모'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10087
+      name: '레드 어쌔신 플라워'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10089
+      name: '프로페셔널 캐스캣'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10090
+      name: '스카이 윙 세트'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10092
+      name: '프로페셔널 세트'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10093
+      name: '다크 치어리더 원피스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10094
+      name: '근위대 제복'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10095
+      name: '와일드 윙 세트'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10096
+      name: '다크 매지션 원피스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10097
+      name: '시크릿 엔젤 원피스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10098
+      name: '골드캣 중갑 원피스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10099
+      name: '다크 어쌔신 원피스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 30066
+      name: '파이어릿 두건'
+      level: 25
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30067
+      name: '빈티지 레드체크 셔츠'
+      level: 15
+      characterPartInfo:
+        characterId: 10
+        slot: 16
+    - tid: 30068
+      name: '다크 엔젤 캡'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30069
+      name: '화이트 엔젤 캡'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30070
+      name: '프로페셔널 뉴스보이캡'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30072
+      name: '근위대 투구'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30073
+      name: '골드캣 투구'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30075
+      name: '터프 윙 캡'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30076
+      name: '네이비 윙 캡'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30077
+      name: '다크 응원단장 베레모'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30078
+      name: '응원단장 베레모'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30079
+      name: '다크 위자드 캡'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30080
+      name: '레드 어쌔신 마스크'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30081
+      name: '블루 어쌔신 마스크'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30083
+      name: '네이비 윙 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30084
+      name: '화이트 엔젤 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30085
+      name: '프로페셔널 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30086
+      name: '다크 응원단장 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30087
+      name: 'Tough wing suit'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30088
+      name: '다크 엔젤 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30089
+      name: '다크 어쌔신 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30090
+      name: '근위대 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30091
+      name: '다크 위자드 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30092
+      name: '골드캣 중갑 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30093
+      name: '실버캣 중갑 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30094
+      name: '트레이너 뉴스보이캡'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30095
+      name: '트레이너 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 10100
+      name: '트레이너 캐스캣'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10101
+      name: '트레이너 세트'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 30096
+      name: '실버 캣 투구'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 29241
+      name: '테스트_민첩마'
+      level: 1
+      mountPartSetInfo:
+        skinId: 9
+        maneId: 1
+        tailId: 1
+        faceId: 99
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 30098
+      name: '닌자3'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30099
+      name: '닌자4'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 29242
+      name: '테스트_경쟁마'
+      level: 1
+      mountPartSetInfo:
+        skinId: 17
+        maneId: 32
+        tailId: 27
+        faceId: 99
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29243
+      name: '테스트_돌파마'
+      level: 1
+      mountPartSetInfo:
+        skinId: 17
+        maneId: 33
+        tailId: 28
+        faceId: 99
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29244
+      name: '테스트_근력마'
+      level: 1
+      mountPartSetInfo:
+        skinId: 17
+        maneId: 34
+        tailId: 29
+        faceId: 99
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29245
+      name: '테스트_용기마'
+      level: 1
+      mountPartSetInfo:
+        skinId: 17
+        maneId: 35
+        tailId: 30
+        faceId: 99
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29246
+      name: '테스트_민첩경쟁마'
+      level: 1
+      mountPartSetInfo:
+        skinId: 17
+        maneId: 3
+        tailId: 3
+        faceId: 99
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29247
+      name: '테스트_민첩돌파마'
+      level: 1
+      mountPartSetInfo:
+        skinId: 17
+        maneId: 36
+        tailId: 26
+        faceId: 99
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29248
+      name: '테스트_민첩근력마'
+      level: 1
+      mountPartSetInfo:
+        skinId: 17
+        maneId: 37
+        tailId: 27
+        faceId: 99
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29249
+      name: '테스트_민첩용기마'
+      level: 1
+      mountPartSetInfo:
+        skinId: 17
+        maneId: 3
+        tailId: 3
+        faceId: 99
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29250
+      name: '테스트_경쟁돌파마'
+      level: 1
+      mountPartSetInfo:
+        skinId: 17
+        maneId: 38
+        tailId: 28
+        faceId: 99
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29251
+      name: '테스트_경쟁근력마'
+      level: 1
+      mountPartSetInfo:
+        skinId: 17
+        maneId: 39
+        tailId: 29
+        faceId: 99
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29252
+      name: '테스트_경쟁용기마'
+      level: 1
+      mountPartSetInfo:
+        skinId: 17
+        maneId: 3
+        tailId: 3
+        faceId: 99
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29253
+      name: '테스트_돌파근력마'
+      level: 1
+      mountPartSetInfo:
+        skinId: 17
+        maneId: 40
+        tailId: 30
+        faceId: 99
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29254
+      name: '테스트_돌파용기마'
+      level: 1
+      mountPartSetInfo:
+        skinId: 17
+        maneId: 3
+        tailId: 3
+        faceId: 99
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29255
+      name: '테스트_근력용기마'
+      level: 1
+      mountPartSetInfo:
+        skinId: 17
+        maneId: 3
+        tailId: 3
+        faceId: 99
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29256
+      name: '테스트_민돌근마'
+      level: 1
+      mountPartSetInfo:
+        skinId: 17
+        maneId: 3
+        tailId: 3
+        faceId: 99
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 29257
+      name: '테스트_조합형마'
+      level: 1
+      mountPartSetInfo:
+        skinId: 17
+        maneId: 3
+        tailId: 3
+        faceId: 99
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 10102
+      name: '프리뷰 티롤모'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 30100
+      name: '프리뷰  티롤모'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 10103
+      name: '삑살난 신비의 투명 상의 '
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 16
+    - tid: 46001
+      name: '보호의 성수'
+      level: 1
+    - tid: 46002
+      name: '캐릭터 이름 변경권'
+      level: 1
+    - tid: 46003
+      name: '기수의 비약'
+      level: 1
+    - tid: 46004
+      name: '갈기의 비약'
+      level: 1
+    - tid: 46005
+      name: '말 슬롯 추가 아이템'
+      level: 1
+    - tid: 88888
+      name: '패키지'
+      level: 1
+    - tid: 10104
+      name: '피치 래빗 윈터캡 & 고글'
+      level: 10
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10105
+      name: '스웨이드 체크 캡'
+      level: 20
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10106
+      name: '와인체크 헤드 드레스'
+      level: 20
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10107
+      name: '캐롯 심볼 피치 윈터 룩'
+      level: 10
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10108
+      name: '레이스업 스타일 웨스턴 룩'
+      level: 20
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10109
+      name: '플레드리스 고딕 드레스'
+      level: 20
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 30101
+      name: '핑키 래빗 윈터캡 & 고글'
+      level: 10
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30102
+      name: '스웨이드 헌터 캡'
+      level: 20
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30103
+      name: '플레드리스 체인 미니햇'
+      level: 20
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30104
+      name: '캐롯 심볼 핑키 윈터 룩'
+      level: 10
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30105
+      name: '레이스업 패턴 웨스턴 룩'
+      level: 20
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30106
+      name: '템플고딕 와인 슈트(반팔)'
+      level: 20
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 46006
+      name: '1단계 말 슬롯 확장권'
+      level: 1
+    - tid: 46007
+      name: '2단계 말 슬롯 확장권'
+      level: 1
+    - tid: 46008
+      name: '3단계 말 슬롯 확장권'
+      level: 1
+    - tid: 46009
+      name: '4단계 말 슬롯 확장권'
+      level: 1
+    - tid: 46010
+      name: '5단계 말 슬롯 확장권'
+      level: 1
+    - tid: 10110
+      name: '양 머리 장식 후드'
+      level: 10
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10111
+      name: '다크 세일러 베레모'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10112
+      name: '블랙 펠트 플룸 햇'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10113
+      name: '고딕 펑크 세일러 블라우스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 16
+    - tid: 10114
+      name: '블루 리본 솜구름 윈터 룩'
+      level: 10
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10115
+      name: '머스킷티어 브레이스 폼'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10116
+      name: '네츄럴 스트링 튜닉 드레스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10117
+      name: '고딕 펑크 플리츠 스커트'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 32
+    - tid: 30107
+      name: '양 머리 쿠션 후드'
+      level: 10
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30108
+      name: '다크 세일러 모자'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30109
+      name: '다크 펠트 플룸 햇'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30110
+      name: '고딕 펑크 세일러 셔츠'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 16
+    - tid: 30111
+      name: '블루 워머 솜구름 윈터 룩'
+      level: 10
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30112
+      name: '머스킷티어 브레이스 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30113
+      name: '네츄럴 스트링 튜닉 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30114
+      name: '고딕 펑크 세일러 팬츠'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 32
+    - tid: 86868
+      name: '캐롯'
+      level: 1
+    - tid: 20086
+      name: '유령기사의 편자'
+      level: 1
+      mountPartInfo:
+        slot: 8
+    - tid: 10122
+      name: '네츄럴 밴딩 단발'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 2
+    - tid: 10123
+      name: '다크 블러드 고딕 드레스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 30115
+      name: '미디엄 소프트 샤기 컷'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 2
+    - tid: 30116
+      name: '보헤미안 롱 스타일'
+      level: 25
+      characterPartInfo:
+        characterId: 10
+        slot: 2
+    - tid: 30117
+      name: '스파이크 레이어'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 2
+    - tid: 30118
+      name: '볼륨 스트레이트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 2
+    - tid: 30119
+      name: '비대칭 댄디 콘로우'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 2
+    - tid: 30120
+      name: '다크 블러드 고딕 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 10124
+      name: '퓨어 화이트 플라워'
+      level: 25
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10125
+      name: '블루 플라워링 베이비 돌'
+      level: 25
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10126
+      name: '바이올렛 코사지 헤어밴드'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 30121
+      name: '블루 실크 플라워링 슈트'
+      level: 25
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30122
+      name: '바이올렛 페도라'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30123
+      name: '쥬얼 바이올렛 포멀 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30124
+      name: '라이딩 포멀 페브릭 캡'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30125
+      name: '라이딩 포멀 셔츠'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 16
+    - tid: 30126
+      name: '라이딩 포멀 트라우저'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 32
+    - tid: 30127
+      name: '이퀘스트리언 심볼 라이딩 캡'
+      level: 35
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30128
+      name: '이퀘스트리언 라이딩 슈트'
+      level: 35
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 10127
+      name: '바이올렛 코사지 베이비 돌'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10128
+      name: '라이딩 포멀 스트랩 캡'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10129
+      name: '라이딩 포멀 블라우스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 16
+    - tid: 10130
+      name: '라이딩 포멀 팬츠'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 32
+    - tid: 10131
+      name: '이퀘스트리언 리본 라이딩 캡'
+      level: 35
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10132
+      name: '이퀘스트리언 라이딩 드레스'
+      level: 35
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 20087
+      name: '4등급 브라운 민첩마'
+      level: 4
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20088
+      name: '4등급 브라운 용기마'
+      level: 4
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20089
+      name: '4등급 브라운 돌파마'
+      level: 4
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20090
+      name: '4등급 브라운 근력마'
+      level: 4
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20091
+      name: '4등급 브라운 경쟁마'
+      level: 4
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20092
+      name: '5등급 브라운 민첩마'
+      level: 4
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20093
+      name: '5등급 브라운 용기마'
+      level: 4
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20094
+      name: '5등급 브라운 돌파마'
+      level: 4
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20095
+      name: '5등급 브라운 근력마'
+      level: 4
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20096
+      name: '5등급 브라운 경쟁마'
+      level: 4
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20097
+      name: '6등급 브라운 민첩마'
+      level: 4
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 5
+    - tid: 20098
+      name: '6등급 브라운 용기마'
+      level: 4
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20099
+      name: '6등급 브라운 돌파마'
+      level: 4
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20100
+      name: '6등급 브라운 근력마'
+      level: 4
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20101
+      name: '6등급 브라운 경쟁마'
+      level: 4
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20102
+      name: '7등급 브라운 민첩마'
+      level: 4
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20103
+      name: '7등급 브라운 용기마'
+      level: 4
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20104
+      name: '7등급 브라운 돌파마'
+      level: 4
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20105
+      name: '7등급 브라운 근력마'
+      level: 4
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 20106
+      name: '7등급 브라운 경쟁마'
+      level: 4
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 10133
+      name: '퓨어 로우 포니테일'
+      level: 30
+      characterPartInfo:
+        characterId: 20
+        slot: 2
+    - tid: 10134
+      name: '원랭스 러블리 보브'
+      level: 30
+      characterPartInfo:
+        characterId: 20
+        slot: 2
+    - tid: 10135
+      name: '레트로 글램 웨이브'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 2
+    - tid: 10136
+      name: '라이딩 포멀 프라임 캡'
+      level: 57
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10137
+      name: '크림슨 원더 헤어 리본'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10138
+      name: '라이딩 포멀 슬림 코트'
+      level: 57
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10139
+      name: '크림슨 원더 에이프런 드레스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 30129
+      name: '매쉬 업 모히칸 스타일'
+      level: 30
+      characterPartInfo:
+        characterId: 10
+        slot: 2
+    - tid: 30130
+      name: '소프트 크림 웨이브'
+      level: 30
+      characterPartInfo:
+        characterId: 10
+        slot: 2
+    - tid: 30131
+      name: '클래식 로우 포니테일'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 2
+    - tid: 30132
+      name: '라이딩 포멀 프리미엄 캡'
+      level: 57
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30133
+      name: '원더 레빗 헤어밴드'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30134
+      name: '라이딩 포멀 펜슬 코트'
+      level: 57
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30135
+      name: '크림슨 체크 원더 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 10140
+      name: '블루 토파즈 미니 크라운'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10141
+      name: '블랙 스터드 미니햇'
+      level: 30
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10142
+      name: '뱅가드 플리티드 드레스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10143
+      name: '오리엔탈 뱅가드 드레스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10144
+      name: '로그 레이서 벨티드 재킷'
+      level: 30
+      characterPartInfo:
+        characterId: 20
+        slot: 16
+    - tid: 10145
+      name: '로그 레이서 스키니 진'
+      level: 30
+      characterPartInfo:
+        characterId: 20
+        slot: 32
+    - tid: 30136
+      name: '아쿠아 토파즈 미니 크라운'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30137
+      name: '다크 스터드 미니햇'
+      level: 30
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30138
+      name: '뱅가드 레이스 러플 코트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30139
+      name: '오리엔탈 뱅가드 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30140
+      name: '로그 레이서 본디지 재킷'
+      level: 30
+      characterPartInfo:
+        characterId: 10
+        slot: 16
+    - tid: 30141
+      name: '로그 레이서 스터드 벨트 진'
+      level: 30
+      characterPartInfo:
+        characterId: 10
+        slot: 32
+    - tid: 50001
+      name: '랜덤박스'
+      level: 1
+    - tid: 50002
+      name: '골든 랜덤박스'
+      level: 1
+    - tid: 46011
+      name: '노력의 증표'
+      level: 1
+    - tid: 90001
+      name: '포레 포츈에그 (Lv.2)'
+      level: 1
+    - tid: 90002
+      name: '포레 포츈에그 (Lv.3)'
+      level: 1
+    - tid: 90003
+      name: '포레 포츈에그 (Lv.4)'
+      level: 1
+    - tid: 90004
+      name: '드랜 포츈에그  (Lv.1)'
+      level: 1
+    - tid: 90005
+      name: '드랜 포츈에그 (Lv.2)'
+      level: 1
+    - tid: 98001
+      name: '양(방목용)'
+      level: 1
+    - tid: 98002
+      name: '임팔라(방목용)'
+      level: 1
+    - tid: 98003
+      name: '독수리(방목용)'
+      level: 1
+    - tid: 10146
+      name: '타이거 스킨 비키니'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10147
+      name: '레트로 핑크 수영복'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10148
+      name: '엘레강스 버클 수영복'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 30142
+      name: '타이거 스킨 팬츠'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30143
+      name: '아이비 정글 팬츠'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30144
+      name: '알로하 비치 트렁크'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30145
+      name: '롤리팝 비치 트렁크'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 10149
+      name: '아킨즈 뷰티 터번'
+      level: 35
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10150
+      name: '아킨즈 뷰티 드레스'
+      level: 35
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 30146
+      name: '아킨즈 노블 터번'
+      level: 35
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30147
+      name: '아킨즈 칼릭 슈트'
+      level: 35
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 90011
+      name: '드랜 포츈에그 (Lv.3)'
+      level: 1
+    - tid: 90012
+      name: '드랜 포츈에그 (Lv.4)'
+      level: 1
+    - tid: 90006
+      name: '도르프 포츈에그 (Lv.1)'
+      level: 1
+    - tid: 90007
+      name: '도르프 포츈에그 (Lv.2)'
+      level: 1
+    - tid: 90010
+      name: '포레 포츈에그 (Lv.1)'
+      level: 1
+    - tid: 97001
+      name: '포츈에그 부스팅 포션(10초)'
+      level: 1
+    - tid: 20108
+      name: '플래티넘 장신구'
+      level: 1
+      mountPartInfo:
+        slot: 16
+    - tid: 20109
+      name: '플래티넘 편자'
+      level: 1
+      mountPartInfo:
+        slot: 8
+    - tid: 20110
+      name: '플래티넘 보조장비'
+      level: 1
+      mountPartInfo:
+        slot: 32
+    - tid: 20107
+      name: '플래티넘 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20111
+      name: '이집트01 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20112
+      name: '이집트02 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20113
+      name: '이집트02 편자'
+      level: 1
+      mountPartInfo:
+        slot: 8
+    - tid: 20114
+      name: '이집트02 보조장비'
+      level: 1
+      mountPartInfo:
+        slot: 32
+    - tid: 10151
+      name: '주나 테스트 헤어'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 2
+    - tid: 10152
+      name: '주나 테스트 드레스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 20115
+      name: '이집트03 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20116
+      name: '이집트03 장신구'
+      level: 1
+      mountPartInfo:
+        slot: 16
+    - tid: 20117
+      name: '이집트03 편자'
+      level: 1
+      mountPartInfo:
+        slot: 8
+    - tid: 20118
+      name: '이집트03 보조장비'
+      level: 1
+      mountPartInfo:
+        slot: 32
+    - tid: 19001
+      name: 'NPC 주나헤어'
+      level: 0
+      characterPartInfo:
+        characterId: 20
+        slot: 2
+    - tid: 19002
+      name: 'NPC 주나 드레스'
+      level: 0
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 90013
+      name: '타비아 포츈에그 (Lv.1)'
+      level: 1
+    - tid: 90014
+      name: '타비아 포츈에그 (Lv.2)'
+      level: 1
+    - tid: 90008
+      name: '도르프 포츈에그 (Lv.3)'
+      level: 1
+    - tid: 90009
+      name: '도르프 포츈에그 (Lv.4)'
+      level: 1
+    - tid: 90015
+      name: '타비아 포츈에그 (Lv.3)'
+      level: 1
+    - tid: 90016
+      name: '타비아 포츈에그 (Lv.4)'
+      level: 1
+    - tid: 99026
+      name: '흔한 형광나비 (노랑)'
+      level: 1
+    - tid: 99027
+      name: '흔한 형광나비 (파랑)'
+      level: 1
+    - tid: 99028
+      name: '흔한 형광나비 (빨강)'
+      level: 1
+    - tid: 99029
+      name: '흔한 형광나비 (녹색)'
+      level: 1
+    - tid: 99030
+      name: '보통 형광나비 (노랑)'
+      level: 1
+    - tid: 99031
+      name: '보통 형광나비 (파랑)'
+      level: 1
+    - tid: 99032
+      name: '보통 형광나비 (빨강)'
+      level: 1
+    - tid: 99033
+      name: '보통 형광나비 (녹색)'
+      level: 1
+    - tid: 99034
+      name: '희귀한 형광나비 (노랑)'
+      level: 1
+    - tid: 99035
+      name: '희귀한 형광나비 (파랑)'
+      level: 1
+    - tid: 99036
+      name: '희귀한 형광나비 (빨강)'
+      level: 1
+    - tid: 99037
+      name: '희귀한 형광나비 (녹색)'
+      level: 1
+    - tid: 99038
+      name: '전설의 형광나비 (노랑)'
+      level: 1
+    - tid: 99039
+      name: '전설의 형광나비 (파랑)'
+      level: 0
+    - tid: 99040
+      name: '전설의 형광나비 (빨강)'
+      level: 1
+    - tid: 99041
+      name: '전설의 형광나비 (녹색)'
+      level: 1
+    - tid: 99042
+      name: '볼품없는 정령여우 (갈색)'
+      level: 1
+    - tid: 99043
+      name: '볼품없는 정령여우 (분홍)'
+      level: 1
+    - tid: 99044
+      name: '평범한 정령여우 (갈색)'
+      level: 1
+    - tid: 99045
+      name: '평범한 정령여우 (분홍)'
+      level: 1
+    - tid: 99046
+      name: '귀티나는 정령여우 (갈색)'
+      level: 1
+    - tid: 99047
+      name: '귀티나는 정령여우 (분홍)'
+      level: 1
+    - tid: 99048
+      name: '기품있는 정령여우 (갈색)'
+      level: 1
+    - tid: 99049
+      name: '기품있는 정령여우 (분홍)'
+      level: 1
+    - tid: 46012
+      name: '기사단 문장 수정권'
+      level: 1
+    - tid: 46013
+      name: '콩 송편'
+      level: 1
+    - tid: 46014
+      name: '꿀 송편'
+      level: 1
+    - tid: 97003
+      name: '포츈에그 헬프 포션(10초)'
+      level: 1
+    - tid: 10153
+      name: '동방 사관수기생 붉은 관모'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10154
+      name: '동방 사관수기생 붉은 관복'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 30148
+      name: '동방 사관수기생 적색 관모'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30149
+      name: '동방 사관수기생 적색 관복'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 99058
+      name: '이병 스타갈매기 (파랑)
+    '
+      level: 1
+    - tid: 99059
+      name: '이병 스타갈매기 (녹색)'
+      level: 1
+    - tid: 99060
+      name: '이병 스타갈매기 (빨강)'
+      level: 1
+    - tid: 46015
+      name: '복주머니'
+      level: 1
+    - tid: 50003
+      name: '추석 이벤트 랜덤박스'
+      level: 1
+    - tid: 99061
+      name: '이병 스타갈매기 (검정)'
+      level: 1
+    - tid: 99062
+      name: '일병 스타갈매기 (파랑)'
+      level: 1
+    - tid: 99063
+      name: '일병 스타갈매기 (녹색)'
+      level: 1
+    - tid: 99064
+      name: '일병 스타갈매기 (빨강)'
+      level: 1
+    - tid: 99065
+      name: '일병 스타갈매기 (검정)'
+      level: 1
+    - tid: 99066
+      name: '상병 스타갈매기 (파랑)'
+      level: 1
+    - tid: 99067
+      name: '상병 스타갈매기 (녹색)'
+      level: 1
+    - tid: 99068
+      name: '상병 스타갈매기 (빨강)'
+      level: 1
+    - tid: 99069
+      name: '상병 스타갈매기 (검정)'
+      level: 1
+    - tid: 99070
+      name: '말년 스타갈매기 (파랑)'
+      level: 1
+    - tid: 99071
+      name: '말년 스타갈매기 (녹색)'
+      level: 1
+    - tid: 99072
+      name: '말년 스타갈매기 (빨강)'
+      level: 1
+    - tid: 99073
+      name: '말년 스타갈매기 (검정)'
+      level: 1
+    - tid: 10155
+      name: '포레 레인저 티롤모'
+      level: 40
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10156
+      name: '포레 레인저 아처리 폼'
+      level: 40
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 30150
+      name: '우드 레인저 티롤모'
+      level: 40
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30151
+      name: '우드 레인저 아처리 슈트'
+      level: 40
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 99074
+      name: '잡종 꽃잎뱀 (갈색)'
+      level: 1
+    - tid: 99075
+      name: '잡종 꽃잎뱀 (녹색)'
+      level: 1
+    - tid: 99076
+      name: '잡종 꽃잎뱀 (검정)'
+      level: 1
+    - tid: 99077
+      name: '변종 꽃잎뱀 (갈색)'
+      level: 1
+    - tid: 99078
+      name: '변종 꽃잎뱀 (녹색)'
+      level: 1
+    - tid: 99079
+      name: '변종 꽃잎뱀 (검정)'
+      level: 1
+    - tid: 99080
+      name: '순종 꽃잎뱀 (갈색)'
+      level: 1
+    - tid: 99081
+      name: '순종 꽃잎뱀 (녹색)'
+      level: 1
+    - tid: 99082
+      name: '순종 꽃잎뱀 (검정)'
+      level: 1
+    - tid: 99083
+      name: '왕족 꽃잎뱀 (갈색)'
+      level: 1
+    - tid: 99084
+      name: '왕족 꽃잎뱀 (녹색)'
+      level: 1
+    - tid: 99085
+      name: '왕족 꽃잎뱀 (검정)'
+      level: 1
+    - tid: 89901
+      name: '펫 이름 변경권'
+      level: 1
+    - tid: 99086
+      name: '흔한 아머비틀 (빨강)'
+      level: 1
+    - tid: 99087
+      name: '흔한 아머비틀 (파랑)'
+      level: 1
+    - tid: 99088
+      name: '흔한 아머비틀 (노랑)'
+      level: 1
+    - tid: 99089
+      name: '보통 아머비틀 (빨강)'
+      level: 1
+    - tid: 99090
+      name: '보통 아머비틀 (파랑)'
+      level: 1
+    - tid: 99091
+      name: '보통 아머비틀 (노랑)'
+      level: 1
+    - tid: 99092
+      name: '희귀 아머비틀 (빨강)'
+      level: 1
+    - tid: 99093
+      name: '희귀 아머비틀 (파랑)'
+      level: 1
+    - tid: 99094
+      name: '희귀 아머비틀 (노랑)'
+      level: 1
+    - tid: 99095
+      name: '전설의 아머비틀 (빨강)'
+      level: 1
+    - tid: 99096
+      name: '전설의 아머비틀 (파랑)'
+      level: 1
+    - tid: 99097
+      name: '전설의 아머비틀 (노랑)'
+      level: 1
+    - tid: 99098
+      name: '추레한 프리우끼 (갈색)'
+      level: 1
+    - tid: 99099
+      name: '추레한 프리우끼 (보라)'
+      level: 1
+    - tid: 99100
+      name: '추레한 프리우끼 (녹색)'
+      level: 1
+    - tid: 99101
+      name: '깔끔한 프리우끼 (갈색)'
+      level: 1
+    - tid: 99102
+      name: '깔끔한 프리우끼 (보라)'
+      level: 1
+    - tid: 99103
+      name: '깔끔한 프리우끼 (녹색)'
+      level: 1
+    - tid: 99104
+      name: '세련된 프리우끼 (갈색)'
+      level: 1
+    - tid: 99105
+      name: '세련된 프리우끼 (보라)'
+      level: 1
+    - tid: 99106
+      name: '세련된 프리우끼 (녹색)'
+      level: 1
+    - tid: 99107
+      name: '패션왕 프리우끼 (갈색)'
+      level: 1
+    - tid: 99108
+      name: '패션왕 프리우끼 (보라)'
+      level: 1
+    - tid: 99109
+      name: '패션왕 프리우끼 (녹색)'
+      level: 1
+    - tid: 99110
+      name: '이병 골목너굴 (회색)'
+      level: 1
+    - tid: 99111
+      name: '이병 골목너굴 (갈색)'
+      level: 1
+    - tid: 99112
+      name: '이병 골목너굴 (파랑)'
+      level: 1
+    - tid: 99113
+      name: '일병 골목너굴 (회색)'
+      level: 1
+    - tid: 99114
+      name: '일병 골목너굴 (갈색)'
+      level: 1
+    - tid: 99115
+      name: '일병 골목너굴 (파랑)'
+      level: 1
+    - tid: 99116
+      name: '상병 골목너굴 (회색)'
+      level: 1
+    - tid: 99117
+      name: '상병 골목너굴 (갈색)'
+      level: 1
+    - tid: 99118
+      name: '상병 골목너굴 (파랑)'
+      level: 1
+    - tid: 99119
+      name: '병장 골목너굴 (회색)'
+      level: 1
+    - tid: 99120
+      name: '병장 골목너굴 (갈색)'
+      level: 1
+    - tid: 99121
+      name: '병장 골목너굴 (파랑)'
+      level: 1
+    - tid: 99122
+      name: '볼품없는 킹스캐럽 (보라)'
+      level: 1
+    - tid: 99123
+      name: '볼품없는 킹스캐럽 (빨강)'
+      level: 1
+    - tid: 99124
+      name: '볼품없는 킹스캐럽 (파랑)'
+      level: 1
+    - tid: 99125
+      name: '평범한 킹스캐럽 (보라)'
+      level: 1
+    - tid: 99126
+      name: '평범한 킹스캐럽 (빨강)'
+      level: 1
+    - tid: 99127
+      name: '평범한 킹스캐럽 (파랑)'
+      level: 1
+    - tid: 99128
+      name: '귀티나는 킹스캐럽 (보라)'
+      level: 1
+    - tid: 99129
+      name: '귀티나는 킹스캐럽 (빨강)'
+      level: 1
+    - tid: 99130
+      name: '귀티나는 킹스캐럽 (파랑)'
+      level: 1
+    - tid: 99131
+      name: '기품있는 킹스캐럽 (보라)'
+      level: 1
+    - tid: 99132
+      name: '기품있는 킹스캐럽 (빨강)'
+      level: 1
+    - tid: 99133
+      name: '기품있는 킹스캐럽 (파랑)'
+      level: 1
+    - tid: 10157
+      name: '이퀘스트리언 트윙클 드레스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 30152
+      name: '이퀘스트리언 트윙클 슈트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 20119
+      name: '트윙클 나이트 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20120
+      name: '트윙클 나이트 장신구'
+      level: 1
+      mountPartInfo:
+        slot: 16
+    - tid: 20121
+      name: '트윙클 나이트 편자'
+      level: 1
+      mountPartInfo:
+        slot: 8
+    - tid: 20122
+      name: '트윙클 나이트 보조장비'
+      level: 1
+      mountPartInfo:
+        slot: 32
+    - tid: 10158
+      name: '이퀘스트리언 트윙클 라인 캡'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 30153
+      name: '이퀘스트리언 트윙클 심볼 캡'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 99134
+      name: '추레한 스피드꼬꼬 (빨강)'
+      level: 1
+    - tid: 99135
+      name: '추레한 스피드꼬꼬 (갈색)'
+      level: 1
+    - tid: 99136
+      name: '추레한 스피드꼬꼬 (검정)'
+      level: 1
+    - tid: 99137
+      name: '깔끔한 스피드꼬꼬 (빨강)'
+      level: 1
+    - tid: 99138
+      name: '깔끔한 스피드꼬꼬 (갈색)'
+      level: 1
+    - tid: 99139
+      name: '깔끔한 스피드꼬꼬 (검정)'
+      level: 1
+    - tid: 99140
+      name: '세련된 스피드꼬꼬 (빨강)'
+      level: 1
+    - tid: 99141
+      name: '세련된 스피드꼬꼬 (갈색)'
+      level: 1
+    - tid: 99142
+      name: '세련된 스피드꼬꼬 (검정)'
+      level: 1
+    - tid: 99143
+      name: '패션왕 스피드꼬꼬 (빨강)'
+      level: 1
+    - tid: 99144
+      name: '패션왕 스피드꼬꼬 (갈색)'
+      level: 1
+    - tid: 99145
+      name: '패션왕 스피드꼬꼬 (검정)'
+      level: 1
+    - tid: 99146
+      name: '볼품없는 정령여우 (검정)'
+      level: 1
+    - tid: 99147
+      name: '평범한 정령여우 (검정)'
+      level: 1
+    - tid: 99148
+      name: '귀티나는 정령여우 (검정)'
+      level: 1
+    - tid: 99149
+      name: '기품있는 정령여우 (검정)'
+      level: 1
+    - tid: 41010
+      name: 'Shiny mane brush'
+      level: 3
+      careParameters:
+        cleanPoints: 20
+        polishPoints: 1000
+        parts: 1
+    - tid: 41011
+      name: 'Shiny tail brush'
+      level: 3
+      careParameters:
+        cleanPoints: 20
+        polishPoints: 1000
+        parts: 2
+    - tid: 41012
+      name: 'Shiny dry cloth'
+      level: 3
+      careParameters:
+        cleanPoints: 20
+        polishPoints: 1000
+        parts: 0
+    - tid: 70001
+      name: '박차 중 충돌안함'
+      level: 1
+    - tid: 47001
+      name: '숙련도 부스팅'
+      level: 1
+    - tid: 47002
+      name: '로켓 스타터'
+      level: 1
+    - tid: 99150
+      name: '하급 퓨어미믹 (갈색)'
+      level: 1
+    - tid: 99151
+      name: '하급 퓨어미믹 (녹색)'
+      level: 1
+    - tid: 99152
+      name: '하급 퓨어미믹 (빨강)'
+      level: 1
+    - tid: 99153
+      name: '중급 퓨어미믹 (갈색)'
+      level: 1
+    - tid: 99154
+      name: '중급 퓨어미믹 (녹색)'
+      level: 1
+    - tid: 99155
+      name: '중급 퓨어미믹 (빨강)'
+      level: 1
+    - tid: 99156
+      name: '고급 퓨어미믹 (갈색)'
+      level: 1
+    - tid: 99157
+      name: '고급 퓨어미믹 (녹색)'
+      level: 1
+    - tid: 99158
+      name: '고급 퓨어미믹 (빨강)'
+      level: 1
+    - tid: 99159
+      name: '최상급 퓨어미믹 (갈색)'
+      level: 1
+    - tid: 99160
+      name: '최상급 퓨어미믹 (녹색)'
+      level: 1
+    - tid: 99161
+      name: '최상급 퓨어미믹 (빨강)'
+      level: 1
+    - tid: 46016
+      name: '할로윈 캔디'
+      level: 1
+    - tid: 46017
+      name: '할로윈 초콜릿'
+      level: 1
+    - tid: 10159
+      name: '할로윈 블랙 위치 햇'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10160
+      name: '잭 오 랜턴 미니 햇'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 30154
+      name: '할로윈 다크 위자드 햇'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30155
+      name: '잭 오 랜턴 체크 햇'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 46018
+      name: '정제된 크리스털'
+      level: 1
+    - tid: 92001
+      name: '펫 크기 변경'
+      level: 1
+    - tid: 46019
+      name: '알 탐지기'
+      level: 12
+    - tid: 46022
+      name: '안전 박차 뱃지'
+      level: 1
+    - tid: 45005
+      name: '관리자의 방울'
+      level: 1
+    - tid: 45003
+      name: '말이름변경권'
+      level: 1
+    - tid: 46020
+      name: '숙련의 비약'
+      level: 1
+    - tid: 46021
+      name: '퍼펙트 스타트 뱃지'
+      level: 1
+    - tid: 45006
+      name: '주나의 깜짝상자'
+      level: 1
+    - tid: 45002
+      name: '펫이름변경권'
+      level: 1
+    - tid: 45004
+      name: '오버 큐브'
+      level: 1
+    - tid: 50005
+      name: '주나의 깜짝상자'
+      level: 1
+    - tid: 50006
+      name: '주나의 깜짝상자 더미'
+      level: 1
+    - tid: 70002
+      name: '순간이동기'
+      level: 1
+    - tid: 46023
+      name: '글라이딩 스타터'
+      level: 1
+    - tid: 10161
+      name: '브레이드 헤어 슬리크 스타일'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 2
+    - tid: 10162
+      name: '러블리 웨이브 벼머리 스타일'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 2
+    - tid: 10163
+      name: '러블리 리본 피크닉 햇'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10164
+      name: '로맨틱 컨트리 피크닉 원피스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 30156
+      name: '스틱 드레드 헤어'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 2
+    - tid: 30157
+      name: '릴렉싱 숏 테일'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 2
+    - tid: 30158
+      name: '로맨틱 리본 피크닉 햇'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30159
+      name: '로맨틱 컨트리 피크닉 룩'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 50007
+      name: '크리스마스 깜짝상자'
+      level: 1
+    - tid: 10165
+      name: '루돌프 코 헤어밴드'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 30160
+      name: '루돌프 뿔 헤어밴드'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 20123
+      name: '크리스마스 보호구'
+      level: 1
+      mountPartInfo:
+        slot: 1
+    - tid: 20124
+      name: '크리스마스 장신구'
+      level: 1
+      mountPartInfo:
+        slot: 16
+    - tid: 20125
+      name: '크리스마스 편자'
+      level: 1
+      mountPartInfo:
+        slot: 8
+    - tid: 20126
+      name: '크리스마스 보조장비'
+      level: 1
+      mountPartInfo:
+        slot: 32
+    - tid: 50008
+      name: '크리스마스 깜짝상자'
+      level: 1
+    - tid: 90017
+      name: '프레그리아 포츈에그 (Lv. 1)'
+      level: 1
+    - tid: 90018
+      name: '프레그리아 포츈에그 (Lv. 2)'
+      level: 1
+    - tid: 90019
+      name: '프레그리아 포츈에그 (Lv. 3)'
+      level: 1
+    - tid: 90020
+      name: '프레그리아 포츈에그 (Lv. 4)'
+      level: 1
+    - tid: 99162
+      name: '아기 눈길바다표범 (파랑)'
+      level: 1
+    - tid: 99163
+      name: '아기 눈길바다표범 (갈색)'
+      level: 1
+    - tid: 99164
+      name: '아기 눈길바다표범 (분홍)'
+      level: 1
+    - tid: 99165
+      name: '소년 눈길바다표범 (파랑)'
+      level: 1
+    - tid: 99166
+      name: '소년 눈길바다표범 (갈색)'
+      level: 1
+    - tid: 99167
+      name: '소년 눈길바다표범 (분홍)'
+      level: 1
+    - tid: 99168
+      name: '청년 눈길바다표범 (파랑)'
+      level: 1
+    - tid: 99169
+      name: '청년 눈길바다표범 (갈색)'
+      level: 1
+    - tid: 99170
+      name: '청년 눈길바다표범 (분홍)'
+      level: 1
+    - tid: 99171
+      name: '중년 눈길바다표범 (파랑)'
+      level: 1
+    - tid: 99172
+      name: '중년 눈길바다표범 (갈색)'
+      level: 1
+    - tid: 99173
+      name: '중년 눈길바다표범 (분홍)'
+      level: 1
+    - tid: 99174
+      name: '막내 호빵펭귄 (검정)'
+      level: 1
+    - tid: 99175
+      name: '막내 호빵펭귄 (갈색)'
+      level: 1
+    - tid: 99176
+      name: '막내 호빵펭귄 (분홍)'
+      level: 1
+    - tid: 99177
+      name: '고참 호빵펭귄 (검정)'
+      level: 1
+    - tid: 99178
+      name: '고참 호빵펭귄 (갈색)'
+      level: 1
+    - tid: 99179
+      name: '고참 호빵펭귄 (분홍)'
+      level: 1
+    - tid: 99180
+      name: '대장 호빵펭귄 (검정)'
+      level: 1
+    - tid: 99181
+      name: '대장 호빵펭귄 (갈색)'
+      level: 1
+    - tid: 99182
+      name: '대장 호빵펭귄 (분홍)'
+      level: 1
+    - tid: 99183
+      name: '왕고 호빵펭귄 (검정)'
+      level: 1
+    - tid: 99184
+      name: '왕고 호빵펭귄 (갈색)'
+      level: 1
+    - tid: 99185
+      name: '왕고 호빵펭귄 (분홍)'
+      level: 1
+    - tid: 28002
+      name: '11등급말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 28003
+      name: '7등급말'
+      level: 1
+      mountPartSetInfo:
+        skinId: 1
+        maneId: 3
+        tailId: 3
+        faceId: 1
+        scale: 5
+        legLength: 5
+        legVolume: 5
+        bodyLength: 5
+        bodyVolume: 5
+        emblemId: 1
+    - tid: 88889
+      name: '패키지 테스트'
+      level: 1
+    - tid: 10167
+      name: '라프리아 바이킹 헬름 S'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10168
+      name: '터틀넥 눈꽃 니트'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 16
+    - tid: 10166
+      name: '라프리아 개척민 전통 원피스'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10169
+      name: '폭스테일 태그 미니스커트'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 32
+    - tid: 10170
+      name: '왕 방울 니트 비니'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10171
+      name: '사슴뿔 헤어밴드 S'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 30161
+      name: '라프리아 개척민 전통의상'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30162
+      name: '라프리아 바이킹 헬름 R'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30163
+      name: '믹스 매치 패딩 베스트'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 16
+    - tid: 30164
+      name: '폭스테일 태그 워싱진'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 32
+    - tid: 30165
+      name: '핀 태그 니트 비니'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30166
+      name: '사슴뿔 헤어밴드 R'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 50009
+      name: '복주머니'
+      level: 1
+    - tid: 50010
+      name: '세뱃돈 봉투'
+      level: 1
+    - tid: 10172
+      name: '풀꽃 연지 머리띠'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10173
+      name: '꽃자수 나들이 전모'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 1
+    - tid: 10174
+      name: '스터드 컴뱃 코르셋톱'
+      level: 30
+      characterPartInfo:
+        characterId: 20
+        slot: 16
+    - tid: 10175
+      name: '풀꽃 연지 한복'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10176
+      name: '꽃자수 나들이 한복'
+      level: 1
+      characterPartInfo:
+        characterId: 20
+        slot: 48
+    - tid: 10177
+      name: '스터드 컴뱃 핫팬츠'
+      level: 30
+      characterPartInfo:
+        characterId: 20
+        slot: 32
+    - tid: 30167
+      name: '풀꽃 도령 머리띠'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30168
+      name: '꽃자수 도령 복건'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 1
+    - tid: 30169
+      name: '스터드 컴뱃 가죽재킷'
+      level: 30
+      characterPartInfo:
+        characterId: 10
+        slot: 16
+    - tid: 30170
+      name: '풀꽃 도령 한복'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30171
+      name: '꽃자수 도령 한복'
+      level: 1
+      characterPartInfo:
+        characterId: 10
+        slot: 48
+    - tid: 30172
+      name: '스터드 컴뱃 가죽팬츠'
+      level: 30
+      characterPartInfo:
+        characterId: 10
+        slot: 32

@@ -8,6 +8,8 @@
 #include <spdlog/spdlog.h>
 #include <yaml-cpp/yaml.h>
 
+namespace server
+{
 namespace registry
 {
 
@@ -221,3 +223,5 @@ Pet PetRegistry::GetPet(server::data::Tid tid)
 }
 
 } // namespace registry
+
+} // namespace server

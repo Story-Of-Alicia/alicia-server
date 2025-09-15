@@ -467,7 +467,13 @@ void ChatSystem::RegisterUserCommands()
           {
             storedItem.items().emplace_back(createdItemUid);
             storedItem.sender() = "System";
-            storedItem.message() = std::format("{}x Item '{}'", itemCount, createdItemTid);
+
+            const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(createdItemTid);
+            if (itemTemplate)
+              storedItem.message() = std::format("{}x Item '{}'", itemCount, itemTemplate->name);
+            else
+              storedItem.message() = std::format("{}x Item '{}'", itemCount, createdItemTid);
+
             storedItem.created() = data::Clock::now();
 
             giftUid = storedItem.uid();

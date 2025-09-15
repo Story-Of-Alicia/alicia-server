@@ -46,6 +46,8 @@ void ServerInstance::Initialize()
   _config.LoadFromFile(_resourceDirectory / "config/server/config.yaml");
   _config.LoadFromEnvironment();
 
+  _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items.yaml");
+
   // Initialize the directors and tick them on their own threads.
   // Directors will terminate their tick loop once `_shouldRun` flag is set to false.
 
@@ -113,6 +115,11 @@ RanchDirector& ServerInstance::GetRanchDirector()
 RaceDirector& ServerInstance::GetRaceDirector()
 {
   return _raceDirector;
+}
+
+registry::ItemRegistry& ServerInstance::GetItemRegistry()
+{
+  return _itemRegistry;
 }
 
 ChatSystem& ServerInstance::GetChatSystem()

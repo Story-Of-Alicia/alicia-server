@@ -848,29 +848,29 @@ void LobbyCommandRequestSpecialEventListOK::Read(
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandHeartbeat::Write(
-  const LobbyCommandHeartbeat& command,
+void AcCmdCLHeartbeat::Write(
+  const AcCmdCLHeartbeat& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandHeartbeat::Read(
-  LobbyCommandHeartbeat& command,
+void AcCmdCLHeartbeat::Read(
+  AcCmdCLHeartbeat& command,
   SourceStream& stream)
 {
   // Empty.
 }
 
-void LobbyCommandGoodsShopList::Write(
-  const LobbyCommandGoodsShopList& command,
+void AcCmdCLGoodsShopList::Write(
+  const AcCmdCLGoodsShopList& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandGoodsShopList::Read(
-  LobbyCommandGoodsShopList& command,
+void AcCmdCLGoodsShopList::Read(
+  AcCmdCLGoodsShopList& command,
   SourceStream& stream)
 {
   for (auto& data : command.data)
@@ -879,8 +879,8 @@ void LobbyCommandGoodsShopList::Read(
   }
 }
 
-void LobbyCommandGoodsShopListOK::Write(
-  const LobbyCommandGoodsShopListOK& command,
+void AcCmdCLGoodsShopListOK::Write(
+  const AcCmdCLGoodsShopListOK& command,
   SinkStream& stream)
 {
   for (const auto& data : command.data)
@@ -889,37 +889,62 @@ void LobbyCommandGoodsShopListOK::Write(
   }
 }
 
-void LobbyCommandGoodsShopListOK::Read(
-  LobbyCommandGoodsShopListOK& command,
+void AcCmdCLGoodsShopListOK::Read(
+  AcCmdCLGoodsShopListOK& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandGoodsShopListCancel::Write(
-  const LobbyCommandGoodsShopListCancel&
+void AcCmdCLGoodsShopListCancel::Write(
+  const AcCmdCLGoodsShopListCancel&
     command,
   SinkStream& stream)
 {
   // Empty.
 }
 
-void LobbyCommandGoodsShopListCancel::Read(
-  LobbyCommandGoodsShopListCancel& command,
+void AcCmdCLGoodsShopListCancel::Read(
+  AcCmdCLGoodsShopListCancel& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandInquiryTreecash::Write(
-  const LobbyCommandInquiryTreecash& command,
+void AcCmdLCGoodsShopListData::Write(
+  const AcCmdLCGoodsShopListData& command,
+  SinkStream& stream)
+{
+  for (const auto& b : command.member1)
+  {
+    stream.Write(b);
+  }
+
+  stream.Write(command.member2)
+    .Write(command.member3);
+
+  stream.Write(static_cast<uint32_t>(command.data.size()));
+  for (const auto & b : command.data)
+  {
+    stream.Write(b);
+  }
+}
+
+void AcCmdLCGoodsShopListData::Read(
+  AcCmdLCGoodsShopListData& command,
+  SourceStream& stream)
+{
+}
+
+void AcCmdCLInquiryTreecash::Write(
+  const AcCmdCLInquiryTreecash& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandInquiryTreecash::Read(
-  LobbyCommandInquiryTreecash& command,
+void AcCmdCLInquiryTreecash::Read(
+  AcCmdCLInquiryTreecash& command,
   SourceStream& stream)
 {
   // Empty.
