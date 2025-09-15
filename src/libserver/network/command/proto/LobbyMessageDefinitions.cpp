@@ -1253,4 +1253,33 @@ void AcCmdLCNotice::Read(AcCmdLCNotice& command, SourceStream& stream)
     throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCLEnterRoomQuickStop::Read(
+  AcCmdCLEnterRoomQuickStop& command,
+  SourceStream& stream)
+{
+  // Empty.
+}
+
+void AcCmdCLEnterRoomQuickStop::Write(
+  const AcCmdCLEnterRoomQuickStop& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLEnterRoomQuickStopOK::Read(
+  AcCmdCLEnterRoomQuickStopOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLEnterRoomQuickStopOK::Write(
+  const AcCmdCLEnterRoomQuickStopOK& command,
+  SinkStream& stream)
+{
+  // Empty.
+}
+
+
 } // namespace server::protocol

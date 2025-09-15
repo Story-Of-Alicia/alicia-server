@@ -234,6 +234,12 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
     {
       HandleChangeRanchOption(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLEnterRoomQuickStop>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleEnterRoomQuickStop(clientId, command);
+    });
 }
 
 void LobbyDirector::Initialize()
@@ -910,6 +916,20 @@ void LobbyDirector::HandleChangeRanchOption(
     {
       character.isRanchLocked() = !character.isRanchLocked();
     });
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void LobbyDirector::HandleEnterRoomQuickStop(
+  ClientId clientId,
+  const protocol::AcCmdCLEnterRoomQuickStop& command)
+{
+  protocol::AcCmdCLEnterRoomQuickStopOK response {};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
