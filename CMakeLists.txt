@@ -55,6 +55,7 @@ add_library(alicia-libserver STATIC
         src/libserver/network/command/proto/RaceMessageDefinitions.cpp
         src/libserver/network/command/proto/RanchMessageDefinitions.cpp
         src/libserver/registry/HorseRegistry.cpp
+        src/libserver/registry/ItemRegistry.cpp
         src/libserver/registry/OtpRegistry.cpp
         src/libserver/registry/PetRegistry.cpp
         src/libserver/registry/RoomRegistry.cpp
@@ -70,7 +71,8 @@ target_link_libraries(alicia-libserver PUBLIC
         spdlog::spdlog
         Boost::headers
         nlohmann_json::nlohmann_json
-        yaml-cpp::yaml-cpp)
+        yaml-cpp::yaml-cpp
+        zlibstatic)
 
 # alicia-server target
 add_executable(alicia-server

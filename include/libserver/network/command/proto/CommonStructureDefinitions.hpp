@@ -359,7 +359,7 @@ struct Pet
   uint32_t petId{};
   uint32_t member2{};
   std::string name{};
-  uint32_t member4{};
+  uint32_t birthDate{};
 
   static void Write(const Pet& value, SinkStream& stream);
   static void Read(Pet& value, SourceStream& stream);

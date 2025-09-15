@@ -29,6 +29,8 @@
 
 #include <spdlog/spdlog.h>
 
+#include <zlib.h>
+
 namespace server
 {
 
@@ -243,12 +245,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       HandleHousingRepair(clientId, command);
     });
 
-  _commandServer.RegisterCommandHandler<protocol::RanchCommandMissionEvent>(
+  _commandServer.RegisterCommandHandler<protocol::AcCmdRCMissionEvent>(
     [this](ClientId clientId, auto& command)
     {
-      protocol::RanchCommandMissionEvent event
+      protocol::AcCmdRCMissionEvent event
       {
-        .event = protocol::RanchCommandMissionEvent::Event::EVENT_CALL_NPC_RESULT,
+        .event = protocol::AcCmdRCMissionEvent::Event::EVENT_CALL_NPC_RESULT,
         .callerOid = command.callerOid,
         .calledOid = 0x40'00'00'00,
       };
@@ -424,7 +426,7 @@ void RanchDirector::BroadcastUpdateMountInfoNotify(
   const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
     horseUid);
 
-  protocol::RanchCommandUpdateMountInfoNotify notify{};
+  protocol::AcCmdRCUpdateMountInfoNotify notify{};
   horseRecord->Immutable([&notify](const data::Horse& horse)
   {
     protocol::BuildProtocolHorse(notify.horse, horse);
@@ -588,6 +590,7 @@ void RanchDirector::HandleEnterRanch(
   clientContext.isAuthenticated = GetServerInstance().GetOtpRegistry().AuthorizeCode(
     command.characterUid, command.otp);
 
+  // Determine whether the ranch is locked.
   bool isRanchLocked = false;
   if (command.rancherUid != command.characterUid)
   {
@@ -627,7 +630,7 @@ void RanchDirector::HandleEnterRanch(
       .rankingPercentile = 50}};
 
   rancherRecord->Immutable(
-    [this, &response, ranchInstance, ranchCreated](
+    [this, &response, &ranchInstance, ranchCreated](
       const data::Character& rancher) mutable
     {
       const auto& rancherName = rancher.name();
@@ -1514,7 +1517,11 @@ void RanchDirector::HandleRequestNpcDressList(
 {
   protocol::RanchCommandRequestNpcDressListOK response{
     .unk0 = requestNpcDressList.unk0,
-    .dressList = {} // TODO: Fetch dress list from somewhere
+    .dressList = {
+    Item{
+    .uid = 0xFFF,
+    .tid = 10164,
+    .count = 1}} // TODO: Fetch dress list from somewhere
   };
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -1808,7 +1815,10 @@ void RanchDirector::HandleUpdatePet(
   ClientId clientId,
   const protocol::AcCmdCRUpdatePet& command)
 {
-  protocol::AcCmdRCUpdatePet response;
+  protocol::AcCmdRCUpdatePet response{
+    .petInfo = command.petInfo
+  };
+
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
@@ -1848,6 +1858,7 @@ void RanchDirector::HandleUpdatePet(
       if (!petExists)
       {
         spdlog::warn("Character {} has no pet with petId {}", character.uid(), command.petInfo.pet.petId);
+        //probably should send a cancel here
         return;
       }
 
@@ -1858,6 +1869,7 @@ void RanchDirector::HandleUpdatePet(
         spdlog::warn("No items found for character {}", character.uid());
         return;
       }
+      // Pet rename, find item in inventory
       if (std::ranges::contains(character.items(), command.itemUid))
       {
         // TODO: actually reduce the item count or remove it
@@ -1868,11 +1880,11 @@ void RanchDirector::HandleUpdatePet(
             pet.name() = command.petInfo.pet.name;
           });
       }
+      //just summoning the pet
       else
       {
         character.petUid = petUid;
       }
-      response.petInfo = command.petInfo;
       if (petUid != 0)
       {
         const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
@@ -1880,16 +1892,7 @@ void RanchDirector::HandleUpdatePet(
           [&response](const data::Pet& pet)
           {
             response.petInfo.pet.name = pet.name();
-          });
-      }
-      response.petInfo = command.petInfo;
-      if (petUid != 0)
-      {
-        const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
-        petRecord.Immutable(
-          [&response](const data::Pet& pet)
-          {
-            response.petInfo.pet.name = pet.name();
+            response.petInfo.pet.birthDate = util::TimePointToAliciaTime(pet.birthDate());
           });
       }
     });
@@ -2172,11 +2175,15 @@ void RanchDirector::HandleRequestPetBirth(
         character.eggs().erase(it);
       }
 
-      if (auto it = std::ranges::find(character.items(), hatchingEggUid);
+      if (auto it = std::ranges::find(character.items(), hatchingEggItemUid);
         it != character.items().end())
       {
         character.items().erase(it);
       }
+
+      //Delete the Item and Egg records
+      GetServerInstance().GetDataDirector().GetEggCache().Delete(hatchingEggUid);
+      GetServerInstance().GetDataDirector().GetItemCache().Delete(hatchingEggItemUid);
 
       const registry::Egg eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
         hatchingEggTid);
@@ -2249,11 +2256,13 @@ void RanchDirector::HandleRequestPetBirth(
         pet.itemUid() = petItemUid;
         pet.name() = "";
         pet.petId() = petId;
+        pet.birthDate() = data::Clock::now();
     
         // Fill the response with the born pet.
         response.petBirthInfo.petInfo.pet = {
           .petId = pet.petId(),
-          .name = pet.name()};
+          .name = pet.name(),
+          .birthDate = util::TimePointToAliciaTime(pet.birthDate())};
         petUid = pet.uid();
       });
 
@@ -2337,49 +2346,107 @@ void RanchDirector::BroadcastEquipmentUpdate(ClientId clientId)
   }
 }
 
-void RanchDirector::HandleUseFeedItem(
-  const protocol::AcCmdCRUseItem& command,
+bool RanchDirector::HandleUseFoodItem(
+  const data::Uid characterUid,
+  const data::Uid mountUid,
+  const data::Tid usedItemTid,
   protocol::AcCmdCRUseItemOK& response)
 {
-  // feed, Action 1 through 3
-  //   success - both bytes zero
-  //   failure - Action empty
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    characterUid);
+  const auto mountRecord = _serverInstance.GetDataDirector().GetHorse(
+    mountUid);
+  const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(
+    usedItemTid);
+  assert(itemTemplate && itemTemplate->foodParameters);
 
-  // Food tab is the first tab, hence the use of RanchCommandUseItemOK::ActionType::Action1
+  // Update plenitude and friendliness points according to the item used.
+  mountRecord.Mutable([&itemTemplate](data::Horse& horse)
+  {
+    // todo: there's a ranch skill which gives bonus to these points
+    horse.mountCondition.plenitude() += itemTemplate->foodParameters->plenitudePoints;
+    horse.mountCondition.friendliness() += itemTemplate->foodParameters->friendlinessPoints;
+  });
+
   response.type = protocol::AcCmdCRUseItemOK::ActionType::Feed;
+  response.experiencePoints = 0xFF;
+  response.playSuccessLevel = protocol::AcCmdCRUseItemOK::PlaySuccessLevel::Bad;
 
-  // TODO: Update the horse's stats based on the feed item used.
+  // todo: award experiences gained
+  // todo: client-side update of plenitude and friendliness stats
+
+  return true;
 }
 
-void RanchDirector::HandleUseCleanItem(
-  const protocol::AcCmdCRUseItem& command,
+bool RanchDirector::HandleUseCleanItem(
+  const data::Uid characterUid,
+  const data::Uid mountUid,
+  const data::Tid usedItemTid,
   protocol::AcCmdCRUseItemOK& response)
 {
-  // brushes, always empty response
-  //   success - Action empty
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    characterUid);
+  const auto mountRecord = _serverInstance.GetDataDirector().GetHorse(
+    mountUid);
+  const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(
+    usedItemTid);
+  assert(itemTemplate && itemTemplate->careParameters);
 
-  // Clean tab is the second tab, hence the use of RanchCommandUseItemOK::ActionType::Action2
+  // Update clean and polish points according to the item used.
+  mountRecord.Mutable([&itemTemplate](data::Horse& horse)
+  {
+    // todo: there's a ranch skill which gives bonus to these points
+
+    switch (itemTemplate->careParameters->parts)
+    {
+      case registry::Item::CareParameters::Part::Body:
+      {
+        horse.mountCondition.bodyPolish() += itemTemplate->careParameters->polishPoints;
+        break;
+      }
+      case registry::Item::CareParameters::Part::Mane:
+      {
+        horse.mountCondition.manePolish() += itemTemplate->careParameters->polishPoints;
+        break;
+      }
+      case registry::Item::CareParameters::Part::Tail:
+      {
+        horse.mountCondition.tailPolish() += itemTemplate->careParameters->polishPoints;
+        break;
+      }
+    }
+  });
+
   response.type = protocol::AcCmdCRUseItemOK::ActionType::Wash;
-  response.playSuccessLevel = protocol::AcCmdCRUseItemOK::PlaySuccessLevel::CriticalGood; // 2
+  response.playSuccessLevel = protocol::AcCmdCRUseItemOK::PlaySuccessLevel::CriticalGood;
 
-  // TODO: Update the horse's stats based on the clean item used.
+  // todo: award experiences gained
+  // todo: client-side update of clean and polish stats
+
+  return true;
 }
 
-void RanchDirector::HandleUsePlayItem(
-  const protocol::AcCmdCRUseItem& command,
+bool RanchDirector::HandleUsePlayItem(
+  const data::Uid characterUid,
+  const data::Uid mountUid,
+  const data::Tid usedItemTid,
+  const protocol::AcCmdCRUseItem::PlaySuccessLevel successLevel,
   protocol::AcCmdCRUseItemOK& response)
 {
-  // toys, always Action 1 to Action 3,
-  //   play success indicated by the second byte
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    characterUid);
+  const auto mountRecord = _serverInstance.GetDataDirector().GetHorse(
+    mountUid);
+  const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(
+    usedItemTid);
+  assert(itemTemplate && itemTemplate->playParameters);
 
   // TODO: Make critical chance configurable. Currently 0->1 is 50% chance.
   std::uniform_int_distribution<uint32_t> critRandomDist(0, 1);
   auto crit = critRandomDist(_randomDevice);
 
-  // TODO: Action 1, 2 and 3 are valid.
-  // Assuming action 3 = play following the tab order.
   response.type = protocol::AcCmdCRUseItemOK::ActionType::Play;
-  switch (command.playSuccessLevel)
+  switch (successLevel)
   {
     case protocol::AcCmdCRUseItem::PlaySuccessLevel::Bad:
       response.playSuccessLevel = protocol::AcCmdCRUseItemOK::PlaySuccessLevel::Bad;
@@ -2396,30 +2463,14 @@ void RanchDirector::HandleUsePlayItem(
       break;
   }
 
-  spdlog::info("Play - itemUid: {}, horseUid: {}, mem1: {}, {} hit, {} play",
-    command.itemUid,
-    command.horseUid,
-    command.always1,
-    command.playSuccessLevel == protocol::AcCmdCRUseItem::PlaySuccessLevel::Bad
-      ? "Bad"
-      : command.playSuccessLevel == protocol::AcCmdCRUseItem::PlaySuccessLevel::Good
-        ? "Good"
-        : "Perfect",
-    response.playSuccessLevel == protocol::AcCmdCRUseItemOK::PlaySuccessLevel::Bad
-      ? "Bad"
-      : response.playSuccessLevel == protocol::AcCmdCRUseItemOK::PlaySuccessLevel::Good
-        ? "Good"
-        : response.playSuccessLevel == protocol::AcCmdCRUseItemOK::PlaySuccessLevel::CriticalGood
-          ? "Critical Good"
-          : response.playSuccessLevel == protocol::AcCmdCRUseItemOK::PlaySuccessLevel::Perfect
-            ? "Perfect"
-            : "Critical Perfect");
-
   // TODO: Update the horse's stats based on the play item used.
+  return true;
 }
 
-void RanchDirector::HandleUseCureItem(
-  const protocol::AcCmdCRUseItem& command,
+bool RanchDirector::HandleUseCureItem(
+  const data::Uid characterUid,
+  const data::Uid mountUid,
+  const data::Tid usedItemTid,
   protocol::AcCmdCRUseItemOK& response)
 {
   // No info
@@ -2428,6 +2479,7 @@ void RanchDirector::HandleUseCureItem(
   response.experiencePoints = 0;
 
   // TODO: Update the horse's stats based on the cure item used.
+  return true;
 }
 
 void RanchDirector::HandleUseItem(
@@ -2440,63 +2492,106 @@ void RanchDirector::HandleUseItem(
     response.type = protocol::AcCmdCRUseItemOK::ActionType::Generic};
 
   const auto& clientContext = GetClientContext(clientId);
-  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
+  const auto usedItemUid = command.itemUid;
+  const auto horseUid = command.horseUid;
+
+  bool hasItem = false;
+  bool hasHorse = false;
   std::string characterName;
-  std::vector<data::Uid> items;
-  characterRecord.Immutable([&characterName, &items](const data::Character& character)
+  characterRecord.Immutable([&characterName, &usedItemUid, &horseUid, &hasItem, &hasHorse](
+    const data::Character& character)
   {
+    hasItem = std::ranges::contains(character.items(), usedItemUid);;
+    hasHorse = std::ranges::contains(character.horses(), horseUid)
+      || character.mountUid() == horseUid;
+
     characterName = character.name();
-    items = character.items();
-  });
-  
-  if (not std::ranges::contains(items, command.itemUid))
-  {
-    spdlog::warn("Character {} tried to use item {} that is not in their inventory",
-      characterName, command.itemUid);
-    return;
-  }
-
-  const auto itemRecord = GetServerInstance().GetDataDirector().GetItem(command.itemUid);
-  auto itemTid = data::InvalidTid;
-  itemRecord.Immutable([&itemTid](const data::Item& item)
-  {
-    itemTid = item.tid();
   });
 
-  spdlog::debug("HandleUseItem - itemUid: {}, itemTid: {}, always1: {}, horseUid: {}, play: {}",
-    command.itemUid,
-    itemTid,
-    command.always1,
-    command.horseUid,
-    static_cast<uint32_t>(command.playSuccessLevel));
+  if (not hasItem || not hasHorse)
+    throw std::runtime_error("Item or horse not owned by the character");
 
-  if (itemTid > 41000 && itemTid < 41008)
+  const auto mountRecord = GetServerInstance().GetDataDirector().GetHorse(
+    command.horseUid);
+  const auto itemRecord = GetServerInstance().GetDataDirector().GetItem(
+    command.itemUid);
+
+  auto usedItemTid = data::InvalidTid;
+  itemRecord.Immutable([&usedItemTid](const data::Item& item)
   {
-    // Food items
-    HandleUseFeedItem(command, response);
+    usedItemTid = item.tid();
+  });
+
+  const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(
+    usedItemTid);
+  if (not itemTemplate)
+    throw std::runtime_error("Item tempate not available");
+
+  bool consumeItem = false;
+  if (itemTemplate->foodParameters)
+  {
+    consumeItem = HandleUseFoodItem(
+      clientContext.characterUid,
+      horseUid,
+      usedItemTid,
+      response);
   }
-  else if (itemTid == 40002 || itemTid == 41008 || itemTid == 41009)
+  else if (itemTemplate->careParameters)
   {
-    // Clean items
-    HandleUseCleanItem(command, response);
+    HandleUseCleanItem(
+      clientContext.characterUid,
+      horseUid,
+      usedItemTid,
+      response);
   }
-  else if (itemTid == 42001 || itemTid == 42002)
+  else if (itemTemplate->playParameters)
   {
-    // Carrot on a stick or bow and arrow respectively.
-    HandleUsePlayItem(command, response);
+    HandleUsePlayItem(
+      clientContext.characterUid,
+      horseUid,
+      usedItemTid,
+      command.playSuccessLevel,
+      response);
   }
-  else if (itemTid > 44000 && itemTid < 44007)
+  else if (itemTemplate->cureParameters)
   {
-    // Cure items
-    HandleUseCureItem(command, response);
+    HandleUseCureItem(
+      clientContext.characterUid,
+      horseUid,
+      usedItemTid,
+      response);
   }
   else
   {
     throw std::runtime_error(
-      std::format("Unknown use of item tid {} for item uid {}", itemTid, command.itemUid));
+      std::format("Unknown use of item tid {} for item uid {}", usedItemTid, command.itemUid));
     return;
+  }
+
+  if (consumeItem)
+  {
+    bool isUsedItemEmpty = false;
+    itemRecord.Mutable([&isUsedItemEmpty, &response](data::Item& item)
+    {
+      item.count() -= 1;
+      response.updatedItemCount = item.count();
+
+      isUsedItemEmpty = item.count() <= 0;
+    });
+
+    if (isUsedItemEmpty)
+    {
+      characterRecord.Mutable([usedItemUid = command.itemUid](data::Character& character)
+      {
+        const auto removedItems = std::ranges::remove(character.items(), usedItemUid);
+        character.items().erase(removedItems.begin(), removedItems.end());
+      });
+
+      _serverInstance.GetDataDirector().GetItemCache().Delete(command.itemUid);
+    }
   }
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -2505,6 +2600,28 @@ void RanchDirector::HandleUseItem(
     {
       return response;
     });
+
+  // Perform a mount update
+
+  protocol::AcCmdRCUpdateMountInfoNotify notify{
+    protocol::AcCmdRCUpdateMountInfoNotify::Action::UpdateConditionAndName,
+    };
+
+  const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(
+    horseUid);
+
+  horseRecord.Immutable([&notify](const data::Horse& horse)
+  {
+    protocol::BuildProtocolHorse(notify.horse, horse);
+  });
+
+  const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+  for (auto client : ranchInstance.clients)
+  {
+    _commandServer.QueueCommand<decltype(notify)>(
+      client,
+      [notify](){return notify;});
+  }
 }
 
 void RanchDirector::HandleHousingBuild(

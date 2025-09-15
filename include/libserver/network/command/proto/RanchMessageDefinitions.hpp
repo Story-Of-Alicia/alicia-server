@@ -1509,12 +1509,12 @@ struct RanchCommandUpdateMountNicknameCancel
     SourceStream& stream);
 };
 
-struct RanchCommandUpdateMountInfoNotify
+struct AcCmdRCUpdateMountInfoNotify
 {
   enum class Action
   {
     Default = 0,
-    UpdateMount = 4,
+    UpdateConditionAndName = 4,
     SetMountStateAndBreedData = 5,
     SomeItemManip0 = 9,
     SomeItemManip1 = 10,
@@ -1522,7 +1522,7 @@ struct RanchCommandUpdateMountInfoNotify
     SomeItemManip3 = 13,
   };
 
-  Action action{Action::UpdateMount};
+  Action action{Action::UpdateConditionAndName};
   uint8_t member1{};
   Horse horse{};
 
@@ -1535,14 +1535,14 @@ struct RanchCommandUpdateMountInfoNotify
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandUpdateMountInfoNotify& command,
+    const AcCmdRCUpdateMountInfoNotify& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandUpdateMountInfoNotify& command,
+    AcCmdRCUpdateMountInfoNotify& command,
     SourceStream& stream);
 };
 
@@ -2871,7 +2871,8 @@ struct AcCmdCRHousingRepairNotify
     AcCmdCRHousingRepairNotify& command,
     SourceStream& stream);
 };
-struct RanchCommandMissionEvent
+
+struct AcCmdRCMissionEvent
 {
   enum class Event : uint32_t
   {
@@ -2927,14 +2928,14 @@ struct RanchCommandMissionEvent
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandMissionEvent& command,
+    const AcCmdRCMissionEvent& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandMissionEvent& command,
+    AcCmdRCMissionEvent& command,
     SourceStream& stream);
 };
 

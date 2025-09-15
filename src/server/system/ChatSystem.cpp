@@ -443,6 +443,11 @@ void ChatSystem::RegisterUserCommands()
           return {"Invalid item count"};
         }
 
+        if (createdItemTid >= 99000 && createdItemTid <= 99200)
+        {
+          return {"Please give yourself eggs to hatch pets."};
+        }
+
         // Create the item.
         auto createdItemUid = data::InvalidUid;
         const auto createdItemRecord = _serverInstance.GetDataDirector().CreateItem();
@@ -462,7 +467,13 @@ void ChatSystem::RegisterUserCommands()
           {
             storedItem.items().emplace_back(createdItemUid);
             storedItem.sender() = "System";
-            storedItem.message() = std::format("{}x Item '{}'", itemCount, createdItemTid);
+
+            const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(createdItemTid);
+            if (itemTemplate)
+              storedItem.message() = std::format("{}x Item '{}'", itemCount, itemTemplate->name);
+            else
+              storedItem.message() = std::format("{}x Item '{}'", itemCount, createdItemTid);
+
             storedItem.created() = data::Clock::now();
 
             giftUid = storedItem.uid();

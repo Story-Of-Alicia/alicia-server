@@ -722,6 +722,8 @@ void server::FileDataSource::RetrievePet(data::Uid uid, data::Pet& pet)
   pet.itemUid = json["itemUid"].get<data::Uid>();
   pet.petId = json["petId"].get<data::Uid>();
   pet.name = json["name"].get<std::string>();
+  pet.birthDate = data::Clock::time_point(std::chrono::seconds(
+    json["birthDate"].get<uint64_t>()));
 }
 
 void server::FileDataSource::StorePet(data::Uid uid, const data::Pet& pet)
@@ -741,6 +743,8 @@ void server::FileDataSource::StorePet(data::Uid uid, const data::Pet& pet)
   json["itemUid"] = pet.itemUid();
   json["petId"] = pet.petId();
   json["name"] = pet.name();
+  json["birthDate"] = std::chrono::duration_cast<std::chrono::seconds>(
+    pet.birthDate().time_since_epoch()).count();
 
   dataFile << json.dump(2);
 }

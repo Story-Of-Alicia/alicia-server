@@ -108,7 +108,7 @@ private:
   //!
   void HandleHeartbeat(
     ClientId clientId,
-    const protocol::LobbyCommandHeartbeat& command);
+    const protocol::AcCmdCLHeartbeat& command);
 
   //!
   void HandleShowInventory(
@@ -169,12 +169,12 @@ private:
   //!
   void HandleGoodsShopList(
     ClientId clientId,
-    const protocol::LobbyCommandGoodsShopList& command);
+    const protocol::AcCmdCLGoodsShopList& command);
 
   //!
   void HandleInquiryTreecash(
     ClientId clientId,
-    const protocol::LobbyCommandInquiryTreecash& command);
+    const protocol::AcCmdCLInquiryTreecash& command);
 
   //!
   void HandleGuildPartyList(

@@ -172,6 +172,8 @@ struct Pet
   dao::Field<Uid> petId{0};
   //! A name of the pet.
   dao::Field<std::string> name{};
+  //! A birth date of the pet.
+  dao::Field<Clock::time_point> birthDate{};
 };
 
 //! Stored item

@@ -22,6 +22,7 @@
 #include "libserver/data/helper/ProtocolHelper.hpp"
 #include "libserver/registry/RoomRegistry.hpp"
 #include "server/ServerInstance.hpp"
+#include "zlib.h"
 
 #include <random>
 
@@ -85,7 +86,7 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
       HandleEnterRoom(clientId, command);
     });
 
-  _commandServer.RegisterCommandHandler<protocol::LobbyCommandHeartbeat>(
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLHeartbeat>(
     [this](ClientId clientId, const auto& command)
     {
       HandleHeartbeat(clientId, command);
@@ -151,13 +152,13 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
       HandleGetMessengerInfo(clientId, command);
     });
 
-  _commandServer.RegisterCommandHandler<protocol::LobbyCommandGoodsShopList>(
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLGoodsShopList>(
     [this](ClientId clientId, const auto& command)
     {
       HandleGoodsShopList(clientId, command);
     });
 
-  _commandServer.RegisterCommandHandler<protocol::LobbyCommandInquiryTreecash>(
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLInquiryTreecash>(
     [this](ClientId clientId, const auto& command)
     {
       HandleInquiryTreecash(clientId, command);
@@ -497,7 +498,7 @@ void LobbyDirector::HandleEnterRoom(
 
 void LobbyDirector::HandleHeartbeat(
   ClientId clientId,
-  const protocol::LobbyCommandHeartbeat& command)
+  const protocol::AcCmdCLHeartbeat& command)
 {
   // TODO: Statistics for the heartbeat.
 }
@@ -761,9 +762,9 @@ void LobbyDirector::HandleGetMessengerInfo(
 
 void LobbyDirector::HandleGoodsShopList(
   ClientId clientId,
-  const protocol::LobbyCommandGoodsShopList& command)
+  const protocol::AcCmdCLGoodsShopList& command)
 {
-  protocol::LobbyCommandGoodsShopListOK response{
+  protocol::AcCmdCLGoodsShopListOK response{
     .data = command.data};
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -772,11 +773,61 @@ void LobbyDirector::HandleGoodsShopList(
     {
       return response;
     });
+
+  const std::string xml =
+    "<ShopList>\n"
+    "  <GoodsList>\n"
+    "    <GoodsSQ>0</GoodsSQ>\n"
+    "    <SetType>0</SetType>\n"
+    "    <MoneyType>0</MoneyType>\n"
+    "    <GoodsType>0</GoodsType>\n"
+    "    <RecommendType>1</RecommendType>\n"
+    "    <RecommendNO>1</RecommendNO>\n"
+    "    <GiftType>0</GiftType>\n"
+    "    <SalesRank>1</SalesRank>\n"
+    "    <BonusGameMoney>0</BonusGameMoney>\n"
+    "    <GoodsNM><![CDATA[Goods name]]></GoodsNM>\n"
+    "    <GoodsDesc><![CDATA[Goods desc]]></GoodsDesc>\n"
+    "    <ItemCapacityDesc><![CDATA[Capacity desc]]></ItemCapacityDesc>\n"
+    "    <SellST>0</SellST>\n"
+    "    <ItemUID>30013</ItemUID>\n"
+    "    <ItemElem>\n"
+    "      <Item>\n"
+    "        <PriceID>1</PriceID>\n"
+    "        <PriceRange>1</PriceRange>\n"
+    "        <GoodsPrice>1</GoodsPrice>\n"
+    "      </Item>\n"
+    "    </ItemElem>\n"
+    "  </GoodsList>\n"
+    "</ShopList>\n";
+
+  std::vector<std::byte> compressedXml;
+  compressedXml.resize(xml.size());
+
+  uLongf compressedSize = compressedXml.size();
+  compress(
+    reinterpret_cast<Bytef*>(compressedXml.data()),
+    &compressedSize,
+    reinterpret_cast<const Bytef*>(xml.c_str()),
+    xml.length());
+
+  compressedXml.resize(compressedSize);
+
+  protocol::AcCmdLCGoodsShopListData data{
+    .member3 = 1,
+    .data = compressedXml};
+
+  _commandServer.QueueCommand<decltype(data)>(
+    clientId,
+    [data]()
+    {
+      return data;
+    });
 }
 
 void LobbyDirector::HandleInquiryTreecash(
   ClientId clientId,
-  const protocol::LobbyCommandInquiryTreecash& command)
+  const protocol::AcCmdCLInquiryTreecash& command)
 {
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(

@@ -1202,7 +1202,7 @@ struct LobbyCommandRequestSpecialEventListOK
 };
 
 //! Serverbound heartbeat command.
-struct LobbyCommandHeartbeat
+struct AcCmdCLHeartbeat
 {
   static Command GetCommand()
   {
@@ -1213,19 +1213,19 @@ struct LobbyCommandHeartbeat
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandHeartbeat& command,
+    const AcCmdCLHeartbeat& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandHeartbeat& command,
+    AcCmdCLHeartbeat& command,
     SourceStream& stream);
 };
 
 //! Serverboud goods message
-struct LobbyCommandGoodsShopList
+struct AcCmdCLGoodsShopList
 {
   std::array<uint8_t, 12> data;
 
@@ -1238,19 +1238,19 @@ struct LobbyCommandGoodsShopList
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandGoodsShopList& command,
+    const AcCmdCLGoodsShopList& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandGoodsShopList& command,
+    AcCmdCLGoodsShopList& command,
     SourceStream& stream);
 };
 
 //! Clientbound shop goods message
-struct LobbyCommandGoodsShopListOK
+struct AcCmdCLGoodsShopListOK
 {
   std::array<uint8_t, 12> data;
 
@@ -1263,19 +1263,19 @@ struct LobbyCommandGoodsShopListOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandGoodsShopListOK& command,
+    const AcCmdCLGoodsShopListOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandGoodsShopListOK& command,
+    AcCmdCLGoodsShopListOK& command,
     SourceStream& stream);
 };
 
 //! Clientbound shop goods message
-struct LobbyCommandGoodsShopListCancel
+struct AcCmdCLGoodsShopListCancel
 {
   static Command GetCommand()
   {
@@ -1286,18 +1286,45 @@ struct LobbyCommandGoodsShopListCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandGoodsShopListCancel& command,
+    const AcCmdCLGoodsShopListCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandGoodsShopListCancel& command,
+    AcCmdCLGoodsShopListCancel& command,
     SourceStream& stream);
 };
 
-struct LobbyCommandInquiryTreecash
+struct AcCmdLCGoodsShopListData
+{
+  std::array<uint8_t, 12> member1;
+  uint8_t member2;
+  uint8_t member3;
+  std::vector<std::byte> data;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCGoodsShopListData;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCGoodsShopListData& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCGoodsShopListData& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLInquiryTreecash
 {
   static Command GetCommand()
   {
@@ -1308,14 +1335,14 @@ struct LobbyCommandInquiryTreecash
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandInquiryTreecash& command,
+    const AcCmdCLInquiryTreecash& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandInquiryTreecash& command,
+    AcCmdCLInquiryTreecash& command,
     SourceStream& stream);
 };
 

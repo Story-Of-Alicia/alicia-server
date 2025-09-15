@@ -255,20 +255,29 @@ private:
   void BroadcastEquipmentUpdate(
     ClientId clientId);
 
-  void HandleUseFeedItem(
-    const protocol::AcCmdCRUseItem& command,
+  bool HandleUseFoodItem(
+    data::Uid mountUid,
+    data::Uid characterUid,
+    data::Tid usedItemTid,
     protocol::AcCmdCRUseItemOK& response);
 
-  void HandleUseCleanItem(
-    const protocol::AcCmdCRUseItem& command,
+  bool HandleUseCleanItem(
+    data::Uid mountUid,
+    data::Uid characterUid,
+    data::Tid usedItemTid,
     protocol::AcCmdCRUseItemOK& response);
   
-  void HandleUsePlayItem(
-    const protocol::AcCmdCRUseItem& command,
+  bool HandleUsePlayItem(
+    data::Uid characterUid,
+    data::Uid mountUid,
+    data::Tid usedItemTid,
+    protocol::AcCmdCRUseItem::PlaySuccessLevel successLevel,
     protocol::AcCmdCRUseItemOK& response);
 
-  void HandleUseCureItem(
-    const protocol::AcCmdCRUseItem& command,
+  bool HandleUseCureItem(
+    data::Uid characterUid,
+    data::Uid mountUid,
+    data::Tid usedItemTid,
     protocol::AcCmdCRUseItemOK& response);
 
   void HandleUseItem(

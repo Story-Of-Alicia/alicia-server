@@ -1013,8 +1013,8 @@ void RanchCommandUpdateMountNicknameCancel::Read(
   throw std::runtime_error("Not implemented.");
 }
 
-void RanchCommandUpdateMountInfoNotify::Write(
-  const RanchCommandUpdateMountInfoNotify& command,
+void AcCmdRCUpdateMountInfoNotify::Write(
+  const AcCmdRCUpdateMountInfoNotify& command,
   SinkStream& stream)
 {
   stream.Write(command.action)
@@ -1022,8 +1022,8 @@ void RanchCommandUpdateMountInfoNotify::Write(
     .Write(command.horse);
 }
 
-void RanchCommandUpdateMountInfoNotify::Read(
-  RanchCommandUpdateMountInfoNotify& command,
+void AcCmdRCUpdateMountInfoNotify::Read(
+  AcCmdRCUpdateMountInfoNotify& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");
@@ -1892,8 +1892,8 @@ void AcCmdCRHousingRepairNotify::Read(
 {
   throw std::runtime_error("Not implemented");
 }
-void RanchCommandMissionEvent::Write(
-  const RanchCommandMissionEvent& command,
+void AcCmdRCMissionEvent::Write(
+  const AcCmdRCMissionEvent& command,
   SinkStream& stream)
 {
   stream.Write(command.event)
@@ -1901,8 +1901,8 @@ void RanchCommandMissionEvent::Write(
     .Write(command.calledOid);
 }
 
-void RanchCommandMissionEvent::Read(
-  RanchCommandMissionEvent& command,
+void AcCmdRCMissionEvent::Read(
+  AcCmdRCMissionEvent& command,
   SourceStream& stream)
 {
   stream.Read(command.event)

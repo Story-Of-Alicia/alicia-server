@@ -9,8 +9,11 @@
 
 #include "libserver/data/DataDefinitions.hpp"
 
+namespace server
+{
 namespace registry
 {
+
 struct Egg
 {
   //! An item representing the egg.
@@ -43,6 +46,7 @@ public:
     static PetRegistry instance{};
     return instance;
   }
+
 private:
   std::unordered_map<server::data::Tid, Egg> _eggs;
   std::unordered_map<server::data::Tid, Pet> _pets;
@@ -50,5 +54,7 @@ private:
 
 
 } // namespace registry
+
+} // namespace server
 
 #endif // PETREGISTRY_HPP
