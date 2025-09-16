@@ -96,6 +96,10 @@ void BuildProtocolMacroOptions(
   MacroOptions& protocolMacros,
   const data::Settings& settingsRecord);
 
+void BuildProtocolGamepadOptions(
+  GamepadOptions& protocolGamepadOptions,
+  const data::Settings& settingsRecord);
+
 } // namespace protocol
 
 } // namespace server

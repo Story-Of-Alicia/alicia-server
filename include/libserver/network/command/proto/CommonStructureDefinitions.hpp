@@ -114,6 +114,25 @@ struct MacroOptions
   static void Read(MacroOptions& value, SourceStream& stream);
 };
 
+struct GamepadOptions
+{
+  struct Option
+  {
+    uint8_t type{};
+    uint8_t unused{};
+    uint8_t primaryButton{};
+    uint8_t secondaryButton{};
+
+    static void Write(const Option& option, SinkStream& stream);
+    static void Read(Option& option, SourceStream& stream);
+  };
+
+  std::vector<Option> bindings{};
+
+  static void Write(const GamepadOptions& value, SinkStream& stream);
+  static void Read(GamepadOptions& value, SourceStream& stream);
+};
+
 //!
 struct Character
 {
