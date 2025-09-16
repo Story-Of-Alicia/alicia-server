@@ -1228,8 +1228,10 @@ void LobbyDirector::HandleUpdateUserSettings(
           {
             settings.gamepadSettingsAvailable() = true;
             std::vector<data::Settings::Gamepad::Option> copiedBindings;
+            auto bindings = command.gamepadOptions.bindings;
+            bindings.pop_back(); // The last binding is invalid, sends type 2 and overwrites real settings
 
-            for (const auto& binding : command.gamepadOptions.bindings)
+            for (const auto& binding : bindings)
             {
               data::Settings::Gamepad::Option option;
               option.primaryButton = binding.primaryButton;
