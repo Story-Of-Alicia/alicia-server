@@ -101,7 +101,7 @@ struct LobbyCommandLoginOK
   KeyboardOptions keyboardOptions{};
   MacroOptions macroOptions{};
   uint32_t valueOptions{};
-  // GamepadOptions gamepadOptions{};
+  GamepadOptions gamepadOptions{};
 
   uint8_t age{};
   uint8_t hideGenderAndAge{};
@@ -1964,6 +1964,8 @@ struct AcCmdCLUpdateUserSettings
 
   //sent every time at the closure of the settings window
   uint32_t valueSetting{};
+  GamepadOptions gamepadOptions{};
+  
   uint8_t option1{};
   uint8_t option2{};
 

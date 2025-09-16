@@ -961,6 +961,7 @@ void server::FileDataSource::RetrieveSettings(data::Uid uid, data::Settings& set
   settings.uid = json["uid"].get<data::Uid>();
 
   // Keyboard bindings
+  settings.keyboardSettingsAvailable() = json["keyboardSettingsAvailable"].get<bool>();
   auto keyboardJson = json["keyboard"];
   auto& bindings = settings.keyboard().bindings();
 
@@ -974,7 +975,22 @@ void server::FileDataSource::RetrieveSettings(data::Uid uid, data::Settings& set
   }
 
   // Macros
+  settings.macrosAvailable() = json["macroSettingsAvailable"].get<bool>();
   settings.macros() = json["macros"].get<std::array<std::string, 8>>();
+
+  // Gamepad bindings
+  settings.gamepadSettingsAvailable() = json["gamepadSettingsAvailable"].get<bool>();
+  auto gamepadJson = json["gamepad"];
+  auto& gamepadBindings = settings.gamepad().bindings();
+
+  for (const auto& item : gamepadJson["bindings"])
+  {
+    gamepadBindings.emplace_back(data::Settings::Gamepad::Option{
+      .primaryButton = item["primaryButton"].get<uint8_t>(),
+      .type = item["type"].get<uint8_t>(),
+      .secondaryButton = item["secondaryButton"].get<uint8_t>()
+    });
+  }
 }
 
 void server::FileDataSource::StoreSettings(data::Uid uid, const data::Settings& settings)
@@ -1003,9 +1019,24 @@ void server::FileDataSource::StoreSettings(data::Uid uid, const data::Settings& 
     });
   }
   json["keyboard"] = keyboard;
+  json["keyboardSettingsAvailable"] = settings.keyboardSettingsAvailable();
 
   // Macros
   json["macros"] = settings.macros();
+  json["macroSettingsAvailable"] = settings.macrosAvailable();
+
+  // Gamepad bindings
+  nlohmann::json gamepad;
+  for (const auto& option : settings.gamepad().bindings())
+  {
+    gamepad["bindings"].push_back({
+      {"primaryButton", option.primaryButton()},
+      {"type", option.type()},
+      {"secondaryButton", option.secondaryButton()}
+    });
+  }
+  json["gamepad"] = gamepad;
+  json["gamepadSettingsAvailable"] = settings.gamepadSettingsAvailable();
 
   dataFile << json.dump(2);
 }

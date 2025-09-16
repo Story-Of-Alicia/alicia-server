@@ -1202,6 +1202,7 @@ void LobbyDirector::HandleUpdateUserSettings(
           // Copy keyboard bindings if present
           if (optionTypeMask & static_cast<uint32_t>(protocol::OptionType::Keyboard))
           {
+            settings.keyboardSettingsAvailable() = true;
             std::vector<data::Settings::Keyboard::Option> copiedBindings;
 
             for (const auto& binding : command.keyboardOptions.bindings)
@@ -1219,7 +1220,25 @@ void LobbyDirector::HandleUpdateUserSettings(
           // Copy macros if present
           if (optionTypeMask & static_cast<uint32_t>(protocol::OptionType::Macros))
           {
+            settings.macrosAvailable() = true;
             settings.macros() = command.macroOptions.macros;
+          }
+
+          if (optionTypeMask & static_cast<uint32_t>(OptionType::Gamepad))
+          {
+            settings.gamepadSettingsAvailable() = true;
+            std::vector<data::Settings::Gamepad::Option> copiedBindings;
+
+            for (const auto& binding : command.gamepadOptions.bindings)
+            {
+              data::Settings::Gamepad::Option option;
+              option.primaryButton = binding.primaryButton;
+              option.secondaryButton = binding.secondaryButton;
+              option.type = binding.type;
+              copiedBindings.push_back(std::move(option));
+            }
+
+            settings.gamepad() = data::Settings::Gamepad{std::move(copiedBindings)};
           }
         });
     });

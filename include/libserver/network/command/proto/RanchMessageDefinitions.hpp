@@ -106,10 +106,10 @@ struct AcCmdCREnterRanchOK
   } bitset{};
 
   //! Incubator logic:
-  //! icubator slots from 0 to 3, 0 = locked, 1 = single, 2 = double, 3 = triple
+  //! incubator slots from 0 to 3, 0 = locked, 1 = single, 2 = double, 3 = triple
   //! incubator use count should count down to 0, if broken transform into single incubator
-  uint32_t incubatorSlots{2};
-  uint32_t incubatorUseCount{};
+  uint32_t incubatorSlots{0};
+  uint32_t incubatorUseCount{0};
 
   std::array<Egg, 3> incubator;
 

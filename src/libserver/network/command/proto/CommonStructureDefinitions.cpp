@@ -122,6 +122,44 @@ void MacroOptions::Read(MacroOptions& value, SourceStream& stream)
   }
 }
 
+void GamepadOptions::Option::Write(const Option& option, SinkStream& stream)
+{
+  stream.Write(option.secondaryButton)
+    .Write(option.type)
+    .Write(option.unused)
+    .Write(option.primaryButton);
+}
+
+void GamepadOptions::Option::Read(Option& option, SourceStream& stream)
+{
+  stream.Read(option.secondaryButton)
+    .Read(option.type)
+    .Read(option.unused)
+    .Read(option.primaryButton);
+}
+
+void GamepadOptions::Write(const GamepadOptions& value, SinkStream& stream)
+{
+  stream.Write(static_cast<uint8_t>(value.bindings.size()));
+
+  for (const auto& binding : value.bindings)
+  {
+    stream.Write(binding);
+  }
+}
+
+void GamepadOptions::Read(GamepadOptions& value, SourceStream& stream)
+{
+  uint8_t size;
+  stream.Read(size);
+  value.bindings.resize(size);
+
+  for (auto& binding : value.bindings)
+  {
+    stream.Read(binding);
+  }
+}
+
 void Character::Parts::Write(const Parts& value, SinkStream& stream)
 {
   stream.Write(value.charId)

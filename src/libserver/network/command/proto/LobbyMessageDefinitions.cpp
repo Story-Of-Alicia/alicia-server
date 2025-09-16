@@ -142,7 +142,20 @@ void LobbyCommandLoginOK::Write(
     stream.Write(command.valueOptions);
   }
 
-  // ToDo: Write the gamepad options.
+  // Write the gamepad options if specified in the option type mask.
+  if (optionTypeMask & static_cast<uint32_t>(OptionType::Gamepad))
+  {
+    const auto& gamepad = command.gamepadOptions;
+    stream.Write(static_cast<uint8_t>(gamepad.bindings.size()));
+
+    for (const auto& binding : gamepad.bindings)
+    {
+      stream.Write(binding.type)
+        .Write(binding.unused)
+        .Write(binding.primaryButton)
+        .Write(binding.secondaryButton);
+    }
+  }
 
   stream.Write(static_cast<uint8_t>(command.age))
     .Write(command.hideGenderAndAge);
@@ -1302,6 +1315,25 @@ if (optionTypeMask & static_cast<uint32_t>(OptionType::Value))
 {
   stream.Read(command.valueSetting);
 }
+
+// Write the gamepad options if specified in the option type mask.
+if (optionTypeMask & static_cast<uint32_t>(OptionType::Gamepad))
+{
+  auto& gamepad = command.gamepadOptions;
+  uint8_t bindingCount = 0;
+  stream.Read(bindingCount);
+  gamepad.bindings.resize(bindingCount);
+
+  for (auto& binding : gamepad.bindings)
+  {
+    stream.Read(binding.type)
+      .Read(binding.unused)
+      .Read(binding.primaryButton)
+      .Read(binding.secondaryButton);
+  }
+}
+
+
   stream.Read(command.option1)
     .Read(command.option2);
 }

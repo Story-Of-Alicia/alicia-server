@@ -366,7 +366,7 @@ void LoginHandler::QueueUserLoginAccepted(
       _lobbyDirector._clients.size()),
     .val1 = 0x0,
     .val3 = 0x0,
-    .optionType = 25,
+    .optionType = static_cast<uint32_t>(OptionType::Value),
     .valueOptions = 0x64,
 
     .missions = {
@@ -551,8 +551,19 @@ void LoginHandler::QueueUserLoginAccepted(
 
         settingsRecord->Immutable([&response](const data::Settings& settings)
         {
-          protocol::BuildProtocolKeyboardOptions(response.keyboardOptions, settings);
-          protocol::BuildProtocolMacroOptions(response.macroOptions, settings);
+          if (settings.keyboardSettingsAvailable()){
+            response.optionType += static_cast<uint32_t>(OptionType::Keyboard);
+            protocol::BuildProtocolKeyboardOptions(response.keyboardOptions, settings);
+          }
+          if (settings.macrosAvailable()){
+            response.optionType += static_cast<uint32_t>(OptionType::Macros);
+            protocol::BuildProtocolMacroOptions(response.macroOptions, settings);
+          }
+          
+          if (settings.gamepadSettingsAvailable()){
+            response.optionType += static_cast<uint32_t>(OptionType::Gamepad);
+            protocol::BuildProtocolGamepadOptions(response.gamepadOptions, settings);
+          }
         });
       }
 
