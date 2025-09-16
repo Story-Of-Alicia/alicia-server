@@ -202,38 +202,22 @@ struct Settings
 {
   dao::Field<Uid> uid{InvalidUid};
 
-  struct Keyboard
+  struct Option
   {
-    struct Option
-    {
-      dao::Field<uint8_t> primaryKey{0};
-      dao::Field<uint8_t> type{0};
-      dao::Field<uint8_t> secondaryKey{0};
-    };
-
-    dao::Field<std::vector<Option>> bindings{};
-  };
-
-  struct Gamepad
-  {
-    struct Option
-    {
-      dao::Field<uint8_t> primaryButton{0};
-      dao::Field<uint8_t> type{0};
-      dao::Field<uint8_t> secondaryButton{0};
-    };
-
-    dao::Field<std::vector<Option>> bindings{};
+    dao::Field<uint8_t> primaryKey{0};
+    dao::Field<uint8_t> type{0};
+    dao::Field<uint8_t> secondaryKey{0};
   };
 
   dao::Field<bool> keyboardSettingsAvailable{false};
-  dao::Field<Keyboard> keyboard{};
+  dao::Field<std::vector<std::shared_ptr<Option>>> keyboardBindings{};
+
 
   dao::Field<bool> macrosAvailable{false};
   dao::Field<std::array<std::string, 8>> macros{};
 
   dao::Field<bool> gamepadSettingsAvailable{false};
-  dao::Field<Gamepad> gamepad{};
+  dao::Field<std::vector<std::shared_ptr<Option>>> gamepadBindings{};
 };
 
 //! User

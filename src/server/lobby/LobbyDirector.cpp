@@ -1203,18 +1203,18 @@ void LobbyDirector::HandleUpdateUserSettings(
           if (optionTypeMask & static_cast<uint32_t>(protocol::OptionType::Keyboard))
           {
             settings.keyboardSettingsAvailable() = true;
-            std::vector<data::Settings::Keyboard::Option> copiedBindings;
+            std::vector<std::shared_ptr<data::Settings::Option>> copiedBindings;
 
             for (const auto& binding : command.keyboardOptions.bindings)
             {
-              data::Settings::Keyboard::Option option;
-              option.primaryKey = binding.primaryKey;
-              option.secondaryKey = binding.secondaryKey;
-              option.type = binding.type;
+              auto option = std::make_shared<data::Settings::Option>();
+              option->primaryKey = binding.primaryKey;
+              option->secondaryKey = binding.secondaryKey;
+              option->type = binding.type;
               copiedBindings.push_back(std::move(option));
             }
 
-            settings.keyboard() = data::Settings::Keyboard{std::move(copiedBindings)};
+            settings.keyboardBindings() = std::move(copiedBindings);
           }
 
           // Copy macros if present
@@ -1227,20 +1227,21 @@ void LobbyDirector::HandleUpdateUserSettings(
           if (optionTypeMask & static_cast<uint32_t>(OptionType::Gamepad))
           {
             settings.gamepadSettingsAvailable() = true;
-            std::vector<data::Settings::Gamepad::Option> copiedBindings;
-            auto bindings = command.gamepadOptions.bindings;
-            bindings.pop_back(); // The last binding is invalid, sends type 2 and overwrites real settings
+            std::vector<std::shared_ptr<data::Settings::Option>> copiedBindings;
+            auto bindings = std::vector<decltype(command.gamepadOptions.bindings)::value_type>(command.gamepadOptions.bindings);
+            if (!bindings.empty())
+              bindings.pop_back(); // The last binding is invalid, sends type 2 and overwrites real settings
 
             for (const auto& binding : bindings)
             {
-              data::Settings::Gamepad::Option option;
-              option.primaryButton = binding.primaryButton;
-              option.secondaryButton = binding.secondaryButton;
-              option.type = binding.type;
+              auto option = std::make_shared<data::Settings::Option>();
+              option->primaryKey = binding.primaryButton;
+              option->secondaryKey = binding.secondaryButton;
+              option->type = binding.type;
               copiedBindings.push_back(std::move(option));
             }
 
-            settings.gamepad() = data::Settings::Gamepad{std::move(copiedBindings)};
+            settings.gamepadBindings() = std::move(copiedBindings);
           }
         });
     });

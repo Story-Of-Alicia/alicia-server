@@ -963,15 +963,15 @@ void server::FileDataSource::RetrieveSettings(data::Uid uid, data::Settings& set
   // Keyboard bindings
   settings.keyboardSettingsAvailable() = json["keyboardSettingsAvailable"].get<bool>();
   auto keyboardJson = json["keyboard"];
-  auto& bindings = settings.keyboard().bindings();
+  auto& keyboardBindings = settings.keyboardBindings();
 
   for (const auto& item : keyboardJson["bindings"])
   {
-    bindings.emplace_back(data::Settings::Keyboard::Option{
+    keyboardBindings.emplace_back(std::make_shared<data::Settings::Option>(data::Settings::Option{
       .primaryKey = item["primaryKey"].get<uint8_t>(),
       .type = item["type"].get<uint8_t>(),
       .secondaryKey = item["secondaryKey"].get<uint8_t>()
-    });
+    }));
   }
 
   // Macros
@@ -981,15 +981,15 @@ void server::FileDataSource::RetrieveSettings(data::Uid uid, data::Settings& set
   // Gamepad bindings
   settings.gamepadSettingsAvailable() = json["gamepadSettingsAvailable"].get<bool>();
   auto gamepadJson = json["gamepad"];
-  auto& gamepadBindings = settings.gamepad().bindings();
+  auto& gamepadBindings = settings.gamepadBindings();
 
   for (const auto& item : gamepadJson["bindings"])
   {
-    gamepadBindings.emplace_back(data::Settings::Gamepad::Option{
-      .primaryButton = item["primaryButton"].get<uint8_t>(),
+    gamepadBindings.emplace_back(std::make_shared<data::Settings::Option>(data::Settings::Option{
+      .primaryKey = item["primaryButton"].get<uint8_t>(),
       .type = item["type"].get<uint8_t>(),
-      .secondaryButton = item["secondaryButton"].get<uint8_t>()
-    });
+      .secondaryKey = item["secondaryButton"].get<uint8_t>()
+    }));
   }
 }
 
@@ -1010,14 +1010,13 @@ void server::FileDataSource::StoreSettings(data::Uid uid, const data::Settings& 
 
   // Keyboard bindings
   nlohmann::json keyboard;
-  for (const auto& option : settings.keyboard().bindings())
-  {
+  for (const auto& option : settings.keyboardBindings()) {
     keyboard["bindings"].push_back({
-      {"primaryKey", option.primaryKey()},
-      {"type", option.type()},
-      {"secondaryKey", option.secondaryKey()}
+        {"primaryKey", option->primaryKey()},
+        {"type", option->type()},
+        {"secondaryKey", option->secondaryKey()}
     });
-  }
+}
   json["keyboard"] = keyboard;
   json["keyboardSettingsAvailable"] = settings.keyboardSettingsAvailable();
 
@@ -1027,12 +1026,12 @@ void server::FileDataSource::StoreSettings(data::Uid uid, const data::Settings& 
 
   // Gamepad bindings
   nlohmann::json gamepad;
-  for (const auto& option : settings.gamepad().bindings())
+  for (const auto& option : settings.gamepadBindings())
   {
     gamepad["bindings"].push_back({
-      {"primaryButton", option.primaryButton()},
-      {"type", option.type()},
-      {"secondaryButton", option.secondaryButton()}
+      {"primaryButton", option->primaryKey()},
+      {"type", option->type()},
+      {"secondaryButton", option->secondaryKey()}
     });
   }
   json["gamepad"] = gamepad;
