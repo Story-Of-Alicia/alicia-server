@@ -68,16 +68,18 @@ void StoredItem::Read(StoredItem& item, SourceStream& stream)
 
 void KeyboardOptions::Option::Write(const Option& option, SinkStream& stream)
 {
-  stream.Write(option.index)
+  stream.Write(option.secondaryKey)
     .Write(option.type)
-    .Write(option.key);
+    .Write(option.unused)
+    .Write(option.primaryKey);
 }
 
 void KeyboardOptions::Option::Read(Option& option, SourceStream& stream)
 {
-  stream.Read(option.index)
+  stream.Read(option.secondaryKey)
     .Read(option.type)
-    .Read(option.key);
+    .Read(option.unused)
+    .Read(option.primaryKey);
 }
 
 void KeyboardOptions::Write(const KeyboardOptions& value, SinkStream& stream)
@@ -115,6 +117,44 @@ void MacroOptions::Read(MacroOptions& value, SourceStream& stream)
   for (auto& macro : value.macros)
   {
     stream.Read(macro);
+  }
+}
+
+void GamepadOptions::Option::Write(const Option& option, SinkStream& stream)
+{
+  stream.Write(option.secondaryButton)
+    .Write(option.type)
+    .Write(option.unused)
+    .Write(option.primaryButton);
+}
+
+void GamepadOptions::Option::Read(Option& option, SourceStream& stream)
+{
+  stream.Read(option.secondaryButton)
+    .Read(option.type)
+    .Read(option.unused)
+    .Read(option.primaryButton);
+}
+
+void GamepadOptions::Write(const GamepadOptions& value, SinkStream& stream)
+{
+  stream.Write(static_cast<uint8_t>(value.bindings.size()));
+
+  for (const auto& binding : value.bindings)
+  {
+    stream.Write(binding);
+  }
+}
+
+void GamepadOptions::Read(GamepadOptions& value, SourceStream& stream)
+{
+  uint8_t size;
+  stream.Read(size);
+  value.bindings.resize(size);
+
+  for (auto& binding : value.bindings)
+  {
+    stream.Read(binding);
   }
 }
 

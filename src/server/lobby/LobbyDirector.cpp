@@ -234,6 +234,12 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
     {
       HandleChangeRanchOption(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLUpdateUserSettings>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleUpdateUserSettings(clientId, command);
+    });
 }
 
 void LobbyDirector::Initialize()
@@ -932,6 +938,94 @@ LobbyDirector::ClientContext& LobbyDirector::GetClientContext(
     throw std::runtime_error("Client is not authenticated");
 
   return clientContext;
+}
+
+void LobbyDirector::HandleUpdateUserSettings(
+  ClientId clientId,
+  const protocol::AcCmdCLUpdateUserSettings& command)
+{
+  // Currently disabled until the saving is sorted out.
+  /* 
+  const auto& clientContext = GetClientContext(clientId);
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  characterRecord.Mutable([&command, this](data::Character& character)
+    {
+      if (character.settingsUid() == 0)
+      {
+        auto settingsUid = data::InvalidUid;
+        auto settingsRecord = GetServerInstance().GetDataDirector().CreateSettings();
+        settingsRecord.Mutable([&settingsUid](data::Settings& settings)
+          {
+            settingsUid = settings.uid();
+          });
+        character.settingsUid() = settingsUid;
+      }
+
+      const auto settingsUid = character.settingsUid();
+      auto settingsRecord = GetServerInstance().GetDataDirector().GetSettings(settingsUid);
+
+      settingsRecord.Mutable([&command](data::Settings& settings)
+        {
+          const auto optionTypeMask = static_cast<uint32_t>(
+            command.optionType);
+          // Copy keyboard bindings if present
+          if (optionTypeMask & static_cast<uint32_t>(OptionType::Keyboard))
+          {
+            settings.keyboardSettingsAvailable() = true;
+            std::vector<std::shared_ptr<data::Settings::Option>> copiedBindings;
+
+            for (const auto& binding : command.keyboardOptions.bindings)
+            {
+              auto option = std::make_shared<data::Settings::Option>();
+              option->primaryKey = binding.primaryKey;
+              option->secondaryKey = binding.secondaryKey;
+              option->type = binding.type;
+              copiedBindings.push_back(std::move(option));
+            }
+
+            settings.keyboardBindings() = std::move(copiedBindings);
+          }
+
+          // Copy macros if present
+          if (optionTypeMask & static_cast<uint32_t>(OptionType::Macros))
+          {
+            settings.macrosAvailable() = true;
+            settings.macros() = command.macroOptions.macros;
+          }
+
+          if (optionTypeMask & static_cast<uint32_t>(OptionType::Gamepad))
+          {
+            settings.gamepadSettingsAvailable() = true;
+            std::vector<std::shared_ptr<data::Settings::Option>> copiedBindings;
+            auto bindings = std::vector<decltype(command.gamepadOptions.bindings)::value_type>(command.gamepadOptions.bindings);
+            if (!bindings.empty())
+              bindings.pop_back(); // The last binding is invalid, sends type 2 and overwrites real settings
+
+            for (const auto& binding : bindings)
+            {
+              auto option = std::make_shared<data::Settings::Option>();
+              option->primaryKey = binding.primaryButton;
+              option->secondaryKey = binding.secondaryButton;
+              option->type = binding.type;
+              copiedBindings.push_back(std::move(option));
+            }
+
+            settings.gamepadBindings() = std::move(copiedBindings);
+          }
+        });
+    });
+    */
+
+  protocol::AcCmdCLUpdateUserSettingsOK response{};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 } // namespace server

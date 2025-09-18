@@ -42,6 +42,7 @@ public:
   using StorageItemStorage = DataStorage<data::Uid, data::StorageItem>;
   using HousingStorage = DataStorage<data::Uid, data::Housing>;
   using GuildStorage = DataStorage<data::Uid, data::Guild>;
+  using SettingsStorage = DataStorage<data::Uid, data::Settings>;
 
   //! Default constructor.
   explicit DataDirector(const std::filesystem::path& basePath);
@@ -115,6 +116,10 @@ public:
   [[nodiscard]] Record<data::Housing> CreateHousing() noexcept;
   [[nodiscard]] HousingStorage& GetHousingCache();
 
+  [[nodiscard]] Record<data::Settings> GetSettings(data::Uid settingsUid) noexcept;
+  [[nodiscard]] Record<data::Settings> CreateSettings() noexcept;
+  [[nodiscard]] SettingsStorage& GetSettingsCache();
+
 private:
   //! An underlying data source of the data director.
   std::unique_ptr<FileDataSource> _primaryDataSource;
@@ -162,6 +167,8 @@ private:
   HousingStorage _housingStorage;
   //! A guild storage.
   GuildStorage _guildStorage;
+  //! A character Keybind settings storage.
+  SettingsStorage _settingsStorage;
 };
 
 } // namespace server

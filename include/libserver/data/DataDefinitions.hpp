@@ -25,6 +25,7 @@
 #include <chrono>
 #include <string>
 #include <vector>
+#include <array>
 
 namespace server
 {
@@ -196,6 +197,28 @@ struct Guild
   dao::Field<std::string> name{};
 };
 
+struct Settings
+{
+  dao::Field<Uid> uid{InvalidUid};
+
+  struct Option
+  {
+    dao::Field<uint8_t> primaryKey{0};
+    dao::Field<uint8_t> type{0};
+    dao::Field<uint8_t> secondaryKey{0};
+  };
+
+  dao::Field<bool> keyboardSettingsAvailable{false};
+  dao::Field<std::vector<std::shared_ptr<Option>>> keyboardBindings{};
+
+
+  dao::Field<bool> macrosAvailable{false};
+  dao::Field<std::array<std::string, 8>> macros{};
+
+  dao::Field<bool> gamepadSettingsAvailable{false};
+  dao::Field<std::vector<std::shared_ptr<Option>>> gamepadBindings{};
+};
+
 //! User
 struct Character
 {
@@ -261,6 +284,8 @@ struct Character
   dao::Field<std::vector<Uid>> housing{};
 
   dao::Field<bool> isRanchLocked{};
+
+  dao::Field<Uid> settingsUid{InvalidUid};
 };
 
 struct Horse

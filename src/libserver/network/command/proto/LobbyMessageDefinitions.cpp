@@ -118,9 +118,10 @@ void LobbyCommandLoginOK::Write(
 
     for (const auto& binding : keyboard.bindings)
     {
-      stream.Write(binding.index)
-        .Write(binding.type)
-        .Write(binding.key);
+      stream.Write(binding.type)
+        .Write(binding.unused)
+        .Write(binding.primaryKey)
+        .Write(binding.secondaryKey);
     }
   }
 
@@ -141,7 +142,20 @@ void LobbyCommandLoginOK::Write(
     stream.Write(command.valueOptions);
   }
 
-  // ToDo: Write the gamepad options.
+  // Write the gamepad options if specified in the option type mask.
+  if (optionTypeMask & static_cast<uint32_t>(OptionType::Gamepad))
+  {
+    const auto& gamepad = command.gamepadOptions;
+    stream.Write(static_cast<uint8_t>(gamepad.bindings.size()));
+
+    for (const auto& binding : gamepad.bindings)
+    {
+      stream.Write(binding.type)
+        .Write(binding.unused)
+        .Write(binding.primaryButton)
+        .Write(binding.secondaryButton);
+    }
+  }
 
   stream.Write(static_cast<uint8_t>(command.age))
     .Write(command.hideGenderAndAge);
@@ -1253,4 +1267,88 @@ void AcCmdLCNotice::Read(AcCmdLCNotice& command, SourceStream& stream)
     throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCLUpdateUserSettings::Write(
+  const AcCmdCLUpdateUserSettings& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLUpdateUserSettings::Read(
+  AcCmdCLUpdateUserSettings& command,
+  SourceStream& stream)
+{
+stream.Read(command.optionType);
+const auto optionTypeMask = static_cast<uint32_t>(
+  command.optionType);
+
+// Write the keyboard options if specified in the option type mask.
+if (optionTypeMask & static_cast<uint32_t>(OptionType::Keyboard))
+{
+  auto& keyboard = command.keyboardOptions;
+  uint8_t bindingCount = 0;
+  stream.Read(bindingCount);
+  keyboard.bindings.resize(bindingCount);
+
+  for (auto& binding : keyboard.bindings)
+  {
+    stream.Read(binding.type)
+      .Read(binding.unused)
+      .Read(binding.primaryKey)
+      .Read(binding.secondaryKey);
+  }
+}
+
+// Write the macro options if specified in the option type mask.
+if (optionTypeMask & static_cast<uint32_t>(OptionType::Macros))
+{
+  auto& macros = command.macroOptions;
+
+  for (auto& macro : macros.macros)
+  {
+    stream.Read(macro);
+  }
+}
+
+// Write the value option if specified in the option type mask.
+if (optionTypeMask & static_cast<uint32_t>(OptionType::Value))
+{
+  stream.Read(command.valueSetting);
+}
+
+// Write the gamepad options if specified in the option type mask.
+if (optionTypeMask & static_cast<uint32_t>(OptionType::Gamepad))
+{
+  auto& gamepad = command.gamepadOptions;
+  uint8_t bindingCount = 0;
+  stream.Read(bindingCount);
+  gamepad.bindings.resize(bindingCount);
+
+  for (auto& binding : gamepad.bindings)
+  {
+    stream.Read(binding.type)
+      .Read(binding.unused)
+      .Read(binding.primaryButton)
+      .Read(binding.secondaryButton);
+  }
+}
+
+
+  stream.Read(command.option1)
+    .Read(command.option2);
+}
+
+void AcCmdCLUpdateUserSettingsOK::Write(
+  const AcCmdCLUpdateUserSettingsOK& command,
+  SinkStream& stream)
+{
+  // Empty.
+} 
+
+void AcCmdCLUpdateUserSettingsOK::Read(
+  AcCmdCLUpdateUserSettingsOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
 } // namespace server::protocol

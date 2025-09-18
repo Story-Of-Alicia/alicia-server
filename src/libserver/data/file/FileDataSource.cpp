@@ -63,6 +63,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _petDataPath = prepareDataPath("pets");
   _housingDataPath = prepareDataPath("housing");
   _guildDataPath = prepareDataPath("guilds");
+  _settingsDataPath = prepareDataPath("settings");
 
   // Read the meta-data file and parse the sequential UIDs.
   const std::filesystem::path metaFilePath = ProduceDataPath(
@@ -104,6 +105,7 @@ void server::FileDataSource::Terminate()
   meta["petSequentialUid"] = _petSequentialUid.load();
   meta["housingSequentialUid"] = _housingSequentialUid.load();
   meta["guildSequentialId"] = _guildSequentialId.load();
+  meta["settingsSequentialId"] = _settingsSequentialId.load();
 
   metaFile << meta.dump(2);
 }
@@ -275,6 +277,8 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.housing = json["housing"].get<std::vector<data::Uid>>();
 
   character.isRanchLocked = json["isRanchLocked"].get<bool>();
+
+  character.settingsUid = json["settingsUid"].get<data::Uid>();
 }
 
 void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
@@ -339,6 +343,8 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["housing"] = character.housing();
 
   json["isRanchLocked"] = character.isRanchLocked();
+
+  json["settingsUid"] = character.settingsUid();
 
   dataFile << json.dump(2);
 }
@@ -856,5 +862,112 @@ void server::FileDataSource::DeleteGuild(data::Uid uid)
 {
   const std::filesystem::path dataFilePath = ProduceDataPath(
     _guildDataPath, std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
+}
+
+void server::FileDataSource::CreateSettings(data::Settings& settings)
+{
+  settings.uid = ++_settingsSequentialId;
+}
+
+void server::FileDataSource::RetrieveSettings(data::Uid uid, data::Settings& settings)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _settingsDataPath, std::format("{}", uid));
+
+  std::ifstream dataFile(dataFilePath);
+  if (!dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Settings file '{}' not accessible", dataFilePath.string()));
+  }
+
+  const auto json = nlohmann::json::parse(dataFile);
+  settings.uid = json["uid"].get<data::Uid>();
+
+  // Keyboard bindings
+  settings.keyboardSettingsAvailable() = json["keyboardSettingsAvailable"].get<bool>();
+  auto keyboardJson = json["keyboard"];
+  auto& keyboardBindings = settings.keyboardBindings();
+
+  for (const auto& item : keyboardJson["bindings"])
+  {
+    keyboardBindings.emplace_back(std::make_shared<data::Settings::Option>(data::Settings::Option{
+      .primaryKey = item["primaryKey"].get<uint8_t>(),
+      .type = item["type"].get<uint8_t>(),
+      .secondaryKey = item["secondaryKey"].get<uint8_t>()
+    }));
+  }
+
+  // Macros
+  settings.macrosAvailable() = json["macroSettingsAvailable"].get<bool>();
+  settings.macros() = json["macros"].get<std::array<std::string, 8>>();
+
+  // Gamepad bindings
+  settings.gamepadSettingsAvailable() = json["gamepadSettingsAvailable"].get<bool>();
+  auto gamepadJson = json["gamepad"];
+  auto& gamepadBindings = settings.gamepadBindings();
+
+  for (const auto& item : gamepadJson["bindings"])
+  {
+    gamepadBindings.emplace_back(std::make_shared<data::Settings::Option>(data::Settings::Option{
+      .primaryKey = item["primaryButton"].get<uint8_t>(),
+      .type = item["type"].get<uint8_t>(),
+      .secondaryKey = item["secondaryButton"].get<uint8_t>()
+    }));
+  }
+}
+
+void server::FileDataSource::StoreSettings(data::Uid uid, const data::Settings& settings)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _settingsDataPath, std::format("{}", uid));
+
+  std::ofstream dataFile(dataFilePath);
+  if (!dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Settings file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json;
+  json["uid"] = settings.uid();
+
+  // Keyboard bindings
+  nlohmann::json keyboard;
+  for (const auto& option : settings.keyboardBindings()) {
+    keyboard["bindings"].push_back({
+        {"primaryKey", option->primaryKey()},
+        {"type", option->type()},
+        {"secondaryKey", option->secondaryKey()}
+    });
+}
+  json["keyboard"] = keyboard;
+  json["keyboardSettingsAvailable"] = settings.keyboardSettingsAvailable();
+
+  // Macros
+  json["macros"] = settings.macros();
+  json["macroSettingsAvailable"] = settings.macrosAvailable();
+
+  // Gamepad bindings
+  nlohmann::json gamepad;
+  for (const auto& option : settings.gamepadBindings())
+  {
+    gamepad["bindings"].push_back({
+      {"primaryButton", option->primaryKey()},
+      {"type", option->type()},
+      {"secondaryButton", option->secondaryKey()}
+    });
+  }
+  json["gamepad"] = gamepad;
+  json["gamepadSettingsAvailable"] = settings.gamepadSettingsAvailable();
+
+  dataFile << json.dump(2);
+}
+
+void server::FileDataSource::DeleteSettings(data::Uid uid)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _settingsDataPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
 }
