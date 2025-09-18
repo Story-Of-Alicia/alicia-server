@@ -893,6 +893,8 @@ void LobbyDirector::HandleUpdateUserSettings(
   ClientId clientId,
   const protocol::AcCmdCLUpdateUserSettings& command)
 {
+  // Currently disabled until the saving is sorted out.
+  /* 
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
@@ -963,6 +965,7 @@ void LobbyDirector::HandleUpdateUserSettings(
           }
         });
     });
+    */
 
   protocol::AcCmdCLUpdateUserSettingsOK response{};
 
