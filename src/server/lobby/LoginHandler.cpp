@@ -552,16 +552,15 @@ void LoginHandler::QueueUserLoginAccepted(
         settingsRecord->Immutable([&response](const data::Settings& settings)
         {
           if (settings.keyboardSettingsAvailable()){
-            response.optionType += static_cast<uint32_t>(OptionType::Keyboard);
+            response.optionType |= static_cast<uint32_t>(OptionType::Keyboard);
             protocol::BuildProtocolKeyboardOptions(response.keyboardOptions, settings);
           }
           if (settings.macrosAvailable()){
-            response.optionType += static_cast<uint32_t>(OptionType::Macros);
+            response.optionType |= static_cast<uint32_t>(OptionType::Macros);
             protocol::BuildProtocolMacroOptions(response.macroOptions, settings);
           }
-          
           if (settings.gamepadSettingsAvailable()){
-            response.optionType += static_cast<uint32_t>(OptionType::Gamepad);
+            response.optionType |= static_cast<uint32_t>(OptionType::Gamepad);
             protocol::BuildProtocolGamepadOptions(response.gamepadOptions, settings);
           }
         });
