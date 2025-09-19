@@ -3581,57 +3581,44 @@ void RanchDirector::HandleInviteToGuild(
   ClientId clientId,
   const protocol::AcCmdCRInviteGuildJoin& command)
 {
-  auto SendCancelToSender = [this, &clientId](GuildError e)
-  {
-    protocol::AcCmdCRInviteGuildJoinCancel response{.error = e};
-    _commandServer.QueueCommand<decltype(response)>(clientId, [response]()
-    {
-      return response;
-    });
-  };
-
   const auto& clientContext = GetClientContext(clientId);
 
-  std::string characterName;
-  auto guildUid = data::InvalidUid;
+  // Get info to check if inviter is inviting themselves or is not in a guild
+  std::string inviterCharacterName;
+  auto inviterGuildUid = data::InvalidUid;
   const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
-  characterRecord.Immutable([&guildUid, &characterName](const data::Character& character)
+  characterRecord.Immutable([&inviterGuildUid, &inviterCharacterName](const data::Character& character)
   {
-    guildUid = character.guildUid();
-    characterName = character.name();
+    inviterGuildUid = character.guildUid();
+    inviterCharacterName = character.name();
   });
 
   // Check if invitee is online
-  bool isInviteeFoundAndOnline = false;
+  // Guild invites are lobby-wide, get online characters from the lobby director
   data::Uid inviteeGuildUid = data::InvalidUid;
-  // Get online characters from the lobby director
-  for (const auto& onlineCharacterUid : GetServerInstance().GetLobbyDirector().GetOnlineCharacters())
+  const auto& onlineCharacters = GetServerInstance().GetLobbyDirector().GetOnlineCharacters();
+  auto it = std::find_if(onlineCharacters.begin(), onlineCharacters.end(),
+  [this, &inviteeGuildUid, name = command.characterName](data::Uid uid)
   {
-    GetServerInstance().GetDataDirector().GetCharacter(onlineCharacterUid).Immutable(
-      [&isInviteeFoundAndOnline, &inviteeGuildUid, characterName = command.characterName](const data::Character& character)
-    {
-      if (character.name() == characterName)
+    bool found = false;
+    GetServerInstance().GetDataDirector().GetCharacter(uid).Immutable(
+      [&found, &name, &inviteeGuildUid](const data::Character& character)
       {
-        isInviteeFoundAndOnline = true;
-        inviteeGuildUid = character.guildUid();
-      }
-    });
-
-    if (isInviteeFoundAndOnline)
-    {
-      break;
-    }
-  }
+        if (found = character.name() == name)
+          inviteeGuildUid = character.guildUid();
+      });
+    return found;
+  });
 
   std::optional<GuildError> error;
-  if (guildUid == data::InvalidUid)
+  if (inviterGuildUid == data::InvalidUid)
   {
     // Inviter is not in a guild (should not be possible)
     error.emplace(GuildError::NoGuild);
     spdlog::warn("Character {} tried to invite {} to guild but inviter is not in a guild",
       clientContext.characterUid, command.characterName);
   }
-  else if (command.characterName == characterName)
+  else if (command.characterName == inviterCharacterName)
   {
     // Player is trying to invite themselves to the guild
     error.emplace(GuildError::CannotInviteSelf);
@@ -3641,7 +3628,7 @@ void RanchDirector::HandleInviteToGuild(
     // Character is already in the guild or is already in another guild
     error.emplace(GuildError::JoinedGuild);
   }
-  else if (not isInviteeFoundAndOnline)
+  else if (it == onlineCharacters.end())
   {
     // Invitee is not found or offline
     error.emplace(GuildError::NoUserOrOffline);
@@ -3649,14 +3636,18 @@ void RanchDirector::HandleInviteToGuild(
 
   if (error.has_value())
   {
-    SendCancelToSender(error.value());
+    protocol::AcCmdCRInviteGuildJoinCancel response{.error = error.value()};
+    _commandServer.QueueCommand<decltype(response)>(clientId, [response]()
+    {
+      return response;
+    });
     return;
   }
 
   // Character is found, is not in (a) guild and is online
   GetServerInstance().GetLobbyDirector().InviteToGuild(
     command.characterName,
-    guildUid,
+    inviterGuildUid,
     clientContext.characterUid
   );
 }
