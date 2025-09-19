@@ -67,7 +67,7 @@ void WriteRacer(SinkStream& stream, const Racer& racer)
     .Write(racer.guild.val1)
     .Write(racer.guild.val2)
     .Write(racer.guild.name)
-    .Write(racer.guild.val4)
+    .Write(racer.guild.guildRole)
     .Write(racer.guild.val5)
     .Write(racer.guild.val6);
   stream.Write(racer.unk9);

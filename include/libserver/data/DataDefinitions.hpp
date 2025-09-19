@@ -25,6 +25,7 @@
 #include <chrono>
 #include <string>
 #include <vector>
+#include <unordered_set>
 
 namespace server
 {
@@ -194,6 +195,18 @@ struct Guild
 {
   dao::Field<Uid> uid{InvalidUid};
   dao::Field<std::string> name{};
+  dao::Field<std::string> description{};
+  dao::Field<Uid> owner{};
+  dao::Field<std::vector<Uid>> officers{};
+  dao::Field<std::vector<Uid>> members{};
+  // Do not persist this in storage
+  dao::Field<std::unordered_set<data::Uid>> invites{};
+
+  dao::Field<uint32_t> rank{};
+  dao::Field<uint32_t> totalWins{};
+  dao::Field<uint32_t> totalLosses{};
+  dao::Field<uint32_t> seasonalWins{};
+  dao::Field<uint32_t> seasonalLosses{};
 };
 
 //! User

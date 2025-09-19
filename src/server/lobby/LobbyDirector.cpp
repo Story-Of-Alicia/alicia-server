@@ -234,6 +234,18 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
     {
       HandleChangeRanchOption(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdLCInviteGuildJoinCancel>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleDeclineInviteToGuild(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdLCInviteGuildJoinOK>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleAcceptInviteToGuild(clientId, command);
+    }); 
 }
 
 void LobbyDirector::Initialize()
@@ -355,6 +367,92 @@ void LobbyDirector::Notice(data::Uid characterUid, const std::string& message)
         });
       return;
     }
+  }
+}
+
+void LobbyDirector::InviteToGuild(std::string characterName, data::Uid guildUid, data::Uid inviterCharacterUid)
+{
+  // Inviter character name
+  std::string inviterCharacterName;
+  GetServerInstance().GetDataDirector().GetCharacter(inviterCharacterUid).Immutable(
+    [&inviterCharacterName](const data::Character& character)
+  {
+    inviterCharacterName = character.name();
+  });
+
+  // For all clients
+  for (const auto& client : _clients)
+  {
+    const auto& clientId = client.first;
+    const auto& clientContext = client.second;
+    // Skip disconnected clients
+    if (not clientContext.isAuthenticated)
+    {
+      continue;
+    }
+    
+    // Ensure character record exists (do not retrieve)
+    const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacterCache().Get(
+      clientContext.characterUid, false);
+    if (not characterRecord.has_value())
+    {
+      continue;
+    };
+
+    bool found = false;
+    characterRecord.value().Immutable([&found, characterName, guildUid](const data::Character& character)
+    {
+      // If character record with matching invite name
+      if (character.name() == characterName)
+      {
+        found = true;
+      }
+    });
+
+    if (not found)
+    {
+      continue;
+    }
+
+    std::string guildName, guildDescription;
+    GetServerInstance().GetDataDirector().GetGuild(guildUid).Immutable([&guildName, &guildDescription](const data::Guild& guild)
+    {
+      guildName = guild.name();
+      guildDescription = guild.description();
+    });
+
+    protocol::AcCmdLCInviteGuildJoin command{
+      .characterUid = clientContext.characterUid,
+      .inviterCharacterUid = inviterCharacterUid, // clientContext.characterUid?
+      .inviterCharacterName = inviterCharacterName,
+      .unk3 = guildDescription,
+      .guild = {
+        .uid = guildUid,
+        .val1 = 1,
+        .val2 = 2,
+        .name = guildName,
+        .guildRole = GuildRole::Member,
+        .val5 = 5,
+        .val6 = 6
+      }
+    };
+
+    _commandServer.QueueCommand<decltype(command)>(
+      clientId,
+      [command]()
+      {
+        return command;
+      });
+
+    GetServerInstance().GetDataDirector().GetGuild(guildUid).Mutable(
+      [characterUid = clientContext.characterUid](data::Guild& guild)
+      {
+        // Add character UID to invites set 
+        guild.invites().emplace(characterUid);
+      });
+    
+    // Found client and sent invite command, no need to process the rest of the clients
+    break;
   }
 }
 
@@ -654,6 +752,25 @@ void LobbyDirector::HandleRequestSpecialEventList(
     });
 }
 
+void LobbyDirector::BuildPersonalInfoBasicResponse(
+  const data::Character& character,
+  protocol::LobbyCommandPersonalInfo& response
+)
+{
+  const auto& guildRecord = GetServerInstance().GetDataDirector().GetGuild(character.guildUid());
+  if (guildRecord.IsAvailable())
+  {
+    guildRecord.Immutable([&response](const data::Guild& guild)
+    {
+      response.basic.guildName = guild.name();
+    });
+  }
+  
+  response.basic.introduction = character.introduction();
+  response.basic.level = character.level();
+  // TODO: implement other stats
+}
+
 void LobbyDirector::HandleRequestPersonalInfo(
   ClientId clientId,
   const protocol::LobbyCommandRequestPersonalInfo& command)
@@ -665,6 +782,28 @@ void LobbyDirector::HandleRequestPersonalInfo(
     .characterUid = command.characterUid,
     .type = command.type,
   };
+
+  characterRecord.Immutable([this, &response](const data::Character& character)
+  {
+    switch (response.type)
+    {
+      case protocol::LobbyCommandRequestPersonalInfo::Type::Basic:
+      {
+        BuildPersonalInfoBasicResponse(character, response);
+        break;
+      }
+      case protocol::LobbyCommandRequestPersonalInfo::Type::Courses:
+      {
+        // TODO: implement
+        break;
+      }
+      case protocol::LobbyCommandRequestPersonalInfo::Type::Eight:
+      {
+        // TODO: (what on earth uses "Eight")
+        break;
+      }
+    }
+  });
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -932,6 +1071,84 @@ LobbyDirector::ClientContext& LobbyDirector::GetClientContext(
     throw std::runtime_error("Client is not authenticated");
 
   return clientContext;
+}
+
+void LobbyDirector::HandleDeclineInviteToGuild(
+  ClientId clientId,
+  const protocol::AcCmdLCInviteGuildJoinCancel& command)
+{
+  // TODO: command data check
+  GetServerInstance().GetRanchDirector().SendGuildInviteDecline(
+    command.characterUid,
+    command.inviterCharacterUid,
+    command.inviterCharacterName,
+    command.guild.uid
+  );
+}
+
+void LobbyDirector::HandleAcceptInviteToGuild(
+  ClientId clientId,
+  const protocol::AcCmdLCInviteGuildJoinOK& command)
+{
+  // TODO: command data check
+
+  const auto& clientContext = GetClientContext(clientId);
+
+  // Check if character has guild invite
+  bool hasGuildInvite = false;
+  GetServerInstance().GetDataDirector().GetGuild(command.guild.uid).Mutable(
+    [&hasGuildInvite, characterUid = clientContext.characterUid](data::Guild& guild)
+    {
+      hasGuildInvite = guild.invites().contains(characterUid);
+      // Delete invite from guild if found
+      if (hasGuildInvite)
+        guild.invites().erase(characterUid);
+    });
+
+  if (not hasGuildInvite)
+  {
+    spdlog::warn("Character {} tried to join a guild {} but does not have a valid invite",
+      clientContext.characterUid, command.guild.uid);
+    return;
+  }
+
+  std::string inviteeCharacterName;
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+    [&inviteeCharacterName, guildUid = command.guild.uid](data::Character& character)
+  {
+    inviteeCharacterName = character.name();
+    character.guildUid() = guildUid;
+  });
+
+  bool guildAddSuccess = false;
+  GetServerInstance().GetDataDirector().GetGuild(command.guild.uid).Mutable(
+    [&guildAddSuccess, inviteeCharacterUid = command.characterUid](data::Guild& guild)
+    {
+      // Check if invitee who accepted is in the guild
+      if (std::ranges::contains(guild.members(), inviteeCharacterUid) ||
+          std::ranges::contains(guild.officers(), inviteeCharacterUid) ||
+          guild.owner() == inviteeCharacterUid)
+      {
+        spdlog::warn("Character {} tried to join guild {} that they are already a part of",
+          inviteeCharacterUid, guild.uid());
+        return;
+      }
+
+      guild.members().emplace_back(inviteeCharacterUid);
+      guildAddSuccess = true;
+    });
+
+  if (not guildAddSuccess)
+  {
+    // TODO: return some error to the accepting client?
+    return;
+  }
+
+  GetServerInstance().GetRanchDirector().AcceptGuildJoinNotify(
+    command.guild.uid,
+    command.characterUid,
+    inviteeCharacterName
+  );
 }
 
 } // namespace server
