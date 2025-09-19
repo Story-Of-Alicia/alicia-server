@@ -1454,7 +1454,8 @@ void RanchDirector::HandleUpdateMountNickname(
   // - the mount's name is empty
   bool canRenameHorse = false;
 
-  characterRecord.Mutable([this, &canRenameHorse, horseUid = command.horseUid](data::Character& character)
+  uint32_t itemCount = 0;
+  characterRecord.Mutable([this, &canRenameHorse, &itemCount, horseUid = command.horseUid](data::Character& character)
   {
     const bool ownsHorse =  character.mountUid() == horseUid
       || std::ranges::contains(character.horses(), horseUid);
@@ -1501,13 +1502,24 @@ void RanchDirector::HandleUpdateMountNickname(
       return;
     }
 
-    // Find the item in the inventory.
-    const auto itemInventoryIter = std::ranges::find(
-      character.items(), horseRenameItemUid);
-
-    // Remove the item from the inventory.
-    character.items().erase(itemInventoryIter);
     canRenameHorse = true;
+
+    GetServerInstance().GetDataDirector().GetItem(horseRenameItemUid).Mutable(
+      [&itemCount](data::Item& item)
+      {
+        itemCount = item.count()--;
+      });
+
+    // Erase if item count < 1 
+    if (itemCount < 1)
+    {
+      // Find the item in the inventory.
+      const auto itemInventoryIter = std::ranges::find(
+        character.items(), horseRenameItemUid);
+
+      // Remove the item from the inventory.
+      character.items().erase(itemInventoryIter);
+    }
   });
 
   if (not canRenameHorse)
@@ -1534,7 +1546,7 @@ void RanchDirector::HandleUpdateMountNickname(
     .horseUid = command.horseUid,
     .nickname = command.name,
     .unk1 = command.unk1,
-    .unk2 = 0};
+    .unk2 = itemCount};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -3569,6 +3581,15 @@ void RanchDirector::HandleInviteToGuild(
   ClientId clientId,
   const protocol::AcCmdCRInviteGuildJoin& command)
 {
+  auto SendCancelToSender = [this, &clientId](GuildError e)
+  {
+    protocol::AcCmdCRInviteGuildJoinCancel response{.error = e};
+    _commandServer.QueueCommand<decltype(response)>(clientId, [response]()
+    {
+      return response;
+    });
+  };
+
   const auto& clientContext = GetClientContext(clientId);
 
   std::string characterName;
@@ -3579,39 +3600,6 @@ void RanchDirector::HandleInviteToGuild(
     guildUid = character.guildUid();
     characterName = character.name();
   });
-
-  if (guildUid == data::InvalidUid)
-  {
-    spdlog::warn("Character {} tried to invite {} to guild but inviter is not in a guild",
-      clientContext.characterUid, command.characterName);
-    protocol::AcCmdCRInviteGuildJoinCancel cancel{
-      .error = GuildError::NoGuild
-    };
-
-    _commandServer.QueueCommand<decltype(cancel)>(
-      clientId,
-      [cancel]()
-      {
-        return cancel;
-      });
-    return;
-  }
-
-  // Check if player is trying to invite themselves to the guild
-  if (command.characterName == characterName)
-  {
-    protocol::AcCmdCRInviteGuildJoinCancel cancel{
-      .error = GuildError::CannotInviteSelf
-    };
-
-    _commandServer.QueueCommand<decltype(cancel)>(
-      clientId,
-      [cancel]()
-      {
-        return cancel;
-      });
-    return;
-  }
 
   // Check if invitee is online
   bool isInviteeFoundAndOnline = false;
@@ -3635,37 +3623,37 @@ void RanchDirector::HandleInviteToGuild(
     }
   }
 
-  // If character is already in the guild or is already in another guild
-  if (inviteeGuildUid != data::InvalidUid)
+  std::optional<GuildError> error;
+  if (guildUid == data::InvalidUid)
   {
-    protocol::AcCmdCRInviteGuildJoinCancel cancel{
-      .error = GuildError::JoinedGuild
-    };
-
-    _commandServer.QueueCommand<decltype(cancel)>(
-      clientId,
-      [cancel]()
-      {
-        return cancel;
-      });
-    return; 
+    // Inviter is not in a guild (should not be possible)
+    error.emplace(GuildError::NoGuild);
+    spdlog::warn("Character {} tried to invite {} to guild but inviter is not in a guild",
+      clientContext.characterUid, command.characterName);
+  }
+  else if (command.characterName == characterName)
+  {
+    // Player is trying to invite themselves to the guild
+    error.emplace(GuildError::CannotInviteSelf);
+  }
+  else if (inviteeGuildUid != data::InvalidUid)
+  {
+    // Character is already in the guild or is already in another guild
+    error.emplace(GuildError::JoinedGuild);
+  }
+  else if (not isInviteeFoundAndOnline)
+  {
+    // Invitee is not found or offline
+    error.emplace(GuildError::NoUserOrOffline);
   }
 
-  if (not isInviteeFoundAndOnline)
+  if (error.has_value())
   {
-    protocol::AcCmdCRInviteGuildJoinCancel cancel{
-      .error = GuildError::NoUserOrOffline
-    };
-
-    _commandServer.QueueCommand<decltype(cancel)>(
-      clientId,
-      [cancel]()
-      {
-        return cancel;
-      });
+    SendCancelToSender(error.value());
     return;
   }
 
+  // Character is found, is not in (a) guild and is online
   GetServerInstance().GetLobbyDirector().InviteToGuild(
     command.characterName,
     guildUid,
