@@ -964,6 +964,22 @@ void LobbyDirector::HandleRequestMountInfo(
   {
     protocol::AcCmdCLRequestMountInfoOK::MountInfo mountInfo;
     mountInfo.horseUid = mountUid;
+    const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(mountUid);
+
+    horseRecord.Immutable([&mountInfo](const data::Horse& horse)
+      {
+        mountInfo.boostsInARow = horse.mountInfo.boostsInARow();
+        mountInfo.winsSpeedSingle = horse.mountInfo.winsSpeedSingle();
+        mountInfo.winsSpeedTeam = horse.mountInfo.winsSpeedTeam();
+        mountInfo.winsMagicSingle = horse.mountInfo.winsMagicSingle();
+        mountInfo.winsMagicTeam = horse.mountInfo.winsMagicTeam();
+        mountInfo.totalDistance = horse.mountInfo.totalDistance();
+        mountInfo.topSpeed = horse.mountInfo.topSpeed();
+        mountInfo.longestGlideDistance = horse.mountInfo.longestGlideDistance();
+        mountInfo.participated = horse.mountInfo.participated();
+        mountInfo.cumulativePrize = horse.mountInfo.cumulativePrize();
+        mountInfo.biggestPrize = horse.mountInfo.biggestPrize();
+      });
 
     mountInfos.emplace_back(std::move(mountInfo));
   }

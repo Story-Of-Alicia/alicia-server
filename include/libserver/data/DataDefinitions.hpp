@@ -333,6 +333,27 @@ struct Horse
     dao::Field<uint16_t> boredom{};
     dao::Field<uint16_t> stopAmendsPoint{};
   } mountCondition{};
+
+  struct MountInfo
+  {
+    dao::Field<uint16_t> boostsInARow{};
+    dao::Field<uint16_t> winsSpeedSingle{};
+    dao::Field<uint16_t> winsSpeedTeam{};
+    dao::Field<uint16_t> winsMagicSingle{};
+    dao::Field<uint16_t> winsMagicTeam{};
+
+    // Store in metres, displayed in kilometres
+    dao::Field<uint32_t> totalDistance{};
+    // Whole number, divided by 10 for the floating point.
+    dao::Field<uint32_t> topSpeed{};
+    // Whole number, divided by 10 for the floating point.
+    dao::Field<uint32_t> longestGlideDistance{};
+
+    // refers to carnival participation
+    dao::Field<uint32_t> participated{};
+    dao::Field<uint32_t> cumulativePrize{};
+    dao::Field<uint32_t> biggestPrize{};
+  } mountInfo{};
 };
 
 struct Housing

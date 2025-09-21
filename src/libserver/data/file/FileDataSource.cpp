@@ -434,6 +434,20 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
 
   horse.dateOfBirth = data::Clock::time_point(std::chrono::seconds(
     json["dateOfBirth"].get<uint64_t>()));
+
+  auto mountInfo = json["mountInfo"];
+  horse.mountInfo = data::Horse::MountInfo{
+    .boostsInARow = mountInfo["boostsInARow"].get<uint16_t>(),
+    .winsSpeedSingle = mountInfo["winsSpeedSingle"].get<uint16_t>(),
+    .winsSpeedTeam = mountInfo["winsSpeedTeam"].get<uint16_t>(),
+    .winsMagicSingle = mountInfo["winsMagicSingle"].get<uint16_t>(),
+    .winsMagicTeam = mountInfo["winsMagicTeam"].get<uint16_t>(),
+    .totalDistance = mountInfo["totalDistance"].get<uint32_t>(),
+    .topSpeed = mountInfo["topSpeed"].get<uint32_t>(),
+    .longestGlideDistance = mountInfo["longestGlideDistance"].get<uint32_t>(),
+    .participated = mountInfo["participated"].get<uint32_t>(),
+    .cumulativePrize = mountInfo["cumulativePrize"].get<uint32_t>(),
+    .biggestPrize = mountInfo["biggestPrize"].get<uint32_t>()};
 }
 
 void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
@@ -514,6 +528,20 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
 
   json["dateOfBirth"] = std::chrono::ceil<std::chrono::seconds>(
     horse.dateOfBirth().time_since_epoch()).count();
+  
+  nlohmann::json mountInfo;
+  mountInfo["boostsInARow"] = horse.mountInfo.boostsInARow();
+  mountInfo["winsSpeedSingle"] = horse.mountInfo.winsSpeedSingle();
+  mountInfo["winsSpeedTeam"] = horse.mountInfo.winsSpeedTeam();
+  mountInfo["winsMagicSingle"] = horse.mountInfo.winsMagicSingle();
+  mountInfo["winsMagicTeam"] = horse.mountInfo.winsMagicTeam();
+  mountInfo["totalDistance"] = horse.mountInfo.totalDistance();
+  mountInfo["topSpeed"] = horse.mountInfo.topSpeed();
+  mountInfo["longestGlideDistance"] = horse.mountInfo.longestGlideDistance();
+  mountInfo["participated"] = horse.mountInfo.participated();
+  mountInfo["cumulativePrize"] = horse.mountInfo.cumulativePrize();
+  mountInfo["biggestPrize"] = horse.mountInfo.biggestPrize();
+  json["mountInfo"] = mountInfo;
   dataFile << json.dump(2);
 }
 

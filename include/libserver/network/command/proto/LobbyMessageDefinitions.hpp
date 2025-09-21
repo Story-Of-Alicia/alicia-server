@@ -1857,28 +1857,30 @@ struct AcCmdCLRequestMountInfo{
     SourceStream& stream);
 };
 
-struct AcCmdCLRequestMountInfoOK{
+struct AcCmdCLRequestMountInfoOK
+{
   uint32_t characterUid{};
-  struct MountInfo{
-  uint32_t horseUid{};
+  struct MountInfo
+  {
+    uint32_t horseUid{};
 
-  uint16_t boostsInARow{};
-  uint16_t winsSpeedSingle{};
-  uint16_t winsSpeedTeam{};
-  uint16_t winsMagicSingle{};
-  uint16_t winsMagicTeam{};
+    uint16_t boostsInARow{};
+    uint16_t winsSpeedSingle{};
+    uint16_t winsSpeedTeam{};
+    uint16_t winsMagicSingle{};
+    uint16_t winsMagicTeam{};
 
-  // Store in metres, displayed in kilometres
-  uint32_t totalDistance{};
-  // Whole number, divided by 10 for the floating point.
-  uint32_t topSpeed{};
-  // Whole number, divided by 10 for the floating point.
-  uint32_t longestGlideDistance{};
+    // Store in metres, displayed in kilometres
+    uint32_t totalDistance{};
+    // Whole number, divided by 10 for the floating point.
+    uint32_t topSpeed{};
+    // Whole number, divided by 10 for the floating point.
+    uint32_t longestGlideDistance{};
 
-  // refers to carnival participation
-  uint32_t participated{};
-  uint32_t cumulativePrize{};
-  uint32_t biggestPrize{};
+    // refers to carnival participation
+    uint32_t participated{};
+    uint32_t cumulativePrize{};
+    uint32_t biggestPrize{};
   };
   // max size 10
   std::vector<MountInfo> mountInfos{};
