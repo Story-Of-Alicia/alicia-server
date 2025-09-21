@@ -1003,7 +1003,7 @@ void RanchCommandUpdateMountNicknameCancel::Write(
   const RanchCommandUpdateMountNicknameCancel& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0);
+  stream.Write(command.error);
 }
 
 void RanchCommandUpdateMountNicknameCancel::Read(

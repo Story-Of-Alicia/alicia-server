@@ -1278,31 +1278,36 @@ void RanchDirector::HandleUpdateMountNickname(
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  // Flag indicating whether the user is allowed to rename their mount which is when:
-  // - the user has a horse rename item
-  // - the mount's name is empty
-  bool canRenameHorse = false;
-
   uint32_t horseRenameItemCount = 0;
-  characterRecord.Mutable([this, characterUid = clientContext.characterUid, command, &canRenameHorse, &horseRenameItemCount](data::Character& character)
+  std::optional<HorseRenameError> error;
+  characterRecord.Mutable([this, &error, characterUid = clientContext.characterUid, command, &horseRenameItemCount](data::Character& character)
   {
-    const bool ownsHorse =  character.mountUid() == command.horseUid
+    const bool ownsHorse = character.mountUid() == command.horseUid
       || std::ranges::contains(character.horses(), command.horseUid);
 
     if (not ownsHorse)
+    {
+      // Command contains horse UID that the calling client does not own
+      error.emplace(HorseRenameError::ServerError);
       return;
+    }
 
     const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(command.horseUid);
     if (not horseRecord)
+    {
+      // Somehow the horse record does not exist
+      error.emplace(HorseRenameError::ServerError);
       return;
+    }
 
     // If the horse does not have a name, allow them to rename it.
-    horseRecord.Immutable([&canRenameHorse](const data::Horse& horse)
+    bool isHorseNameEmpty = false;
+    horseRecord.Immutable([&error, &isHorseNameEmpty](const data::Horse& horse)
     {
-      canRenameHorse = horse.name().empty();
+      isHorseNameEmpty = horse.name().empty();
     });
 
-    if (canRenameHorse)
+    if (isHorseNameEmpty)
       return;
 
     // Retrieve the horse rename item.
@@ -1312,8 +1317,45 @@ void RanchDirector::HandleUpdateMountNickname(
       // Item of that UID does not exist
       spdlog::warn("Character {} tried to rename horse {} with non-existent item {}",
         characterUid, command.horseUid, command.itemUid);
+      error.emplace(HorseRenameError::NoHorseRenameItem);
       return;
     }
+
+    // Check if calling character owns the item
+    if (not std::ranges::contains(character.items(), command.itemUid))
+    {
+      // Character tried to use an item that they do not have in their inventory
+      spdlog::warn("Character {} tried to use item {} that does not belong to them",
+        characterUid, command.itemUid);
+      error.emplace(HorseRenameError::NoHorseRenameItem);
+      return;
+    }
+
+    // Check for duplicate horse names
+    for (const auto& characterHorseUid : character.horses())
+    {
+      // Early exit when an error is spotted
+      if (error.has_value())
+        break;
+
+      GetServerInstance().GetDataDirector().GetHorse(characterHorseUid).Immutable(
+        [&error, newHorseName = command.name](const data::Horse& horse)
+        {
+          if (horse.name() == newHorseName)
+          {
+            error.emplace(HorseRenameError::DuplicateHorseName);
+          }
+        }
+      );
+    }
+
+    if (error.has_value())
+    {
+      return;
+    }
+
+    // TODO: validate new horse name for invalid/illegal characters
+    // HorseRenameError::InvalidNickname
 
     constexpr data::Tid HorseRenameItem = 45003;
 
@@ -1329,9 +1371,12 @@ void RanchDirector::HandleUpdateMountNickname(
 
     if (not isItemHorseRenameItem)
     {
+      // Item is not a horse rename item
+      error.emplace(HorseRenameError::WrongItem);
       return;
     }
 
+    // Remove item from character's inventory if empty
     if (horseRenameItemCount < 1)
     {
       // Find the item in the inventory.
@@ -1341,12 +1386,14 @@ void RanchDirector::HandleUpdateMountNickname(
       // Remove the item from the inventory.
       character.items().erase(itemInventoryIter);
     }
-    canRenameHorse = true;
   });
 
-  if (not canRenameHorse)
+  if (error.has_value())
   {
-    protocol::RanchCommandUpdateMountNicknameCancel response{};
+    protocol::RanchCommandUpdateMountNicknameCancel response{
+      .error = error.value()
+    };
+
     _commandServer.QueueCommand<decltype(response)>(
       clientId,
       [response]()

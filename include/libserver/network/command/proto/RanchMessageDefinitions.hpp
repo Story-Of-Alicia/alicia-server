@@ -1487,7 +1487,7 @@ struct RanchCommandUpdateMountNicknameOK
 //! Serverbound get messenger info command.
 struct RanchCommandUpdateMountNicknameCancel
 {
-  uint8_t unk0{};
+  HorseRenameError error{};
 
   static Command GetCommand()
   {

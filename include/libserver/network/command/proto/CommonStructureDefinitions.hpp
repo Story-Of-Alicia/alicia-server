@@ -520,6 +520,16 @@ enum class TeamMode : uint8_t
   Team = 2
 };
 
+// HorseNameStrings
+enum class HorseRenameError : uint8_t
+{
+  ServerError = 0, // ServerError
+  DuplicateHorseName = 1, // DUPLICATED
+  InvalidNickname = 2, // CR_INVALID_NICKNAME
+  NoHorseRenameItem = 3, // CR_ITEM_NOT_FOUND,
+  WrongItem = 4, // CR_WRONG_ITEM
+};
+
 } // namespace server
 
 #endif
