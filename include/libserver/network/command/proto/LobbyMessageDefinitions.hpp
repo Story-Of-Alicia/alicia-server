@@ -1833,6 +1833,78 @@ struct AcCmdLCNotice
     SourceStream& stream);
 };
 
+
+struct AcCmdCLRequestMountInfo{
+  uint32_t characterUid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLRequestMountInfo;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLRequestMountInfo& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLRequestMountInfo& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLRequestMountInfoOK
+{
+  uint32_t characterUid{};
+  struct MountInfo
+  {
+    uint32_t horseUid{};
+
+    uint16_t boostsInARow{};
+    uint16_t winsSpeedSingle{};
+    uint16_t winsSpeedTeam{};
+    uint16_t winsMagicSingle{};
+    uint16_t winsMagicTeam{};
+
+    // Store in metres, displayed in kilometres
+    uint32_t totalDistance{};
+    // Whole number, divided by 10 for the floating point.
+    uint32_t topSpeed{};
+    // Whole number, divided by 10 for the floating point.
+    uint32_t longestGlideDistance{};
+
+    // refers to carnival participation
+    uint32_t participated{};
+    uint32_t cumulativePrize{};
+    uint32_t biggestPrize{};
+  };
+  // max size 10
+  std::vector<MountInfo> mountInfos{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLRequestMountInfoOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLRequestMountInfoOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLRequestMountInfoOK& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // LOBBY_MESSAGE_DEFINES_HPP

@@ -188,7 +188,11 @@ private:
   void HandleChangeRanchOption(
     ClientId clientId,
     const protocol::LobbyCommandChangeRanchOption& command);
-
+  
+  void HandleRequestMountInfo(
+    ClientId clientId,
+    const protocol::AcCmdCLRequestMountInfo& command);
+    
   //!
   ServerInstance& _serverInstance;
   //!
