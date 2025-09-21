@@ -1284,15 +1284,15 @@ void RanchDirector::HandleUpdateMountNickname(
   bool canRenameHorse = false;
 
   uint32_t horseRenameItemCount = 0;
-  characterRecord.Mutable([this, &canRenameHorse, horseUid = command.horseUid, &horseRenameItemCount](data::Character& character)
+  characterRecord.Mutable([this, characterUid = clientContext.characterUid, command, &canRenameHorse, &horseRenameItemCount](data::Character& character)
   {
-    const bool ownsHorse =  character.mountUid() == horseUid
-      || std::ranges::contains(character.horses(), horseUid);
+    const bool ownsHorse =  character.mountUid() == command.horseUid
+      || std::ranges::contains(character.horses(), command.horseUid);
 
     if (not ownsHorse)
       return;
 
-    const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(horseUid);
+    const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(command.horseUid);
     if (not horseRecord)
       return;
 
@@ -1305,29 +1305,29 @@ void RanchDirector::HandleUpdateMountNickname(
     if (canRenameHorse)
       return;
 
-    constexpr data::Tid HorseRenameItem = 45003;
-    const auto itemRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(
-      character.items());
-
-    // Find the horse rename item.
-    auto horseRenameItemUid = data::InvalidUid;
-    for (const auto& itemRecord : *itemRecords)
+    // Retrieve the horse rename item.
+    const auto itemRecord = GetServerInstance().GetDataDirector().GetItem(command.itemUid);
+    if (not itemRecord.IsAvailable())
     {
-      itemRecord.Mutable([&horseRenameItemUid, &horseRenameItemCount](data::Item& item)
-      {
-        if (item.tid() == HorseRenameItem)
-        {
-          horseRenameItemUid = item.uid();
-          horseRenameItemCount = --item.count(); // decrement and then assign
-        }
-      });
-
-      // Break early if the item was found.
-      if (horseRenameItemUid != data::InvalidUid)
-        break;
+      // Item of that UID does not exist
+      spdlog::warn("Character {} tried to rename horse {} with non-existent item {}",
+        characterUid, command.horseUid, command.itemUid);
+      return;
     }
 
-    if (horseRenameItemUid == data::InvalidUid)
+    constexpr data::Tid HorseRenameItem = 45003;
+
+    bool isItemHorseRenameItem = false;
+    itemRecord.Mutable([&isItemHorseRenameItem, &horseRenameItemCount](data::Item& item)
+    {
+      if (isItemHorseRenameItem = item.tid() == HorseRenameItem)
+      {
+        // Item is a horse rename item
+        horseRenameItemCount = --item.count(); // decrement and then assign
+      }
+    });
+
+    if (not isItemHorseRenameItem)
     {
       return;
     }
@@ -1336,7 +1336,7 @@ void RanchDirector::HandleUpdateMountNickname(
     {
       // Find the item in the inventory.
       const auto itemInventoryIter = std::ranges::find(
-        character.items(), horseRenameItemUid);
+        character.items(), command.itemUid);
 
       // Remove the item from the inventory.
       character.items().erase(itemInventoryIter);
