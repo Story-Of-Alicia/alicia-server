@@ -97,7 +97,7 @@ void RanchCommandMountFamilyTree::Read(
   RanchCommandMountFamilyTree& command,
   SourceStream& stream)
 {
-  stream.Read(command.unk0);
+  stream.Read(command.horseUid);
 }
 
 void RanchCommandMountFamilyTreeOK::Write(

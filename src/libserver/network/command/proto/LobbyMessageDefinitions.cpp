@@ -1253,4 +1253,41 @@ void AcCmdLCNotice::Read(AcCmdLCNotice& command, SourceStream& stream)
     throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCLRequestMountInfo::Write(
+  const AcCmdCLRequestMountInfo& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdCLRequestMountInfo::Read(
+  AcCmdCLRequestMountInfo& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterUid);
+}
+
+void AcCmdCLRequestMountInfoOK::Write(
+  const AcCmdCLRequestMountInfoOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid);
+  stream.Write(static_cast<uint8_t>(command.mountInfos.size()));
+  for (const auto& mountInfo : command.mountInfos)
+  {
+    stream.Write(mountInfo.horseUid)
+      .Write(mountInfo.boostsInARow)
+      .Write(mountInfo.winsSpeedSingle)
+      .Write(mountInfo.winsSpeedTeam)
+      .Write(mountInfo.winsMagicSingle)
+      .Write(mountInfo.winsMagicTeam)
+      .Write(mountInfo.totalDistance)
+      .Write(mountInfo.topSpeed)
+      .Write(mountInfo.longestGlideDistance)
+      .Write(mountInfo.participated)
+      .Write(mountInfo.cumulativePrize)
+      .Write(mountInfo.biggestPrize);
+  }
+}
+
 } // namespace server::protocol

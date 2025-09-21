@@ -234,6 +234,12 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
     {
       HandleChangeRanchOption(clientId, command);
     });
+  
+    _commandServer.RegisterCommandHandler<protocol::AcCmdCLRequestMountInfo>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleRequestMountInfo(clientId, command);
+    });
 }
 
 void LobbyDirector::Initialize()
@@ -932,6 +938,44 @@ LobbyDirector::ClientContext& LobbyDirector::GetClientContext(
     throw std::runtime_error("Client is not authenticated");
 
   return clientContext;
+}
+
+void LobbyDirector::HandleRequestMountInfo(
+  ClientId clientId,
+  const protocol::AcCmdCLRequestMountInfo& command)
+{
+  protocol::AcCmdCLRequestMountInfoOK response{
+    .characterUid = command.characterUid,
+  };
+
+  const auto& characterUid = GetClientContext(clientId).characterUid;
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(characterUid);
+
+  std::vector<protocol::AcCmdCLRequestMountInfoOK::MountInfo> mountInfos;
+  std::vector<data::Uid> mountUids;
+  characterRecord.Immutable([&mountUids](const data::Character& character)
+  {
+    mountUids = character.horses();
+    if (character.mountUid() != data::InvalidUid)
+      mountUids.emplace_back(character.mountUid());
+  });
+
+  for (const auto mountUid : mountUids)
+  {
+    protocol::AcCmdCLRequestMountInfoOK::MountInfo mountInfo;
+    mountInfo.horseUid = mountUid;
+
+    mountInfos.emplace_back(std::move(mountInfo));
+  }
+
+  response.mountInfos = std::move(mountInfos);
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 } // namespace server
