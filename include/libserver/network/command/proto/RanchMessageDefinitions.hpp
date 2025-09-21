@@ -1434,7 +1434,7 @@ struct RanchCommandUpdateMountNickname
 {
   uint32_t horseUid{};
   std::string name{};
-  uint32_t unk1{};
+  uint32_t itemUid{};
 
   static Command GetCommand()
   {
@@ -1461,8 +1461,8 @@ struct RanchCommandUpdateMountNicknameOK
 {
   uint32_t horseUid{};
   std::string nickname{};
-  uint32_t unk1{};
-  uint32_t unk2{};
+  uint32_t itemUid{};
+  uint32_t itemCount{};
 
   static Command GetCommand()
   {

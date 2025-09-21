@@ -996,7 +996,7 @@ void RanchCommandUpdateMountNickname::Read(
 {
   stream.Read(command.horseUid)
     .Read(command.name)
-    .Read(command.unk1);
+    .Read(command.itemUid);
 }
 
 void RanchCommandUpdateMountNicknameCancel::Write(
@@ -1035,8 +1035,8 @@ void RanchCommandUpdateMountNicknameOK::Write(
 {
   stream.Write(command.horseUid)
     .Write(command.nickname)
-    .Write(command.unk1)
-    .Write(command.unk2);
+    .Write(command.itemUid)
+    .Write(command.itemCount);
 }
 
 void RanchCommandUpdateMountNicknameOK::Read(

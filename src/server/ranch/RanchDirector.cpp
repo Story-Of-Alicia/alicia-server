@@ -1367,8 +1367,8 @@ void RanchDirector::HandleUpdateMountNickname(
   protocol::RanchCommandUpdateMountNicknameOK response{
     .horseUid = command.horseUid,
     .nickname = command.name,
-    .unk1 = command.unk1,
-    .unk2 = horseRenameItemCount};
+    .itemUid = command.itemUid,
+    .itemCount = horseRenameItemCount};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
