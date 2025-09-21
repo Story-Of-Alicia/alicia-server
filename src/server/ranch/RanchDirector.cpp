@@ -1283,7 +1283,8 @@ void RanchDirector::HandleUpdateMountNickname(
   // - the mount's name is empty
   bool canRenameHorse = false;
 
-  characterRecord.Mutable([this, &canRenameHorse, horseUid = command.horseUid](data::Character& character)
+  uint32_t horseRenameItemCount = 0;
+  characterRecord.Mutable([this, &canRenameHorse, horseUid = command.horseUid, &horseRenameItemCount](data::Character& character)
   {
     const bool ownsHorse =  character.mountUid() == horseUid
       || std::ranges::contains(character.horses(), horseUid);
@@ -1312,11 +1313,12 @@ void RanchDirector::HandleUpdateMountNickname(
     auto horseRenameItemUid = data::InvalidUid;
     for (const auto& itemRecord : *itemRecords)
     {
-      itemRecord.Immutable([&horseRenameItemUid](const data::Item& item)
+      itemRecord.Mutable([&horseRenameItemUid, &horseRenameItemCount](data::Item& item)
       {
         if (item.tid() == HorseRenameItem)
         {
           horseRenameItemUid = item.uid();
+          horseRenameItemCount = --item.count(); // decrement and then assign
         }
       });
 
@@ -1330,12 +1332,15 @@ void RanchDirector::HandleUpdateMountNickname(
       return;
     }
 
-    // Find the item in the inventory.
-    const auto itemInventoryIter = std::ranges::find(
-      character.items(), horseRenameItemUid);
+    if (horseRenameItemCount < 1)
+    {
+      // Find the item in the inventory.
+      const auto itemInventoryIter = std::ranges::find(
+        character.items(), horseRenameItemUid);
 
-    // Remove the item from the inventory.
-    character.items().erase(itemInventoryIter);
+      // Remove the item from the inventory.
+      character.items().erase(itemInventoryIter);
+    }
     canRenameHorse = true;
   });
 
@@ -1363,7 +1368,7 @@ void RanchDirector::HandleUpdateMountNickname(
     .horseUid = command.horseUid,
     .nickname = command.name,
     .unk1 = command.unk1,
-    .unk2 = 0};
+    .unk2 = horseRenameItemCount};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
