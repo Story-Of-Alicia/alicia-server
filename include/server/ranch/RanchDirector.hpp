@@ -86,7 +86,7 @@ public:
     data::Uid characterUid,
     GuildRole guildRole);
 
-  void SendGuildInviteDecline(
+  void SendGuildInviteDeclined(
     data::Uid characterUid,
     data::Uid inviterCharacterUid,
     std::string inviterCharacterName,
