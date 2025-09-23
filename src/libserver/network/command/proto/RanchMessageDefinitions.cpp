@@ -2350,6 +2350,7 @@ void AcCmdCRRequestGuildMatchInfoCancel::Write(
   const AcCmdCRRequestGuildMatchInfoCancel& command,
   SinkStream& stream)
 {
+  // Empty.
 }
 
 void AcCmdCRRequestGuildMatchInfoOK::Read(
