@@ -408,9 +408,7 @@ void LobbyDirector::InviteToGuild(std::string characterName, data::Uid guildUid,
     });
 
     if (not found)
-    {
       continue;
-    }
 
     std::string guildName, guildDescription;
     GetServerInstance().GetDataDirector().GetGuild(guildUid).Immutable([&guildName, &guildDescription](const data::Guild& guild)
