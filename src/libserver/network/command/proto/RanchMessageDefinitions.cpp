@@ -2279,6 +2279,7 @@ void AcCmdCRGuildMemberList::Read(
   AcCmdCRGuildMemberList& command,
   SourceStream& stream)
 {
+  // Empty.
 }
 
 void AcCmdCRGuildMemberList::Write(
