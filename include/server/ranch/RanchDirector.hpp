@@ -92,7 +92,7 @@ public:
     std::string inviterCharacterName,
     data::Uid guildUid);
 
-  void AcceptGuildJoinNotify(
+  void SendGuildInviteAccepted(
     data::Uid guildUid,
     data::Uid characterUid,
     std::string newMemberCharacterName);
