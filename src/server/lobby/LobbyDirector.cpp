@@ -411,11 +411,12 @@ void LobbyDirector::InviteToGuild(std::string characterName, data::Uid guildUid,
       continue;
 
     std::string guildName, guildDescription;
-    GetServerInstance().GetDataDirector().GetGuild(guildUid).Immutable([&guildName, &guildDescription](const data::Guild& guild)
-    {
-      guildName = guild.name();
-      guildDescription = guild.description();
-    });
+    GetServerInstance().GetDataDirector().GetGuild(guildUid).Immutable(
+      [&guildName, &guildDescription](const data::Guild& guild)
+      {
+        guildName = guild.name();
+        guildDescription = guild.description();
+      });
 
     protocol::AcCmdLCInviteGuildJoin command{
       .characterUid = clientContext.characterUid,
