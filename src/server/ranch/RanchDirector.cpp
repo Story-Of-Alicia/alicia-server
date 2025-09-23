@@ -1519,6 +1519,7 @@ void RanchDirector::HandleUpdateMountNickname(
 
       // Remove the item from the inventory.
       character.items().erase(itemInventoryIter);
+      GetServerInstance().GetDataDirector().GetItemCache().Delete(horseRenameItemUid);
     }
   });
 
