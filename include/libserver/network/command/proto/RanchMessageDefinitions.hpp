@@ -2087,8 +2087,7 @@ struct RanchCommandRequestGuildInfoOK
     uint32_t member5{};
     std::string name{};
     std::string description{};
-    // Cooldown for invite in hours (TOOLTIP_INVITE_COOLTIME).
-    // Essentially behaves like a boolean. 1 = disables the guild invite button
+    //! Invite cool down in hours.
     uint32_t inviteCooldown{};
     uint32_t member9{};
     uint32_t member10{};
