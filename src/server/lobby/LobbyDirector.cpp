@@ -754,8 +754,7 @@ void LobbyDirector::HandleRequestSpecialEventList(
 
 void LobbyDirector::BuildPersonalInfoBasicResponse(
   const data::Character& character,
-  protocol::LobbyCommandPersonalInfo& response
-)
+  protocol::LobbyCommandPersonalInfo& response)
 {
   const auto& guildRecord = GetServerInstance().GetDataDirector().GetGuild(character.guildUid());
   if (guildRecord.IsAvailable())
