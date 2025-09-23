@@ -2152,6 +2152,7 @@ struct AcCmdCRWithdrawGuildMember
   enum class Option : uint8_t
   {
     Leave = 0,
+    //! Expelled
     Kicked = 1,
     Unk2 = 2
   } option{};
