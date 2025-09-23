@@ -2231,7 +2231,7 @@ struct AcCmdRCWithdrawGuildMemberNotify
   uint32_t guildUid;
   uint32_t guildMemberCharacterUid;
   uint32_t withdrawnCharacterUid;
-  AcCmdCRWithdrawGuildMember::Option option; // 1 - expelled
+  AcCmdCRWithdrawGuildMember::Option option;
 
   static Command GetCommand()
   {
