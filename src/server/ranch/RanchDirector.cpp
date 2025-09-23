@@ -614,7 +614,7 @@ void RanchDirector::BroadcastUpdateGuildMemberGradeNotify(
   });
 }
 
-void RanchDirector::SendGuildInviteDecline(
+void RanchDirector::SendGuildInviteDeclined(
   data::Uid characterUid,
   data::Uid inviterCharacterUid,
   std::string inviterCharacterName,
