@@ -2080,9 +2080,9 @@ struct RanchCommandRequestGuildInfoOK
     uint8_t member1{};
     uint32_t member2{};
     uint32_t member3{};
-    // 0  = Does not request member list
-    // 0  > Requests member list
-    // 29 > Disables guild invite
+    //! Member count. Maximum number of members a guild can have is 30. 
+    //! Setting the number to a value greater or equal to the maximum
+    //! results in the invite button being disabled.
     uint8_t memberCount{};
     uint32_t member5{};
     std::string name{};
