@@ -1143,7 +1143,7 @@ void LobbyDirector::HandleAcceptInviteToGuild(
     return;
   }
 
-  GetServerInstance().GetRanchDirector().AcceptGuildJoinNotify(
+  GetServerInstance().GetRanchDirector().SendGuildInviteAccepted(
     command.guild.uid,
     command.characterUid,
     inviteeCharacterName
