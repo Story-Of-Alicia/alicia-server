@@ -385,11 +385,9 @@ void LobbyDirector::InviteToGuild(std::string characterName, data::Uid guildUid,
   {
     const auto& clientId = client.first;
     const auto& clientContext = client.second;
-    // Skip disconnected clients
+    // Skip unauthorized clients.
     if (not clientContext.isAuthenticated)
-    {
       continue;
-    }
     
     // Ensure character record exists (do not retrieve)
     const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacterCache().Get(
