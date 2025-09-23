@@ -662,7 +662,7 @@ void RanchDirector::SendGuildInviteDeclined(
   }
 }
 
-void RanchDirector::AcceptGuildJoinNotify(
+void RanchDirector::SendGuildInviteAccepted(
   data::Uid guildUid,
   data::Uid characterUid,
   std::string newMemberCharacterName)
