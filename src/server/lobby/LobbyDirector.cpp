@@ -395,7 +395,7 @@ void LobbyDirector::InviteToGuild(std::string characterName, data::Uid guildUid,
     if (not characterRecord.has_value())
     {
       continue;
-    };
+    }
 
     bool found = false;
     characterRecord.value().Immutable([&found, characterName, guildUid](const data::Character& character)
