@@ -69,7 +69,8 @@ bool IsMuted(protocol::Command id)
   return id == protocol::Command::AcCmdCLHeartbeat
     || id == protocol::Command::AcCmdCRHeartbeat
     || id == protocol::Command::AcCmdCRRanchSnapshot
-    || id == protocol::Command::AcCmdCRRanchSnapshotNotify;
+    || id == protocol::Command::AcCmdCRRanchSnapshotNotify
+    || id == protocol::Command::AcCmdUserRaceUpdatePos;
 }
 
 } // namespace
