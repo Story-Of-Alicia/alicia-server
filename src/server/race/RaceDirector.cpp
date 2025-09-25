@@ -393,12 +393,12 @@ void RaceDirector::HandleStartRace(
     response.racers.emplace_back(protocol::AcCmdCRStartRaceNotify::Racer{
       .oid = characterOid,
       .name = characterName,
-      .unk2 = 1,
-      .unk3 = 1,
-      .unk4 = 1,
+      .unk2 = 2,
+      .unk3 = 2,
+      .unk4 = 2,
       .p2dId = 2,
-      .unk6 = 1,
-      .unk7 = 1});
+      .unk6 = 2,
+      .unk7 = 2});
   }
 
   // Send to all clients in the room.
@@ -409,7 +409,7 @@ void RaceDirector::HandleStartRace(
       roomClientContext.characterUid);
 
     _commandServer.QueueCommand<decltype(response)>(
-      clientId,
+      roomClientId,
       [response]()
       {
         return response;
@@ -441,24 +441,52 @@ void RaceDirector::HandleLoadingComplete(
   ClientId clientId,
   const protocol::AcCmdCRLoadingComplete& command)
 {
-  // todo: notify of load complete
-  _commandServer.QueueCommand<protocol::AcCmdCRLoadingCompleteNotify>(
-    clientId,
-    []()
-    {
-      return protocol::AcCmdCRLoadingCompleteNotify{
-        .oid = 1};
-    });
+  auto& clientContext = _clients[clientId];
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
+  
+  // Add this client to the loaded clients set
+  roomInstance.loadedRaceClients.insert(clientId);
 
-  _commandServer.QueueCommand<protocol::AcCmdUserRaceCountdown>(
-    clientId,
-    []()
+  const auto characterOid = roomInstance.worldTracker.GetCharacterOid(clientContext.characterUid);
+
+  // Notify all clients in the room that this player's loading is complete
+  for (const ClientId& roomClientId : roomInstance.clients)
+  {
+    _commandServer.QueueCommand<protocol::AcCmdCRLoadingCompleteNotify>(
+      roomClientId,
+      [characterOid]()
+      {
+        return protocol::AcCmdCRLoadingCompleteNotify{
+          .oid = characterOid};
+      });
+  }
+
+  // Check if all players in the room have completed loading
+  bool allPlayersLoaded = (roomInstance.loadedRaceClients.size() == roomInstance.clients.size());
+
+  // If all players have loaded, start countdown for everyone
+  if (allPlayersLoaded)
+  {
+    spdlog::info("All players in room {} have finished loading, starting countdown", clientContext.roomUid);
+    
+    auto countdownTimestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(
+      std::chrono::steady_clock::now().time_since_epoch())
+      .count() / 100 + 10 * 10'000'000;
+
+    for (const ClientId& roomClientId : roomInstance.clients)
     {
-      return protocol::AcCmdUserRaceCountdown{
-        .timestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(
-          std::chrono::steady_clock::now().time_since_epoch())
-          .count() / 100 + 5 * 10'000'000};
-    });
+      _commandServer.QueueCommand<protocol::AcCmdUserRaceCountdown>(
+        roomClientId,
+        [countdownTimestamp]()
+        {
+          return protocol::AcCmdUserRaceCountdown{
+            .timestamp = countdownTimestamp};
+        });
+    }
+    
+    // Reset loading state for next race
+    roomInstance.loadedRaceClients.clear();
+  }
 }
 
 void RaceDirector::HandleReadyRace(

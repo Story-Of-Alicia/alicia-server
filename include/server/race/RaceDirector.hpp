@@ -69,6 +69,8 @@ private:
     std::unordered_set<ClientId> clients;
     WorldTracker worldTracker;
     data::Uid leaderCharacterUid{data::InvalidUid};
+    //Clients that are loaded into the race
+    std::unordered_set<uint16_t> loadedRaceClients;
   };
 
   void HandleEnterRoom(
