@@ -559,7 +559,7 @@ void ChatSystem::RegisterUserCommands()
           // Add the item directly to character's inventory.
           characterRecord.Mutable([createdItemUid](data::Character& character)
             {
-              character.items().emplace_back(createdItemUid);
+              character.inventory().emplace_back(createdItemUid);
             });
         }
 

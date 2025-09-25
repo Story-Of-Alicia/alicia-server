@@ -414,7 +414,7 @@ void LoginHandler::QueueUserLoginAccepted(
       response.age = character.age();
       response.hideGenderAndAge = character.hideGenderAndAge();
 
-      response.bitfield = protocol::LobbyCommandLoginOK::HasPlayerBefore;
+      response.bitfield = protocol::LobbyCommandLoginOK::HasPlayedBefore;
 
       // Character equipment.
       const auto characterEquipmentItems = _lobbyDirector.GetServerInstance().GetDataDirector().GetItemCache().Get(

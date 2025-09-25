@@ -1306,7 +1306,7 @@ void RanchDirector::HandleUpdateMountNickname(
 
     constexpr data::Tid HorseRenameItem = 45003;
     const auto itemRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(
-      character.items());
+      character.inventory());
 
     // Find the horse rename item.
     auto horseRenameItemUid = data::InvalidUid;
@@ -1332,10 +1332,10 @@ void RanchDirector::HandleUpdateMountNickname(
 
     // Find the item in the inventory.
     const auto itemInventoryIter = std::ranges::find(
-      character.items(), horseRenameItemUid);
+      character.inventory(), horseRenameItemUid);
 
     // Remove the item from the inventory.
-    character.items().erase(itemInventoryIter);
+    character.inventory().erase(itemInventoryIter);
     canRenameHorse = true;
   });
 
@@ -1494,8 +1494,8 @@ void RanchDirector::HandleGetItemFromStorage(
         response.storageItemUid);
 
       // Add the items to the character's inventory.
-      character.items().insert(
-        character.items().end(),
+      character.inventory().insert(
+        character.inventory().end(),
         items.begin(),
         items.end());
 
@@ -1540,46 +1540,151 @@ void RanchDirector::HandleWearEquipment(
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  bool equipSuccessful = false;
+  bool isValidItem = false;
+  bool isValidHorse = false;
 
-  characterRecord.Mutable([&command, &equipSuccessful](data::Character& character)
+  characterRecord.Immutable([&isValidItem, &isValidHorse, &command](
+    const data::Character& character)
   {
-    const bool hasEquippedItem = std::ranges::contains(
-      character.items(), command.itemUid);
-    const bool hasMountedHorse = std::ranges::contains(
-      character.horses(), command.itemUid);
+    isValidItem = std::ranges::contains(
+      character.inventory(), command.equipmentUid);
+    isValidHorse = std::ranges::contains(
+      character.horses(), command.equipmentUid);
+  });
 
-    // Make sure the equip UID is either a valid item or a horse.
-    equipSuccessful = hasEquippedItem || hasMountedHorse;
-
-    if (hasMountedHorse)
+  if (isValidHorse)
+  {
+    const data::Uid equippedHorseUid = command.equipmentUid;
+    characterRecord.Mutable([&equippedHorseUid](data::Character& character)
     {
-      const bool isHorseAlreadyMounted = character.mountUid() == command.itemUid;
+      const bool isHorseAlreadyMounted = character.mountUid() == equippedHorseUid;
       if (isHorseAlreadyMounted)
         return;
 
       // Add the mount back to the horse list.
       character.horses().emplace_back(character.mountUid());
-      character.mountUid() = command.itemUid;
+      character.mountUid() = equippedHorseUid;
 
       // Remove the new mount from the horse list.
-      character.horses().erase(std::ranges::find(character.horses(), command.itemUid));
-    }
-    else if (hasEquippedItem)
+      character.horses().erase(
+        std::ranges::find(character.horses(), equippedHorseUid));
+    });
+  }
+  else if (isValidItem)
+  {
+    const data::Uid equippedItemUid = command.equipmentUid;
+    auto equippedItemTid = data::InvalidTid;
+
+    const auto equippedItemRecord = _serverInstance.GetDataDirector().GetItem(
+      equippedItemUid);
+    equippedItemRecord.Immutable([&equippedItemTid](const data::Item& item)
     {
-      const bool isItemAlreadyEquipped = std::ranges::contains(
-        character.characterEquipment(), command.itemUid);
-      if (isItemAlreadyEquipped)
-        return;
+      equippedItemTid = item.tid();
+    });
 
-      character.characterEquipment().emplace_back(command.itemUid);
+    // Determine whether the newly equipped item is valid and can be equipped.
+    const auto equippedItemTemplate = _serverInstance.GetItemRegistry().GetItem(
+      equippedItemTid);
+
+    if (not equippedItemTemplate.has_value())
+    {
+      throw std::runtime_error("Tried equipping item which is not recognized by the server");
     }
-  });
 
+    if (not equippedItemTemplate->characterPartInfo.has_value()
+      && not equippedItemTemplate->mountPartInfo.has_value())
+    {
+      throw std::runtime_error("Tried equipping item which is not a valid character or mount equipment");
+    }
+
+    characterRecord.Mutable(
+      [this, &equippedItemTemplate, &equippedItemUid](
+      data::Character& character)
+    {
+      const bool isCharacterEquipment = equippedItemTemplate->characterPartInfo.has_value();
+      const bool isMountEquipment = equippedItemTemplate->mountPartInfo.has_value();
+
+      // Store the current character equipment UIDs
+      std::vector<data::Uid> equipmentUids;
+      if (isCharacterEquipment)
+        equipmentUids = character.characterEquipment();
+      else if (isMountEquipment)
+        equipmentUids = character.mountEquipment();
+      else
+        assert(false && "invalid equipment type");
+
+      // Determine which equipment is to be replaced by the newly equipped item.
+      std::vector<data::Uid> equipmentToReplace;
+      const auto equipmentRecords = _serverInstance.GetDataDirector().GetItemCache().Get(
+        equipmentUids);
+      for (const auto& equipmentRecord : *equipmentRecords)
+      {
+        auto equipmentUid{data::InvalidUid};
+        auto equipmentTid{data::InvalidTid};
+        equipmentRecord.Immutable([&equipmentUid, &equipmentTid](const data::Item& item)
+        {
+          equipmentUid = item.uid();
+          equipmentTid = item.tid();
+        });
+
+        // Replace equipment which occupies the same slots as the newly equipped item.
+        const auto equipmentTemplate = _serverInstance.GetItemRegistry().GetItem(
+          equipmentTid);
+
+        if (isCharacterEquipment)
+        {
+          if (static_cast<uint32_t>(equipmentTemplate->characterPartInfo->slot)
+            & static_cast<uint32_t>(equippedItemTemplate->characterPartInfo->slot))
+          {
+            equipmentToReplace.emplace_back(equipmentUid);
+          }
+        }
+        else if (isMountEquipment)
+        {
+          if (static_cast<uint32_t>(equipmentTemplate->mountPartInfo->slot)
+            & static_cast<uint32_t>(equippedItemTemplate->mountPartInfo->slot))
+          {
+            equipmentToReplace.emplace_back(equipmentUid);
+          }
+        }
+      }
+
+      // Remove equipment replaced with the newly equipped item.
+      const auto replacedEquipment = std::ranges::remove_if(
+        equipmentUids,
+        [&equipmentToReplace](const data::Uid uid)
+        {
+          return std::ranges::contains(equipmentToReplace, uid);
+        });
+
+      // Erase them from the equipment.
+      equipmentUids.erase(replacedEquipment.begin(), replacedEquipment.end());
+      // Add the newly equipped item.
+      equipmentUids.emplace_back(equippedItemUid);
+
+      if (isCharacterEquipment)
+        character.characterEquipment = equipmentUids;
+      else if (isMountEquipment)
+        character.mountEquipment = equipmentUids;
+      else
+        assert(false && "invalid equipment type");
+
+      // Remove the newly equipped item from the inventory.
+      const auto equippedItemsToRemove = std::ranges::remove(
+        character.inventory(), equippedItemUid);
+      character.inventory().erase(equippedItemsToRemove.begin(), equippedItemsToRemove.end());
+
+      // Add the replaced equipment back to the inventory.
+      std::ranges::copy(equipmentToReplace, std::back_inserter(character.inventory()));
+    });
+  }
+
+  // Make sure the equipment UID is either a valid item or a horse.
+  const bool equipSuccessful = isValidItem || isValidHorse;
   if (equipSuccessful)
   {
     protocol::AcCmdCRWearEquipmentOK response{
-      .itemUid = command.itemUid,
+      .itemUid = command.equipmentUid,
       .member = command.member};
 
     _commandServer.QueueCommand<decltype(response)>(
@@ -1588,13 +1693,13 @@ void RanchDirector::HandleWearEquipment(
       {
         return response;
       });
-    BroadcastEquipmentUpdate(clientId);
 
+    BroadcastEquipmentUpdate(clientId);
     return;
   }
 
   protocol::AcCmdCRWearEquipmentCancel response{
-    .itemUid = command.itemUid,
+    .itemUid = command.equipmentUid,
     .member = command.member};
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -1615,18 +1720,30 @@ void RanchDirector::HandleRemoveEquipment(
 
   characterRecord.Mutable([&command](data::Character& character)
   {
-    const bool ownsItem = std::ranges::contains(
-      character.items(), command.itemUid);
+    const auto characterEquipmentItemIter = std::ranges::find(
+      character.characterEquipment(),
+      command.itemUid);
+    const auto mountEquipmentItemIter = std::ranges::find(
+      character.mountEquipment(),
+      command.itemUid);
 
     // You can't really unequip a horse. You can only switch to a different one.
     // At least in Alicia 1.0.
 
-    if (ownsItem)
+    if (characterEquipmentItemIter != character.characterEquipment().cend())
     {
       const auto range = std::ranges::remove(
         character.characterEquipment(), command.itemUid);
       character.characterEquipment().erase(range.begin(), range.end());
     }
+    else if (mountEquipmentItemIter != character.mountEquipment().cend())
+    {
+      const auto range = std::ranges::remove(
+        character.mountEquipment(), command.itemUid);
+      character.mountEquipment().erase(range.begin(), range.end());
+    }
+
+    character.inventory().emplace_back(command.itemUid);
   });
 
   // We really don't need to cancel the unequip. Always respond with OK.
@@ -1863,14 +1980,14 @@ void RanchDirector::HandleUpdatePet(
       }
 
       auto itemRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(
-        character.items());
+        character.inventory());
       if (not itemRecords || itemRecords->empty())
       {
         spdlog::warn("No items found for character {}", character.uid());
         return;
       }
       // Pet rename, find item in inventory
-      if (std::ranges::contains(character.items(), command.itemUid))
+      if (std::ranges::contains(character.inventory(), command.itemUid))
       {
         // TODO: actually reduce the item count or remove it
         const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
@@ -2175,10 +2292,10 @@ void RanchDirector::HandleRequestPetBirth(
         character.eggs().erase(it);
       }
 
-      if (auto it = std::ranges::find(character.items(), hatchingEggItemUid);
-        it != character.items().end())
+      if (auto it = std::ranges::find(character.inventory(), hatchingEggItemUid);
+        it != character.inventory().end())
       {
-        character.items().erase(it);
+        character.inventory().erase(it);
       }
 
       //Delete the Item and Egg records
@@ -2227,7 +2344,7 @@ void RanchDirector::HandleRequestPetBirth(
             .tid = item.tid(),
             .count = item.count()};
           // write the item into the character items
-          character.items().emplace_back(item.uid());
+          character.inventory().emplace_back(item.uid());
         });
         return;
       }
@@ -2266,7 +2383,7 @@ void RanchDirector::HandleRequestPetBirth(
         petUid = pet.uid();
       });
 
-      character.items().emplace_back(petItemUid);
+      character.inventory().emplace_back(petItemUid);
       character.pets().emplace_back(petUid);
     });
 
@@ -2301,7 +2418,7 @@ void RanchDirector::HandleRequestPetBirth(
 void RanchDirector::BroadcastEquipmentUpdate(ClientId clientId)
 {
   const auto& clientContext = GetClientContext(clientId);
-  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
   protocol::AcCmdCRUpdateEquipmentNotify notify{
@@ -2504,7 +2621,7 @@ void RanchDirector::HandleUseItem(
   characterRecord.Immutable([&characterName, &usedItemUid, &horseUid, &hasItem, &hasHorse](
     const data::Character& character)
   {
-    hasItem = std::ranges::contains(character.items(), usedItemUid);;
+    hasItem = std::ranges::contains(character.inventory(), usedItemUid);;
     hasHorse = std::ranges::contains(character.horses(), horseUid)
       || character.mountUid() == horseUid;
 
@@ -2586,8 +2703,8 @@ void RanchDirector::HandleUseItem(
     {
       characterRecord.Mutable([usedItemUid = command.itemUid](data::Character& character)
       {
-        const auto removedItems = std::ranges::remove(character.items(), usedItemUid);
-        character.items().erase(removedItems.begin(), removedItems.end());
+        const auto removedItems = std::ranges::remove(character.inventory(), usedItemUid);
+        character.inventory().erase(removedItems.begin(), removedItems.end());
       });
 
       _serverInstance.GetDataDirector().GetItemCache().Delete(command.itemUid);
