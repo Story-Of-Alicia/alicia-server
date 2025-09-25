@@ -119,11 +119,30 @@ void RaceDirector::Initialize()
     GetConfig().listen.address.to_string(),
     GetConfig().listen.port);
 
+  test = std::thread([this]()
+  {
+    asio::io_context ioCtx;
+    asio::ip::udp::socket skt(
+      ioCtx,
+      asio::ip::udp::endpoint(
+        asio::ip::address_v4::loopback(),
+        10500));
+
+    asio::streambuf buf;
+    while (run_test)
+    {
+      const size_t b = skt.receive(buf.prepare(1024));
+      buf.consume(b);
+    }
+  });
+  test.detach();
+
   _commandServer.BeginHost(GetConfig().listen.address, GetConfig().listen.port);
 }
 
 void RaceDirector::Terminate()
 {
+  run_test = false;
   _commandServer.EndHost();
 }
 
@@ -375,10 +394,9 @@ void RaceDirector::HandleStartRace(
 
   protocol::AcCmdCRStartRaceNotify response{
     .gameMode = room.gameMode,
-    .skills = false,
-    .mapBlockId = 41,
-    .ip = GetConfig().listen.address.to_uint(),
-    .port = GetConfig().listen.port
+    .mapBlockId = room.mapBlockId,
+    .ip = asio::ip::address_v4::loopback().to_uint(),
+    .port = static_cast<uint16_t>(10500),
   };
 
   for (const auto& [characterUid, characterOid] : roomInstance.worldTracker.GetCharacters())
@@ -396,7 +414,7 @@ void RaceDirector::HandleStartRace(
       .unk2 = 2,
       .unk3 = 2,
       .unk4 = 2,
-      .p2dId = 2,
+      .p2dId = 0,
       .unk6 = 2,
       .unk7 = 2});
   }
@@ -620,6 +638,9 @@ void RaceDirector::HandleAwardEnd(
 
   for (const auto roomClientId : roomInstance.clients)
   {
+    if (roomClientId == clientId)
+      continue;
+
     _commandServer.QueueCommand<decltype(notify)>(
       roomClientId,
       [notify]()

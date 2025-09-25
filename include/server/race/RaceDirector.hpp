@@ -124,6 +124,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRAwardEnd& command);
 
+  //!
+  std::thread test;
+  std::atomic_bool run_test{true};
+
   //! A server instance.
   ServerInstance& _serverInstance;
   //! A command server instance.

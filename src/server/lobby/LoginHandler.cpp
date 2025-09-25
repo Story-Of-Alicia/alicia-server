@@ -347,23 +347,23 @@ void LoginHandler::QueueUserLoginAccepted(
 
   protocol::LobbyCommandLoginOK response{
     .lobbyTime = util::TimePointToFileTime(util::Clock::now()),
-    .member0 = 0xCA794,
+    // .member0 = 0xCA794,
     .motd = std::format(
       "Welcome to Story of Alicia. Players online: {}",
       _lobbyDirector._clients.size()),
     .val1 = 0x0,
     .val3 = 0x0,
-    .optionType = OptionType::Value,
-    .valueOptions = 0x64,
-
-    .val5 = {
-      {0x18, {{2, 1}}},
-      {0x1F, {{2, 1}}},
-      {0x23, {{2, 1}}},
-      {0x29, {{2, 1}}},
-      {0x2A, {{2, 1}}},
-      {0x2B, {{2, 1}}},
-      {0x2E, {{2, 1}}}},
+    // .optionType = OptionType::Value,
+    // .valueOptions = 0x64,
+    //
+    // .val5 = {
+    //   {0x18, {{2, 1}}},
+    //   {0x1F, {{2, 1}}},
+    //   {0x23, {{2, 1}}},
+    //   {0x29, {{2, 1}}},
+    //   {0x2A, {{2, 1}}},
+    //   {0x2B, {{2, 1}}},
+    //   {0x2E, {{2, 1}}}},
 
     .ranchAddress = _lobbyDirector.GetConfig().advertisement.ranch.address.to_uint(),
     .ranchPort = _lobbyDirector.GetConfig().advertisement.ranch.port,
@@ -371,14 +371,15 @@ void LoginHandler::QueueUserLoginAccepted(
 
     .systemContent = _lobbyDirector._systemContent,
 
-    .managementSkills = {4, 0x2B, 4},
-    .skillRanks = {.values = {{1,1}}},
-    .val14 = 0xca1b87db,
-    .guild = {.val1 = 1},
-    .val16 = 4,
-    .val18 = 0x2a,
-    .val19 = 0x38d,
-    .val20 = 0x1c7};
+    // .managementSkills = {4, 0x2B, 4},
+    // .skillRanks = {.values = {{1,1}}},
+    // .val14 = 0xca1b87db,
+    // .guild = {.val1 = 1},
+    // .val16 = 4,
+    // .val18 = 0x2a,
+    // .val19 = 0x38d,
+    //.val20 = 0x1c7
+  };
 
   // Get the character UID of the user.
   auto userCharacterUid{data::InvalidUid};
@@ -415,7 +416,7 @@ void LoginHandler::QueueUserLoginAccepted(
       response.age = character.age();
       response.hideGenderAndAge = character.hideGenderAndAge();
 
-      response.bitfield = protocol::LobbyCommandLoginOK::HasPlayedBefore;
+      //response.bitfield = protocol::LobbyCommandLoginOK::HasPlayedBefore;
 
       // Character equipment.
       const auto characterEquipmentItems = _lobbyDirector.GetServerInstance().GetDataDirector().GetItemCache().Get(

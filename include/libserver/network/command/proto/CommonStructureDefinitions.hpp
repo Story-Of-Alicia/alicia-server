@@ -508,6 +508,7 @@ struct League
 
 enum class GameMode : uint8_t
 {
+  Nothing = 0,
   Speed = 1,
   Magic = 2,
   Guild = 3,

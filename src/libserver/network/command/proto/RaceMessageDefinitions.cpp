@@ -19,6 +19,8 @@
 
 #include "libserver/network/command/proto/RaceMessageDefinitions.hpp"
 
+#include "libserver/network/chatter/ChatterServer.hpp"
+
 namespace server::protocol
 {
 
@@ -416,7 +418,9 @@ void AcCmdCRStartRaceNotify::Write(
       .Write(element.unk7);
   }
 
-  stream.Write(command.ip)
+  stream.Write(
+    boost::asio::detail::socket_ops::host_to_network_long(
+      command.ip))
     .Write(command.port)
     .Write(command.unk6)
     .Write(command.unk9)
