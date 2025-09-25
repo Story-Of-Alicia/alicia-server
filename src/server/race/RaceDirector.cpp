@@ -389,8 +389,12 @@ void RaceDirector::HandleRaceTimer(
   const protocol::AcCmdUserRaceTimer& command)
 {
   protocol::AcCmdUserRaceTimerOK response{
-    .unk0 = command.timestamp + 10000,
-    .unk1 = command.timestamp + 20000};
+    .clientTimestamp = command.timestamp,
+    .serverTimestamp = static_cast<uint64_t>(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()
+      ).count() / 100)
+  };
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,

@@ -551,8 +551,8 @@ struct AcCmdUserRaceTimer
 
 struct AcCmdUserRaceTimerOK
 {
-  uint64_t unk0{};
-  uint64_t unk1{};
+  uint64_t clientTimestamp{};
+  uint64_t serverTimestamp{};
 
   static Command GetCommand()
   {
