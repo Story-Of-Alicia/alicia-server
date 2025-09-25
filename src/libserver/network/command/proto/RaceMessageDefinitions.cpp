@@ -399,7 +399,7 @@ void AcCmdCRStartRaceNotify::Write(
 {
   stream.Write(command.gameMode)
     .Write(command.skills)
-    .Write(command.someonesOid)
+    .Write(command.racerOid)
     .Write(command.member4)
     .Write(command.mapBlockId);
 

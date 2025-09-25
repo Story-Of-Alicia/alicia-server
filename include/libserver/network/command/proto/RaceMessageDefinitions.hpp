@@ -381,7 +381,7 @@ struct AcCmdCRStartRaceNotify
   GameMode gameMode{};
   bool skills{};
   // this is an oid of a special player
-  uint16_t someonesOid{};
+  uint16_t racerOid{};
   uint32_t member4{}; // Room ID?
   uint16_t mapBlockId{};
 

@@ -308,11 +308,11 @@ void RaceDirector::HandleEnterRoom(
 
   for (const ClientId& roomClientId : roomInstance.clients)
   {
-    _commandServer.QueueCommand<decltype(response)>(
+    _commandServer.QueueCommand<decltype(notify)>(
       roomClientId,
-      [response]()
+      [notify]()
       {
-        return response;
+        return notify;
       });
   }
 
@@ -370,16 +370,12 @@ void RaceDirector::HandleStartRace(
 {
   const auto& clientContext = _clients[clientId];
 
-  const auto& room = RoomRegistry::Get().GetRoom(
-    clientContext.roomUid);
+  const auto& room = RoomRegistry::Get().GetRoom(clientContext.roomUid);
   const auto& roomInstance = _roomInstances[clientContext.roomUid];
 
-  // Start the race or AcCmdRCRoomCountdown
   protocol::AcCmdCRStartRaceNotify response{
     .gameMode = room.gameMode,
     .skills = false,
-    .someonesOid = 0,
-    .member4 = room.uid,
     .mapBlockId = 41,
     .ip = GetConfig().listen.address.to_uint(),
     .port = GetConfig().listen.port
@@ -387,45 +383,31 @@ void RaceDirector::HandleStartRace(
 
   for (const auto& [characterUid, characterOid] : roomInstance.worldTracker.GetCharacters())
   {
-    if (response.someonesOid == 0)
-    {
-      response.someonesOid = characterOid;
-    }
-      std::string characterName;
+    std::string characterName;
     GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
       [&characterName](const data::Character& character)
       {
         characterName = character.name();
     });
-  
-    protocol::AcCmdCRStartRaceNotify::Racer racer{
+
+    response.racers.emplace_back(protocol::AcCmdCRStartRaceNotify::Racer{
       .oid = characterOid,
       .name = characterName,
-      .unk2 = 0,
-      .unk3 = 0,
-      .unk4 = 0,
-      .p2dId = 1,
-      .unk6 = 0,
-      .unk7 = 0
-    };
-
-    response.racers.emplace_back(racer);
+      .unk2 = 1,
+      .unk3 = 1,
+      .unk4 = 1,
+      .p2dId = 2,
+      .unk6 = 1,
+      .unk7 = 1});
   }
 
-  for (const ClientId& clientId : roomInstance.clients)
+  // Send to all clients in the room.
+  for (const ClientId& roomClientId : roomInstance.clients)
   {
-    const auto& it = std::find_if(_clients.begin(), _clients.end(),
-      [clientId](const auto& pair)
-      {
-        return pair.first == clientId;
-      });
+    const auto& roomClientContext = _clients[roomClientId];
+    response.racerOid = roomInstance.worldTracker.GetCharacterOid(
+      roomClientContext.characterUid);
 
-    if (it == _clients.end())
-      continue;
-
-    response.someonesOid = roomInstance.worldTracker.GetCharacterOid(it->second.characterUid);
-
-    // Send to all clients in the room
     _commandServer.QueueCommand<decltype(response)>(
       clientId,
       [response]()
