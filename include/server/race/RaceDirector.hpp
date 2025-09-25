@@ -68,6 +68,7 @@ private:
   {
     std::unordered_set<ClientId> clients;
     WorldTracker worldTracker;
+    data::Uid leaderCharacterUid{data::InvalidUid};
   };
 
   void HandleEnterRoom(

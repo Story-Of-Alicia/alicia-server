@@ -53,8 +53,9 @@ struct Avatar
 //! Racer
 struct Racer
 {
-  uint8_t member1{1};
-  uint8_t member2{2};
+  // 0 for regular players, everything else leader
+  uint8_t member1{0};
+  uint8_t member2{3};
   uint32_t level{};
   uint32_t oid{};
   uint32_t uid{};
