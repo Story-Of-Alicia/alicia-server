@@ -138,6 +138,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRHurdleClearResult& command);
 
+  void HandleStartingRate(
+    ClientId clientId,
+    const protocol::AcCmdCRStartingRate& command);
+
   //!
   std::thread test;
   std::atomic_bool run_test{true};

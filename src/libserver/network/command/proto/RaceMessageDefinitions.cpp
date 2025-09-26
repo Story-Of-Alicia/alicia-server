@@ -949,4 +949,20 @@ void AcCmdCRHurdleClearResultOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRStartingRate::Write(
+  const AcCmdCRStartingRate& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRStartingRate::Read(
+  AcCmdCRStartingRate& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterOid)
+    .Read(command.unk1)
+    .Read(command.boostGained);
+}
+
 } // namespace server::protocol

@@ -128,6 +128,12 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     {
       HandleHurdleClearResult(clientId, message);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRStartingRate>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleStartingRate(clientId, message);
+    });
 }
 
 void RaceDirector::Initialize()
@@ -893,6 +899,46 @@ void RaceDirector::HandleHurdleClearResult(
         return starPointResponse;
       });
   }
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [clientId, response]()
+    {
+      return response;
+    });
+}
+
+void RaceDirector::HandleStartingRate(
+  ClientId clientId,
+  const protocol::AcCmdCRStartingRate& command)
+{
+  if (command.unk1 < 1 && command.boostGained < 1)
+  {
+    // Velocity and boost gained is not valid 
+    // TODO: throw?
+    return;
+  }
+
+  const auto& clientContext = _clients[clientId];
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
+  const auto& characterOid = roomInstance.worldTracker.GetCharacterOid(clientContext.characterUid);
+
+  if (command.characterOid != characterOid)
+  {
+    // Calling client character oid did not match command character oid
+    // TODO: throw?
+    return;
+  }
+
+  // TODO: validate boost gained against a table and determine good/perfect start
+  roomInstance.starPointTracker[characterOid] += command.boostGained;
+
+  // Only send this on good/perfect starts
+  protocol::AcCmdCRStarPointGetOK response{
+    .characterOid = command.characterOid,
+    .boosterGauge = roomInstance.starPointTracker[characterOid],
+    .unk2 = 0
+  };
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
