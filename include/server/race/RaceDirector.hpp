@@ -72,6 +72,7 @@ private:
     data::Uid leaderCharacterUid{data::InvalidUid};
     //Clients that are loaded into the race
     std::unordered_set<uint16_t> loadedRaceClients;
+    std::unordered_set<uint16_t> finishedRaceClients;
     std::unordered_map<uint16_t, uint32_t> starPointTracker;
     std::unordered_map<uint16_t, uint32_t> jumpComboTracker;
   };

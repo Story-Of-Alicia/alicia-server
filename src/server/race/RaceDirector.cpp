@@ -456,8 +456,8 @@ void RaceDirector::HandleStartRace(
   protocol::AcCmdCRStartRaceNotify response{
     .gameMode = room.gameMode,
     .mapBlockId = room.mapBlockId,
-    .ip = asio::ip::address_v4::loopback().to_uint(),
-    .port = static_cast<uint16_t>(10500),
+    // .ip = asio::ip::address_v4::loopback().to_uint(),
+    // .port = static_cast<uint16_t>(10500),
   };
 
   for (const auto& [characterUid, characterOid] : roomInstance.worldTracker.GetCharacters())
@@ -599,13 +599,16 @@ void RaceDirector::HandleUserRaceFinal(
 {
   auto& clientContext = _clients[clientId];
 
-  const auto& roomInstance = _roomInstances[clientContext.roomUid];
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
 
   protocol::AcCmdUserRaceFinalNotify notify{
     .oid = command.oid,
     .member2 = command.member2};
+
   for (const ClientId& roomClientId : roomInstance.clients)
   {
+    roomInstance.finishedRaceClients.insert(notify.oid);
+
     _commandServer.QueueCommand<decltype(notify)>(
       roomClientId,
       [notify]()
@@ -622,7 +625,7 @@ void RaceDirector::HandleRaceResult(
   auto& clientContext = _clients[clientId];
   const auto& roomInstance = _roomInstances[clientContext.roomUid];
 
-  protocol::AcCmdCRRaceResultOK notify{
+  protocol::AcCmdCRRaceResultOK response{
     .member1 = 1,
     .member2 = 1,
     .member3 = 1,
@@ -630,27 +633,48 @@ void RaceDirector::HandleRaceResult(
     .member5 = 1,
     .member6 = 1};
 
-  for (const ClientId& roomClientId : roomInstance.clients)
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+
+  protocol::AcCmdRCRaceResultNotify notify{};
+
+  bool allFinished = true;
+  for (const auto& [uid, oid] : roomInstance.worldTracker.GetCharacters())
   {
-    _commandServer.QueueCommand<decltype(notify)>(
-      roomClientId,
-      [notify]()
+    auto& score = notify.scores.emplace_back();
+    if (not roomInstance.finishedRaceClients.contains(oid))
+    {
+      allFinished = false;
+      break;
+    }
+
+    const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+      uid);
+    if (characterRecord)
+    {
+      characterRecord.Immutable([&score](const data::Character& character)
       {
-        return notify;
+        score.uid = character.uid();
+        score.name = character.name();
       });
+    }
   }
 
-  protocol::AcCmdRCRaceResultNotify result{
-    .scores = {{}}};
-
-  for (const auto roomClientId : roomInstance.clients)
+  if (allFinished)
   {
-    _commandServer.QueueCommand<decltype(result)>(
-      roomClientId,
-      [result]()
-      {
-        return result;
-      });
+    for (ClientId roomClientId : roomInstance.clients)
+    {
+      _commandServer.QueueCommand<decltype(notify)>(
+        roomClientId,
+        [notify]()
+        {
+          return notify;
+        });
+    }
   }
 }
 
@@ -680,6 +704,9 @@ void RaceDirector::HandleAwardStart(
 
   for (const auto roomClientId : roomInstance.clients)
   {
+    if (roomClientId == clientId)
+      continue;
+
     _commandServer.QueueCommand<decltype(notify)>(
       roomClientId,
       [notify]()
