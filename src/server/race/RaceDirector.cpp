@@ -116,6 +116,12 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     {
       HandleStarPointGet(clientId, message);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestSpur>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleRequestSpur(clientId, message);
+    });
 }
 
 void RaceDirector::Initialize()
@@ -705,6 +711,68 @@ void RaceDirector::HandleStarPointGet(
         response.characterOid,
         response.boosterGauge,
         response.unk2);
+      return response;
+    });
+}
+
+void RaceDirector::HandleRequestSpur(
+  ClientId clientId,
+  const protocol::AcCmdCRRequestSpur& command)
+{
+  spdlog::debug("[{}] AcCmdCRRequestSpur: {} {} {}",
+    clientId,
+    command.characterOid,
+    command.activeBoosters,
+    command.comboBreak);
+
+  const auto& clientContext = _clients[clientId];
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
+  const auto& characterOid = roomInstance.worldTracker.GetCharacterOid(clientContext.characterUid);
+
+  protocol::AcCmdCRRequestSpurOK response{
+    .characterOid = command.characterOid,
+    .activeBoosters = command.activeBoosters,
+    .unk2 = 0,
+    .comboBreak = command.comboBreak
+  };
+
+  if (command.characterOid != characterOid)
+  {
+    // TODO: command character oid does not match calling character oid
+    // Throw?
+    return;
+  }
+
+  // TODO: make this configurable
+  constexpr uint32_t SpurConsumeAmount = 40000;
+  auto [it, inserted] = roomInstance.starPointTracker.try_emplace(characterOid, 0);
+  if (inserted)
+  {
+    // character tried spur but had no tracking
+    // TODO: throw? return with zeroed response?
+    return;
+  }
+  else if (it->second < SpurConsumeAmount)
+  {
+    // character requested spur but does not have enough to spur. cheats?
+    // TODO: return response with current state?
+    return;
+  }
+
+  // Consume boost amount
+  response.unk2 = it->second -= SpurConsumeAmount;
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [clientId, response]()
+    {
+      // TODO: remove later once done developing
+      spdlog::debug("[{}] AcCmdCRRequestSpurOK: {} {} {} {}",
+        clientId,
+        response.characterOid,
+        response.activeBoosters,
+        response.unk2,
+        response.comboBreak);
       return response;
     });
 }

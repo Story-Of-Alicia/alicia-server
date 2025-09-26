@@ -129,6 +129,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRStarPointGet& command);
 
+  void HandleRequestSpur(
+    ClientId clientId,
+    const protocol::AcCmdCRRequestSpur& command);
+
   //!
   std::thread test;
   std::atomic_bool run_test{true};

@@ -1159,6 +1159,59 @@ struct AcCmdCRStarPointGetOK
     SourceStream& stream);
 };
 
+struct AcCmdCRRequestSpur
+{
+  uint16_t characterOid;
+  uint8_t activeBoosters;
+  uint8_t comboBreak; // combo break?
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestSpur;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestSpur& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestSpur& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestSpurOK
+{
+  uint16_t characterOid;
+  uint8_t activeBoosters;
+  uint32_t unk2; // current star point? (gauge)
+  uint8_t comboBreak;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestSpurOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestSpurOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestSpurOK& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RACE_MESSAGE_DEFINES_HPP

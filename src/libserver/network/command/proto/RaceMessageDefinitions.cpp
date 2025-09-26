@@ -884,4 +884,37 @@ void AcCmdCRStarPointGetOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRRequestSpur::Write(
+  const AcCmdCRRequestSpur& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRequestSpur::Read(
+  AcCmdCRRequestSpur& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterOid)
+    .Read(command.activeBoosters)
+    .Read(command.comboBreak);
+}
+
+void AcCmdCRRequestSpurOK::Write(
+  const AcCmdCRRequestSpurOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterOid)
+    .Write(command.activeBoosters)
+    .Write(command.unk2)
+    .Write(command.comboBreak);
+}
+
+void AcCmdCRRequestSpurOK::Read(
+  AcCmdCRRequestSpurOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
