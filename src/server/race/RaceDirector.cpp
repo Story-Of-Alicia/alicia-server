@@ -134,6 +134,12 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     {
       HandleStartingRate(clientId, message);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceUpdatePos>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleRaceUserPos(clientId, message);
+    });
 }
 
 void RaceDirector::Initialize()
@@ -145,6 +151,8 @@ void RaceDirector::Initialize()
 
   test = std::thread([this]()
   {
+    std::unordered_set<asio::ip::udp::endpoint> _clients;
+
     asio::io_context ioCtx;
     asio::ip::udp::socket skt(
       ioCtx,
@@ -155,8 +163,31 @@ void RaceDirector::Initialize()
     asio::streambuf buf;
     while (run_test)
     {
-      const size_t b = skt.receive(buf.prepare(1024));
-      buf.consume(b);
+      const auto message = buf.prepare(1024);
+      asio::ip::udp::endpoint sender;
+
+      try
+      {
+        const size_t b = skt.receive_from(message, sender);
+
+        buf.commit(b);
+        for (auto& client : _clients)
+        {
+          if (client == sender)
+            continue;
+
+          skt.send_to(buf.data(),  client);
+        }
+
+        if (not _clients.contains(sender))
+          _clients.insert(sender);
+
+        buf.consume(b);
+      } catch (const std::exception& x)
+      {
+        1+1;
+      }
+
     }
   });
   test.detach();
@@ -311,7 +342,8 @@ void RaceDirector::HandleEnterRoom(
       [this, characterOid, &protocolRacer, leaderUid = roomInstance.leaderCharacterUid](const data::Character& character)
       {
         if (character.uid() == leaderUid)
-          protocolRacer.member1 = 1; 
+          protocolRacer.member1 = 1;
+
         protocolRacer.level = character.level();
         protocolRacer.oid = characterOid;
         protocolRacer.uid = character.uid();
@@ -322,6 +354,9 @@ void RaceDirector::HandleEnterRoom(
         protocolRacer.avatar = protocol::Avatar{};
 
         protocol::BuildProtocolCharacter(protocolRacer.avatar->character, character);
+        protocol::BuildProtocolItems(
+          protocolRacer.avatar->characterEquipment,
+          *_serverInstance.GetDataDirector().GetItemCache().Get(character.characterEquipment()));
 
         const auto mountRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
           character.mountUid());
@@ -493,12 +528,6 @@ void RaceDirector::HandleLoadingComplete(
 
   const auto characterOid = roomInstance.worldTracker.GetCharacterOid(clientContext.characterUid);
 
-  protocol::AcCmdRCMissionEvent event
-  {
-    .event = protocol::AcCmdRCMissionEvent::Event::EVENT_SCRIPT,
-    .callerOid = 1006,
-    .calledOid = 1006,
-  };
 
   // Notify all clients in the room that this player's loading is complete
   for (const ClientId& roomClientId : roomInstance.clients)
@@ -526,12 +555,6 @@ void RaceDirector::HandleLoadingComplete(
 
     for (const ClientId& roomClientId : roomInstance.clients)
     {
-      _commandServer.QueueCommand<decltype(event)>(
-        roomClientId,
-        [event]()
-        {
-          return event;
-        });
       _commandServer.QueueCommand<protocol::AcCmdUserRaceCountdown>(
         roomClientId,
         [countdownTimestamp]()
@@ -739,8 +762,7 @@ void RaceDirector::HandleRequestSpur(
     .characterOid = command.characterOid,
     .activeBoosters = command.activeBoosters,
     .unk2 = 0,
-    .comboBreak = command.comboBreak
-  };
+    .comboBreak = command.comboBreak};
 
   if (command.characterOid != characterOid)
   {
@@ -919,6 +941,21 @@ void RaceDirector::HandleStartingRate(
     {
       return response;
     });
+}
+
+void RaceDirector::HandleRaceUserPos(
+  ClientId clientId,
+  const protocol::AcCmdUserRaceUpdatePos& command)
+{
+  const auto& clientContext = _clients[clientId];
+  const auto& roomInstance = _roomInstances[clientContext.roomUid];
+
+  for (const auto& roomClientId : roomInstance.clients)
+  {
+    // Prevent broadcast to self.
+    if (clientId == roomClientId)
+      continue;
+  }
 }
 
 } // namespace server

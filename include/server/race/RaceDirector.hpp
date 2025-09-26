@@ -28,11 +28,12 @@
 
 #include <unordered_map>
 #include <unordered_set>
-#include <vector>
 
 namespace server
 {
+
 class ServerInstance;
+
 } // namespace server
 
 namespace server
@@ -141,6 +142,10 @@ private:
   void HandleStartingRate(
     ClientId clientId,
     const protocol::AcCmdCRStartingRate& command);
+
+  void HandleRaceUserPos(
+    ClientId clientId,
+    const protocol::AcCmdUserRaceUpdatePos& command);
 
   //!
   std::thread test;

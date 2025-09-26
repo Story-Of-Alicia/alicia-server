@@ -965,4 +965,33 @@ void AcCmdCRStartingRate::Read(
     .Read(command.boostGained);
 }
 
+void AcCmdUserRaceUpdatePos::Write(
+  const AcCmdUserRaceUpdatePos& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdUserRaceUpdatePos::Read(
+  AcCmdUserRaceUpdatePos& command,
+  SourceStream& stream)
+{
+  stream.Read(command.oid);
+
+  for (auto& element : command.member2)
+  {
+    stream.Read(element);
+  }
+
+  for (auto& element : command.member3)
+  {
+    stream.Read(element);
+  }
+
+  stream.Read(command.member4)
+    .Read(command.member5)
+    .Read(command.member6)
+    .Read(command.member7);
+}
+
 } // namespace server::protocol

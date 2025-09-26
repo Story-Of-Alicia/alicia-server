@@ -356,14 +356,8 @@ void LoginHandler::QueueUserLoginAccepted(
     // .optionType = OptionType::Value,
     // .valueOptions = 0x64,
     //
-    // .val5 = {
-    //   {0x18, {{2, 1}}},
-    //   {0x1F, {{2, 1}}},
-    //   {0x23, {{2, 1}}},
-    //   {0x29, {{2, 1}}},
-    //   {0x2A, {{2, 1}}},
-    //   {0x2B, {{2, 1}}},
-    //   {0x2E, {{2, 1}}}},
+    .val5 = {
+      {0x18, {{2, 1}}},},
 
     .ranchAddress = _lobbyDirector.GetConfig().advertisement.ranch.address.to_uint(),
     .ranchPort = _lobbyDirector.GetConfig().advertisement.ranch.port,
