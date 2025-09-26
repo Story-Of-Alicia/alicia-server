@@ -71,6 +71,7 @@ private:
     data::Uid leaderCharacterUid{data::InvalidUid};
     //Clients that are loaded into the race
     std::unordered_set<uint16_t> loadedRaceClients;
+    std::unordered_map<uint16_t, uint32_t> starPointTracker;
   };
 
   void HandleEnterRoom(
@@ -123,6 +124,10 @@ private:
   void HandleAwardEnd(
     ClientId clientId,
     const protocol::AcCmdCRAwardEnd& command);
+
+  void HandleStarPointGet(
+    ClientId clientId,
+    const protocol::AcCmdCRStarPointGet& command);
 
   //!
   std::thread test;

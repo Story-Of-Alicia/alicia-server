@@ -1107,6 +1107,58 @@ struct AcCmdCRAwardEndNotify
     SourceStream& stream);
 };
 
+struct AcCmdCRStarPointGet
+{
+  uint16_t characterOid; // oid?
+  uint32_t unk1;
+  uint32_t gainedBoostAmount;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRStarPointGet;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRStarPointGet& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRStarPointGet& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRStarPointGetOK
+{
+  uint16_t characterOid; // oid?
+  uint32_t boosterGauge;
+  uint8_t unk2;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRStarPointGetOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRStarPointGetOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRStarPointGetOK& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RACE_MESSAGE_DEFINES_HPP

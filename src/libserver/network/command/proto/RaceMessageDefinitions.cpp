@@ -852,4 +852,36 @@ void AcCmdCRAwardEndNotify::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRStarPointGet::Write(
+  const AcCmdCRStarPointGet& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRStarPointGet::Read(
+  AcCmdCRStarPointGet& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterOid)
+    .Read(command.unk1)
+    .Read(command.gainedBoostAmount);
+}
+
+void AcCmdCRStarPointGetOK::Write(
+  const AcCmdCRStarPointGetOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterOid)
+    .Write(command.boosterGauge)
+    .Write(command.unk2);
+}
+
+void AcCmdCRStarPointGetOK::Read(
+  AcCmdCRStarPointGetOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol

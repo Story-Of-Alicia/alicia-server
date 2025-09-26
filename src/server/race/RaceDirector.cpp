@@ -110,6 +110,12 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     {
       HandleAwardEnd(clientId, message);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRStarPointGet>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleStarPointGet(clientId, message);
+    });
 }
 
 void RaceDirector::Initialize()
@@ -648,6 +654,59 @@ void RaceDirector::HandleAwardEnd(
         return notify;
       });
   }
+}
+
+void RaceDirector::HandleStarPointGet(
+  ClientId clientId,
+  const protocol::AcCmdCRStarPointGet& command)
+{
+  // TODO: remove later once done developing
+  spdlog::debug("[{}] AcCmdCRStarPointGet: {} {} {}",
+    clientId,
+    command.characterOid,
+    command.unk1,
+    command.gainedBoostAmount);
+
+  const auto& clientContext = _clients[clientId];
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
+  const auto& characterOid = roomInstance.worldTracker.GetCharacterOid(clientContext.characterUid);
+
+  if (command.characterOid != characterOid)
+  {
+    // TODO: command character oid does not match calling character oid
+    // Throw?
+    return;
+  }
+  
+  // Get pointer and if inserted with characterOid as key
+  // If character oid is not in star point tracker, store and start values at 0
+  auto [it, inserted] = roomInstance.starPointTracker.try_emplace(characterOid, 0);
+  
+  // TODO: make this configurable
+  constexpr uint32_t MaxBoosterGameRule1 = 120000; // speed?
+  constexpr uint32_t MaxBoosterGameRule2 = 100000; // magic?
+
+  // TODO: Increment it from command or max it to game rule max (based on game mode)
+  it->second = std::min(it->second + command.gainedBoostAmount, MaxBoosterGameRule1);
+
+  protocol::AcCmdCRStarPointGetOK response{
+    .characterOid = command.characterOid,
+    .boosterGauge = it->second,
+    .unk2 = 0
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [clientId, response]()
+    {
+      // TODO: remove later once done developing
+      spdlog::debug("[{}] AcCmdCRStarPointGetOK: {} {} {}",
+        clientId,
+        response.characterOid,
+        response.boosterGauge,
+        response.unk2);
+      return response;
+    });
 }
 
 } // namespace server
