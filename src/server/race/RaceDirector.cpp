@@ -693,13 +693,6 @@ void RaceDirector::HandleStarPointGet(
   ClientId clientId,
   const protocol::AcCmdCRStarPointGet& command)
 {
-  // TODO: remove later once done developing
-  spdlog::debug("[{}] AcCmdCRStarPointGet: {} {} {}",
-    clientId,
-    command.characterOid,
-    command.unk1,
-    command.gainedBoostAmount);
-
   const auto& clientContext = _clients[clientId];
   auto& roomInstance = _roomInstances[clientContext.roomUid];
   const auto& characterOid = roomInstance.worldTracker.GetCharacterOid(clientContext.characterUid);
@@ -715,12 +708,10 @@ void RaceDirector::HandleStarPointGet(
   // If character oid is not in star point tracker, store and start values at 0
   auto [it, inserted] = roomInstance.starPointTracker.try_emplace(characterOid, 0);
   
-  // TODO: make this configurable
-  constexpr uint32_t MaxBoosterGameRule1 = 120000; // speed?
-  constexpr uint32_t MaxBoosterGameRule2 = 100000; // magic?
+  const auto& room = _serverInstance.GetRoomSystem().GetRoom(clientContext.roomUid);
+  const auto& courseRegistry = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(room.gameMode);
 
-  // TODO: Increment it from command or max it to game rule max (based on game mode)
-  it->second = std::min(it->second + command.gainedBoostAmount, MaxBoosterGameRule1);
+  it->second = std::min(it->second + command.gainedBoostAmount, courseRegistry.starPointsMax);
 
   protocol::AcCmdCRStarPointGetOK response{
     .characterOid = command.characterOid,
@@ -732,12 +723,6 @@ void RaceDirector::HandleStarPointGet(
     clientId,
     [clientId, response]()
     {
-      // TODO: remove later once done developing
-      spdlog::debug("[{}] AcCmdCRStarPointGetOK: {} {} {}",
-        clientId,
-        response.characterOid,
-        response.boosterGauge,
-        response.unk2);
       return response;
     });
 }
@@ -746,12 +731,6 @@ void RaceDirector::HandleRequestSpur(
   ClientId clientId,
   const protocol::AcCmdCRRequestSpur& command)
 {
-  spdlog::debug("[{}] AcCmdCRRequestSpur: {} {} {}",
-    clientId,
-    command.characterOid,
-    command.activeBoosters,
-    command.comboBreak);
-
   const auto& clientContext = _clients[clientId];
   auto& roomInstance = _roomInstances[clientContext.roomUid];
   const auto& characterOid = roomInstance.worldTracker.GetCharacterOid(clientContext.characterUid);
@@ -770,8 +749,9 @@ void RaceDirector::HandleRequestSpur(
     return;
   }
 
-  // TODO: make this configurable
-  constexpr uint32_t SpurConsumeAmount = 40000;
+  const auto& room = _serverInstance.GetRoomSystem().GetRoom(clientContext.roomUid);
+  const auto& courseRegistry = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(room.gameMode);
+
   auto [it, inserted] = roomInstance.starPointTracker.try_emplace(characterOid, 0);
   if (inserted)
   {
@@ -779,7 +759,7 @@ void RaceDirector::HandleRequestSpur(
     // TODO: throw? return with zeroed response?
     return;
   }
-  else if (it->second < SpurConsumeAmount)
+  else if (it->second < courseRegistry.spurConsumeStarPoints)
   {
     // character requested spur but does not have enough to spur. cheats?
     // TODO: return response with current state?
@@ -787,19 +767,12 @@ void RaceDirector::HandleRequestSpur(
   }
 
   // Consume boost amount
-  response.unk2 = it->second -= SpurConsumeAmount;
+  response.unk2 = it->second -= courseRegistry.spurConsumeStarPoints;
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [clientId, response]()
     {
-      // TODO: remove later once done developing
-      spdlog::debug("[{}] AcCmdCRRequestSpurOK: {} {} {} {}",
-        clientId,
-        response.characterOid,
-        response.activeBoosters,
-        response.unk2,
-        response.comboBreak);
       return response;
     });
 }
