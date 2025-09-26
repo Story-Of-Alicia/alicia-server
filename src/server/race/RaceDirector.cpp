@@ -412,11 +412,11 @@ void RaceDirector::HandleStartRace(
       .oid = characterOid,
       .name = characterName,
       .unk2 = 2,
-      .unk3 = 2,
-      .unk4 = 2,
+      .unk3 = 3,
+      .unk4 = 4,
       .p2dId = 0,
-      .unk6 = 2,
-      .unk7 = 2});
+      .unk6 = 6,
+      .unk7 = 7});
   }
 
   // Send to all clients in the room.

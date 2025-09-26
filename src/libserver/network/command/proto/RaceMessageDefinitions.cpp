@@ -85,9 +85,9 @@ void WriteRoomDescription(SinkStream& stream, const RoomDescription& roomDescrip
     .Write(roomDescription.playerCount)
     .Write(roomDescription.description)
     .Write(roomDescription.unk1)
-    .Write(roomDescription.gameMode)
-    .Write(roomDescription.mapBlockId)
     .Write(roomDescription.teamMode)
+    .Write(roomDescription.mapBlockId)
+    .Write(roomDescription.gameMode)
     .Write(roomDescription.missionId)
     .Write(roomDescription.unk6)
     .Write(roomDescription.skillBracket);

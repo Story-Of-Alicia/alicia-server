@@ -879,7 +879,7 @@ struct AcCmdRCRaceResultNotify
     uint16_t member11{0};
     uint16_t member12{0};
     //! Time in milliseconds.
-    uint32_t recordTimeDifference{1};
+    uint32_t recordTimeDifference{0};
     uint32_t member14{3000};
     uint32_t member15{4000};
     AcCmdCRStartRaceNotify::Struct2 member16{
