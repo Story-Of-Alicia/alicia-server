@@ -660,6 +660,7 @@ void RaceDirector::HandleRaceResult(
       {
         score.uid = character.uid();
         score.name = character.name();
+        score.level = character.level();
       });
     }
   }
