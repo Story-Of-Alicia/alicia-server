@@ -20,6 +20,8 @@
 #ifndef ROOMREGISTRY_HPP
 #define ROOMREGISTRY_HPP
 
+#include "libserver/registry/CourseRegistry.hpp"
+
 #include <cstdint>
 #include <string>
 #include <unordered_map>
@@ -44,7 +46,7 @@ struct Room
   uint16_t mapBlockId{};
   uint32_t otp{};
   uint8_t playerCount;
-  GameMode gameMode;
+  uint8_t gameMode;
   TeamMode teamMode;
   uint8_t unk3;
   uint16_t bitset;

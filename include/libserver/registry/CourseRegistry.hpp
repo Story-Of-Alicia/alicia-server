@@ -32,9 +32,13 @@ struct Course
 {
   struct GameModeInfo
   {
-    enum class Type
+    enum class Type : uint8_t
     {
-      Nothing, Speed, Magic
+      Nothing = 0,
+      Speed = 1,
+      Magic = 2,
+      Guild = 3,
+      Tutorial = 6
     };
 
     //! An amount of star points awarded for a good jump.
@@ -81,13 +85,13 @@ public:
   void ReadConfig(const std::filesystem::path& configPath);
 
   [[nodiscard]] const Course::GameModeInfo& GetCourseGameModeInfo(
-    Course::GameModeInfo::Type type);
+    uint8_t type);
   [[nodiscard]] const Course::MapBlockInfo& GetMapBlockInfo(
     uint32_t id);
 
 private:
   //! A collection of game mode infos.
-  std::unordered_map<Course::GameModeInfo::Type, Course::GameModeInfo> _gameModeInfo;
+  std::unordered_map<uint8_t, Course::GameModeInfo> _gameModeInfo;
   //! A collection of map block infos.
   std::unordered_map<uint32_t, Course::MapBlockInfo> _mapBlockInfo;
 };

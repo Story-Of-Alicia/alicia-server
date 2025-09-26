@@ -122,6 +122,12 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     {
       HandleRequestSpur(clientId, message);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRHurdleClearResult>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleHurdleClearResult(clientId, message);
+    });
 }
 
 void RaceDirector::Initialize()
@@ -788,6 +794,110 @@ void RaceDirector::HandleRequestSpur(
         response.activeBoosters,
         response.unk2,
         response.comboBreak);
+      return response;
+    });
+}
+
+void RaceDirector::HandleHurdleClearResult(
+  ClientId clientId,
+  const protocol::AcCmdCRHurdleClearResult& command)
+{
+  const auto& clientContext = _clients[clientId];
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
+  const auto& characterOid = roomInstance.worldTracker.GetCharacterOid(clientContext.characterUid);
+
+  if (command.characterOid != characterOid)
+  {
+    // Calling character oid does not match command character oid
+    // TODO: throw?
+    return;
+  }
+
+  protocol::AcCmdCRHurdleClearResultOK response{
+    .characterOid = command.characterOid,
+    .hurdleClearType = command.hurdleClearType,
+    .jumpCombo = 0,
+    .unk3 = 0
+  };
+  
+  protocol::AcCmdCRStarPointGetOK starPointResponse{
+    .characterOid = command.characterOid,
+    .boosterGauge = roomInstance.starPointTracker[characterOid],
+    .unk2 = 0
+  };
+
+  const auto& room = _serverInstance.GetRoomSystem().GetRoom(clientContext.roomUid);
+  const auto& courseRegistry = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(room.gameMode);
+
+  auto [it, inserted] = roomInstance.jumpComboTracker.try_emplace(characterOid, 0);
+  switch (command.hurdleClearType)
+  {
+    case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Perfect:
+    {
+      // Perfect jump (max combo 99)
+      // Increment combo, max 99 and set response
+      it->second = std::min(static_cast<uint32_t>(99), it->second + 1);
+      if (room.gameMode == 1)
+      {
+        // Only send jump combo if it is a speed race
+        response.jumpCombo = it->second;
+      }
+      
+      // Calculate max applicable combo
+      const auto& applicableComboCount = std::min(courseRegistry.perfectJumpMaxBonusCombo, it->second);
+      // Calculate max combo count * perfect jump boost unit points
+      const auto& comboBoost = applicableComboCount * courseRegistry.perfectJumpUnitStarPoints;
+      // Add boost points to character boost tracker
+      roomInstance.starPointTracker[characterOid] += courseRegistry.perfectJumpStarPoints + comboBoost;
+      // Update boost gauge
+      starPointResponse.boosterGauge = roomInstance.starPointTracker[characterOid];
+      break;
+    }
+    case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Good:
+    case protocol::AcCmdCRHurdleClearResult::HurdleClearType::DoubleJumpOrGlide:
+    {
+      // Not perfect, reset jump combo
+      response.jumpCombo = it->second = 0;
+      // Increment boost gauge by good jump
+      roomInstance.starPointTracker[characterOid] += courseRegistry.goodJumpStarPoints;
+      // Update boost gauge
+      starPointResponse.boosterGauge = roomInstance.starPointTracker[characterOid];
+      break;
+    }
+    case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Collision:
+    {
+      // Not a perfect jump, reset jump combo counter
+      response.jumpCombo = it->second = 0;
+      break;
+    }
+    default:
+    {
+      spdlog::warn("Unhandled hurdle clear type {}",
+        static_cast<uint8_t>(command.hurdleClearType));
+      return;
+    }
+  }
+
+  if (command.hurdleClearType != protocol::AcCmdCRHurdleClearResult::HurdleClearType::Collision)
+  {
+    _commandServer.QueueCommand<decltype(starPointResponse)>(
+      clientId,
+      [clientId, starPointResponse]()
+      {
+        // TODO: remove later once done developing
+        spdlog::debug("[{}] AcCmdCRHurdleClearResult->AcCmdCRStarPointGetOK: {} {} {}",
+          clientId,
+          starPointResponse.characterOid,
+          starPointResponse.boosterGauge,
+          starPointResponse.unk2);
+        return starPointResponse;
+      });
+  }
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [clientId, response]()
+    {
       return response;
     });
 }

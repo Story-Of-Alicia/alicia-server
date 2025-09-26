@@ -72,6 +72,7 @@ private:
     //Clients that are loaded into the race
     std::unordered_set<uint16_t> loadedRaceClients;
     std::unordered_map<uint16_t, uint32_t> starPointTracker;
+    std::unordered_map<uint16_t, uint32_t> jumpComboTracker;
   };
 
   void HandleEnterRoom(
@@ -132,6 +133,10 @@ private:
   void HandleRequestSpur(
     ClientId clientId,
     const protocol::AcCmdCRRequestSpur& command);
+
+  void HandleHurdleClearResult(
+    ClientId clientId,
+    const protocol::AcCmdCRHurdleClearResult& command);
 
   //!
   std::thread test;

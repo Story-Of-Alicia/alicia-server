@@ -917,4 +917,36 @@ void AcCmdCRRequestSpurOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRHurdleClearResult::Write(
+  const AcCmdCRHurdleClearResult& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRHurdleClearResult::Read(
+  AcCmdCRHurdleClearResult& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterOid)
+    .Read(command.hurdleClearType);
+}
+
+void AcCmdCRHurdleClearResultOK::Write(
+  const AcCmdCRHurdleClearResultOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterOid)
+    .Write(command.hurdleClearType)
+    .Write(command.jumpCombo)
+    .Write(command.unk3);
+}
+
+void AcCmdCRHurdleClearResultOK::Read(
+  AcCmdCRHurdleClearResultOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol

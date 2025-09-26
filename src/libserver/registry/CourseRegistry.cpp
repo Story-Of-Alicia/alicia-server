@@ -29,7 +29,7 @@ namespace server::registry
 namespace
 {
 
-Course::GameModeInfo::Type ReadGameModeInfo(
+uint8_t ReadGameModeInfo(
   const YAML::Node& section,
   Course::GameModeInfo& gameMode)
 {
@@ -48,7 +48,7 @@ Course::GameModeInfo::Type ReadGameModeInfo(
   gameMode.starPointsMax = section["starPointsMax"].as<
     decltype(gameMode.starPointsMax)>();
 
-  return static_cast<Course::GameModeInfo::Type>(
+  return static_cast<uint8_t>(
     section["type"].as<uint32_t>());
 }
 
@@ -123,7 +123,7 @@ void CourseRegistry::ReadConfig(
 }
 
 const Course::GameModeInfo& CourseRegistry::GetCourseGameModeInfo(
-  Course::GameModeInfo::Type type)
+  uint8_t type)
 {
   const auto gameModeInfo = _gameModeInfo.find(type);
   if (gameModeInfo == _gameModeInfo.cend())

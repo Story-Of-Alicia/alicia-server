@@ -626,7 +626,7 @@ struct LobbyCommandEnterChannelCancel
 struct LobbyCommandRoomList
 {
   uint8_t page;
-  GameMode gameMode;
+  uint8_t gameMode;
   TeamMode teamMode;
 
   static Command GetCommand()
@@ -712,7 +712,7 @@ struct LobbyCommandMakeRoom
   std::string name;
   std::string password;
   uint8_t playerCount;
-  GameMode gameMode;
+  uint8_t gameMode;
   TeamMode teamMode;
   uint16_t missionId;
   uint8_t unk3;

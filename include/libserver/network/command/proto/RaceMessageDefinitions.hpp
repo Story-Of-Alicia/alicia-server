@@ -89,7 +89,7 @@ struct RoomDescription
   uint8_t playerCount{};
   std::string description{};
   uint8_t unk1{};
-  GameMode gameMode{};
+  uint8_t gameMode{};
   //! From the table `MapBlockInfo`.
   uint16_t mapBlockId{};
   // 0 waiting room, 1 race started?
@@ -378,7 +378,7 @@ struct AcCmdCRStartRace
 
 struct AcCmdCRStartRaceNotify
 {
-  GameMode gameMode{};
+  uint8_t gameMode{};
   bool skills{};
   // this is an oid of a special player
   uint16_t racerOid{};
@@ -1209,6 +1209,66 @@ struct AcCmdCRRequestSpurOK
   //! @param stream Source stream.
   static void Read(
     AcCmdCRRequestSpurOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRHurdleClearResult
+{
+  uint16_t characterOid;
+  enum class HurdleClearType : uint8_t
+  {
+    Perfect = 0,
+    Good = 1,
+    DoubleJumpOrGlide = 2,
+    Collision = 3
+  };
+  HurdleClearType hurdleClearType;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRHurdleClearResult;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRHurdleClearResult& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRHurdleClearResult& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRHurdleClearResultOK
+{
+  uint16_t characterOid;
+  protocol::AcCmdCRHurdleClearResult::HurdleClearType hurdleClearType;
+  //! Max combo is 99
+  uint32_t jumpCombo;
+  uint32_t unk3;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRHurdleClearResultOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRHurdleClearResultOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRHurdleClearResultOK& command,
     SourceStream& stream);
 };
 

@@ -506,15 +506,6 @@ struct League
   static void Read(League& value, SourceStream& stream);
 };
 
-enum class GameMode : uint8_t
-{
-  Nothing = 0,
-  Speed = 1,
-  Magic = 2,
-  Guild = 3,
-  Tutorial = 6
-};
-
 enum class TeamMode : uint8_t
 {
   Single = 1,
