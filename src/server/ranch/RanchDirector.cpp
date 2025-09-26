@@ -591,7 +591,7 @@ void RanchDirector::HandleEnterRanch(
     throw std::runtime_error(
       std::format("Rancher's character [{}] not available", command.rancherUid));
 
-  clientContext.isAuthenticated = GetServerInstance().GetOtpRegistry().AuthorizeCode(
+  clientContext.isAuthenticated = GetServerInstance().GetOtpSystem().AuthorizeCode(
     command.characterUid, command.otp);
 
   // Determine whether the ranch is locked.
@@ -690,10 +690,10 @@ void RanchDirector::HandleEnterRanch(
         for (auto& eggRecord : *eggRecords)
         {
           eggRecord.Immutable(
-            [&response](const data::Egg& egg)
+            [this, &response](const data::Egg& egg)
             {
               // retrieve hatchDuration
-              const registry::Egg eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
+              const registry::Egg eggTemplate = _serverInstance.GetPetRegistry().GetEgg(
                 egg.itemTid());
               const auto hatchingDuration = eggTemplate.hatchDuration;
               protocol::BuildProtocolEgg(response.incubator[egg.incubatorSlot()], egg, hatchingDuration );
@@ -2076,7 +2076,7 @@ void RanchDirector::HandleIncubateEgg(
   characterRecord.Mutable(
     [this, &command, &response, clientId](data::Character& character)
     {
-      const std::optional<registry::Egg> eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
+      const std::optional<registry::Egg> eggTemplate = _serverInstance.GetPetRegistry().GetEgg(
         command.itemTid);
       if (not eggTemplate)
       {
@@ -2190,12 +2190,12 @@ void RanchDirector::HandleBoostIncubateEgg(
       for (const auto& egg : *eggRecord)
       {
 
-        egg.Mutable([&command, &response](data::Egg& eggData)
+        egg.Mutable([this, &command, &response](data::Egg& eggData)
           {
             if (eggData.incubatorSlot() == command.incubatorSlot)
             {
               // retrieve egg template for the hatchDuration
-              const registry::Egg eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
+              const registry::Egg eggTemplate = _serverInstance.GetPetRegistry().GetEgg(
                 eggData.itemTid());
 
               eggData.boostsUsed() += 1;
@@ -2306,14 +2306,14 @@ void RanchDirector::HandleRequestPetBirth(
       GetServerInstance().GetDataDirector().GetEggCache().Delete(hatchingEggUid);
       GetServerInstance().GetDataDirector().GetItemCache().Delete(hatchingEggItemUid);
 
-      const registry::Egg eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
+      const registry::Egg eggTemplate = _serverInstance.GetPetRegistry().GetEgg(
         hatchingEggTid);
 
       const auto& hatchablePets = eggTemplate.hatchablePets;
       std::uniform_int_distribution<size_t> dist(0, hatchablePets.size() - 1);
       const data::Tid petItemTid = hatchablePets[dist(_randomDevice)];
 
-      const registry::Pet petTemplate = registry::PetRegistry::GetInstance().GetPet(
+      const registry::Pet petTemplate = _serverInstance.GetPetRegistry().GetPet(
         petItemTid);
       const auto petId = petTemplate.petId;
 

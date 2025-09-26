@@ -17,48 +17,56 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
-#ifndef PETREGISTRY_HPP
-#define PETREGISTRY_HPP
+#ifndef ROOMREGISTRY_HPP
+#define ROOMREGISTRY_HPP
 
+#include <cstdint>
+#include <string>
 #include <unordered_map>
 
-#include "libserver/data/DataDefinitions.hpp"
-
-namespace server::registry
+namespace server
+{
+enum class TeamMode : uint8_t;
+}
+namespace server
+{
+enum class GameMode : uint8_t;
+}
+namespace server
 {
 
-struct Egg
+struct Room
 {
-  //! An item representing the egg.
-  data::Tid itemTid;
-  //! A time duration it takes the egg to hatch.
-  data::Clock::duration hatchDuration;
-  //! A vector of pets that can hatch from the egg.
-  std::vector<data::Tid> hatchablePets;
+  uint32_t uid{};
+  std::string name;
+  std::string description;
+  uint16_t missionId{};
+  uint16_t mapBlockId{};
+  uint32_t otp{};
+  uint8_t playerCount;
+  GameMode gameMode;
+  TeamMode teamMode;
+  uint8_t unk3;
+  uint16_t bitset;
+  uint8_t unk4;
 };
 
-struct Pet
-{
-  data::Tid petTid{}; // petItem tid
-  uint32_t petId{}; // pet id for spawning
-};
-
-class PetRegistry final
+class RoomSystem
 {
 public:
-  PetRegistry();
-
-  void ReadConfig();
-
-  Egg GetEgg(server::data::Tid tid);
-
-  Pet GetPet(server::data::Tid tid);
+  Room& CreateRoom();
+  Room& GetRoom(uint32_t uid);
+  void DeleteRoom(uint32_t uid);
+  const std::unordered_map<uint32_t, Room>& GetRooms()
+  {
+    return _rooms;
+  }
 
 private:
-  std::unordered_map<data::Tid, Egg> _eggs;
-  std::unordered_map<data::Tid, Pet> _pets;
+  uint32_t _sequencedId = 0;
+  std::unordered_map<uint32_t, Room> _rooms;
 };
 
-} // namespace server::registry
+} // namespace server
 
-#endif // PETREGISTRY_HPP
+#endif //ROOMREGISTRY_HPP

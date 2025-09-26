@@ -258,7 +258,7 @@ void LoginHandler::HandleUserCreateCharacter(
 
     auto mountUid = data::InvalidUid;
     mountRecord.Mutable(
-      [&mountUid](data::Horse& horse)
+      [this, &mountUid](data::Horse& horse)
       {
         // The TID of the horse specifies which body mesh is used for that horse.
         // Can be found in the `MountPartInfo` table.
@@ -267,7 +267,7 @@ void LoginHandler::HandleUserCreateCharacter(
         horse.mountCondition.stamina = 3500;
         horse.growthPoints() = 150;
 
-        HorseRegistry::Get().BuildRandomHorse(
+        _lobbyDirector._serverInstance.GetHorseRegistry().BuildRandomHorse(
           horse.parts,
           horse.appearance);
 

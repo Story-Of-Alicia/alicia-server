@@ -17,48 +17,38 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
-#ifndef PETREGISTRY_HPP
-#define PETREGISTRY_HPP
+#include "../../../include/server/system/RoomSystem.hpp"
 
-#include <unordered_map>
+#include <cassert>
+#include <stdexcept>
 
-#include "libserver/data/DataDefinitions.hpp"
-
-namespace server::registry
+namespace server
 {
 
-struct Egg
+Room& RoomSystem::CreateRoom()
 {
-  //! An item representing the egg.
-  data::Tid itemTid;
-  //! A time duration it takes the egg to hatch.
-  data::Clock::duration hatchDuration;
-  //! A vector of pets that can hatch from the egg.
-  std::vector<data::Tid> hatchablePets;
-};
+  const auto [it, inserted] = _rooms.try_emplace(++_sequencedId);
+  assert(inserted);
 
-struct Pet
+  it->second.uid = _sequencedId;
+
+  return it->second;
+}
+
+Room& RoomSystem::GetRoom(uint32_t uid)
 {
-  data::Tid petTid{}; // petItem tid
-  uint32_t petId{}; // pet id for spawning
-};
+  const auto it = _rooms.find(uid);
+  if (it == _rooms.end())
+    throw std::runtime_error("room does not exist");
+  return it->second;
+}
 
-class PetRegistry final
+void RoomSystem::DeleteRoom(uint32_t uid)
 {
-public:
-  PetRegistry();
+  const auto it = _rooms.find(uid);
+  if (it == _rooms.end())
+    throw std::runtime_error("room does not exist");
+  _rooms.erase(it);
+}
 
-  void ReadConfig();
-
-  Egg GetEgg(server::data::Tid tid);
-
-  Pet GetPet(server::data::Tid tid);
-
-private:
-  std::unordered_map<data::Tid, Egg> _eggs;
-  std::unordered_map<data::Tid, Pet> _pets;
-};
-
-} // namespace server::registry
-
-#endif // PETREGISTRY_HPP
+} // namespace server

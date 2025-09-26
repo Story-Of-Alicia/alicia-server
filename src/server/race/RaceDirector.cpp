@@ -22,7 +22,7 @@
 #include "libserver/data/helper/ProtocolHelper.hpp"
 #include "server/ServerInstance.hpp"
 
-#include "libserver/registry/RoomRegistry.hpp"
+#include "../../../include/server/system/RoomSystem.hpp"
 
 #include <spdlog/spdlog.h>
 
@@ -220,7 +220,7 @@ void RaceDirector::HandleClientDisconnected(ClientId clientId)
 
       if (roomInstance.clients.empty())
       {
-        RoomRegistry::Get().DeleteRoom(clientContext.roomUid);
+        _serverInstance.GetRoomSystem().DeleteRoom(clientContext.roomUid);
         _roomInstances.erase(clientContext.roomUid);
         spdlog::info("Room {} deleted as it is now empty", clientContext.roomUid);
       }
@@ -255,8 +255,8 @@ void RaceDirector::HandleEnterRoom(
   clientContext.characterUid = command.characterUid;
   clientContext.roomUid = command.roomUid;
 
-  auto& roomRegistry = RoomRegistry::Get();
-  auto& room = roomRegistry.GetRoom(command.roomUid);
+  const auto& room = _serverInstance.GetRoomSystem().GetRoom(
+    command.roomUid);
 
   auto& roomInstance = _roomInstances[command.roomUid];
   roomInstance.worldTracker.AddCharacter(command.characterUid);
@@ -357,7 +357,8 @@ void RaceDirector::HandleChangeRoomOptions(
   // todo: validate command fields
 
   const auto& clientContext = _clients[clientId];
-  auto& room = RoomRegistry::Get().GetRoom(clientContext.roomUid);
+  auto& room = _serverInstance.GetRoomSystem().GetRoom(
+    clientContext.roomUid);
 
   room.mapBlockId = command.mapBlockId;
 
@@ -401,7 +402,8 @@ void RaceDirector::HandleStartRace(
 {
   const auto& clientContext = _clients[clientId];
 
-  const auto& room = RoomRegistry::Get().GetRoom(clientContext.roomUid);
+  const auto& room = _serverInstance.GetRoomSystem().GetRoom(
+    clientContext.roomUid);
   const auto& roomInstance = _roomInstances[clientContext.roomUid];
 
   protocol::AcCmdCRStartRaceNotify response{
@@ -479,6 +481,13 @@ void RaceDirector::HandleLoadingComplete(
 
   const auto characterOid = roomInstance.worldTracker.GetCharacterOid(clientContext.characterUid);
 
+  protocol::AcCmdRCMissionEvent event
+  {
+    .event = protocol::AcCmdRCMissionEvent::Event::EVENT_SCRIPT,
+    .callerOid = 1006,
+    .calledOid = 1006,
+  };
+
   // Notify all clients in the room that this player's loading is complete
   for (const ClientId& roomClientId : roomInstance.clients)
   {
@@ -505,6 +514,12 @@ void RaceDirector::HandleLoadingComplete(
 
     for (const ClientId& roomClientId : roomInstance.clients)
     {
+      _commandServer.QueueCommand<decltype(event)>(
+        roomClientId,
+        [event]()
+        {
+          return event;
+        });
       _commandServer.QueueCommand<protocol::AcCmdUserRaceCountdown>(
         roomClientId,
         [countdownTimestamp]()

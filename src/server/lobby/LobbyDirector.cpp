@@ -19,8 +19,8 @@
 
 #include "server/lobby/LobbyDirector.hpp"
 
+#include "../../../include/server/system/RoomSystem.hpp"
 #include "libserver/data/helper/ProtocolHelper.hpp"
-#include "libserver/registry/RoomRegistry.hpp"
 #include "server/ServerInstance.hpp"
 #include "zlib.h"
 
@@ -434,7 +434,7 @@ void LobbyDirector::HandleRoomList(
   response.unk1 = 1;
   response.unk2 = 1;
 
-  for (const auto& room : RoomRegistry::Get().GetRooms() | std::views::values)
+  for (const auto& room : _serverInstance.GetRoomSystem().GetRooms() | std::views::values)
   {
     auto& roomResponse = response.rooms.emplace_back();
     roomResponse.id = room.uid;
@@ -455,8 +455,7 @@ void LobbyDirector::HandleMakeRoom(
   ClientId clientId,
   const protocol::LobbyCommandMakeRoom& command)
 {
-  auto& roomRegistry = RoomRegistry::Get();
-  auto& room = roomRegistry.CreateRoom();
+  auto& room = _serverInstance.GetRoomSystem().CreateRoom();
 
   room.name = command.name;
   room.description = command.password;
@@ -486,8 +485,6 @@ void LobbyDirector::HandleEnterRoom(
   ClientId clientId,
   const protocol::LobbyCommandEnterRoom& command)
 {
-  auto& roomRegistry = RoomRegistry::Get();
-
   protocol::LobbyCommandEnterRoomOK response{
     .roomUid = command.roomUid,
     .otp = 0xBAAD,
@@ -736,7 +733,7 @@ void LobbyDirector::QueueEnterRanchOK(
   const auto& clientContext = GetClientContext(clientId);
   protocol::LobbyCommandEnterRanchOK response{
     .rancherUid = rancherUid,
-    .otp = GetServerInstance().GetOtpRegistry().GrantCode(clientContext.characterUid),
+    .otp = GetServerInstance().GetOtpSystem().GrantCode(clientContext.characterUid),
     .ranchAddress = GetConfig().advertisement.ranch.address.to_uint(),
     .ranchPort = GetConfig().advertisement.ranch.port};
 

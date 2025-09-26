@@ -1,0 +1,362 @@
+courses:
+  gameModeInfo:
+    collection:
+      # No game mode
+      - type: 0
+        goodJumpStarPoints: 0
+        perfectJumpStarPoints: 0
+        perfectJumpUnitStarPoints: 0
+        perfectJumpMaxBonusCombo: 0
+        perfectSpurCheckTime: 0
+        spurConsumeStarPoints: 0
+        starPointsMax: 0
+      # Speed game mode
+      - type: 1
+        goodJumpStarPoints: 12000
+        perfectJumpStarPoints: 12000
+        perfectJumpUnitStarPoints: 1000
+        perfectJumpMaxBonusCombo: 5
+        perfectSpurCheckTime: 600
+        spurConsumeStarPoints: 40000
+        starPointsMax: 120000
+      # Magic game mode
+      - type: 2
+        goodJumpStarPoints: 10000
+        perfectJumpStarPoints: 10000
+        perfectJumpUnitStarPoints: 1000
+        perfectJumpMaxBonusCombo: 1
+        perfectSpurCheckTime: 0
+        spurConsumeStarPoints: 40000
+        starPointsMax: 100000
+  mapBlockInfo:
+    collection:
+      - id: 1
+        requiredLevel: 0
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 2
+        requiredLevel: 15
+        podiumId: 0
+        trainingFee: 150
+        timeLimit: 300
+        waitTime: 10
+      - id: 3
+        requiredLevel: 17
+        podiumId: 0
+        trainingFee: 150
+        timeLimit: 300
+        waitTime: 10
+      - id: 4
+        requiredLevel: 16
+        podiumId: 0
+        trainingFee: 150
+        timeLimit: 300
+        waitTime: 10
+      - id: 5
+        requiredLevel: 19
+        podiumId: 0
+        trainingFee: 150
+        timeLimit: 300
+        waitTime: 10
+      - id: 22
+        requiredLevel: 14
+        podiumId: 0
+        trainingFee: 150
+        timeLimit: 300
+        waitTime: 10
+      - id: 38
+        requiredLevel: 1
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 17
+        requiredLevel: 0
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 20001
+        requiredLevel: 0
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 5
+      - id: 8
+        requiredLevel: 9
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 20000
+        requiredLevel: 0
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 30
+        waitTime: 1
+      - id: 6
+        requiredLevel: 16
+        podiumId: 0
+        trainingFee: 150
+        timeLimit: 300
+        waitTime: 10
+      - id: 10
+        requiredLevel: 7
+        podiumId: 20008
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 9
+        requiredLevel: 18
+        podiumId: 0
+        trainingFee: 150
+        timeLimit: 300
+        waitTime: 10
+      - id: 20003
+        requiredLevel: 0
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 5
+      - id: 40
+        requiredLevel: 2
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 41
+        requiredLevel: 1
+        podiumId: 20008
+        trainingFee: 0
+        timeLimit: 2
+        waitTime: 10
+      - id: 7
+        requiredLevel: 22
+        podiumId: 0
+        trainingFee: 150
+        timeLimit: 300
+        waitTime: 10
+      - id: 71
+        requiredLevel: 0
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 11
+        requiredLevel: 20
+        podiumId: 0
+        trainingFee: 150
+        timeLimit: 300
+        waitTime: 10
+      - id: 67
+        requiredLevel: 1000
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 5
+      - id: 73
+        requiredLevel: 0
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 77
+        requiredLevel: 1000
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 610
+        requiredLevel: 0
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 777
+        requiredLevel: 1000
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 19
+        requiredLevel: 5
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 20002
+        requiredLevel: 0
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 5
+      - id: 13
+        requiredLevel: 0
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 14
+        requiredLevel: 3
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 15
+        requiredLevel: 8
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 16
+        requiredLevel: 11
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 35
+        requiredLevel: 0
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 5
+      - id: 879
+        requiredLevel: 1000
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 1
+      - id: 735
+        requiredLevel: 1000
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 5
+      - id: 12
+        requiredLevel: 17
+        podiumId: 20008
+        trainingFee: 150
+        timeLimit: 300
+        waitTime: 10
+      - id: 18
+        requiredLevel: 6
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 20004
+        requiredLevel: 1000
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 5
+      - id: 42
+        requiredLevel: 14
+        podiumId: 20008
+        trainingFee: 150
+        timeLimit: 300
+        waitTime: 10
+      - id: 78
+        requiredLevel: 1000
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 5
+      - id: 46
+        requiredLevel: 1
+        podiumId: 20007
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 21
+        requiredLevel: 3
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 44
+        requiredLevel: 0
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 30
+        waitTime: 1
+      - id: 76
+        requiredLevel: 1000
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 20
+        requiredLevel: 5
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 68
+        requiredLevel: 1000
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 5
+      - id: 23
+        requiredLevel: 15
+        podiumId: 0
+        trainingFee: 150
+        timeLimit: 300
+        waitTime: 10
+      - id: 24
+        requiredLevel: 7
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 25
+        requiredLevel: 10
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 800
+        requiredLevel: 1000
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 5
+      - id: 20005
+        requiredLevel: 0
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 30
+        waitTime: 1
+      - id: 26
+        requiredLevel: 0
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 10
+      - id: 20006
+        requiredLevel: 0
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 5
+      - id: 20007
+        requiredLevel: 0
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 5
+      - id: 20008
+        requiredLevel: 0
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 5
+      - id: 20009
+        requiredLevel: 0
+        podiumId: 0
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 5
