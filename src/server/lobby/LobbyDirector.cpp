@@ -473,6 +473,7 @@ void LobbyDirector::HandleMakeRoom(
   room.unk3 = command.unk3;
   room.bitset = static_cast<uint16_t>(command.bitset);
   room.unk4 = command.unk4;
+  room.mapBlockId = 10002;
 
   protocol::LobbyCommandMakeRoomOK response{
     .roomUid = room.uid,

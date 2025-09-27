@@ -84,7 +84,7 @@ void WriteRoomDescription(SinkStream& stream, const RoomDescription& roomDescrip
   stream.Write(roomDescription.name)
     .Write(roomDescription.playerCount)
     .Write(roomDescription.password)
-    .Write(roomDescription.unk1)
+    .Write(roomDescription.gameModeMaps)
     .Write(roomDescription.teamMode)
     .Write(roomDescription.mapBlockId)
     .Write(roomDescription.gameMode)
@@ -963,6 +963,52 @@ void AcCmdCRStartingRate::Read(
   stream.Read(command.characterOid)
     .Read(command.unk1)
     .Read(command.boostGained);
+}
+
+void AcCmdCRRequestMagicItem::Write(
+  const AcCmdCRRequestMagicItem& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRequestMagicItem::Read(
+  AcCmdCRRequestMagicItem& command,
+  SourceStream& stream)
+{
+  stream.Read(command.member1)
+    .Read(command.member2);
+}
+
+void AcCmdCRRequestMagicItemOK::Write(
+  const AcCmdCRRequestMagicItemOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1)
+    .Write(command.member2)
+    .Write(command.member3);
+}
+
+void AcCmdCRRequestMagicItemOK::Read(
+  AcCmdCRRequestMagicItemOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRequestMagicItemNotify::Write(
+  const AcCmdCRRequestMagicItemNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1)
+    .Write(command.member2);
+}
+
+void AcCmdCRRequestMagicItemNotify::Read(
+  AcCmdCRRequestMagicItemNotify& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
 }
 
 void AcCmdUserRaceUpdatePos::Write(

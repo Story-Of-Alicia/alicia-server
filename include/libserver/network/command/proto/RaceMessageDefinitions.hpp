@@ -88,7 +88,8 @@ struct RoomDescription
   std::string name{};
   uint8_t playerCount{};
   std::string password{};
-  uint8_t unk1{};
+  // disables/enables adv map selection
+  uint8_t gameModeMaps{};
   uint8_t gameMode{};
   //! From the table `MapBlockInfo`.
   uint16_t mapBlockId{};
@@ -248,13 +249,6 @@ struct AcCmdCRChangeRoomOptions
 
 struct AcCmdCRChangeRoomOptionsNotify
 {
-  // Response consists of: short as a bitfield
-  //  if & 1 != 0: string
-  //  if & 2 != 0: byte
-  //  if & 4 != 0: string
-  //  if & 8 != 0: byte
-  //  if  & 16 != 0: short
-  //  if  & 32 != 0: byte
   RoomOptionType optionsBitfield{};
   std::string name{};
   uint8_t playerCount{};
@@ -1295,6 +1289,82 @@ struct AcCmdCRStartingRate
   //! @param stream Source stream.
   static void Read(
     AcCmdCRStartingRate& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestMagicItem
+{
+  uint16_t member1; // character oid?
+  uint32_t member2; // item type?
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestMagicItem;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestMagicItem& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestMagicItem& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestMagicItemOK
+{
+  uint16_t member1; // character oid?
+  uint32_t member2; // item type?
+  uint32_t member3; // star point reset?
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestMagicItemOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestMagicItemOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestMagicItemOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestMagicItemNotify
+{
+  uint16_t member1; // character oid?
+  uint32_t member2; // item type?
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestMagicItemNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestMagicItemNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestMagicItemNotify& command,
     SourceStream& stream);
 };
 

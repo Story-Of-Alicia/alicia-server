@@ -322,7 +322,7 @@ void RaceDirector::HandleEnterRoom(
       .name = room.name,
       .playerCount = room.playerCount,
       .password = room.password,
-      .unk1 = 0,
+      .gameModeMaps = room.gameMode,
       .gameMode = room.gameMode,
       .mapBlockId = room.mapBlockId,
       .teamMode = room.teamMode,
@@ -420,7 +420,6 @@ void RaceDirector::HandleChangeRoomOptions(
   if (optionsBitfieldMask & static_cast<uint16_t>(protocol::RoomOptionType::HasRaceStarted))
     room.unk3 = command.hasRaceStarted;
   
-  
   protocol::AcCmdCRChangeRoomOptionsNotify response{
     .optionsBitfield = command.optionsBitfield,
     .name = command.name,
@@ -465,12 +464,20 @@ void RaceDirector::HandleStartRace(
     clientContext.roomUid);
   const auto& roomInstance = _roomInstances[clientContext.roomUid];
 
-  protocol::AcCmdCRStartRaceNotify response{
-    .gameMode = room.gameMode,
-    .mapBlockId = room.mapBlockId,
-    // .ip = asio::ip::address_v4::loopback().to_uint(),
-    // .port = static_cast<uint16_t>(10500),
-  };
+  protocol::AcCmdCRStartRaceNotify response{};
+  response.gameMode = room.gameMode;
+  // This Block will handle the random map selection
+  if (room.mapBlockId == 10000 || room.mapBlockId == 10001 || room.mapBlockId == 10002)
+  {
+    // TODO: Select a random mapBlockId from a predefined list
+    // For now its a map that at least loads in
+    response.mapBlockId = 1;
+  }
+  else
+    response.mapBlockId = room.mapBlockId;
+
+  // response.ip = asio::ip::address_v4::loopback().to_uint();
+  // response.port = static_cast<uint16_t>(10500);
 
   for (const auto& [characterUid, characterOid] : roomInstance.worldTracker.GetCharacters())
   {
