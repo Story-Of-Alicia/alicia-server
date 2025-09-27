@@ -47,7 +47,7 @@ void WriteRacer(SinkStream& stream, const Racer& racer)
     .Write(racer.uid)
     .Write(racer.name)
     .Write(racer.unk5)
-    .Write(racer.unk6)
+    .Write(racer.teamColor)
     .Write(racer.isHidden)
     .Write(racer.isNPC);
 
@@ -210,17 +210,17 @@ void AcCmdCRChangeRoomOptions::Read(
   {
     stream.Read(command.password);
   }
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk3)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::GameMode)
   {
-    stream.Read(command.option3);
+    stream.Read(command.gameMode);
   }
   if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::MapBlockId)
   {
     stream.Read(command.mapBlockId);
   }
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::HasRaceStarted)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::NPCRace)
   {
-    stream.Read(command.hasRaceStarted);
+    stream.Read(command.npcRace);
   }
 }
 
@@ -241,22 +241,67 @@ void AcCmdCRChangeRoomOptionsNotify::Write(
   {
     stream.Write(command.password);
   }
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk3)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::GameMode)
   {
-    stream.Write(command.option3);
+    stream.Write(command.gameMode);
   }
   if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::MapBlockId)
   {
     stream.Write(command.mapBlockId);
   }
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::HasRaceStarted)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::NPCRace)
   {
-    stream.Write(command.hasRaceStarted);
+    stream.Write(command.npcRace);
   }
 }
 
 void AcCmdCRChangeRoomOptionsNotify::Read(
   AcCmdCRChangeRoomOptionsNotify& command,
+  SourceStream& stream)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void AcCmdCRChangeTeam::Write(
+  const AcCmdCRChangeTeam& command,
+  SinkStream& stream)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void AcCmdCRChangeTeam::Read(
+  AcCmdCRChangeTeam& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterOid)
+    .Read(command.teamColor);
+}
+
+void AcCmdCRChangeTeamOK::Write(
+  const AcCmdCRChangeTeamOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterOid)
+    .Write(command.teamColor);
+}
+
+void AcCmdCRChangeTeamOK::Read(
+  AcCmdCRChangeTeamOK& command,
+  SourceStream& stream)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void AcCmdCRChangeTeamNotify::Write(
+  const AcCmdCRChangeTeamNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterOid)
+    .Write(command.teamColor);
+}
+
+void AcCmdCRChangeTeamNotify::Read(
+  AcCmdCRChangeTeamNotify& command,
   SourceStream& stream)
 {
   throw std::logic_error("Not implemented.");
@@ -412,8 +457,8 @@ void AcCmdCRStartRaceNotify::Write(
       .Write(element.name)
       .Write(element.unk2)
       .Write(element.unk3)
-      .Write(element.unk4)
       .Write(element.p2dId)
+      .Write(element.teamColor)
       .Write(element.unk6)
       .Write(element.unk7);
   }

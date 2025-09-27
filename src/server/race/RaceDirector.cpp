@@ -25,6 +25,7 @@
 #include "../../../include/server/system/RoomSystem.hpp"
 
 #include <spdlog/spdlog.h>
+#include <bitset>
 
 namespace server
 {
@@ -43,6 +44,12 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& message)
     {
       HandleChangeRoomOptions(clientId, message);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRChangeTeam>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleChangeTeam(clientId, message);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRLeaveRoom>(
@@ -407,27 +414,29 @@ void RaceDirector::HandleChangeRoomOptions(
   auto& room = _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid);
 
-  uint16_t optionsBitfieldMask = static_cast<uint16_t>(command.optionsBitfield);
+  std::bitset<6> options(static_cast<uint16_t>(command.optionsBitfield));
 
-  if (optionsBitfieldMask & static_cast<uint16_t>(protocol::RoomOptionType::Name))
+  if (options.test(0))
     room.name = command.name;
-  if (optionsBitfieldMask & static_cast<uint16_t>(protocol::RoomOptionType::PlayerCount))
+  if (options.test(1))
     room.playerCount = command.playerCount;
-  if (optionsBitfieldMask & static_cast<uint16_t>(protocol::RoomOptionType::Password))
+  if (options.test(2))
+    room.gameMode = command.gameMode;
+  if (options.test(3))
     room.password = command.password;
-  if (optionsBitfieldMask & static_cast<uint16_t>(protocol::RoomOptionType::MapBlockId))
+  if (options.test(4))
     room.mapBlockId = command.mapBlockId;
-  if (optionsBitfieldMask & static_cast<uint16_t>(protocol::RoomOptionType::HasRaceStarted))
-    room.unk3 = command.hasRaceStarted;
+  if (options.test(5))
+    room.unk3 = command.npcRace;
   
   protocol::AcCmdCRChangeRoomOptionsNotify response{
     .optionsBitfield = command.optionsBitfield,
     .name = command.name,
     .playerCount = command.playerCount,
     .password = command.password,
-    .option3 = command.option3,
+    .gameMode = command.gameMode,
     .mapBlockId = command.mapBlockId,
-    .hasRaceStarted = command.hasRaceStarted};
+    .npcRace = command.npcRace};
 
   const auto& roomInstance = _roomInstances[clientContext.roomUid];
 
@@ -438,6 +447,44 @@ void RaceDirector::HandleChangeRoomOptions(
       [response]()
       {
         return response;
+      });
+  }
+}
+
+void RaceDirector::HandleChangeTeam(
+  ClientId clientId,
+  const protocol::AcCmdCRChangeTeam& command)
+{
+  const auto& clientContext = _clients[clientId];
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
+
+  // TODO: Set the teamcolor for the player in the room instance
+
+  protocol::AcCmdCRChangeTeamOK response{
+    .characterOid = command.characterOid,
+    .teamColor = command.teamColor};
+
+  protocol::AcCmdCRChangeTeamNotify notify{
+    .characterOid = command.characterOid,
+    .teamColor = command.teamColor};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+  
+  // Notify all other clients in the room
+  for (const ClientId& roomClientId : roomInstance.clients)
+  {
+    if (roomClientId == clientId)
+      continue;
+    _commandServer.QueueCommand<decltype(notify)>(
+      roomClientId,
+      [notify]()
+      {
+        return notify;
       });
   }
 }
@@ -499,8 +546,8 @@ void RaceDirector::HandleStartRace(
       .name = characterName,
       .unk2 = 2,
       .unk3 = 3,
-      .unk4 = 4,
-      .p2dId = 0,
+      .p2dId= 4,
+      .teamColor= protocol::TeamColor::Solo,
       .unk6 = 6,
       .unk7 = 7});
   }

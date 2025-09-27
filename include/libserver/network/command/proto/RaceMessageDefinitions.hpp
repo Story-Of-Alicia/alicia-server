@@ -36,9 +36,16 @@ enum class RoomOptionType : uint16_t
   Name = 1 << 0,
   PlayerCount = 1 << 1,
   Password = 1 << 2,
-  Unk3 = 1 << 3,
+  GameMode = 1 << 3,
   MapBlockId = 1 << 4,
-  HasRaceStarted = 1 << 5,
+  NPCRace = 1 << 5,
+};
+
+enum class TeamColor : uint32_t
+{
+  Solo = 1,
+  Red = 2,
+  Blue = 3
 };
 
 struct Avatar
@@ -55,13 +62,13 @@ struct Racer
 {
   // 0 for regular players, everything else leader
   uint8_t member1{0};
-  uint8_t member2{3};
+  uint8_t member2{1};
   uint32_t level{};
   uint32_t oid{};
   uint32_t uid{};
   std::string name{};
   uint8_t unk5{3};
-  uint32_t unk6{4};
+  TeamColor teamColor{TeamColor::Solo};
   bool isHidden{};
   bool isNPC{};
 
@@ -212,20 +219,13 @@ struct AcCmdCREnterRoomNotify
 
 struct AcCmdCRChangeRoomOptions
 {
-  // Request consists of: short as a bitfield
-  //  if & 1 != 0: string
-  //  if & 2 != 0: byte
-  //  if & 4 != 0: string
-  //  if & 8 != 0: byte
-  //  if  & 16 != 0: short
-  //  if  & 32 != 0: byte
   RoomOptionType optionsBitfield{};
   std::string name{};
   uint8_t playerCount{};
   std::string password{};
-  uint8_t option3{};
+  uint8_t gameMode{};
   uint16_t mapBlockId{};
-  uint8_t hasRaceStarted{};
+  uint8_t npcRace{};
 
   static Command GetCommand()
   {
@@ -253,9 +253,9 @@ struct AcCmdCRChangeRoomOptionsNotify
   std::string name{};
   uint8_t playerCount{};
   std::string password{}; // password
-  uint8_t option3{};
+  uint8_t gameMode{};
   uint16_t mapBlockId{};
-  uint8_t hasRaceStarted{};
+  uint8_t npcRace{};
 
   static Command GetCommand()
   {
@@ -274,6 +274,81 @@ struct AcCmdCRChangeRoomOptionsNotify
   //! @param stream Source stream.
   static void Read(
     AcCmdCRChangeRoomOptionsNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRChangeTeam
+{
+  uint32_t characterOid{};
+  TeamColor teamColor{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeTeam;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeTeam& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeTeam& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRChangeTeamOK
+{
+  uint32_t characterOid{};
+  TeamColor teamColor{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeTeamOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeTeamOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeTeamOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRChangeTeamNotify
+{
+  uint32_t characterOid{};
+  TeamColor teamColor{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeTeamNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeTeamNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeTeamNotify& command,
     SourceStream& stream);
 };
 
@@ -386,8 +461,8 @@ struct AcCmdCRStartRaceNotify
     std::string name{};
     uint8_t unk2{};
     uint8_t unk3{};
-    uint16_t unk4{};
-    uint32_t p2dId{};
+    uint16_t p2dId{};
+    TeamColor teamColor{};
     uint16_t unk6{}; // Index?
     uint32_t unk7{};
   };

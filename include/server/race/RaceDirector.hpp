@@ -85,6 +85,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRChangeRoomOptions& command);
 
+  void HandleChangeTeam(
+    ClientId clientId,
+    const protocol::AcCmdCRChangeTeam& command);
+
   void HandleLeaveRoom(
     ClientId clientId);
 
