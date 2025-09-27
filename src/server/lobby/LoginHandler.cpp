@@ -265,6 +265,7 @@ void LoginHandler::HandleUserCreateCharacter(
         horse.tid() = 20002;
         horse.dateOfBirth() = data::Clock::now();
         horse.mountCondition.stamina = 3500;
+        horse.growthPoints() = 150;
 
         HorseRegistry::Get().BuildRandomHorse(
           horse.parts,

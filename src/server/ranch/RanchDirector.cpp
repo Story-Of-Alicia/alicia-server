@@ -102,7 +102,11 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       HandleUnregisterStallionEstimateInfo(clientId, command);
     });
 
-  // AcCmdCRStatusPointApply
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRStatusPointApply>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleStatusPointApply(clientId, command);
+    });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRTryBreeding>(
     [this](ClientId clientId, auto& command)
@@ -2911,6 +2915,32 @@ void RanchDirector::HandleHideAge(
     clientContext.visitingRancherUid,
     command.option
   );
+}
+
+void RanchDirector::HandleStatusPointApply(
+  ClientId clientId,
+  const protocol::AcCmdCRStatusPointApply command)
+{
+  protocol::AcCmdCRStatusPointApplyOK response {};
+
+  const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(command.horseUid);
+  horseRecord->Mutable([&command](data::Horse& horse)
+  {
+    horse.stats.agility = command.stats.agility;
+    horse.stats.ambition = command.stats.ambition;
+    horse.stats.rush = command.stats.rush;
+    horse.stats.endurance = command.stats.endurance;
+    horse.stats.courage = command.stats.courage;
+
+    horse.growthPoints(horse.growthPoints() - 1);
+  });
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 } // namespace server
