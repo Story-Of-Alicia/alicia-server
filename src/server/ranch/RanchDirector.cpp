@@ -2932,7 +2932,7 @@ void RanchDirector::HandleStatusPointApply(
     horse.stats.endurance = command.stats.endurance;
     horse.stats.courage = command.stats.courage;
 
-    horse.growthPoints(horse.growthPoints() - 1);
+    horse.growthPoints() -= 1;
   });
 
   _commandServer.QueueCommand<decltype(response)>(
