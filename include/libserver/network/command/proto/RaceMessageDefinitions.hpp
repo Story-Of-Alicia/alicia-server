@@ -33,12 +33,12 @@ namespace server::protocol
 
 enum class RoomOptionType : uint16_t
 {
-  Unk0 = 1 << 0,
-  Unk1 = 1 << 1,
-  Unk2 = 1 << 2,
+  Name = 1 << 0,
+  PlayerCount = 1 << 1,
+  Password = 1 << 2,
   Unk3 = 1 << 3,
-  Unk4 = 1 << 4,
-  Unk5 = 1 << 5,
+  MapBlockId = 1 << 4,
+  HasRaceStarted = 1 << 5,
 };
 
 struct Avatar
@@ -87,7 +87,7 @@ struct RoomDescription
 {
   std::string name{};
   uint8_t playerCount{};
-  std::string description{};
+  std::string password{};
   uint8_t unk1{};
   uint8_t gameMode{};
   //! From the table `MapBlockInfo`.
@@ -221,7 +221,7 @@ struct AcCmdCRChangeRoomOptions
   RoomOptionType optionsBitfield{};
   std::string name{};
   uint8_t playerCount{};
-  std::string description{};
+  std::string password{};
   uint8_t option3{};
   uint16_t mapBlockId{};
   uint8_t hasRaceStarted{};
@@ -258,7 +258,7 @@ struct AcCmdCRChangeRoomOptionsNotify
   RoomOptionType optionsBitfield{};
   std::string name{};
   uint8_t playerCount{};
-  std::string description{};
+  std::string password{}; // password
   uint8_t option3{};
   uint16_t mapBlockId{};
   uint8_t hasRaceStarted{};

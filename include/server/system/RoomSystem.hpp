@@ -41,7 +41,7 @@ struct Room
 {
   uint32_t uid{};
   std::string name;
-  std::string description;
+  std::string password;
   uint16_t missionId{};
   uint16_t mapBlockId{};
   uint32_t otp{};

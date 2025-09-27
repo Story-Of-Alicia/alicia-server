@@ -431,16 +431,23 @@ void LobbyDirector::HandleRoomList(
 {
   protocol::LobbyCommandRoomListOK response;
   response.page = command.page;
-  response.unk1 = 1;
-  response.unk2 = 1;
+  response.unk1 = command.gameMode;
+  response.unk2 = static_cast<uint8_t>(command.teamMode);
 
   for (const auto& room : _serverInstance.GetRoomSystem().GetRooms() | std::views::values)
   {
+    if ( room.gameMode != command.gameMode
+      || room.teamMode != command.teamMode)
+      continue;
+
+    // TODO: get Live player count from RaceDirector
     auto& roomResponse = response.rooms.emplace_back();
     roomResponse.id = room.uid;
-    roomResponse.playerCount = 1;
-    roomResponse.maxPlayers = 8;
+    roomResponse.playerCount = 1; // Placeholder, replace with actual live count
+    roomResponse.maxPlayers = room.playerCount;
     roomResponse.level = 2;
+    roomResponse.name = room.name;
+    roomResponse.map = room.mapBlockId;
   }
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -458,7 +465,7 @@ void LobbyDirector::HandleMakeRoom(
   auto& room = _serverInstance.GetRoomSystem().CreateRoom();
 
   room.name = command.name;
-  room.description = command.password;
+  room.password = command.password;
   room.missionId = command.missionId;
   room.playerCount = command.playerCount;
   room.gameMode = command.gameMode;

@@ -321,7 +321,7 @@ void RaceDirector::HandleEnterRoom(
     .roomDescription = {
       .name = room.name,
       .playerCount = room.playerCount,
-      .description = room.description,
+      .password = room.password,
       .unk1 = 0,
       .gameMode = room.gameMode,
       .mapBlockId = room.mapBlockId,
@@ -407,13 +407,25 @@ void RaceDirector::HandleChangeRoomOptions(
   auto& room = _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid);
 
-  room.mapBlockId = command.mapBlockId;
+  uint16_t optionsBitfieldMask = static_cast<uint16_t>(command.optionsBitfield);
 
+  if (optionsBitfieldMask & static_cast<uint16_t>(protocol::RoomOptionType::Name))
+    room.name = command.name;
+  if (optionsBitfieldMask & static_cast<uint16_t>(protocol::RoomOptionType::PlayerCount))
+    room.playerCount = command.playerCount;
+  if (optionsBitfieldMask & static_cast<uint16_t>(protocol::RoomOptionType::Password))
+    room.password = command.password;
+  if (optionsBitfieldMask & static_cast<uint16_t>(protocol::RoomOptionType::MapBlockId))
+    room.mapBlockId = command.mapBlockId;
+  if (optionsBitfieldMask & static_cast<uint16_t>(protocol::RoomOptionType::HasRaceStarted))
+    room.unk3 = command.hasRaceStarted;
+  
+  
   protocol::AcCmdCRChangeRoomOptionsNotify response{
     .optionsBitfield = command.optionsBitfield,
     .name = command.name,
     .playerCount = command.playerCount,
-    .description = command.description,
+    .password = command.password,
     .option3 = command.option3,
     .mapBlockId = command.mapBlockId,
     .hasRaceStarted = command.hasRaceStarted};

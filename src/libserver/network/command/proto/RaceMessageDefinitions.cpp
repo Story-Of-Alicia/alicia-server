@@ -83,7 +83,7 @@ void WriteRoomDescription(SinkStream& stream, const RoomDescription& roomDescrip
 {
   stream.Write(roomDescription.name)
     .Write(roomDescription.playerCount)
-    .Write(roomDescription.description)
+    .Write(roomDescription.password)
     .Write(roomDescription.unk1)
     .Write(roomDescription.teamMode)
     .Write(roomDescription.mapBlockId)
@@ -198,27 +198,27 @@ void AcCmdCRChangeRoomOptions::Read(
   SourceStream& stream)
 {
   stream.Read(command.optionsBitfield);
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk0)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Name)
   {
     stream.Read(command.name);
   }
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk1)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::PlayerCount)
   {
     stream.Read(command.playerCount);
   }
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk2)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Password)
   {
-    stream.Read(command.description);
+    stream.Read(command.password);
   }
   if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk3)
   {
     stream.Read(command.option3);
   }
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk4)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::MapBlockId)
   {
     stream.Read(command.mapBlockId);
   }
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk5)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::HasRaceStarted)
   {
     stream.Read(command.hasRaceStarted);
   }
@@ -229,27 +229,27 @@ void AcCmdCRChangeRoomOptionsNotify::Write(
   SinkStream& stream)
 {
   stream.Write(command.optionsBitfield);
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk0)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Name)
   {
     stream.Write(command.name);
   }
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk1)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::PlayerCount)
   {
     stream.Write(command.playerCount);
   }
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk2)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Password)
   {
-    stream.Write(command.description);
+    stream.Write(command.password);
   }
   if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk3)
   {
     stream.Write(command.option3);
   }
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk4)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::MapBlockId)
   {
     stream.Write(command.mapBlockId);
   }
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::Unk5)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::HasRaceStarted)
   {
     stream.Write(command.hasRaceStarted);
   }
