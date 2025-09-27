@@ -462,7 +462,7 @@ void RaceDirector::HandleStartRace(
 
   const auto& room = _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid);
-  const auto& roomInstance = _roomInstances[clientContext.roomUid];
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
 
   protocol::AcCmdCRStartRaceNotify response{};
   response.gameMode = room.gameMode;
@@ -478,6 +478,12 @@ void RaceDirector::HandleStartRace(
 
   // response.ip = asio::ip::address_v4::loopback().to_uint();
   // response.port = static_cast<uint16_t>(10500);
+
+  // Clear race trackers from the room instance
+  // Rooms can persistent so it is necessary to clear boost gauge
+  // and jump combo trackers 
+  roomInstance.jumpComboTracker.clear();
+  roomInstance.starPointTracker.clear();
 
   for (const auto& [characterUid, characterOid] : roomInstance.worldTracker.GetCharacters())
   {
