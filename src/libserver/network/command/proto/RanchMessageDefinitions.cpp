@@ -2262,23 +2262,28 @@ void AcCmdCRStatusPointApply::Write(const AcCmdCRStatusPointApply& command, Sink
 {
   throw std::runtime_error("Not implemented");
 }
+
 void AcCmdCRStatusPointApply::Read(AcCmdCRStatusPointApply& command, SourceStream& stream)
 {
   stream.Read(command.horseUid)
   .Read(command.stats);
 }
+
 void AcCmdCRStatusPointApplyOK::Write(const AcCmdCRStatusPointApplyOK& command, SinkStream& stream)
 {
   // empty
 }
+
 void AcCmdCRStatusPointApplyOK::Read(AcCmdCRStatusPointApplyOK& command, SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
+
 void AcCmdCRStatusPointApplyCancel::Write(const AcCmdCRStatusPointApplyCancel& command, SinkStream& stream)
 {
   // empty
 }
+
 void AcCmdCRStatusPointApplyCancel::Read(AcCmdCRStatusPointApplyCancel& command, SourceStream& stream)
 {
   // empty
