@@ -103,6 +103,20 @@ void InteractiveLoop()
 
 int main(int argc, char** argv)
 {
+  std::filesystem::path baseDirectory;
+
+  // todo: parse arguments
+  std::vector<std::string> arguments;
+  for (int32_t idx = 1; idx < argc; ++idx)
+  {
+    arguments.emplace_back(argv[idx]);
+  }
+
+  for (const auto& argument : arguments | std::views::join_with(' '))
+  {
+    baseDirectory += argument;
+  }
+
 #ifdef WIN32
   // Register the control handler.
   if (SetConsoleCtrlHandler(CtrlHandler, TRUE) == FALSE)
@@ -129,7 +143,7 @@ int main(int argc, char** argv)
 
   // Daily file sink.
   const auto fileSink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(
-    "logs/log.log", 0, 0);
+    (baseDirectory / "logs" / "log.txt").string(), 0, 0);
 
   // Console sink.
   const auto consoleSink = std::make_shared<
@@ -146,27 +160,13 @@ int main(int argc, char** argv)
   // Set is as the default logger for the application.
   spdlog::set_default_logger(g_logger);
 
-  std::filesystem::path resourceDirectory;
-
-  // todo: parse arguments
-  std::vector<std::string> arguments;
-  for (int32_t idx = 1; idx < argc; ++idx)
-  {
-    arguments.emplace_back(argv[idx]);
-  }
-
-  for (const auto& argument : arguments | std::views::join_with(' '))
-  {
-    resourceDirectory += argument;
-  }
-
   spdlog::info("Running dedicated Alicia server v{}.", server::BuildVersion);
-  if (not resourceDirectory.empty())
-    spdlog::info("Resources directory: {}", resourceDirectory.string());
+  if (not baseDirectory.empty())
+    spdlog::info("Base directory: {}", baseDirectory.string());
   else
-    spdlog::info("Resources directory is the working directory");
+    spdlog::info("Base directory is the working directory");
 
-  server::ServerInstance serverInstance(resourceDirectory);
+  server::ServerInstance serverInstance(baseDirectory);
   serverInstance.Initialize();
 
   spdlog::info(
