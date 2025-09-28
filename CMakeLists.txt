@@ -87,7 +87,8 @@ add_executable(alicia-server
         src/server/system/InfractionSystem.cpp
         src/server/system/OtpSystem.cpp
         src/server/system/RoomSystem.cpp
-        src/server/tracker/WorldTracker.cpp)
+        src/server/tracker/RaceTracker.cpp
+        src/server/tracker/RanchTracker.cpp)
 target_include_directories(alicia-server
         PRIVATE include/)
 target_link_libraries(alicia-server PRIVATE

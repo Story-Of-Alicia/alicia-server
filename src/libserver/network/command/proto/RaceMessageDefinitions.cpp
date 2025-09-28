@@ -40,7 +40,7 @@ void WritePlayerRacer(SinkStream& stream, const Avatar& playerRacer)
 
 void WriteRacer(SinkStream& stream, const Racer& racer)
 {
-  stream.Write(racer.member1)
+  stream.Write(racer.isRoomLeader)
     .Write(racer.member2)
     .Write(racer.level)
     .Write(racer.oid)
@@ -620,7 +620,7 @@ void AcCmdCRReadyRaceNotify::Write(
   SinkStream& stream)
 {
   stream.Write(command.characterUid)
-    .Write(command.ready);
+    .Write(command.isReady);
 }
 
 void AcCmdCRReadyRaceNotify::Read(
@@ -910,7 +910,7 @@ void AcCmdCRStarPointGet::Read(
 {
   stream.Read(command.characterOid)
     .Read(command.unk1)
-    .Read(command.gainedBoostAmount);
+    .Read(command.gainedStarPoints);
 }
 
 void AcCmdCRStarPointGetOK::Write(
@@ -918,7 +918,7 @@ void AcCmdCRStarPointGetOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.characterOid)
-    .Write(command.boosterGauge)
+    .Write(command.starPointValue)
     .Write(command.unk2);
 }
 
@@ -951,7 +951,7 @@ void AcCmdCRRequestSpurOK::Write(
 {
   stream.Write(command.characterOid)
     .Write(command.activeBoosters)
-    .Write(command.unk2)
+    .Write(command.startPointValue)
     .Write(command.comboBreak);
 }
 
@@ -1109,6 +1109,20 @@ void AcCmdRCRoomCountdownCancel::Write(
 
 void AcCmdRCRoomCountdownCancel::Read(
   AcCmdRCRoomCountdownCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRChangeMasterNotify::Write(
+  const AcCmdCRChangeMasterNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.masterUid);
+}
+
+void AcCmdCRChangeMasterNotify::Read(
+  AcCmdCRChangeMasterNotify& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");

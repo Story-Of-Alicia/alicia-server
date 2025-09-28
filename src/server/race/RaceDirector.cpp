@@ -241,64 +241,9 @@ void RaceDirector::HandleClientDisconnected(ClientId clientId)
 
   const auto roomIter = _roomInstances.find(
     clientContext.roomUid);
-  if (roomIter == _roomInstances.cend())
+  if (roomIter != _roomInstances.cend())
   {
-    spdlog::warn(
-      "Client {} left a room {} which does not exist.",
-      clientId,
-      clientContext.roomUid);
-  }
-  else
-  {
-    if (clientContext.roomUid != data::InvalidUid)
-    {
-      auto& roomInstance = _roomInstances[clientContext.roomUid];
-
-      roomInstance.clients.erase(clientId);
-      roomInstance.worldTracker.RemoveCharacter(
-        clientContext.characterUid);
-
-      // Check if the leaving player was the leader
-      bool wasLeader = (roomInstance.leaderCharacterUid == clientContext.characterUid);
-
-      // Notify other clients in the room.
-      protocol::AcCmdCRLeaveRoomNotify notify{
-        .characterId = clientContext.characterUid,
-        .unk0 = 1};
-
-      for (const ClientId& roomClientId : roomInstance.clients)
-      {
-        _commandServer.QueueCommand<decltype(notify)>(
-          roomClientId,
-          [notify]()
-          {
-            return notify;
-          });
-      }
-
-      // If the leader left and there are still players, assign new leader
-      if (wasLeader && !roomInstance.clients.empty())
-      {
-        // Find the first remaining client and make them leader
-        ClientId newLeaderClientId = *roomInstance.clients.begin();
-        const auto& newLeaderContext = _clients[newLeaderClientId];
-        roomInstance.leaderCharacterUid = newLeaderContext.characterUid;
-        
-        spdlog::info("Character {} became the new leader of room {} after leader left", 
-                     newLeaderContext.characterUid, clientContext.roomUid);
-      }
-
-      if (roomInstance.clients.empty())
-      {
-        _serverInstance.GetRoomSystem().DeleteRoom(clientContext.roomUid);
-        _roomInstances.erase(clientContext.roomUid);
-        spdlog::info("Room {} deleted as it is now empty", clientContext.roomUid);
-      }
-    }
-    else
-    {
-      spdlog::warn("Client {} is not in a room", clientId);
-    }
+    HandleLeaveRoom(clientId);
   }
 
   spdlog::info("Client {} disconnected from the race", clientId);
@@ -319,8 +264,6 @@ void RaceDirector::HandleEnterRoom(
   ClientId clientId,
   const protocol::AcCmdCREnterRoom& command)
 {
-  assert(command.otp == 0xBAAD);
-
   auto& clientContext = _clients[clientId];
   clientContext.characterUid = command.characterUid;
   clientContext.roomUid = command.roomUid;
@@ -328,15 +271,20 @@ void RaceDirector::HandleEnterRoom(
   const auto& room = _serverInstance.GetRoomSystem().GetRoom(
     command.roomUid);
 
-  auto& roomInstance = _roomInstances[command.roomUid];
-  roomInstance.worldTracker.AddCharacter(command.characterUid);
+  // todo: verify otp
 
-  // Set the first player joining as room leader
-  if (roomInstance.clients.empty())
+  const auto& [roomInstanceIter, inserted] = _roomInstances.try_emplace(
+    command.roomUid);
+  auto& roomInstance = roomInstanceIter->second;
+
+  // If the room instance was just created, set it up.
+  if (inserted)
   {
-    roomInstance.leaderCharacterUid = command.characterUid;
-    spdlog::info("Character {} became the leader of room {}", command.characterUid, command.roomUid);
+    roomInstance.masterUid = command.characterUid;
   }
+
+  roomInstance.tracker.AddRacer(
+    command.characterUid);
 
   // Todo: Roll the code for the connecting client.
   // Todo: The response contains the code, somewhere.
@@ -359,20 +307,21 @@ void RaceDirector::HandleEnterRoom(
 
   protocol::Racer joiningRacer;
 
-  for (const auto& [characterUid, characterOid] : roomInstance.worldTracker.GetCharacters())
+  for (const auto& [characterUid, racer] : roomInstance.tracker.GetRacers())
   {
     auto& protocolRacer = response.racers.emplace_back();
 
     const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
       characterUid);
     characterRecord.Immutable(
-      [this, characterOid, &protocolRacer, leaderUid = roomInstance.leaderCharacterUid](const data::Character& character)
+      [this, racer, &protocolRacer, leaderUid = roomInstance.masterUid](
+        const data::Character& character)
       {
         if (character.uid() == leaderUid)
-          protocolRacer.member1 = 1;
+          protocolRacer.isRoomLeader = true;
 
         protocolRacer.level = character.level();
-        protocolRacer.oid = characterOid;
+        protocolRacer.oid = racer.oid;
         protocolRacer.uid = character.uid();
         protocolRacer.name = character.name();
         protocolRacer.isHidden = false;
@@ -380,10 +329,14 @@ void RaceDirector::HandleEnterRoom(
 
         protocolRacer.avatar = protocol::Avatar{};
 
-        protocol::BuildProtocolCharacter(protocolRacer.avatar->character, character);
+        protocol::BuildProtocolCharacter(
+          protocolRacer.avatar->character, character);
+
         protocol::BuildProtocolItems(
           protocolRacer.avatar->characterEquipment,
-          *_serverInstance.GetDataDirector().GetItemCache().Get(character.characterEquipment()));
+          *_serverInstance.GetDataDirector().GetItemCache().Get(
+            character.characterEquipment()));
+        // todo: horse equipment
 
         const auto mountRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
           character.mountUid());
@@ -479,7 +432,21 @@ void RaceDirector::HandleChangeTeam(
   const auto& clientContext = _clients[clientId];
   auto& roomInstance = _roomInstances[clientContext.roomUid];
 
-  // TODO: Set the teamcolor for the player in the room instance
+  auto& racer = roomInstance.tracker.GetRacer(
+    clientContext.characterUid);
+
+  // todo: team balancing
+
+  switch (command.teamColor)
+  {
+    case protocol::TeamColor::Red:
+      racer.team = tracker::RaceTracker::Racer::Team::Red;
+      break;
+    case protocol::TeamColor::Blue:
+      racer.team = tracker::RaceTracker::Racer::Team::Blue;
+      break;
+    default: {}
+  }
 
   protocol::AcCmdCRChangeTeamOK response{
     .characterOid = command.characterOid,
@@ -501,6 +468,7 @@ void RaceDirector::HandleChangeTeam(
   {
     if (roomClientId == clientId)
       continue;
+
     _commandServer.QueueCommand<decltype(notify)>(
       roomClientId,
       [notify]()
@@ -513,6 +481,68 @@ void RaceDirector::HandleChangeTeam(
 void RaceDirector::HandleLeaveRoom(ClientId clientId)
 {
   protocol::AcCmdCRLeaveRoomOK response{};
+
+  auto& clientContext = _clients[clientId];
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
+
+  roomInstance.tracker.RemoveRacer(
+    clientContext.characterUid);
+
+  // Check if the leaving player was the leader
+  const bool wasLeader = roomInstance.masterUid == clientContext.characterUid;
+
+  {
+    // Notify other clients in the room about the character leaving.
+    protocol::AcCmdCRLeaveRoomNotify notify{
+      .characterId = clientContext.characterUid,
+      .unk0 = 1};
+
+    for (const ClientId& roomClientId : roomInstance.clients)
+    {
+      _commandServer.QueueCommand<decltype(notify)>(
+        roomClientId,
+        [notify]()
+        {
+          return notify;
+        });
+    }
+  }
+
+  if (not roomInstance.clients.empty() && wasLeader)
+  {
+    // Find the next leader.
+    // todo: assign mastership to the best player
+
+    roomInstance.masterUid = roomInstance.tracker.GetRacers().begin()->first;
+
+    spdlog::info("Character {} became the master of room {} after the previous master left",
+      roomInstance.masterUid,
+      clientContext.roomUid);
+
+    {
+      // Notify other clients in the room about the new master.
+      protocol::AcCmdCRChangeMasterNotify notify{
+        .masterUid = roomInstance.masterUid};
+
+      for (const ClientId& roomClientId : roomInstance.clients)
+      {
+        _commandServer.QueueCommand<decltype(notify)>(
+          roomClientId,
+          [notify]()
+          {
+            return notify;
+          });
+      }
+    }
+  }
+  else
+  {
+    _serverInstance.GetRoomSystem().DeleteRoom(
+      clientContext.roomUid);
+    _roomInstances.erase(clientContext.roomUid);
+  }
+
+  clientContext.roomUid = data::InvalidUid;
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -527,13 +557,21 @@ void RaceDirector::HandleReadyRace(
   const protocol::AcCmdCRReadyRace& command)
 {
   auto& clientContext = _clients[clientId];
-  clientContext.ready = !_clients[clientId].ready;
+
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
+
+  auto& racer = roomInstance.tracker.GetRacer(
+    clientContext.characterUid);
+
+  // Toggle the ready state.
+  if (racer.state == tracker::RaceTracker::Racer::State::NotReady)
+    racer.state = tracker::RaceTracker::Racer::State::Ready;
+  else if (racer.state == tracker::RaceTracker::Racer::State::Ready)
+    racer.state = tracker::RaceTracker::Racer::State::NotReady;
 
   protocol::AcCmdCRReadyRaceNotify response{
     .characterUid = clientContext.characterUid,
-    .ready = clientContext.ready};
-
-  const auto& roomInstance = _roomInstances[clientContext.roomUid];
+    .isReady = racer.state == tracker::RaceTracker::Racer::State::Ready};
 
   for (const ClientId& roomClientId : roomInstance.clients)
   {
@@ -555,6 +593,8 @@ void RaceDirector::HandleStartRace(
   const auto& room = _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid);
   auto& roomInstance = _roomInstances[clientContext.roomUid];
+
+  // todo: verify master
 
   constexpr uint32_t AllMapsCourseId = 10000;
   constexpr uint32_t NewMapsCourseId = 10001;
@@ -578,13 +618,7 @@ void RaceDirector::HandleStartRace(
     notify.mapBlockId = room.mapBlockId;
   }
 
-  // Clear race trackers from the room instance
-  // Rooms can persistent so it is necessary to clear boost gauge
-  // and jump combo trackers
-  roomInstance.jumpComboTracker.clear();
-  roomInstance.starPointTracker.clear();
-
-  for (const auto& [characterUid, characterOid] : roomInstance.worldTracker.GetCharacters())
+  for (const auto& [characterUid, racer] : roomInstance.tracker.GetRacers())
   {
     std::string characterName;
     GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
@@ -593,23 +627,39 @@ void RaceDirector::HandleStartRace(
         characterName = character.name();
     });
 
-    notify.racers.emplace_back(protocol::AcCmdCRStartRaceNotify::Racer{
-      .oid = characterOid,
+    auto& protocolRacer = notify.racers.emplace_back(protocol::AcCmdCRStartRaceNotify::Player{
+      .oid = racer.oid,
       .name = characterName,
       .unk2 = 2,
       .unk3 = 3,
-      .p2dId = characterOid,
-      .teamColor = protocol::TeamColor::Solo,
+      .p2dId = racer.oid,
       .unk6 = 6,
       .unk7 = 7});
+
+    switch (racer.team)
+    {
+      case tracker::RaceTracker::Racer::Team::Solo:
+        protocolRacer.teamColor = protocol::TeamColor::Solo;
+        break;
+      case tracker::RaceTracker::Racer::Team::Red:
+        protocolRacer.teamColor = protocol::TeamColor::Red;
+        break;
+      case tracker::RaceTracker::Racer::Team::Blue:
+        protocolRacer.teamColor = protocol::TeamColor::Blue;
+        break;
+    }
   }
 
   // Send to all clients in the room.
   for (const ClientId& roomClientId : roomInstance.clients)
   {
     const auto& roomClientContext = _clients[roomClientId];
-    notify.racerOid = roomInstance.worldTracker.GetCharacterOid(
+
+    auto& racer = roomInstance.tracker.GetRacer(
       roomClientContext.characterUid);
+    racer.state = tracker::RaceTracker::Racer::State::Loading;
+
+    notify.racerOid = racer.oid;
 
     _commandServer.QueueCommand<decltype(notify)>(
       roomClientId,
@@ -646,50 +696,54 @@ void RaceDirector::HandleLoadingComplete(
 {
   auto& clientContext = _clients[clientId];
   auto& roomInstance = _roomInstances[clientContext.roomUid];
-  
-  // Add this client to the loaded clients set
-  roomInstance.loadedRaceClients.insert(clientId);
 
-  const auto characterOid = roomInstance.worldTracker.GetCharacterOid(clientContext.characterUid);
+  auto& racer = roomInstance.tracker.GetRacer(
+    clientContext.characterUid);
 
+  racer.state = tracker::RaceTracker::Racer::State::Racing;
 
   // Notify all clients in the room that this player's loading is complete
   for (const ClientId& roomClientId : roomInstance.clients)
   {
     _commandServer.QueueCommand<protocol::AcCmdCRLoadingCompleteNotify>(
       roomClientId,
-      [characterOid]()
+      [oid = racer.oid]()
       {
         return protocol::AcCmdCRLoadingCompleteNotify{
-          .oid = characterOid};
+          .oid = oid};
       });
   }
 
-  // Check if all players in the room have completed loading
-  bool allPlayersLoaded = (roomInstance.loadedRaceClients.size() == roomInstance.clients.size());
-
-  // If all players have loaded, start countdown for everyone
-  if (allPlayersLoaded)
-  {
-    spdlog::info("All players in room {} have finished loading, starting countdown", clientContext.roomUid);
-    
-    auto countdownTimestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(
-      std::chrono::steady_clock::now().time_since_epoch())
-      .count() / 100 + 10 * 10'000'000;
-
-    for (const ClientId& roomClientId : roomInstance.clients)
+  const bool allRacersLoaded = std::ranges::all_of(
+    std::views::values(roomInstance.tracker.GetRacers()),
+    [](const tracker::RaceTracker::Racer& racer)
     {
-      _commandServer.QueueCommand<protocol::AcCmdUserRaceCountdown>(
-        roomClientId,
-        [countdownTimestamp]()
-        {
-          return protocol::AcCmdUserRaceCountdown{
-            .timestamp = countdownTimestamp};
-        });
-    }
-    
-    // Reset loading state for next race
-    roomInstance.loadedRaceClients.clear();
+      return racer.state == tracker::RaceTracker::Racer::State::Racing;
+    });
+
+  if (not allRacersLoaded)
+  {
+    return;
+  }
+
+  spdlog::info(
+    "All players in room {} have finished loading,"
+    " starting the countdown.",
+    clientContext.roomUid);
+
+  const auto countdownTimestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(
+    std::chrono::steady_clock::now().time_since_epoch())
+    .count() / 100 + 10 * 10'000'000;
+
+  for (const ClientId& roomClientId : roomInstance.clients)
+  {
+    _commandServer.QueueCommand<protocol::AcCmdUserRaceCountdown>(
+      roomClientId,
+      [countdownTimestamp]()
+      {
+        return protocol::AcCmdUserRaceCountdown{
+          .timestamp = countdownTimestamp};
+      });
   }
 }
 
@@ -698,17 +752,19 @@ void RaceDirector::HandleUserRaceFinal(
   const protocol::AcCmdUserRaceFinal& command)
 {
   auto& clientContext = _clients[clientId];
-
   auto& roomInstance = _roomInstances[clientContext.roomUid];
 
+  // todo: address npc racers and update their states
+  auto& racer = roomInstance.tracker.GetRacer(
+    clientContext.characterUid);
+  racer.state = tracker::RaceTracker::Racer::State::Finished;
+
   protocol::AcCmdUserRaceFinalNotify notify{
-    .oid = command.oid,
+    .oid = racer.oid,
     .member2 = command.member2};
 
   for (const ClientId& roomClientId : roomInstance.clients)
   {
-    roomInstance.finishedRaceClients.insert(notify.oid);
-
     _commandServer.QueueCommand<decltype(notify)>(
       roomClientId,
       [notify]()
@@ -742,18 +798,23 @@ void RaceDirector::HandleRaceResult(
 
   protocol::AcCmdRCRaceResultNotify notify{};
 
-  bool allFinished = true;
-  for (const auto& [uid, oid] : roomInstance.worldTracker.GetCharacters())
+  const bool allRacersFinished = std::ranges::all_of(
+    std::views::values(roomInstance.tracker.GetRacers()),
+    [](const tracker::RaceTracker::Racer& racer)
+    {
+      return racer.state == tracker::RaceTracker::Racer::State::Finished;
+    });
+
+  if (not allRacersFinished)
+    return;
+
+  // Build the score board.
+  for (const auto& characterUid : roomInstance.tracker.GetRacers() | std::views::keys)
   {
     auto& score = notify.scores.emplace_back();
-    if (not roomInstance.finishedRaceClients.contains(oid))
-    {
-      allFinished = false;
-      break;
-    }
 
     const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
-      uid);
+      characterUid);
     if (characterRecord)
     {
       characterRecord.Immutable([&score](const data::Character& character)
@@ -765,17 +826,14 @@ void RaceDirector::HandleRaceResult(
     }
   }
 
-  if (allFinished)
+  for (const ClientId roomClientId : roomInstance.clients)
   {
-    for (ClientId roomClientId : roomInstance.clients)
-    {
-      _commandServer.QueueCommand<decltype(notify)>(
-        roomClientId,
-        [notify]()
-        {
-          return notify;
-        });
-    }
+    _commandServer.QueueCommand<decltype(notify)>(
+      roomClientId,
+      [notify]()
+      {
+        return notify;
+      });
   }
 }
 
@@ -846,28 +904,29 @@ void RaceDirector::HandleStarPointGet(
 {
   const auto& clientContext = _clients[clientId];
   auto& roomInstance = _roomInstances[clientContext.roomUid];
-  const auto& characterOid = roomInstance.worldTracker.GetCharacterOid(clientContext.characterUid);
 
-  if (command.characterOid != characterOid)
+  auto& racer = roomInstance.tracker.GetRacer(
+    clientContext.characterUid);
+  if (command.characterOid != racer.oid)
   {
-    // TODO: command character oid does not match calling character oid
-    // Throw?
-    return;
+    throw std::runtime_error(
+      "Client tried to perform action on behalf of different racer");
   }
   
   // Get pointer and if inserted with characterOid as key
-  // If character oid is not in star point tracker, store and start values at 0
-  auto [it, inserted] = roomInstance.starPointTracker.try_emplace(characterOid, 0);
-  
-  const auto& room = _serverInstance.GetRoomSystem().GetRoom(clientContext.roomUid);
-  const auto& courseRegistry = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(room.gameMode);
+  const auto& room = _serverInstance.GetRoomSystem().GetRoom(
+    clientContext.roomUid);
+  const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
+    room.gameMode);
 
-  it->second = std::min(it->second + command.gainedBoostAmount, courseRegistry.starPointsMax);
+  racer.starPointValue = std::min(
+    racer.starPointValue + command.gainedStarPoints,
+    gameModeTemplate.starPointsMax);
 
   protocol::AcCmdCRStarPointGetOK response{
     .characterOid = command.characterOid,
-    .boosterGauge = it->second,
-    .unk2 = 0
+    .starPointValue = racer.starPointValue,
+    .unk2 = false
   };
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -884,40 +943,30 @@ void RaceDirector::HandleRequestSpur(
 {
   const auto& clientContext = _clients[clientId];
   auto& roomInstance = _roomInstances[clientContext.roomUid];
-  const auto& characterOid = roomInstance.worldTracker.GetCharacterOid(clientContext.characterUid);
+
+  auto& racer = roomInstance.tracker.GetRacer(
+    clientContext.characterUid);
+  if (command.characterOid != racer.oid)
+  {
+    throw std::runtime_error(
+      "Client tried to perform action on behalf of different racer");
+  }
+
+  const auto& room = _serverInstance.GetRoomSystem().GetRoom(
+    clientContext.roomUid);
+  const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
+    room.gameMode);
+
+  if (racer.starPointValue < gameModeTemplate.spurConsumeStarPoints)
+    throw std::runtime_error("Client is dead ass cheating (or is really desynced)");
+
+  racer.starPointValue -= gameModeTemplate.spurConsumeStarPoints;
 
   protocol::AcCmdCRRequestSpurOK response{
     .characterOid = command.characterOid,
     .activeBoosters = command.activeBoosters,
-    .unk2 = 0,
+    .startPointValue = racer.starPointValue,
     .comboBreak = command.comboBreak};
-
-  if (command.characterOid != characterOid)
-  {
-    // TODO: command character oid does not match calling character oid
-    // Throw?
-    return;
-  }
-
-  const auto& room = _serverInstance.GetRoomSystem().GetRoom(clientContext.roomUid);
-  const auto& courseRegistry = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(room.gameMode);
-
-  auto [it, inserted] = roomInstance.starPointTracker.try_emplace(characterOid, 0);
-  if (inserted)
-  {
-    // character tried spur but had no tracking
-    // TODO: throw? return with zeroed response?
-    return;
-  }
-  else if (it->second < courseRegistry.spurConsumeStarPoints)
-  {
-    // character requested spur but does not have enough to spur. cheats?
-    // TODO: return response with current state?
-    return;
-  }
-
-  // Consume boost amount
-  response.unk2 = it->second -= courseRegistry.spurConsumeStarPoints;
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -933,13 +982,13 @@ void RaceDirector::HandleHurdleClearResult(
 {
   const auto& clientContext = _clients[clientId];
   auto& roomInstance = _roomInstances[clientContext.roomUid];
-  const auto& characterOid = roomInstance.worldTracker.GetCharacterOid(clientContext.characterUid);
 
-  if (command.characterOid != characterOid)
+  auto& racer = roomInstance.tracker.GetRacer(
+    clientContext.characterUid);
+  if (command.characterOid != racer.oid)
   {
-    // Calling character oid does not match command character oid
-    // TODO: throw?
-    return;
+    throw std::runtime_error(
+      "Client tried to perform action on behalf of different racer");
   }
 
   protocol::AcCmdCRHurdleClearResultOK response{
@@ -951,52 +1000,66 @@ void RaceDirector::HandleHurdleClearResult(
   
   protocol::AcCmdCRStarPointGetOK starPointResponse{
     .characterOid = command.characterOid,
-    .boosterGauge = roomInstance.starPointTracker[characterOid],
-    .unk2 = 0
+    .starPointValue = racer.starPointValue,
+    .unk2 = false,
   };
 
-  const auto& room = _serverInstance.GetRoomSystem().GetRoom(clientContext.roomUid);
-  const auto& courseRegistry = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(room.gameMode);
+  const auto& room = _serverInstance.GetRoomSystem().GetRoom(
+    clientContext.roomUid);
+  const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
+    room.gameMode);
 
-  auto [it, inserted] = roomInstance.jumpComboTracker.try_emplace(characterOid, 0);
   switch (command.hurdleClearType)
   {
     case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Perfect:
     {
-      // Perfect jump (max combo 99)
-      // Increment combo, max 99 and set response
-      it->second = std::min(static_cast<uint32_t>(99), it->second + 1);
+      // Perfect jump over the hurdle.
+      racer.jumpComboValue = std::min(
+        static_cast<uint32_t>(99),
+        racer.jumpComboValue + 1);
+
       if (room.gameMode == 1)
       {
         // Only send jump combo if it is a speed race
-        response.jumpCombo = it->second;
+        response.jumpCombo = racer.jumpComboValue;
       }
-      
+
       // Calculate max applicable combo
-      const auto& applicableComboCount = std::min(courseRegistry.perfectJumpMaxBonusCombo, it->second);
+      const auto& applicableComboCount = std::min(
+        gameModeTemplate.perfectJumpMaxBonusCombo,
+        racer.jumpComboValue);
       // Calculate max combo count * perfect jump boost unit points
-      const auto& comboBoost = applicableComboCount * courseRegistry.perfectJumpUnitStarPoints;
+      const auto& gainedStarPointsFromCombo = applicableComboCount * gameModeTemplate.perfectJumpUnitStarPoints;
       // Add boost points to character boost tracker
-      roomInstance.starPointTracker[characterOid] += courseRegistry.perfectJumpStarPoints + comboBoost;
+      racer.starPointValue = std::min(
+        racer.starPointValue + gameModeTemplate.perfectJumpStarPoints + gainedStarPointsFromCombo,
+        gameModeTemplate.starPointsMax);
+
       // Update boost gauge
-      starPointResponse.boosterGauge = roomInstance.starPointTracker[characterOid];
+      starPointResponse.starPointValue = racer.starPointValue;
       break;
     }
     case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Good:
     case protocol::AcCmdCRHurdleClearResult::HurdleClearType::DoubleJumpOrGlide:
     {
-      // Not perfect, reset jump combo
-      response.jumpCombo = it->second = 0;
-      // Increment boost gauge by good jump
-      roomInstance.starPointTracker[characterOid] += courseRegistry.goodJumpStarPoints;
+      // Not a perfect jump over the hurdle, reset the jump combo.
+      racer.jumpComboValue = 0;
+      response.jumpCombo = racer.jumpComboValue;
+
+      // Increment boost gauge by a good jump
+      racer.starPointValue = std::min(
+        racer.starPointValue + gameModeTemplate.goodJumpStarPoints,
+        gameModeTemplate.starPointsMax);
+
       // Update boost gauge
-      starPointResponse.boosterGauge = roomInstance.starPointTracker[characterOid];
+      starPointResponse.starPointValue = racer.starPointValue;
       break;
     }
     case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Collision:
     {
-      // Not a perfect jump, reset jump combo counter
-      response.jumpCombo = it->second = 0;
+      // A collision with hurdle, reset the jump combo.
+      racer.jumpComboValue = 0;
+      response.jumpCombo = racer.jumpComboValue;
       break;
     }
     default:
@@ -1007,18 +1070,13 @@ void RaceDirector::HandleHurdleClearResult(
     }
   }
 
+  // Update the star point value if the jump was not a collision.
   if (command.hurdleClearType != protocol::AcCmdCRHurdleClearResult::HurdleClearType::Collision)
   {
     _commandServer.QueueCommand<decltype(starPointResponse)>(
       clientId,
       [clientId, starPointResponse]()
       {
-        // TODO: remove later once done developing
-        spdlog::debug("[{}] AcCmdCRHurdleClearResult->AcCmdCRStarPointGetOK: {} {} {}",
-          clientId,
-          starPointResponse.characterOid,
-          starPointResponse.boosterGauge,
-          starPointResponse.unk2);
         return starPointResponse;
       });
   }
@@ -1044,24 +1102,30 @@ void RaceDirector::HandleStartingRate(
 
   const auto& clientContext = _clients[clientId];
   auto& roomInstance = _roomInstances[clientContext.roomUid];
-  const auto& characterOid = roomInstance.worldTracker.GetCharacterOid(clientContext.characterUid);
 
-  if (command.characterOid != characterOid)
+  auto& racer = roomInstance.tracker.GetRacer(
+    clientContext.characterUid);
+  if (command.characterOid != racer.oid)
   {
-    // Calling client character oid did not match command character oid
-    // TODO: throw?
-    return;
+    throw std::runtime_error(
+      "Client tried to perform action on behalf of different racer");
   }
 
+  const auto& room = _serverInstance.GetRoomSystem().GetRoom(
+    clientContext.roomUid);
+  const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
+    room.gameMode);
+
   // TODO: validate boost gained against a table and determine good/perfect start
-  roomInstance.starPointTracker[characterOid] += command.boostGained;
+  racer.starPointValue = std::min(
+    racer.starPointValue + command.boostGained,
+    gameModeTemplate.starPointsMax);
 
   // Only send this on good/perfect starts
   protocol::AcCmdCRStarPointGetOK response{
     .characterOid = command.characterOid,
-    .boosterGauge = roomInstance.starPointTracker[characterOid],
-    .unk2 = 0
-  };
+    .starPointValue = racer.starPointValue,
+    .unk2 = false};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,

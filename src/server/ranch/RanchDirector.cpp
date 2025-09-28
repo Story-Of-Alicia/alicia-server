@@ -649,7 +649,7 @@ void RanchDirector::HandleEnterRanch(
       {
         for (const auto& horseUid : rancher.horses())
         {
-          ranchInstance.worldTracker.AddHorse(horseUid);
+          ranchInstance.tracker.AddHorse(horseUid);
         }
       }
 
@@ -703,14 +703,14 @@ void RanchDirector::HandleEnterRanch(
     });
 
   // Add the character to the ranch.
-  ranchInstance.worldTracker.AddCharacter(
+  ranchInstance.tracker.AddCharacter(
     command.characterUid);
 
   // The character that is currently entering the ranch.
   RanchCharacter characterEnteringRanch;
 
   // Add the ranch horses.
-  for (auto [horseUid, horseOid] : ranchInstance.worldTracker.GetHorses())
+  for (auto [horseUid, horseOid] : ranchInstance.tracker.GetHorses())
   {
     auto& ranchHorse = response.horses.emplace_back();
     ranchHorse.horseOid = horseOid;
@@ -727,7 +727,7 @@ void RanchDirector::HandleEnterRanch(
   }
 
   // Add the ranch characters.
-  for (auto [characterUid, characterOid] : ranchInstance.worldTracker.GetCharacters())
+  for (auto [characterUid, characterOid] : ranchInstance.tracker.GetCharacters())
   {
     auto& protocolCharacter = response.characters.emplace_back();
     protocolCharacter.oid = characterOid;
@@ -882,7 +882,7 @@ void RanchDirector::HandleRanchLeave(ClientId clientId)
 
   auto& ranchInstance = ranchIter->second;
 
-  ranchInstance.worldTracker.RemoveCharacter(clientContext.characterUid);
+  ranchInstance.tracker.RemoveCharacter(clientContext.characterUid);
   ranchInstance.clients.erase(clientId);
 
   protocol::AcCmdCRLeaveRanchOK response{};
@@ -982,7 +982,7 @@ void RanchDirector::HandleSnapshot(
   const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
 
   protocol::RanchCommandRanchSnapshotNotify notify{
-    .ranchIndex = ranchInstance.worldTracker.GetCharacterOid(
+    .ranchIndex = ranchInstance.tracker.GetCharacterOid(
       clientContext.characterUid),
     .type = command.type,
   };
@@ -991,11 +991,15 @@ void RanchDirector::HandleSnapshot(
   {
     case protocol::AcCmdCRRanchSnapshot::Full:
     {
+      if (command.full.ranchIndex != notify.ranchIndex)
+        throw std::runtime_error("Client sent a snapshot for an entity it's not controlling");
       notify.full = command.full;
       break;
     }
     case protocol::AcCmdCRRanchSnapshot::Partial:
     {
+      if (command.full.ranchIndex != notify.ranchIndex)
+        throw std::runtime_error("Client sent a snapshot for an entity it's not controlling");
       notify.partial = command.partial;
       break;
     }

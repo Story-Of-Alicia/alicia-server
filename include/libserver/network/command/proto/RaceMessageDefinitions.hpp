@@ -60,8 +60,7 @@ struct Avatar
 //! Racer
 struct Racer
 {
-  // 0 for regular players, everything else leader
-  uint8_t member1{0};
+  bool isRoomLeader{0};
   uint8_t member2{1};
   uint32_t level{};
   uint32_t oid{};
@@ -455,7 +454,7 @@ struct AcCmdCRStartRaceNotify
   uint16_t mapBlockId{};
 
   // List size specified with a uint8_t. Max size 10
-  struct Racer
+  struct Player
   {
     uint16_t oid{};
     std::string name{};
@@ -466,7 +465,7 @@ struct AcCmdCRStartRaceNotify
     uint16_t unk6{}; // Index?
     uint32_t unk7{};
   };
-  std::vector<Racer> racers{};
+  std::vector<Player> racers{};
 
   uint32_t p2pRelayAddress{};
   uint16_t p2pRelayPort{};
@@ -766,7 +765,7 @@ struct AcCmdCRReadyRace
 struct AcCmdCRReadyRaceNotify
 {
   uint32_t characterUid{};
-  uint8_t ready{};
+  bool isReady{};
 
   static Command GetCommand()
   {
@@ -840,7 +839,7 @@ struct AcCmdUserRaceFinal
 
 struct AcCmdUserRaceFinalNotify
 {
-  int16_t oid{};
+  uint16_t oid{};
   uint32_t member2{};
 
   static Command GetCommand()
@@ -1180,7 +1179,7 @@ struct AcCmdCRStarPointGet
 {
   uint16_t characterOid; // oid?
   uint32_t unk1;
-  uint32_t gainedBoostAmount;
+  uint32_t gainedStarPoints;
 
   static Command GetCommand()
   {
@@ -1204,9 +1203,9 @@ struct AcCmdCRStarPointGet
 
 struct AcCmdCRStarPointGetOK
 {
-  uint16_t characterOid; // oid?
-  uint32_t boosterGauge;
-  uint8_t unk2;
+  uint16_t characterOid;
+  uint32_t starPointValue;
+  bool unk2;
 
   static Command GetCommand()
   {
@@ -1258,7 +1257,7 @@ struct AcCmdCRRequestSpurOK
 {
   uint16_t characterOid;
   uint8_t activeBoosters;
-  uint32_t unk2; // current star point? (gauge)
+  uint32_t startPointValue; // current star point? (gauge)
   uint8_t comboBreak;
 
   static Command GetCommand()
@@ -1316,7 +1315,7 @@ struct AcCmdCRHurdleClearResult
 struct AcCmdCRHurdleClearResultOK
 {
   uint16_t characterOid;
-  protocol::AcCmdCRHurdleClearResult::HurdleClearType hurdleClearType;
+  AcCmdCRHurdleClearResult::HurdleClearType hurdleClearType;
   //! Max combo is 99
   uint32_t jumpCombo;
   uint32_t unk3;
@@ -1517,6 +1516,31 @@ struct AcCmdRCRoomCountdownCancel
   //! @param stream Source stream.
   static void Read(
     AcCmdRCRoomCountdownCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRChangeMasterNotify
+{
+  //! A character UID of the new master.
+  uint32_t masterUid;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeMasterNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeMasterNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeMasterNotify& command,
     SourceStream& stream);
 };
 

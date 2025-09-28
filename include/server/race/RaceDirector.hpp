@@ -22,9 +22,10 @@
 
 #include "server/Config.hpp"
 
+#include "server/tracker/RaceTracker.hpp"
+
 #include "libserver/network/command/CommandServer.hpp"
 #include "libserver/network/command/proto/RaceMessageDefinitions.hpp"
-#include "server/tracker/WorldTracker.hpp"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -61,40 +62,18 @@ private:
   {
     data::Uid characterUid{data::InvalidUid};
     data::Uid roomUid{data::InvalidUid};
-    bool ready = false;
     bool authorized = false;
   };
-
-  struct Race
-  {
-    struct Player
-    {
-      enum class State
-      {
-        Disconnected,
-        NotReady,
-        Ready,
-        Loading,
-        Loaded,
-      };
-
-      uint16_t oid{};
-      State state{State::NotReady};
-    };
-
-    std::unordered_map<uint16_t, Player> players;
-  };
+  ;
 
   struct RoomInstance
   {
     std::unordered_set<ClientId> clients;
-    WorldTracker worldTracker;
-    data::Uid leaderCharacterUid{data::InvalidUid};
-    //Clients that are loaded into the race
-    std::unordered_set<uint16_t> loadedRaceClients;
-    std::unordered_set<uint16_t> finishedRaceClients;
-    std::unordered_map<uint16_t, uint32_t> starPointTracker;
-    std::unordered_map<uint16_t, uint32_t> jumpComboTracker;
+
+    tracker::RaceTracker tracker;
+
+    //! A leader character's UID.
+    data::Uid masterUid{data::InvalidUid};
   };
 
   void HandleEnterRoom(
