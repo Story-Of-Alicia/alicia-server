@@ -508,7 +508,7 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
     }
   }
 
-  if (not roomInstance.clients.empty() && wasLeader)
+  if (not roomInstance.tracker.GetRacers().empty() && wasLeader)
   {
     // Find the next leader.
     // todo: assign mastership to the best player
