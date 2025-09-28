@@ -232,6 +232,8 @@ void RaceDirector::Tick() {}
 
 void RaceDirector::HandleClientConnected(ClientId clientId)
 {
+  _clients.try_emplace(clientId);
+
   spdlog::info("Client {} connected to the race", clientId);
 }
 
@@ -499,6 +501,9 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
 
     for (const ClientId& roomClientId : roomInstance.clients)
     {
+      if (roomClientId == clientId)
+        continue;
+
       _commandServer.QueueCommand<decltype(notify)>(
         roomClientId,
         [notify]()
