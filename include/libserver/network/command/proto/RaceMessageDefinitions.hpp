@@ -1444,12 +1444,19 @@ struct AcCmdCRRequestMagicItemNotify
 
 struct AcCmdUserRaceUpdatePos
 {
+  //! Character oid
   uint16_t oid{};
+  //! Position
   std::array<float, 3> member2{};
+  //! Rotation
   std::array<float, 3> member3{};
+  //! Speed
   float member4{};
+  //! 1 = In the air
   uint16_t member5{};
+  //! Race track progress
   float member6{};
+  //! Ticks since connected to race director?
   uint32_t member7{};
 
   static Command GetCommand()
