@@ -373,25 +373,29 @@ void AcCmdCRStartRaceNotify::Struct1::Write(
   const Struct1& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0)
-   .Write(command.unk1)
-   .Write(command.unk2)
-   .Write(command.unk3);
+  stream.Write(command.member1)
+   .Write(command.member2)
+   .Write(command.member3)
+   .Write(command.member4);
 
   stream.Write(static_cast<uint8_t>(
-    command.unk4.size()));
-  for (const auto& element : command.unk4)
+    command.member5.size()));
+  for (const auto& element : command.member5)
   {
     stream.Write(element);
   }
 
-  stream.Write(command.unk5)
-    .Write(command.unk6)
-    .Write(command.unk7)
-    .Write(command.unk8)
-    .Write(command.unk9)
-    .Write(command.unk10)
-    .Write(command.unk11);
+  if (command.member4 == 3)
+  {
+    stream.Write(command.optional.member6)
+      .Write(command.optional.member8)
+      .Write(command.optional.member9)
+      .Write(command.optional.member10)
+      .Write(command.optional.member11)
+      .Write(command.optional.member12);
+  }
+
+  stream.Write(command.member13);
 }
 
 void AcCmdCRStartRaceNotify::Struct1::Read(

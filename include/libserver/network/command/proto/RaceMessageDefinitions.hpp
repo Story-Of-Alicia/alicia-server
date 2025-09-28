@@ -474,22 +474,25 @@ struct AcCmdCRStartRaceNotify
 
   struct Struct1
   {
-    uint16_t unk0{};
-    uint8_t unk1{};
-    uint8_t unk2{};
-    uint32_t unk3{};
+    uint16_t member1{};
+    uint8_t member2{};
+    uint8_t member3{};
+    uint32_t member4{};
     // List size specified with a uint8_t. Max size 20
-    std::vector<uint32_t> unk4{};
+    std::vector<uint32_t> member5{};
 
-    // If isBusy == 3?
-    uint16_t unk5{};
-    uint16_t unk6{};
-    uint16_t unk7{};
-    uint16_t unk8{};
-    uint16_t unk9{};
+    // only present if member4 == 3
+    struct Optional
+    {
+      uint16_t member6{};
+      uint16_t member8{};
+      uint16_t member9{};
+      uint16_t member10{};
+      uint16_t member11{};
+      uint8_t member12{};
+    } optional{};
 
-    uint8_t unk10{};
-    uint32_t unk11{};
+    uint32_t member13{};
 
     static void Write(
       const Struct1& command,
@@ -716,8 +719,8 @@ struct AcCmdCRChat
 
 struct AcCmdCRChatNotify
 {
-  std::string author;
   std::string message;
+  std::string author;
   uint8_t unknown{};
 
   static Command GetCommand()
@@ -942,6 +945,7 @@ struct AcCmdRCRaceResultNotify
     uint32_t member6{0};
     uint32_t carrots{0};
     uint32_t level{0};
+    // this is copied as memcpy
     uint32_t member9{0};
     uint32_t member10{0};
     uint16_t member11{0};

@@ -151,6 +151,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdUserRaceUpdatePos& command);
 
+  void HandleChat(
+    ClientId clientId,
+    const protocol::AcCmdCRChat& command);
+
   //!
   std::thread test;
   std::atomic_bool run_test{true};

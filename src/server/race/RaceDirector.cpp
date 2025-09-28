@@ -147,6 +147,12 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     {
       HandleRaceUserPos(clientId, message);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRChat>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleChat(clientId, message);
+    });
 }
 
 void RaceDirector::Initialize()
@@ -513,30 +519,33 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
     }
   }
 
-  if (not roomInstance.tracker.GetRacers().empty() && wasLeader)
+  if (not roomInstance.tracker.GetRacers().empty())
   {
-    // Find the next leader.
-    // todo: assign mastership to the best player
-
-    roomInstance.masterUid = roomInstance.tracker.GetRacers().begin()->first;
-
-    spdlog::info("Character {} became the master of room {} after the previous master left",
-      roomInstance.masterUid,
-      clientContext.roomUid);
-
+    if (wasLeader)
     {
-      // Notify other clients in the room about the new master.
-      protocol::AcCmdCRChangeMasterNotify notify{
-        .masterUid = roomInstance.masterUid};
+      // Find the next leader.
+      // todo: assign mastership to the best player
 
-      for (const ClientId& roomClientId : roomInstance.clients)
+      roomInstance.masterUid = roomInstance.tracker.GetRacers().begin()->first;
+
+      spdlog::info("Character {} became the master of room {} after the previous master left",
+        roomInstance.masterUid,
+        clientContext.roomUid);
+
       {
-        _commandServer.QueueCommand<decltype(notify)>(
-          roomClientId,
-          [notify]()
-          {
-            return notify;
-          });
+        // Notify other clients in the room about the new master.
+        protocol::AcCmdCRChangeMasterNotify notify{
+          .masterUid = roomInstance.masterUid};
+
+        for (const ClientId& roomClientId : roomInstance.clients)
+        {
+          _commandServer.QueueCommand<decltype(notify)>(
+            roomClientId,
+            [notify]()
+            {
+              return notify;
+            });
+        }
       }
     }
   }
@@ -875,9 +884,6 @@ void RaceDirector::HandleAwardStart(
 
   for (const auto roomClientId : roomInstance.clients)
   {
-    if (roomClientId == clientId)
-      continue;
-
     _commandServer.QueueCommand<decltype(notify)>(
       roomClientId,
       [notify]()
@@ -1159,6 +1165,36 @@ void RaceDirector::HandleRaceUserPos(
     // Prevent broadcast to self.
     if (clientId == roomClientId)
       continue;
+  }
+}
+
+void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& command)
+{
+  const auto& clientContext = _clients[clientId];
+
+  const auto messageVerdict = _serverInstance.GetChatSystem().ProcessChatMessage(
+    clientContext.characterUid, command.message);
+
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  protocol::AcCmdCRChatNotify notify{
+    .message = messageVerdict.message,
+    .unknown = 1};
+
+  characterRecord.Immutable([&notify](const data::Character& character)
+  {
+    notify.author = character.name();
+  });
+
+  spdlog::info("[Room {}] {}: {}", clientContext.roomUid, notify.author, notify.message);
+
+  const auto& roomInstance = _roomInstances[clientContext.characterUid];
+  for (const ClientId roomClientId : roomInstance.clients)
+  {
+    _commandServer.QueueCommand<decltype(notify)>(
+      roomClientId,
+      [notify]{return notify;});
   }
 }
 
