@@ -655,6 +655,13 @@ void RaceDirector::HandleStartRace(
     }
   }
 
+  // Reset jump combo/star point (boost)
+  for (auto& racer : roomInstance.tracker.GetRacers() | std::views::values)
+  {
+    racer.jumpComboValue = 0;
+    racer.starPointValue = 0;
+  }
+
   // Send to all clients in the room.
   for (const ClientId& roomClientId : roomInstance.clients)
   {
@@ -784,7 +791,7 @@ void RaceDirector::HandleRaceResult(
   const protocol::AcCmdCRRaceResult& command)
 {
   auto& clientContext = _clients[clientId];
-  const auto& roomInstance = _roomInstances[clientContext.roomUid];
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
 
   protocol::AcCmdCRRaceResultOK response{
     .member1 = 1,

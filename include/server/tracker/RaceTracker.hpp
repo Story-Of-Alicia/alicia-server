@@ -72,7 +72,7 @@ public:
   [[nodiscard]] Racer& GetRacer(data::Uid characterUid);
   //! Returns a reference to all racer records.
   //! @return Reference to racer records.
-  [[nodiscard]] const ObjectMap& GetRacers() const;
+  [[nodiscard]] ObjectMap& GetRacers();
 
 private:
   //! The next entity ID.

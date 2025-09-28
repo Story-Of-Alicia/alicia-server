@@ -47,7 +47,7 @@ RaceTracker::Racer& RaceTracker::GetRacer(data::Uid characterUid)
   return racerIter->second;
 }
 
-const RaceTracker::ObjectMap& RaceTracker::GetRacers() const
+RaceTracker::ObjectMap& RaceTracker::GetRacers()
 {
   return _racers;
 }
