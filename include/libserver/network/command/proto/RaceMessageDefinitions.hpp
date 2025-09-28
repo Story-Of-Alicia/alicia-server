@@ -539,8 +539,11 @@ struct AcCmdCRStartRaceNotify
   } unk13{};
 
   uint8_t unk14{};
-  uint32_t unk15{};
-  uint32_t unk16{};
+  //! Carnival (FestivalMissionInfo)
+  uint32_t carnivalType{};
+  //! Weather (MapWeatherInfo)
+  //! Snow has snow, rain only has cloudy weather
+  uint32_t weatherType{};
   uint8_t unk17{};
 
   // List size specified with a byte. Max size 8

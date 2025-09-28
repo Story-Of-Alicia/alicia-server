@@ -480,8 +480,8 @@ void AcCmdCRStartRaceNotify::Write(
     .Write(command.unk13);
 
   stream.Write(command.unk14)
-    .Write(command.unk15)
-    .Write(command.unk16)
+    .Write(command.carnivalType)
+    .Write(command.weatherType)
     .Write(command.unk17);
 
   stream.Write(static_cast<uint8_t>(command.unk18.size()));
