@@ -65,6 +65,26 @@ private:
     bool authorized = false;
   };
 
+  struct Race
+  {
+    struct Player
+    {
+      enum class State
+      {
+        Disconnected,
+        NotReady,
+        Ready,
+        Loading,
+        Loaded,
+      };
+
+      uint16_t oid{};
+      State state{State::NotReady};
+    };
+
+    std::unordered_map<uint16_t, Player> players;
+  };
+
   struct RoomInstance
   {
     std::unordered_set<ClientId> clients;
@@ -92,6 +112,10 @@ private:
   void HandleLeaveRoom(
     ClientId clientId);
 
+  void HandleReadyRace(
+  ClientId clientId,
+  const protocol::AcCmdCRReadyRace& command);
+
   void HandleStartRace(
     ClientId clientId,
     const protocol::AcCmdCRStartRace& command);
@@ -103,10 +127,6 @@ private:
   void HandleLoadingComplete(
     ClientId clientId,
     const protocol::AcCmdCRLoadingComplete& command);
-
-  void HandleReadyRace(
-    ClientId clientId,
-    const protocol::AcCmdCRReadyRace& command);
 
   void HandleUserRaceFinal(
     ClientId clientId,

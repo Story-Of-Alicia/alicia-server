@@ -167,32 +167,52 @@ void RaceDirector::Initialize()
         asio::ip::address_v4::loopback(),
         10500));
 
-    asio::streambuf buf;
+    asio::streambuf readBuffer;
+    asio::streambuf writeBuffer;
+
     while (run_test)
     {
-      const auto message = buf.prepare(1024);
+      const auto request = readBuffer.prepare(1024);
       asio::ip::udp::endpoint sender;
 
       try
       {
-        const size_t b = skt.receive_from(message, sender);
+        const size_t bytesRead = skt.receive_from(request, sender);
 
-        buf.commit(b);
+        struct RelayHeader
+        {
+          uint16_t member0{};
+          uint16_t member1{};
+          uint16_t member2{};
+        };
+
+        const auto response = writeBuffer.prepare(1024);
+
+        RelayHeader* header = static_cast<RelayHeader*>(response.data());
+        header->member2 = 1;
+
+        for (const auto idx : std::views::iota(0ull, bytesRead))
+        {
+          static_cast<std::byte*>(response.data())[idx + sizeof(RelayHeader)] = static_cast<const std::byte*>(
+            request.data())[idx];
+        }
+
+        writeBuffer.commit(bytesRead + sizeof(RelayHeader));
+        readBuffer.consume(bytesRead + sizeof(RelayHeader));
+
         for (auto& client : _clients)
         {
           if (client == sender)
             continue;
 
-          skt.send_to(buf.data(),  client);
+          writeBuffer.consume(
+            skt.send_to(writeBuffer.data(), client));
         }
 
         if (not _clients.contains(sender))
           _clients.insert(sender);
 
-        buf.consume(b);
-      } catch (const std::exception& x)
-      {
-        1+1;
+      } catch (const std::exception& x) {
       }
 
     }
@@ -414,7 +434,8 @@ void RaceDirector::HandleChangeRoomOptions(
   auto& room = _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid);
 
-  std::bitset<6> options(static_cast<uint16_t>(command.optionsBitfield));
+  const std::bitset<6> options(
+    static_cast<uint16_t>(command.optionsBitfield));
 
   if (options.test(0))
     room.name = command.name;
@@ -429,7 +450,7 @@ void RaceDirector::HandleChangeRoomOptions(
   if (options.test(5))
     room.unk3 = command.npcRace;
   
-  protocol::AcCmdCRChangeRoomOptionsNotify response{
+  protocol::AcCmdCRChangeRoomOptionsNotify notify{
     .optionsBitfield = command.optionsBitfield,
     .name = command.name,
     .playerCount = command.playerCount,
@@ -442,11 +463,11 @@ void RaceDirector::HandleChangeRoomOptions(
 
   for (const auto roomClientId : roomInstance.clients)
   {
-    _commandServer.QueueCommand<decltype(response)>(
+    _commandServer.QueueCommand<decltype(notify)>(
       roomClientId,
-      [response]()
+      [notify]()
       {
-        return response;
+        return notify;
       });
   }
 }
@@ -474,7 +495,7 @@ void RaceDirector::HandleChangeTeam(
     {
       return response;
     });
-  
+
   // Notify all other clients in the room
   for (const ClientId& roomClientId : roomInstance.clients)
   {
@@ -501,6 +522,30 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
     });
 }
 
+void RaceDirector::HandleReadyRace(
+  ClientId clientId,
+  const protocol::AcCmdCRReadyRace& command)
+{
+  auto& clientContext = _clients[clientId];
+  clientContext.ready = !_clients[clientId].ready;
+
+  protocol::AcCmdCRReadyRaceNotify response{
+    .characterUid = clientContext.characterUid,
+    .ready = clientContext.ready};
+
+  const auto& roomInstance = _roomInstances[clientContext.roomUid];
+
+  for (const ClientId& roomClientId : roomInstance.clients)
+  {
+    _commandServer.QueueCommand<decltype(response)>(
+      roomClientId,
+      [response]()
+      {
+        return response;
+      });
+  }
+}
+
 void RaceDirector::HandleStartRace(
   ClientId clientId,
   const protocol::AcCmdCRStartRace& command)
@@ -511,24 +556,31 @@ void RaceDirector::HandleStartRace(
     clientContext.roomUid);
   auto& roomInstance = _roomInstances[clientContext.roomUid];
 
-  protocol::AcCmdCRStartRaceNotify response{};
-  response.gameMode = room.gameMode;
-  // This Block will handle the random map selection
-  if (room.mapBlockId == 10000 || room.mapBlockId == 10001 || room.mapBlockId == 10002)
+  constexpr uint32_t AllMapsCourseId = 10000;
+  constexpr uint32_t NewMapsCourseId = 10001;
+  constexpr uint32_t HotMapsCourseId = 10002;
+
+  protocol::AcCmdCRStartRaceNotify notify{
+    .gameMode = room.gameMode,
+    .p2pRelayAddress = asio::ip::address_v4::loopback().to_uint(),
+    .p2pRelayPort = static_cast<uint16_t>(10500)};
+
+  if (room.mapBlockId == AllMapsCourseId
+    || room.mapBlockId == NewMapsCourseId
+    || room.mapBlockId == HotMapsCourseId)
   {
     // TODO: Select a random mapBlockId from a predefined list
     // For now its a map that at least loads in
-    response.mapBlockId = 1;
+    notify.mapBlockId = 1;
   }
   else
-    response.mapBlockId = room.mapBlockId;
-
-  // response.ip = asio::ip::address_v4::loopback().to_uint();
-  // response.port = static_cast<uint16_t>(10500);
+  {
+    notify.mapBlockId = room.mapBlockId;
+  }
 
   // Clear race trackers from the room instance
   // Rooms can persistent so it is necessary to clear boost gauge
-  // and jump combo trackers 
+  // and jump combo trackers
   roomInstance.jumpComboTracker.clear();
   roomInstance.starPointTracker.clear();
 
@@ -541,13 +593,13 @@ void RaceDirector::HandleStartRace(
         characterName = character.name();
     });
 
-    response.racers.emplace_back(protocol::AcCmdCRStartRaceNotify::Racer{
+    notify.racers.emplace_back(protocol::AcCmdCRStartRaceNotify::Racer{
       .oid = characterOid,
       .name = characterName,
       .unk2 = 2,
       .unk3 = 3,
-      .p2dId= 4,
-      .teamColor= protocol::TeamColor::Solo,
+      .p2dId = characterOid,
+      .teamColor = protocol::TeamColor::Solo,
       .unk6 = 6,
       .unk7 = 7});
   }
@@ -556,14 +608,14 @@ void RaceDirector::HandleStartRace(
   for (const ClientId& roomClientId : roomInstance.clients)
   {
     const auto& roomClientContext = _clients[roomClientId];
-    response.racerOid = roomInstance.worldTracker.GetCharacterOid(
+    notify.racerOid = roomInstance.worldTracker.GetCharacterOid(
       roomClientContext.characterUid);
 
-    _commandServer.QueueCommand<decltype(response)>(
+    _commandServer.QueueCommand<decltype(notify)>(
       roomClientId,
-      [response]()
+      [notify]()
       {
-        return response;
+        return notify;
       });
   }
 }
@@ -638,30 +690,6 @@ void RaceDirector::HandleLoadingComplete(
     
     // Reset loading state for next race
     roomInstance.loadedRaceClients.clear();
-  }
-}
-
-void RaceDirector::HandleReadyRace(
-  ClientId clientId,
-  const protocol::AcCmdCRReadyRace& command)
-{
-  auto& clientContext = _clients[clientId];
-  clientContext.ready = !_clients[clientId].ready;
-
-  protocol::AcCmdCRReadyRaceNotify response{
-    .characterUid = clientContext.characterUid,
-    .ready = clientContext.ready};
-
-  const auto& roomInstance = _roomInstances[clientContext.roomUid];
-
-  for (const ClientId& roomClientId : roomInstance.clients)
-  {
-    _commandServer.QueueCommand<decltype(response)>(
-      roomClientId,
-      [response]()
-      {
-        return response;
-      });
   }
 }
 

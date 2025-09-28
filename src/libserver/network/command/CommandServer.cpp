@@ -67,6 +67,8 @@ void XorAlgorithm(
 bool IsMuted(protocol::Command id)
 {
   return id == protocol::Command::AcCmdCLHeartbeat
+    || id == protocol::Command::AcCmdCLRoomList
+    || id == protocol::Command::AcCmdCLRoomListOK
     || id == protocol::Command::AcCmdCRHeartbeat
     || id == protocol::Command::AcCmdCRRanchSnapshot
     || id == protocol::Command::AcCmdCRRanchSnapshotNotify

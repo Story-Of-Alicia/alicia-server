@@ -468,8 +468,8 @@ struct AcCmdCRStartRaceNotify
   };
   std::vector<Racer> racers{};
 
-  uint32_t ip{};
-  uint16_t port{};
+  uint32_t p2pRelayAddress{};
+  uint16_t p2pRelayPort{};
 
   uint8_t unk6{};
 
@@ -1470,6 +1470,53 @@ struct AcCmdUserRaceUpdatePos
   //! @param stream Source stream.
   static void Read(
     AcCmdUserRaceUpdatePos& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCRoomCountdown
+{
+  float member0{};
+  uint16_t member1{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCRoomCountdown;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCRoomCountdown& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCRoomCountdown& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCRoomCountdownCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCRoomCountdownCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCRoomCountdownCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCRoomCountdownCancel& command,
     SourceStream& stream);
 };
 

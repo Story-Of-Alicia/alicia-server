@@ -885,11 +885,22 @@ void RanchDirector::HandleRanchLeave(ClientId clientId)
   ranchInstance.worldTracker.RemoveCharacter(clientContext.characterUid);
   ranchInstance.clients.erase(clientId);
 
+  protocol::AcCmdCRLeaveRanchOK response{};
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+
   protocol::AcCmdCRLeaveRanchNotify notify{
     .characterId = clientContext.characterUid};
 
   for (const ClientId& ranchClientId : ranchInstance.clients)
   {
+    if (ranchClientId == clientId)
+      continue;
+
     _commandServer.QueueCommand<decltype(notify)>(
       ranchClientId,
       [notify]()

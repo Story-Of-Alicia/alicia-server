@@ -465,8 +465,8 @@ void AcCmdCRStartRaceNotify::Write(
 
   stream.Write(
     boost::asio::detail::socket_ops::host_to_network_long(
-      command.ip))
-    .Write(command.port)
+      command.p2pRelayAddress))
+    .Write(command.p2pRelayPort)
     .Write(command.unk6)
     .Write(command.unk9)
     .Write(command.unk10);
@@ -1083,6 +1083,35 @@ void AcCmdUserRaceUpdatePos::Read(
     .Read(command.member5)
     .Read(command.member6)
     .Read(command.member7);
+}
+
+void AcCmdRCRoomCountdown::Write(
+  const AcCmdRCRoomCountdown& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member0)
+    .Write(command.member1);
+}
+
+void AcCmdRCRoomCountdown::Read(
+  AcCmdRCRoomCountdown& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCRoomCountdownCancel::Write(
+  const AcCmdRCRoomCountdownCancel& command,
+  SinkStream& stream)
+{
+  // Empty.
+}
+
+void AcCmdRCRoomCountdownCancel::Read(
+  AcCmdRCRoomCountdownCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
 }
 
 } // namespace server::protocol
