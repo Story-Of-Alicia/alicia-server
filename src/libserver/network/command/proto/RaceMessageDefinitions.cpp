@@ -593,8 +593,8 @@ void AcCmdCRChatNotify::Write(
   const AcCmdCRChatNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.author)
-    .Write(command.message)
+  stream.Write(command.message)
+    .Write(command.author)
     .Write(command.unknown);
 }
 
