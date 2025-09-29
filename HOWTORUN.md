@@ -7,14 +7,14 @@ Here's a quick set-up through **docker compose**. It sets up alicia server insta
 ```yaml
 services:
  instance:
-   image: 'ghcr.io/story-of-alicia/alicia-server'
+   image: 'ghcr.io/story-of-alicia/alicia-server:latest'
    restart: unless-stopped
    ports:
      - '10030-10033:10030-10033/tcp'
    ulimits:
      core: -1
    volumes:
-      - "./config:/var/lib/alicia-server/config/server"
+      #- "./config:/var/lib/alicia-server/config"
       - "./logs:/var/lib/alicia-server/logs"
       - "./data:/var/lib/alicia-server/data"
       - "./dumps:/dumps"
