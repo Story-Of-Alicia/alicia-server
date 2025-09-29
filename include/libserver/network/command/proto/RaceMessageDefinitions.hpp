@@ -159,7 +159,7 @@ struct AcCmdCREnterRoomOK
   uint32_t unk10{};
   float unk11{};
   uint32_t unk12{};
-  uint32_t unk13{};
+  uint32_t scrambleValue{};
 
   static Command GetCommand()
   {
@@ -449,7 +449,7 @@ struct AcCmdCRStartRaceNotify
   uint8_t gameMode{};
   bool skills{};
   // this is an oid of a special player
-  uint16_t racerOid{};
+  uint16_t hostOid{};
   uint32_t member4{}; // Room ID?
   uint16_t mapBlockId{};
 

@@ -71,7 +71,7 @@ void MessengerDirector::HandleChatterLogin(
   protocol::ChatCmdLoginAckOK response{
     .groups = {{.uid = OnlinePlayersCategoryUid, .name = "Online Players"}}};
 
-  for (data::Uid onlineCharacterUid : _serverInstance.GetRanchDirector().GetOnlineCharacters())
+  for (data::Uid onlineCharacterUid : _serverInstance.GetLobbyDirector().GetOnlineCharacters())
   {
     const auto onlineCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(
       onlineCharacterUid);
@@ -87,7 +87,8 @@ void MessengerDirector::HandleChatterLogin(
       friendo.categoryUid = OnlinePlayersCategoryUid;
 
       // todo: get the ranch/room information
-      friendo.ranchUid = onlineCharacter.uid();
+      //friendo.ranchUid = onlineCharacter.uid();
+      friendo.roomUid = 1;
     });
   }
 

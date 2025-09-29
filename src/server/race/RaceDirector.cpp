@@ -645,11 +645,7 @@ void RaceDirector::HandleStartRace(
     auto& protocolRacer = notify.racers.emplace_back(protocol::AcCmdCRStartRaceNotify::Player{
       .oid = racer.oid,
       .name = characterName,
-      .unk2 = 2,
-      .unk3 = 3,
-      .p2dId = racer.oid,
-      .unk6 = 6,
-      .unk7 = 7});
+      .p2dId = racer.oid,});
 
     switch (racer.team)
     {
@@ -681,7 +677,7 @@ void RaceDirector::HandleStartRace(
       roomClientContext.characterUid);
     racer.state = tracker::RaceTracker::Racer::State::Loading;
 
-    notify.racerOid = racer.oid;
+    notify.hostOid = racer.oid;
 
     _commandServer.QueueCommand<decltype(notify)>(
       roomClientId,

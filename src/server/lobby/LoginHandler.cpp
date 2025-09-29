@@ -55,6 +55,7 @@ void LoginHandler::Tick()
       continue;
     }
 
+    // If the data are still being loaded do not proceed with login.
     if (_lobbyDirector.GetServerInstance().GetDataDirector().AreDataBeingLoaded(
       loginContext.userName))
     {
@@ -145,6 +146,7 @@ void LoginHandler::Tick()
     // If the user has a character request the load.
     if (hasCharacter)
     {
+      // If the user character is not loaded do not proceed.
       if (not loginContext.userCharacterLoadRequested)
       {
         _lobbyDirector.GetServerInstance().GetDataDirector().RequestLoadCharacterData(
@@ -161,9 +163,12 @@ void LoginHandler::Tick()
     const bool forcedCharacterCreator = _lobbyDirector._forcedCharacterCreator.erase(
       characterUid) > 0;
 
-    // If the user does not have a character send them to the character creator.
+    // If the user does not have a character or the character creator was enforced
+    // send them to the character creator.
     if (not hasCharacter || forcedCharacterCreator)
     {
+      loginContext.justCreatedCharacter = true;
+
       spdlog::debug("User '{}' sent to the character creator", loginContext.userName);
       QueueUserCreateNickname(clientId, loginContext.userName);
       return;
@@ -340,6 +345,7 @@ void LoginHandler::QueueUserLoginAccepted(
   const ClientId clientId,
   const std::string& userName)
 {
+  const auto loginContext = _clientLogins[clientId];
   const auto userRecord = _lobbyDirector.GetServerInstance().GetDataDirector().GetUserCache().Get(
     userName);
   if (not userRecord)
@@ -353,6 +359,15 @@ void LoginHandler::QueueUserLoginAccepted(
       _lobbyDirector._clients.size()),
     .val1 = 0x0,
     .val3 = 0x0,
+
+    .missions = {
+      protocol::LobbyCommandLoginOK::Mission{
+        .id = 0x18,
+        .progress = {
+          protocol::LobbyCommandLoginOK::Mission::Progress{
+          .id = 2,
+          .value = 1}}}},
+
     // .optionType = OptionType::Value,
     // .valueOptions = 0x64,
     //
@@ -401,13 +416,17 @@ void LoginHandler::QueueUserLoginAccepted(
     data::InvalidUid};
 
   characterRecord.Immutable(
-    [this, &response, &characterMountUid](const data::Character& character)
+    [this, justCreatedCharacter = loginContext.justCreatedCharacter, &response, &characterMountUid](const data::Character& character)
     {
       response.uid = character.uid();
       response.name = character.name();
 
       response.introduction = character.introduction();
-      response.gender = character.parts.modelId() == 10 ? Gender::Boy : Gender::Girl;
+
+      // todo: model constant
+      response.gender = character.parts.modelId() == 10
+        ? Gender::Boy
+        : Gender::Girl;
 
       response.level = character.level();
       response.carrots = character.carrots();
@@ -416,7 +435,8 @@ void LoginHandler::QueueUserLoginAccepted(
       response.age = character.age();
       response.hideGenderAndAge = character.hideGenderAndAge();
 
-      //response.bitfield = protocol::LobbyCommandLoginOK::HasPlayedBefore;
+      if (not justCreatedCharacter)
+        response.bitfield = protocol::LobbyCommandLoginOK::HasPlayedBefore;
 
       // Character equipment.
       const auto characterEquipmentItems = _lobbyDirector.GetServerInstance().GetDataDirector().GetItemCache().Get(

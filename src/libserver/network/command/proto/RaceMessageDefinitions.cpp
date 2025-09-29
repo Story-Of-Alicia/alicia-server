@@ -149,7 +149,7 @@ void AcCmdCREnterRoomOK::Write(
   stream.Write(command.unk10)
     .Write(command.unk11)
     .Write(command.unk12)
-    .Write(command.unk13);
+    .Write(command.scrambleValue);
 }
 
 void AcCmdCREnterRoomOK::Read(
@@ -450,7 +450,7 @@ void AcCmdCRStartRaceNotify::Write(
 {
   stream.Write(command.gameMode)
     .Write(command.skills)
-    .Write(command.racerOid)
+    .Write(command.hostOid)
     .Write(command.member4)
     .Write(command.mapBlockId);
 
