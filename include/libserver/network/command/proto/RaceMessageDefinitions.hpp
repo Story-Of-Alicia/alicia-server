@@ -519,7 +519,7 @@ struct AcCmdCRStartRaceNotify
       SourceStream& stream);
   } unk10{};
 
-  uint16_t unk11{};
+  uint16_t missionId{};
   uint8_t unk12{};
 
   struct Struct3

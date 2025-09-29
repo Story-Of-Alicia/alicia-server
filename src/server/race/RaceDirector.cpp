@@ -631,6 +631,7 @@ void RaceDirector::HandleStartRace(
   {
     notify.mapBlockId = room.mapBlockId;
   }
+  notify.missionId = room.missionId;
 
   for (const auto& [characterUid, racer] : roomInstance.tracker.GetRacers())
   {

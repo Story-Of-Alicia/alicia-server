@@ -475,7 +475,7 @@ void AcCmdCRStartRaceNotify::Write(
     .Write(command.unk9)
     .Write(command.unk10);
 
-  stream.Write(command.unk11)
+  stream.Write(command.missionId)
     .Write(command.unk12)
     .Write(command.unk13);
 
