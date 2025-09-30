@@ -485,8 +485,8 @@ void LobbyCommandRoomList::Read(
   SourceStream& stream)
 {
   stream.Read(command.page)
-    .Read(command.teamMode)
-    .Read(command.gameMode);
+    .Read(command.gameMode)
+    .Read(command.teamMode);
 }
 
 void LobbyCommandRoomListOK::Room::Write(
