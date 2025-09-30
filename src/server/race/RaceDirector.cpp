@@ -1199,7 +1199,7 @@ void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& co
 
   spdlog::info("[Room {}] {}: {}", clientContext.roomUid, notify.author, notify.message);
 
-  const auto& roomInstance = _roomInstances[clientContext.characterUid];
+  const auto& roomInstance = _roomInstances[clientContext.roomUid];
   for (const ClientId roomClientId : roomInstance.clients)
   {
     _commandServer.QueueCommand<decltype(notify)>(
