@@ -165,6 +165,18 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     {
       HandleRelay(clientId, message);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceActivateInteractiveEvent>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleUserRaceActivateInteractiveEvent(clientId, message);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceActivateEvent>(
+    [this](ClientId clientId, const auto& message)
+     {
+       HandleUserRaceActivateEvent(clientId, message);
+     });
 }
 
 void RaceDirector::Initialize()
@@ -1288,6 +1300,57 @@ void RaceDirector::HandleRelay(
         roomClientId,
         [notify]{return notify;});
     }
+  }
+}
+
+void RaceDirector::HandleUserRaceActivateInteractiveEvent
+(
+  ClientId clientId,
+  const protocol::AcCmdUserRaceActivateInteractiveEvent& command)
+{
+  const auto& clientContext = _clients[clientId];
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
+
+  // Get the sender's OID from the room tracker
+  auto& racer = roomInstance.tracker.GetRacer(clientContext.characterUid);
+
+  protocol::AcCmdUserRaceActivateInteractiveEvent notify{
+    .member1 = command.member1,
+    .characterOid = racer.oid, // sender oid
+    .member3 = command.member3
+  };
+
+  // Broadcast to all clients in the room
+  for (const ClientId roomClientId : roomInstance.clients)
+  {
+    _commandServer.QueueCommand<decltype(notify)>(
+      roomClientId,
+      [notify]{return notify;});
+  }
+}
+
+void RaceDirector::HandleUserRaceActivateEvent
+(
+  ClientId clientId,
+  const protocol::AcCmdUserRaceActivateEvent& command)
+{
+  const auto& clientContext = _clients[clientId];
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
+
+  // Get the sender's OID from the room tracker
+  auto& racer = roomInstance.tracker.GetRacer(clientContext.characterUid);
+
+  protocol::AcCmdUserRaceActivateEvent notify{
+    .eventId = command.eventId,
+    .characterOid = racer.oid, // sender oid
+  };
+
+  // Broadcast to all clients in the room
+  for (const ClientId roomClientId : roomInstance.clients)
+  {
+    _commandServer.QueueCommand<decltype(notify)>(
+      roomClientId,
+      [notify]{return notify;});
   }
 }
 

@@ -163,6 +163,14 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRRelay& command);
 
+  void HandleUserRaceActivateInteractiveEvent(
+    ClientId clientId,
+    const protocol::AcCmdUserRaceActivateInteractiveEvent& command);
+
+  void HandleUserRaceActivateEvent(
+    ClientId clientId,
+    const protocol::AcCmdUserRaceActivateEvent& command);
+
   //!
   std::thread test;
   std::atomic_bool run_test{true};

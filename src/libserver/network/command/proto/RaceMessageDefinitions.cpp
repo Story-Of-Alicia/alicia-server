@@ -1255,4 +1255,36 @@ void AcCmdRCTeamSpurGauge::Read(
   throw std::runtime_error("Not implemented");  
 }
 
+void AcCmdUserRaceActivateInteractiveEvent::Write(
+  const AcCmdUserRaceActivateInteractiveEvent& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1)
+    .Write(command.characterOid)
+    .Write(command.member3);
+}
+
+void AcCmdUserRaceActivateInteractiveEvent::Read(
+  AcCmdUserRaceActivateInteractiveEvent& command,
+  SourceStream& stream)
+{
+  stream.Read(command.member1)
+    .Read(command.member3);
+}
+
+void AcCmdUserRaceActivateEvent::Write(
+  const AcCmdUserRaceActivateEvent& command,
+  SinkStream& stream)
+{
+  stream.Write(command.eventId)
+    .Write(command.characterOid);
+}
+
+void AcCmdUserRaceActivateEvent::Read(
+  AcCmdUserRaceActivateEvent& command,
+  SourceStream& stream)
+{
+  stream.Read(command.eventId);
+}
+
 } // namespace server::protocol

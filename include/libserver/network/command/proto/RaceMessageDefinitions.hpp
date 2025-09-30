@@ -1685,11 +1685,61 @@ struct AcCmdRCTeamSpurGauge
   static void Write(
     const AcCmdRCTeamSpurGauge& command,
     SinkStream& stream);
+
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
     AcCmdRCTeamSpurGauge& command,
+    SourceStream& stream);
+};
+
+struct AcCmdUserRaceActivateInteractiveEvent
+{
+  uint32_t member1{};
+  uint16_t characterOid{};
+  uint64_t member3{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdUserRaceActivateInteractiveEvent;
+  }
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdUserRaceActivateInteractiveEvent& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdUserRaceActivateInteractiveEvent& command,
+    SourceStream& stream);
+};
+
+struct AcCmdUserRaceActivateEvent
+{
+  uint32_t eventId{};
+  uint16_t characterOid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdUserRaceActivateEvent;
+  }
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdUserRaceActivateEvent& command,
+    SinkStream& stream);
+    
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdUserRaceActivateEvent& command,
     SourceStream& stream);
 };
 
