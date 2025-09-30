@@ -415,9 +415,9 @@ void RaceDirector::HandleChangeRoomOptions(
   if (options.test(1))
     room.playerCount = command.playerCount;
   if (options.test(2))
-    room.gameMode = command.gameMode;
-  if (options.test(3))
     room.password = command.password;
+  if (options.test(3))
+    room.gameMode = command.gameMode;
   if (options.test(4))
     room.mapBlockId = command.mapBlockId;
   if (options.test(5))
