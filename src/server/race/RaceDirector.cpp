@@ -303,6 +303,16 @@ void RaceDirector::HandleEnterRoom(
     roomInstance.masterUid = command.characterUid;
   }
 
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [roomUid = clientContext.roomUid, inserted](
+      const data::Character& character)
+    {
+      if (inserted)
+        spdlog::info("Character '{}' has created the room {}", character.name(), roomUid);
+      else
+        spdlog::info("Character '{}' has joined the room {}", character.name(), roomUid);
+    });
+
   roomInstance.tracker.AddRacer(
     command.characterUid);
 
@@ -510,6 +520,13 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
 
   auto& clientContext = _clients[clientId];
   auto& roomInstance = _roomInstances[clientContext.roomUid];
+
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [roomUid = clientContext.roomUid](
+      const data::Character& character)
+    {
+      spdlog::info("Character '{}' has left the room {}", character.name(), roomUid);
+    });
 
   roomInstance.tracker.RemoveRacer(
     clientContext.characterUid);
