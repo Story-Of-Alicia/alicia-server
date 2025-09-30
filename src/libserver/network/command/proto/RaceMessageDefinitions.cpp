@@ -26,9 +26,9 @@ namespace server::protocol
 
 void WritePlayerRacer(SinkStream& stream, const Avatar& playerRacer)
 {
-  stream.Write(static_cast<uint8_t>(playerRacer.characterEquipment.size()));
+  stream.Write(static_cast<uint8_t>(playerRacer.equipment.size()));
 
-  for (const Item& item : playerRacer.characterEquipment)
+  for (const Item& item : playerRacer.equipment)
   {
     stream.Write(item);
   }
@@ -40,7 +40,7 @@ void WritePlayerRacer(SinkStream& stream, const Avatar& playerRacer)
 
 void WriteRacer(SinkStream& stream, const Racer& racer)
 {
-  stream.Write(racer.isRoomLeader)
+  stream.Write(racer.isMaster)
     .Write(racer.member2)
     .Write(racer.level)
     .Write(racer.oid)
@@ -595,7 +595,7 @@ void AcCmdCRChatNotify::Write(
 {
   stream.Write(command.message)
     .Write(command.author)
-    .Write(command.unknown);
+    .Write(command.isSystem);
 }
 
 void AcCmdCRChatNotify::Read(

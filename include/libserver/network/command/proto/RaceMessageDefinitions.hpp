@@ -51,7 +51,7 @@ enum class TeamColor : uint32_t
 struct Avatar
 {
   // List length specified with a uint8_t
-  std::vector<Item> characterEquipment{};
+  std::vector<Item> equipment{};
   Character character{};
   Horse mount{};
   uint32_t unk0{};
@@ -60,13 +60,13 @@ struct Avatar
 //! Racer
 struct Racer
 {
-  bool isRoomLeader{0};
-  uint8_t member2{1};
+  bool isMaster{};
+  uint8_t member2{};
   uint32_t level{};
   uint32_t oid{};
   uint32_t uid{};
   std::string name{};
-  uint8_t unk5{3};
+  uint8_t unk5{20};
   TeamColor teamColor{TeamColor::Solo};
   bool isHidden{};
   bool isNPC{};
@@ -83,10 +83,10 @@ struct Racer
   Pet pet{};
   Guild guild{};
   League unk9{};
-  uint8_t unk10{5};
-  uint8_t unk11{6};
-  uint8_t unk12{7};
-  uint8_t unk13{8};
+  uint8_t unk10{20};
+  uint8_t unk11{20};
+  uint8_t unk12{20};
+  uint8_t unk13{20};
 };
 
 struct RoomDescription
@@ -724,7 +724,7 @@ struct AcCmdCRChatNotify
 {
   std::string message;
   std::string author;
-  uint8_t unknown{};
+  bool isSystem{};
 
   static Command GetCommand()
   {

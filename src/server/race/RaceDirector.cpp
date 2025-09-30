@@ -338,7 +338,7 @@ void RaceDirector::HandleEnterRoom(
         const data::Character& character)
       {
         if (character.uid() == leaderUid)
-          protocolRacer.isRoomLeader = true;
+          protocolRacer.isMaster = true;
 
         protocolRacer.level = character.level();
         protocolRacer.oid = racer.oid;
@@ -352,11 +352,17 @@ void RaceDirector::HandleEnterRoom(
         protocol::BuildProtocolCharacter(
           protocolRacer.avatar->character, character);
 
+        // Build the character equipment.
         protocol::BuildProtocolItems(
-          protocolRacer.avatar->characterEquipment,
+          protocolRacer.avatar->equipment,
           *_serverInstance.GetDataDirector().GetItemCache().Get(
             character.characterEquipment()));
-        // todo: horse equipment
+
+        // Build the mount equipment.
+        protocol::BuildProtocolItems(
+          protocolRacer.avatar->equipment,
+          *_serverInstance.GetDataDirector().GetItemCache().Get(
+            character.mountEquipment()));
 
         const auto mountRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
           character.mountUid());
@@ -1190,7 +1196,7 @@ void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& co
 
   protocol::AcCmdCRChatNotify notify{
     .message = messageVerdict.message,
-    .unknown = 1};
+    .isSystem = false};
 
   characterRecord.Immutable([&notify](const data::Character& character)
   {
