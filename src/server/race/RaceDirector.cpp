@@ -530,6 +530,7 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
 
   roomInstance.tracker.RemoveRacer(
     clientContext.characterUid);
+  roomInstance.clients.erase(clientId);
 
   // Check if the leaving player was the leader
   const bool wasLeader = roomInstance.masterUid == clientContext.characterUid;
