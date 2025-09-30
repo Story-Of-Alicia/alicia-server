@@ -447,7 +447,7 @@ struct AcCmdCRStartRace
 struct AcCmdCRStartRaceNotify
 {
   uint8_t gameMode{};
-  bool skills{};
+  TeamMode teamMode{};
   // this is an oid of a special player
   uint16_t hostOid{};
   uint32_t member4{}; // Room ID?
@@ -1663,6 +1663,33 @@ struct AcCmdCRRelayNotify
   //! @param stream Source stream.
   static void Read(
     AcCmdCRRelayNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCTeamSpurGauge
+{
+  uint32_t member1{};
+  float member2{};
+  float member3{};
+  float member4{};
+  uint16_t member5{};
+  uint32_t member6{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCTeamSpurGauge;
+  }
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCTeamSpurGauge& command,
+    SinkStream& stream);
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCTeamSpurGauge& command,
     SourceStream& stream);
 };
 

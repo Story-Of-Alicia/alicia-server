@@ -449,7 +449,7 @@ void AcCmdCRStartRaceNotify::Write(
   SinkStream& stream)
 {
   stream.Write(command.gameMode)
-    .Write(command.skills)
+    .Write(command.teamMode)
     .Write(command.hostOid)
     .Write(command.member4)
     .Write(command.mapBlockId);
@@ -1234,6 +1234,25 @@ void AcCmdCRRelayNotify::Read(
   {
     stream.Read(byte);
   }
+}
+
+void AcCmdRCTeamSpurGauge::Write(
+  const AcCmdRCTeamSpurGauge& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1)
+    .Write(command.member2)
+    .Write(command.member3)
+    .Write(command.member4)
+    .Write(command.member5)
+    .Write(command.member6);
+}
+
+void AcCmdRCTeamSpurGauge::Read(
+  AcCmdRCTeamSpurGauge& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");  
 }
 
 } // namespace server::protocol

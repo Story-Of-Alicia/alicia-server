@@ -628,6 +628,7 @@ void RaceDirector::HandleStartRace(
 
   protocol::AcCmdCRStartRaceNotify notify{
     .gameMode = room.gameMode,
+    .teamMode = room.teamMode,
     .p2pRelayAddress = asio::ip::address_v4::loopback().to_uint(),
     .p2pRelayPort = static_cast<uint16_t>(10500)};
 
