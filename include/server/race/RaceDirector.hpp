@@ -155,6 +155,14 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRChat& command);
 
+  void HandleRelayCommand(
+    ClientId clientId,
+    const protocol::AcCmdCRRelayCommand& command);
+
+  void HandleRelay(
+    ClientId clientId,
+    const protocol::AcCmdCRRelay& command);
+
   //!
   std::thread test;
   std::atomic_bool run_test{true};

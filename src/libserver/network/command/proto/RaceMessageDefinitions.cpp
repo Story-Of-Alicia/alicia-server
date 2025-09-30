@@ -1132,4 +1132,108 @@ void AcCmdCRChangeMasterNotify::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRRelayCommand::Write(
+  const AcCmdCRRelayCommand& command,
+  SinkStream& stream)
+{
+  stream.Write(command.senderOid);
+  for (const auto& byte : command.relayData)
+  {
+    stream.Write(byte);
+  }
+}
+
+void AcCmdCRRelayCommand::Read(
+  AcCmdCRRelayCommand& command,
+  SourceStream& stream)
+{
+  stream.Read(command.senderOid);
+  
+  // Read remaining bytes as relay data
+  const auto remainingBytes = stream.Size() - stream.GetCursor();
+  command.relayData.resize(remainingBytes);
+  for (auto& byte : command.relayData)
+  {
+    stream.Read(byte);
+  }
+}
+
+void AcCmdCRRelayCommandNotify::Write(
+  const AcCmdCRRelayCommandNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.senderOid);
+  for (const auto& byte : command.relayData)
+  {
+    stream.Write(byte);
+  }
+}
+
+void AcCmdCRRelayCommandNotify::Read(
+  AcCmdCRRelayCommandNotify& command,
+  SourceStream& stream)
+{
+  stream.Read(command.senderOid);
+  
+  // Read remaining bytes as relay data
+  const auto remainingBytes = stream.Size() - stream.GetCursor();
+  command.relayData.resize(remainingBytes);
+  for (auto& byte : command.relayData)
+  {
+    stream.Read(byte);
+  }
+}
+
+void AcCmdCRRelay::Write(
+  const AcCmdCRRelay& command,
+  SinkStream& stream)
+{
+  stream.Write(command.senderOid);
+  for (const auto& byte : command.relayData)
+  {
+    stream.Write(byte);
+  }
+}
+
+void AcCmdCRRelay::Read(
+  AcCmdCRRelay& command,
+  SourceStream& stream)
+{
+  stream.Read(command.senderOid);
+  
+  // Read remaining bytes as relay data
+  const auto remainingBytes = stream.Size() - stream.GetCursor();
+  command.relayData.resize(remainingBytes);
+  for (auto& byte : command.relayData)
+  {
+    stream.Read(byte);
+  }
+}
+
+void AcCmdCRRelayNotify::Write(
+  const AcCmdCRRelayNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.senderOid);
+  for (const auto& byte : command.relayData)
+  {
+    stream.Write(byte);
+  }
+}
+
+void AcCmdCRRelayNotify::Read(
+  AcCmdCRRelayNotify& command,
+  SourceStream& stream)
+{
+  stream.Read(command.senderOid);
+  
+  // Read remaining bytes as relay data
+  const auto remainingBytes = stream.Size() - stream.GetCursor();
+  command.relayData.resize(remainingBytes);
+  for (auto& byte : command.relayData)
+  {
+    stream.Read(byte);
+  }
+}
+
 } // namespace server::protocol

@@ -1558,6 +1558,114 @@ struct AcCmdCRChangeMasterNotify
     SourceStream& stream);
 };
 
+struct AcCmdCRRelayCommand
+{
+  //! Character OID of the sender
+  uint16_t senderOid{};
+  //! Raw relay data
+  std::vector<uint8_t> relayData{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRelayCommand;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRelayCommand& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRelayCommand& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRelayCommandNotify
+{
+  //! Character OID of the sender
+  uint16_t senderOid{};
+  //! Raw relay data
+  std::vector<uint8_t> relayData{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRelayCommandNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRelayCommandNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRelayCommandNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRelay
+{
+  //! The sender object ID.
+  uint32_t senderOid;
+  //! The relay data.
+  std::vector<uint8_t> relayData;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRelay;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRelay& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRelay& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRelayNotify
+{
+  //! The sender object ID.
+  uint32_t senderOid;
+  //! The relay data.
+  std::vector<uint8_t> relayData;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRelayNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRelayNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRelayNotify& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RACE_MESSAGE_DEFINES_HPP

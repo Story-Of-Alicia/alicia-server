@@ -153,6 +153,18 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     {
       HandleChat(clientId, message);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRelayCommand>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleRelayCommand(clientId, message);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRelay>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleRelay(clientId, message);
+    });
 }
 
 void RaceDirector::Initialize()
@@ -1192,6 +1204,60 @@ void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& co
     _commandServer.QueueCommand<decltype(notify)>(
       roomClientId,
       [notify]{return notify;});
+  }
+}
+
+void RaceDirector::HandleRelayCommand(
+  ClientId clientId,
+  const protocol::AcCmdCRRelayCommand& command)
+{
+  const auto& clientContext = _clients[clientId];
+  
+  // Create relay notify message
+  protocol::AcCmdCRRelayCommandNotify notify{
+    .senderOid = command.senderOid,
+    .relayData = command.relayData
+  };
+
+  // Get the room instance for this client
+  const auto& roomInstance = _roomInstances[clientContext.roomUid];
+  
+  // Relay the command to all other clients in the room
+  for (const ClientId roomClientId : roomInstance.clients)
+  {
+    if (roomClientId != clientId) // Don't send back to sender
+    {
+      _commandServer.QueueCommand<decltype(notify)>(
+        roomClientId,
+        [notify]{return notify;});
+    }
+  }
+}
+
+void RaceDirector::HandleRelay(
+  ClientId clientId,
+  const protocol::AcCmdCRRelay& command)
+{
+  const auto& clientContext = _clients[clientId];
+  
+  // Create relay notify message
+  protocol::AcCmdCRRelayNotify notify{
+    .senderOid = command.senderOid,
+    .relayData = command.relayData
+  };
+
+  // Get the room instance for this client
+  const auto& roomInstance = _roomInstances[clientContext.roomUid];
+  
+  // Relay the command to all other clients in the room
+  for (const ClientId roomClientId : roomInstance.clients)
+  {
+    if (roomClientId != clientId) // Don't send back to sender
+    {
+      _commandServer.QueueCommand<decltype(notify)>(
+        roomClientId,
+        [notify]{return notify;});
+    }
   }
 }
 
