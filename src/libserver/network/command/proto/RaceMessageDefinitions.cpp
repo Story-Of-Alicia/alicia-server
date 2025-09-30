@@ -46,7 +46,7 @@ void WriteRacer(SinkStream& stream, const Racer& racer)
     .Write(racer.oid)
     .Write(racer.uid)
     .Write(racer.name)
-    .Write(racer.unk5)
+    .Write(racer.isReady)
     .Write(racer.teamColor)
     .Write(racer.isHidden)
     .Write(racer.isNPC);
@@ -660,7 +660,7 @@ void AcCmdUserRaceFinal::Read(
   SourceStream& stream)
 {
   stream.Read(command.oid)
-    .Read(command.member2)
+    .Read(command.courseTime)
     .Read(command.member3);
 }
 
@@ -669,7 +669,7 @@ void AcCmdUserRaceFinalNotify::Write(
   SinkStream& stream)
 {
   stream.Write(command.oid)
-    .Write(command.member2);
+    .Write(command.courseTime);
 }
 
 void AcCmdUserRaceFinalNotify::Read(
@@ -756,9 +756,9 @@ void AcCmdRCRaceResultNotify::Write(
       .Write(score.recordTimeDifference)
       .Write(score.member14)
       .Write(score.member15)
-      .Write(score.member16)
+      .Write(score.achievements)
       .Write(score.bitset)
-      .Write(score.member18)
+      .Write(score.mountName)
       .Write(score.member19)
       .Write(score.member20)
       .Write(score.bonusCarrots)

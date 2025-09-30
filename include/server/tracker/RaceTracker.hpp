@@ -38,6 +38,7 @@ public:
   {
     enum class State
     {
+      Disconnected,
       NotReady,
       Ready,
       Loading,
@@ -51,10 +52,11 @@ public:
     };
 
     Oid oid{InvalidEntityOid};
-    State state{State::NotReady};
+    State state{State::Disconnected};
     Team team{Team::Solo};
     uint32_t starPointValue{};
     uint32_t jumpComboValue{};
+    uint32_t courseTime{};
   };
 
   //! An object map.
@@ -63,7 +65,7 @@ public:
   //! Adds a racer for tracking.
   //! @param characterUid Character UID.
   //! @returns A reference to the racer record.
-  Racer AddRacer(data::Uid characterUid);
+  Racer& AddRacer(data::Uid characterUid);
   //! Removes a racer from tracking.
   //! @param characterUid Character UID.
   void RemoveRacer(data::Uid characterUid);

@@ -66,7 +66,7 @@ struct Racer
   uint32_t oid{};
   uint32_t uid{};
   std::string name{};
-  uint8_t unk5{20};
+  bool isReady{};
   TeamColor teamColor{TeamColor::Solo};
   bool isHidden{};
   bool isNPC{};
@@ -83,10 +83,10 @@ struct Racer
   Pet pet{};
   Guild guild{};
   League unk9{};
-  uint8_t unk10{20};
-  uint8_t unk11{20};
-  uint8_t unk12{20};
-  uint8_t unk13{20};
+  uint8_t unk10{0};
+  uint8_t unk11{0};
+  uint8_t unk12{};
+  uint8_t unk13{};
 };
 
 struct RoomDescription
@@ -820,7 +820,7 @@ struct AcCmdUserRaceCountdown
 struct AcCmdUserRaceFinal
 {
   int16_t oid{};
-  uint32_t member2{};
+  uint32_t courseTime{};
   float member3{};
 
   static Command GetCommand()
@@ -846,7 +846,7 @@ struct AcCmdUserRaceFinal
 struct AcCmdUserRaceFinalNotify
 {
   uint16_t oid{};
-  uint32_t member2{};
+  uint32_t courseTime{};
 
   static Command GetCommand()
   {
@@ -939,40 +939,41 @@ struct AcCmdRCRaceResultNotify
 {
   struct ScoreInfo
   {
-    uint32_t uid{1};
-    std::string name{"abc"};
+    uint32_t uid{};
+    std::string name{};
     //! Time in milliseconds.
-    uint32_t courseTime{0};
-    uint32_t member4{0};
-    uint32_t experience{0};
-    uint32_t member6{0};
-    uint32_t carrots{0};
-    uint32_t level{0};
+    uint32_t courseTime{};
+    uint32_t member4{};
+    uint32_t experience{};
+    uint32_t member6{};
+    uint32_t carrots{};
+    uint32_t level{};
     // this is copied as memcpy
-    uint32_t member9{0};
-    uint32_t member10{0};
-    uint16_t member11{0};
-    uint16_t member12{0};
+    uint32_t member9{};
+    uint32_t member10{};
+    uint16_t member11{};
+    uint16_t member12{};
     //! Time in milliseconds.
-    uint32_t recordTimeDifference{0};
-    uint32_t member14{3000};
-    uint32_t member15{4000};
-    AcCmdCRStartRaceNotify::Struct2 member16{
-      .unk0 = 100,
-      .unk1 = 200,
-      .unk2 = 300,
-      .unk3 = 400};
-    uint32_t bitset{0xFFFFFFFF};
-    std::string member18{"something"};
-    uint16_t member19{0};
-    uint8_t member20{0};
-    uint32_t bonusCarrots{0};
-    uint32_t member22{0};
+    uint32_t recordTimeDifference{};
+    uint32_t member14{};
+    uint32_t member15{};
+    AcCmdCRStartRaceNotify::Struct2 achievements{};
+    enum Bitset : uint32_t
+    {
+      Connected = 1 << 7,
+      HasLevelUpBonus = 1 << 8,
+      PcBang = 1 << 10,
+    } bitset;
+    std::string mountName{};
+    uint16_t member19{};
+    uint8_t member20{};
+    uint32_t bonusCarrots{};
+    uint32_t member22{};
     AcCmdCRStartRaceNotify::Struct1 member23{};
-    uint32_t member24{0};
-    uint8_t member25{0};
-    uint32_t member26{0};
-    uint32_t member27{0};
+    uint32_t member24{};
+    uint8_t member25{};
+    uint32_t member26{};
+    uint32_t member27{};
   };
 
   //! Max 16 entries, short as size

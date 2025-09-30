@@ -22,7 +22,7 @@
 #include "libserver/data/helper/ProtocolHelper.hpp"
 #include "server/ServerInstance.hpp"
 
-#include "../../../include/server/system/RoomSystem.hpp"
+#include "server/system/RoomSystem.hpp"
 
 #include <spdlog/spdlog.h>
 #include <bitset>
@@ -325,8 +325,10 @@ void RaceDirector::HandleEnterRoom(
         spdlog::info("Character '{}' has joined the room {}", character.name(), roomUid);
     });
 
-  roomInstance.tracker.AddRacer(
+  auto& joinedRacer = roomInstance.tracker.AddRacer(
     command.characterUid);
+
+  joinedRacer.state = tracker::RaceTracker::Racer::State::NotReady;
 
   // Todo: Roll the code for the connecting client.
   // Todo: The response contains the code, somewhere.
@@ -352,6 +354,8 @@ void RaceDirector::HandleEnterRoom(
   for (const auto& [characterUid, racer] : roomInstance.tracker.GetRacers())
   {
     auto& protocolRacer = response.racers.emplace_back();
+
+    protocolRacer.isReady = racer.state == tracker::RaceTracker::Racer::State::Ready;
 
     const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
       characterUid);
@@ -717,6 +721,8 @@ void RaceDirector::HandleStartRace(
     racer.starPointValue = 0;
   }
 
+  // todo: start loading timeout timer
+
   // Send to all clients in the room.
   for (const ClientId& roomClientId : roomInstance.clients)
   {
@@ -803,6 +809,8 @@ void RaceDirector::HandleLoadingComplete(
     " starting the countdown.",
     clientContext.roomUid);
 
+  // todo: start race timeout timer
+
   const auto countdownTimestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(
     std::chrono::steady_clock::now().time_since_epoch())
     .count() / 100 + 10 * 10'000'000;
@@ -826,14 +834,18 @@ void RaceDirector::HandleUserRaceFinal(
   auto& clientContext = _clients[clientId];
   auto& roomInstance = _roomInstances[clientContext.roomUid];
 
+  // todo: sanity check for course time
   // todo: address npc racers and update their states
   auto& racer = roomInstance.tracker.GetRacer(
     clientContext.characterUid);
   racer.state = tracker::RaceTracker::Racer::State::Finished;
+  racer.courseTime = command.courseTime;
 
   protocol::AcCmdUserRaceFinalNotify notify{
     .oid = racer.oid,
-    .member2 = command.member2};
+    .courseTime = command.courseTime};
+
+  // todo: start finish timeout timer
 
   for (const ClientId& roomClientId : roomInstance.clients)
   {
@@ -850,6 +862,8 @@ void RaceDirector::HandleRaceResult(
   ClientId clientId,
   const protocol::AcCmdCRRaceResult& command)
 {
+  // todo: only requested by the room master
+
   auto& clientContext = _clients[clientId];
   auto& roomInstance = _roomInstances[clientContext.roomUid];
 
@@ -881,21 +895,32 @@ void RaceDirector::HandleRaceResult(
     return;
 
   // Build the score board.
-  for (const auto& characterUid : roomInstance.tracker.GetRacers() | std::views::keys)
+  for (const auto& [characterUid, racer] : roomInstance.tracker.GetRacers())
   {
     auto& score = notify.scores.emplace_back();
 
+    // todo: figure out the other bit set values
+
+    if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
+      score.bitset = protocol::AcCmdRCRaceResultNotify::ScoreInfo::Connected;
+
+    score.courseTime = racer.courseTime;
+
     const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
       characterUid);
-    if (characterRecord)
+
+    characterRecord.Immutable([this, &score](const data::Character& character)
     {
-      characterRecord.Immutable([&score](const data::Character& character)
-      {
-        score.uid = character.uid();
-        score.name = character.name();
-        score.level = character.level();
-      });
-    }
+      score.uid = character.uid();
+      score.name = character.name();
+      score.level = character.level();
+
+      _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Immutable(
+        [&score](const data::Horse& horse)
+        {
+          score.mountName = horse.name();
+        });
+    });
   }
 
   for (const ClientId roomClientId : roomInstance.clients)
@@ -913,14 +938,12 @@ void RaceDirector::HandleP2PRaceResult(
   ClientId clientId,
   const protocol::AcCmdCRP2PResult& command)
 {
-  spdlog::info("abc");
 }
 
 void RaceDirector::HandleP2PUserRaceResult(
   ClientId clientId,
   const protocol::AcCmdUserRaceP2PResult& command)
 {
-  spdlog::info("abc");
 }
 
 void RaceDirector::HandleAwardStart(

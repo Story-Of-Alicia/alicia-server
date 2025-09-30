@@ -22,7 +22,7 @@
 namespace server::tracker
 {
 
-RaceTracker::Racer RaceTracker::AddRacer(data::Uid characterUid)
+RaceTracker::Racer& RaceTracker::AddRacer(data::Uid characterUid)
 {
   const auto [racerIter, created] = _racers.try_emplace(characterUid);
   if (not created)
