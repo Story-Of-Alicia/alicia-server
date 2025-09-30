@@ -696,6 +696,11 @@ void RaceDirector::HandleStartRace(
       roomClientContext.characterUid);
     racer.state = tracker::RaceTracker::Racer::State::Loading;
 
+    _serverInstance.GetDataDirector().GetCharacter(roomClientContext.characterUid).Immutable([](const data::Character& character)
+    {
+      spdlog::info("Race start sent to '{}'", character.name());
+    });
+
     notify.hostOid = racer.oid;
 
     _commandServer.QueueCommand<decltype(notify)>(
