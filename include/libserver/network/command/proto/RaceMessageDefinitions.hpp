@@ -1905,6 +1905,32 @@ struct AcCmdGameRaceItemSpawn
     SourceStream& stream);
 };
 
+struct AcCmdUserRaceItemGet
+{
+  uint16_t characterOid;
+  uint16_t itemId;
+  uint32_t unk3;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdUserRaceItemGet;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdUserRaceItemGet& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdUserRaceItemGet& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RACE_MESSAGE_DEFINES_HPP

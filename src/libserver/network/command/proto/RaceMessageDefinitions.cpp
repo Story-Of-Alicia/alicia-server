@@ -1477,4 +1477,20 @@ void AcCmdGameRaceItemSpawn::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdUserRaceItemGet::Write(
+  const AcCmdUserRaceItemGet& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdUserRaceItemGet::Read(
+  AcCmdUserRaceItemGet& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterOid)
+    .Read(command.itemId)
+    .Read(command.unk3);
+}
+
 } // namespace server::protocol

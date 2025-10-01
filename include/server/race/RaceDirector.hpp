@@ -179,6 +179,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRUseMagicItem& command);
 
+  void HandleUserRaceItemGet(
+    ClientId clientId,
+    const protocol::AcCmdUserRaceItemGet& command);
+
   //!
   std::thread test;
   std::atomic_bool run_test{true};

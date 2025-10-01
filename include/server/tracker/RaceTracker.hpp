@@ -25,6 +25,7 @@
 #include <libserver/data/DataDefinitions.hpp>
 
 #include <map>
+#include <array>
 
 namespace server::tracker
 {
@@ -60,8 +61,19 @@ public:
     std::optional<uint32_t> magicItem{};
   };
 
+  //! An item
+  struct Item
+  {
+    uint32_t itemId{};
+    uint32_t itemType{};
+    std::array<float, 3> position{};
+  };
+
   //! An object map.
   using ObjectMap = std::map<data::Uid, Racer>;
+  //! An item object map.
+  //! Maps itemId -> Item (in the race)
+  using ItemObjectMap = std::map<uint16_t, Item>;
 
   //! Adds a racer for tracking.
   //! @param characterUid Character UID.
@@ -77,11 +89,30 @@ public:
   //! @return Reference to racer records.
   [[nodiscard]] ObjectMap& GetRacers();
 
+  //! Adds an item for tracking.
+  //! @returns A reference to the new item record.
+  Item& AddItem();
+  //! Removes an item from tracking.
+  //! @param itemId Item ID.
+  void RemoveItem(uint16_t itemId);
+  //! Returns reference to the item record.
+  //! @param itemId Item ID.
+  //! @returns Item record.
+  [[nodiscard]] Item& GetItem(uint16_t itemId);
+  //! Returns a reference to all item records.
+  //! @return Reference to item records.
+  [[nodiscard]] ItemObjectMap& GetItems();
+
 private:
   //! The next entity ID.
   Oid _nextObjectId = 1;
-  //! Horse entities in the ranch.
+  //! Horse entities in the race.
   ObjectMap _racers;
+
+  //! The next item ID.
+  uint16_t _nextItemId = 1;
+  //! Items in the race
+  ItemObjectMap _items;
 };
 
 } // namespace server::tracker

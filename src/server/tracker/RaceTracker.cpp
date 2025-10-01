@@ -52,4 +52,34 @@ RaceTracker::ObjectMap& RaceTracker::GetRacers()
   return _racers;
 }
 
+RaceTracker::Item& RaceTracker::AddItem()
+{
+  const auto [itemIter, created] = _items.try_emplace(_nextItemId);
+  if (not created)
+    throw std::runtime_error("Item is already added to the race map");
+
+  itemIter->second.itemId = _nextItemId++;
+
+  return itemIter->second;
+}
+
+void RaceTracker::RemoveItem(uint16_t itemId)
+{
+  _items.erase(itemId);
+}
+
+RaceTracker::Item& RaceTracker::GetItem(uint16_t itemId)
+{
+  auto itemIter = _items.find(itemId);
+  if (itemIter == _items.cend())
+    throw std::runtime_error("Item is not in the race map");
+
+  return itemIter->second;
+}
+
+RaceTracker::ItemObjectMap& RaceTracker::GetItems()
+{
+  return _items;
+}
+
 } // namespace server::tracker

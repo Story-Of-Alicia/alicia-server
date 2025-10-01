@@ -189,6 +189,12 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     {
       HandleUseMagicItem(clientId, message);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceItemGet>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleUserRaceItemGet(clientId, message);
+    });
 }
 
 void RaceDirector::Initialize()
@@ -816,6 +822,32 @@ void RaceDirector::HandleLoadingComplete(
     return;
   }
 
+  // TODO: better way of doing this? Reinstantiating the room?
+  // Clear room items before populating
+  roomInstance.tracker.GetItems().clear();
+
+  // map id 1, right in front of start line [20.631426, -25.969913, -8004.5986]
+  // 101 - Gold horseshoe
+  // 102 - Silver horseshoe
+  // 402 - magic horseshoe (tutorial?)
+  for (uint32_t i = 0; i < 5; ++i)
+  {
+    auto& item = roomInstance.tracker.AddItem();
+    item.itemType = 102;
+    // FIXME: do not use hardcoded positions, store them in files instead
+    item.position = {30.0f, -25.0f, -8012.0f + (i * 3)};
+
+    protocol::AcCmdGameRaceItemSpawn spawn{
+      .itemId = item.itemId,
+      .itemType = item.itemType,
+      .position = item.position,
+      .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
+      .member5 = false,
+      .removeDelay = -1.0f};
+
+    _commandServer.QueueCommand<decltype(spawn)>(clientId, [spawn](){return spawn;});
+  }
+
   spdlog::info(
     "All players in room {} have finished loading,"
     " starting the countdown.",
@@ -1264,16 +1296,6 @@ void RaceDirector::HandleRaceUserPos(
     return;
   }
 
-  static protocol::AcCmdGameRaceItemSpawn spawn{
-    .itemId = 1008,
-    .itemType = 402,
-    .position =  command.member2,
-    .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
-    .member5 = false,
-    .removeDelay = -1.0f};
-
-  _commandServer.QueueCommand<decltype(spawn)>(clientId, [](){return spawn;});
-
   const auto& room = _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid);
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
@@ -1566,6 +1588,17 @@ void RaceDirector::HandleUseMagicItem(
     });
 
   racer.magicItem.reset();
+}
+
+void RaceDirector::HandleUserRaceItemGet(
+  ClientId clientId,
+  const protocol::AcCmdUserRaceItemGet& command)
+{
+  spdlog::debug("[{}] AcCmdUserRaceItemGet: {} {} {}",
+    clientId,
+    command.characterOid,
+    command.itemId,
+    command.unk3);
 }
 
 } // namespace server
