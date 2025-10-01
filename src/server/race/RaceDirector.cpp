@@ -1264,6 +1264,16 @@ void RaceDirector::HandleRaceUserPos(
     return;
   }
 
+  static protocol::AcCmdGameRaceItemSpawn spawn{
+    .itemId = 1008,
+    .itemType = 402,
+    .position =  command.member2,
+    .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
+    .member5 = false,
+    .removeDelay = -1.0f};
+
+  _commandServer.QueueCommand<decltype(spawn)>(clientId, [](){return spawn;});
+
   const auto& room = _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid);
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(

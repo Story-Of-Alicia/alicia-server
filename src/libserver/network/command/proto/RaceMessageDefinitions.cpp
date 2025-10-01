@@ -1449,4 +1449,32 @@ void AcCmdCRUseMagicItemOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdGameRaceItemSpawn::Write(
+  const AcCmdGameRaceItemSpawn& command,
+  SinkStream& stream)
+{
+  stream.Write(command.itemId)
+    .Write(command.itemType);
+
+  for (const float& axis : command.position)
+  {
+    stream.Write(axis);
+  }
+
+  for (const float& axis : command.orientation)
+  {
+    stream.Write(axis);
+  }
+
+  stream.Write(command.member5)
+    .Write(command.removeDelay);
+}
+
+void AcCmdGameRaceItemSpawn::Read(
+  AcCmdGameRaceItemSpawn& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
