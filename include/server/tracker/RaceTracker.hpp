@@ -57,6 +57,7 @@ public:
     uint32_t starPointValue{};
     uint32_t jumpComboValue{};
     uint32_t courseTime{};
+    std::optional<uint32_t> magicItem{};
   };
 
   //! An object map.

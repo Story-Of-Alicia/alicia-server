@@ -1185,6 +1185,7 @@ struct AcCmdCRAwardEndNotify
 
 struct AcCmdCRStarPointGet
 {
+  //! Oid of the calling character
   uint16_t characterOid; // oid?
   uint32_t unk1;
   uint32_t gainedStarPoints;
@@ -1211,9 +1212,12 @@ struct AcCmdCRStarPointGet
 
 struct AcCmdCRStarPointGetOK
 {
+  //! Oid of the affected character
   uint16_t characterOid;
+  //! Speed/magic boost value
   uint32_t starPointValue;
-  bool unk2;
+  //! Only works on magic gamemode, will give magic item regardless of magic gauge
+  bool giveMagicItem;
 
   static Command GetCommand()
   {
@@ -1377,7 +1381,7 @@ struct AcCmdCRStartingRate
 struct AcCmdCRRequestMagicItem
 {
   uint16_t member1; // character oid?
-  uint32_t member2; // item type?
+  uint32_t member2; // item type? 0 = request random?
 
   static Command GetCommand()
   {
@@ -1427,8 +1431,8 @@ struct AcCmdCRRequestMagicItemOK
 
 struct AcCmdCRRequestMagicItemNotify
 {
-  uint16_t member1; // character oid?
-  uint32_t member2; // item type?
+  uint32_t member1; // item id?
+  uint16_t member2; // character oid?
 
   static Command GetCommand()
   {
@@ -1741,6 +1745,134 @@ struct AcCmdUserRaceActivateEvent
   //! @param stream Source stream.
   static void Read(
     AcCmdUserRaceActivateEvent& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUseMagicItem
+{
+  // vFunc_2
+  uint16_t characterOid;
+  //! Read and switch/case depends on it
+  uint32_t magicItemId;
+
+  // sub_45ed60
+  struct Optional1
+  {
+    std::array<float, 3> member1;
+    std::array<float, 3> member2;
+  };
+  std::optional<Optional1> optional1;
+
+  // sub_4d5460
+  struct Optional2
+  {
+    uint8_t size;
+    std::vector<uint16_t> list;
+  };
+  std::optional<Optional2> optional2;
+
+  // vFunc_4 @ 0x00698540
+  uint32_t unk3;
+  std::optional<float> optional3; // cast time?
+  std::optional<float> optional4; // total cast time?
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUseMagicItem;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUseMagicItem& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUseMagicItem& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUseMagicItemCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUseMagicItemCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUseMagicItemCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUseMagicItemCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUseMagicItemOK
+{
+  uint16_t characterOid;
+  uint32_t magicItemId;
+
+  // sub_45ed60
+  std::optional<AcCmdCRUseMagicItem::Optional1> optional1;
+  // sub_4d5460
+  std::optional<AcCmdCRUseMagicItem::Optional2> optional2;
+
+  uint16_t unk3;
+  // TODO: is this correct type?
+  float unk4;
+  
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUseMagicItemOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUseMagicItemOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUseMagicItemOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUseMagicItemNotify
+{
+  // TODO: same struct as AcCmdCRUseMagicItem
+  
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUseMagicItemNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUseMagicItemNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUseMagicItemNotify& command,
     SourceStream& stream);
 };
 

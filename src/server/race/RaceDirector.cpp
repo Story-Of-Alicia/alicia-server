@@ -177,6 +177,18 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
      {
        HandleUserRaceActivateEvent(clientId, message);
      });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestMagicItem>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleRequestMagicItem(clientId, message);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRUseMagicItem>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleUseMagicItem(clientId, message);
+    });
 }
 
 void RaceDirector::Initialize()
@@ -1015,10 +1027,11 @@ void RaceDirector::HandleStarPointGet(
     racer.starPointValue + command.gainedStarPoints,
     gameModeTemplate.starPointsMax);
 
+  // Star point get (boost get) is only called in speed, should never give magic item
   protocol::AcCmdCRStarPointGetOK response{
     .characterOid = command.characterOid,
     .starPointValue = racer.starPointValue,
-    .unk2 = false
+    .giveMagicItem = false
   };
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -1090,10 +1103,11 @@ void RaceDirector::HandleHurdleClearResult(
     .unk3 = 0
   };
   
+  // Give magic item is calculated later
   protocol::AcCmdCRStarPointGetOK starPointResponse{
     .characterOid = command.characterOid,
     .starPointValue = racer.starPointValue,
-    .unk2 = false,
+    .giveMagicItem = false
   };
 
   const auto& room = _serverInstance.GetRoomSystem().GetRoom(
@@ -1161,6 +1175,14 @@ void RaceDirector::HandleHurdleClearResult(
       return;
     }
   }
+  
+  // Needs to be assigned after hurdle clear result calculations
+  // Triggers magic item request when set to true (if gamemode is magic and magic gauge is max)
+  // TODO: is there only perfect clears in magic race?
+  starPointResponse.giveMagicItem = 
+    room.gameMode == 2 &&
+    racer.starPointValue >= gameModeTemplate.starPointsMax &&
+    command.hurdleClearType == protocol::AcCmdCRHurdleClearResult::HurdleClearType::Perfect;
 
   // Update the star point value if the jump was not a collision.
   if (command.hurdleClearType != protocol::AcCmdCRHurdleClearResult::HurdleClearType::Collision)
@@ -1185,9 +1207,10 @@ void RaceDirector::HandleStartingRate(
   ClientId clientId,
   const protocol::AcCmdCRStartingRate& command)
 {
+  // TODO: check for sensible values
   if (command.unk1 < 1 && command.boostGained < 1)
   {
-    // Velocity and boost gained is not valid 
+    // Velocity and boost gained is not valid
     // TODO: throw?
     return;
   }
@@ -1217,7 +1240,8 @@ void RaceDirector::HandleStartingRate(
   protocol::AcCmdCRStarPointGetOK response{
     .characterOid = command.characterOid,
     .starPointValue = racer.starPointValue,
-    .unk2 = false};
+    .giveMagicItem = false // TODO: this would never give a magic item on race start, right?
+  };
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -1232,7 +1256,48 @@ void RaceDirector::HandleRaceUserPos(
   const protocol::AcCmdUserRaceUpdatePos& command)
 {
   const auto& clientContext = _clients[clientId];
-  const auto& roomInstance = _roomInstances[clientContext.roomUid];
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
+  auto& racer = roomInstance.tracker.GetRacer(clientContext.characterUid);
+  if (command.oid != racer.oid)
+  {
+    // TODO: command character oid does not match calling character oid
+    return;
+  }
+
+  const auto& room = _serverInstance.GetRoomSystem().GetRoom(
+    clientContext.roomUid);
+  const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
+    room.gameMode);
+
+  // FIXME: this will increment before race even starts since player sends update pos before the race begins
+  // Check if gamemode is magic is not holding an item
+  if (room.gameMode == 2 && not racer.magicItem.has_value())
+  {
+    if (racer.starPointValue < gameModeTemplate.starPointsMax)
+    {
+      // TODO: add these to configuration somewhere
+      // Eyeballed these values from watching videos
+      constexpr uint32_t NoItemHeldBoostAmount = 2000;
+      // TODO: does holding an item and with certain equipment give you magic? At a reduced rate?
+      constexpr uint32_t ItemHeldWithEquipmentBoostAmount = 1000;
+      racer.starPointValue = std::min(gameModeTemplate.starPointsMax, racer.starPointValue + NoItemHeldBoostAmount);
+    }
+
+    // Conditional already checks if there is no magic item and gamemode is magic,
+    // only check if racer has max magic gauge to give magic item
+    protocol::AcCmdCRStarPointGetOK starPointResponse{
+      .characterOid = command.oid,
+      .starPointValue = racer.starPointValue,
+      .giveMagicItem = racer.starPointValue >= gameModeTemplate.starPointsMax
+    };
+
+    _commandServer.QueueCommand<decltype(starPointResponse)>(
+      clientId,
+      [starPointResponse]
+      {
+        return starPointResponse;
+      });
+  }
 
   for (const auto& roomClientId : roomInstance.clients)
   {
@@ -1375,6 +1440,122 @@ void RaceDirector::HandleUserRaceActivateEvent
       roomClientId,
       [notify]{return notify;});
   }
+}
+
+void RaceDirector::HandleRequestMagicItem(
+  ClientId clientId,
+  const protocol::AcCmdCRRequestMagicItem& command)
+{
+  spdlog::debug("[{}] AcCmdCRRequestMagicItem: {} {}",
+    clientId,
+    command.member1,
+    command.member2);
+
+  const auto& clientContext = _clients[clientId];
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
+  auto& racer = roomInstance.tracker.GetRacer(clientContext.characterUid);
+
+  // TODO: command.member1 is character oid?
+  if (command.member1 != racer.oid)
+  {
+    // TODO: throw? return?
+    return;
+  }
+
+  // Check if racer is already holding a magic item
+  if (racer.magicItem.has_value())
+  {
+    // Has no corresponding cancel, log and return
+    spdlog::warn("Character {} tried to request a magic item in race {} but they already have one, skipping...",
+      clientContext.characterUid,
+      clientContext.roomUid);
+    return;
+  }
+
+  // TODO: reset magic gauge to 0?
+  protocol::AcCmdCRStarPointGetOK starPointResponse{
+    .characterOid = command.member1,
+    .starPointValue = racer.starPointValue = 0,
+    .giveMagicItem = false
+  };
+
+  _commandServer.QueueCommand<decltype(starPointResponse)>(
+    clientId,
+    [starPointResponse]
+    {
+      return starPointResponse;
+    });
+
+  // 2 - Fireball
+  // 4 - Shield
+  // 10 - Ice wall
+  protocol::AcCmdCRRequestMagicItemOK response{
+    .member1 = command.member1,
+    .member2 = racer.magicItem.emplace(4),
+    .member3 = 0
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]
+    {
+      return response;
+    });
+
+  protocol::AcCmdCRRequestMagicItemNotify notify{
+    .member1 = response.member2,
+    .member2 = response.member1
+  };
+
+  for (const auto& roomClientId : roomInstance.clients)
+  {
+    // Prevent broadcast to self
+    if (roomClientId == clientId)
+      continue;
+    
+    _commandServer.QueueCommand<decltype(notify)>(
+      roomClientId,
+      [notify]
+      {
+        return notify;
+      });
+  }
+}
+
+void RaceDirector::HandleUseMagicItem(
+  ClientId clientId,
+  const protocol::AcCmdCRUseMagicItem& command)
+{
+  const auto& clientContext = _clients[clientId];
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
+  auto& racer = roomInstance.tracker.GetRacer(clientContext.characterUid);
+
+  if (command.characterOid != racer.oid)
+  {
+    // TODO: throw? return?
+    return;
+  }
+
+  protocol::AcCmdCRUseMagicItemOK response{
+    .characterOid = command.characterOid,
+    .magicItemId = command.magicItemId,
+    .unk3 = command.characterOid,
+    .unk4 = command.optional3.has_value() ? command.optional3.value() : 0
+  };
+
+  if (command.optional1.has_value())
+    response.optional1.value() = command.optional1.value();
+  if (command.optional2.has_value())
+    response.optional2.value() = command.optional2.value();
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]
+    {
+      return response;
+    });
+
+  racer.magicItem.reset();
 }
 
 } // namespace server

@@ -72,7 +72,12 @@ bool IsMuted(protocol::Command id)
     || id == protocol::Command::AcCmdCRHeartbeat
     || id == protocol::Command::AcCmdCRRanchSnapshot
     || id == protocol::Command::AcCmdCRRanchSnapshotNotify
-    || id == protocol::Command::AcCmdUserRaceUpdatePos;
+    || id == protocol::Command::AcCmdUserRaceUpdatePos
+    || id == protocol::Command::AcCmdCRRelay
+    || id == protocol::Command::AcCmdCRRelayNotify
+    || id == protocol::Command::AcCmdCRRelayCommand
+    || id == protocol::Command::AcCmdCRRelayCommandNotify
+    || id == protocol::Command::AcCmdUserRaceActivateEvent;
 }
 
 } // namespace
