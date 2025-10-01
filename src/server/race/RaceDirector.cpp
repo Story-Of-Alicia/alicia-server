@@ -1643,7 +1643,8 @@ void RaceDirector::HandleUserRaceItemGet(
           });
       }
     },
-    Scheduler::Clock::now() + std::chrono::seconds(2));
+    //only for speed for now, change to itemDeck registry later for magic
+    Scheduler::Clock::now() + std::chrono::milliseconds(500));
 }
 
 } // namespace server
