@@ -1594,11 +1594,39 @@ void RaceDirector::HandleUserRaceItemGet(
   ClientId clientId,
   const protocol::AcCmdUserRaceItemGet& command)
 {
-  spdlog::debug("[{}] AcCmdUserRaceItemGet: {} {} {}",
-    clientId,
-    command.characterOid,
-    command.itemId,
-    command.unk3);
+  const auto& clientContext = _clients[clientId];
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
+  auto const& item = roomInstance.tracker.GetItems().at(command.itemId);
+  protocol::AcCmdGameRaceItemGet get{
+    .characterOid = command.characterOid,
+    .itemId = command.itemId,
+    .itemType = item.itemType,
+  };
+
+  // Notify all clients in the room that this item has been picked up
+  for (const ClientId& roomClientId : roomInstance.clients)
+  {
+    _commandServer.QueueCommand<decltype(get)>(
+      roomClientId,
+      [get]()
+      {
+        return get;
+      });
+  }
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+   // Respawn the item after a delay
+  protocol::AcCmdGameRaceItemSpawn spawn{
+      .itemId = item.itemId,
+      .itemType = item.itemType,
+      .position = item.position,
+      .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
+      .member5 = false,
+      .removeDelay = -1.0f};
+  for (const ClientId& roomClientId : roomInstance.clients)
+  {
+    _commandServer.QueueCommand<decltype(spawn)>(roomClientId, [spawn](){return spawn;});
+  }
 }
 
 } // namespace server

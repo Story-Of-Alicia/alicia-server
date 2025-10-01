@@ -1493,4 +1493,20 @@ void AcCmdUserRaceItemGet::Read(
     .Read(command.unk3);
 }
 
+void AcCmdGameRaceItemGet::Write(
+  const AcCmdGameRaceItemGet& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterOid)
+    .Write(command.itemId)
+    .Write(command.itemType);
+}
+
+void AcCmdGameRaceItemGet::Read(
+  AcCmdGameRaceItemGet& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
