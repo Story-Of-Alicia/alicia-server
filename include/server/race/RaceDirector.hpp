@@ -26,6 +26,7 @@
 
 #include "libserver/network/command/CommandServer.hpp"
 #include "libserver/network/command/proto/RaceMessageDefinitions.hpp"
+#include "libserver/util/Scheduler.hpp"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -187,6 +188,8 @@ private:
   std::thread test;
   std::atomic_bool run_test{true};
 
+  //! A scheduler instance.
+  Scheduler _scheduler;
   //! A server instance.
   ServerInstance& _serverInstance;
   //! A command server instance.

@@ -276,7 +276,9 @@ void RaceDirector::Terminate()
   _commandServer.EndHost();
 }
 
-void RaceDirector::Tick() {}
+void RaceDirector::Tick() {
+  _scheduler.Tick();
+}
 
 void RaceDirector::HandleClientConnected(ClientId clientId)
 {
@@ -672,98 +674,100 @@ void RaceDirector::HandleStartRace(
   ClientId clientId,
   const protocol::AcCmdCRStartRace& command)
 {
-  const auto& clientContext = _clients[clientId];
-
-  const auto& room = _serverInstance.GetRoomSystem().GetRoom(
-    clientContext.roomUid);
-  auto& roomInstance = _roomInstances[clientContext.roomUid];
-
-  // todo: verify master
-
-  constexpr uint32_t AllMapsCourseId = 10000;
-  constexpr uint32_t NewMapsCourseId = 10001;
-  constexpr uint32_t HotMapsCourseId = 10002;
-
-  protocol::AcCmdCRStartRaceNotify notify{
-    .gameMode = room.gameMode,
-    .teamMode = room.teamMode,
-    .p2pRelayAddress = asio::ip::address_v4::loopback().to_uint(),
-    .p2pRelayPort = static_cast<uint16_t>(10500)};
-
-  if (room.mapBlockId == AllMapsCourseId
-    || room.mapBlockId == NewMapsCourseId
-    || room.mapBlockId == HotMapsCourseId)
-  {
-    // TODO: Select a random mapBlockId from a predefined list
-    // For now its a map that at least loads in
-    notify.mapBlockId = 1;
-  }
-  else
-  {
-    notify.mapBlockId = room.mapBlockId;
-  }
-  notify.missionId = room.missionId;
-
-  for (const auto& [characterUid, racer] : roomInstance.tracker.GetRacers())
-  {
-    std::string characterName;
-    GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
-      [&characterName](const data::Character& character)
-      {
-        characterName = character.name();
-    });
-
-    auto& protocolRacer = notify.racers.emplace_back(protocol::AcCmdCRStartRaceNotify::Player{
-      .oid = racer.oid,
-      .name = characterName,
-      .p2dId = racer.oid,});
-
-    switch (racer.team)
+  _scheduler.Queue(
+    [this, clientId]()
     {
-      case tracker::RaceTracker::Racer::Team::Solo:
-        protocolRacer.teamColor = protocol::TeamColor::Solo;
-        break;
-      case tracker::RaceTracker::Racer::Team::Red:
-        protocolRacer.teamColor = protocol::TeamColor::Red;
-        break;
-      case tracker::RaceTracker::Racer::Team::Blue:
-        protocolRacer.teamColor = protocol::TeamColor::Blue;
-        break;
-    }
-  }
+      const auto& clientContext = _clients[clientId];
 
-  // Reset jump combo/star point (boost)
-  for (auto& racer : roomInstance.tracker.GetRacers() | std::views::values)
-  {
-    racer.jumpComboValue = 0;
-    racer.starPointValue = 0;
-  }
+      const auto& room = _serverInstance.GetRoomSystem().GetRoom(
+        clientContext.roomUid);
+      auto& roomInstance = _roomInstances[clientContext.roomUid];
 
-  // todo: start loading timeout timer
+      // todo: verify master
 
-  // Send to all clients in the room.
-  for (const ClientId& roomClientId : roomInstance.clients)
-  {
-    const auto& roomClientContext = _clients[roomClientId];
+      constexpr uint32_t AllMapsCourseId = 10000;
+      constexpr uint32_t NewMapsCourseId = 10001;
+      constexpr uint32_t HotMapsCourseId = 10002;
 
-    auto& racer = roomInstance.tracker.GetRacer(
-      roomClientContext.characterUid);
-    racer.state = tracker::RaceTracker::Racer::State::Loading;
+      protocol::AcCmdCRStartRaceNotify notify{
+        .gameMode = room.gameMode,
+        .teamMode = room.teamMode,
+        .p2pRelayAddress = asio::ip::address_v4::loopback().to_uint(),
+        .p2pRelayPort = static_cast<uint16_t>(10500)};
 
-    _serverInstance.GetDataDirector().GetCharacter(roomClientContext.characterUid).Immutable([](const data::Character& character)
-    {
-      spdlog::info("Race start sent to '{}'", character.name());
-    });
-
-    notify.hostOid = racer.oid;
-
-    _commandServer.QueueCommand<decltype(notify)>(
-      roomClientId,
-      [notify]()
+      if (room.mapBlockId == AllMapsCourseId || room.mapBlockId == NewMapsCourseId || room.mapBlockId == HotMapsCourseId)
       {
-        return notify;
-      });
-  }
+        // TODO: Select a random mapBlockId from a predefined list
+        // For now its a map that at least loads in
+        notify.mapBlockId = 1;
+      }
+      else
+      {
+        notify.mapBlockId = room.mapBlockId;
+      }
+      notify.missionId = room.missionId;
+
+      for (const auto& [characterUid, racer] : roomInstance.tracker.GetRacers())
+      {
+        std::string characterName;
+        GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable([&characterName](const data::Character& character)
+          {
+            characterName = character.name();
+          });
+
+        auto& protocolRacer = notify.racers.emplace_back(protocol::AcCmdCRStartRaceNotify::Player{
+          .oid = racer.oid,
+          .name = characterName,
+          .p2dId = racer.oid,
+        });
+
+        switch (racer.team)
+        {
+          case tracker::RaceTracker::Racer::Team::Solo:
+            protocolRacer.teamColor = protocol::TeamColor::Solo;
+            break;
+          case tracker::RaceTracker::Racer::Team::Red:
+            protocolRacer.teamColor = protocol::TeamColor::Red;
+            break;
+          case tracker::RaceTracker::Racer::Team::Blue:
+            protocolRacer.teamColor = protocol::TeamColor::Blue;
+            break;
+        }
+      }
+
+      // Reset jump combo/star point (boost)
+      for (auto& racer : roomInstance.tracker.GetRacers() | std::views::values)
+      {
+        racer.jumpComboValue = 0;
+        racer.starPointValue = 0;
+      }
+
+      // todo: start loading timeout timer
+      // Send to all clients in the room.
+      for (const ClientId& roomClientId : roomInstance.clients)
+      {
+        const auto& roomClientContext = _clients[roomClientId];
+
+        auto& racer = roomInstance.tracker.GetRacer(
+          roomClientContext.characterUid);
+        racer.state = tracker::RaceTracker::Racer::State::Loading;
+
+        _serverInstance.GetDataDirector().GetCharacter(roomClientContext.characterUid).Immutable([](const data::Character& character)
+          {
+            spdlog::info("Race start sent to '{}'", character.name());
+          });
+
+        notify.hostOid = racer.oid;
+
+        _commandServer.QueueCommand<decltype(notify)>(
+          roomClientId,
+          [notify]()
+          {
+            return notify;
+          });
+      }
+    },
+    Scheduler::Clock::now() + std::chrono::seconds(3));
 }
 
 void RaceDirector::HandleRaceTimer(
@@ -845,7 +849,8 @@ void RaceDirector::HandleLoadingComplete(
       .member5 = false,
       .removeDelay = -1.0f};
 
-    _commandServer.QueueCommand<decltype(spawn)>(clientId, [spawn](){return spawn;});
+    for (const ClientId& roomClientId : roomInstance.clients)
+      _commandServer.QueueCommand<decltype(spawn)>(roomClientId, [spawn](){return spawn;});
   }
 
   spdlog::info(
@@ -1613,20 +1618,32 @@ void RaceDirector::HandleUserRaceItemGet(
         return get;
       });
   }
+  // Wait for ItemDeck registry, to give the correct amount of SP for item pick up
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(500));
-   // Respawn the item after a delay
-  protocol::AcCmdGameRaceItemSpawn spawn{
-      .itemId = item.itemId,
-      .itemType = item.itemType,
-      .position = item.position,
-      .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
-      .member5 = false,
-      .removeDelay = -1.0f};
-  for (const ClientId& roomClientId : roomInstance.clients)
-  {
-    _commandServer.QueueCommand<decltype(spawn)>(roomClientId, [spawn](){return spawn;});
-  }
+  _scheduler.Queue(
+    [this, clientId, item, &roomInstance]()
+    {
+      // Respawn the item after a delay
+      protocol::AcCmdGameRaceItemSpawn spawn{
+        .itemId = item.itemId,
+        .itemType = item.itemType,
+        .position = item.position,
+        .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
+        .member5 = false,
+        .removeDelay = -1.0f
+      };
+
+      for (const ClientId& roomClientId : roomInstance.clients)
+      {
+        _commandServer.QueueCommand<decltype(spawn)>(
+          roomClientId, 
+          [spawn]()
+          {
+            return spawn;
+          });
+      }
+    },
+    Scheduler::Clock::now() + std::chrono::seconds(2));
 }
 
 } // namespace server
