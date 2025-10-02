@@ -1854,7 +1854,18 @@ struct AcCmdCRUseMagicItemOK
 
 struct AcCmdCRUseMagicItemNotify
 {
-  // TODO: same struct as AcCmdCRUseMagicItem
+  // Same struct as AcCmdCRUseMagicItem
+  uint16_t characterOid;
+  uint32_t magicItemId;
+
+  // sub_45ed60
+  std::optional<AcCmdCRUseMagicItem::Optional1> optional1;
+  // sub_4d5460
+  std::optional<AcCmdCRUseMagicItem::Optional2> optional2;
+
+  uint32_t unk3;
+  std::optional<float> optional3; // cast time?
+  std::optional<float> optional4; // total cast time?
   
   static Command GetCommand()
   {

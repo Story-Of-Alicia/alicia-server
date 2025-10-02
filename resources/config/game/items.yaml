@@ -3577,16 +3577,6 @@ items:
     - tid: 90013
       name: '타비아 포츈에그 (Lv.1)'
       level: 1
-    - tid: 50100
-      name: 'Bolt'
-      level: 1
-      magicItemInfo:
-        itemType: 1
-        targetingRequired: true
-        effectType: 'lightning'
-        damage: 100
-        speedReduction: 50
-        fallDuration: 2.0
     - tid: 90014
       name: '타비아 포츈에그 (Lv.2)'
       level: 1

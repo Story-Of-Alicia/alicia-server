@@ -63,8 +63,6 @@ public:
     // Bolt targeting system
     bool isTargeting{false};
     Oid currentTarget{InvalidEntityOid};
-    bool isBeingTargeted{false};
-    Oid targetedBy{InvalidEntityOid};
   };
 
   //! An item

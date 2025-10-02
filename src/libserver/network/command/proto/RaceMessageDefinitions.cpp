@@ -1564,4 +1564,158 @@ void AcCmdRCMagicExpire::Write(
   stream.Write(command.characterOid);
 }
 
+void AcCmdCRUseMagicItemNotify::Write(
+  const AcCmdCRUseMagicItemNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterOid);
+  stream.Write(command.magicItemId);
+
+  switch(command.magicItemId)
+  {
+    // Case 0xA and 0xB write 2x [3x floats]
+    // and then fallthrough to write uint16_t vector
+    case 0xa:
+    case 0xb:
+      // Assert that optional1 has value
+      assert(command.optional1.has_value());
+
+      for (auto& element : command.optional1.value().member1)
+      {
+        stream.Write(element);
+      }
+      for (auto& element : command.optional1.value().member2)
+      {
+        stream.Write(element);
+      }
+      [[fallthrough]];
+    case 0x2:
+    case 0x3:
+    case 0xc:
+    case 0xd:
+    case 0xe:
+    case 0xf:
+    case 0x10:
+    case 0x11:
+    case 0x12:
+    case 0x13:
+    {
+      // Assert that optional2 has value
+      assert(command.optional2.has_value());
+
+      // Expects vector size followed by uint16_t vector itself
+      stream.Write(command.optional2.value().size);
+      for (auto& element : command.optional2.value().list)
+      {
+        stream.Write(element);
+      }
+      break;
+    }
+    default:
+    {
+      break;
+    }
+  }
+
+  // FIXME: wtf am i switching
+  switch (command.magicItemId)
+  {
+    case 0x2:
+    case 0x3:
+    case 0xe:
+    case 0xf:
+    case 0x10:
+    case 0x11:
+    case 0x12:
+    case 0x13:
+    {
+      // Assert that optional3 and optional4 have values
+      assert(command.optional3.has_value());
+      assert(command.optional4.has_value());
+      stream.Write(command.optional3.value())
+        .Write(command.optional4.value());
+      break;
+    }
+    default:
+    {
+      break;
+    }
+  }
+
+  stream.Write(command.unk3);
+}
+
+void AcCmdCRUseMagicItemNotify::Read(
+  AcCmdCRUseMagicItemNotify& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterOid);
+  stream.Read(command.magicItemId);
+
+  switch(command.magicItemId)
+  {
+    // Case 0xA and 0xB read 2x [3x floats]
+    // and then fallthrough to read uint16_t vector
+    case 0xa:
+    case 0xb:
+      for (auto& element : command.optional1.emplace().member1)
+      {
+        stream.Read(element);
+      }
+      for (auto& element : command.optional1.value().member2)
+      {
+        stream.Read(element);
+      }
+      [[fallthrough]];
+    case 0x2:
+    case 0x3:
+    case 0xc:
+    case 0xd:
+    case 0xe:
+    case 0xf:
+    case 0x10:
+    case 0x11:
+    case 0x12:
+    case 0x13:
+    {
+      auto& optional2 = command.optional2.emplace();
+
+      stream.Read(optional2.size);
+      optional2.list.resize(optional2.size);
+      for (auto& element : optional2.list)
+      {
+        stream.Read(element);
+      }
+      break;
+    }
+    default:
+    {
+      break;
+    }
+  }
+
+  stream.Read(command.unk3);
+  // FIXME: wtf am i switching
+  switch (command.magicItemId)
+  {
+    case 0x2:
+    case 0x3:
+    case 0xe:
+    case 0xf:
+    case 0x10:
+    case 0x11:
+    case 0x12:
+    case 0x13:
+    {
+      stream.Read(command.optional3.emplace())
+        .Read(command.optional4.emplace());
+      break;
+    }
+    default:
+    {
+      break;
+    }
+  }
+}
+
 } // namespace server::protocol

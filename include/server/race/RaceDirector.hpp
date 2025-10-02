@@ -75,6 +75,15 @@ private:
 
     //! A leader character's UID.
     data::Uid masterUid{data::InvalidUid};
+    
+    //! Countdown start time for race timing
+    std::optional<std::chrono::steady_clock::time_point> countdownStartTime;
+    
+    //! Actual race start timestamp (when countdown reaches 0)
+    std::optional<uint64_t> raceStartTimestamp;
+    
+    //! Whether we've reset magic bars after countdown finished
+    bool postCountdownResetDone{false};
   };
 
   void HandleEnterRoom(

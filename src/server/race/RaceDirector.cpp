@@ -883,11 +883,17 @@ void RaceDirector::HandleLoadingComplete(
     " starting the countdown.",
     clientContext.roomUid);
 
+  // Record countdown start time
+  roomInstance.countdownStartTime = std::chrono::steady_clock::now();
+
   // todo: start race timeout timer
 
   const auto countdownTimestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(
     std::chrono::steady_clock::now().time_since_epoch())
     .count() / 100 + 10 * 10'000'000;
+    
+  // Store when the race will actually start (countdown timestamp is when race begins)
+  roomInstance.raceStartTimestamp = countdownTimestamp;
 
   for (const ClientId& roomClientId : roomInstance.clients)
   {
@@ -1331,9 +1337,30 @@ void RaceDirector::HandleRaceUserPos(
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
     room.gameMode);
 
-  // Only regenerate magic during active race (not in lobby or before race starts)
-  // Check if gamemode is magic, race is active, and not holding an item
-  if (room.gameMode == 2 && racer.state == tracker::RaceTracker::Racer::State::Racing && not racer.magicItem.has_value())
+  // Only regenerate magic during active race (after countdown finishes)
+  // Check if gamemode is magic, race is active, countdown finished, and not holding an item
+  bool raceActuallyStarted = false;
+  if (roomInstance.raceStartTimestamp.has_value())
+  {
+    // Get current timestamp in same format as countdown timestamp
+    auto currentTimestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(
+      std::chrono::steady_clock::now().time_since_epoch()).count() / 100;
+      
+    raceActuallyStarted = currentTimestamp >= roomInstance.raceStartTimestamp.value();
+    
+    // Reset all magic bars once when race actually starts
+    if (raceActuallyStarted && !roomInstance.postCountdownResetDone)
+    {
+      roomInstance.postCountdownResetDone = true;
+      for (auto& [uid, raceRacer] : roomInstance.tracker.GetRacers())
+      {
+        raceRacer.starPointValue = 0;
+        spdlog::info("Reset magic bar for racer {} after countdown finished", raceRacer.oid);
+      }
+    }
+  }
+  
+  if (room.gameMode == 2 && racer.state == tracker::RaceTracker::Racer::State::Racing && raceActuallyStarted && not racer.magicItem.has_value())
   {
     if (racer.starPointValue < gameModeTemplate.starPointsMax)
     {
@@ -1717,36 +1744,21 @@ void RaceDirector::HandleChangeMagicTargetNotify(
   // Update current target
   racer.currentTarget = command.targetOid;
   
-  // Find the target racer and notify them
-  for (auto& [targetUid, targetRacer] : roomInstance.tracker.GetRacers())
+  // Send targeting notification to the target
+  protocol::AcCmdCRChangeMagicTargetNotify targetNotify{
+    .characterOid = command.characterOid,
+    .targetOid = command.targetOid
+  };
+  
+  // Find the client ID for this target and send notification
+  for (const ClientId& roomClientId : roomInstance.clients)
   {
-    if (targetRacer.oid == command.targetOid)
+    const auto& targetClientContext = _clients[roomClientId];
+    if (roomInstance.tracker.GetRacer(targetClientContext.characterUid).oid == command.targetOid)
     {
-      spdlog::info("Notifying target {} that they are being targeted by {}", 
-        command.targetOid, command.characterOid);
-      
-      // Update target's state
-      targetRacer.isBeingTargeted = true;
-      targetRacer.targetedBy = command.characterOid;
-      
-      // Send targeting notification to the target
-      protocol::AcCmdCRChangeMagicTargetNotify targetNotify{
-        .characterOid = command.characterOid,
-        .targetOid = command.targetOid
-      };
-      
-      // Find the client ID for this target
-      for (const ClientId& roomClientId : roomInstance.clients)
-      {
-        const auto& targetClientContext = _clients[roomClientId];
-        if (roomInstance.tracker.GetRacer(targetClientContext.characterUid).oid == command.targetOid)
-        {
-          _commandServer.QueueCommand<decltype(targetNotify)>(
-            roomClientId, 
-            [targetNotify]() { return targetNotify; });
-          break;
-        }
-      }
+      _commandServer.QueueCommand<decltype(targetNotify)>(
+        roomClientId, 
+        [targetNotify]() { return targetNotify; });
       break;
     }
   }
@@ -1780,24 +1792,21 @@ void RaceDirector::HandleChangeMagicTargetOK(
       spdlog::info("Bolt hit target {}! Applying effects...", command.targetOid);
       
       // Apply bolt effects: fall down, lose speed, lose item
-      // For now, we'll simulate this by resetting their magic item
+      // Reset their magic item (they lose it when hit)
       targetRacer.magicItem.reset();
       
-      // Clear targeting states
-      targetRacer.isBeingTargeted = false;
-      targetRacer.targetedBy = tracker::InvalidEntityOid;
-      
-      // Send bolt hit notification to all clients in the room
-      protocol::AcCmdRCMagicExpire expireNotify{
-        .characterOid = command.targetOid,
-        .magicItemId = 50100 // Bolt item ID
+      // Send bolt hit notification to all clients so they can see the hit effects
+      protocol::AcCmdCRUseMagicItemNotify boltHitNotify{
+        .characterOid = command.targetOid,  // The target gets hit
+        .magicItemId = 2,  // Bolt magic item ID
+        .unk3 = command.targetOid
       };
       
       for (const ClientId& roomClientId : roomInstance.clients)
       {
-        _commandServer.QueueCommand<decltype(expireNotify)>(
+        _commandServer.QueueCommand<decltype(boltHitNotify)>(
           roomClientId, 
-          [expireNotify]() { return expireNotify; });
+          [boltHitNotify]() { return boltHitNotify; });
       }
       
       break;
@@ -1829,38 +1838,30 @@ void RaceDirector::HandleChangeMagicTargetCancel(
     return;
   }
   
+  // Send remove target notification to the current target (if any)
+  if (racer.currentTarget != tracker::InvalidEntityOid)
+  {
+    protocol::AcCmdRCRemoveMagicTarget removeNotify{
+      .characterOid = command.characterOid
+    };
+    
+    // Find the client ID for the current target
+    for (const ClientId& roomClientId : roomInstance.clients)
+    {
+      const auto& targetClientContext = _clients[roomClientId];
+      if (roomInstance.tracker.GetRacer(targetClientContext.characterUid).oid == racer.currentTarget)
+      {
+        _commandServer.QueueCommand<decltype(removeNotify)>(
+          roomClientId, 
+          [removeNotify]() { return removeNotify; });
+        break;
+      }
+    }
+  }
+  
   // Reset targeting state
   racer.isTargeting = false;
   racer.currentTarget = tracker::InvalidEntityOid;
-  
-  // If there was a target, clear their targeted state
-  for (auto& [targetUid, targetRacer] : roomInstance.tracker.GetRacers())
-  {
-    if (targetRacer.targetedBy == command.characterOid)
-    {
-      targetRacer.isBeingTargeted = false;
-      targetRacer.targetedBy = tracker::InvalidEntityOid;
-      
-      // Send remove target notification
-      protocol::AcCmdRCRemoveMagicTarget removeNotify{
-        .characterOid = command.characterOid
-      };
-      
-      // Find the client ID for this target
-      for (const ClientId& roomClientId : roomInstance.clients)
-      {
-        const auto& targetClientContext = _clients[roomClientId];
-        if (roomInstance.tracker.GetRacer(targetClientContext.characterUid).oid == targetRacer.oid)
-        {
-          _commandServer.QueueCommand<decltype(removeNotify)>(
-            roomClientId, 
-            [removeNotify]() { return removeNotify; });
-          break;
-        }
-      }
-      break;
-    }
-  }
   
   spdlog::info("Character {} exited targeting mode", command.characterOid);
 }
