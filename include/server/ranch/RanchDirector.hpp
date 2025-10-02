@@ -21,7 +21,7 @@
 #define RANCHDIRECTOR_HPP
 
 #include "server/Config.hpp"
-#include "server/tracker/WorldTracker.hpp"
+#include "server/tracker/RanchTracker.hpp"
 
 #include "libserver/network/command/CommandServer.hpp"
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
@@ -103,7 +103,7 @@ private:
   struct RanchInstance
   {
     //! A world tracker of the ranch.
-    WorldTracker worldTracker;
+    tracker::RanchTracker tracker;
     //! A set of clients connected to the ranch.
     std::unordered_set<ClientId> clients;
   };
@@ -316,6 +316,10 @@ private:
   void HandleHideAge(
     ClientId clientId,
     const protocol::AcCmdCRHideAge command);
+
+    void HandleStatusPointApply(
+    ClientId clientId,
+    const protocol::AcCmdCRStatusPointApply command);
 
   //!
   ServerInstance& _serverInstance;

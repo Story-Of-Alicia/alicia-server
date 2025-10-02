@@ -397,9 +397,11 @@ void ChatSystem::RegisterUserCommands()
       {
         characterRecord.Immutable([this, &mountUid](const data::Character& character)
           {
-            _serverInstance.GetDataDirector().GetHorseCache().Get(character.mountUid())->Mutable([](data::Horse& horse)
+            _serverInstance.GetDataDirector().GetHorseCache().Get(character.mountUid())->Mutable(
+              [this](data::Horse& horse)
               {
-                HorseRegistry::Get().BuildRandomHorse(horse.parts, horse.appearance);
+                _serverInstance.GetHorseRegistry().BuildRandomHorse(
+                  horse.parts, horse.appearance);
               });
             mountUid = character.mountUid();
           });

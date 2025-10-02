@@ -106,19 +106,19 @@ struct LobbyCommandLoginOK
   uint8_t age{};
   uint8_t hideGenderAndAge{};
 
-  struct Unk1
+  struct Mission
   {
-    uint16_t val0{};
+    uint16_t id{};
 
-    struct Unk1Unk1
+    struct Progress
     {
-      uint32_t val1{};
-      uint32_t val2{};
+      uint32_t id{};
+      uint32_t value{};
     };
-    std::vector<Unk1Unk1> val1{};
+    std::vector<Progress> progress{};
   };
-  //! If this is not set, crash happens in preview image generation.
-  std::vector<Unk1> val5; // max 17
+  //! Max 17
+  std::vector<Mission> missions{};
 
   // 256 characters max
   std::string val6{};
@@ -626,7 +626,7 @@ struct LobbyCommandEnterChannelCancel
 struct LobbyCommandRoomList
 {
   uint8_t page;
-  GameMode gameMode;
+  uint8_t gameMode;
   TeamMode teamMode;
 
   static Command GetCommand()
@@ -712,7 +712,7 @@ struct LobbyCommandMakeRoom
   std::string name;
   std::string password;
   uint8_t playerCount;
-  GameMode gameMode;
+  uint8_t gameMode;
   TeamMode teamMode;
   uint16_t missionId;
   uint8_t unk3;

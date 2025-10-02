@@ -104,7 +104,11 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       HandleUnregisterStallionEstimateInfo(clientId, command);
     });
 
-  // AcCmdCRStatusPointApply
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRStatusPointApply>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleStatusPointApply(clientId, command);
+    });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRTryBreeding>(
     [this](ClientId clientId, auto& command)
@@ -587,7 +591,7 @@ void RanchDirector::HandleEnterRanch(
     throw std::runtime_error(
       std::format("Rancher's character [{}] not available", command.rancherUid));
 
-  clientContext.isAuthenticated = GetServerInstance().GetOtpRegistry().AuthorizeCode(
+  clientContext.isAuthenticated = GetServerInstance().GetOtpSystem().AuthorizeCode(
     command.characterUid, command.otp);
 
   // Determine whether the ranch is locked.
@@ -645,7 +649,7 @@ void RanchDirector::HandleEnterRanch(
       {
         for (const auto& horseUid : rancher.horses())
         {
-          ranchInstance.worldTracker.AddHorse(horseUid);
+          ranchInstance.tracker.AddHorse(horseUid);
         }
       }
 
@@ -686,10 +690,10 @@ void RanchDirector::HandleEnterRanch(
         for (auto& eggRecord : *eggRecords)
         {
           eggRecord.Immutable(
-            [&response](const data::Egg& egg)
+            [this, &response](const data::Egg& egg)
             {
               // retrieve hatchDuration
-              const registry::Egg eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
+              const registry::EggInfo eggTemplate = _serverInstance.GetPetRegistry().GetEggInfo(
                 egg.itemTid());
               const auto hatchingDuration = eggTemplate.hatchDuration;
               protocol::BuildProtocolEgg(response.incubator[egg.incubatorSlot()], egg, hatchingDuration );
@@ -699,14 +703,14 @@ void RanchDirector::HandleEnterRanch(
     });
 
   // Add the character to the ranch.
-  ranchInstance.worldTracker.AddCharacter(
+  ranchInstance.tracker.AddCharacter(
     command.characterUid);
 
   // The character that is currently entering the ranch.
   RanchCharacter characterEnteringRanch;
 
   // Add the ranch horses.
-  for (auto [horseUid, horseOid] : ranchInstance.worldTracker.GetHorses())
+  for (auto [horseUid, horseOid] : ranchInstance.tracker.GetHorses())
   {
     auto& ranchHorse = response.horses.emplace_back();
     ranchHorse.horseOid = horseOid;
@@ -723,7 +727,7 @@ void RanchDirector::HandleEnterRanch(
   }
 
   // Add the ranch characters.
-  for (auto [characterUid, characterOid] : ranchInstance.worldTracker.GetCharacters())
+  for (auto [characterUid, characterOid] : ranchInstance.tracker.GetCharacters())
   {
     auto& protocolCharacter = response.characters.emplace_back();
     protocolCharacter.oid = characterOid;
@@ -878,14 +882,25 @@ void RanchDirector::HandleRanchLeave(ClientId clientId)
 
   auto& ranchInstance = ranchIter->second;
 
-  ranchInstance.worldTracker.RemoveCharacter(clientContext.characterUid);
+  ranchInstance.tracker.RemoveCharacter(clientContext.characterUid);
   ranchInstance.clients.erase(clientId);
+
+  protocol::AcCmdCRLeaveRanchOK response{};
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 
   protocol::AcCmdCRLeaveRanchNotify notify{
     .characterId = clientContext.characterUid};
 
   for (const ClientId& ranchClientId : ranchInstance.clients)
   {
+    if (ranchClientId == clientId)
+      continue;
+
     _commandServer.QueueCommand<decltype(notify)>(
       ranchClientId,
       [notify]()
@@ -967,7 +982,7 @@ void RanchDirector::HandleSnapshot(
   const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
 
   protocol::RanchCommandRanchSnapshotNotify notify{
-    .ranchIndex = ranchInstance.worldTracker.GetCharacterOid(
+    .ranchIndex = ranchInstance.tracker.GetCharacterOid(
       clientContext.characterUid),
     .type = command.type,
   };
@@ -976,11 +991,15 @@ void RanchDirector::HandleSnapshot(
   {
     case protocol::AcCmdCRRanchSnapshot::Full:
     {
+      if (command.full.ranchIndex != notify.ranchIndex)
+        throw std::runtime_error("Client sent a snapshot for an entity it's not controlling");
       notify.full = command.full;
       break;
     }
     case protocol::AcCmdCRRanchSnapshot::Partial:
     {
+      if (command.full.ranchIndex != notify.ranchIndex)
+        throw std::runtime_error("Client sent a snapshot for an entity it's not controlling");
       notify.partial = command.partial;
       break;
     }
@@ -2072,7 +2091,7 @@ void RanchDirector::HandleIncubateEgg(
   characterRecord.Mutable(
     [this, &command, &response, clientId](data::Character& character)
     {
-      const std::optional<registry::Egg> eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
+      const std::optional<registry::EggInfo> eggTemplate = _serverInstance.GetPetRegistry().GetEggInfo(
         command.itemTid);
       if (not eggTemplate)
       {
@@ -2186,12 +2205,12 @@ void RanchDirector::HandleBoostIncubateEgg(
       for (const auto& egg : *eggRecord)
       {
 
-        egg.Mutable([&command, &response](data::Egg& eggData)
+        egg.Mutable([this, &command, &response](data::Egg& eggData)
           {
             if (eggData.incubatorSlot() == command.incubatorSlot)
             {
               // retrieve egg template for the hatchDuration
-              const registry::Egg eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
+              const registry::EggInfo eggTemplate = _serverInstance.GetPetRegistry().GetEggInfo(
                 eggData.itemTid());
 
               eggData.boostsUsed() += 1;
@@ -2302,14 +2321,14 @@ void RanchDirector::HandleRequestPetBirth(
       GetServerInstance().GetDataDirector().GetEggCache().Delete(hatchingEggUid);
       GetServerInstance().GetDataDirector().GetItemCache().Delete(hatchingEggItemUid);
 
-      const registry::Egg eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
+      const registry::EggInfo eggTemplate = _serverInstance.GetPetRegistry().GetEggInfo(
         hatchingEggTid);
 
       const auto& hatchablePets = eggTemplate.hatchablePets;
       std::uniform_int_distribution<size_t> dist(0, hatchablePets.size() - 1);
       const data::Tid petItemTid = hatchablePets[dist(_randomDevice)];
 
-      const registry::Pet petTemplate = registry::PetRegistry::GetInstance().GetPet(
+      const registry::PetInfo petTemplate = _serverInstance.GetPetRegistry().GetPetInfo(
         petItemTid);
       const auto petId = petTemplate.petId;
 
@@ -2356,9 +2375,9 @@ void RanchDirector::HandleRequestPetBirth(
       const auto petItem = GetServerInstance().GetDataDirector().CreateItem();
       const auto bornPet = GetServerInstance().GetDataDirector().CreatePet();
 
-      petItem.Mutable([&response, &petItemUid, petId, petTemplate](data::Item& item)
+      petItem.Mutable([&response, &petItemUid, petId, petItemTid](data::Item& item)
       {
-        item.tid() = petTemplate.petTid;
+        item.tid() = petItemTid;
         item.count() = 1;
         // Fill the response with the born item information.
         response.petBirthInfo.eggItem = {
@@ -3145,6 +3164,32 @@ void RanchDirector::HandleHideAge(
     clientContext.visitingRancherUid,
     command.option
   );
+}
+
+void RanchDirector::HandleStatusPointApply(
+  ClientId clientId,
+  const protocol::AcCmdCRStatusPointApply command)
+{
+  protocol::AcCmdCRStatusPointApplyOK response {};
+
+  const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(command.horseUid);
+  horseRecord->Mutable([&command](data::Horse& horse)
+  {
+    horse.stats.agility = command.stats.agility;
+    horse.stats.ambition = command.stats.ambition;
+    horse.stats.rush = command.stats.rush;
+    horse.stats.endurance = command.stats.endurance;
+    horse.stats.courage = command.stats.courage;
+
+    horse.growthPoints() -= 1;
+  });
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 } // namespace server

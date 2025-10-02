@@ -71,6 +71,8 @@ private:
     bool userLoadRequested{false};
     //! Whether the load of the user's character was requested.
     bool userCharacterLoadRequested{false};
+    //! Whether the user just created a character this session.
+    bool justCreatedCharacter{false};
   };
 
   std::unordered_map<ClientId, LoginContext> _clientLogins;

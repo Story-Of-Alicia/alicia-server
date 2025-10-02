@@ -217,11 +217,12 @@ protected:
 
   protocol::LobbyCommandLoginOK::SystemContent _systemContent{
     .values = {
-      {4, 0},
-      {16, 0},
-      {21, 0},
-      {22, 0},
-      {30, 0}}};
+      // {4, 0},
+      // {16, 0},
+      // {21, 0},
+      // {22, 0},
+      // {30, 0}
+      }};
   
   //!
   std::unordered_map<ClientId, ClientContext> _clients;

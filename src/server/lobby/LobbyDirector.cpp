@@ -19,8 +19,8 @@
 
 #include "server/lobby/LobbyDirector.hpp"
 
+#include "../../../include/server/system/RoomSystem.hpp"
 #include "libserver/data/helper/ProtocolHelper.hpp"
-#include "libserver/registry/RoomRegistry.hpp"
 #include "server/ServerInstance.hpp"
 #include "zlib.h"
 
@@ -431,16 +431,28 @@ void LobbyDirector::HandleRoomList(
 {
   protocol::LobbyCommandRoomListOK response;
   response.page = command.page;
-  response.unk1 = 1;
-  response.unk2 = 1;
+  response.unk1 = command.gameMode;
+  response.unk2 = static_cast<uint8_t>(command.teamMode);
 
-  for (const auto& room : RoomRegistry::Get().GetRooms() | std::views::values)
+  for (const auto& room : _serverInstance.GetRoomSystem().GetRooms() | std::views::values)
   {
+    if ( room.gameMode != command.gameMode
+      || room.teamMode != command.teamMode)
+      continue;
+
+    // TODO: get Live player count from RaceDirector
+    // TODO: gamestate showing
     auto& roomResponse = response.rooms.emplace_back();
     roomResponse.id = room.uid;
-    roomResponse.playerCount = 1;
-    roomResponse.maxPlayers = 8;
+    if (room.password.empty())
+      roomResponse.isLocked = false;
+    else
+      roomResponse.isLocked = true;
+    roomResponse.playerCount = 1; // Placeholder, replace with actual live count
+    roomResponse.maxPlayers = room.playerCount;
     roomResponse.level = 2;
+    roomResponse.name = room.name;
+    roomResponse.map = room.mapBlockId;
   }
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -455,11 +467,10 @@ void LobbyDirector::HandleMakeRoom(
   ClientId clientId,
   const protocol::LobbyCommandMakeRoom& command)
 {
-  auto& roomRegistry = RoomRegistry::Get();
-  auto& room = roomRegistry.CreateRoom();
+  auto& room = _serverInstance.GetRoomSystem().CreateRoom();
 
   room.name = command.name;
-  room.description = command.password;
+  room.password = command.password;
   room.missionId = command.missionId;
   room.playerCount = command.playerCount;
   room.gameMode = command.gameMode;
@@ -467,6 +478,7 @@ void LobbyDirector::HandleMakeRoom(
   room.unk3 = command.unk3;
   room.bitset = static_cast<uint16_t>(command.bitset);
   room.unk4 = command.unk4;
+  room.mapBlockId = 10002;
 
   protocol::LobbyCommandMakeRoomOK response{
     .roomUid = room.uid,
@@ -486,8 +498,6 @@ void LobbyDirector::HandleEnterRoom(
   ClientId clientId,
   const protocol::LobbyCommandEnterRoom& command)
 {
-  auto& roomRegistry = RoomRegistry::Get();
-
   protocol::LobbyCommandEnterRoomOK response{
     .roomUid = command.roomUid,
     .otp = 0xBAAD,
@@ -736,7 +746,7 @@ void LobbyDirector::QueueEnterRanchOK(
   const auto& clientContext = GetClientContext(clientId);
   protocol::LobbyCommandEnterRanchOK response{
     .rancherUid = rancherUid,
-    .otp = GetServerInstance().GetOtpRegistry().GrantCode(clientContext.characterUid),
+    .otp = GetServerInstance().GetOtpSystem().GrantCode(clientContext.characterUid),
     .ranchAddress = GetConfig().advertisement.ranch.address.to_uint(),
     .ranchPort = GetConfig().advertisement.ranch.port};
 

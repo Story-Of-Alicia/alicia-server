@@ -704,6 +704,7 @@ enum class Command : uint16_t
   AcCmdUserRaceCloseWait = 0x1030,
   AcCmdUserRaceDeleteNotify = 0x1036,
   AcCmdUserRaceFinal = 0x1037,
+  //AcCmdUserRaceFinalNotify = 0x1037,
   AcCmdUserRaceUpdatePos = 0x103f,
   AcCmdGameRaceItemSpawn = 0x1045,
   AcCmdGameRaceItemGet = 0x1048,

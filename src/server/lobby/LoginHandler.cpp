@@ -55,6 +55,7 @@ void LoginHandler::Tick()
       continue;
     }
 
+    // If the data are still being loaded do not proceed with login.
     if (_lobbyDirector.GetServerInstance().GetDataDirector().AreDataBeingLoaded(
       loginContext.userName))
     {
@@ -145,6 +146,7 @@ void LoginHandler::Tick()
     // If the user has a character request the load.
     if (hasCharacter)
     {
+      // If the user character is not loaded do not proceed.
       if (not loginContext.userCharacterLoadRequested)
       {
         _lobbyDirector.GetServerInstance().GetDataDirector().RequestLoadCharacterData(
@@ -161,9 +163,12 @@ void LoginHandler::Tick()
     const bool forcedCharacterCreator = _lobbyDirector._forcedCharacterCreator.erase(
       characterUid) > 0;
 
-    // If the user does not have a character send them to the character creator.
+    // If the user does not have a character or the character creator was enforced
+    // send them to the character creator.
     if (not hasCharacter || forcedCharacterCreator)
     {
+      loginContext.justCreatedCharacter = true;
+
       spdlog::debug("User '{}' sent to the character creator", loginContext.userName);
       QueueUserCreateNickname(clientId, loginContext.userName);
       return;
@@ -258,15 +263,16 @@ void LoginHandler::HandleUserCreateCharacter(
 
     auto mountUid = data::InvalidUid;
     mountRecord.Mutable(
-      [&mountUid](data::Horse& horse)
+      [this, &mountUid](data::Horse& horse)
       {
         // The TID of the horse specifies which body mesh is used for that horse.
         // Can be found in the `MountPartInfo` table.
         horse.tid() = 20002;
         horse.dateOfBirth() = data::Clock::now();
         horse.mountCondition.stamina = 3500;
+        horse.growthPoints() = 150;
 
-        HorseRegistry::Get().BuildRandomHorse(
+        _lobbyDirector._serverInstance.GetHorseRegistry().BuildRandomHorse(
           horse.parts,
           horse.appearance);
 
@@ -339,6 +345,7 @@ void LoginHandler::QueueUserLoginAccepted(
   const ClientId clientId,
   const std::string& userName)
 {
+  const auto loginContext = _clientLogins[clientId];
   const auto userRecord = _lobbyDirector.GetServerInstance().GetDataDirector().GetUserCache().Get(
     userName);
   if (not userRecord)
@@ -346,23 +353,77 @@ void LoginHandler::QueueUserLoginAccepted(
 
   protocol::LobbyCommandLoginOK response{
     .lobbyTime = util::TimePointToFileTime(util::Clock::now()),
-    .member0 = 0xCA794,
+    // .member0 = 0xCA794,
     .motd = std::format(
       "Welcome to Story of Alicia. Players online: {}",
       _lobbyDirector._clients.size()),
     .val1 = 0x0,
     .val3 = 0x0,
-    .optionType = OptionType::Value,
-    .valueOptions = 0x64,
 
-    .val5 = {
-      {0x18, {{2, 1}}},
-      {0x1F, {{2, 1}}},
-      {0x23, {{2, 1}}},
-      {0x29, {{2, 1}}},
-      {0x2A, {{2, 1}}},
-      {0x2B, {{2, 1}}},
-      {0x2E, {{2, 1}}}},
+    .missions = {
+      protocol::LobbyCommandLoginOK::Mission{
+        .id = 0x18,
+        .progress = {
+          protocol::LobbyCommandLoginOK::Mission::Progress{
+          .id = 2,
+          .value = 1}}},
+      protocol::LobbyCommandLoginOK::Mission{
+        .id = 0x1F,
+        .progress = {
+          protocol::LobbyCommandLoginOK::Mission::Progress{
+            .id = 2,
+            .value = 1}}},
+      protocol::LobbyCommandLoginOK::Mission{
+        .id = 0x23,
+        .progress = {
+          protocol::LobbyCommandLoginOK::Mission::Progress{
+            .id = 2,
+            .value = 1}}},
+      protocol::LobbyCommandLoginOK::Mission{
+        .id = 0x29,
+        .progress = {
+          protocol::LobbyCommandLoginOK::Mission::Progress{
+            .id = 2,
+            .value = 1}}},
+      protocol::LobbyCommandLoginOK::Mission{
+        .id = 0x2A,
+        .progress = {
+          protocol::LobbyCommandLoginOK::Mission::Progress{
+            .id = 2,
+            .value = 1}}},
+      protocol::LobbyCommandLoginOK::Mission{
+        .id = 0x2B,
+        .progress = {
+          protocol::LobbyCommandLoginOK::Mission::Progress{
+            .id = 2,
+            .value = 1}}},
+      protocol::LobbyCommandLoginOK::Mission{
+        .id = 0x2C,
+        .progress = {
+          protocol::LobbyCommandLoginOK::Mission::Progress{
+            .id = 2,
+            .value = 1}}},
+      protocol::LobbyCommandLoginOK::Mission{
+        .id = 0x2D,
+        .progress = {
+          protocol::LobbyCommandLoginOK::Mission::Progress{
+            .id = 2,
+            .value = 1}}},
+      protocol::LobbyCommandLoginOK::Mission{
+        .id = 0x2E,
+        .progress = {
+          protocol::LobbyCommandLoginOK::Mission::Progress{
+            .id = 2,
+            .value = 1}}},
+      protocol::LobbyCommandLoginOK::Mission{
+        .id = 0x2F,
+        .progress = {
+          protocol::LobbyCommandLoginOK::Mission::Progress{
+            .id = 2,
+            .value = 1}}},},
+
+    // .optionType = OptionType::Value,
+    // .valueOptions = 0x64,
 
     .ranchAddress = _lobbyDirector.GetConfig().advertisement.ranch.address.to_uint(),
     .ranchPort = _lobbyDirector.GetConfig().advertisement.ranch.port,
@@ -370,14 +431,15 @@ void LoginHandler::QueueUserLoginAccepted(
 
     .systemContent = _lobbyDirector._systemContent,
 
-    .managementSkills = {4, 0x2B, 4},
-    .skillRanks = {.values = {{1,1}}},
-    .val14 = 0xca1b87db,
-    .guild = {.val1 = 1},
-    .val16 = 4,
-    .val18 = 0x2a,
-    .val19 = 0x38d,
-    .val20 = 0x1c7};
+    // .managementSkills = {4, 0x2B, 4},
+    // .skillRanks = {.values = {{1,1}}},
+    // .val14 = 0xca1b87db,
+    // .guild = {.val1 = 1},
+    // .val16 = 4,
+    // .val18 = 0x2a,
+    // .val19 = 0x38d,
+    //.val20 = 0x1c7
+  };
 
   // Get the character UID of the user.
   auto userCharacterUid{data::InvalidUid};
@@ -399,13 +461,17 @@ void LoginHandler::QueueUserLoginAccepted(
     data::InvalidUid};
 
   characterRecord.Immutable(
-    [this, &response, &characterMountUid](const data::Character& character)
+    [this, justCreatedCharacter = loginContext.justCreatedCharacter, &response, &characterMountUid](const data::Character& character)
     {
       response.uid = character.uid();
       response.name = character.name();
 
       response.introduction = character.introduction();
-      response.gender = character.parts.modelId() == 10 ? Gender::Boy : Gender::Girl;
+
+      // todo: model constant
+      response.gender = character.parts.modelId() == 10
+        ? Gender::Boy
+        : Gender::Girl;
 
       response.level = character.level();
       response.carrots = character.carrots();
@@ -414,7 +480,8 @@ void LoginHandler::QueueUserLoginAccepted(
       response.age = character.age();
       response.hideGenderAndAge = character.hideGenderAndAge();
 
-      response.bitfield = protocol::LobbyCommandLoginOK::HasPlayedBefore;
+      if (not justCreatedCharacter)
+        response.bitfield = protocol::LobbyCommandLoginOK::HasPlayedBefore;
 
       // Character equipment.
       const auto characterEquipmentItems = _lobbyDirector.GetServerInstance().GetDataDirector().GetItemCache().Get(
