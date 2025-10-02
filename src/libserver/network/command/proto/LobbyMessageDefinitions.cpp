@@ -147,16 +147,16 @@ void LobbyCommandLoginOK::Write(
     .Write(command.hideGenderAndAge);
 
   //
-  stream.Write(static_cast<uint8_t>(command.val5.size()));
-  for (const auto& val : command.val5)
+  stream.Write(static_cast<uint8_t>(command.missions.size()));
+  for (const auto& val : command.missions)
   {
-    stream.Write(val.val0);
+    stream.Write(val.id);
 
-    stream.Write(static_cast<uint8_t>(val.val1.size()));
-    for (const auto& nestedVal : val.val1)
+    stream.Write(static_cast<uint8_t>(val.progress.size()));
+    for (const auto& nestedVal : val.progress)
     {
-      stream.Write(nestedVal.val1)
-        .Write(nestedVal.val2);
+      stream.Write(nestedVal.id)
+        .Write(nestedVal.value);
     }
   }
 
@@ -485,8 +485,8 @@ void LobbyCommandRoomList::Read(
   SourceStream& stream)
 {
   stream.Read(command.page)
-    .Read(command.teamMode)
-    .Read(command.gameMode);
+    .Read(command.gameMode)
+    .Read(command.teamMode);
 }
 
 void LobbyCommandRoomListOK::Room::Write(
@@ -1251,6 +1251,43 @@ void AcCmdLCNotice::Write(const AcCmdLCNotice& command, SinkStream& stream)
 void AcCmdLCNotice::Read(AcCmdLCNotice& command, SourceStream& stream)
 {
     throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLRequestMountInfo::Write(
+  const AcCmdCLRequestMountInfo& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdCLRequestMountInfo::Read(
+  AcCmdCLRequestMountInfo& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterUid);
+}
+
+void AcCmdCLRequestMountInfoOK::Write(
+  const AcCmdCLRequestMountInfoOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid);
+  stream.Write(static_cast<uint8_t>(command.mountInfos.size()));
+  for (const auto& mountInfo : command.mountInfos)
+  {
+    stream.Write(mountInfo.horseUid)
+      .Write(mountInfo.boostsInARow)
+      .Write(mountInfo.winsSpeedSingle)
+      .Write(mountInfo.winsSpeedTeam)
+      .Write(mountInfo.winsMagicSingle)
+      .Write(mountInfo.winsMagicTeam)
+      .Write(mountInfo.totalDistance)
+      .Write(mountInfo.topSpeed)
+      .Write(mountInfo.longestGlideDistance)
+      .Write(mountInfo.participated)
+      .Write(mountInfo.cumulativePrize)
+      .Write(mountInfo.biggestPrize);
+  }
 }
 
 void AcCmdLCInviteGuildJoin::Read(

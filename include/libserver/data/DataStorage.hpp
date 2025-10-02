@@ -137,6 +137,15 @@ public:
     return *_value;
   }
 
+  Data& Mutable() const
+  {
+    if (not IsAvailable())
+      throw std::runtime_error("Value of the record is unavailable");
+
+    _lock.lock();
+    return *_value;
+  }
+
 private:
   //! An access mutex of the value.
   mutable std::shared_mutex* _mutex;

@@ -12,11 +12,14 @@
 #include "server/ranch/RanchDirector.hpp"
 #include "server/system/ChatSystem.hpp"
 #include "server/system/InfractionSystem.hpp"
+#include "server/system/OtpSystem.hpp"
+#include "server/system/RoomSystem.hpp"
 
 #include <libserver/data/DataDirector.hpp>
-#include <libserver/registry/ItemRegistry.hpp>
+#include <libserver/registry/CourseRegistry.hpp>
 #include <libserver/registry/HorseRegistry.hpp>
-#include <libserver/registry/OtpRegistry.hpp>
+#include <libserver/registry/ItemRegistry.hpp>
+#include <libserver/registry/PetRegistry.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -52,13 +55,21 @@ public:
   //! @returns Reference to the race director.
   RaceDirector& GetRaceDirector();
 
+  //! Returns reference to the Course registry.
+  //! @returns Reference to the Course registry.
+  registry::CourseRegistry& GetCourseRegistry();
+
+  //! Returns reference to the Horse registry.
+  //! @returns Reference to the Horse registry.
+  registry::HorseRegistry& GetHorseRegistry();
+
   //! Returns reference to the Item registry.
   //! @returns Reference to the Item registry.
   registry::ItemRegistry& GetItemRegistry();
 
-  //! Returns reference to the OTP registry.
-  //! @returns Reference to the OTP registry.
-  OtpRegistry& GetOtpRegistry();
+  //! Returns reference to the Pet registry.
+  //! @returns Reference to the Pet registry.
+  registry::PetRegistry& GetPetRegistry();
 
   //! Returns reference to the chat system.
   //! @returns Reference to the chat system.
@@ -67,6 +78,14 @@ public:
   //! Returns reference to the infraction system.
   //! @returns Reference to the infraction system.
   InfractionSystem& GetInfractionSystem();
+
+  //! Returns reference to the OTP system.
+  //! @returns Reference to the OTP system.
+  OtpSystem& GetOtpSystem();
+
+  //! Returns reference to the room system.
+  //! @returns Reference to the room system.
+  RoomSystem& GetRoomSystem();
 
   //! Returns reference to the settings.
   //! @returns Reference to the settings.
@@ -145,13 +164,23 @@ private:
   //! A race director.
   RaceDirector _raceDirector;
 
-  //! Registry of OTP codes.
-  OtpRegistry _otpRegistry;
-  //! Registry of items.
+  //! A registry of courses.
+  registry::CourseRegistry _courseRegistry;
+  //! A registry of horses.
+  registry::HorseRegistry _horseRegistry;
+  //! A registry of items.
   registry::ItemRegistry _itemRegistry;
+  //! A registry of pets.
+  registry::PetRegistry _petRegistry;
 
+  //! A chat system.
   ChatSystem _chatSystem;
+  //! An infraction system.
   InfractionSystem _infractionSystem;
+  //! An OTP system.
+  OtpSystem _otpSystem;
+  //! A room system.
+  RoomSystem _roomSystem;
 };
 
 } // namespace server

@@ -54,11 +54,11 @@ add_library(alicia-libserver STATIC
         src/libserver/network/command/proto/LobbyMessageDefinitions.cpp
         src/libserver/network/command/proto/RaceMessageDefinitions.cpp
         src/libserver/network/command/proto/RanchMessageDefinitions.cpp
+        src/libserver/network/http/WebSocket.cpp
+        src/libserver/registry/CourseRegistry.cpp
         src/libserver/registry/HorseRegistry.cpp
         src/libserver/registry/ItemRegistry.cpp
-        src/libserver/registry/OtpRegistry.cpp
         src/libserver/registry/PetRegistry.cpp
-        src/libserver/registry/RoomRegistry.cpp
         src/libserver/util/Locale.cpp
         src/libserver/util/Scheduler.cpp
         src/libserver/util/Stream.cpp
@@ -86,7 +86,10 @@ add_executable(alicia-server
         src/server/ranch/RanchDirector.cpp
         src/server/system/ChatSystem.cpp
         src/server/system/InfractionSystem.cpp
-        src/server/tracker/WorldTracker.cpp)
+        src/server/system/OtpSystem.cpp
+        src/server/system/RoomSystem.cpp
+        src/server/tracker/RaceTracker.cpp
+        src/server/tracker/RanchTracker.cpp)
 target_include_directories(alicia-server
         PRIVATE include/)
 target_link_libraries(alicia-server PRIVATE

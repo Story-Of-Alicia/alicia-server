@@ -926,7 +926,7 @@ struct AcCmdCRRecoverMountCancel
     SourceStream& stream);
 };
 
-struct RanchCommandStatusPointApply
+struct AcCmdCRStatusPointApply
 {
   uint32_t horseUid{};
   Horse::Stats stats{};
@@ -940,18 +940,18 @@ struct RanchCommandStatusPointApply
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandStatusPointApply& command,
+    const AcCmdCRStatusPointApply& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandStatusPointApply& command,
+    AcCmdCRStatusPointApply& command,
     SourceStream& stream);
 };
 
-struct RanchCommandStatusPointApplyOK
+struct AcCmdCRStatusPointApplyOK
 {
   static Command GetCommand()
   {
@@ -962,18 +962,18 @@ struct RanchCommandStatusPointApplyOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandStatusPointApplyOK& command,
+    const AcCmdCRStatusPointApplyOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandStatusPointApplyOK& command,
+    AcCmdCRStatusPointApplyOK& command,
     SourceStream& stream);
 };
 
-struct RanchCommandStatusPointApplyCancel
+struct AcCmdCRStatusPointApplyCancel
 {
   static Command GetCommand()
   {
@@ -984,14 +984,14 @@ struct RanchCommandStatusPointApplyCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandStatusPointApplyCancel& command,
+    const AcCmdCRStatusPointApplyCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandStatusPointApplyCancel& command,
+    AcCmdCRStatusPointApplyCancel& command,
     SourceStream& stream);
 };
 
@@ -1803,7 +1803,7 @@ struct RanchCommandRequestNpcDressListCancel
 
 struct AcCmdCRWearEquipment
 {
-  uint32_t itemUid{};
+  uint32_t equipmentUid{};
   uint8_t member{};
 
   static Command GetCommand()
@@ -3331,7 +3331,7 @@ struct AcCmdCRUseItemCancel
 //!
 struct RanchCommandMountFamilyTree
 {
-  uint32_t unk0;
+  uint32_t horseUid{};
 
   static Command GetCommand()
   {

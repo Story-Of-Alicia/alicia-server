@@ -104,7 +104,11 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       HandleUnregisterStallionEstimateInfo(clientId, command);
     });
 
-  // AcCmdCRStatusPointApply
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRStatusPointApply>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleStatusPointApply(clientId, command);
+    });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRTryBreeding>(
     [this](ClientId clientId, auto& command)
@@ -758,7 +762,7 @@ void RanchDirector::HandleEnterRanch(
     throw std::runtime_error(
       std::format("Rancher's character [{}] not available", command.rancherUid));
 
-  clientContext.isAuthenticated = GetServerInstance().GetOtpRegistry().AuthorizeCode(
+  clientContext.isAuthenticated = GetServerInstance().GetOtpSystem().AuthorizeCode(
     command.characterUid, command.otp);
 
   // Determine whether the ranch is locked.
@@ -816,7 +820,7 @@ void RanchDirector::HandleEnterRanch(
       {
         for (const auto& horseUid : rancher.horses())
         {
-          ranchInstance.worldTracker.AddHorse(horseUid);
+          ranchInstance.tracker.AddHorse(horseUid);
         }
       }
 
@@ -857,10 +861,10 @@ void RanchDirector::HandleEnterRanch(
         for (auto& eggRecord : *eggRecords)
         {
           eggRecord.Immutable(
-            [&response](const data::Egg& egg)
+            [this, &response](const data::Egg& egg)
             {
               // retrieve hatchDuration
-              const registry::Egg eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
+              const registry::EggInfo eggTemplate = _serverInstance.GetPetRegistry().GetEggInfo(
                 egg.itemTid());
               const auto hatchingDuration = eggTemplate.hatchDuration;
               protocol::BuildProtocolEgg(response.incubator[egg.incubatorSlot()], egg, hatchingDuration );
@@ -870,14 +874,14 @@ void RanchDirector::HandleEnterRanch(
     });
 
   // Add the character to the ranch.
-  ranchInstance.worldTracker.AddCharacter(
+  ranchInstance.tracker.AddCharacter(
     command.characterUid);
 
   // The character that is currently entering the ranch.
   RanchCharacter characterEnteringRanch;
 
   // Add the ranch horses.
-  for (auto [horseUid, horseOid] : ranchInstance.worldTracker.GetHorses())
+  for (auto [horseUid, horseOid] : ranchInstance.tracker.GetHorses())
   {
     auto& ranchHorse = response.horses.emplace_back();
     ranchHorse.horseOid = horseOid;
@@ -894,7 +898,7 @@ void RanchDirector::HandleEnterRanch(
   }
 
   // Add the ranch characters.
-  for (auto [characterUid, characterOid] : ranchInstance.worldTracker.GetCharacters())
+  for (auto [characterUid, characterOid] : ranchInstance.tracker.GetCharacters())
   {
     auto& protocolCharacter = response.characters.emplace_back();
     protocolCharacter.oid = characterOid;
@@ -1049,14 +1053,25 @@ void RanchDirector::HandleRanchLeave(ClientId clientId)
 
   auto& ranchInstance = ranchIter->second;
 
-  ranchInstance.worldTracker.RemoveCharacter(clientContext.characterUid);
+  ranchInstance.tracker.RemoveCharacter(clientContext.characterUid);
   ranchInstance.clients.erase(clientId);
+
+  protocol::AcCmdCRLeaveRanchOK response{};
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 
   protocol::AcCmdCRLeaveRanchNotify notify{
     .characterId = clientContext.characterUid};
 
   for (const ClientId& ranchClientId : ranchInstance.clients)
   {
+    if (ranchClientId == clientId)
+      continue;
+
     _commandServer.QueueCommand<decltype(notify)>(
       ranchClientId,
       [notify]()
@@ -1138,7 +1153,7 @@ void RanchDirector::HandleSnapshot(
   const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
 
   protocol::RanchCommandRanchSnapshotNotify notify{
-    .ranchIndex = ranchInstance.worldTracker.GetCharacterOid(
+    .ranchIndex = ranchInstance.tracker.GetCharacterOid(
       clientContext.characterUid),
     .type = command.type,
   };
@@ -1147,11 +1162,15 @@ void RanchDirector::HandleSnapshot(
   {
     case protocol::AcCmdCRRanchSnapshot::Full:
     {
+      if (command.full.ranchIndex != notify.ranchIndex)
+        throw std::runtime_error("Client sent a snapshot for an entity it's not controlling");
       notify.full = command.full;
       break;
     }
     case protocol::AcCmdCRRanchSnapshot::Partial:
     {
+      if (command.full.ranchIndex != notify.ranchIndex)
+        throw std::runtime_error("Client sent a snapshot for an entity it's not controlling");
       notify.partial = command.partial;
       break;
     }
@@ -1478,7 +1497,7 @@ void RanchDirector::HandleUpdateMountNickname(
 
     constexpr data::Tid HorseRenameItem = 45003;
     const auto itemRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(
-      character.items());
+      character.inventory());
 
     // Find the horse rename item.
     auto horseRenameItemUid = data::InvalidUid;
@@ -1515,10 +1534,10 @@ void RanchDirector::HandleUpdateMountNickname(
     {
       // Find the item in the inventory.
       const auto itemInventoryIter = std::ranges::find(
-        character.items(), horseRenameItemUid);
+        character.inventory(), horseRenameItemUid);
 
       // Remove the item from the inventory.
-      character.items().erase(itemInventoryIter);
+      character.inventory().erase(itemInventoryIter);
       GetServerInstance().GetDataDirector().GetItemCache().Delete(horseRenameItemUid);
     }
   });
@@ -1678,8 +1697,8 @@ void RanchDirector::HandleGetItemFromStorage(
         response.storageItemUid);
 
       // Add the items to the character's inventory.
-      character.items().insert(
-        character.items().end(),
+      character.inventory().insert(
+        character.inventory().end(),
         items.begin(),
         items.end());
 
@@ -1724,46 +1743,151 @@ void RanchDirector::HandleWearEquipment(
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  bool equipSuccessful = false;
+  bool isValidItem = false;
+  bool isValidHorse = false;
 
-  characterRecord.Mutable([&command, &equipSuccessful](data::Character& character)
+  characterRecord.Immutable([&isValidItem, &isValidHorse, &command](
+    const data::Character& character)
   {
-    const bool hasEquippedItem = std::ranges::contains(
-      character.items(), command.itemUid);
-    const bool hasMountedHorse = std::ranges::contains(
-      character.horses(), command.itemUid);
+    isValidItem = std::ranges::contains(
+      character.inventory(), command.equipmentUid);
+    isValidHorse = std::ranges::contains(
+      character.horses(), command.equipmentUid);
+  });
 
-    // Make sure the equip UID is either a valid item or a horse.
-    equipSuccessful = hasEquippedItem || hasMountedHorse;
-
-    if (hasMountedHorse)
+  if (isValidHorse)
+  {
+    const data::Uid equippedHorseUid = command.equipmentUid;
+    characterRecord.Mutable([&equippedHorseUid](data::Character& character)
     {
-      const bool isHorseAlreadyMounted = character.mountUid() == command.itemUid;
+      const bool isHorseAlreadyMounted = character.mountUid() == equippedHorseUid;
       if (isHorseAlreadyMounted)
         return;
 
       // Add the mount back to the horse list.
       character.horses().emplace_back(character.mountUid());
-      character.mountUid() = command.itemUid;
+      character.mountUid() = equippedHorseUid;
 
       // Remove the new mount from the horse list.
-      character.horses().erase(std::ranges::find(character.horses(), command.itemUid));
-    }
-    else if (hasEquippedItem)
+      character.horses().erase(
+        std::ranges::find(character.horses(), equippedHorseUid));
+    });
+  }
+  else if (isValidItem)
+  {
+    const data::Uid equippedItemUid = command.equipmentUid;
+    auto equippedItemTid = data::InvalidTid;
+
+    const auto equippedItemRecord = _serverInstance.GetDataDirector().GetItem(
+      equippedItemUid);
+    equippedItemRecord.Immutable([&equippedItemTid](const data::Item& item)
     {
-      const bool isItemAlreadyEquipped = std::ranges::contains(
-        character.characterEquipment(), command.itemUid);
-      if (isItemAlreadyEquipped)
-        return;
+      equippedItemTid = item.tid();
+    });
 
-      character.characterEquipment().emplace_back(command.itemUid);
+    // Determine whether the newly equipped item is valid and can be equipped.
+    const auto equippedItemTemplate = _serverInstance.GetItemRegistry().GetItem(
+      equippedItemTid);
+
+    if (not equippedItemTemplate.has_value())
+    {
+      throw std::runtime_error("Tried equipping item which is not recognized by the server");
     }
-  });
 
+    if (not equippedItemTemplate->characterPartInfo.has_value()
+      && not equippedItemTemplate->mountPartInfo.has_value())
+    {
+      throw std::runtime_error("Tried equipping item which is not a valid character or mount equipment");
+    }
+
+    characterRecord.Mutable(
+      [this, &equippedItemTemplate, &equippedItemUid](
+      data::Character& character)
+    {
+      const bool isCharacterEquipment = equippedItemTemplate->characterPartInfo.has_value();
+      const bool isMountEquipment = equippedItemTemplate->mountPartInfo.has_value();
+
+      // Store the current character equipment UIDs
+      std::vector<data::Uid> equipmentUids;
+      if (isCharacterEquipment)
+        equipmentUids = character.characterEquipment();
+      else if (isMountEquipment)
+        equipmentUids = character.mountEquipment();
+      else
+        assert(false && "invalid equipment type");
+
+      // Determine which equipment is to be replaced by the newly equipped item.
+      std::vector<data::Uid> equipmentToReplace;
+      const auto equipmentRecords = _serverInstance.GetDataDirector().GetItemCache().Get(
+        equipmentUids);
+      for (const auto& equipmentRecord : *equipmentRecords)
+      {
+        auto equipmentUid{data::InvalidUid};
+        auto equipmentTid{data::InvalidTid};
+        equipmentRecord.Immutable([&equipmentUid, &equipmentTid](const data::Item& item)
+        {
+          equipmentUid = item.uid();
+          equipmentTid = item.tid();
+        });
+
+        // Replace equipment which occupies the same slots as the newly equipped item.
+        const auto equipmentTemplate = _serverInstance.GetItemRegistry().GetItem(
+          equipmentTid);
+
+        if (isCharacterEquipment)
+        {
+          if (static_cast<uint32_t>(equipmentTemplate->characterPartInfo->slot)
+            & static_cast<uint32_t>(equippedItemTemplate->characterPartInfo->slot))
+          {
+            equipmentToReplace.emplace_back(equipmentUid);
+          }
+        }
+        else if (isMountEquipment)
+        {
+          if (static_cast<uint32_t>(equipmentTemplate->mountPartInfo->slot)
+            & static_cast<uint32_t>(equippedItemTemplate->mountPartInfo->slot))
+          {
+            equipmentToReplace.emplace_back(equipmentUid);
+          }
+        }
+      }
+
+      // Remove equipment replaced with the newly equipped item.
+      const auto replacedEquipment = std::ranges::remove_if(
+        equipmentUids,
+        [&equipmentToReplace](const data::Uid uid)
+        {
+          return std::ranges::contains(equipmentToReplace, uid);
+        });
+
+      // Erase them from the equipment.
+      equipmentUids.erase(replacedEquipment.begin(), replacedEquipment.end());
+      // Add the newly equipped item.
+      equipmentUids.emplace_back(equippedItemUid);
+
+      if (isCharacterEquipment)
+        character.characterEquipment = equipmentUids;
+      else if (isMountEquipment)
+        character.mountEquipment = equipmentUids;
+      else
+        assert(false && "invalid equipment type");
+
+      // Remove the newly equipped item from the inventory.
+      const auto equippedItemsToRemove = std::ranges::remove(
+        character.inventory(), equippedItemUid);
+      character.inventory().erase(equippedItemsToRemove.begin(), equippedItemsToRemove.end());
+
+      // Add the replaced equipment back to the inventory.
+      std::ranges::copy(equipmentToReplace, std::back_inserter(character.inventory()));
+    });
+  }
+
+  // Make sure the equipment UID is either a valid item or a horse.
+  const bool equipSuccessful = isValidItem || isValidHorse;
   if (equipSuccessful)
   {
     protocol::AcCmdCRWearEquipmentOK response{
-      .itemUid = command.itemUid,
+      .itemUid = command.equipmentUid,
       .member = command.member};
 
     _commandServer.QueueCommand<decltype(response)>(
@@ -1772,13 +1896,13 @@ void RanchDirector::HandleWearEquipment(
       {
         return response;
       });
-    BroadcastEquipmentUpdate(clientId);
 
+    BroadcastEquipmentUpdate(clientId);
     return;
   }
 
   protocol::AcCmdCRWearEquipmentCancel response{
-    .itemUid = command.itemUid,
+    .itemUid = command.equipmentUid,
     .member = command.member};
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -1799,18 +1923,30 @@ void RanchDirector::HandleRemoveEquipment(
 
   characterRecord.Mutable([&command](data::Character& character)
   {
-    const bool ownsItem = std::ranges::contains(
-      character.items(), command.itemUid);
+    const auto characterEquipmentItemIter = std::ranges::find(
+      character.characterEquipment(),
+      command.itemUid);
+    const auto mountEquipmentItemIter = std::ranges::find(
+      character.mountEquipment(),
+      command.itemUid);
 
     // You can't really unequip a horse. You can only switch to a different one.
     // At least in Alicia 1.0.
 
-    if (ownsItem)
+    if (characterEquipmentItemIter != character.characterEquipment().cend())
     {
       const auto range = std::ranges::remove(
         character.characterEquipment(), command.itemUid);
       character.characterEquipment().erase(range.begin(), range.end());
     }
+    else if (mountEquipmentItemIter != character.mountEquipment().cend())
+    {
+      const auto range = std::ranges::remove(
+        character.mountEquipment(), command.itemUid);
+      character.mountEquipment().erase(range.begin(), range.end());
+    }
+
+    character.inventory().emplace_back(command.itemUid);
   });
 
   // We really don't need to cancel the unequip. Always respond with OK.
@@ -2132,14 +2268,14 @@ void RanchDirector::HandleUpdatePet(
       }
 
       auto itemRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(
-        character.items());
+        character.inventory());
       if (not itemRecords || itemRecords->empty())
       {
         spdlog::warn("No items found for character {}", character.uid());
         return;
       }
       // Pet rename, find item in inventory
-      if (std::ranges::contains(character.items(), command.itemUid))
+      if (std::ranges::contains(character.inventory(), command.itemUid))
       {
         // TODO: actually reduce the item count or remove it
         const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
@@ -2224,7 +2360,7 @@ void RanchDirector::HandleIncubateEgg(
   characterRecord.Mutable(
     [this, &command, &response, clientId](data::Character& character)
     {
-      const std::optional<registry::Egg> eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
+      const std::optional<registry::EggInfo> eggTemplate = _serverInstance.GetPetRegistry().GetEggInfo(
         command.itemTid);
       if (not eggTemplate)
       {
@@ -2338,12 +2474,12 @@ void RanchDirector::HandleBoostIncubateEgg(
       for (const auto& egg : *eggRecord)
       {
 
-        egg.Mutable([&command, &response](data::Egg& eggData)
+        egg.Mutable([this, &command, &response](data::Egg& eggData)
           {
             if (eggData.incubatorSlot() == command.incubatorSlot)
             {
               // retrieve egg template for the hatchDuration
-              const registry::Egg eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
+              const registry::EggInfo eggTemplate = _serverInstance.GetPetRegistry().GetEggInfo(
                 eggData.itemTid());
 
               eggData.boostsUsed() += 1;
@@ -2444,24 +2580,24 @@ void RanchDirector::HandleRequestPetBirth(
         character.eggs().erase(it);
       }
 
-      if (auto it = std::ranges::find(character.items(), hatchingEggItemUid);
-        it != character.items().end())
+      if (auto it = std::ranges::find(character.inventory(), hatchingEggItemUid);
+        it != character.inventory().end())
       {
-        character.items().erase(it);
+        character.inventory().erase(it);
       }
 
       //Delete the Item and Egg records
       GetServerInstance().GetDataDirector().GetEggCache().Delete(hatchingEggUid);
       GetServerInstance().GetDataDirector().GetItemCache().Delete(hatchingEggItemUid);
 
-      const registry::Egg eggTemplate = registry::PetRegistry::GetInstance().GetEgg(
+      const registry::EggInfo eggTemplate = _serverInstance.GetPetRegistry().GetEggInfo(
         hatchingEggTid);
 
       const auto& hatchablePets = eggTemplate.hatchablePets;
       std::uniform_int_distribution<size_t> dist(0, hatchablePets.size() - 1);
       const data::Tid petItemTid = hatchablePets[dist(_randomDevice)];
 
-      const registry::Pet petTemplate = registry::PetRegistry::GetInstance().GetPet(
+      const registry::PetInfo petTemplate = _serverInstance.GetPetRegistry().GetPetInfo(
         petItemTid);
       const auto petId = petTemplate.petId;
 
@@ -2496,7 +2632,7 @@ void RanchDirector::HandleRequestPetBirth(
             .tid = item.tid(),
             .count = item.count()};
           // write the item into the character items
-          character.items().emplace_back(item.uid());
+          character.inventory().emplace_back(item.uid());
         });
         return;
       }
@@ -2508,9 +2644,9 @@ void RanchDirector::HandleRequestPetBirth(
       const auto petItem = GetServerInstance().GetDataDirector().CreateItem();
       const auto bornPet = GetServerInstance().GetDataDirector().CreatePet();
 
-      petItem.Mutable([&response, &petItemUid, petId, petTemplate](data::Item& item)
+      petItem.Mutable([&response, &petItemUid, petId, petItemTid](data::Item& item)
       {
-        item.tid() = petTemplate.petTid;
+        item.tid() = petItemTid;
         item.count() = 1;
         // Fill the response with the born item information.
         response.petBirthInfo.eggItem = {
@@ -2535,7 +2671,7 @@ void RanchDirector::HandleRequestPetBirth(
         petUid = pet.uid();
       });
 
-      character.items().emplace_back(petItemUid);
+      character.inventory().emplace_back(petItemUid);
       character.pets().emplace_back(petUid);
     });
 
@@ -2570,7 +2706,7 @@ void RanchDirector::HandleRequestPetBirth(
 void RanchDirector::BroadcastEquipmentUpdate(ClientId clientId)
 {
   const auto& clientContext = GetClientContext(clientId);
-  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
   protocol::AcCmdCRUpdateEquipmentNotify notify{
@@ -2773,7 +2909,7 @@ void RanchDirector::HandleUseItem(
   characterRecord.Immutable([&characterName, &usedItemUid, &horseUid, &hasItem, &hasHorse](
     const data::Character& character)
   {
-    hasItem = std::ranges::contains(character.items(), usedItemUid);;
+    hasItem = std::ranges::contains(character.inventory(), usedItemUid);;
     hasHorse = std::ranges::contains(character.horses(), horseUid)
       || character.mountUid() == horseUid;
 
@@ -2855,8 +2991,8 @@ void RanchDirector::HandleUseItem(
     {
       characterRecord.Mutable([usedItemUid = command.itemUid](data::Character& character)
       {
-        const auto removedItems = std::ranges::remove(character.items(), usedItemUid);
-        character.items().erase(removedItems.begin(), removedItems.end());
+        const auto removedItems = std::ranges::remove(character.inventory(), usedItemUid);
+        character.inventory().erase(removedItems.begin(), removedItems.end());
       });
 
       _serverInstance.GetDataDirector().GetItemCache().Delete(command.itemUid);
@@ -3297,6 +3433,32 @@ void RanchDirector::HandleHideAge(
     clientContext.visitingRancherUid,
     command.option
   );
+}
+
+void RanchDirector::HandleStatusPointApply(
+  ClientId clientId,
+  const protocol::AcCmdCRStatusPointApply command)
+{
+  protocol::AcCmdCRStatusPointApplyOK response {};
+
+  const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(command.horseUid);
+  horseRecord->Mutable([&command](data::Horse& horse)
+  {
+    horse.stats.agility = command.stats.agility;
+    horse.stats.ambition = command.stats.ambition;
+    horse.stats.rush = command.stats.rush;
+    horse.stats.endurance = command.stats.endurance;
+    horse.stats.courage = command.stats.courage;
+
+    horse.growthPoints() -= 1;
+  });
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 void RanchDirector::HandleGetGuildMemberList(

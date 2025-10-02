@@ -106,19 +106,19 @@ struct LobbyCommandLoginOK
   uint8_t age{};
   uint8_t hideGenderAndAge{};
 
-  struct Unk1
+  struct Mission
   {
-    uint16_t val0{};
+    uint16_t id{};
 
-    struct Unk1Unk1
+    struct Progress
     {
-      uint32_t val1{};
-      uint32_t val2{};
+      uint32_t id{};
+      uint32_t value{};
     };
-    std::vector<Unk1Unk1> val1{};
+    std::vector<Progress> progress{};
   };
-  //! If this is not set, crash happens in preview image generation.
-  std::vector<Unk1> val5; // max 17
+  //! Max 17
+  std::vector<Mission> missions{};
 
   // 256 characters max
   std::string val6{};
@@ -145,7 +145,7 @@ struct LobbyCommandLoginOK
 
   enum AvatarBitset : uint32_t
   {
-    HasPlayerBefore = 2,
+    HasPlayedBefore = 2,
   };
   // std::bitset
   //! Bit 2: Has played before
@@ -626,7 +626,7 @@ struct LobbyCommandEnterChannelCancel
 struct LobbyCommandRoomList
 {
   uint8_t page;
-  GameMode gameMode;
+  uint8_t gameMode;
   TeamMode teamMode;
 
   static Command GetCommand()
@@ -712,7 +712,7 @@ struct LobbyCommandMakeRoom
   std::string name;
   std::string password;
   uint8_t playerCount;
-  GameMode gameMode;
+  uint8_t gameMode;
   TeamMode teamMode;
   uint16_t missionId;
   uint8_t unk3;
@@ -1830,6 +1830,78 @@ struct AcCmdLCNotice
   //! @param stream Source stream.
   static void Read(
     AcCmdLCNotice& command,
+    SourceStream& stream);
+};
+
+
+struct AcCmdCLRequestMountInfo{
+  uint32_t characterUid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLRequestMountInfo;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLRequestMountInfo& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLRequestMountInfo& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLRequestMountInfoOK
+{
+  uint32_t characterUid{};
+  struct MountInfo
+  {
+    uint32_t horseUid{};
+
+    uint16_t boostsInARow{};
+    uint16_t winsSpeedSingle{};
+    uint16_t winsSpeedTeam{};
+    uint16_t winsMagicSingle{};
+    uint16_t winsMagicTeam{};
+
+    // Store in metres, displayed in kilometres
+    uint32_t totalDistance{};
+    // Whole number, divided by 10 for the floating point.
+    uint32_t topSpeed{};
+    // Whole number, divided by 10 for the floating point.
+    uint32_t longestGlideDistance{};
+
+    // refers to carnival participation
+    uint32_t participated{};
+    uint32_t cumulativePrize{};
+    uint32_t biggestPrize{};
+  };
+  // max size 10
+  std::vector<MountInfo> mountInfos{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLRequestMountInfoOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLRequestMountInfoOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLRequestMountInfoOK& command,
     SourceStream& stream);
 };
 

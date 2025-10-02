@@ -17,53 +17,58 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
-#ifndef WORLDTRACKER_HPP
-#define WORLDTRACKER_HPP
+#ifndef ROOMREGISTRY_HPP
+#define ROOMREGISTRY_HPP
 
-#include "libserver/data/DataDefinitions.hpp"
+#include "libserver/registry/CourseRegistry.hpp"
 
-#include <map>
+#include <cstdint>
+#include <string>
+#include <unordered_map>
 
 namespace server
 {
+enum class TeamMode : uint8_t;
+}
+namespace server
+{
+enum class GameMode : uint8_t;
+}
+namespace server
+{
 
-//!
-using Oid = uint16_t;
-//!
-constexpr Oid InvalidEntityOid = 0;
+struct Room
+{
+  uint32_t uid{};
+  std::string name;
+  std::string password;
+  uint16_t missionId{};
+  uint16_t mapBlockId{};
+  uint32_t otp{};
+  uint8_t playerCount;
+  uint8_t gameMode;
+  TeamMode teamMode;
+  uint8_t unk3;
+  uint16_t bitset;
+  uint8_t unk4;
+};
 
-//!
-class WorldTracker
+class RoomSystem
 {
 public:
-  //! An object map.
-  using ObjectMap = std::map<data::Uid, uint16_t>;
-
-  //!
-  Oid AddCharacter(data::Uid character);
-  //!
-  void RemoveCharacter(data::Uid character);
-  //!
-  [[nodiscard]] Oid GetCharacterOid(data::Uid character) const;
-  //!
-  Oid AddHorse(data::Uid mount);
-  //!
-  [[nodiscard]] Oid GetHorseOid(data::Uid mount) const;
-
-  //!
-  [[nodiscard]] const ObjectMap& GetHorses() const;
-  //!
-  [[nodiscard]] const ObjectMap& GetCharacters() const;
+  Room& CreateRoom();
+  Room& GetRoom(uint32_t uid);
+  void DeleteRoom(uint32_t uid);
+  const std::unordered_map<uint32_t, Room>& GetRooms()
+  {
+    return _rooms;
+  }
 
 private:
-  //! The next entity ID.
-  Oid _nextObjectId = 1;
-  //! Mount entities in the world.
-  ObjectMap _horses;
-  //! Character entities in the world.
-  ObjectMap _characters;
+  uint32_t _sequencedId = 0;
+  std::unordered_map<uint32_t, Room> _rooms;
 };
 
 } // namespace server
 
-#endif // WORLDTRACKER_HPP
+#endif //ROOMREGISTRY_HPP

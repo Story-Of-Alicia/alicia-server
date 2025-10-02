@@ -46,7 +46,11 @@ void ServerInstance::Initialize()
   _config.LoadFromFile(_resourceDirectory / "config/server/config.yaml");
   _config.LoadFromEnvironment();
 
+  // Read configurations
+
+  _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
   _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items.yaml");
+  _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
 
   // Initialize the directors and tick them on their own threads.
   // Directors will terminate their tick loop once `_shouldRun` flag is set to false.
@@ -117,9 +121,24 @@ RaceDirector& ServerInstance::GetRaceDirector()
   return _raceDirector;
 }
 
+registry::CourseRegistry& ServerInstance::GetCourseRegistry()
+{
+  return _courseRegistry;
+}
+
+registry::HorseRegistry& ServerInstance::GetHorseRegistry()
+{
+  return _horseRegistry;
+}
+
 registry::ItemRegistry& ServerInstance::GetItemRegistry()
 {
   return _itemRegistry;
+}
+
+registry::PetRegistry& ServerInstance::GetPetRegistry()
+{
+  return _petRegistry;
 }
 
 ChatSystem& ServerInstance::GetChatSystem()
@@ -132,14 +151,19 @@ InfractionSystem& ServerInstance::GetInfractionSystem()
   return _infractionSystem;
 }
 
+RoomSystem& ServerInstance::GetRoomSystem()
+{
+  return _roomSystem;
+}
+
+OtpSystem& ServerInstance::GetOtpSystem()
+{
+  return _otpSystem;
+}
+
 Config& ServerInstance::GetSettings()
 {
   return _config;
-}
-
-OtpRegistry& ServerInstance::GetOtpRegistry()
-{
-  return _otpRegistry;
 }
 
 } // namespace server

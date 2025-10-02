@@ -3,19 +3,27 @@
 ### Docker (recommended)
 The repository builds & publishes master branch to a docker image. To use this server you'll have to simply run a container with the image that we publish.
 
-Here's a quick set-up through **docker compose**.
+Here's a quick set-up through **docker compose**. It sets up alicia server instance running on default ports and binds important folders to folders in the working directory of the docker compose.
 ```yaml
 services:
- server:
+ instance:
    image: 'ghcr.io/story-of-alicia/alicia-server:latest'
+   restart: unless-stopped
    ports:
-     - "10030-10033:10030-10033"
+     - '10030-10033:10030-10033/tcp'
+   ulimits:
+     core: -1
    volumes:
-     - "./server:/var/lib/alicia-server"
+      #- "./config:/var/lib/alicia-server/config"
+      - "./logs:/var/lib/alicia-server/logs"
+      - "./data:/var/lib/alicia-server/data"
+      - "./dumps:/dumps"
 ```
 
 #### Server configuration
-By default, the game uses ports `10030`-`10033`. The default configuration of the server should be sufficient for development purposes. If not, contact us. Todo tutorial.
+By default, the game uses ports `10030`-`10033`. The default configuration of the server should be sufficient for development purposes.
+
+On the server there is two categories of configurations, one for the general server settings and one for the game settings, located at `./config/server` and `./config/game` respectively.
 
 ### Registering users (DATASOURCE FOR PROTOTYPE ONLY)
 To add users to your server, open the data directory and create a **JSON** file for each user you want to register. Name of the file should be the username they'll use to log in. 
@@ -24,7 +32,7 @@ Example of a user file (`rgnter.json`):
 
 ```json5
 // Filename: rgnter.json
-{"name": "rgnter", "token": "myamazingpassword", "characterUid": 0}
+{"name": "rgnter", "token": "myamazingpassword", "characterUid": 0, "infractions": []}
 ```
 
 ## Client
@@ -53,18 +61,12 @@ Production configuration is meant for connecting to the officialy released serve
 
 ### Launching game in development configuration
 
-Locate the launcher's configuration file ( `settings.json`). If the installer was used, this is usually `%appdata%/Story of Alicia` unless explicitly changed. If different path was used in the installer, you can consult the `HKCU\Software\Story Of Alicia\Default` registry key as it points to the location where the game was installed.
+Locate the game executable file. If the installer was used, this is usually `%appdata%\Story of Alicia\game` unless explicitly changed. If different path was used in the installer, you can consult the `HKCU\Software\Story Of Alicia\Default` registry key as it points to the location where the game was installed.
 
-Modify the `executableArguments` field in the configuration file, specify the development game configuration and specify your user's credentials. This is done through `ID` and `OP` program arguments which indicate username and token respectively. Example:
-
+Open terminal in the game folder and run the following command:
 ```bash
-game/Alicia.exe =
--GameID 3
-2 -ID [<username>] -OP [<password>]
+./Alicia.exe = -GameID 2 -ID [username] -OP [password]
 ```
-
-After saving the settings, simply launch the `alicia-launcher-cli.exe`
-
 ### Patches
 - Disable hackshield
 - Disable RcScrTxt localization limitations

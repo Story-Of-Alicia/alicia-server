@@ -33,18 +33,25 @@ namespace server::protocol
 
 enum class RoomOptionType : uint16_t
 {
-  Unk0 = 1 << 0,
-  Unk1 = 1 << 1,
-  Unk2 = 1 << 2,
-  Unk3 = 1 << 3,
-  Unk4 = 1 << 4,
-  Unk5 = 1 << 5,
+  Name = 1 << 0,
+  PlayerCount = 1 << 1,
+  Password = 1 << 2,
+  GameMode = 1 << 3,
+  MapBlockId = 1 << 4,
+  NPCRace = 1 << 5,
+};
+
+enum class TeamColor : uint32_t
+{
+  Solo = 1,
+  Red = 2,
+  Blue = 3
 };
 
 struct Avatar
 {
   // List length specified with a uint8_t
-  std::vector<Item> characterEquipment{};
+  std::vector<Item> equipment{};
   Character character{};
   Horse mount{};
   uint32_t unk0{};
@@ -53,14 +60,14 @@ struct Avatar
 //! Racer
 struct Racer
 {
-  uint8_t member1{1};
-  uint8_t member2{2};
+  bool isMaster{};
+  uint8_t member2{};
   uint32_t level{};
   uint32_t oid{};
   uint32_t uid{};
   std::string name{};
-  uint8_t unk5{3};
-  uint32_t unk6{4};
+  bool isReady{};
+  TeamColor teamColor{TeamColor::Solo};
   bool isHidden{};
   bool isNPC{};
 
@@ -76,19 +83,20 @@ struct Racer
   Pet pet{};
   Guild guild{};
   League unk9{};
-  uint8_t unk10{5};
-  uint8_t unk11{6};
-  uint8_t unk12{7};
-  uint8_t unk13{8};
+  uint8_t unk10{0};
+  uint8_t unk11{0};
+  uint8_t unk12{};
+  uint8_t unk13{};
 };
 
 struct RoomDescription
 {
   std::string name{};
   uint8_t playerCount{};
-  std::string description{};
-  uint8_t unk1{};
-  GameMode gameMode{};
+  std::string password{};
+  // disables/enables adv map selection
+  uint8_t gameModeMaps{};
+  uint8_t gameMode{};
   //! From the table `MapBlockInfo`.
   uint16_t mapBlockId{};
   // 0 waiting room, 1 race started?
@@ -99,7 +107,7 @@ struct RoomDescription
   uint8_t skillBracket{};
 };
 
-struct RaceCommandEnterRoom
+struct AcCmdCREnterRoom
 {
   uint32_t characterUid{};
   uint32_t otp{};
@@ -113,15 +121,15 @@ struct RaceCommandEnterRoom
   //! Writes the command to a provided sink stream.
   //! @param command Command.
   //! @param stream Sink stream.
-  static void Write(const RaceCommandEnterRoom& command, SinkStream& stream);
+  static void Write(const AcCmdCREnterRoom& command, SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
-  static void Read(RaceCommandEnterRoom& command, SourceStream& stream);
+  static void Read(AcCmdCREnterRoom& command, SourceStream& stream);
 };
 
-struct RaceCommandEnterRoomOK
+struct AcCmdCREnterRoomOK
 {
   // List size specified with a uint32_t. Max size 10
   std::vector<Racer> racers{};
@@ -151,7 +159,7 @@ struct RaceCommandEnterRoomOK
   uint32_t unk10{};
   float unk11{};
   uint32_t unk12{};
-  uint32_t unk13{};
+  uint32_t scrambleValue{};
 
   static Command GetCommand()
   {
@@ -161,15 +169,15 @@ struct RaceCommandEnterRoomOK
   //! Writes the command to a provided sink stream.
   //! @param command Command.
   //! @param stream Sink stream.
-  static void Write(const RaceCommandEnterRoomOK& command, SinkStream& stream);
+  static void Write(const AcCmdCREnterRoomOK& command, SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
-  static void Read(RaceCommandEnterRoomOK& command, SourceStream& stream);
+  static void Read(AcCmdCREnterRoomOK& command, SourceStream& stream);
 };
 
-struct RaceCommandEnterRoomCancel
+struct AcCmdCREnterRoomCancel
 {
   static Command GetCommand()
   {
@@ -179,15 +187,15 @@ struct RaceCommandEnterRoomCancel
   //! Writes the command to a provided sink stream.
   //! @param command Command.
   //! @param stream Sink stream.
-  static void Write(const RaceCommandEnterRoomCancel& command, SinkStream& stream);
+  static void Write(const AcCmdCREnterRoomCancel& command, SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
-  static void Read(RaceCommandEnterRoomCancel& command, SourceStream& stream);
+  static void Read(AcCmdCREnterRoomCancel& command, SourceStream& stream);
 };
 
-struct RaceCommandEnterRoomNotify
+struct AcCmdCREnterRoomNotify
 {
   Racer racer{};
   uint32_t averageTimeRecord{};
@@ -200,30 +208,23 @@ struct RaceCommandEnterRoomNotify
   //! Writes the command to a provided sink stream.
   //! @param command Command.
   //! @param stream Sink stream.
-  static void Write(const RaceCommandEnterRoomNotify& command, SinkStream& stream);
+  static void Write(const AcCmdCREnterRoomNotify& command, SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
-  static void Read(RaceCommandEnterRoomNotify& command, SourceStream& stream);
+  static void Read(AcCmdCREnterRoomNotify& command, SourceStream& stream);
 };
 
-struct RaceCommandChangeRoomOptions
+struct AcCmdCRChangeRoomOptions
 {
-  // Request consists of: short as a bitfield
-  //  if & 1 != 0: string
-  //  if & 2 != 0: byte
-  //  if & 4 != 0: string
-  //  if & 8 != 0: byte
-  //  if  & 16 != 0: short
-  //  if  & 32 != 0: byte
   RoomOptionType optionsBitfield{};
   std::string name{};
   uint8_t playerCount{};
-  std::string description{};
-  uint8_t option3{};
+  std::string password{};
+  uint8_t gameMode{};
   uint16_t mapBlockId{};
-  uint8_t hasRaceStarted{};
+  uint8_t npcRace{};
 
   static Command GetCommand()
   {
@@ -234,33 +235,26 @@ struct RaceCommandChangeRoomOptions
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RaceCommandChangeRoomOptions& command,
+    const AcCmdCRChangeRoomOptions& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RaceCommandChangeRoomOptions& command,
+    AcCmdCRChangeRoomOptions& command,
     SourceStream& stream);
 };
 
-struct RaceCommandChangeRoomOptionsNotify
+struct AcCmdCRChangeRoomOptionsNotify
 {
-  // Response consists of: short as a bitfield
-  //  if & 1 != 0: string
-  //  if & 2 != 0: byte
-  //  if & 4 != 0: string
-  //  if & 8 != 0: byte
-  //  if  & 16 != 0: short
-  //  if  & 32 != 0: byte
   RoomOptionType optionsBitfield{};
   std::string name{};
   uint8_t playerCount{};
-  std::string description{};
-  uint8_t option3{};
+  std::string password{}; // password
+  uint8_t gameMode{};
   uint16_t mapBlockId{};
-  uint8_t hasRaceStarted{};
+  uint8_t npcRace{};
 
   static Command GetCommand()
   {
@@ -271,18 +265,93 @@ struct RaceCommandChangeRoomOptionsNotify
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RaceCommandChangeRoomOptionsNotify& command,
+    const AcCmdCRChangeRoomOptionsNotify& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RaceCommandChangeRoomOptionsNotify& command,
+    AcCmdCRChangeRoomOptionsNotify& command,
     SourceStream& stream);
 };
 
-struct RaceCommandLeaveRoom
+struct AcCmdCRChangeTeam
+{
+  uint32_t characterOid{};
+  TeamColor teamColor{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeTeam;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeTeam& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeTeam& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRChangeTeamOK
+{
+  uint32_t characterOid{};
+  TeamColor teamColor{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeTeamOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeTeamOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeTeamOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRChangeTeamNotify
+{
+  uint32_t characterOid{};
+  TeamColor teamColor{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeTeamNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeTeamNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeTeamNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRLeaveRoom
 {
   static Command GetCommand()
   {
@@ -293,17 +362,18 @@ struct RaceCommandLeaveRoom
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RaceCommandLeaveRoom& command,
+    const AcCmdCRLeaveRoom& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RaceCommandLeaveRoom& command,
+    AcCmdCRLeaveRoom& command,
     SourceStream& stream);
 };
-struct RaceCommandLeaveRoomOK
+
+struct AcCmdCRLeaveRoomOK
 {
   static Command GetCommand()
   {
@@ -314,17 +384,18 @@ struct RaceCommandLeaveRoomOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RaceCommandLeaveRoomOK& command,
+    const AcCmdCRLeaveRoomOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RaceCommandLeaveRoomOK& command,
+    AcCmdCRLeaveRoomOK& command,
     SourceStream& stream);
 };
-struct RaceCommandLeaveRoomNotify
+
+struct AcCmdCRLeaveRoomNotify
 {
   uint32_t characterId{};
   uint32_t unk0{};
@@ -337,18 +408,18 @@ struct RaceCommandLeaveRoomNotify
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RaceCommandLeaveRoomNotify& command,
+    const AcCmdCRLeaveRoomNotify& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RaceCommandLeaveRoomNotify& command,
+    AcCmdCRLeaveRoomNotify& command,
     SourceStream& stream);
 };
 
-struct RaceCommandStartRace
+struct AcCmdCRStartRace
 {
   // List size specified with a byte. Max size 10 (potentially)
   std::vector<uint16_t> unk0{};
@@ -362,87 +433,117 @@ struct RaceCommandStartRace
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RaceCommandStartRace& command,
+    const AcCmdCRStartRace& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RaceCommandStartRace& command,
+    AcCmdCRStartRace& command,
     SourceStream& stream);
 };
 
-struct RaceCommandStartRaceNotify
+struct AcCmdCRStartRaceNotify
 {
-  GameMode gameMode{};
-  bool skills{};
+  uint8_t gameMode{};
+  TeamMode teamMode{};
   // this is an oid of a special player
-  uint16_t someonesOid{};
+  uint16_t hostOid{};
   uint32_t member4{}; // Room ID?
   uint16_t mapBlockId{};
 
   // List size specified with a uint8_t. Max size 10
-  struct Racer
+  struct Player
   {
     uint16_t oid{};
     std::string name{};
     uint8_t unk2{};
     uint8_t unk3{};
-    uint16_t unk4{};
-    uint32_t p2dId{};
+    uint16_t p2dId{};
+    TeamColor teamColor{};
     uint16_t unk6{}; // Index?
     uint32_t unk7{};
   };
-  std::vector<Racer> racers{};
+  std::vector<Player> racers{};
 
-  uint32_t ip{};
-  uint16_t port{};
+  uint32_t p2pRelayAddress{};
+  uint16_t p2pRelayPort{};
 
   uint8_t unk6{};
 
-  struct
+  struct Struct1
   {
-    uint16_t unk0{};
-    uint8_t unk1{};
-    uint8_t unk2{};
-    uint32_t unk3{};
+    uint16_t member1{};
+    uint8_t member2{};
+    uint8_t member3{};
+    uint32_t member4{};
     // List size specified with a uint8_t. Max size 20
-    std::vector<uint32_t> unk4{};
+    std::vector<uint32_t> member5{};
 
-    // If isBusy == 3?
-    uint16_t unk5{};
-    uint16_t unk6{};
-    uint16_t unk7{};
-    uint16_t unk8{};
-    uint16_t unk9{};
+    // only present if member4 == 3
+    struct Optional
+    {
+      uint16_t member6{};
+      uint16_t member8{};
+      uint16_t member9{};
+      uint16_t member10{};
+      uint16_t member11{};
+      uint8_t member12{};
+    } optional{};
 
-    uint8_t unk10{};
-    uint32_t unk11{};
+    uint32_t member13{};
+
+    static void Write(
+      const Struct1& command,
+      SinkStream& stream);
+
+    static void Read(
+      Struct1& command,
+      SourceStream& stream);
   } unk9{};
 
-  struct
+  struct Struct2
   {
     uint32_t unk0{};
     uint32_t unk1{};
     uint32_t unk2{};
     uint32_t unk3{};
+
+    static void Write(
+      const Struct2& command,
+      SinkStream& stream);
+
+    static void Read(
+      Struct2& command,
+      SourceStream& stream);
   } unk10{};
 
-  uint16_t unk11{};
+  uint16_t missionId{};
   uint8_t unk12{};
 
-  struct
+  struct Struct3
   {
     uint8_t unk0{};
     uint32_t unk1{};
     // List size specified with a byte. Max size 3
     std::vector<uint16_t> unk2{};
+
+    static void Write(
+      const Struct3& command,
+      SinkStream& stream);
+
+    static void Read(
+      Struct3& command,
+      SourceStream& stream);
   } unk13{};
 
   uint8_t unk14{};
-  uint32_t unk15{};
-  uint32_t unk16{};
+  //! Carnival (FestivalMissionInfo)
+  uint32_t carnivalType{};
+  //! Weather (MapWeatherInfo)
+  //! Snow has snow, rain only has cloudy weather
+  uint32_t weatherType{};
   uint8_t unk17{};
 
   // List size specified with a byte. Max size 8
@@ -463,18 +564,18 @@ struct RaceCommandStartRaceNotify
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RaceCommandStartRaceNotify& command,
+    const AcCmdCRStartRaceNotify& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RaceCommandStartRaceNotify& command,
+    AcCmdCRStartRaceNotify& command,
     SourceStream& stream);
 };
 
-struct RaceCommandStartRaceCancel
+struct AcCmdCRStartRaceCancel
 {
   uint8_t reason{};
 
@@ -487,18 +588,18 @@ struct RaceCommandStartRaceCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RaceCommandStartRaceCancel& command,
+    const AcCmdCRStartRaceCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RaceCommandStartRaceCancel& command,
+    AcCmdCRStartRaceCancel& command,
     SourceStream& stream);
 };
 
-struct RaceCommandUserRaceTimer
+struct AcCmdUserRaceTimer
 {
   // count of 100ns intervals since the system start
   uint64_t timestamp{}; // potentially
@@ -512,21 +613,21 @@ struct RaceCommandUserRaceTimer
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RaceCommandUserRaceTimer& command,
+    const AcCmdUserRaceTimer& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RaceCommandUserRaceTimer& command,
+    AcCmdUserRaceTimer& command,
     SourceStream& stream);
 };
 
-struct RaceCommandUserRaceTimerOK
+struct AcCmdUserRaceTimerOK
 {
-  uint64_t unk0{};
-  uint64_t unk1{};
+  uint64_t clientTimestamp{};
+  uint64_t serverTimestamp{};
 
   static Command GetCommand()
   {
@@ -537,18 +638,18 @@ struct RaceCommandUserRaceTimerOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RaceCommandUserRaceTimerOK& command,
+    const AcCmdUserRaceTimerOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RaceCommandUserRaceTimerOK& command,
+    AcCmdUserRaceTimerOK& command,
     SourceStream& stream);
 };
 
-struct RaceCommandLoadingComplete
+struct AcCmdCRLoadingComplete
 {
   static Command GetCommand()
   {
@@ -559,18 +660,18 @@ struct RaceCommandLoadingComplete
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RaceCommandLoadingComplete& command,
+    const AcCmdCRLoadingComplete& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RaceCommandLoadingComplete& command,
+    AcCmdCRLoadingComplete& command,
     SourceStream& stream);
 };
 
-struct RaceCommandLoadingCompleteNotify
+struct AcCmdCRLoadingCompleteNotify
 {
   uint16_t oid{};
 
@@ -583,18 +684,18 @@ struct RaceCommandLoadingCompleteNotify
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RaceCommandLoadingCompleteNotify& command,
+    const AcCmdCRLoadingCompleteNotify& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RaceCommandLoadingCompleteNotify& command,
+    AcCmdCRLoadingCompleteNotify& command,
     SourceStream& stream);
 };
 
-struct RaceCommandChat
+struct AcCmdCRChat
 {
   std::string message;
   uint8_t unknown{};
@@ -608,22 +709,22 @@ struct RaceCommandChat
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RaceCommandChat& command,
+    const AcCmdCRChat& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RaceCommandChat& command,
+    AcCmdCRChat& command,
     SourceStream& stream);
 };
 
-struct RaceCommandChatNotify
+struct AcCmdCRChatNotify
 {
-  std::string author;
   std::string message;
-  uint8_t unknown{};
+  std::string author;
+  bool isSystem{};
 
   static Command GetCommand()
   {
@@ -634,18 +735,18 @@ struct RaceCommandChatNotify
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RaceCommandChatNotify& command,
+    const AcCmdCRChatNotify& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RaceCommandChatNotify& command,
+    AcCmdCRChatNotify& command,
     SourceStream& stream);
 };
 
-struct RaceCommandReadyRace
+struct AcCmdCRReadyRace
 {
   static Command GetCommand()
   {
@@ -656,21 +757,21 @@ struct RaceCommandReadyRace
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RaceCommandReadyRace& command,
+    const AcCmdCRReadyRace& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RaceCommandReadyRace& command,
+    AcCmdCRReadyRace& command,
     SourceStream& stream);
 };
 
-struct RaceCommandReadyRaceNotify
+struct AcCmdCRReadyRaceNotify
 {
   uint32_t characterUid{};
-  uint8_t ready{};
+  bool isReady{};
 
   static Command GetCommand()
   {
@@ -681,18 +782,18 @@ struct RaceCommandReadyRaceNotify
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RaceCommandReadyRaceNotify& command,
+    const AcCmdCRReadyRaceNotify& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RaceCommandReadyRaceNotify& command,
+    AcCmdCRReadyRaceNotify& command,
     SourceStream& stream);
 };
 
-struct RaceCommandCountdown
+struct AcCmdUserRaceCountdown
 {
   int64_t timestamp{}; // potentially
 
@@ -705,14 +806,1394 @@ struct RaceCommandCountdown
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RaceCommandCountdown& command,
+    const AcCmdUserRaceCountdown& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RaceCommandCountdown& command,
+    AcCmdUserRaceCountdown& command,
+    SourceStream& stream);
+};
+
+struct AcCmdUserRaceFinal
+{
+  int16_t oid{};
+  uint32_t courseTime{};
+  float member3{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdUserRaceFinal;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdUserRaceFinal& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdUserRaceFinal& command,
+    SourceStream& stream);
+};
+
+struct AcCmdUserRaceFinalNotify
+{
+  uint16_t oid{};
+  uint32_t courseTime{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdUserRaceFinal;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdUserRaceFinalNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdUserRaceFinalNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRaceResult
+{
+  uint8_t member1{};
+  uint32_t member2{};
+  uint32_t member3{};
+  uint32_t member4{};
+  uint32_t member5{};
+  uint32_t member6{};
+  uint32_t member7{};
+  uint32_t member8{};
+  uint32_t member9{};
+  //! Max count 32
+  std::vector<uint32_t> member10{};
+  uint8_t member11{};
+  uint32_t member12{};
+  uint16_t member13{};
+  uint8_t member14{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRaceResult;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRaceResult& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRaceResult& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRaceResultOK
+{
+  uint8_t member1{};
+  uint64_t member2{};
+  uint16_t member3{};
+  uint16_t member4{};
+  uint8_t member5{};
+  uint32_t member6{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRaceResultOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRaceResultOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRaceResultOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCRaceResultNotify
+{
+  struct ScoreInfo
+  {
+    uint32_t uid{};
+    std::string name{};
+    //! Time in milliseconds.
+    uint32_t courseTime{};
+    uint32_t member4{};
+    uint32_t experience{};
+    uint32_t member6{};
+    uint32_t carrots{};
+    uint32_t level{};
+    // this is copied as memcpy
+    uint32_t member9{};
+    uint32_t member10{};
+    uint16_t member11{};
+    uint16_t member12{};
+    //! Time in milliseconds.
+    uint32_t recordTimeDifference{};
+    uint32_t member14{};
+    uint32_t member15{};
+    AcCmdCRStartRaceNotify::Struct2 achievements{};
+    enum Bitset : uint32_t
+    {
+      Connected = 1 << 7,
+      HasLevelUpBonus = 1 << 8,
+      PcBang = 1 << 10,
+    } bitset;
+    std::string mountName{};
+    uint16_t member19{};
+    uint8_t member20{};
+    uint32_t bonusCarrots{};
+    uint32_t member22{};
+    AcCmdCRStartRaceNotify::Struct1 member23{};
+    uint32_t member24{};
+    uint8_t member25{};
+    uint32_t member26{};
+    uint32_t member27{};
+  };
+
+  //! Max 16 entries, short as size
+  std::vector<ScoreInfo> scores{};
+  AcCmdCRStartRaceNotify::Struct3 member2{};
+
+  uint32_t member3{};
+  uint32_t member4{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCRaceResultNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCRaceResultNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCRaceResultNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRP2PResult
+{
+  uint16_t oid{};
+  uint32_t member2{};
+  std::array<std::string, 3> podium{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRP2PResult;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRP2PResult& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRP2PResult& command,
+    SourceStream& stream);
+};
+
+struct AcCmdUserRaceP2PResult
+{
+  struct Something
+  {
+    uint16_t oid{};
+    uint8_t member2{};
+  };
+
+  //! Max 16 entries.
+  std::vector<Something> member1;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdUserRaceP2PResult;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdUserRaceP2PResult& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdUserRaceP2PResult& command,
+    SourceStream& stream);
+};
+
+struct AcCmdGameRaceP2PResult
+{
+  struct Something
+  {
+    uint16_t oid{};
+    uint8_t member2{};
+  };
+
+  //! Max 16 entries.
+  std::vector<Something> member1;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdGameRaceP2PResult;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdGameRaceP2PResult& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdGameRaceP2PResult& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRAwardStart
+{
+  uint32_t member1;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRAwardStart;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRAwardStart& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRAwardStart& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRAwardEnd
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRAwardEnd;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRAwardEnd& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRAwardEnd& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCAwardNotify
+{
+  uint32_t member1;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCAwardNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCAwardNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCAwardNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRAwardEndNotify
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRAwardEndNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRAwardEndNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRAwardEndNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRStarPointGet
+{
+  //! Oid of the calling character
+  uint16_t characterOid; // oid?
+  uint32_t unk1;
+  uint32_t gainedStarPoints;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRStarPointGet;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRStarPointGet& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRStarPointGet& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRStarPointGetOK
+{
+  //! Oid of the affected character
+  uint16_t characterOid;
+  //! Speed/magic boost value
+  uint32_t starPointValue;
+  //! Only works on magic gamemode, will give magic item regardless of magic gauge
+  bool giveMagicItem;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRStarPointGetOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRStarPointGetOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRStarPointGetOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestSpur
+{
+  uint16_t characterOid;
+  uint8_t activeBoosters;
+  uint8_t comboBreak; // combo break?
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestSpur;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestSpur& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestSpur& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestSpurOK
+{
+  uint16_t characterOid;
+  uint8_t activeBoosters;
+  uint32_t startPointValue; // current star point? (gauge)
+  uint8_t comboBreak;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestSpurOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestSpurOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestSpurOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRHurdleClearResult
+{
+  uint16_t characterOid;
+  enum class HurdleClearType : uint8_t
+  {
+    Perfect = 0,
+    Good = 1,
+    DoubleJumpOrGlide = 2,
+    Collision = 3
+  };
+  HurdleClearType hurdleClearType;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRHurdleClearResult;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRHurdleClearResult& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRHurdleClearResult& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRHurdleClearResultOK
+{
+  uint16_t characterOid;
+  AcCmdCRHurdleClearResult::HurdleClearType hurdleClearType;
+  //! Max combo is 99
+  uint32_t jumpCombo;
+  uint32_t unk3;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRHurdleClearResultOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRHurdleClearResultOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRHurdleClearResultOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRStartingRate
+{
+  uint16_t characterOid;
+  uint32_t unk1; // Forward velocity??
+  uint32_t boostGained;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRStartingRate;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRStartingRate& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRStartingRate& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestMagicItem
+{
+  uint16_t member1; // character oid?
+  uint32_t member2; // item type? 0 = request random?
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestMagicItem;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestMagicItem& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestMagicItem& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestMagicItemOK
+{
+  uint16_t member1; // character oid?
+  uint32_t member2; // item type?
+  uint32_t member3; // star point reset?
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestMagicItemOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestMagicItemOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestMagicItemOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestMagicItemNotify
+{
+  uint32_t member1; // item id?
+  uint16_t member2; // character oid?
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestMagicItemNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestMagicItemNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestMagicItemNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdUserRaceUpdatePos
+{
+  //! Character oid
+  uint16_t oid{};
+  //! Position
+  std::array<float, 3> member2{};
+  //! Rotation
+  std::array<float, 3> member3{};
+  //! Speed
+  float member4{};
+  //! 1 = In the air
+  uint16_t member5{};
+  //! Race track progress
+  float member6{};
+  //! Ticks since connected to race director?
+  uint32_t member7{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdUserRaceUpdatePos;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdUserRaceUpdatePos& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdUserRaceUpdatePos& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCRoomCountdown
+{
+  float member0{};
+  uint16_t member1{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCRoomCountdown;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCRoomCountdown& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCRoomCountdown& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCRoomCountdownCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCRoomCountdownCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCRoomCountdownCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCRoomCountdownCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRChangeMasterNotify
+{
+  //! A character UID of the new master.
+  uint32_t masterUid;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeMasterNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeMasterNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeMasterNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRelayCommand
+{
+  //! Character OID of the sender
+  uint16_t senderOid{};
+  //! Raw relay data
+  std::vector<uint8_t> relayData{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRelayCommand;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRelayCommand& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRelayCommand& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRelayCommandNotify
+{
+  //! Character OID of the sender
+  uint16_t senderOid{};
+  //! Raw relay data
+  std::vector<uint8_t> relayData{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRelayCommandNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRelayCommandNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRelayCommandNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRelay
+{
+  //! The sender object ID.
+  uint32_t senderOid;
+  //! The relay data.
+  std::vector<uint8_t> relayData;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRelay;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRelay& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRelay& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRelayNotify
+{
+  //! The sender object ID.
+  uint32_t senderOid;
+  //! The relay data.
+  std::vector<uint8_t> relayData;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRelayNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRelayNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRelayNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCTeamSpurGauge
+{
+  uint32_t member1{};
+  float member2{};
+  float member3{};
+  float member4{};
+  uint16_t member5{};
+  uint32_t member6{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCTeamSpurGauge;
+  }
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCTeamSpurGauge& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCTeamSpurGauge& command,
+    SourceStream& stream);
+};
+
+struct AcCmdUserRaceActivateInteractiveEvent
+{
+  uint32_t member1{};
+  uint16_t characterOid{};
+  uint64_t member3{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdUserRaceActivateInteractiveEvent;
+  }
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdUserRaceActivateInteractiveEvent& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdUserRaceActivateInteractiveEvent& command,
+    SourceStream& stream);
+};
+
+struct AcCmdUserRaceActivateEvent
+{
+  uint32_t eventId{};
+  uint16_t characterOid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdUserRaceActivateEvent;
+  }
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdUserRaceActivateEvent& command,
+    SinkStream& stream);
+    
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdUserRaceActivateEvent& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUseMagicItem
+{
+  // vFunc_2
+  uint16_t characterOid;
+  //! Read and switch/case depends on it
+  uint32_t magicItemId;
+
+  // sub_45ed60
+  struct Optional1
+  {
+    std::array<float, 3> member1;
+    std::array<float, 3> member2;
+  };
+  std::optional<Optional1> optional1;
+
+  // sub_4d5460
+  struct Optional2
+  {
+    uint8_t size;
+    std::vector<uint16_t> list;
+  };
+  std::optional<Optional2> optional2;
+
+  // vFunc_4 @ 0x00698540
+  uint32_t unk3;
+  std::optional<float> optional3; // cast time?
+  std::optional<float> optional4; // total cast time?
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUseMagicItem;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUseMagicItem& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUseMagicItem& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUseMagicItemCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUseMagicItemCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUseMagicItemCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUseMagicItemCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUseMagicItemOK
+{
+  uint16_t characterOid;
+  uint32_t magicItemId;
+
+  // sub_45ed60
+  std::optional<AcCmdCRUseMagicItem::Optional1> optional1;
+  // sub_4d5460
+  std::optional<AcCmdCRUseMagicItem::Optional2> optional2;
+
+  uint16_t unk3;
+  // TODO: is this correct type?
+  float unk4;
+  
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUseMagicItemOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUseMagicItemOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUseMagicItemOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUseMagicItemNotify
+{
+  // Same struct as AcCmdCRUseMagicItem
+  uint16_t characterOid;
+  uint32_t magicItemId;
+
+  // sub_45ed60
+  std::optional<AcCmdCRUseMagicItem::Optional1> optional1;
+  // sub_4d5460
+  std::optional<AcCmdCRUseMagicItem::Optional2> optional2;
+
+  uint32_t unk3;
+  std::optional<float> optional3; // cast time?
+  std::optional<float> optional4; // total cast time?
+  
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUseMagicItemNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUseMagicItemNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUseMagicItemNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdGameRaceItemSpawn
+{
+  uint32_t itemId{};
+  uint32_t itemType{};
+  std::array<float, 3> position;
+  std::array<float, 4> orientation;
+  bool member5{};
+  float removeDelay{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdGameRaceItemSpawn;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdGameRaceItemSpawn& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdGameRaceItemSpawn& command,
+    SourceStream& stream);
+};
+
+struct AcCmdUserRaceItemGet
+{
+  uint16_t characterOid;
+  uint16_t itemId;
+  uint32_t unk3;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdUserRaceItemGet;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdUserRaceItemGet& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdUserRaceItemGet& command,
+    SourceStream& stream);
+};
+
+struct AcCmdGameRaceItemGet
+{
+  uint16_t characterOid;
+  uint32_t itemId;
+  uint32_t itemType;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdGameRaceItemGet;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdGameRaceItemGet& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdGameRaceItemGet& command,
+    SourceStream& stream);
+};
+
+// Magic Targeting Commands for Bolt System
+struct AcCmdCRStartMagicTarget
+{
+  uint16_t characterOid;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRStartMagicTarget;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRStartMagicTarget& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRStartMagicTarget& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRChangeMagicTargetNotify
+{
+  uint16_t characterOid;
+  uint16_t targetOid;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeMagicTargetNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeMagicTargetNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeMagicTargetNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRChangeMagicTargetOK
+{
+  uint16_t characterOid;
+  uint16_t targetOid;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeMagicTargetOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeMagicTargetOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeMagicTargetOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRChangeMagicTargetCancel
+{
+  uint16_t characterOid;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeMagicTargetCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeMagicTargetCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeMagicTargetCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCRemoveMagicTarget
+{
+  uint16_t characterOid;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCRemoveMagicTarget;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCRemoveMagicTarget& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCRemoveMagicTarget& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCMagicExpire
+{
+  uint16_t characterOid;
+  uint32_t magicItemId;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCMagicExpire;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCMagicExpire& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCMagicExpire& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCTriggerActivate
+{
+  uint16_t characterOid;
+  uint32_t triggerType;     // Type of trigger/animation to activate
+  uint32_t triggerValue;    // Additional trigger parameter
+  float duration;           // Duration of the effect
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCTriggerActivate;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCTriggerActivate& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCTriggerActivate& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRActivateSkillEffect
+{
+  uint16_t characterOid;
+  uint32_t skillId;         // What skill/effect to activate
+  uint32_t unk1;            // Unknown parameter
+  uint32_t unk2;            // Unknown parameter
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRActivateSkillEffect;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRActivateSkillEffect& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRActivateSkillEffect& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCAddSkillEffect
+{
+  uint16_t characterOid;    // Target character
+  uint32_t effectId;        // Effect/animation ID (knockdown, stun, etc.)
+  uint32_t duration;        // Effect duration in milliseconds
+  uint32_t intensity;       // Effect strength/intensity
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCAddSkillEffect;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCAddSkillEffect& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCAddSkillEffect& command,
     SourceStream& stream);
 };
 

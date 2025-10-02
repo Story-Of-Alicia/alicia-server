@@ -97,7 +97,7 @@ void RanchCommandMountFamilyTree::Read(
   RanchCommandMountFamilyTree& command,
   SourceStream& stream)
 {
-  stream.Read(command.unk0);
+  stream.Read(command.horseUid);
 }
 
 void RanchCommandMountFamilyTreeOK::Write(
@@ -1246,7 +1246,7 @@ void AcCmdCRWearEquipment::Read(
   AcCmdCRWearEquipment& command,
   SourceStream& stream)
 {
-  stream.Read(command.itemUid)
+  stream.Read(command.equipmentUid)
     .Read(command.member);
 }
 
@@ -2273,6 +2273,49 @@ void AcCmdRCHideAgeNotify::Write(
 {
   stream.Write(command.characterUid)
     .Write(command.option);
+}
+
+void AcCmdCRStatusPointApply::Write(
+  const AcCmdCRStatusPointApply& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRStatusPointApply::Read(
+  AcCmdCRStatusPointApply& command,
+  SourceStream& stream)
+{
+  stream.Read(command.horseUid)
+  .Read(command.stats);
+}
+
+void AcCmdCRStatusPointApplyOK::Write(
+  const AcCmdCRStatusPointApplyOK& command,
+  SinkStream& stream)
+{
+  // empty
+}
+
+void AcCmdCRStatusPointApplyOK::Read(
+  AcCmdCRStatusPointApplyOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRStatusPointApplyCancel::Write(
+  const AcCmdCRStatusPointApplyCancel& command,
+  SinkStream& stream)
+{
+  // empty
+}
+
+void AcCmdCRStatusPointApplyCancel::Read(
+  AcCmdCRStatusPointApplyCancel& command,
+  SourceStream& stream)
+{
+  // empty
 }
 
 void AcCmdCRGuildMemberList::Read(

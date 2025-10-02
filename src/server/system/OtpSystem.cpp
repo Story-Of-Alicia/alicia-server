@@ -2,12 +2,12 @@
 // Created by rgnter on 17/07/2025.
 //
 
-#include "libserver/registry/OtpRegistry.hpp"
+#include "server/system/OtpSystem.hpp"
 
 namespace server
 {
 
-uint32_t OtpRegistry::GrantCode(const uint32_t key)
+uint32_t OtpSystem::GrantCode(const uint32_t key)
 {
   const auto [iter, inserted] = _codes.try_emplace(
     key,
@@ -18,7 +18,7 @@ uint32_t OtpRegistry::GrantCode(const uint32_t key)
   return iter->second.code;
 }
 
-bool OtpRegistry::AuthorizeCode(const uint32_t key, const uint32_t code)
+bool OtpSystem::AuthorizeCode(const uint32_t key, const uint32_t code)
 {
   const auto codeIter = _codes.find(key);
   if (codeIter == _codes.cend())

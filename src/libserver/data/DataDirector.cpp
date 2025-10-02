@@ -929,7 +929,10 @@ void DataDirector::ScheduleCharacterLoad(
 
         gifts = character.gifts();
         purchases = character.purchases();
-        items = character.items();
+
+        std::ranges::copy(character.inventory(), std::back_inserter(items));
+        std::ranges::copy(character.characterEquipment(), std::back_inserter(items));
+        std::ranges::copy(character.mountEquipment(), std::back_inserter(items));
 
         horses = character.horses();
 

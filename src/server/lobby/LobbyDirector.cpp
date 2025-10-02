@@ -19,8 +19,8 @@
 
 #include "server/lobby/LobbyDirector.hpp"
 
+#include "../../../include/server/system/RoomSystem.hpp"
 #include "libserver/data/helper/ProtocolHelper.hpp"
-#include "libserver/registry/RoomRegistry.hpp"
 #include "server/ServerInstance.hpp"
 #include "zlib.h"
 
@@ -233,6 +233,12 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& command)
     {
       HandleChangeRanchOption(clientId, command);
+    });
+  
+    _commandServer.RegisterCommandHandler<protocol::AcCmdCLRequestMountInfo>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleRequestMountInfo(clientId, command);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdLCInviteGuildJoinCancel>(
@@ -520,16 +526,28 @@ void LobbyDirector::HandleRoomList(
 {
   protocol::LobbyCommandRoomListOK response;
   response.page = command.page;
-  response.unk1 = 1;
-  response.unk2 = 1;
+  response.unk1 = command.gameMode;
+  response.unk2 = static_cast<uint8_t>(command.teamMode);
 
-  for (const auto& room : RoomRegistry::Get().GetRooms() | std::views::values)
+  for (const auto& room : _serverInstance.GetRoomSystem().GetRooms() | std::views::values)
   {
+    if ( room.gameMode != command.gameMode
+      || room.teamMode != command.teamMode)
+      continue;
+
+    // TODO: get Live player count from RaceDirector
+    // TODO: gamestate showing
     auto& roomResponse = response.rooms.emplace_back();
     roomResponse.id = room.uid;
-    roomResponse.playerCount = 1;
-    roomResponse.maxPlayers = 8;
+    if (room.password.empty())
+      roomResponse.isLocked = false;
+    else
+      roomResponse.isLocked = true;
+    roomResponse.playerCount = 1; // Placeholder, replace with actual live count
+    roomResponse.maxPlayers = room.playerCount;
     roomResponse.level = 2;
+    roomResponse.name = room.name;
+    roomResponse.map = room.mapBlockId;
   }
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -544,11 +562,10 @@ void LobbyDirector::HandleMakeRoom(
   ClientId clientId,
   const protocol::LobbyCommandMakeRoom& command)
 {
-  auto& roomRegistry = RoomRegistry::Get();
-  auto& room = roomRegistry.CreateRoom();
+  auto& room = _serverInstance.GetRoomSystem().CreateRoom();
 
   room.name = command.name;
-  room.description = command.password;
+  room.password = command.password;
   room.missionId = command.missionId;
   room.playerCount = command.playerCount;
   room.gameMode = command.gameMode;
@@ -556,6 +573,7 @@ void LobbyDirector::HandleMakeRoom(
   room.unk3 = command.unk3;
   room.bitset = static_cast<uint16_t>(command.bitset);
   room.unk4 = command.unk4;
+  room.mapBlockId = 10002;
 
   protocol::LobbyCommandMakeRoomOK response{
     .roomUid = room.uid,
@@ -575,8 +593,6 @@ void LobbyDirector::HandleEnterRoom(
   ClientId clientId,
   const protocol::LobbyCommandEnterRoom& command)
 {
-  auto& roomRegistry = RoomRegistry::Get();
-
   protocol::LobbyCommandEnterRoomOK response{
     .roomUid = command.roomUid,
     .otp = 0xBAAD,
@@ -622,7 +638,7 @@ void LobbyDirector::QueueShowInventory(ClientId clientId)
     [this, &response](const data::Character& character)
     {
       const auto itemRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(
-        character.items());
+        character.inventory());
       protocol::BuildProtocolItems(response.items, *itemRecords);
 
       const auto horseRecords = GetServerInstance().GetDataDirector().GetHorseCache().Get(
@@ -865,7 +881,7 @@ void LobbyDirector::QueueEnterRanchOK(
   const auto& clientContext = GetClientContext(clientId);
   protocol::LobbyCommandEnterRanchOK response{
     .rancherUid = rancherUid,
-    .otp = GetServerInstance().GetOtpRegistry().GrantCode(clientContext.characterUid),
+    .otp = GetServerInstance().GetOtpSystem().GrantCode(clientContext.characterUid),
     .ranchAddress = GetConfig().advertisement.ranch.address.to_uint(),
     .ranchPort = GetConfig().advertisement.ranch.port};
 
@@ -1067,6 +1083,60 @@ LobbyDirector::ClientContext& LobbyDirector::GetClientContext(
     throw std::runtime_error("Client is not authenticated");
 
   return clientContext;
+}
+
+void LobbyDirector::HandleRequestMountInfo(
+  ClientId clientId,
+  const protocol::AcCmdCLRequestMountInfo& command)
+{
+  protocol::AcCmdCLRequestMountInfoOK response{
+    .characterUid = command.characterUid,
+  };
+
+  const auto& characterUid = GetClientContext(clientId).characterUid;
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(characterUid);
+
+  std::vector<protocol::AcCmdCLRequestMountInfoOK::MountInfo> mountInfos;
+  std::vector<data::Uid> mountUids;
+  characterRecord.Immutable([&mountUids](const data::Character& character)
+  {
+    mountUids = character.horses();
+    if (character.mountUid() != data::InvalidUid)
+      mountUids.emplace_back(character.mountUid());
+  });
+
+  for (const auto mountUid : mountUids)
+  {
+    protocol::AcCmdCLRequestMountInfoOK::MountInfo mountInfo;
+    mountInfo.horseUid = mountUid;
+    const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(mountUid);
+
+    horseRecord.Immutable([&mountInfo](const data::Horse& horse)
+      {
+        mountInfo.boostsInARow = horse.mountInfo.boostsInARow();
+        mountInfo.winsSpeedSingle = horse.mountInfo.winsSpeedSingle();
+        mountInfo.winsSpeedTeam = horse.mountInfo.winsSpeedTeam();
+        mountInfo.winsMagicSingle = horse.mountInfo.winsMagicSingle();
+        mountInfo.winsMagicTeam = horse.mountInfo.winsMagicTeam();
+        mountInfo.totalDistance = horse.mountInfo.totalDistance();
+        mountInfo.topSpeed = horse.mountInfo.topSpeed();
+        mountInfo.longestGlideDistance = horse.mountInfo.longestGlideDistance();
+        mountInfo.participated = horse.mountInfo.participated();
+        mountInfo.cumulativePrize = horse.mountInfo.cumulativePrize();
+        mountInfo.biggestPrize = horse.mountInfo.biggestPrize();
+      });
+
+    mountInfos.emplace_back(std::move(mountInfo));
+  }
+
+  response.mountInfos = std::move(mountInfos);
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 void LobbyDirector::HandleDeclineInviteToGuild(

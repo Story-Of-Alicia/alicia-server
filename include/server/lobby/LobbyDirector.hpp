@@ -193,7 +193,11 @@ private:
   void HandleChangeRanchOption(
     ClientId clientId,
     const protocol::LobbyCommandChangeRanchOption& command);
-
+  
+  void HandleRequestMountInfo(
+    ClientId clientId,
+    const protocol::AcCmdCLRequestMountInfo& command);
+    
   void HandleDeclineInviteToGuild(
     ClientId clientId,
     const protocol::AcCmdLCInviteGuildJoinCancel& command);
@@ -226,11 +230,12 @@ protected:
 
   protocol::LobbyCommandLoginOK::SystemContent _systemContent{
     .values = {
-      {4, 0},
-      {16, 0},
-      {21, 0},
-      {22, 0},
-      {30, 0}}};
+      // {4, 0},
+      // {16, 0},
+      // {21, 0},
+      // {22, 0},
+      // {30, 0}
+      }};
   
   //!
   std::unordered_map<ClientId, ClientContext> _clients;
