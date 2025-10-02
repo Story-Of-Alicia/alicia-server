@@ -26,6 +26,7 @@
 
 #include <spdlog/spdlog.h>
 #include <bitset>
+#include <limits>
 
 namespace server
 {
@@ -1524,10 +1525,8 @@ void RaceDirector::HandleRequestMagicItem(
   ClientId clientId,
   const protocol::AcCmdCRRequestMagicItem& command)
 {
-  spdlog::debug("[{}] AcCmdCRRequestMagicItem: {} {}",
-    clientId,
-    command.member1,
-    command.member2);
+  spdlog::info("Player {} requested magic item (OID: {}, type: {})", 
+    clientId, command.member1, command.member2);
 
   const auto& clientContext = _clients[clientId];
   auto& roomInstance = _roomInstances[clientContext.roomUid];
@@ -1604,6 +1603,7 @@ void RaceDirector::HandleUseMagicItem(
   ClientId clientId,
   const protocol::AcCmdCRUseMagicItem& command)
 {
+  spdlog::info("Player {} used magic item {} (OID: {})", clientId, command.magicItemId, command.characterOid);
   const auto& clientContext = _clients[clientId];
   auto& roomInstance = _roomInstances[clientContext.roomUid];
   auto& racer = roomInstance.tracker.GetRacer(clientContext.characterUid);
@@ -1632,6 +1632,138 @@ void RaceDirector::HandleUseMagicItem(
     {
       return response;
     });
+
+  // Notify other players that this player used their magic item (UI synchronization)
+  protocol::AcCmdCRUseMagicItemNotify usageNotify{
+    .characterOid = command.characterOid,
+    .magicItemId = command.magicItemId,
+    .unk3 = command.characterOid
+  };
+
+  // Copy optional fields from the original command
+  if (command.optional1.has_value())
+    usageNotify.optional1 = command.optional1.value();
+  if (command.optional2.has_value())
+    usageNotify.optional2 = command.optional2.value();
+  if (command.optional3.has_value())
+    usageNotify.optional3 = command.optional3.value();
+  if (command.optional4.has_value())
+    usageNotify.optional4 = command.optional4.value();
+
+  // Special handling for bolt (magic item ID 2) - ensure required fields are populated
+  if (command.magicItemId == 2)
+  {
+    // Bolt requires optional2 (vector)
+    if (!usageNotify.optional2.has_value()) {
+      auto& opt2 = usageNotify.optional2.emplace();
+      opt2.size = 0;
+      opt2.list.clear();
+    }
+    
+    // Bolt requires optional3 and optional4
+    if (!usageNotify.optional3.has_value())
+      usageNotify.optional3 = 0.0f;
+    if (!usageNotify.optional4.has_value())
+      usageNotify.optional4 = 0.0f;
+  }
+
+  for (const auto& roomClientId : roomInstance.clients)
+  {
+    if (roomClientId == clientId)
+      continue;
+    
+    _commandServer.QueueCommand<decltype(usageNotify)>(
+      roomClientId,
+      [usageNotify]() { return usageNotify; });
+  }
+
+  // Special handling for bolt (magic item ID 2) - Auto-targeting system
+  if (command.magicItemId == 2)
+  {
+    spdlog::info("Bolt used! Implementing auto-targeting system for player {}", clientId);
+    
+    // Find a target automatically (first other player in the room)
+    tracker::Oid targetOid = tracker::InvalidEntityOid;
+    for (const auto& [targetUid, targetRacer] : roomInstance.tracker.GetRacers())
+    {
+      // Skip the attacker, find first valid target
+      if (targetRacer.oid != command.characterOid && 
+          targetRacer.state == tracker::RaceTracker::Racer::State::Racing)
+      {
+        targetOid = targetRacer.oid;
+        spdlog::info("Auto-selected target: OID {}", targetOid);
+        break;
+      }
+    }
+    
+    if (targetOid != tracker::InvalidEntityOid)
+    {
+      // Apply bolt hit effects to the target
+      for (auto& [targetUid, targetRacer] : roomInstance.tracker.GetRacers())
+      {
+        if (targetRacer.oid == targetOid)
+        {
+          spdlog::info("Applying bolt effects to target racer {} (OID: {})", targetUid, targetRacer.oid);
+          
+          // NOTE: We're NOT sending bolt hit notification anymore to avoid "Nice shot!" bug
+          // The client should handle hit effects based on the targeting system or other means
+          
+          // Effect 1: Target loses their current magic item
+          if (targetRacer.magicItem.has_value())
+          {
+            uint32_t lostItemId = targetRacer.magicItem.value();
+            spdlog::info("Target racer {} lost magic item {}", targetRacer.oid, lostItemId);
+            targetRacer.magicItem.reset();
+            
+            // Find the target's client ID and notify them
+            ClientId targetClientId = std::numeric_limits<ClientId>::max(); // Use max as "not found"
+            spdlog::info("Looking for target client with characterUid {}", targetUid);
+            for (const auto& [clientId, clientContext] : _clients)
+            {
+              spdlog::info("Checking client {} with characterUid {}", clientId, clientContext.characterUid);
+              if (clientContext.characterUid == targetUid)
+              {
+                targetClientId = clientId;
+                spdlog::info("Found target client: {}", targetClientId);
+                break;
+              }
+            }
+            
+            if (targetClientId != std::numeric_limits<ClientId>::max())
+            {
+              // Try sending the same command that the target would get if they used their item
+              protocol::AcCmdCRUseMagicItemOK itemUsedNotify{
+                .characterOid = targetRacer.oid,
+                .magicItemId = lostItemId,
+                .unk3 = targetRacer.oid,
+                .unk4 = 0
+              };
+              
+              _commandServer.QueueCommand<decltype(itemUsedNotify)>(
+                targetClientId,
+                [itemUsedNotify]() { return itemUsedNotify; });
+                
+              spdlog::info("Sent magic item usage notification to target client {} (simulating item consumption)", targetClientId);
+            }
+            else
+            {
+              spdlog::error("Could not find target client for characterUid {}", targetUid);
+            }
+          }
+          else
+          {
+            spdlog::info("Target racer {} has no magic item to lose", targetRacer.oid);
+          }
+          
+          break;
+        }
+      }
+    }
+    else
+    {
+      spdlog::info("No valid target found for bolt");
+    }
+  }
 
   racer.magicItem.reset();
 }
