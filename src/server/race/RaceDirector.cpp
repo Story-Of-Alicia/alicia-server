@@ -222,11 +222,12 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
       HandleChangeMagicTargetCancel(clientId, message);
     });
   
-  _commandServer.RegisterCommandHandler<protocol::AcCmdCRActivateSkillEffect>(
-    [this](ClientId clientId, const auto& message)
-    {
-      HandleActivateSkillEffect(clientId, message);
-    });
+  // Note: AcCmdCRActivateSkillEffect handler commented out due to build issues
+  // _commandServer.RegisterCommandHandler<protocol::AcCmdCRActivateSkillEffect>(
+  //   [this](ClientId clientId, const auto& message)
+  //   {
+  //     HandleActivateSkillEffect(clientId, message);
+  //   });
 }
 
 void RaceDirector::Initialize()
@@ -1338,6 +1339,10 @@ void RaceDirector::HandleRaceUserPos(
     // TODO: command character oid does not match calling character oid
     return;
   }
+  
+  // Update racer's current position and rotation
+  racer.position = command.member2;  // Position (x, y, z)
+  racer.rotation = command.member3;  // Rotation (x, y, z)
 
   const auto& room = _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid);
@@ -1577,7 +1582,7 @@ void RaceDirector::HandleRequestMagicItem(
   // 10 - Ice wall
   protocol::AcCmdCRRequestMagicItemOK response{
     .member1 = command.member1,
-    .member2 = racer.magicItem.emplace(10),  // Ice wall magic item
+    .member2 = racer.magicItem.emplace(2),  // Ice wall magic item
     .member3 = 0
   };
 
@@ -1642,7 +1647,7 @@ void RaceDirector::HandleUseMagicItem(
       return response;
     });
 
-  // Notify other players that this player used their magic item (UI synchronization)
+  // Notify other players that this player used their magic item
   protocol::AcCmdCRUseMagicItemNotify usageNotify{
     .characterOid = command.characterOid,
     .magicItemId = command.magicItemId,
@@ -1662,7 +1667,6 @@ void RaceDirector::HandleUseMagicItem(
   // Special handling for magic items that require optional fields
   if (command.magicItemId == 2)  // Bolt only (ice wall handled separately)
   {
-    // These items require optional2 (vector)
     if (!usageNotify.optional2.has_value()) {
       auto& opt2 = usageNotify.optional2.emplace();
       opt2.size = 0;
@@ -1677,7 +1681,7 @@ void RaceDirector::HandleUseMagicItem(
   }
 
   // Send general usage notification to other players (except for ice wall which has its own notification)
-  if (command.magicItemId != 10)  // Skip general notification for ice wall
+  if (command.magicItemId != 10) 
   {
     for (const auto& roomClientId : roomInstance.clients)
     {
@@ -1776,15 +1780,15 @@ void RaceDirector::HandleUseMagicItem(
     }
   }
   
-  // Special handling for ice wall (magic item ID 10)
+  // Special handling for ice wall
   else if (command.magicItemId == 10)
   {
     spdlog::info("Ice wall used! Spawning ice wall at player {} location", clientId);
     
     // Spawn ice wall at player's current location
     auto& iceWall = roomInstance.tracker.AddItem();
-    iceWall.itemType = 1;     // Type: obstacle/trap
-    iceWall.position = {100.0f, 10.0f, 100.0f};  // Safe position in game world
+    iceWall.itemType = 1;
+    iceWall.position = racer.position;  // Use actual player position
     
     spdlog::info("Spawned ice wall with ID {} at position ({}, {}, {})", 
       iceWall.itemId, iceWall.position[0], iceWall.position[1], iceWall.position[2]);
@@ -1792,11 +1796,11 @@ void RaceDirector::HandleUseMagicItem(
     // Notify all clients about the ice wall spawn using proper race item spawn command
     protocol::AcCmdGameRaceItemSpawn iceWallSpawn{
       .itemId = iceWall.itemId,
-      .itemType = iceWall.itemType,  // 1 = obstacle/trap
+      .itemType = iceWall.itemType,
       .position = iceWall.position,
-      .orientation = {0.0f, 0.0f, 0.0f, 1.0f},  // No rotation (identity quaternion)
+      .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
       .member5 = false,
-      .removeDelay = 30.0f  // Remove after 30 seconds
+      .removeDelay = 30.0f 
     };
     
     spdlog::info("Sending ice wall spawn using AcCmdGameRaceItemSpawn: itemId={}, position=({}, {}, {})", 
@@ -2044,6 +2048,7 @@ void RaceDirector::HandleChangeMagicTargetCancel(
   spdlog::info("Character {} exited targeting mode", command.characterOid);
 }
 
+/*
 void RaceDirector::HandleActivateSkillEffect(
   ClientId clientId,
   const protocol::AcCmdCRActivateSkillEffect& command)
@@ -2081,6 +2086,7 @@ void RaceDirector::HandleActivateSkillEffect(
   // The AcCmdRCAddSkillEffect command causes disconnections
   spdlog::info("Knockdown effect disabled to prevent disconnections");
 }
+*/
 
 
 } // namespace server
