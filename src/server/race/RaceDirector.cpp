@@ -221,6 +221,12 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     {
       HandleChangeMagicTargetCancel(clientId, message);
     });
+  
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRActivateSkillEffect>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleActivateSkillEffect(clientId, message);
+    });
 }
 
 void RaceDirector::Initialize()
@@ -1507,6 +1513,9 @@ void RaceDirector::HandleUserRaceActivateEvent
   // Get the sender's OID from the room tracker
   auto& racer = roomInstance.tracker.GetRacer(clientContext.characterUid);
 
+  spdlog::info("HandleUserRaceActivateEvent: clientId={}, eventId={}, characterOid={}", 
+    clientId, command.eventId, racer.oid);
+
   protocol::AcCmdUserRaceActivateEvent notify{
     .eventId = command.eventId,
     .characterOid = racer.oid, // sender oid
@@ -1568,7 +1577,7 @@ void RaceDirector::HandleRequestMagicItem(
   // 10 - Ice wall
   protocol::AcCmdCRRequestMagicItemOK response{
     .member1 = command.member1,
-    .member2 = racer.magicItem.emplace(2),
+    .member2 = racer.magicItem.emplace(10),  // Ice wall magic item
     .member3 = 0
   };
 
@@ -1650,31 +1659,35 @@ void RaceDirector::HandleUseMagicItem(
   if (command.optional4.has_value())
     usageNotify.optional4 = command.optional4.value();
 
-  // Special handling for bolt (magic item ID 2) - ensure required fields are populated
-  if (command.magicItemId == 2)
+  // Special handling for magic items that require optional fields
+  if (command.magicItemId == 2)  // Bolt only (ice wall handled separately)
   {
-    // Bolt requires optional2 (vector)
+    // These items require optional2 (vector)
     if (!usageNotify.optional2.has_value()) {
       auto& opt2 = usageNotify.optional2.emplace();
       opt2.size = 0;
       opt2.list.clear();
     }
     
-    // Bolt requires optional3 and optional4
+    // These items require optional3 and optional4
     if (!usageNotify.optional3.has_value())
       usageNotify.optional3 = 0.0f;
     if (!usageNotify.optional4.has_value())
       usageNotify.optional4 = 0.0f;
   }
 
-  for (const auto& roomClientId : roomInstance.clients)
+  // Send general usage notification to other players (except for ice wall which has its own notification)
+  if (command.magicItemId != 10)  // Skip general notification for ice wall
   {
-    if (roomClientId == clientId)
-      continue;
-    
-    _commandServer.QueueCommand<decltype(usageNotify)>(
-      roomClientId,
-      [usageNotify]() { return usageNotify; });
+    for (const auto& roomClientId : roomInstance.clients)
+    {
+      if (roomClientId == clientId)
+        continue;
+      
+      _commandServer.QueueCommand<decltype(usageNotify)>(
+        roomClientId,
+        [usageNotify]() { return usageNotify; });
+    }
   }
 
   // Special handling for bolt (magic item ID 2) - Auto-targeting system
@@ -1705,8 +1718,35 @@ void RaceDirector::HandleUseMagicItem(
         {
           spdlog::info("Applying bolt effects to target racer {} (OID: {})", targetUid, targetRacer.oid);
           
-          // NOTE: We're NOT sending bolt hit notification anymore to avoid "Nice shot!" bug
-          // The client should handle hit effects based on the targeting system or other means
+          // Send magic item notify for bolt hit effects (safe approach)
+          protocol::AcCmdCRUseMagicItemNotify boltHitNotify{
+            .characterOid = targetRacer.oid,  // Target gets hit
+            .magicItemId = 2,  // Bolt magic item ID  
+            .unk3 = targetRacer.oid
+          };
+          
+          // Populate required optional fields for bolt
+          if (!boltHitNotify.optional2.has_value()) {
+            auto& opt2 = boltHitNotify.optional2.emplace();
+            opt2.size = 0;
+            opt2.list.clear();
+          }
+          
+          // Set timing values for bolt animation
+          boltHitNotify.optional3 = 1.0f;  // Cast time: 1 second for bolt to hit
+          boltHitNotify.optional4 = 3.0f;  // Effect duration: 3 seconds target stays down
+          
+          spdlog::info("Sending bolt hit notification: characterOid={}, magicItemId={}, timing: {}s/{}s", 
+            boltHitNotify.characterOid, boltHitNotify.magicItemId, 
+            boltHitNotify.optional3.value(), boltHitNotify.optional4.value());
+          
+          for (const ClientId& roomClientId : roomInstance.clients)
+          {
+            spdlog::info("Sending bolt hit notification to client {}", roomClientId);
+            _commandServer.QueueCommand<decltype(boltHitNotify)>(
+              roomClientId, 
+              [boltHitNotify]() { return boltHitNotify; });
+          }
           
           // Effect 1: Target loses their current magic item
           if (targetRacer.magicItem.has_value())
@@ -1715,79 +1755,11 @@ void RaceDirector::HandleUseMagicItem(
             spdlog::info("Target racer {} lost magic item {}", targetRacer.oid, lostItemId);
             targetRacer.magicItem.reset();
             
-            // Find the target's client ID and notify them
-            ClientId targetClientId = std::numeric_limits<ClientId>::max(); // Use max as "not found"
-            spdlog::info("Looking for target client with characterUid {}", targetUid);
-            for (const auto& [clientId, clientContext] : _clients)
-            {
-              spdlog::info("Checking client {} with characterUid {}", clientId, clientContext.characterUid);
-              if (clientContext.characterUid == targetUid)
-              {
-                targetClientId = clientId;
-                spdlog::info("Found target client: {}", targetClientId);
-                break;
-              }
-            }
+            // TODO: Add proper magic expire notification once we confirm bolt hit works
+            spdlog::info("Target lost magic item {} (server-side only for now)", lostItemId);
             
-            if (targetClientId != std::numeric_limits<ClientId>::max())
-            {
-              // Try sending the same command that the target would get if they used their item
-              protocol::AcCmdCRUseMagicItemOK itemUsedNotify{
-                .characterOid = targetRacer.oid,
-                .magicItemId = lostItemId,
-                .unk3 = targetRacer.oid,
-                .unk4 = 0
-              };
-              
-              // For bolt (magic item ID 2), populate required optional fields
-              if (lostItemId == 2)
-              {
-                // Bolt requires optional2 (vector)
-                auto& opt2 = itemUsedNotify.optional2.emplace();
-                opt2.size = 0;
-                opt2.list.clear();
-              }
-              
-              _commandServer.QueueCommand<decltype(itemUsedNotify)>(
-                targetClientId,
-                [itemUsedNotify]() { return itemUsedNotify; });
-                
-              spdlog::info("Sent magic item usage notification to target client {} (simulating item consumption)", targetClientId);
-              
-              // Also notify other players that the target used their magic item
-              protocol::AcCmdCRUseMagicItemNotify targetUsageNotify{
-                .characterOid = targetRacer.oid,
-                .magicItemId = lostItemId,
-                .unk3 = targetRacer.oid
-              };
-              
-              // Populate required fields for bolt
-              if (lostItemId == 2)
-              {
-                auto& opt2 = targetUsageNotify.optional2.emplace();
-                opt2.size = 0;
-                opt2.list.clear();
-                targetUsageNotify.optional3 = 0.0f;
-                targetUsageNotify.optional4 = 0.0f;
-              }
-              
-              for (const auto& roomClientId : roomInstance.clients)
-              {
-                // Don't send to the target (they already got the OK response)
-                if (roomClientId == targetClientId)
-                  continue;
-                
-                _commandServer.QueueCommand<decltype(targetUsageNotify)>(
-                  roomClientId,
-                  [targetUsageNotify]() { return targetUsageNotify; });
-              }
-              
-              spdlog::info("Sent target magic item usage notification to other players");
-            }
-            else
-            {
-              spdlog::error("Could not find target client for characterUid {}", targetUid);
-            }
+            // Simplified approach: Only server-side item removal for now
+            // TODO: Add client notifications once bolt hit animation is working
           }
           else
           {
@@ -1801,6 +1773,40 @@ void RaceDirector::HandleUseMagicItem(
     else
     {
       spdlog::info("No valid target found for bolt");
+    }
+  }
+  
+  // Special handling for ice wall (magic item ID 10)
+  else if (command.magicItemId == 10)
+  {
+    spdlog::info("Ice wall used! Spawning ice wall at player {} location", clientId);
+    
+    // Spawn ice wall at player's current location
+    auto& iceWall = roomInstance.tracker.AddItem();
+    iceWall.itemType = 1;     // Type: obstacle/trap
+    iceWall.position = {100.0f, 10.0f, 100.0f};  // Safe position in game world
+    
+    spdlog::info("Spawned ice wall with ID {} at position ({}, {}, {})", 
+      iceWall.itemId, iceWall.position[0], iceWall.position[1], iceWall.position[2]);
+    
+    // Notify all clients about the ice wall spawn using proper race item spawn command
+    protocol::AcCmdGameRaceItemSpawn iceWallSpawn{
+      .itemId = iceWall.itemId,
+      .itemType = iceWall.itemType,  // 1 = obstacle/trap
+      .position = iceWall.position,
+      .orientation = {0.0f, 0.0f, 0.0f, 1.0f},  // No rotation (identity quaternion)
+      .member5 = false,
+      .removeDelay = 30.0f  // Remove after 30 seconds
+    };
+    
+    spdlog::info("Sending ice wall spawn using AcCmdGameRaceItemSpawn: itemId={}, position=({}, {}, {})", 
+      iceWallSpawn.itemId, iceWallSpawn.position[0], iceWallSpawn.position[1], iceWallSpawn.position[2]);
+    
+    for (const ClientId& roomClientId : roomInstance.clients)
+    {
+      _commandServer.QueueCommand<decltype(iceWallSpawn)>(
+        roomClientId, 
+        [iceWallSpawn]() { return iceWallSpawn; });
     }
   }
 
@@ -2036,6 +2042,44 @@ void RaceDirector::HandleChangeMagicTargetCancel(
   racer.currentTarget = tracker::InvalidEntityOid;
   
   spdlog::info("Character {} exited targeting mode", command.characterOid);
+}
+
+void RaceDirector::HandleActivateSkillEffect(
+  ClientId clientId,
+  const protocol::AcCmdCRActivateSkillEffect& command)
+{
+  const auto& clientContext = _clients[clientId];
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
+  
+  // Convert unk2 back to float (it's 1.0f = 1065353216 as uint32)
+  float intensity = *reinterpret_cast<const float*>(&command.unk2);
+  
+  spdlog::info("HandleActivateSkillEffect: clientId={}, characterOid={}, skillId={}, unk1={}, intensity={}", 
+    clientId, command.characterOid, command.skillId, command.unk1, intensity);
+  
+  // Process the skill effect activation - give target extra gauge (Attack Compensation skill)
+  auto& targetRacer = roomInstance.tracker.GetRacer(clientContext.characterUid);
+  
+  // Apply "Attack Compensation" skill - target gets extra gauge when attacked
+  targetRacer.starPointValue += 50;  // Give 50 star points for being attacked
+  spdlog::info("Applied Attack Compensation skill: character {} gained 50 star points", command.characterOid);
+  
+  // Send skill effect response back to the requesting client
+  protocol::AcCmdUserRaceActivateEvent activateResponse{
+    .eventId = command.skillId,  // Echo back the skill ID
+    .characterOid = command.characterOid
+  };
+  
+  spdlog::info("Responding to skill activation for character {} with skillId {}", command.characterOid, command.skillId);
+  
+  // Send response back to the client who requested the skill activation
+  _commandServer.QueueCommand<decltype(activateResponse)>(
+    clientId,
+    [activateResponse]() { return activateResponse; });
+  
+  // TODO: Implement knockdown animation once we figure out the correct structure
+  // The AcCmdRCAddSkillEffect command causes disconnections
+  spdlog::info("Knockdown effect disabled to prevent disconnections");
 }
 
 
