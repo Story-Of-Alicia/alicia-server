@@ -1347,17 +1347,6 @@ void RaceDirector::HandleRaceUserPos(
       std::chrono::steady_clock::now().time_since_epoch()).count() / 100;
       
     raceActuallyStarted = currentTimestamp >= roomInstance.raceStartTimestamp.value();
-    
-    // Reset all magic bars once when race actually starts
-    if (raceActuallyStarted && !roomInstance.postCountdownResetDone)
-    {
-      roomInstance.postCountdownResetDone = true;
-      for (auto& [uid, raceRacer] : roomInstance.tracker.GetRacers())
-      {
-        raceRacer.starPointValue = 0;
-        spdlog::info("Reset magic bar for racer {} after countdown finished", raceRacer.oid);
-      }
-    }
   }
   
   if (room.gameMode == 2 && racer.state == tracker::RaceTracker::Racer::State::Racing && raceActuallyStarted && not racer.magicItem.has_value())
@@ -1796,14 +1785,26 @@ void RaceDirector::HandleChangeMagicTargetOK(
       targetRacer.magicItem.reset();
       
       // Send bolt hit notification to all clients so they can see the hit effects
+      spdlog::info("Sending bolt hit notification to all clients for target {}", command.targetOid);
+      
+      // Send bolt hit as magic item usage notification
       protocol::AcCmdCRUseMagicItemNotify boltHitNotify{
-        .characterOid = command.targetOid,  // The target gets hit
-        .magicItemId = 2,  // Bolt magic item ID
+        .characterOid = command.targetOid,  // The target who gets hit
+        .magicItemId = 2,  // Bolt magic item ID  
         .unk3 = command.targetOid
       };
       
+      // For bolt (ID 2), we might need to populate optional fields
+      // Based on the Read method, bolt (case 0x2) expects optional2 and optional3/4
+      if (!boltHitNotify.optional2.has_value()) {
+        auto& opt2 = boltHitNotify.optional2.emplace();
+        opt2.size = 0;  // Empty list for now
+        opt2.list.clear();
+      }
+      
       for (const ClientId& roomClientId : roomInstance.clients)
       {
+        spdlog::info("Sending bolt hit notification to client {}", roomClientId);
         _commandServer.QueueCommand<decltype(boltHitNotify)>(
           roomClientId, 
           [boltHitNotify]() { return boltHitNotify; });

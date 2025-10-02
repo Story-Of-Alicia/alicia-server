@@ -81,9 +81,6 @@ private:
     
     //! Actual race start timestamp (when countdown reaches 0)
     std::optional<uint64_t> raceStartTimestamp;
-    
-    //! Whether we've reset magic bars after countdown finished
-    bool postCountdownResetDone{false};
   };
 
   void HandleEnterRoom(
