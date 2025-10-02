@@ -20,43 +20,41 @@
 #ifndef PETREGISTRY_HPP
 #define PETREGISTRY_HPP
 
-#include <unordered_map>
-
 #include "libserver/data/DataDefinitions.hpp"
+
+#include <filesystem>
+#include <unordered_map>
 
 namespace server::registry
 {
 
-struct Egg
+struct EggInfo
 {
-  //! An item representing the egg.
-  data::Tid itemTid;
+  //! A deck item ID of the egg.
+  data::Tid deckItemId;
   //! A time duration it takes the egg to hatch.
   data::Clock::duration hatchDuration;
   //! A vector of pets that can hatch from the egg.
   std::vector<data::Tid> hatchablePets;
 };
 
-struct Pet
+struct PetInfo
 {
-  data::Tid petTid{}; // petItem tid
-  uint32_t petId{}; // pet id for spawning
+  //! A pet ID.
+  uint32_t petId{};
 };
 
 class PetRegistry final
 {
 public:
-  PetRegistry();
+  void ReadConfig(const std::filesystem::path& configPath);
 
-  void ReadConfig();
-
-  Egg GetEgg(server::data::Tid tid);
-
-  Pet GetPet(server::data::Tid tid);
+  EggInfo GetEggInfo(data::Tid eggItemTid);
+  PetInfo GetPetInfo(data::Tid petItemTid);
 
 private:
-  std::unordered_map<data::Tid, Egg> _eggs;
-  std::unordered_map<data::Tid, Pet> _pets;
+  std::unordered_map<data::Tid, EggInfo> _eggs;
+  std::unordered_map<data::Tid, PetInfo> _pets;
 };
 
 } // namespace server::registry

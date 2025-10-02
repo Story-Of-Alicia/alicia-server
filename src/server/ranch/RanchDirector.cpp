@@ -693,7 +693,7 @@ void RanchDirector::HandleEnterRanch(
             [this, &response](const data::Egg& egg)
             {
               // retrieve hatchDuration
-              const registry::Egg eggTemplate = _serverInstance.GetPetRegistry().GetEgg(
+              const registry::EggInfo eggTemplate = _serverInstance.GetPetRegistry().GetEggInfo(
                 egg.itemTid());
               const auto hatchingDuration = eggTemplate.hatchDuration;
               protocol::BuildProtocolEgg(response.incubator[egg.incubatorSlot()], egg, hatchingDuration );
@@ -2091,7 +2091,7 @@ void RanchDirector::HandleIncubateEgg(
   characterRecord.Mutable(
     [this, &command, &response, clientId](data::Character& character)
     {
-      const std::optional<registry::Egg> eggTemplate = _serverInstance.GetPetRegistry().GetEgg(
+      const std::optional<registry::EggInfo> eggTemplate = _serverInstance.GetPetRegistry().GetEggInfo(
         command.itemTid);
       if (not eggTemplate)
       {
@@ -2210,7 +2210,7 @@ void RanchDirector::HandleBoostIncubateEgg(
             if (eggData.incubatorSlot() == command.incubatorSlot)
             {
               // retrieve egg template for the hatchDuration
-              const registry::Egg eggTemplate = _serverInstance.GetPetRegistry().GetEgg(
+              const registry::EggInfo eggTemplate = _serverInstance.GetPetRegistry().GetEggInfo(
                 eggData.itemTid());
 
               eggData.boostsUsed() += 1;
@@ -2321,14 +2321,14 @@ void RanchDirector::HandleRequestPetBirth(
       GetServerInstance().GetDataDirector().GetEggCache().Delete(hatchingEggUid);
       GetServerInstance().GetDataDirector().GetItemCache().Delete(hatchingEggItemUid);
 
-      const registry::Egg eggTemplate = _serverInstance.GetPetRegistry().GetEgg(
+      const registry::EggInfo eggTemplate = _serverInstance.GetPetRegistry().GetEggInfo(
         hatchingEggTid);
 
       const auto& hatchablePets = eggTemplate.hatchablePets;
       std::uniform_int_distribution<size_t> dist(0, hatchablePets.size() - 1);
       const data::Tid petItemTid = hatchablePets[dist(_randomDevice)];
 
-      const registry::Pet petTemplate = _serverInstance.GetPetRegistry().GetPet(
+      const registry::PetInfo petTemplate = _serverInstance.GetPetRegistry().GetPetInfo(
         petItemTid);
       const auto petId = petTemplate.petId;
 
@@ -2375,9 +2375,9 @@ void RanchDirector::HandleRequestPetBirth(
       const auto petItem = GetServerInstance().GetDataDirector().CreateItem();
       const auto bornPet = GetServerInstance().GetDataDirector().CreatePet();
 
-      petItem.Mutable([&response, &petItemUid, petId, petTemplate](data::Item& item)
+      petItem.Mutable([&response, &petItemUid, petId, petItemTid](data::Item& item)
       {
-        item.tid() = petTemplate.petTid;
+        item.tid() = petItemTid;
         item.count() = 1;
         // Fill the response with the born item information.
         response.petBirthInfo.eggItem = {

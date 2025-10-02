@@ -20,6 +20,7 @@
 #ifndef COURSEREGISTRY_HPP
 #define COURSEREGISTRY_HPP
 
+#include <array>
 #include <cstdint>
 
 #include <unordered_map>
@@ -73,6 +74,22 @@ struct Course
     uint32_t timeLimit{};
     //! A wait time.
     uint32_t waitTime{};
+
+    struct DeckItemInstance
+    {
+      //! A deck item ID;
+      uint32_t deckId;
+      //! A position of the deck item.
+      std::array<float, 3> position;
+    };
+
+    //! A collection of deck item instances.
+    std::vector<DeckItemInstance> deckItems;
+  };
+
+  struct DeckItemInfo
+  {
+    // currently nothing important
   };
 
 };
@@ -94,7 +111,9 @@ private:
   std::unordered_map<uint8_t, Course::GameModeInfo> _gameModeInfo;
   //! A collection of map block infos.
   std::unordered_map<uint32_t, Course::MapBlockInfo> _mapBlockInfo;
-};
+  //! A collection of deck item infos.
+  std::unordered_map<uint32_t, Course::DeckItemInfo> _deckItemInfo;
+ };
 
 }
 

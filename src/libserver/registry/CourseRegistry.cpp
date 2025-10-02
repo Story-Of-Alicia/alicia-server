@@ -19,6 +19,7 @@
 
 #include "libserver/registry/CourseRegistry.hpp"
 
+#include <spdlog/spdlog.h>
 #include <yaml-cpp/yaml.h>
 
 #include <stdexcept>
@@ -66,6 +67,18 @@ uint32_t ReadMapBlockInfo(
     decltype(mapBlock.timeLimit)>();
   mapBlock.waitTime = section["waitTime"].as<
     decltype(mapBlock.waitTime)>();
+
+  const auto deckItemCollectionSection = section["deckItems"]["collection"];
+  for (const auto& deckItemSection : deckItemCollectionSection)
+  {
+    auto& deckItem = mapBlock.deckItems.emplace_back();
+    deckItem.deckId = deckItemSection["deckId"].as<
+      decltype(Course::MapBlockInfo::DeckItemInstance::deckId)>();
+    deckItem.position = {
+      deckItemSection["position"][0].as<float>(),
+      deckItemSection["position"][1].as<float>(),
+      deckItemSection["position"][2].as<float>()};
+  }
 
   return section["id"].as<uint32_t>();
 }
@@ -120,6 +133,12 @@ void CourseRegistry::ReadConfig(
       _mapBlockInfo.emplace(id, mapBlock);
     }
   }
+
+  spdlog::info(
+    "Course registry loaded {} game modes, {} maps and {} deck items",
+    _gameModeInfo.size(),
+    _mapBlockInfo.size(),
+    _deckItemInfo.size());
 }
 
 const Course::GameModeInfo& CourseRegistry::GetCourseGameModeInfo(

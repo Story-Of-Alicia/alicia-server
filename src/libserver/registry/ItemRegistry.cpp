@@ -19,6 +19,7 @@
 
 #include <libserver/registry/ItemRegistry.hpp>
 
+#include <spdlog/spdlog.h>
 #include <yaml-cpp/yaml.h>
 
 #include <cassert>
@@ -177,6 +178,8 @@ void ItemRegistry::ReadConfig(const std::filesystem::path& configPath)
     const auto [iter, inserted] = _items.try_emplace(item.tid, item);
     assert(inserted);
   }
+
+  spdlog::info("Item registry loaded {} items", _items.size());
 }
 
 std::optional<Item> ItemRegistry::GetItem(uint32_t tid)

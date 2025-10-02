@@ -50,6 +50,7 @@ void ServerInstance::Initialize()
 
   _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
   _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items.yaml");
+  _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
 
   // Initialize the directors and tick them on their own threads.
   // Directors will terminate their tick loop once `_shouldRun` flag is set to false.
