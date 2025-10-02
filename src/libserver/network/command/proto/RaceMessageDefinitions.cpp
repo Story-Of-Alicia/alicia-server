@@ -1506,7 +1506,62 @@ void AcCmdGameRaceItemGet::Read(
   AcCmdGameRaceItemGet& command,
   SourceStream& stream)
 {
-  throw std::runtime_error("Not implemented");
+  stream.Read(command.characterOid)
+    .Read(command.itemId)
+    .Read(command.itemType);
+}
+
+// Magic Targeting Commands Implementation
+void AcCmdCRStartMagicTarget::Read(
+  AcCmdCRStartMagicTarget& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterOid);
+}
+
+void AcCmdCRChangeMagicTargetNotify::Write(
+  const AcCmdCRChangeMagicTargetNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterOid)
+    .Write(command.targetOid);
+}
+
+void AcCmdCRChangeMagicTargetNotify::Read(
+  AcCmdCRChangeMagicTargetNotify& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterOid)
+    .Read(command.targetOid);
+}
+
+void AcCmdCRChangeMagicTargetOK::Read(
+  AcCmdCRChangeMagicTargetOK& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterOid)
+    .Read(command.targetOid);
+}
+
+void AcCmdCRChangeMagicTargetCancel::Read(
+  AcCmdCRChangeMagicTargetCancel& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterOid);
+}
+
+void AcCmdRCRemoveMagicTarget::Write(
+  const AcCmdRCRemoveMagicTarget& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterOid);
+}
+
+void AcCmdRCMagicExpire::Write(
+  const AcCmdRCMagicExpire& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterOid);
 }
 
 } // namespace server::protocol

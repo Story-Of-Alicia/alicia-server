@@ -1957,6 +1957,154 @@ struct AcCmdGameRaceItemGet
     SourceStream& stream);
 };
 
+// Magic Targeting Commands for Bolt System
+struct AcCmdCRStartMagicTarget
+{
+  uint16_t characterOid;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRStartMagicTarget;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRStartMagicTarget& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRStartMagicTarget& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRChangeMagicTargetNotify
+{
+  uint16_t characterOid;
+  uint16_t targetOid;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeMagicTargetNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeMagicTargetNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeMagicTargetNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRChangeMagicTargetOK
+{
+  uint16_t characterOid;
+  uint16_t targetOid;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeMagicTargetOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeMagicTargetOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeMagicTargetOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRChangeMagicTargetCancel
+{
+  uint16_t characterOid;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeMagicTargetCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeMagicTargetCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeMagicTargetCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCRemoveMagicTarget
+{
+  uint16_t characterOid;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCRemoveMagicTarget;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCRemoveMagicTarget& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCRemoveMagicTarget& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCMagicExpire
+{
+  uint16_t characterOid;
+  uint32_t magicItemId;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCMagicExpire;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCMagicExpire& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCMagicExpire& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RACE_MESSAGE_DEFINES_HPP

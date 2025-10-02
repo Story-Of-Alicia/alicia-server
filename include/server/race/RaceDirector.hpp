@@ -184,6 +184,23 @@ private:
     ClientId clientId,
     const protocol::AcCmdUserRaceItemGet& command);
 
+  // Magic Targeting Commands for Bolt System
+  void HandleStartMagicTarget(
+    ClientId clientId,
+    const protocol::AcCmdCRStartMagicTarget& command);
+
+  void HandleChangeMagicTargetNotify(
+    ClientId clientId,
+    const protocol::AcCmdCRChangeMagicTargetNotify& command);
+
+  void HandleChangeMagicTargetOK(
+    ClientId clientId,
+    const protocol::AcCmdCRChangeMagicTargetOK& command);
+
+  void HandleChangeMagicTargetCancel(
+    ClientId clientId,
+    const protocol::AcCmdCRChangeMagicTargetCancel& command);
+
   //!
   std::thread test;
   std::atomic_bool run_test{true};

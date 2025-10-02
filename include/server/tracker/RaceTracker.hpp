@@ -59,6 +59,12 @@ public:
     uint32_t jumpComboValue{};
     uint32_t courseTime{};
     std::optional<uint32_t> magicItem{};
+    
+    // Bolt targeting system
+    bool isTargeting{false};
+    Oid currentTarget{InvalidEntityOid};
+    bool isBeingTargeted{false};
+    Oid targetedBy{InvalidEntityOid};
   };
 
   //! An item
