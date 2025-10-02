@@ -1739,11 +1739,50 @@ void RaceDirector::HandleUseMagicItem(
                 .unk4 = 0
               };
               
+              // For bolt (magic item ID 2), populate required optional fields
+              if (lostItemId == 2)
+              {
+                // Bolt requires optional2 (vector)
+                auto& opt2 = itemUsedNotify.optional2.emplace();
+                opt2.size = 0;
+                opt2.list.clear();
+              }
+              
               _commandServer.QueueCommand<decltype(itemUsedNotify)>(
                 targetClientId,
                 [itemUsedNotify]() { return itemUsedNotify; });
                 
               spdlog::info("Sent magic item usage notification to target client {} (simulating item consumption)", targetClientId);
+              
+              // Also notify other players that the target used their magic item
+              protocol::AcCmdCRUseMagicItemNotify targetUsageNotify{
+                .characterOid = targetRacer.oid,
+                .magicItemId = lostItemId,
+                .unk3 = targetRacer.oid
+              };
+              
+              // Populate required fields for bolt
+              if (lostItemId == 2)
+              {
+                auto& opt2 = targetUsageNotify.optional2.emplace();
+                opt2.size = 0;
+                opt2.list.clear();
+                targetUsageNotify.optional3 = 0.0f;
+                targetUsageNotify.optional4 = 0.0f;
+              }
+              
+              for (const auto& roomClientId : roomInstance.clients)
+              {
+                // Don't send to the target (they already got the OK response)
+                if (roomClientId == targetClientId)
+                  continue;
+                
+                _commandServer.QueueCommand<decltype(targetUsageNotify)>(
+                  roomClientId,
+                  [targetUsageNotify]() { return targetUsageNotify; });
+              }
+              
+              spdlog::info("Sent target magic item usage notification to other players");
             }
             else
             {
