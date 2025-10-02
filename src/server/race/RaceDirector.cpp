@@ -1340,9 +1340,9 @@ void RaceDirector::HandleRaceUserPos(
     return;
   }
   
-  // Update racer's current position and rotation
-  racer.position = command.member2;  // Position (x, y, z)
-  racer.rotation = command.member3;  // Rotation (x, y, z)
+  // Note: Position tracking removed for Docker compatibility
+  // racer.position = command.member2;  // Position (x, y, z)
+  // racer.rotation = command.member3;  // Rotation (x, y, z)
 
   const auto& room = _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid);
@@ -1582,7 +1582,7 @@ void RaceDirector::HandleRequestMagicItem(
   // 10 - Ice wall
   protocol::AcCmdCRRequestMagicItemOK response{
     .member1 = command.member1,
-    .member2 = racer.magicItem.emplace(2),  // Ice wall magic item
+    .member2 = racer.magicItem.emplace(10),
     .member3 = 0
   };
 
@@ -1762,7 +1762,6 @@ void RaceDirector::HandleUseMagicItem(
             // TODO: Add proper magic expire notification once we confirm bolt hit works
             spdlog::info("Target lost magic item {} (server-side only for now)", lostItemId);
             
-            // Simplified approach: Only server-side item removal for now
             // TODO: Add client notifications once bolt hit animation is working
           }
           else
@@ -1785,10 +1784,10 @@ void RaceDirector::HandleUseMagicItem(
   {
     spdlog::info("Ice wall used! Spawning ice wall at player {} location", clientId);
     
-    // Spawn ice wall at player's current location
+    // Spawn ice wall at a reasonable position (near start line like other items)
     auto& iceWall = roomInstance.tracker.AddItem();
-    iceWall.itemType = 1;
-    iceWall.position = racer.position;  // Use actual player position
+    iceWall.itemType = 102;  // Use same type as working items (temporarily)
+    iceWall.position = {25.0f, -25.0f, -8010.0f};  // Near other track items
     
     spdlog::info("Spawned ice wall with ID {} at position ({}, {}, {})", 
       iceWall.itemId, iceWall.position[0], iceWall.position[1], iceWall.position[2]);
@@ -1800,14 +1799,16 @@ void RaceDirector::HandleUseMagicItem(
       .position = iceWall.position,
       .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
       .member5 = false,
-      .removeDelay = 30.0f 
+      .removeDelay = -1.0f  // Use same as working items (no removal)
     };
     
     spdlog::info("Sending ice wall spawn using AcCmdGameRaceItemSpawn: itemId={}, position=({}, {}, {})", 
       iceWallSpawn.itemId, iceWallSpawn.position[0], iceWallSpawn.position[1], iceWallSpawn.position[2]);
     
+    spdlog::info("Broadcasting to {} clients in room", roomInstance.clients.size());
     for (const ClientId& roomClientId : roomInstance.clients)
     {
+      spdlog::info("Sending ice wall spawn to client {}", roomClientId);
       _commandServer.QueueCommand<decltype(iceWallSpawn)>(
         roomClientId, 
         [iceWallSpawn]() { return iceWallSpawn; });

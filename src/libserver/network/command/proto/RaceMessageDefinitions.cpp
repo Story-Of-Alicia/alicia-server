@@ -1307,22 +1307,24 @@ void AcCmdCRUseMagicItem::Read(
     // and then fallthrough to read uint16_t vector
     case 0xa:
     case 0xb:
-      for (auto& element : command.optional1.value().member1)
+    {
+      auto& optional1 = command.optional1.emplace();
+      for (auto& element : optional1.member1)
       {
         stream.Read(element);
       }
-      for (auto& element : command.optional1.value().member2)
+      for (auto& element : optional1.member2)
       {
         stream.Read(element);
       }
       [[fallthrough]];
+    }
     case 0x2:
     case 0x3:
     case 0xc:
     case 0xd:
     case 0xe:
     case 0xf:
-    case 0x10:
     case 0x11:
     case 0x12:
     case 0x13:
@@ -1330,8 +1332,6 @@ void AcCmdCRUseMagicItem::Read(
       auto& optional2 = command.optional2.emplace();
 
       stream.Read(optional2.size);
-      command.optional2.emplace(optional2.size);
-
       optional2.list.resize(optional2.size);
       for (auto& element : optional2.list)
       {
@@ -1353,7 +1353,6 @@ void AcCmdCRUseMagicItem::Read(
     case 0x3:
     case 0xe:
     case 0xf:
-    case 0x10:
     case 0x11:
     case 0x12:
     case 0x13:
@@ -1415,7 +1414,6 @@ void AcCmdCRUseMagicItemOK::Write(
     case 0xd:
     case 0xe:
     case 0xf:
-    case 0x10:
     case 0x11:
     case 0x12:
     case 0x13:
@@ -1595,7 +1593,6 @@ void AcCmdCRUseMagicItemNotify::Write(
     case 0xd:
     case 0xe:
     case 0xf:
-    case 0x10:
     case 0x11:
     case 0x12:
     case 0x13:
@@ -1624,7 +1621,6 @@ void AcCmdCRUseMagicItemNotify::Write(
     case 0x3:
     case 0xe:
     case 0xf:
-    case 0x10:
     case 0x11:
     case 0x12:
     case 0x13:
@@ -1673,7 +1669,6 @@ void AcCmdCRUseMagicItemNotify::Read(
     case 0xd:
     case 0xe:
     case 0xf:
-    case 0x10:
     case 0x11:
     case 0x12:
     case 0x13:
@@ -1702,7 +1697,6 @@ void AcCmdCRUseMagicItemNotify::Read(
     case 0x3:
     case 0xe:
     case 0xf:
-    case 0x10:
     case 0x11:
     case 0x12:
     case 0x13:
@@ -1716,6 +1710,66 @@ void AcCmdCRUseMagicItemNotify::Read(
       break;
     }
   }
+}
+
+void AcCmdRCTriggerActivate::Write(
+  const AcCmdRCTriggerActivate& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterOid)
+    .Write(command.triggerType)
+    .Write(command.triggerValue)
+    .Write(command.duration);
+}
+
+void AcCmdRCTriggerActivate::Read(
+  AcCmdRCTriggerActivate& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterOid)
+    .Read(command.triggerType)
+    .Read(command.triggerValue)
+    .Read(command.duration);
+}
+
+void AcCmdCRActivateSkillEffect::Write(
+  const AcCmdCRActivateSkillEffect& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterOid)
+    .Write(command.skillId)
+    .Write(command.unk1)
+    .Write(command.unk2);
+}
+
+void AcCmdCRActivateSkillEffect::Read(
+  AcCmdCRActivateSkillEffect& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterOid)
+    .Read(command.skillId)
+    .Read(command.unk1)
+    .Read(command.unk2);
+}
+
+void AcCmdRCAddSkillEffect::Write(
+  const AcCmdRCAddSkillEffect& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterOid)
+    .Write(command.effectId)
+    .Write(command.duration)
+    .Write(command.intensity);
+}
+
+void AcCmdRCAddSkillEffect::Read(
+  AcCmdRCAddSkillEffect& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterOid)
+    .Read(command.effectId)
+    .Read(command.duration)
+    .Read(command.intensity);
 }
 
 } // namespace server::protocol

@@ -2116,6 +2116,87 @@ struct AcCmdRCMagicExpire
     SourceStream& stream);
 };
 
+struct AcCmdRCTriggerActivate
+{
+  uint16_t characterOid;
+  uint32_t triggerType;     // Type of trigger/animation to activate
+  uint32_t triggerValue;    // Additional trigger parameter
+  float duration;           // Duration of the effect
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCTriggerActivate;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCTriggerActivate& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCTriggerActivate& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRActivateSkillEffect
+{
+  uint16_t characterOid;
+  uint32_t skillId;         // What skill/effect to activate
+  uint32_t unk1;            // Unknown parameter
+  uint32_t unk2;            // Unknown parameter
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRActivateSkillEffect;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRActivateSkillEffect& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRActivateSkillEffect& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCAddSkillEffect
+{
+  uint16_t characterOid;    // Target character
+  uint32_t effectId;        // Effect/animation ID (knockdown, stun, etc.)
+  uint32_t duration;        // Effect duration in milliseconds
+  uint32_t intensity;       // Effect strength/intensity
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCAddSkillEffect;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCAddSkillEffect& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCAddSkillEffect& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RACE_MESSAGE_DEFINES_HPP
