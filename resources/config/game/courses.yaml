@@ -4,6 +4,8 @@ courses:
       # No game mode
       - type: 0
         goodJumpStarPoints: 0
+        itemSpawners:
+          collection: {}
         perfectJumpStarPoints: 0
         perfectJumpUnitStarPoints: 0
         perfectJumpMaxBonusCombo: 0
@@ -13,6 +15,10 @@ courses:
       # Speed game mode
       - type: 1
         goodJumpStarPoints: 12000
+        itemSpawners:
+          collection:
+            - deckId: 101
+            - deckId: 102
         perfectJumpStarPoints: 12000
         perfectJumpUnitStarPoints: 1000
         perfectJumpMaxBonusCombo: 5
@@ -22,6 +28,11 @@ courses:
       # Magic game mode
       - type: 2
         goodJumpStarPoints: 10000
+        itemSpawners:
+          collection:
+            - deckId: 201
+            - deckId: 202
+            - deckId: 203
         perfectJumpStarPoints: 10000
         perfectJumpUnitStarPoints: 1000
         perfectJumpMaxBonusCombo: 1
@@ -36,6 +47,7 @@ courses:
         name: 'ri_land01'
         requiredLevel: 0
         podiumId: 0
+        offset: [60.05899811, 26.11234179, 7848.76699829]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -141,6 +153,7 @@ courses:
         name: 'ri_land02'
         requiredLevel: 15
         podiumId: 0
+        offset: [-229.3940124511719,32.26399993369141,8113.388000488281]
         trainingFee: 150
         timeLimit: 300
         waitTime: 10
@@ -216,6 +229,7 @@ courses:
         name: 'ri_land03'
         requiredLevel: 17
         podiumId: 0
+        offset: [139.7910041809082,17.959629065283202,7899.704002380371]
         trainingFee: 150
         timeLimit: 300
         waitTime: 10
@@ -297,6 +311,7 @@ courses:
         name: 'ri_land04'
         requiredLevel: 16
         podiumId: 0
+        offset: [160.51199340820312,16.675846577746583,8183.738006591797]
         trainingFee: 150
         timeLimit: 300
         waitTime: 10
@@ -366,6 +381,7 @@ courses:
         name: 'ri_fore02'
         requiredLevel: 19
         podiumId: 0
+        offset: [401.1719970703125,110.0109977815918,8281.54800415039]
         trainingFee: 150
         timeLimit: 300
         waitTime: 10
@@ -445,6 +461,7 @@ courses:
         name: 'ri_dorf03'
         requiredLevel: 14
         podiumId: 0
+        offset: [-367.3269958496094,58.24609944721679,7953.914001464844]
         trainingFee: 150
         timeLimit: 300
         waitTime: 10
@@ -504,6 +521,7 @@ courses:
         name: 'ri_pgri01_test01'
         requiredLevel: 1
         podiumId: 0
+        offset: [0,0,0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -513,6 +531,7 @@ courses:
         name: 'ri_land01_r'
         requiredLevel: 0
         podiumId: 0
+        offset: [0,0,0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -522,6 +541,7 @@ courses:
         name: 'readyroom01'
         requiredLevel: 0
         podiumId: 0
+        offset: [0,0,0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 5
@@ -531,6 +551,7 @@ courses:
         name: 'ri_dorf02'
         requiredLevel: 9
         podiumId: 0
+        offset: [-155.8179931640625,15.178014004183769,8030.974998474121]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -622,6 +643,7 @@ courses:
         name: 'ranch_00'
         requiredLevel: 0
         podiumId: 0
+        offset: [0, 0, 0]
         trainingFee: 0
         timeLimit: 30
         waitTime: 1
@@ -631,6 +653,7 @@ courses:
         name: 'ri_fore03'
         requiredLevel: 16
         podiumId: 0
+        offset: [232.07400512695312,-74.93282413867188,8117.746002197266]
         trainingFee: 150
         timeLimit: 300
         waitTime: 10
@@ -752,6 +775,7 @@ courses:
         name: 'li_tabi02'
         requiredLevel: 7
         podiumId: 20008
+        offset: [-33.60100173950195,0.42615606372070225,8242.837005615234]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -849,6 +873,7 @@ courses:
         name: 'ri_dorf04'
         requiredLevel: 18
         podiumId: 0
+        offset: [252.44900512695312,18.913247704508787,8270.441009521484]
         trainingFee: 150
         timeLimit: 300
         waitTime: 10
@@ -924,6 +949,7 @@ courses:
         name: 'set_waterfall'
         requiredLevel: 0
         podiumId: 0
+        offset: [0, 0, 0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 5
@@ -933,6 +959,7 @@ courses:
         name: 'ri_land05'
         requiredLevel: 2
         podiumId: 0
+        offset: [264.5469970703125,16.16551303458496,8041.664001464844]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -996,6 +1023,7 @@ courses:
         name: 'li_tabi01'
         requiredLevel: 1
         podiumId: 20008
+        offset: [160.04100036621094,8.28105597246704,8125.105003356934]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -1075,6 +1103,7 @@ courses:
         name: 'ri_fore01'
         requiredLevel: 22
         podiumId: 0
+        offset: [385.39599609375,17.268133013570214,8090.8489990234375]
         trainingFee: 150
         timeLimit: 300
         waitTime: 10
@@ -1150,6 +1179,7 @@ courses:
         name: 'b_tuto_test'
         requiredLevel: 0
         podiumId: 0
+        offset: [0, 0, 0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -1159,6 +1189,7 @@ courses:
         name: 'ri_dorf02'
         requiredLevel: 20
         podiumId: 0
+        offset: [-155.8179931640625,15.178014004183769,8030.974998474121]
         trainingFee: 150
         timeLimit: 300
         waitTime: 10
@@ -1250,6 +1281,7 @@ courses:
         name: 'ri_land01'
         requiredLevel: 1000
         podiumId: 0
+        offset: [60.05899811,26.11234179,7850.26699829]
         trainingFee: 0
         timeLimit: 300
         waitTime: 5
@@ -1355,6 +1387,7 @@ courses:
         name: 'ri_land08'
         requiredLevel: 0
         podiumId: 0
+        offset: [0, 0, 0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -1364,6 +1397,7 @@ courses:
         name: 'li_tabi04'
         requiredLevel: 1000
         podiumId: 0
+        offset: [0, 0, 0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -1373,6 +1407,7 @@ courses:
         name: 'b_ranch_01'
         requiredLevel: 0
         podiumId: 0
+        offset: [0, 0, 0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -1382,6 +1417,7 @@ courses:
         name: 'test_bboo01'
         requiredLevel: 1000
         podiumId: 0
+        offset: [0, 0, 0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -1391,6 +1427,7 @@ courses:
         name: 'ri_fore04'
         requiredLevel: 5
         podiumId: 0
+        offset: [22.672996520996094,60.49102019936524,8115.069999694824]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -1470,6 +1507,7 @@ courses:
         name: 'award'
         requiredLevel: 0
         podiumId: 0
+        offset: [0,0,0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 5
@@ -1479,6 +1517,7 @@ courses:
         name: 'ri_land03'
         requiredLevel: 0
         podiumId: 0
+        offset: [139.7910041809082,17.959629065283202,7899.704002380371]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -1560,6 +1599,7 @@ courses:
         name: 'ri_land02'
         requiredLevel: 3
         podiumId: 0
+        offset: [-229.3940124511719,32.26399993369141,8113.388000488281]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -1635,6 +1675,7 @@ courses:
         name: 'ri_land04'
         requiredLevel: 8
         podiumId: 0
+        offset: [160.51199340820312,16.675846577746583,8183.738006591797]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -1704,6 +1745,7 @@ courses:
         name: 'ri_fore02'
         requiredLevel: 11
         podiumId: 0
+        offset: [401.1719970703125,110.0109977815918,8281.54800415039]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -1783,6 +1825,7 @@ courses:
         name: 'test_small'
         requiredLevel: 0
         podiumId: 0
+        offset: [0, 0, 0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 5
@@ -1792,6 +1835,7 @@ courses:
         name: 'running_test'
         requiredLevel: 1000
         podiumId: 0
+        offset: [0, 0, 0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 1
@@ -1801,6 +1845,7 @@ courses:
         name: 'color_bboo01'
         requiredLevel: 1000
         podiumId: 0
+        offset: [0, 0, 0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 5
@@ -1810,6 +1855,7 @@ courses:
         name: 'li_tabi02'
         requiredLevel: 17
         podiumId: 20008
+        offset: [-33.60100173950195,0.42615606372070225,8242.837005615234]
         trainingFee: 150
         timeLimit: 300
         waitTime: 10
@@ -1907,6 +1953,7 @@ courses:
         name: 'ri_dorf04'
         requiredLevel: 6
         podiumId: 0
+        offset: [252.44900512695312,18.913247704508787,8270.441009521484]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -1982,6 +2029,7 @@ courses:
         name: 'select_bg_tuto02'
         requiredLevel: 1000
         podiumId: 0
+        offset: [0,0,0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 5
@@ -1991,6 +2039,7 @@ courses:
         name: 'li_tabi01'
         requiredLevel: 14
         podiumId: 20008
+        offset: [160.04100036621094,8.28105597246704,8125.105003356934]
         trainingFee: 150
         timeLimit: 300
         waitTime: 10
@@ -2070,6 +2119,7 @@ courses:
         name: 'sdc001'
         requiredLevel: 1000
         podiumId: 0
+        offset: [0, 0, 0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 5
@@ -2079,6 +2129,7 @@ courses:
         name: 'ri_pgri01'
         requiredLevel: 1
         podiumId: 20007
+        offset: [275.76300048828125,1.5805230127282712,8018.638000488281]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -2148,6 +2199,7 @@ courses:
         name: 'ri_dorf03'
         requiredLevel: 3
         podiumId: 0
+        offset: [-367.3269958496094,58.24609944721679,7953.914001464844]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -2208,6 +2260,7 @@ courses:
         requiredLevel: 0
         podiumId: 0
         trainingFee: 0
+        offset: [0, 0, 0]
         timeLimit: 30
         waitTime: 1
         deckItems:
@@ -2216,6 +2269,7 @@ courses:
         name: 'li_tabi03_test'
         requiredLevel: 1000
         podiumId: 0
+        offset: [0, 0, 0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -2225,6 +2279,7 @@ courses:
         name: 'ri_fore03'
         requiredLevel: 5
         podiumId: 0
+        offset: [232.07400512695312,-74.93282413867188,8117.746002197266]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -2346,6 +2401,7 @@ courses:
         name: 'tuto_03'
         requiredLevel: 1000
         podiumId: 0
+        offset: [0, 0, 0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 5
@@ -2355,6 +2411,7 @@ courses:
         name: 'ri_land07'
         requiredLevel: 15
         podiumId: 0
+        offset: [157.8679962158203,16.674121855300292,8181.833999633789]
         trainingFee: 150
         timeLimit: 300
         waitTime: 10
@@ -2410,6 +2467,7 @@ courses:
         name: 'ri_land06'
         requiredLevel: 7
         podiumId: 0
+        offset: [-42.22200012207031,18.073565463562012,7979.982999801636]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -2483,6 +2541,7 @@ courses:
         name: 'ri_land07'
         requiredLevel: 10
         podiumId: 0
+        offset: [157.8679962158203,16.674121855300292,8181.833999633789]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -2538,6 +2597,7 @@ courses:
         name: 'gp_01'
         requiredLevel: 1000
         podiumId: 0
+        offset: [0, 0, 0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 5
@@ -2547,6 +2607,7 @@ courses:
         name: 'ranch_w'
         requiredLevel: 0
         podiumId: 0
+        offset: [0, 0, 0]
         trainingFee: 0
         timeLimit: 30
         waitTime: 1
@@ -2556,6 +2617,7 @@ courses:
         name: 'ri_fore05'
         requiredLevel: 0
         podiumId: 0
+        offset: [0, 0, 0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 10
@@ -2565,6 +2627,7 @@ courses:
         name: 'readyroom01_w'
         requiredLevel: 0
         podiumId: 0
+        offset: [0, 0, 0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 5
@@ -2574,6 +2637,7 @@ courses:
         name: 'bg_award03'
         requiredLevel: 0
         podiumId: 0
+        offset: [0, 0, 0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 5
@@ -2583,6 +2647,7 @@ courses:
         name: 'bg_award02'
         requiredLevel: 0
         podiumId: 0
+        offset: [0, 0, 0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 5
@@ -2592,6 +2657,7 @@ courses:
         name: 'set_waterfall'
         requiredLevel: 0
         podiumId: 0
+        offset: [0, 0, 0]
         trainingFee: 0
         timeLimit: 300
         waitTime: 5

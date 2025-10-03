@@ -24,8 +24,10 @@
 
 #include <libserver/data/DataDefinitions.hpp>
 
-#include <map>
 #include <array>
+#include <chrono>
+#include <map>
+#include <unordered_set>
 
 namespace server::tracker
 {
@@ -50,6 +52,11 @@ public:
       Solo, Red, Blue
     };
 
+    struct ItemInstance
+    {
+      std::chrono::steady_clock::time_point expiryTimePoint;
+    };
+
     Oid oid{InvalidEntityOid};
     State state{State::Disconnected};
     Team team{Team::Solo};
@@ -57,6 +64,9 @@ public:
     uint32_t jumpComboValue{};
     uint32_t courseTime{};
     std::optional<uint32_t> magicItem{};
+
+    //! A set of tracked items in racer's proximity.
+    std::unordered_set<Oid> trackedItems;
     
     // Bolt targeting system
     bool isTargeting{false};
@@ -66,8 +76,9 @@ public:
   //! An item
   struct Item
   {
-    uint32_t itemId{};
-    uint32_t itemType{};
+    Oid oid{};
+    uint32_t deckId{};
+    std::chrono::steady_clock::time_point respawnTimePoint{};
     std::array<float, 3> position{};
   };
 
@@ -100,12 +111,12 @@ public:
   //! @returns A reference to the new item record.
   Item& AddItem();
   //! Removes an item from tracking.
-  //! @param itemId Item ID.
-  void RemoveItem(uint16_t itemId);
+  //! @param itemId Item OID.
+  void RemoveItem(Oid itemId);
   //! Returns reference to the item record.
-  //! @param itemId Item ID.
+  //! @param itemId Item OID.
   //! @returns Item record.
-  [[nodiscard]] Item& GetItem(uint16_t itemId);
+  [[nodiscard]] Item& GetItem(Oid itemId);
   //! Returns a reference to all item records.
   //! @return Reference to item records.
   [[nodiscard]] ItemObjectMap& GetItems();

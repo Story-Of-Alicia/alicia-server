@@ -63,8 +63,7 @@ RaceTracker::Item& RaceTracker::AddItem()
   if (not created)
     throw std::runtime_error("Item is already added to the race map");
 
-  itemIter->second.itemId = _nextItemOid++;
-
+  itemIter->second.oid = _nextItemOid++;
   return itemIter->second;
 }
 
