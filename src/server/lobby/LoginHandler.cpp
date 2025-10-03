@@ -514,8 +514,10 @@ void LoginHandler::QueueUserLoginAccepted(
         if (not guildRecord)
           throw std::runtime_error("Character's guild not available");
 
-        guildRecord.Immutable([&response](const data::Guild& guild)
+        std::vector<uint32_t> guildMembers;
+        guildRecord.Immutable([&response, &guildMembers](const data::Guild& guild)
         {
+          guildMembers = guild.members();
           protocol::BuildProtocolGuild(response.guild, guild);
           const bool isOwner = guild.owner() == response.uid;
           const bool isOfficer = std::ranges::contains(guild.officers(), response.uid);
@@ -530,6 +532,14 @@ void LoginHandler::QueueUserLoginAccepted(
           else
             throw std::runtime_error("Character is in a guild but not a member");
         });
+
+        // FIXME: a patch to preload characters in the guild to memory
+        // so the guild members list can compile and display fully
+        for (const auto& guildMember : guildMembers)
+        {
+          // Just get character and don't do anything with it
+          _lobbyDirector.GetServerInstance().GetDataDirector().GetCharacterCache().Get(guildMember, true);
+        }
       }
 
       if (character.petUid() != data::InvalidUid)
