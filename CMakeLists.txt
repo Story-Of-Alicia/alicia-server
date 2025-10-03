@@ -5,6 +5,7 @@ project(alicia-server)
 option(BUILD_TESTS "Build tests" ON)
 
 find_package(Boost 1.80.0 MODULE)
+find_package(ICU COMPONENTS uc REQUIRED)
 
 add_subdirectory(3rd-party SYSTEM)
 
@@ -64,7 +65,9 @@ add_library(alicia-libserver STATIC
         src/libserver/util/Stream.cpp
         src/libserver/util/Util.cpp)
 target_include_directories(alicia-libserver PUBLIC
-        include/)
+        include/
+        PRIVATE
+        ${ICU_INCLUDE_DIRS}/)
 target_link_libraries(alicia-libserver PUBLIC
         project-properties
         platform-properties
@@ -72,7 +75,8 @@ target_link_libraries(alicia-libserver PUBLIC
         Boost::headers
         nlohmann_json::nlohmann_json
         yaml-cpp::yaml-cpp
-        zlibstatic)
+        zlibstatic
+        ICU::uc)
 
 # alicia-server target
 add_executable(alicia-server
