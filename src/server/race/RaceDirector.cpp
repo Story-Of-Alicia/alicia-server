@@ -383,6 +383,23 @@ void RaceDirector::Tick() {
           return raceCountdown;
         });
     }
+
+    // Prepare the item spawners based on map and game mode (use resolved mapBlockId)
+    PrepareItemSpawners(roomUid, roomInstance.mapBlockId);
+
+    // Spawn all items that were prepared by PrepareItemSpawners
+    for (const auto& [itemId, item] : roomInstance.tracker.GetItems())
+    {
+      protocol::AcCmdGameRaceItemSpawn spawn{
+        .itemId = item.itemId,
+        .itemType = item.itemType,
+        .position = item.position,
+        .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
+        .removeDelay = -1};
+
+      for (const ClientId& roomClientId : roomInstance.clients)
+        _commandServer.QueueCommand<decltype(spawn)>(roomClientId, [spawn](){return spawn;});
+    }
   }
 
   // Process rooms which are racing
@@ -999,6 +1016,53 @@ void RaceDirector::HandleReadyRace(
       {
         return response;
       });
+  }
+}
+
+void RaceDirector::PrepareItemSpawners(data::Uid roomUid, uint16_t mapBlockId)
+{
+  const auto& room = _serverInstance.GetRoomSystem().GetRoom(roomUid);
+  auto& roomInstance = _roomInstances[roomUid];
+
+  try {
+    const auto& gameModeInfo = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(room.gameMode);
+    const auto& mapBlockInfo = GetServerInstance().GetCourseRegistry().GetMapBlockInfo(mapBlockId);
+
+    // get map offset
+    const auto& offset = mapBlockInfo.offset;
+
+    // Clear any existing items
+    roomInstance.tracker.GetItems().clear();
+
+    // Spawn items based on map positions and game mode allowed deck IDs
+    for (const auto& deckItemInstance : mapBlockInfo.deckItems)
+    {
+      // Check if this deck ID is allowed for the current game mode
+      if (std::find(gameModeInfo.deckIds.begin(), gameModeInfo.deckIds.end(),
+                    deckItemInstance.deckId) != gameModeInfo.deckIds.end())
+      {
+        auto& item = roomInstance.tracker.AddItem();
+        item.itemType = deckItemInstance.deckId;
+        item.position[0] = deckItemInstance.position[0] - offset[0];
+        item.position[1] = deckItemInstance.position[1] - offset[1];
+        item.position[2] = deckItemInstance.position[2] - offset[2];
+
+        spdlog::debug("Prepared item spawner: deckId={}, position=[{}, {}, {}]",
+                     deckItemInstance.deckId,
+                     deckItemInstance.position[0],
+                     deckItemInstance.position[1],
+                     deckItemInstance.position[2]);
+      }
+    }
+
+    spdlog::info("Prepared {} item spawners for room {} (gameMode={}, mapBlock={})",
+                roomInstance.tracker.GetItems().size(),
+                roomUid,
+                room.gameMode,
+                mapBlockId);
+  }
+  catch (const std::exception& e) {
+    spdlog::warn("Failed to prepare item spawners for room {}: {}", roomUid, e.what());
   }
 }
 
