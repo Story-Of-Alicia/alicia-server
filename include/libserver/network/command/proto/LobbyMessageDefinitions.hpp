@@ -857,7 +857,27 @@ struct LobbyCommandEnterRoomOK
 
 struct LobbyCommandEnterRoomCancel
 {
-  uint8_t status{};
+  // please verify these values
+  enum class Status : uint8_t
+  {
+    NotLogin = 1,
+    CR_NOT_IN_CHANNEL = 2,
+    CR_BUSY_PREVIOUS = 3,
+    CR_ALREADY_ROOM = 4,
+    CR_INVALID_ROOM = 5,
+    CR_CROWDED_ROOM = 6,
+    CR_VERSION_ERROR = 7,
+    CR_LOST_ROOM = 8,
+    CR_LOST_SERVER = 9,
+    CR_AUTH_ERROR = 10,
+    CR_BAD_PASSWORD = 11,
+    CR_PLAYING_ROOM = 12,
+    CR_PRACTICE_ROOM = 13,
+    CR_PRACTICE_ROOM2 = 14,
+    CR_PRACTICE_ROOM_SPEEDTEAM = 15,
+    CR_PRACTICE_ROOM_MAGICTEAM = 16,
+  };
+  Status status{};
 
   static Command GetCommand()
   {

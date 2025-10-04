@@ -498,6 +498,22 @@ void LobbyDirector::HandleEnterRoom(
   ClientId clientId,
   const protocol::LobbyCommandEnterRoom& command)
 {
+  auto room = _serverInstance.GetRoomSystem().GetRoom(command.roomUid);
+  // TODO: add more error handling
+  // add the errorcodes to the protocol as enums
+  if (room.password != command.password)
+  {
+    protocol::LobbyCommandEnterRoomCancel response{
+      .status = protocol::LobbyCommandEnterRoomCancel::Status::CR_BAD_PASSWORD};
+
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]()
+      {
+        return response;
+      });
+    return;
+  }
   protocol::LobbyCommandEnterRoomOK response{
     .roomUid = command.roomUid,
     .otp = 0xBAAD,
