@@ -876,8 +876,7 @@ struct LobbyCommandEnterRoomCancel
     CR_PRACTICE_ROOM2 = 14,
     CR_PRACTICE_ROOM_SPEEDTEAM = 15,
     CR_PRACTICE_ROOM_MAGICTEAM = 16,
-  };
-  Status status{};
+  } status{};
 
   static Command GetCommand()
   {
