@@ -3667,7 +3667,8 @@ void RanchDirector::HandleUpdateGuildMemberGrade(
     // If promoting, check if target member is already an officer
     if (command.guildRole == GuildRole::Officer && std::ranges::contains(guild.officers(), command.characterUid))
     {
-      // TODO: Write in guild chat that max officer count has been reached
+      // Tried to promote a guild member to officer but they are already an officer
+      // TODO: Send a notify to the calling client of the target member's current guild role to update UI state 
       spdlog::warn("Character {} tried to update character {} guild role to officer but they are already an officer",
         command.characterUid, static_cast<uint8_t>(command.guildRole));
       return;
@@ -3731,7 +3732,7 @@ void RanchDirector::HandleUpdateGuildMemberGrade(
   // If ownership transfer
   if (command.guildRole == GuildRole::Owner)
   {
-    // Broadcast owner's new member guild role status
+    // Broadcast ex-owner's new guild role as member
     BroadcastUpdateGuildMemberGradeNotify(
       guildUid,
       clientContext.characterUid,
