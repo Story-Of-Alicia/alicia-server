@@ -498,7 +498,7 @@ void LobbyDirector::HandleEnterRoom(
   ClientId clientId,
   const protocol::LobbyCommandEnterRoom& command)
 {
-  auto room = _serverInstance.GetRoomSystem().GetRoom(command.roomUid);
+  const auto& room = _serverInstance.GetRoomSystem().GetRoom(command.roomUid);
   // TODO: add more error handling
   // add the errorcodes to the protocol as enums
   if (room.password != command.password)
