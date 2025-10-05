@@ -26,10 +26,25 @@
 
 #include <spdlog/spdlog.h>
 #include <bitset>
-#include <limits>
 
 namespace server
 {
+
+namespace
+{
+
+//! Converts a steady clock's time point to a race clock's time point.
+//! @param timePoint Time point.
+//! @return Race clock time point.
+uint64_t TimePointToRaceTimePoint(const std::chrono::steady_clock::time_point& timePoint)
+{
+  // Amount of 100ns
+  constexpr uint64_t IntervalConstant = 100;
+  return std::chrono::duration_cast<std::chrono::nanoseconds>(
+    timePoint.time_since_epoch()).count() / IntervalConstant;
+}
+
+} // anon namespace
 
 RaceDirector::RaceDirector(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
@@ -311,6 +326,158 @@ void RaceDirector::Terminate()
 
 void RaceDirector::Tick() {
   _scheduler.Tick();
+
+  // Process rooms which are waiting
+  for (auto& [roomUid, roomInstance] : _roomInstances)
+  {
+    if (roomInstance.stage != RoomInstance::Stage::Waiting)
+      continue;
+
+    // todo: room countdown handling
+  }
+
+  // Process rooms which are loading
+  for (auto& roomInstance : _roomInstances | std::views::values)
+  {
+    if (roomInstance.stage != RoomInstance::Stage::Loading)
+      continue;
+
+    const bool allRacersLoaded = std::ranges::all_of(
+      std::views::values(roomInstance.tracker.GetRacers()),
+      [](const tracker::RaceTracker::Racer& racer)
+      {
+        return racer.state == tracker::RaceTracker::Racer::State::Racing;
+      });
+
+    const bool loadTimeoutReached = std::chrono::steady_clock::now() >= roomInstance.stageTimeoutTimePoint;
+
+    // If not all of the racer have loaded yet and the timeout has not been reached yet
+    // do not start the race.
+    if (not allRacersLoaded && not loadTimeoutReached)
+      continue;
+
+    // TODO: better way of doing this? Reinstantiating the room?
+    // Clear room items before populating
+    roomInstance.tracker.GetItems().clear();
+
+    // map id 1, right in front of start line [20.631426, -25.969913, -8004.5986]
+    // 101 - Gold horseshoe
+    // 102 - Silver horseshoe
+    // 402 - magic horseshoe (tutorial?)
+    for (uint32_t i = 0; i < 5; ++i)
+    {
+      auto& item = roomInstance.tracker.AddItem();
+      item.itemType = 102;
+      // FIXME: do not use hardcoded positions, store them in files instead
+      item.position = {30.0f, -25.0f, -8012.0f + (i * 3)};
+
+      protocol::AcCmdGameRaceItemSpawn spawn{
+        .itemId = item.itemId,
+        .itemType = item.itemType,
+        .position = item.position,
+        .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
+        .sizeLevel = 10,
+        .removeDelay = 90'000};
+
+      for (const ClientId& roomClientId : roomInstance.clients)
+        _commandServer.QueueCommand<decltype(spawn)>(roomClientId, [spawn](){return spawn;});
+    }
+
+    const auto mapBlockTemplate = _serverInstance.GetCourseRegistry().GetMapBlockInfo(
+      roomInstance.mapBlockId);
+
+    // Switch to the racing stage and set the timeout time point.
+    roomInstance.stage = RoomInstance::Stage::Racing;
+    roomInstance.stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(
+      mapBlockTemplate.timeLimit);
+
+    // Set up the race start time point.
+    const auto now = std::chrono::steady_clock::now();
+    roomInstance.raceStartTimePoint = now + std::chrono::seconds(
+      mapBlockTemplate.waitTime);
+
+    const protocol::AcCmdUserRaceCountdown raceCountdown{
+      .raceStartTimestamp = TimePointToRaceTimePoint(
+        roomInstance.raceStartTimePoint)};
+
+    // Broadcast the race countdown.
+    for (const ClientId& roomClientId : roomInstance.clients)
+    {
+      _commandServer.QueueCommand<protocol::AcCmdUserRaceCountdown>(
+        roomClientId,
+        [&raceCountdown]()
+        {
+          return raceCountdown;
+        });
+    }
+  }
+
+  // Process rooms which are racing
+  for (auto& roomInstance : _roomInstances | std::views::values)
+  {
+    if (roomInstance.stage != RoomInstance::Stage::Racing)
+      continue;
+
+    protocol::AcCmdRCRaceResultNotify raceResult{};
+
+    const bool allRacersFinished = std::ranges::all_of(
+      std::views::values(roomInstance.tracker.GetRacers()),
+      [](const tracker::RaceTracker::Racer& racer)
+      {
+        return racer.state == tracker::RaceTracker::Racer::State::Finishing;
+      });
+
+    const bool raceTimeoutReached = std::chrono::steady_clock::now() >= roomInstance.stageTimeoutTimePoint;
+
+    // If not all of the racer have finished yet and the timeout has not been reached yet
+    // do not finish the race.
+    if (not allRacersFinished && not raceTimeoutReached)
+      return;
+
+    roomInstance.stage = RoomInstance::Stage::Waiting;
+
+    // Build the score board.
+    for (auto& [characterUid, racer] : roomInstance.tracker.GetRacers())
+    {
+      auto& score = raceResult.scores.emplace_back();
+
+      racer.state = tracker::RaceTracker::Racer::State::NotReady;
+
+      // todo: figure out the other bit set values
+
+      if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
+        score.bitset = protocol::AcCmdRCRaceResultNotify::ScoreInfo::HasLevelUpBonus;
+
+      score.courseTime = racer.courseTime;
+
+      const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+        characterUid);
+
+      characterRecord.Immutable([this, &score](const data::Character& character)
+      {
+        score.uid = character.uid();
+        score.name = character.name();
+        score.level = character.level();
+
+        _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Immutable(
+          [&score](const data::Horse& horse)
+          {
+            score.mountName = horse.name();
+          });
+      });
+    }
+
+    // Broadcast the race result
+    for (const ClientId roomClientId : roomInstance.clients)
+    {
+      _commandServer.QueueCommand<decltype(raceResult)>(
+        roomClientId,
+        [raceResult]()
+        {
+          return raceResult;
+        });
+    }
+  }
 }
 
 void RaceDirector::HandleClientConnected(ClientId clientId)
@@ -408,7 +575,7 @@ void RaceDirector::HandleEnterRoom(
   {
     auto& protocolRacer = response.racers.emplace_back();
 
-    protocolRacer.isReady = racer.state == tracker::RaceTracker::Racer::State::Ready;
+    protocolRacer.isReady = racer.state == tracker::RaceTracker::Racer::State::Waiting;
 
     const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
       characterUid);
@@ -423,6 +590,7 @@ void RaceDirector::HandleEnterRoom(
         protocolRacer.oid = racer.oid;
         protocolRacer.uid = character.uid();
         protocolRacer.name = character.name();
+        protocolRacer.isReady = racer.state == tracker::RaceTracker::Racer::State::Waiting;
         protocolRacer.isHidden = false;
         protocolRacer.isNPC = false;
 
@@ -487,10 +655,10 @@ void RaceDirector::HandleChangeRoomOptions(
   const protocol::AcCmdCRChangeRoomOptions& command)
 {
   // todo: validate command fields
-
   const auto& clientContext = _clients[clientId];
   auto& room = _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid);
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
 
   const std::bitset<6> options(
     static_cast<uint16_t>(command.optionsBitfield));
@@ -507,7 +675,7 @@ void RaceDirector::HandleChangeRoomOptions(
     room.mapBlockId = command.mapBlockId;
   if (options.test(5))
     room.unk3 = command.npcRace;
-  
+
   protocol::AcCmdCRChangeRoomOptionsNotify notify{
     .optionsBitfield = command.optionsBitfield,
     .name = command.name,
@@ -516,8 +684,6 @@ void RaceDirector::HandleChangeRoomOptions(
     .gameMode = command.gameMode,
     .mapBlockId = command.mapBlockId,
     .npcRace = command.npcRace};
-
-  const auto& roomInstance = _roomInstances[clientContext.roomUid];
 
   for (const auto roomClientId : roomInstance.clients)
   {
@@ -588,6 +754,9 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
   protocol::AcCmdCRLeaveRoomOK response{};
 
   auto& clientContext = _clients[clientId];
+  if (clientContext.roomUid == 0)
+    return;
+
   auto& roomInstance = _roomInstances[clientContext.roomUid];
 
   _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
@@ -684,13 +853,13 @@ void RaceDirector::HandleReadyRace(
 
   // Toggle the ready state.
   if (racer.state == tracker::RaceTracker::Racer::State::NotReady)
-    racer.state = tracker::RaceTracker::Racer::State::Ready;
-  else if (racer.state == tracker::RaceTracker::Racer::State::Ready)
+    racer.state = tracker::RaceTracker::Racer::State::Waiting;
+  else if (racer.state == tracker::RaceTracker::Racer::State::Waiting)
     racer.state = tracker::RaceTracker::Racer::State::NotReady;
 
   protocol::AcCmdCRReadyRaceNotify response{
     .characterUid = clientContext.characterUid,
-    .isReady = racer.state == tracker::RaceTracker::Racer::State::Ready};
+    .isReady = racer.state == tracker::RaceTracker::Racer::State::Waiting};
 
   for (const ClientId& roomClientId : roomInstance.clients)
   {
@@ -707,6 +876,51 @@ void RaceDirector::HandleStartRace(
   ClientId clientId,
   const protocol::AcCmdCRStartRace& command)
 {
+  const auto& clientContext = _clients[clientId];
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
+
+  if (clientContext.characterUid != roomInstance.masterUid)
+    throw std::runtime_error("Client tried to start the race even though they're not the master");
+
+  const auto& room = _serverInstance.GetRoomSystem().GetRoom(
+    clientContext.roomUid);
+
+  constexpr uint32_t AllMapsCourseId = 10000;
+  constexpr uint32_t NewMapsCourseId = 10001;
+  constexpr uint32_t HotMapsCourseId = 10002;
+
+  if (room.mapBlockId == AllMapsCourseId
+    || room.mapBlockId == NewMapsCourseId
+    || room.mapBlockId == HotMapsCourseId)
+  {
+    // TODO: Select a random mapBlockId from a predefined list
+    // For now its a map that at least loads in
+    roomInstance.mapBlockId = 1;
+  }
+  else
+  {
+    roomInstance.mapBlockId = room.mapBlockId;
+  }
+
+  const protocol::AcCmdRCRoomCountdown roomCountdown{
+    .countdown = 3000,
+    .mapBlockId = roomInstance.mapBlockId};
+
+  // Broadcast room countdown.
+  for (const ClientId& roomClientId : roomInstance.clients)
+  {
+    _commandServer.QueueCommand<decltype(roomCountdown)>(
+      roomClientId,
+      [roomCountdown]()
+      {
+        return roomCountdown;
+      });
+  }
+
+  roomInstance.stage = RoomInstance::Stage::Loading;
+  roomInstance.stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(30);
+
+  // Queue race start after room countdown.
   _scheduler.Queue(
     [this, clientId]()
     {
@@ -716,43 +930,31 @@ void RaceDirector::HandleStartRace(
         clientContext.roomUid);
       auto& roomInstance = _roomInstances[clientContext.roomUid];
 
-      // todo: verify master
-
-      constexpr uint32_t AllMapsCourseId = 10000;
-      constexpr uint32_t NewMapsCourseId = 10001;
-      constexpr uint32_t HotMapsCourseId = 10002;
-
       protocol::AcCmdCRStartRaceNotify notify{
         .gameMode = room.gameMode,
         .teamMode = room.teamMode,
         .p2pRelayAddress = asio::ip::address_v4::loopback().to_uint(),
         .p2pRelayPort = static_cast<uint16_t>(10500)};
 
-      if (room.mapBlockId == AllMapsCourseId || room.mapBlockId == NewMapsCourseId || room.mapBlockId == HotMapsCourseId)
-      {
-        // TODO: Select a random mapBlockId from a predefined list
-        // For now its a map that at least loads in
-        notify.mapBlockId = 1;
-      }
-      else
-      {
-        notify.mapBlockId = room.mapBlockId;
-      }
+      notify.mapBlockId = roomInstance.mapBlockId;
       notify.missionId = room.missionId;
 
+      // Build the racers.
       for (const auto& [characterUid, racer] : roomInstance.tracker.GetRacers())
       {
         std::string characterName;
-        GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable([&characterName](const data::Character& character)
+        GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
+          [&characterName](
+            const data::Character& character)
           {
             characterName = character.name();
           });
 
-        auto& protocolRacer = notify.racers.emplace_back(protocol::AcCmdCRStartRaceNotify::Player{
-          .oid = racer.oid,
-          .name = characterName,
-          .p2dId = racer.oid,
-        });
+        auto& protocolRacer = notify.racers.emplace_back(
+          protocol::AcCmdCRStartRaceNotify::Player{
+            .oid = racer.oid,
+            .name = characterName,
+            .p2dId = racer.oid,});
 
         switch (racer.team)
         {
@@ -785,11 +987,6 @@ void RaceDirector::HandleStartRace(
           roomClientContext.characterUid);
         racer.state = tracker::RaceTracker::Racer::State::Loading;
 
-        _serverInstance.GetDataDirector().GetCharacter(roomClientContext.characterUid).Immutable([](const data::Character& character)
-          {
-            spdlog::info("Race start sent to '{}'", character.name());
-          });
-
         notify.hostOid = racer.oid;
 
         _commandServer.QueueCommand<decltype(notify)>(
@@ -800,7 +997,7 @@ void RaceDirector::HandleStartRace(
           });
       }
     },
-    Scheduler::Clock::now() + std::chrono::seconds(3));
+    Scheduler::Clock::now() + std::chrono::milliseconds(roomCountdown.countdown));
 }
 
 void RaceDirector::HandleRaceTimer(
@@ -808,12 +1005,9 @@ void RaceDirector::HandleRaceTimer(
   const protocol::AcCmdUserRaceTimer& command)
 {
   protocol::AcCmdUserRaceTimerOK response{
-    .clientTimestamp = command.timestamp,
-    .serverTimestamp = static_cast<uint64_t>(
-      std::chrono::duration_cast<std::chrono::nanoseconds>(
-        std::chrono::steady_clock::now().time_since_epoch()
-      ).count() / 100)
-  };
+    .clientRaceClock = command.clientClock,
+    .serverRaceClock = TimePointToRaceTimePoint(
+      std::chrono::steady_clock::now()),};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -846,73 +1040,6 @@ void RaceDirector::HandleLoadingComplete(
           .oid = oid};
       });
   }
-
-  const bool allRacersLoaded = std::ranges::all_of(
-    std::views::values(roomInstance.tracker.GetRacers()),
-    [](const tracker::RaceTracker::Racer& racer)
-    {
-      return racer.state == tracker::RaceTracker::Racer::State::Racing;
-    });
-
-  if (not allRacersLoaded)
-  {
-    return;
-  }
-
-  // TODO: better way of doing this? Reinstantiating the room?
-  // Clear room items before populating
-  roomInstance.tracker.GetItems().clear();
-
-  // map id 1, right in front of start line [20.631426, -25.969913, -8004.5986]
-  // 101 - Gold horseshoe
-  // 102 - Silver horseshoe
-  // 402 - magic horseshoe (tutorial?)
-  for (uint32_t i = 0; i < 5; ++i)
-  {
-    auto& item = roomInstance.tracker.AddItem();
-    item.itemType = 102;
-    // FIXME: do not use hardcoded positions, store them in files instead
-    item.position = {30.0f, -25.0f, -8012.0f + (i * 3)};
-
-    protocol::AcCmdGameRaceItemSpawn spawn{
-      .itemId = item.itemId,
-      .itemType = item.itemType,
-      .position = item.position,
-      .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
-      .member5 = false,
-      .removeDelay = -1.0f};
-
-    for (const ClientId& roomClientId : roomInstance.clients)
-      _commandServer.QueueCommand<decltype(spawn)>(roomClientId, [spawn](){return spawn;});
-  }
-
-  spdlog::info(
-    "All players in room {} have finished loading,"
-    " starting the countdown.",
-    clientContext.roomUid);
-
-  // Record countdown start time
-  roomInstance.countdownStartTime = std::chrono::steady_clock::now();
-
-  // todo: start race timeout timer
-
-  const auto countdownTimestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(
-    std::chrono::steady_clock::now().time_since_epoch())
-    .count() / 100 + 10 * 10'000'000;
-    
-  // Store when the race will actually start (countdown timestamp is when race begins)
-  roomInstance.raceStartTimestamp = countdownTimestamp;
-
-  for (const ClientId& roomClientId : roomInstance.clients)
-  {
-    _commandServer.QueueCommand<protocol::AcCmdUserRaceCountdown>(
-      roomClientId,
-      [countdownTimestamp]()
-      {
-        return protocol::AcCmdUserRaceCountdown{
-          .timestamp = countdownTimestamp};
-      });
-  }
 }
 
 void RaceDirector::HandleUserRaceFinal(
@@ -926,7 +1053,8 @@ void RaceDirector::HandleUserRaceFinal(
   // todo: address npc racers and update their states
   auto& racer = roomInstance.tracker.GetRacer(
     clientContext.characterUid);
-  racer.state = tracker::RaceTracker::Racer::State::Finished;
+
+  racer.state = tracker::RaceTracker::Racer::State::Finishing;
   racer.courseTime = command.courseTime;
 
   protocol::AcCmdUserRaceFinalNotify notify{
@@ -969,63 +1097,23 @@ void RaceDirector::HandleRaceResult(
     {
       return response;
     });
-
-  protocol::AcCmdRCRaceResultNotify notify{};
-
-  const bool allRacersFinished = std::ranges::all_of(
-    std::views::values(roomInstance.tracker.GetRacers()),
-    [](const tracker::RaceTracker::Racer& racer)
-    {
-      return racer.state == tracker::RaceTracker::Racer::State::Finished;
-    });
-
-  if (not allRacersFinished)
-    return;
-
-  // Build the score board.
-  for (const auto& [characterUid, racer] : roomInstance.tracker.GetRacers())
-  {
-    auto& score = notify.scores.emplace_back();
-
-    // todo: figure out the other bit set values
-
-    if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
-      score.bitset = protocol::AcCmdRCRaceResultNotify::ScoreInfo::Connected;
-
-    score.courseTime = racer.courseTime;
-
-    const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
-      characterUid);
-
-    characterRecord.Immutable([this, &score](const data::Character& character)
-    {
-      score.uid = character.uid();
-      score.name = character.name();
-      score.level = character.level();
-
-      _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Immutable(
-        [&score](const data::Horse& horse)
-        {
-          score.mountName = horse.name();
-        });
-    });
-  }
-
-  for (const ClientId roomClientId : roomInstance.clients)
-  {
-    _commandServer.QueueCommand<decltype(notify)>(
-      roomClientId,
-      [notify]()
-      {
-        return notify;
-      });
-  }
 }
 
 void RaceDirector::HandleP2PRaceResult(
   ClientId clientId,
   const protocol::AcCmdCRP2PResult& command)
 {
+  const auto& clientContext = _clients[clientId];
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
+
+  protocol::AcCmdGameRaceP2PResult result{};
+  for (const auto & [uid, racer] : roomInstance.tracker.GetRacers())
+  {
+    auto& protocolRacer = result.member1.emplace_back();
+    protocolRacer.oid = racer.oid;
+  }
+
+  _commandServer.QueueCommand<decltype(result)>(clientId, [result](){return result;});
 }
 
 void RaceDirector::HandleP2PUserRaceResult(
@@ -1334,15 +1422,12 @@ void RaceDirector::HandleRaceUserPos(
   const auto& clientContext = _clients[clientId];
   auto& roomInstance = _roomInstances[clientContext.roomUid];
   auto& racer = roomInstance.tracker.GetRacer(clientContext.characterUid);
+
   if (command.oid != racer.oid)
   {
-    // TODO: command character oid does not match calling character oid
-    return;
+    throw std::runtime_error(
+      "Client tried to perform action on behalf of different racer");
   }
-  
-  // Note: Position tracking removed for Docker compatibility
-  // racer.position = command.member2;  // Position (x, y, z)
-  // racer.rotation = command.member3;  // Rotation (x, y, z)
 
   const auto& room = _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid);
@@ -1350,18 +1435,13 @@ void RaceDirector::HandleRaceUserPos(
     room.gameMode);
 
   // Only regenerate magic during active race (after countdown finishes)
-  // Check if gamemode is magic, race is active, countdown finished, and not holding an item
-  bool raceActuallyStarted = false;
-  if (roomInstance.raceStartTimestamp.has_value())
-  {
-    // Get current timestamp in same format as countdown timestamp
-    auto currentTimestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(
-      std::chrono::steady_clock::now().time_since_epoch()).count() / 100;
-      
-    raceActuallyStarted = currentTimestamp >= roomInstance.raceStartTimestamp.value();
-  }
+  // Check if game mode is magic, race is active, countdown finished, and not holding an item
+  const bool raceActuallyStarted = std::chrono::steady_clock::now() >= roomInstance.raceStartTimePoint;
   
-  if (room.gameMode == 2 && racer.state == tracker::RaceTracker::Racer::State::Racing && raceActuallyStarted && not racer.magicItem.has_value())
+  if (room.gameMode == 2
+    && racer.state == tracker::RaceTracker::Racer::State::Racing
+    && raceActuallyStarted
+    && not racer.magicItem.has_value())
   {
     if (racer.starPointValue < gameModeTemplate.starPointsMax)
     {
@@ -1435,9 +1515,8 @@ void RaceDirector::HandleRelayCommand(
   
   // Create relay notify message
   protocol::AcCmdCRRelayCommandNotify notify{
-    .senderOid = command.senderOid,
-    .relayData = command.relayData
-  };
+    .member1 = command.member1,
+    .member2 = command.member2};
 
   // Get the room instance for this client
   const auto& roomInstance = _roomInstances[clientContext.roomUid];
@@ -1462,9 +1541,10 @@ void RaceDirector::HandleRelay(
   
   // Create relay notify message
   protocol::AcCmdCRRelayNotify notify{
-    .senderOid = command.senderOid,
-    .relayData = command.relayData
-  };
+    .oid = command.oid,
+    .member2 = command.member2,
+    .member3 = command.member3,
+    .data = std::move(command.data),};
 
   // Get the room instance for this client
   const auto& roomInstance = _roomInstances[clientContext.roomUid];
@@ -1798,8 +1878,8 @@ void RaceDirector::HandleUseMagicItem(
       .itemType = iceWall.itemType,
       .position = iceWall.position,
       .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
-      .member5 = false,
-      .removeDelay = -1.0f  // Use same as working items (no removal)
+      .sizeLevel = false,
+      .removeDelay = -1  // Use same as working items (no removal)
     };
     
     spdlog::info("Sending ice wall spawn using AcCmdGameRaceItemSpawn: itemId={}, position=({}, {}, {})", 
@@ -1852,8 +1932,8 @@ void RaceDirector::HandleUserRaceItemGet(
         .itemType = item.itemType,
         .position = item.position,
         .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
-        .member5 = false,
-        .removeDelay = -1.0f
+        .sizeLevel = false,
+        .removeDelay = -1
       };
 
       for (const ClientId& roomClientId : roomInstance.clients)

@@ -71,9 +71,9 @@ struct Course
     uint32_t podiumId{};
     //! A fee for training on the map.
     uint32_t trainingFee{};
-    //! A time limit.
+    //! A map time limit in seconds.
     uint32_t timeLimit{};
-    //! A wait time.
+    //! A wait time in seconds.
     uint32_t waitTime{};
 
     struct DeckItemInstance

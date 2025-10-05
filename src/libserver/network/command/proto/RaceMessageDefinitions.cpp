@@ -528,15 +528,15 @@ void AcCmdUserRaceTimer::Read(
   AcCmdUserRaceTimer& command,
   SourceStream& stream)
 {
-  stream.Read(command.timestamp);
+  stream.Read(command.clientClock);
 }
 
 void AcCmdUserRaceTimerOK::Write(
   const AcCmdUserRaceTimerOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.clientTimestamp)
-    .Write(command.serverTimestamp);
+  stream.Write(command.clientRaceClock)
+    .Write(command.serverRaceClock);
 }
 
 void AcCmdUserRaceTimerOK::Read(
@@ -638,7 +638,7 @@ void AcCmdUserRaceCountdown::Write(
   const AcCmdUserRaceCountdown& command,
   SinkStream& stream)
 {
-  stream.Write(command.timestamp);
+  stream.Write(command.raceStartTimestamp);
 }
 
 void AcCmdUserRaceCountdown::Read(
@@ -1093,8 +1093,9 @@ void AcCmdRCRoomCountdown::Write(
   const AcCmdRCRoomCountdown& command,
   SinkStream& stream)
 {
-  stream.Write(command.member0)
-    .Write(command.member1);
+  stream.Write(command.countdown)
+    .Write(command.mapBlockId)
+    .Write(command.member2);
 }
 
 void AcCmdRCRoomCountdown::Read(
@@ -1136,77 +1137,54 @@ void AcCmdCRRelayCommand::Write(
   const AcCmdCRRelayCommand& command,
   SinkStream& stream)
 {
-  stream.Write(command.senderOid);
-  for (const auto& byte : command.relayData)
-  {
-    stream.Write(byte);
-  }
+  throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRRelayCommand::Read(
   AcCmdCRRelayCommand& command,
   SourceStream& stream)
 {
-  stream.Read(command.senderOid);
-  
-  // Read remaining bytes as relay data
-  const auto remainingBytes = stream.Size() - stream.GetCursor();
-  command.relayData.resize(remainingBytes);
-  for (auto& byte : command.relayData)
-  {
-    stream.Read(byte);
-  }
+  stream.Read(command.member1)
+    .Read(command.member2);
 }
 
 void AcCmdCRRelayCommandNotify::Write(
   const AcCmdCRRelayCommandNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.senderOid);
-  for (const auto& byte : command.relayData)
-  {
-    stream.Write(byte);
-  }
+  stream.Write(command.member1);
+  stream.Write(command.member2);
 }
 
 void AcCmdCRRelayCommandNotify::Read(
   AcCmdCRRelayCommandNotify& command,
   SourceStream& stream)
 {
-  stream.Read(command.senderOid);
-  
-  // Read remaining bytes as relay data
-  const auto remainingBytes = stream.Size() - stream.GetCursor();
-  command.relayData.resize(remainingBytes);
-  for (auto& byte : command.relayData)
-  {
-    stream.Read(byte);
-  }
+  throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRRelay::Write(
   const AcCmdCRRelay& command,
   SinkStream& stream)
 {
-  stream.Write(command.senderOid);
-  for (const auto& byte : command.relayData)
-  {
-    stream.Write(byte);
-  }
+  throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRRelay::Read(
   AcCmdCRRelay& command,
   SourceStream& stream)
 {
-  stream.Read(command.senderOid);
-  
-  // Read remaining bytes as relay data
-  const auto remainingBytes = stream.Size() - stream.GetCursor();
-  command.relayData.resize(remainingBytes);
-  for (auto& byte : command.relayData)
+  stream.Read(command.oid)
+    .Read(command.member2)
+    .Read(command.member3);
+
+  uint16_t bufferSize;
+  stream.Read(bufferSize);
+  command.data.resize(bufferSize);
+
+  for (uint8_t& datum : command.data)
   {
-    stream.Read(byte);
+    stream.Read(datum);
   }
 }
 
@@ -1214,10 +1192,14 @@ void AcCmdCRRelayNotify::Write(
   const AcCmdCRRelayNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.senderOid);
-  for (const auto& byte : command.relayData)
+  stream.Write(command.oid)
+    .Write(command.member2)
+    .Write(command.member3);
+
+  stream.Write(static_cast<uint16_t>(command.data.size()));
+  for (const uint8_t datum : command.data)
   {
-    stream.Write(byte);
+    stream.Write(datum);
   }
 }
 
@@ -1225,15 +1207,7 @@ void AcCmdCRRelayNotify::Read(
   AcCmdCRRelayNotify& command,
   SourceStream& stream)
 {
-  stream.Read(command.senderOid);
-  
-  // Read remaining bytes as relay data
-  const auto remainingBytes = stream.Size() - stream.GetCursor();
-  command.relayData.resize(remainingBytes);
-  for (auto& byte : command.relayData)
-  {
-    stream.Read(byte);
-  }
+  throw std::runtime_error("Not implemented");
 }
 
 void AcCmdRCTeamSpurGauge::Write(
@@ -1464,7 +1438,7 @@ void AcCmdGameRaceItemSpawn::Write(
     stream.Write(axis);
   }
 
-  stream.Write(command.member5)
+  stream.Write(command.sizeLevel)
     .Write(command.removeDelay);
 }
 

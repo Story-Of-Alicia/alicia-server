@@ -65,22 +65,30 @@ private:
     data::Uid roomUid{data::InvalidUid};
     bool authorized = false;
   };
-  ;
 
   struct RoomInstance
   {
-    std::unordered_set<ClientId> clients;
+    enum class Stage
+    {
+      Waiting,
+      Loading,
+      Racing
+    } stage;
 
-    tracker::RaceTracker tracker;
+    //! A time point of when the stage timeout occurs.
+    std::chrono::steady_clock::time_point stageTimeoutTimePoint;
 
+    //! A map block id.
+    uint16_t mapBlockId{1};
     //! A leader character's UID.
     data::Uid masterUid{data::InvalidUid};
-    
-    //! Countdown start time for race timing
-    std::optional<std::chrono::steady_clock::time_point> countdownStartTime;
-    
-    //! Actual race start timestamp (when countdown reaches 0)
-    std::optional<uint64_t> raceStartTimestamp;
+    //! A race object tracker.
+    tracker::RaceTracker tracker;
+
+    //! A time point of when the race is actually started (a countdown is finished).
+    std::chrono::steady_clock::time_point raceStartTimePoint;
+    //! A room clients.
+    std::unordered_set<ClientId> clients;
   };
 
   void HandleEnterRoom(

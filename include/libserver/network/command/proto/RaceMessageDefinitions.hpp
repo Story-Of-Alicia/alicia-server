@@ -601,8 +601,8 @@ struct AcCmdCRStartRaceCancel
 
 struct AcCmdUserRaceTimer
 {
-  // count of 100ns intervals since the system start
-  uint64_t timestamp{}; // potentially
+  //! A count of 100ns intervals since the system start.
+  uint64_t clientClock{};
 
   static Command GetCommand()
   {
@@ -626,8 +626,10 @@ struct AcCmdUserRaceTimer
 
 struct AcCmdUserRaceTimerOK
 {
-  uint64_t clientTimestamp{};
-  uint64_t serverTimestamp{};
+  //! A count of 100ns intervals since the system start.
+  uint64_t clientRaceClock{};
+  //! A count of 100ns intervals since the system start.
+  uint64_t serverRaceClock{};
 
   static Command GetCommand()
   {
@@ -795,7 +797,7 @@ struct AcCmdCRReadyRaceNotify
 
 struct AcCmdUserRaceCountdown
 {
-  int64_t timestamp{}; // potentially
+  uint64_t raceStartTimestamp{};
 
   static Command GetCommand()
   {
@@ -960,6 +962,7 @@ struct AcCmdRCRaceResultNotify
     AcCmdCRStartRaceNotify::Struct2 achievements{};
     enum Bitset : uint32_t
     {
+      TimeOver = 1 << 6,
       Connected = 1 << 7,
       HasLevelUpBonus = 1 << 8,
       PcBang = 1 << 10,
@@ -1493,8 +1496,10 @@ struct AcCmdUserRaceUpdatePos
 
 struct AcCmdRCRoomCountdown
 {
-  float member0{};
-  uint16_t member1{};
+  //! In milliseconds.
+  uint32_t countdown{};
+  uint16_t mapBlockId{};
+  uint16_t member2{};
 
   static Command GetCommand()
   {
@@ -1565,10 +1570,8 @@ struct AcCmdCRChangeMasterNotify
 
 struct AcCmdCRRelayCommand
 {
-  //! Character OID of the sender
-  uint16_t senderOid{};
-  //! Raw relay data
-  std::vector<uint8_t> relayData{};
+  uint8_t member1{};
+  uint16_t member2{};
 
   static Command GetCommand()
   {
@@ -1592,10 +1595,8 @@ struct AcCmdCRRelayCommand
 
 struct AcCmdCRRelayCommandNotify
 {
-  //! Character OID of the sender
-  uint16_t senderOid{};
-  //! Raw relay data
-  std::vector<uint8_t> relayData{};
+  uint8_t member1{};
+  uint16_t member2{};
 
   static Command GetCommand()
   {
@@ -1619,10 +1620,10 @@ struct AcCmdCRRelayCommandNotify
 
 struct AcCmdCRRelay
 {
-  //! The sender object ID.
-  uint32_t senderOid;
-  //! The relay data.
-  std::vector<uint8_t> relayData;
+  uint16_t oid;
+  uint16_t member2;
+  uint16_t member3;
+  std::vector<uint8_t> data;
 
   static Command GetCommand()
   {
@@ -1646,10 +1647,10 @@ struct AcCmdCRRelay
 
 struct AcCmdCRRelayNotify
 {
-  //! The sender object ID.
-  uint32_t senderOid;
-  //! The relay data.
-  std::vector<uint8_t> relayData;
+  uint16_t oid;
+  uint16_t member2;
+  uint16_t member3;
+  std::vector<uint8_t> data;
 
   static Command GetCommand()
   {
@@ -1893,8 +1894,9 @@ struct AcCmdGameRaceItemSpawn
   uint32_t itemType{};
   std::array<float, 3> position;
   std::array<float, 4> orientation;
-  bool member5{};
-  float removeDelay{};
+  uint8_t sizeLevel{};
+  //! Delay before removal in milliseconds.
+  int32_t removeDelay{};
 
   static Command GetCommand()
   {
