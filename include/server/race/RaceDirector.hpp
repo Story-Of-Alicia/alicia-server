@@ -52,6 +52,25 @@ public:
   void Terminate();
   void Tick();
 
+  bool IsRoomRacing(uint32_t uid)
+  {
+    const auto roomIter = _roomInstances.find(uid);
+    if (roomIter == _roomInstances.cend())
+      return false;
+
+    return roomIter->second.stage == RoomInstance::Stage::Racing |
+      roomIter->second.stage == RoomInstance::Stage::Loading;
+  }
+
+  uint32_t GetRoomPlayerCount(uint32_t uid)
+  {
+    const auto roomIter = _roomInstances.find(uid);
+    if (roomIter == _roomInstances.cend())
+      return 0;
+
+    return roomIter->second.tracker.GetRacers().size();
+  }
+
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId clientId) override;
 

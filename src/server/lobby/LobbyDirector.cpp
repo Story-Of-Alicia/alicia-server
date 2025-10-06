@@ -443,12 +443,15 @@ void LobbyDirector::HandleRoomList(
     // TODO: get Live player count from RaceDirector
     // TODO: gamestate showing
     auto& roomResponse = response.rooms.emplace_back();
+    roomResponse.hasStarted = _serverInstance.GetRaceDirector().IsRoomRacing(room.uid);
     roomResponse.id = room.uid;
-    if (room.password.empty())
-      roomResponse.isLocked = false;
-    else
+    if (not room.password.empty()
+      || roomResponse.hasStarted)
+    {
       roomResponse.isLocked = true;
-    roomResponse.playerCount = 1; // Placeholder, replace with actual live count
+    }
+
+    roomResponse.playerCount = _serverInstance.GetRaceDirector().GetRoomPlayerCount(room.uid); // Placeholder, replace with actual live count
     roomResponse.maxPlayers = room.playerCount;
     roomResponse.level = 2;
     roomResponse.name = room.name;
@@ -499,6 +502,7 @@ void LobbyDirector::HandleEnterRoom(
   const protocol::LobbyCommandEnterRoom& command)
 {
   const auto& room = _serverInstance.GetRoomSystem().GetRoom(command.roomUid);
+
   // TODO: add more error handling
   // add the errorcodes to the protocol as enums
   if (room.password != command.password)
@@ -514,6 +518,7 @@ void LobbyDirector::HandleEnterRoom(
       });
     return;
   }
+
   protocol::LobbyCommandEnterRoomOK response{
     .roomUid = command.roomUid,
     .otp = 0xBAAD,

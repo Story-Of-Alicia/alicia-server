@@ -117,7 +117,6 @@ void LoginHandler::Tick()
   while (not _clientLoginResponseQueue.empty())
   {
     const ClientId clientId = _clientLoginResponseQueue.front();
-    auto& clientContext = _lobbyDirector.GetClientContext(clientId, false);
     auto& loginContext = _clientLogins[clientId];
 
     // If the user character load was already requested wait for the load to complete.
@@ -186,9 +185,17 @@ void LoginHandler::Tick()
     spdlog::debug("User '{}' succeeded in authentication", loginContext.userName);
     QueueUserLoginAccepted(clientId, loginContext.userName);
 
-    clientContext.userName = loginContext.userName;
-    clientContext.characterUid = characterUid;
-    clientContext.isAuthenticated = true;
+    try
+    {
+      auto& clientContext = _lobbyDirector.GetClientContext(clientId, false);
+      clientContext.userName = loginContext.userName;
+      clientContext.characterUid = characterUid;
+      clientContext.isAuthenticated = true;
+    }
+    catch (const std::exception& x)
+    {
+      // todo: client might have already disconnected
+    }
 
     // Only one response per tick.
     break;

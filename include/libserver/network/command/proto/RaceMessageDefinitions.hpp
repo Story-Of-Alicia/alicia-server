@@ -962,10 +962,13 @@ struct AcCmdRCRaceResultNotify
     AcCmdCRStartRaceNotify::Struct2 achievements{};
     enum Bitset : uint32_t
     {
-      TimeOver = 1 << 6,
-      Connected = 1 << 7,
-      HasLevelUpBonus = 1 << 8,
-      PcBang = 1 << 10,
+      Connected = 1 << 6,
+      LevelUpBonusCarrots = 1 << 7,
+      RankingBonusCarrotsAndExperience = 1 << 8,
+      ItemBonusExperience = 1 << 9,
+      PcBangBonusCarrotsAndExperience = 1 << 10,
+      EventBonusCarrots = 1 << 11,
+      EventBonusExperience = 1 << 12,
     } bitset;
     std::string mountName{};
     uint16_t member19{};
