@@ -317,9 +317,13 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRHideAge command);
 
-    void HandleStatusPointApply(
+  void HandleStatusPointApply(
     ClientId clientId,
     const protocol::AcCmdCRStatusPointApply command);
+
+  void HandleChangeSkillCardPreset(
+    ClientId clientId,
+    const protocol::AcCmdCRChangeSkillCardPreset command);
 
   //!
   ServerInstance& _serverInstance;

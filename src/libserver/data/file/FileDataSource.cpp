@@ -275,6 +275,22 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.housing = json["housing"].get<std::vector<data::Uid>>();
 
   character.isRanchLocked = json["isRanchLocked"].get<bool>();
+
+  const auto& loadSkillInto = [](data::Character::Skills::Sets& sets, const nlohmann::json& json)
+  {
+    const auto& loadSetInto = [](data::Character::Skills::Sets::Set& set, const nlohmann::json& json)
+    {
+      set.slot1 = json["slot1"].get<uint32_t>();
+      set.slot2 = json["slot2"].get<uint32_t>();
+    };
+
+    loadSetInto(sets.set1, json["set1"]);
+    loadSetInto(sets.set2, json["set2"]);
+  };
+
+  const auto& skills = json["skills"];
+  loadSkillInto(character.skills.speed(), skills["speed"]);
+  loadSkillInto(character.skills.magic(), skills["magic"]);
 }
 
 void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
@@ -339,6 +355,29 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["housing"] = character.housing();
 
   json["isRanchLocked"] = character.isRanchLocked();
+
+  // Construct gamemode skills from skill sets
+  const auto& makeSkillJson = [](const data::Character::Skills::Sets& sets)
+  {
+    // Make skill set from SkillSet
+    const auto& makeSetJson = [](const data::Character::Skills::Sets::Set& set)
+    {
+      nlohmann::json json;
+      json["slot1"] = set.slot1;
+      json["slot2"] = set.slot2;
+      return json;
+    };
+
+    nlohmann::json json;
+    json["set1"] = makeSetJson(sets.set1);
+    json["set2"] = makeSetJson(sets.set2);
+    return json;
+  };
+
+  nlohmann::json skills;
+  skills["speed"] = makeSkillJson(character.skills.speed());
+  skills["magic"] = makeSkillJson(character.skills.magic());
+  json["skills"] = skills;
 
   dataFile << json.dump(2);
 }

@@ -19,6 +19,8 @@
 
 #include "libserver/network/command/proto/CommonStructureDefinitions.hpp"
 
+#include <cassert>
+
 namespace server
 {
 
@@ -586,6 +588,44 @@ void League::Read(League& value, SourceStream& stream)
 {
   stream.Read(value.type)
     .Read(value.rankingPercentile);
+}
+
+void SkillSet::Write(const SkillSet& value, SinkStream& stream)
+{
+  // Set 1 or 2 are supported
+  // TODO: enable this if we are certain only max of 2 sets are possible
+  // assert(value.setId < 3);
+  // Only magic or speed skills are saved (see tag10 @ 0x0050f760)
+  // Note: Gamemode 4 (spectator?) was discovered doing some auxilary function
+  assert(
+    value.gamemode == Gamemode::Magic ||
+    value.gamemode == Gamemode::Speed ||
+    value.gamemode == Gamemode::Unk4);
+  // Updating a skill set requires 2 skill values (can be 0) to be sent
+  assert(value.skills.size() == 2);
+
+  stream.Write(value.setId)
+    .Write(value.gamemode);
+  
+  stream.Write(static_cast<uint8_t>(value.skills.size()));
+  for (const auto& skill : value.skills)
+  {
+    stream.Write(skill);
+  }
+}
+
+void SkillSet::Read(SkillSet& value, SourceStream& stream)
+{
+  stream.Read(value.setId)
+    .Read(value.gamemode);
+
+  uint8_t size;
+  stream.Read(size);
+  value.skills.resize(size);
+  for (auto& element : value.skills)
+  {
+    stream.Read(element);
+  }
 }
 
 } // namespace server

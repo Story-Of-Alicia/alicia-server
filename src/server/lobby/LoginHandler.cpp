@@ -560,6 +560,30 @@ void LoginHandler::QueueUserLoginAccepted(
     {
       return response;
     });
+
+  protocol::AcCmdLCSkillCardPresetList skillPresetListResponse{
+    .unk0 = 0,
+    .unk1 = 0
+  };
+
+  characterRecord.Immutable([&skillPresetListResponse](const data::Character& character)
+  {
+    const auto& speed = character.skills.speed();
+    const auto& magic = character.skills.magic();
+    skillPresetListResponse.skillSets = {
+      SkillSet{.setId = 0, .gamemode = Gamemode::Speed, .skills = {speed.set1.slot1, speed.set1.slot2}},
+      SkillSet{.setId = 1, .gamemode = Gamemode::Speed, .skills = {speed.set2.slot1, speed.set2.slot2}},
+      SkillSet{.setId = 0, .gamemode = Gamemode::Magic, .skills = {magic.set1.slot1, magic.set1.slot2}},
+      SkillSet{.setId = 1, .gamemode = Gamemode::Magic, .skills = {magic.set2.slot1, magic.set2.slot2}}
+    };
+  });
+
+  _server.QueueCommand<decltype(skillPresetListResponse)>(
+    clientId,
+    [skillPresetListResponse]()
+    {
+      return skillPresetListResponse;
+    });
 }
 
 void LoginHandler::QueueUserCreateNickname(ClientId clientId, const std::string& userName)

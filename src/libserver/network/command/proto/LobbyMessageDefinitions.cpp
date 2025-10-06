@@ -1290,4 +1290,25 @@ void AcCmdCLRequestMountInfoOK::Write(
   }
 }
 
+void AcCmdLCSkillCardPresetList::Read(
+  AcCmdLCSkillCardPresetList& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdLCSkillCardPresetList::Write(
+  const AcCmdLCSkillCardPresetList& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1);
+
+  stream.Write(static_cast<uint8_t>(command.skillSets.size()));
+  for (const auto& skillSet : command.skillSets)
+  {
+    stream.Write(skillSet);
+  }
+}
+
 } // namespace server::protocol

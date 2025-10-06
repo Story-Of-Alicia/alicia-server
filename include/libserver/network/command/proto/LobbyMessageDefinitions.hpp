@@ -1905,6 +1905,32 @@ struct AcCmdCLRequestMountInfoOK
     SourceStream& stream);
 };
 
+struct AcCmdLCSkillCardPresetList
+{
+  uint8_t unk0{};
+  uint8_t unk1{};
+  std::vector<SkillSet> skillSets{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCSkillCardPresetList;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCSkillCardPresetList& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCSkillCardPresetList& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // LOBBY_MESSAGE_DEFINES_HPP

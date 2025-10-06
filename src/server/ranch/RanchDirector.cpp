@@ -330,6 +330,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleHideAge(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRChangeSkillCardPreset>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleChangeSkillCardPreset(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -3189,6 +3195,49 @@ void RanchDirector::HandleStatusPointApply(
     [response]()
     {
       return response;
+    });
+}
+
+void RanchDirector::HandleChangeSkillCardPreset(
+  ClientId clientId,
+  const protocol::AcCmdCRChangeSkillCardPreset command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  if (command.skillSet.setId > 2)
+  {
+    // TODO: character tried to update skill set exceeding range, return?
+    spdlog::warn("Character {} tried to update their skill set {} but character cannot have more than 2 skill sets",
+      clientContext.characterUid, command.skillSet.setId);
+    return;
+  }
+  else if (command.skillSet.skills.size() > 2)
+  {
+    spdlog::warn("Character {} tried to save more skills ({} skills) than a skill set can hold (2 skills)",
+      clientContext.characterUid, command.skillSet.skills.size());
+    return;
+  }
+
+  const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
+  characterRecord.Mutable(
+    [&command](data::Character& character)
+    {
+      auto selectSkillSets = [&character](Gamemode gamemode)
+      { 
+        switch (gamemode)
+        {
+          case Gamemode::Magic:
+            return &character.skills.magic();
+          case Gamemode::Speed:
+            return &character.skills.speed();
+          default:
+            throw std::runtime_error("Gamemode is not recognised");
+        }
+      };
+
+      const auto& skillSets = selectSkillSets(command.skillSet.gamemode);
+      auto& skillSet = command.skillSet.setId == 0 ? skillSets->set1 : skillSets->set2;
+      skillSet.slot1 = command.skillSet.skills[0];
+      skillSet.slot2 = command.skillSet.skills[1];
     });
 }
 

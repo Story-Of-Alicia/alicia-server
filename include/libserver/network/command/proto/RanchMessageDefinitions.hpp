@@ -3596,6 +3596,30 @@ struct AcCmdRCHideAgeNotify
     SourceStream& stream);
 };
 
+struct AcCmdCRChangeSkillCardPreset
+{
+  SkillSet skillSet{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeSkillCardPreset;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeSkillCardPreset& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeSkillCardPreset& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RANCH_MESSAGE_DEFINES_HPP
