@@ -2199,6 +2199,31 @@ struct AcCmdRCAddSkillEffect
     SourceStream& stream);
 };
 
+struct AcCmdCRChangeSkillCardPresetID
+{
+  uint8_t setId{};
+  Gamemode gamemode{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeSkillCardPresetID;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeSkillCardPresetID& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeSkillCardPresetID& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RACE_MESSAGE_DEFINES_HPP

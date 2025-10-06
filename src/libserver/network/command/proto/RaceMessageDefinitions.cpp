@@ -1746,4 +1746,19 @@ void AcCmdRCAddSkillEffect::Read(
     .Read(command.intensity);
 }
 
+void AcCmdCRChangeSkillCardPresetID::Write(
+  const AcCmdCRChangeSkillCardPresetID& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRChangeSkillCardPresetID::Read(
+  AcCmdCRChangeSkillCardPresetID& command,
+  SourceStream& stream)
+{
+  stream.Read(command.setId)
+    .Read(command.gamemode);
+}
+
 } // namespace server::protocol

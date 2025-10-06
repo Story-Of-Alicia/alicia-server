@@ -243,6 +243,12 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
   //   {
   //     HandleActivateSkillEffect(clientId, message);
   //   });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRChangeSkillCardPresetID>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleChangeSkillCardPresetId(clientId, message);
+    });
 }
 
 void RaceDirector::Initialize()
@@ -2169,5 +2175,14 @@ void RaceDirector::HandleActivateSkillEffect(
 }
 */
 
+void RaceDirector::HandleChangeSkillCardPresetId(
+  ClientId clientId,
+  const protocol::AcCmdCRChangeSkillCardPresetID& command)
+{
+  spdlog::debug("[{}] AcCmdCRChangeSkillCardPresetID: {} {}",
+    clientId,
+    command.setId,
+    static_cast<uint8_t>(command.gamemode));
+}
 
 } // namespace server

@@ -215,6 +215,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRChangeMagicTargetCancel& command);
 
+  void HandleChangeSkillCardPresetId(
+    ClientId clientId,
+    const protocol::AcCmdCRChangeSkillCardPresetID& command);
+
   // Note: HandleActivateSkillEffect commented out due to build issues
   // void HandleActivateSkillEffect(
   //   ClientId clientId,
