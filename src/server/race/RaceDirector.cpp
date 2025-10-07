@@ -366,29 +366,6 @@ void RaceDirector::Tick() {
     // Clear room items before populating
     roomInstance.tracker.GetItems().clear();
 
-    // map id 1, right in front of start line [20.631426, -25.969913, -8004.5986]
-    // 101 - Gold horseshoe
-    // 102 - Silver horseshoe
-    // 402 - magic horseshoe (tutorial?)
-    for (uint32_t i = 0; i < 5; ++i)
-    {
-      auto& item = roomInstance.tracker.AddItem();
-      item.itemType = 102;
-      // FIXME: do not use hardcoded positions, store them in files instead
-      item.position = {30.0f, -25.0f, -8012.0f + (i * 3)};
-
-      protocol::AcCmdGameRaceItemSpawn spawn{
-        .itemId = item.itemId,
-        .itemType = item.itemType,
-        .position = item.position,
-        .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
-        .sizeLevel = 10,
-        .removeDelay = 90'000};
-
-      for (const ClientId& roomClientId : roomInstance.clients)
-        _commandServer.QueueCommand<decltype(spawn)>(roomClientId, [spawn](){return spawn;});
-    }
-
     const auto mapBlockTemplate = _serverInstance.GetCourseRegistry().GetMapBlockInfo(
       roomInstance.mapBlockId);
 
@@ -452,7 +429,10 @@ void RaceDirector::Tick() {
       // todo: figure out the other bit set values
 
       if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
-        score.bitset = protocol::AcCmdRCRaceResultNotify::ScoreInfo::HasLevelUpBonus;
+      {
+        score.bitset = static_cast<protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset>(
+            protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::Connected | 0b1'1111);
+      }
 
       score.courseTime = racer.courseTime;
 
@@ -1718,8 +1698,7 @@ void RaceDirector::HandleUseMagicItem(
     .characterOid = command.characterOid,
     .magicItemId = command.magicItemId,
     .unk3 = command.characterOid,
-    .unk4 = command.optional3.has_value() ? command.optional3.value() : 0
-  };
+    .unk4 = command.optional3.has_value() ? command.optional3.value() : 0};
 
   if (command.optional1.has_value())
     response.optional1 = command.optional1.value();
@@ -1869,7 +1848,10 @@ void RaceDirector::HandleUseMagicItem(
   else if (command.magicItemId == 10)
   {
     spdlog::info("Ice wall used! Spawning ice wall at player {} location", clientId);
-    
+
+    protocol::AcCmdCRUseMagicItemNotify notify{
+      .characterOid = command.characterOid,
+      .magicItemId = command.magicItemId};
     // Spawn ice wall at a reasonable position (near start line like other items)
     auto& iceWall = roomInstance.tracker.AddItem();
     iceWall.itemType = 102;  // Use same type as working items (temporarily)
