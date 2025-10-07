@@ -28,6 +28,7 @@
 #include "libserver/network/command/proto/RaceMessageDefinitions.hpp"
 #include "libserver/util/Scheduler.hpp"
 
+#include <random>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -78,6 +79,8 @@ public:
   Config::Race& GetConfig();
 
 private:
+  std::random_device _randomDevice;
+
   struct ClientContext
   {
     data::Uid characterUid{data::InvalidUid};

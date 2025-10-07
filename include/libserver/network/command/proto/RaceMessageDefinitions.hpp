@@ -446,7 +446,7 @@ struct AcCmdCRStartRace
 
 struct AcCmdCRStartRaceNotify
 {
-  uint8_t gameMode{};
+  Gamemode gameMode{};
   TeamMode teamMode{};
   // this is an oid of a special player
   uint16_t hostOid{};

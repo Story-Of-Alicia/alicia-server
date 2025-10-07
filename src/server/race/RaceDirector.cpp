@@ -917,7 +917,8 @@ void RaceDirector::HandleStartRace(
       auto& roomInstance = _roomInstances[clientContext.roomUid];
 
       protocol::AcCmdCRStartRaceNotify notify{
-        .gameMode = room.gameMode,
+        // TODO: change me after proper gamemode enum implementation
+        .gameMode = static_cast<Gamemode>(room.gameMode),
         .teamMode = room.teamMode,
         .p2pRelayAddress = asio::ip::address_v4::loopback().to_uint(),
         .p2pRelayPort = static_cast<uint16_t>(10500)};
@@ -976,8 +977,8 @@ void RaceDirector::HandleStartRace(
         notify.hostOid = racer.oid;
 
         bool isSpeedOrMagic =
-          notify.gameMode == static_cast<uint8_t>(Gamemode::Speed) ||
-          notify.gameMode == static_cast<uint8_t>(Gamemode::Magic);
+          notify.gameMode == Gamemode::Speed ||
+          notify.gameMode == Gamemode::Magic;
         // Skills only apply for speed single or magic single
         if (isSpeedOrMagic && notify.teamMode == TeamMode::FFA)
         {
@@ -989,6 +990,32 @@ void RaceDirector::HandleStartRace(
             racer.skillSet.skills.begin(),
             racer.skillSet.skills.end(),
             notify.racerActiveSkillSet.skills.begin());
+
+          // Bonus skills are unique for each racer in the racer
+          // TODO: put these in a skill registry table
+          std::vector<uint32_t> speedOnlyBonusSkills = {59, 32, 31};
+          std::vector<uint32_t> magicOnlyBonusSkills = {34, 35, 36, 57, 58};
+          std::vector<uint32_t> bonusSkillIds = {43, 29, 30}; // Speed + magic
+          
+          // Append to list depending on gamemode
+          if (notify.gameMode == Gamemode::Speed)
+          {
+            bonusSkillIds.insert(
+              bonusSkillIds.end(),
+              speedOnlyBonusSkills.begin(),
+              speedOnlyBonusSkills.end());
+          }
+          else if (notify.gameMode == Gamemode::Magic)
+          {
+            bonusSkillIds.insert(
+              bonusSkillIds.end(),
+              magicOnlyBonusSkills.begin(),
+              magicOnlyBonusSkills.end());
+          }
+
+          std::uniform_int_distribution<uint32_t> bonusSkillDist(0, bonusSkillIds.size() - 1);
+          auto bonusSkillIdx = bonusSkillDist(_randomDevice);
+          notify.racerActiveSkillSet.skills[2] = bonusSkillIds[bonusSkillIdx];
         }
 
         _commandServer.QueueCommand<decltype(notify)>(
