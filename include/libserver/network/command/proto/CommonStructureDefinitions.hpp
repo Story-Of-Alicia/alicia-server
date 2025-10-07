@@ -326,14 +326,20 @@ struct Horse
   static void Read(Horse& value, SourceStream& stream);
 };
 
+enum class GuildRole : uint8_t {
+  Owner = 10,
+  Officer = 100,
+  Member = 200    
+};
+
 //!
 struct Guild
 {
   uint32_t uid{};
   uint8_t val1{};
-  uint32_t val2{};
+  uint32_t val2{}; // emblem uid?
   std::string name{};
-  uint8_t val4{};
+  GuildRole guildRole{};
   uint32_t val5{};
   // ignored by the client?
   uint8_t val6{};
@@ -510,6 +516,21 @@ enum class TeamMode : uint8_t
 {
   Single = 1,
   Team = 2
+};
+
+// As described by GuildStrings table
+enum class GuildError : uint8_t {
+  SystemError = 0,
+  NoUserOrOffline = 1,
+  NoGuild = 2,
+  BadGuildName = 3,
+  GuildNameAlreadyExists = 4,
+  GuildAlreadyCreated = 5,
+  JoinedGuild = 6,
+  NoAuthority = 7,
+  InviteRejected = 8,
+  CannotInviteSelf = 9,
+  Unknown = 255
 };
 
 } // namespace server
