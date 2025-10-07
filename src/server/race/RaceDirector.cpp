@@ -975,6 +975,22 @@ void RaceDirector::HandleStartRace(
 
         notify.hostOid = racer.oid;
 
+        bool isSpeedOrMagic =
+          notify.gameMode == static_cast<uint8_t>(Gamemode::Speed) ||
+          notify.gameMode == static_cast<uint8_t>(Gamemode::Magic);
+        // Skills only apply for speed single or magic single
+        if (isSpeedOrMagic && notify.teamMode == TeamMode::FFA)
+        {
+          // Notify racer of confirmed selection of skills
+          notify.racerActiveSkillSet.setId = racer.skillSet.setId;
+          // TODO: validate this against level-locked skills
+          assert(notify.racerActiveSkillSet.skills.size() >= racer.skillSet.skills.size());
+          std::copy(
+            racer.skillSet.skills.begin(),
+            racer.skillSet.skills.end(),
+            notify.racerActiveSkillSet.skills.begin());
+        }
+
         _commandServer.QueueCommand<decltype(notify)>(
           roomClientId,
           [notify]()
@@ -2161,10 +2177,47 @@ void RaceDirector::HandleChangeSkillCardPresetId(
   ClientId clientId,
   const protocol::AcCmdCRChangeSkillCardPresetID& command)
 {
-  spdlog::debug("[{}] AcCmdCRChangeSkillCardPresetID: {} {}",
-    clientId,
-    command.setId,
-    static_cast<uint8_t>(command.gamemode));
+  if (command.setId < 0 || command.setId > 2)
+  {
+    // TODO: throw? return?
+    // Calling client requested to change skill preset to something out of range
+    // 0 < setId < 3
+    return;
+  }
+  
+  if (command.gamemode != Gamemode::Speed && command.gamemode != Gamemode::Magic)
+  {
+    // TODO: throw? return?
+    // Gamemode can either be speed (1) or magic (2)
+    return;
+  }
+  
+  const auto& clientContext = _clients[clientId];
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
+  auto& racer = roomInstance.tracker.GetRacer(clientContext.characterUid);
+
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [&racer, &command](const data::Character& character)
+    {
+      // Get skill sets by gamemode
+      const auto& skillSets = 
+        command.gamemode == Gamemode::Speed ? character.skills.speed() :
+        command.gamemode == Gamemode::Magic ? character.skills.magic() :
+        throw std::runtime_error("Invalid gamemode");
+      // Get skill set by setId
+      const auto& skillSet =
+        command.setId == 0 ? skillSets.set1 :
+        command.setId == 1 ? skillSets.set2 :
+        throw std::runtime_error("Invalid skill set ID");
+      // Set racer skill set from record
+      racer.skillSet = {
+        .setId = command.setId,
+        .skills = {skillSet.slot1, skillSet.slot2}
+      };
+    }
+  );
+
+  // No response command
 }
 
 } // namespace server

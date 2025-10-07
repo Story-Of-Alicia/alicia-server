@@ -508,8 +508,9 @@ struct League
 
 enum class TeamMode : uint8_t
 {
-  Single = 1,
-  Team = 2
+  FFA = 1, // Multiplayer single
+  Team = 2,
+  Single = 3 // Singleplayer/training
 };
 
 enum class Gamemode : uint32_t

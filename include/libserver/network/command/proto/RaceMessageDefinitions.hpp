@@ -522,21 +522,23 @@ struct AcCmdCRStartRaceNotify
   uint16_t missionId{};
   uint8_t unk12{};
 
-  struct Struct3
+  struct ActiveSkillSet
   {
-    uint8_t unk0{};
+    //! Skill set ID
+    uint8_t setId{};
+    //! Unused TODO: confirm this
     uint32_t unk1{};
-    // List size specified with a byte. Max size 3
-    std::vector<uint16_t> unk2{};
+    //! Skills (including bonus). Max 3 skills
+    std::array<uint32_t, 3> skills{};
 
     static void Write(
-      const Struct3& command,
+      const ActiveSkillSet& command,
       SinkStream& stream);
 
     static void Read(
-      Struct3& command,
+      ActiveSkillSet& command,
       SourceStream& stream);
-  } unk13{};
+  } racerActiveSkillSet{};
 
   uint8_t unk14{};
   //! Carnival (FestivalMissionInfo)
@@ -984,7 +986,7 @@ struct AcCmdRCRaceResultNotify
 
   //! Max 16 entries, short as size
   std::vector<ScoreInfo> scores{};
-  AcCmdCRStartRaceNotify::Struct3 member2{};
+  AcCmdCRStartRaceNotify::ActiveSkillSet racerActiveSkillSet{};
 
   uint32_t member3{};
   uint32_t member4{};

@@ -422,23 +422,23 @@ void AcCmdCRStartRaceNotify::Struct2::Read(
   throw std::runtime_error("Not implemented.");
 }
 
-void AcCmdCRStartRaceNotify::Struct3::Write(
-  const Struct3& command,
+void AcCmdCRStartRaceNotify::ActiveSkillSet::Write(
+  const ActiveSkillSet& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0)
+  stream.Write(command.setId)
     .Write(command.unk1);
 
   stream.Write(static_cast<uint8_t>(
-    command.unk2.size()));
-  for (const auto& element : command.unk2)
+    command.skills.size()));
+  for (const auto& element : command.skills)
   {
     stream.Write(element);
   }
 }
 
-void AcCmdCRStartRaceNotify::Struct3::Read(
-  Struct3& command,
+void AcCmdCRStartRaceNotify::ActiveSkillSet::Read(
+  ActiveSkillSet& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");
@@ -477,7 +477,7 @@ void AcCmdCRStartRaceNotify::Write(
 
   stream.Write(command.missionId)
     .Write(command.unk12)
-    .Write(command.unk13);
+    .Write(command.racerActiveSkillSet);
 
   stream.Write(command.unk14)
     .Write(command.carnivalType)
@@ -770,7 +770,7 @@ void AcCmdRCRaceResultNotify::Write(
       .Write(score.member27);
   }
 
-  stream.Write(command.member2);
+  stream.Write(command.racerActiveSkillSet);
 
   stream.Write(command.member3)
     .Write(command.member4);

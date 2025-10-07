@@ -60,6 +60,12 @@ public:
     uint32_t courseTime{};
     std::optional<uint32_t> magicItem{};
     
+    struct ActiveSkillSet
+    {
+      uint8_t setId{};
+      std::array<uint32_t, 3> skills{};
+    } skillSet{};
+    
     // Bolt targeting system
     bool isTargeting{false};
     Oid currentTarget{InvalidEntityOid};
