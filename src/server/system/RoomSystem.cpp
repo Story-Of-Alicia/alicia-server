@@ -84,14 +84,9 @@ Room::Player& Room::GetPlayer(data::Uid characterUid)
   return playerIter->second;
 }
 
-void Room::SetRoomInRace(bool state)
+void Room::SetRoomPlaying(bool state)
 {
-  _roomIsInRace = state;
-}
-
-void Room::SetRoomInCeremony(bool ceremonyState)
-{
-  _roomIsInCeremony = ceremonyState;
+  _roomIsPlaying = state;
 }
 
 uint32_t Room::GetUid() const
@@ -99,14 +94,9 @@ uint32_t Room::GetUid() const
   return _uid;
 }
 
-bool Room::IsRoomInRace() const
+bool Room::IsRoomPlaying() const
 {
-  return _roomIsInRace;
-}
-
-bool Room::IsRoomInCeremony() const
-{
-  return _roomIsInCeremony;
+  return _roomIsPlaying;
 }
 
 size_t Room::GetPlayerCount() const
@@ -125,7 +115,7 @@ Room::Snapshot Room::GetRoomSnapshot() const
     .uid = _uid,
     .details = _details,
     .playerCount = _players.size(),
-    .isPlaying = _roomIsInRace || _roomIsInCeremony,
+    .isPlaying = _roomIsPlaying,
   };
 }
 

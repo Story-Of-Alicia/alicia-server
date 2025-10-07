@@ -84,12 +84,10 @@ public:
   void RemovePlayer(data::Uid characterUid);
   [[nodiscard]] Player& GetPlayer(data::Uid characterUid);
 
-  void SetRoomInRace(bool raceState);
-  void SetRoomInCeremony(bool ceremonyState);
+  void SetRoomPlaying(bool isPlaying);
 
   [[nodiscard]] uint32_t GetUid() const;
-  [[nodiscard]] bool IsRoomInRace() const;
-  [[nodiscard]] bool IsRoomInCeremony() const;
+  [[nodiscard]] bool IsRoomPlaying() const;
   [[nodiscard]] size_t GetPlayerCount() const;
 
   [[nodiscard]] Details& GetRoomDetails();
@@ -101,8 +99,7 @@ private:
   uint32_t _uid{};
   std::unordered_set<data::Uid> _queuedPlayers;
   std::unordered_map<data::Uid, Player> _players;
-  bool _roomIsInRace{};
-  bool _roomIsInCeremony{};
+  bool _roomIsPlaying{};
 };
 
 class RoomSystem

@@ -84,6 +84,11 @@ public:
   //! Removes a racer from tracking.
   //! @param characterUid Character UID.
   void RemoveRacer(data::Uid characterUid);
+  //! Returns whether the character is a racer.
+  //! @param characterUid Character UID.
+  //! @return `true` if the character is a racer,
+  //!          otherwise returns `false`;
+  bool IsRacer(data::Uid characterUid);
   //! Returns reference to the racer record.
   //! @returns Racer record.
   [[nodiscard]] Racer& GetRacer(data::Uid characterUid);

@@ -38,6 +38,11 @@ void RaceTracker::RemoveRacer(data::Uid characterUid)
   _racers.erase(characterUid);
 }
 
+bool RaceTracker::IsRacer(data::Uid characterUid)
+{
+  return _racers.contains(characterUid);
+}
+
 RaceTracker::Racer& RaceTracker::GetRacer(data::Uid characterUid)
 {
   auto racerIter = _racers.find(characterUid);
