@@ -613,6 +613,8 @@ void LobbyDirector::HandleEnterRoom(
         const auto& roomPassword = room.GetRoomDetails().password;
         if (not roomPassword.empty())
           isAuthorized = roomPassword == command.password;
+        else
+          isAuthorized = true;
 
         isRoomFull = room.IsRoomFull();
         if (isRoomFull)

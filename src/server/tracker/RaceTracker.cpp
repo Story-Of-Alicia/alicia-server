@@ -81,5 +81,12 @@ RaceTracker::ItemObjectMap& RaceTracker::GetItems()
 {
   return _items;
 }
+void RaceTracker::Clear()
+{
+  _racers.clear();
+  _items.clear();
+  _nextRacerOid = 1;
+  _nextItemOid = 1;
+}
 
 } // namespace server::tracker

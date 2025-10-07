@@ -124,7 +124,7 @@ void AcCmdCREnterRoomOK::Write(
     WriteRacer(stream, racer);
   }
 
-  stream.Write(command.nowPlaying)
+  stream.Write(command.isRoomWaiting)
     .Write(command.uid);
 
   WriteRoomDescription(stream, command.roomDescription);

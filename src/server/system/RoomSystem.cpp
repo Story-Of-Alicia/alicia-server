@@ -25,6 +25,17 @@
 namespace server
 {
 
+bool Room::Player::ToggleReady()
+{
+  _isReady = not _isReady;
+  return _isReady;
+}
+
+bool Room::Player::IsReady() const
+{
+  return _isReady;
+}
+
 Room::Room(uint32_t uid)
   : _uid(uid)
 {
@@ -55,7 +66,7 @@ bool Room::AddPlayer(data::Uid characterUid)
     return false;
 
   _queuedPlayers.erase(characterUid);
-  _players.emplace(characterUid);
+  _players.try_emplace(characterUid, Player{});
 
   return true;
 }
@@ -113,15 +124,23 @@ Room::Snapshot Room::GetRoomSnapshot() const
   return Snapshot{
     .uid = _uid,
     .details = _details,
-    .isPlaying = _roomIsInRace,
-    .playerCount = _players.size()};
+    .playerCount = _players.size(),
+    .isPlaying = _roomIsInRace || _roomIsInCeremony,
+  };
+}
+
+std::unordered_map<data::Uid, Room::Player>& Room::GetPlayers()
+{
+  return _players;
 }
 
 void RoomSystem::CreateRoom(const std::function<void(Room&)>& consumer)
 {
   std::unique_lock roomsLock(_roomsLock);
   const auto roomUid = ++_sequencedId;
-  const auto [it, inserted] = _rooms.try_emplace(roomUid, Room(roomUid));
+  const auto [it, inserted] = _rooms.try_emplace(
+    roomUid,
+    std::move(Room(roomUid)));
   assert(inserted);
 
   auto& [room, roomMutex] = it->second;
@@ -169,7 +188,7 @@ void RoomSystem::DeleteRoom(uint32_t uid)
 {
   const auto it = _rooms.find(uid);
   if (it == _rooms.end())
-    throw std::runtime_error("room does not exist");
+    throw std::runtime_error("Room does not exist");
   _rooms.erase(it);
 }
 

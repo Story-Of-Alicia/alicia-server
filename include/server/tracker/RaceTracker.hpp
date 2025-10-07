@@ -40,8 +40,6 @@ public:
     enum class State
     {
       Disconnected,
-      NotReady,
-      Waiting,
       Loading,
       Racing,
       Finishing,
@@ -53,7 +51,7 @@ public:
     };
 
     Oid oid{InvalidEntityOid};
-    State state{State::NotReady};
+    State state{State::Disconnected};
     Team team{Team::Solo};
     uint32_t starPointValue{};
     uint32_t jumpComboValue{};
@@ -106,6 +104,9 @@ public:
   //! Returns a reference to all item records.
   //! @return Reference to item records.
   [[nodiscard]] ItemObjectMap& GetItems();
+
+  void Clear();
+
 
 private:
   //! The next entity OID.

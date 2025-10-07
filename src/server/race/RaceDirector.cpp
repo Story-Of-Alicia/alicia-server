@@ -329,15 +329,6 @@ void RaceDirector::Terminate()
 void RaceDirector::Tick() {
   _scheduler.Tick();
 
-  // Process rooms which are waiting
-  for (auto& [roomUid, roomInstance] : _roomInstances)
-  {
-    if (roomInstance.stage != RoomInstance::Stage::Waiting)
-      continue;
-
-    // todo: room countdown handling
-  }
-
   // Process rooms which are loading
   for (auto& roomInstance : _roomInstances | std::views::values)
   {
@@ -357,10 +348,6 @@ void RaceDirector::Tick() {
     // do not start the race.
     if (not allRacersLoaded && not loadTimeoutReached)
       continue;
-
-    // TODO: better way of doing this? Reinstantiating the room?
-    // Clear room items before populating
-    roomInstance.tracker.GetItems().clear();
 
     const auto mapBlockTemplate = _serverInstance.GetCourseRegistry().GetMapBlockInfo(
       roomInstance.raceMapBlockId);
@@ -413,8 +400,7 @@ void RaceDirector::Tick() {
     if (not allRacersFinished && not raceTimeoutReached)
       return;
 
-    roomInstance.stage = RoomInstance::Stage::Waiting;
-
+    // Set the room state.
     _serverInstance.GetRoomSystem().GetRoom(
       roomUid,
       [](Room& room)
@@ -428,8 +414,6 @@ void RaceDirector::Tick() {
     for (auto& [characterUid, racer] : roomInstance.tracker.GetRacers())
     {
       auto& score = raceResult.scores.emplace_back();
-
-      racer.state = tracker::RaceTracker::Racer::State::NotReady;
 
       // todo: figure out the other bit set values
 
@@ -468,6 +452,12 @@ void RaceDirector::Tick() {
           return raceResult;
         });
     }
+
+    roomInstance.stage = RoomInstance::Stage::Waiting;
+
+    // Clear the tracker after the race.
+    // todo: after ceremony
+    roomInstance.tracker.Clear();
   }
 }
 
@@ -535,13 +525,17 @@ void RaceDirector::HandleEnterRoom(
 
   // Determine the racer count and whether the room is full.
   bool isOvercrowded = false;
-  _serverInstance.GetRoomSystem().GetRoom(
-    command.roomUid,
-    [&isOvercrowded, characterUid = clientContext.characterUid](Room& room)
-    {
-      // If the player is not able to be added, the room is full.
-      isOvercrowded = not room.AddPlayer(characterUid);
-    });
+
+  if (clientContext.isAuthenticated)
+  {
+    _serverInstance.GetRoomSystem().GetRoom(
+      command.roomUid,
+      [&isOvercrowded, characterUid = command.characterUid](Room& room)
+      {
+        // If the player is not able to be added, the room is full.
+        isOvercrowded = not room.AddPlayer(characterUid);
+      });
+  }
 
   // Cancel the enter room if the client is not authenticated,
   // the room does not exist or the room is full.
@@ -590,7 +584,7 @@ void RaceDirector::HandleEnterRoom(
   _commandServer.SetCode(clientId, {});
 
   protocol::AcCmdCREnterRoomOK response{
-    .nowPlaying = 1,
+    .isRoomWaiting = roomInstance.stage == RoomInstance::Stage::Waiting,
     .uid = command.roomUid};
 
   try
@@ -620,26 +614,42 @@ void RaceDirector::HandleEnterRoom(
 
   protocol::Racer joiningRacer;
 
-  for (const auto& [characterUid, racer] : roomInstance.tracker.GetRacers())
+  // Collect the room players.
+  std::vector<data::Uid> characterUids;
+  _serverInstance.GetRoomSystem().GetRoom(
+    clientContext.roomUid,
+    [&characterUids](Room& room)
+    {
+      for (const auto& characterUid : room.GetPlayers() | std::views::keys)
+      {
+        characterUids.emplace_back(characterUid);
+      }
+    });
+
+  for (const auto& characterUid : characterUids)
   {
     auto& protocolRacer = response.racers.emplace_back();
 
-    protocolRacer.isReady = racer.state == tracker::RaceTracker::Racer::State::Waiting;
+    bool isPlayerReady = false;
+    _serverInstance.GetRoomSystem().GetRoom(
+      clientContext.roomUid,
+      [&isPlayerReady, characterUid](Room& room)
+      {
+        isPlayerReady = room.GetPlayer(characterUid).IsReady();
+      });
 
     const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
       characterUid);
     characterRecord.Immutable(
-      [this, racer, &protocolRacer, leaderUid = roomInstance.masterUid](
+      [this, &protocolRacer, leaderUid = roomInstance.masterUid](
         const data::Character& character)
       {
         if (character.uid() == leaderUid)
           protocolRacer.isMaster = true;
 
         protocolRacer.level = character.level();
-        protocolRacer.oid = racer.oid;
         protocolRacer.uid = character.uid();
         protocolRacer.name = character.name();
-        protocolRacer.isReady = racer.state == tracker::RaceTracker::Racer::State::Waiting;
         protocolRacer.isHidden = false;
         protocolRacer.isNPC = false;
 
@@ -845,8 +855,8 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
       spdlog::info("Character '{}' has left the room {}", character.name(), roomUid);
     });
 
-  roomInstance.tracker.RemoveRacer(
-    clientContext.characterUid);
+  roomInstance.tracker.GetRacer(clientContext.characterUid)
+    .state = tracker::RaceTracker::Racer::State::Disconnected;
   roomInstance.clients.erase(clientId);
 
   _serverInstance.GetRoomSystem().GetRoom(
@@ -878,37 +888,47 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
     }
   }
 
-  if (not roomInstance.tracker.GetRacers().empty())
+  if (wasMaster)
   {
-    if (wasMaster)
+    // Try to find the next master.
+    auto nextMasterUid{data::InvalidUid};
+    _serverInstance.GetRoomSystem().GetRoom(
+      clientContext.roomUid,
+      [&nextMasterUid](Room& room)
+      {
+        for (const auto characterUid : room.GetPlayers() | std::views::keys)
+        {
+          // todo: assign mastership to the best player
+          nextMasterUid = characterUid;
+          break;
+        }
+      });
+
+    if (nextMasterUid != data::InvalidUid)
     {
-      // Find the next leader.
-      // todo: assign mastership to the best player
+      roomInstance.masterUid = nextMasterUid;
 
-      roomInstance.masterUid = roomInstance.tracker.GetRacers().begin()->first;
-
-      spdlog::info("Character {} became the master of room {} after the previous master left",
+      spdlog::info("Player {} became the master of room {} after the previous master left",
         roomInstance.masterUid,
         clientContext.roomUid);
 
-      {
-        // Notify other clients in the room about the new master.
-        protocol::AcCmdCRChangeMasterNotify notify{
-          .masterUid = roomInstance.masterUid};
+      // Notify other clients in the room about the new master.
+      protocol::AcCmdCRChangeMasterNotify notify{
+        .masterUid = roomInstance.masterUid};
 
-        for (const ClientId& roomClientId : roomInstance.clients)
-        {
-          _commandServer.QueueCommand<decltype(notify)>(
-            roomClientId,
-            [notify]()
-            {
-              return notify;
-            });
-        }
+      for (const ClientId& roomClientId : roomInstance.clients)
+      {
+        _commandServer.QueueCommand<decltype(notify)>(
+          roomClientId,
+          [notify]()
+          {
+            return notify;
+          });
       }
     }
   }
-  else
+
+  if (roomInstance.clients.empty())
   {
     _serverInstance.GetRoomSystem().DeleteRoom(
       clientContext.roomUid);
@@ -931,21 +951,19 @@ void RaceDirector::HandleReadyRace(
 {
   auto& clientContext = GetClientContext(clientId);
 
-  auto& roomInstance = _roomInstances[clientContext.roomUid];
-
-  auto& racer = roomInstance.tracker.GetRacer(
-    clientContext.characterUid);
-
-  // Toggle the ready state.
-  if (racer.state == tracker::RaceTracker::Racer::State::NotReady)
-    racer.state = tracker::RaceTracker::Racer::State::Waiting;
-  else if (racer.state == tracker::RaceTracker::Racer::State::Waiting)
-    racer.state = tracker::RaceTracker::Racer::State::NotReady;
+  bool isPlayerReady = false;
+  _serverInstance.GetRoomSystem().GetRoom(
+    clientContext.roomUid,
+    [&isPlayerReady, characterUid = clientContext.characterUid](Room& room)
+    {
+      isPlayerReady = room.GetPlayer(characterUid).ToggleReady();
+    });
 
   protocol::AcCmdCRReadyRaceNotify response{
     .characterUid = clientContext.characterUid,
-    .isReady = racer.state == tracker::RaceTracker::Racer::State::Waiting};
+    .isReady = isPlayerReady};
 
+  const auto& roomInstance = _roomInstances[clientContext.roomUid];
   for (const ClientId& roomClientId : roomInstance.clients)
   {
     _commandServer.QueueCommand<decltype(response)>(
@@ -1013,6 +1031,20 @@ void RaceDirector::HandleStartRace(
         return roomCountdown;
       });
   }
+
+  // todo: add the items
+
+  // Add the racers.
+  _serverInstance.GetRoomSystem().GetRoom(
+    clientContext.roomUid,
+    [&roomInstance](Room& room)
+    {
+      // todo: observers
+      for (const auto& characterUid : room.GetPlayers() | std::views::keys)
+      {
+        roomInstance.tracker.AddRacer(characterUid);
+      }
+    });
 
   roomInstance.stage = RoomInstance::Stage::Loading;
   roomInstance.stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(30);

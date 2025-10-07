@@ -134,7 +134,7 @@ struct AcCmdCREnterRoomOK
   // List size specified with a uint32_t. Max size 10
   std::vector<Racer> racers{};
 
-  uint8_t nowPlaying{};
+  bool isRoomWaiting{};
   uint32_t uid{};
   RoomDescription roomDescription{};
 

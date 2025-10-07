@@ -45,9 +45,13 @@ public:
     Solo = 1, Team = 2
   };
 
-  struct Player
+  class Player
   {
-    bool isReady = false;
+  public:
+    bool ToggleReady();
+    [[nodiscard]] bool IsReady() const;
+  private:
+    bool _isReady = false;
   };
 
   struct Details
@@ -90,6 +94,8 @@ public:
 
   [[nodiscard]] Details& GetRoomDetails();
   [[nodiscard]] Snapshot GetRoomSnapshot() const;
+  [[nodiscard]] std::unordered_map<data::Uid, Player>& GetPlayers();
+
 private:
   Details _details;
   uint32_t _uid{};
@@ -112,7 +118,7 @@ public:
 private:
   struct Entry
   {
-    Room room{};
+    Room room;
     std::mutex mutex{};
   };
 
