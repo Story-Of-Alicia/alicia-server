@@ -918,7 +918,7 @@ void RaceDirector::HandleStartRace(
 
       protocol::AcCmdCRStartRaceNotify notify{
         // TODO: change me after proper gamemode enum implementation
-        .gameMode = static_cast<Gamemode>(room.gameMode),
+        .gameMode = room.gameMode,
         .teamMode = room.teamMode,
         .p2pRelayAddress = asio::ip::address_v4::loopback().to_uint(),
         .p2pRelayPort = static_cast<uint16_t>(10500)};
@@ -977,8 +977,8 @@ void RaceDirector::HandleStartRace(
         notify.hostOid = racer.oid;
 
         bool isSpeedOrMagic =
-          notify.gameMode == Gamemode::Speed ||
-          notify.gameMode == Gamemode::Magic;
+          notify.gameMode == static_cast<uint8_t>(Gamemode::Speed) ||
+          notify.gameMode == static_cast<uint8_t>(Gamemode::Magic);
         // Skills only apply for speed single or magic single
         if (isSpeedOrMagic && notify.teamMode == TeamMode::FFA)
         {
@@ -998,14 +998,14 @@ void RaceDirector::HandleStartRace(
           std::vector<uint32_t> bonusSkillIds = {43, 29, 30}; // Speed + magic
           
           // Append to list depending on gamemode
-          if (notify.gameMode == Gamemode::Speed)
+          if (notify.gameMode == static_cast<uint8_t>(Gamemode::Speed))
           {
             bonusSkillIds.insert(
               bonusSkillIds.end(),
               speedOnlyBonusSkills.begin(),
               speedOnlyBonusSkills.end());
           }
-          else if (notify.gameMode == Gamemode::Magic)
+          else if (notify.gameMode == static_cast<uint8_t>(Gamemode::Magic))
           {
             bonusSkillIds.insert(
               bonusSkillIds.end(),
