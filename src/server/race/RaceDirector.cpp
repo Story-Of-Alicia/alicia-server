@@ -385,8 +385,6 @@ void RaceDirector::Tick() {
     if (roomInstance.stage != RoomInstance::Stage::Racing)
       continue;
 
-    protocol::AcCmdRCRaceResultNotify raceResult{};
-
     const bool allRacersFinished = std::ranges::all_of(
       std::views::values(roomInstance.tracker.GetRacers()),
       [](const tracker::RaceTracker::Racer& racer)
@@ -401,6 +399,8 @@ void RaceDirector::Tick() {
     // do not finish the race.
     if (not allRacersFinished && not raceTimeoutReached)
       return;
+
+    protocol::AcCmdRCRaceResultNotify raceResult{};
 
     // Build the score board.
     for (auto& [characterUid, racer] : roomInstance.tracker.GetRacers())
@@ -1045,7 +1045,8 @@ void RaceDirector::HandleStartRace(
       // todo: observers
       for (const auto& characterUid : room.GetPlayers() | std::views::keys)
       {
-        roomInstance.tracker.AddRacer(characterUid);
+        auto& racer = roomInstance.tracker.AddRacer(characterUid);
+        racer.state = tracker::RaceTracker::Racer::State::Loading;
       }
     });
 
@@ -1105,14 +1106,6 @@ void RaceDirector::HandleStartRace(
         }
       }
 
-      // Reset jump combo/star point (boost)
-      for (auto& racer : roomInstance.tracker.GetRacers() | std::views::values)
-      {
-        racer.jumpComboValue = 0;
-        racer.starPointValue = 0;
-      }
-
-      // todo: start loading timeout timer
       // Send to all clients in the room.
       for (const ClientId& roomClientId : roomInstance.clients)
       {
@@ -1120,8 +1113,6 @@ void RaceDirector::HandleStartRace(
 
         auto& racer = roomInstance.tracker.GetRacer(
           roomClientContext.characterUid);
-        racer.state = tracker::RaceTracker::Racer::State::Loading;
-
         notify.hostOid = racer.oid;
 
         _commandServer.QueueCommand<decltype(notify)>(
