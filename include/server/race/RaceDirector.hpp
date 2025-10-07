@@ -92,7 +92,7 @@ private:
     {
       Waiting,
       Loading,
-      Racing
+      Racing,
     } stage{Stage::Waiting};
     //! A time point of when the stage timeout occurs.
     std::chrono::steady_clock::time_point stageTimeoutTimePoint;

@@ -453,9 +453,6 @@ void RaceDirector::Tick() {
       {
         room.SetRoomPlaying(false);
       });
-
-    // Clear the tracker after the race.
-    roomInstance.tracker.Clear();
   }
 }
 
@@ -523,7 +520,6 @@ void RaceDirector::HandleEnterRoom(
 
   // Determine the racer count and whether the room is full.
   bool isOvercrowded = false;
-
   if (clientContext.isAuthenticated)
   {
     _serverInstance.GetRoomSystem().GetRoom(
@@ -1035,7 +1031,10 @@ void RaceDirector::HandleStartRace(
       });
   }
 
-  // todo: add the items
+  // Clear the tracker before the race.
+  roomInstance.tracker.Clear();
+
+  // todo: Add the items.
 
   // Add the racers.
   _serverInstance.GetRoomSystem().GetRoom(
@@ -1106,13 +1105,14 @@ void RaceDirector::HandleStartRace(
         }
       }
 
-      // Send to all clients in the room.
+      // Send to all clients participating in the race.
       for (const ClientId& roomClientId : roomInstance.clients)
       {
         const auto& roomClientContext = _clients[roomClientId];
 
-        auto& racer = roomInstance.tracker.GetRacer(
-          roomClientContext.characterUid);
+        if (not roomInstance.tracker.IsRacer(roomClientContext.characterUid))
+          continue;
+        auto& racer = roomInstance.tracker.GetRacer(roomClientContext.characterUid);
         notify.hostOid = racer.oid;
 
         _commandServer.QueueCommand<decltype(notify)>(
@@ -1252,21 +1252,36 @@ void RaceDirector::HandleAwardStart(
   ClientId clientId,
   const protocol::AcCmdCRAwardStart& command)
 {
-  // const auto& clientContext = GetClientContext(clientId);
-  // const auto& roomInstance = _roomInstances[clientContext.roomUid];
-  //
-  // protocol::AcCmdRCAwardNotify notify{
-  //   .member1 = command.member1};
-  //
-  // for (const auto roomClientId : roomInstance.clients)
-  // {
-  //   _commandServer.QueueCommand<decltype(notify)>(
-  //     roomClientId,
-  //     [notify]()
-  //     {
-  //       return notify;
-  //     });
-  // }
+  const auto& clientContext = GetClientContext(clientId);
+  auto& roomInstance = _roomInstances[clientContext.roomUid];
+
+  protocol::AcCmdRCAwardNotify notify{
+    .member1 = command.member1};
+
+  // Send to clients not participating in races.
+  for (const auto roomClientId : roomInstance.clients)
+  {
+    const auto& roomClientContext = _clients[roomClientId];
+
+    // Whether the client is a participating racer that did not disconnect.
+    bool isParticipatingRacer = false;
+    if (roomInstance.tracker.IsRacer(roomClientContext.characterUid))
+    {
+      auto& racer = roomInstance.tracker.GetRacer(
+        roomClientContext.characterUid);
+      isParticipatingRacer = racer.state != tracker::RaceTracker::Racer::State::Disconnected;
+    }
+
+    if (isParticipatingRacer)
+      continue;
+
+    _commandServer.QueueCommand<decltype(notify)>(
+      roomClientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
 }
 
 void RaceDirector::HandleAwardEnd(
@@ -1274,13 +1289,25 @@ void RaceDirector::HandleAwardEnd(
   const protocol::AcCmdCRAwardEnd& command)
 {
   // const auto& clientContext = GetClientContext(clientId);
-  // const auto& roomInstance = _roomInstances[clientContext.roomUid];
+  // auto& roomInstance = _roomInstances[clientContext.roomUid];
   //
   // protocol::AcCmdCRAwardEndNotify notify{};
   //
+  // // Send to clients not participating in races.
   // for (const auto roomClientId : roomInstance.clients)
   // {
-  //   if (roomClientId == clientId)
+  //   const auto& roomClientContext = _clients[roomClientId];
+  //
+  //   // Whether the client is a participating racer that did not disconnect.
+  //   bool isParticipatingRacer = false;
+  //   if (roomInstance.tracker.IsRacer(roomClientContext.characterUid))
+  //   {
+  //     auto& racer = roomInstance.tracker.GetRacer(
+  //       roomClientContext.characterUid);
+  //     isParticipatingRacer = racer.state != tracker::RaceTracker::Racer::State::Disconnected;
+  //   }
+  //
+  //   if (isParticipatingRacer)
   //     continue;
   //
   //   _commandServer.QueueCommand<decltype(notify)>(
