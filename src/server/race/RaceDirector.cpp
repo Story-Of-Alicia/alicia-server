@@ -335,6 +335,7 @@ void RaceDirector::Tick() {
     if (roomInstance.stage != RoomInstance::Stage::Loading)
       continue;
 
+    // Determine whether all racers have started racing.
     const bool allRacersLoaded = std::ranges::all_of(
       std::views::values(roomInstance.tracker.GetRacers()),
       [](const tracker::RaceTracker::Racer& racer)
@@ -385,6 +386,7 @@ void RaceDirector::Tick() {
     if (roomInstance.stage != RoomInstance::Stage::Racing)
       continue;
 
+    // Determine whether all racers have finished.
     const bool allRacersFinished = std::ranges::all_of(
       std::views::values(roomInstance.tracker.GetRacers()),
       [](const tracker::RaceTracker::Racer& racer)
@@ -402,9 +404,16 @@ void RaceDirector::Tick() {
 
     protocol::AcCmdRCRaceResultNotify raceResult{};
 
-    // Build the score board.
-    for (auto& [characterUid, racer] : roomInstance.tracker.GetRacers())
+    std::map<uint32_t, data::Uid> scoreboard;
+    for (const auto & [characterUid, racer] : roomInstance.tracker.GetRacers())
     {
+      scoreboard.try_emplace(racer.courseTime, characterUid);
+    }
+
+    // Build the score board.
+    for (auto& characterUid : scoreboard | std::views::values)
+    {
+      auto& racer = roomInstance.tracker.GetRacer(characterUid);
       auto& score = raceResult.scores.emplace_back();
 
       // todo: figure out the other bit set values
@@ -620,10 +629,12 @@ void RaceDirector::HandleEnterRoom(
       }
     });
 
+  // Build the room players.
   for (const auto& characterUid : characterUids)
   {
     auto& protocolRacer = response.racers.emplace_back();
 
+    // Determine whether the player is ready.
     bool isPlayerReady = false;
     _serverInstance.GetRoomSystem().GetRoom(
       clientContext.roomUid,
@@ -632,6 +643,7 @@ void RaceDirector::HandleEnterRoom(
         isPlayerReady = room.GetPlayer(characterUid).IsReady();
       });
 
+    // Fill data from the character record.
     const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
       characterUid);
     characterRecord.Immutable(
@@ -715,6 +727,7 @@ void RaceDirector::HandleChangeRoomOptions(
   const std::bitset<6> options(
     static_cast<uint16_t>(command.optionsBitfield));
 
+  // Change the room options.
   _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid,
     [&options, &command](Room& room)
@@ -1269,6 +1282,7 @@ void RaceDirector::HandleAwardStart(
     {
       auto& racer = roomInstance.tracker.GetRacer(
         roomClientContext.characterUid);
+      // todo: handle player reconnect instead of ignoring them here
       isParticipatingRacer = racer.state != tracker::RaceTracker::Racer::State::Disconnected;
     }
 
@@ -1288,6 +1302,8 @@ void RaceDirector::HandleAwardEnd(
   ClientId clientId,
   const protocol::AcCmdCRAwardEnd& command)
 {
+  // todo: this always crashes everyone
+
   // const auto& clientContext = GetClientContext(clientId);
   // auto& roomInstance = _roomInstances[clientContext.roomUid];
   //
@@ -1350,7 +1366,7 @@ void RaceDirector::HandleStarPointGet(
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
-    [clientId, response]()
+    [response]()
     {
       return response;
     });
@@ -1387,7 +1403,7 @@ void RaceDirector::HandleRequestSpur(
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
-    [clientId, response]()
+    [response]()
     {
       return response;
     });
