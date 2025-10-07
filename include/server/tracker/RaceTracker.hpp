@@ -108,13 +108,13 @@ public:
   [[nodiscard]] ItemObjectMap& GetItems();
 
 private:
-  //! The next entity ID.
-  Oid _nextObjectId = 1;
+  //! The next entity OID.
+  Oid _nextRacerOid = 1;
   //! Horse entities in the race.
   ObjectMap _racers;
 
-  //! The next item ID.
-  uint16_t _nextItemId = 1;
+  //! The next item OID.
+  uint16_t _nextItemOid = 1;
   //! Items in the race
   ItemObjectMap _items;
 };

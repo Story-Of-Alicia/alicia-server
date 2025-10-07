@@ -17,30 +17,152 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
-#include "../../../include/server/system/RoomSystem.hpp"
+#include "server/system/RoomSystem.hpp"
 
 #include <cassert>
+#include <ranges>
 #include <stdexcept>
-
 namespace server
 {
 
-Room& RoomSystem::CreateRoom()
+Room::Room(uint32_t uid)
+  : _uid(uid)
 {
-  const auto [it, inserted] = _rooms.try_emplace(++_sequencedId);
-  assert(inserted);
-
-  it->second.uid = _sequencedId;
-
-  return it->second;
 }
 
-Room& RoomSystem::GetRoom(uint32_t uid)
+bool Room::IsRoomFull() const
 {
+  return _players.size() + _queuedPlayers.size() >= _details.maxPlayerCount;
+}
+
+bool Room::QueuePlayer(data::Uid characterUid)
+{
+  if (IsRoomFull())
+    return false;
+
+  _queuedPlayers.emplace(characterUid);
+  return true;
+}
+
+bool Room::DequeuePlayer(data::Uid characterUid)
+{
+  return _queuedPlayers.erase(characterUid) != 0;
+}
+
+bool Room::AddPlayer(data::Uid characterUid)
+{
+  if (_players.size() >= _details.maxPlayerCount)
+    return false;
+
+  _queuedPlayers.erase(characterUid);
+  _players.emplace(characterUid);
+
+  return true;
+}
+
+void Room::RemovePlayer(data::Uid characterUid)
+{
+  _players.erase(characterUid);
+}
+
+Room::Player& Room::GetPlayer(data::Uid characterUid)
+{
+  const auto playerIter = _players.find(characterUid);
+  if (playerIter == _players.cend())
+    throw std::runtime_error("Room player does not exist");
+  return playerIter->second;
+}
+
+void Room::SetRoomInRace(bool state)
+{
+  _roomIsInRace = state;
+}
+
+void Room::SetRoomInCeremony(bool ceremonyState)
+{
+  _roomIsInCeremony = ceremonyState;
+}
+
+uint32_t Room::GetUid() const
+{
+  return _uid;
+}
+
+bool Room::IsRoomInRace() const
+{
+  return _roomIsInRace;
+}
+
+bool Room::IsRoomInCeremony() const
+{
+  return _roomIsInCeremony;
+}
+
+size_t Room::GetPlayerCount() const
+{
+  return _players.size();
+}
+
+Room::Details& Room::GetRoomDetails()
+{
+  return _details;
+}
+
+Room::Snapshot Room::GetRoomSnapshot() const
+{
+  return Snapshot{
+    .uid = _uid,
+    .details = _details,
+    .isPlaying = _roomIsInRace,
+    .playerCount = _players.size()};
+}
+
+void RoomSystem::CreateRoom(const std::function<void(Room&)>& consumer)
+{
+  std::unique_lock roomsLock(_roomsLock);
+  const auto roomUid = ++_sequencedId;
+  const auto [it, inserted] = _rooms.try_emplace(roomUid, Room(roomUid));
+  assert(inserted);
+
+  auto& [room, roomMutex] = it->second;
+  roomsLock.unlock();
+
+  std::scoped_lock lock(roomMutex);
+  consumer(room);
+}
+
+void RoomSystem::GetRoom(const uint32_t uid, const std::function<void(Room&)>& consumer)
+{
+  std::unique_lock roomsLock(_roomsLock);
   const auto it = _rooms.find(uid);
   if (it == _rooms.end())
-    throw std::runtime_error("room does not exist");
-  return it->second;
+    throw std::runtime_error("Room does not exist");
+
+  auto& [room, roomMutex] = it->second;
+  roomsLock.unlock();
+
+  std::scoped_lock lock(roomMutex);
+  consumer(it->second.room);
+}
+
+bool RoomSystem::RoomExists(uint32_t uid)
+{
+  std::scoped_lock lock(_roomsLock);
+  return _rooms.contains(uid);
+}
+
+std::vector<Room::Snapshot> RoomSystem::GetRoomsSnapshot()
+{
+  std::scoped_lock roomsLock(_roomsLock);
+
+  std::vector<Room::Snapshot> rooms;
+  for (auto& entry : _rooms)
+  {
+    std::scoped_lock roomLock(entry.second.mutex);
+    rooms.emplace_back(entry.second.room.GetRoomSnapshot());
+  }
+
+  return rooms;
 }
 
 void RoomSystem::DeleteRoom(uint32_t uid)

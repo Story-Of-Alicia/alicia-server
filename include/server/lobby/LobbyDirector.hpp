@@ -27,6 +27,7 @@
 #include "libserver/data/DataDefinitions.hpp"
 #include "libserver/network/command/CommandServer.hpp"
 #include "libserver/network/command/proto/LobbyMessageDefinitions.hpp"
+#include "libserver/util/Scheduler.hpp"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -192,7 +193,9 @@ private:
   void HandleRequestMountInfo(
     ClientId clientId,
     const protocol::AcCmdCLRequestMountInfo& command);
-    
+
+  //! A scheduler
+  Scheduler _scheduler;
   //!
   ServerInstance& _serverInstance;
   //!

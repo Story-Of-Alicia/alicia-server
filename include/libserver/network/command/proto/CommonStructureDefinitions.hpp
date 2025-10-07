@@ -27,7 +27,7 @@
 #include <string>
 #include <vector>
 
-namespace server
+namespace server::protocol
 {
 
 //!
@@ -508,10 +508,17 @@ struct League
 
 enum class TeamMode : uint8_t
 {
-  Single = 1,
+  Solo = 1,
   Team = 2
 };
 
-} // namespace server
+enum class GameMode : uint8_t
+{
+  Speed = 1,
+  Magic = 2,
+  Tutorial = 6,
+};
+
+} // namespace server::protocol
 
 #endif

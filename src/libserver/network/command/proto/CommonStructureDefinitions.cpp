@@ -19,7 +19,7 @@
 
 #include "libserver/network/command/proto/CommonStructureDefinitions.hpp"
 
-namespace server
+namespace server::protocol
 {
 
 void Item::Write(const Item& item, SinkStream& stream)
@@ -588,4 +588,4 @@ void League::Read(League& value, SourceStream& stream)
     .Read(value.rankingPercentile);
 }
 
-} // namespace server
+} // namespace server::protocol
