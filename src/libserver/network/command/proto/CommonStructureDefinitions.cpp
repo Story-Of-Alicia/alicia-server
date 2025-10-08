@@ -21,7 +21,7 @@
 
 #include <cassert>
 
-namespace server
+namespace server::protocol
 {
 
 void Item::Write(const Item& item, SinkStream& stream)
@@ -598,9 +598,9 @@ void SkillSet::Write(const SkillSet& value, SinkStream& stream)
   // Only magic or speed skills are saved (see tag10 @ 0x0050f760)
   // Note: Gamemode 4 (spectator?) was discovered doing some auxilary function
   assert(
-    value.gamemode == Gamemode::Magic ||
-    value.gamemode == Gamemode::Speed ||
-    value.gamemode == Gamemode::Unk4);
+    value.gamemode == GameMode::Magic ||
+    value.gamemode == GameMode::Speed ||
+    value.gamemode == GameMode::Unk4);
   // Updating a skill set requires 2 skill values (can be 0) to be sent
   assert(value.skills.size() == 2);
 
@@ -628,4 +628,4 @@ void SkillSet::Read(SkillSet& value, SourceStream& stream)
   }
 }
 
-} // namespace server
+} // namespace server::protocol

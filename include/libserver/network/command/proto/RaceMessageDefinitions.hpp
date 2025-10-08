@@ -43,7 +43,7 @@ enum class RoomOptionType : uint16_t
 
 enum class TeamColor : uint32_t
 {
-  Solo = 1,
+  None = 1,
   Red = 2,
   Blue = 3
 };
@@ -67,7 +67,7 @@ struct Racer
   uint32_t uid{};
   std::string name{};
   bool isReady{};
-  TeamColor teamColor{TeamColor::Solo};
+  TeamColor teamColor{TeamColor::None};
   bool isHidden{};
   bool isNPC{};
 
@@ -92,11 +92,11 @@ struct Racer
 struct RoomDescription
 {
   std::string name{};
-  uint8_t playerCount{};
+  uint8_t maxPlayerCount{};
   std::string password{};
   // disables/enables adv map selection
   uint8_t gameModeMaps{};
-  uint8_t gameMode{};
+  GameMode gameMode{};
   //! From the table `MapBlockInfo`.
   uint16_t mapBlockId{};
   // 0 waiting room, 1 race started?
@@ -110,7 +110,7 @@ struct RoomDescription
 struct AcCmdCREnterRoom
 {
   uint32_t characterUid{};
-  uint32_t otp{};
+  uint32_t oneTimePassword{};
   uint32_t roomUid{};
 
   static Command GetCommand()
@@ -134,7 +134,7 @@ struct AcCmdCREnterRoomOK
   // List size specified with a uint32_t. Max size 10
   std::vector<Racer> racers{};
 
-  uint8_t nowPlaying{};
+  bool isRoomWaiting{};
   uint32_t uid{};
   RoomDescription roomDescription{};
 
@@ -222,7 +222,7 @@ struct AcCmdCRChangeRoomOptions
   std::string name{};
   uint8_t playerCount{};
   std::string password{};
-  uint8_t gameMode{};
+  GameMode gameMode{};
   uint16_t mapBlockId{};
   uint8_t npcRace{};
 
@@ -252,7 +252,7 @@ struct AcCmdCRChangeRoomOptionsNotify
   std::string name{};
   uint8_t playerCount{};
   std::string password{}; // password
-  uint8_t gameMode{};
+  GameMode gameMode{};
   uint16_t mapBlockId{};
   uint8_t npcRace{};
 
@@ -446,12 +446,12 @@ struct AcCmdCRStartRace
 
 struct AcCmdCRStartRaceNotify
 {
-  uint8_t gameMode{};
-  TeamMode teamMode{};
+  GameMode raceGameMode{};
+  TeamMode raceTeamMode{};
   // this is an oid of a special player
   uint16_t hostOid{};
   uint32_t member4{}; // Room ID?
-  uint16_t mapBlockId{};
+  uint16_t raceMapBlockId{};
 
   // List size specified with a uint8_t. Max size 10
   struct Player
@@ -519,7 +519,7 @@ struct AcCmdCRStartRaceNotify
       SourceStream& stream);
   } unk10{};
 
-  uint16_t missionId{};
+  uint16_t raceMissionId{};
   uint8_t unk12{};
 
   struct ActiveSkillSet

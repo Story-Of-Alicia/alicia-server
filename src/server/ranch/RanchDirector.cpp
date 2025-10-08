@@ -563,11 +563,11 @@ RanchDirector::ClientContext& RanchDirector::GetClientContext(
 {
   const auto clientIter = _clients.find(clientId);
   if (clientIter == _clients.cend())
-    throw std::runtime_error("Client context not available");
+    throw std::runtime_error("Ranch client is not available");
 
   auto& clientContext = clientIter->second;
   if (requireAuthentication && not clientContext.isAuthenticated)
-    throw std::runtime_error("Client is not authenticated");
+    throw std::runtime_error("Ranch client is not authenticated");
 
   return clientContext;
 }
@@ -636,7 +636,7 @@ void RanchDirector::HandleEnterRanch(
   protocol::AcCmdCREnterRanchOK response{
     .rancherUid = command.rancherUid,
     .league = {
-      .type = League::Type::Platinum,
+      .type = protocol::League::Type::Platinum,
       .rankingPercentile = 50}};
 
   rancherRecord->Immutable(
@@ -713,7 +713,7 @@ void RanchDirector::HandleEnterRanch(
     command.characterUid);
 
   // The character that is currently entering the ranch.
-  RanchCharacter characterEnteringRanch;
+  protocol::RanchCharacter characterEnteringRanch;
 
   // Add the ranch horses.
   for (auto [horseUid, horseOid] : ranchInstance.tracker.GetHorses())
@@ -748,14 +748,15 @@ void RanchDirector::HandleEnterRanch(
       protocolCharacter.uid = character.uid();
       protocolCharacter.name = character.name();
       protocolCharacter.role = character.role() == data::Character::Role::GameMaster
-        ? RanchCharacter::Role::GameMaster
+        ? protocol::RanchCharacter::Role::GameMaster
         : character.role() == data::Character::Role::Op
-        ? RanchCharacter::Role::Op // Assumed, tried but no visual change
-        : RanchCharacter::Role::User; 
+          ? protocol::RanchCharacter::Role::Op
+          : protocol::RanchCharacter::Role::User;
       protocolCharacter.age = character.hideGenderAndAge() ? 0 : character.age();
+      // todo: use model constant
       protocolCharacter.gender = character.parts.modelId() == 10
-          ? RanchCharacter::Gender::Boy
-          : RanchCharacter::Gender::Girl;
+          ? protocol::RanchCharacter::Gender::Boy
+          : protocol::RanchCharacter::Gender::Girl;
 
       protocolCharacter.introduction = character.introduction();
 
@@ -1543,10 +1544,10 @@ void RanchDirector::HandleRequestNpcDressList(
   protocol::RanchCommandRequestNpcDressListOK response{
     .unk0 = requestNpcDressList.unk0,
     .dressList = {
-    Item{
-    .uid = 0xFFF,
-    .tid = 10164,
-    .count = 1}} // TODO: Fetch dress list from somewhere
+    protocol::Item{
+      .uid = 0xFFF,
+      .tid = 10164,
+      .count = 1}} // TODO: Fetch dress list from somewhere
   };
 
   _commandServer.QueueCommand<decltype(response)>(

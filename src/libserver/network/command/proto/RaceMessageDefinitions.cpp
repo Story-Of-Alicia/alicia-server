@@ -82,7 +82,7 @@ void WriteRacer(SinkStream& stream, const Racer& racer)
 void WriteRoomDescription(SinkStream& stream, const RoomDescription& roomDescription)
 {
   stream.Write(roomDescription.name)
-    .Write(roomDescription.playerCount)
+    .Write(roomDescription.maxPlayerCount)
     .Write(roomDescription.password)
     .Write(roomDescription.gameModeMaps)
     .Write(roomDescription.teamMode)
@@ -105,7 +105,7 @@ void AcCmdCREnterRoom::Read(
   SourceStream& stream)
 {
   stream.Read(command.characterUid)
-    .Read(command.otp)
+    .Read(command.oneTimePassword)
     .Read(command.roomUid);
 }
 
@@ -124,7 +124,7 @@ void AcCmdCREnterRoomOK::Write(
     WriteRacer(stream, racer);
   }
 
-  stream.Write(command.nowPlaying)
+  stream.Write(command.isRoomWaiting)
     .Write(command.uid);
 
   WriteRoomDescription(stream, command.roomDescription);
@@ -448,11 +448,11 @@ void AcCmdCRStartRaceNotify::Write(
   const AcCmdCRStartRaceNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.gameMode)
-    .Write(command.teamMode)
+  stream.Write(command.raceGameMode)
+    .Write(command.raceTeamMode)
     .Write(command.hostOid)
     .Write(command.member4)
-    .Write(command.mapBlockId);
+    .Write(command.raceMapBlockId);
 
   stream.Write(static_cast<uint8_t>(command.racers.size()));
   for (const auto& element : command.racers)
@@ -475,7 +475,7 @@ void AcCmdCRStartRaceNotify::Write(
     .Write(command.unk9)
     .Write(command.unk10);
 
-  stream.Write(command.missionId)
+  stream.Write(command.raceMissionId)
     .Write(command.unk12)
     .Write(command.racerActiveSkillSet);
 

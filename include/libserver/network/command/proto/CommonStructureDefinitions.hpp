@@ -27,7 +27,7 @@
 #include <string>
 #include <vector>
 
-namespace server
+namespace server::protocol
 {
 
 //!
@@ -508,39 +508,17 @@ struct League
 
 enum class TeamMode : uint8_t
 {
-  FFA = 1, // Multiplayer single
-  Team = 2,
-  Single = 3 // Singleplayer/training
+  Solo = 1,
+  Team = 2
 };
 
-enum class Gamemode : uint32_t
+enum class GameMode : uint8_t
 {
   Speed = 1,
   Magic = 2,
-  Unk4 = 4
+  Tutorial = 6,
 };
 
-struct SkillSet
-{
-  //! ID of the set
-  //! 0 - Set 1
-  //! 1 - Set 2
-  uint8_t setId{};
-  //! Either speed (1) or magic (2)
-  Gamemode gamemode{};
-  //! ID of racing skills
-  //! Max 2 skills
-  std::vector<uint32_t> skills{};
-
-  static void Write(
-    const SkillSet& command,
-    SinkStream& stream);
-
-  static void Read(
-    SkillSet& command,
-    SourceStream& stream);
-};
-
-} // namespace server
+} // namespace server::protocol
 
 #endif

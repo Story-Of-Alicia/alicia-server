@@ -477,8 +477,8 @@ void LoginHandler::QueueUserLoginAccepted(
 
       // todo: model constant
       response.gender = character.parts.modelId() == 10
-        ? Gender::Boy
-        : Gender::Girl;
+        ? protocol::Gender::Boy
+        : protocol::Gender::Girl;
 
       response.level = character.level();
       response.carrots = character.carrots();
