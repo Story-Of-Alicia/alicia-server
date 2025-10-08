@@ -357,10 +357,9 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["isRanchLocked"] = character.isRanchLocked();
 
   // Construct gamemode skills from skill sets
-  const auto& makeSkillJson = [](const data::Character::Skills::Sets& sets)
+  const auto& writeSkills = [](const data::Character::Skills::Sets& sets)
   {
-    // Make skill set from SkillSet
-    const auto& makeSetJson = [](const data::Character::Skills::Sets::Set& set)
+    const auto& writeSkillSet = [](const data::Character::Skills::Sets::Set& set)
     {
       nlohmann::json json;
       json["slot1"] = set.slot1;
@@ -369,14 +368,14 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
     };
 
     nlohmann::json json;
-    json["set1"] = makeSetJson(sets.set1);
-    json["set2"] = makeSetJson(sets.set2);
+    json["set1"] = writeSkillSet(sets.set1);
+    json["set2"] = writeSkillSet(sets.set2);
     return json;
   };
 
   nlohmann::json skills;
-  skills["speed"] = makeSkillJson(character.skills.speed());
-  skills["magic"] = makeSkillJson(character.skills.magic());
+  skills["speed"] = writeSkills(character.skills.speed());
+  skills["magic"] = writeSkills(character.skills.magic());
   json["skills"] = skills;
 
   dataFile << json.dump(2);
