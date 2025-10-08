@@ -383,23 +383,6 @@ void RaceDirector::Tick() {
           return raceCountdown;
         });
     }
-
-    // Prepare the item spawners based on map and game mode (use resolved mapBlockId)
-    PrepareItemSpawners(roomUid, roomInstance.mapBlockId);
-
-    // Spawn all items that were prepared by PrepareItemSpawners
-    for (const auto& [itemId, item] : roomInstance.tracker.GetItems())
-    {
-      protocol::AcCmdGameRaceItemSpawn spawn{
-        .itemId = item.itemId,
-        .itemType = item.itemType,
-        .position = item.position,
-        .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
-        .removeDelay = -1};
-
-      for (const ClientId& roomClientId : roomInstance.clients)
-        _commandServer.QueueCommand<decltype(spawn)>(roomClientId, [spawn](){return spawn;});
-    }
   }
 
   // Process rooms which are racing
@@ -1019,30 +1002,27 @@ void RaceDirector::HandleReadyRace(
   }
 }
 
-void RaceDirector::PrepareItemSpawners(data::Uid roomUid, uint16_t mapBlockId)
+void RaceDirector::PrepareItemSpawners(data::Uid roomUid)
 {
-  const auto& room = _serverInstance.GetRoomSystem().GetRoom(roomUid);
   auto& roomInstance = _roomInstances[roomUid];
 
   try {
-    const auto& gameModeInfo = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(room.gameMode);
-    const auto& mapBlockInfo = GetServerInstance().GetCourseRegistry().GetMapBlockInfo(mapBlockId);
+    const auto& gameModeInfo = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
+      static_cast<uint32_t>(roomInstance.raceGameMode));
+    const auto& mapBlockInfo = GetServerInstance().GetCourseRegistry().GetMapBlockInfo(
+      roomInstance.raceMapBlockId);
 
-    // get map offset
+    // Get the map position offset
     const auto& offset = mapBlockInfo.offset;
-
-    // Clear any existing items
-    roomInstance.tracker.GetItems().clear();
 
     // Spawn items based on map positions and game mode allowed deck IDs
     for (const auto& deckItemInstance : mapBlockInfo.deckItems)
     {
       // Check if this deck ID is allowed for the current game mode
-      if (std::find(gameModeInfo.deckIds.begin(), gameModeInfo.deckIds.end(),
-                    deckItemInstance.deckId) != gameModeInfo.deckIds.end())
+      if (std::find(gameModeInfo.deckIds.begin(), gameModeInfo.deckIds.end(), deckItemInstance.deckId) != gameModeInfo.deckIds.end())
       {
         auto& item = roomInstance.tracker.AddItem();
-        item.itemType = deckItemInstance.deckId;
+        item.deckId = deckItemInstance.deckId;
         item.position[0] = deckItemInstance.position[0] - offset[0];
         item.position[1] = deckItemInstance.position[1] - offset[1];
         item.position[2] = deckItemInstance.position[2] - offset[2];
@@ -1058,8 +1038,8 @@ void RaceDirector::PrepareItemSpawners(data::Uid roomUid, uint16_t mapBlockId)
     spdlog::info("Prepared {} item spawners for room {} (gameMode={}, mapBlock={})",
                 roomInstance.tracker.GetItems().size(),
                 roomUid,
-                room.gameMode,
-                mapBlockId);
+                static_cast<uint32_t>(roomInstance.raceGameMode),
+                roomInstance.raceMapBlockId);
   }
   catch (const std::exception& e) {
     spdlog::warn("Failed to prepare item spawners for room {}: {}", roomUid, e.what());
@@ -1126,7 +1106,8 @@ void RaceDirector::HandleStartRace(
   // Clear the tracker before the race.
   roomInstance.tracker.Clear();
 
-  // todo: Add the items.
+  // Add the items.
+  PrepareItemSpawners(clientContext.roomUid);
 
   // Add the racers.
   _serverInstance.GetRoomSystem().GetRoom(
@@ -1670,6 +1651,56 @@ void RaceDirector::HandleRaceUserPos(
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
     static_cast<uint8_t>(roomInstance.raceGameMode));
 
+  for (const auto& [itemOid, item] : roomInstance.tracker.GetItems())
+  {
+    const bool canItemRespawn = std::chrono::steady_clock::now() >= item.respawnTimePoint;
+    if (not canItemRespawn)
+      continue;
+
+    // The distance between the player and the item.
+    const auto distanceBetweenPlayerAndItem = std::sqrt(
+      std::pow(command.member2[0] - item.position[0], 2) +
+      std::pow(command.member2[1] - item.position[1], 2) +
+      std::pow(command.member2[2] - item.position[2], 2));
+
+    // A distance of the player from the item before it can be spawned.
+    constexpr double ItemSpawnDistanceThreshold = 90.0;
+
+    const bool isItemInPlayerProximity = distanceBetweenPlayerAndItem < ItemSpawnDistanceThreshold;
+    const bool isItemAlreadyTracked = racer.trackedItems.contains(itemOid);
+
+    if (isItemAlreadyTracked)
+    {
+      // If the item is not in the player's proximity anymore
+      // then remove it from the tracked items.
+      if (not isItemInPlayerProximity)
+        racer.trackedItems.erase(itemOid);
+
+      continue;
+    }
+
+    // If the item is not in player's proximity do not spawn it.
+    if (not isItemInPlayerProximity)
+      continue;
+
+    protocol::AcCmdGameRaceItemSpawn spawn{
+      .itemId = item.oid,
+      .itemType = item.deckId,
+      .position = item.position,
+      .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
+      .removeDelay = -1};
+
+    racer.trackedItems.insert(item.oid);
+
+    for (const ClientId& roomClientId : roomInstance.clients)
+    {
+      _commandServer.QueueCommand<decltype(spawn)>(roomClientId, [spawn]()
+      {
+        return spawn;
+      });
+    }
+  }
+
   // Only regenerate magic during active race (after countdown finishes)
   // Check if game mode is magic, race is active, countdown finished, and not holding an item
   const bool raceActuallyStarted = std::chrono::steady_clock::now() >= roomInstance.raceStartTimePoint;
@@ -2104,16 +2135,16 @@ void RaceDirector::HandleUseMagicItem(
       .magicItemId = command.magicItemId};
     // Spawn ice wall at a reasonable position (near start line like other items)
     auto& iceWall = roomInstance.tracker.AddItem();
-    iceWall.itemType = 102;  // Use same type as working items (temporarily)
+    iceWall.deckId = 102;  // Use same type as working items (temporarily)
     iceWall.position = {25.0f, -25.0f, -8010.0f};  // Near other track items
     
     spdlog::info("Spawned ice wall with ID {} at position ({}, {}, {})", 
-      iceWall.itemId, iceWall.position[0], iceWall.position[1], iceWall.position[2]);
+      iceWall.oid, iceWall.position[0], iceWall.position[1], iceWall.position[2]);
     
     // Notify all clients about the ice wall spawn using proper race item spawn command
     protocol::AcCmdGameRaceItemSpawn iceWallSpawn{
-      .itemId = iceWall.itemId,
-      .itemType = iceWall.itemType,
+      .itemId = iceWall.oid,
+      .itemType = iceWall.deckId,
       .position = iceWall.position,
       .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
       .sizeLevel = false,
@@ -2142,12 +2173,15 @@ void RaceDirector::HandleUserRaceItemGet(
 {
   const auto& clientContext = GetClientContext(clientId);
   auto& roomInstance = _roomInstances[clientContext.roomUid];
-  auto const& item = roomInstance.tracker.GetItems().at(command.itemId);
+  auto& item = roomInstance.tracker.GetItem(command.itemId);
+
+  constexpr auto ItemRespawnDuration = std::chrono::milliseconds(500);
+  item.respawnTimePoint = std::chrono::steady_clock::now() + ItemRespawnDuration;
+
   protocol::AcCmdGameRaceItemGet get{
     .characterOid = command.characterOid,
     .itemId = command.itemId,
-    .itemType = item.itemType,
-  };
+    .itemType = item.deckId,};
 
   // Notify all clients in the room that this item has been picked up
   for (const ClientId& roomClientId : roomInstance.clients)
@@ -2159,33 +2193,12 @@ void RaceDirector::HandleUserRaceItemGet(
         return get;
       });
   }
-  // Wait for ItemDeck registry, to give the correct amount of SP for item pick up
 
-  _scheduler.Queue(
-    [this, clientId, item, &roomInstance]()
-    {
-      // Respawn the item after a delay
-      protocol::AcCmdGameRaceItemSpawn spawn{
-        .itemId = item.itemId,
-        .itemType = item.itemType,
-        .position = item.position,
-        .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
-        .sizeLevel = false,
-        .removeDelay = -1
-      };
-
-      for (const ClientId& roomClientId : roomInstance.clients)
-      {
-        _commandServer.QueueCommand<decltype(spawn)>(
-          roomClientId, 
-          [spawn]()
-          {
-            return spawn;
-          });
-      }
-    },
-    //only for speed for now, change to itemDeck registry later for magic
-    Scheduler::Clock::now() + std::chrono::milliseconds(500));
+  // Erase the item from item instances of each client.
+  for (auto& racer : roomInstance.tracker.GetRacers() | std::views::values)
+  {
+    racer.trackedItems.erase(item.oid);
+  }
 }
 
 // Magic Targeting System Implementation for Bolt
