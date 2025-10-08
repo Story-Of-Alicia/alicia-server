@@ -1028,18 +1028,18 @@ void RaceDirector::PrepareItemSpawners(data::Uid roomUid)
         item.position[2] = deckItemInstance.position[2] - offset[2];
 
         spdlog::debug("Prepared item spawner: deckId={}, position=[{}, {}, {}]",
-                     deckItemInstance.deckId,
-                     deckItemInstance.position[0],
-                     deckItemInstance.position[1],
-                     deckItemInstance.position[2]);
+           deckItemInstance.deckId,
+           deckItemInstance.position[0],
+           deckItemInstance.position[1],
+           deckItemInstance.position[2]);
       }
     }
 
     spdlog::info("Prepared {} item spawners for room {} (gameMode={}, mapBlock={})",
-                roomInstance.tracker.GetItems().size(),
-                roomUid,
-                static_cast<uint32_t>(roomInstance.raceGameMode),
-                roomInstance.raceMapBlockId);
+      roomInstance.tracker.GetItems().size(),
+      roomUid,
+      static_cast<uint32_t>(roomInstance.raceGameMode),
+      roomInstance.raceMapBlockId);
   }
   catch (const std::exception& e) {
     spdlog::warn("Failed to prepare item spawners for room {}: {}", roomUid, e.what());
