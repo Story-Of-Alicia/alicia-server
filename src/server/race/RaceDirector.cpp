@@ -31,7 +31,6 @@
 
 namespace server
 {
-
 namespace
 {
 
@@ -238,7 +237,7 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     {
       HandleChangeMagicTargetCancel(clientId, message);
     });
-  
+
   // Note: AcCmdCRActivateSkillEffect handler commented out due to build issues
   // _commandServer.RegisterCommandHandler<protocol::AcCmdCRActivateSkillEffect>(
   //   [this](ClientId clientId, const auto& message)
@@ -326,6 +325,28 @@ void RaceDirector::Terminate()
   _commandServer.EndHost();
 }
 
+struct StarPointRequest
+{
+  ClientId clientId;
+  protocol::AcCmdCRStarPointGet request;
+};
+
+struct SpurRequest
+{
+  ClientId clientId;
+  protocol::AcCmdCRRequestSpur request;
+};
+
+struct HurdleClearRequest
+{
+  ClientId clientId;
+  protocol::AcCmdCRHurdleClearResult request;
+};
+
+std::queue<StarPointRequest> starPointRequestQueue;
+std::queue<SpurRequest> spurRequestQueue;
+std::queue<HurdleClearRequest> hurdleClearRequestQueue;
+
 void RaceDirector::Tick() {
   _scheduler.Tick();
 
@@ -390,6 +411,207 @@ void RaceDirector::Tick() {
   {
     if (roomInstance.stage != RoomInstance::Stage::Racing)
       continue;
+
+    // tick race
+    {
+      // process star point get - slides
+      while (not starPointRequestQueue.empty()) {
+        const auto& [clientId, command] = starPointRequestQueue.front();
+        {
+          const auto& clientContext = GetClientContext(clientId);
+          auto& roomInstance = _roomInstances[clientContext.roomUid];
+
+          auto& racer = roomInstance.tracker.GetRacer(
+            clientContext.characterUid);
+          if (command.characterOid != racer.oid)
+            continue;
+
+          const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
+            static_cast<uint8_t>(roomInstance.raceGameMode));
+
+          racer.starPointValue = std::min(
+            racer.starPointValue + command.gainedStarPoints,
+            gameModeTemplate.starPointsMax);
+
+          // Star point get (boost get) is only called in speed, should never give magic item
+          protocol::AcCmdCRStarPointGetOK response{
+            .characterOid = command.characterOid,
+            .starPointValue = racer.starPointValue,
+            .giveMagicItem = false
+          };
+
+          _commandServer.QueueCommand<decltype(response)>(
+            clientId,
+            [response]()
+            {
+              return response;
+            });
+        }
+        starPointRequestQueue.pop();
+      }
+
+      // process spur request - boosts
+      while (not spurRequestQueue.empty())
+      {
+        const auto& [clientId, command] = spurRequestQueue.front();
+        {
+          const auto& clientContext = GetClientContext(clientId);
+          auto& roomInstance = _roomInstances[clientContext.roomUid];
+
+          auto& racer = roomInstance.tracker.GetRacer(
+            clientContext.characterUid);
+          if (command.characterOid != racer.oid)
+          {
+            continue;
+          }
+
+          const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
+            static_cast<uint8_t>(roomInstance.raceGameMode));
+
+          if (racer.starPointValue < gameModeTemplate.spurConsumeStarPoints)
+            throw std::runtime_error("Client is dead ass cheating (or is really desynced)");
+
+          racer.starPointValue -= gameModeTemplate.spurConsumeStarPoints;
+
+          protocol::AcCmdCRRequestSpurOK response{
+            .characterOid = command.characterOid,
+            .activeBoosters = command.activeBoosters,
+            .startPointValue = racer.starPointValue,
+            .comboBreak = command.comboBreak};
+
+          _commandServer.QueueCommand<decltype(response)>(
+            clientId,
+            [response]()
+            {
+              return response;
+            });
+        }
+        spurRequestQueue.pop();
+      }
+
+      // process hurdle clear requests - jumps
+      while (not hurdleClearRequestQueue.empty())
+      {
+        const auto& [clientId, command] = hurdleClearRequestQueue.front();
+        {
+          const auto& clientContext = GetClientContext(clientId);
+          auto& roomInstance = _roomInstances[clientContext.roomUid];
+
+          auto& racer = roomInstance.tracker.GetRacer(
+            clientContext.characterUid);
+          if (command.characterOid != racer.oid)
+          {
+            throw std::runtime_error(
+              "Client tried to perform action on behalf of different racer");
+          }
+
+          protocol::AcCmdCRHurdleClearResultOK response{
+            .characterOid = command.characterOid,
+            .hurdleClearType = command.hurdleClearType,
+            .jumpCombo = 0,
+            .unk3 = 0
+          };
+
+          // Give magic item is calculated later
+          protocol::AcCmdCRStarPointGetOK starPointResponse{
+            .characterOid = command.characterOid,
+            .starPointValue = racer.starPointValue,
+            .giveMagicItem = false
+          };
+
+          const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
+              static_cast<uint8_t>(roomInstance.raceGameMode));
+
+          switch (command.hurdleClearType)
+          {
+            case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Perfect:
+            {
+              // Perfect jump over the hurdle.
+              racer.jumpComboValue = std::min(
+                static_cast<uint32_t>(99),
+                racer.jumpComboValue + 1);
+
+              if (roomInstance.raceGameMode == protocol::GameMode::Speed)
+              {
+                // Only send jump combo if it is a speed race
+                response.jumpCombo = racer.jumpComboValue;
+              }
+
+              // Calculate max applicable combo
+              const auto& applicableComboCount = std::min(
+                gameModeTemplate.perfectJumpMaxBonusCombo,
+                racer.jumpComboValue);
+              // Calculate max combo count * perfect jump boost unit points
+              const auto& gainedStarPointsFromCombo = applicableComboCount * gameModeTemplate.perfectJumpUnitStarPoints;
+              // Add boost points to character boost tracker
+              racer.starPointValue = std::min(
+                racer.starPointValue + gameModeTemplate.perfectJumpStarPoints + gainedStarPointsFromCombo,
+                gameModeTemplate.starPointsMax);
+
+              // Update boost gauge
+              starPointResponse.starPointValue = racer.starPointValue;
+              break;
+            }
+            case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Good:
+            case protocol::AcCmdCRHurdleClearResult::HurdleClearType::DoubleJumpOrGlide:
+            {
+              // Not a perfect jump over the hurdle, reset the jump combo.
+              racer.jumpComboValue = 0;
+              response.jumpCombo = racer.jumpComboValue;
+
+              // Increment boost gauge by a good jump
+              racer.starPointValue = std::min(
+                racer.starPointValue + gameModeTemplate.goodJumpStarPoints,
+                gameModeTemplate.starPointsMax);
+
+              // Update boost gauge
+              starPointResponse.starPointValue = racer.starPointValue;
+              break;
+            }
+            case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Collision:
+            {
+              // A collision with hurdle, reset the jump combo.
+              racer.jumpComboValue = 0;
+              response.jumpCombo = racer.jumpComboValue;
+              break;
+            }
+            default:
+            {
+              spdlog::warn("Unhandled hurdle clear type {}",
+                static_cast<uint8_t>(command.hurdleClearType));
+              return;
+            }
+          }
+
+          // Needs to be assigned after hurdle clear result calculations
+          // Triggers magic item request when set to true (if gamemode is magic and magic gauge is max)
+          // TODO: is there only perfect clears in magic race?
+          starPointResponse.giveMagicItem =
+            roomInstance.raceGameMode == protocol::GameMode::Magic &&
+            racer.starPointValue >= gameModeTemplate.starPointsMax &&
+            command.hurdleClearType == protocol::AcCmdCRHurdleClearResult::HurdleClearType::Perfect;
+
+          // Update the star point value if the jump was not a collision.
+          if (command.hurdleClearType != protocol::AcCmdCRHurdleClearResult::HurdleClearType::Collision)
+          {
+            _commandServer.QueueCommand<decltype(starPointResponse)>(
+              clientId,
+              [clientId, starPointResponse]()
+              {
+                return starPointResponse;
+              });
+          }
+
+          _commandServer.QueueCommand<decltype(response)>(
+            clientId,
+            [clientId, response]()
+            {
+              return response;
+            });
+        }
+        hurdleClearRequestQueue.pop();
+      }
+    }
 
     // Determine whether all racers have finished.
     const bool allRacersFinished = std::ranges::all_of(
@@ -1353,194 +1575,21 @@ void RaceDirector::HandleStarPointGet(
   ClientId clientId,
   const protocol::AcCmdCRStarPointGet& command)
 {
-  const auto& clientContext = GetClientContext(clientId);
-  auto& roomInstance = _roomInstances[clientContext.roomUid];
-
-  auto& racer = roomInstance.tracker.GetRacer(
-    clientContext.characterUid);
-  if (command.characterOid != racer.oid)
-  {
-    throw std::runtime_error(
-      "Client tried to perform action on behalf of different racer");
-  }
-
-  const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(roomInstance.raceGameMode));
-
-  racer.starPointValue = std::min(
-    racer.starPointValue + command.gainedStarPoints,
-    gameModeTemplate.starPointsMax);
-
-  // Star point get (boost get) is only called in speed, should never give magic item
-  protocol::AcCmdCRStarPointGetOK response{
-    .characterOid = command.characterOid,
-    .starPointValue = racer.starPointValue,
-    .giveMagicItem = false
-  };
-
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [response]()
-    {
-      return response;
-    });
+  starPointRequestQueue.emplace(StarPointRequest{.clientId = clientId, .request = command});
 }
 
 void RaceDirector::HandleRequestSpur(
   ClientId clientId,
   const protocol::AcCmdCRRequestSpur& command)
 {
-  const auto& clientContext = GetClientContext(clientId);
-  auto& roomInstance = _roomInstances[clientContext.roomUid];
-
-  auto& racer = roomInstance.tracker.GetRacer(
-    clientContext.characterUid);
-  if (command.characterOid != racer.oid)
-  {
-    throw std::runtime_error(
-      "Client tried to perform action on behalf of different racer");
-  }
-
-  const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(roomInstance.raceGameMode));
-
-  if (racer.starPointValue < gameModeTemplate.spurConsumeStarPoints)
-    throw std::runtime_error("Client is dead ass cheating (or is really desynced)");
-
-  racer.starPointValue -= gameModeTemplate.spurConsumeStarPoints;
-
-  protocol::AcCmdCRRequestSpurOK response{
-    .characterOid = command.characterOid,
-    .activeBoosters = command.activeBoosters,
-    .startPointValue = racer.starPointValue,
-    .comboBreak = command.comboBreak};
-
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [response]()
-    {
-      return response;
-    });
+  spurRequestQueue.emplace(SpurRequest{.clientId = clientId, .request = command});
 }
 
 void RaceDirector::HandleHurdleClearResult(
   ClientId clientId,
   const protocol::AcCmdCRHurdleClearResult& command)
 {
-  const auto& clientContext = GetClientContext(clientId);
-  auto& roomInstance = _roomInstances[clientContext.roomUid];
-
-  auto& racer = roomInstance.tracker.GetRacer(
-    clientContext.characterUid);
-  if (command.characterOid != racer.oid)
-  {
-    throw std::runtime_error(
-      "Client tried to perform action on behalf of different racer");
-  }
-
-  protocol::AcCmdCRHurdleClearResultOK response{
-    .characterOid = command.characterOid,
-    .hurdleClearType = command.hurdleClearType,
-    .jumpCombo = 0,
-    .unk3 = 0
-  };
-  
-  // Give magic item is calculated later
-  protocol::AcCmdCRStarPointGetOK starPointResponse{
-    .characterOid = command.characterOid,
-    .starPointValue = racer.starPointValue,
-    .giveMagicItem = false
-  };
-
-  const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-      static_cast<uint8_t>(roomInstance.raceGameMode));
-
-  switch (command.hurdleClearType)
-  {
-    case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Perfect:
-    {
-      // Perfect jump over the hurdle.
-      racer.jumpComboValue = std::min(
-        static_cast<uint32_t>(99),
-        racer.jumpComboValue + 1);
-
-      if (roomInstance.raceGameMode == protocol::GameMode::Speed)
-      {
-        // Only send jump combo if it is a speed race
-        response.jumpCombo = racer.jumpComboValue;
-      }
-
-      // Calculate max applicable combo
-      const auto& applicableComboCount = std::min(
-        gameModeTemplate.perfectJumpMaxBonusCombo,
-        racer.jumpComboValue);
-      // Calculate max combo count * perfect jump boost unit points
-      const auto& gainedStarPointsFromCombo = applicableComboCount * gameModeTemplate.perfectJumpUnitStarPoints;
-      // Add boost points to character boost tracker
-      racer.starPointValue = std::min(
-        racer.starPointValue + gameModeTemplate.perfectJumpStarPoints + gainedStarPointsFromCombo,
-        gameModeTemplate.starPointsMax);
-
-      // Update boost gauge
-      starPointResponse.starPointValue = racer.starPointValue;
-      break;
-    }
-    case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Good:
-    case protocol::AcCmdCRHurdleClearResult::HurdleClearType::DoubleJumpOrGlide:
-    {
-      // Not a perfect jump over the hurdle, reset the jump combo.
-      racer.jumpComboValue = 0;
-      response.jumpCombo = racer.jumpComboValue;
-
-      // Increment boost gauge by a good jump
-      racer.starPointValue = std::min(
-        racer.starPointValue + gameModeTemplate.goodJumpStarPoints,
-        gameModeTemplate.starPointsMax);
-
-      // Update boost gauge
-      starPointResponse.starPointValue = racer.starPointValue;
-      break;
-    }
-    case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Collision:
-    {
-      // A collision with hurdle, reset the jump combo.
-      racer.jumpComboValue = 0;
-      response.jumpCombo = racer.jumpComboValue;
-      break;
-    }
-    default:
-    {
-      spdlog::warn("Unhandled hurdle clear type {}",
-        static_cast<uint8_t>(command.hurdleClearType));
-      return;
-    }
-  }
-  
-  // Needs to be assigned after hurdle clear result calculations
-  // Triggers magic item request when set to true (if gamemode is magic and magic gauge is max)
-  // TODO: is there only perfect clears in magic race?
-  starPointResponse.giveMagicItem = 
-    roomInstance.raceGameMode == protocol::GameMode::Magic &&
-    racer.starPointValue >= gameModeTemplate.starPointsMax &&
-    command.hurdleClearType == protocol::AcCmdCRHurdleClearResult::HurdleClearType::Perfect;
-
-  // Update the star point value if the jump was not a collision.
-  if (command.hurdleClearType != protocol::AcCmdCRHurdleClearResult::HurdleClearType::Collision)
-  {
-    _commandServer.QueueCommand<decltype(starPointResponse)>(
-      clientId,
-      [clientId, starPointResponse]()
-      {
-        return starPointResponse;
-      });
-  }
-
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [clientId, response]()
-    {
-      return response;
-    });
+  hurdleClearRequestQueue.emplace(HurdleClearRequest{.clientId = clientId, .request = command});
 }
 
 void RaceDirector::HandleStartingRate(
