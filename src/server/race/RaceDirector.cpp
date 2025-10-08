@@ -413,7 +413,7 @@ void RaceDirector::Tick() {
       continue;
 
     // tick race
-    {
+    try {
       // process star point get - slides
       while (not starPointRequestQueue.empty()) {
         const auto& [clientId, command] = starPointRequestQueue.front();
@@ -611,6 +611,9 @@ void RaceDirector::Tick() {
         }
         hurdleClearRequestQueue.pop();
       }
+    } catch (const std::exception& x)
+    {
+      // ignore it
     }
 
     // Determine whether all racers have finished.
