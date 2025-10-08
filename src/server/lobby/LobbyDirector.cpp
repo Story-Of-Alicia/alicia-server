@@ -538,11 +538,15 @@ void LobbyDirector::HandleMakeRoom(
 
       switch (command.teamMode)
       {
-        case protocol::TeamMode::Solo:
-          room.GetRoomDetails().teamMode = Room::TeamMode::Solo;
+        case protocol::TeamMode::FFA:
+          room.GetRoomDetails().teamMode = Room::TeamMode::FFA;
           break;
         case protocol::TeamMode::Team:
           room.GetRoomDetails().teamMode = Room::TeamMode::Team;
+          break;
+        case protocol::TeamMode::Single:
+          room.GetRoomDetails().teamMode = Room::TeamMode::Single;
+          break;
         default:
           spdlog::error("Unknown team mode '{}'", static_cast<uint32_t>(command.gameMode));
       }

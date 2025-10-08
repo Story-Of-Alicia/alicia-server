@@ -2207,7 +2207,9 @@ struct AcCmdRCAddSkillEffect
 struct AcCmdCRChangeSkillCardPresetID
 {
   uint8_t setId{};
-  Gamemode gamemode{};
+  //! Command gives this as u32, we cast it from u32 to GameMode in Read
+  //! Could very possibly means tabId which would loosely correlate to GameMode
+  GameMode gamemode{};
 
   static Command GetCommand()
   {

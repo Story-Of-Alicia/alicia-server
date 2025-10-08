@@ -3222,13 +3222,13 @@ void RanchDirector::HandleChangeSkillCardPreset(
   characterRecord.Mutable(
     [&command](data::Character& character)
     {
-      auto selectSkillSets = [&character](Gamemode gamemode)
+      auto selectSkillSets = [&character](protocol::GameMode gamemode)
       { 
         switch (gamemode)
         {
-          case Gamemode::Magic:
+          case protocol::GameMode::Magic:
             return &character.skills.magic();
-          case Gamemode::Speed:
+          case protocol::GameMode::Speed:
             return &character.skills.speed();
           default:
             throw std::runtime_error("Gamemode is not recognised");

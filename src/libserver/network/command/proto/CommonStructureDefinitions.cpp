@@ -604,8 +604,9 @@ void SkillSet::Write(const SkillSet& value, SinkStream& stream)
   // Updating a skill set requires 2 skill values (can be 0) to be sent
   assert(value.skills.size() == 2);
 
-  stream.Write(value.setId)
-    .Write(value.gamemode);
+  stream.Write(value.setId);
+  // Gamemode needs recasting to uint32_t for the command
+  stream.Write(static_cast<uint32_t>(value.gamemode)); 
   
   stream.Write(static_cast<uint8_t>(value.skills.size()));
   for (const auto& skill : value.skills)
@@ -616,8 +617,11 @@ void SkillSet::Write(const SkillSet& value, SinkStream& stream)
 
 void SkillSet::Read(SkillSet& value, SourceStream& stream)
 {
+  // Command provides gamemode as uint32_t, recast it to its enum
+  uint32_t commandGameMode;
   stream.Read(value.setId)
-    .Read(value.gamemode);
+    .Read(commandGameMode);
+  value.gamemode = static_cast<GameMode>(commandGameMode);
 
   uint8_t size;
   stream.Read(size);

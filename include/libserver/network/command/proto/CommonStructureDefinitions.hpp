@@ -510,7 +510,7 @@ enum class TeamMode : uint8_t
 {
   FFA = 1,
   Team = 2,
-  Solo = 3
+  Single = 3
 };
 
 enum class GameMode : uint8_t

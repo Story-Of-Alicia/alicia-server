@@ -1757,8 +1757,11 @@ void AcCmdCRChangeSkillCardPresetID::Read(
   AcCmdCRChangeSkillCardPresetID& command,
   SourceStream& stream)
 {
+  // Command provides gamemode as uint32_t, recast it to its enum
+  uint32_t commandGameMode;
   stream.Read(command.setId)
-    .Read(command.gamemode);
+    .Read(commandGameMode);
+  command.gamemode = static_cast<GameMode>(commandGameMode);
 }
 
 } // namespace server::protocol

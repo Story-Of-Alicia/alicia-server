@@ -1150,10 +1150,10 @@ void RaceDirector::HandleStartRace(
         notify.hostOid = racer.oid;
 
         bool isSpeedOrMagic =
-          notify.gameMode == static_cast<uint8_t>(Gamemode::Speed) ||
-          notify.gameMode == static_cast<uint8_t>(Gamemode::Magic);
+          notify.raceGameMode == protocol::GameMode::Speed ||
+          notify.raceGameMode == protocol::GameMode::Magic;
         // Skills only apply for speed single or magic single
-        if (isSpeedOrMagic && notify.teamMode == TeamMode::FFA)
+        if (isSpeedOrMagic && notify.raceTeamMode == protocol::TeamMode::FFA)
         {
           // Notify racer of confirmed selection of skills
           notify.racerActiveSkillSet.setId = racer.skillSet.setId;
@@ -1171,14 +1171,14 @@ void RaceDirector::HandleStartRace(
           std::vector<uint32_t> bonusSkillIds = {43, 29, 30}; // Speed + magic
           
           // Append to list depending on gamemode
-          if (notify.gameMode == static_cast<uint8_t>(Gamemode::Speed))
+          if (notify.raceGameMode == protocol::GameMode::Speed)
           {
             bonusSkillIds.insert(
               bonusSkillIds.end(),
               speedOnlyBonusSkills.begin(),
               speedOnlyBonusSkills.end());
           }
-          else if (notify.gameMode == static_cast<uint8_t>(Gamemode::Magic))
+          else if (notify.raceGameMode == protocol::GameMode::Magic)
           {
             bonusSkillIds.insert(
               bonusSkillIds.end(),
@@ -2403,7 +2403,7 @@ void RaceDirector::HandleChangeSkillCardPresetId(
     return;
   }
   
-  if (command.gamemode != Gamemode::Speed && command.gamemode != Gamemode::Magic)
+  if (command.gamemode != protocol::GameMode::Speed && command.gamemode != protocol::GameMode::Magic)
   {
     // TODO: throw? return?
     // Gamemode can either be speed (1) or magic (2)
@@ -2419,8 +2419,8 @@ void RaceDirector::HandleChangeSkillCardPresetId(
     {
       // Get skill sets by gamemode
       const auto& skillSets = 
-        command.gamemode == Gamemode::Speed ? character.skills.speed() :
-        command.gamemode == Gamemode::Magic ? character.skills.magic() :
+        command.gamemode == protocol::GameMode::Speed ? character.skills.speed() :
+        command.gamemode == protocol::GameMode::Magic ? character.skills.magic() :
         throw std::runtime_error("Invalid gamemode");
       // Get skill set by setId
       const auto& skillSet =

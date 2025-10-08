@@ -578,10 +578,10 @@ void LoginHandler::QueueUserLoginAccepted(
     const auto& speed = character.skills.speed();
     const auto& magic = character.skills.magic();
     skillPresetListResponse.skillSets = {
-      SkillSet{.setId = 0, .gamemode = Gamemode::Speed, .skills = {speed.set1.slot1, speed.set1.slot2}},
-      SkillSet{.setId = 1, .gamemode = Gamemode::Speed, .skills = {speed.set2.slot1, speed.set2.slot2}},
-      SkillSet{.setId = 0, .gamemode = Gamemode::Magic, .skills = {magic.set1.slot1, magic.set1.slot2}},
-      SkillSet{.setId = 1, .gamemode = Gamemode::Magic, .skills = {magic.set2.slot1, magic.set2.slot2}}
+      protocol::SkillSet{.setId = 0, .gamemode = protocol::GameMode::Speed, .skills = {speed.set1.slot1, speed.set1.slot2}},
+      protocol::SkillSet{.setId = 1, .gamemode = protocol::GameMode::Speed, .skills = {speed.set2.slot1, speed.set2.slot2}},
+      protocol::SkillSet{.setId = 0, .gamemode = protocol::GameMode::Magic, .skills = {magic.set1.slot1, magic.set1.slot2}},
+      protocol::SkillSet{.setId = 1, .gamemode = protocol::GameMode::Magic, .skills = {magic.set2.slot1, magic.set2.slot2}}
     };
   });
 
