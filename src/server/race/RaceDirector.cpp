@@ -1149,7 +1149,7 @@ void RaceDirector::HandleStartRace(
         auto& racer = roomInstance.tracker.GetRacer(roomClientContext.characterUid);
         notify.hostOid = racer.oid;
 
-        bool isSpeedOrMagic =
+        const bool isSpeedOrMagic =
           notify.raceGameMode == protocol::GameMode::Speed ||
           notify.raceGameMode == protocol::GameMode::Magic;
         // Skills only apply for speed single or magic single
