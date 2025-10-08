@@ -276,21 +276,21 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
 
   character.isRanchLocked = json["isRanchLocked"].get<bool>();
 
-  const auto& loadSkillInto = [](data::Character::Skills::Sets& sets, const nlohmann::json& json)
+  const auto readSkills = [](data::Character::Skills::Sets& sets, const nlohmann::json& json)
   {
-    const auto& loadSetInto = [](data::Character::Skills::Sets::Set& set, const nlohmann::json& json)
+    const auto readSkillSet = [](data::Character::Skills::Sets::Set& set, const nlohmann::json& json)
     {
       set.slot1 = json["slot1"].get<uint32_t>();
       set.slot2 = json["slot2"].get<uint32_t>();
     };
 
-    loadSetInto(sets.set1, json["set1"]);
-    loadSetInto(sets.set2, json["set2"]);
+    readSkillSet(sets.set1, json["set1"]);
+    readSkillSet(sets.set2, json["set2"]);
   };
 
   const auto& skills = json["skills"];
-  loadSkillInto(character.skills.speed(), skills["speed"]);
-  loadSkillInto(character.skills.magic(), skills["magic"]);
+  readSkills(character.skills.speed(), skills["speed"]);
+  readSkills(character.skills.magic(), skills["magic"]);
 }
 
 void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
