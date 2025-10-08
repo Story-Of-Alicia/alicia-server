@@ -465,8 +465,12 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.grade = json["grade"].get<uint32_t>();
   horse.growthPoints = json["growthPoints"].get<uint32_t>();
 
-  horse.potentialType = json["potentialType"].get<uint32_t>();
-  horse.potentialLevel = json["potentialLevel"].get<uint32_t>();
+  auto potential = json["potential"];
+  horse.potential = data::Horse::Potential{
+    .type = potential["type"].get<uint8_t>(),
+    .level = potential["level"].get<uint8_t>(),
+    .value = potential["value"].get<uint8_t>()
+  };
 
   horse.luckState = json["luckState"].get<uint32_t>();
   horse.emblemUid = json["emblem"].get<uint32_t>();
@@ -559,8 +563,11 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["grade"] = horse.grade();
   json["growthPoints"] = horse.growthPoints();
 
-  json["potentialType"] = horse.potentialType();
-  json["potentialLevel"] = horse.potentialLevel();
+  nlohmann::json potential;
+  potential["type"] = horse.potential.type();
+  potential["level"] = horse.potential.level();
+  potential["value"] = horse.potential.value();
+  json["potential"] = potential;
 
   json["luckState"] = horse.luckState();
   json["emblem"] = horse.emblemUid();

@@ -293,7 +293,7 @@ struct Horse
     uint32_t val5{};
 
     uint8_t potentialLevel{};
-    uint8_t hasPotential{};
+    uint8_t potentialType{};
     uint8_t potentialValue{};
     uint8_t val9{};
 

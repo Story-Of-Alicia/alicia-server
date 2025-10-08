@@ -330,8 +330,12 @@ struct Horse
   dao::Field<uint32_t> grade{0u};
   dao::Field<uint32_t> growthPoints{0u};
 
-  dao::Field<Tid> potentialType{0u};
-  dao::Field<uint32_t> potentialLevel{0u};
+  struct Potential
+  {
+    dao::Field<uint8_t> type{0u};
+    dao::Field<uint8_t> level{0u};
+    dao::Field<uint8_t> value{0u};
+  } potential{};
 
   dao::Field<uint32_t> luckState{0u};
   dao::Field<uint32_t> emblemUid{0u};
