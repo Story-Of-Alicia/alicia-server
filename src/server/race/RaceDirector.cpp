@@ -330,7 +330,7 @@ void RaceDirector::Tick() {
   _scheduler.Tick();
 
   // Process rooms which are loading
-  for (auto& roomInstance : _roomInstances | std::views::values)
+  for (auto& [roomUid, roomInstance] : _roomInstances)
   {
     if (roomInstance.stage != RoomInstance::Stage::Loading)
       continue;
@@ -350,6 +350,11 @@ void RaceDirector::Tick() {
     // do not start the race.
     if (not allRacersLoaded && not loadTimeoutReached)
       continue;
+
+    if (loadTimeoutReached)
+    {
+      spdlog::warn("Room {} has reached the loading timeout threshold", roomUid);
+    }
 
     const auto mapBlockTemplate = _serverInstance.GetCourseRegistry().GetMapBlockInfo(
       roomInstance.raceMapBlockId);
@@ -402,16 +407,26 @@ void RaceDirector::Tick() {
     if (not allRacersFinished && not raceTimeoutReached)
       return;
 
+    if (raceTimeoutReached)
+    {
+      spdlog::warn("Room {} has reached the race timeout threshold", roomUid);
+    }
+
     protocol::AcCmdRCRaceResultNotify raceResult{};
 
     std::map<uint32_t, data::Uid> scoreboard;
-    for (const auto & [characterUid, racer] : roomInstance.tracker.GetRacers())
+    for (const auto& [characterUid, racer] : roomInstance.tracker.GetRacers())
     {
-      scoreboard.try_emplace(racer.courseTime, characterUid);
+      // todo: do not do this here i guess
+      uint32_t courseTime = std::numeric_limits<uint32_t>::max();
+      if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
+        courseTime = racer.courseTime;
+
+      scoreboard.try_emplace(courseTime, characterUid);
     }
 
     // Build the score board.
-    for (auto& characterUid : scoreboard | std::views::values)
+    for (auto& [courseTime, characterUid] : scoreboard)
     {
       auto& racer = roomInstance.tracker.GetRacer(characterUid);
       auto& score = raceResult.scores.emplace_back();
@@ -421,10 +436,10 @@ void RaceDirector::Tick() {
       if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
       {
         score.bitset = static_cast<protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset>(
-            protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::Connected | 0b1'1111);
+            protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::Connected);
       }
 
-      score.courseTime = racer.courseTime;
+      score.courseTime = courseTime;
 
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
         characterUid);
@@ -1166,6 +1181,7 @@ void RaceDirector::HandleLoadingComplete(
   auto& racer = roomInstance.tracker.GetRacer(
     clientContext.characterUid);
 
+  // Switch the racer to the racing state.
   racer.state = tracker::RaceTracker::Racer::State::Racing;
 
   // Notify all clients in the room that this player's loading is complete
@@ -1199,8 +1215,6 @@ void RaceDirector::HandleUserRaceFinal(
   protocol::AcCmdUserRaceFinalNotify notify{
     .oid = racer.oid,
     .courseTime = command.courseTime};
-
-  // todo: start finish timeout timer
 
   for (const ClientId& roomClientId : roomInstance.clients)
   {
