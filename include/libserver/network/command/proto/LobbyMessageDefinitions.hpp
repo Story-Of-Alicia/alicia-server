@@ -626,7 +626,7 @@ struct LobbyCommandEnterChannelCancel
 struct LobbyCommandRoomList
 {
   uint8_t page;
-  uint8_t gameMode;
+  GameMode gameMode;
   TeamMode teamMode;
 
   static Command GetCommand()
@@ -653,23 +653,29 @@ struct LobbyCommandRoomList
 struct LobbyCommandRoomListOK
 {
   uint8_t page{};
-  uint8_t unk1{};
-  uint8_t unk2{};
+  GameMode gameMode{};
+  TeamMode teamMode{};
 
   struct Room
   {
-    uint32_t id{};
+    uint32_t uid{};
     std::string name{};
     uint8_t playerCount{};
-    uint8_t maxPlayers{};
+    uint8_t maxPlayerCount{};
     uint8_t isLocked{};
     uint8_t unk0{};
     uint8_t unk1{};
     uint16_t map{};
-    uint8_t hasStarted{};
+    bool hasStarted{};
     uint16_t unk2{};
     uint8_t unk3{};
-    uint8_t level{}; // 0: 3lv, 1: 12lv, 2 and beyond: nothing
+
+    enum class SkillBracket
+    {
+      Newbies = 0,
+      Level12 = 1,
+      Experienced = 2,
+    } skillBracket{SkillBracket::Experienced};
     uint32_t unk4{};
 
     static void Write(const Room& value, SinkStream& stream);
@@ -712,7 +718,7 @@ struct LobbyCommandMakeRoom
   std::string name;
   std::string password;
   uint8_t playerCount;
-  uint8_t gameMode;
+  GameMode gameMode;
   TeamMode teamMode;
   uint16_t missionId;
   uint8_t unk3;
@@ -751,9 +757,9 @@ struct LobbyCommandMakeRoom
 struct LobbyCommandMakeRoomOK
 {
   uint32_t roomUid{};
-  uint32_t otp{};
-  uint32_t address{};
-  uint16_t port{};
+  uint32_t oneTimePassword{};
+  uint32_t raceServerAddress{};
+  uint16_t raceServerPort{};
   uint8_t unk2{};
 
   static Command GetCommand()
@@ -830,9 +836,9 @@ struct LobbyCommandEnterRoom
 struct LobbyCommandEnterRoomOK
 {
   uint32_t roomUid{};
-  uint32_t otp{};
-  uint32_t address{};
-  uint16_t port{};
+  uint32_t oneTimePassword{};
+  uint32_t raceServerAddress{};
+  uint16_t raceServerPort{};
   uint8_t member6{};
 
   static Command GetCommand()
@@ -1921,6 +1927,32 @@ struct AcCmdCLRequestMountInfoOK
   //! @param stream Source stream.
   static void Read(
     AcCmdCLRequestMountInfoOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdLCSkillCardPresetList
+{
+  uint8_t unk0{};
+  uint8_t unk1{};
+  std::vector<SkillSet> skillSets{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCSkillCardPresetList;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCSkillCardPresetList& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCSkillCardPresetList& command,
     SourceStream& stream);
 };
 

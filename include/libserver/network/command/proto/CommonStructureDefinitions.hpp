@@ -27,7 +27,7 @@
 #include <string>
 #include <vector>
 
-namespace server
+namespace server::protocol
 {
 
 //!
@@ -293,7 +293,7 @@ struct Horse
     uint32_t val5{};
 
     uint8_t potentialLevel{};
-    uint8_t hasPotential{};
+    uint8_t potentialType{};
     uint8_t potentialValue{};
     uint8_t val9{};
 
@@ -508,10 +508,40 @@ struct League
 
 enum class TeamMode : uint8_t
 {
-  Single = 1,
-  Team = 2
+  FFA = 1,
+  Team = 2,
+  Single = 3
 };
 
-} // namespace server
+enum class GameMode : uint8_t
+{
+  Speed = 1,
+  Magic = 2,
+  Unk4 = 4,
+  Tutorial = 6,
+};
+
+struct SkillSet
+{
+  //! ID of the set
+  //! 0 - Set 1
+  //! 1 - Set 2
+  uint8_t setId{};
+  //! Either speed (1) or magic (2)
+  GameMode gamemode{};
+  //! ID of racing skills
+  //! Max 2 skills
+  std::vector<uint32_t> skills{};
+
+  static void Write(
+    const SkillSet& command,
+    SinkStream& stream);
+
+  static void Read(
+    SkillSet& command,
+    SourceStream& stream);
+};
+
+} // namespace server::protocol
 
 #endif

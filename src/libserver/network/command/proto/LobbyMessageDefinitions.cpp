@@ -493,10 +493,10 @@ void LobbyCommandRoomListOK::Room::Write(
   const Room& value,
   SinkStream& stream)
 {
-  stream.Write(value.id)
+  stream.Write(value.uid)
     .Write(value.name)
     .Write(value.playerCount)
-    .Write(value.maxPlayers)
+    .Write(value.maxPlayerCount)
     .Write(value.isLocked)
     .Write(value.unk0)
     .Write(value.unk1)
@@ -504,7 +504,7 @@ void LobbyCommandRoomListOK::Room::Write(
     .Write(value.hasStarted)
     .Write(value.unk2)
     .Write(value.unk3)
-    .Write(value.level)
+    .Write(value.skillBracket)
     .Write(value.unk4);
 }
 
@@ -520,8 +520,8 @@ void LobbyCommandRoomListOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.page)
-    .Write(command.unk1)
-    .Write(command.unk2)
+    .Write(command.gameMode)
+    .Write(command.teamMode)
     .Write(static_cast<uint8_t>(command.rooms.size()));
   for (const auto& room : command.rooms)
   {
@@ -566,9 +566,9 @@ void LobbyCommandMakeRoomOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.roomUid)
-    .Write(command.otp)
-    .Write(htonl(command.address))
-    .Write(command.port)
+    .Write(command.oneTimePassword)
+    .Write(htonl(command.raceServerAddress))
+    .Write(command.raceServerPort)
     .Write(command.unk2);
 }
 
@@ -614,9 +614,9 @@ void LobbyCommandEnterRoomOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.roomUid)
-    .Write(command.otp)
-    .Write(htonl(command.address))
-    .Write(command.port)
+    .Write(command.oneTimePassword)
+    .Write(htonl(command.raceServerAddress))
+    .Write(command.raceServerPort)
     .Write(command.member6);
 }
 
@@ -1287,6 +1287,27 @@ void AcCmdCLRequestMountInfoOK::Write(
       .Write(mountInfo.participated)
       .Write(mountInfo.cumulativePrize)
       .Write(mountInfo.biggestPrize);
+  }
+}
+
+void AcCmdLCSkillCardPresetList::Read(
+  AcCmdLCSkillCardPresetList& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdLCSkillCardPresetList::Write(
+  const AcCmdLCSkillCardPresetList& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1);
+
+  stream.Write(static_cast<uint8_t>(command.skillSets.size()));
+  for (const auto& skillSet : command.skillSets)
+  {
+    stream.Write(skillSet);
   }
 }
 

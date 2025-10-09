@@ -477,8 +477,8 @@ void LoginHandler::QueueUserLoginAccepted(
 
       // todo: model constant
       response.gender = character.parts.modelId() == 10
-        ? Gender::Boy
-        : Gender::Girl;
+        ? protocol::Gender::Boy
+        : protocol::Gender::Girl;
 
       response.level = character.level();
       response.carrots = character.carrots();
@@ -566,6 +566,30 @@ void LoginHandler::QueueUserLoginAccepted(
     [response]()
     {
       return response;
+    });
+
+  protocol::AcCmdLCSkillCardPresetList skillPresetListResponse{
+    .unk0 = 0,
+    .unk1 = 0
+  };
+
+  characterRecord.Immutable([&skillPresetListResponse](const data::Character& character)
+  {
+    const auto& speed = character.skills.speed();
+    const auto& magic = character.skills.magic();
+    skillPresetListResponse.skillSets = {
+      protocol::SkillSet{.setId = 0, .gamemode = protocol::GameMode::Speed, .skills = {speed.set1.slot1, speed.set1.slot2}},
+      protocol::SkillSet{.setId = 1, .gamemode = protocol::GameMode::Speed, .skills = {speed.set2.slot1, speed.set2.slot2}},
+      protocol::SkillSet{.setId = 0, .gamemode = protocol::GameMode::Magic, .skills = {magic.set1.slot1, magic.set1.slot2}},
+      protocol::SkillSet{.setId = 1, .gamemode = protocol::GameMode::Magic, .skills = {magic.set2.slot1, magic.set2.slot2}}
+    };
+  });
+
+  _server.QueueCommand<decltype(skillPresetListResponse)>(
+    clientId,
+    [skillPresetListResponse]()
+    {
+      return skillPresetListResponse;
     });
 }
 

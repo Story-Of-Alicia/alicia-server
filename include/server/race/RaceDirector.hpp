@@ -28,6 +28,7 @@
 #include "libserver/network/command/proto/RaceMessageDefinitions.hpp"
 #include "libserver/util/Scheduler.hpp"
 
+#include <random>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -78,37 +79,48 @@ public:
   Config::Race& GetConfig();
 
 private:
+  std::random_device _randomDevice;
+
   struct ClientContext
   {
     data::Uid characterUid{data::InvalidUid};
     data::Uid roomUid{data::InvalidUid};
-    bool authorized = false;
+    bool isAuthenticated = false;
   };
 
   struct RoomInstance
   {
+    //! A stage of the room.
     enum class Stage
     {
       Waiting,
       Loading,
-      Racing
-    } stage;
-
+      Racing,
+    } stage{Stage::Waiting};
     //! A time point of when the stage timeout occurs.
     std::chrono::steady_clock::time_point stageTimeoutTimePoint;
 
-    //! A map block id.
-    uint16_t mapBlockId{1};
-    //! A leader character's UID.
+    //! A master's character UID.
     data::Uid masterUid{data::InvalidUid};
     //! A race object tracker.
     tracker::RaceTracker tracker;
+
+    //! A game mode of the race.
+    protocol::GameMode raceGameMode;
+    //! A team mode of the race.
+    protocol::TeamMode raceTeamMode;
+    //! A map block ID of the race.
+    uint16_t raceMapBlockId{};
+    //! A mission ID of the race.
+    uint16_t raceMissionId{};
 
     //! A time point of when the race is actually started (a countdown is finished).
     std::chrono::steady_clock::time_point raceStartTimePoint;
     //! A room clients.
     std::unordered_set<ClientId> clients;
   };
+
+  ClientContext& GetClientContext(ClientId clientId, bool requireAuthorized = true);
 
   void HandleEnterRoom(
     ClientId clientId,
@@ -233,6 +245,10 @@ private:
   void HandleChangeMagicTargetCancel(
     ClientId clientId,
     const protocol::AcCmdCRChangeMagicTargetCancel& command);
+
+  void HandleChangeSkillCardPresetId(
+    ClientId clientId,
+    const protocol::AcCmdCRChangeSkillCardPresetID& command);
 
   // Note: HandleActivateSkillEffect commented out due to build issues
   // void HandleActivateSkillEffect(

@@ -330,6 +330,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleHideAge(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRChangeSkillCardPreset>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleChangeSkillCardPreset(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -557,11 +563,11 @@ RanchDirector::ClientContext& RanchDirector::GetClientContext(
 {
   const auto clientIter = _clients.find(clientId);
   if (clientIter == _clients.cend())
-    throw std::runtime_error("Client context not available");
+    throw std::runtime_error("Ranch client is not available");
 
   auto& clientContext = clientIter->second;
   if (requireAuthentication && not clientContext.isAuthenticated)
-    throw std::runtime_error("Client is not authenticated");
+    throw std::runtime_error("Ranch client is not authenticated");
 
   return clientContext;
 }
@@ -630,7 +636,7 @@ void RanchDirector::HandleEnterRanch(
   protocol::AcCmdCREnterRanchOK response{
     .rancherUid = command.rancherUid,
     .league = {
-      .type = League::Type::Platinum,
+      .type = protocol::League::Type::Platinum,
       .rankingPercentile = 50}};
 
   rancherRecord->Immutable(
@@ -707,7 +713,7 @@ void RanchDirector::HandleEnterRanch(
     command.characterUid);
 
   // The character that is currently entering the ranch.
-  RanchCharacter characterEnteringRanch;
+  protocol::RanchCharacter characterEnteringRanch;
 
   // Add the ranch horses.
   for (auto [horseUid, horseOid] : ranchInstance.tracker.GetHorses())
@@ -742,14 +748,15 @@ void RanchDirector::HandleEnterRanch(
       protocolCharacter.uid = character.uid();
       protocolCharacter.name = character.name();
       protocolCharacter.role = character.role() == data::Character::Role::GameMaster
-        ? RanchCharacter::Role::GameMaster
+        ? protocol::RanchCharacter::Role::GameMaster
         : character.role() == data::Character::Role::Op
-        ? RanchCharacter::Role::Op // Assumed, tried but no visual change
-        : RanchCharacter::Role::User; 
+          ? protocol::RanchCharacter::Role::Op
+          : protocol::RanchCharacter::Role::User;
       protocolCharacter.age = character.hideGenderAndAge() ? 0 : character.age();
+      // todo: use model constant
       protocolCharacter.gender = character.parts.modelId() == 10
-          ? RanchCharacter::Gender::Boy
-          : RanchCharacter::Gender::Girl;
+          ? protocol::RanchCharacter::Gender::Boy
+          : protocol::RanchCharacter::Gender::Girl;
 
       protocolCharacter.introduction = character.introduction();
 
@@ -1537,10 +1544,10 @@ void RanchDirector::HandleRequestNpcDressList(
   protocol::RanchCommandRequestNpcDressListOK response{
     .unk0 = requestNpcDressList.unk0,
     .dressList = {
-    Item{
-    .uid = 0xFFF,
-    .tid = 10164,
-    .count = 1}} // TODO: Fetch dress list from somewhere
+    protocol::Item{
+      .uid = 0xFFF,
+      .tid = 10164,
+      .count = 1}} // TODO: Fetch dress list from somewhere
   };
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -3189,6 +3196,49 @@ void RanchDirector::HandleStatusPointApply(
     [response]()
     {
       return response;
+    });
+}
+
+void RanchDirector::HandleChangeSkillCardPreset(
+  ClientId clientId,
+  const protocol::AcCmdCRChangeSkillCardPreset command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  if (command.skillSet.setId > 2)
+  {
+    // TODO: character tried to update skill set exceeding range, return?
+    spdlog::warn("Character {} tried to update their skill set {} but character cannot have more than 2 skill sets",
+      clientContext.characterUid, command.skillSet.setId);
+    return;
+  }
+  else if (command.skillSet.skills.size() > 2)
+  {
+    spdlog::warn("Character {} tried to save more skills ({} skills) than a skill set can hold (2 skills)",
+      clientContext.characterUid, command.skillSet.skills.size());
+    return;
+  }
+
+  const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
+  characterRecord.Mutable(
+    [&command](data::Character& character)
+    {
+      auto selectSkillSets = [&character](protocol::GameMode gamemode)
+      { 
+        switch (gamemode)
+        {
+          case protocol::GameMode::Magic:
+            return &character.skills.magic();
+          case protocol::GameMode::Speed:
+            return &character.skills.speed();
+          default:
+            throw std::runtime_error("Gamemode is not recognised");
+        }
+      };
+
+      const auto& skillSets = selectSkillSets(command.skillSet.gamemode);
+      auto& skillSet = command.skillSet.setId == 0 ? skillSets->set1 : skillSets->set2;
+      skillSet.slot1 = command.skillSet.skills[0];
+      skillSet.slot2 = command.skillSet.skills[1];
     });
 }
 

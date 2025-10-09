@@ -28,7 +28,7 @@ RaceTracker::Racer& RaceTracker::AddRacer(data::Uid characterUid)
   if (not created)
     throw std::runtime_error("Character is already a racer");
 
-  racerIter->second.oid = _nextObjectId++;
+  racerIter->second.oid = _nextRacerOid++;
 
   return racerIter->second;
 }
@@ -36,6 +36,11 @@ RaceTracker::Racer& RaceTracker::AddRacer(data::Uid characterUid)
 void RaceTracker::RemoveRacer(data::Uid characterUid)
 {
   _racers.erase(characterUid);
+}
+
+bool RaceTracker::IsRacer(data::Uid characterUid)
+{
+  return _racers.contains(characterUid);
 }
 
 RaceTracker::Racer& RaceTracker::GetRacer(data::Uid characterUid)
@@ -54,11 +59,11 @@ RaceTracker::ObjectMap& RaceTracker::GetRacers()
 
 RaceTracker::Item& RaceTracker::AddItem()
 {
-  const auto [itemIter, created] = _items.try_emplace(_nextItemId);
+  const auto [itemIter, created] = _items.try_emplace(_nextItemOid);
   if (not created)
     throw std::runtime_error("Item is already added to the race map");
 
-  itemIter->second.itemId = _nextItemId++;
+  itemIter->second.itemId = _nextItemOid++;
 
   return itemIter->second;
 }
@@ -80,6 +85,13 @@ RaceTracker::Item& RaceTracker::GetItem(uint16_t itemId)
 RaceTracker::ItemObjectMap& RaceTracker::GetItems()
 {
   return _items;
+}
+void RaceTracker::Clear()
+{
+  _racers.clear();
+  _items.clear();
+  _nextRacerOid = 1;
+  _nextItemOid = 1;
 }
 
 } // namespace server::tracker

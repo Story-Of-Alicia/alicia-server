@@ -275,6 +275,22 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.housing = json["housing"].get<std::vector<data::Uid>>();
 
   character.isRanchLocked = json["isRanchLocked"].get<bool>();
+
+  const auto readSkills = [](data::Character::Skills::Sets& sets, const nlohmann::json& json)
+  {
+    const auto readSkillSet = [](data::Character::Skills::Sets::Set& set, const nlohmann::json& json)
+    {
+      set.slot1 = json["slot1"].get<uint32_t>();
+      set.slot2 = json["slot2"].get<uint32_t>();
+    };
+
+    readSkillSet(sets.set1, json["set1"]);
+    readSkillSet(sets.set2, json["set2"]);
+  };
+
+  const auto& skills = json["skills"];
+  readSkills(character.skills.speed(), skills["speed"]);
+  readSkills(character.skills.magic(), skills["magic"]);
 }
 
 void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
@@ -339,6 +355,28 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["housing"] = character.housing();
 
   json["isRanchLocked"] = character.isRanchLocked();
+
+  // Construct gamemode skills from skill sets
+  const auto& writeSkills = [](const data::Character::Skills::Sets& sets)
+  {
+    const auto& writeSkillSet = [](const data::Character::Skills::Sets::Set& set)
+    {
+      nlohmann::json json;
+      json["slot1"] = set.slot1;
+      json["slot2"] = set.slot2;
+      return json;
+    };
+
+    nlohmann::json json;
+    json["set1"] = writeSkillSet(sets.set1);
+    json["set2"] = writeSkillSet(sets.set2);
+    return json;
+  };
+
+  nlohmann::json skills;
+  skills["speed"] = writeSkills(character.skills.speed());
+  skills["magic"] = writeSkills(character.skills.magic());
+  json["skills"] = skills;
 
   dataFile << json.dump(2);
 }
@@ -426,8 +464,12 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.grade = json["grade"].get<uint32_t>();
   horse.growthPoints = json["growthPoints"].get<uint32_t>();
 
-  horse.potentialType = json["potentialType"].get<uint32_t>();
-  horse.potentialLevel = json["potentialLevel"].get<uint32_t>();
+  auto potential = json["potential"];
+  horse.potential = data::Horse::Potential{
+    .type = potential["type"].get<uint8_t>(),
+    .level = potential["level"].get<uint8_t>(),
+    .value = potential["value"].get<uint8_t>()
+  };
 
   horse.luckState = json["luckState"].get<uint32_t>();
   horse.emblemUid = json["emblem"].get<uint32_t>();
@@ -520,8 +562,11 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["grade"] = horse.grade();
   json["growthPoints"] = horse.growthPoints();
 
-  json["potentialType"] = horse.potentialType();
-  json["potentialLevel"] = horse.potentialLevel();
+  nlohmann::json potential;
+  potential["type"] = horse.potential.type();
+  potential["level"] = horse.potential.level();
+  potential["value"] = horse.potential.value();
+  json["potential"] = potential;
 
   json["luckState"] = horse.luckState();
   json["emblem"] = horse.emblemUid();

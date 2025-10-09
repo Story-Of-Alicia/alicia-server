@@ -82,7 +82,7 @@ void WriteRacer(SinkStream& stream, const Racer& racer)
 void WriteRoomDescription(SinkStream& stream, const RoomDescription& roomDescription)
 {
   stream.Write(roomDescription.name)
-    .Write(roomDescription.playerCount)
+    .Write(roomDescription.maxPlayerCount)
     .Write(roomDescription.password)
     .Write(roomDescription.gameModeMaps)
     .Write(roomDescription.teamMode)
@@ -105,7 +105,7 @@ void AcCmdCREnterRoom::Read(
   SourceStream& stream)
 {
   stream.Read(command.characterUid)
-    .Read(command.otp)
+    .Read(command.oneTimePassword)
     .Read(command.roomUid);
 }
 
@@ -124,7 +124,7 @@ void AcCmdCREnterRoomOK::Write(
     WriteRacer(stream, racer);
   }
 
-  stream.Write(command.nowPlaying)
+  stream.Write(command.isRoomWaiting)
     .Write(command.uid);
 
   WriteRoomDescription(stream, command.roomDescription);
@@ -422,23 +422,23 @@ void AcCmdCRStartRaceNotify::Struct2::Read(
   throw std::runtime_error("Not implemented.");
 }
 
-void AcCmdCRStartRaceNotify::Struct3::Write(
-  const Struct3& command,
+void AcCmdCRStartRaceNotify::ActiveSkillSet::Write(
+  const ActiveSkillSet& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0)
+  stream.Write(command.setId)
     .Write(command.unk1);
 
   stream.Write(static_cast<uint8_t>(
-    command.unk2.size()));
-  for (const auto& element : command.unk2)
+    command.skills.size()));
+  for (const auto& element : command.skills)
   {
     stream.Write(element);
   }
 }
 
-void AcCmdCRStartRaceNotify::Struct3::Read(
-  Struct3& command,
+void AcCmdCRStartRaceNotify::ActiveSkillSet::Read(
+  ActiveSkillSet& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");
@@ -448,11 +448,11 @@ void AcCmdCRStartRaceNotify::Write(
   const AcCmdCRStartRaceNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.gameMode)
-    .Write(command.teamMode)
+  stream.Write(command.raceGameMode)
+    .Write(command.raceTeamMode)
     .Write(command.hostOid)
     .Write(command.member4)
-    .Write(command.mapBlockId);
+    .Write(command.raceMapBlockId);
 
   stream.Write(static_cast<uint8_t>(command.racers.size()));
   for (const auto& element : command.racers)
@@ -475,9 +475,9 @@ void AcCmdCRStartRaceNotify::Write(
     .Write(command.unk9)
     .Write(command.unk10);
 
-  stream.Write(command.missionId)
+  stream.Write(command.raceMissionId)
     .Write(command.unk12)
-    .Write(command.unk13);
+    .Write(command.racerActiveSkillSet);
 
   stream.Write(command.unk14)
     .Write(command.carnivalType)
@@ -770,7 +770,7 @@ void AcCmdRCRaceResultNotify::Write(
       .Write(score.member27);
   }
 
-  stream.Write(command.member2);
+  stream.Write(command.racerActiveSkillSet);
 
   stream.Write(command.member3)
     .Write(command.member4);
@@ -1744,6 +1744,24 @@ void AcCmdRCAddSkillEffect::Read(
     .Read(command.effectId)
     .Read(command.duration)
     .Read(command.intensity);
+}
+
+void AcCmdCRChangeSkillCardPresetID::Write(
+  const AcCmdCRChangeSkillCardPresetID& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRChangeSkillCardPresetID::Read(
+  AcCmdCRChangeSkillCardPresetID& command,
+  SourceStream& stream)
+{
+  // Command provides gamemode as uint32_t, recast it to its enum
+  uint32_t commandGameMode;
+  stream.Read(command.setId)
+    .Read(commandGameMode);
+  command.gamemode = static_cast<GameMode>(commandGameMode);
 }
 
 } // namespace server::protocol

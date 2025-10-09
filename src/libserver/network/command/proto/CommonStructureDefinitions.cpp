@@ -19,7 +19,9 @@
 
 #include "libserver/network/command/proto/CommonStructureDefinitions.hpp"
 
-namespace server
+#include <cassert>
+
+namespace server::protocol
 {
 
 void Item::Write(const Item& item, SinkStream& stream)
@@ -273,7 +275,7 @@ void Horse::Write(const Horse& value, SinkStream& stream)
     .Write(value.vals1.classProgression)
     .Write(value.vals1.val5)
     .Write(value.vals1.potentialLevel)
-    .Write(value.vals1.hasPotential)
+    .Write(value.vals1.potentialType)
     .Write(value.vals1.potentialValue)
     .Write(value.vals1.val9)
     .Write(value.vals1.luck)
@@ -327,7 +329,7 @@ void Horse::Read(Horse& value, SourceStream& stream)
     .Read(value.vals1.classProgression)
     .Read(value.vals1.val5)
     .Read(value.vals1.potentialLevel)
-    .Read(value.vals1.hasPotential)
+    .Read(value.vals1.potentialType)
     .Read(value.vals1.potentialValue)
     .Read(value.vals1.val9)
     .Read(value.vals1.luck)
@@ -588,4 +590,46 @@ void League::Read(League& value, SourceStream& stream)
     .Read(value.rankingPercentile);
 }
 
-} // namespace server
+void SkillSet::Write(const SkillSet& value, SinkStream& stream)
+{
+  // Set 1 or 2 are supported
+  // TODO: enable this if we are certain only max of 2 sets are possible
+  // assert(value.setId < 3);
+  // Only magic or speed skills are saved (see tag10 @ 0x0050f760)
+  // Note: Gamemode 4 (spectator?) was discovered doing some auxilary function
+  assert(
+    value.gamemode == GameMode::Magic ||
+    value.gamemode == GameMode::Speed ||
+    value.gamemode == GameMode::Unk4);
+  // Updating a skill set requires 2 skill values (can be 0) to be sent
+  assert(value.skills.size() == 2);
+
+  stream.Write(value.setId);
+  // Gamemode needs recasting to uint32_t for the command
+  stream.Write(static_cast<uint32_t>(value.gamemode)); 
+  
+  stream.Write(static_cast<uint8_t>(value.skills.size()));
+  for (const auto& skill : value.skills)
+  {
+    stream.Write(skill);
+  }
+}
+
+void SkillSet::Read(SkillSet& value, SourceStream& stream)
+{
+  // Command provides gamemode as uint32_t, recast it to its enum
+  uint32_t commandGameMode;
+  stream.Read(value.setId)
+    .Read(commandGameMode);
+  value.gamemode = static_cast<GameMode>(commandGameMode);
+
+  uint8_t size;
+  stream.Read(size);
+  value.skills.resize(size);
+  for (auto& element : value.skills)
+  {
+    stream.Read(element);
+  }
+}
+
+} // namespace server::protocol

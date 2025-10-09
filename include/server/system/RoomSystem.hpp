@@ -20,53 +20,110 @@
 #ifndef ROOMREGISTRY_HPP
 #define ROOMREGISTRY_HPP
 
-#include "libserver/registry/CourseRegistry.hpp"
+#include <libserver/data/DataDefinitions.hpp>
 
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
+#include <mutex>
 
 namespace server
 {
-enum class TeamMode : uint8_t;
-}
-namespace server
-{
-enum class GameMode : uint8_t;
-}
-namespace server
-{
 
-struct Room
+class Room
 {
-  uint32_t uid{};
-  std::string name;
-  std::string password;
-  uint16_t missionId{};
-  uint16_t mapBlockId{};
-  uint32_t otp{};
-  uint8_t playerCount;
-  uint8_t gameMode;
-  TeamMode teamMode;
-  uint8_t unk3;
-  uint16_t bitset;
-  uint8_t unk4;
+public:
+  enum class GameMode
+  {
+    Speed = 1, Magic = 2, Guild, Tutorial = 6
+  };
+
+  enum class TeamMode
+  {
+    FFA = 1,
+    Team = 2,
+    Single = 3
+  };
+
+  class Player
+  {
+  public:
+    bool ToggleReady();
+    [[nodiscard]] bool IsReady() const;
+  private:
+    bool _isReady = false;
+  };
+
+  struct Details
+  {
+    std::string name;
+    std::string password;
+    uint16_t missionId{};
+    uint16_t courseId{};
+    uint32_t maxPlayerCount{};
+    GameMode gameMode{};
+    TeamMode teamMode{};
+    bool member11{};
+    uint8_t skillBracket{};
+  };
+
+  struct Snapshot
+  {
+    uint32_t uid;
+    Details details;
+    size_t playerCount;
+    bool isPlaying;
+  };
+
+  explicit Room(uint32_t uid);
+
+  [[nodiscard]] bool IsRoomFull() const;
+  bool QueuePlayer(data::Uid characterUid);
+  bool DequeuePlayer(data::Uid characterUid);
+  bool AddPlayer(data::Uid characterUid);
+  void RemovePlayer(data::Uid characterUid);
+  [[nodiscard]] Player& GetPlayer(data::Uid characterUid);
+
+  void SetRoomPlaying(bool isPlaying);
+
+  [[nodiscard]] uint32_t GetUid() const;
+  [[nodiscard]] bool IsRoomPlaying() const;
+  [[nodiscard]] size_t GetPlayerCount() const;
+
+  [[nodiscard]] Details& GetRoomDetails();
+  [[nodiscard]] Snapshot GetRoomSnapshot() const;
+  [[nodiscard]] std::unordered_map<data::Uid, Player>& GetPlayers();
+
+private:
+  Details _details;
+  uint32_t _uid{};
+  std::unordered_set<data::Uid> _queuedPlayers;
+  std::unordered_map<data::Uid, Player> _players;
+  bool _roomIsPlaying{};
 };
 
 class RoomSystem
 {
 public:
-  Room& CreateRoom();
-  Room& GetRoom(uint32_t uid);
+  void CreateRoom(const std::function<void(Room&)>& consumer);
+  void GetRoom(uint32_t uid, const std::function<void(Room&)>& consumer);
+  bool RoomExists(uint32_t uid);
   void DeleteRoom(uint32_t uid);
-  const std::unordered_map<uint32_t, Room>& GetRooms()
-  {
-    return _rooms;
-  }
+
+  std::vector<Room::Snapshot> GetRoomsSnapshot();
 
 private:
+  struct Entry
+  {
+    Room room;
+    std::mutex mutex{};
+  };
+
   uint32_t _sequencedId = 0;
-  std::unordered_map<uint32_t, Room> _rooms;
+  std::mutex _roomsLock;
+  std::unordered_map<uint32_t, Entry> _rooms;
 };
 
 } // namespace server

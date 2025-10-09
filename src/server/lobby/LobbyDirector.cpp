@@ -19,14 +19,16 @@
 
 #include "server/lobby/LobbyDirector.hpp"
 
-#include "../../../include/server/system/RoomSystem.hpp"
-#include "libserver/data/helper/ProtocolHelper.hpp"
+#include "server/system/RoomSystem.hpp"
 #include "server/ServerInstance.hpp"
-#include "zlib.h"
+
+#include <libserver/data/helper/ProtocolHelper.hpp>
+
+#include <boost/container_hash/hash.hpp>
+#include <spdlog/spdlog.h>
+#include <zlib.h>
 
 #include <random>
-
-#include <spdlog/spdlog.h>
 
 namespace
 {
@@ -273,6 +275,7 @@ void LobbyDirector::Terminate()
 void LobbyDirector::Tick()
 {
   _loginHandler.Tick();
+  _scheduler.Tick();
 }
 
 void LobbyDirector::HandleClientConnected(ClientId clientId)
@@ -429,33 +432,58 @@ void LobbyDirector::HandleRoomList(
   ClientId clientId,
   const protocol::LobbyCommandRoomList& command)
 {
-  protocol::LobbyCommandRoomListOK response;
-  response.page = command.page;
-  response.unk1 = command.gameMode;
-  response.unk2 = static_cast<uint8_t>(command.teamMode);
+  constexpr uint32_t RoomsPerPage = 9;
 
-  for (const auto& room : _serverInstance.GetRoomSystem().GetRooms() | std::views::values)
+  protocol::LobbyCommandRoomListOK response{
+    .page = command.page,
+    .gameMode = command.gameMode,
+    .teamMode = command.teamMode};
+
+  // todo: update every x tick
+  const auto roomSnapshots = _serverInstance.GetRoomSystem().GetRoomsSnapshot();
+  const auto roomChunks = std::views::chunk(
+    roomSnapshots,
+    RoomsPerPage);
+
+  if (not roomChunks.empty())
   {
-    if ( room.gameMode != command.gameMode
-      || room.teamMode != command.teamMode)
-      continue;
+    // Clamp the page index to the la
+    const auto pageIndex = std::max(
+      std::min(
+        roomChunks.size() - 1,
+        static_cast<size_t>(command.page)),
+      size_t{0});
 
-    // TODO: get Live player count from RaceDirector
-    // TODO: gamestate showing
-    auto& roomResponse = response.rooms.emplace_back();
-    roomResponse.hasStarted = _serverInstance.GetRaceDirector().IsRoomRacing(room.uid);
-    roomResponse.id = room.uid;
-    if (not room.password.empty()
-      || roomResponse.hasStarted)
+    for (const auto& room : roomChunks[pageIndex])
     {
-      roomResponse.isLocked = true;
-    }
+      const protocol::GameMode roomGameMode = static_cast<
+        protocol::GameMode>(room.details.gameMode);
+      const protocol::TeamMode roomTeamMode = static_cast<
+        protocol::TeamMode>(room.details.teamMode);
 
-    roomResponse.playerCount = _serverInstance.GetRaceDirector().GetRoomPlayerCount(room.uid); // Placeholder, replace with actual live count
-    roomResponse.maxPlayers = room.playerCount;
-    roomResponse.level = 2;
-    roomResponse.name = room.name;
-    roomResponse.map = room.mapBlockId;
+      if (roomGameMode != command.gameMode
+        || roomTeamMode != command.teamMode)
+      {
+        continue;
+      }
+
+      auto& roomResponse = response.rooms.emplace_back();
+
+      roomResponse.hasStarted = room.isPlaying;
+
+      roomResponse.uid = room.uid;
+      if (not room.details.password.empty())
+      {
+        roomResponse.isLocked = true;
+      }
+
+      roomResponse.playerCount = room.playerCount;
+      roomResponse.maxPlayerCount = room.details.maxPlayerCount;
+      // todo: skill bracket
+      roomResponse.skillBracket = protocol::LobbyCommandRoomListOK::Room::SkillBracket::Experienced;
+      roomResponse.name = room.details.name;
+      roomResponse.map = room.details.courseId;
+    }
   }
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -470,24 +498,93 @@ void LobbyDirector::HandleMakeRoom(
   ClientId clientId,
   const protocol::LobbyCommandMakeRoom& command)
 {
-  auto& room = _serverInstance.GetRoomSystem().CreateRoom();
+  const auto clientContext = GetClientContext(clientId);
+  uint32_t createdRoomUid{0};
 
-  room.name = command.name;
-  room.password = command.password;
-  room.missionId = command.missionId;
-  room.playerCount = command.playerCount;
-  room.gameMode = command.gameMode;
-  room.teamMode = command.teamMode;
-  room.unk3 = command.unk3;
-  room.bitset = static_cast<uint16_t>(command.bitset);
-  room.unk4 = command.unk4;
-  room.mapBlockId = 10002;
+  _serverInstance.GetRoomSystem().CreateRoom(
+    [&createdRoomUid, &command, characterUid = clientContext.characterUid](
+      Room& room)
+    {
+      const bool isTraining = command.playerCount == 1;
+
+      // Only allow an empty room name in training/tutorial rooms.
+      // todo: better way to detect this?
+      if (command.name.empty() && not isTraining)
+        return;
+
+      room.GetRoomDetails().name = command.name;
+      room.GetRoomDetails().password = command.password;
+      room.GetRoomDetails().missionId = command.missionId;
+      // todo: validate mission id
+
+      room.GetRoomDetails().maxPlayerCount = std::max(
+        std::min(command.playerCount,uint8_t{8}),
+        uint8_t{0});
+
+      switch (command.gameMode)
+      {
+        case protocol::GameMode::Speed:
+          room.GetRoomDetails().gameMode = Room::GameMode::Speed;
+          break;
+        case protocol::GameMode::Magic:
+          room.GetRoomDetails().gameMode = Room::GameMode::Magic;
+          break;
+        case protocol::GameMode::Tutorial:
+          room.GetRoomDetails().gameMode = Room::GameMode::Tutorial;
+          break;
+        default:
+          spdlog::error("Unknown game mode '{}'", static_cast<uint32_t>(command.gameMode));
+      }
+
+      switch (command.teamMode)
+      {
+        case protocol::TeamMode::FFA:
+          room.GetRoomDetails().teamMode = Room::TeamMode::FFA;
+          break;
+        case protocol::TeamMode::Team:
+          room.GetRoomDetails().teamMode = Room::TeamMode::Team;
+          break;
+        case protocol::TeamMode::Single:
+          room.GetRoomDetails().teamMode = Room::TeamMode::Single;
+          break;
+        default:
+          spdlog::error("Unknown team mode '{}'", static_cast<uint32_t>(command.gameMode));
+      }
+
+      room.GetRoomDetails().member11 = command.unk3;
+      room.GetRoomDetails().skillBracket = command.unk4;
+      // default to all courses
+      room.GetRoomDetails().courseId = 10002;
+
+      // Queue the master as a player.
+      room.QueuePlayer(characterUid);
+      createdRoomUid = room.GetUid();
+    });
+
+  if (createdRoomUid == 0)
+  {
+    protocol::LobbyCommandMakeRoomCancel response{};
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]()
+      {
+        return response;
+      });
+
+    return;
+  }
+
+  size_t identityHash = std::hash<uint32_t>()(clientContext.characterUid);
+  boost::hash_combine(identityHash, createdRoomUid);
+
+  const auto roomOtp = _serverInstance.GetOtpSystem().GrantCode(
+    identityHash);
 
   protocol::LobbyCommandMakeRoomOK response{
-    .roomUid = room.uid,
-    .otp = 0xBAAD,
-    .address = GetConfig().advertisement.race.address.to_uint(),
-    .port = GetConfig().advertisement.race.port};
+    .roomUid = createdRoomUid,
+    .oneTimePassword = roomOtp,
+    .raceServerAddress = GetConfig().advertisement.race.address.to_uint(),
+    .raceServerPort = GetConfig().advertisement.race.port};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -501,11 +598,57 @@ void LobbyDirector::HandleEnterRoom(
   ClientId clientId,
   const protocol::LobbyCommandEnterRoom& command)
 {
-  const auto& room = _serverInstance.GetRoomSystem().GetRoom(command.roomUid);
+  const auto clientContext = GetClientContext(clientId);
 
-  // TODO: add more error handling
-  // add the errorcodes to the protocol as enums
-  if (room.password != command.password)
+  // Whether the room is valid.
+  bool isRoomValid = true;
+  // Whether the user is authorized to enter.
+  bool isAuthorized = false;
+  // Whether the room is full.
+  bool isRoomFull = false;
+
+  try
+  {
+    _serverInstance.GetRoomSystem().GetRoom(
+      command.roomUid,
+      [&isAuthorized, &isRoomFull, &command, characterUid = clientContext.characterUid](
+        Room& room)
+      {
+        const auto& roomPassword = room.GetRoomDetails().password;
+        if (not roomPassword.empty())
+          isAuthorized = roomPassword == command.password;
+        else
+          isAuthorized = true;
+
+        isRoomFull = room.IsRoomFull();
+        if (isRoomFull)
+          return;
+
+        room.QueuePlayer(characterUid);
+      });
+  }
+  catch (const std::exception&)
+  {
+    // The client requested to join a room which no longer exists.
+    // We do care in this case.
+    isRoomValid = false;
+  }
+
+  if (not isRoomValid)
+  {
+    protocol::LobbyCommandEnterRoomCancel response{
+      .status = protocol::LobbyCommandEnterRoomCancel::Status::CR_INVALID_ROOM};
+
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]()
+      {
+        return response;
+      });
+    return;
+  }
+
+  if (not isAuthorized)
   {
     protocol::LobbyCommandEnterRoomCancel response{
       .status = protocol::LobbyCommandEnterRoomCancel::Status::CR_BAD_PASSWORD};
@@ -519,11 +662,31 @@ void LobbyDirector::HandleEnterRoom(
     return;
   }
 
+  if (isRoomFull)
+  {
+    protocol::LobbyCommandEnterRoomCancel response{
+      .status = protocol::LobbyCommandEnterRoomCancel::Status::CR_CROWDED_ROOM};
+
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]()
+      {
+        return response;
+      });
+    return;
+  }
+
+  size_t identityHash = std::hash<uint32_t>()(clientContext.characterUid);
+  boost::hash_combine(identityHash, command.roomUid);
+
+  const auto roomOtp = _serverInstance.GetOtpSystem().GrantCode(
+    identityHash);
+
   protocol::LobbyCommandEnterRoomOK response{
     .roomUid = command.roomUid,
-    .otp = 0xBAAD,
-    .address = GetConfig().advertisement.race.address.to_uint(),
-    .port = GetConfig().advertisement.race.port};
+    .oneTimePassword = roomOtp,
+    .raceServerAddress = GetConfig().advertisement.race.address.to_uint(),
+    .raceServerPort = GetConfig().advertisement.race.port};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -531,6 +694,37 @@ void LobbyDirector::HandleEnterRoom(
     {
       return response;
     });
+
+  // Schedule removal of the player from the room queue.
+  _scheduler.Queue(
+    [this, roomUid = command.roomUid, characterUid = clientContext.characterUid]()
+    {
+      try
+      {
+        _serverInstance.GetRoomSystem().GetRoom(
+          roomUid,
+          [this, characterUid](Room& room)
+          {
+            const bool dequeued = room.DequeuePlayer(characterUid);
+
+            if (not dequeued)
+              return;
+
+            // If the player was actually dequeued it means
+            // they have never connected to the room.
+            _serverInstance.GetDataDirector().GetCharacter(characterUid).Immutable(
+              [](const data::Character& character)
+              {
+                  spdlog::warn("Player '{}' did not connect to the room before the timeout", character.name());
+              });
+          });
+      }
+      catch (const std::exception&)
+      {
+        // We really don't care.
+      }
+    },
+    Scheduler::Clock::now() + std::chrono::seconds(7));
 }
 
 void LobbyDirector::HandleHeartbeat(
@@ -962,11 +1156,11 @@ LobbyDirector::ClientContext& LobbyDirector::GetClientContext(
 {
   auto clientContextIter = _clients.find(clientId);
   if (clientContextIter == _clients.end())
-    throw std::runtime_error("Client context not available");
+    throw std::runtime_error("Lobby client is not available");
 
   auto& clientContext = clientContextIter->second;
   if (requireAuthentication && not clientContext.isAuthenticated)
-    throw std::runtime_error("Client is not authenticated");
+    throw std::runtime_error("Lobby client is not authenticated");
 
   return clientContext;
 }

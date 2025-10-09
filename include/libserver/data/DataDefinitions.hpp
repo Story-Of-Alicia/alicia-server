@@ -261,6 +261,27 @@ struct Character
   dao::Field<std::vector<Uid>> housing{};
 
   dao::Field<bool> isRanchLocked{};
+
+  struct Skills
+  {
+    // TODO: confirm this
+    //! Max 2 skill sets per gamemode
+    struct Sets
+    {
+      //! Max 2 skills per skill set
+      struct Set
+      {
+        uint32_t slot1{};
+        uint32_t slot2{};
+      };
+
+      Set set1{};
+      Set set2{};
+    };
+
+    dao::Field<Sets> speed{};
+    dao::Field<Sets> magic{};
+  } skills{};
 };
 
 struct Horse
@@ -309,8 +330,12 @@ struct Horse
   dao::Field<uint32_t> grade{0u};
   dao::Field<uint32_t> growthPoints{0u};
 
-  dao::Field<Tid> potentialType{0u};
-  dao::Field<uint32_t> potentialLevel{0u};
+  struct Potential
+  {
+    dao::Field<uint8_t> type{0u};
+    dao::Field<uint8_t> level{0u};
+    dao::Field<uint8_t> value{0u};
+  } potential{};
 
   dao::Field<uint32_t> luckState{0u};
   dao::Field<uint32_t> emblemUid{0u};
