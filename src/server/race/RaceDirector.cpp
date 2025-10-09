@@ -1284,13 +1284,22 @@ void RaceDirector::HandleRaceResult(
   auto& clientContext = GetClientContext(clientId);
   auto& roomInstance = _roomInstances[clientContext.roomUid];
 
+  // TODO: veryfy the character ?
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
   protocol::AcCmdCRRaceResultOK response{
     .member1 = 1,
     .member2 = 1,
     .member3 = 1,
     .member4 = 1,
-    .member5 = 1,
-    .member6 = 1};
+    .member5 = 1};
+
+  characterRecord.Immutable(
+    [&roomInstance, &response](const data::Character& character)
+    {
+      response.currentCarrots = character.carrots();
+    });
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
