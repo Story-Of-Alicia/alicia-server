@@ -1285,7 +1285,7 @@ void RaceDirector::HandleRaceResult(
   auto& roomInstance = _roomInstances[clientContext.roomUid];
 
   // TODO: veryfy the character ?
-  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
   protocol::AcCmdCRRaceResultOK response{
