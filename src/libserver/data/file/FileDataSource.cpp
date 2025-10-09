@@ -286,6 +286,7 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
 
     readSkillSet(sets.set1, json["set1"]);
     readSkillSet(sets.set2, json["set2"]);
+    sets.activeSetId = json["activeSetId"].get<uint8_t>();
   };
 
   const auto& skills = json["skills"];
@@ -370,6 +371,7 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
     nlohmann::json json;
     json["set1"] = writeSkillSet(sets.set1);
     json["set2"] = writeSkillSet(sets.set2);
+    json["activeSetId"] = sets.activeSetId;
     return json;
   };
 
