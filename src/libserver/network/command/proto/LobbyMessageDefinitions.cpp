@@ -1301,8 +1301,8 @@ void AcCmdLCSkillCardPresetList::Write(
   const AcCmdLCSkillCardPresetList& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0)
-    .Write(command.unk1);
+  stream.Write(command.speedActiveSetId)
+    .Write(command.magicActiveSetId);
 
   stream.Write(static_cast<uint8_t>(command.skillSets.size()));
   for (const auto& skillSet : command.skillSets)

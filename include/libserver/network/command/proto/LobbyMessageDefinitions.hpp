@@ -1932,8 +1932,8 @@ struct AcCmdCLRequestMountInfoOK
 
 struct AcCmdLCSkillCardPresetList
 {
-  uint8_t unk0{};
-  uint8_t unk1{};
+  uint8_t speedActiveSetId{};
+  uint8_t magicActiveSetId{};
   std::vector<SkillSet> skillSets{};
 
   static Command GetCommand()
