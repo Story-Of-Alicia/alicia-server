@@ -395,33 +395,53 @@ void ChatSystem::RegisterUserCommands()
 
       if (subLiteral == "potential")
       {
-        if (arguments.size() < 4)
+        if (arguments.size() > 1 && arguments[1] == "random")
+        {
+          characterRecord.Immutable(
+            [this](const data::Character& character)
+            {
+              _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Mutable(
+                [this](data::Horse& horse)
+                {
+                  _serverInstance.GetHorseRegistry().GiveHorseRandomPotential(
+                    horse.potential);
+                });
+            });
+        }
+        else if (arguments.size() > 3)
+        {
+          const auto& type = static_cast<uint8_t>(std::atoi(arguments[1].c_str()));
+          const auto& level = static_cast<uint8_t>(std::atoi(arguments[2].c_str()));
+          const auto& value = static_cast<uint8_t>(std::atoi(arguments[3].c_str()));
+
+          // Table MountPotentialInfo has all but index 12
+          // Valid range: 0 < type < 16
+          constexpr uint8_t InvalidPotential = 12;
+          if (type == InvalidPotential || type > 15 || type < 1)
+            return {"Invalid horse potential type, range 1-15 (except 12)"};
+
+          characterRecord.Immutable(
+            [this, &type, &level, &value](
+              const data::Character& character)
+            {
+              _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Mutable(
+                [this, &type, &level, &value](data::Horse& horse)
+                {
+                  _serverInstance.GetHorseRegistry().SetHorsePotential(
+                    horse.potential,
+                    type,
+                    level,
+                    value);
+                });
+            });
+        }
+        else
+        {
           return {
             "Invalid command arguments.",
+            "(//horse potential random)",
             "(//horse potential <type> <level> <value>)"};
-        const auto& type = static_cast<uint8_t>(std::atoi(arguments[1].c_str()));
-        const auto& level = static_cast<uint8_t>(std::atoi(arguments[2].c_str()));
-        const auto& value = static_cast<uint8_t>(std::atoi(arguments[3].c_str()));
-
-        // Table MountPotentialInfo has all but index 12
-        // Valid range: 0 < type < 16
-        constexpr uint8_t InvalidPotential = 12;
-        if (type == InvalidPotential || type > 15 || type < 1)
-          return {"Invalid horse potential type, range 1-15 (except 12)"};
-
-        characterRecord.Immutable(
-          [this, &mountUid, &type, &level, &value](
-            const data::Character& character)
-          {
-            _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Mutable(
-              [&type, &level, &value](data::Horse& horse)
-              {
-                horse.potential.type() = type;
-                horse.potential.level() = level;
-                horse.potential.value() = value;
-              });
-            mountUid = character.mountUid();
-          });
+        }
 
         return {"Horse potential set",
           "Restart the client."};
