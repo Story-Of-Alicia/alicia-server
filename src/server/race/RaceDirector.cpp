@@ -2163,33 +2163,23 @@ void RaceDirector::HandleUserRaceItemGet(
 
   auto& racer = roomInstance.tracker.GetRacer(clientContext.characterUid);
   auto const& item = roomInstance.tracker.GetItems().at(command.itemId);
-  protocol::AcCmdGameRaceItemGet get{
-    .characterOid = command.characterOid,
-    .itemId = command.itemId,
-    .itemType = item.itemType,
-  };
 
-  // Notify all clients in the room that this item has been picked up
-  for (const ClientId& roomClientId : roomInstance.clients)
-  {
-    _commandServer.QueueCommand<decltype(get)>(
-      roomClientId,
-      [get]()
-      {
-        return get;
-      });
-  }
-  // Wait for ItemDeck registry, to give the correct amount of SP for item pick up
-
-  const auto& room = _serverInstance.GetRoomSystem().GetRoom(
-    clientContext.roomUid);
+  server::Room::GameMode gameMode;
+  _serverInstance.GetRoomSystem().GetRoom(
+    clientContext.roomUid,
+    [&gameMode](Room& room)
+    {
+      auto& roomDetails = room.GetRoomDetails();
+      gameMode = roomDetails.gameMode;
+    });
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    room.gameMode);
+    static_cast<uint8_t>(gameMode));
 
-  switch(static_cast<server::registry::Course::GameModeInfo::Type>(room.gameMode))
+  // Wait for ItemDeck registry, to give the correct amount of SP for item pick up
+  switch(gameMode)
   {
     // TODO: Deduplicate from StarPointGet
-    case server::registry::Course::GameModeInfo::Type::Speed:
+    case server::Room::GameMode::Speed:
       {
         switch (item.itemType)
         {
@@ -2223,8 +2213,16 @@ void RaceDirector::HandleUserRaceItemGet(
       break;
 
     // TODO: Deduplicate from RequestMagicItem
-    case server::registry::Course::GameModeInfo::Type::Magic:
+    case server::Room::GameMode::Magic:
       {
+        if (racer.magicItem.has_value())
+        {
+          spdlog::warn("Character {} tried to request a magic item in race {} but they already have one, skipping...",
+            clientContext.characterUid,
+            clientContext.roomUid);
+          return;
+        }
+
         const uint32_t gainedMagicItem = RandomMagicItem();
         protocol::AcCmdCRRequestMagicItemOK magicItemOk{
           .member1 = command.characterOid,
@@ -2254,6 +2252,22 @@ void RaceDirector::HandleUserRaceItemGet(
         // TODO: reset magic gauge to 0?
       }
       break;
+  }
+
+  // Notify all clients in the room that this item has been picked up
+  protocol::AcCmdGameRaceItemGet get{
+    .characterOid = command.characterOid,
+    .itemId = command.itemId,
+    .itemType = item.itemType,
+  };
+  for (const ClientId& raceClientId : roomInstance.clients)
+  {
+    _commandServer.QueueCommand<decltype(get)>(
+      raceClientId,
+      [get]()
+      {
+        return get;
+      });
   }
 
   // Respawn the item after a delay
