@@ -46,6 +46,18 @@ uint64_t TimePointToRaceTimePoint(const std::chrono::steady_clock::time_point& t
     timePoint.time_since_epoch()).count() / IntervalConstant;
 }
 
+// 2 - Bolt
+// 4 - Shield
+// 10 - Ice wall
+const std::array<uint32_t, 3> magicItems = {2, 4, 10};
+
+uint32_t RandomMagicItem()
+{
+  static std::random_device rd;
+  std::uniform_int_distribution distribution(0, static_cast<int>(magicItems.size() - 1));
+  return magicItems[distribution(rd)];
+}
+
 } // anon namespace
 
 RaceDirector::RaceDirector(ServerInstance& serverInstance)
@@ -1900,12 +1912,11 @@ void RaceDirector::HandleRequestMagicItem(
       return starPointResponse;
     });
 
-  // 2 - Bolt
-  // 4 - Shield
-  // 10 - Ice wall
+  uint32_t gainedMagicItem = RandomMagicItem();
+
   protocol::AcCmdCRRequestMagicItemOK response{
     .member1 = command.member1,
-    .member2 = racer.magicItem.emplace(10),
+    .member2 = racer.magicItem.emplace(gainedMagicItem),
     .member3 = 0
   };
 
@@ -2149,29 +2160,120 @@ void RaceDirector::HandleUserRaceItemGet(
 {
   const auto& clientContext = GetClientContext(clientId);
   auto& roomInstance = _roomInstances[clientContext.roomUid];
+
+  auto& racer = roomInstance.tracker.GetRacer(clientContext.characterUid);
   auto const& item = roomInstance.tracker.GetItems().at(command.itemId);
+
+  server::Room::GameMode gameMode;
+  _serverInstance.GetRoomSystem().GetRoom(
+    clientContext.roomUid,
+    [&gameMode](Room& room)
+    {
+      auto& roomDetails = room.GetRoomDetails();
+      gameMode = roomDetails.gameMode;
+    });
+  const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
+    static_cast<uint8_t>(gameMode));
+
+  // Wait for ItemDeck registry, to give the correct amount of SP for item pick up
+  switch(gameMode)
+  {
+    // TODO: Deduplicate from StarPointGet
+    case server::Room::GameMode::Speed:
+      {
+        switch (item.itemType)
+        {
+          case 101: // Gold horseshoe. Get star points until the next boost
+            racer.starPointValue = std::min(((racer.starPointValue/40000)+1) * 40000, gameModeTemplate.starPointsMax);
+            break;
+          case 102: // Silver horseshoe. Get 10k star points
+            racer.starPointValue = std::min(racer.starPointValue+10000, gameModeTemplate.starPointsMax);
+            break;
+          default:
+            // TODO: Disconnect?
+            spdlog::warn("Player {} picked up unknown item type {}",
+              clientId, item.itemType);
+            break;
+        }
+
+        // Only send this on good/perfect starts
+        protocol::AcCmdCRStarPointGetOK starPointResponse{
+          .characterOid = command.characterOid,
+          .starPointValue = racer.starPointValue,
+          .giveMagicItem = false
+        };
+
+        _commandServer.QueueCommand<decltype(starPointResponse)>(
+          clientId,
+          [clientId, starPointResponse]()
+          {
+            return starPointResponse;
+          });
+      }
+      break;
+
+    // TODO: Deduplicate from RequestMagicItem
+    case server::Room::GameMode::Magic:
+      {
+        if (racer.magicItem.has_value())
+        {
+          spdlog::warn("Character {} tried to request a magic item in race {} but they already have one, skipping...",
+            clientContext.characterUid,
+            clientContext.roomUid);
+          return;
+        }
+
+        const uint32_t gainedMagicItem = RandomMagicItem();
+        protocol::AcCmdCRRequestMagicItemOK magicItemOk{
+          .member1 = command.characterOid,
+          .member2 = racer.magicItem.emplace(gainedMagicItem),
+          .member3 = 0
+        };
+        _commandServer.QueueCommand<decltype(magicItemOk)>(
+          clientId,
+          [clientId, magicItemOk]()
+          {
+            return magicItemOk;
+          });
+        protocol::AcCmdCRRequestMagicItemNotify notify{
+          .member1 = racer.magicItem.emplace(gainedMagicItem),
+          .member2 = command.characterOid,
+        };
+        for (const ClientId& roomClientId : roomInstance.clients)
+        {
+          _commandServer.QueueCommand<decltype(notify)>(
+            roomClientId, 
+            [notify]()
+            {
+              return notify;
+            });
+        }
+
+        // TODO: reset magic gauge to 0?
+      }
+      break;
+  }
+
+  // Notify all clients in the room that this item has been picked up
   protocol::AcCmdGameRaceItemGet get{
     .characterOid = command.characterOid,
     .itemId = command.itemId,
     .itemType = item.itemType,
   };
-
-  // Notify all clients in the room that this item has been picked up
-  for (const ClientId& roomClientId : roomInstance.clients)
+  for (const ClientId& raceClientId : roomInstance.clients)
   {
     _commandServer.QueueCommand<decltype(get)>(
-      roomClientId,
+      raceClientId,
       [get]()
       {
         return get;
       });
   }
-  // Wait for ItemDeck registry, to give the correct amount of SP for item pick up
 
+  // Respawn the item after a delay
   _scheduler.Queue(
     [this, clientId, item, &roomInstance]()
     {
-      // Respawn the item after a delay
       protocol::AcCmdGameRaceItemSpawn spawn{
         .itemId = item.itemId,
         .itemType = item.itemType,
