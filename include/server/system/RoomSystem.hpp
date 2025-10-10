@@ -50,10 +50,18 @@ public:
   class Player
   {
   public:
+    enum class Team
+    {
+      Solo, Red, Blue
+    };
+
     bool ToggleReady();
     [[nodiscard]] bool IsReady() const;
+    void SetTeam(Team team);
+    [[nodiscard]] Team GetTeam() const;
   private:
     bool _isReady = false;
+    Team _team = Team::Solo;
   };
 
   struct Details

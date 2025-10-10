@@ -532,6 +532,31 @@ RaceDirector::ClientContext& RaceDirector::GetClientContext(ClientId clientId, b
   return clientContext;
 }
 
+ClientId RaceDirector::GetClientIdByCharacterUid(data::Uid characterUid)
+{
+  for (auto& [clientId, clientContext] : _clients)
+  {
+    if (clientContext.characterUid == characterUid
+      && clientContext.isAuthenticated)
+      return clientId;
+  }
+
+  throw std::runtime_error("Character not associated with any client");
+}
+
+RaceDirector::ClientContext& RaceDirector::GetClientContextByCharacterUid(
+  data::Uid characterUid)
+{
+  for (auto& clientContext : _clients | std::views::values)
+  {
+    if (clientContext.characterUid == characterUid
+      && clientContext.isAuthenticated)
+      return clientContext;
+  }
+
+  throw std::runtime_error("Character not associated with any client");
+}
+
 void RaceDirector::HandleEnterRoom(
   ClientId clientId,
   const protocol::AcCmdCREnterRoom& command)
@@ -657,18 +682,21 @@ void RaceDirector::HandleEnterRoom(
 
     // Determine whether the player is ready.
     bool isPlayerReady = false;
+    server::Room::Player::Team team;
     _serverInstance.GetRoomSystem().GetRoom(
       clientContext.roomUid,
-      [&isPlayerReady, characterUid](Room& room)
+      [&isPlayerReady, &team, characterUid](Room& room)
       {
-        isPlayerReady = room.GetPlayer(characterUid).IsReady();
+        const auto& player = room.GetPlayer(characterUid);
+        isPlayerReady = player.IsReady();
+        team = player.GetTeam();
       });
 
     // Fill data from the character record.
     const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
       characterUid);
     characterRecord.Immutable(
-      [this, isPlayerReady, &protocolRacer, leaderUid = raceInstance.masterUid](
+      [this, isPlayerReady, team, &protocolRacer, leaderUid = raceInstance.masterUid](
         const data::Character& character)
       {
         if (character.uid() == leaderUid)
@@ -680,6 +708,18 @@ void RaceDirector::HandleEnterRoom(
         protocolRacer.isHidden = false;
         protocolRacer.isNPC = false;
         protocolRacer.isReady = isPlayerReady;
+        switch (team)
+        {
+          case Room::Player::Team::Red:
+            protocolRacer.teamColor = protocol::TeamColor::Red;
+            break;
+          case Room::Player::Team::Blue:
+            protocolRacer.teamColor = protocol::TeamColor::Blue;
+            break;
+          default:
+            protocolRacer.teamColor = protocol::TeamColor::None;
+            break;
+        }
 
         protocolRacer.avatar = protocol::Avatar{};
 
@@ -819,23 +859,6 @@ void RaceDirector::HandleChangeTeam(
   const protocol::AcCmdCRChangeTeam& command)
 {
   const auto& clientContext = GetClientContext(clientId);
-  auto& raceInstance = _raceInstances[clientContext.roomUid];
-
-  auto& racer = raceInstance.tracker.GetRacer(
-    clientContext.characterUid);
-
-  // todo: team balancing
-
-  switch (command.teamColor)
-  {
-    case protocol::TeamColor::Red:
-      racer.team = tracker::RaceTracker::Racer::Team::Red;
-      break;
-    case protocol::TeamColor::Blue:
-      racer.team = tracker::RaceTracker::Racer::Team::Blue;
-      break;
-    default: {}
-  }
 
   protocol::AcCmdCRChangeTeamOK response{
     .characterOid = command.characterOid,
@@ -845,26 +868,46 @@ void RaceDirector::HandleChangeTeam(
     .characterOid = command.characterOid,
     .teamColor = command.teamColor};
 
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [response]()
+  // todo: team balancing
+  _serverInstance.GetRoomSystem().GetRoom(
+    clientContext.roomUid,
+    [this, &clientId, &command, &response, &notify](Room& room)
     {
-      return response;
-    });
-
-  // Notify all other clients in the room
-  for (const ClientId& raceClientId : raceInstance.clients)
-  {
-    if (raceClientId == clientId)
-      continue;
-
-    _commandServer.QueueCommand<decltype(notify)>(
-      raceClientId,
-      [notify]()
+      auto& player = room.GetPlayer(command.characterOid);
+      switch (command.teamColor)
       {
-        return notify;
-      });
-  }
+        case protocol::TeamColor::Red:
+          player.SetTeam(server::Room::Player::Team::Red);
+          break;
+        case protocol::TeamColor::Blue:
+          player.SetTeam(server::Room::Player::Team::Blue);
+          break;
+        default: {}
+      }
+
+      this->_commandServer.QueueCommand<decltype(response)>(
+        clientId,
+        [response]()
+        {
+          return response;
+        });
+
+      // Notify all other clients in the room
+      for (const auto& characterUid : room.GetPlayers() | std::views::keys)
+      {
+        if (characterUid == command.characterOid)
+          continue;
+
+        auto roomPlayerClientId = this->GetClientIdByCharacterUid(characterUid);
+
+        this->_commandServer.QueueCommand<decltype(notify)>(
+          roomPlayerClientId,
+          [notify]()
+          {
+            return notify;
+          });
+      }
+    });
 }
 
 void RaceDirector::HandleLeaveRoom(ClientId clientId)
@@ -1076,10 +1119,22 @@ void RaceDirector::HandleStartRace(
     [&raceInstance](Room& room)
     {
       // todo: observers
-      for (const auto& characterUid : room.GetPlayers() | std::views::keys)
+      for (const auto& [characterUid, roomPlayer] : room.GetPlayers())
       {
         auto& racer = raceInstance.tracker.AddRacer(characterUid);
         racer.state = tracker::RaceTracker::Racer::State::Loading;
+        switch (roomPlayer.GetTeam())
+        {
+          case Room::Player::Team::Solo:
+            racer.team = tracker::RaceTracker::Racer::Team::Solo;
+            break;
+          case Room::Player::Team::Red:
+            racer.team = tracker::RaceTracker::Racer::Team::Red;
+            break;
+          case Room::Player::Team::Blue:
+            racer.team = tracker::RaceTracker::Racer::Team::Blue;
+            break;
+        }
       }
     });
 

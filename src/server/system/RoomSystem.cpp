@@ -36,6 +36,16 @@ bool Room::Player::IsReady() const
   return _isReady;
 }
 
+void Room::Player::SetTeam(Room::Player::Team team)
+{
+  _team = team;
+}
+
+Room::Player::Team Room::Player::GetTeam() const
+{
+  return _team;
+}
+
 Room::Room(uint32_t uid)
   : _uid(uid)
 {
@@ -65,8 +75,43 @@ bool Room::AddPlayer(data::Uid characterUid)
   if (_players.size() >= _details.maxPlayerCount)
     return false;
 
+  Player player {};
+  if (_details.teamMode == TeamMode::Team)
+  {
+      size_t redTeamCount = 0;
+      size_t blueTeamCount = 0;
+      for (const auto& [_, player] : _players)
+      {
+        switch (player.GetTeam())
+        {
+          case Player::Team::Red:
+            ++redTeamCount;
+            break;
+          case Player::Team::Blue:
+            ++blueTeamCount;
+            break;
+          default:
+            break;
+        }
+      }
+
+      if (redTeamCount > blueTeamCount)
+      {
+        player.SetTeam(Player::Team::Blue);
+      }
+      else if (blueTeamCount > redTeamCount)
+      {
+        player.SetTeam(Player::Team::Red);
+      }
+      else
+      {
+        player.SetTeam(
+          (std::rand() % 2 == 0) ? Player::Team::Red : Player::Team::Blue);
+      }
+  }
+
   _queuedPlayers.erase(characterUid);
-  _players.try_emplace(characterUid, Player{});
+  _players.try_emplace(characterUid, player);
 
   return true;
 }

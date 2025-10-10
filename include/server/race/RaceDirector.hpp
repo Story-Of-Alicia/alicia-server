@@ -121,6 +121,8 @@ private:
   };
 
   ClientContext& GetClientContext(ClientId clientId, bool requireAuthorized = true);
+  ClientId GetClientIdByCharacterUid(data::Uid characterUid);
+  ClientContext& GetClientContextByCharacterUid(data::Uid characterUid);
 
   void HandleEnterRoom(
     ClientId clientId,
