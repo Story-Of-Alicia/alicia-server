@@ -346,8 +346,9 @@ void RaceDirector::Tick() {
       std::views::values(raceInstance.tracker.GetRacers()),
       [](const tracker::RaceTracker::Racer& racer)
       {
-        return racer.state == tracker::RaceTracker::Racer::State::Racing
-          || racer.state == tracker::RaceTracker::Racer::State::Disconnected;
+        const auto racerState = racer.state.load(std::memory_order::relaxed);
+        return racerState == tracker::RaceTracker::Racer::State::Racing
+          || racerState == tracker::RaceTracker::Racer::State::Disconnected;
       });
 
     const bool loadTimeoutReached = std::chrono::steady_clock::now() >= raceInstance.stageTimeoutTimePoint;
@@ -402,8 +403,9 @@ void RaceDirector::Tick() {
       std::views::values(raceInstance.tracker.GetRacers()),
       [](const tracker::RaceTracker::Racer& racer)
       {
-        return racer.state == tracker::RaceTracker::Racer::State::Finishing
-          || racer.state == tracker::RaceTracker::Racer::State::Disconnected;
+        const auto racerState = racer.state.load(std::memory_order::relaxed);
+        return racerState == tracker::RaceTracker::Racer::State::Finishing
+          || racerState == tracker::RaceTracker::Racer::State::Disconnected;
       });
 
     const bool raceTimeoutReached = std::chrono::steady_clock::now() >= raceInstance.stageTimeoutTimePoint;
@@ -425,7 +427,7 @@ void RaceDirector::Tick() {
     {
       // todo: do not do this here i guess
       uint32_t courseTime = std::numeric_limits<uint32_t>::max();
-      if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
+      if (racer.state.load(std::memory_order::relaxed) != tracker::RaceTracker::Racer::State::Disconnected)
         courseTime = racer.courseTime;
 
       scoreboard.try_emplace(courseTime, characterUid);
@@ -439,7 +441,7 @@ void RaceDirector::Tick() {
 
       // todo: figure out the other bit set values
 
-      if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
+      if (racer.state.load(std::memory_order::relaxed) != tracker::RaceTracker::Racer::State::Disconnected)
       {
         score.bitset = static_cast<protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset>(
             protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::Connected);
@@ -573,7 +575,7 @@ void RaceDirector::HandleEnterRoom(
   const bool doesRoomExist = _serverInstance.GetRoomSystem().RoomExists(
     command.roomUid);
 
-  // Determine the racer count and whether the room is full.
+  // Determine whether the room is full.
   bool isOvercrowded = false;
   if (clientContext.isAuthenticated)
   {
@@ -930,7 +932,9 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
   if (raceInstance.tracker.IsRacer(clientContext.characterUid))
   {
     auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
-    racer.state = tracker::RaceTracker::Racer::State::Disconnected;
+    racer.state.store(
+      tracker::RaceTracker::Racer::State::Disconnected,
+      std::memory_order::relaxed);
   }
 
   raceInstance.clients.erase(clientId);
@@ -1122,6 +1126,10 @@ void RaceDirector::HandleStartRace(
       for (const auto& [characterUid, roomPlayer] : room.GetPlayers())
       {
         auto& racer = raceInstance.tracker.AddRacer(characterUid);
+        racer.state.store(
+            tracker::RaceTracker::Racer::State::Loading,
+            std::memory_order::relaxed);
+        auto& racer = raceInstance.tracker.AddRacer(characterUid);
         racer.state = tracker::RaceTracker::Racer::State::Loading;
         switch (roomPlayer.GetTeam())
         {
@@ -1299,7 +1307,9 @@ void RaceDirector::HandleLoadingComplete(
     clientContext.characterUid);
 
   // Switch the racer to the racing state.
-  racer.state = tracker::RaceTracker::Racer::State::Racing;
+  racer.state.store(
+    tracker::RaceTracker::Racer::State::Racing,
+    std::memory_order::relaxed);
 
   // Notify all clients in the room that this player's loading is complete
   for (const ClientId& raceClientId : raceInstance.clients)
@@ -1326,7 +1336,9 @@ void RaceDirector::HandleUserRaceFinal(
   auto& racer = raceInstance.tracker.GetRacer(
     clientContext.characterUid);
 
-  racer.state = tracker::RaceTracker::Racer::State::Finishing;
+  racer.state.store(
+      tracker::RaceTracker::Racer::State::Finishing,
+      std::memory_order::relaxed);
   racer.courseTime = command.courseTime;
 
   protocol::AcCmdUserRaceFinalNotify notify{
@@ -1423,7 +1435,7 @@ void RaceDirector::HandleAwardStart(
       auto& racer = raceInstance.tracker.GetRacer(
         raceClientContext.characterUid);
       // todo: handle player reconnect instead of ignoring them here
-      isParticipatingRacer = racer.state != tracker::RaceTracker::Racer::State::Disconnected;
+      isParticipatingRacer = racer.state.load(std::memory_order::relaxed) != tracker::RaceTracker::Racer::State::Disconnected;
     }
 
     if (isParticipatingRacer)
@@ -1737,7 +1749,7 @@ void RaceDirector::HandleRaceUserPos(
   const bool raceActuallyStarted = std::chrono::steady_clock::now() >= raceInstance.raceStartTimePoint;
   
   if (raceInstance.raceGameMode == protocol::GameMode::Magic
-    && racer.state == tracker::RaceTracker::Racer::State::Racing
+    && racer.state.load(std::memory_order::relaxed) == tracker::RaceTracker::Racer::State::Racing
     && raceActuallyStarted
     && not racer.magicItem.has_value())
   {
@@ -2082,7 +2094,7 @@ void RaceDirector::HandleUseMagicItem(
     {
       // Skip the attacker, find first valid target
       if (targetRacer.oid != command.characterOid && 
-          targetRacer.state == tracker::RaceTracker::Racer::State::Racing)
+          racer.state.load(std::memory_order::relaxed) == tracker::RaceTracker::Racer::State::Racing)
       {
         targetOid = targetRacer.oid;
         spdlog::info("Auto-selected target: OID {}", targetOid);
@@ -2125,7 +2137,7 @@ void RaceDirector::HandleUseMagicItem(
           {
             spdlog::info("Sending bolt hit notification to client {}", raceClientId);
             _commandServer.QueueCommand<decltype(boltHitNotify)>(
-              raceClientId, 
+              raceClientId,
               [boltHitNotify]() { return boltHitNotify; });
           }
           
@@ -2190,7 +2202,7 @@ void RaceDirector::HandleUseMagicItem(
     {
       spdlog::info("Sending ice wall spawn to client {}", raceClientId);
       _commandServer.QueueCommand<decltype(iceWallSpawn)>(
-        raceClientId, 
+        raceClientId,
         [iceWallSpawn]() { return iceWallSpawn; });
     }
   }
@@ -2239,7 +2251,7 @@ void RaceDirector::HandleUserRaceItemGet(
       for (const ClientId& raceClientId : raceInstance.clients)
       {
         _commandServer.QueueCommand<decltype(spawn)>(
-          raceClientId, 
+          raceClientId,
           [spawn]()
           {
             return spawn;
@@ -2308,7 +2320,7 @@ void RaceDirector::HandleChangeMagicTargetNotify(
     if (raceInstance.tracker.GetRacer(targetClientContext.characterUid).oid == command.targetOid)
     {
       _commandServer.QueueCommand<decltype(targetNotify)>(
-        raceClientId, 
+        raceClientId,
         [targetNotify]() { return targetNotify; });
       break;
     }
@@ -2368,7 +2380,7 @@ void RaceDirector::HandleChangeMagicTargetOK(
       {
         spdlog::info("Sending bolt hit notification to client {}", raceClientId);
         _commandServer.QueueCommand<decltype(boltHitNotify)>(
-          raceClientId, 
+          raceClientId,
           [boltHitNotify]() { return boltHitNotify; });
       }
       
@@ -2415,7 +2427,7 @@ void RaceDirector::HandleChangeMagicTargetCancel(
       if (raceInstance.tracker.GetRacer(targetClientContext.characterUid).oid == racer.currentTarget)
       {
         _commandServer.QueueCommand<decltype(removeNotify)>(
-          raceClientId, 
+          raceClientId,
           [removeNotify]() { return removeNotify; });
         break;
       }
@@ -2496,7 +2508,7 @@ void RaceDirector::HandleChangeSkillCardPresetId(
     [&racer, &command](data::Character& character)
     {
       // Get skill sets by gamemode
-      auto& skillSets = 
+      auto& skillSets =
         command.gamemode == protocol::GameMode::Speed ? character.skills.speed() :
         command.gamemode == protocol::GameMode::Magic ? character.skills.magic() :
         throw std::runtime_error("Invalid gamemode");

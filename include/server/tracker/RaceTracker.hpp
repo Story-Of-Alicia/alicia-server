@@ -51,7 +51,7 @@ public:
     };
 
     Oid oid{InvalidEntityOid};
-    State state{State::Disconnected};
+    std::atomic<State> state{State::Disconnected};
     Team team{Team::Solo};
     uint32_t starPointValue{};
     uint32_t jumpComboValue{};
