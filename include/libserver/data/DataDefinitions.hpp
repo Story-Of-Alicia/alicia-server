@@ -277,6 +277,7 @@ struct Character
 
       Set set1{};
       Set set2{};
+      uint8_t activeSetId{0};
     };
 
     dao::Field<Sets> speed{};

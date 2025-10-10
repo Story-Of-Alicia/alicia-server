@@ -34,7 +34,7 @@ struct EggInfo
   //! A deck item ID of the egg.
   data::Tid deckItemId;
   //! A time duration it takes the egg to hatch.
-  data::Clock::duration hatchDuration;
+  data::Clock::duration hatchDuration{0};
   //! A vector of pets that can hatch from the egg.
   std::vector<data::Tid> hatchablePets;
 };

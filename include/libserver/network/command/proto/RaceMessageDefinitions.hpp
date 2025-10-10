@@ -917,7 +917,7 @@ struct AcCmdCRRaceResultOK
   uint16_t member3{};
   uint16_t member4{};
   uint8_t member5{};
-  uint32_t member6{};
+  uint32_t currentCarrots{};
 
   static Command GetCommand()
   {

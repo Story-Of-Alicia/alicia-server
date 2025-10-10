@@ -724,7 +724,7 @@ void AcCmdCRRaceResultOK::Write(
     .Write(command.member3)
     .Write(command.member4)
     .Write(command.member5)
-    .Write(command.member6);
+    .Write(command.currentCarrots);
 }
 
 void AcCmdCRRaceResultOK::Read(

@@ -1156,13 +1156,27 @@ void RaceDirector::HandleStartRace(
         if (isSpeedOrMagic && notify.raceTeamMode == protocol::TeamMode::FFA)
         {
           // Notify racer of confirmed selection of skills
-          notify.racerActiveSkillSet.setId = racer.skillSet.setId;
-          // TODO: validate this against level-locked skills
-          assert(notify.racerActiveSkillSet.skills.size() >= racer.skillSet.skills.size());
-          std::copy(
-            racer.skillSet.skills.begin(),
-            racer.skillSet.skills.end(),
-            notify.racerActiveSkillSet.skills.begin());
+          GetServerInstance().GetDataDirector().GetCharacter(roomClientContext.characterUid).Immutable(
+            [&notify](const data::Character& character)
+            {
+              // Get skill set by gamemode
+              const auto& skillSets =
+                notify.raceGameMode == protocol::GameMode::Speed ? character.skills.speed() :
+                notify.raceGameMode == protocol::GameMode::Magic ? character.skills.magic() :
+                  throw std::runtime_error("Unknown game mode");
+
+              // Get racer's active skill set ID and set it in notify 
+              notify.racerActiveSkillSet.setId = skillSets.activeSetId;
+
+              const auto& skillSet =
+                skillSets.activeSetId == 0 ? skillSets.set1 :
+                skillSets.activeSetId == 1 ? skillSets.set2 :
+                throw std::runtime_error("Invalid skill set ID");
+              
+              // Slot 1, slot 2, bonus (calculated after)
+              notify.racerActiveSkillSet.skills[0] = skillSet.slot1;
+              notify.racerActiveSkillSet.skills[1] = skillSet.slot2;
+            });
 
           // Bonus skills are unique for each racer in the racer
           // TODO: put these in a skill registry table
@@ -1284,13 +1298,22 @@ void RaceDirector::HandleRaceResult(
   auto& clientContext = GetClientContext(clientId);
   auto& roomInstance = _roomInstances[clientContext.roomUid];
 
+  // TODO: veryfy the character ?
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
   protocol::AcCmdCRRaceResultOK response{
     .member1 = 1,
     .member2 = 1,
     .member3 = 1,
     .member4 = 1,
-    .member5 = 1,
-    .member6 = 1};
+    .member5 = 1};
+
+  characterRecord.Immutable(
+    [&roomInstance, &response](const data::Character& character)
+    {
+      response.currentCarrots = character.carrots();
+    });
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -2414,24 +2437,16 @@ void RaceDirector::HandleChangeSkillCardPresetId(
   auto& roomInstance = _roomInstances[clientContext.roomUid];
   auto& racer = roomInstance.tracker.GetRacer(clientContext.characterUid);
 
-  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
-    [&racer, &command](const data::Character& character)
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+    [&racer, &command](data::Character& character)
     {
       // Get skill sets by gamemode
-      const auto& skillSets = 
+      auto& skillSets = 
         command.gamemode == protocol::GameMode::Speed ? character.skills.speed() :
         command.gamemode == protocol::GameMode::Magic ? character.skills.magic() :
         throw std::runtime_error("Invalid gamemode");
-      // Get skill set by setId
-      const auto& skillSet =
-        command.setId == 0 ? skillSets.set1 :
-        command.setId == 1 ? skillSets.set2 :
-        throw std::runtime_error("Invalid skill set ID");
-      // Set racer skill set from record
-      racer.skillSet = {
-        .setId = command.setId,
-        .skills = {skillSet.slot1, skillSet.slot2}
-      };
+      // Set character's active skill set in the record
+      skillSets.activeSetId = command.setId;
     }
   );
 
