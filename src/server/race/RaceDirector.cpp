@@ -2335,30 +2335,7 @@ void RaceDirector::HandleUserRaceItemGet(
   constexpr auto ItemRespawnDuration = std::chrono::milliseconds(500);
   item.respawnTimePoint = std::chrono::steady_clock::now() + ItemRespawnDuration;
 
-  auto& racer = roomInstance.tracker.GetRacer(clientContext.characterUid);
-  
-  protocol::AcCmdGameRaceItemGet get{
-    .characterOid = command.characterOid,
-    .itemId = item.oid,
-    .itemType = item.deckId};
-
-  // Notify all clients in the room that this item has been picked up
-  for (const ClientId& raceClientId : raceInstance.clients)
-  {
-    _commandServer.QueueCommand<decltype(get)>(
-      raceClientId,
-      [get]()
-      {
-        return get;
-      });
-  }
-  // Wait for ItemDeck registry, to give the correct amount of SP for item pick up
-
-  // Erase the item from item instances of each client.
-  for (auto& racer : raceInstance.tracker.GetRacers() | std::views::values)
-  {
-    racer.trackedItems.erase(item.oid);
-  }
+  auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
   server::Room::GameMode gameMode;
   server::registry::Course::GameModeInfo gameModeInfo;
@@ -2407,6 +2384,14 @@ void RaceDirector::HandleUserRaceItemGet(
     // TODO: Deduplicate from RequestMagicItem
     case server::Room::GameMode::Magic:
       {
+        if (racer.magicItem.has_value())
+        {
+          spdlog::warn("Character {} tried to request a magic item in race {} but they already have one, skipping...",
+            clientContext.characterUid,
+            clientContext.roomUid);
+          return;
+        }
+
         const uint32_t gainedMagicItem = RandomMagicItem();
         protocol::AcCmdCRRequestMagicItemOK magicItemOk{
           .member1 = command.characterOid,
@@ -2423,7 +2408,7 @@ void RaceDirector::HandleUserRaceItemGet(
           .member1 = racer.magicItem.emplace(gainedMagicItem),
           .member2 = command.characterOid,
         };
-        for (const ClientId& roomClientId : roomInstance.clients)
+        for (const ClientId& roomClientId : raceInstance.clients)
         {
           _commandServer.QueueCommand<decltype(notify)>(
             roomClientId, 
@@ -2438,9 +2423,32 @@ void RaceDirector::HandleUserRaceItemGet(
       break;
   }
 
+  // Notify all clients in the room that this item has been picked up
+  protocol::AcCmdGameRaceItemGet get{
+    .characterOid = command.characterOid,
+    .itemId = command.itemId,
+    .itemType = item.deckId,
+  };
+
+  for (const ClientId& raceClientId : raceInstance.clients)
+  {
+    _commandServer.QueueCommand<decltype(get)>(
+      raceClientId,
+      [get]()
+      {
+        return get;
+      });
+  }
+
+  // Erase the item from item instances of each client.
+  for (auto& racer : raceInstance.tracker.GetRacers() | std::views::values)
+  {
+    racer.trackedItems.erase(item.oid);
+  }
+
   // Respawn the item after a delay
   _scheduler.Queue(
-    [this, clientId, item, &roomInstance]()
+    [this, clientId, item, &raceInstance]()
     {
       protocol::AcCmdGameRaceItemSpawn spawn{
         .itemId = item.oid,
@@ -2451,7 +2459,7 @@ void RaceDirector::HandleUserRaceItemGet(
         .removeDelay = -1
       };
 
-      for (const ClientId& roomClientId : roomInstance.clients)
+      for (const ClientId& roomClientId : raceInstance.clients)
       {
         _commandServer.QueueCommand<decltype(spawn)>(
           roomClientId, 
