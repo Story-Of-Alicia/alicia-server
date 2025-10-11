@@ -1329,6 +1329,11 @@ void RaceDirector::HandleUserRaceFinal(
   racer.state = tracker::RaceTracker::Racer::State::Finishing;
   racer.courseTime = command.courseTime;
 
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable([roomUid = clientContext.roomUid](const data::Character& character)
+  {
+    spdlog::debug("[Room {}] Debug: Finished race: {}", roomUid, character.name());
+  });
+
   protocol::AcCmdUserRaceFinalNotify notify{
     .oid = racer.oid,
     .courseTime = command.courseTime};
@@ -1356,6 +1361,11 @@ void RaceDirector::HandleRaceResult(
   // TODO: veryfy the character ?
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
+
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable([roomUid = clientContext.roomUid](const data::Character& character)
+  {
+    spdlog::debug("[Room {}] Race result requested by {}", roomUid, character.name());
+  });
 
   protocol::AcCmdCRRaceResultOK response{
     .member1 = 1,
@@ -1541,11 +1551,24 @@ void RaceDirector::HandleRequestSpur(
     .startPointValue = racer.starPointValue,
     .comboBreak = command.comboBreak};
 
+  protocol::AcCmdCRStarPointGetOK starPointResponse{
+    .characterOid = command.characterOid,
+    .starPointValue = racer.starPointValue,
+    .giveMagicItem = false
+  };
+
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
     {
       return response;
+    });
+
+  _commandServer.QueueCommand<decltype(starPointResponse)>(
+    clientId,
+    [starPointResponse]()
+    {
+      return starPointResponse;
     });
 }
 

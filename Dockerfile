@@ -14,7 +14,6 @@ ENV LD_LIBRARY_PATH=/usr/local/lib
 
 # Prepare the source
 COPY . .
-RUN git submodule update --init --recursive
 RUN cmake -DCMAKE_BUILD_TYPE=${SERVER_BUILD_TYPE} -DBUILD_TESTS=False . -B ./build
 RUN cmake --build ./build --parallel
 
