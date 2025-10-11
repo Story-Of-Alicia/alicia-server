@@ -572,6 +572,18 @@ RanchDirector::ClientContext& RanchDirector::GetClientContext(
   return clientContext;
 }
 
+ClientId RanchDirector::GetClientIdByCharacterUid(data::Uid characterUid)
+{
+  for (auto& [clientId, clientContext] : _clients)
+  {
+    if (clientContext.characterUid == characterUid
+      && clientContext.isAuthenticated)
+      return clientId;
+  }
+
+  throw std::runtime_error("Character not associated with any client");
+}
+
 RanchDirector::ClientContext& RanchDirector::GetClientContextByCharacterUid(
   data::Uid characterUid)
 {

@@ -55,8 +55,8 @@ public:
 
   bool IsRoomRacing(uint32_t uid)
   {
-    const auto roomIter = _roomInstances.find(uid);
-    if (roomIter == _roomInstances.cend())
+    const auto roomIter = _raceInstances.find(uid);
+    if (roomIter == _raceInstances.cend())
       return false;
 
     return roomIter->second.stage == RoomInstance::Stage::Racing |
@@ -65,8 +65,8 @@ public:
 
   uint32_t GetRoomPlayerCount(uint32_t uid)
   {
-    const auto roomIter = _roomInstances.find(uid);
-    if (roomIter == _roomInstances.cend())
+    const auto roomIter = _raceInstances.find(uid);
+    if (roomIter == _raceInstances.cend())
       return 0;
 
     return roomIter->second.tracker.GetRacers().size();
@@ -121,6 +121,8 @@ private:
   };
 
   ClientContext& GetClientContext(ClientId clientId, bool requireAuthorized = true);
+  ClientId GetClientIdByCharacterUid(data::Uid characterUid);
+  ClientContext& GetClientContextByCharacterUid(data::Uid characterUid);
 
   void HandleEnterRoom(
     ClientId clientId,
@@ -268,7 +270,7 @@ private:
   //! A map of all client contexts.
   std::unordered_map<ClientId, ClientContext> _clients;
   //! A map of all room instances.
-  std::unordered_map<uint32_t, RoomInstance> _roomInstances;
+  std::unordered_map<uint32_t, RoomInstance> _raceInstances;
 };
 
 } // namespace server

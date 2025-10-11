@@ -114,6 +114,11 @@ private:
   //! @returns Client context.
   [[nodiscard]] ClientContext& GetClientContext(ClientId clientId, bool requireAuthentication = true);
 
+  //! Get the client ID by the character's unique ID.
+  //! @param characterUid UID of the character.
+  //! @returns Client ID.
+  [[nodiscard]] ClientId GetClientIdByCharacterUid(data::Uid characterUid);
+
   //! Get the client context by the character's unique ID.
   //! @param characterUid UID of the character.
   //! @returns Client context.
