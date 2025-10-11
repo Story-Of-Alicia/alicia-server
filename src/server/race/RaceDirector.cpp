@@ -338,7 +338,7 @@ void RaceDirector::Tick() {
   // Process rooms which are loading
   for (auto& [raceUid, raceInstance] : _raceInstances)
   {
-    if (raceInstance.stage != RoomInstance::Stage::Loading)
+    if (raceInstance.stage.load(std::memory_order::acquire) != RoomInstance::Stage::Loading)
       continue;
 
     // Determine whether all racers have started racing.
@@ -367,9 +367,9 @@ void RaceDirector::Tick() {
       raceInstance.raceMapBlockId);
 
     // Switch to the racing stage and set the timeout time point.
-    raceInstance.stage = RoomInstance::Stage::Racing;
     raceInstance.stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(
       mapBlockTemplate.timeLimit);
+    raceInstance.stage.store(RoomInstance::Stage::Racing, std::memory_order::release);
 
     // Set up the race start time point.
     const auto now = std::chrono::steady_clock::now();
@@ -395,7 +395,7 @@ void RaceDirector::Tick() {
   // Process rooms which are racing
   for (auto& [raceUid, raceInstance] : _raceInstances)
   {
-    if (raceInstance.stage != RoomInstance::Stage::Racing)
+    if (raceInstance.stage.load(std::memory_order::acquire) != RoomInstance::Stage::Racing)
       continue;
 
     // Determine whether all racers have finished.
@@ -478,7 +478,9 @@ void RaceDirector::Tick() {
     }
 
     // Set the room state.
-    raceInstance.stage = RoomInstance::Stage::Waiting;
+    raceInstance.stageTimeoutTimePoint = std::chrono::steady_clock::time_point::max();
+    raceInstance.stage.store(RoomInstance::Stage::Waiting, std::memory_order::release);
+
     _serverInstance.GetRoomSystem().GetRoom(
       raceUid,
       [](Room& room)
@@ -635,7 +637,7 @@ void RaceDirector::HandleEnterRoom(
   _commandServer.SetCode(clientId, {});
 
   protocol::AcCmdCREnterRoomOK response{
-    .isRoomWaiting = raceInstance.stage == RoomInstance::Stage::Waiting,
+    .isRoomWaiting = raceInstance.stage.load(std::memory_order::acquire) == RoomInstance::Stage::Waiting,
     .uid = command.roomUid};
 
   try
@@ -1129,8 +1131,7 @@ void RaceDirector::HandleStartRace(
         racer.state.store(
             tracker::RaceTracker::Racer::State::Loading,
             std::memory_order::relaxed);
-        auto& racer = raceInstance.tracker.AddRacer(characterUid);
-        racer.state = tracker::RaceTracker::Racer::State::Loading;
+
         switch (roomPlayer.GetTeam())
         {
           case Room::Player::Team::Solo:
@@ -1146,8 +1147,8 @@ void RaceDirector::HandleStartRace(
       }
     });
 
-  raceInstance.stage = RoomInstance::Stage::Loading;
   raceInstance.stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(30);
+  raceInstance.stage.store(RoomInstance::Stage::Loading, std::memory_order::release);
 
   _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid,

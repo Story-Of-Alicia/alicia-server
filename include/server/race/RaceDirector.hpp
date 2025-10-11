@@ -53,25 +53,6 @@ public:
   void Terminate();
   void Tick();
 
-  bool IsRoomRacing(uint32_t uid)
-  {
-    const auto roomIter = _raceInstances.find(uid);
-    if (roomIter == _raceInstances.cend())
-      return false;
-
-    return roomIter->second.stage == RoomInstance::Stage::Racing |
-      roomIter->second.stage == RoomInstance::Stage::Loading;
-  }
-
-  uint32_t GetRoomPlayerCount(uint32_t uid)
-  {
-    const auto roomIter = _raceInstances.find(uid);
-    if (roomIter == _raceInstances.cend())
-      return 0;
-
-    return roomIter->second.tracker.GetRacers().size();
-  }
-
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId clientId) override;
 
@@ -96,7 +77,10 @@ private:
       Waiting,
       Loading,
       Racing,
-    } stage{Stage::Waiting};
+    };
+
+    //! A stage of the room.
+    std::atomic<Stage> stage{Stage::Waiting};
     //! A time point of when the stage timeout occurs.
     std::chrono::steady_clock::time_point stageTimeoutTimePoint;
 
