@@ -6,6 +6,10 @@ option(BUILD_TESTS "Build tests" ON)
 
 find_package(Boost 1.80.0 MODULE)
 
+if(NOT WIN32)
+        find_package(ICU COMPONENTS uc REQUIRED)
+endif()
+
 add_subdirectory(3rd-party SYSTEM)
 
 include(cmake/Versioning.cmake)
@@ -65,6 +69,10 @@ add_library(alicia-libserver STATIC
         src/libserver/util/Util.cpp)
 target_include_directories(alicia-libserver PUBLIC
         include/)
+if(NOT WIN32)
+        target_include_directories(alicia-libserver PRIVATE
+        ${ICU_INCLUDE_DIRS}/)
+endif()
 target_link_libraries(alicia-libserver PUBLIC
         project-properties
         platform-properties
@@ -73,6 +81,9 @@ target_link_libraries(alicia-libserver PUBLIC
         nlohmann_json::nlohmann_json
         yaml-cpp::yaml-cpp
         zlibstatic)
+if(NOT WIN32)
+        target_link_libraries(alicia-libserver PUBLIC ICU::uc)
+endif()
 
 # alicia-server target
 add_executable(alicia-server
