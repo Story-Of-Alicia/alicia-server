@@ -764,12 +764,6 @@ void RanchDirector::HandleEnterRanch(
         : character.role() == data::Character::Role::Op
           ? protocol::RanchCharacter::Role::Op
           : protocol::RanchCharacter::Role::User;
-      protocolCharacter.age = character.hideGenderAndAge() ? 0 : character.age();
-      // todo: use model constant
-      protocolCharacter.gender = character.parts.modelId() == 10
-          ? protocol::RanchCharacter::Gender::Boy
-          : protocol::RanchCharacter::Gender::Girl;
-
       protocolCharacter.introduction = character.introduction();
 
       protocol::BuildProtocolCharacter(protocolCharacter.character, character);
@@ -787,6 +781,26 @@ void RanchDirector::HandleEnterRanch(
       }
 
       protocol::BuildProtocolItems(protocolCharacter.characterEquipment, *equipment);
+
+      // Character's settings.
+      const auto settingsRecord = GetServerInstance().GetDataDirector().GetSettings(
+        character.settingsUid());
+
+      if (settingsRecord)
+      {
+        settingsRecord.Immutable(
+          [&protocolCharacter, &character](const data::Settings& settings)
+        {
+          if (settings.hideAge())
+            return;
+
+          protocolCharacter.age = settings.age();
+          // todo: use model constant
+          protocolCharacter.gender = character.parts.modelId() == 10
+              ? protocol::RanchCharacter::Gender::Boy
+              : protocol::RanchCharacter::Gender::Girl;
+        });
+      }
 
       // Character's mount.
       const auto mountRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
@@ -3134,14 +3148,27 @@ void RanchDirector::HandleChangeAge(
   const protocol::AcCmdCRChangeAge command)
 {
   const auto& clientContext = GetClientContext(clientId);
-  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable([age = command.age](data::Character& character)
-  {
-    character.age() = static_cast<uint8_t>(age);
-  });
+
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid)
+    .Mutable([this, age = command.age](
+      data::Character& character)
+    {
+      const auto settingsRecord = character.settingsUid() != data::InvalidUid
+        ? GetServerInstance().GetDataDirector().GetSettings(character.settingsUid())
+        : GetServerInstance().GetDataDirector().CreateSettings();
+
+      settingsRecord.Mutable(
+        [&character, &age](data::Settings& settings)
+        {
+          settings.age() = static_cast<uint8_t>(age);
+
+          if (character.settingsUid() == data::InvalidUid)
+            character.settingsUid = settings.uid();
+        });
+    });
 
   protocol::AcCmdCRChangeAgeOK response {
-    .age = command.age
-  };
+    .age = command.age};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -3153,8 +3180,7 @@ void RanchDirector::HandleChangeAge(
   BroadcastChangeAgeNotify(
     clientContext.characterUid,
     clientContext.visitingRancherUid,
-    command.age
-  );
+    command.age);
 }
 
 void RanchDirector::HandleHideAge(
@@ -3162,14 +3188,26 @@ void RanchDirector::HandleHideAge(
   const protocol::AcCmdCRHideAge command)
 {
   const auto& clientContext = GetClientContext(clientId);
-  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable([option = command.option](data::Character& character)
-  {
-    character.hideGenderAndAge() = option == protocol::AcCmdCRHideAge::Option::Hidden;
-  });
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid)
+    .Mutable([this, option = command.option](
+      data::Character& character)
+    {
+      const auto settingsRecord = character.settingsUid() != data::InvalidUid
+        ? GetServerInstance().GetDataDirector().GetSettings(character.settingsUid())
+        : GetServerInstance().GetDataDirector().CreateSettings();
+
+      settingsRecord.Mutable(
+        [&option, &character](data::Settings& settings)
+        {
+          settings.hideAge() = option == protocol::AcCmdCRHideAge::Option::Hidden;
+
+          if (character.settingsUid() == data::InvalidUid)
+            character.settingsUid = settings.uid();
+        });
+    });
 
   protocol::AcCmdCRHideAgeOK response {
-    .option = command.option
-  };
+    .option = command.option};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -3181,8 +3219,7 @@ void RanchDirector::HandleHideAge(
   BroadcastHideAgeNotify(
     clientContext.characterUid,
     clientContext.visitingRancherUid,
-    command.option
-  );
+    command.option);
 }
 
 void RanchDirector::HandleStatusPointApply(

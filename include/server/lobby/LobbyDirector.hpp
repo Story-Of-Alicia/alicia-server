@@ -189,7 +189,11 @@ private:
   void HandleChangeRanchOption(
     ClientId clientId,
     const protocol::LobbyCommandChangeRanchOption& command);
-  
+
+  void HandleUpdateUserSettings(
+    ClientId clientId,
+    const protocol::AcCmdCLUpdateUserSettings& command);
+
   void HandleRequestMountInfo(
     ClientId clientId,
     const protocol::AcCmdCLRequestMountInfo& command);

@@ -289,6 +289,46 @@ void BuildProtocolEgg(
   protocolEgg.boost = 400000;
 }
 
+void BuildProtocolSettings(
+  Settings& settings,
+  const data::Settings& settingsRecord)
+{
+  if (settingsRecord.keyboardBindings())
+  {
+    settings.typeBitset.set(Settings::Keyboard);
+
+    for (const auto& keyboardBinding : settingsRecord.keyboardBindings().value())
+    {
+      auto& protocolBinding = settings.keyboardOptions.bindings.emplace_back();
+      protocolBinding.primaryKey = keyboardBinding.primaryKey;
+      protocolBinding.type = keyboardBinding.type;
+      protocolBinding.secondaryKey = keyboardBinding.secondaryKey;
+      protocolBinding.unused = 0; // Unused
+    }
+  }
+
+  if (settingsRecord.gamepadBindings())
+  {
+    settings.typeBitset.set(Settings::Gamepad);
+
+    for (const auto& keyboardBinding : settingsRecord.gamepadBindings().value())
+    {
+      auto& protocolBinding = settings.gamepadOptions.bindings.emplace_back();
+      protocolBinding.primaryButton = keyboardBinding.primaryKey;
+      protocolBinding.type = keyboardBinding.type;
+      protocolBinding.secondaryButton = keyboardBinding.secondaryKey;
+      protocolBinding.unused = 0; // Unused
+    }
+  }
+
+  if (settingsRecord.macros())
+  {
+    settings.typeBitset.set(Settings::Macros);
+
+    settings.macroOptions.macros = settingsRecord.macros().value();
+  }
+}
+
 } // namespace protocol
 
 } // namespace server

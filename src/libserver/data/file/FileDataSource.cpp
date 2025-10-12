@@ -63,6 +63,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _petDataPath = prepareDataPath("pets");
   _housingDataPath = prepareDataPath("housing");
   _guildDataPath = prepareDataPath("guilds");
+  _settingsDataPath = prepareDataPath("settings");
 
   // Read the meta-data file and parse the sequential UIDs.
   const std::filesystem::path metaFilePath = ProduceDataPath(
@@ -104,6 +105,7 @@ void server::FileDataSource::Terminate()
   meta["petSequentialUid"] = _petSequentialUid.load();
   meta["housingSequentialUid"] = _housingSequentialUid.load();
   meta["guildSequentialId"] = _guildSequentialId.load();
+  meta["settingsSequentialId"] = _settingsSequentialId.load();
 
   metaFile << meta.dump(2);
 }
@@ -231,8 +233,6 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.name = json["name"].get<std::string>();
 
   character.introduction = json["introduction"].get<std::string>();
-  character.age = json["age"].get<uint8_t>();
-  character.hideGenderAndAge = json["hideGenderAndAge"].get<bool>();
 
   character.level = json["level"].get<uint32_t>();
   character.carrots = json["carrots"].get<int32_t>();
@@ -276,6 +276,8 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
 
   character.isRanchLocked = json["isRanchLocked"].get<bool>();
 
+  character.settingsUid = json["settingsUid"].get<data::Uid>();
+
   const auto readSkills = [](data::Character::Skills::Sets& sets, const nlohmann::json& json)
   {
     const auto readSkillSet = [](data::Character::Skills::Sets::Set& set, const nlohmann::json& json)
@@ -311,8 +313,6 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["name"] = character.name();
 
   json["introduction"] = character.introduction();
-  json["age"] = character.age();
-  json["hideGenderAndAge"] = character.hideGenderAndAge();
 
   json["level"] = character.level();
   json["carrots"] = character.carrots();
@@ -357,7 +357,9 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
 
   json["isRanchLocked"] = character.isRanchLocked();
 
-  // Construct gamemode skills from skill sets
+  json["settingsUid"] = character.settingsUid();
+
+  // Construct game mode skills from skill sets
   const auto& writeSkills = [](const data::Character::Skills::Sets& sets)
   {
     const auto& writeSkillSet = [](const data::Character::Skills::Sets::Set& set)
@@ -575,7 +577,7 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
 
   json["dateOfBirth"] = std::chrono::ceil<std::chrono::seconds>(
     horse.dateOfBirth().time_since_epoch()).count();
-  
+
   nlohmann::json mountInfo;
   mountInfo["boostsInARow"] = horse.mountInfo.boostsInARow();
   mountInfo["winsSpeedSingle"] = horse.mountInfo.winsSpeedSingle();
@@ -931,5 +933,141 @@ void server::FileDataSource::DeleteGuild(data::Uid uid)
 {
   const std::filesystem::path dataFilePath = ProduceDataPath(
     _guildDataPath, std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
+}
+
+void server::FileDataSource::CreateSettings(data::Settings& settings)
+{
+  settings.uid = ++_settingsSequentialId;
+}
+
+void server::FileDataSource::RetrieveSettings(data::Uid uid, data::Settings& settings)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _settingsDataPath, std::format("{}", uid));
+
+  std::ifstream dataFile(dataFilePath);
+  if (!dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Settings file '{}' not accessible", dataFilePath.string()));
+  }
+
+  const auto json = nlohmann::json::parse(dataFile);
+  settings.uid = json["uid"].get<data::Uid>();
+
+  settings.age = json["age"].get<uint8_t>();
+  settings.hideAge = json["hideGenderAndAge"].get<bool>();
+
+  // Keyboard bindings
+  {
+    const auto& keyboardJson = json["keyboard"];
+    const auto& keyboardBindingsJson = keyboardJson["bindings"];
+    if (not keyboardBindingsJson.empty())
+    {
+      auto& keyboardBindings = settings.keyboardBindings().emplace();
+
+      for (const auto& keyboardBindingJson : keyboardBindingsJson)
+      {
+        keyboardBindings.emplace_back(data::Settings::Option{
+          .primaryKey = keyboardBindingJson["primaryKey"].get<uint32_t>(),
+          .type = keyboardBindingJson["type"].get<uint32_t>(),
+          .secondaryKey = keyboardBindingJson["secondaryKey"].get<uint32_t>()
+        });
+      }
+    }
+  }
+
+  // Gamepad bindings
+  {
+    const auto& gamepadJson = json["gamepad"];
+    const auto& gamepadBindingsJson = gamepadJson["bindings"];
+    if (not gamepadBindingsJson.empty())
+    {
+      auto& gamepadBindings = settings.gamepadBindings().emplace();
+
+      for (const auto& gamepadBindingJson : gamepadBindingsJson)
+      {
+        gamepadBindings.emplace_back(data::Settings::Option{
+          .primaryKey = gamepadBindingJson["primaryButton"].get<uint32_t>(),
+          .type = gamepadBindingJson["type"].get<uint32_t>(),
+          .secondaryKey = gamepadBindingJson["secondaryButton"].get<uint32_t>()
+        });
+      }
+    }
+  }
+
+  if (json.contains("macros"))
+  {
+    const auto& macrosJson = json["macros"];
+    settings.macros().emplace() = macrosJson.get<std::array<std::string, 8>>();
+  }
+}
+
+void server::FileDataSource::StoreSettings(data::Uid uid, const data::Settings& settings)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _settingsDataPath, std::format("{}", uid));
+
+  std::ofstream dataFile(dataFilePath);
+  if (!dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Settings file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json;
+  json["uid"] = settings.uid();
+
+  json["age"] = settings.age();
+  json["hideGenderAndAge"] = settings.hideAge();
+
+  // Keyboard bindings
+  {
+    auto& keyboardJson = json["keyboard"];
+    auto& bindings = keyboardJson["bindings"];
+
+    if (settings.keyboardBindings())
+    {
+      for (auto& bindingRecord : settings.keyboardBindings().value())
+      {
+        auto& bindingJson = bindings.emplace_back();
+        bindingJson["type"] = bindingRecord.type;
+        bindingJson["primaryKey"] = bindingRecord.primaryKey;
+        bindingJson["secondaryKey"] = bindingRecord.secondaryKey;
+      }
+    }
+  }
+
+  // Gamepad bindings
+  {
+    auto& gamepadJson = json["gamepad"];
+    auto& bindings = gamepadJson["bindings"];
+
+    if (settings.gamepadBindings())
+    {
+      for (auto& bindingRecord : settings.gamepadBindings().value())
+      {
+        auto& bindingJson = bindings.emplace_back();
+        bindingJson["type"] = bindingRecord.type;
+        bindingJson["primaryButton"] = bindingRecord.primaryKey;
+        bindingJson["secondaryButton"] = bindingRecord.secondaryKey;
+      }
+    }
+  }
+
+  // Macros
+  if (settings.macros())
+  {
+    json["macros"] = settings.macros().value();
+  }
+
+  dataFile << json.dump(2);
+}
+
+void server::FileDataSource::DeleteSettings(data::Uid uid)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _settingsDataPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
 }

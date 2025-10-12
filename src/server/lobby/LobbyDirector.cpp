@@ -236,7 +236,13 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
     {
       HandleChangeRanchOption(clientId, command);
     });
-  
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLUpdateUserSettings>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleUpdateUserSettings(clientId, command);
+    });
+
     _commandServer.RegisterCommandHandler<protocol::AcCmdCLRequestMountInfo>(
     [this](ClientId clientId, const auto& command)
     {
@@ -1163,6 +1169,95 @@ LobbyDirector::ClientContext& LobbyDirector::GetClientContext(
     throw std::runtime_error("Lobby client is not authenticated");
 
   return clientContext;
+}
+
+void LobbyDirector::HandleUpdateUserSettings(
+  ClientId clientId,
+  const protocol::AcCmdCLUpdateUserSettings& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+   clientContext.characterUid);
+
+  auto settingsUid = data::InvalidUid;
+  characterRecord.Immutable([&settingsUid](const data::Character& character)
+  {
+    settingsUid = character.settingsUid();
+  });
+
+  const bool wasCreated = settingsUid == data::InvalidUid;
+  const auto settingsRecord = settingsUid != data::InvalidUid
+    ? _serverInstance.GetDataDirector().GetSettings(settingsUid)
+    : _serverInstance.GetDataDirector().CreateSettings();
+
+  settingsRecord.Mutable([&settingsUid, &command](data::Settings& settings)
+  {
+    // Copy the keyboard bindings if present in the command.
+    if (command.settings.typeBitset.test(protocol::Settings::Keyboard))
+    {
+      if (not settings.keyboardBindings())
+        settings.keyboardBindings().emplace();
+
+      for (const auto& protocolBinding : command.settings.keyboardOptions.bindings)
+      {
+        auto& bindingRecord = settings.keyboardBindings()->emplace_back();
+
+        bindingRecord.type = protocolBinding.type;
+        bindingRecord.primaryKey = protocolBinding.primaryKey;
+        bindingRecord.secondaryKey = protocolBinding.secondaryKey;
+      }
+    }
+
+    // Copy the gamepad bindings if present in the command.
+    if (command.settings.typeBitset.test(protocol::Settings::Gamepad))
+    {
+      if (not settings.gamepadBindings())
+        settings.gamepadBindings().emplace();
+
+      auto protocolBindings = command.settings.gamepadOptions.bindings;
+
+      // The last binding is invalid, sends type 2 and overwrites real settings
+      if (!protocolBindings.empty())
+       protocolBindings.pop_back();
+
+      for (const auto& protocolBinding : protocolBindings)
+      {
+        auto& bindingRecord = settings.gamepadBindings()->emplace_back();
+
+        bindingRecord.type = protocolBinding.type;
+        bindingRecord.primaryKey = protocolBinding.primaryButton;
+        bindingRecord.secondaryKey = protocolBinding.secondaryButton;
+      }
+    }
+
+    // Copy the macros if present in the command.
+    if (command.settings.typeBitset.test(protocol::Settings::Macros))
+    {
+      settings.macros() = command.settings.macroOptions.macros;
+    }
+
+    settingsUid = settings.uid();
+  });
+
+  if (wasCreated)
+  {
+    characterRecord.Mutable([&settingsUid](data::Character& character)
+    {
+      character.settingsUid() = settingsUid;
+    });
+  }
+
+  // We explicitly do not update the `age` and `hideAge` members,
+  // as the client uses dedicated `AcCmdCRChangeAge` and `AcCmdCRHideAge` commands instead.
+
+  protocol::AcCmdCLUpdateUserSettingsOK response{};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 void LobbyDirector::HandleRequestMountInfo(

@@ -1541,11 +1541,24 @@ void RaceDirector::HandleRequestSpur(
     .startPointValue = racer.starPointValue,
     .comboBreak = command.comboBreak};
 
+  protocol::AcCmdCRStarPointGetOK starPointResponse{
+    .characterOid = command.characterOid,
+    .starPointValue = racer.starPointValue,
+    .giveMagicItem = false
+  };
+
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
     {
       return response;
+    });
+
+  _commandServer.QueueCommand<decltype(starPointResponse)>(
+    clientId,
+    [starPointResponse]()
+    {
+      return starPointResponse;
     });
 }
 

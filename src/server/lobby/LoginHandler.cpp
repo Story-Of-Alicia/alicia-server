@@ -484,8 +484,6 @@ void LoginHandler::QueueUserLoginAccepted(
       response.carrots = character.carrots();
       response.role = std::bit_cast<protocol::LobbyCommandLoginOK::Role>(
         character.role());
-      response.age = character.age();
-      response.hideGenderAndAge = character.hideGenderAndAge();
 
       if (not justCreatedCharacter)
         response.bitfield = protocol::LobbyCommandLoginOK::HasPlayedBefore;
@@ -540,11 +538,30 @@ void LoginHandler::QueueUserLoginAccepted(
         });
       }
 
+      if (character.settingsUid() != data::InvalidUid)
+      {
+        const auto settingsRecord = _lobbyDirector.GetServerInstance().GetDataDirector().GetSettingsCache().Get(
+          character.settingsUid());
+        if (not settingsRecord)
+          throw std::runtime_error("Character's settings not available");
+
+        settingsRecord->Immutable([&response](const data::Settings& settings)
+        {
+          // We set the age despite if the hide age is set,
+          // just so the user is able to see the last value set by them.
+          response.settings.age = settings.age();
+          response.settings.hideAge = settings.hideAge();
+
+          protocol::BuildProtocolSettings(response.settings, settings);
+        });
+      }
+
       characterMountUid = character.mountUid();
     });
 
   // Get the mounted horse record and fill the protocol data.
-  const auto mountRecord = _lobbyDirector.GetServerInstance().GetDataDirector().GetHorseCache().Get(characterMountUid);
+  const auto mountRecord = _lobbyDirector.GetServerInstance().GetDataDirector().GetHorseCache().Get(
+    characterMountUid);
   if (not mountRecord)
     throw std::runtime_error("Horse mount record unavailable");
 

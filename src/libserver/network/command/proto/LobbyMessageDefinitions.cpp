@@ -104,47 +104,8 @@ void LobbyCommandLoginOK::Write(
     .Write(command.role)
     .Write(command.val3);
 
-  // Options
-  // Option type mask
-  const auto optionTypeMask = static_cast<uint32_t>(
-    command.optionType);
-  stream.Write(optionTypeMask);
-
-  // Write the keyboard options if specified in the option type mask.
-  if (optionTypeMask & static_cast<uint32_t>(OptionType::Keyboard))
-  {
-    const auto& keyboard = command.keyboardOptions;
-    stream.Write(static_cast<uint8_t>(keyboard.bindings.size()));
-
-    for (const auto& binding : keyboard.bindings)
-    {
-      stream.Write(binding.index)
-        .Write(binding.type)
-        .Write(binding.key);
-    }
-  }
-
-  // Write the macro options if specified in the option type mask.
-  if (optionTypeMask & static_cast<uint32_t>(OptionType::Macros))
-  {
-    const auto& macros = command.macroOptions;
-
-    for (const auto& macro : macros.macros)
-    {
-      stream.Write(macro);
-    }
-  }
-
-  // Write the value option if specified in the option type mask.
-  if (optionTypeMask & static_cast<uint32_t>(OptionType::Value))
-  {
-    stream.Write(command.valueOptions);
-  }
-
-  // ToDo: Write the gamepad options.
-
-  stream.Write(static_cast<uint8_t>(command.age))
-    .Write(command.hideGenderAndAge);
+  //
+  stream.Write(command.settings);
 
   //
   stream.Write(static_cast<uint8_t>(command.missions.size()));
@@ -1253,6 +1214,33 @@ void AcCmdLCNotice::Read(AcCmdLCNotice& command, SourceStream& stream)
     throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCLUpdateUserSettings::Write(
+  const AcCmdCLUpdateUserSettings& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLUpdateUserSettings::Read(
+  AcCmdCLUpdateUserSettings& command,
+  SourceStream& stream)
+{
+  stream.Read(command.settings);
+}
+
+void AcCmdCLUpdateUserSettingsOK::Write(
+  const AcCmdCLUpdateUserSettingsOK& command,
+  SinkStream& stream)
+{
+  // Empty.
+}
+
+void AcCmdCLUpdateUserSettingsOK::Read(
+  AcCmdCLUpdateUserSettingsOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
 void AcCmdCLRequestMountInfo::Write(
   const AcCmdCLRequestMountInfo& command,
   SinkStream& stream)

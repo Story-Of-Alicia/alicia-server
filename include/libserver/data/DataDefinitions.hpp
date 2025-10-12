@@ -20,11 +20,13 @@
 #ifndef DATADEFINITIONS_HPP
 #define DATADEFINITIONS_HPP
 
+#include <array>
 #include <atomic>
-#include <cstdint>
 #include <chrono>
+#include <cstdint>
 #include <string>
 #include <vector>
+#include <optional>
 
 namespace server
 {
@@ -196,6 +198,26 @@ struct Guild
   dao::Field<std::string> name{};
 };
 
+//! Settings
+struct Settings
+{
+  dao::Field<Uid> uid{InvalidUid};
+
+  struct Option
+  {
+    uint32_t primaryKey{0};
+    uint32_t type{0};
+    uint32_t secondaryKey{0};
+  };
+
+  dao::Field<std::optional<std::vector<Option>>> keyboardBindings{std::nullopt};
+  dao::Field<std::optional<std::array<std::string, 8>>> macros{std::nullopt};
+  dao::Field<std::optional<std::vector<Option>>> gamepadBindings{std::nullopt};
+
+  dao::Field<uint32_t> age{};
+  dao::Field<bool> hideAge{true};
+};
+
 //! User
 struct Character
 {
@@ -205,8 +227,6 @@ struct Character
   dao::Field<std::string> name{};
 
   dao::Field<std::string> introduction{};
-  dao::Field<uint8_t> age{18};
-  dao::Field<bool> hideGenderAndAge{true};
 
   dao::Field<uint32_t> level{};
   dao::Field<int32_t> carrots{};
@@ -261,6 +281,8 @@ struct Character
   dao::Field<std::vector<Uid>> housing{};
 
   dao::Field<bool> isRanchLocked{};
+
+  dao::Field<Uid> settingsUid{InvalidUid};
 
   struct Skills
   {
