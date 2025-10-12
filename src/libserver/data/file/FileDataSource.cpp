@@ -278,7 +278,7 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
 
   character.isRanchLocked = json["isRanchLocked"].get<bool>();
 
-  character.settings = json["settingsUid"].get<data::Uid>();
+  character.settingsUid = json["settingsUid"].get<data::Uid>();
 
   const auto readSkills = [](data::Character::Skills::Sets& sets, const nlohmann::json& json)
   {
@@ -363,7 +363,7 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
 
   json["settingsUid"] = character.settingsUid();
 
-  // Construct gamemode skills from skill sets
+  // Construct game mode skills from skill sets
   const auto& writeSkills = [](const data::Character::Skills::Sets& sets)
   {
     const auto& writeSkillSet = [](const data::Character::Skills::Sets::Set& set)

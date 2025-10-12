@@ -286,7 +286,7 @@ struct Character
 
   dao::Field<bool> isRanchLocked{};
 
-  dao::Field<Uid> settings{InvalidUid};
+  dao::Field<Uid> settingsUid{InvalidUid};
 
   struct Skills
   {

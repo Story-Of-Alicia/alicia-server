@@ -366,7 +366,7 @@ void LoginHandler::QueueUserLoginAccepted(
       _lobbyDirector._clients.size()),
     .val1 = 0x0,
     .val3 = 0x0,
-    .optionType = static_cast<uint32_t>(OptionType::Value),
+    .optionType = static_cast<uint32_t>(protocol::OptionType::Value),
     .valueOptions = 0x64,
 
     .missions = {
@@ -542,25 +542,33 @@ void LoginHandler::QueueUserLoginAccepted(
         });
       }
 
-      if (character.settings() != data::InvalidUid)
+      if (character.settingsUid() != data::InvalidUid)
       {
         const auto settingsRecord = _lobbyDirector.GetServerInstance().GetDataDirector().GetSettingsCache().Get(
-          character.settings());
+          character.settingsUid());
         if (not settingsRecord)
           throw std::runtime_error("Character's settings not available");
 
         settingsRecord->Immutable([&response](const data::Settings& settings)
         {
-          if (settings.keyboardSettingsAvailable()){
-            response.optionType |= static_cast<uint32_t>(OptionType::Keyboard);
+          // Fill the keyboard settings
+          if (settings.keyboardSettingsAvailable())
+          {
+            response.optionType |= static_cast<uint32_t>(protocol::OptionType::Keyboard);
             protocol::BuildProtocolKeyboardOptions(response.keyboardOptions, settings);
           }
-          if (settings.macrosAvailable()){
-            response.optionType |= static_cast<uint32_t>(OptionType::Macros);
+
+          // Fill the macros settings
+          if (settings.macrosAvailable())
+          {
+            response.optionType |= static_cast<uint32_t>(protocol::OptionType::Macros);
             protocol::BuildProtocolMacroOptions(response.macroOptions, settings);
           }
-          if (settings.gamepadSettingsAvailable()){
-            response.optionType |= static_cast<uint32_t>(OptionType::Gamepad);
+
+          // Fill the gamepad settings
+          if (settings.gamepadSettingsAvailable())
+          {
+            response.optionType |= static_cast<uint32_t>(protocol::OptionType::Gamepad);
             protocol::BuildProtocolGamepadOptions(response.gamepadOptions, settings);
           }
         });
@@ -570,7 +578,8 @@ void LoginHandler::QueueUserLoginAccepted(
     });
 
   // Get the mounted horse record and fill the protocol data.
-  const auto mountRecord = _lobbyDirector.GetServerInstance().GetDataDirector().GetHorseCache().Get(characterMountUid);
+  const auto mountRecord = _lobbyDirector.GetServerInstance().GetDataDirector().GetHorseCache().Get(
+    characterMountUid);
   if (not mountRecord)
     throw std::runtime_error("Horse mount record unavailable");
 
