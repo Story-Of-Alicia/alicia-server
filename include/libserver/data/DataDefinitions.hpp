@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <optional>
 
 namespace server
 {
@@ -204,20 +205,17 @@ struct Settings
 
   struct Option
   {
-    dao::Field<uint8_t> primaryKey{0};
-    dao::Field<uint8_t> type{0};
-    dao::Field<uint8_t> secondaryKey{0};
+    uint32_t primaryKey{0};
+    uint32_t type{0};
+    uint32_t secondaryKey{0};
   };
 
-  dao::Field<bool> keyboardSettingsAvailable{false};
-  dao::Field<std::vector<std::shared_ptr<Option>>> keyboardBindings{};
+  dao::Field<std::optional<std::vector<Option>>> keyboardBindings{std::nullopt};
+  dao::Field<std::optional<std::array<std::string, 8>>> macros{std::nullopt};
+  dao::Field<std::optional<std::vector<Option>>> gamepadBindings{std::nullopt};
 
-
-  dao::Field<bool> macrosAvailable{false};
-  dao::Field<std::array<std::string, 8>> macros{};
-
-  dao::Field<bool> gamepadSettingsAvailable{false};
-  dao::Field<std::vector<std::shared_ptr<Option>>> gamepadBindings{};
+  dao::Field<uint32_t> age{};
+  dao::Field<bool> hideAge{true};
 };
 
 //! User
@@ -229,8 +227,6 @@ struct Character
   dao::Field<std::string> name{};
 
   dao::Field<std::string> introduction{};
-  dao::Field<uint8_t> age{18};
-  dao::Field<bool> hideGenderAndAge{true};
 
   dao::Field<uint32_t> level{};
   dao::Field<int32_t> carrots{};

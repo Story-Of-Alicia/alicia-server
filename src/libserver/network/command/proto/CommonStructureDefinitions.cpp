@@ -160,6 +160,123 @@ void GamepadOptions::Read(GamepadOptions& value, SourceStream& stream)
   }
 }
 
+void Settings::Write(const Settings& value, SinkStream& stream)
+{
+  stream.Write(value.typeBitset.to_ulong());
+
+  // Write the keyboard options if specified in the option type mask.
+  if (value.typeBitset.test(Type::Keyboard))
+  {
+    const auto& keyboard = value.keyboardOptions;
+    stream.Write(static_cast<uint8_t>(keyboard.bindings.size()));
+
+    for (const auto& binding : keyboard.bindings)
+    {
+      stream.Write(binding.type)
+        .Write(binding.unused)
+        .Write(binding.primaryKey)
+        .Write(binding.secondaryKey);
+    }
+  }
+
+  // Write the macro options if specified in the option type mask.
+  if (value.typeBitset.test(Type::Macros))
+  {
+    const auto& macros = value.macroOptions;
+
+    for (const auto& macro : macros.macros)
+    {
+      stream.Write(macro);
+    }
+  }
+
+  // Write the value option if specified in the option type mask.
+  if (value.typeBitset.test(Type::Value))
+  {
+    stream.Write(value.valueOption);
+  }
+
+  // Write the gamepad options if specified in the option type mask.
+  if (value.typeBitset.test(Type::Gamepad))
+  {
+    const auto& gamepad = value.gamepadOptions;
+    stream.Write(static_cast<uint8_t>(gamepad.bindings.size()));
+
+    for (const auto& binding : gamepad.bindings)
+    {
+      stream.Write(binding.type)
+        .Write(binding.unused)
+        .Write(binding.primaryButton)
+        .Write(binding.secondaryButton);
+    }
+  }
+
+  stream.Write(value.age)
+    .Write(value.hideAge);
+}
+
+void Settings::Read(Settings& value, SourceStream& stream)
+{
+  uint32_t typeBitsetValue;
+  stream.Read(typeBitsetValue);
+
+  value.typeBitset = typeBitsetValue;
+
+  // Write the keyboard options if specified in the option type mask.
+  if (value.typeBitset.test(Type::Keyboard))
+  {
+    auto& keyboard = value.keyboardOptions;
+    uint8_t bindingCount = 0;
+    stream.Read(bindingCount);
+    keyboard.bindings.resize(bindingCount);
+
+    for (auto& binding : keyboard.bindings)
+    {
+      stream.Read(binding.type)
+        .Read(binding.unused)
+        .Read(binding.primaryKey)
+        .Read(binding.secondaryKey);
+    }
+  }
+
+  // Write the gamepad options if specified in the option type mask.
+  if (value.typeBitset.test(Type::Gamepad))
+  {
+    auto& gamepad = value.gamepadOptions;
+    uint8_t bindingCount = 0;
+    stream.Read(bindingCount);
+    gamepad.bindings.resize(bindingCount);
+
+    for (auto& binding : gamepad.bindings)
+    {
+      stream.Read(binding.type)
+        .Read(binding.unused)
+        .Read(binding.primaryButton)
+        .Read(binding.secondaryButton);
+    }
+  }
+
+  // Write the macro options if specified in the option type mask.
+  if (value.typeBitset.test(Type::Macros))
+  {
+    auto& macros = value.macroOptions;
+
+    for (auto& macro : macros.macros)
+    {
+      stream.Read(macro);
+    }
+  }
+
+  // Write the value option if specified in the option type mask.
+  if (value.typeBitset.test(Type::Value))
+  {
+    stream.Read(value.valueOption);
+  }
+
+  stream.Read(value.age)
+    .Read(value.hideAge);
+}
+
 void Character::Parts::Write(const Parts& value, SinkStream& stream)
 {
   stream.Write(value.charId)

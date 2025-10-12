@@ -289,44 +289,44 @@ void BuildProtocolEgg(
   protocolEgg.boost = 400000;
 }
 
-void BuildProtocolKeyboardOptions(
-  KeyboardOptions& protocolKeyboardOptions,
+void BuildProtocolSettings(
+  Settings& settings,
   const data::Settings& settingsRecord)
 {
-  protocolKeyboardOptions.bindings.clear();
-  for (const auto& binding : settingsRecord.keyboardBindings())
+  if (settingsRecord.keyboardBindings())
   {
-    KeyboardOptions::Option option;
-    option.primaryKey = binding->primaryKey();
-    option.type = binding->type();
-    option.secondaryKey = binding->secondaryKey();
-    option.unused = 0; // Unused
-    protocolKeyboardOptions.bindings.push_back(option);
-  }
-}
+    settings.typeBitset.set(Settings::Keyboard);
 
-void BuildProtocolMacroOptions(
-  MacroOptions& protocolMacros,
-  const data::Settings& settingsRecord)
-{
-  protocolMacros.macros = settingsRecord.macros();
-}
-
-void BuildProtocolGamepadOptions(
-  GamepadOptions& protocolGamepadOptions,
-  const data::Settings& settingsRecord)
-{
-  protocolGamepadOptions.bindings.clear();
-  for (const auto& binding : settingsRecord.gamepadBindings())
-  {
-    GamepadOptions::Option option;
-    option.primaryButton = binding->primaryKey();
-    option.type = binding->type();
-    option.secondaryButton = binding->secondaryKey();
-    option.unused = 0; // Unused
-    protocolGamepadOptions.bindings.push_back(option);
+    for (const auto& keyboardBinding : settingsRecord.keyboardBindings().value())
+    {
+      auto& protocolBinding = settings.keyboardOptions.bindings.emplace_back();
+      protocolBinding.primaryKey = keyboardBinding.primaryKey;
+      protocolBinding.type = keyboardBinding.type;
+      protocolBinding.secondaryKey = keyboardBinding.secondaryKey;
+      protocolBinding.unused = 0; // Unused
+    }
   }
 
+  if (settingsRecord.gamepadBindings())
+  {
+    settings.typeBitset.set(Settings::Gamepad);
+
+    for (const auto& keyboardBinding : settingsRecord.gamepadBindings().value())
+    {
+      auto& protocolBinding = settings.gamepadOptions.bindings.emplace_back();
+      protocolBinding.primaryButton = keyboardBinding.primaryKey;
+      protocolBinding.type = keyboardBinding.type;
+      protocolBinding.secondaryButton = keyboardBinding.secondaryKey;
+      protocolBinding.unused = 0; // Unused
+    }
+  }
+
+  if (settingsRecord.macros())
+  {
+    settings.typeBitset.set(Settings::Macros);
+
+    settings.macroOptions.macros = settingsRecord.macros().value();
+  }
 }
 
 } // namespace protocol

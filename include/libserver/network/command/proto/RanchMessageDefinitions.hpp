@@ -3500,6 +3500,8 @@ struct AcCmdRCChangeAgeNotify
 
 struct AcCmdCRHideAge
 {
+  //! Whether the age is hidden.
+  //! Client also hides the gender along with the age.
   enum class Option : uint8_t {
     Shown = 0,
     Hidden = 1

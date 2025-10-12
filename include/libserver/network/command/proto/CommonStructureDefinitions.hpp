@@ -23,6 +23,7 @@
 #include "libserver/util/Stream.hpp"
 
 #include <array>
+#include <bitset>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -77,21 +78,11 @@ struct StoredItem
 };
 
 //!
-enum class OptionType : uint32_t
-{
-  Keyboard = 1 << 0,
-  Macros = 1 << 3,
-  Value = 1 << 4,
-  Gamepad = 1 << 5,
-};
-
-//!
 struct KeyboardOptions
 {
   struct Option
   {
     uint8_t type{};
-    //always 0
     uint8_t unused{};
     uint8_t primaryKey{};
     uint8_t secondaryKey{};
@@ -131,6 +122,32 @@ struct GamepadOptions
 
   static void Write(const GamepadOptions& value, SinkStream& stream);
   static void Read(GamepadOptions& value, SourceStream& stream);
+};
+
+struct Settings
+{
+  //! Represents a type bit indices in the type bit set.
+  enum Type : uint32_t
+  {
+    Keyboard = 0,
+    Macros = 3,
+    Value = 4,
+    Gamepad = 5,
+  };
+
+  std::bitset<32> typeBitset{};
+
+  KeyboardOptions keyboardOptions{};
+  MacroOptions macroOptions{};
+  //sent every time at the closure of the settings window
+  uint32_t valueOption{};
+  GamepadOptions gamepadOptions{};
+
+  uint8_t age{};
+  uint8_t hideAge{};
+
+  static void Write(const Settings& value, SinkStream& stream);
+  static void Read(Settings& value, SourceStream& stream);
 };
 
 //!
@@ -457,7 +474,7 @@ struct RanchCharacter
   enum class Gender : uint8_t
   {
     Girl = 0,
-    Boy = 1
+    Boy = 1,
   } gender{Gender::Girl};
   std::string introduction{};
 

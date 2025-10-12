@@ -96,15 +96,7 @@ struct LobbyCommandLoginOK
 
   uint8_t val3{};
 
-  //! Option type mask.
-  uint32_t optionType{};
-  KeyboardOptions keyboardOptions{};
-  MacroOptions macroOptions{};
-  uint32_t valueOptions{};
-  GamepadOptions gamepadOptions{};
-
-  uint8_t age{};
-  uint8_t hideGenderAndAge{};
+  Settings settings{};
 
   struct Mission
   {
@@ -1958,17 +1950,7 @@ struct AcCmdLCSkillCardPresetList
 
 struct AcCmdCLUpdateUserSettings
 {
-  OptionType optionType{};
-  KeyboardOptions keyboardOptions{};
-  MacroOptions macroOptions{};
-
-  //sent every time at the closure of the settings window
-  uint32_t valueSetting{};
-  GamepadOptions gamepadOptions{};
-  
-  uint8_t option1{};
-  uint8_t option2{};
-
+  Settings settings;
 
   static Command GetCommand()
   {

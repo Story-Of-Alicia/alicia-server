@@ -233,8 +233,6 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.name = json["name"].get<std::string>();
 
   character.introduction = json["introduction"].get<std::string>();
-  character.age = json["age"].get<uint8_t>();
-  character.hideGenderAndAge = json["hideGenderAndAge"].get<bool>();
 
   character.level = json["level"].get<uint32_t>();
   character.carrots = json["carrots"].get<int32_t>();
@@ -315,8 +313,6 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["name"] = character.name();
 
   json["introduction"] = character.introduction();
-  json["age"] = character.age();
-  json["hideGenderAndAge"] = character.hideGenderAndAge();
 
   json["level"] = character.level();
   json["carrots"] = character.carrots();
@@ -960,36 +956,51 @@ void server::FileDataSource::RetrieveSettings(data::Uid uid, data::Settings& set
   const auto json = nlohmann::json::parse(dataFile);
   settings.uid = json["uid"].get<data::Uid>();
 
-  // Keyboard bindings
-  settings.keyboardSettingsAvailable() = json["keyboardSettingsAvailable"].get<bool>();
-  auto keyboardJson = json["keyboard"];
-  auto& keyboardBindings = settings.keyboardBindings();
+  settings.age = json["age"].get<uint8_t>();
+  settings.hideAge = json["hideGenderAndAge"].get<bool>();
 
-  for (const auto& item : keyboardJson["bindings"])
+  // Keyboard bindings
   {
-    keyboardBindings.emplace_back(std::make_shared<data::Settings::Option>(data::Settings::Option{
-      .primaryKey = item["primaryKey"].get<uint8_t>(),
-      .type = item["type"].get<uint8_t>(),
-      .secondaryKey = item["secondaryKey"].get<uint8_t>()
-    }));
+    const auto& keyboardJson = json["keyboard"];
+    const auto& keyboardBindingsJson = keyboardJson["bindings"];
+    if (not keyboardBindingsJson.empty())
+    {
+      auto& keyboardBindings = settings.keyboardBindings().emplace();
+
+      for (const auto& keyboardBindingJson : keyboardBindingsJson)
+      {
+        keyboardBindings.emplace_back(data::Settings::Option{
+          .primaryKey = keyboardBindingJson["primaryKey"].get<uint32_t>(),
+          .type = keyboardBindingJson["type"].get<uint32_t>(),
+          .secondaryKey = keyboardBindingJson["secondaryKey"].get<uint32_t>()
+        });
+      }
+    }
   }
 
-  // Macros
-  settings.macrosAvailable() = json["macroSettingsAvailable"].get<bool>();
-  settings.macros() = json["macros"].get<std::array<std::string, 8>>();
-
   // Gamepad bindings
-  settings.gamepadSettingsAvailable() = json["gamepadSettingsAvailable"].get<bool>();
-  auto gamepadJson = json["gamepad"];
-  auto& gamepadBindings = settings.gamepadBindings();
-
-  for (const auto& item : gamepadJson["bindings"])
   {
-    gamepadBindings.emplace_back(std::make_shared<data::Settings::Option>(data::Settings::Option{
-      .primaryKey = item["primaryButton"].get<uint8_t>(),
-      .type = item["type"].get<uint8_t>(),
-      .secondaryKey = item["secondaryButton"].get<uint8_t>()
-    }));
+    const auto& gamepadJson = json["gamepad"];
+    const auto& gamepadBindingsJson = gamepadJson["bindings"];
+    if (not gamepadBindingsJson.empty())
+    {
+      auto& gamepadBindings = settings.gamepadBindings().emplace();
+
+      for (const auto& gamepadBindingJson : gamepadBindingsJson)
+      {
+        gamepadBindings.emplace_back(data::Settings::Option{
+          .primaryKey = gamepadBindingJson["primaryButton"].get<uint32_t>(),
+          .type = gamepadBindingJson["type"].get<uint32_t>(),
+          .secondaryKey = gamepadBindingJson["secondaryButton"].get<uint32_t>()
+        });
+      }
+    }
+  }
+
+  if (json.contains("macros"))
+  {
+    const auto& macrosJson = json["macros"];
+    settings.macros().emplace() = macrosJson.get<std::array<std::string, 8>>();
   }
 }
 
@@ -1008,34 +1019,48 @@ void server::FileDataSource::StoreSettings(data::Uid uid, const data::Settings& 
   nlohmann::json json;
   json["uid"] = settings.uid();
 
-  // Keyboard bindings
-  nlohmann::json keyboard;
-  for (const auto& option : settings.keyboardBindings()) {
-    keyboard["bindings"].push_back({
-        {"primaryKey", option->primaryKey()},
-        {"type", option->type()},
-        {"secondaryKey", option->secondaryKey()}
-    });
-}
-  json["keyboard"] = keyboard;
-  json["keyboardSettingsAvailable"] = settings.keyboardSettingsAvailable();
+  json["age"] = settings.age();
+  json["hideGenderAndAge"] = settings.hideAge();
 
-  // Macros
-  json["macros"] = settings.macros();
-  json["macroSettingsAvailable"] = settings.macrosAvailable();
+  // Keyboard bindings
+  {
+    auto& keyboardJson = json["keyboard"];
+    auto& bindings = keyboardJson["bindings"];
+
+    if (settings.keyboardBindings())
+    {
+      for (auto& bindingRecord : settings.keyboardBindings().value())
+      {
+        auto& bindingJson = bindings.emplace_back();
+        bindingJson["type"] = bindingRecord.type;
+        bindingJson["primaryKey"] = bindingRecord.primaryKey;
+        bindingJson["secondaryKey"] = bindingRecord.secondaryKey;
+      }
+    }
+  }
 
   // Gamepad bindings
-  nlohmann::json gamepad;
-  for (const auto& option : settings.gamepadBindings())
   {
-    gamepad["bindings"].push_back({
-      {"primaryButton", option->primaryKey()},
-      {"type", option->type()},
-      {"secondaryButton", option->secondaryKey()}
-    });
+    auto& gamepadJson = json["gamepad"];
+    auto& bindings = gamepadJson["bindings"];
+
+    if (settings.gamepadBindings())
+    {
+      for (auto& bindingRecord : settings.gamepadBindings().value())
+      {
+        auto& bindingJson = bindings.emplace_back();
+        bindingJson["type"] = bindingRecord.type;
+        bindingJson["primaryButton"] = bindingRecord.primaryKey;
+        bindingJson["secondaryButton"] = bindingRecord.secondaryKey;
+      }
+    }
   }
-  json["gamepad"] = gamepad;
-  json["gamepadSettingsAvailable"] = settings.gamepadSettingsAvailable();
+
+  // Macros
+  if (settings.macros())
+  {
+    json["macros"] = settings.macros().value();
+  }
 
   dataFile << json.dump(2);
 }

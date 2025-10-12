@@ -1175,79 +1175,80 @@ void LobbyDirector::HandleUpdateUserSettings(
   ClientId clientId,
   const protocol::AcCmdCLUpdateUserSettings& command)
 {
-  // Currently disabled until the saving is sorted out.
-  /* 
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
-    clientContext.characterUid);
+   clientContext.characterUid);
 
-  characterRecord.Mutable([&command, this](data::Character& character)
+  auto settingsUid = data::InvalidUid;
+  characterRecord.Immutable([&settingsUid](const data::Character& character)
+  {
+    settingsUid = character.settingsUid();
+  });
+
+  const bool wasCreated = settingsUid == data::InvalidUid;
+  const auto settingsRecord = settingsUid != data::InvalidUid
+    ? _serverInstance.GetDataDirector().GetSettings(settingsUid)
+    : _serverInstance.GetDataDirector().CreateSettings();
+
+  settingsRecord.Mutable([&settingsUid, &command](data::Settings& settings)
+  {
+    // Copy the keyboard bindings if present in the command.
+    if (command.settings.typeBitset.test(protocol::Settings::Keyboard))
     {
-      if (character.settings() == 0)
+      if (not settings.keyboardBindings())
+        settings.keyboardBindings().emplace();
+
+      for (const auto& protocolBinding : command.settings.keyboardOptions.bindings)
       {
-        auto settingsUid = data::InvalidUid;
-        auto settingsRecord = GetServerInstance().GetDataDirector().CreateSettings();
-        settingsRecord.Mutable([&settingsUid](data::Settings& settings)
-          {
-            settingsUid = settings.uid();
-          });
-        character.settings() = settingsUid;
+        auto& bindingRecord = settings.keyboardBindings()->emplace_back();
+
+        bindingRecord.type = protocolBinding.type;
+        bindingRecord.primaryKey = protocolBinding.primaryKey;
+        bindingRecord.secondaryKey = protocolBinding.secondaryKey;
       }
+    }
 
-      const auto settingsUid = character.settings();
-      auto settingsRecord = GetServerInstance().GetDataDirector().GetSettings(settingsUid);
+    // Copy the gamepad bindings if present in the command.
+    if (command.settings.typeBitset.test(protocol::Settings::Gamepad))
+    {
+      if (not settings.gamepadBindings())
+        settings.gamepadBindings().emplace();
 
-      settingsRecord.Mutable([&command](data::Settings& settings)
-        {
-          const auto optionTypeMask = static_cast<uint32_t>(
-            command.optionType);
-          // Copy keyboard bindings if present
-          if (optionTypeMask & static_cast<uint32_t>(protocol::OptionType::Keyboard))
-          {
-            settings.keyboardSettingsAvailable() = true;
-            std::vector<std::shared_ptr<data::Settings::Option>> copiedBindings;
+      auto protocolBindings = command.settings.gamepadOptions.bindings;
 
-            for (const auto& binding : command.keyboardOptions.bindings)
-            {
-              auto option = std::make_shared<data::Settings::Option>();
-              option->primaryKey = binding.primaryKey;
-              option->secondaryKey = binding.secondaryKey;
-              option->type = binding.type;
-              copiedBindings.push_back(std::move(option));
-            }
+      // The last binding is invalid, sends type 2 and overwrites real settings
+      if (!protocolBindings.empty())
+       protocolBindings.pop_back();
 
-            settings.keyboardBindings() = std::move(copiedBindings);
-          }
+      for (const auto& protocolBinding : protocolBindings)
+      {
+        auto& bindingRecord = settings.gamepadBindings()->emplace_back();
 
-          // Copy macros if present
-          if (optionTypeMask & static_cast<uint32_t>(protocol::OptionType::Macros))
-          {
-            settings.macrosAvailable() = true;
-            settings.macros() = command.macroOptions.macros;
-          }
+        bindingRecord.type = protocolBinding.type;
+        bindingRecord.primaryKey = protocolBinding.primaryButton;
+        bindingRecord.secondaryKey = protocolBinding.secondaryButton;
+      }
+    }
 
-          if (optionTypeMask & static_cast<uint32_t>(OptionType::Gamepad))
-          {
-            settings.gamepadSettingsAvailable() = true;
-            std::vector<std::shared_ptr<data::Settings::Option>> copiedBindings;
-            auto bindings = std::vector<decltype(command.gamepadOptions.bindings)::value_type>(command.gamepadOptions.bindings);
-            if (!bindings.empty())
-              bindings.pop_back(); // The last binding is invalid, sends type 2 and overwrites real settings
+    // Copy the macros if present in the command.
+    if (command.settings.typeBitset.test(protocol::Settings::Macros))
+    {
+      settings.macros() = command.settings.macroOptions.macros;
+    }
 
-            for (const auto& binding : bindings)
-            {
-              auto option = std::make_shared<data::Settings::Option>();
-              option->primaryKey = binding.primaryButton;
-              option->secondaryKey = binding.secondaryButton;
-              option->type = binding.type;
-              copiedBindings.push_back(std::move(option));
-            }
+    settingsUid = settings.uid();
+  });
 
-            settings.gamepadBindings() = std::move(copiedBindings);
-          }
-        });
+  if (wasCreated)
+  {
+    characterRecord.Mutable([&settingsUid](data::Character& character)
+    {
+      character.settingsUid() = settingsUid;
     });
-    */
+  }
+
+  // We explicitly do not update the `age` and `hideAge` members,
+  // as the client uses dedicated `AcCmdCRChangeAge` and `AcCmdCRHideAge` commands instead.
 
   protocol::AcCmdCLUpdateUserSettingsOK response{};
 

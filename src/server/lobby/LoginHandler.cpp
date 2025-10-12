@@ -366,8 +366,6 @@ void LoginHandler::QueueUserLoginAccepted(
       _lobbyDirector._clients.size()),
     .val1 = 0x0,
     .val3 = 0x0,
-    .optionType = static_cast<uint32_t>(protocol::OptionType::Value),
-    .valueOptions = 0x64,
 
     .missions = {
       protocol::LobbyCommandLoginOK::Mission{
@@ -486,8 +484,6 @@ void LoginHandler::QueueUserLoginAccepted(
       response.carrots = character.carrots();
       response.role = std::bit_cast<protocol::LobbyCommandLoginOK::Role>(
         character.role());
-      response.age = character.age();
-      response.hideGenderAndAge = character.hideGenderAndAge();
 
       if (not justCreatedCharacter)
         response.bitfield = protocol::LobbyCommandLoginOK::HasPlayedBefore;
@@ -551,26 +547,12 @@ void LoginHandler::QueueUserLoginAccepted(
 
         settingsRecord->Immutable([&response](const data::Settings& settings)
         {
-          // Fill the keyboard settings
-          if (settings.keyboardSettingsAvailable())
-          {
-            response.optionType |= static_cast<uint32_t>(protocol::OptionType::Keyboard);
-            protocol::BuildProtocolKeyboardOptions(response.keyboardOptions, settings);
-          }
+          // We set the age despite if the hide age is set,
+          // just so the user is able to see the last value set by them.
+          response.settings.age = settings.age();
+          response.settings.hideAge = settings.hideAge();
 
-          // Fill the macros settings
-          if (settings.macrosAvailable())
-          {
-            response.optionType |= static_cast<uint32_t>(protocol::OptionType::Macros);
-            protocol::BuildProtocolMacroOptions(response.macroOptions, settings);
-          }
-
-          // Fill the gamepad settings
-          if (settings.gamepadSettingsAvailable())
-          {
-            response.optionType |= static_cast<uint32_t>(protocol::OptionType::Gamepad);
-            protocol::BuildProtocolGamepadOptions(response.gamepadOptions, settings);
-          }
+          protocol::BuildProtocolSettings(response.settings, settings);
         });
       }
 
