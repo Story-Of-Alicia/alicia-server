@@ -598,6 +598,7 @@ enum class GuildError : uint8_t {
   NoAuthority = 7,
   InviteRejected = 8,
   CannotInviteSelf = 9,
+  NotAlone = 10,
   Unknown = 255
 };
 

@@ -2154,7 +2154,7 @@ struct AcCmdCRWithdrawGuildMember
     Leave = 0,
     //! Expelled
     Kicked = 1,
-    Unk2 = 2
+    Disband = 2
   } option{};
 
   static Command GetCommand()
@@ -2205,7 +2205,7 @@ struct AcCmdCRWithdrawGuildMemberCancel
 {
   //! See GuildStrings table in libconfig
   //! 0 from CDATA[ERROR_FAIL_SYSTEMERROR]
-  uint8_t status{};
+  protocol::GuildError status{};
 
   static Command GetCommand()
   {

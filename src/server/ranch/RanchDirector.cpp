@@ -2152,7 +2152,7 @@ void RanchDirector::HandleWithdrawGuild(
        command.option == protocol::AcCmdCRWithdrawGuildMember::Option::Kicked && command.characterUid == clientContext.characterUid)
   {
     protocol::AcCmdCRWithdrawGuildMemberCancel response{
-      .status = 8 // ERROR_FAIL_UNKNOWN
+      .status = protocol::GuildError::Unknown // ERROR_FAIL_UNKNOWN
     };
     _commandServer.QueueCommand<decltype(response)>(
       clientId,
@@ -2177,14 +2177,32 @@ void RanchDirector::HandleWithdrawGuild(
     character.guildUid() = data::InvalidUid;
   });
 
+  std::optional<protocol::GuildError> error;
   const auto& guildRecord = GetServerInstance().GetDataDirector().GetGuild(guildUid);
-  guildRecord.Mutable([&characterUid, option = command.option](data::Guild& guild)
+  guildRecord.Mutable([&characterUid, &error, option = command.option](data::Guild& guild)
   {
-    if (option == protocol::AcCmdCRWithdrawGuildMember::Option::Leave && guild.owner() == characterUid)
+
+    if (option == protocol::AcCmdCRWithdrawGuildMember::Option::Disband)
     {
-      // TODO: handle owner disband edge case
-      // Loop through each client, set guildUid to 0 and notify online guild members
-      return;
+      if (guild.owner() != characterUid)
+      {
+        // Command was to disband guild but caller is not the owner, report
+        error.emplace(protocol::GuildError::NoAuthority);
+        spdlog::warn("Character {} tried to disband guild {} but is not owner",
+          characterUid,
+          guild.uid());
+        return;
+      }
+
+      if (guild.members().size() > 0 || guild.officers().size() > 0)
+      {
+        // Command was to disabnd guild but guild has members (somehow)
+        error.emplace(protocol::GuildError::NotAlone);
+        spdlog::warn("Character {} tried to disband guild {} with members and/or officers present",
+          characterUid,
+          guild.uid());
+        return;
+      }
     }
     
     // Make sure there is no trace of ex-member in the guild
@@ -2193,6 +2211,20 @@ void RanchDirector::HandleWithdrawGuild(
     if (std::ranges::find(guild.officers(), characterUid) != guild.officers().cend())
       guild.officers().erase(std::ranges::find(guild.officers(), characterUid));
   });
+
+  if (error.has_value())
+  {
+    protocol::AcCmdCRWithdrawGuildMemberCancel cancel{
+      .status = error.value()
+    };
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
 
   protocol::AcCmdCRWithdrawGuildMemberOK response{
     .option = command.option
