@@ -3741,7 +3741,8 @@ void RanchDirector::HandleUpdateGuildMemberGrade(
         const auto& index = std::ranges::find(guild.officers(), guild.owner());
         if (index != guild.officers().end())
           guild.officers().erase(index);
-        // Fall through to the member case
+        // Fall through to handle removal of officer role from the target user.
+        [[fallthrough]]
       }
       case protocol::GuildRole::Member:
       {
