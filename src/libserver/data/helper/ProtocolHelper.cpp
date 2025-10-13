@@ -76,9 +76,9 @@ void BuildProtocolHorse(
     .spirit = 0x00,
     .classProgression = static_cast<uint32_t>(horse.clazzProgress()),
     .val5 = 0x00,
-    .potentialLevel = static_cast<uint8_t>(horse.potentialLevel()),
-    .hasPotential = static_cast<uint8_t>(horse.potentialType() != 0),
-    .potentialValue = static_cast<uint8_t>(horse.potentialLevel()),
+    .potentialLevel = static_cast<uint8_t>(horse.potential.level()),
+    .potentialType = static_cast<uint8_t>(horse.potential.type()),
+    .potentialValue = static_cast<uint8_t>(horse.potential.value()),
     .val9 = 0x00,
     .luck = static_cast<uint8_t>(horse.luckState()),
     .injury = Horse::Injury::None,
@@ -287,6 +287,46 @@ void BuildProtocolEgg(
     int64_t{0});
   
   protocolEgg.boost = 400000;
+}
+
+void BuildProtocolSettings(
+  Settings& settings,
+  const data::Settings& settingsRecord)
+{
+  if (settingsRecord.keyboardBindings())
+  {
+    settings.typeBitset.set(Settings::Keyboard);
+
+    for (const auto& keyboardBinding : settingsRecord.keyboardBindings().value())
+    {
+      auto& protocolBinding = settings.keyboardOptions.bindings.emplace_back();
+      protocolBinding.primaryKey = keyboardBinding.primaryKey;
+      protocolBinding.type = keyboardBinding.type;
+      protocolBinding.secondaryKey = keyboardBinding.secondaryKey;
+      protocolBinding.unused = 0; // Unused
+    }
+  }
+
+  if (settingsRecord.gamepadBindings())
+  {
+    settings.typeBitset.set(Settings::Gamepad);
+
+    for (const auto& keyboardBinding : settingsRecord.gamepadBindings().value())
+    {
+      auto& protocolBinding = settings.gamepadOptions.bindings.emplace_back();
+      protocolBinding.primaryButton = keyboardBinding.primaryKey;
+      protocolBinding.type = keyboardBinding.type;
+      protocolBinding.secondaryButton = keyboardBinding.secondaryKey;
+      protocolBinding.unused = 0; // Unused
+    }
+  }
+
+  if (settingsRecord.macros())
+  {
+    settings.typeBitset.set(Settings::Macros);
+
+    settings.macroOptions.macros = settingsRecord.macros().value();
+  }
 }
 
 } // namespace protocol

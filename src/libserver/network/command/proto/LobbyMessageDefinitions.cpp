@@ -104,47 +104,8 @@ void LobbyCommandLoginOK::Write(
     .Write(command.role)
     .Write(command.val3);
 
-  // Options
-  // Option type mask
-  const auto optionTypeMask = static_cast<uint32_t>(
-    command.optionType);
-  stream.Write(optionTypeMask);
-
-  // Write the keyboard options if specified in the option type mask.
-  if (optionTypeMask & static_cast<uint32_t>(OptionType::Keyboard))
-  {
-    const auto& keyboard = command.keyboardOptions;
-    stream.Write(static_cast<uint8_t>(keyboard.bindings.size()));
-
-    for (const auto& binding : keyboard.bindings)
-    {
-      stream.Write(binding.index)
-        .Write(binding.type)
-        .Write(binding.key);
-    }
-  }
-
-  // Write the macro options if specified in the option type mask.
-  if (optionTypeMask & static_cast<uint32_t>(OptionType::Macros))
-  {
-    const auto& macros = command.macroOptions;
-
-    for (const auto& macro : macros.macros)
-    {
-      stream.Write(macro);
-    }
-  }
-
-  // Write the value option if specified in the option type mask.
-  if (optionTypeMask & static_cast<uint32_t>(OptionType::Value))
-  {
-    stream.Write(command.valueOptions);
-  }
-
-  // ToDo: Write the gamepad options.
-
-  stream.Write(static_cast<uint8_t>(command.age))
-    .Write(command.hideGenderAndAge);
+  //
+  stream.Write(command.settings);
 
   //
   stream.Write(static_cast<uint8_t>(command.missions.size()));
@@ -493,10 +454,10 @@ void LobbyCommandRoomListOK::Room::Write(
   const Room& value,
   SinkStream& stream)
 {
-  stream.Write(value.id)
+  stream.Write(value.uid)
     .Write(value.name)
     .Write(value.playerCount)
-    .Write(value.maxPlayers)
+    .Write(value.maxPlayerCount)
     .Write(value.isLocked)
     .Write(value.unk0)
     .Write(value.unk1)
@@ -504,7 +465,7 @@ void LobbyCommandRoomListOK::Room::Write(
     .Write(value.hasStarted)
     .Write(value.unk2)
     .Write(value.unk3)
-    .Write(value.level)
+    .Write(value.skillBracket)
     .Write(value.unk4);
 }
 
@@ -520,8 +481,8 @@ void LobbyCommandRoomListOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.page)
-    .Write(command.unk1)
-    .Write(command.unk2)
+    .Write(command.gameMode)
+    .Write(command.teamMode)
     .Write(static_cast<uint8_t>(command.rooms.size()));
   for (const auto& room : command.rooms)
   {
@@ -566,9 +527,9 @@ void LobbyCommandMakeRoomOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.roomUid)
-    .Write(command.otp)
-    .Write(htonl(command.address))
-    .Write(command.port)
+    .Write(command.oneTimePassword)
+    .Write(htonl(command.raceServerAddress))
+    .Write(command.raceServerPort)
     .Write(command.unk2);
 }
 
@@ -614,9 +575,9 @@ void LobbyCommandEnterRoomOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.roomUid)
-    .Write(command.otp)
-    .Write(htonl(command.address))
-    .Write(command.port)
+    .Write(command.oneTimePassword)
+    .Write(htonl(command.raceServerAddress))
+    .Write(command.raceServerPort)
     .Write(command.member6);
 }
 
@@ -1253,6 +1214,33 @@ void AcCmdLCNotice::Read(AcCmdLCNotice& command, SourceStream& stream)
     throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCLUpdateUserSettings::Write(
+  const AcCmdCLUpdateUserSettings& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLUpdateUserSettings::Read(
+  AcCmdCLUpdateUserSettings& command,
+  SourceStream& stream)
+{
+  stream.Read(command.settings);
+}
+
+void AcCmdCLUpdateUserSettingsOK::Write(
+  const AcCmdCLUpdateUserSettingsOK& command,
+  SinkStream& stream)
+{
+  // Empty.
+}
+
+void AcCmdCLUpdateUserSettingsOK::Read(
+  AcCmdCLUpdateUserSettingsOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
 void AcCmdCLRequestMountInfo::Write(
   const AcCmdCLRequestMountInfo& command,
   SinkStream& stream)
@@ -1287,6 +1275,27 @@ void AcCmdCLRequestMountInfoOK::Write(
       .Write(mountInfo.participated)
       .Write(mountInfo.cumulativePrize)
       .Write(mountInfo.biggestPrize);
+  }
+}
+
+void AcCmdLCSkillCardPresetList::Read(
+  AcCmdLCSkillCardPresetList& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdLCSkillCardPresetList::Write(
+  const AcCmdLCSkillCardPresetList& command,
+  SinkStream& stream)
+{
+  stream.Write(command.speedActiveSetId)
+    .Write(command.magicActiveSetId);
+
+  stream.Write(static_cast<uint8_t>(command.skillSets.size()));
+  for (const auto& skillSet : command.skillSets)
+  {
+    stream.Write(skillSet);
   }
 }
 

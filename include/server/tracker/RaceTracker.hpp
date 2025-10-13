@@ -40,11 +40,9 @@ public:
     enum class State
     {
       Disconnected,
-      NotReady,
-      Ready,
       Loading,
       Racing,
-      Finished,
+      Finishing,
     };
 
     enum class Team
@@ -86,6 +84,11 @@ public:
   //! Removes a racer from tracking.
   //! @param characterUid Character UID.
   void RemoveRacer(data::Uid characterUid);
+  //! Returns whether the character is a racer.
+  //! @param characterUid Character UID.
+  //! @return `true` if the character is a racer,
+  //!          otherwise returns `false`;
+  bool IsRacer(data::Uid characterUid);
   //! Returns reference to the racer record.
   //! @returns Racer record.
   [[nodiscard]] Racer& GetRacer(data::Uid characterUid);
@@ -107,14 +110,17 @@ public:
   //! @return Reference to item records.
   [[nodiscard]] ItemObjectMap& GetItems();
 
+  void Clear();
+
+
 private:
-  //! The next entity ID.
-  Oid _nextObjectId = 1;
+  //! The next entity OID.
+  Oid _nextRacerOid = 1;
   //! Horse entities in the race.
   ObjectMap _racers;
 
-  //! The next item ID.
-  uint16_t _nextItemId = 1;
+  //! The next item OID.
+  uint16_t _nextItemOid = 1;
   //! Items in the race
   ItemObjectMap _items;
 };

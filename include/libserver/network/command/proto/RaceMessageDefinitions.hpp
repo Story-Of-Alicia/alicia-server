@@ -43,7 +43,7 @@ enum class RoomOptionType : uint16_t
 
 enum class TeamColor : uint32_t
 {
-  Solo = 1,
+  None = 1,
   Red = 2,
   Blue = 3
 };
@@ -67,7 +67,7 @@ struct Racer
   uint32_t uid{};
   std::string name{};
   bool isReady{};
-  TeamColor teamColor{TeamColor::Solo};
+  TeamColor teamColor{TeamColor::None};
   bool isHidden{};
   bool isNPC{};
 
@@ -92,11 +92,11 @@ struct Racer
 struct RoomDescription
 {
   std::string name{};
-  uint8_t playerCount{};
+  uint8_t maxPlayerCount{};
   std::string password{};
   // disables/enables adv map selection
   uint8_t gameModeMaps{};
-  uint8_t gameMode{};
+  GameMode gameMode{};
   //! From the table `MapBlockInfo`.
   uint16_t mapBlockId{};
   // 0 waiting room, 1 race started?
@@ -110,7 +110,7 @@ struct RoomDescription
 struct AcCmdCREnterRoom
 {
   uint32_t characterUid{};
-  uint32_t otp{};
+  uint32_t oneTimePassword{};
   uint32_t roomUid{};
 
   static Command GetCommand()
@@ -134,7 +134,7 @@ struct AcCmdCREnterRoomOK
   // List size specified with a uint32_t. Max size 10
   std::vector<Racer> racers{};
 
-  uint8_t nowPlaying{};
+  bool isRoomWaiting{};
   uint32_t uid{};
   RoomDescription roomDescription{};
 
@@ -222,7 +222,7 @@ struct AcCmdCRChangeRoomOptions
   std::string name{};
   uint8_t playerCount{};
   std::string password{};
-  uint8_t gameMode{};
+  GameMode gameMode{};
   uint16_t mapBlockId{};
   uint8_t npcRace{};
 
@@ -252,7 +252,7 @@ struct AcCmdCRChangeRoomOptionsNotify
   std::string name{};
   uint8_t playerCount{};
   std::string password{}; // password
-  uint8_t gameMode{};
+  GameMode gameMode{};
   uint16_t mapBlockId{};
   uint8_t npcRace{};
 
@@ -446,12 +446,12 @@ struct AcCmdCRStartRace
 
 struct AcCmdCRStartRaceNotify
 {
-  uint8_t gameMode{};
-  TeamMode teamMode{};
+  GameMode raceGameMode{};
+  TeamMode raceTeamMode{};
   // this is an oid of a special player
   uint16_t hostOid{};
   uint32_t member4{}; // Room ID?
-  uint16_t mapBlockId{};
+  uint16_t raceMapBlockId{};
 
   // List size specified with a uint8_t. Max size 10
   struct Player
@@ -519,24 +519,26 @@ struct AcCmdCRStartRaceNotify
       SourceStream& stream);
   } unk10{};
 
-  uint16_t missionId{};
+  uint16_t raceMissionId{};
   uint8_t unk12{};
 
-  struct Struct3
+  struct ActiveSkillSet
   {
-    uint8_t unk0{};
+    //! Skill set ID
+    uint8_t setId{};
+    //! Unused TODO: confirm this
     uint32_t unk1{};
-    // List size specified with a byte. Max size 3
-    std::vector<uint16_t> unk2{};
+    //! Skills (including bonus). Max 3 skills
+    std::array<uint32_t, 3> skills{};
 
     static void Write(
-      const Struct3& command,
+      const ActiveSkillSet& command,
       SinkStream& stream);
 
     static void Read(
-      Struct3& command,
+      ActiveSkillSet& command,
       SourceStream& stream);
-  } unk13{};
+  } racerActiveSkillSet{};
 
   uint8_t unk14{};
   //! Carnival (FestivalMissionInfo)
@@ -601,8 +603,8 @@ struct AcCmdCRStartRaceCancel
 
 struct AcCmdUserRaceTimer
 {
-  // count of 100ns intervals since the system start
-  uint64_t timestamp{}; // potentially
+  //! A count of 100ns intervals since the system start.
+  uint64_t clientClock{};
 
   static Command GetCommand()
   {
@@ -626,8 +628,10 @@ struct AcCmdUserRaceTimer
 
 struct AcCmdUserRaceTimerOK
 {
-  uint64_t clientTimestamp{};
-  uint64_t serverTimestamp{};
+  //! A count of 100ns intervals since the system start.
+  uint64_t clientRaceClock{};
+  //! A count of 100ns intervals since the system start.
+  uint64_t serverRaceClock{};
 
   static Command GetCommand()
   {
@@ -795,7 +799,7 @@ struct AcCmdCRReadyRaceNotify
 
 struct AcCmdUserRaceCountdown
 {
-  int64_t timestamp{}; // potentially
+  uint64_t raceStartTimestamp{};
 
   static Command GetCommand()
   {
@@ -913,7 +917,7 @@ struct AcCmdCRRaceResultOK
   uint16_t member3{};
   uint16_t member4{};
   uint8_t member5{};
-  uint32_t member6{};
+  uint32_t currentCarrots{};
 
   static Command GetCommand()
   {
@@ -960,9 +964,13 @@ struct AcCmdRCRaceResultNotify
     AcCmdCRStartRaceNotify::Struct2 achievements{};
     enum Bitset : uint32_t
     {
-      Connected = 1 << 7,
-      HasLevelUpBonus = 1 << 8,
-      PcBang = 1 << 10,
+      Connected = 1 << 6,
+      LevelUpBonusCarrots = 1 << 7,
+      RankingBonusCarrotsAndExperience = 1 << 8,
+      ItemBonusExperience = 1 << 9,
+      PcBangBonusCarrotsAndExperience = 1 << 10,
+      EventBonusCarrots = 1 << 11,
+      EventBonusExperience = 1 << 12,
     } bitset;
     std::string mountName{};
     uint16_t member19{};
@@ -978,7 +986,7 @@ struct AcCmdRCRaceResultNotify
 
   //! Max 16 entries, short as size
   std::vector<ScoreInfo> scores{};
-  AcCmdCRStartRaceNotify::Struct3 member2{};
+  AcCmdCRStartRaceNotify::ActiveSkillSet racerActiveSkillSet{};
 
   uint32_t member3{};
   uint32_t member4{};
@@ -1493,8 +1501,10 @@ struct AcCmdUserRaceUpdatePos
 
 struct AcCmdRCRoomCountdown
 {
-  float member0{};
-  uint16_t member1{};
+  //! In milliseconds.
+  uint32_t countdown{};
+  uint16_t mapBlockId{};
+  uint16_t member2{};
 
   static Command GetCommand()
   {
@@ -1565,10 +1575,8 @@ struct AcCmdCRChangeMasterNotify
 
 struct AcCmdCRRelayCommand
 {
-  //! Character OID of the sender
-  uint16_t senderOid{};
-  //! Raw relay data
-  std::vector<uint8_t> relayData{};
+  uint8_t member1{};
+  uint16_t member2{};
 
   static Command GetCommand()
   {
@@ -1592,10 +1600,8 @@ struct AcCmdCRRelayCommand
 
 struct AcCmdCRRelayCommandNotify
 {
-  //! Character OID of the sender
-  uint16_t senderOid{};
-  //! Raw relay data
-  std::vector<uint8_t> relayData{};
+  uint8_t member1{};
+  uint16_t member2{};
 
   static Command GetCommand()
   {
@@ -1619,10 +1625,10 @@ struct AcCmdCRRelayCommandNotify
 
 struct AcCmdCRRelay
 {
-  //! The sender object ID.
-  uint32_t senderOid;
-  //! The relay data.
-  std::vector<uint8_t> relayData;
+  uint16_t oid;
+  uint16_t member2;
+  uint16_t member3;
+  std::vector<uint8_t> data;
 
   static Command GetCommand()
   {
@@ -1646,10 +1652,10 @@ struct AcCmdCRRelay
 
 struct AcCmdCRRelayNotify
 {
-  //! The sender object ID.
-  uint32_t senderOid;
-  //! The relay data.
-  std::vector<uint8_t> relayData;
+  uint16_t oid;
+  uint16_t member2;
+  uint16_t member3;
+  std::vector<uint8_t> data;
 
   static Command GetCommand()
   {
@@ -1893,8 +1899,9 @@ struct AcCmdGameRaceItemSpawn
   uint32_t itemType{};
   std::array<float, 3> position;
   std::array<float, 4> orientation;
-  bool member5{};
-  float removeDelay{};
+  uint8_t sizeLevel{};
+  //! Delay before removal in milliseconds.
+  int32_t removeDelay{};
 
   static Command GetCommand()
   {
@@ -2194,6 +2201,33 @@ struct AcCmdRCAddSkillEffect
   //! @param stream Source stream.
   static void Read(
     AcCmdRCAddSkillEffect& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRChangeSkillCardPresetID
+{
+  uint8_t setId{};
+  //! Command gives this as u32, we cast it from u32 to GameMode in Read
+  //! Could very possibly means tabId which would loosely correlate to GameMode
+  GameMode gamemode{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeSkillCardPresetID;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeSkillCardPresetID& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeSkillCardPresetID& command,
     SourceStream& stream);
 };
 

@@ -117,7 +117,6 @@ void LoginHandler::Tick()
   while (not _clientLoginResponseQueue.empty())
   {
     const ClientId clientId = _clientLoginResponseQueue.front();
-    auto& clientContext = _lobbyDirector.GetClientContext(clientId, false);
     auto& loginContext = _clientLogins[clientId];
 
     // If the user character load was already requested wait for the load to complete.
@@ -186,9 +185,17 @@ void LoginHandler::Tick()
     spdlog::debug("User '{}' succeeded in authentication", loginContext.userName);
     QueueUserLoginAccepted(clientId, loginContext.userName);
 
-    clientContext.userName = loginContext.userName;
-    clientContext.characterUid = characterUid;
-    clientContext.isAuthenticated = true;
+    try
+    {
+      auto& clientContext = _lobbyDirector.GetClientContext(clientId, false);
+      clientContext.userName = loginContext.userName;
+      clientContext.characterUid = characterUid;
+      clientContext.isAuthenticated = true;
+    }
+    catch (const std::exception& x)
+    {
+      // todo: client might have already disconnected
+    }
 
     // Only one response per tick.
     break;
@@ -470,15 +477,13 @@ void LoginHandler::QueueUserLoginAccepted(
 
       // todo: model constant
       response.gender = character.parts.modelId() == 10
-        ? Gender::Boy
-        : Gender::Girl;
+        ? protocol::Gender::Boy
+        : protocol::Gender::Girl;
 
       response.level = character.level();
       response.carrots = character.carrots();
       response.role = std::bit_cast<protocol::LobbyCommandLoginOK::Role>(
         character.role());
-      response.age = character.age();
-      response.hideGenderAndAge = character.hideGenderAndAge();
 
       if (not justCreatedCharacter)
         response.bitfield = protocol::LobbyCommandLoginOK::HasPlayedBefore;
@@ -555,11 +560,30 @@ void LoginHandler::QueueUserLoginAccepted(
         });
       }
 
+      if (character.settingsUid() != data::InvalidUid)
+      {
+        const auto settingsRecord = _lobbyDirector.GetServerInstance().GetDataDirector().GetSettingsCache().Get(
+          character.settingsUid());
+        if (not settingsRecord)
+          throw std::runtime_error("Character's settings not available");
+
+        settingsRecord->Immutable([&response](const data::Settings& settings)
+        {
+          // We set the age despite if the hide age is set,
+          // just so the user is able to see the last value set by them.
+          response.settings.age = settings.age();
+          response.settings.hideAge = settings.hideAge();
+
+          protocol::BuildProtocolSettings(response.settings, settings);
+        });
+      }
+
       characterMountUid = character.mountUid();
     });
 
   // Get the mounted horse record and fill the protocol data.
-  const auto mountRecord = _lobbyDirector.GetServerInstance().GetDataDirector().GetHorseCache().Get(characterMountUid);
+  const auto mountRecord = _lobbyDirector.GetServerInstance().GetDataDirector().GetHorseCache().Get(
+    characterMountUid);
   if (not mountRecord)
     throw std::runtime_error("Horse mount record unavailable");
 
@@ -581,6 +605,29 @@ void LoginHandler::QueueUserLoginAccepted(
     [response]()
     {
       return response;
+    });
+
+  protocol::AcCmdLCSkillCardPresetList skillPresetListResponse{};
+  characterRecord.Immutable([&skillPresetListResponse](const data::Character& character)
+  {
+    const auto& speed = character.skills.speed();
+    skillPresetListResponse.speedActiveSetId = speed.activeSetId;
+    const auto& magic = character.skills.magic();
+    skillPresetListResponse.magicActiveSetId = magic.activeSetId;
+
+    skillPresetListResponse.skillSets = {
+      protocol::SkillSet{.setId = 0, .gamemode = protocol::GameMode::Speed, .skills = {speed.set1.slot1, speed.set1.slot2}},
+      protocol::SkillSet{.setId = 1, .gamemode = protocol::GameMode::Speed, .skills = {speed.set2.slot1, speed.set2.slot2}},
+      protocol::SkillSet{.setId = 0, .gamemode = protocol::GameMode::Magic, .skills = {magic.set1.slot1, magic.set1.slot2}},
+      protocol::SkillSet{.setId = 1, .gamemode = protocol::GameMode::Magic, .skills = {magic.set2.slot1, magic.set2.slot2}}
+    };
+  });
+
+  _server.QueueCommand<decltype(skillPresetListResponse)>(
+    clientId,
+    [skillPresetListResponse]()
+    {
+      return skillPresetListResponse;
     });
 }
 

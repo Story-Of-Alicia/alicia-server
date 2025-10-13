@@ -205,4 +205,34 @@ void HorseRegistry::BuildRandomHorse(
   appearance.bodyVolume = scale;
 }
 
+void HorseRegistry::SetHorsePotential(
+  data::Horse::Potential& potential,
+  uint8_t type,
+  uint8_t level,
+  uint8_t value)
+{
+  potential.type = type;
+  potential.level = level;
+  potential.value = value;
+}
+
+void HorseRegistry::GiveHorseRandomPotential(
+  data::Horse::Potential& potential)
+{
+  uint8_t type;
+  std::uniform_int_distribution<uint32_t> typeDist(1, 15);
+  // Horse type cannot be 12 as it does not exist in original Alicia
+  do
+  {
+    type = typeDist(_randomDevice);
+  } while (type == 12);
+
+  std::uniform_int_distribution<uint32_t> randomDist(0, 255);
+  SetHorsePotential(
+    potential,
+    type,
+    randomDist(_randomDevice),
+    randomDist(_randomDevice));
+}
+
 } // namespace server

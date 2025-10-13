@@ -96,15 +96,7 @@ struct LobbyCommandLoginOK
 
   uint8_t val3{};
 
-  //! Option type mask.
-  OptionType optionType{};
-  KeyboardOptions keyboardOptions{};
-  MacroOptions macroOptions{};
-  uint32_t valueOptions{};
-  // GamepadOptions gamepadOptions{};
-
-  uint8_t age{};
-  uint8_t hideGenderAndAge{};
+  Settings settings{};
 
   struct Mission
   {
@@ -626,7 +618,7 @@ struct LobbyCommandEnterChannelCancel
 struct LobbyCommandRoomList
 {
   uint8_t page;
-  uint8_t gameMode;
+  GameMode gameMode;
   TeamMode teamMode;
 
   static Command GetCommand()
@@ -653,23 +645,29 @@ struct LobbyCommandRoomList
 struct LobbyCommandRoomListOK
 {
   uint8_t page{};
-  uint8_t unk1{};
-  uint8_t unk2{};
+  GameMode gameMode{};
+  TeamMode teamMode{};
 
   struct Room
   {
-    uint32_t id{};
+    uint32_t uid{};
     std::string name{};
     uint8_t playerCount{};
-    uint8_t maxPlayers{};
+    uint8_t maxPlayerCount{};
     uint8_t isLocked{};
     uint8_t unk0{};
     uint8_t unk1{};
     uint16_t map{};
-    uint8_t hasStarted{};
+    bool hasStarted{};
     uint16_t unk2{};
     uint8_t unk3{};
-    uint8_t level{}; // 0: 3lv, 1: 12lv, 2 and beyond: nothing
+
+    enum class SkillBracket
+    {
+      Newbies = 0,
+      Level12 = 1,
+      Experienced = 2,
+    } skillBracket{SkillBracket::Experienced};
     uint32_t unk4{};
 
     static void Write(const Room& value, SinkStream& stream);
@@ -712,7 +710,7 @@ struct LobbyCommandMakeRoom
   std::string name;
   std::string password;
   uint8_t playerCount;
-  uint8_t gameMode;
+  GameMode gameMode;
   TeamMode teamMode;
   uint16_t missionId;
   uint8_t unk3;
@@ -751,9 +749,9 @@ struct LobbyCommandMakeRoom
 struct LobbyCommandMakeRoomOK
 {
   uint32_t roomUid{};
-  uint32_t otp{};
-  uint32_t address{};
-  uint16_t port{};
+  uint32_t oneTimePassword{};
+  uint32_t raceServerAddress{};
+  uint16_t raceServerPort{};
   uint8_t unk2{};
 
   static Command GetCommand()
@@ -830,9 +828,9 @@ struct LobbyCommandEnterRoom
 struct LobbyCommandEnterRoomOK
 {
   uint32_t roomUid{};
-  uint32_t otp{};
-  uint32_t address{};
-  uint16_t port{};
+  uint32_t oneTimePassword{};
+  uint32_t raceServerAddress{};
+  uint16_t raceServerPort{};
   uint8_t member6{};
 
   static Command GetCommand()
@@ -857,7 +855,26 @@ struct LobbyCommandEnterRoomOK
 
 struct LobbyCommandEnterRoomCancel
 {
-  uint8_t status{};
+  // please verify these values
+  enum class Status : uint8_t
+  {
+    NotLogin = 1,
+    CR_NOT_IN_CHANNEL = 2,
+    CR_BUSY_PREVIOUS = 3,
+    CR_ALREADY_ROOM = 4,
+    CR_INVALID_ROOM = 5,
+    CR_CROWDED_ROOM = 6,
+    CR_VERSION_ERROR = 7,
+    CR_LOST_ROOM = 8,
+    CR_LOST_SERVER = 9,
+    CR_AUTH_ERROR = 10,
+    CR_BAD_PASSWORD = 11,
+    CR_PLAYING_ROOM = 12,
+    CR_PRACTICE_ROOM = 13,
+    CR_PRACTICE_ROOM2 = 14,
+    CR_PRACTICE_ROOM_SPEEDTEAM = 15,
+    CR_PRACTICE_ROOM_MAGICTEAM = 16,
+  } status{};
 
   static Command GetCommand()
   {
@@ -1902,6 +1919,78 @@ struct AcCmdCLRequestMountInfoOK
   //! @param stream Source stream.
   static void Read(
     AcCmdCLRequestMountInfoOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdLCSkillCardPresetList
+{
+  uint8_t speedActiveSetId{};
+  uint8_t magicActiveSetId{};
+  std::vector<SkillSet> skillSets{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCSkillCardPresetList;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCSkillCardPresetList& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCSkillCardPresetList& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLUpdateUserSettings
+{
+  Settings settings;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLUpdateUserSettings;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLUpdateUserSettings& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLUpdateUserSettings& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLUpdateUserSettingsOK
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLUpdateUserSettingsOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLUpdateUserSettingsOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLUpdateUserSettingsOK& command,
     SourceStream& stream);
 };
 

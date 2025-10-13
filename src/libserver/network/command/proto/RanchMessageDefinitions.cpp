@@ -2318,6 +2318,20 @@ void AcCmdCRStatusPointApplyCancel::Read(
   // empty
 }
 
+void AcCmdCRChangeSkillCardPreset::Write(
+  const AcCmdCRChangeSkillCardPreset& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRChangeSkillCardPreset::Read(
+  AcCmdCRChangeSkillCardPreset& command,
+  SourceStream& stream)
+{
+  stream.Read(command.skillSet);
+}
+
 void AcCmdCRGuildMemberList::Read(
   AcCmdCRGuildMemberList& command,
   SourceStream& stream)

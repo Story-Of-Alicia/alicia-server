@@ -65,6 +65,15 @@ public:
     data::Horse::Parts& parts,
     data::Horse::Appearance& appearance);
 
+  void SetHorsePotential(
+    data::Horse::Potential& potential,
+    uint8_t type,
+    uint8_t level,
+    uint8_t value);
+
+  void GiveHorseRandomPotential(
+    data::Horse::Potential& potential);
+
 private:
   std::random_device _randomDevice;
   std::unordered_map<data::Tid, Coat> _coats;

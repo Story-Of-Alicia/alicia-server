@@ -27,6 +27,7 @@
 #include "libserver/data/DataDefinitions.hpp"
 #include "libserver/network/command/CommandServer.hpp"
 #include "libserver/network/command/proto/LobbyMessageDefinitions.hpp"
+#include "libserver/util/Scheduler.hpp"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -193,7 +194,11 @@ private:
   void HandleChangeRanchOption(
     ClientId clientId,
     const protocol::LobbyCommandChangeRanchOption& command);
-  
+
+  void HandleUpdateUserSettings(
+    ClientId clientId,
+    const protocol::AcCmdCLUpdateUserSettings& command);
+
   void HandleRequestMountInfo(
     ClientId clientId,
     const protocol::AcCmdCLRequestMountInfo& command);
@@ -206,6 +211,9 @@ private:
     ClientId clientId,
     const protocol::AcCmdLCInviteGuildJoinOK& command);
 
+
+  //! A scheduler
+  Scheduler _scheduler;
   //!
   ServerInstance& _serverInstance;
   //!

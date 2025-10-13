@@ -28,6 +28,7 @@
 #include "libserver/network/command/proto/RaceMessageDefinitions.hpp"
 #include "libserver/util/Scheduler.hpp"
 
+#include <random>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -52,6 +53,25 @@ public:
   void Terminate();
   void Tick();
 
+  bool IsRoomRacing(uint32_t uid)
+  {
+    const auto roomIter = _raceInstances.find(uid);
+    if (roomIter == _raceInstances.cend())
+      return false;
+
+    return roomIter->second.stage == RoomInstance::Stage::Racing |
+      roomIter->second.stage == RoomInstance::Stage::Loading;
+  }
+
+  uint32_t GetRoomPlayerCount(uint32_t uid)
+  {
+    const auto roomIter = _raceInstances.find(uid);
+    if (roomIter == _raceInstances.cend())
+      return 0;
+
+    return roomIter->second.tracker.GetRacers().size();
+  }
+
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId clientId) override;
 
@@ -59,29 +79,50 @@ public:
   Config::Race& GetConfig();
 
 private:
+  std::random_device _randomDevice;
+
   struct ClientContext
   {
     data::Uid characterUid{data::InvalidUid};
     data::Uid roomUid{data::InvalidUid};
-    bool authorized = false;
+    bool isAuthenticated = false;
   };
-  ;
 
   struct RoomInstance
   {
-    std::unordered_set<ClientId> clients;
+    //! A stage of the room.
+    enum class Stage
+    {
+      Waiting,
+      Loading,
+      Racing,
+    } stage{Stage::Waiting};
+    //! A time point of when the stage timeout occurs.
+    std::chrono::steady_clock::time_point stageTimeoutTimePoint;
 
+    //! A master's character UID.
+    data::Uid masterUid{data::InvalidUid};
+    //! A race object tracker.
     tracker::RaceTracker tracker;
 
-    //! A leader character's UID.
-    data::Uid masterUid{data::InvalidUid};
-    
-    //! Countdown start time for race timing
-    std::optional<std::chrono::steady_clock::time_point> countdownStartTime;
-    
-    //! Actual race start timestamp (when countdown reaches 0)
-    std::optional<uint64_t> raceStartTimestamp;
+    //! A game mode of the race.
+    protocol::GameMode raceGameMode;
+    //! A team mode of the race.
+    protocol::TeamMode raceTeamMode;
+    //! A map block ID of the race.
+    uint16_t raceMapBlockId{};
+    //! A mission ID of the race.
+    uint16_t raceMissionId{};
+
+    //! A time point of when the race is actually started (a countdown is finished).
+    std::chrono::steady_clock::time_point raceStartTimePoint;
+    //! A room clients.
+    std::unordered_set<ClientId> clients;
   };
+
+  ClientContext& GetClientContext(ClientId clientId, bool requireAuthorized = true);
+  ClientId GetClientIdByCharacterUid(data::Uid characterUid);
+  ClientContext& GetClientContextByCharacterUid(data::Uid characterUid);
 
   void HandleEnterRoom(
     ClientId clientId,
@@ -207,6 +248,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRChangeMagicTargetCancel& command);
 
+  void HandleChangeSkillCardPresetId(
+    ClientId clientId,
+    const protocol::AcCmdCRChangeSkillCardPresetID& command);
+
   // Note: HandleActivateSkillEffect commented out due to build issues
   // void HandleActivateSkillEffect(
   //   ClientId clientId,
@@ -225,7 +270,7 @@ private:
   //! A map of all client contexts.
   std::unordered_map<ClientId, ClientContext> _clients;
   //! A map of all room instances.
-  std::unordered_map<uint32_t, RoomInstance> _roomInstances;
+  std::unordered_map<uint32_t, RoomInstance> _raceInstances;
 };
 
 } // namespace server
