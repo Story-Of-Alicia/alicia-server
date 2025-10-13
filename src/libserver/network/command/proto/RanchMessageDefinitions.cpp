@@ -546,6 +546,119 @@ void RanchCommandRanchStuffOK::Read(
   throw std::runtime_error("Not implemented.");
 }
 
+void AcCmdCRBreedingFailureCard::Write(
+  const AcCmdCRBreedingFailureCard& command,
+  SinkStream& stream)
+{
+  // Empty response
+}
+
+void AcCmdCRBreedingFailureCard::Read(
+  AcCmdCRBreedingFailureCard& command,
+  SourceStream& stream)
+{
+  // Empty - statusOrFlag is internal only, not serialized
+}
+
+void AcCmdCRBreedingFailureCardOK::Write(
+  const AcCmdCRBreedingFailureCardOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.choiceOrFlag);
+}
+
+void AcCmdCRBreedingFailureCardOK::Read(
+  AcCmdCRBreedingFailureCardOK& command,
+  SourceStream& stream)
+{
+  stream.Read(command.choiceOrFlag);
+}
+
+void AcCmdCRBreedingFailureCardCancel::Write(
+  const AcCmdCRBreedingFailureCardCancel& command,
+  SinkStream& stream)
+{
+  // Empty response
+}
+
+void AcCmdCRBreedingFailureCardCancel::Read(
+  AcCmdCRBreedingFailureCardCancel& command,
+  SourceStream& stream)
+{
+  // Empty - statusOrFlag is internal only, not serialized
+}
+
+void AcCmdCRBreedingFailureCardChoose::Write(
+  const AcCmdCRBreedingFailureCardChoose& command,
+  SinkStream& stream)
+{
+  // Empty - statusOrFlag is internal only, not serialized
+}
+
+void AcCmdCRBreedingFailureCardChoose::Read(
+  AcCmdCRBreedingFailureCardChoose& command,
+  SourceStream& stream)
+{
+  // Empty - statusOrFlag is internal only, not serialized
+}
+
+void AcCmdCRBreedingFailureCardChooseOK::Write(
+  const AcCmdCRBreedingFailureCardChooseOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.choice);
+  stream.Write(command.valueA);
+  
+  // Write variable-length list (max size 2)
+  const auto listSize = static_cast<uint8_t>(command.middleList.size());
+  stream.Write(listSize);
+  
+  for (uint32_t value : command.middleList)
+  {
+    stream.Write(value);
+  }
+  
+  stream.Write(command.extra0);
+  stream.Write(command.extra1);
+  stream.Write(command.valueZ);
+}
+
+void AcCmdCRBreedingFailureCardChooseOK::Read(
+  AcCmdCRBreedingFailureCardChooseOK& command,
+  SourceStream& stream)
+{
+  stream.Read(command.choice);
+  stream.Read(command.valueA);
+  
+  // Read variable-length list (max size 2)
+  uint8_t listSize{};
+  stream.Read(listSize);
+  
+  command.middleList.resize(listSize);
+  for (auto& value : command.middleList)
+  {
+    stream.Read(value);
+  }
+  
+  stream.Read(command.extra0);
+  stream.Read(command.extra1);
+  stream.Read(command.valueZ);
+}
+
+void AcCmdCRBreedingFailureCardChooseCancel::Write(
+  const AcCmdCRBreedingFailureCardChooseCancel& command,
+  SinkStream& stream)
+{
+  // Empty response
+}
+
+void AcCmdCRBreedingFailureCardChooseCancel::Read(
+  AcCmdCRBreedingFailureCardChooseCancel& command,
+  SourceStream& stream)
+{
+  // Empty response
+}
+
 void AcCmdCRSearchStallion::Write(
   const AcCmdCRSearchStallion& command,
   SinkStream& stream)
