@@ -597,7 +597,7 @@ void RanchDirector::BroadcastUpdateGuildMemberGradeNotify(
     for (const auto& guildMember : guild.members())
     {
       // Self broadcast is needed, OK response is not sufficient
-      for (auto& [clientId, clientContext]: _clients)
+      for (auto& [clientId, clientContext] : _clients)
       {
         // Skip offline clients
         if (not clientContext.isAuthenticated)
@@ -607,15 +607,11 @@ void RanchDirector::BroadcastUpdateGuildMemberGradeNotify(
         if (clientContext.characterUid != guildMember)
           continue;
         
-        GetServerInstance().GetDataDirector().GetCharacter(guildMember).Immutable(
-          [this, clientId, &guild, &notify](const data::Character& character)
+        _commandServer.QueueCommand<decltype(notify)>(
+          clientId,
+          [notify]()
           {
-            _commandServer.QueueCommand<decltype(notify)>(
-              clientId,
-              [notify]()
-              {
-                return notify;
-              });
+            return notify;
           });
       }
     }
@@ -2209,7 +2205,7 @@ void RanchDirector::HandleWithdrawGuild(
     });
 
   const auto& authorityCharacterUid = clientContext.characterUid;
-  for (const auto& [clientId, clientContext]: _clients)
+  for (const auto& [clientId, clientContext] : _clients)
   {
     // Notify online characters only
     if (not clientContext.isAuthenticated)
@@ -3741,7 +3737,7 @@ void RanchDirector::HandleUpdateGuildMemberGrade(
         if (index != guild.officers().end())
           guild.officers().erase(index);
         // Fall through to handle removal of officer role from the target user.
-        [[fallthrough]]
+        [[fallthrough]];
       }
       case protocol::GuildRole::Member:
       {
