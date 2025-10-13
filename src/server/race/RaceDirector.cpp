@@ -1061,13 +1061,13 @@ void RaceDirector::HandleReadyRace(
 
 void RaceDirector::PrepareItemSpawners(data::Uid roomUid)
 {
-  auto& roomInstance = _roomInstances[roomUid];
+  auto& raceInstance = _raceInstances[roomUid];
 
   try {
     const auto& gameModeInfo = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-      static_cast<uint32_t>(roomInstance.raceGameMode));
+      static_cast<uint32_t>(raceInstance.raceGameMode));
     const auto& mapBlockInfo = GetServerInstance().GetCourseRegistry().GetMapBlockInfo(
-      roomInstance.raceMapBlockId);
+      raceInstance.raceMapBlockId);
 
     // Get the map position offset
     const auto& offset = mapBlockInfo.offset;
@@ -1078,7 +1078,7 @@ void RaceDirector::PrepareItemSpawners(data::Uid roomUid)
       // Check if this deck ID is allowed for the current game mode
       if (std::find(gameModeInfo.deckIds.begin(), gameModeInfo.deckIds.end(), deckItemInstance.deckId) != gameModeInfo.deckIds.end())
       {
-        auto& item = roomInstance.tracker.AddItem();
+        auto& item = raceInstance.tracker.AddItem();
         item.deckId = deckItemInstance.deckId;
         item.position[0] = deckItemInstance.position[0] - offset[0];
         item.position[1] = deckItemInstance.position[1] - offset[1];
@@ -1093,10 +1093,10 @@ void RaceDirector::PrepareItemSpawners(data::Uid roomUid)
     }
 
     spdlog::info("Prepared {} item spawners for room {} (gameMode={}, mapBlock={})",
-      roomInstance.tracker.GetItems().size(),
+      raceInstance.tracker.GetItems().size(),
       roomUid,
-      static_cast<uint32_t>(roomInstance.raceGameMode),
-      roomInstance.raceMapBlockId);
+      static_cast<uint32_t>(raceInstance.raceGameMode),
+      raceInstance.raceMapBlockId);
   }
   catch (const std::exception& e) {
     spdlog::warn("Failed to prepare item spawners for room {}: {}", roomUid, e.what());
