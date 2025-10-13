@@ -3880,8 +3880,7 @@ void RanchDirector::HandleGetEmblemList(
     [&guildUid](const data::Character& character)
     {
       guildUid = character.guildUid();
-    }
-  );
+    });
 
   if (guildUid == data::InvalidUid)
   {
