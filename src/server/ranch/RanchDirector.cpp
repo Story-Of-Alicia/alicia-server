@@ -597,10 +597,8 @@ void RanchDirector::BroadcastUpdateGuildMemberGradeNotify(
     for (const auto& guildMember : guild.members())
     {
       // Self broadcast is needed, OK response is not sufficient
-      for (auto& client : _clients)
+      for (auto& [clientId, clientContext]: _clients)
       {
-        const auto& clientId = client.first;
-        const auto& clientContext = client.second;
         // Skip offline clients
         if (not clientContext.isAuthenticated)
           continue;
