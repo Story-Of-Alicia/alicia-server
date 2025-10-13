@@ -2226,12 +2226,6 @@ courses:
             - deckId: 2000
               position: [8.595, 44.160, -101.693]
             - deckId: 102
-              position: [-191.610, 17.280, 258.370]
-            - deckId: 102
-              position: [-197.510, 17.060, 258.750]
-            - deckId: 102
-              position: [-192.880, 17.030, 263.150]
-            - deckId: 102
               position: [128.900, 51.190, -129.170]
             - deckId: 102
               position: [132.490, 51.620, -126.820]
@@ -2253,8 +2247,6 @@ courses:
               position: [-66.840, 39.430, 61.960]
             - deckId: 203
               position: [-263.640, 17.620, 214.980]
-            - deckId: 101
-              position: [-363.660, 22.100, 172.800]
       - id:  44
         name: 'town_test01'
         requiredLevel: 0
