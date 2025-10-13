@@ -2209,9 +2209,8 @@ void RanchDirector::HandleWithdrawGuild(
     });
 
   const auto& authorityCharacterUid = clientContext.characterUid;
-  for (const auto& client : _clients)
+  for (const auto& [clientId, clientContext]: _clients)
   {
-    const auto& clientContext = client.second;
     // Notify online characters only
     if (not clientContext.isAuthenticated)
     {
