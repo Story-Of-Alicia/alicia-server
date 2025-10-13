@@ -21,6 +21,7 @@
 #define RANCHDIRECTOR_HPP
 
 #include "server/Config.hpp"
+#include "server/ranch/BreedingMarket.hpp"
 #include "server/tracker/RanchTracker.hpp"
 
 #include "libserver/network/command/CommandServer.hpp"
@@ -46,6 +47,9 @@ public:
   void Initialize();
   void Terminate();
   void Tick();
+
+  //! Loads registered stallions from database on server startup
+  void LoadRegisteredStallions();
 
   std::vector<data::Uid> GetOnlineCharacters();
 
@@ -79,6 +83,9 @@ public:
   void SendStorageNotification(
     data::Uid characterUid,
     protocol::AcCmdCRRequestStorage::Category category);
+
+  //! Send inventory update notification to refresh client inventory display
+  void SendInventoryUpdate(ClientId clientId);
 
   void BroadcastChangeAgeNotify(
     data::Uid characterUid,
@@ -129,6 +136,20 @@ private:
 
     
     uint8_t busyState{0};
+    //! Whether there's a pending breeding failure card waiting to be claimed
+    bool hasPendingFailureCard{false};
+    //! Current breeding failure card type: 0 = Normal (RED), 1 = Chance (YELLOW)
+    uint8_t pendingCardType{0};
+
+    //! Breeding session context for tracking breeding market flow
+    struct BreedingContext
+    {
+      uint32_t sessionId{0};        // Non-zero, stable for the dialog
+      uint32_t mareId{0};           // Player's horse involved in breeding
+      uint32_t stallionId{0};       // Last stallion searched/selected
+      uint8_t choice{0};            // Choice from failure card (0x212)
+      uint32_t lastTick{0};         // Server tick/timestamp
+    } breedingContext;
   };
 
   struct RanchInstance
@@ -193,6 +214,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRUnregisterStallionEstimateInfo& command);
 
+  void HandleCheckStallionCharge(
+    ClientId clientId,
+    const protocol::AcCmdCRCheckStallionCharge& command);
+
   void HandleTryBreeding(
     ClientId clientId,
     const protocol::AcCmdCRTryBreeding& command);
@@ -205,6 +230,16 @@ private:
   void HandleBreedingWishlist(
     ClientId clientId,
     const protocol::AcCmdCRBreedingWishlist& command);
+
+  //!
+  void HandleBreedingFailureCard(
+    ClientId clientId,
+    const protocol::AcCmdCRBreedingFailureCard& command);
+
+  //!
+  void HandleBreedingFailureCardChoose(
+    ClientId clientId,
+    const protocol::AcCmdCRBreedingFailureCardChoose& command);
 
   //!
   void HandleCmdAction(
@@ -412,16 +447,17 @@ private:
     const protocol::AcCmdCRRegisterDailyQuestGroup& command);
 
   void HandleRequestDailyQuestReward(
-      ClientId clientId, 
+      ClientId clientId,
       const protocol::AcCmdCRRequestDailyQuestReward& command);
-  
+
   void HandleRegisterQuest(
       ClientId clientId,
       const protocol::AcCmdCRRegisterQuest& command);
-  
+
   void HandleRequestQuestReward(
     ClientId clientId,
     const protocol::AcCmdCRRequestQuestReward& command);
+
   void SendChangeNicknameCancel(
     ClientId clientId,
     protocol::ChangeNicknameError reason);
@@ -459,6 +495,9 @@ private:
   ServerInstance& _serverInstance;
   //!
   CommandServer _commandServer;
+
+  //! The breeding market system.
+  BreedingMarket _breedingMarket;
 
   //!
   std::unordered_map<ClientId, ClientContext> _clients;
