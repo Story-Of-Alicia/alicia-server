@@ -1401,15 +1401,6 @@ void RanchDirector::HandleEnterBreedingMarket(
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  // Initialize breeding session context (if not already set)
-  // Using self-breeding approach: sessionId is used for both mare and stallion
-  if (clientContext.breedingContext.sessionId == 0)
-  {
-    clientContext.breedingContext.sessionId = clientContext.characterUid; // Use characterUid as stable session ID
-    clientContext.breedingContext.choice = 0;
-  }
-  clientContext.breedingContext.lastTick = static_cast<uint32_t>(std::time(nullptr));
-
   protocol::RanchCommandEnterBreedingMarketOK response;
 
   characterRecord.Immutable(
@@ -1465,7 +1456,7 @@ void RanchDirector::HandleSearchStallion(
   spdlog::debug("Registered stallions count: {}", registeredStallions.size());
   
   protocol::RanchCommandSearchStallionOK response{
-    .unk0 = clientContext.breedingContext.sessionId,  // Echo session ID (not zero!)
+    .unk0 = 0,
     .unk1 = 0};
 
   for (const data::Uid& horseUid : registeredStallions)
@@ -1585,12 +1576,6 @@ void RanchDirector::HandleSearchStallion(
       protocolStallion.unk11 = 0;   // Unknown field
       protocolStallion.lineage = stallionLineage;
     });
-    
-    // Track the last stallion searched (use first for now)
-    if (clientContext.breedingContext.stallionId == 0)
-    {
-      clientContext.breedingContext.stallionId = stallionUid;
-    }
   }
   
   spdlog::debug("SearchStallion: Found {} stallions", response.stallions.size());
@@ -1826,7 +1811,7 @@ void RanchDirector::HandleTryBreeding(
 
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
-  
+
   // Get mare and stallion records
   auto mareRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(command.mareUid);
   auto stallionRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(command.stallionUid);
@@ -2323,7 +2308,7 @@ void RanchDirector::HandleTryBreeding(
   }
   
   spdlog::info("TryBreeding: Created foal UID={}, TID={}", foalUid, foalTid);
-  
+
   protocol::RanchCommandTryBreedingOK response{
     .uid = foalUid,
     .tid = foalTid,
