@@ -2223,7 +2223,6 @@ void RanchDirector::HandleWithdrawGuild(
       continue;
     }
 
-    const auto& clientId = client.first;
     const auto& clientRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
     clientRecord.Immutable([this, clientId, guildUid, option = command.option, characterUid, authorityCharacterUid]
       (const data::Character& character)
