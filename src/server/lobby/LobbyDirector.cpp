@@ -455,7 +455,8 @@ void LobbyDirector::InviteToGuild(std::string characterName, data::Uid guildUid,
       });
 
     // Add character UID to pending invites for the guild
-    _pendingGuildInvites.emplace(guildUid, clientContext.characterUid);
+    const auto [iter, inserted] = _pendingGuildInvites.try_emplace(guildUid);
+    iter->second.emplace_back(clientContext.characterUid);
     
     // Found client and sent invite command, no need to process the rest of the clients
     break;
