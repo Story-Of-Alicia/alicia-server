@@ -336,6 +336,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleChangeSkillCardPreset(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRBreedingFailureCard>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleBreedingFailureCard(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -3288,6 +3294,41 @@ void RanchDirector::HandleChangeSkillCardPreset(
       auto& skillSet = command.skillSet.setId == 0 ? skillSets->set1 : skillSets->set2;
       skillSet.slot1 = command.skillSet.skills[0];
       skillSet.slot2 = command.skillSet.skills[1];
+    });
+}
+
+void RanchDirector::HandleBreedingFailureCard(
+  ClientId clientId,
+  const protocol::AcCmdCRBreedingFailureCard command)
+{
+  protocol::AcCmdCRBreedingFailureCardOK response {};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void RanchDirector::HandleBreedingFailureCardChoose(
+  ClientId clientId,
+  const protocol::AcCmdCRBreedingFailureCardChoose command)
+{
+  protocol::AcCmdCRBreedingFailureCardChooseOK response {
+    .member1 = 0,
+    .rewardId = 10,
+    .member3 = 1,
+    .member4 = {1,0},
+    .member5 = 3,
+    .item = {.uid = 999,.tid = 20082,.expiresAt = 9,.count = 3},
+    .member6 = 0};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
     });
 }
 

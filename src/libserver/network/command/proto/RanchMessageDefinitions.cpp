@@ -2315,5 +2315,64 @@ void AcCmdCRChangeSkillCardPreset::Read(
   stream.Read(command.skillSet);
 }
 
+void AcCmdCRBreedingFailureCard::Write(
+  const AcCmdCRBreedingFailureCard& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+void AcCmdCRBreedingFailureCard::Read(
+  AcCmdCRBreedingFailureCard& command,
+  SourceStream& stream)
+{
+  // empty
+}
+void AcCmdCRBreedingFailureCardOK::Write(
+  const AcCmdCRBreedingFailureCardOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1);
+}
+void AcCmdCRBreedingFailureCardOK::Read(
+  AcCmdCRBreedingFailureCardOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBreedingFailureCardChoose::Write(
+  const AcCmdCRBreedingFailureCardChoose& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+void AcCmdCRBreedingFailureCardChoose::Read(
+  AcCmdCRBreedingFailureCardChoose& command,
+  SourceStream& stream)
+{
+  // empty
+}
+void AcCmdCRBreedingFailureCardChooseOK::Write(
+  const AcCmdCRBreedingFailureCardChooseOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1)
+  .Write(command.rewardId)
+  .Write(command.member3);
+  for (const auto& value : command.member4)
+  {
+    stream.Write(value);
+  };
+  stream.Write(command.member5)
+        .Write(command.item)
+  .Write(command.member6);
+}
+void AcCmdCRBreedingFailureCardChooseOK::Read(
+  AcCmdCRBreedingFailureCardChooseOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
 

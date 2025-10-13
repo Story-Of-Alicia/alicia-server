@@ -330,6 +330,14 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRChangeSkillCardPreset command);
 
+  void HandleBreedingFailureCard(
+    ClientId clientId,
+    const protocol::AcCmdCRBreedingFailureCard command);
+
+  void HandleBreedingFailureCardChoose(
+    ClientId clientId,
+    const protocol::AcCmdCRBreedingFailureCardChoose command);
+
   //!
   ServerInstance& _serverInstance;
   //!
