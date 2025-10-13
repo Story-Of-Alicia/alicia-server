@@ -1080,15 +1080,15 @@ void RaceDirector::PrepareItemSpawners(data::Uid roomUid)
       {
         auto& item = raceInstance.tracker.AddItem();
         item.deckId = deckItemInstance.deckId;
-        item.position[0] = deckItemInstance.position[0] - offset[0];
-        item.position[1] = deckItemInstance.position[1] - offset[1];
-        item.position[2] = deckItemInstance.position[2] - offset[2];
+        item.position[0] = deckItemInstance.position[0] + offset[0];
+        item.position[1] = deckItemInstance.position[1] + offset[1];
+        item.position[2] = deckItemInstance.position[2] + offset[2];
 
         spdlog::debug("Prepared item spawner: deckId={}, position=[{}, {}, {}]",
-           deckItemInstance.deckId,
-           deckItemInstance.position[0],
-           deckItemInstance.position[1],
-           deckItemInstance.position[2]);
+          deckItemInstance.deckId,
+          deckItemInstance.position[0],
+          deckItemInstance.position[1],
+          deckItemInstance.position[2]);
       }
     }
 
