@@ -3815,17 +3815,17 @@ void RanchDirector::HandleInviteToGuild(
   data::Uid inviteeGuildUid = data::InvalidUid;
   const auto& onlineCharacters = GetServerInstance().GetLobbyDirector().GetOnlineCharacters();
   auto it = std::find_if(onlineCharacters.begin(), onlineCharacters.end(),
-  [this, &inviteeGuildUid, name = command.characterName](data::Uid uid)
-  {
-    bool found = false;
-    GetServerInstance().GetDataDirector().GetCharacter(uid).Immutable(
-      [&found, &name, &inviteeGuildUid](const data::Character& character)
-      {
-        if (found = character.name() == name)
-          inviteeGuildUid = character.guildUid();
-      });
-    return found;
-  });
+    [this, &inviteeGuildUid, name = command.characterName](data::Uid uid)
+    {
+      bool found = false;
+      GetServerInstance().GetDataDirector().GetCharacter(uid).Immutable(
+        [&found, &name, &inviteeGuildUid](const data::Character& character)
+        {
+          if (found = character.name() == name)
+            inviteeGuildUid = character.guildUid();
+        });
+      return found;
+    });
 
   std::optional<protocol::GuildError> error;
   if (inviterGuildUid == data::InvalidUid)
