@@ -50,6 +50,8 @@ ServerInstance::ServerInstance(
   , _chatSystem(*this)
   , _infractionSystem(*this)
   , _itemSystem(*this)
+  , _breedingMarket(*this)
+  , _genetics(*this)
 {
 }
 
@@ -251,6 +253,7 @@ void ServerInstance::Initialize()
 void ServerInstance::Terminate()
 {
   _shouldRun.store(false, std::memory_order::relaxed);
+  _breedingMarket.Terminate();
 }
 
 AuthenticationService& ServerInstance::GetAuthenticationService()
@@ -346,6 +349,16 @@ RoomSystem& ServerInstance::GetRoomSystem()
 OtpSystem& ServerInstance::GetOtpSystem()
 {
   return _otpSystem;
+}
+
+Genetics& ServerInstance::GetGenetics()
+{
+  return _genetics;
+}
+
+BreedingMarket& ServerInstance::GetBreedingMarket()
+{
+  return _breedingMarket;
 }
 
 Config& ServerInstance::GetSettings()

@@ -27,6 +27,9 @@
 #include "server/chat/PrivateChatDirector.hpp"
 #include "server/messenger/MessengerDirector.hpp"
 #include "server/race/RaceDirector.hpp"
+#include "server/ranch/Genetics.hpp"
+#include "server/ranch/BreedingMarket.hpp"
+#include "server/ranch/Genetics.hpp"
 #include "server/ranch/RanchDirector.hpp"
 #include "server/system/ChatSystem.hpp"
 #include "server/system/InfractionSystem.hpp"
@@ -128,6 +131,7 @@ public:
   //! @return Reference to the moderation system.
   ModerationSystem& GetModerationSystem();
 
+
   //! Returns reference to the OTP system.
   //! @returns Reference to the OTP system.
   OtpSystem& GetOtpSystem();
@@ -135,6 +139,14 @@ public:
   //! Returns reference to the room system.
   //! @returns Reference to the room system.
   RoomSystem& GetRoomSystem();
+
+  //! Returns reference to the genetics system.
+  //! @returns Reference to the genetics system.
+  Genetics& GetGenetics();
+
+  //! Returns reference to the breeding market.
+  //! @returns Reference to the breeding market.
+  BreedingMarket& GetBreedingMarket();
 
   //! Returns reference to the settings.
   //! @returns Reference to the settings.
@@ -251,6 +263,11 @@ private:
   //! A room system.
   RoomSystem _roomSystem;
 
+  //! The genetics calculation system.
+  Genetics _genetics;
+
+  //! The breeding market system.
+  BreedingMarket _breedingMarket;
 };
 
 } // namespace server
