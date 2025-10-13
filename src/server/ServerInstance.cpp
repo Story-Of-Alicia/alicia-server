@@ -52,6 +52,8 @@ ServerInstance::ServerInstance(
   , _itemSystem(*this)
   , _matchmakingSystem(*this)
   , _telemetry(*this)
+  , _breedingMarket(*this)
+  , _genetics(*this)
 {
 }
 
@@ -280,6 +282,7 @@ void ServerInstance::Initialize()
 void ServerInstance::Terminate()
 {
   _shouldRun.store(false, std::memory_order::relaxed);
+  _breedingMarket.Terminate();
 }
 
 AuthenticationService& ServerInstance::GetAuthenticationService()
@@ -395,6 +398,16 @@ Telemetry& ServerInstance::GetTelemetry()
 OtpSystem& ServerInstance::GetOtpSystem()
 {
   return _otpSystem;
+}
+
+Genetics& ServerInstance::GetGenetics()
+{
+  return _genetics;
+}
+
+BreedingMarket& ServerInstance::GetBreedingMarket()
+{
+  return _breedingMarket;
 }
 
 Config& ServerInstance::GetSettings()

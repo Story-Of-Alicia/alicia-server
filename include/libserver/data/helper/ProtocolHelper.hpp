@@ -28,7 +28,8 @@ void BuildProtocolHorse(
 
 void BuildProtocolHorseParts(
   Horse::Parts& protocolHorseParts,
-  const data::Horse::Parts& parts);
+  const data::Horse::Parts& parts,
+  bool isFoal = false);
 
 void BuildProtocolHorseAppearance(
   Horse::Appearance& protocolHorseAppearance,
