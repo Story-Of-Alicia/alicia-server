@@ -84,7 +84,7 @@ public:
   void BroadcastUpdateGuildMemberGradeNotify(
     data::Uid guildUid,
     data::Uid characterUid,
-    GuildRole guildRole);
+    protocol::GuildRole guildRole);
 
   void SendGuildInviteDeclined(
     data::Uid characterUid,

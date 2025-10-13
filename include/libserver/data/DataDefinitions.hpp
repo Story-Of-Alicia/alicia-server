@@ -231,26 +231,6 @@ struct Settings
   dao::Field<bool> hideAge{true};
 };
 
-//! Settings
-struct Settings
-{
-  dao::Field<Uid> uid{InvalidUid};
-
-  struct Option
-  {
-    uint32_t primaryKey{0};
-    uint32_t type{0};
-    uint32_t secondaryKey{0};
-  };
-
-  dao::Field<std::optional<std::vector<Option>>> keyboardBindings{std::nullopt};
-  dao::Field<std::optional<std::array<std::string, 8>>> macros{std::nullopt};
-  dao::Field<std::optional<std::vector<Option>>> gamepadBindings{std::nullopt};
-
-  dao::Field<uint32_t> age{};
-  dao::Field<bool> hideAge{true};
-};
-
 //! User
 struct Character
 {

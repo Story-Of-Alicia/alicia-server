@@ -529,11 +529,11 @@ void LoginHandler::QueueUserLoginAccepted(
           const bool isMember = std::ranges::contains(guild.members(), response.uid);
           
           if (isOwner)
-            response.guild.guildRole = GuildRole::Owner;
+            response.guild.guildRole = protocol::GuildRole::Owner;
           else if (isOfficer)
-            response.guild.guildRole = GuildRole::Officer;
+            response.guild.guildRole = protocol::GuildRole::Officer;
           else if (isMember)
-            response.guild.guildRole = GuildRole::Member;
+            response.guild.guildRole = protocol::GuildRole::Member;
           else
             throw std::runtime_error("Character is in a guild but not a member");
         });

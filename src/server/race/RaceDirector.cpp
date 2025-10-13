@@ -763,15 +763,15 @@ void RaceDirector::HandleEnterRoom(
               
               if (guild.owner() == characterUid)
               {
-                protocolRacer.guild.guildRole = GuildRole::Owner;
+                protocolRacer.guild.guildRole = protocol::GuildRole::Owner;
               }
               else if (std::ranges::contains(guild.officers(), characterUid))
               {
-                protocolRacer.guild.guildRole = GuildRole::Officer;
+                protocolRacer.guild.guildRole = protocol::GuildRole::Officer;
               }
               else
               {
-                protocolRacer.guild.guildRole = GuildRole::Member;
+                protocolRacer.guild.guildRole = protocol::GuildRole::Member;
               }
             });
         }

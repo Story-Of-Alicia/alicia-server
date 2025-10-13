@@ -580,14 +580,14 @@ void RanchDirector::BroadcastHideAgeNotify(
 void RanchDirector::BroadcastUpdateGuildMemberGradeNotify(
   data::Uid guildUid,
   data::Uid characterUid,
-  GuildRole guildRole)
+  protocol::GuildRole guildRole)
 {
   // TODO: Identify fields
   protocol::AcCmdRCUpdateGuildMemberGradeNotify notify{
     .guildUid = guildUid,
     .unk1 = data::InvalidUid,
     .targetCharacterUid = characterUid,
-    .unk3 = GuildRole::Member,
+    .unk3 = protocol::GuildRole::Member,
     .guildRole = guildRole
   };
 
@@ -635,7 +635,7 @@ void RanchDirector::SendGuildInviteDeclined(
     .unk0 = characterUid,
     .unk1 = inviterCharacterUid,
     .unk2 = inviterCharacterName,
-    .error = GuildError::InviteRejected,
+    .error = protocol::GuildError::InviteRejected,
     .unk4 = guildUid // is this true?
   };
 
@@ -3573,15 +3573,15 @@ void RanchDirector::HandleGetGuildMemberList(
 
         if (guild.owner() == character.uid())
         {
-          memberInfo.guildRole = GuildRole::Owner;
+          memberInfo.guildRole = protocol::GuildRole::Owner;
         }
         else if (std::ranges::contains(guild.officers(), character.uid()))
         {
-          memberInfo.guildRole = GuildRole::Officer;
+          memberInfo.guildRole = protocol::GuildRole::Officer;
         }
         else
         {
-          memberInfo.guildRole = GuildRole::Member;
+          memberInfo.guildRole = protocol::GuildRole::Member;
         }
 
         response.members.emplace_back(memberInfo);
@@ -3712,7 +3712,7 @@ void RanchDirector::HandleUpdateGuildMemberGrade(
     constexpr uint8_t MaxOfficers = 2;
 
     // If promoting, check if there is enough space for officers to promote
-    if (command.guildRole == GuildRole::Officer && guild.officers().size() >= MaxOfficers)
+    if (command.guildRole == protocol::GuildRole::Officer && guild.officers().size() >= MaxOfficers)
     {
       // TODO: Write in guild chat that max officer count has been reached
       spdlog::warn("Character {} tried to update character {} guild role to officer but there are already max officers of {}",
@@ -3721,7 +3721,7 @@ void RanchDirector::HandleUpdateGuildMemberGrade(
     }
 
     // If promoting, check if target member is already an officer
-    if (command.guildRole == GuildRole::Officer && std::ranges::contains(guild.officers(), command.characterUid))
+    if (command.guildRole == protocol::GuildRole::Officer && std::ranges::contains(guild.officers(), command.characterUid))
     {
       // Tried to promote a guild member to officer but they are already an officer
       // TODO: Send a notify to the calling client of the target member's current guild role to update UI state 
@@ -3735,7 +3735,7 @@ void RanchDirector::HandleUpdateGuildMemberGrade(
     // If currently member, get placed in officers list
     switch (command.guildRole)
     {
-      case GuildRole::Owner:
+      case protocol::GuildRole::Owner:
       {
         // Transfer of ownership - swap roles (owner becomes member)
         // Since owner is already a member, just overwrite owner with new owner
@@ -3746,7 +3746,7 @@ void RanchDirector::HandleUpdateGuildMemberGrade(
           guild.officers().erase(index);
         // Fall through to the member case
       }
-      case GuildRole::Member:
+      case protocol::GuildRole::Member:
       {
         // Demotion - Find and erase officer from list of officers
         // Ensure an officer being transferred ownership is removed from officers list
@@ -3755,7 +3755,7 @@ void RanchDirector::HandleUpdateGuildMemberGrade(
           guild.officers().erase(index);
         break;
       }
-      case GuildRole::Officer:
+      case protocol::GuildRole::Officer:
       {
         // Promotion - Previously checked if there is enough space for a new officer
         guild.officers().emplace_back(command.characterUid);
@@ -3786,13 +3786,13 @@ void RanchDirector::HandleUpdateGuildMemberGrade(
   );
 
   // If ownership transfer
-  if (command.guildRole == GuildRole::Owner)
+  if (command.guildRole == protocol::GuildRole::Owner)
   {
     // Broadcast ex-owner's new guild role as member
     BroadcastUpdateGuildMemberGradeNotify(
       guildUid,
       clientContext.characterUid,
-      GuildRole::Member
+      protocol::GuildRole::Member
     );
   }
 }
@@ -3830,28 +3830,28 @@ void RanchDirector::HandleInviteToGuild(
     return found;
   });
 
-  std::optional<GuildError> error;
+  std::optional<protocol::GuildError> error;
   if (inviterGuildUid == data::InvalidUid)
   {
     // Inviter is not in a guild (should not be possible)
-    error.emplace(GuildError::NoGuild);
+    error.emplace(protocol::GuildError::NoGuild);
     spdlog::warn("Character {} tried to invite {} to guild but inviter is not in a guild",
       clientContext.characterUid, command.characterName);
   }
   else if (command.characterName == inviterCharacterName)
   {
     // Player is trying to invite themselves to the guild
-    error.emplace(GuildError::CannotInviteSelf);
+    error.emplace(protocol::GuildError::CannotInviteSelf);
   }
   else if (inviteeGuildUid != data::InvalidUid)
   {
     // Character is already in the guild or is already in another guild
-    error.emplace(GuildError::JoinedGuild);
+    error.emplace(protocol::GuildError::JoinedGuild);
   }
   else if (it == onlineCharacters.end())
   {
     // Invitee is not found or offline
-    error.emplace(GuildError::NoUserOrOffline);
+    error.emplace(protocol::GuildError::NoUserOrOffline);
   }
 
   if (error.has_value())

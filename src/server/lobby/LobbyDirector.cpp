@@ -443,7 +443,7 @@ void LobbyDirector::InviteToGuild(std::string characterName, data::Uid guildUid,
         .val1 = 1,
         .val2 = 2,
         .name = guildName,
-        .guildRole = GuildRole::Member,
+        .guildRole = protocol::GuildRole::Member,
         .val5 = 5,
         .val6 = 6
       }
