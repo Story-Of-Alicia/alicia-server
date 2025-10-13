@@ -617,7 +617,7 @@ void AcCmdCRBreedingFailureCardChooseOK::Write(
   stream.Write(command.member1)
     .Write(command.rewardId)
     .Write(command.member3);
-    
+
   for (const auto& value : command.member4)
   {
     stream.Write(value);
