@@ -1098,7 +1098,13 @@ void RanchDirector::HandleSearchStallion(
 {
   auto& clientContext = GetClientContext(clientId);
   
-  spdlog::debug("SearchStallion: command.unk0 = {}", command.unk0);
+  spdlog::debug("SearchStallion: seedOrReqId={}, flags=[{},{},{},{},{},{},{},{}], "
+    "filterLists=[{},{},{}], tailFlag={}",
+    command.seedOrReqId,
+    command.flag0, command.flag1, command.flag2, command.flag3,
+    command.flag4, command.flag5, command.flag6, command.flag7,
+    command.filterLists[0].size(), command.filterLists[1].size(), command.filterLists[2].size(),
+    command.tailFlag);
   
   protocol::RanchCommandSearchStallionOK response{
     .unk0 = 0,
