@@ -1073,22 +1073,24 @@ void RaceDirector::PrepareItemSpawners(data::Uid roomUid)
     const auto& offset = mapBlockInfo.offset;
 
     // Spawn items based on map positions and game mode allowed deck IDs
-    for (const auto& deckItemInstance : mapBlockInfo.deckItems)
+    for (const uint32_t usedDeckItemId : gameModeInfo.usedDeckItemIds)
     {
-      // Check if this deck ID is allowed for the current game mode
-      if (std::find(gameModeInfo.deckIds.begin(), gameModeInfo.deckIds.end(), deckItemInstance.deckId) != gameModeInfo.deckIds.end())
+      for (const auto& mapDeckItemInstance : mapBlockInfo.deckItems)
       {
+        if (mapDeckItemInstance.deckId != usedDeckItemId)
+          continue;
+
         auto& item = raceInstance.tracker.AddItem();
-        item.deckId = deckItemInstance.deckId;
-        item.position[0] = deckItemInstance.position[0] + offset[0];
-        item.position[1] = deckItemInstance.position[1] + offset[1];
-        item.position[2] = deckItemInstance.position[2] + offset[2];
+        item.deckId = mapDeckItemInstance.deckId;
+        item.position[0] = mapDeckItemInstance.position[0] + offset[0];
+        item.position[1] = mapDeckItemInstance.position[1] + offset[1];
+        item.position[2] = mapDeckItemInstance.position[2] + offset[2];
 
         spdlog::debug("Prepared item spawner: deckId={}, position=[{}, {}, {}]",
-          deckItemInstance.deckId,
-          deckItemInstance.position[0],
-          deckItemInstance.position[1],
-          deckItemInstance.position[2]);
+          mapDeckItemInstance.deckId,
+          item.position[0],
+          item.position[1],
+          item.position[2]);
       }
     }
 

@@ -1189,7 +1189,7 @@ courses:
         name: 'ri_dorf02'
         requiredLevel: 20
         podiumId: 0
-        offset: [-155.8179931640625,15.178014004183769,8030.974998474121]
+        offset: [362.74,-15.59,-8033.14]
         trainingFee: 150
         timeLimit: 300
         waitTime: 10

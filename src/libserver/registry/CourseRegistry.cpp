@@ -53,7 +53,7 @@ uint8_t ReadGameModeInfo(
   {
     for (const auto& itemSpawnerSection : itemSpawnersSection)
     {
-      gameMode.deckIds.emplace_back(
+      gameMode.usedDeckItemIds.emplace_back(
         itemSpawnerSection["deckId"].as<uint32_t>());
     }
   }

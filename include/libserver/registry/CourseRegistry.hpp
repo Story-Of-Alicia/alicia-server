@@ -57,8 +57,8 @@ struct Course
     uint32_t spurConsumeStarPoints{};
     //! A maximum amount of star points collectable.
     uint32_t starPointsMax{};
-    //! Item spawners for the game mode
-    std::vector<uint32_t> deckIds{};
+    //! A list of used item decks.
+    std::vector<uint32_t> usedDeckItemIds{};
   };
 
   struct EventInfo
