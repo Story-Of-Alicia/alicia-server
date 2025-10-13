@@ -1579,7 +1579,7 @@ struct LobbyCommandPersonalInfo
     uint16_t member15{};
     uint16_t member16{};
     std::string introduction{};
-    uint32_t level{};
+    uint32_t level{60};
     //! Level progress as dictated by LevelInfo table in libconfig
     uint32_t levelProgress{};
     std::string member20{};
@@ -1991,6 +1991,98 @@ struct AcCmdCLUpdateUserSettingsOK
   //! @param stream Source stream.
   static void Read(
     AcCmdCLUpdateUserSettingsOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdLCInviteGuildJoin
+{
+  uint32_t characterUid;
+  uint32_t inviterCharacterUid;
+  std::string inviterCharacterName;
+  std::string unk3; // guild description?
+
+  // sub_4be7a0
+  Guild guild;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCInviteGuildJoin;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCInviteGuildJoin& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCInviteGuildJoin& command,
+    SourceStream& stream);
+};
+
+struct AcCmdLCInviteGuildJoinCancel
+{
+  uint32_t characterUid;
+  uint32_t inviterCharacterUid;
+  std::string inviterCharacterName;
+  std::string unk3; // guild description?
+
+  // sub_4be7a0
+  Guild guild;
+
+  GuildError error;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCInviteGuildJoinCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCInviteGuildJoinCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCInviteGuildJoinCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdLCInviteGuildJoinOK
+{
+  uint32_t characterUid;
+  uint32_t inviterCharacterUid;
+  std::string inviterCharacterName;
+  std::string unk3; // guild description?
+
+  // sub_4be7a0
+  Guild guild;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCInviteGuildJoinOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCInviteGuildJoinOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCInviteGuildJoinOK& command,
     SourceStream& stream);
 };
 

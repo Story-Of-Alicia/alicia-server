@@ -162,7 +162,8 @@ void GamepadOptions::Read(GamepadOptions& value, SourceStream& stream)
 
 void Settings::Write(const Settings& value, SinkStream& stream)
 {
-  stream.Write(value.typeBitset.to_ulong());
+  uint32_t typeValue{value.typeBitset.to_ulong()};
+  stream.Write(typeValue);
 
   // Write the keyboard options if specified in the option type mask.
   if (value.typeBitset.test(Type::Keyboard))
@@ -508,7 +509,7 @@ void Guild::Write(const Guild& value, SinkStream& stream)
     .Write(value.val1)
     .Write(value.val2)
     .Write(value.name)
-    .Write(value.val4)
+    .Write(value.guildRole)
     .Write(value.val5)
     .Write(value.val6);
 }
@@ -519,7 +520,7 @@ void Guild::Read(Guild& value, SourceStream& stream)
     .Read(value.val1)
     .Read(value.val2)
     .Read(value.name)
-    .Read(value.val4)
+    .Read(value.guildRole)
     .Read(value.val5)
     .Read(value.val6);
 }
@@ -648,7 +649,7 @@ void RanchCharacter::Write(const RanchCharacter& ranchCharacter, SinkStream& str
     .Write(struct5.val1)
     .Write(struct5.val2)
     .Write(struct5.name)
-    .Write(struct5.val4)
+    .Write(struct5.guildRole)
     .Write(struct5.val5)
     .Write(struct5.val6);
 

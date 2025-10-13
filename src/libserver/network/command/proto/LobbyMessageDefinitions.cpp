@@ -173,7 +173,7 @@ void LobbyCommandLoginOK::Write(
     .Write(struct5.val1)
     .Write(struct5.val2)
     .Write(struct5.name)
-    .Write(struct5.val4)
+    .Write(struct5.guildRole)
     .Write(struct5.val5)
     .Write(struct5.val6);
 
@@ -1297,6 +1297,62 @@ void AcCmdLCSkillCardPresetList::Write(
   {
     stream.Write(skillSet);
   }
+}
+
+void AcCmdLCInviteGuildJoin::Read(
+  AcCmdLCInviteGuildJoin& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdLCInviteGuildJoin::Write(
+  const AcCmdLCInviteGuildJoin& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.inviterCharacterUid)
+    .Write(command.inviterCharacterName)
+    .Write(command.unk3)
+    .Write(command.guild);
+}
+
+void AcCmdLCInviteGuildJoinCancel::Read(
+  AcCmdLCInviteGuildJoinCancel& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterUid)
+    .Read(command.inviterCharacterUid)
+    .Read(command.inviterCharacterName)
+    .Read(command.unk3)
+    .Read(command.guild)
+    .Read(command.error);
+}
+
+void AcCmdLCInviteGuildJoinCancel::Write(
+  const AcCmdLCInviteGuildJoinCancel& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdLCInviteGuildJoinOK::Read(
+  AcCmdLCInviteGuildJoinOK& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterUid)
+    .Read(command.inviterCharacterUid)
+    .Read(command.inviterCharacterName)
+    .Read(command.unk3)
+    .Read(command.guild);
+}
+
+void AcCmdLCInviteGuildJoinOK::Write(
+  const AcCmdLCInviteGuildJoinOK& command,
+  SinkStream& stream)
+{
+  // TODO: Return this back to the client to confirm join?
+  throw std::runtime_error("Not implemented");
 }
 
 } // namespace server::protocol

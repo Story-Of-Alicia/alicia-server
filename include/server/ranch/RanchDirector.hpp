@@ -81,6 +81,22 @@ public:
     const data::Uid rancherUid,
     protocol::AcCmdCRHideAge::Option option);
 
+  void BroadcastUpdateGuildMemberGradeNotify(
+    data::Uid guildUid,
+    data::Uid characterUid,
+    protocol::GuildRole guildRole);
+
+  void SendGuildInviteDeclined(
+    data::Uid characterUid,
+    data::Uid inviterCharacterUid,
+    std::string inviterCharacterName,
+    data::Uid guildUid);
+
+  void SendGuildInviteAccepted(
+    data::Uid guildUid,
+    data::Uid characterUid,
+    std::string newMemberCharacterName);
+
   ServerInstance& GetServerInstance();
   Config::Ranch& GetConfig();
 
@@ -226,7 +242,7 @@ private:
     ClientId clientId,
     const protocol::RanchCommandRequestGuildInfo& command);
 
-  void HandleLeaveGuild(
+  void HandleWithdrawGuild(
     ClientId clientId,
     const protocol::AcCmdCRWithdrawGuildMember& command);
 
@@ -329,6 +345,26 @@ private:
   void HandleChangeSkillCardPreset(
     ClientId clientId,
     const protocol::AcCmdCRChangeSkillCardPreset command);
+
+  void HandleGetGuildMemberList(
+    ClientId clientId,
+    const protocol::AcCmdCRGuildMemberList& command);
+
+  void HandleRequestGuildMatchInfo(
+    ClientId clientId,
+    const protocol::AcCmdCRRequestGuildMatchInfo& command);
+  
+  void HandleUpdateGuildMemberGrade(
+    ClientId clientId,
+    const protocol::AcCmdCRUpdateGuildMemberGrade& command);
+
+  void HandleInviteToGuild(
+    ClientId clientId,
+    const protocol::AcCmdCRInviteGuildJoin& command);
+    
+  void HandleGetEmblemList(
+    ClientId clientId,
+    const protocol::AcCmdCREmblemList& command);
 
   //!
   ServerInstance& _serverInstance;

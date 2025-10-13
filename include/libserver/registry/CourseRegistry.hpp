@@ -57,6 +57,8 @@ struct Course
     uint32_t spurConsumeStarPoints{};
     //! A maximum amount of star points collectable.
     uint32_t starPointsMax{};
+    //! A list of used item decks.
+    std::vector<uint32_t> usedDeckItemIds{};
   };
 
   struct EventInfo
@@ -69,6 +71,8 @@ struct Course
     uint32_t requiredLevel{};
     //! A podium ID.
     uint32_t podiumId{};
+    //! An offset to apply to all deck item positions.
+    std::array<float, 3> offset{};
     //! A fee for training on the map.
     uint32_t trainingFee{};
     //! A map time limit in seconds.

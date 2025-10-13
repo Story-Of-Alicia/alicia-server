@@ -48,6 +48,15 @@ uint8_t ReadGameModeInfo(
     decltype(gameMode.spurConsumeStarPoints)>();
   gameMode.starPointsMax = section["starPointsMax"].as<
     decltype(gameMode.starPointsMax)>();
+  const auto itemSpawnersSection = section["itemSpawners"]["collection"];
+  if (itemSpawnersSection)
+  {
+    for (const auto& itemSpawnerSection : itemSpawnersSection)
+    {
+      gameMode.usedDeckItemIds.emplace_back(
+        itemSpawnerSection["deckId"].as<uint32_t>());
+    }
+  }
 
   return static_cast<uint8_t>(
     section["type"].as<uint32_t>());
@@ -61,6 +70,11 @@ uint32_t ReadMapBlockInfo(
     decltype(mapBlock.requiredLevel)>();
   mapBlock.podiumId = section["podiumId"].as<
     decltype(mapBlock.podiumId)>();
+  mapBlock.offset = {
+    section["offset"][0].as<float>(),
+    section["offset"][1].as<float>(),
+    section["offset"][2].as<float>()
+  };
   mapBlock.trainingFee = section["trainingFee"].as<
     decltype(mapBlock.trainingFee)>();
   mapBlock.timeLimit = section["timeLimit"].as<

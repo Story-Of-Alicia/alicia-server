@@ -257,6 +257,8 @@ private:
   //   ClientId clientId,
   //   const protocol::AcCmdCRActivateSkillEffect& command);
 
+  void PrepareItemSpawners(data::Uid roomUid);
+
   //!
   std::thread test;
   std::atomic_bool run_test{true};

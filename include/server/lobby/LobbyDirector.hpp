@@ -72,6 +72,7 @@ public:
   Config::Lobby& GetConfig();
 
   void RequestCharacterCreator(data::Uid characterUid);
+  void InviteToGuild(std::string characterName, data::Uid guildUid, data::Uid inviterCharacterUid);
 
   void Disconnect(data::Uid characterUid);
   void Mute(data::Uid characterUid, data::Clock::time_point expiration);
@@ -144,6 +145,10 @@ private:
     ClientId clientId,
     const protocol::LobbyCommandRequestSpecialEventList& command);
 
+  void BuildPersonalInfoBasicResponse(
+    const data::Character& character,
+    protocol::LobbyCommandPersonalInfo& response);
+
   //!
   void HandleRequestPersonalInfo(
     ClientId clientId,
@@ -197,6 +202,17 @@ private:
   void HandleRequestMountInfo(
     ClientId clientId,
     const protocol::AcCmdCLRequestMountInfo& command);
+    
+  void HandleDeclineInviteToGuild(
+    ClientId clientId,
+    const protocol::AcCmdLCInviteGuildJoinCancel& command);
+
+  void HandleAcceptInviteToGuild(
+    ClientId clientId,
+    const protocol::AcCmdLCInviteGuildJoinOK& command);
+
+  //! Pending (online) guild invites
+  std::map<data::Uid, std::vector<data::Uid>> _pendingGuildInvites;
 
   //! A scheduler
   Scheduler _scheduler;
