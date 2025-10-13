@@ -1401,6 +1401,15 @@ void RanchDirector::HandleEnterBreedingMarket(
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
+  // Initialize breeding session context (if not already set)
+  // Using self-breeding approach: sessionId is used for both mare and stallion
+  if (clientContext.breedingContext.sessionId == 0)
+  {
+    clientContext.breedingContext.sessionId = clientContext.characterUid; // Use characterUid as stable session ID
+    clientContext.breedingContext.choice = 0;
+  }
+  clientContext.breedingContext.lastTick = static_cast<uint32_t>(std::time(nullptr));
+
   protocol::RanchCommandEnterBreedingMarketOK response;
 
   characterRecord.Immutable(
@@ -1441,19 +1450,22 @@ void RanchDirector::HandleSearchStallion(
 {
   auto& clientContext = GetClientContext(clientId);
 
+  // Update breeding context with search info
+  clientContext.breedingContext.lastTick = static_cast<uint32_t>(std::time(nullptr));
+
   spdlog::debug("SearchStallion: unk0={}, flags=[{},{},{},{},{},{},{},{}], "
-    "filterLists=[{},{},{}], unk10={}",
+    "filterLists=[{},{},{}], unk10={}, mareId={}",
     command.unk0,
     command.unk1, command.unk2, command.unk3, command.unk4,
     command.unk5, command.unk6, command.unk7, command.unk8,
     command.unk9[0].size(), command.unk9[1].size(), command.unk9[2].size(),
-    command.unk10);
+    command.unk10, clientContext.breedingContext.mareId);
 
   const auto registeredStallions = _breedingMarket.GetRegisteredStallions();
   spdlog::debug("Registered stallions count: {}", registeredStallions.size());
   
   protocol::RanchCommandSearchStallionOK response{
-    .unk0 = 0,
+    .unk0 = clientContext.breedingContext.sessionId,  // Echo session ID (not zero!)
     .unk1 = 0};
 
   for (const data::Uid& horseUid : registeredStallions)
@@ -1573,6 +1585,12 @@ void RanchDirector::HandleSearchStallion(
       protocolStallion.unk11 = 0;   // Unknown field
       protocolStallion.lineage = stallionLineage;
     });
+    
+    // Track the last stallion searched (use first for now)
+    if (clientContext.breedingContext.stallionId == 0)
+    {
+      clientContext.breedingContext.stallionId = stallionUid;
+    }
   }
   
   spdlog::debug("SearchStallion: Found {} stallions", response.stallions.size());
@@ -1798,8 +1816,14 @@ void RanchDirector::HandleTryBreeding(
   const protocol::AcCmdCRTryBreeding& command)
 {
   spdlog::info("TryBreeding: mareUid={}, stallionUid={}", command.mareUid, command.stallionUid);
-  
-  const auto& clientContext = GetClientContext(clientId);
+
+  auto& clientContext = GetClientContext(clientId);
+
+  // CRITICAL: Capture the breeding attempt so we can echo it back in failure card responses
+  clientContext.breedingContext.mareId = command.mareUid;
+  clientContext.breedingContext.stallionId = command.stallionUid;
+  clientContext.breedingContext.lastTick = static_cast<uint32_t>(std::time(nullptr));
+
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
   
@@ -2358,21 +2382,21 @@ void RanchDirector::HandleBreedingFailureCard(
   const protocol::AcCmdCRBreedingFailureCard& command)
 {
   spdlog::info("BreedingFailureCard: statusOrFlag = {}", command.statusOrFlag);
-  
+
   auto& clientContext = GetClientContext(clientId);
-  
+
   // Only show the card if there's a pending failure card from breeding
   if (!clientContext.hasPendingFailureCard)
   {
     spdlog::info("BreedingFailureCard: No pending card, not sending response");
     return;
   }
-  
+
   // Use the card type that was determined when breeding failed
   uint8_t cardType = clientContext.pendingCardType;
-  
+
   spdlog::info("BreedingFailureCard: Showing {} card", cardType == 1 ? "CHANCE (YELLOW)" : "NORMAL (RED)");
-  
+
   protocol::AcCmdCRBreedingFailureCardOK response{
     .choiceOrFlag = cardType  // 0 = RED card, 1 = YELLOW card
   };
@@ -2390,8 +2414,8 @@ void RanchDirector::HandleBreedingFailureCardChoose(
   const protocol::AcCmdCRBreedingFailureCardChoose& command)
 {
   spdlog::info("BreedingFailureCardChoose: statusOrFlag = {}", command.statusOrFlag);
-  
-  const auto& clientContext = GetClientContext(clientId);
+
+  auto& clientContext = GetClientContext(clientId);
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
   
@@ -2647,7 +2671,7 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     {
       return response;
     });
-  
+
   // Send inventory update notification to refresh client inventory
   SendInventoryUpdate(clientId);
 }
