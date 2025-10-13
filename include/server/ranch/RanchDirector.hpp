@@ -118,16 +118,6 @@ private:
 
     
     uint8_t busyState{0};
-    
-    //! Breeding session context for tracking breeding market flow
-    struct BreedingContext
-    {
-      uint32_t sessionId{0};        // Non-zero, stable for the dialog
-      uint32_t mareId{0};           // Player's horse involved in breeding
-      uint32_t stallionId{0};       // Last stallion searched/selected
-      uint8_t choice{0};            // Choice from failure card (0x212)
-      uint32_t lastTick{0};         // Server tick/timestamp
-    } breedingContext;
   };
 
   struct RanchInstance

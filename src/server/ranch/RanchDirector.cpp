@@ -1279,15 +1279,6 @@ void RanchDirector::HandleEnterBreedingMarket(
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  // Initialize breeding session context (if not already set)
-  // Using self-breeding approach: sessionId is used for both mare and stallion
-  if (clientContext.breedingContext.sessionId == 0)
-  {
-    clientContext.breedingContext.sessionId = clientContext.characterUid; // Use characterUid as stable session ID
-    clientContext.breedingContext.choice = 0;
-  }
-  clientContext.breedingContext.lastTick = static_cast<uint32_t>(std::time(nullptr));
-
   protocol::RanchCommandEnterBreedingMarketOK response;
 
   characterRecord.Immutable(
@@ -1327,15 +1318,10 @@ void RanchDirector::HandleSearchStallion(
 {
   auto& clientContext = GetClientContext(clientId);
   
-  // Update breeding context with search info
-  clientContext.breedingContext.lastTick = static_cast<uint32_t>(std::time(nullptr));
-  
-  // Don't capture unk0 - it might be a page/filter index, not a valid entity ID
-  // Instead, let EnterBreedingMarket set a valid ID
-  spdlog::debug("SearchStallion: command.unk0 = {}, mareId = {}", command.unk0, clientContext.breedingContext.mareId);
+  spdlog::debug("SearchStallion: command.unk0 = {}", command.unk0);
   
   protocol::RanchCommandSearchStallionOK response{
-    .unk0 = clientContext.breedingContext.sessionId,  // Echo session ID (not zero!)
+    .unk0 = 0,
     .unk1 = 0};
 
   for (const data::Uid& stallionUid : g_stallions)
@@ -1359,12 +1345,6 @@ void RanchDirector::HandleSearchStallion(
       protocol::BuildProtocolHorseParts(protocolStallion.parts, stallion.parts);
       protocol::BuildProtocolHorseAppearance(protocolStallion.appearance, stallion.appearance);
     });
-    
-    // Track the last stallion searched (use first for now)
-    if (clientContext.breedingContext.stallionId == 0)
-    {
-      clientContext.breedingContext.stallionId = stallionUid;
-    }
   }
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -1431,16 +1411,6 @@ void RanchDirector::HandleTryBreeding(
   ClientId clientId,
   const protocol::AcCmdCRTryBreeding& command)
 {
-  auto& clientContext = GetClientContext(clientId);
-  
-  // CRITICAL: Capture the breeding attempt so we can echo it back in failure card responses
-  clientContext.breedingContext.mareId = command.mareUid;
-  clientContext.breedingContext.stallionId = command.stallionUid;
-  clientContext.breedingContext.lastTick = static_cast<uint32_t>(std::time(nullptr));
-  
-  spdlog::debug("TryBreeding: Captured mareUid={}, stallionUid={}", 
-    command.mareUid, command.stallionUid);
-  
   protocol::RanchCommandTryBreedingOK response{
     .uid = command.mareUid,
     .tid = command.stallionUid,
@@ -1516,37 +1486,30 @@ void RanchDirector::HandleBreedingFailureCardChoose(
   ClientId clientId,
   const protocol::AcCmdCRBreedingFailureCardChoose& command)
 {
-  // The client sends statusOrFlag (0 = allowed) for the breeding failure card action
-  auto& clientContext = GetClientContext(clientId);
-  auto& ctx = clientContext.breedingContext;
+  // Log what the client sent - statusOrFlag might indicate which card was chosen
+  spdlog::debug("BreedingFailureCardChoose: statusOrFlag = {}", command.statusOrFlag);
   
-  // Update context with choice (though we don't know what it means yet)
-  ctx.choice = 0; // Could be extracted from command if needed
-  ctx.lastTick = static_cast<uint32_t>(std::time(nullptr));
+  protocol::AcCmdCRBreedingFailureCardChooseOK response;
   
-  protocol::AcCmdCRBreedingFailureCardChooseOK response{};
+  // member1 might be the chosen card index - echo back what the client sent
+  response.member1 = static_cast<uint8_t>(command.statusOrFlag);
+  response.rewardId = 10;
   
-  // Echo back the breeding session context
-  // Wire format: choice(u8), valueA(u32), n(u8), list[0..n-1](u32*n), extra0(u32), extra1(u32), valueZ(u32)
+  // member3 might control animation delay/timing - try 0 to disable auto-fade
+  response.member3 = 0;  // Try 0 - maybe it disables automatic disappearance
   
-  response.choice = ctx.choice;
-  response.valueA = ctx.sessionId;  // Stable breeding session ID
+  response.member4 = {1, 0};
   
-  // Middle list: Echo back the ACTUAL breeding attempt from HandleTryBreeding
-  // The client validates that these match the horses it sent in AcCmdCRTryBreeding
-  response.middleList.resize(2);
-  response.middleList[0] = ctx.mareId;      // Mare from breeding attempt
-  response.middleList[1] = ctx.stallionId;  // Stallion from breeding attempt
+  // member5 might control fade duration - try 0 as well
+  response.member5 = 0;  // Try 0 - maybe cards stay until manually dismissed
   
-  spdlog::debug("BreedingFailureCardChooseOK: sessionId={}, mareId={}, stallionId={}, choice={}",
-    ctx.sessionId, ctx.mareId, ctx.stallionId, ctx.choice);
+  response.item.uid = 999;
+  response.item.tid = 20082;
+  response.item.expiresAt = 9;
+  response.item.count = 3;
   
-  // Integrity fields
-  response.extra0 = ctx.lastTick;   // Server timestamp
-  response.extra1 = ctx.mareId ^ ctx.stallionId ^ ctx.choice; // XOR checksum of breeding data
-  
-  response.valueZ = ctx.sessionId;  // Session confirmation
-  
+  // member6 might be a behavior flag - try 1 instead of 0
+  response.member6 = 1;  // Changed from 0
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,

@@ -1478,17 +1478,13 @@ struct AcCmdCRBreedingFailureCardChoose
 
 struct AcCmdCRBreedingFailureCardChooseOK
 {
-  uint8_t choice{};
-  uint32_t valueA{};
-  
-  // Middle section: variable-length list
-  // List size specified with a uint8_t. Max size 2
-  std::vector<uint32_t> middleList{};
-  
-  uint32_t extra0{};
-  uint32_t extra1{};
-  
-  uint32_t valueZ{};
+  uint8_t member1{};
+  uint32_t rewardId{};
+  uint8_t member3{};
+  std::array<uint32_t,2> member4{};
+  uint32_t member5{};
+  Item item{};
+  uint32_t member6{};
 
   static Command GetCommand()
   {

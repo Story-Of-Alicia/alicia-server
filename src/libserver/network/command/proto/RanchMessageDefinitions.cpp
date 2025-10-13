@@ -606,43 +606,23 @@ void AcCmdCRBreedingFailureCardChooseOK::Write(
   const AcCmdCRBreedingFailureCardChooseOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.choice);
-  stream.Write(command.valueA);
-  
-  // Write variable-length list (max size 2)
-  const auto listSize = static_cast<uint8_t>(command.middleList.size());
-  stream.Write(listSize);
-  
-  for (uint32_t value : command.middleList)
+  stream.Write(command.member1)
+  .Write(command.rewardId)
+  .Write(command.member3);
+  for (const auto& value : command.member4)
   {
     stream.Write(value);
-  }
-  
-  stream.Write(command.extra0);
-  stream.Write(command.extra1);
-  stream.Write(command.valueZ);
+  };
+  stream.Write(command.member5)
+        .Write(command.item)
+  .Write(command.member6);
 }
 
 void AcCmdCRBreedingFailureCardChooseOK::Read(
   AcCmdCRBreedingFailureCardChooseOK& command,
   SourceStream& stream)
 {
-  stream.Read(command.choice);
-  stream.Read(command.valueA);
-  
-  // Read variable-length list (max size 2)
-  uint8_t listSize{};
-  stream.Read(listSize);
-  
-  command.middleList.resize(listSize);
-  for (auto& value : command.middleList)
-  {
-    stream.Read(value);
-  }
-  
-  stream.Read(command.extra0);
-  stream.Read(command.extra1);
-  stream.Read(command.valueZ);
+  throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRBreedingFailureCardChooseCancel::Write(
