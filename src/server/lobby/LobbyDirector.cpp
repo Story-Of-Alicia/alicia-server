@@ -396,10 +396,8 @@ void LobbyDirector::InviteToGuild(std::string characterName, data::Uid guildUid,
   });
 
   // For all clients
-  for (const auto& client : _clients)
+  for (const auto& [clientId, clientContext] : _clients)
   {
-    const auto& clientId = client.first;
-    const auto& clientContext = client.second;
     // Skip unauthorized clients.
     if (not clientContext.isAuthenticated)
       continue;
