@@ -454,12 +454,8 @@ void LobbyDirector::InviteToGuild(std::string characterName, data::Uid guildUid,
         return command;
       });
 
-    GetServerInstance().GetDataDirector().GetGuild(guildUid).Mutable(
-      [characterUid = clientContext.characterUid](data::Guild& guild)
-      {
-        // Add character UID to invites set 
-        guild.invites().emplace(characterUid);
-      });
+    // Add character UID to pending invites for the guild
+    _pendingGuildInvites.emplace(guildUid, clientContext.characterUid);
     
     // Found client and sent invite command, no need to process the rest of the clients
     break;
@@ -1468,19 +1464,23 @@ void LobbyDirector::HandleAcceptInviteToGuild(
 
   const auto& clientContext = GetClientContext(clientId);
 
-  // Check if character has guild invite
-  bool hasGuildInvite = false;
-  GetServerInstance().GetDataDirector().GetGuild(command.guild.uid).Mutable(
-    [&hasGuildInvite, characterUid = clientContext.characterUid](data::Guild& guild)
-    {
-      hasGuildInvite = guild.invites().contains(characterUid);
-      // Delete invite from guild if found
-      if (hasGuildInvite)
-        guild.invites().erase(characterUid);
-    });
+  // Pending invites for guild
+  auto& pendingGuildInvites = _pendingGuildInvites[command.guild.uid];
 
-  if (not hasGuildInvite)
+  // Check if character has guild invite
+  const auto& guildInvite = std::find(
+    pendingGuildInvites.begin(),
+    pendingGuildInvites.end(),
+    clientContext.characterUid);
+
+  if (guildInvite != pendingGuildInvites.end())
   {
+    // Guild invite exists, erase and process
+    pendingGuildInvites.erase(guildInvite);
+  }
+  else
+  {
+    // Character tried to join guild but has no pending (online) invite
     spdlog::warn("Character {} tried to join a guild {} but does not have a valid invite",
       clientContext.characterUid, command.guild.uid);
     return;

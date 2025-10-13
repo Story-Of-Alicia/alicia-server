@@ -211,6 +211,8 @@ private:
     ClientId clientId,
     const protocol::AcCmdLCInviteGuildJoinOK& command);
 
+  //! Pending (online) guild invites
+  std::map<data::Uid, std::vector<data::Uid>> _pendingGuildInvites;
 
   //! A scheduler
   Scheduler _scheduler;
