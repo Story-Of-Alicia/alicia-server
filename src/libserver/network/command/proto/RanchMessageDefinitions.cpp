@@ -622,7 +622,7 @@ void AcCmdCRBreedingFailureCardChooseOK::Write(
   {
     stream.Write(value);
   }
-  
+
   stream.Write(command.member5)
     .Write(command.item)
     .Write(command.member6);
