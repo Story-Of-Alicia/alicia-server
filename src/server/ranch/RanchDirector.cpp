@@ -166,6 +166,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       HandleUpdateMountNickname(clientId, command);
     });
 
+  _commandServer.RegisterCommandHandler<protocol::RanchCommandMountFamilyTree>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleMountFamilyTree(clientId, command);
+    });
+
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestStorage>(
     [this](ClientId clientId, auto& command)
     {
@@ -3124,185 +3130,169 @@ void RanchDirector::HandleMountFamilyTree(
   ClientId clientId,
   const protocol::RanchCommandMountFamilyTree& command)
 {
-  spdlog::debug("HandleMountFamilyTree: horseUid = {}", command.horseUid);
+  protocol::RanchCommandMountFamilyTreeOK response{};
 
-  protocol::RanchCommandMountFamilyTreeOK response;
+  std::vector<protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem> familyTree;
 
-  // Get the main horse's data first to calculate lineage
-  uint32_t mainHorseSkinId = 0;
-  const auto mainHorseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(command.horseUid);
-  if (mainHorseRecord)
+  const auto& horseRecord = GetServerInstance().GetDataDirector().GetHorse(
+    command.horseUid);
+
+  if (not horseRecord.IsAvailable())
   {
-    mainHorseRecord->Immutable([&](const data::Horse& horse)
-    {
-      mainHorseSkinId = horse.tid();
-    });
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]()
+      {
+        return response;
+      });
+    return;
   }
 
-  // Helper function to get horse data with lineage calculation and breeding role gender
-  auto getHorseAncestor = [&](uint32_t uid, uint8_t id, uint8_t breedingRoleGender) -> protocol::RanchCommandMountFamilyTreeOK::Ancestor
-  {
-    protocol::RanchCommandMountFamilyTreeOK::Ancestor ancestor;
-    ancestor.id = id;
-    ancestor.gender = breedingRoleGender; // 0=stallion (male), 1=mare (female), 2=unknown/self
+  std::vector<data::Uid> parents;
 
-    if (uid == 0)
+  horseRecord.Immutable([&parents, horseUid = command.horseUid](const data::Horse& horse)
+  {
+    parents = horse.ancestors();
+    spdlog::debug("Horse {} has {} parents in ancestors field", horseUid, parents.size());
+    if (parents.size() == 2)
     {
-      // No parent/ancestor - create dummy entry
-      ancestor.name = "?"; // Single character placeholder for unknown ancestors
-      ancestor.grade = 0;
-      ancestor.skinId = 20002; // Use different TID from main horse to avoid circular ref
-      ancestor.lineage = 0;
+      spdlog::debug("  Parent UIDs: father={}, mother={}", parents[0], parents[1]);
+    }
+  });
+
+  if (parents.size() == 2)
+  {
+    std::vector<data::Uid> grandparents_father;
+    std::vector<data::Uid> grandparents_mother;
+
+    auto fatherRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
+      parents[0]);
+    
+    if (fatherRecord)
+    {
+      spdlog::debug("Loading father horse {}: SUCCESS", parents[0]);
+      fatherRecord->Immutable([&familyTree, &grandparents_father](const data::Horse& horse)
+      {
+        protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem father;
+        father.id = 1;
+        father.name = horse.name();
+        father.grade = horse.grade();
+        father.skinId = horse.parts.skinTid();
+
+        familyTree.emplace_back(father);
+
+        //get grandparents of father
+        grandparents_father = horse.ancestors();
+      });
     }
     else
     {
-      const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(uid);
-      if (horseRecord)
-      {
-        horseRecord->Immutable([&](const data::Horse& horse)
-        {
-          ancestor.name = horse.name();
-          ancestor.grade = horse.grade();
-          ancestor.skinId = horse.tid();
-          
-          // Calculate lineage based on coat color inheritance
-          uint8_t calculatedLineage = 1; // Base +1 for having the coat
-          
-          // Check if this ancestor has the same coat as the main horse
-          if (horse.tid() == mainHorseSkinId)
-          {
-            // Calculate lineage based on position in family tree
-            if (id == 1 || id == 2) // Parents: +2 each
-            {
-              calculatedLineage = 2;
-            }
-            else if (id >= 3 && id <= 6) // Grandparents: +1 each
-            {
-              calculatedLineage = 1;
-            }
-            else // Self or others
-            {
-              calculatedLineage = 1;
-            }
-          }
-          else
-          {
-            calculatedLineage = 0; // Different coat color
-          }
-          
-          ancestor.lineage = calculatedLineage;
-          spdlog::debug("Found horse {}: name='{}', grade={}, tid={}, calculatedLineage={} (same coat as main: {})", 
-            uid, ancestor.name, ancestor.grade, ancestor.skinId, calculatedLineage, (horse.tid() == mainHorseSkinId));
-        });
-      }
-      else
-      {
-        // Horse not found - create dummy entry
-        ancestor.name = "?"; // Single character placeholder for unknown ancestors
-        ancestor.grade = 0;
-        ancestor.skinId = 20002; // Use different TID from main horse to avoid circular ref
-        ancestor.lineage = 0;
-        spdlog::warn("Horse {} not found in cache!", uid);
-      }
+      spdlog::debug("Loading father horse {}: FAILED (not in cache)", parents[0]);
     }
-    return ancestor;
-  };
 
-  // Get the horse's parent UIDs from the database
-  uint32_t fatherUid = 0;
-  uint32_t motherUid = 0;
-  
-  const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(command.horseUid);
-  if (horseRecord)
-  {
-    horseRecord->Immutable([&](const data::Horse& horse)
-    {
-      fatherUid = horse.fatherUid();
-      motherUid = horse.motherUid();
-      spdlog::debug("Horse {} has fatherUid={}, motherUid={}", command.horseUid, fatherUid, motherUid);
-    });
-  }
-
-  // Get grandparent UIDs by looking up the parents
-  uint32_t paternalGrandfatherUid = 0;
-  uint32_t paternalGrandmotherUid = 0;
-  uint32_t maternalGrandfatherUid = 0;
-  uint32_t maternalGrandmotherUid = 0;
-
-  if (fatherUid != 0)
-  {
-    const auto fatherRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(fatherUid);
-    if (fatherRecord)
-    {
-      fatherRecord->Immutable([&](const data::Horse& father)
-      {
-        paternalGrandfatherUid = father.fatherUid();
-        paternalGrandmotherUid = father.motherUid();
-      });
-    }
-  }
-
-  if (motherUid != 0)
-  {
-    const auto motherRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(motherUid);
+    auto motherRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
+      parents[1]);
+    
     if (motherRecord)
     {
-      motherRecord->Immutable([&](const data::Horse& mother)
+      spdlog::debug("Loading mother horse {}: SUCCESS", parents[1]);
+      motherRecord->Immutable([&familyTree, &grandparents_mother](const data::Horse& horse)
       {
-        maternalGrandfatherUid = mother.fatherUid();
-        maternalGrandmotherUid = mother.motherUid();
+        protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem mother;
+        mother.id = 2;
+        mother.name = horse.name();
+        mother.grade = horse.grade();
+        mother.skinId = horse.parts.skinTid();
+
+        familyTree.emplace_back(mother);
+
+        //get grandparents of mother
+        grandparents_mother = horse.ancestors();
       });
     }
-  }
-
-  // Build the 7-ancestor tree with breeding role genders
-  // In breeding context: Player's horse = mare (female), Market stallion = stallion (male)
-  response.ancestors[0] = getHorseAncestor(command.horseUid, 0, 2); // Self (2=unknown/self)
-  response.ancestors[1] = getHorseAncestor(fatherUid, 1, 0); // Father (0=stallion)
-  response.ancestors[2] = getHorseAncestor(motherUid, 2, 1); // Mother (1=mare)
-  response.ancestors[3] = getHorseAncestor(paternalGrandfatherUid, 3, 0); // Paternal Grandfather (0=stallion)
-  response.ancestors[4] = getHorseAncestor(paternalGrandmotherUid, 4, 1); // Paternal Grandmother (1=mare)
-  response.ancestors[5] = getHorseAncestor(maternalGrandfatherUid, 5, 0); // Maternal Grandfather (0=stallion)
-  response.ancestors[6] = getHorseAncestor(maternalGrandmotherUid, 6, 1); // Maternal Grandmother (1=mare)
-
-  // Calculate total lineage for the main horse
-  uint8_t totalLineage = 1; // Base +1 for having the coat
-  for (size_t i = 1; i < 7; ++i) // Skip self (index 0)
-  {
-    if (response.ancestors[i].skinId == mainHorseSkinId && !response.ancestors[i].name.empty())
+    else
     {
-      if (i == 1 || i == 2) // Parents: +2 each
+      spdlog::debug("Loading mother horse {}: FAILED (not in cache)", parents[1]);
+    }
+
+    //grandparents of father
+    if(grandparents_father.size() == 2)
+    {
+      auto grandfatherRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
+        grandparents_father[0]);
+      
+      if (grandfatherRecord)
       {
-        totalLineage += 2;
+        grandfatherRecord->Immutable([&familyTree](const data::Horse& horse)
+        {
+          protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem grandfather;
+          grandfather.id = 3;
+          grandfather.name = horse.name();
+          grandfather.grade = horse.grade();
+          grandfather.skinId = horse.parts.skinTid();
+
+          familyTree.emplace_back(grandfather);
+        });
       }
-      else if (i >= 3 && i <= 6) // Grandparents: +1 each
+
+      auto grandmotherRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
+        grandparents_father[1]);
+      
+      if (grandmotherRecord)
       {
-        totalLineage += 1;
+        grandmotherRecord->Immutable([&familyTree](const data::Horse& horse)
+        {
+          protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem grandmother;
+          grandmother.id = 4;
+          grandmother.name = horse.name();
+          grandmother.grade = horse.grade();
+          grandmother.skinId = horse.parts.skinTid();
+
+          familyTree.emplace_back(grandmother);
+        });
+      }
+    }
+
+    //grandparents of mother
+    if(grandparents_mother.size() == 2)
+    {
+      auto grandfatherRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
+        grandparents_mother[0]);
+      
+      if (grandfatherRecord)
+      {
+        grandfatherRecord->Immutable([&familyTree](const data::Horse& horse)
+        {
+          protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem grandfather;
+          grandfather.id = 5;
+          grandfather.name = horse.name();
+          grandfather.grade = horse.grade();
+          grandfather.skinId = horse.parts.skinTid();
+
+          familyTree.emplace_back(grandfather);
+        });
+      }
+
+      auto grandmotherRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
+        grandparents_mother[1]);
+      
+      if (grandmotherRecord)
+      {
+        grandmotherRecord->Immutable([&familyTree](const data::Horse& horse)
+        {
+          protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem grandmother;
+          grandmother.id = 6;
+          grandmother.name = horse.name();
+          grandmother.grade = horse.grade();
+          grandmother.skinId = horse.parts.skinTid();
+
+          familyTree.emplace_back(grandmother);
+        });
       }
     }
   }
-  
-  // Update the main horse's lineage in the response
-  response.ancestors[0].lineage = totalLineage;
-
-  spdlog::debug("Family tree for horse {}: self={} (not sent), sending 6 ancestors: father={}, mother={}, paternal_gp=[{},{}], maternal_gp=[{},{}]",
-    command.horseUid,
-    response.ancestors[0].name,
-    response.ancestors[1].name,
-    response.ancestors[2].name,
-    response.ancestors[3].name,
-    response.ancestors[4].name,
-    response.ancestors[5].name,
-    response.ancestors[6].name);
-  
-  spdlog::debug("Total lineage for horse {}: {} (coat: {}, parents with same coat: {}, grandparents with same coat: {})",
-    command.horseUid, totalLineage, mainHorseSkinId,
-    ((response.ancestors[1].skinId == mainHorseSkinId && !response.ancestors[1].name.empty()) ? 1 : 0) +
-    ((response.ancestors[2].skinId == mainHorseSkinId && !response.ancestors[2].name.empty()) ? 1 : 0),
-    ((response.ancestors[3].skinId == mainHorseSkinId && !response.ancestors[3].name.empty()) ? 1 : 0) +
-    ((response.ancestors[4].skinId == mainHorseSkinId && !response.ancestors[4].name.empty()) ? 1 : 0) +
-    ((response.ancestors[5].skinId == mainHorseSkinId && !response.ancestors[5].name.empty()) ? 1 : 0) +
-    ((response.ancestors[6].skinId == mainHorseSkinId && !response.ancestors[6].name.empty()) ? 1 : 0));
+  spdlog::debug("Family tree complete: {} ancestors found", familyTree.size());
+  response.ancestors = familyTree;
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,

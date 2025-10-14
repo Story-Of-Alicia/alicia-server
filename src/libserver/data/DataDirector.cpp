@@ -955,6 +955,22 @@ void DataDirector::ScheduleCharacterLoad(
 
     const auto horseRecords = GetHorseCache().Get(horses);
 
+    // Queue ancestors for loading to support family tree feature
+    if (horseRecords)
+    {
+      for (const auto& horseRecord : *horseRecords)
+      {
+        horseRecord.Immutable([this](const data::Horse& horse)
+        {
+          for (const auto ancestorUid : horse.ancestors())
+          {
+            // Queue ancestor for retrieval (will load from data source if not cached)
+            GetHorseCache().Get(ancestorUid);
+          }
+        });
+      }
+    }
+
     const auto eggRecords = GetEggCache().Get(eggs);
 
     const auto housingRecords = GetHousingCache().Get(housing);

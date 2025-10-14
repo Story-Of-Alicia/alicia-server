@@ -98,6 +98,12 @@ target_link_libraries(alicia-server PRIVATE
 target_include_directories(alicia-server PUBLIC
         "${PROJECT_BINARY_DIR}/generated")
 
+# Fix for RanchDirector.cpp exceeding section limit
+if (MSVC)
+    set_source_files_properties(src/server/ranch/RanchDirector.cpp
+            PROPERTIES COMPILE_FLAGS "/bigobj")
+endif()
+
 if (BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
