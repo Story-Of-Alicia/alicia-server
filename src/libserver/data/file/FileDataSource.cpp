@@ -596,8 +596,8 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.clazz = json["clazz"].get<uint32_t>();
   horse.clazzProgress = json["clazzProgress"].get<uint32_t>();
   horse.grade = json["grade"].get<uint32_t>();
-  horse.growthPoints = json.value("growthPoints", uint16_t{0});
-  
+  horse.growthPoints = json["growthPoints"].get<uint32_t>();
+
   const auto& breedingJson = json["breeding"];
   horse.breeding.breedingCount = breedingJson.value("breedingCount", uint32_t{0});
   horse.breeding.breedingCombo = breedingJson.value("breedingCombo", uint32_t{0});
@@ -605,7 +605,11 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.type = json.value("type", uint32_t{0});
   horse.tendency = json.value("tendency", uint32_t{0});
   horse.spirit = json.value("spirit", uint32_t{0});
-  horse.fatigue = json.value("fatigue", uint16_t{0});
+
+  // Family tree fields
+  horse.fatherUid = json.value("fatherUid", 0u);
+  horse.motherUid = json.value("motherUid", 0u);
+  horse.lineage = json.value("lineage", 0u);
 
   auto potential = json["potential"];
   horse.potential = data::Horse::Potential{
@@ -714,9 +718,13 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["breeding"]["breedingCombo"] = horse.breeding.breedingCombo();
 
   json["type"] = horse.type();
-  json["fatigue"] = horse.fatigue();
   json["spirit"] = horse.spirit();
   json["tendency"] = horse.tendency();
+
+  // Family tree fields
+  json["fatherUid"] = horse.fatherUid();
+  json["motherUid"] = horse.motherUid();
+  json["lineage"] = horse.lineage();
 
   nlohmann::json potential;
   potential["type"] = horse.potential.type();
