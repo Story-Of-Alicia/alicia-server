@@ -3581,25 +3581,17 @@ struct RanchCommandMountFamilyTree
 //!
 struct RanchCommandMountFamilyTreeOK
 {
-  struct MountFamilyTreeItem
+  struct Ancestor
   {
-    enum class Position : uint8_t
-    {
-      Father = 1,
-      Mother = 2,
-      PaternalGrandfather = 3,
-      PaternalGrandmother = 4,
-      MaternalGrandfather = 5,
-      MaternalGrandmother = 6
-    };
-
-    Position id{};
-    std::string name{};
-    uint8_t grade{};
-    uint16_t skinId{};
+    uint8_t id{};           // Position: 0=self, 1=father, 2=mother, 3=paternal grandfather, etc.
+    std::string name{};     // Horse name
+    uint8_t grade{};        // Horse grade
+    uint32_t skinId{};      // Horse TID/breed
+    uint8_t lineage{};      // The +X lineage value
+    uint8_t gender{};       // 0=male, 1=female, 2=unknown/self
   };
 
-  //! A list of members of the family tree.
+  // 7 entries: self, 2 parents, 4 grandparents
   std::array<Ancestor, 7> ancestors{};
 
   static Command GetCommand()
