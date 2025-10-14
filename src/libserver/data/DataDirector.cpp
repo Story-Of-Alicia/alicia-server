@@ -965,7 +965,11 @@ void DataDirector::ScheduleCharacterLoad(
         {
           for (const auto ancestorUid : horse.ancestors())
           {
-            allAncestors.push_back(ancestorUid);
+            // Skip empty slots (0 = no ancestor in this position)
+            if (ancestorUid != 0)
+            {
+              allAncestors.push_back(ancestorUid);
+            }
           }
         });
       }
