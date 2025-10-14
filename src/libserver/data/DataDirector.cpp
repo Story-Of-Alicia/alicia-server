@@ -1040,19 +1040,24 @@ void DataDirector::ScheduleCharacterLoad(
 
     const auto horseRecords = GetHorseCache().Get(horses);
 
-    // Queue ancestors for loading to support family tree feature
+    // Queue all ancestors for loading to support family tree feature
     if (horseRecords)
     {
+      std::vector<data::Uid> allAncestors;
       for (const auto& horseRecord : *horseRecords)
       {
-        horseRecord.Immutable([this](const data::Horse& horse)
+        horseRecord.Immutable([&allAncestors](const data::Horse& horse)
         {
           for (const auto ancestorUid : horse.ancestors())
           {
-            // Queue ancestor for retrieval (will load from data source if not cached)
-            GetHorseCache().Get(ancestorUid);
+            allAncestors.push_back(ancestorUid);
           }
         });
+      }
+    
+      if (!allAncestors.empty())
+      {
+        GetHorseCache().Get(allAncestors);
       }
     }
 
