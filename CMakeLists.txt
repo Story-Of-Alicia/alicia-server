@@ -80,7 +80,7 @@ add_executable(alicia-server
         src/server/ServerInstance.cpp
         src/server/Config.cpp
         src/server/lobby/LobbyDirector.cpp
-        src/server/lobby/LoginHandler.cpp
+        src/server/lobby/LobbyNetworkHandler.cpp
         src/server/messenger/MessengerDirector.cpp
         src/server/race/RaceDirector.cpp
         src/server/ranch/RanchDirector.cpp

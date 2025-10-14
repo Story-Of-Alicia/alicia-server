@@ -22,15 +22,15 @@
 namespace server::protocol
 {
 
-void LobbyCommandLogin::Write(
-  const LobbyCommandLogin& command,
+void AcCmdCLLogin::Write(
+  const AcCmdCLLogin& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandLogin::Read(
-  LobbyCommandLogin& command,
+void AcCmdCLLogin::Read(
+  AcCmdCLLogin& command,
   SourceStream& stream)
 {
   stream.Read(command.constant0)
@@ -200,29 +200,29 @@ void LobbyCommandLoginOK::Read(
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandLoginCancel::Write(
-  const LobbyCommandLoginCancel& command,
+void AcCmdCLLoginCancel::Write(
+  const AcCmdCLLoginCancel& command,
   SinkStream& stream)
 {
   stream.Write(static_cast<uint8_t>(command.reason));
 }
 
-void LobbyCommandLoginCancel::Read(
-  LobbyCommandLoginCancel& command,
+void AcCmdCLLoginCancel::Read(
+  AcCmdCLLoginCancel& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandShowInventory::Write(
-  const LobbyCommandShowInventory& command,
+void AcCmdCLShowInventory::Write(
+  const AcCmdCLShowInventory& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandShowInventory::Read(
-  LobbyCommandShowInventory& command,
+void AcCmdCLShowInventory::Read(
+  AcCmdCLShowInventory& command,
   SourceStream& stream)
 {
   // Empty,
@@ -266,15 +266,15 @@ void LobbyCommandCreateNicknameNotify::Read(
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandCreateNickname::Write(
-  const LobbyCommandCreateNickname& command,
+void AcCmdCLCreateNickname::Write(
+  const AcCmdCLCreateNickname& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandCreateNickname::Read(
-  LobbyCommandCreateNickname& command,
+void AcCmdCLCreateNickname::Read(
+  AcCmdCLCreateNickname& command,
   SourceStream& stream)
 {
   stream.Read(command.nickname)
@@ -360,22 +360,22 @@ void LobbyCommandRequestLeagueInfoCancel::Read(
 {
 }
 
-void LobbyCommandAchievementCompleteList::Write(
-  const LobbyCommandAchievementCompleteList& command,
+void AcCmdCLAchievementCompleteList::Write(
+  const AcCmdCLAchievementCompleteList& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandAchievementCompleteList::Read(
-  LobbyCommandAchievementCompleteList& command,
+void AcCmdCLAchievementCompleteList::Read(
+  AcCmdCLAchievementCompleteList& command,
   SourceStream& stream)
 {
   stream.Read(command.unk0);
 }
 
-void LobbyCommandAchievementCompleteListOK::Write(
-  const LobbyCommandAchievementCompleteListOK& command,
+void AcCmdCLAchievementCompleteListOK::Write(
+  const AcCmdCLAchievementCompleteListOK& command,
   SinkStream& stream)
 {
   stream.Write(command.unk0);
@@ -386,63 +386,93 @@ void LobbyCommandAchievementCompleteListOK::Write(
   }
 }
 
-void LobbyCommandAchievementCompleteListOK::Read(
-  LobbyCommandAchievementCompleteListOK& command,
+void AcCmdCLAchievementCompleteListOK::Read(
+  AcCmdCLAchievementCompleteListOK& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandEnterChannel::Write(
-  const LobbyCommandEnterChannel& command,
+void AcCmdCLEnterChannel::Write(
+  const AcCmdCLEnterChannel& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandEnterChannel::Read(
-  LobbyCommandEnterChannel& command,
+void AcCmdCLEnterChannel::Read(
+  AcCmdCLEnterChannel& command,
   SourceStream& stream)
 {
   stream.Read(command.channel);
 }
 
-void LobbyCommandEnterChannelOK::Write(
-  const LobbyCommandEnterChannelOK& command,
+void AcCmdCLEnterChannelOK::Write(
+  const AcCmdCLEnterChannelOK& command,
   SinkStream& stream)
 {
   stream.Write(command.unk0)
     .Write(command.unk1);
 }
 
-void LobbyCommandEnterChannelOK::Read(
-  LobbyCommandEnterChannelOK& command,
+void AcCmdCLEnterChannelOK::Read(
+  AcCmdCLEnterChannelOK& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandEnterChannelCancel::Write(
-  const LobbyCommandEnterChannelCancel& command,
+void AcCmdCLEnterChannelCancel::Write(
+  const AcCmdCLEnterChannelCancel& command,
   SinkStream& stream)
 {
+  // Empty.
 }
 
-void LobbyCommandEnterChannelCancel::Read(
-  LobbyCommandEnterChannelCancel& command,
+void AcCmdCLEnterChannelCancel::Read(
+  AcCmdCLEnterChannelCancel& command,
   SourceStream& stream)
 {
+  throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandRoomList::Write(
-  const LobbyCommandRoomList& command,
+void AcCmdCLLeaveChannel::Write(
+  const AcCmdCLLeaveChannel& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandRoomList::Read(
-  LobbyCommandRoomList& command,
+void AcCmdCLLeaveChannel::Read(
+  AcCmdCLLeaveChannel& command,
+  SourceStream& stream)
+{
+  // Empty.
+}
+
+void AcCmdCLLeaveChannelOK::Write(
+  const AcCmdCLLeaveChannelOK& command,
+  SinkStream& stream)
+{
+  // Empty.
+}
+
+void AcCmdCLLeaveChannelOK::Read(
+  AcCmdCLLeaveChannelOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdCLRoomList::Write(
+  const AcCmdCLRoomList& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdCLRoomList::Read(
+  AcCmdCLRoomList& command,
   SourceStream& stream)
 {
   stream.Read(command.page)
@@ -554,15 +584,15 @@ void LobbyCommandMakeRoomCancel::Read(
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandEnterRoom::Write(
-  const LobbyCommandEnterRoom& command,
+void AcCmdCLEnterRoom::Write(
+  const AcCmdCLEnterRoom& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandEnterRoom::Read(
-  LobbyCommandEnterRoom& command,
+void AcCmdCLEnterRoom::Read(
+  AcCmdCLEnterRoom& command,
   SourceStream& stream)
 {
   stream.Read(command.roomUid)
@@ -570,8 +600,8 @@ void LobbyCommandEnterRoom::Read(
     .Read(command.member3);
 }
 
-void LobbyCommandEnterRoomOK::Write(
-  const LobbyCommandEnterRoomOK& command,
+void AcCmdCLEnterRoomOK::Write(
+  const AcCmdCLEnterRoomOK& command,
   SinkStream& stream)
 {
   stream.Write(command.roomUid)
@@ -581,22 +611,50 @@ void LobbyCommandEnterRoomOK::Write(
     .Write(command.member6);
 }
 
-void LobbyCommandEnterRoomOK::Read(
-  LobbyCommandEnterRoomOK& command,
+void AcCmdCLEnterRoomOK::Read(
+  AcCmdCLEnterRoomOK& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandEnterRoomCancel::Write(
-  const LobbyCommandEnterRoomCancel& command,
+void AcCmdCLEnterRoomCancel::Write(
+  const AcCmdCLEnterRoomCancel& command,
   SinkStream& stream)
 {
   stream.Write(command.status);
 }
 
-void LobbyCommandEnterRoomCancel::Read(
-  LobbyCommandEnterRoomCancel& command,
+void AcCmdCLEnterRoomCancel::Read(
+  AcCmdCLEnterRoomCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdCLLeaveRoom::Write(
+  const AcCmdCLLeaveRoom& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdCLLeaveRoom::Read(
+  AcCmdCLLeaveRoom& command,
+  SourceStream& stream)
+{
+  // Empty.
+}
+
+void AcCmdCLLeaveRoomOK::Write(
+  const AcCmdCLLeaveRoomOK& command,
+  SinkStream& stream)
+{
+  // Empty.
+}
+
+void AcCmdCLLeaveRoomOK::Read(
+  AcCmdCLLeaveRoomOK& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");
@@ -616,8 +674,8 @@ void LobbyCommandRequestQuestList::Read(
   stream.Read(command.unk0);
 }
 
-void LobbyCommandRequestQuestListOK::Write(
-  const LobbyCommandRequestQuestListOK& command,
+void AcCmdCLRequestQuestListOK::Write(
+  const AcCmdCLRequestQuestListOK& command,
   SinkStream& stream)
 {
   stream.Write(command.unk0);
@@ -628,29 +686,29 @@ void LobbyCommandRequestQuestListOK::Write(
   }
 }
 
-void LobbyCommandRequestQuestListOK::Read(
-  LobbyCommandRequestQuestListOK& command,
+void AcCmdCLRequestQuestListOK::Read(
+  AcCmdCLRequestQuestListOK& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandRequestDailyQuestList::Write(
-  const LobbyCommandRequestDailyQuestList& command,
+void AcCmdCLRequestDailyQuestList::Write(
+  const AcCmdCLRequestDailyQuestList& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandRequestDailyQuestList::Read(
-  LobbyCommandRequestDailyQuestList& command,
+void AcCmdCLRequestDailyQuestList::Read(
+  AcCmdCLRequestDailyQuestList& command,
   SourceStream& stream)
 {
   stream.Read(command.val0);
 }
 
-void LobbyCommandRequestDailyQuestListOK::Write(
-  const LobbyCommandRequestDailyQuestListOK& command,
+void AcCmdCLRequestDailyQuestListOK::Write(
+  const AcCmdCLRequestDailyQuestListOK& command,
   SinkStream& stream)
 {
   stream.Write(command.val0);
@@ -671,22 +729,22 @@ void LobbyCommandRequestDailyQuestListOK::Write(
   }
 }
 
-void LobbyCommandRequestDailyQuestListOK::Read(
-  LobbyCommandRequestDailyQuestListOK& command,
+void AcCmdCLRequestDailyQuestListOK::Read(
+  AcCmdCLRequestDailyQuestListOK& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandEnterRanch::Write(
-  const LobbyCommandEnterRanch& command,
+void AcCmdCLEnterRanch::Write(
+  const AcCmdCLEnterRanch& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandEnterRanch::Read(
-  LobbyCommandEnterRanch& command,
+void AcCmdCLEnterRanch::Read(
+  AcCmdCLEnterRanch& command,
   SourceStream& stream)
 {
   stream.Read(command.rancherUid)
@@ -694,8 +752,8 @@ void LobbyCommandEnterRanch::Read(
     .Read(command.unk2);
 }
 
-void LobbyCommandEnterRanchOK::Write(
-  const LobbyCommandEnterRanchOK& command,
+void AcCmdCLEnterRanchOK::Write(
+  const AcCmdCLEnterRanchOK& command,
   SinkStream& stream)
 {
   stream.Write(command.rancherUid)
@@ -704,43 +762,43 @@ void LobbyCommandEnterRanchOK::Write(
     .Write(command.ranchPort);
 }
 
-void LobbyCommandEnterRanchOK::Read(
-  LobbyCommandEnterRanchOK& command,
+void AcCmdCLEnterRanchOK::Read(
+  AcCmdCLEnterRanchOK& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandEnterRanchCancel::Write(
-  const LobbyCommandEnterRanchCancel& command,
+void AcCmdCLEnterRanchCancel::Write(
+  const AcCmdCLEnterRanchCancel& command,
   SinkStream& stream)
 {
   stream.Write(command.unk0);
 }
 
-void LobbyCommandEnterRanchCancel::Read(
-  LobbyCommandEnterRanchCancel& command,
+void AcCmdCLEnterRanchCancel::Read(
+  AcCmdCLEnterRanchCancel& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandGetMessengerInfo::Write(
-  const LobbyCommandGetMessengerInfo& command,
+void AcCmdCLGetMessengerInfo::Write(
+  const AcCmdCLGetMessengerInfo& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandGetMessengerInfo::Read(
-  LobbyCommandGetMessengerInfo& command,
+void AcCmdCLGetMessengerInfo::Read(
+  AcCmdCLGetMessengerInfo& command,
   SourceStream& stream)
 {
   // Empty.
 }
 
-void LobbyCommandGetMessengerInfoOK::Write(
-  const LobbyCommandGetMessengerInfoOK& command,
+void AcCmdCLGetMessengerInfoOK::Write(
+  const AcCmdCLGetMessengerInfoOK& command,
   SinkStream& stream)
 {
   stream.Write(command.code)
@@ -748,26 +806,56 @@ void LobbyCommandGetMessengerInfoOK::Write(
     .Write(command.port);
 }
 
-void LobbyCommandGetMessengerInfoOK::Read(
-  LobbyCommandGetMessengerInfoOK& command,
+void AcCmdCLGetMessengerInfoOK::Read(
+  AcCmdCLGetMessengerInfoOK& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandGetMessengerInfoCancel::Write(
-  const LobbyCommandGetMessengerInfoCancel& command,
+void AcCmdCLGetMessengerInfoCancel::Write(
+  const AcCmdCLGetMessengerInfoCancel& command,
   SinkStream& stream)
 {
   // Empty.
 }
 
-void LobbyCommandGetMessengerInfoCancel::Read(
-  LobbyCommandGetMessengerInfoCancel& command,
+void AcCmdCLGetMessengerInfoCancel::Read(
+  AcCmdCLGetMessengerInfoCancel& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
+
+void AcCmdCLCheckWaitingSeqno::Write(
+  const AcCmdCLCheckWaitingSeqno& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdCLCheckWaitingSeqno::Read(
+  AcCmdCLCheckWaitingSeqno& command,
+  SourceStream& stream)
+{
+  stream.Read(command.uid);
+}
+
+void AcCmdCLCheckWaitingSeqnoOK::Write(
+  const AcCmdCLCheckWaitingSeqnoOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.uid)
+    .Write(command.position);
+}
+
+void AcCmdCLCheckWaitingSeqnoOK::Read(
+  AcCmdCLCheckWaitingSeqnoOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
 void LobbyCommandRequestSpecialEventList::Write(
   const LobbyCommandRequestSpecialEventList& command,
   SinkStream& stream)
@@ -939,15 +1027,15 @@ void LobbyCommandInquiryTreecashCancel::Read(
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandClientNotify::Write(
-  const LobbyCommandClientNotify& command,
+void AcCmdClientNotify::Write(
+  const AcCmdClientNotify& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandClientNotify::Read(
-  LobbyCommandClientNotify& command,
+void AcCmdClientNotify::Read(
+  AcCmdClientNotify& command,
   SourceStream& stream)
 {
   stream.Read(command.val0).Read(command.val1);
@@ -983,36 +1071,78 @@ void LobbyCommandGuildPartyListOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
-void LobbyCommandEnterRandomRanch::Write(
-  const LobbyCommandEnterRandomRanch& command,
+void AcCmdCLEnterRanchRandomly::Write(
+  const AcCmdCLEnterRanchRandomly& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void LobbyCommandEnterRandomRanch::Read(
-  LobbyCommandEnterRandomRanch& command,
+void AcCmdCLEnterRanchRandomly::Read(
+  AcCmdCLEnterRanchRandomly& command,
   SourceStream& stream)
 {
   // Empty.
 }
 
-void LobbyCommandRequestPersonalInfo::Write(
-  const LobbyCommandRequestPersonalInfo& command,
+void AcCmdCLFeatureCommand::Write(
+  const AcCmdCLFeatureCommand& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void LobbyCommandRequestPersonalInfo::Read(
-  LobbyCommandRequestPersonalInfo& command,
+void AcCmdCLFeatureCommand::Read(
+  AcCmdCLFeatureCommand& command,
+  SourceStream& stream)
+{
+  stream.Read(command.command);
+}
+
+void AcCmdCLRequestFestivalResult::Write(
+  const AcCmdCLRequestFestivalResult& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLRequestFestivalResult::Read(
+  AcCmdCLRequestFestivalResult& command,
+  SourceStream& stream)
+{
+  stream.Read(command.member1);
+}
+
+void AcCmdCLRequestFestivalResultOK::Write(
+  const AcCmdCLRequestFestivalResultOK& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Command needs to be discovered");
+}
+
+void AcCmdCLRequestFestivalResultOK::Read(
+  AcCmdCLRequestFestivalResultOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLRequestPersonalInfo::Write(
+  const AcCmdCLRequestPersonalInfo& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLRequestPersonalInfo::Read(
+  AcCmdCLRequestPersonalInfo& command,
   SourceStream& stream)
 {
   stream.Read(command.characterUid)
     .Read(command.type);
 }
 
-void LobbyCommandPersonalInfo::Basic::Write(const Basic& command, SinkStream& stream)
+void AcCmdLCPersonalInfo::Basic::Write(const Basic& command, SinkStream& stream)
 {
   stream.Write(command.distanceTravelled)
     .Write(command.topSpeed)
@@ -1045,12 +1175,12 @@ void LobbyCommandPersonalInfo::Basic::Write(const Basic& command, SinkStream& st
     .Write(command.member29);
 }
 
-void LobbyCommandPersonalInfo::Basic::Read(Basic& command, SourceStream& stream)
+void AcCmdLCPersonalInfo::Basic::Read(Basic& command, SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void LobbyCommandPersonalInfo::CourseInformation::Write(const CourseInformation& command, SinkStream& stream)
+void AcCmdLCPersonalInfo::CourseInformation::Write(const CourseInformation& command, SinkStream& stream)
 {
   stream.Write(command.totalGames)
     .Write(command.totalSpeedGames)
@@ -1070,12 +1200,12 @@ void LobbyCommandPersonalInfo::CourseInformation::Write(const CourseInformation&
   }
 }
 
-void LobbyCommandPersonalInfo::CourseInformation::Read(CourseInformation& command, SourceStream& stream)
+void AcCmdLCPersonalInfo::CourseInformation::Read(CourseInformation& command, SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void LobbyCommandPersonalInfo::Eight::Write(const Eight& command, SinkStream& stream)
+void AcCmdLCPersonalInfo::Eight::Write(const Eight& command, SinkStream& stream)
 {
   stream.Write(static_cast<uint8_t>(command.member1.size()));
   for (const auto& entry : command.member1)
@@ -1085,29 +1215,29 @@ void LobbyCommandPersonalInfo::Eight::Write(const Eight& command, SinkStream& st
   }
 }
 
-void LobbyCommandPersonalInfo::Eight::Read(Eight& command, SourceStream& stream)
+void AcCmdLCPersonalInfo::Eight::Read(Eight& command, SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void LobbyCommandPersonalInfo::Write(const LobbyCommandPersonalInfo& command, SinkStream& stream)
+void AcCmdLCPersonalInfo::Write(const AcCmdLCPersonalInfo& command, SinkStream& stream)
 {
   stream.Write(command.characterUid)
     .Write(command.type);
 
   switch (command.type)
   {
-    case LobbyCommandRequestPersonalInfo::Type::Basic:
+    case AcCmdCLRequestPersonalInfo::Type::Basic:
       {
         stream.Write(command.basic);
         break;
       }
-    case LobbyCommandRequestPersonalInfo::Type::Courses:
+    case AcCmdCLRequestPersonalInfo::Type::Courses:
       {
         stream.Write(command.courseInformation);
         break;
       }
-    case LobbyCommandRequestPersonalInfo::Type::Eight:
+    case AcCmdCLRequestPersonalInfo::Type::Eight:
       {
         stream.Write(command.eight);
         break;
@@ -1115,36 +1245,36 @@ void LobbyCommandPersonalInfo::Write(const LobbyCommandPersonalInfo& command, Si
   }
 }
 
-void LobbyCommandPersonalInfo::Read(
-  LobbyCommandPersonalInfo& command,
+void AcCmdLCPersonalInfo::Read(
+  AcCmdLCPersonalInfo& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void LobbyCommandSetIntroduction::Write(
-  const LobbyCommandSetIntroduction& command,
+void AcCmdCLSetIntroduction::Write(
+  const AcCmdCLSetIntroduction& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void LobbyCommandSetIntroduction::Read(
-  LobbyCommandSetIntroduction& command,
+void AcCmdCLSetIntroduction::Read(
+  AcCmdCLSetIntroduction& command,
   SourceStream& stream)
 {
   stream.Read(command.introduction);
 }
 
-void LobbyCommandUpdateSystemContent::Write(
-  const LobbyCommandUpdateSystemContent& command,
+void AcCmdCLUpdateSystemContent::Write(
+  const AcCmdCLUpdateSystemContent& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void LobbyCommandUpdateSystemContent::Read(
-  LobbyCommandUpdateSystemContent& command,
+void AcCmdCLUpdateSystemContent::Read(
+  AcCmdCLUpdateSystemContent& command,
   SourceStream& stream)
 {
   stream.Read(command.member1)
@@ -1152,15 +1282,130 @@ void LobbyCommandUpdateSystemContent::Read(
     .Read(command.value);
 }
 
-void LobbyCommandUpdateSystemContentNotify::Write(
-  const LobbyCommandUpdateSystemContentNotify& command,
+void AcCmdLCUpdateSystemContent::Write(
+  const AcCmdLCUpdateSystemContent& command,
   SinkStream& stream)
 {
   stream.Write(command.systemContent);
 }
 
-void LobbyCommandUpdateSystemContentNotify::Read(
-  LobbyCommandUpdateSystemContentNotify& command,
+void AcCmdLCUpdateSystemContent::Read(
+  AcCmdLCUpdateSystemContent& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLEnterRoomQuickStop::Write(
+  const AcCmdCLEnterRoomQuickStop& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLEnterRoomQuickStop::Read(
+  AcCmdCLEnterRoomQuickStop& command,
+  SourceStream& stream)
+{
+  // Empty.
+}
+
+void AcCmdCLEnterRoomQuickStopOK::Write(
+  const AcCmdCLEnterRoomQuickStopOK& command,
+  SinkStream& stream)
+{
+  // Empty.
+}
+
+void AcCmdCLEnterRoomQuickStopOK::Read(
+  AcCmdCLEnterRoomQuickStopOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLEnterRoomQuickStopCancel::Write(
+  const AcCmdCLEnterRoomQuickStopCancel& command,
+  SinkStream& stream)
+{
+  // Empty.
+}
+
+void AcCmdCLEnterRoomQuickStopCancel::Read(
+  AcCmdCLEnterRoomQuickStopCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLRequestFestivalPrize::Write(
+  const AcCmdCLRequestFestivalPrize& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLRequestFestivalPrize::Read(
+  AcCmdCLRequestFestivalPrize& command,
+  SourceStream& stream)
+{
+  stream.Read(command.member1);
+}
+
+void AcCmdCLRequestFestivalPrizeOK::Write(
+  const AcCmdCLRequestFestivalPrizeOK& command,
+  SinkStream& stream)
+{
+  // todo: discover
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLRequestFestivalPrizeOK::Read(
+  AcCmdCLRequestFestivalPrizeOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLRequestFestivalPrizeCancel::Write(
+  const AcCmdCLRequestFestivalPrizeCancel& command,
+  SinkStream& stream)
+{
+  // todo: discover
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLRequestFestivalPrizeCancel::Read(
+  AcCmdCLRequestFestivalPrizeCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLQueryServerTime::Write(
+  const AcCmdCLQueryServerTime& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLQueryServerTime::Read(
+  AcCmdCLQueryServerTime& command,
+  SourceStream& stream)
+{
+  // Empty.
+}
+
+void AcCmdCLQueryServerTimeOK::Write(
+  const AcCmdCLQueryServerTimeOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.lobbyTime.dwLowDateTime)
+    .Write(command.lobbyTime.dwHighDateTime);
+}
+
+void AcCmdCLQueryServerTimeOK::Read(
+  AcCmdCLQueryServerTimeOK& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
@@ -1241,6 +1486,36 @@ void AcCmdCLUpdateUserSettingsOK::Read(
 {
   throw std::runtime_error("Not implemented");
 }
+
+void AcCmdCLEnterRoomQuick::Write(
+  const AcCmdCLEnterRoomQuick& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLEnterRoomQuick::Read(
+  AcCmdCLEnterRoomQuick& command,
+  SourceStream& stream)
+{
+  stream.Read(command.member1)
+    .Read(command.member2);
+}
+
+void AcCmdCLEnterRoomQuickCancel::Write(
+  const AcCmdCLEnterRoomQuickCancel& command,
+  SinkStream& stream)
+{
+  // Empty.
+}
+
+void AcCmdCLEnterRoomQuickCancel::Read(
+  AcCmdCLEnterRoomQuickCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void AcCmdCLRequestMountInfo::Write(
   const AcCmdCLRequestMountInfo& command,
   SinkStream& stream)

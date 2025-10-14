@@ -71,10 +71,10 @@ void MessengerDirector::HandleChatterLogin(
   protocol::ChatCmdLoginAckOK response{
     .groups = {{.uid = OnlinePlayersCategoryUid, .name = "Online Players"}}};
 
-  for (data::Uid onlineCharacterUid : _serverInstance.GetLobbyDirector().GetOnlineCharacters())
+  for (const auto& userInstance : _serverInstance.GetLobbyDirector().GetUsers() | std::views::values)
   {
     const auto onlineCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(
-      onlineCharacterUid);
+      userInstance.characterUid);
 
     auto& friendo = response.friends.emplace_back();
     onlineCharacterRecord.Immutable([&friendo](const data::Character& onlineCharacter)
