@@ -3646,37 +3646,80 @@ void RanchDirector::HandleMountFamilyTree(
   });
 
 
-  if (ancestors.size() < 2)
+  // Ancestors array uses FIXED POSITIONS (size 0 or 6):
+  // Index 0 = Father (id 1), 1 = Mother (id 2)
+  // Index 2 = Paternal Grandfather (id 3), 3 = Paternal Grandmother (id 4)
+  // Index 4 = Maternal Grandfather (id 5), 5 = Maternal Grandmother (id 6)
+  // Value 0 = empty slot (no ancestor in this position)
+  
+  if (ancestors.empty())
   {
-    spdlog::debug("Horse has fewer than 2 ancestors, cannot build family tree");
+    spdlog::debug("Horse has no ancestors");
+  }
+  else if (ancestors.size() != 6)
+  {
+    spdlog::warn("Horse has {} ancestors, expected 0 or 6 (fixed positions)", ancestors.size());
   }
   else
   {
-    // Load all ancestors in a single batch call
-    auto ancestorRecords = GetServerInstance().GetDataDirector().GetHorseCache().Get(ancestors);
-    
-    if (!ancestorRecords)
+    // Collect non-zero ancestor UIDs for batch loading
+    std::vector<data::Uid> nonZeroAncestors;
+    for (const auto uid : ancestors)
     {
-      spdlog::warn("Not all ancestors are loaded in cache");
+      if (uid != 0)
+      {
+        nonZeroAncestors.push_back(uid);
+      }
+    }
+    
+    if (nonZeroAncestors.empty())
+    {
+      spdlog::debug("All ancestor slots are empty");
     }
     else
     {
-      // Map each ancestor record to its position in the family tree
-      // Index 0 = Father (id 1), 1 = Mother (id 2), 2 = Paternal Grandfather (id 3), etc.
-      for (size_t i = 0; i < ancestorRecords->size() && i < 6; ++i)
+      // Load all non-zero ancestors in a single batch
+      auto ancestorRecords = GetServerInstance().GetDataDirector().GetHorseCache().Get(nonZeroAncestors);
+      
+      if (!ancestorRecords)
       {
-        (*ancestorRecords)[i].Immutable([&familyTree, i](const data::Horse& horse)
-        {
-          protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem ancestor;
-          ancestor.id = static_cast<uint8_t>(i + 1); // id 1-6
-          ancestor.name = horse.name();
-          ancestor.grade = horse.grade();
-          ancestor.skinId = horse.parts.skinTid();
-          
-          familyTree.emplace_back(ancestor);
-        });
+        spdlog::warn("Not all ancestors are loaded in cache");
       }
-      spdlog::debug("Loaded {} ancestors from cache in single batch", familyTree.size());
+      else
+      {
+        // Create a map of UID -> Record for quick lookup
+        std::unordered_map<data::Uid, const Record<data::Horse>*> ancestorMap;
+        for (const auto& record : *ancestorRecords)
+        {
+          record.Immutable([&ancestorMap, &record](const data::Horse& horse)
+          {
+            ancestorMap[horse.uid()] = &record;
+          });
+        }
+        
+        // Process each position in the fixed array
+        for (size_t i = 0; i < 6; ++i)
+        {
+          const auto uid = ancestors[i];
+          if (uid == 0) continue; // Skip empty slots
+          
+          auto it = ancestorMap.find(uid);
+          if (it != ancestorMap.end())
+          {
+            it->second->Immutable([&familyTree, i](const data::Horse& horse)
+            {
+              protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem ancestor;
+              ancestor.id = static_cast<uint8_t>(i + 1); // id based on position (1-6)
+              ancestor.name = horse.name();
+              ancestor.grade = horse.grade();
+              ancestor.skinId = horse.parts.skinTid();
+              
+              familyTree.emplace_back(ancestor);
+            });
+          }
+        }
+        spdlog::debug("Loaded {} ancestors from cache (from {} non-zero UIDs)", familyTree.size(), nonZeroAncestors.size());
+      }
     }
   }
   spdlog::debug("Family tree complete: {} ancestors found", familyTree.size());
