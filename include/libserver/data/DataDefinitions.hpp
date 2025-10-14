@@ -376,6 +376,11 @@ struct Horse
   dao::Field<uint32_t> grade{0u};
   dao::Field<uint32_t> growthPoints{0u};
 
+  // Family tree fields
+  dao::Field<Uid> fatherUid{0u};
+  dao::Field<Uid> motherUid{0u};
+  dao::Field<uint8_t> lineage{0u};
+
   struct Potential
   {
     dao::Field<uint8_t> type{0u};
