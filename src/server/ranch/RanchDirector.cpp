@@ -3148,147 +3148,46 @@ void RanchDirector::HandleMountFamilyTree(
     return;
   }
 
-  std::vector<data::Uid> parents;
+  std::vector<data::Uid> ancestors;
 
-  horseRecord.Immutable([&parents, horseUid = command.horseUid](const data::Horse& horse)
+  horseRecord.Immutable([&ancestors, horseUid = command.horseUid](const data::Horse& horse)
   {
-    parents = horse.ancestors();
-    spdlog::debug("Horse {} has {} parents in ancestors field", horseUid, parents.size());
-    if (parents.size() == 2)
-    {
-      spdlog::debug("  Parent UIDs: father={}, mother={}", parents[0], parents[1]);
-    }
+    ancestors = horse.ancestors();
+    spdlog::debug("Horse {} has {} ancestors in ancestors field", horseUid, ancestors.size());
   });
 
-  if (parents.size() == 2)
+
+  if (ancestors.size() < 2)
   {
-    std::vector<data::Uid> grandparents_father;
-    std::vector<data::Uid> grandparents_mother;
-
-    auto fatherRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
-      parents[0]);
+    spdlog::debug("Horse has fewer than 2 ancestors, cannot build family tree");
+  }
+  else
+  {
+    // Load all ancestors in a single batch call
+    auto ancestorRecords = GetServerInstance().GetDataDirector().GetHorseCache().Get(ancestors);
     
-    if (fatherRecord)
+    if (!ancestorRecords)
     {
-      spdlog::debug("Loading father horse {}: SUCCESS", parents[0]);
-      fatherRecord->Immutable([&familyTree, &grandparents_father](const data::Horse& horse)
-      {
-        protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem father;
-        father.id = 1;
-        father.name = horse.name();
-        father.grade = horse.grade();
-        father.skinId = horse.parts.skinTid();
-
-        familyTree.emplace_back(father);
-
-        //get grandparents of father
-        grandparents_father = horse.ancestors();
-      });
+      spdlog::warn("Not all ancestors are loaded in cache");
     }
     else
     {
-      spdlog::debug("Loading father horse {}: FAILED (not in cache)", parents[0]);
-    }
-
-    auto motherRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
-      parents[1]);
-    
-    if (motherRecord)
-    {
-      spdlog::debug("Loading mother horse {}: SUCCESS", parents[1]);
-      motherRecord->Immutable([&familyTree, &grandparents_mother](const data::Horse& horse)
+      // Map each ancestor record to its position in the family tree
+      // Index 0 = Father (id 1), 1 = Mother (id 2), 2 = Paternal Grandfather (id 3), etc.
+      for (size_t i = 0; i < ancestorRecords->size() && i < 6; ++i)
       {
-        protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem mother;
-        mother.id = 2;
-        mother.name = horse.name();
-        mother.grade = horse.grade();
-        mother.skinId = horse.parts.skinTid();
-
-        familyTree.emplace_back(mother);
-
-        //get grandparents of mother
-        grandparents_mother = horse.ancestors();
-      });
-    }
-    else
-    {
-      spdlog::debug("Loading mother horse {}: FAILED (not in cache)", parents[1]);
-    }
-
-    //grandparents of father
-    if(grandparents_father.size() == 2)
-    {
-      auto grandfatherRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
-        grandparents_father[0]);
-      
-      if (grandfatherRecord)
-      {
-        grandfatherRecord->Immutable([&familyTree](const data::Horse& horse)
+        (*ancestorRecords)[i].Immutable([&familyTree, i](const data::Horse& horse)
         {
-          protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem grandfather;
-          grandfather.id = 3;
-          grandfather.name = horse.name();
-          grandfather.grade = horse.grade();
-          grandfather.skinId = horse.parts.skinTid();
-
-          familyTree.emplace_back(grandfather);
+          protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem ancestor;
+          ancestor.id = static_cast<uint8_t>(i + 1); // id 1-6
+          ancestor.name = horse.name();
+          ancestor.grade = horse.grade();
+          ancestor.skinId = horse.parts.skinTid();
+          
+          familyTree.emplace_back(ancestor);
         });
       }
-
-      auto grandmotherRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
-        grandparents_father[1]);
-      
-      if (grandmotherRecord)
-      {
-        grandmotherRecord->Immutable([&familyTree](const data::Horse& horse)
-        {
-          protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem grandmother;
-          grandmother.id = 4;
-          grandmother.name = horse.name();
-          grandmother.grade = horse.grade();
-          grandmother.skinId = horse.parts.skinTid();
-
-          familyTree.emplace_back(grandmother);
-        });
-      }
-    }
-
-    //grandparents of mother
-    if(grandparents_mother.size() == 2)
-    {
-      auto grandfatherRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
-        grandparents_mother[0]);
-      
-      if (grandfatherRecord)
-      {
-        grandfatherRecord->Immutable([&familyTree](const data::Horse& horse)
-        {
-          protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem grandfather;
-          grandfather.id = 5;
-          grandfather.name = horse.name();
-          grandfather.grade = horse.grade();
-          grandfather.skinId = horse.parts.skinTid();
-
-          familyTree.emplace_back(grandfather);
-        });
-      }
-
-      auto grandmotherRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
-        grandparents_mother[1]);
-      
-      if (grandmotherRecord)
-      {
-        grandmotherRecord->Immutable([&familyTree](const data::Horse& horse)
-        {
-          protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem grandmother;
-          grandmother.id = 6;
-          grandmother.name = horse.name();
-          grandmother.grade = horse.grade();
-          grandmother.skinId = horse.parts.skinTid();
-
-          familyTree.emplace_back(grandmother);
-        });
-      }
+      spdlog::debug("Loaded {} ancestors from cache in single batch", familyTree.size());
     }
   }
   spdlog::debug("Family tree complete: {} ancestors found", familyTree.size());
