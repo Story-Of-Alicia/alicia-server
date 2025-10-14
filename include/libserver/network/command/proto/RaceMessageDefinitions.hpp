@@ -2231,6 +2231,39 @@ struct AcCmdCRChangeSkillCardPresetID
     SourceStream& stream);
 };
 
+struct AcCmdCRAchievementUpdateProperty
+{
+  //! User achievement event
+  //! Refer to AchvEventPropertyLink table
+  enum class UserAchievementEvent : uint16_t
+  {
+    MaxVelocity = 38,
+    MaxGlidingDistance = 44,
+    PerfectSpurCombo = 61,
+  } userAchievementEvent{};
+  // Achievement property
+  std::string property{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRAchievementUpdateProperty;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRAchievementUpdateProperty& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRAchievementUpdateProperty& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RACE_MESSAGE_DEFINES_HPP

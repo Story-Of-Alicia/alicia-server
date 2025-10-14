@@ -252,6 +252,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRChangeSkillCardPresetID& command);
 
+  void HandleAchievementUpdateProperty(
+    ClientId clientId,
+    const protocol::AcCmdCRAchievementUpdateProperty& command);
+
   // Note: HandleActivateSkillEffect commented out due to build issues
   // void HandleActivateSkillEffect(
   //   ClientId clientId,

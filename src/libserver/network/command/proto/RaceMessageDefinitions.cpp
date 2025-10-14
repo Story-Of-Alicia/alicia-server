@@ -1764,4 +1764,19 @@ void AcCmdCRChangeSkillCardPresetID::Read(
   command.gamemode = static_cast<GameMode>(commandGameMode);
 }
 
+void AcCmdCRAchievementUpdateProperty::Write(
+  const AcCmdCRAchievementUpdateProperty& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRAchievementUpdateProperty::Read(
+  AcCmdCRAchievementUpdateProperty& command,
+  SourceStream& stream)
+{
+  stream.Read(command.userAchievementEvent)
+    .Read(command.property);
+}
+
 } // namespace server::protocol

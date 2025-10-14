@@ -263,6 +263,12 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     {
       HandleChangeSkillCardPresetId(clientId, message);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRAchievementUpdateProperty>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleAchievementUpdateProperty(clientId, message);
+    });
 }
 
 void RaceDirector::Initialize()
@@ -2751,6 +2757,76 @@ void RaceDirector::HandleChangeSkillCardPresetId(
   );
 
   // No response command
+}
+
+void RaceDirector::HandleAchievementUpdateProperty(
+  ClientId clientId,
+  const protocol::AcCmdCRAchievementUpdateProperty& command)
+{
+  // TODO: command sanity check
+
+  const auto& clientContext = GetClientContext(clientId);
+
+  data::Uid mountUid = data::InvalidUid;
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [&mountUid](const data::Character& character)
+    {
+      mountUid = character.mountUid();
+    });
+
+  if (mountUid == data::InvalidUid)
+  {
+    // TODO: mount UID in the character record somehow returned invalid
+    spdlog::warn("Character {} has invalid mount UID", clientContext.characterUid);
+    return;
+  }
+
+  GetServerInstance().GetDataDirector().GetHorse(mountUid).Mutable(
+    [&command](data::Horse& horse)
+    {
+      switch (command.userAchievementEvent)
+      {
+        case protocol::AcCmdCRAchievementUpdateProperty::UserAchievementEvent::MaxVelocity:
+          // Max velocity
+          // This is supplied as metres per second, convert to km/h
+          // 36 = (3600 / 1000) * 10 (to store internally)
+          // Round it to 1 decimal place
+          horse.mountInfo.topSpeed() =
+            std::max(
+              horse.mountInfo.topSpeed(),
+              static_cast<uint32_t>(
+                std::stof(
+                  command.property.c_str()) * 36));
+          break;
+        case protocol::AcCmdCRAchievementUpdateProperty::UserAchievementEvent::MaxGlidingDistance:
+          // Max gliding distance
+          horse.mountInfo.longestGlideDistance() =
+            std::max(
+              horse.mountInfo.longestGlideDistance(),
+              static_cast<uint32_t>(
+                std::stof(
+                  command.property.c_str()) * 10));
+          break;
+        case protocol::AcCmdCRAchievementUpdateProperty::UserAchievementEvent::PerfectSpurCombo:
+          // Perfect spur combo
+          // TODO: possible loss of translation
+          // libconfig declares this as perfect spur combo
+          horse.mountInfo.boostsInARow() =
+            std::max(
+              horse.mountInfo.boostsInARow(),
+              static_cast<uint16_t>(
+                std::stoi(
+                  command.property.c_str())));
+          break;
+        default:
+          spdlog::warn("Unhandled AcCmdCRAchievementUpdateProperty: {} {}",
+            static_cast<uint16_t>(command.userAchievementEvent),
+            command.property);
+          break;
+      }
+    });
+
+  // TODO: return AcCmdRCAchievementUpdateNotify?
 }
 
 } // namespace server
