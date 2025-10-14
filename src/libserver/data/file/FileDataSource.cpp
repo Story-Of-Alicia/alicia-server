@@ -606,11 +606,6 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.tendency = json.value("tendency", uint32_t{0});
   horse.spirit = json.value("spirit", uint32_t{0});
 
-  // Family tree fields
-  horse.fatherUid = json.value("fatherUid", 0u);
-  horse.motherUid = json.value("motherUid", 0u);
-  horse.lineage = json.value("lineage", 0u);
-
   auto potential = json["potential"];
   horse.potential = data::Horse::Potential{
     .type = potential["type"].get<uint32_t>(),
@@ -639,9 +634,14 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
     .cumulativePrize = mountInfo["cumulativePrize"].get<uint32_t>(),
     .biggestPrize = mountInfo["biggestPrize"].get<uint32_t>()};
   
-  horse.ancestors = json.value("ancestors", std::vector<data::Uid>{});
-  
-  horse.lineage = json.value("lineage", uint32_t{1});
+  if (json.contains("ancestors"))
+  {
+    horse.ancestors = json["ancestors"].get<std::vector<data::Uid>>();
+  }
+  else
+  {
+    horse.ancestors = std::vector<data::Uid>{};
+  }
 }
 
 void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
@@ -713,18 +713,13 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["clazzProgress"] = horse.clazzProgress();
   json["grade"] = horse.grade();
   json["growthPoints"] = horse.growthPoints();
-  
+
   json["breeding"]["breedingCount"] = horse.breeding.breedingCount();
   json["breeding"]["breedingCombo"] = horse.breeding.breedingCombo();
 
   json["type"] = horse.type();
   json["spirit"] = horse.spirit();
   json["tendency"] = horse.tendency();
-
-  // Family tree fields
-  json["fatherUid"] = horse.fatherUid();
-  json["motherUid"] = horse.motherUid();
-  json["lineage"] = horse.lineage();
 
   nlohmann::json potential;
   potential["type"] = horse.potential.type();
@@ -754,7 +749,6 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["mountInfo"] = mountInfo;
 
   json["ancestors"] = horse.ancestors();
-  json["lineage"] = horse.lineage();
   dataFile << json.dump(2);
 }
 
