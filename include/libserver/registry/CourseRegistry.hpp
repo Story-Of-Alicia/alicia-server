@@ -59,6 +59,8 @@ struct Course
     uint32_t starPointsMax{};
     //! A list of used item decks.
     std::vector<uint32_t> usedDeckItemIds{};
+    //! A map pool
+    std::vector<uint32_t> mapPool{};
   };
 
   struct EventInfo

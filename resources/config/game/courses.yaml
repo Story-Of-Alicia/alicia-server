@@ -6,6 +6,8 @@ courses:
         goodJumpStarPoints: 0
         itemSpawners:
           collection: {}
+        mapPool:
+          collection: {}
         perfectJumpStarPoints: 0
         perfectJumpUnitStarPoints: 0
         perfectJumpMaxBonusCombo: 0
@@ -19,6 +21,36 @@ courses:
           collection:
             - deckId: 101
             - deckId: 102
+        mapPool:
+          collection:
+            - mapBlockId: 1
+            - mapBlockId: 2
+            - mapBlockId: 3
+            - mapBlockId: 4
+            - mapBlockId: 5
+            - mapBlockId: 6
+            - mapBlockId: 7
+            - mapBlockId: 8
+            - mapBlockId: 9
+            - mapBlockId: 10
+            - mapBlockId: 11
+            - mapBlockId: 12
+            - mapBlockId: 13
+            - mapBlockId: 14
+            - mapBlockId: 15
+            - mapBlockId: 16
+            - mapBlockId: 18
+            - mapBlockId: 19
+            - mapBlockId: 20
+            - mapBlockId: 21
+            - mapBlockId: 22
+            - mapBlockId: 23
+            - mapBlockId: 24
+            - mapBlockId: 25
+            - mapBlockId: 40
+            - mapBlockId: 41
+            - mapBlockId: 42
+            - mapBlockId: 46
         perfectJumpStarPoints: 12000
         perfectJumpUnitStarPoints: 1000
         perfectJumpMaxBonusCombo: 5
@@ -33,6 +65,24 @@ courses:
             - deckId: 201
             - deckId: 202
             - deckId: 203
+        mapPool:
+          collection: 
+            - mapBlockId: 1
+            - mapBlockId: 8
+            - mapBlockId: 10
+            - mapBlockId: 13
+            - mapBlockId: 14
+            - mapBlockId: 15
+            - mapBlockId: 16
+            - mapBlockId: 18
+            - mapBlockId: 19
+            - mapBlockId: 20
+            - mapBlockId: 21
+            - mapBlockId: 24
+            - mapBlockId: 25
+            - mapBlockId: 40
+            - mapBlockId: 41
+            - mapBlockId: 46
         perfectJumpStarPoints: 10000
         perfectJumpUnitStarPoints: 1000
         perfectJumpMaxBonusCombo: 1

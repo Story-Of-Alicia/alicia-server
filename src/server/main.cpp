@@ -19,6 +19,7 @@
 
 #include "Version.hpp"
 #include "server/ServerInstance.hpp"
+#include <libserver/util/Util.hpp>
 
 #include <spdlog/sinks/daily_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
