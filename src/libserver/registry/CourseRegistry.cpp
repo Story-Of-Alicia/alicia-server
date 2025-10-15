@@ -57,6 +57,14 @@ uint8_t ReadGameModeInfo(
         itemSpawnerSection["deckId"].as<uint32_t>());
     }
   }
+  const auto mapPoolSection = section["mapPool"]["collection"];
+  if (mapPoolSection)
+  {
+    for (const auto& mapBlockId : mapPoolSection)
+    {
+      gameMode.mapPool.emplace_back(mapBlockId["mapBlockId"].as<uint32_t>());
+    }
+  }
 
   return static_cast<uint8_t>(
     section["type"].as<uint32_t>());

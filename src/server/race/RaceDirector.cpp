@@ -1150,10 +1150,11 @@ void RaceDirector::HandleStartRace(
     throw std::runtime_error("Client tried to start the race even though they're not the master");
 
   uint32_t roomSelectedCourses;
+  uint8_t roomGameMode;
 
   _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid,
-    [&roomSelectedCourses, &raceInstance](Room& room)
+    [&roomSelectedCourses, &roomGameMode, &raceInstance](Room& room)
     {
       auto& details = room.GetRoomDetails();
 
@@ -1161,6 +1162,7 @@ void RaceDirector::HandleStartRace(
       raceInstance.raceTeamMode = static_cast<protocol::TeamMode>(details.gameMode);
       raceInstance.raceMissionId = details.missionId;
 
+      roomGameMode = static_cast<uint8_t>(details.gameMode);
       roomSelectedCourses = details.courseId;
     });
 
@@ -1172,9 +1174,43 @@ void RaceDirector::HandleStartRace(
     || roomSelectedCourses == NewMapsCourseId
     || roomSelectedCourses == HotMapsCourseId)
   {
-    // TODO: Select a random mapBlockId from a predefined list
-    // For now its a map that at least loads in
-    raceInstance.raceMapBlockId = 1;
+    auto const maps = _serverInstance.GetCourseRegistry().GetCourseGameModeInfo(roomGameMode).mapPool;
+    if (maps.empty())
+      raceInstance.raceMapBlockId = 1;
+
+    uint32_t masterLevel;
+    const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+      raceInstance.masterUid);
+    characterRecord.Immutable(
+      [&masterLevel](const data::Character& character)
+      {
+        masterLevel = character.level();
+      });
+    // Filter out maps that are above the master's level
+    std::vector<uint32_t> filteredMaps;
+    std::copy_if(
+      maps.cbegin(),
+      maps.cend(),
+      std::back_inserter(filteredMaps),
+      [this, masterLevel](uint32_t mapBlockId)
+      {
+        try
+        {
+          const auto& mapBlockInfo = _serverInstance.GetCourseRegistry().GetMapBlockInfo(
+            mapBlockId);
+          return mapBlockInfo.requiredLevel <= masterLevel;
+        }
+        catch (const std::exception& e)
+        {
+          spdlog::warn("Failed to get map block info for mapBlockId {}: {}", mapBlockId, e.what());
+          return false;
+        }
+      });
+
+    // Select a random map from the pool.
+    static std::random_device rd;
+    std::uniform_int_distribution distribution(0, static_cast<int>(filteredMaps.size() - 1));
+    raceInstance.raceMapBlockId = filteredMaps[distribution(rd)];
   }
   else
   {
