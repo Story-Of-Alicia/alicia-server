@@ -73,10 +73,10 @@ void WriteRacer(SinkStream& stream, const Racer& racer)
     .Write(racer.guild.val5)
     .Write(racer.guild.val6);
   stream.Write(racer.unk9);
-  stream.Write(racer.unk10)
+  stream.Write(racer.role)
     .Write(racer.unk11)
     .Write(racer.unk12)
-    .Write(racer.unk13);
+    .Write(racer.gender);
 }
 
 void WriteRoomDescription(SinkStream& stream, const RoomDescription& roomDescription)

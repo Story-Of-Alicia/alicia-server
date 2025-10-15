@@ -83,10 +83,15 @@ struct Racer
   Pet pet{};
   Guild guild{};
   League unk9{};
-  uint8_t unk10{0};
+  enum class Role : uint8_t
+  {
+    User = 0,
+    Op = 1,
+    GameMaster = 2
+  } role{Role::User};
   uint8_t unk11{0};
   uint8_t unk12{};
-  uint8_t unk13{};
+  Gender gender{Gender::Unspecified};
 };
 
 struct RoomDescription

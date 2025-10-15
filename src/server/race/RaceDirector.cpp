@@ -722,9 +722,24 @@ void RaceDirector::HandleEnterRoom(
         if (character.uid() == leaderUid)
           protocolRacer.isMaster = true;
 
+        GetServerInstance().GetDataDirector().GetSettings(character.settingsUid()).Immutable(
+          [&protocolRacer, modelId = character.parts.modelId()](const data::Settings& settings)
+          {
+            if (not settings.hideAge())
+            {
+              // TODO: Add age here (find if it is even possible)
+
+              protocolRacer.gender = 
+                modelId == 10 ? protocol::Gender::Boy :
+                modelId == 20 ? protocol::Gender::Girl :
+                throw std::runtime_error("Character gender not recognised by model ID");
+            }
+          });
+        
         protocolRacer.level = character.level();
         protocolRacer.uid = character.uid();
         protocolRacer.name = character.name();
+        protocolRacer.role = static_cast<protocol::Racer::Role>(character.role());
         protocolRacer.isHidden = false;
         protocolRacer.isNPC = false;
         protocolRacer.isReady = isPlayerReady;

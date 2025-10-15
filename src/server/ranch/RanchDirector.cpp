@@ -3436,6 +3436,8 @@ void RanchDirector::HandleCheckStorageItem(
   });
 }
 
+//! Changes the age of the calling character
+//! If this is called, it implicitly means "hide age" is not selected on the client, so we show age
 void RanchDirector::HandleChangeAge(
   ClientId clientId,
   const protocol::AcCmdCRChangeAge command)
@@ -3453,6 +3455,8 @@ void RanchDirector::HandleChangeAge(
       settingsRecord.Mutable(
         [&character, &age](data::Settings& settings)
         {
+          // Age can only be changed if the "hide age and gender" option is not ticked
+          settings.hideAge() = false;
           settings.age() = static_cast<uint8_t>(age);
 
           if (character.settingsUid() == data::InvalidUid)
