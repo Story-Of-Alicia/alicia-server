@@ -505,6 +505,13 @@ void RanchDirector::SendStorageNotification(
     });
 }
 
+void RanchDirector::SendInventoryUpdate(ClientId clientId)
+{
+  // TODO: Find the proper way to trigger client-side inventory refresh
+  // Currently items only show up after client restart
+  // The client auto-refreshes carrots but not items in real-time
+}
+
 void RanchDirector::BroadcastChangeAgeNotify(
   data::Uid characterUid,
   const data::Uid rancherUid,
@@ -1258,8 +1265,8 @@ void RanchDirector::HandleBreedingFailureCard(
   ClientId clientId,
   const protocol::AcCmdCRBreedingFailureCard& command)
 {
-  // The client sends statusOrFlag which determines if the action is allowed
-  // We simply acknowledge the request with an OK response
+  spdlog::info("BreedingFailureCard: statusOrFlag = {}", command.statusOrFlag);
+  
   protocol::AcCmdCRBreedingFailureCardOK response{};
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -1274,67 +1281,201 @@ void RanchDirector::HandleBreedingFailureCardChoose(
   ClientId clientId,
   const protocol::AcCmdCRBreedingFailureCardChoose& command)
 {
-  spdlog::debug("BreedingFailureCardChoose: Zero payload command received");
+  spdlog::info("BreedingFailureCardChoose: statusOrFlag = {}", command.statusOrFlag);
+  
+  const auto& clientContext = GetClientContext(clientId);
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
   
   protocol::AcCmdCRBreedingFailureCardChooseOK response;
   
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  const uint8_t choice = 0;  // Always use card 0 (cards 1-2 cause invisible card issues)
+  static std::mt19937 gen(std::chrono::steady_clock::now().time_since_epoch().count());
   
-  response.member1 = choice;
+  uint32_t moneySpent = 100000;
   
-  // Weighted random reward selection
-  std::uniform_int_distribution<> rewardDist(1, 100);
-  const int roll = rewardDist(gen);
+  struct ProbData {
+    uint32_t moneySpent;
+    int probA;
+    int probB;
+    int probC;
+  };
   
-  uint32_t rewardId;
-  if (roll <= 60) {
-    std::uniform_int_distribution<> commonDist(1, 7);
-    rewardId = commonDist(gen);
-  } else if (roll <= 85) {
-    std::uniform_int_distribution<> uncommonDist(8, 12);
-    rewardId = uncommonDist(gen);
-  } else {
-    std::uniform_int_distribution<> rareDist(13, 20);
-    rewardId = rareDist(gen);
+  static const std::vector<ProbData> probTable = {
+    {4000, 100, 0, 0}, {5000, 100, 0, 0}, {6000, 100, 0, 0}, {7000, 100, 0, 0}, {8000, 100, 0, 0},
+    {9000, 96, 4, 0}, {10000, 90, 10, 0}, {11000, 89, 10, 1}, {12000, 87, 11, 2}, {13000, 86, 11, 3},
+    {16000, 77, 18, 5}, {19000, 68, 25, 7}, {22000, 57, 34, 9}, {25000, 50, 39, 11}, {28000, 40, 47, 13},
+    {31000, 33, 52, 15}, {35000, 22, 60, 18}, {39000, 16, 62, 22}, {43000, 8, 66, 26}, {47000, 10, 59, 31},
+    {51000, 7, 57, 36}, {55000, 6, 52, 42}, {59000, 7, 45, 48}, {65000, 10, 35, 55}, {71000, 10, 28, 62},
+    {77000, 10, 20, 70}, {83000, 7, 15, 78}, {89000, 4, 11, 85}, {95000, 1, 8, 91}, {100000, 0, 0, 100},
+    {125000, 0, 0, 100}, {140000, 0, 0, 100}, {155000, 0, 0, 100}
+  };
+  
+  // Find probability entry for money spent
+  const ProbData* probEntry = &probTable[0];
+  for (const auto& entry : probTable) {
+    if (moneySpent <= entry.moneySpent) {
+      probEntry = &entry;
+      break;
+    }
   }
   
+  std::uniform_int_distribution<int> gradeDist(1, 100);
+  int gradeRoll = gradeDist(gen);
+  
+  int rewardGrade = 0;
+  if (gradeRoll <= probEntry->probA) {
+    rewardGrade = 0;
+  } else if (gradeRoll <= probEntry->probA + probEntry->probB) {
+    rewardGrade = 1;
+  } else {
+    rewardGrade = 2;
+  }
+  
+  std::uniform_int_distribution<int> cardTypeDist(0, 1);
+  bool isChanceCard = (cardTypeDist(gen) == 1);
+  
+  struct RewardData {
+    uint32_t itemTid;
+    uint32_t itemCount;
+    uint32_t gameMoney;
+  };
+  
+  uint32_t rewardId;
+  const RewardData* rewardData = nullptr;
+  
+  if (isChanceCard) {
+    uint32_t minReward, maxReward;
+    if (rewardGrade == 0) {
+      minReward = 1; maxReward = 16;
+    } else if (rewardGrade == 1) {
+      minReward = 17; maxReward = 32;
+    } else {
+      minReward = 33; maxReward = 48;
+    }
+    
+    std::uniform_int_distribution<uint32_t> chanceDist(minReward, maxReward);
+    rewardId = chanceDist(gen);
+    
+    static const std::unordered_map<uint32_t, RewardData> chanceRewardTable = {
+      {1, {45001, 1, 300}}, {2, {45001, 1, 350}}, {3, {45001, 1, 400}}, {4, {45001, 1, 420}},
+      {5, {45001, 1, 450}}, {6, {45001, 1, 550}}, {7, {45001, 1, 600}}, {8, {44006, 1, 620}},
+      {9, {44005, 1, 700}}, {10, {44004, 1, 800}}, {11, {44003, 1, 800}}, {12, {44002, 1, 900}},
+      {13, {44001, 1, 900}}, {14, {43001, 1, 950}}, {15, {44002, 1, 1000}}, {16, {43001, 2, 1000}},
+      {17, {42002, 7, 1400}}, {18, {42001, 10, 1800}}, {19, {43001, 1, 2000}}, {20, {44006, 1, 2000}},
+      {21, {44004, 2, 2000}}, {22, {44002, 2, 2000}}, {23, {43001, 1, 2100}}, {24, {45001, 2, 2200}},
+      {25, {45001, 2, 2300}}, {26, {45001, 2, 2500}}, {27, {45001, 2, 2800}}, {28, {45001, 2, 3000}},
+      {29, {45001, 2, 3500}}, {30, {45001, 2, 3800}}, {31, {45001, 2, 4000}}, {32, {45001, 3, 4000}},
+      {33, {45001, 3, 7000}}, {34, {45001, 3, 8000}}, {35, {45001, 3, 9000}}, {36, {45001, 3, 10000}},
+      {37, {45001, 3, 11000}}, {38, {45001, 3, 12000}}, {39, {45001, 3, 13000}}, {40, {45001, 3, 14000}},
+      {41, {44006, 3, 15000}}, {42, {44004, 3, 16000}}, {43, {44002, 3, 17000}}, {44, {44001, 3, 18000}},
+      {45, {44003, 3, 19000}}, {46, {45001, 3, 20000}}, {47, {45001, 3, 25000}}, {48, {45001, 3, 25000}}
+    };
+    
+    auto it = chanceRewardTable.find(rewardId);
+    if (it != chanceRewardTable.end()) {
+      rewardData = &it->second;
+    }
+  } else {
+    uint32_t minReward, maxReward;
+    if (rewardGrade == 0) {
+      minReward = 1; maxReward = 20;
+    } else if (rewardGrade == 1) {
+      minReward = 21; maxReward = 38;
+    } else {
+      minReward = 39; maxReward = 63;
+    }
+    
+    std::uniform_int_distribution<uint32_t> normalDist(minReward, maxReward);
+    rewardId = normalDist(gen);
+    
+    static const std::unordered_map<uint32_t, RewardData> normalRewardTable = {
+      {1, {45001, 1, 100}}, {2, {45001, 1, 100}}, {3, {45001, 1, 120}}, {4, {45001, 1, 140}},
+      {5, {45001, 1, 120}}, {6, {45001, 1, 100}}, {7, {45001, 1, 120}}, {8, {45001, 1, 100}},
+      {9, {45001, 1, 120}}, {10, {41001, 5, 120}}, {11, {41009, 3, 150}}, {12, {41007, 3, 150}},
+      {13, {40002, 2, 150}}, {14, {41004, 2, 150}}, {15, {41003, 2, 180}}, {16, {41002, 3, 180}},
+      {17, {41001, 4, 200}}, {18, {41009, 2, 240}}, {19, {41008, 2, 300}}, {20, {40002, 3, 350}},
+      {21, {45001, 3, 300}}, {22, {45001, 2, 350}}, {23, {45001, 2, 400}}, {24, {45001, 2, 450}},
+      {25, {45001, 1, 500}}, {26, {45001, 1, 550}}, {27, {45001, 1, 600}}, {28, {45001, 1, 650}},
+      {29, {45001, 1, 700}}, {30, {45001, 1, 700}}, {31, {45001, 1, 800}}, {32, {45001, 1, 800}},
+      {33, {45001, 1, 900}}, {34, {45001, 1, 900}}, {35, {44001, 1, 1000}}, {36, {44005, 1, 1000}},
+      {37, {44003, 1, 1000}}, {38, {44001, 1, 1000}}, {39, {44006, 3, 2000}}, {40, {44004, 3, 2100}},
+      {41, {44002, 3, 2200}}, {42, {43001, 3, 2300}}, {43, {43001, 1, 2400}}, {44, {43001, 1, 2500}},
+      {45, {44006, 2, 2600}}, {46, {44004, 2, 2700}}, {47, {44002, 2, 2800}}, {48, {43001, 2, 2900}},
+      {49, {43001, 2, 3000}}, {50, {43001, 2, 3200}}, {51, {43001, 2, 3400}}, {52, {43001, 2, 3600}},
+      {53, {45001, 3, 3800}}, {54, {45001, 3, 4300}}, {55, {45001, 3, 4800}}, {56, {45001, 2, 5300}},
+      {57, {45001, 2, 5800}}, {58, {45001, 2, 6300}}, {59, {45001, 3, 6800}}, {60, {45001, 3, 7300}},
+      {61, {45001, 2, 7800}}, {62, {45001, 3, 10000}}, {63, {45001, 3, 13000}}
+    };
+    
+    auto it = normalRewardTable.find(rewardId);
+    if (it != normalRewardTable.end()) {
+      rewardData = &it->second;
+    }
+  }
+  
+  static const RewardData fallbackReward = {45001, 1, 120};
+  if (!rewardData) {
+    rewardData = &fallbackReward;
+  }
+  
+  data::Uid itemUid = 0;
+  bool foundExistingItem = false;
+  
+  characterRecord.Immutable([&itemUid, &foundExistingItem, rewardData, this](const data::Character& character) {
+    for (const auto& existingItemUid : character.inventory()) {
+      const auto existingItemRecord = GetServerInstance().GetDataDirector().GetItem(existingItemUid);
+      if (existingItemRecord) {
+        existingItemRecord.Immutable([&itemUid, &foundExistingItem, rewardData](const data::Item& existingItem) {
+          if (existingItem.tid() == rewardData->itemTid) {
+            itemUid = existingItem.uid();
+            foundExistingItem = true;
+          }
+        });
+        if (foundExistingItem) break;
+      }
+    }
+  });
+  
+  if (foundExistingItem) {
+    const auto existingItemRecord = GetServerInstance().GetDataDirector().GetItem(itemUid);
+    existingItemRecord.Mutable([rewardData, &response](data::Item& item) {
+      item.count() += rewardData->itemCount;
+      response.item.uid = item.uid();
+      response.item.tid = item.tid();
+      response.item.expiresAt = 0;
+      response.item.count = rewardData->itemCount;
+    });
+  } else {
+    const auto newItem = GetServerInstance().GetDataDirector().CreateItem();
+    newItem.Mutable([&itemUid, rewardData, &response](data::Item& item) {
+      item.tid() = rewardData->itemTid;
+      item.count() = rewardData->itemCount;
+      itemUid = item.uid();
+      response.item.uid = item.uid();
+      response.item.tid = item.tid();
+      response.item.expiresAt = 0;
+      response.item.count = item.count();
+    });
+    characterRecord.Mutable([itemUid](data::Character& character) {
+      character.inventory().emplace_back(itemUid);
+    });
+  }
+  
+  characterRecord.Mutable([rewardData](data::Character& character) {
+    character.carrots() += rewardData->gameMoney;
+  });
+  
+  response.member1 = 0;
   response.rewardId = rewardId;
   response.member3 = 0;
   response.member4 = {1, 0};
   response.member5 = 0;
+  response.member6 = rewardData->gameMoney;
   
-  // Reward lookup table from client's BreedingFailureCard_Chance
-  struct RewardData {
-    uint32_t itemTid;
-    uint32_t itemCount;
-  };
-  
-  static const std::unordered_map<uint32_t, RewardData> rewardTable = {
-    {1, {45001, 1}}, {2, {45001, 1}}, {3, {45001, 1}}, {4, {45001, 1}},
-    {5, {45001, 1}}, {6, {45001, 1}}, {7, {45001, 1}}, {8, {44006, 1}},
-    {9, {44005, 1}}, {10, {44004, 1}}, {11, {44003, 1}}, {12, {44002, 1}},
-    {13, {44001, 1}}, {14, {43001, 1}}, {15, {44002, 1}}, {16, {43001, 2}},
-    {17, {42002, 7}}, {18, {42001, 10}}, {19, {43001, 1}}, {20, {44006, 1}}
-  };
-  
-  auto it = rewardTable.find(rewardId);
-  if (it != rewardTable.end()) {
-    response.item.uid = 999 + rewardId;
-    response.item.tid = it->second.itemTid;
-    response.item.expiresAt = 9;
-    response.item.count = it->second.itemCount;
-  } else {
-    response.item.uid = 999;
-    response.item.tid = 45001;
-    response.item.expiresAt = 9;
-    response.item.count = 1;
-  }
-  
-  response.member6 = 1;
-
-  spdlog::debug("BreedingFailureCardChoose: Card {}, RewardId {}", choice, rewardId);
+  spdlog::info("BreedingFailureCard: {} CARD (Grade {})! MoneySpent: {}, GradeRoll: {}, RewardId {}, gave {} carrots + item {} x{}",
+    isChanceCard ? "CHANCE (YELLOW)" : "NORMAL (RED)",
+    rewardGrade, moneySpent, gradeRoll, rewardId,
+    rewardData->gameMoney, rewardData->itemTid, rewardData->itemCount);
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -1342,6 +1483,9 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     {
       return response;
     });
+  
+  // Send inventory update notification to refresh client inventory
+  SendInventoryUpdate(clientId);
 }
 
 void RanchDirector::HandleCmdAction(
@@ -3192,9 +3336,9 @@ void RanchDirector::HandleMountFamilyTree(
       ancestor.grade = 0;
       ancestor.skinId = 20002; // Use different TID from main horse to avoid circular ref
       ancestor.lineage = 0;
-    }
-    else
-    {
+  }
+  else
+  {
       const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(uid);
       if (horseRecord)
       {
@@ -3223,9 +3367,9 @@ void RanchDirector::HandleMountFamilyTree(
             {
               calculatedLineage = 1;
             }
-          }
-          else
-          {
+    }
+    else
+    {
             calculatedLineage = 0; // Different coat color
           }
           
@@ -3294,9 +3438,9 @@ void RanchDirector::HandleMountFamilyTree(
         const auto& ancestors = mother.ancestors();
         maternalGrandfatherUid = ancestors.size() > 0 ? ancestors[0] : 0;
         maternalGrandmotherUid = ancestors.size() > 1 ? ancestors[1] : 0;
-      });
-    }
-  }
+            });
+          }
+        }
 
   // Build the 7-ancestor tree with breeding role genders
   // In breeding context: Player's horse = mare (female), Market stallion = stallion (male)
