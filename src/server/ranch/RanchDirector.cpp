@@ -549,9 +549,33 @@ void RanchDirector::SendStorageNotification(
 
 void RanchDirector::SendInventoryUpdate(ClientId clientId)
 {
-  // TODO: Find the proper way to trigger client-side inventory refresh
-  // Currently items only show up after client restart
-  // The client auto-refreshes carrots but not items in real-time
+  const auto& clientContext = GetClientContext(clientId);
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  if (not characterRecord)
+    return;
+
+  protocol::AcCmdCRGetItemFromStorageOK response{
+    .storageItemUid = 0,
+    .items = {},
+    .updatedCarrots = 0};
+
+  characterRecord.Immutable(
+    [this, &response](const data::Character& character)
+    {
+      const auto itemRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(
+        character.inventory());
+      protocol::BuildProtocolItems(response.items, *itemRecords);
+      response.updatedCarrots = character.carrots();
+    });
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 void RanchDirector::BroadcastChangeAgeNotify(
@@ -1663,7 +1687,7 @@ void RanchDirector::HandleBreedingFailureCardChoose(
       response.item.uid = item.uid();
       response.item.tid = item.tid();
       response.item.expiresAt = 0;
-      response.item.count = rewardData->itemCount;
+      response.item.count = item.count();
     });
   } else {
     const auto newItem = GetServerInstance().GetDataDirector().CreateItem();
