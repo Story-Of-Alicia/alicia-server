@@ -1636,6 +1636,30 @@ void RaceDirector::HandleRequestSpur(
     .startPointValue = racer.starPointValue,
     .comboBreak = command.comboBreak};
 
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [this, &response](const data::Character& character)
+    {
+      GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Mutable(
+        [&response](data::Horse& horse)
+        {
+          // Tracks mount spur proficiency
+          if (horse.mastery.spurMagicCount() < 600)
+          {
+            // Use min guard to prevent somehow above max value
+            horse.mastery.spurMagicCount() = std::min(
+              static_cast<uint32_t>(600), // Mount spur/magic proficiency max 600
+              ++horse.mastery.spurMagicCount()
+            );
+          }
+
+          // Tracks max consecutive boosts// Tracks max consecutive boosts
+          horse.mountInfo.boostsInARow() = std::max(
+            horse.mountInfo.boostsInARow(),
+            static_cast<uint16_t>(response.activeBoosters)
+          );
+        });
+    });
+
   protocol::AcCmdCRStarPointGetOK starPointResponse{
     .characterOid = command.characterOid,
     .starPointValue = racer.starPointValue,
