@@ -4864,9 +4864,9 @@ void RanchDirector::HandleMountFamilyTree(
       ancestor.grade = 0;
       ancestor.skinId = 20002; // Use different TID from main horse to avoid circular ref
       ancestor.lineage = 0;
-    }
-    else
-    {
+  }
+  else
+  {
       const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(uid);
       if (horseRecord)
       {
@@ -4895,9 +4895,9 @@ void RanchDirector::HandleMountFamilyTree(
             {
               calculatedLineage = 1;
             }
-          }
-          else
-          {
+    }
+    else
+    {
             calculatedLineage = 0; // Different coat color
           }
           
@@ -4966,9 +4966,9 @@ void RanchDirector::HandleMountFamilyTree(
         const auto& ancestors = mother.ancestors();
         maternalGrandfatherUid = ancestors.size() > 0 ? ancestors[0] : 0;
         maternalGrandmotherUid = ancestors.size() > 1 ? ancestors[1] : 0;
-      });
-    }
-  }
+            });
+          }
+        }
 
   // Build the 7-ancestor tree with breeding role genders
   // In breeding context: Player's horse = mare (female), Market stallion = stallion (male)
