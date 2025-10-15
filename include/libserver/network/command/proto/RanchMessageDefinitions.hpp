@@ -3467,17 +3467,18 @@ struct RanchCommandMountFamilyTree
 //!
 struct RanchCommandMountFamilyTreeOK
 {
-  struct MountFamilyTreeItem
+  struct Ancestor
   {
-    uint8_t id{};
-    std::string name{};
-    uint8_t grade{};
-    uint16_t skinId{};
+    uint8_t id{};           // Position: 0=self, 1=father, 2=mother, 3=paternal grandfather, etc.
+    std::string name{};     // Horse name
+    uint8_t grade{};        // Horse grade
+    uint32_t skinId{};      // Horse TID/breed
+    uint8_t lineage{};      // The +X lineage value
+    uint8_t gender{};       // 0=male, 1=female, 2=unknown/self
   };
 
-  // In the packet, the length is specified as a byte
-  // max size 6
-  std::vector<MountFamilyTreeItem> ancestors;
+  // 7 entries: self, 2 parents, 4 grandparents
+  std::array<Ancestor, 7> ancestors{};
 
   static Command GetCommand()
   {
