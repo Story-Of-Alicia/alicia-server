@@ -57,6 +57,7 @@ uint8_t ReadGameModeInfo(
         itemSpawnerSection["deckId"].as<uint32_t>());
     }
   }
+
   const auto mapPoolSection = section["mapPool"]["collection"];
   if (mapPoolSection)
   {
