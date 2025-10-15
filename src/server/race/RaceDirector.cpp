@@ -1209,6 +1209,7 @@ void RaceDirector::HandleStartRace(
         });
 
       // Select a random map from the pool.
+      static std::random_device rd;
       std::uniform_int_distribution distribution(0, static_cast<int>(filteredMaps.size() - 1));
       raceInstance.raceMapBlockId = filteredMaps[distribution(rd)];
     }
