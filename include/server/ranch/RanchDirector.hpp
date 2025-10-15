@@ -71,6 +71,9 @@ public:
     data::Uid characterUid,
     protocol::AcCmdCRRequestStorage::Category category);
 
+  //! Send inventory update notification to refresh client inventory display
+  void SendInventoryUpdate(ClientId clientId);
+
   void BroadcastChangeAgeNotify(
     data::Uid characterUid,
     const data::Uid rancherUid,
