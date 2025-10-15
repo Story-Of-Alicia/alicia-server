@@ -1174,12 +1174,11 @@ void RaceDirector::HandleStartRace(
     || roomSelectedCourses == NewMapsCourseId
     || roomSelectedCourses == HotMapsCourseId)
   {
-    auto const maps = _serverInstance.GetCourseRegistry().GetCourseGameModeInfo(roomGameMode).mapPool;
-    if (maps.empty())
-      raceInstance.raceMapBlockId = 1;
-    else
+    const auto& gameMode = _serverInstance.GetCourseRegistry().GetCourseGameModeInfo(
+      roomGameMode);
+    if (not gameMode.mapPool.empty())
     {
-      uint32_t masterLevel;
+      uint32_t masterLevel{};
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
         raceInstance.masterUid);
       characterRecord.Immutable(
@@ -1187,11 +1186,12 @@ void RaceDirector::HandleStartRace(
         {
           masterLevel = character.level();
         });
-      // Filter out maps that are above the master's level
+        
+      // Filter out the maps that are above the master's level.
       std::vector<uint32_t> filteredMaps;
       std::copy_if(
-        maps.cbegin(),
-        maps.cend(),
+        gameMode.mapPool.cbegin(),
+        gameMode.mapPool.cend(),
         std::back_inserter(filteredMaps),
         [this, masterLevel](uint32_t mapBlockId)
         {
@@ -1209,9 +1209,12 @@ void RaceDirector::HandleStartRace(
         });
 
       // Select a random map from the pool.
-      static std::random_device rd;
       std::uniform_int_distribution distribution(0, static_cast<int>(filteredMaps.size() - 1));
       raceInstance.raceMapBlockId = filteredMaps[distribution(rd)];
+    }
+    else
+    {
+      raceInstance.raceMapBlockId = 1;
     }
   }
   else
