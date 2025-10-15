@@ -22,21 +22,21 @@ server:
       ranch:
         # The IPv4 address or a domain of the advertised ranch server.
         # Additionally configurable through environment variable LOBBY_ADVERTISED_RANCH_ADDRESS.
-        address: "127.0.0.1"
+        address: "10.211.55.4"
         # The port of the advertised ranch server.
         # Additionally configurable through environment variablesLOBBY_ADVERTISED_RANCH_PORT.
         port: 10031
       race:
         # The IPv4 address or a domain of the advertised race server.
         # Additionally configurable through environment variable LOBBY_ADVERTISED_RACE_ADDRESS.
-        address: "127.0.0.1"
+        address: "10.211.55.4"
         # The port of the advertised race server.
         # Additionally configurable through environment variable LOBBY_ADVERTISED_RACE_PORT.
         port: 10032
       messenger:
         # The IPv4 address or a domain of the advertised messenger server.
         # Additionally configurable through environment variable LOBBY_ADVERTISED_MESSENGER_ADDRESS.
-        address: "127.0.0.1"
+        address: "10.211.55.4"
         # The port of the advertised messenger server.
         # Additionally configurable through environment variable LOBBY_ADVERTISED_MESSENGER_PORT.
         port: 10033

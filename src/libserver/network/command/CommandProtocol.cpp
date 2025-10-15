@@ -395,7 +395,7 @@ const std::unordered_map<Command, std::string_view> commands = {
   {Command::AcCmdCRResetCareSkill, "AcCmdCRResetCareSkill"},
   {Command::AcCmdCRResetCareSkillOK, "AcCmdCRResetCareSkillOK"},
   {Command::AcCmdCRResetCareSkillCancel, "AcCmdCRResetCareSkillCancel"},
-  {Command::AcCmdCRTriggerizeAct, "AcCmdCRTriggerizeAct"},
+  {Command::AcCmdCRTriggerizeAct, "AcCmdCRTriggerizeAct"}, 
   {Command::AcCmdRCSupplyItemInsert, "AcCmdRCSupplyItemInsert"},
   {Command::AcCmdCROpCmd, "AcCmdCROpCmd"},
   {Command::AcCmdCROpCmdOK, "AcCmdCROpCmdOK"},
