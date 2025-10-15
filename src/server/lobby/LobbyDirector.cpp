@@ -30,6 +30,7 @@ LobbyDirector::LobbyDirector(ServerInstance& serverInstance)
   , _networkHandler(new LobbyNetworkHandler(_serverInstance))
 {
 }
+
 LobbyDirector::~LobbyDirector()
 {
   delete _networkHandler;
@@ -49,7 +50,7 @@ void LobbyDirector::Tick()
 {
   while (not _loginResponseQueue.empty())
   {
-    const std::string& userName = _loginResponseQueue.front();
+    const std::string userName = _loginResponseQueue.front();
     auto& loginContext = _userLogins[userName];
 
     // If the user character load was already requested wait for the load to complete.
@@ -89,6 +90,7 @@ void LobbyDirector::Tick()
     }
 
     _loginResponseQueue.pop();
+    _userLogins.erase(userName);
 
     const bool forcedCharacterCreator = _charactersForcedIntoCreator.erase(
       characterUid) > 0;
@@ -97,10 +99,8 @@ void LobbyDirector::Tick()
     // send them to the character creator.
     if (not hasCharacter || forcedCharacterCreator)
     {
-      loginContext.justCreatedCharacter = true;
-
       spdlog::debug("User '{}' sent to the character creator", userName);
-      _networkHandler->SendUserToCharacterCreator(userName);
+      _networkHandler->AcceptLogin(userName, true);
       return;
     }
 
@@ -109,7 +109,7 @@ void LobbyDirector::Tick()
       userName))
     {
       spdlog::error("User character data for '{}' not available", userName);
-      _networkHandler->SendUserLoginRejected(
+      _networkHandler->RejectLogin(
         userName,
         protocol::AcCmdCLLoginCancel::Reason::Generic);
       break;
@@ -118,7 +118,7 @@ void LobbyDirector::Tick()
     const auto& [iter, inserted] = _userInstances.try_emplace(userName);
     if (not inserted)
     {
-      _networkHandler->SendUserLoginRejected(
+      _networkHandler->RejectLogin(
         userName,
         protocol::AcCmdCLLoginCancel::Reason::Duplicated);
       return;
@@ -129,7 +129,7 @@ void LobbyDirector::Tick()
     userInstance.characterUid = characterUid;
 
     spdlog::debug("User '{}' succeeded in authentication", userName);
-    _networkHandler->SendUserLoginAccepted(userName);
+    _networkHandler->AcceptLogin(userName);
 
     // Only one response per tick.
     break;
@@ -138,38 +138,34 @@ void LobbyDirector::Tick()
   // Process the client login request queue.
   while (not _loginRequestQueue.empty())
   {
-    const std::string& userName = _loginRequestQueue.front();
+    const std::string userName = _loginRequestQueue.front();
     auto& loginContext = _userLogins[userName];
 
     // Request the load of the user data if not requested yet.
     if (not loginContext.userLoadRequested)
     {
-      _serverInstance.GetDataDirector().RequestLoadUserData(
-        userName);
+      _serverInstance.GetDataDirector().RequestLoadUserData(userName);
 
       loginContext.userLoadRequested = true;
       continue;
     }
 
     // If the data are still being loaded do not proceed with login.
-    if (_serverInstance.GetDataDirector().AreDataBeingLoaded(
-      userName))
+    if (_serverInstance.GetDataDirector().AreDataBeingLoaded(userName))
     {
       continue;
     }
 
     _loginRequestQueue.pop();
 
-    if (not _serverInstance.GetDataDirector().AreUserDataLoaded(
-      userName))
+    if (not _serverInstance.GetDataDirector().AreUserDataLoaded(userName))
     {
       spdlog::error("User data for '{}' not available", userName);
-      _networkHandler->SendUserLoginRejected(userName, protocol::AcCmdCLLoginCancel::Reason::Generic);
+      _networkHandler->RejectLogin(userName, protocol::AcCmdCLLoginCancel::Reason::Generic);
       break;
     }
 
-    const auto userRecord = _serverInstance.GetDataDirector().GetUser(
-      userName);
+    const auto userRecord = _serverInstance.GetDataDirector().GetUser(userName);
     assert(userRecord.IsAvailable());
 
     bool isAuthenticated = false;
@@ -183,7 +179,7 @@ void LobbyDirector::Tick()
     if (not isAuthenticated)
     {
       spdlog::debug("User '{}' failed in authentication", userName);
-      _networkHandler->SendUserLoginRejected(userName, protocol::AcCmdCLLoginCancel::Reason::InvalidUser);
+      _networkHandler->RejectLogin(userName, protocol::AcCmdCLLoginCancel::Reason::InvalidUser);
     }
     else
     {
@@ -193,7 +189,7 @@ void LobbyDirector::Tick()
 
       if (infractionVerdict.preventServerJoining)
       {
-        _networkHandler->SendUserLoginRejected(
+        _networkHandler->RejectLogin(
           userName,
           protocol::AcCmdCLLoginCancel::Reason::DisconnectYourself);
       }
@@ -215,25 +211,23 @@ void LobbyDirector::QueueUserLogin(
   const std::string& userName,
   const std::string& userToken)
 {
+  const auto [iter, inserted] = _userLogins.try_emplace(userName);
+  if (not inserted)
   {
-    std::scoped_lock lock(_userLoginsMutex);
-    const auto [iter, inserted] = _userLogins.try_emplace(userName);
-    if (not inserted)
-      return;
-
-    iter->second.userToken = userToken;
+    // A case where two user logins are queued is impossible.
+    // The responsible network handler should disconnect
+    // the latter client because of duplicate login.
+    assert(false);
   }
 
-  {
-    std::scoped_lock lock(_loginRequestQueueMutex);
-    _loginRequestQueue.emplace(userName);
-  }
+  iter->second.userToken = userToken;
+
+  _loginRequestQueue.emplace(userName);
 }
 
 void LobbyDirector::QueueCharacterCreated(
   const std::string& userName)
 {
-  std::scoped_lock lock(_loginResponseQueueMutex);
   _loginRequestQueue.emplace(userName);
 }
 
@@ -243,6 +237,13 @@ size_t LobbyDirector::GetUserQueuePosition(
   // todo: make the queue a list
   //       count response queue position + count request queue position
   return 0;
+}
+
+void LobbyDirector::QueueUserLogout(const std::string& userName)
+{
+  _userInstances.erase(userName);
+  _userLogins.erase(userName);
+  // todo: was last member of a guild online?
 }
 
 void LobbyDirector::SetCharacterForcedIntoCreator(

@@ -86,6 +86,9 @@ public:
   size_t GetUserQueuePosition(
     const std::string& userName);
 
+  void QueueUserLogout(
+    const std::string& userName);
+
   void SetCharacterForcedIntoCreator(
     data::Uid characterUid,
     bool forced);
@@ -137,20 +140,15 @@ private:
     bool userLoadRequested{false};
     //! A flag indicating whether the load of the user's character was requested.
     bool userCharacterLoadRequested{false};
-    //! A flag indicating whether the user just created a character this session.
-    bool justCreatedCharacter{false};
   };
 
-  std::mutex _userLoginsMutex;
   std::unordered_map<std::string, QueuedLogin> _userLogins;
 
   std::unordered_map<std::string, UserInstance> _userInstances;
   std::unordered_map<data::Uid, GuildInstance> _guildInstances;
   std::unordered_set<data::Uid> _charactersForcedIntoCreator;
 
-  std::mutex _loginRequestQueueMutex;
   std::queue<std::string> _loginRequestQueue;
-  std::mutex _loginResponseQueueMutex;
   std::queue<std::string> _loginResponseQueue;
 
   //! A server instance.

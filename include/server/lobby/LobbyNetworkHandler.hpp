@@ -23,13 +23,12 @@ public:
   void Initialize();
   void Terminate();
 
-  void SendUserLoginRejected(
+  void AcceptLogin(
+    const std::string& userName,
+    bool sendToCharacterCreator = false);
+  void RejectLogin(
     const std::string& userName,
     protocol::AcCmdCLLoginCancel::Reason reason);
-  void SendUserLoginAccepted(
-    const std::string& userName);
-  void SendUserToCharacterCreator(
-    const std::string& userName);
 
   void SendCharacterGuildInvitation(
     data::Uid inviteeUid,
@@ -105,7 +104,7 @@ private:
 
   void HandleMakeRoom(
     ClientId clientId,
-    const protocol::LobbyCommandMakeRoom& command);
+    const protocol::AcCmdCLMakeRoom& command);
 
   void HandleEnterRoom(
     ClientId clientId,
@@ -209,13 +208,13 @@ private:
     ClientId clientId,
     const protocol::AcCmdCLInquiryTreecash& command);
 
-  void HandleDeclineInviteToGuild(
-    ClientId clientId,
-    const protocol::AcCmdLCInviteGuildJoinCancel& command);
-
   void HandleAcceptInviteToGuild(
     ClientId clientId,
     const protocol::AcCmdLCInviteGuildJoinOK& command);
+
+  void HandleDeclineInviteToGuild(
+    ClientId clientId,
+    const protocol::AcCmdLCInviteGuildJoinCancel& command);
 
   void HandleClientNotify(
     ClientId clientId,
@@ -223,7 +222,7 @@ private:
 
   void HandleChangeRanchOption(
     ClientId clientId,
-    const protocol::LobbyCommandChangeRanchOption& command);
+    const protocol::AcCmdCLChangeRanchOption& command);
 
   void HandleRequestDailyQuestList(
     ClientId clientId,
@@ -231,20 +230,20 @@ private:
 
   void HandleRequestLeagueInfo(
     ClientId clientId,
-    const protocol::LobbyCommandRequestLeagueInfo& command);
+    const protocol::AcCmdCLRequestLeagueInfo& command);
 
   // todo: AcCmdCLMakeGuildParty, AcCmdCLGuildPartyList, AcCmdCLEnterGuildParty,
   //       AcCmdCLLeaveGuildParty, AcCmdCLStartGuildPartyMatch, AcCmdCLStopGuildPartyMatch
 
   void HandleRequestQuestList(
     ClientId clientId,
-    const protocol::LobbyCommandRequestQuestList& command);
+    const protocol::AcCmdCLRequestQuestList& command);
 
   // todo: AcCmdCLChangeGuildPartyOptions,
 
-  void HandleRequestPSecialEventList(
+  void HandleRequestSpecialEventList(
     ClientId clientId,
-    const protocol::LobbyCommandRequestSpecialEventList& command);
+    const protocol::AcCmdCLRequestSpecialEventList& command);
 
   //! A server instance.
   ServerInstance& _serverInstance;

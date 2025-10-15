@@ -31,16 +31,223 @@ LobbyNetworkHandler::LobbyNetworkHandler(
   , _commandServer(*this)
 {
   _commandServer.RegisterCommandHandler<protocol::AcCmdCLLogin>(
-  [this](const ClientId clientId, const auto& command)
-  {
-    HandleLogin(clientId, command);
-  });
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleLogin(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLRoomList>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleRoomList(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLHeartbeat>(
+    [this](const ClientId clientId, [[maybe_unused]] const auto& command)
+    {
+      HandleHeartbeat(clientId);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLMakeRoom>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleMakeRoom(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLEnterRoom>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleEnterRoom(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLLeaveRoom>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleLeaveRoom(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLEnterChannel>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleEnterChannel(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLLeaveChannel>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleLeaveChannel(clientId, command);
+    });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCLCreateNickname>(
-  [this](const ClientId clientId, const auto& command)
-  {
-    HandleCreateNickname(clientId, command);
-  });
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleCreateNickname(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLShowInventory>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleShowInventory(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLUpdateUserSettings>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleUpdateUserSettings(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLEnterRoomQuick>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleEnterRoomQuick(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLGoodsShopList>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleGoodsShopList(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLAchievementCompleteList>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleAchievementCompleteList(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLRequestPersonalInfo>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleRequestPersonalInfo(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLEnterRanch>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleEnterRanch(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLEnterRanchRandomly>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleEnterRanchRandomly(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLFeatureCommand>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleFeatureCommand(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLRequestFestivalResult>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleRequestFestivalResult(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLSetIntroduction>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleSetIntroduction(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLGetMessengerInfo>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleGetMessengerInfo(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLCheckWaitingSeqno>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleCheckWaitingSeqno(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLUpdateSystemContent>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleUpdateSystemContent(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLEnterRoomQuickStop>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleEnterRoomQuickStop(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLRequestFestivalPrize>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleRequestFestivalPrize(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLQueryServerTime>(
+    [this](const ClientId clientId, [[maybe_unused]] const auto& command)
+    {
+      HandleQueryServerTime(clientId);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLRequestMountInfo>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleRequestMountInfo(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLInquiryTreecash>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleInquiryTreecash(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdLCInviteGuildJoinOK>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleAcceptInviteToGuild(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdLCInviteGuildJoinCancel>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleDeclineInviteToGuild(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdClientNotify>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleClientNotify(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLChangeRanchOption>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleChangeRanchOption(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLRequestDailyQuestList>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleRequestDailyQuestList(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLRequestLeagueInfo>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleRequestLeagueInfo(clientId, command);
+    });
+
+  // todo: AcCmdCLMakeGuildParty, AcCmdCLGuildPartyList, AcCmdCLEnterGuildParty,
+  //       AcCmdCLLeaveGuildParty, AcCmdCLStartGuildPartyMatch, AcCmdCLStopGuildPartyMatch
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLRequestQuestList>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleRequestQuestList(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLRequestSpecialEventList>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleRequestSpecialEventList(clientId, command);
+    });
 }
 
 void LobbyNetworkHandler::Initialize()
@@ -73,42 +280,37 @@ void LobbyNetworkHandler::Terminate()
   _commandServer.EndHost();
 }
 
-void LobbyNetworkHandler::SendUserLoginRejected(
+void LobbyNetworkHandler::AcceptLogin(
   const std::string& userName,
-  protocol::AcCmdCLLoginCancel::Reason reason)
+  const bool sendToCharacterCreator)
 {
   try
   {
-    const auto clientId = GetClientIdByUserName(userName);
+    const auto clientId = GetClientIdByUserName(userName, false);
+    auto& clientContext = GetClientContext(clientId, false);
+
+    clientContext.isAuthenticated = true;
+
+    if (sendToCharacterCreator)
+      SendCreateNicknameNotify(clientId);
+    else
+      SendLoginOK(clientId);
+  }
+  catch (const std::exception&)
+  {
+    // We really don't care if the user disconnected.
+  }
+}
+
+void LobbyNetworkHandler::RejectLogin(
+  const std::string& userName,
+  const protocol::AcCmdCLLoginCancel::Reason reason)
+{
+  try
+  {
+    const auto clientId = GetClientIdByUserName(userName, false);
     SendLoginCancel(clientId, reason);
-  }
-  catch (const std::exception&)
-  {
-    // We really don't care if the user disconnected.
-  }
-}
-
-void LobbyNetworkHandler::SendUserLoginAccepted(
-  const std::string& userName)
-{
-  try
-  {
-    const auto clientId = GetClientIdByUserName(userName);
-    SendLoginOK(clientId);
-  }
-  catch (const std::exception&)
-  {
-    // We really don't care if the user disconnected.
-  }
-}
-
-void LobbyNetworkHandler::SendUserToCharacterCreator(
-  const std::string& userName)
-{
-  try
-  {
-    const auto clientId = GetClientIdByUserName(userName);
-    SendCreateNicknameNotify(clientId);
+    _commandServer.DisconnectClient(clientId);
   }
   catch (const std::exception&)
   {
@@ -150,9 +352,7 @@ void LobbyNetworkHandler::SendCharacterGuildInvitation(
       .name = guildName,
       .guildRole = protocol::GuildRole::Member,
       .val5 = 5,
-      .val6 = 6
-    }
-  };
+      .val6 = 6}};
 
   _commandServer.QueueCommand<decltype(command)>(
     inviteeClientId,
@@ -298,6 +498,21 @@ void LobbyNetworkHandler::HandleClientConnected(ClientId clientId)
 
 void LobbyNetworkHandler::HandleClientDisconnected(ClientId clientId)
 {
+  try
+  {
+    const auto& clientContext = GetClientContext(clientId, false);
+    _serverInstance.GetLobbyDirector().GetScheduler().Queue(
+      [this, userName = clientContext.userName]()
+      {
+        _serverInstance.GetLobbyDirector().QueueUserLogout(
+          userName);
+      });
+  }
+  catch (const std::exception&)
+  {
+    // We really don't care if the user was not authenticated.
+  }
+
   _clients.erase(clientId);
 }
 
@@ -326,14 +541,21 @@ void LobbyNetworkHandler::HandleLogin(
     return;
   }
 
-  _serverInstance.GetLobbyDirector().QueueUserLogin(command.loginId, command.authKey);
+  auto& clientContext = GetClientContext(clientId, false);
+  clientContext.userName = command.loginId;
+
+  _serverInstance.GetLobbyDirector().GetScheduler().Queue(
+  [this, userName = command.loginId, userToken = command.authKey]()
+  {
+    _serverInstance.GetLobbyDirector().QueueUserLogin(
+      userName,
+      userToken);
+  });
 }
 
 void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
 {
   auto& clientContext = GetClientContext(clientId);
-
-  clientContext.isAuthenticated = true;
 
   const auto userRecord = _serverInstance.GetDataDirector().GetUserCache().Get(
     clientContext.userName);
@@ -701,7 +923,7 @@ void LobbyNetworkHandler::HandleHeartbeat(
 
 void LobbyNetworkHandler::HandleMakeRoom(
   ClientId clientId,
-  const protocol::LobbyCommandMakeRoom& command)
+  const protocol::AcCmdCLMakeRoom& command)
 {
   const auto& clientContext = GetClientContext(clientId);
   uint32_t createdRoomUid{0};
@@ -768,7 +990,7 @@ void LobbyNetworkHandler::HandleMakeRoom(
 
   if (createdRoomUid == 0)
   {
-    protocol::LobbyCommandMakeRoomCancel response{};
+    protocol::AcCmdCLMakeRoomCancel response{};
     _commandServer.QueueCommand<decltype(response)>(
       clientId,
       [response]()
@@ -786,7 +1008,7 @@ void LobbyNetworkHandler::HandleMakeRoom(
     identityHash);
 
   const auto lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
-  protocol::LobbyCommandMakeRoomOK response{
+  protocol::AcCmdCLMakeRoomOK response{
     .roomUid = createdRoomUid,
     .oneTimePassword = roomOtp,
     .raceServerAddress = lobbyConfig.advertisement.race.address.to_uint(),
@@ -882,6 +1104,9 @@ void LobbyNetworkHandler::HandleEnterRoom(
     return;
   }
 
+  auto& userInstance = _serverInstance.GetLobbyDirector().GetUsers()[clientContext.userName];
+  userInstance.roomUid = command.roomUid;
+
   size_t identityHash = std::hash<uint32_t>()(clientContext.characterUid);
   boost::hash_combine(identityHash, command.roomUid);
 
@@ -947,6 +1172,17 @@ void LobbyNetworkHandler::HandleEnterChannel(
   const protocol::AcCmdCLEnterChannel& command)
 {
   // todo: implement channels
+  protocol::AcCmdCLEnterChannelOK response{
+    .unk0 = command.channel,
+    .unk1 = 557,
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 void LobbyNetworkHandler::HandleLeaveChannel(
@@ -954,6 +1190,14 @@ void LobbyNetworkHandler::HandleLeaveChannel(
   const protocol::AcCmdCLLeaveChannel& command)
 {
   // todo: implement channels
+  protocol::AcCmdCLLeaveChannelOK response{};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 void LobbyNetworkHandler::SendCreateNicknameNotify(ClientId clientId)
@@ -1065,8 +1309,7 @@ void LobbyNetworkHandler::HandleCreateNickname(
       };
     });
 
-  _serverInstance.GetLobbyDirector().QueueCharacterCreated(
-    clientContext.userName);
+  SendLoginOK(clientId);
 }
 
 void LobbyNetworkHandler::HandleShowInventory(
@@ -1652,19 +1895,6 @@ void LobbyNetworkHandler::HandleInquiryTreecash(
     });
 }
 
-void LobbyNetworkHandler::HandleDeclineInviteToGuild(
-  const ClientId clientId,
-  const protocol::AcCmdLCInviteGuildJoinCancel& command)
-{
-  // TODO: command data check
-  _serverInstance.GetRanchDirector().SendGuildInviteDeclined(
-    command.characterUid,
-    command.inviterCharacterUid,
-    command.inviterCharacterName,
-    command.guild.uid
-  );
-}
-
 void LobbyNetworkHandler::HandleAcceptInviteToGuild(
   const ClientId clientId,
   const protocol::AcCmdLCInviteGuildJoinOK& command)
@@ -1733,6 +1963,19 @@ void LobbyNetworkHandler::HandleAcceptInviteToGuild(
   );
 }
 
+void LobbyNetworkHandler::HandleDeclineInviteToGuild(
+  const ClientId clientId,
+  const protocol::AcCmdLCInviteGuildJoinCancel& command)
+{
+  // TODO: command data check
+  _serverInstance.GetRanchDirector().SendGuildInviteDeclined(
+    command.characterUid,
+    command.inviterCharacterUid,
+    command.inviterCharacterName,
+    command.guild.uid
+  );
+}
+
 void LobbyNetworkHandler::HandleClientNotify(
   const ClientId clientId,
   const protocol::AcCmdClientNotify& command)
@@ -1744,12 +1987,12 @@ void LobbyNetworkHandler::HandleClientNotify(
 
 void LobbyNetworkHandler::HandleChangeRanchOption(
   const ClientId clientId,
-  const protocol::LobbyCommandChangeRanchOption& command)
+  const protocol::AcCmdCLChangeRanchOption& command)
 {
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     clientContext.characterUid);
-  protocol::LobbyCommandChangeRanchOptionOK response{
+  protocol::AcCmdCLChangeRanchOptionOK response{
     .unk0 = command.unk0,
     .unk1 = command.unk1,
     .unk2 = command.unk2};
@@ -1792,9 +2035,9 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
 
 void LobbyNetworkHandler::HandleRequestLeagueInfo(
   const ClientId clientId,
-  const protocol::LobbyCommandRequestLeagueInfo& command)
+  const protocol::AcCmdCLRequestLeagueInfo& command)
 {
-  protocol::LobbyCommandRequestLeagueInfoOK response{};
+  protocol::AcCmdCLRequestLeagueInfoOK response{};
 
   // todo: implement leagues
 
@@ -1808,7 +2051,7 @@ void LobbyNetworkHandler::HandleRequestLeagueInfo(
 
 void LobbyNetworkHandler::HandleRequestQuestList(
   const ClientId clientId,
-  const protocol::LobbyCommandRequestQuestList& command)
+  const protocol::AcCmdCLRequestQuestList& command)
 {
   const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
@@ -1830,9 +2073,9 @@ void LobbyNetworkHandler::HandleRequestQuestList(
     });
 }
 
-void LobbyNetworkHandler::HandleRequestPSecialEventList(
+void LobbyNetworkHandler::HandleRequestSpecialEventList(
   const ClientId clientId,
-  const protocol::LobbyCommandRequestSpecialEventList& command)
+  const protocol::AcCmdCLRequestSpecialEventList& command)
 {
   const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
@@ -1840,7 +2083,7 @@ void LobbyNetworkHandler::HandleRequestPSecialEventList(
 
   // todo: figure this out
 
-  protocol::LobbyCommandRequestSpecialEventListOK response{};
+  protocol::AcCmdCLRequestSpecialEventListOK response{};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
