@@ -1605,6 +1605,31 @@ void RaceDirector::HandleStarPointGet(
     {
       return response;
     });
+
+  // TODO: correctly label this with enums
+  // unk1 == 12 (sliding)
+  // Conversely unk1 == 13 (strong heart)
+  if (command.unk1 == 12)
+  {
+    GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+      [this](const data::Character& character)
+      {
+        GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Mutable(
+          [](data::Horse& horse)
+          {
+            // Tracks mount sliding proficiency
+            // TODO: sliding *time*? amount of times slid? time spent sliding?
+            if (horse.mastery.slidingTime() < 900)
+            {
+              // Use min guard to prevent somehow above max value
+              horse.mastery.slidingTime() = std::min(
+                static_cast<uint32_t>(900), // Mount slidingTime proficiency max 900
+                ++horse.mastery.slidingTime()
+              );
+            }
+          });
+      });
+  }
 }
 
 void RaceDirector::HandleRequestSpur(
