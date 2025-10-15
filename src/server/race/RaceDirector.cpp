@@ -1799,6 +1799,31 @@ void RaceDirector::HandleHurdleClearResult(
     {
       return response;
     });
+
+  bool isSuccessfulJump =
+    command.hurdleClearType == protocol::AcCmdCRHurdleClearResult::HurdleClearType::Perfect ||
+    command.hurdleClearType == protocol::AcCmdCRHurdleClearResult::HurdleClearType::Good ||
+    command.hurdleClearType == protocol::AcCmdCRHurdleClearResult::HurdleClearType::DoubleJumpOrGlide;
+  if (isSuccessfulJump)
+  {
+    GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+      [this](const data::Character& character)
+      {
+        GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Mutable(
+          [](data::Horse& horse)
+          {
+            // Tracks mount jump proficiency
+            if (horse.mastery.jumpCount() < 1200)
+            {
+              // Use min guard to prevent somehow above max value
+              horse.mastery.jumpCount() = std::min(
+                static_cast<uint32_t>(1200), // Mount jump proficiency max 1200
+                ++horse.mastery.jumpCount()
+              );
+            }
+          });
+      });
+  }
 }
 
 void RaceDirector::HandleStartingRate(
