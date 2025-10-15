@@ -30,9 +30,7 @@
 #include <ranges>
 #include <random>
 #include <unordered_map>
-#include <fstream>
 #include <format>
-#include <filesystem>
 
 #include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
@@ -182,12 +180,6 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, auto& command)
     {
       HandleUpdateMountNickname(clientId, command);
-    });
-
-  _commandServer.RegisterCommandHandler<protocol::RanchCommandMountFamilyTree>(
-    [this](ClientId clientId, auto& command)
-    {
-      HandleMountFamilyTree(clientId, command);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestStorage>(
@@ -2409,18 +2401,18 @@ void RanchDirector::HandleBreedingFailureCardChoose(
   auto& clientContext = GetClientContext(clientId);
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
-  
+
   protocol::AcCmdCRBreedingFailureCardChooseOK response;
-  
+
   static std::mt19937 gen(std::chrono::steady_clock::now().time_since_epoch().count());
-  
+
   // Get player's total breeding money spent for reward grade calculation
   uint32_t moneySpent = 0;
   characterRecord.Immutable([&moneySpent](const data::Character& character)
   {
     moneySpent = character.breedingMoneySpent();
   });
-  
+
   // Breeding Failure Card reward grade probability structure
   // Maps total money spent on breeding to reward grade probabilities
   struct ProbData {
@@ -2429,10 +2421,10 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     int probB;            // Probability % for Grade B (uncommon/mid-tier rewards)
     int probC;            // Probability % for Grade C (rare/high-tier rewards)
   };
-  
+
   // Breeding Failure Card Probability Table
   // BreedingFailureCardProb in libconfig
-  // 
+  //
   // This table determines the reward grade (quality tier) based on cumulative money spent on breeding.
   // As players spend more money, probabilities shift from Grade A (common) -> Grade B (uncommon) -> Grade C (rare)
   //
@@ -2451,7 +2443,7 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     {77000, 10, 20, 70}, {83000, 7, 15, 78}, {89000, 4, 11, 85}, {95000, 1, 8, 91}, {100000, 0, 0, 100},
     {125000, 0, 0, 100}, {140000, 0, 0, 100}, {155000, 0, 0, 100}
   };
-  
+
   // Find probability entry for money spent
   const ProbData& probEntry = [&]() -> const ProbData& {
     for (const auto& entry : probTable) {
@@ -2461,10 +2453,10 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     }
     return probTable.back(); // Default to highest spending tier
   }();
-  
+
   std::uniform_int_distribution<int> gradeDist(1, 100);
   int gradeRoll = gradeDist(gen);
-  
+
   int rewardGrade = 0;
   if (gradeRoll <= probEntry.probA) {
     rewardGrade = 0;
@@ -2473,28 +2465,28 @@ void RanchDirector::HandleBreedingFailureCardChoose(
   } else {
     rewardGrade = 2;
   }
-  
+
   // Use the card type that was already determined in HandleBreedingFailureCard
   bool isChanceCard = (clientContext.pendingCardType == 1);
-  
+
   // Determine card type: 50/50 chance between Normal (RED) and Chance (YELLOW) cards
   // TODO: Figure out the exact/approximate probability of each card type.
-  
+
   // Breeding Failure Card reward data structure
   struct RewardData {
     uint32_t itemTid;    // Item Template ID (identifies the reward item type)
     uint32_t itemCount;  // Number of items to award
     uint32_t gameMoney;  // Bonus carrots (in-game currency) to award
   };
-  
+
   uint32_t rewardId;
   const RewardData* rewardData = nullptr;
-  
+
   if (isChanceCard) {
     // GOLD "Chance" Cards
     // Source: libconfig_c.dat -> BreedingFailureCard_Chance table (48 entries)
     // These cards give HIGHER rewards than normal cards
-    
+
     // Map grade to RewardId ranges within the Chance table:
     // Grade A (common tier): RewardId 1-16   (300-1000 carrots, basic items)
     // Grade B (uncommon):    RewardId 17-32  (1400-4000 carrots, better items)
@@ -2507,10 +2499,10 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     } else {
       minReward = 33; maxReward = 48;
     }
-    
+
     std::uniform_int_distribution<uint32_t> chanceDist(minReward, maxReward);
     rewardId = chanceDist(gen);
-    
+
     // BreedingFailureCard_Chance in libconfig
     // Format: {RewardId, {ItemTid, ItemCount, CarrotBonus}}
     // RewardId 1-16: Grade A rewards (low-tier for yellow cards)
@@ -2530,7 +2522,7 @@ void RanchDirector::HandleBreedingFailureCardChoose(
       {41, {44006, 3, 15000}}, {42, {44004, 3, 16000}}, {43, {44002, 3, 17000}}, {44, {44001, 3, 18000}},
       {45, {44003, 3, 19000}}, {46, {45001, 3, 20000}}, {47, {45001, 3, 25000}}, {48, {45001, 3, 25000}}
     };
-    
+
     auto it = chanceRewardTable.find(rewardId);
     if (it != chanceRewardTable.end()) {
       rewardData = &it->second;
@@ -2539,7 +2531,7 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     // RED "Normal" Cards
     // Source: libconfig_c.dat -> BreedingFailureCard_Normal table (63 entries)
     // These cards give LOWER rewards compared to chance cards
-    
+
     // Map grade to RewardId ranges within the Normal table:
     // Grade A (common tier): RewardId 1-20   (100-350 carrots, basic items)
     // Grade B (uncommon):    RewardId 21-38  (300-1000 carrots, better items)
@@ -2552,10 +2544,10 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     } else {
       minReward = 39; maxReward = 63;
     }
-    
+
     std::uniform_int_distribution<uint32_t> normalDist(minReward, maxReward);
     rewardId = normalDist(gen);
-    
+
     // BreedingFailureCard_Normal in libconfig
     // Format: {RewardId, {ItemTid, ItemCount, CarrotBonus}}
     // RewardId 1-20: Grade A rewards (low-tier, 100-350 carrots)
@@ -2580,21 +2572,21 @@ void RanchDirector::HandleBreedingFailureCardChoose(
       {57, {45001, 2, 5800}}, {58, {45001, 2, 6300}}, {59, {45001, 3, 6800}}, {60, {45001, 3, 7300}},
       {61, {45001, 2, 7800}}, {62, {45001, 3, 10000}}, {63, {45001, 3, 13000}}
     };
-    
+
     auto it = normalRewardTable.find(rewardId);
     if (it != normalRewardTable.end()) {
       rewardData = &it->second;
     }
   }
-  
+
   static const RewardData fallbackReward = {45001, 1, 120};
   if (!rewardData) {
     rewardData = &fallbackReward;
   }
-  
+
   data::Uid itemUid = 0;
   bool foundExistingItem = false;
-  
+
   characterRecord.Immutable([&itemUid, &foundExistingItem, rewardData, this](const data::Character& character) {
     for (const auto& existingItemUid : character.inventory()) {
       const auto existingItemRecord = GetServerInstance().GetDataDirector().GetItem(existingItemUid);
@@ -2609,7 +2601,7 @@ void RanchDirector::HandleBreedingFailureCardChoose(
       }
     }
   });
-  
+
   if (foundExistingItem) {
     const auto existingItemRecord = GetServerInstance().GetDataDirector().GetItem(itemUid);
     existingItemRecord.Mutable([rewardData, &response](data::Item& item) {
@@ -2634,18 +2626,18 @@ void RanchDirector::HandleBreedingFailureCardChoose(
       character.inventory().emplace_back(itemUid);
     });
   }
-  
+
   characterRecord.Mutable([rewardData](data::Character& character) {
     character.carrots() += rewardData->gameMoney;
   });
-  
+
   response.member1 = 0;
   response.rewardId = rewardId;
   response.member3 = 0;
   response.member4 = {1, 0};
   response.member5 = 0;
   response.member6 = rewardData->gameMoney;
-  
+
   spdlog::info("BreedingFailureCard: {} CARD (Grade {})! MoneySpent: {}, GradeRoll: {}, RewardId {}, gave {} carrots + item {} x{}",
     isChanceCard ? "CHANCE (YELLOW)" : "NORMAL (RED)",
     rewardGrade, moneySpent, gradeRoll, rewardId,
@@ -4843,111 +4835,189 @@ void RanchDirector::HandleMountFamilyTree(
   ClientId clientId,
   const protocol::RanchCommandMountFamilyTree&)
 {
-  protocol::RanchCommandMountFamilyTreeOK response{};
+  spdlog::debug("HandleMountFamilyTree: horseUid = {}", command.horseUid);
 
-  std::vector<protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem> familyTree;
+  protocol::RanchCommandMountFamilyTreeOK response;
 
-  const auto& horseRecord = GetServerInstance().GetDataDirector().GetHorse(
-    command.horseUid);
-
-  if (not horseRecord.IsAvailable())
+  // Get the main horse's data first to calculate lineage
+  uint32_t mainHorseSkinId = 0;
+  const auto mainHorseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(command.horseUid);
+  if (mainHorseRecord)
   {
-    _commandServer.QueueCommand<decltype(response)>(
-      clientId,
-      [response]()
-      {
-        return response;
-      });
-    return;
-  }
-
-  std::vector<data::Uid> ancestors;
-
-  horseRecord.Immutable([&ancestors, horseUid = command.horseUid](const data::Horse& horse)
-  {
-    ancestors = horse.ancestors();
-    spdlog::debug("Horse {} has {} ancestors in ancestors field", horseUid, ancestors.size());
-  });
-
-
-  // Ancestors array uses FIXED POSITIONS (size 0 or 6):
-  // Index 0 = Father (id 1), 1 = Mother (id 2)
-  // Index 2 = Paternal Grandfather (id 3), 3 = Paternal Grandmother (id 4)
-  // Index 4 = Maternal Grandfather (id 5), 5 = Maternal Grandmother (id 6)
-  // Value 0 = empty slot (no ancestor in this position)
-  
-  if (ancestors.empty())
-  {
-    spdlog::debug("Horse has no ancestors");
-  }
-  else if (ancestors.size() != 6)
-  {
-    spdlog::warn("Horse has {} ancestors, expected 0 or 6 (fixed positions)", ancestors.size());
-  }
-  else
-  {
-    // Collect non-zero ancestor UIDs for batch loading
-    std::vector<data::Uid> nonZeroAncestors;
-    for (const auto uid : ancestors)
+    mainHorseRecord->Immutable([&](const data::Horse& horse)
     {
-      if (uid != 0)
-      {
-        nonZeroAncestors.push_back(uid);
-      }
-    }
-    
-    if (nonZeroAncestors.empty())
+      mainHorseSkinId = horse.tid();
+    });
+  }
+
+  // Helper function to get horse data with lineage calculation and breeding role gender
+  auto getHorseAncestor = [&](uint32_t uid, uint8_t id, uint8_t breedingRoleGender) -> protocol::RanchCommandMountFamilyTreeOK::Ancestor
+  {
+    protocol::RanchCommandMountFamilyTreeOK::Ancestor ancestor;
+    ancestor.id = id;
+    ancestor.gender = breedingRoleGender; // 0=stallion (male), 1=mare (female), 2=unknown/self
+
+    if (uid == 0)
     {
-      spdlog::debug("All ancestor slots are empty");
+      // No parent/ancestor - create dummy entry
+      ancestor.name = "?"; // Single character placeholder for unknown ancestors
+      ancestor.grade = 0;
+      ancestor.skinId = 20002; // Use different TID from main horse to avoid circular ref
+      ancestor.lineage = 0;
     }
     else
     {
-      // Load all non-zero ancestors in a single batch
-      auto ancestorRecords = GetServerInstance().GetDataDirector().GetHorseCache().Get(nonZeroAncestors);
-      
-      if (!ancestorRecords)
+      const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(uid);
+      if (horseRecord)
       {
-        spdlog::warn("Not all ancestors are loaded in cache");
+        horseRecord->Immutable([&](const data::Horse& horse)
+        {
+          ancestor.name = horse.name();
+          ancestor.grade = horse.grade();
+          ancestor.skinId = horse.tid();
+          
+          // Calculate lineage based on coat color inheritance
+          uint8_t calculatedLineage = 1; // Base +1 for having the coat
+          
+          // Check if this ancestor has the same coat as the main horse
+          if (horse.tid() == mainHorseSkinId)
+          {
+            // Calculate lineage based on position in family tree
+            if (id == 1 || id == 2) // Parents: +2 each
+            {
+              calculatedLineage = 2;
+            }
+            else if (id >= 3 && id <= 6) // Grandparents: +1 each
+            {
+              calculatedLineage = 1;
+            }
+            else // Self or others
+            {
+              calculatedLineage = 1;
+            }
+          }
+          else
+          {
+            calculatedLineage = 0; // Different coat color
+          }
+          
+          ancestor.lineage = calculatedLineage;
+          spdlog::debug("Found horse {}: name='{}', grade={}, tid={}, calculatedLineage={} (same coat as main: {})", 
+            uid, ancestor.name, ancestor.grade, ancestor.skinId, calculatedLineage, (horse.tid() == mainHorseSkinId));
+        });
       }
       else
       {
-        // Create a map of UID -> Record for quick lookup
-        std::unordered_map<data::Uid, const Record<data::Horse>*> ancestorMap;
-        for (const auto& record : *ancestorRecords)
-        {
-          record.Immutable([&ancestorMap, &record](const data::Horse& horse)
-          {
-            ancestorMap[horse.uid()] = &record;
-          });
-        }
-        
-        // Process each position in the fixed array
-        for (size_t i = 0; i < 6; ++i)
-        {
-          const auto uid = ancestors[i];
-          if (uid == 0) continue; // Skip empty slots
-          
-          auto it = ancestorMap.find(uid);
-          if (it != ancestorMap.end())
-          {
-            it->second->Immutable([&familyTree, i](const data::Horse& horse)
-            {
-              protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem ancestor;
-              ancestor.id = static_cast<uint8_t>(i + 1); // id based on position (1-6)
-              ancestor.name = horse.name();
-              ancestor.grade = horse.grade();
-              ancestor.skinId = horse.parts.skinTid();
-              
-              familyTree.emplace_back(ancestor);
-            });
-          }
-        }
-        spdlog::debug("Loaded {} ancestors from cache (from {} non-zero UIDs)", familyTree.size(), nonZeroAncestors.size());
+        // Horse not found - create dummy entry
+        ancestor.name = "?"; // Single character placeholder for unknown ancestors
+        ancestor.grade = 0;
+        ancestor.skinId = 20002; // Use different TID from main horse to avoid circular ref
+        ancestor.lineage = 0;
+        spdlog::warn("Horse {} not found in cache!", uid);
+      }
+    }
+    return ancestor;
+  };
+
+  // Get the horse's parent UIDs from the database
+  uint32_t fatherUid = 0;
+  uint32_t motherUid = 0;
+  
+  const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(command.horseUid);
+  if (horseRecord)
+  {
+    horseRecord->Immutable([&](const data::Horse& horse)
+    {
+      // Get parent UIDs from ancestors array (typically first two entries)
+      const auto& ancestors = horse.ancestors();
+      fatherUid = ancestors.size() > 0 ? ancestors[0] : 0;
+      motherUid = ancestors.size() > 1 ? ancestors[1] : 0;
+      spdlog::debug("Horse {} has fatherUid={}, motherUid={}", command.horseUid, fatherUid, motherUid);
+    });
+  }
+
+  // Get grandparent UIDs by looking up the parents
+  uint32_t paternalGrandfatherUid = 0;
+  uint32_t paternalGrandmotherUid = 0;
+  uint32_t maternalGrandfatherUid = 0;
+  uint32_t maternalGrandmotherUid = 0;
+
+  if (fatherUid != 0)
+  {
+    const auto fatherRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(fatherUid);
+    if (fatherRecord)
+    {
+      fatherRecord->Immutable([&](const data::Horse& father)
+      {
+        const auto& ancestors = father.ancestors();
+        paternalGrandfatherUid = ancestors.size() > 0 ? ancestors[0] : 0;
+        paternalGrandmotherUid = ancestors.size() > 1 ? ancestors[1] : 0;
+      });
+    }
+  }
+
+  if (motherUid != 0)
+  {
+    const auto motherRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(motherUid);
+    if (motherRecord)
+    {
+      motherRecord->Immutable([&](const data::Horse& mother)
+      {
+        const auto& ancestors = mother.ancestors();
+        maternalGrandfatherUid = ancestors.size() > 0 ? ancestors[0] : 0;
+        maternalGrandmotherUid = ancestors.size() > 1 ? ancestors[1] : 0;
+      });
+    }
+  }
+
+  // Build the 7-ancestor tree with breeding role genders
+  // In breeding context: Player's horse = mare (female), Market stallion = stallion (male)
+  response.ancestors[0] = getHorseAncestor(command.horseUid, 0, 2); // Self (2=unknown/self)
+  response.ancestors[1] = getHorseAncestor(fatherUid, 1, 0); // Father (0=stallion)
+  response.ancestors[2] = getHorseAncestor(motherUid, 2, 1); // Mother (1=mare)
+  response.ancestors[3] = getHorseAncestor(paternalGrandfatherUid, 3, 0); // Paternal Grandfather (0=stallion)
+  response.ancestors[4] = getHorseAncestor(paternalGrandmotherUid, 4, 1); // Paternal Grandmother (1=mare)
+  response.ancestors[5] = getHorseAncestor(maternalGrandfatherUid, 5, 0); // Maternal Grandfather (0=stallion)
+  response.ancestors[6] = getHorseAncestor(maternalGrandmotherUid, 6, 1); // Maternal Grandmother (1=mare)
+
+  // Calculate total lineage for the main horse
+  uint8_t totalLineage = 1; // Base +1 for having the coat
+  for (size_t i = 1; i < 7; ++i) // Skip self (index 0)
+  {
+    if (response.ancestors[i].skinId == mainHorseSkinId && !response.ancestors[i].name.empty())
+    {
+      if (i == 1 || i == 2) // Parents: +2 each
+      {
+        totalLineage += 2;
+      }
+      else if (i >= 3 && i <= 6) // Grandparents: +1 each
+      {
+        totalLineage += 1;
       }
     }
   }
-  spdlog::debug("Family tree complete: {} ancestors found", familyTree.size());
-  response.ancestors = familyTree;
+  
+  // Update the main horse's lineage in the response
+  response.ancestors[0].lineage = totalLineage;
+
+  spdlog::debug("Family tree for horse {}: self={} (not sent), sending 6 ancestors: father={}, mother={}, paternal_gp=[{},{}], maternal_gp=[{},{}]",
+    command.horseUid,
+    response.ancestors[0].name,
+    response.ancestors[1].name,
+    response.ancestors[2].name,
+    response.ancestors[3].name,
+    response.ancestors[4].name,
+    response.ancestors[5].name,
+    response.ancestors[6].name);
+  
+  spdlog::debug("Total lineage for horse {}: {} (coat: {}, parents with same coat: {}, grandparents with same coat: {})",
+    command.horseUid, totalLineage, mainHorseSkinId,
+    ((response.ancestors[1].skinId == mainHorseSkinId && !response.ancestors[1].name.empty()) ? 1 : 0) +
+    ((response.ancestors[2].skinId == mainHorseSkinId && !response.ancestors[2].name.empty()) ? 1 : 0),
+    ((response.ancestors[3].skinId == mainHorseSkinId && !response.ancestors[3].name.empty()) ? 1 : 0) +
+    ((response.ancestors[4].skinId == mainHorseSkinId && !response.ancestors[4].name.empty()) ? 1 : 0) +
+    ((response.ancestors[5].skinId == mainHorseSkinId && !response.ancestors[5].name.empty()) ? 1 : 0) +
+    ((response.ancestors[6].skinId == mainHorseSkinId && !response.ancestors[6].name.empty()) ? 1 : 0));
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
