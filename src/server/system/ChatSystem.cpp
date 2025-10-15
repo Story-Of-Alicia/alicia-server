@@ -159,7 +159,7 @@ void ChatSystem::RegisterUserCommands()
       const std::span<const std::string>& arguments,
       data::Uid characterUid) -> std::vector<std::string>
     {
-      _serverInstance.GetLobbyDirector().RequestCharacterCreator(characterUid);
+      _serverInstance.GetLobbyDirector().SetCharacterForcedIntoCreator(characterUid, true);
       return {
         "Once you restart your game,",
         " you'll enter the character creator.",
@@ -256,7 +256,7 @@ void ChatSystem::RegisterUserCommands()
               "This player's ranch is locked.",
               visitingCharacterName)};
 
-        _serverInstance.GetLobbyDirector().UpdateVisitPreference(
+        _serverInstance.GetLobbyDirector().SetCharacterVisitPreference(
           characterUid, visitingCharacterUid);
 
         return {
@@ -656,19 +656,17 @@ void ChatSystem::RegisterAdminCommands()
       }
 
       std::vector<std::string> userList;
-      const std::vector<std::string> users = _serverInstance.GetLobbyDirector()
-        .GetOnlineUsers();
 
       userList.emplace_back("Users:");
       constexpr std::string_view UserLine = "  - {}, user: {}, uid: {}{}";
 
-      for (const auto& userName : users)
+      for (const auto& userInstance : _serverInstance.GetLobbyDirector().GetUsers() | std::views::values)
       {
         bool hasInfractions = false;
         std::string onlineCharacterName = "xxx";
         data::Uid onlineCharacterUid{data::InvalidUid};
 
-        const auto userRecord = _serverInstance.GetDataDirector().GetUser(userName);
+        const auto userRecord = _serverInstance.GetDataDirector().GetUser(userInstance.userName);
         if (userRecord)
         {
           userRecord.Immutable([&onlineCharacterUid, &hasInfractions](const data::User& user)
@@ -690,7 +688,7 @@ void ChatSystem::RegisterAdminCommands()
         userList.emplace_back(std::format(
           UserLine,
           onlineCharacterName,
-          userName,
+          userInstance.userName,
           onlineCharacterUid,
           hasInfractions ? " <font color=\"#FF0000\">(!)</font>" : ""));
       }
@@ -743,13 +741,13 @@ void ChatSystem::RegisterAdminCommands()
           return {"Character unavailable or offline"};
         }
 
-        _serverInstance.GetLobbyDirector().Notice(specifiedCharacterUid, message);
+        _serverInstance.GetLobbyDirector().NotifyCharacter(specifiedCharacterUid, message);
         return {"Notice sent to character"};
       }
 
-      for (const auto& onlineCharacterUid : _serverInstance.GetLobbyDirector().GetOnlineCharacters())
+      for (const auto& userInstance : _serverInstance.GetLobbyDirector().GetUsers() | std::views::values)
       {
-        _serverInstance.GetLobbyDirector().Notice(onlineCharacterUid, message);
+        _serverInstance.GetLobbyDirector().NotifyCharacter(userInstance.characterUid, message);
       }
       return {"Notice sent to all characters"};
     });
@@ -958,13 +956,13 @@ void ChatSystem::RegisterAdminCommands()
 
         if (punishmentType == data::Infraction::Punishment::Ban)
         {
-          _serverInstance.GetLobbyDirector().Disconnect(userCharacterUid);
+          _serverInstance.GetLobbyDirector().DisconnectCharacter(userCharacterUid);
           _serverInstance.GetRanchDirector().Disconnect(userCharacterUid);
           // todo: race
         }
         else if (punishmentType == data::Infraction::Punishment::Mute)
         {
-          _serverInstance.GetLobbyDirector().Mute(userCharacterUid, data::Clock::now() + duration);
+          _serverInstance.GetLobbyDirector().MuteCharacter(userCharacterUid, data::Clock::now() + duration);
         }
 
         return {std::format("Infraction added to '{}'", userName)};

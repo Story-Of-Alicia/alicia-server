@@ -20,33 +20,46 @@
 #ifndef LOBBYDIRECTOR_HPP
 #define LOBBYDIRECTOR_HPP
 
-#include "LoginHandler.hpp"
-
 #include "server/Config.hpp"
 
-#include "libserver/data/DataDefinitions.hpp"
-#include "libserver/network/command/CommandServer.hpp"
-#include "libserver/network/command/proto/LobbyMessageDefinitions.hpp"
-#include "libserver/util/Scheduler.hpp"
+#include <libserver/data/DataDefinitions.hpp>
+#include <libserver/util/Scheduler.hpp>
 
 #include <unordered_map>
-#include <unordered_set>
+#include <queue>
 
 namespace server
 {
 
 class ServerInstance;
 class Config;
+class LobbyNetworkHandler;
 
 class LobbyDirector final
-  : public CommandServer::EventHandlerInterface
 {
-  friend LoginHandler;
-
 public:
+  struct UserInstance
+  {
+    uint32_t ranchOtpCode{};
+    uint32_t raceOtpCode{};
+
+    std::string userName{};
+    data::Uid characterUid{data::InvalidUid};
+    data::Uid roomUid{data::InvalidUid};
+
+    //! Only until the messenger is not implemented.
+    [[deprecated]] data::Uid visitPreference{data::InvalidUid};
+  };
+
+  struct GuildInstance
+  {
+    std::vector<data::Uid> invites;
+  };
+
   //! Constructor
   //! @param serverInstance Instance of the server.
   explicit LobbyDirector(ServerInstance& serverInstance);
+  ~LobbyDirector();
 
   //! Deleted copy constructor.
   LobbyDirector(const LobbyDirector&) = delete;
@@ -65,192 +78,86 @@ public:
   //! Tick the director.
   void Tick();
 
-  ServerInstance& GetServerInstance();
+  void QueueUserLogin(
+    const std::string& userName,
+    const std::string& userToken);
+  void QueueCharacterCreated(
+    const std::string& userName);
+  size_t GetUserQueuePosition(
+    const std::string& userName);
+
+  void QueueUserLogout(
+    const std::string& userName);
+
+  void SetCharacterForcedIntoCreator(
+    data::Uid characterUid,
+    bool forced);
+  [[nodiscard]] bool IsCharacterForcedIntoCreator(
+    data::Uid characterUid) const;
+
+  void InviteCharacterToGuild(
+    data::Uid inviteeCharacterUid,
+    data::Uid guildUid,
+    data::Uid inviterCharacterUid);
+
+  // prototype function
+  [[deprecated]] void SetCharacterVisitPreference(
+    data::Uid characterUid,
+    data::Uid rancherUid);
+
+  void DisconnectCharacter(
+    data::Uid characterUid);
+  void MuteCharacter(
+    data::Uid characterUid,
+    data::Clock::time_point expiration);
+  void NotifyCharacter(
+    data::Uid characterUid,
+    const std::string& message);
+
+  //! Get users
+  //! @return Get users.
+  [[nodiscard]] std::unordered_map<std::string, UserInstance>& GetUsers();
+  //! Get guilds
+  //! @return Get guilds.
+  [[nodiscard]] std::unordered_map<data::Uid, GuildInstance>& GetGuilds();
 
   //! Get lobby config.
   //! @return Lobby config.
-  Config::Lobby& GetConfig();
-
-  void RequestCharacterCreator(data::Uid characterUid);
-  void InviteToGuild(std::string characterName, data::Uid guildUid, data::Uid inviterCharacterUid);
-
-  void Disconnect(data::Uid characterUid);
-  void Mute(data::Uid characterUid, data::Clock::time_point expiration);
-  void Notice(data::Uid characterUid, const std::string& message);
-
-  // todo: refactor
-  std::vector<std::string> GetOnlineUsers();
-  std::vector<data::Uid> GetOnlineCharacters();
-
-  // prototype function
-  [[deprecated]] void UpdateVisitPreference(
-    data::Uid characterUid,
-    data::Uid visitingCharacterUid);
+  [[nodiscard]] Config::Lobby& GetConfig();
+  //! Get lobby scheduler.
+  //! @return Lobby scheduler.
+  [[nodiscard]] Scheduler& GetScheduler();
+  //! Get lobby network handler.
+  //! @return Lobby network handler.
+  [[nodiscard]] LobbyNetworkHandler& GetNetworkHandler();
 
 private:
-  void HandleClientConnected(ClientId clientId) override;
-  void HandleClientDisconnected(ClientId clientId) override;
-
-  void HandleEnterChannel(
-    ClientId clientId,
-    const protocol::LobbyCommandEnterChannel& command);
-
-  void HandleRoomList(
-    ClientId,
-    const protocol::LobbyCommandRoomList& command);
-
-  void HandleMakeRoom(
-    ClientId clientId,
-    const protocol::LobbyCommandMakeRoom& command);
-
-  void HandleEnterRoom(
-    ClientId clientId,
-    const protocol::LobbyCommandEnterRoom& command);
-
-  //!
-  void HandleHeartbeat(
-    ClientId clientId,
-    const protocol::AcCmdCLHeartbeat& command);
-
-  //!
-  void HandleShowInventory(
-    ClientId clientId,
-    const protocol::LobbyCommandShowInventory& command);
-
-  void QueueShowInventory(
-    ClientId clientId);
-
-  //!
-  void HandleAchievementCompleteList(
-    ClientId clientId,
-    const protocol::LobbyCommandAchievementCompleteList& command);
-
-  //!
-  void HandleRequestLeagueInfo(
-    ClientId clientId,
-    const protocol::LobbyCommandRequestLeagueInfo& command);
-
-  //!
-  void HandleRequestQuestList(
-    ClientId clientId,
-    const protocol::LobbyCommandRequestQuestList& command);
-
-  //!
-  void HandleRequestDailyQuestList(
-    ClientId clientId,
-    const protocol::LobbyCommandRequestDailyQuestList& command);
-
-  //!
-  void HandleRequestSpecialEventList(
-    ClientId clientId,
-    const protocol::LobbyCommandRequestSpecialEventList& command);
-
-  void BuildPersonalInfoBasicResponse(
-    const data::Character& character,
-    protocol::LobbyCommandPersonalInfo& response);
-
-  //!
-  void HandleRequestPersonalInfo(
-    ClientId clientId,
-    const protocol::LobbyCommandRequestPersonalInfo& command);
-
-  void HandleSetIntroduction(
-    ClientId clientId,
-    const protocol::LobbyCommandSetIntroduction& command);
-
-  //!
-  void HandleEnterRanch(
-    ClientId clientId,
-    const protocol::LobbyCommandEnterRanch& command);
-
-  void QueueEnterRanchOK(
-    ClientId clientId,
-    data::Uid rancherUid);
-
-  //!
-  void HandleGetMessengerInfo(
-    ClientId clientId,
-    const protocol::LobbyCommandGetMessengerInfo& command);
-
-  //!
-  void HandleGoodsShopList(
-    ClientId clientId,
-    const protocol::AcCmdCLGoodsShopList& command);
-
-  //!
-  void HandleInquiryTreecash(
-    ClientId clientId,
-    const protocol::AcCmdCLInquiryTreecash& command);
-
-  //!
-  void HandleGuildPartyList(
-    ClientId clientId,
-    const protocol::LobbyCommandGuildPartyList& command);
-
-  void HandleUpdateSystemContent(
-    ClientId clientId,
-    const protocol::LobbyCommandUpdateSystemContent& command);
-
-  void HandleChangeRanchOption(
-    ClientId clientId,
-    const protocol::LobbyCommandChangeRanchOption& command);
-
-  void HandleUpdateUserSettings(
-    ClientId clientId,
-    const protocol::AcCmdCLUpdateUserSettings& command);
-
-  void HandleRequestMountInfo(
-    ClientId clientId,
-    const protocol::AcCmdCLRequestMountInfo& command);
-    
-  void HandleDeclineInviteToGuild(
-    ClientId clientId,
-    const protocol::AcCmdLCInviteGuildJoinCancel& command);
-
-  void HandleAcceptInviteToGuild(
-    ClientId clientId,
-    const protocol::AcCmdLCInviteGuildJoinOK& command);
-
-  //! Pending (online) guild invites
-  std::map<data::Uid, std::vector<data::Uid>> _pendingGuildInvites;
-
-  //! A scheduler
-  Scheduler _scheduler;
-  //!
-  ServerInstance& _serverInstance;
-  //!
-  CommandServer _commandServer;
-  //!
-  LoginHandler _loginHandler;
-
-protected:
-  struct ClientContext
+  struct QueuedLogin
   {
-    //! Whether the client is authenticated.
-    bool isAuthenticated{false};
-    std::string userName;
-    data::Uid characterUid = data::InvalidUid;
-    data::Uid rancherVisitPreference = data::InvalidUid;
+    //! A user token.
+    std::string userToken;
+    //! A flag indicating whether the load of the user was requested.
+    bool userLoadRequested{false};
+    //! A flag indicating whether the load of the user's character was requested.
+    bool userCharacterLoadRequested{false};
   };
 
-  //!
-  ClientContext& GetClientContext(
-    ClientId clientId,
-    bool requireAuthentication = true);
+  std::unordered_map<std::string, QueuedLogin> _userLogins;
 
-  protocol::LobbyCommandLoginOK::SystemContent _systemContent{
-    .values = {
-      // {4, 0},
-      // {16, 0},
-      // {21, 0},
-      // {22, 0},
-      // {30, 0}
-      }};
-  
-  //!
-  std::unordered_map<ClientId, ClientContext> _clients;
-  //!
-  std::unordered_set<data::Uid> _forcedCharacterCreator;
+  std::unordered_map<std::string, UserInstance> _userInstances;
+  std::unordered_map<data::Uid, GuildInstance> _guildInstances;
+  std::unordered_set<data::Uid> _charactersForcedIntoCreator;
+
+  std::queue<std::string> _loginRequestQueue;
+  std::queue<std::string> _loginResponseQueue;
+
+  //! A server instance.
+  ServerInstance& _serverInstance;
+  //! A scheduler.
+  Scheduler _scheduler;
+
+  //! A network handler.
+  LobbyNetworkHandler* _networkHandler;
 };
 
 } // namespace server
