@@ -1177,40 +1177,42 @@ void RaceDirector::HandleStartRace(
     auto const maps = _serverInstance.GetCourseRegistry().GetCourseGameModeInfo(roomGameMode).mapPool;
     if (maps.empty())
       raceInstance.raceMapBlockId = 1;
-
-    uint32_t masterLevel;
-    const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
-      raceInstance.masterUid);
-    characterRecord.Immutable(
-      [&masterLevel](const data::Character& character)
-      {
-        masterLevel = character.level();
-      });
-    // Filter out maps that are above the master's level
-    std::vector<uint32_t> filteredMaps;
-    std::copy_if(
-      maps.cbegin(),
-      maps.cend(),
-      std::back_inserter(filteredMaps),
-      [this, masterLevel](uint32_t mapBlockId)
-      {
-        try
+    else
+    {
+      uint32_t masterLevel;
+      const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+        raceInstance.masterUid);
+      characterRecord.Immutable(
+        [&masterLevel](const data::Character& character)
         {
-          const auto& mapBlockInfo = _serverInstance.GetCourseRegistry().GetMapBlockInfo(
-            mapBlockId);
-          return mapBlockInfo.requiredLevel <= masterLevel;
-        }
-        catch (const std::exception& e)
+          masterLevel = character.level();
+        });
+      // Filter out maps that are above the master's level
+      std::vector<uint32_t> filteredMaps;
+      std::copy_if(
+        maps.cbegin(),
+        maps.cend(),
+        std::back_inserter(filteredMaps),
+        [this, masterLevel](uint32_t mapBlockId)
         {
-          spdlog::warn("Failed to get map block info for mapBlockId {}: {}", mapBlockId, e.what());
-          return false;
-        }
-      });
+          try
+          {
+            const auto& mapBlockInfo = _serverInstance.GetCourseRegistry().GetMapBlockInfo(
+              mapBlockId);
+            return mapBlockInfo.requiredLevel <= masterLevel;
+          }
+          catch (const std::exception& e)
+          {
+            spdlog::warn("Failed to get map block info for mapBlockId {}: {}", mapBlockId, e.what());
+            return false;
+          }
+        });
 
-    // Select a random map from the pool.
-    static std::random_device rd;
-    std::uniform_int_distribution distribution(0, static_cast<int>(filteredMaps.size() - 1));
-    raceInstance.raceMapBlockId = filteredMaps[distribution(rd)];
+      // Select a random map from the pool.
+      static std::random_device rd;
+      std::uniform_int_distribution distribution(0, static_cast<int>(filteredMaps.size() - 1));
+      raceInstance.raceMapBlockId = filteredMaps[distribution(rd)];
+    }
   }
   else
   {
