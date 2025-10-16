@@ -706,7 +706,7 @@ struct LobbyCommandRoomListOK
     uint16_t unk2{};
     uint8_t unk3{};
 
-    enum class SkillBracket
+    enum class SkillBracket : uint8_t
     {
       Newbies = 0,
       Level12 = 1,
