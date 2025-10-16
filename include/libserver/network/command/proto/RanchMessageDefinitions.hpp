@@ -3477,7 +3477,7 @@ struct RanchCommandMountFamilyTreeOK
     uint8_t gender{};       // 0=male, 1=female, 2=unknown/self
   };
 
-  // 7 entries: self, 2 parents, 4 grandparents
+  //! A list of members of the family tree.
   std::array<Ancestor, 7> ancestors{};
 
   static Command GetCommand()
