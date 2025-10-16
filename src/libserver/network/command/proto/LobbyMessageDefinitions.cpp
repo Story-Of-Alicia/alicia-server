@@ -492,7 +492,7 @@ void LobbyCommandRoomListOK::Room::Write(
     .Write(value.unk0)
     .Write(value.unk1)
     .Write(value.map)
-    .Write(value.hasStarted)
+    .Write(value.state)
     .Write(value.unk2)
     .Write(value.unk3)
     .Write(value.skillBracket)

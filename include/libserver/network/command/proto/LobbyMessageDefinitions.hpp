@@ -702,11 +702,17 @@ struct LobbyCommandRoomListOK
     uint8_t unk0{};
     uint8_t unk1{};
     uint16_t map{};
-    bool hasStarted{};
+    //! State of the room
+    //! Internally a bool
+    enum State : uint8_t
+    {
+      Waiting = 0,
+      Playing = 1
+    } state{State::Waiting};
     uint16_t unk2{};
     uint8_t unk3{};
 
-    enum class SkillBracket
+    enum class SkillBracket : uint8_t
     {
       Newbies = 0,
       Level12 = 1,

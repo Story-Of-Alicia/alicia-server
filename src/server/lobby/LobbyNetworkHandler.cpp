@@ -890,7 +890,9 @@ void LobbyNetworkHandler::HandleRoomList(
 
       auto& roomResponse = response.rooms.emplace_back();
 
-      roomResponse.hasStarted = room.isPlaying;
+      roomResponse.state = room.isPlaying ? 
+        protocol::LobbyCommandRoomListOK::Room::State::Playing :
+        protocol::LobbyCommandRoomListOK::Room::State::Waiting;
 
       roomResponse.uid = room.uid;
       if (not room.details.password.empty())
