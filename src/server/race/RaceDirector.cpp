@@ -722,20 +722,29 @@ void RaceDirector::HandleEnterRoom(
         if (character.uid() == leaderUid)
           protocolRacer.isMaster = true;
 
-        GetServerInstance().GetDataDirector().GetSettings(character.settingsUid()).Immutable(
-          [&protocolRacer, modelId = character.parts.modelId()](const data::Settings& settings)
-          {
-            if (not settings.hideAge())
+        const auto& settingsRecord = GetServerInstance().GetDataDirector().GetSettings(character.settingsUid());
+        if (settingsRecord.IsAvailable())
+        {
+          settingsRecord.Immutable(
+            [&protocolRacer, modelId = character.parts.modelId()](const data::Settings& settings)
             {
-              // TODO: Add age here (find if it is even possible)
+              if (not settings.hideAge())
+              {
+                // TODO: Add age here (find if it is even possible)
 
-              protocolRacer.gender = 
-                modelId == 10 ? protocol::Gender::Boy :
-                modelId == 20 ? protocol::Gender::Girl :
-                throw std::runtime_error("Character gender not recognised by model ID");
-            }
-          });
-        
+                protocolRacer.gender = 
+                  modelId == 10 ? protocol::Gender::Boy :
+                  modelId == 20 ? protocol::Gender::Girl :
+                  throw std::runtime_error("Character gender not recognised by model ID");
+              }
+            });
+        }
+        else
+        {
+          spdlog::warn("Settings record for character {} was not found, skipping role/gender assignment...",
+            character.uid());
+        }
+
         protocolRacer.level = character.level();
         protocolRacer.uid = character.uid();
         protocolRacer.name = character.name();
