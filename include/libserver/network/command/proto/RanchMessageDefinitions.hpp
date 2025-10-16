@@ -3527,9 +3527,8 @@ struct RanchCommandMountFamilyTreeOK
     uint16_t skinId{};
   };
 
-  // In the packet, the length is specified as a byte
-  // max size 6
-  std::vector<MountFamilyTreeItem> ancestors;
+  //! A list of members of the family tree.
+  std::array<Ancestor, 7> ancestors{};
 
   static Command GetCommand()
   {
