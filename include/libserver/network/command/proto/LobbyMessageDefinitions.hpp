@@ -702,7 +702,11 @@ struct LobbyCommandRoomListOK
     uint8_t unk0{};
     uint8_t unk1{};
     uint16_t map{};
-    bool hasStarted{};
+    enum State : uint8_t
+    {
+      Waiting = 0,
+      Playing = 1
+    } hasStarted{State::Waiting};
     uint16_t unk2{};
     uint8_t unk3{};
 
