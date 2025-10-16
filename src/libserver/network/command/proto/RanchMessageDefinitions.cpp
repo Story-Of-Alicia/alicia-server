@@ -106,89 +106,21 @@ void RanchCommandMountFamilyTreeOK::Write(
   const RanchCommandMountFamilyTreeOK& command,
   SinkStream& stream)
 {
-  // Client expects EXACTLY 6 entries, NO count byte - just 144 bytes (6 × 24)
-  for (size_t i = 1; i <= 6; ++i)
+  stream.Write(static_cast<uint8_t>(command.ancestors.size()));
+  for (auto& item : command.ancestors)
   {
-    const auto& a = command.ancestors[i];
-    uint8_t buf[24] = {0};
-    
-    size_t pos = 0;
-    
-    // +0x00 relation id (1 byte)
-    buf[pos++] = a.id; // 1..6
-    
-    // +0x01 name[10], ASCII, null-padded (FIXED 10 bytes)
-    {
-      constexpr size_t kNameBytes = 10;
-      const size_t copyLen = std::min(a.name.size(), kNameBytes);
-      memcpy(&buf[pos], a.name.data(), copyLen);
-      // remaining bytes already zero
-      pos += kNameBytes;
-    }
-    
-    // +0x0B coatTid (4 bytes LE)
-    uint32_t tid = static_cast<uint32_t>(a.skinId);
-    std::memcpy(&buf[pos], &tid, sizeof(tid));
-    pos += sizeof(tid);
-    
-    // +0x0F gender (1 byte) - GENDER COMES FIRST!
-    buf[pos++] = a.gender;   // 0=male, 1=female
-    
-    // +0x10 lineage (1 byte)
-    buf[pos++] = a.lineage;
-    
-    // +0x11..+0x17 padding (7 bytes, already zero)
-    static_assert(sizeof(buf) == 24, "entry must be 24 bytes");
-    
-    // Debug: Log what we're writing
-    spdlog::debug("Writing ancestor {}: id={}, name='{}', skinId={}, lineage={}, gender={}", 
-      i, a.id, a.name, a.skinId, a.lineage, a.gender);
-    
-    // Write 24-byte entry
-    stream.Write(buf, sizeof(buf));
+    stream.Write(item.id)
+      .Write(item.name)
+      .Write(item.grade)
+      .Write(item.skinId);
   }
-  // Total payload: exactly 144 bytes (logger may show +4 for framing)
 }
 
 void RanchCommandMountFamilyTreeOK::Read(
   RanchCommandMountFamilyTreeOK& command,
   SourceStream& stream)
 {
-  // Client sends exactly 6 entries, NO count byte - just 144 bytes (6 × 24)
-  for (size_t i = 0; i < 6; ++i)
-  {
-    uint8_t buf[24];
-    stream.Read(buf, sizeof(buf));
-    
-    size_t pos = 0;
-    auto& out = command.ancestors[i + 1];
-    
-    // +0x00 relation id (1 byte)
-    out.id = buf[pos++];
-    
-    // +0x01 name[10] (FIXED 10 bytes, null-padded)
-    out.name.clear();
-    for (int k = 0; k < 10; ++k)
-    {
-      char c = static_cast<char>(buf[pos++]);
-      if (c == '\0') break;
-      out.name.push_back(c);
-    }
-    // If we stopped early due to null, skip remaining bytes to maintain alignment
-    while (pos < 11) pos++;
-    
-    // +0x0B coatTid (4 bytes)
-    std::memcpy(&out.skinId, &buf[pos], sizeof(uint32_t));
-    pos += sizeof(uint32_t);
-    
-    // +0x0F gender (1 byte) - GENDER COMES FIRST!
-    out.gender = buf[pos++];
-    
-    // +0x10 lineage (1 byte)
-    out.lineage = buf[pos++];
-    
-    // +0x11..+0x17 padding (7 bytes, ignored)
-  }
+  throw std::runtime_error("Not implemented.");
 }
 
 void RanchCommandMountFamilyTreeCancel::Write(
