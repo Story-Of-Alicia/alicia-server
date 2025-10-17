@@ -2423,7 +2423,7 @@ void RanchDirector::HandleBreedingFailureCardChoose(
   };
 
   // Breeding Failure Card Probability Table
-  // BreedingFailureCardProb in libconfig
+  // Source: libconfig_c.dat -> BreedingFailureCardProb table (XML)
   //
   // This table determines the reward grade (quality tier) based on cumulative money spent on breeding.
   // As players spend more money, probabilities shift from Grade A (common) -> Grade B (uncommon) -> Grade C (rare)
@@ -2469,9 +2469,6 @@ void RanchDirector::HandleBreedingFailureCardChoose(
   // Use the card type that was already determined in HandleBreedingFailureCard
   bool isChanceCard = (clientContext.pendingCardType == 1);
 
-  // Determine card type: 50/50 chance between Normal (RED) and Chance (YELLOW) cards
-  // TODO: Figure out the exact/approximate probability of each card type.
-
   // Breeding Failure Card reward data structure
   struct RewardData {
     uint32_t itemTid;    // Item Template ID (identifies the reward item type)
@@ -2503,7 +2500,7 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     std::uniform_int_distribution<uint32_t> chanceDist(minReward, maxReward);
     rewardId = chanceDist(gen);
 
-    // BreedingFailureCard_Chance in libconfig
+    // Chance Card Reward Table (YELLOW cards)
     // Format: {RewardId, {ItemTid, ItemCount, CarrotBonus}}
     // RewardId 1-16: Grade A rewards (low-tier for yellow cards)
     // RewardId 17-32: Grade B rewards (mid-tier)
@@ -2548,7 +2545,7 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     std::uniform_int_distribution<uint32_t> normalDist(minReward, maxReward);
     rewardId = normalDist(gen);
 
-    // BreedingFailureCard_Normal in libconfig
+    // Normal Card Reward Table (RED cards)
     // Format: {RewardId, {ItemTid, ItemCount, CarrotBonus}}
     // RewardId 1-20: Grade A rewards (low-tier, 100-350 carrots)
     // RewardId 21-38: Grade B rewards (mid-tier, 300-1000 carrots)
@@ -2932,7 +2929,6 @@ void RanchDirector::HandleGetItemFromStorage(
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-<<<<<<< HEAD
   bool isStorageItemValid = true;
 
   // Try to remove the storage item from the character.
