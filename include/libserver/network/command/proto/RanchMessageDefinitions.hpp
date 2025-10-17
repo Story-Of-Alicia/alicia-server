@@ -3581,7 +3581,7 @@ struct RanchCommandMountFamilyTreeOK
 {
   struct MountFamilyTreeItem
   {
-    enum class FamilyTreePosition : uint8_t
+    enum class Position : uint8_t
     {
       Father = 1,
       Mother = 2,
@@ -3590,8 +3590,8 @@ struct RanchCommandMountFamilyTreeOK
       MaternalGrandfather = 5,
       MaternalGrandmother = 6
     };
-    
-    FamilyTreePosition id{};
+
+    Position id{};
     std::string name{};
     uint8_t grade{};
     uint16_t skinId{};
