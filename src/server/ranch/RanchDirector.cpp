@@ -1742,87 +1742,49 @@ void RanchDirector::HandleGetItemFromStorage(
   const protocol::AcCmdCRGetItemFromStorage& command)
 {
   const auto& clientContext = GetClientContext(clientId);
-  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  bool storedItemIsValid = true;
-
-  // Try to remove the stored item from the character.
-  characterRecord.Mutable(
-    [this, &storedItemIsValid, storedItemUid = command.storedItemUid](
-      data::Character& character)
-    {
-      // The stored item is either a gift or a purchase.
-      // Try to remove from both gift and purchase vectors.
-
-      const auto storedGiftIter = std::ranges::find(character.gifts(), storedItemUid);
-      if (storedGiftIter != character.gifts().cend())
-      {
-        character.gifts().erase(storedGiftIter);
-        return;
-      }
-
-      const auto storedPurchaseIter = std::ranges::find(character.purchases(), storedItemUid);
-      if (storedPurchaseIter != character.purchases().cend())
-      {
-        character.purchases().erase(storedPurchaseIter);
-        return;
-      }
-
-      storedItemIsValid = false;
-    });
-
-  // If the stored item is invalid cancel the takeout.
-  if (not storedItemIsValid)
+  if (not characterRecord)
   {
-    protocol::AcCmdCRGetItemFromStorageCancel response{
-      .storedItemUid = command.storedItemUid,
-      .status = 0};
-
-    _commandServer.QueueCommand<decltype(response)>(
-      clientId,
-      [response]()
-      {
-        return response;
-      });
-    return;
+    throw std::runtime_error(
+      std::format("Character [{}] not available", clientContext.characterUid));
   }
 
-  protocol::AcCmdCRGetItemFromStorageOK response{
-    .storageItemUid = command.storedItemUid};
+  // NOTE: This handler is being repurposed to grant a breeding failure card reward
+  // until the full card choice system is implemented. This is a temporary measure.
 
-  // Get the items assigned to the storage item and fill the protocol command.
-  characterRecord.Mutable([this, &response](
-    data::Character& character)
-    {
-      const auto storedItemRecord = GetServerInstance().GetDataDirector().GetStorageItemCache().Get(
-        response.storageItemUid);
+  // 1. Define the reward item (e.g., 5 Carrots, TID 45001)
+  const uint32_t rewardItemTid = 45001;
+  const uint16_t rewardItemCount = 5;
 
-      // Collection of the items received from the storage item.
-      std::vector<data::Uid> items;
+  // 2. Create the item and add it to the character's inventory
+  const auto newItem = GetServerInstance().GetDataDirector().CreateItem();
+  data::Uid newItemUid = 0;
+  newItem.Mutable([&](data::Item& item) {
+    item.tid() = rewardItemTid;
+    item.count() = rewardItemCount;
+    newItemUid = item.uid();
+  });
 
-      storedItemRecord->Immutable([this, &items, &response](const data::StorageItem& storedItem)
-      {
-        items = storedItem.items();
-        const auto itemRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(
-          items);
+  characterRecord.Mutable([newItemUid](data::Character& character) {
+    character.inventory().emplace_back(newItemUid);
+  });
 
-        protocol::BuildProtocolItems(response.items, *itemRecords);
-      });
+  // 3. Send the response for the original action (even though we are repurposing it)
+  // We will use AcCmdCRGetItemFromStorageOK for now to signal success to the client action that triggered this.
+  protocol::AcCmdCRGetItemFromStorageOK response;
+  response.storageItemUid = command.storedItemUid; // Acknowledge the original request
+  
+  protocol::Item responseItem;
+  responseItem.uid = newItemUid;
+  responseItem.tid = rewardItemTid;
+  responseItem.count = rewardItemCount;
+  response.items.push_back(responseItem);
 
-      // Delete the storage item.
-      GetServerInstance().GetDataDirector().GetStorageItemCache().Delete(
-        response.storageItemUid);
-
-      // Add the items to the character's inventory.
-      character.inventory().insert(
-        character.inventory().end(),
-        items.begin(),
-        items.end());
-
-      // TODO: Update carrots as needed
+  characterRecord.Immutable([&](const data::Character& character) {
       response.updatedCarrots = character.carrots();
-    });
+  });
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -1830,6 +1792,11 @@ void RanchDirector::HandleGetItemFromStorage(
     {
       return response;
     });
+
+  // 4. Send the inventory update notification to refresh the client's UI
+  SendInventoryUpdate(clientId);
+
+  spdlog::info("Awarded temporary breeding failure item {} (x{}) to character {}", rewardItemTid, rewardItemCount, clientContext.characterUid);
 }
 
 void RanchDirector::HandleRequestNpcDressList(
