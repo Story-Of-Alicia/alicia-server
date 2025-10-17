@@ -3892,72 +3892,48 @@ void RanchDirector::HandleMountFamilyTree(
   // Map of position ID to UID for family tree
   using Position = protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem::Position;
   std::map<Position, data::Uid> ancestorPositions;
+  
+  // BFS queue in Position enum order: Father(1) → Mother(2) → grandparents
+  std::queue<std::pair<data::Uid, Position>> bfs;
+  bfs.emplace(parents[0], Position::Father);
+  bfs.emplace(parents[1], Position::Mother);
 
-  ancestorPositions[Position::Father] = parents[0];
-  ancestorPositions[Position::Mother] = parents[1];
-
-  // Get grandparents and add to map - using GetHorse() to ensure storage loading
-  const auto fatherRecord = GetServerInstance().GetDataDirector().GetHorse(parents[0]);
-  if (fatherRecord.IsAvailable())
+  // BFS for 2 generations
+  while (not bfs.empty())
   {
-    std::vector<data::Uid> fatherAncestors;
-    fatherRecord.Immutable([&fatherAncestors](const data::Horse& horse) { 
-      fatherAncestors = horse.ancestors(); 
-    });
-    
-    if (fatherAncestors.size() == 2)
+    auto [uid, pos] = bfs.front();
+    bfs.pop();
+    ancestorPositions[pos] = uid;
+
+    if (pos == Position::Father || pos == Position::Mother)
     {
-      ancestorPositions[Position::PaternalGrandfather] = fatherAncestors[0];
-      ancestorPositions[Position::PaternalGrandmother] = fatherAncestors[1];
+      const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(uid);
+      if (horseRecord.IsAvailable())
+      {
+        std::vector<data::Uid> ancestors;
+        horseRecord.Immutable([&ancestors](const data::Horse& h)
+          {
+            ancestors = h.ancestors();
+          });
+        if (ancestors.size() == 2)
+        {
+          auto [grandfather, grandmother] = pos == Position::Father
+          ? std::make_pair(Position::PaternalGrandfather, Position::PaternalGrandmother)
+          : std::make_pair(Position::MaternalGrandfather, Position::MaternalGrandmother);
+
+          bfs.emplace(ancestors[0], grandfather);
+          bfs.emplace(ancestors[1], grandmother);
+        }
+      }
     }
   }
-
-  const auto motherRecord = GetServerInstance().GetDataDirector().GetHorse(parents[1]);
-  if (motherRecord.IsAvailable())
-  {
-    std::vector<data::Uid> motherAncestors;
-    motherRecord.Immutable([&motherAncestors](const data::Horse& horse) { 
-      motherAncestors = horse.ancestors(); 
-    });
-    
-    if (motherAncestors.size() == 2)
-    {
-      ancestorPositions[Position::MaternalGrandfather] = motherAncestors[0];
-      ancestorPositions[Position::MaternalGrandmother] = motherAncestors[1];
-    }
-  }
-
-  // Collect all ancestor UIDs for batch retrieval
-  std::vector<data::Uid> allAncestorUids;
-  for (const auto& [id, uid] : ancestorPositions)
-  {
-    allAncestorUids.push_back(uid);
-  }
-
-  // Get cached records for all ancestors at once for efficiency
-  const auto ancestorRecords = GetServerInstance().GetDataDirector().GetHorseCache().Get(allAncestorUids);
-  if (not ancestorRecords)
-  {
-    _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
-    return;
-  }
-
-  // Build response using cached data
+  // Build response from ancestor positions
   for (const auto& [positionId, horseUid] : ancestorPositions)
   {
-    // Find the horse record directly by UID
-    auto ancestorIter = std::find_if(ancestorRecords->begin(), ancestorRecords->end(),
-      [horseUid](const auto& record) {
-        bool matches = false;
-        record.Immutable([&](const data::Horse& horse) {
-          matches = horse.uid() == horseUid;
-        });
-        return matches;
-      });
-
-    if (ancestorIter != ancestorRecords->end())
+    const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(horseUid);
+    if (horseRecord.IsAvailable())
     {
-      ancestorIter->Immutable([&](const data::Horse& horse) {
+      horseRecord.Immutable([&](const data::Horse& horse) {
         auto item = protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem{};
         item.id = positionId;
         item.name = horse.name();
