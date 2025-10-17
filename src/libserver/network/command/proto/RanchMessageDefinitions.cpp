@@ -608,15 +608,17 @@ void AcCmdCRBreedingFailureCardChooseOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.member1)
-  .Write(command.rewardId)
-  .Write(command.member3);
+    .Write(command.rewardId)
+    .Write(command.member3);
+    
   for (const auto& value : command.member4)
   {
     stream.Write(value);
-  };
+  }
+  
   stream.Write(command.member5)
-        .Write(command.item)
-  .Write(command.member6);
+    .Write(command.item)
+    .Write(command.member6);
 }
 
 void AcCmdCRBreedingFailureCardChooseOK::Read(
