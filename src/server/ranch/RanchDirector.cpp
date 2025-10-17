@@ -3420,7 +3420,7 @@ void RanchDirector::HandleMountFamilyTree(
             it->second->Immutable([&familyTree, i](const data::Horse& horse)
             {
               protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem ancestor;
-              ancestor.id = static_cast<uint8_t>(i + 1); // id based on position (1-6)
+              ancestor.id = static_cast<protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem::FamilyTreePosition>(i + 1); // id based on position (1-6)
               ancestor.name = horse.name();
               ancestor.grade = horse.grade();
               ancestor.skinId = horse.parts.skinTid();
