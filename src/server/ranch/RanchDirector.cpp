@@ -1537,13 +1537,27 @@ void RanchDirector::HandleBreedingFailureCardChoose(
   
   uint32_t moneySpent = 100000;
   
+  // Breeding Failure Card reward grade probability structure
+  // Maps total money spent on breeding to reward grade probabilities
   struct ProbData {
-    uint32_t moneySpent;
-    int probA;
-    int probB;
-    int probC;
+    uint32_t moneySpent;  // Total money spent threshold (in game currency)
+    int probA;            // Probability % for Grade A (common/low-tier rewards)
+    int probB;            // Probability % for Grade B (uncommon/mid-tier rewards)
+    int probC;            // Probability % for Grade C (rare/high-tier rewards)
   };
   
+  // Breeding Failure Card Probability Table
+  // Source: libconfig_c.dat -> BreedingFailureCardProb table (XML)
+  // 
+  // This table determines the reward grade (quality tier) based on cumulative money spent on breeding.
+  // As players spend more money, probabilities shift from Grade A (common) -> Grade B (uncommon) -> Grade C (rare)
+  //
+  // Format: {MoneySpent threshold, Prob_A%, Prob_B%, Prob_C%}
+  // - At 4k-8k spent: 100% Grade A (only common rewards)
+  // - At 10k spent: 90% A, 10% B (mostly common, some uncommon)
+  // - At 100k+ spent: 0% A, 0% B, 100% C (guaranteed rare/high-tier rewards)
+  //
+  // The grade determines which reward tier is selected from the Normal/Chance reward tables
   static const std::vector<ProbData> probTable = {
     {4000, 100, 0, 0}, {5000, 100, 0, 0}, {6000, 100, 0, 0}, {7000, 100, 0, 0}, {8000, 100, 0, 0},
     {9000, 96, 4, 0}, {10000, 90, 10, 0}, {11000, 89, 10, 1}, {12000, 87, 11, 2}, {13000, 86, 11, 3},
@@ -1575,19 +1589,30 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     rewardGrade = 2;
   }
   
+  // Determine card type: 50/50 chance between Normal (RED) and Chance (YELLOW) cards
+  // TODO: Figure out the exact/approximate probability of each card type.
   std::uniform_int_distribution<int> cardTypeDist(0, 1);
   bool isChanceCard = (cardTypeDist(gen) == 1);
   
+  // Breeding Failure Card reward data structure
   struct RewardData {
-    uint32_t itemTid;
-    uint32_t itemCount;
-    uint32_t gameMoney;
+    uint32_t itemTid;    // Item Template ID (identifies the reward item type)
+    uint32_t itemCount;  // Number of items to award
+    uint32_t gameMoney;  // Bonus carrots (in-game currency) to award
   };
   
   uint32_t rewardId;
   const RewardData* rewardData = nullptr;
   
   if (isChanceCard) {
+    // GOLD "Chance" Cards
+    // Source: libconfig_c.dat -> BreedingFailureCard_Chance table (48 entries)
+    // These cards give HIGHER rewards than normal cards
+    
+    // Map grade to RewardId ranges within the Chance table:
+    // Grade A (common tier): RewardId 1-16   (300-1000 carrots, basic items)
+    // Grade B (uncommon):    RewardId 17-32  (1400-4000 carrots, better items)
+    // Grade C (rare tier):   RewardId 33-48  (7000-25000 carrots, premium items)
     uint32_t minReward, maxReward;
     if (rewardGrade == 0) {
       minReward = 1; maxReward = 16;
@@ -1600,6 +1625,11 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     std::uniform_int_distribution<uint32_t> chanceDist(minReward, maxReward);
     rewardId = chanceDist(gen);
     
+    // Chance Card Reward Table (YELLOW cards)
+    // Format: {RewardId, {ItemTid, ItemCount, CarrotBonus}}
+    // RewardId 1-16: Grade A rewards (low-tier for yellow cards)
+    // RewardId 17-32: Grade B rewards (mid-tier)
+    // RewardId 33-48: Grade C rewards (high-tier, up to 25k carrots!)
     static const std::unordered_map<uint32_t, RewardData> chanceRewardTable = {
       {1, {45001, 1, 300}}, {2, {45001, 1, 350}}, {3, {45001, 1, 400}}, {4, {45001, 1, 420}},
       {5, {45001, 1, 450}}, {6, {45001, 1, 550}}, {7, {45001, 1, 600}}, {8, {44006, 1, 620}},
@@ -1620,6 +1650,14 @@ void RanchDirector::HandleBreedingFailureCardChoose(
       rewardData = &it->second;
     }
   } else {
+    // RED "Normal" Cards
+    // Source: libconfig_c.dat -> BreedingFailureCard_Normal table (63 entries)
+    // These cards give LOWER rewards compared to chance cards
+    
+    // Map grade to RewardId ranges within the Normal table:
+    // Grade A (common tier): RewardId 1-20   (100-350 carrots, basic items)
+    // Grade B (uncommon):    RewardId 21-38  (300-1000 carrots, better items)
+    // Grade C (rare tier):   RewardId 39-63  (2000-13000 carrots, premium items)
     uint32_t minReward, maxReward;
     if (rewardGrade == 0) {
       minReward = 1; maxReward = 20;
@@ -1632,6 +1670,12 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     std::uniform_int_distribution<uint32_t> normalDist(minReward, maxReward);
     rewardId = normalDist(gen);
     
+    // Normal Card Reward Table (RED cards)
+    // Format: {RewardId, {ItemTid, ItemCount, CarrotBonus}}
+    // RewardId 1-20: Grade A rewards (low-tier, 100-350 carrots)
+    // RewardId 21-38: Grade B rewards (mid-tier, 300-1000 carrots)
+    // RewardId 39-63: Grade C rewards (high-tier, 2000-13000 carrots)
+    // Note: Even at Grade C, normal cards give less than chance cards!
     static const std::unordered_map<uint32_t, RewardData> normalRewardTable = {
       {1, {45001, 1, 100}}, {2, {45001, 1, 100}}, {3, {45001, 1, 120}}, {4, {45001, 1, 140}},
       {5, {45001, 1, 120}}, {6, {45001, 1, 100}}, {7, {45001, 1, 120}}, {8, {45001, 1, 100}},
