@@ -3959,7 +3959,7 @@ void RanchDirector::HandleMountFamilyTree(
     {
       ancestorIter->Immutable([&](const data::Horse& horse) {
         auto item = protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem{};
-        item.id = positionId;
+        item.id = static_cast<protocol::RanchCommandMountFamilyTreeOK::FamilyTreePosition>(positionId);
         item.name = horse.name();
         item.grade = horse.grade();
         item.skinId = horse.parts.skinTid();
