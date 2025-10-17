@@ -495,6 +495,15 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
     .participated = mountInfo["participated"].get<uint32_t>(),
     .cumulativePrize = mountInfo["cumulativePrize"].get<uint32_t>(),
     .biggestPrize = mountInfo["biggestPrize"].get<uint32_t>()};
+  
+  if (json.contains("ancestors"))
+  {
+    horse.ancestors = json["ancestors"].get<std::vector<data::Uid>>();
+  }
+  else
+  {
+    horse.ancestors = std::vector<data::Uid>{};
+  }
 }
 
 void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
@@ -592,6 +601,8 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   mountInfo["cumulativePrize"] = horse.mountInfo.cumulativePrize();
   mountInfo["biggestPrize"] = horse.mountInfo.biggestPrize();
   json["mountInfo"] = mountInfo;
+
+  json["ancestors"] = horse.ancestors();
   dataFile << json.dump(2);
 }
 

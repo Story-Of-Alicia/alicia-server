@@ -26,6 +26,8 @@
 #include "libserver/util/Util.hpp"
 
 #include <ranges>
+#include <random>
+#include <unordered_map>
 
 #include <spdlog/spdlog.h>
 
@@ -128,6 +130,18 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, auto& command)
     {
       HandleBreedingWishlist(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRBreedingFailureCard>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleBreedingFailureCard(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRBreedingFailureCardChoose>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleBreedingFailureCardChoose(clientId, command);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRRanchCmdAction>(
@@ -512,6 +526,37 @@ void RanchDirector::SendStorageNotification(
   protocol::AcCmdCRRequestStorageOK response{
     .category = category,
     .pageCountAndNotification = 0b1};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void RanchDirector::SendInventoryUpdate(ClientId clientId)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  if (not characterRecord)
+    return;
+
+  protocol::AcCmdCRGetItemFromStorageOK response{
+    .storageItemUid = 0,
+    .items = {},
+    .updatedCarrots = 0};
+
+  characterRecord.Immutable(
+    [this, &response](const data::Character& character)
+    {
+      const auto itemRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(
+        character.inventory());
+      protocol::BuildProtocolItems(response.items, *itemRecords);
+      response.updatedCarrots = character.carrots();
+    });
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -1222,15 +1267,16 @@ void RanchDirector::HandleEnterBreedingMarket(
   ClientId clientId,
   const protocol::AcCmdCREnterBreedingMarket& command)
 {
-  const auto& clientContext = GetClientContext(clientId);
+  auto& clientContext = GetClientContext(clientId);
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
   protocol::RanchCommandEnterBreedingMarketOK response;
 
   characterRecord.Immutable(
-    [this, &response](const data::Character& character)
+    [this, &response, &clientContext](const data::Character& character)
     {
+      // If character has horses, use first horse
       const auto horseRecords = GetServerInstance().GetDataDirector().GetHorseCache().Get(
         character.horses());
 
@@ -1262,6 +1308,16 @@ void RanchDirector::HandleSearchStallion(
   ClientId clientId,
   const protocol::AcCmdCRSearchStallion& command)
 {
+  auto& clientContext = GetClientContext(clientId);
+  
+  spdlog::debug("SearchStallion: unk0={}, flags=[{},{},{},{},{},{},{},{}], "
+    "filterLists=[{},{},{}], unk10={}",
+    command.unk0,
+    command.unk1, command.unk2, command.unk3, command.unk4,
+    command.unk5, command.unk6, command.unk7, command.unk8,
+    command.unk9[0].size(), command.unk9[1].size(), command.unk9[2].size(),
+    command.unk10);
+  
   protocol::RanchCommandSearchStallionOK response{
     .unk0 = 0,
     .unk1 = 0};
@@ -1406,6 +1462,278 @@ void RanchDirector::HandleBreedingWishlist(
     {
       return response;
     });
+}
+
+void RanchDirector::HandleBreedingFailureCard(
+  ClientId clientId,
+  const protocol::AcCmdCRBreedingFailureCard& command)
+{
+  spdlog::info("BreedingFailureCard: statusOrFlag = {}", command.statusOrFlag);
+  
+  protocol::AcCmdCRBreedingFailureCardOK response{};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void RanchDirector::HandleBreedingFailureCardChoose(
+  ClientId clientId,
+  const protocol::AcCmdCRBreedingFailureCardChoose& command)
+{
+  spdlog::info("BreedingFailureCardChoose: statusOrFlag = {}", command.statusOrFlag);
+  
+  const auto& clientContext = GetClientContext(clientId);
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+  
+  protocol::AcCmdCRBreedingFailureCardChooseOK response;
+  
+  static std::mt19937 gen(std::chrono::steady_clock::now().time_since_epoch().count());
+  
+  uint32_t moneySpent = 100000;
+  
+  // Breeding Failure Card reward grade probability structure
+  // Maps total money spent on breeding to reward grade probabilities
+  struct ProbData {
+    uint32_t moneySpent;  // Total money spent threshold (in game currency)
+    int probA;            // Probability % for Grade A (common/low-tier rewards)
+    int probB;            // Probability % for Grade B (uncommon/mid-tier rewards)
+    int probC;            // Probability % for Grade C (rare/high-tier rewards)
+  };
+  
+  // Breeding Failure Card Probability Table
+  // Source: libconfig_c.dat -> BreedingFailureCardProb table (XML)
+  // 
+  // This table determines the reward grade (quality tier) based on cumulative money spent on breeding.
+  // As players spend more money, probabilities shift from Grade A (common) -> Grade B (uncommon) -> Grade C (rare)
+  //
+  // Format: {MoneySpent threshold, Prob_A%, Prob_B%, Prob_C%}
+  // - At 4k-8k spent: 100% Grade A (only common rewards)
+  // - At 10k spent: 90% A, 10% B (mostly common, some uncommon)
+  // - At 100k+ spent: 0% A, 0% B, 100% C (guaranteed rare/high-tier rewards)
+  //
+  // The grade determines which reward tier is selected from the Normal/Chance reward tables
+  static const std::vector<ProbData> probTable = {
+    {4000, 100, 0, 0}, {5000, 100, 0, 0}, {6000, 100, 0, 0}, {7000, 100, 0, 0}, {8000, 100, 0, 0},
+    {9000, 96, 4, 0}, {10000, 90, 10, 0}, {11000, 89, 10, 1}, {12000, 87, 11, 2}, {13000, 86, 11, 3},
+    {16000, 77, 18, 5}, {19000, 68, 25, 7}, {22000, 57, 34, 9}, {25000, 50, 39, 11}, {28000, 40, 47, 13},
+    {31000, 33, 52, 15}, {35000, 22, 60, 18}, {39000, 16, 62, 22}, {43000, 8, 66, 26}, {47000, 10, 59, 31},
+    {51000, 7, 57, 36}, {55000, 6, 52, 42}, {59000, 7, 45, 48}, {65000, 10, 35, 55}, {71000, 10, 28, 62},
+    {77000, 10, 20, 70}, {83000, 7, 15, 78}, {89000, 4, 11, 85}, {95000, 1, 8, 91}, {100000, 0, 0, 100},
+    {125000, 0, 0, 100}, {140000, 0, 0, 100}, {155000, 0, 0, 100}
+  };
+  
+  // Find probability entry for money spent
+  const ProbData& probEntry = [&]() -> const ProbData& {
+    for (const auto& entry : probTable) {
+      if (moneySpent <= entry.moneySpent) {
+        return entry;
+      }
+    }
+    return probTable.back(); // Default to highest spending tier
+  }();
+  
+  std::uniform_int_distribution<int> gradeDist(1, 100);
+  int gradeRoll = gradeDist(gen);
+  
+  int rewardGrade = 0;
+  if (gradeRoll <= probEntry.probA) {
+    rewardGrade = 0;
+  } else if (gradeRoll <= probEntry.probA + probEntry.probB) {
+    rewardGrade = 1;
+  } else {
+    rewardGrade = 2;
+  }
+  
+  // Determine card type: 50/50 chance between Normal (RED) and Chance (YELLOW) cards
+  // TODO: Figure out the exact/approximate probability of each card type.
+  std::uniform_int_distribution<int> cardTypeDist(0, 1);
+  bool isChanceCard = (cardTypeDist(gen) == 1);
+  
+  // Breeding Failure Card reward data structure
+  struct RewardData {
+    uint32_t itemTid;    // Item Template ID (identifies the reward item type)
+    uint32_t itemCount;  // Number of items to award
+    uint32_t gameMoney;  // Bonus carrots (in-game currency) to award
+  };
+  
+  uint32_t rewardId;
+  const RewardData* rewardData = nullptr;
+  
+  if (isChanceCard) {
+    // GOLD "Chance" Cards
+    // Source: libconfig_c.dat -> BreedingFailureCard_Chance table (48 entries)
+    // These cards give HIGHER rewards than normal cards
+    
+    // Map grade to RewardId ranges within the Chance table:
+    // Grade A (common tier): RewardId 1-16   (300-1000 carrots, basic items)
+    // Grade B (uncommon):    RewardId 17-32  (1400-4000 carrots, better items)
+    // Grade C (rare tier):   RewardId 33-48  (7000-25000 carrots, premium items)
+    uint32_t minReward, maxReward;
+    if (rewardGrade == 0) {
+      minReward = 1; maxReward = 16;
+    } else if (rewardGrade == 1) {
+      minReward = 17; maxReward = 32;
+    } else {
+      minReward = 33; maxReward = 48;
+    }
+    
+    std::uniform_int_distribution<uint32_t> chanceDist(minReward, maxReward);
+    rewardId = chanceDist(gen);
+    
+    // Chance Card Reward Table (YELLOW cards)
+    // Format: {RewardId, {ItemTid, ItemCount, CarrotBonus}}
+    // RewardId 1-16: Grade A rewards (low-tier for yellow cards)
+    // RewardId 17-32: Grade B rewards (mid-tier)
+    // RewardId 33-48: Grade C rewards (high-tier, up to 25k carrots!)
+    static const std::unordered_map<uint32_t, RewardData> chanceRewardTable = {
+      {1, {45001, 1, 300}}, {2, {45001, 1, 350}}, {3, {45001, 1, 400}}, {4, {45001, 1, 420}},
+      {5, {45001, 1, 450}}, {6, {45001, 1, 550}}, {7, {45001, 1, 600}}, {8, {44006, 1, 620}},
+      {9, {44005, 1, 700}}, {10, {44004, 1, 800}}, {11, {44003, 1, 800}}, {12, {44002, 1, 900}},
+      {13, {44001, 1, 900}}, {14, {43001, 1, 950}}, {15, {44002, 1, 1000}}, {16, {43001, 2, 1000}},
+      {17, {42002, 7, 1400}}, {18, {42001, 10, 1800}}, {19, {43001, 1, 2000}}, {20, {44006, 1, 2000}},
+      {21, {44004, 2, 2000}}, {22, {44002, 2, 2000}}, {23, {43001, 1, 2100}}, {24, {45001, 2, 2200}},
+      {25, {45001, 2, 2300}}, {26, {45001, 2, 2500}}, {27, {45001, 2, 2800}}, {28, {45001, 2, 3000}},
+      {29, {45001, 2, 3500}}, {30, {45001, 2, 3800}}, {31, {45001, 2, 4000}}, {32, {45001, 3, 4000}},
+      {33, {45001, 3, 7000}}, {34, {45001, 3, 8000}}, {35, {45001, 3, 9000}}, {36, {45001, 3, 10000}},
+      {37, {45001, 3, 11000}}, {38, {45001, 3, 12000}}, {39, {45001, 3, 13000}}, {40, {45001, 3, 14000}},
+      {41, {44006, 3, 15000}}, {42, {44004, 3, 16000}}, {43, {44002, 3, 17000}}, {44, {44001, 3, 18000}},
+      {45, {44003, 3, 19000}}, {46, {45001, 3, 20000}}, {47, {45001, 3, 25000}}, {48, {45001, 3, 25000}}
+    };
+    
+    auto it = chanceRewardTable.find(rewardId);
+    if (it != chanceRewardTable.end()) {
+      rewardData = &it->second;
+    }
+  } else {
+    // RED "Normal" Cards
+    // Source: libconfig_c.dat -> BreedingFailureCard_Normal table (63 entries)
+    // These cards give LOWER rewards compared to chance cards
+    
+    // Map grade to RewardId ranges within the Normal table:
+    // Grade A (common tier): RewardId 1-20   (100-350 carrots, basic items)
+    // Grade B (uncommon):    RewardId 21-38  (300-1000 carrots, better items)
+    // Grade C (rare tier):   RewardId 39-63  (2000-13000 carrots, premium items)
+    uint32_t minReward, maxReward;
+    if (rewardGrade == 0) {
+      minReward = 1; maxReward = 20;
+    } else if (rewardGrade == 1) {
+      minReward = 21; maxReward = 38;
+    } else {
+      minReward = 39; maxReward = 63;
+    }
+    
+    std::uniform_int_distribution<uint32_t> normalDist(minReward, maxReward);
+    rewardId = normalDist(gen);
+    
+    // Normal Card Reward Table (RED cards)
+    // Format: {RewardId, {ItemTid, ItemCount, CarrotBonus}}
+    // RewardId 1-20: Grade A rewards (low-tier, 100-350 carrots)
+    // RewardId 21-38: Grade B rewards (mid-tier, 300-1000 carrots)
+    // RewardId 39-63: Grade C rewards (high-tier, 2000-13000 carrots)
+    // Note: Even at Grade C, normal cards give less than chance cards!
+    static const std::unordered_map<uint32_t, RewardData> normalRewardTable = {
+      {1, {45001, 1, 100}}, {2, {45001, 1, 100}}, {3, {45001, 1, 120}}, {4, {45001, 1, 140}},
+      {5, {45001, 1, 120}}, {6, {45001, 1, 100}}, {7, {45001, 1, 120}}, {8, {45001, 1, 100}},
+      {9, {45001, 1, 120}}, {10, {41001, 5, 120}}, {11, {41009, 3, 150}}, {12, {41007, 3, 150}},
+      {13, {40002, 2, 150}}, {14, {41004, 2, 150}}, {15, {41003, 2, 180}}, {16, {41002, 3, 180}},
+      {17, {41001, 4, 200}}, {18, {41009, 2, 240}}, {19, {41008, 2, 300}}, {20, {40002, 3, 350}},
+      {21, {45001, 3, 300}}, {22, {45001, 2, 350}}, {23, {45001, 2, 400}}, {24, {45001, 2, 450}},
+      {25, {45001, 1, 500}}, {26, {45001, 1, 550}}, {27, {45001, 1, 600}}, {28, {45001, 1, 650}},
+      {29, {45001, 1, 700}}, {30, {45001, 1, 700}}, {31, {45001, 1, 800}}, {32, {45001, 1, 800}},
+      {33, {45001, 1, 900}}, {34, {45001, 1, 900}}, {35, {44001, 1, 1000}}, {36, {44005, 1, 1000}},
+      {37, {44003, 1, 1000}}, {38, {44001, 1, 1000}}, {39, {44006, 3, 2000}}, {40, {44004, 3, 2100}},
+      {41, {44002, 3, 2200}}, {42, {43001, 3, 2300}}, {43, {43001, 1, 2400}}, {44, {43001, 1, 2500}},
+      {45, {44006, 2, 2600}}, {46, {44004, 2, 2700}}, {47, {44002, 2, 2800}}, {48, {43001, 2, 2900}},
+      {49, {43001, 2, 3000}}, {50, {43001, 2, 3200}}, {51, {43001, 2, 3400}}, {52, {43001, 2, 3600}},
+      {53, {45001, 3, 3800}}, {54, {45001, 3, 4300}}, {55, {45001, 3, 4800}}, {56, {45001, 2, 5300}},
+      {57, {45001, 2, 5800}}, {58, {45001, 2, 6300}}, {59, {45001, 3, 6800}}, {60, {45001, 3, 7300}},
+      {61, {45001, 2, 7800}}, {62, {45001, 3, 10000}}, {63, {45001, 3, 13000}}
+    };
+    
+    auto it = normalRewardTable.find(rewardId);
+    if (it != normalRewardTable.end()) {
+      rewardData = &it->second;
+    }
+  }
+  
+  static const RewardData fallbackReward = {45001, 1, 120};
+  if (!rewardData) {
+    rewardData = &fallbackReward;
+  }
+  
+  data::Uid itemUid = 0;
+  bool foundExistingItem = false;
+  
+  characterRecord.Immutable([&itemUid, &foundExistingItem, rewardData, this](const data::Character& character) {
+    for (const auto& existingItemUid : character.inventory()) {
+      const auto existingItemRecord = GetServerInstance().GetDataDirector().GetItem(existingItemUid);
+      if (existingItemRecord) {
+        existingItemRecord.Immutable([&itemUid, &foundExistingItem, rewardData](const data::Item& existingItem) {
+          if (existingItem.tid() == rewardData->itemTid) {
+            itemUid = existingItem.uid();
+            foundExistingItem = true;
+          }
+        });
+        if (foundExistingItem) break;
+      }
+    }
+  });
+  
+  if (foundExistingItem) {
+    const auto existingItemRecord = GetServerInstance().GetDataDirector().GetItem(itemUid);
+    existingItemRecord.Mutable([rewardData, &response](data::Item& item) {
+      item.count() += rewardData->itemCount;
+      response.item.uid = item.uid();
+      response.item.tid = item.tid();
+      response.item.expiresAt = 0;
+      response.item.count = item.count();
+    });
+  } else {
+    const auto newItem = GetServerInstance().GetDataDirector().CreateItem();
+    newItem.Mutable([&itemUid, rewardData, &response](data::Item& item) {
+      item.tid() = rewardData->itemTid;
+      item.count() = rewardData->itemCount;
+      itemUid = item.uid();
+      response.item.uid = item.uid();
+      response.item.tid = item.tid();
+      response.item.expiresAt = 0;
+      response.item.count = item.count();
+    });
+    characterRecord.Mutable([itemUid](data::Character& character) {
+      character.inventory().emplace_back(itemUid);
+    });
+  }
+  
+  characterRecord.Mutable([rewardData](data::Character& character) {
+    character.carrots() += rewardData->gameMoney;
+  });
+  
+  response.member1 = 0;
+  response.rewardId = rewardId;
+  response.member3 = 0;
+  response.member4 = {1, 0};
+  response.member5 = 0;
+  response.member6 = rewardData->gameMoney;
+  
+  spdlog::info("BreedingFailureCard: {} CARD (Grade {})! MoneySpent: {}, GradeRoll: {}, RewardId {}, gave {} carrots + item {} x{}",
+    isChanceCard ? "CHANCE (YELLOW)" : "NORMAL (RED)",
+    rewardGrade, moneySpent, gradeRoll, rewardId,
+    rewardData->gameMoney, rewardData->itemTid, rewardData->itemCount);
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+  
+  // Send inventory update notification to refresh client inventory
+  SendInventoryUpdate(clientId);
 }
 
 void RanchDirector::HandleCmdAction(
@@ -1651,87 +1979,49 @@ void RanchDirector::HandleGetItemFromStorage(
   const protocol::AcCmdCRGetItemFromStorage& command)
 {
   const auto& clientContext = GetClientContext(clientId);
-  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  bool storedItemIsValid = true;
-
-  // Try to remove the stored item from the character.
-  characterRecord.Mutable(
-    [this, &storedItemIsValid, storedItemUid = command.storedItemUid](
-      data::Character& character)
-    {
-      // The stored item is either a gift or a purchase.
-      // Try to remove from both gift and purchase vectors.
-
-      const auto storedGiftIter = std::ranges::find(character.gifts(), storedItemUid);
-      if (storedGiftIter != character.gifts().cend())
-      {
-        character.gifts().erase(storedGiftIter);
-        return;
-      }
-
-      const auto storedPurchaseIter = std::ranges::find(character.purchases(), storedItemUid);
-      if (storedPurchaseIter != character.purchases().cend())
-      {
-        character.purchases().erase(storedPurchaseIter);
-        return;
-      }
-
-      storedItemIsValid = false;
-    });
-
-  // If the stored item is invalid cancel the takeout.
-  if (not storedItemIsValid)
+  if (not characterRecord)
   {
-    protocol::AcCmdCRGetItemFromStorageCancel response{
-      .storedItemUid = command.storedItemUid,
-      .status = 0};
-
-    _commandServer.QueueCommand<decltype(response)>(
-      clientId,
-      [response]()
-      {
-        return response;
-      });
-    return;
+    throw std::runtime_error(
+      std::format("Character [{}] not available", clientContext.characterUid));
   }
 
-  protocol::AcCmdCRGetItemFromStorageOK response{
-    .storageItemUid = command.storedItemUid};
+  // NOTE: This handler is being repurposed to grant a breeding failure card reward
+  // until the full card choice system is implemented. This is a temporary measure.
 
-  // Get the items assigned to the storage item and fill the protocol command.
-  characterRecord.Mutable([this, &response](
-    data::Character& character)
-    {
-      const auto storedItemRecord = GetServerInstance().GetDataDirector().GetStorageItemCache().Get(
-        response.storageItemUid);
+  // 1. Define the reward item (e.g., 5 Carrots, TID 45001)
+  const uint32_t rewardItemTid = 45001;
+  const uint16_t rewardItemCount = 5;
 
-      // Collection of the items received from the storage item.
-      std::vector<data::Uid> items;
+  // 2. Create the item and add it to the character's inventory
+  const auto newItem = GetServerInstance().GetDataDirector().CreateItem();
+  data::Uid newItemUid = 0;
+  newItem.Mutable([&](data::Item& item) {
+    item.tid() = rewardItemTid;
+    item.count() = rewardItemCount;
+    newItemUid = item.uid();
+  });
 
-      storedItemRecord->Immutable([this, &items, &response](const data::StorageItem& storedItem)
-      {
-        items = storedItem.items();
-        const auto itemRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(
-          items);
+  characterRecord.Mutable([newItemUid](data::Character& character) {
+    character.inventory().emplace_back(newItemUid);
+  });
 
-        protocol::BuildProtocolItems(response.items, *itemRecords);
-      });
+  // 3. Send the response for the original action (even though we are repurposing it)
+  // We will use AcCmdCRGetItemFromStorageOK for now to signal success to the client action that triggered this.
+  protocol::AcCmdCRGetItemFromStorageOK response;
+  response.storageItemUid = command.storedItemUid; // Acknowledge the original request
+  
+  protocol::Item responseItem;
+  responseItem.uid = newItemUid;
+  responseItem.tid = rewardItemTid;
+  responseItem.count = rewardItemCount;
+  response.items.push_back(responseItem);
 
-      // Delete the storage item.
-      GetServerInstance().GetDataDirector().GetStorageItemCache().Delete(
-        response.storageItemUid);
-
-      // Add the items to the character's inventory.
-      character.inventory().insert(
-        character.inventory().end(),
-        items.begin(),
-        items.end());
-
-      // TODO: Update carrots as needed
+  characterRecord.Immutable([&](const data::Character& character) {
       response.updatedCarrots = character.carrots();
-    });
+  });
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -1739,6 +2029,11 @@ void RanchDirector::HandleGetItemFromStorage(
     {
       return response;
     });
+
+  // 4. Send the inventory update notification to refresh the client's UI
+  SendInventoryUpdate(clientId);
+
+  spdlog::info("Awarded temporary breeding failure item {} (x{}) to character {}", rewardItemTid, rewardItemCount, clientContext.characterUid);
 }
 
 void RanchDirector::HandleRequestNpcDressList(
@@ -3355,54 +3650,81 @@ void RanchDirector::HandleMountFamilyTree(
   ClientId clientId,
   const protocol::RanchCommandMountFamilyTree& command)
 {
-  // todo: implement horse family tree
+  protocol::RanchCommandMountFamilyTreeOK response{};
 
-  protocol::RanchCommandMountFamilyTreeOK response{
-    .ancestors = {
-      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
-        .id = 1,
-        .name = "1",
-        .grade = 1,
-        .skinId = 1
-      },
-      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
-        .id = 2,
-        .name = "2",
-        .grade = 4,
-        .skinId = 1
-      },
-      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
-        .id = 3,
-        .name = "3",
-        .grade = 1,
-        .skinId = 1
-      },
-      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
-        .id = 4,
-        .name = "4",
-        .grade = 1,
-        .skinId = 1
-      },
-      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
-        .id = 5,
-        .name = "5",
-        .grade = 1,
-        .skinId = 1
-      },
-      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
-        .id = 6,
-        .name = "6",
-        .grade = 1,
-        .skinId = 1
-      }}
-  };
+  const auto& horseRecord = GetServerInstance().GetDataDirector().GetHorse(command.horseUid);
+  if (not horseRecord.IsAvailable())
+  {
+    _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
+    return;
+  }
 
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [response]()
+  std::vector<data::Uid> parents;
+  horseRecord.Immutable([&parents](const data::Horse& horse) { parents = horse.ancestors(); });
+
+  // If there are not exactly two parents, return empty response
+  if (parents.size() != 2)
+  {
+    _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
+    return;
+  }
+
+  // Map of position ID to UID for family tree
+  using Position = protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem::Position;
+  std::map<Position, data::Uid> ancestorPositions;
+  
+  // BFS queue in Position enum order: Father(1) → Mother(2) → grandparents
+  std::queue<std::pair<data::Uid, Position>> bfs;
+  bfs.emplace(parents[0], Position::Father);
+  bfs.emplace(parents[1], Position::Mother);
+
+  // BFS for 2 generations
+  while (not bfs.empty())
+  {
+    auto [uid, pos] = bfs.front();
+    bfs.pop();
+    ancestorPositions[pos] = uid;
+
+    if (pos == Position::Father || pos == Position::Mother)
     {
-      return response;
-    });
+      const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(uid);
+      if (horseRecord.IsAvailable())
+      {
+        std::vector<data::Uid> ancestors;
+        horseRecord.Immutable([&ancestors](const data::Horse& h)
+          {
+            ancestors = h.ancestors();
+          });
+        if (ancestors.size() == 2)
+        {
+          auto [grandfather, grandmother] = pos == Position::Father
+          ? std::make_pair(Position::PaternalGrandfather, Position::PaternalGrandmother)
+          : std::make_pair(Position::MaternalGrandfather, Position::MaternalGrandmother);
+
+          bfs.emplace(ancestors[0], grandfather);
+          bfs.emplace(ancestors[1], grandmother);
+        }
+      }
+    }
+  }
+  // Build response from ancestor positions
+  for (const auto& [positionId, horseUid] : ancestorPositions)
+  {
+    const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(horseUid);
+    if (horseRecord.IsAvailable())
+    {
+      horseRecord.Immutable([&](const data::Horse& horse) {
+        auto item = protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem{};
+        item.id = positionId;
+        item.name = horse.name();
+        item.grade = horse.grade();
+        item.skinId = horse.parts.skinTid();
+        response.ancestors.push_back(item);
+      });
+    }
+  }
+
+  _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
 }
 
 void RanchDirector::HandleCheckStorageItem(

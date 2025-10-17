@@ -71,6 +71,9 @@ public:
     data::Uid characterUid,
     protocol::AcCmdCRRequestStorage::Category category);
 
+  //! Send inventory update notification to refresh client inventory display
+  void SendInventoryUpdate(ClientId clientId);
+
   void BroadcastChangeAgeNotify(
     data::Uid characterUid,
     const data::Uid rancherUid,
@@ -190,6 +193,16 @@ private:
   void HandleBreedingWishlist(
     ClientId clientId,
     const protocol::RanchCommandBreedingWishlist& command);
+
+  //!
+  void HandleBreedingFailureCard(
+    ClientId clientId,
+    const protocol::AcCmdCRBreedingFailureCard& command);
+
+  //!
+  void HandleBreedingFailureCardChoose(
+    ClientId clientId,
+    const protocol::AcCmdCRBreedingFailureCardChoose& command);
 
   //!
   void HandleCmdAction(

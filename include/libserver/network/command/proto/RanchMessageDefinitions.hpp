@@ -1380,6 +1380,152 @@ struct RanchCommandRanchStuffOK
     SourceStream& stream);
 };
 
+struct AcCmdCRBreedingFailureCard
+{
+  int16_t statusOrFlag{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBreedingFailureCard;
+  }
+
+  //! Writes the command to the provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBreedingFailureCard& command,
+    SinkStream& stream);
+
+  //! Reads a command from the provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBreedingFailureCard& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBreedingFailureCardOK
+{
+  uint8_t choiceOrFlag{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBreedingFailureCardOK;
+  }
+
+  //! Writes the command to the provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBreedingFailureCardOK& command,
+    SinkStream& stream);
+
+  //! Reads a command from the provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBreedingFailureCardOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBreedingFailureCardCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBreedingFailureCardCancel;
+  }
+
+  //! Writes the command to the provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBreedingFailureCardCancel& command,
+    SinkStream& stream);
+
+  //! Reads a command from the provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBreedingFailureCardCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBreedingFailureCardChoose
+{
+  int16_t statusOrFlag{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBreedingFailureCardChoose;
+  }
+
+  //! Writes the command to the provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBreedingFailureCardChoose& command,
+    SinkStream& stream);
+
+  //! Reads a command from the provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBreedingFailureCardChoose& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBreedingFailureCardChooseOK
+{
+  uint8_t member1{};
+  uint32_t rewardId{};
+  uint8_t member3{};
+  std::array<uint32_t,2> member4{};
+  uint32_t member5{};
+  Item item{};
+  uint32_t member6{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBreedingFailureCardChooseOK;
+  }
+
+  //! Writes the command to the provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBreedingFailureCardChooseOK& command,
+    SinkStream& stream);
+
+  //! Reads a command from the provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBreedingFailureCardChooseOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBreedingFailureCardChooseCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBreedingFailureCardChooseCancel;
+  }
+
+  //! Writes the command to the provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBreedingFailureCardChooseCancel& command,
+    SinkStream& stream);
+
+  //! Reads a command from the provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBreedingFailureCardChooseCancel& command,
+    SourceStream& stream);
+};
+
 struct RanchCommandUpdateBusyState
 {
   uint8_t busyState{};
@@ -3358,7 +3504,17 @@ struct RanchCommandMountFamilyTreeOK
 {
   struct MountFamilyTreeItem
   {
-    uint8_t id{};
+    enum class Position : uint8_t
+    {
+      Father = 1,
+      Mother = 2,
+      PaternalGrandfather = 3,
+      PaternalGrandmother = 4,
+      MaternalGrandfather = 5,
+      MaternalGrandmother = 6
+    };
+
+    Position id{};
     std::string name{};
     uint8_t grade{};
     uint16_t skinId{};
