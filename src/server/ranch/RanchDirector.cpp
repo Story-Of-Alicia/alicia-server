@@ -2932,6 +2932,7 @@ void RanchDirector::HandleGetItemFromStorage(
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
+<<<<<<< HEAD
   bool isStorageItemValid = true;
 
   // Try to remove the storage item from the character.
@@ -3028,6 +3029,10 @@ void RanchDirector::HandleGetItemFromStorage(
 
       // Add the collected carrots.
       character.carrots() += collectedCarrots;
+    });
+
+  characterRecord.Immutable([&response](const data::Character& character)
+    {
       response.updatedCarrots = character.carrots();
   });
 
