@@ -1040,28 +1040,63 @@ void DataDirector::ScheduleCharacterLoad(
 
     const auto horseRecords = GetHorseCache().Get(horses);
 
-    // Queue all ancestors for loading to support family tree feature
+    // Queue all ancestors (including grandparents) for loading to support family tree feature
     if (horseRecords)
     {
       std::vector<data::Uid> allAncestors;
+      
+      // Collect direct parents (first generation)
       for (const auto& horseRecord : *horseRecords)
       {
         horseRecord.Immutable([&allAncestors](const data::Horse& horse)
         {
-          for (const auto ancestorUid : horse.ancestors())
+          const auto& ancestors = horse.ancestors();
+          for (const auto ancestorUid : ancestors)
           {
-            // Skip empty slots (0 = no ancestor in this position)
-            if (ancestorUid != 0)
-            {
-              allAncestors.push_back(ancestorUid);
-            }
+            allAncestors.push_back(ancestorUid);
           }
         });
       }
     
       if (!allAncestors.empty())
       {
-        GetHorseCache().Get(allAncestors);
+        // Load first generation ancestors (parents)
+        std::vector<data::Uid> firstGeneration = allAncestors;
+        std::vector<data::Uid> loadedFirstGen;
+        
+        for (const auto ancestorUid : firstGeneration)
+        {
+          // Load ancestor and check if available by attempting to access it
+          GetHorse(ancestorUid).Immutable([&loadedFirstGen, ancestorUid](const data::Horse& horse)
+          {
+            loadedFirstGen.push_back(ancestorUid);
+          });
+        }
+        
+        // Collect second generation ancestors (grandparents)
+        std::vector<data::Uid> secondGeneration;
+        for (const auto ancestorUid : loadedFirstGen)
+        {
+          const auto ancestorRecord = GetHorseCache().Get(ancestorUid);
+          if (ancestorRecord)
+          {
+            ancestorRecord->Immutable([&secondGeneration](const data::Horse& horse)
+            {
+              const auto& grandparents = horse.ancestors();
+              for (const auto grandparentUid : grandparents)
+              {
+                secondGeneration.push_back(grandparentUid);
+              }
+            });
+          }
+        }
+        
+        // Load second generation ancestors (grandparents)
+        for (const auto grandparentUid : secondGeneration)
+        {
+          GetHorse(grandparentUid).Immutable([](const data::Horse&) {
+          });
+        }
       }
     }
 

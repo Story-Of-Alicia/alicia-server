@@ -3872,115 +3872,103 @@ void RanchDirector::HandleMountFamilyTree(
 {
   protocol::RanchCommandMountFamilyTreeOK response{};
 
-  std::vector<protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem> familyTree;
-
-  const auto& horseRecord = GetServerInstance().GetDataDirector().GetHorse(
-    command.horseUid);
-
+  const auto& horseRecord = GetServerInstance().GetDataDirector().GetHorse(command.horseUid);
   if (not horseRecord.IsAvailable())
   {
-    _commandServer.QueueCommand<decltype(response)>(
-      clientId,
-      [response]()
-      {
-        return response;
-      });
+    _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
     return;
   }
 
-  std::vector<data::Uid> ancestors;
+  std::vector<data::Uid> parents;
+  horseRecord.Immutable([&parents](const data::Horse& horse) { parents = horse.ancestors(); });
 
-  horseRecord.Immutable([&ancestors, horseUid = command.horseUid](const data::Horse& horse)
+  // If there are not exactly two parents, return empty response
+  if (parents.size() != 2)
   {
-    ancestors = horse.ancestors();
-    spdlog::debug("Horse {} has {} ancestors in ancestors field", horseUid, ancestors.size());
-  });
-
-  // Ancestors array uses FIXED POSITIONS (size 0 or 6):
-  // Index 0 = Father (id 1), 1 = Mother (id 2)
-  // Index 2 = Paternal Grandfather (id 3), 3 = Paternal Grandmother (id 4)
-  // Index 4 = Maternal Grandfather (id 5), 5 = Maternal Grandmother (id 6)
-  // Value 0 = empty slot (no ancestor in this position)
-
-  if (ancestors.empty())
-  {
-    spdlog::debug("Horse has no ancestors");
+    _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
+    return;
   }
-  else if (ancestors.size() != 6)
+
+  // Map of position ID to UID for family tree
+  std::map<uint32_t, data::Uid> ancestorPositions;
+  ancestorPositions[1] = parents[0]; // Father
+  ancestorPositions[2] = parents[1]; // Mother
+
+  // Get grandparents and add to map - using GetHorse() to ensure storage loading
+  const auto fatherRecord = GetServerInstance().GetDataDirector().GetHorse(parents[0]);
+  if (fatherRecord.IsAvailable())
   {
-    spdlog::warn("Horse has {} ancestors, expected 0 or 6 (fixed positions)", ancestors.size());
-  }
-  else
-  {
-    // Collect non-zero ancestor UIDs for batch loading
-    std::vector<data::Uid> nonZeroAncestors;
-    for (const auto uid : ancestors)
-    {
-      if (uid != 0)
-      {
-        nonZeroAncestors.push_back(uid);
-      }
-    }
-
-    if (nonZeroAncestors.empty())
-    {
-      spdlog::debug("All ancestor slots are empty");
-    }
-    else
-    {
-      // Load all non-zero ancestors in a single batch
-      auto ancestorRecords = GetServerInstance().GetDataDirector().GetHorseCache().Get(nonZeroAncestors);
-
-      if (!ancestorRecords)
-      {
-        spdlog::warn("Not all ancestors are loaded in cache");
-      }
-      else
-      {
-        // Create a map of UID -> Record for quick lookup
-        std::unordered_map<data::Uid, const Record<data::Horse>*> ancestorMap;
-        for (const auto& record : *ancestorRecords)
-        {
-          record.Immutable([&ancestorMap, &record](const data::Horse& horse)
-          {
-            ancestorMap[horse.uid()] = &record;
-          });
-        }
-
-        // Process each position in the fixed array
-        for (size_t i = 0; i < 6; ++i)
-        {
-          const auto uid = ancestors[i];
-          if (uid == 0) continue; // Skip empty slots
-
-          auto it = ancestorMap.find(uid);
-          if (it != ancestorMap.end())
-          {
-            it->second->Immutable([&familyTree, i](const data::Horse& horse)
-            {
-              protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem ancestor;
-              ancestor.id = static_cast<protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem::FamilyTreePosition>(i + 1); // id based on position (1-6)
-              ancestor.name = horse.name();
-              ancestor.grade = horse.grade();
-              ancestor.skinId = horse.parts.skinTid();
-
-              familyTree.emplace_back(ancestor);
-            });
-          }
-        }
-        spdlog::debug("Loaded {} ancestors from cache (from {} non-zero UIDs)", familyTree.size(), nonZeroAncestors.size());
-      }
-    }
-  }
-  spdlog::debug("Family tree complete: {} ancestors found", familyTree.size());
-  response.ancestors = familyTree;
-
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [response]()
-    {
-      return response;
+    std::vector<data::Uid> fatherAncestors;
+    fatherRecord.Immutable([&fatherAncestors](const data::Horse& horse) { 
+      fatherAncestors = horse.ancestors(); 
     });
+    
+    if (fatherAncestors.size() == 2)
+    {
+      ancestorPositions[3] = fatherAncestors[0]; // Paternal grandfather
+      ancestorPositions[4] = fatherAncestors[1]; // Paternal grandmother
+    }
+  }
+
+  const auto motherRecord = GetServerInstance().GetDataDirector().GetHorse(parents[1]);
+  if (motherRecord.IsAvailable())
+  {
+    std::vector<data::Uid> motherAncestors;
+    motherRecord.Immutable([&motherAncestors](const data::Horse& horse) { 
+      motherAncestors = horse.ancestors(); 
+    });
+    
+    if (motherAncestors.size() == 2)
+    {
+      // Maternal grandfathe
+      ancestorPositions[5] = motherAncestors[0];
+      // Maternal grandmother
+      ancestorPositions[6] = motherAncestors[1]; 
+    }
+  }
+
+  // Collect all ancestor UIDs for batch retrieval
+  std::vector<data::Uid> allAncestorUids;
+  for (const auto& [id, uid] : ancestorPositions)
+  {
+    allAncestorUids.push_back(uid);
+  }
+
+  // Get cached records for all ancestors at once for efficiency
+  const auto ancestorRecords = GetServerInstance().GetDataDirector().GetHorseCache().Get(allAncestorUids);
+  if (not ancestorRecords)
+  {
+    _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
+    return;
+  }
+
+  // Build response using cached data
+  for (const auto& [positionId, horseUid] : ancestorPositions)
+  {
+    // Find the horse record directly by UID
+    auto ancestorIter = std::find_if(ancestorRecords->begin(), ancestorRecords->end(),
+      [horseUid](const auto& record) {
+        bool matches = false;
+        record.Immutable([&](const data::Horse& horse) {
+          matches = horse.uid() == horseUid;
+        });
+        return matches;
+      });
+
+    if (ancestorIter != ancestorRecords->end())
+    {
+      ancestorIter->Immutable([&](const data::Horse& horse) {
+        auto item = protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem{};
+        item.id = positionId;
+        item.name = horse.name();
+        item.grade = horse.grade();
+        item.skinId = horse.parts.skinTid();
+        response.ancestors.push_back(item);
+      });
+    }
+  }
+
+  _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
 }
 
 void RanchDirector::HandleCheckStorageItem(
