@@ -3890,9 +3890,11 @@ void RanchDirector::HandleMountFamilyTree(
   }
 
   // Map of position ID to UID for family tree
-  std::map<uint32_t, data::Uid> ancestorPositions;
-  ancestorPositions[1] = parents[0]; // Father
-  ancestorPositions[2] = parents[1]; // Mother
+  using Position = protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem::Position;
+  std::map<Position, data::Uid> ancestorPositions;
+
+  ancestorPositions[Position::Father] = parents[0];
+  ancestorPositions[Position::Mother] = parents[1];
 
   // Get grandparents and add to map - using GetHorse() to ensure storage loading
   const auto fatherRecord = GetServerInstance().GetDataDirector().GetHorse(parents[0]);
@@ -3905,8 +3907,8 @@ void RanchDirector::HandleMountFamilyTree(
     
     if (fatherAncestors.size() == 2)
     {
-      ancestorPositions[3] = fatherAncestors[0]; // Paternal grandfather
-      ancestorPositions[4] = fatherAncestors[1]; // Paternal grandmother
+      ancestorPositions[Position::PaternalGrandfather] = fatherAncestors[0];
+      ancestorPositions[Position::PaternalGrandmother] = fatherAncestors[1];
     }
   }
 
@@ -3920,10 +3922,8 @@ void RanchDirector::HandleMountFamilyTree(
     
     if (motherAncestors.size() == 2)
     {
-      // Maternal grandfathe
-      ancestorPositions[5] = motherAncestors[0];
-      // Maternal grandmother
-      ancestorPositions[6] = motherAncestors[1]; 
+      ancestorPositions[Position::MaternalGrandfather] = motherAncestors[0];
+      ancestorPositions[Position::MaternalGrandmother] = motherAncestors[1];
     }
   }
 
@@ -3959,7 +3959,7 @@ void RanchDirector::HandleMountFamilyTree(
     {
       ancestorIter->Immutable([&](const data::Horse& horse) {
         auto item = protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem{};
-        item.id = static_cast<protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem::FamilyTreePosition>(positionId);
+        item.id = positionId;
         item.name = horse.name();
         item.grade = horse.grade();
         item.skinId = horse.parts.skinTid();
