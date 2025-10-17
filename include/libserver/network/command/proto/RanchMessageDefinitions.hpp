@@ -1492,8 +1492,6 @@ struct AcCmdCRBreedingFailureCardOK
 
 struct AcCmdCRBreedingFailureCardCancel
 {
-  int16_t statusOrFlag{};
-
   static Command GetCommand()
   {
     return Command::AcCmdCRBreedingFailureCardCancel;
