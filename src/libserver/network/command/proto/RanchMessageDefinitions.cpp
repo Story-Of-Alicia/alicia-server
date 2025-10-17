@@ -2275,6 +2275,45 @@ void AcCmdRCHideAgeNotify::Write(
     .Write(command.option);
 }
 
+void AcCmdCRChangeNickname::Write(
+  const AcCmdCRChangeNickname& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRChangeNickname::Read(
+  AcCmdCRChangeNickname& command,
+  SourceStream& stream)
+{
+  stream.Read(command.itemUid)
+    .Read(command.newNickname);
+}
+
+void AcCmdCRChangeNicknameCancel::Write(
+  const AcCmdCRChangeNicknameCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1)
+    .Write(command.status);
+}
+
+void AcCmdCRChangeNicknameCancel::Read(
+  AcCmdCRChangeNicknameCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRChangeNicknameOK::Write(
+  const AcCmdCRChangeNicknameOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.itemUid)
+    .Write(command.member2)
+    .Write(command.newNickname);
+}
+
 void AcCmdCRStatusPointApply::Write(
   const AcCmdCRStatusPointApply& command,
   SinkStream& stream)

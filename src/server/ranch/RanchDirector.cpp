@@ -366,6 +366,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleGetEmblemList(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRChangeNickname>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleChangeNickname(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -3928,6 +3934,34 @@ void RanchDirector::HandleGetEmblemList(
       // TODO: compile emblem list
     });
   
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+};
+
+void RanchDirector::HandleChangeNickname(
+  ClientId clientId,
+  const protocol::AcCmdCRChangeNickname& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
+
+  //TODO: validate nickname (length, inappropriate words, etc)
+  //TODO: check for duplicate nicknames
+  characterRecord.Mutable(
+    [&command](data::Character& character)
+    {
+      character.name() = command.newNickname;
+    });
+
+  protocol::AcCmdCRChangeNicknameOK response{
+    .itemUid = command.itemUid,
+    .member2 = 1,
+    .newNickname = command.newNickname};
+
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
