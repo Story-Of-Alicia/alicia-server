@@ -1349,21 +1349,22 @@ void RanchDirector::HandleBreedingFailureCardChoose(
   };
   
   // Find probability entry for money spent
-  const ProbData* probEntry = &probTable[0];
-  for (const auto& entry : probTable) {
-    if (moneySpent <= entry.moneySpent) {
-      probEntry = &entry;
-      break;
+  const ProbData& probEntry = [&]() -> const ProbData& {
+    for (const auto& entry : probTable) {
+      if (moneySpent <= entry.moneySpent) {
+        return entry;
+      }
     }
-  }
+    return probTable.back(); // Default to highest spending tier
+  }();
   
   std::uniform_int_distribution<int> gradeDist(1, 100);
   int gradeRoll = gradeDist(gen);
   
   int rewardGrade = 0;
-  if (gradeRoll <= probEntry->probA) {
+  if (gradeRoll <= probEntry.probA) {
     rewardGrade = 0;
-  } else if (gradeRoll <= probEntry->probA + probEntry->probB) {
+  } else if (gradeRoll <= probEntry.probA + probEntry.probB) {
     rewardGrade = 1;
   } else {
     rewardGrade = 2;
