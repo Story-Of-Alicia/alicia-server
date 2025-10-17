@@ -21,7 +21,6 @@
 
 #include <cassert>
 #include <algorithm>
-#include <cstring>
 #include <format>
 #include <spdlog/spdlog.h>
 
@@ -601,14 +600,7 @@ void AcCmdCRBreedingFailureCardChoose::Read(
   AcCmdCRBreedingFailureCardChoose& command,
   SourceStream& stream)
 {
-  // Try to read the statusOrFlag field, but handle zero payload gracefully
-  const auto available = stream.Size() - stream.GetCursor();
-  if (available >= 2) {
-    stream.Read(command.statusOrFlag);
-  } else {
-    // Zero payload - default to first card choice
-    command.statusOrFlag = 0;
-  }
+  stream.Read(command.statusOrFlag);
 }
 
 void AcCmdCRBreedingFailureCardChooseOK::Write(
