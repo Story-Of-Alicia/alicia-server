@@ -4,7 +4,7 @@ project(alicia-server)
 
 option(BUILD_TESTS "Build tests" ON)
 
-find_package(Boost 1.80.0 MODULE)
+find_package(Boost REQUIRED COMPONENTS asio system)
 
 add_subdirectory(3rd-party SYSTEM)
 
@@ -69,10 +69,11 @@ target_link_libraries(alicia-libserver PUBLIC
         project-properties
         platform-properties
         spdlog::spdlog
-        Boost::headers
+        Boost::asio
+        Boost::system
         nlohmann_json::nlohmann_json
         yaml-cpp::yaml-cpp
-        zlibstatic)
+        zlib)
 
 # alicia-server target
 add_executable(alicia-server
@@ -94,7 +95,8 @@ target_include_directories(alicia-server
         PRIVATE include/)
 target_link_libraries(alicia-server PRIVATE
         project-properties
-        alicia-libserver)
+        alicia-libserver
+        zlib)
 target_include_directories(alicia-server PUBLIC
         "${PROJECT_BINARY_DIR}/generated")
 

@@ -88,6 +88,16 @@ private:
     bool isAuthenticated = false;
   };
 
+  //! AI Rider structure for single player mode
+  struct AIRider
+  {
+    uint32_t oid;                                    //! AI对象ID (服务器分配)
+    std::string name;                                //! AI名称
+    uint32_t aiDifficulty;                           //! AI难度 (1=简单, 2=普通, 3=困难)
+    uint32_t aiPersonality;                          //! AI个性ID (1-7对应不同角色)
+    tracker::RaceTracker::Racer::Team team;          //! 队伍
+  };
+
   struct RoomInstance
   {
     //! A stage of the room.
@@ -96,7 +106,6 @@ private:
       Waiting,
       Loading,
       Racing,
-      Finishing,
     } stage{Stage::Waiting};
     //! A time point of when the stage timeout occurs.
     std::chrono::steady_clock::time_point stageTimeoutTimePoint;
@@ -119,6 +128,9 @@ private:
     std::chrono::steady_clock::time_point raceStartTimePoint;
     //! A room clients.
     std::unordered_set<ClientId> clients;
+    
+    //! AI riders in this room (for single player mode)
+    std::vector<AIRider> aiRiders;
   };
 
   ClientContext& GetClientContext(ClientId clientId, bool requireAuthorized = true);
@@ -231,6 +243,19 @@ private:
   void HandleUserRaceItemGet(
     ClientId clientId,
     const protocol::AcCmdUserRaceItemGet& command);
+
+  //! Spawn AI riders for single player mode
+  void SpawnAIRiders(
+    RoomInstance& roomInstance,
+    data::Uid roomUid);
+
+  //! Auto-complete AI loading
+  void AutoCompleteAILoading(RoomInstance& roomInstance);
+
+  //! Generate AI race results
+  void GenerateAIRaceResults(
+    RoomInstance& roomInstance,
+    uint32_t playerTime);
 
   // Magic Targeting Commands for Bolt System
   void HandleStartMagicTarget(

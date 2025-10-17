@@ -46,6 +46,39 @@ uint64_t TimePointToRaceTimePoint(const std::chrono::steady_clock::time_point& t
     timePoint.time_since_epoch()).count() / IntervalConstant;
 }
 
+// AI名称列表 - 简单难度 (对应客户端SAI_easy1-7) (AI name list - Easy difficulty, corresponds to client SAI_easy1-7)
+const std::vector<std::string> AI_EASY_NAMES = {
+  "Cookie",   // 쿠키
+  "Jake",     // 제이크
+  "Jade",     // 제이드
+  "Ann",      // 앤
+  "Saint",    // 세인트
+  "Janis",    // 제니스
+  "Cathy"     // 캐시
+};
+
+// AI名称列表 - 普通难度 (对应客户端SAI_nomal1-7) (AI name list - Normal difficulty, corresponds to client SAI_nomal1-7)
+const std::vector<std::string> AI_NORMAL_NAMES = {
+  "Karim",    // 카림
+  "Eden",     // 이든
+  "Warren",   // 워렌
+  "Tien",     // 티엔
+  "Dains",    // 데인즈
+  "Glen",     // 글렌
+  "Marin"     // 마린
+};
+
+// AI名称列表 - 困难难度 (对应客户端SAI_hard1-7) (AI name list - Hard difficulty, corresponds to client SAI_hard1-7)
+const std::vector<std::string> AI_HARD_NAMES = {
+  "Mullin",     // 멀린
+  "Delta",      // 델타
+  "Anju",       // 앤주
+  "Christian",  // 크리스챤
+  "Lyra",       // 라이라
+  "Happy",      // 해피
+  "Pepper"      // 페퍼
+};
+
 // 2 - Bolt
 // 4 - Shield
 // 10 - Ice wall
@@ -417,54 +450,6 @@ void RaceDirector::Tick() {
     if (raceInstance.stage != RoomInstance::Stage::Racing)
       continue;
 
-    const bool raceTimeoutReached = std::chrono::steady_clock::now() >= raceInstance.stageTimeoutTimePoint;
-
-    const bool isFinishing = std::ranges::any_of(
-      std::views::values(raceInstance.tracker.GetRacers()),
-      [](const tracker::RaceTracker::Racer& racer)
-      {
-        return racer.state == tracker::RaceTracker::Racer::State::Finishing;
-      });
-
-    // If the race is not finishing and the timeout was not reached
-    // do not finish the race.
-    if (not isFinishing && not raceTimeoutReached)
-      continue;
-
-    raceInstance.stage = RoomInstance::Stage::Finishing;
-    raceInstance.stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(10);
-
-    // If the race timeout was reached notify the clients about the finale.
-    if (raceTimeoutReached)
-    {
-      protocol::AcCmdUserRaceFinalNotify notify{};
-
-      // Broadcast the race final.
-      for (const ClientId& raceClientId : raceInstance.clients)
-      {
-        const auto& raceClientContext = GetClientContext(raceClientId, true);
-
-        const auto isParticipant = raceInstance.tracker.IsRacer(
-          raceClientContext.characterUid);
-        if (not isParticipant)
-          continue;
-
-        _commandServer.QueueCommand<decltype(notify)>(
-          raceClientId,
-          [notify]()
-          {
-            return notify;
-          });
-      }
-    }
-  }
-
-  // Process rooms which are finishing
-  for (auto& [raceUid, raceInstance] : _raceInstances)
-  {
-    if (raceInstance.stage != RoomInstance::Stage::Finishing)
-      continue;
-
     // Determine whether all racers have finished.
     const bool allRacersFinished = std::ranges::all_of(
       std::views::values(raceInstance.tracker.GetRacers()),
@@ -474,14 +459,14 @@ void RaceDirector::Tick() {
           || racer.state == tracker::RaceTracker::Racer::State::Disconnected;
       });
 
-    const bool finishTimeoutReached = std::chrono::steady_clock::now() >= raceInstance.stageTimeoutTimePoint;
+    const bool raceTimeoutReached = std::chrono::steady_clock::now() >= raceInstance.stageTimeoutTimePoint;
 
     // If not all of the racer have finished yet and the timeout has not been reached yet
     // do not finish the race.
-    if (not allRacersFinished && not finishTimeoutReached)
-      continue;
+    if (not allRacersFinished && not raceTimeoutReached)
+      return;
 
-    if (finishTimeoutReached)
+    if (raceTimeoutReached)
     {
       spdlog::warn("Room {} has reached the race timeout threshold", raceUid);
     }
@@ -515,21 +500,71 @@ void RaceDirector::Tick() {
 
       score.courseTime = courseTime;
 
-      const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
-        characterUid);
-
-      characterRecord.Immutable([this, &score](const data::Character& character)
+      // 检查是否是AI (UID >= 1000000) (Check if it's an AI, UID >= 1000000)
+      bool isAI = (characterUid >= 1000000 && characterUid < 2000000);
+      
+      if (isAI)
       {
-        score.uid = character.uid();
-        score.name = character.name();
-        score.level = character.level();
+        // 从AI列表获取AI信息 (Get AI information from AI list)
+        auto aiIt = std::find_if(
+          raceInstance.aiRiders.begin(),
+          raceInstance.aiRiders.end(),
+          [oid = racer.oid](const AIRider& ai) { return ai.oid == oid; });
+        
+        if (aiIt != raceInstance.aiRiders.end())
+        {
+          score.uid = characterUid;
+          score.name = aiIt->name;
+          score.level = 1;  // AI默认等级 (AI default level)
+          score.mountName = "AI Horse";  // AI马匹名称 (AI horse name)
+          
+          spdlog::debug("Added AI {} to scoreboard: time={}ms, rank={}", 
+                       aiIt->name, courseTime, raceResult.scores.size());
+        }
+        else
+        {
+          spdlog::warn("AI rider with OID {} not found in aiRiders list", racer.oid);
+          score.uid = characterUid;
+          score.name = "Unknown AI";
+          score.level = 1;
+          score.mountName = "AI Horse";
+        }
+      }
+      else
+      {
+        // 真实玩家 (Real player)
+        const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+          characterUid);
 
-        _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Immutable(
-          [&score](const data::Horse& horse)
-          {
-            score.mountName = horse.name();
-          });
-      });
+        characterRecord.Immutable([this, &score](const data::Character& character)
+        {
+          score.uid = character.uid();
+          score.name = character.name();
+          score.level = character.level();
+
+          _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Immutable(
+            [&score](const data::Horse& horse)
+            {
+              score.mountName = horse.name();
+            });
+        });
+        
+        spdlog::debug("Added player {} to scoreboard: time={}ms, rank={}", 
+                     score.name, courseTime, raceResult.scores.size());
+      }
+    }
+
+    // Log final scoreboard
+    if (!raceInstance.aiRiders.empty())
+    {
+      spdlog::info("=== Final Race Results for Room {} ===", raceUid);
+      for (size_t i = 0; i < raceResult.scores.size(); ++i)
+      {
+        const auto& s = raceResult.scores[i];
+        spdlog::info("  Rank #{} | {:12s} | Time: {}ms", 
+                     i+1, s.name, s.courseTime);
+      }
+      spdlog::info("==========================================");
     }
 
     // Broadcast the race result
@@ -1293,9 +1328,10 @@ void RaceDirector::HandleStartRace(
   PrepareItemSpawners(clientContext.roomUid);
 
   // Add the racers.
+  size_t playerCount = 0;
   _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid,
-    [&raceInstance](Room& room)
+    [&raceInstance, &playerCount](Room& room)
     {
       // todo: observers
       for (const auto& [characterUid, roomPlayer] : room.GetPlayers())
@@ -1314,8 +1350,25 @@ void RaceDirector::HandleStartRace(
             racer.team = tracker::RaceTracker::Racer::Team::Blue;
             break;
         }
+        playerCount++;
       }
     });
+  
+  // 检查是否是单人竞速模式（Race Alone），如果是则生成AI骑手 (Check if it's single player race mode (Race Alone), if so spawn AI riders)
+  // 条件: playerCount == 1 且不是教程模式 (Condition: playerCount == 1 and not tutorial mode)
+  const bool isSinglePlayerRace = (playerCount == 1) 
+                                   && (raceInstance.raceGameMode != protocol::GameMode::Tutorial)
+                                   && raceInstance.aiRiders.empty();
+  
+  if (isSinglePlayerRace)
+  {
+    spdlog::info("Single player race mode detected (non-tutorial), spawning AI riders");
+    SpawnAIRiders(raceInstance, clientContext.roomUid);
+  }
+  else if (playerCount == 1 && raceInstance.raceGameMode == protocol::GameMode::Tutorial)
+  {
+    spdlog::info("Tutorial mode detected, skipping AI rider spawning");
+  }
 
   raceInstance.stage = RoomInstance::Stage::Loading;
   raceInstance.stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(30);
@@ -1342,22 +1395,59 @@ void RaceDirector::HandleStartRace(
         .p2pRelayPort = static_cast<uint16_t>(10500),
         .raceMissionId = raceInstance.raceMissionId,};
 
-      // Build the racers.
+      // Build the racers (including AI riders).
       for (const auto& [characterUid, racer] : raceInstance.tracker.GetRacers())
       {
         std::string characterName;
-        GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
-          [&characterName](
-            const data::Character& character)
+        uint8_t aiPersonality = 0;
+        uint32_t aiDifficulty = 0;
+        bool isAI = (characterUid >= 1000000 && characterUid < 2000000);
+        
+        if (isAI)
+        {
+          // 从AI列表获取名称和属性 (Get name and attributes from AI list)
+          auto aiIt = std::find_if(
+            raceInstance.aiRiders.begin(),
+            raceInstance.aiRiders.end(),
+            [oid = racer.oid](const AIRider& ai) { return ai.oid == oid; });
+          
+          if (aiIt != raceInstance.aiRiders.end())
           {
-            characterName = character.name();
-          });
+            characterName = aiIt->name;
+            aiPersonality = static_cast<uint8_t>(aiIt->aiPersonality);
+            aiDifficulty = aiIt->aiDifficulty;
+          }
+          else
+          {
+            characterName = "AI Rider";
+            aiPersonality = 1;
+            aiDifficulty = 2;
+          }
+        }
+        else
+        {
+          // 获取真实玩家名称
+          GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
+            [&characterName](
+              const data::Character& character)
+            {
+              characterName = character.name();
+            });
+        }
+
+        // 计算参赛者索引 (Calculate racer index)
+        uint16_t racerIndex = static_cast<uint16_t>(notify.racers.size());
 
         auto& protocolRacer = notify.racers.emplace_back(
           protocol::AcCmdCRStartRaceNotify::Player{
             .oid = racer.oid,
             .name = characterName,
-            .p2dId = racer.oid,});
+            .unk2 = isAI ? static_cast<uint8_t>(1) : static_cast<uint8_t>(0),  // AI=1, 玩家=0 (AI=1, Player=0)
+            .unk3 = isAI ? aiPersonality : static_cast<uint8_t>(0),  // AI个性ID (AI personality ID)
+            .p2dId = racer.oid,
+            .unk6 = isAI ? static_cast<uint16_t>(1) : racerIndex,  // AI都用1，玩家用正常索引 (AI all use 1, player use normal index)
+            .unk7 = isAI ? static_cast<uint32_t>(1) : static_cast<uint32_t>(0),  // AI=1 (AI=1)
+          });
 
         switch (racer.team)
         {
@@ -1371,6 +1461,19 @@ void RaceDirector::HandleStartRace(
             protocolRacer.teamColor = protocol::TeamColor::Blue;
             break;
         }
+      }
+      
+      // 输出参赛者信息用于调试 (Output racer information for debugging)
+      if (!raceInstance.aiRiders.empty())
+      {
+        spdlog::info("=== Race Start Notify - Total {} racers ===", notify.racers.size());
+        for (size_t i = 0; i < notify.racers.size(); ++i)
+        {
+          const auto& r = notify.racers[i];
+          spdlog::info("  #{} | OID={:3d} | {:12s} | unk2={} unk3={} unk6={} unk7={}", 
+                       i+1, r.oid, r.name, r.unk2, r.unk3, r.unk6, r.unk7);
+        }
+        spdlog::info("=========================================");
       }
 
       // Send to all clients participating in the race.
@@ -1491,6 +1594,12 @@ void RaceDirector::HandleLoadingComplete(
           .oid = oid};
       });
   }
+  
+  // 自动完成所有AI的加载 (Auto-complete loading for all AI)
+  if (!raceInstance.aiRiders.empty())
+  {
+    AutoCompleteAILoading(raceInstance);
+  }
 }
 
 void RaceDirector::HandleUserRaceFinal(
@@ -1501,7 +1610,6 @@ void RaceDirector::HandleUserRaceFinal(
   auto& raceInstance = _raceInstances[clientContext.roomUid];
 
   // todo: sanity check for course time
-  // todo: address npc racers and update their states
   auto& racer = raceInstance.tracker.GetRacer(
     clientContext.characterUid);
 
@@ -1520,6 +1628,12 @@ void RaceDirector::HandleUserRaceFinal(
       {
         return notify;
       });
+  }
+  
+  // 如果有AI骑手，生成它们的比赛结果 (If there are AI riders, generate their race results)
+  if (!raceInstance.aiRiders.empty())
+  {
+    GenerateAIRaceResults(raceInstance, command.courseTime);
   }
 }
 
@@ -2841,6 +2955,196 @@ void RaceDirector::HandleChangeSkillCardPresetId(
   );
 
   // No response command
+}
+
+void RaceDirector::SpawnAIRiders(
+  RoomInstance& roomInstance,
+  data::Uid roomUid)
+{
+  // 默认使用普通难度 (Default to normal difficulty)
+  uint32_t aiDifficulty = 2;
+  
+  // 尝试从房间详情获取AI难度设置（如果有的话） (Try to get AI difficulty setting from room details if available)
+  // 当前Room类没有aiDifficulty字段，使用默认值 (Current Room class has no aiDifficulty field, using default value)
+  
+  // 验证难度值有效性 (Validate difficulty value)
+  if (aiDifficulty < 1 || aiDifficulty > 3)
+  {
+    spdlog::warn("Invalid AI difficulty {}, using default (2)", aiDifficulty);
+    aiDifficulty = 2;
+  }
+  
+  // 选择对应难度的AI名称列表 (Select AI name list for corresponding difficulty)
+  const std::vector<std::string>* aiNames = &AI_NORMAL_NAMES;
+  const char* difficultyName = "Normal";
+  
+  switch (aiDifficulty)
+  {
+    case 1:
+      aiNames = &AI_EASY_NAMES;
+      difficultyName = "Easy";
+      break;
+    case 2:
+      aiNames = &AI_NORMAL_NAMES;
+      difficultyName = "Normal";
+      break;
+    case 3:
+      aiNames = &AI_HARD_NAMES;
+      difficultyName = "Hard";
+      break;
+  }
+  
+  spdlog::info("Spawning {} AI riders for single player race (difficulty: {} - {})", 
+               aiNames->size(), aiDifficulty, difficultyName);
+  
+  // 生成7个AI骑手 (Spawn 7 AI riders)
+  for (size_t i = 0; i < aiNames->size(); ++i)
+  {
+    // 创建AI角色UID (使用特殊范围避免与真实玩家冲突) (Create AI character UID, using special range to avoid conflicts with real players)
+    // AI UID范围: 1000000 - 1999999 (AI UID range: 1000000 - 1999999)
+    data::Uid aiCharacterUid = 1000000 + i;
+    
+    // 添加到比赛追踪器 (Add to race tracker)
+    auto& aiRacer = roomInstance.tracker.AddRacer(aiCharacterUid);
+    
+    // 设置AI状态为加载中（与真实玩家一样） (Set AI state to loading, same as real players)
+    aiRacer.state = tracker::RaceTracker::Racer::State::Loading;
+    aiRacer.team = tracker::RaceTracker::Racer::Team::Solo;
+    
+    // 创建AI骑手信息 (Create AI rider information)
+    AIRider aiRider{
+      .oid = aiRacer.oid,
+      .name = (*aiNames)[i],
+      .aiDifficulty = aiDifficulty,
+      .aiPersonality = static_cast<uint32_t>(i + 1),
+      .team = tracker::RaceTracker::Racer::Team::Solo
+    };
+    
+    // 存储到房间实例 (Store to room instance)
+    roomInstance.aiRiders.push_back(aiRider);
+    
+    spdlog::info("  Spawned AI rider #{}: {} (OID: {}, UID: {}, personality: {})",
+                 i + 1, aiRider.name, aiRider.oid, aiCharacterUid, aiRider.aiPersonality);
+  }
+  
+  spdlog::info("Total racers in room: {} (1 player + {} AI)", 
+               roomInstance.tracker.GetRacers().size(), 
+               roomInstance.aiRiders.size());
+}
+
+void RaceDirector::AutoCompleteAILoading(RoomInstance& roomInstance)
+{
+  if (roomInstance.aiRiders.empty())
+    return;
+    
+  spdlog::info("Auto-completing AI loading for {} AI riders", 
+               roomInstance.aiRiders.size());
+  
+  for (const auto& aiRider : roomInstance.aiRiders)
+  {
+    // 查找对应的racer并标记为Racing (Find corresponding racer and mark as Racing)
+    for (auto& [uid, racer] : roomInstance.tracker.GetRacers())
+    {
+      if (racer.oid == aiRider.oid)
+      {
+        // 只有在Loading状态才切换到Racing (Only switch to Racing if in Loading state)
+        if (racer.state == tracker::RaceTracker::Racer::State::Loading)
+        {
+          racer.state = tracker::RaceTracker::Racer::State::Racing;
+          
+          spdlog::info("  AI rider {} (OID: {}) loading complete", 
+                       aiRider.name, racer.oid);
+          
+          // 通知所有客户端此AI加载完成 (Notify all clients that this AI has completed loading)
+          for (const ClientId& roomClientId : roomInstance.clients)
+          {
+            _commandServer.QueueCommand<protocol::AcCmdCRLoadingCompleteNotify>(
+              roomClientId,
+              [oid = racer.oid]()
+              {
+                return protocol::AcCmdCRLoadingCompleteNotify{.oid = oid};
+              });
+          }
+        }
+        break;
+      }
+    }
+  }
+}
+
+void RaceDirector::GenerateAIRaceResults(
+  RoomInstance& roomInstance,
+  uint32_t playerTime)
+{
+  if (roomInstance.aiRiders.empty())
+    return;
+    
+  static std::random_device rd;
+  static std::mt19937 gen(rd());
+  
+  spdlog::info("Generating AI race results (player time: {}ms)", playerTime);
+  
+  for (const auto& aiRider : roomInstance.aiRiders)
+  {
+    // 根据难度计算AI完成时间 (Calculate AI completion time based on difficulty)
+    uint32_t aiTime = playerTime;
+    
+    switch (aiRider.aiDifficulty)
+    {
+      case 1:  // 简单 - AI比玩家慢5-15% (Easy - AI is 5-15% slower than player)
+      {
+        std::uniform_int_distribution<> dis(5, 15);
+        aiTime += aiTime * dis(gen) / 100;
+        break;
+      }
+      case 2:  // 普通 - AI时间在玩家±5%之间 (Normal - AI time is within ±5% of player)
+      {
+        std::uniform_int_distribution<> dis(-5, 5);
+        aiTime += aiTime * dis(gen) / 100;
+        break;
+      }
+      case 3:  // 困难 - AI比玩家快5-15% (Hard - AI is 5-15% faster than player)
+      {
+        std::uniform_int_distribution<> dis(5, 15);
+        aiTime -= aiTime * dis(gen) / 100;
+        break;
+      }
+    }
+    
+    // 确保时间为正数 (Ensure time is positive)
+    if (aiTime == 0)
+      aiTime = playerTime;
+    
+    spdlog::info("  AI rider {} finished in {}ms (player: {}ms, diff: {}%)",
+                 aiRider.name, aiTime, playerTime,
+                 playerTime > 0 ? (static_cast<int>(aiTime) - static_cast<int>(playerTime)) * 100 / playerTime : 0);
+    
+    // 查找对应的racer并更新状态 (Find corresponding racer and update state)
+    for (auto& [uid, racer] : roomInstance.tracker.GetRacers())
+    {
+      if (racer.oid == aiRider.oid)
+      {
+        racer.state = tracker::RaceTracker::Racer::State::Finishing;
+        racer.courseTime = aiTime;
+        
+        // 发送AI完成通知给所有客户端 (Send AI completion notification to all clients)
+        protocol::AcCmdUserRaceFinalNotify notify{
+          .oid = racer.oid,
+          .courseTime = aiTime
+        };
+        
+        for (const ClientId& roomClientId : roomInstance.clients)
+        {
+          _commandServer.QueueCommand<decltype(notify)>(
+            roomClientId,
+            [notify]() { return notify; });
+        }
+        break;
+      }
+    }
+  }
+  
+  spdlog::info("AI race results generated for {} AI riders", roomInstance.aiRiders.size());
 }
 
 } // namespace server
