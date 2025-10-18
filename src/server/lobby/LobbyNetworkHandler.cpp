@@ -7,6 +7,7 @@
 #include "server/ServerInstance.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
+#include <libserver/util/Locale.hpp>
 
 #include <boost/container_hash/hash.hpp>
 #include <spdlog/spdlog.h>
@@ -1224,6 +1225,13 @@ void LobbyNetworkHandler::HandleCreateNickname(
   const protocol::AcCmdCLCreateNickname& command)
 {
   auto& clientContext = GetClientContext(clientId);
+
+  const bool isValidNickname = locale::IsNameValid(command.nickname, 16);
+  if (not isValidNickname)
+  {
+    SendLoginCancel(clientId, protocol::AcCmdCLLoginCancel::Reason::Generic);
+    return;
+  }
 
   clientContext.justCreatedCharacter = true;
 

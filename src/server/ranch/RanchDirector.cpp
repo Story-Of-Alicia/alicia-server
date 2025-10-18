@@ -20,16 +20,13 @@
 #include "server/ranch/RanchDirector.hpp"
 #include "server/ServerInstance.hpp"
 
-#include "libserver/data/helper/ProtocolHelper.hpp"
-#include "libserver/registry/HorseRegistry.hpp"
-#include "libserver/registry/PetRegistry.hpp"
-#include "libserver/util/Util.hpp"
+#include <libserver/data/helper/ProtocolHelper.hpp>
+#include <libserver/util/Locale.hpp>
+#include <libserver/util/Util.hpp>
 
 #include <ranges>
 
 #include <spdlog/spdlog.h>
-
-#include <zlib.h>
 
 namespace server
 {
@@ -3977,11 +3974,8 @@ void RanchDirector::HandleChangeNickname(
         return;
       }
 
-      // Check if new nickname size is 4 <= size <= 16 and does not have whitespace
-      bool isValidNickname = 
-        command.newNickname.size() <= 16 &&
-        command.newNickname.size() >= 4 &&
-        command.newNickname.find(' ') == std::string::npos;
+      // Check if the new nickname is valid.
+      const bool isValidNickname = locale::IsNameValid(command.newNickname, 16);
       if (not isValidNickname)
       {
         // Character name exceeds 16 byte limit or is not long enough (min 4 bytes) or has whitespace
