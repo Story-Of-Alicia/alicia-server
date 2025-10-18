@@ -3946,20 +3946,106 @@ void RanchDirector::HandleChangeNickname(
   ClientId clientId,
   const protocol::AcCmdCRChangeNickname& command)
 {
-  const auto& clientContext = GetClientContext(clientId);
-  const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
+  uint16_t itemCount;
+  std::optional<protocol::NameChangeError> error;
 
-  //TODO: validate nickname (length, inappropriate words, etc)
-  //TODO: check for duplicate nicknames
-  characterRecord.Mutable(
-    [&command](data::Character& character)
+  const auto& clientContext = GetClientContext(clientId);
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+    [this, &command, &itemCount, &error](data::Character& character)
     {
+      // Get item record by command itemUid
+      const auto& itemRecord = GetServerInstance().GetDataDirector().GetItem(command.itemUid);
+      if (not itemRecord.IsAvailable())
+      {
+        // Item does not exist
+        error.emplace(protocol::NameChangeError::NoOrIncorrectItem);
+        spdlog::warn("Character {} tried rename themselves using item {} that does not exist",
+          character.uid(),
+          command.itemUid);
+        return;
+      }
+      
+      // Check if character owns this item
+      auto& inventory = character.inventory();
+      if (not std::ranges::contains(inventory, command.itemUid))
+      {
+        // Character does not own this item
+        error.emplace(protocol::NameChangeError::NoOrIncorrectItem);
+        spdlog::warn("Character {} tried rename themselves using item {} that does not belong to them",
+          character.uid(),
+          command.itemUid);
+        return;
+      }
+
+      // Check if new nickname size is 4 <= size <= 16 and does not have whitespace
+      bool isValidNickname = 
+        command.newNickname.size() <= 16 &&
+        command.newNickname.size() >= 4 &&
+        command.newNickname.find(' ') == std::string::npos;
+      if (not isValidNickname)
+      {
+        // Character name exceeds 16 byte limit or is not long enough (min 4 bytes) or has whitespace
+        error.emplace(protocol::NameChangeError::InvalidNickname);
+        // Note: do not log the attempted character nickname in the interest 
+        // of preventing some form of vulnerability with spdlog.
+        // Paranoid but mindful
+        spdlog::warn("Character {} tried rename themselves to an invalid nickname",
+          character.uid());
+        return;
+      }
+
+      //TODO: validate nickname (inappropriate words, etc)
+      //TODO: check for duplicate nicknames
+
+      // Manipulate item
+      itemRecord.Mutable([&itemCount, &error](data::Item& item)
+      {
+        // Sanity check item count
+        if (item.count() < 1)
+        {
+          // Client tried to use an item whose quantity was 0
+          error.emplace(protocol::NameChangeError::NoOrIncorrectItem);
+          return;
+        }
+
+        // Decrement item count
+        itemCount = --item.count();
+      });
+
+      // Delete item if there is none left
+      if (itemCount < 1)
+      {
+        // Delete item from character's inventory
+        inventory.erase(std::ranges::find(inventory, command.itemUid));
+
+        // Delete item record
+        GetServerInstance().GetDataDirector().GetItemCache().Delete(command.itemUid);
+      }
+
+      // Change character name to new name
       character.name() = command.newNickname;
     });
 
+  if (error.has_value())
+  {
+    // An error occurred when attempting to change nickname, return error response
+    protocol::AcCmdCRChangeNicknameCancel cancel{
+      .member1 = command.itemUid,
+      .status = error.value()
+    };
+
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
   protocol::AcCmdCRChangeNicknameOK response{
     .itemUid = command.itemUid,
-    .member2 = 1,
+    .itemCount = itemCount,
     .newNickname = command.newNickname};
 
   _commandServer.QueueCommand<decltype(response)>(

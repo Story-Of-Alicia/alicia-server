@@ -2310,7 +2310,7 @@ void AcCmdCRChangeNicknameOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.itemUid)
-    .Write(command.member2)
+    .Write(command.itemCount)
     .Write(command.newNickname);
 }
 

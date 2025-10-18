@@ -3662,8 +3662,10 @@ struct AcCmdCRChangeNickname
 
 struct AcCmdCRChangeNicknameCancel
 {
+  // Likely itemUid
   uint32_t member1{};
-  uint8_t status{};
+  NameChangeError status{};
+
   static Command GetCommand()
   {
     return Command::AcCmdCRChangeNicknameCancel;
@@ -3687,8 +3689,7 @@ struct AcCmdCRChangeNicknameCancel
 struct AcCmdCRChangeNicknameOK
 {
   uint32_t itemUid{};
-  //seems like item count?
-  uint16_t member2{}; 
+  uint16_t itemCount{}; 
   std::string newNickname{};
 
   static Command GetCommand()
