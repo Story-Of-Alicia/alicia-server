@@ -602,6 +602,16 @@ enum class GuildError : uint8_t {
   Unknown = 255
 };
 
+//! Corresponds to values in CharNameChangeUIStrings
+enum class NameChangeError : uint8_t
+{
+  UnknownError = 0x1,       // CEC_UNDEFINED
+  NoOrIncorrectItem = 0x1a, // CEC_HAS_NO_RIGHT_ITEM
+  InvalidNickname = 0x1b,   // CEC_INVALID_NICKNAME
+  DuplicateNickname = 0x1c, // CEC_DUPLICATED_NICKNAME
+  NicknameCooldown = 0x1d   // CEC_NICKNAME_NOT_AVAILABE_DAY
+};
+
 } // namespace server::protocol
 
 #endif

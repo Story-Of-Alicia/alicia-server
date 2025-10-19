@@ -24,10 +24,10 @@ public:
   void Terminate();
 
   void AcceptLogin(
-    const std::string& userName,
+    ClientId clientId,
     bool sendToCharacterCreator = false);
   void RejectLogin(
-    const std::string& userName,
+    ClientId clientId,
     protocol::AcCmdCLLoginCancel::Reason reason);
 
   void SendCharacterGuildInvitation(
@@ -111,8 +111,7 @@ private:
     const protocol::AcCmdCLEnterRoom& command);
 
   void HandleLeaveRoom(
-    ClientId clientId,
-    const protocol::AcCmdCLLeaveRoom& command);
+    ClientId clientId);
 
   void HandleEnterChannel(
     ClientId clientId,
@@ -184,6 +183,10 @@ private:
   void HandleCheckWaitingSeqno(
     ClientId clientId,
     const protocol::AcCmdCLCheckWaitingSeqno& command);
+
+  void SendWaitingSeqno(
+    ClientId clientId,
+    size_t queuePosition);
 
   void HandleUpdateSystemContent(
     ClientId clientId,

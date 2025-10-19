@@ -3635,6 +3635,83 @@ struct AcCmdRCHideAgeNotify
     SourceStream& stream);
 };
 
+struct AcCmdCRChangeNickname
+{
+  uint32_t itemUid{};
+  std::string newNickname{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeNickname;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeNickname& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeNickname& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRChangeNicknameCancel
+{
+  // Likely itemUid
+  uint32_t member1{};
+  NameChangeError status{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeNicknameCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeNicknameCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeNicknameCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRChangeNicknameOK
+{
+  uint32_t itemUid{};
+  uint16_t itemCount{}; 
+  std::string newNickname{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeNicknameOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeNicknameOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeNicknameOK& command,
+    SourceStream& stream);
+};
+
 struct AcCmdCRChangeSkillCardPreset
 {
   SkillSet skillSet{};

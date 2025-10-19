@@ -23,10 +23,11 @@
 #include "server/Config.hpp"
 
 #include <libserver/data/DataDefinitions.hpp>
+#include <libserver/network/NetworkDefinitions.hpp>
 #include <libserver/util/Scheduler.hpp>
 
 #include <unordered_map>
-#include <queue>
+#include <list>
 
 namespace server
 {
@@ -78,16 +79,22 @@ public:
   //! Tick the director.
   void Tick();
 
-  void QueueUserLogin(
+  bool QueueClientConnect(
+    network::ClientId clientId);
+  size_t QueueClientLogin(
+    network::ClientId clientId,
     const std::string& userName,
     const std::string& userToken);
-  void QueueCharacterCreated(
-    const std::string& userName);
-  size_t GetUserQueuePosition(
+  size_t GetClientQueuePosition(
+      network::ClientId clientId);
+
+  void QueueClientDisconnect(
+    network::ClientId clientId);
+  void QueueClientLogout(
+    network::ClientId clientId,
     const std::string& userName);
 
-  void QueueUserLogout(
-    const std::string& userName);
+  void SetUserRoom(const std::string& userName, data::Uid roomUid);
 
   void SetCharacterForcedIntoCreator(
     data::Uid characterUid,
@@ -134,6 +141,8 @@ public:
 private:
   struct QueuedLogin
   {
+    //! A user name.
+    std::string userName;
     //! A user token.
     std::string userToken;
     //! A flag indicating whether the load of the user was requested.
@@ -142,14 +151,14 @@ private:
     bool userCharacterLoadRequested{false};
   };
 
-  std::unordered_map<std::string, QueuedLogin> _userLogins;
+  std::unordered_map<network::ClientId, QueuedLogin> _clientLogins;
 
   std::unordered_map<std::string, UserInstance> _userInstances;
   std::unordered_map<data::Uid, GuildInstance> _guildInstances;
   std::unordered_set<data::Uid> _charactersForcedIntoCreator;
 
-  std::queue<std::string> _loginRequestQueue;
-  std::queue<std::string> _loginResponseQueue;
+  std::list<network::ClientId> _loginRequestQueue;
+  std::list<network::ClientId> _loginResponseQueue;
 
   //! A server instance.
   ServerInstance& _serverInstance;

@@ -20,16 +20,13 @@
 #include "server/ranch/RanchDirector.hpp"
 #include "server/ServerInstance.hpp"
 
-#include "libserver/data/helper/ProtocolHelper.hpp"
-#include "libserver/registry/HorseRegistry.hpp"
-#include "libserver/registry/PetRegistry.hpp"
-#include "libserver/util/Util.hpp"
+#include <libserver/data/helper/ProtocolHelper.hpp>
+#include <libserver/util/Locale.hpp>
+#include <libserver/util/Util.hpp>
 
 #include <ranges>
 
 #include <spdlog/spdlog.h>
-
-#include <zlib.h>
 
 namespace server
 {
@@ -366,6 +363,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleGetEmblemList(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRChangeNickname>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleChangeNickname(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -403,13 +406,16 @@ std::vector<data::Uid> RanchDirector::GetOnlineCharacters()
 
 void RanchDirector::HandleClientConnected(ClientId clientId)
 {
-  spdlog::info("Client {} connected to the ranch", clientId);
+  spdlog::debug(
+    "Client {} connected to the ranch server from {}",
+    clientId,
+    _commandServer.GetClientAddress(clientId).to_string());
   _clients.try_emplace(clientId);
 }
 
 void RanchDirector::HandleClientDisconnected(ClientId clientId)
 {
-  spdlog::info("Client {} disconnected from the ranch", clientId);
+  spdlog::info("Client {} disconnected from the ranch server", clientId);
 
   const auto& clientContext = GetClientContext(clientId, false);
   if (clientContext.isAuthenticated)
@@ -3932,6 +3938,117 @@ void RanchDirector::HandleGetEmblemList(
       // TODO: compile emblem list
     });
   
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+};
+
+void RanchDirector::HandleChangeNickname(
+  ClientId clientId,
+  const protocol::AcCmdCRChangeNickname& command)
+{
+  uint16_t itemCount;
+  std::optional<protocol::NameChangeError> error;
+
+  const auto& clientContext = GetClientContext(clientId);
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+    [this, &command, &itemCount, &error](data::Character& character)
+    {
+      // Get item record by command itemUid
+      const auto& itemRecord = GetServerInstance().GetDataDirector().GetItem(command.itemUid);
+      if (not itemRecord.IsAvailable())
+      {
+        // Item does not exist
+        error.emplace(protocol::NameChangeError::NoOrIncorrectItem);
+        spdlog::warn("Character {} tried rename themselves using item {} that does not exist",
+          character.uid(),
+          command.itemUid);
+        return;
+      }
+      
+      // Check if character owns this item
+      auto& inventory = character.inventory();
+      if (not std::ranges::contains(inventory, command.itemUid))
+      {
+        // Character does not own this item
+        error.emplace(protocol::NameChangeError::NoOrIncorrectItem);
+        spdlog::warn("Character {} tried rename themselves using item {} that does not belong to them",
+          character.uid(),
+          command.itemUid);
+        return;
+      }
+
+      // Check if the new nickname is valid.
+      const bool isValidNickname = locale::IsNameValid(command.newNickname, 16);
+      if (not isValidNickname)
+      {
+        // Character name exceeds 16 byte limit or is not long enough (min 4 bytes) or has whitespace
+        error.emplace(protocol::NameChangeError::InvalidNickname);
+        // Note: do not log the attempted character nickname in the interest 
+        // of preventing some form of vulnerability with spdlog.
+        // Paranoid but mindful
+        spdlog::warn("Character {} tried rename themselves to an invalid nickname",
+          character.uid());
+        return;
+      }
+
+      //TODO: validate nickname (inappropriate words, etc)
+      //TODO: check for duplicate nicknames
+
+      // Manipulate item
+      itemRecord.Mutable([&itemCount, &error](data::Item& item)
+      {
+        // Sanity check item count
+        if (item.count() < 1)
+        {
+          // Client tried to use an item whose quantity was 0
+          error.emplace(protocol::NameChangeError::NoOrIncorrectItem);
+          return;
+        }
+
+        // Decrement item count
+        itemCount = --item.count();
+      });
+
+      // Delete item if there is none left
+      if (itemCount < 1)
+      {
+        // Delete item from character's inventory
+        inventory.erase(std::ranges::find(inventory, command.itemUid));
+
+        // Delete item record
+        GetServerInstance().GetDataDirector().GetItemCache().Delete(command.itemUid);
+      }
+
+      // Change character name to new name
+      character.name() = command.newNickname;
+    });
+
+  if (error.has_value())
+  {
+    // An error occurred when attempting to change nickname, return error response
+    protocol::AcCmdCRChangeNicknameCancel cancel{
+      .member1 = command.itemUid,
+      .status = error.value()
+    };
+
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  protocol::AcCmdCRChangeNicknameOK response{
+    .itemUid = command.itemUid,
+    .itemCount = itemCount,
+    .newNickname = command.newNickname};
+
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()

@@ -366,6 +366,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCREmblemList& command);
 
+  void HandleChangeNickname(
+    ClientId clientId, 
+    const protocol::AcCmdCRChangeNickname& command);
+
   //!
   ServerInstance& _serverInstance;
   //!
