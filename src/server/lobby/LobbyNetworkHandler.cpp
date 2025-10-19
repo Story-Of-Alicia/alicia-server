@@ -292,9 +292,15 @@ void LobbyNetworkHandler::AcceptLogin(
     clientContext.isAuthenticated = true;
 
     if (sendToCharacterCreator)
+    {
+      // Reset the waiting sequence number so the client does not soft lock.
+      // SendWaitingSeqno(clientId, 0);
       SendCreateNicknameNotify(clientId);
+    }
     else
+    {
       SendLoginOK(clientId);
+    }
   }
   catch (const std::exception&)
   {
@@ -559,12 +565,12 @@ void LobbyNetworkHandler::HandleLogin(
   _serverInstance.GetLobbyDirector().GetScheduler().Queue(
     [this, clientId, userName = command.loginId, userToken = command.authKey]()
     {
-      const auto queuePosition = _serverInstance.GetLobbyDirector().QueueClientLogin(
+      [[maybe_unused]] const auto queuePosition = _serverInstance.GetLobbyDirector().QueueClientLogin(
         clientId,
         userName,
         userToken);
 
-      SendWaitingSeqno(clientId, queuePosition);
+      //SendWaitingSeqno(clientId, queuePosition);
     });
 }
 

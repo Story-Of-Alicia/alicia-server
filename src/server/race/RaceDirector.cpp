@@ -432,7 +432,7 @@ void RaceDirector::Tick() {
       continue;
 
     raceInstance.stage = RoomInstance::Stage::Finishing;
-    raceInstance.stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+    raceInstance.stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(15);
 
     // If the race timeout was reached notify the clients about the finale.
     if (raceTimeoutReached)
