@@ -40,6 +40,17 @@ namespace locale
 //! @throws std::runtime_error If the conversion fails for any reason.
 [[nodiscard]] std::string FromUtf8(const std::string& input);
 
+//! Validates UTF-8 encoded string representing a name (character name, horse name or a pet name).
+//! The input string must conform to the following conditions:
+//! - The byte count of the input must be less than or equal to `maxStringByteCapacity` parameter.
+//! - The codepoint count of the input must be greater than 2 if the input string is purely korean,
+//!   otherwise it must be greater than 3.
+//!
+//! @param input Input string.
+//! @param maxStringByteCapacity Byte capacity of the string.
+//! @returns `true` if the name is valid, otherwise returns `false`.
+[[nodiscard]] bool IsNameValid(const std::string& input, size_t maxStringByteCapacity = 16);
+
 } // namespace locale
 
 } // namespace server

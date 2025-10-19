@@ -417,6 +417,54 @@ void RaceDirector::Tick() {
     if (raceInstance.stage != RoomInstance::Stage::Racing)
       continue;
 
+    const bool raceTimeoutReached = std::chrono::steady_clock::now() >= raceInstance.stageTimeoutTimePoint;
+
+    const bool isFinishing = std::ranges::any_of(
+      std::views::values(raceInstance.tracker.GetRacers()),
+      [](const tracker::RaceTracker::Racer& racer)
+      {
+        return racer.state == tracker::RaceTracker::Racer::State::Finishing;
+      });
+
+    // If the race is not finishing and the timeout was not reached
+    // do not finish the race.
+    if (not isFinishing && not raceTimeoutReached)
+      continue;
+
+    raceInstance.stage = RoomInstance::Stage::Finishing;
+    raceInstance.stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+
+    // If the race timeout was reached notify the clients about the finale.
+    if (raceTimeoutReached)
+    {
+      protocol::AcCmdUserRaceFinalNotify notify{};
+
+      // Broadcast the race final.
+      for (const ClientId& raceClientId : raceInstance.clients)
+      {
+        const auto& raceClientContext = GetClientContext(raceClientId, true);
+
+        const auto isParticipant = raceInstance.tracker.IsRacer(
+          raceClientContext.characterUid);
+        if (not isParticipant)
+          continue;
+
+        _commandServer.QueueCommand<decltype(notify)>(
+          raceClientId,
+          [notify]()
+          {
+            return notify;
+          });
+      }
+    }
+  }
+
+  // Process rooms which are finishing
+  for (auto& [raceUid, raceInstance] : _raceInstances)
+  {
+    if (raceInstance.stage != RoomInstance::Stage::Finishing)
+      continue;
+
     // Determine whether all racers have finished.
     const bool allRacersFinished = std::ranges::all_of(
       std::views::values(raceInstance.tracker.GetRacers()),
@@ -426,14 +474,14 @@ void RaceDirector::Tick() {
           || racer.state == tracker::RaceTracker::Racer::State::Disconnected;
       });
 
-    const bool raceTimeoutReached = std::chrono::steady_clock::now() >= raceInstance.stageTimeoutTimePoint;
+    const bool finishTimeoutReached = std::chrono::steady_clock::now() >= raceInstance.stageTimeoutTimePoint;
 
     // If not all of the racer have finished yet and the timeout has not been reached yet
     // do not finish the race.
-    if (not allRacersFinished && not raceTimeoutReached)
-      return;
+    if (not allRacersFinished && not finishTimeoutReached)
+      continue;
 
-    if (raceTimeoutReached)
+    if (finishTimeoutReached)
     {
       spdlog::warn("Room {} has reached the race timeout threshold", raceUid);
     }
@@ -510,7 +558,10 @@ void RaceDirector::HandleClientConnected(ClientId clientId)
 {
   _clients.try_emplace(clientId);
 
-  spdlog::info("Client {} connected to the race", clientId);
+  spdlog::debug(
+    "Client {} connected to the race server from {}",
+    clientId,
+    _commandServer.GetClientAddress(clientId).to_string());
 }
 
 void RaceDirector::HandleClientDisconnected(ClientId clientId)
@@ -525,7 +576,7 @@ void RaceDirector::HandleClientDisconnected(ClientId clientId)
     }
   }
 
-  spdlog::info("Client {} disconnected from the race", clientId);
+  spdlog::info("Client {} disconnected from the race server", clientId);
   _clients.erase(clientId);
 }
 

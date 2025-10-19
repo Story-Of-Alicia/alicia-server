@@ -110,10 +110,17 @@ size_t ChatterServer::OnClientData(
 
     SourceStream commandDataSource({commandData.begin(), commandData.end()});
 
-    // todo: deserialization and handler call
-    protocol::ChatCmdLogin command;
-    commandDataSource.Read(command);
-    _chatterCommandHandler.HandleChatterLogin(clientId, command);
+    if (header.commandId == 1)
+    {
+      // todo: deserialization and handler call
+      protocol::ChatCmdLogin command;
+      commandDataSource.Read(command);
+      _chatterCommandHandler.HandleChatterLogin(clientId, command);
+    }
+  }
+  else
+  {
+    //spdlog::warn("Unhandled chatter: {}", header.commandId);
   }
 
   return commandStream.GetCursor();

@@ -3,6 +3,8 @@ server:
   general:
     # The name of the group or an individual running and managing this instance of the server.
     brand: "dev"
+    # The notice displayed to the player when they join the server.
+    notice: "Players online: {players_online}"
   # Configuration section of the lobby server.
   lobby:
     # Whether the lobby server is enabled.
