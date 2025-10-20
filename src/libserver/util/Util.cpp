@@ -161,21 +161,11 @@ Clock::time_point AliciaShopTimeToTimePoint(const std::array<uint32_t, 3>& times
   uint16_t minute = timestamp[2];
   uint16_t second = (timestamp[2] >> 16);
 
-  if (year < 2008) throw new std::runtime_error("Invalid year (Ntreev didn't even release it then)");
-  if (month < 1 || month > 12) throw std::runtime_error("Invalid month");
-  if (day < 1 || day > 31) throw std::runtime_error("Invalid day");
-  if (hour > 23) throw std::runtime_error("Invalid hour");
-  if (minute > 59) throw std::runtime_error("Invalid minute");
-  if (second > 59) throw std::runtime_error("Invalid second");
-
   std::chrono::year y{static_cast<int32_t>(year)};
   std::chrono::month m{static_cast<uint32_t>(month)};
   std::chrono::day d{static_cast<uint32_t>(day)};
 
   std::chrono::year_month_day ymd{y, m, d};
-  if (!ymd.ok()) 
-    throw std::runtime_error("Invalid date");
-
   std::chrono::sys_days days{ymd};
   std::chrono::sys_seconds tp_seconds = 
     days + 
