@@ -1388,7 +1388,7 @@ struct AcCmdCLHeartbeat
 struct AcCmdCLGoodsShopList
 {
   //! Timestamp of the shop cached by the client
-  util::DateTime cachedShopTimestamp{};
+  util::Clock::time_point cachedShopTimestamp{};
 
   static Command GetCommand()
   {
@@ -1414,7 +1414,7 @@ struct AcCmdCLGoodsShopList
 struct AcCmdCLGoodsShopListOK
 {
   //! New shop timestamp
-  util::DateTime shopTimestamp{};
+  util::Clock::time_point shopTimestamp{};
 
   static Command GetCommand()
   {
@@ -1461,7 +1461,7 @@ struct AcCmdCLGoodsShopListCancel
 
 struct AcCmdLCGoodsShopListData
 {
-  util::DateTime dateTime;
+  util::Clock::time_point timestamp;
   uint8_t member2;
   uint8_t member3;
   std::vector<std::byte> data;
