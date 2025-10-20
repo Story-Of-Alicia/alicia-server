@@ -432,7 +432,7 @@ void RaceDirector::Tick() {
       continue;
 
     raceInstance.stage = RoomInstance::Stage::Finishing;
-    raceInstance.stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+    raceInstance.stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(15);
 
     // If the race timeout was reached notify the clients about the finale.
     if (raceTimeoutReached)
@@ -578,6 +578,18 @@ void RaceDirector::HandleClientDisconnected(ClientId clientId)
 
   spdlog::info("Client {} disconnected from the race server", clientId);
   _clients.erase(clientId);
+}
+
+void RaceDirector::DisconnectCharacter(data::Uid characterUid)
+{
+  try
+  {
+    _commandServer.DisconnectClient(GetClientIdByCharacterUid(characterUid));
+  }
+  catch (const std::exception&)
+  {
+    // We really don't care.
+  }
 }
 
 ServerInstance& RaceDirector::GetServerInstance()
@@ -1170,20 +1182,9 @@ void RaceDirector::PrepareItemSpawners(data::Uid roomUid)
         item.position[0] = mapDeckItemInstance.position[0] + offset[0];
         item.position[1] = mapDeckItemInstance.position[1] + offset[1];
         item.position[2] = mapDeckItemInstance.position[2] + offset[2];
-
-        spdlog::debug("Prepared item spawner: deckId={}, position=[{}, {}, {}]",
-          mapDeckItemInstance.deckId,
-          item.position[0],
-          item.position[1],
-          item.position[2]);
       }
     }
 
-    spdlog::info("Prepared {} item spawners for room {} (gameMode={}, mapBlock={})",
-      raceInstance.tracker.GetItems().size(),
-      roomUid,
-      static_cast<uint32_t>(raceInstance.raceGameMode),
-      raceInstance.raceMapBlockId);
   }
   catch (const std::exception& e) {
     spdlog::warn("Failed to prepare item spawners for room {}: {}", roomUid, e.what());
@@ -1350,8 +1351,7 @@ void RaceDirector::HandleStartRace(
       {
         std::string characterName;
         GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
-          [&characterName](
-            const data::Character& character)
+          [&characterName](const data::Character& character)
           {
             characterName = character.name();
           });
@@ -1376,6 +1376,10 @@ void RaceDirector::HandleStartRace(
         }
       }
 
+      const bool isEligibleForSkills = (notify.raceGameMode == protocol::GameMode::Speed
+        || notify.raceGameMode == protocol::GameMode::Magic)
+        && notify.raceTeamMode == protocol::TeamMode::FFA;
+
       // Send to all clients participating in the race.
       for (const ClientId& raceClientId : raceInstance.clients)
       {
@@ -1383,14 +1387,12 @@ void RaceDirector::HandleStartRace(
 
         if (not raceInstance.tracker.IsRacer(raceClientContext.characterUid))
           continue;
+
         auto& racer = raceInstance.tracker.GetRacer(raceClientContext.characterUid);
         notify.hostOid = racer.oid;
 
-        const bool isSpeedOrMagic =
-          notify.raceGameMode == protocol::GameMode::Speed ||
-          notify.raceGameMode == protocol::GameMode::Magic;
         // Skills only apply for speed single or magic single
-        if (isSpeedOrMagic && notify.raceTeamMode == protocol::TeamMode::FFA)
+        if (isEligibleForSkills)
         {
           // Notify racer of confirmed selection of skills
           GetServerInstance().GetDataDirector().GetCharacter(raceClientContext.characterUid).Immutable(

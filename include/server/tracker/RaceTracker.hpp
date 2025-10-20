@@ -62,7 +62,7 @@ public:
     Team team{Team::Solo};
     uint32_t starPointValue{};
     uint32_t jumpComboValue{};
-    uint32_t courseTime{};
+    uint32_t courseTime{std::numeric_limits<uint32_t>::max()};
     std::optional<uint32_t> magicItem{};
 
     //! A set of tracked items in racer's proximity.

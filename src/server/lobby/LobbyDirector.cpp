@@ -98,7 +98,10 @@ void LobbyDirector::Tick()
     // send them to the character creator.
     if (not hasCharacter || forcedCharacterCreator)
     {
-      spdlog::debug("User '{}' sent to the character creator", clientId);
+      spdlog::debug(
+        "User '{}' (client {}) succeeded in authentication and was sent to the character creator",
+        loginContext.userName,
+        clientId);
       _networkHandler->AcceptLogin(clientId, true);
       return;
     }

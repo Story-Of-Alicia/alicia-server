@@ -75,6 +75,8 @@ public:
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId clientId) override;
 
+  void DisconnectCharacter(data::Uid characterUid);
+
   ServerInstance& GetServerInstance();
   Config::Race& GetConfig();
 
