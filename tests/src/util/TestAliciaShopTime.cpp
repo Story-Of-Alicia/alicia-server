@@ -55,15 +55,7 @@ void TestTimePointToAliciaShopTime()
   // 2026-01-23 01:23:45
   constexpr std::array<uint32_t, 3> expectedTimestamp{0x000107ea, 0x00010017, 0x002d0017};
 
-  bool success = false;
-  for (auto i = 0; i < 3; ++i)
-  {
-    success = actualTimestamp[i] == expectedTimestamp[i];
-    if (not success)
-      break;
-  }
-
-  assert(success);
+  assert(std::ranges::equal(actualTimestamp, expectedTimestamp));
 }
 
 } // namespace
