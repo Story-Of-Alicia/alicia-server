@@ -1387,7 +1387,8 @@ struct AcCmdCLHeartbeat
 //! Serverboud goods message
 struct AcCmdCLGoodsShopList
 {
-  std::array<uint8_t, 12> data;
+  //! Timestamp of the shop cached by the client
+  util::DateTime cachedShopTimestamp{};
 
   static Command GetCommand()
   {
@@ -1412,7 +1413,8 @@ struct AcCmdCLGoodsShopList
 //! Clientbound shop goods message
 struct AcCmdCLGoodsShopListOK
 {
-  std::array<uint8_t, 12> data;
+  //! New shop timestamp
+  util::DateTime shopTimestamp{};
 
   static Command GetCommand()
   {
@@ -1459,7 +1461,7 @@ struct AcCmdCLGoodsShopListCancel
 
 struct AcCmdLCGoodsShopListData
 {
-  std::array<uint8_t, 12> member1;
+  util::DateTime dateTime;
   uint8_t member2;
   uint8_t member3;
   std::vector<std::byte> data;

@@ -116,6 +116,35 @@ uint32_t DurationToAliciaTime(const Clock::duration& duration)
   return DateTimeToAliciaTime(dateTime);
 }
 
+DateTime AliciaShopTimeToDateTime(const std::array<uint32_t, 3> timestamp)
+{
+  // "2025-10-31 23:59:59"
+  // 000a07e9 0017001f 003b003b
+
+  // 2025-10 = 0x000a07e9
+  // 31 23   = 0x0017001f
+  // 59:59   = 0x003b003b
+
+  return DateTime{
+    .years = static_cast<uint16_t>(timestamp[0]),
+    .months = static_cast<uint16_t>((timestamp[0] >> 16)),
+    .days = static_cast<uint16_t>(timestamp[1]),
+    .hours = static_cast<uint16_t>((timestamp[1] >> 16)),
+    .minutes = static_cast<uint16_t>(timestamp[2]),
+    .seconds = static_cast<uint16_t>((timestamp[2] >> 16))
+  };
+}
+
+std::array<uint32_t, 3> DateTimeToAliciaShopTime(const DateTime& dateTime)
+{
+  uint32_t monthYear, hourDay, secondMinute;
+  monthYear = (dateTime.months << 16) | dateTime.years;
+  hourDay = (dateTime.hours << 16) | dateTime.days;
+  secondMinute = (dateTime.seconds<< 16) | dateTime.minutes;
+
+  return {monthYear, hourDay, secondMinute};
+}
+
 asio::ip::address_v4 ResolveHostName(const std::string& host)
 {
   try
