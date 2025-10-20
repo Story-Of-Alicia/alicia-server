@@ -145,6 +145,72 @@ std::array<uint32_t, 3> DateTimeToAliciaShopTime(const DateTime& dateTime)
   return {monthYear, hourDay, secondMinute};
 }
 
+Clock::time_point AliciaShopTimeToTimePoint(const std::array<uint32_t, 3>& timestamp)
+{
+  // "2025-10-31 23:59:59"
+  // 000a07e9 0017001f 003b003b
+
+  // 2025-10 = 0x000a07e9
+  // 31 23   = 0x0017001f
+  // 59:59   = 0x003b003b
+
+  uint16_t year = timestamp[0];
+  uint16_t month = (timestamp[0] >> 16);
+  uint16_t day = timestamp[1];
+  uint16_t hour = (timestamp[1] >> 16);
+  uint16_t minute = timestamp[2];
+  uint16_t second = (timestamp[2] >> 16);
+
+  if (year < 2008) throw new std::runtime_error("Invalid year (Ntreev didn't even release it then)");
+  if (month < 1 || month > 12) throw std::runtime_error("Invalid month");
+  if (day < 1 || day > 31) throw std::runtime_error("Invalid day");
+  if (hour > 23) throw std::runtime_error("Invalid hour");
+  if (minute > 59) throw std::runtime_error("Invalid minute");
+  if (second > 59) throw std::runtime_error("Invalid second");
+
+  std::chrono::year y{static_cast<int32_t>(year)};
+  std::chrono::month m{static_cast<uint32_t>(month)};
+  std::chrono::day d{static_cast<uint32_t>(day)};
+
+  std::chrono::year_month_day ymd{y, m, d};
+  if (!ymd.ok()) 
+    throw std::runtime_error("Invalid date");
+
+  std::chrono::sys_days days{ymd};
+  std::chrono::sys_seconds tp_seconds = 
+    days + 
+    std::chrono::hours{hour} + 
+    std::chrono::minutes{minute} + 
+    std::chrono::seconds{second};
+
+  // convert to system_clock::time_point (sys_seconds is based on system_clock on most platforms)
+  return std::chrono::system_clock::time_point(tp_seconds);
+}
+
+std::array<uint32_t, 3> TimePointToAliciaShopTime(const Clock::time_point& timePoint)
+{
+  const std::chrono::year_month_day date{
+    std::chrono::floor<std::chrono::days>(timePoint)};
+  if (not date.ok())
+    throw std::runtime_error("Invalid date");
+
+  const std::chrono::hh_mm_ss time{
+    timePoint - std::chrono::floor<std::chrono::days>(timePoint)};
+
+  // Pack according to spec:
+  // word0: high16 = month, low16 = year
+  // word1: high16 = hour,  low16 = day
+  // word2: high16 = second, low16 = minute
+  uint32_t w0 = 
+    (static_cast<uint32_t>(date.month()) << 16) | static_cast<int32_t>(date.year());
+  uint32_t w1 = 
+    (static_cast<int32_t>(time.hours().count()) << 16) | static_cast<uint32_t>(date.day());
+  uint32_t w2 = 
+    (static_cast<int32_t>(time.seconds().count()) << 16) | static_cast<int32_t>(time.minutes().count());
+
+  return std::array<uint32_t, 3>{w0, w1, w2};
+}
+
 asio::ip::address_v4 ResolveHostName(const std::string& host)
 {
   try

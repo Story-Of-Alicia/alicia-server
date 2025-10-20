@@ -1613,17 +1613,12 @@ void LobbyNetworkHandler::HandleGoodsShopList(
   const ClientId clientId,
   const protocol::AcCmdCLGoodsShopList& command)
 {
-  auto dateTime = util::DateTime{
-    .years = 2025,
-    .months = 10,
-    .days = 31,
-    .hours = 23,
-    .minutes = 59,
-    .seconds = 57
-  };
+  // TODO: remove this, only used for testing protocol
+  auto now = util::Clock::now();
 
+  // TODO: send date time that is now?
   protocol::AcCmdCLGoodsShopListOK response{
-    .shopTimestamp = dateTime
+    .shopTimestamp = now
   };
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -1673,9 +1668,9 @@ void LobbyNetworkHandler::HandleGoodsShopList(
   compressedXml.resize(compressedSize);
 
   // TODO: remove this, only used for testing protocol
-  dateTime.seconds = dateTime.seconds = 58;
+  now += std::chrono::seconds(1);
   protocol::AcCmdLCGoodsShopListData data{
-    .dateTime = dateTime,
+    .timestamp = now,
     .member3 = 1,
     .data = compressedXml};
 

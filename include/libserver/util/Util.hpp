@@ -79,6 +79,16 @@ DateTime AliciaShopTimeToDateTime(const std::array<uint32_t, 3> timestamp);
 /// @return Alicia shop timestamp representing the date and time
 std::array<uint32_t, 3> DateTimeToAliciaShopTime(const DateTime& dateTime);
 
+/// @brief Converts Alicia shop timestamp to time point
+/// @param timestamp Alicia shop timestamp
+/// @return Time point representing the date and time
+Clock::time_point AliciaShopTimeToTimePoint(const std::array<uint32_t, 3>& timestamp);
+
+/// @brief Converts time point to Alicia shop timestamp
+/// @param timestamp Time stamp
+/// @return Alicia shop timestamp representing the date and time
+std::array<uint32_t, 3> TimePointToAliciaShopTime(const Clock::time_point& timestamp);
+
 asio::ip::address_v4 ResolveHostName(const std::string& host);
 
 std::string GenerateByteDump(std::span<const std::byte> data);
