@@ -29,11 +29,11 @@ namespace
 void TestAliciaShopTimeToTimePoint()
 {
   // 2025-10-31 23:59:58
-  std::array<uint32_t, 3> timestamp{0x000a07e9, 0x0017001f, 0x003a003b};
-  const auto& actualTimePoint = server::util::AliciaShopTimeToTimePoint(timestamp);
+  constexpr std::array<uint32_t, 3> actualTimestamp{0x000a07e9, 0x0017001f, 0x003a003b};
+  const auto& actualTimePoint = server::util::AliciaShopTimeToTimePoint(actualTimestamp);
 
   // 2025-10-31 23:59:58
-  const auto& expectedTimePoint =
+  constexpr auto expectedTimePoint =
     std::chrono::sys_days{std::chrono::year{2025} / 10 / 31} +
     std::chrono::hours{23} +
     std::chrono::minutes{59} +
@@ -45,7 +45,7 @@ void TestAliciaShopTimeToTimePoint()
 void TestTimePointToAliciaShopTime()
 {
   // 2026-01-23 01:23:45
-  const auto& actualTimePoint =
+  constexpr auto actualTimePoint =
     std::chrono::sys_days{std::chrono::year{2026} / 01 / 23} +
     std::chrono::hours{01} +
     std::chrono::minutes{23} +
