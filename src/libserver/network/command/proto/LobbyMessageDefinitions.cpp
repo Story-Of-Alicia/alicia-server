@@ -927,20 +927,18 @@ void AcCmdCLGoodsShopList::Read(
   AcCmdCLGoodsShopList& command,
   SourceStream& stream)
 {
-  for (auto& data : command.data)
-  {
-    stream.Read(data);
-  }
+  std::array<uint32_t, 3> cachedShopTimestamp;
+  stream.Read(cachedShopTimestamp.data(), 12);
+
+  command.cachedShopTimestamp = util::AliciaShopTimeToDateTime(cachedShopTimestamp);
 }
 
 void AcCmdCLGoodsShopListOK::Write(
   const AcCmdCLGoodsShopListOK& command,
   SinkStream& stream)
 {
-  for (const auto& data : command.data)
-  {
-    stream.Write(data);
-  }
+  const auto& dateTime = util::DateTimeToAliciaShopTime(command.shopTimestamp);
+  stream.Write(dateTime.data(), 12);
 }
 
 void AcCmdCLGoodsShopListOK::Read(
@@ -969,10 +967,8 @@ void AcCmdLCGoodsShopListData::Write(
   const AcCmdLCGoodsShopListData& command,
   SinkStream& stream)
 {
-  for (const auto& b : command.member1)
-  {
-    stream.Write(b);
-  }
+  const auto& dateTime = util::DateTimeToAliciaShopTime(command.dateTime);
+  stream.Write(dateTime.data(), 12);
 
   stream.Write(command.member2)
     .Write(command.member3);
