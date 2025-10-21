@@ -2154,7 +2154,8 @@ struct AcCmdCRActivateSkillEffect
 {
   uint16_t characterOid;
   uint32_t skillId;         // What skill/effect to activate
-  uint32_t unk1;            // Unknown parameter
+  uint16_t targetOid;       // Unknown parameter
+  uint16_t unk1;            // Unknown parameter
   uint32_t unk2;            // Unknown parameter
 
   static Command GetCommand()
@@ -2181,8 +2182,20 @@ struct AcCmdRCAddSkillEffect
 {
   uint16_t characterOid;    // Target character
   uint32_t effectId;        // Effect/animation ID (knockdown, stun, etc.)
-  uint32_t duration;        // Effect duration in milliseconds
-  uint32_t intensity;       // Effect strength/intensity
+  uint16_t targetOid;
+  uint16_t attackerOid;
+  uint16_t unk2;            // Unused
+  uint16_t unk3;            // Unused
+  uint32_t unk4;            // Posibly intensity, no idea but it makes the corner kill thingy not show up
+
+  struct Effects2And3
+  {
+    uint32_t unk0; // Effect time in seconds?
+    uint32_t unk1; // Unused
+  };
+  std::optional<Effects2And3> defenseMagicEffect;
+
+  std::optional<uint32_t> attackMagicEffect; // Effect time in milliseconds
 
   static Command GetCommand()
   {
