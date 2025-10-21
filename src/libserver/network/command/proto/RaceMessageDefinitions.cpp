@@ -218,9 +218,9 @@ void AcCmdCRChangeRoomOptions::Read(
   {
     stream.Read(command.mapBlockId);
   }
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::NPCRace)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::NpcDifficulty)
   {
-    stream.Read(command.npcRace);
+    stream.Read(command.npcDifficulty);
   }
 }
 
@@ -249,9 +249,9 @@ void AcCmdCRChangeRoomOptionsNotify::Write(
   {
     stream.Write(command.mapBlockId);
   }
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::NPCRace)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::NpcDifficulty)
   {
-    stream.Write(command.npcRace);
+    stream.Write(command.npcDifficulty);
   }
 }
 

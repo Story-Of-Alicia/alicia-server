@@ -38,7 +38,7 @@ enum class RoomOptionType : uint16_t
   Password = 1 << 2,
   GameMode = 1 << 3,
   MapBlockId = 1 << 4,
-  NPCRace = 1 << 5,
+  NpcDifficulty = 1 << 5,
 };
 
 enum class TeamColor : uint32_t
@@ -229,7 +229,7 @@ struct AcCmdCRChangeRoomOptions
   std::string password{};
   GameMode gameMode{};
   uint16_t mapBlockId{};
-  uint8_t npcRace{};
+  uint8_t npcDifficulty{};
 
   static Command GetCommand()
   {
@@ -259,7 +259,7 @@ struct AcCmdCRChangeRoomOptionsNotify
   std::string password{}; // password
   GameMode gameMode{};
   uint16_t mapBlockId{};
-  uint8_t npcRace{};
+  uint8_t npcDifficulty{};
 
   static Command GetCommand()
   {
