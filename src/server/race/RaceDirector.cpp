@@ -252,11 +252,11 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     });
   
   // Note: AcCmdCRActivateSkillEffect handler commented out due to build issues
-  // _commandServer.RegisterCommandHandler<protocol::AcCmdCRActivateSkillEffect>(
-  //   [this](ClientId clientId, const auto& message)
-  //   {
-  //     HandleActivateSkillEffect(clientId, message);
-  //   });
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRActivateSkillEffect>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleActivateSkillEffect(clientId, message);
+    });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRChangeSkillCardPresetID>(
     [this](ClientId clientId, const auto& message)
@@ -2769,7 +2769,6 @@ void RaceDirector::HandleChangeMagicTargetCancel(
   spdlog::info("Character {} exited targeting mode", command.characterOid);
 }
 
-/*
 void RaceDirector::HandleActivateSkillEffect(
   ClientId clientId,
   const protocol::AcCmdCRActivateSkillEffect& command)
@@ -2780,8 +2779,8 @@ void RaceDirector::HandleActivateSkillEffect(
   // Convert unk2 back to float (it's 1.0f = 1065353216 as uint32)
   float intensity = *reinterpret_cast<const float*>(&command.unk2);
   
-  spdlog::info("HandleActivateSkillEffect: clientId={}, characterOid={}, skillId={}, unk1={}, intensity={}", 
-    clientId, command.characterOid, command.skillId, command.unk1, intensity);
+  spdlog::info("HandleActivateSkillEffect: clientId={}, characterOid={}, skillId={}, targetOid={}, unk1={}, intensity={}", 
+    clientId, command.characterOid, command.skillId, command.targetOid, command.unk1, intensity);
   
   // Process the skill effect activation - give target extra gauge (Attack Compensation skill)
   auto& targetRacer = raceInstance.tracker.GetRacer(clientContext.characterUid);
@@ -2803,11 +2802,28 @@ void RaceDirector::HandleActivateSkillEffect(
     clientId,
     [activateResponse]() { return activateResponse; });
   
-  // TODO: Implement knockdown animation once we figure out the correct structure
-  // The AcCmdRCAddSkillEffect command causes disconnections
-  spdlog::info("Knockdown effect disabled to prevent disconnections");
+
+  // Broadcast skill effect activation to all clients in the room
+  protocol::AcCmdRCAddSkillEffect addSkillEffect{
+    .characterOid = command.characterOid,
+    .effectId = command.skillId,
+    .targetOid = command.characterOid,
+    .attackerOid = command.characterOid, // TODO: Store in the skill instance the attacker
+    .unk2 = 0,
+    .unk3 = 0,
+    .unk4 = 0,
+    .defenseMagicEffect = protocol::AcCmdRCAddSkillEffect::Effects2And3{
+      .unk0 = 3000,
+      .unk1 = 0,
+    },
+    .attackMagicEffect = 3000
+  };
+
+  // TODO: Broadcast
+  _commandServer.QueueCommand<decltype(addSkillEffect)>(
+    clientId,
+    [addSkillEffect]() { return addSkillEffect; });
 }
-*/
 
 void RaceDirector::HandleChangeSkillCardPresetId(
   ClientId clientId,
