@@ -4110,24 +4110,15 @@ void RanchDirector::HandleUpdateDailyQuest(
   spdlog::debug("Content Daily Quest Package: {} {} {} {}", command.unk_0, command.unk_1, command.unk_2, command.unk_3);
 
   protocol::AcCmdCRUpdateDailyQuestOK response{};
-  response.unk_0 = 1;
+  response.unk_0 = 100;
   response.unk = {command.unk_0, command.unk_1, command.unk_2, command.unk_3};
   response.unk_1 = 2;
-  response.unk_2 = 1;
+  response.unk_2 = 1000;
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
     {
      return response;
-    });
-
-  protocol::AcCmdCRRequestDailyQuestRewardOK response1{};
-  response1.unk = 1;
-  _commandServer.QueueCommand<decltype(response1)>(
-    clientId,
-    [response1]()
-    {
-      return response1;
     });
 }
 

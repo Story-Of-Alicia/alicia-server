@@ -2694,19 +2694,5 @@ void AcCmdCRUpdateDailyQuestOK::Unk::Read(Unk& value, SourceStream& stream)
     .Read(value.d);
 }
 
-void AcCmdCRRequestDailyQuestRewardOK::Write(
-  const AcCmdCRRequestDailyQuestRewardOK& command,
-  SinkStream& stream)
-{
-  stream.Write(command.unk);
-}
-
-void AcCmdCRRequestDailyQuestRewardOK::Read(
-  AcCmdCRRequestDailyQuestRewardOK& command,
-  SourceStream& stream)
-{
-  // Empty
-}
-
 } // namespace server::protocol
 
