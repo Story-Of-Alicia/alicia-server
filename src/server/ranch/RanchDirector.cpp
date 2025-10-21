@@ -4111,7 +4111,7 @@ void RanchDirector::HandleUpdateDailyQuest(
 
   protocol::AcCmdCRUpdateDailyQuestOK response{};
   response.unk_0 = 100;
-  response.unk = {command.unk_0, command.unk_1, command.unk_2, command.unk_3};
+  response.unk = {command.unk_0, command.unk_1, command.unk_3, command.unk_2};
   response.unk_1 = 2;
   response.unk_2 = 1000;
   _commandServer.QueueCommand<decltype(response)>(
