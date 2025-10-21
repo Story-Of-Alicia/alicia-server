@@ -974,10 +974,7 @@ void AcCmdLCGoodsShopListData::Write(
     .Write(command.member3);
 
   stream.Write(static_cast<uint32_t>(command.data.size()));
-  for (const auto & b : command.data)
-  {
-    stream.Write(b);
-  }
+  stream.Write(command.data.data(), command.data.size());
 }
 
 void AcCmdLCGoodsShopListData::Read(

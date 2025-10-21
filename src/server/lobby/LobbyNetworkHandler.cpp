@@ -1614,45 +1614,57 @@ void LobbyNetworkHandler::HandleGoodsShopList(
   const protocol::AcCmdCLGoodsShopList& command)
 {
   // TODO: remove this, only used for testing protocol
-  auto now = util::Clock::now();
-
-  // TODO: send date time that is now?
-  protocol::AcCmdCLGoodsShopListOK response{
-    .shopTimestamp = now
-  };
-
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [response]()
-    {
-      return response;
-    });
+  auto now = util::Clock::now() + std::chrono::days(1);
 
   const std::string xml =
-    "<ShopList>\n"
-    "  <GoodsList>\n"
-    "    <GoodsSQ>0</GoodsSQ>\n"
-    "    <SetType>0</SetType>\n"
-    "    <MoneyType>0</MoneyType>\n"
-    "    <GoodsType>0</GoodsType>\n"
-    "    <RecommendType>1</RecommendType>\n"
-    "    <RecommendNO>1</RecommendNO>\n"
-    "    <GiftType>0</GiftType>\n"
-    "    <SalesRank>1</SalesRank>\n"
-    "    <BonusGameMoney>0</BonusGameMoney>\n"
-    "    <GoodsNM><![CDATA[Goods name]]></GoodsNM>\n"
-    "    <GoodsDesc><![CDATA[Goods desc]]></GoodsDesc>\n"
-    "    <ItemCapacityDesc><![CDATA[Capacity desc]]></ItemCapacityDesc>\n"
-    "    <SellST>0</SellST>\n"
-    "    <ItemUID>30013</ItemUID>\n"
-    "    <ItemElem>\n"
-    "      <Item>\n"
-    "        <PriceID>1</PriceID>\n"
-    "        <PriceRange>1</PriceRange>\n"
-    "        <GoodsPrice>1</GoodsPrice>\n"
-    "      </Item>\n"
-    "    </ItemElem>\n"
-    "  </GoodsList>\n"
+    "<ShopList>"
+    "	<GoodsList>\n"
+    "		<GoodsSQ>0</GoodsSQ>\n"
+    "		<SetType>0</SetType>\n"
+    "		<MoneyType>0</MoneyType>\n"
+    "		<GoodsType>1</GoodsType>\n"
+    "		<RecommendType>1</RecommendType>\n"
+    "		<RecommendNO>1</RecommendNO>\n"
+    "		<GiftType>1</GiftType>\n"
+    "		<SalesRank>1</SalesRank>\n"
+    "		<BonusGameMoney>100</BonusGameMoney>\n"
+    "		<GoodsNM>0</GoodsNM>\n"
+    "		<GoodsDesc>0</GoodsDesc>\n"
+    "		<ItemCapacityDesc>0</ItemCapacityDesc>\n"
+    "		<SellST>1</SellST>\n"
+    "		<ItemUID>10075</ItemUID>\n"
+    "		<ItemElem>\n"
+    "			<Item>\n"
+    "				<PriceID>1</PriceID>\n"
+    "				<PriceRange>10</PriceRange>\n"
+    "				<GoodsPrice>100</GoodsPrice>\n"
+    "			</Item>\n"
+    "		</ItemElem>\n"
+    "	</GoodsList>\n"
+    "	<GoodsList>\n"
+    "		<GoodsSQ>1</GoodsSQ>\n"
+    "		<SetType>1</SetType>\n"
+    "		<MoneyType>1</MoneyType>\n"
+    "		<GoodsType>1</GoodsType>\n"
+    "		<RecommendType>1</RecommendType>\n"
+    "		<RecommendNO>1</RecommendNO>\n"
+    "		<GiftType>0</GiftType>\n"
+    "		<SalesRank>0</SalesRank>\n"
+    "		<BonusGameMoney>1</BonusGameMoney>\n"
+    "		<GoodsNM>0</GoodsNM>\n"
+    "		<GoodsDesc>0</GoodsDesc>\n"
+    "		<ItemCapacityDesc>0</ItemCapacityDesc>\n"
+    "		<SellST>1</SellST>\n"
+    "		<ItemUID>10075</ItemUID>\n"
+    "		<SetPrice>5</SetPrice>\n"
+    "		<ItemElem>\n"
+    "			<Item>\n"
+    "				<ItemUID>10075</ItemUID>\n"
+    "				<PriceRange>0</PriceRange>\n"
+    "				<PriceID>0</PriceID>\n"
+    "			</Item>\n"
+    "		</ItemElem>\n"
+    "	</GoodsList>\n"
     "</ShopList>\n";
 
   std::vector<std::byte> compressedXml;
@@ -1667,10 +1679,9 @@ void LobbyNetworkHandler::HandleGoodsShopList(
 
   compressedXml.resize(compressedSize);
 
-  // TODO: remove this, only used for testing protocol
-  now += std::chrono::seconds(1);
   protocol::AcCmdLCGoodsShopListData data{
     .timestamp = now,
+    .member2 = 0,
     .member3 = 1,
     .data = compressedXml};
 
@@ -1680,6 +1691,19 @@ void LobbyNetworkHandler::HandleGoodsShopList(
     {
       return data;
     });
+
+  // TODO: send date time that is now?
+  protocol::AcCmdCLGoodsShopListOK response{
+    .shopTimestamp = now
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+
 }
 
 void LobbyNetworkHandler::HandleAchievementCompleteList(
