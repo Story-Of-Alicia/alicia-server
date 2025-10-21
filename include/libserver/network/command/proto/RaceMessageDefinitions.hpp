@@ -978,8 +978,8 @@ struct AcCmdRCRaceResultNotify
       EventBonusExperience = 1 << 12,
     } bitset;
     std::string mountName{};
-    uint16_t member19{};
-    uint8_t member20{};
+    uint16_t growthPoints{};
+    uint8_t horseClass{};
     uint32_t bonusCarrots{};
     uint32_t member22{};
     AcCmdCRStartRaceNotify::Struct1 member23{};
