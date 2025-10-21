@@ -4145,7 +4145,7 @@ struct AcCmdCREmblemListOK
 
 struct AcCmdCRUpdateDailyQuest
 {
-  uint16_t unk_0;
+  uint16_t questId;
   uint32_t unk_1;
   uint8_t unk_2;
   uint8_t unk_3;
@@ -4171,18 +4171,18 @@ struct AcCmdCRUpdateDailyQuest
 
 struct AcCmdCRUpdateDailyQuestOK
 {
-  uint32_t unk_0;
-  struct Unk
+  uint32_t newCarrotBalance;
+  struct Quest
   {
-    uint16_t a;
-    uint32_t b;
-    uint8_t c;
-    uint8_t d;
+    uint16_t questId;
+    uint32_t unk_1;
+    uint8_t unk_2;
+    uint8_t unk_3;
 
-    static void Write(const Unk& value, SinkStream& stream);
-    static void Read(Unk& value, SourceStream& stream);
+    static void Write(const Quest& value, SinkStream& stream);
+    static void Read(Quest& value, SourceStream& stream);
   };
-  Unk unk{};
+  Quest quest{};
   uint32_t unk_1;
   uint32_t unk_2;
   static Command GetCommand()
@@ -4225,6 +4225,55 @@ struct AcCmdCRUpdateDailyQuestCancel
   //! @param stream Source stream.
   static void Read(
     AcCmdCRUpdateDailyQuestCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRegisterDailyQuestGroup
+{
+  uint16_t unk_0;
+  AcCmdCRUpdateDailyQuestOK::Quest quest1{};
+  AcCmdCRUpdateDailyQuestOK::Quest quest2{};
+  AcCmdCRUpdateDailyQuestOK::Quest quest3{};
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRegisterDailyQuestGroup;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRegisterDailyQuestGroup& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRegisterDailyQuestGroup& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRegisterDailyQuestGroupOK
+{
+  uint8_t status;
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRegisterDailyQuestGroupOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRegisterDailyQuestGroupOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRegisterDailyQuestGroupOK& command,
     SourceStream& stream);
 };
 

@@ -2641,7 +2641,7 @@ void AcCmdCRUpdateDailyQuest::Read(
   AcCmdCRUpdateDailyQuest& command,
   SourceStream& stream)
 {
-  stream.Read(command.unk_0);
+  stream.Read(command.questId);
   stream.Read(command.unk_1);
   stream.Read(command.unk_2);
   stream.Read(command.unk_3);
@@ -2665,8 +2665,8 @@ void AcCmdCRUpdateDailyQuestOK::Write(
   const AcCmdCRUpdateDailyQuestOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk_0);
-  stream.Write(command.unk);
+  stream.Write(command.newCarrotBalance);
+  stream.Write(command.quest);
   stream.Write(command.unk_1);
   stream.Write(command.unk_2);
 }
@@ -2678,20 +2678,51 @@ void AcCmdCRUpdateDailyQuestOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
-void AcCmdCRUpdateDailyQuestOK::Unk::Write(const Unk& value, SinkStream& stream)
+void AcCmdCRUpdateDailyQuestOK::Quest::Write(const Quest& value, SinkStream& stream)
 {
-  stream.Write(value.a)
-    .Write(value.b)
-    .Write(value.c)
-    .Write(value.d);
+  stream.Write(value.questId)
+    .Write(value.unk_1)
+    .Write(value.unk_2)
+    .Write(value.unk_3);
 }
 
-void AcCmdCRUpdateDailyQuestOK::Unk::Read(Unk& value, SourceStream& stream)
+void AcCmdCRUpdateDailyQuestOK::Quest::Read(Quest& value, SourceStream& stream)
 {
-  stream.Read(value.a)
-    .Read(value.b)
-    .Read(value.c)
-    .Read(value.d);
+  stream.Read(value.questId)
+    .Read(value.unk_1)
+    .Read(value.unk_2)
+    .Read(value.unk_3);
+}
+// AcCmdCRRegisterDailyQuestGroup
+void AcCmdCRRegisterDailyQuestGroup::Write(
+  const AcCmdCRRegisterDailyQuestGroup& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRegisterDailyQuestGroup::Read(
+  AcCmdCRRegisterDailyQuestGroup& command,
+  SourceStream& stream)
+{
+  stream.Read(command.unk_0);
+  stream.Read(command.quest1);
+  stream.Read(command.quest2);
+  stream.Read(command.quest3);
+}
+
+void AcCmdCRRegisterDailyQuestGroupOK::Write(
+  const AcCmdCRRegisterDailyQuestGroupOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.status);
+}
+
+void AcCmdCRRegisterDailyQuestGroupOK::Read(
+  AcCmdCRRegisterDailyQuestGroupOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
 }
 
 } // namespace server::protocol

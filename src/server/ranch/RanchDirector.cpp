@@ -375,6 +375,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleUpdateDailyQuest(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRegisterDailyQuestGroup>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleRegisterDailyQuestGroup(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -4107,18 +4113,35 @@ void RanchDirector::HandleUpdateDailyQuest(
   const protocol::AcCmdCRUpdateDailyQuest& command)
 {
   const auto& clientContext = GetClientContext(clientId);
-  spdlog::debug("Content Daily Quest Package: {} {} {} {}", command.unk_0, command.unk_1, command.unk_2, command.unk_3);
+  spdlog::debug("Content Daily Quest Package: {} {} {} {}", command.questId, command.unk_1, command.unk_2, command.unk_3);
 
   protocol::AcCmdCRUpdateDailyQuestOK response{};
-  response.unk_0 = 100;
-  response.unk = {command.unk_0, command.unk_1, command.unk_3, command.unk_2};
-  response.unk_1 = 2;
-  response.unk_2 = 1000;
+  response.newCarrotBalance = 1000;
+  response.quest = {command.questId, 1, 1 ,1};
+  response.unk_1 = 1;
+  response.unk_2 = 1;
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
     {
      return response;
+    });
+}
+// AcCmdCRRegisterDailyQuestGroup
+void RanchDirector::HandleRegisterDailyQuestGroup(
+  ClientId clientId,
+  const protocol::AcCmdCRRegisterDailyQuestGroup& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  spdlog::debug("Quest Group Packet Data: {} {} {} {} {}", command.unk_0, command.quest1.questId, command.quest1.unk_1, command.quest1.unk_2, command.quest1.unk_3);
+
+  protocol::AcCmdCRRegisterDailyQuestGroupOK response{};
+  response.status = 1;
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
     });
 }
 
