@@ -1712,8 +1712,9 @@ void AcCmdCRActivateSkillEffect::Write(
 {
   stream.Write(command.characterOid)
     .Write(command.skillId)
-    .Write(command.unk1)
-    .Write(command.unk2);
+    .Write(command.targetOid)
+    .Write(command.unk2)
+    .Write(command.unk1);
 }
 
 void AcCmdCRActivateSkillEffect::Read(
@@ -1722,6 +1723,7 @@ void AcCmdCRActivateSkillEffect::Read(
 {
   stream.Read(command.characterOid)
     .Read(command.skillId)
+    .Read(command.targetOid)
     .Read(command.unk1)
     .Read(command.unk2);
 }
@@ -1732,8 +1734,27 @@ void AcCmdRCAddSkillEffect::Write(
 {
   stream.Write(command.characterOid)
     .Write(command.effectId)
-    .Write(command.duration)
-    .Write(command.intensity);
+    .Write(command.targetOid)
+    .Write(command.attackerOid)
+    .Write(command.unk2)
+    .Write(command.unk3)
+    .Write(command.unk4);
+
+  switch(command.effectId)
+  {
+    case 2:
+    case 3:
+      stream.Write(command.defenseMagicEffect.value().unk0)
+        .Write(command.defenseMagicEffect.value().unk1);
+      break;
+    case 5:
+    case 6:
+    case 7:
+    case 22:
+    case 23:
+      stream.Write(command.attackMagicEffect.value());
+      break;
+  }
 }
 
 void AcCmdRCAddSkillEffect::Read(
@@ -1742,8 +1763,27 @@ void AcCmdRCAddSkillEffect::Read(
 {
   stream.Read(command.characterOid)
     .Read(command.effectId)
-    .Read(command.duration)
-    .Read(command.intensity);
+    .Read(command.targetOid)
+    .Read(command.attackerOid)
+    .Read(command.unk2)
+    .Read(command.unk3)
+    .Read(command.unk4);
+  
+  switch(command.effectId)
+  {
+    case 2:
+    case 3:
+      stream.Read(command.defenseMagicEffect.emplace().unk0)
+        .Read(command.defenseMagicEffect.value().unk1);
+      break;
+    case 5:
+    case 6:
+    case 7:
+    case 22:
+    case 23:
+      stream.Read(command.attackMagicEffect.emplace());
+      break;
+  }
 }
 
 void AcCmdCRChangeSkillCardPresetID::Write(
