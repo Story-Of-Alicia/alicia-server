@@ -370,6 +370,10 @@ private:
     ClientId clientId, 
     const protocol::AcCmdCRChangeNickname& command);
 
+  void HandleUpdateDailyQuest(
+    ClientId clientId,
+    const protocol::AcCmdCRUpdateDailyQuest& command);
+
   //!
   ServerInstance& _serverInstance;
   //!

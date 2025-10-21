@@ -369,6 +369,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleChangeNickname(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRUpdateDailyQuest>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleUpdateDailyQuest(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -4093,6 +4099,35 @@ void RanchDirector::HandleChangeSkillCardPreset(
       auto& skillSet = command.skillSet.setId == 0 ? skillSets->set1 : skillSets->set2;
       skillSet.slot1 = command.skillSet.skills[0];
       skillSet.slot2 = command.skillSet.skills[1];
+    });
+}
+
+void RanchDirector::HandleUpdateDailyQuest(
+  ClientId clientId,
+  const protocol::AcCmdCRUpdateDailyQuest& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  spdlog::debug("Content Daily Quest Package: {} {} {} {}", command.unk_0, command.unk_1, command.unk_2, command.unk_3);
+
+  protocol::AcCmdCRUpdateDailyQuestOK response{};
+  response.unk_0 = 1;
+  response.unk = {command.unk_0, command.unk_1, command.unk_2, command.unk_3};
+  response.unk_1 = 2;
+  response.unk_2 = 1;
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+     return response;
+    });
+
+  protocol::AcCmdCRRequestDailyQuestRewardOK response1{};
+  response1.unk = 1;
+  _commandServer.QueueCommand<decltype(response1)>(
+    clientId,
+    [response1]()
+    {
+      return response1;
     });
 }
 

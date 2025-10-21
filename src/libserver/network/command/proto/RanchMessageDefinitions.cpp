@@ -2630,5 +2630,83 @@ void AcCmdCREmblemListOK::Write(
   }
 }
 
+void AcCmdCRUpdateDailyQuest::Write(
+  const AcCmdCRUpdateDailyQuest& command,
+  SinkStream& stream)
+{
+  // Empty
+}
+
+void AcCmdCRUpdateDailyQuest::Read(
+  AcCmdCRUpdateDailyQuest& command,
+  SourceStream& stream)
+{
+  stream.Read(command.unk_0);
+  stream.Read(command.unk_1);
+  stream.Read(command.unk_2);
+  stream.Read(command.unk_3);
+}
+
+void AcCmdCRUpdateDailyQuestCancel::Write(
+  const AcCmdCRUpdateDailyQuestCancel& command,
+  SinkStream& stream)
+{
+  // Empty
+}
+
+void AcCmdCRUpdateDailyQuestCancel::Read(
+  AcCmdCRUpdateDailyQuestCancel& command,
+  SourceStream& stream)
+{
+  // Empty
+}
+
+void AcCmdCRUpdateDailyQuestOK::Write(
+  const AcCmdCRUpdateDailyQuestOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk_0);
+  stream.Write(command.unk);
+  stream.Write(command.unk_1);
+  stream.Write(command.unk_2);
+}
+
+void AcCmdCRUpdateDailyQuestOK::Read(
+  AcCmdCRUpdateDailyQuestOK& command,
+  SourceStream& stream)
+{
+  // Empty
+}
+
+void AcCmdCRUpdateDailyQuestOK::Unk::Write(const Unk& value, SinkStream& stream)
+{
+  stream.Write(value.a)
+    .Write(value.b)
+    .Write(value.c)
+    .Write(value.d);
+}
+
+void AcCmdCRUpdateDailyQuestOK::Unk::Read(Unk& value, SourceStream& stream)
+{
+  stream.Read(value.a)
+    .Read(value.b)
+    .Read(value.c)
+    .Read(value.d);
+}
+
+void AcCmdCRRequestDailyQuestRewardOK::Write(
+  const AcCmdCRRequestDailyQuestRewardOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk);
+}
+
+void AcCmdCRRequestDailyQuestRewardOK::Read(
+  AcCmdCRRequestDailyQuestRewardOK& command,
+  SourceStream& stream)
+{
+  // Empty
+}
+
 } // namespace server::protocol
 

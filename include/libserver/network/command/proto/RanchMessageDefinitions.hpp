@@ -4143,6 +4143,114 @@ struct AcCmdCREmblemListOK
     SourceStream& stream);
 };
 
+struct AcCmdCRUpdateDailyQuest
+{
+  uint16_t unk_0;
+  uint32_t unk_1;
+  uint8_t unk_2;
+  uint8_t unk_3;
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdateDailyQuest;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUpdateDailyQuest& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUpdateDailyQuest& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUpdateDailyQuestOK
+{
+  uint32_t unk_0;
+  struct Unk
+  {
+    uint16_t a;
+    uint32_t b;
+    uint8_t c;
+    uint8_t d;
+
+    static void Write(const Unk& value, SinkStream& stream);
+    static void Read(Unk& value, SourceStream& stream);
+  };
+  Unk unk{};
+  uint32_t unk_1;
+  uint32_t unk_2;
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdateDailyQuestOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUpdateDailyQuestOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUpdateDailyQuestOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUpdateDailyQuestCancel
+{
+  // uint32_t dailyQuestId{};
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdateDailyQuestCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUpdateDailyQuestCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUpdateDailyQuestCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestDailyQuestRewardOK
+{
+  uint32_t unk;
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestDailyQuestRewardOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestDailyQuestRewardOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestDailyQuestRewardOK& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RANCH_MESSAGE_DEFINES_HPP
