@@ -2634,7 +2634,7 @@ void AcCmdCRUpdateDailyQuest::Write(
   const AcCmdCRUpdateDailyQuest& command,
   SinkStream& stream)
 {
-  // Empty
+  throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRUpdateDailyQuest::Read(
@@ -2651,14 +2651,14 @@ void AcCmdCRUpdateDailyQuestCancel::Write(
   const AcCmdCRUpdateDailyQuestCancel& command,
   SinkStream& stream)
 {
-  // Empty
+  throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRUpdateDailyQuestCancel::Read(
   AcCmdCRUpdateDailyQuestCancel& command,
   SourceStream& stream)
 {
-  // Empty
+  throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRUpdateDailyQuestOK::Write(
@@ -2675,7 +2675,7 @@ void AcCmdCRUpdateDailyQuestOK::Read(
   AcCmdCRUpdateDailyQuestOK& command,
   SourceStream& stream)
 {
-  // Empty
+  throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRUpdateDailyQuestOK::Unk::Write(const Unk& value, SinkStream& stream)
