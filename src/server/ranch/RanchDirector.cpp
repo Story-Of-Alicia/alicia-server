@@ -4141,7 +4141,17 @@ void RanchDirector::HandleRegisterDailyQuestGroup(
   const protocol::AcCmdCRRegisterDailyQuestGroup& command)
 {
   const auto& clientContext = GetClientContext(clientId);
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    clientContext.characterUid);
   spdlog::debug("Quest Group Packet Data: {} {} {} {} {}", command.unk_0, command.quest1.questId, command.quest1.unk_1, command.quest1.unk_2, command.quest1.unk_3);
+
+  characterRecord.Mutable(
+    [&command](data::Character& character)
+    {
+      character.dailyquests.dailyquest1() = {command.quest1.questId, command.quest1.unk_1, command.quest1.unk_2, command.quest1.unk_3};
+      character.dailyquests.dailyquest2() = {command.quest2.questId, command.quest2.unk_1, command.quest2.unk_2, command.quest2.unk_3};
+      character.dailyquests.dailyquest3() = {command.quest3.questId, command.quest3.unk_1, command.quest3.unk_2, command.quest3.unk_3};
+    });
 
   protocol::AcCmdCRRegisterDailyQuestGroupOK response{};
   response.status = 1;

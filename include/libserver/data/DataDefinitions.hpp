@@ -316,6 +316,21 @@ struct Character
     dao::Field<Sets> speed{};
     dao::Field<Sets> magic{};
   } skills{};
+
+  struct DailyQuests 
+  {
+    struct Quest
+    {
+      uint16_t unk_0{};
+      uint32_t unk_1{};
+      uint8_t unk_2{};
+      uint8_t unk_3{};
+    };
+
+    dao::Field<Quest> dailyquest1{};
+    dao::Field<Quest> dailyquest2{};
+    dao::Field<Quest> dailyquest3{};
+  } dailyquests{};
 };
 
 struct Horse
