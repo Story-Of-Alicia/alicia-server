@@ -1613,70 +1613,7 @@ void LobbyNetworkHandler::HandleGoodsShopList(
   const ClientId clientId,
   const protocol::AcCmdCLGoodsShopList& command)
 {
-  util::ShopList shopList;
-  shopList.goodsList.emplace_back(
-    util::ShopList::Goods{
-      .goodsSq = 0,
-      .setType = 0,
-      .moneyType = 0,
-      .goodsType = 3,
-      .recommendType = 1,
-      .recommendNo = 0,
-      .giftType = 0,
-      .salesRank = 1,
-      .bonusGameMoney = 100,
-      .goodsNm = "Tail Brush",
-      .goodsDesc = "The tail is an important part of the body that repels insects. Shake off the dust and dirt from the tail that has been messed up by the game. Comb the tail hair gently and slowly so that it does not fall out.",
-      .itemCapacityDesc = 100,
-      .sellSt = 1,
-      .itemUid = 40002,
-      .items = {
-        util::ShopList::Goods::Item{
-          .priceId = 0,
-          .priceRange = 1,
-          .goodsPrice = 10
-        },
-        util::ShopList::Goods::Item{
-          .priceId = 1,
-          .priceRange = 10,
-          .goodsPrice = 90
-        },
-        util::ShopList::Goods::Item{
-          .priceId = 2,
-          .priceRange = 100,
-          .goodsPrice = 500
-        }
-      }
-    }
-  );
-
-  shopList.goodsList.emplace_back(
-    util::ShopList::Goods{
-      .goodsSq = 1,
-      .setType = 1,
-      .moneyType = 1,
-      .goodsType = 1,
-      .recommendType = 1,
-      .recommendNo = 1,
-      .giftType = 0,
-      .salesRank = 0,
-      .bonusGameMoney = 1,
-      .goodsNm = "Test123",
-      .goodsDesc = "Test456",
-      .itemCapacityDesc = 0,
-      .sellSt = 1,
-      .itemUid = 30023,
-      .setPrice = 5,
-      .items = {
-        util::ShopList::Goods::Item{
-          .priceId = 0,
-          .priceRange = 0,
-          .itemUid = 30023
-        }
-      }
-    }
-  );
-
+  const auto& shopList = util::GetSampleShopList();
   const auto& xml = util::ShopListToXmlString(shopList);
 
   std::vector<std::byte> compressedXml;
