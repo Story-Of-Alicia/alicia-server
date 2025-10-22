@@ -2078,7 +2078,24 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
     [&response](const data::Character& character)
     {
       response.val0 = character.uid();
+      response.dailyQuest1.questId = character.dailyquests.dailyquest1().unk_0;
+      response.dailyQuest1.unk_1 = character.dailyquests.dailyquest1().unk_1;
+      response.dailyQuest1.unk_2 = character.dailyquests.dailyquest1().unk_2;
+      response.dailyQuest1.unk_3 = character.dailyquests.dailyquest1().unk_3;
+
+      response.dailyQuest2.questId = character.dailyquests.dailyquest2().unk_0;
+      response.dailyQuest2.unk_1 = character.dailyquests.dailyquest2().unk_1;
+      response.dailyQuest2.unk_2 = character.dailyquests.dailyquest2().unk_2;
+      response.dailyQuest2.unk_3 = character.dailyquests.dailyquest2().unk_3;
+
+      response.dailyQuest3.questId = character.dailyquests.dailyquest3().unk_0;
+      response.dailyQuest3.unk_1 = character.dailyquests.dailyquest3().unk_1;
+      response.dailyQuest3.unk_2 = character.dailyquests.dailyquest3().unk_2;
+      response.dailyQuest3.unk_3 = character.dailyquests.dailyquest3().unk_3;
     });
+  //response.testQuest = {0, 0, 0, 0, 0, 0, 0};
+  response.questCount = 0;
+  response.dailyQuestCount = 3;
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,

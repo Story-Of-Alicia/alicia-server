@@ -712,21 +712,14 @@ void AcCmdCLRequestDailyQuestListOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.val0);
-  stream.Write(static_cast<uint16_t>(command.quests.size()));
+  stream.Write(command.questCount);
+  // TODO for all quests in char file write quests(we assume count is 0 for now
+  //stream.Write(command.testQuest);
 
-  for (const auto& quest : command.quests)
-  {
-    stream.Write(quest);
-  }
-  stream.Write(
-    static_cast<uint16_t>(command.val1.size()));
-  for (const auto& entry : command.val1)
-  {
-    stream.Write(entry.val0)
-      .Write(entry.val1)
-      .Write(entry.val2)
-      .Write(entry.val3);
-  }
+  stream.Write(command.dailyQuestCount);
+  stream.Write(command.dailyQuest1);
+  stream.Write(command.dailyQuest2);
+  stream.Write(command.dailyQuest3);
 }
 
 void AcCmdCLRequestDailyQuestListOK::Read(
@@ -734,6 +727,46 @@ void AcCmdCLRequestDailyQuestListOK::Read(
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdCLRequestDailyQuestListOK::DailyQuest::Write(const DailyQuest& value, SinkStream& stream)
+{
+  stream.Write(value.questId)
+    .Write(value.unk_1)
+    .Write(value.unk_2)
+    .Write(value.unk_3);
+}
+
+void AcCmdCLRequestDailyQuestListOK::DailyQuest::Read(DailyQuest& value, SourceStream& stream)
+{
+  stream.Read(value.questId)
+    .Read(value.unk_1)
+    .Read(value.unk_2)
+    .Read(value.unk_3);
+}
+
+void AcCmdCLRequestDailyQuestListOK::Quest::Write(const Quest& value, SinkStream& stream)
+{
+  stream.Write(value.field0)
+    .Write(value.field1)
+    .Write(value.field2)
+    .Write(value.field3)
+    .Write(value.field4)
+    .Write(value.field5)
+    .Write(value.field6)
+    .Write(value.field7);
+}
+
+void AcCmdCLRequestDailyQuestListOK::Quest::Read(Quest& value, SourceStream& stream)
+{
+  stream.Read(value.field0)
+    .Read(value.field1)
+    .Read(value.field2)
+    .Read(value.field3)
+    .Read(value.field4)
+    .Read(value.field5)
+    .Read(value.field6)
+    .Read(value.field7);
 }
 
 void AcCmdCLEnterRanch::Write(

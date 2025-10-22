@@ -1067,19 +1067,39 @@ struct AcCmdCLRequestDailyQuestList
 
 struct AcCmdCLRequestDailyQuestListOK
 {
-  uint32_t val0{};
-  //! Size specified with uint16
-  std::vector<Quest> quests;
+  uint32_t val0;
+  uint16_t questCount; // a guess
+  uint16_t dailyQuestCount; // a guess
 
-  struct Unk
+  struct Quest //I think
   {
-    uint16_t val0{};
-    uint32_t val1{};
-    uint8_t val2{};
-    uint8_t val3{};
+    uint16_t field0;
+    uint32_t field1;
+    uint8_t field2;
+    uint32_t field3;
+    uint8_t field4;
+    uint32_t field5;
+    uint8_t field6;
+    uint8_t field7;
+
+    static void Write(const Quest& value, SinkStream& stream);
+    static void Read(Quest& value, SourceStream& stream);
   };
-  //! Size specified with uint16
-  std::vector<Unk> val1;
+
+  struct DailyQuest
+  {
+    uint16_t questId;
+    uint32_t unk_1;
+    uint8_t unk_2;
+    uint8_t unk_3;
+
+    static void Write(const DailyQuest& value, SinkStream& stream);
+    static void Read(DailyQuest& value, SourceStream& stream);
+  };
+  //Quest testQuest{};
+  DailyQuest dailyQuest1{};
+  DailyQuest dailyQuest2{};
+  DailyQuest dailyQuest3{};
 
   static Command GetCommand()
   {
