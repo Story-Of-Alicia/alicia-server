@@ -275,6 +275,236 @@ std::vector<std::string> TokenizeString(const std::string& value, char delimiter
   return tokens;
 }
 
+ShopList GetSampleShopList()
+{
+  uint32_t goodsSq = 1;
+
+  ShopList shopList;
+  shopList.goodsList.emplace_back(
+    ShopList::Goods{
+      .goodsSq = goodsSq++,
+      .setType = 0,
+      .moneyType = ShopList::Goods::MoneyType::Cash,
+      .goodsType = ShopList::Goods::GoodsType::Limited,
+      .recommendType = 0,
+      .recommendNo = 1,
+      .giftType = ShopList::Goods::GiftType::NoGifting,
+      .salesRank = 1,
+      .bonusGameMoney = 100,
+      .goodsNm = "Santa Outfit",
+      .goodsDesc = "Description",
+      .itemCapacityDesc = "Item Capacity Description Something",
+      .sellSt = 1,
+      .itemUid = 30022,
+      .items = {
+        ShopList::Goods::Item{
+          .priceId = 0,
+          .priceRange = 1,
+          .goodsPrice = 10
+        }
+      }
+    }
+  );
+  shopList.goodsList.emplace_back(
+    ShopList::Goods{
+      .goodsSq = goodsSq++,
+      .setType = 0,
+      .moneyType = ShopList::Goods::MoneyType::Carrots,
+      .goodsType = ShopList::Goods::GoodsType::Sale,
+      .recommendType = 1,
+      .recommendNo = 1,
+      .giftType = ShopList::Goods::GiftType::NoGifting,
+      .salesRank = 2,
+      .bonusGameMoney = 500,
+      .goodsNm = "Black Cat Stealth Suit",
+      .goodsDesc = "Description",
+      .itemCapacityDesc = "Item Capacity Description Something",
+      .sellSt = 1,
+      .itemUid = 30008,
+      .items = {
+        ShopList::Goods::Item{
+          .priceId = 0,
+          .priceRange = 1,
+          .goodsPrice = 20000
+        }
+      }
+    }
+  );
+  shopList.goodsList.emplace_back(
+    ShopList::Goods{
+      .goodsSq = goodsSq++,
+      .setType = 0,
+      .moneyType = ShopList::Goods::MoneyType::Carrots,
+      .goodsType = ShopList::Goods::GoodsType::Sale,
+      .recommendType = 1,
+      .recommendNo = 0,
+      .giftType = ShopList::Goods::GiftType::NoGifting,
+      .salesRank = 3,
+      .bonusGameMoney = 200,
+      .goodsNm = "Cavalry Armour",
+      .goodsDesc = "Description",
+      .itemCapacityDesc = "Item Capacity Description Something",
+      .sellSt = 1,
+      .itemUid = 30055,
+      .items = {
+        ShopList::Goods::Item{
+          .priceId = 0,
+          .priceRange = 1,
+          .goodsPrice = 25000
+        }
+      }
+    }
+  );
+  shopList.goodsList.emplace_back(
+    ShopList::Goods{
+      .goodsSq = goodsSq++,
+      .setType = 0,
+      .moneyType = ShopList::Goods::MoneyType::Carrots,
+      .goodsType = ShopList::Goods::GoodsType::Sale,
+      .recommendType = 1,
+      .recommendNo = 1,
+      .giftType = ShopList::Goods::GiftType::NoGifting,
+      .salesRank = 4,
+      .bonusGameMoney = 10,
+      .goodsNm = "Arcane Suit",
+      .goodsDesc = "Description",
+      .itemCapacityDesc = "Item Capacity Description Something",
+      .sellSt = 1,
+      .itemUid = 30058,
+      .items = {
+        ShopList::Goods::Item{
+          .priceId = 0,
+          .priceRange = 1,
+          .goodsPrice = 30000
+        }
+      }
+    }
+  );
+  shopList.goodsList.emplace_back(
+    ShopList::Goods{
+      .goodsSq = goodsSq++,
+      .setType = 0,
+      .moneyType = ShopList::Goods::MoneyType::Cash,
+      .goodsType = ShopList::Goods::GoodsType::New,
+      .recommendType = 1,
+      .recommendNo = 1,
+      .giftType = ShopList::Goods::GiftType::CanGift,
+      .salesRank = 5,
+      .bonusGameMoney = 10,
+      .goodsNm = "Swimwear",
+      .goodsDesc = "Description",
+      .itemCapacityDesc = "Item Capacity Description Something",
+      .sellSt = 1,
+      .itemUid = 30059,
+      .items = {
+        ShopList::Goods::Item{
+          .priceId = 0,
+          .priceRange = 1,
+          .goodsPrice = 50
+        }
+      }
+    }
+  );
+
+  // Testing duplicate recommended/suggested
+  shopList.goodsList.emplace_back(
+    ShopList::Goods{
+      .goodsSq = goodsSq++,
+      .setType = 0,
+      .moneyType = ShopList::Goods::MoneyType::Cash,
+      .goodsType = ShopList::Goods::GoodsType::New,
+      .recommendType = 2,
+      .recommendNo = 0,
+      .giftType = ShopList::Goods::GiftType::CanGift,
+      .salesRank = 2,
+      .bonusGameMoney = 10,
+      .goodsNm = "Suggested 1",
+      .goodsDesc = "Description",
+      .itemCapacityDesc = "Item Capacity Description Something",
+      .sellSt = 1,
+      .itemUid = 10166,
+      .items = {
+        ShopList::Goods::Item{
+          .priceId = 0,
+          .priceRange = 1,
+          .goodsPrice = 20
+        }
+      }
+    }
+  );
+
+  // Note: Set type 1
+  shopList.goodsList.emplace_back(
+    ShopList::Goods{
+      .goodsSq = goodsSq++,
+      .setType = 1,
+      .moneyType = ShopList::Goods::MoneyType::Cash,
+      .goodsType = ShopList::Goods::GoodsType::New,
+      .recommendType = 1,
+      .recommendNo = 1,
+      .giftType = ShopList::Goods::GiftType::NoGifting,
+      .salesRank = 0,
+      .bonusGameMoney = 1,
+      .goodsNm = "Test123",
+      .goodsDesc = "Test456",
+      .itemCapacityDesc = "Item Capacity Description Something",
+      .sellSt = 1,
+      .itemUid = 30023,
+      .setPrice = 5,
+      .items = {
+        ShopList::Goods::Item{
+          .priceId = 0,
+          .priceRange = 0,
+          .itemUid = 30023
+        }
+      }
+    }
+  );
+
+  // Common item loop
+  std::vector<uint32_t> feedItemTids{41001, 41002, 41003, 41004, 41005, 41006, 41007};
+  for (const auto& tid : feedItemTids)
+  {
+    shopList.goodsList.emplace_back(
+      ShopList::Goods{
+        .goodsSq = goodsSq++,
+        .setType = 0,
+        .moneyType = ShopList::Goods::MoneyType::Carrots,
+        .goodsType = ShopList::Goods::GoodsType::Default,
+        .recommendType = 0,
+        .recommendNo = 0,
+        .giftType = ShopList::Goods::GiftType::NoGifting,
+        .salesRank = 0,
+        .bonusGameMoney = 0,
+        .goodsNm = "Feed Item " + std::to_string(tid),
+        .goodsDesc = "Description",
+        .itemCapacityDesc = "Item Capacity Description Something",
+        .sellSt = 1,
+        .itemUid = tid,
+        .items = {
+          ShopList::Goods::Item{
+            .priceId = 1,
+            .priceRange = 1,
+            .goodsPrice = 20
+          },
+          ShopList::Goods::Item{
+            .priceId = 2,
+            .priceRange = 10,
+            .goodsPrice = 150
+          },
+          ShopList::Goods::Item{
+            .priceId = 3,
+            .priceRange = 100,
+            .goodsPrice = 1200
+          }
+        }
+      }
+    );
+  }
+
+  return shopList;
+}
+
 std::string ShopListToXmlString(const ShopList& shopList)
 {
   tinyxml2::XMLDocument doc;
@@ -295,16 +525,16 @@ std::string ShopListToXmlString(const ShopList& shopList)
     const auto& goodsElem = doc.NewElement("GoodsList");
     goodsElem->InsertNewChildElement("GoodsSQ")->SetText(goods.goodsSq);
     goodsElem->InsertNewChildElement("SetType")->SetText(goods.setType);
-    goodsElem->InsertNewChildElement("MoneyType")->SetText(goods.moneyType);
-    goodsElem->InsertNewChildElement("GoodsType")->SetText(goods.goodsType);
+    goodsElem->InsertNewChildElement("MoneyType")->SetText(static_cast<uint32_t>(goods.moneyType));
+    goodsElem->InsertNewChildElement("GoodsType")->SetText(static_cast<uint32_t>(goods.goodsType));
     goodsElem->InsertNewChildElement("RecommendType")->SetText(goods.recommendType);
     goodsElem->InsertNewChildElement("RecommendNO")->SetText(goods.recommendNo);
-    goodsElem->InsertNewChildElement("GiftType")->SetText(goods.giftType);
+    goodsElem->InsertNewChildElement("GiftType")->SetText(static_cast<uint32_t>(goods.giftType));
     goodsElem->InsertNewChildElement("SalesRank")->SetText(goods.salesRank);
     goodsElem->InsertNewChildElement("BonusGameMoney")->SetText(goods.bonusGameMoney);
     goodsElem->InsertNewChildElement("GoodsNM")->SetText(goods.goodsNm.c_str());
     goodsElem->InsertNewChildElement("GoodsDesc")->SetText(goods.goodsDesc.c_str());
-    goodsElem->InsertNewChildElement("ItemCapacityDesc")->SetText(goods.itemCapacityDesc);
+    goodsElem->InsertNewChildElement("ItemCapacityDesc")->SetText(goods.itemCapacityDesc.c_str());
     goodsElem->InsertNewChildElement("SellST")->SetText(goods.sellSt);
     goodsElem->InsertNewChildElement("ItemUID")->SetText(goods.itemUid);
     if (goods.setType == 1)
