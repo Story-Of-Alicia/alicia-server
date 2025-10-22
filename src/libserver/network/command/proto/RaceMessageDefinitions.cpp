@@ -721,7 +721,7 @@ void AcCmdCRRaceResultOK::Write(
 {
   stream.Write(command.member1)
     .Write(command.member2)
-    .Write(command.member3)
+    .Write(command.horseFatigue)
     .Write(command.member4)
     .Write(command.member5)
     .Write(command.currentCarrots);

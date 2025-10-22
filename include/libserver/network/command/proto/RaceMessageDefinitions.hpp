@@ -919,7 +919,7 @@ struct AcCmdCRRaceResultOK
 {
   uint8_t member1{};
   uint64_t member2{};
-  uint16_t member3{};
+  uint16_t horseFatigue{};
   uint16_t member4{};
   uint8_t member5{};
   uint32_t currentCarrots{};
