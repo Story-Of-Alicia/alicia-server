@@ -390,8 +390,8 @@ ShopList GetSampleShopList()
       .recommendNo = 1,
       .giftType = ShopList::Goods::GiftType::CanGift,
       .salesRank = 5,
-      .bonusGameMoney = 10,
-      .goodsNm = "Swimwear",
+      .bonusGameMoney = 50000,
+      .goodsNm = "Red-Stripe Swimsuit",
       .goodsDesc = "Description",
       .itemCapacityDesc = "Item Capacity Description Something",
       .sellSt = 1,
@@ -501,6 +501,34 @@ ShopList GetSampleShopList()
       }
     );
   }
+
+  // Hat 30158
+  shopList.goodsList.emplace_back(
+    ShopList::Goods{
+      .goodsSq = goodsSq++,
+      .setType = 0,
+      .moneyType = ShopList::Goods::MoneyType::Cash,
+      .goodsType = ShopList::Goods::GoodsType::New,
+      .recommendType = 1,
+      .recommendNo = 1,
+      .giftType = ShopList::Goods::GiftType::NoGifting,
+      .salesRank = 0,
+      .bonusGameMoney = 1000,
+      .goodsNm = "Romantic Ribbon Picnic Hat",
+      .goodsDesc = "Description",
+      .itemCapacityDesc = "Item Capacity Description Something",
+      .sellSt = 1,
+      .itemUid = 30158,
+      .setPrice = 5,
+      .items = {
+        ShopList::Goods::Item{
+          .priceId = 1,
+          .priceRange = 1,
+          .itemUid = 30023
+        }
+      }
+    }
+  );
 
   return shopList;
 }
