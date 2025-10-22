@@ -275,4 +275,69 @@ std::vector<std::string> TokenizeString(const std::string& value, char delimiter
   return tokens;
 }
 
+std::string ShopListToXmlString(const ShopList& shopList)
+{
+  tinyxml2::XMLDocument doc;
+  doc.InsertFirstChild(
+    doc.NewDeclaration(R"(xml version="1.0" encoding="utf-8")"));
+
+  // Begin <ShopList>
+  const auto& shopListElem = doc.NewElement("ShopList");
+  doc.InsertEndChild(shopListElem);
+
+  // Iterate goods
+  for (auto g = 0; g < shopList.goodsList.size(); ++g)
+  {
+    // Get goods entry
+    const auto& goods = shopList.goodsList[g];
+
+    // Begin <GoodsList>
+    const auto& goodsElem = doc.NewElement("GoodsList");
+    goodsElem->InsertNewChildElement("GoodsSQ")->SetText(goods.goodsSq);
+    goodsElem->InsertNewChildElement("SetType")->SetText(goods.setType);
+    goodsElem->InsertNewChildElement("MoneyType")->SetText(goods.moneyType);
+    goodsElem->InsertNewChildElement("GoodsType")->SetText(goods.goodsType);
+    goodsElem->InsertNewChildElement("RecommendType")->SetText(goods.recommendType);
+    goodsElem->InsertNewChildElement("RecommendNO")->SetText(goods.recommendNo);
+    goodsElem->InsertNewChildElement("GiftType")->SetText(goods.giftType);
+    goodsElem->InsertNewChildElement("SalesRank")->SetText(goods.salesRank);
+    goodsElem->InsertNewChildElement("BonusGameMoney")->SetText(goods.bonusGameMoney);
+    goodsElem->InsertNewChildElement("GoodsNM")->SetText(goods.goodsNm.c_str());
+    goodsElem->InsertNewChildElement("GoodsDesc")->SetText(goods.goodsDesc.c_str());
+    goodsElem->InsertNewChildElement("ItemCapacityDesc")->SetText(goods.itemCapacityDesc);
+    goodsElem->InsertNewChildElement("SellST")->SetText(goods.sellSt);
+    goodsElem->InsertNewChildElement("ItemUID")->SetText(goods.itemUid);
+    if (goods.setType == 1)
+      goodsElem->InsertNewChildElement("SetPrice")->SetText(goods.setPrice);
+
+    // Begin <ItemElem>
+    const auto& itemElem = doc.NewElement("ItemElem");
+    for (auto i = 0; i < goods.items.size(); ++i)
+    {
+      const auto& item = goods.items[i];
+
+      // Begin <Item>
+      const auto& itemXmlElem = doc.NewElement("Item");
+      itemXmlElem->InsertNewChildElement("PriceID")->SetText(item.priceId);
+      itemXmlElem->InsertNewChildElement("PriceRange")->SetText(item.priceRange);
+      if (goods.setType == 0)
+        itemXmlElem->InsertNewChildElement("GoodsPrice")->SetText(item.goodsPrice);
+      else
+        itemXmlElem->InsertNewChildElement("ItemUID")->SetText(item.itemUid);
+      // End <Item>
+      itemElem->InsertEndChild(itemXmlElem);
+    }
+    // End <ItemElem>
+    goodsElem->InsertEndChild(itemElem);
+
+    // End <GoodsList> element
+    shopListElem->InsertEndChild(goodsElem);
+  }
+
+  tinyxml2::XMLPrinter printer;
+  doc.Print(&printer);
+
+  return printer.CStr();
+}
+
 } // namespace server
