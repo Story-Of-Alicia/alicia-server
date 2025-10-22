@@ -4113,11 +4113,19 @@ void RanchDirector::HandleUpdateDailyQuest(
   const protocol::AcCmdCRUpdateDailyQuest& command)
 {
   const auto& clientContext = GetClientContext(clientId);
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    clientContext.characterUid);
   spdlog::debug("Content Daily Quest Package: {} {} {} {}", command.questId, command.unk_1, command.unk_2, command.unk_3);
 
   protocol::AcCmdCRUpdateDailyQuestOK response{};
-  response.newCarrotBalance = 1000;
-  response.quest = {command.questId, 1, 1 ,1};
+  characterRecord.Mutable(
+    [&response](data::Character& character)
+    {
+      character.carrots() += 1000;
+
+      response.newCarrotBalance = character.carrots();
+    });
+  response.quest = {command.questId, command.unk_1, command.unk_2, 1};
   response.unk_1 = 1;
   response.unk_2 = 1;
   _commandServer.QueueCommand<decltype(response)>(
@@ -4127,7 +4135,7 @@ void RanchDirector::HandleUpdateDailyQuest(
      return response;
     });
 }
-// AcCmdCRRegisterDailyQuestGroup
+
 void RanchDirector::HandleRegisterDailyQuestGroup(
   ClientId clientId,
   const protocol::AcCmdCRRegisterDailyQuestGroup& command)

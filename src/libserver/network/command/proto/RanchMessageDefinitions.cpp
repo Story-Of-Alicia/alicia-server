@@ -2693,7 +2693,7 @@ void AcCmdCRUpdateDailyQuestOK::Quest::Read(Quest& value, SourceStream& stream)
     .Read(value.unk_2)
     .Read(value.unk_3);
 }
-// AcCmdCRRegisterDailyQuestGroup
+
 void AcCmdCRRegisterDailyQuestGroup::Write(
   const AcCmdCRRegisterDailyQuestGroup& command,
   SinkStream& stream)
