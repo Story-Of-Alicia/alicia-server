@@ -1568,8 +1568,8 @@ void RaceDirector::HandleRaceResult(
   protocol::AcCmdCRRaceResultOK response{
     .member1 = 1,
     .member2 = 1,
-    .member4 = 1,
     .horseFatigue = 1,
+    .member4 = 1,
     .member5 = 1};
 
   characterRecord.Immutable(
