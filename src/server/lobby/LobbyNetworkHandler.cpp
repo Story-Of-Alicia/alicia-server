@@ -1618,54 +1618,64 @@ void LobbyNetworkHandler::HandleGoodsShopList(
 
   const std::string xml =
     "<ShopList>"
-    "	<GoodsList>\n"
-    "		<GoodsSQ>0</GoodsSQ>\n"
-    "		<SetType>0</SetType>\n"
-    "		<MoneyType>0</MoneyType>\n"
-    "		<GoodsType>1</GoodsType>\n"
-    "		<RecommendType>1</RecommendType>\n"
-    "		<RecommendNO>1</RecommendNO>\n"
-    "		<GiftType>1</GiftType>\n"
-    "		<SalesRank>1</SalesRank>\n"
-    "		<BonusGameMoney>100</BonusGameMoney>\n"
-    "		<GoodsNM>0</GoodsNM>\n"
-    "		<GoodsDesc>0</GoodsDesc>\n"
-    "		<ItemCapacityDesc>0</ItemCapacityDesc>\n"
-    "		<SellST>1</SellST>\n"
-    "		<ItemUID>10075</ItemUID>\n"
-    "		<ItemElem>\n"
-    "			<Item>\n"
-    "				<PriceID>1</PriceID>\n"
-    "				<PriceRange>10</PriceRange>\n"
-    "				<GoodsPrice>100</GoodsPrice>\n"
-    "			</Item>\n"
-    "		</ItemElem>\n"
-    "	</GoodsList>\n"
-    "	<GoodsList>\n"
-    "		<GoodsSQ>1</GoodsSQ>\n"
-    "		<SetType>1</SetType>\n"
-    "		<MoneyType>1</MoneyType>\n"
-    "		<GoodsType>1</GoodsType>\n"
-    "		<RecommendType>1</RecommendType>\n"
-    "		<RecommendNO>1</RecommendNO>\n"
-    "		<GiftType>0</GiftType>\n"
-    "		<SalesRank>0</SalesRank>\n"
-    "		<BonusGameMoney>1</BonusGameMoney>\n"
-    "		<GoodsNM>0</GoodsNM>\n"
-    "		<GoodsDesc>0</GoodsDesc>\n"
-    "		<ItemCapacityDesc>0</ItemCapacityDesc>\n"
-    "		<SellST>1</SellST>\n"
-    "		<ItemUID>10075</ItemUID>\n"
-    "		<SetPrice>5</SetPrice>\n"
-    "		<ItemElem>\n"
-    "			<Item>\n"
-    "				<ItemUID>10075</ItemUID>\n"
-    "				<PriceRange>0</PriceRange>\n"
-    "				<PriceID>0</PriceID>\n"
-    "			</Item>\n"
-    "		</ItemElem>\n"
-    "	</GoodsList>\n"
-    "</ShopList>\n";
+    "  <GoodsList>"
+    "    <GoodsSQ>0</GoodsSQ>"
+    "    <SetType>0</SetType>" // 0 - Goods info | 1 - Set (package)
+    "    <MoneyType>0</MoneyType>" // 0 - Carrots | 1 - Cash
+    "    <GoodsType>3</GoodsType>" // 1 - New | 2 - Limited | 3 - Sale | 4 - PC Bang | 5 - ??? | 6 - ???
+    "    <RecommendType>1</RecommendType>"
+    "    <RecommendNO>0</RecommendNO>" // 1 - Do not show in suggested/recommended tab
+    "    <GiftType>0</GiftType>" // 0 - Disable gifting | 1 - Enable gifting
+    "    <SalesRank>1</SalesRank>" // "Best top 5" ordering 1 <= rank <= 5
+    "    <BonusGameMoney>100</BonusGameMoney>" // Bonus on purchase
+    "    <GoodsNM>Tail Brush</GoodsNM>" // Item name (TODO: does it need to be wrapped in CDATA?)
+    "    <GoodsDesc>The tail is an important part of the body that repels insects. Shake off the dust and dirt from the tail that has been messed up by the game. Comb the tail hair gently and slowly so that it does not fall out.</GoodsDesc>" // Item description
+    "    <ItemCapacityDesc>100</ItemCapacityDesc>"
+    "    <SellST>1</SellST>" // 1 - Shows item in shop, anything else hides it
+    "    <ItemUID>40002</ItemUID>" // Item TID
+    "    <ItemElem>"
+    "      <Item>"
+    "        <PriceID>0</PriceID>" // Custom defined price ID, starts from 0, to be tracked and handled by server
+    "        <PriceRange>1</PriceRange>" // Item count
+    "        <GoodsPrice>10</GoodsPrice>" // Item price
+    "      </Item>"
+    "      <Item>"
+    "        <PriceID>1</PriceID>"
+    "        <PriceRange>10</PriceRange>"
+    "        <GoodsPrice>90</GoodsPrice>"
+    "      </Item>"
+    "      <Item>"
+    "        <PriceID>2</PriceID>"
+    "        <PriceRange>100</PriceRange>"
+    "        <GoodsPrice>500</GoodsPrice>"
+    "      </Item>"
+    "    </ItemElem>"
+    "  </GoodsList>"
+    "  <GoodsList>"
+    "    <GoodsSQ>1</GoodsSQ>"
+    "    <SetType>1</SetType>"
+    "    <MoneyType>1</MoneyType>"
+    "    <GoodsType>1</GoodsType>"
+    "    <RecommendType>1</RecommendType>"
+    "    <RecommendNO>1</RecommendNO>"
+    "    <GiftType>0</GiftType>"
+    "    <SalesRank>0</SalesRank>"
+    "    <BonusGameMoney>1</BonusGameMoney>"
+    "    <GoodsNM>0</GoodsNM>"
+    "    <GoodsDesc>0</GoodsDesc>"
+    "    <ItemCapacityDesc>0</ItemCapacityDesc>"
+    "    <SellST>1</SellST>"
+    "    <ItemUID>30023</ItemUID>"
+    "    <SetPrice>5</SetPrice>" // Price of the set
+    "    <ItemElem>"
+    "      <Item>"
+    "        <ItemUID>30023</ItemUID>"
+    "        <PriceRange>0</PriceRange>"
+    "        <PriceID>0</PriceID>"
+    "      </Item>"
+    "    </ItemElem>"
+    "  </GoodsList>"
+    "</ShopList>";
 
   std::vector<std::byte> compressedXml;
   compressedXml.resize(xml.size());

@@ -375,6 +375,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleChangeNickname(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRConfirmSetItem>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleConfirmSetItem(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -4299,6 +4305,40 @@ void RanchDirector::HandleChangeSkillCardPreset(
       skillSet.slot1 = command.skillSet.skills[0];
       skillSet.slot2 = command.skillSet.skills[1];
     });
+}
+
+void RanchDirector::HandleConfirmSetItem(
+  ClientId clientId,
+  const protocol::AcCmdCRConfirmSetItem& command)
+{
+  // TODO: Retrieve shop item and verify it's existence etc
+  // Return cancel response if some server error happens
+  if (true)
+  {
+    // TODO: item storage check, see if character owns items
+    protocol::AcCmdCRConfirmSetItemOK response{
+      .shopItemUid = command.shopItemUid,
+      .result = protocol::AcCmdCRConfirmSetItemOK::Result::Unowned
+    };
+
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]()
+      {
+        return response;
+      });
+  }
+  else
+  {
+    // Some server error happened here
+    protocol::AcCmdCRConfirmSetItemCancel cancel{};
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+  }
 }
 
 } // namespace server

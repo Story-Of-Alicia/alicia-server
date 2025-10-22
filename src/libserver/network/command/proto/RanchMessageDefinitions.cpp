@@ -2662,5 +2662,49 @@ void AcCmdCRMountInjuryHealOK::Write(
     .Write(command.updatedCarrotCount);
 }
 
+void AcCmdCRConfirmSetItem::Read(
+  AcCmdCRConfirmSetItem& command,
+  SourceStream& stream)
+{
+  stream.Read(command.shopItemUid);
+}
+
+void AcCmdCRConfirmSetItem::Write(
+  const AcCmdCRConfirmSetItem& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRConfirmSetItemOK::Read(
+  AcCmdCRConfirmSetItemOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRConfirmSetItemOK::Write(
+  const AcCmdCRConfirmSetItemOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.shopItemUid)
+    .Write(command.result);
+}
+
+void AcCmdCRConfirmSetItemCancel::Read(
+  AcCmdCRConfirmSetItemCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRConfirmSetItemCancel::Write(
+  const AcCmdCRConfirmSetItemCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1);
+}
+
 } // namespace server::protocol
 

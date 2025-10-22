@@ -280,6 +280,11 @@ private:
     ClientId clientId,
     const protocol::RanchCommandUserPetInfos& command);
 
+  //! Typically called from the shop when buying a set (package)
+  void HandleConfirmSetItem(
+    ClientId clientId,
+    const protocol::AcCmdCRConfirmSetItem& command);
+
   //! Broadcasts an equipment update of the character owned by the client
   //! to the currently connected ranch.
   //! @param clientId ID of the client.
