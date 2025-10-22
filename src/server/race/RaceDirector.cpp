@@ -514,7 +514,7 @@ void RaceDirector::Tick() {
       }
 
       score.courseTime = courseTime;
-
+      //score.experience = 420;
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
         characterUid);
 
@@ -528,6 +528,8 @@ void RaceDirector::Tick() {
           [&score](const data::Horse& horse)
           {
             score.mountName = horse.name();
+            score.horseClass = horse.clazz();
+            score.growthPoints = horse.growthPoints();
           });
       });
     }
@@ -735,7 +737,7 @@ void RaceDirector::HandleEnterRoom(
           .mapBlockId = roomDetails.courseId,
           .teamMode = static_cast<protocol::TeamMode>(roomDetails.teamMode),
           .missionId = roomDetails.missionId,
-          .unk6 = roomDetails.member11,
+          .unk6 = roomDetails.npcDifficulty,
           .skillBracket = roomDetails.skillBracket};
       });
   }
@@ -785,9 +787,33 @@ void RaceDirector::HandleEnterRoom(
         if (character.uid() == leaderUid)
           protocolRacer.isMaster = true;
 
+        const auto& settingsRecord = GetServerInstance().GetDataDirector().GetSettings(character.settingsUid());
+        if (settingsRecord.IsAvailable())
+        {
+          settingsRecord.Immutable(
+            [&protocolRacer, modelId = character.parts.modelId()](const data::Settings& settings)
+            {
+              if (not settings.hideAge())
+              {
+                // TODO: Add age here (find if it is even possible)
+
+                protocolRacer.gender = 
+                  modelId == 10 ? protocol::Gender::Boy :
+                  modelId == 20 ? protocol::Gender::Girl :
+                  throw std::runtime_error("Character gender not recognised by model ID");
+              }
+            });
+        }
+        else
+        {
+          spdlog::warn("Settings record for character {} was not found, skipping role/gender assignment...",
+            character.uid());
+        }
+
         protocolRacer.level = character.level();
         protocolRacer.uid = character.uid();
         protocolRacer.name = character.name();
+        protocolRacer.role = static_cast<protocol::Racer::Role>(character.role());
         protocolRacer.isHidden = false;
         protocolRacer.isNPC = false;
         protocolRacer.isReady = isPlayerReady;
@@ -935,7 +961,7 @@ void RaceDirector::HandleChangeRoomOptions(
       }
       if (options.test(5))
       {
-        roomDetails.member11 = command.npcRace;
+        roomDetails.npcDifficulty = command.npcDifficulty;
       }
     });
 
@@ -946,7 +972,7 @@ void RaceDirector::HandleChangeRoomOptions(
     .password = command.password,
     .gameMode = command.gameMode,
     .mapBlockId = command.mapBlockId,
-    .npcRace = command.npcRace};
+    .npcDifficulty = command.npcDifficulty};
 
   for (const auto raceClientId : raceInstance.clients)
   {
@@ -1544,7 +1570,7 @@ void RaceDirector::HandleRaceResult(
   protocol::AcCmdCRRaceResultOK response{
     .member1 = 1,
     .member2 = 1,
-    .member3 = 1,
+    .horseFatigue = 1,
     .member4 = 1,
     .member5 = 1};
 
