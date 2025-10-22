@@ -75,6 +75,8 @@ public:
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId clientId) override;
 
+  void DisconnectCharacter(data::Uid characterUid);
+
   ServerInstance& GetServerInstance();
   Config::Race& GetConfig();
 
@@ -96,6 +98,7 @@ private:
       Waiting,
       Loading,
       Racing,
+      Finishing,
     } stage{Stage::Waiting};
     //! A time point of when the stage timeout occurs.
     std::chrono::steady_clock::time_point stageTimeoutTimePoint;

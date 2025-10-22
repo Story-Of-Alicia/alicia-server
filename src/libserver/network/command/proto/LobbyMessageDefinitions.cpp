@@ -67,7 +67,7 @@ void LobbyCommandLoginOK::Write(
   // Profile
   stream.Write(command.uid)
     .Write(command.name)
-    .Write(command.motd)
+    .Write(command.notice)
     .Write(static_cast<uint8_t>(command.gender))
     .Write(command.introduction);
 
@@ -492,7 +492,7 @@ void LobbyCommandRoomListOK::Room::Write(
     .Write(value.unk0)
     .Write(value.unk1)
     .Write(value.map)
-    .Write(value.hasStarted)
+    .Write(value.state)
     .Write(value.unk2)
     .Write(value.unk3)
     .Write(value.skillBracket)
@@ -845,7 +845,7 @@ void AcCmdCLCheckWaitingSeqnoOK::Write(
   const AcCmdCLCheckWaitingSeqnoOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.uid)
+  stream.Write(command.time)
     .Write(command.position);
 }
 

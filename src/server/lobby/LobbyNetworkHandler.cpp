@@ -7,6 +7,7 @@
 #include "server/ServerInstance.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
+#include <libserver/util/Locale.hpp>
 
 #include <boost/container_hash/hash.hpp>
 #include <spdlog/spdlog.h>
@@ -61,9 +62,9 @@ LobbyNetworkHandler::LobbyNetworkHandler(
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCLLeaveRoom>(
-    [this](const ClientId clientId, const auto& command)
+    [this](const ClientId clientId, [[maybe_unused]] const auto& command)
     {
-      HandleLeaveRoom(clientId, command);
+      HandleLeaveRoom(clientId);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCLEnterChannel>(
@@ -281,20 +282,25 @@ void LobbyNetworkHandler::Terminate()
 }
 
 void LobbyNetworkHandler::AcceptLogin(
-  const std::string& userName,
+  ClientId clientId,
   const bool sendToCharacterCreator)
 {
   try
   {
-    const auto clientId = GetClientIdByUserName(userName, false);
     auto& clientContext = GetClientContext(clientId, false);
 
     clientContext.isAuthenticated = true;
 
     if (sendToCharacterCreator)
+    {
+      // Reset the waiting sequence number so the client does not soft lock.
+      // SendWaitingSeqno(clientId, 0);
       SendCreateNicknameNotify(clientId);
+    }
     else
+    {
       SendLoginOK(clientId);
+    }
   }
   catch (const std::exception&)
   {
@@ -303,14 +309,14 @@ void LobbyNetworkHandler::AcceptLogin(
 }
 
 void LobbyNetworkHandler::RejectLogin(
-  const std::string& userName,
+  ClientId clientId,
   const protocol::AcCmdCLLoginCancel::Reason reason)
 {
   try
   {
-    const auto clientId = GetClientIdByUserName(userName, false);
+    [[maybe_unused]] auto& clientContext = GetClientContext(clientId, false);
+
     SendLoginCancel(clientId, reason);
-    _commandServer.DisconnectClient(clientId);
   }
   catch (const std::exception&)
   {
@@ -494,26 +500,38 @@ LobbyNetworkHandler::ClientContext& LobbyNetworkHandler::GetClientContext(
 void LobbyNetworkHandler::HandleClientConnected(ClientId clientId)
 {
   _clients.try_emplace(clientId);
+
+  spdlog::debug(
+    "Client {} connected to the lobby server from {}",
+    clientId,
+    _commandServer.GetClientAddress(clientId).to_string());
+
+  _serverInstance.GetLobbyDirector().GetScheduler().Queue(
+    [this, clientId]()
+    {
+      _serverInstance.GetLobbyDirector().QueueClientConnect(clientId);
+    });
 }
 
 void LobbyNetworkHandler::HandleClientDisconnected(ClientId clientId)
 {
-  try
-  {
     const auto& clientContext = GetClientContext(clientId, false);
+
     _serverInstance.GetLobbyDirector().GetScheduler().Queue(
-      [this, userName = clientContext.userName]()
+      [this, isAuthenticated = clientContext.isAuthenticated, clientId, userName = clientContext.userName]()
       {
-        _serverInstance.GetLobbyDirector().QueueUserLogout(
-          userName);
+        if (isAuthenticated)
+        {
+          _serverInstance.GetLobbyDirector().QueueClientLogout(
+            clientId,
+            userName);
+        }
+
+        _serverInstance.GetLobbyDirector().QueueClientDisconnect(clientId);
       });
-  }
-  catch (const std::exception&)
-  {
-    // We really don't care if the user was not authenticated.
-  }
 
   _clients.erase(clientId);
+  spdlog::debug("Client {} disconnected from the lobby server", clientId);
 }
 
 void LobbyNetworkHandler::HandleLogin(
@@ -545,12 +563,15 @@ void LobbyNetworkHandler::HandleLogin(
   clientContext.userName = command.loginId;
 
   _serverInstance.GetLobbyDirector().GetScheduler().Queue(
-  [this, userName = command.loginId, userToken = command.authKey]()
-  {
-    _serverInstance.GetLobbyDirector().QueueUserLogin(
-      userName,
-      userToken);
-  });
+    [this, clientId, userName = command.loginId, userToken = command.authKey]()
+    {
+      [[maybe_unused]] const auto queuePosition = _serverInstance.GetLobbyDirector().QueueClientLogin(
+        clientId,
+        userName,
+        userToken);
+
+      //SendWaitingSeqno(clientId, queuePosition);
+    });
 }
 
 void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
@@ -585,9 +606,6 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
   protocol::LobbyCommandLoginOK response{
     .lobbyTime = util::TimePointToFileTime(util::Clock::now()),
     // .member0 = 0xCA794,
-    .motd = std::format(
-      "Welcome to Story of Alicia. Players online: {}",
-      _serverInstance.GetLobbyDirector().GetUsers().size()),
     .val1 = 0x0,
     .val3 = 0x0,
 
@@ -803,6 +821,23 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
       protocol::BuildProtocolHorse(response.horse, horse);
     });
 
+  constexpr std::string_view PlayersOnlinePlaceholder = "{players_online}";
+
+  std::string notice = _serverInstance.GetSettings().general.notice;
+  if (const auto placeholder = notice.find(PlayersOnlinePlaceholder); placeholder != std::string::npos)
+  {
+    notice = notice.replace(
+      placeholder,
+      PlayersOnlinePlaceholder.length(),
+      std::format(
+        "{}", _serverInstance.GetLobbyDirector().GetUsers().size()));
+  }
+
+  if (!notice.empty())
+  {
+    response.notice = notice;
+  }
+
   _commandServer.SetCode(clientId, {});
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -890,7 +925,9 @@ void LobbyNetworkHandler::HandleRoomList(
 
       auto& roomResponse = response.rooms.emplace_back();
 
-      roomResponse.hasStarted = room.isPlaying;
+      roomResponse.state = room.isPlaying ? 
+        protocol::LobbyCommandRoomListOK::Room::State::Playing :
+        protocol::LobbyCommandRoomListOK::Room::State::Waiting;
 
       roomResponse.uid = room.uid;
       if (not room.details.password.empty())
@@ -1104,9 +1141,6 @@ void LobbyNetworkHandler::HandleEnterRoom(
     return;
   }
 
-  auto& userInstance = _serverInstance.GetLobbyDirector().GetUsers()[clientContext.userName];
-  userInstance.roomUid = command.roomUid;
-
   size_t identityHash = std::hash<uint32_t>()(clientContext.characterUid);
   boost::hash_combine(identityHash, command.roomUid);
 
@@ -1128,43 +1162,39 @@ void LobbyNetworkHandler::HandleEnterRoom(
       return response;
     });
 
-  // Schedule removal of the player from the room queue.
   _serverInstance.GetLobbyDirector().GetScheduler().Queue(
-    [this, roomUid = command.roomUid, characterUid = clientContext.characterUid]()
+    [this, userName = clientContext.userName, characterUid = clientContext.characterUid, roomUid = command.roomUid]()
     {
-      try
+      bool hasEnteredRaceRoom = false;
+
+      if (_serverInstance.GetRoomSystem().RoomExists(roomUid))
       {
         _serverInstance.GetRoomSystem().GetRoom(
           roomUid,
-          [this, characterUid](Room& room)
+          [&hasEnteredRaceRoom, characterUid](Room& room)
           {
-            const bool dequeued = room.DequeuePlayer(characterUid);
+            const bool playerDequeued = room.DequeuePlayer(characterUid);
 
-            if (not dequeued)
-              return;
-
-            // If the player was actually dequeued it means
-            // they have never connected to the room.
-            _serverInstance.GetDataDirector().GetCharacter(characterUid).Immutable(
-              [](const data::Character& character)
-              {
-                  spdlog::warn("Player '{}' did not connect to the room before the timeout", character.name());
-              });
+            // If the player was dequeued that means they did not enter the room.
+            hasEnteredRaceRoom = not playerDequeued;
           });
       }
-      catch (const std::exception&)
-      {
-        // We really don't care.
-      }
+
+      if (hasEnteredRaceRoom)
+        _serverInstance.GetLobbyDirector().SetUserRoom(userName, roomUid);
     },
     Scheduler::Clock::now() + std::chrono::seconds(7));
 }
 
 void LobbyNetworkHandler::HandleLeaveRoom(
-  const ClientId clientId,
-  const protocol::AcCmdCLLeaveRoom& command)
+  const ClientId clientId)
 {
-  spdlog::error("Not implemented - client {} left a room", clientId);
+  const auto& clientContext = GetClientContext(clientId);
+  _serverInstance.GetLobbyDirector().GetScheduler().Queue(
+    [this, userName = clientContext.userName]()
+    {
+      _serverInstance.GetLobbyDirector().SetUserRoom(userName, 0);
+    });
 }
 
 void LobbyNetworkHandler::HandleEnterChannel(
@@ -1217,6 +1247,13 @@ void LobbyNetworkHandler::HandleCreateNickname(
   const protocol::AcCmdCLCreateNickname& command)
 {
   auto& clientContext = GetClientContext(clientId);
+
+  const bool isValidNickname = locale::IsNameValid(command.nickname, 16);
+  if (not isValidNickname)
+  {
+    SendLoginCancel(clientId, protocol::AcCmdCLLoginCancel::Reason::Generic);
+    return;
+  }
 
   clientContext.justCreatedCharacter = true;
 
@@ -1754,9 +1791,29 @@ void LobbyNetworkHandler::HandleGetMessengerInfo(
 
 void LobbyNetworkHandler::HandleCheckWaitingSeqno(
   const ClientId clientId,
-  const protocol::AcCmdCLCheckWaitingSeqno& command)
+  [[maybe_unused]] const protocol::AcCmdCLCheckWaitingSeqno& command)
 {
-  // todo: implement waiting
+  _serverInstance.GetLobbyDirector().GetScheduler().Queue([this, clientId]()
+  {
+    SendWaitingSeqno(
+      clientId,
+      _serverInstance.GetLobbyDirector().GetClientQueuePosition(clientId));
+  });
+}
+
+void LobbyNetworkHandler::SendWaitingSeqno(
+  ClientId clientId,
+  size_t queuePosition)
+{
+  protocol::AcCmdCLCheckWaitingSeqnoOK response{
+    .position = static_cast<uint32_t>(queuePosition)};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 void LobbyNetworkHandler::HandleUpdateSystemContent(

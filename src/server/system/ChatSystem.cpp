@@ -30,6 +30,15 @@
 namespace server
 {
 
+namespace
+{
+
+constexpr std::string_view UserLine        = "  - user: '{}'";
+constexpr std::string_view CharacterLine   = "    <font color=\"#AAAAAA\">(uid:{}) '{}', level {}</font>";
+constexpr std::string_view NoCharacterLine = "    <font color=\"#FF0000\">no character</font>";
+
+} // anon namespace
+
 void CommandManager::RegisterCommand(
   const std::string& literal,
   Handler handler) noexcept
@@ -112,7 +121,7 @@ void ChatSystem::RegisterUserCommands()
     "about",
     [this](
       const std::span<const std::string>& arguments,
-      data::Uid characterUid) -> std::vector<std::string>
+      [[maybe_unused]] data::Uid characterUid) -> std::vector<std::string>
     {
       const std::string brandName = _serverInstance.GetSettings().general.brand;
 
@@ -120,8 +129,10 @@ void ChatSystem::RegisterUserCommands()
         "Story of Alicia dedicated server software",
         " available under the GPL-2.0 license",
         "",
-        std::format("Running alicia-server@v{}", BuildVersion),
-        std::format("Hosted by {}", brandName)};
+        "Running story-of-alicia/alicia-server",
+        std::format("  v{}", BuildVersion),
+        std::format("Hosted by:"),
+        std::format("  {}", brandName)};
     });
 
   // help command
@@ -129,7 +140,7 @@ void ChatSystem::RegisterUserCommands()
     "help",
     [this](
       const std::span<const std::string>& arguments,
-      data::Uid characterUid) -> std::vector<std::string>
+      [[maybe_unused]] data::Uid characterUid) -> std::vector<std::string>
     {
       return {
         "Command are a subject of the prototype.",
@@ -137,8 +148,8 @@ void ChatSystem::RegisterUserCommands()
         " or browse the code online.",
         " ",
         "Official user command reference:",
-        " //create - Send you to the character creator",
         " //about - Information about the server",
+        " //create - Sends you to the character creator",
         " //online - Information about players",
         " ",
         "Official admin command reference:",
@@ -657,40 +668,44 @@ void ChatSystem::RegisterAdminCommands()
 
       std::vector<std::string> userList;
 
-      userList.emplace_back("Users:");
-      constexpr std::string_view UserLine = "  - {}, user: {}, uid: {}{}";
+      const auto& userInstances = _serverInstance.GetLobbyDirector().GetUsers();
+      userList.emplace_back(std::format("Users ({}):", userInstances.size()));
 
-      for (const auto& userInstance : _serverInstance.GetLobbyDirector().GetUsers() | std::views::values)
+      for (const auto& userInstance : userInstances | std::views::values)
       {
-        bool hasInfractions = false;
-        std::string onlineCharacterName = "xxx";
-        data::Uid onlineCharacterUid{data::InvalidUid};
-
-        const auto userRecord = _serverInstance.GetDataDirector().GetUser(userInstance.userName);
-        if (userRecord)
-        {
-          userRecord.Immutable([&onlineCharacterUid, &hasInfractions](const data::User& user)
-          {
-            onlineCharacterUid = user.characterUid();
-            hasInfractions = not user.infractions().empty();
-          });
-
-          const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(onlineCharacterUid);
-          if (characterRecord)
-          {
-            characterRecord.Immutable([&onlineCharacterName](const data::Character& character)
-            {
-              onlineCharacterName = character.name();
-            });
-          }
-        }
-
         userList.emplace_back(std::format(
           UserLine,
-          onlineCharacterName,
-          userInstance.userName,
-          onlineCharacterUid,
-          hasInfractions ? " <font color=\"#FF0000\">(!)</font>" : ""));
+          userInstance.userName));
+
+        const auto userRecord = _serverInstance.GetDataDirector().GetUser(
+          userInstance.userName);
+        if (userRecord)
+        {
+          auto onlineCharacterUid{data::InvalidUid};
+          userRecord.Immutable([&onlineCharacterUid](const data::User& user)
+          {
+            onlineCharacterUid = user.characterUid();
+          });
+
+          const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+            onlineCharacterUid);
+          if (characterRecord)
+          {
+            characterRecord.Immutable([&userList](const data::Character& character)
+            {
+              userList.emplace_back(std::format(
+                CharacterLine,
+                character.uid(),
+                character.name(),
+                character.level()));
+            });
+          }
+          else
+          {
+            userList.emplace_back(std::format(
+              NoCharacterLine));
+          }
+        }
       }
 
       return userList;
@@ -958,7 +973,7 @@ void ChatSystem::RegisterAdminCommands()
         {
           _serverInstance.GetLobbyDirector().DisconnectCharacter(userCharacterUid);
           _serverInstance.GetRanchDirector().Disconnect(userCharacterUid);
-          // todo: race
+          _serverInstance.GetRaceDirector().DisconnectCharacter(userCharacterUid);
         }
         else if (punishmentType == data::Infraction::Punishment::Mute)
         {

@@ -92,6 +92,7 @@ public:
   //! Ends the server.
   void EndHost();
 
+  asio::ip::address_v4 GetClientAddress(ClientId);
   void DisconnectClient(ClientId clientId);
 
   //! Registers a command handler.

@@ -14,7 +14,12 @@ services:
    ulimits:
      core: -1
    volumes:
+      # If you bind `/alicia-server/config` to host filesystem, the default configuration
+      # will be unavailable, and you have to manually to get it from the `/resources`
+      # folder in the repository.
+      #
       #- "./config:/var/lib/alicia-server/config"
+      # 
       - "./logs:/var/lib/alicia-server/logs"
       - "./data:/var/lib/alicia-server/data"
       - "./dumps:/dumps"
@@ -65,7 +70,7 @@ Locate the game executable file. If the installer was used, this is usually `%ap
 
 Open terminal in the game folder and run the following command:
 ```bash
-./Alicia.exe = -GameID 2 -ID [username] -OP [password]
+./Alicia.exe -GameID 2 -ID [username] -OP [password]
 ```
 ### Patches
 - Disable hackshield
