@@ -1613,69 +1613,71 @@ void LobbyNetworkHandler::HandleGoodsShopList(
   const ClientId clientId,
   const protocol::AcCmdCLGoodsShopList& command)
 {
-  // TODO: remove this, only used for testing protocol
-  auto now = util::Clock::now() + std::chrono::days(1);
+  util::ShopList shopList;
+  shopList.goodsList.emplace_back(
+    util::ShopList::Goods{
+      .goodsSq = 0,
+      .setType = 0,
+      .moneyType = 0,
+      .goodsType = 3,
+      .recommendType = 1,
+      .recommendNo = 0,
+      .giftType = 0,
+      .salesRank = 1,
+      .bonusGameMoney = 100,
+      .goodsNm = "Tail Brush",
+      .goodsDesc = "The tail is an important part of the body that repels insects. Shake off the dust and dirt from the tail that has been messed up by the game. Comb the tail hair gently and slowly so that it does not fall out.",
+      .itemCapacityDesc = 100,
+      .sellSt = 1,
+      .itemUid = 40002,
+      .items = {
+        util::ShopList::Goods::Item{
+          .priceId = 0,
+          .priceRange = 1,
+          .goodsPrice = 10
+        },
+        util::ShopList::Goods::Item{
+          .priceId = 1,
+          .priceRange = 10,
+          .goodsPrice = 90
+        },
+        util::ShopList::Goods::Item{
+          .priceId = 2,
+          .priceRange = 100,
+          .goodsPrice = 500
+        }
+      }
+    }
+  );
 
-  const std::string xml =
-    "<ShopList>"
-    "  <GoodsList>"
-    "    <GoodsSQ>0</GoodsSQ>"
-    "    <SetType>0</SetType>" // 0 - Goods info | 1 - Set (package)
-    "    <MoneyType>0</MoneyType>" // 0 - Carrots | 1 - Cash
-    "    <GoodsType>3</GoodsType>" // 1 - New | 2 - Limited | 3 - Sale | 4 - PC Bang | 5 - ??? | 6 - ???
-    "    <RecommendType>1</RecommendType>"
-    "    <RecommendNO>0</RecommendNO>" // 1 - Do not show in suggested/recommended tab
-    "    <GiftType>0</GiftType>" // 0 - Disable gifting | 1 - Enable gifting
-    "    <SalesRank>1</SalesRank>" // "Best top 5" ordering 1 <= rank <= 5
-    "    <BonusGameMoney>100</BonusGameMoney>" // Bonus on purchase
-    "    <GoodsNM>Tail Brush</GoodsNM>" // Item name (TODO: does it need to be wrapped in CDATA?)
-    "    <GoodsDesc>The tail is an important part of the body that repels insects. Shake off the dust and dirt from the tail that has been messed up by the game. Comb the tail hair gently and slowly so that it does not fall out.</GoodsDesc>" // Item description
-    "    <ItemCapacityDesc>100</ItemCapacityDesc>"
-    "    <SellST>1</SellST>" // 1 - Shows item in shop, anything else hides it
-    "    <ItemUID>40002</ItemUID>" // Item TID
-    "    <ItemElem>"
-    "      <Item>"
-    "        <PriceID>0</PriceID>" // Custom defined price ID, starts from 0, to be tracked and handled by server
-    "        <PriceRange>1</PriceRange>" // Item count
-    "        <GoodsPrice>10</GoodsPrice>" // Item price
-    "      </Item>"
-    "      <Item>"
-    "        <PriceID>1</PriceID>"
-    "        <PriceRange>10</PriceRange>"
-    "        <GoodsPrice>90</GoodsPrice>"
-    "      </Item>"
-    "      <Item>"
-    "        <PriceID>2</PriceID>"
-    "        <PriceRange>100</PriceRange>"
-    "        <GoodsPrice>500</GoodsPrice>"
-    "      </Item>"
-    "    </ItemElem>"
-    "  </GoodsList>"
-    "  <GoodsList>"
-    "    <GoodsSQ>1</GoodsSQ>"
-    "    <SetType>1</SetType>"
-    "    <MoneyType>1</MoneyType>"
-    "    <GoodsType>1</GoodsType>"
-    "    <RecommendType>1</RecommendType>"
-    "    <RecommendNO>1</RecommendNO>"
-    "    <GiftType>0</GiftType>"
-    "    <SalesRank>0</SalesRank>"
-    "    <BonusGameMoney>1</BonusGameMoney>"
-    "    <GoodsNM>0</GoodsNM>"
-    "    <GoodsDesc>0</GoodsDesc>"
-    "    <ItemCapacityDesc>0</ItemCapacityDesc>"
-    "    <SellST>1</SellST>"
-    "    <ItemUID>30023</ItemUID>"
-    "    <SetPrice>5</SetPrice>" // Price of the set
-    "    <ItemElem>"
-    "      <Item>"
-    "        <ItemUID>30023</ItemUID>"
-    "        <PriceRange>0</PriceRange>"
-    "        <PriceID>0</PriceID>"
-    "      </Item>"
-    "    </ItemElem>"
-    "  </GoodsList>"
-    "</ShopList>";
+  shopList.goodsList.emplace_back(
+    util::ShopList::Goods{
+      .goodsSq = 1,
+      .setType = 1,
+      .moneyType = 1,
+      .goodsType = 1,
+      .recommendType = 1,
+      .recommendNo = 1,
+      .giftType = 0,
+      .salesRank = 0,
+      .bonusGameMoney = 1,
+      .goodsNm = "Test123",
+      .goodsDesc = "Test456",
+      .itemCapacityDesc = 0,
+      .sellSt = 1,
+      .itemUid = 30023,
+      .setPrice = 5,
+      .items = {
+        util::ShopList::Goods::Item{
+          .priceId = 0,
+          .priceRange = 0,
+          .itemUid = 30023
+        }
+      }
+    }
+  );
+
+  const auto& xml = util::ShopListToXmlString(shopList);
 
   std::vector<std::byte> compressedXml;
   compressedXml.resize(xml.size());
@@ -1688,6 +1690,9 @@ void LobbyNetworkHandler::HandleGoodsShopList(
     xml.length());
 
   compressedXml.resize(compressedSize);
+
+  // TODO: remove this, only used for testing protocol
+  auto now = util::Clock::now() + std::chrono::days(1);
 
   protocol::AcCmdLCGoodsShopListData data{
     .timestamp = now,
