@@ -56,29 +56,44 @@ struct ShopList
   struct Goods
   {
     uint32_t goodsSq{};
+    //! 0 - Goods info | 1 - Set (package)
     uint32_t setType{};
+    //! 0 - Carrots | 1 - Cash
     uint32_t moneyType{};
+    //! Item offer type
+    //! 1 - New | 2 - Limited | 3 - Sale | 4 - PC Bang | 5 - ??? | 6 - ???
     uint32_t goodsType{};
     uint32_t recommendType{};
+    //! 1 - Do not show in suggested/recommended tab
     uint32_t recommendNo{};
+    //! 0 - Disable gifting | 1 - Enable gifting
     uint32_t giftType{};
+    //! "Best top 5" ordering 1 <= rank <= 5
     uint32_t salesRank{};
+    //! Bonus on purchase
     uint32_t bonusGameMoney{};
+    //! Item name (TODO: does it need to be wrapped in CDATA?)
     std::string goodsNm{};
+    //! Item description
     std::string goodsDesc{};
     uint32_t itemCapacityDesc{};
+    //! 1 - Shows item in shop, anything else hides it
     uint32_t sellSt{};
+    //! Item TID
     uint32_t itemUid{};
-    // Only valid when setType = 1
+    //! Only valid when setType = 1
     uint32_t setPrice{};
 
     struct Item
     {
+      //! Unique price ID for the offer
       uint32_t priceId{};
+      //! Item count for the price
       uint32_t priceRange{};
-      // Only valid when setType = 0
+      //! Item price
+      //! Only valid when setType = 0
       uint32_t goodsPrice{};
-      // Only valid when setType = 1
+      //! Only valid when setType = 1
       uint32_t itemUid{};
     };
     std::vector<Item> items{};
