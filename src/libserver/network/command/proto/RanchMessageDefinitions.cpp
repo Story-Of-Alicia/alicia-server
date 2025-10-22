@@ -22,6 +22,7 @@
 #include <cassert>
 #include <algorithm>
 #include <format>
+#include <spdlog/spdlog.h>
 
 namespace server::protocol
 {
@@ -544,6 +545,101 @@ void RanchCommandRanchStuffOK::Read(
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdCRBreedingFailureCard::Write(
+  const AcCmdCRBreedingFailureCard& command,
+  SinkStream& stream)
+{
+  // Empty response
+}
+
+void AcCmdCRBreedingFailureCard::Read(
+  AcCmdCRBreedingFailureCard& command,
+  SourceStream& stream)
+{
+  // Empty - statusOrFlag is internal only, not serialized
+}
+
+void AcCmdCRBreedingFailureCardOK::Write(
+  const AcCmdCRBreedingFailureCardOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.choiceOrFlag);
+}
+
+void AcCmdCRBreedingFailureCardOK::Read(
+  AcCmdCRBreedingFailureCardOK& command,
+  SourceStream& stream)
+{
+  stream.Read(command.choiceOrFlag);
+}
+
+void AcCmdCRBreedingFailureCardCancel::Write(
+  const AcCmdCRBreedingFailureCardCancel& command,
+  SinkStream& stream)
+{
+  // Empty response
+}
+
+void AcCmdCRBreedingFailureCardCancel::Read(
+  AcCmdCRBreedingFailureCardCancel& command,
+  SourceStream& stream)
+{
+  // Empty - statusOrFlag is internal only, not serialized
+}
+
+void AcCmdCRBreedingFailureCardChoose::Write(
+  const AcCmdCRBreedingFailureCardChoose& command,
+  SinkStream& stream)
+{
+  // Zero payload command - no data to write
+}
+
+void AcCmdCRBreedingFailureCardChoose::Read(
+  AcCmdCRBreedingFailureCardChoose& command,
+  SourceStream& stream)
+{
+  // Zero payload command - statusOrFlag is internal only, not serialized
+}
+
+void AcCmdCRBreedingFailureCardChooseOK::Write(
+  const AcCmdCRBreedingFailureCardChooseOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1)
+    .Write(command.rewardId)
+    .Write(command.member3);
+    
+  for (const auto& value : command.member4)
+  {
+    stream.Write(value);
+  }
+  
+  stream.Write(command.member5)
+    .Write(command.item)
+    .Write(command.member6);
+}
+
+void AcCmdCRBreedingFailureCardChooseOK::Read(
+  AcCmdCRBreedingFailureCardChooseOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBreedingFailureCardChooseCancel::Write(
+  const AcCmdCRBreedingFailureCardChooseCancel& command,
+  SinkStream& stream)
+{
+  // Empty response
+}
+
+void AcCmdCRBreedingFailureCardChooseCancel::Read(
+  AcCmdCRBreedingFailureCardChooseCancel& command,
+  SourceStream& stream)
+{
+  // Empty response
 }
 
 void AcCmdCRSearchStallion::Write(

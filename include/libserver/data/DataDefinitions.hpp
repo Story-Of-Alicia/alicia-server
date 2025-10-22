@@ -413,6 +413,8 @@ struct Horse
     dao::Field<uint32_t> cumulativePrize{};
     dao::Field<uint32_t> biggestPrize{};
   } mountInfo{};
+
+  dao::Field<std::vector<uint32_t>> ancestors{};
 };
 
 struct Housing
