@@ -4204,6 +4204,87 @@ struct AcCmdCRMountInjuryHealOK
     SourceStream& stream);
 };
 
+struct AcCmdCRConfirmSetItem
+{
+  uint32_t shopItemUid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRConfirmSetItem;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRConfirmSetItem& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRConfirmSetItem& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRConfirmSetItemOK
+{
+  // TODO: suspected values
+  uint32_t shopItemUid{};
+  enum Result : uint8_t
+  {
+    Unowned = 0,
+    Owned = 1
+  } result{Result::Unowned};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRConfirmSetItemOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRConfirmSetItemOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRConfirmSetItemOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRConfirmSetItemCancel
+{
+  //! Verified unused, handler always uses table "ShopHandlerStrings" entry "UnknownError"
+  uint32_t unk0{};
+  //! Verified unused, handler always uses table "ShopHandlerStrings" entry "UnknownError"
+  uint8_t unk1{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRConfirmSetItemCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRConfirmSetItemCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRConfirmSetItemCancel& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RANCH_MESSAGE_DEFINES_HPP
