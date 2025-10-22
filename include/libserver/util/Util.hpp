@@ -21,6 +21,8 @@
 #define UTIL_HPP
 
 #include <boost/asio.hpp>
+#include <tinyxml2.h>
+
 #include <chrono>
 #include <span>
 
@@ -47,6 +49,41 @@ struct DateTime
   int32_t hours = 0;
   int32_t minutes = 0;
   int32_t seconds = 0;
+};
+
+struct ShopList
+{
+  struct Goods
+  {
+    uint32_t goodsSq{};
+    uint32_t setType{};
+    uint32_t moneyType{};
+    uint32_t goodsType{};
+    uint32_t recommendType{};
+    uint32_t recommendNo{};
+    uint32_t giftType{};
+    uint32_t salesRank{};
+    uint32_t bonusGameMoney{};
+    std::string goodsNm{};
+    std::string goodsDesc{};
+    uint32_t itemCapacityDesc{};
+    uint32_t sellSt{};
+    uint32_t itemUid{};
+    // Only valid when setType = 1
+    uint32_t setPrice{};
+
+    struct Item
+    {
+      uint32_t priceId{};
+      uint32_t priceRange{};
+      // Only valid when setType = 0
+      uint32_t goodsPrice{};
+      // Only valid when setType = 1
+      uint32_t itemUid{};
+    };
+    std::vector<Item> items{};
+  };
+  std::vector<Goods> goodsList{};
 };
 
 //! Converts a time point to the Windows file time.
@@ -94,6 +131,8 @@ asio::ip::address_v4 ResolveHostName(const std::string& host);
 std::string GenerateByteDump(std::span<const std::byte> data);
 
 std::vector<std::string> TokenizeString(const std::string& value, char delimiter);
+
+std::string ShopListToXmlString(const ShopList& shopList);
 
 } // namespace server::util
 
