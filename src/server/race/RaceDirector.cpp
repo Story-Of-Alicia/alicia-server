@@ -2143,7 +2143,7 @@ void RaceDirector::HandleUserRaceActivateEvent
   spdlog::info("HandleUserRaceActivateEvent: clientId={}, eventId={}, characterOid={}", 
     clientId, command.eventId, racer.oid);
 
-  protocol::AcCmdUserRaceActivateEvent notify{
+  protocol::AcCmdUserRaceActivateEventNotify notify{
     .eventId = command.eventId,
     .characterOid = racer.oid, // sender oid
   };
@@ -2790,7 +2790,7 @@ void RaceDirector::HandleActivateSkillEffect(
   spdlog::info("Applied Attack Compensation skill: character {} gained 50 star points", command.characterOid);
   
   // Send skill effect response back to the requesting client
-  protocol::AcCmdUserRaceActivateEvent activateResponse{
+  protocol::AcCmdUserRaceActivateEventNotify activateResponse{
     .eventId = command.skillId,  // Echo back the skill ID
     .characterOid = command.characterOid
   };
