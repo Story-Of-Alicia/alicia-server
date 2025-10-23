@@ -2283,6 +2283,33 @@ struct AcCmdRCAddSkillEffect
     SourceStream& stream);
 };
 
+struct AcCmdRCRemoveSkillEffect
+{
+  uint16_t characterOid;    // Target character
+  uint32_t effectId;        // Effect/animation ID to remove
+  uint16_t targetOid;
+  uint8_t unk1;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCRemoveSkillEffect;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCRemoveSkillEffect& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCRemoveSkillEffect& command,
+    SourceStream& stream);
+};
+
 struct AcCmdCRChangeSkillCardPresetID
 {
   uint8_t setId{};

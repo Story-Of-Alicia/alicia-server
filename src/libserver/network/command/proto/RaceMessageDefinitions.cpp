@@ -1831,6 +1831,26 @@ void AcCmdRCAddSkillEffect::Read(
   }
 }
 
+void AcCmdRCRemoveSkillEffect::Write(
+  const AcCmdRCRemoveSkillEffect& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterOid)
+    .Write(command.effectId)
+    .Write(command.targetOid)
+    .Write(command.unk1);
+}
+
+void AcCmdRCRemoveSkillEffect::Read(
+  AcCmdRCRemoveSkillEffect& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterOid)
+    .Read(command.effectId)
+    .Read(command.targetOid)
+    .Read(command.unk1);
+}
+
 void AcCmdCRChangeSkillCardPresetID::Write(
   const AcCmdCRChangeSkillCardPresetID& command,
   SinkStream& stream)
