@@ -2073,27 +2073,29 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
     clientContext.characterUid);
 
   protocol::AcCmdCLRequestDailyQuestListOK response{};
-
+  
   characterRecord.Immutable(
     [&response](const data::Character& character)
     {
+      const auto& dailyQuestIds = character.dailyQuests();
+      //spdlog::debug("Daily quest ids: {}", dailyQuestIds);
       response.val0 = character.uid();
-      response.dailyQuest1.questId = character.dailyquests.dailyquest1().unk_0;
-      response.dailyQuest1.unk_1 = character.dailyquests.dailyquest1().unk_1;
-      response.dailyQuest1.unk_2 = character.dailyquests.dailyquest1().unk_2;
-      response.dailyQuest1.unk_3 = character.dailyquests.dailyquest1().unk_3;
+      response.dailyQuest1.questId = 0;
+      response.dailyQuest1.unk_1 = 1;
+      response.dailyQuest1.unk_2 = 1;
+      response.dailyQuest1.unk_3 = 1;
 
-      response.dailyQuest2.questId = character.dailyquests.dailyquest2().unk_0;
-      response.dailyQuest2.unk_1 = character.dailyquests.dailyquest2().unk_1;
-      response.dailyQuest2.unk_2 = character.dailyquests.dailyquest2().unk_2;
-      response.dailyQuest2.unk_3 = character.dailyquests.dailyquest2().unk_3;
+      response.dailyQuest2.questId = 0;
+      response.dailyQuest2.unk_1 = 1;
+      response.dailyQuest2.unk_2 = 1;
+      response.dailyQuest2.unk_3 = 1;
 
-      response.dailyQuest3.questId = character.dailyquests.dailyquest3().unk_0;
-      response.dailyQuest3.unk_1 = character.dailyquests.dailyquest3().unk_1;
-      response.dailyQuest3.unk_2 = character.dailyquests.dailyquest3().unk_2;
-      response.dailyQuest3.unk_3 = character.dailyquests.dailyquest3().unk_3;
+      response.dailyQuest3.questId = 0;
+      response.dailyQuest3.unk_1 = 1;
+      response.dailyQuest3.unk_2 = 1;
+      response.dailyQuest3.unk_3 = 1;
     });
-  //response.testQuest = {0, 0, 0, 0, 0, 0, 0};
+
   response.questCount = 0;
   response.dailyQuestCount = 3;
 

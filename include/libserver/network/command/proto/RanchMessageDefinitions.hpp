@@ -4145,10 +4145,7 @@ struct AcCmdCREmblemListOK
 
 struct AcCmdCRUpdateDailyQuest
 {
-  uint16_t questId;
-  uint32_t unk_1;
-  uint8_t unk_2;
-  uint8_t unk_3;
+  DailyQuest quest{};
   static Command GetCommand()
   {
     return Command::AcCmdCRUpdateDailyQuest;
@@ -4224,6 +4221,7 @@ struct AcCmdCRRegisterDailyQuestGroup
   DailyQuest quest1{};
   DailyQuest quest2{};
   DailyQuest quest3{};
+  //std::vector<DailyQuest> dailyQuests;
   static Command GetCommand()
   {
     return Command::AcCmdCRRegisterDailyQuestGroup;

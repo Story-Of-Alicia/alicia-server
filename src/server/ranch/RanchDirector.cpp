@@ -4115,7 +4115,6 @@ void RanchDirector::HandleUpdateDailyQuest(
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     clientContext.characterUid);
-  spdlog::debug("Content Daily Quest Package: {} {} {} {}", command.questId, command.unk_1, command.unk_2, command.unk_3);
 
   protocol::AcCmdCRUpdateDailyQuestOK response{};
   characterRecord.Mutable(
@@ -4125,7 +4124,7 @@ void RanchDirector::HandleUpdateDailyQuest(
 
       response.newCarrotBalance = character.carrots();
     });
-  response.quest = {command.questId, command.unk_1, command.unk_2, 1};
+  response.quest = {command.quest.questId, command.quest.unk_1, command.quest.unk_2, 1};
   response.unk_1 = 1;
   response.unk_2 = 1;
   _commandServer.QueueCommand<decltype(response)>(
@@ -4143,14 +4142,13 @@ void RanchDirector::HandleRegisterDailyQuestGroup(
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     clientContext.characterUid);
-  spdlog::debug("Quest Group Packet Data: {} {} {} {} {}", command.unk_0, command.quest1.questId, command.quest1.unk_1, command.quest1.unk_2, command.quest1.unk_3);
+  //const auto dailyQuestRecord = _serverInstance.GetDataDirector().GetDailyQuest(
+  //  clientContext.characterUid);
 
   characterRecord.Mutable(
     [&command](data::Character& character)
     {
-      character.dailyquests.dailyquest1() = {command.quest1.questId, command.quest1.unk_1, command.quest1.unk_2, command.quest1.unk_3};
-      character.dailyquests.dailyquest2() = {command.quest2.questId, command.quest2.unk_1, command.quest2.unk_2, command.quest2.unk_3};
-      character.dailyquests.dailyquest3() = {command.quest3.questId, command.quest3.unk_1, command.quest3.unk_2, command.quest3.unk_3};
+      character.dailyQuests() = {command.quest1.questId, command.quest2.questId, command.quest3.questId};
     });
 
   protocol::AcCmdCRRegisterDailyQuestGroupOK response{};

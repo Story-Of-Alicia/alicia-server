@@ -2641,10 +2641,7 @@ void AcCmdCRUpdateDailyQuest::Read(
   AcCmdCRUpdateDailyQuest& command,
   SourceStream& stream)
 {
-  stream.Read(command.questId);
-  stream.Read(command.unk_1);
-  stream.Read(command.unk_2);
-  stream.Read(command.unk_3);
+  stream.Read(command.quest);
 }
 
 void AcCmdCRUpdateDailyQuestCancel::Write(

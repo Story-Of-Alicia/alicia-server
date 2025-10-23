@@ -317,20 +317,7 @@ struct Character
     dao::Field<Sets> magic{};
   } skills{};
 
-  struct DailyQuests 
-  {
-    struct Quest
-    {
-      uint16_t unk_0{};
-      uint32_t unk_1{};
-      uint8_t unk_2{};
-      uint8_t unk_3{};
-    };
-
-    dao::Field<Quest> dailyquest1{};
-    dao::Field<Quest> dailyquest2{};
-    dao::Field<Quest> dailyquest3{};
-  } dailyquests{};
+    dao::Field<std::vector<Uid>> dailyQuests{};
 };
 
 struct Horse
@@ -446,6 +433,15 @@ struct Egg
   dao::Field<Clock::time_point> incubatedAt{};
   dao::Field<uint32_t> incubatorSlot{};
   dao::Field<uint32_t> boostsUsed;
+};
+
+struct DailyQuest
+{
+  dao::Field<Uid> uid{InvalidUid};
+  dao::Field<uint16_t> unk_0{};
+  dao::Field<uint32_t> unk_1{};
+  dao::Field<uint8_t> unk_2{};
+  dao::Field<uint8_t> unk_3{};
 };
 
 } // namespace data

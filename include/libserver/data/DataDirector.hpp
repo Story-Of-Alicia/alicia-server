@@ -43,6 +43,7 @@ public:
   using HousingStorage = DataStorage<data::Uid, data::Housing>;
   using GuildStorage = DataStorage<data::Uid, data::Guild>;
   using SettingsStorage = DataStorage<data::Uid, data::Settings>;
+  using DailyQuestStorage = DataStorage<data::Uid, data::DailyQuest>;
 
   //! Default constructor.
   explicit DataDirector(const std::filesystem::path& basePath);
@@ -120,6 +121,10 @@ public:
   [[nodiscard]] Record<data::Settings> CreateSettings() noexcept;
   [[nodiscard]] SettingsStorage& GetSettingsCache();
 
+  [[nodiscard]] Record<data::DailyQuest> GetDailyQuest(data::Uid characterUid) noexcept;
+  [[nodiscard]] Record<data::DailyQuest> CreateDailyQuest() noexcept;
+  [[nodiscard]] DailyQuestStorage& GetDailyQuestCache();
+
 private:
   //! An underlying data source of the data director.
   std::unique_ptr<FileDataSource> _primaryDataSource;
@@ -169,6 +174,8 @@ private:
   GuildStorage _guildStorage;
   //! A character Keybind settings storage.
   SettingsStorage _settingsStorage;
+  //! A daily quest storage.
+  DailyQuestStorage _dailyQuestStorage;
 };
 
 } // namespace server
