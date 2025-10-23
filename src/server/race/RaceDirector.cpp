@@ -230,6 +230,12 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
        HandleUserRaceActivateEvent(clientId, message);
      });
 
+  _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceDeactivateEvent>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleUserRaceDeactivateEvent(clientId, message);
+    });
+
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestMagicItem>(
     [this](ClientId clientId, const auto& message)
     {
@@ -2166,6 +2172,34 @@ void RaceDirector::HandleUserRaceActivateEvent
     clientId, command.eventId, racer.oid);
 
   protocol::AcCmdUserRaceActivateEventNotify notify{
+    .eventId = command.eventId,
+    .characterOid = racer.oid, // sender oid
+  };
+
+  // Broadcast to all clients in the room
+  for (const ClientId raceClientId : raceInstance.clients)
+  {
+    _commandServer.QueueCommand<decltype(notify)>(
+      raceClientId,
+      [notify]{return notify;});
+  }
+}
+
+void RaceDirector::HandleUserRaceDeactivateEvent
+(
+  ClientId clientId,
+  const protocol::AcCmdUserRaceDeactivateEvent& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  auto& raceInstance = _raceInstances[clientContext.roomUid];
+
+  // Get the sender's OID from the room tracker
+  auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
+
+  spdlog::info("HandleUserRaceDeactivateEvent: clientId={}, eventId={}, characterOid={}", 
+    clientId, command.eventId, racer.oid);
+
+  protocol::AcCmdUserRaceDeactivateEventNotify notify{
     .eventId = command.eventId,
     .characterOid = racer.oid, // sender oid
   };

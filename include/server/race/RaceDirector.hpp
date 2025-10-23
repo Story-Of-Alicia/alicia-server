@@ -222,6 +222,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdUserRaceActivateEvent& command);
 
+  void HandleUserRaceDeactivateEvent(
+    ClientId clientId,
+    const protocol::AcCmdUserRaceDeactivateEvent& command);
+
   void HandleRequestMagicItem(
     ClientId clientId,
     const protocol::AcCmdCRRequestMagicItem& command);
