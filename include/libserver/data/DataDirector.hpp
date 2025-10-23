@@ -121,7 +121,7 @@ public:
   [[nodiscard]] Record<data::Settings> CreateSettings() noexcept;
   [[nodiscard]] SettingsStorage& GetSettingsCache();
 
-  [[nodiscard]] Record<data::DailyQuest> GetDailyQuest(data::Uid characterUid) noexcept;
+  [[nodiscard]] Record<data::DailyQuest> GetDailyQuest(data::Uid dailyQuestUid) noexcept;
   [[nodiscard]] Record<data::DailyQuest> CreateDailyQuest() noexcept;
   [[nodiscard]] DailyQuestStorage& GetDailyQuestCache();
 

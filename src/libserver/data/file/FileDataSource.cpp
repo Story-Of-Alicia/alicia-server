@@ -64,6 +64,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _housingDataPath = prepareDataPath("housing");
   _guildDataPath = prepareDataPath("guilds");
   _settingsDataPath = prepareDataPath("settings");
+  _dailyQuestDataPath = prepareDataPath("daily_quests");
 
   // Read the meta-data file and parse the sequential UIDs.
   const std::filesystem::path metaFilePath = ProduceDataPath(
@@ -84,6 +85,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _housingSequentialUid = meta["housingSequentialUid"].get<uint32_t>();
   _guildSequentialId = meta["guildSequentialId"].get<uint32_t>();
   _settingsSequentialId = meta["settingsSequentialId"].get<uint32_t>();
+  _dailyQuestSequentialId = meta["dailyQuestSequentialId"].get<uint32_t>();
 }
 
 void server::FileDataSource::Terminate()
@@ -107,6 +109,7 @@ void server::FileDataSource::Terminate()
   meta["housingSequentialUid"] = _housingSequentialUid.load();
   meta["guildSequentialId"] = _guildSequentialId.load();
   meta["settingsSequentialId"] = _settingsSequentialId.load();
+  meta["dailyQuestSequentialId"] = _dailyQuestSequentialId.load();
 
   metaFile << meta.dump(2);
 }

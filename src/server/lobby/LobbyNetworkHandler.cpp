@@ -2071,6 +2071,7 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     clientContext.characterUid);
+  //const auto dailyQuestRecords = _serverInstance.GetDataDirector().GetDailyQuest(1);
 
   protocol::AcCmdCLRequestDailyQuestListOK response{};
   
@@ -2078,9 +2079,11 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
     [&response](const data::Character& character)
     {
       const auto& dailyQuestIds = character.dailyQuests();
-      //spdlog::debug("Daily quest ids: {}", dailyQuestIds);
+      
+      //spdlog::debug("Daily quest ids: {}", dailyQuestRecords);
+
       response.val0 = character.uid();
-      response.dailyQuest1.questId = 0;
+      response.dailyQuest1.questId = 1004;
       response.dailyQuest1.unk_1 = 1;
       response.dailyQuest1.unk_2 = 1;
       response.dailyQuest1.unk_3 = 1;

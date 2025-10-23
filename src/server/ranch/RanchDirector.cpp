@@ -4142,14 +4142,54 @@ void RanchDirector::HandleRegisterDailyQuestGroup(
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     clientContext.characterUid);
-  //const auto dailyQuestRecord = _serverInstance.GetDataDirector().GetDailyQuest(
-  //  clientContext.characterUid);
+  bool hasDailyQuests = false;
+ 
 
   characterRecord.Mutable(
-    [&command](data::Character& character)
+    [&command, &hasDailyQuests](data::Character& character)
     {
-      character.dailyQuests() = {command.quest1.questId, command.quest2.questId, command.quest3.questId};
+      if (character.dailyQuests().size() == 3)
+      {
+        hasDailyQuests = true;
+      }
+      else
+      {
+        character.dailyQuests() = {1, 2, 3};
+      }
     });
+
+  if (!hasDailyQuests)
+  {
+    const auto dailyQuestRecord1 = GetServerInstance().GetDataDirector().CreateDailyQuest();
+    dailyQuestRecord1.Mutable(
+      [&command](data::DailyQuest& dailyQuest)
+      {
+        dailyQuest.unk_0 = command.quest1.questId;
+        dailyQuest.unk_1 = command.quest1.unk_1;
+        dailyQuest.unk_2 = command.quest1.unk_2;
+        dailyQuest.unk_3 = command.quest1.unk_3;
+      });
+    
+    const auto dailyQuestRecord2 = GetServerInstance().GetDataDirector().CreateDailyQuest();
+    dailyQuestRecord2.Mutable(
+      [&command](data::DailyQuest& dailyQuest)
+      {
+        dailyQuest.unk_0 = command.quest2.questId;
+        dailyQuest.unk_1 = command.quest2.unk_1;
+        dailyQuest.unk_2 = command.quest2.unk_2;
+        dailyQuest.unk_3 = command.quest2.unk_3;
+      });
+
+    const auto dailyQuestRecord3 = GetServerInstance().GetDataDirector().CreateDailyQuest();
+    dailyQuestRecord3.Mutable(
+      [&command](data::DailyQuest& dailyQuest)
+      {
+        dailyQuest.unk_0 = command.quest3.questId;
+        dailyQuest.unk_1 = command.quest3.unk_1;
+        dailyQuest.unk_2 = command.quest3.unk_2;
+        dailyQuest.unk_3 = command.quest3.unk_3;
+      });
+  }
 
   protocol::AcCmdCRRegisterDailyQuestGroupOK response{};
   response.status = 1;
