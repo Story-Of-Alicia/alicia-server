@@ -1069,9 +1069,9 @@ struct AcCmdCLRequestDailyQuestListOK
 {
   uint32_t val0;
   uint16_t questCount; // a guess
-  uint16_t dailyQuestCount; // a guess
+  uint16_t dailyQuestCount;
 
-  struct Quest //I think
+  struct Unk
   {
     uint16_t field0;
     uint32_t field1;
@@ -1082,21 +1082,10 @@ struct AcCmdCLRequestDailyQuestListOK
     uint8_t field6;
     uint8_t field7;
 
-    static void Write(const Quest& value, SinkStream& stream);
-    static void Read(Quest& value, SourceStream& stream);
+    static void Write(const Unk& value, SinkStream& stream);
+    static void Read(Unk& value, SourceStream& stream);
   };
-
-  struct DailyQuest
-  {
-    uint16_t questId;
-    uint32_t unk_1;
-    uint8_t unk_2;
-    uint8_t unk_3;
-
-    static void Write(const DailyQuest& value, SinkStream& stream);
-    static void Read(DailyQuest& value, SourceStream& stream);
-  };
-  //Quest testQuest{};
+  
   DailyQuest dailyQuest1{};
   DailyQuest dailyQuest2{};
   DailyQuest dailyQuest3{};

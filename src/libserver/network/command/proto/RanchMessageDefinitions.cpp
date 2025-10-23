@@ -2678,22 +2678,6 @@ void AcCmdCRUpdateDailyQuestOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
-void AcCmdCRUpdateDailyQuestOK::Quest::Write(const Quest& value, SinkStream& stream)
-{
-  stream.Write(value.questId)
-    .Write(value.unk_1)
-    .Write(value.unk_2)
-    .Write(value.unk_3);
-}
-
-void AcCmdCRUpdateDailyQuestOK::Quest::Read(Quest& value, SourceStream& stream)
-{
-  stream.Read(value.questId)
-    .Read(value.unk_1)
-    .Read(value.unk_2)
-    .Read(value.unk_3);
-}
-
 void AcCmdCRRegisterDailyQuestGroup::Write(
   const AcCmdCRRegisterDailyQuestGroup& command,
   SinkStream& stream)

@@ -729,23 +729,7 @@ void AcCmdCLRequestDailyQuestListOK::Read(
   throw std::runtime_error("Not implemented.");
 }
 
-void AcCmdCLRequestDailyQuestListOK::DailyQuest::Write(const DailyQuest& value, SinkStream& stream)
-{
-  stream.Write(value.questId)
-    .Write(value.unk_1)
-    .Write(value.unk_2)
-    .Write(value.unk_3);
-}
-
-void AcCmdCLRequestDailyQuestListOK::DailyQuest::Read(DailyQuest& value, SourceStream& stream)
-{
-  stream.Read(value.questId)
-    .Read(value.unk_1)
-    .Read(value.unk_2)
-    .Read(value.unk_3);
-}
-
-void AcCmdCLRequestDailyQuestListOK::Quest::Write(const Quest& value, SinkStream& stream)
+void AcCmdCLRequestDailyQuestListOK::Unk::Write(const Unk& value, SinkStream& stream)
 {
   stream.Write(value.field0)
     .Write(value.field1)
@@ -757,7 +741,7 @@ void AcCmdCLRequestDailyQuestListOK::Quest::Write(const Quest& value, SinkStream
     .Write(value.field7);
 }
 
-void AcCmdCLRequestDailyQuestListOK::Quest::Read(Quest& value, SourceStream& stream)
+void AcCmdCLRequestDailyQuestListOK::Unk::Read(Unk& value, SourceStream& stream)
 {
   stream.Read(value.field0)
     .Read(value.field1)

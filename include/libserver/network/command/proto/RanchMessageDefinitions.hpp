@@ -4172,17 +4172,7 @@ struct AcCmdCRUpdateDailyQuest
 struct AcCmdCRUpdateDailyQuestOK
 {
   uint32_t newCarrotBalance;
-  struct Quest
-  {
-    uint16_t questId;
-    uint32_t unk_1;
-    uint8_t unk_2;
-    uint8_t unk_3;
-
-    static void Write(const Quest& value, SinkStream& stream);
-    static void Read(Quest& value, SourceStream& stream);
-  };
-  Quest quest{};
+  DailyQuest quest{};
   uint32_t unk_1;
   uint32_t unk_2;
   static Command GetCommand()
@@ -4231,9 +4221,9 @@ struct AcCmdCRUpdateDailyQuestCancel
 struct AcCmdCRRegisterDailyQuestGroup
 {
   uint16_t unk_0;
-  AcCmdCRUpdateDailyQuestOK::Quest quest1{};
-  AcCmdCRUpdateDailyQuestOK::Quest quest2{};
-  AcCmdCRUpdateDailyQuestOK::Quest quest3{};
+  DailyQuest quest1{};
+  DailyQuest quest2{};
+  DailyQuest quest3{};
   static Command GetCommand()
   {
     return Command::AcCmdCRRegisterDailyQuestGroup;
