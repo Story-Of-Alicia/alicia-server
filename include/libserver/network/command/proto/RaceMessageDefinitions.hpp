@@ -1733,7 +1733,6 @@ struct AcCmdUserRaceActivateInteractiveEvent
 struct AcCmdUserRaceActivateEvent
 {
   uint32_t eventId{};
-  uint16_t characterOid{};
 
   static Command GetCommand()
   {
@@ -1751,6 +1750,30 @@ struct AcCmdUserRaceActivateEvent
   //! @param stream Source stream.
   static void Read(
     AcCmdUserRaceActivateEvent& command,
+    SourceStream& stream);
+};
+
+struct AcCmdUserRaceActivateEventNotify
+{
+  uint32_t eventId{};
+  uint16_t characterOid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdUserRaceActivateEvent;
+  }
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdUserRaceActivateEventNotify& command,
+    SinkStream& stream);
+    
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdUserRaceActivateEventNotify& command,
     SourceStream& stream);
 };
 
