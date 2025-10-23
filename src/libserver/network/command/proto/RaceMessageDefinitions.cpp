@@ -1276,6 +1276,36 @@ void AcCmdUserRaceActivateEventNotify::Read(
     .Read(command.characterOid);
 }
 
+void AcCmdUserRaceDeactivateEvent::Write(
+  const AcCmdUserRaceDeactivateEvent& command,
+  SinkStream& stream)
+{
+  stream.Write(command.eventId);
+}
+
+void AcCmdUserRaceDeactivateEvent::Read(
+  AcCmdUserRaceDeactivateEvent& command,
+  SourceStream& stream)
+{
+  stream.Read(command.eventId);
+}
+
+void AcCmdUserRaceDeactivateEventNotify::Write(
+  const AcCmdUserRaceDeactivateEventNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.eventId)
+    .Write(command.characterOid);
+}
+
+void AcCmdUserRaceDeactivateEventNotify::Read(
+  AcCmdUserRaceDeactivateEventNotify& command,
+  SourceStream& stream)
+{
+  stream.Read(command.eventId)
+    .Read(command.characterOid);
+}
+
 void AcCmdCRUseMagicItem::Write(
   const AcCmdCRUseMagicItem& command,
   SinkStream& stream)

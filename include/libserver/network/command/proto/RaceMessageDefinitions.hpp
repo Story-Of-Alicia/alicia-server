@@ -1777,6 +1777,49 @@ struct AcCmdUserRaceActivateEventNotify
     SourceStream& stream);
 };
 
+struct AcCmdUserRaceDeactivateEvent
+{
+  uint32_t eventId{};
+  
+  static Command GetCommand()
+  {
+    return Command::AcCmdUserRaceDeactivateEvent;
+  }
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const AcCmdUserRaceDeactivateEvent& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    AcCmdUserRaceDeactivateEvent& command, SourceStream& buffer);
+};
+
+struct AcCmdUserRaceDeactivateEventNotify
+{
+  uint32_t eventId{};
+  uint16_t characterOid{};
+  
+  static Command GetCommand()
+  {
+    return Command::AcCmdUserRaceDeactivateEvent;
+  }
+  //! Writes the command to a provided sink buffer.
+  //! @param command Command.
+  //! @param buffer Sink buffer.
+  static void Write(
+    const AcCmdUserRaceDeactivateEventNotify& command, SinkStream& buffer);
+
+  //! Reader a command from a provided source buffer.
+  //! @param command Command.
+  //! @param buffer Source buffer.
+  static void Read(
+    AcCmdUserRaceDeactivateEventNotify& command, SourceStream& buffer);
+};
+
 struct AcCmdCRUseMagicItem
 {
   // vFunc_2
