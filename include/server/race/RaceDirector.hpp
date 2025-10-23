@@ -80,6 +80,8 @@ public:
   ServerInstance& GetServerInstance();
   Config::Race& GetConfig();
 
+  void ManageSkillEffect(data::Uid characterUid, uint16_t effectId, bool add);
+
 private:
   std::random_device _randomDevice;
 

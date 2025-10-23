@@ -2857,28 +2857,8 @@ void RaceDirector::HandleActivateSkillEffect(
   _commandServer.QueueCommand<decltype(activateResponse)>(
     clientId,
     [activateResponse]() { return activateResponse; });
-  
 
-  // Broadcast skill effect activation to all clients in the room
-  protocol::AcCmdRCAddSkillEffect addSkillEffect{
-    .characterOid = command.characterOid,
-    .effectId = command.skillId,
-    .targetOid = command.characterOid,
-    .attackerOid = command.characterOid, // TODO: Store in the skill instance the attacker
-    .unk2 = 0,
-    .unk3 = 0,
-    .unk4 = 0,
-    .defenseMagicEffect = protocol::AcCmdRCAddSkillEffect::Effects2And3{
-      .unk0 = 3000,
-      .unk1 = 0,
-    },
-    .attackMagicEffect = 3000
-  };
-
-  // TODO: Broadcast
-  _commandServer.QueueCommand<decltype(addSkillEffect)>(
-    clientId,
-    [addSkillEffect]() { return addSkillEffect; });
+    // TODO: Broadcast an skill effect activation if it applies
 }
 
 void RaceDirector::HandleChangeSkillCardPresetId(
@@ -2918,6 +2898,58 @@ void RaceDirector::HandleChangeSkillCardPresetId(
   );
 
   // No response command
+}
+
+void RaceDirector::ManageSkillEffect(data::Uid characterUid, uint16_t effectId, bool add){
+  const auto& clientContext = GetClientContextByCharacterUid(characterUid);
+  auto& raceInstance = _raceInstances[clientContext.roomUid];
+  auto& racer = raceInstance.tracker.GetRacer(characterUid); 
+
+  if(add) {
+    spdlog::info("AddSkillEffect called for characterUid={}, effectId={}", characterUid, effectId);
+
+    // Broadcast skill effect activation to all clients in the room
+    protocol::AcCmdRCAddSkillEffect addSkillEffect{
+      .characterOid = racer.oid,
+      .effectId = effectId,
+      .targetOid = racer.oid,
+      .attackerOid = racer.oid, // TODO: Store in the skill instance the attacker
+      .unk2 = 0,
+      .unk3 = 0,
+      .unk4 = 0,
+      .defenseMagicEffect = protocol::AcCmdRCAddSkillEffect::DefenseMagicEffect{
+        .unk0 = 3000,
+        .unk1 = 0,
+      },
+      .attackMagicEffect = 3000
+    };
+
+    // Broadcast
+    for (const ClientId& raceClientId : raceInstance.clients)
+    {
+      _commandServer.QueueCommand<decltype(addSkillEffect)>(
+        raceClientId,
+        [addSkillEffect]() { return addSkillEffect; });
+    }
+  } else {
+    spdlog::info("RemoveSkillEffect called for characterUid={}, effectId={}", characterUid, effectId);
+
+    // Broadcast skill effect deactivation to all clients in the room
+    protocol::AcCmdRCRemoveSkillEffect removeSkillEffect{
+      .characterOid = racer.oid,
+      .effectId = effectId,
+      .targetOid = racer.oid,
+      .unk1 = 0,
+    };
+
+    // Broadcast
+    for (const ClientId& raceClientId : raceInstance.clients)
+    {
+      _commandServer.QueueCommand<decltype(removeSkillEffect)>(
+        raceClientId,
+        [removeSkillEffect]() { return removeSkillEffect; });
+    }
+  }
 }
 
 } // namespace server

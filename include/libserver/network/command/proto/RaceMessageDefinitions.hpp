@@ -2254,12 +2254,12 @@ struct AcCmdRCAddSkillEffect
   uint16_t unk3;            // Unused
   uint32_t unk4;            // Posibly intensity, no idea but it makes the corner kill thingy not show up
 
-  struct Effects2And3
+  struct DefenseMagicEffect
   {
     uint32_t unk0; // Effect time in seconds?
     uint32_t unk1; // Unused
   };
-  std::optional<Effects2And3> defenseMagicEffect;
+  std::optional<DefenseMagicEffect> defenseMagicEffect;
 
   std::optional<uint32_t> attackMagicEffect; // Effect time in milliseconds
 
