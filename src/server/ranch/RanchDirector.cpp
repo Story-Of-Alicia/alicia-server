@@ -4154,7 +4154,8 @@ void RanchDirector::HandleRegisterDailyQuestGroup(
       }
       else
       {
-        character.dailyQuests() = {1, 2, 3};
+        uint32_t start = (character.uid() - 1)*3 + 1;
+        character.dailyQuests() = {start, start + 1, start + 2};
       }
     });
 

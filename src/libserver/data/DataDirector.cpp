@@ -1062,8 +1062,10 @@ void DataDirector::ScheduleCharacterLoad(
 
     std::vector<data::Uid> pets;
 
+    std::vector<data::Uid> daily_quests;
+
     characterRecord.Immutable(
-      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets, &settingsUid](
+      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets, &daily_quests, &settingsUid](
         const data::Character& character)
       {
         guildUid = character.guildUid();
@@ -1085,6 +1087,8 @@ void DataDirector::ScheduleCharacterLoad(
 
         pets = character.pets();
 
+        daily_quests = character.dailyQuests();
+
         // Add the mount to the horses list,
         // so that it is loaded with all the horses.
         horses.emplace_back(character.mountUid());
@@ -1104,6 +1108,8 @@ void DataDirector::ScheduleCharacterLoad(
     const auto housingRecords = GetHousingCache().Get(housing);
 
     const auto petRecords = GetPetCache().Get(pets);
+
+    const auto dailyQuestRecords = GetDailyQuestCache().Get(daily_quests);
 
     // Only require guild if the UID is not invalid.
     if (not guildRecord && guildUid != data::InvalidUid)
@@ -1198,6 +1204,13 @@ void DataDirector::ScheduleCharacterLoad(
     {
       userDataContext.debugMessage = std::format(
         "Eggs not available");
+      return;
+    }
+
+    if (not dailyQuestRecords)
+    {
+      userDataContext.debugMessage = std::format(
+        "Daily quest not available");
       return;
     }
 
