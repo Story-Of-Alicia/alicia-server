@@ -20,11 +20,14 @@
 #ifndef DATADEFINITIONS_HPP
 #define DATADEFINITIONS_HPP
 
+#include <array>
 #include <atomic>
-#include <cstdint>
 #include <chrono>
+#include <cstdint>
 #include <string>
 #include <vector>
+#include <optional>
+#include <unordered_set>
 
 namespace server
 {
@@ -194,6 +197,36 @@ struct Guild
 {
   dao::Field<Uid> uid{InvalidUid};
   dao::Field<std::string> name{};
+  dao::Field<std::string> description{};
+  dao::Field<Uid> owner{};
+  dao::Field<std::vector<Uid>> officers{};
+  dao::Field<std::vector<Uid>> members{};
+
+  dao::Field<uint32_t> rank{};
+  dao::Field<uint32_t> totalWins{};
+  dao::Field<uint32_t> totalLosses{};
+  dao::Field<uint32_t> seasonalWins{};
+  dao::Field<uint32_t> seasonalLosses{};
+};
+
+//! Settings
+struct Settings
+{
+  dao::Field<Uid> uid{InvalidUid};
+
+  struct Option
+  {
+    uint32_t primaryKey{0};
+    uint32_t type{0};
+    uint32_t secondaryKey{0};
+  };
+
+  dao::Field<std::optional<std::vector<Option>>> keyboardBindings{std::nullopt};
+  dao::Field<std::optional<std::array<std::string, 8>>> macros{std::nullopt};
+  dao::Field<std::optional<std::vector<Option>>> gamepadBindings{std::nullopt};
+
+  dao::Field<uint32_t> age{};
+  dao::Field<bool> hideAge{true};
 };
 
 //! User
@@ -205,8 +238,6 @@ struct Character
   dao::Field<std::string> name{};
 
   dao::Field<std::string> introduction{};
-  dao::Field<uint8_t> age{18};
-  dao::Field<bool> hideGenderAndAge{true};
 
   dao::Field<uint32_t> level{};
   dao::Field<int32_t> carrots{};
@@ -247,7 +278,7 @@ struct Character
   dao::Field<std::vector<Uid>> gifts{};
   dao::Field<std::vector<Uid>> purchases{};
   
-  dao::Field<std::vector<Uid>> items{};
+  dao::Field<std::vector<Uid>> inventory{};
   dao::Field<std::vector<Uid>> characterEquipment{};
   dao::Field<std::vector<Uid>> mountEquipment{};
   
@@ -261,6 +292,30 @@ struct Character
   dao::Field<std::vector<Uid>> housing{};
 
   dao::Field<bool> isRanchLocked{};
+
+  dao::Field<Uid> settingsUid{InvalidUid};
+
+  struct Skills
+  {
+    // TODO: confirm this
+    //! Max 2 skill sets per gamemode
+    struct Sets
+    {
+      //! Max 2 skills per skill set
+      struct Set
+      {
+        uint32_t slot1{};
+        uint32_t slot2{};
+      };
+
+      Set set1{};
+      Set set2{};
+      uint8_t activeSetId{0};
+    };
+
+    dao::Field<Sets> speed{};
+    dao::Field<Sets> magic{};
+  } skills{};
 };
 
 struct Horse
@@ -309,8 +364,12 @@ struct Horse
   dao::Field<uint32_t> grade{0u};
   dao::Field<uint32_t> growthPoints{0u};
 
-  dao::Field<Tid> potentialType{0u};
-  dao::Field<uint32_t> potentialLevel{0u};
+  struct Potential
+  {
+    dao::Field<uint8_t> type{0u};
+    dao::Field<uint8_t> level{0u};
+    dao::Field<uint8_t> value{0u};
+  } potential{};
 
   dao::Field<uint32_t> luckState{0u};
   dao::Field<uint32_t> emblemUid{0u};

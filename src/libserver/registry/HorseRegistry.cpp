@@ -1,15 +1,28 @@
-//
-// Created by rgnter on 3/07/2025.
-//
+/**
+ * Alicia Server - dedicated server software
+ * Copyright (C) 2024 Story Of Alicia
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ **/
 
 #include "libserver/registry/HorseRegistry.hpp"
-
-#include <fstream>
 
 #include <spdlog/spdlog.h>
 #include <yaml-cpp/yaml.h>
 
-namespace server
+namespace server::registry
 {
 
 namespace
@@ -190,6 +203,36 @@ void HorseRegistry::BuildRandomHorse(
   appearance.legVolume = scale;
   appearance.bodyLength = scale;
   appearance.bodyVolume = scale;
+}
+
+void HorseRegistry::SetHorsePotential(
+  data::Horse::Potential& potential,
+  uint8_t type,
+  uint8_t level,
+  uint8_t value)
+{
+  potential.type = type;
+  potential.level = level;
+  potential.value = value;
+}
+
+void HorseRegistry::GiveHorseRandomPotential(
+  data::Horse::Potential& potential)
+{
+  uint8_t type;
+  std::uniform_int_distribution<uint32_t> typeDist(1, 15);
+  // Horse type cannot be 12 as it does not exist in original Alicia
+  do
+  {
+    type = typeDist(_randomDevice);
+  } while (type == 12);
+
+  std::uniform_int_distribution<uint32_t> randomDist(0, 255);
+  SetHorsePotential(
+    potential,
+    type,
+    randomDist(_randomDevice),
+    randomDist(_randomDevice));
 }
 
 } // namespace server

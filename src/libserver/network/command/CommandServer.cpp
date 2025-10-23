@@ -67,9 +67,17 @@ void XorAlgorithm(
 bool IsMuted(protocol::Command id)
 {
   return id == protocol::Command::AcCmdCLHeartbeat
+    || id == protocol::Command::AcCmdCLRoomList
+    || id == protocol::Command::AcCmdCLRoomListOK
     || id == protocol::Command::AcCmdCRHeartbeat
     || id == protocol::Command::AcCmdCRRanchSnapshot
-    || id == protocol::Command::AcCmdCRRanchSnapshotNotify;
+    || id == protocol::Command::AcCmdCRRanchSnapshotNotify
+    || id == protocol::Command::AcCmdUserRaceUpdatePos
+    || id == protocol::Command::AcCmdCRRelay
+    || id == protocol::Command::AcCmdCRRelayNotify
+    || id == protocol::Command::AcCmdCRRelayCommand
+    || id == protocol::Command::AcCmdCRRelayCommandNotify
+    || id == protocol::Command::AcCmdUserRaceActivateEvent;
 }
 
 } // namespace
@@ -126,6 +134,11 @@ void CommandServer::EndHost()
 
   _server.End();
   _serverThread.join();
+}
+
+asio::ip::address_v4 CommandServer::GetClientAddress(ClientId clientId)
+{
+  return _server.GetClient(clientId)->GetAddress();
 }
 
 void CommandServer::DisconnectClient(ClientId clientId)
@@ -249,8 +262,9 @@ size_t CommandServer::NetworkEventHandler::OnClientData(
       {
         throw std::runtime_error(
           std::format(
-            "Malformed command: Bad command data size '{}', padding is {}.",
-            magic.length,
+            "Malformed command {}: Bad command data size '{}', padding is {}.",
+            GetCommandName(commandId),
+            commandDataSize,
             padding)
             .c_str());
       }

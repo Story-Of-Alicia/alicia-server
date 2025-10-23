@@ -21,7 +21,7 @@
 #define RANCHDIRECTOR_HPP
 
 #include "server/Config.hpp"
-#include "server/tracker/WorldTracker.hpp"
+#include "server/tracker/RanchTracker.hpp"
 
 #include "libserver/network/command/CommandServer.hpp"
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
@@ -81,6 +81,22 @@ public:
     const data::Uid rancherUid,
     protocol::AcCmdCRHideAge::Option option);
 
+  void BroadcastUpdateGuildMemberGradeNotify(
+    data::Uid guildUid,
+    data::Uid characterUid,
+    protocol::GuildRole guildRole);
+
+  void SendGuildInviteDeclined(
+    data::Uid characterUid,
+    data::Uid inviterCharacterUid,
+    std::string inviterCharacterName,
+    data::Uid guildUid);
+
+  void SendGuildInviteAccepted(
+    data::Uid guildUid,
+    data::Uid characterUid,
+    std::string newMemberCharacterName);
+
   ServerInstance& GetServerInstance();
   Config::Ranch& GetConfig();
 
@@ -103,7 +119,7 @@ private:
   struct RanchInstance
   {
     //! A world tracker of the ranch.
-    WorldTracker worldTracker;
+    tracker::RanchTracker tracker;
     //! A set of clients connected to the ranch.
     std::unordered_set<ClientId> clients;
   };
@@ -113,6 +129,11 @@ private:
   //! @param requireAuthentication Require the client to be authorized.
   //! @returns Client context.
   [[nodiscard]] ClientContext& GetClientContext(ClientId clientId, bool requireAuthentication = true);
+
+  //! Get the client ID by the character's unique ID.
+  //! @param characterUid UID of the character.
+  //! @returns Client ID.
+  [[nodiscard]] ClientId GetClientIdByCharacterUid(data::Uid characterUid);
 
   //! Get the client context by the character's unique ID.
   //! @param characterUid UID of the character.
@@ -221,7 +242,7 @@ private:
     ClientId clientId,
     const protocol::RanchCommandRequestGuildInfo& command);
 
-  void HandleLeaveGuild(
+  void HandleWithdrawGuild(
     ClientId clientId,
     const protocol::AcCmdCRWithdrawGuildMember& command);
 
@@ -316,6 +337,38 @@ private:
   void HandleHideAge(
     ClientId clientId,
     const protocol::AcCmdCRHideAge command);
+
+  void HandleStatusPointApply(
+    ClientId clientId,
+    const protocol::AcCmdCRStatusPointApply command);
+
+  void HandleChangeSkillCardPreset(
+    ClientId clientId,
+    const protocol::AcCmdCRChangeSkillCardPreset command);
+
+  void HandleGetGuildMemberList(
+    ClientId clientId,
+    const protocol::AcCmdCRGuildMemberList& command);
+
+  void HandleRequestGuildMatchInfo(
+    ClientId clientId,
+    const protocol::AcCmdCRRequestGuildMatchInfo& command);
+  
+  void HandleUpdateGuildMemberGrade(
+    ClientId clientId,
+    const protocol::AcCmdCRUpdateGuildMemberGrade& command);
+
+  void HandleInviteToGuild(
+    ClientId clientId,
+    const protocol::AcCmdCRInviteGuildJoin& command);
+    
+  void HandleGetEmblemList(
+    ClientId clientId,
+    const protocol::AcCmdCREmblemList& command);
+
+  void HandleChangeNickname(
+    ClientId clientId, 
+    const protocol::AcCmdCRChangeNickname& command);
 
   //!
   ServerInstance& _serverInstance;

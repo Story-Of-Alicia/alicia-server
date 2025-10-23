@@ -17,23 +17,23 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
-#include "server/tracker/WorldTracker.hpp"
+#include "server/tracker/RanchTracker.hpp"
 
-namespace server
+namespace server::tracker
 {
 
-Oid WorldTracker::AddCharacter(data::Uid character)
+Oid RanchTracker::AddCharacter(data::Uid character)
 {
   _characters[character] = _nextObjectId;
   return _nextObjectId++;
 }
 
-void WorldTracker::RemoveCharacter(data::Uid character)
+void RanchTracker::RemoveCharacter(data::Uid character)
 {
   _characters.erase(character);
 }
 
-Oid WorldTracker::GetCharacterOid(data::Uid character) const
+Oid RanchTracker::GetCharacterOid(data::Uid character) const
 {
   const auto itr = _characters.find(character);
   if (itr == _characters.cend())
@@ -41,28 +41,33 @@ Oid WorldTracker::GetCharacterOid(data::Uid character) const
   return itr->second;
 }
 
-Oid WorldTracker::AddHorse(data::Uid mount)
+Oid RanchTracker::AddHorse(data::Uid horse)
 {
-  _horses[mount] = _nextObjectId;
+  _horses[horse] = _nextObjectId;
   return _nextObjectId++;
 }
 
-Oid WorldTracker::GetHorseOid(data::Uid mount) const
+void RanchTracker::RemoveHorse(data::Uid horse)
 {
-  const auto itr = _horses.find(mount);
+  _horses.erase(horse);
+}
+
+Oid RanchTracker::GetHorseOid(data::Uid horse) const
+{
+  const auto itr = _horses.find(horse);
   if (itr == _horses.cend())
     return InvalidEntityOid;
   return itr->second;
 }
 
-const WorldTracker::ObjectMap& WorldTracker::GetHorses() const
-{
-  return _horses;
-}
-
-const WorldTracker::ObjectMap& WorldTracker::GetCharacters() const
+const RanchTracker::ObjectMap& RanchTracker::GetCharacters() const
 {
   return _characters;
 }
 
-} // namespace server
+const RanchTracker::ObjectMap& RanchTracker::GetHorses() const
+{
+  return _horses;
+}
+
+} // namespace server::tracker

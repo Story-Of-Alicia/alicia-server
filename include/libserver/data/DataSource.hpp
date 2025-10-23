@@ -176,6 +176,20 @@ public:
   //! Deletes the guild from the data source.
   //! @param uid UID of the guild.
   virtual void DeleteGuild(data::Uid uid) = 0;
+
+  //! Creates the settings in the data source.
+  //! @param settings Settings to create.
+  virtual void CreateSettings(data::Settings& settings) = 0;
+  //! Retrieves the settings from the data source.
+  //! @param uid UID of the settings.
+  virtual void RetrieveSettings(data::Uid uid, data::Settings& settings) = 0;
+  //! Stores the settings on the data source.
+  //! @param uid UID of the settings.
+  //! @param settings Settings to store.
+  virtual void StoreSettings(data::Uid uid, const data::Settings& settings) = 0;
+  //! Deletes the settings from the data source.
+  //! @param uid UID of the settings.
+  virtual void DeleteSettings(data::Uid uid) = 0;
 };
 
 } // namespace server

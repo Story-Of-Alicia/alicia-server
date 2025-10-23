@@ -23,11 +23,12 @@
 #include "libserver/util/Stream.hpp"
 
 #include <array>
+#include <bitset>
 #include <cstdint>
 #include <string>
 #include <vector>
 
-namespace server
+namespace server::protocol
 {
 
 //!
@@ -77,22 +78,14 @@ struct StoredItem
 };
 
 //!
-enum class OptionType : uint32_t
-{
-  Keyboard = 1 << 0,
-  Macros = 1 << 3,
-  Value = 1 << 4,
-  Gamepad = 1 << 5,
-};
-
-//!
 struct KeyboardOptions
 {
   struct Option
   {
-    uint16_t index{};
     uint8_t type{};
-    uint8_t key{};
+    uint8_t unused{};
+    uint8_t primaryKey{};
+    uint8_t secondaryKey{};
 
     static void Write(const Option& option, SinkStream& stream);
     static void Read(Option& option, SourceStream& stream);
@@ -110,6 +103,51 @@ struct MacroOptions
 
   static void Write(const MacroOptions& value, SinkStream& stream);
   static void Read(MacroOptions& value, SourceStream& stream);
+};
+
+struct GamepadOptions
+{
+  struct Option
+  {
+    uint8_t type{};
+    uint8_t unused{};
+    uint8_t primaryButton{};
+    uint8_t secondaryButton{};
+
+    static void Write(const Option& option, SinkStream& stream);
+    static void Read(Option& option, SourceStream& stream);
+  };
+
+  std::vector<Option> bindings{};
+
+  static void Write(const GamepadOptions& value, SinkStream& stream);
+  static void Read(GamepadOptions& value, SourceStream& stream);
+};
+
+struct Settings
+{
+  //! Represents a type bit indices in the type bit set.
+  enum Type : uint32_t
+  {
+    Keyboard = 0,
+    Macros = 3,
+    Value = 4,
+    Gamepad = 5,
+  };
+
+  std::bitset<32> typeBitset{};
+
+  KeyboardOptions keyboardOptions{};
+  MacroOptions macroOptions{};
+  //sent every time at the closure of the settings window
+  uint32_t valueOption{};
+  GamepadOptions gamepadOptions{};
+
+  uint8_t age{};
+  uint8_t hideAge{};
+
+  static void Write(const Settings& value, SinkStream& stream);
+  static void Read(Settings& value, SourceStream& stream);
 };
 
 //!
@@ -293,7 +331,7 @@ struct Horse
     uint32_t val5{};
 
     uint8_t potentialLevel{};
-    uint8_t hasPotential{};
+    uint8_t potentialType{};
     uint8_t potentialValue{};
     uint8_t val9{};
 
@@ -326,14 +364,20 @@ struct Horse
   static void Read(Horse& value, SourceStream& stream);
 };
 
+enum class GuildRole : uint8_t {
+  Owner = 10,
+  Officer = 100,
+  Member = 200    
+};
+
 //!
 struct Guild
 {
   uint32_t uid{};
   uint8_t val1{};
-  uint32_t val2{};
+  uint32_t val2{}; // emblem uid?
   std::string name{};
-  uint8_t val4{};
+  GuildRole guildRole{};
   uint32_t val5{};
   // ignored by the client?
   uint8_t val6{};
@@ -436,7 +480,7 @@ struct RanchCharacter
   enum class Gender : uint8_t
   {
     Girl = 0,
-    Boy = 1
+    Boy = 1,
   } gender{Gender::Girl};
   std::string introduction{};
 
@@ -506,18 +550,66 @@ struct League
   static void Read(League& value, SourceStream& stream);
 };
 
+enum class TeamMode : uint8_t
+{
+  FFA = 1,
+  Team = 2,
+  Single = 3
+};
+
 enum class GameMode : uint8_t
 {
   Speed = 1,
   Magic = 2,
-  Guild = 3,
-  Tutorial = 6
+  Unk4 = 4,
+  Tutorial = 6,
 };
 
-enum class TeamMode : uint8_t
+struct SkillSet
 {
-  Single = 1,
-  Team = 2
+  //! ID of the set
+  //! 0 - Set 1
+  //! 1 - Set 2
+  uint8_t setId{};
+  //! Either speed (1) or magic (2)
+  GameMode gamemode{};
+  //! ID of racing skills
+  //! Max 2 skills
+  std::vector<uint32_t> skills{};
+
+  static void Write(
+    const SkillSet& command,
+    SinkStream& stream);
+
+  static void Read(
+    SkillSet& command,
+    SourceStream& stream);
+};
+
+// As described by GuildStrings table
+enum class GuildError : uint8_t {
+  SystemError = 0,
+  NoUserOrOffline = 1,
+  NoGuild = 2,
+  BadGuildName = 3,
+  GuildNameAlreadyExists = 4,
+  GuildAlreadyCreated = 5,
+  JoinedGuild = 6,
+  NoAuthority = 7,
+  InviteRejected = 8,
+  CannotInviteSelf = 9,
+  NotAlone = 10,
+  Unknown = 255
+};
+
+//! Corresponds to values in CharNameChangeUIStrings
+enum class NameChangeError : uint8_t
+{
+  UnknownError = 0x1,       // CEC_UNDEFINED
+  NoOrIncorrectItem = 0x1a, // CEC_HAS_NO_RIGHT_ITEM
+  InvalidNickname = 0x1b,   // CEC_INVALID_NICKNAME
+  DuplicateNickname = 0x1c, // CEC_DUPLICATED_NICKNAME
+  NicknameCooldown = 0x1d   // CEC_NICKNAME_NOT_AVAILABE_DAY
 };
 
 // HorseNameStrings
@@ -530,6 +622,6 @@ enum class HorseRenameError : uint8_t
   WrongItem = 4, // CR_WRONG_ITEM
 };
 
-} // namespace server
+} // namespace server::protocol
 
 #endif

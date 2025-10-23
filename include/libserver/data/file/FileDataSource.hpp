@@ -83,6 +83,10 @@ public:
   void StoreGuild(data::Uid uid, const data::Guild& guild) override;
   void DeleteGuild(data::Uid uid) override;
 
+  void CreateSettings(data::Settings& settings) override;
+  void RetrieveSettings(data::Uid uid, data::Settings& settings) override;
+  void StoreSettings(data::Uid uid, const data::Settings& settings) override;
+  void DeleteSettings(data::Uid uid) override;
 private:
   //! A root data path.
   std::filesystem::path _dataPath;
@@ -107,6 +111,8 @@ private:
   std::filesystem::path _housingDataPath;
   //! A path to the guild data files.
   std::filesystem::path _guildDataPath;
+  //! A path to the settings data files.
+  std::filesystem::path _settingsDataPath;
 
   //! A path to meta-data file.
   std::filesystem::path _metaFilePath;
@@ -128,6 +134,8 @@ private:
   std::atomic_uint32_t _housingSequentialUid = 0;
   //! Sequential UID for guilds.
   std::atomic_uint32_t _guildSequentialId = 0;
+  //! Sequential UID for settings.
+  std::atomic_uint32_t _settingsSequentialId = 0;
 };
 
 } // namespace server

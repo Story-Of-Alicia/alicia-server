@@ -2,8 +2,8 @@
 // Created by rgnter on 17/07/2025.
 //
 
-#ifndef OTPREGISTRY_HPP
-#define OTPREGISTRY_HPP
+#ifndef OTPSYSTEM_HPP
+#define OTPSYSTEM_HPP
 
 #include <chrono>
 #include <random>
@@ -12,7 +12,7 @@
 namespace server
 {
 
-class OtpRegistry
+class OtpSystem
 {
 public:
   uint32_t GrantCode(uint32_t key);
@@ -31,4 +31,4 @@ private:
 
 } // namespace server
 
-#endif //OTPREGISTRY_HPP
+#endif //OTPSYSTEM_HPP

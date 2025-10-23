@@ -1,0 +1,424 @@
+pets:
+  eggs:
+    collection:
+      # City Eggs
+      - eggItemTid: 90006
+        deckId: 909
+        hatch:
+          duration: '9h'
+          pets: [99150, 99151, 99152, 99058, 99059, 99060, 99061]
+      - eggItemTid: 90007
+        deckId: 910
+        hatch:
+          duration: '41h'
+          pets: [99153, 99154, 99155, 99062, 99063, 99064, 99065]
+      - eggItemTid: 90008
+        deckId: 911
+        hatch:
+          duration: '73h'
+          pets: [99156, 99157, 99158, 99066, 99067, 99068, 99069]
+      - eggItemTid: 90009
+        deckId: 912
+        hatch:
+          duration: '105h'
+          pets: [99159, 99160, 99161, 99070, 99071, 99072, 99073]
+      # Forest Eggs
+      - eggItemTid: 90010
+        deckId: 905
+        hatch:
+          duration: '9h'
+          pets: [99098, 99099, 99100, 99086, 99087, 99088]
+      - eggItemTid: 90001
+        deckId: 906
+        hatch:
+          duration: '41h'
+          pets: [99101, 99102, 99103, 99089, 99090, 99091]
+      - eggItemTid: 90002
+        deckId: 907
+        hatch:
+          duration: '73h'
+          pets: [99104, 99105, 99106, 99092, 99093, 99094]
+      - eggItemTid: 90003
+        deckId: 908
+        hatch:
+          duration: '105h'
+          pets: [99107, 99108, 99109, 99095, 99096, 99097]
+      # Meadow Eggs
+      - eggItemTid: 90004
+        deckId: 901
+        hatch:
+          duration: '9h'
+          pets: [99134, 99135, 99136, 99026, 99027, 99028, 99029, 99110, 99111, 99112]
+      - eggItemTid: 90005
+        deckId: 902
+        hatch:
+          duration: '41h'
+          pets: [99137, 99138, 99139, 99030, 99031, 99032, 99033, 99113, 99114, 99115]
+      - eggItemTid: 90011
+        deckId: 903
+        hatch:
+          duration: '73h'
+          pets: [99140, 99141, 99142, 99034, 99035, 99036, 99037, 99116, 99117, 99118]
+      - eggItemTid: 90012
+        deckId: 904
+        hatch:
+          duration: '105h'
+          pets: [99143, 99144, 99145, 99038, 99039, 99040, 99041, 99119, 99120, 99121]
+      # Ice Eggs
+      - eggItemTid: 90017
+        deckId: 917
+        hatch:
+          duration: '9h'
+          pets: [99162, 99163, 99164, 99174, 99175, 99176]
+      - eggItemTid: 90018
+        deckId: 918
+        hatch:
+          duration: '41h'
+          pets: [99165, 99166, 99167, 99177, 99178, 99179]
+      - eggItemTid: 90019
+        deckId: 919
+        hatch:
+          duration: '73h'
+          pets: [99168, 99169, 99170, 99180, 99181, 99182]
+      - eggItemTid: 90020
+        deckId: 920
+        hatch:
+          duration: '105h'
+          pets: [99171, 99172, 99173, 99183, 99184, 99185]
+      # Desert Eggs
+      - eggItemTid: 90013
+        deckId: 913
+        hatch:
+          duration: '9h'
+          pets: [99042, 99043, 99146, 99074, 99075, 99076, 99122, 99123, 99124]
+      - eggItemTid: 90014
+        deckId: 914
+        hatch:
+          duration: '41h'
+          pets: [99044, 99045, 99147, 99077, 99078, 99079, 99125, 99126, 99127]
+      - eggItemTid: 90015
+        deckId: 915
+        hatch:
+          duration: '73h'
+          pets: [99046, 99047, 99148, 99080, 99081, 99082, 99128, 99129, 99130]
+      - eggItemTid: 90016
+        deckId: 916
+        hatch:
+          duration: '105h'
+          pets: [99048, 99049, 99149, 99083, 99084, 99085, 99131, 99132, 99133]
+  collection:
+    - petId: 26
+      itemTid: 99026
+    - petId: 27
+      itemTid: 99027
+    - petId: 28
+      itemTid: 99028
+    - petId: 29
+      itemTid: 99029
+    - petId: 30
+      itemTid: 99030
+    - petId: 31
+      itemTid: 99031
+    - petId: 32
+      itemTid: 99032
+    - petId: 33
+      itemTid: 99033
+    - petId: 34
+      itemTid: 99034
+    - petId: 35
+      itemTid: 99035
+    - petId: 36
+      itemTid: 99036
+    - petId: 37
+      itemTid: 99037
+    - petId: 38
+      itemTid: 99038
+    - petId: 39
+      itemTid: 99039
+    - petId: 40
+      itemTid: 99040
+    - petId: 41
+      itemTid: 99041
+    - petId: 42
+      itemTid: 99042
+    - petId: 43
+      itemTid: 99043
+    - petId: 44
+      itemTid: 99044
+    - petId: 45
+      itemTid: 99045
+    - petId: 46
+      itemTid: 99046
+    - petId: 47
+      itemTid: 99047
+    - petId: 48
+      itemTid: 99048
+    - petId: 49
+      itemTid: 99049
+    - petId: 58
+      itemTid: 99058
+    - petId: 59
+      itemTid: 99059
+    - petId: 60
+      itemTid: 99060
+    - petId: 70
+      itemTid: 99061
+    - petId: 61
+      itemTid: 99062
+    - petId: 62
+      itemTid: 99063
+    - petId: 63
+      itemTid: 99064
+    - petId: 71
+      itemTid: 99065
+    - petId: 64
+      itemTid: 99066
+    - petId: 65
+      itemTid: 99067
+    - petId: 66
+      itemTid: 99068
+    - petId: 72
+      itemTid: 99069
+    - petId: 67
+      itemTid: 99070
+    - petId: 68
+      itemTid: 99071
+    - petId: 69
+      itemTid: 99072
+    - petId: 73
+      itemTid: 99073
+    - petId: 74
+      itemTid: 99074
+    - petId: 75
+      itemTid: 99075
+    - petId: 76
+      itemTid: 99076
+    - petId: 77
+      itemTid: 99077
+    - petId: 78
+      itemTid: 99078
+    - petId: 79
+      itemTid: 99079
+    - petId: 80
+      itemTid: 99080
+    - petId: 81
+      itemTid: 99081
+    - petId: 82
+      itemTid: 99082
+    - petId: 83
+      itemTid: 99083
+    - petId: 84
+      itemTid: 99084
+    - petId: 85
+      itemTid: 99085
+    - petId: 86
+      itemTid: 99086
+    - petId: 87
+      itemTid: 99087
+    - petId: 88
+      itemTid: 99088
+    - petId: 89
+      itemTid: 99089
+    - petId: 90
+      itemTid: 99090
+    - petId: 91
+      itemTid: 99091
+    - petId: 92
+      itemTid: 99092
+    - petId: 93
+      itemTid: 99093
+    - petId: 94
+      itemTid: 99094
+    - petId: 95
+      itemTid: 99095
+    - petId: 96
+      itemTid: 99096
+    - petId: 97
+      itemTid: 99097
+    - petId: 98
+      itemTid: 99098
+    - petId: 99
+      itemTid: 99099
+    - petId: 100
+      itemTid: 99100
+    - petId: 101
+      itemTid: 99101
+    - petId: 102
+      itemTid: 99102
+    - petId: 103
+      itemTid: 99103
+    - petId: 104
+      itemTid: 99104
+    - petId: 105
+      itemTid: 99105
+    - petId: 106
+      itemTid: 99106
+    - petId: 107
+      itemTid: 99107
+    - petId: 108
+      itemTid: 99108
+    - petId: 109
+      itemTid: 99109
+    - petId: 110
+      itemTid: 99110
+    - petId: 111
+      itemTid: 99111
+    - petId: 112
+      itemTid: 99112
+    - petId: 113
+      itemTid: 99113
+    - petId: 114
+      itemTid: 99114
+    - petId: 115
+      itemTid: 99115
+    - petId: 116
+      itemTid: 99116
+    - petId: 117
+      itemTid: 99117
+    - petId: 118
+      itemTid: 99118
+    - petId: 119
+      itemTid: 99119
+    - petId: 120
+      itemTid: 99120
+    - petId: 121
+      itemTid: 99121
+    - petId: 122
+      itemTid: 99122
+    - petId: 123
+      itemTid: 99123
+    - petId: 124
+      itemTid: 99124
+    - petId: 125
+      itemTid: 99125
+    - petId: 126
+      itemTid: 99126
+    - petId: 127
+      itemTid: 99127
+    - petId: 128
+      itemTid: 99128
+    - petId: 129
+      itemTid: 99129
+    - petId: 130
+      itemTid: 99130
+    - petId: 131
+      itemTid: 99131
+    - petId: 132
+      itemTid: 99132
+    - petId: 133
+      itemTid: 99133
+    - petId: 134
+      itemTid: 99134
+    - petId: 135
+      itemTid: 99135
+    - petId: 136
+      itemTid: 99136
+    - petId: 137
+      itemTid: 99137
+    - petId: 138
+      itemTid: 99138
+    - petId: 139
+      itemTid: 99139
+    - petId: 140
+      itemTid: 99140
+    - petId: 141
+      itemTid: 99141
+    - petId: 142
+      itemTid: 99142
+    - petId: 143
+      itemTid: 99143
+    - petId: 144
+      itemTid: 99144
+    - petId: 145
+      itemTid: 99145
+    - petId: 146
+      itemTid: 99146
+    - petId: 147
+      itemTid: 99147
+    - petId: 148
+      itemTid: 99148
+    - petId: 149
+      itemTid: 99149
+    - petId: 100
+      itemTid: 47001
+    - petId: 100
+      itemTid: 47002
+    - petId: 150
+      itemTid: 99150
+    - petId: 151
+      itemTid: 99151
+    - petId: 152
+      itemTid: 99152
+    - petId: 153
+      itemTid: 99153
+    - petId: 154
+      itemTid: 99154
+    - petId: 155
+      itemTid: 99155
+    - petId: 156
+      itemTid: 99156
+    - petId: 157
+      itemTid: 99157
+    - petId: 158
+      itemTid: 99158
+    - petId: 159
+      itemTid: 99159
+    - petId: 160
+      itemTid: 99160
+    - petId: 161
+      itemTid: 99161
+    - petId: 100
+      itemTid: 45005
+    - petId: 100
+      itemTid: 46020
+    - petId: 180
+      itemTid: 46021
+    - petId: 162
+      itemTid: 99162
+    - petId: 163
+      itemTid: 99163
+    - petId: 164
+      itemTid: 99164
+    - petId: 165
+      itemTid: 99165
+    - petId: 166
+      itemTid: 99166
+    - petId: 167
+      itemTid: 99167
+    - petId: 168
+      itemTid: 99168
+    - petId: 169
+      itemTid: 99169
+    - petId: 170
+      itemTid: 99170
+    - petId: 171
+      itemTid: 99171
+    - petId: 172
+      itemTid: 99172
+    - petId: 173
+      itemTid: 99173
+    - petId: 174
+      itemTid: 99174
+    - petId: 175
+      itemTid: 99175
+    - petId: 176
+      itemTid: 99176
+    - petId: 177
+      itemTid: 99177
+    - petId: 178
+      itemTid: 99178
+    - petId: 179
+      itemTid: 99179
+    - petId: 180
+      itemTid: 99180
+    - petId: 181
+      itemTid: 99181
+    - petId: 182
+      itemTid: 99182
+    - petId: 183
+      itemTid: 99183
+    - petId: 184
+      itemTid: 99184
+    - petId: 185
+      itemTid: 99185
+      name: '왕고 호빵펭귄'

@@ -60,9 +60,9 @@ void Client::End()
       _socket.close();
     }
   }
-  catch (const std::exception& x)
+  catch (const std::exception&)
   {
-    spdlog::error("Exception ending client: {}", x.what());
+    // Ignore
   }
 
   _networkEventHandler.OnClientDisconnected(_clientId);
@@ -79,6 +79,11 @@ void Client::QueueWrite(WriteSupplier writeSupplier)
   }
 
   WriteLoop();
+}
+
+asio::ip::address_v4 Client::GetAddress()
+{
+  return _socket.remote_endpoint().address().to_v4();
 }
 
 void Client::WriteLoop() noexcept
@@ -137,8 +142,8 @@ void Client::WriteLoop() noexcept
       }
       catch (const std::exception& x)
       {
-        spdlog::error(
-          "Exception in the write chain of client {}: {}",
+        spdlog::debug(
+          "Client {} is disconnecting because of read loop exception: {}",
           clientPtr->_clientId,
           x.what());
 
@@ -193,8 +198,8 @@ void Client::ReadLoop() noexcept
       }
       catch (const std::exception& x)
       {
-        spdlog::error(
-          "Exception in the read chain of client {}: {}",
+        spdlog::debug(
+          "Client {} is disconnecting because of write loop exception: {}",
           clientPtr->_clientId,
           x.what());
 
