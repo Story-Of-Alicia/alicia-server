@@ -4218,10 +4218,7 @@ struct AcCmdCRUpdateDailyQuestCancel
 struct AcCmdCRRegisterDailyQuestGroup
 {
   uint16_t unk_0;
-  DailyQuest quest1{};
-  DailyQuest quest2{};
-  DailyQuest quest3{};
-  //std::vector<DailyQuest> dailyQuests;
+  std::vector<DailyQuest> dailyQuests;
   static Command GetCommand()
   {
     return Command::AcCmdCRRegisterDailyQuestGroup;

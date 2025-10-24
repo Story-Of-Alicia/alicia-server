@@ -2086,7 +2086,6 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
     {
       if (questId % 3 == 1)
       {
-        //const Uid id = questId;
         const auto questRecord = _serverInstance.GetDataDirector().GetDailyQuest(questId);
         questRecord.Immutable(
           [&response](const data::DailyQuest& quest)
@@ -2122,24 +2121,6 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
           });
       }
       }
-      
-      //spdlog::debug("Daily quest ids: {}", dailyQuestRecords);
-
-      
-      response.dailyQuest1.questId = 1004;
-      response.dailyQuest1.unk_1 = 0;
-      response.dailyQuest1.unk_2 = 0;
-      response.dailyQuest1.unk_3 = 0;
-
-      response.dailyQuest2.questId = 1005;
-      response.dailyQuest2.unk_1 = 0;
-      response.dailyQuest2.unk_2 = 0;
-      response.dailyQuest2.unk_3 = 0;
-
-      response.dailyQuest3.questId = 1006;
-      response.dailyQuest3.unk_1 = 0;
-      response.dailyQuest3.unk_2 = 0;
-      response.dailyQuest3.unk_3 = 0;
 
   response.questCount = 0;
   response.dailyQuestCount = 3;
