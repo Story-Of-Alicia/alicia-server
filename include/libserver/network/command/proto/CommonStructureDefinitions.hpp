@@ -281,8 +281,8 @@ struct Horse
     //! A plenitude value in a range of <0, 1200>.
     //! 910 is a little full, 1200 is full
     uint16_t plenitude{};
-    //! A dirty value in a range of <0, 600>. for all body parts.
-    //! 600 is fully dirty, 0 is clean.
+    //! A dirty value in a range of <0, 1200>. for all body parts.
+    //! 1200 is fully dirty, 0 is clean.
     uint16_t bodyDirtiness{};
     //! Referred to as `ManeTwisted` by the client.
     uint16_t maneDirtiness{};

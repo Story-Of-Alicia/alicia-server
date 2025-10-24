@@ -41,6 +41,9 @@ constexpr size_t MaxRanchHousingCount = 13;
 constexpr int16_t DoubleIncubatorId = 52;
 constexpr int16_t SingleIncubatorId = 51;
 
+constexpr uint16_t MaxFriendliness = 1200;
+constexpr uint16_t MaxPlenitude = 1200;
+
 } // namespace anon
 
 RanchDirector::RanchDirector(ServerInstance& serverInstance)
@@ -2870,6 +2873,9 @@ bool RanchDirector::HandleUseFoodItem(
   const data::Tid usedItemTid,
   protocol::AcCmdCRUseItemOK& response)
 {
+  // This action type has 
+  response.type = protocol::AcCmdCRUseItemOK::ActionType::Feed;
+
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     characterUid);
   const auto mountRecord = _serverInstance.GetDataDirector().GetHorse(
@@ -2881,13 +2887,21 @@ bool RanchDirector::HandleUseFoodItem(
   // Update plenitude and friendliness points according to the item used.
   mountRecord.Mutable([&itemTemplate](data::Horse& horse)
   {
-    // todo: there's a ranch skill which gives bonus to these points
-    horse.mountCondition.plenitude() += itemTemplate->foodParameters->plenitudePoints;
-    horse.mountCondition.friendliness() += itemTemplate->foodParameters->friendlinessPoints;
+    // TODO: there's a ranch skill which gives bonus to these points
+
+    horse.mountCondition.plenitude() = std::min(
+      static_cast<uint16_t>(horse.mountCondition.plenitude() + itemTemplate->foodParameters->plenitudePoints),
+      MaxPlenitude
+    );
+    
+    horse.mountCondition.friendliness() = std::min(
+      static_cast<uint16_t>(horse.mountCondition.friendliness() + itemTemplate->foodParameters->friendlinessPoints),
+      MaxFriendliness
+    );
   });
 
-  response.type = protocol::AcCmdCRUseItemOK::ActionType::Feed;
-  response.experiencePoints = 0xFF;
+  // TODO: determine values
+  response.experiencePoints = 1;
   response.playSuccessLevel = protocol::AcCmdCRUseItemOK::PlaySuccessLevel::Bad;
 
   // todo: award experiences gained
@@ -2902,6 +2916,8 @@ bool RanchDirector::HandleUseCleanItem(
   const data::Tid usedItemTid,
   protocol::AcCmdCRUseItemOK& response)
 {
+  response.type = protocol::AcCmdCRUseItemOK::ActionType::Wash;
+
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     characterUid);
   const auto mountRecord = _serverInstance.GetDataDirector().GetHorse(
@@ -2919,26 +2935,32 @@ bool RanchDirector::HandleUseCleanItem(
     {
       case registry::Item::CareParameters::Part::Body:
       {
+        horse.mountCondition.bodyDirtiness() = 0;
         horse.mountCondition.bodyPolish() += itemTemplate->careParameters->polishPoints;
         break;
       }
       case registry::Item::CareParameters::Part::Mane:
       {
+        horse.mountCondition.maneDirtiness() = 0;
         horse.mountCondition.manePolish() += itemTemplate->careParameters->polishPoints;
         break;
       }
       case registry::Item::CareParameters::Part::Tail:
       {
+        horse.mountCondition.tailDirtiness() = 0;
         horse.mountCondition.tailPolish() += itemTemplate->careParameters->polishPoints;
         break;
       }
     }
+
+    horse.mountCondition.charm() += itemTemplate->careParameters->cleanPoints;
   });
 
-  response.type = protocol::AcCmdCRUseItemOK::ActionType::Wash;
-  response.playSuccessLevel = protocol::AcCmdCRUseItemOK::PlaySuccessLevel::CriticalGood;
+  // TODO: determine values
+  response.experiencePoints = 1;
+  // TODO: is this needed? confirm
+  response.playSuccessLevel = protocol::AcCmdCRUseItemOK::PlaySuccessLevel::Perfect;
 
-  // todo: award experiences gained
   // todo: client-side update of clean and polish stats
 
   return true;
@@ -2951,6 +2973,8 @@ bool RanchDirector::HandleUsePlayItem(
   const protocol::AcCmdCRUseItem::PlaySuccessLevel successLevel,
   protocol::AcCmdCRUseItemOK& response)
 {
+  response.type = protocol::AcCmdCRUseItemOK::ActionType::Play;
+  
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     characterUid);
   const auto mountRecord = _serverInstance.GetDataDirector().GetHorse(
@@ -2963,7 +2987,6 @@ bool RanchDirector::HandleUsePlayItem(
   std::uniform_int_distribution<uint32_t> critRandomDist(0, 1);
   auto crit = critRandomDist(_randomDevice);
 
-  response.type = protocol::AcCmdCRUseItemOK::ActionType::Play;
   switch (successLevel)
   {
     case protocol::AcCmdCRUseItem::PlaySuccessLevel::Bad:
@@ -2981,7 +3004,23 @@ bool RanchDirector::HandleUsePlayItem(
       break;
   }
 
-  // TODO: Update the horse's stats based on the play item used.
+  mountRecord.Mutable([&itemTemplate](data::Horse& horse)
+  {
+    // As dictated by the intimacy gauge in-game
+    constexpr uint16_t MaxFriendliness = 1200;
+    const auto& newFriendlinessValue = static_cast<uint16_t>(
+      horse.mountCondition.friendliness() + itemTemplate->playParameters->friendlinessPoints);
+
+    horse.mountCondition.friendliness() = std::min(
+      newFriendlinessValue,
+      MaxFriendliness);
+  });
+
+  // TODO: determine values
+  response.experiencePoints = 1;
+  // TODO: is this needed? confirm
+  response.playSuccessLevel = protocol::AcCmdCRUseItemOK::PlaySuccessLevel::Perfect;
+
   return true;
 }
 
@@ -2991,12 +3030,12 @@ bool RanchDirector::HandleUseCureItem(
   const data::Tid usedItemTid,
   protocol::AcCmdCRUseItemOK& response)
 {
-  // No info
-
   response.type = protocol::AcCmdCRUseItemOK::ActionType::Cure;
-  response.experiencePoints = 0;
 
   // TODO: Update the horse's stats based on the cure item used.
+
+  response.experiencePoints = 1;
+
   return true;
 }
 
@@ -3129,8 +3168,6 @@ void RanchDirector::HandleUseItem(
   horseRecord.Immutable([&mountOk](const data::Horse& horse)
   {
     protocol::BuildProtocolHorse(mountOk.horse, horse);
-    mountOk.horse.val17 = 1234;
-    mountOk.horse.vals1.luck = 4;
   });
 
   _commandServer.QueueCommand<decltype(mountOk)>(

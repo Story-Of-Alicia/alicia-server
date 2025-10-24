@@ -63,6 +63,7 @@ private:
 
   protocol::LobbyCommandLoginOK::SystemContent _systemContent{
     .values = {
+      {33, 0}
       // {4, 0},
       // {16, 0},
       // {21, 0},

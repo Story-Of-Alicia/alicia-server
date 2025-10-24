@@ -82,7 +82,7 @@ void ReadCareParameters(
   careParameters.polishPoints = yaml["polishPoints"].as<
     decltype(careParameters.cleanPoints)>();
   careParameters.parts = static_cast<Item::CareParameters::Part>(
-    yaml["polishPoints"].as<uint32_t>());
+    yaml["parts"].as<uint32_t>());
 }
 
 void ReadCureParameters(
