@@ -1017,8 +1017,8 @@ void AcCmdRCUpdateMountInfoNotify::Write(
   const AcCmdRCUpdateMountInfoNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.action)
-    .Write(command.member1)
+  stream.Write(command.characterUid)
+    .Write(command.action)
     .Write(command.horse);
 }
 

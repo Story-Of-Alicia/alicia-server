@@ -1511,19 +1511,28 @@ struct RanchCommandUpdateMountNicknameCancel
 
 struct AcCmdRCUpdateMountInfoNotify
 {
-  enum class Action
+  // TODO: confirm these values
+  enum class Action : uint8_t
   {
+    // Takes horse name + type (type foal interacts with graze)
     Default = 0,
-    UpdateConditionAndName = 4,
-    SetMountStateAndBreedData = 5,
-    SomeItemManip0 = 9,
-    SomeItemManip1 = 10,
-    SomeItemManip2 = 12,
-    SomeItemManip3 = 13,
+    // Has gMsgSetMountInfo/RanchCare_ResetAmends//Ranch_UpdateMountName
+    // [Ranch_UpdateMountName] characterUid = 0
+    // This appears to do the horse change animation
+    MaybeRentHorseOrReturnToNature = 4,
+    // Has gMsgSetMountState/Breed_SuccessData_MountSeed
+    // [Breed_SuccessData_MountSeed] seed? = 0
+    PutHorseInRentOrBreedingSystem = 5,
+    // Takes potentialLevel and potentialValue
+    ProgressHorsePotential = 9,
+    // Just takes luck.
+    SomethingWithHorseLuck = 10,
+    UpdateInjuryState = 11,
+    SomethingWithInjuryAndLuck = 12
   };
 
-  Action action{Action::UpdateConditionAndName};
-  uint8_t member1{};
+  uint32_t characterUid{};
+  Action action{Action::Default};
   Horse horse{};
 
   static Command GetCommand()

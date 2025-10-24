@@ -1626,12 +1626,17 @@ void RanchDirector::HandleUpdateMountNickname(
     return;
   }
 
+  protocol::AcCmdRCUpdateMountInfoNotify notify{
+    .characterUid = clientContext.characterUid
+  };
+
   const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
     command.horseUid);
 
-  horseRecord->Mutable([horseName = command.name](data::Horse& horse)
+  horseRecord->Mutable([&notify, horseName = command.name](data::Horse& horse)
   {
     horse.name() = horseName;
+    protocol::BuildProtocolHorse(notify.horse, horse);
   });
 
   protocol::RanchCommandUpdateMountNicknameOK response{
@@ -1646,8 +1651,20 @@ void RanchDirector::HandleUpdateMountNickname(
     {
       return response;
     });
+  
+  for (const ClientId& ranchClientId : _ranches[clientContext.visitingRancherUid].clients)
+  {
+    // Prevent broadcast to self.
+    if (ranchClientId == clientId)
+      continue;
 
-  BroadcastUpdateMountInfoNotify(clientContext.characterUid, clientContext.visitingRancherUid, response.horseUid);
+    _commandServer.QueueCommand<decltype(notify)>(
+      ranchClientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
 }
 
 void RanchDirector::HandleRequestStorage(
