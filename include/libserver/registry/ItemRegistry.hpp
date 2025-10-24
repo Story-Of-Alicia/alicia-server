@@ -115,7 +115,12 @@ struct Item
   std::string name;
   std::string description;
   uint32_t level{};
-
+  enum class ConsumeType
+  {
+    Permanent = 0,
+    Temporary = 1,
+    Consumable = 2
+  } consumeType{ConsumeType::Permanent};
   std::optional<CharacterPartInfo> characterPartInfo;
   std::optional<MountPartInfo> mountPartInfo;
   std::optional<MountPartSetInfo> mountPartSetInfo;
