@@ -3110,25 +3110,24 @@ void RanchDirector::HandleUseItem(
 
   // Perform a mount update
 
-  protocol::AcCmdRCUpdateMountInfoNotify notify{
-    protocol::AcCmdRCUpdateMountInfoNotify::Action::UpdateConditionAndName,
-    };
+  protocol::AcCmdCRUpdateMountInfoOK mountOk{
+    .unk0 = 4,
+  };
 
-  const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(
-    horseUid);
-
-  horseRecord.Immutable([&notify](const data::Horse& horse)
+  const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(horseUid);
+  horseRecord.Immutable([&mountOk](const data::Horse& horse)
   {
-    protocol::BuildProtocolHorse(notify.horse, horse);
+    protocol::BuildProtocolHorse(mountOk.horse, horse);
+    mountOk.horse.val17 = 1234;
+    mountOk.horse.vals1.luck = 4;
   });
 
-  const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
-  for (auto client : ranchInstance.clients)
-  {
-    _commandServer.QueueCommand<decltype(notify)>(
-      client,
-      [notify](){return notify;});
-  }
+  _commandServer.QueueCommand<decltype(mountOk)>(
+    clientId,
+    [mountOk]()
+    {
+      return mountOk;
+    });
 }
 
 void RanchDirector::HandleHousingBuild(

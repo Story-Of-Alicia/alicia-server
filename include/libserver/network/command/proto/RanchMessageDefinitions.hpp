@@ -4143,6 +4143,31 @@ struct AcCmdCREmblemListOK
     SourceStream& stream);
 };
 
+struct AcCmdCRUpdateMountInfoOK
+{
+  uint8_t unk0{};
+  Horse horse{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdateMountInfoOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUpdateMountInfoOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUpdateMountInfoOK& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RANCH_MESSAGE_DEFINES_HPP

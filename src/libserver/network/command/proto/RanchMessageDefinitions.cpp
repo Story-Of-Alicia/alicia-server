@@ -2630,5 +2630,20 @@ void AcCmdCREmblemListOK::Write(
   }
 }
 
+void AcCmdCRUpdateMountInfoOK::Read(
+  AcCmdCRUpdateMountInfoOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRUpdateMountInfoOK::Write(
+  const AcCmdCRUpdateMountInfoOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.horse);
+}
+
 } // namespace server::protocol
 
