@@ -261,25 +261,12 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
       HandleStartMagicTarget(clientId, message);
     });
 
-  _commandServer.RegisterCommandHandler<protocol::AcCmdCRChangeMagicTargetNotify>(
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRChangeMagicTarget>(
     [this](ClientId clientId, const auto& message)
     {
-      HandleChangeMagicTargetNotify(clientId, message);
-    });
-
-  _commandServer.RegisterCommandHandler<protocol::AcCmdCRChangeMagicTargetOK>(
-    [this](ClientId clientId, const auto& message)
-    {
-      HandleChangeMagicTargetOK(clientId, message);
-    });
-
-  _commandServer.RegisterCommandHandler<protocol::AcCmdCRChangeMagicTargetCancel>(
-    [this](ClientId clientId, const auto& message)
-    {
-      HandleChangeMagicTargetCancel(clientId, message);
+      HandleChangeMagicTarget(clientId, message);
     });
   
-  // Note: AcCmdCRActivateSkillEffect handler commented out due to build issues
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRActivateSkillEffect>(
     [this](ClientId clientId, const auto& message)
     {
@@ -2704,37 +2691,52 @@ void RaceDirector::HandleStartMagicTarget(
   spdlog::info("Character {} entered targeting mode", command.characterOid);
 }
 
-void RaceDirector::HandleChangeMagicTargetNotify(
+void RaceDirector::HandleChangeMagicTarget(
   ClientId clientId,
-  const protocol::AcCmdCRChangeMagicTargetNotify& command)
+  const protocol::AcCmdCRChangeMagicTarget& command)
 {
-  spdlog::info("Player {} changed magic target: character OID {} -> target OID {}", 
-    clientId, command.characterOid, command.targetOid);
-  
+  // TODO: Throttle how often the same dragon can change between the same two targets
+
+  spdlog::info("Player {} changed magic target: unk0={}, unk1={}, character OID {} -> target OID {}", 
+    clientId, command.unk0, command.unk1, command.oldTargetOid, command.newTargetOid);
+
   const auto& clientContext = GetClientContext(clientId);
   auto& raceInstance = _raceInstances[clientContext.roomUid];
   auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
-  
-  if (command.characterOid != racer.oid)
+
+  if (command.oldTargetOid != racer.oid)
   {
     spdlog::warn("Character OID mismatch in HandleChangeMagicTargetNotify");
     return;
   }
-  
+
   // Update current target
-  racer.currentTarget = command.targetOid;
-  
+  racer.currentTarget = command.newTargetOid;
+
+  // Send OK response
+  protocol::AcCmdCRChangeMagicTargetOK response{
+    .unk0 = command.unk0,
+    .unk1 = command.unk1,
+    .oldTargetOid = command.oldTargetOid,
+    .newTargetOid = command.newTargetOid
+  };
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]() { return response; });
+
   // Send targeting notification to the target
   protocol::AcCmdCRChangeMagicTargetNotify targetNotify{
-    .characterOid = command.characterOid,
-    .targetOid = command.targetOid
+    .unk0 = command.unk0,
+    .unk1 = command.unk1,
+    .oldTargetOid = command.oldTargetOid,
+    .newTargetOid = command.newTargetOid
   };
-  
+
   // Find the client ID for this target and send notification
   for (const ClientId& raceClientId : raceInstance.clients)
   {
     const auto& targetClientContext = _clients[raceClientId];
-    if (raceInstance.tracker.GetRacer(targetClientContext.characterUid).oid == command.targetOid)
+    if (raceInstance.tracker.GetRacer(targetClientContext.characterUid).oid == racer.currentTarget)
     {
       _commandServer.QueueCommand<decltype(targetNotify)>(
         raceClientId,
@@ -2742,120 +2744,6 @@ void RaceDirector::HandleChangeMagicTargetNotify(
       break;
     }
   }
-}
-
-void RaceDirector::HandleChangeMagicTargetOK(
-  ClientId clientId,
-  const protocol::AcCmdCRChangeMagicTargetOK& command)
-{
-  spdlog::info("Player {} confirmed magic target: character OID {} -> target OID {}", 
-    clientId, command.characterOid, command.targetOid);
-  
-  const auto& clientContext = GetClientContext(clientId);
-  auto& raceInstance = _raceInstances[clientContext.roomUid];
-  auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
-  
-  if (command.characterOid != racer.oid)
-  {
-    spdlog::warn("Character OID mismatch in HandleChangeMagicTargetOK");
-    return;
-  }
-  
-  // This is where the Bolt should be fired!
-  spdlog::info("BOLT FIRED! {} -> {}", command.characterOid, command.targetOid);
-  
-  // Find the target racer and apply bolt effects
-  for (auto& [targetUid, targetRacer] : raceInstance.tracker.GetRacers())
-  {
-    if (targetRacer.oid == command.targetOid)
-    {
-      spdlog::info("Bolt hit target {}! Applying effects...", command.targetOid);
-      
-      // Apply bolt effects: fall down, lose speed, lose item
-      // Reset their magic item (they lose it when hit)
-      targetRacer.magicItem.reset();
-      
-      // Send bolt hit notification to all clients so they can see the hit effects
-      spdlog::info("Sending bolt hit notification to all clients for target {}", command.targetOid);
-      
-      // Send bolt hit as magic item usage notification
-      protocol::AcCmdCRUseMagicItemNotify boltHitNotify{
-        .characterOid = command.targetOid,  // The target who gets hit
-        .magicItemId = 2,  // Bolt magic item ID  
-        .unk3 = command.targetOid
-      };
-      
-      // For bolt (ID 2), we might need to populate optional fields
-      // Based on the Read method, bolt (case 0x2) expects optional2 and optional3/4
-      if (!boltHitNotify.optional2.has_value()) {
-        auto& opt2 = boltHitNotify.optional2.emplace();
-        opt2.size = 0;  // Empty list for now
-        opt2.list.clear();
-      }
-      
-      for (const ClientId& raceClientId : raceInstance.clients)
-      {
-        spdlog::info("Sending bolt hit notification to client {}", raceClientId);
-        _commandServer.QueueCommand<decltype(boltHitNotify)>(
-          raceClientId,
-          [boltHitNotify]() { return boltHitNotify; });
-      }
-      
-      break;
-    }
-  }
-  
-  // Reset attacker's targeting state
-  racer.isTargeting = false;
-  racer.currentTarget = tracker::InvalidEntityOid;
-  
-  // Consume the Bolt magic item
-  racer.magicItem.reset();
-}
-
-void RaceDirector::HandleChangeMagicTargetCancel(
-  ClientId clientId,
-  const protocol::AcCmdCRChangeMagicTargetCancel& command)
-{
-  spdlog::info("Player {} cancelled magic targeting: character OID {}", 
-    clientId, command.characterOid);
-  
-  const auto& clientContext = GetClientContext(clientId);
-  auto& raceInstance = _raceInstances[clientContext.roomUid];
-  auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
-  
-  if (command.characterOid != racer.oid)
-  {
-    spdlog::warn("Character OID mismatch in HandleChangeMagicTargetCancel");
-    return;
-  }
-  
-  // Send remove target notification to the current target (if any)
-  if (racer.currentTarget != tracker::InvalidEntityOid)
-  {
-    protocol::AcCmdRCRemoveMagicTarget removeNotify{
-      .characterOid = command.characterOid
-    };
-    
-    // Find the client ID for the current target
-    for (const ClientId& raceClientId : raceInstance.clients)
-    {
-      const auto& targetClientContext = _clients[raceClientId];
-      if (raceInstance.tracker.GetRacer(targetClientContext.characterUid).oid == racer.currentTarget)
-      {
-        _commandServer.QueueCommand<decltype(removeNotify)>(
-          raceClientId,
-          [removeNotify]() { return removeNotify; });
-        break;
-      }
-    }
-  }
-  
-  // Reset targeting state
-  racer.isTargeting = false;
-  racer.currentTarget = tracker::InvalidEntityOid;
-  
-  spdlog::info("Character {} exited targeting mode", command.characterOid);
 }
 
 void RaceDirector::HandleActivateSkillEffect(

@@ -2073,10 +2073,39 @@ struct AcCmdCRStartMagicTarget
     SourceStream& stream);
 };
 
+struct AcCmdCRChangeMagicTarget
+{
+  uint16_t unk0;
+  uint16_t unk1;
+  uint16_t oldTargetOid;
+  uint16_t newTargetOid;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeMagicTarget;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeMagicTarget& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeMagicTarget& command,
+    SourceStream& stream);
+};
+
 struct AcCmdCRChangeMagicTargetNotify
 {
-  uint16_t characterOid;
-  uint16_t targetOid;
+  uint16_t unk0;
+  uint16_t unk1;
+  uint16_t oldTargetOid;
+  uint16_t newTargetOid;
 
   static Command GetCommand()
   {
@@ -2100,8 +2129,10 @@ struct AcCmdCRChangeMagicTargetNotify
 
 struct AcCmdCRChangeMagicTargetOK
 {
-  uint16_t characterOid;
-  uint16_t targetOid;
+  uint16_t unk0;
+  uint16_t unk1;
+  uint16_t oldTargetOid;
+  uint16_t newTargetOid;
 
   static Command GetCommand()
   {
@@ -2126,6 +2157,9 @@ struct AcCmdCRChangeMagicTargetOK
 struct AcCmdCRChangeMagicTargetCancel
 {
   uint16_t characterOid;
+  uint16_t unk1;
+  uint16_t unk2;
+  uint16_t unk3;
 
   static Command GetCommand()
   {
@@ -2150,6 +2184,9 @@ struct AcCmdCRChangeMagicTargetCancel
 struct AcCmdRCRemoveMagicTarget
 {
   uint16_t characterOid;
+  uint16_t unk1;
+  uint16_t unk2;
+  uint16_t unk3;
 
   static Command GetCommand()
   {

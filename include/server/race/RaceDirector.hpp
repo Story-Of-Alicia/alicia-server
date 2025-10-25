@@ -244,17 +244,9 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRStartMagicTarget& command);
 
-  void HandleChangeMagicTargetNotify(
+  void HandleChangeMagicTarget(
     ClientId clientId,
-    const protocol::AcCmdCRChangeMagicTargetNotify& command);
-
-  void HandleChangeMagicTargetOK(
-    ClientId clientId,
-    const protocol::AcCmdCRChangeMagicTargetOK& command);
-
-  void HandleChangeMagicTargetCancel(
-    ClientId clientId,
-    const protocol::AcCmdCRChangeMagicTargetCancel& command);
+    const protocol::AcCmdCRChangeMagicTarget& command);
 
   void HandleChangeSkillCardPresetId(
     ClientId clientId,
