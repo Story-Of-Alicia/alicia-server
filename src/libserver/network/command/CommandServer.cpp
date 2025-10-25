@@ -77,7 +77,9 @@ bool IsMuted(protocol::Command id)
     || id == protocol::Command::AcCmdCRRelayNotify
     || id == protocol::Command::AcCmdCRRelayCommand
     || id == protocol::Command::AcCmdCRRelayCommandNotify
-    || id == protocol::Command::AcCmdUserRaceActivateEvent;
+    || id == protocol::Command::AcCmdUserRaceActivateEvent
+    || id == protocol::Command::AcCmdCRStarPointGet
+    || id == protocol::Command::AcCmdCRStarPointGetOK;
 }
 
 } // namespace
