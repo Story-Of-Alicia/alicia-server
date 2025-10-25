@@ -41,6 +41,11 @@ constexpr size_t MaxRanchHousingCount = 13;
 constexpr int16_t DoubleIncubatorId = 52;
 constexpr int16_t SingleIncubatorId = 51;
 
+constexpr uint16_t MaxCharm = 1000;
+constexpr uint16_t MaxFriendliness = 1000;
+constexpr uint16_t MaxAttachment = 1000;
+constexpr uint16_t MaxPlenitude = 1200;
+
 } // namespace anon
 
 RanchDirector::RanchDirector(ServerInstance& serverInstance)
@@ -1501,83 +1506,122 @@ void RanchDirector::HandleUpdateMountNickname(
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  // Flag indicating whether the user is allowed to rename their mount which is when:
-  // - the user has a horse rename item
-  // - the mount's name is empty
-  bool canRenameHorse = false;
-
-  uint32_t itemCount = 0;
-  characterRecord.Mutable([this, &canRenameHorse, &itemCount, horseUid = command.horseUid](data::Character& character)
+  uint32_t horseRenameItemCount = 0;
+  std::optional<protocol::HorseRenameError> error;
+  characterRecord.Mutable([this, &error, characterUid = clientContext.characterUid, command, &horseRenameItemCount](data::Character& character)
   {
-    const bool ownsHorse =  character.mountUid() == horseUid
-      || std::ranges::contains(character.horses(), horseUid);
+    const bool ownsHorse = character.mountUid() == command.horseUid
+      || std::ranges::contains(character.horses(), command.horseUid);
 
     if (not ownsHorse)
+    {
+      // Command contains horse UID that the calling client does not own
+      error.emplace(protocol::HorseRenameError::ServerError);
       return;
+    }
 
-    const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(horseUid);
+    const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(command.horseUid);
     if (not horseRecord)
+    {
+      // Somehow the horse record does not exist
+      error.emplace(protocol::HorseRenameError::ServerError);
       return;
+    }
 
     // If the horse does not have a name, allow them to rename it.
-    horseRecord.Immutable([&canRenameHorse](const data::Horse& horse)
+    bool isHorseNameEmpty = false;
+    horseRecord.Immutable([&error, &isHorseNameEmpty](const data::Horse& horse)
     {
-      canRenameHorse = horse.name().empty();
+      isHorseNameEmpty = horse.name().empty();
     });
 
-    if (canRenameHorse)
+    if (isHorseNameEmpty)
       return;
+
+    // Retrieve the horse rename item.
+    const auto itemRecord = GetServerInstance().GetDataDirector().GetItem(command.itemUid);
+    if (not itemRecord.IsAvailable())
+    {
+      // Item of that UID does not exist
+      spdlog::warn("Character {} tried to rename horse {} with non-existent item {}",
+        characterUid, command.horseUid, command.itemUid);
+      error.emplace(protocol::HorseRenameError::NoHorseRenameItem);
+      return;
+    }
+
+    // Check if calling character owns the item
+    if (not std::ranges::contains(character.inventory(), command.itemUid))
+    {
+      // Character tried to use an item that they do not have in their inventory
+      spdlog::warn("Character {} tried to use item {} that does not belong to them",
+        characterUid, command.itemUid);
+      error.emplace(protocol::HorseRenameError::NoHorseRenameItem);
+      return;
+    }
+
+    // Check for duplicate horse names
+    for (const auto& characterHorseUid : character.horses())
+    {
+      // Early exit when an error is spotted
+      if (error.has_value())
+        break;
+
+      GetServerInstance().GetDataDirector().GetHorse(characterHorseUid).Immutable(
+        [&error, newHorseName = command.name](const data::Horse& horse)
+        {
+          if (horse.name() == newHorseName)
+          {
+            error.emplace(protocol::HorseRenameError::DuplicateHorseName);
+          }
+        }
+      );
+    }
+
+    if (error.has_value())
+    {
+      return;
+    }
+
+    // TODO: validate new horse name for invalid/illegal characters
+    // HorseRenameError::InvalidNickname
 
     constexpr data::Tid HorseRenameItem = 45003;
-    const auto itemRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(
-      character.inventory());
 
-    // Find the horse rename item.
-    auto horseRenameItemUid = data::InvalidUid;
-    for (const auto& itemRecord : *itemRecords)
+    bool isItemHorseRenameItem = false;
+    itemRecord.Mutable([&isItemHorseRenameItem, &horseRenameItemCount](data::Item& item)
     {
-      itemRecord.Immutable([&horseRenameItemUid](const data::Item& item)
+      if (isItemHorseRenameItem = item.tid() == HorseRenameItem)
       {
-        if (item.tid() == HorseRenameItem)
-        {
-          horseRenameItemUid = item.uid();
-        }
-      });
+        // Item is a horse rename item
+        horseRenameItemCount = --item.count(); // decrement and then assign
+      }
+    });
 
-      // Break early if the item was found.
-      if (horseRenameItemUid != data::InvalidUid)
-        break;
-    }
-
-    if (horseRenameItemUid == data::InvalidUid)
+    if (not isItemHorseRenameItem)
     {
+      // Item is not a horse rename item
+      error.emplace(protocol::HorseRenameError::WrongItem);
       return;
     }
 
-    canRenameHorse = true;
-
-    GetServerInstance().GetDataDirector().GetItem(horseRenameItemUid).Mutable(
-      [&itemCount](data::Item& item)
-      {
-        itemCount = item.count()--;
-      });
-
-    // Erase if item count < 1 
-    if (itemCount < 1)
+    // Remove item from character's inventory if empty
+    if (horseRenameItemCount < 1)
     {
       // Find the item in the inventory.
       const auto itemInventoryIter = std::ranges::find(
-        character.inventory(), horseRenameItemUid);
+        character.inventory(), command.itemUid);
 
       // Remove the item from the inventory.
       character.inventory().erase(itemInventoryIter);
-      GetServerInstance().GetDataDirector().GetItemCache().Delete(horseRenameItemUid);
     }
   });
 
-  if (not canRenameHorse)
+  if (error.has_value())
   {
-    protocol::RanchCommandUpdateMountNicknameCancel response{};
+    protocol::RanchCommandUpdateMountNicknameCancel response{
+      .error = error.value()
+    };
+
     _commandServer.QueueCommand<decltype(response)>(
       clientId,
       [response]()
@@ -1587,19 +1631,24 @@ void RanchDirector::HandleUpdateMountNickname(
     return;
   }
 
+  protocol::AcCmdRCUpdateMountInfoNotify notify{
+    .characterUid = clientContext.characterUid
+  };
+
   const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
     command.horseUid);
 
-  horseRecord->Mutable([horseName = command.name](data::Horse& horse)
+  horseRecord->Mutable([&notify, horseName = command.name](data::Horse& horse)
   {
     horse.name() = horseName;
+    protocol::BuildProtocolHorse(notify.horse, horse);
   });
 
   protocol::RanchCommandUpdateMountNicknameOK response{
     .horseUid = command.horseUid,
     .nickname = command.name,
-    .unk1 = command.unk1,
-    .unk2 = itemCount};
+    .itemUid = command.itemUid,
+    .itemCount = horseRenameItemCount};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -1607,8 +1656,20 @@ void RanchDirector::HandleUpdateMountNickname(
     {
       return response;
     });
+  
+  for (const ClientId& ranchClientId : _ranches[clientContext.visitingRancherUid].clients)
+  {
+    // Prevent broadcast to self.
+    if (ranchClientId == clientId)
+      continue;
 
-  BroadcastUpdateMountInfoNotify(clientContext.characterUid, clientContext.visitingRancherUid, response.horseUid);
+    _commandServer.QueueCommand<decltype(notify)>(
+      ranchClientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
 }
 
 void RanchDirector::HandleRequestStorage(
@@ -1840,19 +1901,14 @@ void RanchDirector::HandleWearEquipment(
       const bool isCharacterEquipment = equippedItemTemplate->characterPartInfo.has_value();
       const bool isMountEquipment = equippedItemTemplate->mountPartInfo.has_value();
 
-      // Store the current character equipment UIDs
-      std::vector<data::Uid> equipmentUids;
-      if (isCharacterEquipment)
-        equipmentUids = character.characterEquipment();
-      else if (isMountEquipment)
-        equipmentUids = character.mountEquipment();
-      else
-        assert(false && "invalid equipment type");
+      // Retrieve the current equipment UIDs.
+      std::vector<data::Uid> equipmentUids = character.characterEquipment();
 
       // Determine which equipment is to be replaced by the newly equipped item.
       std::vector<data::Uid> equipmentToReplace;
       const auto equipmentRecords = _serverInstance.GetDataDirector().GetItemCache().Get(
         equipmentUids);
+
       for (const auto& equipmentRecord : *equipmentRecords)
       {
         auto equipmentUid{data::InvalidUid};
@@ -1869,18 +1925,27 @@ void RanchDirector::HandleWearEquipment(
 
         if (isCharacterEquipment)
         {
-          if (static_cast<uint32_t>(equipmentTemplate->characterPartInfo->slot)
-            & static_cast<uint32_t>(equippedItemTemplate->characterPartInfo->slot))
+          // Only compare character parts if the existing equipment template
+          if (equipmentTemplate.has_value() && equipmentTemplate->characterPartInfo.has_value())
           {
-            equipmentToReplace.emplace_back(equipmentUid);
+            if (static_cast<uint32_t>(equipmentTemplate->characterPartInfo->slot)
+              & static_cast<uint32_t>(equippedItemTemplate->characterPartInfo->slot))
+            {
+              equipmentToReplace.emplace_back(equipmentUid);
+            }
           }
         }
         else if (isMountEquipment)
         {
-          if (static_cast<uint32_t>(equipmentTemplate->mountPartInfo->slot)
-            & static_cast<uint32_t>(equippedItemTemplate->mountPartInfo->slot))
+          // Only compare mount parts if the existing equipment template
+          if (equipmentTemplate.has_value() 
+          && equipmentTemplate->mountPartInfo.has_value())
           {
-            equipmentToReplace.emplace_back(equipmentUid);
+            if (static_cast<uint32_t>(equipmentTemplate->mountPartInfo->slot)
+              & static_cast<uint32_t>(equippedItemTemplate->mountPartInfo->slot))
+            {
+              equipmentToReplace.emplace_back(equipmentUid);
+            }
           }
         }
       }
@@ -1898,12 +1963,8 @@ void RanchDirector::HandleWearEquipment(
       // Add the newly equipped item.
       equipmentUids.emplace_back(equippedItemUid);
 
-      if (isCharacterEquipment)
-        character.characterEquipment = equipmentUids;
-      else if (isMountEquipment)
-        character.mountEquipment = equipmentUids;
-      else
-        assert(false && "invalid equipment type");
+      // Persist back into the unified character equipment list.
+      character.characterEquipment = equipmentUids;
 
       // Remove the newly equipped item from the inventory.
       const auto equippedItemsToRemove = std::ranges::remove(
@@ -1956,11 +2017,10 @@ void RanchDirector::HandleRemoveEquipment(
 
   characterRecord.Mutable([&command](data::Character& character)
   {
+    // Since mount equipment is combined into characterEquipment for
+    // ranch logic, only search and operate on characterEquipment.
     const auto characterEquipmentItemIter = std::ranges::find(
       character.characterEquipment(),
-      command.itemUid);
-    const auto mountEquipmentItemIter = std::ranges::find(
-      character.mountEquipment(),
       command.itemUid);
 
     // You can't really unequip a horse. You can only switch to a different one.
@@ -1972,12 +2032,7 @@ void RanchDirector::HandleRemoveEquipment(
         character.characterEquipment(), command.itemUid);
       character.characterEquipment().erase(range.begin(), range.end());
     }
-    else if (mountEquipmentItemIter != character.mountEquipment().cend())
-    {
-      const auto range = std::ranges::remove(
-        character.mountEquipment(), command.itemUid);
-      character.mountEquipment().erase(range.begin(), range.end());
-    }
+    // If not found in characterEquipment, treat as not equipped (no-op).
 
     character.inventory().emplace_back(command.itemUid);
   });
@@ -2783,9 +2838,9 @@ void RanchDirector::BroadcastEquipmentUpdate(ClientId clientId)
     protocol::BuildProtocolItems(notify.characterEquipment, *characterEquipment);
 
     // Mount equipment
-    const auto mountEquipment = GetServerInstance().GetDataDirector().GetItemCache().Get(
-      character.mountEquipment());
-    protocol::BuildProtocolItems(notify.mountEquipment, *mountEquipment);
+    // Mount equipment is stored in the same character equipment list
+    // for ranch-related notifications. Reuse characterEquipment here.
+    protocol::BuildProtocolItems(notify.mountEquipment, *characterEquipment);
 
     // Mount record
     const auto mountRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
@@ -2820,6 +2875,9 @@ bool RanchDirector::HandleUseFoodItem(
   const data::Tid usedItemTid,
   protocol::AcCmdCRUseItemOK& response)
 {
+  // This action type has 
+  response.type = protocol::AcCmdCRUseItemOK::ActionType::Feed;
+
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     characterUid);
   const auto mountRecord = _serverInstance.GetDataDirector().GetHorse(
@@ -2831,13 +2889,32 @@ bool RanchDirector::HandleUseFoodItem(
   // Update plenitude and friendliness points according to the item used.
   mountRecord.Mutable([&itemTemplate](data::Horse& horse)
   {
-    // todo: there's a ranch skill which gives bonus to these points
-    horse.mountCondition.plenitude() += itemTemplate->foodParameters->plenitudePoints;
-    horse.mountCondition.friendliness() += itemTemplate->foodParameters->friendlinessPoints;
+    // TODO: there's a ranch skill which gives bonus to these points
+
+    horse.mountCondition.plenitude() = std::min(
+      static_cast<uint16_t>(
+        horse.mountCondition.plenitude() + itemTemplate->foodParameters->plenitudePoints),
+      MaxPlenitude
+    );
+    
+    horse.mountCondition.friendliness() = std::min(
+      static_cast<uint16_t>(
+        horse.mountCondition.friendliness() + itemTemplate->foodParameters->friendlinessPoints),
+      MaxFriendliness
+    );
+
+    // TODO: confirm this behaviour
+    // Rationale: friendliness/charm max = 1000, play activities unlock after ~111 and ~501
+    // which roughly corresponds to attachment values
+    horse.mountCondition.attachment() = std::min(
+      static_cast<uint16_t>(
+        horse.mountCondition.attachment() + itemTemplate->foodParameters->friendlinessPoints),
+      MaxAttachment
+    );
   });
 
-  response.type = protocol::AcCmdCRUseItemOK::ActionType::Feed;
-  response.experiencePoints = 0xFF;
+  // TODO: determine values
+  response.experiencePoints = 1;
   response.playSuccessLevel = protocol::AcCmdCRUseItemOK::PlaySuccessLevel::Bad;
 
   // todo: award experiences gained
@@ -2852,6 +2929,8 @@ bool RanchDirector::HandleUseCleanItem(
   const data::Tid usedItemTid,
   protocol::AcCmdCRUseItemOK& response)
 {
+  response.type = protocol::AcCmdCRUseItemOK::ActionType::Wash;
+
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     characterUid);
   const auto mountRecord = _serverInstance.GetDataDirector().GetHorse(
@@ -2869,26 +2948,44 @@ bool RanchDirector::HandleUseCleanItem(
     {
       case registry::Item::CareParameters::Part::Body:
       {
-        horse.mountCondition.bodyPolish() += itemTemplate->careParameters->polishPoints;
+        horse.mountCondition.bodyDirtiness() = 0;
         break;
       }
       case registry::Item::CareParameters::Part::Mane:
       {
-        horse.mountCondition.manePolish() += itemTemplate->careParameters->polishPoints;
+        horse.mountCondition.maneDirtiness() = 0;
         break;
       }
       case registry::Item::CareParameters::Part::Tail:
       {
-        horse.mountCondition.tailPolish() += itemTemplate->careParameters->polishPoints;
+        horse.mountCondition.tailDirtiness() = 0;
         break;
       }
     }
+    
+    // Set horse charm (attractiveness) to new incremented value or max
+    horse.mountCondition.charm() = std::min(
+      static_cast<uint16_t>(
+        horse.mountCondition.charm() + itemTemplate->careParameters->cleanPoints),
+      MaxCharm
+    );
+
+    // TODO: confirm this behaviour
+    // Rationale: friendliness/charm max = 1000, play activities unlock after ~111 and ~501
+    // which roughly corresponds to attachment values
+    // Set horse attachment (boredom) value to new incremented value or max
+    horse.mountCondition.attachment() = std::min(
+      static_cast<uint16_t>(
+        horse.mountCondition.attachment() + itemTemplate->careParameters->cleanPoints),
+      MaxAttachment
+    );
   });
 
-  response.type = protocol::AcCmdCRUseItemOK::ActionType::Wash;
-  response.playSuccessLevel = protocol::AcCmdCRUseItemOK::PlaySuccessLevel::CriticalGood;
+  // TODO: determine values
+  response.experiencePoints = 1;
+  // TODO: is this needed? confirm
+  response.playSuccessLevel = protocol::AcCmdCRUseItemOK::PlaySuccessLevel::Perfect;
 
-  // todo: award experiences gained
   // todo: client-side update of clean and polish stats
 
   return true;
@@ -2901,6 +2998,8 @@ bool RanchDirector::HandleUsePlayItem(
   const protocol::AcCmdCRUseItem::PlaySuccessLevel successLevel,
   protocol::AcCmdCRUseItemOK& response)
 {
+  response.type = protocol::AcCmdCRUseItemOK::ActionType::Play;
+  
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     characterUid);
   const auto mountRecord = _serverInstance.GetDataDirector().GetHorse(
@@ -2913,7 +3012,6 @@ bool RanchDirector::HandleUsePlayItem(
   std::uniform_int_distribution<uint32_t> critRandomDist(0, 1);
   auto crit = critRandomDist(_randomDevice);
 
-  response.type = protocol::AcCmdCRUseItemOK::ActionType::Play;
   switch (successLevel)
   {
     case protocol::AcCmdCRUseItem::PlaySuccessLevel::Bad:
@@ -2931,7 +3029,26 @@ bool RanchDirector::HandleUsePlayItem(
       break;
   }
 
-  // TODO: Update the horse's stats based on the play item used.
+  mountRecord.Mutable([&itemTemplate](data::Horse& horse)
+  {
+    // As dictated by the intimacy gauge in-game
+    const auto& newFriendlinessValue = static_cast<uint16_t>(
+      horse.mountCondition.friendliness() + itemTemplate->playParameters->friendlinessPoints);
+
+    // TODO: do normal/crit good/perfect plays affect the increment value?
+    // Set friendliness (intimacy) to incremented value or max
+    horse.mountCondition.friendliness() = std::min(
+      newFriendlinessValue,
+      MaxFriendliness);
+
+    // TODO: implement boredom mechanism
+  });
+
+  // TODO: determine values
+  response.experiencePoints = 1;
+  // TODO: is this needed? confirm
+  response.playSuccessLevel = protocol::AcCmdCRUseItemOK::PlaySuccessLevel::Perfect;
+
   return true;
 }
 
@@ -2941,12 +3058,12 @@ bool RanchDirector::HandleUseCureItem(
   const data::Tid usedItemTid,
   protocol::AcCmdCRUseItemOK& response)
 {
-  // No info
-
   response.type = protocol::AcCmdCRUseItemOK::ActionType::Cure;
-  response.experiencePoints = 0;
 
   // TODO: Update the horse's stats based on the cure item used.
+
+  response.experiencePoints = 1;
+
   return true;
 }
 
@@ -2968,8 +3085,9 @@ void RanchDirector::HandleUseItem(
 
   bool hasItem = false;
   bool hasHorse = false;
+  uint32_t carrotCount = 0;
   std::string characterName;
-  characterRecord.Immutable([&characterName, &usedItemUid, &horseUid, &hasItem, &hasHorse](
+  characterRecord.Immutable([&characterName, &usedItemUid, &horseUid, &hasItem, &hasHorse, &carrotCount](
     const data::Character& character)
   {
     hasItem = std::ranges::contains(character.inventory(), usedItemUid);;
@@ -2977,6 +3095,7 @@ void RanchDirector::HandleUseItem(
       || character.mountUid() == horseUid;
 
     characterName = character.name();
+    carrotCount = character.carrots();
   });
 
   if (not hasItem || not hasHorse)
@@ -2996,7 +3115,7 @@ void RanchDirector::HandleUseItem(
   const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(
     usedItemTid);
   if (not itemTemplate)
-    throw std::runtime_error("Item tempate not available");
+    throw std::runtime_error("Item template not available");
 
   bool consumeItem = false;
   if (itemTemplate->foodParameters)
@@ -3009,7 +3128,7 @@ void RanchDirector::HandleUseItem(
   }
   else if (itemTemplate->careParameters)
   {
-    HandleUseCleanItem(
+    consumeItem = HandleUseCleanItem(
       clientContext.characterUid,
       horseUid,
       usedItemTid,
@@ -3017,7 +3136,7 @@ void RanchDirector::HandleUseItem(
   }
   else if (itemTemplate->playParameters)
   {
-    HandleUsePlayItem(
+    consumeItem = HandleUsePlayItem(
       clientContext.characterUid,
       horseUid,
       usedItemTid,
@@ -3026,11 +3145,25 @@ void RanchDirector::HandleUseItem(
   }
   else if (itemTemplate->cureParameters)
   {
-    HandleUseCureItem(
+    consumeItem = HandleUseCureItem(
       clientContext.characterUid,
       horseUid,
       usedItemTid,
       response);
+
+    protocol::AcCmdCRMountInjuryHealOK cure{
+      .horseUid = horseUid,
+      .unk1 = 0,
+      .unk2 = 0,
+      .updatedCarrotCount = carrotCount
+    };
+
+    _commandServer.QueueCommand<decltype(cure)>(
+      clientId,
+      [cure]()
+      {
+        return cure;
+      });
   }
   else
   {
@@ -3070,26 +3203,22 @@ void RanchDirector::HandleUseItem(
     });
 
   // Perform a mount update
+  protocol::AcCmdCRUpdateMountInfoOK mountOk{
+    .unk0 = 4,
+  };
 
-  protocol::AcCmdRCUpdateMountInfoNotify notify{
-    protocol::AcCmdRCUpdateMountInfoNotify::Action::UpdateConditionAndName,
-    };
-
-  const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(
-    horseUid);
-
-  horseRecord.Immutable([&notify](const data::Horse& horse)
+  const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(horseUid);
+  horseRecord.Immutable([&mountOk](const data::Horse& horse)
   {
-    protocol::BuildProtocolHorse(notify.horse, horse);
+    protocol::BuildProtocolHorse(mountOk.horse, horse);
   });
 
-  const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
-  for (auto client : ranchInstance.clients)
-  {
-    _commandServer.QueueCommand<decltype(notify)>(
-      client,
-      [notify](){return notify;});
-  }
+  _commandServer.QueueCommand<decltype(mountOk)>(
+    clientId,
+    [mountOk]()
+    {
+      return mountOk;
+    });
 }
 
 void RanchDirector::HandleHousingBuild(
