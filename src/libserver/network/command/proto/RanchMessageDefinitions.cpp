@@ -2645,5 +2645,22 @@ void AcCmdCRUpdateMountInfoOK::Write(
     .Write(command.horse);
 }
 
+void AcCmdCRMountInjuryHealOK::Read(
+  AcCmdCRMountInjuryHealOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRMountInjuryHealOK::Write(
+  const AcCmdCRMountInjuryHealOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.horseUid)
+    .Write(command.unk1)
+    .Write(command.unk2)
+    .Write(command.updatedCarrotCount);
+}
+
 } // namespace server::protocol
 

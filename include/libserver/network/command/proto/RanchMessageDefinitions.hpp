@@ -4177,6 +4177,33 @@ struct AcCmdCRUpdateMountInfoOK
     SourceStream& stream);
 };
 
+struct AcCmdCRMountInjuryHealOK
+{
+  uint32_t horseUid{};
+  uint32_t unk1{};
+  uint8_t unk2{};
+  uint32_t updatedCarrotCount{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRMountInjuryHealOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRMountInjuryHealOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRMountInjuryHealOK& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RANCH_MESSAGE_DEFINES_HPP

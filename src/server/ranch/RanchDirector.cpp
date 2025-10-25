@@ -3057,8 +3057,9 @@ void RanchDirector::HandleUseItem(
 
   bool hasItem = false;
   bool hasHorse = false;
+  uint32_t carrotCount = 0;
   std::string characterName;
-  characterRecord.Immutable([&characterName, &usedItemUid, &horseUid, &hasItem, &hasHorse](
+  characterRecord.Immutable([&characterName, &usedItemUid, &horseUid, &hasItem, &hasHorse, &carrotCount](
     const data::Character& character)
   {
     hasItem = std::ranges::contains(character.inventory(), usedItemUid);;
@@ -3066,6 +3067,7 @@ void RanchDirector::HandleUseItem(
       || character.mountUid() == horseUid;
 
     characterName = character.name();
+    carrotCount = character.carrots();
   });
 
   if (not hasItem || not hasHorse)
@@ -3085,7 +3087,7 @@ void RanchDirector::HandleUseItem(
   const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(
     usedItemTid);
   if (not itemTemplate)
-    throw std::runtime_error("Item tempate not available");
+    throw std::runtime_error("Item template not available");
 
   bool consumeItem = false;
   if (itemTemplate->foodParameters)
@@ -3098,7 +3100,7 @@ void RanchDirector::HandleUseItem(
   }
   else if (itemTemplate->careParameters)
   {
-    HandleUseCleanItem(
+    consumeItem = HandleUseCleanItem(
       clientContext.characterUid,
       horseUid,
       usedItemTid,
@@ -3106,7 +3108,7 @@ void RanchDirector::HandleUseItem(
   }
   else if (itemTemplate->playParameters)
   {
-    HandleUsePlayItem(
+    consumeItem = HandleUsePlayItem(
       clientContext.characterUid,
       horseUid,
       usedItemTid,
@@ -3115,11 +3117,25 @@ void RanchDirector::HandleUseItem(
   }
   else if (itemTemplate->cureParameters)
   {
-    HandleUseCureItem(
+    consumeItem = HandleUseCureItem(
       clientContext.characterUid,
       horseUid,
       usedItemTid,
       response);
+
+    protocol::AcCmdCRMountInjuryHealOK cure{
+      .horseUid = horseUid,
+      .unk1 = 0,
+      .unk2 = 0,
+      .updatedCarrotCount = carrotCount
+    };
+
+    _commandServer.QueueCommand<decltype(cure)>(
+      clientId,
+      [cure]()
+      {
+        return cure;
+      });
   }
   else
   {
@@ -3159,7 +3175,6 @@ void RanchDirector::HandleUseItem(
     });
 
   // Perform a mount update
-
   protocol::AcCmdCRUpdateMountInfoOK mountOk{
     .unk0 = 4,
   };
