@@ -64,6 +64,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _housingDataPath = prepareDataPath("housing");
   _guildDataPath = prepareDataPath("guilds");
   _settingsDataPath = prepareDataPath("settings");
+  _dailyQuestDataPath = prepareDataPath("daily_quests");
 
   // Read the meta-data file and parse the sequential UIDs.
   const std::filesystem::path metaFilePath = ProduceDataPath(
@@ -84,6 +85,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _housingSequentialUid = meta["housingSequentialUid"].get<uint32_t>();
   _guildSequentialId = meta["guildSequentialId"].get<uint32_t>();
   _settingsSequentialId = meta["settingsSequentialId"].get<uint32_t>();
+  _dailyQuestSequentialId = meta["dailyQuestSequentialId"].get<uint32_t>();
 }
 
 void server::FileDataSource::Terminate()
@@ -107,6 +109,7 @@ void server::FileDataSource::Terminate()
   meta["housingSequentialUid"] = _housingSequentialUid.load();
   meta["guildSequentialId"] = _guildSequentialId.load();
   meta["settingsSequentialId"] = _settingsSequentialId.load();
+  meta["dailyQuestSequentialId"] = _dailyQuestSequentialId.load();
 
   metaFile << meta.dump(2);
 }
@@ -295,6 +298,8 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   const auto& skills = json["skills"];
   readSkills(character.skills.speed(), skills["speed"]);
   readSkills(character.skills.magic(), skills["magic"]);
+
+  character.dailyQuests = json["dailyquests"].get<std::vector<data::Uid>>();
 }
 
 void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
@@ -382,6 +387,8 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   skills["speed"] = writeSkills(character.skills.speed());
   skills["magic"] = writeSkills(character.skills.magic());
   json["skills"] = skills;
+
+  json["dailyquests"] = character.dailyQuests();
 
   dataFile << json.dump(2);
 }
@@ -1090,5 +1097,59 @@ void server::FileDataSource::DeleteSettings(data::Uid uid)
 {
   const std::filesystem::path dataFilePath = ProduceDataPath(
     _settingsDataPath, std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
+}
+
+void server::FileDataSource::CreateDailyQuest(data::DailyQuest& dailyQuest)
+{
+  dailyQuest.uid = ++_dailyQuestSequentialId;
+}
+
+void server::FileDataSource::RetrieveDailyQuest(data::Uid uid, data::DailyQuest& dailyQuest)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _dailyQuestDataPath, std::format("{}", uid));
+
+  std::ifstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Daily quest file '{}' not accessible", dataFilePath.string()));
+  }
+
+  const auto json = nlohmann::json::parse(dataFile);
+  dailyQuest.uid = json["uid"].get<data::Uid>();
+  dailyQuest.unk_0 = json["unk_0"].get<uint16_t>();
+  dailyQuest.unk_1 = json["unk_1"].get<uint32_t>();
+  dailyQuest.unk_2 = json["unk_2"].get<uint8_t>();
+  dailyQuest.unk_3 = json["unk_3"].get<uint8_t>();
+}
+
+void server::FileDataSource::StoreDailyQuest(data::Uid uid, const data::DailyQuest& dailyQuest)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _dailyQuestDataPath, std::format("{}", uid));
+
+  std::ofstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Daily quest file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json;
+  json["uid"] = dailyQuest.uid();
+  json["unk_0"] = dailyQuest.unk_0();
+  json["unk_1"] = dailyQuest.unk_1();
+  json["unk_2"] = dailyQuest.unk_2();
+  json["unk_3"] = dailyQuest.unk_3();
+
+  dataFile << json.dump(2);
+}
+
+void server::FileDataSource::DeleteDailyQuest(data::Uid uid)
+{
+  const std::filesystem::path dataFilePath = ProduceDataPath(
+    _dailyQuestDataPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
 }

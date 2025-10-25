@@ -369,6 +369,18 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleChangeNickname(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRUpdateDailyQuest>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleUpdateDailyQuest(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRegisterDailyQuestGroup>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleRegisterDailyQuestGroup(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -4093,6 +4105,101 @@ void RanchDirector::HandleChangeSkillCardPreset(
       auto& skillSet = command.skillSet.setId == 0 ? skillSets->set1 : skillSets->set2;
       skillSet.slot1 = command.skillSet.skills[0];
       skillSet.slot2 = command.skillSet.skills[1];
+    });
+}
+
+void RanchDirector::HandleUpdateDailyQuest(
+  ClientId clientId,
+  const protocol::AcCmdCRUpdateDailyQuest& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  protocol::AcCmdCRUpdateDailyQuestOK response{};
+  characterRecord.Mutable(
+    [&response](data::Character& character)
+    {
+      character.carrots() += 1000;
+
+      response.newCarrotBalance = character.carrots();
+    });
+  response.quest = {command.quest.questId, command.quest.unk_1, command.quest.unk_2, 1};
+  response.unk_1 = 1;
+  response.unk_2 = 1;
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+     return response;
+    });
+}
+
+void RanchDirector::HandleRegisterDailyQuestGroup(
+  ClientId clientId,
+  const protocol::AcCmdCRRegisterDailyQuestGroup& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+  bool hasDailyQuests = false;
+  std::vector<uint32_t> dailyQuests = {0,0,0};
+
+  characterRecord.Mutable(
+    [&command, &hasDailyQuests, &dailyQuests](data::Character& character)
+    {
+      if (character.dailyQuests().size() == 3)
+      {
+        hasDailyQuests = true;
+        dailyQuests = character.dailyQuests();
+      }
+      else
+      {
+        uint32_t start = (character.uid() - 1)*3 + 1;
+        character.dailyQuests() = {start, start + 1, start + 2};
+        dailyQuests = character.dailyQuests();
+      }
+    });
+
+  if (!hasDailyQuests)
+  {
+    for (auto& quest : command.dailyQuests)
+    {
+      const auto dailyQuestRecord = GetServerInstance().GetDataDirector().CreateDailyQuest();
+      dailyQuestRecord.Mutable(
+        [&quest](data::DailyQuest& dailyQuest)
+        {
+          dailyQuest.unk_0 = quest.questId;
+          dailyQuest.unk_1 = quest.unk_1;
+          dailyQuest.unk_2 = quest.unk_2;
+          dailyQuest.unk_3 = quest.unk_3;
+        });
+    }
+  }
+  else if (hasDailyQuests)
+  {
+    for (int i = 0; i < 3; i++)
+    {
+      spdlog::debug("Quest id: {}", dailyQuests[i]);
+      const auto dailyQuestRecord = _serverInstance.GetDataDirector().GetDailyQuest(dailyQuests[i]);
+      dailyQuestRecord.Mutable(
+        [&command, &i](data::DailyQuest& dailyQuest)
+      {
+          dailyQuest.unk_0 = command.dailyQuests[i].questId;
+          dailyQuest.unk_1 = command.dailyQuests[i].unk_1;
+          dailyQuest.unk_2 = command.dailyQuests[i].unk_2;
+          dailyQuest.unk_3 = command.dailyQuests[i].unk_3;
+       });
+    }
+  }
+
+  protocol::AcCmdCRRegisterDailyQuestGroupOK response{};
+  response.status = 1;
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
     });
 }
 

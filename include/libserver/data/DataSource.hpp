@@ -190,6 +190,20 @@ public:
   //! Deletes the settings from the data source.
   //! @param uid UID of the settings.
   virtual void DeleteSettings(data::Uid uid) = 0;
+
+  //! Creates the settings in the data source.
+  //! @param dailyQuest DailyQuest to create.
+  virtual void CreateDailyQuest(data::DailyQuest& dailyQuest) = 0;
+  //! Retrieves the daily quest from the data source.
+  //! @param uid UID of the daily quest.
+  virtual void RetrieveDailyQuest(data::Uid uid, data::DailyQuest& dailyQuest) = 0;
+  //! Stores the daily quest on the data source.
+  //! @param uid UID of the daily quest.
+  //! @param dailyQuest DailyQuest to store.
+  virtual void StoreDailyQuest(data::Uid uid, const data::DailyQuest& dailyQuest) = 0;
+  //! Deletes the daily quest from the data source.
+  //! @param uid UID of the daily quest.
+  virtual void DeleteDailyQuest(data::Uid uid) = 0;
 };
 
 } // namespace server

@@ -4143,6 +4143,125 @@ struct AcCmdCREmblemListOK
     SourceStream& stream);
 };
 
+struct AcCmdCRUpdateDailyQuest
+{
+  DailyQuest quest{};
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdateDailyQuest;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUpdateDailyQuest& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUpdateDailyQuest& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUpdateDailyQuestOK
+{
+  uint32_t newCarrotBalance;
+  DailyQuest quest{};
+  uint32_t unk_1;
+  uint32_t unk_2;
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdateDailyQuestOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUpdateDailyQuestOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUpdateDailyQuestOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUpdateDailyQuestCancel
+{
+  // uint32_t dailyQuestId{};
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdateDailyQuestCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUpdateDailyQuestCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUpdateDailyQuestCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRegisterDailyQuestGroup
+{
+  uint16_t unk_0;
+  std::vector<DailyQuest> dailyQuests;
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRegisterDailyQuestGroup;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRegisterDailyQuestGroup& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRegisterDailyQuestGroup& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRegisterDailyQuestGroupOK
+{
+  uint8_t status;
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRegisterDailyQuestGroupOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRegisterDailyQuestGroupOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRegisterDailyQuestGroupOK& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RANCH_MESSAGE_DEFINES_HPP

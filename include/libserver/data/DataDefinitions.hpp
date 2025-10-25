@@ -316,6 +316,8 @@ struct Character
     dao::Field<Sets> speed{};
     dao::Field<Sets> magic{};
   } skills{};
+
+    dao::Field<std::vector<Uid>> dailyQuests{};
 };
 
 struct Horse
@@ -431,6 +433,15 @@ struct Egg
   dao::Field<Clock::time_point> incubatedAt{};
   dao::Field<uint32_t> incubatorSlot{};
   dao::Field<uint32_t> boostsUsed;
+};
+
+struct DailyQuest
+{
+  dao::Field<Uid> uid{InvalidUid};
+  dao::Field<uint16_t> unk_0{};
+  dao::Field<uint32_t> unk_1{};
+  dao::Field<uint8_t> unk_2{};
+  dao::Field<uint8_t> unk_3{};
 };
 
 } // namespace data

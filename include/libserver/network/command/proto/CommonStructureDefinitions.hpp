@@ -612,6 +612,17 @@ enum class NameChangeError : uint8_t
   NicknameCooldown = 0x1d   // CEC_NICKNAME_NOT_AVAILABE_DAY
 };
 
+struct DailyQuest
+{
+  uint16_t questId;
+  uint32_t unk_1;
+  uint8_t unk_2;
+  uint8_t unk_3;
+
+  static void Write(const DailyQuest& value, SinkStream& stream);
+  static void Read(DailyQuest& value, SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif

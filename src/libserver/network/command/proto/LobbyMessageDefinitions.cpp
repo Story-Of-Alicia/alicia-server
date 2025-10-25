@@ -712,20 +712,14 @@ void AcCmdCLRequestDailyQuestListOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.val0);
-  stream.Write(static_cast<uint16_t>(command.quests.size()));
+  stream.Write(command.questCount);
+  // TODO for all quests in char file write quests(we assume count is 0 for now
+  //stream.Write(command.testQuest);
 
-  for (const auto& quest : command.quests)
+  stream.Write(command.dailyQuestCount);
+  for (auto& quest : command.dailyQuests)
   {
     stream.Write(quest);
-  }
-  stream.Write(
-    static_cast<uint16_t>(command.val1.size()));
-  for (const auto& entry : command.val1)
-  {
-    stream.Write(entry.val0)
-      .Write(entry.val1)
-      .Write(entry.val2)
-      .Write(entry.val3);
   }
 }
 
@@ -734,6 +728,30 @@ void AcCmdCLRequestDailyQuestListOK::Read(
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdCLRequestDailyQuestListOK::Unk::Write(const Unk& value, SinkStream& stream)
+{
+  stream.Write(value.field0)
+    .Write(value.field1)
+    .Write(value.field2)
+    .Write(value.field3)
+    .Write(value.field4)
+    .Write(value.field5)
+    .Write(value.field6)
+    .Write(value.field7);
+}
+
+void AcCmdCLRequestDailyQuestListOK::Unk::Read(Unk& value, SourceStream& stream)
+{
+  stream.Read(value.field0)
+    .Read(value.field1)
+    .Read(value.field2)
+    .Read(value.field3)
+    .Read(value.field4)
+    .Read(value.field5)
+    .Read(value.field6)
+    .Read(value.field7);
 }
 
 void AcCmdCLEnterRanch::Write(

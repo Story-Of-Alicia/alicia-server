@@ -2630,5 +2630,83 @@ void AcCmdCREmblemListOK::Write(
   }
 }
 
+void AcCmdCRUpdateDailyQuest::Write(
+  const AcCmdCRUpdateDailyQuest& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRUpdateDailyQuest::Read(
+  AcCmdCRUpdateDailyQuest& command,
+  SourceStream& stream)
+{
+  stream.Read(command.quest);
+}
+
+void AcCmdCRUpdateDailyQuestCancel::Write(
+  const AcCmdCRUpdateDailyQuestCancel& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRUpdateDailyQuestCancel::Read(
+  AcCmdCRUpdateDailyQuestCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRUpdateDailyQuestOK::Write(
+  const AcCmdCRUpdateDailyQuestOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.newCarrotBalance);
+  stream.Write(command.quest);
+  stream.Write(command.unk_1);
+  stream.Write(command.unk_2);
+}
+
+void AcCmdCRUpdateDailyQuestOK::Read(
+  AcCmdCRUpdateDailyQuestOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRegisterDailyQuestGroup::Write(
+  const AcCmdCRRegisterDailyQuestGroup& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRegisterDailyQuestGroup::Read(
+  AcCmdCRRegisterDailyQuestGroup& command,
+  SourceStream& stream)
+{
+  stream.Read(command.unk_0);
+  command.dailyQuests.resize(3);
+  for (auto& quest : command.dailyQuests)
+  {
+    stream.Read(quest);
+  }
+}
+
+void AcCmdCRRegisterDailyQuestGroupOK::Write(
+  const AcCmdCRRegisterDailyQuestGroupOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.status);
+}
+
+void AcCmdCRRegisterDailyQuestGroupOK::Read(
+  AcCmdCRRegisterDailyQuestGroupOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
 
