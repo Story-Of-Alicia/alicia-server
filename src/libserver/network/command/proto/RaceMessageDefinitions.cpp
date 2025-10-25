@@ -1533,42 +1533,64 @@ void AcCmdCRStartMagicTarget::Read(
     .Read(command.unk3);
 }
 
+void AcCmdCRChangeMagicTarget::Read(
+  AcCmdCRChangeMagicTarget& command,
+  SourceStream& stream)
+{
+  stream.Read(command.unk0)
+    .Read(command.unk1)
+    .Read(command.oldTargetOid)
+    .Read(command.newTargetOid);
+}
+
 void AcCmdCRChangeMagicTargetNotify::Write(
   const AcCmdCRChangeMagicTargetNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.characterOid)
-    .Write(command.targetOid);
+  stream.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.oldTargetOid)
+    .Write(command.newTargetOid);
 }
 
 void AcCmdCRChangeMagicTargetNotify::Read(
   AcCmdCRChangeMagicTargetNotify& command,
   SourceStream& stream)
 {
-  stream.Read(command.characterOid)
-    .Read(command.targetOid);
+  stream.Read(command.unk0)
+    .Read(command.unk1)
+    .Read(command.oldTargetOid)
+    .Read(command.newTargetOid);
 }
 
-void AcCmdCRChangeMagicTargetOK::Read(
-  AcCmdCRChangeMagicTargetOK& command,
-  SourceStream& stream)
+void AcCmdCRChangeMagicTargetOK::Write(
+  const AcCmdCRChangeMagicTargetOK& command,
+  SinkStream& stream)
 {
-  stream.Read(command.characterOid)
-    .Read(command.targetOid);
+  stream.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.oldTargetOid)
+    .Write(command.newTargetOid);
 }
 
-void AcCmdCRChangeMagicTargetCancel::Read(
-  AcCmdCRChangeMagicTargetCancel& command,
-  SourceStream& stream)
+void AcCmdCRChangeMagicTargetCancel::Write(
+  const AcCmdCRChangeMagicTargetCancel& command,
+  SinkStream& stream)
 {
-  stream.Read(command.characterOid);
+  stream.Write(command.characterOid)
+    .Write(command.unk1)
+    .Write(command.unk2)
+    .Write(command.unk3);
 }
 
 void AcCmdRCRemoveMagicTarget::Write(
   const AcCmdRCRemoveMagicTarget& command,
   SinkStream& stream)
 {
-  stream.Write(command.characterOid);
+  stream.Write(command.characterOid)
+    .Write(command.unk1)
+    .Write(command.unk2)
+    .Write(command.unk3);
 }
 
 void AcCmdRCMagicExpire::Write(
