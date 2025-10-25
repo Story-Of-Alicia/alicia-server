@@ -378,7 +378,7 @@ void RaceDirector::Tick() {
   // Process rooms which are loading
   for (auto& [raceUid, raceInstance] : _raceInstances)
   {
-    if (raceInstance.stage != RoomInstance::Stage::Loading)
+    if (raceInstance.stage != RaceInstance::Stage::Loading)
       continue;
 
     // Determine whether all racers have started racing.
@@ -414,7 +414,7 @@ void RaceDirector::Tick() {
       raceInstance.raceMapBlockId);
 
     // Switch to the racing stage and set the timeout time point.
-    raceInstance.stage = RoomInstance::Stage::Racing;
+    raceInstance.stage = RaceInstance::Stage::Racing;
     raceInstance.stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(
       mapBlockTemplate.timeLimit);
 
@@ -442,7 +442,7 @@ void RaceDirector::Tick() {
   // Process rooms which are racing
   for (auto& [raceUid, raceInstance] : _raceInstances)
   {
-    if (raceInstance.stage != RoomInstance::Stage::Racing)
+    if (raceInstance.stage != RaceInstance::Stage::Racing)
       continue;
 
     const bool raceTimeoutReached = std::chrono::steady_clock::now() >= raceInstance.stageTimeoutTimePoint;
@@ -459,7 +459,7 @@ void RaceDirector::Tick() {
     if (not isFinishing && not raceTimeoutReached)
       continue;
 
-    raceInstance.stage = RoomInstance::Stage::Finishing;
+    raceInstance.stage = RaceInstance::Stage::Finishing;
     raceInstance.stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(15);
 
     // If the race timeout was reached notify the clients about the finale.
@@ -490,7 +490,7 @@ void RaceDirector::Tick() {
   // Process rooms which are finishing
   for (auto& [raceUid, raceInstance] : _raceInstances)
   {
-    if (raceInstance.stage != RoomInstance::Stage::Finishing)
+    if (raceInstance.stage != RaceInstance::Stage::Finishing)
       continue;
 
     // Determine whether all racers have finished.
@@ -572,7 +572,7 @@ void RaceDirector::Tick() {
     }
 
     // Set the room state.
-    raceInstance.stage = RoomInstance::Stage::Waiting;
+    raceInstance.stage = RaceInstance::Stage::Waiting;
     _serverInstance.GetRoomSystem().GetRoom(
       raceUid,
       [](Room& room)
@@ -744,7 +744,7 @@ void RaceDirector::HandleEnterRoom(
   _commandServer.SetCode(clientId, {});
 
   protocol::AcCmdCREnterRoomOK response{
-    .isRoomWaiting = raceInstance.stage == RoomInstance::Stage::Waiting,
+    .isRoomWaiting = raceInstance.stage == RaceInstance::Stage::Waiting,
     .uid = command.roomUid};
 
   try
@@ -1349,7 +1349,7 @@ void RaceDirector::HandleStartRace(
       }
     });
 
-  raceInstance.stage = RoomInstance::Stage::Loading;
+  raceInstance.stage = RaceInstance::Stage::Loading;
   raceInstance.stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(30);
 
   _serverInstance.GetRoomSystem().GetRoom(
