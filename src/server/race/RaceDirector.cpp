@@ -2363,9 +2363,17 @@ void RaceDirector::HandleUseMagicItem(
   }
 
   // Special handling for bolt (magic item ID 2) - Auto-targeting system
-  if (command.magicItemId == 2)
+  // TODO: Figure out Dragon ids
+  if (
+    // Bolt
+    command.magicItemId == 2 
+    || command.magicItemId == 3 
+    // Dragon
+    || command.magicItemId == 16
+    || command.magicItemId == 17
+  )
   {
-    spdlog::info("Bolt used! Implementing auto-targeting system for player {}", clientId);
+    spdlog::info("Implementing auto-targeting system for player {}", clientId);
     
     // Find a target automatically (first other player in the room)
     tracker::Oid targetOid = tracker::InvalidEntityOid;
@@ -2388,7 +2396,7 @@ void RaceDirector::HandleUseMagicItem(
       {
         if (targetRacer.oid == targetOid)
         {
-          spdlog::info("Applying bolt effects to target racer {} (OID: {})", targetUid, targetRacer.oid);
+          spdlog::info("Applying effects to target racer {} (OID: {})", targetUid, targetRacer.oid);
           
           // Send magic item notify for bolt hit effects (safe approach)
           protocol::AcCmdCRUseMagicItemNotify boltHitNotify{
@@ -2424,8 +2432,6 @@ void RaceDirector::HandleUseMagicItem(
             
             // TODO: Add proper magic expire notification once we confirm bolt hit works
             spdlog::info("Target lost magic item {} (server-side only for now)", lostItemId);
-            
-            // TODO: Add client notifications once bolt hit animation is working
           }
           else
           {
