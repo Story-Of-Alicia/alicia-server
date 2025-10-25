@@ -1845,8 +1845,13 @@ struct AcCmdCRUseMagicItem
 
   // vFunc_4 @ 0x00698540
   uint32_t unk3;
-  std::optional<float> optional3; // cast time?
-  std::optional<float> optional4; // total cast time?
+
+  struct Optional3
+  {
+    float member1; // cast time?
+    float member2; // total cast time?
+  };
+  std::optional<Optional3> optional3;
 
   static Command GetCommand()
   {
