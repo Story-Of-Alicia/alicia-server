@@ -2309,7 +2309,7 @@ void RaceDirector::HandleUseMagicItem(
     .characterOid = command.characterOid,
     .magicItemId = command.magicItemId,
     .unk3 = command.characterOid,
-    .unk4 = command.optional3.has_value() ? command.optional3.value() : 0};
+    .unk4 = command.optional3.has_value() ? command.optional3.value().member1 : 0.0f};
 
   if (command.optional1.has_value())
     response.optional1 = command.optional1.value();
@@ -2337,10 +2337,6 @@ void RaceDirector::HandleUseMagicItem(
     usageNotify.optional1 = command.optional1.value();
   if (command.optional2.has_value())
     usageNotify.optional2 = command.optional2.value();
-  if (command.optional3.has_value())
-    usageNotify.optional3 = command.optional3.value();
-  if (command.optional4.has_value())
-    usageNotify.optional4 = command.optional4.value();
 
   // Special handling for magic items that require optional fields
   if (command.magicItemId == 2)  // Bolt only (ice wall handled separately)
@@ -2350,12 +2346,6 @@ void RaceDirector::HandleUseMagicItem(
       opt2.size = 0;
       opt2.list.clear();
     }
-    
-    // These items require optional3 and optional4
-    if (!usageNotify.optional3.has_value())
-      usageNotify.optional3 = 0.0f;
-    if (!usageNotify.optional4.has_value())
-      usageNotify.optional4 = 0.0f;
   }
 
   // Send general usage notification to other players (except for ice wall which has its own notification)
@@ -2414,13 +2404,8 @@ void RaceDirector::HandleUseMagicItem(
             opt2.list.clear();
           }
           
-          // Set timing values for bolt animation
-          boltHitNotify.optional3 = 1.0f;  // Cast time: 1 second for bolt to hit
-          boltHitNotify.optional4 = 3.0f;  // Effect duration: 3 seconds target stays down
-          
-          spdlog::info("Sending bolt hit notification: characterOid={}, magicItemId={}, timing: {}s/{}s", 
-            boltHitNotify.characterOid, boltHitNotify.magicItemId, 
-            boltHitNotify.optional3.value(), boltHitNotify.optional4.value());
+          spdlog::info("Sending bolt hit notification: characterOid={}, magicItemId={}", 
+            boltHitNotify.characterOid, boltHitNotify.magicItemId);
           
           for (const ClientId& raceClientId : raceInstance.clients)
           {

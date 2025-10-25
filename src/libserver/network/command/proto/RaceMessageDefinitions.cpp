@@ -1344,6 +1344,7 @@ void AcCmdCRUseMagicItem::Read(
     case 0xd:
     case 0xe:
     case 0xf:
+    case 0x10:
     case 0x11:
     case 0x12:
     case 0x13:
@@ -1358,30 +1359,22 @@ void AcCmdCRUseMagicItem::Read(
       }
       break;
     }
-    default:
-    {
-      break;
-    }
   }
 
   stream.Read(command.unk3);
-  // FIXME: wtf am i switching
   switch (command.magicItemId)
   {
     case 0x2:
     case 0x3:
     case 0xe:
     case 0xf:
+    case 0x10:
     case 0x11:
     case 0x12:
     case 0x13:
     {
-      stream.Read(command.optional3.emplace())
-        .Read(command.optional4.emplace());
-      break;
-    }
-    default:
-    {
+      stream.Read(command.optional3.emplace().member1)
+        .Read(command.optional3.value().member2);
       break;
     }
   }
@@ -1433,6 +1426,7 @@ void AcCmdCRUseMagicItemOK::Write(
     case 0xd:
     case 0xe:
     case 0xf:
+    case 0x10:
     case 0x11:
     case 0x12:
     case 0x13:
@@ -1612,6 +1606,7 @@ void AcCmdCRUseMagicItemNotify::Write(
     case 0xd:
     case 0xe:
     case 0xf:
+    case 0x10:
     case 0x11:
     case 0x12:
     case 0x13:
