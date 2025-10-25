@@ -717,9 +717,10 @@ void AcCmdCLRequestDailyQuestListOK::Write(
   //stream.Write(command.testQuest);
 
   stream.Write(command.dailyQuestCount);
-  stream.Write(command.dailyQuest1);
-  stream.Write(command.dailyQuest2);
-  stream.Write(command.dailyQuest3);
+  for (auto& quest : command.dailyQuests)
+  {
+    stream.Write(quest);
+  }
 }
 
 void AcCmdCLRequestDailyQuestListOK::Read(

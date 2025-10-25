@@ -1086,9 +1086,7 @@ struct AcCmdCLRequestDailyQuestListOK
     static void Read(Unk& value, SourceStream& stream);
   };
   
-  DailyQuest dailyQuest1{};
-  DailyQuest dailyQuest2{};
-  DailyQuest dailyQuest3{};
+  std::array<DailyQuest, 3> dailyQuests;
 
   static Command GetCommand()
   {

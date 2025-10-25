@@ -2082,45 +2082,19 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
       dailyQuestIds = character.dailyQuests();
       response.val0 = character.uid();
     });
-    for (const uint32_t questId : dailyQuestIds)
+  for (int i = 0; i < 3; i++)
     {
-      if (questId % 3 == 1)
-      {
-        const auto questRecord = _serverInstance.GetDataDirector().GetDailyQuest(questId);
-        questRecord.Immutable(
-          [&response](const data::DailyQuest& quest)
-          {
-            response.dailyQuest1.questId = static_cast<uint16_t>(quest.unk_0());
-            response.dailyQuest1.unk_1 = static_cast<uint16_t>(quest.unk_1());
-            response.dailyQuest1.unk_2 = static_cast<uint16_t>(quest.unk_2());
-            response.dailyQuest1.unk_3 = static_cast<uint16_t>(quest.unk_3());
-          });
-      }
-      else if (questId % 3 == 2)
-      {
-        const auto questRecord = _serverInstance.GetDataDirector().GetDailyQuest(questId);
-        questRecord.Immutable(
-          [&response](const data::DailyQuest& quest)
-          {
-            response.dailyQuest2.questId = static_cast<uint16_t>(quest.unk_0());
-            response.dailyQuest2.unk_1 = static_cast<uint16_t>(quest.unk_1());
-            response.dailyQuest2.unk_2 = static_cast<uint16_t>(quest.unk_2());
-            response.dailyQuest2.unk_3 = static_cast<uint16_t>(quest.unk_3());
-          });
-      }
-      else if (questId % 3 == 0)
-      {
-        const auto questRecord = _serverInstance.GetDataDirector().GetDailyQuest(questId);
-        questRecord.Immutable(
-          [&response](const data::DailyQuest& quest)
-          {
-            response.dailyQuest3.questId = static_cast<uint16_t>(quest.unk_0());
-            response.dailyQuest3.unk_1 = static_cast<uint16_t>(quest.unk_1());
-            response.dailyQuest3.unk_2 = static_cast<uint16_t>(quest.unk_2());
-            response.dailyQuest3.unk_3 = static_cast<uint16_t>(quest.unk_3());
-          });
-      }
-      }
+    const auto questRecord = _serverInstance.GetDataDirector().GetDailyQuest(dailyQuestIds[i]);
+      questRecord.Immutable(
+        [&response, &i](const data::DailyQuest& quest)
+        {
+        response.dailyQuests[i].questId = static_cast<uint16_t>(quest.unk_0());
+        response.dailyQuests[i].unk_1 = static_cast<uint16_t>(quest.unk_1());
+        response.dailyQuests[i].unk_2 = static_cast<uint16_t>(quest.unk_2());
+        response.dailyQuests[i].unk_3 = static_cast<uint16_t>(quest.unk_3());
+        });
+
+    }
 
   response.questCount = 0;
   response.dailyQuestCount = 3;
