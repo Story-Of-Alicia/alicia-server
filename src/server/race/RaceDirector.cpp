@@ -2330,6 +2330,8 @@ void RaceDirector::HandleUseMagicItem(
     .unk3 = command.characterOid
   };
 
+  std::optional<uint32_t> effectId = std::nullopt;
+
   // Copy optional fields from the original command
   if (command.optional1.has_value())
     usageNotify.optional1 = command.optional1.value();
@@ -2494,7 +2496,47 @@ void RaceDirector::HandleUseMagicItem(
     }
   }
 
+  // TODO: Special handling for the shackles and darkness
+  // Magic    | IDs    | Effect ID
+  // Shackles | 12, 13 | 10, 11
+  // Darkness | 14, 15 | 12, 13
+
+  // TODO: Special handling for the team buffs
+  // Magic    | IDs    | Effect ID
+  // Phoenix  | 8,  9  | 6,  7
+  // BufPower | 20, 21 | 18, 19
+  // BufGauge | 22, 23 | 20, 21
+  // BufSpeed | 24, 25 | 22, 23
+
+  // TODO: Special handling for the lightning
+  // Magic     | IDs    | Effect ID
+  // Lightning | 16, 17 | 18, 19
+
+  else
+  {
+    switch (command.magicItemId)
+    {
+      // Shield
+      case 4:
+        effectId = 2;
+        break;
+      case 5:
+        effectId = 3;
+        break;
+      // Booster
+      case 6:
+      case 7:
+        effectId = 5;
+        break;
+    }
+  }
+
   racer.magicItem.reset();
+
+  if (effectId.has_value())
+  {
+    this->ScheduleSkillEffect(raceInstance, command.characterOid, effectId.value());
+  }
 }
 
 void RaceDirector::HandleUserRaceItemGet(
