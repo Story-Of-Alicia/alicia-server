@@ -80,8 +80,6 @@ public:
   ServerInstance& GetServerInstance();
   Config::Race& GetConfig();
 
-  void ManageSkillEffect(data::Uid characterUid, uint16_t effectId, bool add);
-
 private:
   std::random_device _randomDevice;
 
@@ -128,6 +126,7 @@ private:
   ClientContext& GetClientContext(ClientId clientId, bool requireAuthorized = true);
   ClientId GetClientIdByCharacterUid(data::Uid characterUid);
   ClientContext& GetClientContextByCharacterUid(data::Uid characterUid);
+  void ScheduleSkillEffect(server::RaceDirector::RaceInstance& raceInstance, server::tracker::Oid characterOid, uint16_t effectId);
 
   void HandleEnterRoom(
     ClientId clientId,
