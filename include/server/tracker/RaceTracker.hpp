@@ -67,10 +67,6 @@ public:
 
     //! A set of tracked items in racer's proximity.
     std::unordered_set<Oid> trackedItems;
-    
-    // Bolt targeting system
-    bool isTargeting{false};
-    Oid currentTarget{InvalidEntityOid};
   };
 
   //! An item

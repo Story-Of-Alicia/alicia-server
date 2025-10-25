@@ -2531,10 +2531,6 @@ void RaceDirector::HandleStartMagicTarget(
     return;
   }
   
-  // Set targeting state
-  racer.isTargeting = true;
-  racer.currentTarget = tracker::InvalidEntityOid;
-  
   spdlog::info("Character {} entered targeting mode", command.characterOid);
 }
 
@@ -2557,9 +2553,6 @@ void RaceDirector::HandleChangeMagicTarget(
     return;
   }
 
-  // Update current target
-  racer.currentTarget = command.newTargetOid;
-
   // Send OK response
   protocol::AcCmdCRChangeMagicTargetOK response{
     .unk0 = command.unk0,
@@ -2579,17 +2572,12 @@ void RaceDirector::HandleChangeMagicTarget(
     .newTargetOid = command.newTargetOid
   };
 
-  // Find the client ID for this target and send notification
   for (const ClientId& raceClientId : raceInstance.clients)
   {
     const auto& targetClientContext = _clients[raceClientId];
-    if (raceInstance.tracker.GetRacer(targetClientContext.characterUid).oid == racer.currentTarget)
-    {
-      _commandServer.QueueCommand<decltype(targetNotify)>(
-        raceClientId,
-        [targetNotify]() { return targetNotify; });
-      break;
-    }
+    _commandServer.QueueCommand<decltype(targetNotify)>(
+      raceClientId,
+      [targetNotify]() { return targetNotify; });
   }
 }
 
