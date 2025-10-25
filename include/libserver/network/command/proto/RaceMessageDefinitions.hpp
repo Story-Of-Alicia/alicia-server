@@ -2049,6 +2049,9 @@ struct AcCmdGameRaceItemGet
 struct AcCmdCRStartMagicTarget
 {
   uint16_t characterOid;
+  uint16_t unk1;
+  uint16_t unk2;
+  uint16_t unk3;
 
   static Command GetCommand()
   {
