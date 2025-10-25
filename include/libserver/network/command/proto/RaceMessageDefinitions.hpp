@@ -1935,10 +1935,9 @@ struct AcCmdCRUseMagicItemNotify
   // sub_4d5460
   std::optional<AcCmdCRUseMagicItem::Optional2> optional2;
 
-  uint32_t unk3;
-  std::optional<float> optional3; // cast time?
-  std::optional<float> optional4; // total cast time?
-  
+  uint16_t unk3;
+  uint32_t unk4;
+
   static Command GetCommand()
   {
     return Command::AcCmdCRUseMagicItemNotify;

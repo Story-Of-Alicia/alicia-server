@@ -1632,32 +1632,9 @@ void AcCmdCRUseMagicItemNotify::Write(
       break;
     }
   }
-
-  // FIXME: wtf am i switching
-  switch (command.magicItemId)
-  {
-    case 0x2:
-    case 0x3:
-    case 0xe:
-    case 0xf:
-    case 0x11:
-    case 0x12:
-    case 0x13:
-    {
-      // Assert that optional3 and optional4 have values
-      assert(command.optional3.has_value());
-      assert(command.optional4.has_value());
-      stream.Write(command.optional3.value())
-        .Write(command.optional4.value());
-      break;
-    }
-    default:
-    {
-      break;
-    }
-  }
-
-  stream.Write(command.unk3);
+  
+  stream.Write(command.unk3)
+    .Write(command.unk4);
 }
 
 void AcCmdCRUseMagicItemNotify::Read(
@@ -1708,27 +1685,8 @@ void AcCmdCRUseMagicItemNotify::Read(
     }
   }
 
-  stream.Read(command.unk3);
-  // FIXME: wtf am i switching
-  switch (command.magicItemId)
-  {
-    case 0x2:
-    case 0x3:
-    case 0xe:
-    case 0xf:
-    case 0x11:
-    case 0x12:
-    case 0x13:
-    {
-      stream.Read(command.optional3.emplace())
-        .Read(command.optional4.emplace());
-      break;
-    }
-    default:
-    {
-      break;
-    }
-  }
+  stream.Read(command.unk3)
+    .Read(command.unk4);
 }
 
 void AcCmdRCTriggerActivate::Write(

@@ -639,38 +639,6 @@ void ChatSystem::RegisterUserCommands()
 
 void ChatSystem::RegisterAdminCommands()
 {
-  // debug commands TODO: remove
-  _commandManager.RegisterCommand(
-    "effect",
-    [this](
-      const std::span<const std::string>& arguments,
-      data::Uid characterUid) -> std::vector<std::string>
-    {
-      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
-      if (not invokerRecord)
-        return {"Server error"};
-
-      bool isAdmin = false;
-      invokerRecord.Immutable([&isAdmin](const data::Character& character)
-      {
-        isAdmin = character.role() != data::Character::Role::User;
-      });
-
-      if (not isAdmin)
-        return {};
-
-      bool add;
-      const std::string addOrRem = arguments[0];
-      if (addOrRem == "add")
-        add = true;
-      else if (addOrRem == "rem")
-        add = false;
-      else
-        return {"Invalid sub-literal, use 'add' or 'rem'"};
-      const uint16_t effectId = std::atoi(arguments[1].data());
-      _serverInstance.GetRaceDirector().ManageSkillEffect(characterUid, effectId, add);
-      return {"Effect added"};
-    });
   // users command
   _commandManager.RegisterCommand(
     "users",
