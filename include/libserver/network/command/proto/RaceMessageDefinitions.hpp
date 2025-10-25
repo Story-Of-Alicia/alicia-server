@@ -2381,6 +2381,59 @@ struct AcCmdCRChangeSkillCardPresetID
     SourceStream& stream);
 };
 
+struct AcCmdRCCreateObstacle
+{
+  uint16_t unk0;
+  uint16_t unk1; // unused
+  uint16_t unk2;
+  std::array<float, 3> position{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCCreateObstacle;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCCreateObstacle& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCCreateObstacle& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCObstacleStatus
+{
+  uint8_t unk0; // unused
+  uint32_t deactivate; // Deactivates the obstacle if its 1
+  uint32_t unk2; // Obstacle UID?
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCObstacleStatus;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCObstacleStatus& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCObstacleStatus& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RACE_MESSAGE_DEFINES_HPP

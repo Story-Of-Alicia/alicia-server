@@ -1847,4 +1847,26 @@ void AcCmdCRChangeSkillCardPresetID::Read(
   command.gamemode = static_cast<GameMode>(commandGameMode);
 }
 
+void AcCmdRCCreateObstacle::Write(
+  const AcCmdRCCreateObstacle& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.unk2);
+  for (const float& value : command.position)
+  {
+    stream.Write(value);
+  }
+}
+
+void AcCmdRCObstacleStatus::Write(
+  const AcCmdRCObstacleStatus& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.deactivate)
+    .Write(command.unk2);
+}
+
 } // namespace server::protocol
