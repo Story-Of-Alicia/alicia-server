@@ -41,7 +41,9 @@ constexpr size_t MaxRanchHousingCount = 13;
 constexpr int16_t DoubleIncubatorId = 52;
 constexpr int16_t SingleIncubatorId = 51;
 
-constexpr uint16_t MaxFriendliness = 1200;
+constexpr uint16_t MaxCharm = 1000;
+constexpr uint16_t MaxFriendliness = 1000;
+constexpr uint16_t MaxAttachment = 1000;
 constexpr uint16_t MaxPlenitude = 1200;
 
 } // namespace anon
@@ -2890,13 +2892,24 @@ bool RanchDirector::HandleUseFoodItem(
     // TODO: there's a ranch skill which gives bonus to these points
 
     horse.mountCondition.plenitude() = std::min(
-      static_cast<uint16_t>(horse.mountCondition.plenitude() + itemTemplate->foodParameters->plenitudePoints),
+      static_cast<uint16_t>(
+        horse.mountCondition.plenitude() + itemTemplate->foodParameters->plenitudePoints),
       MaxPlenitude
     );
     
     horse.mountCondition.friendliness() = std::min(
-      static_cast<uint16_t>(horse.mountCondition.friendliness() + itemTemplate->foodParameters->friendlinessPoints),
+      static_cast<uint16_t>(
+        horse.mountCondition.friendliness() + itemTemplate->foodParameters->friendlinessPoints),
       MaxFriendliness
+    );
+
+    // TODO: confirm this behaviour
+    // Rationale: friendliness/charm max = 1000, play activities unlock after ~111 and ~501
+    // which roughly corresponds to attachment values
+    horse.mountCondition.attachment() = std::min(
+      static_cast<uint16_t>(
+        horse.mountCondition.attachment() + itemTemplate->foodParameters->friendlinessPoints),
+      MaxAttachment
     );
   });
 
@@ -2936,24 +2949,36 @@ bool RanchDirector::HandleUseCleanItem(
       case registry::Item::CareParameters::Part::Body:
       {
         horse.mountCondition.bodyDirtiness() = 0;
-        horse.mountCondition.bodyPolish() += itemTemplate->careParameters->polishPoints;
         break;
       }
       case registry::Item::CareParameters::Part::Mane:
       {
         horse.mountCondition.maneDirtiness() = 0;
-        horse.mountCondition.manePolish() += itemTemplate->careParameters->polishPoints;
         break;
       }
       case registry::Item::CareParameters::Part::Tail:
       {
         horse.mountCondition.tailDirtiness() = 0;
-        horse.mountCondition.tailPolish() += itemTemplate->careParameters->polishPoints;
         break;
       }
     }
+    
+    // Set horse charm (attractiveness) to new incremented value or max
+    horse.mountCondition.charm() = std::min(
+      static_cast<uint16_t>(
+        horse.mountCondition.charm() + itemTemplate->careParameters->cleanPoints),
+      MaxCharm
+    );
 
-    horse.mountCondition.charm() += itemTemplate->careParameters->cleanPoints;
+    // TODO: confirm this behaviour
+    // Rationale: friendliness/charm max = 1000, play activities unlock after ~111 and ~501
+    // which roughly corresponds to attachment values
+    // Set horse attachment (boredom) value to new incremented value or max
+    horse.mountCondition.attachment() = std::min(
+      static_cast<uint16_t>(
+        horse.mountCondition.attachment() + itemTemplate->careParameters->cleanPoints),
+      MaxAttachment
+    );
   });
 
   // TODO: determine values
@@ -3007,13 +3032,16 @@ bool RanchDirector::HandleUsePlayItem(
   mountRecord.Mutable([&itemTemplate](data::Horse& horse)
   {
     // As dictated by the intimacy gauge in-game
-    constexpr uint16_t MaxFriendliness = 1200;
     const auto& newFriendlinessValue = static_cast<uint16_t>(
       horse.mountCondition.friendliness() + itemTemplate->playParameters->friendlinessPoints);
 
+    // TODO: do normal/crit good/perfect plays affect the increment value?
+    // Set friendliness (intimacy) to incremented value or max
     horse.mountCondition.friendliness() = std::min(
       newFriendlinessValue,
       MaxFriendliness);
+
+    // TODO: implement boredom mechanism
   });
 
   // TODO: determine values

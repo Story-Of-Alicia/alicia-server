@@ -298,7 +298,7 @@ struct Horse
     //! 1 is a little bored
     //! 11 wants to play a little
     //! 21 wants to play.
-    uint16_t boredom{};
+    uint16_t boredom{21};
 
     uint16_t bodyPolish{};
     uint16_t manePolish{};
