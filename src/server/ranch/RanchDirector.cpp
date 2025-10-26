@@ -4124,14 +4124,16 @@ void RanchDirector::HandleUpdateDailyQuest(
 
       response.newCarrotBalance = character.carrots();
     });
+
   response.quest = {command.quest.questId, command.quest.unk_1, command.quest.unk_2, 1};
   response.unk_1 = 1;
   response.unk_2 = 1;
+
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
     {
-     return response;
+      return response;
     });
 }
 

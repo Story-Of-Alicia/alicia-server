@@ -2071,7 +2071,6 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     clientContext.characterUid);
-  //const auto dailyQuestRecords = _serverInstance.GetDataDirector().GetDailyQuest(1);
   std::vector<uint32_t> dailyQuestIds = {0,0,0};
 
   protocol::AcCmdCLRequestDailyQuestListOK response{};
@@ -2095,8 +2094,13 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
         });
 
     }
+  
+  for (int i = 0; i < 10; i++)
+    {
+    response.unk[i] = {1, 101, 101, 30, 0, 0};
+    }
 
-  response.questCount = 0;
+  response.unkCount = 10;
   response.dailyQuestCount = 3;
 
   _commandServer.QueueCommand<decltype(response)>(

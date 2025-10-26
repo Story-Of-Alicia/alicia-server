@@ -64,7 +64,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _housingDataPath = prepareDataPath("housing");
   _guildDataPath = prepareDataPath("guilds");
   _settingsDataPath = prepareDataPath("settings");
-  _dailyQuestDataPath = prepareDataPath("daily_quests");
+  _dailyQuestDataPath = prepareDataPath("dailyQuests");
 
   // Read the meta-data file and parse the sequential UIDs.
   const std::filesystem::path metaFilePath = ProduceDataPath(
@@ -299,7 +299,7 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   readSkills(character.skills.speed(), skills["speed"]);
   readSkills(character.skills.magic(), skills["magic"]);
 
-  character.dailyQuests = json["dailyquests"].get<std::vector<data::Uid>>();
+  character.dailyQuests = json["dailyQuests"].get<std::vector<data::Uid>>();
 }
 
 void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
@@ -388,7 +388,7 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   skills["magic"] = writeSkills(character.skills.magic());
   json["skills"] = skills;
 
-  json["dailyquests"] = character.dailyQuests();
+  json["dailyQuests"] = character.dailyQuests();
 
   dataFile << json.dump(2);
 }

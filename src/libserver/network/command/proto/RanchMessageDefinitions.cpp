@@ -2687,6 +2687,7 @@ void AcCmdCRRegisterDailyQuestGroup::Read(
   SourceStream& stream)
 {
   stream.Read(command.unk_0);
+
   command.dailyQuests.resize(3);
   for (auto& quest : command.dailyQuests)
   {

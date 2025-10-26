@@ -1068,7 +1068,7 @@ struct AcCmdCLRequestDailyQuestList
 struct AcCmdCLRequestDailyQuestListOK
 {
   uint32_t val0;
-  uint16_t questCount; // a guess
+  uint16_t unkCount;
   uint16_t dailyQuestCount;
 
   struct Unk
@@ -1078,14 +1078,13 @@ struct AcCmdCLRequestDailyQuestListOK
     uint8_t field2;
     uint32_t field3;
     uint8_t field4;
-    uint32_t field5;
-    uint8_t field6;
-    uint8_t field7;
+    uint8_t field5;
 
     static void Write(const Unk& value, SinkStream& stream);
     static void Read(Unk& value, SourceStream& stream);
   };
   
+  std::array<Unk, 10> unk;
   std::array<DailyQuest, 3> dailyQuests;
 
   static Command GetCommand()

@@ -712,11 +712,15 @@ void AcCmdCLRequestDailyQuestListOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.val0);
-  stream.Write(command.questCount);
-  // TODO for all quests in char file write quests(we assume count is 0 for now
-  //stream.Write(command.testQuest);
+  stream.Write(command.unkCount);
+ 
+  for (auto& member : command.unk)
+  {
+    stream.Write(member);
+  }
 
   stream.Write(command.dailyQuestCount);
+
   for (auto& quest : command.dailyQuests)
   {
     stream.Write(quest);
@@ -737,9 +741,7 @@ void AcCmdCLRequestDailyQuestListOK::Unk::Write(const Unk& value, SinkStream& st
     .Write(value.field2)
     .Write(value.field3)
     .Write(value.field4)
-    .Write(value.field5)
-    .Write(value.field6)
-    .Write(value.field7);
+    .Write(value.field5);
 }
 
 void AcCmdCLRequestDailyQuestListOK::Unk::Read(Unk& value, SourceStream& stream)
@@ -749,9 +751,7 @@ void AcCmdCLRequestDailyQuestListOK::Unk::Read(Unk& value, SourceStream& stream)
     .Read(value.field2)
     .Read(value.field3)
     .Read(value.field4)
-    .Read(value.field5)
-    .Read(value.field6)
-    .Read(value.field7);
+    .Read(value.field5);
 }
 
 void AcCmdCLEnterRanch::Write(
