@@ -445,7 +445,8 @@ void Horse::Write(const Horse& value, SinkStream& stream)
 
   stream.Write(value.mastery);
 
-  stream.Write(value.val16).Write(value.val17);
+  stream.Write(value.val16)
+    .Write(value.visualCleanlinessBitset);
 }
 
 void Horse::Read(Horse& value, SourceStream& stream)
@@ -500,7 +501,7 @@ void Horse::Read(Horse& value, SourceStream& stream)
   stream.Read(value.mastery);
 
   stream.Read(value.val16)
-    .Read(value.val17);
+    .Read(value.visualCleanlinessBitset);
 }
 
 void Guild::Write(const Guild& value, SinkStream& stream)
