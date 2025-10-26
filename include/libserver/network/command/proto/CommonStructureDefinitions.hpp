@@ -364,7 +364,36 @@ struct Horse
   } mastery{};
 
   uint32_t val16{};
-  uint32_t val17{};
+
+  //! Bitshifted values for horse visual cleanliness
+  enum class VisualCleanlinessBitset : uint32_t
+  {
+    Default = 0,
+    //! Body
+    BodySlightlyDirty = 1 << 0,
+    BodyVeryDirty = 1 << 1,
+    BodyLightSparkles = 1 << 2,
+    BodyMediumSparkles = 1 << 3,
+    BodyHeavySparkles = 1 << 4,
+    //! Mane (has only 1 dirty texture)
+    ManeSlightlyDirty = 1 << 10,
+    ManeVeryDirty = 1 << 11,
+    ManeLightSparkles = 1 << 12,
+    ManeMediumSparkles = 1 << 13,
+    ManeHeavySparkles = 1 << 14,
+    //! Tail
+    TailSlightlyDirty = 1 << 20,
+    TailVeryDirty = 1 << 21,
+    TailLightSparkles = 1 << 22,
+    TailMediumSparkles = 1 << 23,
+    TailHeavySparkles = 1 << 24,
+    //! For testing, do not use
+    _AllSlightlyDirty = BodySlightlyDirty | ManeSlightlyDirty | TailSlightlyDirty,
+    _AllVeryDirty = BodyVeryDirty | ManeVeryDirty | TailVeryDirty,
+    _AllLightSparkles = BodyLightSparkles | ManeLightSparkles | TailLightSparkles,
+    _AllMediumSparkles = BodyMediumSparkles | ManeMediumSparkles | TailMediumSparkles,
+    _AllHeavySparkles = BodyHeavySparkles | ManeHeavySparkles | TailHeavySparkles
+  } visualCleanlinessBitset{VisualCleanlinessBitset::Default};
 
   static void Write(const Horse& value, SinkStream& stream);
   static void Read(Horse& value, SourceStream& stream);

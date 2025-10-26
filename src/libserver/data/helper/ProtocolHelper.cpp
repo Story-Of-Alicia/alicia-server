@@ -49,7 +49,8 @@ void BuildProtocolHorse(
   protocolHorse.growthPoints = static_cast<uint16_t>(horse.growthPoints());
 
   protocolHorse.val16 = 0xb8a167e4,
-  protocolHorse.val17 = 0;
+  protocolHorse.visualCleanlinessBitset = 
+    protocol::Horse::VisualCleanlinessBitset::_AllVeryDirty;
 
   protocolHorse.mountCondition = {
     .stamina = static_cast<uint16_t>(
