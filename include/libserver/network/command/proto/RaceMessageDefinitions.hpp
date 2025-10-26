@@ -965,7 +965,7 @@ struct AcCmdRCRaceResultNotify
     //! Time in milliseconds.
     uint32_t recordTimeDifference{};
     uint32_t member14{};
-    uint32_t member15{};
+    uint32_t horseClassProgress{500};
     AcCmdCRStartRaceNotify::Struct2 achievements{};
     enum Bitset : uint32_t
     {
