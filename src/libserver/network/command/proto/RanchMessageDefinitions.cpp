@@ -842,7 +842,7 @@ void AcCmdCRCheckStallionCharge::Read(
   AcCmdCRCheckStallionCharge& command,
   SourceStream& stream)
 {
-  stream.Read(command.charge);
+  stream.Read(command.horseUid);
 }
 
 void AcCmdCRCheckStallionChargeOK::Write(
