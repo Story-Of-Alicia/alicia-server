@@ -45,6 +45,7 @@ public:
   using SettingsStorage = DataStorage<data::Uid, data::Settings>;
   using DailyQuestStorage = DataStorage<data::Uid, data::DailyQuest>;
   using MailStorage = DataStorage<data::Uid, data::Mail>;
+  using StallionStorage = DataStorage<data::Uid, data::Stallion>;
 
   //! Default constructor.
   explicit DataDirector(const std::filesystem::path& basePath);
@@ -126,10 +127,14 @@ public:
   [[nodiscard]] Record<data::DailyQuest> GetDailyQuest(data::Uid dailyQuestUid) noexcept;
   [[nodiscard]] Record<data::DailyQuest> CreateDailyQuest() noexcept;
   [[nodiscard]] DailyQuestStorage& GetDailyQuestCache();
-  
+
   [[nodiscard]] Record<data::Mail> GetMail(data::Uid mailUid) noexcept;
   [[nodiscard]] Record<data::Mail> CreateMail() noexcept;
   [[nodiscard]] MailStorage& GetMailCache();
+
+  [[nodiscard]] Record<data::Stallion> GetStallion(data::Uid stallionUid) noexcept;
+  [[nodiscard]] Record<data::Stallion> CreateStallion() noexcept;
+  [[nodiscard]] StallionStorage& GetStallionCache();
 
   [[nodiscard]] DataSource& GetDataSource() noexcept;
 
@@ -186,6 +191,8 @@ private:
   DailyQuestStorage _dailyQuestStorage;
   //! A mail storage.
   MailStorage _mailStorage;
+  //! A stallion storage.
+  StallionStorage _stallionStorage;
 };
 
 } // namespace server
