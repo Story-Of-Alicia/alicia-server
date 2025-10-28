@@ -832,7 +832,7 @@ struct AcCmdCRUnregisterStallionEstimateInfoCancel
 
 struct AcCmdCRCheckStallionCharge
 {
-  uint32_t charge{};
+  uint32_t horseUid{};
 
   static Command GetCommand()
   {
