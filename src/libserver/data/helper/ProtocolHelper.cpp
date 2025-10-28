@@ -48,7 +48,7 @@ void BuildProtocolHorse(
   protocolHorse.grade = static_cast<uint8_t>(horse.grade());
   protocolHorse.growthPoints = horse.growthPoints();
 
-  protocolHorse.vals1.horseType = static_cast<protocol::Horse::HorseType>(horse.horseType());
+  protocolHorse.vals1.type = static_cast<protocol::Horse::HorseType>(horse.horseType());
   protocolHorse.vals1.tendency = horse.tendency();
   protocolHorse.vals1.spirit = horse.spirit();
   protocolHorse.vals1.fatigue = horse.fatigue();
