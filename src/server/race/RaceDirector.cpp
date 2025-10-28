@@ -1566,16 +1566,24 @@ void RaceDirector::HandleRaceResult(
     clientContext.characterUid);
 
   protocol::AcCmdCRRaceResultOK response{
-    .member1 = 1,
-    .member2 = 1,
-    .horseFatigue = 1,
+    .recordGhostReplay = protocol::AcCmdCRRaceResultOK::RecordGhostReplay::Yes,
+    .resultKey = 0, // TODO: record replays and store serverside
     .member4 = 1,
-    .member5 = 1};
+    .notifyMountEmblemUnlock = protocol::AcCmdCRRaceResultOK::Unlock::NoNotify // TODO: implement
+  };
 
   characterRecord.Immutable(
-    [&raceInstance, &response](const data::Character& character)
+    [this, &response](const data::Character& character)
     {
       response.currentCarrots = character.carrots();
+
+      GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Immutable(
+        [&response](const data::Horse& horse)
+        {
+          // Fatigue max = 1500
+          // TODO: modify fatigue to some incremented value
+          response.horseFatigue = horse.fatigue();
+        });
     });
 
   _commandServer.QueueCommand<decltype(response)>(

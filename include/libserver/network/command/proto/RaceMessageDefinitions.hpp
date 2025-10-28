@@ -22,6 +22,7 @@
 
 #include "CommonStructureDefinitions.hpp"
 #include "libserver/network/command/CommandProtocol.hpp"
+#include "libserver/util/Util.hpp"
 
 #include <cstdint>
 #include <optional>
@@ -917,11 +918,26 @@ struct AcCmdCRRaceResult
 
 struct AcCmdCRRaceResultOK
 {
-  uint8_t member1{};
-  uint64_t member2{};
+  //! A flag to indicate to the client whether to record the ghost replay and save.
+  //! Likely used to indicate to the client if the receiving server can accept replay files.
+  enum class RecordGhostReplay : uint8_t
+  {
+    No = 0,
+    Yes = 1
+  } recordGhostReplay{RecordGhostReplay::Yes};
+  //! Used to upload ghost replay to server.
+  uint64_t resultKey{};
+  //! Post-race horse fatigue.
   uint16_t horseFatigue{};
+  //! TODO: Appears to be unused.
   uint16_t member4{};
-  uint8_t member5{};
+  //! Notifies the player that their mount has completed all proficiency requirements and unlocks the mount's emblem.
+  enum class Unlock : uint8_t
+  {
+    NoNotify = 0,
+    Notify = 1
+  } notifyMountEmblemUnlock{Unlock::NoNotify};
+  //! The current carrot balance of the character, with the difference (carrots earned) calculated by the client.
   uint32_t currentCarrots{};
 
   static Command GetCommand()
