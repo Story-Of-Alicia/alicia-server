@@ -2622,6 +2622,7 @@ void RaceDirector::HandleActivateSkillEffect(
 
   // TODO: Dont send if the affected racer has a shield
   this->ScheduleSkillEffect(raceInstance, command.characterOid, command.effectId);
+  targetRacer.magicItem.reset();
 }
 
 void RaceDirector::HandleChangeSkillCardPresetId(
