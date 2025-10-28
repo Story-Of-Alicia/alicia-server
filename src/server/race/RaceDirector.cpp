@@ -67,10 +67,10 @@ bool RollCritical()
   return (rand() % 100) < 5;
 }
 
-uint32_t RandomMagicItem()
+uint32_t RandomMagicItem(Room::TeamMode teamMode)
 {
   static std::random_device rd;
-  std::uniform_int_distribution distribution(0, static_cast<int>(magicItems.size() - 1));
+  std::uniform_int_distribution distribution(0, teamMode == Room::TeamMode::Team ? 12 : 9);
   uint32_t magicItemId = magicItems[distribution(rd)];
   if (RollCritical())
   {
@@ -2209,14 +2209,14 @@ void RaceDirector::HandleRequestMagicItem(
   const protocol::AcCmdCRRequestMagicItem& command)
 {
   spdlog::info("Player {} requested magic item (OID: {}, type: {})", 
-    clientId, command.member1, command.member2);
+    clientId, command.characterOid, command.member2);
 
   const auto& clientContext = GetClientContext(clientId);
   auto& raceInstance = _raceInstances[clientContext.roomUid];
   auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
   // TODO: command.member1 is character oid?
-  if (command.member1 != racer.oid)
+  if (command.characterOid != racer.oid)
   {
     // TODO: throw? return?
     return;
@@ -2234,7 +2234,7 @@ void RaceDirector::HandleRequestMagicItem(
 
   // TODO: reset magic gauge to 0?
   protocol::AcCmdCRStarPointGetOK starPointResponse{
-    .characterOid = command.member1,
+    .characterOid = command.characterOid,
     .starPointValue = racer.starPointValue = 0,
     .giveMagicItem = false
   };
@@ -2246,11 +2246,17 @@ void RaceDirector::HandleRequestMagicItem(
       return starPointResponse;
     });
 
-  uint32_t gainedMagicItem = RandomMagicItem();
+  uint32_t gainedMagicItem;
+  _serverInstance.GetRoomSystem().GetRoom(
+    clientContext.roomUid,
+    [&gainedMagicItem](Room& room)
+    {
+      gainedMagicItem = RandomMagicItem(room.GetRoomDetails().teamMode);
+    });
 
   protocol::AcCmdCRRequestMagicItemOK response{
-    .member1 = command.member1,
-    .member2 = racer.magicItem.emplace(gainedMagicItem),
+    .characterOid = command.characterOid,
+    .magicItemId = racer.magicItem.emplace(gainedMagicItem),
     .member3 = 0
   };
 
@@ -2262,8 +2268,8 @@ void RaceDirector::HandleRequestMagicItem(
     });
 
   protocol::AcCmdCRRequestMagicItemNotify notify{
-    .member1 = response.member2,
-    .member2 = response.member1
+    .magicItemId = response.magicItemId,
+    .characterOid = response.characterOid
   };
 
   for (const auto& raceClientId : raceInstance.clients)
@@ -2389,10 +2395,12 @@ void RaceDirector::HandleUserRaceItemGet(
 
   auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
+  server::Room::TeamMode teamMode;
   server::Room::GameMode gameMode;
   server::registry::Course::GameModeInfo gameModeInfo;
-  _serverInstance.GetRoomSystem().GetRoom(clientContext.roomUid, [this, &gameMode, &gameModeInfo](const server::Room& room)
+  _serverInstance.GetRoomSystem().GetRoom(clientContext.roomUid, [this, &teamMode, &gameMode, &gameModeInfo](const server::Room& room)
   {
+    teamMode = room.GetRoomSnapshot().details.teamMode;
     gameMode = room.GetRoomSnapshot().details.gameMode;
     gameModeInfo = this->GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(static_cast<uint8_t>(gameMode));
   });
@@ -2444,10 +2452,10 @@ void RaceDirector::HandleUserRaceItemGet(
           return;
         }
 
-        const uint32_t gainedMagicItem = RandomMagicItem();
+        const uint32_t gainedMagicItem = RandomMagicItem(teamMode);
         protocol::AcCmdCRRequestMagicItemOK magicItemOk{
-          .member1 = command.characterOid,
-          .member2 = racer.magicItem.emplace(gainedMagicItem),
+          .characterOid = command.characterOid,
+          .magicItemId = racer.magicItem.emplace(gainedMagicItem),
           .member3 = 0
         };
         _commandServer.QueueCommand<decltype(magicItemOk)>(
@@ -2457,8 +2465,8 @@ void RaceDirector::HandleUserRaceItemGet(
             return magicItemOk;
           });
         protocol::AcCmdCRRequestMagicItemNotify notify{
-          .member1 = racer.magicItem.emplace(gainedMagicItem),
-          .member2 = command.characterOid,
+          .magicItemId = racer.magicItem.emplace(gainedMagicItem),
+          .characterOid = command.characterOid,
         };
         for (const ClientId& roomClientId : raceInstance.clients)
         {

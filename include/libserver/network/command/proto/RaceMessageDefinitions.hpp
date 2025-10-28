@@ -1388,7 +1388,7 @@ struct AcCmdCRStartingRate
 
 struct AcCmdCRRequestMagicItem
 {
-  uint16_t member1; // character oid?
+  uint16_t characterOid; // character oid?
   uint32_t member2; // item type? 0 = request random?
 
   static Command GetCommand()
@@ -1413,8 +1413,8 @@ struct AcCmdCRRequestMagicItem
 
 struct AcCmdCRRequestMagicItemOK
 {
-  uint16_t member1; // character oid?
-  uint32_t member2; // item type?
+  uint16_t characterOid; // character oid?
+  uint32_t magicItemId; // item type?
   uint32_t member3; // star point reset?
 
   static Command GetCommand()
@@ -1439,8 +1439,8 @@ struct AcCmdCRRequestMagicItemOK
 
 struct AcCmdCRRequestMagicItemNotify
 {
-  uint32_t member1; // item id?
-  uint16_t member2; // character oid?
+  uint32_t magicItemId; // item id?
+  uint16_t characterOid; // character oid?
 
   static Command GetCommand()
   {

@@ -1025,7 +1025,7 @@ void AcCmdCRRequestMagicItem::Read(
   AcCmdCRRequestMagicItem& command,
   SourceStream& stream)
 {
-  stream.Read(command.member1)
+  stream.Read(command.characterOid)
     .Read(command.member2);
 }
 
@@ -1033,8 +1033,8 @@ void AcCmdCRRequestMagicItemOK::Write(
   const AcCmdCRRequestMagicItemOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.member1)
-    .Write(command.member2)
+  stream.Write(command.characterOid)
+    .Write(command.magicItemId)
     .Write(command.member3);
 }
 
@@ -1049,8 +1049,8 @@ void AcCmdCRRequestMagicItemNotify::Write(
   const AcCmdCRRequestMagicItemNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.member1)
-    .Write(command.member2);
+  stream.Write(command.magicItemId)
+    .Write(command.characterOid);
 }
 
 void AcCmdCRRequestMagicItemNotify::Read(
