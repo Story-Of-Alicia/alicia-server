@@ -1350,6 +1350,7 @@ void RanchDirector::HandleEnterBreedingMarket(
 }
 
 static std::vector<data::Uid> g_stallions;
+static std::unordered_map<data::Uid, data::Uid> g_horseToStallionMap; // Maps horseUid -> stallionUid
 
 void RanchDirector::HandleSearchStallion(
   ClientId clientId,
@@ -1369,26 +1370,60 @@ void RanchDirector::HandleSearchStallion(
     .unk0 = 0,
     .unk1 = 0};
 
-  for (const data::Uid& stallionUid : g_stallions)
+  for (const data::Uid& horseUid : g_stallions)
   {
-    const auto stallionRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
-      stallionUid);
+    const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(horseUid);
+    if (!horseRecord)
+      continue;
+
+    // Look up the stallion registration record using the map
+    auto it = g_horseToStallionMap.find(horseUid);
+    if (it == g_horseToStallionMap.end())
+      continue; // Horse not properly registered
+    
+    data::Uid stallionUid = it->second;
+    const auto stallionRecord = GetServerInstance().GetDataDirector().GetStallion(stallionUid);
+    if (!stallionRecord)
+      continue;
 
     auto& protocolStallion = response.stallions.emplace_back();
-    stallionRecord->Immutable([&protocolStallion](const data::Horse& stallion)
+    
+    std::string ownerName = "unknown";
+    uint32_t breedingCharge = 0;
+    util::Clock::time_point expiresAt = util::Clock::now() + std::chrono::hours(24);
+
+    // Get stallion registration data
+    stallionRecord.Immutable([&](const data::Stallion& stallion)
     {
-      protocolStallion.member1 = "unknown";
-      protocolStallion.uid = stallion.uid();
-      protocolStallion.tid = stallion.tid();
+      breedingCharge = stallion.breedingCharge();
+      expiresAt = stallion.expiresAt();
+      
+      // Get owner name
+      const auto ownerRecord = GetServerInstance().GetDataDirector().GetCharacter(
+        stallion.ownerUid());
+      
+      if (ownerRecord)
+      {
+        ownerRecord.Immutable([&ownerName](const data::Character& owner)
+        {
+          ownerName = owner.name();
+        });
+      }
+    });
 
-      protocolStallion.name = stallion.name();
-      protocolStallion.grade = stallion.grade();
+    horseRecord->Immutable([&protocolStallion, &ownerName, &breedingCharge, &expiresAt](const data::Horse& horse)
+    {
+      protocolStallion.member1 = ownerName;
+      protocolStallion.uid = horse.uid();
+      protocolStallion.tid = horse.tid();
+      protocolStallion.name = horse.name();
+      protocolStallion.grade = horse.grade();
+      protocolStallion.matePrice = breedingCharge;  // TODO: Load from stallion record
+      protocolStallion.expiresAt = util::TimePointToAliciaTime(expiresAt);
 
-      protocolStallion.expiresAt = util::TimePointToAliciaTime(util::Clock::now() + std::chrono::hours(1));
-
-      protocol::BuildProtocolHorseStats(protocolStallion.stats, stallion.stats);
-      protocol::BuildProtocolHorseParts(protocolStallion.parts, stallion.parts);
-      protocol::BuildProtocolHorseAppearance(protocolStallion.appearance, stallion.appearance);
+      protocol::BuildProtocolHorseStats(protocolStallion.stats, horse.stats);
+      protocol::BuildProtocolHorseParts(protocolStallion.parts, horse.parts);
+      protocol::BuildProtocolHorseAppearance(protocolStallion.appearance, horse.appearance);
     });
   }
 
@@ -1443,8 +1478,32 @@ void RanchDirector::HandleRegisterStallion(
     }
   });
 
-  // Add to registered stallions list
+  // Mark horse as registered stallion
+  horseRecord->Mutable([](data::Horse& horse)
+  {
+    horse.horseType() = 2; // HorseType::Stallion
+  });
+
+  // Create persistent stallion registration
+  auto stallionRecord = GetServerInstance().GetDataDirector().CreateStallion();
+  
+  data::Uid stallionUid = data::InvalidUid;
+  stallionRecord.Mutable([&command, &clientContext, &stallionUid](data::Stallion& stallion)
+  {
+    stallion.horseUid() = command.horseUid;
+    stallion.ownerUid() = clientContext.characterUid;
+    stallion.breedingCharge() = command.carrots;
+    stallion.registeredAt() = server::util::Clock::now();
+    stallion.expiresAt() = server::util::Clock::now() + std::chrono::hours(24 * 7); // 7 days
+    stallion.timesBreeded() = 0;
+    stallionUid = stallion.uid();
+  });
+
+  // Add in-memory list for backwards compatibility
   g_stallions.emplace_back(command.horseUid);
+  
+  // Map horseUid to stallionUid for quick lookup
+  g_horseToStallionMap[command.horseUid] = stallionUid;
 
   protocol::AcCmdCRRegisterStallionOK response{
     .horseUid = command.horseUid};
@@ -1464,7 +1523,31 @@ void RanchDirector::HandleUnregisterStallion(
   ClientId clientId,
   const protocol::AcCmdCRUnregisterStallion& command)
 {
+  // Reset horse type back to Adult
+  auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(command.horseUid);
+  if (horseRecord)
+  {
+    horseRecord->Mutable([](data::Horse& horse)
+    {
+      horse.horseType() = 0; // HorseType::Adult
+    });
+  }
+
+  // Remove from in-memory list
   g_stallions.erase(std::ranges::find(g_stallions, command.horseUid));
+
+  // Look up and delete the stallion registration record
+  auto it = g_horseToStallionMap.find(command.horseUid);
+  if (it != g_horseToStallionMap.end())
+  {
+    data::Uid stallionUid = it->second;
+    
+    // Delete the stallion record from database
+    GetServerInstance().GetDataDirector().GetStallionCache().Delete(stallionUid);
+    
+    // Remove from map
+    g_horseToStallionMap.erase(it);
+  }
 
   protocol::AcCmdCRUnregisterStallionOK response{};
 

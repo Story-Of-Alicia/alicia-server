@@ -43,6 +43,7 @@ public:
   using HousingStorage = DataStorage<data::Uid, data::Housing>;
   using GuildStorage = DataStorage<data::Uid, data::Guild>;
   using SettingsStorage = DataStorage<data::Uid, data::Settings>;
+  using StallionStorage = DataStorage<data::Uid, data::Stallion>;
 
   //! Default constructor.
   explicit DataDirector(const std::filesystem::path& basePath);
@@ -120,6 +121,10 @@ public:
   [[nodiscard]] Record<data::Settings> CreateSettings() noexcept;
   [[nodiscard]] SettingsStorage& GetSettingsCache();
 
+  [[nodiscard]] Record<data::Stallion> GetStallion(data::Uid stallionUid) noexcept;
+  [[nodiscard]] Record<data::Stallion> CreateStallion() noexcept;
+  [[nodiscard]] StallionStorage& GetStallionCache();
+
   [[nodiscard]] DataSource& GetDataSource() noexcept;
 
 private:
@@ -171,6 +176,8 @@ private:
   GuildStorage _guildStorage;
   //! A character Keybind settings storage.
   SettingsStorage _settingsStorage;
+  //! A stallion storage.
+  StallionStorage _stallionStorage;
 };
 
 } // namespace server

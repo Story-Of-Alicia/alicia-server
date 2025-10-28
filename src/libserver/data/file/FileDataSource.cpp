@@ -64,6 +64,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _housingDataPath = prepareDataPath("housing");
   _guildDataPath = prepareDataPath("guilds");
   _settingsDataPath = prepareDataPath("settings");
+  _stallionDataPath = prepareDataPath("stallions");
 
   // Read the meta-data file and parse the sequential UIDs.
   const std::filesystem::path metaFilePath = ProduceDataFilePath(
@@ -515,7 +516,12 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.clazz = json["clazz"].get<uint32_t>();
   horse.clazzProgress = json["clazzProgress"].get<uint32_t>();
   horse.grade = json["grade"].get<uint32_t>();
-  horse.growthPoints = json["growthPoints"].get<uint32_t>();
+  horse.growthPoints = json.value("growthPoints", uint16_t{0});
+
+  horse.horseType = json.value("horseType", uint8_t{0});
+  horse.tendency = json.value("tendency", uint8_t{0});
+  horse.spirit = json.value("spirit", uint8_t{0});
+  horse.fatigue = json.value("fatigue", uint16_t{0});
 
   auto potential = json["potential"];
   horse.potential = data::Horse::Potential{
@@ -624,6 +630,11 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["clazzProgress"] = horse.clazzProgress();
   json["grade"] = horse.grade();
   json["growthPoints"] = horse.growthPoints();
+
+  json["horseType"] = horse.horseType();
+  json["fatigue"] = horse.fatigue();
+  json["spirit"] = horse.spirit();
+  json["tendency"] = horse.tendency();
 
   nlohmann::json potential;
   potential["type"] = horse.potential.type();
@@ -1044,6 +1055,7 @@ void server::FileDataSource::DeleteGuild(data::Uid uid)
   std::filesystem::remove(dataFilePath);
 }
 
+<<<<<<< HEAD
 bool server::FileDataSource::IsGuildNameUnique(const std::string_view& name)
 {
   const std::regex rg(
@@ -1198,9 +1210,72 @@ void server::FileDataSource::StoreSettings(data::Uid uid, const data::Settings& 
   dataFile << json.dump(2);
 }
 
+void server::FileDataSource::CreateStallion(data::Stallion& stallion)
+{
+  stallion.uid() = ++_stallionSequentialUid;
+}
+
+void server::FileDataSource::RetrieveStallion(data::Uid uid, data::Stallion& stallion)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _stallionDataPath, std::format("{}", uid));
+
+  std::ifstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Stallion file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json = nlohmann::json::parse(dataFile);
+  stallion.uid() = json["uid"];
+  stallion.horseUid() = json["horseUid"];
+  stallion.ownerUid() = json["ownerUid"];
+  stallion.breedingCharge() = json["breedingCharge"];
+  stallion.registeredAt() = data::Clock::time_point(
+    std::chrono::seconds(json["registeredAt"].get<uint64_t>()));
+  stallion.expiresAt() = data::Clock::time_point(
+    std::chrono::seconds(json["expiresAt"].get<uint64_t>()));
+  stallion.timesBreeded() = json.value("timesBreeded", 0u);
+}
+
+void server::FileDataSource::StoreStallion(data::Uid uid, const data::Stallion& stallion)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _stallionDataPath, std::format("{}", uid));
+
+  std::ofstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Stallion file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json;
+  json["uid"] = stallion.uid();
+  json["horseUid"] = stallion.horseUid();
+  json["ownerUid"] = stallion.ownerUid();
+  json["breedingCharge"] = stallion.breedingCharge();
+  json["registeredAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+    stallion.registeredAt().time_since_epoch()).count();
+  json["expiresAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+    stallion.expiresAt().time_since_epoch()).count();
+  json["timesBreeded"] = stallion.timesBreeded();
+>>>>>>> 0286bd2 (Added missing Horse fields for stallion registration)
+
+  dataFile << json.dump(2);
+}
+
 void server::FileDataSource::DeleteSettings(data::Uid uid)
 {
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _settingsDataPath, std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
+}
+
+void server::FileDataSource::DeleteStallion(data::Uid uid)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _stallionDataPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
 }

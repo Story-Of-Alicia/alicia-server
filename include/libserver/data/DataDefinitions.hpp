@@ -374,7 +374,12 @@ struct Horse
   dao::Field<uint32_t> clazz{0u};
   dao::Field<uint32_t> clazzProgress{0u};
   dao::Field<uint32_t> grade{0u};
-  dao::Field<uint32_t> growthPoints{0u};
+  dao::Field<uint16_t> growthPoints{0u};
+
+  dao::Field<uint8_t> horseType{0u};
+  dao::Field<uint8_t> tendency{0u};
+  dao::Field<uint8_t> spirit{0u};
+  dao::Field<uint16_t> fatigue{0u};  // uint16_t not uint8_t!
 
   struct Potential
   {
@@ -446,6 +451,17 @@ struct Egg
   dao::Field<Clock::time_point> incubatedAt{};
   dao::Field<uint32_t> incubatorSlot{};
   dao::Field<uint32_t> boostsUsed;
+};
+
+struct Stallion
+{
+  dao::Field<Uid> uid{InvalidUid};
+  dao::Field<Uid> horseUid{InvalidUid};     // The horse being registered as stallion
+  dao::Field<Uid> ownerUid{InvalidUid};     // Owner of the stallion
+  dao::Field<uint32_t> breedingCharge{};    // Price in carrots to breed with this stallion
+  dao::Field<Clock::time_point> registeredAt{};
+  dao::Field<Clock::time_point> expiresAt{};
+  dao::Field<uint32_t> timesBreeded{0};     // How many times this stallion has been used for breeding
 };
 
 } // namespace data
