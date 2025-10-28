@@ -1591,9 +1591,8 @@ void RanchDirector::HandleRegisterStallion(
   const protocol::AcCmdCRRegisterStallion& command)
 {
   spdlog::info("RegisterStallion: horseUid={}, breedingCharge={}", command.horseUid, command.carrots);
-  
+
   const auto& clientContext = GetClientContext(clientId);
-  
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
@@ -1635,7 +1634,7 @@ void RanchDirector::HandleRegisterStallion(
   // Update client's inventory/carrot display
   SendInventoryUpdate(clientId);
 
-  spdlog::info("RegisterStallion: Successfully registered horse {} as stallion {}", 
+  spdlog::info("RegisterStallion: Successfully registered horse {} as stallion {}",
     command.horseUid, stallionUid);
 }
 
@@ -1798,13 +1797,17 @@ void RanchDirector::HandleCheckStallionCharge(
   ClientId clientId,
   const protocol::AcCmdCRCheckStallionCharge& command)
 {
+  // Calculate registration fee (50% of breeding charge)
+  uint32_t registrationFee = command.charge / 2;
+
   // Validate and return breeding charge information
+  // TODO: Lookup actual horse grade and use proper min/max from BreedingCostInfo
   protocol::AcCmdCRCheckStallionChargeOK response{
-    .status = 0,              // 0 = success
-    .minCharge = 1,           // TODO: Min charge should be based on the grade of the stallion
-    .maxCharge = 99999,       // TODO: Max charge should be based on the grade of the stallion
-    .registrationFee = 0,     // TODO: Registration fee should be 1/2 of the charge
-    .charge = command.charge  // Echo back the requested charge
+    .status = 0,                // 0 = success
+    .minCharge = 10000,         // Grade 8 minimum charge
+    .maxCharge = 40000,         // Grade 8 maximum charge (TODO: Add grades 4-7)
+    .registrationFee = registrationFee,  // Registration fee is 50% of the charge
+    .charge = command.charge    // Echo back the requested charge
   };
 
   _commandServer.QueueCommand<decltype(response)>(
