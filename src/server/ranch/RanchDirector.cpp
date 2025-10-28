@@ -1460,10 +1460,10 @@ void RanchDirector::HandleSearchStallion(
   for (const data::Uid& horseUid : registeredStallions)
   {
     spdlog::debug("Processing stallion horseUid: {}", horseUid);
-    
+
     const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(horseUid);
-  if (!horseRecord)
-  {
+    if (!horseRecord)
+    {
       spdlog::warn("Horse record not found for horseUid: {}", horseUid);
       continue;
     }
@@ -1475,14 +1475,14 @@ void RanchDirector::HandleSearchStallion(
       spdlog::warn("Stallion data not found for horseUid: {}", horseUid);
       continue;
     }
-    
+
     const auto& stallionData = *stallionDataOpt;
     spdlog::debug("Successfully retrieved cached data for stallion");
 
     auto& protocolStallion = response.stallions.emplace_back();
     
     std::string ownerName = "unknown";
-    
+
     // Get owner name
     const auto ownerRecord = GetServerInstance().GetDataDirector().GetCharacter(stallionData.ownerUid);
     if (ownerRecord)
@@ -1494,7 +1494,7 @@ void RanchDirector::HandleSearchStallion(
     }
 
     auto& horseRegistry = GetServerInstance().GetHorseRegistry();
-    
+
     horseRecord->Immutable([&protocolStallion, &ownerName, &stallionData, &horseRegistry](const data::Horse& horse)
     {
       protocolStallion.member1 = ownerName;
@@ -1502,13 +1502,13 @@ void RanchDirector::HandleSearchStallion(
       protocolStallion.tid = horse.tid();
       protocolStallion.name = horse.name();
       protocolStallion.grade = horse.grade();
-      
+
       // Calculate pregnancy chance based on breeding count and grade
       // Grade-based max hearts: G4=5.0, G5=4.6, G6=4.1, G7=3.9, G8=3.2
       // All grades floor at 4% (0.2 hearts) minimum
       uint32_t breedingCount = horse.breeding.breedingCount();
       uint32_t pregnancyChance = 0;
-      
+
       switch (horse.grade())
       {
         case 4:
@@ -1527,50 +1527,50 @@ void RanchDirector::HandleSearchStallion(
           pregnancyChance = std::min(breedingCount, 30u);  // 64% -> 4%
           break;
       }
-      
+
       protocolStallion.pregnancyChance = pregnancyChance;
-      
+
       // Calculate stallion coat inheritance probability
       // All bonuses (combo + pregnancy + lineage) boost the stallion's coat inheritance chance
       // Formula: stallionWeight = coatBaseRate × (1 + bonusPercentage/100)
-      
+
       // Get stallion's coat base inheritance rate
       const auto& stallionCoatInfo = horseRegistry.GetCoatInfo(horse.parts.skinTid());
-      
+
       // Calculate bonus components (will boost stallion's coat probability)
       uint32_t stallionCombo = horse.breeding.breedingCombo();
       uint32_t stallionLineage = horse.lineage();
       uint32_t comboBonus = stallionCombo * 1;  // 1% per consecutive success
       uint32_t pregnancyBonus = (30 - pregnancyChance);  // 0-30% based on freshness
       uint32_t lineageBonus = (stallionLineage > 1) ? (stallionLineage - 1) : 0;  // 1% per lineage point above base (0-8%)
-      
+
       // Total bonus percentage (0-100+%)
       uint16_t totalBonusPercentage = comboBonus + pregnancyBonus + lineageBonus;
       if (totalBonusPercentage > 100) totalBonusPercentage = 100;  // Cap at 100%
-      
+
       // Calculate stallion's boosted weight (what it would be in breeding)
       float bonusMultiplier = 1.0f + (totalBonusPercentage / 100.0f);
       float stallionWeight = 10.0f * stallionCoatInfo.inheritanceRate * bonusMultiplier;
-      
+
       // Estimate probability in a typical scenario (assuming average mare/GP/random distribution)
       // Typical total: Mare(~10) + Stallion(boosted) + GPs(~20) + Random(~60) ≈ 90 + boosted
       // Simplified: Show stallion's weight as percentage of typical total
       float typicalTotal = 90.0f + stallionWeight;
       float estimatedProbability = (stallionWeight / typicalTotal) * 100.0f;
-      
+
       // Map to 0-8 UI scale based on probability percentage
       // 0% = 0/8, 12.5% = 1/8, 25% = 2/8, 50% = 4/8, 100% = 8/8
       uint8_t inheritanceRateUI = static_cast<uint8_t>(std::min(8.0f, (estimatedProbability / 12.5f)));
       protocolStallion.inheritanceRate = inheritanceRateUI; // 0~8
       protocolStallion.matePrice = stallionData.breedingCharge;
-      
+
       auto expiresAt = stallionData.registeredAt + std::chrono::hours(24);
       protocolStallion.expiresAt = util::TimePointToAliciaTime(expiresAt);
 
       protocol::BuildProtocolHorseStats(protocolStallion.stats, horse.stats);
       protocol::BuildProtocolHorseParts(protocolStallion.parts, horse.parts, horse.type() == 1);
       protocol::BuildProtocolHorseAppearance(protocolStallion.appearance, horse.appearance);
-      
+
       protocolStallion.unk11 = 0;   // Unknown field
       protocolStallion.lineage = stallionLineage;
     });
@@ -1666,10 +1666,10 @@ void RanchDirector::HandleUnregisterStallion(
   const protocol::AcCmdCRUnregisterStallion& command)
 {
   const auto& clientContext = GetClientContext(clientId);
-  
+
   // Delegate to BreedingMarket
   auto earnings = _breedingMarket.UnregisterStallion(command.horseUid);
-  
+
   // Pay compensation to owner immediately
   // TODO: Mail the payment to the owner
   if (earnings.compensation > 0)
@@ -1679,8 +1679,21 @@ void RanchDirector::HandleUnregisterStallion(
     {
       character.carrots() = character.carrots() + earnings.compensation;
     });
-    
+
     spdlog::info("UnregisterStallion: Paid {} carrots compensation to player", earnings.compensation);
+  }
+
+  // Look up and delete the stallion registration record
+  auto it = g_horseToStallionMap.find(command.horseUid);
+  if (it != g_horseToStallionMap.end())
+  {
+    data::Uid stallionUid = it->second;
+    
+    // Delete the stallion record from database
+    GetServerInstance().GetDataDirector().GetStallionCache().Delete(stallionUid);
+    
+    // Remove from map
+    g_horseToStallionMap.erase(it);
   }
 
   protocol::AcCmdCRUnregisterStallionOK response{};
