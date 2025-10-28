@@ -825,6 +825,58 @@ struct AcCmdCRUnregisterStallionEstimateInfoCancel
     SourceStream& stream);
 };
 
+struct AcCmdCRCheckStallionCharge
+{
+  uint32_t charge{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRCheckStallionCharge;
+  }
+
+  //! Writes the command to the provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRCheckStallionCharge& command,
+    SinkStream& stream);
+
+  //! Reads a command from the provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRCheckStallionCharge& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRCheckStallionChargeOK
+{
+  uint8_t status{};           // Status/result code (0 = success)
+  uint32_t minCharge{};       // Minimum allowed charge
+  uint32_t maxCharge{};       // Maximum allowed charge
+  uint32_t registrationFee{}; // Registration fee or related cost
+  uint32_t charge{};          // The validated charge amount
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRCheckStallionChargeOK;
+  }
+
+  //! Writes the command to the provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRCheckStallionChargeOK& command,
+    SinkStream& stream);
+
+  //! Reads a command from the provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRCheckStallionChargeOK& command,
+    SourceStream& stream);
+};
+
 struct AcCmdCRUpdateEquipmentNotify
 {
   uint32_t characterUid{};

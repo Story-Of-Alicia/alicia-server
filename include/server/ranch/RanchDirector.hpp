@@ -185,6 +185,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRUnregisterStallionEstimateInfo& command);
 
+  void HandleCheckStallionCharge(
+    ClientId clientId,
+    const protocol::AcCmdCRCheckStallionCharge& command);
+
   void HandleTryBreeding(
     ClientId clientId,
     const protocol::AcCmdCRTryBreeding& command);
