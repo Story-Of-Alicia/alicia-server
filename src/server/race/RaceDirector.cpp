@@ -46,38 +46,37 @@ uint64_t TimePointToRaceTimePoint(const std::chrono::steady_clock::time_point& t
     timePoint.time_since_epoch()).count() / IntervalConstant;
 }
 
-const std::array<uint32_t, 24> magicItems = {
+const std::array<uint32_t, 12> magicItems = {
   2, // FireBall     Team mode 0
   4, // WaterShield  Team mode 0
   6, // Booster      Team mode 0
   8, // HotRodding   Team mode 0
   10, // IceWall     Team mode 0
-  3, // FireBall2    Team mode 0
-  5, // WaterShield2 Team mode 0
-  7, // Booster2     Team mode 0
-  9, // HotRodding2  Team mode 0
   12, // JumpStun    Team mode 0
-  11, // IceWall2    Team mode 0
-  20, // BufPower    Team mode 1
-  22, // BufGauge    Team mode 1
   14, // DarkFire    Team mode 0
   16, // Summon      Team mode 0
   18, // Lightning   Team mode 0
-  19, // Lightning2  Team mode 0
+  20, // BufPower    Team mode 1
+  22, // BufGauge    Team mode 1
   24, // BufSpeed    Team mode 1
-  17, // Summon2     Team mode 0
-  15, // DarkFire2   Team mode 0
-  13, // JumpStun2   Team mode 0
-  23, // BufGauge2   Team mode 1
-  21, // BufPower2   Team mode 1
-  25, // BufSpeed2   Team mode 1
 };
+
+bool RollCritical()
+{
+  // TODO: Take into account the Team's BufPower effect
+  return (rand() % 100) < 5;
+}
 
 uint32_t RandomMagicItem()
 {
   static std::random_device rd;
   std::uniform_int_distribution distribution(0, static_cast<int>(magicItems.size() - 1));
-  return magicItems[distribution(rd)];
+  uint32_t magicItemId = magicItems[distribution(rd)];
+  if (RollCritical())
+  {
+    magicItemId += 1;
+  }
+  return magicItemId;
 }
 
 bool SkillIsCritical(uint32_t skillOrEffectId)
