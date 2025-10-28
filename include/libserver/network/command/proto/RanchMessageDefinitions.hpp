@@ -832,7 +832,7 @@ struct AcCmdCRUnregisterStallionEstimateInfoCancel
 
 struct AcCmdCRCheckStallionCharge
 {
-  uint32_t horseUid{};
+  uint32_t charge{};
 
   static Command GetCommand()
   {
@@ -856,16 +856,11 @@ struct AcCmdCRCheckStallionCharge
 
 struct AcCmdCRCheckStallionChargeOK
 {
-  //! Result
-  bool hasFailed{};
-  //! Minimum allowed charge
-  uint32_t minCharge{};
-  //! Maximum allowed charge
-  uint32_t maxCharge{};
-  //! Registration fee or related cost
-  uint32_t registrationFee{};
-  //! The validated charge amount
-  uint32_t charge{};
+  uint8_t status{};           // Status/result code (0 = success)
+  uint32_t minCharge{};       // Minimum allowed charge
+  uint32_t maxCharge{};       // Maximum allowed charge
+  uint32_t registrationFee{}; // Registration fee or related cost
+  uint32_t charge{};          // The validated charge amount
 
   static Command GetCommand()
   {

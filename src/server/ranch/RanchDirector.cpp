@@ -1794,6 +1794,27 @@ void RanchDirector::HandleCheckStallionCharge(
     });
 }
 
+void RanchDirector::HandleCheckStallionCharge(
+  ClientId clientId,
+  const protocol::AcCmdCRCheckStallionCharge& command)
+{
+  // Validate and return breeding charge information
+  protocol::AcCmdCRCheckStallionChargeOK response{
+    .status = 0,              // 0 = success
+    .minCharge = 1,           // TODO: Min charge should be based on the grade of the stallion
+    .maxCharge = 99999,       // TODO: Max charge should be based on the grade of the stallion
+    .registrationFee = 0,     // TODO: Registration fee should be 1/2 of the charge
+    .charge = command.charge  // Echo back the requested charge
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
 void RanchDirector::HandleTryBreeding(
   ClientId clientId,
   const protocol::AcCmdCRTryBreeding& command)

@@ -842,14 +842,14 @@ void AcCmdCRCheckStallionCharge::Read(
   AcCmdCRCheckStallionCharge& command,
   SourceStream& stream)
 {
-  stream.Read(command.horseUid);
+  stream.Read(command.charge);
 }
 
 void AcCmdCRCheckStallionChargeOK::Write(
   const AcCmdCRCheckStallionChargeOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.hasFailed)
+  stream.Write(command.status)
     .Write(command.minCharge)
     .Write(command.maxCharge)
     .Write(command.registrationFee)
