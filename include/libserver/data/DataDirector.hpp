@@ -42,6 +42,7 @@ public:
   using StorageItemStorage = DataStorage<data::Uid, data::StorageItem>;
   using HousingStorage = DataStorage<data::Uid, data::Housing>;
   using GuildStorage = DataStorage<data::Uid, data::Guild>;
+  using StallionStorage = DataStorage<data::Uid, data::Stallion>;
 
   //! Default constructor.
   explicit DataDirector(const std::filesystem::path& basePath);
@@ -115,6 +116,10 @@ public:
   [[nodiscard]] Record<data::Housing> CreateHousing() noexcept;
   [[nodiscard]] HousingStorage& GetHousingCache();
 
+  [[nodiscard]] Record<data::Stallion> GetStallion(data::Uid stallionUid) noexcept;
+  [[nodiscard]] Record<data::Stallion> CreateStallion() noexcept;
+  [[nodiscard]] StallionStorage& GetStallionCache();
+
 private:
   //! An underlying data source of the data director.
   std::unique_ptr<FileDataSource> _primaryDataSource;
@@ -162,6 +167,8 @@ private:
   HousingStorage _housingStorage;
   //! A guild storage.
   GuildStorage _guildStorage;
+  //! A stallion storage.
+  StallionStorage _stallionStorage;
 };
 
 } // namespace server

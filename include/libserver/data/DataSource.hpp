@@ -176,6 +176,19 @@ public:
   //! Deletes the guild from the data source.
   //! @param uid UID of the guild.
   virtual void DeleteGuild(data::Uid uid) = 0;
+
+  virtual void CreateStallion(data::Stallion& stallion) = 0;
+  //! Retrieves the stallion from the data source.
+  //! @param uid UID of the stallion.
+  //! @param stallion Stallion to retrieve.
+  virtual void RetrieveStallion(data::Uid uid, data::Stallion& stallion) = 0;
+  //! Stores the stallion on the data source.
+  //! @param uid UID of the stallion.
+  //! @param stallion Stallion to store.
+  virtual void StoreStallion(data::Uid uid, const data::Stallion& stallion) = 0;
+  //! Deletes the stallion from the data source.
+  //! @param uid UID of the stallion.
+  virtual void DeleteStallion(data::Uid uid) = 0;
 };
 
 } // namespace server
