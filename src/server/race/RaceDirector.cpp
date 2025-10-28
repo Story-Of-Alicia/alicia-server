@@ -2360,14 +2360,14 @@ void RaceDirector::HandleUseMagicItem(
     // Shield
     case 4:
       racer.shield = server::tracker::RaceTracker::Racer::Shield::Normal;
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, 2, [&racer]()
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, command.characterOid, 2, [&racer]()
       {
         racer.shield = server::tracker::RaceTracker::Racer::Shield::None;
       });
       break;
     case 5:
       racer.shield = server::tracker::RaceTracker::Racer::Shield::Critical;
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, 3, [&racer]()
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, command.characterOid, 3, [&racer]()
       {
         racer.shield = server::tracker::RaceTracker::Racer::Shield::None;
       });
@@ -2375,7 +2375,7 @@ void RaceDirector::HandleUseMagicItem(
     // Booster
     case 6:
     case 7:
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, 5);
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, command.characterOid, 5);
       break;
   }
 
@@ -2612,13 +2612,13 @@ void RaceDirector::HandleActivateSkillEffect(
   float intensity = *reinterpret_cast<const float*>(&command.unk2);
 
   spdlog::info("HandleActivateSkillEffect: clientId={}, characterOid={}, skillId={}, targetOid={}, unk1={}, intensity={}", 
-    clientId, command.characterOid, command.effectId, command.targetOid, command.unk1, intensity);
+    clientId, command.targetOid, command.effectId, command.attackerOid, command.unk1, intensity);
 
   auto& targetRacer = raceInstance.tracker.GetRacer(clientContext.characterUid);
   if ((!SkillIsCritical(command.effectId) && targetRacer.shield == server::tracker::RaceTracker::Racer::Shield::Normal)
   || targetRacer.shield == server::tracker::RaceTracker::Racer::Shield::Critical)
   {
-    spdlog::info("Target racer {} has a shield active, attack blocked", command.characterOid);
+    spdlog::info("Target racer {} has a shield active, attack blocked", command.targetOid);
     // TODO: Send some kind of notification that the attack was blocked? That picture on the side (PIPEvent?)
     // Maybe i actually need to send the effect but with a different parameter to mean "blocked"
     // Else it doesnt show in the kill list in the corner
@@ -2627,9 +2627,8 @@ void RaceDirector::HandleActivateSkillEffect(
 
   // TODO: Send notify to show that pic on the side (PIPEvent?)
 
-  // TODO: Dont send if the affected racer has a shield
-  this->ScheduleSkillEffect(raceInstance, command.characterOid, command.effectId);
-  targetRacer.magicItem.reset();
+  // TODO: Remove held item
+  this->ScheduleSkillEffect(raceInstance, command.attackerOid, command.targetOid, command.effectId);
 }
 
 void RaceDirector::HandleChangeSkillCardPresetId(
@@ -2671,15 +2670,13 @@ void RaceDirector::HandleChangeSkillCardPresetId(
   // No response command
 }
 
-void RaceDirector::ScheduleSkillEffect(server::RaceDirector::RaceInstance& raceInstance, server::tracker::Oid characterOid, uint16_t effectId, std::optional<std::function<void()>> afterEffectRemoved){
-  spdlog::info("AddSkillEffect called for characterOid={}, effectId={}", characterOid, effectId);
-
+void RaceDirector::ScheduleSkillEffect(server::RaceDirector::RaceInstance& raceInstance, server::tracker::Oid attackerOid, server::tracker::Oid targetOid, uint16_t effectId, std::optional<std::function<void()>> afterEffectRemoved){
   // Broadcast skill effect activation to all clients in the room
   protocol::AcCmdRCAddSkillEffect addSkillEffect{
-    .characterOid = characterOid,
+    .characterOid = targetOid,
     .effectId = effectId,
-    .targetOid = characterOid,
-    .attackerOid = characterOid, // TODO: Store in the skill instance the attacker
+    .targetOid = targetOid,
+    .attackerOid = attackerOid,
     .unk2 = 0,
     .unk3 = 0,
     .unk4 = 0,
@@ -2701,15 +2698,13 @@ void RaceDirector::ScheduleSkillEffect(server::RaceDirector::RaceInstance& raceI
   // Remove the effect after a delay
   // TODO: Handle overlapping effects of the same type
   _scheduler.Queue(
-    [this, characterOid, effectId, &raceInstance, afterEffectRemoved]()
+    [this, attackerOid, targetOid, effectId, &raceInstance, afterEffectRemoved]()
     {
-      spdlog::info("RemoveSkillEffect called for characterOid={}, effectId={}", characterOid, effectId);
-
       // Broadcast skill effect deactivation to all clients in the room
       protocol::AcCmdRCRemoveSkillEffect removeSkillEffect{
-        .characterOid = characterOid,
+        .characterOid = targetOid,
         .effectId = effectId,
-        .targetOid = characterOid,
+        .targetOid = targetOid,
         .unk1 = 0,
       };
 

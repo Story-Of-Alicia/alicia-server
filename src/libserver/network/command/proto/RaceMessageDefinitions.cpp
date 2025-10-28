@@ -1733,9 +1733,9 @@ void AcCmdCRActivateSkillEffect::Write(
   const AcCmdCRActivateSkillEffect& command,
   SinkStream& stream)
 {
-  stream.Write(command.characterOid)
+  stream.Write(command.targetOid)
     .Write(command.effectId)
-    .Write(command.targetOid)
+    .Write(command.attackerOid)
     .Write(command.unk2)
     .Write(command.unk1);
 }
@@ -1744,9 +1744,9 @@ void AcCmdCRActivateSkillEffect::Read(
   AcCmdCRActivateSkillEffect& command,
   SourceStream& stream)
 {
-  stream.Read(command.characterOid)
+  stream.Read(command.targetOid)
     .Read(command.effectId)
-    .Read(command.targetOid)
+    .Read(command.attackerOid)
     .Read(command.unk1)
     .Read(command.unk2);
 }

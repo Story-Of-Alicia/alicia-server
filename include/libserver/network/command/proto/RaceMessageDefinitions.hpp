@@ -2262,9 +2262,9 @@ struct AcCmdRCTriggerActivate
 
 struct AcCmdCRActivateSkillEffect
 {
-  uint16_t characterOid;
+  uint16_t targetOid;
   uint32_t effectId;         // What skill/effect to activate
-  uint16_t targetOid;       // Unknown parameter
+  uint16_t attackerOid;       // Unknown parameter
   uint16_t unk1;            // Unknown parameter
   uint32_t unk2;            // Unknown parameter
 
