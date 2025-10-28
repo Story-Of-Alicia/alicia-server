@@ -596,7 +596,12 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.clazz = json["clazz"].get<uint32_t>();
   horse.clazzProgress = json["clazzProgress"].get<uint32_t>();
   horse.grade = json["grade"].get<uint32_t>();
-  horse.growthPoints = json["growthPoints"].get<uint32_t>();
+  horse.growthPoints = json.value("growthPoints", uint16_t{0});
+
+  horse.horseType = json.value("horseType", uint8_t{0});
+  horse.tendency = json.value("tendency", uint8_t{0});
+  horse.spirit = json.value("spirit", uint8_t{0});
+  horse.fatigue = json.value("fatigue", uint16_t{0});
 
   const auto& breedingJson = json["breeding"];
   horse.breeding.breedingCount = breedingJson.value("breedingCount", uint32_t{0});
@@ -718,6 +723,7 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["breeding"]["breedingCombo"] = horse.breeding.breedingCombo();
 
   json["type"] = horse.type();
+  json["horseType"] = horse.horseType();
   json["spirit"] = horse.spirit();
   json["tendency"] = horse.tendency();
 
@@ -1204,6 +1210,11 @@ void server::FileDataSource::RetrieveStallion(data::Uid uid, data::Stallion& sta
   stallion.timesMated() = json.value("timesMated", uint32_t{0});
   stallion.registeredAt() = data::Clock::time_point(
     std::chrono::seconds(json["registeredAt"].get<uint64_t>()));
+  if (json.contains("expiresAt"))
+  {
+    stallion.expiresAt() = data::Clock::time_point(
+      std::chrono::seconds(json["expiresAt"].get<uint64_t>()));
+  }
 }
 
 void server::FileDataSource::StoreStallion(data::Uid uid, const data::Stallion& stallion)
@@ -1226,6 +1237,8 @@ void server::FileDataSource::StoreStallion(data::Uid uid, const data::Stallion& 
   json["timesMated"] = stallion.timesMated();
   json["registeredAt"] = std::chrono::duration_cast<std::chrono::seconds>(
     stallion.registeredAt().time_since_epoch()).count();
+  json["expiresAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+    stallion.expiresAt().time_since_epoch()).count();
 
   dataFile << json.dump(2);
 }
@@ -1558,7 +1571,7 @@ void server::FileDataSource::DeleteStallion(data::Uid uid)
 std::vector<server::data::Uid> server::FileDataSource::ListRegisteredStallions()
 {
   std::vector<server::data::Uid> stallionUids;
-  
+
   if (!std::filesystem::exists(_stallionDataPath))
   {
     return stallionUids;
@@ -1568,7 +1581,7 @@ std::vector<server::data::Uid> server::FileDataSource::ListRegisteredStallions()
   {
     if (!entry.is_regular_file() || entry.path().extension() != ".json")
       continue;
-      
+
     try
     {
       // Extract stallion UID from filename (e.g., "123.json" -> 123)
@@ -1580,6 +1593,6 @@ std::vector<server::data::Uid> server::FileDataSource::ListRegisteredStallions()
       // Silently skip invalid filenames
     }
   }
-  
+
   return stallionUids;
 }

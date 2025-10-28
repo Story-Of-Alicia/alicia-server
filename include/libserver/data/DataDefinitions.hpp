@@ -403,16 +403,17 @@ struct Horse
   dao::Field<uint32_t> clazzProgress{0u};
   dao::Field<uint32_t> grade{0u};
   dao::Field<uint32_t> growthPoints{0u};
-  
+
   struct Breeding
   {
     //! A count of how many times the horse was bred.
     dao::Field<uint32_t> breedingCount{0u};
-    //! A count of successful consecutive breedings. 
+    //! A count of successful consecutive breedings.
     dao::Field<uint32_t> breedingCombo{0u};
   } breeding{};
-  
+
   dao::Field<uint32_t> type{0u};
+  dao::Field<uint8_t> horseType{0u};
   dao::Field<uint32_t> tendency{0u};
   dao::Field<uint32_t> spirit{0u};
   dao::Field<uint32_t> fatigue{0u};
@@ -539,6 +540,7 @@ struct Stallion
   dao::Field<uint32_t> breedingCharge{};    // Price in carrots to breed with this stallion
   dao::Field<uint32_t> timesMated{0u};      // Times bred during current registration
   dao::Field<Clock::time_point> registeredAt{};
+  dao::Field<Clock::time_point> expiresAt{};
   // Note: Stallions expire 24 hours after registeredAt
 };
 
