@@ -1734,7 +1734,7 @@ void AcCmdCRActivateSkillEffect::Write(
   SinkStream& stream)
 {
   stream.Write(command.characterOid)
-    .Write(command.skillId)
+    .Write(command.effectId)
     .Write(command.targetOid)
     .Write(command.unk2)
     .Write(command.unk1);
@@ -1745,7 +1745,7 @@ void AcCmdCRActivateSkillEffect::Read(
   SourceStream& stream)
 {
   stream.Read(command.characterOid)
-    .Read(command.skillId)
+    .Read(command.effectId)
     .Read(command.targetOid)
     .Read(command.unk1)
     .Read(command.unk2);

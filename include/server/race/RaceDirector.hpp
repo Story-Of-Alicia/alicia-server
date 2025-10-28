@@ -126,7 +126,7 @@ private:
   ClientContext& GetClientContext(ClientId clientId, bool requireAuthorized = true);
   ClientId GetClientIdByCharacterUid(data::Uid characterUid);
   ClientContext& GetClientContextByCharacterUid(data::Uid characterUid);
-  void ScheduleSkillEffect(server::RaceDirector::RaceInstance& raceInstance, server::tracker::Oid characterOid, uint16_t effectId);
+  void ScheduleSkillEffect(server::RaceDirector::RaceInstance& raceInstance, server::tracker::Oid characterOid, uint16_t effectId, std::optional<std::function<void()>> afterEffectRemoved = std::nullopt);
 
   void HandleEnterRoom(
     ClientId clientId,

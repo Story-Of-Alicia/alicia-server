@@ -80,6 +80,11 @@ uint32_t RandomMagicItem()
   return magicItems[distribution(rd)];
 }
 
+bool SkillIsCritical(uint32_t skillOrEffectId)
+{
+  return skillOrEffectId % 2 != 0;
+}
+
 } // anon namespace
 
 RaceDirector::RaceDirector(ServerInstance& serverInstance)
@@ -2349,10 +2354,18 @@ void RaceDirector::HandleUseMagicItem(
   {
     // Shield
     case 4:
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, 2);
+      racer.shield = server::tracker::RaceTracker::Racer::Shield::Normal;
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, 2, [&racer]()
+      {
+        racer.shield = server::tracker::RaceTracker::Racer::Shield::None;
+      });
       break;
     case 5:
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, 3);
+      racer.shield = server::tracker::RaceTracker::Racer::Shield::Critical;
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, 3, [&racer]()
+      {
+        racer.shield = server::tracker::RaceTracker::Racer::Shield::None;
+      });
       break;
     // Booster
     case 6:
@@ -2587,35 +2600,28 @@ void RaceDirector::HandleActivateSkillEffect(
 {
   const auto& clientContext = GetClientContext(clientId);
   auto& raceInstance = _raceInstances[clientContext.roomUid];
-  
+
   // Convert unk2 back to float (it's 1.0f = 1065353216 as uint32)
   float intensity = *reinterpret_cast<const float*>(&command.unk2);
-  
+
   spdlog::info("HandleActivateSkillEffect: clientId={}, characterOid={}, skillId={}, targetOid={}, unk1={}, intensity={}", 
-    clientId, command.characterOid, command.skillId, command.targetOid, command.unk1, intensity);
-  
-  // Process the skill effect activation - give target extra gauge (Attack Compensation skill)
+    clientId, command.characterOid, command.effectId, command.targetOid, command.unk1, intensity);
+
   auto& targetRacer = raceInstance.tracker.GetRacer(clientContext.characterUid);
-  
-  // Apply "Attack Compensation" skill - target gets extra gauge when attacked
-  targetRacer.starPointValue += 50;  // Give 50 star points for being attacked
-  spdlog::info("Applied Attack Compensation skill: character {} gained 50 star points", command.characterOid);
-  
-  // Send skill effect response back to the requesting client
-  protocol::AcCmdUserRaceActivateEventNotify activateResponse{
-    .eventId = command.skillId,  // Echo back the skill ID
-    .characterOid = command.characterOid
-  };
-  
-  spdlog::info("Responding to skill activation for character {} with skillId {}", command.characterOid, command.skillId);
-  
-  // Send response back to the client who requested the skill activation
-  _commandServer.QueueCommand<decltype(activateResponse)>(
-    clientId,
-    [activateResponse]() { return activateResponse; });
+  if ((!SkillIsCritical(command.effectId) && targetRacer.shield == server::tracker::RaceTracker::Racer::Shield::Normal)
+  || targetRacer.shield == server::tracker::RaceTracker::Racer::Shield::Critical)
+  {
+    spdlog::info("Target racer {} has a shield active, attack blocked", command.characterOid);
+    // TODO: Send some kind of notification that the attack was blocked? That picture on the side (PIPEvent?)
+    // Maybe i actually need to send the effect but with a different parameter to mean "blocked"
+    // Else it doesnt show in the kill list in the corner
+    return;
+  }
+
+  // TODO: Send notify to show that pic on the side (PIPEvent?)
 
   // TODO: Dont send if the affected racer has a shield
-  this->ScheduleSkillEffect(raceInstance, command.characterOid, command.skillId);
+  this->ScheduleSkillEffect(raceInstance, command.characterOid, command.effectId);
 }
 
 void RaceDirector::HandleChangeSkillCardPresetId(
@@ -2657,7 +2663,7 @@ void RaceDirector::HandleChangeSkillCardPresetId(
   // No response command
 }
 
-void RaceDirector::ScheduleSkillEffect(server::RaceDirector::RaceInstance& raceInstance, server::tracker::Oid characterOid, uint16_t effectId){
+void RaceDirector::ScheduleSkillEffect(server::RaceDirector::RaceInstance& raceInstance, server::tracker::Oid characterOid, uint16_t effectId, std::optional<std::function<void()>> afterEffectRemoved){
   spdlog::info("AddSkillEffect called for characterOid={}, effectId={}", characterOid, effectId);
 
   // Broadcast skill effect activation to all clients in the room
@@ -2687,7 +2693,7 @@ void RaceDirector::ScheduleSkillEffect(server::RaceDirector::RaceInstance& raceI
   // Remove the effect after a delay
   // TODO: Handle overlapping effects of the same type
   _scheduler.Queue(
-    [this, characterOid, effectId, &raceInstance]()
+    [this, characterOid, effectId, &raceInstance, afterEffectRemoved]()
     {
       spdlog::info("RemoveSkillEffect called for characterOid={}, effectId={}", characterOid, effectId);
 
@@ -2705,6 +2711,11 @@ void RaceDirector::ScheduleSkillEffect(server::RaceDirector::RaceInstance& raceI
         _commandServer.QueueCommand<decltype(removeSkillEffect)>(
           raceClientId,
           [removeSkillEffect]() { return removeSkillEffect; });
+      }
+
+      if (afterEffectRemoved.has_value())
+      {
+        afterEffectRemoved.value()();
       }
     },
     Scheduler::Clock::now() + std::chrono::seconds(3)); // TODO: Different time per effect
