@@ -104,6 +104,12 @@ public:
   void RetrieveMail(data::Uid uid, data::Mail& mail) override;
   void StoreMail(data::Uid uid, const data::Mail& mail) override;
   void DeleteMail(data::Uid uid) override;
+
+  void CreateStallion(data::Stallion& stallion) override;
+  void RetrieveStallion(data::Uid uid, data::Stallion& stallion) override;
+  void StoreStallion(data::Uid uid, const data::Stallion& stallion) override;
+  void DeleteStallion(data::Uid uid) override;
+
 private:
   //! A root data path.
   std::filesystem::path _dataPath;
@@ -134,6 +140,8 @@ private:
   std::filesystem::path _dailyQuestDataPath;
   //! A path to the mail data files.
   std::filesystem::path _mailDataPath;
+  //! A path to the stallion data files.
+  std::filesystem::path _stallionDataPath;
 
   //! A path to meta-data file.
   std::filesystem::path _metaFilePath;
@@ -161,6 +169,8 @@ private:
   std::atomic_uint32_t _dailyQuestSequentialId = 0;
   //! Sequential UID for mail.
   std::atomic_uint32_t _mailSequentialId = 0;
+  //! Sequential UID for stallions.
+  std::atomic_uint32_t _stallionSequentialUid = 0;
 };
 
 } // namespace server
