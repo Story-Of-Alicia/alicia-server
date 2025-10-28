@@ -1404,6 +1404,23 @@ void RanchDirector::HandleRegisterStallion(
   ClientId clientId,
   const protocol::AcCmdCRRegisterStallion& command)
 {
+  const auto& clientContext = GetClientContext(clientId);
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  // Calculate registration fee (50% of breeding charge)
+  uint32_t registrationFee = command.carrots / 2;
+
+  // Deduct the registration fee from player's carrots
+  characterRecord.Mutable([registrationFee](data::Character& character)
+  {
+    if (character.carrots() >= registrationFee)
+    {
+      character.carrots() = character.carrots() - registrationFee;
+    }
+  });
+
+  // Add to registered stallions list
   g_stallions.emplace_back(command.horseUid);
 
   protocol::AcCmdCRRegisterStallionOK response{
@@ -1415,6 +1432,9 @@ void RanchDirector::HandleRegisterStallion(
     {
       return response;
     });
+
+  // Update client's inventory/carrot display
+  SendInventoryUpdate(clientId);
 }
 
 void RanchDirector::HandleUnregisterStallion(
@@ -1456,13 +1476,17 @@ void RanchDirector::HandleCheckStallionCharge(
   ClientId clientId,
   const protocol::AcCmdCRCheckStallionCharge& command)
 {
+  // Calculate registration fee (50% of breeding charge)
+  uint32_t registrationFee = command.charge / 2;
+
   // Validate and return breeding charge information
+  // TODO: Lookup actual horse grade and use proper min/max from BreedingCostInfo
   protocol::AcCmdCRCheckStallionChargeOK response{
-    .status = 0,              // 0 = success
-    .minCharge = 1,           // TODO: Min charge should be based on the grade of the stallion
-    .maxCharge = 99999,       // TODO: Max charge should be based on the grade of the stallion
-    .registrationFee = 0,     // TODO: Registration fee should be 1/2 of the charge
-    .charge = command.charge  // Echo back the requested charge
+    .status = 0,                // 0 = success
+    .minCharge = 10000,         // Grade 8 minimum charge
+    .maxCharge = 40000,         // Grade 8 maximum charge (TODO: Add grades 4-7)
+    .registrationFee = registrationFee,  // Registration fee is 50% of the charge
+    .charge = command.charge    // Echo back the requested charge
   };
 
   _commandServer.QueueCommand<decltype(response)>(
