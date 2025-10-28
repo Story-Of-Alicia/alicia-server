@@ -1408,8 +1408,54 @@ void RanchDirector::HandleRegisterStallion(
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  // Calculate registration fee (50% of breeding charge)
-  uint32_t registrationFee = command.carrots / 2;
+  // Get horse grade to determine registration fee
+  auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(command.horseUid);
+  uint32_t registrationFee = 0;
+
+  if (horseRecord)
+  {
+    uint8_t horseGrade = 0;
+    horseRecord->Immutable([&horseGrade](const data::Horse& horse)
+    {
+      horseGrade = horse.grade();
+    });
+
+    // Breeding cost table from BreedingCostInfo (resources/config/game/breeding/prices.yaml)
+    // TODO: Load from config file instead of hardcoding
+    static const std::unordered_map<uint8_t, std::tuple<uint32_t, uint32_t, uint32_t>> breedingCosts = {
+      // {minPrice, maxPrice, registrationFee}
+      {1,  {1000,  4000,   500}},
+      {2,  {1000,  4000,   500}},
+      {3,  {1000,  4000,   500}},
+      {4,  {4000,  12000,  1000}},
+      {5,  {5000,  15000,  1500}},
+      {6,  {6000,  18000,  2000}},
+      {7,  {8000,  24000,  3000}},
+      {8,  {10000, 30000,  4000}},
+      {9,  {13000, 39000,  5000}},
+      {10, {13000, 39000,  6000}},
+      {11, {13000, 39000,  8000}},
+      {12, {17000, 51000,  9500}},
+      {13, {21000, 63000,  11000}},
+      {14, {25000, 75000,  13500}},
+      {15, {31000, 93000,  16000}},
+      {16, {34000, 102000, 19000}},
+      {17, {41000, 123000, 21000}},
+      {18, {42000, 126000, 24500}},
+      {19, {46000, 138000, 26000}},
+      {20, {49000, 138000, 27500}},
+      {21, {50000, 150000, 27500}},
+      {22, {50000, 150000, 27500}},
+      {23, {50000, 150000, 27500}},
+      {24, {50000, 150000, 27500}},
+    };
+
+    auto it = breedingCosts.find(horseGrade);
+    if (it != breedingCosts.end())
+    {
+      registrationFee = std::get<2>(it->second);
+    }
+  }
 
   // Deduct the registration fee from player's carrots
   characterRecord.Mutable([registrationFee](data::Character& character)
@@ -1476,17 +1522,67 @@ void RanchDirector::HandleCheckStallionCharge(
   ClientId clientId,
   const protocol::AcCmdCRCheckStallionCharge& command)
 {
-  // Calculate registration fee (50% of breeding charge)
-  uint32_t registrationFee = command.charge / 2;
+  // Get horse data to determine grade
+  auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(command.horseUid);
+  
+  uint32_t minCharge = 1;
+  uint32_t maxCharge = 99999;
+  uint32_t registrationFee = 0;
+  
+  if (horseRecord)
+  {
+    uint8_t horseGrade = 0;
+    horseRecord->Immutable([&horseGrade](const data::Horse& horse)
+    {
+      horseGrade = horse.grade();
+    });
+
+    // Breeding cost table from BreedingCostInfo (resources/config/game/breeding/prices.yaml)
+    // TODO: Load from config file instead of hardcoding
+    static const std::unordered_map<uint8_t, std::tuple<uint32_t, uint32_t, uint32_t>> breedingCosts = {
+      // {minPrice, maxPrice, registrationFee}
+      {1,  {1000,  4000,   500}},
+      {2,  {1000,  4000,   500}},
+      {3,  {1000,  4000,   500}},
+      {4,  {4000,  12000,  1000}},
+      {5,  {5000,  15000,  1500}},
+      {6,  {6000,  18000,  2000}},
+      {7,  {8000,  24000,  3000}},
+      {8,  {10000, 30000,  4000}},
+      {9,  {13000, 39000,  5000}},
+      {10, {13000, 39000,  6000}},
+      {11, {13000, 39000,  8000}},
+      {12, {17000, 51000,  9500}},
+      {13, {21000, 63000,  11000}},
+      {14, {25000, 75000,  13500}},
+      {15, {31000, 93000,  16000}},
+      {16, {34000, 102000, 19000}},
+      {17, {41000, 123000, 21000}},
+      {18, {42000, 126000, 24500}},
+      {19, {46000, 138000, 26000}},
+      {20, {49000, 138000, 27500}},
+      {21, {50000, 150000, 27500}},
+      {22, {50000, 150000, 27500}},
+      {23, {50000, 150000, 27500}},
+      {24, {50000, 150000, 27500}},
+    };
+
+    auto it = breedingCosts.find(horseGrade);
+    if (it != breedingCosts.end())
+    {
+      minCharge = std::get<0>(it->second);
+      maxCharge = std::get<1>(it->second);
+      registrationFee = std::get<2>(it->second);
+    }
+  }
 
   // Validate and return breeding charge information
-  // TODO: Lookup actual horse grade and use proper min/max from BreedingCostInfo
   protocol::AcCmdCRCheckStallionChargeOK response{
     .status = 0,                // 0 = success
-    .minCharge = 10000,         // Grade 8 minimum charge
-    .maxCharge = 40000,         // Grade 8 maximum charge (TODO: Add grades 4-7)
-    .registrationFee = registrationFee,  // Registration fee is 50% of the charge
-    .charge = command.charge    // Echo back the requested charge
+    .minCharge = minCharge,     // Grade-specific minimum charge
+    .maxCharge = maxCharge,     // Grade-specific maximum charge
+    .registrationFee = registrationFee,  // Grade-specific registration fee
+    .charge = command.horseUid  // Echo back the horseUid
   };
 
   _commandServer.QueueCommand<decltype(response)>(
