@@ -46,6 +46,9 @@ public:
   void Terminate();
   void Tick();
 
+  //! Loads registered stallions from database on server startup
+  void LoadRegisteredStallions();
+
   std::vector<data::Uid> GetOnlineCharacters();
 
   void HandleClientConnected(ClientId clientId) override;
