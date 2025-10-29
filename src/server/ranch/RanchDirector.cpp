@@ -462,6 +462,15 @@ void RanchDirector::LoadRegisteredStallions()
       
       nlohmann::json json = nlohmann::json::parse(file);
       
+      spdlog::debug("Loading stallion {} from {}", stallionUid, entry.path().string());
+      
+      if (!json.contains("horseUid") || !json.contains("expiresAt") || 
+          !json.contains("ownerUid") || !json.contains("breedingCharge"))
+      {
+        spdlog::warn("Stallion file {} is missing required fields, skipping", entry.path().string());
+        continue;
+      }
+      
       data::Uid horseUid = json["horseUid"];
       uint64_t expiresAtSeconds = json["expiresAt"];
       util::Clock::time_point expiresAt = util::Clock::time_point(std::chrono::seconds(expiresAtSeconds));
