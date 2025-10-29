@@ -31,6 +31,7 @@
 #include <random>
 #include <unordered_map>
 #include <format>
+#include <fstream>
 
 #include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
@@ -54,6 +55,19 @@ constexpr uint16_t MaxAttachment = 1000;
 constexpr uint16_t MaxPlenitude = 1200;
 
 } // namespace anon
+
+// Global stallion tracking
+static std::vector<data::Uid> g_stallions;
+static std::unordered_map<data::Uid, data::Uid> g_horseToStallionMap; // Maps horseUid -> stallionUid
+
+// Cached stallion data to avoid async loading issues
+struct CachedStallionData
+{
+  data::Uid ownerUid;
+  uint32_t breedingCharge;
+  util::Clock::time_point expiresAt;
+};
+static std::unordered_map<data::Uid, CachedStallionData> g_stallionDataCache; // Maps stallionUid -> cached data
 
 RanchDirector::RanchDirector(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
@@ -486,6 +500,116 @@ void RanchDirector::Initialize()
     GetConfig().listen.port);
 
   _commandServer.BeginHost(GetConfig().listen.address, GetConfig().listen.port);
+  
+  // Load registered stallions from database
+  LoadRegisteredStallions();
+}
+
+void RanchDirector::LoadRegisteredStallions()
+{
+  // Scan the stallions directory and load all registered stallions
+  // The stallions are stored in the data/stallions directory relative to server root
+  const std::filesystem::path stallionsPath = "data/stallions";
+  
+  if (!std::filesystem::exists(stallionsPath))
+  {
+    spdlog::info("Stallions directory does not exist, skipping stallion loading");
+    return;
+  }
+
+  int loadedCount = 0;
+  int expiredCount = 0;
+  std::vector<data::Uid> horseUidsToPreload;
+  std::vector<data::Uid> stallionUidsToLoad;
+  
+  for (const auto& entry : std::filesystem::directory_iterator(stallionsPath))
+  {
+    if (!entry.is_regular_file() || entry.path().extension() != ".json")
+      continue;
+      
+    try
+    {
+      // Extract stallion UID from filename (e.g., "123.json" -> 123)
+      data::Uid stallionUid = std::stoul(entry.path().stem().string());
+      
+      // Read the JSON file directly to get stallion info
+      std::ifstream file(entry.path());
+      if (!file.is_open())
+      {
+        spdlog::warn("Failed to open stallion file {}", entry.path().string());
+        continue;
+      }
+      
+      nlohmann::json json = nlohmann::json::parse(file);
+      
+      data::Uid horseUid = json["horseUid"];
+      uint64_t expiresAtSeconds = json["expiresAt"];
+      util::Clock::time_point expiresAt = util::Clock::time_point(std::chrono::seconds(expiresAtSeconds));
+      
+      // Check if stallion has expired
+      if (util::Clock::now() >= expiresAt)
+      {
+        spdlog::info("Stallion {} (horse {}) has expired, removing from database", 
+          stallionUid, horseUid);
+        
+        // Queue stallion UID for retrieval to delete it
+        stallionUidsToLoad.push_back(stallionUid);
+        
+        // Reset horse type back to Adult
+        auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(horseUid);
+        if (horseRecord)
+        {
+          horseRecord->Mutable([](data::Horse& horse)
+          {
+            horse.horseType() = 0; // Adult
+          });
+        }
+        
+        // Delete expired stallion file
+        std::filesystem::remove(entry.path());
+        expiredCount++;
+        continue;
+      }
+      
+      // Cache the stallion data to avoid async loading issues
+      data::Uid ownerUid = json["ownerUid"];
+      uint32_t breedingCharge = json["breedingCharge"];
+      
+      CachedStallionData cachedData{
+        .ownerUid = ownerUid,
+        .breedingCharge = breedingCharge,
+        .expiresAt = expiresAt
+      };
+      g_stallionDataCache[stallionUid] = cachedData;
+      
+      // Add to in-memory lists for active stallions
+      g_stallions.emplace_back(horseUid);
+      g_horseToStallionMap[horseUid] = stallionUid;
+      horseUidsToPreload.push_back(horseUid);
+      
+      loadedCount++;
+    }
+    catch (const std::exception& e)
+    {
+      spdlog::warn("Failed to load stallion from {}: {}", 
+        entry.path().string(), e.what());
+    }
+  }
+  
+  // Pre-load all stallions
+  if (!horseUidsToPreload.empty())
+  {
+    GetServerInstance().GetDataDirector().GetHorseCache().Get(horseUidsToPreload);
+  }
+  
+  spdlog::info("Loaded {} registered stallion(s) from database ({} expired and removed)", 
+    loadedCount, expiredCount);
+  
+  // Debug: Log the first few stallions
+  if (!g_stallions.empty())
+  {
+    spdlog::debug("g_stallions count: {}, first entry: {}", g_stallions.size(), g_stallions[0]);
+  }
 }
 
 void RanchDirector::Terminate()
@@ -1608,6 +1732,8 @@ void RanchDirector::HandleRegisterStallion(
     horseGrade = horse.grade();
   });
 
+  spdlog::debug("RegisterStallion: Horse grade is {}", horseGrade);
+
   // Only allow grades 4-8 to be registered
   if (horseGrade < 4 || horseGrade > 8)
   {
@@ -1621,6 +1747,8 @@ void RanchDirector::HandleRegisterStallion(
 
   // Calculate registration fee (50% of breeding charge)
   uint32_t registrationFee = command.carrots / 2;
+
+  spdlog::debug("RegisterStallion: Deducting registration fee of {} carrots", registrationFee);
 
   // Deduct the registration fee from player's carrots
   characterRecord.Mutable([registrationFee](data::Character& character)
@@ -1653,6 +1781,8 @@ void RanchDirector::HandleRegisterStallion(
     {
       return response;
     });
+
+  spdlog::debug("RegisterStallion: Sending inventory update");
 
   // Update client's inventory/carrot display
   SendInventoryUpdate(clientId);
