@@ -2388,6 +2388,21 @@ void RaceDirector::HandleUseMagicItem(
     case 7:
       this->ScheduleSkillEffect(raceInstance, command.characterOid, command.characterOid, 5);
       break;
+    // Phoenix
+    case 8:
+      racer.hotRodded = true;
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, command.characterOid, 6, [&racer]()
+      {
+        racer.hotRodded = false;
+      });
+      break;
+    case 9:
+      racer.hotRodded = true;
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, command.characterOid, 6, [&racer]()
+      {
+        racer.hotRodded = false;
+      });
+      break;
   }
 
   racer.magicItem.reset();
@@ -2636,7 +2651,8 @@ void RaceDirector::HandleActivateSkillEffect(
   }
 
   if ((!SkillIsCritical(effectiveEffectId) && targetRacer.shield == server::tracker::RaceTracker::Racer::Shield::Normal)
-  || targetRacer.shield == server::tracker::RaceTracker::Racer::Shield::Critical)
+  || targetRacer.shield == server::tracker::RaceTracker::Racer::Shield::Critical
+  || targetRacer.hotRodded)
   {
     spdlog::info("Target racer {} has a shield active, attack blocked", command.targetOid);
     // TODO: Send some kind of notification that the attack was blocked? That picture on the side (PIPEvent?)
