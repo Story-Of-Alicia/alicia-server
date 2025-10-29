@@ -218,6 +218,9 @@ public:
   //! Deletes the stallion from the data source.
   //! @param uid UID of the stallion.
   virtual void DeleteStallion(data::Uid uid) = 0;
+  //! Lists all registered stallion UIDs from the data source.
+  //! @returns Vector of stallion UIDs.
+  virtual std::vector<data::Uid> ListRegisteredStallions() = 0;
 };
 
 } // namespace server

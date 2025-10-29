@@ -403,6 +403,8 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
 
 void RanchDirector::Initialize()
 {
+  GetServerInstance().GetBreedingMarket().Initialize();
+
   spdlog::debug(
     "Ranch server listening on {}:{}",
     GetConfig().listen.address.to_string(),

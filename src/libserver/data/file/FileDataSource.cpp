@@ -1281,3 +1281,32 @@ void server::FileDataSource::DeleteStallion(data::Uid uid)
     _stallionDataPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
 }
+
+std::vector<server::data::Uid> server::FileDataSource::ListRegisteredStallions()
+{
+  std::vector<server::data::Uid> stallionUids;
+  
+  if (!std::filesystem::exists(_stallionDataPath))
+  {
+    return stallionUids;
+  }
+
+  for (const auto& entry : std::filesystem::directory_iterator(_stallionDataPath))
+  {
+    if (!entry.is_regular_file() || entry.path().extension() != ".json")
+      continue;
+      
+    try
+    {
+      // Extract stallion UID from filename (e.g., "123.json" -> 123)
+      server::data::Uid stallionUid = std::stoul(entry.path().stem().string());
+      stallionUids.push_back(stallionUid);
+    }
+    catch (const std::exception&)
+    {
+      // Silently skip invalid filenames
+    }
+  }
+  
+  return stallionUids;
+}

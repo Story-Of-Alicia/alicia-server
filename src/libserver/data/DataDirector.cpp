@@ -916,6 +916,11 @@ DataDirector::StallionStorage& DataDirector::GetStallionCache()
   return _stallionStorage;
 }
 
+std::vector<data::Uid> DataDirector::ListRegisteredStallions()
+{
+  return _primaryDataSource->ListRegisteredStallions();
+}
+
 void DataDirector::ScheduleUserLoad(
   UserDataContext& userDataContext,
   const std::string& userName)

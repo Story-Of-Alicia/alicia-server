@@ -96,6 +96,7 @@ public:
   void RetrieveStallion(data::Uid uid, data::Stallion& stallion) override;
   void StoreStallion(data::Uid uid, const data::Stallion& stallion) override;
   void DeleteStallion(data::Uid uid) override;
+  std::vector<data::Uid> ListRegisteredStallions() override;
 private:
   //! A root data path.
   std::filesystem::path _dataPath;
