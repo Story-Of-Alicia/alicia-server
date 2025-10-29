@@ -29,6 +29,8 @@
 #include <random>
 #include <unordered_map>
 #include <fstream>
+#include <format>
+#include <filesystem>
 
 #include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
@@ -52,19 +54,6 @@ constexpr uint16_t MaxAttachment = 1000;
 constexpr uint16_t MaxPlenitude = 1200;
 
 } // namespace anon
-
-// Global stallion tracking
-static std::vector<data::Uid> g_stallions;
-static std::unordered_map<data::Uid, data::Uid> g_horseToStallionMap; // Maps horseUid -> stallionUid
-
-// Cached stallion data to avoid async loading issues
-struct CachedStallionData
-{
-  data::Uid ownerUid;
-  uint32_t breedingCharge;
-  util::Clock::time_point expiresAt;
-};
-static std::unordered_map<data::Uid, CachedStallionData> g_stallionDataCache; // Maps stallionUid -> cached data
 
 RanchDirector::RanchDirector(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
@@ -420,125 +409,6 @@ void RanchDirector::Initialize()
     GetConfig().listen.port);
 
   _commandServer.BeginHost(GetConfig().listen.address, GetConfig().listen.port);
-  
-  // Load registered stallions from database
-  LoadRegisteredStallions();
-}
-
-void RanchDirector::LoadRegisteredStallions()
-{
-  // Scan the stallions directory and load all registered stallions
-  // The stallions are stored in the data/stallions directory relative to server root
-  const std::filesystem::path stallionsPath = "data/stallions";
-  
-  if (!std::filesystem::exists(stallionsPath))
-  {
-    spdlog::info("Stallions directory does not exist, skipping stallion loading");
-    return;
-  }
-
-  int loadedCount = 0;
-  int expiredCount = 0;
-  std::vector<data::Uid> horseUidsToPreload;
-  std::vector<data::Uid> stallionUidsToLoad;
-  
-  for (const auto& entry : std::filesystem::directory_iterator(stallionsPath))
-  {
-    if (!entry.is_regular_file() || entry.path().extension() != ".json")
-      continue;
-      
-    try
-    {
-      // Extract stallion UID from filename (e.g., "123.json" -> 123)
-      data::Uid stallionUid = std::stoul(entry.path().stem().string());
-      
-      // Read the JSON file directly to get stallion info
-      std::ifstream file(entry.path());
-      if (!file.is_open())
-      {
-        spdlog::warn("Failed to open stallion file {}", entry.path().string());
-        continue;
-      }
-      
-      nlohmann::json json = nlohmann::json::parse(file);
-      
-      spdlog::debug("Loading stallion {} from {}", stallionUid, entry.path().string());
-      
-      if (!json.contains("horseUid") || !json.contains("expiresAt") || 
-          !json.contains("ownerUid") || !json.contains("breedingCharge"))
-      {
-        spdlog::warn("Stallion file {} is missing required fields, skipping", entry.path().string());
-        continue;
-      }
-      
-      data::Uid horseUid = json["horseUid"];
-      uint64_t expiresAtSeconds = json["expiresAt"];
-      util::Clock::time_point expiresAt = util::Clock::time_point(std::chrono::seconds(expiresAtSeconds));
-      
-      // Check if stallion has expired
-      if (util::Clock::now() >= expiresAt)
-      {
-        spdlog::info("Stallion {} (horse {}) has expired, removing from database", 
-          stallionUid, horseUid);
-        
-        // Queue stallion UID for retrieval to delete it
-        stallionUidsToLoad.push_back(stallionUid);
-        
-        // Reset horse type back to Adult
-        auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(horseUid);
-        if (horseRecord)
-        {
-          horseRecord->Mutable([](data::Horse& horse)
-          {
-            horse.horseType() = 0; // Adult
-          });
-        }
-        
-        // Delete expired stallion file
-        std::filesystem::remove(entry.path());
-        expiredCount++;
-        continue;
-      }
-      
-      // Cache the stallion data to avoid async loading issues
-      data::Uid ownerUid = json["ownerUid"];
-      uint32_t breedingCharge = json["breedingCharge"];
-      
-      CachedStallionData cachedData{
-        .ownerUid = ownerUid,
-        .breedingCharge = breedingCharge,
-        .expiresAt = expiresAt
-      };
-      g_stallionDataCache[stallionUid] = cachedData;
-      
-      // Add to in-memory lists for active stallions
-      g_stallions.emplace_back(horseUid);
-      g_horseToStallionMap[horseUid] = stallionUid;
-      horseUidsToPreload.push_back(horseUid);
-      
-      loadedCount++;
-    }
-    catch (const std::exception& e)
-    {
-      spdlog::warn("Failed to load stallion from {}: {}", 
-        entry.path().string(), e.what());
-    }
-  }
-  
-  // Pre-load all stallions
-  if (!horseUidsToPreload.empty())
-  {
-    GetServerInstance().GetDataDirector().GetHorseCache().Get(horseUidsToPreload);
-  }
-  
-  spdlog::info("Loaded {} registered stallion(s) from database ({} expired and removed)", 
-    loadedCount, expiredCount);
-  
-  // Debug: Log the first few stallions
-  if (!g_stallions.empty())
-  {
-    spdlog::debug("g_stallions count: {}, first entry: {}", g_stallions.size(), g_stallions[0]);
-  }
 }
 
 void RanchDirector::Terminate()
@@ -1466,12 +1336,12 @@ void RanchDirector::HandleEnterBreedingMarket(
         auto& protocolHorse = response.stallions.emplace_back();
 
         // Get the horse data (EnterBreedingMarket has simpler struct)
-        horseRecord.Immutable([&protocolHorse](const data::Horse& horse)
+        horseRecord.Immutable([&protocolHorse, this](const data::Horse& horse)
         {
           protocolHorse.uid = horse.uid();
           protocolHorse.tid = horse.tid();
           protocolHorse.combo = 0;  // Combo/success streak count
-          protocolHorse.isRegistered = (horse.horseType() == 2) ? 1 : 0;  // 1 if registered as stallion, 0 if not
+          protocolHorse.isRegistered = GetServerInstance().GetBreedingMarket().IsRegistered(horse.uid()) ? 1 : 0;
           protocolHorse.unk2 = 0;   // Unknown field
           protocolHorse.lineage = 0; // Ancestor coat lineage score
         });
@@ -1500,13 +1370,14 @@ void RanchDirector::HandleSearchStallion(
     command.unk9[0].size(), command.unk9[1].size(), command.unk9[2].size(),
     command.unk10);
 
-  spdlog::debug("g_stallions size: {}", g_stallions.size());
+  const auto registeredStallions = GetServerInstance().GetBreedingMarket().GetRegisteredStallions();
+  spdlog::debug("Registered stallions count: {}", registeredStallions.size());
   
   protocol::RanchCommandSearchStallionOK response{
     .unk0 = 0,
     .unk1 = 0};
 
-  for (const data::Uid& horseUid : g_stallions)
+  for (const data::Uid& horseUid : registeredStallions)
   {
     spdlog::debug("Processing stallion horseUid: {}", horseUid);
     
@@ -1517,34 +1388,23 @@ void RanchDirector::HandleSearchStallion(
       continue;
     }
 
-    // Look up the stallion registration record using the map
-    auto it = g_horseToStallionMap.find(horseUid);
-    if (it == g_horseToStallionMap.end())
+    // Get cached stallion data from breeding market
+    auto stallionDataOpt = GetServerInstance().GetBreedingMarket().GetStallionData(horseUid);
+    if (!stallionDataOpt)
     {
-      spdlog::warn("Stallion mapping not found for horseUid: {}", horseUid);
-      continue; // Horse not properly registered
-    }
-    
-    data::Uid stallionUid = it->second;
-    spdlog::debug("Found stallion mapping: horseUid={} -> stallionUid={}", horseUid, stallionUid);
-    
-    // Get cached stallion data to avoid async loading issues
-    auto cacheIt = g_stallionDataCache.find(stallionUid);
-    if (cacheIt == g_stallionDataCache.end())
-    {
-      spdlog::warn("Stallion data not found in cache for stallionUid: {}", stallionUid);
+      spdlog::warn("Stallion data not found for horseUid: {}", horseUid);
       continue;
     }
     
-    const CachedStallionData& cachedData = cacheIt->second;
-    spdlog::debug("Successfully retrieved cached data for stallion {}", stallionUid);
+    const auto& stallionData = *stallionDataOpt;
+    spdlog::debug("Successfully retrieved cached data for stallion");
 
     auto& protocolStallion = response.stallions.emplace_back();
     
     std::string ownerName = "unknown";
     
     // Get owner name
-    const auto ownerRecord = GetServerInstance().GetDataDirector().GetCharacter(cachedData.ownerUid);
+    const auto ownerRecord = GetServerInstance().GetDataDirector().GetCharacter(stallionData.ownerUid);
     if (ownerRecord)
     {
       ownerRecord.Immutable([&ownerName](const data::Character& owner)
@@ -1553,7 +1413,7 @@ void RanchDirector::HandleSearchStallion(
       });
     }
 
-    horseRecord->Immutable([&protocolStallion, &ownerName, &cachedData](const data::Horse& horse)
+    horseRecord->Immutable([&protocolStallion, &ownerName, &stallionData](const data::Horse& horse)
     {
       protocolStallion.member1 = ownerName;
       protocolStallion.uid = horse.uid();
@@ -1561,9 +1421,9 @@ void RanchDirector::HandleSearchStallion(
       protocolStallion.name = horse.name();
       protocolStallion.grade = horse.grade();
       protocolStallion.chance = 0;  // TODO: Calculate breeding chances based on bonus, linage, etc.
-      protocolStallion.matePrice = cachedData.breedingCharge;
+      protocolStallion.matePrice = stallionData.breedingCharge;
       protocolStallion.unk7 = 0;    // Unknown field
-      protocolStallion.expiresAt = util::TimePointToAliciaTime(cachedData.expiresAt);
+      protocolStallion.expiresAt = util::TimePointToAliciaTime(stallionData.expiresAt);
 
       protocol::BuildProtocolHorseStats(protocolStallion.stats, horse.stats);
       protocol::BuildProtocolHorseParts(protocolStallion.parts, horse.parts);
@@ -1592,37 +1452,11 @@ void RanchDirector::HandleRegisterStallion(
   
   const auto& clientContext = GetClientContext(clientId);
   
-  // Get horse data to validate grade
-  auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(command.horseUid);
-  if (!horseRecord)
-  {
-    spdlog::warn("RegisterStallion: Horse {} not found", command.horseUid);
-    return; // TODO: Send cancel response
-  }
-
-  uint8_t horseGrade = 0;
-  horseRecord->Immutable([&horseGrade](const data::Horse& horse)
-  {
-    horseGrade = horse.grade();
-  });
-
-  spdlog::debug("RegisterStallion: Horse grade is {}", horseGrade);
-
-  // Only allow grades 4-8 to be registered
-  if (horseGrade < 4 || horseGrade > 8)
-  {
-    spdlog::warn("RegisterStallion: Horse {} grade {} is not allowed for breeding (must be 4-8)", 
-      command.horseUid, horseGrade);
-    return; // TODO: Send cancel response
-  }
-
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
   // Calculate registration fee (50% of breeding charge)
   uint32_t registrationFee = command.carrots / 2;
-
-  spdlog::debug("RegisterStallion: Deducting registration fee of {} carrots", registrationFee);
 
   // Deduct the registration fee from player's carrots
   characterRecord.Mutable([registrationFee](data::Character& character)
@@ -1633,48 +1467,18 @@ void RanchDirector::HandleRegisterStallion(
     }
   });
 
-  spdlog::debug("RegisterStallion: Setting horse type to Stallion (2)");
+  // Delegate to BreedingMarket
+  auto stallionUidOpt = GetServerInstance().GetBreedingMarket().RegisterStallion(
+    clientContext.characterUid,
+    command.horseUid,
+    command.carrots);
 
-  // Mark horse as registered stallion
-  horseRecord->Mutable([](data::Horse& horse)
-    {
-      horse.horseType() = 2; // HorseType::Stallion
-  });
-
-  spdlog::debug("RegisterStallion: Creating stallion database record");
-
-  // Create persistent stallion registration
-  auto stallionRecord = GetServerInstance().GetDataDirector().CreateStallion();
-
-  data::Uid stallionUid = data::InvalidUid;
-  stallionRecord.Mutable([&command, &clientContext, &stallionUid](data::Stallion& stallion)
+  if (!stallionUidOpt)
   {
-    stallion.horseUid() = command.horseUid;
-    stallion.ownerUid() = clientContext.characterUid;
-    stallion.breedingCharge() = command.carrots;
-    stallion.registeredAt() = server::util::Clock::now();
-    stallion.expiresAt() = server::util::Clock::now() + std::chrono::hours(24 * 7); // 7 days
-    stallion.timesBreeded() = 0;
-    stallionUid = stallion.uid();
-  });
-
-  spdlog::info("RegisterStallion: Created stallion record with UID {}", stallionUid);
-
-  // Add in-memory list for backwards compatibility
-  g_stallions.emplace_back(command.horseUid);
-  
-  // Map horseUid to stallionUid for quick lookup
-  g_horseToStallionMap[command.horseUid] = stallionUid;
-  
-  // Cache the stallion data
-  CachedStallionData cachedData{
-    .ownerUid = clientContext.characterUid,
-    .breedingCharge = command.carrots,
-    .expiresAt = server::util::Clock::now() + std::chrono::hours(24 * 7)
-  };
-  g_stallionDataCache[stallionUid] = cachedData;
-
-  spdlog::debug("RegisterStallion: Sending OK response to client");
+    spdlog::warn("RegisterStallion: Failed to register horse {}", command.horseUid);
+    // TODO: Send cancel response and refund registration fee
+    return;
+  }
 
   protocol::AcCmdCRRegisterStallionOK response{
     .horseUid = command.horseUid};
@@ -1686,71 +1490,74 @@ void RanchDirector::HandleRegisterStallion(
       return response;
     });
 
-  spdlog::debug("RegisterStallion: Sending inventory update");
-
   // Update client's inventory/carrot display
   SendInventoryUpdate(clientId);
 
-  spdlog::info("RegisterStallion: Successfully registered horse {} as stallion {}", command.horseUid, stallionUid);
+  spdlog::info("RegisterStallion: Successfully registered horse {} as stallion {}", 
+    command.horseUid, *stallionUidOpt);
 }
 
 void RanchDirector::HandleUnregisterStallion(
   ClientId clientId,
   const protocol::AcCmdCRUnregisterStallion& command)
 {
-  // Reset horse type back to Adult
-  auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(command.horseUid);
-  if (horseRecord)
-  {
-    horseRecord->Mutable([](data::Horse& horse)
-    {
-      horse.horseType() = 0; // HorseType::Adult
-    });
-  }
-
-  // Remove from in-memory list
-  g_stallions.erase(std::ranges::find(g_stallions, command.horseUid));
-
-  // Look up and delete the stallion registration record
-  auto it = g_horseToStallionMap.find(command.horseUid);
-  if (it != g_horseToStallionMap.end())
-  {
-    data::Uid stallionUid = it->second;
-    
-    // Delete the stallion record from database
-    GetServerInstance().GetDataDirector().GetStallionCache().Delete(stallionUid);
-    
-    // Remove from map
-    g_horseToStallionMap.erase(it);
-  }
+  const auto& clientContext = GetClientContext(clientId);
+  
+  // Delegate to BreedingMarket
+  uint32_t compensation = GetServerInstance().GetBreedingMarket().UnregisterStallion(command.horseUid);
+  
+  // TODO: Pay compensation to owner
+  // if (compensation > 0)
+  // {
+  //   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
+  //   characterRecord.Mutable([compensation](data::Character& character)
+  //   {
+  //     character.carrots() = character.carrots() + compensation;
+  //   });
+  // }
 
   protocol::AcCmdCRUnregisterStallionOK response{};
-
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [response]()
-    {
-      return response;
-    });
+  _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
+  
+  // Update client's carrot balance
+  SendInventoryUpdate(clientId);
 }
 
 void RanchDirector::HandleUnregisterStallionEstimateInfo(
   ClientId clientId,
   const protocol::AcCmdCRUnregisterStallionEstimateInfo& command)
 {
+  // Delegate to BreedingMarket
+  auto estimateOpt = GetServerInstance().GetBreedingMarket().GetUnregisterEstimate(command.horseUid);
+  
+  if (!estimateOpt)
+  {
+    spdlog::warn("UnregisterStallionEstimateInfo: Horse {} is not registered as stallion", command.horseUid);
+    // Return error response with zeros
+    protocol::AcCmdCRUnregisterStallionEstimateInfoOK response{
+      .member1 = 0xFFFF'FFFF,
+      .timesMated = 0,
+      .matingCompensation = 0,
+      .member4 = 0xFFFF'FFFF,
+      .matingPrice = 0
+    };
+    _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
+    return;
+  }
+
+  auto [timesMated, compensation, breedingCharge] = *estimateOpt;
+
   protocol::AcCmdCRUnregisterStallionEstimateInfoOK response{
     .member1 = 0xFFFF'FFFF,
-    .timesMated = 0,
-    .matingCompensation = 0,
+    .timesMated = timesMated,
+    .matingCompensation = compensation,
     .member4 = 0xFFFF'FFFF,
-    .matingPrice = 0};
+    .matingPrice = breedingCharge
+  };
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
-    [response]()
-    {
-      return response;
-    });
+    [response]() { return response; });
 }
 
 void RanchDirector::HandleCheckStallionCharge(
