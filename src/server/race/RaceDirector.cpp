@@ -2424,6 +2424,27 @@ void RaceDirector::HandleUseMagicItem(
         }
       }
       break;
+    // BufSpeed
+    case 24:
+      for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
+      {
+        if (racer.oid == otherRacer.oid
+        || (racer.team != server::tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
+        {
+          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 22);
+        }
+      }
+      break;
+    case 25:
+      for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
+      {
+        if (racer.oid == otherRacer.oid
+        || (racer.team != server::tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
+        {
+          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 23);
+        }
+      }
+      break;
   }
 
   racer.magicItem.reset();
