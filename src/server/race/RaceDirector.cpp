@@ -2403,6 +2403,27 @@ void RaceDirector::HandleUseMagicItem(
         racer.hotRodded = false;
       });
       break;
+    // Shackles
+    // TODO: Apply only to opponents ahead of the racer
+    case 12:
+      for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
+      {
+        if (racer.oid != otherRacer.oid
+        && (racer.team == server::tracker::RaceTracker::Racer::Team::Solo || racer.team != otherRacer.team))
+        {
+          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 10);
+        }
+      }
+    case 13:
+      for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
+      {
+        if (racer.oid != otherRacer.oid
+        && (racer.team == server::tracker::RaceTracker::Racer::Team::Solo || racer.team != otherRacer.team))
+        {
+          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 11);
+        }
+      }
+      break;
   }
 
   racer.magicItem.reset();
