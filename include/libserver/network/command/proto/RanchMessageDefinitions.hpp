@@ -424,7 +424,8 @@ struct RanchCommandEnterBreedingMarketOK
     uint32_t tid{};
     // Counts of successful breeds (>:o) in succession.
     uint8_t combo{};
-    uint32_t unk1{};
+    // Registration status: 1 if horse is registered as stallion, 0 if not
+    uint32_t isRegistered{};
 
     uint8_t unk2{};
     // Basically weighted score of number of ancestors that share the same coat as the horse.

@@ -1471,7 +1471,7 @@ void RanchDirector::HandleEnterBreedingMarket(
           protocolHorse.uid = horse.uid();
           protocolHorse.tid = horse.tid();
           protocolHorse.combo = 0;  // Combo/success streak count
-          protocolHorse.unk1 = 0;   // Unknown field
+          protocolHorse.isRegistered = (horse.horseType() == 2) ? 1 : 0;  // 1 if registered as stallion, 0 if not
           protocolHorse.unk2 = 0;   // Unknown field
           protocolHorse.lineage = 0; // Ancestor coat lineage score
         });
