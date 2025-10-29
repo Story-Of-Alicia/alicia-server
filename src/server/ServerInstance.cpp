@@ -53,6 +53,7 @@ ServerInstance::ServerInstance(
   , _breedingMarket(*this)
   , _genetics(*this)
   , _itemSystem(*this)
+  , _breedingMarket(*this)
 {
 }
 
@@ -214,6 +215,9 @@ void ServerInstance::Initialize()
     }
   }
 
+  // Breeding market (initialize before ranch director)
+  _breedingMarket.Initialize();
+
   // Ranch director
   _ranchDirectorThread = std::thread([this]()
   {
@@ -254,6 +258,7 @@ void ServerInstance::Initialize()
 void ServerInstance::Terminate()
 {
   _shouldRun.store(false, std::memory_order::relaxed);
+  _breedingMarket.Terminate();
 }
 
 AuthenticationService& ServerInstance::GetAuthenticationService()
@@ -354,6 +359,11 @@ OtpSystem& ServerInstance::GetOtpSystem()
 Genetics& ServerInstance::GetGenetics()
 {
   return _genetics;
+}
+
+BreedingMarket& ServerInstance::GetBreedingMarket()
+{
+  return _breedingMarket;
 }
 
 Config& ServerInstance::GetSettings()

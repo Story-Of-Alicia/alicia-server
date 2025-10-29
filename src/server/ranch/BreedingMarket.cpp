@@ -44,6 +44,7 @@ std::optional<ChargeRange> GetChargeRangeForGrade(uint8_t grade)
 
 } // anon namespace
 
+
 BreedingMarket::BreedingMarket(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
 {
@@ -53,7 +54,7 @@ void BreedingMarket::Initialize()
 {
   // Get all registered stallion UIDs from the data source
   _stallionUidsToLoad = _serverInstance.GetDataDirector().ListRegisteredStallions();
-  
+
 
   if (_stallionUidsToLoad.empty())
   {
@@ -61,13 +62,13 @@ void BreedingMarket::Initialize()
     return;
   }
 
-  
+
   // Request async loading of stallion records (individual calls trigger loading)
   for (data::Uid stallionUid : _stallionUidsToLoad)
   {
     _serverInstance.GetDataDirector().GetStallionCache().Get(stallionUid);
   }
-  
+
   _stallionsLoaded = false;
 }
 
@@ -83,13 +84,13 @@ void BreedingMarket::Terminate()
 void BreedingMarket::Tick()
 {
   std::lock_guard<std::mutex> lock(_mutex);
-  
+
   // Load stallions from database
   if (!_stallionsLoaded && !_stallionUidsToLoad.empty())
   {
     int loadedCount = 0;
     std::vector<data::Uid> stillPending;
-    
+
     // Check each stallion individually
     for (data::Uid stallionUid : _stallionUidsToLoad)
     {
@@ -100,12 +101,12 @@ void BreedingMarket::Tick()
         stillPending.push_back(stallionUid);
         continue;
       }
-      
+
       StallionData cachedData{};
       bool isValid = true;
-      
+
       uint32_t timesMated = 0;
-      
+
       stallionRecordOpt->Immutable([&](const data::Stallion& stallion)
       {
         cachedData.stallionUid = stallion.uid();
@@ -114,7 +115,7 @@ void BreedingMarket::Tick()
         cachedData.breedingCharge = stallion.breedingCharge();
         cachedData.registeredAt = stallion.registeredAt();
         timesMated = stallion.timesMated();
-        
+
         // Check if expired immediately (24 hours after registration)
         const auto expiresAt = cachedData.registeredAt + std::chrono::hours(24);
         if (util::Clock::now() >= expiresAt)
@@ -127,15 +128,15 @@ void BreedingMarket::Tick()
           _serverInstance.GetDataDirector().GetHorseCache().Get(stallion.horseUid());
         }
       });
-      
+
       if (!isValid)
       {
         // Handle expired stallion: pay owner, reset horse type, delete record
         uint32_t earnings = cachedData.breedingCharge * timesMated;
-        
+
         // Pay the owner
         PayOwner(cachedData.ownerUid, earnings);
-        
+
         // Reset horse type back to Adult (0)
         // Trigger async load of the horse
         const auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(cachedData.horseUid);
@@ -151,23 +152,23 @@ void BreedingMarket::Tick()
           // Horse not loaded yet - queue it for later processing
           _horsesNeedingTypeReset.push_back(cachedData.horseUid);
         }
-        
+
         // Delete stallion record from database
         _serverInstance.GetDataDirector().GetStallionCache().Delete(stallionUid);
-        
+
         // Don't add to stillPending - it's been handled
         continue;
       }
-      
+
       _stallionDataCache[stallionUid] = std::move(cachedData);
       _registeredStallions.emplace_back(cachedData.horseUid);
       _horseToStallionMap[cachedData.horseUid] = stallionUid;
       loadedCount++;
     }
-    
+
     // Update the queue with only pending stallions
     _stallionUidsToLoad = std::move(stillPending);
-    
+
     // If all stallions are loaded, mark as complete
     if (_stallionUidsToLoad.empty())
     {
@@ -178,13 +179,13 @@ void BreedingMarket::Tick()
     {
     }
   }
-  
+
   // Check for expired stallions every tick
   if (_stallionsLoaded)
   {
     CheckExpiredStallions();
   }
-  
+
   // Try to process pending payments and horse type resets
   ProcessPendingHorseTypeResets();
 }
@@ -194,16 +195,16 @@ void BreedingMarket::CheckExpiredStallions()
   // This is called from Tick() which already holds the mutex
   const auto now = util::Clock::now();
   std::vector<data::Uid> expiredHorseUids;
-  
+
   for (auto it = _stallionDataCache.begin(); it != _stallionDataCache.end(); )
   {
     const data::Uid stallionUid = it->first;
     const StallionData& stallionData = it->second;
-    
+
     auto expiresAt = stallionData.registeredAt + std::chrono::hours(24);
     if (now >= expiresAt)
     {
-      
+
       // Get timesMated before deleting the record
       uint32_t timesMated = 0;
       auto stallionRecordOpt = _serverInstance.GetDataDirector().GetStallionCache().Get(stallionUid);
@@ -214,17 +215,17 @@ void BreedingMarket::CheckExpiredStallions()
           timesMated = stallion.timesMated();
         });
       }
-      
+
       // Calculate and pay owner their earnings
       uint32_t earnings = stallionData.breedingCharge * timesMated;
       PayOwner(stallionData.ownerUid, earnings);
-      
+
       // Remove from cache
       expiredHorseUids.push_back(stallionData.horseUid);
-      
+
       // Delete stallion record from database
       _serverInstance.GetDataDirector().GetStallionCache().Delete(stallionUid);
-      
+
       // Reset horse type back to Adult (0)
       auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(stallionData.horseUid);
       if (horseRecord)
@@ -239,7 +240,7 @@ void BreedingMarket::CheckExpiredStallions()
         // Horse not loaded yet - queue it for later processing
         _horsesNeedingTypeReset.push_back(stallionData.horseUid);
       }
-      
+
       // Erase from cache
       it = _stallionDataCache.erase(it);
     }
@@ -248,7 +249,7 @@ void BreedingMarket::CheckExpiredStallions()
       ++it;
     }
   }
-  
+
   // Remove expired horses from tracking lists
   for (data::Uid horseUid : expiredHorseUids)
   {
@@ -256,7 +257,7 @@ void BreedingMarket::CheckExpiredStallions()
     _registeredStallions.erase(
       std::remove(_registeredStallions.begin(), _registeredStallions.end(), horseUid),
       _registeredStallions.end());
-    
+
     // Remove from horse->stallion map
     _horseToStallionMap.erase(horseUid);
   }
@@ -335,9 +336,9 @@ data::Uid BreedingMarket::RegisterStallion(
 
   // Add to in-memory structures
   _registeredStallions.emplace_back(horseUid);
-  
+
   _horseToStallionMap[horseUid] = stallionUid;
-  
+
   // Cache the stallion data
   StallionData cachedData{
     .stallionUid = stallionUid,
@@ -346,7 +347,7 @@ data::Uid BreedingMarket::RegisterStallion(
     .breedingCharge = breedingCharge,
     .registeredAt = registeredAt
   };
-  
+
   _stallionDataCache[stallionUid] = cachedData;
 
   return stallionUid;
@@ -381,10 +382,10 @@ BreedingMarket::StallionBreedingEarnings BreedingMarket::UnregisterStallion(data
       {
         earnings.timesMated = stallion.timesMated();
       });
-      
+
       earnings.breedingCharge = cachedData.breedingCharge;
       earnings.compensation = earnings.timesMated * earnings.breedingCharge;
-      
+
     }
     
     // Remove from cache
@@ -425,7 +426,7 @@ std::optional<BreedingMarket::StallionBreedingEarnings> BreedingMarket::GetUnreg
   }
 
   data::Uid stallionUid = it->second;
-  
+
   // Get cached stallion data
   auto cacheIt = _stallionDataCache.find(stallionUid);
   if (cacheIt == _stallionDataCache.end())
@@ -492,9 +493,9 @@ void BreedingMarket::ProcessPendingHorseTypeResets()
   {
     return;
   }
-  
+
   std::vector<data::Uid> stillPending;
-  
+
   for (data::Uid horseUid : _horsesNeedingTypeReset)
   {
     const auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(horseUid);
@@ -511,9 +512,8 @@ void BreedingMarket::ProcessPendingHorseTypeResets()
       stillPending.push_back(horseUid);
     }
   }
-  
+
   _horsesNeedingTypeReset = std::move(stillPending);
-  
 }
 
 void BreedingMarket::PayOwner(data::Uid ownerUid, uint32_t earnings)
@@ -546,6 +546,7 @@ void BreedingMarket::PayOwner(data::Uid ownerUid, uint32_t earnings)
     spdlog::error("Breeding market: Failed to pay owner {} ({} carrots): {}", ownerUid, earnings, ex.what());
   }
 }
+
 
 } // namespace server
 
