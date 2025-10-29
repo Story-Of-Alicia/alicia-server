@@ -85,6 +85,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _housingSequentialUid = meta["housingSequentialUid"].get<uint32_t>();
   _guildSequentialId = meta["guildSequentialId"].get<uint32_t>();
   _settingsSequentialId = meta["settingsSequentialId"].get<uint32_t>();
+  _stallionSequentialUid = meta["stallionSequentialUid"].get<uint32_t>();
 }
 
 void server::FileDataSource::Terminate()
@@ -108,6 +109,7 @@ void server::FileDataSource::Terminate()
   meta["housingSequentialUid"] = _housingSequentialUid.load();
   meta["guildSequentialId"] = _guildSequentialId.load();
   meta["settingsSequentialId"] = _settingsSequentialId.load();
+  meta["stallionSequentialUid"] = _stallionSequentialUid.load();
 
   metaFile << meta.dump(2);
 }

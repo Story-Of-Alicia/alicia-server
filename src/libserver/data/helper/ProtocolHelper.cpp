@@ -74,11 +74,11 @@ void BuildProtocolHorse(
   };
 
   protocolHorse.vals1 = {
-    .type = Horse::HorseType::Adult,
+    .type = static_cast<protocol::Horse::HorseType>(horse.horseType()),
     .val1 = 0x00,
     .dateOfBirth = util::TimePointToAliciaTime(horse.dateOfBirth()),
-    .tendency = 0x02,
-    .spirit = 0x00,
+    .tendency = horse.tendency(),
+    .spirit = horse.spirit(),
     .classProgression = static_cast<uint32_t>(horse.clazzProgress()),
     .val5 = 0x00,
     .potentialLevel = static_cast<uint8_t>(horse.potential.level()),
