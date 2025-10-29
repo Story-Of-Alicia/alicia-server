@@ -1700,8 +1700,14 @@ void RaceDirector::HandleStarPointGet(
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
     static_cast<uint8_t>(raceInstance.raceGameMode));
 
+  uint32_t gainedStarPoints = command.gainedStarPoints;
+  if (racer.gaugeBuff) {
+    // TODO: Something sensible, idk what the bonus does
+    gainedStarPoints *= 2;
+  }
+
   racer.starPointValue = std::min(
-    racer.starPointValue + command.gainedStarPoints,
+    racer.starPointValue + gainedStarPoints,
     gameModeTemplate.starPointsMax);
 
   // Star point get (boost get) is only called in speed, should never give magic item
@@ -1842,9 +1848,15 @@ void RaceDirector::HandleHurdleClearResult(
       racer.jumpComboValue = 0;
       response.jumpCombo = racer.jumpComboValue;
 
+      uint32_t gainedStarPoints = gameModeTemplate.goodJumpStarPoints;
+      if (racer.gaugeBuff) {
+        // TODO: Something sensible, idk what the bonus does
+        gainedStarPoints *= 2;
+      }
+
       // Increment boost gauge by a good jump
       racer.starPointValue = std::min(
-        racer.starPointValue + gameModeTemplate.goodJumpStarPoints,
+        racer.starPointValue + gainedStarPoints,
         gameModeTemplate.starPointsMax);
 
       // Update boost gauge
@@ -2022,7 +2034,13 @@ void RaceDirector::HandleRaceUserPos(
       constexpr uint32_t NoItemHeldBoostAmount = 2000;
       // TODO: does holding an item and with certain equipment give you magic? At a reduced rate?
       constexpr uint32_t ItemHeldWithEquipmentBoostAmount = 1000;
-      racer.starPointValue = std::min(gameModeTemplate.starPointsMax, racer.starPointValue + NoItemHeldBoostAmount);
+      uint32_t gainedStarPoints;
+        gainedStarPoints = NoItemHeldBoostAmount;
+      if (racer.gaugeBuff) {
+        // TODO: Something sensible, idk what the bonus does
+        gainedStarPoints *= 2;
+      }
+      racer.starPointValue = std::min(gameModeTemplate.starPointsMax, racer.starPointValue + gainedStarPoints);
     }
 
     // Conditional already checks if there is no magic item and gamemode is magic,
@@ -2342,22 +2360,6 @@ void RaceDirector::HandleUseMagicItem(
       [usageNotify]() { return usageNotify; });
   }
 
-  // TODO: Special handling for the shackles and darkness
-  // Magic    | IDs    | Effect ID
-  // Shackles | 12, 13 | 10, 11
-  // Darkness | 14, 15 | 12, 13
-
-  // TODO: Special handling for the team buffs
-  // Magic    | IDs    | Effect ID
-  // Phoenix  | 8,  9  | 6,  7
-  // BufPower | 20, 21 | 18, 19
-  // BufGauge | 22, 23 | 20, 21
-  // BufSpeed | 24, 25 | 22, 23
-
-  // TODO: Special handling for the lightning
-  // Magic     | IDs    | Effect ID
-  // Lightning | 16, 17 | 18, 19
-
   // Send effect for items that have instant effects
   switch (command.magicItemId)
   {
@@ -2444,6 +2446,36 @@ void RaceDirector::HandleUseMagicItem(
           this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 19, [&otherRacer]()
           {
             otherRacer.critChance = false;
+          });
+        }
+      }
+      break;
+    // BufGauge
+    case 22:
+      for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
+      {
+        if (racer.oid == otherRacer.oid
+        || (racer.team != server::tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
+        {
+          otherRacer.gaugeBuff = true;
+          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 20, [&otherRacer]()
+          {
+            otherRacer.gaugeBuff = false;
+          });
+        }
+      }
+      break;
+    case 23:
+      // TODO: Is the crit gauge buff different from the normal gauge buff?
+      for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
+      {
+        if (racer.oid == otherRacer.oid
+        || (racer.team != server::tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
+        {
+          otherRacer.gaugeBuff = true;
+          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 21, [&otherRacer]()
+          {
+            otherRacer.gaugeBuff = false;
           });
         }
       }

@@ -79,6 +79,7 @@ public:
     bool darkness{};
     bool hotRodded{};
     bool critChance{};
+    bool gaugeBuff{};
   };
 
   //! An item
