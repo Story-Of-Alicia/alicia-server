@@ -89,6 +89,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _settingsSequentialId = meta["settingsSequentialId"].get<uint32_t>();
   _dailyQuestSequentialId = meta["dailyQuestSequentialId"].get<uint32_t>();
   _mailSequentialId = meta["mailSequentialId"].get<uint32_t>();
+  _stallionSequentialUid = meta["stallionSequentialUid"].get<uint32_t>();
 }
 
 void server::FileDataSource::Terminate()
@@ -123,6 +124,7 @@ void server::FileDataSource::SaveMetadata()
   meta["settingsSequentialId"] = _settingsSequentialId.load();
   meta["dailyQuestSequentialId"] = _dailyQuestSequentialId.load();
   meta["mailSequentialId"] = _mailSequentialId.load();
+  meta["stallionSequentialUid"] = _stallionSequentialUid.load();
 
   metaFile << meta.dump(2);
 }
