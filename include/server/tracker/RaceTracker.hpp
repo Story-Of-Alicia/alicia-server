@@ -76,6 +76,7 @@ public:
     std::unordered_set<Oid> trackedItems;
 
     Shield shield{Shield::None};
+    bool darkness{};
   };
 
   //! An item

@@ -2628,7 +2628,14 @@ void RaceDirector::HandleActivateSkillEffect(
     clientId, command.targetOid, command.effectId, command.attackerOid, command.unk1, intensity);
 
   auto& targetRacer = raceInstance.tracker.GetRacer(clientContext.characterUid);
-  if ((!SkillIsCritical(command.effectId) && targetRacer.shield == server::tracker::RaceTracker::Racer::Shield::Normal)
+
+  uint32_t effectiveEffectId = command.effectId;
+  if (targetRacer.darkness && !SkillIsCritical(effectiveEffectId))
+  {
+    effectiveEffectId += 1; // Use the "critical" version of the skill effect
+  }
+
+  if ((!SkillIsCritical(effectiveEffectId) && targetRacer.shield == server::tracker::RaceTracker::Racer::Shield::Normal)
   || targetRacer.shield == server::tracker::RaceTracker::Racer::Shield::Critical)
   {
     spdlog::info("Target racer {} has a shield active, attack blocked", command.targetOid);
@@ -2638,10 +2645,23 @@ void RaceDirector::HandleActivateSkillEffect(
     return;
   }
 
-  // TODO: Send notify to show that pic on the side (PIPEvent?)
+  std::optional<std::function<void()>> afterEffectRemoved = std::nullopt;
+  switch (effectiveEffectId)
+  {
+      // Darkness
+      case 12:
+      case 13:
+        // TODO: Is crit darkness different from normal darkness?
+        targetRacer.darkness = true;
+        afterEffectRemoved = [&targetRacer]()
+        {
+          targetRacer.darkness = false;
+        };
+        break;
+  } 
 
   // TODO: Remove held item
-  this->ScheduleSkillEffect(raceInstance, command.attackerOid, command.targetOid, command.effectId);
+  this->ScheduleSkillEffect(raceInstance, command.attackerOid, command.targetOid, effectiveEffectId, afterEffectRemoved);
 }
 
 void RaceDirector::HandleChangeSkillCardPresetId(
