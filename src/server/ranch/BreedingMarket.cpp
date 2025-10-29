@@ -18,6 +18,7 @@ namespace
 {
 
 // Breeding grade restrictions
+// TODO: Make these configurable via server config
 constexpr uint8_t MinBreedingGrade = 4;
 constexpr uint8_t MaxBreedingGrade = 8;
 
@@ -43,6 +44,7 @@ void BreedingMarket::Initialize()
   for (data::Uid stallionUid : stallionUids)
   {
     // Load stallion data synchronously by creating it in the cache
+    // This bypasses the async retrieval queue and loads immediately
     data::Stallion stallionData;
     data::Uid horseUid = 0;
     data::Uid ownerUid = 0;
