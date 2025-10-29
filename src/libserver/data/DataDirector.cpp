@@ -1192,6 +1192,11 @@ DataSource& DataDirector::GetDataSource() noexcept
   return *_primaryDataSource;
 }
 
+std::vector<data::Uid> DataDirector::ListRegisteredStallions()
+{
+  return _primaryDataSource->ListRegisteredStallions();
+}
+
 void DataDirector::ScheduleUserLoad(
   UserDataContext& userDataContext,
   const std::string& userName)

@@ -212,9 +212,6 @@ void ServerInstance::Initialize()
     }
   }
 
-  // Breeding market (initialize before ranch director)
-  _breedingMarket.Initialize();
-
   // Ranch director
   _ranchDirectorThread = std::thread([this]()
   {
