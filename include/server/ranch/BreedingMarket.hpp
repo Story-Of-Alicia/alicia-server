@@ -59,6 +59,7 @@ public:
   //! Ticks the breeding market (checks for expired stallions)
   void Tick();
 
+
   //! Registers a horse as a stallion in the breeding market
   //! @param characterUid UID of the character registering the stallion
   //! @param horseUid UID of the horse to register
@@ -121,10 +122,10 @@ private:
 
   //! Checks and removes expired stallions
   void CheckExpiredStallions();
-  
+
   //! Attempts to reset horse types for horses in _horsesNeedingTypeReset
   void ProcessPendingHorseTypeResets();
-  
+
   //! Pays a stallion owner immediately, loading from the data source if needed
   void PayOwner(data::Uid ownerUid, uint32_t earnings);
 };
