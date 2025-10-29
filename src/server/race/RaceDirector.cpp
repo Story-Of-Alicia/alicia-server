@@ -1687,6 +1687,8 @@ void RaceDirector::HandleStarPointGet(
 
   auto& racer = raceInstance.tracker.GetRacer(
     clientContext.characterUid);
+
+  // TODO: Revise this in NPC races
   if (command.characterOid != racer.oid)
   {
     throw std::runtime_error(
@@ -1724,6 +1726,8 @@ void RaceDirector::HandleRequestSpur(
 
   auto& racer = raceInstance.tracker.GetRacer(
     clientContext.characterUid);
+
+  // TODO: Revise this in NPC races
   if (command.characterOid != racer.oid)
   {
     throw std::runtime_error(
@@ -1774,6 +1778,8 @@ void RaceDirector::HandleHurdleClearResult(
 
   auto& racer = raceInstance.tracker.GetRacer(
     clientContext.characterUid);
+
+  // TODO: Revise this in NPC races
   if (command.characterOid != racer.oid)
   {
     throw std::runtime_error(
@@ -1902,6 +1908,8 @@ void RaceDirector::HandleStartingRate(
 
   auto& racer = raceInstance.tracker.GetRacer(
     clientContext.characterUid);
+
+  // TODO: Revise this in NPC races
   if (command.characterOid != racer.oid)
   {
     throw std::runtime_error(
@@ -1939,6 +1947,7 @@ void RaceDirector::HandleRaceUserPos(
   auto& raceInstance = _raceInstances[clientContext.roomUid];
   auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
+  // TODO: Revise this in NPC races
   if (command.oid != racer.oid)
   {
     throw std::runtime_error(
@@ -2215,10 +2224,10 @@ void RaceDirector::HandleRequestMagicItem(
   auto& raceInstance = _raceInstances[clientContext.roomUid];
   auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
-  // TODO: command.member1 is character oid?
+  // TODO: Revise this on NPC races
   if (command.characterOid != racer.oid)
   {
-    // TODO: throw? return?
+    spdlog::warn("Client tried to perform action on behalf of different racer");
     return;
   }
 
@@ -2296,6 +2305,7 @@ void RaceDirector::HandleUseMagicItem(
   auto& raceInstance = _raceInstances[clientContext.roomUid];
   auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
+  // TODO: Revise this in NPC races
   if (command.characterOid != racer.oid)
   {
     spdlog::warn("Client tried to perform action on behalf of different racer");
@@ -2358,6 +2368,7 @@ void RaceDirector::HandleUseMagicItem(
   switch (command.magicItemId)
   {
     // Shield
+    // TODO: Maybe not change it if they already have a stronger shield?
     case 4:
       racer.shield = server::tracker::RaceTracker::Racer::Shield::Normal;
       this->ScheduleSkillEffect(raceInstance, command.characterOid, command.characterOid, 2, [&racer]()
@@ -2452,7 +2463,7 @@ void RaceDirector::HandleUserRaceItemGet(
           return;
         }
 
-        const uint32_t gainedMagicItem = RandomMagicItem(teamMode);
+        // TODO: Replace with the item's deckId?
         protocol::AcCmdCRRequestMagicItemOK magicItemOk{
           .characterOid = command.characterOid,
           .magicItemId = racer.magicItem.emplace(gainedMagicItem),
@@ -2545,6 +2556,7 @@ void RaceDirector::HandleStartMagicTarget(
   auto& raceInstance = _raceInstances[clientContext.roomUid];
   auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
   
+  // TODO: Revise this in NPC races
   if (command.characterOid != racer.oid)
   {
     spdlog::warn("Character OID mismatch in HandleStartMagicTarget");
@@ -2567,6 +2579,7 @@ void RaceDirector::HandleChangeMagicTarget(
   auto& raceInstance = _raceInstances[clientContext.roomUid];
   auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
+  // TODO: Revise this in NPC races
   if (command.oldTargetOid != racer.oid)
   {
     spdlog::warn("Character OID mismatch in HandleChangeMagicTargetNotify");

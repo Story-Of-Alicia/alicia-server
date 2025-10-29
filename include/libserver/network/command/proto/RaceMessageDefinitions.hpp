@@ -2290,17 +2290,17 @@ struct AcCmdCRActivateSkillEffect
 
 struct AcCmdRCAddSkillEffect
 {
-  uint16_t characterOid;    // Target character
+  uint16_t characterOid;    // Requester character Oid
   uint32_t effectId;        // Effect/animation ID (knockdown, stun, etc.)
   uint16_t targetOid;
   uint16_t attackerOid;
   uint16_t unk2;            // Unused
   uint16_t unk3;            // Unused
-  uint32_t unk4;            // Posibly intensity, no idea but it makes the corner kill thingy not show up
+  uint32_t unk4;            // Posibly intensity, no idea but it it not work
 
   struct DefenseMagicEffect
   {
-    uint32_t unk0; // Effect time in seconds?
+    uint32_t unk0; // Effect time in seconds? It makes the it not work
     uint32_t unk1; // Unused
   };
   std::optional<DefenseMagicEffect> defenseMagicEffect;
