@@ -2035,7 +2035,11 @@ void RaceDirector::HandleRaceUserPos(
       // TODO: does holding an item and with certain equipment give you magic? At a reduced rate?
       constexpr uint32_t ItemHeldWithEquipmentBoostAmount = 1000;
       uint32_t gainedStarPoints;
+      if (racer.magicItem.has_value()) {
+        gainedStarPoints = ItemHeldWithEquipmentBoostAmount;
+      } else {
         gainedStarPoints = NoItemHeldBoostAmount;
+      }
       if (racer.gaugeBuff) {
         // TODO: Something sensible, idk what the bonus does
         gainedStarPoints *= 2;
