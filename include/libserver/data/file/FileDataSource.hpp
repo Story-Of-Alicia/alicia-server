@@ -111,6 +111,7 @@ public:
   void DeleteStallion(data::Uid uid) override;
   std::vector<data::Uid> ListRegisteredStallions() override;
 
+
 private:
   //! A root data path.
   std::filesystem::path _dataPath;
