@@ -119,6 +119,9 @@ public:
   [[nodiscard]] Record<data::Stallion> GetStallion(data::Uid stallionUid) noexcept;
   [[nodiscard]] Record<data::Stallion> CreateStallion() noexcept;
   [[nodiscard]] StallionStorage& GetStallionCache();
+  [[nodiscard]] std::vector<data::Uid> ListRegisteredStallions();
+
+  [[nodiscard]] FileDataSource& GetDataSource() { return *_primaryDataSource; }
 
 private:
   //! An underlying data source of the data director.
