@@ -933,7 +933,7 @@ void RanchCommandEnterBreedingMarketOK::Write(
     stream.Write(stallion.uid)
       .Write(stallion.tid)
       .Write(stallion.combo)
-      .Write(stallion.unk1)
+      .Write(stallion.isRegistered)
       .Write(stallion.unk2)
       .Write(stallion.lineage);
   }
