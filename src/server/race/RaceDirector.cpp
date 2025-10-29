@@ -61,18 +61,20 @@ const std::array<uint32_t, 12> magicItems = {
   24, // BufSpeed    Team mode 1
 };
 
-bool RollCritical()
+bool RollCritical(server::tracker::RaceTracker::Racer& racer)
 {
-  // TODO: Take into account the Team's BufPower effect
+  if (racer.critChance) {
+    return true;
+  }
   return (rand() % 100) < 5;
 }
 
-uint32_t RandomMagicItem(Room::TeamMode teamMode)
+uint32_t RandomMagicItem(server::tracker::RaceTracker::Racer& racer)
 {
   static std::random_device rd;
-  std::uniform_int_distribution distribution(0, teamMode == Room::TeamMode::Team ? 12 : 9);
+  std::uniform_int_distribution distribution(0, racer.team == server::tracker::RaceTracker::Racer::Team::Solo ? 8 : 11);
   uint32_t magicItemId = magicItems[distribution(rd)];
-  if (RollCritical())
+  if (RollCritical(racer))
   {
     magicItemId += 1;
   }
@@ -2255,17 +2257,9 @@ void RaceDirector::HandleRequestMagicItem(
       return starPointResponse;
     });
 
-  uint32_t gainedMagicItem;
-  _serverInstance.GetRoomSystem().GetRoom(
-    clientContext.roomUid,
-    [&gainedMagicItem](Room& room)
-    {
-      gainedMagicItem = RandomMagicItem(room.GetRoomDetails().teamMode);
-    });
-
   protocol::AcCmdCRRequestMagicItemOK response{
     .characterOid = command.characterOid,
-    .magicItemId = racer.magicItem.emplace(gainedMagicItem),
+    .magicItemId = racer.magicItem.emplace(RandomMagicItem(racer)),
     .member3 = 0
   };
 
@@ -2424,6 +2418,36 @@ void RaceDirector::HandleUseMagicItem(
         }
       }
       break;
+    // BufPower
+    case 20:
+      for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
+      {
+        if (racer.oid == otherRacer.oid
+        || (racer.team != server::tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
+        {
+          otherRacer.critChance = true;
+          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 18, [&otherRacer]()
+          {
+            otherRacer.critChance = false;
+          });
+        }
+      }
+      break;
+    case 21:
+      // TODO: Is the critical "crit chance" buff different from the normal gauge buff?
+      for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
+      {
+        if (racer.oid == otherRacer.oid
+        || (racer.team != server::tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
+        {
+          otherRacer.critChance = true;
+          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 19, [&otherRacer]()
+          {
+            otherRacer.critChance = false;
+          });
+        }
+      }
+      break;
     // BufSpeed
     case 24:
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
@@ -2463,12 +2487,10 @@ void RaceDirector::HandleUserRaceItemGet(
 
   auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
-  server::Room::TeamMode teamMode;
   server::Room::GameMode gameMode;
   server::registry::Course::GameModeInfo gameModeInfo;
-  _serverInstance.GetRoomSystem().GetRoom(clientContext.roomUid, [this, &teamMode, &gameMode, &gameModeInfo](const server::Room& room)
+  _serverInstance.GetRoomSystem().GetRoom(clientContext.roomUid, [this, &gameMode, &gameModeInfo](const server::Room& room)
   {
-    teamMode = room.GetRoomSnapshot().details.teamMode;
     gameMode = room.GetRoomSnapshot().details.gameMode;
     gameModeInfo = this->GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(static_cast<uint8_t>(gameMode));
   });
@@ -2521,6 +2543,7 @@ void RaceDirector::HandleUserRaceItemGet(
         }
 
         // TODO: Replace with the item's deckId?
+        const uint32_t gainedMagicItem = RandomMagicItem(racer);
         protocol::AcCmdCRRequestMagicItemOK magicItemOk{
           .characterOid = command.characterOid,
           .magicItemId = racer.magicItem.emplace(gainedMagicItem),

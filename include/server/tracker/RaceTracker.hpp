@@ -78,6 +78,7 @@ public:
     Shield shield{Shield::None};
     bool darkness{};
     bool hotRodded{};
+    bool critChance{};
   };
 
   //! An item
