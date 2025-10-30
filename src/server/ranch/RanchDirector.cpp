@@ -1344,8 +1344,8 @@ void RanchDirector::HandleEnterBreedingMarket(
           protocolHorse.tid = horse.tid();
           protocolHorse.combo = 0;  // Combo/success streak count
           protocolHorse.isRegistered = GetServerInstance().GetBreedingMarket().IsRegistered(horse.uid()) ? 1 : 0;
-          protocolHorse.unk2 = 0;   // Unknown field
-          protocolHorse.lineage = 0; // Ancestor coat lineage score
+          protocolHorse.breedingBonus = 1;   // Breeding bonus value
+          protocolHorse.lineage = 1; // Ancestor coat lineage score
         });
       }
     });
