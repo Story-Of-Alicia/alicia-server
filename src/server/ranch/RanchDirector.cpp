@@ -1465,8 +1465,8 @@ void RanchDirector::HandleSearchStallion(
     spdlog::debug("Processing stallion horseUid: {}", horseUid);
 
     const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(horseUid);
-    if (!horseRecord)
-    {
+  if (!horseRecord)
+  {
       spdlog::warn("Horse record not found for horseUid: {}", horseUid);
       continue;
     }
@@ -1695,11 +1695,11 @@ void RanchDirector::HandleUnregisterStallionEstimateInfo(
   {
     spdlog::warn("UnregisterStallionEstimateInfo: Horse {} is not registered as stallion", command.horseUid);
     // Return error response with zeros
-    protocol::AcCmdCRUnregisterStallionEstimateInfoOK response{
-      .member1 = 0xFFFF'FFFF,
-      .timesMated = 0,
-      .matingCompensation = 0,
-      .member4 = 0xFFFF'FFFF,
+  protocol::AcCmdCRUnregisterStallionEstimateInfoOK response{
+    .member1 = 0xFFFF'FFFF,
+    .timesMated = 0,
+    .matingCompensation = 0,
+    .member4 = 0xFFFF'FFFF,
       .matingPrice = 0
     };
     _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
@@ -1856,20 +1856,20 @@ void RanchDirector::HandleTryBreeding(
       totalMoneySpent = character.breedingMoneySpent();
     }
   });
-  
-  spdlog::info("TryBreeding: Charged {} carrots, total breeding money spent: {}", 
+
+  spdlog::info("TryBreeding: Charged {} carrots, total breeding money spent: {}",
     breedingCharge, totalMoneySpent);
-  
+
   // Calculate pregnancy chance based on stallion's breeding count and grade
   uint32_t pregnancyChance = 0;
   uint8_t stallionGrade = 0;
   uint32_t baseSuccessRate = 64;
-  
+
   stallionRecord->Immutable([&pregnancyChance, &stallionGrade, &baseSuccessRate](const data::Horse& stallion)
   {
     stallionGrade = stallion.grade();
     uint32_t breedingCount = stallion.breeding.breedingCount();
-    
+
     // Grade-based base success rates (max pregnancy rate at breedingCount = 0)
     // All grades floor at 4% minimum
     switch (stallionGrade)
@@ -1901,7 +1901,7 @@ void RanchDirector::HandleTryBreeding(
         break;
     }
   });
-  
+
   // Roll breeding bonus based on stallion grade (BonusProbInfo table)
   // Grades 4-6 = Small (10% chance), Grades 7-8 = Big (15% chance)
   struct BonusEntry {
@@ -1911,7 +1911,7 @@ void RanchDirector::HandleTryBreeding(
     int ratioSmall;    // TODO: If ratioSmall and ratioBig aren't supposed to mean low and high grades, make changes accordingly
     int ratioBig;
   };
-  
+
   // BonusProbInfo in libconfig
   static const std::vector<BonusEntry> bonusTable = {
     {1, 0, 5, 10, 0},   {2, 0, 10, 30, 0},  {3, 0, 15, 35, 0},
@@ -1920,21 +1920,21 @@ void RanchDirector::HandleTryBreeding(
     {10, 0, 70, 0, 10}, {11, 1, 1, 0, 15},  {12, 1, 2, 0, 15},
     {13, 1, 3, 0, 20}
   };
-  
+
   uint8_t rolledBonusId = 0;
   uint8_t rolledBonusType = 0;
   uint8_t rolledBonusValue = 0;
-  
+
   // Determine bonus type and probability based on stallion grade
   bool isSmallGrade = (stallionGrade >= 4 && stallionGrade <= 6);
   bool isBigGrade = (stallionGrade >= 7 && stallionGrade <= 8);
-  
+
   if (isSmallGrade || isBigGrade)
   {
     // Roll for bonus activation
     std::uniform_int_distribution<int> activationRoll(1, 100);
     int activationThreshold = isSmallGrade ? 10 : 15;
-    
+
     if (activationRoll(_randomDevice) <= activationThreshold)
     {
       std::vector<int> weights;
@@ -1943,56 +1943,56 @@ void RanchDirector::HandleTryBreeding(
         int weight = isSmallGrade ? entry.ratioSmall : entry.ratioBig;
         weights.push_back(weight);
       }
-      
+
       // Roll for specific bonus
       std::discrete_distribution<int> bonusDist(weights.begin(), weights.end());
       int selectedIndex = bonusDist(_randomDevice);
-      
+
       rolledBonusId = bonusTable[selectedIndex].id;
       rolledBonusType = bonusTable[selectedIndex].type;
       rolledBonusValue = bonusTable[selectedIndex].value;
-      
+
       spdlog::info("TryBreeding: Rolled breeding bonus! Grade {} ({}) -> Bonus ID {} (Type {}, Value {})",
-        stallionGrade, isSmallGrade ? "Small" : "Big", 
+        stallionGrade, isSmallGrade ? "Small" : "Big",
         rolledBonusId, rolledBonusType, rolledBonusValue);
     }
   }
-  
+
   // Determine breeding success based on pregnancy chance + bonus
   // Formula: success rate = baseSuccessRate - (pregnancyChance * 2%) + bonus%
   // baseSuccessRate is grade-dependent (calculated above)
   std::uniform_int_distribution<uint32_t> breedingRoll(1, 100);
   uint32_t actualSuccessRate = baseSuccessRate - (pregnancyChance * 2);
-  
+
   // Apply Type 0 bonus (pregnancy % increase) if applicable
   uint32_t bonusAmount = (rolledBonusType == 0) ? rolledBonusValue : 0;
   uint32_t successThreshold = actualSuccessRate + bonusAmount;
-  
+
   // Cap at 100%
   if (successThreshold > 100) successThreshold = 100;
-  
+
   bool breedingSuccess = breedingRoll(_randomDevice) <= successThreshold;
-  
+
   // TODO: Implement proper breeding failure. Currently the breeding animation doesn't show up before card selection window pops up.
   //       Also, the client doesn't reset breedingCombo of the mare on failure.
   //       TryBreedingOK command triggers the breeding animation so I think we should be using it to indicate the client that breeding has failed.
   if (!breedingSuccess)
   {
-    spdlog::info("TryBreeding: Breeding failed (grade={}, pregnancyChance={}, base={}%, bonus=+{}%, final={}%)", 
+    spdlog::info("TryBreeding: Breeding failed (grade={}, pregnancyChance={}, base={}%, bonus=+{}%, final={}%)",
       stallionGrade, pregnancyChance, actualSuccessRate, bonusAmount, successThreshold);
-    
+
     // Reset mare's breeding combo on failure
     mareRecord->Mutable([](data::Horse& mare)
     {
       mare.breeding.breedingCombo() = 0;
     });
-    
+
     // Increment stallion's lifetime breeding counter even on failure
     stallionRecord->Mutable([](data::Horse& stallion)
     {
     stallion.breeding.breedingCount() = stallion.breeding.breedingCount() + 1;
     });
-    
+
     // Increment stallion's registration breeding counter
     auto stallionDbRecord = GetServerInstance().GetDataDirector().GetStallionCache().Get(
       stallionDataOpt->stallionUid);
@@ -2003,19 +2003,19 @@ void RanchDirector::HandleTryBreeding(
         stallion.timesMated() = stallion.timesMated() + 1;
       });
     }
-    
+
     // Set up breeding failure card for the player
     // Randomly determine card type: 15% Chance (YELLOW=1), 85% Normal (RED=0)
     std::uniform_int_distribution<int> cardTypeDist(1, 100);
     uint8_t cardType = static_cast<uint8_t>(cardTypeDist(_randomDevice) <= 15 ? 1 : 0);
-    
+
     auto& ctx = GetClientContext(clientId);
     ctx.hasPendingFailureCard = true;
     ctx.pendingCardType = cardType;
-    
-    spdlog::info("TryBreeding: Breeding failure card ready - {} card", 
+
+    spdlog::info("TryBreeding: Breeding failure card ready - {} card",
       cardType == 1 ? "CHANCE (YELLOW)" : "NORMAL (RED)");
-    
+
     // Send the breeding failure card popup to the client
     protocol::AcCmdCRBreedingFailureCardOK cardResponse{
       .choiceOrFlag = cardType  // 0 = RED card, 1 = YELLOW card
@@ -2027,15 +2027,15 @@ void RanchDirector::HandleTryBreeding(
       {
         return cardResponse;
       });
-    
+
     // Update inventory to reflect carrot deduction
     SendInventoryUpdate(clientId);
     return;
   }
-  
-  spdlog::info("TryBreeding: Breeding succeeded (grade={}, pregnancyChance={}, base={}%, bonus=+{}%, final={}%)", 
+
+  spdlog::info("TryBreeding: Breeding succeeded (grade={}, pregnancyChance={}, base={}%, bonus=+{}%, final={}%)",
     stallionGrade, pregnancyChance, actualSuccessRate, bonusAmount, successThreshold);
-  
+
   // Create the foal/baby horse
   auto foalRecord = GetServerInstance().GetDataDirector().CreateHorse();
   
@@ -2058,7 +2058,7 @@ void RanchDirector::HandleTryBreeding(
     uint8_t mareGrade = 0;
     uint32_t mareScale = 0, mareLegLength = 0, mareLegVolume = 0, mareBodyLength = 0, mareBodyVolume = 0;
     std::vector<data::Uid> mareAncestors;
-    
+
     uint32_t mareCombo = 0;
     mareRecord->Immutable([&](const data::Horse& mare)
     {
@@ -2117,12 +2117,12 @@ void RanchDirector::HandleTryBreeding(
     foal.name() = "";  // Empty name - player will name it
     foal.type() = 1; // 1 = Foal
     foal.dateOfBirth() = data::Clock::now();
-    
+
     // From MountTendencyRatioInfo table:
     // Tendency 1: 35%, Tendency 2: 30%, Tendency 3: 20%, Tendency 4: 10%, Tendency 5: 5%, Tendency 6: 0%
     std::discrete_distribution<int> tendencyDist({35, 30, 20, 10, 5});
     foal.tendency() = static_cast<uint32_t>(tendencyDist(_randomDevice) + 1); // +1 because distribution returns 0-4
-    
+
     // Calculate foal grade first
     // Apply fertility peak bonus if Type 1 bonus was rolled (IDs 11-13 map to stages 1-3)
     uint8_t fertilityPeakLevel = 0;
@@ -2131,11 +2131,11 @@ void RanchDirector::HandleTryBreeding(
       fertilityPeakLevel = rolledBonusId - 10; // ID 11 -> Level 1, ID 12 -> Level 2, ID 13 -> Level 3
       spdlog::info("TryBreeding: Applying fertility peak stage {} to foal grade calculation", fertilityPeakLevel);
     }
-    
+
     auto& genetics = GetServerInstance().GetGenetics();
     uint8_t foalGrade = genetics.CalculateFoalGrade(mareGrade, stallionGrade, fertilityPeakLevel);
     foal.grade() = foalGrade;
-    
+
     // Use Genetics class for skin calculation with inheritance rate
     // Inheritance rate increases chance of inheriting stallion's coat (based on combo + pregnancy rate)
     uint32_t pregnancyChanceForInheritance = std::min(stallionTimesBreeded, 30u);
@@ -2147,64 +2147,64 @@ void RanchDirector::HandleTryBreeding(
       stallionCombo,
       pregnancyChanceForInheritance);
     foal.parts.skinTid() = foalSkinTid;
-    
+
     // Inherit face from parents (simple randomization)
     foal.parts.faceTid() = (rand() % 2 == 0) ? mareFace : stallionFace;
-    
+
     // Use Genetics class for mane/tail calculations (uses foalGrade for shape restrictions, foalSkinTid for color restrictions)
     auto maneTailResult = genetics.CalculateManeTailGenetics(
       command.mareUid,
       command.stallionUid,
       foalGrade,
       foalSkinTid);
-    
+
     foal.parts.maneTid() = maneTailResult.maneTid;
     foal.parts.tailTid() = maneTailResult.tailTid;
-    
-    spdlog::debug("TryBreeding: Mane(color:{}, shape:{}, TID:{}), Tail(color:{}, shape:{}, TID:{})", 
+
+    spdlog::debug("TryBreeding: Mane(color:{}, shape:{}, TID:{}), Tail(color:{}, shape:{}, TID:{})",
       maneTailResult.maneColor, maneTailResult.maneShape, maneTailResult.maneTid,
       maneTailResult.tailColor, maneTailResult.tailShape, maneTailResult.tailTid);
-    
+
     // Inherit appearance from parents with genetic variation (average ± 20%)
     auto inheritAppearance = [this](uint32_t mareValue, uint32_t stallionValue) -> uint32_t {
       // Calculate average
       float average = (static_cast<float>(mareValue) + static_cast<float>(stallionValue)) / 2.0f;
-      
+
       // Apply ±20% random variation
       std::uniform_real_distribution<float> variationDist(0.8f, 1.2f);
       float variation = variationDist(_randomDevice);
       float result = average * variation;
-      
+
       // Clamp to valid range [1, 10]
       uint32_t finalValue = static_cast<uint32_t>(std::round(result));
       if (finalValue < 1) finalValue = 1;
       if (finalValue > 10) finalValue = 10;
-      
+
       return finalValue;
     };
-    
+
     foal.appearance.scale() = inheritAppearance(mareScale, stallionScale);
     foal.appearance.legLength() = inheritAppearance(mareLegLength, stallionLegLength);
     foal.appearance.legVolume() = inheritAppearance(mareLegVolume, stallionLegVolume);
     foal.appearance.bodyLength() = inheritAppearance(mareBodyLength, stallionBodyLength);
     foal.appearance.bodyVolume() = inheritAppearance(mareBodyVolume, stallionBodyVolume);
-    
+
     // Then calculate stats that FIT the grade
     auto statResult = genetics.CalculateFoalStats(
       mareAgility, mareCourage, mareRush, mareEndurance, mareAmbition,
       stallionAgility, stallionCourage, stallionRush, stallionEndurance, stallionAmbition,
       foalGrade);
-    
+
     foal.stats.agility() = statResult.agility;
     foal.stats.courage() = statResult.courage;
     foal.stats.rush() = statResult.rush;
     foal.stats.endurance() = statResult.endurance;
     foal.stats.ambition() = statResult.ambition;
-    
-    uint32_t totalStats = foal.stats.agility() + foal.stats.courage() + 
+
+    uint32_t totalStats = foal.stats.agility() + foal.stats.courage() +
                           foal.stats.rush() + foal.stats.endurance() + foal.stats.ambition();
-    
-    spdlog::debug("TryBreeding: Foal grade={}, stats total={} (parents grade {}/{})", 
+
+    spdlog::debug("TryBreeding: Foal grade={}, stats total={} (parents grade {}/{})",
       foalGrade, totalStats, mareGrade, stallionGrade);
     
     // Set foal growth stage
@@ -2214,13 +2214,13 @@ void RanchDirector::HandleTryBreeding(
     
     // Initialize foal condition with full stamina
     foal.mountCondition.stamina() = 4000;
-    
+
     // Calculate potential genetics (pass foal's skin for star bonus)
     auto potentialResult = GetServerInstance().GetGenetics().CalculateFoalPotential(
       command.mareUid,
       command.stallionUid,
       foalSkinTid);
-    
+
     if (potentialResult.hasPotential)
     {
       foal.potential.type() = potentialResult.type;
@@ -2233,10 +2233,10 @@ void RanchDirector::HandleTryBreeding(
       foal.potential.level() = 0;
       foal.potential.value() = 0;
     }
-    
+
     // Store parent UIDs for family tree
     foal.ancestors() = {command.stallionUid, command.mareUid};
-    
+
     // Calculate lineage based on coat matching with parents and grandparents
     foal.lineage() = genetics.CalculateLineage(foalSkinTid, command.mareUid, command.stallionUid);
     
@@ -2245,18 +2245,18 @@ void RanchDirector::HandleTryBreeding(
     foalTid = foal.tid();
     foalPotentialType = foal.potential.type();
     foalGradeForResponse = foal.grade();
-    
+
     // Build protocol parts/appearance/stats for response
     foalParts.skinId = foal.parts.skinTid();
     foalParts.faceId = foal.parts.faceTid();
-    
+
     // Map adult mane/tail TIDs to foal-safe color TIDs (1-5) for rendering
     // The actual adult TIDs are stored in the database and will show when horse grows up
     auto MapToFoalColorTid = [](data::Tid adultTid) -> uint8_t
     {
       if (adultTid >= 1 && adultTid <= 5)
         return adultTid;
-      
+
       // For TIDs 6-40, map to color based on pattern (every 5 TIDs cycle through colors)
       // TID 6,11,16,21,26,31,36 -> Color 1 (Black)
       // TID 7,12,17,22,27,32,37 -> Color 2 (White)
@@ -2265,10 +2265,10 @@ void RanchDirector::HandleTryBreeding(
       // TID 10,15,20,25,30,35,40 -> Color 5 (Grey)
       return ((adultTid - 1) % 5) + 1;
     };
-    
+
     foalParts.maneId = MapToFoalColorTid(foal.parts.maneTid());
     foalParts.tailId = MapToFoalColorTid(foal.parts.tailTid());
-    
+
     foalAppearance.scale = foal.appearance.scale();
     foalAppearance.legLength = foal.appearance.legLength();
     foalAppearance.legVolume = foal.appearance.legVolume();
@@ -2289,9 +2289,9 @@ void RanchDirector::HandleTryBreeding(
     // Reset breeding money spent after successful breeding
     character.breedingMoneySpent() = 0;
   });
-  
+
   spdlog::info("TryBreeding: Breeding successful - reset breedingMoneySpent to 0");
-  
+
   // Increment mare's breeding combo on successful breeding
   uint32_t mareCombo = 0;
   mareRecord->Mutable([&mareCombo](data::Horse& mare)
@@ -2299,16 +2299,16 @@ void RanchDirector::HandleTryBreeding(
     mare.breeding.breedingCombo() = mare.breeding.breedingCombo() + 1;
     mareCombo = mare.breeding.breedingCombo();
   });
-  
+
   spdlog::info("TryBreeding: Mare combo increased to {}", mareCombo);
-  
+
   // Increment stallion's lifetime breeding counter (on the horse record)
   // Note: Stallion's combo is NOT affected by breeding
   stallionRecord->Mutable([](data::Horse& stallion)
   {
     stallion.breeding.breedingCount() = stallion.breeding.breedingCount() + 1;
   });
-  
+
   // Increment stallion's registration breeding counter (for compensation calculation)
   auto stallionDbRecord = GetServerInstance().GetDataDirector().GetStallionCache().Get(
     stallionDataOpt->stallionUid);
@@ -2319,7 +2319,7 @@ void RanchDirector::HandleTryBreeding(
       stallion.timesMated() = stallion.timesMated() + 1;
     });
   }
-  
+
   spdlog::info("TryBreeding: Created foal UID={}, TID={}", foalUid, foalTid);
 
   protocol::RanchCommandTryBreedingOK response{
