@@ -54,6 +54,7 @@ ServerInstance::ServerInstance(
   , _genetics(*this)
   , _itemSystem(*this)
   , _breedingMarket(*this)
+  , _genetics(*this)
 {
 }
 
@@ -355,6 +356,11 @@ Genetics& ServerInstance::GetGenetics()
 BreedingMarket& ServerInstance::GetBreedingMarket()
 {
   return _breedingMarket;
+}
+
+Genetics& ServerInstance::GetGenetics()
+{
+  return _genetics;
 }
 
 Config& ServerInstance::GetSettings()
