@@ -181,11 +181,6 @@ public:
 
   void Terminate()
   {
-    // Process pending deletes before clearing queues
-    // NOTE: This may cause a stack corruption warning in Debug builds during shutdown
-    // ("Stack around the variable 'threadLock' was corrupted" in main.cpp)
-    // I'm ignoring this for now as I don't see it impacting anything but
-    // TODO: Fix this.
     for (const auto& key : _deleteQueue)
     {
       _dataSourceDeleteListener(key);
