@@ -235,4 +235,24 @@ void HorseRegistry::GiveHorseRandomPotential(
     randomDist(_randomDevice));
 }
 
+int32_t HorseRegistry::GetManeColorGroup(data::Tid maneTid) const
+{
+  auto it = _manes.find(maneTid);
+  if (it != _manes.end())
+  {
+    return it->second.colorGroup;
+  }
+  return 0;
+}
+
+int32_t HorseRegistry::GetTailColorGroup(data::Tid tailTid) const
+{
+  auto it = _tails.find(tailTid);
+  if (it != _tails.end())
+  {
+    return it->second.colorGroup;
+  }
+  return 0;
+}
+
 } // namespace server
