@@ -84,6 +84,7 @@ void BuildProtocolHorse(
     .potentialLevel = static_cast<uint8_t>(horse.potential.level()),
     .potentialType = static_cast<uint8_t>(horse.potential.type()),
     .potentialValue = static_cast<uint8_t>(horse.potential.value()),
+    // TODO: Calculate potential max if it exists
     .val9 = 0x00,
     .luck = static_cast<uint8_t>(horse.luckState()),
     .injury = Horse::Injury::None,
