@@ -1039,7 +1039,7 @@ void RanchCommandTryBreedingOK::Write(
     .Write(command.unk3)
     .Write(command.unk4)
     .Write(command.unk5)
-    .Write(command.unk6)
+    .Write(command.potentialType)
     .Write(command.unk7)
     .Write(command.unk8)
     .Write(command.unk9)

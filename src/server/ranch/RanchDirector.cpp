@@ -1695,12 +1695,13 @@ void RanchDirector::HandleTryBreeding(
   
   data::Uid foalUid = 0;
   data::Tid foalTid = 0;
+  uint8_t foalPotentialType = 0;
   protocol::Horse::Parts foalParts{};
   protocol::Horse::Appearance foalAppearance{};
   protocol::Horse::Stats foalStats{};
   
   foalRecord.Mutable([this, &command, &mareRecord, &stallionRecord, &foalUid, &foalTid, 
-                      &foalParts, &foalAppearance, &foalStats](data::Horse& foal)
+                      &foalPotentialType, &foalParts, &foalAppearance, &foalStats](data::Horse& foal)
   {
     // Get parent data for genetics
     data::Tid mareTid = 0;
@@ -1751,7 +1752,7 @@ void RanchDirector::HandleTryBreeding(
     foal.horseType() = 1; // 1 = Foal
     foal.dateOfBirth() = data::Clock::now();
     
-    // Calculate foal grade FIRST (based on parents with variance and restrictions)
+    // Calculate foal grade first
     auto& genetics = GetServerInstance().GetGenetics();
     uint8_t foalGrade = genetics.CalculateFoalGrade(mareGrade, stallionGrade);
     foal.grade() = foalGrade;
@@ -1827,6 +1828,7 @@ void RanchDirector::HandleTryBreeding(
     // Store values for response
     foalUid = foal.uid();
     foalTid = foal.tid();
+    foalPotentialType = foal.potential.type();
     
     // Build protocol parts/appearance/stats for response
     foalParts.skinId = foal.parts.skinTid();
@@ -1886,7 +1888,7 @@ void RanchDirector::HandleTryBreeding(
     .unk3 = 0,
     .unk4 = 0,
     .unk5 = 0,
-    .unk6 = 0,
+    .potentialType = foalPotentialType,
     .unk7 = 0,
     .unk8 = 0,
     .unk9 = 0,
