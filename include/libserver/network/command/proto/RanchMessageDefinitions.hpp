@@ -1091,7 +1091,7 @@ struct RanchCommandTryBreedingOK
   uint8_t unk3{};
   uint8_t unk4{};
   uint8_t unk5{};
-  uint8_t unk6{};
+  uint8_t potentialType{};
   uint8_t unk7{};
   uint8_t unk8{};
   uint16_t unk9{};
