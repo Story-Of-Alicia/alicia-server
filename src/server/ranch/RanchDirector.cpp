@@ -1751,15 +1751,20 @@ void RanchDirector::HandleTryBreeding(
     foal.horseType() = 1; // 1 = Foal
     foal.dateOfBirth() = data::Clock::now();
     
+    // Calculate foal grade FIRST (based on parents with variance and restrictions)
+    auto& genetics = GetServerInstance().GetGenetics();
+    uint8_t foalGrade = genetics.CalculateFoalGrade(mareGrade, stallionGrade);
+    foal.grade() = foalGrade;
+    
     // Inherit parts from parents (simple randomization)
     foal.parts.skinTid() = (rand() % 2 == 0) ? mareSkin : stallionSkin;
     foal.parts.faceTid() = (rand() % 2 == 0) ? mareFace : stallionFace;
     
-    // Use Genetics class for mane/tail calculations
-    auto maneTailResult = GetServerInstance().GetGenetics().CalculateManeTailGenetics(
+    // Use Genetics class for mane/tail calculations (use calculated foalGrade for shape restrictions)
+    auto maneTailResult = genetics.CalculateManeTailGenetics(
       command.mareUid,
       command.stallionUid,
-      (mareGrade + stallionGrade) / 2);
+      foalGrade);
     
     foal.parts.maneTid() = maneTailResult.maneTid;
     foal.parts.tailTid() = maneTailResult.tailTid;
@@ -1775,23 +1780,46 @@ void RanchDirector::HandleTryBreeding(
     foal.appearance.bodyLength() = 4;
     foal.appearance.bodyVolume() = 4;
     
-    // Inherit stats (average with slight randomization)
-    foal.stats.agility() = (mareAgility + stallionAgility) / 2;
-    foal.stats.courage() = (mareCourage + stallionCourage) / 2;
-    foal.stats.rush() = (mareRush + stallionRush) / 2;
-    foal.stats.endurance() = (mareEndurance + stallionEndurance) / 2;
-    foal.stats.ambition() = (mareAmbition + stallionAmbition) / 2;
+    // Then calculate stats that FIT the grade
+    auto statResult = genetics.CalculateFoalStats(
+      mareAgility, mareCourage, mareRush, mareEndurance, mareAmbition,
+      stallionAgility, stallionCourage, stallionRush, stallionEndurance, stallionAmbition,
+      foalGrade);
     
-    // Calculate baby grade based on parent grades
-    // TODO: Use BreedingGradeProbInfo table for proper probability
-    uint8_t gradeDistance = abs(stallionGrade - mareGrade);
-    uint8_t avgGrade = (mareGrade + stallionGrade) / 2;
-    foal.grade() = std::min((uint8_t)8, avgGrade); // Cap at grade 8
+    foal.stats.agility() = statResult.agility;
+    foal.stats.courage() = statResult.courage;
+    foal.stats.rush() = statResult.rush;
+    foal.stats.endurance() = statResult.endurance;
+    foal.stats.ambition() = statResult.ambition;
+    
+    uint32_t totalStats = foal.stats.agility() + foal.stats.courage() + 
+                          foal.stats.rush() + foal.stats.endurance() + foal.stats.ambition();
+    
+    spdlog::debug("TryBreeding: Foal grade={}, stats total={} (parents grade {}/{})", 
+      foalGrade, totalStats, mareGrade, stallionGrade);
     
     // Set foal growth stage
     foal.clazz() = 0;
     foal.clazzProgress() = 0;
     foal.growthPoints() = 0;
+    
+    // Calculate potential genetics
+    auto potentialResult = GetServerInstance().GetGenetics().CalculateFoalPotential(
+      command.mareUid,
+      command.stallionUid);
+    
+    if (potentialResult.hasPotential)
+    {
+      foal.potential.type() = potentialResult.type;
+      foal.potential.level() = potentialResult.level;  // Always 0
+      foal.potential.value() = potentialResult.value;  // Always 0
+    }
+    else
+    {
+      foal.potential.type() = 0;
+      foal.potential.level() = 0;
+      foal.potential.value() = 0;
+    }
     
     // Store parent UIDs for family tree
     foal.ancestors() = {command.mareUid, command.stallionUid};
