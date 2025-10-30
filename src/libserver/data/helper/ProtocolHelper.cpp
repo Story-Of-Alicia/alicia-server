@@ -83,7 +83,7 @@ void BuildProtocolHorse(
     .luck = static_cast<uint8_t>(horse.luckState()),
     .injury = Horse::Injury::None,
     .val12 = 0x00,
-    .fatigue = 0x00,
+    .fatigue = horse.fatigue(),
     .val14 = 0x00,
     .emblem = static_cast<uint16_t>(horse.emblemUid())};
 

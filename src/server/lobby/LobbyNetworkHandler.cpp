@@ -1015,7 +1015,7 @@ void LobbyNetworkHandler::HandleMakeRoom(
           spdlog::error("Unknown team mode '{}'", static_cast<uint32_t>(command.gameMode));
       }
 
-      room.GetRoomDetails().member11 = command.unk3;
+      room.GetRoomDetails().npcDifficulty = command.unk3;
       room.GetRoomDetails().skillBracket = command.unk4;
       // default to all courses
       room.GetRoomDetails().courseId = 10002;
