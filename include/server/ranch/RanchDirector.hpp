@@ -280,6 +280,10 @@ private:
     ClientId clientId,
     const protocol::RanchCommandUserPetInfos& command);
 
+  void HandleConfirmItem(
+    ClientId clientId,
+    const protocol::AcCmdCRConfirmItem& command);
+
   //! Typically called from the shop when buying a set (package)
   void HandleConfirmSetItem(
     ClientId clientId,

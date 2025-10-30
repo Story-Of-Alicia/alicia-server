@@ -4204,6 +4204,84 @@ struct AcCmdCRMountInjuryHealOK
     SourceStream& stream);
 };
 
+struct AcCmdCRConfirmItem
+{
+  std::string member1;
+  uint32_t member2;
+  uint8_t member3;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRConfirmItem;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRConfirmItem& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRConfirmItem& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRConfirmItemOK
+{
+  std::string member1;
+  uint32_t member2;
+  uint8_t member3;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRConfirmItemOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRConfirmItemOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRConfirmItemOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRConfirmItemCancel
+{
+  std::string member1;
+  uint32_t member2;
+  uint8_t member3;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRConfirmItemCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRConfirmItemCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRConfirmItemCancel& command,
+    SourceStream& stream);
+};
+
 struct AcCmdCRConfirmSetItem
 {
   uint32_t shopItemUid{};

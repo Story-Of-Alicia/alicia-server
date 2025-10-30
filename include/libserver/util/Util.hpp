@@ -21,7 +21,6 @@
 #define UTIL_HPP
 
 #include <boost/asio.hpp>
-#include <tinyxml2.h>
 
 #include <chrono>
 #include <span>
@@ -49,72 +48,6 @@ struct DateTime
   int32_t hours = 0;
   int32_t minutes = 0;
   int32_t seconds = 0;
-};
-
-struct ShopList
-{
-  struct Goods
-  {
-    //! Goods sequence number (internal unique shop item number, incremental, cannot be 0)
-    uint32_t goodsSq{};
-    //! 0 - Goods info | 1 - Set (package)
-    uint32_t setType{};
-    //! Currency to pay with for the goods
-    enum class MoneyType
-    {
-      Carrots = 0,
-      Cash = 1
-    } moneyType{MoneyType::Carrots};
-    //! Item offer type
-    enum class GoodsType
-    {
-      Default = 0,
-      New = 1,
-      Limited = 2,
-      Sale = 3,
-      PCBang = 4
-    } goodsType{GoodsType::Default};
-    // TODO: recommended category?
-    uint32_t recommendType{};
-    //! 1 - Do not show in suggested/recommended tab
-    uint32_t recommendNo{};
-    //! Can character gift shop item to another character
-    enum class GiftType
-    {
-      NoGifting = 0,
-      CanGift = 1
-    } giftType{GiftType::NoGifting};
-    //! "Best top 5" ordering 1 <= rank <= 5
-    uint32_t salesRank{};
-    //! Bonus on purchase
-    uint32_t bonusGameMoney{};
-    //! Item name (TODO: does it need to be wrapped in CDATA?)
-    std::string goodsNm{};
-    //! Item description
-    std::string goodsDesc{};
-    std::string itemCapacityDesc{};
-    //! 1 - Shows item in shop, anything else hides it
-    uint32_t sellSt{};
-    //! Item TID
-    uint32_t itemUid{};
-    //! Only valid when setType = 1
-    uint32_t setPrice{};
-
-    struct Item
-    {
-      //! Unique price ID for the offer, must not be 0
-      uint32_t priceId{};
-      //! Item count for the price
-      uint32_t priceRange{};
-      //! Item price
-      //! Only valid when setType = 0
-      uint32_t goodsPrice{};
-      //! Only valid when setType = 1
-      uint32_t itemUid{};
-    };
-    std::vector<Item> items{};
-  };
-  std::vector<Goods> goodsList{};
 };
 
 //! Converts a time point to the Windows file time.
@@ -162,10 +95,6 @@ asio::ip::address_v4 ResolveHostName(const std::string& host);
 std::string GenerateByteDump(std::span<const std::byte> data);
 
 std::vector<std::string> TokenizeString(const std::string& value, char delimiter);
-
-ShopList GetSampleShopList();
-
-std::string ShopListToXmlString(const ShopList& shopList);
 
 } // namespace server::util
 

@@ -1613,18 +1613,18 @@ void LobbyNetworkHandler::HandleGoodsShopList(
   const ClientId clientId,
   const protocol::AcCmdCLGoodsShopList& command)
 {
-  const auto& shopList = util::GetSampleShopList();
-  const auto& xml = util::ShopListToXmlString(shopList);
+  const auto& shopList = _serverInstance.GetLobbyDirector().GetShopManager().GetSerializedShopList();
 
   std::vector<std::byte> compressedXml;
-  compressedXml.resize(xml.size());
+  compressedXml.resize(shopList.size());
 
   uLongf compressedSize = compressedXml.size();
-  compress(
+  compress2(
     reinterpret_cast<Bytef*>(compressedXml.data()),
     &compressedSize,
-    reinterpret_cast<const Bytef*>(xml.c_str()),
-    xml.length());
+    reinterpret_cast<const Bytef*>(shopList.c_str()),
+    shopList.length(),
+    9);
 
   compressedXml.resize(compressedSize);
 

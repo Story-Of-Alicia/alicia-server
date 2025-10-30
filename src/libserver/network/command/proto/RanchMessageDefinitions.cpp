@@ -2662,6 +2662,54 @@ void AcCmdCRMountInjuryHealOK::Write(
     .Write(command.updatedCarrotCount);
 }
 
+void AcCmdCRConfirmItem::Write(
+  const AcCmdCRConfirmItem& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRConfirmItem::Read(
+  AcCmdCRConfirmItem& command,
+  SourceStream& stream)
+{
+  stream.Read(command.member1)
+    .Read(command.member2)
+    .Read(command.member3);
+}
+
+void AcCmdCRConfirmItemOK::Write(
+  const AcCmdCRConfirmItemOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1)
+    .Write(command.member2)
+    .Write(command.member3);
+}
+
+void AcCmdCRConfirmItemOK::Read(
+  AcCmdCRConfirmItemOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRConfirmItemCancel::Write(
+  const AcCmdCRConfirmItemCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1)
+    .Write(command.member2)
+    .Write(command.member3);
+}
+
+void AcCmdCRConfirmItemCancel::Read(
+  AcCmdCRConfirmItemCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void AcCmdCRConfirmSetItem::Read(
   AcCmdCRConfirmSetItem& command,
   SourceStream& stream)

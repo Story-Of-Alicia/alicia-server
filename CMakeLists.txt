@@ -83,6 +83,7 @@ add_executable(alicia-server
         src/server/main.cpp
         src/server/ServerInstance.cpp
         src/server/Config.cpp
+        src/server/lobby/shop/Shop.cpp
         src/server/lobby/LobbyDirector.cpp
         src/server/lobby/LobbyNetworkHandler.cpp
         src/server/messenger/MessengerDirector.cpp
