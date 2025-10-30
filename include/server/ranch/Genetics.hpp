@@ -23,6 +23,8 @@
 #include <libserver/data/DataDefinitions.hpp>
 #include <libserver/data/DataStorage.hpp>
 
+#include <random>
+
 namespace server
 {
 
@@ -69,8 +71,53 @@ public:
   //! @returns Foal's stat value
   uint32_t CalculateFoalStat(uint32_t mareStat, uint32_t stallionStat);
 
+  //! Calculates grade from total stats.
+  //! @param totalStats Sum of all 5 stats
+  //! @returns Grade (1-8) based on total stats
+  static uint8_t CalculateGradeFromStats(uint32_t totalStats);
+
+  //! Result of stat genetics calculation
+  struct StatResult
+  {
+    uint32_t agility{0};
+    uint32_t courage{0};
+    uint32_t rush{0};
+    uint32_t endurance{0};
+    uint32_t ambition{0};
+  };
+
+  //! Calculates all foal stats based on parents and target grade.
+  //! @param mareStats Parent mare's stats
+  //! @param stallionStats Parent stallion's stats
+  //! @param targetGrade Target grade to fit stats within
+  //! @returns All five stats that fit the target grade
+  StatResult CalculateFoalStats(
+    uint32_t mareAgility, uint32_t mareCourage, uint32_t mareRush, 
+    uint32_t mareEndurance, uint32_t mareAmbition,
+    uint32_t stallionAgility, uint32_t stallionCourage, uint32_t stallionRush,
+    uint32_t stallionEndurance, uint32_t stallionAmbition,
+    uint8_t targetGrade);
+
+  //! Result of potential genetics calculation
+  struct PotentialResult
+  {
+    bool hasPotential{false};
+    uint8_t type{0};
+    uint8_t level{0};  // Always 0 for newborns
+    uint8_t value{0};  // Always 0 for newborns
+  };
+
+  //! Calculates whether foal has a potential and what type.
+  //! @param mareUid Mare's UID
+  //! @param stallionUid Stallion's UID
+  //! @returns Potential result
+  PotentialResult CalculateFoalPotential(
+    data::Uid mareUid,
+    data::Uid stallionUid);
+
 private:
   ServerInstance& _serverInstance;
+  std::mt19937 _randomEngine;
 
   //! Extracts color from TID (1-5, cycles every 5)
   static int32_t GetColorFromTid(data::Tid tid);
