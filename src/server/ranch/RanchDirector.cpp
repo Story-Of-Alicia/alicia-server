@@ -1384,8 +1384,8 @@ void RanchDirector::HandleSearchStallion(
     spdlog::debug("Processing stallion horseUid: {}", horseUid);
     
     const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(horseUid);
-    if (!horseRecord)
-    {
+  if (!horseRecord)
+  {
       spdlog::warn("Horse record not found for horseUid: {}", horseUid);
       continue;
     }
@@ -1536,11 +1536,11 @@ void RanchDirector::HandleUnregisterStallionEstimateInfo(
   {
     spdlog::warn("UnregisterStallionEstimateInfo: Horse {} is not registered as stallion", command.horseUid);
     // Return error response with zeros
-    protocol::AcCmdCRUnregisterStallionEstimateInfoOK response{
-      .member1 = 0xFFFF'FFFF,
-      .timesMated = 0,
-      .matingCompensation = 0,
-      .member4 = 0xFFFF'FFFF,
+  protocol::AcCmdCRUnregisterStallionEstimateInfoOK response{
+    .member1 = 0xFFFF'FFFF,
+    .timesMated = 0,
+    .matingCompensation = 0,
+    .member4 = 0xFFFF'FFFF,
       .matingPrice = 0
     };
     _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
@@ -1654,19 +1654,172 @@ void RanchDirector::HandleTryBreeding(
   ClientId clientId,
   const protocol::AcCmdCRTryBreeding& command)
 {
+  spdlog::info("TryBreeding: mareUid={}, stallionUid={}", command.mareUid, command.stallionUid);
+  
+  const auto& clientContext = GetClientContext(clientId);
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+  
+  // Get mare and stallion records
+  auto mareRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(command.mareUid);
+  auto stallionRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(command.stallionUid);
+  
+  if (!mareRecord || !stallionRecord)
+  {
+    spdlog::warn("TryBreeding: Mare or stallion not found");
+    return; // TODO: Send error response
+  }
+  
+  // Get breeding charge from breeding market
+  auto stallionDataOpt = GetServerInstance().GetBreedingMarket().GetStallionData(command.stallionUid);
+  if (!stallionDataOpt)
+  {
+    spdlog::warn("TryBreeding: Stallion {} not registered in breeding market", command.stallionUid);
+    return; // TODO: Send error response
+  }
+  
+  uint32_t breedingCharge = stallionDataOpt->breedingCharge;
+  
+  // Deduct breeding fee from player
+  characterRecord.Mutable([breedingCharge](data::Character& character)
+  {
+    if (character.carrots() >= breedingCharge)
+    {
+      character.carrots() = character.carrots() - breedingCharge;
+    }
+  });
+  
+  // Create the foal/baby horse
+  auto foalRecord = GetServerInstance().GetDataDirector().CreateHorse();
+  
+  data::Uid foalUid = 0;
+  data::Tid foalTid = 0;
+  protocol::Horse::Parts foalParts{};
+  protocol::Horse::Appearance foalAppearance{};
+  protocol::Horse::Stats foalStats{};
+  
+  foalRecord.Mutable([this, &command, &mareRecord, &stallionRecord, &foalUid, &foalTid, 
+                      &foalParts, &foalAppearance, &foalStats](data::Horse& foal)
+  {
+    // Get parent data for genetics
+    data::Tid mareTid = 0;
+    data::Tid mareSkin = 0, mareMane = 0, mareTail = 0, mareFace = 0;
+    uint32_t mareAgility = 0, mareCourage = 0, mareRush = 0, mareEndurance = 0, mareAmbition = 0;
+    uint8_t mareGrade = 0;
+    
+    mareRecord->Immutable([&](const data::Horse& mare)
+    {
+      mareTid = mare.tid();
+      mareSkin = mare.parts.skinTid();
+      mareMane = mare.parts.maneTid();
+      mareTail = mare.parts.tailTid();
+      mareFace = mare.parts.faceTid();
+      mareAgility = mare.stats.agility();
+      mareCourage = mare.stats.courage();
+      mareRush = mare.stats.rush();
+      mareEndurance = mare.stats.endurance();
+      mareAmbition = mare.stats.ambition();
+      mareGrade = mare.grade();
+    });
+    
+    data::Tid stallionSkin = 0, stallionMane = 0, stallionTail = 0, stallionFace = 0;
+    uint32_t stallionAgility = 0, stallionCourage = 0, stallionRush = 0, stallionEndurance = 0, stallionAmbition = 0;
+    uint8_t stallionGrade = 0;
+    
+    stallionRecord->Immutable([&](const data::Horse& stallion)
+    {
+      stallionSkin = stallion.parts.skinTid();
+      stallionMane = stallion.parts.maneTid();
+      stallionTail = stallion.parts.tailTid();
+      stallionFace = stallion.parts.faceTid();
+      stallionAgility = stallion.stats.agility();
+      stallionCourage = stallion.stats.courage();
+      stallionRush = stallion.stats.rush();
+      stallionEndurance = stallion.stats.endurance();
+      stallionAmbition = stallion.stats.ambition();
+      stallionGrade = stallion.grade();
+    });
+    
+    // Set foal basic info
+    foal.tid() = mareTid; // Foal uses mare's breed/TID
+    foal.name() = "";  // Empty name - player will name it
+    foal.horseType() = 1; // 1 = Foal
+    foal.dateOfBirth() = data::Clock::now();
+    
+    // Inherit parts from parents (simple randomization)
+    foal.parts.skinTid() = (rand() % 2 == 0) ? mareSkin : stallionSkin;
+    foal.parts.maneTid() = (rand() % 2 == 0) ? mareMane : stallionMane;
+    foal.parts.tailTid() = (rand() % 2 == 0) ? mareTail : stallionTail;
+    foal.parts.faceTid() = (rand() % 2 == 0) ? mareFace : stallionFace;
+    
+    // Inherit appearance (average of parents)
+    foal.appearance.scale() = (mareSkin + stallionSkin) / 2;
+    foal.appearance.legLength() = 4;
+    foal.appearance.legVolume() = 4;
+    foal.appearance.bodyLength() = 4;
+    foal.appearance.bodyVolume() = 4;
+    
+    // Inherit stats (average with slight randomization)
+    foal.stats.agility() = (mareAgility + stallionAgility) / 2;
+    foal.stats.courage() = (mareCourage + stallionCourage) / 2;
+    foal.stats.rush() = (mareRush + stallionRush) / 2;
+    foal.stats.endurance() = (mareEndurance + stallionEndurance) / 2;
+    foal.stats.ambition() = (mareAmbition + stallionAmbition) / 2;
+    
+    // Calculate baby grade based on parent grades
+    // TODO: Use BreedingGradeProbInfo table for proper probability
+    uint8_t gradeDistance = abs(stallionGrade - mareGrade);
+    uint8_t avgGrade = (mareGrade + stallionGrade) / 2;
+    foal.grade() = std::min((uint8_t)8, avgGrade); // Cap at grade 8
+    
+    // Set foal growth stage
+    foal.clazz() = 0;
+    foal.clazzProgress() = 0;
+    foal.growthPoints() = 0;
+    
+    // Store parent UIDs for family tree
+    foal.ancestors() = {command.mareUid, command.stallionUid};
+    
+    // Store values for response
+    foalUid = foal.uid();
+    foalTid = foal.tid();
+    
+    // Build protocol parts/appearance/stats for response
+    foalParts.skinId = foal.parts.skinTid();
+    foalParts.maneId = foal.parts.maneTid();
+    foalParts.tailId = foal.parts.tailTid();
+    foalParts.faceId = foal.parts.faceTid();
+    
+    foalAppearance.scale = foal.appearance.scale();
+    foalAppearance.legLength = foal.appearance.legLength();
+    foalAppearance.legVolume = foal.appearance.legVolume();
+    foalAppearance.bodyLength = foal.appearance.bodyLength();
+    foalAppearance.bodyVolume = foal.appearance.bodyVolume();
+    
+    foalStats.agility = foal.stats.agility();
+    foalStats.ambition = foal.stats.ambition();
+    foalStats.rush = foal.stats.rush();
+    foalStats.endurance = foal.stats.endurance();
+    foalStats.courage = foal.stats.courage();
+  });
+  
+  // Add foal to character's horse list
+  characterRecord.Mutable([foalUid](data::Character& character)
+  {
+    character.horses().emplace_back(foalUid);
+  });
+  
+  spdlog::info("TryBreeding: Created foal UID={}, TID={}", foalUid, foalTid);
+  
   protocol::RanchCommandTryBreedingOK response{
-    .uid = command.mareUid,
-    .tid = command.stallionUid,
+    .uid = foalUid,
+    .tid = foalTid,
     .val = 0,
-    .count = 0,
+    .count = 1,
     .unk0 = 0,
-    .parts = {
-      .skinId = 1,
-      .maneId = 4,
-      .tailId = 4,
-      .faceId = 5},
-    .appearance = {.scale = 4, .legLength = 4, .legVolume = 5, .bodyLength = 3, .bodyVolume = 4},
-    .stats = {.agility = 9, .ambition = 9, .rush = 9, .endurance = 9, .courage = 9},
+    .parts = foalParts,
+    .appearance = foalAppearance,
+    .stats = foalStats,
     .unk1 = 0,
     .unk2 = 0,
     .unk3 = 0,
@@ -1679,13 +1832,15 @@ void RanchDirector::HandleTryBreeding(
     .unk10 = 0,
   };
 
-  // TODO: Actually do something
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
     {
       return response;
     });
+  
+  // Update inventory to reflect carrot deduction
+  SendInventoryUpdate(clientId);
 }
 
 void RanchDirector::HandleBreedingAbandon(
