@@ -934,7 +934,7 @@ void RanchCommandEnterBreedingMarketOK::Write(
       .Write(stallion.tid)
       .Write(stallion.combo)
       .Write(stallion.isRegistered)
-      .Write(stallion.unk2)
+      .Write(stallion.breedingBonus)
       .Write(stallion.lineage);
   }
 }

@@ -427,7 +427,7 @@ struct RanchCommandEnterBreedingMarketOK
     // Registration status: 1 if horse is registered as stallion, 0 if not
     uint32_t isRegistered{};
 
-    uint8_t unk2{};
+    uint8_t breedingBonus{};
     // Basically weighted score of number of ancestors that share the same coat as the horse.
     // Ancestors of first generation add two points to lineage,
     // ancestors of the second generation add one point to the lineage,
