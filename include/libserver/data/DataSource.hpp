@@ -37,7 +37,7 @@ public:
 
   //! Creates the user in the data source.
   //! @param user User to ccreate.
-  virtual void CreateUser(data::User& user);
+  virtual void CreateUser(data::User& user) = 0;
   //! Retrieves the user from the data source.
   //! @param name Name of the user.
   //! @param user User to retrieve.
@@ -48,7 +48,7 @@ public:
   virtual void StoreUser(const std::string_view& name, const data::User& user) = 0;
   //! Returns whether the user name is unique.
   //! @return `true` if the user name is unique, otherwise returns `false`.
-  virtual bool IsUserNameUnique(const std::string_view& name);
+  virtual bool IsUserNameUnique(const std::string_view& name) = 0;
 
   //! Creates the infraction in the data source.
   //! @param infraction Infraction to create.
@@ -81,7 +81,7 @@ public:
   virtual void DeleteCharacter(data::Uid uid) = 0;
   //! Returns whether the character name is unique.
   //! @return `true` if the character name is unique, otherwise returns `false`.
-  virtual bool IsCharacterNameUnique(const std::string_view& name);
+  virtual bool IsCharacterNameUnique(const std::string_view& name) = 0;
 
   //! Creates the horse in the data source.
   //! @param horse Horse to create.
@@ -189,7 +189,7 @@ public:
   virtual void DeleteGuild(data::Uid uid) = 0;
   //! Returns whether the guild name is unique.
   //! @return `true` if the guild name is unique, otherwise returns `false`.
-  virtual bool IsGuildNameUnique(const std::string_view& name);
+  virtual bool IsGuildNameUnique(const std::string_view& name) = 0;
 
   //! Creates the settings in the data source.
   //! @param settings Settings to create.
