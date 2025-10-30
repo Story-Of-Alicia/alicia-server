@@ -38,6 +38,7 @@ LobbyDirector::~LobbyDirector()
 
 void LobbyDirector::Initialize()
 {
+  _shopManager.GenerateShopList(_serverInstance.GetItemRegistry());
   _networkHandler->Initialize();
 }
 
@@ -359,6 +360,11 @@ Config::Lobby& LobbyDirector::GetConfig()
 Scheduler& LobbyDirector::GetScheduler()
 {
   return _scheduler;
+}
+
+ShopManager& LobbyDirector::GetShopManager()
+{
+  return _shopManager;
 }
 
 LobbyNetworkHandler& LobbyDirector::GetNetworkHandler()

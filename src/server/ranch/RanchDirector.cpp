@@ -375,6 +375,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       HandleChangeNickname(clientId, command);
     });
 
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRConfirmItem>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleConfirmItem(clientId, command);
+    });
+
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRConfirmSetItem>(
     [this](ClientId clientId, const auto& command)
     {
@@ -2469,6 +2475,7 @@ void RanchDirector::HandleUserPetInfos(
       return response;
     });
 }
+
 void RanchDirector::HandleIncubateEgg(
   ClientId clientId,
   const protocol::AcCmdCRIncubateEgg& command)
@@ -4238,6 +4245,13 @@ void RanchDirector::HandleChangeSkillCardPreset(
       skillSet.slot1 = command.skillSet.skills[0];
       skillSet.slot2 = command.skillSet.skills[1];
     });
+}
+
+void RanchDirector::HandleConfirmItem(
+  ClientId clientId,
+  const protocol::AcCmdCRConfirmItem& command)
+{
+  spdlog::debug("aaaaaaaaaaaaaaaaaaaaaaaa");
 }
 
 void RanchDirector::HandleConfirmSetItem(

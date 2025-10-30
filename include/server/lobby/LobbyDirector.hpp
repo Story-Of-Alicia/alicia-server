@@ -22,6 +22,8 @@
 
 #include "server/Config.hpp"
 
+#include "server/lobby/shop/Shop.hpp"
+
 #include <libserver/data/DataDefinitions.hpp>
 #include <libserver/network/NetworkDefinitions.hpp>
 #include <libserver/util/Scheduler.hpp>
@@ -134,6 +136,9 @@ public:
   //! Get lobby scheduler.
   //! @return Lobby scheduler.
   [[nodiscard]] Scheduler& GetScheduler();
+  //! Get shop manager.
+  //! @return Shop manager.
+  [[nodiscard]] ShopManager& GetShopManager();
   //! Get lobby network handler.
   //! @return Lobby network handler.
   [[nodiscard]] LobbyNetworkHandler& GetNetworkHandler();
@@ -164,6 +169,8 @@ private:
   ServerInstance& _serverInstance;
   //! A scheduler.
   Scheduler _scheduler;
+  //! A shop manager.
+  ShopManager _shopManager;
 
   //! A network handler.
   LobbyNetworkHandler* _networkHandler;
