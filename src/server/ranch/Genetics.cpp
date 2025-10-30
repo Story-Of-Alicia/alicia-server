@@ -486,6 +486,7 @@ Genetics::PotentialResult Genetics::CalculateFoalPotential(
   {
     // No potential
     result.hasPotential = false;
+    spdlog::debug("Genetics: Foal potential - no potential (rolled {}, needed < {})", potentialRoll, potentialProbability);
     return result;
   }
   
