@@ -25,6 +25,7 @@
 #include <libserver/util/Locale.hpp>
 #include <libserver/util/Util.hpp>
 
+#include <algorithm>
 #include <ranges>
 #include <random>
 #include <unordered_map>
@@ -1428,7 +1429,7 @@ void RanchDirector::HandleSearchStallion(
       protocolStallion.expiresAt = util::TimePointToAliciaTime(stallionData.expiresAt);
 
       protocol::BuildProtocolHorseStats(protocolStallion.stats, horse.stats);
-      protocol::BuildProtocolHorseParts(protocolStallion.parts, horse.parts);
+      protocol::BuildProtocolHorseParts(protocolStallion.parts, horse.parts, horse.horseType());
       protocol::BuildProtocolHorseAppearance(protocolStallion.appearance, horse.appearance);
       
       protocolStallion.unk11 = 0;   // Unknown field
@@ -1706,6 +1707,7 @@ void RanchDirector::HandleTryBreeding(
     data::Tid mareSkin = 0, mareMane = 0, mareTail = 0, mareFace = 0;
     uint32_t mareAgility = 0, mareCourage = 0, mareRush = 0, mareEndurance = 0, mareAmbition = 0;
     uint8_t mareGrade = 0;
+    std::vector<data::Uid> mareAncestors;
     
     mareRecord->Immutable([&](const data::Horse& mare)
     {
@@ -1720,11 +1722,13 @@ void RanchDirector::HandleTryBreeding(
       mareEndurance = mare.stats.endurance();
       mareAmbition = mare.stats.ambition();
       mareGrade = mare.grade();
+      mareAncestors = mare.ancestors();
     });
     
     data::Tid stallionSkin = 0, stallionMane = 0, stallionTail = 0, stallionFace = 0;
     uint32_t stallionAgility = 0, stallionCourage = 0, stallionRush = 0, stallionEndurance = 0, stallionAmbition = 0;
     uint8_t stallionGrade = 0;
+    std::vector<data::Uid> stallionAncestors;
     
     stallionRecord->Immutable([&](const data::Horse& stallion)
     {
@@ -1738,6 +1742,7 @@ void RanchDirector::HandleTryBreeding(
       stallionEndurance = stallion.stats.endurance();
       stallionAmbition = stallion.stats.ambition();
       stallionGrade = stallion.grade();
+      stallionAncestors = stallion.ancestors();
     });
     
     // Set foal basic info
@@ -1748,9 +1753,20 @@ void RanchDirector::HandleTryBreeding(
     
     // Inherit parts from parents (simple randomization)
     foal.parts.skinTid() = (rand() % 2 == 0) ? mareSkin : stallionSkin;
-    foal.parts.maneTid() = (rand() % 2 == 0) ? mareMane : stallionMane;
-    foal.parts.tailTid() = (rand() % 2 == 0) ? mareTail : stallionTail;
     foal.parts.faceTid() = (rand() % 2 == 0) ? mareFace : stallionFace;
+    
+    // Use Genetics class for mane/tail calculations
+    auto maneTailResult = GetServerInstance().GetGenetics().CalculateManeTailGenetics(
+      command.mareUid,
+      command.stallionUid,
+      (mareGrade + stallionGrade) / 2);
+    
+    foal.parts.maneTid() = maneTailResult.maneTid;
+    foal.parts.tailTid() = maneTailResult.tailTid;
+    
+    spdlog::debug("TryBreeding: Mane(color:{}, shape:{}, TID:{}), Tail(color:{}, shape:{}, TID:{})", 
+      maneTailResult.maneColor, maneTailResult.maneShape, maneTailResult.maneTid,
+      maneTailResult.tailColor, maneTailResult.tailShape, maneTailResult.tailTid);
     
     // Inherit appearance (average of parents)
     foal.appearance.scale() = (mareSkin + stallionSkin) / 2;
@@ -1786,9 +1802,26 @@ void RanchDirector::HandleTryBreeding(
     
     // Build protocol parts/appearance/stats for response
     foalParts.skinId = foal.parts.skinTid();
-    foalParts.maneId = foal.parts.maneTid();
-    foalParts.tailId = foal.parts.tailTid();
     foalParts.faceId = foal.parts.faceTid();
+    
+    // Map adult mane/tail TIDs to foal-safe color TIDs (1-5) for rendering
+    // The actual adult TIDs are stored in the database and will show when horse grows up
+    auto MapToFoalColorTid = [](data::Tid adultTid) -> uint8_t
+    {
+      if (adultTid >= 1 && adultTid <= 5)
+        return adultTid;
+      
+      // For TIDs 6-40, map to color based on pattern (every 5 TIDs cycle through colors)
+      // TID 6,11,16,21,26,31,36 -> Color 1 (Black)
+      // TID 7,12,17,22,27,32,37 -> Color 2 (White)
+      // TID 8,13,18,23,28,33,38 -> Color 3 (Brown)
+      // TID 9,14,19,24,29,34,39 -> Color 4 (Dark Brown)
+      // TID 10,15,20,25,30,35,40 -> Color 5 (Grey)
+      return ((adultTid - 1) % 5) + 1;
+    };
+    
+    foalParts.maneId = MapToFoalColorTid(foal.parts.maneTid());
+    foalParts.tailId = MapToFoalColorTid(foal.parts.tailTid());
     
     foalAppearance.scale = foal.appearance.scale();
     foalAppearance.legLength = foal.appearance.legLength();

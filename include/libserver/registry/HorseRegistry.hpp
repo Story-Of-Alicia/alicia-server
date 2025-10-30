@@ -74,6 +74,16 @@ public:
   void GiveHorseRandomPotential(
     data::Horse::Potential& potential);
 
+  //! Gets the color group for a mane TID.
+  //! @param maneTid Mane template ID.
+  //! @returns Color group (1-5), or 0 if not found.
+  int32_t GetManeColorGroup(data::Tid maneTid) const;
+
+  //! Gets the color group for a tail TID.
+  //! @param tailTid Tail template ID.
+  //! @returns Color group (1-5), or 0 if not found.
+  int32_t GetTailColorGroup(data::Tid tailTid) const;
+
 private:
   std::random_device _randomDevice;
   std::unordered_map<data::Tid, Coat> _coats;
