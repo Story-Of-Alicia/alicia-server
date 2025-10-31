@@ -1895,14 +1895,14 @@ void RanchDirector::HandleTryBreeding(
   protocol::RanchCommandTryBreedingOK response{
     .uid = foalUid,
     .tid = foalTid,
-    .val = 0,
+    .val = 1,
     .count = 1,
     .unk0 = foalGradeForResponse,
     .parts = foalParts,
     .appearance = foalAppearance,
     .stats = foalStats,
     .unk1 = 0, // Shows a window saying the foal has returned to the ranch"목장으로 돌아갔습니다"
-    .unk2 = 5, // Pregnancy bonus (BonusProbInfo in libconfig) TODO: Implement pregnancy bonus
+    .unk2 = 0, // Pregnancy bonus (BonusProbInfo in libconfig) TODO: Implement pregnancy bonus
     .unk3 = 0,
     .unk4 = 0,
     .unk5 = 0,
