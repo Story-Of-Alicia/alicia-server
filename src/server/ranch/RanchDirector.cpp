@@ -1757,8 +1757,13 @@ void RanchDirector::HandleTryBreeding(
     uint8_t foalGrade = genetics.CalculateFoalGrade(mareGrade, stallionGrade);
     foal.grade() = foalGrade;
     
-    // Inherit parts from parents (simple randomization)
-    foal.parts.skinTid() = (rand() % 2 == 0) ? mareSkin : stallionSkin;
+    // Use Genetics class for skin calculation
+    foal.parts.skinTid() = genetics.CalculateFoalSkin(
+      command.mareUid,
+      command.stallionUid,
+      foalGrade);
+    
+    // Inherit face from parents (simple randomization)
     foal.parts.faceTid() = (rand() % 2 == 0) ? mareFace : stallionFace;
     
     // Use Genetics class for mane/tail calculations (use calculated foalGrade for shape restrictions)

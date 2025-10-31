@@ -58,6 +58,32 @@ HorseRegistry::HorseRegistry()
     {20, Coat{.tid = 20, .faceType = 0}},
   };
 
+  _skins = {
+    // Tier 1 (Common): TID 1-7
+    {1, SkinInfo{.tid = 1, .minGrade = 1, .rarityTier = 1, .faceType = 0}},   // Chestnut
+    {2, SkinInfo{.tid = 2, .minGrade = 1, .rarityTier = 1, .faceType = -1}},  // Bay
+    {3, SkinInfo{.tid = 3, .minGrade = 1, .rarityTier = 1, .faceType = 0}},   // Champagne Sabino
+    {4, SkinInfo{.tid = 4, .minGrade = 2, .rarityTier = 1, .faceType = 0}},   // Chestnut Stockings
+    {5, SkinInfo{.tid = 5, .minGrade = 3, .rarityTier = 1, .faceType = -1}},  // Buckskin
+    {6, SkinInfo{.tid = 6, .minGrade = 3, .rarityTier = 1, .faceType = 0}},   // Champagne
+    {7, SkinInfo{.tid = 7, .minGrade = 5, .rarityTier = 1, .faceType = 0}},   // Leopard Appaloosa
+    // Tier 2 (Uncommon): TID 8-14
+    {8, SkinInfo{.tid = 8, .minGrade = 6, .rarityTier = 2, .faceType = -1}},  // Blanket Appaloosa
+    {9, SkinInfo{.tid = 9, .minGrade = 6, .rarityTier = 2, .faceType = 0}},   // White Grey
+    {10, SkinInfo{.tid = 10, .minGrade = 6, .rarityTier = 2, .faceType = 0}}, // Dapple Grey
+    {11, SkinInfo{.tid = 11, .minGrade = 6, .rarityTier = 2, .faceType = -1}}, // Chestnut Pinto
+    {12, SkinInfo{.tid = 12, .minGrade = 6, .rarityTier = 2, .faceType = 0}}, // Sooty Bay
+    {13, SkinInfo{.tid = 13, .minGrade = 6, .rarityTier = 2, .faceType = 0}}, // Palomino
+    {14, SkinInfo{.tid = 14, .minGrade = 7, .rarityTier = 2, .faceType = 0}}, // Black Pinto
+    // Tier 3 (Rare): TID 15-20
+    {15, SkinInfo{.tid = 15, .minGrade = 7, .rarityTier = 3, .faceType = -1}}, // Black
+    {16, SkinInfo{.tid = 16, .minGrade = 6, .rarityTier = 3, .faceType = 0}}, // Brown Sabino
+    {17, SkinInfo{.tid = 17, .minGrade = 8, .rarityTier = 3, .faceType = 0}}, // Amber Cream
+    {18, SkinInfo{.tid = 18, .minGrade = 7, .rarityTier = 3, .faceType = 0}}, // Mealy Bay
+    {19, SkinInfo{.tid = 19, .minGrade = 8, .rarityTier = 3, .faceType = -1}}, // Black Sabino
+    {20, SkinInfo{.tid = 20, .minGrade = 8, .rarityTier = 3, .faceType = 0}}, // Dapple Bay
+  };
+
   _faces = {
     {1, Face{.tid = 1, .type = -1}},
     {2, Face{.tid = 2, .type = -1}},
@@ -233,6 +259,16 @@ void HorseRegistry::GiveHorseRandomPotential(
     type,
     randomDist(_randomDevice),
     randomDist(_randomDevice));
+}
+
+const SkinInfo* HorseRegistry::GetSkinInfo(data::Tid skinTid) const
+{
+  auto it = _skins.find(skinTid);
+  if (it != _skins.end())
+  {
+    return &it->second;
+  }
+  return nullptr;
 }
 
 int32_t HorseRegistry::GetManeColorGroup(data::Tid maneTid) const
