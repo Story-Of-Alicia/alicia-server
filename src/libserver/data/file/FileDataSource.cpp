@@ -471,6 +471,7 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.clazzProgress = json["clazzProgress"].get<uint32_t>();
   horse.grade = json["grade"].get<uint32_t>();
   horse.growthPoints = json.value("growthPoints", uint16_t{0});
+  horse.timesBreeded = json.value("timesBreeded", uint32_t{0});
 
   horse.horseType = json.value("horseType", uint8_t{0});
   horse.tendency = json.value("tendency", uint8_t{0});
@@ -583,6 +584,7 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["clazzProgress"] = horse.clazzProgress();
   json["grade"] = horse.grade();
   json["growthPoints"] = horse.growthPoints();
+  json["timesBreeded"] = horse.timesBreeded();
 
   json["horseType"] = horse.horseType();
   json["fatigue"] = horse.fatigue();
@@ -1007,7 +1009,6 @@ void server::FileDataSource::RetrieveStallion(data::Uid uid, data::Stallion& sta
     std::chrono::seconds(json["registeredAt"].get<uint64_t>()));
   stallion.expiresAt() = data::Clock::time_point(
     std::chrono::seconds(json["expiresAt"].get<uint64_t>()));
-  stallion.timesBreeded() = json.value("timesBreeded", 0u);
 }
 
 void server::FileDataSource::StoreStallion(data::Uid uid, const data::Stallion& stallion)
@@ -1031,7 +1032,6 @@ void server::FileDataSource::StoreStallion(data::Uid uid, const data::Stallion& 
     stallion.registeredAt().time_since_epoch()).count();
   json["expiresAt"] = std::chrono::duration_cast<std::chrono::seconds>(
     stallion.expiresAt().time_since_epoch()).count();
-  json["timesBreeded"] = stallion.timesBreeded();
 
   dataFile << json.dump(2);
 }

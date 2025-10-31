@@ -35,54 +35,31 @@ constexpr uint32_t FigureScaleMax = 10;
 
 HorseRegistry::HorseRegistry()
 {
+  // Color codes: 1=Black, 2=White, 3=Brown, 4=Dark Brown, 5=Grey
   _coats = {
-    {1, Coat{.tid = 1, .faceType = 0}},
-    {2, Coat{.tid = 2, .faceType = -1}},
-    {3, Coat{.tid = 3, .faceType = 0}},
-    {4, Coat{.tid = 4, .faceType = 0}},
-    {5, Coat{.tid = 5, .faceType = -1}},
-    {6, Coat{.tid = 6, .faceType = 0}},
-    {7, Coat{.tid = 7, .faceType = 0}},
-    {8, Coat{.tid = 8, .faceType = -1}},
-    {9, Coat{.tid = 9, .faceType = 0}},
-    {10, Coat{.tid = 10, .faceType = 0}},
-    {11, Coat{.tid = 11, .faceType = -1}},
-    {12, Coat{.tid = 12, .faceType = 0}},
-    {13, Coat{.tid = 13, .faceType = 0}},
-    {14, Coat{.tid = 14, .faceType = 0}},
-    {15, Coat{.tid = 15, .faceType = -1}},
-    {16, Coat{.tid = 16, .faceType = 0}},
-    {17, Coat{.tid = 17, .faceType = 0}},
-    {18, Coat{.tid = 18, .faceType = 0}},
-    {19, Coat{.tid = 19, .faceType = -1}},
-    {20, Coat{.tid = 20, .faceType = 0}},
-  };
-
-  _skins = {
-    // Tier 1 (Common): TID 1-7
-    // Color codes: 1=Black, 2=White, 3=Brown, 4=Dark Brown, 5=Grey
-    {1, SkinInfo{.tid = 1, .minGrade = 1, .rarityTier = 1, .faceType = 0, .allowedManeColors = {2,3,4,1}}},   // Chestnut
-    {2, SkinInfo{.tid = 2, .minGrade = 1, .rarityTier = 1, .faceType = -1, .allowedManeColors = {2,3,4,1}}},  // Bay
-    {3, SkinInfo{.tid = 3, .minGrade = 1, .rarityTier = 1, .faceType = 0, .allowedManeColors = {5,2,1}}},   // Champagne Sabino
-    {4, SkinInfo{.tid = 4, .minGrade = 2, .rarityTier = 1, .faceType = 0, .allowedManeColors = {2,3,4,1}}},   // Chestnut Stockings
-    {5, SkinInfo{.tid = 5, .minGrade = 3, .rarityTier = 1, .faceType = -1, .allowedManeColors = {5,2,1}}},  // Buckskin
-    {6, SkinInfo{.tid = 6, .minGrade = 3, .rarityTier = 1, .faceType = 0, .allowedManeColors = {5,2,3,4,1}}},   // Champagne
-    {7, SkinInfo{.tid = 7, .minGrade = 5, .rarityTier = 1, .faceType = 0, .allowedManeColors = {2,3,4,1}}},   // Leopard Appaloosa
-    // Tier 2 (Uncommon): TID 8-14
-    {8, SkinInfo{.tid = 8, .minGrade = 6, .rarityTier = 2, .faceType = -1, .allowedManeColors = {5,2,1}}},  // Blanket Appaloosa
-    {9, SkinInfo{.tid = 9, .minGrade = 6, .rarityTier = 2, .faceType = 0, .allowedManeColors = {5,2,1}}},   // White Grey
-    {10, SkinInfo{.tid = 10, .minGrade = 6, .rarityTier = 2, .faceType = 0, .allowedManeColors = {5,2,1}}}, // Dapple Grey
-    {11, SkinInfo{.tid = 11, .minGrade = 6, .rarityTier = 2, .faceType = -1, .allowedManeColors = {3,4,2,1}}}, // Chestnut Pinto
-    {12, SkinInfo{.tid = 12, .minGrade = 6, .rarityTier = 2, .faceType = 0, .allowedManeColors = {2,3,4,1}}}, // Sooty Bay
-    {13, SkinInfo{.tid = 13, .minGrade = 6, .rarityTier = 2, .faceType = 0, .allowedManeColors = {2,3,4,1}}}, // Palomino
-    {14, SkinInfo{.tid = 14, .minGrade = 7, .rarityTier = 2, .faceType = 0, .allowedManeColors = {5,2,1}}}, // Black Pinto
-    // Tier 3 (Rare): TID 15-20
-    {15, SkinInfo{.tid = 15, .minGrade = 7, .rarityTier = 3, .faceType = -1, .allowedManeColors = {5,2,1}}}, // Black
-    {16, SkinInfo{.tid = 16, .minGrade = 6, .rarityTier = 3, .faceType = 0, .allowedManeColors = {2,3,4,1}}}, // Brown Sabino (Chestnut Sabino)
-    {17, SkinInfo{.tid = 17, .minGrade = 8, .rarityTier = 3, .faceType = 0, .allowedManeColors = {2,3,4,1}}}, // Amber Cream
-    {18, SkinInfo{.tid = 18, .minGrade = 7, .rarityTier = 3, .faceType = 0, .allowedManeColors = {2,3,4,1}}}, // Mealy Bay
-    {19, SkinInfo{.tid = 19, .minGrade = 8, .rarityTier = 3, .faceType = -1, .allowedManeColors = {5,2,1}}}, // Black Sabino
-    {20, SkinInfo{.tid = 20, .minGrade = 8, .rarityTier = 3, .faceType = 0, .allowedManeColors = {2,3,4,1}}}, // Dapple Bay
+  // Tier 1 (Common): TID 1-7
+  {1, Coat{.tid = 1, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .allowedManeColors = {1,2,3}}},   // Chestnut: White, light brown, dark brown
+  {2, Coat{.tid = 2, .faceType = -1, .minGrade = 1, .tier = Coat::Tier::Common, .allowedManeColors = {1,2,3}}},  // Bay: White, light brown, dark brown
+  {3, Coat{.tid = 3, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .allowedManeColors = {5,1,4}}},   // Champagne Sabino: Grey, white, black
+  {4, Coat{.tid = 4, .faceType = 0, .minGrade = 2, .tier = Coat::Tier::Common, .allowedManeColors = {1,2,3}}},   // Chestnut Stockings: White, light brown, dark brown
+  {5, Coat{.tid = 5, .faceType = -1, .minGrade = 3, .tier = Coat::Tier::Common, .allowedManeColors = {5,1,4}}},  // Buckskin: Grey, white, black
+  {6, Coat{.tid = 6, .faceType = 0, .minGrade = 3, .tier = Coat::Tier::Common, .allowedManeColors = {5,1,2}}},   // Champagne: Grey, white, brown (no dark brown)
+  {7, Coat{.tid = 7, .faceType = 0, .minGrade = 5, .tier = Coat::Tier::Common, .allowedManeColors = {1,2,3}}},   // Leopard Appaloosa: White, light brown, dark brown
+  // Tier 2 (Uncommon): TID 8-14
+  {8, Coat{.tid = 8, .faceType = -1, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedManeColors = {5,1,4}}},  // Blanket Appaloosa: Grey, white, black
+  {9, Coat{.tid = 9, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedManeColors = {5,1,4}}},   // White Grey: Grey, white, black
+  {10, Coat{.tid = 10, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedManeColors = {5,1,4}}}, // Dapple Grey: Grey, white, black
+  {11, Coat{.tid = 11, .faceType = -1, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedManeColors = {2,3,1}}}, // Chestnut Pinto: Light brown, dark brown, white
+  {12, Coat{.tid = 12, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedManeColors = {1,2,3}}}, // Sooty Bay: White, light brown, dark brown
+  {13, Coat{.tid = 13, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedManeColors = {1,2,3}}}, // Palomino: White, light brown, dark brown
+  {14, Coat{.tid = 14, .faceType = 0, .minGrade = 7, .tier = Coat::Tier::Uncommon, .allowedManeColors = {5,1,4}}}, // Black Pinto: Grey, white, black
+  // Tier 3 (Rare): TID 15-20
+  {15, Coat{.tid = 15, .faceType = -1, .minGrade = 7, .tier = Coat::Tier::Rare, .allowedManeColors = {5,1,4}}}, // Black: Grey, white, black
+  {16, Coat{.tid = 16, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Rare, .allowedManeColors = {1,2,3}}}, // Brown Sabino (Chestnut Sabino): White, light brown, dark brown
+  {17, Coat{.tid = 17, .faceType = 0, .minGrade = 8, .tier = Coat::Tier::Rare, .allowedManeColors = {1,2,3}}}, // Amber Cream: White, light brown, dark brown
+  {18, Coat{.tid = 18, .faceType = 0, .minGrade = 7, .tier = Coat::Tier::Rare, .allowedManeColors = {1,2,3}}}, // Mealy Bay: White, light brown, dark brown
+  {19, Coat{.tid = 19, .faceType = -1, .minGrade = 8, .tier = Coat::Tier::Rare, .allowedManeColors = {5,1,4}}}, // Black Sabino: Grey, white, black
+  {20, Coat{.tid = 20, .faceType = 0, .minGrade = 8, .tier = Coat::Tier::Rare, .allowedManeColors = {1,2,3}}}, // Dapple Bay: White, light brown, dark brown
   };
 
   _faces = {
@@ -262,14 +239,17 @@ void HorseRegistry::GiveHorseRandomPotential(
     randomDist(_randomDevice));
 }
 
-const SkinInfo* HorseRegistry::GetSkinInfo(data::Tid skinTid) const
+const Coat& HorseRegistry::GetCoatInfo(data::Tid coatTid) const
 {
-  auto it = _skins.find(skinTid);
-  if (it != _skins.end())
+  auto it = _coats.find(coatTid);
+  if (it != _coats.end())
   {
-    return &it->second;
+    return it->second;
   }
-  return nullptr;
+  
+  // Fallback to Chestnut (coat 1) if not found
+  static const Coat invalidCoat{.tid = 1, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .allowedManeColors = {2,3,4,1}};
+  return invalidCoat;
 }
 
 int32_t HorseRegistry::GetManeColorGroup(data::Tid maneTid) const

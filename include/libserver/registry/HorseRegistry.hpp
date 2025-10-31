@@ -31,17 +31,18 @@ namespace server::registry
 
 struct Coat
 {
+  enum class Tier
+  {
+    Common = 1,
+    Uncommon = 2,
+    Rare = 3
+  };
+
   data::Tid tid{data::InvalidTid};
   //! -1 and 0
   int32_t faceType{0};
-};
-
-struct SkinInfo
-{
-  data::Tid tid{data::InvalidTid};
   int32_t minGrade{1};
-  int32_t rarityTier{1}; // 1=Common, 2=Uncommon, 3=Rare/Epic/Legendary
-  int32_t faceType{0};
+  Tier tier{Tier::Common};
   std::vector<int32_t> allowedManeColors; // Valid mane/tail colors for this coat (1-5)
 };
 
@@ -94,16 +95,15 @@ public:
   //! @returns Color group (1-5), or 0 if not found.
   int32_t GetTailColorGroup(data::Tid tailTid) const;
 
-  //! Gets skin information for a given skin TID.
-  //! @param skinTid Skin template ID.
-  //! @returns Pointer to SkinInfo, or nullptr if not found.
-  const SkinInfo* GetSkinInfo(data::Tid skinTid) const;
+  //! Gets coat information for a given coat TID.
+  //! @param coatTid Coat template ID.
+  //! @returns Pointer to Coat, or nullptr if not found.
+  const Coat& GetCoatInfo(data::Tid coatTid) const;
 
 private:
   std::random_device _randomDevice;
   std::unordered_map<data::Tid, Coat> _coats;
   std::unordered_map<data::Tid, Face> _faces;
-  std::unordered_map<data::Tid, SkinInfo> _skins;
 
   std::unordered_map<data::Tid, Mane> _manes;
   std::unordered_map<data::Tid, Tail> _tails;

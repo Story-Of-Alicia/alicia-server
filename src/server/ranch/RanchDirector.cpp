@@ -1399,7 +1399,7 @@ void RanchDirector::HandleSearchStallion(
       protocolStallion.expiresAt = util::TimePointToAliciaTime(stallionData.expiresAt);
 
       protocol::BuildProtocolHorseStats(protocolStallion.stats, horse.stats);
-      protocol::BuildProtocolHorseParts(protocolStallion.parts, horse.parts, horse.horseType());
+      protocol::BuildProtocolHorseParts(protocolStallion.parts, horse.parts, horse.horseType() == 1);
       protocol::BuildProtocolHorseAppearance(protocolStallion.appearance, horse.appearance);
       
       protocolStallion.unk11 = 0;   // Unknown field
@@ -1849,6 +1849,12 @@ void RanchDirector::HandleTryBreeding(
   characterRecord.Mutable([foalUid](data::Character& character)
   {
     character.horses().emplace_back(foalUid);
+  });
+  
+  // Increment stallion's breeding counter
+  stallionRecord->Mutable([](data::Horse& stallion)
+  {
+    stallion.timesBreeded() = stallion.timesBreeded() + 1;
   });
   
   spdlog::info("TryBreeding: Created foal UID={}, TID={}", foalUid, foalTid);

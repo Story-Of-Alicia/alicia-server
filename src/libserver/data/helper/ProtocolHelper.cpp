@@ -93,7 +93,7 @@ void BuildProtocolHorse(
     .val14 = 0x00,
     .emblem = static_cast<uint16_t>(horse.emblemUid())};
 
-  BuildProtocolHorseParts(protocolHorse.parts, horse.parts, horse.horseType());
+  BuildProtocolHorseParts(protocolHorse.parts, horse.parts, horse.horseType() == 1);
   BuildProtocolHorseAppearance(protocolHorse.appearance, horse.appearance);
   BuildProtocolHorseStats(protocolHorse.stats, horse.stats);
   BuildProtocolHorseMastery(protocolHorse.mastery, horse.mastery);
@@ -102,7 +102,7 @@ void BuildProtocolHorse(
 void BuildProtocolHorseParts(
   Horse::Parts& protocolHorseParts,
   const data::Horse::Parts& parts,
-  uint8_t horseType)
+  bool isFoal)
 {
   // Helper function to map adult TIDs to foal-safe color TIDs
   auto MapToFoalColorTid = [](data::Tid adultTid) -> uint8_t
@@ -120,8 +120,8 @@ void BuildProtocolHorseParts(
   uint8_t maneId = static_cast<uint8_t>(parts.maneTid());
   uint8_t tailId = static_cast<uint8_t>(parts.tailTid());
   
-  // If this is a foal (horseType == 1), map to foal-safe color TIDs
-  if (horseType == 1)
+  // If this is a foal, map to foal-safe color TIDs
+  if (isFoal)
   {
     maneId = MapToFoalColorTid(parts.maneTid());
     tailId = MapToFoalColorTid(parts.tailTid());
