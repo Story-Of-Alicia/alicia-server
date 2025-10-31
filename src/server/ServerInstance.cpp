@@ -253,7 +253,6 @@ void ServerInstance::Initialize()
 void ServerInstance::Terminate()
 {
   _shouldRun.store(false, std::memory_order::relaxed);
-  _breedingMarket.Terminate();
 }
 
 AuthenticationService& ServerInstance::GetAuthenticationService()
@@ -349,11 +348,6 @@ RoomSystem& ServerInstance::GetRoomSystem()
 OtpSystem& ServerInstance::GetOtpSystem()
 {
   return _otpSystem;
-}
-
-BreedingMarket& ServerInstance::GetBreedingMarket()
-{
-  return _breedingMarket;
 }
 
 Genetics& ServerInstance::GetGenetics()
