@@ -303,12 +303,12 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
     result.maneTid = 1; // White short mane
   }
 
-  // IMPORTANT: Extract the actual color from the mane we selected
-  // Then find the tail with the SAME color (not just same color group)
+  // Extract the actual color from the mane we selected
+  // Then find the tail with the SAME color
   registry::Color selectedColor = _serverInstance.GetHorseRegistry().GetManeColor(result.maneTid);
   result.tailTid = _serverInstance.GetHorseRegistry().FindTailByColorAndShape(selectedColor, tailShape);
 
-  // Fallback if we couldn't find a matching tail
+  // Fallback if matching tail isn't found
   if (result.tailTid == data::InvalidTid || result.tailTid == 0)
   {
     spdlog::warn("Genetics: Failed to find tail matching mane color for shape {}, using generic lookup", tailShape);
@@ -463,7 +463,7 @@ Genetics::StatResult Genetics::CalculateFoalStats(
     int32_t variance = (avgStat * 20) / 100;
     std::uniform_int_distribution<int32_t> varianceDist(-variance, variance);
     int32_t finalStat = avgStat + varianceDist(_randomEngine);
-    if (finalStat < 1) finalStat = 1;
+    if (finalStat < 0) finalStat = 0;
     if (finalStat > 100) finalStat = 100;
     return static_cast<uint32_t>(finalStat);
   };
@@ -506,12 +506,12 @@ Genetics::StatResult Genetics::CalculateFoalStats(
       *largestStat = static_cast<uint32_t>(static_cast<int32_t>(*largestStat) + difference);
     }
     
-    // Clamp all stats to 1-100 range
-    result.agility = std::clamp(result.agility, 1u, 100u);
-    result.courage = std::clamp(result.courage, 1u, 100u);
-    result.rush = std::clamp(result.rush, 1u, 100u);
-    result.endurance = std::clamp(result.endurance, 1u, 100u);
-    result.ambition = std::clamp(result.ambition, 1u, 100u);
+    // Clamp all stats to 0-100 range
+    result.agility = std::min(result.agility, 100u);
+    result.courage = std::min(result.courage, 100u);
+    result.rush = std::min(result.rush, 100u);
+    result.endurance = std::min(result.endurance, 100u);
+    result.ambition = std::min(result.ambition, 100u);
   }
   
   spdlog::debug("Genetics: Target grade {}, total range {}-{}, actual total {}", 
