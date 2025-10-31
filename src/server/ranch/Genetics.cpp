@@ -20,6 +20,7 @@
 #include "server/ranch/Genetics.hpp"
 #include "server/ServerInstance.hpp"
 
+#include <algorithm>
 #include <spdlog/spdlog.h>
 
 namespace server
@@ -84,7 +85,8 @@ void Genetics::ValidateTailShape(int32_t& tailShape, uint8_t foalGrade)
 Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
   data::Uid mareUid,
   data::Uid stallionUid,
-  uint8_t foalGrade)
+  uint8_t foalGrade,
+  data::Tid foalSkinTid)
 {
   ManeTailResult result;
 
@@ -116,6 +118,28 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
     stallionTail = stallion.parts.tailTid();
     stallionAncestors = stallion.ancestors();
   });
+
+  // Get allowed mane colors for the foal's coat
+  auto skinInfo = _serverInstance.GetHorseRegistry().GetSkinInfo(foalSkinTid);
+  std::vector<int32_t> allowedColors = {1, 2, 3, 4, 5}; // Default: all colors
+  if (skinInfo && !skinInfo->allowedManeColors.empty())
+  {
+    allowedColors = skinInfo->allowedManeColors;
+  }
+
+  // Helper lambda to check if a color is valid for this coat
+  auto isColorValid = [&](int32_t color) -> bool
+  {
+    return std::find(allowedColors.begin(), allowedColors.end(), color) != allowedColors.end();
+  };
+
+  // Helper lambda to get random valid color
+  auto getRandomValidColor = [&]() -> int32_t
+  {
+    if (allowedColors.empty()) return 1; // Fallback
+    auto dist = std::uniform_int_distribution<size_t>(0, allowedColors.size() - 1);
+    return allowedColors[dist(_randomEngine)];
+  };
 
   // === COLOR GENETICS (same color for both mane and tail) ===
   
@@ -156,7 +180,12 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
       gpRecord.Immutable([&](const data::Horse& gp) { sharedColor = GetColorFromTid(gp.parts.maneTid()); });
   }
   
-  if (sharedColor == 0) sharedColor = 1 + (rand() % 5);  // Random fallback (60%)
+  // Validate inherited color against coat restrictions
+  if (sharedColor == 0 || !isColorValid(sharedColor))
+  {
+    sharedColor = getRandomValidColor();  // Random fallback (60%) or invalid color replacement
+    spdlog::debug("Genetics: Mane/tail color - inherited color invalid for coat, using random valid color {}", sharedColor);
+  }
   
   int32_t maneColor = sharedColor;
   int32_t tailColor = sharedColor;  // SAME COLOR
