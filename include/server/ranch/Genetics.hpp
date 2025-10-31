@@ -53,11 +53,13 @@ public:
   //! @param mareUid Mare's UID
   //! @param stallionUid Stallion's UID
   //! @param foalGrade Foal's calculated grade (for shape restrictions)
+  //! @param foalSkinTid Foal's skin TID (determines allowed colors)
   //! @returns Mane and tail TIDs with separately inherited color and shape
   ManeTailResult CalculateManeTailGenetics(
     data::Uid mareUid,
     data::Uid stallionUid,
-    uint8_t foalGrade);
+    uint8_t foalGrade,
+    data::Tid foalSkinTid);
 
   //! Calculates skin/coat genetics based on parents and grandparents.
   //! Weighted inheritance: Mom 7%, Dad 7%, GPs 3% each, Random 74%
