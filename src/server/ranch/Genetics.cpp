@@ -243,10 +243,41 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
       gpRecord.Immutable([&](const data::Horse& gp) { maneShape = GetShapeFromTid(gp.parts.maneTid(), true); });
   }
 
-  if (maneShape == 0) maneShape = rand() % 8;  // Random shape (60%, 8 shapes: 0-7)
-
-  // Validate mane shape against grade
-  ValidateManeShape(maneShape, foalGrade);
+  // If no inherited shape, use weighted random selection based on inheritance rates
+  if (maneShape == 0)
+  {
+    // Collect valid mane shapes for the foal's grade with their weights
+    std::vector<int32_t> validShapes;
+    std::vector<float> weights;
+    
+    // Check all 8 mane shapes (0-7)
+    for (int32_t shape = 0; shape <= 7; ++shape)
+    {
+      // Get any mane TID with this shape to check minGrade and inheritanceRate
+      data::Tid sampleTid = (shape * 5) + 1; // White color variant of each shape
+      const auto* maneInfo = _serverInstance.GetHorseRegistry().GetMane(sampleTid);
+      if (maneInfo && maneInfo->minGrade <= foalGrade)
+      {
+        validShapes.push_back(shape);
+        weights.push_back(maneInfo->inheritanceRate);
+      }
+    }
+    
+    if (!validShapes.empty())
+    {
+      std::discrete_distribution<size_t> dist(weights.begin(), weights.end());
+      maneShape = validShapes[dist(_randomEngine)];
+    }
+    else
+    {
+      maneShape = 0; // Fallback to shape 0
+    }
+  }
+  else
+  {
+    // Validate inherited mane shape against grade
+    ValidateManeShape(maneShape, foalGrade);
+  }
 
   // === TAIL SHAPE GENETICS ===
   
@@ -288,10 +319,41 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
       gpRecord.Immutable([&](const data::Horse& gp) { tailShape = GetShapeFromTid(gp.parts.tailTid(), false); });
   }
 
-  if (tailShape == 0) tailShape = rand() % 6;  // Random shape (60%, 6 shapes: 0-5)
-
-  // Validate tail shape against grade
-  ValidateTailShape(tailShape, foalGrade);
+  // If no inherited shape, use weighted random selection based on inheritance rates
+  if (tailShape == 0)
+  {
+    // Collect valid tail shapes for the foal's grade with their weights
+    std::vector<int32_t> validShapes;
+    std::vector<float> weights;
+    
+    // Check all 6 tail shapes (0-5)
+    for (int32_t shape = 0; shape <= 5; ++shape)
+    {
+      // Get any tail TID with this shape to check minGrade and inheritanceRate
+      data::Tid sampleTid = (shape * 5) + 1; // White color variant of each shape
+      const auto* tailInfo = _serverInstance.GetHorseRegistry().GetTail(sampleTid);
+      if (tailInfo && tailInfo->minGrade <= foalGrade)
+      {
+        validShapes.push_back(shape);
+        weights.push_back(tailInfo->inheritanceRate);
+      }
+    }
+    
+    if (!validShapes.empty())
+    {
+      std::discrete_distribution<size_t> dist(weights.begin(), weights.end());
+      tailShape = validShapes[dist(_randomEngine)];
+    }
+    else
+    {
+      tailShape = 0; // Fallback to shape 0
+    }
+  }
+  else
+  {
+    // Validate inherited tail shape against grade
+    ValidateTailShape(tailShape, foalGrade);
+  }
 
   // Get random mane TID from the selected color group and shape
   result.maneTid = _serverInstance.GetHorseRegistry().GetRandomManeFromColorAndShape(maneColorGroupId, maneShape, _randomEngine);

@@ -83,95 +83,95 @@ HorseRegistry::HorseRegistry()
   // Pattern: TID = (shape * 5) + color
 
   _manes = {
-    // Shape 0 (Medium short)
-    {1, Mane{.tid = 1, .color = Color::White, .shape = 0}},
-    {2, Mane{.tid = 2, .color = Color::LightBrown, .shape = 0}},
-    {3, Mane{.tid = 3, .color = Color::Brown, .shape = 0}},
-    {4, Mane{.tid = 4, .color = Color::DarkBrown, .shape = 0}},
-    {5, Mane{.tid = 5, .color = Color::Grey, .shape = 0}},
-    // Shape 1 (Medium)
-    {6, Mane{.tid = 6, .color = Color::White, .shape = 1}},
-    {7, Mane{.tid = 7, .color = Color::LightBrown, .shape = 1}},
-    {8, Mane{.tid = 8, .color = Color::Brown, .shape = 1}},
-    {9, Mane{.tid = 9, .color = Color::DarkBrown, .shape = 1}},
-    {10, Mane{.tid = 10, .color = Color::Grey, .shape = 1}},
-    // Shape 2 (Shaved)
-    {11, Mane{.tid = 11, .color = Color::White, .shape = 2}},
-    {12, Mane{.tid = 12, .color = Color::LightBrown, .shape = 2}},
-    {13, Mane{.tid = 13, .color = Color::Brown, .shape = 2}},
-    {14, Mane{.tid = 14, .color = Color::DarkBrown, .shape = 2}},
-    {15, Mane{.tid = 15, .color = Color::Grey, .shape = 2}},
-    // Shape 3 (Short)
-    {16, Mane{.tid = 16, .color = Color::White, .shape = 3}},
-    {17, Mane{.tid = 17, .color = Color::LightBrown, .shape = 3}},
-    {18, Mane{.tid = 18, .color = Color::Brown, .shape = 3}},
-    {19, Mane{.tid = 19, .color = Color::DarkBrown, .shape = 3}},
-    {20, Mane{.tid = 20, .color = Color::Grey, .shape = 3}},
-    // Shape 4 (Extremely short)
-    {21, Mane{.tid = 21, .color = Color::White, .shape = 4}},
-    {22, Mane{.tid = 22, .color = Color::LightBrown, .shape = 4}},
-    {23, Mane{.tid = 23, .color = Color::Brown, .shape = 4}},
-    {24, Mane{.tid = 24, .color = Color::DarkBrown, .shape = 4}},
-    {25, Mane{.tid = 25, .color = Color::Grey, .shape = 4}},
-    // Shape 5 (Spiky)
-    {26, Mane{.tid = 26, .color = Color::White, .shape = 5}},
-    {27, Mane{.tid = 27, .color = Color::LightBrown, .shape = 5}},
-    {28, Mane{.tid = 28, .color = Color::Brown, .shape = 5}},
-    {29, Mane{.tid = 29, .color = Color::DarkBrown, .shape = 5}},
-    {30, Mane{.tid = 30, .color = Color::Grey, .shape = 5}},
-    // Shape 6 (Long)
-    {31, Mane{.tid = 31, .color = Color::White, .shape = 6}},
-    {32, Mane{.tid = 32, .color = Color::LightBrown, .shape = 6}},
-    {33, Mane{.tid = 33, .color = Color::Brown, .shape = 6}},
-    {34, Mane{.tid = 34, .color = Color::DarkBrown, .shape = 6}},
-    {35, Mane{.tid = 35, .color = Color::Grey, .shape = 6}},
-    // Shape 7 (Curly)
-    {36, Mane{.tid = 36, .color = Color::White, .shape = 7}},
-    {37, Mane{.tid = 37, .color = Color::LightBrown, .shape = 7}},
-    {38, Mane{.tid = 38, .color = Color::Brown, .shape = 7}},
-    {39, Mane{.tid = 39, .color = Color::DarkBrown, .shape = 7}},
-    {40, Mane{.tid = 40, .color = Color::Grey, .shape = 7}},
+    // Shape 0 (Medium short): 30% inheritance, grade 1+
+    {1, Mane{.tid = 1, .color = Color::White, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {2, Mane{.tid = 2, .color = Color::LightBrown, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {3, Mane{.tid = 3, .color = Color::Brown, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {4, Mane{.tid = 4, .color = Color::DarkBrown, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {5, Mane{.tid = 5, .color = Color::Grey, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1}},
+    // Shape 1 (Medium): 20% inheritance, grade 6+
+    {6, Mane{.tid = 6, .color = Color::White, .shape = 1, .inheritanceRate = 20.0f, .minGrade = 6}},
+    {7, Mane{.tid = 7, .color = Color::LightBrown, .shape = 1, .inheritanceRate = 20.0f, .minGrade = 6}},
+    {8, Mane{.tid = 8, .color = Color::Brown, .shape = 1, .inheritanceRate = 20.0f, .minGrade = 6}},
+    {9, Mane{.tid = 9, .color = Color::DarkBrown, .shape = 1, .inheritanceRate = 20.0f, .minGrade = 6}},
+    {10, Mane{.tid = 10, .color = Color::Grey, .shape = 1, .inheritanceRate = 20.0f, .minGrade = 6}},
+    // Shape 2 (Shaved): 30% inheritance, grade 1+
+    {11, Mane{.tid = 11, .color = Color::White, .shape = 2, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {12, Mane{.tid = 12, .color = Color::LightBrown, .shape = 2, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {13, Mane{.tid = 13, .color = Color::Brown, .shape = 2, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {14, Mane{.tid = 14, .color = Color::DarkBrown, .shape = 2, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {15, Mane{.tid = 15, .color = Color::Grey, .shape = 2, .inheritanceRate = 30.0f, .minGrade = 1}},
+    // Shape 3 (Short): 30% inheritance, grade 1+
+    {16, Mane{.tid = 16, .color = Color::White, .shape = 3, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {17, Mane{.tid = 17, .color = Color::LightBrown, .shape = 3, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {18, Mane{.tid = 18, .color = Color::Brown, .shape = 3, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {19, Mane{.tid = 19, .color = Color::DarkBrown, .shape = 3, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {20, Mane{.tid = 20, .color = Color::Grey, .shape = 3, .inheritanceRate = 30.0f, .minGrade = 1}},
+    // Shape 4 (Extremely short): 30% inheritance, grade 1+
+    {21, Mane{.tid = 21, .color = Color::White, .shape = 4, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {22, Mane{.tid = 22, .color = Color::LightBrown, .shape = 4, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {23, Mane{.tid = 23, .color = Color::Brown, .shape = 4, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {24, Mane{.tid = 24, .color = Color::DarkBrown, .shape = 4, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {25, Mane{.tid = 25, .color = Color::Grey, .shape = 4, .inheritanceRate = 30.0f, .minGrade = 1}},
+    // Shape 5 (Spiky): 30% inheritance, grade 4+
+    {26, Mane{.tid = 26, .color = Color::White, .shape = 5, .inheritanceRate = 30.0f, .minGrade = 4}},
+    {27, Mane{.tid = 27, .color = Color::LightBrown, .shape = 5, .inheritanceRate = 30.0f, .minGrade = 4}},
+    {28, Mane{.tid = 28, .color = Color::Brown, .shape = 5, .inheritanceRate = 30.0f, .minGrade = 4}},
+    {29, Mane{.tid = 29, .color = Color::DarkBrown, .shape = 5, .inheritanceRate = 30.0f, .minGrade = 4}},
+    {30, Mane{.tid = 30, .color = Color::Grey, .shape = 5, .inheritanceRate = 30.0f, .minGrade = 4}},
+    // Shape 6 (Long): 15% inheritance, grade 6+
+    {31, Mane{.tid = 31, .color = Color::White, .shape = 6, .inheritanceRate = 15.0f, .minGrade = 6}},
+    {32, Mane{.tid = 32, .color = Color::LightBrown, .shape = 6, .inheritanceRate = 15.0f, .minGrade = 6}},
+    {33, Mane{.tid = 33, .color = Color::Brown, .shape = 6, .inheritanceRate = 15.0f, .minGrade = 6}},
+    {34, Mane{.tid = 34, .color = Color::DarkBrown, .shape = 6, .inheritanceRate = 15.0f, .minGrade = 6}},
+    {35, Mane{.tid = 35, .color = Color::Grey, .shape = 6, .inheritanceRate = 15.0f, .minGrade = 6}},
+    // Shape 7 (Curly): 5% inheritance, grade 7+
+    {36, Mane{.tid = 36, .color = Color::White, .shape = 7, .inheritanceRate = 5.0f, .minGrade = 7}},
+    {37, Mane{.tid = 37, .color = Color::LightBrown, .shape = 7, .inheritanceRate = 5.0f, .minGrade = 7}},
+    {38, Mane{.tid = 38, .color = Color::Brown, .shape = 7, .inheritanceRate = 5.0f, .minGrade = 7}},
+    {39, Mane{.tid = 39, .color = Color::DarkBrown, .shape = 7, .inheritanceRate = 5.0f, .minGrade = 7}},
+    {40, Mane{.tid = 40, .color = Color::Grey, .shape = 7, .inheritanceRate = 5.0f, .minGrade = 7}},
   };
 
   // Tail TIDs 1-30: 6 shapes x 5 colors
   // Pattern: TID = (shape * 5) + color
   _tails = {
-    // Shape 0 (Short)
-    {1, Tail{.tid = 1, .color = Color::White, .shape = 0}},
-    {2, Tail{.tid = 2, .color = Color::LightBrown, .shape = 0}},
-    {3, Tail{.tid = 3, .color = Color::Brown, .shape = 0}},
-    {4, Tail{.tid = 4, .color = Color::DarkBrown, .shape = 0}},
-    {5, Tail{.tid = 5, .color = Color::Grey, .shape = 0}},
-    // Shape 1 (Medium)
-    {6, Tail{.tid = 6, .color = Color::White, .shape = 1}},
-    {7, Tail{.tid = 7, .color = Color::LightBrown, .shape = 1}},
-    {8, Tail{.tid = 8, .color = Color::Brown, .shape = 1}},
-    {9, Tail{.tid = 9, .color = Color::DarkBrown, .shape = 1}},
-    {10, Tail{.tid = 10, .color = Color::Grey, .shape = 1}},
-    // Shape 2 (Long)
-    {11, Tail{.tid = 11, .color = Color::White, .shape = 2}},
-    {12, Tail{.tid = 12, .color = Color::LightBrown, .shape = 2}},
-    {13, Tail{.tid = 13, .color = Color::Brown, .shape = 2}},
-    {14, Tail{.tid = 14, .color = Color::DarkBrown, .shape = 2}},
-    {15, Tail{.tid = 15, .color = Color::Grey, .shape = 2}},
-    // Shape 3 (Wavy)
-    {16, Tail{.tid = 16, .color = Color::White, .shape = 3}},
-    {17, Tail{.tid = 17, .color = Color::LightBrown, .shape = 3}},
-    {18, Tail{.tid = 18, .color = Color::Brown, .shape = 3}},
-    {19, Tail{.tid = 19, .color = Color::DarkBrown, .shape = 3}},
-    {20, Tail{.tid = 20, .color = Color::Grey, .shape = 3}},
-    // Shape 4 (Curly)
-    {21, Tail{.tid = 21, .color = Color::White, .shape = 4}},
-    {22, Tail{.tid = 22, .color = Color::LightBrown, .shape = 4}},
-    {23, Tail{.tid = 23, .color = Color::Brown, .shape = 4}},
-    {24, Tail{.tid = 24, .color = Color::DarkBrown, .shape = 4}},
-    {25, Tail{.tid = 25, .color = Color::Grey, .shape = 4}},
-    // Shape 5 (Long Curly)
-    {26, Tail{.tid = 26, .color = Color::White, .shape = 5}},
-    {27, Tail{.tid = 27, .color = Color::LightBrown, .shape = 5}},
-    {28, Tail{.tid = 28, .color = Color::Brown, .shape = 5}},
-    {29, Tail{.tid = 29, .color = Color::DarkBrown, .shape = 5}},
-    {30, Tail{.tid = 30, .color = Color::Grey, .shape = 5}},
+    // Shape 0 (Medium): 30% inheritance
+    {1, Tail{.tid = 1, .color = Color::White, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {2, Tail{.tid = 2, .color = Color::LightBrown, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {3, Tail{.tid = 3, .color = Color::Brown, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {4, Tail{.tid = 4, .color = Color::DarkBrown, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {5, Tail{.tid = 5, .color = Color::Grey, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1}},
+    // Shape 1 (Long Thick): 30% inheritance
+    {6, Tail{.tid = 6, .color = Color::White, .shape = 1, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {7, Tail{.tid = 7, .color = Color::LightBrown, .shape = 1, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {8, Tail{.tid = 8, .color = Color::Brown, .shape = 1, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {9, Tail{.tid = 9, .color = Color::DarkBrown, .shape = 1, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {10, Tail{.tid = 10, .color = Color::Grey, .shape = 1, .inheritanceRate = 30.0f, .minGrade = 1}},
+    // Shape 2 (Cropped): 20% inheritance
+    {11, Tail{.tid = 11, .color = Color::White, .shape = 2, .inheritanceRate = 20.0f, .minGrade = 1}},
+    {12, Tail{.tid = 12, .color = Color::LightBrown, .shape = 2, .inheritanceRate = 20.0f, .minGrade = 1}},
+    {13, Tail{.tid = 13, .color = Color::Brown, .shape = 2, .inheritanceRate = 20.0f, .minGrade = 1}},
+    {14, Tail{.tid = 14, .color = Color::DarkBrown, .shape = 2, .inheritanceRate = 20.0f, .minGrade = 1}},
+    {15, Tail{.tid = 15, .color = Color::Grey, .shape = 2, .inheritanceRate = 20.0f, .minGrade = 1}},
+    // Shape 3 (Long Thin): 30% inheritance
+    {16, Tail{.tid = 16, .color = Color::White, .shape = 3, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {17, Tail{.tid = 17, .color = Color::LightBrown, .shape = 3, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {18, Tail{.tid = 18, .color = Color::Brown, .shape = 3, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {19, Tail{.tid = 19, .color = Color::DarkBrown, .shape = 3, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {20, Tail{.tid = 20, .color = Color::Grey, .shape = 3, .inheritanceRate = 30.0f, .minGrade = 1}},
+    // Shape 4 (Short Thin): 30% inheritance
+    {21, Tail{.tid = 21, .color = Color::White, .shape = 4, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {22, Tail{.tid = 22, .color = Color::LightBrown, .shape = 4, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {23, Tail{.tid = 23, .color = Color::Brown, .shape = 4, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {24, Tail{.tid = 24, .color = Color::DarkBrown, .shape = 4, .inheritanceRate = 30.0f, .minGrade = 1}},
+    {25, Tail{.tid = 25, .color = Color::Grey, .shape = 4, .inheritanceRate = 30.0f, .minGrade = 1}},
+    // Shape 5 (Long Curly): 30% inheritance, grade 7+
+    {26, Tail{.tid = 26, .color = Color::White, .shape = 5, .inheritanceRate = 30.0f, .minGrade = 7}},
+    {27, Tail{.tid = 27, .color = Color::LightBrown, .shape = 5, .inheritanceRate = 30.0f, .minGrade = 7}},
+    {28, Tail{.tid = 28, .color = Color::Brown, .shape = 5, .inheritanceRate = 30.0f, .minGrade = 7}},
+    {29, Tail{.tid = 29, .color = Color::DarkBrown, .shape = 5, .inheritanceRate = 30.0f, .minGrade = 7}},
+    {30, Tail{.tid = 30, .color = Color::Grey, .shape = 5, .inheritanceRate = 30.0f, .minGrade = 7}},
   };
 
   // Build lookup tables for efficient querying
@@ -427,6 +427,26 @@ data::Tid HorseRegistry::FindTailByColorAndShape(Color color, int32_t shape) con
     }
   }
   return data::InvalidTid;
+}
+
+const Mane* HorseRegistry::GetMane(data::Tid tid) const
+{
+  auto it = _manes.find(tid);
+  if (it != _manes.end())
+  {
+    return &it->second;
+  }
+  return nullptr;
+}
+
+const Tail* HorseRegistry::GetTail(data::Tid tid) const
+{
+  auto it = _tails.find(tid);
+  if (it != _tails.end())
+  {
+    return &it->second;
+  }
+  return nullptr;
 }
 
 } // namespace server
