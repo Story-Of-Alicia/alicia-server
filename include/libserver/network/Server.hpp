@@ -20,6 +20,8 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
+#include "NetworkDefinitions.hpp"
+
 #include <functional>
 #include <unordered_map>
 #include <span>
@@ -31,9 +33,6 @@ namespace server::network
 {
 
 namespace asio = boost::asio;
-
-//! Client Id.
-using ClientId = std::size_t;
 
 //! A write handler.
 using WriteSupplier = std::function<size_t(asio::streambuf&)>;
@@ -79,6 +78,8 @@ public:
   void End();
   //! Queues a write.
   void QueueWrite(WriteSupplier writeSupplier);
+  //!
+  asio::ip::address_v4 GetAddress();
 
 private:
   void WriteLoop() noexcept;

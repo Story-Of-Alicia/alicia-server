@@ -19,8 +19,11 @@
 
 #include <libserver/util/Locale.hpp>
 
+#include <array>
 #include <cassert>
 #include <locale>
+#include <regex>
+#include <cstdio>
 
 namespace
 {
@@ -36,9 +39,38 @@ void TestLocale()
   assert(eucOutput == eucSource);
 }
 
+void TestNameValidation()
+{
+  constexpr std::array validNames = {
+    "validName1",
+    "valid-name2",
+    "valid_name3",
+    "valid.name4",
+    "가123-",
+    "가가.가가9"};
+
+  constexpr std::array invalidNames = {
+    // Invalid because of length
+    "invalidLatinNameBEcauseOfLength211",
+    // Invalid because of symbols
+    "%!@^",
+    "가가가가가가가가가가가가"};
+
+  for (const auto& entry : validNames)
+  {
+    assert(server::locale::IsNameValid(entry) == true);
+  }
+
+  for (const auto& entry : invalidNames)
+  {
+    assert(server::locale::IsNameValid(entry) == false);
+  }
+}
+
 } // namespace
 
 int main()
 {
   TestLocale();
+  TestNameValidation();
 }

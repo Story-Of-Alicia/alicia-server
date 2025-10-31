@@ -158,6 +158,7 @@ void Config::LoadFromFile(const std::filesystem::path& filePath)
     {
       const auto generalYaml = serverYaml["general"];
       general.brand = generalYaml["brand"].as<std::string>("<not set>");
+      general.notice = generalYaml["notice"].as<std::string>("");
     }
     catch (const std::exception& e)
     {

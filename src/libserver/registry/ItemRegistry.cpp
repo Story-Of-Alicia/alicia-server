@@ -82,7 +82,7 @@ void ReadCareParameters(
   careParameters.polishPoints = yaml["polishPoints"].as<
     decltype(careParameters.cleanPoints)>();
   careParameters.parts = static_cast<Item::CareParameters::Part>(
-    yaml["polishPoints"].as<uint32_t>());
+    yaml["parts"].as<uint32_t>());
 }
 
 void ReadCureParameters(
@@ -146,7 +146,9 @@ void ItemRegistry::ReadConfig(const std::filesystem::path& configPath)
     Item item{
       .tid = itemSection["tid"].as<decltype(Item::tid)>(0),
       .name = itemSection["name"].as<decltype(Item::name)>(""),
-      .level = itemSection["level"].as<decltype(Item::level)>(0),};
+      .level = itemSection["level"].as<decltype(Item::level)>(0),
+      .consumeType = static_cast<Item::ConsumeType>(
+        itemSection["consumeType"].as<uint32_t>())};
 
     // Read ItemPartInfo
 

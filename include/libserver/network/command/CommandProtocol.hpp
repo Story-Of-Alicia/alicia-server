@@ -233,7 +233,9 @@ enum class Command : uint16_t
   AcCmdCLEnterRanch = 0xfc,
   AcCmdCLEnterRanchOK = 0xfd,
   AcCmdCLEnterRanchCancel = 0xfe,
+  //! Not used by the client.
   AcCmdCLLeaveRanchOK = 0x100,
+  //! Not used by the client.
   AcCmdCLLeaveRanchCancel = 0x101,
   AcCmdRCMobPlayerDead = 0x105,
   AcCmdLCMissionRecordUpdate = 0x107,

@@ -88,7 +88,12 @@ void BuildProtocolEgg(
   Egg& protocolEgg,
   const data::Egg& eggRecord,
   const data::Clock::duration hatchDuration);
-  
+
+void BuildProtocolSettings(
+  Settings& settings,
+  const data::Settings& settingsRecord);
+
+
 } // namespace protocol
 
 } // namespace server

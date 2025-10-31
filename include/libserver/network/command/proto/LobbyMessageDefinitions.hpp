@@ -32,7 +32,7 @@
 namespace server::protocol
 {
 
-struct LobbyCommandLogin
+struct AcCmdCLLogin
 {
   uint16_t constant0{0x00};
   uint16_t constant1{0x00};
@@ -50,14 +50,14 @@ struct LobbyCommandLogin
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandLogin& command,
+    const AcCmdCLLogin& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandLogin& command,
+    AcCmdCLLogin& command,
     SourceStream& stream);
 };
 
@@ -71,7 +71,7 @@ struct LobbyCommandLoginOK
   //! Max length 16
   std::string name{};
   //! Max length 255
-  std::string motd{};
+  std::string notice{};
   Gender gender{Gender::Unspecified};
   //! Max length 255
   std::string introduction{};
@@ -96,15 +96,7 @@ struct LobbyCommandLoginOK
 
   uint8_t val3{};
 
-  //! Option type mask.
-  OptionType optionType{};
-  KeyboardOptions keyboardOptions{};
-  MacroOptions macroOptions{};
-  uint32_t valueOptions{};
-  // GamepadOptions gamepadOptions{};
-
-  uint8_t age{};
-  uint8_t hideGenderAndAge{};
+  Settings settings{};
 
   struct Mission
   {
@@ -117,6 +109,7 @@ struct LobbyCommandLoginOK
     };
     std::vector<Progress> progress{};
   };
+
   //! Max 17
   std::vector<Mission> missions{};
 
@@ -226,7 +219,7 @@ struct LobbyCommandLoginOK
 };
 
 //! Clientbound login CANCEL command.
-struct LobbyCommandLoginCancel
+struct AcCmdCLLoginCancel
 {
   //! Cancel reason for login.
   enum class Reason : uint8_t
@@ -251,19 +244,19 @@ struct LobbyCommandLoginCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandLoginCancel& command,
+    const AcCmdCLLoginCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandLoginCancel& command,
+    AcCmdCLLoginCancel& command,
     SourceStream& stream);
 };
 
 //! Serverbound show inventory command.
-struct LobbyCommandShowInventory
+struct AcCmdCLShowInventory
 {
   static Command GetCommand()
   {
@@ -274,14 +267,14 @@ struct LobbyCommandShowInventory
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandShowInventory& command,
+    const AcCmdCLShowInventory& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandShowInventory& command,
+    AcCmdCLShowInventory& command,
     SourceStream& stream);
 };
 
@@ -358,7 +351,7 @@ struct LobbyCommandCreateNicknameNotify
 };
 
 //! Serverbound create nickname ok command.
-struct LobbyCommandCreateNickname
+struct AcCmdCLCreateNickname
 {
   std::string nickname{};
   Character character{};
@@ -373,14 +366,14 @@ struct LobbyCommandCreateNickname
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandCreateNickname& command,
+    const AcCmdCLCreateNickname& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandCreateNickname& command,
+    AcCmdCLCreateNickname& command,
     SourceStream& stream);
 };
 
@@ -410,7 +403,7 @@ struct LobbyCommandCreateNicknameCancel
 };
 
 //! Serverbound request league info command.
-struct LobbyCommandRequestLeagueInfo
+struct AcCmdCLRequestLeagueInfo
 {
   static Command GetCommand()
   {
@@ -421,19 +414,19 @@ struct LobbyCommandRequestLeagueInfo
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandRequestLeagueInfo& command,
+    const AcCmdCLRequestLeagueInfo& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandRequestLeagueInfo& command,
+    AcCmdCLRequestLeagueInfo& command,
     SourceStream& stream);
 };
 
 //! Clientbound request league info response.
-struct LobbyCommandRequestLeagueInfoOK
+struct AcCmdCLRequestLeagueInfoOK
 {
   //! Table LeagueSeasonInfo
   uint8_t season{};
@@ -462,19 +455,19 @@ struct LobbyCommandRequestLeagueInfoOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandRequestLeagueInfoOK& command,
+    const AcCmdCLRequestLeagueInfoOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandRequestLeagueInfoOK& command,
+    AcCmdCLRequestLeagueInfoOK& command,
     SourceStream& stream);
 };
 
 //! Serverbound request league info command.
-struct LobbyCommandRequestLeagueInfoCancel
+struct AcCmdCLRequestLeagueInfoCancel
 {
   static Command GetCommand()
   {
@@ -485,19 +478,19 @@ struct LobbyCommandRequestLeagueInfoCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandRequestLeagueInfoCancel& command,
+    const AcCmdCLRequestLeagueInfoCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandRequestLeagueInfoCancel& command,
+    AcCmdCLRequestLeagueInfoCancel& command,
     SourceStream& stream);
 };
 
 //! Serverbound achievement complete list command.
-struct LobbyCommandAchievementCompleteList
+struct AcCmdCLAchievementCompleteList
 {
   uint32_t unk0{};
 
@@ -510,19 +503,19 @@ struct LobbyCommandAchievementCompleteList
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandAchievementCompleteList& command,
+    const AcCmdCLAchievementCompleteList& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandAchievementCompleteList& command,
+    AcCmdCLAchievementCompleteList& command,
     SourceStream& stream);
 };
 
 //! Clientbound achievement complete list response.
-struct LobbyCommandAchievementCompleteListOK
+struct AcCmdCLAchievementCompleteListOK
 {
   uint32_t unk0{};
   std::vector<Quest> achievements;
@@ -536,19 +529,19 @@ struct LobbyCommandAchievementCompleteListOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandAchievementCompleteListOK& command,
+    const AcCmdCLAchievementCompleteListOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandAchievementCompleteListOK& command,
+    AcCmdCLAchievementCompleteListOK& command,
     SourceStream& stream);
 };
 
 //! Serverbound enter channel command.
-struct LobbyCommandEnterChannel
+struct AcCmdCLEnterChannel
 {
   uint8_t channel;
 
@@ -561,19 +554,19 @@ struct LobbyCommandEnterChannel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandEnterChannel& command,
+    const AcCmdCLEnterChannel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandEnterChannel& command,
+    AcCmdCLEnterChannel& command,
     SourceStream& stream);
 };
 
 //! Clientbound enter channel response.
-struct LobbyCommandEnterChannelOK
+struct AcCmdCLEnterChannelOK
 {
   uint8_t unk0{};
   uint16_t unk1{};
@@ -587,19 +580,19 @@ struct LobbyCommandEnterChannelOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandEnterChannelOK& command,
+    const AcCmdCLEnterChannelOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandEnterChannelOK& command,
+    AcCmdCLEnterChannelOK& command,
     SourceStream& stream);
 };
 
 //! Serverbound enter channel command.
-struct LobbyCommandEnterChannelCancel
+struct AcCmdCLEnterChannelCancel
 {
   static Command GetCommand()
   {
@@ -610,20 +603,63 @@ struct LobbyCommandEnterChannelCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandEnterChannelCancel& command,
+    const AcCmdCLEnterChannelCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandEnterChannelCancel& command,
+    AcCmdCLEnterChannelCancel& command,
     SourceStream& stream);
 };
 
+struct AcCmdCLLeaveChannel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLLeaveChannel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLLeaveChannel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLLeaveChannel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLLeaveChannelOK
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLLeaveChannelOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLLeaveChannelOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLLeaveChannelOK& command,
+    SourceStream& stream);
+};
 
 //! Serverbound room list command.
-struct LobbyCommandRoomList
+struct AcCmdCLRoomList
 {
   uint8_t page;
   GameMode gameMode;
@@ -638,14 +674,14 @@ struct LobbyCommandRoomList
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandRoomList& command,
+    const AcCmdCLRoomList& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandRoomList& command,
+    AcCmdCLRoomList& command,
     SourceStream& stream);
 };
 
@@ -666,11 +702,17 @@ struct LobbyCommandRoomListOK
     uint8_t unk0{};
     uint8_t unk1{};
     uint16_t map{};
-    bool hasStarted{};
+    //! State of the room
+    //! Internally a bool
+    enum State : uint8_t
+    {
+      Waiting = 0,
+      Playing = 1
+    } state{State::Waiting};
     uint16_t unk2{};
     uint8_t unk3{};
 
-    enum class SkillBracket
+    enum class SkillBracket : uint8_t
     {
       Newbies = 0,
       Level12 = 1,
@@ -712,7 +754,7 @@ struct LobbyCommandRoomListOK
 };
 
 //! Serverbound make room command.
-struct LobbyCommandMakeRoom
+struct AcCmdCLMakeRoom
 {
   // presumably
   std::string name;
@@ -742,19 +784,19 @@ struct LobbyCommandMakeRoom
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandMakeRoom& command,
+    const AcCmdCLMakeRoom& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandMakeRoom& command,
+    AcCmdCLMakeRoom& command,
     SourceStream& stream);
 };
 
 //! Clientbound make room response.
-struct LobbyCommandMakeRoomOK
+struct AcCmdCLMakeRoomOK
 {
   uint32_t roomUid{};
   uint32_t oneTimePassword{};
@@ -771,19 +813,19 @@ struct LobbyCommandMakeRoomOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandMakeRoomOK& command,
+    const AcCmdCLMakeRoomOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandMakeRoomOK& command,
+    AcCmdCLMakeRoomOK& command,
     SourceStream& stream);
 };
 
 //! Serverbound make room command.
-struct LobbyCommandMakeRoomCancel
+struct AcCmdCLMakeRoomCancel
 {
   uint8_t unk0{};
 
@@ -796,18 +838,18 @@ struct LobbyCommandMakeRoomCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandMakeRoomCancel& command,
+    const AcCmdCLMakeRoomCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandMakeRoomCancel& command,
+    AcCmdCLMakeRoomCancel& command,
     SourceStream& stream);
 };
 
-struct LobbyCommandEnterRoom
+struct AcCmdCLEnterRoom
 {
   uint32_t roomUid{};
   std::string password{};
@@ -822,18 +864,18 @@ struct LobbyCommandEnterRoom
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandEnterRoom& command,
+    const AcCmdCLEnterRoom& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandEnterRoom& command,
+    AcCmdCLEnterRoom& command,
     SourceStream& stream);
 };
 
-struct LobbyCommandEnterRoomOK
+struct AcCmdCLEnterRoomOK
 {
   uint32_t roomUid{};
   uint32_t oneTimePassword{};
@@ -850,18 +892,18 @@ struct LobbyCommandEnterRoomOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandEnterRoomOK& command,
+    const AcCmdCLEnterRoomOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandEnterRoomOK& command,
+    AcCmdCLEnterRoomOK& command,
     SourceStream& stream);
 };
 
-struct LobbyCommandEnterRoomCancel
+struct AcCmdCLEnterRoomCancel
 {
   // please verify these values
   enum class Status : uint8_t
@@ -893,19 +935,63 @@ struct LobbyCommandEnterRoomCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandEnterRoomCancel& command,
+    const AcCmdCLEnterRoomCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandEnterRoomCancel& command,
+    AcCmdCLEnterRoomCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLLeaveRoom
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLLeaveRoom;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLLeaveRoom& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLLeaveRoom& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLLeaveRoomOK
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLLeaveRoomOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLLeaveRoomOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLLeaveRoomOK& command,
     SourceStream& stream);
 };
 
 //! Serverbound request quest list command.
-struct LobbyCommandRequestQuestList
+struct AcCmdCLRequestQuestList
 {
   uint32_t unk0{};
 
@@ -918,19 +1004,19 @@ struct LobbyCommandRequestQuestList
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandRequestQuestList& command,
+    const AcCmdCLRequestQuestList& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandRequestQuestList& command,
+    AcCmdCLRequestQuestList& command,
     SourceStream& stream);
 };
 
 //! Clientbound request quest list response.
-struct LobbyCommandRequestQuestListOK
+struct AcCmdCLRequestQuestListOK
 {
   uint32_t unk0{};
   std::vector<Quest> quests;
@@ -944,18 +1030,18 @@ struct LobbyCommandRequestQuestListOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandRequestQuestListOK& command,
+    const AcCmdCLRequestQuestListOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandRequestQuestListOK& command,
+    AcCmdCLRequestQuestListOK& command,
     SourceStream& stream);
 };
 
-struct LobbyCommandRequestDailyQuestList
+struct AcCmdCLRequestDailyQuestList
 {
   uint32_t val0{};
 
@@ -968,18 +1054,18 @@ struct LobbyCommandRequestDailyQuestList
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandRequestDailyQuestList& command,
+    const AcCmdCLRequestDailyQuestList& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandRequestDailyQuestList& command,
+    AcCmdCLRequestDailyQuestList& command,
     SourceStream& stream);
 };
 
-struct LobbyCommandRequestDailyQuestListOK
+struct AcCmdCLRequestDailyQuestListOK
 {
   uint32_t val0{};
   //! Size specified with uint16
@@ -1004,19 +1090,19 @@ struct LobbyCommandRequestDailyQuestListOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandRequestDailyQuestListOK& command,
+    const AcCmdCLRequestDailyQuestListOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandRequestDailyQuestListOK& command,
+    AcCmdCLRequestDailyQuestListOK& command,
     SourceStream& stream);
 };
 
 //! Serverbound enter ranch command.
-struct LobbyCommandEnterRanch
+struct AcCmdCLEnterRanch
 {
   uint32_t rancherUid;
   std::string unk1;
@@ -1031,19 +1117,19 @@ struct LobbyCommandEnterRanch
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandEnterRanch& command,
+    const AcCmdCLEnterRanch& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandEnterRanch& command,
+    AcCmdCLEnterRanch& command,
     SourceStream& stream);
 };
 
 //! Clientbound enter ranch response.
-struct LobbyCommandEnterRanchOK
+struct AcCmdCLEnterRanchOK
 {
   uint32_t rancherUid{};
   uint32_t otp{};
@@ -1059,19 +1145,19 @@ struct LobbyCommandEnterRanchOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandEnterRanchOK& command,
+    const AcCmdCLEnterRanchOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandEnterRanchOK& command,
+    AcCmdCLEnterRanchOK& command,
     SourceStream& stream);
 };
 
 //! Serverbound enter ranch command.
-struct LobbyCommandEnterRanchCancel
+struct AcCmdCLEnterRanchCancel
 {
   uint16_t unk0;
 
@@ -1084,19 +1170,19 @@ struct LobbyCommandEnterRanchCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandEnterRanchCancel& command,
+    const AcCmdCLEnterRanchCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandEnterRanchCancel& command,
+    AcCmdCLEnterRanchCancel& command,
     SourceStream& stream);
 };
 
 //! Serverbound get messenger info command.
-struct LobbyCommandGetMessengerInfo
+struct AcCmdCLGetMessengerInfo
 {
   static Command GetCommand()
   {
@@ -1107,19 +1193,19 @@ struct LobbyCommandGetMessengerInfo
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandGetMessengerInfo& command,
+    const AcCmdCLGetMessengerInfo& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandGetMessengerInfo& command,
+    AcCmdCLGetMessengerInfo& command,
     SourceStream& stream);
 };
 
 //! Clientbound get messenger info response.
-struct LobbyCommandGetMessengerInfoOK
+struct AcCmdCLGetMessengerInfoOK
 {
   uint32_t code;
   uint32_t ip;
@@ -1134,19 +1220,19 @@ struct LobbyCommandGetMessengerInfoOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandGetMessengerInfoOK& command,
+    const AcCmdCLGetMessengerInfoOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandGetMessengerInfoOK& command,
+    AcCmdCLGetMessengerInfoOK& command,
     SourceStream& stream);
 };
 
 //! Serverbound get messenger info command.
-struct LobbyCommandGetMessengerInfoCancel
+struct AcCmdCLGetMessengerInfoCancel
 {
   static Command GetCommand()
   {
@@ -1157,19 +1243,68 @@ struct LobbyCommandGetMessengerInfoCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandGetMessengerInfoCancel& command,
+    const AcCmdCLGetMessengerInfoCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandGetMessengerInfoCancel& command,
+    AcCmdCLGetMessengerInfoCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLCheckWaitingSeqno
+{
+  uint32_t uid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLCheckWaitingSeqno;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLCheckWaitingSeqno& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLCheckWaitingSeqno& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLCheckWaitingSeqnoOK
+{
+  uint32_t time{};
+  uint32_t position{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLCheckWaitingSeqnoOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLCheckWaitingSeqnoOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLCheckWaitingSeqnoOK& command,
     SourceStream& stream);
 };
 
 //! Serverbound request special event list command.
-struct LobbyCommandRequestSpecialEventList
+struct AcCmdCLRequestSpecialEventList
 {
   uint32_t unk0;
 
@@ -1182,14 +1317,14 @@ struct LobbyCommandRequestSpecialEventList
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandRequestSpecialEventList& command,
+    const AcCmdCLRequestSpecialEventList& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandRequestSpecialEventList& command,
+    AcCmdCLRequestSpecialEventList& command,
     SourceStream& stream);
 };
 
@@ -1200,7 +1335,7 @@ struct Event
 };
 
 //! Clientbound request special event list response.
-struct LobbyCommandRequestSpecialEventListOK
+struct AcCmdCLRequestSpecialEventListOK
 {
   uint32_t unk0;
   std::vector<Quest> quests;
@@ -1215,14 +1350,14 @@ struct LobbyCommandRequestSpecialEventListOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandRequestSpecialEventListOK& command,
+    const AcCmdCLRequestSpecialEventListOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandRequestSpecialEventListOK& command,
+    AcCmdCLRequestSpecialEventListOK& command,
     SourceStream& stream);
 };
 
@@ -1417,7 +1552,7 @@ struct LobbyCommandInquiryTreecashCancel
     SourceStream& stream);
 };
 
-struct LobbyCommandClientNotify
+struct AcCmdClientNotify
 {
   // Scene state
   // 1 - success
@@ -1437,14 +1572,14 @@ struct LobbyCommandClientNotify
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandClientNotify& command,
+    const AcCmdClientNotify& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandClientNotify& command,
+    AcCmdClientNotify& command,
     SourceStream& stream);
 };
 
@@ -1506,7 +1641,7 @@ struct LobbyCommandGuildPartyListOK
     SourceStream& stream);
 };
 
-struct LobbyCommandEnterRandomRanch
+struct AcCmdCLEnterRanchRandomly
 {
   static Command GetCommand()
   {
@@ -1517,18 +1652,90 @@ struct LobbyCommandEnterRandomRanch
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandEnterRandomRanch& command,
+    const AcCmdCLEnterRanchRandomly& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandEnterRandomRanch& command,
+    AcCmdCLEnterRanchRandomly& command,
     SourceStream& stream);
 };
 
-struct LobbyCommandRequestPersonalInfo
+struct AcCmdCLFeatureCommand
+{
+  std::string command;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLFeatureCommand;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLFeatureCommand& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLFeatureCommand& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLRequestFestivalResult
+{
+  uint32_t member1{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLRequestFestivalResult;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLRequestFestivalResult& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLRequestFestivalResult& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLRequestFestivalResultOK
+{
+  // todo: members
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLRequestFestivalResultOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLRequestFestivalResultOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLRequestFestivalResultOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLRequestPersonalInfo
 {
   enum class Type : uint32_t
   {
@@ -1549,21 +1756,21 @@ struct LobbyCommandRequestPersonalInfo
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandRequestPersonalInfo& command,
+    const AcCmdCLRequestPersonalInfo& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandRequestPersonalInfo& command,
+    AcCmdCLRequestPersonalInfo& command,
     SourceStream& stream);
 };
 
-struct LobbyCommandPersonalInfo
+struct AcCmdLCPersonalInfo
 {
   uint32_t characterUid{};
-  LobbyCommandRequestPersonalInfo::Type type{};
+  AcCmdCLRequestPersonalInfo::Type type{};
 
   struct Basic
   {
@@ -1587,7 +1794,7 @@ struct LobbyCommandPersonalInfo
     uint16_t member15{};
     uint16_t member16{};
     std::string introduction{};
-    uint32_t level{};
+    uint32_t level{60};
     //! Level progress as dictated by LevelInfo table in libconfig
     uint32_t levelProgress{};
     std::string member20{};
@@ -1650,18 +1857,18 @@ struct LobbyCommandPersonalInfo
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandPersonalInfo& command,
+    const AcCmdLCPersonalInfo& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandPersonalInfo& command,
+    AcCmdLCPersonalInfo& command,
     SourceStream& stream);
 };
 
-struct LobbyCommandSetIntroduction
+struct AcCmdCLSetIntroduction
 {
   std::string introduction{};
 
@@ -1674,18 +1881,18 @@ struct LobbyCommandSetIntroduction
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandSetIntroduction& command,
+    const AcCmdCLSetIntroduction& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandSetIntroduction& command,
+    AcCmdCLSetIntroduction& command,
     SourceStream& stream);
 };
 
-struct LobbyCommandUpdateSystemContent
+struct AcCmdCLUpdateSystemContent
 {
   uint8_t member1{};
   uint32_t key{};
@@ -1700,18 +1907,18 @@ struct LobbyCommandUpdateSystemContent
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandUpdateSystemContent& command,
+    const AcCmdCLUpdateSystemContent& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandUpdateSystemContent& command,
+    AcCmdCLUpdateSystemContent& command,
     SourceStream& stream);
 };
 
-struct LobbyCommandUpdateSystemContentNotify
+struct AcCmdLCUpdateSystemContent
 {
   LobbyCommandLoginOK::SystemContent systemContent;
 
@@ -1724,18 +1931,202 @@ struct LobbyCommandUpdateSystemContentNotify
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandUpdateSystemContentNotify& command,
+    const AcCmdLCUpdateSystemContent& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandUpdateSystemContentNotify& command,
+    AcCmdLCUpdateSystemContent& command,
     SourceStream& stream);
 };
 
-struct LobbyCommandChangeRanchOption
+struct AcCmdCLEnterRoomQuickStop
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLEnterRoomQuickStop;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLEnterRoomQuickStop& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLEnterRoomQuickStop& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLEnterRoomQuickStopOK
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLEnterRoomQuickStopOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLEnterRoomQuickStopOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLEnterRoomQuickStopOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLEnterRoomQuickStopCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLEnterRoomQuickStopCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLEnterRoomQuickStopCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLEnterRoomQuickStopCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLRequestFestivalPrize
+{
+  uint32_t member1{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLRequestFestivalPrize;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLRequestFestivalPrize& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLRequestFestivalPrize& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLQueryServerTime
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLQueryServerTime;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLQueryServerTime& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLQueryServerTime& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLQueryServerTimeOK
+{
+  util::WinFileTime lobbyTime{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLQueryServerTimeOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLQueryServerTimeOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLQueryServerTimeOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLRequestFestivalPrizeOK
+{
+  // todo: figure out fields
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLRequestFestivalPrizeOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLRequestFestivalPrizeOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLRequestFestivalPrizeOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLRequestFestivalPrizeCancel
+{
+  // todo: figure out fields
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLRequestFestivalPrizeCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLRequestFestivalPrizeCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLRequestFestivalPrizeCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLChangeRanchOption
 {
   uint32_t unk0{};
   uint16_t unk1{};
@@ -1750,18 +2141,18 @@ struct LobbyCommandChangeRanchOption
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandChangeRanchOption& command,
+    const AcCmdCLChangeRanchOption& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandChangeRanchOption& command,
+    AcCmdCLChangeRanchOption& command,
     SourceStream& stream);
 };
 
-struct LobbyCommandChangeRanchOptionOK
+struct AcCmdCLChangeRanchOptionOK
 {
   uint32_t unk0{};
   uint16_t unk1{};
@@ -1776,14 +2167,14 @@ struct LobbyCommandChangeRanchOptionOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandChangeRanchOptionOK& command,
+    const AcCmdCLChangeRanchOptionOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandChangeRanchOptionOK& command,
+    AcCmdCLChangeRanchOptionOK& command,
     SourceStream& stream);
 };
 
@@ -1953,6 +2344,191 @@ struct AcCmdLCSkillCardPresetList
   //! @param stream Source stream.
   static void Read(
     AcCmdLCSkillCardPresetList& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLUpdateUserSettings
+{
+  Settings settings;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLUpdateUserSettings;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLUpdateUserSettings& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLUpdateUserSettings& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLUpdateUserSettingsOK
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLUpdateUserSettingsOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLUpdateUserSettingsOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLUpdateUserSettingsOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLEnterRoomQuick
+{
+  uint8_t member1{};
+  uint8_t member2{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLEnterRoomQuick;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLEnterRoomQuick& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLEnterRoomQuick& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLEnterRoomQuickCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLEnterRoomQuickCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLEnterRoomQuickCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLEnterRoomQuickCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdLCInviteGuildJoin
+{
+  uint32_t characterUid;
+  uint32_t inviterCharacterUid;
+  std::string inviterCharacterName;
+  std::string unk3; // guild description?
+
+  // sub_4be7a0
+  Guild guild;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCInviteGuildJoin;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCInviteGuildJoin& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCInviteGuildJoin& command,
+    SourceStream& stream);
+};
+
+struct AcCmdLCInviteGuildJoinCancel
+{
+  uint32_t characterUid;
+  uint32_t inviterCharacterUid;
+  std::string inviterCharacterName;
+  std::string unk3; // guild description?
+
+  // sub_4be7a0
+  Guild guild;
+
+  GuildError error;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCInviteGuildJoinCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCInviteGuildJoinCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCInviteGuildJoinCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdLCInviteGuildJoinOK
+{
+  uint32_t characterUid;
+  uint32_t inviterCharacterUid;
+  std::string inviterCharacterName;
+  std::string unk3; // guild description?
+
+  // sub_4be7a0
+  Guild guild;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCInviteGuildJoinOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCInviteGuildJoinOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCInviteGuildJoinOK& command,
     SourceStream& stream);
 };
 

@@ -23,6 +23,7 @@
 #include "libserver/util/Stream.hpp"
 
 #include <array>
+#include <bitset>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -77,22 +78,14 @@ struct StoredItem
 };
 
 //!
-enum class OptionType : uint32_t
-{
-  Keyboard = 1 << 0,
-  Macros = 1 << 3,
-  Value = 1 << 4,
-  Gamepad = 1 << 5,
-};
-
-//!
 struct KeyboardOptions
 {
   struct Option
   {
-    uint16_t index{};
     uint8_t type{};
-    uint8_t key{};
+    uint8_t unused{};
+    uint8_t primaryKey{};
+    uint8_t secondaryKey{};
 
     static void Write(const Option& option, SinkStream& stream);
     static void Read(Option& option, SourceStream& stream);
@@ -110,6 +103,51 @@ struct MacroOptions
 
   static void Write(const MacroOptions& value, SinkStream& stream);
   static void Read(MacroOptions& value, SourceStream& stream);
+};
+
+struct GamepadOptions
+{
+  struct Option
+  {
+    uint8_t type{};
+    uint8_t unused{};
+    uint8_t primaryButton{};
+    uint8_t secondaryButton{};
+
+    static void Write(const Option& option, SinkStream& stream);
+    static void Read(Option& option, SourceStream& stream);
+  };
+
+  std::vector<Option> bindings{};
+
+  static void Write(const GamepadOptions& value, SinkStream& stream);
+  static void Read(GamepadOptions& value, SourceStream& stream);
+};
+
+struct Settings
+{
+  //! Represents a type bit indices in the type bit set.
+  enum Type : uint32_t
+  {
+    Keyboard = 0,
+    Macros = 3,
+    Value = 4,
+    Gamepad = 5,
+  };
+
+  std::bitset<32> typeBitset{};
+
+  KeyboardOptions keyboardOptions{};
+  MacroOptions macroOptions{};
+  //sent every time at the closure of the settings window
+  uint32_t valueOption{};
+  GamepadOptions gamepadOptions{};
+
+  uint8_t age{};
+  uint8_t hideAge{};
+
+  static void Write(const Settings& value, SinkStream& stream);
+  static void Read(Settings& value, SourceStream& stream);
 };
 
 //!
@@ -243,8 +281,8 @@ struct Horse
     //! A plenitude value in a range of <0, 1200>.
     //! 910 is a little full, 1200 is full
     uint16_t plenitude{};
-    //! A dirty value in a range of <0, 600>. for all body parts.
-    //! 600 is fully dirty, 0 is clean.
+    //! A dirty value in a range of <0, 1200>. for all body parts.
+    //! 1200 is fully dirty, 0 is clean.
     uint16_t bodyDirtiness{};
     //! Referred to as `ManeTwisted` by the client.
     uint16_t maneDirtiness{};
@@ -260,7 +298,7 @@ struct Horse
     //! 1 is a little bored
     //! 11 wants to play a little
     //! 21 wants to play.
-    uint16_t boredom{};
+    uint16_t boredom{21};
 
     uint16_t bodyPolish{};
     uint16_t manePolish{};
@@ -326,14 +364,20 @@ struct Horse
   static void Read(Horse& value, SourceStream& stream);
 };
 
+enum class GuildRole : uint8_t {
+  Owner = 10,
+  Officer = 100,
+  Member = 200    
+};
+
 //!
 struct Guild
 {
   uint32_t uid{};
   uint8_t val1{};
-  uint32_t val2{};
+  uint32_t val2{}; // emblem uid?
   std::string name{};
-  uint8_t val4{};
+  GuildRole guildRole{};
   uint32_t val5{};
   // ignored by the client?
   uint8_t val6{};
@@ -436,7 +480,7 @@ struct RanchCharacter
   enum class Gender : uint8_t
   {
     Girl = 0,
-    Boy = 1
+    Boy = 1,
   } gender{Gender::Girl};
   std::string introduction{};
 
@@ -540,6 +584,42 @@ struct SkillSet
   static void Read(
     SkillSet& command,
     SourceStream& stream);
+};
+
+// As described by GuildStrings table
+enum class GuildError : uint8_t {
+  SystemError = 0,
+  NoUserOrOffline = 1,
+  NoGuild = 2,
+  BadGuildName = 3,
+  GuildNameAlreadyExists = 4,
+  GuildAlreadyCreated = 5,
+  JoinedGuild = 6,
+  NoAuthority = 7,
+  InviteRejected = 8,
+  CannotInviteSelf = 9,
+  NotAlone = 10,
+  Unknown = 255
+};
+
+//! Corresponds to values in CharNameChangeUIStrings
+enum class NameChangeError : uint8_t
+{
+  UnknownError = 0x1,       // CEC_UNDEFINED
+  NoOrIncorrectItem = 0x1a, // CEC_HAS_NO_RIGHT_ITEM
+  InvalidNickname = 0x1b,   // CEC_INVALID_NICKNAME
+  DuplicateNickname = 0x1c, // CEC_DUPLICATED_NICKNAME
+  NicknameCooldown = 0x1d   // CEC_NICKNAME_NOT_AVAILABE_DAY
+};
+
+// HorseNameStrings
+enum class HorseRenameError : uint8_t
+{
+  ServerError = 0, // ServerError
+  DuplicateHorseName = 1, // DUPLICATED
+  InvalidNickname = 2, // CR_INVALID_NICKNAME
+  NoHorseRenameItem = 3, // CR_ITEM_NOT_FOUND,
+  WrongItem = 4, // CR_WRONG_ITEM
 };
 
 } // namespace server::protocol

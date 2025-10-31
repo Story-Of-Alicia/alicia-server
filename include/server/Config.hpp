@@ -26,6 +26,7 @@ public:
   struct General
   {
     std::string brand;
+    std::string notice;
   } general{};
 
   //!
@@ -34,8 +35,6 @@ public:
     bool enabled{true};
     Listen listen{
       .port = 10030};
-
-    std::string motd;
 
     struct Advertisement
     {

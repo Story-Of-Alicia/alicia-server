@@ -70,16 +70,18 @@ void StoredItem::Read(StoredItem& item, SourceStream& stream)
 
 void KeyboardOptions::Option::Write(const Option& option, SinkStream& stream)
 {
-  stream.Write(option.index)
+  stream.Write(option.secondaryKey)
     .Write(option.type)
-    .Write(option.key);
+    .Write(option.unused)
+    .Write(option.primaryKey);
 }
 
 void KeyboardOptions::Option::Read(Option& option, SourceStream& stream)
 {
-  stream.Read(option.index)
+  stream.Read(option.secondaryKey)
     .Read(option.type)
-    .Read(option.key);
+    .Read(option.unused)
+    .Read(option.primaryKey);
 }
 
 void KeyboardOptions::Write(const KeyboardOptions& value, SinkStream& stream)
@@ -118,6 +120,162 @@ void MacroOptions::Read(MacroOptions& value, SourceStream& stream)
   {
     stream.Read(macro);
   }
+}
+
+void GamepadOptions::Option::Write(const Option& option, SinkStream& stream)
+{
+  stream.Write(option.secondaryButton)
+    .Write(option.type)
+    .Write(option.unused)
+    .Write(option.primaryButton);
+}
+
+void GamepadOptions::Option::Read(Option& option, SourceStream& stream)
+{
+  stream.Read(option.secondaryButton)
+    .Read(option.type)
+    .Read(option.unused)
+    .Read(option.primaryButton);
+}
+
+void GamepadOptions::Write(const GamepadOptions& value, SinkStream& stream)
+{
+  stream.Write(static_cast<uint8_t>(value.bindings.size()));
+
+  for (const auto& binding : value.bindings)
+  {
+    stream.Write(binding);
+  }
+}
+
+void GamepadOptions::Read(GamepadOptions& value, SourceStream& stream)
+{
+  uint8_t size;
+  stream.Read(size);
+  value.bindings.resize(size);
+
+  for (auto& binding : value.bindings)
+  {
+    stream.Read(binding);
+  }
+}
+
+void Settings::Write(const Settings& value, SinkStream& stream)
+{
+  uint32_t typeValue{value.typeBitset.to_ulong()};
+  stream.Write(typeValue);
+
+  // Write the keyboard options if specified in the option type mask.
+  if (value.typeBitset.test(Type::Keyboard))
+  {
+    const auto& keyboard = value.keyboardOptions;
+    stream.Write(static_cast<uint8_t>(keyboard.bindings.size()));
+
+    for (const auto& binding : keyboard.bindings)
+    {
+      stream.Write(binding.type)
+        .Write(binding.unused)
+        .Write(binding.primaryKey)
+        .Write(binding.secondaryKey);
+    }
+  }
+
+  // Write the macro options if specified in the option type mask.
+  if (value.typeBitset.test(Type::Macros))
+  {
+    const auto& macros = value.macroOptions;
+
+    for (const auto& macro : macros.macros)
+    {
+      stream.Write(macro);
+    }
+  }
+
+  // Write the value option if specified in the option type mask.
+  if (value.typeBitset.test(Type::Value))
+  {
+    stream.Write(value.valueOption);
+  }
+
+  // Write the gamepad options if specified in the option type mask.
+  if (value.typeBitset.test(Type::Gamepad))
+  {
+    const auto& gamepad = value.gamepadOptions;
+    stream.Write(static_cast<uint8_t>(gamepad.bindings.size()));
+
+    for (const auto& binding : gamepad.bindings)
+    {
+      stream.Write(binding.type)
+        .Write(binding.unused)
+        .Write(binding.primaryButton)
+        .Write(binding.secondaryButton);
+    }
+  }
+
+  stream.Write(value.age)
+    .Write(value.hideAge);
+}
+
+void Settings::Read(Settings& value, SourceStream& stream)
+{
+  uint32_t typeBitsetValue;
+  stream.Read(typeBitsetValue);
+
+  value.typeBitset = typeBitsetValue;
+
+  // Write the keyboard options if specified in the option type mask.
+  if (value.typeBitset.test(Type::Keyboard))
+  {
+    auto& keyboard = value.keyboardOptions;
+    uint8_t bindingCount = 0;
+    stream.Read(bindingCount);
+    keyboard.bindings.resize(bindingCount);
+
+    for (auto& binding : keyboard.bindings)
+    {
+      stream.Read(binding.type)
+        .Read(binding.unused)
+        .Read(binding.primaryKey)
+        .Read(binding.secondaryKey);
+    }
+  }
+
+  // Write the gamepad options if specified in the option type mask.
+  if (value.typeBitset.test(Type::Gamepad))
+  {
+    auto& gamepad = value.gamepadOptions;
+    uint8_t bindingCount = 0;
+    stream.Read(bindingCount);
+    gamepad.bindings.resize(bindingCount);
+
+    for (auto& binding : gamepad.bindings)
+    {
+      stream.Read(binding.type)
+        .Read(binding.unused)
+        .Read(binding.primaryButton)
+        .Read(binding.secondaryButton);
+    }
+  }
+
+  // Write the macro options if specified in the option type mask.
+  if (value.typeBitset.test(Type::Macros))
+  {
+    auto& macros = value.macroOptions;
+
+    for (auto& macro : macros.macros)
+    {
+      stream.Read(macro);
+    }
+  }
+
+  // Write the value option if specified in the option type mask.
+  if (value.typeBitset.test(Type::Value))
+  {
+    stream.Read(value.valueOption);
+  }
+
+  stream.Read(value.age)
+    .Read(value.hideAge);
 }
 
 void Character::Parts::Write(const Parts& value, SinkStream& stream)
@@ -351,7 +509,7 @@ void Guild::Write(const Guild& value, SinkStream& stream)
     .Write(value.val1)
     .Write(value.val2)
     .Write(value.name)
-    .Write(value.val4)
+    .Write(value.guildRole)
     .Write(value.val5)
     .Write(value.val6);
 }
@@ -362,7 +520,7 @@ void Guild::Read(Guild& value, SourceStream& stream)
     .Read(value.val1)
     .Read(value.val2)
     .Read(value.name)
-    .Read(value.val4)
+    .Read(value.guildRole)
     .Read(value.val5)
     .Read(value.val6);
 }
@@ -491,7 +649,7 @@ void RanchCharacter::Write(const RanchCharacter& ranchCharacter, SinkStream& str
     .Write(struct5.val1)
     .Write(struct5.val2)
     .Write(struct5.name)
-    .Write(struct5.val4)
+    .Write(struct5.guildRole)
     .Write(struct5.val5)
     .Write(struct5.val6);
 

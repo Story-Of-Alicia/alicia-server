@@ -71,13 +71,13 @@ void MessengerDirector::HandleChatterLogin(
   protocol::ChatCmdLoginAckOK response{
     .groups = {{.uid = OnlinePlayersCategoryUid, .name = "Online Players"}}};
 
-  for (data::Uid onlineCharacterUid : _serverInstance.GetLobbyDirector().GetOnlineCharacters())
+  for (const auto& userInstance : _serverInstance.GetLobbyDirector().GetUsers() | std::views::values)
   {
     const auto onlineCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(
-      onlineCharacterUid);
+      userInstance.characterUid);
 
     auto& friendo = response.friends.emplace_back();
-    onlineCharacterRecord.Immutable([&friendo](const data::Character& onlineCharacter)
+    onlineCharacterRecord.Immutable([&userInstance, &friendo](const data::Character& onlineCharacter)
     {
       friendo.name = onlineCharacter.name();
       friendo.status = onlineCharacter.isRanchLocked()
@@ -87,8 +87,8 @@ void MessengerDirector::HandleChatterLogin(
       friendo.categoryUid = OnlinePlayersCategoryUid;
 
       // todo: get the ranch/room information
-      //friendo.ranchUid = onlineCharacter.uid();
-      friendo.roomUid = 1;
+      friendo.ranchUid = onlineCharacter.uid();
+      friendo.roomUid = userInstance.roomUid;
     });
   }
 

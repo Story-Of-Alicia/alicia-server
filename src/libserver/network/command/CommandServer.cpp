@@ -136,6 +136,11 @@ void CommandServer::EndHost()
   _serverThread.join();
 }
 
+asio::ip::address_v4 CommandServer::GetClientAddress(ClientId clientId)
+{
+  return _server.GetClient(clientId)->GetAddress();
+}
+
 void CommandServer::DisconnectClient(ClientId clientId)
 {
   _server.GetClient(clientId)->End();

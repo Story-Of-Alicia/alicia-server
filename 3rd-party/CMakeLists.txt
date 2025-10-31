@@ -1,6 +1,14 @@
 add_subdirectory(json)
+
+set(YAML_CPP_BUILD_TOOLS OFF)
+set(YAML_CPP_BUILD_TESTS OFF)
 add_subdirectory(yaml-cpp)
+
 add_subdirectory(spdlog)
+set(ZLIB_BUILD_TESTING OFF)
+set(ZLIB_BUILD_SHARED OFF)
+set(ZLIB_BUILD_MINIZIP OFF)
+
 add_subdirectory(zlib)
 
 set(BUILD_SHARED_LIBS OFF)

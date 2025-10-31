@@ -43,6 +43,7 @@ public:
   using HousingStorage = DataStorage<data::Uid, data::Housing>;
   using GuildStorage = DataStorage<data::Uid, data::Guild>;
   using StallionStorage = DataStorage<data::Uid, data::Stallion>;
+  using SettingsStorage = DataStorage<data::Uid, data::Settings>;
 
   //! Default constructor.
   explicit DataDirector(const std::filesystem::path& basePath);
@@ -121,6 +122,10 @@ public:
   [[nodiscard]] StallionStorage& GetStallionCache();
   [[nodiscard]] std::vector<data::Uid> ListRegisteredStallions();
 
+  [[nodiscard]] Record<data::Settings> GetSettings(data::Uid settingsUid) noexcept;
+  [[nodiscard]] Record<data::Settings> CreateSettings() noexcept;
+  [[nodiscard]] SettingsStorage& GetSettingsCache();
+
   [[nodiscard]] FileDataSource& GetDataSource() { return *_primaryDataSource; }
 
 private:
@@ -172,6 +177,8 @@ private:
   GuildStorage _guildStorage;
   //! A stallion storage.
   StallionStorage _stallionStorage;
+  //! A character Keybind settings storage.
+  SettingsStorage _settingsStorage;
 };
 
 } // namespace server

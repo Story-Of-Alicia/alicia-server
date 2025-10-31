@@ -89,6 +89,10 @@ public:
   void DeleteStallion(data::Uid uid) override;
   std::vector<data::Uid> ListRegisteredStallions() override;
 
+  void CreateSettings(data::Settings& settings) override;
+  void RetrieveSettings(data::Uid uid, data::Settings& settings) override;
+  void StoreSettings(data::Uid uid, const data::Settings& settings) override;
+  void DeleteSettings(data::Uid uid) override;
 private:
   //! A root data path.
   std::filesystem::path _dataPath;
@@ -115,6 +119,8 @@ private:
   std::filesystem::path _guildDataPath;
   //! A path to the stallion data files.
   std::filesystem::path _stallionDataPath;
+  //! A path to the settings data files.
+  std::filesystem::path _settingsDataPath;
 
   //! A path to meta-data file.
   std::filesystem::path _metaFilePath;
@@ -138,6 +144,8 @@ private:
   std::atomic_uint32_t _guildSequentialId = 0;
   //! Sequential UID for stallions.
   std::atomic_uint32_t _stallionSequentialUid = 0;
+  //! Sequential UID for settings.
+  std::atomic_uint32_t _settingsSequentialId = 0;
 };
 
 } // namespace server
