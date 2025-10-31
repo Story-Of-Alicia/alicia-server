@@ -47,20 +47,38 @@ void Genetics::ValidateManeShape(int32_t& maneShape, uint8_t foalGrade)
   // Spiky (shape 5): Requires Grade 4
   // Long (shape 6): Requires Grade 6
   // Long Curly (shape 7): Requires Grade 7
-  if (maneShape == 5 && foalGrade < 4)
-    maneShape = rand() % 5;  // Fall back to basic shapes (0-4)
-  else if (maneShape == 6 && foalGrade < 6)
-    maneShape = rand() % 5;
-  else if (maneShape == 7 && foalGrade < 7)
-    maneShape = rand() % 5;
+  
+  // Determine max allowed shape for this grade
+  int32_t maxAllowedShape = 4; // Default: basic shapes (0-4)
+  if (foalGrade >= 7)
+    maxAllowedShape = 7; // Can have Long Curly
+  else if (foalGrade >= 6)
+    maxAllowedShape = 6; // Can have Long
+  else if (foalGrade >= 4)
+    maxAllowedShape = 5; // Can have Spiky
+  
+  // If current shape exceeds what foal can have, pick random valid shape
+  if (maneShape > maxAllowedShape)
+  {
+    maneShape = rand() % (maxAllowedShape + 1); // 0 to maxAllowedShape
+  }
 }
 
 void Genetics::ValidateTailShape(int32_t& tailShape, uint8_t foalGrade)
 {
   // Apply grade restrictions to tail shapes
   // Long Curly tail (shape 5): Requires Grade 7
-  if (tailShape == 5 && foalGrade < 7)
-    tailShape = rand() % 5;  // Fall back to basic shapes (0-4)
+  
+  // Determine max allowed shape for this grade
+  int32_t maxAllowedShape = 4; // Default: basic shapes (0-4)
+  if (foalGrade >= 7)
+    maxAllowedShape = 5; // Can have Long Curly
+  
+  // If current shape exceeds what foal can have, pick random valid shape
+  if (tailShape > maxAllowedShape)
+  {
+    tailShape = rand() % (maxAllowedShape + 1); // 0 to maxAllowedShape
+  }
 }
 
 Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
@@ -101,95 +119,133 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
 
   // === COLOR GENETICS (same color for both mane and tail) ===
   
-  // Color: Mom 20%, Dad 20%, Maternal GP 10%, Paternal GP 10%, Random 40%
+  // Color: Mom 10%, Dad 10%, GP1 5%, GP2 5%, GP3 5%, GP4 5%, Random 60%
   int colorRoll = rand() % 100;
   int32_t sharedColor = 0;
   
-  if (colorRoll < 20)
+  if (colorRoll < 10)
   {
-    sharedColor = GetColorFromTid(mareMane);  // 20% Mom's mane color
+    sharedColor = GetColorFromTid(mareMane);  // 10% Mom's mane color
   }
-  else if (colorRoll < 40)
+  else if (colorRoll < 20)
   {
-    sharedColor = GetColorFromTid(stallionMane);  // 20% Dad's mane color
+    sharedColor = GetColorFromTid(stallionMane);  // 10% Dad's mane color
   }
-  else if (colorRoll < 50 && mareAncestors.size() >= 1)
+  else if (colorRoll < 25 && mareAncestors.size() >= 1)
   {
     auto gpRecord = _serverInstance.GetDataDirector().GetHorse(mareAncestors[0]);
     if (gpRecord)
       gpRecord.Immutable([&](const data::Horse& gp) { sharedColor = GetColorFromTid(gp.parts.maneTid()); });
   }
-  else if (colorRoll < 60 && stallionAncestors.size() >= 1)
+  else if (colorRoll < 30 && mareAncestors.size() >= 2)
+  {
+    auto gpRecord = _serverInstance.GetDataDirector().GetHorse(mareAncestors[1]);
+    if (gpRecord)
+      gpRecord.Immutable([&](const data::Horse& gp) { sharedColor = GetColorFromTid(gp.parts.maneTid()); });
+  }
+  else if (colorRoll < 35 && stallionAncestors.size() >= 1)
   {
     auto gpRecord = _serverInstance.GetDataDirector().GetHorse(stallionAncestors[0]);
     if (gpRecord)
       gpRecord.Immutable([&](const data::Horse& gp) { sharedColor = GetColorFromTid(gp.parts.maneTid()); });
   }
+  else if (colorRoll < 40 && stallionAncestors.size() >= 2)
+  {
+    auto gpRecord = _serverInstance.GetDataDirector().GetHorse(stallionAncestors[1]);
+    if (gpRecord)
+      gpRecord.Immutable([&](const data::Horse& gp) { sharedColor = GetColorFromTid(gp.parts.maneTid()); });
+  }
   
-  if (sharedColor == 0) sharedColor = 1 + (rand() % 5);  // Random fallback
+  if (sharedColor == 0) sharedColor = 1 + (rand() % 5);  // Random fallback (60%)
   
   int32_t maneColor = sharedColor;
   int32_t tailColor = sharedColor;  // SAME COLOR
   
-  // === MANE GENETICS ===
+  // === MANE SHAPE GENETICS ===
 
-  // Mane Shape: Mom 20%, Dad 20%, Maternal GP 10%, Paternal GP 10%, Random 40%
+  // Mane Shape: Mom 10%, Dad 10%, GP1 5%, GP2 5%, GP3 5%, GP4 5%, Random 60%
   int maneShapeRoll = rand() % 100;
   int32_t maneShape = 0;
 
-  if (maneShapeRoll < 20)
+  if (maneShapeRoll < 10)
   {
-    maneShape = GetShapeFromTid(mareMane);  // 20% Mom
+    maneShape = GetShapeFromTid(mareMane);  // 10% Mom
   }
-  else if (maneShapeRoll < 40)
+  else if (maneShapeRoll < 20)
   {
-    maneShape = GetShapeFromTid(stallionMane);  // 20% Dad
+    maneShape = GetShapeFromTid(stallionMane);  // 10% Dad
   }
-  else if (maneShapeRoll < 50 && mareAncestors.size() >= 1)
+  else if (maneShapeRoll < 25 && mareAncestors.size() >= 1)
   {
     auto gpRecord = _serverInstance.GetDataDirector().GetHorse(mareAncestors[0]);
     if (gpRecord)
       gpRecord.Immutable([&](const data::Horse& gp) { maneShape = GetShapeFromTid(gp.parts.maneTid()); });
   }
-  else if (maneShapeRoll < 60 && stallionAncestors.size() >= 1)
+  else if (maneShapeRoll < 30 && mareAncestors.size() >= 2)
+  {
+    auto gpRecord = _serverInstance.GetDataDirector().GetHorse(mareAncestors[1]);
+    if (gpRecord)
+      gpRecord.Immutable([&](const data::Horse& gp) { maneShape = GetShapeFromTid(gp.parts.maneTid()); });
+  }
+  else if (maneShapeRoll < 35 && stallionAncestors.size() >= 1)
   {
     auto gpRecord = _serverInstance.GetDataDirector().GetHorse(stallionAncestors[0]);
     if (gpRecord)
       gpRecord.Immutable([&](const data::Horse& gp) { maneShape = GetShapeFromTid(gp.parts.maneTid()); });
   }
+  else if (maneShapeRoll < 40 && stallionAncestors.size() >= 2)
+  {
+    auto gpRecord = _serverInstance.GetDataDirector().GetHorse(stallionAncestors[1]);
+    if (gpRecord)
+      gpRecord.Immutable([&](const data::Horse& gp) { maneShape = GetShapeFromTid(gp.parts.maneTid()); });
+  }
 
-  if (maneShape == 0 && maneShapeRoll >= 60)
-    maneShape = rand() % 8;  // Random shape (8 groups)
+  if (maneShape == 0) maneShape = rand() % 8;  // Random shape (60%, 8 groups)
 
   // Validate mane shape against grade
   ValidateManeShape(maneShape, foalGrade);
 
-  // === TAIL GENETICS ===
+  // === TAIL SHAPE GENETICS ===
   
   // Tail uses same color as mane (already calculated above)
-  // Tail Shape: Mom 20%, Dad 20%, Maternal GP 10%, Paternal GP 10%, Random 40%
+  // Tail Shape: Mom 10%, Dad 10%, GP1 5%, GP2 5%, GP3 5%, GP4 5%, Random 60%
   int tailShapeRoll = rand() % 100;
   int32_t tailShape = 0;
 
-  if (tailShapeRoll < 20)
-    tailShape = GetShapeFromTid(mareTail);
-  else if (tailShapeRoll < 40)
-    tailShape = GetShapeFromTid(stallionTail);
-  else if (tailShapeRoll < 50 && mareAncestors.size() >= 1)
+  if (tailShapeRoll < 10)
+  {
+    tailShape = GetShapeFromTid(mareTail);  // 10% Mom
+  }
+  else if (tailShapeRoll < 20)
+  {
+    tailShape = GetShapeFromTid(stallionTail);  // 10% Dad
+  }
+  else if (tailShapeRoll < 25 && mareAncestors.size() >= 1)
   {
     auto gpRecord = _serverInstance.GetDataDirector().GetHorse(mareAncestors[0]);
     if (gpRecord)
       gpRecord.Immutable([&](const data::Horse& gp) { tailShape = GetShapeFromTid(gp.parts.tailTid()); });
   }
-  else if (tailShapeRoll < 60 && stallionAncestors.size() >= 1)
+  else if (tailShapeRoll < 30 && mareAncestors.size() >= 2)
+  {
+    auto gpRecord = _serverInstance.GetDataDirector().GetHorse(mareAncestors[1]);
+    if (gpRecord)
+      gpRecord.Immutable([&](const data::Horse& gp) { tailShape = GetShapeFromTid(gp.parts.tailTid()); });
+  }
+  else if (tailShapeRoll < 35 && stallionAncestors.size() >= 1)
   {
     auto gpRecord = _serverInstance.GetDataDirector().GetHorse(stallionAncestors[0]);
     if (gpRecord)
       gpRecord.Immutable([&](const data::Horse& gp) { tailShape = GetShapeFromTid(gp.parts.tailTid()); });
   }
+  else if (tailShapeRoll < 40 && stallionAncestors.size() >= 2)
+  {
+    auto gpRecord = _serverInstance.GetDataDirector().GetHorse(stallionAncestors[1]);
+    if (gpRecord)
+      gpRecord.Immutable([&](const data::Horse& gp) { tailShape = GetShapeFromTid(gp.parts.tailTid()); });
+  }
 
-  if (tailShape == 0 && tailShapeRoll >= 60)
-    tailShape = rand() % 6;  // Random shape (6 groups)
+  if (tailShape == 0) tailShape = rand() % 6;  // Random shape (60%, 6 groups)
 
   // Validate tail shape against grade
   ValidateTailShape(tailShape, foalGrade);
@@ -565,6 +621,178 @@ Genetics::PotentialResult Genetics::CalculateFoalPotential(
     result.hasPotential, result.type, potentialProbability);
   
   return result;
+}
+
+data::Tid Genetics::CalculateFoalSkin(
+  data::Uid mareUid,
+  data::Uid stallionUid,
+  uint8_t foalGrade)
+{
+  // Get parent and grandparent skin data
+  auto mareRecord = _serverInstance.GetDataDirector().GetHorse(mareUid);
+  auto stallionRecord = _serverInstance.GetDataDirector().GetHorse(stallionUid);
+  
+  if (!mareRecord || !stallionRecord)
+  {
+    spdlog::error("Genetics: Mare or stallion not found for skin calculation");
+    return 1; // Fallback to Chestnut
+  }
+  
+  data::Tid mareSkin = 0, stallionSkin = 0;
+  std::vector<data::Uid> mareAncestors, stallionAncestors;
+  
+  mareRecord.Immutable([&](const data::Horse& mare) {
+    mareSkin = mare.parts.skinTid();
+    mareAncestors = mare.ancestors();
+  });
+  
+  stallionRecord.Immutable([&](const data::Horse& stallion) {
+    stallionSkin = stallion.parts.skinTid();
+    stallionAncestors = stallion.ancestors();
+  });
+  
+  // Get grandparent skins in order: mare's parents, stallion's parents
+  std::vector<data::Tid> gpSkins;
+  for (const auto& gpUid : mareAncestors)
+  {
+    auto gpRecord = _serverInstance.GetDataDirector().GetHorse(gpUid);
+    if (gpRecord)
+    {
+      gpRecord.Immutable([&](const data::Horse& gp) {
+        gpSkins.push_back(gp.parts.skinTid());
+      });
+    }
+  }
+  for (const auto& gpUid : stallionAncestors)
+  {
+    auto gpRecord = _serverInstance.GetDataDirector().GetHorse(gpUid);
+    if (gpRecord)
+    {
+      gpRecord.Immutable([&](const data::Horse& gp) {
+        gpSkins.push_back(gp.parts.skinTid());
+      });
+    }
+  }
+  
+  // Helper lambda to get random valid skin for foal's grade with weighted rarity
+  auto getRandomValidSkin = [&]() -> data::Tid
+  {
+    // Separate valid skins by tier
+    std::vector<data::Tid> tier1Skins; // Common
+    std::vector<data::Tid> tier2Skins; // Uncommon
+    std::vector<data::Tid> tier3Skins; // Rare
+    
+    for (int tid = 1; tid <= 20; ++tid)
+    {
+      auto skinInfo = _serverInstance.GetHorseRegistry().GetSkinInfo(tid);
+      if (skinInfo && skinInfo->minGrade <= foalGrade)
+      {
+        switch (skinInfo->rarityTier)
+        {
+          case 1: tier1Skins.push_back(tid); break;
+          case 2: tier2Skins.push_back(tid); break;
+          case 3: tier3Skins.push_back(tid); break;
+        }
+      }
+    }
+    
+    // If no valid skins at all, fallback to Chestnut
+    if (tier1Skins.empty() && tier2Skins.empty() && tier3Skins.empty())
+    {
+      return 1;
+    }
+    
+    // Weighted probabilities: Tier 1 = 60%, Tier 2 = 30%, Tier 3 = 10%
+    auto rand0_99 = std::uniform_int_distribution<int>(0, 99);
+    int tierRoll = rand0_99(_randomEngine);
+    
+    std::vector<data::Tid>* selectedTier = nullptr;
+    
+    if (tierRoll < 60 && !tier1Skins.empty())
+    {
+      selectedTier = &tier1Skins; // 60% - Tier 1 (Common)
+    }
+    else if (tierRoll < 90 && !tier2Skins.empty())
+    {
+      selectedTier = &tier2Skins; // 30% - Tier 2 (Uncommon)
+    }
+    else if (!tier3Skins.empty())
+    {
+      selectedTier = &tier3Skins; // 10% - Tier 3 (Rare)
+    }
+    
+    // Fallback if selected tier is empty (e.g., low grade foal can't access tier 2/3)
+    if (selectedTier == nullptr || selectedTier->empty())
+    {
+      if (!tier1Skins.empty()) selectedTier = &tier1Skins;
+      else if (!tier2Skins.empty()) selectedTier = &tier2Skins;
+      else if (!tier3Skins.empty()) selectedTier = &tier3Skins;
+    }
+    
+    // Select random skin from chosen tier
+    if (selectedTier && !selectedTier->empty())
+    {
+      auto dist = std::uniform_int_distribution<size_t>(0, selectedTier->size() - 1);
+      return (*selectedTier)[dist(_randomEngine)];
+    }
+    
+    return 1; // Final fallback to Chestnut
+  };
+  
+  // Helper lambda to check if skin is valid for foal's grade, returns skin or random
+  auto getValidSkinOrRandom = [&](data::Tid skinTid) -> data::Tid
+  {
+    auto skinInfo = _serverInstance.GetHorseRegistry().GetSkinInfo(skinTid);
+    if (skinInfo && skinInfo->minGrade <= foalGrade)
+    {
+      return skinTid; // Valid, use it
+    }
+    // Too high grade requirement, select random instead
+    return getRandomValidSkin();
+  };
+  
+  // Weighted inheritance: Mom 10%, Dad 10%, GPs 5% each (up to 4), Random 60%
+  auto rand0_99 = std::uniform_int_distribution<int>(0, 99);
+  int roll = rand0_99(_randomEngine);
+  
+  data::Tid selectedSkin = 0;
+  
+  if (roll < 10)
+  {
+    selectedSkin = getValidSkinOrRandom(mareSkin); // Mom 10%
+  }
+  else if (roll < 20)
+  {
+    selectedSkin = getValidSkinOrRandom(stallionSkin); // Dad 10%
+  }
+  else if (roll < 25 && gpSkins.size() > 0)
+  {
+    selectedSkin = getValidSkinOrRandom(gpSkins[0]); // Maternal GP1 5%
+  }
+  else if (roll < 30 && gpSkins.size() > 1)
+  {
+    selectedSkin = getValidSkinOrRandom(gpSkins[1]); // Maternal GP2 5%
+  }
+  else if (roll < 35 && gpSkins.size() > 2)
+  {
+    selectedSkin = getValidSkinOrRandom(gpSkins[2]); // Paternal GP1 5%
+  }
+  else if (roll < 40 && gpSkins.size() > 3)
+  {
+    selectedSkin = getValidSkinOrRandom(gpSkins[3]); // Paternal GP2 5%
+  }
+  else
+  {
+    // Random 60% - constrained by foal grade
+    selectedSkin = getRandomValidSkin();
+  }
+  
+  // Log final selection
+  auto skinInfo = _serverInstance.GetHorseRegistry().GetSkinInfo(selectedSkin);
+  spdlog::debug("Genetics: Foal skin - selected TID {} (grade requirement: {}, foal grade: {})",
+    selectedSkin, skinInfo ? skinInfo->minGrade : 0, foalGrade);
+  
+  return selectedSkin;
 }
 
 } // namespace server
