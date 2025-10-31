@@ -329,6 +329,7 @@ data::Uid BreedingMarket::RegisterStallion(
     stallion.ownerUid() = characterUid;
     stallion.breedingCharge() = breedingCharge;
     stallion.registeredAt() = util::Clock::now();
+    stallion.expiresAt() = util::Clock::now() + std::chrono::hours(24 * 7); // 7 days
     stallionUid = stallion.uid();
     registeredAt = stallion.registeredAt();
   });
@@ -443,11 +444,16 @@ std::optional<BreedingMarket::StallionBreedingEarnings> BreedingMarket::GetUnreg
     return std::nullopt;
   }
 
+  // Get times bred from horse record
+  auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(cachedData.horseUid);
   uint32_t timesMated = 0;
-  stallionRecord->Immutable([&timesMated](const data::Stallion& stallion)
+  if (horseRecord)
   {
-    timesMated = stallion.timesMated();
-  });
+    horseRecord->Immutable([&timesMated](const data::Horse& horse)
+    {
+      timesMated = horse.timesMated();
+    });
+  }
 
   const uint32_t compensation = timesMated * cachedData.breedingCharge;
 
