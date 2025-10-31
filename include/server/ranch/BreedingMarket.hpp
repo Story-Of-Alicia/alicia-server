@@ -32,6 +32,7 @@ public:
   //! Cached stallion metadata for quick access without async loading
   struct StallionData
   {
+    data::Uid horseUid;
     data::Uid ownerUid;
     uint32_t breedingCharge;
     util::Clock::time_point expiresAt;
