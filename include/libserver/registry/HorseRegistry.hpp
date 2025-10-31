@@ -22,6 +22,7 @@
 
 #include <random>
 #include <unordered_map>
+#include <vector>
 
 #include "libserver/data/DataDefinitions.hpp"
 
@@ -41,6 +42,7 @@ struct SkinInfo
   int32_t minGrade{1};
   int32_t rarityTier{1}; // 1=Common, 2=Uncommon, 3=Rare/Epic/Legendary
   int32_t faceType{0};
+  std::vector<int32_t> allowedManeColors; // Valid mane/tail colors for this coat (1-5)
 };
 
 struct Face
