@@ -47,28 +47,28 @@ HorseRegistry::HorseRegistry()
 
   _coats = {
   // Tier 1 (Common): TID 1-7
-  {1, Coat{.tid = 1, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .allowedColorGroups = {1}}},   // Chestnut
-  {2, Coat{.tid = 2, .faceType = -1, .minGrade = 1, .tier = Coat::Tier::Common, .allowedColorGroups = {1}}},  // Bay
-  {3, Coat{.tid = 3, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .allowedColorGroups = {2}}},   // Champagne Sabino
-  {4, Coat{.tid = 4, .faceType = 0, .minGrade = 2, .tier = Coat::Tier::Common, .allowedColorGroups = {1}}},   // Chestnut Stockings
-  {5, Coat{.tid = 5, .faceType = -1, .minGrade = 3, .tier = Coat::Tier::Common, .allowedColorGroups = {2}}},  // Buckskin
-  {6, Coat{.tid = 6, .faceType = 0, .minGrade = 3, .tier = Coat::Tier::Common, .allowedColorGroups = {3}}},   // Champagne (special group)
-  {7, Coat{.tid = 7, .faceType = 0, .minGrade = 5, .tier = Coat::Tier::Common, .allowedColorGroups = {1}}},   // Leopard Appaloosa
+  {1, Coat{.tid = 1, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .inheritanceRate = 30.0f, .allowedColorGroups = {1}}},   // Chestnut
+  {2, Coat{.tid = 2, .faceType = -1, .minGrade = 1, .tier = Coat::Tier::Common, .inheritanceRate = 25.0f, .allowedColorGroups = {1}}},  // Bay
+  {3, Coat{.tid = 3, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .inheritanceRate = 30.0f, .allowedColorGroups = {2}}},   // Champagne Sabino
+  {4, Coat{.tid = 4, .faceType = 0, .minGrade = 2, .tier = Coat::Tier::Common, .inheritanceRate = 21.0f, .allowedColorGroups = {1}}},   // Chestnut Stockings
+  {5, Coat{.tid = 5, .faceType = -1, .minGrade = 3, .tier = Coat::Tier::Common, .inheritanceRate = 23.0f, .allowedColorGroups = {2}}},  // Buckskin
+  {6, Coat{.tid = 6, .faceType = 0, .minGrade = 3, .tier = Coat::Tier::Common, .inheritanceRate = 21.0f, .allowedColorGroups = {3}}},   // Champagne
+  {7, Coat{.tid = 7, .faceType = 0, .minGrade = 5, .tier = Coat::Tier::Common, .inheritanceRate = 21.0f, .allowedColorGroups = {1}}},   // Leopard Appaloosa
   // Tier 2 (Uncommon): TID 8-14
-  {8, Coat{.tid = 8, .faceType = -1, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedColorGroups = {2}}},  // Blanket Appaloosa
-  {9, Coat{.tid = 9, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedColorGroups = {2}}},   // White Grey
-  {10, Coat{.tid = 10, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedColorGroups = {2}}}, // Dapple Grey
-  {11, Coat{.tid = 11, .faceType = -1, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedColorGroups = {1}}}, // Chestnut Pinto
-  {12, Coat{.tid = 12, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedColorGroups = {1}}}, // Sooty Bay
-  {13, Coat{.tid = 13, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedColorGroups = {1}}}, // Palomino
-  {14, Coat{.tid = 14, .faceType = 0, .minGrade = 7, .tier = Coat::Tier::Uncommon, .allowedColorGroups = {2}}}, // Black Pinto
+  {8, Coat{.tid = 8, .faceType = -1, .minGrade = 6, .tier = Coat::Tier::Uncommon, .inheritanceRate = 15.0f, .allowedColorGroups = {2}}},  // Blanket Appaloosa
+  {9, Coat{.tid = 9, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .inheritanceRate = 7.0f, .allowedColorGroups = {2}}},   // White Grey
+  {10, Coat{.tid = 10, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .inheritanceRate = 15.0f, .allowedColorGroups = {2}}}, // Dapple Grey
+  {11, Coat{.tid = 11, .faceType = -1, .minGrade = 6, .tier = Coat::Tier::Uncommon, .inheritanceRate = 18.0f, .allowedColorGroups = {1}}}, // Chestnut Pinto
+  {12, Coat{.tid = 12, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .inheritanceRate = 11.0f, .allowedColorGroups = {1}}}, // Sooty Bay
+  {13, Coat{.tid = 13, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .inheritanceRate = 15.0f, .allowedColorGroups = {1}}}, // Palomino
+  {14, Coat{.tid = 14, .faceType = 0, .minGrade = 7, .tier = Coat::Tier::Uncommon, .inheritanceRate = 19.0f, .allowedColorGroups = {2}}}, // Black Pinto
   // Tier 3 (Rare): TID 15-20
-  {15, Coat{.tid = 15, .faceType = -1, .minGrade = 7, .tier = Coat::Tier::Rare, .allowedColorGroups = {2}}}, // Black
-  {16, Coat{.tid = 16, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Rare, .allowedColorGroups = {1}}}, // Brown Sabino (Chestnut Sabino)
-  {17, Coat{.tid = 17, .faceType = 0, .minGrade = 8, .tier = Coat::Tier::Rare, .allowedColorGroups = {1}}}, // Amber Cream
-  {18, Coat{.tid = 18, .faceType = 0, .minGrade = 7, .tier = Coat::Tier::Rare, .allowedColorGroups = {1}}}, // Mealy Bay
-  {19, Coat{.tid = 19, .faceType = -1, .minGrade = 8, .tier = Coat::Tier::Rare, .allowedColorGroups = {2}}}, // Black Sabino
-  {20, Coat{.tid = 20, .faceType = 0, .minGrade = 8, .tier = Coat::Tier::Rare, .allowedColorGroups = {1}}}, // Dapple Bay
+  {15, Coat{.tid = 15, .faceType = -1, .minGrade = 7, .tier = Coat::Tier::Rare, .inheritanceRate = 7.0f, .allowedColorGroups = {2}}}, // Black
+  {16, Coat{.tid = 16, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Rare, .inheritanceRate = 12.0f, .allowedColorGroups = {1}}}, // Brown Sabino
+  {17, Coat{.tid = 17, .faceType = 0, .minGrade = 8, .tier = Coat::Tier::Rare, .inheritanceRate = 10.0f, .allowedColorGroups = {1}}}, // Amber Cream
+  {18, Coat{.tid = 18, .faceType = 0, .minGrade = 7, .tier = Coat::Tier::Rare, .inheritanceRate = 10.0f, .allowedColorGroups = {1}}}, // Mealy Bay
+  {19, Coat{.tid = 19, .faceType = -1, .minGrade = 8, .tier = Coat::Tier::Rare, .inheritanceRate = 10.0f, .allowedColorGroups = {2}}}, // Black Sabino
+  {20, Coat{.tid = 20, .faceType = 0, .minGrade = 8, .tier = Coat::Tier::Rare, .inheritanceRate = 5.0f, .allowedColorGroups = {1}}}, // Dapple Bay
   };
 
   _faces = {
@@ -81,16 +81,9 @@ HorseRegistry::HorseRegistry()
 
   // Mane TIDs 1-40: 8 shapes x 5 colors
   // Pattern: TID = (shape * 5) + color
-  // Shape 0 (Short): TIDs 1-5
-  // Shape 1 (Medium): TIDs 6-10
-  // Shape 2 (Long): TIDs 11-15
-  // Shape 3 (Wavy): TIDs 16-20
-  // Shape 4 (Curly): TIDs 21-25
-  // Shape 5 (Spiky): TIDs 26-30
-  // Shape 6 (Long Straight): TIDs 31-35
-  // Shape 7 (Long Curly): TIDs 36-40
+
   _manes = {
-    // Shape 0 (Short)
+    // Shape 0 (Medium short)
     {1, Mane{.tid = 1, .color = Color::White, .shape = 0}},
     {2, Mane{.tid = 2, .color = Color::LightBrown, .shape = 0}},
     {3, Mane{.tid = 3, .color = Color::Brown, .shape = 0}},
@@ -102,19 +95,19 @@ HorseRegistry::HorseRegistry()
     {8, Mane{.tid = 8, .color = Color::Brown, .shape = 1}},
     {9, Mane{.tid = 9, .color = Color::DarkBrown, .shape = 1}},
     {10, Mane{.tid = 10, .color = Color::Grey, .shape = 1}},
-    // Shape 2 (Long)
+    // Shape 2 (Shaved)
     {11, Mane{.tid = 11, .color = Color::White, .shape = 2}},
     {12, Mane{.tid = 12, .color = Color::LightBrown, .shape = 2}},
     {13, Mane{.tid = 13, .color = Color::Brown, .shape = 2}},
     {14, Mane{.tid = 14, .color = Color::DarkBrown, .shape = 2}},
     {15, Mane{.tid = 15, .color = Color::Grey, .shape = 2}},
-    // Shape 3 (Wavy)
+    // Shape 3 (Short)
     {16, Mane{.tid = 16, .color = Color::White, .shape = 3}},
     {17, Mane{.tid = 17, .color = Color::LightBrown, .shape = 3}},
     {18, Mane{.tid = 18, .color = Color::Brown, .shape = 3}},
     {19, Mane{.tid = 19, .color = Color::DarkBrown, .shape = 3}},
     {20, Mane{.tid = 20, .color = Color::Grey, .shape = 3}},
-    // Shape 4 (Curly)
+    // Shape 4 (Extremely short)
     {21, Mane{.tid = 21, .color = Color::White, .shape = 4}},
     {22, Mane{.tid = 22, .color = Color::LightBrown, .shape = 4}},
     {23, Mane{.tid = 23, .color = Color::Brown, .shape = 4}},
@@ -126,13 +119,13 @@ HorseRegistry::HorseRegistry()
     {28, Mane{.tid = 28, .color = Color::Brown, .shape = 5}},
     {29, Mane{.tid = 29, .color = Color::DarkBrown, .shape = 5}},
     {30, Mane{.tid = 30, .color = Color::Grey, .shape = 5}},
-    // Shape 6 (Long Straight)
+    // Shape 6 (Long)
     {31, Mane{.tid = 31, .color = Color::White, .shape = 6}},
     {32, Mane{.tid = 32, .color = Color::LightBrown, .shape = 6}},
     {33, Mane{.tid = 33, .color = Color::Brown, .shape = 6}},
     {34, Mane{.tid = 34, .color = Color::DarkBrown, .shape = 6}},
     {35, Mane{.tid = 35, .color = Color::Grey, .shape = 6}},
-    // Shape 7 (Long Curly)
+    // Shape 7 (Curly)
     {36, Mane{.tid = 36, .color = Color::White, .shape = 7}},
     {37, Mane{.tid = 37, .color = Color::LightBrown, .shape = 7}},
     {38, Mane{.tid = 38, .color = Color::Brown, .shape = 7}},
@@ -142,12 +135,6 @@ HorseRegistry::HorseRegistry()
 
   // Tail TIDs 1-30: 6 shapes x 5 colors
   // Pattern: TID = (shape * 5) + color
-  // Shape 0 (Short): TIDs 1-5
-  // Shape 1 (Medium): TIDs 6-10
-  // Shape 2 (Long): TIDs 11-15
-  // Shape 3 (Wavy): TIDs 16-20
-  // Shape 4 (Curly): TIDs 21-25
-  // Shape 5 (Long Curly): TIDs 26-30
   _tails = {
     // Shape 0 (Short)
     {1, Tail{.tid = 1, .color = Color::White, .shape = 0}},
