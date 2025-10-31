@@ -35,6 +35,14 @@ struct Coat
   int32_t faceType{0};
 };
 
+struct SkinInfo
+{
+  data::Tid tid{data::InvalidTid};
+  int32_t minGrade{1};
+  int32_t rarityTier{1}; // 1=Common, 2=Uncommon, 3=Rare/Epic/Legendary
+  int32_t faceType{0};
+};
+
 struct Face
 {
   data::Tid tid{data::InvalidTid};
@@ -84,10 +92,16 @@ public:
   //! @returns Color group (1-5), or 0 if not found.
   int32_t GetTailColorGroup(data::Tid tailTid) const;
 
+  //! Gets skin information for a given skin TID.
+  //! @param skinTid Skin template ID.
+  //! @returns Pointer to SkinInfo, or nullptr if not found.
+  const SkinInfo* GetSkinInfo(data::Tid skinTid) const;
+
 private:
   std::random_device _randomDevice;
   std::unordered_map<data::Tid, Coat> _coats;
   std::unordered_map<data::Tid, Face> _faces;
+  std::unordered_map<data::Tid, SkinInfo> _skins;
 
   std::unordered_map<data::Tid, Mane> _manes;
   std::unordered_map<data::Tid, Tail> _tails;
