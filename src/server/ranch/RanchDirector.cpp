@@ -3854,6 +3854,14 @@ void RanchDirector::HandleUseItem(
   if (not itemTemplate)
     throw std::runtime_error("Item template not available");
 
+  if (itemTemplate->type != registry::Item::Type::Consumable)
+  {
+    throw std::runtime_error(std::format(
+      "Use of unconsumable item {} (tid: {})",
+      command.itemUid,
+      usedItemTid));
+  }
+
   bool consumeItem = false;
   if (itemTemplate->foodParameters)
   {
@@ -3904,9 +3912,10 @@ void RanchDirector::HandleUseItem(
   }
   else
   {
-    throw std::runtime_error(
-      std::format("Unknown use of item tid {} for item uid {}", usedItemTid, command.itemUid));
-    return;
+    spdlog::warn(
+      "Use of unhandled item {} (tid: {})",
+      command.itemUid,
+      usedItemTid);
   }
 
   if (consumeItem)

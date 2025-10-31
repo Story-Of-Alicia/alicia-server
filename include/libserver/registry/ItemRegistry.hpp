@@ -25,6 +25,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace server::registry
 {
@@ -112,15 +113,19 @@ struct Item
   };
 
   uint32_t tid{};
-  std::string name;
-  std::string description;
-  uint32_t level{};
-  enum class ConsumeType
+
+  enum class Type
   {
     Permanent = 0,
     Temporary = 1,
     Consumable = 2
-  } consumeType{ConsumeType::Permanent};
+  } type{Type::Permanent};
+
+  uint32_t level{};
+
+  std::string name;
+  std::vector<std::string> description;
+
   std::optional<CharacterPartInfo> characterPartInfo;
   std::optional<MountPartInfo> mountPartInfo;
   std::optional<MountPartSetInfo> mountPartSetInfo;

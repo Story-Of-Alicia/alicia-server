@@ -21,9 +21,9 @@
 #define DATADIRECTOR_HPP
 
 #include "DataDefinitions.hpp"
+#include "DataSource.hpp"
 #include "DataStorage.hpp"
-// #include "pq/PqDataSource.hpp"
-#include "file/FileDataSource.hpp"
+
 #include "libserver/util/Scheduler.hpp"
 
 namespace server
@@ -126,11 +126,11 @@ public:
   [[nodiscard]] Record<data::Settings> CreateSettings() noexcept;
   [[nodiscard]] SettingsStorage& GetSettingsCache();
 
-  [[nodiscard]] FileDataSource& GetDataSource() { return *_primaryDataSource; }
+  [[nodiscard]] DataSource& GetDataSource() noexcept;
 
 private:
   //! An underlying data source of the data director.
-  std::unique_ptr<FileDataSource> _primaryDataSource;
+  std::unique_ptr<DataSource> _primaryDataSource;
 
   Scheduler _scheduler;
 
