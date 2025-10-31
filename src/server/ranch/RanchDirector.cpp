@@ -1343,10 +1343,10 @@ void RanchDirector::HandleEnterBreedingMarket(
         {
           protocolHorse.uid = horse.uid();
           protocolHorse.tid = horse.tid();
-          protocolHorse.combo = 0;  // Combo/success streak count
+          protocolHorse.combo = 0;  // Combo/success streak count TODO: Implement success streak
           protocolHorse.isRegistered = GetServerInstance().GetBreedingMarket().IsRegistered(horse.uid()) ? 1 : 0;
-          protocolHorse.breedingBonus = 1;   // Breeding bonus value
-          protocolHorse.lineage = 1; // Ancestor coat lineage score
+          protocolHorse.breedingBonus = 0;   // Breeding bonus value TODO: Implement breeding bonus
+          protocolHorse.lineage = 1; // Ancestor coat lineage score TODO: Implement lineage
         });
       }
     });
@@ -1759,19 +1759,21 @@ void RanchDirector::HandleTryBreeding(
     foal.grade() = foalGrade;
     
     // Use Genetics class for skin calculation
-    foal.parts.skinTid() = genetics.CalculateFoalSkin(
+    data::Tid foalSkinTid = genetics.CalculateFoalSkin(
       command.mareUid,
       command.stallionUid,
       foalGrade);
+    foal.parts.skinTid() = foalSkinTid;
     
     // Inherit face from parents (simple randomization)
     foal.parts.faceTid() = (rand() % 2 == 0) ? mareFace : stallionFace;
     
-    // Use Genetics class for mane/tail calculations (use calculated foalGrade for shape restrictions)
+    // Use Genetics class for mane/tail calculations (uses foalGrade for shape restrictions, foalSkinTid for color restrictions)
     auto maneTailResult = genetics.CalculateManeTailGenetics(
       command.mareUid,
       command.stallionUid,
-      foalGrade);
+      foalGrade,
+      foalSkinTid);
     
     foal.parts.maneTid() = maneTailResult.maneTid;
     foal.parts.tailTid() = maneTailResult.tailTid;
