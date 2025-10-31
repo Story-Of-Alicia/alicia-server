@@ -841,7 +841,7 @@ void AcCmdCRCheckStallionChargeOK::Write(
   const AcCmdCRCheckStallionChargeOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.status)
+  stream.Write(command.hasFailed)
     .Write(command.minCharge)
     .Write(command.maxCharge)
     .Write(command.registrationFee)

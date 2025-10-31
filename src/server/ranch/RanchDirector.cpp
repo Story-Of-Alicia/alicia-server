@@ -1592,7 +1592,7 @@ void RanchDirector::HandleCheckStallionCharge(
     
     // Return error response
     protocol::AcCmdCRCheckStallionChargeOK response{
-      .status = 1,            // 1 = error/not allowed
+      .hasFailed = true, 
       .minCharge = 0,
       .maxCharge = 0,
       .registrationFee = 0,
@@ -1639,7 +1639,7 @@ void RanchDirector::HandleCheckStallionCharge(
 
   // Validate and return breeding charge information
   protocol::AcCmdCRCheckStallionChargeOK response{
-    .status = 0,                // 0 = success
+    .hasFailed = false,         // Success
     .minCharge = minCharge,     // Grade-specific minimum
     .maxCharge = maxCharge,     // Grade-specific maximum
     .registrationFee = registrationFee,  // TODO: Calculate based on grade
