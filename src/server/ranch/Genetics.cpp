@@ -740,69 +740,34 @@ data::Tid Genetics::CalculateFoalSkin(
     }
   }
   
-  // Helper lambda to get random valid skin for foal's grade with weighted rarity
+  // Helper lambda to get random valid skin using weighted inheritance rates
   auto getRandomValidSkin = [&]() -> data::Tid
   {
-    // Separate valid skins by tier
-    std::vector<data::Tid> tier1Skins; // Common
-    std::vector<data::Tid> tier2Skins; // Uncommon
-    std::vector<data::Tid> tier3Skins; // Rare
+    // Collect all valid coats for the foal's grade with their inheritance rates
+    std::vector<data::Tid> validTids;
+    std::vector<float> weights;
     
     for (int tid = 1; tid <= 20; ++tid)
     {
       const auto& coatInfo = _serverInstance.GetHorseRegistry().GetCoatInfo(tid);
       if (coatInfo.minGrade <= foalGrade)
       {
-        switch (coatInfo.tier)
-        {
-          case registry::Coat::Tier::Common: tier1Skins.push_back(tid); break;
-          case registry::Coat::Tier::Uncommon: tier2Skins.push_back(tid); break;
-          case registry::Coat::Tier::Rare: tier3Skins.push_back(tid); break;
-        }
+        validTids.push_back(tid);
+        weights.push_back(coatInfo.inheritanceRate);
       }
     }
     
     // If no valid skins at all, fallback to Chestnut
-    if (tier1Skins.empty() && tier2Skins.empty() && tier3Skins.empty())
+    if (validTids.empty())
     {
       return 1;
     }
     
-    // Weighted probabilities: Tier 1 = 60%, Tier 2 = 30%, Tier 3 = 10%
-    auto rand0_99 = std::uniform_int_distribution<int>(0, 99);
-    int tierRoll = rand0_99(_randomEngine);
+    // Use weighted random selection based on inheritance rates
+    std::discrete_distribution<size_t> dist(weights.begin(), weights.end());
+    size_t selectedIndex = dist(_randomEngine);
     
-    std::vector<data::Tid>* selectedTier = nullptr;
-    
-    if (tierRoll < 60 && !tier1Skins.empty())
-    {
-      selectedTier = &tier1Skins; // 60% - Tier 1 (Common)
-    }
-    else if (tierRoll < 90 && !tier2Skins.empty())
-    {
-      selectedTier = &tier2Skins; // 30% - Tier 2 (Uncommon)
-    }
-    else if (!tier3Skins.empty())
-    {
-      selectedTier = &tier3Skins; // 10% - Tier 3 (Rare)
-    }
-    
-    // Fallback if selected tier is empty (e.g., low grade foal can't access tier 2/3)
-    if (selectedTier == nullptr || selectedTier->empty())
-    {
-      if (!tier1Skins.empty()) selectedTier = &tier1Skins;
-      else if (!tier2Skins.empty()) selectedTier = &tier2Skins;
-      else if (!tier3Skins.empty()) selectedTier = &tier3Skins;
-    }
-    
-    // Select random skin from chosen tier
-    if (selectedTier && !selectedTier->empty())
-    {
-      auto dist = std::uniform_int_distribution<size_t>(0, selectedTier->size() - 1);
-      return (*selectedTier)[dist(_randomEngine)];
-    }
-    
-    return 1; // Final fallback to Chestnut
+    return validTids[selectedIndex];
   };
   
   // Helper lambda to check if skin is valid for foal's grade, returns skin or random
