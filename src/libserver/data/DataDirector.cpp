@@ -706,6 +706,7 @@ void DataDirector::Tick()
     _petStorage.Tick();
     _guildStorage.Tick();
     _housingStorage.Tick();
+    _stallionStorage.Tick();
     _settingsStorage.Tick();
     _dailyQuestStorage.Tick();
     _mailStorage.Tick();

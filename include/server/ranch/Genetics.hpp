@@ -132,11 +132,17 @@ private:
   ServerInstance& _serverInstance;
   std::mt19937 _randomEngine;
 
-  //! Extracts color from TID (1-5, cycles every 5)
-  static int32_t GetColorFromTid(data::Tid tid);
+  //! Gets color group ID from a mane or tail TID
+  //! @param tid Mane or tail TID
+  //! @param isMane True if mane, false if tail
+  //! @returns Color group ID (1-3), or 0 if not found
+  int32_t GetColorGroupIdFromTid(data::Tid tid, bool isMane);
 
-  //! Extracts shape group from TID
-  static int32_t GetShapeFromTid(data::Tid tid);
+  //! Extracts shape from a mane or tail TID
+  //! @param tid Mane or tail TID
+  //! @param isMane True if mane, false if tail
+  //! @returns Shape (0-7 for manes, 0-5 for tails)
+  int32_t GetShapeFromTid(data::Tid tid, bool isMane);
 
   //! Validates and adjusts mane shape based on grade requirements
   static void ValidateManeShape(int32_t& maneShape, uint8_t foalGrade);

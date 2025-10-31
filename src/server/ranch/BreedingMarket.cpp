@@ -32,64 +32,146 @@ BreedingMarket::BreedingMarket(ServerInstance& serverInstance)
 void BreedingMarket::Initialize()
 {
   // Get all registered stallion UIDs from the data source
-  std::vector<data::Uid> stallionUids = _serverInstance.GetDataDirector().ListRegisteredStallions();
+  _stallionUidsToLoad = _serverInstance.GetDataDirector().ListRegisteredStallions();
   
-  spdlog::debug("BreedingMarket::Initialize() found {} stallion file(s)", stallionUids.size());
+  spdlog::info("BreedingMarket::Initialize - Found {} stallion UID(s) from data source", _stallionUidsToLoad.size());
   
-  int loadedCount = 0;
-  int expiredCount = 0;
-  std::vector<data::Uid> horseUidsToPreload;
-  std::vector<data::Uid> stallionUidsToDelete;
-  
-  for (data::Uid stallionUid : stallionUids)
+  if (_stallionUidsToLoad.empty())
   {
-    // Load stallion data synchronously by creating it in the cache
-    // This bypasses the async retrieval queue and loads immediately
-    data::Stallion stallionData;
-    data::Uid horseUid = 0;
-    data::Uid ownerUid = 0;
-    uint32_t breedingCharge = 0;
-    util::Clock::time_point expiresAt;
+    spdlog::info("No registered stallions found in database");
+    _stallionsLoaded = true;
+    return;
+  }
+  
+  // Log the stallion UIDs
+  for (data::Uid uid : _stallionUidsToLoad)
+  {
+    spdlog::debug("  - Queuing stallion UID: {}", uid);
+  }
+  
+  spdlog::info("Queuing {} stallion(s) for async loading", _stallionUidsToLoad.size());
+  
+  // Request async loading of stallion records (individual calls trigger loading)
+  for (data::Uid stallionUid : _stallionUidsToLoad)
+  {
+    _serverInstance.GetDataDirector().GetStallionCache().Get(stallionUid);
+  }
+  
+  _stallionsLoaded = false;
+}
+
+void BreedingMarket::Terminate()
+{
+  _registeredStallions.clear();
+  _horseToStallionMap.clear();
+  _stallionDataCache.clear();
+  _stallionsLoaded = false;
+  _stallionUidsToLoad.clear();
+}
+
+void BreedingMarket::Tick()
+{
+  std::lock_guard<std::mutex> lock(_mutex);
+  
+  // Load stallions from database
+  if (!_stallionsLoaded && !_stallionUidsToLoad.empty())
+  {
+    int loadedCount = 0;
+    int pendingCount = 0;
     
-    try
+    // Check each stallion individually
+    for (data::Uid stallionUid : _stallionUidsToLoad)
     {
-      // Get a mutable stallion to populate
-      auto stallionRecord = _serverInstance.GetDataDirector().GetStallionCache().Create(
-        [this, stallionUid]()
-        {
-          data::Stallion stallion;
-          // Load directly from file system synchronously
-          _serverInstance.GetDataDirector().GetDataSource().RetrieveStallion(stallionUid, stallion);
-          return std::make_pair(stallionUid, std::move(stallion));
-        });
-      
-      stallionRecord.Immutable([&](const data::Stallion& stallion)
+      auto stallionRecordOpt = _serverInstance.GetDataDirector().GetStallionCache().Get(stallionUid);
+      if (!stallionRecordOpt)
       {
-        horseUid = stallion.horseUid();
-        ownerUid = stallion.ownerUid();
-        breedingCharge = stallion.breedingCharge();
-        expiresAt = stallion.expiresAt();
+        // Not loaded yet, will try again next tick
+        pendingCount++;
+        continue;
+      }
+      
+      StallionData cachedData{};
+      bool isValid = true;
+      
+      stallionRecordOpt->Immutable([&](const data::Stallion& stallion)
+      {
+        cachedData.horseUid = stallion.horseUid();
+        cachedData.ownerUid = stallion.ownerUid();
+        cachedData.breedingCharge = stallion.breedingCharge();
+        cachedData.expiresAt = stallion.expiresAt();
+        
+        // Check if expired immediately
+        if (util::Clock::now() >= cachedData.expiresAt)
+        {
+          spdlog::warn("Breeding market: Stallion {} (horse {}) is already expired, skipping", 
+            stallionUid, cachedData.horseUid);
+          isValid = false;
+        }
+        else
+        {
+          // Preload the horse (async)
+          _serverInstance.GetDataDirector().GetHorseCache().Get(stallion.horseUid());
+        }
       });
-    }
-    catch (const std::exception& e)
-    {
-      spdlog::warn("Failed to load stallion record {}: {}", stallionUid, e.what());
-      continue;
+      
+      if (!isValid)
+      {
+        // Skip expired stallion
+        pendingCount--;
+        continue;
+      }
+      
+      _stallionDataCache[stallionUid] = std::move(cachedData);
+      _registeredStallions.emplace_back(cachedData.horseUid);
+      _horseToStallionMap[cachedData.horseUid] = stallionUid;
+      loadedCount++;
+      spdlog::debug("Breeding market: Successfully loaded stallion {} (horse {})", stallionUid, cachedData.horseUid);
     }
     
-    spdlog::debug("Loading stallion {} (horse {})", stallionUid, horseUid);
-    
-    // Check if stallion has expired
-    if (util::Clock::now() >= expiresAt)
+    // If all stallions are loaded, mark as complete
+    if (pendingCount == 0)
     {
-      spdlog::info("Stallion {} (horse {}) has expired, removing from database", 
-        stallionUid, horseUid);
+      spdlog::info("Loaded {} registered stallion(s) from database", loadedCount);
+      _stallionsLoaded = true;
+      _stallionUidsToLoad.clear();
+    }
+    else
+    {
+      spdlog::debug("Breeding market: {} stallions loaded, {} still pending", loadedCount, pendingCount);
+    }
+  }
+  
+  // Check for expired stallions every tick
+  if (_stallionsLoaded)
+  {
+    CheckExpiredStallions();
+  }
+}
+
+void BreedingMarket::CheckExpiredStallions()
+{
+  // This is called from Tick() which already holds the mutex
+  const auto now = util::Clock::now();
+  std::vector<data::Uid> expiredHorseUids;
+  
+  for (auto it = _stallionDataCache.begin(); it != _stallionDataCache.end(); )
+  {
+    const data::Uid stallionUid = it->first;
+    const StallionData& stallionData = it->second;
+    
+    if (now >= stallionData.expiresAt)
+    {
+      spdlog::info("Stallion {} (horse {}) has expired, removing from breeding market", 
+        stallionUid, stallionData.horseUid);
       
-      // Queue stallion UID for deletion via DataStorage
-      stallionUidsToDelete.push_back(stallionUid);
+      // Remove from cache
+      expiredHorseUids.push_back(stallionData.horseUid);
       
-      // Reset horse type back to Adult
-      auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(horseUid);
+      // Delete stallion record from database
+      _serverInstance.GetDataDirector().GetStallionCache().Delete(stallionUid);
+      
+      // Reset horse type back to Adult (0)
+      auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(stallionData.horseUid);
       if (horseRecord)
       {
         horseRecord->Mutable([](data::Horse& horse)
@@ -98,55 +180,31 @@ void BreedingMarket::Initialize()
         });
       }
       
-      expiredCount++;
-      continue;
+      // Erase from cache
+      it = _stallionDataCache.erase(it);
     }
-    
-    // Cache the stallion data to avoid async loading issues
-    StallionData cachedData{
-      .horseUid = horseUid,
-      .ownerUid = ownerUid,
-      .breedingCharge = breedingCharge,
-      .expiresAt = expiresAt
-    };
-    _stallionDataCache[stallionUid] = cachedData;
-    
-    // Add to in-memory lists for active stallions
-    _registeredStallions.emplace_back(horseUid);
-    _horseToStallionMap[horseUid] = stallionUid;
-    horseUidsToPreload.push_back(horseUid);
-    
-    loadedCount++;
+    else
+    {
+      ++it;
+    }
   }
   
-  // Delete expired stallions using DataStorage
-  for (data::Uid stallionUid : stallionUidsToDelete)
+  // Remove expired horses from tracking lists
+  for (data::Uid horseUid : expiredHorseUids)
   {
-    _serverInstance.GetDataDirector().GetStallionCache().Delete(stallionUid);
+    // Remove from registered stallions list
+    _registeredStallions.erase(
+      std::remove(_registeredStallions.begin(), _registeredStallions.end(), horseUid),
+      _registeredStallions.end());
+    
+    // Remove from horse->stallion map
+    _horseToStallionMap.erase(horseUid);
   }
   
-  // Pre-load all stallion horses
-  if (!horseUidsToPreload.empty())
+  if (!expiredHorseUids.empty())
   {
-    _serverInstance.GetDataDirector().GetHorseCache().Get(horseUidsToPreload);
+    spdlog::info("Removed {} expired stallion(s) from breeding market", expiredHorseUids.size());
   }
-  
-  spdlog::info("Loaded {} registered stallion(s) from database ({} expired and removed)", 
-    loadedCount, expiredCount);
-  
-  // Debug: Log the first few stallions
-  if (!_registeredStallions.empty())
-  {
-    spdlog::debug("Registered stallions count: {}, first entry: {}", 
-      _registeredStallions.size(), _registeredStallions[0]);
-  }
-}
-
-void BreedingMarket::Terminate()
-{
-  _registeredStallions.clear();
-  _horseToStallionMap.clear();
-  _stallionDataCache.clear();
 }
 
 std::optional<data::Uid> BreedingMarket::RegisterStallion(

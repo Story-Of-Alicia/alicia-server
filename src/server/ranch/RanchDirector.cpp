@@ -59,6 +59,7 @@ constexpr uint16_t MaxPlenitude = 1200;
 RanchDirector::RanchDirector(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
   , _commandServer(*this)
+  , _breedingMarket(serverInstance)
 {
   _commandServer.RegisterCommandHandler<protocol::AcCmdCREnterRanch>(
     [this](ClientId clientId, const auto& message)
@@ -478,7 +479,7 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
 
 void RanchDirector::Initialize()
 {
-  GetServerInstance().GetBreedingMarket().Initialize();
+  _breedingMarket.Initialize();
 
   spdlog::debug(
     "Ranch server listening on {}:{}",
@@ -490,11 +491,13 @@ void RanchDirector::Initialize()
 
 void RanchDirector::Terminate()
 {
+  _breedingMarket.Terminate();
   _commandServer.EndHost();
 }
 
 void RanchDirector::Tick()
 {
+  _breedingMarket.Tick();
 }
 
 std::vector<data::Uid> RanchDirector::GetOnlineCharacters()
@@ -1416,7 +1419,7 @@ void RanchDirector::HandleEnterBreedingMarket(
           protocolHorse.uid = horse.uid();
           protocolHorse.tid = horse.tid();
           protocolHorse.combo = 0;  // Combo/success streak count TODO: Implement success streak
-          protocolHorse.isRegistered = GetServerInstance().GetBreedingMarket().IsRegistered(horse.uid()) ? 1 : 0;
+          protocolHorse.isRegistered = _breedingMarket.IsRegistered(horse.uid()) ? 1 : 0;
           protocolHorse.breedingBonus = 0;   // Breeding bonus value TODO: Implement breeding bonus
           protocolHorse.lineage = 1; // Ancestor coat lineage score TODO: Implement lineage
         });
@@ -1445,7 +1448,7 @@ void RanchDirector::HandleSearchStallion(
     command.unk9[0].size(), command.unk9[1].size(), command.unk9[2].size(),
     command.unk10);
 
-  const auto registeredStallions = GetServerInstance().GetBreedingMarket().GetRegisteredStallions();
+  const auto registeredStallions = _breedingMarket.GetRegisteredStallions();
   spdlog::debug("Registered stallions count: {}", registeredStallions.size());
   
   protocol::RanchCommandSearchStallionOK response{
@@ -1464,7 +1467,7 @@ void RanchDirector::HandleSearchStallion(
     }
 
     // Get cached stallion data from breeding market
-    auto stallionDataOpt = GetServerInstance().GetBreedingMarket().GetStallionData(horseUid);
+    auto stallionDataOpt = _breedingMarket.GetStallionData(horseUid);
     if (!stallionDataOpt)
     {
       spdlog::warn("Stallion data not found for horseUid: {}", horseUid);
@@ -1543,7 +1546,7 @@ void RanchDirector::HandleRegisterStallion(
   });
 
   // Delegate to BreedingMarket
-  auto stallionUidOpt = GetServerInstance().GetBreedingMarket().RegisterStallion(
+  auto stallionUidOpt = _breedingMarket.RegisterStallion(
     clientContext.characterUid,
     command.horseUid,
     command.carrots);
@@ -1579,7 +1582,7 @@ void RanchDirector::HandleUnregisterStallion(
   const auto& clientContext = GetClientContext(clientId);
   
   // Delegate to BreedingMarket
-  uint32_t compensation = GetServerInstance().GetBreedingMarket().UnregisterStallion(command.horseUid);
+  uint32_t compensation = _breedingMarket.UnregisterStallion(command.horseUid);
   
   // TODO: Pay compensation to owner
   // if (compensation > 0)
@@ -1603,7 +1606,7 @@ void RanchDirector::HandleUnregisterStallionEstimateInfo(
   const protocol::AcCmdCRUnregisterStallionEstimateInfo&)
 {
   // Delegate to BreedingMarket
-  auto estimateOpt = GetServerInstance().GetBreedingMarket().GetUnregisterEstimate(command.horseUid);
+  auto estimateOpt = _breedingMarket.GetUnregisterEstimate(command.horseUid);
   
   if (!estimateOpt)
   {
@@ -1744,7 +1747,7 @@ void RanchDirector::HandleTryBreeding(
   }
   
   // Get breeding charge from breeding market
-  auto stallionDataOpt = GetServerInstance().GetBreedingMarket().GetStallionData(command.stallionUid);
+  auto stallionDataOpt = _breedingMarket.GetStallionData(command.stallionUid);
   if (!stallionDataOpt)
   {
     spdlog::warn("TryBreeding: Stallion {} not registered in breeding market", command.stallionUid);
