@@ -29,6 +29,22 @@
 namespace server::registry
 {
 
+enum class Color
+{
+  White = 1,
+  LightBrown = 2,
+  Brown = 3,
+  DarkBrown = 4,
+  Grey = 5,
+  Black = 6
+};
+
+struct ColorGroup
+{
+  int32_t id{0};
+  std::vector<Color> colors;
+};
+
 struct Coat
 {
   enum class Tier
@@ -43,7 +59,7 @@ struct Coat
   int32_t faceType{0};
   int32_t minGrade{1};
   Tier tier{Tier::Common};
-  std::vector<int32_t> allowedManeColors; // Valid mane/tail colors for this coat (1-5)
+  std::vector<int32_t> allowedColorGroups; // Valid color groups for this coat
 };
 
 struct Face
@@ -55,13 +71,15 @@ struct Face
 struct Mane
 {
   data::Tid tid{data::InvalidTid};
-  int32_t colorGroup{0};
+  Color color{Color::White};
+  int32_t shape{0};
 };
 
 struct Tail
 {
   data::Tid tid{data::InvalidTid};
-  int32_t colorGroup{0};
+  Color color{Color::White};
+  int32_t shape{0};
 };
 
 
@@ -85,37 +103,68 @@ public:
   void GiveHorseRandomPotential(
     data::Horse::Potential& potential);
 
-  //! Gets the color group for a mane TID.
-  //! @param maneTid Mane template ID.
-  //! @returns Color group (1-5), or 0 if not found.
-  int32_t GetManeColorGroup(data::Tid maneTid) const;
-
-  //! Gets the color group for a tail TID.
-  //! @param tailTid Tail template ID.
-  //! @returns Color group (1-5), or 0 if not found.
-  int32_t GetTailColorGroup(data::Tid tailTid) const;
-
   //! Gets coat information for a given coat TID.
   //! @param coatTid Coat template ID.
-  //! @returns Pointer to Coat, or nullptr if not found.
+  //! @returns Reference to Coat, with fallback to default if not found.
   const Coat& GetCoatInfo(data::Tid coatTid) const;
+
+  //! Gets a random mane TID from the specified color group and shape.
+  //! @param colorGroupId Color group ID.
+  //! @param shape Mane shape (0-7).
+  //! @param rng Random number generator.
+  //! @returns Mane TID, or InvalidTid if not found.
+  data::Tid GetRandomManeFromColorAndShape(int32_t colorGroupId, int32_t shape, std::mt19937& rng) const;
+
+  //! Gets a random tail TID from the specified color group and shape.
+  //! @param colorGroupId Color group ID.
+  //! @param shape Tail shape (0-5).
+  //! @param rng Random number generator.
+  //! @returns Tail TID, or InvalidTid if not found.
+  data::Tid GetRandomTailFromColorAndShape(int32_t colorGroupId, int32_t shape, std::mt19937& rng) const;
+
+  //! Gets the color group ID for a mane TID.
+  //! @param maneTid Mane template ID.
+  //! @returns Color group ID, or 0 if not found.
+  int32_t GetManeColorGroupId(data::Tid maneTid) const;
+
+  //! Gets the color group ID for a tail TID.
+  //! @param tailTid Tail template ID.
+  //! @returns Color group ID, or 0 if not found.
+  int32_t GetTailColorGroupId(data::Tid tailTid) const;
+
+  //! Gets mane shape from TID.
+  //! @param maneTid Mane template ID.
+  //! @returns Mane shape (0-7), or 0 if not found.
+  int32_t GetManeShape(data::Tid maneTid) const;
+
+  //! Gets tail shape from TID.
+  //! @param tailTid Tail template ID.
+  //! @returns Tail shape (0-5), or 0 if not found.
+  int32_t GetTailShape(data::Tid tailTid) const;
+
+  //! Gets the color of a mane TID.
+  //! @param maneTid Mane template ID.
+  //! @returns Color enum value.
+  Color GetManeColor(data::Tid maneTid) const;
+
+  //! Finds a tail TID with a specific color and shape.
+  //! @param color Desired color.
+  //! @param shape Desired shape (0-5).
+  //! @returns Tail TID, or InvalidTid if not found.
+  data::Tid FindTailByColorAndShape(Color color, int32_t shape) const;
 
 private:
   std::random_device _randomDevice;
   std::unordered_map<data::Tid, Coat> _coats;
   std::unordered_map<data::Tid, Face> _faces;
+  std::unordered_map<int32_t, ColorGroup> _colorGroups;
 
   std::unordered_map<data::Tid, Mane> _manes;
   std::unordered_map<data::Tid, Tail> _tails;
 
-  struct ManeTailColorGroup
-  {
-    data::Tid maneTid{data::InvalidTid};
-    data::Tid tailTid{data::InvalidTid};
-  };
-
-  //! A vector of manes and tails with a matching color group.
-  std::vector<ManeTailColorGroup> maneTailColorGroups;
+  // Lookup tables for efficient querying: [colorGroupId][shape] -> vector of TIDs
+  std::unordered_map<int32_t, std::unordered_map<int32_t, std::vector<data::Tid>>> _manesByColorAndShape;
+  std::unordered_map<int32_t, std::unordered_map<int32_t, std::vector<data::Tid>>> _tailsByColorAndShape;
 };
 
 } // namespace server::registry

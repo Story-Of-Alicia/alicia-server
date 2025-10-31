@@ -21,6 +21,7 @@
 #define RANCHDIRECTOR_HPP
 
 #include "server/Config.hpp"
+#include "server/ranch/BreedingMarket.hpp"
 #include "server/tracker/RanchTracker.hpp"
 
 #include "libserver/network/command/CommandServer.hpp"
@@ -406,6 +407,9 @@ private:
   ServerInstance& _serverInstance;
   //!
   CommandServer _commandServer;
+
+  //! The breeding market system.
+  BreedingMarket _breedingMarket;
 
   //!
   std::unordered_map<ClientId, ClientContext> _clients;

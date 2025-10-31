@@ -32,14 +32,28 @@ Genetics::Genetics(ServerInstance& serverInstance)
 {
 }
 
-int32_t Genetics::GetColorFromTid(data::Tid tid)
+int32_t Genetics::GetColorGroupIdFromTid(data::Tid maneTid, bool isMane)
 {
-  return ((tid - 1) % 5) + 1;  // Returns 1-5
+  if (isMane)
+  {
+    return _serverInstance.GetHorseRegistry().GetManeColorGroupId(maneTid);
+  }
+  else
+  {
+    return _serverInstance.GetHorseRegistry().GetTailColorGroupId(maneTid);
+  }
 }
 
-int32_t Genetics::GetShapeFromTid(data::Tid tid)
+int32_t Genetics::GetShapeFromTid(data::Tid tid, bool isMane)
 {
-  return ((tid - 1) / 5);  // Groups TIDs by sets of 5
+  if (isMane)
+  {
+    return _serverInstance.GetHorseRegistry().GetManeShape(tid);
+  }
+  else
+  {
+    return _serverInstance.GetHorseRegistry().GetTailShape(tid);
+  }
 }
 
 void Genetics::ValidateManeShape(int32_t& maneShape, uint8_t foalGrade)
@@ -119,76 +133,76 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
     stallionAncestors = stallion.ancestors();
   });
 
-  // Get allowed mane colors for the foal's coat
+  // Get allowed color groups for the foal's coat
   const auto& coatInfo = _serverInstance.GetHorseRegistry().GetCoatInfo(foalSkinTid);
-  std::vector<int32_t> allowedColors = {1, 2, 3, 4, 5}; // Default: all colors
-  if (!coatInfo.allowedManeColors.empty())
+  std::vector<int32_t> allowedColorGroups = {1}; // Default: color group 1
+  if (!coatInfo.allowedColorGroups.empty())
   {
-    allowedColors = coatInfo.allowedManeColors;
+    allowedColorGroups = coatInfo.allowedColorGroups;
   }
 
-  // Helper lambda to check if a color is valid for this coat
-  auto isColorValid = [&](int32_t color) -> bool
+  // Helper lambda to check if a color group is valid for this coat
+  auto isColorGroupValid = [&](int32_t colorGroupId) -> bool
   {
-    return std::find(allowedColors.begin(), allowedColors.end(), color) != allowedColors.end();
+    return std::find(allowedColorGroups.begin(), allowedColorGroups.end(), colorGroupId) != allowedColorGroups.end();
   };
 
-  // Helper lambda to get random valid color
-  auto getRandomValidColor = [&]() -> int32_t
+  // Helper lambda to get random valid color group
+  auto getRandomValidColorGroup = [&]() -> int32_t
   {
-    if (allowedColors.empty()) return 1; // Fallback
-    auto dist = std::uniform_int_distribution<size_t>(0, allowedColors.size() - 1);
-    return allowedColors[dist(_randomEngine)];
+    if (allowedColorGroups.empty()) return 1; // Fallback
+    auto dist = std::uniform_int_distribution<size_t>(0, allowedColorGroups.size() - 1);
+    return allowedColorGroups[dist(_randomEngine)];
   };
 
-  // === COLOR GENETICS (same color for both mane and tail) ===
+  // === COLOR GROUP GENETICS (same color group for both mane and tail) ===
   
-  // Color: Mom 10%, Dad 10%, GP1 5%, GP2 5%, GP3 5%, GP4 5%, Random 60%
+  // Color Group: Mom 10%, Dad 10%, GP1 5%, GP2 5%, GP3 5%, GP4 5%, Random 60%
   int colorRoll = rand() % 100;
-  int32_t sharedColor = 0;
+  int32_t sharedColorGroupId = 0;
   
   if (colorRoll < 10)
   {
-    sharedColor = GetColorFromTid(mareMane);  // 10% Mom's mane color
+    sharedColorGroupId = GetColorGroupIdFromTid(mareMane, true);  // 10% Mom's mane color group
   }
   else if (colorRoll < 20)
   {
-    sharedColor = GetColorFromTid(stallionMane);  // 10% Dad's mane color
+    sharedColorGroupId = GetColorGroupIdFromTid(stallionMane, true);  // 10% Dad's mane color group
   }
   else if (colorRoll < 25 && mareAncestors.size() >= 1)
   {
     auto gpRecord = _serverInstance.GetDataDirector().GetHorse(mareAncestors[0]);
     if (gpRecord)
-      gpRecord.Immutable([&](const data::Horse& gp) { sharedColor = GetColorFromTid(gp.parts.maneTid()); });
+      gpRecord.Immutable([&](const data::Horse& gp) { sharedColorGroupId = GetColorGroupIdFromTid(gp.parts.maneTid(), true); });
   }
   else if (colorRoll < 30 && mareAncestors.size() >= 2)
   {
     auto gpRecord = _serverInstance.GetDataDirector().GetHorse(mareAncestors[1]);
     if (gpRecord)
-      gpRecord.Immutable([&](const data::Horse& gp) { sharedColor = GetColorFromTid(gp.parts.maneTid()); });
+      gpRecord.Immutable([&](const data::Horse& gp) { sharedColorGroupId = GetColorGroupIdFromTid(gp.parts.maneTid(), true); });
   }
   else if (colorRoll < 35 && stallionAncestors.size() >= 1)
   {
     auto gpRecord = _serverInstance.GetDataDirector().GetHorse(stallionAncestors[0]);
     if (gpRecord)
-      gpRecord.Immutable([&](const data::Horse& gp) { sharedColor = GetColorFromTid(gp.parts.maneTid()); });
+      gpRecord.Immutable([&](const data::Horse& gp) { sharedColorGroupId = GetColorGroupIdFromTid(gp.parts.maneTid(), true); });
   }
   else if (colorRoll < 40 && stallionAncestors.size() >= 2)
   {
     auto gpRecord = _serverInstance.GetDataDirector().GetHorse(stallionAncestors[1]);
     if (gpRecord)
-      gpRecord.Immutable([&](const data::Horse& gp) { sharedColor = GetColorFromTid(gp.parts.maneTid()); });
+      gpRecord.Immutable([&](const data::Horse& gp) { sharedColorGroupId = GetColorGroupIdFromTid(gp.parts.maneTid(), true); });
   }
   
-  // Validate inherited color against coat restrictions
-  if (sharedColor == 0 || !isColorValid(sharedColor))
+  // Validate inherited color group against coat restrictions
+  if (sharedColorGroupId == 0 || !isColorGroupValid(sharedColorGroupId))
   {
-    sharedColor = getRandomValidColor();  // Random fallback (60%) or invalid color replacement
-    spdlog::debug("Genetics: Mane/tail color - inherited color invalid for coat, using random valid color {}", sharedColor);
+    sharedColorGroupId = getRandomValidColorGroup();  // Random fallback (60%) or invalid color group replacement
+    spdlog::debug("Genetics: Mane/tail color group - inherited group invalid for coat, using random valid group {}", sharedColorGroupId);
   }
   
-  int32_t maneColor = sharedColor;
-  int32_t tailColor = sharedColor;  // SAME COLOR
+  int32_t maneColorGroupId = sharedColorGroupId;
+  int32_t tailColorGroupId = sharedColorGroupId;  // SAME COLOR GROUP
   
   // === MANE SHAPE GENETICS ===
 
@@ -198,99 +212,122 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
 
   if (maneShapeRoll < 10)
   {
-    maneShape = GetShapeFromTid(mareMane);  // 10% Mom
+    maneShape = GetShapeFromTid(mareMane, true);  // 10% Mom
   }
   else if (maneShapeRoll < 20)
   {
-    maneShape = GetShapeFromTid(stallionMane);  // 10% Dad
+    maneShape = GetShapeFromTid(stallionMane, true);  // 10% Dad
   }
   else if (maneShapeRoll < 25 && mareAncestors.size() >= 1)
   {
     auto gpRecord = _serverInstance.GetDataDirector().GetHorse(mareAncestors[0]);
     if (gpRecord)
-      gpRecord.Immutable([&](const data::Horse& gp) { maneShape = GetShapeFromTid(gp.parts.maneTid()); });
+      gpRecord.Immutable([&](const data::Horse& gp) { maneShape = GetShapeFromTid(gp.parts.maneTid(), true); });
   }
   else if (maneShapeRoll < 30 && mareAncestors.size() >= 2)
   {
     auto gpRecord = _serverInstance.GetDataDirector().GetHorse(mareAncestors[1]);
     if (gpRecord)
-      gpRecord.Immutable([&](const data::Horse& gp) { maneShape = GetShapeFromTid(gp.parts.maneTid()); });
+      gpRecord.Immutable([&](const data::Horse& gp) { maneShape = GetShapeFromTid(gp.parts.maneTid(), true); });
   }
   else if (maneShapeRoll < 35 && stallionAncestors.size() >= 1)
   {
     auto gpRecord = _serverInstance.GetDataDirector().GetHorse(stallionAncestors[0]);
     if (gpRecord)
-      gpRecord.Immutable([&](const data::Horse& gp) { maneShape = GetShapeFromTid(gp.parts.maneTid()); });
+      gpRecord.Immutable([&](const data::Horse& gp) { maneShape = GetShapeFromTid(gp.parts.maneTid(), true); });
   }
   else if (maneShapeRoll < 40 && stallionAncestors.size() >= 2)
   {
     auto gpRecord = _serverInstance.GetDataDirector().GetHorse(stallionAncestors[1]);
     if (gpRecord)
-      gpRecord.Immutable([&](const data::Horse& gp) { maneShape = GetShapeFromTid(gp.parts.maneTid()); });
+      gpRecord.Immutable([&](const data::Horse& gp) { maneShape = GetShapeFromTid(gp.parts.maneTid(), true); });
   }
 
-  if (maneShape == 0) maneShape = rand() % 8;  // Random shape (60%, 8 groups)
+  if (maneShape == 0) maneShape = rand() % 8;  // Random shape (60%, 8 shapes: 0-7)
 
   // Validate mane shape against grade
   ValidateManeShape(maneShape, foalGrade);
 
   // === TAIL SHAPE GENETICS ===
   
-  // Tail uses same color as mane (already calculated above)
+  // Tail uses same color group as mane (already calculated above)
   // Tail Shape: Mom 10%, Dad 10%, GP1 5%, GP2 5%, GP3 5%, GP4 5%, Random 60%
   int tailShapeRoll = rand() % 100;
   int32_t tailShape = 0;
 
   if (tailShapeRoll < 10)
   {
-    tailShape = GetShapeFromTid(mareTail);  // 10% Mom
+    tailShape = GetShapeFromTid(mareTail, false);  // 10% Mom
   }
   else if (tailShapeRoll < 20)
   {
-    tailShape = GetShapeFromTid(stallionTail);  // 10% Dad
+    tailShape = GetShapeFromTid(stallionTail, false);  // 10% Dad
   }
   else if (tailShapeRoll < 25 && mareAncestors.size() >= 1)
   {
     auto gpRecord = _serverInstance.GetDataDirector().GetHorse(mareAncestors[0]);
     if (gpRecord)
-      gpRecord.Immutable([&](const data::Horse& gp) { tailShape = GetShapeFromTid(gp.parts.tailTid()); });
+      gpRecord.Immutable([&](const data::Horse& gp) { tailShape = GetShapeFromTid(gp.parts.tailTid(), false); });
   }
   else if (tailShapeRoll < 30 && mareAncestors.size() >= 2)
   {
     auto gpRecord = _serverInstance.GetDataDirector().GetHorse(mareAncestors[1]);
     if (gpRecord)
-      gpRecord.Immutable([&](const data::Horse& gp) { tailShape = GetShapeFromTid(gp.parts.tailTid()); });
+      gpRecord.Immutable([&](const data::Horse& gp) { tailShape = GetShapeFromTid(gp.parts.tailTid(), false); });
   }
   else if (tailShapeRoll < 35 && stallionAncestors.size() >= 1)
   {
     auto gpRecord = _serverInstance.GetDataDirector().GetHorse(stallionAncestors[0]);
     if (gpRecord)
-      gpRecord.Immutable([&](const data::Horse& gp) { tailShape = GetShapeFromTid(gp.parts.tailTid()); });
+      gpRecord.Immutable([&](const data::Horse& gp) { tailShape = GetShapeFromTid(gp.parts.tailTid(), false); });
   }
   else if (tailShapeRoll < 40 && stallionAncestors.size() >= 2)
   {
     auto gpRecord = _serverInstance.GetDataDirector().GetHorse(stallionAncestors[1]);
     if (gpRecord)
-      gpRecord.Immutable([&](const data::Horse& gp) { tailShape = GetShapeFromTid(gp.parts.tailTid()); });
+      gpRecord.Immutable([&](const data::Horse& gp) { tailShape = GetShapeFromTid(gp.parts.tailTid(), false); });
   }
 
-  if (tailShape == 0) tailShape = rand() % 6;  // Random shape (60%, 6 groups)
+  if (tailShape == 0) tailShape = rand() % 6;  // Random shape (60%, 6 shapes: 0-5)
 
   // Validate tail shape against grade
   ValidateTailShape(tailShape, foalGrade);
 
-  // Combine color + shape into final TIDs
-  result.maneColor = maneColor;
-  result.maneShape = maneShape;
-  result.maneTid = (maneShape * 5) + maneColor;
-  if (result.maneTid < 1) result.maneTid = maneColor;
-  if (result.maneTid > 40) result.maneTid = 40;
+  // Get random mane TID from the selected color group and shape
+  result.maneTid = _serverInstance.GetHorseRegistry().GetRandomManeFromColorAndShape(maneColorGroupId, maneShape, _randomEngine);
 
-  result.tailColor = tailColor;
+  // Fallback if lookup fails
+  if (result.maneTid == data::InvalidTid)
+  {
+    spdlog::warn("Genetics: Failed to find mane for color group {} shape {}, using fallback", maneColorGroupId, maneShape);
+    result.maneTid = 1; // White short mane
+  }
+
+  // IMPORTANT: Extract the actual color from the mane we selected
+  // Then find the tail with the SAME color (not just same color group)
+  registry::Color selectedColor = _serverInstance.GetHorseRegistry().GetManeColor(result.maneTid);
+  result.tailTid = _serverInstance.GetHorseRegistry().FindTailByColorAndShape(selectedColor, tailShape);
+
+  // Fallback if we couldn't find a matching tail
+  if (result.tailTid == data::InvalidTid || result.tailTid == 0)
+  {
+    spdlog::warn("Genetics: Failed to find tail matching mane color for shape {}, using generic lookup", tailShape);
+    result.tailTid = _serverInstance.GetHorseRegistry().GetRandomTailFromColorAndShape(tailColorGroupId, tailShape, _randomEngine);
+    
+    if (result.tailTid == data::InvalidTid)
+    {
+      result.tailTid = 1; // White short tail as last resort
+    }
+  }
+
+  // Store color group and shape for debugging
+  result.maneColor = maneColorGroupId;
+  result.maneShape = maneShape;
+  result.tailColor = tailColorGroupId;
   result.tailShape = tailShape;
-  result.tailTid = (tailShape * 5) + tailColor;
-  if (result.tailTid < 1) result.tailTid = tailColor;
-  if (result.tailTid > 30) result.tailTid = 30;
+
+  spdlog::debug("TryBreeding: Mane(colorGroup:{}, shape:{}, TID:{}), Tail(colorGroup:{}, shape:{}, TID:{})",
+                maneColorGroupId, maneShape, result.maneTid, tailColorGroupId, tailShape, result.tailTid);
 
   return result;
 }

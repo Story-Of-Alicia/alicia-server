@@ -617,6 +617,7 @@ void DataDirector::Tick()
     _petStorage.Tick();
     _guildStorage.Tick();
     _housingStorage.Tick();
+    _stallionStorage.Tick();
     _settingsStorage.Tick();
   }
   catch (const std::exception& x)
