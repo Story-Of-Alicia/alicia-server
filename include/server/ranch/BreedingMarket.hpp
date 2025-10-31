@@ -52,6 +52,9 @@ public:
   //! Terminates the breeding market
   void Terminate();
 
+  //! Ticks the breeding market (checks for expired stallions)
+  void Tick();
+
   //! Registers a horse as a stallion in the breeding market
   //! @param characterUid UID of the character registering the stallion
   //! @param horseUid UID of the horse to register
@@ -101,6 +104,15 @@ private:
 
   //! Cached stallion metadata (stallionUid -> data)
   std::unordered_map<data::Uid, StallionData> _stallionDataCache;
+
+  //! Flag indicating whether stallions are loaded from the database
+  bool _stallionsLoaded{false};
+
+  //! List of stallion UIDs being loaded
+  std::vector<data::Uid> _stallionUidsToLoad;
+
+  //! Checks and removes expired stallions
+  void CheckExpiredStallions();
 };
 
 } // namespace server

@@ -35,31 +35,40 @@ constexpr uint32_t FigureScaleMax = 10;
 
 HorseRegistry::HorseRegistry()
 {
-  // Color codes: 1=Black, 2=White, 3=Brown, 4=Dark Brown, 5=Grey
+  // Define color groups
+  // Color group 1: White, Light Brown, Dark Brown
+  // Color group 2: Grey, White, Black  
+  // Color group 3: Grey, White, Light Brown (Champagne special)
+  _colorGroups = {
+    {1, ColorGroup{.id = 1, .colors = {Color::White, Color::LightBrown, Color::DarkBrown}}},
+    {2, ColorGroup{.id = 2, .colors = {Color::Grey, Color::White, Color::Black}}},
+    {3, ColorGroup{.id = 3, .colors = {Color::Grey, Color::White, Color::Brown}}},
+  };
+
   _coats = {
   // Tier 1 (Common): TID 1-7
-  {1, Coat{.tid = 1, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .allowedManeColors = {1,2,3}}},   // Chestnut: White, light brown, dark brown
-  {2, Coat{.tid = 2, .faceType = -1, .minGrade = 1, .tier = Coat::Tier::Common, .allowedManeColors = {1,2,3}}},  // Bay: White, light brown, dark brown
-  {3, Coat{.tid = 3, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .allowedManeColors = {5,1,4}}},   // Champagne Sabino: Grey, white, black
-  {4, Coat{.tid = 4, .faceType = 0, .minGrade = 2, .tier = Coat::Tier::Common, .allowedManeColors = {1,2,3}}},   // Chestnut Stockings: White, light brown, dark brown
-  {5, Coat{.tid = 5, .faceType = -1, .minGrade = 3, .tier = Coat::Tier::Common, .allowedManeColors = {5,1,4}}},  // Buckskin: Grey, white, black
-  {6, Coat{.tid = 6, .faceType = 0, .minGrade = 3, .tier = Coat::Tier::Common, .allowedManeColors = {5,1,2}}},   // Champagne: Grey, white, brown (no dark brown)
-  {7, Coat{.tid = 7, .faceType = 0, .minGrade = 5, .tier = Coat::Tier::Common, .allowedManeColors = {1,2,3}}},   // Leopard Appaloosa: White, light brown, dark brown
+  {1, Coat{.tid = 1, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .allowedColorGroups = {1}}},   // Chestnut
+  {2, Coat{.tid = 2, .faceType = -1, .minGrade = 1, .tier = Coat::Tier::Common, .allowedColorGroups = {1}}},  // Bay
+  {3, Coat{.tid = 3, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .allowedColorGroups = {2}}},   // Champagne Sabino
+  {4, Coat{.tid = 4, .faceType = 0, .minGrade = 2, .tier = Coat::Tier::Common, .allowedColorGroups = {1}}},   // Chestnut Stockings
+  {5, Coat{.tid = 5, .faceType = -1, .minGrade = 3, .tier = Coat::Tier::Common, .allowedColorGroups = {2}}},  // Buckskin
+  {6, Coat{.tid = 6, .faceType = 0, .minGrade = 3, .tier = Coat::Tier::Common, .allowedColorGroups = {3}}},   // Champagne (special group)
+  {7, Coat{.tid = 7, .faceType = 0, .minGrade = 5, .tier = Coat::Tier::Common, .allowedColorGroups = {1}}},   // Leopard Appaloosa
   // Tier 2 (Uncommon): TID 8-14
-  {8, Coat{.tid = 8, .faceType = -1, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedManeColors = {5,1,4}}},  // Blanket Appaloosa: Grey, white, black
-  {9, Coat{.tid = 9, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedManeColors = {5,1,4}}},   // White Grey: Grey, white, black
-  {10, Coat{.tid = 10, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedManeColors = {5,1,4}}}, // Dapple Grey: Grey, white, black
-  {11, Coat{.tid = 11, .faceType = -1, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedManeColors = {2,3,1}}}, // Chestnut Pinto: Light brown, dark brown, white
-  {12, Coat{.tid = 12, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedManeColors = {1,2,3}}}, // Sooty Bay: White, light brown, dark brown
-  {13, Coat{.tid = 13, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedManeColors = {1,2,3}}}, // Palomino: White, light brown, dark brown
-  {14, Coat{.tid = 14, .faceType = 0, .minGrade = 7, .tier = Coat::Tier::Uncommon, .allowedManeColors = {5,1,4}}}, // Black Pinto: Grey, white, black
+  {8, Coat{.tid = 8, .faceType = -1, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedColorGroups = {2}}},  // Blanket Appaloosa
+  {9, Coat{.tid = 9, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedColorGroups = {2}}},   // White Grey
+  {10, Coat{.tid = 10, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedColorGroups = {2}}}, // Dapple Grey
+  {11, Coat{.tid = 11, .faceType = -1, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedColorGroups = {1}}}, // Chestnut Pinto
+  {12, Coat{.tid = 12, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedColorGroups = {1}}}, // Sooty Bay
+  {13, Coat{.tid = 13, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .allowedColorGroups = {1}}}, // Palomino
+  {14, Coat{.tid = 14, .faceType = 0, .minGrade = 7, .tier = Coat::Tier::Uncommon, .allowedColorGroups = {2}}}, // Black Pinto
   // Tier 3 (Rare): TID 15-20
-  {15, Coat{.tid = 15, .faceType = -1, .minGrade = 7, .tier = Coat::Tier::Rare, .allowedManeColors = {5,1,4}}}, // Black: Grey, white, black
-  {16, Coat{.tid = 16, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Rare, .allowedManeColors = {1,2,3}}}, // Brown Sabino (Chestnut Sabino): White, light brown, dark brown
-  {17, Coat{.tid = 17, .faceType = 0, .minGrade = 8, .tier = Coat::Tier::Rare, .allowedManeColors = {1,2,3}}}, // Amber Cream: White, light brown, dark brown
-  {18, Coat{.tid = 18, .faceType = 0, .minGrade = 7, .tier = Coat::Tier::Rare, .allowedManeColors = {1,2,3}}}, // Mealy Bay: White, light brown, dark brown
-  {19, Coat{.tid = 19, .faceType = -1, .minGrade = 8, .tier = Coat::Tier::Rare, .allowedManeColors = {5,1,4}}}, // Black Sabino: Grey, white, black
-  {20, Coat{.tid = 20, .faceType = 0, .minGrade = 8, .tier = Coat::Tier::Rare, .allowedManeColors = {1,2,3}}}, // Dapple Bay: White, light brown, dark brown
+  {15, Coat{.tid = 15, .faceType = -1, .minGrade = 7, .tier = Coat::Tier::Rare, .allowedColorGroups = {2}}}, // Black
+  {16, Coat{.tid = 16, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Rare, .allowedColorGroups = {1}}}, // Brown Sabino (Chestnut Sabino)
+  {17, Coat{.tid = 17, .faceType = 0, .minGrade = 8, .tier = Coat::Tier::Rare, .allowedColorGroups = {1}}}, // Amber Cream
+  {18, Coat{.tid = 18, .faceType = 0, .minGrade = 7, .tier = Coat::Tier::Rare, .allowedColorGroups = {1}}}, // Mealy Bay
+  {19, Coat{.tid = 19, .faceType = -1, .minGrade = 8, .tier = Coat::Tier::Rare, .allowedColorGroups = {2}}}, // Black Sabino
+  {20, Coat{.tid = 20, .faceType = 0, .minGrade = 8, .tier = Coat::Tier::Rare, .allowedColorGroups = {1}}}, // Dapple Bay
   };
 
   _faces = {
@@ -70,81 +79,138 @@ HorseRegistry::HorseRegistry()
     {7, Face{.tid = 7, .type = -1}},
   };
 
+  // Mane TIDs 1-40: 8 shapes x 5 colors
+  // Pattern: TID = (shape * 5) + color
+  // Shape 0 (Short): TIDs 1-5
+  // Shape 1 (Medium): TIDs 6-10
+  // Shape 2 (Long): TIDs 11-15
+  // Shape 3 (Wavy): TIDs 16-20
+  // Shape 4 (Curly): TIDs 21-25
+  // Shape 5 (Spiky): TIDs 26-30
+  // Shape 6 (Long Straight): TIDs 31-35
+  // Shape 7 (Long Curly): TIDs 36-40
   _manes = {
-    {1, Mane{.tid = 1, .colorGroup = 1}},
-    {2, Mane{.tid = 2, .colorGroup = 2}},
-    {3, Mane{.tid = 3, .colorGroup = 3}},
-    {4, Mane{.tid = 4, .colorGroup = 4}},
-    {5, Mane{.tid = 5, .colorGroup = 5}},
-    {6, Mane{.tid = 6, .colorGroup = 1}},
-    {7, Mane{.tid = 7, .colorGroup = 2}},
-    {8, Mane{.tid = 8, .colorGroup = 3}},
-    {9, Mane{.tid = 9, .colorGroup = 4}},
-    {10, Mane{.tid = 10, .colorGroup = 5}},
-    {11, Mane{.tid = 11, .colorGroup = 1}},
-    {12, Mane{.tid = 12, .colorGroup = 2}},
-    {13, Mane{.tid = 13, .colorGroup = 3}},
-    {14, Mane{.tid = 14, .colorGroup = 4}},
-    {15, Mane{.tid = 15, .colorGroup = 5}},
-    {16, Mane{.tid = 16, .colorGroup = 1}},
-    {17, Mane{.tid = 17, .colorGroup = 2}},
-    {18, Mane{.tid = 18, .colorGroup = 3}},
-    {19, Mane{.tid = 19, .colorGroup = 4}},
-    {20, Mane{.tid = 20, .colorGroup = 5}},
-    {21, Mane{.tid = 21, .colorGroup = 1}},
-    {22, Mane{.tid = 22, .colorGroup = 2}},
-    {23, Mane{.tid = 23, .colorGroup = 3}},
-    {24, Mane{.tid = 24, .colorGroup = 4}},
-    {25, Mane{.tid = 25, .colorGroup = 5}},
-    {26, Mane{.tid = 26, .colorGroup = 1}},
-    {27, Mane{.tid = 27, .colorGroup = 2}},
-    {28, Mane{.tid = 28, .colorGroup = 3}},
-    {29, Mane{.tid = 29, .colorGroup = 4}},
-    {30, Mane{.tid = 30, .colorGroup = 5}},
-    {31, Mane{.tid = 31, .colorGroup = 1}},
-    {32, Mane{.tid = 32, .colorGroup = 2}},
-    {33, Mane{.tid = 33, .colorGroup = 3}},
-    {34, Mane{.tid = 34, .colorGroup = 4}},
-    {35, Mane{.tid = 35, .colorGroup = 5}},
-    {36, Mane{.tid = 36, .colorGroup = 1}},
-    {37, Mane{.tid = 37, .colorGroup = 2}},
-    {38, Mane{.tid = 38, .colorGroup = 3}},
-    {39, Mane{.tid = 39, .colorGroup = 4}},
-    {40, Mane{.tid = 40, .colorGroup = 5}},
+    // Shape 0 (Short)
+    {1, Mane{.tid = 1, .color = Color::White, .shape = 0}},
+    {2, Mane{.tid = 2, .color = Color::LightBrown, .shape = 0}},
+    {3, Mane{.tid = 3, .color = Color::Brown, .shape = 0}},
+    {4, Mane{.tid = 4, .color = Color::DarkBrown, .shape = 0}},
+    {5, Mane{.tid = 5, .color = Color::Grey, .shape = 0}},
+    // Shape 1 (Medium)
+    {6, Mane{.tid = 6, .color = Color::White, .shape = 1}},
+    {7, Mane{.tid = 7, .color = Color::LightBrown, .shape = 1}},
+    {8, Mane{.tid = 8, .color = Color::Brown, .shape = 1}},
+    {9, Mane{.tid = 9, .color = Color::DarkBrown, .shape = 1}},
+    {10, Mane{.tid = 10, .color = Color::Grey, .shape = 1}},
+    // Shape 2 (Long)
+    {11, Mane{.tid = 11, .color = Color::White, .shape = 2}},
+    {12, Mane{.tid = 12, .color = Color::LightBrown, .shape = 2}},
+    {13, Mane{.tid = 13, .color = Color::Brown, .shape = 2}},
+    {14, Mane{.tid = 14, .color = Color::DarkBrown, .shape = 2}},
+    {15, Mane{.tid = 15, .color = Color::Grey, .shape = 2}},
+    // Shape 3 (Wavy)
+    {16, Mane{.tid = 16, .color = Color::White, .shape = 3}},
+    {17, Mane{.tid = 17, .color = Color::LightBrown, .shape = 3}},
+    {18, Mane{.tid = 18, .color = Color::Brown, .shape = 3}},
+    {19, Mane{.tid = 19, .color = Color::DarkBrown, .shape = 3}},
+    {20, Mane{.tid = 20, .color = Color::Grey, .shape = 3}},
+    // Shape 4 (Curly)
+    {21, Mane{.tid = 21, .color = Color::White, .shape = 4}},
+    {22, Mane{.tid = 22, .color = Color::LightBrown, .shape = 4}},
+    {23, Mane{.tid = 23, .color = Color::Brown, .shape = 4}},
+    {24, Mane{.tid = 24, .color = Color::DarkBrown, .shape = 4}},
+    {25, Mane{.tid = 25, .color = Color::Grey, .shape = 4}},
+    // Shape 5 (Spiky)
+    {26, Mane{.tid = 26, .color = Color::White, .shape = 5}},
+    {27, Mane{.tid = 27, .color = Color::LightBrown, .shape = 5}},
+    {28, Mane{.tid = 28, .color = Color::Brown, .shape = 5}},
+    {29, Mane{.tid = 29, .color = Color::DarkBrown, .shape = 5}},
+    {30, Mane{.tid = 30, .color = Color::Grey, .shape = 5}},
+    // Shape 6 (Long Straight)
+    {31, Mane{.tid = 31, .color = Color::White, .shape = 6}},
+    {32, Mane{.tid = 32, .color = Color::LightBrown, .shape = 6}},
+    {33, Mane{.tid = 33, .color = Color::Brown, .shape = 6}},
+    {34, Mane{.tid = 34, .color = Color::DarkBrown, .shape = 6}},
+    {35, Mane{.tid = 35, .color = Color::Grey, .shape = 6}},
+    // Shape 7 (Long Curly)
+    {36, Mane{.tid = 36, .color = Color::White, .shape = 7}},
+    {37, Mane{.tid = 37, .color = Color::LightBrown, .shape = 7}},
+    {38, Mane{.tid = 38, .color = Color::Brown, .shape = 7}},
+    {39, Mane{.tid = 39, .color = Color::DarkBrown, .shape = 7}},
+    {40, Mane{.tid = 40, .color = Color::Grey, .shape = 7}},
   };
 
+  // Tail TIDs 1-30: 6 shapes x 5 colors
+  // Pattern: TID = (shape * 5) + color
+  // Shape 0 (Short): TIDs 1-5
+  // Shape 1 (Medium): TIDs 6-10
+  // Shape 2 (Long): TIDs 11-15
+  // Shape 3 (Wavy): TIDs 16-20
+  // Shape 4 (Curly): TIDs 21-25
+  // Shape 5 (Long Curly): TIDs 26-30
   _tails = {
-    {1, Tail{.tid = 1, .colorGroup = 1}},
-    {2, Tail{.tid = 2, .colorGroup = 2}},
-    {3, Tail{.tid = 3, .colorGroup = 3}},
-    {4, Tail{.tid = 4, .colorGroup = 4}},
-    {5, Tail{.tid = 5, .colorGroup = 5}},
-    {6, Tail{.tid = 6, .colorGroup = 1}},
-    {7, Tail{.tid = 7, .colorGroup = 2}},
-    {8, Tail{.tid = 8, .colorGroup = 3}},
-    {9, Tail{.tid = 9, .colorGroup = 4}},
-    {10, Tail{.tid = 10, .colorGroup = 5}},
-    {11, Tail{.tid = 11, .colorGroup = 1}},
-    {12, Tail{.tid = 12, .colorGroup = 2}},
-    {13, Tail{.tid = 13, .colorGroup = 3}},
-    {14, Tail{.tid = 14, .colorGroup = 4}},
-    {15, Tail{.tid = 15, .colorGroup = 5}},
-    {16, Tail{.tid = 16, .colorGroup = 1}},
-    {17, Tail{.tid = 17, .colorGroup = 2}},
-    {18, Tail{.tid = 18, .colorGroup = 3}},
-    {19, Tail{.tid = 19, .colorGroup = 4}},
-    {20, Tail{.tid = 20, .colorGroup = 5}},
-    {21, Tail{.tid = 21, .colorGroup = 1}},
-    {22, Tail{.tid = 22, .colorGroup = 2}},
-    {23, Tail{.tid = 23, .colorGroup = 3}},
-    {24, Tail{.tid = 24, .colorGroup = 4}},
-    {25, Tail{.tid = 25, .colorGroup = 5}},
-    {26, Tail{.tid = 26, .colorGroup = 1}},
-    {27, Tail{.tid = 27, .colorGroup = 2}},
-    {28, Tail{.tid = 28, .colorGroup = 3}},
-    {29, Tail{.tid = 29, .colorGroup = 4}},
-    {30, Tail{.tid = 30, .colorGroup = 5}},
+    // Shape 0 (Short)
+    {1, Tail{.tid = 1, .color = Color::White, .shape = 0}},
+    {2, Tail{.tid = 2, .color = Color::LightBrown, .shape = 0}},
+    {3, Tail{.tid = 3, .color = Color::Brown, .shape = 0}},
+    {4, Tail{.tid = 4, .color = Color::DarkBrown, .shape = 0}},
+    {5, Tail{.tid = 5, .color = Color::Grey, .shape = 0}},
+    // Shape 1 (Medium)
+    {6, Tail{.tid = 6, .color = Color::White, .shape = 1}},
+    {7, Tail{.tid = 7, .color = Color::LightBrown, .shape = 1}},
+    {8, Tail{.tid = 8, .color = Color::Brown, .shape = 1}},
+    {9, Tail{.tid = 9, .color = Color::DarkBrown, .shape = 1}},
+    {10, Tail{.tid = 10, .color = Color::Grey, .shape = 1}},
+    // Shape 2 (Long)
+    {11, Tail{.tid = 11, .color = Color::White, .shape = 2}},
+    {12, Tail{.tid = 12, .color = Color::LightBrown, .shape = 2}},
+    {13, Tail{.tid = 13, .color = Color::Brown, .shape = 2}},
+    {14, Tail{.tid = 14, .color = Color::DarkBrown, .shape = 2}},
+    {15, Tail{.tid = 15, .color = Color::Grey, .shape = 2}},
+    // Shape 3 (Wavy)
+    {16, Tail{.tid = 16, .color = Color::White, .shape = 3}},
+    {17, Tail{.tid = 17, .color = Color::LightBrown, .shape = 3}},
+    {18, Tail{.tid = 18, .color = Color::Brown, .shape = 3}},
+    {19, Tail{.tid = 19, .color = Color::DarkBrown, .shape = 3}},
+    {20, Tail{.tid = 20, .color = Color::Grey, .shape = 3}},
+    // Shape 4 (Curly)
+    {21, Tail{.tid = 21, .color = Color::White, .shape = 4}},
+    {22, Tail{.tid = 22, .color = Color::LightBrown, .shape = 4}},
+    {23, Tail{.tid = 23, .color = Color::Brown, .shape = 4}},
+    {24, Tail{.tid = 24, .color = Color::DarkBrown, .shape = 4}},
+    {25, Tail{.tid = 25, .color = Color::Grey, .shape = 4}},
+    // Shape 5 (Long Curly)
+    {26, Tail{.tid = 26, .color = Color::White, .shape = 5}},
+    {27, Tail{.tid = 27, .color = Color::LightBrown, .shape = 5}},
+    {28, Tail{.tid = 28, .color = Color::Brown, .shape = 5}},
+    {29, Tail{.tid = 29, .color = Color::DarkBrown, .shape = 5}},
+    {30, Tail{.tid = 30, .color = Color::Grey, .shape = 5}},
   };
+
+  // Build lookup tables for efficient querying
+  for (const auto& [tid, mane] : _manes)
+  {
+    // Map each color to its color group(s)
+    for (const auto& [groupId, group] : _colorGroups)
+    {
+      if (std::find(group.colors.begin(), group.colors.end(), mane.color) != group.colors.end())
+      {
+        _manesByColorAndShape[groupId][mane.shape].push_back(tid);
+      }
+    }
+  }
+
+  for (const auto& [tid, tail] : _tails)
+  {
+    // Map each color to its color group(s)
+    for (const auto& [groupId, group] : _colorGroups)
+    {
+      if (std::find(group.colors.begin(), group.colors.end(), tail.color) != group.colors.end())
+      {
+        _tailsByColorAndShape[groupId][tail.shape].push_back(tid);
+      }
+    }
+  }
 }
 
 void HorseRegistry::ReadConfig()
@@ -248,28 +314,132 @@ const Coat& HorseRegistry::GetCoatInfo(data::Tid coatTid) const
   }
   
   // Fallback to Chestnut (coat 1) if not found
-  static const Coat invalidCoat{.tid = 1, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .allowedManeColors = {2,3,4,1}};
+  static const Coat invalidCoat{.tid = 1, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .allowedColorGroups = {1}};
   return invalidCoat;
 }
 
-int32_t HorseRegistry::GetManeColorGroup(data::Tid maneTid) const
+data::Tid HorseRegistry::GetRandomManeFromColorAndShape(int32_t colorGroupId, int32_t shape, std::mt19937& rng) const
+{
+  auto groupIt = _manesByColorAndShape.find(colorGroupId);
+  if (groupIt == _manesByColorAndShape.end())
+  {
+    return data::InvalidTid;
+  }
+
+  auto shapeIt = groupIt->second.find(shape);
+  if (shapeIt == groupIt->second.end() || shapeIt->second.empty())
+  {
+    return data::InvalidTid;
+  }
+
+  const auto& candidates = shapeIt->second;
+  std::uniform_int_distribution<size_t> dist(0, candidates.size() - 1);
+  return candidates[dist(rng)];
+}
+
+data::Tid HorseRegistry::GetRandomTailFromColorAndShape(int32_t colorGroupId, int32_t shape, std::mt19937& rng) const
+{
+  auto groupIt = _tailsByColorAndShape.find(colorGroupId);
+  if (groupIt == _tailsByColorAndShape.end())
+  {
+    return data::InvalidTid;
+  }
+
+  auto shapeIt = groupIt->second.find(shape);
+  if (shapeIt == groupIt->second.end() || shapeIt->second.empty())
+  {
+    return data::InvalidTid;
+  }
+
+  const auto& candidates = shapeIt->second;
+  std::uniform_int_distribution<size_t> dist(0, candidates.size() - 1);
+  return candidates[dist(rng)];
+}
+
+int32_t HorseRegistry::GetManeColorGroupId(data::Tid maneTid) const
+{
+  auto it = _manes.find(maneTid);
+  if (it == _manes.end())
+  {
+    return 0;
+  }
+
+  const Color maneColor = it->second.color;
+  
+  // Find which color group(s) contain this color
+  for (const auto& [groupId, group] : _colorGroups)
+  {
+    if (std::find(group.colors.begin(), group.colors.end(), maneColor) != group.colors.end())
+    {
+      return groupId;
+    }
+  }
+  
+  return 0;
+}
+
+int32_t HorseRegistry::GetTailColorGroupId(data::Tid tailTid) const
+{
+  auto it = _tails.find(tailTid);
+  if (it == _tails.end())
+  {
+    return 0;
+  }
+
+  const Color tailColor = it->second.color;
+  
+  // Find which color group(s) contain this color
+  for (const auto& [groupId, group] : _colorGroups)
+  {
+    if (std::find(group.colors.begin(), group.colors.end(), tailColor) != group.colors.end())
+    {
+      return groupId;
+    }
+  }
+  
+  return 0;
+}
+
+int32_t HorseRegistry::GetManeShape(data::Tid maneTid) const
 {
   auto it = _manes.find(maneTid);
   if (it != _manes.end())
   {
-    return it->second.colorGroup;
+    return it->second.shape;
   }
   return 0;
 }
 
-int32_t HorseRegistry::GetTailColorGroup(data::Tid tailTid) const
+int32_t HorseRegistry::GetTailShape(data::Tid tailTid) const
 {
   auto it = _tails.find(tailTid);
   if (it != _tails.end())
   {
-    return it->second.colorGroup;
+    return it->second.shape;
   }
   return 0;
+}
+
+Color HorseRegistry::GetManeColor(data::Tid maneTid) const
+{
+  auto it = _manes.find(maneTid);
+  if (it != _manes.end())
+  {
+    return it->second.color;
+  }
+  return Color::White; // Default fallback
+}
+
+data::Tid HorseRegistry::FindTailByColorAndShape(Color color, int32_t shape) const
+{
+  for (const auto& [tailTid, tailInfo] : _tails)
+  {
+    if (tailInfo.color == color && tailInfo.shape == shape)
+    {
+      return tailTid;
+    }
+  }
+  return data::InvalidTid;
 }
 
 } // namespace server
