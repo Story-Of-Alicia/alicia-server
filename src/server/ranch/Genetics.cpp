@@ -120,11 +120,11 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
   });
 
   // Get allowed mane colors for the foal's coat
-  auto skinInfo = _serverInstance.GetHorseRegistry().GetSkinInfo(foalSkinTid);
+  const auto& coatInfo = _serverInstance.GetHorseRegistry().GetCoatInfo(foalSkinTid);
   std::vector<int32_t> allowedColors = {1, 2, 3, 4, 5}; // Default: all colors
-  if (skinInfo && !skinInfo->allowedManeColors.empty())
+  if (!coatInfo.allowedManeColors.empty())
   {
-    allowedColors = skinInfo->allowedManeColors;
+    allowedColors = coatInfo.allowedManeColors;
   }
 
   // Helper lambda to check if a color is valid for this coat
@@ -713,14 +713,14 @@ data::Tid Genetics::CalculateFoalSkin(
     
     for (int tid = 1; tid <= 20; ++tid)
     {
-      auto skinInfo = _serverInstance.GetHorseRegistry().GetSkinInfo(tid);
-      if (skinInfo && skinInfo->minGrade <= foalGrade)
+      const auto& coatInfo = _serverInstance.GetHorseRegistry().GetCoatInfo(tid);
+      if (coatInfo.minGrade <= foalGrade)
       {
-        switch (skinInfo->rarityTier)
+        switch (coatInfo.tier)
         {
-          case 1: tier1Skins.push_back(tid); break;
-          case 2: tier2Skins.push_back(tid); break;
-          case 3: tier3Skins.push_back(tid); break;
+          case registry::Coat::Tier::Common: tier1Skins.push_back(tid); break;
+          case registry::Coat::Tier::Uncommon: tier2Skins.push_back(tid); break;
+          case registry::Coat::Tier::Rare: tier3Skins.push_back(tid); break;
         }
       }
     }
@@ -771,8 +771,8 @@ data::Tid Genetics::CalculateFoalSkin(
   // Helper lambda to check if skin is valid for foal's grade, returns skin or random
   auto getValidSkinOrRandom = [&](data::Tid skinTid) -> data::Tid
   {
-    auto skinInfo = _serverInstance.GetHorseRegistry().GetSkinInfo(skinTid);
-    if (skinInfo && skinInfo->minGrade <= foalGrade)
+    const auto& coatInfo = _serverInstance.GetHorseRegistry().GetCoatInfo(skinTid);
+    if (coatInfo.minGrade <= foalGrade)
     {
       return skinTid; // Valid, use it
     }
@@ -817,9 +817,9 @@ data::Tid Genetics::CalculateFoalSkin(
   }
   
   // Log final selection
-  auto skinInfo = _serverInstance.GetHorseRegistry().GetSkinInfo(selectedSkin);
+  const auto& coatInfo = _serverInstance.GetHorseRegistry().GetCoatInfo(selectedSkin);
   spdlog::debug("Genetics: Foal skin - selected TID {} (grade requirement: {}, foal grade: {})",
-    selectedSkin, skinInfo ? skinInfo->minGrade : 0, foalGrade);
+    selectedSkin, coatInfo.minGrade, foalGrade);
   
   return selectedSkin;
 }

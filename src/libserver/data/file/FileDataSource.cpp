@@ -519,6 +519,7 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.clazzProgress = json["clazzProgress"].get<uint32_t>();
   horse.grade = json["grade"].get<uint32_t>();
   horse.growthPoints = json.value("growthPoints", uint16_t{0});
+  horse.timesBreeded = json.value("timesBreeded", uint32_t{0});
 
   horse.horseType = json.value("horseType", uint8_t{0});
   horse.tendency = json.value("tendency", uint8_t{0});
@@ -632,6 +633,7 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["clazzProgress"] = horse.clazzProgress();
   json["grade"] = horse.grade();
   json["growthPoints"] = horse.growthPoints();
+  json["timesBreeded"] = horse.timesBreeded();
 
   json["horseType"] = horse.horseType();
   json["fatigue"] = horse.fatigue();

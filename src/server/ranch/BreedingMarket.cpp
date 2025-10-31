@@ -104,6 +104,7 @@ void BreedingMarket::Initialize()
     
     // Cache the stallion data to avoid async loading issues
     StallionData cachedData{
+      .horseUid = horseUid,
       .ownerUid = ownerUid,
       .breedingCharge = breedingCharge,
       .expiresAt = expiresAt
@@ -203,7 +204,6 @@ std::optional<data::Uid> BreedingMarket::RegisterStallion(
     stallion.breedingCharge() = breedingCharge;
     stallion.registeredAt() = util::Clock::now();
     stallion.expiresAt() = util::Clock::now() + std::chrono::hours(24 * 7); // 7 days
-    stallion.timesBreeded() = 0;
     stallionUid = stallion.uid();
     expiresAt = stallion.expiresAt();
   });
@@ -220,6 +220,7 @@ std::optional<data::Uid> BreedingMarket::RegisterStallion(
   // Cache the stallion data
   spdlog::debug("RegisterStallion: Creating cached data");
   StallionData cachedData{
+    .horseUid = horseUid,
     .ownerUid = characterUid,
     .breedingCharge = breedingCharge,
     .expiresAt = expiresAt
@@ -256,14 +257,14 @@ uint32_t BreedingMarket::UnregisterStallion(data::Uid horseUid)
   {
     const StallionData& cachedData = cacheIt->second;
     
-    // Get times bred from stallion record
-    auto stallionRecord = _serverInstance.GetDataDirector().GetStallionCache().Get(stallionUid);
-    if (stallionRecord)
+    // Get times bred from horse record
+    auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(cachedData.horseUid);
+    if (horseRecord)
     {
       uint32_t timesMated = 0;
-      stallionRecord->Immutable([&timesMated](const data::Stallion& stallion)
+      horseRecord->Immutable([&timesMated](const data::Horse& horse)
       {
-        timesMated = stallion.timesBreeded();
+        timesMated = horse.timesBreeded();
       });
       
       compensation = timesMated * cachedData.breedingCharge;
@@ -331,11 +332,16 @@ std::optional<std::tuple<uint32_t, uint32_t, uint32_t>> BreedingMarket::GetUnreg
     return std::nullopt;
   }
 
+  // Get times bred from horse record
+  auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(cachedData.horseUid);
   uint32_t timesMated = 0;
-  stallionRecord->Immutable([&timesMated](const data::Stallion& stallion)
+  if (horseRecord)
   {
-    timesMated = stallion.timesBreeded();
-  });
+    horseRecord->Immutable([&timesMated](const data::Horse& horse)
+    {
+      timesMated = horse.timesBreeded();
+    });
+  }
 
   uint32_t compensation = timesMated * cachedData.breedingCharge;
 
