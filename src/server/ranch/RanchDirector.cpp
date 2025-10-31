@@ -1696,12 +1696,13 @@ void RanchDirector::HandleTryBreeding(
   data::Uid foalUid = 0;
   data::Tid foalTid = 0;
   uint8_t foalPotentialType = 0;
+  uint8_t foalGradeForResponse = 0;
   protocol::Horse::Parts foalParts{};
   protocol::Horse::Appearance foalAppearance{};
   protocol::Horse::Stats foalStats{};
   
   foalRecord.Mutable([this, &command, &mareRecord, &stallionRecord, &foalUid, &foalTid, 
-                      &foalPotentialType, &foalParts, &foalAppearance, &foalStats](data::Horse& foal)
+                      &foalPotentialType, &foalGradeForResponse, &foalParts, &foalAppearance, &foalStats](data::Horse& foal)
   {
     // Get parent data for genetics
     data::Tid mareTid = 0;
@@ -1834,6 +1835,7 @@ void RanchDirector::HandleTryBreeding(
     foalUid = foal.uid();
     foalTid = foal.tid();
     foalPotentialType = foal.potential.type();
+    foalGradeForResponse = foal.grade();
     
     // Build protocol parts/appearance/stats for response
     foalParts.skinId = foal.parts.skinTid();
@@ -1884,12 +1886,12 @@ void RanchDirector::HandleTryBreeding(
     .tid = foalTid,
     .val = 0,
     .count = 1,
-    .unk0 = 0,
+    .unk0 = foalGradeForResponse,
     .parts = foalParts,
     .appearance = foalAppearance,
     .stats = foalStats,
-    .unk1 = 0,
-    .unk2 = 0,
+    .unk1 = 0, // Shows a window saying the foal has returned to the ranch"목장으로 돌아갔습니다"
+    .unk2 = 5, // Pregnancy bonus (BonusProbInfo in libconfig) TODO: Implement pregnancy bonus
     .unk3 = 0,
     .unk4 = 0,
     .unk5 = 0,
