@@ -1075,6 +1075,7 @@ void server::FileDataSource::RetrieveStallion(data::Uid uid, data::Stallion& sta
   stallion.horseUid() = json["horseUid"];
   stallion.ownerUid() = json["ownerUid"];
   stallion.breedingCharge() = json["breedingCharge"];
+  stallion.timesMated() = json.value("timesMated", uint32_t{0});
   stallion.registeredAt() = data::Clock::time_point(
     std::chrono::seconds(json["registeredAt"].get<uint64_t>()));
   stallion.expiresAt() = data::Clock::time_point(
@@ -1098,6 +1099,7 @@ void server::FileDataSource::StoreStallion(data::Uid uid, const data::Stallion& 
   json["horseUid"] = stallion.horseUid();
   json["ownerUid"] = stallion.ownerUid();
   json["breedingCharge"] = stallion.breedingCharge();
+  json["timesMated"] = stallion.timesMated();
   json["registeredAt"] = std::chrono::duration_cast<std::chrono::seconds>(
     stallion.registeredAt().time_since_epoch()).count();
   json["expiresAt"] = std::chrono::duration_cast<std::chrono::seconds>(
