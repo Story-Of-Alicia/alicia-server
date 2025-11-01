@@ -1428,7 +1428,12 @@ void RanchDirector::HandleSearchStallion(
       protocolStallion.grade = horse.grade();
       protocolStallion.chance = 0;  // TODO: Calculate breeding chances based on bonus, linage, etc.
       protocolStallion.matePrice = stallionData.breedingCharge;
-      protocolStallion.unk7 = 0;    // Unknown field
+      
+      // Calculate pregnancy chance based on timesBreeded (lifetime breeding count)
+      // 30 -> 0 hearts (Lowest)
+      // 0 -> 3.2 hearts (Highest)
+      protocolStallion.pregnancyChance = std::min(horse.timesBreeded(), 30u);
+      
       protocolStallion.expiresAt = util::TimePointToAliciaTime(stallionData.expiresAt);
 
       protocol::BuildProtocolHorseStats(protocolStallion.stats, horse.stats);
@@ -1695,6 +1700,51 @@ void RanchDirector::HandleTryBreeding(
       character.carrots() = character.carrots() - breedingCharge;
     }
   });
+  
+  // Calculate pregnancy chance based on stallion's timesBreeded
+  uint32_t pregnancyChance = 0;
+  stallionRecord->Immutable([&pregnancyChance](const data::Horse& stallion)
+  {
+    // Base: 0 (64% success), increases by 1 per breeding, max 30 (2% success)
+    pregnancyChance = std::min(stallion.timesBreeded(), 30u);
+  });
+  
+  // Determine breeding success based on pregnancy chance
+  // Formula: success rate = 64% - (pregnancyChance * 2%)
+  std::uniform_int_distribution<uint32_t> breedingRoll(1, 100);
+  uint32_t successThreshold = 64 - (pregnancyChance * 2);
+  bool breedingSuccess = breedingRoll(_randomDevice) <= successThreshold;
+  
+  if (!breedingSuccess)
+  {
+    spdlog::info("TryBreeding: Breeding failed (pregnancyChance={}, successRate={}%)", 
+      pregnancyChance, successThreshold);
+    
+    // Increment stallion's lifetime breeding counter even on failure
+    stallionRecord->Mutable([](data::Horse& stallion)
+    {
+      stallion.timesBreeded() = stallion.timesBreeded() + 1;
+    });
+    
+    // Increment stallion's registration breeding counter
+    auto stallionDbRecord = GetServerInstance().GetDataDirector().GetStallionCache().Get(
+      stallionDataOpt->stallionUid);
+    if (stallionDbRecord)
+    {
+      stallionDbRecord->Mutable([](data::Stallion& stallion)
+      {
+        stallion.timesMated() = stallion.timesMated() + 1;
+      });
+    }
+    
+    // TODO: Send breeding failure response to client
+    // For now, update inventory to reflect carrot deduction
+    SendInventoryUpdate(clientId);
+    return;
+  }
+  
+  spdlog::info("TryBreeding: Breeding succeeded (pregnancyChance={}, successRate={}%)", 
+    pregnancyChance, successThreshold);
   
   // Create the foal/baby horse
   auto foalRecord = GetServerInstance().GetDataDirector().CreateHorse();

@@ -555,7 +555,7 @@ struct RanchCommandSearchStallionOK
     uint8_t grade{};
     uint8_t chance{};
     uint32_t matePrice{};
-    uint32_t unk7{};
+    uint32_t pregnancyChance{};  // Lower = higher success rate (0 = 64%, 30 = 2%)
     // 1304
     uint32_t expiresAt{};
     Horse::Stats stats{};
