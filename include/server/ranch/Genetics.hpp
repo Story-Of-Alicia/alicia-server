@@ -121,12 +121,15 @@ public:
   };
 
   //! Calculates whether foal has a potential and what type.
+  //! Base 5% chance + coat star bonus + parent potential bonus
   //! @param mareUid Mare's UID
   //! @param stallionUid Stallion's UID
+  //! @param foalSkinTid Foal's skin TID (determines star bonus)
   //! @returns Potential result
   PotentialResult CalculateFoalPotential(
     data::Uid mareUid,
-    data::Uid stallionUid);
+    data::Uid stallionUid,
+    data::Tid foalSkinTid);
 
 private:
   ServerInstance& _serverInstance;
