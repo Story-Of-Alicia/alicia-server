@@ -1959,7 +1959,7 @@ void RanchDirector::HandleTryBreeding(
     }
     
     // Store parent UIDs for family tree
-    foal.ancestors() = {command.mareUid, command.stallionUid};
+    foal.ancestors() = {command.stallionUid, command.mareUid};
     
     // Store values for response
     foalUid = foal.uid();
