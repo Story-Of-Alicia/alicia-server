@@ -1172,6 +1172,61 @@ bool server::FileDataSource::IsGuildNameUnique(const std::string_view& name)
   return true;
 }
 
+void server::FileDataSource::CreateStallion(data::Stallion& stallion)
+{
+  stallion.uid() = ++_stallionSequentialUid;
+}
+
+void server::FileDataSource::RetrieveStallion(data::Uid uid, data::Stallion& stallion)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _stallionDataPath, std::format("{}", uid));
+
+  std::ifstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Stallion file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json = nlohmann::json::parse(dataFile);
+  stallion.uid() = json["uid"];
+  stallion.horseUid() = json["horseUid"];
+  stallion.ownerUid() = json["ownerUid"];
+  stallion.breedingCharge() = json["breedingCharge"];
+  stallion.timesMated() = json.value("timesMated", uint32_t{0});
+  stallion.registeredAt() = data::Clock::time_point(
+    std::chrono::seconds(json["registeredAt"].get<uint64_t>()));
+  stallion.expiresAt() = data::Clock::time_point(
+    std::chrono::seconds(json["expiresAt"].get<uint64_t>()));
+}
+
+void server::FileDataSource::StoreStallion(data::Uid uid, const data::Stallion& stallion)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _stallionDataPath, std::format("{}", uid));
+
+  std::ofstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Stallion file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json;
+  json["uid"] = stallion.uid();
+  json["horseUid"] = stallion.horseUid();
+  json["ownerUid"] = stallion.ownerUid();
+  json["breedingCharge"] = stallion.breedingCharge();
+  json["timesMated"] = stallion.timesMated();
+  json["registeredAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+    stallion.registeredAt().time_since_epoch()).count();
+  json["expiresAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+    stallion.expiresAt().time_since_epoch()).count();
+
+  dataFile << json.dump(2);
+}
+
 void server::FileDataSource::CreateSettings(data::Settings& settings)
 {
   settings.uid = ++_settingsSequentialId;
