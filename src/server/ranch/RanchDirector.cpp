@@ -1809,6 +1809,11 @@ void RanchDirector::HandleTryBreeding(
     foal.horseType() = 1; // 1 = Foal
     foal.dateOfBirth() = data::Clock::now();
     
+    // From MountTendencyRatioInfo table:
+    // Tendency 1: 35%, Tendency 2: 30%, Tendency 3: 20%, Tendency 4: 10%, Tendency 5: 5%, Tendency 6: 0%
+    std::discrete_distribution<int> tendencyDist({35, 30, 20, 10, 5});
+    foal.tendency() = static_cast<uint8_t>(tendencyDist(_randomDevice) + 1); // +1 because distribution returns 0-4
+    
     // Calculate foal grade first
     auto& genetics = GetServerInstance().GetGenetics();
     uint8_t foalGrade = genetics.CalculateFoalGrade(mareGrade, stallionGrade);
