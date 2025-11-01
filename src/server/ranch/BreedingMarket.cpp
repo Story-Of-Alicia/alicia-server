@@ -262,7 +262,7 @@ std::optional<data::Uid> BreedingMarket::RegisterStallion(
     stallion.ownerUid() = characterUid;
     stallion.breedingCharge() = breedingCharge;
     stallion.registeredAt() = util::Clock::now();
-    stallion.expiresAt() = util::Clock::now() + std::chrono::hours(24 * 7); // 7 days
+    stallion.expiresAt() = util::Clock::now() + std::chrono::hours(24); // 24 hours
     stallionUid = stallion.uid();
     expiresAt = stallion.expiresAt();
   });
