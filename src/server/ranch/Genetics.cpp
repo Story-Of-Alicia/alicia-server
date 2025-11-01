@@ -591,77 +591,8 @@ Genetics::PotentialResult Genetics::CalculateFoalPotential(
   result.level = 0;  // Always 0 for newborns
   result.value = 0;  // Always 0 for newborns
 
-  // Get mare and stallion records
-  auto mareRecord = _serverInstance.GetDataDirector().GetHorse(mareUid);
-  auto stallionRecord = _serverInstance.GetDataDirector().GetHorse(stallionUid);
-
-  if (!mareRecord || !stallionRecord)
-  {
-    spdlog::error("Genetics: Mare or stallion not found for potential calculation");
-    return result;
-  }
-
-  // Count how many horses have potentials
-  bool mareHasPotential = false;
-  bool stallionHasPotential = false;
-  uint8_t marePotentialType = 0;
-  uint8_t stallionPotentialType = 0;
-  std::vector<data::Uid> mareAncestors, stallionAncestors;
-  
-  mareRecord.Immutable([&](const data::Horse& mare)
-  {
-    mareHasPotential = mare.potential.type() > 0;
-    marePotentialType = mare.potential.type();
-    mareAncestors = mare.ancestors();
-  });
-  
-  stallionRecord.Immutable([&](const data::Horse& stallion)
-  {
-    stallionHasPotential = stallion.potential.type() > 0;
-    stallionPotentialType = stallion.potential.type();
-    stallionAncestors = stallion.ancestors();
-  });
-  
-  // Count grandparents with potentials
-  int grandparentsWithPotential = 0;
-  std::vector<uint8_t> grandparentPotentialTypes;
-  
-  for (const auto& gpUid : mareAncestors)
-  {
-    auto gpRecord = _serverInstance.GetDataDirector().GetHorse(gpUid);
-    if (gpRecord)
-    {
-      gpRecord.Immutable([&](const data::Horse& gp)
-      {
-        if (gp.potential.type() > 0)
-        {
-          grandparentsWithPotential++;
-          grandparentPotentialTypes.push_back(gp.potential.type());
-        }
-      });
-    }
-  }
-  
-  for (const auto& gpUid : stallionAncestors)
-  {
-    auto gpRecord = _serverInstance.GetDataDirector().GetHorse(gpUid);
-    if (gpRecord)
-    {
-      gpRecord.Immutable([&](const data::Horse& gp)
-      {
-        if (gp.potential.type() > 0)
-        {
-          grandparentsWithPotential++;
-          grandparentPotentialTypes.push_back(gp.potential.type());
-        }
-      });
-    }
-  }
-  
-  // Determine probability of having a potential based on family
-  // Formula: Base 5% + (5% per parent) + (2% per grandparent)
-  int parentsWithPotential = (mareHasPotential ? 1 : 0) + (stallionHasPotential ? 1 : 0);
-  int potentialProbability = 5 + (parentsWithPotential * 5) + (grandparentsWithPotential * 2);
+  // Potential types are chosen completely random
+  constexpr int potentialProbability = 5;
   
   // Roll for whether foal has a potential
   auto roll01_99 = std::uniform_int_distribution<int>(0, 99);
@@ -674,78 +605,19 @@ Genetics::PotentialResult Genetics::CalculateFoalPotential(
     return result;
   }
   
-  // Determine the type of potential if the foal has one
+  // Foal has a potential - choose a completely random type
   result.hasPotential = true;
   
-  // Potential type inheritance weights: Mom 8%, Dad 8%, each grandparent 5%, rest random
-  // Prepare ordered grandparent potential types: mare[0], mare[1], stallion[0], stallion[1]
-  uint8_t gpTypes[4] = {0, 0, 0, 0};
-  auto fillGpTypes = [&](const std::vector<data::Uid>& ancestorUids, int startIdx)
-  {
-    for (size_t i = 0; i < ancestorUids.size() && (startIdx + (int)i) < 4; ++i)
-    {
-      auto gpRecord = _serverInstance.GetDataDirector().GetHorse(ancestorUids[i]);
-      if (gpRecord)
-      {
-        gpRecord.Immutable([&](const data::Horse& gp)
-        {
-          gpTypes[startIdx + (int)i] = gp.potential.type();
-        });
-      }
-    }
-  };
-  fillGpTypes(mareAncestors, 0);
-  fillGpTypes(stallionAncestors, 2);
-
-  auto rand01_99 = std::uniform_int_distribution<int>(0, 99);
-  auto typeRoll = rand01_99(_randomEngine);
-
-  auto randomPotentialType = [&]() -> uint8_t
-  {
-    // Random type 1-15 excluding 12
-    auto dist = std::uniform_int_distribution<int>(1, 15);
-    uint8_t t;
-    do { t = static_cast<uint8_t>(dist(_randomEngine)); } while (t == 12);
-    return t;
-  };
-
-  // Helper to finalize selection
-  auto chooseTypeOrRandom = [&](bool has, uint8_t type) -> uint8_t
-  {
-    if (has && type > 0) return type;
-    return randomPotentialType();
-  };
-
-  if (typeRoll < 8)
-  {
-    result.type = chooseTypeOrRandom(mareHasPotential, marePotentialType); // Mom 8%
-  }
-  else if (typeRoll < 16)
-  {
-    result.type = chooseTypeOrRandom(stallionHasPotential, stallionPotentialType); // Dad 8%
-  }
-  else if (typeRoll < 21)
-  {
-    result.type = chooseTypeOrRandom(gpTypes[0] > 0, gpTypes[0]); // Maternal GP #1 5%
-  }
-  else if (typeRoll < 26)
-  {
-    result.type = chooseTypeOrRandom(gpTypes[1] > 0, gpTypes[1]); // Maternal GP #2 5%
-  }
-  else if (typeRoll < 31)
-  {
-    result.type = chooseTypeOrRandom(gpTypes[2] > 0, gpTypes[2]); // Paternal GP #1 5%
-  }
-  else if (typeRoll < 36)
-  {
-    result.type = chooseTypeOrRandom(gpTypes[3] > 0, gpTypes[3]); // Paternal GP #2 5%
-  }
-  else
-  {
-    result.type = randomPotentialType(); // Remaining 64%
-  }
+  // Random type 1-15 excluding 12
+  auto dist = std::uniform_int_distribution<int>(1, 15);
+  uint8_t potentialType;
+  do { 
+    potentialType = static_cast<uint8_t>(dist(_randomEngine)); 
+  } while (potentialType == 12);
   
-  spdlog::debug("Genetics: Foal potential - has:{}, type:{}, probability:{}%",
+  result.type = potentialType;
+  
+  spdlog::debug("Genetics: Foal potential - has:{}, type:{} (completely random, {}% chance)",
     result.hasPotential, result.type, potentialProbability);
   
   return result;
