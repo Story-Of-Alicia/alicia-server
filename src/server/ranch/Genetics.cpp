@@ -592,6 +592,8 @@ Genetics::PotentialResult Genetics::CalculateFoalPotential(
   result.value = 0;  // Always 0 for newborns
 
   // Potential types are chosen completely random
+  // TODO: Compassionate mares have a higher chance to pass down her potential to the foal
+  //       "자애로운 말과 먹기 좋아하는 말이 잘 지내면서 말들이 서로 영향받게 됩니다.  대상이 되는 말은 부모의 능력 수치를 물려받은 망아지를 얻을 확률이 올라갑니다
   constexpr int potentialProbability = 5;
   
   // Roll for whether foal has a potential
