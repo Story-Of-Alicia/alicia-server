@@ -585,16 +585,56 @@ Genetics::StatResult Genetics::CalculateFoalStats(
 
 Genetics::PotentialResult Genetics::CalculateFoalPotential(
   data::Uid mareUid,
-  data::Uid stallionUid)
+  data::Uid stallionUid,
+  data::Tid foalSkinTid)
 {
   PotentialResult result;
   result.level = 0;  // Always 0 for newborns
   result.value = 0;  // Always 0 for newborns
 
-  // Potential types are chosen completely random
+  // Get mare and stallion records
+  auto mareRecord = _serverInstance.GetDataDirector().GetHorse(mareUid);
+  auto stallionRecord = _serverInstance.GetDataDirector().GetHorse(stallionUid);
+
+  if (!mareRecord || !stallionRecord)
+  {
+    spdlog::error("Genetics: Mare or stallion not found for potential calculation");
+    return result;
+  }
+
+  // Check if parents have potentials
+  int parentsWithPotential = 0;
+  mareRecord.Immutable([&parentsWithPotential](const data::Horse& mare)
+  {
+    if (mare.potential.type() > 0)
+      parentsWithPotential++;
+  });
+  
+  stallionRecord.Immutable([&parentsWithPotential](const data::Horse& stallion)
+  {
+    if (stallion.potential.type() > 0)
+      parentsWithPotential++;
+  });
+
+  // Get coat star rating for foal
+  const auto& coatInfo = _serverInstance.GetHorseRegistry().GetCoatInfo(foalSkinTid);
+  int coatStars = coatInfo.stars;
+
+  // Calculate potential probability:
+  // Base: 5%
+  // 3-star coat: +10%
+  // 2-star coat: +5%
+  // Each parent with potential: +10%
   // TODO: Compassionate mares have a higher chance to pass down her potential to the foal
   //       "자애로운 말과 먹기 좋아하는 말이 잘 지내면서 말들이 서로 영향받게 됩니다.  대상이 되는 말은 부모의 능력 수치를 물려받은 망아지를 얻을 확률이 올라갑니다
-  constexpr int potentialProbability = 5;
+  int potentialProbability = 5;
+  
+  if (coatStars == 3)
+    potentialProbability += 10;
+  else if (coatStars == 2)
+    potentialProbability += 5;
+  
+  potentialProbability += (parentsWithPotential * 10);
   
   // Roll for whether foal has a potential
   auto roll01_99 = std::uniform_int_distribution<int>(0, 99);
@@ -603,7 +643,8 @@ Genetics::PotentialResult Genetics::CalculateFoalPotential(
   {
     // No potential
     result.hasPotential = false;
-    spdlog::debug("Genetics: Foal potential - no potential (rolled {}, needed < {})", potentialRoll, potentialProbability);
+    spdlog::debug("Genetics: Foal potential - no potential (rolled {}, needed < {}, stars:{}, parents:{})", 
+      potentialRoll, potentialProbability, coatStars, parentsWithPotential);
     return result;
   }
   
@@ -619,8 +660,8 @@ Genetics::PotentialResult Genetics::CalculateFoalPotential(
   
   result.type = potentialType;
   
-  spdlog::debug("Genetics: Foal potential - has:{}, type:{} (completely random, {}% chance)",
-    result.hasPotential, result.type, potentialProbability);
+  spdlog::debug("Genetics: Foal potential - has:{}, type:{} ({}% chance, stars:{}, parents:{})",
+    result.hasPotential, result.type, potentialProbability, coatStars, parentsWithPotential);
   
   return result;
 }
