@@ -59,6 +59,7 @@ struct Coat
   int32_t faceType{0};
   int32_t minGrade{1};
   Tier tier{Tier::Common};
+  int32_t stars{1}; // Star rating (1-3) - affects potential probability
   float inheritanceRate{1.0f}; // Base probability weight for this coat (from DNA_SkinInfo)
   std::vector<int32_t> allowedColorGroups; // Valid color groups for this coat
 };

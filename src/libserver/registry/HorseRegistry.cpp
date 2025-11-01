@@ -46,29 +46,29 @@ HorseRegistry::HorseRegistry()
   };
 
   _coats = {
-  // Tier 1 (Common): TID 1-7
-  {1, Coat{.tid = 1, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .inheritanceRate = 30.0f, .allowedColorGroups = {1}}},   // Chestnut
-  {2, Coat{.tid = 2, .faceType = -1, .minGrade = 1, .tier = Coat::Tier::Common, .inheritanceRate = 25.0f, .allowedColorGroups = {1}}},  // Bay
-  {3, Coat{.tid = 3, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .inheritanceRate = 30.0f, .allowedColorGroups = {2}}},   // Champagne Sabino
-  {4, Coat{.tid = 4, .faceType = 0, .minGrade = 2, .tier = Coat::Tier::Common, .inheritanceRate = 21.0f, .allowedColorGroups = {1}}},   // Chestnut Stockings
-  {5, Coat{.tid = 5, .faceType = -1, .minGrade = 3, .tier = Coat::Tier::Common, .inheritanceRate = 23.0f, .allowedColorGroups = {2}}},  // Buckskin
-  {6, Coat{.tid = 6, .faceType = 0, .minGrade = 3, .tier = Coat::Tier::Common, .inheritanceRate = 21.0f, .allowedColorGroups = {3}}},   // Champagne
-  {7, Coat{.tid = 7, .faceType = 0, .minGrade = 5, .tier = Coat::Tier::Common, .inheritanceRate = 21.0f, .allowedColorGroups = {1}}},   // Leopard Appaloosa
-  // Tier 2 (Uncommon): TID 8-14
-  {8, Coat{.tid = 8, .faceType = -1, .minGrade = 6, .tier = Coat::Tier::Uncommon, .inheritanceRate = 15.0f, .allowedColorGroups = {2}}},  // Blanket Appaloosa
-  {9, Coat{.tid = 9, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .inheritanceRate = 7.0f, .allowedColorGroups = {2}}},   // White Grey
-  {10, Coat{.tid = 10, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .inheritanceRate = 15.0f, .allowedColorGroups = {2}}}, // Dapple Grey
-  {11, Coat{.tid = 11, .faceType = -1, .minGrade = 6, .tier = Coat::Tier::Uncommon, .inheritanceRate = 18.0f, .allowedColorGroups = {1}}}, // Chestnut Pinto
-  {12, Coat{.tid = 12, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .inheritanceRate = 11.0f, .allowedColorGroups = {1}}}, // Sooty Bay
-  {13, Coat{.tid = 13, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .inheritanceRate = 15.0f, .allowedColorGroups = {1}}}, // Palomino
-  {14, Coat{.tid = 14, .faceType = 0, .minGrade = 7, .tier = Coat::Tier::Uncommon, .inheritanceRate = 19.0f, .allowedColorGroups = {2}}}, // Black Pinto
-  // Tier 3 (Rare): TID 15-20
-  {15, Coat{.tid = 15, .faceType = -1, .minGrade = 7, .tier = Coat::Tier::Rare, .inheritanceRate = 7.0f, .allowedColorGroups = {2}}}, // Black
-  {16, Coat{.tid = 16, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Rare, .inheritanceRate = 12.0f, .allowedColorGroups = {1}}}, // Brown Sabino
-  {17, Coat{.tid = 17, .faceType = 0, .minGrade = 8, .tier = Coat::Tier::Rare, .inheritanceRate = 10.0f, .allowedColorGroups = {1}}}, // Amber Cream
-  {18, Coat{.tid = 18, .faceType = 0, .minGrade = 7, .tier = Coat::Tier::Rare, .inheritanceRate = 10.0f, .allowedColorGroups = {1}}}, // Mealy Bay
-  {19, Coat{.tid = 19, .faceType = -1, .minGrade = 8, .tier = Coat::Tier::Rare, .inheritanceRate = 10.0f, .allowedColorGroups = {2}}}, // Black Sabino
-  {20, Coat{.tid = 20, .faceType = 0, .minGrade = 8, .tier = Coat::Tier::Rare, .inheritanceRate = 5.0f, .allowedColorGroups = {1}}}, // Dapple Bay
+  // 1 Star Coats: Chestnut, Bay, Champagne Sabino, Chestnut Stockings, Buckskin, Champagne, Leopard Appaloosa
+  {1, Coat{.tid = 1, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .stars = 1, .inheritanceRate = 30.0f, .allowedColorGroups = {1}}},   // Chestnut
+  {2, Coat{.tid = 2, .faceType = -1, .minGrade = 1, .tier = Coat::Tier::Common, .stars = 1, .inheritanceRate = 25.0f, .allowedColorGroups = {1}}},  // Bay
+  {3, Coat{.tid = 3, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .stars = 1, .inheritanceRate = 30.0f, .allowedColorGroups = {2}}},   // Champagne Sabino
+  {4, Coat{.tid = 4, .faceType = 0, .minGrade = 2, .tier = Coat::Tier::Common, .stars = 1, .inheritanceRate = 21.0f, .allowedColorGroups = {1}}},   // Chestnut Stockings
+  {5, Coat{.tid = 5, .faceType = -1, .minGrade = 3, .tier = Coat::Tier::Common, .stars = 1, .inheritanceRate = 23.0f, .allowedColorGroups = {2}}},  // Buckskin
+  {6, Coat{.tid = 6, .faceType = 0, .minGrade = 3, .tier = Coat::Tier::Common, .stars = 1, .inheritanceRate = 21.0f, .allowedColorGroups = {3}}},   // Champagne
+  {7, Coat{.tid = 7, .faceType = 0, .minGrade = 5, .tier = Coat::Tier::Common, .stars = 1, .inheritanceRate = 21.0f, .allowedColorGroups = {1}}},   // Leopard Appaloosa
+  // 2 Star Coats: Blanket Appaloosa, Dapple Grey, Chestnut Pinto, Palomino, Black Pinto, Sooty Bay
+  {8, Coat{.tid = 8, .faceType = -1, .minGrade = 6, .tier = Coat::Tier::Uncommon, .stars = 2, .inheritanceRate = 15.0f, .allowedColorGroups = {2}}},  // Blanket Appaloosa
+  {10, Coat{.tid = 10, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .stars = 2, .inheritanceRate = 15.0f, .allowedColorGroups = {2}}}, // Dapple Grey
+  {11, Coat{.tid = 11, .faceType = -1, .minGrade = 6, .tier = Coat::Tier::Uncommon, .stars = 2, .inheritanceRate = 18.0f, .allowedColorGroups = {1}}}, // Chestnut Pinto
+  {13, Coat{.tid = 13, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .stars = 2, .inheritanceRate = 15.0f, .allowedColorGroups = {1}}}, // Palomino
+  {14, Coat{.tid = 14, .faceType = 0, .minGrade = 7, .tier = Coat::Tier::Uncommon, .stars = 2, .inheritanceRate = 19.0f, .allowedColorGroups = {2}}}, // Black Pinto
+  {12, Coat{.tid = 12, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .stars = 2, .inheritanceRate = 11.0f, .allowedColorGroups = {1}}}, // Sooty Bay
+  // 3 Star Coats: White Grey, Chestnut Sabino, Black, Mealy Bay, Amber Cream, Black Sabino, Dapple Bay
+  {9, Coat{.tid = 9, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .stars = 3, .inheritanceRate = 7.0f, .allowedColorGroups = {2}}},   // White Grey
+  {16, Coat{.tid = 16, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Rare, .stars = 3, .inheritanceRate = 12.0f, .allowedColorGroups = {1}}}, // Chestnut Sabino
+  {15, Coat{.tid = 15, .faceType = -1, .minGrade = 7, .tier = Coat::Tier::Rare, .stars = 3, .inheritanceRate = 7.0f, .allowedColorGroups = {2}}}, // Black
+  {18, Coat{.tid = 18, .faceType = 0, .minGrade = 7, .tier = Coat::Tier::Rare, .stars = 3, .inheritanceRate = 10.0f, .allowedColorGroups = {1}}}, // Mealy Bay
+  {17, Coat{.tid = 17, .faceType = 0, .minGrade = 8, .tier = Coat::Tier::Rare, .stars = 3, .inheritanceRate = 10.0f, .allowedColorGroups = {1}}}, // Amber Cream
+  {19, Coat{.tid = 19, .faceType = -1, .minGrade = 8, .tier = Coat::Tier::Rare, .stars = 3, .inheritanceRate = 10.0f, .allowedColorGroups = {2}}}, // Black Sabino
+  {20, Coat{.tid = 20, .faceType = 0, .minGrade = 8, .tier = Coat::Tier::Rare, .stars = 3, .inheritanceRate = 5.0f, .allowedColorGroups = {1}}}, // Dapple Bay
   };
 
   _faces = {

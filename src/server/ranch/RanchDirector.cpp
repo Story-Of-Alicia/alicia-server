@@ -1873,10 +1873,11 @@ void RanchDirector::HandleTryBreeding(
     foal.clazzProgress() = 0;
     foal.growthPoints() = 0;
     
-    // Calculate potential genetics
+    // Calculate potential genetics (pass foal's skin for star bonus)
     auto potentialResult = GetServerInstance().GetGenetics().CalculateFoalPotential(
       command.mareUid,
-      command.stallionUid);
+      command.stallionUid,
+      foalSkinTid);
     
     if (potentialResult.hasPotential)
     {
