@@ -518,13 +518,22 @@ Genetics::StatResult Genetics::CalculateFoalStats(
   std::uniform_int_distribution<uint32_t> totalDist(minTotal, maxTotal);
   uint32_t targetTotal = totalDist(_randomEngine);
   
-  // Calculate base stats as average of parents with ±20% variance
+  // Calculate base stats with mutation system
   auto calcBaseStat = [&](uint32_t mareStat, uint32_t stallionStat) -> uint32_t
   {
     uint32_t avgStat = (mareStat + stallionStat) / 2;
-    int32_t variance = (avgStat * 20) / 100;
-    std::uniform_int_distribution<int32_t> varianceDist(-variance, variance);
-    int32_t finalStat = avgStat + varianceDist(_randomEngine);
+    
+    // Mutation system: if average is very low (0-2), there's a chance to gain random points
+    if (avgStat <= 2)
+    {
+      std::uniform_int_distribution<int> mutationDist(0, 5);
+      int32_t finalStat = mutationDist(_randomEngine);
+      return static_cast<uint32_t>(finalStat);
+    }
+    
+    // Otherwise, apply small random offset (±3 points) for variety
+    std::uniform_int_distribution<int32_t> offsetDist(-3, 3);
+    int32_t finalStat = avgStat + offsetDist(_randomEngine);
     if (finalStat < 0) finalStat = 0;
     if (finalStat > 100) finalStat = 100;
     return static_cast<uint32_t>(finalStat);
