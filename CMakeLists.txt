@@ -83,6 +83,8 @@ add_executable(alicia-server
         src/server/lobby/LobbyNetworkHandler.cpp
         src/server/messenger/MessengerDirector.cpp
         src/server/race/RaceDirector.cpp
+        src/server/ranch/BreedingMarket.cpp
+        src/server/ranch/Genetics.cpp
         src/server/ranch/RanchDirector.cpp
         src/server/system/ChatSystem.cpp
         src/server/system/InfractionSystem.cpp
@@ -97,6 +99,12 @@ target_link_libraries(alicia-server PRIVATE
         alicia-libserver)
 target_include_directories(alicia-server PUBLIC
         "${PROJECT_BINARY_DIR}/generated")
+
+# Prevent RanchDirector.cpp from exceeding section limit
+if (MSVC)
+    set_source_files_properties(src/server/ranch/RanchDirector.cpp
+            PROPERTIES COMPILE_FLAGS "/bigobj")
+endif()
 
 if (BUILD_TESTS)
     enable_testing()

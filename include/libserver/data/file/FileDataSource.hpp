@@ -87,6 +87,12 @@ public:
   void DeleteGuild(data::Uid uid) override;
   bool IsGuildNameUnique(const std::string_view& name) override;
 
+  void CreateStallion(data::Stallion& stallion) override;
+  void RetrieveStallion(data::Uid uid, data::Stallion& stallion) override;
+  void StoreStallion(data::Uid uid, const data::Stallion& stallion) override;
+  void DeleteStallion(data::Uid uid) override;
+  std::vector<data::Uid> ListRegisteredStallions() override;
+
   void CreateSettings(data::Settings& settings) override;
   void RetrieveSettings(data::Uid uid, data::Settings& settings) override;
   void StoreSettings(data::Uid uid, const data::Settings& settings) override;
@@ -115,6 +121,8 @@ private:
   std::filesystem::path _housingDataPath;
   //! A path to the guild data files.
   std::filesystem::path _guildDataPath;
+  //! A path to the stallion data files.
+  std::filesystem::path _stallionDataPath;
   //! A path to the settings data files.
   std::filesystem::path _settingsDataPath;
 
@@ -138,6 +146,8 @@ private:
   std::atomic_uint32_t _housingSequentialUid = 0;
   //! Sequential UID for guilds.
   std::atomic_uint32_t _guildSequentialId = 0;
+  //! Sequential UID for stallions.
+  std::atomic_uint32_t _stallionSequentialUid = 0;
   //! Sequential UID for settings.
   std::atomic_uint32_t _settingsSequentialId = 0;
 };

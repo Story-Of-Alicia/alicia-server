@@ -363,8 +363,13 @@ struct Horse
   dao::Field<uint32_t> clazzProgress{0u};
   dao::Field<uint32_t> grade{0u};
   dao::Field<uint32_t> growthPoints{0u};
+  dao::Field<uint32_t> timesBreeded{0u};  // Total times used for breeding since it was born
+  dao::Field<uint8_t> horseType{0u};
+  dao::Field<uint8_t> tendency{0u};
+  dao::Field<uint8_t> spirit{0u};
+  dao::Field<uint16_t> fatigue{0u};
 
-  struct Potential
+  struct Potential // Bfs ordering
   {
     dao::Field<uint8_t> type{0u};
     dao::Field<uint8_t> level{0u};
@@ -413,6 +418,8 @@ struct Horse
     dao::Field<uint32_t> cumulativePrize{};
     dao::Field<uint32_t> biggestPrize{};
   } mountInfo{};
+
+  dao::Field<std::vector<uint32_t>> ancestors{};
 };
 
 struct Housing
@@ -431,6 +438,17 @@ struct Egg
   dao::Field<Clock::time_point> incubatedAt{};
   dao::Field<uint32_t> incubatorSlot{};
   dao::Field<uint32_t> boostsUsed;
+};
+
+struct Stallion
+{
+  dao::Field<Uid> uid{InvalidUid};
+  dao::Field<Uid> horseUid{InvalidUid};     // The horse being registered as stallion
+  dao::Field<Uid> ownerUid{InvalidUid};     // Owner of the stallion
+  dao::Field<uint32_t> breedingCharge{};    // Price in carrots to breed with this stallion
+  dao::Field<uint32_t> timesMated{0u};      // Times bred during current registration
+  dao::Field<Clock::time_point> registeredAt{};
+  dao::Field<Clock::time_point> expiresAt{};
 };
 
 } // namespace data
