@@ -1512,15 +1512,18 @@ void RanchDirector::HandleUnregisterStallion(
   // Delegate to BreedingMarket
   uint32_t compensation = _breedingMarket.UnregisterStallion(command.horseUid);
   
-  // TODO: Pay compensation to owner
-  // if (compensation > 0)
-  // {
-  //   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
-  //   characterRecord.Mutable([compensation](data::Character& character)
-  //   {
-  //     character.carrots() = character.carrots() + compensation;
-  //   });
-  // }
+  // Pay compensation to owner immediately
+  // TODO: Mail the payment to the owner
+  if (compensation > 0)
+  {
+    auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
+    characterRecord.Mutable([compensation](data::Character& character)
+    {
+      character.carrots() = character.carrots() + compensation;
+    });
+    
+    spdlog::info("UnregisterStallion: Paid {} carrots compensation to player", compensation);
+  }
 
   protocol::AcCmdCRUnregisterStallionOK response{};
   _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
@@ -1884,11 +1887,22 @@ void RanchDirector::HandleTryBreeding(
     character.horses().emplace_back(foalUid);
   });
   
-  // Increment stallion's breeding counter
+  // Increment stallion's lifetime breeding counter (on the horse record)
   stallionRecord->Mutable([](data::Horse& stallion)
   {
     stallion.timesBreeded() = stallion.timesBreeded() + 1;
   });
+  
+  // Increment stallion's registration breeding counter (for compensation calculation)
+  auto stallionDbRecord = GetServerInstance().GetDataDirector().GetStallionCache().Get(
+    stallionDataOpt->stallionUid);
+  if (stallionDbRecord)
+  {
+    stallionDbRecord->Mutable([](data::Stallion& stallion)
+    {
+      stallion.timesMated() = stallion.timesMated() + 1;
+    });
+  }
   
   spdlog::info("TryBreeding: Created foal UID={}, TID={}", foalUid, foalTid);
   
