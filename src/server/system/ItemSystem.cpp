@@ -78,27 +78,28 @@ data::Uid ItemSystem::CreateNewItem(
   auto charaterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
   if (not charaterRecord)
     throw std::runtime_error("Couldn't check character item, character not available");
-  
+
   data::Uid newItemUid = data::InvalidUid;
-  if ( (newItemUid=ItemSystem::GetItemByTid(characterUid, itemTid)) != data::InvalidUid)
+  if ((newItemUid = ItemSystem::GetItemByTid(characterUid, itemTid)) != data::InvalidUid)
   {
     ItemSystem::AddItem(newItemUid, value);
     return newItemUid;
   }
-    
+
   const auto createdItemRecord = _serverInstance.GetDataDirector().CreateItem();
   createdItemRecord.Mutable([this, itemTid, value, &newItemUid](data::Item& item)
-    {
-      const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(itemTid);
-      newItemUid = item.uid();
-      item.tid() = itemTid;
-      item.count() = 1;
+  {
+    const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(itemTid);
+    newItemUid = item.uid();
+    item.tid() = itemTid;
+    item.count() = 1;
 
-      if (itemTemplate->type == registry::Item::Type::Temporary)
-        item.expiresAt() = data::Clock::now() + std::chrono::hours(24 * value);
-      else if (itemTemplate->type == registry::Item::Type::Consumable)
-        item.count() = value;
-    });
+    if (itemTemplate->type == registry::Item::Type::Temporary)
+      item.expiresAt() = data::Clock::now() + std::chrono::hours(24 * value);
+    else if (itemTemplate->type == registry::Item::Type::Consumable)
+      item.count() = value;
+  });
+
   charaterRecord.Mutable([this, &newItemUid](data::Character& character)
   {
     character.inventory().emplace_back(newItemUid);
@@ -114,9 +115,8 @@ void ItemSystem::AddItem(
   if (not itemRecord)
     throw std::runtime_error("Couldn't add item, item not available");
 
-    
-    itemRecord.Mutable([value,this](data::Item& item)
-    {
+  itemRecord.Mutable([value, this](data::Item& item)
+  {
     const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(
       item.tid());
     if (itemTemplate->type == registry::Item::Type::Temporary)
@@ -137,7 +137,7 @@ void ItemSystem::ConsumeItem(
   if (not itemRecord)
     throw std::runtime_error("Couldn't consume item, item not available");
 
-  itemRecord.Mutable([this,itemCount,characterUid](data::Item& item)
+  itemRecord.Mutable([this, itemCount, characterUid](data::Item& item)
   {
     const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(item.tid());
     if (itemTemplate->type != registry::Item::Type::Consumable)
@@ -160,19 +160,16 @@ bool ItemSystem::CheckExpired(data::Uid itemUid)
   const auto itemRecord = _serverInstance.GetDataDirector().GetItem(itemUid);
   if (not itemRecord)
     throw std::runtime_error("Couldn't check item expiration, item not available");
+
   bool isExpired = false;
 
   itemRecord.Immutable([this, &isExpired](const data::Item& item)
   {
     const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(item.tid());
-    if (itemTemplate->type != registry::Item::Type::Temporary)
-      return isExpired;
-
-    if (item.expiresAt() <= data::Clock::now())
-    {
+    if (itemTemplate->type == registry::Item::Type::Temporary && item.expiresAt() <= data::Clock::now())
       isExpired = true;
-    }
   });
+
   return isExpired;
 }
 
@@ -183,12 +180,12 @@ void ItemSystem::RemoveItem(
   const auto & charaterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
   if (not charaterRecord)
     throw std::runtime_error("Couldn't remove item, character not available");
+
   charaterRecord.Mutable([this, itemUid](data::Character& character)
   {
-    auto& inventory = character.inventory();
-    inventory.erase(
-      std::remove(inventory.begin(), inventory.end(), itemUid),
-      inventory.end());
+    character.inventory().erase(
+      std::remove(character.inventory().begin(), character.inventory().end(), itemUid),
+      character.inventory().end());
   });
 
   _serverInstance.GetDataDirector().GetItemCache().Delete(itemUid);
