@@ -59,8 +59,8 @@ public:
     if (roomIter == _raceInstances.cend())
       return false;
 
-    return roomIter->second.stage == RoomInstance::Stage::Racing |
-      roomIter->second.stage == RoomInstance::Stage::Loading;
+    return roomIter->second.stage == RaceInstance::Stage::Racing |
+      roomIter->second.stage == RaceInstance::Stage::Loading;
   }
 
   uint32_t GetRoomPlayerCount(uint32_t uid)
@@ -90,7 +90,7 @@ private:
     bool isAuthenticated = false;
   };
 
-  struct RoomInstance
+  struct RaceInstance
   {
     //! A stage of the room.
     enum class Stage
@@ -126,6 +126,7 @@ private:
   ClientContext& GetClientContext(ClientId clientId, bool requireAuthorized = true);
   ClientId GetClientIdByCharacterUid(data::Uid characterUid);
   ClientContext& GetClientContextByCharacterUid(data::Uid characterUid);
+  void ScheduleSkillEffect(server::RaceDirector::RaceInstance& raceInstance, server::tracker::Oid attackerId, server::tracker::Oid targetId, uint16_t effectId, std::optional<std::function<void()>> afterEffectRemoved = std::nullopt);
 
   void HandleEnterRoom(
     ClientId clientId,
@@ -222,6 +223,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdUserRaceActivateEvent& command);
 
+  void HandleUserRaceDeactivateEvent(
+    ClientId clientId,
+    const protocol::AcCmdUserRaceDeactivateEvent& command);
+
   void HandleRequestMagicItem(
     ClientId clientId,
     const protocol::AcCmdCRRequestMagicItem& command);
@@ -239,26 +244,18 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRStartMagicTarget& command);
 
-  void HandleChangeMagicTargetNotify(
+  void HandleChangeMagicTarget(
     ClientId clientId,
-    const protocol::AcCmdCRChangeMagicTargetNotify& command);
-
-  void HandleChangeMagicTargetOK(
-    ClientId clientId,
-    const protocol::AcCmdCRChangeMagicTargetOK& command);
-
-  void HandleChangeMagicTargetCancel(
-    ClientId clientId,
-    const protocol::AcCmdCRChangeMagicTargetCancel& command);
+    const protocol::AcCmdCRChangeMagicTarget& command);
 
   void HandleChangeSkillCardPresetId(
     ClientId clientId,
     const protocol::AcCmdCRChangeSkillCardPresetID& command);
 
   // Note: HandleActivateSkillEffect commented out due to build issues
-  // void HandleActivateSkillEffect(
-  //   ClientId clientId,
-  //   const protocol::AcCmdCRActivateSkillEffect& command);
+  void HandleActivateSkillEffect(
+    ClientId clientId,
+    const protocol::AcCmdCRActivateSkillEffect& command);
 
   void PrepareItemSpawners(data::Uid roomUid);
 
@@ -275,7 +272,7 @@ private:
   //! A map of all client contexts.
   std::unordered_map<ClientId, ClientContext> _clients;
   //! A map of all room instances.
-  std::unordered_map<uint32_t, RoomInstance> _raceInstances;
+  std::unordered_map<uint32_t, RaceInstance> _raceInstances;
 };
 
 } // namespace server
