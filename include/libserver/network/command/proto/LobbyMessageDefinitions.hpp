@@ -1073,10 +1073,10 @@ struct AcCmdCLRequestDailyQuestListOK
 
   struct Unk
   {
-    uint16_t field0;
-    uint32_t field1;
-    uint8_t field2;
-    uint32_t field3;
+    uint16_t field0; //questid
+    uint32_t field1; 
+    uint8_t field2; //can only be 0 or 1, 0 is in progress, 1 is completed
+    uint32_t field3; //progress
     uint8_t field4;
     uint8_t field5;
 
