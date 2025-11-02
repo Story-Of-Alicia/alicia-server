@@ -723,6 +723,14 @@ void RanchDirector::SendGuildInviteAccepted(
   }
 }
 
+void RanchDirector::AddRanchHorse(
+  data::Uid& rancherUid,
+  data::Uid& horseUid)
+{
+  auto& ranchInstance = _ranches[rancherUid];
+  ranchInstance.tracker.AddHorse(horseUid);
+}
+
 ServerInstance& RanchDirector::GetServerInstance()
 {
   return _serverInstance;
@@ -837,6 +845,7 @@ void RanchDirector::HandleEnterRanch(
 
       response.rancherName = rancherName;
       response.ranchName = std::format("{}{} ranch", rancherName, possessiveSuffix);
+      response.horseSlots = rancher.horseSlotCount();
 
       // If the ranch was just created add the horses to the world tracker.
       if (ranchCreated)

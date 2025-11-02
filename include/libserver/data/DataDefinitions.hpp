@@ -283,6 +283,8 @@ struct Character
   dao::Field<std::vector<Uid>> mountEquipment{};
   
   dao::Field<std::vector<Uid>> horses{};
+  dao::Field<uint8_t> horseSlotCount{0u};
+
   dao::Field<std::vector<Uid>> pets{};
   dao::Field<Uid> mountUid{InvalidUid};
   dao::Field<Uid> petUid{InvalidUid};

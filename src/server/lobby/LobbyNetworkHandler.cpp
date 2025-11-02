@@ -1311,6 +1311,9 @@ void LobbyNetworkHandler::HandleCreateNickname(
 
         character.mountUid() = mountUid;
 
+        constexpr uint8_t StartingHorseSlotCount = 3; 
+        character.horseSlotCount() = StartingHorseSlotCount;
+
         userCharacterUid = character.uid();
       });
 
