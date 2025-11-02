@@ -158,10 +158,12 @@ struct Item
   dao::Field<Uid> uid{InvalidUid};
   //! A type identifier.
   dao::Field<Tid> tid{InvalidTid};
-  //! A time point of when the item expires.
-  dao::Field<Clock::time_point> expiresAt{};
-  //! Amount of an item.
+  //! An amount of an item.
   dao::Field<uint32_t> count{};
+  //! A duration of an item.
+  dao::Field<std::chrono::seconds> duration{};
+  //! A time point of when the item was created.
+  dao::Field<Clock::time_point> createdAt{};
 };
 
 //! Pet
@@ -182,14 +184,22 @@ struct Pet
 //! Stored item
 struct StorageItem
 {
+  struct Item
+  {
+    Tid tid{InvalidTid};
+    uint32_t count{};
+    std::chrono::seconds duration{};
+  };
+
   //! A unique identifier.
   dao::Field<Uid> uid{InvalidUid};
-  dao::Field<std::vector<Uid>> items{};
   dao::Field<std::string> sender{};
   dao::Field<std::string> message{};
-  dao::Field<Clock::time_point> created{};
+  dao::Field<int32_t> carrots{};
+  dao::Field<std::vector<Item>> items{};
   dao::Field<bool> checked{false};
-  dao::Field<bool> expired{false};
+  dao::Field<Clock::time_point> createdAt{};
+  dao::Field<std::chrono::seconds> duration{};
 };
 
 //! Guild

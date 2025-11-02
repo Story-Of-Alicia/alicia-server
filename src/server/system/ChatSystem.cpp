@@ -499,7 +499,7 @@ void ChatSystem::RegisterUserCommands()
       if (arguments.size() < 1)
         return {
           "Invalid command sub-literal.",
-          " (//give <item/horse/preset>)"};
+          " (//give <item/horse/preset/carrots>)"};
 
       const auto& subLiteral = arguments[0];
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
@@ -512,67 +512,69 @@ void ChatSystem::RegisterUserCommands()
             "Invalid command arguments.",
             "(//give item <count> <tid>)"};
 
+        // todo: item duration
         const int32_t itemCount = std::atoi(arguments[1].c_str());
-        const data::Uid createdItemTid = std::atoi(arguments[2].c_str());
-
         if (itemCount < 1)
         {
           return {"Invalid item count"};
         }
 
-        if (createdItemTid >= 99000 && createdItemTid <= 99200)
+        const data::Uid itemTid = std::atoi(arguments[2].c_str());
+
+        const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(itemTid);
+        if (not itemTemplate)
+        {
+          return {std::format("Item '{}' not in the item registry", itemTid)};
+        }
+
+        if (itemTid >= 99000 && itemTid <= 99200)
         {
           return {"Please give yourself eggs to hatch pets."};
         }
 
+        size_t inventoryItemCount{0};
         size_t storedGiftCount{0};
-        characterRecord.Immutable([&storedGiftCount](const data::Character& character)
+        characterRecord.Immutable(
+          [&inventoryItemCount, &storedGiftCount](const data::Character& character)
+          {
+            storedGiftCount = character.gifts().size();
+            inventoryItemCount = character.inventory().size();
+          });
+
+        if (inventoryItemCount > 250)
         {
-          storedGiftCount = character.gifts().size();
-        });
+          return {"You have too many items."};
+        }
 
         if (storedGiftCount > 32)
         {
           return {"You have too many unclaimed gifts."};
         }
 
-        // Create the item.
-        auto createdItemUid = data::InvalidUid;
-        const auto createdItemRecord = _serverInstance.GetDataDirector().CreateItem();
-        createdItemRecord.Mutable([createdItemTid, itemCount, &createdItemUid](data::Item& item)
-          {
-            item.tid() = createdItemTid;
-            item.count() = itemCount;
-            item.expiresAt() = data::Clock::now() + std::chrono::days(10);
-
-            createdItemUid = item.uid();
-          });
-
         // Create the stored item.
         auto giftUid = data::InvalidUid;
+
         const auto storedItem = _serverInstance.GetDataDirector().CreateStorageItem();
-        storedItem.Mutable([this, &giftUid, itemCount, createdItemUid, createdItemTid](data::StorageItem& storedItem)
+        storedItem.Mutable(
+          [&itemTemplate, &giftUid, itemCount, itemTid](data::StorageItem& storageItem)
           {
-            storedItem.items().emplace_back(createdItemUid);
-            storedItem.sender() = "System";
+            storageItem.items().emplace_back(data::StorageItem::Item{
+              .tid = itemTid,
+              .count = static_cast<uint32_t>(itemCount),
+              .duration = std::chrono::days(10)});
+            storageItem.sender() = "System";
 
-            const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(createdItemTid);
-            if (itemTemplate)
-              storedItem.message() = std::format("{}x Item '{}'", itemCount, itemTemplate->name);
-            else
-              storedItem.message() = std::format("{}x Item '{}'", itemCount, createdItemTid);
+            storageItem.message() = std::format("{}x Item '{}'", itemCount, itemTemplate->name);
+            storageItem.createdAt() = data::Clock::now();
 
-            storedItem.created() = data::Clock::now();
-
-            giftUid = storedItem.uid();
+            giftUid = storageItem.uid();
           });
 
         // Add the stored item as a gift.
-
         characterRecord.Mutable([giftUid](data::Character& character)
-          {
-            character.gifts().emplace_back(giftUid);
-          });
+        {
+          character.gifts().emplace_back(giftUid);
+        });
 
         _serverInstance.GetRanchDirector().SendStorageNotification(
           characterUid, protocol::AcCmdCRRequestStorage::Category::Gifts);
@@ -605,7 +607,7 @@ void ChatSystem::RegisterUserCommands()
           {"clean", {40002, 41008, 41009}},
           {"play", {42001, 42002}},
           {"cure", {44001, 44002, 44003, 44004, 44005, 44006}},
-          {"construct", {45001, 46018, 45004, 70002}}};
+          {"construct", {45001, 46018, 45004}}};
 
         std::vector<data::Tid> selectedItems{};
         if (selectedPreset == "all")
@@ -630,28 +632,38 @@ void ChatSystem::RegisterUserCommands()
           return {"Unknown preset"};
         }
 
-        for (const auto& selectedItemTid : selectedItems)
+        // Create the stored item.
+        auto giftUid = data::InvalidUid;
+
+        const auto storedItem = _serverInstance.GetDataDirector().CreateStorageItem();
+        storedItem.Mutable(
+          [&selectedItems, &giftUid](data::StorageItem& storageItem)
+          {
+            for (const data::Tid& itemTid : selectedItems)
+            {
+              storageItem.items().emplace_back(data::StorageItem::Item{
+                .tid = itemTid,
+                .count = 100,
+                .duration = std::chrono::days(10)});
+            }
+
+            storageItem.sender() = "System";
+
+            storageItem.message() = "Preset";
+            storageItem.createdAt() = data::Clock::now();
+
+            giftUid = storageItem.uid();
+          });
+
+        // Add the stored item as a gift.
+        characterRecord.Mutable([giftUid](data::Character& character)
         {
-          // Create the item.
-          auto createdItemUid = data::InvalidUid;
-          const auto createdItemRecord = _serverInstance.GetDataDirector().CreateItem();
-          createdItemRecord.Mutable([selectedItemTid, itemCount, &createdItemUid](data::Item& item)
-            {
-              item.tid() = selectedItemTid;
-              item.count() = itemCount;
-              item.expiresAt() = data::Clock::now() + std::chrono::days(10);
+          character.gifts().emplace_back(giftUid);
+        });
 
-              createdItemUid = item.uid();
-            });
-
-          // Add the item directly to character's inventory.
-          characterRecord.Mutable([createdItemUid](data::Character& character)
-            {
-              character.inventory().emplace_back(createdItemUid);
-            });
-        }
-
-        return {"Preset added to character inventory. Please restart your game to apply changes!"};
+        return {
+          "Preset stored in your gift storage.",
+          "Check your inventory!"};
       }
       else if (subLiteral == "horse")
       {
@@ -703,6 +715,42 @@ void ChatSystem::RegisterUserCommands()
         _serverInstance.GetRanchDirector().AddRanchHorse(characterUid, horseUid);
 
         return {"A new horse has been added to your inventory.", "Restart your game for the changes to apply."};
+      }
+      else if (subLiteral == "carrots")
+      {
+        if (arguments.size() < 2)
+          return {
+            "Invalid command arguments.",
+            "(//give carrots <count>)"};
+
+        const int32_t carrotCount = std::atoi(arguments[1].c_str());
+
+        // Create the storage item.
+        auto giftUid = data::InvalidUid;
+        const auto storedItem = _serverInstance.GetDataDirector().CreateStorageItem();
+        storedItem.Mutable([&giftUid, carrotCount](data::StorageItem& storageItem)
+          {
+            storageItem.carrots() = carrotCount;
+            storageItem.sender() = "System";
+
+            storageItem.message() = std::format("Carrots: {}", carrotCount);
+
+            storageItem.createdAt() = data::Clock::now();
+            giftUid = storageItem.uid();
+          });
+
+        // Add the stored item as a gift.
+        characterRecord.Mutable([giftUid](data::Character& character)
+        {
+          character.gifts().emplace_back(giftUid);
+        });
+
+        _serverInstance.GetRanchDirector().SendStorageNotification(
+          characterUid, protocol::AcCmdCRRequestStorage::Category::Gifts);
+
+        return {
+          "Carrots stored in your gift storage.",
+          "Check your inventory!"};
       }
 
       return {"Unknown sub-literal"};
