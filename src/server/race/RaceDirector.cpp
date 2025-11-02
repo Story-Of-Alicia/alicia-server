@@ -1232,7 +1232,7 @@ void RaceDirector::HandleStartRace(
       auto& details = room.GetRoomDetails();
 
       raceInstance.raceGameMode = static_cast<protocol::GameMode>(details.gameMode);
-      raceInstance.raceTeamMode = static_cast<protocol::TeamMode>(details.gameMode);
+      raceInstance.raceTeamMode = static_cast<protocol::TeamMode>(details.teamMode);
       raceInstance.raceMissionId = details.missionId;
 
       roomGameMode = static_cast<uint8_t>(details.gameMode);
