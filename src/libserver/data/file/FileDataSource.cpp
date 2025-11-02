@@ -19,16 +19,16 @@
 
 #include "libserver/data/file/FileDataSource.hpp"
 
-#include <algorithm>
 #include <format>
 #include <fstream>
+#include <regex>
 
 #include <nlohmann/json.hpp>
 
 namespace
 {
 
-std::filesystem::path ProduceDataPath(
+std::filesystem::path ProduceDataFilePath(
   const std::filesystem::path& root,
   const std::string& filename)
 {
@@ -37,7 +37,7 @@ std::filesystem::path ProduceDataPath(
   return root / (filename + ".json");
 }
 
-} // namespace
+} // anon namespace
 
 void server::FileDataSource::Initialize(const std::filesystem::path& path)
 {
@@ -66,7 +66,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _settingsDataPath = prepareDataPath("settings");
 
   // Read the meta-data file and parse the sequential UIDs.
-  const std::filesystem::path metaFilePath = ProduceDataPath(
+  const std::filesystem::path metaFilePath = ProduceDataFilePath(
     _metaFilePath, "meta");
   std::ifstream metaFile(metaFilePath);
   if (not metaFile.is_open())
@@ -88,7 +88,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
 
 void server::FileDataSource::Terminate()
 {
-  const std::filesystem::path metaFilePath = ProduceDataPath(
+  const std::filesystem::path metaFilePath = ProduceDataFilePath(
     _metaFilePath, "meta");
 
   std::ofstream metaFile(metaFilePath);
@@ -111,12 +111,16 @@ void server::FileDataSource::Terminate()
   metaFile << meta.dump(2);
 }
 
-void server::FileDataSource::RetrieveUser(std::string name, data::User& user)
+void server::FileDataSource::CreateUser(data::User& user)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
-    _userDataPath, name);
+}
 
-  user.name = name;
+void server::FileDataSource::RetrieveUser(const std::string_view& name, data::User& user)
+{
+  user.name = std::string(name);
+
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _userDataPath, user.name());
 
   std::ifstream dataFile(dataFilePath);
   if (not dataFile.is_open())
@@ -132,10 +136,10 @@ void server::FileDataSource::RetrieveUser(std::string name, data::User& user)
   user.infractions = json["infractions"].get<std::vector<data::Uid>>();
 }
 
-void server::FileDataSource::StoreUser(std::string name, const data::User& user)
+void server::FileDataSource::StoreUser(const std::string_view& name, const data::User& user)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
-    _userDataPath, name);
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _userDataPath, user.name());
 
   std::ofstream dataFile(dataFilePath);
   if (not dataFile.is_open())
@@ -153,6 +157,22 @@ void server::FileDataSource::StoreUser(std::string name, const data::User& user)
   dataFile << json.dump(2);
 }
 
+bool server::FileDataSource::IsUserNameUnique(const std::string_view& name)
+{
+  const std::regex rg(
+    std::format("{}", name),
+    std::regex_constants::icase);
+
+  for (const auto& file : std::filesystem::directory_iterator(_userDataPath))
+  {
+    const auto existingUserName = file.path().filename().string();
+    if (std::regex_match(existingUserName, rg))
+      return false;
+  }
+
+  return true;
+}
+
 void server::FileDataSource::CreateInfraction(data::Infraction& infraction)
 {
   infraction.uid = ++_infractionSequentialUid;
@@ -160,7 +180,7 @@ void server::FileDataSource::CreateInfraction(data::Infraction& infraction)
 
 void server::FileDataSource::RetrieveInfraction(data::Uid uid, data::Infraction& infraction)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
    _infractionDataPath, std::format("{}", uid));
 
   std::ifstream dataFile(dataFilePath);
@@ -182,7 +202,7 @@ void server::FileDataSource::RetrieveInfraction(data::Uid uid, data::Infraction&
 
 void server::FileDataSource::StoreInfraction(data::Uid uid, const data::Infraction& infraction)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _infractionDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
@@ -206,7 +226,7 @@ void server::FileDataSource::StoreInfraction(data::Uid uid, const data::Infracti
 
 void server::FileDataSource::DeleteInfraction(data::Uid uid)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _infractionDataPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
 }
@@ -218,7 +238,7 @@ void server::FileDataSource::CreateCharacter(data::Character& character)
 
 void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& character)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _characterDataPath, std::format("{}", uid));
 
   std::ifstream dataFile(dataFilePath);
@@ -299,7 +319,7 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
 
 void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _characterDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
@@ -388,9 +408,34 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
 
 void server::FileDataSource::DeleteCharacter(data::Uid uid)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _characterDataPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
+}
+
+bool server::FileDataSource::IsCharacterNameUnique(const std::string_view& name)
+{
+  const std::regex rg(
+    std::format("{}", name),
+    std::regex_constants::icase);
+
+  for (const auto& file : std::filesystem::directory_iterator(_characterDataPath))
+  {
+    if (file.is_directory())
+      continue;
+
+    std::ifstream dataFile(file.path());
+    if (not dataFile.is_open())
+      continue;
+
+    const auto json = nlohmann::json::parse(dataFile);
+    const auto existingCharacterName = json["name"].get<std::string>();
+
+    if (std::regex_match(existingCharacterName, rg))
+      return false;
+  }
+
+  return true;
 }
 
 void server::FileDataSource::CreateHorse(data::Horse& horse)
@@ -401,7 +446,7 @@ void server::FileDataSource::CreateHorse(data::Horse& horse)
 
 void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _horseDataPath, std::format("{}", uid));
 
   std::ifstream dataFile(dataFilePath);
@@ -500,7 +545,7 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
 
 void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _horseDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
@@ -599,7 +644,7 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
 
 void server::FileDataSource::DeleteHorse(data::Uid uid)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _horseDataPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
 }
@@ -611,7 +656,7 @@ void server::FileDataSource::CreateItem(data::Item& item)
 
 void server::FileDataSource::RetrieveItem(data::Uid uid, data::Item& item)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _itemDataPath, std::format("{}", uid));
 
   std::ifstream dataFile(dataFilePath);
@@ -632,7 +677,7 @@ void server::FileDataSource::RetrieveItem(data::Uid uid, data::Item& item)
 
 void server::FileDataSource::StoreItem(data::Uid uid, const data::Item& item)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _itemDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
@@ -653,7 +698,7 @@ void server::FileDataSource::StoreItem(data::Uid uid, const data::Item& item)
 
 void server::FileDataSource::DeleteItem(data::Uid uid)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _itemDataPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
 }
@@ -665,7 +710,7 @@ void server::FileDataSource::CreateStorageItem(data::StorageItem& item)
 
 void server::FileDataSource::RetrieveStorageItem(data::Uid uid, data::StorageItem& item)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _storageItemPath, std::format("{}", uid));
 
   std::ifstream dataFile(dataFilePath);
@@ -689,7 +734,7 @@ void server::FileDataSource::RetrieveStorageItem(data::Uid uid, data::StorageIte
 
 void server::FileDataSource::StoreStorageItem(data::Uid uid, const data::StorageItem& item)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _storageItemPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
@@ -714,7 +759,7 @@ void server::FileDataSource::StoreStorageItem(data::Uid uid, const data::Storage
 
 void server::FileDataSource::DeleteStorageItem(data::Uid uid)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _storageItemPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
 }
@@ -726,7 +771,7 @@ void server::FileDataSource::CreateEgg(data::Egg& egg)
 
 void server::FileDataSource::RetrieveEgg(data::Uid uid, data::Egg& egg)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _eggDataPath, std::format("{}", uid));
 
   std::ifstream dataFile(dataFilePath);
@@ -751,7 +796,7 @@ void server::FileDataSource::RetrieveEgg(data::Uid uid, data::Egg& egg)
 
 void server::FileDataSource::StoreEgg(data::Uid uid, const data::Egg& egg)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _eggDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
@@ -774,7 +819,7 @@ void server::FileDataSource::StoreEgg(data::Uid uid, const data::Egg& egg)
 
 void server::FileDataSource::DeleteEgg(data::Uid uid)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _eggDataPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
 }
@@ -786,7 +831,7 @@ void server::FileDataSource::CreatePet(data::Pet& pet)
 
 void server::FileDataSource::RetrievePet(data::Uid uid, data::Pet& pet)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _petDataPath, std::format("{}", uid));
 
   std::ifstream dataFile(dataFilePath);
@@ -808,7 +853,7 @@ void server::FileDataSource::RetrievePet(data::Uid uid, data::Pet& pet)
 
 void server::FileDataSource::StorePet(data::Uid uid, const data::Pet& pet)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _petDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
@@ -831,7 +876,7 @@ void server::FileDataSource::StorePet(data::Uid uid, const data::Pet& pet)
 
 void server::FileDataSource::DeletePet(data::Uid uid)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _petDataPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
 }
@@ -843,7 +888,7 @@ void server::FileDataSource::CreateHousing(data::Housing& housing)
 
 void server::FileDataSource::RetrieveHousing(data::Uid uid, data::Housing& housing)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _housingDataPath, std::format("{}", uid));
 
   std::ifstream dataFile(dataFilePath);
@@ -863,7 +908,7 @@ void server::FileDataSource::RetrieveHousing(data::Uid uid, data::Housing& housi
 
 void server::FileDataSource::StoreHousing(data::Uid uid, const data::Housing& housing)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _housingDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
@@ -885,7 +930,7 @@ void server::FileDataSource::StoreHousing(data::Uid uid, const data::Housing& ho
 
 void server::FileDataSource::DeleteHousing(data::Uid uid)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _housingDataPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
 }
@@ -897,7 +942,7 @@ void server::FileDataSource::CreateGuild(data::Guild& guild)
 
 void server::FileDataSource::RetrieveGuild(data::Uid uid, data::Guild& guild)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _guildDataPath, std::format("{}", uid));
 
   std::ifstream dataFile(dataFilePath);
@@ -925,7 +970,7 @@ void server::FileDataSource::RetrieveGuild(data::Uid uid, data::Guild& guild)
 
 void server::FileDataSource::StoreGuild(data::Uid uid, const data::Guild& guild)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _guildDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
@@ -954,9 +999,34 @@ void server::FileDataSource::StoreGuild(data::Uid uid, const data::Guild& guild)
 
 void server::FileDataSource::DeleteGuild(data::Uid uid)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _guildDataPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
+}
+
+bool server::FileDataSource::IsGuildNameUnique(const std::string_view& name)
+{
+  const std::regex rg(
+    std::format("{}", name),
+    std::regex_constants::icase);
+
+  for (const auto& file : std::filesystem::directory_iterator(_guildDataPath))
+  {
+    if (file.is_directory())
+      continue;
+
+    std::ifstream dataFile(file.path());
+    if (not dataFile.is_open())
+      continue;
+
+    const auto json = nlohmann::json::parse(dataFile);
+    const auto existingGuildName = json["name"].get<std::string>();
+
+    if (std::regex_match(existingGuildName, rg))
+      return false;
+  }
+
+  return true;
 }
 
 void server::FileDataSource::CreateSettings(data::Settings& settings)
@@ -966,7 +1036,7 @@ void server::FileDataSource::CreateSettings(data::Settings& settings)
 
 void server::FileDataSource::RetrieveSettings(data::Uid uid, data::Settings& settings)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _settingsDataPath, std::format("{}", uid));
 
   std::ifstream dataFile(dataFilePath);
@@ -1029,7 +1099,7 @@ void server::FileDataSource::RetrieveSettings(data::Uid uid, data::Settings& set
 
 void server::FileDataSource::StoreSettings(data::Uid uid, const data::Settings& settings)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _settingsDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
@@ -1090,7 +1160,7 @@ void server::FileDataSource::StoreSettings(data::Uid uid, const data::Settings& 
 
 void server::FileDataSource::DeleteSettings(data::Uid uid)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _settingsDataPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
 }

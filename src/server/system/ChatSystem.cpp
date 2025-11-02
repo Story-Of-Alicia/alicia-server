@@ -973,7 +973,7 @@ void ChatSystem::RegisterAdminCommands()
         {
           _serverInstance.GetLobbyDirector().DisconnectCharacter(userCharacterUid);
           _serverInstance.GetRanchDirector().Disconnect(userCharacterUid);
-          // todo: race
+          _serverInstance.GetRaceDirector().DisconnectCharacter(userCharacterUid);
         }
         else if (punishmentType == data::Infraction::Punishment::Mute)
         {

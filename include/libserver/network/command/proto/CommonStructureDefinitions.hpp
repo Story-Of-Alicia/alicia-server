@@ -281,8 +281,8 @@ struct Horse
     //! A plenitude value in a range of <0, 1200>.
     //! 910 is a little full, 1200 is full
     uint16_t plenitude{};
-    //! A dirty value in a range of <0, 600>. for all body parts.
-    //! 600 is fully dirty, 0 is clean.
+    //! A dirty value in a range of <0, 1200>. for all body parts.
+    //! 1200 is fully dirty, 0 is clean.
     uint16_t bodyDirtiness{};
     //! Referred to as `ManeTwisted` by the client.
     uint16_t maneDirtiness{};
@@ -298,7 +298,7 @@ struct Horse
     //! 1 is a little bored
     //! 11 wants to play a little
     //! 21 wants to play.
-    uint16_t boredom{};
+    uint16_t boredom{21};
 
     uint16_t bodyPolish{};
     uint16_t manePolish{};
@@ -610,6 +610,16 @@ enum class NameChangeError : uint8_t
   InvalidNickname = 0x1b,   // CEC_INVALID_NICKNAME
   DuplicateNickname = 0x1c, // CEC_DUPLICATED_NICKNAME
   NicknameCooldown = 0x1d   // CEC_NICKNAME_NOT_AVAILABE_DAY
+};
+
+// HorseNameStrings
+enum class HorseRenameError : uint8_t
+{
+  ServerError = 0, // ServerError
+  DuplicateHorseName = 1, // DUPLICATED
+  InvalidNickname = 2, // CR_INVALID_NICKNAME
+  NoHorseRenameItem = 3, // CR_ITEM_NOT_FOUND,
+  WrongItem = 4, // CR_WRONG_ITEM
 };
 
 } // namespace server::protocol

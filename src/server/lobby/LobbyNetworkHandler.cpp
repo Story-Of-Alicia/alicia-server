@@ -1248,7 +1248,9 @@ void LobbyNetworkHandler::HandleCreateNickname(
 {
   auto& clientContext = GetClientContext(clientId);
 
-  const bool isValidNickname = locale::IsNameValid(command.nickname, 16);
+  const bool isValidNickname = locale::IsNameValid(command.nickname, 16)
+    && _serverInstance.GetDataDirector().GetDataSource().IsCharacterNameUnique(command.nickname);
+
   if (not isValidNickname)
   {
     SendLoginCancel(clientId, protocol::AcCmdCLLoginCancel::Reason::Generic);
