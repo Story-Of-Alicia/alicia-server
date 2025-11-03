@@ -2093,8 +2093,19 @@ void RanchDirector::HandleBreedingFailureCard(
 {
   spdlog::info("BreedingFailureCard: statusOrFlag = {}", command.statusOrFlag);
   
+  // Randomly determine card type: 50/50 chance between Normal (RED=0) and Chance (YELLOW=1)
+  static std::mt19937 gen(std::chrono::steady_clock::now().time_since_epoch().count());
+  std::uniform_int_distribution<int> cardTypeDist(0, 1);
+  uint8_t cardType = static_cast<uint8_t>(cardTypeDist(gen));
+  
+  // Store card type in client context for later use in HandleBreedingFailureCardChoose
+  auto& clientContext = GetClientContext(clientId);
+  clientContext.pendingCardType = cardType;
+  
+  spdlog::info("BreedingFailureCard: Selected {} card", cardType == 1 ? "CHANCE (YELLOW)" : "NORMAL (RED)");
+  
   protocol::AcCmdCRBreedingFailureCardOK response{
-    .choiceOrFlag = 0  // Default choice/flag value
+    .choiceOrFlag = cardType  // 0 = RED card, 1 = YELLOW card
   };
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -2174,10 +2185,11 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     rewardGrade = 2;
   }
   
+  // Use the card type that was already determined in HandleBreedingFailureCard
+  bool isChanceCard = (clientContext.pendingCardType == 1);
+  
   // Determine card type: 50/50 chance between Normal (RED) and Chance (YELLOW) cards
   // TODO: Figure out the exact/approximate probability of each card type.
-  std::uniform_int_distribution<int> cardTypeDist(0, 1);
-  bool isChanceCard = (cardTypeDist(gen) == 1);
   
   // Breeding Failure Card reward data structure
   struct RewardData {
@@ -2341,7 +2353,7 @@ void RanchDirector::HandleBreedingFailureCardChoose(
   response.member1 = 0;
   response.rewardId = rewardId;
   response.member3 = 0;
-  response.member4 = {1, 0};
+  response.member4 = {clientContext.pendingCardType, 0};  // Match card type: 0=RED, 1=YELLOW
   response.member5 = 0;
   response.member6 = rewardData->gameMoney;
   
@@ -2558,7 +2570,7 @@ void RanchDirector::HandleUpdateMountNickname(
     {
       return response;
     });
-  
+
   for (const ClientId& ranchClientId : _ranches[clientContext.visitingRancherUid].clients)
   {
     // Prevent broadcast to self.
@@ -2809,11 +2821,11 @@ void RanchDirector::HandleWearEquipment(
         {
           // Only compare character parts if the existing equipment template
           if (equipmentTemplate.has_value() && equipmentTemplate->characterPartInfo.has_value())
+        {
+          if (static_cast<uint32_t>(equipmentTemplate->characterPartInfo->slot)
+            & static_cast<uint32_t>(equippedItemTemplate->characterPartInfo->slot))
           {
-            if (static_cast<uint32_t>(equipmentTemplate->characterPartInfo->slot)
-              & static_cast<uint32_t>(equippedItemTemplate->characterPartInfo->slot))
-            {
-              equipmentToReplace.emplace_back(equipmentUid);
+            equipmentToReplace.emplace_back(equipmentUid);
             }
           }
         }
@@ -2822,11 +2834,11 @@ void RanchDirector::HandleWearEquipment(
           // Only compare mount parts if the existing equipment template
           if (equipmentTemplate.has_value() 
           && equipmentTemplate->mountPartInfo.has_value())
+        {
+          if (static_cast<uint32_t>(equipmentTemplate->mountPartInfo->slot)
+            & static_cast<uint32_t>(equippedItemTemplate->mountPartInfo->slot))
           {
-            if (static_cast<uint32_t>(equipmentTemplate->mountPartInfo->slot)
-              & static_cast<uint32_t>(equippedItemTemplate->mountPartInfo->slot))
-            {
-              equipmentToReplace.emplace_back(equipmentUid);
+            equipmentToReplace.emplace_back(equipmentUid);
             }
           }
         }
@@ -2846,7 +2858,7 @@ void RanchDirector::HandleWearEquipment(
       equipmentUids.emplace_back(equippedItemUid);
 
       // Persist back into the unified character equipment list.
-      character.characterEquipment = equipmentUids;
+        character.characterEquipment = equipmentUids;
 
       // Remove the newly equipped item from the inventory.
       const auto equippedItemsToRemove = std::ranges::remove(
@@ -3069,9 +3081,9 @@ void RanchDirector::HandleRequestGuildInfo(
 
   auto guildUid = data::InvalidUid;
   characterRecord.Immutable([&guildUid](const data::Character& character)
-  {
-    guildUid = character.guildUid();
-  });
+    {
+      guildUid = character.guildUid();
+    });
 
   if (guildUid == data::InvalidUid)
   {
@@ -3090,14 +3102,14 @@ void RanchDirector::HandleRequestGuildInfo(
 
   protocol::RanchCommandRequestGuildInfoOK response{};
 
-  const auto guildRecord = GetServerInstance().GetDataDirector().GetGuild(guildUid);
-  if (not guildRecord)
-    throw std::runtime_error("Guild unavailable");
+    const auto guildRecord = GetServerInstance().GetDataDirector().GetGuild(guildUid);
+    if (not guildRecord)
+      throw std::runtime_error("Guild unavailable");
 
-  guildRecord.Immutable([&response](const data::Guild& guild)
-  {
-    response.guildInfo = {
-      .uid = guild.uid(),
+    guildRecord.Immutable([&response](const data::Guild& guild)
+    {
+      response.guildInfo = {
+        .uid = guild.uid(),
       .member1 = 0,
       .member2 = 0,
       .member3 = 0,
@@ -4621,7 +4633,7 @@ void RanchDirector::HandleChangeAge(
           if (character.settingsUid() == data::InvalidUid)
             character.settingsUid = settings.uid();
         });
-    });
+  });
 
   protocol::AcCmdCRChangeAgeOK response {
     .age = command.age};
@@ -4666,7 +4678,7 @@ void RanchDirector::HandleHideAge(
           if (character.settingsUid() == data::InvalidUid)
             character.settingsUid = settings.uid();
         });
-    });
+  });
 
   protocol::AcCmdCRHideAgeOK response {
     .option = command.option};
