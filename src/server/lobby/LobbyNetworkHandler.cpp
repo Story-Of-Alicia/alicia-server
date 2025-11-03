@@ -987,7 +987,7 @@ void LobbyNetworkHandler::HandleHeartbeat(
   const ClientId clientId)
 {
   auto& clientContext = GetClientContext(clientId);
-  //clientContext.lastHeartbeat = std::chrono::steady_clock::now();
+  clientContext.lastHeartbeat = std::chrono::steady_clock::now();
 }
 
 void LobbyNetworkHandler::HandleMakeRoom(
