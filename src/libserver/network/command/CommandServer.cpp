@@ -77,7 +77,9 @@ bool IsMuted(protocol::Command id)
     || id == protocol::Command::AcCmdCRRelayNotify
     || id == protocol::Command::AcCmdCRRelayCommand
     || id == protocol::Command::AcCmdCRRelayCommandNotify
-    || id == protocol::Command::AcCmdUserRaceActivateEvent;
+    || id == protocol::Command::AcCmdUserRaceActivateEvent
+    || id == protocol::Command::AcCmdCRStarPointGet
+    || id == protocol::Command::AcCmdCRStarPointGetOK;
 }
 
 } // namespace
@@ -155,6 +157,11 @@ CommandServer::NetworkEventHandler::NetworkEventHandler(
   CommandServer& commandServer)
   : _commandServer(commandServer)
 {
+}
+
+void CommandServer::NetworkEventHandler::HandleNetworkTick()
+{
+  _commandServer._eventHandler.HandleNetworkTick();
 }
 
 void CommandServer::NetworkEventHandler::OnClientConnected(

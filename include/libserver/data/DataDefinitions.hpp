@@ -283,6 +283,8 @@ struct Character
   dao::Field<std::vector<Uid>> mountEquipment{};
   
   dao::Field<std::vector<Uid>> horses{};
+  dao::Field<uint8_t> horseSlotCount{0u};
+
   dao::Field<std::vector<Uid>> pets{};
   dao::Field<Uid> mountUid{InvalidUid};
   dao::Field<Uid> petUid{InvalidUid};
@@ -372,6 +374,7 @@ struct Horse
   } potential{};
 
   dao::Field<uint32_t> luckState{0u};
+  dao::Field<uint16_t> fatigue{0u};
   dao::Field<uint32_t> emblemUid{0u};
   dao::Field<Clock::time_point> dateOfBirth{};
 

@@ -723,6 +723,14 @@ void RanchDirector::SendGuildInviteAccepted(
   }
 }
 
+void RanchDirector::AddRanchHorse(
+  data::Uid& rancherUid,
+  data::Uid& horseUid)
+{
+  auto& ranchInstance = _ranches[rancherUid];
+  ranchInstance.tracker.AddHorse(horseUid);
+}
+
 ServerInstance& RanchDirector::GetServerInstance()
 {
   return _serverInstance;
@@ -837,6 +845,7 @@ void RanchDirector::HandleEnterRanch(
 
       response.rancherName = rancherName;
       response.ranchName = std::format("{}{} ranch", rancherName, possessiveSuffix);
+      response.horseSlots = rancher.horseSlotCount();
 
       // If the ranch was just created add the horses to the world tracker.
       if (ranchCreated)
@@ -3117,6 +3126,14 @@ void RanchDirector::HandleUseItem(
   if (not itemTemplate)
     throw std::runtime_error("Item template not available");
 
+  if (itemTemplate->type != registry::Item::Type::Consumable)
+  {
+    throw std::runtime_error(std::format(
+      "Use of unconsumable item {} (tid: {})",
+      command.itemUid,
+      usedItemTid));
+  }
+
   bool consumeItem = false;
   if (itemTemplate->foodParameters)
   {
@@ -3167,9 +3184,10 @@ void RanchDirector::HandleUseItem(
   }
   else
   {
-    throw std::runtime_error(
-      std::format("Unknown use of item tid {} for item uid {}", usedItemTid, command.itemUid));
-    return;
+    spdlog::warn(
+      "Use of unhandled item {} (tid: {})",
+      command.itemUid,
+      usedItemTid);
   }
 
   if (consumeItem)
@@ -3571,6 +3589,8 @@ void RanchDirector::HandleCheckStorageItem(
   });
 }
 
+//! Changes the age of the calling character
+//! If this is called, it implicitly means "hide age" is not selected on the client, so we show age
 void RanchDirector::HandleChangeAge(
   ClientId clientId,
   const protocol::AcCmdCRChangeAge command)
@@ -3588,6 +3608,8 @@ void RanchDirector::HandleChangeAge(
       settingsRecord.Mutable(
         [&character, &age](data::Settings& settings)
         {
+          // Age can only be changed if the "hide age and gender" option is not ticked
+          settings.hideAge() = false;
           settings.age() = static_cast<uint8_t>(age);
 
           if (character.settingsUid() == data::InvalidUid)
