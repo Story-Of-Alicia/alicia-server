@@ -497,9 +497,40 @@ LobbyNetworkHandler::ClientContext& LobbyNetworkHandler::GetClientContext(
   return clientContext;
 }
 
+void LobbyNetworkHandler::HandleNetworkTick()
+{
+  const auto now = std::chrono::steady_clock::now();
+
+  std::vector<ClientId> clientsToDisconnect;
+  for (const auto& [clientId, clientContext] : _clients)
+  {
+    const bool hasReachedTimeOut = now - clientContext.lastHeartbeat > std::chrono::seconds(60);
+    if (not hasReachedTimeOut)
+      continue;
+
+    spdlog::warn(
+       "Client {} ('{}') has reached a network timeout and is being disconnected",
+       clientId,
+       clientContext.userName);
+
+    clientsToDisconnect.emplace_back(clientId);
+
+    _serverInstance.GetRanchDirector().Disconnect(
+      clientContext.characterUid);
+    _serverInstance.GetRaceDirector().DisconnectCharacter(
+      clientContext.characterUid);
+  }
+
+  for (const ClientId& clientId : clientsToDisconnect)
+  {
+    _commandServer.DisconnectClient(clientId);
+  }
+}
+
 void LobbyNetworkHandler::HandleClientConnected(ClientId clientId)
 {
-  _clients.try_emplace(clientId);
+  const auto iter = _clients.try_emplace(clientId).first;
+  iter->second.lastHeartbeat = std::chrono::steady_clock::now();
 
   spdlog::debug(
     "Client {} connected to the lobby server from {}",
@@ -955,7 +986,8 @@ void LobbyNetworkHandler::HandleRoomList(
 void LobbyNetworkHandler::HandleHeartbeat(
   const ClientId clientId)
 {
-  // todo: implement heartbeat statistics
+  auto& clientContext = GetClientContext(clientId);
+  //clientContext.lastHeartbeat = std::chrono::steady_clock::now();
 }
 
 void LobbyNetworkHandler::HandleMakeRoom(

@@ -159,6 +159,11 @@ CommandServer::NetworkEventHandler::NetworkEventHandler(
 {
 }
 
+void CommandServer::NetworkEventHandler::HandleNetworkTick()
+{
+  _commandServer._eventHandler.HandleNetworkTick();
+}
+
 void CommandServer::NetworkEventHandler::OnClientConnected(
   network::ClientId clientId)
 {
