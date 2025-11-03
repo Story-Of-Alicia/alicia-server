@@ -2709,5 +2709,39 @@ void AcCmdCRRegisterDailyQuestGroupOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdRCUpdateDailyQuestNotify::Write(
+  const AcCmdRCUpdateDailyQuestNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid);
+  stream.Write(command.questId);
+  stream.Write(command.unk);
+  stream.Write(command.unk0);
+  stream.Write(command.unk1);
+  stream.Write(command.unk2);
+  stream.Write(command.unk3);
+}
+
+void AcCmdRCUpdateDailyQuestNotify::Read(
+  AcCmdRCUpdateDailyQuestNotify& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdRCUpdateDailyQuestNotify::Unk::Write(const Unk& value, SinkStream& stream)
+{
+  stream.Write(value.unk0)
+    .Write(value.unk1)
+    .Write(value.unk2);
+}
+
+void AcCmdRCUpdateDailyQuestNotify::Unk::Read(Unk& value, SourceStream& stream)
+{
+  stream.Read(value.unk0)
+    .Read(value.unk1)
+    .Read(value.unk2);
+}
+
 } // namespace server::protocol
 

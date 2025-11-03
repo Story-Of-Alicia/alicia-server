@@ -2106,7 +2106,7 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
             response.dailyQuests[i].unk_1 = static_cast<uint32_t>(quest.unk_1());
             response.dailyQuests[i].unk_2 = static_cast<uint8_t>(quest.unk_2());
             response.dailyQuests[i].unk_3 = static_cast<uint8_t>(quest.unk_3());
-            response.unk[i+1] = {static_cast<uint16_t>(quest.unk_0()), 1, 0, 2, 1, 1};
+            response.unk[i+1] = {static_cast<uint16_t>(quest.unk_0()), 1, 1, 2, 1, 1};
           });
       }
       else
