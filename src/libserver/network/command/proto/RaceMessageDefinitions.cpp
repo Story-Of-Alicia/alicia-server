@@ -73,10 +73,10 @@ void WriteRacer(SinkStream& stream, const Racer& racer)
     .Write(racer.guild.val5)
     .Write(racer.guild.val6);
   stream.Write(racer.unk9);
-  stream.Write(racer.unk10)
+  stream.Write(racer.role)
     .Write(racer.unk11)
     .Write(racer.unk12)
-    .Write(racer.unk13);
+    .Write(racer.gender);
 }
 
 void WriteRoomDescription(SinkStream& stream, const RoomDescription& roomDescription)
@@ -218,9 +218,9 @@ void AcCmdCRChangeRoomOptions::Read(
   {
     stream.Read(command.mapBlockId);
   }
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::NPCRace)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::NpcDifficulty)
   {
-    stream.Read(command.npcRace);
+    stream.Read(command.npcDifficulty);
   }
 }
 
@@ -249,9 +249,9 @@ void AcCmdCRChangeRoomOptionsNotify::Write(
   {
     stream.Write(command.mapBlockId);
   }
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::NPCRace)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::NpcDifficulty)
   {
-    stream.Write(command.npcRace);
+    stream.Write(command.npcDifficulty);
   }
 }
 
@@ -719,11 +719,11 @@ void AcCmdCRRaceResultOK::Write(
   const AcCmdCRRaceResultOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.member1)
-    .Write(command.member2)
-    .Write(command.member3)
+  stream.Write(command.recordGhostReplay)
+    .Write(command.resultKey)
+    .Write(command.horseFatigue)
     .Write(command.member4)
-    .Write(command.member5)
+    .Write(command.notifyMountEmblemUnlock)
     .Write(command.currentCarrots);
 }
 
@@ -755,12 +755,12 @@ void AcCmdRCRaceResultNotify::Write(
       .Write(score.member12)
       .Write(score.recordTimeDifference)
       .Write(score.member14)
-      .Write(score.member15)
+      .Write(score.horseClassProgress)
       .Write(score.achievements)
       .Write(score.bitset)
       .Write(score.mountName)
-      .Write(score.member19)
-      .Write(score.member20)
+      .Write(score.growthPoints)
+      .Write(score.horseClass)
       .Write(score.bonusCarrots)
       .Write(score.member22)
       .Write(score.member23)

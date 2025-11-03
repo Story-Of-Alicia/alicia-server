@@ -22,6 +22,7 @@
 
 #include "CommonStructureDefinitions.hpp"
 #include "libserver/network/command/CommandProtocol.hpp"
+#include "libserver/util/Util.hpp"
 
 #include <cstdint>
 #include <optional>
@@ -38,7 +39,7 @@ enum class RoomOptionType : uint16_t
   Password = 1 << 2,
   GameMode = 1 << 3,
   MapBlockId = 1 << 4,
-  NPCRace = 1 << 5,
+  NpcDifficulty = 1 << 5,
 };
 
 enum class TeamColor : uint32_t
@@ -83,10 +84,15 @@ struct Racer
   Pet pet{};
   Guild guild{};
   League unk9{};
-  uint8_t unk10{0};
+  enum class Role : uint8_t
+  {
+    User = 0,
+    Op = 1,
+    GameMaster = 2
+  } role{Role::User};
   uint8_t unk11{0};
   uint8_t unk12{};
-  uint8_t unk13{};
+  Gender gender{Gender::Unspecified};
 };
 
 struct RoomDescription
@@ -224,7 +230,7 @@ struct AcCmdCRChangeRoomOptions
   std::string password{};
   GameMode gameMode{};
   uint16_t mapBlockId{};
-  uint8_t npcRace{};
+  uint8_t npcDifficulty{};
 
   static Command GetCommand()
   {
@@ -254,7 +260,7 @@ struct AcCmdCRChangeRoomOptionsNotify
   std::string password{}; // password
   GameMode gameMode{};
   uint16_t mapBlockId{};
-  uint8_t npcRace{};
+  uint8_t npcDifficulty{};
 
   static Command GetCommand()
   {
@@ -912,11 +918,26 @@ struct AcCmdCRRaceResult
 
 struct AcCmdCRRaceResultOK
 {
-  uint8_t member1{};
-  uint64_t member2{};
-  uint16_t member3{};
+  //! A flag to indicate to the client whether to record the ghost replay and save.
+  //! Likely used to indicate to the client if the receiving server can accept replay files.
+  enum class RecordGhostReplay : uint8_t
+  {
+    No = 0,
+    Yes = 1
+  } recordGhostReplay{RecordGhostReplay::Yes};
+  //! Used to upload ghost replay to server.
+  uint64_t resultKey{};
+  //! Post-race horse fatigue.
+  uint16_t horseFatigue{};
+  //! TODO: Appears to be unused.
   uint16_t member4{};
-  uint8_t member5{};
+  //! Notifies the player that their mount has completed all proficiency requirements and unlocks the mount's emblem.
+  enum class Unlock : uint8_t
+  {
+    NoNotify = 0,
+    Notify = 1
+  } notifyMountEmblemUnlock{Unlock::NoNotify};
+  //! The current carrot balance of the character, with the difference (carrots earned) calculated by the client.
   uint32_t currentCarrots{};
 
   static Command GetCommand()
@@ -960,7 +981,7 @@ struct AcCmdRCRaceResultNotify
     //! Time in milliseconds.
     uint32_t recordTimeDifference{};
     uint32_t member14{};
-    uint32_t member15{};
+    uint32_t horseClassProgress{500};
     AcCmdCRStartRaceNotify::Struct2 achievements{};
     enum Bitset : uint32_t
     {
@@ -973,8 +994,8 @@ struct AcCmdRCRaceResultNotify
       EventBonusExperience = 1 << 12,
     } bitset;
     std::string mountName{};
-    uint16_t member19{};
-    uint8_t member20{};
+    uint16_t growthPoints{};
+    uint8_t horseClass{};
     uint32_t bonusCarrots{};
     uint32_t member22{};
     AcCmdCRStartRaceNotify::Struct1 member23{};
