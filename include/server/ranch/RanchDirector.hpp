@@ -125,6 +125,8 @@ private:
 
     
     uint8_t busyState{0};
+    //! Current breeding failure card type: 0 = Normal (RED), 1 = Chance (YELLOW)
+    uint8_t pendingCardType{0};
   };
 
   struct RanchInstance
