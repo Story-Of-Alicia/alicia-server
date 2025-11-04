@@ -30,6 +30,14 @@
 namespace server::protocol
 {
 
+enum class Status : uint8_t
+{
+  Hidden = 0,
+  Offline = 1,
+  Online = 2,
+  Away = 3
+};
+
 struct ChatCmdLogin
 {
   uint32_t characterUid{};
@@ -74,11 +82,7 @@ struct ChatCmdLoginAckOK
     uint32_t categoryUid{};
     std::string name{};
 
-    enum class Status : uint8_t
-    {
-      Offline = 1,
-      Online = 2
-    } status = Status::Offline;
+    Status status = Status::Offline;
 
     uint8_t member5{};
     uint32_t roomUid{};
@@ -158,13 +162,7 @@ struct ChatCmdGuildLoginOK
     uint32_t characterUid{};
     //! Online status of the guild member.
     //! `Status::Hidden` completely removes the status of that member.
-    enum class Status : uint8_t
-    {
-      Hidden = 0,
-      Offline = 1,
-      Online = 2,
-      Away = 3
-    } status{Status::Hidden};
+    Status status{Status::Hidden};
 
     struct Struct2
     {

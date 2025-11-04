@@ -66,6 +66,8 @@ public:
   void BeginHost(network::asio::ip::address_v4 address, uint16_t port);
   void EndHost();
 
+  network::asio::ip::address_v4 GetClientAddress(const network::ClientId clientId);
+
   template<typename T>
   void QueueCommand(network::ClientId clientId, std::function<T()> commandSupplier)
   {
