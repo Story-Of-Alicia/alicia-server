@@ -1693,14 +1693,20 @@ void RanchDirector::HandleTryBreeding(
   
   uint32_t breedingCharge = stallionDataOpt->breedingCharge;
   
-  // Deduct breeding fee from player
-  characterRecord.Mutable([breedingCharge](data::Character& character)
+  // Deduct breeding fee from player and track total money spent on breeding
+  uint32_t totalMoneySpent = 0;
+  characterRecord.Mutable([breedingCharge, &totalMoneySpent](data::Character& character)
   {
     if (character.carrots() >= breedingCharge)
     {
       character.carrots() = character.carrots() - breedingCharge;
+      character.breedingMoneySpent() = character.breedingMoneySpent() + breedingCharge;
+      totalMoneySpent = character.breedingMoneySpent();
     }
   });
+  
+  spdlog::info("TryBreeding: Charged {} carrots, total breeding money spent: {}", 
+    breedingCharge, totalMoneySpent);
   
   // Calculate pregnancy chance based on stallion's timesBreeded
   uint32_t pregnancyChance = 0;
@@ -1965,7 +1971,11 @@ void RanchDirector::HandleTryBreeding(
   characterRecord.Mutable([foalUid](data::Character& character)
   {
     character.horses().emplace_back(foalUid);
+    // Reset breeding money spent after successful breeding
+    character.breedingMoneySpent() = 0;
   });
+  
+  spdlog::info("TryBreeding: Breeding successful - reset breedingMoneySpent to 0");
   
   // Increment stallion's lifetime breeding counter (on the horse record)
   stallionRecord->Mutable([](data::Horse& stallion)
@@ -2085,7 +2095,12 @@ void RanchDirector::HandleBreedingFailureCardChoose(
   
   static std::mt19937 gen(std::chrono::steady_clock::now().time_since_epoch().count());
   
-  uint32_t moneySpent = 100000;
+  // Get player's total breeding money spent for reward grade calculation
+  uint32_t moneySpent = 0;
+  characterRecord.Immutable([&moneySpent](const data::Character& character)
+  {
+    moneySpent = character.breedingMoneySpent();
+  });
   
   // Breeding Failure Card reward grade probability structure
   // Maps total money spent on breeding to reward grade probabilities
