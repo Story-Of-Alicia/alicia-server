@@ -706,16 +706,22 @@ data::Tid Genetics::CalculateFoalSkin(
     stallionAncestors = stallion.ancestors();
   });
   
-  // Calculate inheritance rate bonus
-  // Formula: (mareCombo + stallionCombo) × InheritanceRateBonusUnit + pregnancyBonus
-  // - InheritanceRateBonusUnit = 2% per consecutive success
-  // - Pregnancy bonus = (30 - pregnancyChance) = 0-30%
-  uint16_t comboBonus = (mareCombo + stallionCombo) * 2;  // Both combos contribute
-  uint16_t pregnancyBonus = (30 - std::min<uint32_t>(pregnancyChance, 30u));  // Better pregnancy = higher bonus
-  uint8_t inheritanceRateBonus = std::min<uint16_t>(comboBonus + pregnancyBonus, 100);  // Cap at 100%
+  // Get coat base inheritance rates for both parents
+  const auto& mareCoatInfo = _serverInstance.GetHorseRegistry().GetCoatInfo(mareSkin);
+  const auto& stallionCoatInfo = _serverInstance.GetHorseRegistry().GetCoatInfo(stallionSkin);
   
-  spdlog::debug("Genetics: InheritanceRate bonus = {}% (mareCombo:{} + stallionCombo:{} = +{}%, pregnancy:{} = +{}%)",
-    inheritanceRateBonus, mareCombo, stallionCombo, comboBonus, pregnancyChance, pregnancyBonus);
+  // Calculate inheritance bonus components - ALL boost stallion's coat probability
+  // Bonus = (mare combo + stallion combo + pregnancy + lineage) → increases stallion coat chance
+  uint16_t comboBonus = (mareCombo + stallionCombo) * 1;  // 1% per consecutive success (both parents contribute)
+  uint16_t pregnancyBonus = (30 - std::min<uint32_t>(pregnancyChance, 30u));  // 0-30% based on stallion freshness
+  uint16_t lineageBonus = 0;  // TODO: Implement lineage system in the future
+  
+  // Total bonus percentage (0-100+%) - all of this boosts STALLION'S coat inheritance
+  uint16_t totalBonusPercentage = comboBonus + pregnancyBonus + lineageBonus;
+  if (totalBonusPercentage > 100) totalBonusPercentage = 100;  // Cap at 100%
+  
+  spdlog::debug("Genetics: Stallion coat inheritance bonus = {}% (mareCombo:{} + stallionCombo:{} = +{}%, pregnancy:{} = +{}%, lineage:+{}%)",
+    totalBonusPercentage, mareCombo, stallionCombo, comboBonus, pregnancyChance, pregnancyBonus, lineageBonus);
   
   // Get grandparent skins in order: mare's parents, stallion's parents
   std::vector<data::Tid> gpSkins;
@@ -782,30 +788,46 @@ data::Tid Genetics::CalculateFoalSkin(
     return getRandomValidSkin();
   };
   
-  // Weighted inheritance with inheritance rate bonus
-  // Base: Mare 10%, Stallion 10%, GPs 5% each (up to 4), Random 60%
-  // Inheritance bonus increases stallion's probability, decreases random probability
-  uint8_t mareWeight = 10;
-  uint8_t stallionWeight = 10 + inheritanceRateBonus;  // Stallion gets inheritance rate bonus
-  uint8_t gpWeight = 5;
+  // All bonuses boost only stallion's coat probability
+  // Formula: stallionWeight = baseWeight × coatInheritanceRate × (1 + bonusPercentage/100)
   
-  // Ensure total doesn't exceed 100% - cap stallion weight and adjust random accordingly
-  if (stallionWeight > 90) stallionWeight = 90;  // Leave room for mare + GPs
+  float bonusMultiplier = 1.0f + (totalBonusPercentage / 100.0f);
+  
+  float mareWeight = 10.0f * mareCoatInfo.inheritanceRate;
+  float stallionWeight = 10.0f * stallionCoatInfo.inheritanceRate * bonusMultiplier;
+  float gpWeight = 5.0f;  // GPs use fixed weight (could also use their coat rates in future)
   
   uint8_t gpCount = std::min((uint8_t)gpSkins.size(), (uint8_t)4);
-  uint8_t totalGpWeight = gpWeight * gpCount;
-  uint8_t randomWeight = 100 - mareWeight - stallionWeight - totalGpWeight;
+  float totalGpWeight = gpWeight * gpCount;
   
-  // Build cumulative thresholds
-  int mareThreshold = mareWeight;
-  int stallionThreshold = mareThreshold + stallionWeight;
-  int gp1Threshold = stallionThreshold + (gpCount > 0 ? gpWeight : 0);
-  int gp2Threshold = gp1Threshold + (gpCount > 1 ? gpWeight : 0);
-  int gp3Threshold = gp2Threshold + (gpCount > 2 ? gpWeight : 0);
-  int gp4Threshold = gp3Threshold + (gpCount > 3 ? gpWeight : 0);
+  // Random weight fills remainder, with base rate of 60 reduced by parent bonuses
+  float baseRandomWeight = 60.0f;
+  float totalParentWeight = mareWeight + stallionWeight + totalGpWeight;
   
-  auto rand0_99 = std::uniform_int_distribution<int>(0, 99);
-  int roll = rand0_99(_randomEngine);
+  // If parents + GPs exceed 100, scale down random to minimum 10%
+  float randomWeight = std::max(10.0f, 100.0f - totalParentWeight);
+  
+  // Normalize all weights to sum to 100
+  float totalWeight = mareWeight + stallionWeight + totalGpWeight + randomWeight;
+  mareWeight = (mareWeight / totalWeight) * 100.0f;
+  stallionWeight = (stallionWeight / totalWeight) * 100.0f;
+  gpWeight = (gpWeight / totalWeight) * 100.0f;
+  randomWeight = (randomWeight / totalWeight) * 100.0f;
+  
+  spdlog::debug("Genetics: Normalized weights - Mare:{:.1f}%, Stallion:{:.1f}%, GPs:{:.1f}% each, Random:{:.1f}%",
+    mareWeight, stallionWeight, gpWeight, randomWeight);
+  
+  // Build cumulative thresholds (using floats for precision)
+  float mareThreshold = mareWeight;
+  float stallionThreshold = mareThreshold + stallionWeight;
+  float gp1Threshold = stallionThreshold + (gpCount > 0 ? gpWeight : 0);
+  float gp2Threshold = gp1Threshold + (gpCount > 1 ? gpWeight : 0);
+  float gp3Threshold = gp2Threshold + (gpCount > 2 ? gpWeight : 0);
+  float gp4Threshold = gp3Threshold + (gpCount > 3 ? gpWeight : 0);
+  
+  // Roll 0.0 to 100.0 for float-based weights
+  auto rand0_100 = std::uniform_real_distribution<float>(0.0f, 100.0f);
+  float roll = rand0_100(_randomEngine);
   
   data::Tid selectedSkin = 0;
   
@@ -839,7 +861,7 @@ data::Tid Genetics::CalculateFoalSkin(
     selectedSkin = getRandomValidSkin();
   }
   
-  spdlog::debug("Genetics: Skin inheritance roll={} (Mare<{}, Stallion<{}, Random otherwise)",
+  spdlog::debug("Genetics: Skin inheritance roll={:.2f} (Mare<{:.1f}, Stallion<{:.1f}, Random otherwise)",
     roll, mareThreshold, stallionThreshold);
   
   // Log final selection

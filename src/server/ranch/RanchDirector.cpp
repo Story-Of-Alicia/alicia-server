@@ -1420,7 +1420,9 @@ void RanchDirector::HandleSearchStallion(
       });
     }
 
-    horseRecord->Immutable([&protocolStallion, &ownerName, &stallionData](const data::Horse& horse)
+    auto& horseRegistry = GetServerInstance().GetHorseRegistry();
+    
+    horseRecord->Immutable([&protocolStallion, &ownerName, &stallionData, &horseRegistry](const data::Horse& horse)
     {
       protocolStallion.member1 = ownerName;
       protocolStallion.uid = horse.uid();
@@ -1434,24 +1436,36 @@ void RanchDirector::HandleSearchStallion(
       uint32_t pregnancyChance = std::min(horse.breeding.timesBreeded(), 30u);
       protocolStallion.pregnancyChance = pregnancyChance;
       
-      // Calculate inheritance rate (probability of inheriting stallion's coat)
-      // Formula: baseRate + (stallionCombo × InheritanceRateBonusUnit) + pregnancyBonus
-      // - InheritanceRateBonusUnit = 2% per consecutive success
-
-      //   (30 - pregnancyChance) gives 0 to 30, multiply by 1% per point
+      // Calculate stallion coat inheritance probability
+      // All bonuses (combo + pregnancy + lineage) boost the stallion's coat inheritance chance
+      // Formula: stallionWeight = coatBaseRate × (1 + bonusPercentage/100)
+      
+      // Get stallion's coat base inheritance rate
+      const auto& stallionCoatInfo = horseRegistry.GetCoatInfo(horse.parts.skinTid());
+      
+      // Calculate bonus components (will boost stallion's coat probability)
       uint8_t stallionCombo = horse.breeding.breedingCombo();
-      uint8_t baseRate = 0;
-      uint8_t comboBonus = stallionCombo * 2; 
-      uint8_t pregnancyBonus = (30 - pregnancyChance);
+      uint8_t comboBonus = stallionCombo * 1;  // 1% per consecutive success
+      uint8_t pregnancyBonus = (30 - pregnancyChance);  // 0-30% based on freshness
+      uint8_t lineageBonus = 0;  // TODO: Implement lineage system in the future
       
-      uint8_t totalInheritanceRate = baseRate + comboBonus + pregnancyBonus;
-      // Cap at 100%
-      if (totalInheritanceRate > 100) totalInheritanceRate = 100;
+      // Total bonus percentage (0-100+%)
+      uint16_t totalBonusPercentage = comboBonus + pregnancyBonus + lineageBonus;
+      if (totalBonusPercentage > 100) totalBonusPercentage = 100;  // Cap at 100%
       
-      // Map 0-100% to 0-8 UI scale proportionally
-      // Formula: (rate * 8 + 50) / 100 for proper rounding, then clamp to 8
-      uint8_t inheritanceRateUI = (totalInheritanceRate * 8u + 50u) / 100u;
-      if (inheritanceRateUI > 8) inheritanceRateUI = 8;
+      // Calculate stallion's boosted weight (what it would be in breeding)
+      float bonusMultiplier = 1.0f + (totalBonusPercentage / 100.0f);
+      float stallionWeight = 10.0f * stallionCoatInfo.inheritanceRate * bonusMultiplier;
+      
+      // Estimate probability in a typical scenario (assuming average mare/GP/random distribution)
+      // Typical total: Mare(~10) + Stallion(boosted) + GPs(~20) + Random(~60) ≈ 90 + boosted
+      // Simplified: Show stallion's weight as percentage of typical total
+      float typicalTotal = 90.0f + stallionWeight;
+      float estimatedProbability = (stallionWeight / typicalTotal) * 100.0f;
+      
+      // Map to 0-8 UI scale based on probability percentage
+      // 0% = 0/8, 12.5% = 1/8, 25% = 2/8, 50% = 4/8, 100% = 8/8
+      uint8_t inheritanceRateUI = static_cast<uint8_t>(std::min(8.0f, (estimatedProbability / 12.5f)));
       protocolStallion.inheritanceRate = inheritanceRateUI; // 0~8
       protocolStallion.matePrice = stallionData.breedingCharge;
       
