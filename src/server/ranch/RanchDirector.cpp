@@ -1795,6 +1795,7 @@ void RanchDirector::HandleTryBreeding(
     data::Tid mareSkin = 0, mareMane = 0, mareTail = 0, mareFace = 0;
     uint32_t mareAgility = 0, mareCourage = 0, mareRush = 0, mareEndurance = 0, mareAmbition = 0;
     uint8_t mareGrade = 0;
+    uint32_t mareScale = 0, mareLegLength = 0, mareLegVolume = 0, mareBodyLength = 0, mareBodyVolume = 0;
     std::vector<data::Uid> mareAncestors;
     
     mareRecord->Immutable([&](const data::Horse& mare)
@@ -1810,12 +1811,18 @@ void RanchDirector::HandleTryBreeding(
       mareEndurance = mare.stats.endurance();
       mareAmbition = mare.stats.ambition();
       mareGrade = mare.grade();
+      mareScale = mare.appearance.scale();
+      mareLegLength = mare.appearance.legLength();
+      mareLegVolume = mare.appearance.legVolume();
+      mareBodyLength = mare.appearance.bodyLength();
+      mareBodyVolume = mare.appearance.bodyVolume();
       mareAncestors = mare.ancestors();
     });
     
     data::Tid stallionSkin = 0, stallionMane = 0, stallionTail = 0, stallionFace = 0;
     uint32_t stallionAgility = 0, stallionCourage = 0, stallionRush = 0, stallionEndurance = 0, stallionAmbition = 0;
     uint8_t stallionGrade = 0;
+    uint32_t stallionScale = 0, stallionLegLength = 0, stallionLegVolume = 0, stallionBodyLength = 0, stallionBodyVolume = 0;
     std::vector<data::Uid> stallionAncestors;
     
     stallionRecord->Immutable([&](const data::Horse& stallion)
@@ -1830,6 +1837,11 @@ void RanchDirector::HandleTryBreeding(
       stallionEndurance = stallion.stats.endurance();
       stallionAmbition = stallion.stats.ambition();
       stallionGrade = stallion.grade();
+      stallionScale = stallion.appearance.scale();
+      stallionLegLength = stallion.appearance.legLength();
+      stallionLegVolume = stallion.appearance.legVolume();
+      stallionBodyLength = stallion.appearance.bodyLength();
+      stallionBodyVolume = stallion.appearance.bodyVolume();
       stallionAncestors = stallion.ancestors();
     });
     
@@ -1873,12 +1885,29 @@ void RanchDirector::HandleTryBreeding(
       maneTailResult.maneColor, maneTailResult.maneShape, maneTailResult.maneTid,
       maneTailResult.tailColor, maneTailResult.tailShape, maneTailResult.tailTid);
     
-    // Inherit appearance (average of parents)
-    foal.appearance.scale() = (mareSkin + stallionSkin) / 2;
-    foal.appearance.legLength() = 4;
-    foal.appearance.legVolume() = 4;
-    foal.appearance.bodyLength() = 4;
-    foal.appearance.bodyVolume() = 4;
+    // Inherit appearance from parents with genetic variation (average ± 20%)
+    auto inheritAppearance = [this](uint32_t mareValue, uint32_t stallionValue) -> uint32_t {
+      // Calculate average
+      float average = (static_cast<float>(mareValue) + static_cast<float>(stallionValue)) / 2.0f;
+      
+      // Apply ±20% random variation
+      std::uniform_real_distribution<float> variationDist(0.8f, 1.2f);
+      float variation = variationDist(_randomDevice);
+      float result = average * variation;
+      
+      // Clamp to valid range [1, 10]
+      uint32_t finalValue = static_cast<uint32_t>(std::round(result));
+      if (finalValue < 1) finalValue = 1;
+      if (finalValue > 10) finalValue = 10;
+      
+      return finalValue;
+    };
+    
+    foal.appearance.scale() = inheritAppearance(mareScale, stallionScale);
+    foal.appearance.legLength() = inheritAppearance(mareLegLength, stallionLegLength);
+    foal.appearance.legVolume() = inheritAppearance(mareLegVolume, stallionLegVolume);
+    foal.appearance.bodyLength() = inheritAppearance(mareBodyLength, stallionBodyLength);
+    foal.appearance.bodyVolume() = inheritAppearance(mareBodyVolume, stallionBodyVolume);
     
     // Then calculate stats that FIT the grade
     auto statResult = genetics.CalculateFoalStats(
