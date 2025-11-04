@@ -1710,22 +1710,87 @@ void RanchDirector::HandleTryBreeding(
   
   // Calculate pregnancy chance based on stallion's timesBreeded
   uint32_t pregnancyChance = 0;
-  stallionRecord->Immutable([&pregnancyChance](const data::Horse& stallion)
+  uint8_t stallionGradeForBonus = 0;
+  stallionRecord->Immutable([&pregnancyChance, &stallionGradeForBonus](const data::Horse& stallion)
   {
     // Base: 0 (64% success), increases by 1 per breeding, max 30 (2% success)
     pregnancyChance = std::min(stallion.timesBreeded(), 30u);
+    stallionGradeForBonus = stallion.grade();
   });
   
-  // Determine breeding success based on pregnancy chance
-  // Formula: success rate = 64% - (pregnancyChance * 2%)
+  // Roll breeding bonus based on stallion grade (BonusProbInfo table)
+  // Grades 4-6 = Small (10% chance), Grades 7-8 = Big (15% chance)
+  struct BonusEntry {
+    uint8_t id;
+    uint8_t type;      // 0 = pregnancy %, 1 = fertility peak
+    uint8_t value;     // bonus value
+    int ratioSmall;    // TODO: If ratioSmall and ratioBig aren't supposed to mean low and high grades, make changes accordingly
+    int ratioBig;
+  };
+  
+  static const std::vector<BonusEntry> bonusTable = {
+    {1, 0, 5, 10, 0},   {2, 0, 10, 30, 0},  {3, 0, 15, 35, 0},
+    {4, 0, 20, 20, 0},  {5, 0, 40, 3, 0},   {6, 0, 50, 2, 0},
+    {7, 0, 40, 0, 10},  {8, 0, 50, 0, 20},  {9, 0, 60, 0, 10},
+    {10, 0, 70, 0, 10}, {11, 1, 1, 0, 15},  {12, 1, 2, 0, 15},
+    {13, 1, 3, 0, 20}
+  };
+  
+  uint8_t rolledBonusId = 0;
+  uint8_t rolledBonusType = 0;
+  uint8_t rolledBonusValue = 0;
+  
+  // Determine bonus type and probability based on stallion grade
+  bool isSmallGrade = (stallionGradeForBonus >= 4 && stallionGradeForBonus <= 6);
+  bool isBigGrade = (stallionGradeForBonus >= 7 && stallionGradeForBonus <= 8);
+  
+  if (isSmallGrade || isBigGrade)
+  {
+    // Roll for bonus activation
+    std::uniform_int_distribution<int> activationRoll(1, 100);
+    int activationThreshold = isSmallGrade ? 10 : 15;
+    
+    if (activationRoll(_randomDevice) <= activationThreshold)
+    {
+      std::vector<int> weights;
+      for (const auto& entry : bonusTable)
+      {
+        int weight = isSmallGrade ? entry.ratioSmall : entry.ratioBig;
+        weights.push_back(weight);
+      }
+      
+      // Roll for specific bonus
+      std::discrete_distribution<int> bonusDist(weights.begin(), weights.end());
+      int selectedIndex = bonusDist(_randomDevice);
+      
+      rolledBonusId = bonusTable[selectedIndex].id;
+      rolledBonusType = bonusTable[selectedIndex].type;
+      rolledBonusValue = bonusTable[selectedIndex].value;
+      
+      spdlog::info("TryBreeding: Rolled breeding bonus! Grade {} ({}) -> Bonus ID {} (Type {}, Value {})",
+        stallionGradeForBonus, isSmallGrade ? "Small" : "Big", 
+        rolledBonusId, rolledBonusType, rolledBonusValue);
+    }
+  }
+  
+  // Determine breeding success based on pregnancy chance + bonus
+  // Formula: success rate = 64% - (pregnancyChance * 2%) + bonus%
   std::uniform_int_distribution<uint32_t> breedingRoll(1, 100);
-  uint32_t successThreshold = 64 - (pregnancyChance * 2);
+  uint32_t baseSuccessRate = 64 - (pregnancyChance * 2);
+  
+  // Apply Type 0 bonus (pregnancy % increase) if applicable
+  uint32_t bonusAmount = (rolledBonusType == 0) ? rolledBonusValue : 0;
+  uint32_t successThreshold = baseSuccessRate + bonusAmount;
+  
+  // Cap at 100%
+  if (successThreshold > 100) successThreshold = 100;
+  
   bool breedingSuccess = breedingRoll(_randomDevice) <= successThreshold;
   
   if (!breedingSuccess)
   {
-    spdlog::info("TryBreeding: Breeding failed (pregnancyChance={}, successRate={}%)", 
-      pregnancyChance, successThreshold);
+    spdlog::info("TryBreeding: Breeding failed (pregnancyChance={}, base={}%, bonus=+{}%, final={}%)", 
+      pregnancyChance, baseSuccessRate, bonusAmount, successThreshold);
     
     // Increment stallion's lifetime breeding counter even on failure
     stallionRecord->Mutable([](data::Horse& stallion)
@@ -1773,8 +1838,8 @@ void RanchDirector::HandleTryBreeding(
     return;
   }
   
-  spdlog::info("TryBreeding: Breeding succeeded (pregnancyChance={}, successRate={}%)", 
-    pregnancyChance, successThreshold);
+  spdlog::info("TryBreeding: Breeding succeeded (pregnancyChance={}, base={}%, bonus=+{}%, final={}%)", 
+    pregnancyChance, baseSuccessRate, bonusAmount, successThreshold);
   
   // Create the foal/baby horse
   auto foalRecord = GetServerInstance().GetDataDirector().CreateHorse();
@@ -1788,7 +1853,8 @@ void RanchDirector::HandleTryBreeding(
   protocol::Horse::Stats foalStats{};
   
   foalRecord.Mutable([this, &command, &mareRecord, &stallionRecord, &foalUid, &foalTid, 
-                      &foalPotentialType, &foalGradeForResponse, &foalParts, &foalAppearance, &foalStats](data::Horse& foal)
+                      &foalPotentialType, &foalGradeForResponse, &foalParts, &foalAppearance, &foalStats,
+                      rolledBonusId, rolledBonusType](data::Horse& foal)
   {
     // Get parent data for genetics
     data::Tid mareTid = 0;
@@ -1857,8 +1923,16 @@ void RanchDirector::HandleTryBreeding(
     foal.tendency() = static_cast<uint8_t>(tendencyDist(_randomDevice) + 1); // +1 because distribution returns 0-4
     
     // Calculate foal grade first
+    // Apply fertility peak bonus if Type 1 bonus was rolled (IDs 11-13 map to stages 1-3)
+    uint8_t fertilityPeakLevel = 0;
+    if (rolledBonusType == 1 && rolledBonusId >= 11 && rolledBonusId <= 13)
+    {
+      fertilityPeakLevel = rolledBonusId - 10; // ID 11 -> Level 1, ID 12 -> Level 2, ID 13 -> Level 3
+      spdlog::info("TryBreeding: Applying fertility peak stage {} to foal grade calculation", fertilityPeakLevel);
+    }
+    
     auto& genetics = GetServerInstance().GetGenetics();
-    uint8_t foalGrade = genetics.CalculateFoalGrade(mareGrade, stallionGrade);
+    uint8_t foalGrade = genetics.CalculateFoalGrade(mareGrade, stallionGrade, fertilityPeakLevel);
     foal.grade() = foalGrade;
     
     // Use Genetics class for skin calculation
@@ -2035,7 +2109,7 @@ void RanchDirector::HandleTryBreeding(
     .appearance = foalAppearance,
     .stats = foalStats,
     .unk1 = 0, // Shows a window saying the foal has returned to the ranch"목장으로 돌아갔습니다"
-    .unk2 = 0, // Pregnancy bonus (BonusProbInfo in libconfig) TODO: Implement pregnancy bonus
+    .unk2 = rolledBonusId,
     .unk3 = 0,
     .unk4 = 0,
     .unk5 = 0,
