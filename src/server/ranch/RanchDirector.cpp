@@ -1427,13 +1427,33 @@ void RanchDirector::HandleSearchStallion(
       protocolStallion.tid = horse.tid();
       protocolStallion.name = horse.name();
       protocolStallion.grade = horse.grade();
-      protocolStallion.inheritanceRate = 0;  // TODO: Calculate based on consecutive successes and pregnancy probability
-      protocolStallion.matePrice = stallionData.breedingCharge;
       
       // Calculate pregnancy chance based on timesBreeded (lifetime breeding count)
-      // 30 -> 0 hearts (Lowest)
-      // 0 -> 3.2 hearts (Highest)
-      protocolStallion.pregnancyChance = std::min(horse.breeding.timesBreeded(), 30u);
+      // 30 -> 0 hearts (Lowest, 2% breeding success)
+      // 0 -> 3.2 hearts (Highest, 64% breeding success)
+      uint32_t pregnancyChance = std::min(horse.breeding.timesBreeded(), 30u);
+      protocolStallion.pregnancyChance = pregnancyChance;
+      
+      // Calculate inheritance rate (probability of inheriting stallion's coat)
+      // Formula: baseRate + (stallionCombo × InheritanceRateBonusUnit) + pregnancyBonus
+      // - InheritanceRateBonusUnit = 2% per consecutive success
+
+      //   (30 - pregnancyChance) gives 0 to 30, multiply by 1% per point
+      uint8_t stallionCombo = horse.breeding.breedingCombo();
+      uint8_t baseRate = 0;
+      uint8_t comboBonus = stallionCombo * 2; 
+      uint8_t pregnancyBonus = (30 - pregnancyChance);
+      
+      uint8_t totalInheritanceRate = baseRate + comboBonus + pregnancyBonus;
+      // Cap at 100%
+      if (totalInheritanceRate > 100) totalInheritanceRate = 100;
+      
+      // Map 0-100% to 0-8 UI scale proportionally
+      // Formula: (rate * 8 + 50) / 100 for proper rounding, then clamp to 8
+      uint8_t inheritanceRateUI = (totalInheritanceRate * 8u + 50u) / 100u;
+      if (inheritanceRateUI > 8) inheritanceRateUI = 8;
+      protocolStallion.inheritanceRate = inheritanceRateUI; // 0~8
+      protocolStallion.matePrice = stallionData.breedingCharge;
       
       protocolStallion.expiresAt = util::TimePointToAliciaTime(stallionData.expiresAt);
 
@@ -1870,6 +1890,7 @@ void RanchDirector::HandleTryBreeding(
     uint32_t mareScale = 0, mareLegLength = 0, mareLegVolume = 0, mareBodyLength = 0, mareBodyVolume = 0;
     std::vector<data::Uid> mareAncestors;
     
+    uint8_t mareCombo = 0;
     mareRecord->Immutable([&](const data::Horse& mare)
     {
       mareTid = mare.tid();
@@ -1889,6 +1910,7 @@ void RanchDirector::HandleTryBreeding(
       mareBodyLength = mare.appearance.bodyLength();
       mareBodyVolume = mare.appearance.bodyVolume();
       mareAncestors = mare.ancestors();
+      mareCombo = mare.breeding.breedingCombo();  // For inheritance rate calculation
     });
     
     data::Tid stallionSkin = 0, stallionMane = 0, stallionTail = 0, stallionFace = 0;
@@ -1896,6 +1918,8 @@ void RanchDirector::HandleTryBreeding(
     uint8_t stallionGrade = 0;
     uint32_t stallionScale = 0, stallionLegLength = 0, stallionLegVolume = 0, stallionBodyLength = 0, stallionBodyVolume = 0;
     std::vector<data::Uid> stallionAncestors;
+    uint8_t stallionCombo = 0;
+    uint32_t stallionTimesBreeded = 0;
     
     stallionRecord->Immutable([&](const data::Horse& stallion)
     {
@@ -1915,6 +1939,8 @@ void RanchDirector::HandleTryBreeding(
       stallionBodyLength = stallion.appearance.bodyLength();
       stallionBodyVolume = stallion.appearance.bodyVolume();
       stallionAncestors = stallion.ancestors();
+      stallionCombo = stallion.breeding.breedingCombo();  // For inheritance rate calculation
+      stallionTimesBreeded = stallion.breeding.timesBreeded();  // For pregnancy chance
     });
     
     // Set foal basic info
@@ -1941,11 +1967,16 @@ void RanchDirector::HandleTryBreeding(
     uint8_t foalGrade = genetics.CalculateFoalGrade(mareGrade, stallionGrade, fertilityPeakLevel);
     foal.grade() = foalGrade;
     
-    // Use Genetics class for skin calculation
+    // Use Genetics class for skin calculation with inheritance rate
+    // Inheritance rate increases chance of inheriting stallion's coat (based on combo + pregnancy rate)
+    uint32_t pregnancyChanceForInheritance = std::min(stallionTimesBreeded, 30u);
     data::Tid foalSkinTid = genetics.CalculateFoalSkin(
       command.mareUid,
       command.stallionUid,
-      foalGrade);
+      foalGrade,
+      mareCombo,
+      stallionCombo,
+      pregnancyChanceForInheritance);
     foal.parts.skinTid() = foalSkinTid;
     
     // Inherit face from parents (simple randomization)

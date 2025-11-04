@@ -678,7 +678,10 @@ Genetics::PotentialResult Genetics::CalculateFoalPotential(
 data::Tid Genetics::CalculateFoalSkin(
   data::Uid mareUid,
   data::Uid stallionUid,
-  uint8_t foalGrade)
+  uint8_t foalGrade,
+  uint8_t mareCombo,
+  uint8_t stallionCombo,
+  uint32_t pregnancyChance)
 {
   // Get parent and grandparent skin data
   auto mareRecord = _serverInstance.GetDataDirector().GetHorse(mareUid);
@@ -702,6 +705,17 @@ data::Tid Genetics::CalculateFoalSkin(
     stallionSkin = stallion.parts.skinTid();
     stallionAncestors = stallion.ancestors();
   });
+  
+  // Calculate inheritance rate bonus
+  // Formula: (mareCombo + stallionCombo) × InheritanceRateBonusUnit + pregnancyBonus
+  // - InheritanceRateBonusUnit = 2% per consecutive success
+  // - Pregnancy bonus = (30 - pregnancyChance) = 0-30%
+  uint16_t comboBonus = (mareCombo + stallionCombo) * 2;  // Both combos contribute
+  uint16_t pregnancyBonus = (30 - std::min<uint32_t>(pregnancyChance, 30u));  // Better pregnancy = higher bonus
+  uint8_t inheritanceRateBonus = std::min<uint16_t>(comboBonus + pregnancyBonus, 100);  // Cap at 100%
+  
+  spdlog::debug("Genetics: InheritanceRate bonus = {}% (mareCombo:{} + stallionCombo:{} = +{}%, pregnancy:{} = +{}%)",
+    inheritanceRateBonus, mareCombo, stallionCombo, comboBonus, pregnancyChance, pregnancyBonus);
   
   // Get grandparent skins in order: mare's parents, stallion's parents
   std::vector<data::Tid> gpSkins;
@@ -768,41 +782,65 @@ data::Tid Genetics::CalculateFoalSkin(
     return getRandomValidSkin();
   };
   
-  // Weighted inheritance: Mom 10%, Dad 10%, GPs 5% each (up to 4), Random 60%
+  // Weighted inheritance with inheritance rate bonus
+  // Base: Mare 10%, Stallion 10%, GPs 5% each (up to 4), Random 60%
+  // Inheritance bonus increases stallion's probability, decreases random probability
+  uint8_t mareWeight = 10;
+  uint8_t stallionWeight = 10 + inheritanceRateBonus;  // Stallion gets inheritance rate bonus
+  uint8_t gpWeight = 5;
+  
+  // Ensure total doesn't exceed 100% - cap stallion weight and adjust random accordingly
+  if (stallionWeight > 90) stallionWeight = 90;  // Leave room for mare + GPs
+  
+  uint8_t gpCount = std::min((uint8_t)gpSkins.size(), (uint8_t)4);
+  uint8_t totalGpWeight = gpWeight * gpCount;
+  uint8_t randomWeight = 100 - mareWeight - stallionWeight - totalGpWeight;
+  
+  // Build cumulative thresholds
+  int mareThreshold = mareWeight;
+  int stallionThreshold = mareThreshold + stallionWeight;
+  int gp1Threshold = stallionThreshold + (gpCount > 0 ? gpWeight : 0);
+  int gp2Threshold = gp1Threshold + (gpCount > 1 ? gpWeight : 0);
+  int gp3Threshold = gp2Threshold + (gpCount > 2 ? gpWeight : 0);
+  int gp4Threshold = gp3Threshold + (gpCount > 3 ? gpWeight : 0);
+  
   auto rand0_99 = std::uniform_int_distribution<int>(0, 99);
   int roll = rand0_99(_randomEngine);
   
   data::Tid selectedSkin = 0;
   
-  if (roll < 10)
+  if (roll < mareThreshold)
   {
-    selectedSkin = getValidSkinOrRandom(mareSkin); // Mom 10%
+    selectedSkin = getValidSkinOrRandom(mareSkin); // Mare ~10%
   }
-  else if (roll < 20)
+  else if (roll < stallionThreshold)
   {
-    selectedSkin = getValidSkinOrRandom(stallionSkin); // Dad 10%
+    selectedSkin = getValidSkinOrRandom(stallionSkin); // Stallion 10% + inheritance bonus
   }
-  else if (roll < 25 && gpSkins.size() > 0)
+  else if (roll < gp1Threshold && gpSkins.size() > 0)
   {
     selectedSkin = getValidSkinOrRandom(gpSkins[0]); // Maternal GP1 5%
   }
-  else if (roll < 30 && gpSkins.size() > 1)
+  else if (roll < gp2Threshold && gpSkins.size() > 1)
   {
     selectedSkin = getValidSkinOrRandom(gpSkins[1]); // Maternal GP2 5%
   }
-  else if (roll < 35 && gpSkins.size() > 2)
+  else if (roll < gp3Threshold && gpSkins.size() > 2)
   {
     selectedSkin = getValidSkinOrRandom(gpSkins[2]); // Paternal GP1 5%
   }
-  else if (roll < 40 && gpSkins.size() > 3)
+  else if (roll < gp4Threshold && gpSkins.size() > 3)
   {
     selectedSkin = getValidSkinOrRandom(gpSkins[3]); // Paternal GP2 5%
   }
   else
   {
-    // Random 60% - constrained by foal grade
+    // Random (decreased by inheritance bonus) - constrained by foal grade
     selectedSkin = getRandomValidSkin();
   }
+  
+  spdlog::debug("Genetics: Skin inheritance roll={} (Mare<{}, Stallion<{}, Random otherwise)",
+    roll, mareThreshold, stallionThreshold);
   
   // Log final selection
   const auto& coatInfo = _serverInstance.GetHorseRegistry().GetCoatInfo(selectedSkin);

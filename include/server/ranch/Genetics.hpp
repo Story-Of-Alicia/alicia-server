@@ -62,15 +62,21 @@ public:
     data::Tid foalSkinTid);
 
   //! Calculates skin/coat genetics based on parents and grandparents.
-  //! Weighted inheritance: Mom 7%, Dad 7%, GPs 3% each, Random 74%
+  //! Weighted inheritance: Mom 10%, Dad 10% (+ inheritance rate bonus), GPs 5% each, Random 60%
   //! @param mareUid Mare's UID
   //! @param stallionUid Stallion's UID
   //! @param foalGrade Foal's calculated grade (for minimum grade requirements)
+  //! @param mareCombo Mare's consecutive breeding success count
+  //! @param stallionCombo Stallion's consecutive breeding success count
+  //! @param pregnancyChance Stallion's pregnancy chance (0-30, lower = better)
   //! @returns Skin TID that the foal inherits
   data::Tid CalculateFoalSkin(
     data::Uid mareUid,
     data::Uid stallionUid,
-    uint8_t foalGrade);
+    uint8_t foalGrade,
+    uint8_t mareCombo = 0,
+    uint8_t stallionCombo = 0,
+    uint32_t pregnancyChance = 30);
 
   //! Calculates foal grade based on parent grades.
   //! @param mareGrade Mare's grade (1-8)
