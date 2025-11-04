@@ -389,7 +389,7 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
   return result;
 }
 
-uint8_t Genetics::CalculateFoalGrade(uint8_t mareGrade, uint8_t stallionGrade)
+uint8_t Genetics::CalculateFoalGrade(uint8_t mareGrade, uint8_t stallionGrade, uint8_t fertilityPeakLevel)
 {
   // BreedingGradeProbInfo in libconfig
   // Rows = GradeDistance (0-4, max difference allowed in breeding)
