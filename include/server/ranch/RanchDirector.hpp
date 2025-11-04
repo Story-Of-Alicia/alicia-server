@@ -378,6 +378,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRRegisterDailyQuestGroup& command);
 
+  void HandleRequestDailyQuestReward(
+      ClientId clientId, 
+      const protocol::AcCmdCRRequestDailyQuestReward& command);
+
   //!
   ServerInstance& _serverInstance;
   //!

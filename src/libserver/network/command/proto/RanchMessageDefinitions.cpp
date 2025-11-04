@@ -2743,5 +2743,55 @@ void AcCmdRCUpdateDailyQuestNotify::Unk::Read(Unk& value, SourceStream& stream)
     .Read(value.unk2);
 }
 
+void AcCmdCRRequestDailyQuestReward::Write(
+  const AcCmdCRRequestDailyQuestReward& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRequestDailyQuestReward::Read(
+  AcCmdCRRequestDailyQuestReward& command,
+  SourceStream& stream)
+{
+  stream.Read(command.unk0);
+  stream.Read(command.unk1);
+}
+
+void AcCmdCRRequestDailyQuestRewardOK::Write(
+  const AcCmdCRRequestDailyQuestRewardOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0);
+
+  for (auto& member : command.unk)
+  {
+    stream.Write(member);
+  }
+}
+
+void AcCmdCRRequestDailyQuestRewardOK::Read(
+  AcCmdCRRequestDailyQuestRewardOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRequestDailyQuestRewardOK::Unk::Write(const Unk& value, SinkStream& stream)
+{
+  stream.Write(value.unk0)
+    .Write(value.unk1)
+    .Write(value.unk2)
+    .Write(value.unk3);
+}
+
+void AcCmdCRRequestDailyQuestRewardOK::Unk::Read(Unk& value, SourceStream& stream)
+{
+  stream.Read(value.unk0)
+    .Read(value.unk1)
+    .Read(value.unk2)
+    .Read(value.unk3);
+}
+
 } // namespace server::protocol
 

@@ -4304,6 +4304,67 @@ struct AcCmdRCUpdateDailyQuestNotify
     SourceStream& stream);
 };
 
+struct AcCmdCRRequestDailyQuestReward
+{
+  uint16_t unk0;
+  uint16_t unk1;
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestDailyQuestReward;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestDailyQuestReward& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestDailyQuestReward& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestDailyQuestRewardOK
+{
+  uint8_t unk0;//count for quests that give a reward
+
+  struct Unk
+  {
+    uint32_t unk0;//questid
+    uint32_t unk1;//item id
+    uint32_t unk2;/
+    uint32_t unk3;//item amount
+
+    static void Write(const Unk& value, SinkStream& stream);
+    static void Read(Unk& value, SourceStream& stream);
+  };
+
+  std::array<Unk, 5> unk;//max 5, is amount of items rewarded?
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestDailyQuestRewardOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestDailyQuestRewardOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestDailyQuestRewardOK& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RANCH_MESSAGE_DEFINES_HPP

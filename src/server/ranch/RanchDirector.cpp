@@ -381,6 +381,11 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleRegisterDailyQuestGroup(clientId, command);
     });
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestDailyQuestReward>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleRequestDailyQuestReward(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -4202,6 +4207,58 @@ void RanchDirector::HandleRegisterDailyQuestGroup(
     [response]()
     {
       return response;
+    });
+}
+
+void RanchDirector::HandleRequestDailyQuestReward(
+  ClientId clientId,
+  const protocol::AcCmdCRRequestDailyQuestReward& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+  std::vector<uint32_t> dailyQuests = {0, 0, 0};
+  spdlog::debug("packet info: {} {}", command.unk0, command.unk1);
+
+  protocol::AcCmdCRRequestDailyQuestRewardOK response{};
+  response.unk0 = 1;
+
+  characterRecord.Mutable(
+    [&command, &dailyQuests, &response](data::Character& character)
+    {
+      dailyQuests = character.dailyQuests();
+      uint32_t carrots = character.carrots();
+
+      response.unk[0] = {command.unk0, 45001, 0, 1};
+      character.carrots() = carrots;
+    });
+
+  for (int i = 1; i < 5; i++)
+  {
+    response.unk[i] = {0, 0, 0, 0};
+  }
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+
+  protocol::AcCmdRCUpdateDailyQuestNotify noti{
+    .characterUid = clientContext.characterUid,
+    .questId = 101,
+    .unk = {1, 1, 1},
+    .unk0 = 1,
+    .unk1 = 1,
+    .unk2 = 1,
+    .unk3 = 0};
+
+  _commandServer.QueueCommand<decltype(noti)>(
+    clientId,
+    [noti]()
+    {
+      return noti;
     });
 }
 
