@@ -875,7 +875,7 @@ void RanchCommandSearchStallionOK::Write(
       .Write(stallion.tid)
       .Write(stallion.name)
       .Write(stallion.grade)
-      .Write(stallion.chance)
+      .Write(stallion.inheritanceRate)
       .Write(stallion.matePrice)
       .Write(stallion.pregnancyChance)
       .Write(stallion.expiresAt)
