@@ -57,6 +57,13 @@ public:
       std::chrono::steady_clock::time_point expiryTimePoint;
     };
 
+    enum class Shield
+    {
+      None,
+      Normal,
+      Critical
+    };
+
     Oid oid{InvalidEntityOid};
     State state{State::Disconnected};
     Team team{Team::Solo};
@@ -67,10 +74,12 @@ public:
 
     //! A set of tracked items in racer's proximity.
     std::unordered_set<Oid> trackedItems;
-    
-    // Bolt targeting system
-    bool isTargeting{false};
-    Oid currentTarget{InvalidEntityOid};
+
+    Shield shield{Shield::None};
+    bool darkness{};
+    bool hotRodded{};
+    bool critChance{};
+    bool gaugeBuff{};
   };
 
   //! An item

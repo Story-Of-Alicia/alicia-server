@@ -104,6 +104,10 @@ public:
     data::Uid characterUid,
     std::string newMemberCharacterName);
 
+  void AddRanchHorse(
+    data::Uid& rancherUid,
+    data::Uid& horseUid);
+
   ServerInstance& GetServerInstance();
   Config::Ranch& GetConfig();
 

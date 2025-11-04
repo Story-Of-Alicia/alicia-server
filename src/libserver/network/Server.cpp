@@ -210,6 +210,7 @@ void Client::ReadLoop() noexcept
 
 Server::Server(EventHandlerInterface& networkEventHandler) noexcept
   : _acceptor(_io_ctx)
+  , _timer(_io_ctx)
   , _networkEventHandler(networkEventHandler)
 {
 }
@@ -237,6 +238,8 @@ void Server::Begin(const asio::ip::address& address, uint16_t port)
 
   // Run the accept loop.
   AcceptLoop();
+  // Run the tick loop.
+  TickLoop();
 
   _io_ctx.run();
 }
@@ -256,6 +259,11 @@ std::shared_ptr<Client> Server::GetClient(ClientId clientId)
   }
 
   return clientItr->second->shared_from_this();
+}
+
+void Server::HandleNetworkTick()
+{
+
 }
 
 void Server::OnClientConnected(
@@ -316,6 +324,20 @@ void Server::AcceptLoop() noexcept
           x.what());
       }
     });
+}
+
+void Server::TickLoop() noexcept
+{
+  _networkEventHandler.HandleNetworkTick();
+
+  _timer.expires_after(std::chrono::seconds(1));
+  _timer.async_wait([this](const boost::system::error_code& error)
+  {
+    if (error)
+      return;
+
+    TickLoop();
+  });
 }
 
 } // namespace server::network

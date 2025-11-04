@@ -66,6 +66,10 @@ void ChatterServer::EndHost()
   }
 }
 
+void ChatterServer::HandleNetworkTick()
+{
+}
+
 void ChatterServer::OnClientConnected(network::ClientId clientId)
 {
   _chatterServerEventsHandler.HandleClientConnected(clientId);

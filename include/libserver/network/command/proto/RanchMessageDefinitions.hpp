@@ -97,7 +97,7 @@ struct AcCmdCREnterRanchOK
   // List size as a byte. Max length 13
   std::vector<Housing> housing{};
 
-  uint8_t horseSlots{5};
+  uint8_t horseSlots{};
   uint32_t member11{};
 
   enum class Bitset : uint32_t

@@ -290,6 +290,8 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.mountEquipment = json["horseEquipment"].get<std::vector<data::Uid>>();
 
   character.horses = json["horses"].get<std::vector<data::Uid>>();
+  character.horseSlotCount = json["horseSlotCount"].get<uint8_t>();
+
   character.pets = json["pets"].get<std::vector<data::Uid>>();
   character.mountUid = json["mountUid"].get<data::Uid>();
   character.petUid = json["petUid"].get<data::Uid>();
@@ -371,6 +373,8 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["horseEquipment"] = character.mountEquipment();
 
   json["horses"] = character.horses();
+  json["horseSlotCount"] = character.horseSlotCount();
+
   json["pets"] = character.pets();
   json["mountUid"] = character.mountUid();
   json["petUid"] = character.petUid();
@@ -531,6 +535,7 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   };
 
   horse.luckState = json["luckState"].get<uint32_t>();
+  horse.fatigue = json["fatigue"].get<uint16_t>();
   horse.emblemUid = json["emblem"].get<uint32_t>();
 
   horse.dateOfBirth = data::Clock::time_point(std::chrono::seconds(
@@ -643,6 +648,7 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["potential"] = potential;
 
   json["luckState"] = horse.luckState();
+  json["fatigue"] = horse.fatigue();
   json["emblem"] = horse.emblemUid();
 
   json["dateOfBirth"] = std::chrono::ceil<std::chrono::seconds>(
