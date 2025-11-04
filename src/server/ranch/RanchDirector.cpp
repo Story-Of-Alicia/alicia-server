@@ -4227,10 +4227,8 @@ void RanchDirector::HandleRequestDailyQuestReward(
     [&command, &dailyQuests, &response](data::Character& character)
     {
       dailyQuests = character.dailyQuests();
-      uint32_t carrots = character.carrots();
 
       response.unk[0] = {command.unk0, 45001, 0, 1};
-      character.carrots() = carrots;
     });
 
   for (int i = 1; i < 5; i++)
@@ -4245,13 +4243,13 @@ void RanchDirector::HandleRequestDailyQuestReward(
       return response;
     });
 
-  protocol::AcCmdRCUpdateDailyQuestNotify noti{
+    protocol::AcCmdRCUpdateDailyQuestNotify noti{
     .characterUid = clientContext.characterUid,
     .questId = 101,
-    .unk = {1, 1, 1},
-    .unk0 = 1,
-    .unk1 = 1,
-    .unk2 = 1,
+    .unk = {1, 1, 10},
+    .unk0 = 3,
+    .unk1 = 12,
+    .unk2 = 100,
     .unk3 = 0};
 
   _commandServer.QueueCommand<decltype(noti)>(

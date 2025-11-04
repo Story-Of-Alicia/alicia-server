@@ -4336,7 +4336,7 @@ struct AcCmdCRRequestDailyQuestRewardOK
   {
     uint32_t unk0;//questid
     uint32_t unk1;//item id
-    uint32_t unk2;/
+    uint32_t unk2;
     uint32_t unk3;//item amount
 
     static void Write(const Unk& value, SinkStream& stream);
