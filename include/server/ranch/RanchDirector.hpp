@@ -125,6 +125,8 @@ private:
 
     
     uint8_t busyState{0};
+    //! Whether there's a pending breeding failure card waiting to be claimed
+    bool hasPendingFailureCard{false};
     //! Current breeding failure card type: 0 = Normal (RED), 1 = Chance (YELLOW)
     uint8_t pendingCardType{0};
   };

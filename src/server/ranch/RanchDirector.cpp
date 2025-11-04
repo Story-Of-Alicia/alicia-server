@@ -1,3 +1,4 @@
+
 /**
  * Alicia Server - dedicated server software
  * Copyright (C) 2024 Story Of Alicia
@@ -1737,8 +1738,19 @@ void RanchDirector::HandleTryBreeding(
       });
     }
     
-    // TODO: Send breeding failure response to client
-    // For now, update inventory to reflect carrot deduction
+    // Set up breeding failure card for the player
+    // Randomly determine card type: 50/50 chance between Normal (RED=0) and Chance (YELLOW=1)
+    std::uniform_int_distribution<int> cardTypeDist(0, 1);
+    uint8_t cardType = static_cast<uint8_t>(cardTypeDist(_randomDevice));
+    
+    auto& ctx = GetClientContext(clientId);
+    ctx.hasPendingFailureCard = true;
+    ctx.pendingCardType = cardType;
+    
+    spdlog::info("TryBreeding: Breeding failure card ready - {} card", 
+      cardType == 1 ? "CHANCE (YELLOW)" : "NORMAL (RED)");
+    
+    // Update inventory to reflect carrot deduction
     SendInventoryUpdate(clientId);
     return;
   }
@@ -2021,16 +2033,19 @@ void RanchDirector::HandleBreedingFailureCard(
 {
   spdlog::info("BreedingFailureCard: statusOrFlag = {}", command.statusOrFlag);
   
-  // Randomly determine card type: 50/50 chance between Normal (RED=0) and Chance (YELLOW=1)
-  static std::mt19937 gen(std::chrono::steady_clock::now().time_since_epoch().count());
-  std::uniform_int_distribution<int> cardTypeDist(0, 1);
-  uint8_t cardType = static_cast<uint8_t>(cardTypeDist(gen));
-  
-  // Store card type in client context for later use in HandleBreedingFailureCardChoose
   auto& clientContext = GetClientContext(clientId);
-  clientContext.pendingCardType = cardType;
   
-  spdlog::info("BreedingFailureCard: Selected {} card", cardType == 1 ? "CHANCE (YELLOW)" : "NORMAL (RED)");
+  // Only show the card if there's a pending failure card from breeding
+  if (!clientContext.hasPendingFailureCard)
+  {
+    spdlog::info("BreedingFailureCard: No pending card, not sending response");
+    return;
+  }
+  
+  // Use the card type that was determined when breeding failed
+  uint8_t cardType = clientContext.pendingCardType;
+  
+  spdlog::info("BreedingFailureCard: Showing {} card", cardType == 1 ? "CHANCE (YELLOW)" : "NORMAL (RED)");
   
   protocol::AcCmdCRBreedingFailureCardOK response{
     .choiceOrFlag = cardType  // 0 = RED card, 1 = YELLOW card
@@ -2289,6 +2304,11 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     isChanceCard ? "CHANCE (YELLOW)" : "NORMAL (RED)",
     rewardGrade, moneySpent, gradeRoll, rewardId,
     rewardData->gameMoney, rewardData->itemTid, rewardData->itemCount);
+
+  // Clear the pending card flag after claiming
+  auto& ctx = GetClientContext(clientId);
+  ctx.hasPendingFailureCard = false;
+  ctx.pendingCardType = 0;
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
