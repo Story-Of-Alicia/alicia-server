@@ -2296,7 +2296,7 @@ void RanchDirector::HandleBreedingFailureCardChoose(
   response.member1 = 0;
   response.rewardId = rewardId;
   response.member3 = 0;
-  response.member4 = {clientContext.pendingCardType, 0};  // Match card type: 0=RED, 1=YELLOW
+  response.member4 = {1, 0};
   response.member5 = 0;
   response.member6 = rewardData->gameMoney;
   
