@@ -1822,6 +1822,18 @@ void RanchDirector::HandleTryBreeding(
     spdlog::info("TryBreeding: Breeding failure card ready - {} card", 
       cardType == 1 ? "CHANCE (YELLOW)" : "NORMAL (RED)");
     
+    // Send the breeding failure card popup to the client
+    protocol::AcCmdCRBreedingFailureCardOK cardResponse{
+      .choiceOrFlag = cardType  // 0 = RED card, 1 = YELLOW card
+    };
+
+    _commandServer.QueueCommand<decltype(cardResponse)>(
+      clientId,
+      [cardResponse]()
+      {
+        return cardResponse;
+      });
+    
     // Update inventory to reflect carrot deduction
     SendInventoryUpdate(clientId);
     return;
