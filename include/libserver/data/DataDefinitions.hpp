@@ -255,6 +255,7 @@ struct Character
   dao::Field<uint32_t> level{};
   dao::Field<int32_t> carrots{};
   dao::Field<int32_t> cash{};
+  dao::Field<uint32_t> breedingMoneySpent{0u};
 
   enum class Role
   {
