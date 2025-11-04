@@ -1347,7 +1347,7 @@ void RanchDirector::HandleEnterBreedingMarket(
         {
           protocolHorse.uid = horse.uid();
           protocolHorse.tid = horse.tid();
-          protocolHorse.combo = 0;  // Combo/success streak count TODO: Implement success streak
+          protocolHorse.combo = horse.breeding.breedingCombo();  // Consecutive successful breeding count
           protocolHorse.isRegistered = _breedingMarket.IsRegistered(horse.uid()) ? 1 : 0;
           protocolHorse.breedingBonus = 0;   // Breeding bonus value TODO: Implement breeding bonus
           protocolHorse.lineage = 1; // Ancestor coat lineage score TODO: Implement lineage
@@ -1433,7 +1433,7 @@ void RanchDirector::HandleSearchStallion(
       // Calculate pregnancy chance based on timesBreeded (lifetime breeding count)
       // 30 -> 0 hearts (Lowest)
       // 0 -> 3.2 hearts (Highest)
-      protocolStallion.pregnancyChance = std::min(horse.timesBreeded(), 30u);
+      protocolStallion.pregnancyChance = std::min(horse.breeding.timesBreeded(), 30u);
       
       protocolStallion.expiresAt = util::TimePointToAliciaTime(stallionData.expiresAt);
 
@@ -1714,7 +1714,7 @@ void RanchDirector::HandleTryBreeding(
   stallionRecord->Immutable([&pregnancyChance, &stallionGradeForBonus](const data::Horse& stallion)
   {
     // Base: 0 (64% success), increases by 1 per breeding, max 30 (2% success)
-    pregnancyChance = std::min(stallion.timesBreeded(), 30u);
+    pregnancyChance = std::min(stallion.breeding.timesBreeded(), 30u);
     stallionGradeForBonus = stallion.grade();
   });
   
@@ -1792,10 +1792,16 @@ void RanchDirector::HandleTryBreeding(
     spdlog::info("TryBreeding: Breeding failed (pregnancyChance={}, base={}%, bonus=+{}%, final={}%)", 
       pregnancyChance, baseSuccessRate, bonusAmount, successThreshold);
     
+    // Reset mare's breeding combo on failure
+    mareRecord->Mutable([](data::Horse& mare)
+    {
+      mare.breeding.breedingCombo() = 0;
+    });
+    
     // Increment stallion's lifetime breeding counter even on failure
     stallionRecord->Mutable([](data::Horse& stallion)
     {
-      stallion.timesBreeded() = stallion.timesBreeded() + 1;
+      stallion.breeding.timesBreeded() = stallion.breeding.timesBreeded() + 1;
     });
     
     // Increment stallion's registration breeding counter
@@ -2080,10 +2086,21 @@ void RanchDirector::HandleTryBreeding(
   
   spdlog::info("TryBreeding: Breeding successful - reset breedingMoneySpent to 0");
   
+  // Increment mare's breeding combo on successful breeding
+  uint8_t mareCombo = 0;
+  mareRecord->Mutable([&mareCombo](data::Horse& mare)
+  {
+    mare.breeding.breedingCombo() = mare.breeding.breedingCombo() + 1;
+    mareCombo = mare.breeding.breedingCombo();
+  });
+  
+  spdlog::info("TryBreeding: Mare combo increased to {}", mareCombo);
+  
   // Increment stallion's lifetime breeding counter (on the horse record)
+  // Note: Stallion's combo is NOT affected by breeding
   stallionRecord->Mutable([](data::Horse& stallion)
   {
-    stallion.timesBreeded() = stallion.timesBreeded() + 1;
+    stallion.breeding.timesBreeded() = stallion.breeding.timesBreeded() + 1;
   });
   
   // Increment stallion's registration breeding counter (for compensation calculation)

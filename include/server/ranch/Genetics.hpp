@@ -75,8 +75,9 @@ public:
   //! Calculates foal grade based on parent grades.
   //! @param mareGrade Mare's grade (1-8)
   //! @param stallionGrade Stallion's grade (1-8)
+  //! @param fertilityPeakLevel Fertility peak bonus level (0-3, default 0)
   //! @returns Foal's grade (1-8)
-  uint8_t CalculateFoalGrade(uint8_t mareGrade, uint8_t stallionGrade);
+  uint8_t CalculateFoalGrade(uint8_t mareGrade, uint8_t stallionGrade, uint8_t fertilityPeakLevel = 0);
 
   //! Calculates foal stat based on parent stats.
   //! @param mareStat Mare's stat value

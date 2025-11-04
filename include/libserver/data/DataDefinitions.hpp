@@ -293,6 +293,8 @@ struct Character
   dao::Field<std::vector<Uid>> mountEquipment{};
   
   dao::Field<std::vector<Uid>> horses{};
+  dao::Field<uint8_t> horseSlotCount{0u};
+  
   dao::Field<std::vector<Uid>> pets{};
   dao::Field<Uid> mountUid{InvalidUid};
   dao::Field<Uid> petUid{InvalidUid};
@@ -326,6 +328,8 @@ struct Character
     dao::Field<Sets> speed{};
     dao::Field<Sets> magic{};
   } skills{};
+  
+  dao::Field<uint32_t> breedingMoneySpent{0u};
 };
 
 struct Horse
@@ -373,7 +377,13 @@ struct Horse
   dao::Field<uint32_t> clazzProgress{0u};
   dao::Field<uint32_t> grade{0u};
   dao::Field<uint32_t> growthPoints{0u};
-  dao::Field<uint32_t> timesBreeded{0u};  // Total times used for breeding since it was born
+  
+  struct Breeding
+  {
+    dao::Field<uint32_t> timesBreeded{0u};  // Total times used for breeding since it was born
+    dao::Field<uint8_t> breedingCombo{0u};
+  } breeding{};
+  
   dao::Field<uint8_t> horseType{0u};
   dao::Field<uint8_t> tendency{0u};
   dao::Field<uint8_t> spirit{0u};

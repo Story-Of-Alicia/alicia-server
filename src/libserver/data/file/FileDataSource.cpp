@@ -286,7 +286,7 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
 
   character.inventory = json["inventory"].get<std::vector<data::Uid>>();
   character.characterEquipment = json["characterEquipment"].get<std::vector<data::Uid>>();
-  character.mountEquipment = json["horseEquipment"].get<std::vector<data::Uid>>();
+  character.mountEquipment = json.value("mountEquipment", std::vector<data::Uid>{});
 
   character.horses = json["horses"].get<std::vector<data::Uid>>();
   character.horseSlotCount = json["horseSlotCount"].get<uint8_t>();
@@ -319,6 +319,8 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   const auto& skills = json["skills"];
   readSkills(character.skills.speed(), skills["speed"]);
   readSkills(character.skills.magic(), skills["magic"]);
+  
+  character.breedingMoneySpent = json.value("breedingMoneySpent", uint32_t{0});
 }
 
 void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
@@ -369,7 +371,7 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
 
   json["inventory"] = character.inventory();
   json["characterEquipment"] = character.characterEquipment();
-  json["horseEquipment"] = character.mountEquipment();
+  json["mountEquipment"] = character.mountEquipment();
 
   json["horses"] = character.horses();
   json["horseSlotCount"] = character.horseSlotCount();
@@ -408,6 +410,8 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   skills["speed"] = writeSkills(character.skills.speed());
   skills["magic"] = writeSkills(character.skills.magic());
   json["skills"] = skills;
+  
+  json["breedingMoneySpent"] = character.breedingMoneySpent();
 
   dataFile << json.dump(2);
 }
@@ -519,7 +523,18 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.clazzProgress = json["clazzProgress"].get<uint32_t>();
   horse.grade = json["grade"].get<uint32_t>();
   horse.growthPoints = json.value("growthPoints", uint16_t{0});
-  horse.timesBreeded = json.value("timesBreeded", uint32_t{0});
+  
+  if (json.contains("breeding"))
+  {
+    horse.breeding.timesBreeded = json["breeding"].value("timesBreeded", uint32_t{0});
+    horse.breeding.breedingCombo = json["breeding"].value("breedingCombo", uint8_t{0});
+  }
+  else
+  {
+    // Legacy flat structure
+    horse.breeding.timesBreeded = json.value("timesBreeded", uint32_t{0});
+    horse.breeding.breedingCombo = json.value("breedingCombo", uint8_t{0});
+  }
 
   horse.horseType = json.value("horseType", uint8_t{0});
   horse.tendency = json.value("tendency", uint8_t{0});
@@ -633,7 +648,9 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["clazzProgress"] = horse.clazzProgress();
   json["grade"] = horse.grade();
   json["growthPoints"] = horse.growthPoints();
-  json["timesBreeded"] = horse.timesBreeded();
+  
+  json["breeding"]["timesBreeded"] = horse.breeding.timesBreeded();
+  json["breeding"]["breedingCombo"] = horse.breeding.breedingCombo();
 
   json["horseType"] = horse.horseType();
   json["fatigue"] = horse.fatigue();
