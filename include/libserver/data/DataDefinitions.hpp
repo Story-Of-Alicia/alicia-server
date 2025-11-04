@@ -389,7 +389,6 @@ struct Horse
   } potential{};
 
   dao::Field<uint32_t> luckState{0u};
-  dao::Field<uint16_t> fatigue{0u};
   dao::Field<uint32_t> emblemUid{0u};
   dao::Field<Clock::time_point> dateOfBirth{};
 
