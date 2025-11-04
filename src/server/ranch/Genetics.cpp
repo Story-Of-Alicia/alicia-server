@@ -523,11 +523,14 @@ Genetics::StatResult Genetics::CalculateFoalStats(
   {
     uint32_t avgStat = (mareStat + stallionStat) / 2;
     
-    // Mutation system: if average is very low (0-2), there's a chance to gain random points
+    // Mutation system: if average is very low (0-2), add weighted random bonus on top
     if (avgStat <= 2)
     {
-      std::uniform_int_distribution<int> mutationDist(0, 5);
-      int32_t finalStat = mutationDist(_randomEngine);
+      // Weighted probabilities: +0 (30%), +1 (40%), +2 (20%), +3 (10%)
+      std::discrete_distribution<int> bonusDist({30, 40, 20, 10});  // Weights for 0, 1, 2, 3
+      int32_t bonus = bonusDist(_randomEngine);
+      int32_t finalStat = avgStat + bonus;
+      if (finalStat > 100) finalStat = 100;
       return static_cast<uint32_t>(finalStat);
     }
     
@@ -795,7 +798,7 @@ data::Tid Genetics::CalculateFoalSkin(
   
   float mareWeight = 10.0f * mareCoatInfo.inheritanceRate;
   float stallionWeight = 10.0f * stallionCoatInfo.inheritanceRate * bonusMultiplier;
-  float gpWeight = 5.0f;  // GPs use fixed weight (could also use their coat rates in future)
+  float gpWeight = 5.0f;
   
   uint8_t gpCount = std::min((uint8_t)gpSkins.size(), (uint8_t)4);
   float totalGpWeight = gpWeight * gpCount;
