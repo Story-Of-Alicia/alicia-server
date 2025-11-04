@@ -32,10 +32,10 @@ namespace server::protocol
 
 struct ChatCmdLogin
 {
-  uint32_t val0{};
+  uint32_t characterUid{};
   std::string name{};
   uint32_t code{};
-  uint32_t val1{};
+  uint32_t guildUid{};
 
   static ChatterCommand GetCommand()
   {
@@ -130,6 +130,78 @@ class ChatCmdUpdateStateAckOK
   std::string hostname = "127.0.0.1";
   uint16_t port = /*htons(10034)*/ 0;
   uint32_t payload = 1;
+};
+
+struct ChatCmdGuildLogin : ChatCmdLogin
+{
+  // ChatCmdGuildLogin shares the same payload as ChatCmdLogin
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdGuildLogin;
+  }
+
+  static void Write(
+    const ChatCmdGuildLogin& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdGuildLogin& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdGuildLoginOK
+{
+  struct GuildMember
+  {
+    //! Character UID of the guild member. 
+    uint32_t characterUid{};
+    //! Online status of the guild member.
+    //! `Status::Hidden` completely removes the status of that member.
+    enum class Status : uint8_t
+    {
+      Hidden = 0,
+      Offline = 1,
+      Online = 2,
+      Away = 3
+    } status{Status::Hidden};
+
+    struct Struct2
+    {
+      uint32_t unk0{};
+      uint32_t unk1{};
+
+      static void Write(
+        const Struct2& command,
+        SinkStream& stream);
+
+      static void Read(
+        Struct2& command,
+        SourceStream& stream);
+    } unk2{};
+
+    static void Write(
+      const GuildMember& command,
+      SinkStream& stream);
+
+    static void Read(
+      GuildMember& command,
+      SourceStream& stream);
+  };
+  std::vector<GuildMember> guildMembers{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdGuildLoginAckOK;
+  }
+
+  static void Write(
+    const ChatCmdGuildLoginOK& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdGuildLoginOK& command,
+    SourceStream& stream);
 };
 
 } // namespace server::protocol

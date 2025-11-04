@@ -35,6 +35,10 @@ private:
     network::ClientId clientId,
     const protocol::ChatCmdLogin& command) override;
 
+  void HandleChatterGuildLogin(
+    network::ClientId clientId,
+    const protocol::ChatCmdGuildLogin& command) override;
+
   ChatterServer _chatterServer;
   ServerInstance& _serverInstance;
 };

@@ -99,32 +99,40 @@ size_t ChatterServer::OnClientData(
   header.length ^= *reinterpret_cast<const uint16_t*>(XorCode.data());
   header.commandId ^= *reinterpret_cast<const uint16_t*>(XorCode.data() + 2);
 
-  if (header.commandId == static_cast<uint16_t>(
-    protocol::ChatterCommand::ChatCmdLogin))
+  std::vector<std::byte> commandData(header.length);
+  SinkStream commandDataSink({commandData.begin(), commandData.end()});
+
+  for (uint16_t idx = 0; idx < header.length - sizeof(protocol::ChatterCommandHeader); ++idx)
   {
-    std::vector<std::byte> commandData(header.length);
-    SinkStream commandDataSink({commandData.begin(), commandData.end()});
+    std::byte& val = commandData[idx];
+    commandStream.Read(val);
+    val ^= XorCode[(commandStream.GetCursor() - 1) % 4];
+  }
 
-    for (uint16_t idx = 0; idx < header.length - sizeof(protocol::ChatterCommandHeader); ++idx)
+  SourceStream commandDataSource({commandData.begin(), commandData.end()});
+
+  switch (header.commandId)
+  {
+    case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdLogin):
     {
-      std::byte& val = commandData[idx];
-      commandStream.Read(val);
-      val ^= XorCode[(commandStream.GetCursor() - 1) % 4];
-    }
-
-    SourceStream commandDataSource({commandData.begin(), commandData.end()});
-
-    if (header.commandId == 1)
-    {
-      // todo: deserialization and handler call
+      // TODO: deserialization and handler call
       protocol::ChatCmdLogin command;
       commandDataSource.Read(command);
       _chatterCommandHandler.HandleChatterLogin(clientId, command);
+      break;
     }
-  }
-  else
-  {
-    //spdlog::warn("Unhandled chatter: {}", header.commandId);
+    case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdGuildLogin):
+    {
+      protocol::ChatCmdGuildLogin command;
+      commandDataSource.Read(command);
+      _chatterCommandHandler.HandleChatterGuildLogin(clientId, command);
+      break;
+    }
+    default:
+    {
+      spdlog::warn("Unhandled chatter: {}", header.commandId);
+      break;
+    }
   }
 
   return commandStream.GetCursor();
