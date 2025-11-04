@@ -362,6 +362,8 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.mailbox.hasNewMail = mailbox["hasNewMail"].get<bool>();
   character.mailbox.inbox = mailbox["inbox"].get<std::vector<data::Uid>>();
   character.mailbox.sent = mailbox["sent"].get<std::vector<data::Uid>>();
+
+  character.breedingMoneySpent = json.value("breedingMoneySpent", uint32_t{0});
 }
 
 void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
@@ -470,6 +472,8 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   skills["speed"] = writeSkills(character.skills.speed());
   skills["magic"] = writeSkills(character.skills.magic());
   json["skills"] = skills;
+  
+  json["breedingMoneySpent"] = character.breedingMoneySpent();
 
   json["dailyQuests"] = character.dailyQuests();
   nlohmann::json mailbox;
@@ -593,7 +597,18 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.clazzProgress = json["clazzProgress"].get<uint32_t>();
   horse.grade = json["grade"].get<uint32_t>();
   horse.growthPoints = json.value("growthPoints", uint16_t{0});
-  horse.timesBreeded = json.value("timesBreeded", uint32_t{0});
+  
+  if (json.contains("breeding"))
+  {
+    horse.breeding.timesBreeded = json["breeding"].value("timesBreeded", uint32_t{0});
+    horse.breeding.breedingCombo = json["breeding"].value("breedingCombo", uint8_t{0});
+  }
+  else
+  {
+    // Legacy flat structure
+    horse.breeding.timesBreeded = json.value("timesBreeded", uint32_t{0});
+    horse.breeding.breedingCombo = json.value("breedingCombo", uint8_t{0});
+  }
 
   horse.horseType = json.value("horseType", uint8_t{0});
   horse.tendency = json.value("tendency", uint8_t{0});
@@ -707,7 +722,9 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["clazzProgress"] = horse.clazzProgress();
   json["grade"] = horse.grade();
   json["growthPoints"] = horse.growthPoints();
-  json["timesBreeded"] = horse.timesBreeded();
+  
+  json["breeding"]["timesBreeded"] = horse.breeding.timesBreeded();
+  json["breeding"]["breedingCombo"] = horse.breeding.breedingCombo();
 
   json["horseType"] = horse.horseType();
   json["fatigue"] = horse.fatigue();
