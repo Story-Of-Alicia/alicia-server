@@ -394,7 +394,7 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
   return result;
 }
 
-uint8_t Genetics::CalculateFoalGrade(uint8_t mareGrade, uint8_t stallionGrade)
+uint8_t Genetics::CalculateFoalGrade(uint8_t mareGrade, uint8_t stallionGrade, uint8_t fertilityPeakLevel)
 {
   // Official breeding grade probability table from libconfig
   // Rows = GradeDistance (0-4, max difference allowed in breeding)
@@ -423,17 +423,87 @@ uint8_t Genetics::CalculateFoalGrade(uint8_t mareGrade, uint8_t stallionGrade)
   // Cap grade distance at 4 (This is the max grade distance you can get by breeding a grade 4 horse with a grade 8 horse)
   if (gradeDistance > 4) gradeDistance = 4;
   
-  // Build cumulative probability distribution
-  float cumulativeProbs[11];
+  float probs[11];
   float total = 0.0f;
   for (int i = 0; i < 11; ++i)
   {
-    total += gradeTable[gradeDistance][i];
-    cumulativeProbs[i] = total;
+    probs[i] = gradeTable[gradeDistance][i];
+    total += probs[i];
+  }
+  
+  // Apply fertility peak bonus: shift probability from lower grades to higher grades
+  // Stage 1: small shift, Stage 2: medium shift, Stage 3: large shift
+  if (fertilityPeakLevel > 0 && fertilityPeakLevel <= 3)
+  {
+    // Shift amounts: 5% per stage for lower offsets, adds to higher offsets
+    float shiftAmount = fertilityPeakLevel * 5.0f; // 5%, 10%, 15% per stage
+    
+    // Redistribute probability from negative offsets (lower grades) to positive offsets (higher grades)
+    // Shift from indices 0-2 (Minus3 to Minus1) to indices 4+ (Plus1 and above)
+    float shiftFromLow = 0.0f;
+    for (int i = 0; i < 3; ++i)
+    {
+      float shift = std::min(probs[i] * (shiftAmount / 100.0f), probs[i] * 0.5f); // Max 50% reduction per slot
+      shiftFromLow += shift;
+      probs[i] -= shift;
+    }
+    
+    // Distribute the shifted probability to higher grade offsets (Plus1 and above)
+    // Prefer later offsets (higher grades) more as stage increases
+    int availableSlots = 0;
+    for (int i = 4; i < 11; ++i)
+    {
+      if (gradeTable[gradeDistance][i] > 0.0f || i <= (4 + fertilityPeakLevel))
+        availableSlots++;
+    }
+    
+    if (availableSlots > 0 && shiftFromLow > 0.0f)
+    {
+      // Weight distribution: higher stages favor higher offsets more
+      float weightSum = 0.0f;
+      float weights[7] = {0};
+      for (int i = 0; i < 7; ++i)
+      {
+        int offset = i + 4; // Start at Plus1
+        if (offset < 11)
+        {
+          // Higher stages get more weight on higher offsets
+          weights[i] = static_cast<float>(i + 1) * static_cast<float>(fertilityPeakLevel);
+          weightSum += weights[i];
+        }
+      }
+      
+      // Distribute the shifted probability
+      for (int i = 0; i < 7; ++i)
+      {
+        int offset = i + 4;
+        if (offset < 11 && weightSum > 0.0f)
+        {
+          float portion = (weights[i] / weightSum) * shiftFromLow;
+          probs[offset] += portion;
+        }
+      }
+    }
+    
+    // Recalculate total after redistribution
+    total = 0.0f;
+    for (int i = 0; i < 11; ++i)
+    {
+      total += probs[i];
+    }
+  }
+  
+  // Build cumulative probability distribution
+  float cumulativeProbs[11];
+  float cumul = 0.0f;
+  for (int i = 0; i < 11; ++i)
+  {
+    cumul += probs[i];
+    cumulativeProbs[i] = cumul;
   }
   
   // Roll random value
-  std::uniform_real_distribution<float> dist(0.0f, 100.0f);
+  std::uniform_real_distribution<float> dist(0.0f, total);
   float roll = dist(_randomEngine);
   
   // Find grade offset based on roll
