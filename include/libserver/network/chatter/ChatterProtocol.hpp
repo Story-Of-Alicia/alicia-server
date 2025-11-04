@@ -33,11 +33,14 @@ struct ChatterCommandHeader
   uint16_t commandId;
 };
 
-enum class ChatterCommand
+enum class ChatterCommand : uint16_t
 {
   ChatCmdLogin = 1,
   ChatCmdLoginAckOK = 2,
-  ChatCmdLoginAckCancel = 3
+  ChatCmdLoginAckCancel = 3,
+  ChatCmdGuildLogin = 0x40,
+  ChatCmdGuildLoginAckOK = 0x41,
+  ChatCmdGuildLoginAckCancel = 0x42,
 };
 
 } // namespace server::protocol

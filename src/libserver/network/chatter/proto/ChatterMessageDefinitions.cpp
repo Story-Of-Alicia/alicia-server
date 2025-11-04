@@ -32,10 +32,10 @@ void server::protocol::ChatCmdLogin::Read(
   ChatCmdLogin& command,
   SourceStream& stream)
 {
-  stream.Read(command.val0)
+  stream.Read(command.characterUid)
     .Read(command.name)
     .Read(command.code)
-    .Read(command.val1);
+    .Read(command.guildUid);
 }
 
 void server::protocol::ChatCmdLoginAckOK::Write(
@@ -83,6 +83,70 @@ void server::protocol::ChatCmdLoginAckCancel::Write(
 void server::protocol::ChatCmdLoginAckCancel::Read(
   ChatCmdLoginAckCancel&,
   SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdGuildLogin::Write(
+  const ChatCmdGuildLogin& command,
+  server::SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdGuildLogin::Read(
+  ChatCmdGuildLogin& command,
+  server::SourceStream& stream)
+{
+  server::protocol::ChatCmdLogin::Read(command, stream);
+}
+
+void server::protocol::ChatCmdGuildLoginOK::GuildMember::Struct2::Write(
+  const ChatCmdGuildLoginOK::GuildMember::Struct2& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1);
+}
+
+void server::protocol::ChatCmdGuildLoginOK::GuildMember::Struct2::Read(
+  ChatCmdGuildLoginOK::GuildMember::Struct2& command,
+  server::SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdGuildLoginOK::GuildMember::Write(
+  const ChatCmdGuildLoginOK::GuildMember& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.status)
+    .Write(command.unk2);
+}
+
+void server::protocol::ChatCmdGuildLoginOK::GuildMember::Read(
+  ChatCmdGuildLoginOK::GuildMember& command,
+  server::SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdGuildLoginOK::Write(
+  const ChatCmdGuildLoginOK& command,
+  server::SinkStream& stream)
+{
+  // Guild members array size (u32)
+  stream.Write(static_cast<uint32_t>(command.guildMembers.size()));
+  for (const auto& struct1Element : command.guildMembers)
+  {
+    stream.Write(struct1Element);
+  }
+}
+
+void server::protocol::ChatCmdGuildLoginOK::Read(
+  ChatCmdGuildLoginOK& command,
+  server::SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }

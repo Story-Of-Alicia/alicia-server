@@ -113,8 +113,8 @@ size_t ChatterServer::OnClientData(
     header.length ^= *reinterpret_cast<const uint16_t*>(XorCode.data());
     header.commandId ^= *reinterpret_cast<const uint16_t*>(XorCode.data() + 2);
 
-    // The length of the command must be at least the size of the header
-    // and less than 4KB.
+    // If the the length of the command is notat least the size of the header
+    // or is more than 4KB discard the command.
     if (header.length < sizeof(protocol::ChatterCommandHeader) ||  header.length > 4092)
     {
       break;
@@ -122,7 +122,8 @@ size_t ChatterServer::OnClientData(
 
     // todo: verify length, verify command, consume the rest of data even if handler does not exist.
 
-    // There's not enough data to read the command.
+    // If there's not enough data to read the command
+    // restore the read cursor so the command may be processed later when more data arrive.
     if (bufferedDataSize < header.length)
     {
       commandStream.Seek(origin);
@@ -130,28 +131,41 @@ size_t ChatterServer::OnClientData(
     }
 
     const auto commandDataLength = header.length - sizeof(protocol::ChatterCommandHeader);
+    std::vector<std::byte> commandData(commandDataLength);
 
-    if (header.commandId == static_cast<uint16_t>(
-      protocol::ChatterCommand::ChatCmdLogin))
+    SinkStream commandDataSink({commandData.begin(), commandData.end()});
+
+    // Read the command data from the command stream.
+    for (uint64_t idx = 0; idx < commandDataLength; ++idx)
     {
-      std::vector<std::byte> commandData(commandDataLength);
-      SinkStream commandDataSink({commandData.begin(), commandData.end()});
+      std::byte& val = commandData[idx];
+      commandStream.Read(val);
+      val ^= XorCode[(commandStream.GetCursor() - 1) % 4];
+    }
 
-      for (uint64_t idx = 0; idx < commandDataLength; ++idx)
+    SourceStream commandDataSource({commandData.begin(), commandData.end()});
+
+    switch (header.commandId)
+    {
+      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdLogin):
       {
-        std::byte& val = commandData[idx];
-        commandStream.Read(val);
-        val ^= XorCode[(commandStream.GetCursor() - 1) % 4];
-      }
-
-      SourceStream commandDataSource({commandData.begin(), commandData.end()});
-
-      if (header.commandId == 1)
-      {
-        // todo: deserialization and handler call
+        // TODO: deserialization and handler call
         protocol::ChatCmdLogin command;
         commandDataSource.Read(command);
         _chatterCommandHandler.HandleChatterLogin(clientId, command);
+        break;
+      }
+      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdGuildLogin):
+      {
+        protocol::ChatCmdGuildLogin command;
+        commandDataSource.Read(command);
+        _chatterCommandHandler.HandleChatterGuildLogin(clientId, command);
+        break;
+      }
+      default:
+      {
+        spdlog::warn("Unhandled chatter: {}", header.commandId);
+        break;
       }
     }
   }

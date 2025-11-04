@@ -71,6 +71,14 @@ void MessengerDirector::HandleChatterLogin(
   protocol::ChatCmdLoginAckOK response{
     .groups = {{.uid = OnlinePlayersCategoryUid, .name = "Online Players"}}};
 
+  // TODO: verify this request in some way
+  // Client request could be logging in as another character
+  _serverInstance.GetDataDirector().GetCharacter(command.characterUid).Immutable(
+    [&response](const data::Character& character)
+    {
+      response.member1 = character.uid();
+    });
+
   for (const auto& userInstance : _serverInstance.GetLobbyDirector().GetUsers() | std::views::values)
   {
     const auto onlineCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(
@@ -93,6 +101,41 @@ void MessengerDirector::HandleChatterLogin(
   }
 
   _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+}
+
+void MessengerDirector::HandleChatterGuildLogin(
+  network::ClientId clientId,
+  const protocol::ChatCmdGuildLogin& command)
+{
+  protocol::ChatCmdGuildLoginOK response{};
+
+  // TODO: check if calling client character uid is command.characterUid
+  // TODO: check if command.guildUid is the guildUid the calling character is in
+
+  // TODO: guild record is retrieved directly from command, verify this
+  _serverInstance.GetDataDirector().GetGuild(command.guildUid).Immutable(
+    [&response](const data::Guild& guild)
+    {
+      for (const data::Uid& member : guild.members())
+      {
+        response.guildMembers.emplace_back(
+          protocol::ChatCmdGuildLoginOK::GuildMember{
+            .characterUid = member,
+            .status = protocol::ChatCmdGuildLoginOK::GuildMember::Status::Online, // TODO: implement online status
+            .unk2 = {
+              .unk0 = 0,
+              .unk1 = 0
+            }
+          });
+      }
+    });
+
+  _chatterServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 } // namespace server

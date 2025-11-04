@@ -48,6 +48,10 @@ public:
   virtual void HandleChatterLogin(
     network::ClientId clientId,
     const protocol::ChatCmdLogin& command) = 0;
+
+  virtual void HandleChatterGuildLogin(
+    network::ClientId clientId,
+    const protocol::ChatCmdGuildLogin& command) = 0;
 };
 
 class ChatterServer final
