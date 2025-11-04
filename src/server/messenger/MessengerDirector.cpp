@@ -56,28 +56,54 @@ Config::Messenger& MessengerDirector::GetConfig()
 
 void MessengerDirector::HandleClientConnected(network::ClientId clientId)
 {
+  spdlog::debug("Client {} connected to the messenger server from {}",
+    clientId,
+    _chatterServer.GetClientAddress(clientId).to_string());
+  _clients.try_emplace(clientId);
 }
 
 void MessengerDirector::HandleClientDisconnected(network::ClientId clientId)
 {
+  spdlog::debug("Client {} disconnected from the messenger server", clientId);
+
+  // TODO: broadcast notify to friends & guilds that character is offline
+
+  _clients.erase(clientId);
 }
 
 void MessengerDirector::HandleChatterLogin(
   network::ClientId clientId,
   const protocol::ChatCmdLogin& command)
 {
+  spdlog::debug("[{}] ChatCmdLogin: {} {} {} {}",
+    clientId,
+    command.characterUid,
+    command.name,
+    command.code,
+    command.guildUid);
+
+  auto& clientContext = _clients[clientId];
+
   constexpr auto OnlinePlayersCategoryUid = std::numeric_limits<uint32_t>::max() - 1;
 
   protocol::ChatCmdLoginAckOK response{
     .groups = {{.uid = OnlinePlayersCategoryUid, .name = "Online Players"}}};
 
   // TODO: verify this request in some way
+  // FIXME: authentication is always assumed to be correct
+  clientContext.isAuthenticated = true;
+
+  // TODO: remember status from last login?
+  clientContext.status = protocol::Status::Online;
+
   // Client request could be logging in as another character
   _serverInstance.GetDataDirector().GetCharacter(command.characterUid).Immutable(
-    [&response](const data::Character& character)
+    [&clientContext](const data::Character& character)
     {
-      response.member1 = character.uid();
+      clientContext.characterUid = character.uid();
     });
+
+  response.member1 = clientContext.characterUid;
 
   for (const auto& userInstance : _serverInstance.GetLobbyDirector().GetUsers() | std::views::values)
   {
@@ -89,8 +115,8 @@ void MessengerDirector::HandleChatterLogin(
     {
       friendo.name = onlineCharacter.name();
       friendo.status = onlineCharacter.isRanchLocked()
-        ? protocol::ChatCmdLoginAckOK::Friend::Status::Offline
-        : protocol::ChatCmdLoginAckOK::Friend::Status::Online;
+        ? protocol::Status::Offline
+        : protocol::Status::Online;
       friendo.uid = onlineCharacter.uid();
       friendo.categoryUid = OnlinePlayersCategoryUid;
 
@@ -114,19 +140,26 @@ void MessengerDirector::HandleChatterGuildLogin(
 
   // TODO: guild record is retrieved directly from command, verify this
   _serverInstance.GetDataDirector().GetGuild(command.guildUid).Immutable(
-    [&response](const data::Guild& guild)
+    [this, &response](const data::Guild& guild)
     {
-      for (const data::Uid& member : guild.members())
+      for (const data::Uid& guildMemberUid : guild.members())
       {
-        response.guildMembers.emplace_back(
+        auto& chatGuildMember = response.guildMembers.emplace_back(
           protocol::ChatCmdGuildLoginOK::GuildMember{
-            .characterUid = member,
-            .status = protocol::ChatCmdGuildLoginOK::GuildMember::Status::Online, // TODO: implement online status
+            .characterUid = guildMemberUid,
+            .status = protocol::Status::Offline,
             .unk2 = {
               .unk0 = 0,
               .unk1 = 0
             }
           });
+
+        // Find if the guild member is connected to the messenger server
+        if (auto it = _clients.find(guildMemberUid); it != _clients.end())
+        {
+          // If guild member is connected, set status to the one set by the character
+          chatGuildMember.status = it->second.status;
+        }
       }
     });
 

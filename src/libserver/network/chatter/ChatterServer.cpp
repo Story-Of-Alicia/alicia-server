@@ -173,4 +173,9 @@ size_t ChatterServer::OnClientData(
   return commandStream.GetCursor();
 }
 
+network::asio::ip::address_v4 ChatterServer::GetClientAddress(const network::ClientId clientId)
+{
+  return _server.GetClient(clientId)->GetAddress();
+}
+
 } // namespace server
