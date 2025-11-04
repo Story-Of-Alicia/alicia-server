@@ -252,7 +252,6 @@ struct Character
   dao::Field<uint32_t> level{};
   dao::Field<int32_t> carrots{};
   dao::Field<uint32_t> cash{};
-  dao::Field<uint32_t> breedingMoneySpent{0u};
 
   enum class Role
   {
@@ -294,8 +293,6 @@ struct Character
   dao::Field<std::vector<Uid>> mountEquipment{};
   
   dao::Field<std::vector<Uid>> horses{};
-  dao::Field<uint8_t> horseSlotCount{0u};
-
   dao::Field<std::vector<Uid>> pets{};
   dao::Field<Uid> mountUid{InvalidUid};
   dao::Field<Uid> petUid{InvalidUid};

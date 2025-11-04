@@ -1427,7 +1427,7 @@ void RanchDirector::HandleSearchStallion(
       protocolStallion.tid = horse.tid();
       protocolStallion.name = horse.name();
       protocolStallion.grade = horse.grade();
-      protocolStallion.chance = 0;  // TODO: Calculate breeding chances based on bonus, linage, etc.
+      protocolStallion.inheritanceRate = 0;  // TODO: Calculate based on consecutive successes and pregnancy probability
       protocolStallion.matePrice = stallionData.breedingCharge;
       
       // Calculate pregnancy chance based on timesBreeded (lifetime breeding count)
