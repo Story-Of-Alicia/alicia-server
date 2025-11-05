@@ -134,6 +134,13 @@ void BreedingMarket::Tick()
           spdlog::info("Breeding market: Paid owner {} a total of {} carrots ({} × {} matings)", 
             cachedData.ownerUid, earnings, cachedData.breedingCharge, timesMated);
         }
+        else
+        {
+          // Owner not loaded yet - queue payment for later
+          _pendingPayments.push_back({cachedData.ownerUid, earnings, cachedData.breedingCharge, timesMated});
+          spdlog::debug("Breeding market: Owner {} not in cache yet, queued payment of {} carrots", 
+            cachedData.ownerUid, earnings);
+        }
         
         // Reset horse type back to Adult (0)
         // Trigger async load of the horse
@@ -190,7 +197,8 @@ void BreedingMarket::Tick()
     CheckExpiredStallions();
   }
   
-  // Try to reset horse types for expired stallions whose horses weren't loaded yet
+  // Try to process pending payments and horse type resets
+  ProcessPendingPayments();
   ProcessPendingHorseTypeResets();
 }
 
@@ -232,6 +240,13 @@ void BreedingMarket::CheckExpiredStallions()
         });
         spdlog::info("Breeding market: Paid owner {} a total of {} carrots ({} × {} matings)", 
           stallionData.ownerUid, earnings, stallionData.breedingCharge, timesMated);
+      }
+      else
+      {
+        // Owner not loaded yet - queue payment for later
+        _pendingPayments.push_back({stallionData.ownerUid, earnings, stallionData.breedingCharge, timesMated});
+        spdlog::debug("Breeding market: Owner {} not in cache yet, queued payment of {} carrots", 
+          stallionData.ownerUid, earnings);
       }
       
       // Remove from cache
@@ -549,6 +564,43 @@ void BreedingMarket::ProcessPendingHorseTypeResets()
   if (!_horsesNeedingTypeReset.empty())
   {
     spdlog::debug("Breeding market: {} horse(s) still pending type reset", _horsesNeedingTypeReset.size());
+  }
+}
+
+void BreedingMarket::ProcessPendingPayments()
+{
+  // This is called from Tick() which already holds the mutex
+  if (_pendingPayments.empty())
+  {
+    return;
+  }
+  
+  std::vector<PendingPayment> stillPending;
+  
+  for (const auto& payment : _pendingPayments)
+  {
+    auto ownerRecord = _serverInstance.GetDataDirector().GetCharacter(payment.ownerUid);
+    if (ownerRecord)
+    {
+      ownerRecord.Mutable([&payment](data::Character& owner)
+      {
+        owner.carrots() = owner.carrots() + payment.earnings;
+      });
+      spdlog::info("Breeding market: Paid owner {} a total of {} carrots ({} × {} matings) (deferred)", 
+        payment.ownerUid, payment.earnings, payment.breedingCharge, payment.timesMated);
+    }
+    else
+    {
+      // Still not loaded, keep it in the queue
+      stillPending.push_back(payment);
+    }
+  }
+  
+  _pendingPayments = std::move(stillPending);
+  
+  if (!_pendingPayments.empty())
+  {
+    spdlog::debug("Breeding market: {} payment(s) still pending", _pendingPayments.size());
   }
 }
 
