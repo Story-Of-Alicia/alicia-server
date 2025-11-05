@@ -440,6 +440,7 @@ struct Horse
   } mountInfo{};
 
   dao::Field<std::vector<uint32_t>> ancestors{};
+  dao::Field<uint8_t> lineage{1u};  // Genetic purity: 1 (base) + parents/grandparents with matching coat
 };
 
 struct Housing

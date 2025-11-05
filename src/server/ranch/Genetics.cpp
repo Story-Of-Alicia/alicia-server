@@ -698,6 +698,7 @@ data::Tid Genetics::CalculateFoalSkin(
   
   data::Tid mareSkin = 0, stallionSkin = 0;
   std::vector<data::Uid> mareAncestors, stallionAncestors;
+  uint8_t stallionLineage = 1;
   
   mareRecord.Immutable([&](const data::Horse& mare) {
     mareSkin = mare.parts.skinTid();
@@ -707,6 +708,7 @@ data::Tid Genetics::CalculateFoalSkin(
   stallionRecord.Immutable([&](const data::Horse& stallion) {
     stallionSkin = stallion.parts.skinTid();
     stallionAncestors = stallion.ancestors();
+    stallionLineage = stallion.lineage();
   });
   
   // Get coat base inheritance rates for both parents
@@ -717,14 +719,14 @@ data::Tid Genetics::CalculateFoalSkin(
   // Bonus = (mare combo + stallion combo + pregnancy + lineage) → increases stallion coat chance
   uint16_t comboBonus = (mareCombo + stallionCombo) * 1;  // 1% per consecutive success (both parents contribute)
   uint16_t pregnancyBonus = (30 - std::min<uint32_t>(pregnancyChance, 30u));  // 0-30% based on stallion freshness
-  uint16_t lineageBonus = 0;  // TODO: Implement lineage system in the future
+  uint16_t lineageBonus = (stallionLineage > 1) ? (stallionLineage - 1) : 0;  // 1% per lineage point above base (0-8%)
   
   // Total bonus percentage (0-100+%) - all of this boosts STALLION'S coat inheritance
   uint16_t totalBonusPercentage = comboBonus + pregnancyBonus + lineageBonus;
   if (totalBonusPercentage > 100) totalBonusPercentage = 100;  // Cap at 100%
   
-  spdlog::debug("Genetics: Stallion coat inheritance bonus = {}% (mareCombo:{} + stallionCombo:{} = +{}%, pregnancy:{} = +{}%, lineage:+{}%)",
-    totalBonusPercentage, mareCombo, stallionCombo, comboBonus, pregnancyChance, pregnancyBonus, lineageBonus);
+  spdlog::debug("Genetics: Stallion coat inheritance bonus = {}% (mareCombo:{} + stallionCombo:{} = +{}%, pregnancy:{} = +{}%, lineage:{} = +{}%)",
+    totalBonusPercentage, mareCombo, stallionCombo, comboBonus, pregnancyChance, pregnancyBonus, stallionLineage, lineageBonus);
   
   // Get grandparent skins in order: mare's parents, stallion's parents
   std::vector<data::Tid> gpSkins;
@@ -873,6 +875,108 @@ data::Tid Genetics::CalculateFoalSkin(
     selectedSkin, coatInfo.minGrade, foalGrade);
   
   return selectedSkin;
+}
+
+uint8_t server::Genetics::CalculateLineage(
+  data::Tid foalSkinTid,
+  data::Uid mareUid,
+  data::Uid stallionUid)
+{
+  // Base lineage score
+  uint8_t lineage = 1;
+  
+  // Get parent horses
+  auto mareRecord = _serverInstance.GetDataDirector().GetHorse(mareUid);
+  auto stallionRecord = _serverInstance.GetDataDirector().GetHorse(stallionUid);
+  
+  if (!mareRecord || !stallionRecord)
+  {
+    spdlog::warn("Genetics: CalculateLineage - parent not found");
+    return lineage;
+  }
+  
+  data::Tid mareSkin = 0;
+  data::Tid stallionSkin = 0;
+  std::vector<data::Uid> mareAncestors;
+  std::vector<data::Uid> stallionAncestors;
+  
+  // Get mare's skin and ancestors
+  mareRecord.Immutable([&mareSkin, &mareAncestors](const data::Horse& mare)
+  {
+    mareSkin = mare.parts.skinTid();
+    mareAncestors = mare.ancestors();
+  });
+  
+  // Get stallion's skin and ancestors
+  stallionRecord.Immutable([&stallionSkin, &stallionAncestors](const data::Horse& stallion)
+  {
+    stallionSkin = stallion.parts.skinTid();
+    stallionAncestors = stallion.ancestors();
+  });
+  
+  // Check parents: +2 for each parent with matching coat
+  if (mareSkin == foalSkinTid)
+  {
+    lineage += 2;
+    spdlog::debug("Genetics: Lineage - mare has matching coat (+2)");
+  }
+  
+  if (stallionSkin == foalSkinTid)
+  {
+    lineage += 2;
+    spdlog::debug("Genetics: Lineage - stallion has matching coat (+2)");
+  }
+  
+  // Check grandparents: +1 for each grandparent with matching coat
+  // Mare's parents (maternal grandparents)
+  if (mareAncestors.size() == 2)
+  {
+    for (data::Uid grandparentUid : mareAncestors)
+    {
+      auto grandparentRecord = _serverInstance.GetDataDirector().GetHorse(grandparentUid);
+      if (grandparentRecord)
+      {
+        data::Tid grandparentSkin = 0;
+        grandparentRecord.Immutable([&grandparentSkin](const data::Horse& gp)
+        {
+          grandparentSkin = gp.parts.skinTid();
+        });
+        
+        if (grandparentSkin == foalSkinTid)
+        {
+          lineage += 1;
+          spdlog::debug("Genetics: Lineage - maternal grandparent has matching coat (+1)");
+        }
+      }
+    }
+  }
+  
+  // Stallion's parents (paternal grandparents)
+  if (stallionAncestors.size() == 2)
+  {
+    for (data::Uid grandparentUid : stallionAncestors)
+    {
+      auto grandparentRecord = _serverInstance.GetDataDirector().GetHorse(grandparentUid);
+      if (grandparentRecord)
+      {
+        data::Tid grandparentSkin = 0;
+        grandparentRecord.Immutable([&grandparentSkin](const data::Horse& gp)
+        {
+          grandparentSkin = gp.parts.skinTid();
+        });
+        
+        if (grandparentSkin == foalSkinTid)
+        {
+          lineage += 1;
+          spdlog::debug("Genetics: Lineage - paternal grandparent has matching coat (+1)");
+        }
+      }
+    }
+  }
+  
+  spdlog::debug("Genetics: Lineage calculation - foal skin {}, final lineage: {}", foalSkinTid, lineage);
+  
+  return lineage;
 }
 
 } // namespace server

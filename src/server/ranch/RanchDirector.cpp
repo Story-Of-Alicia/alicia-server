@@ -1350,7 +1350,7 @@ void RanchDirector::HandleEnterBreedingMarket(
           protocolHorse.combo = horse.breeding.breedingCombo();  // Consecutive successful breeding count
           protocolHorse.isRegistered = _breedingMarket.IsRegistered(horse.uid()) ? 1 : 0;
           protocolHorse.breedingBonus = 0;   // Breeding bonus value TODO: Implement breeding bonus
-          protocolHorse.lineage = 1; // Ancestor coat lineage score TODO: Implement lineage
+          protocolHorse.lineage = horse.lineage(); // Ancestor coat lineage score (1-9)
         });
       }
     });
@@ -1445,9 +1445,10 @@ void RanchDirector::HandleSearchStallion(
       
       // Calculate bonus components (will boost stallion's coat probability)
       uint8_t stallionCombo = horse.breeding.breedingCombo();
+      uint8_t stallionLineage = horse.lineage();
       uint8_t comboBonus = stallionCombo * 1;  // 1% per consecutive success
       uint8_t pregnancyBonus = (30 - pregnancyChance);  // 0-30% based on freshness
-      uint8_t lineageBonus = 0;  // TODO: Implement lineage system in the future
+      uint8_t lineageBonus = (stallionLineage > 1) ? (stallionLineage - 1) : 0;  // 1% per lineage point above base (0-8%)
       
       // Total bonus percentage (0-100+%)
       uint16_t totalBonusPercentage = comboBonus + pregnancyBonus + lineageBonus;
@@ -1476,7 +1477,7 @@ void RanchDirector::HandleSearchStallion(
       protocol::BuildProtocolHorseAppearance(protocolStallion.appearance, horse.appearance);
       
       protocolStallion.unk11 = 0;   // Unknown field
-      protocolStallion.lineage = 0; // TODO: Calculate lineage
+      protocolStallion.lineage = stallionLineage;
     });
   }
   
@@ -2078,6 +2079,9 @@ void RanchDirector::HandleTryBreeding(
     
     // Store parent UIDs for family tree
     foal.ancestors() = {command.stallionUid, command.mareUid};
+    
+    // Calculate lineage based on coat matching with parents and grandparents
+    foal.lineage() = genetics.CalculateLineage(foalSkinTid, command.mareUid, command.stallionUid);
     
     // Store values for response
     foalUid = foal.uid();
