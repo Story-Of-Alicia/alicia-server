@@ -112,8 +112,15 @@ private:
   //! List of stallion UIDs being loaded
   std::vector<data::Uid> _stallionUidsToLoad;
 
+  //! Horses that need their type reset from Stallion (2) back to Adult (0)
+  //! These are horses whose stallion registration expired but weren't in cache yet
+  std::vector<data::Uid> _horsesNeedingTypeReset;
+
   //! Checks and removes expired stallions
   void CheckExpiredStallions();
+  
+  //! Attempts to reset horse types for horses in _horsesNeedingTypeReset
+  void ProcessPendingHorseTypeResets();
 };
 
 } // namespace server
