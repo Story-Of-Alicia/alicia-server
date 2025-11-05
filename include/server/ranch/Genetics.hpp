@@ -138,6 +138,17 @@ public:
     data::Uid stallionUid,
     data::Tid foalSkinTid);
 
+  //! Calculates lineage score based on coat matching with parents and grandparents.
+  //! Base lineage is 1. +2 for each parent with matching coat, +1 for each grandparent with matching coat.
+  //! @param foalSkinTid Foal's skin TID (coat to match against)
+  //! @param mareUid Mare's UID
+  //! @param stallionUid Stallion's UID
+  //! @returns Lineage score (1-9)
+  uint8_t CalculateLineage(
+    data::Tid foalSkinTid,
+    data::Uid mareUid,
+    data::Uid stallionUid);
+
 private:
   ServerInstance& _serverInstance;
   std::mt19937 _randomEngine;
