@@ -651,6 +651,8 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   {
     horse.ancestors = std::vector<data::Uid>{};
   }
+  
+  horse.lineage = json.value("lineage", uint8_t{1});
 }
 
 void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
@@ -759,6 +761,7 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["mountInfo"] = mountInfo;
 
   json["ancestors"] = horse.ancestors();
+  json["lineage"] = horse.lineage();
   dataFile << json.dump(2);
 }
 
