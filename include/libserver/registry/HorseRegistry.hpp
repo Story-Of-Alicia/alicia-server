@@ -70,20 +70,6 @@ struct Face
   int32_t type{0};
 };
 
-struct ManeShapeInfo
-{
-  int32_t shape{0};
-  float inheritanceRate{1.0f};
-  int32_t minGrade{1};
-};
-
-struct TailShapeInfo
-{
-  int32_t shape{0};
-  float inheritanceRate{1.0f};
-  int32_t minGrade{1};
-};
-
 struct Mane
 {
   data::Tid tid{data::InvalidTid};
@@ -173,16 +159,6 @@ public:
   //! @returns Tail TID, or InvalidTid if not found.
   data::Tid FindTailByColorAndShape(Color color, int32_t shape) const;
 
-  //! Gets mane shape information.
-  //! @param shape Mane shape (0-7).
-  //! @returns ManeShapeInfo with inheritance rate and grade requirements.
-  const ManeShapeInfo& GetManeShapeInfo(int32_t shape) const;
-
-  //! Gets tail shape information.
-  //! @param shape Tail shape (0-5).
-  //! @returns TailShapeInfo with inheritance rate and grade requirements.
-  const TailShapeInfo& GetTailShapeInfo(int32_t shape) const;
-
   //! Gets mane by TID (for accessing inheritance rate/minGrade).
   //! @param tid Mane TID.
   //! @returns Pointer to Mane, or nullptr if not found.
@@ -201,9 +177,6 @@ private:
 
   std::unordered_map<data::Tid, Mane> _manes;
   std::unordered_map<data::Tid, Tail> _tails;
-  
-  std::unordered_map<int32_t, ManeShapeInfo> _maneShapes;
-  std::unordered_map<int32_t, TailShapeInfo> _tailShapes;
 
   // Lookup tables for efficient querying: [colorGroupId][shape] -> vector of TIDs
   std::unordered_map<int32_t, std::unordered_map<int32_t, std::vector<data::Tid>>> _manesByColorAndShape;
