@@ -38,6 +38,12 @@ enum class Status : uint8_t
   Away = 3
 };
 
+enum class MailboxFolder : uint8_t
+{
+  Sent = 1,
+  Inbox = 2
+};
+
 struct ChatCmdLogin
 {
   uint32_t characterUid{};
@@ -124,11 +130,7 @@ struct ChatCmdLoginAckCancel
 
 struct ChatCmdLetterList
 {
-  enum class MailboxFolder : uint8_t
-  {
-    Sent = 1,
-    Inbox = 2
-  } folder{};
+  MailboxFolder mailboxFolder{};
 
   // Likely to do with mailbox pagination
   struct Struct0
@@ -163,36 +165,50 @@ struct ChatCmdLetterList
 
 struct ChatCmdLetterListAckOk
 {
-  ChatCmdLetterList::MailboxFolder mailboxFolder{};
+  MailboxFolder mailboxFolder{};
+
   struct MailboxInfo
   {
+    //! Mail count.
     uint32_t mailCount{};
     //! Indicates whether there are more mail in mailbox.
     //! `0` disables the "Show 10 more..." button.
     uint8_t hasMoreMail{};
   } mailboxInfo{};
 
-  // If unk0 == 2
-  struct Struct1
+  struct InboxMail
   {
-    uint32_t unk0{};
-    struct Struct1Struct0
+    //! Mail UID.
+    uint32_t mailUid{};
+
+    //! Dictates whether or not the inbox mail can be replied to, including System mails.
+    enum class ReplyPermission : uint32_t
     {
-      uint32_t unk0{};
-      uint32_t unk1{};
-      struct Struct1Struct0Struct0
-      {
-        std::string unk0{};
-        std::string unk1{};
-        struct Struct1Struct0Struct0Struct0
-        {
-          std::string unk0{};
-          std::string unk1{};
-        } struct1Struct0Struct0Struct0{};
-      } struct1Struct0Struct0{};
-    } struct1Struct0{};
+      CanReply = 0,
+      NoReply = 1
+    } replyPermission{ReplyPermission::CanReply};
+    
+    //! Mail type.
+    enum class MailType : uint32_t
+    {
+      Normal = 0,
+      System = 1
+    } mailType{MailType::Normal};
+
+    //! Who sent the mail.
+    std::string sender{};
+    //! Date of the mail when it was sent, as a string.
+    std::string date{};
+
+    struct Struct0
+    {
+      //! Unknown, left for discovery later.
+      std::string unk0{"struct0.unk0"};
+      //! Mail body.
+      std::string body{};
+    } struct0{};
   };
-  std::vector<Struct1> struct1{};
+  std::vector<InboxMail> inboxMails{};
 
   struct SentMail
   {

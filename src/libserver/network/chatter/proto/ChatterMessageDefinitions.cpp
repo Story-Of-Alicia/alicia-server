@@ -113,7 +113,7 @@ void server::protocol::ChatCmdLetterList::Read(
   ChatCmdLetterList& command,
   server::SourceStream& stream)
 {
-  stream.Read(command.folder)
+  stream.Read(command.mailboxFolder)
     .Read(command.struct0);
 }
 
@@ -128,22 +128,34 @@ void server::protocol::ChatCmdLetterListAckOk::Write(
 
   switch (command.mailboxFolder)
   {
-    case ChatCmdLetterList::MailboxFolder::Sent:
+    case MailboxFolder::Sent:
     {
-      for (const auto& element : command.sentMails)
+      for (const auto& sentMail : command.sentMails)
       {
         // TODO: break this out into it's own struct write function
-        stream.Write(element.mailUid)
-          .Write(element.recipient);
+        stream.Write(sentMail.mailUid)
+          .Write(sentMail.recipient);
         // TODO: break this out into it's own struct write function
-        stream.Write(element.content.date)
-          .Write(element.content.body);
+        stream.Write(sentMail.content.date)
+          .Write(sentMail.content.body);
       }
       break;
     }
-    case ChatCmdLetterList::MailboxFolder::Inbox:
+    case MailboxFolder::Inbox:
     {
-      throw std::runtime_error("Not implemented");
+      for (const auto& mail : command.inboxMails)
+      {
+        stream.Write(mail.mailUid)
+          .Write(mail.replyPermission)
+          .Write(mail.mailType)
+          .Write(mail.sender)
+          .Write(mail.date);
+
+        // TODO: break this out into it's own struct write function
+        stream.Write(mail.struct0.unk0)
+          .Write(mail.struct0.body);
+      }
+      break;
     }
     default:
     {
