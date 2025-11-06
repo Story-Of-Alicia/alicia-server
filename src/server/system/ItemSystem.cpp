@@ -124,8 +124,8 @@ ItemSystem::ReturnType ItemSystem::AddItem(
     spdlog::debug("Couldn't add item, item not available");
     return ItemSystem::ReturnType::NOT_FOUND;
   }
-
-  itemRecord.Mutable([value, this](data::Item& item)
+  ItemSystem::ReturnType result = ItemSystem::ReturnType::SUCCESS;
+  itemRecord.Mutable([value, this, &result](data::Item& item)
   {
     const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(
       item.tid());
@@ -135,10 +135,10 @@ ItemSystem::ReturnType ItemSystem::AddItem(
       item.count() += value;
     else
       spdlog::debug("Couldn't add item, item is not stackable");
-      return ItemSystem::ReturnType::NOT_STACKABLE;
+      result = ItemSystem::ReturnType::NOT_STACKABLE;
   });
 
-  return ItemSystem::ReturnType::SUCCESS;
+  return result;
 }
 
 ItemSystem::ReturnType ItemSystem::ConsumeItem(
@@ -153,26 +153,36 @@ ItemSystem::ReturnType ItemSystem::ConsumeItem(
     return ItemSystem::ReturnType::NOT_FOUND;
   }
 
-  itemRecord.Mutable([this, itemCount, characterUid](data::Item& item)
+  ItemSystem::ReturnType result = ItemSystem::ReturnType::SUCCESS;
+
+  itemRecord.Mutable([this, itemCount, characterUid, &result](data::Item& item)
   {
     const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(item.tid());
     if (itemTemplate->type != registry::Item::Type::Consumable)
     {
       spdlog::debug("Couldn't consume item, item is not consumable");
-      return ItemSystem::ReturnType::NOT_STACKABLE;
+      result = ItemSystem::ReturnType::NOT_STACKABLE;
+      return;
     }
 
     // Check if enough item count is available
     if (item.count() < itemCount)
     {
       spdlog::debug("Couldn't consume item, not enough item count");
-      return ItemSystem::ReturnType::INSUFFICIENT_QUANTITY;
+      result = ItemSystem::ReturnType::INSUFFICIENT_QUANTITY;
+      return;
     }
 
     item.count() -= itemCount;
     if (item.count() <= 0)
-      return ItemSystem::RemoveItem(characterUid, item.uid());
+    {
+      //forward result of removal
+      result = ItemSystem::RemoveItem(characterUid, item.uid());
+      return;
+    }
   });
+
+  return result;
 }
 
 ItemSystem::ReturnType ItemSystem::RemoveItem(
