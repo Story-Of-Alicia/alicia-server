@@ -30,16 +30,24 @@ class ServerInstance;
 class ItemSystem
 {
 public:
+  //TODO: name me appropriately
+  enum ReturnType{
+    SUCCESS,
+    NOT_FOUND,
+    INSUFFICIENT_QUANTITY,
+    NOT_STACKABLE,
+  };
 
   explicit ItemSystem(ServerInstance& serverInstance);
 
   bool CheckCharacterHasItem(data::Uid characterUid, data::Tid itemTid);
   data::Uid GetItemByTid(data::Uid characterUid, data::Tid itemTid);
+  //! has functionality to also just add to existing stackable items
   //! value is either itemCount for stackable items or duration in days for expirable items
   data::Uid CreateNewItem(data::Uid characterUid, data::Tid itemTid, uint32_t value);
-  void AddItem(data::Uid itemUid, uint32_t value);
-  void ConsumeItem(data::Uid characterUid, data::Uid itemUid, uint32_t itemCount);
-  void RemoveItem(data::Uid characterUid, data::Uid itemUid);
+  ReturnType AddItem(data::Uid itemUid, uint32_t value);
+  ReturnType ConsumeItem(data::Uid characterUid, data::Uid itemUid, uint32_t itemCount);
+  ReturnType RemoveItem(data::Uid characterUid, data::Uid itemUid);
 
 private:
   ServerInstance& _serverInstance;

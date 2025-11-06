@@ -19,6 +19,8 @@
 
 #include "server/system/ItemSystem.hpp"
 
+#include <spdlog/spdlog.h>
+
 #include "server/ServerInstance.hpp"
 #include "libserver/data/DataDirector.hpp"
 #include "libserver/registry/ItemRegistry.hpp"
@@ -45,10 +47,13 @@ data::Uid ItemSystem::GetItemByTid(
   data::Uid characterUid,
   data::Tid itemTid)
 {
+  data::Uid itemUid = data::InvalidUid;
+
   auto charaterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
   if (not charaterRecord)
-    throw std::runtime_error("Couldn't check character item, character not available");
-  data::Uid itemUid = data::InvalidUid;
+    spdlog::debug("Couldn't check character item, character not available");
+    return itemUid;
+  
   charaterRecord.Immutable([this, &itemUid, itemTid](const data::Character& character)
   {
     const auto itemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(
@@ -75,11 +80,13 @@ data::Uid ItemSystem::CreateNewItem(
   data::Tid itemTid,
   uint32_t value)
 {
+  data::Uid newItemUid = data::InvalidUid;
+
   auto charaterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
   if (not charaterRecord)
-    throw std::runtime_error("Couldn't check character item, character not available");
+    spdlog::debug("Couldn't check character item, character not available");
+    return newItemUid;
 
-  data::Uid newItemUid = data::InvalidUid;
   if ((newItemUid = ItemSystem::GetItemByTid(characterUid, itemTid)) != data::InvalidUid)
   {
     ItemSystem::AddItem(newItemUid, value);
@@ -107,13 +114,16 @@ data::Uid ItemSystem::CreateNewItem(
   return newItemUid;
 }
 
-void ItemSystem::AddItem(
+ItemSystem::ReturnType ItemSystem::AddItem(
   data::Uid itemUid,
   uint32_t value)
 {
   auto itemRecord = _serverInstance.GetDataDirector().GetItem(itemUid);
   if (not itemRecord)
-    throw std::runtime_error("Couldn't add item, item not available");
+  {
+    spdlog::debug("Couldn't add item, item not available");
+    return ItemSystem::ReturnType::NOT_FOUND;
+  }
 
   itemRecord.Mutable([value, this](data::Item& item)
   {
@@ -124,42 +134,72 @@ void ItemSystem::AddItem(
     else if (itemTemplate->type == registry::Item::Type::Consumable)
       item.count() += value;
     else
-      throw std::runtime_error("Couldn't add item, item is not stackable");
+      spdlog::debug("Couldn't add item, item is not stackable");
+      return ItemSystem::ReturnType::NOT_STACKABLE;
   });
+
+  return ItemSystem::ReturnType::SUCCESS;
 }
 
-void ItemSystem::ConsumeItem(
+ItemSystem::ReturnType ItemSystem::ConsumeItem(
   data::Uid characterUid,
   data::Uid itemUid,
   uint32_t itemCount)
 {
   const auto& itemRecord = _serverInstance.GetDataDirector().GetItem(itemUid);
   if (not itemRecord)
-    throw std::runtime_error("Couldn't consume item, item not available");
+  {
+    spdlog::debug("Couldn't consume item, item not available");
+    return ItemSystem::ReturnType::NOT_FOUND;
+  }
 
   itemRecord.Mutable([this, itemCount, characterUid](data::Item& item)
   {
     const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(item.tid());
     if (itemTemplate->type != registry::Item::Type::Consumable)
-      throw std::runtime_error("Couldn't consume item, item is not consumable");
+    {
+      spdlog::debug("Couldn't consume item, item is not consumable");
+      return ItemSystem::ReturnType::NOT_STACKABLE;
+    }
 
     // Check if enough item count is available
     if (item.count() < itemCount)
-      throw std::runtime_error("Couldn't consume item, not enough item count");
+    {
+      spdlog::debug("Couldn't consume item, not enough item count");
+      return ItemSystem::ReturnType::INSUFFICIENT_QUANTITY;
+    }
 
     item.count() -= itemCount;
     if (item.count() <= 0)
-    {
-      ItemSystem::RemoveItem(characterUid, item.uid());
-    }
+      return ItemSystem::RemoveItem(characterUid, item.uid());
   });
 }
+
+ItemSystem::ReturnType ItemSystem::RemoveItem(
+  data::Uid characterUid,
+  data::Uid itemUid)
+{
+  const auto & charaterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+  if (not charaterRecord)
+    spdlog::debug("Couldn't check character item, character not available");
+    return ItemSystem::ReturnType::NOT_FOUND;
+
+  charaterRecord.Mutable([this, itemUid](data::Character& character)
+  {
+    character.inventory().erase(
+      std::remove(character.inventory().begin(), character.inventory().end(), itemUid),
+      character.inventory().end());
+  });
+
+  _serverInstance.GetDataDirector().GetItemCache().Delete(itemUid);
+  return ItemSystem::ReturnType::SUCCESS;
+};
 
 bool ItemSystem::CheckExpired(data::Uid itemUid)
 {
   const auto itemRecord = _serverInstance.GetDataDirector().GetItem(itemUid);
   if (not itemRecord)
-    throw std::runtime_error("Couldn't check item expiration, item not available");
+    spdlog::debug("Couldn't check item expiration, item not available");
 
   bool isExpired = false;
 
@@ -172,23 +212,5 @@ bool ItemSystem::CheckExpired(data::Uid itemUid)
 
   return isExpired;
 }
-
-void ItemSystem::RemoveItem(
-  data::Uid characterUid,
-  data::Uid itemUid)
-{
-  const auto & charaterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
-  if (not charaterRecord)
-    throw std::runtime_error("Couldn't remove item, character not available");
-
-  charaterRecord.Mutable([this, itemUid](data::Character& character)
-  {
-    character.inventory().erase(
-      std::remove(character.inventory().begin(), character.inventory().end(), itemUid),
-      character.inventory().end());
-  });
-
-  _serverInstance.GetDataDirector().GetItemCache().Delete(itemUid);
-};
 
 } // namespace server
