@@ -1444,11 +1444,11 @@ void RanchDirector::HandleSearchStallion(
       const auto& stallionCoatInfo = horseRegistry.GetCoatInfo(horse.parts.skinTid());
       
       // Calculate bonus components (will boost stallion's coat probability)
-      uint8_t stallionCombo = horse.breeding.breedingCombo();
-      uint8_t stallionLineage = horse.lineage();
-      uint8_t comboBonus = stallionCombo * 1;  // 1% per consecutive success
-      uint8_t pregnancyBonus = (30 - pregnancyChance);  // 0-30% based on freshness
-      uint8_t lineageBonus = (stallionLineage > 1) ? (stallionLineage - 1) : 0;  // 1% per lineage point above base (0-8%)
+      uint32_t stallionCombo = horse.breeding.breedingCombo();
+      uint32_t stallionLineage = horse.lineage();
+      uint32_t comboBonus = stallionCombo * 1;  // 1% per consecutive success
+      uint32_t pregnancyBonus = (30 - pregnancyChance);  // 0-30% based on freshness
+      uint32_t lineageBonus = (stallionLineage > 1) ? (stallionLineage - 1) : 0;  // 1% per lineage point above base (0-8%)
       
       // Total bonus percentage (0-100+%)
       uint16_t totalBonusPercentage = comboBonus + pregnancyBonus + lineageBonus;
@@ -1470,7 +1470,8 @@ void RanchDirector::HandleSearchStallion(
       protocolStallion.inheritanceRate = inheritanceRateUI; // 0~8
       protocolStallion.matePrice = stallionData.breedingCharge;
       
-      protocolStallion.expiresAt = util::TimePointToAliciaTime(stallionData.expiresAt);
+      auto expiresAt = stallionData.registeredAt + std::chrono::hours(24);
+      protocolStallion.expiresAt = util::TimePointToAliciaTime(expiresAt);
 
       protocol::BuildProtocolHorseStats(protocolStallion.stats, horse.stats);
       protocol::BuildProtocolHorseParts(protocolStallion.parts, horse.parts, horse.horseType() == 1);
@@ -1515,12 +1516,12 @@ void RanchDirector::HandleRegisterStallion(
   });
 
   // Delegate to BreedingMarket
-  auto stallionUidOpt = _breedingMarket.RegisterStallion(
+  data::Uid stallionUid = _breedingMarket.RegisterStallion(
     clientContext.characterUid,
     command.horseUid,
     command.carrots);
 
-  if (!stallionUidOpt)
+  if (stallionUid == data::InvalidUid)
   {
     spdlog::warn("RegisterStallion: Failed to register horse {}", command.horseUid);
     // TODO: Send cancel response and refund registration fee
@@ -1541,7 +1542,7 @@ void RanchDirector::HandleRegisterStallion(
   SendInventoryUpdate(clientId);
 
   spdlog::info("RegisterStallion: Successfully registered horse {} as stallion {}", 
-    command.horseUid, *stallionUidOpt);
+    command.horseUid, stallionUid);
 }
 
 void RanchDirector::HandleUnregisterStallion(
@@ -1551,19 +1552,19 @@ void RanchDirector::HandleUnregisterStallion(
   const auto& clientContext = GetClientContext(clientId);
   
   // Delegate to BreedingMarket
-  uint32_t compensation = _breedingMarket.UnregisterStallion(command.horseUid);
+  auto earnings = _breedingMarket.UnregisterStallion(command.horseUid);
   
   // Pay compensation to owner immediately
   // TODO: Mail the payment to the owner
-  if (compensation > 0)
+  if (earnings.compensation > 0)
   {
     auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
-    characterRecord.Mutable([compensation](data::Character& character)
+    characterRecord.Mutable([&earnings](data::Character& character)
     {
-      character.carrots() = character.carrots() + compensation;
+      character.carrots() = character.carrots() + earnings.compensation;
     });
     
-    spdlog::info("UnregisterStallion: Paid {} carrots compensation to player", compensation);
+    spdlog::info("UnregisterStallion: Paid {} carrots compensation to player", earnings.compensation);
   }
 
   protocol::AcCmdCRUnregisterStallionOK response{};
@@ -1595,14 +1596,14 @@ void RanchDirector::HandleUnregisterStallionEstimateInfo(
     return;
   }
 
-  auto [timesMated, compensation, breedingCharge] = *estimateOpt;
+  const auto& estimate = *estimateOpt;
 
   protocol::AcCmdCRUnregisterStallionEstimateInfoOK response{
     .member1 = 0xFFFF'FFFF,
-    .timesMated = timesMated,
-    .matingCompensation = compensation,
+    .timesMated = estimate.timesMated,
+    .matingCompensation = estimate.compensation,
     .member4 = 0xFFFF'FFFF,
-    .matingPrice = breedingCharge
+      .matingPrice = estimate.breedingCharge
   };
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -1905,7 +1906,7 @@ void RanchDirector::HandleTryBreeding(
     uint32_t mareScale = 0, mareLegLength = 0, mareLegVolume = 0, mareBodyLength = 0, mareBodyVolume = 0;
     std::vector<data::Uid> mareAncestors;
     
-    uint8_t mareCombo = 0;
+    uint32_t mareCombo = 0;
     mareRecord->Immutable([&](const data::Horse& mare)
     {
       mareTid = mare.tid();
@@ -1933,7 +1934,7 @@ void RanchDirector::HandleTryBreeding(
     uint8_t stallionGrade = 0;
     uint32_t stallionScale = 0, stallionLegLength = 0, stallionLegVolume = 0, stallionBodyLength = 0, stallionBodyVolume = 0;
     std::vector<data::Uid> stallionAncestors;
-    uint8_t stallionCombo = 0;
+    uint32_t stallionCombo = 0;
     uint32_t stallionTimesBreeded = 0;
     
     stallionRecord->Immutable([&](const data::Horse& stallion)
@@ -1967,7 +1968,7 @@ void RanchDirector::HandleTryBreeding(
     // From MountTendencyRatioInfo table:
     // Tendency 1: 35%, Tendency 2: 30%, Tendency 3: 20%, Tendency 4: 10%, Tendency 5: 5%, Tendency 6: 0%
     std::discrete_distribution<int> tendencyDist({35, 30, 20, 10, 5});
-    foal.tendency() = static_cast<uint8_t>(tendencyDist(_randomDevice) + 1); // +1 because distribution returns 0-4
+    foal.tendency() = static_cast<uint32_t>(tendencyDist(_randomDevice) + 1); // +1 because distribution returns 0-4
     
     // Calculate foal grade first
     // Apply fertility peak bonus if Type 1 bonus was rolled (IDs 11-13 map to stages 1-3)
@@ -2136,7 +2137,7 @@ void RanchDirector::HandleTryBreeding(
   spdlog::info("TryBreeding: Breeding successful - reset breedingMoneySpent to 0");
   
   // Increment mare's breeding combo on successful breeding
-  uint8_t mareCombo = 0;
+  uint32_t mareCombo = 0;
   mareRecord->Mutable([&mareCombo](data::Horse& mare)
   {
     mare.breeding.breedingCombo() = mare.breeding.breedingCombo() + 1;

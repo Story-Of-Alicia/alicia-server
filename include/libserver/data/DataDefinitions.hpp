@@ -293,7 +293,7 @@ struct Character
   dao::Field<std::vector<Uid>> mountEquipment{};
   
   dao::Field<std::vector<Uid>> horses{};
-  dao::Field<uint8_t> horseSlotCount{0u};
+  dao::Field<uint32_t> horseSlotCount{0u};
   
   dao::Field<std::vector<Uid>> pets{};
   dao::Field<Uid> mountUid{InvalidUid};
@@ -381,19 +381,19 @@ struct Horse
   struct Breeding
   {
     dao::Field<uint32_t> timesBreeded{0u};  // Total times used for breeding since it was born
-    dao::Field<uint8_t> breedingCombo{0u};
+    dao::Field<uint32_t> breedingCombo{0u};
   } breeding{};
   
-  dao::Field<uint8_t> horseType{0u};
-  dao::Field<uint8_t> tendency{0u};
-  dao::Field<uint8_t> spirit{0u};
+  dao::Field<uint32_t> horseType{0u};
+  dao::Field<uint32_t> tendency{0u};
+  dao::Field<uint32_t> spirit{0u};
   dao::Field<uint16_t> fatigue{0u};
 
-  struct Potential // Bfs ordering
+  struct Potential
   {
-    dao::Field<uint8_t> type{0u};
-    dao::Field<uint8_t> level{0u};
-    dao::Field<uint8_t> value{0u};
+    dao::Field<uint32_t> type{0u};
+    dao::Field<uint32_t> level{0u};
+    dao::Field<uint32_t> value{0u};
   } potential{};
 
   dao::Field<uint32_t> luckState{0u};
@@ -440,7 +440,7 @@ struct Horse
   } mountInfo{};
 
   dao::Field<std::vector<uint32_t>> ancestors{};
-  dao::Field<uint8_t> lineage{1u};  // Genetic purity: 1 (base) + parents/grandparents with matching coat
+  dao::Field<uint32_t> lineage{1u};  // Genetic purity: 1 (base) + parents/grandparents with matching coat
 };
 
 struct Housing
@@ -469,7 +469,7 @@ struct Stallion
   dao::Field<uint32_t> breedingCharge{};    // Price in carrots to breed with this stallion
   dao::Field<uint32_t> timesMated{0u};      // Times bred during current registration
   dao::Field<Clock::time_point> registeredAt{};
-  dao::Field<Clock::time_point> expiresAt{};
+  // Note: Stallions expire 24 hours after registeredAt
 };
 
 } // namespace data

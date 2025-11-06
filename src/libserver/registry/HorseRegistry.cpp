@@ -34,6 +34,7 @@ constexpr uint32_t FigureScaleMax = 10;
 } // anon namespace
 
 HorseRegistry::HorseRegistry()
+  : _randomEngine(_randomDevice())
 {
   // Define color groups
   // Color group 1: White, Light Brown, Dark Brown
@@ -305,7 +306,7 @@ const Coat& HorseRegistry::GetCoatInfo(data::Tid coatTid) const
   return invalidCoat;
 }
 
-data::Tid HorseRegistry::GetRandomManeFromColorAndShape(int32_t colorGroupId, int32_t shape, std::mt19937& rng) const
+data::Tid HorseRegistry::GetRandomManeFromColorAndShape(int32_t colorGroupId, int32_t shape)
 {
   auto groupIt = _manesByColorAndShape.find(colorGroupId);
   if (groupIt == _manesByColorAndShape.end())
@@ -321,10 +322,10 @@ data::Tid HorseRegistry::GetRandomManeFromColorAndShape(int32_t colorGroupId, in
 
   const auto& candidates = shapeIt->second;
   std::uniform_int_distribution<size_t> dist(0, candidates.size() - 1);
-  return candidates[dist(rng)];
+  return candidates[dist(_randomEngine)];
 }
 
-data::Tid HorseRegistry::GetRandomTailFromColorAndShape(int32_t colorGroupId, int32_t shape, std::mt19937& rng) const
+data::Tid HorseRegistry::GetRandomTailFromColorAndShape(int32_t colorGroupId, int32_t shape)
 {
   auto groupIt = _tailsByColorAndShape.find(colorGroupId);
   if (groupIt == _tailsByColorAndShape.end())
@@ -340,7 +341,7 @@ data::Tid HorseRegistry::GetRandomTailFromColorAndShape(int32_t colorGroupId, in
 
   const auto& candidates = shapeIt->second;
   std::uniform_int_distribution<size_t> dist(0, candidates.size() - 1);
-  return candidates[dist(rng)];
+  return candidates[dist(_randomEngine)];
 }
 
 int32_t HorseRegistry::GetManeColorGroupId(data::Tid maneTid) const
@@ -387,36 +388,6 @@ int32_t HorseRegistry::GetTailColorGroupId(data::Tid tailTid) const
   return 0;
 }
 
-int32_t HorseRegistry::GetManeShape(data::Tid maneTid) const
-{
-  auto it = _manes.find(maneTid);
-  if (it != _manes.end())
-  {
-    return it->second.shape;
-  }
-  return 0;
-}
-
-int32_t HorseRegistry::GetTailShape(data::Tid tailTid) const
-{
-  auto it = _tails.find(tailTid);
-  if (it != _tails.end())
-  {
-    return it->second.shape;
-  }
-  return 0;
-}
-
-Color HorseRegistry::GetManeColor(data::Tid maneTid) const
-{
-  auto it = _manes.find(maneTid);
-  if (it != _manes.end())
-  {
-    return it->second.color;
-  }
-  return Color::White; // Default fallback
-}
-
 data::Tid HorseRegistry::FindTailByColorAndShape(Color color, int32_t shape) const
 {
   for (const auto& [tailTid, tailInfo] : _tails)
@@ -429,24 +400,30 @@ data::Tid HorseRegistry::FindTailByColorAndShape(Color color, int32_t shape) con
   return data::InvalidTid;
 }
 
-const Mane* HorseRegistry::GetMane(data::Tid tid) const
+const Mane& HorseRegistry::GetMane(data::Tid tid) const
 {
   auto it = _manes.find(tid);
   if (it != _manes.end())
   {
-    return &it->second;
+    return it->second;
   }
-  return nullptr;
+  
+  // Fallback to white short mane (TID 1) if not found
+  static const Mane invalidMane{.tid = 1, .color = Color::White, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1};
+  return invalidMane;
 }
 
-const Tail* HorseRegistry::GetTail(data::Tid tid) const
+const Tail& HorseRegistry::GetTail(data::Tid tid) const
 {
   auto it = _tails.find(tid);
   if (it != _tails.end())
   {
-    return &it->second;
+    return it->second;
   }
-  return nullptr;
+  
+  // Fallback to white medium tail (TID 1) if not found
+  static const Tail invalidTail{.tid = 1, .color = Color::White, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1};
+  return invalidTail;
 }
 
 } // namespace server

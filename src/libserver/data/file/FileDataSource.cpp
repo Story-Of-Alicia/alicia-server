@@ -289,7 +289,7 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.mountEquipment = json.value("mountEquipment", std::vector<data::Uid>{});
 
   character.horses = json["horses"].get<std::vector<data::Uid>>();
-  character.horseSlotCount = json["horseSlotCount"].get<uint8_t>();
+  character.horseSlotCount = json["horseSlotCount"].get<uint32_t>();
 
   character.pets = json["pets"].get<std::vector<data::Uid>>();
   character.mountUid = json["mountUid"].get<data::Uid>();
@@ -527,25 +527,25 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   if (json.contains("breeding"))
   {
     horse.breeding.timesBreeded = json["breeding"].value("timesBreeded", uint32_t{0});
-    horse.breeding.breedingCombo = json["breeding"].value("breedingCombo", uint8_t{0});
+    horse.breeding.breedingCombo = json["breeding"].value("breedingCombo", uint32_t{0});
   }
   else
   {
     // Legacy flat structure
     horse.breeding.timesBreeded = json.value("timesBreeded", uint32_t{0});
-    horse.breeding.breedingCombo = json.value("breedingCombo", uint8_t{0});
+    horse.breeding.breedingCombo = json.value("breedingCombo", uint32_t{0});
   }
 
-  horse.horseType = json.value("horseType", uint8_t{0});
-  horse.tendency = json.value("tendency", uint8_t{0});
-  horse.spirit = json.value("spirit", uint8_t{0});
+  horse.horseType = json.value("horseType", uint32_t{0});
+  horse.tendency = json.value("tendency", uint32_t{0});
+  horse.spirit = json.value("spirit", uint32_t{0});
   horse.fatigue = json.value("fatigue", uint16_t{0});
 
   auto potential = json["potential"];
   horse.potential = data::Horse::Potential{
-    .type = potential["type"].get<uint8_t>(),
-    .level = potential["level"].get<uint8_t>(),
-    .value = potential["value"].get<uint8_t>()
+    .type = potential["type"].get<uint32_t>(),
+    .level = potential["level"].get<uint32_t>(),
+    .value = potential["value"].get<uint32_t>()
   };
 
   horse.luckState = json["luckState"].get<uint32_t>();
@@ -578,7 +578,7 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
     horse.ancestors = std::vector<data::Uid>{};
   }
   
-  horse.lineage = json.value("lineage", uint8_t{1});
+  horse.lineage = json.value("lineage", uint32_t{1});
 }
 
 void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)

@@ -553,9 +553,11 @@ struct RanchCommandSearchStallionOK
     uint32_t tid{};
     std::string name{};
     uint8_t grade{};
+    //! Indicates the probability of the stallion's coat being inherited by the foal. Represented with colored arrows in-game.
     uint8_t inheritanceRate{};
     uint32_t matePrice{};
-    uint32_t pregnancyChance{};  // Lower = higher success rate (0 = 64%, 30 = 2%)
+    //! The lower pregnancyChance is, the fuller the hearts are. For example, 0 pregnancyChance = The horse gets pregnant with 64% chance, 30 = 2% chance
+    uint32_t pregnancyChance{};
     // 1304
     uint32_t expiresAt{};
     Horse::Stats stats{};

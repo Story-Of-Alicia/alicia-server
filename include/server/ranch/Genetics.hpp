@@ -74,8 +74,8 @@ public:
     data::Uid mareUid,
     data::Uid stallionUid,
     uint8_t foalGrade,
-    uint8_t mareCombo = 0,
-    uint8_t stallionCombo = 0,
+    uint32_t mareCombo = 0,
+    uint32_t stallionCombo = 0,
     uint32_t pregnancyChance = 30);
 
   //! Calculates foal grade based on parent grades.
@@ -144,7 +144,7 @@ public:
   //! @param mareUid Mare's UID
   //! @param stallionUid Stallion's UID
   //! @returns Lineage score (1-9)
-  uint8_t CalculateLineage(
+  uint32_t CalculateLineage(
     data::Tid foalSkinTid,
     data::Uid mareUid,
     data::Uid stallionUid);

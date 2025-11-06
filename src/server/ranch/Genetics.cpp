@@ -48,11 +48,11 @@ int32_t Genetics::GetShapeFromTid(data::Tid tid, bool isMane)
 {
   if (isMane)
   {
-    return _serverInstance.GetHorseRegistry().GetManeShape(tid);
+    return _serverInstance.GetHorseRegistry().GetMane(tid).shape;
   }
   else
   {
-    return _serverInstance.GetHorseRegistry().GetTailShape(tid);
+    return _serverInstance.GetHorseRegistry().GetTail(tid).shape;
   }
 }
 
@@ -255,11 +255,11 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
     {
       // Get any mane TID with this shape to check minGrade and inheritanceRate
       data::Tid sampleTid = (shape * 5) + 1; // White color variant of each shape
-      const auto* maneInfo = _serverInstance.GetHorseRegistry().GetMane(sampleTid);
-      if (maneInfo && maneInfo->minGrade <= foalGrade)
+      const auto& maneInfo = _serverInstance.GetHorseRegistry().GetMane(sampleTid);
+      if (maneInfo.minGrade <= foalGrade)
       {
         validShapes.push_back(shape);
-        weights.push_back(maneInfo->inheritanceRate);
+        weights.push_back(maneInfo.inheritanceRate);
       }
     }
     
@@ -331,11 +331,11 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
     {
       // Get any tail TID with this shape to check minGrade and inheritanceRate
       data::Tid sampleTid = (shape * 5) + 1; // White color variant of each shape
-      const auto* tailInfo = _serverInstance.GetHorseRegistry().GetTail(sampleTid);
-      if (tailInfo && tailInfo->minGrade <= foalGrade)
+      const auto& tailInfo = _serverInstance.GetHorseRegistry().GetTail(sampleTid);
+      if (tailInfo.minGrade <= foalGrade)
       {
         validShapes.push_back(shape);
-        weights.push_back(tailInfo->inheritanceRate);
+        weights.push_back(tailInfo.inheritanceRate);
       }
     }
     
@@ -356,7 +356,7 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
   }
 
   // Get random mane TID from the selected color group and shape
-  result.maneTid = _serverInstance.GetHorseRegistry().GetRandomManeFromColorAndShape(maneColorGroupId, maneShape, _randomEngine);
+  result.maneTid = _serverInstance.GetHorseRegistry().GetRandomManeFromColorAndShape(maneColorGroupId, maneShape);
 
   // Fallback if lookup fails
   if (result.maneTid == data::InvalidTid)
@@ -367,14 +367,14 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
 
   // Extract the actual color from the mane we selected
   // Then find the tail with the SAME color
-  registry::Color selectedColor = _serverInstance.GetHorseRegistry().GetManeColor(result.maneTid);
+  registry::Color selectedColor = _serverInstance.GetHorseRegistry().GetMane(result.maneTid).color;
   result.tailTid = _serverInstance.GetHorseRegistry().FindTailByColorAndShape(selectedColor, tailShape);
 
   // Fallback if matching tail isn't found
   if (result.tailTid == data::InvalidTid || result.tailTid == 0)
   {
     spdlog::warn("Genetics: Failed to find tail matching mane color for shape {}, using generic lookup", tailShape);
-    result.tailTid = _serverInstance.GetHorseRegistry().GetRandomTailFromColorAndShape(tailColorGroupId, tailShape, _randomEngine);
+    result.tailTid = _serverInstance.GetHorseRegistry().GetRandomTailFromColorAndShape(tailColorGroupId, tailShape);
     
     if (result.tailTid == data::InvalidTid)
     {
@@ -682,8 +682,8 @@ data::Tid Genetics::CalculateFoalSkin(
   data::Uid mareUid,
   data::Uid stallionUid,
   uint8_t foalGrade,
-  uint8_t mareCombo,
-  uint8_t stallionCombo,
+  uint32_t mareCombo,
+  uint32_t stallionCombo,
   uint32_t pregnancyChance)
 {
   // Get parent and grandparent skin data
@@ -698,7 +698,7 @@ data::Tid Genetics::CalculateFoalSkin(
   
   data::Tid mareSkin = 0, stallionSkin = 0;
   std::vector<data::Uid> mareAncestors, stallionAncestors;
-  uint8_t stallionLineage = 1;
+  uint32_t stallionLineage = 1;
   
   mareRecord.Immutable([&](const data::Horse& mare) {
     mareSkin = mare.parts.skinTid();
@@ -877,13 +877,13 @@ data::Tid Genetics::CalculateFoalSkin(
   return selectedSkin;
 }
 
-uint8_t server::Genetics::CalculateLineage(
+uint32_t server::Genetics::CalculateLineage(
   data::Tid foalSkinTid,
   data::Uid mareUid,
   data::Uid stallionUid)
 {
   // Base lineage score
-  uint8_t lineage = 1;
+  uint32_t lineage = 1;
   
   // Get parent horses
   auto mareRecord = _serverInstance.GetDataDirector().GetHorse(mareUid);
