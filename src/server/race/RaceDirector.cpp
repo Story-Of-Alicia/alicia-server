@@ -1120,17 +1120,31 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
   {
     // Try to find the next master.
     auto nextMasterUid{data::InvalidUid};
-    _serverInstance.GetRoomSystem().GetRoom(
-      clientContext.roomUid,
-      [&nextMasterUid](Room& room)
-      {
-        for (const auto characterUid : room.GetPlayers() | std::views::keys)
+
+    // todo: improve this
+    // If the room is waiting, pick from room users.
+    if (raceInstance.stage == RaceInstance::Stage::Waiting)
+    {
+      _serverInstance.GetRoomSystem().GetRoom(
+        clientContext.roomUid,
+        [&nextMasterUid](Room& room)
         {
-          // todo: assign mastership to the best player
-          nextMasterUid = characterUid;
-          break;
-        }
-      });
+          for (const auto characterUid : room.GetPlayers() | std::views::keys)
+          {
+            // todo: assign mastership to the best player
+            nextMasterUid = characterUid;
+            break;
+          }
+        });
+    }
+    else
+    {
+      for (const auto& characterUid : raceInstance.tracker.GetRacers() | std::views::keys)
+      {
+        nextMasterUid = characterUid;
+        break;
+      }
+    }
 
     if (nextMasterUid != data::InvalidUid)
     {
