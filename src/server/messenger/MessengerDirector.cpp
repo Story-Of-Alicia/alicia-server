@@ -160,11 +160,11 @@ void MessengerDirector::HandleChatterLetterList(
         }
       };
 
-      response.mailboxFolder = MailboxFolder::Sent,
-      response.struct0 = protocol::ChatCmdLetterListAckOk::Struct0{
+      response.mailboxFolder = MailboxFolder::Sent;
+      response.mailboxInfo = protocol::ChatCmdLetterListAckOk::MailboxInfo{
         .mailCount = static_cast<uint32_t>(sentMails.size()),
-        .unk1 = 1
-      },
+        .hasMoreMail = 0
+      };
       response.sentMails = sentMails;
       break;
     }

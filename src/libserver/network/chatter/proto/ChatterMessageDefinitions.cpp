@@ -123,8 +123,8 @@ void server::protocol::ChatCmdLetterListAckOk::Write(
 {
   stream.Write(command.mailboxFolder);
   // TODO: break this out into it's own struct write function
-  stream.Write(command.struct0.mailCount)
-    .Write(command.struct0.unk1);
+  stream.Write(command.mailboxInfo.mailCount)
+    .Write(command.mailboxInfo.hasMoreMail);
 
   switch (command.mailboxFolder)
   {

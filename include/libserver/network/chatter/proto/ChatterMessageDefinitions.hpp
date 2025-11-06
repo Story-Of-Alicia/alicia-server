@@ -164,11 +164,13 @@ struct ChatCmdLetterList
 struct ChatCmdLetterListAckOk
 {
   ChatCmdLetterList::MailboxFolder mailboxFolder{};
-  struct Struct0
+  struct MailboxInfo
   {
     uint32_t mailCount{};
-    uint8_t unk1{};
-  } struct0{};
+    //! Indicates whether there are more mail in mailbox.
+    //! `0` disables the "Show 10 more..." button.
+    uint8_t hasMoreMail{};
+  } mailboxInfo{};
 
   // If unk0 == 2
   struct Struct1
@@ -192,7 +194,6 @@ struct ChatCmdLetterListAckOk
   };
   std::vector<Struct1> struct1{};
 
-  // If unk0 == 1 || Struct1.unk0 > 1?
   struct SentMail
   {
     uint32_t mailUid{};
