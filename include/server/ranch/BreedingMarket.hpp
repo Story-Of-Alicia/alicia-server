@@ -19,12 +19,6 @@ namespace server
 // Forward declarations
 class ServerInstance;
 
-namespace data
-{
-  class Horse;
-  class Character;
-}
-
 //! Manages the breeding market system where players can register stallions for breeding
 class BreedingMarket
 {
@@ -36,7 +30,16 @@ public:
     data::Uid horseUid;
     data::Uid ownerUid;
     uint32_t breedingCharge;
-    util::Clock::time_point expiresAt;
+    util::Clock::time_point registeredAt;
+    // Note: Expires 24 hours after registeredAt
+  };
+
+  //! Breeding earnings information
+  struct StallionBreedingEarnings
+  {
+    uint32_t timesMated;
+    uint32_t compensation;
+    uint32_t breedingCharge;
   };
 
   //! Constructor
@@ -60,21 +63,21 @@ public:
   //! @param characterUid UID of the character registering the stallion
   //! @param horseUid UID of the horse to register
   //! @param breedingCharge Price per breeding session in carrots
-  //! @returns Stallion UID if successful, std::nullopt if failed
-  std::optional<data::Uid> RegisterStallion(
+  //! @returns Stallion UID if successful, InvalidUid if failed
+  data::Uid RegisterStallion(
     data::Uid characterUid,
     data::Uid horseUid,
     uint32_t breedingCharge);
 
   //! Unregisters a stallion from the breeding market
   //! @param horseUid UID of the horse to unregister
-  //! @returns Compensation amount (timesMated * breedingCharge) or 0 if failed
-  uint32_t UnregisterStallion(data::Uid horseUid);
+  //! @returns Breeding earnings if successful, with compensation=0 if failed
+  StallionBreedingEarnings UnregisterStallion(data::Uid horseUid);
 
   //! Gets estimate information for unregistering a stallion
   //! @param horseUid UID of the horse
-  //! @returns Tuple of {timesMated, compensation, breedingCharge} or nullopt if not registered
-  std::optional<std::tuple<uint32_t, uint32_t, uint32_t>> GetUnregisterEstimate(data::Uid horseUid);
+  //! @returns Breeding earnings if registered, nullopt if not registered
+  std::optional<StallionBreedingEarnings> GetUnregisterEstimate(data::Uid horseUid);
 
   //! Checks if a horse is registered as a stallion
   //! @param horseUid UID of the horse to check
@@ -120,9 +123,7 @@ private:
   struct PendingPayment
   {
     data::Uid ownerUid;
-    uint32_t earnings;
-    uint32_t breedingCharge;
-    uint32_t timesMated;
+    StallionBreedingEarnings earnings;
   };
   
   //! Payments that need to be processed when owner character loads

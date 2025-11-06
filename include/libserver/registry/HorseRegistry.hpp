@@ -59,9 +59,13 @@ struct Coat
   int32_t faceType{0};
   int32_t minGrade{1};
   Tier tier{Tier::Common};
-  int32_t stars{1}; // Star rating (1-3) - affects potential probability
-  float inheritanceRate{1.0f}; // Base probability weight for this coat (from DNA_SkinInfo)
-  std::vector<int32_t> allowedColorGroups; // Valid color groups for this coat
+  //! Star rating (1-3) - affects potential probability
+  int32_t stars{1};
+  //! Base probability weight for this coat (from DNA_SkinInfo)
+  float inheritanceRate{1.0f};
+  //! A list of color groups used with this coat.
+  //! Derived from https://aliciaonheart.weebly.com/breeding.html
+  std::vector<int32_t> allowedColorGroups; 
 };
 
 struct Face
@@ -117,16 +121,14 @@ public:
   //! Gets a random mane TID from the specified color group and shape.
   //! @param colorGroupId Color group ID.
   //! @param shape Mane shape (0-7).
-  //! @param rng Random number generator.
   //! @returns Mane TID, or InvalidTid if not found.
-  data::Tid GetRandomManeFromColorAndShape(int32_t colorGroupId, int32_t shape, std::mt19937& rng) const;
+  data::Tid GetRandomManeFromColorAndShape(int32_t colorGroupId, int32_t shape);
 
   //! Gets a random tail TID from the specified color group and shape.
   //! @param colorGroupId Color group ID.
   //! @param shape Tail shape (0-5).
-  //! @param rng Random number generator.
   //! @returns Tail TID, or InvalidTid if not found.
-  data::Tid GetRandomTailFromColorAndShape(int32_t colorGroupId, int32_t shape, std::mt19937& rng) const;
+  data::Tid GetRandomTailFromColorAndShape(int32_t colorGroupId, int32_t shape);
 
   //! Gets the color group ID for a mane TID.
   //! @param maneTid Mane template ID.
@@ -138,21 +140,6 @@ public:
   //! @returns Color group ID, or 0 if not found.
   int32_t GetTailColorGroupId(data::Tid tailTid) const;
 
-  //! Gets mane shape from TID.
-  //! @param maneTid Mane template ID.
-  //! @returns Mane shape (0-7), or 0 if not found.
-  int32_t GetManeShape(data::Tid maneTid) const;
-
-  //! Gets tail shape from TID.
-  //! @param tailTid Tail template ID.
-  //! @returns Tail shape (0-5), or 0 if not found.
-  int32_t GetTailShape(data::Tid tailTid) const;
-
-  //! Gets the color of a mane TID.
-  //! @param maneTid Mane template ID.
-  //! @returns Color enum value.
-  Color GetManeColor(data::Tid maneTid) const;
-
   //! Finds a tail TID with a specific color and shape.
   //! @param color Desired color.
   //! @param shape Desired shape (0-5).
@@ -161,16 +148,17 @@ public:
 
   //! Gets mane by TID (for accessing inheritance rate/minGrade).
   //! @param tid Mane TID.
-  //! @returns Pointer to Mane, or nullptr if not found.
-  const Mane* GetMane(data::Tid tid) const;
+  //! @returns Reference to Mane, with fallback to default if not found.
+  const Mane& GetMane(data::Tid tid) const;
 
   //! Gets tail by TID (for accessing inheritance rate/minGrade).
   //! @param tid Tail TID.
-  //! @returns Pointer to Tail, or nullptr if not found.
-  const Tail* GetTail(data::Tid tid) const;
+  //! @returns Reference to Tail, with fallback to default if not found.
+  const Tail& GetTail(data::Tid tid) const;
 
 private:
   std::random_device _randomDevice;
+  mutable std::mt19937 _randomEngine;
   std::unordered_map<data::Tid, Coat> _coats;
   std::unordered_map<data::Tid, Face> _faces;
   std::unordered_map<int32_t, ColorGroup> _colorGroups;
