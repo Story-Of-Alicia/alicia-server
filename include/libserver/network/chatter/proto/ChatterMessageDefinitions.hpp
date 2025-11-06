@@ -182,18 +182,20 @@ struct ChatCmdLetterListAckOk
     uint32_t mailUid{};
 
     //! Dictates whether or not the inbox mail can be replied to, including System mails.
-    enum class ReplyPermission : uint32_t
-    {
-      CanReply = 0,
-      NoReply = 1
-    } replyPermission{ReplyPermission::CanReply};
-    
-    //! Mail type.
     enum class MailType : uint32_t
     {
-      Normal = 0,
+      CanReply = 0,
+      NoReply = 1,
+      CarnivalReward = 2, //! Requests AcCmdCLRequestFestivalResult
+      BreedingReward = 3, //! Requests AcCmdCRBreedingTakeMoney
+    } mailType{MailType::NoReply};
+    
+    //! Mail type.
+    enum class MailOrigin : uint32_t
+    {
+      Character = 0,
       System = 1
-    } mailType{MailType::Normal};
+    } mailOrigin{MailOrigin::Character};
 
     //! Who sent the mail.
     std::string sender{};

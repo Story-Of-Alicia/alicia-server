@@ -177,7 +177,8 @@ size_t ChatterServer::OnClientData(
     }
   }
 
-  return commandStream.GetCursor();
+  // FIXME: correct this behaviour of not using the cursor
+  return data.size();
 }
 
 network::asio::ip::address_v4 ChatterServer::GetClientAddress(const network::ClientId clientId)
