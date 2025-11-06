@@ -122,6 +122,103 @@ struct ChatCmdLoginAckCancel
     SourceStream& stream);
 };
 
+struct ChatCmdLetterList
+{
+  enum class MailboxFolder : uint8_t
+  {
+    Sent = 1,
+    Inbox = 2
+  } folder{};
+
+  // Likely to do with mailbox pagination
+  struct Struct0
+  {
+    // Possibly start and end index
+    // Example values seen: 0, 10
+    uint32_t unk0{};
+    uint32_t unk1{};
+
+    static void Write(
+      const Struct0& command,
+      SinkStream& stream);
+
+    static void Read(
+      Struct0& command,
+      SourceStream& stream);
+  } struct0{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdLetterList;
+  }
+
+  static void Write(
+    const ChatCmdLetterList& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdLetterList& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdLetterListAckOk
+{
+  ChatCmdLetterList::MailboxFolder mailboxFolder{};
+  struct Struct0
+  {
+    uint32_t mailCount{};
+    uint8_t unk1{};
+  } struct0{};
+
+  // If unk0 == 2
+  struct Struct1
+  {
+    uint32_t unk0{};
+    struct Struct1Struct0
+    {
+      uint32_t unk0{};
+      uint32_t unk1{};
+      struct Struct1Struct0Struct0
+      {
+        std::string unk0{};
+        std::string unk1{};
+        struct Struct1Struct0Struct0Struct0
+        {
+          std::string unk0{};
+          std::string unk1{};
+        } struct1Struct0Struct0Struct0{};
+      } struct1Struct0Struct0{};
+    } struct1Struct0{};
+  };
+  std::vector<Struct1> struct1{};
+
+  // If unk0 == 1 || Struct1.unk0 > 1?
+  struct SentMail
+  {
+    uint32_t mailUid{};
+    std::string recipient{};
+    struct Content
+    {
+      std::string date{};
+      std::string body{};
+    } content{};
+  };
+  std::vector<SentMail> sentMails{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdLetterListAckOk;
+  }
+
+  static void Write(
+    const ChatCmdLetterListAckOk& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdLetterListAckOk& command,
+    SourceStream& stream);
+};
+
 class ChatCmdUpdateState
 {
   uint8_t member1;
