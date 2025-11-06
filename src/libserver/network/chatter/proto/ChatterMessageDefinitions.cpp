@@ -146,8 +146,8 @@ void server::protocol::ChatCmdLetterListAckOk::Write(
       for (const auto& mail : command.inboxMails)
       {
         stream.Write(mail.mailUid)
-          .Write(mail.replyPermission)
           .Write(mail.mailType)
+          .Write(mail.mailOrigin)
           .Write(mail.sender)
           .Write(mail.date);
 

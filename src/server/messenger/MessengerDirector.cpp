@@ -177,8 +177,8 @@ void MessengerDirector::HandleChatterLetterList(
       response.inboxMails = std::vector<InboxMail>{
         InboxMail{
           .mailUid = ++mailUid,
-          .replyPermission = InboxMail::ReplyPermission::CanReply,
-          .mailType = InboxMail::MailType::Normal,
+          .mailType = InboxMail::MailType::CanReply,
+          .mailOrigin = InboxMail::MailOrigin::Character,
           .sender = "Ihsus",
           .date = "12:47:53 06/11/2025",
           .struct0 = InboxMail::Struct0{
@@ -187,8 +187,8 @@ void MessengerDirector::HandleChatterLetterList(
         },
         InboxMail{
           .mailUid = ++mailUid,
-          .replyPermission = InboxMail::ReplyPermission::CanReply,
-          .mailType = InboxMail::MailType::System,
+          .mailType = InboxMail::MailType::NoReply,
+          .mailOrigin = InboxMail::MailOrigin::System,
           .sender = "SoA",
           .date = "13:05:35 06/11/2025",
           .struct0 = InboxMail::Struct0{
