@@ -129,6 +129,57 @@ void MessengerDirector::HandleChatterLogin(
   _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }
 
+void MessengerDirector::HandleChatterLetterList(
+  network::ClientId clientId,
+  const protocol::ChatCmdLetterList& command)
+{
+  using MailboxFolder = protocol::ChatCmdLetterList::MailboxFolder;
+  spdlog::debug("[{}] ChatCmdLetterList: {} [{} {}]",
+    clientId,
+    command.folder == MailboxFolder::Inbox ? "Inbox" :
+      command.folder == MailboxFolder::Sent ? "Sent" : "Unknown",
+    command.struct0.unk0,
+    command.struct0.unk1);
+
+  protocol::ChatCmdLetterListAckOk response{};
+  // Construct the response based on the mailbox in the request
+  switch (command.folder)
+  {
+    case MailboxFolder::Sent:
+    {
+      // Letter list request is for sent mails
+      using SentMail = protocol::ChatCmdLetterListAckOk::SentMail;
+      std::vector<SentMail> sentMails{
+        SentMail{
+          .mailUid = 123,
+          .recipient = "Recipient",
+          .content = SentMail::Content{
+            .date = "11:49:50 06/11/2025",
+            .body = "Mail body"
+          }
+        }
+      };
+
+      response.mailboxFolder = MailboxFolder::Sent,
+      response.struct0 = protocol::ChatCmdLetterListAckOk::Struct0{
+        .mailCount = static_cast<uint32_t>(sentMails.size()),
+        .unk1 = 1
+      },
+      response.sentMails = sentMails;
+      break;
+    }
+    default:
+    {
+      spdlog::warn("[{}] ChatCmdLetterList: Unrecognised mailbox folder {}",
+        clientId,
+        static_cast<uint8_t>(command.folder));
+      return;
+    }
+  }
+
+  _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+}
+
 void MessengerDirector::HandleChatterGuildLogin(
   network::ClientId clientId,
   const protocol::ChatCmdGuildLogin& command)

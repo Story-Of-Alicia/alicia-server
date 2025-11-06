@@ -87,6 +87,78 @@ void server::protocol::ChatCmdLoginAckCancel::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void server::protocol::ChatCmdLetterList::Struct0::Write(
+  const ChatCmdLetterList::Struct0& command,
+  server::SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdLetterList::Struct0::Read(
+  ChatCmdLetterList::Struct0& command,
+  server::SourceStream& stream)
+{
+  stream.Read(command.unk0)
+    .Read(command.unk1);
+}
+
+void server::protocol::ChatCmdLetterList::Write(
+  const ChatCmdLetterList& command,
+  server::SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdLetterList::Read(
+  ChatCmdLetterList& command,
+  server::SourceStream& stream)
+{
+  stream.Read(command.folder)
+    .Read(command.struct0);
+}
+
+void server::protocol::ChatCmdLetterListAckOk::Write(
+  const ChatCmdLetterListAckOk& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.mailboxFolder);
+  // TODO: break this out into it's own struct write function
+  stream.Write(command.struct0.mailCount)
+    .Write(command.struct0.unk1);
+
+  switch (command.mailboxFolder)
+  {
+    case ChatCmdLetterList::MailboxFolder::Sent:
+    {
+      for (const auto& element : command.sentMails)
+      {
+        // TODO: break this out into it's own struct write function
+        stream.Write(element.mailUid)
+          .Write(element.recipient);
+        // TODO: break this out into it's own struct write function
+        stream.Write(element.content.date)
+          .Write(element.content.body);
+      }
+      break;
+    }
+    case ChatCmdLetterList::MailboxFolder::Inbox:
+    {
+      throw std::runtime_error("Not implemented");
+    }
+    default:
+    {
+      throw std::runtime_error("Not implemented");
+    }
+  }
+}
+
+void server::protocol::ChatCmdLetterListAckOk::Read(
+  ChatCmdLetterListAckOk& command,
+  server::SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void server::protocol::ChatCmdGuildLogin::Write(
   const ChatCmdGuildLogin& command,
   server::SinkStream& stream)
