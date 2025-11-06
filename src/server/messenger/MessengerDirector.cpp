@@ -133,46 +133,81 @@ void MessengerDirector::HandleChatterLetterList(
   network::ClientId clientId,
   const protocol::ChatCmdLetterList& command)
 {
-  using MailboxFolder = protocol::ChatCmdLetterList::MailboxFolder;
   spdlog::debug("[{}] ChatCmdLetterList: {} [{} {}]",
     clientId,
-    command.folder == MailboxFolder::Inbox ? "Inbox" :
-      command.folder == MailboxFolder::Sent ? "Sent" : "Unknown",
+    command.mailboxFolder == protocol::MailboxFolder::Inbox ? "Inbox" :
+      command.mailboxFolder == protocol::MailboxFolder::Sent ? "Sent" : "Unknown",
     command.struct0.unk0,
     command.struct0.unk1);
 
-  protocol::ChatCmdLetterListAckOk response{};
+  protocol::ChatCmdLetterListAckOk response{
+    .mailboxFolder = command.mailboxFolder
+  };
+
   // Construct the response based on the mailbox in the request
-  switch (command.folder)
+  switch (command.mailboxFolder)
   {
-    case MailboxFolder::Sent:
+    case protocol::MailboxFolder::Sent:
     {
       // Letter list request is for sent mails
       using SentMail = protocol::ChatCmdLetterListAckOk::SentMail;
-      std::vector<SentMail> sentMails{
+      response.sentMails = std::vector<SentMail>{
         SentMail{
           .mailUid = 123,
-          .recipient = "Recipient",
+          .recipient = "wiwiwi",
           .content = SentMail::Content{
             .date = "11:49:50 06/11/2025",
-            .body = "Mail body"
+            .body = "We should race sometime."
           }
         }
       };
 
-      response.mailboxFolder = MailboxFolder::Sent;
       response.mailboxInfo = protocol::ChatCmdLetterListAckOk::MailboxInfo{
-        .mailCount = static_cast<uint32_t>(sentMails.size()),
-        .hasMoreMail = 0
+        .mailCount = static_cast<uint32_t>(response.sentMails.size()),
+        .hasMoreMail = 0 // TODO: do this based on internal mail count
       };
-      response.sentMails = sentMails;
+      break;
+    }
+    case protocol::MailboxFolder::Inbox:
+    {
+      using InboxMail = protocol::ChatCmdLetterListAckOk::InboxMail;
+
+      // TODO: this counter is temporary until MailStorage is implemented
+      uint32_t mailUid = 0;
+      response.inboxMails = std::vector<InboxMail>{
+        InboxMail{
+          .mailUid = ++mailUid,
+          .replyPermission = InboxMail::ReplyPermission::CanReply,
+          .mailType = InboxMail::MailType::Normal,
+          .sender = "Ihsus",
+          .date = "12:47:53 06/11/2025",
+          .struct0 = InboxMail::Struct0{
+            .body = "Would you be interested in some cash?"
+          }
+        },
+        InboxMail{
+          .mailUid = ++mailUid,
+          .replyPermission = InboxMail::ReplyPermission::CanReply,
+          .mailType = InboxMail::MailType::System,
+          .sender = "SoA",
+          .date = "13:05:35 06/11/2025",
+          .struct0 = InboxMail::Struct0{
+            .body = "Your account has been suspended."
+          }
+        }
+      };
+
+      response.mailboxInfo = protocol::ChatCmdLetterListAckOk::MailboxInfo{
+        .mailCount = static_cast<uint32_t>(response.inboxMails.size()),
+        .hasMoreMail = 0 // TODO: do this based on internal mail count, with pagination
+      };
       break;
     }
     default:
     {
       spdlog::warn("[{}] ChatCmdLetterList: Unrecognised mailbox folder {}",
         clientId,
-        static_cast<uint8_t>(command.folder));
+        static_cast<uint8_t>(command.mailboxFolder));
       return;
     }
   }
