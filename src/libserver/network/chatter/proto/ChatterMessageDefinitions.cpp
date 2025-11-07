@@ -87,19 +87,19 @@ void server::protocol::ChatCmdLoginAckCancel::Read(
   throw std::runtime_error("Not implemented");
 }
 
-void server::protocol::ChatCmdLetterList::Struct0::Write(
-  const ChatCmdLetterList::Struct0& command,
+void server::protocol::ChatCmdLetterList::Request::Write(
+  const ChatCmdLetterList::Request& command,
   server::SinkStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void server::protocol::ChatCmdLetterList::Struct0::Read(
-  ChatCmdLetterList::Struct0& command,
+void server::protocol::ChatCmdLetterList::Request::Read(
+  ChatCmdLetterList::Request& command,
   server::SourceStream& stream)
 {
-  stream.Read(command.unk0)
-    .Read(command.unk1);
+  stream.Read(command.lastMailUid)
+    .Read(command.count);
 }
 
 void server::protocol::ChatCmdLetterList::Write(
@@ -114,7 +114,7 @@ void server::protocol::ChatCmdLetterList::Read(
   server::SourceStream& stream)
 {
   stream.Read(command.mailboxFolder)
-    .Read(command.struct0);
+    .Read(command.request);
 }
 
 void server::protocol::ChatCmdLetterListAckOk::Write(
