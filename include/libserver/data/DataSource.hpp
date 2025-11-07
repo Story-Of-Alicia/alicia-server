@@ -208,6 +208,20 @@ public:
   //! Deletes the settings from the data source.
   //! @param uid UID of the settings.
   virtual void DeleteSettings(data::Uid uid) = 0;
+
+  //! Creates the mail in the data source.
+  //! @param mail Mail to create.
+  virtual void CreateMail(data::Mail& mail) = 0;
+  //! Retrieves the mail from the data source.
+  //! @param uid UID of the mail.
+  virtual void RetrieveMail(data::Uid uid, data::Mail& mail) = 0;
+  //! Stores the mail on the data source.
+  //! @param uid UID of the mail.
+  //! @param mail Mail to store.
+  virtual void StoreMail(data::Uid uid, const data::Mail& mail) = 0;
+  //! Deletes the mail from the data source.
+  //! @param uid UID of the mail.
+  virtual void DeleteMail(data::Uid uid) = 0;
 };
 
 } // namespace server

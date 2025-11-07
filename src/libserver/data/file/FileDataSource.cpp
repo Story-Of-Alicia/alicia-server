@@ -64,6 +64,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _housingDataPath = prepareDataPath("housing");
   _guildDataPath = prepareDataPath("guilds");
   _settingsDataPath = prepareDataPath("settings");
+  _mailDataPath = prepareDataPath("mails");
 
   // Read the meta-data file and parse the sequential UIDs.
   const std::filesystem::path metaFilePath = ProduceDataFilePath(
@@ -84,6 +85,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _housingSequentialUid = meta["housingSequentialUid"].get<uint32_t>();
   _guildSequentialId = meta["guildSequentialId"].get<uint32_t>();
   _settingsSequentialId = meta["settingsSequentialId"].get<uint32_t>();
+  _mailSequentialId = meta["mailSequentialId"].get<uint32_t>();
 }
 
 void server::FileDataSource::Terminate()
@@ -107,6 +109,7 @@ void server::FileDataSource::Terminate()
   meta["housingSequentialUid"] = _housingSequentialUid.load();
   meta["guildSequentialId"] = _guildSequentialId.load();
   meta["settingsSequentialId"] = _settingsSequentialId.load();
+  meta["mailSequentialId"] = _mailSequentialId.load();
 
   metaFile << meta.dump(2);
 }
@@ -317,6 +320,10 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   const auto& skills = json["skills"];
   readSkills(character.skills.speed(), skills["speed"]);
   readSkills(character.skills.magic(), skills["magic"]);
+
+  const auto& mailbox = json["mailbox"];
+  character.mailbox.inbox = mailbox["inbox"].get<std::vector<data::Uid>>();
+  character.mailbox.sent = mailbox["sent"].get<std::vector<data::Uid>>();
 }
 
 void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
@@ -406,6 +413,11 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   skills["speed"] = writeSkills(character.skills.speed());
   skills["magic"] = writeSkills(character.skills.magic());
   json["skills"] = skills;
+
+  nlohmann::json mailbox;
+  mailbox["inbox"] = character.mailbox.inbox();
+  mailbox["sent"] = character.mailbox.sent();
+  json["mailbox"] = mailbox;
 
   dataFile << json.dump(2);
 }
@@ -1205,5 +1217,59 @@ void server::FileDataSource::DeleteSettings(data::Uid uid)
 {
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _settingsDataPath, std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
+}
+
+//
+
+void server::FileDataSource::CreateMail(data::Mail& mail)
+{
+  mail.uid = ++_mailSequentialId;
+}
+
+void server::FileDataSource::RetrieveMail(data::Uid uid, data::Mail& mail)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _mailDataPath, std::format("{}", uid));
+
+  std::ifstream dataFile(dataFilePath);
+  if (!dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Mail file '{}' not accessible", dataFilePath.string()));
+  }
+
+  const auto json = nlohmann::json::parse(dataFile);
+  mail.uid = json["uid"].get<data::Uid>();
+  mail.name = json["name"].get<std::string>();
+  mail.date = json["date"].get<std::string>();
+  mail.body = json["body"].get<std::string>();
+}
+
+void server::FileDataSource::StoreMail(data::Uid uid, const data::Mail& mail)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _mailDataPath, std::format("{}", uid));
+
+  std::ofstream dataFile(dataFilePath);
+  if (!dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Mail file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json;
+  json["uid"] = mail.uid();
+  json["name"] = mail.name();
+  json["date"] = mail.date();
+  json["body"] = mail.body();
+
+  dataFile << json.dump(2);
+}
+
+void server::FileDataSource::DeleteMail(data::Uid uid)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _mailDataPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
 }

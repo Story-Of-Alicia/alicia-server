@@ -331,6 +331,12 @@ struct Character
     dao::Field<Sets> speed{};
     dao::Field<Sets> magic{};
   } skills{};
+
+  struct Mailbox
+  {
+    dao::Field<std::vector<Uid>> inbox{};
+    dao::Field<std::vector<Uid>> sent{};
+  } mailbox{};
 };
 
 struct Horse
@@ -447,6 +453,14 @@ struct Egg
   dao::Field<Clock::time_point> incubatedAt{};
   dao::Field<uint32_t> incubatorSlot{};
   dao::Field<uint32_t> boostsUsed;
+};
+
+struct Mail
+{
+  dao::Field<Uid> uid{InvalidUid};
+  dao::Field<std::string> name{};
+  dao::Field<std::string> date{};
+  dao::Field<std::string> body{};
 };
 
 } // namespace data
