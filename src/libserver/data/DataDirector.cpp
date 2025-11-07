@@ -514,6 +514,49 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
         }
         return false;
       })
+  , _mailStorage(
+      [&](const auto& key, auto& mail)
+      {
+        try
+        {
+          _primaryDataSource->RetrieveMail(key, mail);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception retrieving mail {} from the primary data source: {}", key, x.what());
+        }
+        return false;
+      },
+      [&](const auto& key, auto& mail)
+      {
+        try
+        {
+          _primaryDataSource->StoreMail(key, mail);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception storing mail {} on the primary data source: {}", key, x.what());
+        }
+        return false;
+      },
+      [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteMail(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting mail {} from the primary data source: {}", key, x.what());
+        }
+        return false;
+      })
 {
   _primaryDataSource = std::make_unique<FileDataSource>();
   if (auto* fileDataSource = dynamic_cast<FileDataSource*>(_primaryDataSource.get()))
@@ -545,6 +588,7 @@ void DataDirector::Terminate()
     _guildStorage.Terminate();
     _housingStorage.Terminate();
     _settingsStorage.Terminate();
+    _mailStorage.Terminate();
   }
   catch (const std::exception& x)
   {
@@ -572,6 +616,7 @@ void DataDirector::Tick()
     _guildStorage.Tick();
     _housingStorage.Tick();
     _settingsStorage.Tick();
+    _mailStorage.Tick();
   }
   catch (const std::exception& x)
   {
@@ -946,6 +991,30 @@ DataDirector::SettingsStorage& DataDirector::GetSettingsCache()
   return _settingsStorage;
 }
 
+Record<data::Mail> DataDirector::GetMail(data::Uid mailUid) noexcept
+{
+  if (mailUid == data::InvalidUid)
+    return {};
+  return _mailStorage.Get(mailUid).value_or(Record<data::Mail>{});
+}
+
+Record<data::Mail> DataDirector::CreateMail() noexcept
+{
+  return _mailStorage.Create(
+    [this]()
+    {
+      data::Mail mail;
+      _primaryDataSource->CreateMail(mail);
+
+      return std::make_pair(mail.uid(), std::move(mail));
+    });
+}
+
+DataDirector::MailStorage& DataDirector::GetMailCache()
+{
+  return _mailStorage;
+}
+
 DataSource& DataDirector::GetDataSource() noexcept
 {
   return *_primaryDataSource.get();
@@ -1003,8 +1072,11 @@ void DataDirector::ScheduleCharacterLoad(
 
     std::vector<data::Uid> pets;
 
+    // Mailbox prefetch
+    std::vector<data::Uid> mailbox;
+
     characterRecord.Immutable(
-      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets, &settingsUid](
+      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets, &settingsUid, &mailbox](
         const data::Character& character)
       {
         guildUid = character.guildUid();
@@ -1029,6 +1101,10 @@ void DataDirector::ScheduleCharacterLoad(
         // Add the mount to the horses list,
         // so that it is loaded with all the horses.
         horses.emplace_back(character.mountUid());
+
+        // Mailbox
+        std::ranges::copy(character.mailbox.inbox(), std::back_inserter(mailbox));
+        std::ranges::copy(character.mailbox.sent(), std::back_inserter(mailbox));
       });
 
     const auto guildRecord = GetGuild(guildUid);
@@ -1139,6 +1215,15 @@ void DataDirector::ScheduleCharacterLoad(
     {
       userDataContext.debugMessage = std::format(
         "Eggs not available");
+      return;
+    }
+
+    // Require mail records.
+    const auto mailRecords = GetMailCache().Get(mailbox);
+    if (not mailRecords)
+    {
+      userDataContext.debugMessage = std::format(
+        "Mails not available");
       return;
     }
 

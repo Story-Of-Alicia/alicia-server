@@ -43,6 +43,7 @@ public:
   using HousingStorage = DataStorage<data::Uid, data::Housing>;
   using GuildStorage = DataStorage<data::Uid, data::Guild>;
   using SettingsStorage = DataStorage<data::Uid, data::Settings>;
+  using MailStorage = DataStorage<data::Uid, data::Mail>;
 
   //! Default constructor.
   explicit DataDirector(const std::filesystem::path& basePath);
@@ -120,6 +121,10 @@ public:
   [[nodiscard]] Record<data::Settings> CreateSettings() noexcept;
   [[nodiscard]] SettingsStorage& GetSettingsCache();
 
+  [[nodiscard]] Record<data::Mail> GetMail(data::Uid mailUid) noexcept;
+  [[nodiscard]] Record<data::Mail> CreateMail() noexcept;
+  [[nodiscard]] MailStorage& GetMailCache();
+
   [[nodiscard]] DataSource& GetDataSource() noexcept;
 
 private:
@@ -171,6 +176,8 @@ private:
   GuildStorage _guildStorage;
   //! A character Keybind settings storage.
   SettingsStorage _settingsStorage;
+  //! A mail storage.
+  MailStorage _mailStorage;
 };
 
 } // namespace server
