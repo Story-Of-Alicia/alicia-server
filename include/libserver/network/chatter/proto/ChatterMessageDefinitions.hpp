@@ -133,21 +133,21 @@ struct ChatCmdLetterList
   MailboxFolder mailboxFolder{};
 
   // Likely to do with mailbox pagination
-  struct Struct0
+  struct Request
   {
-    // Possibly start and end index
-    // Example values seen: 0, 10
-    uint32_t unk0{};
-    uint32_t unk1{};
+    //! The UID of the last mail in the character mailbox.
+    uint32_t lastMailUid{};
+    //! Requested mail count to read.
+    uint32_t count{};
 
     static void Write(
-      const Struct0& command,
+      const Request& command,
       SinkStream& stream);
 
     static void Read(
-      Struct0& command,
+      Request& command,
       SourceStream& stream);
-  } struct0{};
+  } request{};
 
   static ChatterCommand GetCommand()
   {

@@ -137,12 +137,60 @@ void MessengerDirector::HandleChatterLetterList(
     clientId,
     command.mailboxFolder == protocol::MailboxFolder::Inbox ? "Inbox" :
       command.mailboxFolder == protocol::MailboxFolder::Sent ? "Sent" : "Unknown",
-    command.struct0.unk0,
-    command.struct0.unk1);
+    command.request.lastMailUid,
+    command.request.count);
+
+  const auto& clientContext = _clients[clientId];
 
   protocol::ChatCmdLetterListAckOk response{
     .mailboxFolder = command.mailboxFolder
   };
+
+  bool hasMoreMail{false};
+  std::vector<data::Uid> mailbox{};
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [&command, &mailbox, &hasMoreMail](const data::Character& character)
+    {
+      // Get the mailbox based on the command request
+      std::vector<data::Uid> _mailbox{};
+      if (command.mailboxFolder == protocol::MailboxFolder::Inbox)
+        _mailbox = character.mailbox.inbox();
+      else if (command.mailboxFolder == protocol::MailboxFolder::Sent)
+        _mailbox = character.mailbox.sent();
+      else
+        throw std::runtime_error("Unrecognised mailbox folder.");
+
+      // Start from the beginning of the mailbox, or from specific mailUid as per request
+      auto startIter = _mailbox.begin();
+      if (command.request.lastMailUid != data::InvalidUid)
+        startIter = std::ranges::find(_mailbox, command.request.lastMailUid);
+
+      // Safety mechanism, just in case no mail by that UID was found
+      if (startIter == _mailbox.cend())
+      {
+        spdlog::warn("Character {} tried to request mail after mail {} but that mail does not exist.",
+          character.uid(),
+          command.request.lastMailUid);
+        hasMoreMail = false;
+        return;
+      }
+
+      // Get remaining items left in the array, from the mailUid (or beginning)
+      const auto& remaining = std::distance(
+        startIter,
+        _mailbox.end());
+
+      // Copy n amounts of mail as per request
+      const auto& res = std::ranges::copy_n(
+        startIter,
+        std::min<size_t>(
+          command.request.count,
+          remaining),
+        std::back_inserter(mailbox));
+
+      // Indicate that there are more mail after the current ending of response mail
+      hasMoreMail = res.in != _mailbox.cend();
+    });
 
   // Construct the response based on the mailbox in the request
   switch (command.mailboxFolder)
@@ -151,20 +199,26 @@ void MessengerDirector::HandleChatterLetterList(
     {
       // Letter list request is for sent mails
       using SentMail = protocol::ChatCmdLetterListAckOk::SentMail;
-      response.sentMails = std::vector<SentMail>{
-        SentMail{
-          .mailUid = 123,
-          .recipient = "wiwiwi",
-          .content = SentMail::Content{
-            .date = "11:49:50 06/11/2025",
-            .body = "We should race sometime."
-          }
-        }
-      };
+
+      for (const auto& sentMailUid : mailbox)
+      {
+        _serverInstance.GetDataDirector().GetMail(sentMailUid).Immutable(
+          [&response](const data::Mail& mail)
+          {
+            response.sentMails.emplace_back(SentMail{
+              .mailUid = mail.uid(),
+              .recipient = mail.name(),
+              .content = SentMail::Content{
+                .date = mail.date(),
+                .body = mail.body()
+              }
+            });
+          });
+      }
 
       response.mailboxInfo = protocol::ChatCmdLetterListAckOk::MailboxInfo{
-        .mailCount = static_cast<uint32_t>(response.sentMails.size()),
-        .hasMoreMail = 0 // TODO: do this based on internal mail count
+        .mailCount = static_cast<uint32_t>(mailbox.size()),
+        .hasMoreMail = hasMoreMail
       };
       break;
     }
