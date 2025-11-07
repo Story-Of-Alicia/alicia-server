@@ -66,11 +66,15 @@ private:
 
   protocol::LobbyCommandLoginOK::SystemContent _systemContent{
     .values = {
-      // {4, 0},
-      // {16, 0},
-      // {21, 0},
-      // {22, 0},
-      // {30, 0}
+      {0, 0},
+      {1, 0},
+      {2, 0},
+      {3, 0},
+      {4, 0},
+      {16, 0},
+      {21, 0},
+      {22, 0},
+      {30, 0}
     }};
 
   ClientId GetClientIdByUserName(
