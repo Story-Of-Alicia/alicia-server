@@ -49,6 +49,7 @@ jobs:
               echo "authorised=false" >> $GITHUB_OUTPUT
             fi
           fi
+          echo "Author association: $association"
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
