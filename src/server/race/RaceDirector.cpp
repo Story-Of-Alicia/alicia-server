@@ -926,7 +926,10 @@ void RaceDirector::HandleEnterRoom(
       });
   }
 
-  raceInstance.clients.insert(clientId);
+  {
+    std::scoped_lock lock(raceInstance.clientsMutex);
+    raceInstance.clients.insert(clientId);
+  }
 }
 
 void RaceDirector::HandleChangeRoomOptions(
@@ -995,6 +998,7 @@ void RaceDirector::HandleChangeRoomOptions(
     .mapBlockId = command.mapBlockId,
     .npcDifficulty = command.npcDifficulty};
 
+  std::scoped_lock lock(raceInstance.clientsMutex);
   for (const auto raceClientId : raceInstance.clients)
   {
     _commandServer.QueueCommand<decltype(notify)>(
@@ -1085,7 +1089,10 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
     racer.state = tracker::RaceTracker::Racer::State::Disconnected;
   }
 
-  raceInstance.clients.erase(clientId);
+  {
+    std::scoped_lock lock(raceInstance.clientsMutex);
+    raceInstance.clients.erase(clientId);
+  }
 
   _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid,
@@ -2694,6 +2701,7 @@ void RaceDirector::HandleUserRaceItemGet(
         .removeDelay = -1
       };
 
+      std::scoped_lock lock(raceInstance.clientsMutex);
       for (const ClientId& roomClientId : raceInstance.clients)
       {
         _commandServer.QueueCommand<decltype(spawn)>(
@@ -2906,6 +2914,7 @@ void RaceDirector::ScheduleSkillEffect(server::RaceDirector::RaceInstance& raceI
         .unk1 = 0,
       };
 
+      std::scoped_lock lock(raceInstance.clientsMutex);
       // Broadcast
       for (const ClientId& raceClientId : raceInstance.clients)
       {
