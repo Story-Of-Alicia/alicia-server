@@ -943,6 +943,17 @@ void RaceDirector::HandleChangeRoomOptions(
   const std::bitset<6> options(
     static_cast<uint16_t>(command.optionsBitfield));
 
+  if (options.test(0))
+  {
+    _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+      [this, roomUid = clientContext.roomUid, &command](const data::Character& character)
+      {
+        const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+          character.uid());
+        spdlog::info("Room {}'s name changed by '{}' to '{}'", roomUid, userName, command.name);
+      });
+  }
+
   // Change the room options.
   _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid,

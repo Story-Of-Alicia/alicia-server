@@ -1070,6 +1070,14 @@ void LobbyNetworkHandler::HandleMakeRoom(
     return;
   }
 
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [this, createdRoomUid, &command](const data::Character& character)
+    {
+      const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+        character.uid());
+      spdlog::info("Room {} created by '{}' with the name '{}'", createdRoomUid, userName, command.name);
+    });
+
   size_t identityHash = std::hash<uint32_t>()(clientContext.characterUid);
   boost::hash_combine(identityHash, createdRoomUid);
 
