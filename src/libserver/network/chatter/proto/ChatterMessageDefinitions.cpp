@@ -218,6 +218,25 @@ void server::protocol::ChatCmdLetterSendAckCancel::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void server::protocol::ChatCmdLetterArriveTrs::Write(
+  const ChatCmdLetterArriveTrs& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.mailUid)
+    .Write(command.mailType)
+    .Write(command.mailOrigin)
+    .Write(command.sender)
+    .Write(command.date)
+    .Write(command.body);
+}
+
+void server::protocol::ChatCmdLetterArriveTrs::Read(
+  ChatCmdLetterArriveTrs& command,
+  server::SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void server::protocol::ChatCmdGuildLogin::Write(
   const ChatCmdGuildLogin& command,
   server::SinkStream& stream)
