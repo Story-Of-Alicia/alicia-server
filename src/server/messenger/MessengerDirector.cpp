@@ -289,7 +289,7 @@ void MessengerDirector::HandleChatterLetterSend(
   network::ClientId clientId,
   const protocol::ChatCmdLetterSend& command)
 {
-  spdlog::debug("[{}] ChatCmdLetterSend: {} {}",
+  spdlog::debug("[{}] ChatCmdLetterSend: {} [{}]",
     clientId,
     command.recipient,
     command.body);
@@ -308,6 +308,17 @@ void MessengerDirector::HandleChatterLetterSend(
     return;
   }
 
+  // TODO: enforce any character limit?
+  // TODO: bad word checks and/or deny sending the letter as a result?
+
+  const auto& clientContext = _clients[clientId];
+  std::string senderName{};
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [&senderName](const data::Character& character)
+    {
+      senderName = character.name();
+    });
+
   // UTC now in seconds
   const auto& utcNow = std::chrono::floor<std::chrono::seconds>(util::Clock::now());
   const auto& formattedDt = std::format(DateTimeFormat, utcNow);
@@ -315,9 +326,9 @@ void MessengerDirector::HandleChatterLetterSend(
   // Create and store mail
   data::Uid mailUid{data::InvalidUid};
   auto mailRecord = _serverInstance.GetDataDirector().CreateMail();
-  mailRecord.Mutable([&mailUid, &command, &formattedDt](data::Mail& mail)
+  mailRecord.Mutable([&mailUid, &command, &senderName, &formattedDt](data::Mail& mail)
   {
-    mail.name = command.recipient;
+    mail.name = senderName;
     mail.date = formattedDt;
     mail.body = command.body;
 
@@ -338,8 +349,6 @@ void MessengerDirector::HandleChatterLetterSend(
       // Set mail alarm
       character.mailbox.hasNewMail() = true;
     });
-
-  const auto& clientContext = _clients[clientId];
 
   // Add the new mail to the sender's sent mailbox
   _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
