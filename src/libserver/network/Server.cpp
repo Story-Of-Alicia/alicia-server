@@ -199,7 +199,7 @@ void Client::ReadLoop() noexcept
       catch (const std::exception& x)
       {
         spdlog::debug(
-          "Client {} is disconnecting because of write loop exception: {}",
+          "Client {} is disconnecting because of read loop exception: {}",
           clientPtr->_clientId,
           x.what());
 
