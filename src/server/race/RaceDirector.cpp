@@ -61,7 +61,7 @@ const std::array<uint32_t, 12> magicItems = {
   24, // BufSpeed    Team mode 1
 };
 
-bool RollCritical(server::tracker::RaceTracker::Racer& racer)
+bool RollCritical(tracker::RaceTracker::Racer& racer)
 {
   if (racer.critChance) {
     return true;
@@ -69,10 +69,10 @@ bool RollCritical(server::tracker::RaceTracker::Racer& racer)
   return (rand() % 100) < 5;
 }
 
-uint32_t RandomMagicItem(server::tracker::RaceTracker::Racer& racer)
+uint32_t RandomMagicItem(tracker::RaceTracker::Racer& racer)
 {
   static std::random_device rd;
-  std::uniform_int_distribution distribution(0, racer.team == server::tracker::RaceTracker::Racer::Team::Solo ? 8 : 11);
+  std::uniform_int_distribution distribution(0, racer.team == tracker::RaceTracker::Racer::Team::Solo ? 8 : 11);
   uint32_t magicItemId = magicItems[distribution(rd)];
   if (RollCritical(racer))
   {
@@ -788,7 +788,7 @@ void RaceDirector::HandleEnterRoom(
 
     // Determine whether the player is ready.
     bool isPlayerReady = false;
-    server::Room::Player::Team team;
+    Room::Player::Team team;
     _serverInstance.GetRoomSystem().GetRoom(
       clientContext.roomUid,
       [&isPlayerReady, &team, characterUid](Room& room)
@@ -1044,10 +1044,10 @@ void RaceDirector::HandleChangeTeam(
       switch (command.teamColor)
       {
         case protocol::TeamColor::Red:
-          player.SetTeam(server::Room::Player::Team::Red);
+          player.SetTeam(Room::Player::Team::Red);
           break;
         case protocol::TeamColor::Blue:
-          player.SetTeam(server::Room::Player::Team::Blue);
+          player.SetTeam(Room::Player::Team::Blue);
           break;
         default: {}
       }
@@ -2315,10 +2315,7 @@ void RaceDirector::HandleRequestMagicItem(
   // Check if racer is already holding a magic item
   if (racer.magicItem.has_value())
   {
-    // Has no corresponding cancel, log and return
-    spdlog::warn("Character {} tried to request a magic item in race {} but they already have one, skipping...",
-      clientContext.characterUid,
-      clientContext.roomUid);
+    // todo: this seems to happen a lot, figure it out
     return;
   }
 
@@ -2426,17 +2423,17 @@ void RaceDirector::HandleUseMagicItem(
     // Shield
     // TODO: Maybe not change it if they already have a stronger shield?
     case 4:
-      racer.shield = server::tracker::RaceTracker::Racer::Shield::Normal;
+      racer.shield = tracker::RaceTracker::Racer::Shield::Normal;
       this->ScheduleSkillEffect(raceInstance, command.characterOid, command.characterOid, 2, [&racer]()
       {
-        racer.shield = server::tracker::RaceTracker::Racer::Shield::None;
+        racer.shield = tracker::RaceTracker::Racer::Shield::None;
       });
       break;
     case 5:
-      racer.shield = server::tracker::RaceTracker::Racer::Shield::Critical;
+      racer.shield = tracker::RaceTracker::Racer::Shield::Critical;
       this->ScheduleSkillEffect(raceInstance, command.characterOid, command.characterOid, 3, [&racer]()
       {
-        racer.shield = server::tracker::RaceTracker::Racer::Shield::None;
+        racer.shield = tracker::RaceTracker::Racer::Shield::None;
       });
       break;
     // Booster
@@ -2465,7 +2462,7 @@ void RaceDirector::HandleUseMagicItem(
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
         if (racer.oid != otherRacer.oid
-        && (racer.team == server::tracker::RaceTracker::Racer::Team::Solo || racer.team != otherRacer.team))
+        && (racer.team == tracker::RaceTracker::Racer::Team::Solo || racer.team != otherRacer.team))
         {
           this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 10);
         }
@@ -2474,7 +2471,7 @@ void RaceDirector::HandleUseMagicItem(
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
         if (racer.oid != otherRacer.oid
-        && (racer.team == server::tracker::RaceTracker::Racer::Team::Solo || racer.team != otherRacer.team))
+        && (racer.team == tracker::RaceTracker::Racer::Team::Solo || racer.team != otherRacer.team))
         {
           this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 11);
         }
@@ -2485,7 +2482,7 @@ void RaceDirector::HandleUseMagicItem(
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
         if (racer.oid == otherRacer.oid
-        || (racer.team != server::tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
+        || (racer.team != tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
         {
           otherRacer.critChance = true;
           this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 18, [&otherRacer]()
@@ -2500,7 +2497,7 @@ void RaceDirector::HandleUseMagicItem(
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
         if (racer.oid == otherRacer.oid
-        || (racer.team != server::tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
+        || (racer.team != tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
         {
           otherRacer.critChance = true;
           this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 19, [&otherRacer]()
@@ -2515,7 +2512,7 @@ void RaceDirector::HandleUseMagicItem(
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
         if (racer.oid == otherRacer.oid
-        || (racer.team != server::tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
+        || (racer.team != tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
         {
           otherRacer.gaugeBuff = true;
           this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 20, [&otherRacer]()
@@ -2530,7 +2527,7 @@ void RaceDirector::HandleUseMagicItem(
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
         if (racer.oid == otherRacer.oid
-        || (racer.team != server::tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
+        || (racer.team != tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
         {
           otherRacer.gaugeBuff = true;
           this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 21, [&otherRacer]()
@@ -2545,7 +2542,7 @@ void RaceDirector::HandleUseMagicItem(
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
         if (racer.oid == otherRacer.oid
-        || (racer.team != server::tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
+        || (racer.team != tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
         {
           this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 22);
         }
@@ -2555,7 +2552,7 @@ void RaceDirector::HandleUseMagicItem(
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
         if (racer.oid == otherRacer.oid
-        || (racer.team != server::tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
+        || (racer.team != tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
         {
           this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 23);
         }
@@ -2579,9 +2576,9 @@ void RaceDirector::HandleUserRaceItemGet(
 
   auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
-  server::Room::GameMode gameMode;
-  server::registry::Course::GameModeInfo gameModeInfo;
-  _serverInstance.GetRoomSystem().GetRoom(clientContext.roomUid, [this, &gameMode, &gameModeInfo](const server::Room& room)
+  Room::GameMode gameMode;
+  registry::Course::GameModeInfo gameModeInfo;
+  _serverInstance.GetRoomSystem().GetRoom(clientContext.roomUid, [this, &gameMode, &gameModeInfo](const Room& room)
   {
     gameMode = room.GetRoomSnapshot().details.gameMode;
     gameModeInfo = this->GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(static_cast<uint8_t>(gameMode));
@@ -2590,7 +2587,7 @@ void RaceDirector::HandleUserRaceItemGet(
   switch(gameMode)
   {
     // TODO: Deduplicate from StarPointGet
-    case server::Room::GameMode::Speed:
+    case Room::GameMode::Speed:
       {
         switch (item.deckId)
         {
@@ -2624,13 +2621,10 @@ void RaceDirector::HandleUserRaceItemGet(
       break;
 
     // TODO: Deduplicate from RequestMagicItem
-    case server::Room::GameMode::Magic:
-      {
+    case Room::GameMode::Magic:
+    {
         if (racer.magicItem.has_value())
         {
-          spdlog::warn("Character {} tried to request a magic item in race {} but they already have one, skipping...",
-            clientContext.characterUid,
-            clientContext.roomUid);
           return;
         }
 
@@ -2793,8 +2787,8 @@ void RaceDirector::HandleActivateSkillEffect(
     effectiveEffectId += 1; // Use the "critical" version of the skill effect
   }
 
-  if ((!SkillIsCritical(effectiveEffectId) && targetRacer.shield == server::tracker::RaceTracker::Racer::Shield::Normal)
-  || targetRacer.shield == server::tracker::RaceTracker::Racer::Shield::Critical
+  if ((!SkillIsCritical(effectiveEffectId) && targetRacer.shield == tracker::RaceTracker::Racer::Shield::Normal)
+  || targetRacer.shield == tracker::RaceTracker::Racer::Shield::Critical
   || targetRacer.hotRodded)
   {
     // TODO: Send some kind of notification that the attack was blocked? That picture on the side (PIPEvent?)
@@ -2861,7 +2855,7 @@ void RaceDirector::HandleChangeSkillCardPresetId(
   // No response command
 }
 
-void RaceDirector::ScheduleSkillEffect(server::RaceDirector::RaceInstance& raceInstance, server::tracker::Oid attackerOid, server::tracker::Oid targetOid, uint16_t effectId, std::optional<std::function<void()>> afterEffectRemoved){
+void RaceDirector::ScheduleSkillEffect(RaceDirector::RaceInstance& raceInstance, tracker::Oid attackerOid, tracker::Oid targetOid, uint16_t effectId, std::optional<std::function<void()>> afterEffectRemoved){
   // Broadcast skill effect activation to all clients in the room
   protocol::AcCmdRCAddSkillEffect addSkillEffect{
     .characterOid = targetOid,
