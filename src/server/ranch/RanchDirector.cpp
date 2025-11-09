@@ -19,6 +19,7 @@
 
 #include "server/ranch/RanchDirector.hpp"
 #include "server/ServerInstance.hpp"
+#include "server/system/ItemSystem.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
 #include <libserver/util/Locale.hpp>
@@ -1603,13 +1604,9 @@ void RanchDirector::HandleUpdateMountNickname(
     constexpr data::Tid HorseRenameItem = 45003;
 
     bool isItemHorseRenameItem = false;
-    itemRecord.Mutable([&isItemHorseRenameItem, &horseRenameItemCount](data::Item& item)
+    itemRecord.Immutable([&isItemHorseRenameItem](const data::Item& item)
     {
-      if (isItemHorseRenameItem = item.tid() == HorseRenameItem)
-      {
-        // Item is a horse rename item
-        horseRenameItemCount = --item.count(); // decrement and then assign
-      }
+      isItemHorseRenameItem = (item.tid() == HorseRenameItem);
     });
 
     if (not isItemHorseRenameItem)
@@ -1618,19 +1615,22 @@ void RanchDirector::HandleUpdateMountNickname(
       error.emplace(protocol::HorseRenameError::WrongItem);
       return;
     }
-
-    // Remove item from character's inventory if empty
-    if (horseRenameItemCount < 1)
-    {
-      // Find the item in the inventory.
-      const auto itemInventoryIter = std::ranges::find(
-        character.inventory(), command.itemUid);
-
-      // Remove the item from the inventory.
-      character.inventory().erase(itemInventoryIter);
-    }
   });
 
+  // If no validation errors, try to consume the rename item
+  if (!error.has_value())
+  {
+    const auto consumeResult = GetServerInstance().GetItemSystem().ConsumeItem(
+      clientContext.characterUid, command.itemUid, 1);
+    
+    if (consumeResult != ItemSystem::ReturnType::SUCCESS)
+    {
+      spdlog::warn("Failed to consume horse rename item for character {}", clientContext.characterUid);
+      error.emplace(protocol::HorseRenameError::NoHorseRenameItem);
+    }
+  }
+
+  // If any error occurred, send cancel response and return
   if (error.has_value())
   {
     protocol::RanchCommandUpdateMountNicknameCancel response{
@@ -2705,10 +2705,14 @@ void RanchDirector::HandleRequestPetBirth(
     },
   };
 
+  bool petAlreadyExists = false;
+  data::Tid petItemTid = data::InvalidTid;
+  data::Uid petUid = data::InvalidUid;
+
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
   characterRecord.Mutable(
-    [this, &command, &response](data::Character& character)
+    [this, &command, &response, &petAlreadyExists, &petItemTid, &petUid](data::Character& character)
     {
       auto hatchingEggUid{data::InvalidUid};
       auto hatchingEggItemUid{data::InvalidUid};
@@ -2761,13 +2765,11 @@ void RanchDirector::HandleRequestPetBirth(
 
       const auto& hatchablePets = eggTemplate.hatchablePets;
       std::uniform_int_distribution<size_t> dist(0, hatchablePets.size() - 1);
-      const data::Tid petItemTid = hatchablePets[dist(_randomDevice)];
+      petItemTid = hatchablePets[dist(_randomDevice)];
 
       const registry::PetInfo petTemplate = _serverInstance.GetPetRegistry().GetPetInfo(
         petItemTid);
       const auto petId = petTemplate.petId;
-
-      bool petAlreadyExists = false;
 
       const auto petRecords = GetServerInstance().GetDataDirector().GetPetCache().Get(
         character.pets());
@@ -2786,45 +2788,19 @@ void RanchDirector::HandleRequestPetBirth(
 
       if (petAlreadyExists)
       {
-        // todo: stacking
-        const auto pityItem = GetServerInstance().GetDataDirector().CreateItem();
-        pityItem.Mutable([&character, &response](data::Item& item)
-        {
-          item.tid() = 46019;
-          item.count() = 1;
-          // write Pity item into response
-          response.petBirthInfo.eggItem = {
-            .uid = item.uid(),
-            .tid = item.tid(),
-            .count = item.count()};
-          // write the item into the character items
-          character.inventory().emplace_back(item.uid());
-        });
+        // Pet already exists, need to create pity item outside lambda
+        petAlreadyExists = true;
         return;
       }
 
       auto petUid = data::InvalidUid;
       auto petItemUid = data::InvalidUid;
 
-      // Create the pet and the associated item.
-      const auto petItem = GetServerInstance().GetDataDirector().CreateItem();
+      // Create the pet
       const auto bornPet = GetServerInstance().GetDataDirector().CreatePet();
 
-      petItem.Mutable([&response, &petItemUid, petId, petItemTid](data::Item& item)
+      bornPet.Mutable([&response, &petUid, petId](data::Pet& pet)
       {
-        item.tid() = petItemTid;
-        item.count() = 1;
-        // Fill the response with the born item information.
-        response.petBirthInfo.eggItem = {
-          .uid = item.uid(),
-          .tid = item.tid(),
-          .count = item.count()};
-        petItemUid = item.uid();
-      });
-
-      bornPet.Mutable([&response, &character, &petUid, &petItemUid, petId](data::Pet& pet)
-      {
-        pet.itemUid() = petItemUid;
         pet.name() = "";
         pet.petId() = petId;
         pet.birthDate() = data::Clock::now();
@@ -2837,9 +2813,39 @@ void RanchDirector::HandleRequestPetBirth(
         petUid = pet.uid();
       });
 
-      character.inventory().emplace_back(petItemUid);
       character.pets().emplace_back(petUid);
     });
+
+  // Determine which item to create based on whether pet already exists
+  constexpr data::Tid PityItemTid = 46019;
+  const data::Tid itemTidToCreate = petAlreadyExists ? PityItemTid : petItemTid;
+  
+  // Create the item using ItemSystem
+  const auto createdItemUid = GetServerInstance().GetItemSystem().CreateNewItem(
+    clientContext.characterUid, itemTidToCreate, 1);
+  
+  if (createdItemUid != data::InvalidUid)
+  {
+    // If it's a pet item (not pity), link the newly created pet to the item
+    if (!petAlreadyExists)
+    {
+      auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
+      petRecord.Mutable([createdItemUid](data::Pet& pet)
+      {
+        pet.itemUid() = createdItemUid;
+      });
+    }
+
+    // Fill response with the created item
+    const auto itemRecord = GetServerInstance().GetDataDirector().GetItem(createdItemUid);
+    itemRecord.Immutable([&response](const data::Item& item)
+    {
+      response.petBirthInfo.eggItem = {
+        .uid = item.uid(),
+        .tid = item.tid(),
+        .count = item.count()};
+    });
+  }
 
   protocol::AcCmdCRRequestPetBirthNotify notify{
     .petBirthInfo = response.petBirthInfo
@@ -3231,24 +3237,32 @@ void RanchDirector::HandleUseItem(
 
   if (consumeItem)
   {
-    bool isUsedItemEmpty = false;
-    itemRecord.Mutable([&isUsedItemEmpty, &response](data::Item& item)
+    // Use ItemSystem to consume the item
+    const auto consumeResult = GetServerInstance().GetItemSystem().ConsumeItem(
+      clientContext.characterUid, command.itemUid, 1);
+    
+    if (consumeResult == ItemSystem::ReturnType::SUCCESS)
     {
-      item.count() -= 1;
-      response.updatedItemCount = item.count();
-
-      isUsedItemEmpty = item.count() <= 0;
-    });
-
-    if (isUsedItemEmpty)
-    {
-      characterRecord.Mutable([usedItemUid = command.itemUid](data::Character& character)
+      // Get updated item count for response
+      const auto updatedItemRecord = _serverInstance.GetDataDirector().GetItem(command.itemUid);
+      if (updatedItemRecord)
       {
-        const auto removedItems = std::ranges::remove(character.inventory(), usedItemUid);
-        character.inventory().erase(removedItems.begin(), removedItems.end());
-      });
-
-      _serverInstance.GetDataDirector().GetItemCache().Delete(command.itemUid);
+        updatedItemRecord.Immutable([&response](const data::Item& item)
+        {
+          response.updatedItemCount = item.count();
+        });
+      }
+      else
+      {
+        // Item was removed (count reached 0)
+        response.updatedItemCount = 0;
+      }
+    }
+    else
+    {
+      // TODO:Send Cancel response?
+      spdlog::warn("Failed to consume item {} for character {}", 
+        command.itemUid, clientContext.characterUid);
     }
   }
 
@@ -4192,31 +4206,26 @@ void RanchDirector::HandleChangeNickname(
 
       //TODO: validate nickname (inappropriate words, etc)
 
-      // Manipulate item
-      itemRecord.Mutable([&itemCount, &error](data::Item& item)
+      const auto consumeResult = GetServerInstance().GetItemSystem().ConsumeItem(
+        character.uid(), command.itemUid, 1);
+
+      // TODO: Differentiate more between error types
+      if (consumeResult != ItemSystem::ReturnType::SUCCESS)
       {
-        // Sanity check item count
-        if (item.count() < 1)
-        {
-          // Client tried to use an item whose quantity was 0
-          error.emplace(protocol::NameChangeError::NoOrIncorrectItem);
-          return;
-        }
-
-        // Decrement item count
-        itemCount = --item.count();
-      });
-
-      // Delete item if there is none left
-      if (itemCount < 1)
-      {
-        // Delete item from character's inventory
-        inventory.erase(std::ranges::find(inventory, command.itemUid));
-
-        // Delete item record
-        GetServerInstance().GetDataDirector().GetItemCache().Delete(command.itemUid);
+        error.emplace(protocol::NameChangeError::NoOrIncorrectItem);
+        return;
       }
 
+      // Get updated item count for response
+      uint16_t itemCount = 0;
+      const auto updatedItemRecord = GetServerInstance().GetDataDirector().GetItem(command.itemUid);
+      if (updatedItemRecord.IsAvailable())
+      {
+        updatedItemRecord.Immutable([&itemCount](const data::Item& item)
+          {
+            itemCount = item.count();
+          });
+      }
       // Change character name to new name
       character.name() = command.newNickname;
     });
