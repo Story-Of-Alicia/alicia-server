@@ -86,14 +86,30 @@ void MessengerDirector::HandleChatterLogin(
 
   auto& clientContext = _clients[clientId];
 
+  // TODO: verify this request in some way
+  // FIXME: authentication is always assumed to be correct
+  if (false)
+  {
+    // Login failed, bad actor, log and return
+    // Do not log with `command.name` (character name) to prevent some form of string manipulation in spdlog
+    spdlog::warn("Client {} tried to login as character {} but failed authentication with auth code {}",
+      clientId,
+      command.characterUid,
+      command.code);
+
+    protocol::ChatCmdLoginAckCancel cancel{
+      .errorCode = protocol::ChatterErrorCode::LoginFailed};
+
+    _chatterServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  clientContext.isAuthenticated = true;
+
   constexpr auto OnlinePlayersCategoryUid = std::numeric_limits<uint32_t>::max() - 1;
 
   protocol::ChatCmdLoginAckOK response{
     .groups = {{.uid = OnlinePlayersCategoryUid, .name = "Online Players"}}};
-
-  // TODO: verify this request in some way
-  // FIXME: authentication is always assumed to be correct
-  clientContext.isAuthenticated = true;
 
   // TODO: remember status from last login?
   clientContext.status = protocol::Status::Online;
@@ -284,7 +300,11 @@ void MessengerDirector::HandleChatterLetterSend(
   if (recipientCharacterUid == data::InvalidUid)
   {
     // Character tried to send mail to a character that doesn't exist, no need to log
-    // TODO: character does not exist at all, respond with cancel
+    protocol::ChatCmdLetterSendAckCancel cancel{
+      .errorCode = protocol::ChatterErrorCode::CharacterDoesNotExist
+    };
+
+    _chatterServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
     return;
   }
 
@@ -339,12 +359,7 @@ void MessengerDirector::HandleChatterLetterSend(
     .body = command.body
   };
 
-  _chatterServer.QueueCommand<decltype(response)>(
-    clientId,
-    [response]()
-    {
-      return response;
-    });
+  _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 
   // TODO: alert recipient of new mail if they are online
 }
@@ -353,19 +368,64 @@ void MessengerDirector::HandleChatterGuildLogin(
   network::ClientId clientId,
   const protocol::ChatCmdGuildLogin& command)
 {
-  protocol::ChatCmdGuildLoginOK response{};
+  // ChatCmdGuildLogin is sent after ChatCmdLogin
+  // Assumption: the user is very likely already authenticated with messenger
+  const auto& clientContext = _clients[clientId];
 
-  // TODO: check if calling client character uid is command.characterUid
-  // TODO: check if command.guildUid is the guildUid the calling character is in
+  // Check if client belongs to the guild in the command
+  data::Uid characterGuildUid{data::InvalidUid};
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [&characterGuildUid](const data::Character& character)
+    {
+      characterGuildUid = character.guildUid();
+    });
 
-  // TODO: guild record is retrieved directly from command, verify this
+  std::optional<protocol::ChatterErrorCode> errorCode{};
+  if (not clientContext.isAuthenticated)
+  {
+    // Client is not authenticated with chatter server
+    spdlog::warn("Client {} tried to login to guild {} but is not authenticated with the chatter server.",
+      clientId,
+      command.guildUid);
+    errorCode.emplace(protocol::ChatterErrorCode::GuildLoginClientNotAuthenticated);
+  }
+  else if (command.characterUid != clientContext.characterUid)
+  {
+    // Command `characterUid` does match the client context `characterUid 
+    spdlog::warn("Client {} tried to login, who is character {}, to guild {} on behalf of another character {}",
+      clientId,
+      clientContext.characterUid,
+      command.guildUid,
+      command.characterUid);
+    errorCode.emplace(protocol::ChatterErrorCode::CommandCharacterIsNotClientCharacter);
+  }
+  else if (characterGuildUid != command.guildUid)
+  {
+    // Character does not belong to the guild in the guild login
+    spdlog::warn("Character {} tried to login to guild {} but character is not a guild member.",
+      clientContext.characterUid,
+      command.guildUid);
+    errorCode.emplace(protocol::ChatterErrorCode::GuildLoginCharacterNotGuildMember);
+  }
+
+  if (errorCode.has_value())
+  {
+    // Some error has been encountered, respond with cancel and return
+    protocol::ChatCmdGuildLoginAckCancel cancel{
+      .errorCode = errorCode.value()
+    };
+    _chatterServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  protocol::ChatCmdGuildLoginAckOK response{};
   _serverInstance.GetDataDirector().GetGuild(command.guildUid).Immutable(
     [this, &response](const data::Guild& guild)
     {
       for (const data::Uid& guildMemberUid : guild.members())
       {
         auto& chatGuildMember = response.guildMembers.emplace_back(
-          protocol::ChatCmdGuildLoginOK::GuildMember{
+          protocol::ChatCmdGuildLoginAckOK::GuildMember{
             .characterUid = guildMemberUid,
             .status = protocol::Status::Offline,
             .unk2 = {

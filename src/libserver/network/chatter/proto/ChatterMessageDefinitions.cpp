@@ -78,6 +78,7 @@ void server::protocol::ChatCmdLoginAckCancel::Write(
   const ChatCmdLoginAckCancel&,
   SinkStream&)
 {
+  stream.Write(command.errorCode);
 }
 
 void server::protocol::ChatCmdLoginAckCancel::Read(
@@ -203,6 +204,20 @@ void server::protocol::ChatCmdLetterSendAckOk::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void server::protocol::ChatCmdLetterSendAckCancel::Write(
+  const ChatCmdLetterSendAckCancel& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.errorCode);
+}
+
+void server::protocol::ChatCmdLetterSendAckCancel::Read(
+  ChatCmdLetterSendAckCancel& command,
+  server::SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void server::protocol::ChatCmdGuildLogin::Write(
   const ChatCmdGuildLogin& command,
   server::SinkStream& stream)
@@ -217,23 +232,23 @@ void server::protocol::ChatCmdGuildLogin::Read(
   server::protocol::ChatCmdLogin::Read(command, stream);
 }
 
-void server::protocol::ChatCmdGuildLoginOK::GuildMember::Struct2::Write(
-  const ChatCmdGuildLoginOK::GuildMember::Struct2& command,
+void server::protocol::ChatCmdGuildLoginAckOK::GuildMember::Struct2::Write(
+  const ChatCmdGuildLoginAckOK::GuildMember::Struct2& command,
   server::SinkStream& stream)
 {
   stream.Write(command.unk0)
     .Write(command.unk1);
 }
 
-void server::protocol::ChatCmdGuildLoginOK::GuildMember::Struct2::Read(
-  ChatCmdGuildLoginOK::GuildMember::Struct2& command,
+void server::protocol::ChatCmdGuildLoginAckOK::GuildMember::Struct2::Read(
+  ChatCmdGuildLoginAckOK::GuildMember::Struct2& command,
   server::SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void server::protocol::ChatCmdGuildLoginOK::GuildMember::Write(
-  const ChatCmdGuildLoginOK::GuildMember& command,
+void server::protocol::ChatCmdGuildLoginAckOK::GuildMember::Write(
+  const ChatCmdGuildLoginAckOK::GuildMember& command,
   server::SinkStream& stream)
 {
   stream.Write(command.characterUid)
@@ -241,15 +256,15 @@ void server::protocol::ChatCmdGuildLoginOK::GuildMember::Write(
     .Write(command.unk2);
 }
 
-void server::protocol::ChatCmdGuildLoginOK::GuildMember::Read(
-  ChatCmdGuildLoginOK::GuildMember& command,
+void server::protocol::ChatCmdGuildLoginAckOK::GuildMember::Read(
+  ChatCmdGuildLoginAckOK::GuildMember& command,
   server::SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void server::protocol::ChatCmdGuildLoginOK::Write(
-  const ChatCmdGuildLoginOK& command,
+void server::protocol::ChatCmdGuildLoginAckOK::Write(
+  const ChatCmdGuildLoginAckOK& command,
   server::SinkStream& stream)
 {
   // Guild members array size (u32)
@@ -260,8 +275,22 @@ void server::protocol::ChatCmdGuildLoginOK::Write(
   }
 }
 
-void server::protocol::ChatCmdGuildLoginOK::Read(
-  ChatCmdGuildLoginOK& command,
+void server::protocol::ChatCmdGuildLoginAckOK::Read(
+  ChatCmdGuildLoginAckOK& command,
+  server::SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdGuildLoginAckCancel::Write(
+  const ChatCmdGuildLoginAckCancel& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.errorCode);
+}
+
+void server::protocol::ChatCmdGuildLoginAckCancel::Read(
+  ChatCmdGuildLoginAckCancel& command,
   server::SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
