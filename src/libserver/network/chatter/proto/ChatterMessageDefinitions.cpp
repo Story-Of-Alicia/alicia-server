@@ -44,7 +44,7 @@ void server::protocol::ChatCmdLoginAckOK::Write(
 {
   stream.Write(command.member1);
 
-  stream.Write(command.mailAlarm.mailUid)
+  stream.Write(command.mailAlarm.status)
     .Write(command.mailAlarm.hasMail);
 
   stream.Write(static_cast<uint32_t>(command.groups.size()));
@@ -166,6 +166,38 @@ void server::protocol::ChatCmdLetterListAckOk::Write(
 
 void server::protocol::ChatCmdLetterListAckOk::Read(
   ChatCmdLetterListAckOk& command,
+  server::SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdLetterSend::Write(
+  const ChatCmdLetterSend& command,
+  server::SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdLetterSend::Read(
+  ChatCmdLetterSend& command,
+  server::SourceStream& stream)
+{
+  stream.Read(command.recipient)
+    .Read(command.body);
+}
+
+void server::protocol::ChatCmdLetterSendAckOk::Write(
+  const ChatCmdLetterSendAckOk& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.mailUid)
+    .Write(command.recipient)
+    .Write(command.date)
+    .Write(command.body);
+}
+
+void server::protocol::ChatCmdLetterSendAckOk::Read(
+  ChatCmdLetterSendAckOk& command,
   server::SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");

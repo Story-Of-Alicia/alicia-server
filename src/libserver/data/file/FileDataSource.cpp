@@ -322,6 +322,7 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   readSkills(character.skills.magic(), skills["magic"]);
 
   const auto& mailbox = json["mailbox"];
+  character.mailbox.hasNewMail = mailbox["hasNewMail"].get<bool>();
   character.mailbox.inbox = mailbox["inbox"].get<std::vector<data::Uid>>();
   character.mailbox.sent = mailbox["sent"].get<std::vector<data::Uid>>();
 }
@@ -415,6 +416,7 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["skills"] = skills;
 
   nlohmann::json mailbox;
+  mailbox["hasNewMail"] = character.mailbox.hasNewMail();
   mailbox["inbox"] = character.mailbox.inbox();
   mailbox["sent"] = character.mailbox.sent();
   json["mailbox"] = mailbox;

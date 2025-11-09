@@ -84,8 +84,8 @@ public:
   //! @return `data::InvalidUid` if character by that name does not exist, otherwise returns `data::Uid` of the character.
   virtual data::Uid RetrieveCharacterUidByName(const std::string_view& name) = 0;
   //! Returns whether the character name is unique.
-  //! @return `true` if the character name is unique, otherwise returns `false`.
-  virtual bool IsCharacterNameUnique(const std::string_view& name) = 0;
+  //! @return `server::data::InvalidUid` if the character name is unique, otherwise returns the existing character UID.
+  virtual server::data::Uid IsCharacterNameUnique(const std::string_view& name) = 0;
 
   //! Creates the horse in the data source.
   //! @param horse Horse to create.

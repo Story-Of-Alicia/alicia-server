@@ -71,8 +71,12 @@ struct ChatCmdLoginAckOK
 
   struct MailAlarm
   {
-    uint32_t mailUid{};
-    bool hasMail = false;
+    enum class Status : uint32_t
+    {
+      NoNewMail = 0,
+      NewMail = 1
+    } status{Status::NoNewMail};
+    uint8_t hasMail{};
   } mailAlarm;
 
   struct Group
@@ -90,6 +94,7 @@ struct ChatCmdLoginAckOK
 
     Status status = Status::Offline;
 
+    // 2 - friend request popup
     uint8_t member5{};
     uint32_t roomUid{};
     uint32_t ranchUid{};
@@ -238,18 +243,48 @@ struct ChatCmdLetterListAckOk
     SourceStream& stream);
 };
 
-class ChatCmdUpdateState
+struct ChatCmdLetterSend
 {
-  uint8_t member1;
-  uint32_t member2;
-  uint32_t member3;
+  std::string recipient{};
+  std::string body{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdLetterSend;
+  }
+
+  static void Write(
+    const ChatCmdLetterSend& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdLetterSend& command,
+    SourceStream& stream);
 };
 
-class ChatCmdUpdateStateAckOK
+struct ChatCmdLetterSendAckOk
 {
-  std::string hostname = "127.0.0.1";
-  uint16_t port = /*htons(10034)*/ 0;
-  uint32_t payload = 1;
+  // TODO: confirm if this is truly mailUid or relative index of 0 -> x
+  uint32_t mailUid{};
+  //! Recipient name.
+  std::string recipient{};
+  //! Client takes anything, typically "hh:mm:ss DD/MM/YYYY".
+  std::string date{};
+  //! Mail body.
+  std::string body{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdLetterSendAckOk;
+  }
+
+  static void Write(
+    const ChatCmdLetterSendAckOk& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdLetterSendAckOk& command,
+    SourceStream& stream);
 };
 
 struct ChatCmdGuildLogin : ChatCmdLogin

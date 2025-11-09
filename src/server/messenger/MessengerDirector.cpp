@@ -24,6 +24,8 @@
 namespace server
 {
 
+constexpr std::string_view DateTimeFormat = "{:%H:%M:%S %d/%m/%Y}";
+
 MessengerDirector::MessengerDirector(ServerInstance& serverInstance)
   : _chatterServer(*this, *this)
   , _serverInstance(serverInstance)
@@ -97,10 +99,14 @@ void MessengerDirector::HandleChatterLogin(
   clientContext.status = protocol::Status::Online;
 
   // Client request could be logging in as another character
-  _serverInstance.GetDataDirector().GetCharacter(command.characterUid).Immutable(
-    [&clientContext](const data::Character& character)
+  _serverInstance.GetDataDirector().GetCharacter(command.characterUid).Mutable(
+    [&clientContext](data::Character& character)
     {
       clientContext.characterUid = character.uid();
+
+      // TODO: implement unread mail mechanics
+
+      character.mailbox.hasNewMail() = false;
     });
 
   response.member1 = clientContext.characterUid;
@@ -163,16 +169,19 @@ void MessengerDirector::HandleChatterLetterList(
       // Start from the beginning of the mailbox, or from specific mailUid as per request
       auto startIter = _mailbox.begin();
       if (command.request.lastMailUid != data::InvalidUid)
+      {
         startIter = std::ranges::find(_mailbox, command.request.lastMailUid);
 
-      // Safety mechanism, just in case no mail by that UID was found
-      if (startIter == _mailbox.cend())
-      {
-        spdlog::warn("Character {} tried to request mail after mail {} but that mail does not exist.",
-          character.uid(),
-          command.request.lastMailUid);
-        hasMoreMail = false;
-        return;
+        // Safety mechanism, just in case no mail by that UID was found
+        if (startIter == _mailbox.cend())
+        {
+          spdlog::warn("Character {} tried to request mail after mail {} but that mail does not exist.",
+            character.uid(),
+            command.request.lastMailUid);
+          hasMoreMail = false;
+          // TODO: respond with cancel
+          return;
+        }
       }
 
       // Get remaining items left in the array, from the mailUid (or beginning)
@@ -215,46 +224,31 @@ void MessengerDirector::HandleChatterLetterList(
             });
           });
       }
-
-      response.mailboxInfo = protocol::ChatCmdLetterListAckOk::MailboxInfo{
-        .mailCount = static_cast<uint32_t>(mailbox.size()),
-        .hasMoreMail = hasMoreMail
-      };
       break;
     }
     case protocol::MailboxFolder::Inbox:
     {
       using InboxMail = protocol::ChatCmdLetterListAckOk::InboxMail;
 
-      // TODO: this counter is temporary until MailStorage is implemented
-      uint32_t mailUid = 0;
-      response.inboxMails = std::vector<InboxMail>{
-        InboxMail{
-          .mailUid = ++mailUid,
-          .mailType = InboxMail::MailType::CanReply,
-          .mailOrigin = InboxMail::MailOrigin::Character,
-          .sender = "Ihsus",
-          .date = "12:47:53 06/11/2025",
-          .struct0 = InboxMail::Struct0{
-            .body = "Would you be interested in some cash?"
-          }
-        },
-        InboxMail{
-          .mailUid = ++mailUid,
-          .mailType = InboxMail::MailType::NoReply,
-          .mailOrigin = InboxMail::MailOrigin::System,
-          .sender = "SoA",
-          .date = "13:05:35 06/11/2025",
-          .struct0 = InboxMail::Struct0{
-            .body = "Your account has been suspended."
-          }
-        }
-      };
-
-      response.mailboxInfo = protocol::ChatCmdLetterListAckOk::MailboxInfo{
-        .mailCount = static_cast<uint32_t>(response.inboxMails.size()),
-        .hasMoreMail = 0 // TODO: do this based on internal mail count, with pagination
-      };
+      for (const auto& inboxMailUid : mailbox)
+      {
+        _serverInstance.GetDataDirector().GetMail(inboxMailUid).Immutable(
+          [&response](const data::Mail& mail)
+          {
+            response.inboxMails.emplace_back(InboxMail{
+              InboxMail{
+                .mailUid = mail.uid(),
+                .mailType = InboxMail::MailType::CanReply, // TODO: store in mail
+                .mailOrigin = InboxMail::MailOrigin::Character, // TODO: store in mail
+                .sender = mail.name(),
+                .date = mail.date(),
+                .struct0 = InboxMail::Struct0{
+                  .body = mail.body()
+                }
+              }
+            });
+          });
+      }
       break;
     }
     default:
@@ -266,7 +260,93 @@ void MessengerDirector::HandleChatterLetterList(
     }
   }
 
+  // `mailbox` size here directly correlates with the loop that processes it 
+  response.mailboxInfo = protocol::ChatCmdLetterListAckOk::MailboxInfo{
+    .mailCount = static_cast<uint32_t>(mailbox.size()),
+    .hasMoreMail = hasMoreMail
+  };
+
   _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+}
+
+void MessengerDirector::HandleChatterLetterSend(
+  network::ClientId clientId,
+  const protocol::ChatCmdLetterSend& command)
+{
+  spdlog::debug("[{}] ChatCmdLetterSend: {} {}",
+    clientId,
+    command.recipient,
+    command.body);
+  
+  const data::Uid& recipientCharacterUid = 
+    _serverInstance.GetDataDirector().GetDataSource().IsCharacterNameUnique(command.recipient);
+
+  if (recipientCharacterUid == data::InvalidUid)
+  {
+    // Character tried to send mail to a character that doesn't exist, no need to log
+    // TODO: character does not exist at all, respond with cancel
+    return;
+  }
+
+  // UTC now in seconds
+  const auto& utcNow = std::chrono::floor<std::chrono::seconds>(util::Clock::now());
+  const auto& formattedDt = std::format(DateTimeFormat, utcNow);
+
+  // Create and store mail
+  data::Uid mailUid{data::InvalidUid};
+  auto mailRecord = _serverInstance.GetDataDirector().CreateMail();
+  mailRecord.Mutable([&mailUid, &command, &formattedDt](data::Mail& mail)
+  {
+    mail.name = command.recipient;
+    mail.date = formattedDt;
+    mail.body = command.body;
+
+    // Set mailUid to store in character record
+    mailUid = mail.uid();
+  });
+
+  // Add the new mail to the recipient's inbox
+  _serverInstance.GetDataDirector().GetCharacter(recipientCharacterUid).Mutable(
+    [&mailUid](data::Character& character)
+    {
+      // Insert new mail to the beginning of the list
+      // TODO: this operation is O(n), does dao support std::deque?
+      character.mailbox.inbox().insert(
+        character.mailbox.inbox().begin(),
+        mailUid);
+
+      // Set mail alarm
+      character.mailbox.hasNewMail() = true;
+    });
+
+  const auto& clientContext = _clients[clientId];
+
+  // Add the new mail to the sender's sent mailbox
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+    [&mailUid](data::Character& character)
+    {
+      // Insert new mail to the beginning of the list
+      // TODO: this operation is O(n), does dao support std::deque?
+      character.mailbox.sent().insert(
+        character.mailbox.sent().begin(),
+        mailUid);
+    });
+
+  protocol::ChatCmdLetterSendAckOk response{
+    .mailUid = mailUid,
+    .recipient = command.recipient,
+    .date = formattedDt,
+    .body = command.body
+  };
+
+  _chatterServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+
+  // TODO: alert recipient of new mail if they are online
 }
 
 void MessengerDirector::HandleChatterGuildLogin(

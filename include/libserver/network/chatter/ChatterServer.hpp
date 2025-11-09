@@ -53,6 +53,10 @@ public:
     network::ClientId clientId,
     const protocol::ChatCmdLetterList& command) = 0;
 
+  virtual void HandleChatterLetterSend(
+    network::ClientId clientId,
+    const protocol::ChatCmdLetterSend& command) = 0;
+
   virtual void HandleChatterGuildLogin(
     network::ClientId clientId,
     const protocol::ChatCmdGuildLogin& command) = 0;

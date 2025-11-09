@@ -937,7 +937,7 @@ void LobbyNetworkHandler::HandleRoomList(
     std::back_inserter(roomSnapshots),
     [&command](const server::Room::Snapshot& roomSnapshot)
     {
-      return 
+      return
         roomSnapshot.details.gameMode == static_cast<server::Room::GameMode>(command.gameMode) &&
         roomSnapshot.details.teamMode == static_cast<server::Room::TeamMode>(command.teamMode);
     });
@@ -1644,7 +1644,7 @@ void LobbyNetworkHandler::HandleGoodsShopList(
 
   // TODO: remove this, only used for testing protocol
   auto now = util::Clock::now() + std::chrono::days(1);
-  
+
   //! Chunk size as defined in command handler.
   constexpr auto ChunkSize = 7168;
 
