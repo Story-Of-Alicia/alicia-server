@@ -632,6 +632,57 @@ void ChatSystem::RegisterUserCommands()
 
         return {"Preset added to character inventory. Please restart your game to apply changes!"};
       }
+      else if (subLiteral == "horse")
+      {
+        // Check if character has max amount of horses
+        auto horseCount = 0;
+        auto horseSlotCount = 0;
+        characterRecord.Immutable(
+          [&horseCount, &horseSlotCount](const data::Character& character)
+          {
+            // Mount + horses (if any)
+            horseCount = character.horses().size() + 1;
+            horseSlotCount = character.horseSlotCount();
+          });
+
+        constexpr uint8_t MaxHorsePerCharacter = 10;
+        if (horseCount >= MaxHorsePerCharacter)
+          return {"You already have max amount of horses in your inventory."};
+
+        auto horseUid = data::InvalidUid;
+        const auto& horseRecord = _serverInstance.GetDataDirector().CreateHorse();
+        horseRecord.Mutable(
+          [this, &horseUid](data::Horse& horse)
+          {
+            // Prepare new horse with initial values
+            horse.tid() = 20002;
+            horse.dateOfBirth() = data::Clock::now();
+            horse.mountCondition.stamina = 3500;
+            horse.growthPoints() = 150;
+
+            // Give horse random parts and appearance
+            _serverInstance.GetHorseRegistry().BuildRandomHorse(
+              horse.parts,
+              horse.appearance);
+
+            horseUid = horse.uid();
+          });
+
+        characterRecord.Mutable(
+          [&horseUid](data::Character& character)
+          {
+            // Increment horse slot count if we can
+            if (character.horseSlotCount() <= MaxHorsePerCharacter)
+              character.horseSlotCount() += 1;
+
+            // Add new horse to character
+            character.horses().emplace_back(horseUid);
+          });
+
+        _serverInstance.GetRanchDirector().AddRanchHorse(characterUid, horseUid);
+
+        return {"A new horse has been added to your inventory.", "Restart your game for the changes to apply."};
+      }
 
       return {"Unknown sub-literal"};
     });

@@ -497,9 +497,40 @@ LobbyNetworkHandler::ClientContext& LobbyNetworkHandler::GetClientContext(
   return clientContext;
 }
 
+void LobbyNetworkHandler::HandleNetworkTick()
+{
+  const auto now = std::chrono::steady_clock::now();
+
+  std::vector<ClientId> clientsToDisconnect;
+  for (const auto& [clientId, clientContext] : _clients)
+  {
+    const bool hasReachedTimeOut = now - clientContext.lastHeartbeat > std::chrono::seconds(60);
+    if (not hasReachedTimeOut)
+      continue;
+
+    spdlog::warn(
+       "Client {} ('{}') has reached a network timeout and is being disconnected",
+       clientId,
+       clientContext.userName);
+
+    clientsToDisconnect.emplace_back(clientId);
+
+    _serverInstance.GetRanchDirector().Disconnect(
+      clientContext.characterUid);
+    _serverInstance.GetRaceDirector().DisconnectCharacter(
+      clientContext.characterUid);
+  }
+
+  for (const ClientId& clientId : clientsToDisconnect)
+  {
+    _commandServer.DisconnectClient(clientId);
+  }
+}
+
 void LobbyNetworkHandler::HandleClientConnected(ClientId clientId)
 {
-  _clients.try_emplace(clientId);
+  const auto iter = _clients.try_emplace(clientId).first;
+  iter->second.lastHeartbeat = std::chrono::steady_clock::now();
 
   spdlog::debug(
     "Client {} connected to the lobby server from {}",
@@ -955,7 +986,8 @@ void LobbyNetworkHandler::HandleRoomList(
 void LobbyNetworkHandler::HandleHeartbeat(
   const ClientId clientId)
 {
-  // todo: implement heartbeat statistics
+  auto& clientContext = GetClientContext(clientId);
+  clientContext.lastHeartbeat = std::chrono::steady_clock::now();
 }
 
 void LobbyNetworkHandler::HandleMakeRoom(
@@ -1015,7 +1047,7 @@ void LobbyNetworkHandler::HandleMakeRoom(
           spdlog::error("Unknown team mode '{}'", static_cast<uint32_t>(command.gameMode));
       }
 
-      room.GetRoomDetails().member11 = command.unk3;
+      room.GetRoomDetails().npcDifficulty = command.unk3;
       room.GetRoomDetails().skillBracket = command.unk4;
       // default to all courses
       room.GetRoomDetails().courseId = 10002;
@@ -1037,6 +1069,14 @@ void LobbyNetworkHandler::HandleMakeRoom(
 
     return;
   }
+
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [this, createdRoomUid, &command](const data::Character& character)
+    {
+      const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+        character.uid());
+      spdlog::info("Room {} created by '{}' with the name '{}'", createdRoomUid, userName, command.name);
+    });
 
   size_t identityHash = std::hash<uint32_t>()(clientContext.characterUid);
   boost::hash_combine(identityHash, createdRoomUid);
@@ -1248,7 +1288,9 @@ void LobbyNetworkHandler::HandleCreateNickname(
 {
   auto& clientContext = GetClientContext(clientId);
 
-  const bool isValidNickname = locale::IsNameValid(command.nickname, 16);
+  const bool isValidNickname = locale::IsNameValid(command.nickname, 16)
+    && _serverInstance.GetDataDirector().GetDataSource().IsCharacterNameUnique(command.nickname);
+
   if (not isValidNickname)
   {
     SendLoginCancel(clientId, protocol::AcCmdCLLoginCancel::Reason::Generic);
@@ -1308,6 +1350,9 @@ void LobbyNetworkHandler::HandleCreateNickname(
         character.carrots = 10'000;
 
         character.mountUid() = mountUid;
+
+        constexpr uint8_t StartingHorseSlotCount = 3; 
+        character.horseSlotCount() = StartingHorseSlotCount;
 
         userCharacterUid = character.uid();
       });

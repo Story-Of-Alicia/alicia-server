@@ -996,14 +996,14 @@ void RanchCommandUpdateMountNickname::Read(
 {
   stream.Read(command.horseUid)
     .Read(command.name)
-    .Read(command.unk1);
+    .Read(command.itemUid);
 }
 
 void RanchCommandUpdateMountNicknameCancel::Write(
   const RanchCommandUpdateMountNicknameCancel& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0);
+  stream.Write(command.error);
 }
 
 void RanchCommandUpdateMountNicknameCancel::Read(
@@ -1017,8 +1017,8 @@ void AcCmdRCUpdateMountInfoNotify::Write(
   const AcCmdRCUpdateMountInfoNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.action)
-    .Write(command.member1)
+  stream.Write(command.characterUid)
+    .Write(command.action)
     .Write(command.horse);
 }
 
@@ -1035,8 +1035,8 @@ void RanchCommandUpdateMountNicknameOK::Write(
 {
   stream.Write(command.horseUid)
     .Write(command.nickname)
-    .Write(command.unk1)
-    .Write(command.unk2);
+    .Write(command.itemUid)
+    .Write(command.itemCount);
 }
 
 void RanchCommandUpdateMountNicknameOK::Read(
@@ -2709,6 +2709,13 @@ void AcCmdCRRegisterDailyQuestGroupOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRUpdateMountInfoOK::Read(
+  AcCmdCRUpdateMountInfoOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void AcCmdRCUpdateDailyQuestNotify::Write(
   const AcCmdRCUpdateDailyQuestNotify& command,
   SinkStream& stream)
@@ -2791,6 +2798,31 @@ void AcCmdCRRequestDailyQuestRewardOK::Unk::Read(Unk& value, SourceStream& strea
     .Read(value.unk1)
     .Read(value.unk2)
     .Read(value.unk3);
+}
+  
+void AcCmdCRUpdateMountInfoOK::Write(
+  const AcCmdCRUpdateMountInfoOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.horse);
+}
+
+void AcCmdCRMountInjuryHealOK::Read(
+  AcCmdCRMountInjuryHealOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRMountInjuryHealOK::Write(
+  const AcCmdCRMountInjuryHealOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.horseUid)
+    .Write(command.unk1)
+    .Write(command.unk2)
+    .Write(command.updatedCarrotCount);
 }
 
 } // namespace server::protocol

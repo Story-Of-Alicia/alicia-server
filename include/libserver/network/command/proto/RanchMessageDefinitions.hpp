@@ -97,7 +97,7 @@ struct AcCmdCREnterRanchOK
   // List size as a byte. Max length 13
   std::vector<Housing> housing{};
 
-  uint8_t horseSlots{5};
+  uint8_t horseSlots{};
   uint32_t member11{};
 
   enum class Bitset : uint32_t
@@ -1434,7 +1434,7 @@ struct RanchCommandUpdateMountNickname
 {
   uint32_t horseUid{};
   std::string name{};
-  uint32_t unk1{};
+  uint32_t itemUid{};
 
   static Command GetCommand()
   {
@@ -1461,8 +1461,8 @@ struct RanchCommandUpdateMountNicknameOK
 {
   uint32_t horseUid{};
   std::string nickname{};
-  uint32_t unk1{};
-  uint32_t unk2{};
+  uint32_t itemUid{};
+  uint32_t itemCount{};
 
   static Command GetCommand()
   {
@@ -1487,7 +1487,7 @@ struct RanchCommandUpdateMountNicknameOK
 //! Serverbound get messenger info command.
 struct RanchCommandUpdateMountNicknameCancel
 {
-  uint8_t unk0{};
+  HorseRenameError error{};
 
   static Command GetCommand()
   {
@@ -1511,19 +1511,28 @@ struct RanchCommandUpdateMountNicknameCancel
 
 struct AcCmdRCUpdateMountInfoNotify
 {
-  enum class Action
+  // TODO: confirm these values
+  enum class Action : uint8_t
   {
+    // Takes horse name + type (type foal interacts with graze)
     Default = 0,
-    UpdateConditionAndName = 4,
-    SetMountStateAndBreedData = 5,
-    SomeItemManip0 = 9,
-    SomeItemManip1 = 10,
-    SomeItemManip2 = 12,
-    SomeItemManip3 = 13,
+    // Has gMsgSetMountInfo/RanchCare_ResetAmends//Ranch_UpdateMountName
+    // [Ranch_UpdateMountName] characterUid = 0
+    // This appears to do the horse change animation
+    MaybeRentHorseOrReturnToNature = 4,
+    // Has gMsgSetMountState/Breed_SuccessData_MountSeed
+    // [Breed_SuccessData_MountSeed] seed? = 0
+    PutHorseInRentOrBreedingSystem = 5,
+    // Takes potentialLevel and potentialValue
+    ProgressHorsePotential = 9,
+    // Just takes luck.
+    SomethingWithHorseLuck = 10,
+    UpdateInjuryState = 11,
+    SomethingWithInjuryAndLuck = 12
   };
 
-  Action action{Action::UpdateConditionAndName};
-  uint8_t member1{};
+  uint32_t characterUid{};
+  Action action{Action::Default};
   Horse horse{};
 
   static Command GetCommand()
@@ -4198,6 +4207,14 @@ struct AcCmdCRUpdateDailyQuestCancel
   static Command GetCommand()
   {
     return Command::AcCmdCRUpdateDailyQuestCancel;
+struct AcCmdCRUpdateMountInfoOK
+{
+  uint8_t unk0{};
+  Horse horse{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdateMountInfoOK;
   }
 
   //! Writes the command to a provided sink stream.
@@ -4205,6 +4222,10 @@ struct AcCmdCRUpdateDailyQuestCancel
   //! @param stream Sink stream.
   static void Write(
     const AcCmdCRUpdateDailyQuestCancel& command,
+    SinkStream& stream);
+ 
+  static void Write(
+    const AcCmdCRUpdateMountInfoOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
@@ -4349,6 +4370,26 @@ struct AcCmdCRRequestDailyQuestRewardOK
   {
     return Command::AcCmdCRRequestDailyQuestRewardOK;
   }
+};
+  
+//! Reader a command from a provided source stream.
+//! @param command Command.
+//! @param stream Source stream.
+static void Read(
+    AcCmdCRUpdateMountInfoOK& command,
+    SourceStream& stream);
+
+struct AcCmdCRMountInjuryHealOK
+{
+  uint32_t horseUid{};
+  uint32_t unk1{};
+  uint8_t unk2{};
+  uint32_t updatedCarrotCount{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRMountInjuryHealOK;
+  }
 
   //! Writes the command to a provided sink stream.
   //! @param command Command.
@@ -4356,12 +4397,26 @@ struct AcCmdCRRequestDailyQuestRewardOK
   static void Write(
     const AcCmdCRRequestDailyQuestRewardOK& command,
     SinkStream& stream);
+  
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRMountInjuryHealOK& command,
+    SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
     AcCmdCRRequestDailyQuestRewardOK& command,
+    SourceStream& stream);
+      
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRMountInjuryHealOK& command,
     SourceStream& stream);
 };
 

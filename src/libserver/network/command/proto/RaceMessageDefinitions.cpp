@@ -73,10 +73,10 @@ void WriteRacer(SinkStream& stream, const Racer& racer)
     .Write(racer.guild.val5)
     .Write(racer.guild.val6);
   stream.Write(racer.unk9);
-  stream.Write(racer.unk10)
+  stream.Write(racer.role)
     .Write(racer.unk11)
     .Write(racer.unk12)
-    .Write(racer.unk13);
+    .Write(racer.gender);
 }
 
 void WriteRoomDescription(SinkStream& stream, const RoomDescription& roomDescription)
@@ -218,9 +218,9 @@ void AcCmdCRChangeRoomOptions::Read(
   {
     stream.Read(command.mapBlockId);
   }
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::NPCRace)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::NpcDifficulty)
   {
-    stream.Read(command.npcRace);
+    stream.Read(command.npcDifficulty);
   }
 }
 
@@ -249,9 +249,9 @@ void AcCmdCRChangeRoomOptionsNotify::Write(
   {
     stream.Write(command.mapBlockId);
   }
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::NPCRace)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::NpcDifficulty)
   {
-    stream.Write(command.npcRace);
+    stream.Write(command.npcDifficulty);
   }
 }
 
@@ -719,11 +719,11 @@ void AcCmdCRRaceResultOK::Write(
   const AcCmdCRRaceResultOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.member1)
-    .Write(command.member2)
-    .Write(command.member3)
+  stream.Write(command.recordGhostReplay)
+    .Write(command.resultKey)
+    .Write(command.horseFatigue)
     .Write(command.member4)
-    .Write(command.member5)
+    .Write(command.notifyMountEmblemUnlock)
     .Write(command.currentCarrots);
 }
 
@@ -755,12 +755,12 @@ void AcCmdRCRaceResultNotify::Write(
       .Write(score.member12)
       .Write(score.recordTimeDifference)
       .Write(score.member14)
-      .Write(score.member15)
+      .Write(score.horseClassProgress)
       .Write(score.achievements)
       .Write(score.bitset)
       .Write(score.mountName)
-      .Write(score.member19)
-      .Write(score.member20)
+      .Write(score.growthPoints)
+      .Write(score.horseClass)
       .Write(score.bonusCarrots)
       .Write(score.member22)
       .Write(score.member23)
@@ -1025,7 +1025,7 @@ void AcCmdCRRequestMagicItem::Read(
   AcCmdCRRequestMagicItem& command,
   SourceStream& stream)
 {
-  stream.Read(command.member1)
+  stream.Read(command.characterOid)
     .Read(command.member2);
 }
 
@@ -1033,8 +1033,8 @@ void AcCmdCRRequestMagicItemOK::Write(
   const AcCmdCRRequestMagicItemOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.member1)
-    .Write(command.member2)
+  stream.Write(command.characterOid)
+    .Write(command.magicItemId)
     .Write(command.member3);
 }
 
@@ -1049,8 +1049,8 @@ void AcCmdCRRequestMagicItemNotify::Write(
   const AcCmdCRRequestMagicItemNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.member1)
-    .Write(command.member2);
+  stream.Write(command.magicItemId)
+    .Write(command.characterOid);
 }
 
 void AcCmdCRRequestMagicItemNotify::Read(
@@ -1250,8 +1250,7 @@ void AcCmdUserRaceActivateEvent::Write(
   const AcCmdUserRaceActivateEvent& command,
   SinkStream& stream)
 {
-  stream.Write(command.eventId)
-    .Write(command.characterOid);
+  stream.Write(command.eventId);
 }
 
 void AcCmdUserRaceActivateEvent::Read(
@@ -1259,6 +1258,52 @@ void AcCmdUserRaceActivateEvent::Read(
   SourceStream& stream)
 {
   stream.Read(command.eventId);
+}
+
+void AcCmdUserRaceActivateEventNotify::Write(
+  const AcCmdUserRaceActivateEventNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.eventId)
+    .Write(command.characterOid);
+}
+
+void AcCmdUserRaceActivateEventNotify::Read(
+  AcCmdUserRaceActivateEventNotify& command,
+  SourceStream& stream)
+{
+  stream.Read(command.eventId)
+    .Read(command.characterOid);
+}
+
+void AcCmdUserRaceDeactivateEvent::Write(
+  const AcCmdUserRaceDeactivateEvent& command,
+  SinkStream& stream)
+{
+  stream.Write(command.eventId);
+}
+
+void AcCmdUserRaceDeactivateEvent::Read(
+  AcCmdUserRaceDeactivateEvent& command,
+  SourceStream& stream)
+{
+  stream.Read(command.eventId);
+}
+
+void AcCmdUserRaceDeactivateEventNotify::Write(
+  const AcCmdUserRaceDeactivateEventNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.eventId)
+    .Write(command.characterOid);
+}
+
+void AcCmdUserRaceDeactivateEventNotify::Read(
+  AcCmdUserRaceDeactivateEventNotify& command,
+  SourceStream& stream)
+{
+  stream.Read(command.eventId)
+    .Read(command.characterOid);
 }
 
 void AcCmdCRUseMagicItem::Write(
@@ -1299,6 +1344,7 @@ void AcCmdCRUseMagicItem::Read(
     case 0xd:
     case 0xe:
     case 0xf:
+    case 0x10:
     case 0x11:
     case 0x12:
     case 0x13:
@@ -1313,30 +1359,22 @@ void AcCmdCRUseMagicItem::Read(
       }
       break;
     }
-    default:
-    {
-      break;
-    }
   }
 
   stream.Read(command.unk3);
-  // FIXME: wtf am i switching
   switch (command.magicItemId)
   {
     case 0x2:
     case 0x3:
     case 0xe:
     case 0xf:
+    case 0x10:
     case 0x11:
     case 0x12:
     case 0x13:
     {
-      stream.Read(command.optional3.emplace())
-        .Read(command.optional4.emplace());
-      break;
-    }
-    default:
-    {
+      stream.Read(command.optional3.emplace().member1)
+        .Read(command.optional3.value().member2);
       break;
     }
   }
@@ -1388,6 +1426,7 @@ void AcCmdCRUseMagicItemOK::Write(
     case 0xd:
     case 0xe:
     case 0xf:
+    case 0x10:
     case 0x11:
     case 0x12:
     case 0x13:
@@ -1488,45 +1527,70 @@ void AcCmdCRStartMagicTarget::Read(
   AcCmdCRStartMagicTarget& command,
   SourceStream& stream)
 {
-  stream.Read(command.characterOid);
+  stream.Read(command.characterOid)
+    .Read(command.unk1)
+    .Read(command.unk2)
+    .Read(command.unk3);
+}
+
+void AcCmdCRChangeMagicTarget::Read(
+  AcCmdCRChangeMagicTarget& command,
+  SourceStream& stream)
+{
+  stream.Read(command.unk0)
+    .Read(command.unk1)
+    .Read(command.oldTargetOid)
+    .Read(command.newTargetOid);
 }
 
 void AcCmdCRChangeMagicTargetNotify::Write(
   const AcCmdCRChangeMagicTargetNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.characterOid)
-    .Write(command.targetOid);
+  stream.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.oldTargetOid)
+    .Write(command.newTargetOid);
 }
 
 void AcCmdCRChangeMagicTargetNotify::Read(
   AcCmdCRChangeMagicTargetNotify& command,
   SourceStream& stream)
 {
-  stream.Read(command.characterOid)
-    .Read(command.targetOid);
+  stream.Read(command.unk0)
+    .Read(command.unk1)
+    .Read(command.oldTargetOid)
+    .Read(command.newTargetOid);
 }
 
-void AcCmdCRChangeMagicTargetOK::Read(
-  AcCmdCRChangeMagicTargetOK& command,
-  SourceStream& stream)
+void AcCmdCRChangeMagicTargetOK::Write(
+  const AcCmdCRChangeMagicTargetOK& command,
+  SinkStream& stream)
 {
-  stream.Read(command.characterOid)
-    .Read(command.targetOid);
+  stream.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.oldTargetOid)
+    .Write(command.newTargetOid);
 }
 
-void AcCmdCRChangeMagicTargetCancel::Read(
-  AcCmdCRChangeMagicTargetCancel& command,
-  SourceStream& stream)
+void AcCmdCRChangeMagicTargetCancel::Write(
+  const AcCmdCRChangeMagicTargetCancel& command,
+  SinkStream& stream)
 {
-  stream.Read(command.characterOid);
+  stream.Write(command.characterOid)
+    .Write(command.unk1)
+    .Write(command.unk2)
+    .Write(command.unk3);
 }
 
 void AcCmdRCRemoveMagicTarget::Write(
   const AcCmdRCRemoveMagicTarget& command,
   SinkStream& stream)
 {
-  stream.Write(command.characterOid);
+  stream.Write(command.characterOid)
+    .Write(command.unk1)
+    .Write(command.unk2)
+    .Write(command.unk3);
 }
 
 void AcCmdRCMagicExpire::Write(
@@ -1567,6 +1631,7 @@ void AcCmdCRUseMagicItemNotify::Write(
     case 0xd:
     case 0xe:
     case 0xf:
+    case 0x10:
     case 0x11:
     case 0x12:
     case 0x13:
@@ -1587,32 +1652,9 @@ void AcCmdCRUseMagicItemNotify::Write(
       break;
     }
   }
-
-  // FIXME: wtf am i switching
-  switch (command.magicItemId)
-  {
-    case 0x2:
-    case 0x3:
-    case 0xe:
-    case 0xf:
-    case 0x11:
-    case 0x12:
-    case 0x13:
-    {
-      // Assert that optional3 and optional4 have values
-      assert(command.optional3.has_value());
-      assert(command.optional4.has_value());
-      stream.Write(command.optional3.value())
-        .Write(command.optional4.value());
-      break;
-    }
-    default:
-    {
-      break;
-    }
-  }
-
-  stream.Write(command.unk3);
+  
+  stream.Write(command.unk3)
+    .Write(command.unk4);
 }
 
 void AcCmdCRUseMagicItemNotify::Read(
@@ -1663,27 +1705,8 @@ void AcCmdCRUseMagicItemNotify::Read(
     }
   }
 
-  stream.Read(command.unk3);
-  // FIXME: wtf am i switching
-  switch (command.magicItemId)
-  {
-    case 0x2:
-    case 0x3:
-    case 0xe:
-    case 0xf:
-    case 0x11:
-    case 0x12:
-    case 0x13:
-    {
-      stream.Read(command.optional3.emplace())
-        .Read(command.optional4.emplace());
-      break;
-    }
-    default:
-    {
-      break;
-    }
-  }
+  stream.Read(command.unk3)
+    .Read(command.unk4);
 }
 
 void AcCmdRCTriggerActivate::Write(
@@ -1710,18 +1733,20 @@ void AcCmdCRActivateSkillEffect::Write(
   const AcCmdCRActivateSkillEffect& command,
   SinkStream& stream)
 {
-  stream.Write(command.characterOid)
-    .Write(command.skillId)
-    .Write(command.unk1)
-    .Write(command.unk2);
+  stream.Write(command.targetOid)
+    .Write(command.effectId)
+    .Write(command.attackerOid)
+    .Write(command.unk2)
+    .Write(command.unk1);
 }
 
 void AcCmdCRActivateSkillEffect::Read(
   AcCmdCRActivateSkillEffect& command,
   SourceStream& stream)
 {
-  stream.Read(command.characterOid)
-    .Read(command.skillId)
+  stream.Read(command.targetOid)
+    .Read(command.effectId)
+    .Read(command.attackerOid)
     .Read(command.unk1)
     .Read(command.unk2);
 }
@@ -1732,8 +1757,27 @@ void AcCmdRCAddSkillEffect::Write(
 {
   stream.Write(command.characterOid)
     .Write(command.effectId)
-    .Write(command.duration)
-    .Write(command.intensity);
+    .Write(command.targetOid)
+    .Write(command.attackerOid)
+    .Write(command.unk2)
+    .Write(command.unk3)
+    .Write(command.unk4);
+
+  switch(command.effectId)
+  {
+    case 2:
+    case 3:
+      stream.Write(command.defenseMagicEffect.value().unk0)
+        .Write(command.defenseMagicEffect.value().unk1);
+      break;
+    case 5:
+    case 6:
+    case 7:
+    case 22:
+    case 23:
+      stream.Write(command.attackMagicEffect.value());
+      break;
+  }
 }
 
 void AcCmdRCAddSkillEffect::Read(
@@ -1742,8 +1786,47 @@ void AcCmdRCAddSkillEffect::Read(
 {
   stream.Read(command.characterOid)
     .Read(command.effectId)
-    .Read(command.duration)
-    .Read(command.intensity);
+    .Read(command.targetOid)
+    .Read(command.attackerOid)
+    .Read(command.unk2)
+    .Read(command.unk3)
+    .Read(command.unk4);
+  
+  switch(command.effectId)
+  {
+    case 2:
+    case 3:
+      stream.Read(command.defenseMagicEffect.emplace().unk0)
+        .Read(command.defenseMagicEffect.value().unk1);
+      break;
+    case 5:
+    case 6:
+    case 7:
+    case 22:
+    case 23:
+      stream.Read(command.attackMagicEffect.emplace());
+      break;
+  }
+}
+
+void AcCmdRCRemoveSkillEffect::Write(
+  const AcCmdRCRemoveSkillEffect& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterOid)
+    .Write(command.effectId)
+    .Write(command.targetOid)
+    .Write(command.unk1);
+}
+
+void AcCmdRCRemoveSkillEffect::Read(
+  AcCmdRCRemoveSkillEffect& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterOid)
+    .Read(command.effectId)
+    .Read(command.targetOid)
+    .Read(command.unk1);
 }
 
 void AcCmdCRChangeSkillCardPresetID::Write(
@@ -1762,6 +1845,28 @@ void AcCmdCRChangeSkillCardPresetID::Read(
   stream.Read(command.setId)
     .Read(commandGameMode);
   command.gamemode = static_cast<GameMode>(commandGameMode);
+}
+
+void AcCmdRCCreateObstacle::Write(
+  const AcCmdRCCreateObstacle& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.unk2);
+  for (const float& value : command.position)
+  {
+    stream.Write(value);
+  }
+}
+
+void AcCmdRCObstacleStatus::Write(
+  const AcCmdRCObstacleStatus& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.deactivate)
+    .Write(command.unk2);
 }
 
 } // namespace server::protocol

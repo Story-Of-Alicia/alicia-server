@@ -18,6 +18,8 @@
  **/
 
 #include "libserver/data/DataDirector.hpp"
+
+#include "libserver/data/file/FileDataSource.hpp"
 #include "libserver/util/Deferred.hpp"
 
 #include <spdlog/spdlog.h>
@@ -559,7 +561,10 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
       })
 {
   _primaryDataSource = std::make_unique<FileDataSource>();
-  _primaryDataSource->Initialize(basePath);
+  if (auto* fileDataSource = dynamic_cast<FileDataSource*>(_primaryDataSource.get()))
+  {
+    fileDataSource->Initialize(basePath);
+  }
 }
 
 DataDirector::~DataDirector()
@@ -592,7 +597,10 @@ void DataDirector::Terminate()
     spdlog::error("Unhandled in exception while terminating data director: {}", x.what());
   }
 
-  _primaryDataSource->Terminate();
+  if (auto* fileDataSource = dynamic_cast<FileDataSource*>(_primaryDataSource.get()))
+  {
+    fileDataSource->Terminate();
+  }
 }
 
 void DataDirector::Tick()
@@ -1008,6 +1016,9 @@ Record<data::DailyQuest> DataDirector::CreateDailyQuest() noexcept
 DataDirector::DailyQuestStorage& DataDirector::GetDailyQuestCache()
 {
   return _dailyQuestStorage;
+DataSource& DataDirector::GetDataSource() noexcept
+{
+  return *_primaryDataSource.get();
 }
 
 void DataDirector::ScheduleCharacterLoad(

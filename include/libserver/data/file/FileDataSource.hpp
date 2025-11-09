@@ -35,8 +35,10 @@ public:
   void Initialize(const std::filesystem::path& path);
   void Terminate();
 
-  void RetrieveUser(std::string name, data::User& user) override;
-  void StoreUser(std::string name, const data::User& user) override;
+  void CreateUser(data::User& user) override;
+  void RetrieveUser(const std::string_view& name, data::User& user) override;
+  void StoreUser(const std::string_view& name, const data::User& user) override;
+  bool IsUserNameUnique(const std::string_view& name) override;
 
   void CreateInfraction(data::Infraction& infraction) override;
   void RetrieveInfraction(data::Uid uid, data::Infraction& infraction) override;
@@ -47,6 +49,7 @@ public:
   void RetrieveCharacter(data::Uid uid, data::Character& character) override;
   void StoreCharacter(data::Uid uid, const data::Character& character) override;
   void DeleteCharacter(data::Uid uid) override;
+  bool IsCharacterNameUnique(const std::string_view& name) override;
 
   void CreateHorse(data::Horse& horse) override;
   void RetrieveHorse(data::Uid uid, data::Horse& horse) override;
@@ -82,6 +85,7 @@ public:
   void RetrieveGuild(data::Uid uid, data::Guild& guild) override;
   void StoreGuild(data::Uid uid, const data::Guild& guild) override;
   void DeleteGuild(data::Uid uid) override;
+  bool IsGuildNameUnique(const std::string_view& name) override;
 
   void CreateSettings(data::Settings& settings) override;
   void RetrieveSettings(data::Uid uid, data::Settings& settings) override;

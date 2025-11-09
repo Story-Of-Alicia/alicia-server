@@ -392,6 +392,7 @@ enum class Command : uint16_t
   AcCmdCRMountFamilyTree = 0x21d,
   AcCmdCRMountFamilyTreeOK = 0x21e,
   AcCmdCRMountFamilyTreeCancel = 0x21f,
+  AcCmdCRChangeMagicTarget = 0x22c,
   AcCmdCRChangeMagicTargetOK = 0x22d,
   AcCmdCRChangeMagicTargetCancel = 0x22e,
   AcCmdCRChangeMagicTargetNotify = 0x22f,

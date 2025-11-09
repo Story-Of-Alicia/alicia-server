@@ -73,7 +73,7 @@ public:
     uint32_t maxPlayerCount{};
     GameMode gameMode{};
     TeamMode teamMode{};
-    bool member11{};
+    uint8_t npcDifficulty{};
     uint8_t skillBracket{};
   };
 

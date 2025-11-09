@@ -345,6 +345,7 @@ const std::unordered_map<Command, std::string_view> commands = {
   {Command::AcCmdCRMountFamilyTree, "AcCmdCRMountFamilyTree"},
   {Command::AcCmdCRMountFamilyTreeOK, "AcCmdCRMountFamilyTreeOK"},
   {Command::AcCmdCRMountFamilyTreeCancel, "AcCmdCRMountFamilyTreeCancel"},
+  {Command::AcCmdCRChangeMagicTarget, "AcCmdCRChangeMagicTarget"},
   {Command::AcCmdCRChangeMagicTargetOK, "AcCmdCRChangeMagicTargetOK"},
   {Command::AcCmdCRChangeMagicTargetCancel, "AcCmdCRChangeMagicTargetCancel"},
   {Command::AcCmdCRChangeMagicTargetNotify, "AcCmdCRChangeMagicTargetNotify"},
