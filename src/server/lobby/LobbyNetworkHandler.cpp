@@ -1281,7 +1281,7 @@ void LobbyNetworkHandler::HandleCreateNickname(
   auto& clientContext = GetClientContext(clientId);
 
   const bool isValidNickname = locale::IsNameValid(command.nickname, 16)
-    && _serverInstance.GetDataDirector().GetDataSource().IsCharacterNameUnique(command.nickname);
+    && _serverInstance.GetDataDirector().GetDataSource().IsCharacterNameUnique(command.nickname) == data::InvalidUid;
 
   if (not isValidNickname)
   {

@@ -80,8 +80,8 @@ public:
   //! @param uid UID of the character.
   virtual void DeleteCharacter(data::Uid uid) = 0;
   //! Returns whether the character name is unique.
-  //! @return `true` if the character name is unique, otherwise returns `false`.
-  virtual bool IsCharacterNameUnique(const std::string_view& name) = 0;
+  //! @return `server::data::InvalidUid` if the character name is unique, otherwise returns the existing character UID.
+  virtual server::data::Uid IsCharacterNameUnique(const std::string_view& name) = 0;
 
   //! Creates the horse in the data source.
   //! @param horse Horse to create.

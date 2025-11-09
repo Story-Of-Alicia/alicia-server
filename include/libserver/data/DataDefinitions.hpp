@@ -321,6 +321,7 @@ struct Character
 
   struct Mailbox
   {
+    dao::Field<bool> hasNewMail{false};
     dao::Field<std::vector<Uid>> inbox{};
     dao::Field<std::vector<Uid>> sent{};
   } mailbox{};

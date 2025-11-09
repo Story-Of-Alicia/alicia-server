@@ -322,6 +322,7 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   readSkills(character.skills.magic(), skills["magic"]);
 
   const auto& mailbox = json["mailbox"];
+  character.mailbox.hasNewMail = mailbox["hasNewMail"].get<bool>();
   character.mailbox.inbox = mailbox["inbox"].get<std::vector<data::Uid>>();
   character.mailbox.sent = mailbox["sent"].get<std::vector<data::Uid>>();
 }
@@ -415,6 +416,7 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["skills"] = skills;
 
   nlohmann::json mailbox;
+  mailbox["hasNewMail"] = character.mailbox.hasNewMail();
   mailbox["inbox"] = character.mailbox.inbox();
   mailbox["sent"] = character.mailbox.sent();
   json["mailbox"] = mailbox;
@@ -429,7 +431,7 @@ void server::FileDataSource::DeleteCharacter(data::Uid uid)
   std::filesystem::remove(dataFilePath);
 }
 
-bool server::FileDataSource::IsCharacterNameUnique(const std::string_view& name)
+server::data::Uid server::FileDataSource::IsCharacterNameUnique(const std::string_view& name)
 {
   const std::regex rg(
     std::format("{}", name),
@@ -448,10 +450,10 @@ bool server::FileDataSource::IsCharacterNameUnique(const std::string_view& name)
     const auto existingCharacterName = json["name"].get<std::string>();
 
     if (std::regex_match(existingCharacterName, rg))
-      return false;
+      return json["uid"].get<server::data::Uid>();
   }
 
-  return true;
+  return server::data::InvalidUid;
 }
 
 void server::FileDataSource::CreateHorse(data::Horse& horse)
