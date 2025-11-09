@@ -44,6 +44,22 @@ enum class MailboxFolder : uint8_t
   Inbox = 2
 };
 
+//! Dictates whether or not the inbox mail can be replied to, including System mails.
+enum class MailType : uint32_t
+{
+  CanReply = 0,
+  NoReply = 1,
+  CarnivalReward = 2, //! Requests AcCmdCLRequestFestivalResult
+  BreedingReward = 3, //! Requests AcCmdCRBreedingTakeMoney
+};
+
+//! Mail type.
+enum class MailOrigin : uint32_t
+{
+  Character = 0,
+  System = 1
+};
+
 //! Custom server defined error codes. Does not correspond with any value on the client.
 enum class ChatterErrorCode : uint32_t
 {
@@ -196,22 +212,8 @@ struct ChatCmdLetterListAckOk
   {
     //! Mail UID.
     uint32_t mailUid{};
-
-    //! Dictates whether or not the inbox mail can be replied to, including System mails.
-    enum class MailType : uint32_t
-    {
-      CanReply = 0,
-      NoReply = 1,
-      CarnivalReward = 2, //! Requests AcCmdCLRequestFestivalResult
-      BreedingReward = 3, //! Requests AcCmdCRBreedingTakeMoney
-    } mailType{MailType::NoReply};
-    
-    //! Mail type.
-    enum class MailOrigin : uint32_t
-    {
-      Character = 0,
-      System = 1
-    } mailOrigin{MailOrigin::Character};
+    MailType mailType{};
+    MailOrigin mailOrigin{};
 
     //! Who sent the mail.
     std::string sender{};
@@ -314,6 +316,31 @@ struct ChatCmdLetterSendAckCancel
 
   static void Read(
     ChatCmdLetterSendAckCancel& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdLetterArriveTrs
+{
+  // Note: almost identical to InboxMail with the extra std::string missing
+  uint32_t mailUid{};
+  MailType mailType{};
+  MailOrigin mailOrigin{};
+
+  std::string sender{};
+  std::string date{};
+  std::string body{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdLetterArriveTrs;
+  }
+
+  static void Write(
+    const ChatCmdLetterArriveTrs& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdLetterArriveTrs& command,
     SourceStream& stream);
 };
 

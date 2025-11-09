@@ -254,8 +254,8 @@ void MessengerDirector::HandleChatterLetterList(
             response.inboxMails.emplace_back(InboxMail{
               InboxMail{
                 .mailUid = mail.uid(),
-                .mailType = InboxMail::MailType::CanReply, // TODO: store in mail
-                .mailOrigin = InboxMail::MailOrigin::Character, // TODO: store in mail
+                .mailType = protocol::MailType::CanReply, // TODO: store in mail
+                .mailOrigin = protocol::MailOrigin::Character, // TODO: store in mail
                 .sender = mail.name(),
                 .date = mail.date(),
                 .struct0 = InboxMail::Struct0{
@@ -371,6 +371,29 @@ void MessengerDirector::HandleChatterLetterSend(
   _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 
   // TODO: alert recipient of new mail if they are online
+  // Check if recipient is online for live mail delivery
+  auto client = std::ranges::find_if(
+    _clients,
+    [&recipientCharacterUid](const std::pair<network::ClientId, ClientContext>& client)
+    {
+      return client.second.characterUid == recipientCharacterUid;
+    });
+
+  if (client == _clients.cend())
+    // Character is not online, all good and handled
+    return;
+
+  protocol::ChatCmdLetterArriveTrs notify{
+    .mailUid = mailUid,
+    .mailType = protocol::MailType::CanReply,
+    .mailOrigin = protocol::MailOrigin::Character,
+    .sender = senderName,
+    .date = formattedDt,
+    .body = command.body
+  };
+
+  const auto& recipientClientId = client->first;
+  _chatterServer.QueueCommand<decltype(notify)>(recipientClientId, [notify](){ return notify; });
 }
 
 void MessengerDirector::HandleChatterGuildLogin(
