@@ -44,6 +44,16 @@ enum class MailboxFolder : uint8_t
   Inbox = 2
 };
 
+//! Custom server defined error codes. Does not correspond with any value on the client.
+enum class ChatterErrorCode : uint32_t
+{
+  LoginFailed = 1,
+  CommandCharacterIsNotClientCharacter = 2,
+  CharacterDoesNotExist = 3,
+  GuildLoginClientNotAuthenticated = 4,
+  GuildLoginCharacterNotGuildMember = 5
+};
+
 struct ChatCmdLogin
 {
   uint32_t characterUid{};
@@ -117,18 +127,19 @@ struct ChatCmdLoginAckOK
 
 struct ChatCmdLoginAckCancel
 {
-  uint32_t member1{};
+  //! Custom error code.
+  ChatterErrorCode errorCode{};
 
-  ChatterCommand GetCommand()
+  static ChatterCommand GetCommand()
   {
     return ChatterCommand::ChatCmdLoginAckCancel;
   }
 
-  void Write(
+  static void Write(
     const ChatCmdLoginAckCancel& command,
     SinkStream& stream);
 
-  void Read(
+  static void Read(
     ChatCmdLoginAckCancel& command,
     SourceStream& stream);
 };
@@ -287,6 +298,25 @@ struct ChatCmdLetterSendAckOk
     SourceStream& stream);
 };
 
+struct ChatCmdLetterSendAckCancel
+{
+  //! Custom error code.
+  ChatterErrorCode errorCode{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdLetterSendAckCancel;
+  }
+
+  static void Write(
+    const ChatCmdLetterSendAckCancel& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdLetterSendAckCancel& command,
+    SourceStream& stream);
+};
+
 struct ChatCmdGuildLogin : ChatCmdLogin
 {
   // ChatCmdGuildLogin shares the same payload as ChatCmdLogin
@@ -305,7 +335,7 @@ struct ChatCmdGuildLogin : ChatCmdLogin
     SourceStream& stream);
 };
 
-struct ChatCmdGuildLoginOK
+struct ChatCmdGuildLoginAckOK
 {
   struct GuildMember
   {
@@ -345,11 +375,30 @@ struct ChatCmdGuildLoginOK
   }
 
   static void Write(
-    const ChatCmdGuildLoginOK& command,
+    const ChatCmdGuildLoginAckOK& command,
     SinkStream& stream);
 
   static void Read(
-    ChatCmdGuildLoginOK& command,
+    ChatCmdGuildLoginAckOK& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdGuildLoginAckCancel
+{
+  //! Custom error code.
+  ChatterErrorCode errorCode{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdGuildLoginAckCancel;
+  }
+
+  static void Write(
+    const ChatCmdGuildLoginAckCancel& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdGuildLoginAckCancel& command,
     SourceStream& stream);
 };
 
