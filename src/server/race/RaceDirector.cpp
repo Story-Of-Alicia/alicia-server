@@ -230,17 +230,17 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
       HandleUserRaceActivateInteractiveEvent(clientId, message);
     });
 
-  _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceActivateEvent>(
-    [this](ClientId clientId, const auto& message)
-     {
-       HandleUserRaceActivateEvent(clientId, message);
-     });
+  // _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceActivateEvent>(
+  //   [this](ClientId clientId, const auto& message)
+  //    {
+  //      HandleUserRaceActivateEvent(clientId, message);
+  //    });
 
-  _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceDeactivateEvent>(
-    [this](ClientId clientId, const auto& message)
-    {
-      HandleUserRaceDeactivateEvent(clientId, message);
-    });
+  // _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceDeactivateEvent>(
+  //   [this](ClientId clientId, const auto& message)
+  //   {
+  //     HandleUserRaceDeactivateEvent(clientId, message);
+  //   });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestMagicItem>(
     [this](ClientId clientId, const auto& message)
