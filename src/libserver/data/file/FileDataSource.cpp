@@ -1183,7 +1183,7 @@ void server::FileDataSource::CreateDailyQuest(data::DailyQuest& dailyQuest)
 
 void server::FileDataSource::RetrieveDailyQuest(data::Uid uid, data::DailyQuest& dailyQuest)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _dailyQuestDataPath, std::format("{}", uid));
 
   std::ifstream dataFile(dataFilePath);
@@ -1203,7 +1203,7 @@ void server::FileDataSource::RetrieveDailyQuest(data::Uid uid, data::DailyQuest&
 
 void server::FileDataSource::StoreDailyQuest(data::Uid uid, const data::DailyQuest& dailyQuest)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _dailyQuestDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
@@ -1225,7 +1225,7 @@ void server::FileDataSource::StoreDailyQuest(data::Uid uid, const data::DailyQue
 
 void server::FileDataSource::DeleteDailyQuest(data::Uid uid)
 {
-  const std::filesystem::path dataFilePath = ProduceDataPath(
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _dailyQuestDataPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
 }

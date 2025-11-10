@@ -1016,6 +1016,8 @@ Record<data::DailyQuest> DataDirector::CreateDailyQuest() noexcept
 DataDirector::DailyQuestStorage& DataDirector::GetDailyQuestCache()
 {
   return _dailyQuestStorage;
+}
+
 DataSource& DataDirector::GetDataSource() noexcept
 {
   return *_primaryDataSource.get();

@@ -4207,6 +4207,23 @@ struct AcCmdCRUpdateDailyQuestCancel
   static Command GetCommand()
   {
     return Command::AcCmdCRUpdateDailyQuestCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUpdateDailyQuestCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUpdateDailyQuestCancel& command,
+    SourceStream& stream);
+};
+
 struct AcCmdCRUpdateMountInfoOK
 {
   uint8_t unk0{};
@@ -4221,10 +4238,6 @@ struct AcCmdCRUpdateMountInfoOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const AcCmdCRUpdateDailyQuestCancel& command,
-    SinkStream& stream);
- 
-  static void Write(
     const AcCmdCRUpdateMountInfoOK& command,
     SinkStream& stream);
 
@@ -4232,7 +4245,7 @@ struct AcCmdCRUpdateMountInfoOK
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    AcCmdCRUpdateDailyQuestCancel& command,
+    AcCmdCRUpdateMountInfoOK& command,
     SourceStream& stream);
 };
 
@@ -4370,14 +4383,21 @@ struct AcCmdCRRequestDailyQuestRewardOK
   {
     return Command::AcCmdCRRequestDailyQuestRewardOK;
   }
-};
-  
-//! Reader a command from a provided source stream.
-//! @param command Command.
-//! @param stream Source stream.
-static void Read(
-    AcCmdCRUpdateMountInfoOK& command,
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestDailyQuestRewardOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestDailyQuestRewardOK& command,
     SourceStream& stream);
+};
 
 struct AcCmdCRMountInjuryHealOK
 {
@@ -4389,6 +4409,31 @@ struct AcCmdCRMountInjuryHealOK
   static Command GetCommand()
   {
     return Command::AcCmdCRMountInjuryHealOK;
+  }
+  
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRMountInjuryHealOK& command,
+    SinkStream& stream);
+      
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRMountInjuryHealOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRegisterQuest
+{
+  uint16_t unk0; //questTid?
+  uint32_t unk1; //npcId?
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRegisterQuest;
   }
 
   //! Writes the command to a provided sink stream.

@@ -616,11 +616,12 @@ struct DailyQuest
 {
   uint16_t questId;
   uint32_t unk_1;
-  uint8_t unk_2; //type of reward: 1 = carrots, 2 = exp
+  uint8_t unk_2; // type of reward: 1 = carrots, 2 = exp
   uint8_t unk_3;
 
   static void Write(const DailyQuest& value, SinkStream& stream);
   static void Read(DailyQuest& value, SourceStream& stream);
+};
   
 // HorseNameStrings
 enum class HorseRenameError : uint8_t
