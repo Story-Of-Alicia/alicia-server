@@ -4312,21 +4312,27 @@ void RanchDirector::HandleRegisterDailyQuestGroup(
         dailyQuests = character.dailyQuests();
       }
       else
-      {
-        uint32_t start = (character.uid() - 1)*3 + 1;
         character.dailyQuests() = {start, start + 1, start + 2};
         dailyQuests = character.dailyQuests();
-      }
     });
 
   if (!hasDailyQuests)
   {
     for (auto& quest : command.dailyQuests)
     {
+      data::Uid questUid = data::InvalidUid;
       const auto dailyQuestRecord = GetServerInstance().GetDataDirector().CreateDailyQuest();
       dailyQuestRecord.Mutable(
-        [&quest](data::DailyQuest& dailyQuest)
+        [&quest, &questUid, &characterRecord](data::DailyQuest& dailyQuest)
         {
+          questUid = dailyQuest.uid();
+          
+          characterRecord.Mutable(
+            [&questUid](data::Character& character)
+            {
+              character.dailyQuests().emplace_back(questUid);
+            });
+
           dailyQuest.unk_0 = quest.questId;
           dailyQuest.unk_1 = quest.unk_1;
           dailyQuest.unk_2 = quest.unk_2;
