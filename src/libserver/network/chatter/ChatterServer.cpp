@@ -29,6 +29,13 @@ namespace server
 namespace
 {
 
+// The base XOR scrambling constant, which seems to not roll.
+constexpr std::array XorCode{
+  static_cast<std::byte>(0x2B),
+  static_cast<std::byte>(0xFE),
+  static_cast<std::byte>(0xB8),
+  static_cast<std::byte>(0x02)};
+
 // todo: de/serializer map, handler map
 
 } // anon namespace
@@ -86,45 +93,58 @@ size_t ChatterServer::OnClientData(
 {
   SourceStream commandStream{data};
 
-  // The base XOR scrambling constant, which seems to not roll.
-  constexpr std::array XorCode{
-    static_cast<std::byte>(0x2B),
-    static_cast<std::byte>(0xFE),
-    static_cast<std::byte>(0xB8),
-    static_cast<std::byte>(0x02)};
-
-  protocol::ChatterCommandHeader header;
-  commandStream.Read(header.length)
-    .Read(header.commandId);
-  header.length ^= *reinterpret_cast<const uint16_t*>(XorCode.data());
-  header.commandId ^= *reinterpret_cast<const uint16_t*>(XorCode.data() + 2);
-
-  if (header.commandId == static_cast<uint16_t>(
-    protocol::ChatterCommand::ChatCmdLogin))
+  while (commandStream.GetCursor() != commandStream.Size())
   {
-    std::vector<std::byte> commandData(header.length);
-    SinkStream commandDataSink({commandData.begin(), commandData.end()});
+    const auto origin = commandStream.GetCursor();
 
-    for (uint16_t idx = 0; idx < header.length - sizeof(protocol::ChatterCommandHeader); ++idx)
+    const auto bufferedDataSize = commandStream.Size() - commandStream.GetCursor();
+
+    // If there's not enough buffered data to read the header,
+    // break out of the loop.
+    if (bufferedDataSize < sizeof(protocol::ChatterCommandHeader))
+      break;
+
+    // Read the header.
+    protocol::ChatterCommandHeader header{};
+    commandStream.Read(header.length)
+      .Read(header.commandId);
+
+    // Decrypt the header.
+    header.length ^= *reinterpret_cast<const uint16_t*>(XorCode.data());
+    header.commandId ^= *reinterpret_cast<const uint16_t*>(XorCode.data() + 2);
+
+    // todo: verify length, verify command, consume the rest of data even if handler does not exist.
+
+    // There's not enough data to read the command.
+    if (bufferedDataSize < header.length)
     {
-      std::byte& val = commandData[idx];
-      commandStream.Read(val);
-      val ^= XorCode[(commandStream.GetCursor() - 1) % 4];
+      commandStream.Seek(origin);
+      break;
     }
 
-    SourceStream commandDataSource({commandData.begin(), commandData.end()});
-
-    if (header.commandId == 1)
+    if (header.commandId == static_cast<uint16_t>(
+      protocol::ChatterCommand::ChatCmdLogin))
     {
-      // todo: deserialization and handler call
-      protocol::ChatCmdLogin command;
-      commandDataSource.Read(command);
-      _chatterCommandHandler.HandleChatterLogin(clientId, command);
+      std::vector<std::byte> commandData(header.length);
+      SinkStream commandDataSink({commandData.begin(), commandData.end()});
+
+      for (uint16_t idx = 0; idx < header.length - sizeof(protocol::ChatterCommandHeader); ++idx)
+      {
+        std::byte& val = commandData[idx];
+        commandStream.Read(val);
+        val ^= XorCode[(commandStream.GetCursor() - 1) % 4];
+      }
+
+      SourceStream commandDataSource({commandData.begin(), commandData.end()});
+
+      if (header.commandId == 1)
+      {
+        // todo: deserialization and handler call
+        protocol::ChatCmdLogin command;
+        commandDataSource.Read(command);
+        _chatterCommandHandler.HandleChatterLogin(clientId, command);
+      }
     }
-  }
-  else
-  {
-    //spdlog::warn("Unhandled chatter: {}", header.commandId);
   }
 
   return commandStream.GetCursor();
