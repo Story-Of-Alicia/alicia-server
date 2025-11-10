@@ -1853,9 +1853,9 @@ void RanchDirector::HandleTryBreeding(
     }
     
     // Set up breeding failure card for the player
-    // Randomly determine card type: 50/50 chance between Normal (RED=0) and Chance (YELLOW=1)
-    std::uniform_int_distribution<int> cardTypeDist(0, 1);
-    uint8_t cardType = static_cast<uint8_t>(cardTypeDist(_randomDevice));
+    // Randomly determine card type: 15% Chance (YELLOW=1), 85% Normal (RED=0)
+    std::uniform_int_distribution<int> cardTypeDist(1, 100);
+    uint8_t cardType = static_cast<uint8_t>(cardTypeDist(_randomDevice) <= 15 ? 1 : 0);
     
     auto& ctx = GetClientContext(clientId);
     ctx.hasPendingFailureCard = true;
