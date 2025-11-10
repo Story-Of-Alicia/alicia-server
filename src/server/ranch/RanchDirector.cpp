@@ -1764,6 +1764,7 @@ void RanchDirector::HandleTryBreeding(
     int ratioBig;
   };
   
+  // BonusProbInfo in libconfig
   static const std::vector<BonusEntry> bonusTable = {
     {1, 0, 5, 10, 0},   {2, 0, 10, 30, 0},  {3, 0, 15, 35, 0},
     {4, 0, 20, 20, 0},  {5, 0, 40, 3, 0},   {6, 0, 50, 2, 0},
@@ -2282,7 +2283,7 @@ void RanchDirector::HandleBreedingFailureCardChoose(
   };
   
   // Breeding Failure Card Probability Table
-  // Source: libconfig_c.dat -> BreedingFailureCardProb table (XML)
+  // BreedingFailureCardProb in libconfig
   // 
   // This table determines the reward grade (quality tier) based on cumulative money spent on breeding.
   // As players spend more money, probabilities shift from Grade A (common) -> Grade B (uncommon) -> Grade C (rare)
@@ -2362,7 +2363,7 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     std::uniform_int_distribution<uint32_t> chanceDist(minReward, maxReward);
     rewardId = chanceDist(gen);
     
-    // Chance Card Reward Table (YELLOW cards)
+    // BreedingFailureCard_Chance in libconfig
     // Format: {RewardId, {ItemTid, ItemCount, CarrotBonus}}
     // RewardId 1-16: Grade A rewards (low-tier for yellow cards)
     // RewardId 17-32: Grade B rewards (mid-tier)
@@ -2407,7 +2408,7 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     std::uniform_int_distribution<uint32_t> normalDist(minReward, maxReward);
     rewardId = normalDist(gen);
     
-    // Normal Card Reward Table (RED cards)
+    // BreedingFailureCard_Normal in libconfig
     // Format: {RewardId, {ItemTid, ItemCount, CarrotBonus}}
     // RewardId 1-20: Grade A rewards (low-tier, 100-350 carrots)
     // RewardId 21-38: Grade B rewards (mid-tier, 300-1000 carrots)
