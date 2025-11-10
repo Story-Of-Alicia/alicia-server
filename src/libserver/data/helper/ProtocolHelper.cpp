@@ -105,6 +105,8 @@ void BuildProtocolHorseParts(
   bool isFoal)
 {
   // Helper function to map adult TIDs to foal-safe color TIDs
+  // TODO: This is causing a UI mismatch on the horse appearance info window.
+  //       Figure out a way to render foals' mane and tail and display UI correctly without crashing the client.
   auto MapToFoalColorTid = [](data::Tid adultTid) -> uint8_t
   {
     // Foals can only display colors 1-5
