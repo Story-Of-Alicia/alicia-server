@@ -169,6 +169,13 @@ size_t ChatterServer::OnClientData(
         _chatterCommandHandler.HandleChatterLetterSend(clientId, command);
         break;
       }
+      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdLetterRead):
+      {
+        protocol::ChatCmdLetterRead command;
+        commandDataSource.Read(command);
+        _chatterCommandHandler.HandleChatterLetterRead(clientId, command);
+        break;
+      }
       case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdGuildLogin):
       {
         protocol::ChatCmdGuildLogin command;
@@ -184,8 +191,7 @@ size_t ChatterServer::OnClientData(
     }
   }
 
-  // FIXME: correct this behaviour of not using the cursor
-  return data.size();
+  return commandStream.GetCursor();
 }
 
 network::asio::ip::address_v4 ChatterServer::GetClientAddress(const network::ClientId clientId)

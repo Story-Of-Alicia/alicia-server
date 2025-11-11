@@ -19,13 +19,6 @@ class MessengerDirector
   : private IChatterServerEventsHandler
   , private IChatterCommandHandler
 {
-public:
-  explicit MessengerDirector(ServerInstance& serverInstance);
-
-  void Initialize();
-  void Terminate();
-  void Tick();
-
 private:
   struct ClientContext
   {
@@ -37,6 +30,17 @@ private:
     protocol::Status status{protocol::Status::Hidden};
   };
 
+public:
+  explicit MessengerDirector(ServerInstance& serverInstance);
+
+  void Initialize();
+  void Terminate();
+  ClientContext& GetClientContext(
+    network::ClientId clientId,
+    bool requireAuthentication = true);
+  void Tick();
+
+private:
   Config::Messenger& GetConfig();
 
   void HandleClientConnected(network::ClientId clientId) override;
@@ -53,6 +57,10 @@ private:
   void HandleChatterLetterSend(
     network::ClientId clientId,
     const protocol::ChatCmdLetterSend& command) override;
+
+  void HandleChatterLetterRead(
+    network::ClientId clientId,
+    const protocol::ChatCmdLetterRead& command) override;
 
   void HandleChatterGuildLogin(
     network::ClientId clientId,

@@ -20,6 +20,7 @@
 #ifndef CHATTERMESSAGEDEFINITIONS_HPP
 #define CHATTERMESSAGEDEFINITIONS_HPP
 
+#include <libserver/data/DataDefinitions.hpp>
 #include <libserver/network/chatter/ChatterProtocol.hpp>
 #include <libserver/util/Stream.hpp>
 
@@ -44,30 +45,18 @@ enum class MailboxFolder : uint8_t
   Inbox = 2
 };
 
-//! Dictates whether or not the inbox mail can be replied to, including System mails.
-enum class MailType : uint32_t
-{
-  CanReply = 0,
-  NoReply = 1,
-  CarnivalReward = 2, //! Requests AcCmdCLRequestFestivalResult
-  BreedingReward = 3, //! Requests AcCmdCRBreedingTakeMoney
-};
-
-//! Mail type.
-enum class MailOrigin : uint32_t
-{
-  Character = 0,
-  System = 1
-};
-
 //! Custom server defined error codes. Does not correspond with any value on the client.
+//! The client displays this as "Server Error (code: x)"
 enum class ChatterErrorCode : uint32_t
 {
   LoginFailed = 1,
   CommandCharacterIsNotClientCharacter = 2,
   CharacterDoesNotExist = 3,
   GuildLoginClientNotAuthenticated = 4,
-  GuildLoginCharacterNotGuildMember = 5
+  GuildLoginCharacterNotGuildMember = 5,
+  MailInvalidUid = 6,
+  MailDoesNotExistOrNotAvailable = 7,
+  MailDoesNotBelongToCharacter = 8
 };
 
 struct ChatCmdLogin
@@ -211,9 +200,9 @@ struct ChatCmdLetterListAckOk
   struct InboxMail
   {
     //! Mail UID.
-    uint32_t mailUid{};
-    MailType mailType{};
-    MailOrigin mailOrigin{};
+    data::Uid uid{};
+    data::Mail::MailType type{};
+    data::Mail::MailOrigin origin{};
 
     //! Who sent the mail.
     std::string sender{};
@@ -232,7 +221,7 @@ struct ChatCmdLetterListAckOk
 
   struct SentMail
   {
-    uint32_t mailUid{};
+    data::Uid mailUid{};
     std::string recipient{};
     struct Content
     {
@@ -278,7 +267,7 @@ struct ChatCmdLetterSend
 struct ChatCmdLetterSendAckOk
 {
   // TODO: confirm if this is truly mailUid or relative index of 0 -> x
-  uint32_t mailUid{};
+  data::Uid mailUid{};
   //! Recipient name.
   std::string recipient{};
   //! Client takes anything, typically "hh:mm:ss DD/MM/YYYY".
@@ -319,12 +308,75 @@ struct ChatCmdLetterSendAckCancel
     SourceStream& stream);
 };
 
+struct ChatCmdLetterRead
+{
+  // Very possibly mailbox folder
+  // Typically `2` (inbox?)
+  uint8_t unk0{};
+  data::Uid mailUid{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdLetterRead;
+  }
+
+  static void Write(
+    const ChatCmdLetterRead& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdLetterRead& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdLetterReadAckOk
+{
+  //! Very possibly mailbox folder
+  // Typically `2` (inbox?)
+  uint8_t unk0{};
+
+  //! UID of the mail being requested.
+  data::Uid mailUid{};
+  std::string unk2{"ChatCmdLetterReadAckOk.unk2"};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdLetterReadAckOk;
+  }
+
+  static void Write(
+    const ChatCmdLetterReadAckOk& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdLetterReadAckOk& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdLetterReadAckCancel
+{
+  ChatterErrorCode errorCode{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdLetterReadAckCancel;
+  }
+
+  static void Write(
+    const ChatCmdLetterReadAckCancel& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdLetterReadAckCancel& command,
+    SourceStream& stream);
+};
+
 struct ChatCmdLetterArriveTrs
 {
   // Note: almost identical to InboxMail with the extra std::string missing
-  uint32_t mailUid{};
-  MailType mailType{};
-  MailOrigin mailOrigin{};
+  data::Uid mailUid{};
+  data::Mail::MailType mailType{};
+  data::Mail::MailOrigin mailOrigin{};
 
   std::string sender{};
   std::string date{};
@@ -367,7 +419,7 @@ struct ChatCmdGuildLoginAckOK
   struct GuildMember
   {
     //! Character UID of the guild member. 
-    uint32_t characterUid{};
+    data::Uid characterUid{};
     //! Online status of the guild member.
     //! `Status::Hidden` completely removes the status of that member.
     Status status{Status::Hidden};

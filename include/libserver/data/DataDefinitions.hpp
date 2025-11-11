@@ -458,7 +458,30 @@ struct Egg
 
 struct Mail
 {
+  //! Mail type.
+  //! Dictates whether or not the inbox mail can be replied to, including system mails, or contains rewards.
+  enum class MailType : uint32_t
+  {
+    CanReply = 0,
+    NoReply = 1,
+    CarnivalReward = 2, //! Requests AcCmdCLRequestFestivalResult
+    BreedingReward = 3, //! Requests AcCmdCRBreedingTakeMoney
+  };
+
+  //! Flags whether the mail is a system or a character mail.
+  //! The game client uses this to filter for system mails only.
+  enum class MailOrigin : uint32_t
+  {
+    Character = 0,
+    System = 1
+  };
+
   dao::Field<Uid> uid{InvalidUid};
+
+  dao::Field<bool> read{false};
+  dao::Field<MailType> type{};
+  dao::Field<MailOrigin> origin{};
+
   dao::Field<std::string> name{};
   dao::Field<std::string> date{};
   dao::Field<std::string> body{};

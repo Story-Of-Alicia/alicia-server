@@ -146,9 +146,9 @@ void server::protocol::ChatCmdLetterListAckOk::Write(
     {
       for (const auto& mail : command.inboxMails)
       {
-        stream.Write(mail.mailUid)
-          .Write(mail.mailType)
-          .Write(mail.mailOrigin)
+        stream.Write(mail.uid)
+          .Write(mail.type)
+          .Write(mail.origin)
           .Write(mail.sender)
           .Write(mail.date);
 
@@ -213,6 +213,51 @@ void server::protocol::ChatCmdLetterSendAckCancel::Write(
 
 void server::protocol::ChatCmdLetterSendAckCancel::Read(
   ChatCmdLetterSendAckCancel& command,
+  server::SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdLetterRead::Write(
+  const ChatCmdLetterRead& command,
+  server::SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdLetterRead::Read(
+  ChatCmdLetterRead& command,
+  server::SourceStream& stream)
+{
+  stream.Read(command.unk0)
+    .Read(command.mailUid);
+}
+
+void server::protocol::ChatCmdLetterReadAckOk::Write(
+  const ChatCmdLetterReadAckOk& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.mailUid)
+    .Write(command.unk2);
+}
+
+void server::protocol::ChatCmdLetterReadAckOk::Read(
+  ChatCmdLetterReadAckOk& command,
+  server::SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdLetterReadAckCancel::Write(
+  const ChatCmdLetterReadAckCancel& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.errorCode);
+}
+
+void server::protocol::ChatCmdLetterReadAckCancel::Read(
+  ChatCmdLetterReadAckCancel& command,
   server::SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
