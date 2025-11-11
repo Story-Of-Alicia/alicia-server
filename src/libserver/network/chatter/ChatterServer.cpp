@@ -135,6 +135,13 @@ size_t ChatterServer::OnClientData(
       _chatterCommandHandler.HandleChatterLetterSend(clientId, command);
       break;
     }
+    case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdLetterRead):
+    {
+      protocol::ChatCmdLetterRead command;
+      commandDataSource.Read(command);
+      _chatterCommandHandler.HandleChatterLetterRead(clientId, command);
+      break;
+    }
     case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdGuildLogin):
     {
       protocol::ChatCmdGuildLogin command;

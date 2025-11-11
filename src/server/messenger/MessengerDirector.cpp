@@ -47,6 +47,21 @@ void MessengerDirector::Terminate()
   _chatterServer.EndHost();
 }
 
+MessengerDirector::ClientContext& MessengerDirector::GetClientContext(
+  const network::ClientId clientId,
+  bool requireAuthentication)
+{
+  auto clientContextIter = _clients.find(clientId);
+  if (clientContextIter == _clients.end())
+    throw std::runtime_error("Messenger client is not available");
+
+  auto& clientContext = clientContextIter->second;
+  if (requireAuthentication && not clientContext.isAuthenticated)
+    throw std::runtime_error("Messenger client is not authenticated");
+
+  return clientContext;
+}
+
 void MessengerDirector::Tick()
 {
 }
@@ -84,7 +99,7 @@ void MessengerDirector::HandleChatterLogin(
     command.code,
     command.guildUid);
 
-  auto& clientContext = _clients[clientId];
+  auto& clientContext = GetClientContext(clientId, false);
 
   // TODO: verify this request in some way
   // FIXME: authentication is always assumed to be correct
@@ -162,7 +177,7 @@ void MessengerDirector::HandleChatterLetterList(
     command.request.lastMailUid,
     command.request.count);
 
-  const auto& clientContext = _clients[clientId];
+  const auto& clientContext = GetClientContext(clientId);
 
   protocol::ChatCmdLetterListAckOk response{
     .mailboxFolder = command.mailboxFolder
@@ -253,9 +268,9 @@ void MessengerDirector::HandleChatterLetterList(
           {
             response.inboxMails.emplace_back(InboxMail{
               InboxMail{
-                .mailUid = mail.uid(),
-                .mailType = protocol::MailType::CanReply, // TODO: store in mail
-                .mailOrigin = protocol::MailOrigin::Character, // TODO: store in mail
+                .uid = mail.uid(),
+                .type = mail.type(),
+                .origin = mail.origin(),
                 .sender = mail.name(),
                 .date = mail.date(),
                 .struct0 = InboxMail::Struct0{
@@ -311,7 +326,7 @@ void MessengerDirector::HandleChatterLetterSend(
   // TODO: enforce any character limit?
   // TODO: bad word checks and/or deny sending the letter as a result?
 
-  const auto& clientContext = _clients[clientId];
+  const auto& clientContext = GetClientContext(clientId);
   std::string senderName{};
   _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
     [&senderName](const data::Character& character)
@@ -370,7 +385,6 @@ void MessengerDirector::HandleChatterLetterSend(
 
   _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 
-  // TODO: alert recipient of new mail if they are online
   // Check if recipient is online for live mail delivery
   auto client = std::ranges::find_if(
     _clients,
@@ -385,8 +399,8 @@ void MessengerDirector::HandleChatterLetterSend(
 
   protocol::ChatCmdLetterArriveTrs notify{
     .mailUid = mailUid,
-    .mailType = protocol::MailType::CanReply,
-    .mailOrigin = protocol::MailOrigin::Character,
+    .mailType = data::Mail::MailType::CanReply,
+    .mailOrigin = data::Mail::MailOrigin::Character,
     .sender = senderName,
     .date = formattedDt,
     .body = command.body
@@ -396,13 +410,85 @@ void MessengerDirector::HandleChatterLetterSend(
   _chatterServer.QueueCommand<decltype(notify)>(recipientClientId, [notify](){ return notify; });
 }
 
+void MessengerDirector::HandleChatterLetterRead(
+  network::ClientId clientId,
+  const protocol::ChatCmdLetterRead& command)
+{
+  spdlog::debug("[{}] ChatCmdLetterRead: {} {}",
+    clientId,
+    command.unk0,
+    command.mailUid);
+
+  const auto& clientContext = GetClientContext(clientId);
+
+  // Confirm if the mail even exists
+  const auto& mailRecord = _serverInstance.GetDataDirector().GetMail(command.mailUid);
+
+  std::optional<protocol::ChatterErrorCode> errorCode{};
+  if (command.mailUid == data::InvalidUid)
+  {
+    // Character tried to request an invalid mail
+    spdlog::warn("Character {} tried to request an invalid mail",
+      clientContext.characterUid);
+    errorCode.emplace(protocol::ChatterErrorCode::MailInvalidUid);
+  }
+  else if (not mailRecord.IsAvailable())
+  {
+    // Mail does not exist or is not available
+    spdlog::warn("Character {} tried to request a mail {} that does not exist or is not available",
+      clientContext.characterUid,
+      command.mailUid);
+    errorCode.emplace(protocol::ChatterErrorCode::MailDoesNotExistOrNotAvailable);
+  }
+
+  // If we haven't encountered any errors so far, check the mail ownership
+  if (not errorCode.has_value())
+  {
+    // Confirm the character has such mail in its mailbox
+    _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+      [&command, &errorCode](const data::Character& character)
+      {
+        // Check if character has this mail in their `inbox`
+        const bool& hasMail = std::ranges::contains(
+          character.mailbox.inbox(),
+          command.mailUid);
+
+        if (not hasMail)
+        {
+          // Character does not own this mail
+          errorCode.emplace(protocol::ChatterErrorCode::MailDoesNotBelongToCharacter);
+        }
+      });
+  }
+
+  // If an error occurred along the way, respond with cancel and return
+  if (errorCode.has_value())
+  {
+    protocol::ChatCmdLetterReadAckCancel cancel{.errorCode = errorCode.value()};
+    _chatterServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  // Mark letter as read
+  mailRecord.Mutable([](data::Mail& mail)
+  {
+    mail.read() = true;
+  });
+
+  protocol::ChatCmdLetterReadAckOk response{
+    .unk0 = command.unk0,
+    .mailUid = command.mailUid
+  };
+  _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+}
+
 void MessengerDirector::HandleChatterGuildLogin(
   network::ClientId clientId,
   const protocol::ChatCmdGuildLogin& command)
 {
   // ChatCmdGuildLogin is sent after ChatCmdLogin
   // Assumption: the user is very likely already authenticated with messenger
-  const auto& clientContext = _clients[clientId];
+  const auto& clientContext = GetClientContext(clientId);
 
   // Check if client belongs to the guild in the command
   data::Uid characterGuildUid{data::InvalidUid};

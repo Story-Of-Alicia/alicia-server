@@ -44,6 +44,9 @@ enum class ChatterCommand : uint16_t
   ChatCmdLetterSend = 0x1B,
   ChatCmdLetterSendAckOk = 0x1C,
   ChatCmdLetterSendAckCancel = 0x1D,
+  ChatCmdLetterRead = 0x1E,
+  ChatCmdLetterReadAckOk = 0x1F,
+  ChatCmdLetterReadAckCancel = 0x20,
 
   ChatCmdLetterArriveTrs = 0x24,
 
