@@ -2797,10 +2797,6 @@ void RanchDirector::HandleUpdateMountNickname(
     {
       constexpr data::Tid HorseRenameItemTid = 45003;
 
-      // todo: To reconsider, the client sends us UID of the item that was used
-      //       to rename the horse. This would allow us to not remember `HorseRenameItemTid` and
-      //       to use the item UID to find the item.
-
       const auto consumeResult = GetServerInstance().GetItemSystem().ConsumeItem(
         character, HorseRenameItemTid, 1);
       itemConsumed = consumeResult.itemConsumed;
@@ -5500,10 +5496,6 @@ void RanchDirector::HandleChangeNickname(
     [this, &itemConsumed, &remainingItemCount](data::Character& character)
     {
       const data::Tid CharacterRenameItem = 46002;
-
-      // todo: To reconsider, the client sends us UID of the item that was used
-      //       to rename the character. This would allow us to not remember `CharacterRenameItem` and
-      //       to use the item UID to find the item.
 
       const auto consumeResult = GetServerInstance().GetItemSystem().ConsumeItem(
         character, CharacterRenameItem, 1);
