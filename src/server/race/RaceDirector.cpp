@@ -2156,7 +2156,13 @@ void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& co
     notify.author = character.name();
   });
 
-  spdlog::info("[Room {}] {}: {}", clientContext.roomUid, notify.author, notify.message);
+  const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+    clientContext.characterUid);
+  spdlog::info("[Room {}] {} ({}): {}",
+    clientContext.roomUid,
+    userName,
+    notify.author,
+    notify.message);
 
   const auto& raceInstance = _raceInstances[clientContext.roomUid];
   for (const ClientId raceClientId : raceInstance.clients)
