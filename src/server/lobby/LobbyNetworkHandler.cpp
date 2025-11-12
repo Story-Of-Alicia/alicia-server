@@ -1391,6 +1391,12 @@ void LobbyNetworkHandler::HandleCreateNickname(
       };
     });
 
+  // Log for moderation
+  spdlog::info("User '{}' created a character ({}) with the name '{}'",
+    clientContext.userName,
+    userCharacterUid,
+    command.nickname);
+
   SendLoginOK(clientId);
 }
 
