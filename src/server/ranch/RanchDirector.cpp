@@ -1154,8 +1154,14 @@ void RanchDirector::HandleChat(
     ranchersName = rancher.name();
   });
 
+  const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+    clientContext.characterUid);
   const std::string message = chat.message;
-  spdlog::debug("[{}'s ranch] {}: {}", ranchersName, sendersName, message);
+  spdlog::debug("[{}'s ranch] {} ({}): {}",
+    ranchersName,
+    userName,
+    sendersName,
+    message);
 
   const auto verdict = _serverInstance.GetChatSystem().ProcessChatMessage(
     clientContext.characterUid,
@@ -1647,11 +1653,22 @@ void RanchDirector::HandleUpdateMountNickname(
   const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
     command.horseUid);
 
-  horseRecord->Mutable([&notify, horseName = command.name](data::Horse& horse)
+  std::string currentName{};
+  horseRecord->Mutable([&notify, &currentName, horseName = command.name](data::Horse& horse)
   {
+    currentName = horse.name();
     horse.name() = horseName;
     protocol::BuildProtocolHorse(notify.horse, horse);
   });
+
+  // Log for moderation
+  const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+    clientContext.characterUid);
+  spdlog::info("User '{}' changed the name of a horse ({}) from '{}' to '{}'",
+    userName,
+    command.horseUid,
+    currentName,
+    command.name);
 
   protocol::RanchCommandUpdateMountNicknameOK response{
     .horseUid = command.horseUid,
@@ -2142,6 +2159,14 @@ void RanchDirector::HandleCreateGuild(
     character.guildUid = response.uid;
   });
 
+  // Log for moderation
+  const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+    clientContext.characterUid);
+  spdlog::info("User '{}' created a guild ({}) with the name '{}'",
+    userName,
+    response.uid,
+    command.name);
+
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
@@ -2405,12 +2430,23 @@ void RanchDirector::HandleUpdatePet(
       if (std::ranges::contains(character.inventory(), command.itemUid))
       {
         // TODO: actually reduce the item count or remove it
+        std::string currentName{};
         const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
         petRecord.Mutable(
-          [&command](data::Pet& pet)
+          [&command, &currentName](data::Pet& pet)
           {
+            currentName = pet.name();
             pet.name() = command.petInfo.pet.name;
           });
+
+        // Log for moderation
+        const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+          character.uid());
+        spdlog::info("User '{}' changed the name of a pet ({}) from '{}' to '{}'",
+          userName,
+          petUid,
+          currentName,
+          command.petInfo.pet.name);
       }
       //just summoning the pet
       else
@@ -4101,9 +4137,14 @@ void RanchDirector::HandleChangeNickname(
   std::optional<protocol::NameChangeError> error;
 
   const auto& clientContext = GetClientContext(clientId);
+
+  std::string currentName{};
   GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
-    [this, &command, &itemCount, &error](data::Character& character)
+    [this, &command, &currentName, &itemCount, &error](data::Character& character)
     {
+      // Log current name
+      currentName = character.name();
+
       // Get item record by command itemUid
       const auto& itemRecord = GetServerInstance().GetDataDirector().GetItem(command.itemUid);
       if (not itemRecord.IsAvailable())
@@ -4190,6 +4231,14 @@ void RanchDirector::HandleChangeNickname(
       });
     return;
   }
+
+  // Log for moderation
+  const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+    clientContext.characterUid);
+  spdlog::info("User '{}' changed their character's name from '{}' to '{}'",
+    userName,
+    currentName,
+    command.newNickname);
 
   protocol::AcCmdCRChangeNicknameOK response{
     .itemUid = command.itemUid,
