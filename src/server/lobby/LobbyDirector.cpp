@@ -276,6 +276,18 @@ void LobbyDirector::QueueClientLogout(
   _userInstances.erase(userName);
 }
 
+const std::string LobbyDirector::GetUserByCharacterUid(
+  data::Uid characterUid)
+{
+  for (const auto & [userName, userInstance] : _userInstances)
+  {
+    if (userInstance.characterUid == characterUid)
+      return userName;
+  }
+
+  return "";
+}
+
 void LobbyDirector::SetUserRoom(const std::string& userName, data::Uid roomUid)
 {
   const auto userIter = _userInstances.find(userName);

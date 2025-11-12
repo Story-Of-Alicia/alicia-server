@@ -94,6 +94,7 @@ public:
     network::ClientId clientId,
     const std::string& userName);
 
+  const std::string GetUserByCharacterUid(data::Uid characterUid);
   void SetUserRoom(const std::string& userName, data::Uid roomUid);
 
   void SetCharacterForcedIntoCreator(

@@ -119,6 +119,8 @@ private:
 
     //! A time point of when the race is actually started (a countdown is finished).
     std::chrono::steady_clock::time_point raceStartTimePoint;
+    //! A mutex of room clients.
+    std::mutex clientsMutex;
     //! A room clients.
     std::unordered_set<ClientId> clients;
   };
