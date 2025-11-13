@@ -927,19 +927,19 @@ void LobbyNetworkHandler::HandleRoomList(
     .teamMode = command.teamMode};
 
   // todo: update every x tick
-  std::vector<server::Room::Snapshot> rooms{};
+  std::vector<server::Room::Snapshot> roomSnapshots{};
   std::ranges::copy_if(
     _serverInstance.GetRoomSystem().GetRoomsSnapshot(),
-    std::back_inserter(rooms),
-    [&command](const server::Room::Snapshot& room)
+    std::back_inserter(roomSnapshots),
+    [&command](const server::Room::Snapshot& roomSnapshot)
     {
       return 
-        room.details.gameMode == static_cast<server::Room::GameMode>(command.gameMode) &&
-        room.details.teamMode == static_cast<server::Room::TeamMode>(command.teamMode);
+        roomSnapshot.details.gameMode == static_cast<server::Room::GameMode>(command.gameMode) &&
+        roomSnapshot.details.teamMode == static_cast<server::Room::TeamMode>(command.teamMode);
     });
 
   const auto roomChunks = std::views::chunk(
-    rooms,
+    roomSnapshots,
     RoomsPerPage);
 
   if (not roomChunks.empty())
