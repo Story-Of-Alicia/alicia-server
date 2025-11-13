@@ -2289,9 +2289,12 @@ void RanchDirector::HandleWithdrawGuild(
         return;
       }
 
-      if (guild.members().size() > 0 || guild.officers().size() > 0)
+      const auto& guildMembers = guild.members();
+      // Check that there is only 1 guild member and that member is the owner
+      bool lastGuildMemberIsOwner = guildMembers.size() == 1 && guildMembers[0] == characterUid;
+      if (not lastGuildMemberIsOwner || guild.officers().size() > 0)
       {
-        // Command was to disabnd guild but guild has members (somehow)
+        // Command was to disband guild but guild has members (somehow)
         error.emplace(protocol::GuildError::NotAlone);
         spdlog::warn("Character {} tried to disband guild {} with members and/or officers present",
           characterUid,
