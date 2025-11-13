@@ -927,9 +927,19 @@ void LobbyNetworkHandler::HandleRoomList(
     .teamMode = command.teamMode};
 
   // todo: update every x tick
-  const auto roomSnapshots = _serverInstance.GetRoomSystem().GetRoomsSnapshot();
+  std::vector<server::Room::Snapshot> rooms{};
+  std::ranges::copy_if(
+    _serverInstance.GetRoomSystem().GetRoomsSnapshot(),
+    std::back_inserter(rooms),
+    [&command](const server::Room::Snapshot& room)
+    {
+      return 
+        room.details.gameMode == static_cast<server::Room::GameMode>(command.gameMode) &&
+        room.details.teamMode == static_cast<server::Room::TeamMode>(command.teamMode);
+    });
+
   const auto roomChunks = std::views::chunk(
-    roomSnapshots,
+    rooms,
     RoomsPerPage);
 
   if (not roomChunks.empty())
@@ -943,17 +953,6 @@ void LobbyNetworkHandler::HandleRoomList(
 
     for (const auto& room : roomChunks[pageIndex])
     {
-      const protocol::GameMode roomGameMode = static_cast<
-        protocol::GameMode>(room.details.gameMode);
-      const protocol::TeamMode roomTeamMode = static_cast<
-        protocol::TeamMode>(room.details.teamMode);
-
-      if (roomGameMode != command.gameMode
-        || roomTeamMode != command.teamMode)
-      {
-        continue;
-      }
-
       auto& roomResponse = response.rooms.emplace_back();
 
       roomResponse.state = room.isPlaying ? 
