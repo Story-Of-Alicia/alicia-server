@@ -51,23 +51,31 @@ data::Uid ItemSystem::GetItemByTid(
 
   auto charaterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
   if (not charaterRecord)
+  {
     spdlog::debug("Couldn't check character item, character not available");
     return itemUid;
+  }
   
   charaterRecord.Immutable([this, &itemUid, itemTid](const data::Character& character)
   {
-    const auto itemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(
-      character.inventory());
+    // Combine inventory and equipped items for a single search
+    std::vector<data::Uid> allItemUids = character.inventory();
+    allItemUids.insert(allItemUids.end(), 
+      character.characterEquipment().begin(), 
+      character.characterEquipment().end());
+
+    const auto itemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(allItemUids);
+    if (!itemRecords)
+      return;
 
     for (const auto& itemRecord : *itemRecords)
     {
       itemRecord.Immutable([&itemUid, itemTid](const data::Item& item)
       {
         if (item.tid() == itemTid)
-        {
           itemUid = item.uid();
-        }
       });
+      
       if (itemUid != data::InvalidUid)
         break;
     }
@@ -84,8 +92,10 @@ data::Uid ItemSystem::CreateNewItem(
 
   auto charaterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
   if (not charaterRecord)
+  {
     spdlog::debug("Couldn't check character item, character not available");
     return newItemUid;
+  }
 
   if ((newItemUid = ItemSystem::GetItemByTid(characterUid, itemTid)) != data::InvalidUid)
   {
@@ -114,6 +124,70 @@ data::Uid ItemSystem::CreateNewItem(
   return newItemUid;
 }
 
+data::Uid ItemSystem::EmplaceItem(
+  data::Uid characterUid,
+  data::Uid itemUid)
+{
+  auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+  if (not characterRecord)
+  {
+    return data::InvalidUid;
+  }
+
+  const auto itemRecord = _serverInstance.GetDataDirector().GetItem(itemUid);
+  if (not itemRecord)
+  {
+    return data::InvalidUid;
+  }
+
+  data::Tid itemTid = 0;
+  uint32_t itemCount = 0;
+  itemRecord.Immutable([&itemTid, &itemCount](const data::Item& item)
+  {
+    itemTid = item.tid();
+    itemCount = item.count();
+  });
+
+  // Check if this specific item UID is already in the character's inventory
+  bool itemAlreadyInInventory = false;
+  characterRecord.Immutable([&itemAlreadyInInventory, itemUid](const data::Character& character)
+  {
+    itemAlreadyInInventory = std::ranges::contains(character.inventory(), itemUid);
+  });
+
+  // If already in inventory, take no further action
+  if (itemAlreadyInInventory)
+  {
+    spdlog::debug("Item {} already exists in character {}'s inventory", itemUid, characterUid);
+    return itemUid;
+  }
+
+  // If an item with the same TID exists, try to stack
+  const data::Uid existingItemUid = GetItemByTid(characterUid, itemTid);
+  if (existingItemUid != data::InvalidUid)
+  {
+    // Try to stack with the existing item
+    const auto addResult = AddItem(existingItemUid, itemCount);
+    
+    if (addResult == ItemSystem::ReturnType::SUCCESS)
+    {
+      // Successfully stacked, delete the original item
+      _serverInstance.GetDataDirector().GetItemCache().Delete(itemUid);
+      return existingItemUid;
+    }
+    
+    return data::InvalidUid;
+  }
+
+  // No existing item with this TID - add as new item to inventory
+  characterRecord.Mutable([itemUid](data::Character& character)
+  {
+    character.inventory().emplace_back(itemUid);
+  });
+
+  return itemUid;
+}
+
 ItemSystem::ReturnType ItemSystem::AddItem(
   data::Uid itemUid,
   uint32_t value)
@@ -134,8 +208,10 @@ ItemSystem::ReturnType ItemSystem::AddItem(
     else if (itemTemplate->type == registry::Item::Type::Consumable)
       item.count() += value;
     else
+    {
       spdlog::debug("Couldn't add item, item is not stackable");
       result = ItemSystem::ReturnType::NOT_STACKABLE;
+    }
   });
 
   return result;
@@ -191,8 +267,10 @@ ItemSystem::ReturnType ItemSystem::RemoveItem(
 {
   const auto & charaterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
   if (not charaterRecord)
+  {
     spdlog::debug("Couldn't check character item, character not available");
     return ItemSystem::ReturnType::NOT_FOUND;
+  }
 
   charaterRecord.Mutable([this, itemUid](data::Character& character)
   {

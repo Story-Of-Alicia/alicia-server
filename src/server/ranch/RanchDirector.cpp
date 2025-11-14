@@ -1793,38 +1793,105 @@ void RanchDirector::HandleGetItemFromStorage(
   protocol::AcCmdCRGetItemFromStorageOK response{
     .storageItemUid = command.storedItemUid};
 
-  // Get the items assigned to the storage item and fill the protocol command.
-  characterRecord.Mutable([this, &response](
-    data::Character& character)
-    {
-      const auto storedItemRecord = GetServerInstance().GetDataDirector().GetStorageItemCache().Get(
-        response.storageItemUid);
+  // Collection of item UIDs and their details from the storage item.
+  std::vector<data::Uid> storageItemUids;
+  std::vector<std::pair<data::Tid, uint32_t>> itemsToAdd; // TID and count
 
-      // Collection of the items received from the storage item.
-      std::vector<data::Uid> items;
+  // First, retrieve the items from storage (read-only operation).
+  const auto storedItemRecord = GetServerInstance().GetDataDirector().GetStorageItemCache().Get(
+    response.storageItemUid);
 
-      storedItemRecord->Immutable([this, &items, &response](const data::StorageItem& storedItem)
+  if (!storedItemRecord)
+  {
+    spdlog::error("Failed to retrieve storage item {} from cache", response.storageItemUid);
+    
+    protocol::AcCmdCRGetItemFromStorageCancel cancelResponse{
+      .storedItemUid = command.storedItemUid,
+      .status = 0};
+
+    _commandServer.QueueCommand<decltype(cancelResponse)>(
+      clientId,
+      [cancelResponse]()
       {
-        items = storedItem.items();
-        const auto itemRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(
-          items);
-
-        protocol::BuildProtocolItems(response.items, *itemRecords);
+        return cancelResponse;
       });
+    return;
+  }
 
-      // Delete the storage item.
-      GetServerInstance().GetDataDirector().GetStorageItemCache().Delete(
-        response.storageItemUid);
+  storedItemRecord->Immutable([this, &storageItemUids, &itemsToAdd](const data::StorageItem& storedItem)
+  {
+    storageItemUids = storedItem.items();
+    
+    if (storageItemUids.empty())
+    {
+      spdlog::warn("Storage item contains no items");
+      return;
+    }
 
-      // Add the items to the character's inventory.
-      character.inventory().insert(
-        character.inventory().end(),
-        items.begin(),
-        items.end());
+    const auto itemRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(storageItemUids);
+    if (!itemRecords || itemRecords->empty())
+    {
+      spdlog::error("Failed to retrieve items from storage item");
+      return;
+    }
 
-      // TODO: Update carrots as needed
-      response.updatedCarrots = character.carrots();
-    });
+    for (const auto& itemRecord : *itemRecords)
+    {
+      itemRecord.Immutable([&itemsToAdd](const data::Item& item)
+      {
+        itemsToAdd.emplace_back(item.tid(), item.count());
+      });
+    }
+  });
+
+  // If no items were found, don't proceed
+  if (itemsToAdd.empty())
+  {
+    protocol::AcCmdCRGetItemFromStorageCancel cancelResponse{
+      .storedItemUid = command.storedItemUid,
+      .status = 0};
+
+    _commandServer.QueueCommand<decltype(cancelResponse)>(
+      clientId,
+      [cancelResponse]()
+      {
+        return cancelResponse;
+      });
+    return;
+  }
+
+  // Emplace the items from storage into the character's inventory
+  // EmplaceItem will handle stacking automatically
+  std::vector<data::Uid> addedItemUids;
+  for (const auto& itemUid : storageItemUids)
+  {
+    const auto finalItemUid = GetServerInstance().GetItemSystem().EmplaceItem(
+      clientContext.characterUid, itemUid);
+    
+    if (finalItemUid == data::InvalidUid)
+    {
+      spdlog::error("Failed to emplace item {} for character {}", itemUid, clientContext.characterUid);
+    }
+    else
+    {
+      addedItemUids.push_back(finalItemUid);
+    }
+  }
+
+  GetServerInstance().GetDataDirector().GetStorageItemCache().Delete(
+    response.storageItemUid);
+
+  const auto addedItemRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(
+    addedItemUids);
+  if (addedItemRecords)
+  {
+    protocol::BuildProtocolItems(response.items, *addedItemRecords);
+  }
+
+  characterRecord.Immutable([&response](const data::Character& character)
+  {
+    response.updatedCarrots = character.carrots();
+  });
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,

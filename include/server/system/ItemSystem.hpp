@@ -42,9 +42,10 @@ public:
 
   bool CheckCharacterHasItem(data::Uid characterUid, data::Tid itemTid);
   data::Uid GetItemByTid(data::Uid characterUid, data::Tid itemTid);
-  //! has functionality to also just add to existing stackable items
-  //! value is either itemCount for stackable items or duration in days for expirable items
+  //! useful for shop
   data::Uid CreateNewItem(data::Uid characterUid, data::Tid itemTid, uint32_t value);
+  //! Useful for gifting items that are already created
+  data::Uid EmplaceItem(data::Uid characterUid, data::Uid itemUid);
   ReturnType AddItem(data::Uid itemUid, uint32_t value);
   ReturnType ConsumeItem(data::Uid characterUid, data::Uid itemUid, uint32_t itemCount);
   ReturnType RemoveItem(data::Uid characterUid, data::Uid itemUid);
