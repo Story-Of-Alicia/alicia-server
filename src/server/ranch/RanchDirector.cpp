@@ -4178,16 +4178,19 @@ void RanchDirector::HandleChangeNickname(
       {
         // Character name exceeds 16 byte limit or is not long enough (min 4 bytes) or has whitespace
         error.emplace(protocol::NameChangeError::InvalidNickname);
-        // Note: do not log the attempted character nickname in the interest 
-        // of preventing some form of vulnerability with spdlog.
-        // Paranoid but mindful
-        spdlog::warn("Character {} tried rename themselves to an invalid nickname",
-          character.uid());
+        return;
+      }
+
+      // Check if the new nickname is unique.
+      const bool isUnique = _serverInstance.GetDataDirector().GetDataSource().IsCharacterNameUnique(
+        command.newNickname);
+      if (not isUnique)
+      {
+        error.emplace(protocol::NameChangeError::DuplicateNickname);
         return;
       }
 
       //TODO: validate nickname (inappropriate words, etc)
-      //TODO: check for duplicate nicknames
 
       // Manipulate item
       itemRecord.Mutable([&itemCount, &error](data::Item& item)
