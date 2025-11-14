@@ -61,6 +61,10 @@ public:
     network::ClientId clientId,
     const protocol::ChatCmdLetterRead& command) = 0;
 
+  virtual void HandleChatterLetterDelete(
+    network::ClientId clientId,
+    const protocol::ChatCmdLetterDelete& command) = 0;
+
   virtual void HandleChatterGuildLogin(
     network::ClientId clientId,
     const protocol::ChatCmdGuildLogin& command) = 0;

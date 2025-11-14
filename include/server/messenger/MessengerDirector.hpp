@@ -62,6 +62,10 @@ private:
     network::ClientId clientId,
     const protocol::ChatCmdLetterRead& command) override;
 
+  void HandleChatterLetterDelete(
+    network::ClientId clientId,
+    const protocol::ChatCmdLetterDelete& command) override;
+
   void HandleChatterGuildLogin(
     network::ClientId clientId,
     const protocol::ChatCmdGuildLogin& command) override;

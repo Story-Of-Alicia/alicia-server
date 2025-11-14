@@ -277,6 +277,50 @@ void server::protocol::ChatCmdLetterReadAckCancel::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void server::protocol::ChatCmdLetterDelete::Write(
+  const ChatCmdLetterDelete& command,
+  server::SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdLetterDelete::Read(
+  ChatCmdLetterDelete& command,
+  server::SourceStream& stream)
+{
+  stream.Read(command.folder)
+    .Read(command.mailUid);
+}
+
+void server::protocol::ChatCmdLetterDeleteAckOk::Write(
+  const ChatCmdLetterDeleteAckOk& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.folder)
+    .Write(command.mailUid);
+}
+
+void server::protocol::ChatCmdLetterDeleteAckOk::Read(
+  ChatCmdLetterDeleteAckOk& command,
+  server::SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdLetterDeleteAckCancel::Write(
+  const ChatCmdLetterDeleteAckCancel& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.errorCode);
+}
+
+void server::protocol::ChatCmdLetterDeleteAckCancel::Read(
+  ChatCmdLetterDeleteAckCancel& command,
+  server::SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void server::protocol::ChatCmdLetterArriveTrs::Write(
   const ChatCmdLetterArriveTrs& command,
   server::SinkStream& stream)
