@@ -283,6 +283,24 @@ ItemSystem::ReturnType ItemSystem::RemoveItem(
   return ItemSystem::ReturnType::SUCCESS;
 };
 
+uint32_t ItemSystem::GetItemCount(data::Uid itemUid)
+{
+  const auto& itemRecord = _serverInstance.GetDataDirector().GetItem(itemUid);
+  if (not itemRecord)
+  {
+    spdlog::debug("Couldn't get item count, item not available");
+    return 0;
+  }
+
+  uint32_t itemCount = 0;
+  itemRecord.Immutable([&itemCount](const data::Item& item)
+  {
+    itemCount = item.count();
+  });
+
+  return itemCount;
+}
+
 bool ItemSystem::CheckExpired(data::Uid itemUid)
 {
   const auto itemRecord = _serverInstance.GetDataDirector().GetItem(itemUid);

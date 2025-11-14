@@ -1523,6 +1523,7 @@ void RanchDirector::HandleUpdateMountNickname(
     clientContext.characterUid);
 
   uint32_t horseRenameItemCount = 0;
+  constexpr data::Tid HorseRenameItem = 45003;
   std::optional<protocol::HorseRenameError> error;
   characterRecord.Mutable([this, &error, characterUid = clientContext.characterUid, command, &horseRenameItemCount](data::Character& character)
   {
@@ -1601,8 +1602,6 @@ void RanchDirector::HandleUpdateMountNickname(
     // TODO: validate new horse name for invalid/illegal characters
     // HorseRenameError::InvalidNickname
 
-    constexpr data::Tid HorseRenameItem = 45003;
-
     bool isItemHorseRenameItem = false;
     itemRecord.Immutable([&isItemHorseRenameItem](const data::Item& item)
     {
@@ -1627,6 +1626,13 @@ void RanchDirector::HandleUpdateMountNickname(
     {
       spdlog::warn("Failed to consume horse rename item for character {}", clientContext.characterUid);
       error.emplace(protocol::HorseRenameError::NoHorseRenameItem);
+    }
+    else
+    {
+      const data::Uid remainingItemUid = GetServerInstance().GetItemSystem().GetItemByTid(
+        clientContext.characterUid, HorseRenameItem);
+      
+      horseRenameItemCount = GetServerInstance().GetItemSystem().GetItemCount(remainingItemUid);
     }
   }
 
@@ -1793,11 +1799,9 @@ void RanchDirector::HandleGetItemFromStorage(
   protocol::AcCmdCRGetItemFromStorageOK response{
     .storageItemUid = command.storedItemUid};
 
-  // Collection of item UIDs and their details from the storage item.
   std::vector<data::Uid> storageItemUids;
-  std::vector<std::pair<data::Tid, uint32_t>> itemsToAdd; // TID and count
+  std::vector<std::pair<data::Tid, uint32_t>> itemsToAdd;
 
-  // First, retrieve the items from storage (read-only operation).
   const auto storedItemRecord = GetServerInstance().GetDataDirector().GetStorageItemCache().Get(
     response.storageItemUid);
 
@@ -3311,19 +3315,7 @@ void RanchDirector::HandleUseItem(
     if (consumeResult == ItemSystem::ReturnType::SUCCESS)
     {
       // Get updated item count for response
-      const auto updatedItemRecord = _serverInstance.GetDataDirector().GetItem(command.itemUid);
-      if (updatedItemRecord)
-      {
-        updatedItemRecord.Immutable([&response](const data::Item& item)
-        {
-          response.updatedItemCount = item.count();
-        });
-      }
-      else
-      {
-        // Item was removed (count reached 0)
-        response.updatedItemCount = 0;
-      }
+      response.updatedItemCount = GetServerInstance().GetItemSystem().GetItemCount(command.itemUid);
     }
     else
     {
@@ -4217,14 +4209,13 @@ void RanchDirector::HandleChangeNickname(
   ClientId clientId,
   const protocol::AcCmdCRChangeNickname& command)
 {
-  uint16_t itemCount;
   std::optional<protocol::NameChangeError> error;
 
   const auto& clientContext = GetClientContext(clientId);
 
   std::string currentName{};
   GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
-    [this, &command, &currentName, &itemCount, &error](data::Character& character)
+    [this, &command, &currentName, &error](data::Character& character)
     {
       // Log current name
       currentName = character.name();
@@ -4283,16 +4274,6 @@ void RanchDirector::HandleChangeNickname(
         return;
       }
 
-      // Get updated item count for response
-      uint16_t itemCount = 0;
-      const auto updatedItemRecord = GetServerInstance().GetDataDirector().GetItem(command.itemUid);
-      if (updatedItemRecord.IsAvailable())
-      {
-        updatedItemRecord.Immutable([&itemCount](const data::Item& item)
-          {
-            itemCount = item.count();
-          });
-      }
       // Change character name to new name
       character.name() = command.newNickname;
     });
@@ -4313,6 +4294,8 @@ void RanchDirector::HandleChangeNickname(
       });
     return;
   }
+  
+  const uint16_t itemCount = GetServerInstance().GetItemSystem().GetItemCount(command.itemUid);
 
   // Log for moderation
   const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(

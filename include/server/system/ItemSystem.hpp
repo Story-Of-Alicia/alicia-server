@@ -50,6 +50,8 @@ public:
   ReturnType ConsumeItem(data::Uid characterUid, data::Uid itemUid, uint32_t itemCount);
   ReturnType RemoveItem(data::Uid characterUid, data::Uid itemUid);
 
+  uint32_t GetItemCount(data::Uid itemUid);
+
 private:
   ServerInstance& _serverInstance;
 
