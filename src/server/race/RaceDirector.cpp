@@ -284,6 +284,12 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     {
       HandleChangeSkillCardPresetId(clientId, message);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCROpCmd>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleOpCmd(clientId, message);
+    });
 }
 
 void RaceDirector::Initialize()
@@ -949,7 +955,7 @@ void RaceDirector::HandleChangeRoomOptions(
       [this, roomUid = clientContext.roomUid, &command](const data::Character& character)
       {
         const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
-          character.uid());
+          character.uid()).userName;
         spdlog::info("Room {}'s name changed by '{}' to '{}'", roomUid, userName, command.name);
       });
   }
@@ -2140,36 +2146,71 @@ void RaceDirector::HandleRaceUserPos(
 void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& command)
 {
   const auto& clientContext = GetClientContext(clientId);
-
-  const auto messageVerdict = _serverInstance.GetChatSystem().ProcessChatMessage(
-    clientContext.characterUid, command.message);
-
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  protocol::AcCmdCRChatNotify notify{
-    .message = messageVerdict.message,
-    .isSystem = false};
+  // Process the chat message.
+  const auto verdict = _serverInstance.GetChatSystem().ProcessChatMessage(
+    clientContext.characterUid, command.message);
 
-  characterRecord.Immutable([&notify](const data::Character& character)
+  std::string characterName;
+  characterRecord.Immutable([&characterName](const data::Character& character)
   {
-    notify.author = character.name();
+    characterName = character.name();
   });
 
   const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
-    clientContext.characterUid);
+    clientContext.characterUid).userName;
+
   spdlog::info("[Room {}] {} ({}): {}",
     clientContext.roomUid,
     userName,
-    notify.author,
-    notify.message);
+    characterName,
+    command.message);
 
-  const auto& raceInstance = _raceInstances[clientContext.roomUid];
-  for (const ClientId raceClientId : raceInstance.clients)
+  std::vector<protocol::AcCmdCRChatNotify> response;
+  const bool isCommand = verdict.commandVerdict.has_value();
+
+  if (isCommand)
   {
-    _commandServer.QueueCommand<decltype(notify)>(
-      raceClientId,
-      [notify]{return notify;});
+    for (const auto& line : verdict.commandVerdict->result)
+    {
+      response.emplace_back(protocol::AcCmdCRChatNotify{
+        .message = line,
+        .author = "",
+        .isSystem = true});
+    }
+  }
+  else
+  {
+    response.emplace_back(protocol::AcCmdCRChatNotify{
+        .message = verdict.message,
+        .author = characterName,
+        .isSystem = false,});
+  }
+
+  if (isCommand)
+  {
+    for (const auto& notify : response)
+    {
+      _commandServer.QueueCommand<protocol::AcCmdCRChatNotify>(
+        clientId,
+        [notify]{ return notify; });
+    }
+  }
+  else
+  {
+    const auto& raceInstance = _raceInstances[clientContext.roomUid];
+
+    for (const auto& notify : response)
+    {
+      for (const ClientId raceClientId : raceInstance.clients)
+      {
+        _commandServer.QueueCommand<protocol::AcCmdCRChatNotify>(
+          raceClientId,
+          [notify]{ return notify; });
+      }
+    }
   }
 }
 
@@ -2820,6 +2861,34 @@ void RaceDirector::HandleActivateSkillEffect(
 
   // TODO: Remove held item
   this->ScheduleSkillEffect(raceInstance, command.attackerOid, command.targetOid, effectiveEffectId, afterEffectRemoved);
+}
+
+void RaceDirector::HandleOpCmd(
+  ClientId clientId,
+  const protocol::AcCmdCROpCmd& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  std::vector<std::string> feedback;
+
+  const auto result = GetServerInstance().GetChatSystem().ProcessChatMessage(
+    clientContext.characterUid, "//" + command.command);
+
+  if (not result.commandVerdict)
+  {
+    return;
+  }
+
+  for (const auto response : result.commandVerdict->result)
+  {
+    _commandServer.QueueCommand<protocol::RanchCommandOpCmdOK>(
+      clientId,
+      [response = std::move(response)]()
+      {
+        return protocol::RanchCommandOpCmdOK{
+          .feedback = response};
+      });
+  }
 }
 
 void RaceDirector::HandleChangeSkillCardPresetId(

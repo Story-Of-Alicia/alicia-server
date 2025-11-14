@@ -1073,7 +1073,7 @@ void LobbyNetworkHandler::HandleMakeRoom(
     [this, createdRoomUid, &command](const data::Character& character)
     {
       const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
-        character.uid());
+        character.uid()).userName;
       spdlog::info("Room {} created by '{}' with the name '{}'", createdRoomUid, userName, command.name);
     });
 
@@ -1095,6 +1095,12 @@ void LobbyNetworkHandler::HandleMakeRoom(
     [response]()
     {
       return response;
+    });
+
+  _serverInstance.GetLobbyDirector().GetScheduler().Queue(
+    [this, userName = clientContext.userName, createdRoomUid]()
+    {
+      _serverInstance.GetLobbyDirector().SetUserRoom(userName, createdRoomUid);
     });
 }
 

@@ -276,16 +276,39 @@ void LobbyDirector::QueueClientLogout(
   _userInstances.erase(userName);
 }
 
-const std::string LobbyDirector::GetUserByCharacterUid(
-  data::Uid characterUid)
+bool LobbyDirector::IsUserOnline(const std::string& userName)
 {
-  for (const auto & [userName, userInstance] : _userInstances)
+  return _userInstances.contains(userName);
+}
+
+const LobbyDirector::UserInstance& LobbyDirector::GetUser(
+  const std::string& userName)
+{
+  const auto iter = _userInstances.find(userName);
+  if (iter == _userInstances.cend())
   {
-    if (userInstance.characterUid == characterUid)
-      return userName;
+    throw std::runtime_error(
+      std::format(
+        "User instance '{}' not available",
+        userName));
   }
 
-  return "";
+  return iter->second;
+}
+
+const LobbyDirector::UserInstance& LobbyDirector::GetUserByCharacterUid(
+  data::Uid characterUid)
+{
+  for (const auto& userInstance : _userInstances | std::views::values)
+  {
+    if (userInstance.characterUid == characterUid)
+      return userInstance;
+  }
+
+  throw std::runtime_error(
+    std::format(
+      "User instance for character {} not available",
+      characterUid));
 }
 
 void LobbyDirector::SetUserRoom(const std::string& userName, data::Uid roomUid)
