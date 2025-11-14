@@ -2184,9 +2184,9 @@ void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& co
   else
   {
     response.emplace_back(protocol::AcCmdCRChatNotify{
-        .message = verdict.message,
-        .author = characterName,
-        .isSystem = false,});
+      .message = verdict.message,
+      .author = characterName,
+      .isSystem = false,});
   }
 
   if (isCommand)
