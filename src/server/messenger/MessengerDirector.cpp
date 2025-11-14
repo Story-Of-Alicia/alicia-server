@@ -516,7 +516,7 @@ void MessengerDirector::HandleChatterLetterRead(
   // Mark letter as read
   mailRecord.Mutable([](data::Mail& mail)
   {
-    mail.read() = true;
+    mail.isRead() = true;
   });
 
   protocol::ChatCmdLetterReadAckOk response{
