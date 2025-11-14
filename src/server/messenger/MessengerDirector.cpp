@@ -181,10 +181,13 @@ void MessengerDirector::HandleChatterLetterList(
 
   if (not isInboxRequested and not isSentRequested)
   {
-    // TODO: respond with cancel and return
     spdlog::warn("[{}] ChatCmdLetterList: requested unrecognised mailbox {}",
       clientId,
       static_cast<uint8_t>(command.mailboxFolder));
+
+    protocol::ChatCmdLetterListAckCancel cancel{
+      .errorCode = protocol::ChatterErrorCode::MailUnknownMailboxFolder};
+    _chatterServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
     return;
   }
 
@@ -197,8 +200,10 @@ void MessengerDirector::HandleChatterLetterList(
   std::string characterName{};
   bool hasMoreMail{false};
   std::vector<data::Uid> mailbox{};
+
+  std::optional<protocol::ChatterErrorCode> errorCode{};
   _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
-    [&command, &mailbox, &hasMoreMail, &characterName](const data::Character& character)
+    [&command, &mailbox, &hasMoreMail, &characterName, &errorCode](const data::Character& character)
     {
       characterName = character.name();
 
@@ -224,7 +229,7 @@ void MessengerDirector::HandleChatterLetterList(
             character.uid(),
             command.request.lastMailUid);
           hasMoreMail = false;
-          // TODO: respond with cancel
+          errorCode.emplace(protocol::ChatterErrorCode::MailListInvalidUid);
           return;
         }
       }
@@ -245,6 +250,13 @@ void MessengerDirector::HandleChatterLetterList(
       // Indicate that there are more mail after the current ending of response mail
       hasMoreMail = res.in != _mailbox.cend();
     });
+
+  if (errorCode.has_value())
+  {
+    protocol::ChatCmdLetterListAckCancel cancel{
+      .errorCode = errorCode.value()};
+    _chatterServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+  }
 
   // Build response mailbox
   for (const data::Uid& mailUid : mailbox)

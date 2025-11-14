@@ -56,7 +56,9 @@ enum class ChatterErrorCode : uint32_t
   GuildLoginCharacterNotGuildMember = 5,
   MailInvalidUid = 6,
   MailDoesNotExistOrNotAvailable = 7,
-  MailDoesNotBelongToCharacter = 8
+  MailDoesNotBelongToCharacter = 8,
+  MailUnknownMailboxFolder = 9,
+  MailListInvalidUid = 10
 };
 
 struct ChatCmdLogin
@@ -242,6 +244,25 @@ struct ChatCmdLetterListAckOk
 
   static void Read(
     ChatCmdLetterListAckOk& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdLetterListAckCancel
+{
+  //! Custom error code.
+  ChatterErrorCode errorCode{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdLetterListAckCancel;
+  }
+
+  static void Write(
+    const ChatCmdLetterListAckCancel& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdLetterListAckCancel& command,
     SourceStream& stream);
 };
 
