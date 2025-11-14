@@ -1246,7 +1246,7 @@ void server::FileDataSource::RetrieveMail(data::Uid uid, data::Mail& mail)
   mail.from = json["from"].get<data::Uid>();
   mail.to = json["to"].get<data::Uid>();
 
-  mail.read = json["read"].get<bool>();
+  mail.isRead = json["isRead"].get<bool>();
   mail.isDeleted = json["isDeleted"].get<bool>();
 
   mail.type = json["type"].get<data::Mail::MailType>();
@@ -1275,7 +1275,7 @@ void server::FileDataSource::StoreMail(data::Uid uid, const data::Mail& mail)
   json["from"] = mail.from();
   json["to"] = mail.to();
 
-  json["read"] = mail.read();
+  json["isRead"] = mail.isRead();
   json["isDeleted"] = mail.isDeleted();
 
   json["type"] = mail.type();

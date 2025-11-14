@@ -480,7 +480,7 @@ struct Mail
   dao::Field<Uid> from{InvalidUid};
   dao::Field<Uid> to{InvalidUid};
 
-  dao::Field<bool> read{false};
+  dao::Field<bool> isRead{false};
   dao::Field<bool> isDeleted{false};
 
   dao::Field<MailType> type{};
