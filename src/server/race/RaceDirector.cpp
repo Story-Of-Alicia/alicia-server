@@ -1615,23 +1615,18 @@ void RaceDirector::HandleUserRaceFinal(
 
 void RaceDirector::HandleRaceResult(
   ClientId clientId,
-  const protocol::AcCmdCRRaceResult& command)
+  [[maybe_unused]] const protocol::AcCmdCRRaceResult& command)
 {
-  // todo: only requested by the room master
-
-  auto& clientContext = GetClientContext(clientId);
-  auto& raceInstance = _raceInstances[clientContext.roomUid];
-
-  // TODO: veryfy the character ?
+  const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  protocol::AcCmdCRRaceResultOK response{
-    .recordGhostReplay = protocol::AcCmdCRRaceResultOK::RecordGhostReplay::Yes,
-    .resultKey = 0, // TODO: record replays and store serverside
-    .member4 = 1,
-    .notifyMountEmblemUnlock = protocol::AcCmdCRRaceResultOK::Unlock::NoNotify // TODO: implement
-  };
+  // todo:
+  //  - award carrots and experience,
+  //  - record replays,
+  //  - mount emblem unlocked
+  //  - implement mount fatigue
+  protocol::AcCmdCRRaceResultOK response{};
 
   characterRecord.Immutable(
     [this, &response](const data::Character& character)
@@ -1642,7 +1637,6 @@ void RaceDirector::HandleRaceResult(
         [&response](const data::Horse& horse)
         {
           // Fatigue max = 1500
-          // TODO: modify fatigue to some incremented value
           response.horseFatigue = horse.fatigue();
         });
     });
