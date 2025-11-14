@@ -285,7 +285,7 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       }
     });
 
-  _commandServer.RegisterCommandHandler<protocol::RanchCommandOpCmd>(
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCROpCmd>(
     [this](ClientId clientId, auto& command)
     {
       HandleOpCmd(clientId, command);
@@ -1155,7 +1155,7 @@ void RanchDirector::HandleChat(
   });
 
   const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
-    clientContext.characterUid);
+    clientContext.characterUid).userName;
   const std::string message = chat.message;
   spdlog::debug("[{}'s ranch] {} ({}): {}",
     ranchersName,
@@ -1663,7 +1663,7 @@ void RanchDirector::HandleUpdateMountNickname(
 
   // Log for moderation
   const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
-    clientContext.characterUid);
+    clientContext.characterUid).userName;
   spdlog::info("User '{}' changed the name of a horse ({}) from '{}' to '{}'",
     userName,
     command.horseUid,
@@ -2161,7 +2161,7 @@ void RanchDirector::HandleCreateGuild(
 
   // Log for moderation
   const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
-    clientContext.characterUid);
+    clientContext.characterUid).userName;
   spdlog::info("User '{}' created a guild ({}) with the name '{}'",
     userName,
     response.uid,
@@ -2444,7 +2444,7 @@ void RanchDirector::HandleUpdatePet(
 
         // Log for moderation
         const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
-          character.uid());
+          character.uid()).userName;
         spdlog::info("User '{}' changed the name of a pet ({}) from '{}' to '{}'",
           userName,
           petUid,
@@ -3406,7 +3406,7 @@ void RanchDirector::HandleHousingRepair(
 
 void RanchDirector::HandleOpCmd(
   ClientId clientId,
-  const protocol::RanchCommandOpCmd& command)
+  const protocol::AcCmdCROpCmd& command)
 {
   const auto& clientContext = GetClientContext(clientId);
 
@@ -4237,7 +4237,7 @@ void RanchDirector::HandleChangeNickname(
 
   // Log for moderation
   const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
-    clientContext.characterUid);
+    clientContext.characterUid).userName;
   spdlog::info("User '{}' changed their character's name from '{}' to '{}'",
     userName,
     currentName,
