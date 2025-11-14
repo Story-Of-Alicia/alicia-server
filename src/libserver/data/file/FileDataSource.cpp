@@ -1250,7 +1250,9 @@ void server::FileDataSource::RetrieveMail(data::Uid uid, data::Mail& mail)
   mail.type = json["type"].get<data::Mail::MailType>();
   mail.origin = json["origin"].get<data::Mail::MailOrigin>();
 
-  mail.date = json["date"].get<std::string>();
+  mail.createdAt = data::Clock::time_point(
+    std::chrono::seconds(
+      json["createdAt"].get<uint64_t>()));
   mail.body = json["body"].get<std::string>();
 }
 
@@ -1275,7 +1277,9 @@ void server::FileDataSource::StoreMail(data::Uid uid, const data::Mail& mail)
   json["type"] = mail.type();
   json["origin"] = mail.origin();
 
-  json["date"] = mail.date();
+  json["createdAt"] = std::chrono::duration_cast<
+    std::chrono::seconds>(
+      mail.createdAt().time_since_epoch()).count();
   json["body"] = mail.body();
 
   dataFile << json.dump(2);

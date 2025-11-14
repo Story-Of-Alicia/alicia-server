@@ -484,7 +484,7 @@ struct Mail
   dao::Field<MailType> type{};
   dao::Field<MailOrigin> origin{};
 
-  dao::Field<std::string> date{};
+  dao::Field<Clock::time_point> createdAt{};
   dao::Field<std::string> body{};
 };
 

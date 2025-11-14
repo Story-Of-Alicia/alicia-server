@@ -24,7 +24,7 @@
 namespace server
 {
 
-constexpr std::string_view DateTimeFormat = "{:%H:%M:%S %d/%m/%Y}";
+constexpr std::string_view DateTimeFormat = "{:%H:%M:%S %d/%m/%Y} UTC";
 
 MessengerDirector::MessengerDirector(ServerInstance& serverInstance)
   : _chatterServer(*this, *this)
@@ -268,6 +268,10 @@ void MessengerDirector::HandleChatterLetterList(
             correspondentName = character.name();
           });
 
+        // Format mail createdAt based on format
+        const auto& createdAt = std::format(
+          DateTimeFormat,
+          std::chrono::floor<std::chrono::seconds>(mail.createdAt()));
         if (folder == protocol::MailboxFolder::Sent)
         {
           // Compile sent mail and add to sent mail list
@@ -276,7 +280,7 @@ void MessengerDirector::HandleChatterLetterList(
               .mailUid = mail.uid(),
               .recipient = correspondentName,
               .content = protocol::ChatCmdLetterListAckOk::SentMail::Content{
-                .date = mail.date(),
+                .date = createdAt,
                 .body = mail.body()
               }});
         }
@@ -289,7 +293,7 @@ void MessengerDirector::HandleChatterLetterList(
               .type = mail.type(),
               .origin = mail.origin(),
               .sender = correspondentName,
-              .date = mail.date(),
+              .date = createdAt,
               .struct0 = protocol::ChatCmdLetterListAckOk::InboxMail::Struct0{
                 .body = mail.body()
               }
@@ -351,17 +355,17 @@ void MessengerDirector::HandleChatterLetterSend(
   // Create and store mail
   data::Uid mailUid{data::InvalidUid};
   auto mailRecord = _serverInstance.GetDataDirector().CreateMail();
-  mailRecord.Mutable([&mailUid, &command, &formattedDt, &senderUid, &recipientCharacterUid](data::Mail& mail)
+  mailRecord.Mutable([&mailUid, &command, &utcNow, &senderUid, &recipientCharacterUid](data::Mail& mail)
   {
     // Set mail parameters
-    mail.from = senderUid;
-    mail.to = recipientCharacterUid;
+    mail.from() = senderUid;
+    mail.to() = recipientCharacterUid;
 
-    mail.type = data::Mail::MailType::CanReply;
-    mail.origin = data::Mail::MailOrigin::Character;
+    mail.type() = data::Mail::MailType::CanReply;
+    mail.origin() = data::Mail::MailOrigin::Character;
 
-    mail.date = formattedDt;
-    mail.body = command.body;
+    mail.createdAt() = utcNow;
+    mail.body() = command.body;
 
     // Get mailUid to store in character record
     mailUid = mail.uid();
