@@ -172,6 +172,20 @@ void server::protocol::ChatCmdLetterListAckOk::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void server::protocol::ChatCmdLetterListAckCancel::Write(
+  const ChatCmdLetterListAckCancel& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.errorCode);
+}
+
+void server::protocol::ChatCmdLetterListAckCancel::Read(
+  ChatCmdLetterListAckCancel& command,
+  server::SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void server::protocol::ChatCmdLetterSend::Write(
   const ChatCmdLetterSend& command,
   server::SinkStream& stream)
