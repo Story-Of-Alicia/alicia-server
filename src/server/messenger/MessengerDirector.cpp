@@ -170,12 +170,23 @@ void MessengerDirector::HandleChatterLetterList(
   network::ClientId clientId,
   const protocol::ChatCmdLetterList& command)
 {
+  bool isInboxRequested = command.mailboxFolder == protocol::MailboxFolder::Inbox;
+  bool isSentRequested = command.mailboxFolder == protocol::MailboxFolder::Sent;
   spdlog::debug("[{}] ChatCmdLetterList: {} [{} {}]",
     clientId,
-    command.mailboxFolder == protocol::MailboxFolder::Inbox ? "Inbox" :
-      command.mailboxFolder == protocol::MailboxFolder::Sent ? "Sent" : "Unknown",
+    isInboxRequested ? "Inbox" :
+      isSentRequested ? "Sent" : "Unknown",
     command.request.lastMailUid,
     command.request.count);
+
+  if (not isInboxRequested and not isSentRequested)
+  {
+    // TODO: respond with cancel and return
+    spdlog::warn("[{}] ChatCmdLetterList: requested unrecognised mailbox {}",
+      clientId,
+      static_cast<uint8_t>(command.mailboxFolder));
+    return;
+  }
 
   const auto& clientContext = GetClientContext(clientId);
 
@@ -235,85 +246,56 @@ void MessengerDirector::HandleChatterLetterList(
       hasMoreMail = res.in != _mailbox.cend();
     });
 
-  // Construct the response based on the mailbox in the request
-  switch (command.mailboxFolder)
+  // Build response mailbox
+  for (const data::Uid& mailUid : mailbox)
   {
-    case protocol::MailboxFolder::Sent:
-    {
-      // Letter list request is for sent mails
-      using SentMail = protocol::ChatCmdLetterListAckOk::SentMail;
-
-      // Go through each sent mail
-      for (const auto& sentMailUid : mailbox)
+    _serverInstance.GetDataDirector().GetMail(mailUid).Immutable(
+      [this, &response, folder = command.mailboxFolder](const data::Mail& mail)
       {
-        // Get sent mail record and process
-        _serverInstance.GetDataDirector().GetMail(sentMailUid).Immutable(
-          [this, &response](const data::Mail& mail)
-          {
-            // Get recipient name to render sent mail response
-            std::string recipientName{};
-            _serverInstance.GetDataDirector().GetCharacter(mail.to()).Immutable(
-              [&recipientName](const data::Character& character)
-              {
-                recipientName = character.name();
-              });
+        // Get mail correspondent depending on the request
+        // Mail recipient if sent mailbox or mail sender if inbox mailbox
+        data::Uid correspondentUid{data::InvalidUid};
+        if (folder == protocol::MailboxFolder::Sent)
+          correspondentUid = mail.to();
+        else if (folder == protocol::MailboxFolder::Inbox)
+          correspondentUid = mail.from();
 
-            // Compile sent mail and add to sent mail list
-            response.sentMails.emplace_back(SentMail{
+        // Get correspondent's name to render mail response
+        std::string correspondentName{};
+        _serverInstance.GetDataDirector().GetCharacter(correspondentUid).Immutable(
+          [&correspondentName](const data::Character& character)
+          {
+            correspondentName = character.name();
+          });
+
+        if (folder == protocol::MailboxFolder::Sent)
+        {
+          // Compile sent mail and add to sent mail list
+          response.sentMails.emplace_back(
+            protocol::ChatCmdLetterListAckOk::SentMail{
               .mailUid = mail.uid(),
-              .recipient = recipientName,
-              .content = SentMail::Content{
+              .recipient = correspondentName,
+              .content = protocol::ChatCmdLetterListAckOk::SentMail::Content{
                 .date = mail.date(),
+                .body = mail.body()
+              }});
+        }
+        else if (folder == protocol::MailboxFolder::Inbox)
+        {
+          // Compile sent mail and add to sent mail list
+          response.inboxMails.emplace_back(
+            protocol::ChatCmdLetterListAckOk::InboxMail{
+              .uid = mail.uid(),
+              .type = mail.type(),
+              .origin = mail.origin(),
+              .sender = correspondentName,
+              .date = mail.date(),
+              .struct0 = protocol::ChatCmdLetterListAckOk::InboxMail::Struct0{
                 .body = mail.body()
               }
             });
-          });
-      }
-      break;
-    }
-    case protocol::MailboxFolder::Inbox:
-    {
-      using InboxMail = protocol::ChatCmdLetterListAckOk::InboxMail;
-
-      // Go through each inbox mail
-      for (const auto& inboxMailUid : mailbox)
-      {
-        // Get sent mail record and process
-        _serverInstance.GetDataDirector().GetMail(inboxMailUid).Immutable(
-          [this, &response](const data::Mail& mail)
-          {
-            // Get recipient name to render sent mail response
-            std::string senderName{};
-            _serverInstance.GetDataDirector().GetCharacter(mail.from()).Immutable(
-              [&senderName](const data::Character& character)
-              {
-                senderName = character.name();
-              });
-
-            // Compile sent mail and add to sent mail list
-            response.inboxMails.emplace_back(InboxMail{
-              InboxMail{
-                .uid = mail.uid(),
-                .type = mail.type(),
-                .origin = mail.origin(),
-                .sender = senderName,
-                .date = mail.date(),
-                .struct0 = InboxMail::Struct0{
-                  .body = mail.body()
-                }
-              }
-            });
-          });
-      }
-      break;
-    }
-    default:
-    {
-      spdlog::warn("[{}] ChatCmdLetterList: Unrecognised mailbox folder {}",
-        clientId,
-        static_cast<uint8_t>(command.mailboxFolder));
-      return;
-    }
+        }
+      });
   }
 
   // `mailbox` size here directly correlates with the loop that processes it 
