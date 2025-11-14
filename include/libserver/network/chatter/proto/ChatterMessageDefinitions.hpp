@@ -58,7 +58,11 @@ enum class ChatterErrorCode : uint32_t
   MailDoesNotExistOrNotAvailable = 7,
   MailDoesNotBelongToCharacter = 8,
   MailUnknownMailboxFolder = 9,
-  MailListInvalidUid = 10
+  MailListInvalidUid = 10,
+  LetterDeleteUnknownMailboxFolder = 11,
+  LetterDeleteMailUnavailable = 12,
+  LetterDeleteMailDoesNotBelongToCharacter = 13,
+  LetterDeleteMailDeleteAfterInsertRaceCondition = 14
 };
 
 struct ChatCmdLogin
@@ -376,6 +380,7 @@ struct ChatCmdLetterReadAckOk
 
 struct ChatCmdLetterReadAckCancel
 {
+  //! Custom error code.
   ChatterErrorCode errorCode{};
 
   static ChatterCommand GetCommand()
@@ -389,6 +394,63 @@ struct ChatCmdLetterReadAckCancel
 
   static void Read(
     ChatCmdLetterReadAckCancel& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdLetterDelete
+{
+  MailboxFolder folder{};
+  data::Uid mailUid{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdLetterDelete;
+  }
+
+  static void Write(
+    const ChatCmdLetterDelete& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdLetterDelete& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdLetterDeleteAckOk
+{
+  MailboxFolder folder{};
+  data::Uid mailUid{};
+  
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdLetterDeleteAckOk;
+  }
+
+  static void Write(
+    const ChatCmdLetterDeleteAckOk& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdLetterDeleteAckOk& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdLetterDeleteAckCancel
+{
+  //! Custom error code.
+  ChatterErrorCode errorCode{};
+  
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdLetterDeleteAckCancel;
+  }
+
+  static void Write(
+    const ChatCmdLetterDeleteAckCancel& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdLetterDeleteAckCancel& command,
     SourceStream& stream);
 };
 

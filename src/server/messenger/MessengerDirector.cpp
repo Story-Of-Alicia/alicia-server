@@ -258,12 +258,23 @@ void MessengerDirector::HandleChatterLetterList(
     _chatterServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
   }
 
+  // Track skipped mail to subtract for final response
+  uint32_t skippedMailCount{0}; 
+
   // Build response mailbox
   for (const data::Uid& mailUid : mailbox)
   {
     _serverInstance.GetDataDirector().GetMail(mailUid).Immutable(
-      [this, &response, folder = command.mailboxFolder](const data::Mail& mail)
+      [this, &response, &skippedMailCount, folder = command.mailboxFolder](const data::Mail& mail)
       {
+        // Skip soft deleted mails
+        if (mail.isDeleted())
+        {
+          // Increment counter and return
+          ++skippedMailCount;
+          return;
+        }
+
         // Get mail correspondent depending on the request
         // Mail recipient if sent mailbox or mail sender if inbox mailbox
         data::Uid correspondentUid{data::InvalidUid};
@@ -315,8 +326,9 @@ void MessengerDirector::HandleChatterLetterList(
   }
 
   // `mailbox` size here directly correlates with the loop that processes it 
+  // The client is to not be made aware of any skipped mails, adjust mail count
   response.mailboxInfo = protocol::ChatCmdLetterListAckOk::MailboxInfo{
-    .mailCount = static_cast<uint32_t>(mailbox.size()),
+    .mailCount = static_cast<uint32_t>(mailbox.size() - skippedMailCount),
     .hasMoreMail = hasMoreMail
   };
 
@@ -509,6 +521,116 @@ void MessengerDirector::HandleChatterLetterRead(
 
   protocol::ChatCmdLetterReadAckOk response{
     .unk0 = command.unk0,
+    .mailUid = command.mailUid
+  };
+  _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+}
+
+void MessengerDirector::HandleChatterLetterDelete(
+  network::ClientId clientId,
+  const protocol::ChatCmdLetterDelete& command)
+{
+  bool isRequestSent = command.folder == protocol::MailboxFolder::Sent;
+  bool isRequestInbox = command.folder == protocol::MailboxFolder::Inbox;
+  spdlog::debug("[{}] ChatCmdLetterDelete: {} {}",
+    clientId,
+    isRequestSent ? "Sent" :
+      isRequestInbox ? "Inbox" : "Unknown",
+    command.mailUid);
+
+  const auto& clientContext = GetClientContext(clientId);
+  
+  Record<data::Mail> mailRecord{};
+  std::optional<protocol::ChatterErrorCode> errorCode{};
+  if (not isRequestSent and not isRequestInbox)
+  {
+    // Mailbox unrecognised
+    spdlog::warn("Character {} tried to delete a mail from unrecognised mailbox {}",
+      clientContext.characterUid,
+      static_cast<uint8_t>(command.folder));
+    errorCode.emplace(protocol::ChatterErrorCode::LetterDeleteUnknownMailboxFolder);
+  }
+  else if (not (mailRecord = _serverInstance.GetDataDirector().GetMail(command.mailUid)).IsAvailable())
+  {
+    // Mail is not available
+    spdlog::warn("Character {} tried to delete mail {} which is currently not available",
+      clientContext.characterUid,
+      command.mailUid);
+    errorCode.emplace(protocol::ChatterErrorCode::LetterDeleteUnknownMailboxFolder);
+  }
+
+  if (not errorCode.has_value())
+  {
+    // No errors yet, do ownership check
+    _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+      [this, &command, &errorCode](data::Character& character)
+      {
+        switch (command.folder)
+        {
+          case protocol::MailboxFolder::Sent:
+          {
+            // Sent mailbox
+            // Find mail
+            const auto& iter = std::ranges::find(character.mailbox.sent(), command.mailUid);
+            // Check if character owns this mail
+            if (iter == character.mailbox.sent().cend())
+            {
+              errorCode.emplace(protocol::ChatterErrorCode::LetterDeleteMailDoesNotBelongToCharacter);
+              return;
+            }
+            break;
+          }
+          case protocol::MailboxFolder::Inbox:
+          {
+            // Inbox mailbox
+            // Find mail
+            const auto& iter = std::ranges::find(character.mailbox.inbox(), command.mailUid);
+            // Check if character owns this mail
+            if (iter == character.mailbox.inbox().cend())
+            {
+              errorCode.emplace(protocol::ChatterErrorCode::LetterDeleteMailDoesNotBelongToCharacter);
+              return;
+            }
+            break;
+          }
+          default:
+          {
+            throw std::runtime_error(
+              std::format(
+                "Unrecognised mailbox {}",
+                static_cast<uint8_t>(command.folder)));
+          }
+        }
+      });
+  }
+
+  if (errorCode.has_value())
+  {
+    if (errorCode.value() == protocol::ChatterErrorCode::LetterDeleteMailDoesNotBelongToCharacter)
+      spdlog::debug("Character {} tried to delete mail {} which they do not own from {} mailbox",
+        clientContext.characterUid,
+        command.mailUid,
+        command.folder == protocol::MailboxFolder::Sent ? "Sent" :
+          command.folder == protocol::MailboxFolder::Inbox ? "Inbox" :
+          throw std::runtime_error(
+            std::format(
+              "Unrecognised mailbox {}",
+              static_cast<uint8_t>(command.folder))));
+
+    protocol::ChatCmdLetterDeleteAckCancel cancel{.errorCode = errorCode.value()};
+    _chatterServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  // Mail exists and character owns this mail, soft delete
+  _serverInstance.GetDataDirector().GetMail(command.mailUid).Mutable(
+    [](data::Mail& mail)
+    {
+      mail.isDeleted() = true;
+    });
+  
+  protocol::ChatCmdLetterDeleteAckOk response{
+    .folder = command.folder,
     .mailUid = command.mailUid
   };
   _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
