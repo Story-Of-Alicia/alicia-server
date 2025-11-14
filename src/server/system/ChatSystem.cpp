@@ -1297,7 +1297,7 @@ void ChatSystem::RegisterAdminCommands()
       {
         if (arguments.size() < 2)
         {
-          return {"find character [name]"};
+          return {"info character [name]"};
         }
 
         const auto name = arguments[1];
@@ -1332,7 +1332,7 @@ void ChatSystem::RegisterAdminCommands()
       {
         if (arguments.size() < 2)
         {
-          return {"find horse [name]"};
+          return {"info user [name]"};
         }
 
         const auto name = arguments[1];
