@@ -1280,6 +1280,55 @@ void DataDirector::ScheduleCharacterLoad(
         "Mails not available");
       return;
     }
+    else
+    {
+      // Preload character records for character names in letter list
+      std::unordered_set<data::Uid> mailCharacterUids{};
+
+      // Process every mail belonging to the loading character
+      for (const auto& mailRecord : mailRecords.value())
+      {
+        // Get character uids from mail record
+        data::Uid mailUid, from, to;
+        mailRecord.Immutable(
+          [&mailUid, &from, &to](const data::Mail& mail)
+          {
+            mailUid = mail.uid();
+            from = mail.from();
+            to = mail.to();
+          });
+
+        // Mail ownership logic
+        bool isInboxMail = to == characterUid && from != characterUid;
+        bool isSentMail = from == characterUid && to != characterUid;
+        bool isSelfMail = from == characterUid && to == characterUid;
+
+        bool isOwnedMail = isInboxMail || isSentMail || isSelfMail;
+        bool isAnyInvalid = from == data::InvalidUid || to == data::InvalidUid;
+
+        if (isAnyInvalid or not isOwnedMail)
+        {
+          // Mail is in another mailbox instead of self-sender's, or one of the UIDs are invalid
+          userDataContext.debugMessage =
+            std::format("Error processing mail {} - character {} from {} to {}",
+              mailUid,
+              characterUid,
+              from,
+              to);
+          return;
+        }
+
+        mailCharacterUids.emplace(from);
+        mailCharacterUids.emplace(to);
+      }
+
+      // Preload characters from uids
+      // TODO: is this the best way forward? `Get` doesn't take unordered_set
+      GetCharacterCache().Get(
+        std::vector<data::Uid>(
+          mailCharacterUids.begin(),
+          mailCharacterUids.end()));
+    }
 
     userDataContext.isCharacterDataLoaded.store(true, std::memory_order::release);
   });

@@ -477,12 +477,13 @@ struct Mail
   };
 
   dao::Field<Uid> uid{InvalidUid};
+  dao::Field<Uid> from{InvalidUid};
+  dao::Field<Uid> to{InvalidUid};
 
   dao::Field<bool> read{false};
   dao::Field<MailType> type{};
   dao::Field<MailOrigin> origin{};
 
-  dao::Field<std::string> name{};
   dao::Field<std::string> date{};
   dao::Field<std::string> body{};
 };

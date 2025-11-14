@@ -1243,12 +1243,13 @@ void server::FileDataSource::RetrieveMail(data::Uid uid, data::Mail& mail)
 
   const auto json = nlohmann::json::parse(dataFile);
   mail.uid = json["uid"].get<data::Uid>();
+  mail.from = json["from"].get<data::Uid>();
+  mail.to = json["to"].get<data::Uid>();
 
   mail.read = json["read"].get<bool>();
   mail.type = json["type"].get<data::Mail::MailType>();
   mail.origin = json["origin"].get<data::Mail::MailOrigin>();
 
-  mail.name = json["name"].get<std::string>();
   mail.date = json["date"].get<std::string>();
   mail.body = json["body"].get<std::string>();
 }
@@ -1267,12 +1268,13 @@ void server::FileDataSource::StoreMail(data::Uid uid, const data::Mail& mail)
 
   nlohmann::json json;
   json["uid"] = mail.uid();
+  json["from"] = mail.from();
+  json["to"] = mail.to();
 
   json["read"] = mail.read();
   json["type"] = mail.type();
   json["origin"] = mail.origin();
 
-  json["name"] = mail.name();
   json["date"] = mail.date();
   json["body"] = mail.body();
 

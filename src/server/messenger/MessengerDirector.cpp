@@ -183,11 +183,14 @@ void MessengerDirector::HandleChatterLetterList(
     .mailboxFolder = command.mailboxFolder
   };
 
+  std::string characterName{};
   bool hasMoreMail{false};
   std::vector<data::Uid> mailbox{};
   _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
-    [&command, &mailbox, &hasMoreMail](const data::Character& character)
+    [&command, &mailbox, &hasMoreMail, &characterName](const data::Character& character)
     {
+      characterName = character.name();
+
       // Get the mailbox based on the command request
       std::vector<data::Uid> _mailbox{};
       if (command.mailboxFolder == protocol::MailboxFolder::Inbox)
@@ -240,14 +243,25 @@ void MessengerDirector::HandleChatterLetterList(
       // Letter list request is for sent mails
       using SentMail = protocol::ChatCmdLetterListAckOk::SentMail;
 
+      // Go through each sent mail
       for (const auto& sentMailUid : mailbox)
       {
+        // Get sent mail record and process
         _serverInstance.GetDataDirector().GetMail(sentMailUid).Immutable(
-          [&response](const data::Mail& mail)
+          [this, &response](const data::Mail& mail)
           {
+            // Get recipient name to render sent mail response
+            std::string recipientName{};
+            _serverInstance.GetDataDirector().GetCharacter(mail.to()).Immutable(
+              [&recipientName](const data::Character& character)
+              {
+                recipientName = character.name();
+              });
+
+            // Compile sent mail and add to sent mail list
             response.sentMails.emplace_back(SentMail{
               .mailUid = mail.uid(),
-              .recipient = mail.name(),
+              .recipient = recipientName,
               .content = SentMail::Content{
                 .date = mail.date(),
                 .body = mail.body()
@@ -261,17 +275,28 @@ void MessengerDirector::HandleChatterLetterList(
     {
       using InboxMail = protocol::ChatCmdLetterListAckOk::InboxMail;
 
+      // Go through each inbox mail
       for (const auto& inboxMailUid : mailbox)
       {
+        // Get sent mail record and process
         _serverInstance.GetDataDirector().GetMail(inboxMailUid).Immutable(
-          [&response](const data::Mail& mail)
+          [this, &response](const data::Mail& mail)
           {
+            // Get recipient name to render sent mail response
+            std::string senderName{};
+            _serverInstance.GetDataDirector().GetCharacter(mail.from()).Immutable(
+              [&senderName](const data::Character& character)
+              {
+                senderName = character.name();
+              });
+
+            // Compile sent mail and add to sent mail list
             response.inboxMails.emplace_back(InboxMail{
               InboxMail{
                 .uid = mail.uid(),
                 .type = mail.type(),
                 .origin = mail.origin(),
-                .sender = mail.name(),
+                .sender = senderName,
                 .date = mail.date(),
                 .struct0 = InboxMail::Struct0{
                   .body = mail.body()
@@ -327,10 +352,13 @@ void MessengerDirector::HandleChatterLetterSend(
   // TODO: bad word checks and/or deny sending the letter as a result?
 
   const auto& clientContext = GetClientContext(clientId);
+
   std::string senderName{};
+  data::Uid senderUid{data::InvalidUid};
   _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
-    [&senderName](const data::Character& character)
+    [&senderUid, &senderName](const data::Character& character)
     {
+      senderUid = character.uid();
       senderName = character.name();
     });
 
@@ -341,13 +369,19 @@ void MessengerDirector::HandleChatterLetterSend(
   // Create and store mail
   data::Uid mailUid{data::InvalidUid};
   auto mailRecord = _serverInstance.GetDataDirector().CreateMail();
-  mailRecord.Mutable([&mailUid, &command, &senderName, &formattedDt](data::Mail& mail)
+  mailRecord.Mutable([&mailUid, &command, &formattedDt, &senderUid, &recipientCharacterUid](data::Mail& mail)
   {
-    mail.name = senderName;
+    // Set mail parameters
+    mail.from = senderUid;
+    mail.to = recipientCharacterUid;
+
+    mail.type = data::Mail::MailType::CanReply;
+    mail.origin = data::Mail::MailOrigin::Character;
+
     mail.date = formattedDt;
     mail.body = command.body;
 
-    // Set mailUid to store in character record
+    // Get mailUid to store in character record
     mailUid = mail.uid();
   });
 
