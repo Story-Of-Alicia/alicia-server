@@ -10,6 +10,7 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <exception>
 
 namespace server
 {
@@ -114,31 +115,16 @@ void BreedingMarket::Tick()
         uint32_t earnings = cachedData.breedingCharge * timesMated;
         
         // Pay the owner
-        auto ownerRecord = _serverInstance.GetDataDirector().GetCharacter(cachedData.ownerUid);
-        if (ownerRecord)
-        {
-          ownerRecord.Mutable([earnings](data::Character& owner)
-          {
-            owner.carrots() = owner.carrots() + earnings;
-          });
-        }
-        else
-        {
-          // Owner not loaded yet - queue payment for later
-          _pendingPayments.push_back({cachedData.ownerUid, BreedingMarket::StallionBreedingEarnings{timesMated, earnings, cachedData.breedingCharge}});
-          spdlog::debug("Breeding market: Owner {} not in cache yet, queued payment of {} carrots", 
-            cachedData.ownerUid, earnings);
-        }
+        PayOwner(cachedData.ownerUid, earnings);
         
         // Reset horse type back to Adult (0)
         // Trigger async load of the horse
-        auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(cachedData.horseUid);
+        const auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(cachedData.horseUid);
         if (horseRecord)
         {
           horseRecord->Mutable([&cachedData](data::Horse& horse)
           {
             horse.type() = 0; // Adult
-            spdlog::info("Breeding market: Reset horse {} type from Stallion to Adult", cachedData.horseUid);
           });
         }
         else
@@ -166,8 +152,8 @@ void BreedingMarket::Tick()
     // If all stallions are loaded, mark as complete
     if (_stallionUidsToLoad.empty())
     {
-      spdlog::info("Loaded {} registered stallion(s) from database", loadedCount);
       _stallionsLoaded = true;
+      spdlog::info("Loaded {} stallion(s) from the data source", loadedCount);
     }
     else
     {
@@ -181,7 +167,6 @@ void BreedingMarket::Tick()
   }
   
   // Try to process pending payments and horse type resets
-  ProcessPendingPayments();
   ProcessPendingHorseTypeResets();
 }
 
@@ -213,19 +198,7 @@ void BreedingMarket::CheckExpiredStallions()
       
       // Calculate and pay owner their earnings
       uint32_t earnings = stallionData.breedingCharge * timesMated;
-      auto ownerRecord = _serverInstance.GetDataDirector().GetCharacter(stallionData.ownerUid);
-      if (ownerRecord)
-      {
-        ownerRecord.Mutable([earnings](data::Character& owner)
-        {
-          owner.carrots() = owner.carrots() + earnings;
-        });
-      }
-      else
-      {
-        // Owner not loaded yet - queue payment for later
-        _pendingPayments.push_back({stallionData.ownerUid, BreedingMarket::StallionBreedingEarnings{timesMated, earnings, stallionData.breedingCharge}});
-      }
+      PayOwner(stallionData.ownerUid, earnings);
       
       // Remove from cache
       expiredHorseUids.push_back(stallionData.horseUid);
@@ -267,11 +240,6 @@ void BreedingMarket::CheckExpiredStallions()
     
     // Remove from horse->stallion map
     _horseToStallionMap.erase(horseUid);
-  }
-  
-  if (!expiredHorseUids.empty())
-  {
-    spdlog::info("Removed {} expired stallion(s) from breeding market", expiredHorseUids.size());
   }
 }
 
@@ -434,7 +402,7 @@ std::optional<BreedingMarket::StallionBreedingEarnings> BreedingMarket::GetUnreg
   const StallionData& cachedData = cacheIt->second;
   
   // Get times mated from stallion record (during this registration period)
-  auto stallionRecord = _serverInstance.GetDataDirector().GetStallionCache().Get(stallionUid);
+  const auto stallionRecord = _serverInstance.GetDataDirector().GetStallionCache().Get(stallionUid);
   if (!stallionRecord)
   {
     return std::nullopt;
@@ -446,7 +414,7 @@ std::optional<BreedingMarket::StallionBreedingEarnings> BreedingMarket::GetUnreg
     timesMated = stallion.timesMated();
   });
 
-  uint32_t compensation = timesMated * cachedData.breedingCharge;
+  const uint32_t compensation = timesMated * cachedData.breedingCharge;
 
   return BreedingMarket::StallionBreedingEarnings{timesMated, compensation, cachedData.breedingCharge};
 }
@@ -514,37 +482,35 @@ void BreedingMarket::ProcessPendingHorseTypeResets()
   
 }
 
-void BreedingMarket::ProcessPendingPayments()
+void BreedingMarket::PayOwner(data::Uid ownerUid, uint32_t earnings)
 {
-  // This is called from Tick() which already holds the mutex
-  if (_pendingPayments.empty())
+  if (ownerUid == data::InvalidUid || earnings == 0)
   {
     return;
   }
-  
-  std::vector<PendingPayment> stillPending;
-  
-  for (const auto& payment : _pendingPayments)
+
+  auto ownerRecord = _serverInstance.GetDataDirector().GetCharacter(ownerUid);
+  if (ownerRecord)
   {
-    auto ownerRecord = _serverInstance.GetDataDirector().GetCharacter(payment.ownerUid);
-    if (ownerRecord)
+    ownerRecord.Mutable([earnings](data::Character& owner)
     {
-      ownerRecord.Mutable([&payment](data::Character& owner)
-      {
-        owner.carrots() = owner.carrots() + payment.earnings.compensation;
-      });
-      spdlog::info("Breeding market: Paid owner {} a total of {} carrots ({} × {} matings) (deferred)", 
-        payment.ownerUid, payment.earnings.compensation, payment.earnings.breedingCharge, payment.earnings.timesMated);
-    }
-    else
-    {
-      // Still not loaded, keep it in the queue
-      stillPending.push_back(payment);
-    }
+      owner.carrots() = owner.carrots() + earnings;
+    });
+    return;
   }
-  
-  _pendingPayments = std::move(stillPending);
-  
+
+  try
+  {
+    auto& dataSource = _serverInstance.GetDataDirector().GetDataSource();
+    data::Character offlineOwner{};
+    dataSource.RetrieveCharacter(ownerUid, offlineOwner);
+    offlineOwner.carrots() = offlineOwner.carrots() + earnings;
+    dataSource.StoreCharacter(ownerUid, offlineOwner);
+  }
+  catch (const std::exception& ex)
+  {
+    spdlog::error("Breeding market: Failed to pay owner {} ({} carrots): {}", ownerUid, earnings, ex.what());
+  }
 }
 
 } // namespace server
