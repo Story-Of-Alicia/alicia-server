@@ -106,9 +106,20 @@ void Client::WriteLoop() noexcept
   // Write the suppliers to the write buffer.
   while (not _writeQueue.empty())
   {
-    const auto& supplier = _writeQueue.front();
-    supplier(_writeBuffer);
-    _writeQueue.pop();
+    try
+    {
+      const auto& supplier = _writeQueue.front();
+      supplier(_writeBuffer);
+      _writeQueue.pop();
+    }
+    catch (const std::exception& e)
+    {
+      spdlog::error("Unhandled exception in supplier of write data for client {}: {}",
+        _clientId,
+        e.what());
+      End();
+      return;
+    }
   }
 
   _isSending.store(true, std::memory_order::release);
@@ -199,7 +210,7 @@ void Client::ReadLoop() noexcept
       catch (const std::exception& x)
       {
         spdlog::debug(
-          "Client {} is disconnecting because of write loop exception: {}",
+          "Client {} is disconnecting because of read loop exception: {}",
           clientPtr->_clientId,
           x.what());
 

@@ -29,6 +29,13 @@ namespace server
 namespace
 {
 
+// The base XOR scrambling constant, which seems to not roll.
+constexpr std::array XorCode{
+  static_cast<std::byte>(0x2B),
+  static_cast<std::byte>(0xFE),
+  static_cast<std::byte>(0xB8),
+  static_cast<std::byte>(0x02)};
+
 // todo: de/serializer map, handler map
 
 } // anon namespace
@@ -86,113 +93,138 @@ size_t ChatterServer::OnClientData(
 {
   SourceStream commandStream{data};
 
-  // The base XOR scrambling constant, which seems to not roll.
-  constexpr std::array XorCode{
-    static_cast<std::byte>(0x2B),
-    static_cast<std::byte>(0xFE),
-    static_cast<std::byte>(0xB8),
-    static_cast<std::byte>(0x02)};
-
-  protocol::ChatterCommandHeader header;
-  commandStream.Read(header.length)
-    .Read(header.commandId);
-  header.length ^= *reinterpret_cast<const uint16_t*>(XorCode.data());
-  header.commandId ^= *reinterpret_cast<const uint16_t*>(XorCode.data() + 2);
-
-  std::vector<std::byte> commandData(header.length);
-  SinkStream commandDataSink({commandData.begin(), commandData.end()});
-
-  for (uint16_t idx = 0; idx < header.length - sizeof(protocol::ChatterCommandHeader); ++idx)
+  while (commandStream.GetCursor() != commandStream.Size())
   {
-    std::byte& val = commandData[idx];
-    commandStream.Read(val);
-    val ^= XorCode[(commandStream.GetCursor() - 1) % 4];
+    const auto origin = commandStream.GetCursor();
+
+    const auto bufferedDataSize = commandStream.Size() - commandStream.GetCursor();
+
+    // If there's not enough buffered data to read the header,
+    // break out of the loop.
+    if (bufferedDataSize < sizeof(protocol::ChatterCommandHeader))
+      break;
+
+    // Read the header.
+    protocol::ChatterCommandHeader header{};
+    commandStream.Read(header.length)
+      .Read(header.commandId);
+
+    // Decrypt the header.
+    header.length ^= *reinterpret_cast<const uint16_t*>(XorCode.data());
+    header.commandId ^= *reinterpret_cast<const uint16_t*>(XorCode.data() + 2);
+
+    // The length of the command must be at least the size of the header
+    // and less than 4KB.
+    if (header.length < sizeof(protocol::ChatterCommandHeader) ||  header.length > 4092)
+    {
+      break;
+    }
+
+    // todo: verify length, verify command, consume the rest of data even if handler does not exist.
+
+    // There's not enough data to read the command.
+    if (bufferedDataSize < header.length)
+    {
+      commandStream.Seek(origin);
+      break;
+    }
+
+    const auto commandDataLength = header.length - sizeof(protocol::ChatterCommandHeader);
+
+    std::vector<std::byte> commandData(commandDataLength);
+    SinkStream commandDataSink({commandData.begin(), commandData.end()});
+
+    for (int64_t idx = 0; idx < commandDataLength; ++idx)
+    {
+      std::byte& val = commandData[idx];
+      commandStream.Read(val);
+      val ^= XorCode[(commandStream.GetCursor() - 1) % 4];
+    }
+
+    SourceStream commandDataSource({commandData.begin(), commandData.end()});
+
+    switch (header.commandId)
+    {
+      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdLogin):
+      {
+        // TODO: deserialization and handler call
+        protocol::ChatCmdLogin command;
+        commandDataSource.Read(command);
+        _chatterCommandHandler.HandleChatterLogin(clientId, command);
+        break;
+      }
+      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdLetterList):
+      {
+        protocol::ChatCmdLetterList command;
+        commandDataSource.Read(command);
+        _chatterCommandHandler.HandleChatterLetterList(clientId, command);
+        break;
+      }
+      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdLetterSend):
+      {
+        protocol::ChatCmdLetterSend command;
+        commandDataSource.Read(command);
+        _chatterCommandHandler.HandleChatterLetterSend(clientId, command);
+        break;
+      }
+      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdLetterRead):
+      {
+        protocol::ChatCmdLetterRead command;
+        commandDataSource.Read(command);
+        _chatterCommandHandler.HandleChatterLetterRead(clientId, command);
+        break;
+      }
+      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdLetterDelete):
+      {
+        protocol::ChatCmdLetterDelete command;
+        commandDataSource.Read(command);
+        _chatterCommandHandler.HandleChatterLetterDelete(clientId, command);
+        break;
+      }
+      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdEnterRoom):
+      {
+        protocol::ChatCmdEnterRoom command;
+        commandDataSource.Read(command);
+        _chatterCommandHandler.HandleChatterEnterRoom(clientId, command);
+        break;
+      }
+      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdChat):
+      {
+        protocol::ChatCmdChat command;
+        commandDataSource.Read(command);
+        _chatterCommandHandler.HandleChatterChat(clientId, command);
+        break;
+      }
+      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdInputState):
+      {
+        protocol::ChatCmdInputState command;
+        commandDataSource.Read(command);
+        _chatterCommandHandler.HandleChatterInputState(clientId, command);
+        break;
+      }
+      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdChannelInfo):
+      {
+        protocol::ChatCmdChannelInfo command;
+        commandDataSource.Read(command);
+        _chatterCommandHandler.HandleChatterChannelInfo(clientId, command);
+        break;
+      }
+      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdGuildLogin):
+      {
+        protocol::ChatCmdGuildLogin command;
+        commandDataSource.Read(command);
+        _chatterCommandHandler.HandleChatterGuildLogin(clientId, command);
+        break;
+      }
+      default:
+      {
+        spdlog::warn("Unhandled chatter: {}", header.commandId);
+        break;
+      }
+    }
   }
 
-  SourceStream commandDataSource({commandData.begin(), commandData.end()});
-
-  switch (header.commandId)
-  {
-    case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdLogin):
-    {
-      // TODO: deserialization and handler call
-      protocol::ChatCmdLogin command;
-      commandDataSource.Read(command);
-      _chatterCommandHandler.HandleChatterLogin(clientId, command);
-      break;
-    }
-    case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdLetterList):
-    {
-      protocol::ChatCmdLetterList command;
-      commandDataSource.Read(command);
-      _chatterCommandHandler.HandleChatterLetterList(clientId, command);
-      break;
-    }
-    case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdLetterSend):
-    {
-      protocol::ChatCmdLetterSend command;
-      commandDataSource.Read(command);
-      _chatterCommandHandler.HandleChatterLetterSend(clientId, command);
-      break;
-    }
-    case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdLetterRead):
-    {
-      protocol::ChatCmdLetterRead command;
-      commandDataSource.Read(command);
-      _chatterCommandHandler.HandleChatterLetterRead(clientId, command);
-      break;
-    }
-    case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdLetterDelete):
-    {
-      protocol::ChatCmdLetterDelete command;
-      commandDataSource.Read(command);
-      _chatterCommandHandler.HandleChatterLetterDelete(clientId, command);
-      break;
-    }
-    case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdEnterRoom):
-    {
-      protocol::ChatCmdEnterRoom command;
-      commandDataSource.Read(command);
-      _chatterCommandHandler.HandleChatterEnterRoom(clientId, command);
-      break;
-    }
-    case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdChat):
-    {
-      protocol::ChatCmdChat command;
-      commandDataSource.Read(command);
-      _chatterCommandHandler.HandleChatterChat(clientId, command);
-      break;
-    }
-    case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdInputState):
-    {
-      protocol::ChatCmdInputState command;
-      commandDataSource.Read(command);
-      _chatterCommandHandler.HandleChatterInputState(clientId, command);
-      break;
-    }
-    case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdChannelInfo):
-    {
-      protocol::ChatCmdChannelInfo command;
-      commandDataSource.Read(command);
-      _chatterCommandHandler.HandleChatterChannelInfo(clientId, command);
-      break;
-    }
-    case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdGuildLogin):
-    {
-      protocol::ChatCmdGuildLogin command;
-      commandDataSource.Read(command);
-      _chatterCommandHandler.HandleChatterGuildLogin(clientId, command);
-      break;
-    }
-    default:
-    {
-      spdlog::warn("Unhandled chatter: {}", header.commandId);
-      break;
-    }
-  }
-
-  // FIXME: correct this behaviour of not using the cursor
-  return data.size();
+  return commandStream.GetCursor();
 }
 
 network::asio::ip::address_v4 ChatterServer::GetClientAddress(const network::ClientId clientId)

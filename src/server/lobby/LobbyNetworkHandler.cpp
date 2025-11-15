@@ -927,7 +927,17 @@ void LobbyNetworkHandler::HandleRoomList(
     .teamMode = command.teamMode};
 
   // todo: update every x tick
-  const auto roomSnapshots = _serverInstance.GetRoomSystem().GetRoomsSnapshot();
+  std::vector<server::Room::Snapshot> roomSnapshots{};
+  std::ranges::copy_if(
+    _serverInstance.GetRoomSystem().GetRoomsSnapshot(),
+    std::back_inserter(roomSnapshots),
+    [&command](const server::Room::Snapshot& roomSnapshot)
+    {
+      return 
+        roomSnapshot.details.gameMode == static_cast<server::Room::GameMode>(command.gameMode) &&
+        roomSnapshot.details.teamMode == static_cast<server::Room::TeamMode>(command.teamMode);
+    });
+
   const auto roomChunks = std::views::chunk(
     roomSnapshots,
     RoomsPerPage);
@@ -943,17 +953,6 @@ void LobbyNetworkHandler::HandleRoomList(
 
     for (const auto& room : roomChunks[pageIndex])
     {
-      const protocol::GameMode roomGameMode = static_cast<
-        protocol::GameMode>(room.details.gameMode);
-      const protocol::TeamMode roomTeamMode = static_cast<
-        protocol::TeamMode>(room.details.teamMode);
-
-      if (roomGameMode != command.gameMode
-        || roomTeamMode != command.teamMode)
-      {
-        continue;
-      }
-
       auto& roomResponse = response.rooms.emplace_back();
 
       roomResponse.state = room.isPlaying ? 
@@ -1070,6 +1069,14 @@ void LobbyNetworkHandler::HandleMakeRoom(
     return;
   }
 
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [this, createdRoomUid, &command](const data::Character& character)
+    {
+      const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+        character.uid()).userName;
+      spdlog::info("Room {} created by '{}' with the name '{}'", createdRoomUid, userName, command.name);
+    });
+
   size_t identityHash = std::hash<uint32_t>()(clientContext.characterUid);
   boost::hash_combine(identityHash, createdRoomUid);
 
@@ -1088,6 +1095,12 @@ void LobbyNetworkHandler::HandleMakeRoom(
     [response]()
     {
       return response;
+    });
+
+  _serverInstance.GetLobbyDirector().GetScheduler().Queue(
+    [this, userName = clientContext.userName, createdRoomUid]()
+    {
+      _serverInstance.GetLobbyDirector().SetUserRoom(userName, createdRoomUid);
     });
 }
 
@@ -1382,6 +1395,12 @@ void LobbyNetworkHandler::HandleCreateNickname(
         .emblemId = command.character.appearance.emblemId,
       };
     });
+
+  // Log for moderation
+  spdlog::info("User '{}' created a character ({}) with the name '{}'",
+    clientContext.userName,
+    userCharacterUid,
+    command.nickname);
 
   SendLoginOK(clientId);
 }

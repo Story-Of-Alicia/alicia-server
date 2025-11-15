@@ -33,7 +33,7 @@ if (${MSVC})
     target_link_libraries(platform-properties INTERFACE
             icu.lib)
     target_compile_options(platform-properties INTERFACE
-            /utf-8)
+            /utf-8 /bigobj)
 else()
     target_link_libraries(platform-properties INTERFACE
             icuuc icui18n)

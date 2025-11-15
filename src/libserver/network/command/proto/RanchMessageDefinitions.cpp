@@ -1966,15 +1966,15 @@ void RanchCommandKickRanchNotify::Read(
   throw std::runtime_error("Not implemented");
 }
 
-void RanchCommandOpCmd::Write(
-  const RanchCommandOpCmd& command,
+void AcCmdCROpCmd::Write(
+  const AcCmdCROpCmd& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void RanchCommandOpCmd::Read(
-  RanchCommandOpCmd& command,
+void AcCmdCROpCmd::Read(
+  AcCmdCROpCmd& command,
   SourceStream& stream)
 {
   stream.Read(command.command);
