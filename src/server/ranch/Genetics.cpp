@@ -110,7 +110,6 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
 
   if (!mareRecord || !stallionRecord)
   {
-    spdlog::error("Genetics: Mare or stallion not found");
     return result;
   }
 
@@ -198,7 +197,6 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
   if (sharedColorGroupId == 0 || !isColorGroupValid(sharedColorGroupId))
   {
     sharedColorGroupId = getRandomValidColorGroup();  // Random fallback (60%) or invalid color group replacement
-    spdlog::debug("Genetics: Mane/tail color group - inherited group invalid for coat, using random valid group {}", sharedColorGroupId);
   }
   
   int32_t maneColorGroupId = sharedColorGroupId;
@@ -388,9 +386,6 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
   result.tailColor = tailColorGroupId;
   result.tailShape = tailShape;
 
-  spdlog::debug("TryBreeding: Mane(colorGroup:{}, shape:{}, TID:{}), Tail(colorGroup:{}, shape:{}, TID:{})",
-                maneColorGroupId, maneShape, result.maneTid, tailColorGroupId, tailShape, result.tailTid);
-
   return result;
 }
 
@@ -453,9 +448,6 @@ uint8_t Genetics::CalculateFoalGrade(uint8_t mareGrade, uint8_t stallionGrade, u
   // Clamp to valid range [1, 8]
   if (finalGrade < 1) finalGrade = 1;
   if (finalGrade > 8) finalGrade = 8;
-  
-  spdlog::debug("Genetics: Grade breeding - Parents {}/{} (clamped {}/{}), distance {}, offset {}, final grade {}", 
-    mareGrade, stallionGrade, clampedMareGrade, clampedStallionGrade, gradeDistance, gradeOffset, finalGrade);
   
   return static_cast<uint8_t>(finalGrade);
 }
@@ -588,10 +580,6 @@ Genetics::StatResult Genetics::CalculateFoalStats(
     result.ambition = std::min(result.ambition, 100u);
   }
   
-  spdlog::debug("Genetics: Target grade {}, total range {}-{}, actual total {}", 
-    targetGrade, minTotal, maxTotal, 
-    result.agility + result.courage + result.rush + result.endurance + result.ambition);
-  
   return result;
 }
 
@@ -655,8 +643,6 @@ Genetics::PotentialResult Genetics::CalculateFoalPotential(
   {
     // No potential
     result.hasPotential = false;
-    spdlog::debug("Genetics: Foal potential - no potential (rolled {}, needed < {}, stars:{}, parents:{})", 
-      potentialRoll, potentialProbability, coatStars, parentsWithPotential);
     return result;
   }
   
@@ -671,9 +657,7 @@ Genetics::PotentialResult Genetics::CalculateFoalPotential(
   } while (potentialType == 12);
   
   result.type = potentialType;
-  
-  spdlog::debug("Genetics: Foal potential - has:{}, type:{} ({}% chance, stars:{}, parents:{})",
-    result.hasPotential, result.type, potentialProbability, coatStars, parentsWithPotential);
+
   
   return result;
 }
@@ -725,8 +709,6 @@ data::Tid Genetics::CalculateFoalSkin(
   uint16_t totalBonusPercentage = comboBonus + pregnancyBonus + lineageBonus;
   if (totalBonusPercentage > 100) totalBonusPercentage = 100;  // Cap at 100%
   
-  spdlog::debug("Genetics: Stallion coat inheritance bonus = {}% (mareCombo:{} + stallionCombo:{} = +{}%, pregnancy:{} = +{}%, lineage:{} = +{}%)",
-    totalBonusPercentage, mareCombo, stallionCombo, comboBonus, pregnancyChance, pregnancyBonus, stallionLineage, lineageBonus);
   
   // Get grandparent skins in order: mare's parents, stallion's parents
   std::vector<data::Tid> gpSkins;
@@ -819,8 +801,6 @@ data::Tid Genetics::CalculateFoalSkin(
   gpWeight = (gpWeight / totalWeight) * 100.0f;
   randomWeight = (randomWeight / totalWeight) * 100.0f;
   
-  spdlog::debug("Genetics: Normalized weights - Mare:{:.1f}%, Stallion:{:.1f}%, GPs:{:.1f}% each, Random:{:.1f}%",
-    mareWeight, stallionWeight, gpWeight, randomWeight);
   
   // Build cumulative thresholds (using floats for precision)
   float mareThreshold = mareWeight;
@@ -866,13 +846,9 @@ data::Tid Genetics::CalculateFoalSkin(
     selectedSkin = getRandomValidSkin();
   }
   
-  spdlog::debug("Genetics: Skin inheritance roll={:.2f} (Mare<{:.1f}, Stallion<{:.1f}, Random otherwise)",
-    roll, mareThreshold, stallionThreshold);
   
   // Log final selection
   const auto& coatInfo = _serverInstance.GetHorseRegistry().GetCoatInfo(selectedSkin);
-  spdlog::debug("Genetics: Foal skin - selected TID {} (grade requirement: {}, foal grade: {})",
-    selectedSkin, coatInfo.minGrade, foalGrade);
   
   return selectedSkin;
 }
@@ -918,13 +894,11 @@ uint32_t server::Genetics::CalculateLineage(
   if (mareSkin == foalSkinTid)
   {
     lineage += 2;
-    spdlog::debug("Genetics: Lineage - mare has matching coat (+2)");
   }
   
   if (stallionSkin == foalSkinTid)
   {
     lineage += 2;
-    spdlog::debug("Genetics: Lineage - stallion has matching coat (+2)");
   }
   
   // Check grandparents: +1 for each grandparent with matching coat
@@ -945,7 +919,6 @@ uint32_t server::Genetics::CalculateLineage(
         if (grandparentSkin == foalSkinTid)
         {
           lineage += 1;
-          spdlog::debug("Genetics: Lineage - maternal grandparent has matching coat (+1)");
         }
       }
     }
@@ -968,13 +941,11 @@ uint32_t server::Genetics::CalculateLineage(
         if (grandparentSkin == foalSkinTid)
         {
           lineage += 1;
-          spdlog::debug("Genetics: Lineage - paternal grandparent has matching coat (+1)");
         }
       }
     }
   }
   
-  spdlog::debug("Genetics: Lineage calculation - foal skin {}, final lineage: {}", foalSkinTid, lineage);
   
   return lineage;
 }
