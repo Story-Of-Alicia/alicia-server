@@ -866,13 +866,7 @@ void RaceDirector::HandleEnterRoom(
         protocol::BuildProtocolItems(
           protocolRacer.avatar->equipment,
           *_serverInstance.GetDataDirector().GetItemCache().Get(
-            character.characterEquipment()));
-
-        // Build the mount equipment.
-        protocol::BuildProtocolItems(
-          protocolRacer.avatar->equipment,
-          *_serverInstance.GetDataDirector().GetItemCache().Get(
-            character.mountEquipment()));
+            character.equipment()));
 
         const auto mountRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
           character.mountUid());

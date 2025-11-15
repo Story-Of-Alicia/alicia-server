@@ -77,9 +77,9 @@ struct LobbyCommandLoginOK
   std::string introduction{};
 
   //! Max 16 elements.
-  std::vector<Item> characterEquipment{};
+  std::vector<Item> equipmentItems{};
   //! Max 16 elements.
-  std::vector<Item> mountEquipment{};
+  std::vector<Item> expiringItems{};
 
   uint16_t level{};
   int32_t carrots{};

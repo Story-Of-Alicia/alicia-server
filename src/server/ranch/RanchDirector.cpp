@@ -955,7 +955,7 @@ void RanchDirector::HandleEnterRanch(
 
       // Character's equipment.
       const auto equipment = GetServerInstance().GetDataDirector().GetItemCache().Get(
-        character.characterEquipment());
+        character.equipment());
       if (not equipment)
       {
         throw std::runtime_error(
@@ -1886,8 +1886,9 @@ void RanchDirector::HandleWearEquipment(
 
       // Add the mount back to the horse list.
       character.horses().emplace_back(character.mountUid());
-      character.mountUid() = equippedHorseUid;
 
+      // Select the new mount.
+      character.mountUid() = equippedHorseUid;
       // Remove the new mount from the horse list.
       character.horses().erase(
         std::ranges::find(character.horses(), equippedHorseUid));
@@ -1917,7 +1918,7 @@ void RanchDirector::HandleWearEquipment(
     if (not equippedItemTemplate->characterPartInfo.has_value()
       && not equippedItemTemplate->mountPartInfo.has_value())
     {
-      throw std::runtime_error("Tried equipping item which is not a valid character or mount equipment");
+      throw std::runtime_error("Tried equipping item which is not a valid character or a mount equipment");
     }
 
     characterRecord.Mutable(
@@ -1928,7 +1929,7 @@ void RanchDirector::HandleWearEquipment(
       const bool isMountEquipment = equippedItemTemplate->mountPartInfo.has_value();
 
       // Retrieve the current equipment UIDs.
-      std::vector<data::Uid> equipmentUids = character.characterEquipment();
+      std::vector<data::Uid> equipmentUids = character.equipment();
 
       // Determine which equipment is to be replaced by the newly equipped item.
       std::vector<data::Uid> equipmentToReplace;
@@ -1951,8 +1952,8 @@ void RanchDirector::HandleWearEquipment(
 
         if (isCharacterEquipment)
         {
-          // Only compare character parts if the existing equipment template
-          if (equipmentTemplate.has_value() && equipmentTemplate->characterPartInfo.has_value())
+          if (equipmentTemplate.has_value()
+            && equipmentTemplate->characterPartInfo.has_value())
           {
             if (static_cast<uint32_t>(equipmentTemplate->characterPartInfo->slot)
               & static_cast<uint32_t>(equippedItemTemplate->characterPartInfo->slot))
@@ -1963,9 +1964,8 @@ void RanchDirector::HandleWearEquipment(
         }
         else if (isMountEquipment)
         {
-          // Only compare mount parts if the existing equipment template
           if (equipmentTemplate.has_value() 
-          && equipmentTemplate->mountPartInfo.has_value())
+            && equipmentTemplate->mountPartInfo.has_value())
           {
             if (static_cast<uint32_t>(equipmentTemplate->mountPartInfo->slot)
               & static_cast<uint32_t>(equippedItemTemplate->mountPartInfo->slot))
@@ -1976,25 +1976,25 @@ void RanchDirector::HandleWearEquipment(
         }
       }
 
-      // Remove equipment replaced with the newly equipped item.
+      // Remove repaced equipment from the equipment list.
       const auto replacedEquipment = std::ranges::remove_if(
         equipmentUids,
         [&equipmentToReplace](const data::Uid uid)
         {
           return std::ranges::contains(equipmentToReplace, uid);
         });
-
-      // Erase them from the equipment.
+      // Erase the replaced equipment from the equipment list.
       equipmentUids.erase(replacedEquipment.begin(), replacedEquipment.end());
-      // Add the newly equipped item.
+
+      // Add the newly equipped item to the equipment list.
       equipmentUids.emplace_back(equippedItemUid);
 
-      // Persist back into the unified character equipment list.
-      character.characterEquipment = equipmentUids;
+      character.equipment = equipmentUids;
 
       // Remove the newly equipped item from the inventory.
       const auto equippedItemsToRemove = std::ranges::remove(
         character.inventory(), equippedItemUid);
+      // Erase the newly equipped item from the inventory.
       character.inventory().erase(equippedItemsToRemove.begin(), equippedItemsToRemove.end());
 
       // Add the replaced equipment back to the inventory.
@@ -2046,17 +2046,17 @@ void RanchDirector::HandleRemoveEquipment(
     // Since mount equipment is combined into characterEquipment for
     // ranch logic, only search and operate on characterEquipment.
     const auto characterEquipmentItemIter = std::ranges::find(
-      character.characterEquipment(),
+      character.equipment(),
       command.itemUid);
 
     // You can't really unequip a horse. You can only switch to a different one.
     // At least in Alicia 1.0.
 
-    if (characterEquipmentItemIter != character.characterEquipment().cend())
+    if (characterEquipmentItemIter != character.equipment().cend())
     {
       const auto range = std::ranges::remove(
-        character.characterEquipment(), command.itemUid);
-      character.characterEquipment().erase(range.begin(), range.end());
+        character.equipment(), command.itemUid);
+      character.equipment().erase(range.begin(), range.end());
     }
     // If not found in characterEquipment, treat as not equipped (no-op).
 
@@ -2882,7 +2882,7 @@ void RanchDirector::BroadcastEquipmentUpdate(ClientId clientId)
   {
     // Character equipment
     const auto characterEquipment = GetServerInstance().GetDataDirector().GetItemCache().Get(
-      character.characterEquipment());
+      character.equipment());
     protocol::BuildProtocolItems(notify.characterEquipment, *characterEquipment);
 
     // Mount equipment

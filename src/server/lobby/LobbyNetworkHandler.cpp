@@ -744,23 +744,14 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
 
       // Character equipment.
       const auto characterEquipmentItems = _serverInstance.GetDataDirector().GetItemCache().Get(
-        character.characterEquipment());
+        character.equipment());
       if (not characterEquipmentItems)
         throw std::runtime_error("Character equipment items unavailable");
 
       protocol::BuildProtocolItems(
-        response.characterEquipment,
+        response.equipmentItems,
         *characterEquipmentItems);
-
-      // Mount equipment.
-      const auto mountEquipmentItems = _serverInstance.GetDataDirector().GetItemCache().Get(
-        character.mountEquipment());
-      if (not mountEquipmentItems)
-        throw std::runtime_error("Character equipment items unavailable");
-
-      protocol::BuildProtocolItems(
-        response.mountEquipment,
-        *mountEquipmentItems);
+      // todo: build expiring items
 
       protocol::BuildProtocolCharacter(
         response.character,

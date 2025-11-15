@@ -72,28 +72,28 @@ void LobbyCommandLoginOK::Write(
     .Write(command.introduction);
 
   // Character equipment
-  assert(command.characterEquipment.size() <= 16);
+  assert(command.equipmentItems.size() <= 16);
   const uint8_t characterEquipmentCount = std::min(
-    command.characterEquipment.size(),
+    command.equipmentItems.size(),
     size_t{16});
 
   stream.Write(characterEquipmentCount);
   for (size_t idx = 0; idx < characterEquipmentCount; ++idx)
   {
-    const auto& item = command.characterEquipment[idx];
+    const auto& item = command.equipmentItems[idx];
     stream.Write(item);
   }
 
   // Mount equipment
-  assert(command.mountEquipment.size() <= 16);
+  assert(command.expiringItems.size() <= 16);
   const uint8_t mountEquipmentCount = std::min(
-    command.mountEquipment.size(),
+    command.expiringItems.size(),
     size_t{16});
 
   stream.Write(mountEquipmentCount);
   for (size_t idx = 0; idx < mountEquipmentCount; ++idx)
   {
-    const auto& item = command.mountEquipment[idx];
+    const auto& item = command.expiringItems[idx];
     stream.Write(item);
   }
 
