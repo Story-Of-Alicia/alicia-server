@@ -280,8 +280,8 @@ struct AcCmdCRRanchChatNotify
 {
   std::string author;
   std::string message;
-  uint8_t isSystem{};
-  uint8_t unknown2{};
+  bool isSystem{};
+  bool unknown2{};
 
   static Command GetCommand()
   {
@@ -3077,7 +3077,7 @@ struct RanchCommandKickRanchNotify
     SourceStream& stream);
 };
 
-struct RanchCommandOpCmd
+struct AcCmdCROpCmd
 {
   std::string command{};
 
@@ -3090,14 +3090,14 @@ struct RanchCommandOpCmd
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandOpCmd& command,
+    const AcCmdCROpCmd& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandOpCmd& command,
+    AcCmdCROpCmd& command,
     SourceStream& stream);
 };
 

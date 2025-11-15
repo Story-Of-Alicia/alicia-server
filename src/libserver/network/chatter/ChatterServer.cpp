@@ -113,6 +113,13 @@ size_t ChatterServer::OnClientData(
     header.length ^= *reinterpret_cast<const uint16_t*>(XorCode.data());
     header.commandId ^= *reinterpret_cast<const uint16_t*>(XorCode.data() + 2);
 
+    // The length of the command must be at least the size of the header
+    // and less than 4KB.
+    if (header.length < sizeof(protocol::ChatterCommandHeader) ||  header.length > 4092)
+    {
+      break;
+    }
+
     // todo: verify length, verify command, consume the rest of data even if handler does not exist.
 
     // There's not enough data to read the command.
@@ -122,13 +129,15 @@ size_t ChatterServer::OnClientData(
       break;
     }
 
+    const auto commandDataLength = header.length - sizeof(protocol::ChatterCommandHeader);
+
     if (header.commandId == static_cast<uint16_t>(
       protocol::ChatterCommand::ChatCmdLogin))
     {
-      std::vector<std::byte> commandData(header.length);
+      std::vector<std::byte> commandData(commandDataLength);
       SinkStream commandDataSink({commandData.begin(), commandData.end()});
 
-      for (uint16_t idx = 0; idx < header.length - sizeof(protocol::ChatterCommandHeader); ++idx)
+      for (int64_t idx = 0; idx < commandDataLength; ++idx)
       {
         std::byte& val = commandData[idx];
         commandStream.Read(val);

@@ -26,6 +26,7 @@
 
 #include "libserver/network/command/CommandServer.hpp"
 #include "libserver/network/command/proto/RaceMessageDefinitions.hpp"
+#include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
 #include "libserver/util/Scheduler.hpp"
 
 #include <random>
@@ -258,6 +259,10 @@ private:
   void HandleActivateSkillEffect(
     ClientId clientId,
     const protocol::AcCmdCRActivateSkillEffect& command);
+
+  void HandleOpCmd(
+    ClientId clientId,
+    const protocol::AcCmdCROpCmd& command);
 
   void PrepareItemSpawners(data::Uid roomUid);
 
