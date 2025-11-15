@@ -1252,6 +1252,44 @@ void ChatSystem::RegisterAdminCommands()
         std::vector<std::string> response;
         response.emplace_back(std::format("'{}' ({}) is user '{}'", character.name(), character.uid(), userInstance.userName));
 
+        if (character.guildUid() != data::InvalidUid)
+        {
+          const auto guildRecord = _serverInstance.GetDataDirector().GetGuild(
+            character.guildUid());
+          if (guildRecord)
+          {
+            guildRecord.Immutable([&response, characterUid = character.uid()](
+              const data::Guild& guild)
+            {
+              if (guild.owner() == characterUid)
+              {
+                response.emplace_back(std::format(
+                  "Owner of a guild '{}' ({})",
+                  guild.name(),
+                  guild.uid()));
+              }
+              else if (std::ranges::contains(guild.officers(), characterUid))
+              {
+                response.emplace_back(std::format(
+                  "Officer of a guild '{}' ({})",
+                  guild.name(),
+                  guild.uid()));
+              }
+              else
+              {
+                response.emplace_back(std::format(
+                  "Member of a guild '{}' ({})",
+                  guild.name(),
+                  guild.uid()));
+              }
+            });
+          }
+          else
+          {
+            response.emplace_back(std::format("Member of unavailable guild {}", character.guildUid()));
+          }
+        }
+
         if (userInstance.roomUid > 0)
           response.emplace_back(std::format("Currently in a room {}", userInstance.roomUid));
         else
@@ -1281,7 +1319,7 @@ void ChatSystem::RegisterAdminCommands()
           {
             horseRecord.Immutable([&response](const data::Horse& horse)
             {
-              response.emplace_back(std::format(" - {}", horse.name()));
+              response.emplace_back(std::format(" - {} ({})", horse.name(), horse.uid()));
             });
           }
         }
