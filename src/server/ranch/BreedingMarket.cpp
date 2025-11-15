@@ -23,6 +23,25 @@ namespace
 constexpr uint8_t MinBreedingGrade = 4;
 constexpr uint8_t MaxBreedingGrade = 8;
 
+struct ChargeRange
+{
+  uint32_t min;
+  uint32_t max;
+};
+
+std::optional<ChargeRange> GetChargeRangeForGrade(uint8_t grade)
+{
+  switch (grade)
+  {
+    case 4: return ChargeRange{4000u, 12000u};
+    case 5: return ChargeRange{5000u, 15000u};
+    case 6: return ChargeRange{6000u, 18000u};
+    case 7: return ChargeRange{8000u, 24000u};
+    case 8: return ChargeRange{10000u, 40000u};
+    default: return std::nullopt;
+  }
+}
+
 } // anon namespace
 
 BreedingMarket::BreedingMarket(ServerInstance& serverInstance)
@@ -274,6 +293,21 @@ data::Uid BreedingMarket::RegisterStallion(
   if (horseGrade < MinBreedingGrade || horseGrade > MaxBreedingGrade)
   {
     return data::InvalidUid;
+  }
+
+  if (auto chargeRangeOpt = GetChargeRangeForGrade(horseGrade))
+  {
+    const auto& chargeRange = *chargeRangeOpt;
+    if (breedingCharge < chargeRange.min || breedingCharge > chargeRange.max)
+    {
+      spdlog::warn(
+        "RegisterStallion: Breeding charge {} outside allowed range [{} - {}] for grade {}",
+        breedingCharge,
+        chargeRange.min,
+        chargeRange.max,
+        horseGrade);
+      return data::InvalidUid;
+    }
   }
 
   // Set horse type to Stallion
