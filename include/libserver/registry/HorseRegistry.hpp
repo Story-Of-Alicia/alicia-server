@@ -128,7 +128,7 @@ public:
   //! @param colorGroupId Color group ID.
   //! @param shape Tail shape (0-5).
   //! @returns Tail TID, or InvalidTid if not found.
-  data::Tid GetRandomTailFromColorAndShape(int32_t colorGroupId, int32_t shape);
+  data::Tid GetRandomTailByColorGroupAndShape(int32_t colorGroupId, int32_t shape);
 
   //! Gets the color group ID for a mane TID.
   //! @param maneTid Mane template ID.
