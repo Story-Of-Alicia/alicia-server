@@ -119,24 +119,14 @@ private:
   //! These are horses whose stallion registration expired but weren't in cache yet
   std::vector<data::Uid> _horsesNeedingTypeReset;
 
-  //! Pending payment information for expired stallions
-  struct PendingPayment
-  {
-    data::Uid ownerUid;
-    StallionBreedingEarnings earnings;
-  };
-  
-  //! Payments that need to be processed when owner character loads
-  std::vector<PendingPayment> _pendingPayments;
-
   //! Checks and removes expired stallions
   void CheckExpiredStallions();
   
   //! Attempts to reset horse types for horses in _horsesNeedingTypeReset
   void ProcessPendingHorseTypeResets();
   
-  //! Attempts to process pending owner payments
-  void ProcessPendingPayments();
+  //! Pays a stallion owner immediately, loading from the data source if needed
+  void PayOwner(data::Uid ownerUid, uint32_t earnings);
 };
 
 } // namespace server
