@@ -462,7 +462,7 @@ void server::protocol::ChatCmdChannelInfo::Read(
   ChatCmdChannelInfo& command,
   server::SourceStream& stream)
 {
-  stream.Read(command.unk0);
+  // Empty
 }
 
 void server::protocol::ChatCmdChannelInfoAckOk::Write(
