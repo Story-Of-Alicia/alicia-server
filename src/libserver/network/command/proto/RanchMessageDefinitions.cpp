@@ -2836,17 +2836,17 @@ void AcCmdCRRegisterQuest::Read(
   AcCmdCRRegisterQuest& command,
   SourceStream& stream)
 {
-  stream.Read(command.unk0);
-  stream.Read(command.unk1);
+  stream.Read(command.questId);
+  stream.Read(command.npcId);
 }
 
 void AcCmdCRRegisterQuestOK::Write(
   const AcCmdCRRegisterQuestOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0);
-  stream.Write(command.unk1);
-  stream.Write(command.unk2);
+  stream.Write(command.questId);
+  stream.Write(command.progress);
+  stream.Write(command.isCompleted);
 }
 
 void AcCmdCRRegisterQuestOK::Read(

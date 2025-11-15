@@ -391,6 +391,16 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleRequestDailyQuestReward(clientId, command);
     });
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRegisterQuest>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleRegisterQuest(clientId, command);
+    });
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestQuestReward>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleRequestQuestReward(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -4366,9 +4376,6 @@ void RanchDirector::HandleRegisterDailyQuestGroup(
         hasDailyQuests = true;
         dailyQuests = character.dailyQuests();
       }
-      else
-        character.dailyQuests() = {start, start + 1, start + 2};
-        dailyQuests = character.dailyQuests();
     });
 
   if (!hasDailyQuests)
@@ -4469,6 +4476,71 @@ void RanchDirector::HandleRequestDailyQuestReward(
     [noti]()
     {
       return noti;
+    });
+}
+
+void RanchDirector::HandleRegisterQuest(
+  ClientId clientId,
+  const protocol::AcCmdCRRegisterQuest& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  spdlog::debug("packet info: {} {}", command.questId, command.npcId);
+
+  protocol::AcCmdCRRegisterQuestOK response{};
+  response.questId = command.questId;
+  
+  if (command.questId == 11030 || command.questId == 12010)
+  {
+    response.progress = 1;
+    response.isCompleted = 1;
+  }
+  else
+  {
+    response.progress = 0;
+    response.isCompleted = 0;
+  }
+  
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void RanchDirector::HandleRequestQuestReward(
+  ClientId clientId,
+  const protocol::AcCmdCRRequestQuestReward& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  protocol::AcCmdCRRequestQuestRewardOK response{};
+  response.unk0 = command.unk0;//questTid
+  response.unk1 = 0;//carrots rewarded
+  response.unk2 = 0;//reward count
+  response.unk3 = 1;//effect count
+  response.unk4[0] = {command.unk1, 1};
+
+  for (int i = 0; i < 5; i++)
+  {
+    response.rewards[i] = {0, 0, 0, 0};
+  }
+
+  for (int i = 1; i < 5; i++)
+  {
+    response.unk4[i] = {0, 0};
+  }
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
     });
 }
 

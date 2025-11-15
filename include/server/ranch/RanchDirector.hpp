@@ -385,6 +385,14 @@ private:
   void HandleRequestDailyQuestReward(
       ClientId clientId, 
       const protocol::AcCmdCRRequestDailyQuestReward& command);
+  
+  void HandleRegisterQuest(
+      ClientId clientId,
+      const protocol::AcCmdCRRegisterQuest& command);
+  
+  void HandleRequestQuestReward(
+    ClientId clientId,
+    const protocol::AcCmdCRRequestQuestReward& command);
 
   //!
   ServerInstance& _serverInstance;
