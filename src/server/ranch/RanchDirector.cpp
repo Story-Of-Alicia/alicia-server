@@ -1430,10 +1430,31 @@ void RanchDirector::HandleSearchStallion(
       protocolStallion.name = horse.name();
       protocolStallion.grade = horse.grade();
       
-      // Calculate pregnancy chance based on breeding count (lifetime breeding statistics)
-      // 30 -> 0 hearts (Lowest, 2% breeding success)
-      // 0 -> 3.2 hearts (Highest, 64% breeding success)
-      uint32_t pregnancyChance = std::min(horse.breeding.breedingCount(), 30u);
+      // Calculate pregnancy chance based on breeding count and grade
+      // Grade-based max hearts: G4=5.0, G5=4.6, G6=4.1, G7=3.9, G8=3.2
+      // All grades floor at 4% (0.2 hearts) minimum
+      uint32_t breedingCount = horse.breeding.breedingCount();
+      uint32_t pregnancyChance = 0;
+      
+      switch (horse.grade())
+      {
+        case 4:
+          pregnancyChance = std::min(breedingCount, 48u);  // 100% -> 4%
+          break;
+        case 5:
+          pregnancyChance = std::min(breedingCount, 44u);  // 92% -> 4%
+          break;
+        case 6:
+          pregnancyChance = std::min(breedingCount, 39u);  // 82% -> 4%
+          break;
+        case 7:
+          pregnancyChance = std::min(breedingCount, 37u);  // 78% -> 4%
+          break;
+        case 8:
+          pregnancyChance = std::min(breedingCount, 30u);  // 64% -> 4%
+          break;
+      }
+      
       protocolStallion.pregnancyChance = pregnancyChance;
       
       // Calculate stallion coat inheritance probability
@@ -1690,6 +1711,7 @@ void RanchDirector::HandleCheckStallionCharge(
     .registrationFee = registrationFee,  // TODO: Calculate based on grade
     .charge = command.horseUid  // Echo back the horseUid
   };
+  // TODO: Make minCharge/maxCharge disable the Register button when out of range
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -1744,14 +1766,46 @@ void RanchDirector::HandleTryBreeding(
   spdlog::info("TryBreeding: Charged {} carrots, total breeding money spent: {}", 
     breedingCharge, totalMoneySpent);
   
-  // Calculate pregnancy chance based on stallion's breeding count
+  // Calculate pregnancy chance based on stallion's breeding count and grade
   uint32_t pregnancyChance = 0;
-  uint8_t stallionGradeForBonus = 0;
-  stallionRecord->Immutable([&pregnancyChance, &stallionGradeForBonus](const data::Horse& stallion)
+  uint8_t stallionGrade = 0;
+  uint32_t baseSuccessRate = 64;
+  
+  stallionRecord->Immutable([&pregnancyChance, &stallionGrade, &baseSuccessRate](const data::Horse& stallion)
   {
-    // Base: 0 (64% success), increases by 1 per breeding, max 30 (2% success)
-    pregnancyChance = std::min(stallion.breeding.breedingCount(), 30u);
-    stallionGradeForBonus = stallion.grade();
+    stallionGrade = stallion.grade();
+    uint32_t breedingCount = stallion.breeding.breedingCount();
+    
+    // Grade-based base success rates (max pregnancy rate at breedingCount = 0)
+    // All grades floor at 4% minimum
+    switch (stallionGrade)
+    {
+      case 4:
+        baseSuccessRate = 100;  // 5.0 hearts
+        // 100% -> 4% over 48 breedings (2% per breeding)
+        pregnancyChance = std::min(breedingCount, 48u);
+        break;
+      case 5:
+        baseSuccessRate = 92;   // 4.6 hearts
+        // 92% -> 4% over 44 breedings (2% per breeding)
+        pregnancyChance = std::min(breedingCount, 44u);
+        break;
+      case 6:
+        baseSuccessRate = 82;   // 4.1 hearts
+        // 82% -> 4% over 39 breedings (2% per breeding)
+        pregnancyChance = std::min(breedingCount, 39u);
+        break;
+      case 7:
+        baseSuccessRate = 78;   // 3.9 hearts
+        // 78% -> 4% over 37 breedings (2% per breeding)
+        pregnancyChance = std::min(breedingCount, 37u);
+        break;
+      case 8:
+        baseSuccessRate = 64;   // 3.2 hearts
+        // 64% -> 4% over 30 breedings (2% per breeding)
+        pregnancyChance = std::min(breedingCount, 30u);
+        break;
+    }
   });
   
   // Roll breeding bonus based on stallion grade (BonusProbInfo table)
@@ -1778,8 +1832,8 @@ void RanchDirector::HandleTryBreeding(
   uint8_t rolledBonusValue = 0;
   
   // Determine bonus type and probability based on stallion grade
-  bool isSmallGrade = (stallionGradeForBonus >= 4 && stallionGradeForBonus <= 6);
-  bool isBigGrade = (stallionGradeForBonus >= 7 && stallionGradeForBonus <= 8);
+  bool isSmallGrade = (stallionGrade >= 4 && stallionGrade <= 6);
+  bool isBigGrade = (stallionGrade >= 7 && stallionGrade <= 8);
   
   if (isSmallGrade || isBigGrade)
   {
@@ -1805,19 +1859,20 @@ void RanchDirector::HandleTryBreeding(
       rolledBonusValue = bonusTable[selectedIndex].value;
       
       spdlog::info("TryBreeding: Rolled breeding bonus! Grade {} ({}) -> Bonus ID {} (Type {}, Value {})",
-        stallionGradeForBonus, isSmallGrade ? "Small" : "Big", 
+        stallionGrade, isSmallGrade ? "Small" : "Big", 
         rolledBonusId, rolledBonusType, rolledBonusValue);
     }
   }
   
   // Determine breeding success based on pregnancy chance + bonus
-  // Formula: success rate = 64% - (pregnancyChance * 2%) + bonus%
+  // Formula: success rate = baseSuccessRate - (pregnancyChance * 2%) + bonus%
+  // baseSuccessRate is grade-dependent (calculated above)
   std::uniform_int_distribution<uint32_t> breedingRoll(1, 100);
-  uint32_t baseSuccessRate = 64 - (pregnancyChance * 2);
+  uint32_t actualSuccessRate = baseSuccessRate - (pregnancyChance * 2);
   
   // Apply Type 0 bonus (pregnancy % increase) if applicable
   uint32_t bonusAmount = (rolledBonusType == 0) ? rolledBonusValue : 0;
-  uint32_t successThreshold = baseSuccessRate + bonusAmount;
+  uint32_t successThreshold = actualSuccessRate + bonusAmount;
   
   // Cap at 100%
   if (successThreshold > 100) successThreshold = 100;
@@ -1829,8 +1884,8 @@ void RanchDirector::HandleTryBreeding(
   //       TryBreedingOK command triggers the breeding animation so I think we should be using it to indicate the client that breeding has failed.
   if (!breedingSuccess)
   {
-    spdlog::info("TryBreeding: Breeding failed (pregnancyChance={}, base={}%, bonus=+{}%, final={}%)", 
-      pregnancyChance, baseSuccessRate, bonusAmount, successThreshold);
+    spdlog::info("TryBreeding: Breeding failed (grade={}, pregnancyChance={}, base={}%, bonus=+{}%, final={}%)", 
+      stallionGrade, pregnancyChance, actualSuccessRate, bonusAmount, successThreshold);
     
     // Reset mare's breeding combo on failure
     mareRecord->Mutable([](data::Horse& mare)
@@ -1884,8 +1939,8 @@ void RanchDirector::HandleTryBreeding(
     return;
   }
   
-  spdlog::info("TryBreeding: Breeding succeeded (pregnancyChance={}, base={}%, bonus=+{}%, final={}%)", 
-    pregnancyChance, baseSuccessRate, bonusAmount, successThreshold);
+  spdlog::info("TryBreeding: Breeding succeeded (grade={}, pregnancyChance={}, base={}%, bonus=+{}%, final={}%)", 
+    stallionGrade, pregnancyChance, actualSuccessRate, bonusAmount, successThreshold);
   
   // Create the foal/baby horse
   auto foalRecord = GetServerInstance().GetDataDirector().CreateHorse();
