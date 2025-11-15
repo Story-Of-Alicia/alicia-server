@@ -340,6 +340,147 @@ void server::protocol::ChatCmdLetterArriveTrs::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void server::protocol::ChatCmdEnterRoom::Write(
+  const ChatCmdEnterRoom& command,
+  server::SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdEnterRoom::Read(
+  ChatCmdEnterRoom& command,
+  server::SourceStream& stream)
+{
+  stream.Read(command.code)
+    .Read(command.characterUid)
+    .Read(command.characterName)
+    .Read(command.guildUid);
+}
+
+void server::protocol::ChatCmdEnterRoomAckOk::Write(
+  const ChatCmdEnterRoomAckOk& command,
+  server::SinkStream& stream)
+{
+  stream.Write(static_cast<uint32_t>(command.unk1.size()));
+  for (const auto& item : command.unk1)
+  {
+    stream.Write(item.unk0)
+      .Write(item.unk1);
+  }
+}
+
+void server::protocol::ChatCmdEnterRoomAckOk::Read(
+  ChatCmdEnterRoomAckOk& command,
+  server::SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdChat::Write(
+  const ChatCmdChat& command,
+  server::SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdChat::Read(
+  ChatCmdChat& command,
+  server::SourceStream& stream)
+{
+  stream.Read(command.message)
+    .Read(command.role);
+}
+
+void server::protocol::ChatCmdChatTrs::Write(
+  const ChatCmdChatTrs& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.message);
+}
+
+void server::protocol::ChatCmdChatTrs::Read(
+  ChatCmdChatTrs& command,
+  server::SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdInputState::Write(
+  const ChatCmdInputState& command,
+  server::SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdInputState::Read(
+  ChatCmdInputState& command,
+  server::SourceStream& stream)
+{
+  stream.Read(command.state);
+}
+
+void server::protocol::ChatCmdInputStateTrs::Write(
+  const ChatCmdInputStateTrs& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.state);
+}
+
+void server::protocol::ChatCmdInputStateTrs::Read(
+  ChatCmdInputStateTrs& command,
+  server::SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdChannelChatTrs::Write(
+  const ChatCmdChannelChatTrs& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.unk2);
+}
+
+void server::protocol::ChatCmdChannelChatTrs::Read(
+  ChatCmdChannelChatTrs& command,
+  server::SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdChannelInfo::Write(
+  const ChatCmdChannelInfo& command,
+  server::SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdChannelInfo::Read(
+  ChatCmdChannelInfo& command,
+  server::SourceStream& stream)
+{
+  stream.Read(command.unk0);
+}
+
+void server::protocol::ChatCmdChannelInfoAckOk::Write(
+  const ChatCmdChannelInfoAckOk& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.hostname)
+    .Write(command.port)
+    .Write(command.code);
+}
+
+void server::protocol::ChatCmdChannelInfoAckOk::Read(
+  ChatCmdChannelInfoAckOk& command,
+  server::SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void server::protocol::ChatCmdGuildLogin::Write(
   const ChatCmdGuildLogin& command,
   server::SinkStream& stream)
