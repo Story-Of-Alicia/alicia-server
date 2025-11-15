@@ -1453,7 +1453,7 @@ void RanchDirector::HandleSearchStallion(
       protocolStallion.expiresAt = util::TimePointToAliciaTime(expiresAt);
 
       protocol::BuildProtocolHorseStats(protocolStallion.stats, horse.stats);
-      protocol::BuildProtocolHorseParts(protocolStallion.parts, horse.parts, horse.horseType() == 1);
+      protocol::BuildProtocolHorseParts(protocolStallion.parts, horse.parts, horse.type() == 1);
       protocol::BuildProtocolHorseAppearance(protocolStallion.appearance, horse.appearance);
       
       protocolStallion.unk11 = 0;   // Unknown field
@@ -1803,6 +1803,9 @@ void RanchDirector::HandleTryBreeding(
   
   bool breedingSuccess = breedingRoll(_randomDevice) <= successThreshold;
   
+  // TODO: Implement proper breeding failure. Currently the breeding animation doesn't show up before card selection window pops up.
+  //       Also, the client doesn't reset breedingCombo of the mare on failure.
+  //       TryBreedingOK command triggers the breeding animation so I think we should be using it to indicate the client that breeding has failed.
   if (!breedingSuccess)
   {
     spdlog::info("TryBreeding: Breeding failed (pregnancyChance={}, base={}%, bonus=+{}%, final={}%)", 
@@ -1942,7 +1945,7 @@ void RanchDirector::HandleTryBreeding(
     // Set foal basic info
     foal.tid() = mareTid; // Foal uses mare's breed/TID
     foal.name() = "";  // Empty name - player will name it
-    foal.horseType() = 1; // 1 = Foal
+    foal.type() = 1; // 1 = Foal
     foal.dateOfBirth() = data::Clock::now();
     
     // From MountTendencyRatioInfo table:
