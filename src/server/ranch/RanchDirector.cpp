@@ -2118,6 +2118,9 @@ void RanchDirector::HandleTryBreeding(
     foal.clazzProgress() = 0;
     foal.growthPoints() = 0;
     
+    // Initialize foal condition with full stamina
+    foal.mountCondition.stamina() = 4000;
+    
     // Calculate potential genetics (pass foal's skin for star bonus)
     auto potentialResult = GetServerInstance().GetGenetics().CalculateFoalPotential(
       command.mareUid,
