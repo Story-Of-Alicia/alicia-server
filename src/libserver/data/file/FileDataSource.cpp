@@ -524,19 +524,11 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.grade = json["grade"].get<uint32_t>();
   horse.growthPoints = json.value("growthPoints", uint16_t{0});
   
-  if (json.contains("breeding"))
-  {
-    horse.breeding.timesBreeded = json["breeding"].value("timesBreeded", uint32_t{0});
-    horse.breeding.breedingCombo = json["breeding"].value("breedingCombo", uint32_t{0});
-  }
-  else
-  {
-    // Legacy flat structure
-    horse.breeding.timesBreeded = json.value("timesBreeded", uint32_t{0});
-    horse.breeding.breedingCombo = json.value("breedingCombo", uint32_t{0});
-  }
+  const auto& breedingJson = json["breeding"];
+  horse.breeding.timesBreeded = breedingJson.value("timesBreeded", uint32_t{0});
+  horse.breeding.breedingCombo = breedingJson.value("breedingCombo", uint32_t{0});
 
-  horse.horseType = json.value("horseType", uint32_t{0});
+  horse.type = json.value("type", uint32_t{0});
   horse.tendency = json.value("tendency", uint32_t{0});
   horse.spirit = json.value("spirit", uint32_t{0});
   horse.fatigue = json.value("fatigue", uint16_t{0});
@@ -569,14 +561,7 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
     .cumulativePrize = mountInfo["cumulativePrize"].get<uint32_t>(),
     .biggestPrize = mountInfo["biggestPrize"].get<uint32_t>()};
   
-  if (json.contains("ancestors"))
-  {
-    horse.ancestors = json["ancestors"].get<std::vector<data::Uid>>();
-  }
-  else
-  {
-    horse.ancestors = std::vector<data::Uid>{};
-  }
+  horse.ancestors = json.value("ancestors", std::vector<data::Uid>{});
   
   horse.lineage = json.value("lineage", uint32_t{1});
 }
@@ -654,7 +639,7 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["breeding"]["timesBreeded"] = horse.breeding.timesBreeded();
   json["breeding"]["breedingCombo"] = horse.breeding.breedingCombo();
 
-  json["horseType"] = horse.horseType();
+  json["type"] = horse.type();
   json["fatigue"] = horse.fatigue();
   json["spirit"] = horse.spirit();
   json["tendency"] = horse.tendency();

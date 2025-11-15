@@ -384,10 +384,10 @@ struct Horse
     dao::Field<uint32_t> breedingCombo{0u};
   } breeding{};
   
-  dao::Field<uint32_t> horseType{0u};
+  dao::Field<uint32_t> type{0u};
   dao::Field<uint32_t> tendency{0u};
   dao::Field<uint32_t> spirit{0u};
-  dao::Field<uint16_t> fatigue{0u};
+  dao::Field<uint32_t> fatigue{0u};
 
   struct Potential
   {

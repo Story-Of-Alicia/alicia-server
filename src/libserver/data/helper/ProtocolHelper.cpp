@@ -48,7 +48,7 @@ void BuildProtocolHorse(
   protocolHorse.grade = static_cast<uint8_t>(horse.grade());
   protocolHorse.growthPoints = horse.growthPoints();
 
-  protocolHorse.vals1.type = static_cast<protocol::Horse::HorseType>(horse.horseType());
+  protocolHorse.vals1.type = static_cast<protocol::Horse::HorseType>(horse.type());
   protocolHorse.vals1.tendency = horse.tendency();
   protocolHorse.vals1.spirit = horse.spirit();
   protocolHorse.vals1.fatigue = horse.fatigue();
@@ -74,7 +74,7 @@ void BuildProtocolHorse(
   };
 
   protocolHorse.vals1 = {
-    .type = static_cast<protocol::Horse::HorseType>(horse.horseType()),
+    .type = static_cast<protocol::Horse::HorseType>(horse.type()),
     .val1 = 0x00,
     .dateOfBirth = util::TimePointToAliciaTime(horse.dateOfBirth()),
     .tendency = static_cast<uint8_t>(horse.tendency()),
@@ -89,11 +89,11 @@ void BuildProtocolHorse(
     .luck = static_cast<uint8_t>(horse.luckState()),
     .injury = Horse::Injury::None,
     .val12 = 0x00,
-    .fatigue = horse.fatigue(),
+    .fatigue = static_cast<uint16_t>(horse.fatigue()),
     .val14 = 0x00,
     .emblem = static_cast<uint16_t>(horse.emblemUid())};
 
-  BuildProtocolHorseParts(protocolHorse.parts, horse.parts, horse.horseType() == 1);
+  BuildProtocolHorseParts(protocolHorse.parts, horse.parts, horse.type() == 1);
   BuildProtocolHorseAppearance(protocolHorse.appearance, horse.appearance);
   BuildProtocolHorseStats(protocolHorse.stats, horse.stats);
   BuildProtocolHorseMastery(protocolHorse.mastery, horse.mastery);
