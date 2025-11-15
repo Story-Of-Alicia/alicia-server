@@ -99,7 +99,7 @@ data::Uid ItemSystem::CreateNewItem(
 
   if ((newItemUid = ItemSystem::GetItemByTid(characterUid, itemTid)) != data::InvalidUid)
   {
-    ItemSystem::AddItem(newItemUid, value);
+    ItemSystem::StackItem(newItemUid, value);
     return newItemUid;
   }
 
@@ -167,7 +167,7 @@ data::Uid ItemSystem::EmplaceItem(
   if (existingItemUid != data::InvalidUid)
   {
     // Try to stack with the existing item
-    const auto addResult = AddItem(existingItemUid, itemCount);
+    const auto addResult = StackItem(existingItemUid, itemCount);
     
     if (addResult == ItemSystem::ReturnType::SUCCESS)
     {
@@ -188,7 +188,7 @@ data::Uid ItemSystem::EmplaceItem(
   return itemUid;
 }
 
-ItemSystem::ReturnType ItemSystem::AddItem(
+ItemSystem::ReturnType ItemSystem::StackItem(
   data::Uid itemUid,
   uint32_t value)
 {
@@ -219,9 +219,17 @@ ItemSystem::ReturnType ItemSystem::AddItem(
 
 ItemSystem::ReturnType ItemSystem::ConsumeItem(
   data::Uid characterUid,
-  data::Uid itemUid,
+  data::Tid itemTid,
   uint32_t itemCount)
 {
+  // First, find the item by TID
+  const data::Uid itemUid = GetItemByTid(characterUid, itemTid);
+  if (itemUid == data::InvalidUid)
+  {
+    spdlog::debug("Couldn't consume item, item not found");
+    return ItemSystem::ReturnType::NOT_FOUND;
+  }
+
   const auto& itemRecord = _serverInstance.GetDataDirector().GetItem(itemUid);
   if (not itemRecord)
   {

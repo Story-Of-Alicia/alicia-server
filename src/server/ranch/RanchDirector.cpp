@@ -1601,38 +1601,33 @@ void RanchDirector::HandleUpdateMountNickname(
 
     // TODO: validate new horse name for invalid/illegal characters
     // HorseRenameError::InvalidNickname
-
-    bool isItemHorseRenameItem = false;
-    itemRecord.Immutable([&isItemHorseRenameItem](const data::Item& item)
-    {
-      isItemHorseRenameItem = (item.tid() == HorseRenameItem);
-    });
-
-    if (not isItemHorseRenameItem)
-    {
-      // Item is not a horse rename item
-      error.emplace(protocol::HorseRenameError::WrongItem);
-      return;
-    }
   });
 
   // If no validation errors, try to consume the rename item
   if (!error.has_value())
   {
     const auto consumeResult = GetServerInstance().GetItemSystem().ConsumeItem(
-      clientContext.characterUid, command.itemUid, 1);
+      clientContext.characterUid, HorseRenameItem, 1);
     
-    if (consumeResult != ItemSystem::ReturnType::SUCCESS)
+    switch (consumeResult)
     {
-      spdlog::warn("Failed to consume horse rename item for character {}", clientContext.characterUid);
-      error.emplace(protocol::HorseRenameError::NoHorseRenameItem);
-    }
-    else
-    {
-      const data::Uid remainingItemUid = GetServerInstance().GetItemSystem().GetItemByTid(
-        clientContext.characterUid, HorseRenameItem);
-      
-      horseRenameItemCount = GetServerInstance().GetItemSystem().GetItemCount(remainingItemUid);
+      case ItemSystem::ReturnType::SUCCESS:
+      {
+        const data::Uid remainingItemUid = GetServerInstance().GetItemSystem().GetItemByTid(
+          clientContext.characterUid, HorseRenameItem);
+        
+        horseRenameItemCount = GetServerInstance().GetItemSystem().GetItemCount(remainingItemUid);
+        break;
+      }
+      case ItemSystem::ReturnType::NOT_FOUND:
+        error.emplace(protocol::HorseRenameError::NoHorseRenameItem);
+        break;
+      case ItemSystem::ReturnType::NOT_STACKABLE:
+        error.emplace(protocol::HorseRenameError::WrongItem);
+        break;
+      case ItemSystem::ReturnType::INSUFFICIENT_QUANTITY:
+        error.emplace(protocol::HorseRenameError::NoHorseRenameItem);
+        break;
     }
   }
 
@@ -3310,7 +3305,7 @@ void RanchDirector::HandleUseItem(
   {
     // Use ItemSystem to consume the item
     const auto consumeResult = GetServerInstance().GetItemSystem().ConsumeItem(
-      clientContext.characterUid, command.itemUid, 1);
+      clientContext.characterUid, usedItemTid, 1);
     
     if (consumeResult == ItemSystem::ReturnType::SUCCESS)
     {
@@ -3320,8 +3315,8 @@ void RanchDirector::HandleUseItem(
     else
     {
       // TODO:Send Cancel response?
-      spdlog::warn("Failed to consume item {} for character {}", 
-        command.itemUid, clientContext.characterUid);
+      spdlog::warn("Failed to consume item {} (tid: {}) for character {}", 
+        command.itemUid, usedItemTid, clientContext.characterUid);
     }
   }
 
@@ -4231,6 +4226,13 @@ void RanchDirector::HandleChangeNickname(
           command.itemUid);
         return;
       }
+
+      // Extract the item TID
+      data::Tid nameChangeItemTid = data::InvalidTid;
+      itemRecord.Immutable([&nameChangeItemTid](const data::Item& item)
+      {
+        nameChangeItemTid = item.tid();
+      });
       
       // Check if character owns this item
       auto& inventory = character.inventory();
@@ -4265,7 +4267,7 @@ void RanchDirector::HandleChangeNickname(
       //TODO: validate nickname (inappropriate words, etc)
 
       const auto consumeResult = GetServerInstance().GetItemSystem().ConsumeItem(
-        character.uid(), command.itemUid, 1);
+        character.uid(), nameChangeItemTid, 1);
 
       // TODO: Differentiate more between error types
       if (consumeResult != ItemSystem::ReturnType::SUCCESS)

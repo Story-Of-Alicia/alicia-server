@@ -46,8 +46,8 @@ public:
   data::Uid CreateNewItem(data::Uid characterUid, data::Tid itemTid, uint32_t value);
   //! Useful for gifting items that are already created
   data::Uid EmplaceItem(data::Uid characterUid, data::Uid itemUid);
-  ReturnType AddItem(data::Uid itemUid, uint32_t value);
-  ReturnType ConsumeItem(data::Uid characterUid, data::Uid itemUid, uint32_t itemCount);
+  ReturnType StackItem(data::Uid itemUid, uint32_t value);
+  ReturnType ConsumeItem(data::Uid characterUid, data::Tid itemTid, uint32_t itemCount);
   ReturnType RemoveItem(data::Uid characterUid, data::Uid itemUid);
 
   uint32_t GetItemCount(data::Uid itemUid);
