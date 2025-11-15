@@ -518,9 +518,27 @@ Genetics::StatResult Genetics::CalculateFoalStats(
     // Mutation system: if average is very low (0-2), add weighted random bonus on top
     if (avgStat <= 2)
     {
-      // Weighted probabilities: +0 (30%), +1 (40%), +2 (20%), +3 (10%)
-      std::discrete_distribution<int> bonusDist({30, 40, 20, 10});  // Weights for 0, 1, 2, 3
-      int32_t bonus = bonusDist(_randomEngine);
+      int32_t bonus = 0;
+      
+      if (avgStat == 0)
+      {
+        // Average 0: 30% +0, 40% +1, 20% +2, 10% +3
+        std::discrete_distribution<int> bonusDist({30, 40, 20, 10});
+        bonus = bonusDist(_randomEngine);
+      }
+      else if (avgStat == 1)
+      {
+        // Average 1: 20% +0, 50% +1, 25% +2, 5% +3
+        std::discrete_distribution<int> bonusDist({20, 50, 25, 5});
+        bonus = bonusDist(_randomEngine);
+      }
+      else // avgStat == 2
+      {
+        // Average 2: 20% +0, 50% +1, 25% +2, 5% +3
+        std::discrete_distribution<int> bonusDist({10, 30, 50, 10});
+        bonus = bonusDist(_randomEngine);
+      }
+      
       int32_t finalStat = avgStat + bonus;
       if (finalStat > 100) finalStat = 100;
       return static_cast<uint32_t>(finalStat);
