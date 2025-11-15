@@ -1430,10 +1430,10 @@ void RanchDirector::HandleSearchStallion(
       protocolStallion.name = horse.name();
       protocolStallion.grade = horse.grade();
       
-      // Calculate pregnancy chance based on timesBreeded (lifetime breeding count)
+      // Calculate pregnancy chance based on breeding count (lifetime breeding statistics)
       // 30 -> 0 hearts (Lowest, 2% breeding success)
       // 0 -> 3.2 hearts (Highest, 64% breeding success)
-      uint32_t pregnancyChance = std::min(horse.breeding.timesBreeded(), 30u);
+      uint32_t pregnancyChance = std::min(horse.breeding.breedingCount(), 30u);
       protocolStallion.pregnancyChance = pregnancyChance;
       
       // Calculate stallion coat inheritance probability
@@ -1744,13 +1744,13 @@ void RanchDirector::HandleTryBreeding(
   spdlog::info("TryBreeding: Charged {} carrots, total breeding money spent: {}", 
     breedingCharge, totalMoneySpent);
   
-  // Calculate pregnancy chance based on stallion's timesBreeded
+  // Calculate pregnancy chance based on stallion's breeding count
   uint32_t pregnancyChance = 0;
   uint8_t stallionGradeForBonus = 0;
   stallionRecord->Immutable([&pregnancyChance, &stallionGradeForBonus](const data::Horse& stallion)
   {
     // Base: 0 (64% success), increases by 1 per breeding, max 30 (2% success)
-    pregnancyChance = std::min(stallion.breeding.timesBreeded(), 30u);
+    pregnancyChance = std::min(stallion.breeding.breedingCount(), 30u);
     stallionGradeForBonus = stallion.grade();
   });
   
@@ -1841,7 +1841,7 @@ void RanchDirector::HandleTryBreeding(
     // Increment stallion's lifetime breeding counter even on failure
     stallionRecord->Mutable([](data::Horse& stallion)
     {
-      stallion.breeding.timesBreeded() = stallion.breeding.timesBreeded() + 1;
+    stallion.breeding.breedingCount() = stallion.breeding.breedingCount() + 1;
     });
     
     // Increment stallion's registration breeding counter
@@ -1960,7 +1960,7 @@ void RanchDirector::HandleTryBreeding(
       stallionBodyVolume = stallion.appearance.bodyVolume();
       stallionAncestors = stallion.ancestors();
       stallionCombo = stallion.breeding.breedingCombo();  // For inheritance rate calculation
-      stallionTimesBreeded = stallion.breeding.timesBreeded();  // For pregnancy chance
+      stallionTimesBreeded = stallion.breeding.breedingCount();  // For pregnancy chance
     });
     
     // Set foal basic info
@@ -2154,7 +2154,7 @@ void RanchDirector::HandleTryBreeding(
   // Note: Stallion's combo is NOT affected by breeding
   stallionRecord->Mutable([](data::Horse& stallion)
   {
-    stallion.breeding.timesBreeded() = stallion.breeding.timesBreeded() + 1;
+    stallion.breeding.breedingCount() = stallion.breeding.breedingCount() + 1;
   });
   
   // Increment stallion's registration breeding counter (for compensation calculation)

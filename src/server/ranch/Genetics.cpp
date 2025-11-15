@@ -374,7 +374,7 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
   if (result.tailTid == data::InvalidTid || result.tailTid == 0)
   {
     spdlog::warn("Genetics: Failed to find tail matching mane color for shape {}, using generic lookup", tailShape);
-    result.tailTid = _serverInstance.GetHorseRegistry().GetRandomTailFromColorAndShape(tailColorGroupId, tailShape);
+    result.tailTid = _serverInstance.GetHorseRegistry().GetRandomTailByColorGroupAndShape(tailColorGroupId, tailShape);
     
     if (result.tailTid == data::InvalidTid)
     {
@@ -396,7 +396,7 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
 
 uint8_t Genetics::CalculateFoalGrade(uint8_t mareGrade, uint8_t stallionGrade, uint8_t fertilityPeakLevel)
 {
-  // Official breeding grade probability table from libconfig
+  // BreedingGradeProbInfo in libconfig
   // Rows = GradeDistance (0-4, max difference allowed in breeding)
   // Columns = Grade offset from lower parent (Minus3, Minus2, Minus1, Plus0-7)
   static const float gradeTable[5][11] = {

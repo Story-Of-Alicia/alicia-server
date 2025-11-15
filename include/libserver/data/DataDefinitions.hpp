@@ -380,7 +380,9 @@ struct Horse
   
   struct Breeding
   {
-    dao::Field<uint32_t> timesBreeded{0u};  // Total times used for breeding since it was born
+    //! Total number of times the horse has participated in breeding.
+    dao::Field<uint32_t> breedingCount{0u};
+    //! Number of consecutive successful breedings (resets on failure).
     dao::Field<uint32_t> breedingCombo{0u};
   } breeding{};
   
