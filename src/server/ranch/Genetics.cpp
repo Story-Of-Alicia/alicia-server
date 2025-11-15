@@ -798,19 +798,19 @@ data::Tid Genetics::CalculateFoalSkin(
   
   float bonusMultiplier = 1.0f + (totalBonusPercentage / 100.0f);
   
-  float mareWeight = 10.0f * mareCoatInfo.inheritanceRate;
-  float stallionWeight = 10.0f * stallionCoatInfo.inheritanceRate * bonusMultiplier;
-  float gpWeight = 5.0f;
+  float mareWeight = 1.0f * mareCoatInfo.inheritanceRate;
+  float stallionWeight = 1.0f * stallionCoatInfo.inheritanceRate * bonusMultiplier;
+  float gpWeight = 0.5f;
   
   uint8_t gpCount = std::min((uint8_t)gpSkins.size(), (uint8_t)4);
   float totalGpWeight = gpWeight * gpCount;
   
-  // Random weight fills remainder, with base rate of 60 reduced by parent bonuses
+  // Higher base random weight for more variety
   float baseRandomWeight = 60.0f;
   float totalParentWeight = mareWeight + stallionWeight + totalGpWeight;
   
-  // If parents + GPs exceed 100, scale down random to minimum 10%
-  float randomWeight = std::max(10.0f, 100.0f - totalParentWeight);
+  // Random weight: base - parent influence * 0.2, with minimum of 30
+  float randomWeight = std::max(30.0f, baseRandomWeight - (totalParentWeight * 0.2f));
   
   // Normalize all weights to sum to 100
   float totalWeight = mareWeight + stallionWeight + totalGpWeight + randomWeight;
