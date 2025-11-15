@@ -89,6 +89,21 @@ courses:
         perfectSpurCheckTime: 0
         spurConsumeStarPoints: 40000
         starPointsMax: 100000
+      # Tutorial game mode
+      - type: 6
+        goodJumpStarPoints: 12000
+        itemSpawners:
+          collection:
+            - deckId: 101
+            - deckId: 102
+        mapPool:
+          collection: {}
+        perfectJumpStarPoints: 12000
+        perfectJumpUnitStarPoints: 1000
+        perfectJumpMaxBonusCombo: 5
+        perfectSpurCheckTime: 600
+        spurConsumeStarPoints: 40000
+        starPointsMax: 120000
   deckItemInfo:
     collection: {}
   mapBlockInfo:

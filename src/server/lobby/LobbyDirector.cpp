@@ -99,7 +99,7 @@ void LobbyDirector::Tick()
     if (not hasCharacter || forcedCharacterCreator)
     {
       spdlog::debug(
-        "User '{}' (client {}) succeeded in authentication and was sent to the character creator",
+        "User '{}' (client {}) was sent to the character creator",
         loginContext.userName,
         clientId);
       _networkHandler->AcceptLogin(clientId, true);
@@ -127,7 +127,6 @@ void LobbyDirector::Tick()
       return;
     }
 
-    spdlog::debug("User '{}' succeeded in authentication", loginContext.userName);
     _networkHandler->AcceptLogin(clientId);
 
     auto& userInstance = iter->second;
@@ -225,6 +224,14 @@ bool LobbyDirector::QueueClientConnect(network::ClientId clientId)
   return true;
 }
 
+void LobbyDirector::QueueClientDisconnect(
+  network::ClientId clientId)
+{
+  _loginRequestQueue.remove(clientId);
+  _loginResponseQueue.remove(clientId);
+  _clientLogins.erase(clientId);
+}
+
 size_t LobbyDirector::QueueClientLogin(
   network::ClientId clientId,
   const std::string& userName,
@@ -240,6 +247,12 @@ size_t LobbyDirector::QueueClientLogin(
   _loginRequestQueue.emplace_back(clientId);
 
   return _loginRequestQueue.size() + _loginResponseQueue.size();
+}
+
+void LobbyDirector::QueueClientCreatedCharacter(
+  network::ClientId clientId)
+{
+  _loginResponseQueue.emplace_back(clientId);
 }
 
 size_t LobbyDirector::GetClientQueuePosition(
@@ -258,14 +271,6 @@ size_t LobbyDirector::GetClientQueuePosition(
     position += std::ranges::distance(_loginRequestQueue.begin(), requestIter);
 
   return position;
-}
-
-void LobbyDirector::QueueClientDisconnect(
-  network::ClientId clientId)
-{
-  _loginRequestQueue.remove(clientId);
-  _loginResponseQueue.remove(clientId);
-  _clientLogins.erase(clientId);
 }
 
 void LobbyDirector::QueueClientLogout(

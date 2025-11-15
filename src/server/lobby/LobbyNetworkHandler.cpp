@@ -17,7 +17,6 @@
 
 namespace server
 {
-
 namespace
 {
 
@@ -546,20 +545,20 @@ void LobbyNetworkHandler::HandleClientConnected(ClientId clientId)
 
 void LobbyNetworkHandler::HandleClientDisconnected(ClientId clientId)
 {
-    const auto& clientContext = GetClientContext(clientId, false);
+  const auto& clientContext = GetClientContext(clientId, false);
 
-    _serverInstance.GetLobbyDirector().GetScheduler().Queue(
-      [this, isAuthenticated = clientContext.isAuthenticated, clientId, userName = clientContext.userName]()
+  _serverInstance.GetLobbyDirector().GetScheduler().Queue(
+    [this, isAuthenticated = clientContext.isAuthenticated, clientId, userName = clientContext.userName]()
+    {
+      if (isAuthenticated)
       {
-        if (isAuthenticated)
-        {
-          _serverInstance.GetLobbyDirector().QueueClientLogout(
-            clientId,
-            userName);
-        }
+        _serverInstance.GetLobbyDirector().QueueClientLogout(
+          clientId,
+          userName);
+      }
 
-        _serverInstance.GetLobbyDirector().QueueClientDisconnect(clientId);
-      });
+      _serverInstance.GetLobbyDirector().QueueClientDisconnect(clientId);
+    });
 
   _clients.erase(clientId);
   spdlog::debug("Client {} disconnected from the lobby server", clientId);
@@ -641,66 +640,61 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
     .val3 = 0x0,
 
     .missions = {
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x18,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-          .id = 2,
-          .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x1F,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x23,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x29,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x2A,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x2B,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x2C,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x2D,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x2E,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x2F,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},},
+        protocol::LobbyCommandLoginOK::Mission{
+          .id = 0x1F,
+          .records = {
+            protocol::LobbyCommandLoginOK::Mission::Record{
+              .id = 2,
+              .value = 1}}},
+        protocol::LobbyCommandLoginOK::Mission{
+          .id = 0x23,
+          .records = {
+            protocol::LobbyCommandLoginOK::Mission::Record{
+              .id = 2,
+              .value = 1}}},
+        protocol::LobbyCommandLoginOK::Mission{
+          .id = 0x29,
+          .records = {
+            protocol::LobbyCommandLoginOK::Mission::Record{
+              .id = 2,
+              .value = 1}}},
+        protocol::LobbyCommandLoginOK::Mission{
+          .id = 0x2A,
+          .records = {
+            protocol::LobbyCommandLoginOK::Mission::Record{
+              .id = 2,
+              .value = 1}}},
+        protocol::LobbyCommandLoginOK::Mission{
+          .id = 0x2B,
+          .records = {
+            protocol::LobbyCommandLoginOK::Mission::Record{
+              .id = 2,
+              .value = 1}}},
+        protocol::LobbyCommandLoginOK::Mission{
+          .id = 0x2C,
+          .records = {
+            protocol::LobbyCommandLoginOK::Mission::Record{
+              .id = 2,
+              .value = 1}}},
+        protocol::LobbyCommandLoginOK::Mission{
+          .id = 0x2D,
+          .records = {
+            protocol::LobbyCommandLoginOK::Mission::Record{
+              .id = 2,
+              .value = 1}}},
+        protocol::LobbyCommandLoginOK::Mission{
+          .id = 0x2E,
+          .records = {
+            protocol::LobbyCommandLoginOK::Mission::Record{
+              .id = 2,
+              .value = 1}}},
+        protocol::LobbyCommandLoginOK::Mission{
+          .id = 0x2F,
+          .records = {
+            protocol::LobbyCommandLoginOK::Mission::Record{
+              .id = 2,
+              .value = 1}}},
+    },
 
     .ranchAddress = lobbyConfig.advertisement.ranch.address.to_uint(),
     .ranchPort = lobbyConfig.advertisement.ranch.port,
@@ -1393,12 +1387,15 @@ void LobbyNetworkHandler::HandleCreateNickname(
     userCharacterUid,
     command.nickname);
 
-  SendLoginOK(clientId);
+  _serverInstance.GetLobbyDirector().GetScheduler().Queue([this, clientId]()
+  {
+    _serverInstance.GetLobbyDirector().QueueClientCreatedCharacter(clientId);
+  });
 }
 
 void LobbyNetworkHandler::HandleShowInventory(
   const ClientId clientId,
-  const protocol::AcCmdCLShowInventory& command)
+  [[maybe_unused]] const protocol::AcCmdCLShowInventory& command)
 {
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(

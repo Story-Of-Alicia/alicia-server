@@ -81,15 +81,18 @@ public:
 
   bool QueueClientConnect(
     network::ClientId clientId);
+  void QueueClientDisconnect(
+    network::ClientId clientId);
+
   size_t QueueClientLogin(
     network::ClientId clientId,
     const std::string& userName,
     const std::string& userToken);
+  void QueueClientCreatedCharacter(
+    network::ClientId clientId);
   size_t GetClientQueuePosition(
       network::ClientId clientId);
 
-  void QueueClientDisconnect(
-    network::ClientId clientId);
   void QueueClientLogout(
     network::ClientId clientId,
     const std::string& userName);

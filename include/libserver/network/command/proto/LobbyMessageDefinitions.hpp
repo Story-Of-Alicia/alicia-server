@@ -100,14 +100,14 @@ struct LobbyCommandLoginOK
 
   struct Mission
   {
-    uint16_t id{};
-
-    struct Progress
+    struct Record
     {
       uint32_t id{};
       uint32_t value{};
     };
-    std::vector<Progress> progress{};
+
+    uint16_t id{};
+    std::vector<Record> records{};
   };
 
   //! Max 17

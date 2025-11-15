@@ -113,8 +113,8 @@ void LobbyCommandLoginOK::Write(
   {
     stream.Write(val.id);
 
-    stream.Write(static_cast<uint8_t>(val.progress.size()));
-    for (const auto& nestedVal : val.progress)
+    stream.Write(static_cast<uint8_t>(val.records.size()));
+    for (const auto& nestedVal : val.records)
     {
       stream.Write(nestedVal.id)
         .Write(nestedVal.value);
