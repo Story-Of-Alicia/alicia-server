@@ -738,6 +738,8 @@ void MessengerDirector::HandleChatterChannelInfo(
   network::ClientId clientId,
   const protocol::ChatCmdChannelInfo& command)
 {
+  spdlog::debug("[{}] ChatCmdChannelInfo", clientId);
+
   const auto& lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
   protocol::ChatCmdChannelInfoAckOk response{
     .hostname = lobbyConfig.advertisement.messenger.address.to_string(),
@@ -751,6 +753,13 @@ void MessengerDirector::HandleChatterGuildLogin(
   network::ClientId clientId,
   const protocol::ChatCmdGuildLogin& command)
 {
+  spdlog::debug("[{}] ChatCmdGuildLogin: {} {} {} {}",
+    clientId,
+    command.characterUid,
+    command.name,
+    command.code,
+    command.guildUid);
+
   // ChatCmdGuildLogin is sent after ChatCmdLogin
   // Assumption: the user is very likely already authenticated with messenger
   const auto& clientContext = GetClientContext(clientId);

@@ -627,9 +627,6 @@ struct ChatCmdChannelChatTrs
 
 struct ChatCmdChannelInfo
 {
-  // TODO: unclear, does it really send u32?
-  uint32_t unk0{};
-
   static ChatterCommand GetCommand()
   {
     return ChatterCommand::ChatCmdChannelInfo;
