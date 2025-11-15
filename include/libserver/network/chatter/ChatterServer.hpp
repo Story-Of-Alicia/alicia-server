@@ -65,6 +65,22 @@ public:
     network::ClientId clientId,
     const protocol::ChatCmdLetterDelete& command) = 0;
 
+  virtual void HandleChatterEnterRoom(
+    network::ClientId clientId,
+    const protocol::ChatCmdEnterRoom& command) = 0;
+
+  virtual void HandleChatterChat(
+    network::ClientId clientId,
+    const protocol::ChatCmdChat& command) = 0;
+
+  virtual void HandleChatterInputState(
+    network::ClientId clientId,
+    const protocol::ChatCmdInputState& command) = 0;
+
+  virtual void HandleChatterChannelInfo(
+    network::ClientId clientId,
+    const protocol::ChatCmdChannelInfo& command) = 0;
+
   virtual void HandleChatterGuildLogin(
     network::ClientId clientId,
     const protocol::ChatCmdGuildLogin& command) = 0;

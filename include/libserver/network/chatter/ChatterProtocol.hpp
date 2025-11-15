@@ -53,6 +53,17 @@ enum class ChatterCommand : uint16_t
   ChatCmdLetterDeleteAckCancel = 0x23,
   ChatCmdLetterArriveTrs = 0x24,
 
+  ChatCmdEnterRoom = 0x29,
+  ChatCmdEnterRoomAckOk = 0x2a,
+
+  ChatCmdChat = 0x2E,
+  ChatCmdChatTrs = 0x2F,
+  ChatCmdInputState = 0x30,
+  ChatCmdInputStateTrs = 0x31,
+
+  ChatCmdChannelChatTrs = 0x37,
+  ChatCmdChannelInfo = 0x38,
+  ChatCmdChannelInfoAckOk = 0x39,
   ChatCmdGuildLogin = 0x40,
   ChatCmdGuildLoginAckOK = 0x41,
   ChatCmdGuildLoginAckCancel = 0x42,

@@ -183,6 +183,34 @@ size_t ChatterServer::OnClientData(
         _chatterCommandHandler.HandleChatterLetterDelete(clientId, command);
         break;
       }
+      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdEnterRoom):
+      {
+        protocol::ChatCmdEnterRoom command;
+        commandDataSource.Read(command);
+        _chatterCommandHandler.HandleChatterEnterRoom(clientId, command);
+        break;
+      }
+      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdChat):
+      {
+        protocol::ChatCmdChat command;
+        commandDataSource.Read(command);
+        _chatterCommandHandler.HandleChatterChat(clientId, command);
+        break;
+      }
+      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdInputState):
+      {
+        protocol::ChatCmdInputState command;
+        commandDataSource.Read(command);
+        _chatterCommandHandler.HandleChatterInputState(clientId, command);
+        break;
+      }
+      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdChannelInfo):
+      {
+        protocol::ChatCmdChannelInfo command;
+        commandDataSource.Read(command);
+        _chatterCommandHandler.HandleChatterChannelInfo(clientId, command);
+        break;
+      }
       case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdGuildLogin):
       {
         protocol::ChatCmdGuildLogin command;

@@ -479,6 +479,191 @@ struct ChatCmdLetterArriveTrs
     SourceStream& stream);
 };
 
+struct ChatCmdEnterRoom
+{
+  uint32_t code{};
+  data::Uid characterUid{};
+  std::string characterName{};
+  data::Uid guildUid{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdEnterRoom;
+  }
+
+  static void Write(
+    const ChatCmdEnterRoom& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdEnterRoom& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdEnterRoomAckOk
+{
+  struct Struct0
+  {
+    uint32_t unk0{};
+    std::string unk1{};
+  };
+  std::vector<Struct0> unk1{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdEnterRoomAckOk;
+  }
+
+  static void Write(
+    const ChatCmdEnterRoomAckOk& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdEnterRoomAckOk& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdChat
+{
+  std::string message{};
+  //! Role of the character. `User` and `GameMaster` get sent but `Op` never works.
+  enum class Role : uint8_t
+  {
+    User = 0x0,
+    Op = 0x1, // Assumed, tested but no effect
+    GameMaster = 0x2
+  } role{Role::User};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdChat;
+  }
+
+  static void Write(
+    const ChatCmdChat& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdChat& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdChatTrs
+{
+  uint32_t unk0{};
+  std::string message{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdChatTrs;
+  }
+
+  static void Write(
+    const ChatCmdChatTrs& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdChatTrs& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdInputState
+{
+  uint8_t state{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdInputState;
+  }
+
+  static void Write(
+    const ChatCmdInputState& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdInputState& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdInputStateTrs
+{
+  uint32_t unk0{};
+  uint8_t state{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdInputStateTrs;
+  }
+
+  static void Write(
+    const ChatCmdInputStateTrs& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdInputStateTrs& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdChannelChatTrs
+{
+  std::string unk0{};
+
+  std::string unk1{};
+  uint8_t unk2{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdChannelChatTrs;
+  }
+
+  static void Write(
+    const ChatCmdChannelChatTrs& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdChannelChatTrs& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdChannelInfo
+{
+  // TODO: unclear, does it really send u32?
+  uint32_t unk0{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdChannelInfo;
+  }
+
+  static void Write(
+    const ChatCmdChannelInfo& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdChannelInfo& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdChannelInfoAckOk
+{
+  std::string hostname{};
+  uint16_t port{};
+  uint32_t code{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdChannelInfoAckOk;
+  }
+
+  static void Write(
+    const ChatCmdChannelInfoAckOk& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdChannelInfoAckOk& command,
+    SourceStream& stream);
+};
+
 struct ChatCmdGuildLogin : ChatCmdLogin
 {
   // ChatCmdGuildLogin shares the same payload as ChatCmdLogin

@@ -66,6 +66,22 @@ private:
     network::ClientId clientId,
     const protocol::ChatCmdLetterDelete& command) override;
 
+  void HandleChatterEnterRoom(
+    network::ClientId clientId,
+    const protocol::ChatCmdEnterRoom& command) override;
+
+  void HandleChatterChat(
+    network::ClientId clientId,
+    const protocol::ChatCmdChat& command) override;
+
+  void HandleChatterInputState(
+    network::ClientId clientId,
+    const protocol::ChatCmdInputState& command) override;
+
+  void HandleChatterChannelInfo(
+    network::ClientId clientId,
+    const protocol::ChatCmdChannelInfo& command) override;
+
   void HandleChatterGuildLogin(
     network::ClientId clientId,
     const protocol::ChatCmdGuildLogin& command) override;
