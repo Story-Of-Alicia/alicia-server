@@ -150,7 +150,7 @@ void BreedingMarket::Tick()
         {
           horseRecord->Mutable([&cachedData](data::Horse& horse)
           {
-            horse.horseType() = 0; // Adult
+            horse.type() = 0; // Adult
             spdlog::info("Breeding market: Reset horse {} type from Stallion to Adult", cachedData.horseUid);
           });
         }
@@ -263,7 +263,7 @@ void BreedingMarket::CheckExpiredStallions()
       {
         horseRecord->Mutable([&stallionData](data::Horse& horse)
         {
-          horse.horseType() = 0; // Adult
+          horse.type() = 0; // Adult
           spdlog::info("Breeding market: Reset horse {} type from Stallion to Adult", stallionData.horseUid);
         });
       }
@@ -341,7 +341,7 @@ data::Uid BreedingMarket::RegisterStallion(
   // Set horse type to Stallion
   horseRecord->Mutable([](data::Horse& horse)
   {
-    horse.horseType() = 2; // HorseType::Stallion
+    horse.type() = 2; // HorseType::Stallion
   });
 
   // Create persistent stallion registration
@@ -443,7 +443,7 @@ BreedingMarket::StallionBreedingEarnings BreedingMarket::UnregisterStallion(data
   {
     horseRecord->Mutable([](data::Horse& horse)
     {
-      horse.horseType() = 0; // HorseType::Adult
+      horse.type() = 0; // HorseType::Adult
     });
   }
 
@@ -544,14 +544,12 @@ void BreedingMarket::ProcessPendingHorseTypeResets()
   
   for (data::Uid horseUid : _horsesNeedingTypeReset)
   {
-    auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(horseUid);
+    const auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(horseUid);
     if (horseRecord)
     {
       horseRecord->Mutable([horseUid](data::Horse& horse)
       {
-        horse.horseType() = 0; // Adult
-        spdlog::info("Breeding market: Successfully reset horse {} type from Stallion to Adult (deferred)", 
-          horseUid);
+        horse.type() = 0; // Adult
       });
     }
     else
@@ -563,10 +561,6 @@ void BreedingMarket::ProcessPendingHorseTypeResets()
   
   _horsesNeedingTypeReset = std::move(stillPending);
   
-  if (!_horsesNeedingTypeReset.empty())
-  {
-    spdlog::debug("Breeding market: {} horse(s) still pending type reset", _horsesNeedingTypeReset.size());
-  }
 }
 
 void BreedingMarket::ProcessPendingPayments()
@@ -600,10 +594,6 @@ void BreedingMarket::ProcessPendingPayments()
   
   _pendingPayments = std::move(stillPending);
   
-  if (!_pendingPayments.empty())
-  {
-    spdlog::debug("Breeding market: {} payment(s) still pending", _pendingPayments.size());
-  }
 }
 
 } // namespace server
