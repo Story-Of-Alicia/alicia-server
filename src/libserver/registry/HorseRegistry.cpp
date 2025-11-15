@@ -325,7 +325,7 @@ data::Tid HorseRegistry::GetRandomManeFromColorAndShape(int32_t colorGroupId, in
   return candidates[dist(_randomEngine)];
 }
 
-data::Tid HorseRegistry::GetRandomTailFromColorAndShape(int32_t colorGroupId, int32_t shape)
+data::Tid HorseRegistry::GetRandomTailByColorGroupAndShape(int32_t colorGroupId, int32_t shape)
 {
   auto groupIt = _tailsByColorAndShape.find(colorGroupId);
   if (groupIt == _tailsByColorAndShape.end())

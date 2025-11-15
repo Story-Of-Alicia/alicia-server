@@ -22,7 +22,7 @@ namespace
 constexpr uint8_t MinBreedingGrade = 4;
 constexpr uint8_t MaxBreedingGrade = 8;
 
-} // namespace
+} // anon namespace
 
 BreedingMarket::BreedingMarket(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
@@ -34,22 +34,13 @@ void BreedingMarket::Initialize()
   // Get all registered stallion UIDs from the data source
   _stallionUidsToLoad = _serverInstance.GetDataDirector().ListRegisteredStallions();
   
-  spdlog::info("BreedingMarket::Initialize - Found {} stallion UID(s) from data source", _stallionUidsToLoad.size());
-  
+
   if (_stallionUidsToLoad.empty())
   {
-    spdlog::info("No registered stallions found in database");
     _stallionsLoaded = true;
     return;
   }
-  
-  // Log the stallion UIDs
-  for (data::Uid uid : _stallionUidsToLoad)
-  {
-    spdlog::debug("  - Queuing stallion UID: {}", uid);
-  }
-  
-  spdlog::info("Queuing {} stallion(s) for async loading", _stallionUidsToLoad.size());
+
   
   // Request async loading of stallion records (individual calls trigger loading)
   for (data::Uid stallionUid : _stallionUidsToLoad)
@@ -105,11 +96,9 @@ void BreedingMarket::Tick()
         timesMated = stallion.timesMated();
         
         // Check if expired immediately (24 hours after registration)
-        auto expiresAt = cachedData.registeredAt + std::chrono::hours(24);
+        const auto expiresAt = cachedData.registeredAt + std::chrono::hours(24);
         if (util::Clock::now() >= expiresAt)
         {
-          spdlog::warn("Breeding market: Stallion {} (horse {}) is already expired, processing cleanup", 
-            stallionUid, cachedData.horseUid);
           isValid = false;
         }
         else
@@ -132,8 +121,6 @@ void BreedingMarket::Tick()
           {
             owner.carrots() = owner.carrots() + earnings;
           });
-          spdlog::info("Breeding market: Paid owner {} a total of {} carrots ({} × {} matings)", 
-            cachedData.ownerUid, earnings, cachedData.breedingCharge, timesMated);
         }
         else
         {
@@ -158,13 +145,10 @@ void BreedingMarket::Tick()
         {
           // Horse not loaded yet - queue it for later processing
           _horsesNeedingTypeReset.push_back(cachedData.horseUid);
-          spdlog::debug("Breeding market: Horse {} not in cache yet, queued for type reset", 
-            cachedData.horseUid);
         }
         
         // Delete stallion record from database
         _serverInstance.GetDataDirector().GetStallionCache().Delete(stallionUid);
-        spdlog::info("Breeding market: Deleted expired stallion {} from database", stallionUid);
         
         // Don't add to stillPending - it's been handled
         continue;
@@ -174,7 +158,6 @@ void BreedingMarket::Tick()
       _registeredStallions.emplace_back(cachedData.horseUid);
       _horseToStallionMap[cachedData.horseUid] = stallionUid;
       loadedCount++;
-      spdlog::debug("Breeding market: Successfully loaded stallion {} (horse {})", stallionUid, cachedData.horseUid);
     }
     
     // Update the queue with only pending stallions
@@ -188,7 +171,6 @@ void BreedingMarket::Tick()
     }
     else
     {
-      spdlog::debug("Breeding market: {} stallions loaded, {} still pending", loadedCount, _stallionUidsToLoad.size());
     }
   }
   
@@ -217,8 +199,6 @@ void BreedingMarket::CheckExpiredStallions()
     auto expiresAt = stallionData.registeredAt + std::chrono::hours(24);
     if (now >= expiresAt)
     {
-      spdlog::info("Stallion {} (horse {}) has expired, removing from breeding market", 
-        stallionUid, stallionData.horseUid);
       
       // Get timesMated before deleting the record
       uint32_t timesMated = 0;
@@ -240,15 +220,11 @@ void BreedingMarket::CheckExpiredStallions()
         {
           owner.carrots() = owner.carrots() + earnings;
         });
-        spdlog::info("Breeding market: Paid owner {} a total of {} carrots ({} × {} matings)", 
-          stallionData.ownerUid, earnings, stallionData.breedingCharge, timesMated);
       }
       else
       {
         // Owner not loaded yet - queue payment for later
         _pendingPayments.push_back({stallionData.ownerUid, BreedingMarket::StallionBreedingEarnings{timesMated, earnings, stallionData.breedingCharge}});
-        spdlog::debug("Breeding market: Owner {} not in cache yet, queued payment of {} carrots", 
-          stallionData.ownerUid, earnings);
       }
       
       // Remove from cache
@@ -264,15 +240,12 @@ void BreedingMarket::CheckExpiredStallions()
         horseRecord->Mutable([&stallionData](data::Horse& horse)
         {
           horse.type() = 0; // Adult
-          spdlog::info("Breeding market: Reset horse {} type from Stallion to Adult", stallionData.horseUid);
         });
       }
       else
       {
         // Horse not loaded yet - queue it for later processing
         _horsesNeedingTypeReset.push_back(stallionData.horseUid);
-        spdlog::debug("Breeding market: Horse {} not in cache yet, queued for type reset", 
-          stallionData.horseUid);
       }
       
       // Erase from cache
@@ -312,7 +285,6 @@ data::Uid BreedingMarket::RegisterStallion(
   // Check if already registered
   if (_horseToStallionMap.contains(horseUid))
   {
-    spdlog::warn("RegisterStallion: Horse {} is already registered", horseUid);
     return data::InvalidUid;
   }
 
@@ -333,8 +305,6 @@ data::Uid BreedingMarket::RegisterStallion(
   // Only allow specific grades to be registered
   if (horseGrade < MinBreedingGrade || horseGrade > MaxBreedingGrade)
   {
-    spdlog::warn("RegisterStallion: Horse {} grade {} is not allowed for breeding (must be {}-{})", 
-      horseUid, horseGrade, MinBreedingGrade, MaxBreedingGrade);
     return data::InvalidUid;
   }
 
@@ -360,17 +330,13 @@ data::Uid BreedingMarket::RegisterStallion(
     registeredAt = stallion.registeredAt();
   });
 
-  spdlog::info("RegisterStallion: Created stallion record with UID {}", stallionUid);
 
   // Add to in-memory structures
-  spdlog::debug("RegisterStallion: Adding to _registeredStallions");
   _registeredStallions.emplace_back(horseUid);
   
-  spdlog::debug("RegisterStallion: Adding to _horseToStallionMap");
   _horseToStallionMap[horseUid] = stallionUid;
   
   // Cache the stallion data
-  spdlog::debug("RegisterStallion: Creating cached data");
   StallionData cachedData{
     .stallionUid = stallionUid,
     .horseUid = horseUid,
@@ -379,10 +345,7 @@ data::Uid BreedingMarket::RegisterStallion(
     .registeredAt = registeredAt
   };
   
-  spdlog::debug("RegisterStallion: Adding to _stallionDataCache");
   _stallionDataCache[stallionUid] = cachedData;
-
-  spdlog::info("RegisterStallion: Successfully registered horse {} as stallion {}", horseUid, stallionUid);
 
   return stallionUid;
 }
@@ -390,14 +353,12 @@ data::Uid BreedingMarket::RegisterStallion(
 BreedingMarket::StallionBreedingEarnings BreedingMarket::UnregisterStallion(data::Uid horseUid)
 {
   std::lock_guard<std::mutex> lock(_mutex);
-  
-  spdlog::info("UnregisterStallion: horseUid={}", horseUid);
-  
+
+
   // Look up stallion UID from horse UID
   auto it = _horseToStallionMap.find(horseUid);
   if (it == _horseToStallionMap.end())
   {
-    spdlog::warn("UnregisterStallion: Horse {} is not registered as stallion", horseUid);
     return BreedingMarket::StallionBreedingEarnings{0, 0, 0};
   }
 
@@ -422,8 +383,6 @@ BreedingMarket::StallionBreedingEarnings BreedingMarket::UnregisterStallion(data
       earnings.breedingCharge = cachedData.breedingCharge;
       earnings.compensation = earnings.timesMated * earnings.breedingCharge;
       
-      spdlog::info("UnregisterStallion: Calculated compensation {} carrots (timesMated={}, charge={})", 
-        earnings.compensation, earnings.timesMated, earnings.breedingCharge);
     }
     
     // Remove from cache
@@ -447,8 +406,6 @@ BreedingMarket::StallionBreedingEarnings BreedingMarket::UnregisterStallion(data
     });
   }
 
-  spdlog::info("UnregisterStallion: Successfully unregistered horse {} (stallion {})", 
-    horseUid, stallionUid);
 
   return earnings;
 }
@@ -462,7 +419,6 @@ std::optional<BreedingMarket::StallionBreedingEarnings> BreedingMarket::GetUnreg
   auto it = _horseToStallionMap.find(horseUid);
   if (it == _horseToStallionMap.end())
   {
-    spdlog::warn("GetUnregisterEstimate: Horse {} is not registered as stallion", horseUid);
     return std::nullopt;
   }
 
@@ -472,7 +428,6 @@ std::optional<BreedingMarket::StallionBreedingEarnings> BreedingMarket::GetUnreg
   auto cacheIt = _stallionDataCache.find(stallionUid);
   if (cacheIt == _stallionDataCache.end())
   {
-    spdlog::error("GetUnregisterEstimate: Stallion {} not found in cache (inconsistent state)", stallionUid);
     return std::nullopt;
   }
 
@@ -482,7 +437,6 @@ std::optional<BreedingMarket::StallionBreedingEarnings> BreedingMarket::GetUnreg
   auto stallionRecord = _serverInstance.GetDataDirector().GetStallionCache().Get(stallionUid);
   if (!stallionRecord)
   {
-    spdlog::error("GetUnregisterEstimate: Stallion {} record not found", stallionUid);
     return std::nullopt;
   }
 
@@ -493,9 +447,6 @@ std::optional<BreedingMarket::StallionBreedingEarnings> BreedingMarket::GetUnreg
   });
 
   uint32_t compensation = timesMated * cachedData.breedingCharge;
-
-  spdlog::info("GetUnregisterEstimate: Horse {} - timesMated={}, compensation={}, price={}", 
-    horseUid, timesMated, compensation, cachedData.breedingCharge);
 
   return BreedingMarket::StallionBreedingEarnings{timesMated, compensation, cachedData.breedingCharge};
 }
