@@ -733,7 +733,7 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["grade"] = horse.grade();
   json["growthPoints"] = horse.growthPoints();
   
-  json["breeding"]["timesBreeded"] = horse.breeding.timesBreeded();
+  json["breeding"]["breedingCount"] = horse.breeding.breedingCount();
   json["breeding"]["breedingCombo"] = horse.breeding.breedingCombo();
 
   json["breeding"]["breedingCount"] = horse.breeding.breedingCount();

@@ -22,7 +22,6 @@
 #include <cassert>
 #include <algorithm>
 #include <format>
-#include <spdlog/spdlog.h>
 
 namespace server::protocol
 {
