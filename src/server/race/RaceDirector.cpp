@@ -469,10 +469,19 @@ void RaceDirector::Tick() {
       // Broadcast the race final.
       for (const ClientId& raceClientId : raceInstance.clients)
       {
-        const auto& raceClientContext = GetClientContext(raceClientId, true);
+        bool isParticipant = false;
+        try
+        {
+          const auto& raceClientContext = GetClientContext(raceClientId);
+          isParticipant = raceInstance.tracker.IsRacer(
+            raceClientContext.characterUid);
+        }
+        catch ([[maybe_unused]] const std::exception& x)
+        {
+          // the client has disconnected
+          // this is a data race
+        }
 
-        const auto isParticipant = raceInstance.tracker.IsRacer(
-          raceClientContext.characterUid);
         if (not isParticipant)
           continue;
 
