@@ -912,6 +912,17 @@ void RaceDirector::HandleEnterRoom(
               }
             });
         }
+
+        if (character.petUid() != data::InvalidUid)
+        {
+          const auto petRecord = GetServerInstance().GetDataDirector().GetPetCache().Get(
+            character.petUid());
+          petRecord->Immutable(
+            [&protocolRacer](const data::Pet& pet)
+            {
+              protocol::BuildProtocolPet(protocolRacer.pet, pet);
+            });
+        }
       });
 
     if (characterUid == clientContext.characterUid)
