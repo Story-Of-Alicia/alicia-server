@@ -41,10 +41,8 @@ constexpr std::array XorCode{
 } // anon namespace
 
 ChatterServer::ChatterServer(
-  IChatterServerEventsHandler& chatterServerEventsHandler,
-  IChatterCommandHandler& chatterCommandHandler)
+  IChatterServerEventsHandler& chatterServerEventsHandler)
   : _chatterServerEventsHandler(chatterServerEventsHandler)
-  , _chatterCommandHandler(chatterCommandHandler)
   , _server(*this)
 {
 }
@@ -145,83 +143,32 @@ size_t ChatterServer::OnClientData(
 
     SourceStream commandDataSource({commandData.begin(), commandData.end()});
 
-    switch (header.commandId)
+    // Find the handler of the command.
+    const auto handlerIter = _handlers.find(header.commandId);
+    if (handlerIter == _handlers.cend())
     {
-      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdLogin):
+      if (debugCommands)
       {
-        // TODO: deserialization and handler call
-        protocol::ChatCmdLogin command;
-        commandDataSource.Read(command);
-        _chatterCommandHandler.HandleChatterLogin(clientId, command);
-        break;
+        spdlog::warn("Unhandled chatter command: {:#x}", header.commandId);
       }
-      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdLetterList):
+    }
+    else
+    {
+      const auto& handler = handlerIter->second;
+      try
       {
-        protocol::ChatCmdLetterList command;
-        commandDataSource.Read(command);
-        _chatterCommandHandler.HandleChatterLetterList(clientId, command);
-        break;
+        handler(clientId, commandDataSource);
+        
+        if (debugCommands)
+        {
+          spdlog::debug("Handled chatter command: {:#x}", header.commandId);
+        }
       }
-      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdLetterSend):
+      catch (const std::exception& ex)
       {
-        protocol::ChatCmdLetterSend command;
-        commandDataSource.Read(command);
-        _chatterCommandHandler.HandleChatterLetterSend(clientId, command);
-        break;
-      }
-      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdLetterRead):
-      {
-        protocol::ChatCmdLetterRead command;
-        commandDataSource.Read(command);
-        _chatterCommandHandler.HandleChatterLetterRead(clientId, command);
-        break;
-      }
-      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdLetterDelete):
-      {
-        protocol::ChatCmdLetterDelete command;
-        commandDataSource.Read(command);
-        _chatterCommandHandler.HandleChatterLetterDelete(clientId, command);
-        break;
-      }
-      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdEnterRoom):
-      {
-        protocol::ChatCmdEnterRoom command;
-        commandDataSource.Read(command);
-        _chatterCommandHandler.HandleChatterEnterRoom(clientId, command);
-        break;
-      }
-      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdChat):
-      {
-        protocol::ChatCmdChat command;
-        commandDataSource.Read(command);
-        _chatterCommandHandler.HandleChatterChat(clientId, command);
-        break;
-      }
-      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdInputState):
-      {
-        protocol::ChatCmdInputState command;
-        commandDataSource.Read(command);
-        _chatterCommandHandler.HandleChatterInputState(clientId, command);
-        break;
-      }
-      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdChannelInfo):
-      {
-        protocol::ChatCmdChannelInfo command;
-        commandDataSource.Read(command);
-        _chatterCommandHandler.HandleChatterChannelInfo(clientId, command);
-        break;
-      }
-      case static_cast<uint16_t>(protocol::ChatterCommand::ChatCmdGuildLogin):
-      {
-        protocol::ChatCmdGuildLogin command;
-        commandDataSource.Read(command);
-        _chatterCommandHandler.HandleChatterGuildLogin(clientId, command);
-        break;
-      }
-      default:
-      {
-        spdlog::warn("Unhandled chatter: {}", header.commandId);
-        break;
+        spdlog::error("Unhandled exception handling chatter command {:#x}: {}", 
+          header.commandId,
+          ex.what());
       }
     }
   }
