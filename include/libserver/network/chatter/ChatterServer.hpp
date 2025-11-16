@@ -21,10 +21,13 @@
 #define CHATTER_SERVER_HPP
 
 #include "libserver/network/Server.hpp"
+#include "libserver/util/Stream.hpp"
+#include "libserver/Constants.hpp"
 
 #include "proto/ChatterMessageDefinitions.hpp"
 
 #include <functional>
+#include <unordered_map>
 
 namespace server
 {
@@ -39,66 +42,41 @@ public:
   virtual void HandleClientDisconnected(network::ClientId clientId) = 0;
 };
 
-//! An interface for handler of chatter commands.
-class IChatterCommandHandler
+//! A raw command handler.
+using RawChatterCommandHandler = std::function<void(network::ClientId, SourceStream&)>;
+
+//! Concept for readable command structs.
+template <typename T>
+concept ReadableChatterCommandStruct = ReadableStruct<T> and requires
 {
-public:
-  virtual ~IChatterCommandHandler() = default;
-
-  virtual void HandleChatterLogin(
-    network::ClientId clientId,
-    const protocol::ChatCmdLogin& command) = 0;
-
-  virtual void HandleChatterLetterList(
-    network::ClientId clientId,
-    const protocol::ChatCmdLetterList& command) = 0;
-
-  virtual void HandleChatterLetterSend(
-    network::ClientId clientId,
-    const protocol::ChatCmdLetterSend& command) = 0;
-
-  virtual void HandleChatterLetterRead(
-    network::ClientId clientId,
-    const protocol::ChatCmdLetterRead& command) = 0;
-
-  virtual void HandleChatterLetterDelete(
-    network::ClientId clientId,
-    const protocol::ChatCmdLetterDelete& command) = 0;
-
-  virtual void HandleChatterEnterRoom(
-    network::ClientId clientId,
-    const protocol::ChatCmdEnterRoom& command) = 0;
-
-  virtual void HandleChatterChat(
-    network::ClientId clientId,
-    const protocol::ChatCmdChat& command) = 0;
-
-  virtual void HandleChatterInputState(
-    network::ClientId clientId,
-    const protocol::ChatCmdInputState& command) = 0;
-
-  virtual void HandleChatterChannelInfo(
-    network::ClientId clientId,
-    const protocol::ChatCmdChannelInfo& command) = 0;
-
-  virtual void HandleChatterGuildLogin(
-    network::ClientId clientId,
-    const protocol::ChatCmdGuildLogin& command) = 0;
+  {T::GetCommand()} -> std::convertible_to<protocol::ChatterCommand>;
 };
 
 class ChatterServer final
   : public network::EventHandlerInterface
 {
 public:
-  ChatterServer(
-    IChatterServerEventsHandler& chatterServerEventsHandler,
-    IChatterCommandHandler& chatterCommandHandler);
+  explicit ChatterServer(IChatterServerEventsHandler& chatterServerEventsHandler);
   ~ChatterServer();
 
   void BeginHost(network::asio::ip::address_v4 address, uint16_t port);
   void EndHost();
 
   network::asio::ip::address_v4 GetClientAddress(const network::ClientId clientId);
+
+  //! Registers a command handler.
+  template <ReadableChatterCommandStruct C>
+  void RegisterCommandHandler(
+    std::function<void(network::ClientId clientId, const C& command)> handler)
+  {
+    _handlers[static_cast<uint16_t>(C::GetCommand())] = 
+      [handler](network::ClientId clientId, SourceStream& source)
+      {
+        C command;
+        C::Read(command, source);
+        handler(clientId, command);
+      };
+  }
 
   template<typename T>
   void QueueCommand(network::ClientId clientId, std::function<T()> commandSupplier)
@@ -162,10 +140,14 @@ private:
   size_t OnClientData(network::ClientId clientId, const std::span<const std::byte>& data) override;
 
   IChatterServerEventsHandler& _chatterServerEventsHandler;
-  IChatterCommandHandler& _chatterCommandHandler;
+  std::unordered_map<uint16_t, RawChatterCommandHandler> _handlers{};
 
   network::Server _server;
   std::thread _serverThread;
+
+  // Debug flags for logging command handling
+  bool debugIncomingCommandData = constants::DebugCommands;
+  bool debugCommands = constants::DebugCommands;
 };
 
 } // namespace server

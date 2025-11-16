@@ -28,9 +28,69 @@ constexpr auto OnlinePlayersCategoryUid = std::numeric_limits<uint32_t>::max() -
 constexpr std::string_view DateTimeFormat = "{:%H:%M:%S %d/%m/%Y} UTC";
 
 MessengerDirector::MessengerDirector(ServerInstance& serverInstance)
-  : _chatterServer(*this, *this)
+  : _chatterServer(*this)
   , _serverInstance(serverInstance)
 {
+  // Register chatter command handlers
+  _chatterServer.RegisterCommandHandler<protocol::ChatCmdLogin>(
+    [this](network::ClientId clientId, const auto& command)
+    {
+      HandleChatterLogin(clientId, command);
+    });
+
+  _chatterServer.RegisterCommandHandler<protocol::ChatCmdLetterList>(
+    [this](network::ClientId clientId, const auto& command)
+    {
+      HandleChatterLetterList(clientId, command);
+    });
+
+  _chatterServer.RegisterCommandHandler<protocol::ChatCmdLetterSend>(
+    [this](network::ClientId clientId, const auto& command)
+    {
+      HandleChatterLetterSend(clientId, command);
+    });
+
+  _chatterServer.RegisterCommandHandler<protocol::ChatCmdLetterRead>(
+    [this](network::ClientId clientId, const auto& command)
+    {
+      HandleChatterLetterRead(clientId, command);
+    });
+
+  _chatterServer.RegisterCommandHandler<protocol::ChatCmdLetterDelete>(
+    [this](network::ClientId clientId, const auto& command)
+    {
+      HandleChatterLetterDelete(clientId, command);
+    });
+
+  _chatterServer.RegisterCommandHandler<protocol::ChatCmdEnterRoom>(
+    [this](network::ClientId clientId, const auto& command)
+    {
+      HandleChatterEnterRoom(clientId, command);
+    });
+
+  _chatterServer.RegisterCommandHandler<protocol::ChatCmdChat>(
+    [this](network::ClientId clientId, const auto& command)
+    {
+      HandleChatterChat(clientId, command);
+    });
+
+  _chatterServer.RegisterCommandHandler<protocol::ChatCmdInputState>(
+    [this](network::ClientId clientId, const auto& command)
+    {
+      HandleChatterInputState(clientId, command);
+    });
+
+  _chatterServer.RegisterCommandHandler<protocol::ChatCmdChannelInfo>(
+    [this](network::ClientId clientId, const auto& command)
+    {
+      HandleChatterChannelInfo(clientId, command);
+    });
+
+  _chatterServer.RegisterCommandHandler<protocol::ChatCmdGuildLogin>(
+    [this](network::ClientId clientId, const auto& command)
+    {
+      HandleChatterGuildLogin(clientId, command);
+    });
 }
 
 void MessengerDirector::Initialize()

@@ -17,7 +17,6 @@ class ServerInstance;
 
 class MessengerDirector
   : private IChatterServerEventsHandler
-  , private IChatterCommandHandler
 {
 private:
   struct ClientContext
@@ -46,45 +45,46 @@ private:
   void HandleClientConnected(network::ClientId clientId) override;
   void HandleClientDisconnected(network::ClientId clientId) override;
 
+  // Handler methods for chatter commands
   void HandleChatterLogin(
     network::ClientId clientId,
-    const protocol::ChatCmdLogin& command) override;
+    const protocol::ChatCmdLogin& command);
 
   void HandleChatterLetterList(
     network::ClientId clientId,
-    const protocol::ChatCmdLetterList& command) override;
+    const protocol::ChatCmdLetterList& command);
 
   void HandleChatterLetterSend(
     network::ClientId clientId,
-    const protocol::ChatCmdLetterSend& command) override;
+    const protocol::ChatCmdLetterSend& command);
 
   void HandleChatterLetterRead(
     network::ClientId clientId,
-    const protocol::ChatCmdLetterRead& command) override;
+    const protocol::ChatCmdLetterRead& command);
 
   void HandleChatterLetterDelete(
     network::ClientId clientId,
-    const protocol::ChatCmdLetterDelete& command) override;
+    const protocol::ChatCmdLetterDelete& command);
 
   void HandleChatterEnterRoom(
     network::ClientId clientId,
-    const protocol::ChatCmdEnterRoom& command) override;
+    const protocol::ChatCmdEnterRoom& command);
 
   void HandleChatterChat(
     network::ClientId clientId,
-    const protocol::ChatCmdChat& command) override;
+    const protocol::ChatCmdChat& command);
 
   void HandleChatterInputState(
     network::ClientId clientId,
-    const protocol::ChatCmdInputState& command) override;
+    const protocol::ChatCmdInputState& command);
 
   void HandleChatterChannelInfo(
     network::ClientId clientId,
-    const protocol::ChatCmdChannelInfo& command) override;
+    const protocol::ChatCmdChannelInfo& command);
 
   void HandleChatterGuildLogin(
     network::ClientId clientId,
-    const protocol::ChatCmdGuildLogin& command) override;
+    const protocol::ChatCmdGuildLogin& command);
 
   ChatterServer _chatterServer;
   ServerInstance& _serverInstance;
