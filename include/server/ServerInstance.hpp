@@ -126,7 +126,6 @@ private:
       catch (const std::exception& x)
       {
         spdlog::error("Exception in tick loop: {}", x.what());
-        abort();
       }
     }
   }
