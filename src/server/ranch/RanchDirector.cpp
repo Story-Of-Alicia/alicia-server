@@ -4526,6 +4526,7 @@ void RanchDirector::HandleRequestQuestReward(
   response.unk3 = 1;//effect count
   response.unk4[0] = {command.unk1, 1};
 
+  //TODO: give rewards
   for (int i = 0; i < 5; i++)
   {
     response.rewards[i] = {0, 0, 0, 0};
