@@ -912,6 +912,25 @@ void RaceDirector::HandleEnterRoom(
               }
             });
         }
+
+        if (character.petUid() != data::InvalidUid)
+        {
+          const auto& petRecord = GetServerInstance().GetDataDirector().GetPet(character.petUid());
+          if (petRecord.IsAvailable())
+          {
+            petRecord.Immutable(
+              [&protocolRacer](const data::Pet& pet)
+              {
+                protocol::BuildProtocolPet(protocolRacer.pet, pet);
+              });
+          }
+          else
+          {
+            spdlog::warn("Character {} tried to load pet {} but it is not available.",
+              character.uid(),
+              character.petUid());
+          }
+        }
       });
 
     if (characterUid == clientContext.characterUid)

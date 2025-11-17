@@ -37,6 +37,10 @@ constexpr std::string_view UserLine        = "  - user: '{}'";
 constexpr std::string_view CharacterLine   = "    <font color=\"#AAAAAA\">(uid:{}) '{}', level {}</font>";
 constexpr std::string_view NoCharacterLine = "    <font color=\"#FF0000\">no character</font>";
 
+const std::regex MinutePattern(R"((\d+)m)");
+const std::regex HourPattern(R"((\d+)h)");
+const std::regex DayPattern(R"((\d+)d)");
+
 } // anon namespace
 
 void CommandManager::RegisterCommand(
@@ -948,7 +952,7 @@ void ChatSystem::RegisterAdminCommands()
         return {"infraction",
           "  [add/remove/list]"};
 
-      const std::string subLiteral = arguments[0];
+      const std::string& subLiteral = arguments[0];
 
       if (subLiteral == "add")
       {
@@ -962,48 +966,64 @@ void ChatSystem::RegisterAdminCommands()
             "  [optional: description]"};
         }
 
+        // Get the user name argument.
         const std::string userName = arguments[1];
-        const auto userRecord = _serverInstance.GetDataDirector().GetUser(userName);
-        if (not userRecord)
+
+        // Validate that the user exists.
+        if (_serverInstance.GetDataDirector().GetDataSource().IsUserNameUnique(
+          userName))
         {
-          return {"User not available"};
+          return {
+            std::format(
+              "User '{}' does not exist",
+              userName)};
         }
 
-        const std::string type = arguments[2];
+        // Get the user record.
+        const auto userRecord = _serverInstance.GetDataDirector().GetUserCache().Get(
+          userName);
+        if (not userRecord)
+        {
+          return {
+            std::format(
+              "User '{}' not momentarily unavailable",
+              userName),
+            "Try again later."};
+        }
+
+        // Get the infraction type argument.
+        const std::string& typeArgument = arguments[2];
         data::Infraction::Punishment punishmentType;
-        if (type == "mute")
+        if (typeArgument == "mute")
           punishmentType = data::Infraction::Punishment::Mute;
-        else if (type == "ban")
+        else if (typeArgument == "ban")
           punishmentType = data::Infraction::Punishment::Ban;
         else
           punishmentType = data::Infraction::Punishment::None;
 
-        const std::string durationInput = arguments[3];
-        data::Clock::duration duration = std::chrono::seconds::zero();
+        // Get the infraction duration argument.
+        const std::string& durationArgument = arguments[3];
+        auto duration = std::chrono::seconds::zero();
 
-        const std::regex minutePattern(R"((\d+)m)");
-        const std::regex hourPattern(R"((\d+)h)");
-        const std::regex dayPattern(R"((\d+)d)");
-        std::smatch match;
-
-        if (durationInput == "forever")
+        if (durationArgument == "forever")
         {
-          duration = data::Clock::duration::max();
+          duration = std::chrono::seconds::max();
         }
         else
         {
-          if (std::regex_search(durationInput, match, minutePattern)) {
+          std::smatch match;
+          if (std::regex_search(durationArgument, match, MinutePattern)) {
             duration += std::chrono::minutes(std::stoi(match[1].str()));
           }
-          if (std::regex_search(durationInput, match, hourPattern)) {
+          if (std::regex_search(durationArgument, match, HourPattern)) {
             duration += std::chrono::hours(std::stoi(match[1].str()));
           }
-          if (std::regex_search(durationInput, match, dayPattern)) {
+          if (std::regex_search(durationArgument, match, DayPattern)) {
             duration += std::chrono::days(std::stoi(match[1].str()));
           }
         }
 
-        if (duration == duration.zero())
+        if (duration == data::Clock::duration::zero())
         {
           return {"Invalid duration, format example: 20m10h1d or forever"};
         }
@@ -1033,7 +1053,7 @@ void ChatSystem::RegisterAdminCommands()
           });
 
         auto userCharacterUid{data::InvalidUid};
-        userRecord.Mutable([infractionUid, &userCharacterUid](data::User& user)
+        userRecord->Mutable([infractionUid, &userCharacterUid](data::User& user)
         {
           user.infractions().emplace_back(infractionUid);
 
@@ -1062,17 +1082,35 @@ void ChatSystem::RegisterAdminCommands()
             "  [infraction UID]"};
         }
 
-        const std::string userName = arguments[1];
-        const auto userRecord = _serverInstance.GetDataDirector().GetUser(userName);
-        if (not userRecord)
+        // Get the user name argument.
+        const std::string& userName = arguments[1];
+
+        // Validate that the user exists.
+        if (_serverInstance.GetDataDirector().GetDataSource().IsUserNameUnique(
+          userName))
         {
-          return {"User not available"};
+          return {
+            std::format(
+              "User '{}' does not exist",
+              userName)};
         }
 
-        const data::Uid infractionUid = std::atoi(arguments[2].c_str());
+        // Get the user record.
+        const auto userRecord = _serverInstance.GetDataDirector().GetUserCache().Get(
+          userName);
+        if (not userRecord)
+        {
+          return {
+            std::format(
+              "User '{}' not momentarily unavailable",
+              userName),
+            "Try again later."};
+        }
+
+        const data::Uid infractionUid = std::atol(arguments[2].c_str());
         bool hasInfraction = false;
 
-        userRecord.Mutable([infractionUid, &hasInfraction](data::User& user)
+        userRecord->Mutable([infractionUid, &hasInfraction](data::User& user)
         {
           hasInfraction = std::ranges::contains(user.infractions(), infractionUid);
 
@@ -1084,7 +1122,7 @@ void ChatSystem::RegisterAdminCommands()
         });
 
         if (not hasInfraction)
-          return {"No such infraction exists"};
+          return {std::format("No such infraction for user '{}'", userName)};
 
         return {std::format("Infraction removed from '{}'", userName)};
       }
@@ -1096,17 +1134,35 @@ void ChatSystem::RegisterAdminCommands()
             "  [user name]"};
         }
 
-        const std::string userName = arguments[1];
-        const auto userRecord = _serverInstance.GetDataDirector().GetUser(userName);
+        // Get the user name argument.
+        const std::string& userName = arguments[1];
+
+        // Validate that the user exists.
+        if (_serverInstance.GetDataDirector().GetDataSource().IsUserNameUnique(
+          userName))
+        {
+          return {
+            std::format(
+              "User '{}' does not exist",
+              userName)};
+        }
+
+        // Get the user record.
+        const auto userRecord = _serverInstance.GetDataDirector().GetUserCache().Get(
+          userName);
         if (not userRecord)
         {
-          return {"User not available"};
+          return {
+            std::format(
+              "User '{}' not momentarily unavailable",
+              userName),
+            "Try again later."};
         }
 
         std::vector<std::string> list;
         list.emplace_back(std::format("Infractions of '{}':", userName));
 
-        userRecord.Immutable([this, &list](const data::User& user)
+        userRecord->Immutable([this, &list](const data::User& user)
         {
           const auto infractionRecords = _serverInstance.GetDataDirector().GetInfractionCache().Get(
             user.infractions());
@@ -1134,6 +1190,12 @@ void ChatSystem::RegisterAdminCommands()
               list.emplace_back(std::format(
                 "   punishment: {}", type));
 
+              const bool isForever = infraction.duration() == std::chrono::seconds::max();
+              if (isForever)
+              {
+                list.emplace_back("   expires: <font color=\"#FF0000\">never</font>");
+              }
+              else
               {
                 const auto expires = infraction.createdAt() + infraction.duration();
 
