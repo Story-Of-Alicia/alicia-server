@@ -42,6 +42,7 @@ public:
   using StorageItemStorage = DataStorage<data::Uid, data::StorageItem>;
   using HousingStorage = DataStorage<data::Uid, data::Housing>;
   using GuildStorage = DataStorage<data::Uid, data::Guild>;
+  using StallionStorage = DataStorage<data::Uid, data::Stallion>;
   using SettingsStorage = DataStorage<data::Uid, data::Settings>;
 
   //! Default constructor.
@@ -116,6 +117,11 @@ public:
   [[nodiscard]] Record<data::Housing> CreateHousing() noexcept;
   [[nodiscard]] HousingStorage& GetHousingCache();
 
+  [[nodiscard]] Record<data::Stallion> GetStallion(data::Uid stallionUid) noexcept;
+  [[nodiscard]] Record<data::Stallion> CreateStallion() noexcept;
+  [[nodiscard]] StallionStorage& GetStallionCache();
+  [[nodiscard]] std::vector<data::Uid> ListRegisteredStallions();
+
   [[nodiscard]] Record<data::Settings> GetSettings(data::Uid settingsUid) noexcept;
   [[nodiscard]] Record<data::Settings> CreateSettings() noexcept;
   [[nodiscard]] SettingsStorage& GetSettingsCache();
@@ -169,6 +175,8 @@ private:
   HousingStorage _housingStorage;
   //! A guild storage.
   GuildStorage _guildStorage;
+  //! A stallion storage.
+  StallionStorage _stallionStorage;
   //! A character Keybind settings storage.
   SettingsStorage _settingsStorage;
 };

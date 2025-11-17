@@ -83,6 +83,8 @@ add_executable(alicia-server
         src/server/lobby/LobbyNetworkHandler.cpp
         src/server/messenger/MessengerDirector.cpp
         src/server/race/RaceDirector.cpp
+        src/server/ranch/BreedingMarket.cpp
+        src/server/ranch/Genetics.cpp
         src/server/ranch/RanchDirector.cpp
         src/server/system/ChatSystem.cpp
         src/server/system/InfractionSystem.cpp

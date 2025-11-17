@@ -63,6 +63,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _petDataPath = prepareDataPath("pets");
   _housingDataPath = prepareDataPath("housing");
   _guildDataPath = prepareDataPath("guilds");
+  _stallionDataPath = prepareDataPath("stallions");
   _settingsDataPath = prepareDataPath("settings");
 
   // Read the meta-data file and parse the sequential UIDs.
@@ -83,6 +84,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _petSequentialUid = meta["petSequentialUid"].get<uint32_t>();
   _housingSequentialUid = meta["housingSequentialUid"].get<uint32_t>();
   _guildSequentialId = meta["guildSequentialId"].get<uint32_t>();
+  _stallionSequentialUid = meta["stallionSequentialUid"].get<uint32_t>();
   _settingsSequentialId = meta["settingsSequentialId"].get<uint32_t>();
 }
 
@@ -106,6 +108,7 @@ void server::FileDataSource::Terminate()
   meta["petSequentialUid"] = _petSequentialUid.load();
   meta["housingSequentialUid"] = _housingSequentialUid.load();
   meta["guildSequentialId"] = _guildSequentialId.load();
+  meta["stallionSequentialUid"] = _stallionSequentialUid.load();
   meta["settingsSequentialId"] = _settingsSequentialId.load();
 
   metaFile << meta.dump(2);
@@ -284,10 +287,10 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
 
   character.inventory = json["inventory"].get<std::vector<data::Uid>>();
   character.characterEquipment = json["characterEquipment"].get<std::vector<data::Uid>>();
-  character.mountEquipment = json["horseEquipment"].get<std::vector<data::Uid>>();
+  character.mountEquipment = json.value("mountEquipment", std::vector<data::Uid>{});
 
   character.horses = json["horses"].get<std::vector<data::Uid>>();
-  character.horseSlotCount = json["horseSlotCount"].get<uint8_t>();
+  character.horseSlotCount = json["horseSlotCount"].get<uint32_t>();
 
   character.pets = json["pets"].get<std::vector<data::Uid>>();
   character.mountUid = json["mountUid"].get<data::Uid>();
@@ -317,6 +320,8 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   const auto& skills = json["skills"];
   readSkills(character.skills.speed(), skills["speed"]);
   readSkills(character.skills.magic(), skills["magic"]);
+  
+  character.breedingMoneySpent = json.value("breedingMoneySpent", uint32_t{0});
 }
 
 void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
@@ -367,7 +372,7 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
 
   json["inventory"] = character.inventory();
   json["characterEquipment"] = character.characterEquipment();
-  json["horseEquipment"] = character.mountEquipment();
+  json["mountEquipment"] = character.mountEquipment();
 
   json["horses"] = character.horses();
   json["horseSlotCount"] = character.horseSlotCount();
@@ -406,6 +411,8 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   skills["speed"] = writeSkills(character.skills.speed());
   skills["magic"] = writeSkills(character.skills.magic());
   json["skills"] = skills;
+  
+  json["breedingMoneySpent"] = character.breedingMoneySpent();
 
   dataFile << json.dump(2);
 }
@@ -516,13 +523,22 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.clazz = json["clazz"].get<uint32_t>();
   horse.clazzProgress = json["clazzProgress"].get<uint32_t>();
   horse.grade = json["grade"].get<uint32_t>();
-  horse.growthPoints = json["growthPoints"].get<uint32_t>();
+  horse.growthPoints = json.value("growthPoints", uint16_t{0});
+  
+  const auto& breedingJson = json["breeding"];
+  horse.breeding.breedingCount = breedingJson.value("breedingCount", uint32_t{0});
+  horse.breeding.breedingCombo = breedingJson.value("breedingCombo", uint32_t{0});
+
+  horse.type = json.value("type", uint32_t{0});
+  horse.tendency = json.value("tendency", uint32_t{0});
+  horse.spirit = json.value("spirit", uint32_t{0});
+  horse.fatigue = json.value("fatigue", uint16_t{0});
 
   auto potential = json["potential"];
   horse.potential = data::Horse::Potential{
-    .type = potential["type"].get<uint8_t>(),
-    .level = potential["level"].get<uint8_t>(),
-    .value = potential["value"].get<uint8_t>()
+    .type = potential["type"].get<uint32_t>(),
+    .level = potential["level"].get<uint32_t>(),
+    .value = potential["value"].get<uint32_t>()
   };
 
   horse.luckState = json["luckState"].get<uint32_t>();
@@ -545,6 +561,10 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
     .participated = mountInfo["participated"].get<uint32_t>(),
     .cumulativePrize = mountInfo["cumulativePrize"].get<uint32_t>(),
     .biggestPrize = mountInfo["biggestPrize"].get<uint32_t>()};
+  
+  horse.ancestors = json.value("ancestors", std::vector<data::Uid>{});
+  
+  horse.lineage = json.value("lineage", uint32_t{1});
 }
 
 void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
@@ -616,6 +636,14 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["clazzProgress"] = horse.clazzProgress();
   json["grade"] = horse.grade();
   json["growthPoints"] = horse.growthPoints();
+  
+  json["breeding"]["breedingCount"] = horse.breeding.breedingCount();
+  json["breeding"]["breedingCombo"] = horse.breeding.breedingCombo();
+
+  json["type"] = horse.type();
+  json["fatigue"] = horse.fatigue();
+  json["spirit"] = horse.spirit();
+  json["tendency"] = horse.tendency();
 
   nlohmann::json potential;
   potential["type"] = horse.potential.type();
@@ -643,6 +671,9 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   mountInfo["cumulativePrize"] = horse.mountInfo.cumulativePrize();
   mountInfo["biggestPrize"] = horse.mountInfo.biggestPrize();
   json["mountInfo"] = mountInfo;
+
+  json["ancestors"] = horse.ancestors();
+  json["lineage"] = horse.lineage();
   dataFile << json.dump(2);
 }
 
@@ -1033,6 +1064,57 @@ bool server::FileDataSource::IsGuildNameUnique(const std::string_view& name)
   return true;
 }
 
+void server::FileDataSource::CreateStallion(data::Stallion& stallion)
+{
+  stallion.uid() = ++_stallionSequentialUid;
+}
+
+void server::FileDataSource::RetrieveStallion(data::Uid uid, data::Stallion& stallion)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _stallionDataPath, std::format("{}", uid));
+
+  std::ifstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Stallion file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json = nlohmann::json::parse(dataFile);
+  stallion.uid() = json["uid"];
+  stallion.horseUid() = json["horseUid"];
+  stallion.ownerUid() = json["ownerUid"];
+  stallion.breedingCharge() = json["breedingCharge"];
+  stallion.timesMated() = json.value("timesMated", uint32_t{0});
+  stallion.registeredAt() = data::Clock::time_point(
+    std::chrono::seconds(json["registeredAt"].get<uint64_t>()));
+}
+
+void server::FileDataSource::StoreStallion(data::Uid uid, const data::Stallion& stallion)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _stallionDataPath, std::format("{}", uid));
+
+  std::ofstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Stallion file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json;
+  json["uid"] = stallion.uid();
+  json["horseUid"] = stallion.horseUid();
+  json["ownerUid"] = stallion.ownerUid();
+  json["breedingCharge"] = stallion.breedingCharge();
+  json["timesMated"] = stallion.timesMated();
+  json["registeredAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+    stallion.registeredAt().time_since_epoch()).count();
+
+  dataFile << json.dump(2);
+}
+
 void server::FileDataSource::CreateSettings(data::Settings& settings)
 {
   settings.uid = ++_settingsSequentialId;
@@ -1160,6 +1242,42 @@ void server::FileDataSource::StoreSettings(data::Uid uid, const data::Settings& 
   }
 
   dataFile << json.dump(2);
+}
+
+void server::FileDataSource::DeleteStallion(data::Uid uid)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _stallionDataPath, std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
+}
+
+std::vector<server::data::Uid> server::FileDataSource::ListRegisteredStallions()
+{
+  std::vector<server::data::Uid> stallionUids;
+  
+  if (!std::filesystem::exists(_stallionDataPath))
+  {
+    return stallionUids;
+  }
+
+  for (const auto& entry : std::filesystem::directory_iterator(_stallionDataPath))
+  {
+    if (!entry.is_regular_file() || entry.path().extension() != ".json")
+      continue;
+      
+    try
+    {
+      // Extract stallion UID from filename (e.g., "123.json" -> 123)
+      server::data::Uid stallionUid = std::stoul(entry.path().stem().string());
+      stallionUids.push_back(stallionUid);
+    }
+    catch (const std::exception&)
+    {
+      // Silently skip invalid filenames
+    }
+  }
+  
+  return stallionUids;
 }
 
 void server::FileDataSource::DeleteSettings(data::Uid uid)

@@ -17,6 +17,7 @@ ServerInstance::ServerInstance(
   , _raceDirector(*this)
   , _chatSystem(*this)
   , _infractionSystem(*this)
+  , _genetics(*this)
 {
 }
 
@@ -159,6 +160,11 @@ RoomSystem& ServerInstance::GetRoomSystem()
 OtpSystem& ServerInstance::GetOtpSystem()
 {
   return _otpSystem;
+}
+
+Genetics& ServerInstance::GetGenetics()
+{
+  return _genetics;
 }
 
 Config& ServerInstance::GetSettings()
