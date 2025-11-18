@@ -1390,6 +1390,24 @@ void ChatSystem::RegisterAdminCommands()
           response.emplace_back(" - horses not available");
         }
 
+        response.emplace_back(std::format("Pets:"));
+        const auto petRecords = _serverInstance.GetDataDirector().GetPetCache().Get(
+          character.pets());
+        if (petRecords)
+        {
+          for (const auto& petRecord : *petRecords)
+          {
+            petRecord.Immutable([&response](const data::Pet& pet)
+            {
+              response.emplace_back(std::format(" - {} ({})", pet.name(), pet.uid()));
+            });
+          }
+        }
+        else
+        {
+          response.emplace_back(" - pets not available");
+        }
+
         return response;
       };
 
@@ -1485,7 +1503,8 @@ void ChatSystem::RegisterAdminCommands()
 
       if (arguments.empty())
         return {"mod",
-          " reset user [name]"};
+          " reset user [name]",
+          " rename [horse/pet/room] [uid] [name]"};
 
       const auto& subcommand = arguments[0];
       if (subcommand == "reset")
@@ -1532,8 +1551,94 @@ void ChatSystem::RegisterAdminCommands()
               characterUid)};
         }
       }
+      else if (subcommand == "rename")
+      {
+        if (arguments.size() < 2)
+          return {
+            "mod rename",
+            "  [horse/pet/room] [uid] [name]"};
 
-      return {"Unknown sub-literal"};
+        const auto& concatString = [](const std::span<const std::string>& arguments) -> const std::string
+        {
+          std::string str{};
+          for (const auto& argument : arguments)
+          {
+            str += argument;
+            str += " ";
+          }
+          return str;
+        };          
+
+        const auto& option = arguments[1];
+        if (option == "horse")
+        {
+          if (arguments.size() < 3)
+            return {
+              "mod rename horse",
+              "   [uid] [name]"};
+
+          const auto& horseUid = std::atoi(arguments[2].c_str());
+          if (horseUid == data::InvalidUid)
+            return {"Invalid horse UID"};
+
+          const auto& horseRecord = _serverInstance.GetDataDirector().GetHorse(horseUid);
+          if (not horseRecord.IsAvailable())
+            return {
+              std::format("Horse '{}' does not exist or is currently unavailable", horseUid)};
+
+          if (arguments.size() < 4)
+            return {
+              std::format("mod rename horse {}", horseUid),
+              "    [name]"};
+
+          // Join remaining arguments to form new name
+          std::string newName = concatString(arguments.subspan(3));
+          horseRecord.Mutable([newName](data::Horse& horse)
+          {
+            horse.name() = newName;
+          });
+
+          return {
+            std::format("Horse '{}' has been renamed to '{}'", horseUid, newName)};
+        }
+        else if (option == "pet")
+        {
+          if (arguments.size() < 3)
+            return {
+              "mod rename pet",
+              "   [uid] [name]"};
+
+          const auto& petUid = std::atoi(arguments[2].c_str());
+          if (petUid == data::InvalidUid)
+            return {"Invalid pet UID"};
+
+          const auto& petRecord = _serverInstance.GetDataDirector().GetPet(petUid);
+          if (not petRecord.IsAvailable())
+            return {
+              std::format("Pet '{}' does not exist or is currently unavailable", petUid)};
+
+          if (arguments.size() < 4)
+            return {
+              std::format("mod rename pet {}", petUid),
+              "    [name]"};
+
+          // Join remaining arguments to form new name
+          std::string newName = concatString(arguments.subspan(3));
+          petRecord.Mutable([newName](data::Pet& pet)
+          {
+            pet.name() = newName;
+          });
+
+          return {
+            std::format("Pet '{}' has been renamed to '{}'", petUid, newName)};
+        }
+        else if (option == "room")
+        {
+
+        }
+      }
+
+      return {"Unknown sub-command"};
     });
 }
 
