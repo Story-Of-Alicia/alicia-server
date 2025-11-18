@@ -1529,10 +1529,10 @@ void ChatSystem::RegisterAdminCommands()
             return {
               std::format("User '{}' does not exist or is currently unavailable", username)};
 
-          data::Uid characterUid{data::InvalidUid};
-          userRecord.Mutable([&characterUid](data::User& user)
+          data::Uid targetCharacterUid{data::InvalidUid};
+          userRecord.Mutable([&targetCharacterUid](data::User& user)
           {
-            characterUid = user.characterUid();
+            targetCharacterUid = user.characterUid();
             user.characterUid() = data::InvalidUid;
           });
 
@@ -1541,14 +1541,19 @@ void ChatSystem::RegisterAdminCommands()
           // _serverInstance.GetDataDirector().GetUserCache().Save(username);
 
           // Disconnect from all directors
-          _serverInstance.GetRaceDirector().DisconnectCharacter(characterUid);
-          _serverInstance.GetRanchDirector().Disconnect(characterUid);
-          _serverInstance.GetLobbyDirector().DisconnectCharacter(characterUid);
+          _serverInstance.GetRaceDirector().DisconnectCharacter(targetCharacterUid);
+          _serverInstance.GetRanchDirector().Disconnect(targetCharacterUid);
+          _serverInstance.GetLobbyDirector().DisconnectCharacter(targetCharacterUid);
+
+          spdlog::info("GM '{}' has reset user '{}' whose character uid was '{}'",
+            username,
+            targetCharacterUid,
+            characterUid);
 
           return {
             std::format("User '{}' with character uid {} has been reset",
               username,
-              characterUid)};
+              targetCharacterUid)};
         }
       }
       else if (subcommand == "rename")
@@ -1603,6 +1608,12 @@ void ChatSystem::RegisterAdminCommands()
             horse.name() = newName;
           });
 
+          spdlog::info("GM '{}' has renamed horse '{}' from '{}' to '{}'",
+            characterUid,
+            horseUid,
+            previousName,
+            newName);
+
           return {
             std::format("Horse '{}' has been renamed from '{}' to '{}'",
               horseUid,
@@ -1638,6 +1649,12 @@ void ChatSystem::RegisterAdminCommands()
             previousName = pet.name();
             pet.name() = newName;
           });
+
+          spdlog::info("GM '{}' has renamed pet '{}' from '{}' to '{}'",
+            characterUid,
+            petUid,
+            previousName,
+            newName);
 
           return {
             std::format("Pet '{}' has been renamed from '{}' to '{}'",
@@ -1680,6 +1697,12 @@ void ChatSystem::RegisterAdminCommands()
             .optionsBitfield = protocol::RoomOptionType::Name,
             .name = newName};
           _serverInstance.GetRaceDirector().BroadcastChangeRoomOptions(roomUid, notify);
+
+          spdlog::info("GM '{}' has renamed room '{}' from '{}' to '{}'",
+            characterUid,
+            roomUid,
+            previousName,
+            newName);
 
           return {
             std::format("Room '{}' has been renamed from '{}' to '{}'",
