@@ -1634,7 +1634,40 @@ void ChatSystem::RegisterAdminCommands()
         }
         else if (option == "room")
         {
+          if (arguments.size() < 3)
+            return {
+              "mod rename room",
+              "   [uid] [name]"};
 
+          const auto& roomUid = std::atoi(arguments[2].c_str());
+          if (roomUid == data::InvalidUid)
+            return {"Invalid room UID"};
+
+          bool roomExists = _serverInstance.GetRoomSystem().RoomExists(roomUid);
+          if (not roomExists)
+            return {
+              std::format("Room '{}' does not exist", roomUid)};
+
+          if (arguments.size() < 4)
+            return {
+              std::format("mod rename room {}", roomUid),
+              "    [name]"};
+
+          std::string newName = concatString(arguments.subspan(3));
+          _serverInstance.GetRoomSystem().GetRoom(
+            roomUid,
+            [&newName](Room& room)
+            {
+              room.GetRoomDetails().name = newName;
+            });
+
+          protocol::AcCmdCRChangeRoomOptionsNotify notify{
+            .optionsBitfield = protocol::RoomOptionType::Name,
+            .name = newName};
+          _serverInstance.GetRaceDirector().BroadcastChangeRoomOptions(roomUid, notify);
+
+          return {
+            std::format("Room '{}' has been renamed to '{}'", roomUid, newName)};
         }
       }
 
