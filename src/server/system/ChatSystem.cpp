@@ -1558,13 +1558,16 @@ void ChatSystem::RegisterAdminCommands()
             "mod rename",
             "  [horse/pet/room] [uid] [name]"};
 
-        const auto& concatString = [](const std::span<const std::string>& arguments) -> const std::string
+        const auto& concatString = [](
+          const std::span<const std::string>& arguments,
+          std::string separator = " ") -> const std::string
         {
           std::string str{};
-          for (const auto& argument : arguments)
+          for (auto i = 0; i < arguments.size(); ++i)
           {
-            str += argument;
-            str += " ";
+            str += arguments[i];
+            if (i + 1 < arguments.size())
+              str += separator;
           }
           return str;
         };          
@@ -1591,15 +1594,20 @@ void ChatSystem::RegisterAdminCommands()
               std::format("mod rename horse {}", horseUid),
               "    [name]"};
 
+          std::string previousName{};
           // Join remaining arguments to form new name
           std::string newName = concatString(arguments.subspan(3));
-          horseRecord.Mutable([newName](data::Horse& horse)
+          horseRecord.Mutable([&previousName, newName](data::Horse& horse)
           {
+            previousName = horse.name();
             horse.name() = newName;
           });
 
           return {
-            std::format("Horse '{}' has been renamed to '{}'", horseUid, newName)};
+            std::format("Horse '{}' has been renamed from '{}' to '{}'",
+              horseUid,
+              previousName,
+              newName)};
         }
         else if (option == "pet")
         {
@@ -1622,15 +1630,20 @@ void ChatSystem::RegisterAdminCommands()
               std::format("mod rename pet {}", petUid),
               "    [name]"};
 
+          std::string previousName{};
           // Join remaining arguments to form new name
           std::string newName = concatString(arguments.subspan(3));
-          petRecord.Mutable([newName](data::Pet& pet)
+          petRecord.Mutable([&previousName, newName](data::Pet& pet)
           {
+            previousName = pet.name();
             pet.name() = newName;
           });
 
           return {
-            std::format("Pet '{}' has been renamed to '{}'", petUid, newName)};
+            std::format("Pet '{}' has been renamed from '{}' to '{}'",
+              petUid,
+              previousName,
+              newName)};
         }
         else if (option == "room")
         {
@@ -1653,11 +1666,13 @@ void ChatSystem::RegisterAdminCommands()
               std::format("mod rename room {}", roomUid),
               "    [name]"};
 
+          std::string previousName{};
           std::string newName = concatString(arguments.subspan(3));
           _serverInstance.GetRoomSystem().GetRoom(
             roomUid,
-            [&newName](Room& room)
+            [&previousName, newName](Room& room)
             {
+              previousName = room.GetRoomDetails().name;
               room.GetRoomDetails().name = newName;
             });
 
@@ -1667,7 +1682,10 @@ void ChatSystem::RegisterAdminCommands()
           _serverInstance.GetRaceDirector().BroadcastChangeRoomOptions(roomUid, notify);
 
           return {
-            std::format("Room '{}' has been renamed to '{}'", roomUid, newName)};
+            std::format("Room '{}' has been renamed from '{}' to '{}'",
+              roomUid,
+              previousName,
+              newName)};
         }
       }
 
