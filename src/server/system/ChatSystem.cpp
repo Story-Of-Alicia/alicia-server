@@ -1462,6 +1462,79 @@ void ChatSystem::RegisterAdminCommands()
 
       return {"Unknown sub-literal"};
     });
+
+    // mod command
+  _commandManager.RegisterCommand(
+    "mod",
+    [this](
+      const std::span<const std::string>& arguments,
+      data::Uid characterUid) -> std::vector<std::string>
+    {
+      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+      if (not invokerRecord)
+        return {"Server error"};
+
+      bool isAdmin = false;
+      invokerRecord.Immutable([&isAdmin](const data::Character& character)
+      {
+        isAdmin = character.role() != data::Character::Role::User;
+      });
+
+      if (not isAdmin)
+        return {};
+
+      if (arguments.empty())
+        return {"mod",
+          " reset user [name]"};
+
+      const auto& subcommand = arguments[0];
+      if (subcommand == "reset")
+      {
+        if (arguments.size() < 2)
+          return {"mod reset",
+            "  user [name]"};
+
+        const auto& subject = arguments[1];
+        if (subject == "user")
+        {
+          if (arguments.size() < 3)
+          {
+            return {"mod reset user",
+              "   [name]"};
+          }
+
+          // Get user record from user name
+          std::string username = arguments[2];
+          const auto& userRecord = _serverInstance.GetDataDirector().GetUser(username);
+          if (not userRecord.IsAvailable())
+            return {
+              std::format("User '{}' does not exist or is currently unavailable", username)};
+
+          data::Uid characterUid{data::InvalidUid};
+          userRecord.Mutable([&characterUid](data::User& user)
+          {
+            characterUid = user.characterUid();
+            user.characterUid() = data::InvalidUid;
+          });
+
+          // TODO: Persist changes to the user record
+          // Commented out due to assert throwing on login when getting user record
+          // _serverInstance.GetDataDirector().GetUserCache().Save(username);
+
+          // Disconnect from all directors
+          _serverInstance.GetRaceDirector().DisconnectCharacter(characterUid);
+          _serverInstance.GetRanchDirector().Disconnect(characterUid);
+          _serverInstance.GetLobbyDirector().DisconnectCharacter(characterUid);
+
+          return {
+            std::format("User '{}' with character uid {} has been reset",
+              username,
+              characterUid)};
+        }
+      }
+
+      return {"Unknown sub-literal"};
+    });
 }
 
 void ChatSystem::Broadcast(
