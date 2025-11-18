@@ -73,6 +73,10 @@ public:
     return roomIter->second.tracker.GetRacers().size();
   }
 
+  void BroadcastChangeRoomOptions(
+    const data::Uid& roomUid,
+    const protocol::AcCmdCRChangeRoomOptionsNotify notify);
+
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId clientId) override;
 
