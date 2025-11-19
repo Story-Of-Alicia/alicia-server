@@ -235,7 +235,18 @@ LobbyNetworkHandler::LobbyNetworkHandler(
       HandleRequestLeagueInfo(clientId, command);
     });
 
-  // todo: AcCmdCLMakeGuildParty, AcCmdCLGuildPartyList, AcCmdCLEnterGuildParty,
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLGuildPartyList>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleGuildPartyList(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLEnterGuildParty>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleEnterGuildParty(clientId, command);
+    });
+  // todo: AcCmdCLMakeGuildParty, AcCmdCLEnterGuildParty,
   //       AcCmdCLLeaveGuildParty, AcCmdCLStartGuildPartyMatch, AcCmdCLStopGuildPartyMatch
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCLRequestQuestList>(
@@ -876,6 +887,16 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
     [response]()
     {
       return response;
+    });
+
+  protocol::AcCmdLCGuildMatchAvailable guildMatchAvailableResponse{
+    .member1 = true};
+
+  _commandServer.QueueCommand<decltype(guildMatchAvailableResponse)>(
+    clientId,
+    [guildMatchAvailableResponse]()
+    {
+      return guildMatchAvailableResponse;
     });
 
   protocol::AcCmdLCSkillCardPresetList skillPresetListResponse{};
@@ -2202,6 +2223,48 @@ void LobbyNetworkHandler::HandleRequestSpecialEventList(
     {
       return response;
     });
+}
+
+void LobbyNetworkHandler::HandleGuildPartyList(
+  const ClientId clientId,
+  const protocol::AcCmdCLGuildPartyList& command)
+{
+  protocol::AcCmdCLGuildPartyListOK::Party party{};
+  protocol::AcCmdCLGuildPartyListOK response{
+    .parties = {party}
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void LobbyNetworkHandler::HandleEnterGuildParty(
+  const ClientId clientId,
+  const protocol::AcCmdCLEnterGuildParty& command)
+{
+  protocol::AcCmdCLEnterGuildPartyOK::PartyMember partyMember{
+    .characterUid= GetClientContext(clientId).characterUid,
+    .name = "Xeninii"
+  };
+  protocol::AcCmdCLEnterGuildPartyOK::PartyMember partyMember2{
+    .characterUid = 1,
+    .name = "SomeoneElse"
+  };
+  protocol::AcCmdCLEnterGuildPartyOK response{
+    .partyMembers = {partyMember, partyMember2}
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+
 }
 
 } // namespace server

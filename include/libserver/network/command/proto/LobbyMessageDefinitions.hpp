@@ -1583,7 +1583,7 @@ struct AcCmdClientNotify
     SourceStream& stream);
 };
 
-struct LobbyCommandGuildPartyList
+struct AcCmdCLGuildPartyList
 {
   static Command GetCommand()
   {
@@ -1594,32 +1594,32 @@ struct LobbyCommandGuildPartyList
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandGuildPartyList& command,
+    const AcCmdCLGuildPartyList& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandGuildPartyList& command,
+    AcCmdCLGuildPartyList& command,
     SourceStream& stream);
 };
 
-struct LobbyCommandGuildPartyListOK
+struct AcCmdCLGuildPartyListOK
 {
-  struct Member
+  struct Party
   {
-    uint32_t val0{};
-    uint32_t val1{};
-    std::string val3{};
-    uint32_t val4{};
-    uint32_t val5{};
-    uint32_t val6{};
-    uint32_t val7{};
-    uint8_t val8{};
-    uint32_t val9{};
+    uint32_t partyUid{1};
+    uint32_t val1{0};
+    std::string name{"three"};
+    uint32_t gamemode{0};
+    uint32_t ranchUid{0};
+    uint32_t val6{0};
+    uint32_t leaderUid{0};
+    uint8_t playerCount{1}; //playerCount
+    uint32_t val9{0};
   };
-  std::vector<Member> members;
+  std::vector<Party> parties;
 
   static Command GetCommand()
   {
@@ -1630,14 +1630,90 @@ struct LobbyCommandGuildPartyListOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandGuildPartyListOK& command,
+    const AcCmdCLGuildPartyListOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandGuildPartyListOK& command,
+    AcCmdCLGuildPartyListOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLMakeGuildParty
+{
+  std::string name{};
+  uint32_t gamemode{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLMakeGuildParty;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  static void Write(
+    const AcCmdCLMakeGuildParty& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  static void Read(
+    AcCmdCLMakeGuildParty& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLEnterGuildParty
+{
+  uint32_t partyUid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLEnterGuildParty;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLEnterGuildParty& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLEnterGuildParty& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLEnterGuildPartyOK
+{
+  AcCmdCLGuildPartyListOK::Party party{};
+  struct PartyMember
+  {
+    uint32_t characterUid{}; // characterUid
+    std::string name{};
+  };
+  //max 4 members
+  std::vector<PartyMember> partyMembers{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLEnterGuildPartyOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  static void Write(
+    const AcCmdCLEnterGuildPartyOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  static void Read(
+    AcCmdCLEnterGuildPartyOK& command,
     SourceStream& stream);
 };
 
@@ -2529,6 +2605,30 @@ struct AcCmdLCInviteGuildJoinOK
   //! @param stream Source stream.
   static void Read(
     AcCmdLCInviteGuildJoinOK& command,
+    SourceStream& stream);
+};
+
+
+struct AcCmdLCGuildMatchAvailable
+{
+  uint8_t member1;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCGuildMatchAvailable;
+  }
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCGuildMatchAvailable& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCGuildMatchAvailable& command,
     SourceStream& stream);
 };
 

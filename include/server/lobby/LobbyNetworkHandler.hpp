@@ -238,9 +238,16 @@ private:
     ClientId clientId,
     const protocol::AcCmdCLRequestLeagueInfo& command);
 
-  // todo: AcCmdCLMakeGuildParty, AcCmdCLGuildPartyList, AcCmdCLEnterGuildParty,
+  void HandleGuildPartyList(
+    ClientId clientId,
+    const protocol::AcCmdCLGuildPartyList& command);
+  // todo: AcCmdCLMakeGuildParty, AcCmdCLEnterGuildParty,
   //       AcCmdCLLeaveGuildParty, AcCmdCLStartGuildPartyMatch, AcCmdCLStopGuildPartyMatch
 
+  void HandleEnterGuildParty(
+    ClientId clientId,
+    const protocol::AcCmdCLEnterGuildParty& command);
+  
   void HandleRequestQuestList(
     ClientId clientId,
     const protocol::AcCmdCLRequestQuestList& command);

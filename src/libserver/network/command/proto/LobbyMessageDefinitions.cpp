@@ -1046,34 +1046,94 @@ void AcCmdClientNotify::Read(
   stream.Read(command.val0).Read(command.val1);
 }
 
-void LobbyCommandGuildPartyList::Write(
-  const LobbyCommandGuildPartyList& command,
+void AcCmdCLGuildPartyList::Write(
+  const AcCmdCLGuildPartyList& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void LobbyCommandGuildPartyList::Read(
-  LobbyCommandGuildPartyList& command,
+void AcCmdCLGuildPartyList::Read(
+  AcCmdCLGuildPartyList& command,
   SourceStream& stream)
 {
   // Empty.
 }
 
-void LobbyCommandGuildPartyListOK::Write(
-  const LobbyCommandGuildPartyListOK& command,
+void AcCmdCLGuildPartyListOK::Write(
+  const AcCmdCLGuildPartyListOK& command,
   SinkStream& stream)
 {
-  assert(command.members.empty());
-  // todo: Write members
-  stream.Write(static_cast<uint8_t>(command.members.size()));
+  stream.Write(static_cast<uint8_t>(command.parties.size()));
+  for (const auto& member : command.parties)
+  {
+    stream.Write(member.partyUid)
+      .Write(member.val1)
+      .Write(member.name)
+      .Write(member.gamemode)
+      .Write(member.ranchUid)
+      .Write(member.val6)
+      .Write(member.leaderUid)
+      .Write(member.playerCount)
+      .Write(member.val9);
+  }
 }
 
-void LobbyCommandGuildPartyListOK::Read(
-  LobbyCommandGuildPartyListOK& command,
+void AcCmdCLGuildPartyListOK::Read(
+  AcCmdCLGuildPartyListOK& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLMakeGuildParty::Write(
+  const AcCmdCLMakeGuildParty& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLMakeGuildParty::Read(
+  AcCmdCLMakeGuildParty& command,
+  SourceStream& stream)
+{
+  stream.Read(command.name)
+   .Read(command.gamemode);
+}
+
+void AcCmdCLEnterGuildParty::Write(
+  const AcCmdCLEnterGuildParty& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLEnterGuildParty::Read(
+  AcCmdCLEnterGuildParty& command,
+  SourceStream& stream)
+{
+  stream.Read(command.partyUid);
+}
+
+void AcCmdCLEnterGuildPartyOK::Write(
+  const AcCmdCLEnterGuildPartyOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.party.partyUid)
+    .Write(command.party.val1)
+    .Write(command.party.name)
+    .Write(command.party.gamemode)
+    .Write(command.party.ranchUid)
+    .Write(command.party.val6)
+    .Write(command.party.leaderUid)
+    .Write(command.party.playerCount)
+    .Write(command.party.val9);
+  stream.Write(static_cast<uint8_t>(command.partyMembers.size()));
+  for (const auto& member : command.partyMembers)
+  {
+    stream.Write(member.characterUid)
+      .Write(member.name);
+  }
 }
 
 void AcCmdCLEnterRanchRandomly::Write(
@@ -1632,6 +1692,20 @@ void AcCmdLCInviteGuildJoinOK::Write(
   SinkStream& stream)
 {
   // TODO: Return this back to the client to confirm join?
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdLCGuildMatchAvailable::Write(
+  const AcCmdLCGuildMatchAvailable& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1);
+}
+
+void AcCmdLCGuildMatchAvailable::Read(
+  AcCmdLCGuildMatchAvailable& command,
+  SourceStream& stream)
+{
   throw std::runtime_error("Not implemented");
 }
 
