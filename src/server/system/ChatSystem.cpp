@@ -525,6 +525,17 @@ void ChatSystem::RegisterUserCommands()
           return {"Please give yourself eggs to hatch pets."};
         }
 
+        size_t storedGiftCount{0};
+        characterRecord.Immutable([&storedGiftCount](const data::Character& character)
+        {
+          storedGiftCount = character.gifts().size();
+        });
+
+        if (storedGiftCount > 32)
+        {
+          return {"You have too many unclaimed gifts."};
+        }
+
         // Create the item.
         auto createdItemUid = data::InvalidUid;
         const auto createdItemRecord = _serverInstance.GetDataDirector().CreateItem();

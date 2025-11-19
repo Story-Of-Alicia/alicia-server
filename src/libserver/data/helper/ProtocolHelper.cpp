@@ -189,10 +189,11 @@ void BuildProtocolStoredItem(
   }
   else
   {
-      protocolStoredItem.status = storedItem.checked() 
-        ? StoredItem::Status::Read 
-        : StoredItem::Status::Unread;
+    protocolStoredItem.status = storedItem.checked()
+      ? StoredItem::Status::Read
+      : StoredItem::Status::Unread;
   }
+
   protocolStoredItem.sender = storedItem.sender();
   protocolStoredItem.message = storedItem.message();
   protocolStoredItem.dateAndTime = util::TimePointToAliciaTime(storedItem.created());
