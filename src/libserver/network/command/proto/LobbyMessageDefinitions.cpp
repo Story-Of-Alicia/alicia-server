@@ -1183,6 +1183,20 @@ void AcCmdCLStopGuildPartyMatchOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdLCGuildPartyMatchFound::Write(
+  const AcCmdLCGuildPartyMatchFound& command,
+  SinkStream& stream)
+{
+  stream.Write(command.roomUid);
+}
+
+void AcCmdLCGuildPartyMatchFound::Read(
+  AcCmdLCGuildPartyMatchFound& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void AcCmdCLEnterRanchRandomly::Write(
   const AcCmdCLEnterRanchRandomly&,
   SinkStream&)
