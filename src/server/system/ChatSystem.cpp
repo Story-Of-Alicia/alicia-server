@@ -1504,6 +1504,7 @@ void ChatSystem::RegisterAdminCommands()
         return {"Server error"};
 
       bool isAdmin = false;
+      std::string invokerCharacterName{};
       invokerRecord.Immutable([&isAdmin](const data::Character& character)
       {
         isAdmin = character.role() != data::Character::Role::User;
@@ -1557,9 +1558,9 @@ void ChatSystem::RegisterAdminCommands()
           _serverInstance.GetLobbyDirector().DisconnectCharacter(targetCharacterUid);
 
           spdlog::info("GM '{}' has reset user '{}' whose character uid was '{}'",
+            invokerCharacterName,
             username,
-            targetCharacterUid,
-            characterUid);
+            targetCharacterUid);
 
           return {
             std::format("User '{}' with character uid {} has been reset",
@@ -1620,7 +1621,7 @@ void ChatSystem::RegisterAdminCommands()
           });
 
           spdlog::info("GM '{}' has renamed horse '{}' from '{}' to '{}'",
-            characterUid,
+            invokerCharacterName,
             horseUid,
             previousName,
             newName);
@@ -1662,7 +1663,7 @@ void ChatSystem::RegisterAdminCommands()
           });
 
           spdlog::info("GM '{}' has renamed pet '{}' from '{}' to '{}'",
-            characterUid,
+            invokerCharacterName,
             petUid,
             previousName,
             newName);
@@ -1710,7 +1711,7 @@ void ChatSystem::RegisterAdminCommands()
           _serverInstance.GetRaceDirector().BroadcastChangeRoomOptions(roomUid, notify);
 
           spdlog::info("GM '{}' has renamed room '{}' from '{}' to '{}'",
-            characterUid,
+            invokerCharacterName,
             roomUid,
             previousName,
             newName);
