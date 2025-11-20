@@ -246,8 +246,20 @@ LobbyNetworkHandler::LobbyNetworkHandler(
     {
       HandleEnterGuildParty(clientId, command);
     });
-  // todo: AcCmdCLMakeGuildParty, AcCmdCLEnterGuildParty,
-  //       AcCmdCLLeaveGuildParty, AcCmdCLStartGuildPartyMatch, AcCmdCLStopGuildPartyMatch
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLStartGuildPartyMatch>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleStartGuildPartyMatch(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLStopGuildPartyMatch>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleStopGuildPartyMatch(clientId, command);
+    });
+  // todo: AcCmdCLMakeGuildParty
+  //       AcCmdCLLeaveGuildParty
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCLRequestQuestList>(
     [this](const ClientId clientId, const auto& command)
@@ -2252,10 +2264,24 @@ void LobbyNetworkHandler::HandleEnterGuildParty(
   };
   protocol::AcCmdCLEnterGuildPartyOK::PartyMember partyMember2{
     .characterUid = 1,
-    .name = "SomeoneElse"
+    .name = "SomeoneElse2"
+  };
+  protocol::AcCmdCLEnterGuildPartyOK::PartyMember partyMember3{
+    .characterUid = 3,
+    .name = "SomeoneElse3"
+  };
+  protocol::AcCmdCLEnterGuildPartyOK::PartyMember partyMember4{
+    .characterUid = 4,
+    .name = "SomeoneElse4"
   };
   protocol::AcCmdCLEnterGuildPartyOK response{
-    .partyMembers = {partyMember, partyMember2}
+    .party = {
+      .partyUid = command.partyUid,
+      .name = "Guild Party 1",
+      .ranchUid = partyMember.characterUid,
+      .leaderUid = partyMember.characterUid,
+    },
+    .partyMembers = {partyMember, partyMember2, partyMember3, partyMember4}
   };
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -2265,6 +2291,34 @@ void LobbyNetworkHandler::HandleEnterGuildParty(
       return response;
     });
 
+}
+
+void LobbyNetworkHandler::HandleStartGuildPartyMatch(
+  const ClientId clientId,
+  const protocol::AcCmdCLStartGuildPartyMatch& command)
+{
+  protocol::AcCmdCLStartGuildPartyMatchOK response{};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void LobbyNetworkHandler::HandleStopGuildPartyMatch(
+  const ClientId clientId,
+  const protocol::AcCmdCLStopGuildPartyMatch& command)
+{
+  protocol::AcCmdCLStopGuildPartyMatchOK response{};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 } // namespace server

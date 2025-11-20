@@ -241,13 +241,21 @@ private:
   void HandleGuildPartyList(
     ClientId clientId,
     const protocol::AcCmdCLGuildPartyList& command);
-  // todo: AcCmdCLMakeGuildParty, AcCmdCLEnterGuildParty,
+  // todo: AcCmdCLMakeGuildParty
   //       AcCmdCLLeaveGuildParty, AcCmdCLStartGuildPartyMatch, AcCmdCLStopGuildPartyMatch
 
   void HandleEnterGuildParty(
     ClientId clientId,
     const protocol::AcCmdCLEnterGuildParty& command);
+
+  void HandleStartGuildPartyMatch(
+    ClientId clientId,
+    const protocol::AcCmdCLStartGuildPartyMatch& command);
   
+  void HandleStopGuildPartyMatch(
+    ClientId clientId,
+    const protocol::AcCmdCLStopGuildPartyMatch& command);
+
   void HandleRequestQuestList(
     ClientId clientId,
     const protocol::AcCmdCLRequestQuestList& command);

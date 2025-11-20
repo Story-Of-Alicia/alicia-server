@@ -1717,6 +1717,94 @@ struct AcCmdCLEnterGuildPartyOK
     SourceStream& stream);
 };
 
+struct AcCmdCLStartGuildPartyMatch
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLStartGuildPartyMatch;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLStartGuildPartyMatch& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLStartGuildPartyMatch& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLStartGuildPartyMatchOK
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLStartGuildPartyMatchOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLStartGuildPartyMatchOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLStartGuildPartyMatchOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLStopGuildPartyMatch
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLStopGuildPartyMatch;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLStopGuildPartyMatch& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLStopGuildPartyMatch& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLStopGuildPartyMatchOK
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLStopGuildPartyMatchOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLStopGuildPartyMatchOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLStopGuildPartyMatchOK& command,
+    SourceStream& stream);
+};
+
 struct AcCmdCLEnterRanchRandomly
 {
   static Command GetCommand()

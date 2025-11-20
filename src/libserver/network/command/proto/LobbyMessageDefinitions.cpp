@@ -1136,6 +1136,62 @@ void AcCmdCLEnterGuildPartyOK::Write(
   }
 }
 
+void AcCmdCLStartGuildPartyMatch::Write(
+  const AcCmdCLStartGuildPartyMatch& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLStartGuildPartyMatch::Read(
+  AcCmdCLStartGuildPartyMatch& command,
+  SourceStream& stream)
+{
+  // Empty.
+}
+
+void AcCmdCLStartGuildPartyMatchOK::Write(
+  const AcCmdCLStartGuildPartyMatchOK& command,
+  SinkStream& stream)
+{
+  // Empty.
+}
+
+void AcCmdCLStartGuildPartyMatchOK::Read(
+  AcCmdCLStartGuildPartyMatchOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLStopGuildPartyMatch::Write(
+  const AcCmdCLStopGuildPartyMatch& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLStopGuildPartyMatch::Read(
+  AcCmdCLStopGuildPartyMatch& command,
+  SourceStream& stream)
+{
+  // Empty.
+}
+
+void AcCmdCLStopGuildPartyMatchOK::Write(
+  const AcCmdCLStopGuildPartyMatchOK& command,
+  SinkStream& stream)
+{
+  // Empty.
+}
+
+void AcCmdCLStopGuildPartyMatchOK::Read(
+  AcCmdCLStopGuildPartyMatchOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void AcCmdCLEnterRanchRandomly::Write(
   const AcCmdCLEnterRanchRandomly& command,
   SinkStream& stream)
