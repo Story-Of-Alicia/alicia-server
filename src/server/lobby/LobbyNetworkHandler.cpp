@@ -2299,11 +2299,22 @@ void LobbyNetworkHandler::HandleStartGuildPartyMatch(
 {
   protocol::AcCmdCLStartGuildPartyMatchOK response{};
 
-  _commandServer.QueueCommand<decltype(response)>(
+  //_commandServer.QueueCommand<decltype(response)>(
+  //  clientId,
+  //  [response]()
+  //  {
+  //    return response;
+  //  });
+
+  protocol::AcCmdLCGuildPartyMatchFound notify{
+    .roomUid = 1,
+  };
+
+  _commandServer.QueueCommand<decltype(notify)>(
     clientId,
-    [response]()
+    [notify]()
     {
-      return response;
+      return notify;
     });
 }
 

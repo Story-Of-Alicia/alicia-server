@@ -1805,6 +1805,30 @@ struct AcCmdCLStopGuildPartyMatchOK
     SourceStream& stream);
 };
 
+struct AcCmdLCGuildPartyMatchFound
+{
+  uint32_t roomUid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCGuildPartyMatchFound;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCGuildPartyMatchFound& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCGuildPartyMatchFound& command,
+    SourceStream& stream);
+};
+
 struct AcCmdCLEnterRanchRandomly
 {
   static Command GetCommand()
