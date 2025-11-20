@@ -2306,8 +2306,37 @@ void LobbyNetworkHandler::HandleStartGuildPartyMatch(
   //    return response;
   //  });
 
+  //TODO: implement proper guild party matching
+  // For now we just create a room and notify the client that a match was found
+  const auto& clientContext = GetClientContext(clientId);
+  uint32_t createdRoomUid{0};
+
+  _serverInstance.GetRoomSystem().CreateRoom(
+    [&createdRoomUid, characterUid = clientContext.characterUid](
+      Room& room)
+    {
+      room.GetRoomDetails().name = "Guild Party Room";
+      room.GetRoomDetails().password = "";
+      room.GetRoomDetails().missionId = 0;
+
+      room.GetRoomDetails().maxPlayerCount = 8;
+
+      room.GetRoomDetails().gameMode = Room::GameMode::Speed;
+
+      room.GetRoomDetails().teamMode = Room::TeamMode::Team;
+
+      room.GetRoomDetails().npcDifficulty = 0;
+      room.GetRoomDetails().skillBracket = 0;
+      // default to all courses
+      room.GetRoomDetails().courseId = 10002;
+
+      // Queue the master as a player.
+      room.QueuePlayer(characterUid);
+      createdRoomUid = room.GetUid();
+    });
+
   protocol::AcCmdLCGuildPartyMatchFound notify{
-    .roomUid = 1,
+    .roomUid = createdRoomUid,
   };
 
   _commandServer.QueueCommand<decltype(notify)>(

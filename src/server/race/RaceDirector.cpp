@@ -1275,6 +1275,11 @@ void RaceDirector::HandleReadyRace(
         return response;
       });
   }
+
+  if (isPlayerReady)
+  {
+    HandleStartRace(clientId, protocol::AcCmdCRStartRace{});
+  }
 }
 
 void RaceDirector::PrepareItemSpawners(data::Uid roomUid)
