@@ -1541,12 +1541,17 @@ void ChatSystem::RegisterAdminCommands()
             return {
               std::format("User '{}' does not exist or is currently unavailable", username)};
 
+          // Character UID before the reset
           data::Uid targetCharacterUid{data::InvalidUid};
           userRecord.Mutable([&targetCharacterUid](data::User& user)
           {
             targetCharacterUid = user.characterUid();
             user.characterUid() = data::InvalidUid;
           });
+
+          if (targetCharacterUid == data::InvalidUid)
+            return {
+              std::format("User '{}' does not have a character", username)};
 
           // TODO: Persist changes to the user record
           // Commented out due to assert throwing on login when getting user record
@@ -1573,7 +1578,7 @@ void ChatSystem::RegisterAdminCommands()
         if (arguments.size() < 2)
           return {
             "mod rename",
-            "  [horse/pet/room] [uid] [name]"};
+            "  [horse/pet/guild/room] [uid] [name]"};
 
         const auto& concatString = [](
           const std::span<const std::string>& arguments,
@@ -1671,6 +1676,48 @@ void ChatSystem::RegisterAdminCommands()
           return {
             std::format("Pet '{}' has been renamed from '{}' to '{}'",
               petUid,
+              previousName,
+              newName)};
+        }
+        else if (option == "guild")
+        {
+          if (arguments.size() < 3)
+            return {
+              "mod rename guild",
+              "   [uid] [name]"};
+
+          const auto& guildUid = std::atoi(arguments[2].c_str());
+          if (guildUid == data::InvalidUid)
+            return {"Invalid guild UID"};
+
+          const auto& guildRecord = _serverInstance.GetDataDirector().GetGuild(guildUid);
+          if (not guildRecord.IsAvailable())
+            return {
+              std::format("Guild '{}' does not exist or is currently unavailable", guildUid)};
+
+          if (arguments.size() < 4)
+            return {
+              std::format("mod rename guild {}", guildUid),
+              "    [name]"};
+
+          std::string previousName{};
+          // Join remaining arguments to form new name
+          std::string newName = concatString(arguments.subspan(3));
+          guildRecord.Mutable([&previousName, newName](data::Guild& guild)
+          {
+            previousName = guild.name();
+            guild.name() = newName;
+          });
+
+          spdlog::info("GM '{}' has renamed guild '{}' from '{}' to '{}'",
+            invokerCharacterName,
+            guildUid,
+            previousName,
+            newName);
+
+          return {
+            std::format("Guild '{}' has been renamed from '{}' to '{}'",
+              guildUid,
               previousName,
               newName)};
         }
