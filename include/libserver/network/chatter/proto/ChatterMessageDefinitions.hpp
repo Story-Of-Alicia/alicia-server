@@ -36,7 +36,9 @@ enum class Status : uint8_t
   Hidden = 0,
   Offline = 1,
   Online = 2,
-  Away = 3
+  Away = 3,
+  Racing = 4,
+  WaitingRoom = 5
 };
 
 enum class MailboxFolder : uint8_t
@@ -63,6 +65,18 @@ enum class ChatterErrorCode : uint32_t
   LetterDeleteMailUnavailable = 12,
   LetterDeleteMailDoesNotBelongToCharacter = 13,
   LetterDeleteMailDeleteAfterInsertRaceCondition = 14
+};
+
+struct Presence
+{
+  Status status{};
+  enum class Scene : uint32_t
+  {
+    Ranch = 0,
+    Race = 1
+  } scene{};
+  //! UID of the scene (ranch, room etc). Depends on `scene`.
+  data::Uid sceneUid{};
 };
 
 struct ChatCmdLogin
@@ -479,6 +493,42 @@ struct ChatCmdLetterArriveTrs
     SourceStream& stream);
 };
 
+struct ChatCmdUpdateState
+{
+  Presence presence{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdUpdateState;
+  }
+
+  static void Write(
+    const ChatCmdUpdateState& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdUpdateState& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdUpdateStateTrs : ChatCmdUpdateState
+{
+  uint32_t affectedCharacterUid{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdUpdateStateTrs;
+  }
+
+  static void Write(
+    const ChatCmdUpdateStateTrs& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdUpdateStateTrs& command,
+    SourceStream& stream);
+};
+
 struct ChatCmdEnterRoom
 {
   uint32_t code{};
@@ -743,6 +793,24 @@ struct ChatCmdGuildLoginAckCancel
 
   static void Read(
     ChatCmdGuildLoginAckCancel& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdUpdateGuildMemberStateTrs : ChatCmdUpdateStateTrs
+{
+  // Inherited ChatCmdUpdateStateTrs
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdUpdateGuildMemberStateTrs;
+  }
+
+  static void Write(
+    const ChatCmdUpdateGuildMemberStateTrs& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdUpdateGuildMemberStateTrs& command,
     SourceStream& stream);
 };
 

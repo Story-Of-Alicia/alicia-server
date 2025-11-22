@@ -25,8 +25,13 @@ private:
     bool isAuthenticated{false};
     //! Unique ID of the client's character.
     data::Uid characterUid{data::InvalidUid};
-    //! Messenger status of the client.
-    protocol::Status status{protocol::Status::Hidden};
+    //! Guild UID of the client's character.
+    data::Uid guildUid{data::InvalidUid};
+    //! Online presence of the client.
+    protocol::Presence presence{};
+
+    //! Temporary, friends.
+    std::vector<data::Uid> friends{};
   };
 
 public:
@@ -65,6 +70,10 @@ private:
   void HandleChatterLetterDelete(
     network::ClientId clientId,
     const protocol::ChatCmdLetterDelete& command);
+
+  void HandleChatterUpdateState(
+    network::ClientId clientId,
+    const protocol::ChatCmdUpdateState& command);
 
   void HandleChatterEnterRoom(
     network::ClientId clientId,
