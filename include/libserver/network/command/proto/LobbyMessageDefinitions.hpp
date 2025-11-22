@@ -380,7 +380,13 @@ struct AcCmdCLCreateNickname
 //! Serverbound create nickname cancel command.
 struct LobbyCommandCreateNicknameCancel
 {
-  uint8_t error{};
+  enum class Reason : uint8_t
+  {
+    ServerError = 0,
+    InvalidRequestedNotLoggedIn = 1,
+    DuplicateCharacterName = 2,
+    InvalidCharacterName = 3
+  } error{};
 
   static Command GetCommand()
   {

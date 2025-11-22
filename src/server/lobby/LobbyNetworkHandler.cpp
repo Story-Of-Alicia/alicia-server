@@ -1293,12 +1293,21 @@ void LobbyNetworkHandler::HandleCreateNickname(
 {
   auto& clientContext = GetClientContext(clientId);
 
-  const bool isValidNickname = locale::IsNameValid(command.nickname, 16)
-    && _serverInstance.GetDataDirector().GetDataSource().IsCharacterNameUnique(command.nickname);
-
-  if (not isValidNickname)
+  std::optional<protocol::LobbyCommandCreateNicknameCancel::Reason> error{};
+  if (not locale::IsNameValid(command.nickname, 16))
   {
-    SendLoginCancel(clientId, protocol::AcCmdCLLoginCancel::Reason::Generic);
+    error.emplace(protocol::LobbyCommandCreateNicknameCancel::Reason::InvalidCharacterName);
+  }
+  else if (not _serverInstance.GetDataDirector().GetDataSource().IsCharacterNameUnique(command.nickname))
+  {
+    error.emplace(protocol::LobbyCommandCreateNicknameCancel::Reason::DuplicateCharacterName);
+  }
+
+  if (error.has_value())
+  {
+    protocol::LobbyCommandCreateNicknameCancel cancel{
+      .error = error.value()};
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
     return;
   }
 
