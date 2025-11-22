@@ -632,23 +632,9 @@ void ChatSystem::RegisterUserCommands()
 
         for (const auto& selectedItemTid : selectedItems)
         {
-          // Create the item.
-          auto createdItemUid = data::InvalidUid;
-          const auto createdItemRecord = _serverInstance.GetDataDirector().CreateItem();
-          createdItemRecord.Mutable([selectedItemTid, itemCount, &createdItemUid](data::Item& item)
-            {
-              item.tid() = selectedItemTid;
-              item.count() = itemCount;
-              item.expiresAt() = data::Clock::now() + std::chrono::days(10);
-
-              createdItemUid = item.uid();
-            });
-
-          // Add the item directly to character's inventory.
-          characterRecord.Mutable([createdItemUid](data::Character& character)
-            {
-              character.inventory().emplace_back(createdItemUid);
-            });
+          // Create the item and add it to character's inventory.
+          _serverInstance.GetItemSystem().CreateNewItem(
+            characterUid, selectedItemTid, itemCount);
         }
 
         return {"Preset added to character inventory. Please restart your game to apply changes!"};
