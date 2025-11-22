@@ -52,6 +52,8 @@ enum class ChatterCommand : uint16_t
   ChatCmdLetterDeleteAckOk = 0x22,
   ChatCmdLetterDeleteAckCancel = 0x23,
   ChatCmdLetterArriveTrs = 0x24,
+  ChatCmdUpdateState = 0x25,
+  ChatCmdUpdateStateTrs = 0x26,
 
   ChatCmdEnterRoom = 0x29,
   ChatCmdEnterRoomAckOk = 0x2a,
@@ -67,6 +69,8 @@ enum class ChatterCommand : uint16_t
   ChatCmdGuildLogin = 0x40,
   ChatCmdGuildLoginAckOK = 0x41,
   ChatCmdGuildLoginAckCancel = 0x42,
+
+  ChatCmdUpdateGuildMemberStateTrs = 0x44,
 };
 
 } // namespace server::protocol

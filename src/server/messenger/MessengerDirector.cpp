@@ -62,6 +62,12 @@ MessengerDirector::MessengerDirector(ServerInstance& serverInstance)
       HandleChatterLetterDelete(clientId, command);
     });
 
+  _chatterServer.RegisterCommandHandler<protocol::ChatCmdUpdateState>(
+    [this](network::ClientId clientId, const auto& command)
+    {
+      HandleChatterUpdateState(clientId, command);
+    });
+
   _chatterServer.RegisterCommandHandler<protocol::ChatCmdEnterRoom>(
     [this](network::ClientId clientId, const auto& command)
     {
@@ -144,6 +150,14 @@ void MessengerDirector::HandleClientDisconnected(network::ClientId clientId)
 {
   spdlog::debug("Client {} disconnected from the messenger server", clientId);
 
+  // Call update state like a client would do before disconnect
+  HandleChatterUpdateState(clientId, protocol::ChatCmdUpdateState{
+    .presence = protocol::Presence{
+      .status = protocol::Status::Offline,
+      .scene = protocol::Presence::Scene::Ranch,
+      .sceneUid = 0
+    }});
+
   // TODO: broadcast notify to friends & guilds that character is offline
 
   _clients.erase(clientId);
@@ -186,7 +200,11 @@ void MessengerDirector::HandleChatterLogin(
     .groups = {{.uid = OnlinePlayersCategoryUid, .name = "Online Players"}}};
 
   // TODO: remember status from last login?
-  clientContext.status = protocol::Status::Online;
+  clientContext.presence = protocol::Presence{
+    .status = protocol::Status::Online,
+    .scene = protocol::Presence::Scene::Ranch,
+    .sceneUid = clientContext.characterUid
+  };
 
   // Client request could be logging in as another character
   _serverInstance.GetDataDirector().GetCharacter(command.characterUid).Mutable(
@@ -220,6 +238,11 @@ void MessengerDirector::HandleChatterLogin(
       friendo.ranchUid = onlineCharacter.uid();
       friendo.roomUid = userInstance.roomUid;
     });
+
+    // TODO: temporary
+    // Add online character as friend
+    if (friendo.uid != clientContext.characterUid)
+      clientContext.friends.emplace_back(friendo.uid);
   }
 
   _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
@@ -695,6 +718,109 @@ void MessengerDirector::HandleChatterLetterDelete(
   _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }
 
+void MessengerDirector::HandleChatterUpdateState(
+  network::ClientId clientId,
+  const protocol::ChatCmdUpdateState& command)
+{
+  std::string status =
+    command.presence.status == protocol::Status::Hidden ? "Hidden" :
+    command.presence.status == protocol::Status::Offline ? "Offline" :
+    command.presence.status == protocol::Status::Online ? "Online" :
+    command.presence.status == protocol::Status::Away ? "Away" :
+    command.presence.status == protocol::Status::Racing ? "Racing" :
+    command.presence.status == protocol::Status::WaitingRoom ? "Waiting Room" :
+    std::format("Unknown status {}", static_cast<uint8_t>(command.presence.status));
+
+  std::string scene =
+    command.presence.scene == protocol::Presence::Scene::Ranch ? "Ranch" :
+    command.presence.scene == protocol::Presence::Scene::Race ? "Race" :
+    std::format("Unknown scene {}", static_cast<uint32_t>(command.presence.scene));
+    
+  spdlog::debug("[{}] ChatCmdUpdateState: [{}] [{}] {}",
+    clientId,
+    status,
+    scene,
+    command.presence.sceneUid);
+
+  // Sometimes ChatCmdUpdateState is received with status value > 5 containing giberish and causes crashes
+  if (static_cast<uint8_t>(command.presence.status) > 5)
+  {
+    spdlog::warn("Client {} sent unrecognised ChatCmdUpdateState::Status {}",
+      clientId,
+      static_cast<uint8_t>(command.presence.status));
+    return;
+  }
+
+  auto& clientContext = GetClientContext(clientId);
+  // Update state for client context
+  clientContext.presence = command.presence;
+
+  bool isInGuild = clientContext.guildUid != data::InvalidUid;
+  std::vector<network::ClientId> guildMembersToNotify{};
+
+  // This mechanism goes through all the online clients and checks if the invoker is in their "friends" list.
+  // TODO: ^ temporary, only for online players
+  std::vector<network::ClientId> friendsToNotify{};
+
+  const auto clientsSnapshot = _clients;
+  for (const auto& [onlineClientId, onlineClientContext] : clientsSnapshot)
+  {
+    // Skip unauthenticated clients
+    bool isAuthenticated = onlineClientContext.isAuthenticated;
+    if (not isAuthenticated)
+      continue;
+
+    // Self broadcast is needed, add it to the bag
+    bool isSelf = onlineClientId == clientId;
+    if (isSelf)
+    {
+      if (isInGuild)
+        guildMembersToNotify.emplace_back(onlineClientId);
+      
+      friendsToNotify.emplace_back(onlineClientId);
+      continue;
+    }
+
+    // Broadcast to character that has invoker as friend
+    auto it = std::ranges::find(onlineClientContext.friends, clientContext.characterUid);
+    bool isFriend = it != onlineClientContext.friends.cend();
+    if (isFriend)
+    {
+      friendsToNotify.emplace_back(onlineClientId);
+    }
+
+    // If invoker is in a guild and other client is in the same guild
+    if (isInGuild && onlineClientContext.guildUid == clientContext.guildUid)
+    {
+      guildMembersToNotify.emplace_back(onlineClientId);
+    } 
+  }
+
+  if (not friendsToNotify.empty())
+  {
+    protocol::ChatCmdUpdateStateTrs notify{
+      .affectedCharacterUid = clientContext.characterUid};
+    notify.presence = command.presence;
+
+    for (const auto& targetClientId : friendsToNotify)
+    {
+      _chatterServer.QueueCommand<decltype(notify)>(targetClientId, [notify](){ return notify; });
+    }
+  }
+
+  if (not guildMembersToNotify.empty())
+  {
+    protocol::ChatCmdUpdateGuildMemberStateTrs notify{};
+    notify.affectedCharacterUid = clientContext.characterUid;
+    notify.presence = command.presence;
+
+    for (const auto& targetClientId : guildMembersToNotify)
+    {
+      _chatterServer.QueueCommand<decltype(notify)>(targetClientId, [notify](){ return notify; });
+    }
+  }
+}
+
 void MessengerDirector::HandleChatterEnterRoom(
   network::ClientId clientId,
   const protocol::ChatCmdEnterRoom& command)
@@ -800,6 +926,12 @@ void MessengerDirector::HandleChatterChannelInfo(
 {
   spdlog::debug("[{}] ChatCmdChannelInfo", clientId);
 
+  // Disable all chat
+  // TODO: move this to configuration
+  bool enableChat = false;
+  if (not enableChat)
+    return;
+
   const auto& lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
   protocol::ChatCmdChannelInfoAckOk response{
     .hostname = lobbyConfig.advertisement.messenger.address.to_string(),
@@ -822,7 +954,7 @@ void MessengerDirector::HandleChatterGuildLogin(
 
   // ChatCmdGuildLogin is sent after ChatCmdLogin
   // Assumption: the user is very likely already authenticated with messenger
-  const auto& clientContext = GetClientContext(clientId);
+  auto& clientContext = GetClientContext(clientId);
 
   // Check if client belongs to the guild in the command
   data::Uid characterGuildUid{data::InvalidUid};
@@ -870,6 +1002,9 @@ void MessengerDirector::HandleChatterGuildLogin(
     return;
   }
 
+  // Character is in guild, process ok response
+  clientContext.guildUid = command.guildUid;
+
   protocol::ChatCmdGuildLoginAckOK response{};
   _serverInstance.GetDataDirector().GetGuild(command.guildUid).Immutable(
     [this, &response](const data::Guild& guild)
@@ -887,10 +1022,17 @@ void MessengerDirector::HandleChatterGuildLogin(
           });
 
         // Find if the guild member is connected to the messenger server
-        if (auto it = _clients.find(guildMemberUid); it != _clients.end())
+        const auto clientsSnapshot = _clients;
+        for (auto& onlineClientContext : clientsSnapshot | std::views::values)
         {
           // If guild member is connected, set status to the one set by the character
-          chatGuildMember.status = it->second.status;
+          if (onlineClientContext.characterUid == guildMemberUid)
+          {
+            chatGuildMember.status = onlineClientContext.presence.status;
+            chatGuildMember.unk2.unk0 = static_cast<uint32_t>(onlineClientContext.presence.scene); // TODO: change types
+            chatGuildMember.unk2.unk1 = onlineClientContext.presence.sceneUid;
+            break;
+          }
         }
       }
     });
@@ -901,6 +1043,16 @@ void MessengerDirector::HandleChatterGuildLogin(
     {
       return response;
     });
+
+  // Update state on guild login (update state updates these later)
+  HandleChatterUpdateState(
+    clientId,
+    protocol::ChatCmdUpdateState{
+      .presence = protocol::Presence{
+        .status = protocol::Status::Online,
+        .scene = protocol::Presence::Scene::Ranch, // Default
+        .sceneUid = 0 // Default
+      }});
 }
 
 } // namespace server

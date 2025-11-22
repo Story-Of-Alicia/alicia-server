@@ -340,6 +340,39 @@ void server::protocol::ChatCmdLetterArriveTrs::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void server::protocol::ChatCmdUpdateState::Write(
+  const ChatCmdUpdateState& command,
+  server::SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdUpdateState::Read(
+  ChatCmdUpdateState& command,
+  server::SourceStream& stream)
+{
+  stream.Read(command.presence.status)
+    .Read(command.presence.scene)
+    .Read(command.presence.sceneUid);
+}
+
+void server::protocol::ChatCmdUpdateStateTrs::Write(
+  const ChatCmdUpdateStateTrs& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.affectedCharacterUid)
+    .Write(command.presence.status)
+    .Write(command.presence.scene)
+    .Write(command.presence.sceneUid);
+}
+
+void server::protocol::ChatCmdUpdateStateTrs::Read(
+  ChatCmdUpdateStateTrs& command,
+  server::SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void server::protocol::ChatCmdEnterRoom::Write(
   const ChatCmdEnterRoom& command,
   server::SinkStream& stream)
@@ -554,6 +587,23 @@ void server::protocol::ChatCmdGuildLoginAckCancel::Write(
 
 void server::protocol::ChatCmdGuildLoginAckCancel::Read(
   ChatCmdGuildLoginAckCancel& command,
+  server::SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdUpdateGuildMemberStateTrs::Write(
+  const ChatCmdUpdateGuildMemberStateTrs& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.affectedCharacterUid)
+    .Write(command.presence.status)
+    .Write(command.presence.scene)
+    .Write(command.presence.sceneUid);
+}
+
+void server::protocol::ChatCmdUpdateGuildMemberStateTrs::Read(
+  ChatCmdUpdateGuildMemberStateTrs& command,
   server::SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
