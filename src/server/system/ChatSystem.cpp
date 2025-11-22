@@ -37,6 +37,10 @@ constexpr std::string_view UserLine        = "  - user: '{}'";
 constexpr std::string_view CharacterLine   = "    <font color=\"#AAAAAA\">(uid:{}) '{}', level {}</font>";
 constexpr std::string_view NoCharacterLine = "    <font color=\"#FF0000\">no character</font>";
 
+const std::regex MinutePattern(R"((\d+)m)");
+const std::regex HourPattern(R"((\d+)h)");
+const std::regex DayPattern(R"((\d+)d)");
+
 } // anon namespace
 
 void CommandManager::RegisterCommand(
@@ -90,7 +94,7 @@ ChatSystem::ChatVerdict ChatSystem::ProcessChatMessage(
   }
   else
   {
-    // todo: moderation
+    // todo: auto moderation
     verdict.message = message;
   }
 
@@ -154,10 +158,12 @@ void ChatSystem::RegisterUserCommands()
         " ",
         "Official admin command reference:",
         " //infraction - Infraction management",
+        " //incognito - Toggles incognito mode for GMs"
+        " //info - Info about users and characters",
         " //promote - Promotes user to Game Master role",
         " //demote - Demotes user to User role",
         " //notice - Sends notice to character",
-        " //users - Detailed information about players",
+        " //users - Overview of users",
         " ",
         "More commands available over at: ",
         " https://bruhvrum.github.io/registertest/commands"};
@@ -182,35 +188,39 @@ void ChatSystem::RegisterUserCommands()
   _commandManager.RegisterCommand(
     "online",
     [this](
-      const std::span<const std::string>& arguments,
-      data::Uid characterUid) -> std::vector<std::string>
+      [[maybe_unused]] const std::span<const std::string>& arguments,
+      [[maybe_unused]] data::Uid characterUid) -> std::vector<std::string>
     {
-      // todo: better way to collect online players information,
-      //       maybe some kind of cental statistics collector
-      const auto onlineCharacters = _serverInstance.GetRanchDirector().GetOnlineCharacters();
-
       std::vector<std::string> response;
+
+      const auto& userInstances = _serverInstance.GetLobbyDirector().GetUsers();
+
       response.emplace_back() = std::format(
         "Online ({}):",
-        onlineCharacters.size());
+        userInstances.size());
 
-      for (const data::Uid& onlineCharacterUid : onlineCharacters)
+      for (const auto& userInstance : userInstances | std::views::values)
       {
-        const auto onlineCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(
-          onlineCharacterUid);
-
-        if (not onlineCharacterRecord)
-          continue;
-
-        onlineCharacterRecord.Immutable(
-          [&response, characterUid](
-            const data::Character& character)
+        const auto userRecord = _serverInstance.GetDataDirector().GetUser(
+          userInstance.userName);
+        if (userRecord)
+        {
+          auto onlineCharacterUid{data::InvalidUid};
+          userRecord.Immutable([&onlineCharacterUid](const data::User& user)
           {
-            response.emplace_back() = std::format(
-              "{}{}",
-              character.name(),
-              character.uid() == characterUid ? " (you)" : "");
+            onlineCharacterUid = user.characterUid();
           });
+
+          const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+            onlineCharacterUid);
+          if (characterRecord)
+          {
+            characterRecord.Immutable([&response](const data::Character& character)
+            {
+              response.emplace_back(std::format(" {}", character.name()));
+            });
+          }
+        }
       }
 
       return response;
@@ -513,6 +523,17 @@ void ChatSystem::RegisterUserCommands()
         if (createdItemTid >= 99000 && createdItemTid <= 99200)
         {
           return {"Please give yourself eggs to hatch pets."};
+        }
+
+        size_t storedGiftCount{0};
+        characterRecord.Immutable([&storedGiftCount](const data::Character& character)
+        {
+          storedGiftCount = character.gifts().size();
+        });
+
+        if (storedGiftCount > 32)
+        {
+          return {"You have too many unclaimed gifts."};
         }
 
         // Create the item.
@@ -840,25 +861,32 @@ void ChatSystem::RegisterAdminCommands()
 
       if (arguments.empty())
       {
-        return {"Specify UID"};
+        return {"Specify user name"};
       }
 
-      const data::Uid onlineCharacterUid = std::atoi(arguments[0].data());
-      const auto onlineCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(
-        onlineCharacterUid);
-      if (not onlineCharacterRecord)
+      const auto userName = arguments[0];
+
+      const auto userInstance = _serverInstance.GetLobbyDirector().GetUser(userName);
+      if (not _serverInstance.GetLobbyDirector().IsUserOnline(userName))
       {
-        return {"Character unavailable or offline"};
+        return {std::format("User '{}' is not online", userName)};
+      }
+
+      const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+        userInstance.characterUid);
+      if (not characterRecord)
+      {
+        return {std::format("User '{}' does not have a character", userName)};
       }
 
       std::string characterName;
-      onlineCharacterRecord.Mutable([&characterName](data::Character& character)
+      characterRecord.Mutable([&characterName](data::Character& character)
       {
         character.role() = data::Character::Role::GameMaster;
         characterName = character.name();
       });
 
-      return {std::format("Character '{}' promoted to GM", characterName)};
+      return {std::format("User '{}' ({}) promoted to GM", userName, characterName)};
     });
 
   // demote command
@@ -883,25 +911,32 @@ void ChatSystem::RegisterAdminCommands()
 
       if (arguments.empty())
       {
-        return {"Specify UID"};
+        return {"Specify user name"};
       }
 
-      const data::Uid onlineCharacterUid = std::atoi(arguments[0].data());
-      const auto onlineCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(
-        onlineCharacterUid);
-      if (not onlineCharacterRecord)
+      const auto userName = arguments[0];
+
+      const auto userInstance = _serverInstance.GetLobbyDirector().GetUser(userName);
+      if (not _serverInstance.GetLobbyDirector().IsUserOnline(userName))
       {
-        return {"Character unavailable or offline"};
+        return {std::format("User '{}' is not online", userName)};
+      }
+
+      const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+        userInstance.characterUid);
+      if (not characterRecord)
+      {
+        return {std::format("User '{}' does not have a character", userName)};
       }
 
       std::string characterName;
-      onlineCharacterRecord.Mutable([&characterName](data::Character& character)
+      characterRecord.Mutable([&characterName](data::Character& character)
       {
         character.role() = data::Character::Role::User;
         characterName = character.name();
       });
 
-      return {std::format("Character '{}' demoted to User", characterName)};
+      return {std::format("User '{}' ({}) demoted to user", userName, characterName)};
     });
 
   // infraction command
@@ -928,7 +963,7 @@ void ChatSystem::RegisterAdminCommands()
         return {"infraction",
           "  [add/remove/list]"};
 
-      const std::string subLiteral = arguments[0];
+      const std::string& subLiteral = arguments[0];
 
       if (subLiteral == "add")
       {
@@ -938,54 +973,70 @@ void ChatSystem::RegisterAdminCommands()
             "infraction add",
             "  [user name]",
             "  [none/mute/ban]",
-            "  [duration (XXmXXhXXd)]",
+            "  [duration (XXmXXhXXd or forever)]",
             "  [optional: description]"};
         }
 
+        // Get the user name argument.
         const std::string userName = arguments[1];
-        const auto userRecord = _serverInstance.GetDataDirector().GetUser(userName);
-        if (not userRecord)
+
+        // Validate that the user exists.
+        if (_serverInstance.GetDataDirector().GetDataSource().IsUserNameUnique(
+          userName))
         {
-          return {"User not available"};
+          return {
+            std::format(
+              "User '{}' does not exist",
+              userName)};
         }
 
-        const std::string type = arguments[2];
+        // Get the user record.
+        const auto userRecord = _serverInstance.GetDataDirector().GetUserCache().Get(
+          userName);
+        if (not userRecord)
+        {
+          return {
+            std::format(
+              "User '{}' not momentarily unavailable",
+              userName),
+            "Try again later."};
+        }
+
+        // Get the infraction type argument.
+        const std::string& typeArgument = arguments[2];
         data::Infraction::Punishment punishmentType;
-        if (type == "mute")
+        if (typeArgument == "mute")
           punishmentType = data::Infraction::Punishment::Mute;
-        else if (type == "ban")
+        else if (typeArgument == "ban")
           punishmentType = data::Infraction::Punishment::Ban;
         else
           punishmentType = data::Infraction::Punishment::None;
 
-        const std::string durationInput = arguments[3];
-        data::Clock::duration duration = std::chrono::seconds::zero();
+        // Get the infraction duration argument.
+        const std::string& durationArgument = arguments[3];
+        auto duration = std::chrono::seconds::zero();
 
-        const std::regex minutePattern(R"((\d+)m)");
-        const std::regex hourPattern(R"((\d+)h)");
-        const std::regex dayPattern(R"((\d+)d)");
-        std::smatch match;
-
-        if (durationInput == "infinite")
+        if (durationArgument == "forever")
         {
-          duration = data::Clock::duration::max();
+          duration = std::chrono::seconds::max();
         }
         else
         {
-          if (std::regex_search(durationInput, match, minutePattern)) {
+          std::smatch match;
+          if (std::regex_search(durationArgument, match, MinutePattern)) {
             duration += std::chrono::minutes(std::stoi(match[1].str()));
           }
-          if (std::regex_search(durationInput, match, hourPattern)) {
+          if (std::regex_search(durationArgument, match, HourPattern)) {
             duration += std::chrono::hours(std::stoi(match[1].str()));
           }
-          if (std::regex_search(durationInput, match, dayPattern)) {
+          if (std::regex_search(durationArgument, match, DayPattern)) {
             duration += std::chrono::days(std::stoi(match[1].str()));
           }
         }
 
-        if (duration == duration.zero())
+        if (duration == data::Clock::duration::zero())
         {
-          return {"Invalid duration, format example: 20m10h1d"};
+          return {"Invalid duration, format example: 20m10h1d or forever"};
         }
 
         std::string description;
@@ -1013,7 +1064,7 @@ void ChatSystem::RegisterAdminCommands()
           });
 
         auto userCharacterUid{data::InvalidUid};
-        userRecord.Mutable([infractionUid, &userCharacterUid](data::User& user)
+        userRecord->Mutable([infractionUid, &userCharacterUid](data::User& user)
         {
           user.infractions().emplace_back(infractionUid);
 
@@ -1042,17 +1093,35 @@ void ChatSystem::RegisterAdminCommands()
             "  [infraction UID]"};
         }
 
-        const std::string userName = arguments[1];
-        const auto userRecord = _serverInstance.GetDataDirector().GetUser(userName);
-        if (not userRecord)
+        // Get the user name argument.
+        const std::string& userName = arguments[1];
+
+        // Validate that the user exists.
+        if (_serverInstance.GetDataDirector().GetDataSource().IsUserNameUnique(
+          userName))
         {
-          return {"User not available"};
+          return {
+            std::format(
+              "User '{}' does not exist",
+              userName)};
         }
 
-        const data::Uid infractionUid = std::atoi(arguments[2].c_str());
+        // Get the user record.
+        const auto userRecord = _serverInstance.GetDataDirector().GetUserCache().Get(
+          userName);
+        if (not userRecord)
+        {
+          return {
+            std::format(
+              "User '{}' not momentarily unavailable",
+              userName),
+            "Try again later."};
+        }
+
+        const data::Uid infractionUid = std::atol(arguments[2].c_str());
         bool hasInfraction = false;
 
-        userRecord.Mutable([infractionUid, &hasInfraction](data::User& user)
+        userRecord->Mutable([infractionUid, &hasInfraction](data::User& user)
         {
           hasInfraction = std::ranges::contains(user.infractions(), infractionUid);
 
@@ -1064,7 +1133,7 @@ void ChatSystem::RegisterAdminCommands()
         });
 
         if (not hasInfraction)
-          return {"No such infraction exists"};
+          return {std::format("No such infraction for user '{}'", userName)};
 
         return {std::format("Infraction removed from '{}'", userName)};
       }
@@ -1076,17 +1145,35 @@ void ChatSystem::RegisterAdminCommands()
             "  [user name]"};
         }
 
-        const std::string userName = arguments[1];
-        const auto userRecord = _serverInstance.GetDataDirector().GetUser(userName);
+        // Get the user name argument.
+        const std::string& userName = arguments[1];
+
+        // Validate that the user exists.
+        if (_serverInstance.GetDataDirector().GetDataSource().IsUserNameUnique(
+          userName))
+        {
+          return {
+            std::format(
+              "User '{}' does not exist",
+              userName)};
+        }
+
+        // Get the user record.
+        const auto userRecord = _serverInstance.GetDataDirector().GetUserCache().Get(
+          userName);
         if (not userRecord)
         {
-          return {"User not available"};
+          return {
+            std::format(
+              "User '{}' not momentarily unavailable",
+              userName),
+            "Try again later."};
         }
 
         std::vector<std::string> list;
         list.emplace_back(std::format("Infractions of '{}':", userName));
 
-        userRecord.Immutable([this, &list](const data::User& user)
+        userRecord->Immutable([this, &list](const data::User& user)
         {
           const auto infractionRecords = _serverInstance.GetDataDirector().GetInfractionCache().Get(
             user.infractions());
@@ -1114,6 +1201,12 @@ void ChatSystem::RegisterAdminCommands()
               list.emplace_back(std::format(
                 "   punishment: {}", type));
 
+              const bool isForever = infraction.duration() == std::chrono::seconds::max();
+              if (isForever)
+              {
+                list.emplace_back("   expires: <font color=\"#FF0000\">never</font>");
+              }
+              else
               {
                 const auto expires = infraction.createdAt() + infraction.duration();
 
@@ -1153,6 +1246,484 @@ void ChatSystem::RegisterAdminCommands()
       }
 
       return {"Unknown sub literal"};
+    });
+
+  // incognito command
+  _commandManager.RegisterCommand(
+    "incognito",
+    [this](
+      const std::span<const std::string>& arguments,
+      data::Uid characterUid) -> std::vector<std::string>
+    {
+      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+      if (not invokerRecord)
+        return {"Server error"};
+
+      bool isAdmin = false;
+      invokerRecord.Immutable([&isAdmin](const data::Character& character)
+      {
+        isAdmin = character.role() != data::Character::Role::User;
+      });
+
+      if (not isAdmin)
+        return {};
+
+      bool wasIncognito = false;
+      invokerRecord.Mutable([&wasIncognito](data::Character& character)
+      {
+        wasIncognito = character.role() == data::Character::Role::Op;
+
+        if (wasIncognito)
+        {
+          character.role() = data::Character::Role::GameMaster;
+        }
+        else
+        {
+          character.role() = data::Character::Role::Op;
+        }
+      });
+
+      if (wasIncognito)
+      {
+        return {"Incognito mode turned off"};
+      }
+
+      return {"Incognito mode turned on"};
+    });
+
+  // info command
+  _commandManager.RegisterCommand(
+    "info",
+    [this](
+      const std::span<const std::string>& arguments,
+      data::Uid characterUid) -> std::vector<std::string>
+    {
+      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+      if (not invokerRecord)
+        return {"Server error"};
+
+      bool isAdmin = false;
+      invokerRecord.Immutable([&isAdmin](const data::Character& character)
+      {
+        isAdmin = character.role() != data::Character::Role::User;
+      });
+
+      if (not isAdmin)
+        return {};
+
+      if (arguments.empty())
+        return {"info",
+          " [user/character] [name]"};
+
+      const auto subject = arguments[0];
+
+      const auto dumpCharacterInfo = [this](const data::Character& character)
+      {
+        const auto userInstance = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+          character.uid());
+
+        std::vector<std::string> response;
+        response.emplace_back(std::format("'{}' ({}) is user '{}'", character.name(), character.uid(), userInstance.userName));
+
+        if (character.guildUid() != data::InvalidUid)
+        {
+          const auto guildRecord = _serverInstance.GetDataDirector().GetGuild(
+            character.guildUid());
+          if (guildRecord)
+          {
+            guildRecord.Immutable([&response, characterUid = character.uid()](
+              const data::Guild& guild)
+            {
+              if (guild.owner() == characterUid)
+              {
+                response.emplace_back(std::format(
+                  "Owner of a guild '{}' ({})",
+                  guild.name(),
+                  guild.uid()));
+              }
+              else if (std::ranges::contains(guild.officers(), characterUid))
+              {
+                response.emplace_back(std::format(
+                  "Officer of a guild '{}' ({})",
+                  guild.name(),
+                  guild.uid()));
+              }
+              else
+              {
+                response.emplace_back(std::format(
+                  "Member of a guild '{}' ({})",
+                  guild.name(),
+                  guild.uid()));
+              }
+            });
+          }
+          else
+          {
+            response.emplace_back(std::format("Member of unavailable guild {}", character.guildUid()));
+          }
+        }
+
+        if (userInstance.roomUid > 0)
+          response.emplace_back(std::format("Currently in a room {}", userInstance.roomUid));
+        else
+          response.emplace_back(std::format("Currently at a ranch"));
+
+        response.emplace_back(std::format("Horses:"));
+
+        const auto mountRecord = _serverInstance.GetDataDirector().GetHorse(character.mountUid());
+        if (mountRecord)
+        {
+          mountRecord.Immutable([&response](const data::Horse& horse)
+          {
+            response.emplace_back(std::format(" > '{}' ({})", horse.name(), horse.uid()));
+          });
+        }
+        else
+        {
+          response.emplace_back(" * mount not available");
+        }
+
+        const auto horseRecords = _serverInstance.GetDataDirector().GetHorseCache().Get(
+          character.horses());
+
+        if (horseRecords)
+        {
+          for (const auto& horseRecord : *horseRecords)
+          {
+            horseRecord.Immutable([&response](const data::Horse& horse)
+            {
+              response.emplace_back(std::format(" - {} ({})", horse.name(), horse.uid()));
+            });
+          }
+        }
+        else
+        {
+          response.emplace_back(" - horses not available");
+        }
+
+        response.emplace_back(std::format("Pets:"));
+        const auto petRecords = _serverInstance.GetDataDirector().GetPetCache().Get(
+          character.pets());
+        if (petRecords)
+        {
+          for (const auto& petRecord : *petRecords)
+          {
+            petRecord.Immutable([&response](const data::Pet& pet)
+            {
+              response.emplace_back(std::format(" - {} ({})", pet.name(), pet.uid()));
+            });
+          }
+        }
+        else
+        {
+          response.emplace_back(" - pets not available");
+        }
+
+        return response;
+      };
+
+      if (subject == "character")
+      {
+        if (arguments.size() < 2)
+        {
+          return {"info character [name]"};
+        }
+
+        const auto name = arguments[1];
+        for (const auto& [userName, userInstance] : _serverInstance.GetLobbyDirector().GetUsers())
+        {
+          const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+            userInstance.characterUid);
+          if (not characterRecord)
+            continue;
+
+          std::string characterName;
+          characterRecord.Immutable([&characterName](const data::Character& character)
+          {
+            characterName = character.name();
+          });
+
+          if (characterName != name)
+            continue;
+
+          std::vector<std::string> response;
+          characterRecord.Immutable([&response, &dumpCharacterInfo](const data::Character& character)
+          {
+            response = dumpCharacterInfo(character);
+          });
+
+          return response;
+        }
+
+        return {std::format("Character '{}' is not online", name)};
+      }
+      else if (subject == "user")
+      {
+        if (arguments.size() < 2)
+        {
+          return {"info user [name]"};
+        }
+
+        const auto name = arguments[1];
+        if (not _serverInstance.GetLobbyDirector().IsUserOnline(name))
+        {
+          return {std::format("User '{}' is not online", name)};
+        }
+
+        const auto& userInstance = _serverInstance.GetLobbyDirector().GetUser(name);
+        const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+          userInstance.characterUid);
+
+        if (not characterRecord)
+        {
+          return {std::format("User '{}' does not have a character", name)};
+        }
+
+        std::vector<std::string> response;
+        characterRecord.Immutable([&response, &dumpCharacterInfo](
+          const data::Character& character)
+        {
+          response = dumpCharacterInfo(character);
+        });
+
+        return response;
+      }
+
+      return {"Unknown sub-literal"};
+    });
+
+    // mod command
+  _commandManager.RegisterCommand(
+    "mod",
+    [this](
+      const std::span<const std::string>& arguments,
+      data::Uid characterUid) -> std::vector<std::string>
+    {
+      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+      if (not invokerRecord)
+        return {"Server error"};
+
+      bool isAdmin = false;
+      invokerRecord.Immutable([&isAdmin](const data::Character& character)
+      {
+        isAdmin = character.role() != data::Character::Role::User;
+      });
+
+      if (not isAdmin)
+        return {};
+
+      if (arguments.empty())
+        return {"mod",
+          " reset user [name]",
+          " rename [horse/pet/room] [uid] [name]"};
+
+      const auto& subcommand = arguments[0];
+      if (subcommand == "reset")
+      {
+        if (arguments.size() < 2)
+          return {"mod reset",
+            "  user [name]"};
+
+        const auto& subject = arguments[1];
+        if (subject == "user")
+        {
+          if (arguments.size() < 3)
+          {
+            return {"mod reset user",
+              "   [name]"};
+          }
+
+          // Get user record from user name
+          std::string username = arguments[2];
+          const auto& userRecord = _serverInstance.GetDataDirector().GetUser(username);
+          if (not userRecord.IsAvailable())
+            return {
+              std::format("User '{}' does not exist or is currently unavailable", username)};
+
+          data::Uid targetCharacterUid{data::InvalidUid};
+          userRecord.Mutable([&targetCharacterUid](data::User& user)
+          {
+            targetCharacterUid = user.characterUid();
+            user.characterUid() = data::InvalidUid;
+          });
+
+          // TODO: Persist changes to the user record
+          // Commented out due to assert throwing on login when getting user record
+          // _serverInstance.GetDataDirector().GetUserCache().Save(username);
+
+          // Disconnect from all directors
+          _serverInstance.GetRaceDirector().DisconnectCharacter(targetCharacterUid);
+          _serverInstance.GetRanchDirector().Disconnect(targetCharacterUid);
+          _serverInstance.GetLobbyDirector().DisconnectCharacter(targetCharacterUid);
+
+          spdlog::info("GM '{}' has reset user '{}' whose character uid was '{}'",
+            username,
+            targetCharacterUid,
+            characterUid);
+
+          return {
+            std::format("User '{}' with character uid {} has been reset",
+              username,
+              targetCharacterUid)};
+        }
+      }
+      else if (subcommand == "rename")
+      {
+        if (arguments.size() < 2)
+          return {
+            "mod rename",
+            "  [horse/pet/room] [uid] [name]"};
+
+        const auto& concatString = [](
+          const std::span<const std::string>& arguments,
+          std::string separator = " ") -> const std::string
+        {
+          std::string str{};
+          for (auto i = 0; i < arguments.size(); ++i)
+          {
+            str += arguments[i];
+            if (i + 1 < arguments.size())
+              str += separator;
+          }
+          return str;
+        };          
+
+        const auto& option = arguments[1];
+        if (option == "horse")
+        {
+          if (arguments.size() < 3)
+            return {
+              "mod rename horse",
+              "   [uid] [name]"};
+
+          const auto& horseUid = std::atoi(arguments[2].c_str());
+          if (horseUid == data::InvalidUid)
+            return {"Invalid horse UID"};
+
+          const auto& horseRecord = _serverInstance.GetDataDirector().GetHorse(horseUid);
+          if (not horseRecord.IsAvailable())
+            return {
+              std::format("Horse '{}' does not exist or is currently unavailable", horseUid)};
+
+          if (arguments.size() < 4)
+            return {
+              std::format("mod rename horse {}", horseUid),
+              "    [name]"};
+
+          std::string previousName{};
+          // Join remaining arguments to form new name
+          std::string newName = concatString(arguments.subspan(3));
+          horseRecord.Mutable([&previousName, newName](data::Horse& horse)
+          {
+            previousName = horse.name();
+            horse.name() = newName;
+          });
+
+          spdlog::info("GM '{}' has renamed horse '{}' from '{}' to '{}'",
+            characterUid,
+            horseUid,
+            previousName,
+            newName);
+
+          return {
+            std::format("Horse '{}' has been renamed from '{}' to '{}'",
+              horseUid,
+              previousName,
+              newName)};
+        }
+        else if (option == "pet")
+        {
+          if (arguments.size() < 3)
+            return {
+              "mod rename pet",
+              "   [uid] [name]"};
+
+          const auto& petUid = std::atoi(arguments[2].c_str());
+          if (petUid == data::InvalidUid)
+            return {"Invalid pet UID"};
+
+          const auto& petRecord = _serverInstance.GetDataDirector().GetPet(petUid);
+          if (not petRecord.IsAvailable())
+            return {
+              std::format("Pet '{}' does not exist or is currently unavailable", petUid)};
+
+          if (arguments.size() < 4)
+            return {
+              std::format("mod rename pet {}", petUid),
+              "    [name]"};
+
+          std::string previousName{};
+          // Join remaining arguments to form new name
+          std::string newName = concatString(arguments.subspan(3));
+          petRecord.Mutable([&previousName, newName](data::Pet& pet)
+          {
+            previousName = pet.name();
+            pet.name() = newName;
+          });
+
+          spdlog::info("GM '{}' has renamed pet '{}' from '{}' to '{}'",
+            characterUid,
+            petUid,
+            previousName,
+            newName);
+
+          return {
+            std::format("Pet '{}' has been renamed from '{}' to '{}'",
+              petUid,
+              previousName,
+              newName)};
+        }
+        else if (option == "room")
+        {
+          if (arguments.size() < 3)
+            return {
+              "mod rename room",
+              "   [uid] [name]"};
+
+          const auto& roomUid = std::atoi(arguments[2].c_str());
+          if (roomUid == data::InvalidUid)
+            return {"Invalid room UID"};
+
+          bool roomExists = _serverInstance.GetRoomSystem().RoomExists(roomUid);
+          if (not roomExists)
+            return {
+              std::format("Room '{}' does not exist", roomUid)};
+
+          if (arguments.size() < 4)
+            return {
+              std::format("mod rename room {}", roomUid),
+              "    [name]"};
+
+          std::string previousName{};
+          std::string newName = concatString(arguments.subspan(3));
+          _serverInstance.GetRoomSystem().GetRoom(
+            roomUid,
+            [&previousName, newName](Room& room)
+            {
+              previousName = room.GetRoomDetails().name;
+              room.GetRoomDetails().name = newName;
+            });
+
+          protocol::AcCmdCRChangeRoomOptionsNotify notify{
+            .optionsBitfield = protocol::RoomOptionType::Name,
+            .name = newName};
+          _serverInstance.GetRaceDirector().BroadcastChangeRoomOptions(roomUid, notify);
+
+          spdlog::info("GM '{}' has renamed room '{}' from '{}' to '{}'",
+            characterUid,
+            roomUid,
+            previousName,
+            newName);
+
+          return {
+            std::format("Room '{}' has been renamed from '{}' to '{}'",
+              roomUid,
+              previousName,
+              newName)};
+        }
+      }
+
+      return {"Unknown sub-command"};
     });
 }
 

@@ -318,7 +318,7 @@ private:
     const protocol::AcCmdCRHousingRepair& command);
   
   void HandleOpCmd(ClientId clientId,
-    const protocol::RanchCommandOpCmd& command);
+    const protocol::AcCmdCROpCmd& command);
 
   void HandleRequestLeagueTeamList(ClientId clientId,
     const protocol::RanchCommandRequestLeagueTeamList& command);

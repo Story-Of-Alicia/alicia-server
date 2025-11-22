@@ -184,6 +184,14 @@ size_t CommandServer::NetworkEventHandler::OnClientData(
 
   while (commandStream.GetCursor() != commandStream.Size())
   {
+    // The size of the buffer that was not read yet.
+    const size_t bufferedDataSize = commandStream.Size() - commandStream.GetCursor();
+
+    // Do not continue if the available data does not contain the data
+    // for the message magic.
+    if (bufferedDataSize < sizeof(protocol::MessageMagic))
+      break;
+
     // Store the origin cursor position before reading the command.
     // This is so we can return to it if the command is not completely buffered.
     const auto streamOrigin = commandStream.GetCursor();
@@ -228,12 +236,12 @@ size_t CommandServer::NetworkEventHandler::OnClientData(
 
     // Size of the data portion of the command.
     const size_t commandDataSize = static_cast<size_t>(magic.length) - sizeof(protocol::MessageMagic);
-    // The size of data that is available and was not yet read.
-    const size_t bufferedDataSize = commandStream.Size() - commandStream.GetCursor();
+    // Size of the available data.
+    const size_t availableDataSize = bufferedDataSize - sizeof(protocol::MessageMagic);
 
     // If all the required command data are not buffered,
     // wait for them to arrive.
-    if (commandDataSize > bufferedDataSize)
+    if (commandDataSize > availableDataSize)
     {
       isCommandBufferedWhole = false;
       break;

@@ -26,6 +26,7 @@
 
 #include "libserver/network/command/CommandServer.hpp"
 #include "libserver/network/command/proto/RaceMessageDefinitions.hpp"
+#include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
 #include "libserver/util/Scheduler.hpp"
 
 #include <random>
@@ -71,6 +72,10 @@ public:
 
     return roomIter->second.tracker.GetRacers().size();
   }
+
+  void BroadcastChangeRoomOptions(
+    const data::Uid& roomUid,
+    const protocol::AcCmdCRChangeRoomOptionsNotify notify);
 
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId clientId) override;
@@ -119,6 +124,8 @@ private:
 
     //! A time point of when the race is actually started (a countdown is finished).
     std::chrono::steady_clock::time_point raceStartTimePoint;
+    //! A mutex of room clients.
+    std::mutex clientsMutex;
     //! A room clients.
     std::unordered_set<ClientId> clients;
   };
@@ -256,6 +263,10 @@ private:
   void HandleActivateSkillEffect(
     ClientId clientId,
     const protocol::AcCmdCRActivateSkillEffect& command);
+
+  void HandleOpCmd(
+    ClientId clientId,
+    const protocol::AcCmdCROpCmd& command);
 
   void PrepareItemSpawners(data::Uid roomUid);
 

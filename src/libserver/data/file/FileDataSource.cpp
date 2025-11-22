@@ -160,8 +160,8 @@ void server::FileDataSource::StoreUser(const std::string_view& name, const data:
 bool server::FileDataSource::IsUserNameUnique(const std::string_view& name)
 {
   const std::regex rg(
-    std::format("{}", name),
-    std::regex_constants::icase);
+    std::format("{}.*", name),
+    std::regex_constants::ECMAScript | std::regex_constants::icase);
 
   for (const auto& file : std::filesystem::directory_iterator(_userDataPath))
   {
@@ -194,10 +194,10 @@ void server::FileDataSource::RetrieveInfraction(data::Uid uid, data::Infraction&
   infraction.uid = json["uid"].get<data::Uid>();
   infraction.description = json["description"].get<std::string>();
   infraction.punishment = json["punishment"].get<data::Infraction::Punishment>();
-  infraction.duration = data::Clock::duration(std::chrono::seconds(
-    json["duration"].get<uint64_t>()));
+  infraction.duration = std::chrono::seconds(
+    json["duration"].get<int64_t>());
   infraction.createdAt = data::Clock::time_point(std::chrono::seconds(
-    json["createdAt"].get<uint64_t>()));
+    json["createdAt"].get<int64_t>()));
 }
 
 void server::FileDataSource::StoreInfraction(data::Uid uid, const data::Infraction& infraction)
@@ -216,8 +216,7 @@ void server::FileDataSource::StoreInfraction(data::Uid uid, const data::Infracti
   json["uid"] = infraction.uid();
   json["description"] = infraction.description();
   json["punishment"] = infraction.punishment();
-  json["duration"] = std::chrono::duration_cast<std::chrono::seconds>(
-    infraction.duration()).count();
+  json["duration"] = infraction.duration().count();
   json["createdAt"] = std::chrono::duration_cast<std::chrono::seconds>(
     infraction.createdAt().time_since_epoch()).count();
 
