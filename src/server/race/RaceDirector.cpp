@@ -357,7 +357,6 @@ void RaceDirector::Initialize()
 
       } catch (const std::exception& x) {
       }
-
     }
   });
   test.detach();
@@ -371,8 +370,16 @@ void RaceDirector::Terminate()
   _commandServer.EndHost();
 }
 
-void RaceDirector::Tick() {
-  _scheduler.Tick();
+void RaceDirector::Tick()
+{
+  try
+  {
+    _scheduler.Tick();
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception ticking a race scheduler: {}", x.what());
+  }
 
   // Process rooms which are loading
   for (auto& [raceUid, raceInstance] : _raceInstances)
@@ -427,6 +434,7 @@ void RaceDirector::Tick() {
         raceInstance.raceStartTimePoint)};
 
     // Broadcast the race countdown.
+    std::scoped_lock lock(raceInstance.clientsMutex);
     for (const ClientId& raceClientId : raceInstance.clients)
     {
       _commandServer.QueueCommand<protocol::AcCmdUserRaceCountdown>(
@@ -467,6 +475,7 @@ void RaceDirector::Tick() {
       protocol::AcCmdUserRaceFinalNotify notify{};
 
       // Broadcast the race final.
+      std::scoped_lock lock(raceInstance.clientsMutex);
       for (const ClientId& raceClientId : raceInstance.clients)
       {
         bool isParticipant = false;
@@ -1501,10 +1510,11 @@ void RaceDirector::HandleStartRace(
         || notify.raceGameMode == protocol::GameMode::Magic)
         && notify.raceTeamMode == protocol::TeamMode::FFA;
 
+      std::scoped_lock lock(raceInstance.clientsMutex);
       // Send to all clients participating in the race.
       for (const ClientId& raceClientId : raceInstance.clients)
       {
-        const auto& raceClientContext = _clients[raceClientId];
+        const auto& raceClientContext = GetClientContext(raceClientId);
 
         if (not raceInstance.tracker.IsRacer(raceClientContext.characterUid))
           continue;
