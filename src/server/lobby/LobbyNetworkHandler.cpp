@@ -504,6 +504,12 @@ void LobbyNetworkHandler::HandleNetworkTick()
   std::vector<ClientId> clientsToDisconnect;
   for (const auto& [clientId, clientContext] : _clients)
   {
+    // There's a bug in a client, where if the client is in the character creator,
+    // they'll withdraw from sending heartbeats. Because of this we have to
+    // ignore the lack of heartbeats and not disconnect the client.
+    if (clientContext.isInCharacterCreator)
+      continue;
+
     const bool hasReachedTimeOut = now - clientContext.lastHeartbeat > std::chrono::seconds(60);
     if (not hasReachedTimeOut)
       continue;
@@ -1279,6 +1285,9 @@ void LobbyNetworkHandler::SendCreateNicknameNotify(ClientId clientId)
 {
   protocol::LobbyCommandCreateNicknameNotify notify{};
 
+  auto& clientContext = GetClientContext(clientId);
+  clientContext.isInCharacterCreator = true;
+
   _commandServer.QueueCommand<decltype(notify)>(
     clientId,
     [notify]()
@@ -1303,6 +1312,11 @@ void LobbyNetworkHandler::HandleCreateNickname(
   }
 
   clientContext.justCreatedCharacter = true;
+
+  // We update the last heartbeat too, so that the client does not get
+  // kicked immediately after `isInCharacterCreator` immunity is withdrawn.
+  clientContext.lastHeartbeat = std::chrono::steady_clock::now();
+  clientContext.isInCharacterCreator = false;
 
   const auto userRecord = _serverInstance.GetDataDirector().GetUserCache().Get(
     clientContext.userName);
