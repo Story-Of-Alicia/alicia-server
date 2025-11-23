@@ -1293,8 +1293,18 @@ void LobbyNetworkHandler::HandleCreateNickname(
 {
   auto& clientContext = GetClientContext(clientId);
 
+  constexpr uint32_t DefaultHorseTid = 20001;
+
   std::optional<protocol::LobbyCommandCreateNicknameCancel::Reason> error{};
-  if (not locale::IsNameValid(command.nickname, 16))
+  if (command.requestedHorseTid != DefaultHorseTid)
+  {
+    spdlog::warn("Client {} with character uid {} requested invalid horse tid {}",
+      clientId,
+      clientContext.characterUid,
+      command.requestedHorseTid);
+    error.emplace(protocol::LobbyCommandCreateNicknameCancel::Reason::ServerError);
+  }
+  else if (not locale::IsNameValid(command.nickname, 16))
   {
     error.emplace(protocol::LobbyCommandCreateNicknameCancel::Reason::InvalidCharacterName);
   }
@@ -1333,11 +1343,11 @@ void LobbyNetworkHandler::HandleCreateNickname(
 
     auto mountUid = data::InvalidUid;
     mountRecord.Mutable(
-      [this, &mountUid](data::Horse& horse)
+      [this, &mountUid, requestedHorseTid = command.requestedHorseTid](data::Horse& horse)
       {
         // The TID of the horse specifies which body mesh is used for that horse.
         // Can be found in the `MountPartInfo` table.
-        horse.tid() = 20002;
+        horse.tid() = requestedHorseTid;
         horse.dateOfBirth() = data::Clock::now();
         horse.mountCondition.stamina = 3500;
         horse.growthPoints() = 150;
@@ -1356,7 +1366,8 @@ void LobbyNetworkHandler::HandleCreateNickname(
         &mountUid,
         &command](data::Character& character)
       {
-        character.name = command.nickname;
+        if (character.name() == "")
+          character.name = command.nickname;
 
         // todo: default level configured
         character.level = 60;

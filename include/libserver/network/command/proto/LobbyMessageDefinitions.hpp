@@ -355,7 +355,7 @@ struct AcCmdCLCreateNickname
 {
   std::string nickname{};
   Character character{};
-  uint32_t unk0{};
+  uint32_t requestedHorseTid{};
 
   static Command GetCommand()
   {
