@@ -284,7 +284,7 @@ void AcCmdCLCreateNickname::Read(
 {
   stream.Read(command.nickname)
     .Read(command.character)
-    .Read(command.unk0);
+    .Read(command.requestedHorseTid);
 }
 
 void LobbyCommandCreateNicknameCancel::Write(

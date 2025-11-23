@@ -357,7 +357,6 @@ void RaceDirector::Initialize()
 
       } catch (const std::exception& x) {
       }
-
     }
   });
   test.detach();
@@ -371,8 +370,16 @@ void RaceDirector::Terminate()
   _commandServer.EndHost();
 }
 
-void RaceDirector::Tick() {
-  _scheduler.Tick();
+void RaceDirector::Tick()
+{
+  try
+  {
+    _scheduler.Tick();
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception ticking a race scheduler: {}", x.what());
+  }
 
   // Process rooms which are loading
   for (auto& [raceUid, raceInstance] : _raceInstances)
@@ -391,7 +398,7 @@ void RaceDirector::Tick() {
 
     const bool loadTimeoutReached = std::chrono::steady_clock::now() >= raceInstance.stageTimeoutTimePoint;
 
-    // If not all of the racer have loaded yet and the timeout has not been reached yet
+    // If not all the racers have loaded yet and the timeout has not been reached yet
     // do not start the race.
     if (not allRacersLoaded && not loadTimeoutReached)
       continue;
@@ -427,6 +434,7 @@ void RaceDirector::Tick() {
         raceInstance.raceStartTimePoint)};
 
     // Broadcast the race countdown.
+    std::scoped_lock lock(raceInstance.clientsMutex);
     for (const ClientId& raceClientId : raceInstance.clients)
     {
       _commandServer.QueueCommand<protocol::AcCmdUserRaceCountdown>(
@@ -467,6 +475,7 @@ void RaceDirector::Tick() {
       protocol::AcCmdUserRaceFinalNotify notify{};
 
       // Broadcast the race final.
+      std::scoped_lock lock(raceInstance.clientsMutex);
       for (const ClientId& raceClientId : raceInstance.clients)
       {
         bool isParticipant = false;
@@ -1313,8 +1322,8 @@ void RaceDirector::PrepareItemSpawners(data::Uid roomUid)
 }
 
 void RaceDirector::HandleStartRace(
-  ClientId clientId,
-  const protocol::AcCmdCRStartRace& command)
+  const ClientId clientId,
+  [[maybe_unused]] const protocol::AcCmdCRStartRace& command)
 {
   const auto& clientContext = GetClientContext(clientId);
   auto& raceInstance = _raceInstances[clientContext.roomUid];
@@ -1322,11 +1331,12 @@ void RaceDirector::HandleStartRace(
   if (clientContext.characterUid != raceInstance.masterUid)
     throw std::runtime_error("Client tried to start the race even though they're not the master");
 
+  const auto roomUid = clientContext.roomUid;
   uint32_t roomSelectedCourses;
   uint8_t roomGameMode;
 
   _serverInstance.GetRoomSystem().GetRoom(
-    clientContext.roomUid,
+    roomUid,
     [&roomSelectedCourses, &roomGameMode, &raceInstance](Room& room)
     {
       auto& details = room.GetRoomDetails();
@@ -1415,11 +1425,11 @@ void RaceDirector::HandleStartRace(
   raceInstance.tracker.Clear();
 
   // Add the items.
-  PrepareItemSpawners(clientContext.roomUid);
+  PrepareItemSpawners(roomUid);
 
   // Add the racers.
   _serverInstance.GetRoomSystem().GetRoom(
-    clientContext.roomUid,
+    roomUid,
     [&raceInstance](Room& room)
     {
       // todo: observers
@@ -1446,7 +1456,7 @@ void RaceDirector::HandleStartRace(
   raceInstance.stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(30);
 
   _serverInstance.GetRoomSystem().GetRoom(
-    clientContext.roomUid,
+    roomUid,
     [](Room& room)
     {
       room.SetRoomPlaying(true);
@@ -1454,11 +1464,11 @@ void RaceDirector::HandleStartRace(
 
   // Queue race start after room countdown.
   _scheduler.Queue(
-    [this, clientId]()
+    [this, roomUid]()
     {
-      const auto& clientContext = GetClientContext(clientId);
+      // todo: this could fail
+      auto& raceInstance = _raceInstances[roomUid];
 
-      auto& raceInstance = _raceInstances[clientContext.roomUid];
       protocol::AcCmdCRStartRaceNotify notify{
         .raceGameMode = raceInstance.raceGameMode,
         .raceTeamMode = raceInstance.raceTeamMode,
@@ -1501,10 +1511,11 @@ void RaceDirector::HandleStartRace(
         || notify.raceGameMode == protocol::GameMode::Magic)
         && notify.raceTeamMode == protocol::TeamMode::FFA;
 
+      std::scoped_lock lock(raceInstance.clientsMutex);
       // Send to all clients participating in the race.
       for (const ClientId& raceClientId : raceInstance.clients)
       {
-        const auto& raceClientContext = _clients[raceClientId];
+        const auto& raceClientContext = GetClientContext(raceClientId);
 
         if (not raceInstance.tracker.IsRacer(raceClientContext.characterUid))
           continue;
@@ -2762,7 +2773,7 @@ void RaceDirector::HandleUserRaceItemGet(
 
   // Respawn the item after a delay
   _scheduler.Queue(
-    [this, clientId, item, &raceInstance]()
+    [this, item, &raceInstance]()
     {
       protocol::AcCmdGameRaceItemSpawn spawn{
         .itemId = item.oid,

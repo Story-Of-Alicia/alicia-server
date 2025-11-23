@@ -1523,7 +1523,7 @@ void RanchDirector::HandleUpdateMountNickname(
 
   uint32_t horseRenameItemCount = 0;
   std::optional<protocol::HorseRenameError> error;
-  characterRecord.Mutable([this, &error, characterUid = clientContext.characterUid, command, &horseRenameItemCount](data::Character& character)
+  characterRecord.Mutable([this, &error, command, &horseRenameItemCount](data::Character& character)
   {
     const bool ownsHorse = character.mountUid() == command.horseUid
       || std::ranges::contains(character.horses(), command.horseUid);
@@ -1531,6 +1531,9 @@ void RanchDirector::HandleUpdateMountNickname(
     if (not ownsHorse)
     {
       // Command contains horse UID that the calling client does not own
+      spdlog::warn("Character {} tried to rename horse {} that does not belong to them",
+        character.uid(),
+        command.horseUid);
       error.emplace(protocol::HorseRenameError::ServerError);
       return;
     }
@@ -1539,6 +1542,9 @@ void RanchDirector::HandleUpdateMountNickname(
     if (not horseRecord)
     {
       // Somehow the horse record does not exist
+      spdlog::warn("Character {} tried to rename horse {} that does not exist or is not available",
+        character.uid(),
+        command.horseUid);
       error.emplace(protocol::HorseRenameError::ServerError);
       return;
     }
@@ -1559,7 +1565,7 @@ void RanchDirector::HandleUpdateMountNickname(
     {
       // Item of that UID does not exist
       spdlog::warn("Character {} tried to rename horse {} with non-existent item {}",
-        characterUid, command.horseUid, command.itemUid);
+        character.uid(), command.horseUid, command.itemUid);
       error.emplace(protocol::HorseRenameError::NoHorseRenameItem);
       return;
     }
@@ -1569,7 +1575,7 @@ void RanchDirector::HandleUpdateMountNickname(
     {
       // Character tried to use an item that they do not have in their inventory
       spdlog::warn("Character {} tried to use item {} that does not belong to them",
-        characterUid, command.itemUid);
+        character.uid(), command.itemUid);
       error.emplace(protocol::HorseRenameError::NoHorseRenameItem);
       return;
     }
@@ -1751,7 +1757,7 @@ void RanchDirector::HandleGetItemFromStorage(
 
   // Try to remove the stored item from the character.
   characterRecord.Mutable(
-    [this, &storedItemIsValid, storedItemUid = command.storedItemUid](
+    [&storedItemIsValid, storedItemUid = command.storedItemUid](
       data::Character& character)
     {
       // The stored item is either a gift or a purchase.
