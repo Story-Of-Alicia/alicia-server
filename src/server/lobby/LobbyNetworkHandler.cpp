@@ -1302,12 +1302,31 @@ void LobbyNetworkHandler::HandleCreateNickname(
 {
   auto& clientContext = GetClientContext(clientId);
 
-  const bool isValidNickname = locale::IsNameValid(command.nickname, 16)
-    && _serverInstance.GetDataDirector().GetDataSource().IsCharacterNameUnique(command.nickname);
+  constexpr uint32_t DefaultHorseTid = 20001;
 
-  if (not isValidNickname)
+  std::optional<protocol::LobbyCommandCreateNicknameCancel::Reason> error{};
+  if (command.requestedHorseTid != DefaultHorseTid)
   {
-    SendLoginCancel(clientId, protocol::AcCmdCLLoginCancel::Reason::Generic);
+    spdlog::warn("Client {} with character uid {} requested invalid horse tid {}",
+      clientId,
+      clientContext.characterUid,
+      command.requestedHorseTid);
+    error.emplace(protocol::LobbyCommandCreateNicknameCancel::Reason::ServerError);
+  }
+  else if (not locale::IsNameValid(command.nickname, 16))
+  {
+    error.emplace(protocol::LobbyCommandCreateNicknameCancel::Reason::InvalidCharacterName);
+  }
+  else if (not _serverInstance.GetDataDirector().GetDataSource().IsCharacterNameUnique(command.nickname))
+  {
+    error.emplace(protocol::LobbyCommandCreateNicknameCancel::Reason::DuplicateCharacterName);
+  }
+
+  if (error.has_value())
+  {
+    protocol::LobbyCommandCreateNicknameCancel cancel{
+      .error = error.value()};
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
     return;
   }
 
@@ -1338,11 +1357,11 @@ void LobbyNetworkHandler::HandleCreateNickname(
 
     auto mountUid = data::InvalidUid;
     mountRecord.Mutable(
-      [this, &mountUid](data::Horse& horse)
+      [this, &mountUid, requestedHorseTid = command.requestedHorseTid](data::Horse& horse)
       {
         // The TID of the horse specifies which body mesh is used for that horse.
         // Can be found in the `MountPartInfo` table.
-        horse.tid() = 20002;
+        horse.tid() = requestedHorseTid;
         horse.dateOfBirth() = data::Clock::now();
         horse.mountCondition.stamina = 3500;
         horse.growthPoints() = 150;
@@ -1361,7 +1380,8 @@ void LobbyNetworkHandler::HandleCreateNickname(
         &mountUid,
         &command](data::Character& character)
       {
-        character.name = command.nickname;
+        if (character.name() == "")
+          character.name = command.nickname;
 
         // todo: default level configured
         character.level = 60;
