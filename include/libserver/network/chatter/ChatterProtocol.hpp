@@ -54,7 +54,8 @@ enum class ChatterCommand : uint16_t
   ChatCmdLetterArriveTrs = 0x24,
   ChatCmdUpdateState = 0x25,
   ChatCmdUpdateStateTrs = 0x26,
-
+  ChatCmdChatInvite = 0x27,
+  ChatCmdChatInvitationTrs = 0x28,
   ChatCmdEnterRoom = 0x29,
   ChatCmdEnterRoomAckOk = 0x2a,
 

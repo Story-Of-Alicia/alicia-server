@@ -529,6 +529,48 @@ struct ChatCmdUpdateStateTrs : ChatCmdUpdateState
     SourceStream& stream);
 };
 
+struct ChatCmdChatInvite
+{
+  //! Character UIDs of participants in the chat.
+  std::vector<data::Uid> chatParticipantUids{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdChatInvite;
+  }
+
+  static void Write(
+    const ChatCmdChatInvite& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdChatInvite& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdChatInvitationTrs
+{
+  uint32_t unk0{};
+  uint32_t unk1{};
+  uint32_t unk2{};
+  std::string unk3{};
+  uint16_t unk4{};
+  uint32_t unk5{};
+  
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdChatInvitationTrs;
+  }
+
+  static void Write(
+    const ChatCmdChatInvitationTrs& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdChatInvitationTrs& command,
+    SourceStream& stream);
+};
+
 struct ChatCmdEnterRoom
 {
   uint32_t code{};

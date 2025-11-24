@@ -68,6 +68,12 @@ MessengerDirector::MessengerDirector(ServerInstance& serverInstance)
       HandleChatterUpdateState(clientId, command);
     });
 
+  _chatterServer.RegisterCommandHandler<protocol::ChatCmdChatInvite>(
+    [this](network::ClientId clientId, const auto& command)
+    {
+      HandleChatterChatInvite(clientId, command);
+    });
+
   _chatterServer.RegisterCommandHandler<protocol::ChatCmdEnterRoom>(
     [this](network::ClientId clientId, const auto& command)
     {
@@ -818,6 +824,70 @@ void MessengerDirector::HandleChatterUpdateState(
     {
       _chatterServer.QueueCommand<decltype(notify)>(targetClientId, [notify](){ return notify; });
     }
+  }
+}
+
+void MessengerDirector::HandleChatterChatInvite(
+  network::ClientId clientId,
+  const protocol::ChatCmdChatInvite& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  constexpr auto concatParticipants =
+    [](const std::vector<data::Uid> list, std::string separator = ", ")
+    {
+      std::string str{};
+      for (auto i = 0; i < list.size(); ++i)
+      {
+        str += std::to_string(list[i]);
+        if (i + 1 < list.size())
+          str += separator;
+      }
+      return str;
+    };
+
+  spdlog::debug("[{}] ChatCmdChatInvite: [{}]",
+    clientId,
+    concatParticipants(command.chatParticipantUids));
+
+  std::vector<network::ClientId> clientIdsToNotify{};
+  for (const auto& [targetClientId, targetClientContext] : _clients)
+  {
+    // Skip unauthenticated clients
+    if (not targetClientContext.isAuthenticated)
+      continue;
+    
+    bool isRequestedParticipant = std::ranges::contains(
+      command.chatParticipantUids,
+      targetClientContext.characterUid);
+    if (isRequestedParticipant)
+    {
+      clientIdsToNotify.emplace_back(targetClientId);
+      continue;
+    }
+  }
+
+  if (clientIdsToNotify.empty())
+  {
+    // No characters by that UID found
+    // TODO: ignore request? is there a cancel?
+    return;
+  }
+  
+  // TODO: Sent notify to invoker
+
+  protocol::ChatCmdChatInvitationTrs notify{
+    .unk0 = 0,
+    //.unk1 = 131,
+    .unk2 = clientContext.characterUid,
+    .unk3 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+    .unk4 = 0,
+    .unk5 = clientContext.characterUid};
+  for (const auto& targetClientId : clientIdsToNotify)
+  {
+    const auto& targetClientContext = GetClientContext(targetClientId);
+    notify.unk1 = targetClientContext.characterUid;
+    _chatterServer.QueueCommand<decltype(notify)>(targetClientId, [notify](){ return notify; });
   }
 }
 
