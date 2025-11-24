@@ -373,6 +373,43 @@ void server::protocol::ChatCmdUpdateStateTrs::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void server::protocol::ChatCmdChatInvite::Write(
+  const ChatCmdChatInvite& command,
+  server::SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdChatInvite::Read(
+  ChatCmdChatInvite& command,
+  server::SourceStream& stream)
+{
+  uint32_t length{};
+  stream.Read(length);
+
+  command.chatParticipantUids.resize(length);
+  stream.Read(command.chatParticipantUids.data(), length);
+}
+
+void server::protocol::ChatCmdChatInvitationTrs::Write(
+  const ChatCmdChatInvitationTrs& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.unk2)
+    .Write(command.unk3)
+    .Write(command.unk4)
+    .Write(command.unk5);
+}
+
+void server::protocol::ChatCmdChatInvitationTrs::Read(
+  ChatCmdChatInvitationTrs& command,
+  server::SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void server::protocol::ChatCmdEnterRoom::Write(
   const ChatCmdEnterRoom& command,
   server::SinkStream& stream)

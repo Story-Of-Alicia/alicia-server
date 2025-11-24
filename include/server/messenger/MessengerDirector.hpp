@@ -75,6 +75,10 @@ private:
     network::ClientId clientId,
     const protocol::ChatCmdUpdateState& command);
 
+  void HandleChatterChatInvite(
+    network::ClientId clientId,
+    const protocol::ChatCmdChatInvite& command);
+
   void HandleChatterEnterRoom(
     network::ClientId clientId,
     const protocol::ChatCmdEnterRoom& command);
