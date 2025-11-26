@@ -1516,7 +1516,7 @@ void ChatSystem::RegisterAdminCommands()
       if (arguments.empty())
         return {"mod",
           " reset user [name]",
-          " rename [horse/pet/room] [uid] [name]"};
+          " rename [horse/pet/guild/room] [uid] [name]"};
 
       const auto& subcommand = arguments[0];
       if (subcommand == "reset")
