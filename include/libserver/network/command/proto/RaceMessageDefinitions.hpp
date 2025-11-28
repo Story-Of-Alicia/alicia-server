@@ -1693,11 +1693,16 @@ struct AcCmdCRRelayNotify
 
 struct AcCmdRCTeamSpurGauge
 {
-  uint32_t member1{};
+  //! TODO: unify this enum
+  TeamColor team{};
+  //! Team hooves go on fire at 25.0f (maybe higher)
   float member2{};
-  float member3{};
-  float member4{};
-  uint16_t member5{};
+  //! Opposing team marker. Max 25.0f (TODO: confirm this value)
+  float opposingTeamMarker{};
+  //! The speed at which the gauge or marker moves at.
+  float markerSpeed{};
+  //! This is deserialised and handled but not used in the `GameMsg` callback.
+  uint16_t reserved1{};
   uint32_t member6{};
 
   static Command GetCommand()

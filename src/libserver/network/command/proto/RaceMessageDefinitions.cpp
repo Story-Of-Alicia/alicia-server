@@ -1214,11 +1214,11 @@ void AcCmdRCTeamSpurGauge::Write(
   const AcCmdRCTeamSpurGauge& command,
   SinkStream& stream)
 {
-  stream.Write(command.member1)
+  stream.Write(command.team)
     .Write(command.member2)
-    .Write(command.member3)
-    .Write(command.member4)
-    .Write(command.member5)
+    .Write(command.opposingTeamMarker)
+    .Write(command.markerSpeed)
+    .Write(command.reserved1)
     .Write(command.member6);
 }
 

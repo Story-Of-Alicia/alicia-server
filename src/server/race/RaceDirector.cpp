@@ -1888,6 +1888,101 @@ void RaceDirector::HandleRequestSpur(
     {
       return starPointResponse;
     });
+
+  // If race teammode is not team then we are done here
+  if (raceInstance.raceTeamMode != protocol::TeamMode::Team)
+    return;
+
+  // TODO: calculate this algorithmically 
+  constexpr float MarkerSpeed = 2.0f;
+
+  protocol::AcCmdRCTeamSpurGauge spur{
+    .team = static_cast<protocol::TeamColor>(racer.team), // TODO: casts from one enum to other, unify.
+    .markerSpeed = MarkerSpeed, // TODO: configure
+    .member6 = 0 // TODO: identify use
+  };
+
+  // TODO: is this behaviour true? do we base calculations off of room player count or connected clients
+  // Get max players in room
+  uint32_t roomPlayerCount{};
+  _serverInstance.GetRoomSystem().GetRoom(clientContext.roomUid,
+    [&roomPlayerCount](Room& room)
+    {
+      roomPlayerCount = room.GetPlayers().size();
+    });
+
+  const auto teamSize = roomPlayerCount / 2;
+
+  //! Base point for a successful boost.
+  constexpr uint32_t BaseBoostPoints = 50;
+  //! Base point difference per team member in a team.
+  constexpr uint32_t BoostPointsDiffBase = 20;
+
+  //! Scale points per boost, based on team size.
+  //! Scale = team player count (room player count / 2) - 1 for the formula.
+  const auto scale = teamSize - 1;
+  //! Final points per boost = base boost + additional boost points.
+  const auto additionalBoostPoints = (BoostPointsDiffBase * scale) + (10 * scale);
+  
+  //! Base max points.
+  constexpr uint32_t BaseMaxPoints = 250;
+  //! Max points difference per team member.
+  constexpr uint32_t MaxPointsDiffBase = 150;
+  //! Final max points for team size.
+  const uint32_t maxPoints = BaseMaxPoints + (MaxPointsDiffBase * scale);
+
+  if (racer.team == tracker::RaceTracker::Racer::Team::Red)
+  {
+    // TODO: discovery, lights up hooves
+    spur.member2 = raceInstance.tracker.redTeam.points / 10.0f;
+
+    const uint32_t newPoints = raceInstance.tracker.redTeam.points +
+      BaseBoostPoints +
+      additionalBoostPoints;
+    raceInstance.tracker.redTeam.points = std::min(
+      maxPoints,
+      newPoints);
+
+    // TODO: needs confirmation, suspected to be invoker's team points
+    spur.opposingTeamMarker = raceInstance.tracker.redTeam.points / 10.0f;
+  }
+  else if (racer.team == tracker::RaceTracker::Racer::Team::Blue)
+  {
+    // TODO: discovery, lights up hooves
+    spur.member2 = raceInstance.tracker.blueTeam.points / 10.0f;
+
+    const uint32_t newPoints = raceInstance.tracker.blueTeam.points +
+      BaseBoostPoints +
+      additionalBoostPoints;
+    raceInstance.tracker.blueTeam.points = std::min(
+      maxPoints,
+      newPoints);
+
+    // TODO: needs confirmation, suspected to be invoker's team points
+    spur.opposingTeamMarker = raceInstance.tracker.blueTeam.points / 10.0f;
+  }
+  else
+  {
+    // Team unrecognised (somehow)
+    spdlog::warn("Racer character uid {} is on unrecognised team {}",
+      clientContext.characterUid,
+      static_cast<uint8_t>(racer.team));
+  }
+
+  spdlog::debug("[{}] AcCmdRCTeamSpurGauge: {} {} {} {} {}",
+    clientId,
+    spur.team == protocol::TeamColor::Red ? "Red" :
+      spur.team == protocol::TeamColor::Blue ? "Blue" :
+      "Unknown",
+    spur.member2,
+    spur.opposingTeamMarker,
+    spur.markerSpeed,
+    spur.member6);
+
+  for (const auto& raceClientId : raceInstance.clients)
+  {
+    _commandServer.QueueCommand<decltype(spur)>(raceClientId, [spur](){ return spur; });
+  }
 }
 
 void RaceDirector::HandleHurdleClearResult(
