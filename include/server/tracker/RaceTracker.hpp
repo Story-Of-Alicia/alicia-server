@@ -49,7 +49,9 @@ public:
 
     enum class Team
     {
-      Solo, Red, Blue
+      Solo = 1,
+      Red = 2,
+      Blue = 3
     };
 
     struct ItemInstance
@@ -90,6 +92,14 @@ public:
     std::chrono::steady_clock::time_point respawnTimePoint{};
     std::array<float, 3> position{};
   };
+
+  struct TeamInfo
+  {
+    uint32_t points{0};
+  };
+
+  TeamInfo blueTeam{};
+  TeamInfo redTeam{};
 
   //! An object map.
   using RacerObjectMap = std::map<data::Uid, Racer>;
