@@ -1695,15 +1695,17 @@ struct AcCmdRCTeamSpurGauge
 {
   //! TODO: unify this enum
   TeamColor team{};
-  //! Team hooves go on fire at 25.0f (maybe higher)
-  float member2{};
-  //! Opposing team marker. Max 25.0f (TODO: confirm this value)
-  float opposingTeamMarker{};
-  //! The speed at which the gauge or marker moves at.
+  // Team hooves go on fire at 25.0f (maybe higher)
+  float currentPoints{};
+  // New points
+  float newPoints{};
+  //! The speed at which the gauge or marker moves at. Can be negative to roll backwards.
   float markerSpeed{};
   //! This is deserialised and handled but not used in the `GameMsg` callback.
   uint16_t reserved1{};
-  uint32_t member6{};
+  // 3 - resets gauge (set member2 + opposingTeamMarker to 0?)
+  // Incident? Mentions of RcIncidentMgr when referenced
+  uint32_t unk5{};
 
   static Command GetCommand()
   {

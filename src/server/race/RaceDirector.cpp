@@ -1894,12 +1894,12 @@ void RaceDirector::HandleRequestSpur(
     return;
 
   // TODO: calculate this algorithmically 
-  constexpr float MarkerSpeed = 2.0f;
+  constexpr float MarkerSpeed = 5.0f;
 
   protocol::AcCmdRCTeamSpurGauge spur{
     .team = static_cast<protocol::TeamColor>(racer.team), // TODO: casts from one enum to other, unify.
     .markerSpeed = MarkerSpeed, // TODO: configure
-    .member6 = 0 // TODO: identify use
+    .unk5 = 0 // TODO: identify use
   };
 
   // TODO: is this behaviour true? do we base calculations off of room player count or connected clients
@@ -1931,42 +1931,97 @@ void RaceDirector::HandleRequestSpur(
   //! Final max points for team size.
   const uint32_t maxPoints = BaseMaxPoints + (MaxPointsDiffBase * scale);
 
-  if (racer.team == tracker::RaceTracker::Racer::Team::Red)
+  auto& blueTeamPoints = raceInstance.tracker.blueTeam.points;
+  auto& redTeamPoints = raceInstance.tracker.redTeam.points;
+  auto& teamPoints = 
+    racer.team == tracker::RaceTracker::Racer::Team::Red ? redTeamPoints :
+    racer.team == tracker::RaceTracker::Racer::Team::Blue ? blueTeamPoints :
+    throw std::runtime_error(
+      std::format(
+        "Racer character uid {} is on unrecognised team {}",
+        clientContext.characterUid,
+        static_cast<uint32_t>(racer.team)));
+
+  // TODO: discovery, lights up hooves
+  spur.currentPoints = teamPoints / 10.0f;
+  teamPoints = std::min(
+    maxPoints,
+    teamPoints + BaseBoostPoints + additionalBoostPoints);
+  // TODO: needs confirmation, suspected to be invoker's team points
+  spur.newPoints = teamPoints / 10.0f;
+
+  // If any of the teams got max points to spur, reset points and broadcast team spur
+  bool isTeamRed = racer.team == tracker::RaceTracker::Racer::Team::Red;
+  bool isTeamBlue = racer.team == tracker::RaceTracker::Racer::Team::Blue;
+
+  // Can invoker's team spur
+  bool isTeamSpur = false;
+  // Check if either red or blue team points have hit max
+  if (redTeamPoints >= maxPoints or blueTeamPoints >= maxPoints)
   {
-    // TODO: discovery, lights up hooves
-    spur.member2 = raceInstance.tracker.redTeam.points / 10.0f;
+    // If racer is in team red/blue and their team have enough points to spur
+    isTeamSpur = (isTeamRed and redTeamPoints >= maxPoints) or
+      (isTeamBlue and blueTeamPoints >= maxPoints);
 
-    const uint32_t newPoints = raceInstance.tracker.redTeam.points +
-      BaseBoostPoints +
-      additionalBoostPoints;
-    raceInstance.tracker.redTeam.points = std::min(
-      maxPoints,
-      newPoints);
-
-    // TODO: needs confirmation, suspected to be invoker's team points
-    spur.opposingTeamMarker = raceInstance.tracker.redTeam.points / 10.0f;
+    // Reset points
+    redTeamPoints = 0;
+    blueTeamPoints = 0;
   }
-  else if (racer.team == tracker::RaceTracker::Racer::Team::Blue)
-  {
-    // TODO: discovery, lights up hooves
-    spur.member2 = raceInstance.tracker.blueTeam.points / 10.0f;
 
-    const uint32_t newPoints = raceInstance.tracker.blueTeam.points +
-      BaseBoostPoints +
-      additionalBoostPoints;
-    raceInstance.tracker.blueTeam.points = std::min(
-      maxPoints,
-      newPoints);
-
-    // TODO: needs confirmation, suspected to be invoker's team points
-    spur.opposingTeamMarker = raceInstance.tracker.blueTeam.points / 10.0f;
-  }
-  else
+  if (isTeamSpur)
   {
-    // Team unrecognised (somehow)
-    spdlog::warn("Racer character uid {} is on unrecognised team {}",
-      clientContext.characterUid,
-      static_cast<uint8_t>(racer.team));
+    _scheduler.Queue(
+      [this, &raceInstance, &racer]()
+      {
+        //! Reset boost gauge for team with reset gauge
+        protocol::AcCmdRCTeamSpurGauge beatenSpur{
+          .team = 
+            racer.team == tracker::RaceTracker::Racer::Team::Red ? protocol::TeamColor::Blue :
+            racer.team == tracker::RaceTracker::Racer::Team::Blue ? protocol::TeamColor::Red :
+            throw std::runtime_error(
+              std::format(
+                "Unrecognised racer team '{}'",
+                static_cast<uint32_t>(racer.team))),
+          .currentPoints = 0.0f,
+          .newPoints = 0.0f,
+          .markerSpeed = 1.0f,
+          .unk5 = 3 // Reset gauge and markers
+        };
+
+        protocol::AcCmdRCTeamSpurGauge successfulSpur{
+          .team = 
+            racer.team == tracker::RaceTracker::Racer::Team::Red ? protocol::TeamColor::Red :
+            racer.team == tracker::RaceTracker::Racer::Team::Blue ? protocol::TeamColor::Blue :
+            throw std::runtime_error(
+              std::format(
+                "Unrecognised racer team '{}'",
+                static_cast<uint32_t>(racer.team))),
+          .currentPoints = 25.0f,
+          .newPoints = 0.0f,
+          .markerSpeed = -7.5f,
+          .unk5 = 0
+        };
+
+        std::scoped_lock lock(raceInstance.clientsMutex);
+        for (const ClientId& raceClientId : raceInstance.clients)
+        {
+          _commandServer.QueueCommand<decltype(beatenSpur)>(
+            raceClientId,
+            [beatenSpur]()
+            {
+              return beatenSpur;
+            });
+
+          _commandServer.QueueCommand<decltype(successfulSpur)>(
+            raceClientId,
+            [successfulSpur]()
+            {
+              return successfulSpur;
+            });
+        }
+      },
+      // TODO: 2 seconds is hardcoded, is this correct timing?
+      Scheduler::Clock::now() + std::chrono::seconds(2)); 
   }
 
   spdlog::debug("[{}] AcCmdRCTeamSpurGauge: {} {} {} {} {}",
@@ -1974,12 +2029,13 @@ void RaceDirector::HandleRequestSpur(
     spur.team == protocol::TeamColor::Red ? "Red" :
       spur.team == protocol::TeamColor::Blue ? "Blue" :
       "Unknown",
-    spur.member2,
-    spur.opposingTeamMarker,
+    spur.currentPoints,
+    spur.newPoints,
     spur.markerSpeed,
-    spur.member6);
+    spur.unk5);
 
-  for (const auto& raceClientId : raceInstance.clients)
+  const auto clientsSnapshot = raceInstance.clients;
+  for (const auto& raceClientId : clientsSnapshot)
   {
     _commandServer.QueueCommand<decltype(spur)>(raceClientId, [spur](){ return spur; });
   }

@@ -1215,11 +1215,11 @@ void AcCmdRCTeamSpurGauge::Write(
   SinkStream& stream)
 {
   stream.Write(command.team)
-    .Write(command.member2)
-    .Write(command.opposingTeamMarker)
+    .Write(command.currentPoints)
+    .Write(command.newPoints)
     .Write(command.markerSpeed)
     .Write(command.reserved1)
-    .Write(command.member6);
+    .Write(command.unk5);
 }
 
 void AcCmdRCTeamSpurGauge::Read(
