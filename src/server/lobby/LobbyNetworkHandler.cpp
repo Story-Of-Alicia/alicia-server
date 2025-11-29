@@ -1613,7 +1613,9 @@ void LobbyNetworkHandler::HandleGoodsShopList(
   const ClientId clientId,
   const protocol::AcCmdCLGoodsShopList& command)
 {
-  const auto& shopList = _serverInstance.GetLobbyDirector().GetShopManager().GetSerializedShopList();
+  auto shopList = _serverInstance.GetLobbyDirector().GetShopManager().GetSerializedShopList();
+  //! Re-encode string into EUC-KR to show the item name correctly in KR (if any).
+  shopList = server::locale::FromUtf8(shopList);
 
   std::vector<std::byte> compressedXml;
   compressedXml.resize(shopList.size());
