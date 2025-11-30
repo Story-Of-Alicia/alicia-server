@@ -211,6 +211,9 @@ ItemSystem::ConsumeVerdict ItemSystem::ConsumeItem(
       if (verdict.remainingItemCount == 0)
       {
         _serverInstance.GetDataDirector().GetItemCache().Delete(verdict.itemUid);
+        const auto itemRange = std::ranges::remove(character.inventory(), verdict.itemUid);
+        character.inventory().erase(itemRange.begin(), itemRange.end());
+
         verdict.itemUid = data::InvalidUid;
       }
 
