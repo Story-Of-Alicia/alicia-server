@@ -124,6 +124,7 @@ public:
   //! @return Reference to the moderation system.
   ModerationSystem& GetModerationSystem();
 
+
   //! Returns reference to the OTP system.
   //! @returns Reference to the OTP system.
   OtpSystem& GetOtpSystem();
