@@ -2790,6 +2790,7 @@ void RanchDirector::HandleUpdateMountNickname(
 
   uint32_t remainingItemCount = 0;
 
+
   if (requireItem)
   {
     bool itemConsumed = false;
@@ -2924,40 +2925,102 @@ void RanchDirector::HandleGetItemFromStorage(
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  if (not characterRecord)
+  bool isStorageItemValid = true;
+
+  // Try to remove the storage item from the character.
+  characterRecord.Mutable(
+    [&isStorageItemValid, storageItemUid = command.storageItemUid](
+      data::Character& character)
+    {
+      // The stored item is either a gift or a purchase.
+
+      const auto storedGiftIter = std::ranges::find(character.gifts(), storageItemUid);
+      if (storedGiftIter != character.gifts().cend())
+      {
+        character.gifts().erase(storedGiftIter);
+        return;
+      }
+
+      const auto storedPurchaseIter = std::ranges::find(character.purchases(), storageItemUid);
+      if (storedPurchaseIter != character.purchases().cend())
+      {
+        character.purchases().erase(storedPurchaseIter);
+        return;
+      }
+
+      isStorageItemValid = false;
+    });
+
+  const auto storageItemRecord = GetServerInstance().GetDataDirector().GetStorageItemCache().Get(
+      command.storageItemUid);
+  if (isStorageItemValid)
+    isStorageItemValid = storageItemRecord.has_value();
+
+  // If the stored item is invalid cancel the takeout.
+  if (not isStorageItemValid)
   {
-    throw std::runtime_error(
-      std::format("Character [{}] not available", clientContext.characterUid));
+    protocol::AcCmdCRGetItemFromStorageCancel response{
+      .storageItemUid = command.storageItemUid,
+      .status = 0};
+
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]()
+      {
+        return response;
+      });
+    return;
   }
 
-  // NOTE: This handler is being repurposed to grant a breeding failure card reward
-  // until the full card choice system is implemented. This is a temporary measure.
+  protocol::AcCmdCRGetItemFromStorageOK response{
+    .storageItemUid = command.storageItemUid};
 
-  const uint32_t rewardItemTid = 45001;
-  const uint16_t rewardItemCount = 5;
+  std::vector<data::StorageItem::Item> collectedItems;
+  int32_t collectedCarrots{};
 
-  const auto newItem = GetServerInstance().GetDataDirector().CreateItem();
-  data::Uid newItemUid = 0;
-  newItem.Mutable([&](data::Item& item) {
-    item.tid() = rewardItemTid;
-    item.count() = rewardItemCount;
-    newItemUid = item.uid();
-  });
+  storageItemRecord->Immutable(
+    [&collectedItems, &collectedCarrots](const data::StorageItem& storedItem)
+    {
+      collectedItems = storedItem.items();
+      collectedCarrots = storedItem.carrots();
+    });
 
-  characterRecord.Mutable([newItemUid](data::Character& character) {
-    character.inventory().emplace_back(newItemUid);
-  });
+  characterRecord.Mutable(
+    [this, &collectedItems, &collectedCarrots, &response](data::Character& character)
+    {
+      // Add the collected items.
+      std::vector<data::Uid> itemUids;
+      for (const auto& collectedItem : collectedItems)
+      {
+        const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(
+          collectedItem.tid);
+        if (not itemTemplate)
+          continue;
 
-  protocol::AcCmdCRGetItemFromStorageOK response;
-  response.storageItemUid = command.storedItemUid;
+        auto itemUid = data::InvalidUid;
+        if (itemTemplate->type == registry::Item::Type::Temporary)
+        {
+          itemUid = _serverInstance.GetItemSystem().AddItem(
+            character,
+            collectedItem.tid,
+            collectedItem.duration);
+        }
+        else
+        {
+          itemUid = _serverInstance.GetItemSystem().AddItem(
+            character,
+            collectedItem.tid,
+            collectedItem.count);
+        }
 
-  protocol::Item responseItem;
-  responseItem.uid = newItemUid;
-  responseItem.tid = rewardItemTid;
-  responseItem.count = rewardItemCount;
-  response.items.push_back(responseItem);
+        itemUids.emplace_back(itemUid);
+      }
 
-  characterRecord.Immutable([&](const data::Character& character) {
+      const auto itemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(itemUids);
+      protocol::BuildProtocolItems(response.items, *itemRecords);
+
+      // Add the collected carrots.
+      character.carrots() += collectedCarrots;
       response.updatedCarrots = character.carrots();
   });
 
@@ -2971,10 +3034,7 @@ void RanchDirector::HandleGetItemFromStorage(
       return response;
     });
 
-  // 4. Send the inventory update notification to refresh the client's UI
   SendInventoryUpdate(clientId);
-
-  spdlog::info("Awarded temporary breeding failure item {} (x{}) to character {}", rewardItemTid, rewardItemCount, clientContext.characterUid);
 }
 
 void RanchDirector::HandleRequestNpcDressList(

@@ -428,16 +428,17 @@ private:
     const protocol::AcCmdCRRegisterDailyQuestGroup& command);
 
   void HandleRequestDailyQuestReward(
-      ClientId clientId, 
+      ClientId clientId,
       const protocol::AcCmdCRRequestDailyQuestReward& command);
-  
+
   void HandleRegisterQuest(
       ClientId clientId,
       const protocol::AcCmdCRRegisterQuest& command);
-  
+
   void HandleRequestQuestReward(
     ClientId clientId,
     const protocol::AcCmdCRRequestQuestReward& command);
+
   void SendChangeNicknameCancel(
     ClientId clientId,
     protocol::ChangeNicknameError reason);
@@ -466,6 +467,7 @@ private:
   void HandleInviteUser(
     ClientId clientId,
     const protocol::AcCmdCRInviteUser& command);
+
 
   //!
   ServerInstance& _serverInstance;
