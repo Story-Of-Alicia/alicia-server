@@ -34,8 +34,8 @@ constexpr size_t MinLatinLetterCount = 3;
 constexpr size_t MinKoreanLetterCount = 2;
 
 constexpr std::u16string_view KoreanLettersPattern = u"[가-힣]";
-constexpr std::u16string_view LatinLettersPattern = u"[A-Za-z0-9\._-]";
-constexpr std::u16string_view ValidLettersPattern = u"[^가-힣A-Za-z0-9\._-]";
+constexpr std::u16string_view LatinLettersPattern = u"[A-Za-z0-9._-]";
+constexpr std::u16string_view ValidLettersPattern = u"[^가-힣A-Za-z0-9._-]";
 
 } // anon namespace
 
