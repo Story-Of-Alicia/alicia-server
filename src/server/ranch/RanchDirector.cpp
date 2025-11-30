@@ -1774,10 +1774,26 @@ void RanchDirector::HandleGetItemFromStorage(
       std::vector<data::Uid> itemUids;
       for (const auto& collectedItem : collectedItems)
       {
-        const auto itemUid = _serverInstance.GetItemSystem().AddItem(
-          character,
-          collectedItem.tid,
-          collectedItem.count);
+        const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(
+          collectedItem.tid);
+        if (not itemTemplate)
+          continue;
+
+        auto itemUid = data::InvalidUid;
+        if (itemTemplate->type == registry::Item::Type::Temporary)
+        {
+          itemUid = _serverInstance.GetItemSystem().AddItem(
+            character,
+            collectedItem.tid,
+            collectedItem.duration);
+        }
+        else
+        {
+          itemUid = _serverInstance.GetItemSystem().AddItem(
+            character,
+            collectedItem.tid,
+            collectedItem.count);
+        }
 
         itemUids.emplace_back(itemUid);
       }
