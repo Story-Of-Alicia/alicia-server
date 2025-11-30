@@ -57,13 +57,20 @@ InfractionSystem::Verdict InfractionSystem::CheckOutstandingPunishments(const st
         switch (infraction.punishment())
         {
           case data::Infraction::Punishment::Mute:
-            verdict.preventChatting = true;
+          {
+            verdict.mute.active = true;
+            verdict.mute.expiresAt = infraction.createdAt() + infraction.duration();
             break;
+          }
           case data::Infraction::Punishment::Ban:
+          {
             verdict.preventServerJoining = true;
             break;
+          }
           default:
+          {
             break;
+          }
         }
       });
     }

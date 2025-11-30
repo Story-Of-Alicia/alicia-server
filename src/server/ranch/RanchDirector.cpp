@@ -1135,6 +1135,23 @@ void RanchDirector::HandleChat(
 {
   const auto& clientContext = GetClientContext(clientId);
 
+  // Perform moderation before proceeding with chat processing
+  const auto verdict = _serverInstance.GetChatSystem().ProcessChatMessage(
+    clientContext.characterUid,
+    chat.message);
+
+  if (verdict.isMuted)
+  {
+    // Invoking character is muted. Notify the invoker of their infraction
+    spdlog::warn("Character '{}' tried to chat in ranch chat but has an active mute infraction.",
+      clientContext.characterUid);
+    protocol::AcCmdCRRanchChatNotify notify{
+      .message = verdict.message,
+      .isSystem = true};
+    _commandServer.QueueCommand<decltype(notify)>(clientId, [notify](){ return notify; });
+    return;
+  }
+
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
   const auto rancherRecord = GetServerInstance().GetDataDirector().GetCharacter(
@@ -1156,16 +1173,11 @@ void RanchDirector::HandleChat(
 
   const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
     clientContext.characterUid).userName;
-  const std::string message = chat.message;
   spdlog::debug("[{}'s ranch] {} ({}): {}",
     ranchersName,
     userName,
     sendersName,
-    message);
-
-  const auto verdict = _serverInstance.GetChatSystem().ProcessChatMessage(
-    clientContext.characterUid,
-    message);
+    chat.message);
 
   const auto sendAllMessages = [this](
     const ClientId clientId,

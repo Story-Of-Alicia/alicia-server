@@ -87,7 +87,25 @@ ChatSystem::ChatVerdict ChatSystem::ProcessChatMessage(
 {
   ChatVerdict verdict;
 
-  if (message.starts_with("//"))
+  // Get user instance to inquire about outstanding punishments
+  const auto& userInstance = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+    characterUid);
+
+  // Check for any infractions preventing the user from chatting
+  const auto& infractionVerdict = _serverInstance.GetInfractionSystem().CheckOutstandingPunishments(
+    userInstance.userName);
+
+  if (infractionVerdict.mute.active)
+  {
+    // Active mute infraction, return with no processing done on message
+    verdict.isMuted = true;
+    verdict.message = std::format(
+      "You are chat muted until {:%Y-%m-%d %H:%M:%S}.",
+      std::chrono::time_point_cast<std::chrono::seconds>(
+        infractionVerdict.mute.expiresAt));
+    return verdict;
+  }
+  else if (message.starts_with("//"))
   {
     verdict.commandVerdict = ProcessCommandMessage(
       characterUid, message.substr(2));
