@@ -2776,9 +2776,6 @@ void RanchDirector::HandleRequestPetBirth(
         return;
       }
 
-      auto petUid = data::InvalidUid;
-      auto petItemUid = data::InvalidUid;
-
       // Create the pet
       const auto bornPet = GetServerInstance().GetDataDirector().CreatePet();
 
