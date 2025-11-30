@@ -1529,7 +1529,7 @@ void RanchDirector::HandleUpdateMountNickname(
   characterRecord.Mutable([&ownedHorses](data::Character& character)
   {
     ownedHorses.emplace_back(character.mountUid());
-    ownedHorses.append_range(character.horses());
+    std::ranges::copy(character.horses(), std::back_inserter(ownedHorses));
   });
 
   const bool isHorseOwned = std::ranges::contains(ownedHorses, command.horseUid);
