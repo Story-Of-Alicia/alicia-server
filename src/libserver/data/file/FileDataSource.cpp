@@ -738,7 +738,8 @@ void server::FileDataSource::RetrieveStorageItem(data::Uid uid, data::StorageIte
     storageItem.items().emplace_back(data::StorageItem::Item{
       .tid = itemJson["tid"].get<data::Tid>(),
       .count = itemJson["count"].get<uint32_t>(),
-      .duration = std::chrono::seconds(itemJson["duration"].get<int64_t>()),});
+      .duration = std::chrono::seconds(
+        itemJson["duration"].get<int64_t>()),});
   }
 
   storageItem.checked = json["checked"].get<bool>();
@@ -769,9 +770,12 @@ void server::FileDataSource::StoreStorageItem(data::Uid uid, const data::Storage
   auto& itemsJson = json["items"];
   for (const auto& item : storageItem.items())
   {
-    itemsJson["tid"] = item.tid;
-    itemsJson["count"] = item.count;
-    itemsJson["duration"] = item.duration.count();
+    nlohmann::json itemJson;
+    itemJson["tid"] = item.tid;
+    itemJson["count"] = item.count;
+    itemJson["duration"] = item.duration.count();
+
+    itemsJson.emplace_back(itemJson);
   }
 
   json["checked"] = storageItem.checked();
