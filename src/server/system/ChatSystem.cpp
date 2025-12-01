@@ -100,7 +100,7 @@ ChatSystem::ChatVerdict ChatSystem::ProcessChatMessage(
     // Active mute infraction, return with no processing done on message
     verdict.isMuted = true;
     verdict.message = std::format(
-      "You are chat muted until {:%Y-%m-%d %H:%M:%S}.",
+      "You are chat muted until {:%Y-%m-%d %H:%M:%S} UTC.",
       std::chrono::time_point_cast<std::chrono::seconds>(
         infractionVerdict.mute.expiresAt));
     return verdict;
