@@ -2187,12 +2187,25 @@ void RaceDirector::HandleRaceUserPos(
 void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& command)
 {
   const auto& clientContext = GetClientContext(clientId);
-  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
-    clientContext.characterUid);
 
-  // Process the chat message.
+  // Perform moderation before proceeding with chat processing
   const auto verdict = _serverInstance.GetChatSystem().ProcessChatMessage(
     clientContext.characterUid, command.message);
+
+  if (verdict.isMuted)
+  {
+    // Invoking character is muted. Notify the invoker of their infraction
+    spdlog::warn("Character '{}' tried to chat in race chat but has an active mute infraction.",
+      clientContext.characterUid);
+    protocol::AcCmdCRChatNotify notify{
+      .message = verdict.message,
+      .isSystem = true};
+    _commandServer.QueueCommand<decltype(notify)>(clientId, [notify](){ return notify; });
+    return;
+  }
+
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    clientContext.characterUid);
 
   std::string characterName;
   characterRecord.Immutable([&characterName](const data::Character& character)
