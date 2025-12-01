@@ -160,8 +160,9 @@ void BuildProtocolItem(
 {
   protocolItem.uid = item.uid();
   protocolItem.tid = item.tid();
-  protocolItem.expiresAt = util::TimePointToAliciaTime(item.expiresAt());
   protocolItem.count = item.count();
+  protocolItem.expiresAt = util::TimePointToAliciaTime(
+    item.createdAt() + item.duration());
 }
 
 void BuildProtocolItems(
@@ -178,38 +179,42 @@ void BuildProtocolItems(
   }
 }
 
-void BuildProtocolStoredItem(
-  StoredItem& protocolStoredItem,
-  const data::StorageItem& storedItem)
+void BuildProtocolStorageItem(
+  StoredItem& protocolStorageItem,
+  const data::StorageItem& storageItem)
 {
-  protocolStoredItem.uid = storedItem.uid();
-  if (storedItem.expired())
+  protocolStorageItem.uid = storageItem.uid();
+
+  const bool hasExpiration = storageItem.duration() != std::chrono::seconds::min();
+  const bool isExpired = storageItem.createdAt() + storageItem.duration() > data::Clock::now();
+  if (hasExpiration && isExpired)
   {
-    protocolStoredItem.status = StoredItem::Status::Expired;
+    protocolStorageItem.status = StoredItem::Status::Expired;
   }
   else
   {
-    protocolStoredItem.status = storedItem.checked()
+    protocolStorageItem.status = storageItem.checked()
       ? StoredItem::Status::Read
       : StoredItem::Status::Unread;
   }
 
-  protocolStoredItem.sender = storedItem.sender();
-  protocolStoredItem.message = storedItem.message();
-  protocolStoredItem.dateAndTime = util::TimePointToAliciaTime(storedItem.created());
+  protocolStorageItem.sender = storageItem.sender();
+  protocolStorageItem.message = storageItem.message();
+  protocolStorageItem.carrots = storageItem.carrots();
+  protocolStorageItem.dateAndTime = util::TimePointToAliciaTime(storageItem.createdAt());
 }
 
-void BuildProtocolStoredItems(
-  std::vector<StoredItem>& protocolStoredItems,
-  const std::span<const Record<data::StorageItem>>& storedItemRecords)
+void BuildProtocolStorageItems(
+  std::vector<StoredItem>& protocolStorageItems,
+  const std::span<const Record<data::StorageItem>>& storageItemRecords)
 {
-  for (const auto& storedItem : storedItemRecords)
+  for (const auto& storageItem : storageItemRecords)
   {
-    auto& protocolStoredItem = protocolStoredItems.emplace_back();
-    storedItem.Immutable([&protocolStoredItem](const auto& storedItem)
-      {
-        BuildProtocolStoredItem(protocolStoredItem, storedItem);
-      });
+    auto& protocolStoredItem = protocolStorageItems.emplace_back();
+    storageItem.Immutable([&protocolStoredItem](const auto& storedItem)
+    {
+      BuildProtocolStorageItem(protocolStoredItem, storedItem);
+    });
   }
 }
 
