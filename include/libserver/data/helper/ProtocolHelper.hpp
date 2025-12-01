@@ -54,13 +54,13 @@ void BuildProtocolItems(
   std::vector<Item>& protocolItems,
   const std::vector<Record<data::Item>>& itemRecords);
 
-void BuildProtocolStoredItem(
-  StoredItem& protocolStoredItem,
-  const data::StorageItem& storedItem);
+void BuildProtocolStorageItem(
+  StoredItem& protocolStorageItem,
+  const data::StorageItem& storageItem);
 
-void BuildProtocolStoredItems(
+void BuildProtocolStorageItems(
   std::vector<StoredItem>& protocolStoredItems,
-  const std::span<const Record<data::StorageItem>>& storedItemRecords);
+  const std::span<const Record<data::StorageItem>>& storageItemRecords);
 
 void BuildProtocolGuild(
   Guild& protocolGuild,

@@ -1430,7 +1430,7 @@ struct RanchCommandUpdateBusyStateNotify
 };
 
 //! Serverbound get messenger info command.
-struct RanchCommandUpdateMountNickname
+struct AcCmdCRUpdateMountNickname
 {
   uint32_t horseUid{};
   std::string name{};
@@ -1445,19 +1445,19 @@ struct RanchCommandUpdateMountNickname
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandUpdateMountNickname& command,
+    const AcCmdCRUpdateMountNickname& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandUpdateMountNickname& command,
+    AcCmdCRUpdateMountNickname& command,
     SourceStream& stream);
 };
 
 //! Clientbound get messenger info response.
-struct RanchCommandUpdateMountNicknameOK
+struct AcCmdCRUpdateMountNicknameOK
 {
   uint32_t horseUid{};
   std::string nickname{};
@@ -1473,21 +1473,21 @@ struct RanchCommandUpdateMountNicknameOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandUpdateMountNicknameOK& command,
+    const AcCmdCRUpdateMountNicknameOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandUpdateMountNicknameOK& command,
+    AcCmdCRUpdateMountNicknameOK& command,
     SourceStream& stream);
 };
 
 //! Serverbound get messenger info command.
-struct RanchCommandUpdateMountNicknameCancel
+struct AcCmdCRUpdateMountNicknameCancel
 {
-  HorseRenameError error{};
+  HorseNicknameUpdateError error{};
 
   static Command GetCommand()
   {
@@ -1498,14 +1498,14 @@ struct RanchCommandUpdateMountNicknameCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandUpdateMountNicknameCancel& command,
+    const AcCmdCRUpdateMountNicknameCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandUpdateMountNicknameCancel& command,
+    AcCmdCRUpdateMountNicknameCancel& command,
     SourceStream& stream);
 };
 
@@ -1644,7 +1644,7 @@ struct AcCmdCRRequestStorageCancel
 
 struct AcCmdCRGetItemFromStorage
 {
-  uint32_t storedItemUid{};
+  uint32_t storageItemUid{};
 
   static Command GetCommand()
   {
@@ -1695,7 +1695,7 @@ struct AcCmdCRGetItemFromStorageOK
 
 struct AcCmdCRGetItemFromStorageCancel
 {
-  uint32_t storedItemUid{};
+  uint32_t storageItemUid{};
   uint8_t status{};
 
   static Command GetCommand()
@@ -1720,7 +1720,7 @@ struct AcCmdCRGetItemFromStorageCancel
 
 struct RanchCommandCheckStorageItem
 {
-  uint32_t storedItemUid{};
+  uint32_t storageItemUid{};
 
   //! Writes the command to a provided sink stream.
   //! @param command Command.
@@ -3281,7 +3281,7 @@ struct AcCmdCRUseItemOK
   uint32_t itemUid{};
   //! Updates the client-side count of the item used for care.
   //! Setting it to 0 removes the item completely.
-  uint16_t updatedItemCount{};
+  uint16_t remainingItemCount{};
   //! Action type.
   ActionType type{};
   //! An optional reward of experience points,
@@ -3673,7 +3673,7 @@ struct AcCmdCRChangeNicknameCancel
 {
   // Likely itemUid
   uint32_t member1{};
-  NameChangeError status{};
+  ChangeNicknameError error{};
 
   static Command GetCommand()
   {
@@ -3698,7 +3698,7 @@ struct AcCmdCRChangeNicknameCancel
 struct AcCmdCRChangeNicknameOK
 {
   uint32_t itemUid{};
-  uint16_t itemCount{}; 
+  uint16_t remainingItemCount{};
   std::string newNickname{};
 
   static Command GetCommand()

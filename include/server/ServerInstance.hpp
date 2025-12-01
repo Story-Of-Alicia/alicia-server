@@ -12,6 +12,7 @@
 #include "server/ranch/RanchDirector.hpp"
 #include "server/system/ChatSystem.hpp"
 #include "server/system/InfractionSystem.hpp"
+#include "server/system/ItemSystem.hpp"
 #include "server/system/OtpSystem.hpp"
 #include "server/system/RoomSystem.hpp"
 
@@ -78,6 +79,10 @@ public:
   //! Returns reference to the infraction system.
   //! @returns Reference to the infraction system.
   InfractionSystem& GetInfractionSystem();
+
+  //! Returns reference to the item system.
+  //! @returns Reference to the item system.
+  ItemSystem& GetItemSystem();
 
   //! Returns reference to the OTP system.
   //! @returns Reference to the OTP system.
@@ -176,6 +181,8 @@ private:
   ChatSystem _chatSystem;
   //! An infraction system.
   InfractionSystem _infractionSystem;
+  //! An item system.
+  ItemSystem _itemSystem;
   //! An OTP system.
   OtpSystem _otpSystem;
   //! A room system.

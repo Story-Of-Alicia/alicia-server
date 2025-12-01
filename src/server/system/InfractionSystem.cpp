@@ -46,10 +46,11 @@ InfractionSystem::Verdict InfractionSystem::CheckOutstandingPunishments(const st
       infractionRecord.Immutable([&verdict](const data::Infraction& infraction)
       {
         bool isExpired = false;
+        const data::Clock::time_point expiresAt = infraction.createdAt() + infraction.duration();
 
         // If duration is not max then the infraction has a valid expiration time point.
         if (infraction.duration() != std::chrono::seconds::max())
-          isExpired = infraction.createdAt() + infraction.duration() < data::Clock::now();
+          isExpired = expiresAt < data::Clock::now();
 
         if (isExpired)
           return;
@@ -57,13 +58,20 @@ InfractionSystem::Verdict InfractionSystem::CheckOutstandingPunishments(const st
         switch (infraction.punishment())
         {
           case data::Infraction::Punishment::Mute:
-            verdict.preventChatting = true;
+          {
+            verdict.mute.active = true;
+            verdict.mute.expiresAt = expiresAt;
             break;
+          }
           case data::Infraction::Punishment::Ban:
+          {
             verdict.preventServerJoining = true;
             break;
+          }
           default:
+          {
             break;
+          }
         }
       });
     }

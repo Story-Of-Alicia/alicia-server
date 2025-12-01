@@ -213,7 +213,11 @@ private:
   //!
   void HandleUpdateMountNickname(
     ClientId clientId,
-    const protocol::RanchCommandUpdateMountNickname& command);
+    const protocol::AcCmdCRUpdateMountNickname& command);
+
+  void SendUpdateMountNicknameCancel(
+    ClientId clientId,
+    protocol::HorseNicknameUpdateError reason);
 
   //!
   void HandleRequestStorage(
@@ -373,6 +377,10 @@ private:
   void HandleChangeNickname(
     ClientId clientId, 
     const protocol::AcCmdCRChangeNickname& command);
+
+  void SendChangeNicknameCancel(
+    ClientId clientId,
+    protocol::ChangeNicknameError reason);
 
   //!
   ServerInstance& _serverInstance;
