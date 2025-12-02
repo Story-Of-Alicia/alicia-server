@@ -104,7 +104,7 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
           .salesRank = 0,
           .bonusGameMoney = 0,
           .goodsNm = item.name,
-          .goodsDesc = "care item",
+          .goodsDesc = "",
           .itemCapacityDesc = "Item Capacity Description Something",
           .sellSt = 1,
           .itemUid = tid,
@@ -122,8 +122,7 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
               .priceRange = 100,
               .goodsPrice = 100}}});
     }
-
-    if (item.characterPartInfo)
+    else if (item.characterPartInfo)
     {
       _shopList.goodsList.emplace_back(
         ShopList::Goods{
@@ -137,7 +136,7 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
           .salesRank = 0,
           .bonusGameMoney = 1000,
           .goodsNm = item.name,
-          .goodsDesc = "character item",
+          .goodsDesc = "",
           .itemCapacityDesc = "Item Capacity Description Something",
           .sellSt = 1,
           .itemUid = tid,
@@ -147,6 +146,39 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
               .priceId = 1,
               .priceRange = 1,
               .itemUid = tid}}});
+    }
+    else if (item.type == registry::Item::Type::Temporary)
+    {
+      // Time-based items, price range changes
+      _shopList.goodsList.emplace_back(
+        ShopList::Goods{
+          .goodsSq = tid,
+          .setType = 0,
+          .moneyType = ShopList::Goods::MoneyType::Carrots,
+          .goodsType = ShopList::Goods::GoodsType::Default,
+          .recommendType = 0,
+          .recommendNo = 0,
+          .giftType = ShopList::Goods::GiftType::NoGifting,
+          .salesRank = 0,
+          .bonusGameMoney = 0,
+          .goodsNm = item.name,
+          .goodsDesc = "",
+          .itemCapacityDesc = "Item Capacity Description Something",
+          .sellSt = 1,
+          .itemUid = tid,
+          .items = {
+            ShopList::Goods::Item{
+              .priceId = 1,
+              .priceRange = 24,
+              .goodsPrice = 1},
+            ShopList::Goods::Item{
+              .priceId = 2,
+              .priceRange = 168,
+              .goodsPrice = 2},
+            ShopList::Goods::Item{
+              .priceId = 3,
+              .priceRange = 720,
+              .goodsPrice = 3}}});
     }
   }
 }
