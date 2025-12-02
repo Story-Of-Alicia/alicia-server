@@ -243,7 +243,7 @@ ItemSystem::ConsumeVerdict ItemSystem::ConsumeItem(
 }
 
 bool ItemSystem::HasItem(
-  data::Character& character,
+  const data::Character& character,
   const data::Tid itemTid) const noexcept
 {
   const auto itemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(

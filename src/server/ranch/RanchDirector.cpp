@@ -4325,14 +4325,35 @@ void RanchDirector::HandleConfirmSetItem(
   ClientId clientId,
   const protocol::AcCmdCRConfirmSetItem& command)
 {
-  // TODO: Retrieve shop item and verify it's existence etc
+  const auto& clientContext = GetClientContext(clientId);
+
+  // TODO: shop sends items identified by `GoodsSQ` and the client
+  // uses that to send the command as `shopItemUid`.
+  // Create some form of shop item tracking to map shop to items.
+  // Right now, `GoodsSQ` is item TID.
+  const data::Tid requestedTid = command.shopItemUid;
+
+  // Validate shop item and ensure server has it in the item registry
+  const auto& itemRegistryRecord = GetServerInstance().GetItemRegistry().GetItem(requestedTid);
+
   // Return cancel response if some server error happens
-  if (true)
+  if (itemRegistryRecord.has_value())
   {
-    // TODO: item storage check, see if character owns items
+    // Check if character owns the item
+    bool hasItem = false;
+    GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+      [this, &requestedTid, &hasItem](const data::Character& character)
+      {
+        // For now `shopItemUid` is the item TID (ref: GoodsSQ)
+        hasItem = GetServerInstance().GetItemSystem().HasItem(
+          character,
+          requestedTid);
+      });
+
+    // Parse `hasItem` as result and return response
     protocol::AcCmdCRConfirmSetItemOK response{
-      .shopItemUid = command.shopItemUid,
-      .result = protocol::AcCmdCRConfirmSetItemOK::Result::Unowned
+      .shopItemUid = requestedTid,
+      .result = static_cast<protocol::AcCmdCRConfirmSetItemOK::Result>(hasItem)
     };
 
     _commandServer.QueueCommand<decltype(response)>(
