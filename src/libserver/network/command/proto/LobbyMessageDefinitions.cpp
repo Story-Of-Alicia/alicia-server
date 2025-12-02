@@ -970,8 +970,8 @@ void AcCmdLCGoodsShopListData::Write(
   const std::array<uint32_t, 3>& timePoint = util::TimePointToAliciaShopTime(command.timestamp);
   stream.Write(timePoint.data(), 12);
 
-  stream.Write(command.member2)
-    .Write(command.member3);
+  stream.Write(command.index)
+    .Write(command.count);
 
   stream.Write(static_cast<uint32_t>(command.data.size()));
   stream.Write(command.data.data(), command.data.size());

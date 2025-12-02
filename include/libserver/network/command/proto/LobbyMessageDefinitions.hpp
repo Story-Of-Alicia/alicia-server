@@ -1465,9 +1465,13 @@ struct AcCmdCLGoodsShopListCancel
 
 struct AcCmdLCGoodsShopListData
 {
+  //! Shop timestamp.
   util::Clock::time_point timestamp;
-  uint8_t member2;
-  uint8_t member3;
+  //! The index of the current chunk being sent.
+  uint8_t index;
+  //! The amount of chunks being sent.
+  uint8_t count;
+  //! Shop data, compressed using zlib.
   std::vector<std::byte> data;
 
   static Command GetCommand()

@@ -18,7 +18,7 @@ std::string ShopListToXmlString(const ShopList& shopList)
 {
   tinyxml2::XMLDocument doc;
   doc.InsertFirstChild(
-    doc.NewDeclaration(R"(xml version="1.0" encoding="utf-8")"));
+    doc.NewDeclaration(R"(xml version="1.0" encoding="euc-kr")"));
 
   // Begin <ShopList>
   const auto& shopListElem = doc.NewElement("ShopList");

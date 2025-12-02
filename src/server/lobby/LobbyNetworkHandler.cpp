@@ -1632,19 +1632,54 @@ void LobbyNetworkHandler::HandleGoodsShopList(
 
   // TODO: remove this, only used for testing protocol
   auto now = util::Clock::now() + std::chrono::days(1);
+  
+  //! Chunk size as defined in command handler.
+  constexpr auto ChunkSize = 7168;
 
-  protocol::AcCmdLCGoodsShopListData data{
-    .timestamp = now,
-    .member2 = 0,
-    .member3 = 1,
-    .data = compressedXml};
+  // Fragment shop data and send it in parts for the client to reconstruct and store.
+  const auto& dataParts = std::views::chunk(compressedXml, ChunkSize);
+  const auto chunkCount = dataParts.size();
+  const auto chunkedPartsSize = chunkCount * ChunkSize;
 
-  _commandServer.QueueCommand<decltype(data)>(
-    clientId,
-    [data]()
-    {
-      return data;
-    });
+  //! Max shop data size as defined in the command handler.
+  constexpr auto MaxShopDataSize = 0x8000;
+  // Check if the total size of chunked parts exceed the size of limit defined in command handler
+  if (chunkedPartsSize > MaxShopDataSize)
+  {
+    spdlog::error("Shop data chunking with {} chunks, totalling {} bytes, exceeds max game shop data size of {} bytes.",
+      chunkCount,
+      chunkedPartsSize,
+      MaxShopDataSize);
+
+    protocol::AcCmdCLGoodsShopListCancel cancel{};
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  // Send each chunk with the appropriate index and chunk count
+  for (size_t index = 0; index < dataParts.size(); ++index)
+  {
+    const auto& dataPart = dataParts[index];
+    protocol::AcCmdLCGoodsShopListData data{
+      .timestamp = now,
+      .index = static_cast<uint8_t>(index),
+      .count = static_cast<uint8_t>(chunkCount),
+      .data = std::vector<std::byte>(
+        dataPart.cbegin(),
+        dataPart.cend())};
+
+    _commandServer.QueueCommand<decltype(data)>(
+      clientId,
+      [data]()
+      {
+        return data;
+      });
+  }
 
   // TODO: send date time that is now?
   protocol::AcCmdCLGoodsShopListOK response{
@@ -1657,7 +1692,6 @@ void LobbyNetworkHandler::HandleGoodsShopList(
     {
       return response;
     });
-
 }
 
 void LobbyNetworkHandler::HandleAchievementCompleteList(
