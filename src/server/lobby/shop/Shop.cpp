@@ -92,7 +92,7 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
     {
       _shopList.goodsList.emplace_back(
         ShopList::Goods{
-          .goodsSq = goodsSequenceId,
+          .goodsSq = tid,
           .setType = 0,
           .moneyType = ShopList::Goods::MoneyType::Carrots,
           .goodsType = ShopList::Goods::GoodsType::Default,
@@ -125,7 +125,7 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
     {
       _shopList.goodsList.emplace_back(
         ShopList::Goods{
-          .goodsSq = goodsSequenceId,
+          .goodsSq = tid,
           .setType = 0,
           .moneyType = ShopList::Goods::MoneyType::Carrots,
           .goodsType = ShopList::Goods::GoodsType::New,
