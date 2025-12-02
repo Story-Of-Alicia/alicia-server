@@ -70,7 +70,7 @@ struct ShopList
     {
       //! Unique price ID for the offer, must not be 0
       uint32_t priceId{};
-      //! Item count for the price
+      //! Item count for the price or time in days (measured in hours) for temporary items
       uint32_t priceRange{};
       //! Item price
       //! Only valid when setType = 0
