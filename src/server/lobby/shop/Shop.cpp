@@ -73,7 +73,9 @@ std::string ShopListToXmlString(const ShopList& shopList)
     shopListElem->InsertEndChild(goodsElem);
   }
 
-  tinyxml2::XMLPrinter printer;
+  // Enable XML compact mode
+  constexpr bool compact = true;
+  tinyxml2::XMLPrinter printer(nullptr, compact);
   doc.Print(&printer);
 
   return printer.CStr();
