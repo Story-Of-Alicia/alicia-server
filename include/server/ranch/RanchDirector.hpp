@@ -97,6 +97,10 @@ public:
     data::Uid characterUid,
     std::string newMemberCharacterName);
 
+  void AddRanchHorse(
+    data::Uid& rancherUid,
+    data::Uid& horseUid);
+
   ServerInstance& GetServerInstance();
   Config::Ranch& GetConfig();
 
@@ -209,7 +213,11 @@ private:
   //!
   void HandleUpdateMountNickname(
     ClientId clientId,
-    const protocol::RanchCommandUpdateMountNickname& command);
+    const protocol::AcCmdCRUpdateMountNickname& command);
+
+  void SendUpdateMountNicknameCancel(
+    ClientId clientId,
+    protocol::HorseNicknameUpdateError reason);
 
   //!
   void HandleRequestStorage(
@@ -323,7 +331,7 @@ private:
     const protocol::AcCmdCRHousingRepair& command);
   
   void HandleOpCmd(ClientId clientId,
-    const protocol::RanchCommandOpCmd& command);
+    const protocol::AcCmdCROpCmd& command);
 
   void HandleRequestLeagueTeamList(ClientId clientId,
     const protocol::RanchCommandRequestLeagueTeamList& command);
@@ -378,6 +386,10 @@ private:
   void HandleChangeNickname(
     ClientId clientId, 
     const protocol::AcCmdCRChangeNickname& command);
+
+  void SendChangeNicknameCancel(
+    ClientId clientId,
+    protocol::ChangeNicknameError reason);
 
   //!
   ServerInstance& _serverInstance;

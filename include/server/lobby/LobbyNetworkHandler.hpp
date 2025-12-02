@@ -53,8 +53,13 @@ private:
   {
     //! A flag indicating whether the client is authenticated.
     bool isAuthenticated{false};
+    //! A flag indicating whether the client is in the character creator.
+    bool isInCharacterCreator{false};
     //! A flag indicating whether the client just created a character.
     bool justCreatedCharacter{false};
+
+    //! A time point of the last heartbeat.
+    std::chrono::steady_clock::time_point lastHeartbeat{};
 
     std::string userName{};
     data::Uid characterUid = data::InvalidUid;
@@ -80,8 +85,8 @@ private:
     ClientId clientId,
     bool requireAuthentication = true);
 
+  void HandleNetworkTick() override;
   void HandleClientConnected(ClientId clientId) override;
-
   void HandleClientDisconnected(ClientId clientId) override;
 
   void HandleLogin(

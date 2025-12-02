@@ -1078,30 +1078,6 @@ void DataDirector::ScheduleCharacterLoad(
       return;
     }
 
-    // Add items referenced by the purchase records to the item list.
-    for (const auto& purchaseRecord : *purchaseRecords)
-    {
-      purchaseRecord.Immutable([&items](const data::StorageItem& storageItem)
-      {
-        for (const auto& itemUid : storageItem.items())
-        {
-          items.emplace_back(itemUid);
-        }
-      });
-    }
-
-    // Add items referenced by the gift records to the item list.
-    for (const auto& giftRecord : *giftRecords)
-    {
-      giftRecord.Immutable([&items](const data::StorageItem& storageItem)
-      {
-        for (const auto& itemUid : storageItem.items())
-        {
-          items.emplace_back(itemUid);
-        }
-      });
-    }
-
     const auto itemRecords = GetItemCache().Get(items);
     if (not itemRecords)
     {

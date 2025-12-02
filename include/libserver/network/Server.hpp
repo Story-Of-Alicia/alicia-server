@@ -43,6 +43,9 @@ class EventHandlerInterface
 public:
   virtual ~EventHandlerInterface() = default;
 
+  //! Handler of a network tick.
+  virtual void HandleNetworkTick() = 0;
+
   //! Handler of client connection event.
   //! @param clientId ID of the client connected.
   virtual void OnClientConnected(ClientId clientId) = 0;
@@ -133,15 +136,18 @@ public:
   //! Get client.
   std::shared_ptr<Client> GetClient(ClientId clientId);
 
+  void HandleNetworkTick() override;
   void OnClientConnected(ClientId clientId) override;
   void OnClientDisconnected(ClientId clientId) override;
   size_t OnClientData(ClientId clientId, const std::span<const std::byte>& data) override;
 
 private:
   void AcceptLoop() noexcept;
+  void TickLoop() noexcept;
 
   asio::io_context _io_ctx;
   asio::ip::tcp::acceptor _acceptor;
+  asio::steady_timer _timer;
 
   //! Sequential client ID.
   ClientId _client_id = 0;

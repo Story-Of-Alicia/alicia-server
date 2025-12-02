@@ -17,6 +17,7 @@ ServerInstance::ServerInstance(
   , _raceDirector(*this)
   , _chatSystem(*this)
   , _infractionSystem(*this)
+  , _itemSystem(*this)
 {
 }
 
@@ -149,6 +150,11 @@ ChatSystem& ServerInstance::GetChatSystem()
 InfractionSystem& ServerInstance::GetInfractionSystem()
 {
   return _infractionSystem;
+}
+
+ItemSystem& ServerInstance::GetItemSystem()
+{
+  return _itemSystem;
 }
 
 RoomSystem& ServerInstance::GetRoomSystem()

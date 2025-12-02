@@ -497,9 +497,46 @@ LobbyNetworkHandler::ClientContext& LobbyNetworkHandler::GetClientContext(
   return clientContext;
 }
 
+void LobbyNetworkHandler::HandleNetworkTick()
+{
+  const auto now = std::chrono::steady_clock::now();
+
+  std::vector<ClientId> clientsToDisconnect;
+  for (const auto& [clientId, clientContext] : _clients)
+  {
+    // There's a bug in a client, where if the client is in the character creator,
+    // they'll withdraw from sending heartbeats. Because of this we have to
+    // ignore the lack of heartbeats and not disconnect the client.
+    if (clientContext.isInCharacterCreator)
+      continue;
+
+    const bool hasReachedTimeOut = now - clientContext.lastHeartbeat > std::chrono::seconds(60);
+    if (not hasReachedTimeOut)
+      continue;
+
+    spdlog::warn(
+       "Client {} ('{}') has reached a network timeout and is being disconnected",
+       clientId,
+       clientContext.userName);
+
+    clientsToDisconnect.emplace_back(clientId);
+
+    _serverInstance.GetRanchDirector().Disconnect(
+      clientContext.characterUid);
+    _serverInstance.GetRaceDirector().DisconnectCharacter(
+      clientContext.characterUid);
+  }
+
+  for (const ClientId& clientId : clientsToDisconnect)
+  {
+    _commandServer.DisconnectClient(clientId);
+  }
+}
+
 void LobbyNetworkHandler::HandleClientConnected(ClientId clientId)
 {
-  _clients.try_emplace(clientId);
+  const auto iter = _clients.try_emplace(clientId).first;
+  iter->second.lastHeartbeat = std::chrono::steady_clock::now();
 
   spdlog::debug(
     "Client {} connected to the lobby server from {}",
@@ -896,7 +933,17 @@ void LobbyNetworkHandler::HandleRoomList(
     .teamMode = command.teamMode};
 
   // todo: update every x tick
-  const auto roomSnapshots = _serverInstance.GetRoomSystem().GetRoomsSnapshot();
+  std::vector<server::Room::Snapshot> roomSnapshots{};
+  std::ranges::copy_if(
+    _serverInstance.GetRoomSystem().GetRoomsSnapshot(),
+    std::back_inserter(roomSnapshots),
+    [&command](const server::Room::Snapshot& roomSnapshot)
+    {
+      return 
+        roomSnapshot.details.gameMode == static_cast<server::Room::GameMode>(command.gameMode) &&
+        roomSnapshot.details.teamMode == static_cast<server::Room::TeamMode>(command.teamMode);
+    });
+
   const auto roomChunks = std::views::chunk(
     roomSnapshots,
     RoomsPerPage);
@@ -912,17 +959,6 @@ void LobbyNetworkHandler::HandleRoomList(
 
     for (const auto& room : roomChunks[pageIndex])
     {
-      const protocol::GameMode roomGameMode = static_cast<
-        protocol::GameMode>(room.details.gameMode);
-      const protocol::TeamMode roomTeamMode = static_cast<
-        protocol::TeamMode>(room.details.teamMode);
-
-      if (roomGameMode != command.gameMode
-        || roomTeamMode != command.teamMode)
-      {
-        continue;
-      }
-
       auto& roomResponse = response.rooms.emplace_back();
 
       roomResponse.state = room.isPlaying ? 
@@ -955,7 +991,8 @@ void LobbyNetworkHandler::HandleRoomList(
 void LobbyNetworkHandler::HandleHeartbeat(
   const ClientId clientId)
 {
-  // todo: implement heartbeat statistics
+  auto& clientContext = GetClientContext(clientId);
+  clientContext.lastHeartbeat = std::chrono::steady_clock::now();
 }
 
 void LobbyNetworkHandler::HandleMakeRoom(
@@ -1015,7 +1052,7 @@ void LobbyNetworkHandler::HandleMakeRoom(
           spdlog::error("Unknown team mode '{}'", static_cast<uint32_t>(command.gameMode));
       }
 
-      room.GetRoomDetails().member11 = command.unk3;
+      room.GetRoomDetails().npcDifficulty = command.unk3;
       room.GetRoomDetails().skillBracket = command.unk4;
       // default to all courses
       room.GetRoomDetails().courseId = 10002;
@@ -1038,6 +1075,14 @@ void LobbyNetworkHandler::HandleMakeRoom(
     return;
   }
 
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [this, createdRoomUid, &command](const data::Character& character)
+    {
+      const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+        character.uid()).userName;
+      spdlog::info("Room {} created by '{}' with the name '{}'", createdRoomUid, userName, command.name);
+    });
+
   size_t identityHash = std::hash<uint32_t>()(clientContext.characterUid);
   boost::hash_combine(identityHash, createdRoomUid);
 
@@ -1056,6 +1101,12 @@ void LobbyNetworkHandler::HandleMakeRoom(
     [response]()
     {
       return response;
+    });
+
+  _serverInstance.GetLobbyDirector().GetScheduler().Queue(
+    [this, userName = clientContext.userName, createdRoomUid]()
+    {
+      _serverInstance.GetLobbyDirector().SetUserRoom(userName, createdRoomUid);
     });
 }
 
@@ -1234,6 +1285,9 @@ void LobbyNetworkHandler::SendCreateNicknameNotify(ClientId clientId)
 {
   protocol::LobbyCommandCreateNicknameNotify notify{};
 
+  auto& clientContext = GetClientContext(clientId);
+  clientContext.isInCharacterCreator = true;
+
   _commandServer.QueueCommand<decltype(notify)>(
     clientId,
     [notify]()
@@ -1248,16 +1302,40 @@ void LobbyNetworkHandler::HandleCreateNickname(
 {
   auto& clientContext = GetClientContext(clientId);
 
-  const bool isValidNickname = locale::IsNameValid(command.nickname, 16)
-    && _serverInstance.GetDataDirector().GetDataSource().IsCharacterNameUnique(command.nickname);
+  constexpr uint32_t DefaultHorseTid = 20001;
 
-  if (not isValidNickname)
+  std::optional<protocol::LobbyCommandCreateNicknameCancel::Reason> error{};
+  if (command.requestedHorseTid != DefaultHorseTid)
   {
-    SendLoginCancel(clientId, protocol::AcCmdCLLoginCancel::Reason::Generic);
+    spdlog::warn("Client {} with character uid {} requested invalid horse tid {}",
+      clientId,
+      clientContext.characterUid,
+      command.requestedHorseTid);
+    error.emplace(protocol::LobbyCommandCreateNicknameCancel::Reason::ServerError);
+  }
+  else if (not locale::IsNameValid(command.nickname, 16))
+  {
+    error.emplace(protocol::LobbyCommandCreateNicknameCancel::Reason::InvalidCharacterName);
+  }
+  else if (not _serverInstance.GetDataDirector().GetDataSource().IsCharacterNameUnique(command.nickname))
+  {
+    error.emplace(protocol::LobbyCommandCreateNicknameCancel::Reason::DuplicateCharacterName);
+  }
+
+  if (error.has_value())
+  {
+    protocol::LobbyCommandCreateNicknameCancel cancel{
+      .error = error.value()};
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
     return;
   }
 
   clientContext.justCreatedCharacter = true;
+
+  // We update the last heartbeat too, so that the client does not get
+  // kicked immediately after `isInCharacterCreator` immunity is withdrawn.
+  clientContext.lastHeartbeat = std::chrono::steady_clock::now();
+  clientContext.isInCharacterCreator = false;
 
   const auto userRecord = _serverInstance.GetDataDirector().GetUserCache().Get(
     clientContext.userName);
@@ -1279,11 +1357,11 @@ void LobbyNetworkHandler::HandleCreateNickname(
 
     auto mountUid = data::InvalidUid;
     mountRecord.Mutable(
-      [this, &mountUid](data::Horse& horse)
+      [this, &mountUid, requestedHorseTid = command.requestedHorseTid](data::Horse& horse)
       {
         // The TID of the horse specifies which body mesh is used for that horse.
         // Can be found in the `MountPartInfo` table.
-        horse.tid() = 20002;
+        horse.tid() = requestedHorseTid;
         horse.dateOfBirth() = data::Clock::now();
         horse.mountCondition.stamina = 3500;
         horse.growthPoints() = 150;
@@ -1302,7 +1380,8 @@ void LobbyNetworkHandler::HandleCreateNickname(
         &mountUid,
         &command](data::Character& character)
       {
-        character.name = command.nickname;
+        if (character.name() == "")
+          character.name = command.nickname;
 
         // todo: default level configured
         character.level = 60;
@@ -1310,6 +1389,9 @@ void LobbyNetworkHandler::HandleCreateNickname(
         character.carrots = 10'000;
 
         character.mountUid() = mountUid;
+
+        constexpr uint8_t StartingHorseSlotCount = 3; 
+        character.horseSlotCount() = StartingHorseSlotCount;
 
         userCharacterUid = character.uid();
       });
@@ -1347,6 +1429,12 @@ void LobbyNetworkHandler::HandleCreateNickname(
         .emblemId = command.character.appearance.emblemId,
       };
     });
+
+  // Log for moderation
+  spdlog::info("User '{}' created a character ({}) with the name '{}'",
+    clientContext.userName,
+    userCharacterUid,
+    command.nickname);
 
   SendLoginOK(clientId);
 }

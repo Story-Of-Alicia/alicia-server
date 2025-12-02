@@ -57,6 +57,13 @@ public:
       std::chrono::steady_clock::time_point expiryTimePoint;
     };
 
+    enum class Shield
+    {
+      None,
+      Normal,
+      Critical
+    };
+
     Oid oid{InvalidEntityOid};
     State state{State::Disconnected};
     Team team{Team::Solo};
@@ -67,10 +74,12 @@ public:
 
     //! A set of tracked items in racer's proximity.
     std::unordered_set<Oid> trackedItems;
-    
-    // Bolt targeting system
-    bool isTargeting{false};
-    Oid currentTarget{InvalidEntityOid};
+
+    Shield shield{Shield::None};
+    bool darkness{};
+    bool hotRodded{};
+    bool critChance{};
+    bool gaugeBuff{};
   };
 
   //! An item
@@ -83,7 +92,7 @@ public:
   };
 
   //! An object map.
-  using ObjectMap = std::map<data::Uid, Racer>;
+  using RacerObjectMap = std::map<data::Uid, Racer>;
   //! An item object map.
   //! Maps itemId -> Item (in the race)
   using ItemObjectMap = std::map<uint16_t, Item>;
@@ -105,7 +114,7 @@ public:
   [[nodiscard]] Racer& GetRacer(data::Uid characterUid);
   //! Returns a reference to all racer records.
   //! @return Reference to racer records.
-  [[nodiscard]] ObjectMap& GetRacers();
+  [[nodiscard]] RacerObjectMap& GetRacers();
 
   //! Adds an item for tracking.
   //! @returns A reference to the new item record.
@@ -126,12 +135,9 @@ public:
 
 private:
   //! The next entity OID.
-  Oid _nextRacerOid = 1;
+  Oid _nextObjectOid = 1;
   //! Horse entities in the race.
-  ObjectMap _racers;
-
-  //! The next item OID.
-  uint16_t _nextItemOid = 1;
+  RacerObjectMap _racers;
   //! Items in the race
   ItemObjectMap _items;
 };

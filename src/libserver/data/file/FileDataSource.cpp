@@ -160,8 +160,8 @@ void server::FileDataSource::StoreUser(const std::string_view& name, const data:
 bool server::FileDataSource::IsUserNameUnique(const std::string_view& name)
 {
   const std::regex rg(
-    std::format("{}", name),
-    std::regex_constants::icase);
+    std::format("{}.*", name),
+    std::regex_constants::ECMAScript | std::regex_constants::icase);
 
   for (const auto& file : std::filesystem::directory_iterator(_userDataPath))
   {
@@ -194,10 +194,10 @@ void server::FileDataSource::RetrieveInfraction(data::Uid uid, data::Infraction&
   infraction.uid = json["uid"].get<data::Uid>();
   infraction.description = json["description"].get<std::string>();
   infraction.punishment = json["punishment"].get<data::Infraction::Punishment>();
-  infraction.duration = data::Clock::duration(std::chrono::seconds(
-    json["duration"].get<uint64_t>()));
+  infraction.duration = std::chrono::seconds(
+    json["duration"].get<int64_t>());
   infraction.createdAt = data::Clock::time_point(std::chrono::seconds(
-    json["createdAt"].get<uint64_t>()));
+    json["createdAt"].get<int64_t>()));
 }
 
 void server::FileDataSource::StoreInfraction(data::Uid uid, const data::Infraction& infraction)
@@ -216,8 +216,7 @@ void server::FileDataSource::StoreInfraction(data::Uid uid, const data::Infracti
   json["uid"] = infraction.uid();
   json["description"] = infraction.description();
   json["punishment"] = infraction.punishment();
-  json["duration"] = std::chrono::duration_cast<std::chrono::seconds>(
-    infraction.duration()).count();
+  json["duration"] = infraction.duration().count();
   json["createdAt"] = std::chrono::duration_cast<std::chrono::seconds>(
     infraction.createdAt().time_since_epoch()).count();
 
@@ -287,6 +286,8 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.mountEquipment = json["horseEquipment"].get<std::vector<data::Uid>>();
 
   character.horses = json["horses"].get<std::vector<data::Uid>>();
+  character.horseSlotCount = json["horseSlotCount"].get<uint8_t>();
+
   character.pets = json["pets"].get<std::vector<data::Uid>>();
   character.mountUid = json["mountUid"].get<data::Uid>();
   character.petUid = json["petUid"].get<data::Uid>();
@@ -368,6 +369,8 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["horseEquipment"] = character.mountEquipment();
 
   json["horses"] = character.horses();
+  json["horseSlotCount"] = character.horseSlotCount();
+
   json["pets"] = character.pets();
   json["mountUid"] = character.mountUid();
   json["petUid"] = character.petUid();
@@ -522,6 +525,7 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   };
 
   horse.luckState = json["luckState"].get<uint32_t>();
+  horse.fatigue = json["fatigue"].get<uint16_t>();
   horse.emblemUid = json["emblem"].get<uint32_t>();
 
   horse.dateOfBirth = data::Clock::time_point(std::chrono::seconds(
@@ -619,6 +623,7 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["potential"] = potential;
 
   json["luckState"] = horse.luckState();
+  json["fatigue"] = horse.fatigue();
   json["emblem"] = horse.emblemUid();
 
   json["dateOfBirth"] = std::chrono::ceil<std::chrono::seconds>(
@@ -668,9 +673,10 @@ void server::FileDataSource::RetrieveItem(data::Uid uid, data::Item& item)
 
   item.uid = json["uid"].get<data::Uid>();
   item.tid = json["tid"].get<data::Tid>();
-  item.expiresAt = data::Clock::time_point(
-    std::chrono::seconds(json["expiresAt"].get<int64_t>()));
   item.count = json["count"].get<uint32_t>();
+  item.duration = std::chrono::seconds(json["duration"].get<int64_t>());
+  item.createdAt = data::Clock::time_point(
+    std::chrono::seconds(json["createdAt"].get<int64_t>()));
 }
 
 void server::FileDataSource::StoreItem(data::Uid uid, const data::Item& item)
@@ -688,9 +694,11 @@ void server::FileDataSource::StoreItem(data::Uid uid, const data::Item& item)
   nlohmann::json json;
   json["uid"] = item.uid();
   json["tid"] = item.tid();
-  json["expiresAt"] = std::chrono::ceil<std::chrono::seconds>(
-    item.expiresAt().time_since_epoch()).count();
   json["count"] = item.count();
+  json["duration"] = item.duration().count();
+  json["createdAt"] = std::chrono::ceil<std::chrono::seconds>(
+    item.createdAt().time_since_epoch()).count();
+
   dataFile << json.dump(2);
 }
 
@@ -706,7 +714,7 @@ void server::FileDataSource::CreateStorageItem(data::StorageItem& item)
   item.uid = ++_storageItemSequentialUid;
 }
 
-void server::FileDataSource::RetrieveStorageItem(data::Uid uid, data::StorageItem& item)
+void server::FileDataSource::RetrieveStorageItem(data::Uid uid, data::StorageItem& storageItem)
 {
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _storageItemPath, std::format("{}", uid));
@@ -720,17 +728,28 @@ void server::FileDataSource::RetrieveStorageItem(data::Uid uid, data::StorageIte
 
   const auto json = nlohmann::json::parse(dataFile);
 
-  item.uid = json["uid"].get<data::Uid>();
-  item.items = json["items"].get<std::vector<data::Uid>>();
-  item.sender = json["sender"].get<std::string>();
-  item.message = json["message"].get<std::string>();
-  item.created = data::Clock::time_point(std::chrono::seconds(
-    json["created"].get<uint64_t>()));
-  item.checked = json["checked"].get<bool>();
-  item.expired = json["expired"].get<bool>();
+  storageItem.uid = json["uid"].get<data::Uid>();
+  storageItem.sender = json["sender"].get<std::string>();
+  storageItem.message = json["message"].get<std::string>();
+  storageItem.carrots = json["carrots"].get<int32_t>();
+
+  for (const auto& itemJson : json["items"])
+  {
+    storageItem.items().emplace_back(data::StorageItem::Item{
+      .tid = itemJson["tid"].get<data::Tid>(),
+      .count = itemJson["count"].get<uint32_t>(),
+      .duration = std::chrono::seconds(
+        itemJson["duration"].get<int64_t>()),});
+  }
+
+  storageItem.checked = json["checked"].get<bool>();
+  storageItem.duration = std::chrono::seconds(
+    json["duration"].get<int64_t>());
+  storageItem.createdAt = data::Clock::time_point(std::chrono::seconds(
+    json["createdAt"].get<int64_t>()));
 }
 
-void server::FileDataSource::StoreStorageItem(data::Uid uid, const data::StorageItem& item)
+void server::FileDataSource::StoreStorageItem(data::Uid uid, const data::StorageItem& storageItem)
 {
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _storageItemPath, std::format("{}", uid));
@@ -743,14 +762,26 @@ void server::FileDataSource::StoreStorageItem(data::Uid uid, const data::Storage
   }
 
   nlohmann::json json;
-  json["uid"] = item.uid();
-  json["items"] = item.items();
-  json["sender"] = item.sender();
-  json["message"] = item.message();
-  json["created"] = std::chrono::ceil<std::chrono::seconds>(
-    item.created().time_since_epoch()).count();
-  json["checked"] = item.checked();
-  json["expired"] = item.expired();
+  json["uid"] = storageItem.uid();
+  json["sender"] = storageItem.sender();
+  json["message"] = storageItem.message();
+  json["carrots"] = storageItem.carrots();
+
+  auto& itemsJson = json["items"];
+  for (const auto& item : storageItem.items())
+  {
+    nlohmann::json itemJson;
+    itemJson["tid"] = item.tid;
+    itemJson["count"] = item.count;
+    itemJson["duration"] = item.duration.count();
+
+    itemsJson.emplace_back(itemJson);
+  }
+
+  json["checked"] = storageItem.checked();
+  json["createdAt"] = std::chrono::ceil<std::chrono::seconds>(
+    storageItem.createdAt().time_since_epoch()).count();
+  json["duration"] = storageItem.duration().count();
 
   dataFile << json.dump(2);
 }

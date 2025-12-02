@@ -86,7 +86,7 @@ void SourceStream::Read(void* data, std::size_t size)
 {
   if (_cursor + size > _storage.size())
   {
-    throw std::overflow_error(std::format("Couldn't read {} bytes to the buffer (cursor: {}, available: {}). Not enough space.", size, _cursor, _storage.size()));
+    throw std::overflow_error(std::format("Couldn't read {} bytes from the buffer (cursor: {}, available: {}). Not enough space.", size, _cursor, _storage.size()));
   }
 
   // Read the bytes.
