@@ -1136,23 +1136,6 @@ void RanchDirector::HandleChat(
 {
   const auto& clientContext = GetClientContext(clientId);
 
-  // Perform moderation before proceeding with chat processing
-  const auto verdict = _serverInstance.GetChatSystem().ProcessChatMessage(
-    clientContext.characterUid,
-    chat.message);
-
-  if (verdict.isMuted)
-  {
-    // Invoking character is muted. Notify the invoker of their infraction
-    spdlog::warn("Character '{}' tried to chat in ranch chat but has an active mute infraction.",
-      clientContext.characterUid);
-    protocol::AcCmdCRRanchChatNotify notify{
-      .message = verdict.message,
-      .isSystem = true};
-    _commandServer.QueueCommand<decltype(notify)>(clientId, [notify](){ return notify; });
-    return;
-  }
-
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
   const auto rancherRecord = GetServerInstance().GetDataDirector().GetCharacter(
@@ -1199,9 +1182,28 @@ void RanchDirector::HandleChat(
     }
   };
 
+  // Perform moderation and check for any mute ban
+  const auto verdict = _serverInstance.GetChatSystem().ProcessChatMessage(
+    clientContext.characterUid,
+    chat.message);
+
+  // Process commands, even if user has a mute ban
   if (verdict.commandVerdict)
   {
     sendAllMessages(clientId, sendersName, true, verdict.commandVerdict->result);
+    return;
+  }
+
+  // Message is not a command, check if user has been muted
+  if (verdict.isMuted)
+  {
+    // Invoking character is muted. Notify the invoker of their infraction and do not broadcast.
+    spdlog::warn("Character '{}' tried to chat in ranch chat but has an active mute infraction.",
+      clientContext.characterUid);
+    protocol::AcCmdCRRanchChatNotify notify{
+      .message = verdict.message,
+      .isSystem = true};
+    _commandServer.QueueCommand<decltype(notify)>(clientId, [notify](){ return notify; });
     return;
   }
 
