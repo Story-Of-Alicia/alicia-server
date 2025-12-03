@@ -1197,7 +1197,7 @@ void RanchDirector::HandleChat(
   // Message is not a command, check if user has been muted
   if (verdict.isMuted)
   {
-    // Invoking character is muted. Notify the invoker of their infraction
+    // Invoking character is muted. Notify the invoker of their infraction and do not broadcast.
     spdlog::warn("Character '{}' tried to chat in ranch chat but has an active mute infraction.",
       clientContext.characterUid);
     protocol::AcCmdCRRanchChatNotify notify{
