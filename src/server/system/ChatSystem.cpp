@@ -95,7 +95,17 @@ ChatSystem::ChatVerdict ChatSystem::ProcessChatMessage(
   const auto& infractionVerdict = _serverInstance.GetInfractionSystem().CheckOutstandingPunishments(
     userInstance.userName);
 
-  if (infractionVerdict.mute.active)
+  if (message.starts_with("//"))
+  {
+    verdict.commandVerdict = ProcessCommandMessage(
+      characterUid, message.substr(2));
+  }
+  else if (not infractionVerdict.mute.active)
+  {
+    // todo: auto moderation
+    verdict.message = message;
+  }
+  else if (infractionVerdict.mute.active)
   {
     // Active mute infraction, return with no processing done on message
     verdict.isMuted = true;
@@ -103,17 +113,6 @@ ChatSystem::ChatVerdict ChatSystem::ProcessChatMessage(
       "You are chat muted until {:%Y-%m-%d %H:%M:%S} UTC.",
       std::chrono::time_point_cast<std::chrono::seconds>(
         infractionVerdict.mute.expiresAt));
-    return verdict;
-  }
-  else if (message.starts_with("//"))
-  {
-    verdict.commandVerdict = ProcessCommandMessage(
-      characterUid, message.substr(2));
-  }
-  else
-  {
-    // todo: auto moderation
-    verdict.message = message;
   }
 
   return verdict;
