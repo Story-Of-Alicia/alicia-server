@@ -1022,6 +1022,11 @@ DataDirector::SettingsStorage& DataDirector::GetSettingsCache()
   return _settingsStorage;
 }
 
+FileDataSource& DataDirector::GetFileDataSource()
+{
+  return static_cast<FileDataSource&>(*_primaryDataSource);
+}
+
 DataSource& DataDirector::GetDataSource() noexcept
 {
   return *_primaryDataSource.get();

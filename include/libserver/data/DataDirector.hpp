@@ -129,7 +129,7 @@ public:
   [[nodiscard]] StallionStorage& GetStallionCache();
   [[nodiscard]] std::vector<data::Uid> ListRegisteredStallions();
 
-  [[nodiscard]] FileDataSource& GetDataSource() { return static_cast<FileDataSource&>(*_primaryDataSource); }
+  [[nodiscard]] FileDataSource& GetFileDataSource();
 
   [[nodiscard]] DataSource& GetDataSource() noexcept;
 
