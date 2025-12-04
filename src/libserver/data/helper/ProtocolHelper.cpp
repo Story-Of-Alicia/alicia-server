@@ -46,7 +46,12 @@ void BuildProtocolHorse(
   protocolHorse.clazz = static_cast<uint8_t>(horse.clazz());
   protocolHorse.val0 = 1;
   protocolHorse.grade = static_cast<uint8_t>(horse.grade());
-  protocolHorse.growthPoints = static_cast<uint16_t>(horse.growthPoints());
+  protocolHorse.growthPoints = horse.growthPoints();
+
+  protocolHorse.vals1.type = static_cast<protocol::Horse::HorseType>(horse.type());
+  protocolHorse.vals1.tendency = horse.tendency();
+  protocolHorse.vals1.spirit = horse.spirit();
+  protocolHorse.vals1.fatigue = horse.fatigue();
 
   protocolHorse.val16 = 0xb8a167e4,
   protocolHorse.val17 = 0;
@@ -69,25 +74,26 @@ void BuildProtocolHorse(
   };
 
   protocolHorse.vals1 = {
-    .type = Horse::HorseType::Adult,
+    .type = static_cast<protocol::Horse::HorseType>(horse.type()),
     .val1 = 0x00,
     .dateOfBirth = util::TimePointToAliciaTime(horse.dateOfBirth()),
-    .tendency = 0x02,
-    .spirit = 0x00,
+    .tendency = static_cast<uint8_t>(horse.tendency()),
+    .spirit = static_cast<uint8_t>(horse.spirit()),
     .classProgression = static_cast<uint32_t>(horse.clazzProgress()),
     .val5 = 0x00,
     .potentialLevel = static_cast<uint8_t>(horse.potential.level()),
     .potentialType = static_cast<uint8_t>(horse.potential.type()),
     .potentialValue = static_cast<uint8_t>(horse.potential.value()),
+    // TODO: Calculate potential max if it exists
     .val9 = 0x00,
     .luck = static_cast<uint8_t>(horse.luckState()),
     .injury = Horse::Injury::None,
     .val12 = 0x00,
-    .fatigue = horse.fatigue(),
+    .fatigue = static_cast<uint16_t>(horse.fatigue()),
     .val14 = 0x00,
     .emblem = static_cast<uint16_t>(horse.emblemUid())};
 
-  BuildProtocolHorseParts(protocolHorse.parts, horse.parts);
+  BuildProtocolHorseParts(protocolHorse.parts, horse.parts, horse.type() == 1);
   BuildProtocolHorseAppearance(protocolHorse.appearance, horse.appearance);
   BuildProtocolHorseStats(protocolHorse.stats, horse.stats);
   BuildProtocolHorseMastery(protocolHorse.mastery, horse.mastery);
@@ -95,12 +101,38 @@ void BuildProtocolHorse(
 
 void BuildProtocolHorseParts(
   Horse::Parts& protocolHorseParts,
-  const data::Horse::Parts& parts)
+  const data::Horse::Parts& parts,
+  bool isFoal)
 {
+  // Helper function to map adult TIDs to foal-safe color TIDs
+  // TODO: This is causing a UI mismatch on the horse appearance info window.
+  //       Figure out a way to render foals' mane and tail and display UI correctly without crashing the client.
+  auto MapToFoalColorTid = [](data::Tid adultTid) -> uint8_t
+  {
+    // Foals can only display colors 1-5
+    // TIDs 1-5 map directly
+    if (adultTid >= 1 && adultTid <= 5)
+      return adultTid;
+    
+    // TIDs 6+ map to their color equivalent (cycles every 5)
+    // Pattern: 6->1, 7->2, 8->3, 9->4, 10->5, 11->1, 12->2, etc.
+    return ((adultTid - 1) % 5) + 1;
+  };
+  
+  uint8_t maneId = static_cast<uint8_t>(parts.maneTid());
+  uint8_t tailId = static_cast<uint8_t>(parts.tailTid());
+  
+  // If this is a foal, map to foal-safe color TIDs
+  if (isFoal)
+  {
+    maneId = MapToFoalColorTid(parts.maneTid());
+    tailId = MapToFoalColorTid(parts.tailTid());
+  }
+  
   protocolHorseParts = {
     .skinId = static_cast<uint8_t>(parts.skinTid()),
-    .maneId = static_cast<uint8_t>(parts.maneTid()),
-    .tailId = static_cast<uint8_t>(parts.tailTid()),
+    .maneId = maneId,
+    .tailId = tailId,
     .faceId = static_cast<uint8_t>(parts.faceTid())};
 }
 

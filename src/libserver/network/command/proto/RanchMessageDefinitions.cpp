@@ -546,6 +546,101 @@ void RanchCommandRanchStuffOK::Read(
   throw std::runtime_error("Not implemented.");
 }
 
+void AcCmdCRBreedingFailureCard::Write(
+  const AcCmdCRBreedingFailureCard& command,
+  SinkStream& stream)
+{
+  // Empty response
+}
+
+void AcCmdCRBreedingFailureCard::Read(
+  AcCmdCRBreedingFailureCard& command,
+  SourceStream& stream)
+{
+  // Empty - statusOrFlag is internal only, not serialized
+}
+
+void AcCmdCRBreedingFailureCardOK::Write(
+  const AcCmdCRBreedingFailureCardOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.choiceOrFlag);
+}
+
+void AcCmdCRBreedingFailureCardOK::Read(
+  AcCmdCRBreedingFailureCardOK& command,
+  SourceStream& stream)
+{
+  stream.Read(command.choiceOrFlag);
+}
+
+void AcCmdCRBreedingFailureCardCancel::Write(
+  const AcCmdCRBreedingFailureCardCancel& command,
+  SinkStream& stream)
+{
+  // Empty response
+}
+
+void AcCmdCRBreedingFailureCardCancel::Read(
+  AcCmdCRBreedingFailureCardCancel& command,
+  SourceStream& stream)
+{
+  // Empty - statusOrFlag is internal only, not serialized
+}
+
+void AcCmdCRBreedingFailureCardChoose::Write(
+  const AcCmdCRBreedingFailureCardChoose& command,
+  SinkStream& stream)
+{
+  // Zero payload command - no data to write
+}
+
+void AcCmdCRBreedingFailureCardChoose::Read(
+  AcCmdCRBreedingFailureCardChoose& command,
+  SourceStream& stream)
+{
+  stream.Read(command.statusOrFlag);
+}
+
+void AcCmdCRBreedingFailureCardChooseOK::Write(
+  const AcCmdCRBreedingFailureCardChooseOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1)
+    .Write(command.rewardId)
+    .Write(command.member3);
+    
+  for (const auto& value : command.member4)
+  {
+    stream.Write(value);
+  }
+  
+  stream.Write(command.member5)
+    .Write(command.item)
+    .Write(command.member6);
+}
+
+void AcCmdCRBreedingFailureCardChooseOK::Read(
+  AcCmdCRBreedingFailureCardChooseOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBreedingFailureCardChooseCancel::Write(
+  const AcCmdCRBreedingFailureCardChooseCancel& command,
+  SinkStream& stream)
+{
+  // Empty response
+}
+
+void AcCmdCRBreedingFailureCardChooseCancel::Read(
+  AcCmdCRBreedingFailureCardChooseCancel& command,
+  SourceStream& stream)
+{
+  // Empty response
+}
+
 void AcCmdCRSearchStallion::Write(
   const AcCmdCRSearchStallion& command,
   SinkStream& stream)
@@ -727,6 +822,38 @@ void AcCmdCRUnregisterStallionEstimateInfoCancel::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRCheckStallionCharge::Write(
+  const AcCmdCRCheckStallionCharge& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRCheckStallionCharge::Read(
+  AcCmdCRCheckStallionCharge& command,
+  SourceStream& stream)
+{
+  stream.Read(command.horseUid);
+}
+
+void AcCmdCRCheckStallionChargeOK::Write(
+  const AcCmdCRCheckStallionChargeOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.hasFailed)
+    .Write(command.minCharge)
+    .Write(command.maxCharge)
+    .Write(command.registrationFee)
+    .Write(command.charge);
+}
+
+void AcCmdCRCheckStallionChargeOK::Read(
+  AcCmdCRCheckStallionChargeOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void RanchCommandSearchStallionOK::Write(
   const RanchCommandSearchStallionOK& command,
   SinkStream& stream)
@@ -747,9 +874,9 @@ void RanchCommandSearchStallionOK::Write(
       .Write(stallion.tid)
       .Write(stallion.name)
       .Write(stallion.grade)
-      .Write(stallion.chance)
+      .Write(stallion.inheritanceRate)
       .Write(stallion.matePrice)
-      .Write(stallion.unk7)
+      .Write(stallion.pregnancyChance)
       .Write(stallion.expiresAt)
       .Write(stallion.stats)
       .Write(stallion.parts)
@@ -805,8 +932,8 @@ void RanchCommandEnterBreedingMarketOK::Write(
     stream.Write(stallion.uid)
       .Write(stallion.tid)
       .Write(stallion.combo)
-      .Write(stallion.unk1)
-      .Write(stallion.unk2)
+      .Write(stallion.isRegistered)
+      .Write(stallion.breedingBonus)
       .Write(stallion.lineage);
   }
 }
@@ -911,7 +1038,7 @@ void RanchCommandTryBreedingOK::Write(
     .Write(command.unk3)
     .Write(command.unk4)
     .Write(command.unk5)
-    .Write(command.unk6)
+    .Write(command.potentialType)
     .Write(command.unk7)
     .Write(command.unk8)
     .Write(command.unk9)

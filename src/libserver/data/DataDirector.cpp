@@ -514,6 +514,51 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
         }
         return false;
       })
+  , _stallionStorage(
+     [&](const auto& key, auto& stallion)
+     {
+       try
+       {
+         _primaryDataSource->RetrieveStallion(key, stallion);
+         return true;
+       }
+       catch (const std::exception& x)
+       {
+         spdlog::error(
+           "Exception retrieving stallion {} from the primary data source: {}", key, x.what());
+       }
+
+       return false;
+     },
+     [&](const auto& key, auto& stallion)
+     {
+       try
+       {
+         _primaryDataSource->StoreStallion(key, stallion);
+         return true;
+       }
+       catch (const std::exception& x)
+       {
+         spdlog::error(
+           "Exception storing stallion {} on the primary data source: {}", key, x.what());
+       }
+
+       return false;
+     },
+     [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteStallion(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting stallion {} from the primary data source: {}", key, x.what());
+        }
+        return false;
+      })
 {
   _primaryDataSource = std::make_unique<FileDataSource>();
   if (auto* fileDataSource = dynamic_cast<FileDataSource*>(_primaryDataSource.get()))
@@ -543,6 +588,7 @@ void DataDirector::Terminate()
     _eggStorage.Terminate();
     _petStorage.Terminate();
     _guildStorage.Terminate();
+    _stallionStorage.Terminate();
     _housingStorage.Terminate();
     _settingsStorage.Terminate();
   }
@@ -571,6 +617,7 @@ void DataDirector::Tick()
     _petStorage.Tick();
     _guildStorage.Tick();
     _housingStorage.Tick();
+    _stallionStorage.Tick();
     _settingsStorage.Tick();
   }
   catch (const std::exception& x)
@@ -846,6 +893,35 @@ DataDirector::HousingStorage& DataDirector::GetHousingCache()
   return _housingStorage;
 }
 
+Record<data::Stallion> DataDirector::GetStallion(data::Uid stallionUid) noexcept
+{
+  if (stallionUid == data::InvalidUid)
+    return {};
+  return _stallionStorage.Get(stallionUid).value_or(Record<data::Stallion>{});
+}
+
+Record<data::Stallion> DataDirector::CreateStallion() noexcept
+{
+  return _stallionStorage.Create(
+    [this]()
+    {
+      data::Stallion stallion;
+      _primaryDataSource->CreateStallion(stallion);
+
+      return std::make_pair(stallion.uid(), std::move(stallion));
+    });
+}
+
+DataDirector::StallionStorage& DataDirector::GetStallionCache()
+{
+  return _stallionStorage;
+}
+
+std::vector<data::Uid> DataDirector::ListRegisteredStallions()
+{
+  return _primaryDataSource->ListRegisteredStallions();
+}
+
 void DataDirector::ScheduleUserLoad(
   UserDataContext& userDataContext,
   const std::string& userName)
@@ -946,6 +1022,11 @@ DataDirector::SettingsStorage& DataDirector::GetSettingsCache()
   return _settingsStorage;
 }
 
+FileDataSource& DataDirector::GetFileDataSource()
+{
+  return static_cast<FileDataSource&>(*_primaryDataSource);
+}
+
 DataSource& DataDirector::GetDataSource() noexcept
 {
   return *_primaryDataSource.get();
@@ -1039,6 +1120,66 @@ void DataDirector::ScheduleCharacterLoad(
     const auto purchaseRecords = GetStorageItemCache().Get(purchases);
 
     const auto horseRecords = GetHorseCache().Get(horses);
+
+    // Queue all ancestors (including grandparents) for loading to support family tree feature
+    if (horseRecords)
+    {
+      std::vector<data::Uid> allAncestors;
+      
+      // Collect direct parents (first generation)
+      for (const auto& horseRecord : *horseRecords)
+      {
+        horseRecord.Immutable([&allAncestors](const data::Horse& horse)
+        {
+          const auto& ancestors = horse.ancestors();
+          for (const auto ancestorUid : ancestors)
+          {
+            allAncestors.push_back(ancestorUid);
+          }
+        });
+      }
+    
+      if (!allAncestors.empty())
+      {
+        // Load first generation ancestors (parents)
+        std::vector<data::Uid> firstGeneration = allAncestors;
+        std::vector<data::Uid> loadedFirstGen;
+        
+        for (const auto ancestorUid : firstGeneration)
+        {
+          // Load ancestor and check if available by attempting to access it
+          GetHorse(ancestorUid).Immutable([&loadedFirstGen, ancestorUid](const data::Horse& horse)
+          {
+            loadedFirstGen.push_back(ancestorUid);
+          });
+        }
+        
+        // Collect second generation ancestors (grandparents)
+        std::vector<data::Uid> secondGeneration;
+        for (const auto ancestorUid : loadedFirstGen)
+        {
+          const auto ancestorRecord = GetHorseCache().Get(ancestorUid);
+          if (ancestorRecord)
+          {
+            ancestorRecord->Immutable([&secondGeneration](const data::Horse& horse)
+            {
+              const auto& grandparents = horse.ancestors();
+              for (const auto grandparentUid : grandparents)
+              {
+                secondGeneration.push_back(grandparentUid);
+              }
+            });
+          }
+        }
+        
+        // Load second generation ancestors (grandparents)
+        for (const auto grandparentUid : secondGeneration)
+        {
+          GetHorse(grandparentUid).Immutable([](const data::Horse&) {
+          });
+        }
+      }
+    }
 
     const auto eggRecords = GetEggCache().Get(eggs);
 

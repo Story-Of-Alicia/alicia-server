@@ -293,8 +293,8 @@ struct Character
   dao::Field<std::vector<Uid>> mountEquipment{};
   
   dao::Field<std::vector<Uid>> horses{};
-  dao::Field<uint8_t> horseSlotCount{0u};
-
+  dao::Field<uint32_t> horseSlotCount{0u};
+  
   dao::Field<std::vector<Uid>> pets{};
   dao::Field<Uid> mountUid{InvalidUid};
   dao::Field<Uid> petUid{InvalidUid};
@@ -328,6 +328,8 @@ struct Character
     dao::Field<Sets> speed{};
     dao::Field<Sets> magic{};
   } skills{};
+  
+  dao::Field<uint32_t> breedingMoneySpent{0u};
 };
 
 struct Horse
@@ -375,16 +377,28 @@ struct Horse
   dao::Field<uint32_t> clazzProgress{0u};
   dao::Field<uint32_t> grade{0u};
   dao::Field<uint32_t> growthPoints{0u};
+  
+  struct Breeding
+  {
+    //! A count of how many times the horse was bred.
+    dao::Field<uint32_t> breedingCount{0u};
+    //! A count of successful consecutive breedings. 
+    dao::Field<uint32_t> breedingCombo{0u};
+  } breeding{};
+  
+  dao::Field<uint32_t> type{0u};
+  dao::Field<uint32_t> tendency{0u};
+  dao::Field<uint32_t> spirit{0u};
+  dao::Field<uint32_t> fatigue{0u};
 
   struct Potential
   {
-    dao::Field<uint8_t> type{0u};
-    dao::Field<uint8_t> level{0u};
-    dao::Field<uint8_t> value{0u};
+    dao::Field<uint32_t> type{0u};
+    dao::Field<uint32_t> level{0u};
+    dao::Field<uint32_t> value{0u};
   } potential{};
 
   dao::Field<uint32_t> luckState{0u};
-  dao::Field<uint16_t> fatigue{0u};
   dao::Field<uint32_t> emblemUid{0u};
   dao::Field<Clock::time_point> dateOfBirth{};
 
@@ -426,6 +440,9 @@ struct Horse
     dao::Field<uint32_t> cumulativePrize{};
     dao::Field<uint32_t> biggestPrize{};
   } mountInfo{};
+
+  dao::Field<std::vector<uint32_t>> ancestors{};
+  dao::Field<uint32_t> lineage{1u};  // Genetic purity: 1 (base) + parents/grandparents with matching coat
 };
 
 struct Housing
@@ -444,6 +461,17 @@ struct Egg
   dao::Field<Clock::time_point> incubatedAt{};
   dao::Field<uint32_t> incubatorSlot{};
   dao::Field<uint32_t> boostsUsed;
+};
+
+struct Stallion
+{
+  dao::Field<Uid> uid{InvalidUid};
+  dao::Field<Uid> horseUid{InvalidUid};     // The horse being registered as stallion
+  dao::Field<Uid> ownerUid{InvalidUid};     // Owner of the stallion
+  dao::Field<uint32_t> breedingCharge{};    // Price in carrots to breed with this stallion
+  dao::Field<uint32_t> timesMated{0u};      // Times bred during current registration
+  dao::Field<Clock::time_point> registeredAt{};
+  // Note: Stallions expire 24 hours after registeredAt
 };
 
 } // namespace data

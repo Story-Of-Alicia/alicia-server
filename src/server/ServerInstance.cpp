@@ -18,6 +18,8 @@ ServerInstance::ServerInstance(
   , _chatSystem(*this)
   , _infractionSystem(*this)
   , _itemSystem(*this)
+  , _breedingMarket(*this)
+  , _genetics(*this)
 {
 }
 
@@ -165,6 +167,16 @@ RoomSystem& ServerInstance::GetRoomSystem()
 OtpSystem& ServerInstance::GetOtpSystem()
 {
   return _otpSystem;
+}
+
+Genetics& ServerInstance::GetGenetics()
+{
+  return _genetics;
+}
+
+BreedingMarket& ServerInstance::GetBreedingMarket()
+{
+  return _breedingMarket;
 }
 
 Config& ServerInstance::GetSettings()

@@ -181,6 +181,12 @@ public:
 
   void Terminate()
   {
+    for (const auto& key : _deleteQueue)
+    {
+      _dataSourceDeleteListener(key);
+    }
+    _deleteQueue.clear();
+
     _storeQueue.clear();
     _retrieveQueue.clear();
 
