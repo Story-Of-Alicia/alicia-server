@@ -174,6 +174,11 @@ Genetics& ServerInstance::GetGenetics()
   return _genetics;
 }
 
+BreedingMarket& ServerInstance::GetBreedingMarket()
+{
+  return _breedingMarket;
+}
+
 Config& ServerInstance::GetSettings()
 {
   return _config;
