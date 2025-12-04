@@ -525,8 +525,8 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.growthPoints = json.value("growthPoints", uint16_t{0});
   
   const auto& breedingJson = json["breeding"];
-  horse.breeding.breedingCount = breedingJson.value("breedingCount", uint32_t{0});
-  horse.breeding.breedingCombo = breedingJson.value("breedingCombo", uint32_t{0});
+  horse.breeding.breedingCount = breedingJson.value("count", uint32_t{0});
+  horse.breeding.breedingCombo = breedingJson.value("combo", uint32_t{0});
 
   horse.type = json.value("type", uint32_t{0});
   horse.tendency = json.value("tendency", uint32_t{0});
@@ -636,8 +636,8 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["grade"] = horse.grade();
   json["growthPoints"] = horse.growthPoints();
   
-  json["breeding"]["breedingCount"] = horse.breeding.breedingCount();
-  json["breeding"]["breedingCombo"] = horse.breeding.breedingCombo();
+  json["breeding"]["count"] = horse.breeding.breedingCount();
+  json["breeding"]["combo"] = horse.breeding.breedingCombo();
 
   json["type"] = horse.type();
   json["fatigue"] = horse.fatigue();
