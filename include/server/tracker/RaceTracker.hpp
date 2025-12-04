@@ -96,6 +96,7 @@ public:
   struct TeamInfo
   {
     uint32_t points{0};
+    uint32_t boostCount{0};
   };
 
   TeamInfo blueTeam{};

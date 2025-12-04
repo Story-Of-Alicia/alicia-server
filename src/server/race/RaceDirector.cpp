@@ -3321,14 +3321,26 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
   auto& racer = raceInstance.tracker.GetRacer(
     clientContext.characterUid);
 
-  // TODO: calculate this algorithmically 
-  constexpr float MarkerSpeed = 5.0f;
+  auto& blueTeam = raceInstance.tracker.blueTeam;
+  auto& redTeam = raceInstance.tracker.redTeam;
+  auto& team = 
+    racer.team == tracker::RaceTracker::Racer::Team::Red ? redTeam :
+    racer.team == tracker::RaceTracker::Racer::Team::Blue ? blueTeam :
+    throw std::runtime_error(
+      std::format(
+        "Racer character uid {} is on unrecognised team {}",
+        clientContext.characterUid,
+        static_cast<uint32_t>(racer.team)));
 
-  protocol::AcCmdRCTeamSpurGauge spur{
-    .team = static_cast<protocol::TeamColor>(racer.team), // TODO: casts from one enum to other, unify.
-    .markerSpeed = MarkerSpeed, // TODO: configure
-    .unk5 = 0 // TODO: identify use
-  };
+  //! Boost fill rates, scaled with team count, iterated with boost count.
+  // TODO: put this in the config somewhere
+  const std::vector<float> baseFillRates{
+    1.25f,
+    2.50f,
+    3.00f,
+    3.75f,
+    5.50f,
+    6.50f};
 
   // FIXME:/TODO: currently this gets live player count, not the confirmed team size which is needed
   // Get max players in room
@@ -3340,6 +3352,18 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
     });
 
   const auto teamSize = roomPlayerCount / 2;
+
+  // TODO: warning, this doesn't check whether the opposing team has a team spur active!
+  team.boostCount += 1;
+
+  const auto fillRateIndex = std::min(
+    team.boostCount,
+    static_cast<uint32_t>(baseFillRates.size() - 1));
+  protocol::AcCmdRCTeamSpurGauge spur{
+    .team = static_cast<protocol::TeamColor>(racer.team), // TODO: casts from one enum to other, unify.
+    .markerSpeed = baseFillRates[fillRateIndex] * teamSize, // Base fill rate * boost count * team size
+    .unk5 = 0 // TODO: identify use
+  };
 
   //! Base point for a successful boost.
   constexpr uint32_t BaseBoostPoints = 50;
@@ -3359,8 +3383,8 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
   //! Final max points for team size.
   const uint32_t maxPoints = BaseMaxPoints + (MaxPointsDiffBase * scale);
 
-  auto& blueTeamPoints = raceInstance.tracker.blueTeam.points;
-  auto& redTeamPoints = raceInstance.tracker.redTeam.points;
+  auto& blueTeamPoints = blueTeam.points;
+  auto& redTeamPoints = redTeam.points;
   auto& teamPoints = 
     racer.team == tracker::RaceTracker::Racer::Team::Red ? redTeamPoints :
     racer.team == tracker::RaceTracker::Racer::Team::Blue ? blueTeamPoints :
@@ -3398,6 +3422,10 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
   // If any of the teams can spur, schedule a spur/reset event.
   if (isTeamSpur)
   {
+    // Reset team boost counters
+    redTeam.boostCount = 0;
+    blueTeam.boostCount = 0;
+
     _scheduler.Queue(
       [this, &raceInstance, &racer, maxPoints, teamSize]()
       {
