@@ -3306,17 +3306,20 @@ void RaceDirector::HandleKickUser(
   }
 }
 
+//! Handles team gauge-related logic, including speed and theoretically guild battles.
+//! Primary logic reference: `TeamSpurGaugeInfo` in libconfig
 void RaceDirector::HandleTeamGauge(const ClientId clientId)
 {
   const auto& clientContext = GetClientContext(clientId);
   auto& raceInstance = _raceInstances[clientContext.roomUid];
 
-  auto& racer = raceInstance.tracker.GetRacer(
-    clientContext.characterUid);
-
-  // If race teammode is not team then we are done here
+  // If race teammode is not team then we are done here.
+  // This is necessary to ensure no team-related logic is handled when spur logic is handled.
   if (raceInstance.raceTeamMode != protocol::TeamMode::Team)
     return;
+
+  auto& racer = raceInstance.tracker.GetRacer(
+    clientContext.characterUid);
 
   // TODO: calculate this algorithmically 
   constexpr float MarkerSpeed = 5.0f;
@@ -3327,7 +3330,7 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
     .unk5 = 0 // TODO: identify use
   };
 
-  // TODO: is this behaviour true? do we base calculations off of room player count or connected clients
+  // FIXME:/TODO: currently this gets live player count, not the confirmed team size which is needed
   // Get max players in room
   uint32_t roomPlayerCount{};
   _serverInstance.GetRoomSystem().GetRoom(clientContext.roomUid,
@@ -3382,7 +3385,8 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
   // Check if either red or blue team points have hit max
   if (redTeamPoints >= maxPoints or blueTeamPoints >= maxPoints)
   {
-    // If racer is in team red/blue and their team have enough points to spur
+    // If any (red or blue) team can spur.
+    // Team check is added for additional validation.
     isTeamSpur = (isTeamRed and redTeamPoints >= maxPoints) or
       (isTeamBlue and blueTeamPoints >= maxPoints);
 
@@ -3391,14 +3395,19 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
     blueTeamPoints = 0;
   }
 
+  // If any of the teams can spur, schedule a spur/reset event.
   if (isTeamSpur)
   {
     _scheduler.Queue(
-      [this, &raceInstance, &racer]()
+      [this, &raceInstance, &racer, maxPoints, teamSize]()
       {
-        //! Reset boost gauge for team with reset gauge
+        const float BaseLoseTeamSpurConsumeRate = -10.0f;
+        const float BaseWinTeamSpurConsumeRate = -2.5f;
+
+        // Reset boost gauge for the team that lost it.
         protocol::AcCmdRCTeamSpurGauge beatenSpur{
           .team = 
+            // This is red/blue swap is intentional
             racer.team == tracker::RaceTracker::Racer::Team::Red ? protocol::TeamColor::Blue :
             racer.team == tracker::RaceTracker::Racer::Team::Blue ? protocol::TeamColor::Red :
             throw std::runtime_error(
@@ -3407,27 +3416,26 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
                 static_cast<uint32_t>(racer.team))),
           .currentPoints = 0.0f,
           .newPoints = 0.0f,
-          .markerSpeed = 1.0f,
-          .unk5 = 3 // Reset gauge and markers
+          .markerSpeed = BaseLoseTeamSpurConsumeRate * teamSize, // Scales with `LoseTeamSpurConsumeRate`
+          .unk5 = 3 // Reset gauge and markers.
         };
 
+        // Trigger spur for the team that has won it.
         protocol::AcCmdRCTeamSpurGauge successfulSpur{
-          .team = 
-            racer.team == tracker::RaceTracker::Racer::Team::Red ? protocol::TeamColor::Red :
-            racer.team == tracker::RaceTracker::Racer::Team::Blue ? protocol::TeamColor::Blue :
-            throw std::runtime_error(
-              std::format(
-                "Unrecognised racer team '{}'",
-                static_cast<uint32_t>(racer.team))),
-          .currentPoints = 25.0f,
+          .team = static_cast<protocol::TeamColor>(racer.team),
+          .currentPoints = maxPoints / 10.0f,
           .newPoints = 0.0f,
-          .markerSpeed = -7.5f,
+          .markerSpeed = BaseWinTeamSpurConsumeRate * teamSize, // Scales with `WinTeamSpurConsumeRate`
           .unk5 = 0
         };
+
+        // TODO: lock it so that team with the winning spur cannot fill the gauge until spur is complete
+        // This is maxPoints / consumeRate. For example 25.0f / abs(-2.5f) = 10s locked
 
         std::scoped_lock lock(raceInstance.clientsMutex);
         for (const ClientId& raceClientId : raceInstance.clients)
         {
+          // Broadcast losing team's gauge status
           _commandServer.QueueCommand<decltype(beatenSpur)>(
             raceClientId,
             [beatenSpur]()
@@ -3435,6 +3443,7 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
               return beatenSpur;
             });
 
+          // Broadcast winning team's gauge status
           _commandServer.QueueCommand<decltype(successfulSpur)>(
             raceClientId,
             [successfulSpur]()
@@ -3447,18 +3456,9 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
       Scheduler::Clock::now() + std::chrono::seconds(2)); 
   }
 
-  spdlog::debug("[{}] AcCmdRCTeamSpurGauge: {} {} {} {} {}",
-    clientId,
-    spur.team == protocol::TeamColor::Red ? "Red" :
-      spur.team == protocol::TeamColor::Blue ? "Blue" :
-      "Unknown",
-    spur.currentPoints,
-    spur.newPoints,
-    spur.markerSpeed,
-    spur.unk5);
-
-  const auto clientsSnapshot = raceInstance.clients;
-  for (const auto& raceClientId : clientsSnapshot)
+  // Broadcast invoker's team gauge status
+  std::scoped_lock lock(raceInstance.clientsMutex);
+  for (const auto& raceClientId : raceInstance.clients)
   {
     _commandServer.QueueCommand<decltype(spur)>(raceClientId, [spur](){ return spur; });
   }
