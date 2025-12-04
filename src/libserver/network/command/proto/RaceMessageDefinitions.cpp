@@ -659,9 +659,13 @@ void AcCmdUserRaceFinal::Read(
   AcCmdUserRaceFinal& command,
   SourceStream& stream)
 {
-  stream.Read(command.oid)
-    .Read(command.courseTime)
-    .Read(command.member3);
+  stream.Read(command.oid);
+
+  uint32_t courseTime;
+  stream.Read(courseTime);
+  command.courseTime = std::chrono::milliseconds{courseTime};
+
+  stream.Read(command.member3);
 }
 
 void AcCmdUserRaceFinalNotify::Write(
@@ -669,7 +673,7 @@ void AcCmdUserRaceFinalNotify::Write(
   SinkStream& stream)
 {
   stream.Write(command.oid)
-    .Write(command.courseTime);
+    .Write(static_cast<int32_t>(command.courseTime.count()));
 }
 
 void AcCmdUserRaceFinalNotify::Read(
@@ -891,7 +895,7 @@ void AcCmdCRAwardEndNotify::Write(
   const AcCmdCRAwardEndNotify&,
   SinkStream&)
 {
-  // Empty.
+  stream.Write(command.unk0);
 }
 
 void AcCmdCRAwardEndNotify::Read(

@@ -1724,6 +1724,19 @@ void RaceDirector::HandleUserRaceFinal(
   ClientId clientId,
   const protocol::AcCmdUserRaceFinal& command)
 {
+  bool isDnf = command.member3 > 0;
+  std::chrono::hh_mm_ss raceTime{command.courseTime};
+  spdlog::debug("[{}] AcCmdUserRaceFinal: {} {} {}",
+    clientId,
+    command.oid,
+    isDnf ?
+      "DNF" :
+      std::format("{}:{}.{}",
+        raceTime.minutes().count(),
+        raceTime.seconds().count(),
+        raceTime.subseconds().count()),
+    command.member3);
+
   auto& clientContext = GetClientContext(clientId);
   auto& raceInstance = _raceInstances[clientContext.roomUid];
 
@@ -1733,11 +1746,13 @@ void RaceDirector::HandleUserRaceFinal(
     clientContext.characterUid);
 
   racer.state = tracker::RaceTracker::Racer::State::Finishing;
-  racer.courseTime = command.courseTime;
+  racer.courseTime = isDnf ? -1 :static_cast<int32_t>(command.courseTime.count());
 
   protocol::AcCmdUserRaceFinalNotify notify{
     .oid = racer.oid,
-    .courseTime = command.courseTime};
+    .courseTime = command.member3 < 0 ? 
+      command.courseTime :
+      std::chrono::milliseconds{-1}};
 
   for (const ClientId& raceClientId : raceInstance.clients)
   {
