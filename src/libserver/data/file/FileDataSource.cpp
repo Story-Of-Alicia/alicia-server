@@ -1064,7 +1064,6 @@ void server::FileDataSource::DeleteGuild(data::Uid uid)
   std::filesystem::remove(dataFilePath);
 }
 
-<<<<<<< HEAD
 bool server::FileDataSource::IsGuildNameUnique(const std::string_view& name)
 {
   const std::regex rg(
@@ -1243,9 +1242,7 @@ void server::FileDataSource::RetrieveStallion(data::Uid uid, data::Stallion& sta
   stallion.breedingCharge() = json["breedingCharge"];
   stallion.registeredAt() = data::Clock::time_point(
     std::chrono::seconds(json["registeredAt"].get<uint64_t>()));
-  stallion.expiresAt() = data::Clock::time_point(
-    std::chrono::seconds(json["expiresAt"].get<uint64_t>()));
-  stallion.timesBreeded() = json.value("timesBreeded", 0u);
+  stallion.timesMated() = json.value("timesMated", uint32_t{0});
 }
 
 void server::FileDataSource::StoreStallion(data::Uid uid, const data::Stallion& stallion)
@@ -1267,10 +1264,7 @@ void server::FileDataSource::StoreStallion(data::Uid uid, const data::Stallion& 
   json["breedingCharge"] = stallion.breedingCharge();
   json["registeredAt"] = std::chrono::duration_cast<std::chrono::seconds>(
     stallion.registeredAt().time_since_epoch()).count();
-  json["expiresAt"] = std::chrono::duration_cast<std::chrono::seconds>(
-    stallion.expiresAt().time_since_epoch()).count();
-  json["timesBreeded"] = stallion.timesBreeded();
->>>>>>> 0286bd2 (Added missing Horse fields for stallion registration)
+  json["timesMated"] = stallion.timesMated();
 
   dataFile << json.dump(2);
 }

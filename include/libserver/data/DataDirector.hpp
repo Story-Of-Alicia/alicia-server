@@ -29,6 +29,9 @@
 namespace server
 {
 
+// Forward declaration
+class FileDataSource;
+
 class DataDirector
 {
 public:
@@ -126,7 +129,7 @@ public:
   [[nodiscard]] StallionStorage& GetStallionCache();
   [[nodiscard]] std::vector<data::Uid> ListRegisteredStallions();
 
-  [[nodiscard]] FileDataSource& GetDataSource() { return *_primaryDataSource; }
+  [[nodiscard]] FileDataSource& GetDataSource() { return static_cast<FileDataSource&>(*_primaryDataSource); }
 
   [[nodiscard]] DataSource& GetDataSource() noexcept;
 

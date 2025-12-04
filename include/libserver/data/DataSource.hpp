@@ -187,7 +187,6 @@ public:
   //! Deletes the guild from the data source.
   //! @param uid UID of the guild.
   virtual void DeleteGuild(data::Uid uid) = 0;
-<<<<<<< HEAD
   //! Returns whether the guild name is unique.
   //! @return `true` if the guild name is unique, otherwise returns `false`.
   virtual bool IsGuildNameUnique(const std::string_view& name) = 0;

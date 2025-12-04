@@ -2852,7 +2852,6 @@ void RanchDirector::HandleGetItemFromStorage(
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-<<<<<<< HEAD
   bool isStorageItemValid = true;
 
   // Try to remove the storage item from the character.
