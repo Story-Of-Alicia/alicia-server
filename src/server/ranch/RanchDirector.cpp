@@ -828,9 +828,11 @@ void RanchDirector::HandleEnterRanch(
     return;
   }
 
-  clientContext.userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(clientContext.characterUid).userName;
   clientContext.characterUid = command.characterUid;
   clientContext.visitingRancherUid = command.rancherUid;
+
+  clientContext.userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+    clientContext.characterUid).userName;
 
   protocol::AcCmdCREnterRanchOK response{
     .rancherUid = command.rancherUid,

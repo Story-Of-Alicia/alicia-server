@@ -1304,29 +1304,23 @@ void LobbyNetworkHandler::HandleCreateNickname(
 
   constexpr uint32_t DefaultHorseTid = 20001;
 
-  std::optional<protocol::LobbyCommandCreateNicknameCancel::Reason> error{};
+  std::optional<protocol::AcCmdCLCreateNicknameCancel::Reason> error{};
   if (command.requestedHorseTid != DefaultHorseTid)
   {
     spdlog::warn("Client {} ('{}') requested to create a character with an invalid horse TID '{}'",
       clientId,
       clientContext.userName,
       command.requestedHorseTid);
-    error.emplace(protocol::LobbyCommandCreateNicknameCancel::Reason::ServerError);
+    error.emplace(protocol::AcCmdCLCreateNicknameCancel::Reason::ServerError);
   }
   else if (not locale::IsNameValid(command.nickname, 16))
   {
-    error.emplace(protocol::LobbyCommandCreateNicknameCancel::Reason::InvalidCharacterName);
-  }
-  else if (not _serverInstance.GetDataDirector().GetDataSource().IsCharacterNameUnique(command.nickname))
-  {
-    error.emplace(protocol::LobbyCommandCreateNicknameCancel::Reason::DuplicateCharacterName);
+    error.emplace(protocol::AcCmdCLCreateNicknameCancel::Reason::InvalidCharacterName);
   }
 
   if (error.has_value())
   {
-    protocol::LobbyCommandCreateNicknameCancel cancel{
-      .error = error.value()};
-    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    SendCreateNicknameCancel(clientId, *error);
     return;
   }
 
@@ -1352,6 +1346,17 @@ void LobbyNetworkHandler::HandleCreateNickname(
 
   if (userCharacterUid == data::InvalidUid)
   {
+    const bool isNameUnique = _serverInstance.GetDataDirector().GetDataSource().IsCharacterNameUnique(
+      command.nickname);
+
+    if (not isNameUnique)
+    {
+      SendCreateNicknameCancel(
+        clientId,
+        protocol::AcCmdCLCreateNicknameCancel::Reason::DuplicateCharacterName);
+      return;
+    }
+
     // Create a new mount for the character.
     const auto mountRecord  = _serverInstance.GetDataDirector().CreateHorse();
     if (not mountRecord)
@@ -1413,6 +1418,12 @@ void LobbyNetworkHandler::HandleCreateNickname(
       {
         user.characterUid() = userCharacterUid;
       });
+
+    _serverInstance.GetLobbyDirector().GetScheduler().Queue(
+      [this, userCharacterUid, userName = clientContext.userName]()
+      {
+        _serverInstance.GetLobbyDirector().GetUser(userName).characterUid = userCharacterUid;
+      });
   }
   else
   {
@@ -1448,6 +1459,17 @@ void LobbyNetworkHandler::HandleCreateNickname(
     command.nickname);
 
   SendLoginOK(clientId);
+}
+
+void LobbyNetworkHandler::SendCreateNicknameCancel(
+  const ClientId clientId,
+  const protocol::AcCmdCLCreateNicknameCancel::Reason reason)
+{
+  _commandServer.QueueCommand<protocol::AcCmdCLCreateNicknameCancel>(
+    clientId, [reason]()
+    {
+      return protocol::AcCmdCLCreateNicknameCancel{.error = reason};
+    });
 }
 
 void LobbyNetworkHandler::HandleShowInventory(

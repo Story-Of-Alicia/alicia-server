@@ -287,15 +287,15 @@ void AcCmdCLCreateNickname::Read(
     .Read(command.requestedHorseTid);
 }
 
-void LobbyCommandCreateNicknameCancel::Write(
-  const LobbyCommandCreateNicknameCancel& command,
+void AcCmdCLCreateNicknameCancel::Write(
+  const AcCmdCLCreateNicknameCancel& command,
   SinkStream& stream)
 {
   stream.Write(command.error);
 }
 
-void LobbyCommandCreateNicknameCancel::Read(
-  LobbyCommandCreateNicknameCancel& command,
+void AcCmdCLCreateNicknameCancel::Read(
+  AcCmdCLCreateNicknameCancel& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");

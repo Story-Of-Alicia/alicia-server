@@ -350,7 +350,6 @@ struct LobbyCommandCreateNicknameNotify
     SourceStream& stream);
 };
 
-//! Serverbound create nickname ok command.
 struct AcCmdCLCreateNickname
 {
   std::string nickname{};
@@ -377,8 +376,7 @@ struct AcCmdCLCreateNickname
     SourceStream& stream);
 };
 
-//! Serverbound create nickname cancel command.
-struct LobbyCommandCreateNicknameCancel
+struct AcCmdCLCreateNicknameCancel
 {
   enum class Reason : uint8_t
   {
@@ -397,14 +395,14 @@ struct LobbyCommandCreateNicknameCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandCreateNicknameCancel& command,
+    const AcCmdCLCreateNicknameCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandCreateNicknameCancel& command,
+    AcCmdCLCreateNicknameCancel& command,
     SourceStream& stream);
 };
 
