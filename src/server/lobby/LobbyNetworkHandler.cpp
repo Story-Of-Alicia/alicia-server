@@ -1391,7 +1391,7 @@ void LobbyNetworkHandler::HandleCreateNickname(
         &mountUid,
         &command](data::Character& character)
       {
-        if (character.name() == "")
+        if (character.name().empty())
           character.name = command.nickname;
 
         // todo: default level configured
