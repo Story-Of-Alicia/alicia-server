@@ -1307,9 +1307,9 @@ void LobbyNetworkHandler::HandleCreateNickname(
   std::optional<protocol::LobbyCommandCreateNicknameCancel::Reason> error{};
   if (command.requestedHorseTid != DefaultHorseTid)
   {
-    spdlog::warn("Client {} with character uid {} requested invalid horse tid {}",
+    spdlog::warn("Client {} ('{}') requested to create a character with an invalid horse TID '{}'",
       clientId,
-      clientContext.characterUid,
+      clientContext.userName,
       command.requestedHorseTid);
     error.emplace(protocol::LobbyCommandCreateNicknameCancel::Reason::ServerError);
   }
@@ -1357,7 +1357,7 @@ void LobbyNetworkHandler::HandleCreateNickname(
     if (not mountRecord)
     {
       throw std::runtime_error(
-        std::format("Failed to create horse for user {}", clientContext.userName));
+        std::format("Failed to create horse for user '{}'", clientContext.userName));
     }
 
     auto mountUid = data::InvalidUid;
@@ -1383,7 +1383,7 @@ void LobbyNetworkHandler::HandleCreateNickname(
     if (not userCharacter)
     {
       throw std::runtime_error(
-        std::format("Failed to create character for user {}", clientContext.userName));
+        std::format("Failed to create character for user '{}'", clientContext.userName));
     }
 
     userCharacter->Mutable(
