@@ -1354,6 +1354,11 @@ void LobbyNetworkHandler::HandleCreateNickname(
   {
     // Create a new mount for the character.
     const auto mountRecord  = _serverInstance.GetDataDirector().CreateHorse();
+    if (not mountRecord)
+    {
+      throw std::runtime_error(
+        std::format("Failed to create horse for user {}", clientContext.userName));
+    }
 
     auto mountUid = data::InvalidUid;
     mountRecord.Mutable(
@@ -1375,6 +1380,12 @@ void LobbyNetworkHandler::HandleCreateNickname(
 
     // Create the new character.
     userCharacter = _serverInstance.GetDataDirector().CreateCharacter();
+    if (not userCharacter)
+    {
+      throw std::runtime_error(
+        std::format("Failed to create character for user {}", clientContext.userName));
+    }
+
     userCharacter->Mutable(
       [&userCharacterUid,
         &mountUid,
@@ -1492,6 +1503,12 @@ void LobbyNetworkHandler::HandleUpdateUserSettings(
   const auto settingsRecord = settingsUid != data::InvalidUid
     ? _serverInstance.GetDataDirector().GetSettings(settingsUid)
     : _serverInstance.GetDataDirector().CreateSettings();
+
+  if (not settingsRecord)
+  {
+    throw std::runtime_error(
+      std::format("Failed to create or retrieve settings for user '{}'", clientContext.userName));
+  }
 
   settingsRecord.Mutable([&settingsUid, &command](data::Settings& settings)
   {

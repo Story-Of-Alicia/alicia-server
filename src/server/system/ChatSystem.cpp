@@ -572,6 +572,11 @@ void ChatSystem::RegisterUserCommands()
         auto giftUid = data::InvalidUid;
 
         const auto storedItem = _serverInstance.GetDataDirector().CreateStorageItem();
+        if (not storedItem)
+        {
+          return {"Server error.", "Please contact the administrators."};
+        }
+
         storedItem.Mutable(
           [&itemTemplate, &giftUid, itemCount, itemTid](data::StorageItem& storageItem)
           {
@@ -653,6 +658,11 @@ void ChatSystem::RegisterUserCommands()
         auto giftUid = data::InvalidUid;
 
         const auto storedItem = _serverInstance.GetDataDirector().CreateStorageItem();
+        if (not storedItem)
+        {
+          return {"Server error.", "Please contact the administrators."};
+        }
+
         storedItem.Mutable(
           [&selectedItems, &giftUid](data::StorageItem& storageItem)
           {
@@ -701,6 +711,12 @@ void ChatSystem::RegisterUserCommands()
 
         auto horseUid = data::InvalidUid;
         const auto& horseRecord = _serverInstance.GetDataDirector().CreateHorse();
+
+        if (not horseRecord)
+        {
+          return {"Server error.", "Please contact the administrators."};
+        }
+
         horseRecord.Mutable(
           [this, &horseUid](data::Horse& horse)
           {
@@ -745,6 +761,11 @@ void ChatSystem::RegisterUserCommands()
         // Create the storage item.
         auto giftUid = data::InvalidUid;
         const auto storedItem = _serverInstance.GetDataDirector().CreateStorageItem();
+        if (not storedItem)
+        {
+          return {"Server error.", "Please contact the administrators."};
+        }
+
         storedItem.Mutable([&giftUid, carrotCount](data::StorageItem& storageItem)
           {
             storageItem.carrots() = carrotCount;
