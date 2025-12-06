@@ -4414,6 +4414,7 @@ void RanchDirector::HandleBuyOwnItem(
         }
         else if (goods.setType == 1)
         {
+          // TODO: incomplete implementation
           costOpt.emplace(goods.setPrice);
           priceRange = 1;
         }
