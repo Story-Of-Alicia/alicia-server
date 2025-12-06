@@ -56,6 +56,7 @@ public:
     };
 
     bool ToggleReady();
+    void SetReady(bool ready);
     [[nodiscard]] bool IsReady() const;
     void SetTeam(Team team);
     [[nodiscard]] Team GetTeam() const;
