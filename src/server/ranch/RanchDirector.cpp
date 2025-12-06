@@ -4429,7 +4429,7 @@ void RanchDirector::HandleBuyOwnItem(
         const auto& goods = shopList.goodsList.at(shopItem.goodsSq);
         // Get the item cost from the selected price range
         std::optional<uint32_t> costOpt{};
-        uint32_t quantity{0};
+        uint32_t priceRange{0};
 
         // If goods info, get price from selected price range, else from set price
         if (goods.setType == 0)
@@ -4441,7 +4441,7 @@ void RanchDirector::HandleBuyOwnItem(
             if (price.priceId == shopItem.priceId)
             {
               costOpt.emplace(price.goodsPrice);
-              quantity = price.priceRange;
+              priceRange = price.priceRange;
               break;
             }
           }
@@ -4456,7 +4456,7 @@ void RanchDirector::HandleBuyOwnItem(
         else if (goods.setType == 1)
         {
           costOpt.emplace(goods.setPrice);
-          quantity = 1;
+          priceRange = 1;
         }
         else
         {
@@ -4501,19 +4501,20 @@ void RanchDirector::HandleBuyOwnItem(
         data::Uid itemUid{data::InvalidUid};
         if (itemRegistryRecord->type == registry::Item::Type::Temporary)
         {
-          // TODO: grab this from the shop/price ID
-          constexpr std::chrono::seconds ItemDuration = std::chrono::days(30);
+          // Item duration is the price range field.
+          std::chrono::seconds itemDuration = std::chrono::hours(priceRange);
           itemUid = GetServerInstance().GetItemSystem().AddItem(
             character,
             itemRegistryRecord->tid,
-            ItemDuration);
+            itemDuration);
         }
         else
         {
+          // Item quantity is the price range field.
           itemUid = GetServerInstance().GetItemSystem().AddItem(
             character,
             itemRegistryRecord->tid,
-            quantity);
+            priceRange);
         }
 
         if (shopItem.equipOnPurchase)
