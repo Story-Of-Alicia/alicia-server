@@ -71,6 +71,15 @@ data::Uid ItemSystem::AddItem(
   if (itemUid == data::InvalidUid)
   {
     const auto createdItemRecord = _serverInstance.GetDataDirector().CreateItem();
+    if (not createdItemRecord)
+    {
+      spdlog::error(
+        "Failed to create new item '{}' (x{}) for character '{}'",
+        itemTid,
+        count,
+        character.name());
+    }
+
     auto createdItemUid = data::InvalidUid;
 
     createdItemRecord.Mutable(
@@ -111,6 +120,15 @@ data::Uid ItemSystem::AddItem(
   if (itemUid == data::InvalidUid)
   {
     const auto createdItemRecord = _serverInstance.GetDataDirector().CreateItem();
+    if (not createdItemRecord)
+    {
+      spdlog::error(
+        "Failed to create new item '{}' (xs) for character '{}'",
+        itemTid,
+        duration.count(),
+        character.name());
+    }
+
     auto createdItemUid = data::InvalidUid;
 
     createdItemRecord.Mutable(

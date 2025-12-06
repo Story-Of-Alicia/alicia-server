@@ -91,23 +91,8 @@ void LobbyDirector::Tick()
 
     _loginResponseQueue.pop_front();
 
-    const bool forcedCharacterCreator = _charactersForcedIntoCreator.erase(
-      characterUid) > 0;
-
-    // If the user does not have a character or the character creator was enforced
-    // send them to the character creator.
-    if (not hasCharacter || forcedCharacterCreator)
-    {
-      spdlog::debug(
-        "User '{}' (client {}) succeeded in authentication and was sent to the character creator",
-        loginContext.userName,
-        clientId);
-      _networkHandler->AcceptLogin(clientId, true);
-      return;
-    }
-
     // If the character was not loaded reject the login.
-    if (not _serverInstance.GetDataDirector().AreCharacterDataLoaded(
+    if (characterUid != data::InvalidUid && not _serverInstance.GetDataDirector().AreCharacterDataLoaded(
       loginContext.userName))
     {
       spdlog::error("User character data for '{}' not available", clientId);
@@ -127,8 +112,11 @@ void LobbyDirector::Tick()
       return;
     }
 
+    const bool requiresCharacterCreator = _charactersForcedIntoCreator.erase(characterUid) > 0
+      || characterUid == data::InvalidUid;
+
     spdlog::debug("User '{}' succeeded in authentication", loginContext.userName);
-    _networkHandler->AcceptLogin(clientId);
+    _networkHandler->AcceptLogin(clientId, requiresCharacterCreator);
 
     auto& userInstance = iter->second;
     userInstance.userName = loginContext.userName;
@@ -281,7 +269,7 @@ bool LobbyDirector::IsUserOnline(const std::string& userName)
   return _userInstances.contains(userName);
 }
 
-const LobbyDirector::UserInstance& LobbyDirector::GetUser(
+LobbyDirector::UserInstance& LobbyDirector::GetUser(
   const std::string& userName)
 {
   const auto iter = _userInstances.find(userName);
