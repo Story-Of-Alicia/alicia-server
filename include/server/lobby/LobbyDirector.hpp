@@ -95,7 +95,7 @@ public:
     const std::string& userName);
 
   bool IsUserOnline(const std::string& userName);
-  const UserInstance& GetUser(const std::string& userName);
+  UserInstance& GetUser(const std::string& userName);
   const UserInstance& GetUserByCharacterUid(data::Uid characterUid);
 
   void SetUserRoom(const std::string& userName, data::Uid roomUid);

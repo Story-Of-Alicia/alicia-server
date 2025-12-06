@@ -21,6 +21,7 @@
 #define DATASTORAGE_HPP
 
 #include <atomic>
+#include <format>
 #include <functional>
 #include <mutex>
 #include <optional>
@@ -223,7 +224,7 @@ public:
     auto [key, data] = supplier();
     auto [it, created] = _entries.try_emplace(key);
     if (not created)
-      throw std::runtime_error("Entry already exists");
+      throw std::runtime_error(std::format("Entry with key {} already exists", key));
 
     auto& entry = it->second;
     entry.value = std::move(data);
