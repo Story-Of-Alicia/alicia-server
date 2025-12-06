@@ -34,6 +34,10 @@ if (${MSVC})
             icu.lib)
     target_compile_options(platform-properties INTERFACE
             /utf-8 /bigobj)
+elseif(MINGW)
+    # MinGW/MSYS2 uses different ICU library names and needs winsock libraries
+    target_link_libraries(platform-properties INTERFACE
+            icuuc icuio icuin ws2_32 mswsock)
 else()
     target_link_libraries(platform-properties INTERFACE
             icuuc icui18n)
