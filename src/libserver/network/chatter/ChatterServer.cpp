@@ -137,7 +137,7 @@ size_t ChatterServer::OnClientData(
       std::vector<std::byte> commandData(commandDataLength);
       SinkStream commandDataSink({commandData.begin(), commandData.end()});
 
-      for (int64_t idx = 0; idx < commandDataLength; ++idx)
+      for (uint64_t idx = 0; idx < commandDataLength; ++idx)
       {
         std::byte& val = commandData[idx];
         commandStream.Read(val);

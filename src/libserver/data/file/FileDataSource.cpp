@@ -111,7 +111,7 @@ void server::FileDataSource::Terminate()
   metaFile << meta.dump(2);
 }
 
-void server::FileDataSource::CreateUser(data::User& user)
+void server::FileDataSource::CreateUser(data::User&)
 {
 }
 
@@ -136,7 +136,7 @@ void server::FileDataSource::RetrieveUser(const std::string_view& name, data::Us
   user.infractions = json["infractions"].get<std::vector<data::Uid>>();
 }
 
-void server::FileDataSource::StoreUser(const std::string_view& name, const data::User& user)
+void server::FileDataSource::StoreUser(const std::string_view&, const data::User& user)
 {
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _userDataPath, user.name());
