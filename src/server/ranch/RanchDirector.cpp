@@ -4333,11 +4333,22 @@ void RanchDirector::HandleConfirmSetItem(
 {
   const auto& clientContext = GetClientContext(clientId);
 
-  // TODO: shop sends items identified by `GoodsSQ` and the client
-  // uses that to send the command as `shopItemUid`.
-  // Create some form of shop item tracking to map shop to items.
-  // Right now, `GoodsSQ` is item TID.
-  const data::Tid requestedTid = command.shopItemUid;
+  // Get current shop list
+  const auto& shopList = GetServerInstance().GetLobbyDirector().GetShopManager().GetShopList();
+
+  // Check if current shop list contains the 
+  if (not shopList.goodsList.contains(command.goodsSq))
+  {
+    // Goods by that ID does not exist, return error
+    protocol::AcCmdCRConfirmSetItemCancel cancel{};
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  // Get goods from the goods list
+  const auto& goods = shopList.goodsList.at(command.goodsSq);
+  // Get item TID from the goods
+  const auto& requestedTid = goods.itemUid;
 
   // Validate shop item and ensure server has it in the item registry
   const auto& itemRegistryRecord = GetServerInstance().GetItemRegistry().GetItem(requestedTid);
@@ -4358,7 +4369,7 @@ void RanchDirector::HandleConfirmSetItem(
 
     // Parse `hasItem` as result and return response
     protocol::AcCmdCRConfirmSetItemOK response{
-      .shopItemUid = requestedTid,
+      .goodsSq = command.goodsSq,
       .result = static_cast<protocol::AcCmdCRConfirmSetItemOK::Result>(hasItem)
     };
 
@@ -4392,31 +4403,77 @@ void RanchDirector::HandleBuyOwnItem(
   using OwnedItem = protocol::AcCmdCRBuyOwnItemOK::OwnedItem;
 
   protocol::AcCmdCRBuyOwnItemOK response{};
+  
+  // Get current shop list
+  const auto& shopList = GetServerInstance().GetLobbyDirector().GetShopManager().GetShopList();
 
   GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
-    [this, &command, &response](data::Character& character)
+    [this, &shopList, &command, &response](data::Character& character)
     {
       for (const auto& shopItem : command.shopItems)
       {
+        // Create a result entry in the response
         auto& shopItemResult = response.shopItemResults.emplace_back(
           ShopItemResult{
             .shopItem = shopItem});
 
-        // TODO: retrieve item from shop registry to match against the `GoodsSQ`
-        // For now this is mapped to `item.tid`
-        const data::Tid& tid = shopItem.goodsSq;
-        const auto& itemRegistryRecord = GetServerInstance().GetItemRegistry().GetItem(tid);
+        // Check if a shop item by that `GoodsSQ` exists
+        if (not shopList.goodsList.contains(shopItem.goodsSq))
+        {
+          // TODO: shop item by that `GoodsSQ` does not exist
+          // mark this shop item with relevant error and continue
+          continue;
+        }
+        
+        // Get the shop goods
+        const auto& goods = shopList.goodsList.at(shopItem.goodsSq);
+        // Get the item cost from the selected price range
+        std::optional<uint32_t> costOpt{};
+        uint32_t quantity{0};
 
-        // TODO: selected shop item has price ID attached to it, retrieve it from the shop registry
-        // currently assumes item cost is in carrots, implement check for cash items.
-        constexpr uint32_t Price = 1;
+        // If goods info, get price from selected price range, else from set price
+        if (goods.setType == 0)
+        {
+          // Loop through each price range
+          for (const auto& price : goods.items)
+          {
+            // Check if price ID for the goods matches that of the one selected by the character
+            if (price.priceId == shopItem.priceId)
+            {
+              costOpt.emplace(price.goodsPrice);
+              quantity = price.priceRange;
+              break;
+            }
+          }
 
-        // TODO: determine from shop registry
-        bool isCashItem = false;
+          if (not costOpt.has_value())
+          {
+            // Goods item with that price range not found, continue onto next shop item
+            shopItemResult.transactionResult = ShopItemResult::TransactionResult::NotAvailable;
+            continue;
+          }
+        }
+        else if (goods.setType == 1)
+        {
+          costOpt.emplace(goods.setPrice);
+          quantity = 1;
+        }
+        else
+        {
+          // Set type unknown, return unknown error and move onto the next shop item
+          shopItemResult.transactionResult = ShopItemResult::TransactionResult::UnknownError;
+          continue;
+        }
 
-        bool hasSufficientCarrots = character.carrots() >= Price;
+        // Get the item from the registry, by item TID (`itemUid` in the goods entry is actually the item TID)
+        const auto& itemRegistryRecord = GetServerInstance().GetItemRegistry().GetItem(goods.itemUid);
+
+        bool isCashItem = goods.moneyType == ShopList::Goods::MoneyType::Cash;
+        const uint32_t cost = costOpt.value();
+
+        bool hasSufficientCarrots = character.carrots() >= cost;
         bool canPurchaseCarrotItem = not isCashItem and hasSufficientCarrots;
-        bool hasSufficientCash = character.cash() >= Price;
+        bool hasSufficientCash = character.cash() >= cost;
         bool canPurchaseCashItem = isCashItem and hasSufficientCash;
 
         if (not canPurchaseCarrotItem and not canPurchaseCashItem)
@@ -4425,7 +4482,7 @@ void RanchDirector::HandleBuyOwnItem(
           shopItemResult.transactionResult = ShopItemResult::TransactionResult::OutOfMoney;
           continue;
         }
-        else if (GetServerInstance().GetItemSystem().HasItem(character, tid))
+        else if (GetServerInstance().GetItemSystem().HasItem(character, itemRegistryRecord->tid))
         {
           // Character already owns this item
           // TODO: is there a better one to use than unknown error?
@@ -4436,9 +4493,9 @@ void RanchDirector::HandleBuyOwnItem(
 
         // Deduct from character carrot/cash balance
         if (isCashItem)
-          character.cash() -= Price;
+          character.cash() -= cost;
         else
-          character.carrots() -= Price;
+          character.carrots() -= cost;
 
         // Add item to character's inventory
         data::Uid itemUid{data::InvalidUid};
@@ -4448,24 +4505,21 @@ void RanchDirector::HandleBuyOwnItem(
           constexpr std::chrono::seconds ItemDuration = std::chrono::days(30);
           itemUid = GetServerInstance().GetItemSystem().AddItem(
             character,
-            tid,
+            itemRegistryRecord->tid,
             ItemDuration);
         }
         else
         {
-          // TODO: grab this from the shop/price ID
-          constexpr uint32_t ItemCount = 1;
           itemUid = GetServerInstance().GetItemSystem().AddItem(
             character,
-            tid,
-            ItemCount);
+            itemRegistryRecord->tid,
+            quantity);
         }
 
         if (shopItem.equipOnPurchase)
         {
-          // Add this to character equipment
-          // FIXME:/TODO: this does not remove any equipped item, if any!
-          character.characterEquipment().emplace_back(itemUid);
+          // TODO: Add this to character equipment
+          // Check if any equipment is equipped, unequip and equip new purchase if so
         }
 
         GetServerInstance().GetDataDirector().GetItem(itemUid).Immutable(

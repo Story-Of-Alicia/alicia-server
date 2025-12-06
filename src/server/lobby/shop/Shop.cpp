@@ -25,11 +25,8 @@ std::string ShopListToXmlString(const ShopList& shopList)
   doc.InsertEndChild(shopListElem);
 
   // Iterate goods
-  for (auto g = 0; g < shopList.goodsList.size(); ++g)
+  for (const auto& [goodsSq, goods] : shopList.goodsList)
   {
-    // Get goods entry
-    const auto& goods = shopList.goodsList[g];
-
     // Begin <GoodsList>
     const auto& goodsElem = doc.NewElement("GoodsList");
     goodsElem->InsertNewChildElement("GoodsSQ")->SetText(goods.goodsSq);
@@ -92,9 +89,10 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
 
     if (item.careParameters || item.cureParameters || item.foodParameters || item.playParameters)
     {
-      _shopList.goodsList.emplace_back(
+      _shopList.goodsList.emplace(
+        goodsSequenceId,
         ShopList::Goods{
-          .goodsSq = tid,
+          .goodsSq = goodsSequenceId,
           .setType = 0,
           .moneyType = ShopList::Goods::MoneyType::Carrots,
           .goodsType = ShopList::Goods::GoodsType::Default,
@@ -124,9 +122,10 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
     }
     else if (item.characterPartInfo)
     {
-      _shopList.goodsList.emplace_back(
+      _shopList.goodsList.emplace(
+        goodsSequenceId,
         ShopList::Goods{
-          .goodsSq = tid,
+          .goodsSq = goodsSequenceId,
           .setType = 0,
           .moneyType = ShopList::Goods::MoneyType::Carrots,
           .goodsType = ShopList::Goods::GoodsType::New,
@@ -150,9 +149,10 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
     else if (item.type == registry::Item::Type::Temporary)
     {
       // Time-based items, price range changes
-      _shopList.goodsList.emplace_back(
+      _shopList.goodsList.emplace(
+        goodsSequenceId,
         ShopList::Goods{
-          .goodsSq = tid,
+          .goodsSq = goodsSequenceId,
           .setType = 0,
           .moneyType = ShopList::Goods::MoneyType::Carrots,
           .goodsType = ShopList::Goods::GoodsType::Default,

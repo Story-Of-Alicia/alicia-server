@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 namespace server
 {
@@ -82,7 +83,7 @@ struct ShopList
     std::vector<Item> items{};
   };
 
-  std::vector<Goods> goodsList{};
+  std::unordered_map<uint32_t, Goods> goodsList{};
 };
 
 class ShopManager
