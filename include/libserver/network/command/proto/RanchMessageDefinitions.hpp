@@ -1838,6 +1838,8 @@ struct AcCmdCRWearEquipment
 struct AcCmdCRWearEquipmentOK
 {
   uint32_t itemUid{};
+  // When set only to 1, invokes game message `GameMsg::gMsgWearRiderGrazeMount` with itemUid and 1.
+  // Game message is seemingly never handled internally. Seemingly unused.
   uint8_t member{};
 
   static Command GetCommand()
@@ -4360,6 +4362,130 @@ struct AcCmdCRConfirmSetItemCancel
   //! @param stream Source stream.
   static void Read(
     AcCmdCRConfirmSetItemCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBuyOwnItem 
+{
+  struct ShopItem
+  {
+    //! Shop item ID (corresponds to `GoodsSQ`).
+    uint32_t goodsSq{};
+    //! Equip item on purchase.
+    bool equipOnPurchase{};
+    //! Selected price (corresponds to `PriceRange`).
+    uint16_t priceRange{};
+  };
+
+  //! Max 32 (0x20) items.
+  std::vector<ShopItem> shopItems{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBuyOwnItem;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBuyOwnItem& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBuyOwnItem& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBuyOwnItemCancel
+{
+  //! Values as used in the `ShopHandlerStrings` table in libconfig.
+  enum class Error : uint8_t
+  {
+    GeneralError = 0,       // `CR_ERROR`
+    OutOfMoney = 1,         // `CR_OUT_OF_MONEY`
+    NotAvailable = 2,       // `CR_NOT_AVAILABLE`
+    OutOfStock = 3,         // `CR_OUT_OF_STOCK`
+    OutOfTime = 4,          // `CR_OUT_OF_TIME`
+    DupCharBuy = 5,         // `CR_DUP_CHAR_BUY`
+    TooManyOwns = 6,        // `CR_TOO_MANY_OWNS`
+    ShopBuyUnavailable = 7  // `CR_SHOP_BUY_UNAVAILABLE`
+  } error{Error::GeneralError};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBuyOwnItemCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBuyOwnItemCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBuyOwnItemCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBuyOwnItemOK
+{
+  struct ShopItemResult
+  {
+    protocol::AcCmdCRBuyOwnItem::ShopItem shopItem{};
+    // Corresponds to `ShopHandlerStrings`
+    enum class TransactionResult : uint8_t
+    {
+      Success = 0,
+      UnknownError = 1,       // `UnknownError`
+      OutOfMoney = 0xC,       // `CEC_OUT_OF_MONEY`
+      NotAvailable = 0xD,     // `CEC_NOT_AVAILABLE`
+      OutOfStock = 0xE,       // `CEC_OUT_OF_STOCK`
+      OutOfTime = 0xF,        // `CEC_OUT_OF_TIME`
+      DuplicatedChar = 0x11,  // `CEC_DUPLICATED_CHAR`
+      NoMoreMount = 0x13,     // `CEC_NO_MORE_MOUNT`
+    } transactionResult{TransactionResult::Success};
+  };
+  // Max 32 (0x20)
+  std::vector<ShopItemResult> shopItemResults{};
+
+  struct OwnedItem
+  {
+    //! Indicates whether or not the character should equip this item.
+    bool equip{false};
+    //! Purchased item.
+    Item item{};
+  };
+  // Max 250 (0xfa)
+  std::vector<OwnedItem> ownedItems{};
+
+  uint32_t newCarrots{};
+  uint32_t newCash{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBuyOwnItemOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBuyOwnItemOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBuyOwnItemOK& command,
     SourceStream& stream);
 };
 

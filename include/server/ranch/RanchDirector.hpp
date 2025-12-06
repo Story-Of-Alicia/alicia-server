@@ -391,6 +391,10 @@ private:
     ClientId clientId,
     protocol::ChangeNicknameError reason);
 
+  void HandleBuyOwnItem(
+    ClientId clientId, 
+    const protocol::AcCmdCRBuyOwnItem& command);
+
   //!
   ServerInstance& _serverInstance;
   //!
