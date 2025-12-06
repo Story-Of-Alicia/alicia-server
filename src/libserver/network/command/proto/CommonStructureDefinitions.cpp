@@ -664,7 +664,6 @@ void RanchCharacter::Write(const RanchCharacter& ranchCharacter, SinkStream& str
     .Write(struct6.val2);
 
   // Pet
-  const auto& struct7 = ranchCharacter.pet;
   stream.Write(ranchCharacter.pet)
     .Write(ranchCharacter.unk4)
     .Write(ranchCharacter.unk5);
