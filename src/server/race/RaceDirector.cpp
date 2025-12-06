@@ -597,6 +597,10 @@ void RaceDirector::Tick()
       [](Room& room)
       {
         room.SetRoomPlaying(false);
+        for (auto& [uid, player] : room.GetPlayers())
+        {
+          player.SetReady(true);
+        }
       });
   }
 }
@@ -1330,6 +1334,82 @@ void RaceDirector::HandleStartRace(
 
   if (clientContext.characterUid != raceInstance.masterUid)
     throw std::runtime_error("Client tried to start the race even though they're not the master");
+
+  // Check if all requirements are met to start the race
+  bool allPlayersReady = false;
+  bool isTeamMode = false;
+  uint32_t redTeamCount = 0;
+  uint32_t blueTeamCount = 0;
+
+  _serverInstance.GetRoomSystem().GetRoom(
+    clientContext.roomUid,
+    [&allPlayersReady, &isTeamMode, &redTeamCount, &blueTeamCount, clientContext](Room& room)
+    {
+      // Toggle the ready state of the master
+      room.GetPlayer(clientContext.characterUid).ToggleReady();
+
+      allPlayersReady = std::ranges::all_of(
+        room.GetPlayers() | std::views::values,
+        [](const Room::Player& player)
+        {
+          return player.IsReady();
+        });
+      
+      isTeamMode = room.GetRoomDetails().teamMode == Room::TeamMode::Team;
+
+      // Count team members if in team mode
+      if (isTeamMode)
+      {
+        for (const auto& player : room.GetPlayers() | std::views::values)
+        {
+          switch (player.GetTeam())
+          {
+            case Room::Player::Team::Red:
+              redTeamCount++;
+              break;
+            case Room::Player::Team::Blue:
+              blueTeamCount++;
+              break;
+            default:
+              break;
+          }
+        }
+      }
+    });
+
+  // Helper lambda to send cancellation
+  auto sendCancel = [this, &clientId, clientContext](protocol::AcCmdCRStartRaceCancel::Reason reason)
+  {
+    protocol::AcCmdCRStartRaceCancel cancel{.reason = reason};
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+
+    // Revert the ready state of the master
+    _serverInstance.GetRoomSystem().GetRoom(
+      clientContext.roomUid,
+      [clientContext](Room& room)
+      {
+        room.GetPlayer(clientContext.characterUid).ToggleReady();
+      });
+  };
+
+  // Validate race start conditions
+  if (not allPlayersReady)
+  {
+    sendCancel(protocol::AcCmdCRStartRaceCancel::Reason::NotREADY);
+
+    return;
+  }
+
+  if (isTeamMode && redTeamCount != blueTeamCount)
+  {
+    sendCancel(protocol::AcCmdCRStartRaceCancel::Reason::NotTeamBalance);
+    return;
+  }
 
   const auto roomUid = clientContext.roomUid;
   uint32_t roomSelectedCourses;
