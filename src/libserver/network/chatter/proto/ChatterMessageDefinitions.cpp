@@ -22,15 +22,15 @@
 #include <stdexcept>
 
 void server::protocol::ChatCmdLogin::Write(
-  const ChatCmdLogin& command,
-  server::SinkStream& stream)
+  const ChatCmdLogin&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void server::protocol::ChatCmdLogin::Read(
   ChatCmdLogin& command,
-  server::SourceStream& stream)
+  SourceStream& stream)
 {
   stream.Read(command.val0)
     .Read(command.name)
@@ -68,21 +68,21 @@ void server::protocol::ChatCmdLoginAckOK::Write(
 }
 
 void server::protocol::ChatCmdLoginAckOK::Read(
-  ChatCmdLoginAckOK& command,
-  server::SourceStream& stream)
+  ChatCmdLoginAckOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void server::protocol::ChatCmdLoginAckCancel::Write(
-  const ChatCmdLoginAckCancel& command,
-  server::SinkStream& stream)
+  const ChatCmdLoginAckCancel&,
+  SinkStream&)
 {
 }
 
 void server::protocol::ChatCmdLoginAckCancel::Read(
-  ChatCmdLoginAckCancel& command,
-  server::SourceStream& stream)
+  ChatCmdLoginAckCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }

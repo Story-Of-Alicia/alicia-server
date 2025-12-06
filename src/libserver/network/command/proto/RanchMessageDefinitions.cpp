@@ -27,8 +27,8 @@ namespace server::protocol
 {
 
 void AcCmdCRUseItem::Write(
-  const AcCmdCRUseItem& command,
-  SinkStream& stream)
+  const AcCmdCRUseItem&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -65,8 +65,8 @@ void AcCmdCRUseItemOK::Write(
 }
 
 void AcCmdCRUseItemOK::Read(
-  AcCmdCRUseItemOK& command,
-  SourceStream& stream)
+  AcCmdCRUseItemOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -2039,15 +2039,15 @@ void RanchCommandRequestLeagueTeamListOK::Write(
 }
 
 void RanchCommandRequestLeagueTeamListOK::Read(
-  RanchCommandRequestLeagueTeamListOK& command,
-  SourceStream& stream)
+  RanchCommandRequestLeagueTeamListOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRRecoverMount::Write(
-  const AcCmdCRRecoverMount& command,
-  SinkStream& stream)
+  const AcCmdCRRecoverMount&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -2069,8 +2069,8 @@ void AcCmdCRRecoverMountOK::Write(
 }
 
 void AcCmdCRRecoverMountOK::Read(
-  AcCmdCRRecoverMountOK& command,
-  SourceStream& stream)
+  AcCmdCRRecoverMountOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -2083,15 +2083,15 @@ void AcCmdCRRecoverMountCancel::Write(
 }
 
 void AcCmdCRRecoverMountCancel::Read(
-  AcCmdCRRecoverMountCancel& command,
-  SourceStream& stream)
+  AcCmdCRRecoverMountCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
 void AcCmdCRWithdrawGuildMember::Write(
-  const AcCmdCRWithdrawGuildMember& command,
-  SinkStream& stream)
+  const AcCmdCRWithdrawGuildMember&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2112,8 +2112,8 @@ void AcCmdCRWithdrawGuildMemberOK::Write(
 }
 
 void AcCmdCRWithdrawGuildMemberOK::Read(
-  AcCmdCRWithdrawGuildMemberOK& command,
-  SourceStream& stream)
+  AcCmdCRWithdrawGuildMemberOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2126,8 +2126,8 @@ void AcCmdCRWithdrawGuildMemberCancel::Write(
 }
 
 void AcCmdCRWithdrawGuildMemberCancel::Read(
-  AcCmdCRWithdrawGuildMemberCancel& command,
-  SourceStream& stream)
+  AcCmdCRWithdrawGuildMemberCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2143,8 +2143,8 @@ void AcCmdRCWithdrawGuildMemberNotify::Write(
 }
 
 void AcCmdRCWithdrawGuildMemberNotify::Read(
-  AcCmdRCWithdrawGuildMemberNotify& command,
-  SourceStream& stream)
+  AcCmdRCWithdrawGuildMemberNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2157,8 +2157,8 @@ void AcCmdCRCheckStorageItem::Read(
 }
 
 void AcCmdCRCheckStorageItem::Write(
-  const AcCmdCRCheckStorageItem& command,
-  SinkStream& stream)
+  const AcCmdCRCheckStorageItem&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2171,28 +2171,28 @@ void AcCmdCRChangeAge::Read(
 }
 
 void AcCmdCRChangeAge::Write(
-  const AcCmdCRChangeAge& command,
-  SinkStream& stream)
+  const AcCmdCRChangeAge&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRChangeAgeCancel::Read(
-  AcCmdCRChangeAgeCancel& command,
-  SourceStream& stream)
+  AcCmdCRChangeAgeCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRChangeAgeCancel::Write(
-  const AcCmdCRChangeAgeCancel& command,
-  SinkStream& stream)
+  const AcCmdCRChangeAgeCancel&,
+  SinkStream&)
 {
 }
 
 void AcCmdCRChangeAgeOK::Read(
-  AcCmdCRChangeAgeOK& command,
-  SourceStream& stream)
+  AcCmdCRChangeAgeOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2205,8 +2205,8 @@ void AcCmdCRChangeAgeOK::Write(
 }
 
 void AcCmdRCChangeAgeNotify::Read(
-  AcCmdRCChangeAgeNotify& command,
-  SourceStream& stream)
+  AcCmdRCChangeAgeNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2227,28 +2227,28 @@ void AcCmdCRHideAge::Read(
 }
 
 void AcCmdCRHideAge::Write(
-  const AcCmdCRHideAge& command,
-  SinkStream& stream)
+  const AcCmdCRHideAge&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRHideAgeCancel::Read(
-  AcCmdCRHideAgeCancel& command,
-  SourceStream& stream)
+  AcCmdCRHideAgeCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRHideAgeCancel::Write(
-  const AcCmdCRHideAgeCancel& command,
-  SinkStream& stream)
+  const AcCmdCRHideAgeCancel&,
+  SinkStream&)
 {
 }
 
 void AcCmdCRHideAgeOK::Read(
-  AcCmdCRHideAgeOK& command,
-  SourceStream& stream)
+  AcCmdCRHideAgeOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2261,8 +2261,8 @@ void AcCmdCRHideAgeOK::Write(
 }
 
 void AcCmdRCHideAgeNotify::Read(
-  AcCmdRCHideAgeNotify& command,
-  SourceStream& stream)
+  AcCmdRCHideAgeNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2276,8 +2276,8 @@ void AcCmdRCHideAgeNotify::Write(
 }
 
 void AcCmdCRChangeNickname::Write(
-  const AcCmdCRChangeNickname& command,
-  SinkStream& stream)
+  const AcCmdCRChangeNickname&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2299,8 +2299,8 @@ void AcCmdCRChangeNicknameCancel::Write(
 }
 
 void AcCmdCRChangeNicknameCancel::Read(
-  AcCmdCRChangeNicknameCancel& command,
-  SourceStream& stream)
+  AcCmdCRChangeNicknameCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2315,8 +2315,8 @@ void AcCmdCRChangeNicknameOK::Write(
 }
 
 void AcCmdCRStatusPointApply::Write(
-  const AcCmdCRStatusPointApply& command,
-  SinkStream& stream)
+  const AcCmdCRStatusPointApply& ,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2330,36 +2330,36 @@ void AcCmdCRStatusPointApply::Read(
 }
 
 void AcCmdCRStatusPointApplyOK::Write(
-  const AcCmdCRStatusPointApplyOK& command,
-  SinkStream& stream)
+  const AcCmdCRStatusPointApplyOK&,
+  SinkStream&)
 {
   // empty
 }
 
 void AcCmdCRStatusPointApplyOK::Read(
-  AcCmdCRStatusPointApplyOK& command,
-  SourceStream& stream)
+  AcCmdCRStatusPointApplyOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRStatusPointApplyCancel::Write(
-  const AcCmdCRStatusPointApplyCancel& command,
-  SinkStream& stream)
+  const AcCmdCRStatusPointApplyCancel&,
+  SinkStream&)
 {
   // empty
 }
 
 void AcCmdCRStatusPointApplyCancel::Read(
-  AcCmdCRStatusPointApplyCancel& command,
-  SourceStream& stream)
+  AcCmdCRStatusPointApplyCancel&,
+  SourceStream&)
 {
   // empty
 }
 
 void AcCmdCRChangeSkillCardPreset::Write(
-  const AcCmdCRChangeSkillCardPreset& command,
-  SinkStream& stream)
+  const AcCmdCRChangeSkillCardPreset&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2372,22 +2372,22 @@ void AcCmdCRChangeSkillCardPreset::Read(
 }
 
 void AcCmdCRGuildMemberList::Read(
-  AcCmdCRGuildMemberList& command,
-  SourceStream& stream)
+  AcCmdCRGuildMemberList&,
+  SourceStream&)
 {
   // Empty.
 }
 
 void AcCmdCRGuildMemberList::Write(
-  const AcCmdCRGuildMemberList& command,
-  SinkStream& stream)
+  const AcCmdCRGuildMemberList&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRGuildMemberListCancel::Read(
-  AcCmdCRGuildMemberListCancel& command,
-  SourceStream& stream)
+  AcCmdCRGuildMemberListCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2400,8 +2400,8 @@ void AcCmdCRGuildMemberListCancel::Write(
 }
 
 void AcCmdCRGuildMemberListOK::Read(
-  AcCmdCRGuildMemberListOK& command,
-  SourceStream& stream)
+  AcCmdCRGuildMemberListOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2429,29 +2429,29 @@ void AcCmdCRRequestGuildMatchInfo::Read(
 }
 
 void AcCmdCRRequestGuildMatchInfo::Write(
-  const AcCmdCRRequestGuildMatchInfo& command,
-  SinkStream& stream)
+  const AcCmdCRRequestGuildMatchInfo&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRRequestGuildMatchInfoCancel::Read(
-  AcCmdCRRequestGuildMatchInfoCancel& command,
-  SourceStream& stream)
+  AcCmdCRRequestGuildMatchInfoCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRRequestGuildMatchInfoCancel::Write(
-  const AcCmdCRRequestGuildMatchInfoCancel& command,
-  SinkStream& stream)
+  const AcCmdCRRequestGuildMatchInfoCancel&,
+  SinkStream&)
 {
   // Empty.
 }
 
 void AcCmdCRRequestGuildMatchInfoOK::Read(
-  AcCmdCRRequestGuildMatchInfoOK& command,
-  SourceStream& stream)
+  AcCmdCRRequestGuildMatchInfoOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2484,15 +2484,15 @@ void AcCmdCRUpdateGuildMemberGrade::Read(
 }
 
 void AcCmdCRUpdateGuildMemberGrade::Write(
-  const AcCmdCRUpdateGuildMemberGrade& command,
-  SinkStream& stream)
+  const AcCmdCRUpdateGuildMemberGrade&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRUpdateGuildMemberGradeCancel::Read(
-  AcCmdCRUpdateGuildMemberGradeCancel& command,
-  SourceStream& stream)
+  AcCmdCRUpdateGuildMemberGradeCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2505,22 +2505,22 @@ void AcCmdCRUpdateGuildMemberGradeCancel::Write(
 }
 
 void AcCmdCRUpdateGuildMemberGradeOK::Read(
-  AcCmdCRUpdateGuildMemberGradeOK& command,
-  SourceStream& stream)
+  AcCmdCRUpdateGuildMemberGradeOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRUpdateGuildMemberGradeOK::Write(
-  const AcCmdCRUpdateGuildMemberGradeOK& command,
-  SinkStream& stream)
+  const AcCmdCRUpdateGuildMemberGradeOK&,
+  SinkStream&)
 {
   // Empty return
 }
 
 void AcCmdRCUpdateGuildMemberGradeNotify::Read(
-  AcCmdRCUpdateGuildMemberGradeNotify& command,
-  SourceStream& stream)
+  AcCmdRCUpdateGuildMemberGradeNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2544,15 +2544,15 @@ void AcCmdCRInviteGuildJoin::Read(
 }
 
 void AcCmdCRInviteGuildJoin::Write(
-  const AcCmdCRInviteGuildJoin& command,
-  SinkStream& stream)
+  const AcCmdCRInviteGuildJoin&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRInviteGuildJoinCancel::Read(
-  AcCmdCRInviteGuildJoinCancel& command,
-  SourceStream& stream)
+  AcCmdCRInviteGuildJoinCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2569,8 +2569,8 @@ void AcCmdCRInviteGuildJoinCancel::Write(
 }
 
 void AcCmdRCAcceptGuildJoinNotify::Read(
-  AcCmdRCAcceptGuildJoinNotify& command,
-  SourceStream& stream)
+  AcCmdRCAcceptGuildJoinNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2585,36 +2585,36 @@ void AcCmdRCAcceptGuildJoinNotify::Write(
 }
 
 void AcCmdCREmblemList::Read(
-  AcCmdCREmblemList& command,
-  SourceStream& stream)
+  AcCmdCREmblemList&,
+  SourceStream&)
 {
   // Empty
 }
 
 void AcCmdCREmblemList::Write(
-  const AcCmdCREmblemList& command,
-  SinkStream& stream)
+  const AcCmdCREmblemList&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCREmblemListCancel::Read(
-  AcCmdCREmblemListCancel& command,
-  SourceStream& stream)
+  AcCmdCREmblemListCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCREmblemListCancel::Write(
-  const AcCmdCREmblemListCancel& command,
-  SinkStream& stream)
+  const AcCmdCREmblemListCancel&,
+  SinkStream&)
 {
   // Empty
 }
 
 void AcCmdCREmblemListOK::Read(
-  AcCmdCREmblemListOK& command,
-  SourceStream& stream)
+  AcCmdCREmblemListOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2631,8 +2631,8 @@ void AcCmdCREmblemListOK::Write(
 }
 
 void AcCmdCRUpdateMountInfoOK::Read(
-  AcCmdCRUpdateMountInfoOK& command,
-  SourceStream& stream)
+  AcCmdCRUpdateMountInfoOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2646,8 +2646,8 @@ void AcCmdCRUpdateMountInfoOK::Write(
 }
 
 void AcCmdCRMountInjuryHealOK::Read(
-  AcCmdCRMountInjuryHealOK& command,
-  SourceStream& stream)
+  AcCmdCRMountInjuryHealOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
