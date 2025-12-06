@@ -387,6 +387,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleConfirmSetItem(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRBuyOwnItem>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleBuyOwnItem(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -4374,6 +4380,117 @@ void RanchDirector::HandleConfirmSetItem(
         return cancel;
       });
   }
+}
+
+void RanchDirector::HandleBuyOwnItem(
+  ClientId clientId,
+  const protocol::AcCmdCRBuyOwnItem& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  using ShopItemResult = protocol::AcCmdCRBuyOwnItemOK::ShopItemResult;
+  using OwnedItem = protocol::AcCmdCRBuyOwnItemOK::OwnedItem;
+
+  protocol::AcCmdCRBuyOwnItemOK response{};
+
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+    [this, &command, &response](data::Character& character)
+    {
+      for (const auto& shopItem : command.shopItems)
+      {
+        auto& shopItemResult = response.shopItemResults.emplace_back(
+          ShopItemResult{
+            .shopItem = shopItem});
+
+        // TODO: retrieve item from shop registry to match against the `GoodsSQ`
+        // For now this is mapped to `item.tid`
+        const data::Tid& tid = shopItem.goodsSq;
+        const auto& itemRegistryRecord = GetServerInstance().GetItemRegistry().GetItem(tid);
+
+        // TODO: selected shop item has price ID attached to it, retrieve it from the shop registry
+        // currently assumes item cost is in carrots, implement check for cash items.
+        constexpr uint32_t Price = 1;
+
+        // TODO: determine from shop registry
+        bool isCashItem = false;
+
+        bool hasSufficientCarrots = character.carrots() >= Price;
+        bool canPurchaseCarrotItem = not isCashItem and hasSufficientCarrots;
+        bool hasSufficientCash = character.cash() >= Price;
+        bool canPurchaseCashItem = isCashItem and hasSufficientCash;
+
+        if (not canPurchaseCarrotItem and not canPurchaseCashItem)
+        {
+          // Insufficient carrot or cash balance
+          shopItemResult.transactionResult = ShopItemResult::TransactionResult::OutOfMoney;
+          continue;
+        }
+        else if (GetServerInstance().GetItemSystem().HasItem(character, tid))
+        {
+          // Character already owns this item
+          // TODO: is there a better one to use than unknown error?
+          shopItemResult.transactionResult = ShopItemResult::TransactionResult::UnknownError;
+          continue;
+        }
+        // TODO: implement other checks defined in `ShopItemResult::TransactionResult`
+
+        // Deduct from character carrot/cash balance
+        if (isCashItem)
+          character.cash() -= Price;
+        else
+          character.carrots() -= Price;
+
+        // Add item to character's inventory
+        data::Uid itemUid{data::InvalidUid};
+        if (itemRegistryRecord->type == registry::Item::Type::Temporary)
+        {
+          // TODO: grab this from the shop/price ID
+          constexpr std::chrono::seconds ItemDuration = std::chrono::days(30);
+          itemUid = GetServerInstance().GetItemSystem().AddItem(
+            character,
+            tid,
+            ItemDuration);
+        }
+        else
+        {
+          // TODO: grab this from the shop/price ID
+          constexpr uint32_t ItemCount = 1;
+          itemUid = GetServerInstance().GetItemSystem().AddItem(
+            character,
+            tid,
+            ItemCount);
+        }
+
+        if (shopItem.equipOnPurchase)
+        {
+          // Add this to character equipment
+          // FIXME:/TODO: this does not remove any equipped item, if any!
+          character.characterEquipment().emplace_back(itemUid);
+        }
+
+        GetServerInstance().GetDataDirector().GetItem(itemUid).Immutable(
+          [&shopItem, &response](const data::Item& item)
+          {
+            response.ownedItems.emplace_back(
+              OwnedItem{
+                .equip = shopItem.equipOnPurchase,
+                .item = protocol::Item{
+                  .uid = item.uid(),
+                  .tid = item.tid(),
+                  .expiresAt = util::TimePointToAliciaTime(
+                    item.createdAt() + item.duration()),
+                  .count = item.count()
+                }});
+          });
+      }
+
+      // Update character's balance
+      response.newCarrots = character.carrots();
+      response.newCash = character.cash();
+    });
+
+  // All checks are completed and transaction can go ahead
+  _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }
 
 } // namespace server

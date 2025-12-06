@@ -2754,5 +2754,75 @@ void AcCmdCRConfirmSetItemCancel::Write(
     .Write(command.unk1);
 }
 
+void AcCmdCRBuyOwnItem::Read(
+  AcCmdCRBuyOwnItem& command,
+  SourceStream& stream)
+{
+  uint8_t count{0};
+  stream.Read(count);
+  command.shopItems.resize(count);
+
+  for (auto& shopItem : command.shopItems)
+  {
+    stream.Read(shopItem.goodsSq)
+      .Read(shopItem.equipOnPurchase)
+      .Read(shopItem.priceRange);
+  }
+}
+
+void AcCmdCRBuyOwnItem::Write(
+  const AcCmdCRBuyOwnItem& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBuyOwnItemCancel::Read(
+  AcCmdCRBuyOwnItemCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBuyOwnItemCancel::Write(
+  const AcCmdCRBuyOwnItemCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.error);
+}
+
+void AcCmdCRBuyOwnItemOK::Read(
+  AcCmdCRBuyOwnItemOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBuyOwnItemOK::Write(
+  const AcCmdCRBuyOwnItemOK& command,
+  SinkStream& stream)
+{
+  // List size in one byte.
+  stream.Write(static_cast<uint8_t>(command.shopItemResults.size()));
+  for (const auto& shopItemResult : command.shopItemResults)
+  {
+    stream.Write(shopItemResult.shopItem.goodsSq)
+      .Write(shopItemResult.shopItem.equipOnPurchase)
+      .Write(shopItemResult.shopItem.priceRange)
+      .Write(shopItemResult.transactionResult);
+  }
+
+  // List size in one byte.
+  stream.Write(static_cast<uint8_t>(command.ownedItems.size()));
+  for (const auto& ownedItem : command.ownedItems)
+  {
+    stream.Write(ownedItem.equip)
+      .Write(ownedItem.item);
+  }
+
+  stream.Write(command.newCarrots)
+    .Write(command.newCash);
+}
+
 } // namespace server::protocol
 

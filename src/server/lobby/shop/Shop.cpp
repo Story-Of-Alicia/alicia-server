@@ -145,7 +145,7 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
             ShopList::Goods::Item{
               .priceId = 1,
               .priceRange = 1,
-              .itemUid = tid}}});
+              .goodsPrice = 1}}});
     }
     else if (item.type == registry::Item::Type::Temporary)
     {
