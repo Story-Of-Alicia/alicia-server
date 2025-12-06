@@ -2714,7 +2714,7 @@ void AcCmdCRConfirmSetItem::Read(
   AcCmdCRConfirmSetItem& command,
   SourceStream& stream)
 {
-  stream.Read(command.shopItemUid);
+  stream.Read(command.goodsSq);
 }
 
 void AcCmdCRConfirmSetItem::Write(
@@ -2735,7 +2735,7 @@ void AcCmdCRConfirmSetItemOK::Write(
   const AcCmdCRConfirmSetItemOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.shopItemUid)
+  stream.Write(command.goodsSq)
     .Write(command.result);
 }
 
@@ -2766,7 +2766,7 @@ void AcCmdCRBuyOwnItem::Read(
   {
     stream.Read(shopItem.goodsSq)
       .Read(shopItem.equipOnPurchase)
-      .Read(shopItem.priceRange);
+      .Read(shopItem.priceId);
   }
 }
 
@@ -2808,7 +2808,7 @@ void AcCmdCRBuyOwnItemOK::Write(
   {
     stream.Write(shopItemResult.shopItem.goodsSq)
       .Write(shopItemResult.shopItem.equipOnPurchase)
-      .Write(shopItemResult.shopItem.priceRange)
+      .Write(shopItemResult.shopItem.priceId)
       .Write(shopItemResult.transactionResult);
   }
 

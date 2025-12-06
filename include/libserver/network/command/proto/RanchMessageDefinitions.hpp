@@ -4286,7 +4286,7 @@ struct AcCmdCRConfirmItemCancel
 
 struct AcCmdCRConfirmSetItem
 {
-  uint32_t shopItemUid{};
+  uint32_t goodsSq{};
 
   static Command GetCommand()
   {
@@ -4311,7 +4311,7 @@ struct AcCmdCRConfirmSetItem
 struct AcCmdCRConfirmSetItemOK
 {
   // TODO: suspected values
-  uint32_t shopItemUid{};
+  uint32_t goodsSq{};
   enum Result : uint8_t
   {
     Unowned = 0,
@@ -4373,8 +4373,8 @@ struct AcCmdCRBuyOwnItem
     uint32_t goodsSq{};
     //! Equip item on purchase.
     bool equipOnPurchase{};
-    //! Selected price (corresponds to `PriceRange`).
-    uint16_t priceRange{};
+    //! Selected price (corresponds to `PriceID`).
+    uint16_t priceId{};
   };
 
   //! Max 32 (0x20) items.
