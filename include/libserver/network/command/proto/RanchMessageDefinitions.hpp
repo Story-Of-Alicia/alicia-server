@@ -4375,6 +4375,20 @@ struct AcCmdCRBuyOwnItem
     bool equipOnPurchase{};
     //! Selected price (corresponds to `PriceID`).
     uint16_t priceId{};
+
+    //! Writes the command to a provided sink stream.
+    //! @param command Command.
+    //! @param stream Sink stream.
+    static void Write(
+      const Order& command,
+      SinkStream& stream);
+
+    //! Reader a command from a provided source stream.
+    //! @param command Command.
+    //! @param stream Source stream.
+    static void Read(
+      Order& command,
+      SourceStream& stream);
   };
 
   //! Max 32 (0x20) items.
