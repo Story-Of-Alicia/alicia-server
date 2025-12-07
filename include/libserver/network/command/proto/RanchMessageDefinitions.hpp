@@ -4367,7 +4367,7 @@ struct AcCmdCRConfirmSetItemCancel
 
 struct AcCmdCRBuyOwnItem 
 {
-  struct ShopItem
+  struct Order
   {
     //! Shop item ID (corresponds to `GoodsSQ`).
     uint32_t goodsSq{};
@@ -4378,7 +4378,7 @@ struct AcCmdCRBuyOwnItem
   };
 
   //! Max 32 (0x20) items.
-  std::vector<ShopItem> shopItems{};
+  std::vector<Order> orders{};
 
   static Command GetCommand()
   {
@@ -4437,11 +4437,11 @@ struct AcCmdCRBuyOwnItemCancel
 
 struct AcCmdCRBuyOwnItemOK
 {
-  struct ShopItemResult
+  struct OrderResult
   {
-    protocol::AcCmdCRBuyOwnItem::ShopItem shopItem{};
+    protocol::AcCmdCRBuyOwnItem::Order order{};
     // Corresponds to `ShopHandlerStrings`
-    enum class TransactionResult : uint8_t
+    enum class Result : uint8_t
     {
       Success = 0,
       UnknownError = 1,       // `UnknownError`
@@ -4451,10 +4451,10 @@ struct AcCmdCRBuyOwnItemOK
       OutOfTime = 0xF,        // `CEC_OUT_OF_TIME`
       DuplicatedChar = 0x11,  // `CEC_DUPLICATED_CHAR`
       NoMoreMount = 0x13,     // `CEC_NO_MORE_MOUNT`
-    } transactionResult{TransactionResult::Success};
+    } result{Result::Success};
   };
   // Max 32 (0x20)
-  std::vector<ShopItemResult> shopItemResults{};
+  std::vector<OrderResult> orderResults{};
 
   struct OwnedItem
   {
