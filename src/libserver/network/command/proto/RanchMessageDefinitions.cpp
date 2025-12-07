@@ -2754,6 +2754,24 @@ void AcCmdCRConfirmSetItemCancel::Write(
     .Write(command.unk1);
 }
 
+void AcCmdCRBuyOwnItem::Order::Write(
+  const Order& order,
+  SinkStream& stream)
+{
+  stream.Write(order.goodsSq)
+    .Write(order.equipOnPurchase)
+    .Write(order.priceId);
+}
+
+void AcCmdCRBuyOwnItem::Order::Read(
+  Order& order,
+  SourceStream& stream)
+{
+  stream.Read(order.goodsSq)
+    .Read(order.equipOnPurchase)
+    .Read(order.priceId);
+}
+
 void AcCmdCRBuyOwnItem::Read(
   AcCmdCRBuyOwnItem& command,
   SourceStream& stream)
@@ -2761,12 +2779,9 @@ void AcCmdCRBuyOwnItem::Read(
   uint8_t count{0};
   stream.Read(count);
   command.orders.resize(count);
-
   for (auto& order : command.orders)
   {
-    stream.Read(order.goodsSq)
-      .Read(order.equipOnPurchase)
-      .Read(order.priceId);
+    stream.Read(order);
   }
 }
 
@@ -2806,9 +2821,7 @@ void AcCmdCRBuyOwnItemOK::Write(
   stream.Write(static_cast<uint8_t>(command.orderResults.size()));
   for (const auto& shopItemResult : command.orderResults)
   {
-    stream.Write(shopItemResult.order.goodsSq)
-      .Write(shopItemResult.order.equipOnPurchase)
-      .Write(shopItemResult.order.priceId)
+    stream.Write(shopItemResult.order)
       .Write(shopItemResult.result);
   }
 
