@@ -4531,16 +4531,10 @@ void RanchDirector::HandleBuyOwnItem(
         GetServerInstance().GetDataDirector().GetItem(itemUid).Immutable(
           [&order, &response](const data::Item& item)
           {
-            response.ownedItems.emplace_back(
+            auto& ownedItem = response.ownedItems.emplace_back(
               OwnedItem{
-                .equip = order.equipOnPurchase,
-                .item = protocol::Item{
-                  .uid = item.uid(),
-                  .tid = item.tid(),
-                  .expiresAt = util::TimePointToAliciaTime(
-                    item.createdAt() + item.duration()),
-                  .count = item.count()
-                }});
+                .equip = order.equipOnPurchase});
+            protocol::BuildProtocolItem(ownedItem.item, item);
           });
       }
 
