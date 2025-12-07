@@ -4420,8 +4420,8 @@ void RanchDirector::HandleBuyOwnItem(
         // Check if a shop item by that `GoodsSQ` exists
         if (not shopList.goodsList.contains(shopItem.goodsSq))
         {
-          // TODO: shop item by that `GoodsSQ` does not exist
-          // mark this shop item with relevant error and continue
+          // Goods list does not contains this goods, return unknown error and process other shop items
+          shopItemResult.transactionResult = ShopItemResult::TransactionResult::UnknownError;
           continue;
         }
         

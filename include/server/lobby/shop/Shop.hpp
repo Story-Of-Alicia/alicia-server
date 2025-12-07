@@ -41,9 +41,9 @@ struct ShopList
       Sale = 3,
       PCBang = 4
     } goodsType{GoodsType::Default};
-    // TODO: recommended category?
+    //! 1 - Shows in suggested/recommended tab.
     uint32_t recommendType{};
-    //! 1 - Do not show in suggested/recommended tab
+    //! Unique sequence number for the goods in suggested/recommended tab.
     uint32_t recommendNo{};
     //! Can character gift shop item to another character
     enum class GiftType
@@ -57,8 +57,9 @@ struct ShopList
     uint32_t bonusGameMoney{};
     //! Item name (TODO: does it need to be wrapped in CDATA?)
     std::string goodsNm{};
-    //! Item description
+    //! Item description. If empty, the game client will use the description found (if any) in libconfig.
     std::string goodsDesc{};
+    // Unknown
     std::string itemCapacityDesc{};
     //! 1 - Shows item in shop, anything else hides it
     uint32_t sellSt{};
