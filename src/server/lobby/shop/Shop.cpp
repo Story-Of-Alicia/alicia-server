@@ -83,6 +83,7 @@ std::string ShopListToXmlString(const ShopList& shopList)
 void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
 {
   uint32_t goodsSequenceId = 0;
+  uint32_t recommendNoId = 0;
   for (const auto& [tid, item] : itemRegistry.GetItems())
   {
     ++goodsSequenceId;
@@ -130,7 +131,7 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
           .moneyType = ShopList::Goods::MoneyType::Carrots,
           .goodsType = ShopList::Goods::GoodsType::New,
           .recommendType = 1,
-          .recommendNo = 1,
+          .recommendNo = ++recommendNoId,
           .giftType = ShopList::Goods::GiftType::NoGifting,
           .salesRank = 0,
           .bonusGameMoney = 1000,
@@ -139,7 +140,6 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
           .itemCapacityDesc = "Item Capacity Description Something",
           .sellSt = 1,
           .itemUid = tid,
-          .setPrice = 5,
           .items = {
             ShopList::Goods::Item{
               .priceId = 1,
@@ -156,8 +156,8 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
           .setType = 0,
           .moneyType = ShopList::Goods::MoneyType::Carrots,
           .goodsType = ShopList::Goods::GoodsType::Default,
-          .recommendType = 0,
-          .recommendNo = 0,
+          .recommendType = 1,
+          .recommendNo = ++recommendNoId,
           .giftType = ShopList::Goods::GiftType::NoGifting,
           .salesRank = 0,
           .bonusGameMoney = 0,
