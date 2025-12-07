@@ -4399,7 +4399,7 @@ void RanchDirector::HandleBuyOwnItem(
 {
   const auto& clientContext = GetClientContext(clientId);
 
-  using ShopItemResult = protocol::AcCmdCRBuyOwnItemOK::ShopItemResult;
+  using OrderResult = protocol::AcCmdCRBuyOwnItemOK::OrderResult;
   using OwnedItem = protocol::AcCmdCRBuyOwnItemOK::OwnedItem;
 
   protocol::AcCmdCRBuyOwnItemOK response{};
@@ -4410,23 +4410,23 @@ void RanchDirector::HandleBuyOwnItem(
   GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
     [this, &shopList, &command, &response](data::Character& character)
     {
-      for (const auto& shopItem : command.shopItems)
+      for (const auto& order : command.orders)
       {
-        // Create a result entry in the response
-        auto& shopItemResult = response.shopItemResults.emplace_back(
-          ShopItemResult{
-            .shopItem = shopItem});
+        // Create an order result entry in the response
+        auto& orderResult = response.orderResults.emplace_back(
+          OrderResult{
+            .order = order});
 
-        // Check if a shop item by that `GoodsSQ` exists
-        if (not shopList.goodsList.contains(shopItem.goodsSq))
+        // Check if a goods by that `GoodsSQ` exists in the shop
+        if (not shopList.goodsList.contains(order.goodsSq))
         {
-          // Goods list does not contains this goods, return unknown error and process other shop items
-          shopItemResult.transactionResult = ShopItemResult::TransactionResult::UnknownError;
+          // Goods list does not contains this goods, return unknown error and process next order
+          orderResult.result = OrderResult::Result::UnknownError;
           continue;
         }
         
         // Get the shop goods
-        const auto& goods = shopList.goodsList.at(shopItem.goodsSq);
+        const auto& goods = shopList.goodsList.at(order.goodsSq);
         // Get the item cost from the selected price range
         std::optional<uint32_t> costOpt{};
         uint32_t priceRange{0};
@@ -4438,7 +4438,7 @@ void RanchDirector::HandleBuyOwnItem(
           for (const auto& price : goods.items)
           {
             // Check if price ID for the goods matches that of the one selected by the character
-            if (price.priceId == shopItem.priceId)
+            if (price.priceId == order.priceId)
             {
               costOpt.emplace(price.goodsPrice);
               priceRange = price.priceRange;
@@ -4448,8 +4448,8 @@ void RanchDirector::HandleBuyOwnItem(
 
           if (not costOpt.has_value())
           {
-            // Goods item with that price range not found, continue onto next shop item
-            shopItemResult.transactionResult = ShopItemResult::TransactionResult::NotAvailable;
+            // Goods item with that price range not found, continue onto the next order
+            orderResult.result = OrderResult::Result::NotAvailable;
             continue;
           }
         }
@@ -4461,12 +4461,13 @@ void RanchDirector::HandleBuyOwnItem(
         }
         else
         {
-          // Set type unknown, return unknown error and move onto the next shop item
-          shopItemResult.transactionResult = ShopItemResult::TransactionResult::UnknownError;
+          // Set type is unknown, return unknown error and move onto the next order
+          orderResult.result = OrderResult::Result::UnknownError;
           continue;
         }
 
-        // Get the item from the registry, by item TID (`itemUid` in the goods entry is actually the item TID)
+        // Get the item from the registry by item TID
+        // `itemUid` in the goods entry is actually the item TID
         const auto& itemRegistryRecord = GetServerInstance().GetItemRegistry().GetItem(goods.itemUid);
 
         bool isCashItem = goods.moneyType == ShopList::Goods::MoneyType::Cash;
@@ -4477,20 +4478,23 @@ void RanchDirector::HandleBuyOwnItem(
         bool hasSufficientCash = character.cash() >= cost;
         bool canPurchaseCashItem = isCashItem and hasSufficientCash;
 
+        bool isConsumable = itemRegistryRecord->type == registry::Item::Type::Consumable;
+        bool hasItem = GetServerInstance().GetItemSystem().HasItem(character, itemRegistryRecord->tid);
+
         if (not canPurchaseCarrotItem and not canPurchaseCashItem)
         {
           // Insufficient carrot or cash balance
-          shopItemResult.transactionResult = ShopItemResult::TransactionResult::OutOfMoney;
+          orderResult.result = OrderResult::Result::OutOfMoney;
           continue;
         }
-        else if (GetServerInstance().GetItemSystem().HasItem(character, itemRegistryRecord->tid))
+        else if (hasItem and not isConsumable)
         {
           // Character already owns this item
           // TODO: is there a better one to use than unknown error?
-          shopItemResult.transactionResult = ShopItemResult::TransactionResult::UnknownError;
+          orderResult.result = OrderResult::Result::UnknownError;
           continue;
         }
-        // TODO: implement other checks defined in `ShopItemResult::TransactionResult`
+        // TODO: implement other checks defined in `ShopItemResult::Result`
 
         // Deduct from character carrot/cash balance
         if (isCashItem)
@@ -4518,18 +4522,18 @@ void RanchDirector::HandleBuyOwnItem(
             priceRange);
         }
 
-        if (shopItem.equipOnPurchase)
+        if (order.equipOnPurchase)
         {
           // TODO: Add this to character equipment
           // Check if any equipment is equipped, unequip and equip new purchase if so
         }
 
         GetServerInstance().GetDataDirector().GetItem(itemUid).Immutable(
-          [&shopItem, &response](const data::Item& item)
+          [&order, &response](const data::Item& item)
           {
             response.ownedItems.emplace_back(
               OwnedItem{
-                .equip = shopItem.equipOnPurchase,
+                .equip = order.equipOnPurchase,
                 .item = protocol::Item{
                   .uid = item.uid(),
                   .tid = item.tid(),

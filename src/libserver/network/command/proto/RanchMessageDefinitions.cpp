@@ -2760,13 +2760,13 @@ void AcCmdCRBuyOwnItem::Read(
 {
   uint8_t count{0};
   stream.Read(count);
-  command.shopItems.resize(count);
+  command.orders.resize(count);
 
-  for (auto& shopItem : command.shopItems)
+  for (auto& order : command.orders)
   {
-    stream.Read(shopItem.goodsSq)
-      .Read(shopItem.equipOnPurchase)
-      .Read(shopItem.priceId);
+    stream.Read(order.goodsSq)
+      .Read(order.equipOnPurchase)
+      .Read(order.priceId);
   }
 }
 
@@ -2803,13 +2803,13 @@ void AcCmdCRBuyOwnItemOK::Write(
   SinkStream& stream)
 {
   // List size in one byte.
-  stream.Write(static_cast<uint8_t>(command.shopItemResults.size()));
-  for (const auto& shopItemResult : command.shopItemResults)
+  stream.Write(static_cast<uint8_t>(command.orderResults.size()));
+  for (const auto& shopItemResult : command.orderResults)
   {
-    stream.Write(shopItemResult.shopItem.goodsSq)
-      .Write(shopItemResult.shopItem.equipOnPurchase)
-      .Write(shopItemResult.shopItem.priceId)
-      .Write(shopItemResult.transactionResult);
+    stream.Write(shopItemResult.order.goodsSq)
+      .Write(shopItemResult.order.equipOnPurchase)
+      .Write(shopItemResult.order.priceId)
+      .Write(shopItemResult.result);
   }
 
   // List size in one byte.
