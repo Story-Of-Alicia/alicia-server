@@ -4456,15 +4456,16 @@ struct AcCmdCRBuyOwnItemOK
   // Max 32 (0x20)
   std::vector<OrderResult> orderResults{};
 
-  struct OwnedItem
+  struct Purchase
   {
     //! Indicates whether or not the character should equip this item.
     bool equip{false};
     //! Purchased item.
     Item item{};
   };
-  // Max 250 (0xfa)
-  std::vector<OwnedItem> ownedItems{};
+  //! Successful purchases by the character.
+  //! Max 250 (0xfa) items.
+  std::vector<Purchase> purchases{};
 
   uint32_t newCarrots{};
   uint32_t newCash{};

@@ -4400,7 +4400,7 @@ void RanchDirector::HandleBuyOwnItem(
   const auto& clientContext = GetClientContext(clientId);
 
   using OrderResult = protocol::AcCmdCRBuyOwnItemOK::OrderResult;
-  using OwnedItem = protocol::AcCmdCRBuyOwnItemOK::OwnedItem;
+  using Purchase = protocol::AcCmdCRBuyOwnItemOK::Purchase;
 
   protocol::AcCmdCRBuyOwnItemOK response{};
   
@@ -4507,11 +4507,10 @@ void RanchDirector::HandleBuyOwnItem(
         if (itemRegistryRecord->type == registry::Item::Type::Temporary)
         {
           // Item duration is the price range field.
-          std::chrono::seconds itemDuration = std::chrono::hours(priceRange);
           itemUid = GetServerInstance().GetItemSystem().AddItem(
             character,
             itemRegistryRecord->tid,
-            itemDuration);
+            std::chrono::hours(priceRange));
         }
         else
         {
@@ -4531,10 +4530,10 @@ void RanchDirector::HandleBuyOwnItem(
         GetServerInstance().GetDataDirector().GetItem(itemUid).Immutable(
           [&order, &response](const data::Item& item)
           {
-            auto& ownedItem = response.ownedItems.emplace_back(
-              OwnedItem{
+            auto& purchase = response.purchases.emplace_back(
+              Purchase{
                 .equip = order.equipOnPurchase});
-            protocol::BuildProtocolItem(ownedItem.item, item);
+            protocol::BuildProtocolItem(purchase.item, item);
           });
       }
 

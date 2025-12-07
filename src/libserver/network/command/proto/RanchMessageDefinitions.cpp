@@ -2813,8 +2813,8 @@ void AcCmdCRBuyOwnItemOK::Write(
   }
 
   // List size in one byte.
-  stream.Write(static_cast<uint8_t>(command.ownedItems.size()));
-  for (const auto& ownedItem : command.ownedItems)
+  stream.Write(static_cast<uint8_t>(command.purchases.size()));
+  for (const auto& ownedItem : command.purchases)
   {
     stream.Write(ownedItem.equip)
       .Write(ownedItem.item);
