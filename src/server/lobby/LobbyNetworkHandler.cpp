@@ -927,6 +927,14 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
     {
       return skillPresetListResponse;
     });
+
+  protocol::AcCmdLCPTSPremiumInfo pts{
+    .unk0 = 1,
+    .unk1 = 2,
+    .unk2 = 3,
+    .unk3 = 4
+  };
+  _commandServer.QueueCommand<decltype(pts)>(clientId, [pts]() { return pts; });
 }
 
 void LobbyNetworkHandler::SendLoginCancel(

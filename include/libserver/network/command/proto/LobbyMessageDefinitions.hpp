@@ -2533,6 +2533,33 @@ struct AcCmdLCInviteGuildJoinOK
     SourceStream& stream);
 };
 
+struct AcCmdLCPTSPremiumInfo
+{
+  uint8_t unk0{};
+  uint32_t unk1{};
+  uint8_t unk2{};
+  uint32_t unk3{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCPTSPremiumInfo;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCPTSPremiumInfo& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCPTSPremiumInfo& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // LOBBY_MESSAGE_DEFINES_HPP

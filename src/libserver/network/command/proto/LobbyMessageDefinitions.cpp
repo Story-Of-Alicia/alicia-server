@@ -1650,4 +1650,21 @@ void AcCmdLCInviteGuildJoinOK::Write(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdLCPTSPremiumInfo::Read(
+  AcCmdLCPTSPremiumInfo& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdLCPTSPremiumInfo::Write(
+  const AcCmdLCPTSPremiumInfo& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.unk2)
+    .Write(command.unk3);
+}
+
 } // namespace server::protocol
