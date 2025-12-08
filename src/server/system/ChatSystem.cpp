@@ -95,7 +95,17 @@ ChatSystem::ChatVerdict ChatSystem::ProcessChatMessage(
   const auto& infractionVerdict = _serverInstance.GetInfractionSystem().CheckOutstandingPunishments(
     userInstance.userName);
 
-  if (infractionVerdict.mute.active)
+  if (message.starts_with("//"))
+  {
+    verdict.commandVerdict = ProcessCommandMessage(
+      characterUid, message.substr(2));
+  }
+  else if (not infractionVerdict.mute.active)
+  {
+    // todo: auto moderation
+    verdict.message = message;
+  }
+  else if (infractionVerdict.mute.active)
   {
     // Active mute infraction, return with no processing done on message
     verdict.isMuted = true;
@@ -103,17 +113,6 @@ ChatSystem::ChatVerdict ChatSystem::ProcessChatMessage(
       "You are chat muted until {:%Y-%m-%d %H:%M:%S} UTC.",
       std::chrono::time_point_cast<std::chrono::seconds>(
         infractionVerdict.mute.expiresAt));
-    return verdict;
-  }
-  else if (message.starts_with("//"))
-  {
-    verdict.commandVerdict = ProcessCommandMessage(
-      characterUid, message.substr(2));
-  }
-  else
-  {
-    // todo: auto moderation
-    verdict.message = message;
   }
 
   return verdict;
@@ -573,6 +572,11 @@ void ChatSystem::RegisterUserCommands()
         auto giftUid = data::InvalidUid;
 
         const auto storedItem = _serverInstance.GetDataDirector().CreateStorageItem();
+        if (not storedItem)
+        {
+          return {"Server error.", "Please contact the administrators."};
+        }
+
         storedItem.Mutable(
           [&itemTemplate, &giftUid, itemCount, itemTid](data::StorageItem& storageItem)
           {
@@ -654,6 +658,11 @@ void ChatSystem::RegisterUserCommands()
         auto giftUid = data::InvalidUid;
 
         const auto storedItem = _serverInstance.GetDataDirector().CreateStorageItem();
+        if (not storedItem)
+        {
+          return {"Server error.", "Please contact the administrators."};
+        }
+
         storedItem.Mutable(
           [&selectedItems, &giftUid](data::StorageItem& storageItem)
           {
@@ -702,6 +711,12 @@ void ChatSystem::RegisterUserCommands()
 
         auto horseUid = data::InvalidUid;
         const auto& horseRecord = _serverInstance.GetDataDirector().CreateHorse();
+
+        if (not horseRecord)
+        {
+          return {"Server error.", "Please contact the administrators."};
+        }
+
         horseRecord.Mutable(
           [this, &horseUid](data::Horse& horse)
           {
@@ -746,6 +761,11 @@ void ChatSystem::RegisterUserCommands()
         // Create the storage item.
         auto giftUid = data::InvalidUid;
         const auto storedItem = _serverInstance.GetDataDirector().CreateStorageItem();
+        if (not storedItem)
+        {
+          return {"Server error.", "Please contact the administrators."};
+        }
+
         storedItem.Mutable([&giftUid, carrotCount](data::StorageItem& storageItem)
           {
             storageItem.carrots() = carrotCount;

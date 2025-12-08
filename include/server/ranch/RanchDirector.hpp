@@ -109,6 +109,8 @@ private:
 
   struct ClientContext
   {
+    //! User name.
+    std::string userName;
     //! Whether the client is authenticated.
     bool isAuthenticated{false};
     //! Unique ID of the client's character.

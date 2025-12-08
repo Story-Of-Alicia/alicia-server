@@ -792,7 +792,7 @@ void RanchDirector::HandleEnterRanch(
     command.rancherUid);
   if (not rancherRecord)
     throw std::runtime_error(
-      std::format("Rancher's character [{}] not available", command.rancherUid));
+      std::format("Rancher's character '{}' not available", command.rancherUid));
 
   clientContext.isAuthenticated = GetServerInstance().GetOtpSystem().AuthorizeCode(
     command.characterUid, command.otp);
@@ -824,11 +824,15 @@ void RanchDirector::HandleEnterRanch(
       {
         return response;
       });
+
     return;
   }
 
   clientContext.characterUid = command.characterUid;
   clientContext.visitingRancherUid = command.rancherUid;
+
+  clientContext.userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+    clientContext.characterUid).userName;
 
   protocol::AcCmdCREnterRanchOK response{
     .rancherUid = command.rancherUid,
@@ -1136,23 +1140,6 @@ void RanchDirector::HandleChat(
 {
   const auto& clientContext = GetClientContext(clientId);
 
-  // Perform moderation before proceeding with chat processing
-  const auto verdict = _serverInstance.GetChatSystem().ProcessChatMessage(
-    clientContext.characterUid,
-    chat.message);
-
-  if (verdict.isMuted)
-  {
-    // Invoking character is muted. Notify the invoker of their infraction
-    spdlog::warn("Character '{}' tried to chat in ranch chat but has an active mute infraction.",
-      clientContext.characterUid);
-    protocol::AcCmdCRRanchChatNotify notify{
-      .message = verdict.message,
-      .isSystem = true};
-    _commandServer.QueueCommand<decltype(notify)>(clientId, [notify](){ return notify; });
-    return;
-  }
-
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
   const auto rancherRecord = GetServerInstance().GetDataDirector().GetCharacter(
@@ -1199,9 +1186,28 @@ void RanchDirector::HandleChat(
     }
   };
 
+  // Perform moderation and check for any mute ban
+  const auto verdict = _serverInstance.GetChatSystem().ProcessChatMessage(
+    clientContext.characterUid,
+    chat.message);
+
+  // Process commands, even if user has a mute ban
   if (verdict.commandVerdict)
   {
     sendAllMessages(clientId, sendersName, true, verdict.commandVerdict->result);
+    return;
+  }
+
+  // Message is not a command, check if user has been muted
+  if (verdict.isMuted)
+  {
+    // Invoking character is muted. Notify the invoker of their infraction and do not broadcast.
+    spdlog::warn("Character '{}' tried to chat in ranch chat but has an active mute infraction.",
+      clientContext.characterUid);
+    protocol::AcCmdCRRanchChatNotify notify{
+      .message = verdict.message,
+      .isSystem = true};
+    _commandServer.QueueCommand<decltype(notify)>(clientId, [notify](){ return notify; });
     return;
   }
 
@@ -2138,6 +2144,12 @@ void RanchDirector::HandleCreateGuild(
     .uid = 0};
 
   const auto guildRecord = GetServerInstance().GetDataDirector().CreateGuild();
+  if (not guildRecord)
+  {
+    throw std::runtime_error(
+      std::format("Failed to create guild for user '{}'", clientContext.userName));
+  }
+
   guildRecord.Mutable([&response, command, characterUid = clientContext.characterUid](data::Guild& guild)
   {
     response.uid = guild.uid();
@@ -2519,7 +2531,7 @@ void RanchDirector::HandleIncubateEgg(
   };
 
   characterRecord.Mutable(
-    [this, &command, &response, clientId](data::Character& character)
+    [this, &clientContext, &command, &response, clientId](data::Character& character)
     {
       const std::optional<registry::EggInfo> eggTemplate = _serverInstance.GetPetRegistry().GetEggInfo(
         command.itemTid);
@@ -2543,6 +2555,12 @@ void RanchDirector::HandleIncubateEgg(
       }
 
       const auto eggRecord = GetServerInstance().GetDataDirector().CreateEgg();
+      if (not eggRecord)
+      {
+        throw std::runtime_error(
+          std::format("Failed to create egg for user {}", clientContext.userName));
+      }
+
       eggRecord.Mutable([&command, &response, &character, &eggTemplate](data::Egg& egg)
         {
           
@@ -2707,7 +2725,7 @@ void RanchDirector::HandleRequestPetBirth(
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
   characterRecord.Mutable(
-    [this, &command, &response, &petAlreadyExists, &petItemTid, &petUid](data::Character& character)
+    [this, &clientContext, &command, &response, &petAlreadyExists, &petItemTid, &petUid](data::Character& character)
     {
       auto hatchingEggUid{data::InvalidUid};
       auto hatchingEggItemUid{data::InvalidUid};
@@ -2790,6 +2808,11 @@ void RanchDirector::HandleRequestPetBirth(
 
       // Create the pet
       const auto bornPet = GetServerInstance().GetDataDirector().CreatePet();
+      if (not bornPet)
+      {
+        throw std::runtime_error(
+          std::format("Failed to create pet for user {}", clientContext.userName));
+      }
 
       bornPet.Mutable([&response, &petUid, petId](data::Pet& pet)
       {
@@ -3297,6 +3320,12 @@ void RanchDirector::HandleHousingBuild(
 
   // TODO: add a duplication check for double incubator, since rebuilding triggers HousingBuild and not HousingRepair
   const auto housingRecord = GetServerInstance().GetDataDirector().CreateHousing();
+  if (not housingRecord)
+  {
+    throw std::runtime_error(
+      std::format("Failed to create housing for user {}", clientContext.userName));
+  }
+
   housingRecord.Mutable([housingId = command.housingTid, &housingUid](data::Housing& housing)
   {
     housing.housingId = housingId;
@@ -3625,12 +3654,18 @@ void RanchDirector::HandleChangeAge(
   const auto& clientContext = GetClientContext(clientId);
 
   GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid)
-    .Mutable([this, age = command.age](
+    .Mutable([this, &clientContext, age = command.age](
       data::Character& character)
     {
       const auto settingsRecord = character.settingsUid() != data::InvalidUid
         ? GetServerInstance().GetDataDirector().GetSettings(character.settingsUid())
         : GetServerInstance().GetDataDirector().CreateSettings();
+
+      if (not settingsRecord)
+      {
+        throw std::runtime_error(
+          std::format("Failed to create or retrieve settings for user '{}'", clientContext.userName));
+      }
 
       settingsRecord.Mutable(
         [&character, &age](data::Settings& settings)
@@ -3666,12 +3701,18 @@ void RanchDirector::HandleHideAge(
 {
   const auto& clientContext = GetClientContext(clientId);
   GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid)
-    .Mutable([this, option = command.option](
+    .Mutable([this, &clientContext, option = command.option](
       data::Character& character)
     {
       const auto settingsRecord = character.settingsUid() != data::InvalidUid
         ? GetServerInstance().GetDataDirector().GetSettings(character.settingsUid())
         : GetServerInstance().GetDataDirector().CreateSettings();
+
+      if (not settingsRecord)
+      {
+        throw std::runtime_error(
+          std::format("Failed to create or retrieve settings for user '{}'", clientContext.userName));
+      }
 
       settingsRecord.Mutable(
         [&option, &character](data::Settings& settings)
