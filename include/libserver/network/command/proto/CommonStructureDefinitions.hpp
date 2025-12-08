@@ -60,8 +60,8 @@ struct StoredItem
   };
 
   uint32_t uid{};
-  //! >0 allow send mail
-  uint32_t val1{};
+  //! The `GoodsSQ` of the goods. Only valid for purchases.
+  uint32_t goodsSq{};
   Status status{};
   //! 0 stato shop
   //! >0 system, allow send mail
@@ -69,7 +69,8 @@ struct StoredItem
   uint32_t val4{};
   //! carrots
   uint32_t carrots{};
-  uint32_t val6{};
+  //! The corresponding `PriceID` for the goods. Only valid for purchases.
+  uint32_t priceId{};
   std::string sender;
   std::string message;
   //! [0000'00][00'0000]'[0000'0000]'[0000]'[0000'0000'0000]
