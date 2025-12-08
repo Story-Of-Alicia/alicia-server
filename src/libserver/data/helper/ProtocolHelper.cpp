@@ -185,8 +185,8 @@ void BuildProtocolStorageItem(
 {
   protocolStorageItem.uid = storageItem.uid();
 
-  const bool hasExpiration = storageItem.duration() != std::chrono::seconds::min();
-  const bool isExpired = storageItem.createdAt() + storageItem.duration() > data::Clock::now();
+  const bool hasExpiration = storageItem.duration() != std::chrono::seconds(0);
+  const bool isExpired = storageItem.createdAt() + storageItem.duration() < data::Clock::now();
   if (hasExpiration && isExpired)
   {
     protocolStorageItem.status = StoredItem::Status::Expired;
@@ -202,6 +202,9 @@ void BuildProtocolStorageItem(
   protocolStorageItem.message = storageItem.message();
   protocolStorageItem.carrots = storageItem.carrots();
   protocolStorageItem.dateAndTime = util::TimePointToAliciaTime(storageItem.createdAt());
+
+  protocolStorageItem.goodsSq = storageItem.goodsSq();
+  protocolStorageItem.priceId = storageItem.priceId();
 }
 
 void BuildProtocolStorageItems(

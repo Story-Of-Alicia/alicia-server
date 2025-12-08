@@ -4503,38 +4503,63 @@ void RanchDirector::HandleBuyOwnItem(
           character.carrots() -= cost;
 
         // Add item to character's inventory
-        data::Uid itemUid{data::InvalidUid};
-        if (itemRegistryRecord->type == registry::Item::Type::Temporary)
+        if (order.equipOnPurchase)
         {
+          // TODO: santiy check, see if it is equipable
           // Item duration is the price range field.
-          itemUid = GetServerInstance().GetItemSystem().AddItem(
+          const data::Uid itemUid = GetServerInstance().GetItemSystem().AddItem(
             character,
             itemRegistryRecord->tid,
             std::chrono::hours(priceRange));
-        }
-        else
-        {
-          // Item quantity is the price range field.
-          itemUid = GetServerInstance().GetItemSystem().AddItem(
-            character,
-            itemRegistryRecord->tid,
-            priceRange);
-        }
 
-        if (order.equipOnPurchase)
-        {
+          GetServerInstance().GetDataDirector().GetItem(itemUid).Immutable(
+            [&order, &response](const data::Item& item)
+            {
+              auto& purchase = response.purchases.emplace_back(
+                Purchase{
+                  .equip = order.equipOnPurchase});
+              protocol::BuildProtocolItem(purchase.item, item);
+            });
+
           // TODO: Add this to character equipment
           // Check if any equipment is equipped, unequip and equip new purchase if so
         }
+        else
+        {
+          // Send purchase to storage for the character to claim
+          data::Uid storageItemUid{data::InvalidUid};
+          const auto& storageItemRecord = GetServerInstance().GetDataDirector().CreateStorageItem();
+          storageItemRecord.Mutable(
+            [
+              &storageItemUid,
+              &goods,
+              tid = itemRegistryRecord->tid,
+              itemCount = priceRange,
+              duration = std::chrono::hours(priceRange),
+              priceId = order.priceId](data::StorageItem& storageItem)
+            {
+              storageItemUid = storageItem.uid();
+              storageItem.carrots() = goods.bonusGameMoney;
+              storageItem.createdAt() = util::Clock::now();
+              storageItem.duration() = std::chrono::days(7); // TODO: configurable?
+              storageItem.items() = {
+                data::StorageItem::Item{
+                  .tid = tid,
+                  .count = itemCount,
+                  .duration = duration}
+              };
+              storageItem.goodsSq() = goods.goodsSq;
+              storageItem.priceId() = priceId;
+            });
 
-        GetServerInstance().GetDataDirector().GetItem(itemUid).Immutable(
-          [&order, &response](const data::Item& item)
-          {
-            auto& purchase = response.purchases.emplace_back(
-              Purchase{
-                .equip = order.equipOnPurchase});
-            protocol::BuildProtocolItem(purchase.item, item);
-          });
+          // Add purchase to the purchase storage
+          character.purchases().emplace_back(storageItemUid);
+
+          // Send purchase notification to character
+          GetServerInstance().GetRanchDirector().SendStorageNotification(
+            character.uid(),
+            protocol::AcCmdCRRequestStorage::Category::Purchases);
+        }
       }
 
       // Update character's balance

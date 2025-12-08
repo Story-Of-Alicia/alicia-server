@@ -747,6 +747,10 @@ void server::FileDataSource::RetrieveStorageItem(data::Uid uid, data::StorageIte
     json["duration"].get<int64_t>());
   storageItem.createdAt = data::Clock::time_point(std::chrono::seconds(
     json["createdAt"].get<int64_t>()));
+
+  // Shop data
+  storageItem.goodsSq = json["goodsSq"].get<uint32_t>();
+  storageItem.priceId = json["priceId"].get<uint32_t>();
 }
 
 void server::FileDataSource::StoreStorageItem(data::Uid uid, const data::StorageItem& storageItem)
@@ -782,6 +786,10 @@ void server::FileDataSource::StoreStorageItem(data::Uid uid, const data::Storage
   json["createdAt"] = std::chrono::ceil<std::chrono::seconds>(
     storageItem.createdAt().time_since_epoch()).count();
   json["duration"] = storageItem.duration().count();
+
+  // Shop data
+  json["goodsSq"] = storageItem.goodsSq();
+  json["priceId"] = storageItem.priceId();
 
   dataFile << json.dump(2);
 }
