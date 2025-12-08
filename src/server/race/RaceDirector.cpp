@@ -1167,6 +1167,23 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
   {
     auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
     racer.state = tracker::RaceTracker::Racer::State::Disconnected;
+
+    // Notify all the other racers that the client has disconnected
+    protocol::AcCmdUserRaceDeleteNotify deleteNotify{
+      .racerOid = racer.oid};
+    for (const auto& raceClientId : raceInstance.clients)
+    {
+      // Prevent self broadcast
+      if (raceClientId == clientId)
+        continue;
+
+      _commandServer.QueueCommand<decltype(deleteNotify)>(
+        raceClientId,
+        [deleteNotify]()
+        {
+          return deleteNotify;
+        });
+    }
   }
 
   {
