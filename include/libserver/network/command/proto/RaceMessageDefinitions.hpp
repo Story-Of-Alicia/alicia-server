@@ -2456,6 +2456,32 @@ struct AcCmdRCObstacleStatus
     SourceStream& stream);
 };
 
+//! @brief Notifies game client that the racer, with that object ID, has disconnected from the race.
+struct AcCmdUserRaceDeleteNotify
+{
+  //! OID of the racer.
+  uint16_t racerOid;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdUserRaceDeleteNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdUserRaceDeleteNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdUserRaceDeleteNotify& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RACE_MESSAGE_DEFINES_HPP

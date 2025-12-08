@@ -1873,4 +1873,18 @@ void AcCmdRCObstacleStatus::Write(
     .Write(command.unk2);
 }
 
+void AcCmdUserRaceDeleteNotify::Write(
+  const AcCmdUserRaceDeleteNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.racerOid);
+}
+
+void AcCmdUserRaceDeleteNotify::Read(
+  AcCmdUserRaceDeleteNotify& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
