@@ -4407,8 +4407,9 @@ void RanchDirector::HandleBuyOwnItem(
   // Get current shop list
   const auto& shopList = GetServerInstance().GetLobbyDirector().GetShopManager().GetShopList();
 
+  std::vector<data::Uid> newEquipmentUids{};
   GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
-    [this, &shopList, &command, &response](data::Character& character)
+    [this, &shopList, &command, &response, &newEquipmentUids](data::Character& character)
     {
       for (const auto& order : command.orders)
       {
@@ -4512,6 +4513,7 @@ void RanchDirector::HandleBuyOwnItem(
             itemRegistryRecord->tid,
             std::chrono::hours(priceRange));
 
+          // Append the purchase result into the response
           GetServerInstance().GetDataDirector().GetItem(itemUid).Immutable(
             [&order, &response](const data::Item& item)
             {
@@ -4521,8 +4523,8 @@ void RanchDirector::HandleBuyOwnItem(
               protocol::BuildProtocolItem(purchase.item, item);
             });
 
-          // TODO: Add this to character equipment
-          // Check if any equipment is equipped, unequip and equip new purchase if so
+          // Add to the list of new equipments to handle for equipping
+          newEquipmentUids.emplace_back(itemUid);
         }
         else
         {
@@ -4569,6 +4571,16 @@ void RanchDirector::HandleBuyOwnItem(
 
   // All checks are completed and transaction can go ahead
   _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+
+  // Process all the equipment marked for equipping
+  for (const auto& equipmentUid : newEquipmentUids)
+  {
+    HandleWearEquipment(
+      clientId,
+      protocol::AcCmdCRWearEquipment{
+        .equipmentUid = equipmentUid
+      });
+  }
 }
 
 } // namespace server
