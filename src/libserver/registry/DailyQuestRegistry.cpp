@@ -32,7 +32,7 @@ namespace
 
 uint8_t ReadDailyQuest(
   const YAML::Node& section,
-  DailyQuest::DailyQuestInfo& DailyQuest)
+  DailyQuestInfo& DailyQuest)
 {
   DailyQuest.questId = section["questId"].as<decltype(DailyQuest.questId)>();
   DailyQuest.successType = section["successType"].as<decltype(DailyQuest.successType)>();
@@ -67,7 +67,7 @@ void DailyQuestRegistry::ReadConfig(
 
     for (const auto& dailyQuestInfosSection : collection)
     {
-      DailyQuest::DailyQuestInfo dailyQuest;
+      DailyQuestInfo dailyQuest;
       const auto type = ReadDailyQuestInfo(dailyQuestInfosSection, dailyQuest);
       _DailyQuestInfo.emplace(type, dailyQuest);
     }
@@ -78,7 +78,7 @@ void DailyQuestRegistry::ReadConfig(
     _dailyQuestInfo.size());
 }
 
-const DailyQuest::DailyQuestInfo& DailyQuestRegistry::GetDailyQuestInfo(
+const DailyQuestInfo& DailyQuestRegistry::GetDailyQuestInfo(
   uint8_t type)
 {
   const auto DailyQuestInfo = _dailyQuestInfo.find(type);

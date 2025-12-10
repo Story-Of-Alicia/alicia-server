@@ -29,11 +29,7 @@
 
 namespace server::registry
 {
-
-struct DailyQuest
-{
    struct DailyQuestInfo {
-
       enum class Type : uint8_t
       {
         NoRace = 0,
@@ -57,7 +53,6 @@ struct DailyQuest
         //! Amount of carrots rewarded.
         uint32_t carrots{};
       };
-};
 
 class DailyQuestRegistry
 {
@@ -66,12 +61,12 @@ public:
 
   void ReadConfig(const std::filesystem::path& configPath);
 
-  [[nodiscard]] const DailyQuest::DailyQuestInfo& GetDailyQuestInfo(
+  [[nodiscard]] const DailyQuestInfo& GetDailyQuestInfo(
     uint8_t type);
 
 private:
   //! A collection of daily quest infos.
-  std::unordered_map<uint8_t, DailyQuest::DailyQuestInfo> _dailyQuestInfo;
+  std::unordered_map<uint8_t, DailyQuestInfo> _dailyQuestInfo;
 };
 
 } // namespace server::registry

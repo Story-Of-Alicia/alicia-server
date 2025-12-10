@@ -508,10 +508,10 @@ struct RanchCharacter
 //!
 struct Quest
 {
-  uint16_t tid{};
+  uint16_t tid{}; //questid
   uint32_t member0{};
-  uint8_t member1{};
-  uint32_t member2{};
+  uint8_t member1{}; //can only be 0 or 1, 0 is in progress, 1 is completed
+  uint32_t member2{}; //progress
   uint8_t member3{};
   uint8_t member4{};
 

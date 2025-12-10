@@ -2777,9 +2777,9 @@ void AcCmdCRRequestDailyQuestRewardOK::Write(
   const AcCmdCRRequestDailyQuestRewardOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0);
+  stream.Write(static_cast<uint8_t>(command.rewards.items.size()));
 
-  for (auto& member : command.unk)
+  for (auto& member : command.rewards.items)
   {
     stream.Write(member);
   }
@@ -2792,20 +2792,20 @@ void AcCmdCRRequestDailyQuestRewardOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
-void AcCmdCRRequestDailyQuestRewardOK::Unk::Write(const Unk& value, SinkStream& stream)
+void AcCmdCRRequestDailyQuestRewardOK::Reward::Write(const Reward& value, SinkStream& stream)
 {
-  stream.Write(value.unk0)
-    .Write(value.unk1)
-    .Write(value.unk2)
-    .Write(value.unk3);
+  for (auto& member : value.items)
+  {
+    stream.Write(member);
+  }
 }
 
-void AcCmdCRRequestDailyQuestRewardOK::Unk::Read(Unk& value, SourceStream& stream)
+void AcCmdCRRequestDailyQuestRewardOK::Reward::Read(Reward& value, SourceStream& stream)
 {
-  stream.Read(value.unk0)
-    .Read(value.unk1)
-    .Read(value.unk2)
-    .Read(value.unk3);
+  for (auto& member : value.items)
+  {
+    stream.Read(member);
+  }
 }
 
 void AcCmdCRMountInjuryHealOK::Read(
@@ -2880,7 +2880,7 @@ void AcCmdCRRequestQuestRewardOK::Write(
   stream.Write(command.unk1);
   stream.Write(command.unk2);
 
-  for (auto& reward : command.rewards)
+  for (auto& reward : command.rewards.items)
   {
     stream.Write(reward);
   }

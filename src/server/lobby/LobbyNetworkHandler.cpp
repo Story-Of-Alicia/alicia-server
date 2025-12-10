@@ -2204,9 +2204,6 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
         response.unk[i + 1] = {0, 0, 2, 0, 0, 0};
       }
     }
-  
-  response.unkCount = 10;
-  response.dailyQuestCount = 3;
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,

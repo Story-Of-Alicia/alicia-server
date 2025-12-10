@@ -1074,23 +1074,8 @@ struct AcCmdCLRequestDailyQuestList
 struct AcCmdCLRequestDailyQuestListOK
 {
   uint32_t val0;
-  uint16_t unkCount;
-  uint16_t dailyQuestCount;
-
-  struct Unk
-  {
-    uint16_t field0; //questid
-    uint32_t field1; 
-    uint8_t field2; //can only be 0 or 1, 0 is in progress, 1 is completed
-    uint32_t field3; //progress
-    uint8_t field4;
-    uint8_t field5;
-
-    static void Write(const Unk& value, SinkStream& stream);
-    static void Read(Unk& value, SourceStream& stream);
-  };
   
-  std::array<Unk, 10> unk;
+  std::array<Quest, 10> unk;
   std::array<DailyQuest, 3> dailyQuests;
 
   static Command GetCommand()

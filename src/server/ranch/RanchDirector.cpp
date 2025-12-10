@@ -4446,19 +4446,18 @@ void RanchDirector::HandleRequestDailyQuestReward(
   spdlog::debug("packet info: {} {}", command.unk0, command.unk1);
 
   protocol::AcCmdCRRequestDailyQuestRewardOK response{};
-  response.unk0 = 1;
 
   characterRecord.Mutable(
     [&command, &dailyQuests, &response](data::Character& character)
     {
       dailyQuests = character.dailyQuests();
 
-      response.unk[0] = {command.unk0, 45001, 0, 1};
+      response.rewards.items[0] = {command.unk0, 45001, 0, 1};
     });
 
   for (int i = 1; i < 5; i++)
   {
-    response.unk[i] = {0, 0, 0, 0};
+    response.rewards.items[i] = {0, 0, 0, 0};
   }
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -4533,9 +4532,9 @@ void RanchDirector::HandleRequestQuestReward(
   response.unk4[0] = {command.unk1, 1};
 
   //TODO: give rewards
-  for (int i = 0; i < 5; i++)
+  for (int i = 0; i < response.unk2; i++)
   {
-    response.rewards[i] = {0, 0, 0, 0};
+    response.rewards.items[i] = {0, 0, 0, 0};
   }
 
   for (int i = 1; i < 5; i++)

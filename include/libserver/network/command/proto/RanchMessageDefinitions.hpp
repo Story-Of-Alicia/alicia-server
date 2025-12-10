@@ -4177,7 +4177,7 @@ struct AcCmdCRUpdateDailyQuest
 
 struct AcCmdCRUpdateDailyQuestOK
 {
-  uint32_t newCarrotBalance;
+  int32_t newCarrotBalance;
   DailyQuest quest{};
   uint32_t unk_1;
   uint32_t unk_2;
@@ -4203,7 +4203,6 @@ struct AcCmdCRUpdateDailyQuestOK
 
 struct AcCmdCRUpdateDailyQuestCancel
 {
-  // uint32_t dailyQuestId{};
   static Command GetCommand()
   {
     return Command::AcCmdCRUpdateDailyQuestCancel;
@@ -4317,7 +4316,6 @@ struct AcCmdRCUpdateDailyQuestNotify
   uint32_t unk2;
   uint32_t unk3;
 
-
   static Command GetCommand()
   {
     return Command::AcCmdRCUpdateDailyQuestNotify;
@@ -4364,20 +4362,13 @@ struct AcCmdCRRequestDailyQuestReward
 
 struct AcCmdCRRequestDailyQuestRewardOK
 {
-  uint8_t unk0;//count for quests that give a reward
-
-  struct Unk
+  struct Reward
   {
-    uint32_t unk0;//questid
-    uint32_t unk1;//item id
-    uint32_t unk2;
-    uint32_t unk3;//item amount
+    std::vector<Item> items;
 
-    static void Write(const Unk& value, SinkStream& stream);
-    static void Read(Unk& value, SourceStream& stream);
-  };
-
-  std::array<Unk, 5> unk;//max 5, is amount of items rewarded?
+    static void Write(const Reward& value, SinkStream& stream);
+    static void Read(Reward& value, SourceStream& stream);
+  } rewards;
 
   static Command GetCommand()
   {
@@ -4510,7 +4501,7 @@ struct AcCmdCRRequestQuestRewardOK
   uint8_t unk2; //Unk counter
   uint8_t unk3; //Unk1 counter
     
-  std::array<AcCmdCRRequestDailyQuestRewardOK::Unk, 5> rewards;//game has no limit
+  AcCmdCRRequestDailyQuestRewardOK::Reward rewards;//game has no limit
 
   struct Unk1 // gives a visual effect when receiving the reward
   {
