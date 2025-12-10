@@ -133,6 +133,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCLCreateNickname& command);
 
+  void SendCreateNicknameCancel(
+    ClientId clientId,
+    protocol::AcCmdCLCreateNicknameCancel::Reason reason);
+
   void HandleShowInventory(
     ClientId clientId,
     const protocol::AcCmdCLShowInventory& command);

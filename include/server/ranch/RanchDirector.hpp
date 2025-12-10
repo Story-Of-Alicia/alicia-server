@@ -109,6 +109,8 @@ private:
 
   struct ClientContext
   {
+    //! User name.
+    std::string userName;
     //! Whether the client is authenticated.
     bool isAuthenticated{false};
     //! Unique ID of the client's character.
@@ -213,7 +215,11 @@ private:
   //!
   void HandleUpdateMountNickname(
     ClientId clientId,
-    const protocol::RanchCommandUpdateMountNickname& command);
+    const protocol::AcCmdCRUpdateMountNickname& command);
+
+  void SendUpdateMountNicknameCancel(
+    ClientId clientId,
+    protocol::HorseNicknameUpdateError reason);
 
   //!
   void HandleRequestStorage(
@@ -393,6 +399,9 @@ private:
   void HandleRequestQuestReward(
     ClientId clientId,
     const protocol::AcCmdCRRequestQuestReward& command);
+  void SendChangeNicknameCancel(
+    ClientId clientId,
+    protocol::ChangeNicknameError reason);
 
   //!
   ServerInstance& _serverInstance;

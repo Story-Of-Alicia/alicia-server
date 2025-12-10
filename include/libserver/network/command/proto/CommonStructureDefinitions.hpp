@@ -60,12 +60,15 @@ struct StoredItem
   };
 
   uint32_t uid{};
+  //! >0 allow send mail
   uint32_t val1{};
   Status status{};
-  // hide sender and message.
+  //! 0 stato shop
+  //! >0 system, allow send mail
   uint32_t val3{};
   uint32_t val4{};
-  uint32_t val5{};
+  //! carrots
+  uint32_t carrots{};
   uint32_t val6{};
   std::string sender;
   std::string message;
@@ -603,7 +606,7 @@ enum class GuildError : uint8_t {
 };
 
 //! Corresponds to values in CharNameChangeUIStrings
-enum class NameChangeError : uint8_t
+enum class ChangeNicknameError : uint8_t
 {
   UnknownError = 0x1,       // CEC_UNDEFINED
   NoOrIncorrectItem = 0x1a, // CEC_HAS_NO_RIGHT_ITEM
@@ -624,7 +627,7 @@ struct DailyQuest
 };
   
 // HorseNameStrings
-enum class HorseRenameError : uint8_t
+enum class HorseNicknameUpdateError : uint8_t
 {
   ServerError = 0, // ServerError
   DuplicateHorseName = 1, // DUPLICATED

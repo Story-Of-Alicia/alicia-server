@@ -48,7 +48,7 @@ void AcCmdCRUseItemOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.itemUid)
-    .Write(command.updatedItemCount)
+    .Write(command.remainingItemCount)
     .Write(command.type);
 
   if (command.type == ActionType::Generic)
@@ -983,15 +983,15 @@ void RanchCommandBreedingWishlistOK::Read(
   throw std::runtime_error("Not implemented.");
 }
 
-void RanchCommandUpdateMountNickname::Write(
-  const RanchCommandUpdateMountNickname& command,
+void AcCmdCRUpdateMountNickname::Write(
+  const AcCmdCRUpdateMountNickname& command,
   SinkStream& stream)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void RanchCommandUpdateMountNickname::Read(
-  RanchCommandUpdateMountNickname& command,
+void AcCmdCRUpdateMountNickname::Read(
+  AcCmdCRUpdateMountNickname& command,
   SourceStream& stream)
 {
   stream.Read(command.horseUid)
@@ -999,15 +999,15 @@ void RanchCommandUpdateMountNickname::Read(
     .Read(command.itemUid);
 }
 
-void RanchCommandUpdateMountNicknameCancel::Write(
-  const RanchCommandUpdateMountNicknameCancel& command,
+void AcCmdCRUpdateMountNicknameCancel::Write(
+  const AcCmdCRUpdateMountNicknameCancel& command,
   SinkStream& stream)
 {
   stream.Write(command.error);
 }
 
-void RanchCommandUpdateMountNicknameCancel::Read(
-  RanchCommandUpdateMountNicknameCancel& command,
+void AcCmdCRUpdateMountNicknameCancel::Read(
+  AcCmdCRUpdateMountNicknameCancel& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");
@@ -1029,8 +1029,8 @@ void AcCmdRCUpdateMountInfoNotify::Read(
   throw std::runtime_error("Not implemented.");
 }
 
-void RanchCommandUpdateMountNicknameOK::Write(
-  const RanchCommandUpdateMountNicknameOK& command,
+void AcCmdCRUpdateMountNicknameOK::Write(
+  const AcCmdCRUpdateMountNicknameOK& command,
   SinkStream& stream)
 {
   stream.Write(command.horseUid)
@@ -1039,8 +1039,8 @@ void RanchCommandUpdateMountNicknameOK::Write(
     .Write(command.itemCount);
 }
 
-void RanchCommandUpdateMountNicknameOK::Read(
-  RanchCommandUpdateMountNicknameOK& command,
+void AcCmdCRUpdateMountNicknameOK::Read(
+  AcCmdCRUpdateMountNicknameOK& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented.");
@@ -1103,7 +1103,7 @@ void AcCmdCRGetItemFromStorage::Read(
   AcCmdCRGetItemFromStorage& command,
   SourceStream& stream)
 {
-  stream.Read(command.storedItemUid);
+  stream.Read(command.storageItemUid);
 }
 
 void AcCmdCRGetItemFromStorageOK::Write(
@@ -1130,7 +1130,7 @@ void AcCmdCRGetItemFromStorageCancel::Write(
   const AcCmdCRGetItemFromStorageCancel& command,
   SinkStream& stream)
 {
-  stream.Write(command.storedItemUid)
+  stream.Write(command.storageItemUid)
     .Write(command.status);
 }
 
@@ -1152,7 +1152,7 @@ void RanchCommandCheckStorageItem::Read(
   AcCmdCRGetItemFromStorage& command,
   SourceStream& stream)
 {
-  stream.Read(command.storedItemUid);
+  stream.Read(command.storageItemUid);
 }
 
 void RanchCommandRequestNpcDressList::Write(
@@ -2295,7 +2295,7 @@ void AcCmdCRChangeNicknameCancel::Write(
   SinkStream& stream)
 {
   stream.Write(command.member1)
-    .Write(command.status);
+    .Write(command.error);
 }
 
 void AcCmdCRChangeNicknameCancel::Read(
@@ -2310,7 +2310,7 @@ void AcCmdCRChangeNicknameOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.itemUid)
-    .Write(command.itemCount)
+    .Write(command.remainingItemCount)
     .Write(command.newNickname);
 }
 
