@@ -1069,54 +1069,6 @@ void DataDirector::ScheduleUserLoad(
   });
 }
 
-Record<data::Guild> DataDirector::GetGuild(data::Uid guildUid) noexcept
-{
-  if (guildUid == data::InvalidUid)
-    return {};
-  return _guildStorage.Get(guildUid).value_or(Record<data::Guild>{});
-}
-
-Record<data::Guild> DataDirector::CreateGuild() noexcept
-{
-  return _guildStorage.Create(
-    [this]()
-    {
-      data::Guild guild;
-      _primaryDataSource->CreateGuild(guild);
-
-      return std::make_pair(guild.uid(), std::move(guild));
-    });
-}
-
-DataDirector::GuildStorage& DataDirector::GetGuildCache()
-{
-  return _guildStorage;
-}
-
-Record<data::Settings> DataDirector::GetSettings(data::Uid settingsUid) noexcept
-{
-  if (settingsUid == data::InvalidUid)
-    return {};
-  return _settingsStorage.Get(settingsUid).value_or(Record<data::Settings>{});
-}
-
-Record<data::Settings> DataDirector::CreateSettings() noexcept
-{
-  return _settingsStorage.Create(
-    [this]()
-    {
-      data::Settings settings;
-      _primaryDataSource->CreateSettings(settings);
-
-      return std::make_pair(settings.uid(), std::move(settings));
-    });
-}
-
-DataDirector::SettingsStorage& DataDirector::GetSettingsCache()
-{
-  return _settingsStorage;
-}
-
 Record<data::DailyQuest> DataDirector::GetDailyQuest(data::Uid DailyQuestUid) noexcept
 {
   if (DailyQuestUid == data::InvalidUid)
@@ -1136,15 +1088,9 @@ Record<data::DailyQuest> DataDirector::CreateDailyQuest() noexcept
     });
 }
 
-
 DataDirector::DailyQuestStorage& DataDirector::GetDailyQuestCache()
 {
   return _dailyQuestStorage;
-}
-
-DataSource& DataDirector::GetDataSource() noexcept
-{
-  return *_primaryDataSource.get();
 }
 
 void DataDirector::ScheduleCharacterLoad(
