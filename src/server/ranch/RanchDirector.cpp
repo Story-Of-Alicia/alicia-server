@@ -393,6 +393,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleBuyOwnItem(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRSendGift>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleSendGift(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -4324,7 +4330,78 @@ void RanchDirector::HandleConfirmItem(
   ClientId clientId,
   const protocol::AcCmdCRConfirmItem& command)
 {
-  spdlog::debug("aaaaaaaaaaaaaaaaaaaaaaaa");
+  const auto& clientContext = GetClientContext(clientId);
+
+  // Get invoker's character name for logging
+  std::string invokerCharacterName{};
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [&invokerCharacterName](const data::Character& character)
+    {
+      invokerCharacterName = character.name();
+    });
+
+  // Get current shop list
+  const auto& shopList = GetServerInstance().GetLobbyDirector().GetShopManager().GetShopList();
+
+  // Get recipient character uid, if it even exists
+  // TODO: this checks against the data source if character by that name exists but does not load character
+  // into memory
+  const data::Uid recipientCharacterUid = GetServerInstance()
+    .GetDataDirector()
+    .GetDataSource()
+    .RetrieveCharacterUidByName(command.recipientCharacterName);
+
+  // Check if character is gifting self or current shop list contains the goods
+  bool error{false};
+  if (command.recipientCharacterName == invokerCharacterName)
+  {
+    // Invoker cannot gift themself
+    spdlog::warn("Character '{}' ('{}') tried to confirm item (goods seq '{}') for themselves",
+      clientContext.characterUid,
+      invokerCharacterName,
+      command.goodsSq);
+    error = true;
+  }
+  else if (not shopList.goodsList.contains(command.goodsSq))
+  {
+    // Goods by that ID does not exist, return cancel
+    spdlog::warn("Character '{}' tried to confirm item (goods seq '{}') for another character but goods was not found.",
+      clientContext.characterUid,
+      command.goodsSq);
+    error = true;
+  }
+  else if (recipientCharacterUid == data::InvalidUid)
+  {
+    // Character by that name does not exist
+    // No need to log this
+    error = true;
+  }
+
+  if (error)
+  {
+    // An error has occurred, return with cancel
+    protocol::AcCmdCRConfirmItemCancel cancel{};
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+  
+  // Recipient character exists, goods is valid.
+  const auto& goods = shopList.goodsList.at(command.goodsSq);
+
+  // Check if recipient has the item
+  bool hasItem{true};
+  GetServerInstance().GetDataDirector().GetCharacter(recipientCharacterUid).Immutable(
+    [this, &hasItem, itemTid = goods.itemUid](const data::Character& character)
+    {
+      if (not GetServerInstance().GetItemSystem().HasItem(character, itemTid))
+        hasItem = false;
+    });
+
+  protocol::AcCmdCRConfirmItemOK response{
+    .recipientCharacterName = command.recipientCharacterName,
+    .goodsSq = command.goodsSq,
+    .canPurchase = hasItem};
+  _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }
 
 void RanchDirector::HandleConfirmSetItem(
@@ -4336,7 +4413,7 @@ void RanchDirector::HandleConfirmSetItem(
   // Get current shop list
   const auto& shopList = GetServerInstance().GetLobbyDirector().GetShopManager().GetShopList();
 
-  // Check if current shop list contains the 
+  // Check if current shop list contains the goods
   if (not shopList.goodsList.contains(command.goodsSq))
   {
     // Goods by that ID does not exist, return error
@@ -4576,6 +4653,216 @@ void RanchDirector::HandleBuyOwnItem(
         .equipmentUid = equipmentUid
       });
   }
+}
+
+void RanchDirector::HandleSendGift(
+  ClientId clientId,
+  const protocol::AcCmdCRSendGift& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  std::string invokerCharacterName{};
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [&invokerCharacterName](const data::Character& character)
+    {
+      invokerCharacterName = character.name();
+    });
+
+  // Get current shop list
+  const auto& shopList = GetServerInstance().GetLobbyDirector().GetShopManager().GetShopList();
+
+  // Get recipient character uid, if it even exists
+  // TODO: this checks against the data source if character by that name exists but does not load character
+  // into memory
+  const data::Uid recipientCharacterUid = GetServerInstance()
+    .GetDataDirector()
+    .GetDataSource()
+    .RetrieveCharacterUidByName(command.recipientCharacterName);
+
+  bool error{false};
+  // Check if gifting self or current shop list contains the goods
+  if (command.recipientCharacterName == invokerCharacterName)
+  {
+    // Invoker cannot gift themself
+    spdlog::warn("Character '{}' ('{}') tried to send gift (goods seq '{}') to themself.",
+      clientContext.characterUid,
+      invokerCharacterName,
+      command.order.goodsSq);
+    error = true;
+  }
+  else if (not shopList.goodsList.contains(command.order.goodsSq))
+  {
+    // Goods by that ID does not exist, return cancel
+    spdlog::warn("Character '{}' tried to send gift (goods seq '{}') to another character but goods was not found.",
+      clientContext.characterUid,
+      command.order.goodsSq);
+    error = true;
+  }
+  else if (recipientCharacterUid == data::InvalidUid)
+  {
+    // Character by that name does not exist
+    // No need to log this
+    error = true;
+  }
+
+  protocol::AcCmdCRSendGiftCancel cancel{};
+  if (error)
+  {
+    // An error has occurred, return with cancel
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+  
+  // Recipient character exists, goods is valid.
+  const auto& goods = shopList.goodsList.at(command.order.goodsSq);
+
+  // Get item information
+  const auto& itemRegistryRecord = GetServerInstance().GetItemRegistry().GetItem(goods.itemUid);
+  if (not itemRegistryRecord.has_value())
+  {
+    // Item does not exist in registry
+    spdlog::warn("Character '{}' tried to gift shop item (goods sq '{}') with invalid item tid '{}'.",
+      clientContext.characterUid,
+      command.order.goodsSq,
+      goods.itemUid);
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  // Check if recipient has the item
+  bool hasItem{true};
+  GetServerInstance().GetDataDirector().GetCharacter(recipientCharacterUid).Immutable(
+    [this, &hasItem, itemTid = goods.itemUid](const data::Character& character)
+    {
+      hasItem = GetServerInstance().GetItemSystem().HasItem(character, itemTid);
+    });
+
+  if (hasItem)
+  {
+    // TODO: prepare for the possibility that invoker is gifting an item that can stack
+    // Like items with duration or consumables
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  // Recipient character exists, goods is valid and recipient does not have the item,
+  // process the transaction.
+  protocol::AcCmdCRSendGiftOK response{
+    .giftOrderResult = protocol::AcCmdCRSendGiftOK::GiftOrderResult{
+      .order = command.order
+    }};
+
+  // If set type is goods info, get price from selected price range, else from set price
+  std::optional<uint32_t> cost{};
+  uint32_t priceRange{0};
+  if (goods.setType == 0)
+  {
+    // Loop through each price range
+    for (const auto& price : goods.items)
+    {
+      // Check if price ID for the goods matches that of the one selected by the character
+      if (price.priceId == command.order.priceId)
+      {
+        // Price found by price ID, store cost and price range
+        cost.emplace(price.goodsPrice);
+        priceRange = price.priceRange;
+        break;
+      }
+    }
+
+    if (not cost.has_value())
+    {
+      // Goods with that price range not found
+      spdlog::warn("Character '{}' tried to gift shop item (goods sq '{}') with invalid price id '{}'.",
+        clientContext.characterUid,
+        command.order.goodsSq,
+        command.order.priceId);
+      response.giftOrderResult.error = true;
+    }
+  }
+  else if (goods.setType == 1)
+  {
+    // TODO: incomplete implementation
+    cost.emplace(goods.setPrice);
+    priceRange = 1;
+  }
+  else
+  {
+    // Set type is unknown, return unknown error and move onto the next order
+    response.giftOrderResult.error = true;
+  }
+  
+  // Deduct from invoking character's balance (carrots or cash)
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+    [&response, moneyType = goods.moneyType, &cost](data::Character& character)
+    {
+      // Deduct from balance depending on goods money type
+      if (moneyType == ShopList::Goods::MoneyType::Cash)
+        character.cash() -= cost.value();
+      else
+        character.carrots() -= cost.value();
+      
+      // Set balance values in response
+      response.carrots = character.carrots();
+      response.cash = character.cash();
+    });
+
+  // Add item to system
+  GetServerInstance().GetDataDirector().GetCharacter(recipientCharacterUid).Mutable(
+    [this, &goods, &priceRange, &command, &invokerCharacterName, registryItem = itemRegistryRecord.value()]
+      (data::Character& character)
+    {
+      data::Uid itemUid{data::InvalidUid};
+      // If expirable item, add with duration, else with count
+      if (registryItem.type == registry::Item::Type::Temporary)
+        itemUid = GetServerInstance().GetItemSystem().AddItem(
+          character,
+          registryItem.tid,
+          std::chrono::hours(priceRange));
+      else
+        itemUid = GetServerInstance().GetItemSystem().AddItem(
+          character,
+          registryItem.tid,
+          priceRange);
+
+      // Create storage item and populate with gift details
+      data::Uid storageItemUid{data::InvalidUid};
+      GetServerInstance().GetDataDirector().CreateStorageItem().Mutable(
+        [this, &storageItemUid, &itemUid, &command, &goods, &registryItem, &invokerCharacterName]
+          (data::StorageItem& storageItem)
+        {
+          storageItemUid = storageItem.uid();
+          storageItem.goodsSq() = command.order.goodsSq;
+          storageItem.priceId() = command.order.priceId;
+          storageItem.carrots() = goods.bonusGameMoney;
+          storageItem.duration() = std::chrono::days(7); // TODO: configurable?
+          storageItem.createdAt() = util::Clock::now();
+          storageItem.sender() = invokerCharacterName;
+          storageItem.message() = command.message;
+
+          GetServerInstance().GetDataDirector().GetItem(itemUid).Immutable(
+            [&storageItem](const data::Item& item)
+            {
+              storageItem.items() = {
+                data::StorageItem::Item{
+                  .tid = item.tid(),
+                  .count = item.count(),
+                  .duration = item.duration()}};
+            });
+        });
+
+      // Add storage item to recipient's gift storage
+      character.gifts().emplace_back(storageItemUid);
+    });
+
+  // Gifting is successful, indicate and return response
+  response.giftOrderResult.error = false;
+  _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+
+  // Notify recipient of new item in gift box (if they are online)
+  GetServerInstance().GetRanchDirector().SendStorageNotification(
+    recipientCharacterUid,
+    protocol::AcCmdCRRequestStorage::Category::Gifts);
 }
 
 } // namespace server

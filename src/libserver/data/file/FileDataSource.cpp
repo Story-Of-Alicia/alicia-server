@@ -416,7 +416,7 @@ void server::FileDataSource::DeleteCharacter(data::Uid uid)
   std::filesystem::remove(dataFilePath);
 }
 
-bool server::FileDataSource::IsCharacterNameUnique(const std::string_view& name)
+server::data::Uid server::FileDataSource::RetrieveCharacterUidByName(const std::string_view& name)
 {
   const std::regex rg(
     std::format("{}", name),
@@ -435,10 +435,15 @@ bool server::FileDataSource::IsCharacterNameUnique(const std::string_view& name)
     const auto existingCharacterName = json["name"].get<std::string>();
 
     if (std::regex_match(existingCharacterName, rg))
-      return false;
+      return json["uid"].get<data::Uid>();
   }
 
-  return true;
+  return data::InvalidUid;
+}
+
+bool server::FileDataSource::IsCharacterNameUnique(const std::string_view& name)
+{
+  return RetrieveCharacterUidByName(name) == data::InvalidUid;
 }
 
 void server::FileDataSource::CreateHorse(data::Horse& horse)

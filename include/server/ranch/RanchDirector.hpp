@@ -397,6 +397,10 @@ private:
     ClientId clientId, 
     const protocol::AcCmdCRBuyOwnItem& command);
 
+  void HandleSendGift(
+    ClientId clientId, 
+    const protocol::AcCmdCRSendGift& command);
+
   //!
   ServerInstance& _serverInstance;
   //!

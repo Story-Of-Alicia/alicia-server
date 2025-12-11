@@ -4208,8 +4208,8 @@ struct AcCmdCRMountInjuryHealOK
 
 struct AcCmdCRConfirmItem
 {
-  std::string member1;
-  uint32_t member2;
+  std::string recipientCharacterName;
+  uint32_t goodsSq;
   uint8_t member3;
 
   static Command GetCommand()
@@ -4234,9 +4234,9 @@ struct AcCmdCRConfirmItem
 
 struct AcCmdCRConfirmItemOK
 {
-  std::string member1;
-  uint32_t member2;
-  uint8_t member3;
+  std::string recipientCharacterName;
+  uint32_t goodsSq;
+  bool canPurchase;
 
   static Command GetCommand()
   {
@@ -4260,6 +4260,8 @@ struct AcCmdCRConfirmItemOK
 
 struct AcCmdCRConfirmItemCancel
 {
+  // Has `ShopHandlerStrings` -> `NotExistUser` hardcoded, is not affected by response values.
+
   std::string member1;
   uint32_t member2;
   uint8_t member3;
@@ -4501,6 +4503,87 @@ struct AcCmdCRBuyOwnItemOK
   //! @param stream Source stream.
   static void Read(
     AcCmdCRBuyOwnItemOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRSendGift
+{
+  std::string recipientCharacterName{};
+  std::string message{};
+  protocol::AcCmdCRBuyOwnItem::Order order{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRSendGift;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRSendGift& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRSendGift& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRSendGiftCancel
+{
+  // Cancel is hardcoded to `ShopHandlerStrings` -> `GiftFail`.
+  uint8_t unused{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRSendGiftCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRSendGiftCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRSendGiftCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRSendGiftOK
+{
+  struct GiftOrderResult
+  {
+    protocol::AcCmdCRBuyOwnItem::Order order{};
+    bool error{true};
+  } giftOrderResult{};
+  int32_t carrots{};
+  uint32_t cash{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRSendGiftOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRSendGiftOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRSendGiftOK& command,
     SourceStream& stream);
 };
 
