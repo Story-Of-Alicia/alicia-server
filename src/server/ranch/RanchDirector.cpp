@@ -4488,13 +4488,6 @@ void RanchDirector::HandleBuyOwnItem(
           orderResult.result = OrderResult::Result::OutOfMoney;
           continue;
         }
-        else if (hasItem and not isConsumable)
-        {
-          // Character already owns this item
-          // TODO: is there a better one to use than unknown error?
-          orderResult.result = OrderResult::Result::UnknownError;
-          continue;
-        }
         // TODO: implement other checks defined in `ShopItemResult::Result`
 
         // Deduct from character carrot/cash balance
@@ -4503,8 +4496,9 @@ void RanchDirector::HandleBuyOwnItem(
         else
           character.carrots() -= cost;
 
-        // Add item to character's inventory
-        if (order.equipOnPurchase)
+        // Add item to character's inventory if equip on purchase,
+        // or increment/duration if character already owns it
+        if (order.equipOnPurchase || hasItem)
         {
           // TODO: santiy check, see if it is equipable
           // Item duration is the price range field.
@@ -4523,8 +4517,9 @@ void RanchDirector::HandleBuyOwnItem(
               protocol::BuildProtocolItem(purchase.item, item);
             });
 
-          // Add to the list of new equipments to handle for equipping
-          newEquipmentUids.emplace_back(itemUid);
+          // Add newly purchased equipment to the list of equipments to handle for equipping
+          if (not hasItem)
+            newEquipmentUids.emplace_back(itemUid);
         }
         else
         {
