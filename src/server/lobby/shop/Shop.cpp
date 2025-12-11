@@ -97,7 +97,7 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
       item.characterPartInfo ||
       item.mountPartInfo;
 
-    if (false)
+    if (filter)
       continue;
 
     if (item.type == registry::Item::Type::Permanent || item.type == registry::Item::Type::Consumable)
