@@ -2673,8 +2673,8 @@ void AcCmdCRConfirmItem::Read(
   AcCmdCRConfirmItem& command,
   SourceStream& stream)
 {
-  stream.Read(command.member1)
-    .Read(command.member2)
+  stream.Read(command.recipientCharacterName)
+    .Read(command.goodsSq)
     .Read(command.member3);
 }
 
@@ -2682,9 +2682,9 @@ void AcCmdCRConfirmItemOK::Write(
   const AcCmdCRConfirmItemOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.member1)
-    .Write(command.member2)
-    .Write(command.member3);
+  stream.Write(command.recipientCharacterName)
+    .Write(command.goodsSq)
+    .Write(command.canPurchase);
 }
 
 void AcCmdCRConfirmItemOK::Read(
@@ -2835,6 +2835,53 @@ void AcCmdCRBuyOwnItemOK::Write(
 
   stream.Write(command.newCarrots)
     .Write(command.newCash);
+}
+
+void AcCmdCRSendGift::Read(
+  AcCmdCRSendGift& command,
+  SourceStream& stream)
+{
+  stream.Read(command.recipientCharacterName)
+    .Read(command.message)
+    .Read(command.order);
+}
+
+void AcCmdCRSendGift::Write(
+  const AcCmdCRSendGift& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRSendGiftCancel::Read(
+  AcCmdCRSendGiftCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRSendGiftCancel::Write(
+  const AcCmdCRSendGiftCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unused);
+}
+
+void AcCmdCRSendGiftOK::Read(
+  AcCmdCRSendGiftOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRSendGiftOK::Write(
+  const AcCmdCRSendGiftOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.giftOrderResult.order)
+    .Write(command.giftOrderResult.error)
+    .Write(command.carrots)
+    .Write(command.cash);
 }
 
 } // namespace server::protocol

@@ -97,7 +97,7 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
       item.characterPartInfo ||
       item.mountPartInfo;
 
-    if (filter)
+    if (not filter)
       continue;
 
     if (item.type == registry::Item::Type::Permanent || item.type == registry::Item::Type::Consumable)
@@ -121,6 +121,9 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
 
       if (item.characterPartInfo)
       {
+        // Allow gifting
+        goods.giftType = ShopList::Goods::GiftType::CanGift;
+      
         // Permanent character item only has one price
         goods.items = {
           ShopList::Goods::Item{
