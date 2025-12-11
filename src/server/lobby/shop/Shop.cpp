@@ -88,11 +88,22 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
   {
     ++goodsSequenceId;
 
-    if (item.careParameters || item.cureParameters || item.foodParameters || item.playParameters)
+    // Handmade filter to only show character, horse and care items
+    const bool filter = 
+      item.careParameters ||
+      item.cureParameters ||
+      item.foodParameters ||
+      item.playParameters ||
+      item.characterPartInfo ||
+      item.mountPartInfo;
+
+    if (false)
+      continue;
+
+    if (item.type == registry::Item::Type::Permanent || item.type == registry::Item::Type::Consumable)
     {
-      _shopList.goodsList.emplace(
-        goodsSequenceId,
-        ShopList::Goods{
+      // Item is permanent or consumable
+      ShopList::Goods goods{
           .goodsSq = goodsSequenceId,
           .setType = 0,
           .moneyType = ShopList::Goods::MoneyType::Carrots,
@@ -106,49 +117,42 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
           .goodsDesc = "",
           .itemCapacityDesc = "Item Capacity Description Something",
           .sellSt = 1,
-          .itemUid = tid,
-          .items = {
-            ShopList::Goods::Item{
-              .priceId = 1,
-              .priceRange = 1,
-              .goodsPrice = 1},
-            ShopList::Goods::Item{
-              .priceId = 2,
-              .priceRange = 10,
-              .goodsPrice = 10},
-            ShopList::Goods::Item{
-              .priceId = 3,
-              .priceRange = 100,
-              .goodsPrice = 100}}});
-    }
-    else if (item.characterPartInfo)
-    {
+          .itemUid = tid};
+
+      if (item.characterPartInfo)
+      {
+        // Permanent character item only has one price
+        goods.items = {
+          ShopList::Goods::Item{
+            .priceId = 1,
+            .priceRange = 1,
+            .goodsPrice = 1}};
+      }
+      else
+      {
+        // Any other item can have a range of prices
+        goods.items = {
+          ShopList::Goods::Item{
+            .priceId = 1,
+            .priceRange = 1,
+            .goodsPrice = 1},
+          ShopList::Goods::Item{
+            .priceId = 2,
+            .priceRange = 10,
+            .goodsPrice = 10},
+          ShopList::Goods::Item{
+            .priceId = 3,
+            .priceRange = 100,
+            .goodsPrice = 100}};
+      }
+
       _shopList.goodsList.emplace(
         goodsSequenceId,
-        ShopList::Goods{
-          .goodsSq = goodsSequenceId,
-          .setType = 0,
-          .moneyType = ShopList::Goods::MoneyType::Carrots,
-          .goodsType = ShopList::Goods::GoodsType::New,
-          .recommendType = 1,
-          .recommendNo = ++recommendNoId,
-          .giftType = ShopList::Goods::GiftType::NoGifting,
-          .salesRank = 0,
-          .bonusGameMoney = 1000,
-          .goodsNm = item.name,
-          .goodsDesc = "",
-          .itemCapacityDesc = "Item Capacity Description Something",
-          .sellSt = 1,
-          .itemUid = tid,
-          .items = {
-            ShopList::Goods::Item{
-              .priceId = 1,
-              .priceRange = 1,
-              .goodsPrice = 1}}});
+        goods);
     }
     else if (item.type == registry::Item::Type::Temporary)
     {
-      // Time-based items, price range changes
+      // Expirable items, can have a range of prices (preferable and max 3, can be less)
       _shopList.goodsList.emplace(
         goodsSequenceId,
         ShopList::Goods{
