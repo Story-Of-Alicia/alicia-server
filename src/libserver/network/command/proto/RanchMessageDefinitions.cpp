@@ -2641,7 +2641,7 @@ void AcCmdCRUpdateMountInfoOK::Write(
   const AcCmdCRUpdateMountInfoOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0)
+  stream.Write(command.action)
     .Write(command.horse);
 }
 
@@ -2864,6 +2864,111 @@ void AcCmdCRSendGiftOK::Write(
     .Write(command.giftOrderResult.error)
     .Write(command.carrots)
     .Write(command.cash);
+}
+
+void AcCmdCRPasswordAuth::Write(
+  const AcCmdCRPasswordAuth& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRPasswordAuth::Read(
+  AcCmdCRPasswordAuth& command,
+  SourceStream& stream)
+{
+  stream.Read(command.unk1);
+  if (command.unk1 == 2)
+  {
+    stream.Read(command.unk2)
+      .Read(command.unk3);
+  }
+  else if (command.unk1 == 3)
+  {
+    stream.Read(command.unk3);
+  }
+}
+
+void AcCmdCRPasswordAuthOK::Write(
+  const AcCmdCRPasswordAuthOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.action)
+    .Write(command.duration);
+}
+
+void AcCmdCRPasswordAuthOK::Read(
+  AcCmdCRPasswordAuthOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRUpdateMountInfo::Write(
+  const AcCmdCRUpdateMountInfo& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRUpdateMountInfo::Read(
+  AcCmdCRUpdateMountInfo& command,
+  SourceStream& stream)
+{
+  stream.Read(command.action)
+    .Read(command.horse);
+}
+
+void AcCmdCROpenRandomBox::Write(
+  const AcCmdCROpenRandomBox& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCROpenRandomBox::Read(
+  AcCmdCROpenRandomBox& command,
+  SourceStream& stream)
+{
+  stream.Read(command.itemUid)
+    .Read(command.unk1);
+}
+
+void AcCmdCROpenRandomBoxOK::Write(
+  const AcCmdCROpenRandomBoxOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.packageId)
+    .Write(command.carrotsObtained)
+    .Write(command.newBalance);
+  stream.Write(static_cast<uint8_t>(command.items.size()));
+
+  for (const auto& item : command.items) {
+    stream.Write(item);
+  }
+}
+
+void AcCmdCROpenRandomBoxOK::Read(
+  AcCmdCROpenRandomBoxOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCROpenRandomBoxCancel::Write(
+  const AcCmdCROpenRandomBoxCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1)
+    .Write(command.error);
+}
+void AcCmdCROpenRandomBoxCancel::Read(
+  AcCmdCROpenRandomBoxCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
 }
 
 } // namespace server::protocol

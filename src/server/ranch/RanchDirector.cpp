@@ -399,6 +399,24 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleSendGift(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCROpenRandomBox>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleOpenRandomBox(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRPasswordAuth>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandlePasswordAuth(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRUpdateMountInfo>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleUpdateMountInfo(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -3298,7 +3316,7 @@ void RanchDirector::HandleUseItem(
 
   // Perform a mount update
   protocol::AcCmdCRUpdateMountInfoOK mountOk{
-    .unk0 = 4,};
+    .action = protocol::AcCmdCRUpdateMountInfo::Action::Rename,};
 
   const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(horseUid);
   horseRecord.Immutable([&mountOk](const data::Horse& horse)
@@ -4384,7 +4402,7 @@ void RanchDirector::HandleConfirmItem(
     _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
     return;
   }
-  
+
   // Recipient character exists, goods is valid.
   const auto& goods = shopList.goodsList.at(command.goodsSq);
 
@@ -4480,7 +4498,7 @@ void RanchDirector::HandleBuyOwnItem(
   using Purchase = protocol::AcCmdCRBuyOwnItemOK::Purchase;
 
   protocol::AcCmdCRBuyOwnItemOK response{};
-  
+
   // Get current shop list
   const auto& shopList = GetServerInstance().GetLobbyDirector().GetShopManager().GetShopList();
 
@@ -4502,7 +4520,7 @@ void RanchDirector::HandleBuyOwnItem(
           orderResult.result = OrderResult::Result::UnknownError;
           continue;
         }
-        
+
         // Get the shop goods
         const auto& goods = shopList.goodsList.at(order.goodsSq);
 
@@ -4714,7 +4732,7 @@ void RanchDirector::HandleSendGift(
     _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
     return;
   }
-  
+
   // Recipient character exists, goods is valid.
   const auto& goods = shopList.goodsList.at(command.order.goodsSq);
 
@@ -4793,7 +4811,7 @@ void RanchDirector::HandleSendGift(
     // Set type is unknown, return unknown error and move onto the next order
     response.giftOrderResult.error = true;
   }
-  
+
   // Deduct from invoking character's balance (carrots or cash)
   GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
     [&response, moneyType = goods.moneyType, &cost](data::Character& character)
@@ -4803,7 +4821,7 @@ void RanchDirector::HandleSendGift(
         character.cash() -= cost.value();
       else
         character.carrots() -= cost.value();
-      
+
       // Set balance values in response
       response.carrots = character.carrots();
       response.cash = character.cash();
@@ -4865,6 +4883,139 @@ void RanchDirector::HandleSendGift(
   GetServerInstance().GetRanchDirector().SendStorageNotification(
     recipientCharacterUid,
     protocol::AcCmdCRRequestStorage::Category::Gifts);
+}
+
+void RanchDirector::HandlePasswordAuth(
+  ClientId clientId,
+  const protocol::AcCmdCRPasswordAuth command)
+{
+  protocol::AcCmdCRPasswordAuthOK response {
+    .action = protocol::AcCmdCRPasswordAuthOK::Action::Authenticated
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void RanchDirector::HandleUpdateMountInfo(
+  ClientId clientId,
+  const protocol::AcCmdCRUpdateMountInfo command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid);
+
+  protocol::AcCmdCRUpdateMountInfoOK response {
+    .action = command.action,
+    .horse = command.horse
+    };
+
+  if (command.action == protocol::AcCmdCRUpdateMountInfo::Action::ReturnToNature)
+  {
+    characterRecord.Mutable([this, command](data::Character& character)
+    {
+      const auto horseIter = std::ranges::find(character.horses(),command.horse.uid);
+      const bool isHorseValid = horseIter != character.horses().end();
+
+      if (isHorseValid)
+      {
+        character.horses().erase(horseIter);
+        _serverInstance.GetDataDirector().GetHorseCache().Delete(command.horse.uid);
+      }
+    });
+  }
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void RanchDirector::HandleOpenRandomBox(
+  ClientId clientId,
+  const protocol::AcCmdCROpenRandomBox& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid);
+
+  protocol::AcCmdCROpenRandomBoxOK response{};
+
+  std::random_device rd;
+  std::uniform_int_distribution<uint32_t> booleanDistribution(0, 1);
+
+  const bool isPackageReward = booleanDistribution(rd);
+
+  if (isPackageReward)
+  {
+    std::uniform_int_distribution<uint32_t> carrotAmountDistribution(20, 100);
+    const auto carrotAmount = carrotAmountDistribution(rd)*10;
+
+    response = {
+      .packageId = 0,
+      .carrotsObtained = carrotAmount
+      };
+
+    characterRecord.Mutable([this, carrotAmount, &response](data::Character& character)
+      {
+      character.carrots() += carrotAmount;
+      response.newBalance = character.carrots();
+      }
+    );
+  } else
+  {
+    data::Uid uid = data::InvalidUid;
+    const auto packageKeysView = std::views::keys(_serverInstance.GetItemRegistry().GetPackages());
+    std::vector<data::Tid> possiblePackages;
+    std::ranges::copy(packageKeysView, std::back_inserter(possiblePackages));
+
+    std::uniform_int_distribution<uint32_t> randomPackageDistribution(0, possiblePackages.size() - 1);
+    const auto randomPackageIdx = randomPackageDistribution(rd);
+
+    const data::Tid PackageTid = possiblePackages[randomPackageIdx];
+
+    const auto packageTemplate = _serverInstance.GetItemRegistry().GetPackage(PackageTid);
+
+    response = {
+      .packageId = packageTemplate->packageId,
+    };
+
+    //add package to inventory
+    characterRecord.Mutable([this, packageTemplate, &uid](data::Character& character)
+      {
+        uid = _serverInstance.GetItemSystem().AddItem(character,packageTemplate->tid, packageTemplate->count);
+      }
+    );
+  }
+  // TODO: figure out how to make the open box window appear after opening
+  response.unk0 = command.itemUid;
+
+  // update the box count in inventory
+  characterRecord.Mutable([this, &response, command](data::Character& character)
+    {
+      const auto itemRecord = GetServerInstance().GetDataDirector().GetItem(command.itemUid);
+      auto usedItemTid = data::InvalidTid;
+      itemRecord.Immutable([&usedItemTid](const data::Item& item)
+      {
+        usedItemTid = item.tid();
+      });
+      const auto consumeResult = GetServerInstance().GetItemSystem().ConsumeItem(character, usedItemTid, 1);
+      response.unk1 = consumeResult.remainingItemCount;
+      const auto itemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(character.inventory());
+      protocol::BuildProtocolItems(response.items, *itemRecords);
+    }
+  );
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 } // namespace server
