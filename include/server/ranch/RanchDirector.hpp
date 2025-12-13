@@ -384,6 +384,18 @@ private:
     ClientId clientId,
     protocol::ChangeNicknameError reason);
 
+  void HandleOpenRandomBox(
+    ClientId clientId,
+    const protocol::AcCmdCROpenRandomBox& command);
+
+  void HandleUpdateMountInfo(
+    ClientId clientId,
+    const protocol::AcCmdCRUpdateMountInfo command);
+
+  void HandlePasswordAuth(
+    ClientId clientId,
+    const protocol::AcCmdCRPasswordAuth command);
+
   //!
   ServerInstance& _serverInstance;
   //!

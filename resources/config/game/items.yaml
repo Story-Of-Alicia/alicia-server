@@ -8898,3 +8898,385 @@ items:
       characterPartInfo:
         characterId: 10
         slot: 32
+packages:
+  collection:
+    - packageid: 1001
+      packagename: 각설탕 3개
+      count: 3
+      name: Sugar cubes
+      tid: 41007
+    - packageid: 1002
+      packagename: 당근 3개
+      count: 3
+      name: Carrot
+      tid: 41006
+    - packageid: 1003
+      packagename: 옥수수 3개
+      count: 3
+      name: Corn
+      tid: 41001
+    - packageid: 1004
+      packagename: 보리 3개
+      count: 3
+      name: Barley
+      tid: 41003
+    - packageid: 1005
+      packagename: 건초 2개
+      count: 2
+      name: Grass
+      tid: 41005
+    - packageid: 1008
+      packagename: 목초 2개
+      count: 2
+      name: Grass
+      tid: 41005
+    - packageid: 1007
+      packagename: 콩 2개
+      count: 2
+      name: Beans
+      tid: 41002
+    - packageid: 1011
+      packagename: 재료용 크리스털 1개
+      count: 1
+      name: 재료용 크리스털
+      tid: 45001
+    - packageid: 1012
+      packagename: 성장의 비약 1개
+      count: 1
+      name: 성장의 비약
+      tid: 43001
+    - packageid: 1013
+      packagename: 근육 이완제 1개
+      count: 1
+      name: Muscle relaxant
+      tid: 44001
+    - packageid: 1014
+      packagename: 항균 크림 1개
+      count: 1
+      name: Antibacterial cream
+      tid: 44003
+    - packageid: 1015
+      packagename: 임시 부목 1개
+      count: 1
+      name: Temporary splint
+      tid: 44005
+    - packageid: 1016
+      packagename: 당근 낚시대 10개
+      count: 10
+      name: Carrot on a stick
+      tid: 42001
+    - packageid: 1017
+      packagename: 화살 10개
+      count: 10
+      name: Bow
+      tid: 42002
+    - packageid: 1018
+      packagename: 콩송편 1개
+      count: 1
+      name: 콩 송편
+      tid: 46013
+    - packageid: 1019
+      packagename: 꿀송편 1개
+      count: 1
+      name: 꿀 송편
+      tid: 46014
+    - packageid: 1020
+      packagename: 각설탕 5개
+      count: 5
+      name: Sugar cubes
+      tid: 41007
+    - packageid: 1021
+      packagename: 당근 5개
+      count: 5
+      name: Carrot
+      tid: 41006
+    - packageid: 1022
+      packagename: 옥수수 5개
+      count: 5
+      name: Corn
+      tid: 41001
+    - packageid: 1023
+      packagename: 보리 5개
+      count: 5
+      name: Barley
+      tid: 41003
+    - packageid: 1024
+      packagename: 건초 5개
+      count: 5
+      name: Grass
+      tid: 41005
+    - packageid: 1025
+      packagename: 콩 5개
+      count: 5
+      name: Beans
+      tid: 41002
+    - packageid: 1026
+      packagename: 목초 5개
+      count: 5
+      name: Grass
+      tid: 41005
+    - packageid: 1030
+      packagename: 당근 낚시대 5개
+      count: 5
+      name: Carrot on a stick
+      tid: 42001
+    - packageid: 1031
+      packagename: 화살 5개
+      count: 5
+      name: Bow
+      tid: 42002
+    - packageid: 1032
+      packagename: 할로윈 블랙 위치 햇 7일
+      count: 7
+      name: 할로윈 블랙 위치 햇
+      tid: 10159
+    - packageid: 1033
+      packagename: 잭 오 랜턴 미니 햇 7일
+      count: 7
+      name: 잭 오 랜턴 미니 햇
+      tid: 10160
+    - packageid: 1034
+      packagename: 할로윈 다크 위자드 햇 7일
+      count: 7
+      name: 할로윈 다크 위자드 햇
+      tid: 30154
+    - packageid: 1035
+      packagename: 잭 오 랜턴 체크 햇 7일
+      count: 7
+      name: 잭 오 랜턴 체크 햇
+      tid: 30155
+    - packageid: 1036
+      packagename: 할로윈 캔디 1일
+      count: 1
+      name: 할로윈 캔디
+      tid: 46016
+    - packageid: 1037
+      packagename: 할로윈 초콜릿 1일
+      count: 1
+      name: 할로윈 초콜릿
+      tid: 46017
+    - packageid: 1038
+      packagename: 관리자의 방울 1일
+      count: 1
+      name: 관리자의 방울
+      tid: 45005
+    - packageid: 1039
+      packagename: 숙련의 비약 1일
+      count: 1
+      name: 숙련의 비약
+      tid: 46020
+    - packageid: 1040
+      packagename: 퍼펙트 스타트 뱃지 1일
+      count: 1
+      name: 퍼펙트 스타트 뱃지
+      tid: 46021
+    - packageid: 1041
+      packagename: 안전 박차 뱃지 1일
+      count: 1
+      name: 글라이딩 스타터
+      tid: 46023
+    - packageid: 1042
+      packagename: Dorf Fortune Egg (Lv.1)
+      count: 1
+      name: Dorf Fortune Egg (Lv.1)
+      tid: 90006
+    - packageid: 1043
+      packagename: Dorf Fortune Egg (Lv.2)
+      count: 2
+      name: Dorf Fortune Egg (Lv.2)
+      tid: 90007
+    - packageid: 1044
+      packagename: Dorf Fortune Egg (Lv.3)
+      count: 3
+      name: Dorf Fortune Egg (Lv.3)
+      tid: 90008
+    - packageid: 1045
+      packagename: Dran Fortune Egg (Lv.1)
+      count: 1
+      name: Dran Fortune Egg (Lv.1)
+      tid: 90004
+    - packageid: 1046
+      packagename: Dran Fortune Egg (Lv.2)
+      count: 2
+      name: Dran Fortune Egg (Lv.2)
+      tid: 90005
+    - packageid: 1047
+      packagename: Dran Fortune Egg (Lv.3)
+      count: 3
+      name: Dran Fortune Egg (Lv.3)
+      tid: 90011
+    - packageid: 1048
+      packagename: Tabia Fortune Egg (Lv.1)
+      count: 1
+      name: Tabia Fortune Egg (Lv.1)
+      tid: 90013
+    - packageid: 1049
+      packagename: Tabia Fortune Egg (Lv.2)
+      count: 2
+      name: Tabia Fortune Egg (Lv.2)
+      tid: 90014
+    - packageid: 1050
+      packagename: Tabia Fortune Egg (Lv.3)
+      count: 3
+      name: Tabia Fortune Egg (Lv.3)
+      tid: 90015
+    - packageid: 1051
+      packagename: Foret Fortune Egg (Lv.1)
+      count: 1
+      name: Foret Fortune Egg (Lv.1)
+      tid: 90010
+    - packageid: 1052
+      packagename: Foret Fortune Egg (Lv.2)
+      count: 2
+      name: Foret Fortune Egg (Lv.2)
+      tid: 90001
+    - packageid: 1053
+      packagename: Foret Fortune Egg (Lv.3)
+      count: 3
+      name: Foret Fortune Egg (Lv.3)
+      tid: 90002
+    - packageid: 1054
+      packagename: 펫 이름 변경권 1개
+      count: 1
+      name: 펫이름변경권
+      tid: 45002
+    - packageid: 1055
+      packagename: 크리스마스 말 보호구 3일
+      count: 3
+      name: 크리스마스 보호구
+      tid: 20123
+    - packageid: 1056
+      packagename: 크리스마스 말 장신구 3일
+      count: 3
+      name: 크리스마스 장신구
+      tid: 20124
+    - packageid: 1057
+      packagename: 크리스마스 말 편자 3일
+      count: 3
+      name: 크리스마스 편자
+      tid: 20125
+    - packageid: 1058
+      packagename: 크리스마스 말 보조장비 3일
+      count: 3
+      name: 크리스마스 보조장비
+      tid: 20126
+    - packageid: 1059
+      packagename: 루돌프 뿔 헤어밴드 3일
+      count: 3
+      name: 루돌프 뿔 헤어밴드
+      tid: 30160
+    - packageid: 1060
+      packagename: 루돌프 코 헤어밴드 3일
+      count: 3
+      name: 루돌프 코 헤어밴드
+      tid: 10165
+    - packageid: 1061
+      packagename: 갈기의 비약 1일
+      count: 1
+      name: 갈기의 비약
+      tid: 46004
+    - packageid: 1062
+      packagename: 오버 큐브 1개
+      count: 1
+      name: 순간이동기
+      tid: 70002
+    - packageid: 1063
+      packagename: 1 Purified Crystal
+      count: 1
+      name: 알 탐지기
+      tid: 46019
+    - packageid: 1064
+      packagename: 기수의 비약 1일
+      count: 1
+      name: 기수의 비약
+      tid: 46003
+    - packageid: 1065
+      packagename: 관리자의 방울 1일
+      count: 1
+      name: 관리자의 방울
+      tid: 45005
+    - packageid: 1066
+      packagename: 숙련의 비약 1일
+      count: 1
+      name: 숙련의 비약
+      tid: 46020
+    - packageid: 1067
+      packagename: 성장의 비약 1개
+      count: 1
+      name: 성장의 비약
+      tid: 43001
+    - packageid: 1068
+      packagename: 당근 낚시대 2개
+      count: 2
+      name: Carrot on a stick
+      tid: 42001
+    - packageid: 1069
+      packagename: 화살 2개
+      count: 2
+      name: Bow
+      tid: 42002
+    - packageid: 1070
+      packagename: 각설탕 3개
+      count: 3
+      name: Sugar cubes
+      tid: 41007
+    - packageid: 1071
+      packagename: 당근 3개
+      count: 3
+      name: Carrot
+      tid: 41006
+    - packageid: 1072
+      packagename: 옥수수 3개
+      count: 3
+      name: Corn
+      tid: 41001
+    - packageid: 1073
+      packagename: 보리 3개
+      count: 3
+      name: Barley
+      tid: 41003
+    - packageid: 1074
+      packagename: 건초 2개
+      count: 2
+      name: Grass
+      tid: 41005
+    - packageid: 1075
+      packagename: 콩 2개
+      count: 2
+      name: Beans
+      tid: 41002
+    - packageid: 1076
+      packagename: 목초 2개
+      count: 2
+      name: Grass
+      tid: 41005
+    - packageid: 1077
+      packagename: 재료용 크리스털 1개
+      count: 1
+      name: 재료용 크리스털
+      tid: 45001
+    - packageid: 1081
+      packagename: 근육 이완제 1개
+      count: 1
+      name: Muscle relaxant
+      tid: 44001
+    - packageid: 1082
+      packagename: 항균 크림 1개
+      count: 1
+      name: Antibacterial cream
+      tid: 44003
+    - packageid: 1083
+      packagename: 임시 부목 1개
+      count: 1
+      name: Temporary splint
+      tid: 44005
+    - packageid: 1084
+      packagename: 포레스트 세트 1일
+      count: 1
+      name: 패키지 테스트
+      tid: 88889
+    - packageid: 1085
+      packagename: 유령기사 세트 1일
+      count: 1
+      name: 패키지 테스트
+      tid: 88889

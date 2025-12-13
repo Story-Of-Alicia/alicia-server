@@ -1983,6 +1983,15 @@ void LobbyNetworkHandler::HandleEnterRoomQuickStop(
   const protocol::AcCmdCLEnterRoomQuickStop& command)
 {
   // todo: implement quick enter
+  // Only sending empty response for now so cancelling matchmaking actually gets you out
+  protocol::AcCmdCLEnterRoomQuickStopOK response {};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 void LobbyNetworkHandler::HandleRequestFestivalPrize(
