@@ -384,6 +384,18 @@ private:
     ClientId clientId,
     protocol::ChangeNicknameError reason);
 
+  void HandleCheckPCBangGiftItem(
+    ClientId clientId,
+    protocol::AcCmdCRCheckPCBangGiftItem reason);
+
+  void HandleRequestPCBangGift(
+    ClientId clientId,
+    protocol::AcCmdCRRequestPCBangGift reason);
+
+  void HandleMountRentInfo(
+    ClientId clientId,
+    protocol::AcCmdCRMountRentInfo reason);
+
   //!
   ServerInstance& _serverInstance;
   //!
