@@ -75,7 +75,8 @@ std::string ShopListToXmlString(const ShopList& shopList)
   tinyxml2::XMLPrinter printer(nullptr, compact);
   doc.Print(&printer);
 
-  return printer.CStr();
+  //! Re-encode string into EUC-KR to show the item name correctly in KR (if any).
+  return locale::FromUtf8(printer.CStr());
 }
 
 }

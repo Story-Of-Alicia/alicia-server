@@ -5,6 +5,8 @@
 #ifndef ALICIA_SERVER_SHOP_HPP
 #define ALICIA_SERVER_SHOP_HPP
 
+#include <libserver/util/Locale.hpp>
+
 #include <cstdint>
 #include <string>
 #include <vector>
