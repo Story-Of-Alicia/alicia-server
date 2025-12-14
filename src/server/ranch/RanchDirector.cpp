@@ -449,6 +449,24 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleInviteUser(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRCheckPCBangGiftItem>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleCheckPCBangGiftItem(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestPCBangGift>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleRequestPCBangGift(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRMountRentInfo>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleMountRentInfo(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -5405,5 +5423,133 @@ void RanchDirector::HandleInviteUser(
 
   _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }
+
+void RanchDirector::HandleCheckPCBangGiftItem(
+  ClientId clientId,
+  const protocol::AcCmdCRCheckPCBangGiftItem command)
+{
+  protocol::AcCmdCRCheckPCBangGiftItemOK response{
+    //1 sets carrots to recieved
+    .unk0 = 0
+  };
+
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+};
+
+void RanchDirector::HandleRequestPCBangGift(
+  ClientId clientId,
+  const protocol::AcCmdCRRequestPCBangGift command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
+
+  protocol::AcCmdCRRequestPCBangGiftOK response{};
+   characterRecord.Mutable([this, command, &response](data::Character& character)
+   {
+     switch (command.gift)
+     {
+       case protocol::AcCmdCRRequestPCBangGift::GiftType::Armor:
+       {
+        std::vector<data::Tid> itemsTids = {20120,20122,20119,20121};
+        std::vector<protocol::Item> items;
+
+         for (data::Tid itemTid : itemsTids)
+         {
+           const auto itemUid = GetServerInstance().GetItemSystem().AddItem(
+          character, itemTid, 1);
+           protocol::Item item = {
+              .uid = itemUid,
+              .tid = itemTid,
+              .count = 1
+             };
+           items.push_back(item);
+           }
+         response = {
+          .gift = command.gift,
+          .items = items
+          };
+         break;
+       }
+       case protocol::AcCmdCRRequestPCBangGift::GiftType::Costume:
+       {
+         std::vector<data::Tid> itemsTids;
+         if (character.parts.modelId() == 20)
+         {
+           itemsTids = {10158,10157};
+         }
+         else
+         {
+           itemsTids = {30152,30153};
+         }
+         std::vector<protocol::Item> items;
+
+         for (data::Tid itemTid : itemsTids)
+         {
+           const auto itemUid = GetServerInstance().GetItemSystem().AddItem(
+          character, itemTid, 1);
+           protocol::Item item = {
+              .uid = itemUid,
+              .tid = itemTid,
+              .count = 1
+             };
+           items.push_back(item);
+          }
+         response = {
+          .gift = command.gift,
+          .items = items
+          };
+         break;
+       }
+
+       case protocol::AcCmdCRRequestPCBangGift::GiftType::Food:
+       {
+         response = {
+         .gift = command.gift,
+         };
+         const auto itemUid = GetServerInstance().GetItemSystem().AddItem(
+        character, 41006, 1);
+         GetServerInstance().GetDataDirector().GetItem(itemUid).Immutable([&response](const data::Item& item)
+         {
+           auto& protocolItem = response.items.emplace_back();
+           protocol::BuildProtocolItem(protocolItem, item);
+         });
+         break;
+       }
+     }
+   });
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+};
+
+void RanchDirector::HandleMountRentInfo(
+  ClientId clientId,
+  const protocol::AcCmdCRMountRentInfo command)
+{
+  protocol::AcCmdCRMountRentInfoOK response{
+    .unk0 = 1,
+    .unk1 = 1,
+    .unk2 = 1,
+    .unk3 = 1
+  };
+
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+};
 
 } // namespace server

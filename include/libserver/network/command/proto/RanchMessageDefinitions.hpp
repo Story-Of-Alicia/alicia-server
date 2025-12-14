@@ -5084,6 +5084,160 @@ struct AcCmdCROpenRandomBoxCancel
     SourceStream& stream);
 };
 
+struct AcCmdCRCheckPCBangGiftItem
+{
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRCheckPCBangGiftItem;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRCheckPCBangGiftItem& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRCheckPCBangGiftItem& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRCheckPCBangGiftItemOK
+{
+  uint8_t unk0;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRCheckPCBangGiftItemOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRCheckPCBangGiftItemOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRCheckPCBangGiftItemOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestPCBangGift
+{
+  enum class GiftType : uint32_t
+  {
+    Armor = 1,
+    Costume = 3,
+    Food = 4,
+  };
+
+  GiftType gift;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestPCBangGift;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestPCBangGift& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestPCBangGift& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestPCBangGiftOK
+{
+  AcCmdCRRequestPCBangGift::GiftType gift;
+  uint8_t unk1;
+  std::vector<Item> items;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestPCBangGiftOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestPCBangGiftOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestPCBangGiftOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRMountRentInfo
+{
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRMountRentInfo;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRMountRentInfo& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRMountRentInfo& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRMountRentInfoOK
+{
+  uint32_t unk0;
+  uint32_t unk1;
+  uint16_t unk2;
+  uint32_t unk3;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRMountRentInfoOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRMountRentInfoOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRMountRentInfoOK& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RANCH_MESSAGE_DEFINES_HPP

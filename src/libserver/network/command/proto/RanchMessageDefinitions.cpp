@@ -3246,5 +3246,88 @@ void AcCmdCROpenRandomBoxCancel::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRCheckPCBangGiftItem::Write(
+  const AcCmdCRCheckPCBangGiftItem& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+void AcCmdCRCheckPCBangGiftItem::Read(
+  AcCmdCRCheckPCBangGiftItem& command,
+  SourceStream& stream)
+{
+  //empty
+}
+void AcCmdCRCheckPCBangGiftItemOK::Write(
+  const AcCmdCRCheckPCBangGiftItemOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0);
+}
+void AcCmdCRCheckPCBangGiftItemOK::Read(
+  AcCmdCRCheckPCBangGiftItemOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRequestPCBangGift::Write(
+  const AcCmdCRRequestPCBangGift& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+void AcCmdCRRequestPCBangGift::Read(
+  AcCmdCRRequestPCBangGift& command,
+  SourceStream& stream)
+{
+  stream.Read(command.gift);
+}
+void AcCmdCRRequestPCBangGiftOK::Write(
+  const AcCmdCRRequestPCBangGiftOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.gift);
+  stream.Write(static_cast<uint8_t>(command.items.size()));
+
+  for (const auto& item : command.items) {
+    stream.Write(item);
+  }
+}
+void AcCmdCRRequestPCBangGiftOK::Read(
+  AcCmdCRRequestPCBangGiftOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRMountRentInfo::Write(
+  const AcCmdCRMountRentInfo& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+void AcCmdCRMountRentInfo::Read(
+  AcCmdCRMountRentInfo& command,
+  SourceStream& stream)
+{
+  // empty
+}
+void AcCmdCRMountRentInfoOK::Write(
+  const AcCmdCRMountRentInfoOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.unk2)
+    .Write(command.unk3);
+}
+void AcCmdCRMountRentInfoOK::Read(
+  AcCmdCRMountRentInfoOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
 
