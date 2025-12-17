@@ -89,8 +89,11 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
   {
     ++goodsSequenceId;
 
-    // Handmade filter to only show character, horse and care items
-    const bool filter = 
+    // Check if item can be shown in shop
+    const bool isInShop = not item.shopExclude;
+
+    // Handmade filter to only show character and horse equipment, and care items
+    const bool isPermittedCategory = 
       item.careParameters ||
       item.cureParameters ||
       item.foodParameters ||
@@ -98,7 +101,7 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
       item.characterPartInfo ||
       item.mountPartInfo;
 
-    if (not filter)
+    if (not isInShop or not isPermittedCategory)
       continue;
 
     if (item.type == registry::Item::Type::Permanent || item.type == registry::Item::Type::Consumable)

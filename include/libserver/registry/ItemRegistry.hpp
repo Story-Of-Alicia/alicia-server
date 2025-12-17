@@ -125,6 +125,7 @@ struct Item
 
   std::string name;
   std::vector<std::string> description;
+  bool shopExclude{false};
 
   std::optional<CharacterPartInfo> characterPartInfo;
   std::optional<MountPartInfo> mountPartInfo;
