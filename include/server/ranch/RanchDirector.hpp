@@ -128,6 +128,8 @@ private:
     tracker::RanchTracker tracker;
     //! A set of clients connected to the ranch.
     std::unordered_set<ClientId> clients;
+    //! Tick count.
+    uint8_t ticks;
   };
 
   //! Get client context.

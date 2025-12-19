@@ -25,6 +25,7 @@
 #include <libserver/data/DataDefinitions.hpp>
 
 #include <map>
+#include <unordered_map>
 
 namespace server::tracker
 {
@@ -33,8 +34,14 @@ namespace server::tracker
 class RanchTracker
 {
 public:
+  struct Entity
+  {
+    uint16_t oid{};
+    std::array<float, 3> position{};
+  };
+
   //! An object map.
-  using ObjectMap = std::map<data::Uid, uint16_t>;
+  using ObjectMap = std::map<data::Uid, Entity>;
 
   //! Adds a character for tracking.
   //! @param character Character UID.
@@ -57,6 +64,8 @@ public:
   //! Removes a horse from tracking.
   //! @param horse Character UID.
   [[nodiscard]] Oid GetHorseOid(data::Uid horse) const;
+
+  Entity& GetHorseEntity(data::Uid horse);
 
   //! Returns tracked characters.
   //! @return Tracked characters.

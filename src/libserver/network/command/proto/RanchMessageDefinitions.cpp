@@ -2662,5 +2662,45 @@ void AcCmdCRMountInjuryHealOK::Write(
     .Write(command.updatedCarrotCount);
 }
 
+void AcCmdRCMobMove::Read(
+  AcCmdRCMobMove& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCMobMove::Write(
+  const AcCmdRCMobMove& command,
+  SinkStream& stream)
+{
+  stream.Write(command.mobOid)
+    .Write(command.position.X)
+    .Write(command.position.Y)
+    .Write(command.position.Z);
+
+  if (command.type == protocol::AcCmdRCMobMove::Type::Minimal)
+    return;
+  else if (command.type == protocol::AcCmdRCMobMove::Type::Partial)
+    stream.Write(command.unk2);
+  else if (command.type == protocol::AcCmdRCMobMove::Type::Full)
+    for (const auto& element : command.unk3)
+      stream.Write(element);
+}
+
+void AcCmdRCMobSetVelocity::Read(
+  AcCmdRCMobSetVelocity& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCMobSetVelocity::Write(
+  const AcCmdRCMobSetVelocity& command,
+  SinkStream& stream)
+{
+  stream.Write(command.mobOid)
+    .Write(command.velocity);
+}
+
 } // namespace server::protocol
 

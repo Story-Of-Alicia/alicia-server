@@ -4204,6 +4204,75 @@ struct AcCmdCRMountInjuryHealOK
     SourceStream& stream);
 };
 
+struct AcCmdRCMobMove
+{
+  struct Position
+  {
+    float X{0};
+    float Y{0};
+    float Z{0};
+  };
+
+  // Used to dictate move type, determines which values are handled by the client.
+  // Note: this field is not used deserialised in the protocol.
+  // TODO: confirm enum names matches the semantics
+  enum class Type
+  {
+    Minimal,
+    Partial,
+    Full
+  } type{};
+
+  uint16_t mobOid{};
+  Position position{};
+  uint16_t unk2{};
+  std::array<float, 3> unk3{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCMobMove;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCMobMove& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCMobMove& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCMobSetVelocity
+{
+  uint16_t mobOid{};
+  float velocity{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCMobSetVelocity;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCMobSetVelocity& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCMobSetVelocity& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RANCH_MESSAGE_DEFINES_HPP

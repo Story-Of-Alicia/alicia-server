@@ -24,7 +24,8 @@ namespace server::tracker
 
 Oid RanchTracker::AddCharacter(data::Uid character)
 {
-  _characters[character] = _nextObjectId;
+  auto& characterEntity = _characters[character];
+  characterEntity.oid = _nextObjectId;
   return _nextObjectId++;
 }
 
@@ -38,12 +39,13 @@ Oid RanchTracker::GetCharacterOid(data::Uid character) const
   const auto itr = _characters.find(character);
   if (itr == _characters.cend())
     return InvalidEntityOid;
-  return itr->second;
+  return itr->second.oid;
 }
 
 Oid RanchTracker::AddHorse(data::Uid horse)
 {
-  _horses[horse] = _nextObjectId;
+  auto& entityHorse = _horses[horse];
+  entityHorse.oid = _nextObjectId;
   return _nextObjectId++;
 }
 
@@ -57,6 +59,17 @@ Oid RanchTracker::GetHorseOid(data::Uid horse) const
   const auto itr = _horses.find(horse);
   if (itr == _horses.cend())
     return InvalidEntityOid;
+  return itr->second.oid;
+}
+
+RanchTracker::Entity& RanchTracker::GetHorseEntity(data::Uid horse)
+{
+  const auto itr = _horses.find(horse);
+  if (itr == _horses.cend())
+  {
+    auto entity = RanchTracker::Entity{};
+    return entity;
+  }
   return itr->second;
 }
 

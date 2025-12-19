@@ -394,6 +394,92 @@ void RanchDirector::Terminate()
 
 void RanchDirector::Tick()
 {
+  // Tick random horse movement for every ranch
+  for (auto& [rancherUid, ranchInstance] : _ranches)
+  {
+    ++ranchInstance.ticks;
+    if (ranchInstance.ticks != 1)
+      continue;
+
+    // Rough ranch fence bounds (X-Z format)
+    const std::array<std::array<float, 2>, 2> ranchBounds{
+      {
+        {-5.1686106f, -52.76547f},
+        {8.701556f, -18.826422f}
+      }
+    };
+
+    // Calculate rectangle
+    float xRange = ranchBounds[1][0] - ranchBounds[0][0];
+    float zRange = ranchBounds[1][1] - ranchBounds[0][1];
+
+    // Scale it for the random distribution with desired accuracy
+    constexpr uint32_t PositionAccuracy = 10000;
+
+    xRange *= PositionAccuracy;
+    zRange *= PositionAccuracy;
+
+    std::uniform_int_distribution<uint32_t> ranchXPositionRandomDist(
+      0, (uint32_t)xRange);
+    std::uniform_int_distribution<uint32_t> ranchZPositionRandomDist(
+      0, (uint32_t)zRange);
+    std::uniform_int_distribution<uint32_t> velocityRandomDist(
+      1000, 2000);
+
+    for (const auto& horseUid : ranchInstance.tracker.GetHorses() | std::views::keys)
+    {
+      auto& horseEntity = ranchInstance.tracker.GetHorseEntity(horseUid);
+
+      const int randomX = ranchXPositionRandomDist(_randomDevice);
+      const int randomZ = ranchZPositionRandomDist(_randomDevice);
+
+      const float scaledMinX = ranchBounds[0][0] * PositionAccuracy;
+      const float scaledMinZ = ranchBounds[0][1] * PositionAccuracy;
+
+      const float xPoint = (randomX + scaledMinX) / PositionAccuracy;
+      const float zPoint = (randomZ + scaledMinZ) / PositionAccuracy;
+
+      const protocol::AcCmdRCMobMove::Position targetPosition{
+        xPoint,
+        0,
+        zPoint};
+
+      protocol::AcCmdRCMobSetVelocity velocity{
+        .mobOid = horseEntity.oid,
+        .velocity = velocityRandomDist(_randomDevice) / 100.0f};
+
+      protocol::AcCmdRCMobMove move{
+        .type = protocol::AcCmdRCMobMove::Type::Partial,
+        .mobOid = horseEntity.oid,
+        .position = targetPosition,
+        .unk2 = 2,
+        .unk3 = horseEntity.position
+      };
+
+      horseEntity.position = 
+      {
+        targetPosition.X,
+        0,
+        targetPosition.Z};
+
+      for (const auto clientId : ranchInstance.clients)
+      {
+        _commandServer.QueueCommand<decltype(velocity)>(
+          clientId,
+          [velocity]()
+          {
+            return velocity;
+          });
+
+        _commandServer.QueueCommand<decltype(move)>(
+          clientId,
+          [move]()
+          {
+            return move;
+          });
+      }
+    }
+  }
 }
 
 std::vector<data::Uid> RanchDirector::GetOnlineCharacters()
@@ -918,10 +1004,10 @@ void RanchDirector::HandleEnterRanch(
   protocol::RanchCharacter characterEnteringRanch;
 
   // Add the ranch horses.
-  for (auto [horseUid, horseOid] : ranchInstance.tracker.GetHorses())
+  for (const auto& [horseUid, horseEntity] : ranchInstance.tracker.GetHorses())
   {
     auto& ranchHorse = response.horses.emplace_back();
-    ranchHorse.horseOid = horseOid;
+    ranchHorse.horseOid = horseEntity.oid;
 
     auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(horseUid);
     if (not horseRecord)
@@ -935,10 +1021,10 @@ void RanchDirector::HandleEnterRanch(
   }
 
   // Add the ranch characters.
-  for (auto [characterUid, characterOid] : ranchInstance.tracker.GetCharacters())
+  for (auto [characterUid, characterEntity] : ranchInstance.tracker.GetCharacters())
   {
     auto& protocolCharacter = response.characters.emplace_back();
-    protocolCharacter.oid = characterOid;
+    protocolCharacter.oid = characterEntity.oid;
 
     auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(characterUid);
     if (not characterRecord)
