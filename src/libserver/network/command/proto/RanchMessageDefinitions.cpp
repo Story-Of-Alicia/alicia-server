@@ -2739,8 +2739,8 @@ void AcCmdCROpenRandomBoxOK::Write(
     .Write(command.packageId)
     .Write(command.carrotsObtained)
     .Write(command.newBalance);
-  stream.Write(static_cast<uint8_t>(command.items.size()));
 
+  stream.Write(static_cast<uint8_t>(command.items.size()));
   for (const auto& item : command.items) {
     stream.Write(item);
   }
