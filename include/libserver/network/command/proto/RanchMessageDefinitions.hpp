@@ -4160,9 +4160,9 @@ struct AcCmdCRUpdateMountInfo
   {
     ReturnToNature = 3,
     Rename = 4
-  };
-  Action action;
+  } action;
   Horse horse;
+  
   static Command GetCommand()
   {
     return Command::AcCmdCRUpdateMountInfo;
@@ -4616,6 +4616,7 @@ struct AcCmdCRPasswordAuth
   uint16_t unk1;
   uint32_t unk2;
   std::string unk3;
+  
   static Command GetCommand()
   {
     return Command::AcCmdCRPasswordAuth;
@@ -4644,8 +4645,7 @@ struct AcCmdCRPasswordAuthOK
     Register2FA = 2,
     Authenticated = 3,
     Reset2FA = 7
-  };
-  Action action;
+  } action;
   // in minutes, used when 2FA is reset
   uint32_t duration;
 
@@ -4696,7 +4696,6 @@ struct AcCmdCROpenRandomBox
 
 struct AcCmdCROpenRandomBoxOK
 {
-
   uint32_t unk0{};
   uint32_t unk1{};
   // if packageId = 0, sets to Carrots
