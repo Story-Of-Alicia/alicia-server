@@ -9930,7 +9930,7 @@ packages:
       packagename: 1 Purified Crystal
       count: 1
       name: 알 탐지기
-      tid: 46019
+      tid: 46018
     - packageid: 1064
       packagename: 기수의 비약 1일
       count: 1
@@ -10016,13 +10016,3 @@ packages:
       count: 1
       name: Temporary splint
       tid: 44005
-    - packageid: 1084
-      packagename: 포레스트 세트 1일
-      count: 1
-      name: 패키지 테스트
-      tid: 88889
-    - packageid: 1085
-      packagename: 유령기사 세트 1일
-      count: 1
-      name: 패키지 테스트
-      tid: 88889
