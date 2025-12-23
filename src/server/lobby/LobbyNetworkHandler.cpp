@@ -7,7 +7,6 @@
 #include "server/ServerInstance.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
-#include <libserver/util/Locale.hpp>
 
 #include <boost/container_hash/hash.hpp>
 #include <spdlog/spdlog.h>
@@ -1613,64 +1612,82 @@ void LobbyNetworkHandler::HandleGoodsShopList(
   const ClientId clientId,
   const protocol::AcCmdCLGoodsShopList& command)
 {
+  auto shopList = _serverInstance.GetLobbyDirector().GetShopManager().GetSerializedShopList();
+
+  std::vector<std::byte> compressedXml;
+  compressedXml.resize(shopList.size());
+
+  uLongf compressedSize = compressedXml.size();
+  compress2(
+    reinterpret_cast<Bytef*>(compressedXml.data()),
+    &compressedSize,
+    reinterpret_cast<const Bytef*>(shopList.c_str()),
+    shopList.length(),
+    9);
+
+  compressedXml.resize(compressedSize);
+
+  // TODO: remove this, only used for testing protocol
+  auto now = util::Clock::now() + std::chrono::days(1);
+  
+  //! Chunk size as defined in command handler.
+  constexpr auto ChunkSize = 7168;
+
+  // Fragment shop data and send it in parts for the client to reconstruct and store.
+  const auto& dataParts = std::views::chunk(compressedXml, ChunkSize);
+  const auto chunkCount = dataParts.size();
+  const auto chunkedPartsSize = chunkCount * ChunkSize;
+
+  //! Max shop data size as defined in the command handler.
+  constexpr auto MaxShopDataSize = 0x8000;
+  // Check if the total size of chunked parts exceed the size of limit defined in command handler
+  if (chunkedPartsSize > MaxShopDataSize)
+  {
+    spdlog::error("Shop data chunking with {} chunks, totalling {} bytes, exceeds max game shop data size of {} bytes.",
+      chunkCount,
+      chunkedPartsSize,
+      MaxShopDataSize);
+
+    protocol::AcCmdCLGoodsShopListCancel cancel{};
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  // Send each chunk with the appropriate index and chunk count
+  for (size_t index = 0; index < dataParts.size(); ++index)
+  {
+    const auto& dataPart = dataParts[index];
+    protocol::AcCmdLCGoodsShopListData data{
+      .timestamp = now,
+      .index = static_cast<uint8_t>(index),
+      .count = static_cast<uint8_t>(chunkCount),
+      .data = std::vector<std::byte>(
+        dataPart.cbegin(),
+        dataPart.cend())};
+
+    _commandServer.QueueCommand<decltype(data)>(
+      clientId,
+      [data]()
+      {
+        return data;
+      });
+  }
+
+  // TODO: send date time that is now?
   protocol::AcCmdCLGoodsShopListOK response{
-    .data = command.data};
+    .shopTimestamp = now
+  };
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
     {
       return response;
-    });
-
-  const std::string xml =
-    "<ShopList>\n"
-    "  <GoodsList>\n"
-    "    <GoodsSQ>0</GoodsSQ>\n"
-    "    <SetType>0</SetType>\n"
-    "    <MoneyType>0</MoneyType>\n"
-    "    <GoodsType>0</GoodsType>\n"
-    "    <RecommendType>1</RecommendType>\n"
-    "    <RecommendNO>1</RecommendNO>\n"
-    "    <GiftType>0</GiftType>\n"
-    "    <SalesRank>1</SalesRank>\n"
-    "    <BonusGameMoney>0</BonusGameMoney>\n"
-    "    <GoodsNM><![CDATA[Goods name]]></GoodsNM>\n"
-    "    <GoodsDesc><![CDATA[Goods desc]]></GoodsDesc>\n"
-    "    <ItemCapacityDesc><![CDATA[Capacity desc]]></ItemCapacityDesc>\n"
-    "    <SellST>0</SellST>\n"
-    "    <ItemUID>30013</ItemUID>\n"
-    "    <ItemElem>\n"
-    "      <Item>\n"
-    "        <PriceID>1</PriceID>\n"
-    "        <PriceRange>1</PriceRange>\n"
-    "        <GoodsPrice>1</GoodsPrice>\n"
-    "      </Item>\n"
-    "    </ItemElem>\n"
-    "  </GoodsList>\n"
-    "</ShopList>\n";
-
-  std::vector<std::byte> compressedXml;
-  compressedXml.resize(xml.size());
-
-  uLongf compressedSize = compressedXml.size();
-  compress(
-    reinterpret_cast<Bytef*>(compressedXml.data()),
-    &compressedSize,
-    reinterpret_cast<const Bytef*>(xml.c_str()),
-    xml.length());
-
-  compressedXml.resize(compressedSize);
-
-  protocol::AcCmdLCGoodsShopListData data{
-    .member3 = 1,
-    .data = compressedXml};
-
-  _commandServer.QueueCommand<decltype(data)>(
-    clientId,
-    [data]()
-    {
-      return data;
     });
 }
 

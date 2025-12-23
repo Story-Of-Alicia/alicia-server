@@ -200,6 +200,9 @@ struct StorageItem
   dao::Field<bool> checked{false};
   dao::Field<Clock::time_point> createdAt{};
   dao::Field<std::chrono::seconds> duration{};
+
+  dao::Field<uint32_t> goodsSq{};
+  dao::Field<uint32_t> priceId{};
 };
 
 //! Guild

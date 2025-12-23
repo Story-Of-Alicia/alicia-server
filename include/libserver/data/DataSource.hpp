@@ -79,6 +79,10 @@ public:
   //! Deletes the character from the data source.
   //! @param uid UID of the character.
   virtual void DeleteCharacter(data::Uid uid) = 0;
+  //! Retrieves the character by character name from the data source.
+  //! @param name Name of the character.
+  //! @return `data::InvalidUid` if character by that name does not exist, otherwise returns `data::Uid` of the character.
+  virtual data::Uid RetrieveCharacterUidByName(const std::string_view& name) = 0;
   //! Returns whether the character name is unique.
   //! @return `true` if the character name is unique, otherwise returns `false`.
   virtual bool IsCharacterNameUnique(const std::string_view& name) = 0;

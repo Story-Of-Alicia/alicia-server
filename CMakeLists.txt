@@ -75,13 +75,15 @@ target_link_libraries(alicia-libserver PUBLIC
         Boost::headers
         nlohmann_json::nlohmann_json
         yaml-cpp::yaml-cpp
-        zlibstatic)
+        zlibstatic
+        tinyxml2)
 
 # alicia-server target
 add_executable(alicia-server
         src/server/main.cpp
         src/server/ServerInstance.cpp
         src/server/Config.cpp
+        src/server/lobby/shop/Shop.cpp
         src/server/lobby/LobbyDirector.cpp
         src/server/lobby/LobbyNetworkHandler.cpp
         src/server/messenger/MessengerDirector.cpp

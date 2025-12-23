@@ -927,20 +927,18 @@ void AcCmdCLGoodsShopList::Read(
   AcCmdCLGoodsShopList& command,
   SourceStream& stream)
 {
-  for (auto& data : command.data)
-  {
-    stream.Read(data);
-  }
+  std::array<uint32_t, 3> cachedShopTimestamp;
+  stream.Read(cachedShopTimestamp.data(), 12);
+
+  command.cachedShopTimestamp = util::AliciaShopTimeToTimePoint(cachedShopTimestamp);
 }
 
 void AcCmdCLGoodsShopListOK::Write(
   const AcCmdCLGoodsShopListOK& command,
   SinkStream& stream)
 {
-  for (const auto& data : command.data)
-  {
-    stream.Write(data);
-  }
+  const std::array<uint32_t, 3>& timePoint = util::TimePointToAliciaShopTime(command.shopTimestamp);
+  stream.Write(timePoint.data(), 12);
 }
 
 void AcCmdCLGoodsShopListOK::Read(
@@ -969,19 +967,14 @@ void AcCmdLCGoodsShopListData::Write(
   const AcCmdLCGoodsShopListData& command,
   SinkStream& stream)
 {
-  for (const auto& b : command.member1)
-  {
-    stream.Write(b);
-  }
+  const std::array<uint32_t, 3>& timePoint = util::TimePointToAliciaShopTime(command.timestamp);
+  stream.Write(timePoint.data(), 12);
 
-  stream.Write(command.member2)
-    .Write(command.member3);
+  stream.Write(command.index)
+    .Write(command.count);
 
   stream.Write(static_cast<uint32_t>(command.data.size()));
-  for (const auto & b : command.data)
-  {
-    stream.Write(b);
-  }
+  stream.Write(command.data.data(), command.data.size());
 }
 
 void AcCmdLCGoodsShopListData::Read(

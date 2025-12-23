@@ -125,6 +125,7 @@ struct Item
 
   std::string name;
   std::vector<std::string> description;
+  bool isPurchasable{false};
 
   std::optional<CharacterPartInfo> characterPartInfo;
   std::optional<MountPartInfo> mountPartInfo;
@@ -141,6 +142,7 @@ class ItemRegistry
 public:
   void ReadConfig(const std::filesystem::path& configPath);
   [[nodiscard]] std::optional<Item> GetItem(uint32_t tid);
+  [[nodiscard]] std::unordered_map<uint32_t, Item> GetItems();
 
 private:
   std::unordered_map<uint32_t, Item> _items;
