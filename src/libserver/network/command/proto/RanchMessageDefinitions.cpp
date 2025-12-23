@@ -2906,5 +2906,19 @@ void AcCmdRCMobSetVelocity::Write(
     .Write(command.velocity);
 }
 
+void AcCmdRCAddIdleMountInfoNotify::Read(
+  AcCmdRCAddIdleMountInfoNotify& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCAddIdleMountInfoNotify::Write(
+  const AcCmdRCAddIdleMountInfoNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.ranchHorse);
+}
+
 } // namespace server::protocol
 

@@ -839,7 +839,26 @@ void RanchDirector::AddRanchHorse(
   data::Uid& horseUid)
 {
   auto& ranchInstance = _ranches[rancherUid];
-  ranchInstance.tracker.AddHorse(horseUid);
+  const tracker::Oid horseOid = ranchInstance.tracker.AddHorse(horseUid);
+
+  protocol::AcCmdRCAddIdleMountInfoNotify notify{};
+  notify.ranchHorse.horseOid = horseOid;
+
+  GetServerInstance().GetDataDirector().GetHorse(horseUid).Immutable(
+    [&notify](const data::Horse& horse)
+    {
+      protocol::BuildProtocolHorse(notify.ranchHorse.horse, horse);
+    });
+
+  for (const ClientId clientId : ranchInstance.clients)
+  {
+    _commandServer.QueueCommand<decltype(notify)>(
+      clientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
 }
 
 ServerInstance& RanchDirector::GetServerInstance()

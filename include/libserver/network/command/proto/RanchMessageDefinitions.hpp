@@ -4651,6 +4651,30 @@ struct AcCmdRCMobSetVelocity
     SourceStream& stream);
 };
 
+struct AcCmdRCAddIdleMountInfoNotify
+{
+  RanchHorse ranchHorse{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCAddIdleMountInfoNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCAddIdleMountInfoNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCAddIdleMountInfoNotify& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RANCH_MESSAGE_DEFINES_HPP
