@@ -4957,16 +4957,17 @@ void RanchDirector::HandleOpenRandomBox(
 
     response = {
       .packageId = 0,
-      .carrotsObtained = carrotAmount
-      };
+      .carrotsObtained = carrotAmount};
 
-    characterRecord.Mutable([this, carrotAmount, &response](data::Character& character)
+    characterRecord.Mutable(
+    [this, carrotAmount, &response](data::Character& character)
       {
-      character.carrots() += carrotAmount;
-      response.newBalance = character.carrots();
+        character.carrots() += carrotAmount;
+        response.newBalance = character.carrots();
       }
     );
-  } else
+  }
+  else
   {
     data::Uid uid = data::InvalidUid;
     const auto packageKeysView = std::views::keys(_serverInstance.GetItemRegistry().GetPackages());
@@ -4985,11 +4986,11 @@ void RanchDirector::HandleOpenRandomBox(
     };
 
     //add package to inventory
-    characterRecord.Mutable([this, packageTemplate, &uid](data::Character& character)
+    characterRecord.Mutable(
+      [this, packageTemplate, &uid](data::Character& character)
       {
         uid = _serverInstance.GetItemSystem().AddItem(character,packageTemplate->tid, packageTemplate->count);
-      }
-    );
+      });
   }
   // TODO: figure out how to make the open box window appear after opening
   response.unk0 = command.itemUid;
