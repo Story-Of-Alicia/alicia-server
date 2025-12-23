@@ -511,10 +511,10 @@ struct RanchCharacter
 //!
 struct Quest
 {
-  uint16_t tid{};
+  uint16_t tid{}; //questid
   uint32_t member0{};
-  uint8_t member1{};
-  uint32_t member2{};
+  uint8_t member1{}; //can only be 0 or 1, 0 is in progress, 1 is completed
+  uint32_t member2{}; //progress
   uint8_t member3{};
   uint8_t member4{};
 
@@ -615,6 +615,17 @@ enum class ChangeNicknameError : uint8_t
   NicknameCooldown = 0x1d   // CEC_NICKNAME_NOT_AVAILABE_DAY
 };
 
+struct DailyQuest
+{
+  uint16_t questId;
+  uint32_t unk_1;
+  uint8_t unk_2; // type of reward: 1 = carrots, 2 = exp
+  uint8_t unk_3;
+
+  static void Write(const DailyQuest& value, SinkStream& stream);
+  static void Read(DailyQuest& value, SourceStream& stream);
+};
+  
 // HorseNameStrings
 enum class HorseNicknameUpdateError : uint8_t
 {

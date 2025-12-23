@@ -1071,19 +1071,10 @@ struct AcCmdCLRequestDailyQuestList
 
 struct AcCmdCLRequestDailyQuestListOK
 {
-  uint32_t val0{};
-  //! Size specified with uint16
-  std::vector<Quest> quests;
-
-  struct Unk
-  {
-    uint16_t val0{};
-    uint32_t val1{};
-    uint8_t val2{};
-    uint8_t val3{};
-  };
-  //! Size specified with uint16
-  std::vector<Unk> val1;
+  uint32_t val0;
+  
+  std::array<Quest, 10> unk;
+  std::array<DailyQuest, 3> dailyQuests;
 
   static Command GetCommand()
   {

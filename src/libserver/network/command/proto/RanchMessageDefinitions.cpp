@@ -2630,8 +2630,80 @@ void AcCmdCREmblemListOK::Write(
   }
 }
 
-void AcCmdCRUpdateMountInfoOK::Read(
-  AcCmdCRUpdateMountInfoOK& command,
+void AcCmdCRUpdateDailyQuest::Write(
+  const AcCmdCRUpdateDailyQuest& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRUpdateDailyQuest::Read(
+  AcCmdCRUpdateDailyQuest& command,
+  SourceStream& stream)
+{
+  stream.Read(command.quest);
+}
+
+void AcCmdCRUpdateDailyQuestCancel::Write(
+  const AcCmdCRUpdateDailyQuestCancel& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRUpdateDailyQuestCancel::Read(
+  AcCmdCRUpdateDailyQuestCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRUpdateDailyQuestOK::Write(
+  const AcCmdCRUpdateDailyQuestOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.newCarrotBalance);
+  stream.Write(command.quest);
+  stream.Write(command.unk_1);
+  stream.Write(command.unk_2);
+}
+
+void AcCmdCRUpdateDailyQuestOK::Read(
+  AcCmdCRUpdateDailyQuestOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRegisterDailyQuestGroup::Write(
+  const AcCmdCRRegisterDailyQuestGroup& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRegisterDailyQuestGroup::Read(
+  AcCmdCRRegisterDailyQuestGroup& command,
+  SourceStream& stream)
+{
+  stream.Read(command.unk_0);
+
+  command.dailyQuests.resize(3);
+  for (auto& quest : command.dailyQuests)
+  {
+    stream.Read(quest);
+  }
+}
+
+void AcCmdCRRegisterDailyQuestGroupOK::Write(
+  const AcCmdCRRegisterDailyQuestGroupOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.status);
+}
+
+void AcCmdCRRegisterDailyQuestGroupOK::Read(
+  AcCmdCRRegisterDailyQuestGroupOK& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
@@ -2643,6 +2715,97 @@ void AcCmdCRUpdateMountInfoOK::Write(
 {
   stream.Write(command.unk0)
     .Write(command.horse);
+}
+
+void AcCmdCRUpdateMountInfoOK::Read(
+  AcCmdCRUpdateMountInfoOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCUpdateDailyQuestNotify::Write(
+  const AcCmdRCUpdateDailyQuestNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid);
+  stream.Write(command.questId);
+  stream.Write(command.unk);
+  stream.Write(command.unk0);
+  stream.Write(command.unk1);
+  stream.Write(command.unk2);
+  stream.Write(command.unk3);
+}
+
+void AcCmdRCUpdateDailyQuestNotify::Read(
+  AcCmdRCUpdateDailyQuestNotify& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdRCUpdateDailyQuestNotify::Unk::Write(const Unk& value, SinkStream& stream)
+{
+  stream.Write(value.unk0)
+    .Write(value.unk1)
+    .Write(value.unk2);
+}
+
+void AcCmdRCUpdateDailyQuestNotify::Unk::Read(Unk& value, SourceStream& stream)
+{
+  stream.Read(value.unk0)
+    .Read(value.unk1)
+    .Read(value.unk2);
+}
+
+void AcCmdCRRequestDailyQuestReward::Write(
+  const AcCmdCRRequestDailyQuestReward& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRequestDailyQuestReward::Read(
+  AcCmdCRRequestDailyQuestReward& command,
+  SourceStream& stream)
+{
+  stream.Read(command.unk0);
+  stream.Read(command.unk1);
+}
+
+void AcCmdCRRequestDailyQuestRewardOK::Write(
+  const AcCmdCRRequestDailyQuestRewardOK& command,
+  SinkStream& stream)
+{
+  stream.Write(static_cast<uint8_t>(command.rewards.items.size()));
+
+  for (auto& member : command.rewards.items)
+  {
+    stream.Write(member);
+  }
+}
+
+void AcCmdCRRequestDailyQuestRewardOK::Read(
+  AcCmdCRRequestDailyQuestRewardOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRequestDailyQuestRewardOK::Reward::Write(const Reward& value, SinkStream& stream)
+{
+  for (auto& member : value.items)
+  {
+    stream.Write(member);
+  }
+}
+
+void AcCmdCRRequestDailyQuestRewardOK::Reward::Read(Reward& value, SourceStream& stream)
+{
+  for (auto& member : value.items)
+  {
+    stream.Read(member);
+  }
 }
 
 void AcCmdCRMountInjuryHealOK::Read(
@@ -2660,6 +2823,93 @@ void AcCmdCRMountInjuryHealOK::Write(
     .Write(command.unk1)
     .Write(command.unk2)
     .Write(command.updatedCarrotCount);
+}
+
+void AcCmdCRRegisterQuest::Write(
+  const AcCmdCRRegisterQuest& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRegisterQuest::Read(
+  AcCmdCRRegisterQuest& command,
+  SourceStream& stream)
+{
+  stream.Read(command.questId);
+  stream.Read(command.npcId);
+}
+
+void AcCmdCRRegisterQuestOK::Write(
+  const AcCmdCRRegisterQuestOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.questId);
+  stream.Write(command.progress);
+  stream.Write(command.isCompleted);
+}
+
+void AcCmdCRRegisterQuestOK::Read(
+  AcCmdCRRegisterQuestOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRequestQuestReward::Write(
+  const AcCmdCRRequestQuestReward& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRequestQuestReward::Read(
+  AcCmdCRRequestQuestReward& command,
+  SourceStream& stream)
+{
+  stream.Read(command.unk0);
+  stream.Read(command.unk1);
+  stream.Read(command.unk2);
+}
+
+void AcCmdCRRequestQuestRewardOK::Write(
+  const AcCmdCRRequestQuestRewardOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0);
+  stream.Write(command.unk1);
+  stream.Write(command.unk2);
+
+  for (auto& reward : command.rewards.items)
+  {
+    stream.Write(reward);
+  }
+
+  stream.Write(command.unk3);
+
+  for (auto& member : command.unk4)
+  {
+    stream.Write(member);
+  }
+}
+
+void AcCmdCRRequestQuestRewardOK::Read(
+  AcCmdCRRequestQuestRewardOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRequestQuestRewardOK::Unk1::Write(const Unk1& value, SinkStream& stream)
+{
+  stream.Write(value.unk0)
+    .Write(value.unk1);
+}
+
+void AcCmdCRRequestQuestRewardOK::Unk1::Read(Unk1& value, SourceStream& stream)
+{
+  stream.Read(value.unk0)
+    .Read(value.unk1);
 }
 
 } // namespace server::protocol
