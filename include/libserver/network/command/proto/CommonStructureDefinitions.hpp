@@ -60,7 +60,8 @@ struct StoredItem
   };
 
   uint32_t uid{};
-  //! The `GoodsSQ` of the goods. Only valid for purchases.
+  //! The `GoodsSQ` of the shop goods.
+  //! Only valid for purchases.
   uint32_t goodsSq{};
   Status status{};
   //! 0 stato shop
@@ -69,7 +70,8 @@ struct StoredItem
   uint32_t val4{};
   //! carrots
   uint32_t carrots{};
-  //! The corresponding `PriceID` for the goods. Only valid for purchases.
+  //! The corresponding `PriceID` for the shop goods.
+  //! Only valid for purchases.
   uint32_t priceId{};
   std::string sender;
   std::string message;
@@ -624,6 +626,30 @@ enum class HorseNicknameUpdateError : uint8_t
   InvalidNickname = 2, // CR_INVALID_NICKNAME
   NoHorseRenameItem = 3, // CR_ITEM_NOT_FOUND,
   WrongItem = 4, // CR_WRONG_ITEM
+};
+
+struct ShopOrder
+{
+  //! Shop item ID (corresponds to `GoodsSQ`).
+  uint32_t goodsSq{};
+  //! Equip item immediately after the purchase.
+  bool equipImmediately{};
+  //! Selected price (corresponds to `PriceID`).
+  uint16_t priceId{};
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const ShopOrder& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    ShopOrder& command,
+    SourceStream& stream);
 };
 
 } // namespace server::protocol

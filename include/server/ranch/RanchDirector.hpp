@@ -280,11 +280,12 @@ private:
     ClientId clientId,
     const protocol::RanchCommandUserPetInfos& command);
 
+  //! Confirm whether item in the shop can be purchased or gifted.
   void HandleConfirmItem(
     ClientId clientId,
     const protocol::AcCmdCRConfirmItem& command);
 
-  //! Typically called from the shop when buying a set (package)
+  //! Confirm whether item set in the shop can be purchased or gifted.
   void HandleConfirmSetItem(
     ClientId clientId,
     const protocol::AcCmdCRConfirmSetItem& command);

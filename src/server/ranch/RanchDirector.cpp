@@ -4355,7 +4355,7 @@ void RanchDirector::HandleConfirmItem(
   bool error{false};
   if (command.recipientCharacterName == invokerCharacterName)
   {
-    // Invoker cannot gift themself
+    // Invoker cannot gift to themselves
     spdlog::warn("Character '{}' ('{}') tried to confirm item (goods seq '{}') for themselves",
       clientContext.characterUid,
       invokerCharacterName,
@@ -4505,6 +4505,7 @@ void RanchDirector::HandleBuyOwnItem(
         
         // Get the shop goods
         const auto& goods = shopList.goodsList.at(order.goodsSq);
+
         // Get the item cost from the selected price range
         std::optional<uint32_t> costOpt{};
         uint32_t priceRange{0};
@@ -4512,10 +4513,10 @@ void RanchDirector::HandleBuyOwnItem(
         // If goods info, get price from selected price range, else from set price
         if (goods.setType == 0)
         {
-          // Loop through each price range
+          // To determine the price of set of goods iterate over the items
+          // and match the order price ID to the price ID of one of the items.
           for (const auto& price : goods.items)
           {
-            // Check if price ID for the goods matches that of the one selected by the character
             if (price.priceId == order.priceId)
             {
               costOpt.emplace(price.goodsPrice);
@@ -4548,16 +4549,15 @@ void RanchDirector::HandleBuyOwnItem(
         // `itemUid` in the goods entry is actually the item TID
         const auto& itemRegistryRecord = GetServerInstance().GetItemRegistry().GetItem(goods.itemUid);
 
-        bool isCashItem = goods.moneyType == ShopList::Goods::MoneyType::Cash;
+        const bool isCashItem = goods.moneyType == ShopList::Goods::MoneyType::Cash;
         const uint32_t cost = costOpt.value();
 
-        bool hasSufficientCarrots = character.carrots() >= cost;
-        bool canPurchaseCarrotItem = not isCashItem and hasSufficientCarrots;
-        bool hasSufficientCash = character.cash() >= cost;
-        bool canPurchaseCashItem = isCashItem and hasSufficientCash;
+        const bool hasSufficientCarrots = character.carrots() >= cost;
+        const bool canPurchaseCarrotItem = not isCashItem and hasSufficientCarrots;
+        const bool hasSufficientCash = character.cash() >= cost;
+        const bool canPurchaseCashItem = isCashItem and hasSufficientCash;
 
-        bool isConsumable = itemRegistryRecord->type == registry::Item::Type::Consumable;
-        bool hasItem = GetServerInstance().GetItemSystem().HasItem(character, itemRegistryRecord->tid);
+        const bool hasItem = GetServerInstance().GetItemSystem().HasItem(character, itemRegistryRecord->tid);
 
         if (not canPurchaseCarrotItem and not canPurchaseCashItem)
         {
@@ -4575,9 +4575,10 @@ void RanchDirector::HandleBuyOwnItem(
 
         // Add item to character's inventory if equip on purchase,
         // or increment/duration if character already owns it
-        if (order.equipOnPurchase || hasItem)
+        if (order.equipImmediately || hasItem)
         {
-          // TODO: santiy check, see if it is equipable
+          // TODO: sanity check, see if the item is equipable
+
           // Item duration is the price range field.
           const data::Uid itemUid = GetServerInstance().GetItemSystem().AddItem(
             character,
@@ -4590,7 +4591,7 @@ void RanchDirector::HandleBuyOwnItem(
             {
               auto& purchase = response.purchases.emplace_back(
                 Purchase{
-                  .equip = order.equipOnPurchase});
+                  .equipImmediately = order.equipImmediately});
               protocol::BuildProtocolItem(purchase.item, item);
             });
 
@@ -4610,7 +4611,8 @@ void RanchDirector::HandleBuyOwnItem(
               tid = itemRegistryRecord->tid,
               itemCount = priceRange,
               duration = std::chrono::hours(priceRange),
-              priceId = order.priceId](data::StorageItem& storageItem)
+              priceId = order.priceId](
+                data::StorageItem& storageItem)
             {
               storageItemUid = storageItem.uid();
               storageItem.carrots() = goods.bonusGameMoney;
@@ -4673,7 +4675,7 @@ void RanchDirector::HandleSendGift(
 
   // Get recipient character uid, if it even exists
   // TODO: this checks against the data source if character by that name exists but does not load character
-  // into memory
+  //       into the memory
   const data::Uid recipientCharacterUid = GetServerInstance()
     .GetDataDirector()
     .GetDataSource()

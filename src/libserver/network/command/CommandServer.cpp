@@ -33,7 +33,7 @@ namespace
 {
 
 //! Max size of the command data.
-constexpr std::size_t MaxCommandDataSize = 4096 * 5;
+constexpr std::size_t MaxCommandDataSize = 8192;
 
 //! Max size of the whole command payload.
 //! That is command data size + size of the message magic.

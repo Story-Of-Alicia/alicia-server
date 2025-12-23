@@ -790,4 +790,22 @@ void SkillSet::Read(SkillSet& value, SourceStream& stream)
   }
 }
 
+void ShopOrder::Write(
+  const ShopOrder& order,
+  SinkStream& stream)
+{
+  stream.Write(order.goodsSq)
+    .Write(order.equipImmediately)
+    .Write(order.priceId);
+}
+
+void ShopOrder::Read(
+  ShopOrder& order,
+  SourceStream& stream)
+{
+  stream.Read(order.goodsSq)
+    .Read(order.equipImmediately)
+    .Read(order.priceId);
+}
+
 } // namespace server::protocol

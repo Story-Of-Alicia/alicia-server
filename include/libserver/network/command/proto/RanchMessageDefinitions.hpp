@@ -4369,32 +4369,8 @@ struct AcCmdCRConfirmSetItemCancel
 
 struct AcCmdCRBuyOwnItem 
 {
-  struct Order
-  {
-    //! Shop item ID (corresponds to `GoodsSQ`).
-    uint32_t goodsSq{};
-    //! Equip item on purchase.
-    bool equipOnPurchase{};
-    //! Selected price (corresponds to `PriceID`).
-    uint16_t priceId{};
-
-    //! Writes the command to a provided sink stream.
-    //! @param command Command.
-    //! @param stream Sink stream.
-    static void Write(
-      const Order& command,
-      SinkStream& stream);
-
-    //! Reader a command from a provided source stream.
-    //! @param command Command.
-    //! @param stream Source stream.
-    static void Read(
-      Order& command,
-      SourceStream& stream);
-  };
-
   //! Max 32 (0x20) items.
-  std::vector<Order> orders{};
+  std::vector<ShopOrder> orders{};
 
   static Command GetCommand()
   {
@@ -4421,14 +4397,22 @@ struct AcCmdCRBuyOwnItemCancel
   //! Values as used in the `ShopHandlerStrings` table in libconfig.
   enum class Error : uint8_t
   {
-    GeneralError = 0,       // `CR_ERROR`
-    OutOfMoney = 1,         // `CR_OUT_OF_MONEY`
-    NotAvailable = 2,       // `CR_NOT_AVAILABLE`
-    OutOfStock = 3,         // `CR_OUT_OF_STOCK`
-    OutOfTime = 4,          // `CR_OUT_OF_TIME`
-    DupCharBuy = 5,         // `CR_DUP_CHAR_BUY`
-    TooManyOwns = 6,        // `CR_TOO_MANY_OWNS`
-    ShopBuyUnavailable = 7  // `CR_SHOP_BUY_UNAVAILABLE`
+    //! `CR_ERROR`
+    GeneralError = 0,
+    //! `CR_OUT_OF_MONEY`
+    OutOfMoney = 1,
+    //! `CR_NOT_AVAILABLE`
+    NotAvailable = 2,
+    //! `CR_OUT_OF_STOCK`
+    OutOfStock = 3,
+    //! `CR_OUT_OF_TIME`
+    OutOfTime = 4,
+    //! `CR_DUP_CHAR_BUY`
+    DupCharBuy = 5,
+    //! `CR_TOO_MANY_OWNS`
+    TooManyOwns = 6,
+    //! `CR_SHOP_BUY_UNAVAILABLE`
+    ShopBuyUnavailable = 7
   } error{Error::GeneralError};
 
   static Command GetCommand()
@@ -4455,30 +4439,41 @@ struct AcCmdCRBuyOwnItemOK
 {
   struct OrderResult
   {
-    protocol::AcCmdCRBuyOwnItem::Order order{};
-    // Corresponds to `ShopHandlerStrings`
+    ShopOrder order{};
+
+    //! Corresponds to `ShopHandlerStrings`
     enum class Result : uint8_t
     {
       Success = 0,
-      UnknownError = 1,       // `UnknownError`
-      OutOfMoney = 0xC,       // `CEC_OUT_OF_MONEY`
-      NotAvailable = 0xD,     // `CEC_NOT_AVAILABLE`
-      OutOfStock = 0xE,       // `CEC_OUT_OF_STOCK`
-      OutOfTime = 0xF,        // `CEC_OUT_OF_TIME`
-      DuplicatedChar = 0x11,  // `CEC_DUPLICATED_CHAR`
-      NoMoreMount = 0x13,     // `CEC_NO_MORE_MOUNT`
+      //! `UnknownError`
+      UnknownError = 1,
+      //! `CEC_OUT_OF_MONEY`
+      OutOfMoney = 0xC,
+      //! `CEC_NOT_AVAILABLE`
+      NotAvailable = 0xD,
+      //! `CEC_OUT_OF_STOCK`
+      OutOfStock = 0xE,
+      //! `CEC_OUT_OF_TIME`
+      OutOfTime = 0xF,
+      //! `CEC_DUPLICATED_CHAR`
+      DuplicatedChar = 0x11,
+      //! `CEC_NO_MORE_MOUNT`
+      NoMoreMount = 0x13,
     } result{Result::Success};
   };
-  // Max 32 (0x20)
-  std::vector<OrderResult> orderResults{};
 
   struct Purchase
   {
-    //! Indicates whether or not the character should equip this item.
-    bool equip{false};
+    //! Indicates whether the character should equip this item
+    //! immediately after the purchase.
+    bool equipImmediately{false};
     //! Purchased item.
     Item item{};
   };
+
+  // Max 32 (0x20)
+  std::vector<OrderResult> orderResults{};
+
   //! Successful purchases by the character.
   //! Max 250 (0xfa) items.
   std::vector<Purchase> purchases{};
@@ -4510,7 +4505,7 @@ struct AcCmdCRSendGift
 {
   std::string recipientCharacterName{};
   std::string message{};
-  protocol::AcCmdCRBuyOwnItem::Order order{};
+  ShopOrder order{};
 
   static Command GetCommand()
   {
@@ -4561,7 +4556,7 @@ struct AcCmdCRSendGiftOK
 {
   struct GiftOrderResult
   {
-    protocol::AcCmdCRBuyOwnItem::Order order{};
+    ShopOrder order{};
     bool error{true};
   } giftOrderResult{};
   int32_t carrots{};

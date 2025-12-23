@@ -149,11 +149,8 @@ void ItemRegistry::ReadConfig(const std::filesystem::path& configPath)
         itemSection["type"].as<uint32_t>()),
       .level = itemSection["level"].as<decltype(Item::level)>(0),
       .name = itemSection["name"].as<decltype(Item::name)>(""),
-      .description = itemSection["description"].as<decltype(Item::description)>()};
-
-    // Determine if item is to be excluded from the shop
-    if (const auto shopExcludeSection = itemSection["shopExclude"])
-      item.shopExclude = shopExcludeSection.as<bool>();
+      .description = itemSection["description"].as<decltype(Item::description)>(),
+      .isPurchasable = itemSection["isPurchasable"].as<bool>()};
 
     // Read ItemPartInfo
 

@@ -85,14 +85,15 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
 {
   uint32_t goodsSequenceId = 0;
   uint32_t recommendNoId = 0;
+
   for (const auto& [tid, item] : itemRegistry.GetItems())
   {
     ++goodsSequenceId;
 
     // Check if item can be shown in shop
-    const bool isInShop = not item.shopExclude;
+    const bool isInShop = item.isPurchasable;
 
-    // Handmade filter to only show character and horse equipment, and care items
+    // Handmade filter to only show character and horse equipment and care items
     const bool isPermittedCategory = 
       item.careParameters ||
       item.cureParameters ||
