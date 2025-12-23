@@ -4582,6 +4582,79 @@ struct AcCmdCRSendGiftOK
     SourceStream& stream);
 };
 
+struct AcCmdCRExpandMountSlot
+{
+  //! UID of the item that will be used to expand the mount slot.
+  uint32_t itemUid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRExpandMountSlot;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRExpandMountSlot& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRExpandMountSlot& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRExpandMountSlotCancel
+{
+  // Empty
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRExpandMountSlotCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRExpandMountSlotCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRExpandMountSlotCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRExpandMountSlotOK
+{
+  uint8_t result{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRExpandMountSlotOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRExpandMountSlotOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRExpandMountSlotOK& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RANCH_MESSAGE_DEFINES_HPP

@@ -402,6 +402,10 @@ private:
     ClientId clientId, 
     const protocol::AcCmdCRSendGift& command);
 
+  void HandleExpandMountSlot(
+    ClientId clientId, 
+    const protocol::AcCmdCRExpandMountSlot& command);
+
   //!
   ServerInstance& _serverInstance;
   //!

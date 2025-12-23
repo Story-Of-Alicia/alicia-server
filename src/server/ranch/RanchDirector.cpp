@@ -399,6 +399,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleSendGift(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRExpandMountSlot>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleExpandMountSlot(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -4865,6 +4871,95 @@ void RanchDirector::HandleSendGift(
   GetServerInstance().GetRanchDirector().SendStorageNotification(
     recipientCharacterUid,
     protocol::AcCmdCRRequestStorage::Category::Gifts);
+}
+
+void RanchDirector::HandleExpandMountSlot(
+  ClientId clientId,
+  const protocol::AcCmdCRExpandMountSlot& command)
+{
+  spdlog::debug("[{}] AcCmdCRExpandMountSlot: {}",
+    clientId,
+    command.itemUid);
+
+  const auto& clientContext = GetClientContext(clientId);
+
+  // TODO: verify character has this item
+  // If it doesn't exist, return AcCmdCRExpandMountSlotCancel
+
+  protocol::AcCmdCRExpandMountSlotCancel cancel{};
+  if (command.itemUid == data::InvalidUid)
+  {
+    spdlog::warn("Character '{}' tried to expand mount slots with invalid item uid.",
+      clientContext.characterUid);
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  // Get mount expansion item record
+  const auto& itemRecord = GetServerInstance().GetDataDirector().GetItem(command.itemUid);
+  if (not itemRecord.IsAvailable())
+  {
+    spdlog::warn("Character '{}' tried to expand mount slots with non-existent item '{}'.",
+      clientContext.characterUid,
+      command.itemUid);
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  // Get mount expansion item tid
+  data::Tid itemTid{data::InvalidTid};
+  itemRecord.Immutable(
+    [&itemTid](const data::Item& item)
+    {
+      itemTid = item.tid();
+    });
+
+  // Get invoking character's record
+  const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
+  
+  // Check if recipient has the item
+  bool hasItem{true};
+  uint8_t slots{};
+  characterRecord.Immutable(
+    [this, &hasItem, &slots, itemTid](const data::Character& character)
+    {
+      hasItem = GetServerInstance().GetItemSystem().HasItem(character, itemTid);
+      slots = character.horseSlotCount();
+    });
+
+  // Check if mount slot count cannot be increased anymore (slot count is 10 or more)
+  constexpr uint8_t MaxHorseSlotCount = 10;
+  if (MaxHorseSlotCount >= 10)
+  {
+    spdlog::warn("Character '{}' tried to expand mount slots but is already at max mount slot count.",
+      clientContext.characterUid);
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  // Check if character owns the item
+  if (not hasItem)
+  {
+    spdlog::warn("Character '{}' tried to expand mount slots with item '{}' that they don't own.",
+      clientContext.characterUid,
+      command.itemUid);
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  // Increment mount slot count and return
+  // TODO: do we need positional awareness? There are tiers to mount slot expansion
+  // TODO: verify character horse slot count (sanity check with item TID/type)
+  // TODO: do we consume and remove the item from the character inventory?
+  protocol::AcCmdCRExpandMountSlotOK response{
+    .result = 1};
+  characterRecord.Mutable(
+    [&response](data::Character& character)
+    {
+      response.result = ++character.horseSlotCount();
+    });
+
+  _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }
 
 } // namespace server

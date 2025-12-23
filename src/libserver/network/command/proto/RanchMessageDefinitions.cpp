@@ -2866,5 +2866,47 @@ void AcCmdCRSendGiftOK::Write(
     .Write(command.cash);
 }
 
+void AcCmdCRExpandMountSlot::Read(
+  AcCmdCRExpandMountSlot& command,
+  SourceStream& stream)
+{
+  stream.Read(command.itemUid);
+}
+
+void AcCmdCRExpandMountSlot::Write(
+  const AcCmdCRExpandMountSlot& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRExpandMountSlotCancel::Read(
+  AcCmdCRExpandMountSlotCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRExpandMountSlotCancel::Write(
+  const AcCmdCRExpandMountSlotCancel& command,
+  SinkStream& stream)
+{
+  // Empty
+}
+
+void AcCmdCRExpandMountSlotOK::Read(
+  AcCmdCRExpandMountSlotOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRExpandMountSlotOK::Write(
+  const AcCmdCRExpandMountSlotOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.result);
+}
+
 } // namespace server::protocol
 
