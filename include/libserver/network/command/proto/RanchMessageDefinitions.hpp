@@ -1838,6 +1838,8 @@ struct AcCmdCRWearEquipment
 struct AcCmdCRWearEquipmentOK
 {
   uint32_t itemUid{};
+  // When set only to 1, invokes game message `GameMsg::gMsgWearRiderGrazeMount` with itemUid and 1.
+  // Game message is seemingly never handled internally. Seemingly unused.
   uint8_t member{};
 
   static Command GetCommand()
@@ -4201,6 +4203,382 @@ struct AcCmdCRMountInjuryHealOK
   //! @param stream Source stream.
   static void Read(
     AcCmdCRMountInjuryHealOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRConfirmItem
+{
+  std::string recipientCharacterName;
+  uint32_t goodsSq;
+  uint8_t member3;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRConfirmItem;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRConfirmItem& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRConfirmItem& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRConfirmItemOK
+{
+  std::string recipientCharacterName;
+  uint32_t goodsSq;
+  bool canPurchase;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRConfirmItemOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRConfirmItemOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRConfirmItemOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRConfirmItemCancel
+{
+  // Has `ShopHandlerStrings` -> `NotExistUser` hardcoded, is not affected by response values.
+
+  std::string member1;
+  uint32_t member2;
+  uint8_t member3;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRConfirmItemCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRConfirmItemCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRConfirmItemCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRConfirmSetItem
+{
+  uint32_t goodsSq{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRConfirmSetItem;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRConfirmSetItem& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRConfirmSetItem& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRConfirmSetItemOK
+{
+  // TODO: suspected values
+  uint32_t goodsSq{};
+  enum Result : uint8_t
+  {
+    Unowned = 0,
+    Owned = 1
+  } result{Result::Unowned};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRConfirmSetItemOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRConfirmSetItemOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRConfirmSetItemOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRConfirmSetItemCancel
+{
+  //! Verified unused, handler always uses table "ShopHandlerStrings" entry "UnknownError"
+  uint32_t unk0{};
+  //! Verified unused, handler always uses table "ShopHandlerStrings" entry "UnknownError"
+  uint8_t unk1{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRConfirmSetItemCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRConfirmSetItemCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRConfirmSetItemCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBuyOwnItem 
+{
+  //! Max 32 (0x20) items.
+  std::vector<ShopOrder> orders{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBuyOwnItem;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBuyOwnItem& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBuyOwnItem& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBuyOwnItemCancel
+{
+  //! Values as used in the `ShopHandlerStrings` table in libconfig.
+  enum class Error : uint8_t
+  {
+    //! `CR_ERROR`
+    GeneralError = 0,
+    //! `CR_OUT_OF_MONEY`
+    OutOfMoney = 1,
+    //! `CR_NOT_AVAILABLE`
+    NotAvailable = 2,
+    //! `CR_OUT_OF_STOCK`
+    OutOfStock = 3,
+    //! `CR_OUT_OF_TIME`
+    OutOfTime = 4,
+    //! `CR_DUP_CHAR_BUY`
+    DupCharBuy = 5,
+    //! `CR_TOO_MANY_OWNS`
+    TooManyOwns = 6,
+    //! `CR_SHOP_BUY_UNAVAILABLE`
+    ShopBuyUnavailable = 7
+  } error{Error::GeneralError};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBuyOwnItemCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBuyOwnItemCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBuyOwnItemCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBuyOwnItemOK
+{
+  struct OrderResult
+  {
+    ShopOrder order{};
+
+    //! Corresponds to `ShopHandlerStrings`
+    enum class Result : uint8_t
+    {
+      Success = 0,
+      //! `UnknownError`
+      UnknownError = 1,
+      //! `CEC_OUT_OF_MONEY`
+      OutOfMoney = 0xC,
+      //! `CEC_NOT_AVAILABLE`
+      NotAvailable = 0xD,
+      //! `CEC_OUT_OF_STOCK`
+      OutOfStock = 0xE,
+      //! `CEC_OUT_OF_TIME`
+      OutOfTime = 0xF,
+      //! `CEC_DUPLICATED_CHAR`
+      DuplicatedChar = 0x11,
+      //! `CEC_NO_MORE_MOUNT`
+      NoMoreMount = 0x13,
+    } result{Result::Success};
+  };
+
+  struct Purchase
+  {
+    //! Indicates whether the character should equip this item
+    //! immediately after the purchase.
+    bool equipImmediately{false};
+    //! Purchased item.
+    Item item{};
+  };
+
+  // Max 32 (0x20)
+  std::vector<OrderResult> orderResults{};
+
+  //! Successful purchases by the character.
+  //! Max 250 (0xfa) items.
+  std::vector<Purchase> purchases{};
+
+  uint32_t newCarrots{};
+  uint32_t newCash{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBuyOwnItemOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBuyOwnItemOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBuyOwnItemOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRSendGift
+{
+  std::string recipientCharacterName{};
+  std::string message{};
+  ShopOrder order{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRSendGift;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRSendGift& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRSendGift& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRSendGiftCancel
+{
+  // Cancel is hardcoded to `ShopHandlerStrings` -> `GiftFail`.
+  uint8_t unused{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRSendGiftCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRSendGiftCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRSendGiftCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRSendGiftOK
+{
+  struct GiftOrderResult
+  {
+    ShopOrder order{};
+    bool error{true};
+  } giftOrderResult{};
+  int32_t carrots{};
+  uint32_t cash{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRSendGiftOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRSendGiftOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRSendGiftOK& command,
     SourceStream& stream);
 };
 

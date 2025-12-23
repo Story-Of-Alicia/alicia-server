@@ -2662,5 +2662,209 @@ void AcCmdCRMountInjuryHealOK::Write(
     .Write(command.updatedCarrotCount);
 }
 
+void AcCmdCRConfirmItem::Write(
+  const AcCmdCRConfirmItem& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRConfirmItem::Read(
+  AcCmdCRConfirmItem& command,
+  SourceStream& stream)
+{
+  stream.Read(command.recipientCharacterName)
+    .Read(command.goodsSq)
+    .Read(command.member3);
+}
+
+void AcCmdCRConfirmItemOK::Write(
+  const AcCmdCRConfirmItemOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.recipientCharacterName)
+    .Write(command.goodsSq)
+    .Write(command.canPurchase);
+}
+
+void AcCmdCRConfirmItemOK::Read(
+  AcCmdCRConfirmItemOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRConfirmItemCancel::Write(
+  const AcCmdCRConfirmItemCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1)
+    .Write(command.member2)
+    .Write(command.member3);
+}
+
+void AcCmdCRConfirmItemCancel::Read(
+  AcCmdCRConfirmItemCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRConfirmSetItem::Read(
+  AcCmdCRConfirmSetItem& command,
+  SourceStream& stream)
+{
+  stream.Read(command.goodsSq);
+}
+
+void AcCmdCRConfirmSetItem::Write(
+  const AcCmdCRConfirmSetItem& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRConfirmSetItemOK::Read(
+  AcCmdCRConfirmSetItemOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRConfirmSetItemOK::Write(
+  const AcCmdCRConfirmSetItemOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.goodsSq)
+    .Write(command.result);
+}
+
+void AcCmdCRConfirmSetItemCancel::Read(
+  AcCmdCRConfirmSetItemCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRConfirmSetItemCancel::Write(
+  const AcCmdCRConfirmSetItemCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1);
+}
+
+void AcCmdCRBuyOwnItem::Read(
+  AcCmdCRBuyOwnItem& command,
+  SourceStream& stream)
+{
+  uint8_t count{0};
+  stream.Read(count);
+  command.orders.resize(count);
+  for (auto& order : command.orders)
+  {
+    stream.Read(order);
+  }
+}
+
+void AcCmdCRBuyOwnItem::Write(
+  const AcCmdCRBuyOwnItem& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBuyOwnItemCancel::Read(
+  AcCmdCRBuyOwnItemCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBuyOwnItemCancel::Write(
+  const AcCmdCRBuyOwnItemCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.error);
+}
+
+void AcCmdCRBuyOwnItemOK::Read(
+  AcCmdCRBuyOwnItemOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBuyOwnItemOK::Write(
+  const AcCmdCRBuyOwnItemOK& command,
+  SinkStream& stream)
+{
+  // List size in one byte.
+  stream.Write(static_cast<uint8_t>(command.orderResults.size()));
+  for (const auto& shopItemResult : command.orderResults)
+  {
+    stream.Write(shopItemResult.order)
+      .Write(shopItemResult.result);
+  }
+
+  // List size in one byte.
+  stream.Write(static_cast<uint8_t>(command.purchases.size()));
+  for (const auto& ownedItem : command.purchases)
+  {
+    stream.Write(ownedItem.equipImmediately)
+      .Write(ownedItem.item);
+  }
+
+  stream.Write(command.newCarrots)
+    .Write(command.newCash);
+}
+
+void AcCmdCRSendGift::Read(
+  AcCmdCRSendGift& command,
+  SourceStream& stream)
+{
+  stream.Read(command.recipientCharacterName)
+    .Read(command.message)
+    .Read(command.order);
+}
+
+void AcCmdCRSendGift::Write(
+  const AcCmdCRSendGift& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRSendGiftCancel::Read(
+  AcCmdCRSendGiftCancel& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRSendGiftCancel::Write(
+  const AcCmdCRSendGiftCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unused);
+}
+
+void AcCmdCRSendGiftOK::Read(
+  AcCmdCRSendGiftOK& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRSendGiftOK::Write(
+  const AcCmdCRSendGiftOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.giftOrderResult.order)
+    .Write(command.giftOrderResult.error)
+    .Write(command.carrots)
+    .Write(command.cash);
+}
+
 } // namespace server::protocol
 

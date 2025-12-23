@@ -416,7 +416,7 @@ void server::FileDataSource::DeleteCharacter(data::Uid uid)
   std::filesystem::remove(dataFilePath);
 }
 
-bool server::FileDataSource::IsCharacterNameUnique(const std::string_view& name)
+server::data::Uid server::FileDataSource::RetrieveCharacterUidByName(const std::string_view& name)
 {
   const std::regex rg(
     std::format("{}", name),
@@ -435,10 +435,15 @@ bool server::FileDataSource::IsCharacterNameUnique(const std::string_view& name)
     const auto existingCharacterName = json["name"].get<std::string>();
 
     if (std::regex_match(existingCharacterName, rg))
-      return false;
+      return json["uid"].get<data::Uid>();
   }
 
-  return true;
+  return data::InvalidUid;
+}
+
+bool server::FileDataSource::IsCharacterNameUnique(const std::string_view& name)
+{
+  return RetrieveCharacterUidByName(name) == data::InvalidUid;
 }
 
 void server::FileDataSource::CreateHorse(data::Horse& horse)
@@ -747,6 +752,10 @@ void server::FileDataSource::RetrieveStorageItem(data::Uid uid, data::StorageIte
     json["duration"].get<int64_t>());
   storageItem.createdAt = data::Clock::time_point(std::chrono::seconds(
     json["createdAt"].get<int64_t>()));
+
+  // Shop data
+  storageItem.goodsSq = json["goodsSq"].get<uint32_t>();
+  storageItem.priceId = json["priceId"].get<uint32_t>();
 }
 
 void server::FileDataSource::StoreStorageItem(data::Uid uid, const data::StorageItem& storageItem)
@@ -782,6 +791,10 @@ void server::FileDataSource::StoreStorageItem(data::Uid uid, const data::Storage
   json["createdAt"] = std::chrono::ceil<std::chrono::seconds>(
     storageItem.createdAt().time_since_epoch()).count();
   json["duration"] = storageItem.duration().count();
+
+  // Shop data
+  json["goodsSq"] = storageItem.goodsSq();
+  json["priceId"] = storageItem.priceId();
 
   dataFile << json.dump(2);
 }

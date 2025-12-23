@@ -280,6 +280,16 @@ private:
     ClientId clientId,
     const protocol::RanchCommandUserPetInfos& command);
 
+  //! Confirm whether item in the shop can be purchased or gifted.
+  void HandleConfirmItem(
+    ClientId clientId,
+    const protocol::AcCmdCRConfirmItem& command);
+
+  //! Confirm whether item set in the shop can be purchased or gifted.
+  void HandleConfirmSetItem(
+    ClientId clientId,
+    const protocol::AcCmdCRConfirmSetItem& command);
+
   //! Broadcasts an equipment update of the character owned by the client
   //! to the currently connected ranch.
   //! @param clientId ID of the client.
@@ -383,6 +393,14 @@ private:
   void SendChangeNicknameCancel(
     ClientId clientId,
     protocol::ChangeNicknameError reason);
+
+  void HandleBuyOwnItem(
+    ClientId clientId, 
+    const protocol::AcCmdCRBuyOwnItem& command);
+
+  void HandleSendGift(
+    ClientId clientId, 
+    const protocol::AcCmdCRSendGift& command);
 
   //!
   ServerInstance& _serverInstance;

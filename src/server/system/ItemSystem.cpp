@@ -38,16 +38,16 @@ data::Uid ItemSystem::GetItem(
   data::Character& character,
   data::Tid itemTid) const noexcept
 {
-  const auto itemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(
-    character.inventory());
-  if (not itemRecords)
-    return data::InvalidUid;
-
-  for (const auto& itemRecord : *itemRecords)
+  const auto searchItems = [this, &itemTid](const std::vector<data::Uid>& itemUids) -> data::Uid
   {
-    auto foundItemUid = data::InvalidUid;
-    itemRecord.Immutable(
-      [&foundItemUid, &itemTid](const data::Item& item)
+    const auto itemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(itemUids);
+    if (not itemRecords)
+      return data::InvalidUid;
+
+    for (const auto& itemRecord : *itemRecords)
+    {
+      auto foundItemUid = data::InvalidUid;
+      itemRecord.Immutable([&foundItemUid, &itemTid](const data::Item& item)
       {
         if (item.tid() != itemTid)
           return;
@@ -55,11 +55,18 @@ data::Uid ItemSystem::GetItem(
         foundItemUid = item.uid();
       });
 
-    if (foundItemUid != data::InvalidUid)
-      return foundItemUid;
-  }
+      if (foundItemUid != data::InvalidUid)
+        return foundItemUid;
+    }
 
-  return data::InvalidUid;
+    return data::InvalidUid;
+  };
+
+  auto foundUid = searchItems(character.inventory());
+  if (foundUid != data::InvalidUid)
+    return foundUid;
+
+  return searchItems(character.characterEquipment());
 }
 
 data::Uid ItemSystem::AddItem(
@@ -243,26 +250,35 @@ ItemSystem::ConsumeVerdict ItemSystem::ConsumeItem(
 }
 
 bool ItemSystem::HasItem(
-  data::Character& character,
+  const data::Character& character,
   const data::Tid itemTid) const noexcept
 {
-  const auto itemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(
-    character.inventory());
-  if (not itemRecords)
-    return false;
-
-  for (const auto& itemRecord : *itemRecords)
+  const auto checkItems = [this, &itemTid](const std::vector<data::Uid>& itemUids) -> bool
   {
-    bool isMatch = false;
-    itemRecord.Immutable([&isMatch, &itemTid](
-      const data::Item& item)
-    {
-      isMatch = item.tid() == itemTid;
-    });
+    const auto itemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(itemUids);
+    if (not itemRecords)
+      return false;
 
-    if (isMatch)
-      return true;
-  }
+    for (const auto& itemRecord : *itemRecords)
+    {
+      bool isMatch = false;
+      itemRecord.Immutable([&isMatch, &itemTid](const data::Item& item)
+      {
+        isMatch = item.tid() == itemTid;
+      });
+
+      if (isMatch)
+        return true;
+    }
+
+    return false;
+  };
+
+  if (checkItems(character.inventory()))
+    return true;
+
+  if (checkItems(character.characterEquipment()))
+    return true;
 
   return false;
 }

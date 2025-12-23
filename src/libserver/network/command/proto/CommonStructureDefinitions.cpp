@@ -43,12 +43,12 @@ void Item::Read(Item& item, SourceStream& stream)
 void StoredItem::Write(const StoredItem& item, SinkStream& stream)
 {
   stream.Write(item.uid)
-    .Write(item.val1)
+    .Write(item.goodsSq)
     .Write(item.status)
     .Write(item.val3)
     .Write(item.val4)
     .Write(item.carrots)
-    .Write(item.val6)
+    .Write(item.priceId)
     .Write(item.sender)
     .Write(item.message)
     .Write(item.dateAndTime);
@@ -57,12 +57,12 @@ void StoredItem::Write(const StoredItem& item, SinkStream& stream)
 void StoredItem::Read(StoredItem& item, SourceStream& stream)
 {
   stream.Read(item.uid)
-    .Read(item.val1)
+    .Read(item.goodsSq)
     .Read(item.status)
     .Read(item.val3)
     .Read(item.val4)
     .Read(item.carrots)
-    .Read(item.val6)
+    .Read(item.priceId)
     .Read(item.sender)
     .Read(item.message)
     .Read(item.dateAndTime);
@@ -788,6 +788,24 @@ void SkillSet::Read(SkillSet& value, SourceStream& stream)
   {
     stream.Read(element);
   }
+}
+
+void ShopOrder::Write(
+  const ShopOrder& order,
+  SinkStream& stream)
+{
+  stream.Write(order.goodsSq)
+    .Write(order.equipImmediately)
+    .Write(order.priceId);
+}
+
+void ShopOrder::Read(
+  ShopOrder& order,
+  SourceStream& stream)
+{
+  stream.Read(order.goodsSq)
+    .Read(order.equipImmediately)
+    .Read(order.priceId);
 }
 
 } // namespace server::protocol
