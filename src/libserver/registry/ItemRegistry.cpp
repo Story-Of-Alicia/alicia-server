@@ -194,10 +194,10 @@ void ItemRegistry::ReadConfig(const std::filesystem::path& configPath)
   for (const auto& packageSection : packagesCollectionSection )
   {
     Package package{
-      .packageId = packageSection["packageid"].as<decltype(Package::packageId)>(0),
-      .packageName = packageSection["packagename"].as<decltype(Package::packageName)>(""),
+      .packageId = packageSection["packageId"].as<decltype(Package::packageId)>(0),
+      .packageName = packageSection["packageName"].as<decltype(Package::packageName)>(""),
       .count = packageSection["count"].as<decltype(Package::count)>(0),
-      .itemName = packageSection["itemname"].as<decltype(Package::itemName)>(""),
+      .itemName = packageSection["itemName"].as<decltype(Package::itemName)>(""),
       .tid = packageSection["tid"].as<decltype(Package::tid)>()
     };
 
