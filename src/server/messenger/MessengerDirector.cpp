@@ -24,7 +24,8 @@
 namespace server
 {
 
-constexpr auto OnlinePlayersCategoryUid = std::numeric_limits<uint32_t>::max() - 1;
+constexpr auto FriendsCategoryUid = std::numeric_limits<uint32_t>::max() - 1;
+constexpr auto OnlinePlayersCategoryUid = std::numeric_limits<uint32_t>::max() - 2;
 constexpr std::string_view DateTimeFormat = "{:%H:%M:%S %d/%m/%Y} UTC";
 
 MessengerDirector::MessengerDirector(ServerInstance& serverInstance)
@@ -202,8 +203,7 @@ void MessengerDirector::HandleChatterLogin(
 
   clientContext.isAuthenticated = true;
 
-  protocol::ChatCmdLoginAckOK response{
-    .groups = {{.uid = OnlinePlayersCategoryUid, .name = "Online Players"}}};
+  protocol::ChatCmdLoginAckOK response{};
 
   // TODO: remember status from last login?
   clientContext.presence = protocol::Presence{
@@ -225,33 +225,53 @@ void MessengerDirector::HandleChatterLogin(
 
   response.member1 = clientContext.characterUid;
 
-  for (const auto& userInstance : _serverInstance.GetLobbyDirector().GetUsers() | std::views::values)
-  {
-    const auto onlineCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(
-      userInstance.characterUid);
-
-    auto& friendo = response.friends.emplace_back();
-    onlineCharacterRecord.Immutable([&userInstance, &friendo](const data::Character& onlineCharacter)
+  // Load friends from character's stored friends list
+  std::vector<data::Uid> storedFriends{};
+  _serverInstance.GetDataDirector().GetCharacter(command.characterUid).Immutable(
+    [&storedFriends](const data::Character& character)
     {
-      friendo.name = onlineCharacter.name();
-      friendo.status = onlineCharacter.isRanchLocked()
-        ? protocol::Status::Offline
-        : protocol::Status::Online;
-      friendo.uid = onlineCharacter.uid();
-      friendo.categoryUid = OnlinePlayersCategoryUid;
-
-      // todo: get the ranch/room information
-      friendo.ranchUid = onlineCharacter.uid();
-      friendo.roomUid = userInstance.roomUid;
+      storedFriends = character.friends();
     });
 
-    // TODO: temporary
-    // Add online character as friend
-    if (friendo.uid != clientContext.characterUid)
-      clientContext.friends.emplace_back(friendo.uid);
+  // Create a friends group if character has any friends at all
+  if (!storedFriends.empty())
+    response.groups.emplace_back(FriendsCategoryUid, "Friends");
+
+  // Build friends list for response
+  for (const data::Uid& friendUid : storedFriends)
+  {
+    const auto friendCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(friendUid);
+    if (!friendCharacterRecord.IsAvailable())
+      continue;
+
+    auto& friendo = response.friends.emplace_back();
+    friendCharacterRecord.Immutable([&friendo](const data::Character& friendCharacter)
+    {
+      friendo.name = friendCharacter.name();
+      friendo.uid = friendCharacter.uid();
+      friendo.categoryUid = FriendsCategoryUid;
+      friendo.ranchUid = friendCharacter.uid();
+    });
+
+    // Check if friend is online by looking for them in messenger clients
+    friendo.status = protocol::Status::Offline;
+    for (const auto& [onlineClientId, onlineClientContext] : _clients)
+    {
+      if (onlineClientContext.isAuthenticated && onlineClientContext.characterUid == friendUid)
+      {
+        friendo.status = onlineClientContext.presence.status;
+        friendo.roomUid = onlineClientContext.presence.sceneUid;
+        break;
+      }
+    }
   }
 
-  _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+  _chatterServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 void MessengerDirector::HandleChatterLetterList(
@@ -761,11 +781,17 @@ void MessengerDirector::HandleChatterUpdateState(
   // Update state for client context
   clientContext.presence = command.presence;
 
-  bool isInGuild = clientContext.guildUid != data::InvalidUid;
+  // Get guild uid of the invoking character
+  data::Uid guildUid{data::InvalidUid};
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [&guildUid](const data::Character& character)
+    {
+      guildUid = character.guildUid();
+    });
+
   std::vector<network::ClientId> guildMembersToNotify{};
 
-  // This mechanism goes through all the online clients and checks if the invoker is in their "friends" list.
-  // TODO: ^ temporary, only for online players
+  // This mechanism goes through all the online clients and checks if the invoker is in their stored friends list.
   std::vector<network::ClientId> friendsToNotify{};
 
   const auto clientsSnapshot = _clients;
@@ -776,27 +802,41 @@ void MessengerDirector::HandleChatterUpdateState(
     if (not isAuthenticated)
       continue;
 
-    // Self broadcast is needed, add it to the bag
+    // Self broadcast is needed only for guild notification
     bool isSelf = onlineClientId == clientId;
-    if (isSelf)
+    if (isSelf and guildUid != data::InvalidUid)
     {
-      if (isInGuild)
-        guildMembersToNotify.emplace_back(onlineClientId);
-      
-      friendsToNotify.emplace_back(onlineClientId);
+      guildMembersToNotify.emplace_back(onlineClientId);
       continue;
     }
 
-    // Broadcast to character that has invoker as friend
-    auto it = std::ranges::find(onlineClientContext.friends, clientContext.characterUid);
-    bool isFriend = it != onlineClientContext.friends.cend();
+    // Check if invoker is in the online client's stored friends list
+    bool isFriend = false;
+    _serverInstance.GetDataDirector().GetCharacter(onlineClientContext.characterUid).Immutable(
+      [&isFriend, &clientContext](const data::Character& character)
+      {
+        isFriend = std::ranges::contains(character.friends(), clientContext.characterUid);
+      });
+
     if (isFriend)
     {
       friendsToNotify.emplace_back(onlineClientId);
     }
 
+    // Get online character's guild uid
+    data::Uid onlineCharacterGuildUid{data::InvalidUid};
+    _serverInstance.GetDataDirector().GetCharacter(onlineClientContext.characterUid).Immutable(
+      [&onlineCharacterGuildUid](const data::Character& character)
+      {
+        onlineCharacterGuildUid = character.guildUid();
+      });
+
+    bool isInvokerInAGuild = guildUid != data::InvalidUid;
+    bool isOnlineCharacterInAGuild = onlineCharacterGuildUid != data::InvalidUid;
+    bool isInvokerAndOnlineCharacterInSameGuild = guildUid == onlineCharacterGuildUid;
+
     // If invoker is in a guild and other client is in the same guild
-    if (isInGuild && onlineClientContext.guildUid == clientContext.guildUid)
+    if (isInvokerInAGuild and isOnlineCharacterInAGuild and isInvokerAndOnlineCharacterInSameGuild)
     {
       guildMembersToNotify.emplace_back(onlineClientId);
     } 
@@ -1071,9 +1111,6 @@ void MessengerDirector::HandleChatterGuildLogin(
     _chatterServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
     return;
   }
-
-  // Character is in guild, process ok response
-  clientContext.guildUid = command.guildUid;
 
   protocol::ChatCmdGuildLoginAckOK response{};
   _serverInstance.GetDataDirector().GetGuild(command.guildUid).Immutable(

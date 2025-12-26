@@ -287,6 +287,8 @@ struct Character
   } appearance{};
 
   dao::Field<Uid> guildUid{InvalidUid};
+
+  dao::Field<std::vector<Uid>> friends{};
   
   dao::Field<std::vector<Uid>> gifts{};
   dao::Field<std::vector<Uid>> purchases{};

@@ -281,6 +281,8 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
 
   character.guildUid = json["guildUid"].get<data::Uid>();
 
+  character.friends = json.value("friends", std::vector<data::Uid>{});
+
   character.gifts = json["gifts"].get<std::vector<data::Uid>>();
   character.purchases = json["purchases"].get<std::vector<data::Uid>>();
 
@@ -369,6 +371,8 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["appearance"] = appearance;
 
   json["guildUid"] = character.guildUid();
+
+  json["friends"] = character.friends();
 
   json["gifts"] = character.gifts();
   json["purchases"] = character.purchases();

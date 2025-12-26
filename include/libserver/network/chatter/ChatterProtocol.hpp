@@ -38,6 +38,11 @@ enum class ChatterCommand : uint16_t
   ChatCmdLogin = 1,
   ChatCmdLoginAckOK = 2,
   ChatCmdLoginAckCancel = 3,
+  ChatCmdBuddyAdd = 4,
+  ChatCmdBuddyAddAckOk = 5,
+  ChatCmdBuddyAddAckCancel = 6,
+  ChatCmdBuddyAddRequestTrs = 7,
+  ChatCmdBuddyAddReply = 8,
 
   ChatCmdLetterList = 0x18,
   ChatCmdLetterListAckOk = 0x19,
