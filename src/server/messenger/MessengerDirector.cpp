@@ -453,7 +453,7 @@ void MessengerDirector::HandleChatterLetterSend(
     command.body);
   
   const data::Uid& recipientCharacterUid = 
-    _serverInstance.GetDataDirector().GetDataSource().IsCharacterNameUnique(command.recipient);
+    _serverInstance.GetDataDirector().GetDataSource().RetrieveCharacterUidByName(command.recipient);
 
   if (recipientCharacterUid == data::InvalidUid)
   {
