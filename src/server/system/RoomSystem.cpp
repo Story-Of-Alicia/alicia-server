@@ -22,6 +22,7 @@
 #include <cassert>
 #include <ranges>
 #include <stdexcept>
+
 namespace server
 {
 
@@ -36,7 +37,7 @@ bool Room::Player::IsReady() const
   return _isReady;
 }
 
-void Room::Player::SetTeam(Room::Player::Team team)
+void Room::Player::SetTeam(Team team)
 {
   _team = team;
 }

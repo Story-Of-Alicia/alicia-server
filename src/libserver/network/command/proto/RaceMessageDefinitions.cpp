@@ -719,11 +719,11 @@ void AcCmdCRRaceResultOK::Write(
   const AcCmdCRRaceResultOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.recordGhostReplay)
+  stream.Write(command.recordReplay)
     .Write(command.resultKey)
     .Write(command.horseFatigue)
     .Write(command.member4)
-    .Write(command.notifyMountEmblemUnlock)
+    .Write(command.notifyEmblemUnlocked)
     .Write(command.currentCarrots);
 }
 

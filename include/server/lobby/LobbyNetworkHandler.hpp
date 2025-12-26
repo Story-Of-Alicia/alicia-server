@@ -53,6 +53,8 @@ private:
   {
     //! A flag indicating whether the client is authenticated.
     bool isAuthenticated{false};
+    //! A flag indicating whether the client is in the character creator.
+    bool isInCharacterCreator{false};
     //! A flag indicating whether the client just created a character.
     bool justCreatedCharacter{false};
 
@@ -130,6 +132,10 @@ private:
   void HandleCreateNickname(
     ClientId clientId,
     const protocol::AcCmdCLCreateNickname& command);
+
+  void SendCreateNicknameCancel(
+    ClientId clientId,
+    protocol::AcCmdCLCreateNicknameCancel::Reason reason);
 
   void HandleShowInventory(
     ClientId clientId,

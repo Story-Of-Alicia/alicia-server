@@ -160,8 +160,9 @@ void BuildProtocolItem(
 {
   protocolItem.uid = item.uid();
   protocolItem.tid = item.tid();
-  protocolItem.expiresAt = util::TimePointToAliciaTime(item.expiresAt());
   protocolItem.count = item.count();
+  protocolItem.expiresAt = util::TimePointToAliciaTime(
+    item.createdAt() + item.duration());
 }
 
 void BuildProtocolItems(
@@ -178,37 +179,45 @@ void BuildProtocolItems(
   }
 }
 
-void BuildProtocolStoredItem(
-  StoredItem& protocolStoredItem,
-  const data::StorageItem& storedItem)
+void BuildProtocolStorageItem(
+  StoredItem& protocolStorageItem,
+  const data::StorageItem& storageItem)
 {
-  protocolStoredItem.uid = storedItem.uid();
-  if (storedItem.expired())
+  protocolStorageItem.uid = storageItem.uid();
+
+  const bool hasExpiration = storageItem.duration() != std::chrono::seconds(0);
+  const bool isExpired = storageItem.createdAt() + storageItem.duration() < data::Clock::now();
+  if (hasExpiration && isExpired)
   {
-    protocolStoredItem.status = StoredItem::Status::Expired;
+    protocolStorageItem.status = StoredItem::Status::Expired;
   }
   else
   {
-      protocolStoredItem.status = storedItem.checked() 
-        ? StoredItem::Status::Read 
-        : StoredItem::Status::Unread;
+    protocolStorageItem.status = storageItem.checked()
+      ? StoredItem::Status::Read
+      : StoredItem::Status::Unread;
   }
-  protocolStoredItem.sender = storedItem.sender();
-  protocolStoredItem.message = storedItem.message();
-  protocolStoredItem.dateAndTime = util::TimePointToAliciaTime(storedItem.created());
+
+  protocolStorageItem.sender = storageItem.sender();
+  protocolStorageItem.message = storageItem.message();
+  protocolStorageItem.carrots = storageItem.carrots();
+  protocolStorageItem.dateAndTime = util::TimePointToAliciaTime(storageItem.createdAt());
+
+  protocolStorageItem.goodsSq = storageItem.goodsSq();
+  protocolStorageItem.priceId = storageItem.priceId();
 }
 
-void BuildProtocolStoredItems(
-  std::vector<StoredItem>& protocolStoredItems,
-  const std::span<const Record<data::StorageItem>>& storedItemRecords)
+void BuildProtocolStorageItems(
+  std::vector<StoredItem>& protocolStorageItems,
+  const std::span<const Record<data::StorageItem>>& storageItemRecords)
 {
-  for (const auto& storedItem : storedItemRecords)
+  for (const auto& storageItem : storageItemRecords)
   {
-    auto& protocolStoredItem = protocolStoredItems.emplace_back();
-    storedItem.Immutable([&protocolStoredItem](const auto& storedItem)
-      {
-        BuildProtocolStoredItem(protocolStoredItem, storedItem);
-      });
+    auto& protocolStoredItem = protocolStorageItems.emplace_back();
+    storageItem.Immutable([&protocolStoredItem](const auto& storedItem)
+    {
+      BuildProtocolStorageItem(protocolStoredItem, storedItem);
+    });
   }
 }
 
@@ -275,16 +284,17 @@ void BuildProtocolEgg(
   protocolEgg.uid = eggRecord.uid();
   protocolEgg.itemTid = eggRecord.itemTid();
 
-  protocolEgg.totalHatchingTime = std::chrono::duration_cast<std::chrono::seconds>(
-    hatchDuration).count();
+  protocolEgg.totalHatchingTime = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
+    hatchDuration).count());
 
   const auto totalHatchingDuration = std::chrono::system_clock::now() - eggRecord.incubatedAt();
   const auto totalBoostedDuration = eggRecord.boostsUsed() * std::chrono::hours(8);
   const auto hatchTimeRemaining = hatchDuration - totalHatchingDuration - totalBoostedDuration;
 
   protocolEgg.timeRemaining = std::max(
-    std::chrono::duration_cast<std::chrono::seconds>(hatchTimeRemaining).count(),
-    int64_t{0});
+    static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
+      hatchTimeRemaining).count()),
+    uint32_t{0});
   
   protocolEgg.boost = 400000;
 }
@@ -300,9 +310,9 @@ void BuildProtocolSettings(
     for (const auto& keyboardBinding : settingsRecord.keyboardBindings().value())
     {
       auto& protocolBinding = settings.keyboardOptions.bindings.emplace_back();
-      protocolBinding.primaryKey = keyboardBinding.primaryKey;
-      protocolBinding.type = keyboardBinding.type;
-      protocolBinding.secondaryKey = keyboardBinding.secondaryKey;
+      protocolBinding.primaryKey = static_cast<uint8_t>(keyboardBinding.primaryKey);
+      protocolBinding.type = static_cast<uint8_t>(keyboardBinding.type);
+      protocolBinding.secondaryKey = static_cast<uint8_t>(keyboardBinding.secondaryKey);
       protocolBinding.unused = 0; // Unused
     }
   }
@@ -314,9 +324,9 @@ void BuildProtocolSettings(
     for (const auto& keyboardBinding : settingsRecord.gamepadBindings().value())
     {
       auto& protocolBinding = settings.gamepadOptions.bindings.emplace_back();
-      protocolBinding.primaryButton = keyboardBinding.primaryKey;
-      protocolBinding.type = keyboardBinding.type;
-      protocolBinding.secondaryButton = keyboardBinding.secondaryKey;
+      protocolBinding.primaryButton = static_cast<uint8_t>(keyboardBinding.primaryKey);
+      protocolBinding.type = static_cast<uint8_t>(keyboardBinding.type);
+      protocolBinding.secondaryButton = static_cast<uint8_t>(keyboardBinding.secondaryKey);
       protocolBinding.unused = 0; // Unused
     }
   }

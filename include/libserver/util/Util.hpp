@@ -21,6 +21,7 @@
 #define UTIL_HPP
 
 #include <boost/asio.hpp>
+
 #include <chrono>
 #include <span>
 
@@ -46,6 +47,7 @@ struct DateTime
   uint32_t days = 0;
   int32_t hours = 0;
   int32_t minutes = 0;
+  int32_t seconds = 0;
 };
 
 //! Converts a time point to the Windows file time.
@@ -67,6 +69,26 @@ uint32_t TimePointToAliciaTime(const Clock::time_point& timePoint);
 //! @param duration Duration.
 //! @returns Alicia time representing the duration.
 uint32_t DurationToAliciaTime(const Clock::duration& duration);
+
+/// @brief Converts Alicia shop timestamp to DateTime
+/// @param timestamp Alicia shop timestamp
+/// @return Date time representation
+DateTime AliciaShopTimeToDateTime(const std::array<uint32_t, 3> timestamp);
+
+/// @brief Converts DateTime to Alicia shop timestamp
+/// @param dateTime Date time
+/// @return Alicia shop timestamp representing the date and time
+std::array<uint32_t, 3> DateTimeToAliciaShopTime(const DateTime& dateTime);
+
+/// @brief Converts Alicia shop timestamp to time point
+/// @param timestamp Alicia shop timestamp
+/// @return Time point representing the date and time
+Clock::time_point AliciaShopTimeToTimePoint(const std::array<uint32_t, 3>& timestamp);
+
+/// @brief Converts time point to Alicia shop timestamp
+/// @param timestamp Time stamp
+/// @return Alicia shop timestamp representing the date and time
+std::array<uint32_t, 3> TimePointToAliciaShopTime(const Clock::time_point& timestamp);
 
 asio::ip::address_v4 ResolveHostName(const std::string& host);
 

@@ -7,7 +7,6 @@
 #include "server/ServerInstance.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
-#include <libserver/util/Locale.hpp>
 
 #include <boost/container_hash/hash.hpp>
 #include <spdlog/spdlog.h>
@@ -504,6 +503,12 @@ void LobbyNetworkHandler::HandleNetworkTick()
   std::vector<ClientId> clientsToDisconnect;
   for (const auto& [clientId, clientContext] : _clients)
   {
+    // There's a bug in a client, where if the client is in the character creator,
+    // they'll withdraw from sending heartbeats. Because of this we have to
+    // ignore the lack of heartbeats and not disconnect the client.
+    if (clientContext.isInCharacterCreator)
+      continue;
+
     const bool hasReachedTimeOut = now - clientContext.lastHeartbeat > std::chrono::seconds(60);
     if (not hasReachedTimeOut)
       continue;
@@ -1279,6 +1284,9 @@ void LobbyNetworkHandler::SendCreateNicknameNotify(ClientId clientId)
 {
   protocol::LobbyCommandCreateNicknameNotify notify{};
 
+  auto& clientContext = GetClientContext(clientId);
+  clientContext.isInCharacterCreator = true;
+
   _commandServer.QueueCommand<decltype(notify)>(
     clientId,
     [notify]()
@@ -1293,16 +1301,34 @@ void LobbyNetworkHandler::HandleCreateNickname(
 {
   auto& clientContext = GetClientContext(clientId);
 
-  const bool isValidNickname = locale::IsNameValid(command.nickname, 16)
-    && _serverInstance.GetDataDirector().GetDataSource().IsCharacterNameUnique(command.nickname) == data::InvalidUid;
+  constexpr uint32_t DefaultHorseTid = 20001;
 
-  if (not isValidNickname)
+  std::optional<protocol::AcCmdCLCreateNicknameCancel::Reason> error{};
+  if (command.requestedHorseTid != DefaultHorseTid)
   {
-    SendLoginCancel(clientId, protocol::AcCmdCLLoginCancel::Reason::Generic);
+    spdlog::warn("Client {} ('{}') requested to create a character with an invalid horse TID '{}'",
+      clientId,
+      clientContext.userName,
+      command.requestedHorseTid);
+    error.emplace(protocol::AcCmdCLCreateNicknameCancel::Reason::ServerError);
+  }
+  else if (not locale::IsNameValid(command.nickname, 16))
+  {
+    error.emplace(protocol::AcCmdCLCreateNicknameCancel::Reason::InvalidCharacterName);
+  }
+
+  if (error.has_value())
+  {
+    SendCreateNicknameCancel(clientId, *error);
     return;
   }
 
   clientContext.justCreatedCharacter = true;
+
+  // We update the last heartbeat too, so that the client does not get
+  // kicked immediately after `isInCharacterCreator` immunity is withdrawn.
+  clientContext.lastHeartbeat = std::chrono::steady_clock::now();
+  clientContext.isInCharacterCreator = false;
 
   const auto userRecord = _serverInstance.GetDataDirector().GetUserCache().Get(
     clientContext.userName);
@@ -1319,16 +1345,32 @@ void LobbyNetworkHandler::HandleCreateNickname(
 
   if (userCharacterUid == data::InvalidUid)
   {
+    const bool isNameUnique = _serverInstance.GetDataDirector().GetDataSource().IsCharacterNameUnique(
+      command.nickname);
+
+    if (not isNameUnique)
+    {
+      SendCreateNicknameCancel(
+        clientId,
+        protocol::AcCmdCLCreateNicknameCancel::Reason::DuplicateCharacterName);
+      return;
+    }
+
     // Create a new mount for the character.
     const auto mountRecord  = _serverInstance.GetDataDirector().CreateHorse();
+    if (not mountRecord)
+    {
+      throw std::runtime_error(
+        std::format("Failed to create horse for user '{}'", clientContext.userName));
+    }
 
     auto mountUid = data::InvalidUid;
     mountRecord.Mutable(
-      [this, &mountUid](data::Horse& horse)
+      [this, &mountUid, requestedHorseTid = command.requestedHorseTid](data::Horse& horse)
       {
         // The TID of the horse specifies which body mesh is used for that horse.
         // Can be found in the `MountPartInfo` table.
-        horse.tid() = 20002;
+        horse.tid() = requestedHorseTid;
         horse.dateOfBirth() = data::Clock::now();
         horse.mountCondition.stamina = 3500;
         horse.growthPoints() = 150;
@@ -1342,12 +1384,19 @@ void LobbyNetworkHandler::HandleCreateNickname(
 
     // Create the new character.
     userCharacter = _serverInstance.GetDataDirector().CreateCharacter();
+    if (not userCharacter)
+    {
+      throw std::runtime_error(
+        std::format("Failed to create character for user '{}'", clientContext.userName));
+    }
+
     userCharacter->Mutable(
       [&userCharacterUid,
         &mountUid,
         &command](data::Character& character)
       {
-        character.name = command.nickname;
+        if (character.name().empty())
+          character.name = command.nickname;
 
         // todo: default level configured
         character.level = 60;
@@ -1367,6 +1416,12 @@ void LobbyNetworkHandler::HandleCreateNickname(
       [&userCharacterUid](data::User& user)
       {
         user.characterUid() = userCharacterUid;
+      });
+
+    _serverInstance.GetLobbyDirector().GetScheduler().Queue(
+      [this, userCharacterUid, userName = clientContext.userName]()
+      {
+        _serverInstance.GetLobbyDirector().GetUser(userName).characterUid = userCharacterUid;
       });
   }
   else
@@ -1403,6 +1458,17 @@ void LobbyNetworkHandler::HandleCreateNickname(
     command.nickname);
 
   SendLoginOK(clientId);
+}
+
+void LobbyNetworkHandler::SendCreateNicknameCancel(
+  const ClientId clientId,
+  const protocol::AcCmdCLCreateNicknameCancel::Reason reason)
+{
+  _commandServer.QueueCommand<protocol::AcCmdCLCreateNicknameCancel>(
+    clientId, [reason]()
+    {
+      return protocol::AcCmdCLCreateNicknameCancel{.error = reason};
+    });
 }
 
 void LobbyNetworkHandler::HandleShowInventory(
@@ -1458,6 +1524,12 @@ void LobbyNetworkHandler::HandleUpdateUserSettings(
   const auto settingsRecord = settingsUid != data::InvalidUid
     ? _serverInstance.GetDataDirector().GetSettings(settingsUid)
     : _serverInstance.GetDataDirector().CreateSettings();
+
+  if (not settingsRecord)
+  {
+    throw std::runtime_error(
+      std::format("Failed to create or retrieve settings for user '{}'", clientContext.userName));
+  }
 
   settingsRecord.Mutable([&settingsUid, &command](data::Settings& settings)
   {
@@ -1540,64 +1612,82 @@ void LobbyNetworkHandler::HandleGoodsShopList(
   const ClientId clientId,
   const protocol::AcCmdCLGoodsShopList& command)
 {
+  auto shopList = _serverInstance.GetLobbyDirector().GetShopManager().GetSerializedShopList();
+
+  std::vector<std::byte> compressedXml;
+  compressedXml.resize(shopList.size());
+
+  uLongf compressedSize = compressedXml.size();
+  compress2(
+    reinterpret_cast<Bytef*>(compressedXml.data()),
+    &compressedSize,
+    reinterpret_cast<const Bytef*>(shopList.c_str()),
+    shopList.length(),
+    9);
+
+  compressedXml.resize(compressedSize);
+
+  // TODO: remove this, only used for testing protocol
+  auto now = util::Clock::now() + std::chrono::days(1);
+  
+  //! Chunk size as defined in command handler.
+  constexpr auto ChunkSize = 7168;
+
+  // Fragment shop data and send it in parts for the client to reconstruct and store.
+  const auto& dataParts = std::views::chunk(compressedXml, ChunkSize);
+  const auto chunkCount = dataParts.size();
+  const auto chunkedPartsSize = chunkCount * ChunkSize;
+
+  //! Max shop data size as defined in the command handler.
+  constexpr auto MaxShopDataSize = 0x8000;
+  // Check if the total size of chunked parts exceed the size of limit defined in command handler
+  if (chunkedPartsSize > MaxShopDataSize)
+  {
+    spdlog::error("Shop data chunking with {} chunks, totalling {} bytes, exceeds max game shop data size of {} bytes.",
+      chunkCount,
+      chunkedPartsSize,
+      MaxShopDataSize);
+
+    protocol::AcCmdCLGoodsShopListCancel cancel{};
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  // Send each chunk with the appropriate index and chunk count
+  for (size_t index = 0; index < dataParts.size(); ++index)
+  {
+    const auto& dataPart = dataParts[index];
+    protocol::AcCmdLCGoodsShopListData data{
+      .timestamp = now,
+      .index = static_cast<uint8_t>(index),
+      .count = static_cast<uint8_t>(chunkCount),
+      .data = std::vector<std::byte>(
+        dataPart.cbegin(),
+        dataPart.cend())};
+
+    _commandServer.QueueCommand<decltype(data)>(
+      clientId,
+      [data]()
+      {
+        return data;
+      });
+  }
+
+  // TODO: send date time that is now?
   protocol::AcCmdCLGoodsShopListOK response{
-    .data = command.data};
+    .shopTimestamp = now
+  };
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
     {
       return response;
-    });
-
-  const std::string xml =
-    "<ShopList>\n"
-    "  <GoodsList>\n"
-    "    <GoodsSQ>0</GoodsSQ>\n"
-    "    <SetType>0</SetType>\n"
-    "    <MoneyType>0</MoneyType>\n"
-    "    <GoodsType>0</GoodsType>\n"
-    "    <RecommendType>1</RecommendType>\n"
-    "    <RecommendNO>1</RecommendNO>\n"
-    "    <GiftType>0</GiftType>\n"
-    "    <SalesRank>1</SalesRank>\n"
-    "    <BonusGameMoney>0</BonusGameMoney>\n"
-    "    <GoodsNM><![CDATA[Goods name]]></GoodsNM>\n"
-    "    <GoodsDesc><![CDATA[Goods desc]]></GoodsDesc>\n"
-    "    <ItemCapacityDesc><![CDATA[Capacity desc]]></ItemCapacityDesc>\n"
-    "    <SellST>0</SellST>\n"
-    "    <ItemUID>30013</ItemUID>\n"
-    "    <ItemElem>\n"
-    "      <Item>\n"
-    "        <PriceID>1</PriceID>\n"
-    "        <PriceRange>1</PriceRange>\n"
-    "        <GoodsPrice>1</GoodsPrice>\n"
-    "      </Item>\n"
-    "    </ItemElem>\n"
-    "  </GoodsList>\n"
-    "</ShopList>\n";
-
-  std::vector<std::byte> compressedXml;
-  compressedXml.resize(xml.size());
-
-  uLongf compressedSize = compressedXml.size();
-  compress(
-    reinterpret_cast<Bytef*>(compressedXml.data()),
-    &compressedSize,
-    reinterpret_cast<const Bytef*>(xml.c_str()),
-    xml.length());
-
-  compressedXml.resize(compressedSize);
-
-  protocol::AcCmdLCGoodsShopListData data{
-    .member3 = 1,
-    .data = compressedXml};
-
-  _commandServer.QueueCommand<decltype(data)>(
-    clientId,
-    [data]()
-    {
-      return data;
     });
 }
 

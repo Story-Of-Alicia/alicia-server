@@ -60,7 +60,7 @@ public:
     if (roomIter == _raceInstances.cend())
       return false;
 
-    return roomIter->second.stage == RaceInstance::Stage::Racing |
+    return roomIter->second.stage == RaceInstance::Stage::Racing ||
       roomIter->second.stage == RaceInstance::Stage::Loading;
   }
 
@@ -72,6 +72,10 @@ public:
 
     return roomIter->second.tracker.GetRacers().size();
   }
+
+  void BroadcastChangeRoomOptions(
+    const data::Uid& roomUid,
+    const protocol::AcCmdCRChangeRoomOptionsNotify notify);
 
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId clientId) override;

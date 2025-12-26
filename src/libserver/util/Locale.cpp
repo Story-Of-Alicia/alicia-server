@@ -6,11 +6,11 @@
 
 #include "libserver/util/Deferred.hpp"
 
-#ifndef WIN32
+#ifdef _MSC_VER
+#include <icu.h>
+#else
 #include <unicode/ucnv.h>
 #include <unicode/uregex.h>
-#elifdef WIN32
-#include <icu.h>
 #endif
 
 #include <format>

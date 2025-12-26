@@ -350,12 +350,11 @@ struct LobbyCommandCreateNicknameNotify
     SourceStream& stream);
 };
 
-//! Serverbound create nickname ok command.
 struct AcCmdCLCreateNickname
 {
   std::string nickname{};
   Character character{};
-  uint32_t unk0{};
+  uint32_t requestedHorseTid{};
 
   static Command GetCommand()
   {
@@ -377,10 +376,15 @@ struct AcCmdCLCreateNickname
     SourceStream& stream);
 };
 
-//! Serverbound create nickname cancel command.
-struct LobbyCommandCreateNicknameCancel
+struct AcCmdCLCreateNicknameCancel
 {
-  uint8_t error{};
+  enum class Reason : uint8_t
+  {
+    ServerError = 0,
+    InvalidRequestedNotLoggedIn = 1,
+    DuplicateCharacterName = 2,
+    InvalidCharacterName = 3
+  } error{};
 
   static Command GetCommand()
   {
@@ -391,14 +395,14 @@ struct LobbyCommandCreateNicknameCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandCreateNicknameCancel& command,
+    const AcCmdCLCreateNicknameCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandCreateNicknameCancel& command,
+    AcCmdCLCreateNicknameCancel& command,
     SourceStream& stream);
 };
 
@@ -1387,7 +1391,8 @@ struct AcCmdCLHeartbeat
 //! Serverboud goods message
 struct AcCmdCLGoodsShopList
 {
-  std::array<uint8_t, 12> data;
+  //! Timestamp of the shop cached by the client
+  util::Clock::time_point cachedShopTimestamp{};
 
   static Command GetCommand()
   {
@@ -1412,7 +1417,8 @@ struct AcCmdCLGoodsShopList
 //! Clientbound shop goods message
 struct AcCmdCLGoodsShopListOK
 {
-  std::array<uint8_t, 12> data;
+  //! New shop timestamp
+  util::Clock::time_point shopTimestamp{};
 
   static Command GetCommand()
   {
@@ -1459,9 +1465,13 @@ struct AcCmdCLGoodsShopListCancel
 
 struct AcCmdLCGoodsShopListData
 {
-  std::array<uint8_t, 12> member1;
-  uint8_t member2;
-  uint8_t member3;
+  //! Shop timestamp.
+  util::Clock::time_point timestamp;
+  //! The index of the current chunk being sent.
+  uint8_t index;
+  //! The amount of chunks being sent.
+  uint8_t count;
+  //! Shop data, compressed using zlib.
   std::vector<std::byte> data;
 
   static Command GetCommand()

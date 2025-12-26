@@ -32,11 +32,20 @@ if (${MSVC})
             NTDDI_VERSION=NTDDI_WIN10_19H1)
     target_link_libraries(platform-properties INTERFACE
             icu.lib)
-    target_compile_options(platform-properties INTERFACE
-            /utf-8 /bigobj)
+elseif(MINGW)
+    target_link_libraries(platform-properties INTERFACE
+            icuuc icuio icuin ws2_32 mswsock)
 else()
     target_link_libraries(platform-properties INTERFACE
             icuuc icui18n)
+endif()
+
+if (${MSVC})
+    target_compile_options(platform-properties INTERFACE
+            /utf-8 /bigobj /W4 /permissive-)
+else()
+    target_compile_options(platform-properties INTERFACE
+            -Wall -Wextra -Wpedantic)
 endif()
 
 # alicia-libserver target
@@ -72,13 +81,15 @@ target_link_libraries(alicia-libserver PUBLIC
         Boost::headers
         nlohmann_json::nlohmann_json
         yaml-cpp::yaml-cpp
-        zlibstatic)
+        zlibstatic
+        tinyxml2)
 
 # alicia-server target
 add_executable(alicia-server
         src/server/main.cpp
         src/server/ServerInstance.cpp
         src/server/Config.cpp
+        src/server/lobby/shop/Shop.cpp
         src/server/lobby/LobbyDirector.cpp
         src/server/lobby/LobbyNetworkHandler.cpp
         src/server/messenger/MessengerDirector.cpp
@@ -86,6 +97,7 @@ add_executable(alicia-server
         src/server/ranch/RanchDirector.cpp
         src/server/system/ChatSystem.cpp
         src/server/system/InfractionSystem.cpp
+        src/server/system/ItemSystem.cpp
         src/server/system/OtpSystem.cpp
         src/server/system/RoomSystem.cpp
         src/server/tracker/RaceTracker.cpp

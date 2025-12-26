@@ -49,7 +49,8 @@ public:
   void RetrieveCharacter(data::Uid uid, data::Character& character) override;
   void StoreCharacter(data::Uid uid, const data::Character& character) override;
   void DeleteCharacter(data::Uid uid) override;
-  server::data::Uid IsCharacterNameUnique(const std::string_view& name) override;
+  data::Uid RetrieveCharacterUidByName(const std::string_view& name) override;
+  bool IsCharacterNameUnique(const std::string_view& name) override;
 
   void CreateHorse(data::Horse& horse) override;
   void RetrieveHorse(data::Uid uid, data::Horse& horse) override;

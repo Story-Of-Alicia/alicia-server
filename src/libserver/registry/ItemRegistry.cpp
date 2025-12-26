@@ -149,7 +149,8 @@ void ItemRegistry::ReadConfig(const std::filesystem::path& configPath)
         itemSection["type"].as<uint32_t>()),
       .level = itemSection["level"].as<decltype(Item::level)>(0),
       .name = itemSection["name"].as<decltype(Item::name)>(""),
-      .description = itemSection["description"].as<decltype(Item::description)>()};
+      .description = itemSection["description"].as<decltype(Item::description)>(),
+      .isPurchasable = itemSection["isPurchasable"].as<bool>()};
 
     // Read ItemPartInfo
 
@@ -191,6 +192,10 @@ std::optional<Item> ItemRegistry::GetItem(uint32_t tid)
   if (itemIter == _items.cend())
     return std::nullopt;
   return itemIter->second;
+}
+std::unordered_map<uint32_t, Item> ItemRegistry::GetItems()
+{
+  return _items;
 }
 
 } // namespace server::registry

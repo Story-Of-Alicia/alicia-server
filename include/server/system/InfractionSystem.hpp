@@ -32,7 +32,12 @@ class InfractionSystem
 public:
   struct Verdict
   {
-    bool preventChatting{false};
+    struct Mute
+    {
+      bool active{false};
+      data::Clock::time_point expiresAt{};
+    } mute{};
+    
     bool preventServerJoining{false};
     bool preventRoomJoining{false};
     bool preventBreeding{false};
