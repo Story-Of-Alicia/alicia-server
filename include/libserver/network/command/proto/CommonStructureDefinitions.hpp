@@ -618,6 +618,13 @@ enum class ChangeNicknameError : uint8_t
   NicknameCooldown = 0x1d   // CEC_NICKNAME_NOT_AVAILABE_DAY
 };
 
+enum class OpenRandomBoxError : uint8_t
+{
+  ServerError = 0,   // CR_ERROR
+  ItemNotExists = 1, // CR_NOT_EXISTS
+  UnknownError = 2,  // UnknownError
+};
+
 // HorseNameStrings
 enum class HorseNicknameUpdateError : uint8_t
 {

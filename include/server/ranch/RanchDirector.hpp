@@ -395,12 +395,24 @@ private:
     protocol::ChangeNicknameError reason);
 
   void HandleBuyOwnItem(
-    ClientId clientId, 
+    ClientId clientId,
     const protocol::AcCmdCRBuyOwnItem& command);
 
   void HandleSendGift(
-    ClientId clientId, 
+    ClientId clientId,
     const protocol::AcCmdCRSendGift& command);
+
+  void HandleOpenRandomBox(
+    ClientId clientId,
+    const protocol::AcCmdCROpenRandomBox& command);
+
+  void HandleUpdateMountInfo(
+    ClientId clientId,
+    const protocol::AcCmdCRUpdateMountInfo command);
+
+  void HandlePasswordAuth(
+    ClientId clientId,
+    const protocol::AcCmdCRPasswordAuth command);
 
   //!
   ServerInstance& _serverInstance;
