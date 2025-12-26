@@ -1253,6 +1253,19 @@ void RanchDirector::HandleChat(
     return;
   }
 
+  // Message is not a command, check if user has been muted
+  if (verdict.isMuted)
+  {
+    // Invoking character is muted. Notify the invoker of their infraction and do not broadcast.
+    spdlog::warn("Character '{}' tried to chat in ranch chat but has an active mute infraction.",
+      clientContext.characterUid);
+    protocol::AcCmdCRRanchChatNotify notify{
+      .message = verdict.message,
+      .isSystem = true};
+    _commandServer.QueueCommand<decltype(notify)>(clientId, [notify](){ return notify; });
+    return;
+  }
+
   for (const auto& ranchClientId : ranchInstance.clients)
   {
     sendAllMessages(ranchClientId, sendersName, false, {verdict.message});
@@ -1573,6 +1586,8 @@ void RanchDirector::HandleUpdateBusyState(
       });
   }
 }
+
+
 
 void RanchDirector::HandleUpdateMountNickname(
   ClientId clientId,
@@ -4973,7 +4988,7 @@ void RanchDirector::HandleUpdateMountInfo(
       {
         character.horses().erase(horseIter);
         _serverInstance.GetDataDirector().GetHorseCache().Delete(command.horse.uid);
-        
+
         // Remove horse from ranch tracker
         auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
         ranchInstance.tracker.RemoveHorse(command.horse.uid);

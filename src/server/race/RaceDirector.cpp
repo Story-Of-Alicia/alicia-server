@@ -623,6 +623,23 @@ void RaceDirector::BroadcastChangeRoomOptions(
   }
 }
 
+void RaceDirector::BroadcastChangeRoomOptions(
+  const data::Uid& roomUid,
+  const protocol::AcCmdCRChangeRoomOptionsNotify notify)
+{
+  auto& raceInstance = _raceInstances[roomUid];
+  std::scoped_lock lock(raceInstance.clientsMutex);
+  for (const auto raceClientId : raceInstance.clients)
+  {
+    _commandServer.QueueCommand<decltype(notify)>(
+      raceClientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
+}
+
 void RaceDirector::HandleClientConnected(ClientId clientId)
 {
   _clients.try_emplace(clientId);

@@ -4167,7 +4167,7 @@ struct AcCmdCRUpdateMountInfo
     Rename = 4
   } action;
   Horse horse{};
-  
+
   static Command GetCommand()
   {
     return Command::AcCmdCRUpdateMountInfo;
@@ -4621,7 +4621,7 @@ struct AcCmdCRPasswordAuth
   uint16_t unk1{};
   uint32_t unk2{};
   std::string unk3{};
-  
+
   static Command GetCommand()
   {
     return Command::AcCmdCRPasswordAuth;
@@ -4651,7 +4651,7 @@ struct AcCmdCRPasswordAuthOK
     Authenticated = 3,
     Reset2FA = 7
   } action;
-  //! Duration of the authorization validity window in minutes. 
+  //! Duration of the authorization validity window in minutes.
   uint32_t duration{};
 
   static Command GetCommand()

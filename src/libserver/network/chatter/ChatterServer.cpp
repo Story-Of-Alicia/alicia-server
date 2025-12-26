@@ -148,6 +148,7 @@ size_t ChatterServer::OnClientData(
     if (handlerIter == _handlers.cend())
     {
       if (debugCommands)
+      for (uint64_t idx = 0; idx < commandDataLength; ++idx)
       {
         spdlog::warn("Unhandled chatter command: {:#x}", header.commandId);
       }
