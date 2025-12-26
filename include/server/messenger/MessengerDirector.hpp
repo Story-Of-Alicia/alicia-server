@@ -25,13 +25,8 @@ private:
     bool isAuthenticated{false};
     //! Unique ID of the client's character.
     data::Uid characterUid{data::InvalidUid};
-    //! Guild UID of the client's character.
-    data::Uid guildUid{data::InvalidUid};
     //! Online presence of the client.
     protocol::Presence presence{};
-
-    //! Temporary, friends.
-    std::vector<data::Uid> friends{};
   };
 
 public:

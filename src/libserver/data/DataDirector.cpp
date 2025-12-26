@@ -1075,8 +1075,11 @@ void DataDirector::ScheduleCharacterLoad(
     // Mailbox prefetch
     std::vector<data::Uid> mailbox;
 
+    // Friends prefetch
+    std::vector<data::Uid> friends;
+
     characterRecord.Immutable(
-      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets, &settingsUid, &mailbox](
+      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets, &settingsUid, &mailbox, &friends](
         const data::Character& character)
       {
         guildUid = character.guildUid();
@@ -1105,6 +1108,9 @@ void DataDirector::ScheduleCharacterLoad(
         // Mailbox
         std::ranges::copy(character.mailbox.inbox(), std::back_inserter(mailbox));
         std::ranges::copy(character.mailbox.sent(), std::back_inserter(mailbox));
+
+        // Friends
+        friends = character.friends();
       });
 
     const auto guildRecord = GetGuild(guildUid);
@@ -1274,6 +1280,18 @@ void DataDirector::ScheduleCharacterLoad(
         std::vector<data::Uid>(
           mailCharacterUids.begin(),
           mailCharacterUids.end()));
+    }
+
+    // Preload friend character records
+    if (!friends.empty())
+    {
+      const auto friendRecords = GetCharacterCache().Get(friends);
+      if (!friendRecords)
+      {
+        userDataContext.debugMessage = std::format(
+          "Friend character records not available");
+        return;
+      }
     }
 
     userDataContext.isCharacterDataLoaded.store(true, std::memory_order::release);
