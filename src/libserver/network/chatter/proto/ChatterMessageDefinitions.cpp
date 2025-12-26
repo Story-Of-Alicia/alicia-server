@@ -75,8 +75,8 @@ void server::protocol::ChatCmdLoginAckOK::Read(
 }
 
 void server::protocol::ChatCmdLoginAckCancel::Write(
-  const ChatCmdLoginAckCancel&,
-  SinkStream&)
+  const ChatCmdLoginAckCancel& command,
+  SinkStream& stream)
 {
   stream.Write(command.errorCode);
 }
