@@ -77,7 +77,7 @@ uint32_t DurationToAliciaTime(const Clock::duration& duration)
   // The extracted date time from the duration.
   DateTime dateTime{};
   // Total time of the duration in seconds.
-  uint32_t timeLeft = std::chrono::duration_cast<
+  auto timeLeft = std::chrono::duration_cast<
     std::chrono::seconds>(duration).count();
 
   // Convert the remaining time to time unit, subtract equivalent of the time unit in seconds from the time left
@@ -209,7 +209,7 @@ asio::ip::address_v4 ResolveHostName(const std::string& host)
     const auto address = asio::ip::make_address(host);
     return address.to_v4();
   }
-  catch (const std::exception& ignored)
+  catch (const std::exception&)
   {
   }
 
