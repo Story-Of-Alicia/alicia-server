@@ -1187,8 +1187,10 @@ void DataDirector::ScheduleCharacterLoad(
         std::ranges::copy(character.mailbox.inbox(), std::back_inserter(mailbox));
         std::ranges::copy(character.mailbox.sent(), std::back_inserter(mailbox));
 
-        // Friends
-        friends = character.friends();
+        // Friends (and pending requests)
+        friends = character.contacts.friends();
+        const auto& pending = character.contacts.pending();
+        friends.insert(pending.begin(), pending.end());
       });
 
     const auto guildRecord = GetGuild(guildUid);

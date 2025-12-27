@@ -281,7 +281,9 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
 
   character.guildUid = json["guildUid"].get<data::Uid>();
 
-  character.friends = json["friends"].get<std::set<data::Uid>>();
+  auto contacts = json["contacts"];
+  character.contacts.friends = contacts["friends"].get<std::set<data::Uid>>();
+  character.contacts.pending = contacts["pending"].get<std::set<data::Uid>>();
 
   character.gifts = json["gifts"].get<std::vector<data::Uid>>();
   character.purchases = json["purchases"].get<std::vector<data::Uid>>();
@@ -372,7 +374,10 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
 
   json["guildUid"] = character.guildUid();
 
-  json["friends"] = character.friends();
+  nlohmann::json contacts;
+  contacts["friends"] = character.contacts.friends();
+  contacts["pending"] = character.contacts.pending();
+  json["contacts"] = contacts;
 
   json["gifts"] = character.gifts();
   json["purchases"] = character.purchases();
