@@ -1154,7 +1154,7 @@ void DataDirector::ScheduleCharacterLoad(
     std::vector<data::Uid> mailbox;
 
     // Friends prefetch
-    std::vector<data::Uid> friends;
+    std::set<data::Uid> friends;
 
     characterRecord.Immutable(
       [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets, &settingsUid, &mailbox, &friends](
@@ -1339,7 +1339,10 @@ void DataDirector::ScheduleCharacterLoad(
     // Preload friend character records
     if (!friends.empty())
     {
-      const auto friendRecords = GetCharacterCache().Get(friends);
+      const auto friendRecords = GetCharacterCache().Get(
+        std::vector<data::Uid>(
+          friends.begin(),
+          friends.end()));
       if (!friendRecords)
       {
         userDataContext.debugMessage = std::format(

@@ -50,6 +50,18 @@ private:
     network::ClientId clientId,
     const protocol::ChatCmdLogin& command);
 
+  void HandleChatterBuddyAdd(
+    network::ClientId clientId,
+    const protocol::ChatCmdBuddyAdd& command);
+
+  void HandleChatterBuddyAddReply(
+    network::ClientId clientId,
+    const protocol::ChatCmdBuddyAddReply& command);
+
+  void HandleChatterBuddyMove(
+    network::ClientId clientId,
+    const protocol::ChatCmdBuddyMove& command);
+
   void HandleChatterLetterList(
     network::ClientId clientId,
     const protocol::ChatCmdLetterList& command);

@@ -28,6 +28,7 @@
 #include <vector>
 #include <optional>
 #include <unordered_set>
+#include <set>
 
 namespace server
 {
@@ -288,7 +289,7 @@ struct Character
 
   dao::Field<Uid> guildUid{InvalidUid};
 
-  dao::Field<std::vector<Uid>> friends{};
+  dao::Field<std::set<Uid>> friends{};
   
   dao::Field<std::vector<Uid>> gifts{};
   dao::Field<std::vector<Uid>> purchases{};
