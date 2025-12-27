@@ -246,10 +246,12 @@ void MessengerDirector::HandleChatterLogin(
 
   // Load friends from character's stored friends list
   std::set<data::Uid> storedFriends{};
+  std::set<data::Uid> pendingFriends{};
   _serverInstance.GetDataDirector().GetCharacter(command.characterUid).Immutable(
-    [&storedFriends](const data::Character& character)
+    [&storedFriends, &pendingFriends](const data::Character& character)
     {
-      storedFriends = character.friends();
+      storedFriends = character.contacts.friends();
+      pendingFriends = character.contacts.pending();
     });
 
   // Initialise with one group for now (friends)
@@ -276,6 +278,37 @@ void MessengerDirector::HandleChatterLogin(
     for (const auto& [onlineClientId, onlineClientContext] : _clients)
     {
       if (onlineClientContext.isAuthenticated && onlineClientContext.characterUid == friendUid)
+      {
+        friendo.status = onlineClientContext.presence.status;
+        friendo.roomUid = onlineClientContext.presence.sceneUid;
+        break;
+      }
+    }
+  }
+
+  // Pending friend requests
+  for (const data::Uid& pendingUid : pendingFriends)
+  {
+    const auto friendCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(pendingUid);
+    if (!friendCharacterRecord.IsAvailable())
+      continue;
+
+    auto& friendo = response.friends.emplace_back();
+    friendCharacterRecord.Immutable([&friendo](const data::Character& friendCharacter)
+    {
+      friendo.name = friendCharacter.name();
+      friendo.uid = friendCharacter.uid();
+      friendo.categoryUid = FriendsCategoryUid;
+      friendo.ranchUid = friendCharacter.uid();
+    });
+    
+    friendo.member5 = 2; // Pending request
+    
+    // Check if friend is online by looking for them in messenger clients
+    friendo.status = protocol::Status::Offline;
+    for (const auto& [onlineClientId, onlineClientContext] : _clients)
+    {
+      if (onlineClientContext.isAuthenticated && onlineClientContext.characterUid == pendingUid)
       {
         friendo.status = onlineClientContext.presence.status;
         friendo.roomUid = onlineClientContext.presence.sceneUid;
@@ -344,7 +377,11 @@ void MessengerDirector::HandleChatterBuddyAdd(
   if (targetClient == clientsSnapshot.cend())
   {
     // Target is offline
-    // TODO: Add friend request to character record
+    _serverInstance.GetDataDirector().GetCharacter(targetCharacterUid).Mutable(
+      [&clientContext](data::Character& character)
+      {
+         character.contacts.pending().emplace(clientContext.characterUid);
+      });
   }
   else
   {
@@ -406,16 +443,16 @@ void MessengerDirector::HandleChatterBuddyAddReply(
     requestingCharacterRecord.Mutable(
       [respondingCharacterUid = clientContext.characterUid](data::Character& character)
       {
-        // TODO: move respondingCharacterUid from pending friend requests to friends
-        character.friends().emplace(respondingCharacterUid);
+        character.contacts.pending().erase(respondingCharacterUid);
+        character.contacts.friends().emplace(respondingCharacterUid);
       });
 
     // Add requesting character to responding character's friends list
     respondingCharacterRecord.Mutable(
       [requestingCharacterUid = command.requestingCharacterUid](data::Character& character)
       {
-        /// TODO: move requestingCharacterUid from pending friend requests to friends
-        character.friends().emplace(requestingCharacterUid);
+        character.contacts.pending().erase(requestingCharacterUid);
+        character.contacts.friends().emplace(requestingCharacterUid);
       });
 
     // Check if requesting character is online, if so send response live,
@@ -464,8 +501,11 @@ void MessengerDirector::HandleChatterBuddyAddReply(
   else
   {
     // Friend request rejected
-
-    // TODO: remove pending friend request from both requesting and responding character records
+    respondingCharacterRecord.Mutable(
+      [requestingCharacterUid = command.requestingCharacterUid](data::Character& character)
+      {
+        character.contacts.pending().erase(requestingCharacterUid);
+      });
   }
 }
 
@@ -1029,7 +1069,7 @@ void MessengerDirector::HandleChatterUpdateState(
     _serverInstance.GetDataDirector().GetCharacter(onlineClientContext.characterUid).Immutable(
       [&isFriend, &clientContext](const data::Character& character)
       {
-        isFriend = std::ranges::contains(character.friends(), clientContext.characterUid);
+        isFriend = std::ranges::contains(character.contacts.friends(), clientContext.characterUid);
       });
 
     if (isFriend)

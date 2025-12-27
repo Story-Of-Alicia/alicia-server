@@ -289,7 +289,11 @@ struct Character
 
   dao::Field<Uid> guildUid{InvalidUid};
 
-  dao::Field<std::set<Uid>> friends{};
+  struct Contacts
+  {
+    dao::Field<std::set<Uid>> friends{};
+    dao::Field<std::set<Uid>> pending{};
+  } contacts{};
   
   dao::Field<std::vector<Uid>> gifts{};
   dao::Field<std::vector<Uid>> purchases{};
