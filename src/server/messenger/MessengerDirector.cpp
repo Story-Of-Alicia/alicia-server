@@ -24,7 +24,8 @@
 namespace server
 {
 
-constexpr auto FriendsCategoryUid = std::numeric_limits<uint32_t>::max() - 1;
+//! Alicia client defined friends category.
+constexpr auto FriendsCategoryUid = 0;
 constexpr auto OnlinePlayersCategoryUid = std::numeric_limits<uint32_t>::max() - 2;
 constexpr std::string_view DateTimeFormat = "{:%H:%M:%S %d/%m/%Y} UTC";
 
@@ -37,6 +38,24 @@ MessengerDirector::MessengerDirector(ServerInstance& serverInstance)
     [this](network::ClientId clientId, const auto& command)
     {
       HandleChatterLogin(clientId, command);
+    });
+
+  _chatterServer.RegisterCommandHandler<protocol::ChatCmdBuddyAdd>(
+    [this](network::ClientId clientId, const auto& command)
+    {
+      HandleChatterBuddyAdd(clientId, command);
+    });
+
+  _chatterServer.RegisterCommandHandler<protocol::ChatCmdBuddyAddReply>(
+    [this](network::ClientId clientId, const auto& command)
+    {
+      HandleChatterBuddyAddReply(clientId, command);
+    });
+
+  _chatterServer.RegisterCommandHandler<protocol::ChatCmdBuddyMove>(
+    [this](network::ClientId clientId, const auto& command)
+    {
+      HandleChatterBuddyMove(clientId, command);
     });
 
   _chatterServer.RegisterCommandHandler<protocol::ChatCmdLetterList>(
@@ -226,16 +245,15 @@ void MessengerDirector::HandleChatterLogin(
   response.member1 = clientContext.characterUid;
 
   // Load friends from character's stored friends list
-  std::vector<data::Uid> storedFriends{};
+  std::set<data::Uid> storedFriends{};
   _serverInstance.GetDataDirector().GetCharacter(command.characterUid).Immutable(
     [&storedFriends](const data::Character& character)
     {
       storedFriends = character.friends();
     });
 
-  // Create a friends group if character has any friends at all
-  if (!storedFriends.empty())
-    response.groups.emplace_back(FriendsCategoryUid, "Friends");
+  // Initialise with one group for now (friends)
+  response.groups.emplace_back(FriendsCategoryUid, "");
 
   // Build friends list for response
   for (const data::Uid& friendUid : storedFriends)
@@ -272,6 +290,202 @@ void MessengerDirector::HandleChatterLogin(
     {
       return response;
     });
+}
+
+void MessengerDirector::HandleChatterBuddyAdd(
+  network::ClientId clientId,
+  const protocol::ChatCmdBuddyAdd& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  // Get target character uid by name, if any
+  const data::Uid targetCharacterUid = 
+    _serverInstance
+    .GetDataDirector()
+    .GetDataSource()
+    .RetrieveCharacterUidByName(command.characterName);
+
+  // Check if character by than name exists
+  if (targetCharacterUid == data::InvalidUid)
+  {
+    // Character by that name does not exist
+    // TODO: return protocol::ChatCmdBuddyAddAckCancel (BuddyAddCharacterDoesNotExist)
+    return;
+  }
+
+  // Get invoker's character name
+  // TODO: we could store character name in client context and check instead of retrieving character record
+  std::string invokerCharacterName{};
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [&invokerCharacterName](const data::Character& character)
+    {
+      invokerCharacterName = character.name();
+    });
+
+  // Check if invoker is attempting to add itself
+  if (command.characterName == invokerCharacterName)
+  {
+    // Character cannot add itself as a friend.
+    // The game should already deny this, but we validate serverside too.
+    // TODO: return protocol::ChatCmdBuddyAddAckCancel (BuddyAddCannotAddSelf)
+    return;
+  }
+
+  // Check if character is online, if so send request live, 
+  // else queue it up for when character next comes online.
+  const auto clientsSnapshot = _clients;
+  auto targetClient = std::ranges::find_if(
+    clientsSnapshot,
+    [targetCharacterUid](const auto& client)
+    {
+      return client.second.characterUid == targetCharacterUid;
+    });
+
+  if (targetClient == clientsSnapshot.cend())
+  {
+    // Target is offline
+    // TODO: Add friend request to character record
+  }
+  else
+  {
+    // Target is online, send friend request to recipient
+    const ClientId targetClientId = targetClient->first;
+    protocol::ChatCmdBuddyAddRequestTrs notify{
+      .requestingCharacterUid = clientContext.characterUid,
+      .requestingCharacterName = invokerCharacterName};
+    _chatterServer.QueueCommand<decltype(notify)>(targetClientId,[&notify](){ return notify; });
+  }
+}
+
+void MessengerDirector::HandleChatterBuddyAddReply(
+  network::ClientId clientId,
+  const protocol::ChatCmdBuddyAddReply& command)
+{
+  spdlog::debug("ChatCmdBuddyAddReply: {} {}",
+    command.requestingCharacterUid,
+    command.requestAccepted);
+
+  const auto& clientContext = GetClientContext(clientId);
+  
+  // Get requesting character's record
+  const auto& requestingCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    command.requestingCharacterUid);
+  
+  // Validate such character exists
+  if (not requestingCharacterRecord.IsAvailable())
+  {
+    // Responding character responded to a friend request from an unknown character uid
+    // TODO: return protocol::ChatCmdBuddyAddAckCancel (BuddyAddUnknownCharacter) - will this work?
+    return;
+  }
+
+  // Get requesting character's name
+  std::string requestingCharacterName{};
+  requestingCharacterRecord.Immutable(
+    [&requestingCharacterName](const data::Character& character)
+    {
+      requestingCharacterName = character.name();
+    });
+
+  // Get responding character's record
+  const auto& respondingCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  // Get responding character's name
+  std::string respondingCharacterName{};
+  respondingCharacterRecord.Immutable(
+    [&respondingCharacterName](const data::Character& character)
+    {
+      respondingCharacterName = character.name();
+    });
+
+  // If friend request accepted, add each other to friends list
+  if (command.requestAccepted)
+  {
+    // Add responding character to requesting character's friends list
+    requestingCharacterRecord.Mutable(
+      [respondingCharacterUid = clientContext.characterUid](data::Character& character)
+      {
+        // TODO: move respondingCharacterUid from pending friend requests to friends
+        character.friends().emplace(respondingCharacterUid);
+      });
+
+    // Add requesting character to responding character's friends list
+    respondingCharacterRecord.Mutable(
+      [requestingCharacterUid = command.requestingCharacterUid](data::Character& character)
+      {
+        /// TODO: move requestingCharacterUid from pending friend requests to friends
+        character.friends().emplace(requestingCharacterUid);
+      });
+
+    // Check if requesting character is online, if so send response live,
+    // else simply add responding character to friends list
+    const auto clientsSnapshot = _clients;
+    auto requestingClient = std::ranges::find_if(
+      clientsSnapshot,
+      [requestingCharacterUid = command.requestingCharacterUid](const auto& client)
+      {
+        return client.second.characterUid == requestingCharacterUid;
+      });
+
+    protocol::ChatCmdBuddyAddAckOk response{};
+
+    // Keep track of the requesting character's status (if they are even online)
+    protocol::Status requestingCharacterStatus = protocol::Status::Offline;
+
+    // Check if requesting character is still online to notify of friend request result
+    if (requestingClient != clientsSnapshot.cend())
+    {
+      // Requesting character is online
+      const ClientId requestingClientId = requestingClient->first;
+
+      const ClientContext& requestingClientContext = requestingClient->second;
+      requestingCharacterStatus = requestingClientContext.presence.status;
+
+      // Populate response with responding character's information
+      response.characterUid = clientContext.characterUid;
+      response.characterName = respondingCharacterName;
+      response.unk2 = 0; // TODO: identify this
+      response.status = clientContext.presence.status;
+
+      // Send response to requesting character
+      _chatterServer.QueueCommand<decltype(response)>(requestingClientId, [&response](){ return response; });
+    }
+
+    // Populate response with requesting character's information
+    response.characterUid = command.requestingCharacterUid;
+    response.characterName = requestingCharacterName;
+    response.unk2 = 0; // TODO: identify this
+    response.status = requestingCharacterStatus;
+
+    // Send response to responding character
+    _chatterServer.QueueCommand<decltype(response)>(clientId, [&response](){ return response; });
+  }
+  else
+  {
+    // Friend request rejected
+
+    // TODO: remove pending friend request from both requesting and responding character records
+  }
+}
+
+void MessengerDirector::HandleChatterBuddyMove(
+  network::ClientId clientId,
+  const protocol::ChatCmdBuddyMove& command)
+{
+  spdlog::debug("[{}] ChatCmdBuddyMove: {} {}",
+    clientId,
+    command.characterUid,
+    command.groupUid);
+
+  const auto& clientContext = GetClientContext(clientId);
+
+  // TODO: implement proper mechanism
+
+  protocol::ChatCmdBuddyMoveAckOk response{};
+  response.characterUid = command.characterUid;
+  response.groupUid = command.groupUid;
+  _chatterServer.QueueCommand<decltype(response)>(clientId, [&response](){ return response; });
 }
 
 void MessengerDirector::HandleChatterLetterList(

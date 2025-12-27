@@ -64,7 +64,10 @@ enum class ChatterErrorCode : uint32_t
   LetterDeleteUnknownMailboxFolder = 11,
   LetterDeleteMailUnavailable = 12,
   LetterDeleteMailDoesNotBelongToCharacter = 13,
-  LetterDeleteMailDeleteAfterInsertRaceCondition = 14
+  LetterDeleteMailDeleteAfterInsertRaceCondition = 14,
+  BuddyAddCharacterDoesNotExist = 15,
+  BuddyAddCannotAddSelf = 16,
+  BuddyAddUnknownCharacter = 17
 };
 
 struct Presence
@@ -77,6 +80,14 @@ struct Presence
   } scene{};
   //! UID of the scene (ranch, room etc). Depends on `scene`.
   data::Uid sceneUid{};
+
+  static void Write(
+    const Presence& presence,
+    SinkStream& stream);
+
+  static void Read(
+    Presence& presence,
+    SourceStream& stream);
 };
 
 struct ChatCmdLogin
@@ -166,6 +177,152 @@ struct ChatCmdLoginAckCancel
 
   static void Read(
     ChatCmdLoginAckCancel& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdBuddyAdd
+{
+  std::string characterName{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdBuddyAdd;
+  }
+
+  static void Write(
+    const ChatCmdBuddyAdd& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdBuddyAdd& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdBuddyAddAckOk
+{
+  //! The uid of the character that is part of the friend request.
+  uint32_t characterUid{};
+  std::string characterName{};
+  uint8_t unk2{};
+  //! Online status of the character.
+  protocol::Status status{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdBuddyAddAckOk;
+  }
+
+  static void Write(
+    const ChatCmdBuddyAddAckOk& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdBuddyAddAckOk& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdBuddyAddAckCancel
+{
+  //! Custom error code.
+  ChatterErrorCode errorCode{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdBuddyAddAckCancel;
+  }
+
+  static void Write(
+    const ChatCmdBuddyAddAckCancel& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdBuddyAddAckCancel& command,
+    SourceStream& stream);
+};
+
+//! Clientbound command notifying that a character wants to add them as a friend.
+struct ChatCmdBuddyAddRequestTrs
+{
+  // The uid of the requesting character.
+  // Note: `ChatCmdBuddyAddReply` uses this in the reply.
+  data::Uid requestingCharacterUid{};
+  //! The name of the character requesting to add as friend.
+  std::string requestingCharacterName{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdBuddyAddRequestTrs;
+  }
+
+  static void Write(
+    const ChatCmdBuddyAddRequestTrs& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdBuddyAddRequestTrs& command,
+    SourceStream& stream);
+};
+
+//! Serverbound command containing the response by the character for a friend request.
+struct ChatCmdBuddyAddReply
+{
+  //! The uid of the requesting character.
+  data::Uid requestingCharacterUid{};
+  //! Indicates whether the replying character has accepted the friend request.
+  bool requestAccepted{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdBuddyAddReply;
+  }
+
+  static void Write(
+    const ChatCmdBuddyAddReply& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdBuddyAddReply& command,
+    SourceStream& stream);
+};
+
+//! Serverbound command requesting a character be moved from one group to another.
+struct ChatCmdBuddyMove
+{
+  //! The uid of the character to move to the selected group.
+  data::Uid characterUid{};
+  //! The uid of the group the character is being moved to.
+  data::Uid groupUid{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdBuddyMove;
+  }
+
+  static void Write(
+    const ChatCmdBuddyMove& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdBuddyMove& command,
+    SourceStream& stream);
+};
+
+//! Clientbound command acknowledging the moving of a character from one group to another.
+struct ChatCmdBuddyMoveAckOk : ChatCmdBuddyMove
+{
+  // Protocol mirror of `ChatCmdBuddyMove`
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdBuddyMoveAckOk;
+  }
+
+  static void Write(
+    const ChatCmdBuddyMoveAckOk& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdBuddyMoveAckOk& command,
     SourceStream& stream);
 };
 

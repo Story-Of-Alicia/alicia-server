@@ -28,6 +28,24 @@ void server::protocol::ChatCmdLogin::Write(
   throw std::runtime_error("Not implemented");
 }
 
+void server::protocol::Presence::Read(
+  Presence& presence,
+  SourceStream& stream)
+{
+  stream.Read(presence.status)
+    .Read(presence.scene)
+    .Read(presence.sceneUid);
+}
+
+void server::protocol::Presence::Write(
+  const Presence& presence,
+  SinkStream& stream)
+{
+  stream.Write(presence.status)
+    .Write(presence.scene)
+    .Write(presence.sceneUid);
+}
+
 void server::protocol::ChatCmdLogin::Read(
   ChatCmdLogin& command,
   SourceStream& stream)
@@ -84,6 +102,111 @@ void server::protocol::ChatCmdLoginAckCancel::Write(
 void server::protocol::ChatCmdLoginAckCancel::Read(
   ChatCmdLoginAckCancel&,
   SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdBuddyAdd::Write(
+  const ChatCmdBuddyAdd&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdBuddyAdd::Read(
+  ChatCmdBuddyAdd& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterName);
+}
+
+void server::protocol::ChatCmdBuddyAddAckOk::Write(
+  const ChatCmdBuddyAddAckOk& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.characterName)
+    .Write(command.unk2)
+    .Write(command.status);
+}
+
+void server::protocol::ChatCmdBuddyAddAckOk::Read(
+  ChatCmdBuddyAddAckOk&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdBuddyAddAckCancel::Write(
+  const ChatCmdBuddyAddAckCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.errorCode);
+}
+
+void server::protocol::ChatCmdBuddyAddAckCancel::Read(
+  ChatCmdBuddyAddAckCancel&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdBuddyAddRequestTrs::Write(
+  const ChatCmdBuddyAddRequestTrs& command,
+  SinkStream& stream)
+{
+  stream.Write(command.requestingCharacterUid)
+    .Write(command.requestingCharacterName);
+}
+
+void server::protocol::ChatCmdBuddyAddRequestTrs::Read(
+  ChatCmdBuddyAddRequestTrs&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdBuddyAddReply::Write(
+  const ChatCmdBuddyAddReply&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdBuddyAddReply::Read(
+  ChatCmdBuddyAddReply& command,
+  SourceStream& stream)
+{
+  stream.Read(command.requestingCharacterUid)
+    .Read(command.requestAccepted);
+}
+
+void server::protocol::ChatCmdBuddyMove::Write(
+  const ChatCmdBuddyMove&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdBuddyMove::Read(
+  ChatCmdBuddyMove& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterUid)
+    .Read(command.groupUid);
+}
+
+void server::protocol::ChatCmdBuddyMoveAckOk::Write(
+  const ChatCmdBuddyMoveAckOk& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.groupUid);
+}
+
+void server::protocol::ChatCmdBuddyMoveAckOk::Read(
+  ChatCmdBuddyMoveAckOk& command,
+  SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
 }
