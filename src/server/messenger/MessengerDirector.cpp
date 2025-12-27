@@ -364,6 +364,22 @@ void MessengerDirector::HandleChatterBuddyAdd(
     return;
   }
 
+  // Check if there is already a pending request to the same character
+  bool isAlreadyPending{false};
+  _serverInstance.GetDataDirector().GetCharacter(targetCharacterUid).Immutable(
+    [&isAlreadyPending, requestingCharacterUid = clientContext.characterUid](const data::Character& character)
+    {
+      isAlreadyPending = std::ranges::contains(
+        character.contacts.pending(),
+        requestingCharacterUid);
+    });
+
+  if (isAlreadyPending)
+  {
+    // TODO: handle this case (e.g. notify user)
+    return;
+  }
+
   // Check if character is online, if so send request live, 
   // else queue it up for when character next comes online.
   const auto clientsSnapshot = _clients;
