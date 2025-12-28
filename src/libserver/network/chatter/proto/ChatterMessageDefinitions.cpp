@@ -716,6 +716,23 @@ void server::protocol::ChatCmdChannelInfoAckOk::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void server::protocol::ChatCmdGuildChannelChatTrs::Write(
+  const ChatCmdGuildChannelChatTrs& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.guildUid)
+    .Write(command.author)
+    .Write(command.message)
+    .Write(command.role);
+}
+
+void server::protocol::ChatCmdGuildChannelChatTrs::Read(
+  ChatCmdGuildChannelChatTrs&,
+  server::SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void server::protocol::ChatCmdGuildLogin::Write(
   const ChatCmdGuildLogin& command,
   server::SinkStream& stream)
@@ -807,6 +824,22 @@ void server::protocol::ChatCmdUpdateGuildMemberStateTrs::Write(
 void server::protocol::ChatCmdUpdateGuildMemberStateTrs::Read(
   ChatCmdUpdateGuildMemberStateTrs& command,
   server::SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdChannelInfoGuildRoomAckOk::Write(
+  const ChatCmdChannelInfoGuildRoomAckOk& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.hostname)
+    .Write(command.port)
+    .Write(command.code);
+}
+
+void server::protocol::ChatCmdChannelInfoGuildRoomAckOk::Read(
+  ChatCmdChannelInfoGuildRoomAckOk&,
+  server::SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }

@@ -1383,6 +1383,16 @@ void MessengerDirector::HandleChatterChannelInfo(
     .code = 0xDEADBEEF // TODO: use OtpRegistry
   };
   _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+
+  bool isInGuild = false;
+  if (not isInGuild)
+    return;
+
+  protocol::ChatCmdChannelInfoGuildRoomAckOk guildResponse{};
+  guildResponse.hostname = lobbyConfig.advertisement.messenger.address.to_string();
+  guildResponse.port = lobbyConfig.advertisement.messenger.port;
+  guildResponse.code = 0xCAFECAFE; // TODO: use OtpRegistry
+  _chatterServer.QueueCommand<decltype(guildResponse)>(clientId, [guildResponse](){ return guildResponse; });
 }
 
 void MessengerDirector::HandleChatterGuildLogin(
