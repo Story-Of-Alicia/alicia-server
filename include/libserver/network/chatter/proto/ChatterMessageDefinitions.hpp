@@ -970,6 +970,31 @@ struct ChatCmdChannelInfoAckOk
     SourceStream& stream);
 };
 
+struct ChatCmdGuildChannelChatTrs
+{
+  //! The uid of the destination guild chat.
+  data::Uid guildUid{};
+  //! Author of the message.
+  std::string author{};
+  //! Message content.
+  std::string message{};
+  // TODO: confirm enum values match exactly
+  protocol::ChatCmdChat::Role role{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdGuildChannelChatTrs;
+  }
+
+  static void Write(
+    const ChatCmdGuildChannelChatTrs& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdGuildChannelChatTrs& command,
+    SourceStream& stream);
+};
+
 struct ChatCmdGuildLogin : ChatCmdLogin
 {
   // ChatCmdGuildLogin shares the same payload as ChatCmdLogin
@@ -1070,6 +1095,24 @@ struct ChatCmdUpdateGuildMemberStateTrs : ChatCmdUpdateStateTrs
 
   static void Read(
     ChatCmdUpdateGuildMemberStateTrs& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdChannelInfoGuildRoomAckOk : ChatCmdChannelInfoAckOk
+{
+  // Protocol mirror copy of `ChatCmdChannelInfoAckOk`
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdChannelInfoGuildRoomAckOk;
+  }
+
+  static void Write(
+    const ChatCmdChannelInfoGuildRoomAckOk& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdChannelInfoGuildRoomAckOk& command,
     SourceStream& stream);
 };
 
