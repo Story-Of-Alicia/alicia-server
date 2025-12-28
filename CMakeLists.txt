@@ -56,6 +56,7 @@ add_library(alicia-libserver STATIC
         #src/libserver/data/pq/PqDataSource.cpp
         src/libserver/network/Server.cpp
         src/libserver/network/chatter/proto/ChatterMessageDefinitions.cpp
+        src/libserver/network/chatter/ChatterProtocol.cpp
         src/libserver/network/chatter/ChatterServer.cpp
         src/libserver/network/command/CommandProtocol.cpp
         src/libserver/network/command/CommandServer.cpp

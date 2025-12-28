@@ -143,14 +143,26 @@ size_t ChatterServer::OnClientData(
 
     SourceStream commandDataSource({commandData.begin(), commandData.end()});
 
+    if (debugIncomingCommandData)
+    {
+      spdlog::debug("Read data for command '{}' (0x{:X}),\n\n"
+        "Command data size: {} \n"
+        "Data dump: \n\n{}\n",
+        GetChatterCommandName(static_cast<protocol::ChatterCommand>(header.commandId)),
+        header.commandId,
+        commandDataLength,
+        util::GenerateByteDump({commandData.data(), commandData.size()}));
+    }
+
     // Find the handler of the command.
     const auto handlerIter = _handlers.find(header.commandId);
     if (handlerIter == _handlers.cend())
     {
       if (debugCommands)
-      for (uint64_t idx = 0; idx < commandDataLength; ++idx)
       {
-        spdlog::warn("Unhandled chatter command: {:#x}", header.commandId);
+        spdlog::warn("Unhandled chatter command: {} ({:#x})", 
+          GetChatterCommandName(static_cast<protocol::ChatterCommand>(header.commandId)),
+          header.commandId);
       }
     }
     else
@@ -162,12 +174,15 @@ size_t ChatterServer::OnClientData(
         
         if (debugCommands)
         {
-          spdlog::debug("Handled chatter command: {:#x}", header.commandId);
+          spdlog::debug("Handled chatter command: {} ({:#x})", 
+            GetChatterCommandName(static_cast<protocol::ChatterCommand>(header.commandId)),
+            header.commandId);
         }
       }
       catch (const std::exception& ex)
       {
-        spdlog::error("Unhandled exception handling chatter command {:#x}: {}", 
+        spdlog::error("Unhandled exception handling chatter command {} ({:#x}): {}",
+          GetChatterCommandName(static_cast<protocol::ChatterCommand>(header.commandId)),
           header.commandId,
           ex.what());
       }
