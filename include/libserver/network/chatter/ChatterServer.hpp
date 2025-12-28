@@ -23,8 +23,11 @@
 #include "libserver/network/Server.hpp"
 #include "libserver/util/Stream.hpp"
 #include "libserver/Constants.hpp"
+#include "libserver/util/Util.hpp"
 
 #include "proto/ChatterMessageDefinitions.hpp"
+
+#include <spdlog/spdlog.h>
 
 #include <functional>
 #include <unordered_map>
@@ -81,7 +84,7 @@ public:
   template<typename T>
   void QueueCommand(network::ClientId clientId, std::function<T()> commandSupplier)
   {
-    _server.GetClient(clientId)->QueueWrite([commandSupplier = std::move(commandSupplier)](
+    _server.GetClient(clientId)->QueueWrite([this, commandSupplier = std::move(commandSupplier)](
       network::asio::streambuf& buf)
     {
       // todo: this templated function should just write the bytes to the buffer,
@@ -102,6 +105,20 @@ public:
       const protocol::ChatterCommandHeader header {
         .length = static_cast<uint16_t>(bufferSink.GetCursor()),
         .commandId = static_cast<uint16_t>(T::GetCommand()),};
+
+      if (debugOutgoingCommandData)
+      {
+        spdlog::debug("Write data for command '{}' (0x{:X}),\n\n"
+          "Command data size: {} \n"
+          "Data dump: \n\n{}\n",
+          GetChatterCommandName(T::GetCommand()),
+          static_cast<uint16_t>(T::GetCommand()),
+          header.length,
+          util::GenerateByteDump(
+            std::span(
+              static_cast<std::byte*>(buffer.data()) + sizeof(protocol::ChatterCommandHeader),
+              header.length - sizeof(protocol::ChatterCommandHeader))));
+      }
 
       bufferSink.Seek(0);
       bufferSink.Write(header.length)
@@ -127,6 +144,13 @@ public:
         val ^= XorCode[(bufferSource.GetCursor() - 1) % 4];
         bufferSink.Write(val);
       }
+      
+      if (debugCommands)
+      {
+        spdlog::debug("Sent chatter command message '{}' (0x{:X})",
+          GetChatterCommandName(T::GetCommand()),
+          static_cast<uint16_t>(T::GetCommand()));
+      }
 
       buf.commit(bufferSource.GetCursor());
       return bufferSource.GetCursor();
@@ -147,6 +171,7 @@ private:
 
   // Debug flags for logging command handling
   bool debugIncomingCommandData = constants::DebugCommands;
+  bool debugOutgoingCommandData = constants::DebugCommands;
   bool debugCommands = constants::DebugCommands;
 };
 

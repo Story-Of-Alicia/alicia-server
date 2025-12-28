@@ -411,7 +411,7 @@ void MessengerDirector::HandleChatterBuddyAdd(
     protocol::ChatCmdBuddyAddRequestTrs notify{
       .requestingCharacterUid = clientContext.characterUid,
       .requestingCharacterName = invokerCharacterName};
-    _chatterServer.QueueCommand<decltype(notify)>(targetClientId,[&notify](){ return notify; });
+    _chatterServer.QueueCommand<decltype(notify)>(targetClientId,[notify](){ return notify; });
   }
 }
 
@@ -507,7 +507,7 @@ void MessengerDirector::HandleChatterBuddyAddReply(
       response.status = clientContext.presence.status;
 
       // Send response to requesting character
-      _chatterServer.QueueCommand<decltype(response)>(requestingClientId, [&response](){ return response; });
+      _chatterServer.QueueCommand<decltype(response)>(requestingClientId, [response](){ return response; });
     }
 
     // Populate response with requesting character's information
@@ -517,7 +517,7 @@ void MessengerDirector::HandleChatterBuddyAddReply(
     response.status = requestingCharacterStatus;
 
     // Send response to responding character
-    _chatterServer.QueueCommand<decltype(response)>(clientId, [&response](){ return response; });
+    _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 
     // TODO: follow button in the friends list doesn't work for newly added friends, only when that friend
     // has changed state such as moving rooms or changing online status.
@@ -547,7 +547,7 @@ void MessengerDirector::HandleChatterBuddyDelete(
     // Character by that uid does not exist or not available
     protocol::ChatCmdBuddyDeleteAckCancel cancel{
       .errorCode = protocol::ChatterErrorCode::BuddyDeleteTargetCharacterUnavailable};
-    _chatterServer.QueueCommand<decltype(cancel)>(clientId, [&cancel](){ return cancel; });
+    _chatterServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
     return;
   }
 
@@ -568,7 +568,7 @@ void MessengerDirector::HandleChatterBuddyDelete(
   // Return delete confirmation response to invoking character
   protocol::ChatCmdBuddyDeleteAckOk response{
     .characterUid = command.characterUid};
-  _chatterServer.QueueCommand<decltype(response)>(clientId, [&response](){ return response; });
+  _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 
   // Send delete confirmation to target character if they are online
   const auto clientsSnapshot = _clients;
@@ -585,7 +585,7 @@ void MessengerDirector::HandleChatterBuddyDelete(
     const ClientId targetClientId = targetClient->first;
     // Invoking character's uid to be used for indicating friend delete to target character
     response.characterUid = clientContext.characterUid;
-    _chatterServer.QueueCommand<decltype(response)>(targetClientId, [&response](){ return response; });
+    _chatterServer.QueueCommand<decltype(response)>(targetClientId, [response](){ return response; });
   }
 }
 
@@ -605,7 +605,7 @@ void MessengerDirector::HandleChatterBuddyMove(
   protocol::ChatCmdBuddyMoveAckOk response{};
   response.characterUid = command.characterUid;
   response.groupUid = command.groupUid;
-  _chatterServer.QueueCommand<decltype(response)>(clientId, [&response](){ return response; });
+  _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }
 
 void MessengerDirector::HandleChatterLetterList(
