@@ -58,6 +58,10 @@ private:
     network::ClientId clientId,
     const protocol::ChatCmdBuddyAddReply& command);
 
+  void HandleChatterBuddyDelete(
+    network::ClientId clientId,
+    const protocol::ChatCmdBuddyDelete& command);
+
   void HandleChatterBuddyMove(
     network::ClientId clientId,
     const protocol::ChatCmdBuddyMove& command);

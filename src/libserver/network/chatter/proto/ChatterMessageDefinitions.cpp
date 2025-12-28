@@ -181,6 +181,48 @@ void server::protocol::ChatCmdBuddyAddReply::Read(
     .Read(command.requestAccepted);
 }
 
+void server::protocol::ChatCmdBuddyDelete::Write(
+  const ChatCmdBuddyDelete&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdBuddyDelete::Read(
+  ChatCmdBuddyDelete& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterUid);
+}
+
+void server::protocol::ChatCmdBuddyDeleteAckOk::Write(
+  const ChatCmdBuddyDeleteAckOk& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid);
+}
+
+void server::protocol::ChatCmdBuddyDeleteAckOk::Read(
+  ChatCmdBuddyDeleteAckOk&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdBuddyDeleteAckCancel::Write(
+  const ChatCmdBuddyDeleteAckCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.errorCode);
+}
+
+void server::protocol::ChatCmdBuddyDeleteAckCancel::Read(
+  ChatCmdBuddyDeleteAckCancel&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void server::protocol::ChatCmdBuddyMove::Write(
   const ChatCmdBuddyMove&,
   SinkStream&)

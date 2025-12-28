@@ -52,6 +52,12 @@ MessengerDirector::MessengerDirector(ServerInstance& serverInstance)
       HandleChatterBuddyAddReply(clientId, command);
     });
 
+  _chatterServer.RegisterCommandHandler<protocol::ChatCmdBuddyDelete>(
+    [this](network::ClientId clientId, const auto& command)
+    {
+      HandleChatterBuddyDelete(clientId, command);
+    });
+
   _chatterServer.RegisterCommandHandler<protocol::ChatCmdBuddyMove>(
     [this](network::ClientId clientId, const auto& command)
     {
@@ -513,6 +519,9 @@ void MessengerDirector::HandleChatterBuddyAddReply(
 
     // Send response to responding character
     _chatterServer.QueueCommand<decltype(response)>(clientId, [&response](){ return response; });
+
+    // TODO: follow button in the friends list doesn't work for newly added friends, only when that friend
+    // has changed state such as moving rooms or changing online status.
   }
   else
   {
@@ -522,6 +531,62 @@ void MessengerDirector::HandleChatterBuddyAddReply(
       {
         character.contacts.pending().erase(requestingCharacterUid);
       });
+  }
+}
+
+void MessengerDirector::HandleChatterBuddyDelete(
+  network::ClientId clientId,
+  const protocol::ChatCmdBuddyDelete& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  // Check if character by that uid even exist
+  const auto& targetCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    command.characterUid);
+  if (not targetCharacterRecord.IsAvailable())
+  {
+    // Character by that uid does not exist or not available
+    protocol::ChatCmdBuddyDeleteAckCancel cancel{
+      .errorCode = protocol::ChatterErrorCode::BuddyDeleteTargetCharacterUnavailable};
+    _chatterServer.QueueCommand<decltype(cancel)>(clientId, [&cancel](){ return cancel; });
+    return;
+  }
+
+  // Delete invoking character from target character's friend list
+  targetCharacterRecord.Mutable(
+    [clientContext](data::Character& character)
+    {
+      character.contacts.friends().erase(clientContext.characterUid);
+    });
+
+  // Delete target character from invoking character's friend list
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+    [command](data::Character& character)
+    {
+      character.contacts.friends().erase(command.characterUid);
+    });
+
+  // Return delete confirmation response to invoking character
+  protocol::ChatCmdBuddyDeleteAckOk response{
+    .characterUid = command.characterUid};
+  _chatterServer.QueueCommand<decltype(response)>(clientId, [&response](){ return response; });
+
+  // Send delete confirmation to target character if they are online
+  const auto clientsSnapshot = _clients;
+  auto targetClient = std::ranges::find_if(
+    clientsSnapshot,
+    [targetCharacterUid = command.characterUid](const auto& client)
+    {
+      return client.second.characterUid == targetCharacterUid;
+    });
+
+  // If target character is online then send
+  if (targetClient != clientsSnapshot.cend())
+  {
+    const ClientId targetClientId = targetClient->first;
+    // Invoking character's uid to be used for indicating friend delete to target character
+    response.characterUid = clientContext.characterUid;
+    _chatterServer.QueueCommand<decltype(response)>(targetClientId, [&response](){ return response; });
   }
 }
 
