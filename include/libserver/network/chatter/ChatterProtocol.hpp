@@ -35,15 +35,17 @@ struct ChatterCommandHeader
 
 enum class ChatterCommand : uint16_t
 {
-  ChatCmdLogin = 1,
-  ChatCmdLoginAckOK = 2,
-  ChatCmdLoginAckCancel = 3,
-  ChatCmdBuddyAdd = 4,
-  ChatCmdBuddyAddAckOk = 5,
-  ChatCmdBuddyAddAckCancel = 6,
-  ChatCmdBuddyAddRequestTrs = 7,
-  ChatCmdBuddyAddReply = 8,
-
+  ChatCmdLogin = 0x1,
+  ChatCmdLoginAckOK = 0x2,
+  ChatCmdLoginAckCancel = 0x3,
+  ChatCmdBuddyAdd = 0x4,
+  ChatCmdBuddyAddAckOk = 0x5,
+  ChatCmdBuddyAddAckCancel = 0x6,
+  ChatCmdBuddyAddRequestTrs = 0x7,
+  ChatCmdBuddyAddReply = 0x8,
+  ChatCmdBuddyDelete = 0x9,
+  ChatCmdBuddyDeleteAckOk = 0xA,
+  ChatCmdBuddyDeleteAckCancel = 0xB,
   ChatCmdBuddyMove = 0xC,
   ChatCmdBuddyMoveAckOk = 0xD,
   ChatCmdBuddyMoveAckCancel = 0xE,

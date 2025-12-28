@@ -67,7 +67,8 @@ enum class ChatterErrorCode : uint32_t
   LetterDeleteMailDeleteAfterInsertRaceCondition = 14,
   BuddyAddCharacterDoesNotExist = 15,
   BuddyAddCannotAddSelf = 16,
-  BuddyAddUnknownCharacter = 17
+  BuddyAddUnknownCharacter = 17,
+  BuddyDeleteTargetCharacterUnavailable = 18
 };
 
 struct Presence
@@ -282,6 +283,65 @@ struct ChatCmdBuddyAddReply
 
   static void Read(
     ChatCmdBuddyAddReply& command,
+    SourceStream& stream);
+};
+
+//! Serverbound command requesting unfriending of a character.
+struct ChatCmdBuddyDelete
+{
+  //! The uid of the character to unfriend.
+  data::Uid characterUid{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdBuddyDelete;
+  }
+
+  static void Write(
+    const ChatCmdBuddyDelete& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdBuddyDelete& command,
+    SourceStream& stream);
+};
+
+//! Clientbound command confirming the unfriending of a character.
+struct ChatCmdBuddyDeleteAckOk
+{
+  //! The uid of the character that is unfriended.
+  data::Uid characterUid{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdBuddyDeleteAckOk;
+  }
+
+  static void Write(
+    const ChatCmdBuddyDeleteAckOk& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdBuddyDeleteAckOk& command,
+    SourceStream& stream);
+};
+
+//! Clientbound command cancelling the unfriending of a character.
+struct ChatCmdBuddyDeleteAckCancel
+{
+  ChatterErrorCode errorCode{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdBuddyDeleteAckCancel;
+  }
+
+  static void Write(
+    const ChatCmdBuddyDeleteAckCancel& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdBuddyDeleteAckCancel& command,
     SourceStream& stream);
 };
 
