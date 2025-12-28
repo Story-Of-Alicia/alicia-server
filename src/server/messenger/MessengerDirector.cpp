@@ -386,6 +386,13 @@ void MessengerDirector::HandleChatterBuddyAdd(
     return;
   }
 
+  // Add to pending friend request
+  _serverInstance.GetDataDirector().GetCharacter(targetCharacterUid).Mutable(
+    [&clientContext](data::Character& character)
+    {
+        character.contacts.pending().emplace(clientContext.characterUid);
+    });
+
   // Check if character is online, if so send request live, 
   // else queue it up for when character next comes online.
   const auto clientsSnapshot = _clients;
@@ -396,16 +403,8 @@ void MessengerDirector::HandleChatterBuddyAdd(
       return client.second.characterUid == targetCharacterUid;
     });
 
-  if (targetClient == clientsSnapshot.cend())
-  {
-    // Target is offline
-    _serverInstance.GetDataDirector().GetCharacter(targetCharacterUid).Mutable(
-      [&clientContext](data::Character& character)
-      {
-         character.contacts.pending().emplace(clientContext.characterUid);
-      });
-  }
-  else
+  // Notify responding character, if they are online
+  if (targetClient != clientsSnapshot.cend())
   {
     // Target is online, send friend request to recipient
     const ClientId targetClientId = targetClient->first;
