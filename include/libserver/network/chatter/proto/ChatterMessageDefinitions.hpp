@@ -386,6 +386,69 @@ struct ChatCmdBuddyMoveAckOk : ChatCmdBuddyMove
     SourceStream& stream);
 };
 
+// TODO: implement ChatCmdBuddyMoveAckCancel
+
+//! Serverbound command requesting the creation of a new group.
+struct ChatCmdGroupAdd
+{
+  //! Name of the new group.
+  std::string groupName{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdGroupAdd;
+  }
+
+  static void Write(
+    const ChatCmdGroupAdd& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdGroupAdd& command,
+    SourceStream& stream);
+};
+
+//! Clientbound command confirming the creation of the group.
+struct ChatCmdGroupAddAckOk
+{
+  //! The uid of the newly created group.
+  uint32_t groupUid{};
+  //! The name of the newly created group.
+  std::string groupName{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdGroupAddAckOk;
+  }
+
+  static void Write(
+    const ChatCmdGroupAddAckOk& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdGroupAddAckOk& command,
+    SourceStream& stream);
+};
+
+//! Clientbound command indicating an error has occurred when creating a group.
+struct ChatCmdGroupAddAckCancel
+{
+  ChatterErrorCode errorCode{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdGroupAddAckCancel;
+  }
+
+  static void Write(
+    const ChatCmdGroupAddAckCancel& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdGroupAddAckCancel& command,
+    SourceStream& stream);
+};
+
 struct ChatCmdLetterList
 {
   MailboxFolder mailboxFolder{};

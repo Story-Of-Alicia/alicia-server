@@ -66,6 +66,10 @@ private:
     network::ClientId clientId,
     const protocol::ChatCmdBuddyMove& command);
 
+  void HandleChatterGroupAdd(
+    network::ClientId clientId,
+    const protocol::ChatCmdGroupAdd& command);
+
   void HandleChatterLetterList(
     network::ClientId clientId,
     const protocol::ChatCmdLetterList& command);

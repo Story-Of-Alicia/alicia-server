@@ -247,8 +247,51 @@ void server::protocol::ChatCmdBuddyMoveAckOk::Write(
 }
 
 void server::protocol::ChatCmdBuddyMoveAckOk::Read(
-  ChatCmdBuddyMoveAckOk& command,
+  ChatCmdBuddyMoveAckOk&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdGroupAdd::Write(
+  const ChatCmdGroupAdd&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdGroupAdd::Read(
+  ChatCmdGroupAdd& command,
   SourceStream& stream)
+{
+  stream.Read(command.groupName);
+}
+
+void server::protocol::ChatCmdGroupAddAckOk::Write(
+  const ChatCmdGroupAddAckOk& command,
+  SinkStream& stream)
+{
+  stream.Write(command.groupUid)
+    .Write(command.groupName);
+}
+
+void server::protocol::ChatCmdGroupAddAckOk::Read(
+  ChatCmdGroupAddAckOk&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdGroupAddAckCancel::Write(
+  const ChatCmdGroupAddAckCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.errorCode);
+}
+
+void server::protocol::ChatCmdGroupAddAckCancel::Read(
+  ChatCmdGroupAddAckCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
