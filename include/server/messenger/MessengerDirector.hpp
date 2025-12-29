@@ -70,6 +70,10 @@ private:
     network::ClientId clientId,
     const protocol::ChatCmdGroupAdd& command);
 
+  void HandleChatterGroupRename(
+    network::ClientId clientId,
+    const protocol::ChatCmdGroupRename& command);
+
   void HandleChatterLetterList(
     network::ClientId clientId,
     const protocol::ChatCmdLetterList& command);
