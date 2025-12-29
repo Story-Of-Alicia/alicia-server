@@ -76,6 +76,12 @@ MessengerDirector::MessengerDirector(ServerInstance& serverInstance)
       HandleChatterGroupRename(clientId, command);
     });
 
+  _chatterServer.RegisterCommandHandler<protocol::ChatCmdGroupDelete>(
+    [this](network::ClientId clientId, const auto& command)
+    {
+      HandleChatterGroupDelete(clientId, command);
+    });
+
   _chatterServer.RegisterCommandHandler<protocol::ChatCmdLetterList>(
     [this](network::ClientId clientId, const auto& command)
     {
@@ -821,6 +827,62 @@ void MessengerDirector::HandleChatterGroupRename(
   protocol::ChatCmdGroupRenameAckOk response{};
   response.groupUid = command.groupUid;
   response.groupName = command.groupName;
+  _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+}
+
+void MessengerDirector::HandleChatterGroupDelete(
+  network::ClientId clientId,
+  const protocol::ChatCmdGroupDelete& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  // Check if group by that uid exists
+  std::optional<protocol::ChatterErrorCode> errorCode{};
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+    [&command, &errorCode](data::Character& character)
+    {
+      auto& groups = character.contacts.groups();
+
+      // Confirm the existence of the group and
+      // sanity check the existence of default friends group
+      if (not groups.contains(command.groupUid))
+      {
+        // Group does not exist, cannot delete
+        errorCode.emplace(protocol::ChatterErrorCode::GroupDeleteGroupDoesNotExist);
+        return;
+      }
+      else if (not groups.contains(FriendsCategoryUid))
+      {
+        // Default friend group somehow does not exist
+        errorCode.emplace(protocol::ChatterErrorCode::GroupDeleteDefaultFriendGroupMissing);
+        return;
+      }
+
+      // Group to be deleted
+      const auto& group = groups.at(command.groupUid);
+      // Default friends group
+      auto& friendsGroup = groups.at(FriendsCategoryUid);
+
+      // Move all group members back into the friends list
+      for (const data::Uid& friendUid : group.members)
+      {
+        friendsGroup.members.emplace(friendUid);
+      }
+
+      // Delete invoked group
+      groups.erase(command.groupUid);
+    });
+
+  if (errorCode.has_value())
+  {
+    protocol::ChatCmdGroupDeleteAckCancel cancel{
+      .errorCode = errorCode.value()};
+    _chatterServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  protocol::ChatCmdGroupDeleteAckOk response{};
+  response.groupUid = command.groupUid;
   _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }
 

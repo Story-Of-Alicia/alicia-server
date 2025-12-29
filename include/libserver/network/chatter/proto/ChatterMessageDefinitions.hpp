@@ -47,8 +47,9 @@ enum class MailboxFolder : uint8_t
   Inbox = 2
 };
 
-//! Custom server defined error codes. Does not correspond with any value on the client.
-//! The client displays this as "Server Error (code: x)"
+//! Corresponds with `MessengerErrorStrings`.
+//! Error codes can be custom server defined error codes.
+//! The client displays these custom codes as "Server Error (code: x)"
 enum class ChatterErrorCode : uint32_t
 {
   LoginFailed = 1,
@@ -73,7 +74,9 @@ enum class ChatterErrorCode : uint32_t
   BuddyMoveAlreadyInGroup = 20,
   BuddyMoveFriendNotFound = 21,
   GroupRenameGroupDoesNotExist = 22,
-  GroupRenameDuplicateName = 23
+  GroupRenameDuplicateName = 23,
+  GroupDeleteGroupDoesNotExist = 24,
+  GroupDeleteDefaultFriendGroupMissing = 25
 };
 
 struct Presence
@@ -525,6 +528,61 @@ struct ChatCmdGroupRenameAckCancel
 
   static void Read(
     ChatCmdGroupRenameAckCancel& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdGroupDelete
+{
+  data::Uid groupUid{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdGroupDelete;
+  }
+
+  static void Write(
+    const ChatCmdGroupDelete& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdGroupDelete& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdGroupDeleteAckOk : ChatCmdGroupDelete
+{
+  // Protocol mirror of `ChatCmdGroupDelete`
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdGroupDeleteAckOk;
+  }
+
+  static void Write(
+    const ChatCmdGroupDeleteAckOk& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdGroupDeleteAckOk& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdGroupDeleteAckCancel
+{
+  //! Custom error code.
+  ChatterErrorCode errorCode{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdGroupDeleteAckCancel;
+  }
+
+  static void Write(
+    const ChatCmdGroupDeleteAckCancel& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdGroupDeleteAckCancel& command,
     SourceStream& stream);
 };
 
