@@ -283,11 +283,11 @@ void MessengerDirector::HandleChatterLogin(
         continue;
 
       auto& friendo = response.friends.emplace_back();
-      friendCharacterRecord.Immutable([&friendo](const data::Character& friendCharacter)
+      friendCharacterRecord.Immutable([&friendo, groupUid](const data::Character& friendCharacter)
       {
         friendo.name = friendCharacter.name();
         friendo.uid = friendCharacter.uid();
-        friendo.categoryUid = FriendsCategoryUid;
+        friendo.categoryUid = groupUid;
         friendo.ranchUid = friendCharacter.uid();
       });
 
@@ -640,7 +640,68 @@ void MessengerDirector::HandleChatterBuddyMove(
 
   const auto& clientContext = GetClientContext(clientId);
 
-  // TODO: implement proper mechanism
+  // 1. Check if group exists
+  // 2. Check if already in that group
+  // 3. Check if friends with target character
+  // If all good, move friend to group
+
+  std::optional<protocol::ChatterErrorCode> errorCode{};
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+    [&command, &errorCode](data::Character& character)
+    {
+      auto& groups = character.contacts.groups();
+
+      // Check if group exists or if friend is in the target group
+      if (not groups.contains(command.groupUid))
+      {
+        // Target group by that uid does not exist
+        errorCode.emplace(protocol::ChatterErrorCode::BuddyMoveGroupDoesNotExist);
+        return;
+      }
+      else if (std::ranges::contains(groups.at(command.groupUid).members, command.characterUid))
+      {
+        // Friend is already in the target group
+        errorCode.emplace(protocol::ChatterErrorCode::BuddyMoveAlreadyInGroup);
+        return;
+      }
+
+      // Go through groups, check if friends with character
+      for (auto& [groupUid, group] : character.contacts.groups())
+      {
+        auto& members = group.members;
+
+        // Find friend in this group
+        auto friendIter = std::ranges::find_if(
+          members,
+          [command](const data::Uid& friendUid)
+          {
+            return friendUid == command.characterUid;
+          });
+
+        if (friendIter != members.cend())
+        {
+          // Friend found, move friend to the target group
+          // Erase friend from current group
+          members.erase(friendIter);
+
+          // Add friend to target group
+          auto& targetGroup = groups.at(command.groupUid);
+          targetGroup.members.emplace(command.characterUid);
+          return;
+        }
+      }
+
+      // Loop did not early return, friend not found
+      errorCode.emplace(protocol::ChatterErrorCode::BuddyMoveFriendNotFound);
+    });
+
+  if (errorCode.has_value())
+  {
+    protocol::ChatCmdBuddyMoveAckCancel cancel{
+      .errorCode = errorCode.value()};
+    _chatterServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
 
   protocol::ChatCmdBuddyMoveAckOk response{};
   response.characterUid = command.characterUid;
