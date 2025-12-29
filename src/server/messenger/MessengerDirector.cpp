@@ -64,6 +64,12 @@ MessengerDirector::MessengerDirector(ServerInstance& serverInstance)
       HandleChatterBuddyMove(clientId, command);
     });
 
+  _chatterServer.RegisterCommandHandler<protocol::ChatCmdGroupAdd>(
+    [this](network::ClientId clientId, const auto& command)
+    {
+      HandleChatterGroupAdd(clientId, command);
+    });
+
   _chatterServer.RegisterCommandHandler<protocol::ChatCmdLetterList>(
     [this](network::ClientId clientId, const auto& command)
     {
@@ -251,43 +257,50 @@ void MessengerDirector::HandleChatterLogin(
   response.member1 = clientContext.characterUid;
 
   // Load friends from character's stored friends list
-  std::set<data::Uid> storedFriends{};
   std::set<data::Uid> pendingFriends{};
+  std::map<data::Uid, data::Character::Contacts::Group> groups{};
   _serverInstance.GetDataDirector().GetCharacter(command.characterUid).Immutable(
-    [&storedFriends, &pendingFriends](const data::Character& character)
+    [&pendingFriends, &groups](const data::Character& character)
     {
-      storedFriends = character.contacts.friends();
       pendingFriends = character.contacts.pending();
+      groups = character.contacts.groups();
     });
 
   // Initialise with one group for now (friends)
   response.groups.emplace_back(FriendsCategoryUid, "");
 
-  // Build friends list for response
-  for (const data::Uid& friendUid : storedFriends)
+  // Loop through every group to prepare response
+  for (const auto& [groupUid, group] : groups)
   {
-    const auto friendCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(friendUid);
-    if (!friendCharacterRecord.IsAvailable())
-      continue;
+    // Add group to response
+    response.groups.emplace_back(groupUid, group.name);
 
-    auto& friendo = response.friends.emplace_back();
-    friendCharacterRecord.Immutable([&friendo](const data::Character& friendCharacter)
+    // Build friends list for response
+    for (const data::Uid& friendUid : group.members)
     {
-      friendo.name = friendCharacter.name();
-      friendo.uid = friendCharacter.uid();
-      friendo.categoryUid = FriendsCategoryUid;
-      friendo.ranchUid = friendCharacter.uid();
-    });
+      const auto friendCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(friendUid);
+      if (!friendCharacterRecord.IsAvailable())
+        continue;
 
-    // Check if friend is online by looking for them in messenger clients
-    friendo.status = protocol::Status::Offline;
-    for (const auto& [onlineClientId, onlineClientContext] : _clients)
-    {
-      if (onlineClientContext.isAuthenticated && onlineClientContext.characterUid == friendUid)
+      auto& friendo = response.friends.emplace_back();
+      friendCharacterRecord.Immutable([&friendo](const data::Character& friendCharacter)
       {
-        friendo.status = onlineClientContext.presence.status;
-        friendo.roomUid = onlineClientContext.presence.sceneUid;
-        break;
+        friendo.name = friendCharacter.name();
+        friendo.uid = friendCharacter.uid();
+        friendo.categoryUid = FriendsCategoryUid;
+        friendo.ranchUid = friendCharacter.uid();
+      });
+
+      // Check if friend is online by looking for them in messenger clients
+      friendo.status = protocol::Status::Offline;
+      for (const auto& [onlineClientId, onlineClientContext] : _clients)
+      {
+        if (onlineClientContext.isAuthenticated && onlineClientContext.characterUid == friendUid)
+        {
+          friendo.status = onlineClientContext.presence.status;
+          friendo.roomUid = onlineClientContext.presence.sceneUid;
+          break;
+        }
       }
     }
   }
@@ -460,21 +473,37 @@ void MessengerDirector::HandleChatterBuddyAddReply(
   // If friend request accepted, add each other to friends list
   if (command.requestAccepted)
   {
+    // Helper lambda to add a character to character's friends list
+    const auto& acceptFriendRequest = [](
+      const server::Record<data::Character>& characterRecord,
+      const data::Uid characterUid)
+    {
+      characterRecord.Mutable(
+        [characterUid](data::Character& character)
+        {
+          // Erase other character from character's pending friend requests
+          character.contacts.pending().erase(characterUid);
+          // Add other character to character's friends list
+          auto& groups = character.contacts.groups();
+          // Friends group might not be initially initialised, try create it
+          auto [friendsGroupIter, created] = groups.try_emplace(FriendsCategoryUid);
+          auto& friendsGroup = friendsGroupIter->second;
+          if (created)
+          {
+            // Label the group for internal use only
+            // TODO: is this needed? Helps visually but does not affect game
+            friendsGroup.name = "_internal_friends_group_";
+            friendsGroup.createdAt = util::Clock::now();
+          }
+          friendsGroup.members.emplace(characterUid);
+        });
+    };
+
     // Add responding character to requesting character's friends list
-    requestingCharacterRecord.Mutable(
-      [respondingCharacterUid = clientContext.characterUid](data::Character& character)
-      {
-        character.contacts.pending().erase(respondingCharacterUid);
-        character.contacts.friends().emplace(respondingCharacterUid);
-      });
+    acceptFriendRequest(requestingCharacterRecord, clientContext.characterUid);
 
     // Add requesting character to responding character's friends list
-    respondingCharacterRecord.Mutable(
-      [requestingCharacterUid = command.requestingCharacterUid](data::Character& character)
-      {
-        character.contacts.pending().erase(requestingCharacterUid);
-        character.contacts.friends().emplace(requestingCharacterUid);
-      });
+    acceptFriendRequest(respondingCharacterRecord, command.requestingCharacterUid);
 
     // Check if requesting character is online, if so send response live,
     // else simply add responding character to friends list
@@ -551,19 +580,30 @@ void MessengerDirector::HandleChatterBuddyDelete(
     return;
   }
 
+  // Helper lambda to delete a character to character's friends list
+  const auto& deleteFriend = [](
+    const server::Record<data::Character>& characterRecord,
+    const data::Uid characterUid)
+  {
+    characterRecord.Mutable(
+      [characterUid](data::Character& character)
+      {
+        // Go through all groups and ensure friend is erased
+        auto& groups = character.contacts.groups();
+        for (auto& [groupUid, group] : groups)
+        {
+          group.members.erase(characterUid);
+        }
+      });
+  };
+
   // Delete invoking character from target character's friend list
-  targetCharacterRecord.Mutable(
-    [clientContext](data::Character& character)
-    {
-      character.contacts.friends().erase(clientContext.characterUid);
-    });
+  deleteFriend(targetCharacterRecord, clientContext.characterUid);
 
   // Delete target character from invoking character's friend list
-  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
-    [command](data::Character& character)
-    {
-      character.contacts.friends().erase(command.characterUid);
-    });
+  deleteFriend(
+    _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid),
+    command.characterUid);
 
   // Return delete confirmation response to invoking character
   protocol::ChatCmdBuddyDeleteAckOk response{
@@ -605,6 +645,65 @@ void MessengerDirector::HandleChatterBuddyMove(
   protocol::ChatCmdBuddyMoveAckOk response{};
   response.characterUid = command.characterUid;
   response.groupUid = command.groupUid;
+  _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+}
+
+void MessengerDirector::HandleChatterGroupAdd(
+  network::ClientId clientId,
+  const protocol::ChatCmdGroupAdd& command)
+{
+  spdlog::debug("[{}] ChatCmdGroupAdd: {}", clientId, command.groupName);
+
+  const auto& clientContext = GetClientContext(clientId);
+
+  // TODO: implement the creation and storing of new group in character
+  data::Uid groupUid{data::InvalidUid};
+  std::optional<protocol::ChatterErrorCode> errorCode{};
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+    [&command, &groupUid, &errorCode](data::Character& character)
+    {
+      auto& groups = character.contacts.groups();
+      const auto& nextGroupUid = groups.rbegin()->first + 1;
+
+      // Sanity check if group uid is default friends group uid
+      if (nextGroupUid == 0)
+      {
+        // We have somehow looped back to group uid 0 (which is default friends group)
+        // TODO: respond with error code and return;
+        return;
+      }
+
+      // Create group
+      auto [iter, created] = groups.try_emplace(nextGroupUid);
+      if (not created)
+      {
+        // Group by that new group uid already exists
+        // Something went terribly wrong with the next group uid logic
+        // TODO: respond with error code and return;
+        return;
+      }
+
+      // Set response group uid
+      groupUid = nextGroupUid;
+
+      // Set group information
+      auto& group = iter->second;
+      group.uid = nextGroupUid;
+      group.name = command.groupName;
+      group.createdAt = util::Clock::now();
+    });
+  
+  if (errorCode.has_value())
+  {
+    protocol::ChatCmdGroupAddAckCancel cancel{
+      .errorCode = errorCode.value()};
+    _chatterServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  protocol::ChatCmdGroupAddAckOk response{
+    .groupUid = groupUid,
+    .groupName = command.groupName};
   _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }
 
@@ -1149,7 +1248,12 @@ void MessengerDirector::HandleChatterUpdateState(
     _serverInstance.GetDataDirector().GetCharacter(onlineClientContext.characterUid).Immutable(
       [&isFriend, &clientContext](const data::Character& character)
       {
-        isFriend = std::ranges::contains(character.contacts.friends(), clientContext.characterUid);
+        isFriend = std::ranges::any_of(
+          character.contacts.groups() | std::views::values,
+          [&clientContext](const data::Character::Contacts::Group& group)
+          {
+            return std::ranges::contains(group.members, clientContext.characterUid);
+          });
       });
 
     if (isFriend)

@@ -281,9 +281,23 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
 
   character.guildUid = json["guildUid"].get<data::Uid>();
 
-  auto contacts = json["contacts"];
-  character.contacts.friends = contacts["friends"].get<std::set<data::Uid>>();
+  const auto& contacts = json["contacts"];
   character.contacts.pending = contacts["pending"].get<std::set<data::Uid>>();
+
+  std::map<server::data::Uid, server::data::Character::Contacts::Group> groups{};
+  for (const auto& [groupUidStr, jsonGroup] : contacts["groups"].items())
+  {
+    data::Character::Contacts::Group group{
+      .uid = std::stoul(groupUidStr), // Use key instead of one in the object
+      .name = jsonGroup["name"].get<std::string>(),
+      .members = jsonGroup["members"].get<std::set<data::Uid>>(),
+      .createdAt = data::Clock::time_point(
+        std::chrono::seconds(
+          jsonGroup["createdAt"].get<int64_t>()))
+    };
+    groups.emplace(group.uid, group);
+  }
+  character.contacts.groups = groups;
 
   character.gifts = json["gifts"].get<std::vector<data::Uid>>();
   character.purchases = json["purchases"].get<std::vector<data::Uid>>();
@@ -375,8 +389,21 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["guildUid"] = character.guildUid();
 
   nlohmann::json contacts;
-  contacts["friends"] = character.contacts.friends();
   contacts["pending"] = character.contacts.pending();
+
+  nlohmann::json groups;
+  for (const auto& [groupUid, group] : character.contacts.groups())
+  {
+    nlohmann::json groupJson;
+    groupJson["uid"] = group.uid;
+    groupJson["name"] = group.name;
+    groupJson["members"] = group.members;
+    groupJson["createdAt"] = std::chrono::ceil<std::chrono::seconds>(
+      group.createdAt.time_since_epoch()).count();
+    groups[std::to_string(groupUid)] = groupJson;
+  }
+  contacts["groups"] = groups;
+
   json["contacts"] = contacts;
 
   json["gifts"] = character.gifts();

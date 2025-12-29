@@ -1187,10 +1187,16 @@ void DataDirector::ScheduleCharacterLoad(
         std::ranges::copy(character.mailbox.inbox(), std::back_inserter(mailbox));
         std::ranges::copy(character.mailbox.sent(), std::back_inserter(mailbox));
 
-        // Friends (and pending requests)
-        friends = character.contacts.friends();
+        // Pending friend requests
         const auto& pending = character.contacts.pending();
         friends.insert(pending.begin(), pending.end());
+
+        // All friends (including ones not in a group)
+        for (const auto& [groupUid, group] : character.contacts.groups())
+        {
+          const auto& members = group.members;
+          friends.insert(members.cbegin(), members.cend());
+        }
       });
 
     const auto guildRecord = GetGuild(guildUid);
@@ -1343,8 +1349,8 @@ void DataDirector::ScheduleCharacterLoad(
     {
       const auto friendRecords = GetCharacterCache().Get(
         std::vector<data::Uid>(
-          friends.begin(),
-          friends.end()));
+          friends.cbegin(),
+          friends.cend()));
       if (!friendRecords)
       {
         userDataContext.debugMessage = std::format(

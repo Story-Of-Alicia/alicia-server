@@ -29,6 +29,7 @@
 #include <optional>
 #include <unordered_set>
 #include <set>
+#include <map>
 
 namespace server
 {
@@ -291,8 +292,16 @@ struct Character
 
   struct Contacts
   {
-    dao::Field<std::set<Uid>> friends{};
+    struct Group
+    {
+      Uid uid{};
+      std::string name{};
+      std::set<Uid> members{};
+      Clock::time_point createdAt{};
+    };
+
     dao::Field<std::set<Uid>> pending{};
+    dao::Field<std::map<Uid, Group>> groups{};
   } contacts{};
   
   dao::Field<std::vector<Uid>> gifts{};
