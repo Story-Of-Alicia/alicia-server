@@ -74,6 +74,10 @@ private:
     network::ClientId clientId,
     const protocol::ChatCmdGroupRename& command);
 
+  void HandleChatterGroupDelete(
+    network::ClientId clientId,
+    const protocol::ChatCmdGroupDelete& command);
+
   void HandleChatterLetterList(
     network::ClientId clientId,
     const protocol::ChatCmdLetterList& command);
