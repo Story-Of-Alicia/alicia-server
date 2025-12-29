@@ -71,7 +71,9 @@ enum class ChatterErrorCode : uint32_t
   BuddyDeleteTargetCharacterUnavailable = 18,
   BuddyMoveGroupDoesNotExist = 19,
   BuddyMoveAlreadyInGroup = 20,
-  BuddyMoveFriendNotFound = 21
+  BuddyMoveFriendNotFound = 21,
+  GroupRenameGroupDoesNotExist = 22,
+  GroupRenameDuplicateName = 23
 };
 
 struct Presence
@@ -465,6 +467,64 @@ struct ChatCmdGroupAddAckCancel
 
   static void Read(
     ChatCmdGroupAddAckCancel& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdGroupRename
+{
+  //! The uid of the group to rename.
+  data::Uid groupUid{};
+  //! The new name to give the group.
+  std::string groupName{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdGroupRename;
+  }
+
+  static void Write(
+    const ChatCmdGroupRename& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdGroupRename& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdGroupRenameAckOk : ChatCmdGroupRename
+{
+  // Protocol mirror of `ChatCmdGroupRename`
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdGroupRenameAckOk;
+  }
+
+  static void Write(
+    const ChatCmdGroupRenameAckOk& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdGroupRenameAckOk& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdGroupRenameAckCancel
+{
+  //! Custom error code.
+  ChatterErrorCode errorCode{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdGroupRenameAckCancel;
+  }
+
+  static void Write(
+    const ChatCmdGroupRenameAckCancel& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdGroupRenameAckCancel& command,
     SourceStream& stream);
 };
 

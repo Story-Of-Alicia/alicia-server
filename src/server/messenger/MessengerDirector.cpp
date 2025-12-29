@@ -70,6 +70,12 @@ MessengerDirector::MessengerDirector(ServerInstance& serverInstance)
       HandleChatterGroupAdd(clientId, command);
     });
 
+  _chatterServer.RegisterCommandHandler<protocol::ChatCmdGroupRename>(
+    [this](network::ClientId clientId, const auto& command)
+    {
+      HandleChatterGroupRename(clientId, command);
+    });
+
   _chatterServer.RegisterCommandHandler<protocol::ChatCmdLetterList>(
     [this](network::ClientId clientId, const auto& command)
     {
@@ -765,6 +771,56 @@ void MessengerDirector::HandleChatterGroupAdd(
   protocol::ChatCmdGroupAddAckOk response{
     .groupUid = groupUid,
     .groupName = command.groupName};
+  _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+}
+
+void MessengerDirector::HandleChatterGroupRename(
+  network::ClientId clientId,
+  const protocol::ChatCmdGroupRename& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  std::optional<protocol::ChatterErrorCode> errorCode{};
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+    [&command, &errorCode](data::Character& character)
+    {
+      auto& groups = character.contacts.groups();
+
+      // Check if group exists
+      if (not groups.contains(command.groupUid))
+      {
+        // Group by that uid does not exist
+        errorCode.emplace(protocol::ChatterErrorCode::GroupRenameGroupDoesNotExist);
+        return;
+      }
+
+      // Check if group name is duplicate
+      for (const auto& [groupUid, group] : groups)
+      {
+        if (group.name == command.groupName)
+        {
+          // Duplicate group name, cancel the rename
+          errorCode.emplace(protocol::ChatterErrorCode::GroupRenameDuplicateName);
+          return;
+        }
+      }
+
+      // Set group name
+      auto& group = groups.at(command.groupUid);
+      group.name = command.groupName;
+    });
+
+  if (errorCode.has_value())
+  {
+    protocol::ChatCmdGroupRenameAckCancel cancel{
+      .errorCode = errorCode.value()};
+    _chatterServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  protocol::ChatCmdGroupRenameAckOk response{};
+  response.groupUid = command.groupUid;
+  response.groupName = command.groupName;
   _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }
 

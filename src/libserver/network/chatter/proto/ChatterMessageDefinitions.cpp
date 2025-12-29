@@ -310,6 +310,50 @@ void server::protocol::ChatCmdGroupAddAckCancel::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void server::protocol::ChatCmdGroupRename::Write(
+  const ChatCmdGroupRename&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdGroupRename::Read(
+  ChatCmdGroupRename& command,
+  SourceStream& stream)
+{
+  stream.Read(command.groupUid)
+    .Read(command.groupName);
+}
+
+void server::protocol::ChatCmdGroupRenameAckOk::Write(
+  const ChatCmdGroupRenameAckOk& command,
+  SinkStream& stream)
+{
+  stream.Write(command.groupUid)
+    .Write(command.groupName);
+}
+
+void server::protocol::ChatCmdGroupRenameAckOk::Read(
+  ChatCmdGroupRenameAckOk&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdGroupRenameAckCancel::Write(
+  const ChatCmdGroupRenameAckCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.errorCode);
+}
+
+void server::protocol::ChatCmdGroupRenameAckCancel::Read(
+  ChatCmdGroupRenameAckCancel&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void server::protocol::ChatCmdLetterList::Request::Write(
   const ChatCmdLetterList::Request& command,
   server::SinkStream& stream)
