@@ -68,7 +68,10 @@ enum class ChatterErrorCode : uint32_t
   BuddyAddCharacterDoesNotExist = 15,
   BuddyAddCannotAddSelf = 16,
   BuddyAddUnknownCharacter = 17,
-  BuddyDeleteTargetCharacterUnavailable = 18
+  BuddyDeleteTargetCharacterUnavailable = 18,
+  BuddyMoveGroupDoesNotExist = 19,
+  BuddyMoveAlreadyInGroup = 20,
+  BuddyMoveFriendNotFound = 21
 };
 
 struct Presence
@@ -386,7 +389,23 @@ struct ChatCmdBuddyMoveAckOk : ChatCmdBuddyMove
     SourceStream& stream);
 };
 
-// TODO: implement ChatCmdBuddyMoveAckCancel
+struct ChatCmdBuddyMoveAckCancel
+{
+  ChatterErrorCode errorCode{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdBuddyMoveAckCancel;
+  }
+
+  static void Write(
+    const ChatCmdBuddyMoveAckCancel& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdBuddyMoveAckCancel& command,
+    SourceStream& stream);
+};
 
 //! Serverbound command requesting the creation of a new group.
 struct ChatCmdGroupAdd

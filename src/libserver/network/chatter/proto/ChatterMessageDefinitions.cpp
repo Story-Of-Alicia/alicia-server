@@ -253,6 +253,20 @@ void server::protocol::ChatCmdBuddyMoveAckOk::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void server::protocol::ChatCmdBuddyMoveAckCancel::Write(
+  const ChatCmdBuddyMoveAckCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.errorCode);
+}
+
+void server::protocol::ChatCmdBuddyMoveAckCancel::Read(
+  ChatCmdBuddyMoveAckCancel&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void server::protocol::ChatCmdGroupAdd::Write(
   const ChatCmdGroupAdd&,
   SinkStream&)
