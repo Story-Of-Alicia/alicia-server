@@ -2544,7 +2544,7 @@ void RanchDirector::HandleUserPetInfos(
   characterRecord.Mutable(
     [this, &command, &response](data::Character& character)
     {
-      response.petCount = character.pets().size();
+      response.petCount = static_cast<uint16_t>(character.pets().size());
       auto storedPetRecords = GetServerInstance().GetDataDirector().GetPetCache().Get(
         character.pets());
       if (!storedPetRecords || storedPetRecords->empty())
@@ -2622,9 +2622,11 @@ void RanchDirector::HandleIncubateEgg(
 
           response.egg.uid = eggUid;
           response.egg.itemTid = eggItemTid;
-          response.egg.timeRemaining = std::chrono::duration_cast<std::chrono::seconds>(eggHatchDuration).count();
+          response.egg.timeRemaining = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
+            eggHatchDuration).count());
           response.egg.boost = 400000;
-          response.egg.totalHatchingTime = std::chrono::duration_cast<std::chrono::seconds>(eggHatchDuration).count();
+          response.egg.totalHatchingTime = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
+            eggHatchDuration).count());
         });
     });
 
