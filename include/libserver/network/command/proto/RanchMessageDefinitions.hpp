@@ -4161,7 +4161,7 @@ struct AcCmdCRUpdateMountInfo
     ReturnToNature = 3,
     Rename = 4
   } action;
-  Horse horse;
+  Horse horse{};
   
   static Command GetCommand()
   {
@@ -4613,9 +4613,9 @@ struct AcCmdCRSendGiftOK
 
 struct AcCmdCRPasswordAuth
 {
-  uint16_t unk1;
-  uint32_t unk2;
-  std::string unk3;
+  uint16_t unk1{};
+  uint32_t unk2{};
+  std::string unk3{};
   
   static Command GetCommand()
   {
@@ -4646,8 +4646,8 @@ struct AcCmdCRPasswordAuthOK
     Authenticated = 3,
     Reset2FA = 7
   } action;
-  // in minutes, used when 2FA is reset
-  uint32_t duration;
+  //! Duration of the authorization validity window in minutes. 
+  uint32_t duration{};
 
   static Command GetCommand()
   {
@@ -4671,8 +4671,8 @@ struct AcCmdCRPasswordAuthOK
 
 struct AcCmdCROpenRandomBox
 {
-  uint32_t itemUid;
-  uint32_t unk1;
+  uint32_t itemUid{};
+  uint32_t unk1{};
 
   static Command GetCommand()
   {
@@ -4698,10 +4698,10 @@ struct AcCmdCROpenRandomBoxOK
 {
   uint32_t unk0{};
   uint32_t unk1{};
-  // if packageId = 0, sets to Carrots
-  uint32_t packageId;
-  uint32_t carrotsObtained;
-  uint32_t newBalance;
+  //! If package ID is invalid (set to `0`) the reward is carrots.
+  uint32_t packageId{};
+  uint32_t carrotsObtained{};
+  uint32_t newBalance{};
   std::vector<Item> items;
 
   static Command GetCommand()

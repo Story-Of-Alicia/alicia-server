@@ -139,11 +139,11 @@ struct Item
 
 struct Package
 {
-  uint32_t packageId;
-  std::string packageName;
-  uint32_t count;
-  std::string itemName;
-  uint32_t tid;
+  uint32_t packageId{};
+  std::string packageName{};
+  uint32_t count{};
+  std::string itemName{};
+  uint32_t tid{};
 };
 
 class ItemRegistry

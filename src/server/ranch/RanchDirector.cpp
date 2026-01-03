@@ -4912,8 +4912,7 @@ void RanchDirector::HandleUpdateMountInfo(
 
   protocol::AcCmdCRUpdateMountInfoOK response {
     .action = command.action,
-    .horse = command.horse
-    };
+    .horse = command.horse};
 
   if (command.action == protocol::AcCmdCRUpdateMountInfo::Action::ReturnToNature)
   {
