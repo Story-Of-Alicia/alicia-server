@@ -9,7 +9,7 @@ namespace server
 
 uint32_t OtpSystem::GrantCode(const uint32_t key)
 {
-  const auto [iter, inserted] = _codes.try_emplace(
+  const auto [iter, inserted] = _codes.insert_or_assign(
     key,
     Code{
       .expiry = std::chrono::steady_clock::now() + std::chrono::seconds(30),
