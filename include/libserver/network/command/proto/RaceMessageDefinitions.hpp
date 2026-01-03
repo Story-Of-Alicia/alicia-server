@@ -588,12 +588,12 @@ struct AcCmdCRStartRaceCancel
   enum class Reason : uint8_t
   {
     Generic = 0,
-    NotREADY = 1,
+    NotReady = 1,
     NotTeamBalance = 2,
-    TEAM_LIMIT = 3,
-    SERVICECLOSED = 4,
-    FFASMALLPLAYER = 5,
-    NOTENOUGHFEE = 6,
+    TeamLimit = 3,
+    ServiceClosed = 4,
+    FfaNotEnoughPlayers = 5,
+    NotEnoughCarrotsForFee = 6,
   } reason{};
 
   static Command GetCommand()

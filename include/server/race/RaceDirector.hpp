@@ -158,6 +158,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRStartRace& command);
 
+  void SendStartRaceCancel(
+    ClientId clientId,
+    protocol::AcCmdCRStartRaceCancel::Reason reason);
+
   void HandleRaceTimer(
     ClientId clientId,
     const protocol::AcCmdUserRaceTimer& command);

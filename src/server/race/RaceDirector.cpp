@@ -1338,79 +1338,58 @@ void RaceDirector::HandleStartRace(
   if (clientContext.characterUid != raceInstance.masterUid)
     throw std::runtime_error("Client tried to start the race even though they're not the master");
 
-  // Check if all requirements are met to start the race
+  // Check if all race requirements are met to start the race
+
   bool allPlayersReady = false;
   bool isTeamMode = false;
-  uint32_t redTeamCount = 0;
-  uint32_t blueTeamCount = 0;
+  bool areTeamsBalanced = false;
 
   _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid,
-    [&allPlayersReady, &isTeamMode, &redTeamCount, &blueTeamCount, clientContext](Room& room)
+    [&allPlayersReady, &isTeamMode, &areTeamsBalanced, master = raceInstance.masterUid](Room& room)
     {
-      // Toggle the ready state of the master
-      room.GetPlayer(clientContext.characterUid).ToggleReady();
-
-      allPlayersReady = std::ranges::all_of(
-        room.GetPlayers() | std::views::values,
-        [](const Room::Player& player)
-        {
-          return player.IsReady();
-        });
-      
       isTeamMode = room.GetRoomDetails().teamMode == Room::TeamMode::Team;
 
-      // Count team members if in team mode
-      if (isTeamMode)
+      uint32_t redTeamCount = 0;
+      uint32_t blueTeamCount = 0;
+
+      for (const auto& [characterUid, player] : room.GetPlayers())
       {
-        for (const auto& player : room.GetPlayers() | std::views::values)
+        switch (player.GetTeam())
         {
-          switch (player.GetTeam())
-          {
-            case Room::Player::Team::Red:
-              redTeamCount++;
-              break;
-            case Room::Player::Team::Blue:
-              blueTeamCount++;
-              break;
-            default:
-              break;
-          }
+          case Room::Player::Team::Red:
+            redTeamCount++;
+            break;
+          case Room::Player::Team::Blue:
+            blueTeamCount++;
+            break;
+          default:
+            break;
+        }
+
+        // todo: observer
+        const bool isRoomMaster = characterUid != master;
+
+        // Only count the ready state of player which are not masters.
+        if (!isRoomMaster && !player.IsReady())
+        {
+          allPlayersReady = false;
+          break;
         }
       }
-    });
 
-  // Helper lambda to send cancellation
-  auto sendCancel = [this, &clientId, clientContext](protocol::AcCmdCRStartRaceCancel::Reason reason)
-  {
-    protocol::AcCmdCRStartRaceCancel cancel{.reason = reason};
-    _commandServer.QueueCommand<decltype(cancel)>(
-      clientId,
-      [cancel]()
-      {
-        return cancel;
-      });
+      areTeamsBalanced = redTeamCount == blueTeamCount;
+  });
 
-    // Revert the ready state of the master
-    _serverInstance.GetRoomSystem().GetRoom(
-      clientContext.roomUid,
-      [clientContext](Room& room)
-      {
-        room.GetPlayer(clientContext.characterUid).ToggleReady();
-      });
-  };
-
-  // Validate race start conditions
   if (not allPlayersReady)
   {
-    sendCancel(protocol::AcCmdCRStartRaceCancel::Reason::NotREADY);
-
+    SendStartRaceCancel(clientId, protocol::AcCmdCRStartRaceCancel::Reason::NotReady);
     return;
   }
 
-  if (isTeamMode && redTeamCount != blueTeamCount)
+  if (isTeamMode && not areTeamsBalanced)
   {
-    sendCancel(protocol::AcCmdCRStartRaceCancel::Reason::NotTeamBalance);
+    SendStartRaceCancel(clientId, protocol::AcCmdCRStartRaceCancel::Reason::NotTeamBalance);
     return;
   }
 
@@ -1668,6 +1647,19 @@ void RaceDirector::HandleStartRace(
       }
     },
     Scheduler::Clock::now() + std::chrono::milliseconds(roomCountdown.countdown));
+}
+
+void RaceDirector::SendStartRaceCancel(
+  ClientId clientId,
+  protocol::AcCmdCRStartRaceCancel::Reason reason)
+{
+  _commandServer.QueueCommand<protocol::AcCmdCRStartRaceCancel>(
+    clientId,
+    [reason]()
+    {
+      return protocol::AcCmdCRStartRaceCancel{
+        .reason = reason};
+    });
 }
 
 void RaceDirector::HandleRaceTimer(
