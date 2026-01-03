@@ -32,6 +32,11 @@ bool Room::Player::ToggleReady()
   return _isReady;
 }
 
+void Room::Player::SetReady(bool ready)
+{
+  _isReady = ready;
+}
+
 bool Room::Player::IsReady() const
 {
   return _isReady;

@@ -585,7 +585,16 @@ struct AcCmdCRStartRaceNotify
 
 struct AcCmdCRStartRaceCancel
 {
-  uint8_t reason{};
+  enum class Reason : uint8_t
+  {
+    Generic = 0,
+    NotReady = 1,
+    NotTeamBalance = 2,
+    TeamLimit = 3,
+    ServiceClosed = 4,
+    FfaNotEnoughPlayers = 5,
+    NotEnoughCarrotsForFee = 6,
+  } reason{};
 
   static Command GetCommand()
   {
