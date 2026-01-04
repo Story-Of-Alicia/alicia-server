@@ -1340,7 +1340,7 @@ void RaceDirector::HandleStartRace(
 
   // Check if all race requirements are met to start the race
 
-  bool allPlayersReady = false;
+  bool allPlayersReady = true;
   bool isTeamMode = false;
   bool areTeamsBalanced = false;
 
@@ -1368,7 +1368,7 @@ void RaceDirector::HandleStartRace(
         }
 
         // todo: observer
-        const bool isRoomMaster = characterUid != master;
+        const bool isRoomMaster = characterUid == master;
 
         // Only count the ready state of player which are not masters.
         if (!isRoomMaster && !player.IsReady())
