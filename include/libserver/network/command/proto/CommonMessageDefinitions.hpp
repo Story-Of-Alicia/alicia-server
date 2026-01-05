@@ -21,7 +21,7 @@
 #define COMMON_MESSAGE_DEFINES_HPP
 
 #include "libserver/network/command/CommandProtocol.hpp"
-#include "libserver/util/Util.hpp"
+#include <libserver/util/Stream.hpp>
 
 #include <string>
 
