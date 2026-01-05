@@ -813,6 +813,49 @@ void server::protocol::ChatCmdInputStateTrs::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void server::protocol::ChatCmdGameInvite::Write(
+  const ChatCmdGameInvite&,
+  server::SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdGameInvite::Read(
+  ChatCmdGameInvite& command,
+  server::SourceStream& stream)
+{
+  stream.Read(command.recipientCharacterUid);
+}
+
+void server::protocol::ChatCmdGameInviteAck::Write(
+  const ChatCmdGameInviteAck& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1);
+}
+
+void server::protocol::ChatCmdGameInviteAck::Read(
+  ChatCmdGameInviteAck&,
+  server::SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdGameInviteTrs::Write(
+  const ChatCmdGameInviteTrs& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.unk0);
+}
+
+void server::protocol::ChatCmdGameInviteTrs::Read(
+  ChatCmdGameInviteTrs&,
+  server::SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void server::protocol::ChatCmdChannelChatTrs::Write(
   const ChatCmdChannelChatTrs& command,
   server::SinkStream& stream)

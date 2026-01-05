@@ -1113,6 +1113,63 @@ struct ChatCmdInputStateTrs
     SourceStream& stream);
 };
 
+struct ChatCmdGameInvite
+{
+  //! The uid of the character who has been invited.
+  data::Uid recipientCharacterUid{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdGameInvite;
+  }
+
+  static void Write(
+    const ChatCmdGameInvite& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdGameInvite& command,
+    SourceStream& stream);
+};
+
+//! Seems to be not implemented by the client, only deserialised.
+struct ChatCmdGameInviteAck
+{
+  uint32_t unk0{};
+  uint32_t unk1{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdGameInviteAck;
+  }
+
+  static void Write(
+    const ChatCmdGameInviteAck& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdGameInviteAck& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdGameInviteTrs
+{
+  uint32_t unk0{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdGameInviteTrs;
+  }
+
+  static void Write(
+    const ChatCmdGameInviteTrs& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdGameInviteTrs& command,
+    SourceStream& stream);
+};
+
 struct ChatCmdChannelChatTrs
 {
   std::string unk0{};

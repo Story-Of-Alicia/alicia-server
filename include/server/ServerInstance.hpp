@@ -72,6 +72,10 @@ public:
   //! @returns Reference to the race director.
   RaceDirector& GetRaceDirector();
 
+  //! Returns reference to the messenger director.
+  //! @returns Reference to the messenger director.
+  MessengerDirector& GetMessengerDirector();
+
   //! Returns reference to the Course registry.
   //! @returns Reference to the Course registry.
   registry::CourseRegistry& GetCourseRegistry();

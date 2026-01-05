@@ -290,6 +290,12 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     {
       HandleOpCmd(clientId, message);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRInviteUser>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleInviteUser(clientId, message);
+    });
 }
 
 void RaceDirector::Initialize()
@@ -3129,6 +3135,66 @@ void RaceDirector::ScheduleSkillEffect(RaceDirector::RaceInstance& raceInstance,
       }
     },
     Scheduler::Clock::now() + std::chrono::seconds(3)); // TODO: Different time per effect
+}
+
+void RaceDirector::HandleInviteUser(
+  ClientId clientId,
+  const protocol::AcCmdCRInviteUser& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  protocol::AcCmdCRInviteUserCancel cancel{};
+  cancel.recipientCharacterUid = command.recipientCharacterUid;
+  cancel.recipientCharacterName = command.recipientCharacterName;
+
+  // Check if character by that uid is online
+  auto& clientOpt = GetServerInstance().GetMessengerDirector().GetClientByCharacterUid(
+    command.recipientCharacterUid);
+  if (not clientOpt.has_value())
+  {
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  // Check if there's a name mismatch
+  // TODO: this could benefit from caching the character name within the messenger client context
+  bool isNameMatch{false};
+  GetServerInstance().GetDataDirector().GetCharacter(command.recipientCharacterUid).Immutable(
+    [&isNameMatch, recipientCharacterName = command.recipientCharacterName](const data::Character& character)
+    {
+      isNameMatch = character.name() == recipientCharacterName;
+    });
+
+  if (not isNameMatch)
+  {
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  // Race director invites are generally more relaxed, you can invite characters that are in
+  // either a ranch or race waiting room
+  
+  // Sanity check if character can be invited (is away, online or in waiting room)
+  const auto& recipientStatus = clientOpt.value().clientContext.presence.status;
+  bool canInvite = recipientStatus == protocol::Status::Away or
+    recipientStatus == protocol::Status::Online or
+    recipientStatus == protocol::Status::WaitingRoom;
+
+  if (not canInvite)
+  {
+    // Cannot invite character
+    spdlog::warn("Character '{}', which is in a race waiting room, tried to invite character '{}' who is not in an invitable state",
+      clientContext.characterUid,
+      command.recipientCharacterUid);
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  protocol::AcCmdCRInviteUserOK response{};
+  response.recipientCharacterUid = command.recipientCharacterUid;
+  response.recipientCharacterName = command.recipientCharacterName;
+
+  _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }
 
 } // namespace server

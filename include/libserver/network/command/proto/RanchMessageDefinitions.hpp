@@ -20,6 +20,7 @@
 #ifndef RANCH_MESSAGE_DEFINES_HPP
 #define RANCH_MESSAGE_DEFINES_HPP
 
+#include "CommonMessageDefinitions.hpp"
 #include "CommonStructureDefinitions.hpp"
 #include "libserver/network/command/CommandProtocol.hpp"
 
