@@ -60,6 +60,7 @@ add_library(alicia-libserver STATIC
         src/libserver/network/chatter/ChatterServer.cpp
         src/libserver/network/command/CommandProtocol.cpp
         src/libserver/network/command/CommandServer.cpp
+        src/libserver/network/command/proto/CommonMessageDefinitions.cpp
         src/libserver/network/command/proto/CommonStructureDefinitions.cpp
         src/libserver/network/command/proto/LobbyMessageDefinitions.cpp
         src/libserver/network/command/proto/RaceMessageDefinitions.cpp

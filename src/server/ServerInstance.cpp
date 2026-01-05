@@ -122,6 +122,11 @@ RaceDirector& ServerInstance::GetRaceDirector()
   return _raceDirector;
 }
 
+MessengerDirector& ServerInstance::GetMessengerDirector()
+{
+  return _messengerDirector;
+}
+
 registry::CourseRegistry& ServerInstance::GetCourseRegistry()
 {
   return _courseRegistry;

@@ -147,6 +147,12 @@ MessengerDirector::MessengerDirector(ServerInstance& serverInstance)
     {
       HandleChatterGuildLogin(clientId, command);
     });
+
+  _chatterServer.RegisterCommandHandler<protocol::ChatCmdGameInvite>(
+    [this](network::ClientId clientId, const auto& command)
+    {
+      HandleChatterGameInvite(clientId, command);
+    });
 }
 
 void MessengerDirector::Initialize()
@@ -177,6 +183,36 @@ MessengerDirector::ClientContext& MessengerDirector::GetClientContext(
     throw std::runtime_error("Messenger client is not authenticated");
 
   return clientContext;
+}
+
+const std::optional<MessengerDirector::Client> MessengerDirector::GetClientByCharacterUid(const data::Uid characterUid) const
+{
+  std::optional<Client> client{};
+
+  // Get snapshot of current clients
+  const auto clientsSnapshot = _clients;
+  // Find client iterator by character uid
+  const auto& iter = std::ranges::find_if(
+    clientsSnapshot,
+    [characterUid](const auto& client)
+    {
+      const ClientContext& clientContext = client.second;
+      return clientContext.characterUid == characterUid;
+    });
+
+  // If client is found, set client id
+  if (iter != clientsSnapshot.cend())
+    client.emplace(Client{
+      .clientId = iter->first,
+      .clientContext = iter->second
+    });
+
+  return client;
+}
+
+const bool MessengerDirector::IsCharacterOnline(const data::Uid characterUid) const
+{
+  return GetClientByCharacterUid(characterUid).has_value();
 }
 
 void MessengerDirector::Tick()
@@ -1647,6 +1683,36 @@ void MessengerDirector::HandleChatterInputState(
   }
 }
 
+void MessengerDirector::HandleChatterGameInvite(
+  network::ClientId clientId,
+  const protocol::ChatCmdGameInvite& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  // Get client id of recipient by character uid
+  const std::optional<Client> recipientClient = GetClientByCharacterUid(command.recipientCharacterUid);
+  if (not recipientClient.has_value())
+  {
+    // Character by that uid is not online, cancel
+    // TODO: handle this, there's no cancel, ack maybe does something?
+    return;
+  }
+
+  // TODO: do we need a friendship check?
+
+  // Send game invite notify
+  protocol::ChatCmdGameInviteTrs notify{
+    .unk0 = clientContext.characterUid};
+
+  const ClientId recipientClientId = recipientClient.value().clientId;
+  _chatterServer.QueueCommand<decltype(notify)>(recipientClientId, [notify](){ return notify; });
+
+  protocol::ChatCmdGameInviteAck response{
+    .unk0 = clientContext.characterUid,
+    .unk1 = command.recipientCharacterUid};
+  _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+}
+
 void MessengerDirector::HandleChatterChannelInfo(
   network::ClientId clientId,
   const protocol::ChatCmdChannelInfo& command)
@@ -1777,16 +1843,6 @@ void MessengerDirector::HandleChatterGuildLogin(
     {
       return response;
     });
-
-  // Update state on guild login (update state updates these later)
-  HandleChatterUpdateState(
-    clientId,
-    protocol::ChatCmdUpdateState{
-      .presence = protocol::Presence{
-        .status = protocol::Status::Online,
-        .scene = protocol::Presence::Scene::Ranch, // Default
-        .sceneUid = 0 // Default
-      }});
 }
 
 } // namespace server

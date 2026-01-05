@@ -29,14 +29,25 @@ private:
     protocol::Presence presence{};
   };
 
+  struct Client
+  {
+    network::ClientId clientId{};
+    ClientContext clientContext{};
+  };
+
 public:
   explicit MessengerDirector(ServerInstance& serverInstance);
 
   void Initialize();
   void Terminate();
+
   ClientContext& GetClientContext(
     network::ClientId clientId,
     bool requireAuthentication = true);
+
+  const std::optional<Client> GetClientByCharacterUid(const data::Uid characterUid) const;
+  const bool IsCharacterOnline(const data::Uid characterUid) const;
+
   void Tick();
 
 private:
@@ -113,6 +124,10 @@ private:
   void HandleChatterInputState(
     network::ClientId clientId,
     const protocol::ChatCmdInputState& command);
+
+  void HandleChatterGameInvite(
+    network::ClientId clientId,
+    const protocol::ChatCmdGameInvite& command);
 
   void HandleChatterChannelInfo(
     network::ClientId clientId,

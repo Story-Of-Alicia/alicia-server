@@ -402,6 +402,11 @@ private:
     ClientId clientId, 
     const protocol::AcCmdCRSendGift& command);
 
+  //! Ranch clients can only invite characters in other ranches.
+  void HandleInviteUser(
+    ClientId clientId, 
+    const protocol::AcCmdCRInviteUser& command);
+
   //!
   ServerInstance& _serverInstance;
   //!

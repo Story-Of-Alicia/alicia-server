@@ -60,7 +60,7 @@ public:
     if (roomIter == _raceInstances.cend())
       return false;
 
-    return roomIter->second.stage == RaceInstance::Stage::Racing ||
+    return roomIter->second.stage == RaceInstance::Stage::Racing |
       roomIter->second.stage == RaceInstance::Stage::Loading;
   }
 
@@ -267,6 +267,11 @@ private:
   void HandleOpCmd(
     ClientId clientId,
     const protocol::AcCmdCROpCmd& command);
+
+  //! Race clients can invite characters from ranch or other race rooms.
+  void HandleInviteUser(
+    ClientId clientId,
+    const protocol::AcCmdCRInviteUser& command);
 
   void PrepareItemSpawners(data::Uid roomUid);
 
