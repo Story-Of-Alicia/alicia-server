@@ -81,7 +81,7 @@ enum class ChatterErrorCode : uint32_t
 
 struct Presence
 {
-  Status status{};
+  Status status{protocol::Status::Offline};
   enum class Scene : uint32_t
   {
     Ranch = 0,
@@ -211,7 +211,9 @@ struct ChatCmdBuddyAddAckOk
 {
   //! The uid of the character that is part of the friend request.
   uint32_t characterUid{};
+  //! The name of the character that is part of the friend request.
   std::string characterName{};
+  //! Unused. This field is the same `ChatCmdLoginAckOK::Friend::member5`.
   uint8_t unk2{};
   //! Online status of the character.
   protocol::Status status{};
@@ -1276,23 +1278,9 @@ struct ChatCmdGuildLoginAckOK
   {
     //! Character UID of the guild member. 
     data::Uid characterUid{};
-    //! Online status of the guild member.
-    //! `Status::Hidden` completely removes the status of that member.
-    Status status{Status::Hidden};
-
-    struct Struct2
-    {
-      uint32_t unk0{};
-      uint32_t unk1{};
-
-      static void Write(
-        const Struct2& command,
-        SinkStream& stream);
-
-      static void Read(
-        Struct2& command,
-        SourceStream& stream);
-    } unk2{};
+    //! Online presence of the guild member.
+    //! Note: `Hidden` completely removes the status of that member.
+    Presence presence{};
 
     static void Write(
       const GuildMember& command,

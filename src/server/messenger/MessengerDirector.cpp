@@ -264,7 +264,8 @@ void MessengerDirector::HandleChatterLogin(
 
   // TODO: verify this request in some way
   // FIXME: authentication is always assumed to be correct
-  if (false)
+  bool isAuthenticated = true;
+  if (not isAuthenticated)
   {
     // Login failed, bad actor, log and return
     // Do not log with `command.name` (character name) to prevent some form of string manipulation in spdlog
@@ -1755,8 +1756,26 @@ void MessengerDirector::HandleChatterGuildLogin(
     command.code,
     command.guildUid);
 
+  // TODO: authenticate with OtpSystem, client sends code received from `AcCmdCLGetMessengerInfoOK`
+  bool isAuthenticated = true;
+  if (not isAuthenticated)
+  {
+    // Login failed, bad actor, log and return
+    // Do not log with `command.name` (character name) to prevent some form of string manipulation in spdlog
+    spdlog::warn("Client '{}' tried to login to guild '{}' as character '{}' but failed authentication with auth code '{}'",
+      clientId,
+      command.guildUid,
+      command.characterUid,
+      command.code);
+
+    protocol::ChatCmdGuildLoginAckCancel cancel{
+      .errorCode = protocol::ChatterErrorCode::LoginFailed};
+    _chatterServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
   // ChatCmdGuildLogin is sent after ChatCmdLogin
-  // Assumption: the user is very likely already authenticated with messenger
+
   auto& clientContext = GetClientContext(clientId);
 
   // Check if client belongs to the guild in the command
@@ -1811,15 +1830,10 @@ void MessengerDirector::HandleChatterGuildLogin(
     {
       for (const data::Uid& guildMemberUid : guild.members())
       {
+        // Create a guild member for the response
         auto& chatGuildMember = response.guildMembers.emplace_back(
           protocol::ChatCmdGuildLoginAckOK::GuildMember{
-            .characterUid = guildMemberUid,
-            .status = protocol::Status::Offline,
-            .unk2 = {
-              .unk0 = 0,
-              .unk1 = 0
-            }
-          });
+            .characterUid = guildMemberUid});
 
         // Find if the guild member is connected to the messenger server
         const auto clientsSnapshot = _clients;
@@ -1828,9 +1842,7 @@ void MessengerDirector::HandleChatterGuildLogin(
           // If guild member is connected, set status to the one set by the character
           if (onlineClientContext.characterUid == guildMemberUid)
           {
-            chatGuildMember.status = onlineClientContext.presence.status;
-            chatGuildMember.unk2.unk0 = static_cast<uint32_t>(onlineClientContext.presence.scene); // TODO: change types
-            chatGuildMember.unk2.unk1 = onlineClientContext.presence.sceneUid;
+            chatGuildMember.presence = onlineClientContext.presence;
             break;
           }
         }
