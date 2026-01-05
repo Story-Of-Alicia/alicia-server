@@ -151,8 +151,8 @@ struct ChatCmdLoginAckOK
 
     // 2 - friend request popup
     uint8_t member5{};
-    uint32_t roomUid{};
-    uint32_t ranchUid{};
+    Presence::Scene scene{};
+    data::Uid sceneUid{};
   };
   std::vector<Friend> friends;
 

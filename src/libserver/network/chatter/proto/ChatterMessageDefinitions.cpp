@@ -80,8 +80,8 @@ void server::protocol::ChatCmdLoginAckOK::Write(
       .Write(fr.name)
       .Write(fr.status)
       .Write(fr.member5)
-      .Write(fr.roomUid)
-      .Write(fr.ranchUid);
+      .Write(fr.scene)
+      .Write(fr.sceneUid);
   }
 }
 
