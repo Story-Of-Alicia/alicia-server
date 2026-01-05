@@ -391,6 +391,17 @@ void MessengerDirector::HandleChatterLogin(
     {
       return response;
     });
+
+  // The client sometimes fails to update online state with `ChatCmdUpdateState` command
+  // and leaves the server (and subsequently friends/guildmates) in limbo, resulting incorrect online state.
+  // Emit online state to relevant players in addition
+  // to the client possibly invoking this command.
+  HandleChatterUpdateState(clientId, protocol::ChatCmdUpdateState{
+    .presence = protocol::Presence{
+      .status = protocol::Status::Online,
+      .scene = protocol::Presence::Scene::Ranch,
+      .sceneUid = clientContext.characterUid // Scene uid is default to character uid by design
+    }});
 }
 
 void MessengerDirector::HandleChatterBuddyAdd(
@@ -1425,6 +1436,12 @@ void MessengerDirector::HandleChatterUpdateState(
       static_cast<uint8_t>(command.presence.status));
     return;
   }
+  else if (command.presence.status == protocol::Status::Hidden)
+  {
+    // Do not broadcast this at all as it breaks the row containing 
+    // the invoker in other characters' friends list
+    return;
+  }
 
   auto& clientContext = GetClientContext(clientId);
   // Update state for client context
@@ -1855,6 +1872,12 @@ void MessengerDirector::HandleChatterGuildLogin(
     {
       return response;
     });
+
+  // Broadcast invoker's online
+  HandleChatterUpdateState(
+    clientId,
+    protocol::ChatCmdUpdateState{
+      .presence = clientContext.presence});
 }
 
 } // namespace server
