@@ -577,8 +577,8 @@ void MessengerDirector::HandleChatterBuddyAddReply(
 
     protocol::ChatCmdBuddyAddAckOk response{};
 
-    // Keep track of the requesting character's status (if they are even online)
-    protocol::Status requestingCharacterStatus = protocol::Status::Offline;
+    // Keep track of the requesting character's presence (if they are even online)
+    std::optional<protocol::Presence> requestingCharacterPresence{};
 
     // Check if requesting character is still online to notify of friend request result
     if (requestingClient != clientsSnapshot.cend())
@@ -587,7 +587,7 @@ void MessengerDirector::HandleChatterBuddyAddReply(
       const ClientId requestingClientId = requestingClient->first;
 
       const ClientContext& requestingClientContext = requestingClient->second;
-      requestingCharacterStatus = requestingClientContext.presence.status;
+      requestingCharacterPresence.emplace(requestingClientContext.presence);
 
       // Populate response with responding character's information
       response.characterUid = clientContext.characterUid;
@@ -597,19 +597,36 @@ void MessengerDirector::HandleChatterBuddyAddReply(
 
       // Send response to requesting character
       _chatterServer.QueueCommand<decltype(response)>(requestingClientId, [response](){ return response; });
+
+      // Notify the requesting client of the (invoker) new friend's online state  
+      protocol::ChatCmdUpdateStateTrs stateNotify{
+        .affectedCharacterUid = clientContext.characterUid};
+      stateNotify.presence = clientContext.presence;
+      _chatterServer.QueueCommand<decltype(stateNotify)>(requestingClientId, [stateNotify](){ return stateNotify; });
     }
 
     // Populate response with requesting character's information
     response.characterUid = command.requestingCharacterUid;
     response.characterName = requestingCharacterName;
     response.unk2 = 0; // TODO: identify this
-    response.status = requestingCharacterStatus;
+
+    // Prepare update state for invoker of new friend's online presence
+    protocol::ChatCmdUpdateStateTrs stateNotify{
+      .affectedCharacterUid = command.requestingCharacterUid};
+
+    if (requestingCharacterPresence.has_value())
+    {
+      // Requesting character is online, populate fields
+      const auto& presence = requestingCharacterPresence.value();
+      response.status = presence.status;
+      stateNotify.presence = presence;
+    }
 
     // Send response to responding character
     _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 
-    // TODO: follow button in the friends list doesn't work for newly added friends, only when that friend
-    // has changed state such as moving rooms or changing online status.
+    // Notify the responding client (invoker) of the requester's (new friend's) online state  
+    _chatterServer.QueueCommand<decltype(stateNotify)>(clientId, [stateNotify](){ return stateNotify; });
   }
   else
   {
