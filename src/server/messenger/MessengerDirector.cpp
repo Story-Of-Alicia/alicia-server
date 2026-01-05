@@ -337,7 +337,6 @@ void MessengerDirector::HandleChatterLogin(
         friendo.name = friendCharacter.name();
         friendo.uid = friendCharacter.uid();
         friendo.categoryUid = groupUid;
-        friendo.ranchUid = friendCharacter.uid();
       });
 
       // Check if friend is online by looking for them in messenger clients
@@ -347,7 +346,8 @@ void MessengerDirector::HandleChatterLogin(
         if (onlineClientContext.isAuthenticated && onlineClientContext.characterUid == friendUid)
         {
           friendo.status = onlineClientContext.presence.status;
-          friendo.roomUid = onlineClientContext.presence.sceneUid;
+          friendo.scene = onlineClientContext.presence.scene;
+          friendo.sceneUid = onlineClientContext.presence.sceneUid;
           break;
         }
       }
