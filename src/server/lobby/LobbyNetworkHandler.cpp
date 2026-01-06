@@ -262,10 +262,22 @@ void LobbyNetworkHandler::Initialize()
     "Lobby is advertising race server on {}:{}",
     lobbyConfig.advertisement.race.address.to_string(),
     lobbyConfig.advertisement.race.port);
-  spdlog::debug(
-    "Lobby is advertising messenger server on {}:{}",
-    lobbyConfig.advertisement.messenger.address.to_string(),
-    lobbyConfig.advertisement.messenger.port);
+
+  if (_serverInstance.GetMessengerDirector().GetConfig().enabled)
+  {
+    spdlog::debug(
+      "Lobby is advertising messenger server on {}:{}",
+      lobbyConfig.advertisement.messenger.address.to_string(),
+      lobbyConfig.advertisement.messenger.port);
+
+    if (_serverInstance.GetChatDirector().GetConfig().enabled)
+    {
+      spdlog::debug(
+        "Lobby is advertising chat server on {}:{}",
+        lobbyConfig.advertisement.chat.address.to_string(),
+        lobbyConfig.advertisement.chat.port);
+    }
+  }
 
   spdlog::debug(
     "Lobby server listening on {}:{}",
@@ -1935,6 +1947,18 @@ void LobbyNetworkHandler::HandleGetMessengerInfo(
   const protocol::AcCmdCLGetMessengerInfo& command)
 {
   const auto& clientContext = GetClientContext(clientId);
+
+  // Get messenger config and check if messenger is enabled
+  const auto& messengerConfig = _serverInstance.GetMessengerDirector().GetConfig();
+
+  if (not messengerConfig.enabled)
+  {
+    // Messenger is not enabled
+    protocol::AcCmdCLGetMessengerInfoCancel cancel{};
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
   const auto& lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
 
   // Hash character uid with messenger director's otp constant for a unique key

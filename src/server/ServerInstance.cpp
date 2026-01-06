@@ -77,21 +77,26 @@ void ServerInstance::Initialize()
   });
 
   // Messenger director
-  _messengerThread = std::thread([this]()
+  if (_config.messenger.enabled)
   {
-    _messengerDirector.Initialize();
-    RunDirectorTaskLoop(_messengerDirector);
-    _messengerDirector.Terminate();
-  });
-
-  // Chat director
-  if (_config.chat.enabled)
-    _chatDirectorThread = std::thread([this]()
+    _messengerThread = std::thread([this]()
     {
-      _chatDirector.Initialize();
-      RunDirectorTaskLoop(_chatDirector);
-      _chatDirector.Terminate();
+      _messengerDirector.Initialize();
+      RunDirectorTaskLoop(_messengerDirector);
+      _messengerDirector.Terminate();
     });
+
+    // Chat director
+    if (_config.chat.enabled) // Chat depends on messenger
+    {
+      _chatDirectorThread = std::thread([this]()
+      {
+        _chatDirector.Initialize();
+        RunDirectorTaskLoop(_chatDirector);
+        _chatDirector.Terminate();
+      });
+    }
+  }
 
   // Ranch director
   _ranchDirectorThread = std::thread([this]()

@@ -1656,10 +1656,12 @@ void MessengerDirector::HandleChatterChannelInfo(
   const auto& chatConfig = _serverInstance.GetChatDirector().GetConfig();
   
   if (not chatConfig.enabled)
+  {
     // Chat server is disabled
     // TODO: discover (if any) corresponding cancel response exists in game client
     // to get rid of the All/Guild chat tabs
     return;
+  }
 
   // Hash character uid with chat director's otp constant for a unique key
   size_t identityHash = std::hash<uint32_t>()(clientContext.characterUid);

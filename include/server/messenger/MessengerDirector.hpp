@@ -46,6 +46,10 @@ public:
   void Initialize();
   void Terminate();
 
+  //! Get messenger config.
+  //! @return Messenger config.
+  [[nodiscard]] Config::Messenger& GetConfig();
+
   ClientContext& GetClientContext(
     network::ClientId clientId,
     bool requireAuthentication = true);
@@ -56,7 +60,7 @@ public:
   void Tick();
 
 private:
-  Config::Messenger& GetConfig();
+  
 
   void HandleClientConnected(network::ClientId clientId) override;
   void HandleClientDisconnected(network::ClientId clientId) override;
