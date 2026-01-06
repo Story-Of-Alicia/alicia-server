@@ -47,6 +47,9 @@ public:
       Listen messenger{
         .address = asio::ip::address_v4::loopback(),
         .port = 10033};
+      Listen chat{
+        .address = asio::ip::address_v4::loopback(),
+        .port = 10034};
     } advertisement{};
   } lobby{};
 
@@ -73,6 +76,14 @@ public:
     Listen listen{
       .port = 10033};
   } messenger{};
+
+  //!
+  struct Chat
+  {
+    bool enabled{true};
+    Listen listen{
+      .port = 10034};
+  } chat{};
 
   //!
   struct Data

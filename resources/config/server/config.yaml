@@ -40,6 +40,13 @@ server:
         # The port of the advertised messenger server.
         # Additionally configurable through environment variable LOBBY_ADVERTISED_MESSENGER_PORT.
         port: 10033
+      chat:
+        # The IPv4 address or a domain of the advertised chat server.
+        # Additionally configurable through environment variable LOBBY_ADVERTISED_CHAT_ADDRESS.
+        address: "127.0.0.1"
+        # The port of the advertised chat server.
+        # Additionally configurable through environment variable LOBBY_ADVERTISED_CHAT_PORT.
+        port: 10034
   # Configuration section of the ranch server.
   ranch:
     # Whether the ranch server is enabled.
@@ -76,6 +83,18 @@ server:
       # The port the server listens on.
       # Additionally configurable through environment variabl MESSENGER_SERVER_PORT.
       port: 10033
+  # Configuration section of the chat server.
+  chat:
+    # Whether the chat server is enabled.
+    enabled: false
+    # Address and port listened to by the chat server.
+    listen:
+      # The IPv4 address or a domain the server listens on.
+      # Additionally configurable through environment variable CHAT_SERVER_ADDRESS.
+      address: "0.0.0.0"
+      # The port the server listens on.
+      # Additionally configurable through environment variabl CHAT_SERVER_PORT.
+      port: 10034
   data:
     source: file
     file:

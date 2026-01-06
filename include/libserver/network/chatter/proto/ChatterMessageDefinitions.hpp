@@ -1174,10 +1174,10 @@ struct ChatCmdGameInviteTrs
 
 struct ChatCmdChannelChatTrs
 {
-  std::string unk0{};
+  std::string messageAuthor{};
 
-  std::string unk1{};
-  uint8_t unk2{};
+  std::string message{};
+  protocol::ChatCmdChat::Role role{};
 
   static ChatterCommand GetCommand()
   {

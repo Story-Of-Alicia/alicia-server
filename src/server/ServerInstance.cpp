@@ -13,6 +13,7 @@ ServerInstance::ServerInstance(
   , _dataDirector(resourceDirectory / "data")
   , _lobbyDirector(*this)
   , _messengerDirector(*this)
+  , _chatDirector(*this)
   , _ranchDirector(*this)
   , _raceDirector(*this)
   , _chatSystem(*this)
@@ -35,6 +36,7 @@ ServerInstance::~ServerInstance()
 
   waitForThread("race director", _raceDirectorThread);
   waitForThread("ranch director", _ranchDirectorThread);
+  waitForThread("chat director", _chatDirectorThread);
   waitForThread("messenger director", _messengerThread);
   waitForThread("lobby director", _lobbyDirectorThread);
   waitForThread("data director", _dataDirectorThread);
@@ -80,6 +82,14 @@ void ServerInstance::Initialize()
     _messengerDirector.Initialize();
     RunDirectorTaskLoop(_messengerDirector);
     _messengerDirector.Terminate();
+  });
+
+  // Chat director
+  _chatDirectorThread = std::thread([this]()
+  {
+    _chatDirector.Initialize();
+    RunDirectorTaskLoop(_chatDirector);
+    _chatDirector.Terminate();
   });
 
   // Ranch director

@@ -860,9 +860,9 @@ void server::protocol::ChatCmdChannelChatTrs::Write(
   const ChatCmdChannelChatTrs& command,
   server::SinkStream& stream)
 {
-  stream.Write(command.unk0)
-    .Write(command.unk1)
-    .Write(command.unk2);
+  stream.Write(command.messageAuthor)
+    .Write(command.message)
+    .Write(command.role);
 }
 
 void server::protocol::ChatCmdChannelChatTrs::Read(

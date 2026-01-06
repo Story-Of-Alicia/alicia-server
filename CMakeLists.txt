@@ -94,6 +94,7 @@ add_executable(alicia-server
         src/server/lobby/shop/Shop.cpp
         src/server/lobby/LobbyDirector.cpp
         src/server/lobby/LobbyNetworkHandler.cpp
+        src/server/chat/ChatDirector.cpp
         src/server/messenger/MessengerDirector.cpp
         src/server/race/RaceDirector.cpp
         src/server/ranch/RanchDirector.cpp

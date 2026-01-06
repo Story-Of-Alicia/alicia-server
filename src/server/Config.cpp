@@ -117,6 +117,13 @@ void Config::LoadFromEnvironment()
     std::format("RACE_SERVER_PORT"),
     race.listen.address,
     race.listen.port);
+
+  // Chat address and port.
+  getAddressAndPortVariables(
+    std::format("CHAT_SERVER_ADDRESS"),
+    std::format("CHAT_SERVER_PORT"),
+    chat.listen.address,
+    chat.listen.port);
 }
 
 void Config::LoadFromFile(const std::filesystem::path& filePath)
@@ -176,6 +183,7 @@ void Config::LoadFromFile(const std::filesystem::path& filePath)
       lobby.advertisement.ranch = parseListenSection(lobbyAdvertisementYaml["ranch"]);
       lobby.advertisement.race = parseListenSection(lobbyAdvertisementYaml["race"]);
       lobby.advertisement.messenger = parseListenSection(lobbyAdvertisementYaml["messenger"]);
+      lobby.advertisement.chat = parseListenSection(lobbyAdvertisementYaml["chat"]);
     }
     catch (const std::exception& e)
     {
@@ -216,6 +224,18 @@ void Config::LoadFromFile(const std::filesystem::path& filePath)
     catch (const std::exception& e)
     {
       spdlog::error("Unhandled exception parsing the messenger config: {}", e.what());
+    }
+
+    // Chat config
+    try
+    {
+      const auto chatYaml = serverYaml["chat"];
+      chat.enabled = chatYaml["enabled"].as<bool>();
+      chat.listen = parseListenSection(chatYaml["listen"]);
+    }
+    catch (const std::exception& e)
+    {
+      spdlog::error("Unhandled exception parsing the chat config: {}", e.what());
     }
 
     // Messenger config
