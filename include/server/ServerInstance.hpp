@@ -77,6 +77,10 @@ public:
   //! @returns Reference to the messenger director.
   MessengerDirector& GetMessengerDirector();
 
+  //! Returns reference to the chat director.
+  //! @returns Reference to the chat director.
+  ChatDirector& GetChatDirector();
+
   //! Returns reference to the Course registry.
   //! @returns Reference to the Course registry.
   registry::CourseRegistry& GetCourseRegistry();

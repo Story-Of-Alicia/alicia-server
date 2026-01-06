@@ -85,12 +85,13 @@ void ServerInstance::Initialize()
   });
 
   // Chat director
-  _chatDirectorThread = std::thread([this]()
-  {
-    _chatDirector.Initialize();
-    RunDirectorTaskLoop(_chatDirector);
-    _chatDirector.Terminate();
-  });
+  if (_config.chat.enabled)
+    _chatDirectorThread = std::thread([this]()
+    {
+      _chatDirector.Initialize();
+      RunDirectorTaskLoop(_chatDirector);
+      _chatDirector.Terminate();
+    });
 
   // Ranch director
   _ranchDirectorThread = std::thread([this]()
@@ -137,6 +138,11 @@ RaceDirector& ServerInstance::GetRaceDirector()
 MessengerDirector& ServerInstance::GetMessengerDirector()
 {
   return _messengerDirector;
+}
+
+ChatDirector& ServerInstance::GetChatDirector()
+{
+  return _chatDirector;
 }
 
 registry::CourseRegistry& ServerInstance::GetCourseRegistry()

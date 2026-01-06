@@ -1643,32 +1643,55 @@ void MessengerDirector::HandleChatterGameInvite(
 
 void MessengerDirector::HandleChatterChannelInfo(
   network::ClientId clientId,
-  const protocol::ChatCmdChannelInfo& command)
+  const protocol::ChatCmdChannelInfo&)
 {
   spdlog::debug("[{}] ChatCmdChannelInfo", clientId);
 
-  // Disable all chat
-  // TODO: move this to configuration
-  bool enableChat = true;
-  if (not enableChat)
+  const auto& clientContext = GetClientContext(clientId);
+
+  // Get lobby config to get the chat advertisement address and port
+  const auto& lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
+
+  // Get chat config and check if chat is enabled
+  const auto& chatConfig = _serverInstance.GetChatDirector().GetConfig();
+  
+  if (not chatConfig.enabled)
+    // Chat server is disabled
+    // TODO: discover (if any) corresponding cancel response exists in game client
+    // to get rid of the All/Guild chat tabs
     return;
 
-  const auto& lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
+  // Hash character uid with chat director's otp constant for a unique key
+  size_t identityHash = std::hash<uint32_t>()(clientContext.characterUid);
+  boost::hash_combine(identityHash, ChatOtpConstant);
+  const uint32_t code = _serverInstance.GetOtpSystem().GrantCode(identityHash);
+
+  // Send response for all chat
   protocol::ChatCmdChannelInfoAckOk response{
     .hostname = lobbyConfig.advertisement.chat.address.to_string(),
     .port = lobbyConfig.advertisement.chat.port,
-    .code = 0xDEADBEEF // TODO: use OtpRegistry
-  };
+    .code = code};
   _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 
-  bool isInGuild = true;
+  bool isInGuild{false};
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [&isInGuild](const data::Character& character)
+    {
+      isInGuild = character.guildUid() != 0;
+    });
+
+  // If not in a guild, then we're done handling the command
   if (not isInGuild)
     return;
 
+  // Not sending this internally disables the guild chat on the client,
+  // even if the client says that guild chat is connected
+
+  // Send response for guild chat
   protocol::ChatCmdChannelInfoGuildRoomAckOk guildResponse{};
   guildResponse.hostname = lobbyConfig.advertisement.chat.address.to_string();
   guildResponse.port = lobbyConfig.advertisement.chat.port;
-  guildResponse.code = 0xCAFECAFE; // TODO: use OtpRegistry
+  guildResponse.code = code; // This value seemingly has no effect
   _chatterServer.QueueCommand<decltype(guildResponse)>(clientId, [guildResponse](){ return guildResponse; });
 }
 

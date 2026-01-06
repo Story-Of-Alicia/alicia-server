@@ -13,6 +13,9 @@
 namespace server
 {
 
+//! Chat client OTP constant
+constexpr uint32_t ChatOtpConstant = 0x14E05CE5;
+
 class ServerInstance;
 
 class ChatDirector
@@ -32,6 +35,10 @@ private:
 public:
   explicit ChatDirector(ServerInstance& serverInstance);
 
+  //! Get chat config.
+  //! @return Chat config.
+  [[nodiscard]] Config::Chat& GetConfig();
+
   void Initialize();
   void Terminate();
   ClientContext& GetClientContext(
@@ -40,8 +47,6 @@ public:
   void Tick();
 
 private:
-  Config::Chat& GetConfig();
-
   void HandleClientConnected(network::ClientId clientId) override;
   void HandleClientDisconnected(network::ClientId clientId) override;
 
