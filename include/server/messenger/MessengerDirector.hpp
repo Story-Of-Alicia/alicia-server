@@ -13,6 +13,9 @@
 namespace server
 {
 
+//! Messenger client OTP constant
+constexpr uint32_t MessengerOtpConstant = 0xBABF67A0;
+
 class ServerInstance;
 
 class MessengerDirector
@@ -23,6 +26,8 @@ private:
   {
     //! Whether the client is authenticated.
     bool isAuthenticated{false};
+    //! The otp code used to authenticate this client.
+    uint32_t otpCode{};
     //! Unique ID of the client's character.
     data::Uid characterUid{data::InvalidUid};
     //! Online presence of the client.

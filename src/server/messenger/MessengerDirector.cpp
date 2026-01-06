@@ -21,6 +21,8 @@
 
 #include "server/ServerInstance.hpp"
 
+#include <boost/container_hash/hash.hpp>
+
 namespace server
 {
 
@@ -244,10 +246,17 @@ void MessengerDirector::HandleChatterLogin(
 
   auto& clientContext = GetClientContext(clientId, false);
 
-  // TODO: verify this request in some way
-  // FIXME: authentication is always assumed to be correct
-  bool isAuthenticated = true;
-  if (not isAuthenticated)
+  // Generate identity hash based on the character uid from the command and
+  // the messenger otp constant
+  size_t identityHash = std::hash<uint32_t>()(command.characterUid);
+  boost::hash_combine(identityHash, MessengerOtpConstant);
+
+  // Authorise the code received in the command against the calculated identity hash
+  clientContext.isAuthenticated = _serverInstance.GetOtpSystem().AuthorizeCode(
+    identityHash,
+    command.code);
+
+  if (not clientContext.isAuthenticated)
   {
     // Login failed, bad actor, log and return
     // Do not log with `command.name` (character name) to prevent some form of string manipulation in spdlog
@@ -263,7 +272,8 @@ void MessengerDirector::HandleChatterLogin(
     return;
   }
 
-  clientContext.isAuthenticated = true;
+  // Store this otp code for reauthentication with the guild login command (if at all)
+  clientContext.otpCode = command.code;
 
   protocol::ChatCmdLoginAckOK response{};
 
@@ -1666,6 +1676,8 @@ void MessengerDirector::HandleChatterGuildLogin(
   network::ClientId clientId,
   const protocol::ChatCmdGuildLogin& command)
 {
+  // ChatCmdGuildLogin is sent after ChatCmdLogin
+
   spdlog::debug("[{}] ChatCmdGuildLogin: {} {} {} {}",
     clientId,
     command.characterUid,
@@ -1673,9 +1685,13 @@ void MessengerDirector::HandleChatterGuildLogin(
     command.code,
     command.guildUid);
 
-  // TODO: authenticate with OtpSystem, client sends code received from `AcCmdCLGetMessengerInfoOK`
-  bool isAuthenticated = true;
-  if (not isAuthenticated)
+  auto& clientContext = GetClientContext(clientId);
+
+  // Reauthenticate against the already-used otp code that the client
+  // gave when authenticating with the `ChatCmdLogin` command handler.
+  // The client reuses the otp code that was previously used in `ChatCmdLogin`.
+  clientContext.isAuthenticated = command.code == clientContext.otpCode;
+  if (not clientContext.isAuthenticated)
   {
     // Login failed, bad actor, log and return
     // Do not log with `command.name` (character name) to prevent some form of string manipulation in spdlog
@@ -1690,10 +1706,6 @@ void MessengerDirector::HandleChatterGuildLogin(
     _chatterServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
     return;
   }
-
-  // ChatCmdGuildLogin is sent after ChatCmdLogin
-
-  auto& clientContext = GetClientContext(clientId);
 
   // Check if client belongs to the guild in the command
   data::Uid characterGuildUid{data::InvalidUid};
