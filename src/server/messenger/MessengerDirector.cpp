@@ -118,24 +118,6 @@ MessengerDirector::MessengerDirector(ServerInstance& serverInstance)
       HandleChatterChatInvite(clientId, command);
     });
 
-  _chatterServer.RegisterCommandHandler<protocol::ChatCmdEnterRoom>(
-    [this](network::ClientId clientId, const auto& command)
-    {
-      HandleChatterEnterRoom(clientId, command);
-    });
-
-  _chatterServer.RegisterCommandHandler<protocol::ChatCmdChat>(
-    [this](network::ClientId clientId, const auto& command)
-    {
-      HandleChatterChat(clientId, command);
-    });
-
-  _chatterServer.RegisterCommandHandler<protocol::ChatCmdInputState>(
-    [this](network::ClientId clientId, const auto& command)
-    {
-      HandleChatterInputState(clientId, command);
-    });
-
   _chatterServer.RegisterCommandHandler<protocol::ChatCmdChannelInfo>(
     [this](network::ClientId clientId, const auto& command)
     {
@@ -367,7 +349,6 @@ void MessengerDirector::HandleChatterLogin(
       friendo.name = friendCharacter.name();
       friendo.uid = friendCharacter.uid();
       friendo.categoryUid = FriendsCategoryUid;
-      friendo.ranchUid = friendCharacter.uid();
     });
     
     friendo.member5 = 2; // Pending request
@@ -379,7 +360,8 @@ void MessengerDirector::HandleChatterLogin(
       if (onlineClientContext.isAuthenticated && onlineClientContext.characterUid == pendingUid)
       {
         friendo.status = onlineClientContext.presence.status;
-        friendo.roomUid = onlineClientContext.presence.sceneUid;
+        friendo.scene = onlineClientContext.presence.scene;
+        friendo.sceneUid = onlineClientContext.presence.sceneUid;
         break;
       }
     }
@@ -1619,105 +1601,6 @@ void MessengerDirector::HandleChatterChatInvite(
   }
 }
 
-void MessengerDirector::HandleChatterEnterRoom(
-  network::ClientId clientId,
-  const protocol::ChatCmdEnterRoom& command)
-{
-  spdlog::debug("[{}] ChatCmdEnterRoom: {} {} {} {}",
-    clientId,
-    command.code,
-    command.characterUid,
-    command.characterName,
-    command.guildUid);
-
-  auto& clientContext = GetClientContext(clientId, false);
-  // TODO:/FIXME: authenticate with code assigned in ChatCmdChannelInfo
-  clientContext.characterUid = command.characterUid;
-  clientContext.isAuthenticated = true;
-
-  // TODO: discover response ack
-  protocol::ChatCmdEnterRoomAckOk response{
-    .unk1 = {
-      protocol::ChatCmdEnterRoomAckOk::Struct0{
-        .unk0 = 0,
-        .unk1 = "All"
-      },
-      protocol::ChatCmdEnterRoomAckOk::Struct0{
-        .unk0 = 1,
-        .unk1 = "Guild"
-      }
-    },
-  };
-  _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
-}
-
-void MessengerDirector::HandleChatterChat(
-  network::ClientId clientId,
-  const protocol::ChatCmdChat& command)
-{
-  spdlog::debug("[{}] ChatCmdChat: {} [{}]",
-    clientId,
-    command.message,
-    command.role == protocol::ChatCmdChat::Role::User ? "User" :
-      command.role == protocol::ChatCmdChat::Role::Op ? "Op" :
-      command.role == protocol::ChatCmdChat::Role::GameMaster ? "GameMaster" :
-      std::format(
-        "unknown role {}",
-        static_cast<uint8_t>(command.role)));
-
-  const auto& clientContext = GetClientContext(clientId);
-
-  std::string name{};
-  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
-    [&name](const data::Character& character)
-    {
-      name = character.name();
-    });
-
-  // ChatCmdChatTrs did not work in any way shape or form, the handler seemed to just do nothing
-  // Opted for ChatCmdChannelChatTrs for global chat
-  protocol::ChatCmdChannelChatTrs notify{
-    .unk0 = name,
-    .unk1 = command.message,
-    .unk2 = static_cast<uint8_t>(command.role)};
-  
-  for (const auto& [onlineClientId, onlineClientContext] : _clients)
-  {
-    // Skip unauthenticated clients
-    if (not onlineClientContext.isAuthenticated)
-      continue;
-
-    _chatterServer.QueueCommand<decltype(notify)>(onlineClientId, [notify](){ return notify; });
-  }
-}
-
-void MessengerDirector::HandleChatterInputState(
-  network::ClientId clientId,
-  const protocol::ChatCmdInputState& command)
-{
-  spdlog::debug("[{}] ChatCmdInputState: {}",
-    clientId,
-    command.state);
-
-  // Note: might have to do with login state i.e. remember last online status (online/offline/away)
-  const auto& clientContext = GetClientContext(clientId);
-
-  protocol::ChatCmdInputStateTrs notify{
-    .unk0 = clientContext.characterUid,
-    .state = command.state
-  };
-
-  // TODO: this currently broadcasts to all connected messenger clients, adjust to friends
-  for (const auto& [onlineClientId, onlineClientContext] : _clients)
-  {
-    // Skip unauthenticated clients
-    if (not onlineClientContext.isAuthenticated)
-      continue;
-
-    _chatterServer.QueueCommand<decltype(notify)>(onlineClientId, [notify](){ return notify; });
-  }
-}
-
 void MessengerDirector::HandleChatterGameInvite(
   network::ClientId clientId,
   const protocol::ChatCmdGameInvite& command)
@@ -1756,25 +1639,25 @@ void MessengerDirector::HandleChatterChannelInfo(
 
   // Disable all chat
   // TODO: move this to configuration
-  bool enableChat = false;
+  bool enableChat = true;
   if (not enableChat)
     return;
 
   const auto& lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
   protocol::ChatCmdChannelInfoAckOk response{
-    .hostname = lobbyConfig.advertisement.messenger.address.to_string(),
-    .port = lobbyConfig.advertisement.messenger.port,
+    .hostname = lobbyConfig.advertisement.chat.address.to_string(),
+    .port = lobbyConfig.advertisement.chat.port,
     .code = 0xDEADBEEF // TODO: use OtpRegistry
   };
   _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 
-  bool isInGuild = false;
+  bool isInGuild = true;
   if (not isInGuild)
     return;
 
   protocol::ChatCmdChannelInfoGuildRoomAckOk guildResponse{};
-  guildResponse.hostname = lobbyConfig.advertisement.messenger.address.to_string();
-  guildResponse.port = lobbyConfig.advertisement.messenger.port;
+  guildResponse.hostname = lobbyConfig.advertisement.chat.address.to_string();
+  guildResponse.port = lobbyConfig.advertisement.chat.port;
   guildResponse.code = 0xCAFECAFE; // TODO: use OtpRegistry
   _chatterServer.QueueCommand<decltype(guildResponse)>(clientId, [guildResponse](){ return guildResponse; });
 }

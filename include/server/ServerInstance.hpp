@@ -7,6 +7,7 @@
 
 #include "server/Config.hpp"
 #include "server/lobby/LobbyDirector.hpp"
+#include "server/chat/ChatDirector.hpp"
 #include "server/messenger/MessengerDirector.hpp"
 #include "server/race/RaceDirector.hpp"
 #include "server/ranch/RanchDirector.hpp"
@@ -161,6 +162,11 @@ private:
   std::thread _messengerThread;
   //! A messenger director.
   MessengerDirector _messengerDirector;
+
+  //! A thread for the chat director.
+  std::thread _chatDirectorThread;
+  //! A chat director.
+  ChatDirector _chatDirector;
 
   //! A thread of the ranch director.
   std::thread _ranchDirectorThread;

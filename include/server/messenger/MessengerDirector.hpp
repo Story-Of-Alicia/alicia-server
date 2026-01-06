@@ -113,18 +113,6 @@ private:
     network::ClientId clientId,
     const protocol::ChatCmdChatInvite& command);
 
-  void HandleChatterEnterRoom(
-    network::ClientId clientId,
-    const protocol::ChatCmdEnterRoom& command);
-
-  void HandleChatterChat(
-    network::ClientId clientId,
-    const protocol::ChatCmdChat& command);
-
-  void HandleChatterInputState(
-    network::ClientId clientId,
-    const protocol::ChatCmdInputState& command);
-
   void HandleChatterGameInvite(
     network::ClientId clientId,
     const protocol::ChatCmdGameInvite& command);
