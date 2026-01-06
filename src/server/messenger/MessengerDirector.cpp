@@ -269,11 +269,14 @@ void MessengerDirector::HandleChatterLogin(
       .errorCode = protocol::ChatterErrorCode::LoginFailed};
 
     _chatterServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+
+    // TODO: confirm the cancel command is sent before disconnecting the client
+    _chatterServer.DisconnectClient(clientId);
     return;
   }
 
   // Store this otp code for reauthentication with the guild login command (if at all)
-  clientContext.otpCode = command.code;
+  clientContext.otpCode.emplace(command.code);
 
   protocol::ChatCmdLoginAckOK response{};
 
@@ -1715,8 +1718,9 @@ void MessengerDirector::HandleChatterGuildLogin(
   // Reauthenticate against the already-used otp code that the client
   // gave when authenticating with the `ChatCmdLogin` command handler.
   // The client reuses the otp code that was previously used in `ChatCmdLogin`.
-  clientContext.isAuthenticated = command.code == clientContext.otpCode;
-  if (not clientContext.isAuthenticated)
+
+  // Check if client context has an otp code and then authenticate
+  if (not clientContext.otpCode.has_value() or command.code != clientContext.otpCode)
   {
     // Login failed, bad actor, log and return
     // Do not log with `command.name` (character name) to prevent some form of string manipulation in spdlog
@@ -1731,6 +1735,8 @@ void MessengerDirector::HandleChatterGuildLogin(
     _chatterServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
     return;
   }
+
+  clientContext.isAuthenticated = true;
 
   // Check if client belongs to the guild in the command
   data::Uid characterGuildUid{data::InvalidUid};

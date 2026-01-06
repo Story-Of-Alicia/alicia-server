@@ -66,6 +66,7 @@ public:
   void EndHost();
 
   network::asio::ip::address_v4 GetClientAddress(const network::ClientId clientId);
+  void DisconnectClient(network::ClientId clientId);
 
   //! Registers a command handler.
   template <ReadableChatterCommandStruct C>

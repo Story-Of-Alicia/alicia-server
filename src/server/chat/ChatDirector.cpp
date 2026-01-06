@@ -21,6 +21,8 @@
 
 #include "server/ServerInstance.hpp"
 
+#include <boost/container_hash/hash.hpp>
+
 namespace server
 {
 
@@ -113,9 +115,39 @@ void ChatDirector::HandleChatterEnterRoom(
     command.guildUid);
 
   auto& clientContext = GetClientContext(clientId, false);
-  // TODO:/FIXME: authenticate with code assigned in ChatCmdChannelInfo
+
+  // Generate identity hash based on the character uid from the command and
+  // the chat otp constant
+  size_t identityHash = std::hash<uint32_t>()(command.characterUid);
+  boost::hash_combine(identityHash, ChatOtpConstant);
+
+  // Authorise the code received in the command against the calculated identity hash
+  clientContext.isAuthenticated = _serverInstance.GetOtpSystem().AuthorizeCode(
+    identityHash,
+    command.code);
+
+  if (not clientContext.isAuthenticated)
+  {
+    // Client failed chat authentication
+    // Do not log with `command.name` (character name) to prevent some form of string manipulation in spdlog
+    spdlog::warn("Client '{}' tried to login to chat as character '{}' but failed authentication with auth code '{}'",
+      clientId,
+      command.characterUid,
+      command.code);
+
+    protocol::ChatCmdEnterRoomAckCancel cancel{
+      .errorCode = protocol::ChatterErrorCode::ChatLoginFailed};
+    _chatterServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+
+    // TODO: confirm the cancel command is sent before disconnecting the client
+    _chatterServer.DisconnectClient(clientId);
+    return;
+  }
+
+  // Sets client context character uid to the one provided by the client
+  // This value is assured by the server to be correct (if it passes authentication) as
+  // the server hashes the character uid and then the director's otp constant to compute the code.
   clientContext.characterUid = command.characterUid;
-  clientContext.isAuthenticated = true;
 
   // TODO: discover response ack
   protocol::ChatCmdEnterRoomAckOk response{

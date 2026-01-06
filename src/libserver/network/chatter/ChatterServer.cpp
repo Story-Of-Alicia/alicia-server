@@ -197,4 +197,9 @@ network::asio::ip::address_v4 ChatterServer::GetClientAddress(const network::Cli
   return _server.GetClient(clientId)->GetAddress();
 }
 
+void ChatterServer::DisconnectClient(network::ClientId clientId)
+{
+  _server.GetClient(clientId)->End();
+}
+
 } // namespace server
