@@ -1934,10 +1934,18 @@ void LobbyNetworkHandler::HandleGetMessengerInfo(
   const ClientId clientId,
   const protocol::AcCmdCLGetMessengerInfo& command)
 {
+  const auto& clientContext = GetClientContext(clientId);
   const auto& lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
-  
+
+  // Hash character uid with messenger director's otp constant for a unique key
+  size_t identityHash = std::hash<uint32_t>()(clientContext.characterUid);
+  boost::hash_combine(identityHash, MessengerOtpConstant);
+
+  // Grant otp code to character
+  const uint32_t code = _serverInstance.GetOtpSystem().GrantCode(identityHash);
+
   protocol::AcCmdCLGetMessengerInfoOK response{
-    .code = 0xDEAD,
+    .code = code,
     .ip = static_cast<uint32_t>(htonl(lobbyConfig.advertisement.messenger.address.to_uint())),
     .port = lobbyConfig.advertisement.messenger.port,
   };
