@@ -27,7 +27,7 @@ private:
     //! Whether the client is authenticated.
     bool isAuthenticated{false};
     //! The otp code used to authenticate this client.
-    uint32_t otpCode{};
+    std::optional<uint32_t> otpCode{};
     //! Unique ID of the client's character.
     data::Uid characterUid{data::InvalidUid};
     //! Online presence of the client.

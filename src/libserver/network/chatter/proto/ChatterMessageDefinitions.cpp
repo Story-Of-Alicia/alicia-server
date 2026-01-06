@@ -754,6 +754,20 @@ void server::protocol::ChatCmdEnterRoomAckOk::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void server::protocol::ChatCmdEnterRoomAckCancel::Write(
+  const ChatCmdEnterRoomAckCancel& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.errorCode);
+}
+
+void server::protocol::ChatCmdEnterRoomAckCancel::Read(
+  ChatCmdEnterRoomAckCancel&,
+  server::SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void server::protocol::ChatCmdChat::Write(
   const ChatCmdChat&,
   server::SinkStream&)

@@ -76,7 +76,8 @@ enum class ChatterErrorCode : uint32_t
   GroupRenameGroupDoesNotExist = 22,
   GroupRenameDuplicateName = 23,
   GroupDeleteGroupDoesNotExist = 24,
-  GroupDeleteDefaultFriendGroupMissing = 25
+  GroupDeleteDefaultFriendGroupMissing = 25,
+  ChatLoginFailed = 26
 };
 
 struct Presence
@@ -1031,6 +1032,25 @@ struct ChatCmdEnterRoomAckOk
 
   static void Read(
     ChatCmdEnterRoomAckOk& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdEnterRoomAckCancel
+{
+  //! Custom error code.
+  ChatterErrorCode errorCode{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdEnterRoomAckCancel;
+  }
+
+  static void Write(
+    const ChatCmdEnterRoomAckCancel& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdEnterRoomAckCancel& command,
     SourceStream& stream);
 };
 
