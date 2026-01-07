@@ -2,8 +2,8 @@
 // Created by SergeantSerk on 30/12/2025.
 //
 
-#ifndef CHATDIRECTOR_HPP
-#define CHATDIRECTOR_HPP
+#ifndef PRIVATECHATDIRECTOR_HPP
+#define PRIVATECHATDIRECTOR_HPP
 
 #include <libserver/network/chatter/ChatterServer.hpp>
 #include <libserver/data/DataDefinitions.hpp>
@@ -14,34 +14,32 @@ namespace server
 {
 
 //! Chat client OTP constant
-constexpr uint32_t ChatOtpConstant = 0x14E05CE5;
+constexpr uint32_t PrivateChatOtpConstant = 0x14E05CE5;
 
 class ServerInstance;
 
-class ChatDirector
+class PrivateChatDirector
   : private IChatterServerEventsHandler
 {
 private:
-  struct ClientContext
+  struct ConversationContext
   {
-    //! Whether the client is authenticated.
-    bool isAuthenticated{false};
     //! Unique ID of the client's character.
     data::Uid characterUid{data::InvalidUid};
-    //! Online presence of the client.
-    protocol::Presence presence{};
+    //! Uid of the target character in this conversation.
+    data::Uid targetCharacterUid{data::InvalidUid};
   };
 
 public:
-  explicit ChatDirector(ServerInstance& serverInstance);
+  explicit PrivateChatDirector(ServerInstance& serverInstance);
 
   //! Get chat config.
   //! @return Chat config.
-  [[nodiscard]] Config::Chat& GetConfig();
+  [[nodiscard]] Config::PrivateChat& GetConfig();
 
   void Initialize();
   void Terminate();
-  ClientContext& GetClientContext(
+  ConversationContext& GetConversationContext(
     network::ClientId clientId,
     bool requireAuthentication = true);
   void Tick();
@@ -66,9 +64,9 @@ private:
   ChatterServer _chatterServer;
   ServerInstance& _serverInstance;
 
-  std::unordered_map<network::ClientId, ClientContext> _clients;
+  std::unordered_map<network::ClientId, ConversationContext> _conversations;
 };
 
 } // namespace server
 
-#endif //CHATDIRECTOR_HPP
+#endif //PRIVATECHATDIRECTOR_HPP

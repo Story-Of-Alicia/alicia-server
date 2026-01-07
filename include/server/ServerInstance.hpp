@@ -22,7 +22,8 @@
 
 #include "server/Config.hpp"
 #include "server/lobby/LobbyDirector.hpp"
-#include "server/chat/ChatDirector.hpp"
+#include "server/chat/GeneralChatDirector.hpp"
+#include "server/chat/PrivateChatDirector.hpp"
 #include "server/messenger/MessengerDirector.hpp"
 #include "server/race/RaceDirector.hpp"
 #include "server/ranch/RanchDirector.hpp"
@@ -77,9 +78,13 @@ public:
   //! @returns Reference to the messenger director.
   MessengerDirector& GetMessengerDirector();
 
-  //! Returns reference to the chat director.
-  //! @returns Reference to the chat director.
-  ChatDirector& GetChatDirector();
+  //! Returns reference to the general chat director.
+  //! @returns Reference to the general chat director.
+  GeneralChatDirector& GetGeneralChatDirector();
+
+  //! Returns reference to the private chat director.
+  //! @returns Reference to the private chat director.
+  PrivateChatDirector& GetPrivateChatDirector();
 
   //! Returns reference to the Course registry.
   //! @returns Reference to the Course registry.
@@ -187,10 +192,15 @@ private:
   //! A messenger director.
   MessengerDirector _messengerDirector;
 
-  //! A thread for the chat director.
-  std::thread _chatDirectorThread;
-  //! A chat director.
-  ChatDirector _chatDirector;
+  //! A thread for the general chat director.
+  std::thread _generalChatDirectorThread;
+  //! A general chat director.
+  GeneralChatDirector _generalChatDirector;
+
+  //! A thread for the private chat director.
+  std::thread _privateChatDirectorThread;
+  //! A private chat director.
+  PrivateChatDirector _privateChatDirector;
 
   //! A thread of the ranch director.
   std::thread _ranchDirectorThread;

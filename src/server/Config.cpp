@@ -118,12 +118,19 @@ void Config::LoadFromEnvironment()
     race.listen.address,
     race.listen.port);
 
-  // Chat address and port.
+  // General chat address and port.
   getAddressAndPortVariables(
-    std::format("CHAT_SERVER_ADDRESS"),
-    std::format("CHAT_SERVER_PORT"),
-    chat.listen.address,
-    chat.listen.port);
+    std::format("GENERAL_CHAT_SERVER_ADDRESS"),
+    std::format("GENERAL_CHAT_SERVER_PORT"),
+    generalChat.listen.address,
+    generalChat.listen.port);
+
+  // Private chat address and port.
+  getAddressAndPortVariables(
+    std::format("PRIVATE_CHAT_SERVER_ADDRESS"),
+    std::format("PRIVATE_CHAT_SERVER_PORT"),
+    privateChat.listen.address,
+    privateChat.listen.port);
 }
 
 void Config::LoadFromFile(const std::filesystem::path& filePath)
@@ -226,16 +233,28 @@ void Config::LoadFromFile(const std::filesystem::path& filePath)
       spdlog::error("Unhandled exception parsing the messenger config: {}", e.what());
     }
 
-    // Chat config
+    // General chat config
     try
     {
-      const auto chatYaml = serverYaml["chat"];
-      chat.enabled = chatYaml["enabled"].as<bool>();
-      chat.listen = parseListenSection(chatYaml["listen"]);
+      const auto generalChatYaml = serverYaml["generalChat"];
+      generalChat.enabled = generalChatYaml["enabled"].as<bool>();
+      generalChat.listen = parseListenSection(generalChatYaml["listen"]);
     }
     catch (const std::exception& e)
     {
-      spdlog::error("Unhandled exception parsing the chat config: {}", e.what());
+      spdlog::error("Unhandled exception parsing the general chat config: {}", e.what());
+    }
+
+    // Private chat config
+    try
+    {
+      const auto privateChatYaml = serverYaml["privateChat"];
+      privateChat.enabled = privateChatYaml["enabled"].as<bool>();
+      privateChat.listen = parseListenSection(privateChatYaml["listen"]);
+    }
+    catch (const std::exception& e)
+    {
+      spdlog::error("Unhandled exception parsing the private chat config: {}", e.what());
     }
 
     // Messenger config

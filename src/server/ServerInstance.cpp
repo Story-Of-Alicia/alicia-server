@@ -13,7 +13,8 @@ ServerInstance::ServerInstance(
   , _dataDirector(resourceDirectory / "data")
   , _lobbyDirector(*this)
   , _messengerDirector(*this)
-  , _chatDirector(*this)
+  , _generalChatDirector(*this)
+  , _privateChatDirector(*this)
   , _ranchDirector(*this)
   , _raceDirector(*this)
   , _chatSystem(*this)
@@ -36,7 +37,8 @@ ServerInstance::~ServerInstance()
 
   waitForThread("race director", _raceDirectorThread);
   waitForThread("ranch director", _ranchDirectorThread);
-  waitForThread("chat director", _chatDirectorThread);
+  waitForThread("private chat director", _privateChatDirectorThread);
+  waitForThread("general chat director", _generalChatDirectorThread);
   waitForThread("messenger director", _messengerThread);
   waitForThread("lobby director", _lobbyDirectorThread);
   waitForThread("data director", _dataDirectorThread);
@@ -86,14 +88,25 @@ void ServerInstance::Initialize()
       _messengerDirector.Terminate();
     });
 
-    // Chat director
-    if (_config.chat.enabled) // Chat depends on messenger
+    // General chat director
+    if (_config.generalChat.enabled) // Chat depends on messenger
     {
-      _chatDirectorThread = std::thread([this]()
+      _generalChatDirectorThread = std::thread([this]()
       {
-        _chatDirector.Initialize();
-        RunDirectorTaskLoop(_chatDirector);
-        _chatDirector.Terminate();
+        _generalChatDirector.Initialize();
+        RunDirectorTaskLoop(_generalChatDirector);
+        _generalChatDirector.Terminate();
+      });
+    }
+
+    // Private chat director
+    if (_config.privateChat.enabled) // Chat depends on messenger
+    {
+      _privateChatDirectorThread = std::thread([this]()
+      {
+        _privateChatDirector.Initialize();
+        RunDirectorTaskLoop(_privateChatDirector);
+        _privateChatDirector.Terminate();
       });
     }
   }
@@ -145,9 +158,14 @@ MessengerDirector& ServerInstance::GetMessengerDirector()
   return _messengerDirector;
 }
 
-ChatDirector& ServerInstance::GetChatDirector()
+GeneralChatDirector& ServerInstance::GetGeneralChatDirector()
 {
-  return _chatDirector;
+  return _generalChatDirector;
+}
+
+PrivateChatDirector& ServerInstance::GetPrivateChatDirector()
+{
+  return _privateChatDirector;
 }
 
 registry::CourseRegistry& ServerInstance::GetCourseRegistry()

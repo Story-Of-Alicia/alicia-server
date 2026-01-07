@@ -78,12 +78,19 @@ public:
   } messenger{};
 
   //!
-  struct Chat
+  struct GeneralChat
   {
     bool enabled{true};
     Listen listen{
       .port = 10034};
-  } chat{};
+  } generalChat{};
+
+  struct PrivateChat
+  {
+    bool enabled{true};
+    Listen listen{
+      .port = 10035};
+  } privateChat{};
 
   //!
   struct Data

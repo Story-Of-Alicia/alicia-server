@@ -973,8 +973,8 @@ struct ChatCmdChatInvitationTrs
   uint32_t unk0{};
   uint32_t unk1{};
   uint32_t unk2{};
-  std::string unk3{};
-  uint16_t unk4{};
+  std::string hostname{};
+  uint16_t port{};
   uint32_t unk5{};
   
   static ChatterCommand GetCommand()

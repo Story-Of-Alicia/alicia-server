@@ -706,8 +706,8 @@ void server::protocol::ChatCmdChatInvitationTrs::Write(
   stream.Write(command.unk0)
     .Write(command.unk1)
     .Write(command.unk2)
-    .Write(command.unk3)
-    .Write(command.unk4)
+    .Write(command.hostname)
+    .Write(command.port)
     .Write(command.unk5);
 }
 

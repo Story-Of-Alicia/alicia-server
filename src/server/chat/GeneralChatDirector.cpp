@@ -17,7 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
-#include "server/chat/ChatDirector.hpp"
+#include "server/chat/GeneralChatDirector.hpp"
 
 #include "server/ServerInstance.hpp"
 
@@ -26,7 +26,7 @@
 namespace server
 {
 
-ChatDirector::ChatDirector(ServerInstance& serverInstance)
+GeneralChatDirector::GeneralChatDirector(ServerInstance& serverInstance)
   : _chatterServer(*this)
   , _serverInstance(serverInstance)
 {
@@ -50,60 +50,60 @@ ChatDirector::ChatDirector(ServerInstance& serverInstance)
     });
 }
 
-void ChatDirector::Initialize()
+void GeneralChatDirector::Initialize()
 {
   spdlog::debug(
-    "Chat server listening on {}:{}",
+    "General chat server listening on {}:{}",
     GetConfig().listen.address.to_string(),
     GetConfig().listen.port);
 
   _chatterServer.BeginHost(GetConfig().listen.address, GetConfig().listen.port);
 }
 
-void ChatDirector::Terminate()
+void GeneralChatDirector::Terminate()
 {
   _chatterServer.EndHost();
 }
 
-ChatDirector::ClientContext& ChatDirector::GetClientContext(
+GeneralChatDirector::ClientContext& GeneralChatDirector::GetClientContext(
   const network::ClientId clientId,
   bool requireAuthentication)
 {
   auto clientContextIter = _clients.find(clientId);
   if (clientContextIter == _clients.end())
-    throw std::runtime_error("Chat client is not available");
+    throw std::runtime_error("General chat client is not available");
 
   auto& clientContext = clientContextIter->second;
   if (requireAuthentication && not clientContext.isAuthenticated)
-    throw std::runtime_error("Chat client is not authenticated");
+    throw std::runtime_error("General chat client is not authenticated");
 
   return clientContext;
 }
 
-void ChatDirector::Tick()
+void GeneralChatDirector::Tick()
 {
 }
 
-Config::Chat& ChatDirector::GetConfig()
+Config::GeneralChat& GeneralChatDirector::GetConfig()
 {
-  return _serverInstance.GetSettings().chat;
+  return _serverInstance.GetSettings().generalChat;
 }
 
-void ChatDirector::HandleClientConnected(network::ClientId clientId)
+void GeneralChatDirector::HandleClientConnected(network::ClientId clientId)
 {
-  spdlog::debug("Client {} connected to the chat server from {}",
+  spdlog::debug("Client {} connected to the general chat server from {}",
     clientId,
     _chatterServer.GetClientAddress(clientId).to_string());
   _clients.try_emplace(clientId);
 }
 
-void ChatDirector::HandleClientDisconnected(network::ClientId clientId)
+void GeneralChatDirector::HandleClientDisconnected(network::ClientId clientId)
 {
-  spdlog::debug("Client {} disconnected from the chat server", clientId);
+  spdlog::debug("Client {} disconnected from the general chat server", clientId);
   _clients.erase(clientId);
 }
 
-void ChatDirector::HandleChatterEnterRoom(
+void GeneralChatDirector::HandleChatterEnterRoom(
   network::ClientId clientId,
   const protocol::ChatCmdEnterRoom& command)
 {
@@ -119,7 +119,7 @@ void ChatDirector::HandleChatterEnterRoom(
   // Generate identity hash based on the character uid from the command and
   // the chat otp constant
   size_t identityHash = std::hash<uint32_t>()(command.characterUid);
-  boost::hash_combine(identityHash, ChatOtpConstant);
+  boost::hash_combine(identityHash, GeneralChatOtpConstant);
 
   // Authorise the code received in the command against the calculated identity hash
   clientContext.isAuthenticated = _serverInstance.GetOtpSystem().AuthorizeCode(
@@ -130,7 +130,7 @@ void ChatDirector::HandleChatterEnterRoom(
   {
     // Client failed chat authentication
     // Do not log with `command.name` (character name) to prevent some form of string manipulation in spdlog
-    spdlog::warn("Client '{}' tried to login to chat as character '{}' but failed authentication with auth code '{}'",
+    spdlog::warn("Client '{}' tried to login to general chat as character '{}' but failed authentication with auth code '{}'",
       clientId,
       command.characterUid,
       command.code);
@@ -165,7 +165,7 @@ void ChatDirector::HandleChatterEnterRoom(
   _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }
 
-void ChatDirector::HandleChatterChat(
+void GeneralChatDirector::HandleChatterChat(
   network::ClientId clientId,
   const protocol::ChatCmdChat& command)
 {
@@ -205,7 +205,7 @@ void ChatDirector::HandleChatterChat(
   }
 }
 
-void ChatDirector::HandleChatterInputState(
+void GeneralChatDirector::HandleChatterInputState(
   network::ClientId clientId,
   const protocol::ChatCmdInputState& command)
 {

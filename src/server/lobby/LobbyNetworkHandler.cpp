@@ -270,12 +270,20 @@ void LobbyNetworkHandler::Initialize()
       lobbyConfig.advertisement.messenger.address.to_string(),
       lobbyConfig.advertisement.messenger.port);
 
-    if (_serverInstance.GetChatDirector().GetConfig().enabled)
+    if (_serverInstance.GetGeneralChatDirector().GetConfig().enabled)
     {
       spdlog::debug(
-        "Lobby is advertising chat server on {}:{}",
+        "Lobby is advertising general chat server on {}:{}",
         lobbyConfig.advertisement.chat.address.to_string(),
         lobbyConfig.advertisement.chat.port);
+    }
+
+    if (_serverInstance.GetPrivateChatDirector().GetConfig().enabled)
+    {
+      spdlog::debug(
+        "Lobby is advertising private chat server on {}:{}",
+        lobbyConfig.advertisement.chat.address.to_string(),
+        lobbyConfig.advertisement.chat.port + 1);
     }
   }
 

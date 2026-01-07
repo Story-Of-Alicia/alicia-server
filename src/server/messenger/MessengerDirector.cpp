@@ -1599,18 +1599,48 @@ void MessengerDirector::HandleChatterChatInvite(
   
   // TODO: Sent notify to invoker
 
+  // Get lobby config to get the private chat advertisement address and port
+  const auto& lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
+
+  // TODO: implement PrivateChatDirector
+  const std::string hostname = "127.0.0.1";
+  const uint16_t port = 10035;
+
   protocol::ChatCmdChatInvitationTrs notify{
-    .unk0 = 0,
+    .unk0 = 0xABCD,
     //.unk1 = 131,
-    .unk2 = clientContext.characterUid,
-    .unk3 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
-    .unk4 = 0,
-    .unk5 = clientContext.characterUid};
+    //.unk2 = clientContext.characterUid,
+    .hostname = hostname,
+    .port = port,
+    //.unk5 = clientContext.characterUid
+  };
+
   for (const auto& targetClientId : clientIdsToNotify)
   {
     const auto& targetClientContext = GetClientContext(targetClientId);
+
+    // Initiate chat window for the invoker
+    notify.unk1 = clientContext.characterUid;
+    notify.unk2 = targetClientContext.characterUid;
+    notify.unk5 = targetClientContext.characterUid;
+    _chatterServer.QueueCommand<decltype(notify)>(
+      clientId,
+      [notify]()
+      {
+        return notify;
+      });
+
+    // Initiate chat window for the target character
+    // notify.unk1 = targetClientContext.characterUid;
     notify.unk1 = targetClientContext.characterUid;
-    _chatterServer.QueueCommand<decltype(notify)>(targetClientId, [notify](){ return notify; });
+    notify.unk2 = clientContext.characterUid;
+    notify.unk5 = clientContext.characterUid;
+    _chatterServer.QueueCommand<decltype(notify)>(
+      targetClientId,
+      [notify]()
+      {
+        return notify;
+      });
   }
 }
 
@@ -1656,7 +1686,7 @@ void MessengerDirector::HandleChatterChannelInfo(
   const auto& lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
 
   // Get chat config and check if chat is enabled
-  const auto& chatConfig = _serverInstance.GetChatDirector().GetConfig();
+  const auto& chatConfig = _serverInstance.GetGeneralChatDirector().GetConfig();
   
   if (not chatConfig.enabled)
   {
@@ -1668,7 +1698,7 @@ void MessengerDirector::HandleChatterChannelInfo(
 
   // Hash character uid with chat director's otp constant for a unique key
   size_t identityHash = std::hash<uint32_t>()(clientContext.characterUid);
-  boost::hash_combine(identityHash, ChatOtpConstant);
+  boost::hash_combine(identityHash, GeneralChatOtpConstant);
   const uint32_t code = _serverInstance.GetOtpSystem().GrantCode(identityHash);
 
   // Send response for all chat
