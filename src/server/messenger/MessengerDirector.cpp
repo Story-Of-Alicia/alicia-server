@@ -1602,9 +1602,9 @@ void MessengerDirector::HandleChatterChatInvite(
   // Get lobby config to get the private chat advertisement address and port
   const auto& lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
 
-  // TODO: implement PrivateChatDirector
-  const std::string hostname = "127.0.0.1";
-  const uint16_t port = 10035;
+  // TODO: implement PrivateChatDirector (+1 the chat port)
+  const std::string hostname = lobbyConfig.advertisement.chat.address.to_string();
+  const uint16_t port = lobbyConfig.advertisement.chat.port + 1;
 
   protocol::ChatCmdChatInvitationTrs notify{
     .unk0 = 0xABCD,

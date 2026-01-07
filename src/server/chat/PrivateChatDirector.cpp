@@ -179,7 +179,8 @@ void PrivateChatDirector::HandleChatterChat(
   bool sent{false};
   for (const auto& [targetClientId, targetConversationContext] : _conversations)
   {
-    if (targetConversationContext.characterUid == conversationContext.targetCharacterUid)
+    if (targetConversationContext.characterUid == conversationContext.targetCharacterUid and
+        targetConversationContext.targetCharacterUid == conversationContext.characterUid)
     {
       sent = true;
       _chatterServer.QueueCommand<decltype(notify)>(targetClientId, [notify](){ return notify; });
@@ -209,7 +210,7 @@ void PrivateChatDirector::HandleChatterInputState(
   
   // TODO: discover the purpose of this command and implement
   // observed values:
-  // - 03 when closing private chat window
+  // - 03 when closing private chat window (unique to each conversation instance)
 }
 
 } // namespace server
