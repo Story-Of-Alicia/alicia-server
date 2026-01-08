@@ -1012,6 +1012,7 @@ struct ChatCmdEnterRoom
     SourceStream& stream);
 };
 
+//! Clientbound command which deserialises correctly but handler is not implemented by the client.
 struct ChatCmdEnterRoomAckOk
 {
   struct Struct0
@@ -1051,6 +1052,43 @@ struct ChatCmdEnterRoomAckCancel
 
   static void Read(
     ChatCmdEnterRoomAckCancel& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdEnterBuddyTrs
+{
+  uint32_t unk0{};
+  std::string unk1{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdEnterBuddyTrs;
+  }
+
+  static void Write(
+    const ChatCmdEnterBuddyTrs& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdEnterBuddyTrs& command,
+    SourceStream& stream);
+};
+
+struct ChatCmdLeaveBuddyTrs
+{
+  uint32_t unk0{};
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdLeaveBuddyTrs;
+  }
+
+  static void Write(
+    const ChatCmdLeaveBuddyTrs& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdLeaveBuddyTrs& command,
     SourceStream& stream);
 };
 
@@ -1116,6 +1154,7 @@ struct ChatCmdInputState
     SourceStream& stream);
 };
 
+//! Clientbound command that notifies the input state of a private chat client. Deserialised but handler not implemented (noop).
 struct ChatCmdInputStateTrs
 {
   uint32_t unk0{};
@@ -1132,6 +1171,25 @@ struct ChatCmdInputStateTrs
 
   static void Read(
     ChatCmdInputStateTrs& command,
+    SourceStream& stream);
+};
+
+//! Clientbound command that terminates the client's private chat instance connection with the server.
+struct ChatCmdEndChatTrs
+{
+  // Empty
+
+  static ChatterCommand GetCommand()
+  {
+    return ChatterCommand::ChatCmdEndChatTrs;
+  }
+
+  static void Write(
+    const ChatCmdEndChatTrs& command,
+    SinkStream& stream);
+
+  static void Read(
+    ChatCmdEndChatTrs& command,
     SourceStream& stream);
 };
 

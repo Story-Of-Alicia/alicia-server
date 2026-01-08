@@ -768,6 +768,35 @@ void server::protocol::ChatCmdEnterRoomAckCancel::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void server::protocol::ChatCmdEnterBuddyTrs::Write(
+  const ChatCmdEnterBuddyTrs& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1);
+}
+
+void server::protocol::ChatCmdEnterBuddyTrs::Read(
+  ChatCmdEnterBuddyTrs&,
+  server::SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdLeaveBuddyTrs::Write(
+  const ChatCmdLeaveBuddyTrs& command,
+  server::SinkStream& stream)
+{
+  stream.Write(command.unk0);
+}
+
+void server::protocol::ChatCmdLeaveBuddyTrs::Read(
+  ChatCmdLeaveBuddyTrs&,
+  server::SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void server::protocol::ChatCmdChat::Write(
   const ChatCmdChat&,
   server::SinkStream&)
@@ -822,6 +851,20 @@ void server::protocol::ChatCmdInputStateTrs::Write(
 
 void server::protocol::ChatCmdInputStateTrs::Read(
   ChatCmdInputStateTrs&,
+  server::SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void server::protocol::ChatCmdEndChatTrs::Write(
+  const ChatCmdEndChatTrs& command,
+  server::SinkStream& stream)
+{
+  // Empty
+}
+
+void server::protocol::ChatCmdEndChatTrs::Read(
+  ChatCmdEndChatTrs&,
   server::SourceStream&)
 {
   throw std::runtime_error("Not implemented");

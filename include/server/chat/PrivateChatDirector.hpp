@@ -48,6 +48,9 @@ private:
   void HandleClientConnected(network::ClientId clientId) override;
   void HandleClientDisconnected(network::ClientId clientId) override;
 
+  const std::optional<network::ClientId> GetTargetClientIdByContext(
+    const ConversationContext& conversationContext) const;
+
   // Handler methods for chatter commands
   void HandleChatterEnterRoom(
     network::ClientId clientId,

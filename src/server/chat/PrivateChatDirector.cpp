@@ -85,6 +85,32 @@ Config::PrivateChat& PrivateChatDirector::GetConfig()
   return _serverInstance.GetSettings().privateChat;
 }
 
+const std::optional<network::ClientId> PrivateChatDirector::GetTargetClientIdByContext(
+  const ConversationContext& conversationContext) const
+{
+  std::optional<ClientId> clientId{};
+
+  // Check if any character uids are invalid 
+  if (conversationContext.characterUid == data::InvalidUid or
+      conversationContext.targetCharacterUid == data::InvalidUid)
+    return clientId;
+
+  for (const auto& [targetClientId, targetConversationContext] : _conversations)
+  {
+    // Find target conversation based on invoker and target character uids
+    bool isTargetConversation = 
+      targetConversationContext.characterUid == conversationContext.targetCharacterUid and
+      targetConversationContext.targetCharacterUid == conversationContext.characterUid;
+    if (isTargetConversation)
+    {
+      // This is the target conversation
+      clientId.emplace(targetClientId);
+      return clientId;
+    }
+  }
+  return clientId;
+}
+
 void PrivateChatDirector::HandleClientConnected(network::ClientId clientId)
 {
   spdlog::debug("Client {} connected to the private chat server from {}",
@@ -97,7 +123,19 @@ void PrivateChatDirector::HandleClientDisconnected(network::ClientId clientId)
 {
   spdlog::debug("Client {} disconnected from the private chat server", clientId);
 
-  // TODO: implement the closing/termination of private chats
+  // Terminate the disconnect client's private chat instance
+  protocol::ChatCmdEndChatTrs notify{};
+  _chatterServer.QueueCommand<decltype(notify)>(clientId, [notify](){ return notify; });
+
+  // Terminate the corresponding client's private chat instance
+  const auto& conversationContext = _conversations.at(clientId);
+  const std::optional<ClientId> targetClientId = GetTargetClientIdByContext(
+    conversationContext);
+  if (targetClientId.has_value())
+  {
+    // Target client found, disconnect
+    _chatterServer.QueueCommand<decltype(notify)>(targetClientId.value(), [notify](){ return notify; });
+  }
 
   _conversations.erase(clientId);
 }
@@ -110,6 +148,7 @@ void PrivateChatDirector::HandleChatterEnterRoom(
   const data::Uid targetCharacterUid = command.code;
   const data::Uid invokerCharacterUid = command.characterUid;
   const std::string& invokerCharacterName = command.characterName;
+  // Always 0 for private chats
   const uint32_t unk3 = command.guildUid;
 
   spdlog::debug("[{}] (Private) ChatCmdEnterRoom: {} {} {} {}",
@@ -119,37 +158,45 @@ void PrivateChatDirector::HandleChatterEnterRoom(
     invokerCharacterName,
     unk3);
 
-  // TODO: there is no authentication mechanism here,
-  // discover if there is any supported by the client
+  // TODO: there is no authentication mechanism here
   auto& conversationContext = GetConversationContext(clientId);
 
-  // TODO: validate uids
-  // TODO: validate target character name matches the one supplied in the command
+  // Confirm invoking character of that uid exists
+  const auto& invokerCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(invokerCharacterUid);
+  if (not invokerCharacterRecord.IsAvailable())
+  {
+    // TODO: return cancel
+    return;
+  }
 
+  // Confirm target character of that uid exists
+  const auto& targetCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(targetCharacterUid);
+  if (not targetCharacterRecord.IsAvailable())
+  {
+    // TODO: return cancel
+    return;
+  }
+
+  // Check if invoker's character name provided in command matches server record
+  bool isNameMatch{false};
+  invokerCharacterRecord.Immutable([&isNameMatch, invokerCharacterName](const data::Character& character)
+  {
+    isNameMatch = invokerCharacterName == character.name();
+  });
+
+  if (not isNameMatch)
+  {
+    // TODO: return cancel
+    return;
+  }
+
+  // Set values for the conversation context (participants)
   conversationContext.characterUid = invokerCharacterUid;
   // TODO: Can there be multiple people in a single conversation? Group chat?
   conversationContext.targetCharacterUid = targetCharacterUid;
 
-  std::string targetCharacterName{};
-  _serverInstance.GetDataDirector().GetCharacter(targetCharacterUid).Immutable(
-    [&targetCharacterName](const data::Character& character)
-    {
-      targetCharacterName = character.name();
-    });
-
-  // TODO: discover response ack
-  protocol::ChatCmdEnterRoomAckOk response{
-    .unk1 = {
-      protocol::ChatCmdEnterRoomAckOk::Struct0{
-        .unk0 = invokerCharacterUid,
-        .unk1 = invokerCharacterName
-      },
-      protocol::ChatCmdEnterRoomAckOk::Struct0{
-        .unk0 = targetCharacterUid,
-        .unk1 = targetCharacterName
-      }
-    },
-  };
+  // Deserialises but has no handler
+  protocol::ChatCmdEnterRoomAckOk response{};
   _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }
 
@@ -176,28 +223,17 @@ void PrivateChatDirector::HandleChatterChat(
   // Send message to invoker
   _chatterServer.QueueCommand<decltype(notify)>(clientId, [notify](){ return notify; });
 
-  bool sent{false};
-  for (const auto& [targetClientId, targetConversationContext] : _conversations)
+  // TODO: this works instantenously for connected clients. For disconnected clients that are reconnecting,
+  // buffer the message by waiting x secs to check if the target character has connected to the private chat.
+
+  // Try send message to target character
+  const std::optional<ClientId> targetClientId = GetTargetClientIdByContext(
+    conversationContext);
+  if (targetClientId.has_value())
   {
-    if (targetConversationContext.characterUid == conversationContext.targetCharacterUid and
-        targetConversationContext.targetCharacterUid == conversationContext.characterUid)
-    {
-      sent = true;
-      _chatterServer.QueueCommand<decltype(notify)>(targetClientId, [notify](){ return notify; });
-      break;
-    }
+    // Target client found, disconnect
+    _chatterServer.QueueCommand<decltype(notify)>(targetClientId.value(), [notify](){ return notify; });
   }
-
-  // TODO: implement check if message not sent
-  
-  // for (const auto& [onlineClientId, onlineClientContext] : _clients)
-  // {
-  //   // Skip unauthenticated clients
-  //   if (not onlineClientContext.isAuthenticated)
-  //     continue;
-
-  //   _chatterServer.QueueCommand<decltype(notify)>(onlineClientId, [notify](){ return notify; });
-  // }
 }
 
 void PrivateChatDirector::HandleChatterInputState(
@@ -207,10 +243,40 @@ void PrivateChatDirector::HandleChatterInputState(
   spdlog::debug("[{}] ChatCmdInputState: {}",
     clientId,
     command.state);
-  
-  // TODO: discover the purpose of this command and implement
-  // observed values:
-  // - 03 when closing private chat window (unique to each conversation instance)
+
+  // Observed values:
+  // 01 - when entering the channel/chat window opens
+  // 03 - when closing private chat window (unique to each conversation instance)
+
+  // Tag 7 & 10 does not seem to implement a handler for this and just simply returns (noop)
+  // Corresponding command: ChatCmdInputStateTrs
+
+  const auto& conversationContext = GetConversationContext(clientId);
+  const std::optional<ClientId> targetClientId = GetTargetClientIdByContext(
+    conversationContext);
+
+  if (not targetClientId.has_value())
+    // Terminate chat client? Consider the fact that maybe they are just getting started (connecting)
+    return;
+
+  // Unconfirmed to be working, implemented nevertheless as it seemed best to use these commands for what triggers it
+  if (command.state == 1)
+  {
+    protocol::ChatCmdEnterBuddyTrs notify{
+      .unk0 = conversationContext.characterUid};
+    _serverInstance.GetDataDirector().GetCharacter(conversationContext.characterUid).Immutable(
+      [&notify](const data::Character& character)
+      {
+        notify.unk1 = character.name();
+      });
+    _chatterServer.QueueCommand<decltype(notify)>(targetClientId.value(), [notify](){ return notify; });
+  }
+  else if (command.state == 3)
+  {
+    protocol::ChatCmdLeaveBuddyTrs notify{
+      .unk0 = conversationContext.characterUid};
+    _chatterServer.QueueCommand<decltype(notify)>(targetClientId.value(), [notify](){ return notify; });
+  }
 }
 
 } // namespace server
