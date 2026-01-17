@@ -1,0 +1,92 @@
+words:
+  collection:
+    # Explanation: Neo-nazi symbol
+    - word: '\b1488\b'
+      prevent: true
+    # Explanation: Neo-nazi symbol
+    - word: '\bhh\b'
+      prevent: true
+    # Explanation: Neo-nazi symbol
+    - word: '\b88\b'
+      prevent: true
+    - word: '\bBDSM\b'
+      prevent: true
+    - word: '\bb+[o0]+b+\b'
+      prevent: true
+    - word: '\bb+[o0]+b+s+\b'
+      prevent: true
+    - word: '\bc+l+[i1l]+t+\b'
+      prevent: true
+    - word: '\bc+u+m+\b'
+      prevent: true
+    - word: '\bc+u+n+t+\b'
+      prevent: true
+    # Explanation: Daddy Dom & Little Girl - sexual
+    - word: '\bddlg\b'
+      prevent: true
+    # Explanation: Mommy Dom & Little Girl - sexual
+    - word: '\bmdlg\b'
+      prevent: true
+    # Explanation: Erotic roleplay
+    - word: '\berp\b'
+      prevent: true
+    - word: '\be+s+e+x+\b'
+      prevent: true
+    - word: '\bf+a+[g6]+\b'
+      prevent: true
+    - word: '\bf+u+t+a+\b'
+      prevent: true
+    - word: '\bh+e+i+l+\b'
+      prevent: true
+    - word: '\bk+i+n+k+y+\b'
+      prevent: true
+    - word: '\bl+o+l+i+\b'
+      prevent: true
+    - word: '\bn+[i1l]+g+\b'
+      prevent: true
+    - word: '\bn+g+r+\b'
+      prevent: true
+    - word: '\bn+e+g+r+[o0]+\b'
+      prevent: true
+    - word: '\bn+[i1l]+g+\b'
+      prevent: true
+    - word: '\bn+[i1l]+g+\b'
+      prevent: true
+    - word: '\bn+[i1l]+g+r+\b'
+      prevent: true
+    - word: '\bn+[i1l]+g+e+r+\b'
+      prevent: true
+    - word: '\bp+o+r+n+\b'
+      prevent: true
+    - word: '\br34\b'
+      prevent: true
+    - word: '\bs+c+a+t+\b'
+      prevent: true
+    - word: '\bs+e+x+\b'
+      prevent: true
+    - word: '\bt+[i1l]+t+\b'
+      prevent: true
+    - word: '\bt+[i1l]+t+s+\b'
+      prevent: true
+    - word: '\bt+[i1l]+t+t+[i1l]+s+\b'
+      prevent: true
+    - word: '\bt+[i1l]+t+t+[i1l]+e+s+\b'
+      prevent: true
+    - word: '\bt+r+a+n+n+y+\b'
+      prevent: true
+    - word: '\bt+r+n+y+\b'
+      prevent: true
+    - word: '\by+a+o+i+\b'
+      prevent: true
+    - word: '\by+i+f+f+\b'
+      prevent: true
+    - word: '\by+u+r+i+\b'
+      prevent: true
+    - word: '\bs+l+u+t+\b'
+      prevent: true
+    - word: '\bk+m+s+\b'
+      prevent: true
+    - word: '\bk+y+s+\b'
+      prevent: true
+    - word: '\bs+e+x+y+\b'
+      prevent: true

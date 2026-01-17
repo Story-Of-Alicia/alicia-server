@@ -259,6 +259,10 @@ private:
   void HandleUpdatePet(
     ClientId clientId,
     const protocol::AcCmdCRUpdatePet& command);
+
+  void SendUpdatePetCancel(
+    ClientId clientId,
+    const protocol::AcCmdRCUpdatePetCancel& command);
   
   void HandleIncubateEgg(
     ClientId clientId,

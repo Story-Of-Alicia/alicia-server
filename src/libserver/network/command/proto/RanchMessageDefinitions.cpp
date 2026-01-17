@@ -1396,16 +1396,16 @@ void RanchCommandCreateGuildOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
-void RanchCommandCreateGuildCancel::Write(
-  const RanchCommandCreateGuildCancel& command,
+void AcCmdCRCreateGuildCancel::Write(
+  const AcCmdCRCreateGuildCancel& command,
   SinkStream& stream)
 {
   stream.Write(command.status)
     .Write(command.member2);
 }
 
-void RanchCommandCreateGuildCancel::Read(
-  RanchCommandCreateGuildCancel& command,
+void AcCmdCRCreateGuildCancel::Read(
+  AcCmdCRCreateGuildCancel& command,
   SourceStream& stream)
 {
   throw std::runtime_error("Not implemented");
@@ -1489,8 +1489,13 @@ void AcCmdCRUpdatePet::Read(
   SourceStream& stream)
 {
   stream.Read(command.petInfo);
+
+  uint32_t itemUid{0};
+  // The client bleeds stack instead of skipping the uninitialized value.
   if (stream.GetCursor() - stream.Size() > 4)
-    stream.Read(command.itemUid);
+    stream.Read(itemUid);
+
+  command.itemUid.emplace(itemUid);
 }
 
 void AcCmdRCUpdatePet::Write(
@@ -1516,7 +1521,7 @@ void AcCmdRCUpdatePetCancel::Write(
 {
   stream.Write(command.petInfo)
     .Write(command.member2)
-    .Write(command.member3);
+    .Write(command.error);
 }
 
 void AcCmdRCUpdatePetCancel::Read(

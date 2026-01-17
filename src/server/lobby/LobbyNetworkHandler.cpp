@@ -505,12 +505,13 @@ void LobbyNetworkHandler::HandleNetworkTick()
   {
     // There's a bug in a client, where if the client is in the character creator,
     // they'll withdraw from sending heartbeats. Because of this we have to
-    // ignore the lack of heartbeats and not disconnect the client.
-    if (clientContext.isInCharacterCreator)
-      continue;
+    // ignore the lack of heartbeats for a while longer and not disconnect the client.
+    const auto timeout = clientContext.isInCharacterCreator
+      ? std::chrono::seconds(15 * 60)
+      : std::chrono::seconds(60);
 
-    const bool hasReachedTimeOut = now - clientContext.lastHeartbeat > std::chrono::seconds(60);
-    if (not hasReachedTimeOut)
+    const bool hasReachedTimeout = now - clientContext.lastHeartbeat > timeout;
+    if (not hasReachedTimeout)
       continue;
 
     spdlog::warn(
@@ -1001,6 +1002,20 @@ void LobbyNetworkHandler::HandleMakeRoom(
   const auto& clientContext = GetClientContext(clientId);
   uint32_t createdRoomUid{0};
 
+  const auto moderationVerdict = _serverInstance.GetModerationSystem().Moderate(
+    command.name);
+  if (moderationVerdict.isPrevented)
+  {
+    protocol::AcCmdCLMakeRoomCancel response{};
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]()
+      {
+        return response;
+      });
+    return;
+  }
+
   _serverInstance.GetRoomSystem().CreateRoom(
     [&createdRoomUid, &command, characterUid = clientContext.characterUid](
       Room& room)
@@ -1303,23 +1318,25 @@ void LobbyNetworkHandler::HandleCreateNickname(
 
   constexpr uint32_t DefaultHorseTid = 20001;
 
-  std::optional<protocol::AcCmdCLCreateNicknameCancel::Reason> error{};
   if (command.requestedHorseTid != DefaultHorseTid)
   {
     spdlog::warn("Client {} ('{}') requested to create a character with an invalid horse TID '{}'",
       clientId,
       clientContext.userName,
       command.requestedHorseTid);
-    error.emplace(protocol::AcCmdCLCreateNicknameCancel::Reason::ServerError);
-  }
-  else if (not locale::IsNameValid(command.nickname, 16))
-  {
-    error.emplace(protocol::AcCmdCLCreateNicknameCancel::Reason::InvalidCharacterName);
+
+    SendCreateNicknameCancel(
+      clientId,
+      protocol::AcCmdCLCreateNicknameCancel::Reason::ServerError);
+    return;
   }
 
-  if (error.has_value())
+  if (not locale::IsNameValid(command.nickname, 16)
+    || _serverInstance.GetModerationSystem().Moderate(command.nickname).isPrevented)
   {
-    SendCreateNicknameCancel(clientId, *error);
+    SendCreateNicknameCancel(
+      clientId,
+      protocol::AcCmdCLCreateNicknameCancel::Reason::InvalidCharacterName);
     return;
   }
 
