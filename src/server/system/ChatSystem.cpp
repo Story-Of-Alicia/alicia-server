@@ -91,30 +91,41 @@ ChatSystem::ChatVerdict ChatSystem::ProcessChatMessage(
   const auto& userInstance = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
     characterUid);
 
-  // Check for any infractions preventing the user from chatting
-  const auto& infractionVerdict = _serverInstance.GetInfractionSystem().CheckOutstandingPunishments(
-    userInstance.userName);
-
+  // If the message is a command process it.
   if (message.starts_with("//"))
   {
     verdict.commandVerdict = ProcessCommandMessage(
       characterUid, message.substr(2));
+    return verdict;
   }
-  else if (not infractionVerdict.mute.active)
+
+  // Check for any infractions preventing the user from chatting
+  const auto& infractionVerdict = _serverInstance.GetInfractionSystem().CheckOutstandingPunishments(
+    userInstance.userName);
+
+  // Check if infraction verdict has an active chat prevention.
+  if (infractionVerdict.mute.active)
   {
-    // todo: auto moderation
-    verdict.message = message;
-  }
-  else if (infractionVerdict.mute.active)
-  {
-    // Active mute infraction, return with no processing done on message
     verdict.isMuted = true;
     verdict.message = std::format(
       "You are chat muted until {:%Y-%m-%d %H:%M:%S} UTC.",
       std::chrono::time_point_cast<std::chrono::seconds>(
         infractionVerdict.mute.expiresAt));
+    return verdict;
   }
 
+  const auto moderationVerdict = _serverInstance.GetModerationSystem().Moderate(
+    message);
+
+  // Check  if the moderation verdict prevented the message.
+  if (moderationVerdict.isPrevented)
+  {
+    verdict.isMuted = true;
+    verdict.message = "Your message was prevented by an automod.";
+    return verdict;
+  }
+
+  verdict.message = message;
   return verdict;
 }
 

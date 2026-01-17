@@ -1612,7 +1612,10 @@ void RanchDirector::HandleUpdateMountNickname(
   }
 
   const bool isNameValid = locale::IsNameValid(command.name);
-  if (not isNameValid)
+  const auto moderationVerdict = _serverInstance.GetModerationSystem().Moderate(
+    command.name);
+
+  if (not isNameValid || moderationVerdict.isPrevented)
   {
     SendUpdateMountNicknameCancel(
       clientId,
@@ -2128,10 +2131,32 @@ void RanchDirector::HandleCreateGuild(
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
+  const bool isNameValid = locale::IsNameValid(command.name);
+
+  const auto nameModerationVerdict = _serverInstance.GetModerationSystem().Moderate(
+    command.name);
+  const auto descriptionModerationVerdict = _serverInstance.GetModerationSystem().Moderate(
+    command.description);
+
+  if (not isNameValid || nameModerationVerdict.isPrevented || descriptionModerationVerdict.isPrevented)
+  {
+    protocol::AcCmdCRCreateGuildCancel response{
+      .status = 23,
+      .member2 = 0};
+
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]()
+      {
+        return response;
+      });
+    return;
+  }
+
   bool canCreateGuild = true;
   // todo: configurable
   constexpr int32_t GuildCost = 3000;
-  characterRecord.Immutable([&command, &canCreateGuild, GuildCost](const data::Character& character)
+  characterRecord.Immutable([&canCreateGuild, GuildCost](const data::Character& character)
   {
     // Check if character has sufficient carrots
     if (character.carrots() < GuildCost)
@@ -2168,7 +2193,7 @@ void RanchDirector::HandleCreateGuild(
   // If guild cannot be created, send cancel to client
   if (not canCreateGuild)
   {
-    protocol::RanchCommandCreateGuildCancel response{
+    protocol::AcCmdCRCreateGuildCancel response{
       .status = 0,
       .member2 = 0}; // TODO: Unidentified
 
@@ -2433,89 +2458,102 @@ void RanchDirector::HandleUpdatePet(
     clientContext.characterUid);
 
   auto petUid = data::InvalidUid;
+  bool hasUsedItem = false;
 
   characterRecord.Mutable(
-    [this, &command, &petUid, &response](data::Character& character)
+    [this, &command, &petUid, &hasUsedItem](data::Character& character)
     {
-      
-      response.petInfo.characterUid = character.uid();
       // The pets of the character.
       const auto storedPetRecords = GetServerInstance().GetDataDirector().GetPetCache().Get(
         character.pets());
 
       if (not storedPetRecords || storedPetRecords->empty())
       {
-        // No pets found for the character.
-        spdlog::warn("No pets found for character {}", character.uid());
         return;
       }
-      bool petExists = false;
+
       // Find the pet record based on the item used.
       for (const auto& petRecord : *storedPetRecords)
       {
         petRecord.Immutable(
-          [&command, &petUid, &petExists](const data::Pet& pet)
+          [&command, &petUid](const data::Pet& pet)
           {
             if (pet.itemUid() == command.petInfo.itemUid)
             {
               petUid = pet.uid();
-              petExists = true;
             }
           });
       }
-      
-      if (!petExists)
+
+      if (command.itemUid)
       {
-        spdlog::warn("Character {} has no pet with petId {}", character.uid(), command.petInfo.pet.petId);
-        //probably should send a cancel here
-        return;
+        hasUsedItem = GetServerInstance().GetItemSystem().HasItemInstance(
+         character,
+         *command.itemUid);
       }
 
-      auto itemRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(
-        character.inventory());
-      if (not itemRecords || itemRecords->empty())
-      {
-        spdlog::warn("No items found for character {}", character.uid());
-        return;
-      }
-      // Pet rename, find item in inventory
-      if (std::ranges::contains(character.inventory(), command.itemUid))
-      {
-        // TODO: actually reduce the item count or remove it
-        std::string currentName{};
-        const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
-        petRecord.Mutable(
-          [&command, &currentName](data::Pet& pet)
-          {
-            currentName = pet.name();
-            pet.name() = command.petInfo.pet.name;
-          });
-
-        // Log for moderation
-        const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
-          character.uid()).userName;
-        spdlog::info("User '{}' changed the name of a pet ({}) from '{}' to '{}'",
-          userName,
-          petUid,
-          currentName,
-          command.petInfo.pet.name);
-      }
-      //just summoning the pet
-      else
+      if (not hasUsedItem)
       {
         character.petUid = petUid;
       }
-      if (petUid != 0)
-      {
-        const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
-        petRecord.Immutable(
-          [&response](const data::Pet& pet)
-          {
-            response.petInfo.pet.name = pet.name();
-            response.petInfo.pet.birthDate = util::TimePointToAliciaTime(pet.birthDate());
-          });
-      }
     });
+
+  if (petUid == data::InvalidUid)
+  {
+    throw std::runtime_error(std::format(
+      "Character {} has no pet with petId {}",
+      clientContext.characterUid,
+      command.petInfo.pet.petId));
+    return;
+  }
+
+  // Fill the pet info with the record data.
+
+  response.petInfo.characterUid = clientContext.characterUid;
+
+  const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
+  petRecord.Immutable(
+    [&response](const data::Pet& pet)
+    {
+      response.petInfo.pet.name = pet.name();
+      response.petInfo.pet.birthDate = util::TimePointToAliciaTime(pet.birthDate());
+    });
+
+  if (hasUsedItem)
+  {
+    const auto isNameValid = locale::IsNameValid(command.petInfo.pet.name);
+    const auto moderationVerdict = _serverInstance.GetModerationSystem().Moderate(
+      command.petInfo.pet.name);
+
+    if (not isNameValid || moderationVerdict.isPrevented)
+    {
+      SendUpdatePetCancel(clientId, protocol::AcCmdRCUpdatePetCancel{
+        .petInfo = response.petInfo,
+        .error =  protocol::ChangeNicknameError::InvalidNickname});
+      return;
+    }
+
+    // TODO: actually reduce the item count or remove it
+    std::string currentName{};
+    petRecord.Mutable(
+      [&command, &currentName](data::Pet& pet)
+      {
+        currentName = pet.name();
+        pet.name() = command.petInfo.pet.name;
+      });
+
+    // Update the response.
+    response.petInfo.pet.name = command.petInfo.pet.name;
+
+    // Log for moderation
+    const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+      clientContext.characterUid).userName;
+    spdlog::info("User '{}' changed the name of a pet ({}) from '{}' to '{}'",
+      userName,
+      petUid,
+      currentName,
+      command.petInfo.pet.name);
+  }
 
   const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
 
@@ -2526,6 +2564,18 @@ void RanchDirector::HandleUpdatePet(
         return response;
       });
   }
+}
+
+void RanchDirector::SendUpdatePetCancel(
+  ClientId clientId,
+  const protocol::AcCmdRCUpdatePetCancel& command)
+{
+  _commandServer.QueueCommand<protocol::AcCmdRCUpdatePetCancel>(
+    clientId,
+    [command]()
+    {
+      return command;
+    });
 }
 
 void RanchDirector::HandleUserPetInfos(

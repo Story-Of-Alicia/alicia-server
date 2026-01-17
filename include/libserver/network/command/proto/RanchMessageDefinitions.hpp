@@ -25,6 +25,7 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -2035,9 +2036,10 @@ struct RanchCommandCreateGuildOK
     SourceStream& stream);
 };
 
-struct RanchCommandCreateGuildCancel
+struct AcCmdCRCreateGuildCancel
 {
   //! See CDATA[ERROR_FAIL_SYSTEMERROR]
+  //! See FAIL_BADGUILDNAME
   uint8_t status{};
   uint32_t member2{};
 
@@ -2050,14 +2052,14 @@ struct RanchCommandCreateGuildCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandCreateGuildCancel& command,
+    const AcCmdCRCreateGuildCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandCreateGuildCancel& command,
+    AcCmdCRCreateGuildCancel& command,
     SourceStream& stream);
 };
 
@@ -2268,7 +2270,10 @@ struct AcCmdRCWithdrawGuildMemberNotify
 struct AcCmdCRUpdatePet
 {
   PetInfo petInfo{};
-  uint32_t itemUid; // 
+  //! Client bleeds stack instead of skipping out write
+  //! of the un-initialized value.
+  //! The optional is always present.
+  std::optional<uint32_t> itemUid{std::nullopt};
 
   static Command GetCommand()
   {
@@ -2318,7 +2323,7 @@ struct AcCmdRCUpdatePetCancel
 {
   PetInfo petInfo{};
   uint32_t member2{};
-  uint8_t member3{};
+  ChangeNicknameError error{};
 
   static Command GetCommand()
   {

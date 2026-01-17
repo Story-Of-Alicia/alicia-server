@@ -253,7 +253,7 @@ bool ItemSystem::HasItem(
   const data::Character& character,
   const data::Tid itemTid) const noexcept
 {
-  const auto checkItems = [this, &itemTid](const std::vector<data::Uid>& itemUids) -> bool
+  const auto HasItemWithTid = [this, &itemTid](const std::vector<data::Uid>& itemUids)
   {
     const auto itemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(itemUids);
     if (not itemRecords)
@@ -274,10 +274,23 @@ bool ItemSystem::HasItem(
     return false;
   };
 
-  if (checkItems(character.inventory()))
+  if (HasItemWithTid(character.inventory()))
     return true;
 
-  if (checkItems(character.characterEquipment()))
+  if (HasItemWithTid(character.characterEquipment()))
+    return true;
+
+  return false;
+}
+
+bool ItemSystem::HasItemInstance(
+  const data::Character& character,
+  data::Uid itemUid) const noexcept
+{
+  if (std::ranges::contains(character.inventory(), itemUid))
+    return true;
+
+  if (std::ranges::contains(character.characterEquipment(), itemUid))
     return true;
 
   return false;

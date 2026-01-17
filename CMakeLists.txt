@@ -98,6 +98,7 @@ add_executable(alicia-server
         src/server/system/ChatSystem.cpp
         src/server/system/InfractionSystem.cpp
         src/server/system/ItemSystem.cpp
+        src/server/system/ModerationSystem.cpp
         src/server/system/OtpSystem.cpp
         src/server/system/RoomSystem.cpp
         src/server/tracker/RaceTracker.cpp

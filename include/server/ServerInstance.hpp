@@ -1,6 +1,21 @@
-//
-// Created by rgnter on 14/06/2025.
-//
+/**
+ * Alicia Server - dedicated server software
+ * Copyright (C) 2024 Story Of Alicia
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ **/
 
 #ifndef INSTANCE_HPP
 #define INSTANCE_HPP
@@ -14,6 +29,7 @@
 #include "server/system/InfractionSystem.hpp"
 #include "server/system/ItemSystem.hpp"
 #include "server/system/OtpSystem.hpp"
+#include "server/system/ModerationSystem.hpp"
 #include "server/system/RoomSystem.hpp"
 
 #include <libserver/data/DataDirector.hpp>
@@ -83,6 +99,10 @@ public:
   //! Returns reference to the item system.
   //! @returns Reference to the item system.
   ItemSystem& GetItemSystem();
+
+  //! Returns reference to the moderation system.
+  //! @return Reference to the moderation system.
+  ModerationSystem& GetModerationSystem();
 
   //! Returns reference to the OTP system.
   //! @returns Reference to the OTP system.
@@ -185,6 +205,8 @@ private:
   ItemSystem _itemSystem;
   //! An OTP system.
   OtpSystem _otpSystem;
+  //! A moderation system
+  ModerationSystem _moderationSystem;
   //! A room system.
   RoomSystem _roomSystem;
 };
