@@ -123,7 +123,7 @@ private:
   {
     using Clock = std::chrono::steady_clock;
 
-    constexpr float TicksPerSecond = 50;
+    constexpr uint64_t TicksPerSecond = 50;
     constexpr uint64_t millisPerTick = 1000ull / TicksPerSecond;
 
     Clock::time_point lastTick;

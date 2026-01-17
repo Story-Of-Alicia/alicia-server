@@ -748,25 +748,23 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
       if (not justCreatedCharacter)
         response.bitfield = protocol::LobbyCommandLoginOK::HasPlayedBefore;
 
-      // Character equipment.
-      const auto characterEquipmentItems = _serverInstance.GetDataDirector().GetItemCache().Get(
+      const auto equipmentItems = _serverInstance.GetDataDirector().GetItemCache().Get(
         character.characterEquipment());
-      if (not characterEquipmentItems)
-        throw std::runtime_error("Character equipment items unavailable");
+      if (not equipmentItems)
+        throw std::runtime_error("Equipment items unavailable");
 
       protocol::BuildProtocolItems(
-        response.characterEquipment,
-        *characterEquipmentItems);
+        response.equipmentItems,
+        *equipmentItems);
 
-      // Mount equipment.
-      const auto mountEquipmentItems = _serverInstance.GetDataDirector().GetItemCache().Get(
-        character.mountEquipment());
-      if (not mountEquipmentItems)
-        throw std::runtime_error("Character equipment items unavailable");
+      const auto expiredItems = _serverInstance.GetDataDirector().GetItemCache().Get(
+        character.expiredEquipment());
+      if (not expiredItems)
+        throw std::runtime_error("Expired items unavailable");
 
       protocol::BuildProtocolItems(
-        response.mountEquipment,
-        *mountEquipmentItems);
+        response.expiredItems,
+        *expiredItems);
 
       protocol::BuildProtocolCharacter(
         response.character,

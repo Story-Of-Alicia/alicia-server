@@ -76,11 +76,18 @@ public:
 
 private:
   std::random_device _randomDevice;
+
   std::unordered_map<data::Tid, Coat> _coats;
   std::unordered_map<data::Tid, Face> _faces;
-
   std::unordered_map<data::Tid, Mane> _manes;
   std::unordered_map<data::Tid, Tail> _tails;
+
+  std::vector<data::Tid> _possibleCoats;
+  std::vector<data::Tid> _possibleFaces;
+  std::vector<data::Tid> _possibleManes;
+  std::vector<data::Tid> _possibleTails;
+
+  std::vector<data::Tid> _potentials;
 
   struct ManeTailColorGroup
   {

@@ -283,7 +283,8 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
 
   character.inventory = json["inventory"].get<std::vector<data::Uid>>();
   character.characterEquipment = json["characterEquipment"].get<std::vector<data::Uid>>();
-  character.mountEquipment = json["horseEquipment"].get<std::vector<data::Uid>>();
+  // todo: rename after larger refactor
+  character.expiredEquipment = json["horseEquipment"].get<std::vector<data::Uid>>();
 
   character.horses = json["horses"].get<std::vector<data::Uid>>();
   character.horseSlotCount = json["horseSlotCount"].get<uint8_t>();
@@ -366,7 +367,7 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
 
   json["inventory"] = character.inventory();
   json["characterEquipment"] = character.characterEquipment();
-  json["horseEquipment"] = character.mountEquipment();
+  json["horseEquipment"] = character.expiredEquipment();
 
   json["horses"] = character.horses();
   json["horseSlotCount"] = character.horseSlotCount();

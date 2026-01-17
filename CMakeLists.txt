@@ -28,7 +28,7 @@ target_compile_features(project-properties
 add_library(platform-properties INTERFACE)
 if (${MSVC})
     target_compile_definitions(platform-properties INTERFACE
-            #_WIN32_WINNT=_WIN32_WINNT_WIN10
+            _WIN32_WINNT=_WIN32_WINNT_WIN10
             NTDDI_VERSION=NTDDI_WIN10_19H1)
     target_link_libraries(platform-properties INTERFACE
             icu.lib)

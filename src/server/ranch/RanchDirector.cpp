@@ -127,7 +127,7 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
 
   // AcCmdCLRequestFestivalResult
 
-  _commandServer.RegisterCommandHandler<protocol::RanchCommandBreedingWishlist>(
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRBreedingWishlist>(
     [this](ClientId clientId, auto& command)
     {
       HandleBreedingWishlist(clientId, command);
@@ -1482,9 +1482,9 @@ void RanchDirector::HandleBreedingAbandon(
 
 void RanchDirector::HandleBreedingWishlist(
   ClientId clientId,
-  const protocol::RanchCommandBreedingWishlist& command)
+  const protocol::AcCmdCRBreedingWishlist& command)
 {
-  protocol::RanchCommandBreedingWishlistOK response{};
+  protocol::AcCmdCRBreedingWishlistOK response{};
 
   // TODO: Actually do something
   _commandServer.QueueCommand<decltype(response)>(
@@ -1573,8 +1573,6 @@ void RanchDirector::HandleUpdateBusyState(
       });
   }
 }
-
-
 
 void RanchDirector::HandleUpdateMountNickname(
   ClientId clientId,
@@ -3546,7 +3544,7 @@ void RanchDirector::HandleOpCmd(
 
 void RanchDirector::HandleRequestLeagueTeamList(
   ClientId clientId,
-  const protocol::RanchCommandRequestLeagueTeamList& command)
+  const protocol::RanchCommandRequestLeagueTeamList&)
 {
   protocol::RanchCommandRequestLeagueTeamListOK response{
     .season = 46,
@@ -3657,7 +3655,7 @@ void RanchDirector::HandleRecoverMount(
 
 void RanchDirector::HandleMountFamilyTree(
   ClientId clientId,
-  const protocol::RanchCommandMountFamilyTree& command)
+  const protocol::RanchCommandMountFamilyTree&)
 {
   // todo: implement horse family tree
 
@@ -3863,7 +3861,7 @@ void RanchDirector::HandleStatusPointApply(
 
 void RanchDirector::HandleGetGuildMemberList(
   ClientId clientId,
-  const protocol::AcCmdCRGuildMemberList& command)
+  const protocol::AcCmdCRGuildMemberList&)
 {
   const auto& clientContext = GetClientContext(clientId);
   const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);

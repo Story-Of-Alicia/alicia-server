@@ -111,7 +111,7 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRLeaveRoom>(
-    [this](ClientId clientId, const auto& message)
+    [this](ClientId clientId, const auto&)
     {
       HandleLeaveRoom(clientId);
     });
@@ -913,7 +913,7 @@ void RaceDirector::HandleEnterRoom(
         protocol::BuildProtocolItems(
           protocolRacer.avatar->equipment,
           *_serverInstance.GetDataDirector().GetItemCache().Get(
-            character.mountEquipment()));
+            character.expiredEquipment()));
 
         const auto mountRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
           character.mountUid());

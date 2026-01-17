@@ -195,7 +195,7 @@ private:
   //!
   void HandleBreedingWishlist(
     ClientId clientId,
-    const protocol::RanchCommandBreedingWishlist& command);
+    const protocol::AcCmdCRBreedingWishlist& command);
 
   //!
   void HandleCmdAction(

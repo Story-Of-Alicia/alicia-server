@@ -293,7 +293,7 @@ struct Character
   
   dao::Field<std::vector<Uid>> inventory{};
   dao::Field<std::vector<Uid>> characterEquipment{};
-  dao::Field<std::vector<Uid>> mountEquipment{};
+  dao::Field<std::vector<Uid>> expiredEquipment{};
   
   dao::Field<std::vector<Uid>> horses{};
   dao::Field<uint8_t> horseSlotCount{0u};

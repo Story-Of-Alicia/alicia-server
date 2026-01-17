@@ -64,7 +64,7 @@ public:
       roomIter->second.stage == RaceInstance::Stage::Loading;
   }
 
-  uint32_t GetRoomPlayerCount(uint32_t uid)
+  size_t GetRoomPlayerCount(uint32_t uid)
   {
     const auto roomIter = _raceInstances.find(uid);
     if (roomIter == _raceInstances.cend())

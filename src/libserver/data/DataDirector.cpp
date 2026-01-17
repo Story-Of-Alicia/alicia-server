@@ -1087,7 +1087,7 @@ void DataDirector::ScheduleCharacterLoad(
 
         std::ranges::copy(character.inventory(), std::back_inserter(items));
         std::ranges::copy(character.characterEquipment(), std::back_inserter(items));
-        std::ranges::copy(character.mountEquipment(), std::back_inserter(items));
+        std::ranges::copy(character.expiredEquipment(), std::back_inserter(items));
 
         horses = character.horses();
 

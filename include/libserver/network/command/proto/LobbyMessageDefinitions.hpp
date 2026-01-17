@@ -77,9 +77,9 @@ struct LobbyCommandLoginOK
   std::string introduction{};
 
   //! Max 16 elements.
-  std::vector<Item> characterEquipment{};
+  std::vector<Item> equipmentItems{};
   //! Max 16 elements.
-  std::vector<Item> mountEquipment{};
+  std::vector<Item> expiredItems{};
 
   uint16_t level{};
   int32_t carrots{};
@@ -1310,7 +1310,7 @@ struct AcCmdCLCheckWaitingSeqnoOK
 //! Serverbound request special event list command.
 struct AcCmdCLRequestSpecialEventList
 {
-  uint32_t unk0;
+  uint32_t unk0{};
 
   static Command GetCommand()
   {

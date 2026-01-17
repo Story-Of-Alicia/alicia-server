@@ -32,7 +32,7 @@
 namespace server::protocol
 {
 
-struct RanchCommandHeartbeat
+struct AcCmdCRHeartbeat
 {
   static Command GetCommand()
   {
@@ -43,14 +43,14 @@ struct RanchCommandHeartbeat
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandHeartbeat& command,
+    const AcCmdCRHeartbeat& command,
     SinkStream& stream);
 
   //! Reads a command from the provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandHeartbeat& command,
+    AcCmdCRHeartbeat& command,
     SourceStream& stream);
 };
 
@@ -1118,7 +1118,7 @@ struct AcCmdCRBreedingAbandon
     SourceStream& stream);
 };
 
-struct RanchCommandBreedingAbandonOK
+struct AcCmdCRBreedingAbandonOK
 {
   static Command GetCommand()
   {
@@ -1140,7 +1140,7 @@ struct RanchCommandBreedingAbandonOK
     SourceStream& stream);
 };
 
-struct RanchCommandBreedingAbandonCancel
+struct AcCmdCRBreedingAbandonCancel
 {
   static Command GetCommand()
   {
@@ -1162,7 +1162,7 @@ struct RanchCommandBreedingAbandonCancel
     SourceStream& stream);
 };
 
-struct RanchCommandAchievementUpdateProperty
+struct AcCmdCRAchievementUpdateProperty
 {
   //! 75 - level up
   //! Table `Achievements`
@@ -1178,18 +1178,18 @@ struct RanchCommandAchievementUpdateProperty
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandAchievementUpdateProperty& command,
+    const AcCmdCRAchievementUpdateProperty& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandAchievementUpdateProperty& command,
+    AcCmdCRAchievementUpdateProperty& command,
     SourceStream& stream);
 };
 
-struct RanchCommandBreedingWishlist
+struct AcCmdCRBreedingWishlist
 {
   static Command GetCommand()
   {
@@ -1200,18 +1200,18 @@ struct RanchCommandBreedingWishlist
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandBreedingWishlist& command,
+    const AcCmdCRBreedingWishlist& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandBreedingWishlist& command,
+    AcCmdCRBreedingWishlist& command,
     SourceStream& stream);
 };
 
-struct RanchCommandBreedingWishlistOK
+struct AcCmdCRBreedingWishlistOK
 {
   struct WishlistElement
   {
@@ -1246,18 +1246,18 @@ struct RanchCommandBreedingWishlistOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandBreedingWishlistOK& command,
+    const AcCmdCRBreedingWishlistOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandBreedingWishlistOK& command,
+    AcCmdCRBreedingWishlistOK& command,
     SourceStream& stream);
 };
 
-struct RanchCommandBreedingWishlistCancel
+struct AcCmdCRBreedingWishlistCancel
 {
   static Command GetCommand()
   {
@@ -1268,14 +1268,14 @@ struct RanchCommandBreedingWishlistCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandBreedingWishlistCancel& command,
+    const AcCmdCRBreedingWishlistCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandBreedingWishlistCancel& command,
+    AcCmdCRBreedingWishlistCancel& command,
     SourceStream& stream);
 };
 

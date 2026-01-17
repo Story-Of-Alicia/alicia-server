@@ -80,15 +80,15 @@ void AcCmdCRUseItemCancel::Write(
 }
 
 void AcCmdCRUseItemCancel::Read(
-  AcCmdCRUseItemCancel& command,
-  SourceStream& stream)
+  AcCmdCRUseItemCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
 void RanchCommandMountFamilyTree::Write(
-  const RanchCommandMountFamilyTree& command,
-  SinkStream& stream)
+  const RanchCommandMountFamilyTree&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -115,27 +115,29 @@ void RanchCommandMountFamilyTreeOK::Write(
 }
 
 void RanchCommandMountFamilyTreeOK::Read(
-  RanchCommandMountFamilyTreeOK& command,
-  SourceStream& stream)
+  RanchCommandMountFamilyTreeOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
 void RanchCommandMountFamilyTreeCancel::Write(
-  const RanchCommandMountFamilyTreeCancel& command,
-  SinkStream& stream)
+  const RanchCommandMountFamilyTreeCancel&,
+  SinkStream&)
 {
+  // Empty.
 }
 
 void RanchCommandMountFamilyTreeCancel::Read(
-  RanchCommandMountFamilyTreeCancel& command,
-  SourceStream& stream)
+  RanchCommandMountFamilyTreeCancel&,
+  SourceStream&)
 {
+  throw std::runtime_error("Not implemented.");
 }
 
 void AcCmdCREnterRanch::Write(
-  const AcCmdCREnterRanch& command,
-  SinkStream& stream)
+  const AcCmdCREnterRanch&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -211,22 +213,24 @@ void AcCmdCREnterRanchOK::Write(
 }
 
 void AcCmdCREnterRanchOK::Read(
-  AcCmdCREnterRanchOK& command,
-  SourceStream& stream)
+  AcCmdCREnterRanchOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
 void RanchCommandEnterRanchCancel::Write(
-  const RanchCommandEnterRanchCancel& command,
-  SinkStream& stream)
+  const RanchCommandEnterRanchCancel&,
+  SinkStream&)
 {
+  // Empty.
 }
 
 void RanchCommandEnterRanchCancel::Read(
-  RanchCommandEnterRanchCancel& command,
-  SourceStream& stream)
+  RanchCommandEnterRanchCancel&,
+  SourceStream&)
 {
+  throw std::runtime_error("Not implemented.");
 }
 
 void RanchCommandEnterRanchNotify::Write(
@@ -237,8 +241,8 @@ void RanchCommandEnterRanchNotify::Write(
 }
 
 void RanchCommandEnterRanchNotify::Read(
-  RanchCommandEnterRanchNotify& command,
-  SourceStream& stream)
+  RanchCommandEnterRanchNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -332,8 +336,8 @@ void AcCmdCRRanchSnapshot::PartialSpatial::Read(
 }
 
 void AcCmdCRRanchSnapshot::Write(
-  const AcCmdCRRanchSnapshot& command,
-  SinkStream& stream)
+  const AcCmdCRRanchSnapshot&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -394,15 +398,15 @@ void RanchCommandRanchSnapshotNotify::Write(
 }
 
 void RanchCommandRanchSnapshotNotify::Read(
-  RanchCommandRanchSnapshotNotify& command,
-  SourceStream& stream)
+  RanchCommandRanchSnapshotNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
 void AcCmdCRRanchCmdAction::Write(
-  const AcCmdCRRanchCmdAction& command,
-  SinkStream& stream)
+  const AcCmdCRRanchCmdAction&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -428,15 +432,15 @@ void RanchCommandRanchCmdActionNotify::Write(
 }
 
 void RanchCommandRanchCmdActionNotify::Read(
-  RanchCommandRanchCmdActionNotify& command,
-  SourceStream& stream)
+  RanchCommandRanchCmdActionNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
 void RanchCommandUpdateBusyState::Write(
-  const RanchCommandUpdateBusyState& command,
-  SinkStream& stream)
+  const RanchCommandUpdateBusyState&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -457,36 +461,36 @@ void RanchCommandUpdateBusyStateNotify::Write(
 }
 
 void RanchCommandUpdateBusyStateNotify::Read(
-  RanchCommandUpdateBusyStateNotify& command,
-  SourceStream& stream)
+  RanchCommandUpdateBusyStateNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
 void AcCmdCRLeaveRanch::Write(
-  const AcCmdCRLeaveRanch& command,
-  SinkStream& stream)
+  const AcCmdCRLeaveRanch&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
 void AcCmdCRLeaveRanch::Read(
-  AcCmdCRLeaveRanch& command,
-  SourceStream& stream)
+  AcCmdCRLeaveRanch&,
+  SourceStream&)
 {
   // Empty.
 }
 
 void AcCmdCRLeaveRanchOK::Write(
-  const AcCmdCRLeaveRanchOK& command,
-  SinkStream& stream)
+  const AcCmdCRLeaveRanchOK&,
+  SinkStream&)
 {
   // Empty.
 }
 
 void AcCmdCRLeaveRanchOK::Read(
-  AcCmdCRLeaveRanchOK& command,
-  SourceStream& stream)
+  AcCmdCRLeaveRanchOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -499,25 +503,29 @@ void AcCmdCRLeaveRanchNotify::Write(
 }
 
 void AcCmdCRLeaveRanchNotify::Read(
-  AcCmdCRLeaveRanchNotify& command,
-  SourceStream& stream)
+  AcCmdCRLeaveRanchNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void RanchCommandHeartbeat::Write(
-  const RanchCommandHeartbeat& command,
-  SinkStream& stream)
+void AcCmdCRHeartbeat::Write(
+  const AcCmdCRHeartbeat&,
+  SinkStream&)
 {
+  throw std::runtime_error("Not implemented.");
 }
 
-void RanchCommandHeartbeat::Read(
-  RanchCommandHeartbeat& command,
-  SourceStream& stream) {}
+void AcCmdCRHeartbeat::Read(
+  AcCmdCRHeartbeat&,
+  SourceStream&)
+{
+  // Empty.
+}
 
 void RanchCommandRanchStuff::Write(
-  const RanchCommandRanchStuff& command,
-  SinkStream& stream)
+  const RanchCommandRanchStuff&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -540,15 +548,15 @@ void RanchCommandRanchStuffOK::Write(
 }
 
 void RanchCommandRanchStuffOK::Read(
-  RanchCommandRanchStuffOK& command,
-  SourceStream& stream)
+  RanchCommandRanchStuffOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
 void AcCmdCRSearchStallion::Write(
-  const AcCmdCRSearchStallion& command,
-  SinkStream& stream)
+  const AcCmdCRSearchStallion&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -583,22 +591,22 @@ void AcCmdCRSearchStallion::Read(
 }
 
 void RanchCommandSearchStallionCancel::Write(
-  const RanchCommandSearchStallionCancel& command,
-  SinkStream& stream)
+  const RanchCommandSearchStallionCancel&,
+  SinkStream&)
 {
   // Empty.
 }
 
 void RanchCommandSearchStallionCancel::Read(
-  RanchCommandSearchStallionCancel& command,
-  SourceStream& stream)
+  RanchCommandSearchStallionCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRRegisterStallion::Write(
-  const AcCmdCRRegisterStallion& command,
-  SinkStream& stream)
+  const AcCmdCRRegisterStallion&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -619,29 +627,29 @@ void AcCmdCRRegisterStallionOK::Write(
 }
 
 void AcCmdCRRegisterStallionOK::Read(
-  AcCmdCRRegisterStallionOK& command,
-  SourceStream& stream)
+  AcCmdCRRegisterStallionOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void RanchCommandRegisterStallionCancel::Write(
-  const RanchCommandRegisterStallionCancel& command,
-  SinkStream& stream)
+  const RanchCommandRegisterStallionCancel&,
+  SinkStream&)
 {
   // Empty.
 }
 
 void RanchCommandRegisterStallionCancel::Read(
-  RanchCommandRegisterStallionCancel& command,
-  SourceStream& stream)
+  RanchCommandRegisterStallionCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRUnregisterStallion::Write(
-  const AcCmdCRUnregisterStallion& command,
-  SinkStream& stream)
+  const AcCmdCRUnregisterStallion&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -654,36 +662,36 @@ void AcCmdCRUnregisterStallion::Read(
 }
 
 void AcCmdCRUnregisterStallionOK::Write(
-  const AcCmdCRUnregisterStallionOK& command,
-  SinkStream& stream)
+  const AcCmdCRUnregisterStallionOK&,
+  SinkStream&)
 {
   // Empty.
 }
 
 void AcCmdCRUnregisterStallionOK::Read(
-  AcCmdCRUnregisterStallionOK& command,
-  SourceStream& stream)
+  AcCmdCRUnregisterStallionOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void RanchCommandUnregisterStallionCancel::Write(
-  const RanchCommandUnregisterStallionCancel& command,
-  SinkStream& stream)
+  const RanchCommandUnregisterStallionCancel&,
+  SinkStream&)
 {
   // Empty.
 }
 
 void RanchCommandUnregisterStallionCancel::Read(
-  RanchCommandUnregisterStallionCancel& command,
-  SourceStream& stream)
+  RanchCommandUnregisterStallionCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRUnregisterStallionEstimateInfo::Write(
-  const AcCmdCRUnregisterStallionEstimateInfo& command,
-  SinkStream& stream)
+  const AcCmdCRUnregisterStallionEstimateInfo&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -707,22 +715,22 @@ void AcCmdCRUnregisterStallionEstimateInfoOK::Write(
 }
 
 void AcCmdCRUnregisterStallionEstimateInfoOK::Read(
-  AcCmdCRUnregisterStallionEstimateInfoOK& command,
-  SourceStream& stream)
+  AcCmdCRUnregisterStallionEstimateInfoOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRUnregisterStallionEstimateInfoCancel::Write(
-  const AcCmdCRUnregisterStallionEstimateInfoCancel& command,
-  SinkStream& stream)
+  const AcCmdCRUnregisterStallionEstimateInfoCancel&,
+  SinkStream&)
 {
   // Empty.
 }
 
 void AcCmdCRUnregisterStallionEstimateInfoCancel::Read(
-  AcCmdCRUnregisterStallionEstimateInfoCancel& command,
-  SourceStream& stream)
+  AcCmdCRUnregisterStallionEstimateInfoCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -760,34 +768,38 @@ void RanchCommandSearchStallionOK::Write(
 }
 
 void RanchCommandSearchStallionOK::Read(
-  RanchCommandSearchStallionOK& command,
-  SourceStream& stream)
+  RanchCommandSearchStallionOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
 void AcCmdCREnterBreedingMarket::Write(
-  const AcCmdCREnterBreedingMarket& command,
-  SinkStream& stream)
+  const AcCmdCREnterBreedingMarket&,
+  SinkStream&)
 {
+  throw std::runtime_error("Not implemented.");
 }
 
 void AcCmdCREnterBreedingMarket::Read(
-  AcCmdCREnterBreedingMarket& command,
-  SourceStream& stream)
+  AcCmdCREnterBreedingMarket&,
+  SourceStream&)
 {
+  // Empty.
 }
 
 void RanchCommandEnterBreedingMarketCancel::Write(
-  const RanchCommandEnterBreedingMarketCancel& command,
-  SinkStream& stream)
+  const RanchCommandEnterBreedingMarketCancel&,
+  SinkStream&)
 {
+  // Empty.
 }
 
 void RanchCommandEnterBreedingMarketCancel::Read(
-  RanchCommandEnterBreedingMarketCancel& command,
-  SourceStream& stream)
+  RanchCommandEnterBreedingMarketCancel&,
+  SourceStream&)
 {
+  throw std::runtime_error("Not implemented.");
 }
 
 void RanchCommandEnterBreedingMarketOK::Write(
@@ -812,15 +824,15 @@ void RanchCommandEnterBreedingMarketOK::Write(
 }
 
 void RanchCommandEnterBreedingMarketOK::Read(
-  RanchCommandEnterBreedingMarketOK& command,
-  SourceStream& stream)
+  RanchCommandEnterBreedingMarketOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
 void AcCmdCRTryBreeding::Write(
-  const AcCmdCRTryBreeding& command,
-  SinkStream& stream)
+  const AcCmdCRTryBreeding&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -846,15 +858,15 @@ void RanchCommandTryBreedingCancel::Write(
 }
 
 void RanchCommandTryBreedingCancel::Read(
-  RanchCommandTryBreedingCancel& command,
-  SourceStream& stream)
+  RanchCommandTryBreedingCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRBreedingAbandon::Write(
-  const AcCmdCRBreedingAbandon& command,
-  SinkStream& stream)
+  const AcCmdCRBreedingAbandon&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -866,30 +878,30 @@ void AcCmdCRBreedingAbandon::Read(
   stream.Read(command.horseUid);
 }
 
-void RanchCommandBreedingAbandonOK::Write(
+void AcCmdCRBreedingAbandonOK::Write(
   const AcCmdCRBreedingAbandon& command,
   SinkStream& stream)
 {
   stream.Write(command.horseUid);
 }
 
-void RanchCommandBreedingAbandonOK::Read(
-  AcCmdCRBreedingAbandon& command,
-  SourceStream& stream)
+void AcCmdCRBreedingAbandonOK::Read(
+  AcCmdCRBreedingAbandon&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void RanchCommandBreedingAbandonCancel::Write(
+void AcCmdCRBreedingAbandonCancel::Write(
   const AcCmdCRBreedingAbandon& command,
   SinkStream& stream)
 {
   stream.Write(command.horseUid);
 }
 
-void RanchCommandBreedingAbandonCancel::Read(
-  AcCmdCRBreedingAbandon& command,
-  SourceStream& stream)
+void AcCmdCRBreedingAbandonCancel::Read(
+  AcCmdCRBreedingAbandon&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -919,38 +931,42 @@ void RanchCommandTryBreedingOK::Write(
 }
 
 void RanchCommandTryBreedingOK::Read(
-  RanchCommandTryBreedingOK& command,
-  SourceStream& stream)
+  RanchCommandTryBreedingOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void RanchCommandBreedingWishlist::Write(
-  const RanchCommandBreedingWishlist& command,
-  SinkStream& stream)
+void AcCmdCRBreedingWishlist::Write(
+  const AcCmdCRBreedingWishlist&,
+  SinkStream&)
 {
+  throw std::runtime_error("Not implemented.");
 }
 
-void RanchCommandBreedingWishlist::Read(
-  RanchCommandBreedingWishlist& command,
-  SourceStream& stream)
+void AcCmdCRBreedingWishlist::Read(
+  AcCmdCRBreedingWishlist&,
+  SourceStream&)
 {
+  // Empty.
 }
 
-void RanchCommandBreedingWishlistCancel::Write(
-  const RanchCommandBreedingWishlistCancel& command,
-  SinkStream& stream)
+void AcCmdCRBreedingWishlistCancel::Write(
+  const AcCmdCRBreedingWishlistCancel&,
+  SinkStream&)
 {
+  // Empty.
 }
 
-void RanchCommandBreedingWishlistCancel::Read(
-  RanchCommandBreedingWishlistCancel& command,
-  SourceStream& stream)
+void AcCmdCRBreedingWishlistCancel::Read(
+  AcCmdCRBreedingWishlistCancel&,
+  SourceStream&)
 {
+  throw std::runtime_error("Not implemented.");
 }
 
-void RanchCommandBreedingWishlistOK::Write(
-  const RanchCommandBreedingWishlistOK& command,
+void AcCmdCRBreedingWishlistOK::Write(
+  const AcCmdCRBreedingWishlistOK& command,
   SinkStream& stream)
 {
   stream.Write(static_cast<uint8_t>(command.wishlist.size()));
@@ -976,16 +992,16 @@ void RanchCommandBreedingWishlistOK::Write(
   }
 }
 
-void RanchCommandBreedingWishlistOK::Read(
-  RanchCommandBreedingWishlistOK& command,
-  SourceStream& stream)
+void AcCmdCRBreedingWishlistOK::Read(
+  AcCmdCRBreedingWishlistOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
 void AcCmdCRUpdateMountNickname::Write(
-  const AcCmdCRUpdateMountNickname& command,
-  SinkStream& stream)
+  const AcCmdCRUpdateMountNickname&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -1007,8 +1023,8 @@ void AcCmdCRUpdateMountNicknameCancel::Write(
 }
 
 void AcCmdCRUpdateMountNicknameCancel::Read(
-  AcCmdCRUpdateMountNicknameCancel& command,
-  SourceStream& stream)
+  AcCmdCRUpdateMountNicknameCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -1023,8 +1039,8 @@ void AcCmdRCUpdateMountInfoNotify::Write(
 }
 
 void AcCmdRCUpdateMountInfoNotify::Read(
-  AcCmdRCUpdateMountInfoNotify& command,
-  SourceStream& stream)
+  AcCmdRCUpdateMountInfoNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -1040,22 +1056,25 @@ void AcCmdCRUpdateMountNicknameOK::Write(
 }
 
 void AcCmdCRUpdateMountNicknameOK::Read(
-  AcCmdCRUpdateMountNicknameOK& command,
-  SourceStream& stream)
+  AcCmdCRUpdateMountNicknameOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
 void AcCmdCRRequestStorage::Write(
-  const AcCmdCRRequestStorage& command,
-  SinkStream& stream)
+  const AcCmdCRRequestStorage&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void AcCmdCRRequestStorage::Read(AcCmdCRRequestStorage& command, SourceStream& stream)
+void AcCmdCRRequestStorage::Read(
+  AcCmdCRRequestStorage& command,
+  SourceStream& stream)
 {
-  stream.Read(command.category).Read(command.page);
+  stream.Read(command.category)
+    .Read(command.page);
 }
 
 void AcCmdCRRequestStorageOK::Write(
@@ -1073,7 +1092,9 @@ void AcCmdCRRequestStorageOK::Write(
   }
 }
 
-void AcCmdCRRequestStorageOK::Read(AcCmdCRRequestStorageOK& command, SourceStream& stream)
+void AcCmdCRRequestStorageOK::Read(
+  AcCmdCRRequestStorageOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -1082,19 +1103,20 @@ void AcCmdCRRequestStorageCancel::Write(
   const AcCmdCRRequestStorageCancel& command,
   SinkStream& stream)
 {
-  stream.Write(command.category).Write(command.val1);
+  stream.Write(command.category)
+    .Write(command.val1);
 }
 
 void AcCmdCRRequestStorageCancel::Read(
-  AcCmdCRRequestStorageCancel& command,
-  SourceStream& stream)
+  AcCmdCRRequestStorageCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
 void AcCmdCRGetItemFromStorage::Write(
-  const AcCmdCRGetItemFromStorage& command,
-  SinkStream& stream)
+  const AcCmdCRGetItemFromStorage&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -1120,8 +1142,8 @@ void AcCmdCRGetItemFromStorageOK::Write(
 }
 
 void AcCmdCRGetItemFromStorageOK::Read(
-  AcCmdCRGetItemFromStorageOK& command,
-  SourceStream& stream)
+  AcCmdCRGetItemFromStorageOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -1135,15 +1157,15 @@ void AcCmdCRGetItemFromStorageCancel::Write(
 }
 
 void AcCmdCRGetItemFromStorageCancel::Read(
-  AcCmdCRGetItemFromStorageCancel& command,
-  SourceStream& stream)
+  AcCmdCRGetItemFromStorageCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
 void RanchCommandCheckStorageItem::Write(
-  const AcCmdCRGetItemFromStorage& command,
-  SinkStream& stream)
+  const AcCmdCRGetItemFromStorage&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -1156,8 +1178,8 @@ void RanchCommandCheckStorageItem::Read(
 }
 
 void RanchCommandRequestNpcDressList::Write(
-  const RanchCommandRequestNpcDressList& command,
-  SinkStream& stream)
+  const RanchCommandRequestNpcDressList&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -1182,29 +1204,29 @@ void RanchCommandRequestNpcDressListOK::Write(
 }
 
 void RanchCommandRequestNpcDressListOK::Read(
-  RanchCommandRequestNpcDressListOK& command,
-  SourceStream& stream)
+  RanchCommandRequestNpcDressListOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
 void RanchCommandRequestNpcDressListCancel::Write(
-  const RanchCommandRequestNpcDressListCancel& command,
-  SinkStream& stream)
+  const RanchCommandRequestNpcDressListCancel&,
+  SinkStream&)
 {
   // Empty
 }
 
 void RanchCommandRequestNpcDressListCancel::Read(
-  RanchCommandRequestNpcDressListCancel& command,
-  SourceStream& stream)
+  RanchCommandRequestNpcDressListCancel&,
+  SourceStream&)
 {
   // Empty
 }
 
 void AcCmdCRRanchChat::Write(
-  const AcCmdCRRanchChat& command,
-  SinkStream& stream)
+  const AcCmdCRRanchChat&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1229,15 +1251,15 @@ void AcCmdCRRanchChatNotify::Write(
 }
 
 void AcCmdCRRanchChatNotify::Read(
-  AcCmdCRRanchChatNotify& command,
-  SourceStream& stream)
+  AcCmdCRRanchChatNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRWearEquipment::Write(
-  const AcCmdCRWearEquipment& command,
-  SinkStream& stream)
+  const AcCmdCRWearEquipment&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1259,8 +1281,8 @@ void AcCmdCRWearEquipmentOK::Write(
 }
 
 void AcCmdCRWearEquipmentOK::Read(
-  AcCmdCRWearEquipmentOK& command,
-  SourceStream& stream)
+  AcCmdCRWearEquipmentOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1274,15 +1296,15 @@ void AcCmdCRWearEquipmentCancel::Write(
 }
 
 void AcCmdCRWearEquipmentCancel::Read(
-  AcCmdCRWearEquipmentCancel& command,
-  SourceStream& stream)
+  AcCmdCRWearEquipmentCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRRemoveEquipment::Write(
-  const AcCmdCRRemoveEquipment& command,
-  SinkStream& stream)
+  const AcCmdCRRemoveEquipment&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1302,8 +1324,8 @@ void AcCmdCRRemoveEquipmentOK::Write(
 }
 
 void AcCmdCRRemoveEquipmentOK::Read(
-  AcCmdCRRemoveEquipmentOK& command,
-  SourceStream& stream)
+  AcCmdCRRemoveEquipmentOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1317,8 +1339,8 @@ void AcCmdCRRemoveEquipmentCancel::Write(
 }
 
 void AcCmdCRRemoveEquipmentCancel::Read(
-  AcCmdCRRemoveEquipmentCancel& command,
-  SourceStream& stream)
+  AcCmdCRRemoveEquipmentCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1345,8 +1367,8 @@ void AcCmdCRUpdateEquipmentNotify::Write(
 }
 
 void AcCmdCRUpdateEquipmentNotify::Read(
-  AcCmdCRUpdateEquipmentNotify& command,
-  SourceStream& stream)
+  AcCmdCRUpdateEquipmentNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1360,15 +1382,15 @@ void RanchCommandSetIntroductionNotify::Write(
 }
 
 void RanchCommandSetIntroductionNotify::Read(
-  RanchCommandSetIntroductionNotify& command,
-  SourceStream& stream)
+  RanchCommandSetIntroductionNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void RanchCommandCreateGuild::Write(
-  const RanchCommandCreateGuild& command,
-  SinkStream& stream)
+  const RanchCommandCreateGuild&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1390,8 +1412,8 @@ void RanchCommandCreateGuildOK::Write(
 }
 
 void RanchCommandCreateGuildOK::Read(
-  RanchCommandCreateGuildOK& command,
-  SourceStream& stream)
+  RanchCommandCreateGuildOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1405,21 +1427,21 @@ void AcCmdCRCreateGuildCancel::Write(
 }
 
 void AcCmdCRCreateGuildCancel::Read(
-  AcCmdCRCreateGuildCancel& command,
-  SourceStream& stream)
+  AcCmdCRCreateGuildCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void RanchCommandRequestGuildInfo::Write(
-  const RanchCommandRequestGuildInfo& command,
-  SinkStream& stream)
+  const RanchCommandRequestGuildInfo&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 void RanchCommandRequestGuildInfo::Read(
-  RanchCommandRequestGuildInfo& command,
-  SourceStream& stream)
+  RanchCommandRequestGuildInfo&,
+  SourceStream&)
 {
   // Empty.
 }
@@ -1443,8 +1465,8 @@ void RanchCommandRequestGuildInfoOK::GuildInfo::Write(
 }
 
 void RanchCommandRequestGuildInfoOK::GuildInfo::Read(
-  GuildInfo& command,
-  SourceStream& stream)
+  GuildInfo&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1457,8 +1479,8 @@ void RanchCommandRequestGuildInfoOK::Write(
 }
 
 void RanchCommandRequestGuildInfoOK::Read(
-  RanchCommandRequestGuildInfoOK& command,
-  SourceStream& stream)
+  RanchCommandRequestGuildInfoOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1471,15 +1493,15 @@ void RanchCommandRequestGuildInfoCancel::Write(
 }
 
 void RanchCommandRequestGuildInfoCancel::Read(
-  RanchCommandRequestGuildInfoCancel& command,
-  SourceStream& stream)
+  RanchCommandRequestGuildInfoCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRUpdatePet::Write(
-  const AcCmdCRUpdatePet& command,
-  SinkStream& stream)
+  const AcCmdCRUpdatePet&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1525,15 +1547,15 @@ void AcCmdRCUpdatePetCancel::Write(
 }
 
 void AcCmdRCUpdatePetCancel::Read(
-  AcCmdRCUpdatePetCancel& command,
-  SourceStream& stream)
+  AcCmdRCUpdatePetCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRBoostIncubateInfoList::Write(
-  const AcCmdCRBoostIncubateInfoList& command,
-  SinkStream& stream)
+  const AcCmdCRBoostIncubateInfoList&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1553,19 +1575,18 @@ void AcCmdCRBoostIncubateInfoListOK::Write(
   stream.Write(command.member1)
     .Write(command.count);
   // for loop to write vector of 2 uint32_t
-  
 }
 
 void AcCmdCRBoostIncubateInfoListOK::Read(
-  AcCmdCRBoostIncubateInfoListOK& command,
-  SourceStream& stream)
+  AcCmdCRBoostIncubateInfoListOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRBoostIncubateEgg::Write(
-  const AcCmdCRBoostIncubateEgg& command,
-  SinkStream& stream)
+  const AcCmdCRBoostIncubateEgg&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1588,15 +1609,15 @@ void AcCmdCRBoostIncubateEggOK::Write(
 }
 
 void AcCmdCRBoostIncubateEggOK::Read(
-  AcCmdCRBoostIncubateEggOK& command,
-  SourceStream& stream)
+  AcCmdCRBoostIncubateEggOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRRequestPetBirth::Write(
-  const AcCmdCRRequestPetBirth& command,
-  SinkStream& stream)
+  const AcCmdCRRequestPetBirth&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1618,8 +1639,8 @@ void AcCmdCRRequestPetBirthOK::Write(
 }
 
 void AcCmdCRRequestPetBirthOK::Read(
-  AcCmdCRRequestPetBirthOK& command,
-  SourceStream& stream)
+  AcCmdCRRequestPetBirthOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1632,8 +1653,8 @@ void AcCmdCRRequestPetBirthNotify::Write(
 }
 
 void AcCmdCRRequestPetBirthNotify::Read(
-  AcCmdCRRequestPetBirthNotify& command,
-  SourceStream& stream)
+  AcCmdCRRequestPetBirthNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1646,8 +1667,8 @@ void AcCmdCRRequestPetBirthCancel::Write(
 }
 
 void AcCmdCRRequestPetBirthCancel::Read(
-  AcCmdCRRequestPetBirthCancel& command,
-  SourceStream& stream)
+  AcCmdCRRequestPetBirthCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1660,15 +1681,15 @@ void RanchCommandPetBirthNotify::Write(
 }
 
 void RanchCommandPetBirthNotify::Read(
-  RanchCommandPetBirthNotify& command,
-  SourceStream& stream)
+  RanchCommandPetBirthNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRIncubateEgg::Write(
-  const AcCmdCRIncubateEgg& command,
-  SinkStream& stream)
+  const AcCmdCRIncubateEgg&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1692,8 +1713,8 @@ void AcCmdCRIncubateEggOK::Write(
 }
 
 void AcCmdCRIncubateEggOK::Read(
-  AcCmdCRIncubateEggOK& command,
-  SourceStream& stream)
+  AcCmdCRIncubateEggOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1709,8 +1730,8 @@ void AcCmdCRIncubateEggNotify::Write(
 }
 
 void AcCmdCRIncubateEggNotify::Read(
-  AcCmdCRIncubateEggNotify& command,
-  SourceStream& stream)
+  AcCmdCRIncubateEggNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1726,22 +1747,22 @@ void AcCmdCRIncubateEggCancel::Write(
 }
 
 void AcCmdCRIncubateEggCancel::Read(
-  AcCmdCRIncubateEggCancel& command,
-  SourceStream& stream)
+  AcCmdCRIncubateEggCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void RanchCommandUserPetInfos::Write(
-  const RanchCommandUserPetInfos& command,
-  SinkStream& stream)
+  const RanchCommandUserPetInfos&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void RanchCommandUserPetInfos::Read(
-  RanchCommandUserPetInfos& command,
-  SourceStream& stream)
+  RanchCommandUserPetInfos&,
+  SourceStream&)
 {
   // Empty.
 }
@@ -1760,21 +1781,21 @@ void RanchCommandUserPetInfosOK::Write(
 }
 
 void RanchCommandUserPetInfosOK::Read(
-  RanchCommandUserPetInfosOK& command,
-  SourceStream& stream)
+  RanchCommandUserPetInfosOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void RanchCommandAchievementUpdateProperty::Write(
-  const RanchCommandAchievementUpdateProperty& command,
-  SinkStream& stream)
+void AcCmdCRAchievementUpdateProperty::Write(
+  const AcCmdCRAchievementUpdateProperty&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
-void RanchCommandAchievementUpdateProperty::Read(
-  RanchCommandAchievementUpdateProperty& command,
+void AcCmdCRAchievementUpdateProperty::Read(
+  AcCmdCRAchievementUpdateProperty& command,
   SourceStream& stream)
 {
   stream.Read(command.achievementEvent)
@@ -1782,8 +1803,8 @@ void RanchCommandAchievementUpdateProperty::Read(
 }
 
 void AcCmdCRHousingBuild::Write(
-  const AcCmdCRHousingBuild& command,
-  SinkStream& stream)
+  const AcCmdCRHousingBuild&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1805,8 +1826,8 @@ void AcCmdCRHousingBuildOK::Write(
 }
 
 void AcCmdCRHousingBuildOK::Read(
-  AcCmdCRHousingBuildOK& command,
-  SourceStream& stream)
+  AcCmdCRHousingBuildOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1819,8 +1840,8 @@ void AcCmdCRHousingBuildCancel::Write(
 }
 
 void AcCmdCRHousingBuildCancel::Read(
-  AcCmdCRHousingBuildCancel& command,
-  SourceStream& stream)
+  AcCmdCRHousingBuildCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1834,15 +1855,15 @@ void AcCmdCRHousingBuildNotify::Write(
 }
 
 void AcCmdCRHousingBuildNotify::Read(
-  AcCmdCRHousingBuildNotify& command,
-  SourceStream& stream)
+  AcCmdCRHousingBuildNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRHousingRepair::Write(
-  const AcCmdCRHousingRepair& command,
-  SinkStream& stream)
+  const AcCmdCRHousingRepair&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1863,8 +1884,8 @@ void AcCmdCRHousingRepairOK::Write(
 }
 
 void AcCmdCRHousingRepairOK::Read(
-  AcCmdCRHousingRepairOK& command,
-  SourceStream& stream)
+  AcCmdCRHousingRepairOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1877,8 +1898,8 @@ void AcCmdCRHousingRepairCancel::Write(
 }
 
 void AcCmdCRHousingRepairCancel::Read(
-  AcCmdCRHousingRepairCancel& command,
-  SourceStream& stream)
+  AcCmdCRHousingRepairCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1892,8 +1913,8 @@ void AcCmdCRHousingRepairNotify::Write(
 }
 
 void AcCmdCRHousingRepairNotify::Read(
-  AcCmdCRHousingRepairNotify& command,
-  SourceStream& stream)
+  AcCmdCRHousingRepairNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1916,8 +1937,8 @@ void AcCmdRCMissionEvent::Read(
 }
 
 void RanchCommandKickRanch::Write(
-  const RanchCommandKickRanch& command,
-  SinkStream& stream)
+  const RanchCommandKickRanch&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1930,29 +1951,29 @@ void RanchCommandKickRanch::Read(
 }
 
 void RanchCommandKickRanchOK::Write(
-  const RanchCommandKickRanchOK& command,
-  SinkStream& stream)
+  const RanchCommandKickRanchOK&,
+  SinkStream&)
 {
   // Empty.
 }
 
 void RanchCommandKickRanchOK::Read(
-  RanchCommandKickRanchOK& command,
-  SourceStream& stream)
+  RanchCommandKickRanchOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void RanchCommandKickRanchCancel::Write(
-  const RanchCommandKickRanchCancel& command,
-  SinkStream& stream)
+  const RanchCommandKickRanchCancel&,
+  SinkStream&)
 {
   // Empty.
 }
 
 void RanchCommandKickRanchCancel::Read(
-  RanchCommandKickRanchCancel& command,
-  SourceStream& stream)
+  RanchCommandKickRanchCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1965,15 +1986,15 @@ void RanchCommandKickRanchNotify::Write(
 }
 
 void RanchCommandKickRanchNotify::Read(
-  RanchCommandKickRanchNotify& command,
-  SourceStream& stream)
+  RanchCommandKickRanchNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCROpCmd::Write(
-  const AcCmdCROpCmd& command,
-  SinkStream& stream)
+  const AcCmdCROpCmd&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1994,22 +2015,22 @@ void RanchCommandOpCmdOK::Write(
 }
 
 void RanchCommandOpCmdOK::Read(
-  RanchCommandOpCmdOK& command,
-  SourceStream& stream)
+  RanchCommandOpCmdOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void RanchCommandRequestLeagueTeamList::Write(
-  const RanchCommandRequestLeagueTeamList& command,
-  SinkStream& stream)
+  const RanchCommandRequestLeagueTeamList&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void RanchCommandRequestLeagueTeamList::Read(
-  RanchCommandRequestLeagueTeamList& command,
-  SourceStream& stream)
+  RanchCommandRequestLeagueTeamList&,
+  SourceStream&)
 {
   // Empty.
 }
@@ -2668,8 +2689,8 @@ void AcCmdCRMountInjuryHealOK::Write(
 }
 
 void AcCmdCRConfirmItem::Write(
-  const AcCmdCRConfirmItem& command,
-  SinkStream& stream)
+  const AcCmdCRConfirmItem&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2693,8 +2714,8 @@ void AcCmdCRConfirmItemOK::Write(
 }
 
 void AcCmdCRConfirmItemOK::Read(
-  AcCmdCRConfirmItemOK& command,
-  SourceStream& stream)
+  AcCmdCRConfirmItemOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2709,8 +2730,8 @@ void AcCmdCRConfirmItemCancel::Write(
 }
 
 void AcCmdCRConfirmItemCancel::Read(
-  AcCmdCRConfirmItemCancel& command,
-  SourceStream& stream)
+  AcCmdCRConfirmItemCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2723,15 +2744,15 @@ void AcCmdCRConfirmSetItem::Read(
 }
 
 void AcCmdCRConfirmSetItem::Write(
-  const AcCmdCRConfirmSetItem& command,
-  SinkStream& stream)
+  const AcCmdCRConfirmSetItem&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRConfirmSetItemOK::Read(
-  AcCmdCRConfirmSetItemOK& command,
-  SourceStream& stream)
+  AcCmdCRConfirmSetItemOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2745,8 +2766,8 @@ void AcCmdCRConfirmSetItemOK::Write(
 }
 
 void AcCmdCRConfirmSetItemCancel::Read(
-  AcCmdCRConfirmSetItemCancel& command,
-  SourceStream& stream)
+  AcCmdCRConfirmSetItemCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2773,15 +2794,15 @@ void AcCmdCRBuyOwnItem::Read(
 }
 
 void AcCmdCRBuyOwnItem::Write(
-  const AcCmdCRBuyOwnItem& command,
-  SinkStream& stream)
+  const AcCmdCRBuyOwnItem&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRBuyOwnItemCancel::Read(
-  AcCmdCRBuyOwnItemCancel& command,
-  SourceStream& stream)
+  AcCmdCRBuyOwnItemCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2794,8 +2815,8 @@ void AcCmdCRBuyOwnItemCancel::Write(
 }
 
 void AcCmdCRBuyOwnItemOK::Read(
-  AcCmdCRBuyOwnItemOK& command,
-  SourceStream& stream)
+  AcCmdCRBuyOwnItemOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2834,15 +2855,15 @@ void AcCmdCRSendGift::Read(
 }
 
 void AcCmdCRSendGift::Write(
-  const AcCmdCRSendGift& command,
-  SinkStream& stream)
+  const AcCmdCRSendGift&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRSendGiftCancel::Read(
-  AcCmdCRSendGiftCancel& command,
-  SourceStream& stream)
+  AcCmdCRSendGiftCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2855,8 +2876,8 @@ void AcCmdCRSendGiftCancel::Write(
 }
 
 void AcCmdCRSendGiftOK::Read(
-  AcCmdCRSendGiftOK& command,
-  SourceStream& stream)
+  AcCmdCRSendGiftOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2872,8 +2893,8 @@ void AcCmdCRSendGiftOK::Write(
 }
 
 void AcCmdCRPasswordAuth::Write(
-  const AcCmdCRPasswordAuth& command,
-  SinkStream& stream)
+  const AcCmdCRPasswordAuth&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2903,15 +2924,15 @@ void AcCmdCRPasswordAuthOK::Write(
 }
 
 void AcCmdCRPasswordAuthOK::Read(
-  AcCmdCRPasswordAuthOK& command,
-  SourceStream& stream)
+  AcCmdCRPasswordAuthOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRUpdateMountInfo::Write(
-  const AcCmdCRUpdateMountInfo& command,
-  SinkStream& stream)
+  const AcCmdCRUpdateMountInfo&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2925,8 +2946,8 @@ void AcCmdCRUpdateMountInfo::Read(
 }
 
 void AcCmdCROpenRandomBox::Write(
-  const AcCmdCROpenRandomBox& command,
-  SinkStream& stream)
+  const AcCmdCROpenRandomBox&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2956,8 +2977,8 @@ void AcCmdCROpenRandomBoxOK::Write(
 }
 
 void AcCmdCROpenRandomBoxOK::Read(
-  AcCmdCROpenRandomBoxOK& command,
-  SourceStream& stream)
+  AcCmdCROpenRandomBoxOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2970,8 +2991,8 @@ void AcCmdCROpenRandomBoxCancel::Write(
     .Write(command.error);
 }
 void AcCmdCROpenRandomBoxCancel::Read(
-  AcCmdCROpenRandomBoxCancel& command,
-  SourceStream& stream)
+  AcCmdCROpenRandomBoxCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
