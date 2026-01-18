@@ -4964,7 +4964,7 @@ void RanchDirector::HandleUpdateMountInfo(
 
   if (command.action == protocol::AcCmdCRUpdateMountInfo::Action::ReturnToNature)
   {
-    characterRecord.Mutable([this, command](data::Character& character)
+    characterRecord.Mutable([this, command, &clientContext](data::Character& character)
     {
       const auto horseIter = std::ranges::find(character.horses(),command.horse.uid);
       const bool isHorseValid = horseIter != character.horses().end();
@@ -4973,6 +4973,10 @@ void RanchDirector::HandleUpdateMountInfo(
       {
         character.horses().erase(horseIter);
         _serverInstance.GetDataDirector().GetHorseCache().Delete(command.horse.uid);
+        
+        // Remove horse from ranch tracker
+        auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+        ranchInstance.tracker.RemoveHorse(command.horse.uid);
       }
     });
   }
