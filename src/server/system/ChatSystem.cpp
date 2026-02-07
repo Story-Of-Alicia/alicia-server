@@ -1638,17 +1638,32 @@ void ChatSystem::RegisterAdminCommands()
             return {
               std::format("User '{}' does not exist or is currently unavailable", username)};
 
-          // Character UID before the reset
+          // get Character UID from user record
           data::Uid targetCharacterUid{data::InvalidUid};
-          userRecord.Mutable([&targetCharacterUid](data::User& user)
+          userRecord.Immutable([&targetCharacterUid](const data::User& user)
           {
             targetCharacterUid = user.characterUid();
-            user.characterUid() = data::InvalidUid;
           });
 
           if (targetCharacterUid == data::InvalidUid)
             return {
               std::format("User '{}' does not have a character", username)};
+
+          // Reset character data
+          const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(targetCharacterUid);
+          if (not characterRecord.IsAvailable())
+            return {
+              std::format("Character for user '{}' is currently unavailable", username)};
+
+          characterRecord.Mutable([](data::Character& character)
+          {
+            // Reset character data
+            character.inventory().clear();
+            character.horses().clear();
+            character.pets().clear();
+            character.gifts().clear();
+            character.horseSlotCount() = 3;
+          });
 
           // TODO: Persist changes to the user record
           // Commented out due to assert throwing on login when getting user record
