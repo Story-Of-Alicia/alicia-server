@@ -1606,13 +1606,14 @@ void MessengerDirector::HandleChatterChatInvite(
   const std::string hostname = lobbyConfig.advertisement.chat.address.to_string();
   const uint16_t port = lobbyConfig.advertisement.chat.port + 1;
 
+  // TODO: use unk2 as OTP value for both clients to authenticate with the server for the same conversation
+
   protocol::ChatCmdChatInvitationTrs notify{
-    .unk0 = 0xABCD,
+    //.unk0 = 0xABCDEF09, // TODO: discover if this is even used by the client
     //.unk1 = 131,
-    //.unk2 = clientContext.characterUid,
+    .unk2 = 0xABCDEF09, // TODO: potentially otp code?
     .hostname = hostname,
-    .port = port,
-    //.unk5 = clientContext.characterUid
+    .port = port
   };
 
   for (const auto& targetClientId : clientIdsToNotify)
@@ -1621,7 +1622,6 @@ void MessengerDirector::HandleChatterChatInvite(
 
     // Initiate chat window for the invoker
     notify.unk1 = clientContext.characterUid;
-    notify.unk2 = targetClientContext.characterUid;
     notify.unk5 = targetClientContext.characterUid;
     _chatterServer.QueueCommand<decltype(notify)>(
       clientId,
@@ -1631,9 +1631,7 @@ void MessengerDirector::HandleChatterChatInvite(
       });
 
     // Initiate chat window for the target character
-    // notify.unk1 = targetClientContext.characterUid;
     notify.unk1 = targetClientContext.characterUid;
-    notify.unk2 = clientContext.characterUid;
     notify.unk5 = clientContext.characterUid;
     _chatterServer.QueueCommand<decltype(notify)>(
       targetClientId,
@@ -1724,8 +1722,8 @@ void MessengerDirector::HandleChatterChannelInfo(
 
   // Send response for guild chat
   protocol::ChatCmdChannelInfoGuildRoomAckOk guildResponse{};
-  guildResponse.hostname = lobbyConfig.advertisement.chat.address.to_string();
-  guildResponse.port = lobbyConfig.advertisement.chat.port;
+  guildResponse.hostname = lobbyConfig.advertisement.chat.address.to_string(); // TODO: create a private chat advertisement value
+  guildResponse.port = lobbyConfig.advertisement.chat.port + 1; // TODO: create a private chat advertisement value
   guildResponse.code = code; // This value seemingly has no effect
   _chatterServer.QueueCommand<decltype(guildResponse)>(clientId, [guildResponse](){ return guildResponse; });
 }

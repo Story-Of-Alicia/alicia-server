@@ -1119,7 +1119,11 @@ struct ChatCmdChat
 
 struct ChatCmdChatTrs
 {
-  uint32_t unk0{};
+  //! Author of the message.
+  //! The only use for this (in the context of private chats) is to highlight the
+  //! message on the invoker's chat window if the message belongs to the invoker.
+  uint32_t characterUid{};
+  //! The chat message.
   std::string message{};
 
   static ChatterCommand GetCommand()

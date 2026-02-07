@@ -816,7 +816,7 @@ void server::protocol::ChatCmdChatTrs::Write(
   const ChatCmdChatTrs& command,
   server::SinkStream& stream)
 {
-  stream.Write(command.unk0)
+  stream.Write(command.characterUid)
     .Write(command.message);
 }
 

@@ -217,7 +217,7 @@ void PrivateChatDirector::HandleChatterChat(
   const auto& conversationContext = GetConversationContext(clientId);
 
   protocol::ChatCmdChatTrs notify{
-    .unk0 = conversationContext.characterUid, // TODO: this might be the target character uid
+    .characterUid = conversationContext.characterUid,
     .message = command.message};
 
   // Send message to invoker
