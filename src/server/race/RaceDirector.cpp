@@ -2614,6 +2614,8 @@ void RaceDirector::HandleUseMagicItem(
       break;
     // Booster
     case 6:
+        this->ScheduleSkillEffect(raceInstance, command.characterOid, command.characterOid, 4);
+        break;
     case 7:
       this->ScheduleSkillEffect(raceInstance, command.characterOid, command.characterOid, 5);
       break;
@@ -2627,7 +2629,7 @@ void RaceDirector::HandleUseMagicItem(
       break;
     case 9:
       racer.hotRodded = true;
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, command.characterOid, 6, [&racer]()
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, command.characterOid, 7, [&racer]()
       {
         racer.hotRodded = false;
       });
@@ -2957,19 +2959,37 @@ void RaceDirector::HandleActivateSkillEffect(
 
   auto& targetRacer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
+  // Debug: Log what the client sends
+  spdlog::debug("ActivateSkillEffect: targetOid={}, effectId={}, attackerOid={}, attackerOid2={}, intensity={}",
+    command.targetOid, command.effectId, command.attackerOid, command.attackerOid2, command.intensity);
+
   uint32_t effectiveEffectId = command.effectId;
   if (targetRacer.darkness && !SkillIsCritical(effectiveEffectId))
   {
     effectiveEffectId += 1; // Use the "critical" version of the skill effect
   }
 
-  if ((!SkillIsCritical(effectiveEffectId) && targetRacer.shield == tracker::RaceTracker::Racer::Shield::Normal)
-  || targetRacer.shield == tracker::RaceTracker::Racer::Shield::Critical
-  || targetRacer.hotRodded)
+  // Check if attack should be blocked by shield or hotrodding
+  uint16_t shieldEffectId = 0;  // 0 = no block, 2 = normal shield, 3 = critical shield, 6 = hotrodding
+  if (targetRacer.hotRodded)
   {
-    // TODO: Send some kind of notification that the attack was blocked? That picture on the side (PIPEvent?)
-    // Maybe i actually need to send the effect but with a different parameter to mean "blocked"
-    // Else it doesnt show in the kill list in the corner
+    shieldEffectId = 6;  // HotRodding effect ID
+  }
+  else if (targetRacer.shield == tracker::RaceTracker::Racer::Shield::Critical)
+  {
+    shieldEffectId = 3;  // Critical shield blocks everything
+    targetRacer.shield = tracker::RaceTracker::Racer::Shield::None;
+  }
+  else if (targetRacer.shield == tracker::RaceTracker::Racer::Shield::Normal && !SkillIsCritical(effectiveEffectId))
+  {
+    shieldEffectId = 2;  // Normal shield blocks non-critical attacks
+    targetRacer.shield = tracker::RaceTracker::Racer::Shield::None;
+  }
+
+  if (shieldEffectId != 0)
+  {
+    // Send a "blocked" skill effect notification so other players see the defense
+    this->ScheduleBlockedSkillEffect(raceInstance, command.attackerOid, command.targetOid, effectiveEffectId, shieldEffectId);
     return;
   }
 
@@ -3061,19 +3081,34 @@ void RaceDirector::HandleChangeSkillCardPresetId(
 
 void RaceDirector::ScheduleSkillEffect(RaceDirector::RaceInstance& raceInstance, tracker::Oid attackerOid, tracker::Oid targetOid, uint16_t effectId, std::optional<std::function<void()>> afterEffectRemoved){
   // Broadcast skill effect activation to all clients in the room
+  // Set optional fields based on effectId (must match what the client expects)
+  std::optional<protocol::AcCmdRCAddSkillEffect::DefenseMagicEffect> defenseMagicEffect = std::nullopt;
+  std::optional<uint32_t> attackMagicEffect = std::nullopt;
+  
+  // effectId 2, 3 require defenseMagicEffect
+  if (effectId == 2 || effectId == 3)
+  {
+    defenseMagicEffect = protocol::AcCmdRCAddSkillEffect::DefenseMagicEffect{
+      .unk0 = 0,
+      .unk1 = 0,
+    };
+  }
+  // effectId 5, 6, 7, 22, 23 require attackMagicEffect
+  else if (effectId == 5 || effectId == 6 || effectId == 7 || effectId == 22 || effectId == 23)
+  {
+    attackMagicEffect = 3000;  // Duration in milliseconds
+  }
+
   protocol::AcCmdRCAddSkillEffect addSkillEffect{
     .characterOid = targetOid,
     .effectId = effectId,
     .targetOid = targetOid,
     .attackerOid = attackerOid,
-    .unk2 = 0,
-    .unk3 = 0,
+    .unk2 = 0,       // 0 for normal hits
+    .unk3 = 0,       // 0 for normal hits (non-zero = denied/blocked)
     .unk4 = 0,
-    .defenseMagicEffect = protocol::AcCmdRCAddSkillEffect::DefenseMagicEffect{
-      .unk0 = 0,
-      .unk1 = 0,
-    },
-    .attackMagicEffect = 0
+    .defenseMagicEffect = defenseMagicEffect,
+    .attackMagicEffect = attackMagicEffect
   };
 
   // Broadcast
@@ -3112,6 +3147,68 @@ void RaceDirector::ScheduleSkillEffect(RaceDirector::RaceInstance& raceInstance,
       }
     },
     Scheduler::Clock::now() + std::chrono::seconds(3)); // TODO: Different time per effect
+}
+
+void RaceDirector::ScheduleBlockedSkillEffect(
+  RaceDirector::RaceInstance& raceInstance,
+  tracker::Oid attackerOid,
+  tracker::Oid targetOid,
+  uint16_t effectId,
+  uint16_t shieldEffectId)
+{
+  // Based on decompiled client code FUN_006a0820:
+  // When effectId is 2 or 3 (Shield) and defenseMagicEffect.unk0 != 0:
+  //   - defenseMagicEffect.unk0 = the ATTACK effectId that was blocked
+  //   - Client calls gMsgDefenseMagic to show "blocked" in kill feed
+  //
+  // So we send: Shield effectId (2/3) with defenseMagicEffect.unk0 = blocked attack effectId
+  
+  if (shieldEffectId == 6)  // HotRodding - invincibility
+  {
+    // HotRodding blocks but doesn't get consumed - just log it
+    spdlog::debug("Skill effect {} was blocked by HotRodding (attacker: {}, target: {})",
+      effectId, attackerOid, targetOid);
+    return;
+  }
+  
+  protocol::AcCmdRCAddSkillEffect addSkillEffect{
+    .characterOid = 0,  
+    .effectId = shieldEffectId,  
+    .targetOid = 0,
+    .attackerOid = targetOid,
+    .unk2 = 0,
+    .unk3 = 0,
+    .unk4 = 0,
+    .defenseMagicEffect = protocol::AcCmdRCAddSkillEffect::DefenseMagicEffect{
+      .unk0 = 0,         // TypeID of blocked attack (must be non-zero!)
+      .unk1 = 19,  // 150.0f as float bits
+    },
+    .attackMagicEffect = std::nullopt
+  };
+
+  for (const ClientId& raceClientId : raceInstance.clients)
+  {
+    _commandServer.QueueCommand<decltype(addSkillEffect)>(
+      raceClientId,
+      [addSkillEffect]() { return addSkillEffect; });
+  }
+
+  spdlog::debug("Shield {} blocked attack {}: sent shield effect with defenseMagicEffect.unk0=attackEffectId (attacker: {}, target: {})",
+    shieldEffectId, effectId, attackerOid, targetOid);
+
+  protocol::AcCmdCRUseMagicItemNotify notify{
+    .characterOid = targetOid,
+    .magicItemId = static_cast<uint32_t>(shieldEffectId + 2), // TODO: Magic item ID that caused the block, if applicable
+    .unk3 = attackerOid,
+    .unk4 = 0
+  };
+
+  for (const ClientId& raceClientId : raceInstance.clients)
+  {
+    _commandServer.QueueCommand<decltype(notify)>(
+      raceClientId,
+      [notify]() { return notify; });
+  }
 }
 
 } // namespace server

@@ -134,6 +134,7 @@ private:
   ClientId GetClientIdByCharacterUid(data::Uid characterUid);
   ClientContext& GetClientContextByCharacterUid(data::Uid characterUid);
   void ScheduleSkillEffect(server::RaceDirector::RaceInstance& raceInstance, server::tracker::Oid attackerId, server::tracker::Oid targetId, uint16_t effectId, std::optional<std::function<void()>> afterEffectRemoved = std::nullopt);
+  void ScheduleBlockedSkillEffect(server::RaceDirector::RaceInstance& raceInstance, server::tracker::Oid attackerId, server::tracker::Oid targetId, uint16_t effectId, uint16_t shieldEffectId);
 
   void HandleEnterRoom(
     ClientId clientId,

@@ -2286,10 +2286,10 @@ struct AcCmdRCTriggerActivate
 struct AcCmdCRActivateSkillEffect
 {
   uint16_t targetOid;
-  uint32_t effectId;         // What skill/effect to activate
-  uint16_t attackerOid;       // Unknown parameter
-  uint16_t unk1;            // Unknown parameter
-  uint32_t unk2;            // Unknown parameter
+  uint32_t effectId;          // What skill/effect to activate
+  uint16_t attackerOid;       // Attacker's OID
+  uint16_t attackerOid2;      // Attacker's OID (repeated)
+  float intensity;            // Effect intensity/multiplier (usually 1.0f)
 
   static Command GetCommand()
   {
@@ -2314,17 +2314,17 @@ struct AcCmdCRActivateSkillEffect
 struct AcCmdRCAddSkillEffect
 {
   uint16_t characterOid;    // Requester character Oid
-  uint32_t effectId;        // Effect/animation ID (knockdown, stun, etc.)
+  uint32_t effectId;        // Effect/animation ID (always skillId - 2)
   uint16_t targetOid;
   uint16_t attackerOid;
-  uint16_t unk2;            // Unused
-  uint16_t unk3;            // Unused
-  uint32_t unk4;            // Posibly intensity, no idea but it it not work
+  uint16_t unk2;
+  uint16_t unk3;            // something with effect denied, unsure exactly
+  uint32_t unk4;
 
   struct DefenseMagicEffect
   {
-    uint32_t unk0; // Effect time in seconds? It makes the it not work
-    uint32_t unk1; // Unused
+    uint32_t unk0;
+    uint32_t unk1;
   };
   std::optional<DefenseMagicEffect> defenseMagicEffect;
 

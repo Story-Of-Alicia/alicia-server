@@ -1736,8 +1736,8 @@ void AcCmdCRActivateSkillEffect::Write(
   stream.Write(command.targetOid)
     .Write(command.effectId)
     .Write(command.attackerOid)
-    .Write(command.unk2)
-    .Write(command.unk1);
+    .Write(command.attackerOid2)
+    .Write(command.intensity);
 }
 
 void AcCmdCRActivateSkillEffect::Read(
@@ -1747,8 +1747,8 @@ void AcCmdCRActivateSkillEffect::Read(
   stream.Read(command.targetOid)
     .Read(command.effectId)
     .Read(command.attackerOid)
-    .Read(command.unk1)
-    .Read(command.unk2);
+    .Read(command.attackerOid2)
+    .Read(command.intensity);
 }
 
 void AcCmdRCAddSkillEffect::Write(
