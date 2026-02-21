@@ -64,6 +64,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _housingDataPath = prepareDataPath("housing");
   _guildDataPath = prepareDataPath("guilds");
   _settingsDataPath = prepareDataPath("settings");
+  _mailDataPath = prepareDataPath("mails");
 
   // Read the meta-data file and parse the sequential UIDs.
   const std::filesystem::path metaFilePath = ProduceDataFilePath(
@@ -84,6 +85,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _housingSequentialUid = meta["housingSequentialUid"].get<uint32_t>();
   _guildSequentialId = meta["guildSequentialId"].get<uint32_t>();
   _settingsSequentialId = meta["settingsSequentialId"].get<uint32_t>();
+  _mailSequentialId = meta["mailSequentialId"].get<uint32_t>();
 }
 
 void server::FileDataSource::Terminate()
@@ -107,6 +109,7 @@ void server::FileDataSource::Terminate()
   meta["housingSequentialUid"] = _housingSequentialUid.load();
   meta["guildSequentialId"] = _guildSequentialId.load();
   meta["settingsSequentialId"] = _settingsSequentialId.load();
+  meta["mailSequentialId"] = _mailSequentialId.load();
 
   metaFile << meta.dump(2);
 }
@@ -278,6 +281,24 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
 
   character.guildUid = json["guildUid"].get<data::Uid>();
 
+  const auto& contacts = json["contacts"];
+  character.contacts.pending = contacts["pending"].get<std::set<data::Uid>>();
+
+  std::map<server::data::Uid, server::data::Character::Contacts::Group> groups{};
+  for (const auto& [groupUidStr, jsonGroup] : contacts["groups"].items())
+  {
+    data::Character::Contacts::Group group{
+      .uid = std::stoul(groupUidStr), // Use key instead of one in the object
+      .name = jsonGroup["name"].get<std::string>(),
+      .members = jsonGroup["members"].get<std::set<data::Uid>>(),
+      .createdAt = data::Clock::time_point(
+        std::chrono::seconds(
+          jsonGroup["createdAt"].get<int64_t>()))
+    };
+    groups.emplace(group.uid, group);
+  }
+  character.contacts.groups = groups;
+
   character.gifts = json["gifts"].get<std::vector<data::Uid>>();
   character.purchases = json["purchases"].get<std::vector<data::Uid>>();
 
@@ -317,6 +338,11 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   const auto& skills = json["skills"];
   readSkills(character.skills.speed(), skills["speed"]);
   readSkills(character.skills.magic(), skills["magic"]);
+
+  const auto& mailbox = json["mailbox"];
+  character.mailbox.hasNewMail = mailbox["hasNewMail"].get<bool>();
+  character.mailbox.inbox = mailbox["inbox"].get<std::vector<data::Uid>>();
+  character.mailbox.sent = mailbox["sent"].get<std::vector<data::Uid>>();
 }
 
 void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
@@ -362,6 +388,24 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
 
   json["guildUid"] = character.guildUid();
 
+  nlohmann::json contacts;
+  contacts["pending"] = character.contacts.pending();
+
+  nlohmann::json groups;
+  for (const auto& [groupUid, group] : character.contacts.groups())
+  {
+    nlohmann::json groupJson;
+    groupJson["uid"] = group.uid;
+    groupJson["name"] = group.name;
+    groupJson["members"] = group.members;
+    groupJson["createdAt"] = std::chrono::ceil<std::chrono::seconds>(
+      group.createdAt.time_since_epoch()).count();
+    groups[std::to_string(groupUid)] = groupJson;
+  }
+  contacts["groups"] = groups;
+
+  json["contacts"] = contacts;
+
   json["gifts"] = character.gifts();
   json["purchases"] = character.purchases();
 
@@ -406,6 +450,12 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   skills["speed"] = writeSkills(character.skills.speed());
   skills["magic"] = writeSkills(character.skills.magic());
   json["skills"] = skills;
+
+  nlohmann::json mailbox;
+  mailbox["hasNewMail"] = character.mailbox.hasNewMail();
+  mailbox["inbox"] = character.mailbox.inbox();
+  mailbox["sent"] = character.mailbox.sent();
+  json["mailbox"] = mailbox;
 
   dataFile << json.dump(2);
 }
@@ -1205,5 +1255,79 @@ void server::FileDataSource::DeleteSettings(data::Uid uid)
 {
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _settingsDataPath, std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
+}
+
+//
+
+void server::FileDataSource::CreateMail(data::Mail& mail)
+{
+  mail.uid = ++_mailSequentialId;
+}
+
+void server::FileDataSource::RetrieveMail(data::Uid uid, data::Mail& mail)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _mailDataPath, std::format("{}", uid));
+
+  std::ifstream dataFile(dataFilePath);
+  if (!dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Mail file '{}' not accessible", dataFilePath.string()));
+  }
+
+  const auto json = nlohmann::json::parse(dataFile);
+  mail.uid = json["uid"].get<data::Uid>();
+  mail.from = json["from"].get<data::Uid>();
+  mail.to = json["to"].get<data::Uid>();
+
+  mail.isRead = json["isRead"].get<bool>();
+  mail.isDeleted = json["isDeleted"].get<bool>();
+
+  mail.type = json["type"].get<data::Mail::MailType>();
+  mail.origin = json["origin"].get<data::Mail::MailOrigin>();
+
+  mail.createdAt = data::Clock::time_point(
+    std::chrono::seconds(
+      json["createdAt"].get<uint64_t>()));
+  mail.body = json["body"].get<std::string>();
+}
+
+void server::FileDataSource::StoreMail(data::Uid uid, const data::Mail& mail)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _mailDataPath, std::format("{}", uid));
+
+  std::ofstream dataFile(dataFilePath);
+  if (!dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Mail file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json;
+  json["uid"] = mail.uid();
+  json["from"] = mail.from();
+  json["to"] = mail.to();
+
+  json["isRead"] = mail.isRead();
+  json["isDeleted"] = mail.isDeleted();
+
+  json["type"] = mail.type();
+  json["origin"] = mail.origin();
+
+  json["createdAt"] = std::chrono::duration_cast<
+    std::chrono::seconds>(
+      mail.createdAt().time_since_epoch()).count();
+  json["body"] = mail.body();
+
+  dataFile << json.dump(2);
+}
+
+void server::FileDataSource::DeleteMail(data::Uid uid)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _mailDataPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
 }

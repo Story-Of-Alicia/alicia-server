@@ -262,10 +262,30 @@ void LobbyNetworkHandler::Initialize()
     "Lobby is advertising race server on {}:{}",
     lobbyConfig.advertisement.race.address.to_string(),
     lobbyConfig.advertisement.race.port);
-  spdlog::debug(
-    "Lobby is advertising messenger server on {}:{}",
-    lobbyConfig.advertisement.messenger.address.to_string(),
-    lobbyConfig.advertisement.messenger.port);
+
+  if (_serverInstance.GetMessengerDirector().GetConfig().enabled)
+  {
+    spdlog::debug(
+      "Lobby is advertising messenger server on {}:{}",
+      lobbyConfig.advertisement.messenger.address.to_string(),
+      lobbyConfig.advertisement.messenger.port);
+
+    if (_serverInstance.GetAllChatDirector().GetConfig().enabled)
+    {
+      spdlog::debug(
+        "Lobby is advertising all chat server on {}:{}",
+        lobbyConfig.advertisement.allChat.address.to_string(),
+        lobbyConfig.advertisement.allChat.port);
+    }
+
+    if (_serverInstance.GetPrivateChatDirector().GetConfig().enabled)
+    {
+      spdlog::debug(
+        "Lobby is advertising private chat server on {}:{}",
+        lobbyConfig.advertisement.privateChat.address.to_string(),
+        lobbyConfig.advertisement.privateChat.port);
+    }
+  }
 
   spdlog::debug(
     "Lobby server listening on {}:{}",
@@ -937,7 +957,7 @@ void LobbyNetworkHandler::HandleRoomList(
     std::back_inserter(roomSnapshots),
     [&command](const server::Room::Snapshot& roomSnapshot)
     {
-      return 
+      return
         roomSnapshot.details.gameMode == static_cast<server::Room::GameMode>(command.gameMode) &&
         roomSnapshot.details.teamMode == static_cast<server::Room::TeamMode>(command.teamMode);
     });
@@ -1644,7 +1664,7 @@ void LobbyNetworkHandler::HandleGoodsShopList(
 
   // TODO: remove this, only used for testing protocol
   auto now = util::Clock::now() + std::chrono::days(1);
-  
+
   //! Chunk size as defined in command handler.
   constexpr auto ChunkSize = 7168;
 
@@ -1934,10 +1954,30 @@ void LobbyNetworkHandler::HandleGetMessengerInfo(
   const ClientId clientId,
   const protocol::AcCmdCLGetMessengerInfo& command)
 {
+  const auto& clientContext = GetClientContext(clientId);
+
+  // Get messenger config and check if messenger is enabled
+  const auto& messengerConfig = _serverInstance.GetMessengerDirector().GetConfig();
+
+  if (not messengerConfig.enabled)
+  {
+    // Messenger is not enabled
+    protocol::AcCmdCLGetMessengerInfoCancel cancel{};
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
   const auto& lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
-  
+
+  // Hash character uid with messenger director's otp constant for a unique key
+  size_t identityHash = std::hash<uint32_t>()(clientContext.characterUid);
+  boost::hash_combine(identityHash, MessengerOtpConstant);
+
+  // Grant otp code to character
+  const uint32_t code = _serverInstance.GetOtpSystem().GrantCode(identityHash);
+
   protocol::AcCmdCLGetMessengerInfoOK response{
-    .code = 0xDEAD,
+    .code = code,
     .ip = static_cast<uint32_t>(htonl(lobbyConfig.advertisement.messenger.address.to_uint())),
     .port = lobbyConfig.advertisement.messenger.port,
   };

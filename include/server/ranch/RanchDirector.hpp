@@ -263,7 +263,7 @@ private:
   void SendUpdatePetCancel(
     ClientId clientId,
     const protocol::AcCmdRCUpdatePetCancel& command);
-  
+
   void HandleIncubateEgg(
     ClientId clientId,
     const protocol::AcCmdCRIncubateEgg& command);
@@ -417,6 +417,11 @@ private:
   void HandlePasswordAuth(
     ClientId clientId,
     const protocol::AcCmdCRPasswordAuth command);
+
+  //! Ranch clients can only invite characters in other ranches.
+  void HandleInviteUser(
+    ClientId clientId,
+    const protocol::AcCmdCRInviteUser& command);
 
   //!
   ServerInstance& _serverInstance;

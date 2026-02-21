@@ -1689,7 +1689,7 @@ void ChatSystem::RegisterAdminCommands()
               str += separator;
           }
           return str;
-        };          
+        };
 
         const auto& option = arguments[1];
         if (option == "horse")

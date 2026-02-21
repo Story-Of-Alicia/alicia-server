@@ -28,6 +28,8 @@
 #include <vector>
 #include <optional>
 #include <unordered_set>
+#include <set>
+#include <map>
 
 namespace server
 {
@@ -287,6 +289,20 @@ struct Character
   } appearance{};
 
   dao::Field<Uid> guildUid{InvalidUid};
+
+  struct Contacts
+  {
+    struct Group
+    {
+      Uid uid{};
+      std::string name{};
+      std::set<Uid> members{};
+      Clock::time_point createdAt{};
+    };
+
+    dao::Field<std::set<Uid>> pending{};
+    dao::Field<std::map<Uid, Group>> groups{};
+  } contacts{};
   
   dao::Field<std::vector<Uid>> gifts{};
   dao::Field<std::vector<Uid>> purchases{};
@@ -331,6 +347,13 @@ struct Character
     dao::Field<Sets> speed{};
     dao::Field<Sets> magic{};
   } skills{};
+
+  struct Mailbox
+  {
+    dao::Field<bool> hasNewMail{false};
+    dao::Field<std::vector<Uid>> inbox{};
+    dao::Field<std::vector<Uid>> sent{};
+  } mailbox{};
 };
 
 struct Horse
@@ -447,6 +470,40 @@ struct Egg
   dao::Field<Clock::time_point> incubatedAt{};
   dao::Field<uint32_t> incubatorSlot{};
   dao::Field<uint32_t> boostsUsed;
+};
+
+struct Mail
+{
+  //! Mail type.
+  //! Dictates whether or not the inbox mail can be replied to, including system mails, or contains rewards.
+  enum class MailType : uint32_t
+  {
+    CanReply = 0,
+    NoReply = 1,
+    CarnivalReward = 2, //! Requests AcCmdCLRequestFestivalResult
+    BreedingReward = 3, //! Requests AcCmdCRBreedingTakeMoney
+  };
+
+  //! Flags whether the mail is a system or a character mail.
+  //! The game client uses this to filter for system mails only.
+  enum class MailOrigin : uint32_t
+  {
+    Character = 0,
+    System = 1
+  };
+
+  dao::Field<Uid> uid{InvalidUid};
+  dao::Field<Uid> from{InvalidUid};
+  dao::Field<Uid> to{InvalidUid};
+
+  dao::Field<bool> isRead{false};
+  dao::Field<bool> isDeleted{false};
+
+  dao::Field<MailType> type{};
+  dao::Field<MailOrigin> origin{};
+
+  dao::Field<Clock::time_point> createdAt{};
+  dao::Field<std::string> body{};
 };
 
 } // namespace data

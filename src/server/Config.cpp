@@ -117,6 +117,20 @@ void Config::LoadFromEnvironment()
     std::format("RACE_SERVER_PORT"),
     race.listen.address,
     race.listen.port);
+
+  // All chat address and port.
+  getAddressAndPortVariables(
+    std::format("ALL_CHAT_SERVER_ADDRESS"),
+    std::format("ALL_CHAT_SERVER_PORT"),
+    allChat.listen.address,
+    allChat.listen.port);
+
+  // Private chat address and port.
+  getAddressAndPortVariables(
+    std::format("PRIVATE_CHAT_SERVER_ADDRESS"),
+    std::format("PRIVATE_CHAT_SERVER_PORT"),
+    privateChat.listen.address,
+    privateChat.listen.port);
 }
 
 void Config::LoadFromFile(const std::filesystem::path& filePath)
@@ -176,6 +190,8 @@ void Config::LoadFromFile(const std::filesystem::path& filePath)
       lobby.advertisement.ranch = parseListenSection(lobbyAdvertisementYaml["ranch"]);
       lobby.advertisement.race = parseListenSection(lobbyAdvertisementYaml["race"]);
       lobby.advertisement.messenger = parseListenSection(lobbyAdvertisementYaml["messenger"]);
+      lobby.advertisement.allChat = parseListenSection(lobbyAdvertisementYaml["all_chat"]);
+      lobby.advertisement.privateChat = parseListenSection(lobbyAdvertisementYaml["private_chat"]);
     }
     catch (const std::exception& e)
     {
@@ -216,6 +232,30 @@ void Config::LoadFromFile(const std::filesystem::path& filePath)
     catch (const std::exception& e)
     {
       spdlog::error("Unhandled exception parsing the messenger config: {}", e.what());
+    }
+
+    // All chat config
+    try
+    {
+      const auto allChatYaml = serverYaml["all_chat"];
+      allChat.enabled = allChatYaml["enabled"].as<bool>();
+      allChat.listen = parseListenSection(allChatYaml["listen"]);
+    }
+    catch (const std::exception& e)
+    {
+      spdlog::error("Unhandled exception parsing the all chat config: {}", e.what());
+    }
+
+    // Private chat config
+    try
+    {
+      const auto privateChatYaml = serverYaml["private_chat"];
+      privateChat.enabled = privateChatYaml["enabled"].as<bool>();
+      privateChat.listen = parseListenSection(privateChatYaml["listen"]);
+    }
+    catch (const std::exception& e)
+    {
+      spdlog::error("Unhandled exception parsing the private chat config: {}", e.what());
     }
 
     // Messenger config

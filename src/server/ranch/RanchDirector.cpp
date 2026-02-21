@@ -417,6 +417,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleUpdateMountInfo(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRInviteUser>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleInviteUser(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -1253,6 +1259,19 @@ void RanchDirector::HandleChat(
     return;
   }
 
+  // Message is not a command, check if user has been muted
+  if (verdict.isMuted)
+  {
+    // Invoking character is muted. Notify the invoker of their infraction and do not broadcast.
+    spdlog::warn("Character '{}' tried to chat in ranch chat but has an active mute infraction.",
+      clientContext.characterUid);
+    protocol::AcCmdCRRanchChatNotify notify{
+      .message = verdict.message,
+      .isSystem = true};
+    _commandServer.QueueCommand<decltype(notify)>(clientId, [notify](){ return notify; });
+    return;
+  }
+
   for (const auto& ranchClientId : ranchInstance.clients)
   {
     sendAllMessages(ranchClientId, sendersName, false, {verdict.message});
@@ -1573,6 +1592,8 @@ void RanchDirector::HandleUpdateBusyState(
       });
   }
 }
+
+
 
 void RanchDirector::HandleUpdateMountNickname(
   ClientId clientId,
@@ -4973,7 +4994,7 @@ void RanchDirector::HandleUpdateMountInfo(
       {
         character.horses().erase(horseIter);
         _serverInstance.GetDataDirector().GetHorseCache().Delete(command.horse.uid);
-        
+
         // Remove horse from ranch tracker
         auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
         ranchInstance.tracker.RemoveHorse(command.horse.uid);
@@ -5070,6 +5091,79 @@ void RanchDirector::HandleOpenRandomBox(
     {
       return response;
     });
+}
+
+void RanchDirector::HandleInviteUser(
+  ClientId clientId,
+  const protocol::AcCmdCRInviteUser& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  protocol::AcCmdCRInviteUserCancel cancel{};
+  cancel.recipientCharacterUid = command.recipientCharacterUid;
+  cancel.recipientCharacterName = command.recipientCharacterName;
+
+  // Check if character by that uid is online
+  auto& clientOpt = GetServerInstance().GetMessengerDirector().GetClientByCharacterUid(
+    command.recipientCharacterUid);
+  if (not clientOpt.has_value())
+  {
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  // Check if there's a name mismatch
+  // TODO: this could benefit from caching the character name within the messenger client context
+  bool isNameMatch{false};
+  GetServerInstance().GetDataDirector().GetCharacter(command.recipientCharacterUid).Immutable(
+    [&isNameMatch, recipientCharacterName = command.recipientCharacterName](const data::Character& character)
+    {
+      isNameMatch = character.name() == recipientCharacterName;
+    });
+
+  if (not isNameMatch)
+  {
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  // By copy
+  const auto recipientPresence = clientOpt.value().clientContext.presence;
+
+  // Invites from ranch are more limited, you can only invite characters that are in
+  // a ranch to your ranch
+  const auto& recipientScene = recipientPresence.scene;
+  if (recipientScene == protocol::Presence::Scene::Race)
+  {
+    // Invoker is in ranch, recipient is in race, should not be possible
+    spdlog::warn("Character '{}', who is in a ranch, tried to invite character '{}' to their ranch",
+      clientContext.characterUid,
+      command.recipientCharacterUid);
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  // Sanity check if character can be invited (is away, online or in waiting room)
+  const auto& recipientStatus = clientOpt.value().clientContext.presence.status;
+  bool canInvite = recipientStatus == protocol::Status::Away or
+    recipientStatus == protocol::Status::Online or
+    recipientStatus == protocol::Status::WaitingRoom;
+
+  if (not canInvite)
+  {
+    // Cannot invite character
+    spdlog::warn("Character '{}' tried to invite character '{}' which is not in an invitable state",
+      clientContext.characterUid,
+      command.recipientCharacterUid);
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  protocol::AcCmdCRInviteUserOK response{};
+  response.recipientCharacterUid = command.recipientCharacterUid;
+  response.recipientCharacterName = command.recipientCharacterName;
+
+  _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }
 
 } // namespace server

@@ -214,6 +214,7 @@ std::optional<Item> ItemRegistry::GetItem(uint32_t tid)
     return std::nullopt;
   return itemIter->second;
 }
+
 std::unordered_map<uint32_t, Item> ItemRegistry::GetItems()
 {
   return _items;

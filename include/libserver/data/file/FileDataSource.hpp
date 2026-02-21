@@ -92,6 +92,11 @@ public:
   void RetrieveSettings(data::Uid uid, data::Settings& settings) override;
   void StoreSettings(data::Uid uid, const data::Settings& settings) override;
   void DeleteSettings(data::Uid uid) override;
+
+  void CreateMail(data::Mail& mail) override;
+  void RetrieveMail(data::Uid uid, data::Mail& mail) override;
+  void StoreMail(data::Uid uid, const data::Mail& mail) override;
+  void DeleteMail(data::Uid uid) override;
 private:
   //! A root data path.
   std::filesystem::path _dataPath;
@@ -118,6 +123,8 @@ private:
   std::filesystem::path _guildDataPath;
   //! A path to the settings data files.
   std::filesystem::path _settingsDataPath;
+  //! A path to the mail data files.
+  std::filesystem::path _mailDataPath;
 
   //! A path to meta-data file.
   std::filesystem::path _metaFilePath;
@@ -141,6 +148,8 @@ private:
   std::atomic_uint32_t _guildSequentialId = 0;
   //! Sequential UID for settings.
   std::atomic_uint32_t _settingsSequentialId = 0;
+  //! Sequential UID for mail.
+  std::atomic_uint32_t _mailSequentialId = 0;
 };
 
 } // namespace server

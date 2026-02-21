@@ -22,6 +22,8 @@
 
 #include "server/Config.hpp"
 #include "server/lobby/LobbyDirector.hpp"
+#include "server/chat/AllChatDirector.hpp"
+#include "server/chat/PrivateChatDirector.hpp"
 #include "server/messenger/MessengerDirector.hpp"
 #include "server/race/RaceDirector.hpp"
 #include "server/ranch/RanchDirector.hpp"
@@ -71,6 +73,18 @@ public:
   //! Returns reference to the race director.
   //! @returns Reference to the race director.
   RaceDirector& GetRaceDirector();
+
+  //! Returns reference to the messenger director.
+  //! @returns Reference to the messenger director.
+  MessengerDirector& GetMessengerDirector();
+
+  //! Returns reference to the all chat director.
+  //! @returns Reference to the all chat director.
+  AllChatDirector& GetAllChatDirector();
+
+  //! Returns reference to the private chat director.
+  //! @returns Reference to the private chat director.
+  PrivateChatDirector& GetPrivateChatDirector();
 
   //! Returns reference to the Course registry.
   //! @returns Reference to the Course registry.
@@ -177,6 +191,16 @@ private:
   std::thread _messengerThread;
   //! A messenger director.
   MessengerDirector _messengerDirector;
+
+  //! A thread for the all chat director.
+  std::thread _allChatDirectorThread;
+  //! An all chat director.
+  AllChatDirector _allChatDirector;
+
+  //! A thread for the private chat director.
+  std::thread _privateChatDirectorThread;
+  //! A private chat director.
+  PrivateChatDirector _privateChatDirector;
 
   //! A thread of the ranch director.
   std::thread _ranchDirectorThread;

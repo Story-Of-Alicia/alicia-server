@@ -13,6 +13,8 @@ ServerInstance::ServerInstance(
   , _dataDirector(resourceDirectory / "data")
   , _lobbyDirector(*this)
   , _messengerDirector(*this)
+  , _allChatDirector(*this)
+  , _privateChatDirector(*this)
   , _ranchDirector(*this)
   , _raceDirector(*this)
   , _chatSystem(*this)
@@ -35,6 +37,8 @@ ServerInstance::~ServerInstance()
 
   waitForThread("race director", _raceDirectorThread);
   waitForThread("ranch director", _ranchDirectorThread);
+  waitForThread("private chat director", _privateChatDirectorThread);
+  waitForThread("all chat director", _allChatDirectorThread);
   waitForThread("messenger director", _messengerThread);
   waitForThread("lobby director", _lobbyDirectorThread);
   waitForThread("data director", _dataDirectorThread);
@@ -75,12 +79,37 @@ void ServerInstance::Initialize()
   });
 
   // Messenger director
-  _messengerThread = std::thread([this]()
+  if (_config.messenger.enabled)
   {
-    _messengerDirector.Initialize();
-    RunDirectorTaskLoop(_messengerDirector);
-    _messengerDirector.Terminate();
-  });
+    _messengerThread = std::thread([this]()
+    {
+      _messengerDirector.Initialize();
+      RunDirectorTaskLoop(_messengerDirector);
+      _messengerDirector.Terminate();
+    });
+
+    // All chat director
+    if (_config.allChat.enabled) // All chat depends on messenger
+    {
+      _allChatDirectorThread = std::thread([this]()
+      {
+        _allChatDirector.Initialize();
+        RunDirectorTaskLoop(_allChatDirector);
+        _allChatDirector.Terminate();
+      });
+    }
+
+    // Private chat director
+    if (_config.privateChat.enabled) // Private chat depends on messenger
+    {
+      _privateChatDirectorThread = std::thread([this]()
+      {
+        _privateChatDirector.Initialize();
+        RunDirectorTaskLoop(_privateChatDirector);
+        _privateChatDirector.Terminate();
+      });
+    }
+  }
 
   // Ranch director
   _ranchDirectorThread = std::thread([this]()
@@ -122,6 +151,21 @@ RanchDirector& ServerInstance::GetRanchDirector()
 RaceDirector& ServerInstance::GetRaceDirector()
 {
   return _raceDirector;
+}
+
+MessengerDirector& ServerInstance::GetMessengerDirector()
+{
+  return _messengerDirector;
+}
+
+AllChatDirector& ServerInstance::GetAllChatDirector()
+{
+  return _allChatDirector;
+}
+
+PrivateChatDirector& ServerInstance::GetPrivateChatDirector()
+{
+  return _privateChatDirector;
 }
 
 registry::CourseRegistry& ServerInstance::GetCourseRegistry()
