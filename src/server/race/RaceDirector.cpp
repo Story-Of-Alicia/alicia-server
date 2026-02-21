@@ -3249,7 +3249,7 @@ void RaceDirector::HandleKickUser(
   }
 
   spdlog::info(
-    "User '{}' kicked user '{}' from room '{}'.",
+    "User '{}' kicked user '{}' from room {}.",
     kickerUserName,
     targetUserName,
     clientContext.roomUid);
