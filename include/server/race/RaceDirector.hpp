@@ -277,6 +277,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRInviteUser& command);
 
+  void HandleKickUser(
+    ClientId clientId,
+    const protocol::AcCmdCRKick& command);
+
   void PrepareItemSpawners(data::Uid roomUid);
 
   //!

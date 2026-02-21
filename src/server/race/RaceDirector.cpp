@@ -296,6 +296,12 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     {
       HandleInviteUser(clientId, message);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRKick>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleKickUser(clientId, message);
+    });
 }
 
 void RaceDirector::Initialize()
@@ -3178,6 +3184,89 @@ void RaceDirector::HandleInviteUser(
   response.recipientCharacterName = command.recipientCharacterName;
 
   _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+}
+
+void RaceDirector::HandleKickUser(
+  ClientId clientId,
+  const protocol::AcCmdCRKick& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  auto& raceInstance = _raceInstances[clientContext.roomUid];
+
+  // Only the room master may kick players.
+  if (clientContext.characterUid != raceInstance.masterUid)
+  {
+    spdlog::warn(
+      "Character '{}' tried to kick character '{}' but is not the room master.",
+      clientContext.characterUid,
+      command.characterUid);
+    return;
+  }
+
+  // Prevent self-kick.
+  if (command.characterUid == clientContext.characterUid)
+  {
+    spdlog::warn(
+      "Character '{}' tried to kick themselves.",
+      clientContext.characterUid);
+    return;
+  }
+
+  // Verify the target character is actually in this room.
+  const bool targetInRoom = std::ranges::any_of(
+    raceInstance.clients,
+    [this, &command](const ClientId& raceClientId)
+    {
+      return _clients[raceClientId].characterUid == command.characterUid;
+    });
+
+  if (!targetInRoom)
+  {
+    spdlog::warn(
+      "Character '{}' tried to kick character '{}' who is not in the room.",
+      clientContext.characterUid,
+      command.characterUid);
+    return;
+  }
+
+  // GameMasters (role 2) cannot be kicked.
+  bool targetIsGameMaster = false;
+  _serverInstance.GetDataDirector().GetCharacter(command.characterUid).Immutable([&targetIsGameMaster](const data::Character& character)
+    {
+      targetIsGameMaster = character.role() == data::Character::Role::GameMaster;
+    });
+
+  const auto kickerUserName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(clientContext.characterUid).userName;
+  const auto targetUserName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(command.characterUid).userName;
+
+  if (targetIsGameMaster)
+  {
+    spdlog::info(
+      "User '{}' tried to kick user '{}' who is a GameMaster.",
+      kickerUserName,
+      targetUserName);
+    return;
+  }
+
+  spdlog::info(
+    "User '{}' kicked user '{}' from room {}.",
+    kickerUserName,
+    targetUserName,
+    clientContext.roomUid);
+
+  // Broadcast the kick notification to all clients in the room.
+  protocol::AcCmdCRKickNotify notify{};
+  notify.characterUid = command.characterUid;
+
+  for (const auto& raceClientId : raceInstance.clients)
+  {
+    _commandServer.QueueCommand<decltype(notify)>(
+      raceClientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
 }
 
 } // namespace server

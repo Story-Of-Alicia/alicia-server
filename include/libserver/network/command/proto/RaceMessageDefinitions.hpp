@@ -2457,6 +2457,54 @@ struct AcCmdRCObstacleStatus
     SourceStream& stream);
 };
 
+struct AcCmdCRKick
+{
+  uint32_t characterUid;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRKick;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRKick& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRKick& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRKickNotify
+{
+  uint32_t characterUid;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRKickNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRKickNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRKickNotify& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RACE_MESSAGE_DEFINES_HPP

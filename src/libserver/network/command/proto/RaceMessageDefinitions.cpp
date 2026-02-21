@@ -1869,4 +1869,32 @@ void AcCmdRCObstacleStatus::Write(
     .Write(command.unk2);
 }
 
+void AcCmdCRKick::Write(
+  const AcCmdCRKick& command,
+  SinkStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRKick::Read(
+  AcCmdCRKick& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterUid);
+}
+
+void AcCmdCRKickNotify::Write(
+  const AcCmdCRKickNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid);
+}
+
+void AcCmdCRKickNotify::Read(
+  AcCmdCRKickNotify& command,
+  SourceStream& stream)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
