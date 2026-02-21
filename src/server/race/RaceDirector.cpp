@@ -361,7 +361,7 @@ void RaceDirector::Initialize()
         if (not _clients.contains(sender))
           _clients.insert(sender);
 
-      } catch (const std::exception& x) {
+      } catch (const std::exception&) {
       }
     }
   });
@@ -608,23 +608,6 @@ void RaceDirector::Tick()
         {
           player.SetReady(false);
         }
-      });
-  }
-}
-
-void RaceDirector::BroadcastChangeRoomOptions(
-  const data::Uid& roomUid,
-  const protocol::AcCmdCRChangeRoomOptionsNotify notify)
-{
-  auto& raceInstance = _raceInstances[roomUid];
-  std::scoped_lock lock(raceInstance.clientsMutex);
-  for (const auto raceClientId : raceInstance.clients)
-  {
-    _commandServer.QueueCommand<decltype(notify)>(
-      raceClientId,
-      [notify]()
-      {
-        return notify;
       });
   }
 }

@@ -2997,50 +2997,5 @@ void AcCmdCROpenRandomBoxCancel::Read(
   throw std::runtime_error("Not implemented");
 }
 
-void AcCmdCRInviteUser::Read(
-  AcCmdCRInviteUser& command,
-  SourceStream& stream)
-{
-  stream.Read(command.recipientCharacterUid)
-    .Read(command.recipientCharacterName);
-}
-
-void AcCmdCRInviteUser::Write(
-  const AcCmdCRInviteUser&,
-  SinkStream&)
-{
-  throw std::runtime_error("Not implemented");
-}
-
-void AcCmdCRInviteUserCancel::Read(
-  AcCmdCRInviteUserCancel&,
-  SourceStream&)
-{
-  throw std::runtime_error("Not implemented");
-}
-
-void AcCmdCRInviteUserCancel::Write(
-  const AcCmdCRInviteUserCancel& command,
-  SinkStream& stream)
-{
-  stream.Write(command.recipientCharacterUid)
-    .Write(command.recipientCharacterName);
-}
-
-void AcCmdCRInviteUserOK::Read(
-  AcCmdCRInviteUserOK&,
-  SourceStream&)
-{
-  throw std::runtime_error("Not implemented");
-}
-
-void AcCmdCRInviteUserOK::Write(
-  const AcCmdCRInviteUserOK& command,
-  SinkStream& stream)
-{
-  stream.Write(command.recipientCharacterUid)
-    .Write(command.recipientCharacterName);
-}
-
 } // namespace server::protocol
 
