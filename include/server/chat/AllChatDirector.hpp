@@ -2,8 +2,8 @@
 // Created by SergeantSerk on 30/12/2025.
 //
 
-#ifndef GENERALCHATDIRECTOR_HPP
-#define GENERALCHATDIRECTOR_HPP
+#ifndef ALLCHATDIRECTOR_HPP
+#define ALLCHATDIRECTOR_HPP
 
 #include <libserver/network/chatter/ChatterServer.hpp>
 #include <libserver/data/DataDefinitions.hpp>
@@ -14,11 +14,11 @@ namespace server
 {
 
 //! Chat client OTP constant
-constexpr uint32_t GeneralChatOtpConstant = 0x14E05CE5;
+constexpr uint32_t AllChatOtpConstant = 0x14E05CE5;
 
 class ServerInstance;
 
-class GeneralChatDirector
+class AllChatDirector
   : private IChatterServerEventsHandler
 {
 private:
@@ -33,11 +33,11 @@ private:
   };
 
 public:
-  explicit GeneralChatDirector(ServerInstance& serverInstance);
+  explicit AllChatDirector(ServerInstance& serverInstance);
 
   //! Get chat config.
   //! @return Chat config.
-  [[nodiscard]] Config::GeneralChat& GetConfig();
+  [[nodiscard]] Config::AllChat& GetConfig();
 
   void Initialize();
   void Terminate();
@@ -71,4 +71,4 @@ private:
 
 } // namespace server
 
-#endif //GENERALCHATDIRECTOR_HPP
+#endif // ALLCHATDIRECTOR_HPP

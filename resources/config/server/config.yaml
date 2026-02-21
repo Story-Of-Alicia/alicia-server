@@ -40,13 +40,20 @@ server:
         # The port of the advertised messenger server.
         # Additionally configurable through environment variable LOBBY_ADVERTISED_MESSENGER_PORT.
         port: 10033
-      chat:
-        # The IPv4 address or a domain of the advertised chat server.
-        # Additionally configurable through environment variable LOBBY_ADVERTISED_CHAT_ADDRESS.
+      all_chat:
+        # The IPv4 address or a domain of the advertised all chat server.
+        # Additionally configurable through environment variable LOBBY_ADVERTISED_ALL_CHAT_ADDRESS.
         address: "127.0.0.1"
-        # The port of the advertised chat server.
-        # Additionally configurable through environment variable LOBBY_ADVERTISED_CHAT_PORT.
+        # The port of the advertised all chat server.
+        # Additionally configurable through environment variable LOBBY_ADVERTISED_ALL_CHAT_PORT.
         port: 10034
+      private_chat:
+        # The IPv4 address or a domain of the advertised private chat server.
+        # Additionally configurable through environment variable LOBBY_ADVERTISED_PRIVATE_CHAT_ADDRESS.
+        address: "127.0.0.1"
+        # The port of the advertised private chat server.
+        # Additionally configurable through environment variable LOBBY_ADVERTISED_PRIVATE_CHAT_PORT.
+        port: 10035
   # Configuration section of the ranch server.
   ranch:
     # Whether the ranch server is enabled.
@@ -74,7 +81,7 @@ server:
   # Configuration section of the messenger server.
   messenger:
     # Whether the messenger server is enabled.
-    enabled: false
+    enabled: true
     # Address and port listened to by the messenger server.
     listen:
       # The IPv4 address or a domain the server listens on.
@@ -83,18 +90,30 @@ server:
       # The port the server listens on.
       # Additionally configurable through environment variable MESSENGER_SERVER_PORT.
       port: 10033
-  # Configuration section of the chat server.
-  chat:
-    # Whether the chat server is enabled. This has no effect if messenger is disabled.
+  # Configuration section of the all chat server.
+  all_chat:
+    # Whether the all chat server is enabled. This has no effect if messenger is disabled.
     enabled: false
-    # Address and port listened to by the chat server.
+    # Address and port listened to by the all chat server.
     listen:
       # The IPv4 address or a domain the server listens on.
-      # Additionally configurable through environment variable CHAT_SERVER_ADDRESS.
+      # Additionally configurable through environment variable ALL_CHAT_SERVER_ADDRESS.
       address: "0.0.0.0"
       # The port the server listens on.
-      # Additionally configurable through environment variable CHAT_SERVER_PORT.
+      # Additionally configurable through environment variable ALL_CHAT_SERVER_PORT.
       port: 10034
+  # Configuration section of the private chat server.
+  private_chat:
+    # Whether the private chat server is enabled. This has no effect if messenger is disabled.
+    enabled: false
+    # Address and port listened to by the private chat server.
+    listen:
+      # The IPv4 address or a domain the server listens on.
+      # Additionally configurable through environment variable PRIVATE_CHAT_SERVER_ADDRESS.
+      address: "0.0.0.0"
+      # The port the server listens on.
+      # Additionally configurable through environment variable PRIVATE_CHAT_SERVER_PORT.
+      port: 10035
   data:
     source: file
     file:

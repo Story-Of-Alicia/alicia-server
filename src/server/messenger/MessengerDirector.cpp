@@ -1556,6 +1556,17 @@ void MessengerDirector::HandleChatterChatInvite(
 {
   const auto& clientContext = GetClientContext(clientId);
 
+  // Get private chat config and check if private chat is enabled
+  const auto& privateChatConfig = _serverInstance.GetPrivateChatDirector().GetConfig();
+  
+  if (not privateChatConfig.enabled)
+  {
+    // Private chat server is disabled
+    // TODO: discover (if any) corresponding cancel response exists in game client
+    // to get rid of the All/Guild chat tabs
+    return;
+  }
+
   constexpr auto concatParticipants =
     [](const std::vector<data::Uid> list, std::string separator = ", ")
     {
@@ -1601,10 +1612,8 @@ void MessengerDirector::HandleChatterChatInvite(
 
   // Get lobby config to get the private chat advertisement address and port
   const auto& lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
-
-  // TODO: implement PrivateChatDirector (+1 the chat port)
-  const std::string hostname = lobbyConfig.advertisement.chat.address.to_string();
-  const uint16_t port = lobbyConfig.advertisement.chat.port + 1;
+  const std::string hostname = lobbyConfig.advertisement.privateChat.address.to_string();
+  const uint16_t port = lobbyConfig.advertisement.privateChat.port;
 
   // TODO: use unk2 as OTP value for both clients to authenticate with the server for the same conversation
 
@@ -1683,10 +1692,9 @@ void MessengerDirector::HandleChatterChannelInfo(
   // Get lobby config to get the chat advertisement address and port
   const auto& lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
 
-  // Get chat config and check if chat is enabled
-  const auto& chatConfig = _serverInstance.GetGeneralChatDirector().GetConfig();
-  
-  if (not chatConfig.enabled)
+  // Get all chat config and check if all chat is enabled
+  const auto& allChatConfig = _serverInstance.GetAllChatDirector().GetConfig();
+  if (not allChatConfig.enabled)
   {
     // Chat server is disabled
     // TODO: discover (if any) corresponding cancel response exists in game client
@@ -1696,13 +1704,13 @@ void MessengerDirector::HandleChatterChannelInfo(
 
   // Hash character uid with chat director's otp constant for a unique key
   size_t identityHash = std::hash<uint32_t>()(clientContext.characterUid);
-  boost::hash_combine(identityHash, GeneralChatOtpConstant);
+  boost::hash_combine(identityHash, AllChatOtpConstant);
   const uint32_t code = _serverInstance.GetOtpSystem().GrantCode(identityHash);
 
   // Send response for all chat
   protocol::ChatCmdChannelInfoAckOk response{
-    .hostname = lobbyConfig.advertisement.chat.address.to_string(),
-    .port = lobbyConfig.advertisement.chat.port,
+    .hostname = lobbyConfig.advertisement.allChat.address.to_string(),
+    .port = lobbyConfig.advertisement.allChat.port,
     .code = code};
   _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 
@@ -1720,10 +1728,11 @@ void MessengerDirector::HandleChatterChannelInfo(
   // Not sending this internally disables the guild chat on the client,
   // even if the client says that guild chat is connected
 
-  // Send response for guild chat
+  // Send response for guild chat (which uses private chat type)
+  // TODO: this is broken, needs proper implementing
   protocol::ChatCmdChannelInfoGuildRoomAckOk guildResponse{};
-  guildResponse.hostname = lobbyConfig.advertisement.chat.address.to_string(); // TODO: create a private chat advertisement value
-  guildResponse.port = lobbyConfig.advertisement.chat.port + 1; // TODO: create a private chat advertisement value
+  guildResponse.hostname = lobbyConfig.advertisement.privateChat.address.to_string();
+  guildResponse.port = lobbyConfig.advertisement.privateChat.port;
   guildResponse.code = code; // This value seemingly has no effect
   _chatterServer.QueueCommand<decltype(guildResponse)>(clientId, [guildResponse](){ return guildResponse; });
 }

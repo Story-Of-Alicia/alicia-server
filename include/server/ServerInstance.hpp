@@ -22,7 +22,7 @@
 
 #include "server/Config.hpp"
 #include "server/lobby/LobbyDirector.hpp"
-#include "server/chat/GeneralChatDirector.hpp"
+#include "server/chat/AllChatDirector.hpp"
 #include "server/chat/PrivateChatDirector.hpp"
 #include "server/messenger/MessengerDirector.hpp"
 #include "server/race/RaceDirector.hpp"
@@ -78,9 +78,9 @@ public:
   //! @returns Reference to the messenger director.
   MessengerDirector& GetMessengerDirector();
 
-  //! Returns reference to the general chat director.
-  //! @returns Reference to the general chat director.
-  GeneralChatDirector& GetGeneralChatDirector();
+  //! Returns reference to the all chat director.
+  //! @returns Reference to the all chat director.
+  AllChatDirector& GetAllChatDirector();
 
   //! Returns reference to the private chat director.
   //! @returns Reference to the private chat director.
@@ -192,10 +192,10 @@ private:
   //! A messenger director.
   MessengerDirector _messengerDirector;
 
-  //! A thread for the general chat director.
-  std::thread _generalChatDirectorThread;
-  //! A general chat director.
-  GeneralChatDirector _generalChatDirector;
+  //! A thread for the all chat director.
+  std::thread _allChatDirectorThread;
+  //! An all chat director.
+  AllChatDirector _allChatDirector;
 
   //! A thread for the private chat director.
   std::thread _privateChatDirectorThread;
