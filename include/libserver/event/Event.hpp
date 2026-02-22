@@ -6,6 +6,7 @@
 #define ALICIA_SERVER_EVENT_HPP
 
 #include <functional>
+#include <list>
 
 namespace server
 {

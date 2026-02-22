@@ -20,9 +20,8 @@
 #ifndef ALICIA_SERVER_RECORD_HPP
 #define ALICIA_SERVER_RECORD_HPP
 
-#include "libserver/event/Event.hpp"
-
 #include <functional>
+#include <mutex>
 #include <shared_mutex>
 #include <utility>
 
@@ -87,7 +86,7 @@ public:
   {
     _mutex = other._mutex;
     _lock = std::move(other._lock);
-    _patchListener = std::move(_patchListener);
+    _patchListener = std::move(other._patchListener);
     _value = other._value;
 
     return *this;
