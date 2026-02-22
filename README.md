@@ -18,6 +18,17 @@ If you're a programmer and want to talk about the code [join the dedicated devel
 - Boost
 - libpq
 
+# macOS
+
+When building on Mac you'll also need GCC and the ICU library. The following instructions assume you're using [Homebrew](https://brew.sh/) as your package manager.
+
+1. `brew install gcc`
+2. `export CC=gcc-15 CXX=g++-15` (replace `15` with the version of GCC you installed)
+3. `brew install icu4c`
+4. `export CMAKE_PREFIX_PATH=/opt/homebrew/opt/icu4c@77`
+4. `export LDFLAGS="-L/opt/homebrew/opt/icu4c@77"`
+
+
 ## Building
 
 1. Clone the repository

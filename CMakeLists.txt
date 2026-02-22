@@ -6,6 +6,10 @@ option(BUILD_TESTS "Build tests" ON)
 
 find_package(Boost 1.80.0 MODULE)
 
+if(NOT WIN32)
+        find_package(ICU COMPONENTS uc REQUIRED)
+endif()
+
 add_subdirectory(3rd-party SYSTEM)
 
 include(cmake/Versioning.cmake)
@@ -37,7 +41,9 @@ elseif(MINGW)
             icuuc icuio icuin ws2_32 mswsock)
 else()
     target_link_libraries(platform-properties INTERFACE
-            icuuc icui18n)
+            icuuc icui18n ICU::uc)
+    target_include_directories(platform-properties INTERFACE
+            ${ICU_INCLUDE_DIRS}/)
 endif()
 
 if (${MSVC})
