@@ -1443,6 +1443,9 @@ void LobbyNetworkHandler::HandleCreateNickname(
         constexpr uint8_t StartingHorseSlotCount = 3; 
         character.horseSlotCount() = StartingHorseSlotCount;
 
+        // Create the default friend group.
+        character.contacts.groups().try_emplace(0);
+
         userCharacterUid = character.uid();
       });
 
