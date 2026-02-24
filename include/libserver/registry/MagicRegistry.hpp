@@ -78,6 +78,7 @@ public:
   void ReadConfig(const std::filesystem::path& configPath);
 
   [[nodiscard]] const Magic::SlotInfo& GetSlotInfo(uint32_t type) const;
+  [[nodiscard]] const Magic::SlotInfo& GetSlotInfoByEffectId(uint32_t effectId) const;
   [[nodiscard]] const std::unordered_map<uint32_t, Magic::SlotInfo>& GetSlotInfoMap() const;
 
   //! Basic-type slot IDs available in solo mode (teamMode == 0).
