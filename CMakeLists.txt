@@ -42,7 +42,7 @@ endif()
 
 if (${MSVC})
     target_compile_options(platform-properties INTERFACE
-            /utf-8 /bigobj /Wall /permissive- /WX /wd4996 /wd4702)
+            /utf-8 /bigobj /W4 /permissive- /WX /wd4996 /wd4702)
 else()
     target_compile_options(platform-properties INTERFACE
             -Wall -Wextra -Wpedantic -Werror=deprecated-declaration)
