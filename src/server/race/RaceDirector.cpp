@@ -3137,7 +3137,7 @@ void RaceDirector::HandleInviteUser(
   cancel.recipientCharacterName = command.recipientCharacterName;
 
   // Check if character by that uid is online
-  auto& clientOpt = GetServerInstance().GetMessengerDirector().GetClientByCharacterUid(
+  const auto clientOpt = GetServerInstance().GetMessengerDirector().GetClientByCharacterUid(
     command.recipientCharacterUid);
   if (not clientOpt.has_value())
   {

@@ -4,7 +4,7 @@ project(alicia-server)
 
 option(BUILD_TESTS "Build tests" ON)
 
-find_package(Boost 1.80.0 MODULE)
+find_package(Boost 1.74.0 MODULE REQUIRED)
 
 add_subdirectory(3rd-party SYSTEM)
 
@@ -37,7 +37,7 @@ elseif(MINGW)
             icuuc icuio icuin ws2_32 mswsock)
 else()
     target_link_libraries(platform-properties INTERFACE
-            icuuc icui18n)
+            icuuc icui18n stdc++exp)
 endif()
 
 if (${MSVC})

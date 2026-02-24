@@ -1,24 +1,26 @@
 # syntax=docker/dockerfile:1
-FROM alpine:3 AS build
+FROM gcc:15 AS build
 
 # Setup the build environment
-RUN apk add --no-cache cmake make git build-base boost-dev icu-dev
+RUN apt-get update -y
+RUN apt-get install git cmake libboost-dev libicu-dev -y --no-install-recommends
 
 ARG SERVER_BUILD_TYPE=RelWithDebInfo
 
 # Build the server
 WORKDIR /build/alicia-server
 
-# Add linker search path to /usr/local as that is where iconv is installed at.
-ENV LD_LIBRARY_PATH=/usr/local/lib
-
 # Prepare the source
 COPY . .
+
+# Use
+ENV PATH="/usr/local/bin:${PATH}"
+
 RUN git init
 RUN git submodule update --init --recursive
 
 RUN cmake -DCMAKE_BUILD_TYPE=${SERVER_BUILD_TYPE} -DBUILD_TESTS=False . -B ./build
-RUN cmake --build ./build --parallel
+RUN cmake --build ./build --parallel 8
 
 # Install the binary
 RUN cmake --install ./build --prefix /usr/local
@@ -27,14 +29,15 @@ RUN cmake --install ./build --prefix /usr/local
 RUN mkdir /var/lib/alicia-server/
 RUN cp -r ./resources/* /var/lib/alicia-server/
 
-FROM alpine:3
+FROM debian:forky-slim
 
-LABEL author="Serkan Sahin" maintainer="dev@storyofalicia.com"
+LABEL author="Story of Alicia Developers" maintainer="dev@storyofalicia.com"
 LABEL org.opencontainers.image.source=https://github.com/Story-Of-Alicia/alicia-server
 LABEL org.opencontainers.image.description="Dedicated server implementation for the Alicia game series"
 
 # Setup the runtime environent
-RUN apk add --no-cache libstdc++ icu icu-data-full
+RUN apt-get update -y
+RUN apt-get install libicu76 -y --no-install-recommends
 
 WORKDIR /opt/alicia-server
 

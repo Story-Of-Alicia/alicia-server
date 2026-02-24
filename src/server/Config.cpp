@@ -24,9 +24,8 @@
 #include <charconv>
 #include <format>
 #include <fstream>
-#include <iostream>
-#include <yaml-cpp/yaml.h>
 
+#include <yaml-cpp/yaml.h>
 #include <spdlog/spdlog.h>
 
 namespace server
