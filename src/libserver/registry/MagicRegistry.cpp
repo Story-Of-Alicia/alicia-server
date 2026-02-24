@@ -122,6 +122,16 @@ const Magic::SlotInfo& MagicRegistry::GetSlotInfo(uint32_t type) const
   return it->second;
 }
 
+const Magic::SlotInfo& MagicRegistry::GetSlotInfoByEffectId(uint32_t effectId) const
+{
+  for (const auto& [type, slot] : _slotInfo)
+  {
+    if (slot.skillEffectId == effectId)
+      return slot;
+  }
+  throw std::runtime_error("Magic slot not found for effect ID: " + std::to_string(effectId));
+}
+
 const std::unordered_map<uint32_t, Magic::SlotInfo>& MagicRegistry::GetSlotInfoMap() const
 {
   return _slotInfo;
