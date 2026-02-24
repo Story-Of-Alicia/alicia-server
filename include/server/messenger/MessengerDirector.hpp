@@ -54,8 +54,8 @@ public:
     network::ClientId clientId,
     bool requireAuthentication = true);
 
-  const std::optional<Client> GetClientByCharacterUid(const data::Uid characterUid) const;
-  const bool IsCharacterOnline(const data::Uid characterUid) const;
+  [[nodiscard]] std::optional<Client> GetClientByCharacterUid(const data::Uid characterUid) const;
+  [[nodiscard]] bool IsCharacterOnline(const data::Uid characterUid) const;
 
   void Tick();
 

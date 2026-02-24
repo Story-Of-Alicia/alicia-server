@@ -90,6 +90,11 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
 
 void server::FileDataSource::Terminate()
 {
+  SaveMetadata();
+}
+
+void server::FileDataSource::SaveMetadata()
+{
   const std::filesystem::path metaFilePath = ProduceDataFilePath(
     _metaFilePath, "meta");
 
@@ -179,6 +184,7 @@ bool server::FileDataSource::IsUserNameUnique(const std::string_view& name)
 void server::FileDataSource::CreateInfraction(data::Infraction& infraction)
 {
   infraction.uid = ++_infractionSequentialUid;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrieveInfraction(data::Uid uid, data::Infraction& infraction)
@@ -236,6 +242,7 @@ void server::FileDataSource::DeleteInfraction(data::Uid uid)
 void server::FileDataSource::CreateCharacter(data::Character& character)
 {
   character.uid = ++_characterSequentialUid;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& character)
@@ -499,8 +506,8 @@ bool server::FileDataSource::IsCharacterNameUnique(const std::string_view& name)
 
 void server::FileDataSource::CreateHorse(data::Horse& horse)
 {
-  // can be standalone
   horse.uid = ++_equipmentSequentialUid;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
@@ -711,6 +718,7 @@ void server::FileDataSource::DeleteHorse(data::Uid uid)
 void server::FileDataSource::CreateItem(data::Item& item)
 {
   item.uid = ++_equipmentSequentialUid;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrieveItem(data::Uid uid, data::Item& item)
@@ -768,6 +776,7 @@ void server::FileDataSource::DeleteItem(data::Uid uid)
 void server::FileDataSource::CreateStorageItem(data::StorageItem& item)
 {
   item.uid = ++_storageItemSequentialUid;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrieveStorageItem(data::Uid uid, data::StorageItem& storageItem)
@@ -860,6 +869,7 @@ void server::FileDataSource::DeleteStorageItem(data::Uid uid)
 void server::FileDataSource::CreateEgg(data::Egg& egg)
 {
   egg.uid = ++_eggSequentialUid;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrieveEgg(data::Uid uid, data::Egg& egg)
@@ -920,6 +930,7 @@ void server::FileDataSource::DeleteEgg(data::Uid uid)
 void server::FileDataSource::CreatePet(data::Pet& pet)
 {
   pet.uid = ++_petSequentialUid;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrievePet(data::Uid uid, data::Pet& pet)
@@ -977,6 +988,7 @@ void server::FileDataSource::DeletePet(data::Uid uid)
 void server::FileDataSource::CreateHousing(data::Housing& housing)
 {
   housing.uid = ++_housingSequentialUid;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrieveHousing(data::Uid uid, data::Housing& housing)
@@ -1031,6 +1043,7 @@ void server::FileDataSource::DeleteHousing(data::Uid uid)
 void server::FileDataSource::CreateGuild(data::Guild& guild)
 {
   guild.uid = ++_guildSequentialId;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrieveGuild(data::Uid uid, data::Guild& guild)
@@ -1125,6 +1138,7 @@ bool server::FileDataSource::IsGuildNameUnique(const std::string_view& name)
 void server::FileDataSource::CreateSettings(data::Settings& settings)
 {
   settings.uid = ++_settingsSequentialId;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrieveSettings(data::Uid uid, data::Settings& settings)
@@ -1258,11 +1272,10 @@ void server::FileDataSource::DeleteSettings(data::Uid uid)
   std::filesystem::remove(dataFilePath);
 }
 
-//
-
 void server::FileDataSource::CreateMail(data::Mail& mail)
 {
   mail.uid = ++_mailSequentialId;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrieveMail(data::Uid uid, data::Mail& mail)

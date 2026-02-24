@@ -23,6 +23,7 @@
 #include "libserver/util/Util.hpp"
 
 #include <ranges>
+#include <stacktrace>
 
 #include <spdlog/spdlog.h>
 
@@ -125,7 +126,21 @@ void CommandServer::BeginHost(const asio::ip::address& address, uint16_t port)
   _serverThread = std::thread(
     [this, address, port]()
     {
-      _server.Begin(address, port);
+      try
+      {
+        _server.Begin(address, port);
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error("Unhandled command server network exception: {}", x.what());
+
+        for (const auto& entry : std::stacktrace::current())
+        {
+          spdlog::error("[Stack] {}({}): {}", entry.source_file(), entry.source_line(), entry.description());
+        }
+
+        EndHost();
+      }
     });
 }
 

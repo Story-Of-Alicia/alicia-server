@@ -169,7 +169,8 @@ MessengerDirector::ClientContext& MessengerDirector::GetClientContext(
   return clientContext;
 }
 
-const std::optional<MessengerDirector::Client> MessengerDirector::GetClientByCharacterUid(const data::Uid characterUid) const
+std::optional<MessengerDirector::Client> MessengerDirector::GetClientByCharacterUid(
+  const data::Uid characterUid) const
 {
   std::optional<Client> client{};
 
@@ -194,7 +195,7 @@ const std::optional<MessengerDirector::Client> MessengerDirector::GetClientByCha
   return client;
 }
 
-const bool MessengerDirector::IsCharacterOnline(const data::Uid characterUid) const
+bool MessengerDirector::IsCharacterOnline(const data::Uid characterUid) const
 {
   return GetClientByCharacterUid(characterUid).has_value();
 }

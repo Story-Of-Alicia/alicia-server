@@ -592,7 +592,7 @@ void DataDirector::Terminate()
   }
   catch (const std::exception& x)
   {
-    spdlog::error("Unhandled in exception while terminating data director: {}", x.what());
+    spdlog::error("Unhandled exception while terminating data director: {}", x.what());
   }
 
   if (auto* fileDataSource = dynamic_cast<FileDataSource*>(_primaryDataSource.get()))
@@ -620,7 +620,7 @@ void DataDirector::Tick()
   }
   catch (const std::exception& x)
   {
-    spdlog::error("Unhandled in exception ticking the storages in data director: {}", x.what());
+    spdlog::error("Unhandled exception ticking the storages in data director: {}", x.what());
   }
 
   try
@@ -629,7 +629,7 @@ void DataDirector::Tick()
   }
   catch (std::exception& x)
   {
-    spdlog::error("Unhandled in exception ticking the scheduler in the data director: {}", x.what());
+    spdlog::error("Unhandled exception ticking the scheduler in the data director: {}", x.what());
   }
 }
 

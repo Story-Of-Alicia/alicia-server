@@ -126,6 +126,7 @@ public:
   //!
   //! @param address Address of the interface to bind to.
   //! @param port Port to bind to.
+  //! @throw std::runtime_error
   void Begin(
     const asio::ip::address& address,
     uint16_t port);

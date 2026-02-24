@@ -35,6 +35,8 @@ public:
   void Initialize(const std::filesystem::path& path);
   void Terminate();
 
+  void SaveMetadata();
+
   void CreateUser(data::User& user) override;
   void RetrieveUser(const std::string_view& name, data::User& user) override;
   void StoreUser(const std::string_view& name, const data::User& user) override;

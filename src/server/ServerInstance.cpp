@@ -1,11 +1,40 @@
-//
-// Created by rgnter on 14/06/2025.
-//
+/**
+ * Alicia Server - dedicated server software
+ * Copyright (C) 2024 Story Of Alicia
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ **/
 
 #include "server/ServerInstance.hpp"
 
+#include <stacktrace>
+
 namespace server
 {
+
+namespace
+{
+void DumpStackTrace()
+{
+  for (const auto& entry : std::stacktrace::current())
+  {
+    spdlog::error("[Stack] {}({}): {}", entry.source_file(), entry.source_line(), entry.description());
+  }
+}
+
+} // anon namespace
 
 ServerInstance::ServerInstance(
   const std::filesystem::path& resourceDirectory)
@@ -65,17 +94,37 @@ void ServerInstance::Initialize()
   // Data director
   _dataDirectorThread = std::thread([this]()
   {
-    _dataDirector.Initialize();
-    RunDirectorTaskLoop(_dataDirector);
-    _dataDirector.Terminate();
+    try
+    {
+      _dataDirector.Initialize();
+      RunDirectorTaskLoop(_dataDirector);
+      _dataDirector.Terminate();
+    }
+    catch (const std::exception& x)
+    {
+      spdlog::error("Unhandled exception in the data director: {}", x.what());
+      DumpStackTrace();
+
+      _shouldRun = false;
+    }
   });
 
   // Lobby director
   _lobbyDirectorThread = std::thread([this]()
   {
-    _lobbyDirector.Initialize();
-    RunDirectorTaskLoop(_lobbyDirector);
-    _lobbyDirector.Terminate();
+    try
+    {
+      _lobbyDirector.Initialize();
+      RunDirectorTaskLoop(_lobbyDirector);
+      _lobbyDirector.Terminate();
+    }
+    catch (const std::exception& x)
+    {
+      spdlog::error("Unhandled exception in the lobby director: {}", x.what());
+      DumpStackTrace();
+
+      _shouldRun = false;
+    }
   });
 
   // Messenger director
@@ -83,9 +132,19 @@ void ServerInstance::Initialize()
   {
     _messengerThread = std::thread([this]()
     {
-      _messengerDirector.Initialize();
-      RunDirectorTaskLoop(_messengerDirector);
-      _messengerDirector.Terminate();
+      try
+      {
+        _messengerDirector.Initialize();
+        RunDirectorTaskLoop(_messengerDirector);
+        _messengerDirector.Terminate();
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error("Unhandled exception in the messenger director: {}", x.what());
+        DumpStackTrace();
+
+        _shouldRun = false;
+      }
     });
 
     // All chat director
@@ -93,9 +152,19 @@ void ServerInstance::Initialize()
     {
       _allChatDirectorThread = std::thread([this]()
       {
-        _allChatDirector.Initialize();
-        RunDirectorTaskLoop(_allChatDirector);
-        _allChatDirector.Terminate();
+        try
+        {
+          _allChatDirector.Initialize();
+          RunDirectorTaskLoop(_allChatDirector);
+          _allChatDirector.Terminate();
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error("Unhandled exception in the messenger (all chat) director: {}", x.what());
+          DumpStackTrace();
+
+          _shouldRun = false;
+        }
       });
     }
 
@@ -104,9 +173,19 @@ void ServerInstance::Initialize()
     {
       _privateChatDirectorThread = std::thread([this]()
       {
-        _privateChatDirector.Initialize();
-        RunDirectorTaskLoop(_privateChatDirector);
-        _privateChatDirector.Terminate();
+        try
+        {
+          _privateChatDirector.Initialize();
+          RunDirectorTaskLoop(_privateChatDirector);
+          _privateChatDirector.Terminate();
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error("Unhandled exception in the messenger (private chat) director: {}", x.what());
+          DumpStackTrace();
+
+          _shouldRun = false;
+        }
       });
     }
   }
@@ -114,17 +193,37 @@ void ServerInstance::Initialize()
   // Ranch director
   _ranchDirectorThread = std::thread([this]()
   {
-    _ranchDirector.Initialize();
-    RunDirectorTaskLoop(_ranchDirector);
-    _ranchDirector.Terminate();
+    try
+    {
+      _ranchDirector.Initialize();
+      RunDirectorTaskLoop(_ranchDirector);
+      _ranchDirector.Terminate();
+    }
+    catch (const std::exception& x)
+    {
+      spdlog::error("Unhandled exception in the ranch director: {}", x.what());
+      DumpStackTrace();
+
+      _shouldRun = false;
+    }
   });
 
   // Race director
   _raceDirectorThread = std::thread([this]()
   {
-    _raceDirector.Initialize();
-    RunDirectorTaskLoop(_raceDirector);
-    _raceDirector.Terminate();
+    try
+    {
+      _raceDirector.Initialize();
+      RunDirectorTaskLoop(_raceDirector);
+      _raceDirector.Terminate();
+    }
+    catch (const std::exception& x)
+    {
+      spdlog::error("Unhandled exception in the race director: {}", x.what());
+      DumpStackTrace();
+
+      _shouldRun = false;
+    }
   });
 }
 
