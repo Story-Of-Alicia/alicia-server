@@ -1693,7 +1693,7 @@ void RaceDirector::HandleRaceTimer(
 
 void RaceDirector::HandleLoadingComplete(
   ClientId clientId,
-  const protocol::AcCmdCRLoadingComplete& command)
+  const protocol::AcCmdCRLoadingComplete&)
 {
   auto& clientContext = GetClientContext(clientId);
   auto& raceInstance = _raceInstances[clientContext.roomUid];
@@ -1785,7 +1785,7 @@ void RaceDirector::HandleRaceResult(
 
 void RaceDirector::HandleP2PRaceResult(
   ClientId clientId,
-  const protocol::AcCmdCRP2PResult& command)
+  const protocol::AcCmdCRP2PResult&)
 {
   const auto& clientContext = GetClientContext(clientId);
   auto& raceInstance = _raceInstances[clientContext.roomUid];
@@ -1801,8 +1801,8 @@ void RaceDirector::HandleP2PRaceResult(
 }
 
 void RaceDirector::HandleP2PUserRaceResult(
-  ClientId clientId,
-  const protocol::AcCmdUserRaceP2PResult& command)
+  ClientId,
+  const protocol::AcCmdUserRaceP2PResult&)
 {
 }
 

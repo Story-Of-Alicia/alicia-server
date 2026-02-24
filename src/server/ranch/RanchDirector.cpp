@@ -1326,7 +1326,7 @@ void RanchDirector::HandleSnapshot(
 
 void RanchDirector::HandleEnterBreedingMarket(
   ClientId clientId,
-  const protocol::AcCmdCREnterBreedingMarket& command)
+  const protocol::AcCmdCREnterBreedingMarket&)
 {
   const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
@@ -1366,7 +1366,7 @@ static std::vector<data::Uid> g_stallions;
 
 void RanchDirector::HandleSearchStallion(
   ClientId clientId,
-  const protocol::AcCmdCRSearchStallion& command)
+  const protocol::AcCmdCRSearchStallion&)
 {
   protocol::RanchCommandSearchStallionOK response{
     .unk0 = 0,
@@ -1438,7 +1438,7 @@ void RanchDirector::HandleUnregisterStallion(
 
 void RanchDirector::HandleUnregisterStallionEstimateInfo(
   ClientId clientId,
-  const protocol::AcCmdCRUnregisterStallionEstimateInfo& command)
+  const protocol::AcCmdCRUnregisterStallionEstimateInfo&)
 {
   protocol::AcCmdCRUnregisterStallionEstimateInfoOK response{
     .member1 = 0xFFFF'FFFF,
@@ -1494,14 +1494,14 @@ void RanchDirector::HandleTryBreeding(
 }
 
 void RanchDirector::HandleBreedingAbandon(
-  ClientId clientId,
-  const protocol::AcCmdCRBreedingAbandon& command)
+  ClientId,
+  const protocol::AcCmdCRBreedingAbandon&)
 {
 }
 
 void RanchDirector::HandleBreedingWishlist(
   ClientId clientId,
-  const protocol::AcCmdCRBreedingWishlist& command)
+  const protocol::AcCmdCRBreedingWishlist&)
 {
   protocol::AcCmdCRBreedingWishlistOK response{};
 
@@ -1516,7 +1516,7 @@ void RanchDirector::HandleBreedingWishlist(
 
 void RanchDirector::HandleCmdAction(
   ClientId clientId,
-  const protocol::AcCmdCRRanchCmdAction& command)
+  const protocol::AcCmdCRRanchCmdAction&)
 {
   protocol::RanchCommandRanchCmdActionNotify response{
     .unk0 = 2,
@@ -2270,7 +2270,7 @@ void RanchDirector::HandleCreateGuild(
 
 void RanchDirector::HandleRequestGuildInfo(
   ClientId clientId,
-  const protocol::RanchCommandRequestGuildInfo& command)
+  const protocol::RanchCommandRequestGuildInfo&)
 {
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
@@ -2801,7 +2801,7 @@ void RanchDirector::HandleBoostIncubateEgg(
 
 void RanchDirector::HandleBoostIncubateInfoList(
   ClientId clientId,
-  const protocol::AcCmdCRBoostIncubateInfoList& command)
+  const protocol::AcCmdCRBoostIncubateInfoList&)
 {
   protocol::AcCmdCRBoostIncubateInfoListOK response{
     .member1 = 0,
@@ -4237,7 +4237,7 @@ void RanchDirector::HandleInviteToGuild(
 
 void RanchDirector::HandleGetEmblemList(
   ClientId clientId,
-  const protocol::AcCmdCREmblemList& command)
+  const protocol::AcCmdCREmblemList&)
 {
   const auto& clientContext = GetClientContext(clientId);
   

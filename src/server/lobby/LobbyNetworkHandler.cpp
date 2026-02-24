@@ -1300,7 +1300,7 @@ void LobbyNetworkHandler::HandleEnterChannel(
 
 void LobbyNetworkHandler::HandleLeaveChannel(
   const ClientId clientId,
-  const protocol::AcCmdCLLeaveChannel& command)
+  const protocol::AcCmdCLLeaveChannel&)
 {
   // todo: implement channels
   protocol::AcCmdCLLeaveChannelOK response{};
@@ -1511,7 +1511,7 @@ void LobbyNetworkHandler::SendCreateNicknameCancel(
 
 void LobbyNetworkHandler::HandleShowInventory(
   const ClientId clientId,
-  const protocol::AcCmdCLShowInventory& command)
+  const protocol::AcCmdCLShowInventory&)
 {
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
@@ -1638,8 +1638,8 @@ void LobbyNetworkHandler::HandleUpdateUserSettings(
 }
 
 void LobbyNetworkHandler::HandleEnterRoomQuick(
-  const ClientId clientId,
-  const protocol::AcCmdCLEnterRoomQuick& command)
+  const ClientId,
+  const protocol::AcCmdCLEnterRoomQuick&)
 {
   // todo: implement quick room enter
   spdlog::error("Not implemented - enter room quick");
@@ -1648,7 +1648,7 @@ void LobbyNetworkHandler::HandleEnterRoomQuick(
 
 void LobbyNetworkHandler::HandleGoodsShopList(
   const ClientId clientId,
-  const protocol::AcCmdCLGoodsShopList& command)
+  const protocol::AcCmdCLGoodsShopList&)
 {
   auto shopList = _serverInstance.GetLobbyDirector().GetShopManager().GetSerializedShopList();
 
@@ -1731,7 +1731,7 @@ void LobbyNetworkHandler::HandleGoodsShopList(
 
 void LobbyNetworkHandler::HandleAchievementCompleteList(
   const ClientId clientId,
-  const protocol::AcCmdCLAchievementCompleteList& command)
+  const protocol::AcCmdCLAchievementCompleteList&)
 {
   const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
@@ -1848,7 +1848,7 @@ void LobbyNetworkHandler::HandleEnterRanch(
 
 void LobbyNetworkHandler::HandleEnterRanchRandomly(
   const ClientId clientId,
-  const protocol::AcCmdCLEnterRanchRandomly& command)
+  const protocol::AcCmdCLEnterRanchRandomly&)
 {
   // this is just for prototype, it can suck
   auto& clientContext = GetClientContext(clientId);
@@ -1922,15 +1922,15 @@ void LobbyNetworkHandler::SendEnterRanchOK(
 }
 
 void LobbyNetworkHandler::HandleFeatureCommand(
-  const ClientId clientId,
+  const ClientId,
   const protocol::AcCmdCLFeatureCommand& command)
 {
   spdlog::warn("Feature command: {}", command.command);
 }
 
 void LobbyNetworkHandler::HandleRequestFestivalResult(
-  const ClientId clientId,
-  const protocol::AcCmdCLRequestFestivalResult& command)
+  const ClientId,
+  const protocol::AcCmdCLRequestFestivalResult&)
 {
   // todo: implement festival
 }
@@ -1955,7 +1955,7 @@ void LobbyNetworkHandler::HandleSetIntroduction(
 
 void LobbyNetworkHandler::HandleGetMessengerInfo(
   const ClientId clientId,
-  const protocol::AcCmdCLGetMessengerInfo& command)
+  const protocol::AcCmdCLGetMessengerInfo&)
 {
   const auto& clientContext = GetClientContext(clientId);
 
@@ -2055,7 +2055,7 @@ void LobbyNetworkHandler::HandleUpdateSystemContent(
 
 void LobbyNetworkHandler::HandleEnterRoomQuickStop(
   const ClientId clientId,
-  const protocol::AcCmdCLEnterRoomQuickStop& command)
+  const protocol::AcCmdCLEnterRoomQuickStop&)
 {
   // todo: implement quick enter
   // Only sending empty response for now so cancelling matchmaking actually gets you out
@@ -2070,8 +2070,8 @@ void LobbyNetworkHandler::HandleEnterRoomQuickStop(
 }
 
 void LobbyNetworkHandler::HandleRequestFestivalPrize(
-  const ClientId clientId,
-  const protocol::AcCmdCLRequestFestivalPrize& command)
+  const ClientId,
+  const protocol::AcCmdCLRequestFestivalPrize&)
 {
   // todo: implement festivals
 }
@@ -2141,7 +2141,7 @@ void LobbyNetworkHandler::HandleRequestMountInfo(
 
 void LobbyNetworkHandler::HandleInquiryTreecash(
   const ClientId clientId,
-  const protocol::AcCmdCLInquiryTreecash& command)
+  const protocol::AcCmdCLInquiryTreecash&)
 {
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
@@ -2232,7 +2232,7 @@ void LobbyNetworkHandler::HandleAcceptInviteToGuild(
 }
 
 void LobbyNetworkHandler::HandleDeclineInviteToGuild(
-  const ClientId clientId,
+  const ClientId,
   const protocol::AcCmdLCInviteGuildJoinCancel& command)
 {
   // TODO: command data check
@@ -2245,7 +2245,7 @@ void LobbyNetworkHandler::HandleDeclineInviteToGuild(
 }
 
 void LobbyNetworkHandler::HandleClientNotify(
-  const ClientId clientId,
+  const ClientId,
   const protocol::AcCmdClientNotify& command)
 {
   // todo: reset roll code?
@@ -2279,7 +2279,7 @@ void LobbyNetworkHandler::HandleChangeRanchOption(
 
 void LobbyNetworkHandler::HandleRequestDailyQuestList(
   const ClientId clientId,
-  const protocol::AcCmdCLRequestDailyQuestList& command)
+  const protocol::AcCmdCLRequestDailyQuestList&)
 {
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
@@ -2303,7 +2303,7 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
 
 void LobbyNetworkHandler::HandleRequestLeagueInfo(
   const ClientId clientId,
-  const protocol::AcCmdCLRequestLeagueInfo& command)
+  const protocol::AcCmdCLRequestLeagueInfo&)
 {
   protocol::AcCmdCLRequestLeagueInfoOK response{};
 
@@ -2319,7 +2319,7 @@ void LobbyNetworkHandler::HandleRequestLeagueInfo(
 
 void LobbyNetworkHandler::HandleRequestQuestList(
   const ClientId clientId,
-  const protocol::AcCmdCLRequestQuestList& command)
+  const protocol::AcCmdCLRequestQuestList&)
 {
   const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
@@ -2343,7 +2343,7 @@ void LobbyNetworkHandler::HandleRequestQuestList(
 
 void LobbyNetworkHandler::HandleRequestSpecialEventList(
   const ClientId clientId,
-  const protocol::AcCmdCLRequestSpecialEventList& command)
+  const protocol::AcCmdCLRequestSpecialEventList&)
 {
   const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
