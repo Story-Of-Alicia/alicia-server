@@ -388,11 +388,11 @@ struct Horse
     TailMediumSparkles = 1 << 23,
     TailHeavySparkles = 1 << 24,
     //! For testing, do not use
-    _AllSlightlyDirty = BodySlightlyDirty | ManeSlightlyDirty | TailSlightlyDirty,
-    _AllVeryDirty = BodyVeryDirty | ManeVeryDirty | TailVeryDirty,
-    _AllLightSparkles = BodyLightSparkles | ManeLightSparkles | TailLightSparkles,
-    _AllMediumSparkles = BodyMediumSparkles | ManeMediumSparkles | TailMediumSparkles,
-    _AllHeavySparkles = BodyHeavySparkles | ManeHeavySparkles | TailHeavySparkles
+    AllSlightlyDirty = BodySlightlyDirty | ManeSlightlyDirty | TailSlightlyDirty,
+    AllVeryDirty = BodyVeryDirty | ManeVeryDirty | TailVeryDirty,
+    AllLightSparkles = BodyLightSparkles | ManeLightSparkles | TailLightSparkles,
+    AllMediumSparkles = BodyMediumSparkles | ManeMediumSparkles | TailMediumSparkles,
+    AllHeavySparkles = BodyHeavySparkles | ManeHeavySparkles | TailHeavySparkles
   } visualCleanlinessBitset{VisualCleanlinessBitset::Default};
 
   static void Write(const Horse& value, SinkStream& stream);

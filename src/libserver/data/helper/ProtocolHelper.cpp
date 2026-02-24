@@ -50,7 +50,7 @@ void BuildProtocolHorse(
 
   protocolHorse.val16 = 0xb8a167e4,
   protocolHorse.visualCleanlinessBitset = 
-    protocol::Horse::VisualCleanlinessBitset::_AllVeryDirty;
+    Horse::VisualCleanlinessBitset::AllLightSparkles;
 
   protocolHorse.mountCondition = {
     .stamina = static_cast<uint16_t>(
