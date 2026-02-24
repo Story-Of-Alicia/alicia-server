@@ -892,8 +892,8 @@ void AcCmdRCAwardNotify::Read(
 }
 
 void AcCmdCRAwardEndNotify::Write(
-  const AcCmdCRAwardEndNotify&,
-  SinkStream&)
+  const AcCmdCRAwardEndNotify& command,
+  SinkStream& stream)
 {
   stream.Write(command.unk0);
 }
@@ -1881,8 +1881,8 @@ void AcCmdUserRaceDeleteNotify::Write(
 }
 
 void AcCmdUserRaceDeleteNotify::Read(
-  AcCmdUserRaceDeleteNotify& command,
-  SourceStream& stream)
+  AcCmdUserRaceDeleteNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
