@@ -659,9 +659,13 @@ void AcCmdUserRaceFinal::Read(
   AcCmdUserRaceFinal& command,
   SourceStream& stream)
 {
-  stream.Read(command.oid)
-    .Read(command.courseTime)
-    .Read(command.member3);
+  stream.Read(command.oid);
+
+  uint32_t courseTime;
+  stream.Read(courseTime);
+  command.courseTime = std::chrono::milliseconds{courseTime};
+
+  stream.Read(command.member3);
 }
 
 void AcCmdUserRaceFinalNotify::Write(
@@ -669,7 +673,7 @@ void AcCmdUserRaceFinalNotify::Write(
   SinkStream& stream)
 {
   stream.Write(command.oid)
-    .Write(command.courseTime);
+    .Write(static_cast<int32_t>(command.courseTime.count()));
 }
 
 void AcCmdUserRaceFinalNotify::Read(
@@ -888,10 +892,10 @@ void AcCmdRCAwardNotify::Read(
 }
 
 void AcCmdCRAwardEndNotify::Write(
-  const AcCmdCRAwardEndNotify&,
-  SinkStream&)
+  const AcCmdCRAwardEndNotify& command,
+  SinkStream& stream)
 {
-  // Empty.
+  stream.Write(command.unk0);
 }
 
 void AcCmdCRAwardEndNotify::Read(
@@ -1867,6 +1871,20 @@ void AcCmdRCObstacleStatus::Write(
   stream.Write(command.unk0)
     .Write(command.deactivate)
     .Write(command.unk2);
+}
+
+void AcCmdUserRaceDeleteNotify::Write(
+  const AcCmdUserRaceDeleteNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.racerOid);
+}
+
+void AcCmdUserRaceDeleteNotify::Read(
+  AcCmdUserRaceDeleteNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRKick::Write(
