@@ -45,7 +45,7 @@ if (${MSVC})
             /utf-8 /bigobj /W4 /permissive- /WX /wd4996 /wd4702)
 else()
     target_compile_options(platform-properties INTERFACE
-            -Wall -Wextra -Wpedantic -Werror=deprecated-declaration)
+            -Wall -Wextra -Wpedantic -Wdeprecated-declarations)
 endif()
 
 # alicia-libserver target
