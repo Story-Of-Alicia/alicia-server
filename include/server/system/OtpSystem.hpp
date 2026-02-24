@@ -15,8 +15,8 @@ namespace server
 class OtpSystem
 {
 public:
-  uint32_t GrantCode(uint32_t key);
-  bool AuthorizeCode(uint32_t key, uint32_t code);
+  uint32_t GrantCode(size_t key);
+  bool AuthorizeCode(size_t key, uint32_t code);
 
 private:
   struct Code
@@ -26,7 +26,7 @@ private:
   };
 
   std::random_device _rd;
-  std::unordered_map<uint32_t, Code> _codes;
+  std::unordered_map<size_t, Code> _codes;
 };
 
 } // namespace server

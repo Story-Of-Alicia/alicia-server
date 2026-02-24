@@ -78,7 +78,7 @@ struct ShopList
       uint32_t priceRange{};
       //! Item price
       //! Only valid when setType = 0
-      uint32_t goodsPrice{};
+      int32_t goodsPrice{};
       //! Only valid when setType = 1
       uint32_t itemUid{};
     };

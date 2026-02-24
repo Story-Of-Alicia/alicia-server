@@ -7,7 +7,7 @@
 namespace server
 {
 
-uint32_t OtpSystem::GrantCode(const uint32_t key)
+uint32_t OtpSystem::GrantCode(const size_t key)
 {
   const auto [iter, inserted] = _codes.insert_or_assign(
     key,
@@ -18,7 +18,7 @@ uint32_t OtpSystem::GrantCode(const uint32_t key)
   return iter->second.code;
 }
 
-bool OtpSystem::AuthorizeCode(const uint32_t key, const uint32_t code)
+bool OtpSystem::AuthorizeCode(const size_t key, const uint32_t code)
 {
   const auto codeIter = _codes.find(key);
   if (codeIter == _codes.cend())

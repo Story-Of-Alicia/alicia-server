@@ -48,7 +48,7 @@ std::string ShopListToXmlString(const ShopList& shopList)
 
     // Begin <ItemElem>
     const auto& itemElem = doc.NewElement("ItemElem");
-    for (auto i = 0; i < goods.items.size(); ++i)
+    for (size_t i = 0; i < goods.items.size(); ++i)
     {
       const auto& item = goods.items[i];
 

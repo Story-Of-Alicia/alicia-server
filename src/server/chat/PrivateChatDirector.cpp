@@ -67,7 +67,7 @@ void PrivateChatDirector::Terminate()
 
 PrivateChatDirector::ConversationContext& PrivateChatDirector::GetConversationContext(
   const network::ClientId clientId,
-  bool requireAuthentication)
+  [[maybe_unused]] const bool requireAuthentication)
 {
   auto conversationContextIter = _conversations.find(clientId);
   if (conversationContextIter == _conversations.end())

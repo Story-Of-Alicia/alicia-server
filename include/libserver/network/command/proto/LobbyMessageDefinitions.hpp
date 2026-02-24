@@ -728,7 +728,7 @@ struct LobbyCommandRoomListOK
     static void Read(Room& value, SourceStream& stream);
   };
 
-  std::vector<Room> rooms;
+  std::vector<Room> rooms{};
 
   struct
   {

@@ -933,6 +933,7 @@ struct AcCmdCRRaceResultOK
   //! Used to identify the replay.
   uint64_t resultKey{};
   //! Post-race horse fatigue.
+  //! Fatigue max = 1500
   uint16_t horseFatigue{};
   //! TODO: Appears to be unused.
   uint16_t member4{};

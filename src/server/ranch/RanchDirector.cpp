@@ -60,7 +60,7 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRLeaveRanch>(
-    [this](ClientId clientId, const auto& message)
+    [this](ClientId clientId, const auto&)
     {
       HandleRanchLeave(clientId);
     });
@@ -553,32 +553,25 @@ void RanchDirector::SendStorageNotification(
   data::Uid characterUid,
   protocol::AcCmdCRRequestStorage::Category category)
 {
-  ClientId clientId = -1;
-  for (auto& clientContext : _clients)
+  try
   {
-    if (clientContext.second.characterUid == characterUid && clientContext.second.isAuthenticated)
-      clientId = clientContext.first;
-  }
+    const auto& clientId = GetClientIdByCharacterUid(characterUid);
 
-  if (clientId == -1)
-  {
-    spdlog::error("Tried to send storage notification to unknown client {} with character uid {}",
+    // Setting pageCountAndNotification to 0b1 and category is enough
+    protocol::AcCmdCRRequestStorageOK response{
+      .category = category,
+      .pageCountAndNotification = 0b1};
+
+    _commandServer.QueueCommand<decltype(response)>(
       clientId,
-      characterUid);
-    return;
+      [response]()
+      {
+        return response;
+      });
   }
-
-  // Setting pageCountAndNotification to 0b1 and category is enough
-  protocol::AcCmdCRRequestStorageOK response{
-    .category = category,
-    .pageCountAndNotification = 0b1};
-
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [response]()
-    {
-      return response;
-    });
+  catch (const std::exception&)
+  {
+  }
 }
 
 void RanchDirector::BroadcastChangeAgeNotify(
@@ -898,7 +891,7 @@ void RanchDirector::HandleEnterRanch(
 
       response.rancherName = rancherName;
       response.ranchName = std::format("{}{} ranch", rancherName, possessiveSuffix);
-      response.horseSlots = rancher.horseSlotCount();
+      response.horseSlots = static_cast<uint8_t>(rancher.horseSlotCount());
 
       // If the ranch was just created add the horses to the world tracker.
       if (ranchCreated)
@@ -1032,7 +1025,7 @@ void RanchDirector::HandleEnterRanch(
           if (settings.hideAge())
             return;
 
-          protocolCharacter.age = settings.age();
+          protocolCharacter.age = static_cast<uint8_t>(settings.age());
           // todo: use model constant
           protocolCharacter.gender = character.parts.modelId() == 10
               ? protocol::RanchCharacter::Gender::Boy
@@ -1326,7 +1319,7 @@ void RanchDirector::HandleSnapshot(
 
 void RanchDirector::HandleEnterBreedingMarket(
   ClientId clientId,
-  const protocol::AcCmdCREnterBreedingMarket& command)
+  const protocol::AcCmdCREnterBreedingMarket&)
 {
   const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
@@ -1366,7 +1359,7 @@ static std::vector<data::Uid> g_stallions;
 
 void RanchDirector::HandleSearchStallion(
   ClientId clientId,
-  const protocol::AcCmdCRSearchStallion& command)
+  const protocol::AcCmdCRSearchStallion&)
 {
   protocol::RanchCommandSearchStallionOK response{
     .unk0 = 0,
@@ -1385,9 +1378,10 @@ void RanchDirector::HandleSearchStallion(
       protocolStallion.tid = stallion.tid();
 
       protocolStallion.name = stallion.name();
-      protocolStallion.grade = stallion.grade();
+      protocolStallion.grade = static_cast<uint8_t>(stallion.grade());
 
-      protocolStallion.expiresAt = util::TimePointToAliciaTime(util::Clock::now() + std::chrono::hours(1));
+      protocolStallion.expiresAt = util::TimePointToAliciaTime(
+        util::Clock::now() + std::chrono::hours(1));
 
       protocol::BuildProtocolHorseStats(protocolStallion.stats, stallion.stats);
       protocol::BuildProtocolHorseParts(protocolStallion.parts, stallion.parts);
@@ -1438,7 +1432,7 @@ void RanchDirector::HandleUnregisterStallion(
 
 void RanchDirector::HandleUnregisterStallionEstimateInfo(
   ClientId clientId,
-  const protocol::AcCmdCRUnregisterStallionEstimateInfo& command)
+  const protocol::AcCmdCRUnregisterStallionEstimateInfo&)
 {
   protocol::AcCmdCRUnregisterStallionEstimateInfoOK response{
     .member1 = 0xFFFF'FFFF,
@@ -1494,14 +1488,14 @@ void RanchDirector::HandleTryBreeding(
 }
 
 void RanchDirector::HandleBreedingAbandon(
-  ClientId clientId,
-  const protocol::AcCmdCRBreedingAbandon& command)
+  ClientId,
+  const protocol::AcCmdCRBreedingAbandon&)
 {
 }
 
 void RanchDirector::HandleBreedingWishlist(
   ClientId clientId,
-  const protocol::AcCmdCRBreedingWishlist& command)
+  const protocol::AcCmdCRBreedingWishlist&)
 {
   protocol::AcCmdCRBreedingWishlistOK response{};
 
@@ -1516,7 +1510,7 @@ void RanchDirector::HandleBreedingWishlist(
 
 void RanchDirector::HandleCmdAction(
   ClientId clientId,
-  const protocol::AcCmdCRRanchCmdAction& command)
+  const protocol::AcCmdCRRanchCmdAction&)
 {
   protocol::RanchCommandRanchCmdActionNotify response{
     .unk0 = 2,
@@ -1768,7 +1762,8 @@ void RanchDirector::HandleRequestStorage(
       const auto pagination = std::views::chunk(*storedItemRecords, 5);
       page = std::max(std::min(page - 1, pagination.size() - 1), size_t{0});
 
-      response.pageCountAndNotification = pagination.size() << 2;
+      response.pageCountAndNotification = static_cast<uint16_t>(
+        pagination.size() << 2);
 
       protocol::BuildProtocolStorageItems(response.storedItems, pagination[page]);
     });
@@ -2270,7 +2265,7 @@ void RanchDirector::HandleCreateGuild(
 
 void RanchDirector::HandleRequestGuildInfo(
   ClientId clientId,
-  const protocol::RanchCommandRequestGuildInfo& command)
+  const protocol::RanchCommandRequestGuildInfo&)
 {
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
@@ -2428,39 +2423,42 @@ void RanchDirector::HandleWithdrawGuild(
     });
 
   const auto& authorityCharacterUid = clientContext.characterUid;
-  for (const auto& [clientId, clientContext] : _clients)
+  for (const auto& [onlineClientId, onlineClientContext] : _clients)
   {
     // Notify online characters only
-    if (not clientContext.isAuthenticated)
+    if (not onlineClientContext.isAuthenticated)
     {
       continue;
     }
 
     if (command.option == protocol::AcCmdCRWithdrawGuildMember::Option::Leave &&
-        clientContext.characterUid == characterUid)
+        onlineClientContext.characterUid == characterUid)
     {
       continue;
     }
 
-    const auto& clientRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
-    clientRecord.Immutable([this, clientId, guildUid, option = command.option, characterUid, authorityCharacterUid]
-      (const data::Character& character)
-    {
-      protocol::AcCmdRCWithdrawGuildMemberNotify notify{
-        .guildUid = guildUid,
-        .guildMemberCharacterUid = option == protocol::AcCmdCRWithdrawGuildMember::Option::Kicked ?
-          authorityCharacterUid : character.uid(),
-        .withdrawnCharacterUid = characterUid,
-        .option = option
-      };
+    const auto& clientRecord = GetServerInstance().GetDataDirector().GetCharacter(
+      onlineClientContext.characterUid);
 
-      _commandServer.QueueCommand<decltype(notify)>(
-        clientId,
-        [notify]()
-        {
-          return notify;
-        });
-    });
+    clientRecord.Immutable(
+      [this, onlineClientId, guildUid, option = command.option, characterUid, authorityCharacterUid]
+      (const data::Character& character)
+      {
+        protocol::AcCmdRCWithdrawGuildMemberNotify notify{
+          .guildUid = guildUid,
+          .guildMemberCharacterUid = option == protocol::AcCmdCRWithdrawGuildMember::Option::Kicked ?
+            authorityCharacterUid : character.uid(),
+          .withdrawnCharacterUid = characterUid,
+          .option = option
+        };
+
+        _commandServer.QueueCommand<decltype(notify)>(
+          onlineClientId,
+          [notify]()
+          {
+            return notify;
+          });
+      });
   }
 }
 
@@ -2801,7 +2799,7 @@ void RanchDirector::HandleBoostIncubateEgg(
 
 void RanchDirector::HandleBoostIncubateInfoList(
   ClientId clientId,
-  const protocol::AcCmdCRBoostIncubateInfoList& command)
+  const protocol::AcCmdCRBoostIncubateInfoList&)
 {
   protocol::AcCmdCRBoostIncubateInfoListOK response{
     .member1 = 0,
@@ -3239,9 +3237,9 @@ bool RanchDirector::HandleUsePlayItem(
 }
 
 bool RanchDirector::HandleUseCureItem(
-  const data::Uid characterUid,
-  const data::Uid mountUid,
-  const data::Tid usedItemTid,
+  [[maybe_unused]] const data::Uid characterUid,
+  [[maybe_unused]] const data::Uid mountUid,
+  [[maybe_unused]] const data::Tid usedItemTid,
   protocol::AcCmdCRUseItemOK& response)
 {
   response.type = protocol::AcCmdCRUseItemOK::ActionType::Cure;
@@ -3374,7 +3372,8 @@ void RanchDirector::HandleUseItem(
       const auto consumeVerdict = GetServerInstance().GetItemSystem().ConsumeItem(
         character, usedItemTid, 1);
 
-      response.remainingItemCount = consumeVerdict.remainingItemCount;
+      response.remainingItemCount = static_cast<uint16_t>(
+        consumeVerdict.remainingItemCount);
     });
   }
 
@@ -3494,7 +3493,7 @@ void RanchDirector::HandleHousingRepair(
 
   housingRecord.Mutable([&housingId](data::Housing& housing){
     housing.expiresAt = std::chrono::system_clock::now() + std::chrono::days(20);
-    housingId = housing.housingId();
+    housingId = static_cast<uint16_t>(housing.housingId());
   });
 
   // todo: implement transaction for the repair
@@ -3646,7 +3645,8 @@ void RanchDirector::HandleRecoverMount(
       character.carrots() -= static_cast<int32_t>(
         std::floor(staminaToRecover * StaminaPointPrice));
   
-      response.stamina = horse.mountCondition.stamina();
+      response.stamina = static_cast<uint16_t>(
+        horse.mountCondition.stamina());
       response.updatedCarrots = character.carrots();
     });
   });
@@ -4237,7 +4237,7 @@ void RanchDirector::HandleInviteToGuild(
 
 void RanchDirector::HandleGetEmblemList(
   ClientId clientId,
-  const protocol::AcCmdCREmblemList& command)
+  const protocol::AcCmdCREmblemList&)
 {
   const auto& clientContext = GetClientContext(clientId);
   
@@ -4262,7 +4262,7 @@ void RanchDirector::HandleGetEmblemList(
 
   protocol::AcCmdCREmblemListOK response{};
   GetServerInstance().GetDataDirector().GetGuild(guildUid).Immutable(
-    [&response](const data::Guild& guild)
+    [](const data::Guild&)
     {
       // TODO: compile emblem list
     });
@@ -4596,7 +4596,7 @@ void RanchDirector::HandleBuyOwnItem(
         const auto& goods = shopList.goodsList.at(order.goodsSq);
 
         // Get the item cost from the selected price range
-        std::optional<uint32_t> costOpt{};
+        std::optional<int32_t> costOpt{};
         uint32_t priceRange{0};
 
         // If goods info, get price from selected price range, else from set price
@@ -4639,7 +4639,7 @@ void RanchDirector::HandleBuyOwnItem(
         const auto& itemRegistryRecord = GetServerInstance().GetItemRegistry().GetItem(goods.itemUid);
 
         const bool isCashItem = goods.moneyType == ShopList::Goods::MoneyType::Cash;
-        const uint32_t cost = costOpt.value();
+        const int32_t cost = costOpt.value();
 
         const bool hasSufficientCarrots = character.carrots() >= cost;
         const bool canPurchaseCarrotItem = not isCashItem and hasSufficientCarrots;
@@ -4958,7 +4958,7 @@ void RanchDirector::HandleSendGift(
 
 void RanchDirector::HandlePasswordAuth(
   ClientId clientId,
-  const protocol::AcCmdCRPasswordAuth command)
+  const protocol::AcCmdCRPasswordAuth)
 {
   protocol::AcCmdCRPasswordAuthOK response {
     .action = protocol::AcCmdCRPasswordAuthOK::Action::Authenticated
@@ -5048,7 +5048,9 @@ void RanchDirector::HandleOpenRandomBox(
     std::vector<data::Tid> possiblePackages;
     std::ranges::copy(packageKeysView, std::back_inserter(possiblePackages));
 
-    std::uniform_int_distribution<uint32_t> randomPackageDistribution(0, possiblePackages.size() - 1);
+    std::uniform_int_distribution<uint32_t> randomPackageDistribution(
+      0,
+      static_cast<uint32_t>(possiblePackages.size()) - 1);
     const auto randomPackageIdx = randomPackageDistribution(rd);
 
     const data::Tid PackageTid = possiblePackages[randomPackageIdx];

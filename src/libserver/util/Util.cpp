@@ -154,12 +154,12 @@ Clock::time_point AliciaShopTimeToTimePoint(const std::array<uint32_t, 3>& times
   // 31 23   = 0x0017001f
   // 59:59   = 0x003b003b
 
-  uint16_t year = timestamp[0];
-  uint16_t month = (timestamp[0] >> 16);
-  uint16_t day = timestamp[1];
-  uint16_t hour = (timestamp[1] >> 16);
-  uint16_t minute = timestamp[2];
-  uint16_t second = (timestamp[2] >> 16);
+  const uint16_t year = static_cast<uint16_t>(timestamp[0]);
+  const uint16_t month = static_cast<uint16_t>(timestamp[0] >> 16);
+  const uint16_t day = static_cast<uint16_t>(timestamp[1]);
+  const uint16_t hour = static_cast<uint16_t>(timestamp[1] >> 16);
+  const uint16_t minute = static_cast<uint16_t>(timestamp[2]);
+  const uint16_t second = static_cast<uint16_t>(timestamp[2] >> 16);
 
   std::chrono::year y{static_cast<int32_t>(year)};
   std::chrono::month m{static_cast<uint32_t>(month)};

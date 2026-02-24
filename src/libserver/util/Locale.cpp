@@ -52,9 +52,9 @@ std::string ToUtf8(const std::string& input)
   ucnv_toUChars(
     koreanConv,
     unicodeOutput.data(),
-    unicodeOutput.size(),
+    static_cast<int32_t>(unicodeOutput.size()),
     input.data(),
-    input.length(),
+    static_cast<int32_t>(input.length()),
     &error);
   if (error > U_ZERO_ERROR)
   {
@@ -77,9 +77,9 @@ std::string ToUtf8(const std::string& input)
   ucnv_fromUChars(
     utfConv,
     output.data(),
-    output.size(),
+    static_cast<int32_t>(output.size()),
     unicodeOutput.data(),
-    unicodeOutput.length(),
+    static_cast<int32_t>(unicodeOutput.length()),
     &error);
   if (error > U_ZERO_ERROR)
   {
@@ -105,9 +105,9 @@ std::string FromUtf8(const std::string& input)
   ucnv_toUChars(
     utfConv,
     unicodeOutput.data(),
-    unicodeOutput.size(),
+    static_cast<int32_t>(unicodeOutput.size()),
     input.data(),
-    input.length(),
+    static_cast<int32_t>(input.length()),
     &error);
   if (error > U_ZERO_ERROR)
   {
@@ -125,9 +125,9 @@ std::string FromUtf8(const std::string& input)
   ucnv_fromUChars(
     koreanConv,
     output.data(),
-    output.size(),
+    static_cast<int32_t>(output.size()),
     unicodeOutput.data(),
-    unicodeOutput.length(),
+    static_cast<int32_t>(unicodeOutput.length()),
     &error);
   if (error > U_ZERO_ERROR)
   {
@@ -169,7 +169,7 @@ bool IsNameValid(
 
   thread_local auto* validLettersRegex = uregex_open(
     ValidLettersPattern.data(),
-    ValidLettersPattern.length(),
+    static_cast<int32_t>(ValidLettersPattern.length()),
     0,
     nullptr,
     &status);
@@ -208,7 +208,7 @@ bool IsNameValid(
 
   thread_local auto* koreanLettersRegex = uregex_open(
     KoreanLettersPattern.data(),
-    KoreanLettersPattern.length(),
+    static_cast<int32_t>(KoreanLettersPattern.length()),
     0,
     nullptr,
     &status);
@@ -229,7 +229,7 @@ bool IsNameValid(
 
   thread_local auto* latinLettersRegex = uregex_open(
     LatinLettersPattern.data(),
-    LatinLettersPattern.length(),
+    static_cast<int32_t>(LatinLettersPattern.length()),
     0,
     nullptr,
     &status);
@@ -266,12 +266,12 @@ bool IsNameValid(
   // todo: technical limitation, all arabic numbers are considered to be latin
   //       and thus korean names with numbers are not considered pure.
   const bool isPureKorean = latinLetterCount == 0 && koreanLetterCount > 0;
-  const size_t minLetterCount = isPureKorean
+  const int64_t minLetterCount = isPureKorean
     ? MinKoreanLetterCount
     : MinLatinLetterCount;
 
   // Get the code point count of the input string.
-  const auto inputStringLength = utext_nativeLength(&inputString);
+  const int64_t inputStringLength = utext_nativeLength(&inputString);
   if (inputStringLength < minLetterCount)
     return false;
 

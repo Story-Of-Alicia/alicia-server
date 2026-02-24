@@ -42,10 +42,10 @@ endif()
 
 if (${MSVC})
     target_compile_options(platform-properties INTERFACE
-            /utf-8 /bigobj /W4 /permissive-)
+            /utf-8 /bigobj /W4 /permissive- /WX /wd4996 /wd4702)
 else()
     target_compile_options(platform-properties INTERFACE
-            -Wall -Wextra -Wpedantic)
+            -Wall -Wextra -Wpedantic -Wdeprecated-declarations)
 endif()
 
 # alicia-libserver target
@@ -76,9 +76,10 @@ add_library(alicia-libserver STATIC
         src/libserver/util/Util.cpp)
 target_include_directories(alicia-libserver PUBLIC
         include/)
-target_link_libraries(alicia-libserver PUBLIC
+target_link_libraries(alicia-libserver PRIVATE
         project-properties
-        platform-properties
+        platform-properties)
+target_link_libraries(alicia-libserver PUBLIC
         spdlog::spdlog
         Boost::headers
         nlohmann_json::nlohmann_json
@@ -111,6 +112,7 @@ target_include_directories(alicia-server
         PRIVATE include/)
 target_link_libraries(alicia-server PRIVATE
         project-properties
+        platform-properties
         alicia-libserver)
 target_include_directories(alicia-server PUBLIC
         "${PROJECT_BINARY_DIR}/generated")

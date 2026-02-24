@@ -127,14 +127,14 @@ struct Item
   std::vector<std::string> description;
   bool isPurchasable{false};
 
-  std::optional<CharacterPartInfo> characterPartInfo;
-  std::optional<MountPartInfo> mountPartInfo;
-  std::optional<MountPartSetInfo> mountPartSetInfo;
+  std::optional<CharacterPartInfo> characterPartInfo{};
+  std::optional<MountPartInfo> mountPartInfo{};
+  std::optional<MountPartSetInfo> mountPartSetInfo{};
 
-  std::optional<CareParameters> careParameters;
-  std::optional<CureParameters> cureParameters;
-  std::optional<FoodParameters> foodParameters;
-  std::optional<PlayParameters> playParameters;
+  std::optional<CareParameters> careParameters{};
+  std::optional<CureParameters> cureParameters{};
+  std::optional<FoodParameters> foodParameters{};
+  std::optional<PlayParameters> playParameters{};
 };
 
 struct Package
