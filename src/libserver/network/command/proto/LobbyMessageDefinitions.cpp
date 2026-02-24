@@ -85,7 +85,7 @@ void LobbyCommandLoginOK::Write(
     stream.Write(item);
   }
 
-  constexpr size_t MaxExpiredItemCount = 250.;
+  constexpr size_t MaxExpiredItemCount = 250;
 
   // Mount equipment
   if (command.expiredItems.size() > MaxExpiredItemCount)

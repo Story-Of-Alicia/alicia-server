@@ -256,7 +256,7 @@ struct Character
 
   dao::Field<uint32_t> level{};
   dao::Field<int32_t> carrots{};
-  dao::Field<uint32_t> cash{};
+  dao::Field<int32_t> cash{};
 
   enum class Role
   {
@@ -312,7 +312,7 @@ struct Character
   dao::Field<std::vector<Uid>> expiredEquipment{};
   
   dao::Field<std::vector<Uid>> horses{};
-  dao::Field<uint8_t> horseSlotCount{0u};
+  dao::Field<uint32_t> horseSlotCount{0u};
 
   dao::Field<std::vector<Uid>> pets{};
   dao::Field<Uid> mountUid{InvalidUid};
@@ -341,7 +341,7 @@ struct Character
 
       Set set1{};
       Set set2{};
-      uint8_t activeSetId{0};
+      uint32_t activeSetId{0};
     };
 
     dao::Field<Sets> speed{};
@@ -404,41 +404,41 @@ struct Horse
 
   struct Potential
   {
-    dao::Field<uint8_t> type{0u};
-    dao::Field<uint8_t> level{0u};
-    dao::Field<uint8_t> value{0u};
+    dao::Field<uint32_t> type{0u};
+    dao::Field<uint32_t> level{0u};
+    dao::Field<uint32_t> value{0u};
   } potential{};
 
   dao::Field<uint32_t> luckState{0u};
-  dao::Field<uint16_t> fatigue{0u};
+  dao::Field<uint32_t> fatigue{0u};
   dao::Field<uint32_t> emblemUid{0u};
   dao::Field<Clock::time_point> dateOfBirth{};
 
   struct MountCondition
   {
-    dao::Field<uint16_t> stamina{};
-    dao::Field<uint16_t> charm{};
-    dao::Field<uint16_t> friendliness{};
-    dao::Field<uint16_t> injury{};
-    dao::Field<uint16_t> plenitude{};
-    dao::Field<uint16_t> bodyDirtiness{};
-    dao::Field<uint16_t> maneDirtiness{};
-    dao::Field<uint16_t> tailDirtiness{};
-    dao::Field<uint16_t> bodyPolish{};
-    dao::Field<uint16_t> manePolish{};
-    dao::Field<uint16_t> tailPolish{};
-    dao::Field<uint16_t> attachment{};
-    dao::Field<uint16_t> boredom{};
-    dao::Field<uint16_t> stopAmendsPoint{};
+    dao::Field<uint32_t> stamina{};
+    dao::Field<uint32_t> charm{};
+    dao::Field<uint32_t> friendliness{};
+    dao::Field<uint32_t> injury{};
+    dao::Field<uint32_t> plenitude{};
+    dao::Field<uint32_t> bodyDirtiness{};
+    dao::Field<uint32_t> maneDirtiness{};
+    dao::Field<uint32_t> tailDirtiness{};
+    dao::Field<uint32_t> bodyPolish{};
+    dao::Field<uint32_t> manePolish{};
+    dao::Field<uint32_t> tailPolish{};
+    dao::Field<uint32_t> attachment{};
+    dao::Field<uint32_t> boredom{};
+    dao::Field<uint32_t> stopAmendsPoint{};
   } mountCondition{};
 
   struct MountInfo
   {
-    dao::Field<uint16_t> boostsInARow{};
-    dao::Field<uint16_t> winsSpeedSingle{};
-    dao::Field<uint16_t> winsSpeedTeam{};
-    dao::Field<uint16_t> winsMagicSingle{};
-    dao::Field<uint16_t> winsMagicTeam{};
+    dao::Field<uint32_t> boostsInARow{};
+    dao::Field<uint32_t> winsSpeedSingle{};
+    dao::Field<uint32_t> winsSpeedTeam{};
+    dao::Field<uint32_t> winsMagicSingle{};
+    dao::Field<uint32_t> winsMagicTeam{};
 
     // Store in metres, displayed in kilometres
     dao::Field<uint32_t> totalDistance{};
@@ -457,7 +457,7 @@ struct Horse
 struct Housing
 {
   dao::Field<Uid> uid{InvalidUid};
-  dao::Field<uint16_t> housingId{};
+  dao::Field<uint32_t> housingId{};
   dao::Field<Clock::time_point> expiresAt{};
   dao::Field<uint32_t> durability{};
 };

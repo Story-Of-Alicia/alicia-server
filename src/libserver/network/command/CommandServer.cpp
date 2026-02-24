@@ -410,7 +410,7 @@ void CommandServer::SendCommand(
         supplier(commandSink);
 
         // Command size is the size of the whole command.
-        const uint16_t commandSize = commandSink.GetCursor();
+        const size_t commandSize = commandSink.GetCursor();
 
         if (debugOutgoingCommandData
           && not IsMuted(commandId))
@@ -434,7 +434,7 @@ void CommandServer::SendCommand(
         // Write the message magic.
         const protocol::MessageMagic magic{
           .id = static_cast<uint16_t>(commandId),
-          .length = commandSize};
+          .length = static_cast<uint16_t>(commandSize)};
 
         commandSink.Write(encode_message_magic(magic));
         writeBuffer.commit(magic.length);
@@ -450,7 +450,7 @@ void CommandServer::SendCommand(
         return commandSize;
       });
   }
-  catch (std::exception& x)
+  catch (std::exception&)
   {
     // the client disconnected, todo dont use client ids, or dont
   }

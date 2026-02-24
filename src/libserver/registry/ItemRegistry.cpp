@@ -187,8 +187,7 @@ void ItemRegistry::ReadConfig(const std::filesystem::path& configPath)
     else if (const auto playParametersSection = itemSection["playParameters"])
       ReadPlayParameters(item.playParameters.emplace(), playParametersSection);
 
-    const auto [iter, inserted] = _items.try_emplace(item.tid, item);
-    assert(inserted);
+    _items.try_emplace(item.tid, item);
   }
 
   for (const auto& packageSection : packagesCollectionSection )

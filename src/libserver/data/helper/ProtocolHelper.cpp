@@ -52,20 +52,34 @@ void BuildProtocolHorse(
   protocolHorse.val17 = 0;
 
   protocolHorse.mountCondition = {
-    .stamina = horse.mountCondition.stamina(),
-    .charmPoint = horse.mountCondition.charm(),
-    .friendlyPoint = horse.mountCondition.friendliness(),
-    .injuryPoint = horse.mountCondition.injury(),
-    .plenitude = horse.mountCondition.plenitude(),
-    .bodyDirtiness = horse.mountCondition.bodyDirtiness(),
-    .maneDirtiness = horse.mountCondition.maneDirtiness(),
-    .tailDirtiness = horse.mountCondition.tailDirtiness(),
-    .attachment = horse.mountCondition.attachment(),
-    .boredom = horse.mountCondition.boredom(),
-    .bodyPolish = horse.mountCondition.bodyPolish(),
-    .manePolish = horse.mountCondition.manePolish(),
-    .tailPolish = horse.mountCondition.tailPolish(),
-    .stopAmendsPoint = horse.mountCondition.stopAmendsPoint()
+    .stamina = static_cast<uint16_t>(
+      horse.mountCondition.stamina()),
+    .charmPoint = static_cast<uint16_t>(
+      horse.mountCondition.charm()),
+    .friendlyPoint = static_cast<uint16_t>(
+      horse.mountCondition.friendliness()),
+    .injuryPoint = static_cast<uint16_t>(
+      horse.mountCondition.injury()),
+    .plenitude = static_cast<uint16_t>(
+      horse.mountCondition.plenitude()),
+    .bodyDirtiness = static_cast<uint16_t>(
+      horse.mountCondition.bodyDirtiness()),
+    .maneDirtiness = static_cast<uint16_t>(
+      horse.mountCondition.maneDirtiness()),
+    .tailDirtiness = static_cast<uint16_t>(
+      horse.mountCondition.tailDirtiness()),
+    .attachment = static_cast<uint16_t>(
+      horse.mountCondition.attachment()),
+    .boredom = static_cast<uint16_t>(
+      horse.mountCondition.boredom()),
+    .bodyPolish = static_cast<uint16_t>(
+      horse.mountCondition.bodyPolish()),
+    .manePolish = static_cast<uint16_t>(
+      horse.mountCondition.manePolish()),
+    .tailPolish = static_cast<uint16_t>(
+      horse.mountCondition.tailPolish()),
+    .stopAmendsPoint = static_cast<uint16_t>(
+      horse.mountCondition.stopAmendsPoint())
   };
 
   protocolHorse.vals1 = {
@@ -83,7 +97,7 @@ void BuildProtocolHorse(
     .luck = static_cast<uint8_t>(horse.luckState()),
     .injury = Horse::Injury::None,
     .val12 = 0x00,
-    .fatigue = horse.fatigue(),
+    .fatigue = static_cast<uint16_t>(horse.fatigue()),
     .val14 = 0x00,
     .emblem = static_cast<uint16_t>(horse.emblemUid())};
 
@@ -255,7 +269,8 @@ void BuildProtocolHousing(
   bool hasDurability)
 {
   protocolHousing.uid = housingRecord.uid();
-  protocolHousing.tid = housingRecord.housingId();
+  protocolHousing.tid = static_cast<uint16_t>(
+    housingRecord.housingId());
   protocolHousing.durability = hasDurability 
     ? housingRecord.durability() 
     : util::TimePointToAliciaTime(housingRecord.expiresAt());

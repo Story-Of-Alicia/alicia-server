@@ -81,14 +81,14 @@ bool Room::AddPlayer(data::Uid characterUid)
   if (_players.size() >= _details.maxPlayerCount)
     return false;
 
-  Player player {};
+  Player player{};
   if (_details.teamMode == TeamMode::Team)
   {
       size_t redTeamCount = 0;
       size_t blueTeamCount = 0;
-      for (const auto& [_, player] : _players)
+      for (const auto& roomPlayer : _players | std::views::values)
       {
-        switch (player.GetTeam())
+        switch (roomPlayer.GetTeam())
         {
           case Player::Team::Red:
             ++redTeamCount;

@@ -152,7 +152,7 @@ void ChatSystem::RegisterUserCommands()
   _commandManager.RegisterCommand(
     "about",
     [this](
-      const std::span<const std::string>& arguments,
+      const std::span<const std::string>&,
       [[maybe_unused]] data::Uid characterUid) -> std::vector<std::string>
     {
       const std::string brandName = _serverInstance.GetSettings().general.brand;
@@ -171,7 +171,7 @@ void ChatSystem::RegisterUserCommands()
   _commandManager.RegisterCommand(
     "help",
     [this](
-      const std::span<const std::string>& arguments,
+      const std::span<const std::string>&,
       [[maybe_unused]] data::Uid characterUid) -> std::vector<std::string>
     {
       return {
@@ -201,7 +201,7 @@ void ChatSystem::RegisterUserCommands()
   _commandManager.RegisterCommand(
     "create",
     [this](
-      const std::span<const std::string>& arguments,
+      const std::span<const std::string>&,
       data::Uid characterUid) -> std::vector<std::string>
     {
       _serverInstance.GetLobbyDirector().SetCharacterForcedIntoCreator(characterUid, true);
@@ -252,71 +252,6 @@ void ChatSystem::RegisterUserCommands()
       }
 
       return response;
-    });
-
-  // visit command
-  _commandManager.RegisterCommand(
-    "visit",
-    [this](
-      const std::span<const std::string>& arguments,
-      data::Uid characterUid) -> std::vector<std::string>
-    {
-      // todo: temporary command while messenger is not available
-
-      if (arguments.size() < 1)
-        return {"Invalid command argument. (//visit <name>)"};
-
-      // The name of the character the client wants to visit.
-      const std::string visitingCharacterName = arguments[0];
-
-      auto visitingCharacterUid = data::InvalidUid;
-      bool visitingRanchLocked = true;
-
-      const auto onlineCharacters = _serverInstance.GetRanchDirector().GetOnlineCharacters();
-
-      for (const data::Uid onlineCharacterUid : onlineCharacters)
-      {
-        const auto onlineCharacterRecord = _serverInstance.GetDataDirector().GetCharacterCache().Get(
-          onlineCharacterUid, false);
-
-        if (not onlineCharacterRecord)
-          continue;
-
-        onlineCharacterRecord->Immutable(
-          [&visitingCharacterUid, &visitingCharacterName, &visitingRanchLocked](
-            const data::Character& character)
-          {
-            if (visitingCharacterName != character.name())
-              return;
-
-            visitingCharacterUid = character.uid();
-            visitingRanchLocked = character.isRanchLocked();
-          });
-
-        if (visitingCharacterUid != data::InvalidUid)
-          break;
-      }
-
-      if (visitingCharacterUid != data::InvalidUid)
-      {
-        if (visitingRanchLocked)
-          return {
-            std::format(
-              "This player's ranch is locked.",
-              visitingCharacterName)};
-
-        _serverInstance.GetLobbyDirector().SetCharacterVisitPreference(
-          characterUid, visitingCharacterUid);
-
-        return {
-          std::format(
-            "Next time you enter the portal, you'll visit {}",
-            visitingCharacterName)};
-      }
-
-      return {
-        std::format("Nobody with the name '{}' is online.", visitingCharacterName),
-        "Use //online to view online players."};
     });
 
   // emblem command
@@ -474,13 +409,11 @@ void ChatSystem::RegisterUserCommands()
               const data::Character& character)
             {
               _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Mutable(
-                [this, &type, &level, &value](data::Horse& horse)
+                [&type, &level, &value](data::Horse& horse)
                 {
-                  _serverInstance.GetHorseRegistry().SetHorsePotential(
-                    horse.potential,
-                    type,
-                    level,
-                    value);
+                  horse.potential.type = type;
+                  horse.potential.level = level;
+                  horse.potential.value = value;
                 });
             });
         }
@@ -712,7 +645,7 @@ void ChatSystem::RegisterUserCommands()
           [&horseCount, &horseSlotCount](const data::Character& character)
           {
             // Mount + horses (if any)
-            horseCount = character.horses().size() + 1;
+            horseCount = static_cast<uint32_t>(character.horses().size()) + 1;
             horseSlotCount = character.horseSlotCount();
           });
 
@@ -1349,7 +1282,7 @@ void ChatSystem::RegisterAdminCommands()
   _commandManager.RegisterCommand(
     "incognito",
     [this](
-      const std::span<const std::string>& arguments,
+      const std::span<const std::string>&,
       data::Uid characterUid) -> std::vector<std::string>
     {
       const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
@@ -1870,11 +1803,71 @@ void ChatSystem::RegisterAdminCommands()
 
       return {"Unknown sub-command"};
     });
-}
 
-void ChatSystem::Broadcast(
-  std::string message)
-{
+   // visit command
+  _commandManager.RegisterCommand(
+    "visit",
+    [this](
+      const std::span<const std::string>& arguments,
+      data::Uid characterUid) -> std::vector<std::string>
+    {
+      // todo: temporary command while messenger is not available
+
+      if (arguments.size() < 1)
+        return {"Invalid command argument. (//visit <name>)"};
+
+      // The name of the character the client wants to visit.
+      const std::string visitingCharacterName = arguments[0];
+
+      auto visitingCharacterUid = data::InvalidUid;
+      bool visitingRanchLocked = true;
+
+      const auto onlineCharacters = _serverInstance.GetRanchDirector().GetOnlineCharacters();
+
+      for (const data::Uid onlineCharacterUid : onlineCharacters)
+      {
+        const auto onlineCharacterRecord = _serverInstance.GetDataDirector().GetCharacterCache().Get(
+          onlineCharacterUid, false);
+
+        if (not onlineCharacterRecord)
+          continue;
+
+        onlineCharacterRecord->Immutable(
+          [&visitingCharacterUid, &visitingCharacterName, &visitingRanchLocked](
+            const data::Character& character)
+          {
+            if (visitingCharacterName != character.name())
+              return;
+
+            visitingCharacterUid = character.uid();
+            visitingRanchLocked = character.isRanchLocked();
+          });
+
+        if (visitingCharacterUid != data::InvalidUid)
+          break;
+      }
+
+      if (visitingCharacterUid != data::InvalidUid)
+      {
+        if (visitingRanchLocked)
+          return {
+            std::format(
+              "This player's ranch is locked.",
+              visitingCharacterName)};
+
+        _serverInstance.GetLobbyDirector().SetCharacterVisitPreference(
+          characterUid, visitingCharacterUid);
+
+        return {
+          std::format(
+            "Next time you enter the portal, you'll visit {}",
+            visitingCharacterName)};
+      }
+
+      return {
+        std::format("Nobody with the name '{}' is online.", visitingCharacterName),
+        "Use //online to view online players."};
+    });
 }
 
 } // namespace server

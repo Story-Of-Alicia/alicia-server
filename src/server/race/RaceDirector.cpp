@@ -585,8 +585,8 @@ void RaceDirector::Tick()
           [&score](const data::Horse& horse)
           {
             score.mountName = horse.name();
-            score.horseClass = horse.clazz();
-            score.growthPoints = horse.growthPoints();
+            score.horseClass = static_cast<uint8_t>(horse.clazz());
+            score.growthPoints = static_cast<uint16_t>(horse.growthPoints());
           });
       });
     }
@@ -820,7 +820,7 @@ void RaceDirector::HandleEnterRoom(
           .skillBracket = roomDetails.skillBracket};
       });
   }
-  catch (const std::exception& x)
+  catch (const std::exception&)
   {
     throw std::runtime_error("Client tried entering a deleted room");
   }
@@ -1016,7 +1016,6 @@ void RaceDirector::HandleChangeRoomOptions(
 {
   // todo: validate command fields
   const auto& clientContext = GetClientContext(clientId);
-  auto& raceInstance = _raceInstances[clientContext.roomUid];
 
   const std::bitset<6> options(
     static_cast<uint16_t>(command.optionsBitfield));
@@ -1184,6 +1183,7 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
 
   // Check if the leaving player was the leader
   const bool wasMaster = raceInstance.masterUid == clientContext.characterUid;
+
   {
     // Notify other clients in the room about the character leaving.
     protocol::AcCmdCRLeaveRoomNotify notify{
@@ -1406,7 +1406,7 @@ void RaceDirector::HandleStartRace(
   }
 
   const auto roomUid = clientContext.roomUid;
-  uint32_t roomSelectedCourses;
+  uint16_t roomSelectedCourses;
   uint8_t roomGameMode;
 
   _serverInstance.GetRoomSystem().GetRoom(
@@ -1445,7 +1445,7 @@ void RaceDirector::HandleStartRace(
         });
 
       // Filter out the maps that are above the master's level.
-      std::vector<uint32_t> filteredMaps;
+      std::vector<uint16_t> filteredMaps;
       std::copy_if(
         gameMode.mapPool.cbegin(),
         gameMode.mapPool.cend(),
@@ -1611,7 +1611,7 @@ void RaceDirector::HandleStartRace(
                   throw std::runtime_error("Unknown game mode");
 
               // Get racer's active skill set ID and set it in notify
-              notify.racerActiveSkillSet.setId = skillSets.activeSetId;
+              notify.racerActiveSkillSet.setId = static_cast<uint8_t>(skillSets.activeSetId);
 
               const auto& skillSet =
                 skillSets.activeSetId == 0 ? skillSets.set1 :
@@ -1645,8 +1645,11 @@ void RaceDirector::HandleStartRace(
               magicOnlyBonusSkills.end());
           }
 
-          std::uniform_int_distribution<uint32_t> bonusSkillDist(0, bonusSkillIds.size() - 1);
-          auto bonusSkillIdx = bonusSkillDist(_randomDevice);
+          std::uniform_int_distribution<uint32_t> bonusSkillDist(
+            0,
+            static_cast<uint32_t>(bonusSkillIds.size()) - 1);
+
+          const auto bonusSkillIdx = bonusSkillDist(_randomDevice);
           notify.racerActiveSkillSet.skills[2] = bonusSkillIds[bonusSkillIdx];
         }
 
@@ -1770,8 +1773,8 @@ void RaceDirector::HandleRaceResult(
       GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Immutable(
         [&response](const data::Horse& horse)
         {
-          // Fatigue max = 1500
-          response.horseFatigue = horse.fatigue();
+          response.horseFatigue = static_cast<uint16_t>(
+            horse.fatigue());
         });
     });
 
@@ -1844,8 +1847,8 @@ void RaceDirector::HandleAwardStart(
 }
 
 void RaceDirector::HandleAwardEnd(
-  ClientId clientId,
-  const protocol::AcCmdCRAwardEnd& command)
+  ClientId,
+  const protocol::AcCmdCRAwardEnd&)
 {
   // todo: this always crashes everyone
 
@@ -2866,9 +2869,9 @@ void RaceDirector::HandleUserRaceItemGet(
   }
 
   // Erase the item from item instances of each client.
-  for (auto& racer : raceInstance.tracker.GetRacers() | std::views::values)
+  for (auto& raceRacer : raceInstance.tracker.GetRacers() | std::views::values)
   {
-    racer.trackedItems.erase(item.oid);
+    raceRacer.trackedItems.erase(item.oid);
   }
 
   // Respawn the item after a delay
@@ -2953,7 +2956,6 @@ void RaceDirector::HandleChangeMagicTarget(
 
   for (const ClientId& raceClientId : raceInstance.clients)
   {
-    const auto& targetClientContext = _clients[raceClientId];
     _commandServer.QueueCommand<decltype(targetNotify)>(
       raceClientId,
       [targetNotify]() { return targetNotify; });
@@ -2969,7 +2971,7 @@ void RaceDirector::HandleActivateSkillEffect(
 
   auto& targetRacer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
-  uint32_t effectiveEffectId = command.effectId;
+  uint16_t effectiveEffectId = static_cast<uint16_t>(command.effectId);
   if (targetRacer.darkness && !SkillIsCritical(effectiveEffectId))
   {
     effectiveEffectId += 1; // Use the "critical" version of the skill effect
@@ -3071,7 +3073,12 @@ void RaceDirector::HandleChangeSkillCardPresetId(
   // No response command
 }
 
-void RaceDirector::ScheduleSkillEffect(RaceDirector::RaceInstance& raceInstance, tracker::Oid attackerOid, tracker::Oid targetOid, uint16_t effectId, std::optional<std::function<void()>> afterEffectRemoved){
+void RaceDirector::ScheduleSkillEffect(
+  RaceInstance& raceInstance,
+  tracker::Oid attackerOid,
+  tracker::Oid targetOid,
+  uint16_t effectId,
+  std::optional<std::function<void()>> afterEffectRemoved){
   // Broadcast skill effect activation to all clients in the room
   protocol::AcCmdRCAddSkillEffect addSkillEffect{
     .characterOid = targetOid,

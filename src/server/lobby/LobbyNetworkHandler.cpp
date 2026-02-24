@@ -760,7 +760,7 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
         ? protocol::Gender::Boy
         : protocol::Gender::Girl;
 
-      response.level = character.level();
+      response.level = static_cast<uint16_t>(character.level());
       response.carrots = character.carrots();
       response.role = std::bit_cast<protocol::LobbyCommandLoginOK::Role>(
         character.role());
@@ -849,8 +849,8 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
         {
           // We set the age despite if the hide age is set,
           // just so the user is able to see the last value set by them.
-          response.settings.age = settings.age();
-          response.settings.hideAge = settings.hideAge();
+          response.settings.age = static_cast<uint8_t>(settings.age());
+          response.settings.hideAge = static_cast<uint8_t>(settings.hideAge());
 
           protocol::BuildProtocolSettings(response.settings, settings);
         });
@@ -906,9 +906,12 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
   characterRecord.Immutable([&skillPresetListResponse](const data::Character& character)
   {
     const auto& speed = character.skills.speed();
-    skillPresetListResponse.speedActiveSetId = speed.activeSetId;
+    skillPresetListResponse.speedActiveSetId = static_cast<uint8_t>(
+      speed.activeSetId);
+
     const auto& magic = character.skills.magic();
-    skillPresetListResponse.magicActiveSetId = magic.activeSetId;
+    skillPresetListResponse.magicActiveSetId = static_cast<uint8_t>(
+      magic.activeSetId);
 
     skillPresetListResponse.skillSets = {
       protocol::SkillSet{.setId = 0, .gamemode = protocol::GameMode::Speed, .skills = {speed.set1.slot1, speed.set1.slot2}},
@@ -989,8 +992,8 @@ void LobbyNetworkHandler::HandleRoomList(
         roomResponse.isLocked = true;
       }
 
-      roomResponse.playerCount = room.playerCount;
-      roomResponse.maxPlayerCount = room.details.maxPlayerCount;
+      roomResponse.playerCount = static_cast<uint8_t>(room.playerCount);
+      roomResponse.maxPlayerCount = static_cast<uint8_t>(room.details.maxPlayerCount);
       // todo: skill bracket
       roomResponse.skillBracket = protocol::LobbyCommandRoomListOK::Room::SkillBracket::Experienced;
       roomResponse.name = room.details.name;
@@ -1655,12 +1658,12 @@ void LobbyNetworkHandler::HandleGoodsShopList(
   std::vector<std::byte> compressedXml;
   compressedXml.resize(shopList.size());
 
-  uLongf compressedSize = compressedXml.size();
+  uLongf compressedSize = static_cast<uLongf>(compressedXml.size());
   compress2(
     reinterpret_cast<Bytef*>(compressedXml.data()),
     &compressedSize,
     reinterpret_cast<const Bytef*>(shopList.c_str()),
-    shopList.length(),
+    static_cast<uLongf>(shopList.length()),
     9);
 
   compressedXml.resize(compressedSize);
@@ -1850,7 +1853,6 @@ void LobbyNetworkHandler::HandleEnterRanchRandomly(
   const ClientId clientId,
   const protocol::AcCmdCLEnterRanchRandomly&)
 {
-  // this is just for prototype, it can suck
   auto& clientContext = GetClientContext(clientId);
   const auto requestingCharacterUid = clientContext.characterUid;
 
@@ -2117,17 +2119,28 @@ void LobbyNetworkHandler::HandleRequestMountInfo(
     const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(mountUid);
     horseRecord.Immutable([&mountInfo](const data::Horse& horse)
     {
-      mountInfo.boostsInARow = horse.mountInfo.boostsInARow();
-      mountInfo.winsSpeedSingle = horse.mountInfo.winsSpeedSingle();
-      mountInfo.winsSpeedTeam = horse.mountInfo.winsSpeedTeam();
-      mountInfo.winsMagicSingle = horse.mountInfo.winsMagicSingle();
-      mountInfo.winsMagicTeam = horse.mountInfo.winsMagicTeam();
-      mountInfo.totalDistance = horse.mountInfo.totalDistance();
-      mountInfo.topSpeed = horse.mountInfo.topSpeed();
-      mountInfo.longestGlideDistance = horse.mountInfo.longestGlideDistance();
-      mountInfo.participated = horse.mountInfo.participated();
-      mountInfo.cumulativePrize = horse.mountInfo.cumulativePrize();
-      mountInfo.biggestPrize = horse.mountInfo.biggestPrize();
+      mountInfo.boostsInARow = static_cast<uint16_t>(
+        horse.mountInfo.boostsInARow());
+      mountInfo.winsSpeedSingle = static_cast<uint16_t>(
+        horse.mountInfo.winsSpeedSingle());
+      mountInfo.winsSpeedTeam = static_cast<uint16_t>(
+        horse.mountInfo.winsSpeedTeam());
+      mountInfo.winsMagicSingle = static_cast<uint16_t>(
+        horse.mountInfo.winsMagicSingle());
+      mountInfo.winsMagicTeam = static_cast<uint16_t>(
+        horse.mountInfo.winsMagicTeam());
+      mountInfo.totalDistance = static_cast<uint16_t>(
+        horse.mountInfo.totalDistance());
+      mountInfo.topSpeed = static_cast<uint16_t>(
+        horse.mountInfo.topSpeed());
+      mountInfo.longestGlideDistance = static_cast<uint16_t>(
+        horse.mountInfo.longestGlideDistance());
+      mountInfo.participated = static_cast<uint16_t>(
+        horse.mountInfo.participated());
+      mountInfo.cumulativePrize = static_cast<uint16_t>(
+        horse.mountInfo.cumulativePrize());
+      mountInfo.biggestPrize = static_cast<uint16_t>(
+        horse.mountInfo.biggestPrize());
     });
   }
 

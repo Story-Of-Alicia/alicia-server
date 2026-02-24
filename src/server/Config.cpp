@@ -62,7 +62,7 @@ void Config::LoadFromEnvironment()
         address = util::ResolveHostName(addressValue);
       }
     }
-    catch (const std::exception& x)
+    catch (const std::exception&)
     {
       spdlog::error(" Couldn't resolve the host for '{}'", addressVariableName);
     }

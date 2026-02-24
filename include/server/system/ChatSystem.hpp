@@ -88,8 +88,6 @@ private:
   void RegisterUserCommands();
   void RegisterAdminCommands();
 
-  void Broadcast(std::string message);
-
   //! A server instance.
   ServerInstance& _serverInstance;
   //! A command manager.

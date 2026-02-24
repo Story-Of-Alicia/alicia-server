@@ -291,20 +291,18 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   const auto& contacts = json["contacts"];
   character.contacts.pending = contacts["pending"].get<std::set<data::Uid>>();
 
-  std::map<server::data::Uid, server::data::Character::Contacts::Group> groups{};
-  for (const auto& [groupUidStr, jsonGroup] : contacts["groups"].items())
+  for (const auto& groupJson : contacts["groups"])
   {
     data::Character::Contacts::Group group{
-      .uid = std::stoul(groupUidStr), // Use key instead of one in the object
-      .name = jsonGroup["name"].get<std::string>(),
-      .members = jsonGroup["members"].get<std::set<data::Uid>>(),
-      .createdAt = data::Clock::time_point(
-        std::chrono::seconds(
-          jsonGroup["createdAt"].get<int64_t>()))
+      .uid = groupJson["uid"].get<data::Uid>(),
+      .name = groupJson["name"].get<std::string>(),
+      .members = groupJson["members"].get<std::set<data::Uid>>(),
+      .createdAt = data::Clock::time_point(std::chrono::seconds(
+          groupJson["createdAt"].get<int64_t>()))
     };
-    groups.emplace(group.uid, group);
+
+    character.contacts.groups().try_emplace(group.uid, group);
   }
-  character.contacts.groups = groups;
 
   character.gifts = json["gifts"].get<std::vector<data::Uid>>();
   character.purchases = json["purchases"].get<std::vector<data::Uid>>();
@@ -315,7 +313,7 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.expiredEquipment = json["horseEquipment"].get<std::vector<data::Uid>>();
 
   character.horses = json["horses"].get<std::vector<data::Uid>>();
-  character.horseSlotCount = json["horseSlotCount"].get<uint8_t>();
+  character.horseSlotCount = json["horseSlotCount"].get<uint32_t>();
 
   character.pets = json["pets"].get<std::vector<data::Uid>>();
   character.mountUid = json["mountUid"].get<data::Uid>();
@@ -339,7 +337,7 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
 
     readSkillSet(sets.set1, json["set1"]);
     readSkillSet(sets.set2, json["set2"]);
-    sets.activeSetId = json["activeSetId"].get<uint8_t>();
+    sets.activeSetId = json["activeSetId"].get<uint32_t>();
   };
 
   const auto& skills = json["skills"];
@@ -399,7 +397,7 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   contacts["pending"] = character.contacts.pending();
 
   nlohmann::json groups;
-  for (const auto& [groupUid, group] : character.contacts.groups())
+  for (const auto& group : character.contacts.groups() | std::views::values)
   {
     nlohmann::json groupJson;
     groupJson["uid"] = group.uid;
@@ -407,7 +405,8 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
     groupJson["members"] = group.members;
     groupJson["createdAt"] = std::chrono::ceil<std::chrono::seconds>(
       group.createdAt.time_since_epoch()).count();
-    groups[std::to_string(groupUid)] = groupJson;
+
+    groups.emplace_back(groupJson);
   }
   contacts["groups"] = groups;
 
@@ -559,20 +558,20 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
 
   auto mountCondition = json["mountCondition"];
   horse.mountCondition = data::Horse::MountCondition{
-    .stamina = mountCondition["stamina"].get<uint16_t>(),
-    .charm = mountCondition["charm"].get<uint16_t>(),
-    .friendliness = mountCondition["friendliness"].get<uint16_t>(),
-    .injury = mountCondition["injury"].get<uint16_t>(),
-    .plenitude = mountCondition["plenitude"].get<uint16_t>(),
-    .bodyDirtiness = mountCondition["bodyDirtiness"].get<uint16_t>(),
-    .maneDirtiness = mountCondition["maneDirtiness"].get<uint16_t>(),
-    .tailDirtiness = mountCondition["tailDirtiness"].get<uint16_t>(),
-    .bodyPolish = mountCondition["bodyPolish"].get<uint16_t>(),
-    .manePolish = mountCondition["manePolish"].get<uint16_t>(),
-    .tailPolish = mountCondition["tailPolish"].get<uint16_t>(),
-    .attachment = mountCondition["attachment"].get<uint16_t>(),
-    .boredom = mountCondition["boredom"].get<uint16_t>(),
-    .stopAmendsPoint = mountCondition["stopAmendsPoint"].get<uint16_t>()};
+    .stamina = mountCondition["stamina"].get<uint32_t>(),
+    .charm = mountCondition["charm"].get<uint32_t>(),
+    .friendliness = mountCondition["friendliness"].get<uint32_t>(),
+    .injury = mountCondition["injury"].get<uint32_t>(),
+    .plenitude = mountCondition["plenitude"].get<uint32_t>(),
+    .bodyDirtiness = mountCondition["bodyDirtiness"].get<uint32_t>(),
+    .maneDirtiness = mountCondition["maneDirtiness"].get<uint32_t>(),
+    .tailDirtiness = mountCondition["tailDirtiness"].get<uint32_t>(),
+    .bodyPolish = mountCondition["bodyPolish"].get<uint32_t>(),
+    .manePolish = mountCondition["manePolish"].get<uint32_t>(),
+    .tailPolish = mountCondition["tailPolish"].get<uint32_t>(),
+    .attachment = mountCondition["attachment"].get<uint32_t>(),
+    .boredom = mountCondition["boredom"].get<uint32_t>(),
+    .stopAmendsPoint = mountCondition["stopAmendsPoint"].get<uint32_t>()};
 
   horse.rating = json["rating"].get<uint32_t>();
   horse.clazz = json["clazz"].get<uint32_t>();
@@ -582,13 +581,13 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
 
   auto potential = json["potential"];
   horse.potential = data::Horse::Potential{
-    .type = potential["type"].get<uint8_t>(),
-    .level = potential["level"].get<uint8_t>(),
-    .value = potential["value"].get<uint8_t>()
+    .type = potential["type"].get<uint32_t>(),
+    .level = potential["level"].get<uint32_t>(),
+    .value = potential["value"].get<uint32_t>()
   };
 
   horse.luckState = json["luckState"].get<uint32_t>();
-  horse.fatigue = json["fatigue"].get<uint16_t>();
+  horse.fatigue = json["fatigue"].get<uint32_t>();
   horse.emblemUid = json["emblem"].get<uint32_t>();
 
   horse.dateOfBirth = data::Clock::time_point(std::chrono::seconds(
@@ -596,11 +595,11 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
 
   auto mountInfo = json["mountInfo"];
   horse.mountInfo = data::Horse::MountInfo{
-    .boostsInARow = mountInfo["boostsInARow"].get<uint16_t>(),
-    .winsSpeedSingle = mountInfo["winsSpeedSingle"].get<uint16_t>(),
-    .winsSpeedTeam = mountInfo["winsSpeedTeam"].get<uint16_t>(),
-    .winsMagicSingle = mountInfo["winsMagicSingle"].get<uint16_t>(),
-    .winsMagicTeam = mountInfo["winsMagicTeam"].get<uint16_t>(),
+    .boostsInARow = mountInfo["boostsInARow"].get<uint32_t>(),
+    .winsSpeedSingle = mountInfo["winsSpeedSingle"].get<uint32_t>(),
+    .winsSpeedTeam = mountInfo["winsSpeedTeam"].get<uint32_t>(),
+    .winsMagicSingle = mountInfo["winsMagicSingle"].get<uint32_t>(),
+    .winsMagicTeam = mountInfo["winsMagicTeam"].get<uint32_t>(),
     .totalDistance = mountInfo["totalDistance"].get<uint32_t>(),
     .topSpeed = mountInfo["topSpeed"].get<uint32_t>(),
     .longestGlideDistance = mountInfo["longestGlideDistance"].get<uint32_t>(),
@@ -1005,7 +1004,7 @@ void server::FileDataSource::RetrieveHousing(data::Uid uid, data::Housing& housi
 
   const auto json = nlohmann::json::parse(dataFile);
   housing.uid = json["uid"].get<data::Uid>();
-  housing.housingId = json["housingId"].get<uint16_t>();
+  housing.housingId = json["housingId"].get<uint32_t>();
   housing.expiresAt = data::Clock::time_point(
     std::chrono::seconds(json["expiresAt"].get<uint64_t>()));
   housing.durability = json["durability"].get<uint32_t>();
@@ -1156,7 +1155,7 @@ void server::FileDataSource::RetrieveSettings(data::Uid uid, data::Settings& set
   const auto json = nlohmann::json::parse(dataFile);
   settings.uid = json["uid"].get<data::Uid>();
 
-  settings.age = json["age"].get<uint8_t>();
+  settings.age = json["age"].get<uint32_t>();
   settings.hideAge = json["hideGenderAndAge"].get<bool>();
 
   // Keyboard bindings
