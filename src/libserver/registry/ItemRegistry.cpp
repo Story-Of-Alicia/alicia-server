@@ -139,6 +139,14 @@ void ItemRegistry::ReadConfig(const std::filesystem::path& configPath)
   if (not collectionSection)
     throw std::runtime_error("Missing collection section");
 
+  const auto packagesSection = root["packages"];
+  if (not packagesSection)
+    throw std::runtime_error("Missing packages section");
+
+  const auto packagesCollectionSection = packagesSection["collection"];
+  if (not packagesCollectionSection)
+    throw std::runtime_error("Missing packages collection section");
+
   _items.clear();
 
   for (const auto& itemSection : collectionSection)
@@ -149,7 +157,8 @@ void ItemRegistry::ReadConfig(const std::filesystem::path& configPath)
         itemSection["type"].as<uint32_t>()),
       .level = itemSection["level"].as<decltype(Item::level)>(0),
       .name = itemSection["name"].as<decltype(Item::name)>(""),
-      .description = itemSection["description"].as<decltype(Item::description)>()};
+      .description = itemSection["description"].as<decltype(Item::description)>(),
+      .isPurchasable = itemSection["isPurchasable"].as<bool>()};
 
     // Read ItemPartInfo
 
@@ -178,11 +187,23 @@ void ItemRegistry::ReadConfig(const std::filesystem::path& configPath)
     else if (const auto playParametersSection = itemSection["playParameters"])
       ReadPlayParameters(item.playParameters.emplace(), playParametersSection);
 
-    const auto [iter, inserted] = _items.try_emplace(item.tid, item);
-    assert(inserted);
+    _items.try_emplace(item.tid, item);
   }
 
-  spdlog::info("Item registry loaded {} items", _items.size());
+  for (const auto& packageSection : packagesCollectionSection )
+  {
+    Package package{
+      .packageId = packageSection["packageId"].as<decltype(Package::packageId)>(0),
+      .packageName = packageSection["packageName"].as<decltype(Package::packageName)>(""),
+      .count = packageSection["count"].as<decltype(Package::count)>(0),
+      .itemName = packageSection["itemName"].as<decltype(Package::itemName)>(""),
+      .tid = packageSection["tid"].as<decltype(Package::tid)>()
+    };
+
+    _packages.try_emplace(package.packageId, package);
+  }
+
+  spdlog::info("Item registry loaded {} items and {} packages", _items.size() , _packages.size());
 }
 
 std::optional<Item> ItemRegistry::GetItem(uint32_t tid)
@@ -191,6 +212,24 @@ std::optional<Item> ItemRegistry::GetItem(uint32_t tid)
   if (itemIter == _items.cend())
     return std::nullopt;
   return itemIter->second;
+}
+
+std::unordered_map<uint32_t, Item> ItemRegistry::GetItems()
+{
+  return _items;
+}
+
+std::optional<Package> ItemRegistry::GetPackage(uint32_t packageId)
+{
+  const auto packageIter = _packages.find(packageId);
+  if (packageIter == _packages.cend())
+    return std::nullopt;
+  return packageIter->second;
+}
+
+std::unordered_map<uint32_t, Package> ItemRegistry::GetPackages()
+{
+  return _packages;
 }
 
 } // namespace server::registry

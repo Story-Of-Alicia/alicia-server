@@ -4,7 +4,7 @@ project(alicia-server)
 
 option(BUILD_TESTS "Build tests" ON)
 
-find_package(Boost 1.80.0 MODULE)
+find_package(Boost 1.74.0 MODULE REQUIRED)
 
 add_subdirectory(3rd-party SYSTEM)
 
@@ -28,18 +28,24 @@ target_compile_features(project-properties
 add_library(platform-properties INTERFACE)
 if (${MSVC})
     target_compile_definitions(platform-properties INTERFACE
-            #_WIN32_WINNT=_WIN32_WINNT_WIN10
+            _WIN32_WINNT=_WIN32_WINNT_WIN10
             NTDDI_VERSION=NTDDI_WIN10_19H1)
     target_link_libraries(platform-properties INTERFACE
             icu.lib)
-    target_compile_options(platform-properties INTERFACE
-            /utf-8 /bigobj)
 elseif(MINGW)
     target_link_libraries(platform-properties INTERFACE
             icuuc icuio icuin ws2_32 mswsock)
 else()
     target_link_libraries(platform-properties INTERFACE
-            icuuc icui18n)
+            icuuc icui18n stdc++exp)
+endif()
+
+if (${MSVC})
+    target_compile_options(platform-properties INTERFACE
+            /utf-8 /bigobj /W4 /permissive- /WX /wd4996 /wd4702)
+else()
+    target_compile_options(platform-properties INTERFACE
+            -Wall -Wextra -Wpedantic -Wdeprecated-declarations)
 endif()
 
 # alicia-libserver target
@@ -50,9 +56,11 @@ add_library(alicia-libserver STATIC
         #src/libserver/data/pq/PqDataSource.cpp
         src/libserver/network/Server.cpp
         src/libserver/network/chatter/proto/ChatterMessageDefinitions.cpp
+        src/libserver/network/chatter/ChatterProtocol.cpp
         src/libserver/network/chatter/ChatterServer.cpp
         src/libserver/network/command/CommandProtocol.cpp
         src/libserver/network/command/CommandServer.cpp
+        src/libserver/network/command/proto/CommonMessageDefinitions.cpp
         src/libserver/network/command/proto/CommonStructureDefinitions.cpp
         src/libserver/network/command/proto/LobbyMessageDefinitions.cpp
         src/libserver/network/command/proto/RaceMessageDefinitions.cpp
@@ -68,28 +76,34 @@ add_library(alicia-libserver STATIC
         src/libserver/util/Util.cpp)
 target_include_directories(alicia-libserver PUBLIC
         include/)
-target_link_libraries(alicia-libserver PUBLIC
+target_link_libraries(alicia-libserver PRIVATE
         project-properties
-        platform-properties
+        platform-properties)
+target_link_libraries(alicia-libserver PUBLIC
         spdlog::spdlog
         Boost::headers
         nlohmann_json::nlohmann_json
         yaml-cpp::yaml-cpp
-        zlibstatic)
+        zlibstatic
+        tinyxml2)
 
 # alicia-server target
 add_executable(alicia-server
         src/server/main.cpp
         src/server/ServerInstance.cpp
         src/server/Config.cpp
+        src/server/lobby/shop/Shop.cpp
         src/server/lobby/LobbyDirector.cpp
         src/server/lobby/LobbyNetworkHandler.cpp
+        src/server/chat/AllChatDirector.cpp
+        src/server/chat/PrivateChatDirector.cpp
         src/server/messenger/MessengerDirector.cpp
         src/server/race/RaceDirector.cpp
         src/server/ranch/RanchDirector.cpp
         src/server/system/ChatSystem.cpp
         src/server/system/InfractionSystem.cpp
         src/server/system/ItemSystem.cpp
+        src/server/system/ModerationSystem.cpp
         src/server/system/OtpSystem.cpp
         src/server/system/RoomSystem.cpp
         src/server/tracker/RaceTracker.cpp
@@ -98,6 +112,7 @@ target_include_directories(alicia-server
         PRIVATE include/)
 target_link_libraries(alicia-server PRIVATE
         project-properties
+        platform-properties
         alicia-libserver)
 target_include_directories(alicia-server PUBLIC
         "${PROJECT_BINARY_DIR}/generated")

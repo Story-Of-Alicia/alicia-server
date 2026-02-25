@@ -77,9 +77,9 @@ struct LobbyCommandLoginOK
   std::string introduction{};
 
   //! Max 16 elements.
-  std::vector<Item> characterEquipment{};
+  std::vector<Item> equipmentItems{};
   //! Max 16 elements.
-  std::vector<Item> mountEquipment{};
+  std::vector<Item> expiredItems{};
 
   uint16_t level{};
   int32_t carrots{};
@@ -728,7 +728,7 @@ struct LobbyCommandRoomListOK
     static void Read(Room& value, SourceStream& stream);
   };
 
-  std::vector<Room> rooms;
+  std::vector<Room> rooms{};
 
   struct
   {
@@ -1301,7 +1301,7 @@ struct AcCmdCLCheckWaitingSeqnoOK
 //! Serverbound request special event list command.
 struct AcCmdCLRequestSpecialEventList
 {
-  uint32_t unk0;
+  uint32_t unk0{};
 
   static Command GetCommand()
   {
@@ -1382,7 +1382,8 @@ struct AcCmdCLHeartbeat
 //! Serverboud goods message
 struct AcCmdCLGoodsShopList
 {
-  std::array<uint8_t, 12> data;
+  //! Timestamp of the shop cached by the client
+  util::Clock::time_point cachedShopTimestamp{};
 
   static Command GetCommand()
   {
@@ -1407,7 +1408,8 @@ struct AcCmdCLGoodsShopList
 //! Clientbound shop goods message
 struct AcCmdCLGoodsShopListOK
 {
-  std::array<uint8_t, 12> data;
+  //! New shop timestamp
+  util::Clock::time_point shopTimestamp{};
 
   static Command GetCommand()
   {
@@ -1454,9 +1456,13 @@ struct AcCmdCLGoodsShopListCancel
 
 struct AcCmdLCGoodsShopListData
 {
-  std::array<uint8_t, 12> member1;
-  uint8_t member2;
-  uint8_t member3;
+  //! Shop timestamp.
+  util::Clock::time_point timestamp;
+  //! The index of the current chunk being sent.
+  uint8_t index;
+  //! The amount of chunks being sent.
+  uint8_t count;
+  //! Shop data, compressed using zlib.
   std::vector<std::byte> data;
 
   static Command GetCommand()

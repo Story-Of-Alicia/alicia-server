@@ -23,6 +23,7 @@
 
 #include <ranges>
 #include <spdlog/spdlog.h>
+#include <stacktrace>
 
 namespace server::network
 {
@@ -230,29 +231,49 @@ void Server::Begin(const asio::ip::address& address, uint16_t port)
 {
   const asio::ip::tcp::endpoint server_endpoint(address, port);
 
-  _acceptor.open(server_endpoint.protocol());
-
   try
   {
+    _acceptor.open(server_endpoint.protocol());
     _acceptor.bind(server_endpoint);
+    _acceptor.listen();
   }
   catch (const std::exception& x)
   {
-    spdlog::error(
-      "Failed to host server on {}:{}: {}",
-      address.to_string(),
-      port,
-      x.what());
+    throw std::runtime_error(
+      std::format(
+        "Exception while trying to host server on {}:{}: {}",
+        address.to_string(),
+        port,
+        x.what()));
   }
-
-  _acceptor.listen();
 
   // Run the accept loop.
   AcceptLoop();
-  // Run the tick loop.
-  TickLoop();
 
-  _io_ctx.run();
+  try
+  {
+    // Run the tick loop.
+    TickLoop();
+  }
+  catch (const std::exception& x)
+  {
+    throw std::runtime_error(
+      std::format(
+        "Exception in network tick loop: {}",
+        x.what()));
+  }
+
+  try
+  {
+    _io_ctx.run();
+  }
+  catch (const std::exception& x)
+  {
+    throw std::runtime_error(
+      std::format(
+        "Exception in asio IO context: {}",
+        x.what()));
+  }
 }
 
 void Server::End()

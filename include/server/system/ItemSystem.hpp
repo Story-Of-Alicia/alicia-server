@@ -65,7 +65,11 @@ public:
     uint32_t count = 1) const noexcept;
 
   [[nodiscard]] bool HasItem(
-    data::Character& character,
+    const data::Character& character,
+    data::Tid itemTid) const noexcept;
+
+  [[nodiscard]] bool HasItemInstance(
+    const data::Character& character,
     data::Uid itemUid) const noexcept;
 
   uint32_t GetItemCount(data::Uid itemUid);

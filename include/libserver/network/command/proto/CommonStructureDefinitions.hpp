@@ -60,8 +60,9 @@ struct StoredItem
   };
 
   uint32_t uid{};
-  //! >0 allow send mail
-  uint32_t val1{};
+  //! The `GoodsSQ` of the shop goods.
+  //! Only valid for purchases.
+  uint32_t goodsSq{};
   Status status{};
   //! 0 stato shop
   //! >0 system, allow send mail
@@ -69,7 +70,9 @@ struct StoredItem
   uint32_t val4{};
   //! carrots
   uint32_t carrots{};
-  uint32_t val6{};
+  //! The corresponding `PriceID` for the shop goods.
+  //! Only valid for purchases.
+  uint32_t priceId{};
   std::string sender;
   std::string message;
   //! [0000'00][00'0000]'[0000'0000]'[0000]'[0000'0000'0000]
@@ -361,7 +364,36 @@ struct Horse
   } mastery{};
 
   uint32_t val16{};
-  uint32_t val17{};
+
+  //! Bitshifted values for horse visual cleanliness
+  enum class VisualCleanlinessBitset : uint32_t
+  {
+    Default = 0,
+    //! Body
+    BodySlightlyDirty = 1 << 0,
+    BodyVeryDirty = 1 << 1,
+    BodyLightSparkles = 1 << 2,
+    BodyMediumSparkles = 1 << 3,
+    BodyHeavySparkles = 1 << 4,
+    //! Mane (has only 1 dirty texture)
+    ManeSlightlyDirty = 1 << 10,
+    ManeVeryDirty = 1 << 11,
+    ManeLightSparkles = 1 << 12,
+    ManeMediumSparkles = 1 << 13,
+    ManeHeavySparkles = 1 << 14,
+    //! Tail
+    TailSlightlyDirty = 1 << 20,
+    TailVeryDirty = 1 << 21,
+    TailLightSparkles = 1 << 22,
+    TailMediumSparkles = 1 << 23,
+    TailHeavySparkles = 1 << 24,
+    //! For testing, do not use
+    AllSlightlyDirty = BodySlightlyDirty | ManeSlightlyDirty | TailSlightlyDirty,
+    AllVeryDirty = BodyVeryDirty | ManeVeryDirty | TailVeryDirty,
+    AllLightSparkles = BodyLightSparkles | ManeLightSparkles | TailLightSparkles,
+    AllMediumSparkles = BodyMediumSparkles | ManeMediumSparkles | TailMediumSparkles,
+    AllHeavySparkles = BodyHeavySparkles | ManeHeavySparkles | TailHeavySparkles
+  } visualCleanlinessBitset{VisualCleanlinessBitset::Default};
 
   static void Write(const Horse& value, SinkStream& stream);
   static void Read(Horse& value, SourceStream& stream);
@@ -626,6 +658,13 @@ struct DailyQuest
   static void Read(DailyQuest& value, SourceStream& stream);
 };
   
+enum class OpenRandomBoxError : uint8_t
+{
+  ServerError = 0,   // CR_ERROR
+  ItemNotExists = 1, // CR_NOT_EXISTS
+  UnknownError = 2,  // UnknownError
+};
+
 // HorseNameStrings
 enum class HorseNicknameUpdateError : uint8_t
 {
@@ -634,6 +673,30 @@ enum class HorseNicknameUpdateError : uint8_t
   InvalidNickname = 2, // CR_INVALID_NICKNAME
   NoHorseRenameItem = 3, // CR_ITEM_NOT_FOUND,
   WrongItem = 4, // CR_WRONG_ITEM
+};
+
+struct ShopOrder
+{
+  //! Shop item ID (corresponds to `GoodsSQ`).
+  uint32_t goodsSq{};
+  //! Equip item immediately after the purchase.
+  bool equipImmediately{};
+  //! Selected price (corresponds to `PriceID`).
+  uint16_t priceId{};
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const ShopOrder& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    ShopOrder& command,
+    SourceStream& stream);
 };
 
 } // namespace server::protocol

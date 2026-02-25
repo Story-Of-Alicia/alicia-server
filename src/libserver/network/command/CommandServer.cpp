@@ -23,6 +23,7 @@
 #include "libserver/util/Util.hpp"
 
 #include <ranges>
+#include <stacktrace>
 
 #include <spdlog/spdlog.h>
 
@@ -33,7 +34,7 @@ namespace
 {
 
 //! Max size of the command data.
-constexpr std::size_t MaxCommandDataSize = 4092;
+constexpr std::size_t MaxCommandDataSize = 8192;
 
 //! Max size of the whole command payload.
 //! That is command data size + size of the message magic.
@@ -125,7 +126,21 @@ void CommandServer::BeginHost(const asio::ip::address& address, uint16_t port)
   _serverThread = std::thread(
     [this, address, port]()
     {
-      _server.Begin(address, port);
+      try
+      {
+        _server.Begin(address, port);
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error("Unhandled command server network exception: {}", x.what());
+
+        for (const auto& entry : std::stacktrace::current())
+        {
+          spdlog::error("[Stack] {}({}): {}", entry.source_file(), entry.source_line(), entry.description());
+        }
+
+        EndHost();
+      }
     });
 }
 
@@ -395,7 +410,7 @@ void CommandServer::SendCommand(
         supplier(commandSink);
 
         // Command size is the size of the whole command.
-        const uint16_t commandSize = commandSink.GetCursor();
+        const size_t commandSize = commandSink.GetCursor();
 
         if (debugOutgoingCommandData
           && not IsMuted(commandId))
@@ -419,7 +434,7 @@ void CommandServer::SendCommand(
         // Write the message magic.
         const protocol::MessageMagic magic{
           .id = static_cast<uint16_t>(commandId),
-          .length = commandSize};
+          .length = static_cast<uint16_t>(commandSize)};
 
         commandSink.Write(encode_message_magic(magic));
         writeBuffer.commit(magic.length);
@@ -435,7 +450,7 @@ void CommandServer::SendCommand(
         return commandSize;
       });
   }
-  catch (std::exception& x)
+  catch (std::exception&)
   {
     // the client disconnected, todo dont use client ids, or dont
   }

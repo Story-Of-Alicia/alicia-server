@@ -1,12 +1,29 @@
-//
-// Created by rgnter on 14/06/2025.
-//
+/**
+ * Alicia Server - dedicated server software
+ * Copyright (C) 2024 Story Of Alicia
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ **/
 
 #ifndef INSTANCE_HPP
 #define INSTANCE_HPP
 
 #include "server/Config.hpp"
 #include "server/lobby/LobbyDirector.hpp"
+#include "server/chat/AllChatDirector.hpp"
+#include "server/chat/PrivateChatDirector.hpp"
 #include "server/messenger/MessengerDirector.hpp"
 #include "server/race/RaceDirector.hpp"
 #include "server/ranch/RanchDirector.hpp"
@@ -14,6 +31,7 @@
 #include "server/system/InfractionSystem.hpp"
 #include "server/system/ItemSystem.hpp"
 #include "server/system/OtpSystem.hpp"
+#include "server/system/ModerationSystem.hpp"
 #include "server/system/RoomSystem.hpp"
 
 #include <libserver/data/DataDirector.hpp>
@@ -56,6 +74,18 @@ public:
   //! @returns Reference to the race director.
   RaceDirector& GetRaceDirector();
 
+  //! Returns reference to the messenger director.
+  //! @returns Reference to the messenger director.
+  MessengerDirector& GetMessengerDirector();
+
+  //! Returns reference to the all chat director.
+  //! @returns Reference to the all chat director.
+  AllChatDirector& GetAllChatDirector();
+
+  //! Returns reference to the private chat director.
+  //! @returns Reference to the private chat director.
+  PrivateChatDirector& GetPrivateChatDirector();
+
   //! Returns reference to the Course registry.
   //! @returns Reference to the Course registry.
   registry::CourseRegistry& GetCourseRegistry();
@@ -84,6 +114,10 @@ public:
   //! @returns Reference to the item system.
   ItemSystem& GetItemSystem();
 
+  //! Returns reference to the moderation system.
+  //! @return Reference to the moderation system.
+  ModerationSystem& GetModerationSystem();
+
   //! Returns reference to the OTP system.
   //! @returns Reference to the OTP system.
   OtpSystem& GetOtpSystem();
@@ -103,7 +137,7 @@ private:
   {
     using Clock = std::chrono::steady_clock;
 
-    constexpr float TicksPerSecond = 50;
+    constexpr uint64_t TicksPerSecond = 50;
     constexpr uint64_t millisPerTick = 1000ull / TicksPerSecond;
 
     Clock::time_point lastTick;
@@ -158,6 +192,16 @@ private:
   //! A messenger director.
   MessengerDirector _messengerDirector;
 
+  //! A thread for the all chat director.
+  std::thread _allChatDirectorThread;
+  //! An all chat director.
+  AllChatDirector _allChatDirector;
+
+  //! A thread for the private chat director.
+  std::thread _privateChatDirectorThread;
+  //! A private chat director.
+  PrivateChatDirector _privateChatDirector;
+
   //! A thread of the ranch director.
   std::thread _ranchDirectorThread;
   //! A ranch director.
@@ -185,6 +229,8 @@ private:
   ItemSystem _itemSystem;
   //! An OTP system.
   OtpSystem _otpSystem;
+  //! A moderation system
+  ModerationSystem _moderationSystem;
   //! A room system.
   RoomSystem _roomSystem;
 };

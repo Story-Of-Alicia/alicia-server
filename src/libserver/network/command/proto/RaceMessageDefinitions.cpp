@@ -94,8 +94,8 @@ void WriteRoomDescription(SinkStream& stream, const RoomDescription& roomDescrip
 }
 
 void AcCmdCREnterRoom::Write(
-  const AcCmdCREnterRoom& command,
-  SinkStream& stream)
+  const AcCmdCREnterRoom&,
+  SinkStream&)
 {
   throw std::logic_error("Not implemented.");
 }
@@ -153,21 +153,21 @@ void AcCmdCREnterRoomOK::Write(
 }
 
 void AcCmdCREnterRoomOK::Read(
-  AcCmdCREnterRoomOK& command,
-  SourceStream& stream)
+  AcCmdCREnterRoomOK&,
+  SourceStream&)
 {
   throw std::logic_error("Not implemented.");
 }
 
 void AcCmdCREnterRoomCancel::Write(
-  const AcCmdCREnterRoomCancel& command,
-  SinkStream& stream)
+  const AcCmdCREnterRoomCancel&,
+  SinkStream&)
 {
 }
 
 void AcCmdCREnterRoomCancel::Read(
-  AcCmdCREnterRoomCancel& command,
-  SourceStream& stream)
+  AcCmdCREnterRoomCancel&,
+  SourceStream&)
 {
 }
 
@@ -180,15 +180,15 @@ void AcCmdCREnterRoomNotify::Write(
 }
 
 void AcCmdCREnterRoomNotify::Read(
-  AcCmdCREnterRoomNotify& command,
-  SourceStream& stream)
+  AcCmdCREnterRoomNotify&,
+  SourceStream&)
 {
   throw std::logic_error("Not implemented.");
 }
 
 void AcCmdCRChangeRoomOptions::Write(
-  const AcCmdCRChangeRoomOptions& command,
-  SinkStream& stream)
+  const AcCmdCRChangeRoomOptions&,
+  SinkStream&)
 {
   throw std::logic_error("Not implemented.");
 }
@@ -256,15 +256,15 @@ void AcCmdCRChangeRoomOptionsNotify::Write(
 }
 
 void AcCmdCRChangeRoomOptionsNotify::Read(
-  AcCmdCRChangeRoomOptionsNotify& command,
-  SourceStream& stream)
+  AcCmdCRChangeRoomOptionsNotify&,
+  SourceStream&)
 {
   throw std::logic_error("Not implemented.");
 }
 
 void AcCmdCRChangeTeam::Write(
-  const AcCmdCRChangeTeam& command,
-  SinkStream& stream)
+  const AcCmdCRChangeTeam&,
+  SinkStream&)
 {
   throw std::logic_error("Not implemented.");
 }
@@ -286,8 +286,8 @@ void AcCmdCRChangeTeamOK::Write(
 }
 
 void AcCmdCRChangeTeamOK::Read(
-  AcCmdCRChangeTeamOK& command,
-  SourceStream& stream)
+  AcCmdCRChangeTeamOK&,
+  SourceStream&)
 {
   throw std::logic_error("Not implemented.");
 }
@@ -301,35 +301,35 @@ void AcCmdCRChangeTeamNotify::Write(
 }
 
 void AcCmdCRChangeTeamNotify::Read(
-  AcCmdCRChangeTeamNotify& command,
-  SourceStream& stream)
+  AcCmdCRChangeTeamNotify&,
+  SourceStream&)
 {
   throw std::logic_error("Not implemented.");
 }
 
 void AcCmdCRLeaveRoom::Write(
-  const AcCmdCRLeaveRoom& command,
-  SinkStream& stream)
+  const AcCmdCRLeaveRoom&,
+  SinkStream&)
 {
   throw std::logic_error("Not implemented.");
 }
 
 void AcCmdCRLeaveRoom::Read(
-  AcCmdCRLeaveRoom& command,
-  SourceStream& stream)
+  AcCmdCRLeaveRoom&,
+  SourceStream&)
 {
   // Empty
 }
 void AcCmdCRLeaveRoomOK::Write(
-  const AcCmdCRLeaveRoomOK& command,
-  SinkStream& stream)
+  const AcCmdCRLeaveRoomOK&,
+  SinkStream&)
 {
   // Empty
 }
 
 void AcCmdCRLeaveRoomOK::Read(
-  AcCmdCRLeaveRoomOK& command,
-  SourceStream& stream)
+  AcCmdCRLeaveRoomOK&,
+  SourceStream&)
 {
   throw std::logic_error("Not implemented.");
 }
@@ -343,15 +343,15 @@ void AcCmdCRLeaveRoomNotify::Write(
 }
 
 void AcCmdCRLeaveRoomNotify::Read(
-  AcCmdCRLeaveRoomNotify& command,
-  SourceStream& stream)
+  AcCmdCRLeaveRoomNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
 void AcCmdCRStartRace::Write(
-  const AcCmdCRStartRace& command,
-  SinkStream& stream)
+  const AcCmdCRStartRace&,
+  SinkStream&)
 {
   throw std::logic_error("Not implemented.");
 }
@@ -399,8 +399,8 @@ void AcCmdCRStartRaceNotify::Struct1::Write(
 }
 
 void AcCmdCRStartRaceNotify::Struct1::Read(
-  Struct1& command,
-  SourceStream& stream)
+  Struct1&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -416,8 +416,8 @@ void AcCmdCRStartRaceNotify::Struct2::Write(
 }
 
 void AcCmdCRStartRaceNotify::Struct2::Read(
-  Struct2& command,
-  SourceStream& stream)
+  Struct2&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -438,8 +438,8 @@ void AcCmdCRStartRaceNotify::ActiveSkillSet::Write(
 }
 
 void AcCmdCRStartRaceNotify::ActiveSkillSet::Read(
-  ActiveSkillSet& command,
-  SourceStream& stream)
+  ActiveSkillSet&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -497,8 +497,8 @@ void AcCmdCRStartRaceNotify::Write(
 }
 
 void AcCmdCRStartRaceNotify::Read(
-  AcCmdCRStartRaceNotify& command,
-  SourceStream& stream)
+  AcCmdCRStartRaceNotify&,
+  SourceStream&)
 {
   throw std::logic_error("Not implemented.");
 }
@@ -511,15 +511,15 @@ void AcCmdCRStartRaceCancel::Write(
 }
 
 void AcCmdCRStartRaceCancel::Read(
-  AcCmdCRStartRaceCancel& command,
-  SourceStream& stream)
+  AcCmdCRStartRaceCancel&,
+  SourceStream&)
 {
   throw std::logic_error("Not implemented.");
 }
 
 void AcCmdUserRaceTimer::Write(
-  const AcCmdUserRaceTimer& command,
-  SinkStream& stream)
+  const AcCmdUserRaceTimer&,
+  SinkStream&)
 {
   throw std::logic_error("Not implemented.");
 }
@@ -540,22 +540,22 @@ void AcCmdUserRaceTimerOK::Write(
 }
 
 void AcCmdUserRaceTimerOK::Read(
-  AcCmdUserRaceTimerOK& command,
-  SourceStream& stream)
+  AcCmdUserRaceTimerOK&,
+  SourceStream&)
 {
   throw std::logic_error("Not implemented.");
 }
 
 void AcCmdCRLoadingComplete::Write(
-  const AcCmdCRLoadingComplete& command,
-  SinkStream& stream)
+  const AcCmdCRLoadingComplete&,
+  SinkStream&)
 {
   throw std::logic_error("Not implemented.");
 }
 
 void AcCmdCRLoadingComplete::Read(
-  AcCmdCRLoadingComplete& command,
-  SourceStream& stream)
+  AcCmdCRLoadingComplete&,
+  SourceStream&)
 {
   // Empty.
 }
@@ -568,15 +568,15 @@ void AcCmdCRLoadingCompleteNotify::Write(
 }
 
 void AcCmdCRLoadingCompleteNotify::Read(
-  AcCmdCRLoadingCompleteNotify& command,
-  SourceStream& stream)
+  AcCmdCRLoadingCompleteNotify&,
+  SourceStream&)
 {
   throw std::logic_error("Not implemented.");
 }
 
 void AcCmdCRChat::Write(
-  const AcCmdCRChat& command,
-  SinkStream& stream)
+  const AcCmdCRChat&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -599,22 +599,22 @@ void AcCmdCRChatNotify::Write(
 }
 
 void AcCmdCRChatNotify::Read(
-  AcCmdCRChatNotify& command,
-  SourceStream& stream)
+  AcCmdCRChatNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRReadyRace::Write(
-  const AcCmdCRReadyRace& command,
-  SinkStream& stream)
+  const AcCmdCRReadyRace&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRReadyRace::Read(
-  AcCmdCRReadyRace& command,
-  SourceStream& stream)
+  AcCmdCRReadyRace&,
+  SourceStream&)
 {
   // Empty.
 }
@@ -628,8 +628,8 @@ void AcCmdCRReadyRaceNotify::Write(
 }
 
 void AcCmdCRReadyRaceNotify::Read(
-  AcCmdCRReadyRaceNotify& command,
-  SourceStream& stream)
+  AcCmdCRReadyRaceNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -642,15 +642,15 @@ void AcCmdUserRaceCountdown::Write(
 }
 
 void AcCmdUserRaceCountdown::Read(
-  AcCmdUserRaceCountdown& command,
-  SourceStream& stream)
+  AcCmdUserRaceCountdown&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdUserRaceFinal::Write(
-  const AcCmdUserRaceFinal& command,
-  SinkStream& stream)
+  const AcCmdUserRaceFinal&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -659,9 +659,13 @@ void AcCmdUserRaceFinal::Read(
   AcCmdUserRaceFinal& command,
   SourceStream& stream)
 {
-  stream.Read(command.oid)
-    .Read(command.courseTime)
-    .Read(command.member3);
+  stream.Read(command.oid);
+
+  uint32_t courseTime;
+  stream.Read(courseTime);
+  command.courseTime = std::chrono::milliseconds{courseTime};
+
+  stream.Read(command.member3);
 }
 
 void AcCmdUserRaceFinalNotify::Write(
@@ -669,19 +673,19 @@ void AcCmdUserRaceFinalNotify::Write(
   SinkStream& stream)
 {
   stream.Write(command.oid)
-    .Write(command.courseTime);
+    .Write(static_cast<int32_t>(command.courseTime.count()));
 }
 
 void AcCmdUserRaceFinalNotify::Read(
-  AcCmdUserRaceFinalNotify& command,
-  SourceStream& stream)
+  AcCmdUserRaceFinalNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRRaceResult::Write(
-  const AcCmdCRRaceResult& command,
-  SinkStream& stream)
+  const AcCmdCRRaceResult&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -728,8 +732,8 @@ void AcCmdCRRaceResultOK::Write(
 }
 
 void AcCmdCRRaceResultOK::Read(
-  AcCmdCRRaceResultOK& command,
-  SourceStream& stream)
+  AcCmdCRRaceResultOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -777,15 +781,15 @@ void AcCmdRCRaceResultNotify::Write(
 }
 
 void AcCmdRCRaceResultNotify::Read(
-  AcCmdRCRaceResultNotify& command,
-  SourceStream& stream)
+  AcCmdRCRaceResultNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRP2PResult::Write(
-  const AcCmdCRP2PResult& command,
-  SinkStream& stream)
+  const AcCmdCRP2PResult&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -803,8 +807,8 @@ void AcCmdCRP2PResult::Read(
 }
 
 void AcCmdUserRaceP2PResult::Write(
-  const AcCmdUserRaceP2PResult& command,
-  SinkStream& stream)
+  const AcCmdUserRaceP2PResult&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -839,15 +843,15 @@ void AcCmdGameRaceP2PResult::Write(
 }
 
 void AcCmdGameRaceP2PResult::Read(
-  AcCmdGameRaceP2PResult& command,
-  SourceStream& stream)
+  AcCmdGameRaceP2PResult&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRAwardStart::Write(
-  const AcCmdCRAwardStart& command,
-  SinkStream& stream)
+  const AcCmdCRAwardStart&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -860,15 +864,15 @@ void AcCmdCRAwardStart::Read(
 }
 
 void AcCmdCRAwardEnd::Write(
-  const AcCmdCRAwardEnd& command,
-  SinkStream& stream)
+  const AcCmdCRAwardEnd&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRAwardEnd::Read(
-  AcCmdCRAwardEnd& command,
-  SourceStream& stream)
+  AcCmdCRAwardEnd&,
+  SourceStream&)
 {
   // Empty.
 }
@@ -881,8 +885,8 @@ void AcCmdRCAwardNotify::Write(
 }
 
 void AcCmdRCAwardNotify::Read(
-  AcCmdRCAwardNotify& command,
-  SourceStream& stream)
+  AcCmdRCAwardNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -891,19 +895,19 @@ void AcCmdCRAwardEndNotify::Write(
   const AcCmdCRAwardEndNotify& command,
   SinkStream& stream)
 {
-  // Empty.
+  stream.Write(command.unk0);
 }
 
 void AcCmdCRAwardEndNotify::Read(
-  AcCmdCRAwardEndNotify& command,
-  SourceStream& stream)
+  AcCmdCRAwardEndNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRStarPointGet::Write(
-  const AcCmdCRStarPointGet& command,
-  SinkStream& stream)
+  const AcCmdCRStarPointGet&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -927,15 +931,15 @@ void AcCmdCRStarPointGetOK::Write(
 }
 
 void AcCmdCRStarPointGetOK::Read(
-  AcCmdCRStarPointGetOK& command,
-  SourceStream& stream)
+  AcCmdCRStarPointGetOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRRequestSpur::Write(
-  const AcCmdCRRequestSpur& command,
-  SinkStream& stream)
+  const AcCmdCRRequestSpur&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -960,15 +964,15 @@ void AcCmdCRRequestSpurOK::Write(
 }
 
 void AcCmdCRRequestSpurOK::Read(
-  AcCmdCRRequestSpurOK& command,
-  SourceStream& stream)
+  AcCmdCRRequestSpurOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRHurdleClearResult::Write(
-  const AcCmdCRHurdleClearResult& command,
-  SinkStream& stream)
+  const AcCmdCRHurdleClearResult&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -992,15 +996,15 @@ void AcCmdCRHurdleClearResultOK::Write(
 }
 
 void AcCmdCRHurdleClearResultOK::Read(
-  AcCmdCRHurdleClearResultOK& command,
-  SourceStream& stream)
+  AcCmdCRHurdleClearResultOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRStartingRate::Write(
-  const AcCmdCRStartingRate& command,
-  SinkStream& stream)
+  const AcCmdCRStartingRate&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1015,8 +1019,8 @@ void AcCmdCRStartingRate::Read(
 }
 
 void AcCmdCRRequestMagicItem::Write(
-  const AcCmdCRRequestMagicItem& command,
-  SinkStream& stream)
+  const AcCmdCRRequestMagicItem&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1039,8 +1043,8 @@ void AcCmdCRRequestMagicItemOK::Write(
 }
 
 void AcCmdCRRequestMagicItemOK::Read(
-  AcCmdCRRequestMagicItemOK& command,
-  SourceStream& stream)
+  AcCmdCRRequestMagicItemOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1054,15 +1058,15 @@ void AcCmdCRRequestMagicItemNotify::Write(
 }
 
 void AcCmdCRRequestMagicItemNotify::Read(
-  AcCmdCRRequestMagicItemNotify& command,
-  SourceStream& stream)
+  AcCmdCRRequestMagicItemNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdUserRaceUpdatePos::Write(
-  const AcCmdUserRaceUpdatePos& command,
-  SinkStream& stream)
+  const AcCmdUserRaceUpdatePos&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1099,22 +1103,22 @@ void AcCmdRCRoomCountdown::Write(
 }
 
 void AcCmdRCRoomCountdown::Read(
-  AcCmdRCRoomCountdown& command,
-  SourceStream& stream)
+  AcCmdRCRoomCountdown&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdRCRoomCountdownCancel::Write(
-  const AcCmdRCRoomCountdownCancel& command,
-  SinkStream& stream)
+  const AcCmdRCRoomCountdownCancel&,
+  SinkStream&)
 {
   // Empty.
 }
 
 void AcCmdRCRoomCountdownCancel::Read(
-  AcCmdRCRoomCountdownCancel& command,
-  SourceStream& stream)
+  AcCmdRCRoomCountdownCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1127,15 +1131,15 @@ void AcCmdCRChangeMasterNotify::Write(
 }
 
 void AcCmdCRChangeMasterNotify::Read(
-  AcCmdCRChangeMasterNotify& command,
-  SourceStream& stream)
+  AcCmdCRChangeMasterNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRRelayCommand::Write(
-  const AcCmdCRRelayCommand& command,
-  SinkStream& stream)
+  const AcCmdCRRelayCommand&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1157,15 +1161,15 @@ void AcCmdCRRelayCommandNotify::Write(
 }
 
 void AcCmdCRRelayCommandNotify::Read(
-  AcCmdCRRelayCommandNotify& command,
-  SourceStream& stream)
+  AcCmdCRRelayCommandNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRRelay::Write(
-  const AcCmdCRRelay& command,
-  SinkStream& stream)
+  const AcCmdCRRelay&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1204,8 +1208,8 @@ void AcCmdCRRelayNotify::Write(
 }
 
 void AcCmdCRRelayNotify::Read(
-  AcCmdCRRelayNotify& command,
-  SourceStream& stream)
+  AcCmdCRRelayNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1223,8 +1227,8 @@ void AcCmdRCTeamSpurGauge::Write(
 }
 
 void AcCmdRCTeamSpurGauge::Read(
-  AcCmdRCTeamSpurGauge& command,
-  SourceStream& stream)
+  AcCmdRCTeamSpurGauge&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");  
 }
@@ -1307,8 +1311,8 @@ void AcCmdUserRaceDeactivateEventNotify::Read(
 }
 
 void AcCmdCRUseMagicItem::Write(
-  const AcCmdCRUseMagicItem& command,
-  SinkStream& stream)
+  const AcCmdCRUseMagicItem&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1381,15 +1385,15 @@ void AcCmdCRUseMagicItem::Read(
 }
 
 void AcCmdCRUseMagicItemCancel::Write(
-  const AcCmdCRUseMagicItemCancel& command,
-  SinkStream& stream)
+  const AcCmdCRUseMagicItemCancel&,
+  SinkStream&)
 {
   // Empty
 }
 
 void AcCmdCRUseMagicItemCancel::Read(
-  AcCmdCRUseMagicItemCancel& command,
-  SourceStream& stream)
+  AcCmdCRUseMagicItemCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1454,8 +1458,8 @@ void AcCmdCRUseMagicItemOK::Write(
 }
 
 void AcCmdCRUseMagicItemOK::Read(
-  AcCmdCRUseMagicItemOK& command,
-  SourceStream& stream)
+  AcCmdCRUseMagicItemOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1482,15 +1486,15 @@ void AcCmdGameRaceItemSpawn::Write(
 }
 
 void AcCmdGameRaceItemSpawn::Read(
-  AcCmdGameRaceItemSpawn& command,
-  SourceStream& stream)
+  AcCmdGameRaceItemSpawn&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdUserRaceItemGet::Write(
-  const AcCmdUserRaceItemGet& command,
-  SinkStream& stream)
+  const AcCmdUserRaceItemGet&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1830,8 +1834,8 @@ void AcCmdRCRemoveSkillEffect::Read(
 }
 
 void AcCmdCRChangeSkillCardPresetID::Write(
-  const AcCmdCRChangeSkillCardPresetID& command,
-  SinkStream& stream)
+  const AcCmdCRChangeSkillCardPresetID&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1867,6 +1871,48 @@ void AcCmdRCObstacleStatus::Write(
   stream.Write(command.unk0)
     .Write(command.deactivate)
     .Write(command.unk2);
+}
+
+void AcCmdUserRaceDeleteNotify::Write(
+  const AcCmdUserRaceDeleteNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.racerOid);
+}
+
+void AcCmdUserRaceDeleteNotify::Read(
+  AcCmdUserRaceDeleteNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRKick::Write(
+  const AcCmdCRKick&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRKick::Read(
+  AcCmdCRKick& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterUid);
+}
+
+void AcCmdCRKickNotify::Write(
+  const AcCmdCRKickNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid);
+}
+
+void AcCmdCRKickNotify::Read(
+  AcCmdCRKickNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
 }
 
 } // namespace server::protocol

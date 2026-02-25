@@ -65,6 +65,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _guildDataPath = prepareDataPath("guilds");
   _settingsDataPath = prepareDataPath("settings");
   _dailyQuestDataPath = prepareDataPath("dailyQuests");
+  _mailDataPath = prepareDataPath("mails");
 
   // Read the meta-data file and parse the sequential UIDs.
   const std::filesystem::path metaFilePath = ProduceDataFilePath(
@@ -86,9 +87,15 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _guildSequentialId = meta["guildSequentialId"].get<uint32_t>();
   _settingsSequentialId = meta["settingsSequentialId"].get<uint32_t>();
   _dailyQuestSequentialId = meta["dailyQuestSequentialId"].get<uint32_t>();
+  _mailSequentialId = meta["mailSequentialId"].get<uint32_t>();
 }
 
 void server::FileDataSource::Terminate()
+{
+  SaveMetadata();
+}
+
+void server::FileDataSource::SaveMetadata()
 {
   const std::filesystem::path metaFilePath = ProduceDataFilePath(
     _metaFilePath, "meta");
@@ -110,11 +117,12 @@ void server::FileDataSource::Terminate()
   meta["guildSequentialId"] = _guildSequentialId.load();
   meta["settingsSequentialId"] = _settingsSequentialId.load();
   meta["dailyQuestSequentialId"] = _dailyQuestSequentialId.load();
+  meta["mailSequentialId"] = _mailSequentialId.load();
 
   metaFile << meta.dump(2);
 }
 
-void server::FileDataSource::CreateUser(data::User& user)
+void server::FileDataSource::CreateUser(data::User&)
 {
 }
 
@@ -139,7 +147,7 @@ void server::FileDataSource::RetrieveUser(const std::string_view& name, data::Us
   user.infractions = json["infractions"].get<std::vector<data::Uid>>();
 }
 
-void server::FileDataSource::StoreUser(const std::string_view& name, const data::User& user)
+void server::FileDataSource::StoreUser(const std::string_view&, const data::User& user)
 {
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _userDataPath, user.name());
@@ -179,6 +187,7 @@ bool server::FileDataSource::IsUserNameUnique(const std::string_view& name)
 void server::FileDataSource::CreateInfraction(data::Infraction& infraction)
 {
   infraction.uid = ++_infractionSequentialUid;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrieveInfraction(data::Uid uid, data::Infraction& infraction)
@@ -236,6 +245,7 @@ void server::FileDataSource::DeleteInfraction(data::Uid uid)
 void server::FileDataSource::CreateCharacter(data::Character& character)
 {
   character.uid = ++_characterSequentialUid;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& character)
@@ -281,15 +291,32 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
 
   character.guildUid = json["guildUid"].get<data::Uid>();
 
+  const auto& contacts = json["contacts"];
+  character.contacts.pending = contacts["pending"].get<std::set<data::Uid>>();
+
+  for (const auto& groupJson : contacts["groups"])
+  {
+    data::Character::Contacts::Group group{
+      .uid = groupJson["uid"].get<data::Uid>(),
+      .name = groupJson["name"].get<std::string>(),
+      .members = groupJson["members"].get<std::set<data::Uid>>(),
+      .createdAt = data::Clock::time_point(std::chrono::seconds(
+          groupJson["createdAt"].get<int64_t>()))
+    };
+
+    character.contacts.groups().try_emplace(group.uid, group);
+  }
+
   character.gifts = json["gifts"].get<std::vector<data::Uid>>();
   character.purchases = json["purchases"].get<std::vector<data::Uid>>();
 
   character.inventory = json["inventory"].get<std::vector<data::Uid>>();
   character.characterEquipment = json["characterEquipment"].get<std::vector<data::Uid>>();
-  character.mountEquipment = json["horseEquipment"].get<std::vector<data::Uid>>();
+  // todo: rename after larger refactor
+  character.expiredEquipment = json["horseEquipment"].get<std::vector<data::Uid>>();
 
   character.horses = json["horses"].get<std::vector<data::Uid>>();
-  character.horseSlotCount = json["horseSlotCount"].get<uint8_t>();
+  character.horseSlotCount = json["horseSlotCount"].get<uint32_t>();
 
   character.pets = json["pets"].get<std::vector<data::Uid>>();
   character.mountUid = json["mountUid"].get<data::Uid>();
@@ -313,7 +340,7 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
 
     readSkillSet(sets.set1, json["set1"]);
     readSkillSet(sets.set2, json["set2"]);
-    sets.activeSetId = json["activeSetId"].get<uint8_t>();
+    sets.activeSetId = json["activeSetId"].get<uint32_t>();
   };
 
   const auto& skills = json["skills"];
@@ -321,6 +348,10 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   readSkills(character.skills.magic(), skills["magic"]);
 
   character.dailyQuests = json["dailyQuests"].get<std::vector<data::Uid>>();
+  const auto& mailbox = json["mailbox"];
+  character.mailbox.hasNewMail = mailbox["hasNewMail"].get<bool>();
+  character.mailbox.inbox = mailbox["inbox"].get<std::vector<data::Uid>>();
+  character.mailbox.sent = mailbox["sent"].get<std::vector<data::Uid>>();
 }
 
 void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
@@ -366,12 +397,31 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
 
   json["guildUid"] = character.guildUid();
 
+  nlohmann::json contacts;
+  contacts["pending"] = character.contacts.pending();
+
+  nlohmann::json groups;
+  for (const auto& group : character.contacts.groups() | std::views::values)
+  {
+    nlohmann::json groupJson;
+    groupJson["uid"] = group.uid;
+    groupJson["name"] = group.name;
+    groupJson["members"] = group.members;
+    groupJson["createdAt"] = std::chrono::ceil<std::chrono::seconds>(
+      group.createdAt.time_since_epoch()).count();
+
+    groups.emplace_back(groupJson);
+  }
+  contacts["groups"] = groups;
+
+  json["contacts"] = contacts;
+
   json["gifts"] = character.gifts();
   json["purchases"] = character.purchases();
 
   json["inventory"] = character.inventory();
   json["characterEquipment"] = character.characterEquipment();
-  json["horseEquipment"] = character.mountEquipment();
+  json["horseEquipment"] = character.expiredEquipment();
 
   json["horses"] = character.horses();
   json["horseSlotCount"] = character.horseSlotCount();
@@ -412,6 +462,11 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["skills"] = skills;
 
   json["dailyQuests"] = character.dailyQuests();
+  nlohmann::json mailbox;
+  mailbox["hasNewMail"] = character.mailbox.hasNewMail();
+  mailbox["inbox"] = character.mailbox.inbox();
+  mailbox["sent"] = character.mailbox.sent();
+  json["mailbox"] = mailbox;
 
   dataFile << json.dump(2);
 }
@@ -423,7 +478,7 @@ void server::FileDataSource::DeleteCharacter(data::Uid uid)
   std::filesystem::remove(dataFilePath);
 }
 
-bool server::FileDataSource::IsCharacterNameUnique(const std::string_view& name)
+server::data::Uid server::FileDataSource::RetrieveCharacterUidByName(const std::string_view& name)
 {
   const std::regex rg(
     std::format("{}", name),
@@ -442,16 +497,21 @@ bool server::FileDataSource::IsCharacterNameUnique(const std::string_view& name)
     const auto existingCharacterName = json["name"].get<std::string>();
 
     if (std::regex_match(existingCharacterName, rg))
-      return false;
+      return json["uid"].get<data::Uid>();
   }
 
-  return true;
+  return data::InvalidUid;
+}
+
+bool server::FileDataSource::IsCharacterNameUnique(const std::string_view& name)
+{
+  return RetrieveCharacterUidByName(name) == data::InvalidUid;
 }
 
 void server::FileDataSource::CreateHorse(data::Horse& horse)
 {
-  // can be standalone
   horse.uid = ++_equipmentSequentialUid;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
@@ -503,20 +563,20 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
 
   auto mountCondition = json["mountCondition"];
   horse.mountCondition = data::Horse::MountCondition{
-    .stamina = mountCondition["stamina"].get<uint16_t>(),
-    .charm = mountCondition["charm"].get<uint16_t>(),
-    .friendliness = mountCondition["friendliness"].get<uint16_t>(),
-    .injury = mountCondition["injury"].get<uint16_t>(),
-    .plenitude = mountCondition["plenitude"].get<uint16_t>(),
-    .bodyDirtiness = mountCondition["bodyDirtiness"].get<uint16_t>(),
-    .maneDirtiness = mountCondition["maneDirtiness"].get<uint16_t>(),
-    .tailDirtiness = mountCondition["tailDirtiness"].get<uint16_t>(),
-    .bodyPolish = mountCondition["bodyPolish"].get<uint16_t>(),
-    .manePolish = mountCondition["manePolish"].get<uint16_t>(),
-    .tailPolish = mountCondition["tailPolish"].get<uint16_t>(),
-    .attachment = mountCondition["attachment"].get<uint16_t>(),
-    .boredom = mountCondition["boredom"].get<uint16_t>(),
-    .stopAmendsPoint = mountCondition["stopAmendsPoint"].get<uint16_t>()};
+    .stamina = mountCondition["stamina"].get<uint32_t>(),
+    .charm = mountCondition["charm"].get<uint32_t>(),
+    .friendliness = mountCondition["friendliness"].get<uint32_t>(),
+    .injury = mountCondition["injury"].get<uint32_t>(),
+    .plenitude = mountCondition["plenitude"].get<uint32_t>(),
+    .bodyDirtiness = mountCondition["bodyDirtiness"].get<uint32_t>(),
+    .maneDirtiness = mountCondition["maneDirtiness"].get<uint32_t>(),
+    .tailDirtiness = mountCondition["tailDirtiness"].get<uint32_t>(),
+    .bodyPolish = mountCondition["bodyPolish"].get<uint32_t>(),
+    .manePolish = mountCondition["manePolish"].get<uint32_t>(),
+    .tailPolish = mountCondition["tailPolish"].get<uint32_t>(),
+    .attachment = mountCondition["attachment"].get<uint32_t>(),
+    .boredom = mountCondition["boredom"].get<uint32_t>(),
+    .stopAmendsPoint = mountCondition["stopAmendsPoint"].get<uint32_t>()};
 
   horse.rating = json["rating"].get<uint32_t>();
   horse.clazz = json["clazz"].get<uint32_t>();
@@ -526,13 +586,13 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
 
   auto potential = json["potential"];
   horse.potential = data::Horse::Potential{
-    .type = potential["type"].get<uint8_t>(),
-    .level = potential["level"].get<uint8_t>(),
-    .value = potential["value"].get<uint8_t>()
+    .type = potential["type"].get<uint32_t>(),
+    .level = potential["level"].get<uint32_t>(),
+    .value = potential["value"].get<uint32_t>()
   };
 
   horse.luckState = json["luckState"].get<uint32_t>();
-  horse.fatigue = json["fatigue"].get<uint16_t>();
+  horse.fatigue = json["fatigue"].get<uint32_t>();
   horse.emblemUid = json["emblem"].get<uint32_t>();
 
   horse.dateOfBirth = data::Clock::time_point(std::chrono::seconds(
@@ -540,11 +600,11 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
 
   auto mountInfo = json["mountInfo"];
   horse.mountInfo = data::Horse::MountInfo{
-    .boostsInARow = mountInfo["boostsInARow"].get<uint16_t>(),
-    .winsSpeedSingle = mountInfo["winsSpeedSingle"].get<uint16_t>(),
-    .winsSpeedTeam = mountInfo["winsSpeedTeam"].get<uint16_t>(),
-    .winsMagicSingle = mountInfo["winsMagicSingle"].get<uint16_t>(),
-    .winsMagicTeam = mountInfo["winsMagicTeam"].get<uint16_t>(),
+    .boostsInARow = mountInfo["boostsInARow"].get<uint32_t>(),
+    .winsSpeedSingle = mountInfo["winsSpeedSingle"].get<uint32_t>(),
+    .winsSpeedTeam = mountInfo["winsSpeedTeam"].get<uint32_t>(),
+    .winsMagicSingle = mountInfo["winsMagicSingle"].get<uint32_t>(),
+    .winsMagicTeam = mountInfo["winsMagicTeam"].get<uint32_t>(),
     .totalDistance = mountInfo["totalDistance"].get<uint32_t>(),
     .topSpeed = mountInfo["topSpeed"].get<uint32_t>(),
     .longestGlideDistance = mountInfo["longestGlideDistance"].get<uint32_t>(),
@@ -662,6 +722,7 @@ void server::FileDataSource::DeleteHorse(data::Uid uid)
 void server::FileDataSource::CreateItem(data::Item& item)
 {
   item.uid = ++_equipmentSequentialUid;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrieveItem(data::Uid uid, data::Item& item)
@@ -719,6 +780,7 @@ void server::FileDataSource::DeleteItem(data::Uid uid)
 void server::FileDataSource::CreateStorageItem(data::StorageItem& item)
 {
   item.uid = ++_storageItemSequentialUid;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrieveStorageItem(data::Uid uid, data::StorageItem& storageItem)
@@ -754,6 +816,10 @@ void server::FileDataSource::RetrieveStorageItem(data::Uid uid, data::StorageIte
     json["duration"].get<int64_t>());
   storageItem.createdAt = data::Clock::time_point(std::chrono::seconds(
     json["createdAt"].get<int64_t>()));
+
+  // Shop data
+  storageItem.goodsSq = json["goodsSq"].get<uint32_t>();
+  storageItem.priceId = json["priceId"].get<uint32_t>();
 }
 
 void server::FileDataSource::StoreStorageItem(data::Uid uid, const data::StorageItem& storageItem)
@@ -790,6 +856,10 @@ void server::FileDataSource::StoreStorageItem(data::Uid uid, const data::Storage
     storageItem.createdAt().time_since_epoch()).count();
   json["duration"] = storageItem.duration().count();
 
+  // Shop data
+  json["goodsSq"] = storageItem.goodsSq();
+  json["priceId"] = storageItem.priceId();
+
   dataFile << json.dump(2);
 }
 
@@ -803,6 +873,7 @@ void server::FileDataSource::DeleteStorageItem(data::Uid uid)
 void server::FileDataSource::CreateEgg(data::Egg& egg)
 {
   egg.uid = ++_eggSequentialUid;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrieveEgg(data::Uid uid, data::Egg& egg)
@@ -863,6 +934,7 @@ void server::FileDataSource::DeleteEgg(data::Uid uid)
 void server::FileDataSource::CreatePet(data::Pet& pet)
 {
   pet.uid = ++_petSequentialUid;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrievePet(data::Uid uid, data::Pet& pet)
@@ -920,6 +992,7 @@ void server::FileDataSource::DeletePet(data::Uid uid)
 void server::FileDataSource::CreateHousing(data::Housing& housing)
 {
   housing.uid = ++_housingSequentialUid;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrieveHousing(data::Uid uid, data::Housing& housing)
@@ -936,7 +1009,7 @@ void server::FileDataSource::RetrieveHousing(data::Uid uid, data::Housing& housi
 
   const auto json = nlohmann::json::parse(dataFile);
   housing.uid = json["uid"].get<data::Uid>();
-  housing.housingId = json["housingId"].get<uint16_t>();
+  housing.housingId = json["housingId"].get<uint32_t>();
   housing.expiresAt = data::Clock::time_point(
     std::chrono::seconds(json["expiresAt"].get<uint64_t>()));
   housing.durability = json["durability"].get<uint32_t>();
@@ -974,6 +1047,7 @@ void server::FileDataSource::DeleteHousing(data::Uid uid)
 void server::FileDataSource::CreateGuild(data::Guild& guild)
 {
   guild.uid = ++_guildSequentialId;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrieveGuild(data::Uid uid, data::Guild& guild)
@@ -1068,6 +1142,7 @@ bool server::FileDataSource::IsGuildNameUnique(const std::string_view& name)
 void server::FileDataSource::CreateSettings(data::Settings& settings)
 {
   settings.uid = ++_settingsSequentialId;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrieveSettings(data::Uid uid, data::Settings& settings)
@@ -1085,7 +1160,7 @@ void server::FileDataSource::RetrieveSettings(data::Uid uid, data::Settings& set
   const auto json = nlohmann::json::parse(dataFile);
   settings.uid = json["uid"].get<data::Uid>();
 
-  settings.age = json["age"].get<uint8_t>();
+  settings.age = json["age"].get<uint32_t>();
   settings.hideAge = json["hideGenderAndAge"].get<bool>();
 
   // Keyboard bindings
@@ -1244,6 +1319,68 @@ void server::FileDataSource::StoreDailyQuest(data::Uid uid, const data::DailyQue
   json["unk_1"] = dailyQuest.unk_1();
   json["unk_2"] = dailyQuest.unk_2();
   json["unk_3"] = dailyQuest.unk_3();
+void server::FileDataSource::CreateMail(data::Mail& mail)
+{
+  mail.uid = ++_mailSequentialId;
+  SaveMetadata();
+}
+
+void server::FileDataSource::RetrieveMail(data::Uid uid, data::Mail& mail)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _mailDataPath, std::format("{}", uid));
+
+  std::ifstream dataFile(dataFilePath);
+  if (!dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Mail file '{}' not accessible", dataFilePath.string()));
+  }
+
+  const auto json = nlohmann::json::parse(dataFile);
+  mail.uid = json["uid"].get<data::Uid>();
+  mail.from = json["from"].get<data::Uid>();
+  mail.to = json["to"].get<data::Uid>();
+
+  mail.isRead = json["isRead"].get<bool>();
+  mail.isDeleted = json["isDeleted"].get<bool>();
+
+  mail.type = json["type"].get<data::Mail::MailType>();
+  mail.origin = json["origin"].get<data::Mail::MailOrigin>();
+
+  mail.createdAt = data::Clock::time_point(
+    std::chrono::seconds(
+      json["createdAt"].get<uint64_t>()));
+  mail.body = json["body"].get<std::string>();
+}
+
+void server::FileDataSource::StoreMail(data::Uid uid, const data::Mail& mail)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _mailDataPath, std::format("{}", uid));
+
+  std::ofstream dataFile(dataFilePath);
+  if (!dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Mail file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json;
+  json["uid"] = mail.uid();
+  json["from"] = mail.from();
+  json["to"] = mail.to();
+
+  json["isRead"] = mail.isRead();
+  json["isDeleted"] = mail.isDeleted();
+
+  json["type"] = mail.type();
+  json["origin"] = mail.origin();
+
+  json["createdAt"] = std::chrono::duration_cast<
+    std::chrono::seconds>(
+      mail.createdAt().time_since_epoch()).count();
+  json["body"] = mail.body();
 
   dataFile << json.dump(2);
 }
@@ -1252,5 +1389,11 @@ void server::FileDataSource::DeleteDailyQuest(data::Uid uid)
 {
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _dailyQuestDataPath, std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
+}
+void server::FileDataSource::DeleteMail(data::Uid uid)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _mailDataPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
 }

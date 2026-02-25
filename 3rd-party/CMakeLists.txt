@@ -14,4 +14,6 @@ add_subdirectory(zlib)
 set(BUILD_SHARED_LIBS OFF)
 set(PostgreSQL_ADDITIONAL_VERSIONS "17")
 
+add_subdirectory(tinyxml2)
+
 #add_subdirectory(libpqxx)

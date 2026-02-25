@@ -49,23 +49,38 @@ void BuildProtocolHorse(
   protocolHorse.growthPoints = static_cast<uint16_t>(horse.growthPoints());
 
   protocolHorse.val16 = 0xb8a167e4,
-  protocolHorse.val17 = 0;
+  protocolHorse.visualCleanlinessBitset = 
+    Horse::VisualCleanlinessBitset::AllLightSparkles;
 
   protocolHorse.mountCondition = {
-    .stamina = horse.mountCondition.stamina(),
-    .charmPoint = horse.mountCondition.charm(),
-    .friendlyPoint = horse.mountCondition.friendliness(),
-    .injuryPoint = horse.mountCondition.injury(),
-    .plenitude = horse.mountCondition.plenitude(),
-    .bodyDirtiness = horse.mountCondition.bodyDirtiness(),
-    .maneDirtiness = horse.mountCondition.maneDirtiness(),
-    .tailDirtiness = horse.mountCondition.tailDirtiness(),
-    .attachment = horse.mountCondition.attachment(),
-    .boredom = horse.mountCondition.boredom(),
-    .bodyPolish = horse.mountCondition.bodyPolish(),
-    .manePolish = horse.mountCondition.manePolish(),
-    .tailPolish = horse.mountCondition.tailPolish(),
-    .stopAmendsPoint = horse.mountCondition.stopAmendsPoint()
+    .stamina = static_cast<uint16_t>(
+      horse.mountCondition.stamina()),
+    .charmPoint = static_cast<uint16_t>(
+      horse.mountCondition.charm()),
+    .friendlyPoint = static_cast<uint16_t>(
+      horse.mountCondition.friendliness()),
+    .injuryPoint = static_cast<uint16_t>(
+      horse.mountCondition.injury()),
+    .plenitude = static_cast<uint16_t>(
+      horse.mountCondition.plenitude()),
+    .bodyDirtiness = static_cast<uint16_t>(
+      horse.mountCondition.bodyDirtiness()),
+    .maneDirtiness = static_cast<uint16_t>(
+      horse.mountCondition.maneDirtiness()),
+    .tailDirtiness = static_cast<uint16_t>(
+      horse.mountCondition.tailDirtiness()),
+    .attachment = static_cast<uint16_t>(
+      horse.mountCondition.attachment()),
+    .boredom = static_cast<uint16_t>(
+      horse.mountCondition.boredom()),
+    .bodyPolish = static_cast<uint16_t>(
+      horse.mountCondition.bodyPolish()),
+    .manePolish = static_cast<uint16_t>(
+      horse.mountCondition.manePolish()),
+    .tailPolish = static_cast<uint16_t>(
+      horse.mountCondition.tailPolish()),
+    .stopAmendsPoint = static_cast<uint16_t>(
+      horse.mountCondition.stopAmendsPoint())
   };
 
   protocolHorse.vals1 = {
@@ -83,7 +98,7 @@ void BuildProtocolHorse(
     .luck = static_cast<uint8_t>(horse.luckState()),
     .injury = Horse::Injury::None,
     .val12 = 0x00,
-    .fatigue = horse.fatigue(),
+    .fatigue = static_cast<uint16_t>(horse.fatigue()),
     .val14 = 0x00,
     .emblem = static_cast<uint16_t>(horse.emblemUid())};
 
@@ -185,8 +200,8 @@ void BuildProtocolStorageItem(
 {
   protocolStorageItem.uid = storageItem.uid();
 
-  const bool hasExpiration = storageItem.duration() != std::chrono::seconds::min();
-  const bool isExpired = storageItem.createdAt() + storageItem.duration() > data::Clock::now();
+  const bool hasExpiration = storageItem.duration() != std::chrono::seconds(0);
+  const bool isExpired = storageItem.createdAt() + storageItem.duration() < data::Clock::now();
   if (hasExpiration && isExpired)
   {
     protocolStorageItem.status = StoredItem::Status::Expired;
@@ -202,6 +217,9 @@ void BuildProtocolStorageItem(
   protocolStorageItem.message = storageItem.message();
   protocolStorageItem.carrots = storageItem.carrots();
   protocolStorageItem.dateAndTime = util::TimePointToAliciaTime(storageItem.createdAt());
+
+  protocolStorageItem.goodsSq = storageItem.goodsSq();
+  protocolStorageItem.priceId = storageItem.priceId();
 }
 
 void BuildProtocolStorageItems(
@@ -252,7 +270,8 @@ void BuildProtocolHousing(
   bool hasDurability)
 {
   protocolHousing.uid = housingRecord.uid();
-  protocolHousing.tid = housingRecord.housingId();
+  protocolHousing.tid = static_cast<uint16_t>(
+    housingRecord.housingId());
   protocolHousing.durability = hasDurability 
     ? housingRecord.durability() 
     : util::TimePointToAliciaTime(housingRecord.expiresAt());
@@ -281,16 +300,17 @@ void BuildProtocolEgg(
   protocolEgg.uid = eggRecord.uid();
   protocolEgg.itemTid = eggRecord.itemTid();
 
-  protocolEgg.totalHatchingTime = std::chrono::duration_cast<std::chrono::seconds>(
-    hatchDuration).count();
+  protocolEgg.totalHatchingTime = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
+    hatchDuration).count());
 
   const auto totalHatchingDuration = std::chrono::system_clock::now() - eggRecord.incubatedAt();
   const auto totalBoostedDuration = eggRecord.boostsUsed() * std::chrono::hours(8);
   const auto hatchTimeRemaining = hatchDuration - totalHatchingDuration - totalBoostedDuration;
 
   protocolEgg.timeRemaining = std::max(
-    std::chrono::duration_cast<std::chrono::seconds>(hatchTimeRemaining).count(),
-    int64_t{0});
+    static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
+      hatchTimeRemaining).count()),
+    uint32_t{0});
   
   protocolEgg.boost = 400000;
 }
@@ -306,9 +326,9 @@ void BuildProtocolSettings(
     for (const auto& keyboardBinding : settingsRecord.keyboardBindings().value())
     {
       auto& protocolBinding = settings.keyboardOptions.bindings.emplace_back();
-      protocolBinding.primaryKey = keyboardBinding.primaryKey;
-      protocolBinding.type = keyboardBinding.type;
-      protocolBinding.secondaryKey = keyboardBinding.secondaryKey;
+      protocolBinding.primaryKey = static_cast<uint8_t>(keyboardBinding.primaryKey);
+      protocolBinding.type = static_cast<uint8_t>(keyboardBinding.type);
+      protocolBinding.secondaryKey = static_cast<uint8_t>(keyboardBinding.secondaryKey);
       protocolBinding.unused = 0; // Unused
     }
   }
@@ -320,9 +340,9 @@ void BuildProtocolSettings(
     for (const auto& keyboardBinding : settingsRecord.gamepadBindings().value())
     {
       auto& protocolBinding = settings.gamepadOptions.bindings.emplace_back();
-      protocolBinding.primaryButton = keyboardBinding.primaryKey;
-      protocolBinding.type = keyboardBinding.type;
-      protocolBinding.secondaryButton = keyboardBinding.secondaryKey;
+      protocolBinding.primaryButton = static_cast<uint8_t>(keyboardBinding.primaryKey);
+      protocolBinding.type = static_cast<uint8_t>(keyboardBinding.type);
+      protocolBinding.secondaryButton = static_cast<uint8_t>(keyboardBinding.secondaryKey);
       protocolBinding.unused = 0; // Unused
     }
   }

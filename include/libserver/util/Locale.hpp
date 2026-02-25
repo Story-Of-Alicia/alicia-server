@@ -40,7 +40,7 @@ namespace locale
 //! @throws std::runtime_error If the conversion fails for any reason.
 [[nodiscard]] std::string FromUtf8(const std::string& input);
 
-//! Validates UTF-8 encoded string representing a name (character name, horse name or a pet name).
+//! Validates UTF-8 encoded string representing a name (a character name, a horse name, a pet name or a guild name).
 //! The input string must conform to the following conditions:
 //! - The byte count of the input must be less than or equal to `maxStringByteCapacity` parameter.
 //! - The codepoint count of the input must be greater than 2 if the input string is purely korean,

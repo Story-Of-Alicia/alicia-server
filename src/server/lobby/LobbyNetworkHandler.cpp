@@ -7,7 +7,6 @@
 #include "server/ServerInstance.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
-#include <libserver/util/Locale.hpp>
 
 #include <boost/container_hash/hash.hpp>
 #include <spdlog/spdlog.h>
@@ -263,10 +262,30 @@ void LobbyNetworkHandler::Initialize()
     "Lobby is advertising race server on {}:{}",
     lobbyConfig.advertisement.race.address.to_string(),
     lobbyConfig.advertisement.race.port);
-  spdlog::debug(
-    "Lobby is advertising messenger server on {}:{}",
-    lobbyConfig.advertisement.messenger.address.to_string(),
-    lobbyConfig.advertisement.messenger.port);
+
+  if (_serverInstance.GetMessengerDirector().GetConfig().enabled)
+  {
+    spdlog::debug(
+      "Lobby is advertising messenger server on {}:{}",
+      lobbyConfig.advertisement.messenger.address.to_string(),
+      lobbyConfig.advertisement.messenger.port);
+
+    if (_serverInstance.GetAllChatDirector().GetConfig().enabled)
+    {
+      spdlog::debug(
+        "Lobby is advertising all chat server on {}:{}",
+        lobbyConfig.advertisement.allChat.address.to_string(),
+        lobbyConfig.advertisement.allChat.port);
+    }
+
+    if (_serverInstance.GetPrivateChatDirector().GetConfig().enabled)
+    {
+      spdlog::debug(
+        "Lobby is advertising private chat server on {}:{}",
+        lobbyConfig.advertisement.privateChat.address.to_string(),
+        lobbyConfig.advertisement.privateChat.port);
+    }
+  }
 
   spdlog::debug(
     "Lobby server listening on {}:{}",
@@ -506,12 +525,13 @@ void LobbyNetworkHandler::HandleNetworkTick()
   {
     // There's a bug in a client, where if the client is in the character creator,
     // they'll withdraw from sending heartbeats. Because of this we have to
-    // ignore the lack of heartbeats and not disconnect the client.
-    if (clientContext.isInCharacterCreator)
-      continue;
+    // ignore the lack of heartbeats for a while longer and not disconnect the client.
+    const auto timeout = clientContext.isInCharacterCreator
+      ? std::chrono::seconds(15 * 60)
+      : std::chrono::seconds(60);
 
-    const bool hasReachedTimeOut = now - clientContext.lastHeartbeat > std::chrono::seconds(60);
-    if (not hasReachedTimeOut)
+    const bool hasReachedTimeout = now - clientContext.lastHeartbeat > timeout;
+    if (not hasReachedTimeout)
       continue;
 
     spdlog::warn(
@@ -740,7 +760,7 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
         ? protocol::Gender::Boy
         : protocol::Gender::Girl;
 
-      response.level = character.level();
+      response.level = static_cast<uint16_t>(character.level());
       response.carrots = character.carrots();
       response.role = std::bit_cast<protocol::LobbyCommandLoginOK::Role>(
         character.role());
@@ -748,25 +768,23 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
       if (not justCreatedCharacter)
         response.bitfield = protocol::LobbyCommandLoginOK::HasPlayedBefore;
 
-      // Character equipment.
-      const auto characterEquipmentItems = _serverInstance.GetDataDirector().GetItemCache().Get(
+      const auto equipmentItems = _serverInstance.GetDataDirector().GetItemCache().Get(
         character.characterEquipment());
-      if (not characterEquipmentItems)
-        throw std::runtime_error("Character equipment items unavailable");
+      if (not equipmentItems)
+        throw std::runtime_error("Equipment items unavailable");
 
       protocol::BuildProtocolItems(
-        response.characterEquipment,
-        *characterEquipmentItems);
+        response.equipmentItems,
+        *equipmentItems);
 
-      // Mount equipment.
-      const auto mountEquipmentItems = _serverInstance.GetDataDirector().GetItemCache().Get(
-        character.mountEquipment());
-      if (not mountEquipmentItems)
-        throw std::runtime_error("Character equipment items unavailable");
+      const auto expiredItems = _serverInstance.GetDataDirector().GetItemCache().Get(
+        character.expiredEquipment());
+      if (not expiredItems)
+        throw std::runtime_error("Expired items unavailable");
 
       protocol::BuildProtocolItems(
-        response.mountEquipment,
-        *mountEquipmentItems);
+        response.expiredItems,
+        *expiredItems);
 
       protocol::BuildProtocolCharacter(
         response.character,
@@ -831,8 +849,8 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
         {
           // We set the age despite if the hide age is set,
           // just so the user is able to see the last value set by them.
-          response.settings.age = settings.age();
-          response.settings.hideAge = settings.hideAge();
+          response.settings.age = static_cast<uint8_t>(settings.age());
+          response.settings.hideAge = static_cast<uint8_t>(settings.hideAge());
 
           protocol::BuildProtocolSettings(response.settings, settings);
         });
@@ -888,9 +906,12 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
   characterRecord.Immutable([&skillPresetListResponse](const data::Character& character)
   {
     const auto& speed = character.skills.speed();
-    skillPresetListResponse.speedActiveSetId = speed.activeSetId;
+    skillPresetListResponse.speedActiveSetId = static_cast<uint8_t>(
+      speed.activeSetId);
+
     const auto& magic = character.skills.magic();
-    skillPresetListResponse.magicActiveSetId = magic.activeSetId;
+    skillPresetListResponse.magicActiveSetId = static_cast<uint8_t>(
+      magic.activeSetId);
 
     skillPresetListResponse.skillSets = {
       protocol::SkillSet{.setId = 0, .gamemode = protocol::GameMode::Speed, .skills = {speed.set1.slot1, speed.set1.slot2}},
@@ -939,7 +960,7 @@ void LobbyNetworkHandler::HandleRoomList(
     std::back_inserter(roomSnapshots),
     [&command](const server::Room::Snapshot& roomSnapshot)
     {
-      return 
+      return
         roomSnapshot.details.gameMode == static_cast<server::Room::GameMode>(command.gameMode) &&
         roomSnapshot.details.teamMode == static_cast<server::Room::TeamMode>(command.teamMode);
     });
@@ -971,8 +992,8 @@ void LobbyNetworkHandler::HandleRoomList(
         roomResponse.isLocked = true;
       }
 
-      roomResponse.playerCount = room.playerCount;
-      roomResponse.maxPlayerCount = room.details.maxPlayerCount;
+      roomResponse.playerCount = static_cast<uint8_t>(room.playerCount);
+      roomResponse.maxPlayerCount = static_cast<uint8_t>(room.details.maxPlayerCount);
       // todo: skill bracket
       roomResponse.skillBracket = protocol::LobbyCommandRoomListOK::Room::SkillBracket::Experienced;
       roomResponse.name = room.details.name;
@@ -1001,6 +1022,20 @@ void LobbyNetworkHandler::HandleMakeRoom(
 {
   const auto& clientContext = GetClientContext(clientId);
   uint32_t createdRoomUid{0};
+
+  const auto moderationVerdict = _serverInstance.GetModerationSystem().Moderate(
+    command.name);
+  if (moderationVerdict.isPrevented)
+  {
+    protocol::AcCmdCLMakeRoomCancel response{};
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]()
+      {
+        return response;
+      });
+    return;
+  }
 
   _serverInstance.GetRoomSystem().CreateRoom(
     [&createdRoomUid, &command, characterUid = clientContext.characterUid](
@@ -1268,7 +1303,7 @@ void LobbyNetworkHandler::HandleEnterChannel(
 
 void LobbyNetworkHandler::HandleLeaveChannel(
   const ClientId clientId,
-  const protocol::AcCmdCLLeaveChannel& command)
+  const protocol::AcCmdCLLeaveChannel&)
 {
   // todo: implement channels
   protocol::AcCmdCLLeaveChannelOK response{};
@@ -1304,23 +1339,25 @@ void LobbyNetworkHandler::HandleCreateNickname(
 
   constexpr uint32_t DefaultHorseTid = 20001;
 
-  std::optional<protocol::AcCmdCLCreateNicknameCancel::Reason> error{};
   if (command.requestedHorseTid != DefaultHorseTid)
   {
     spdlog::warn("Client {} ('{}') requested to create a character with an invalid horse TID '{}'",
       clientId,
       clientContext.userName,
       command.requestedHorseTid);
-    error.emplace(protocol::AcCmdCLCreateNicknameCancel::Reason::ServerError);
-  }
-  else if (not locale::IsNameValid(command.nickname, 16))
-  {
-    error.emplace(protocol::AcCmdCLCreateNicknameCancel::Reason::InvalidCharacterName);
+
+    SendCreateNicknameCancel(
+      clientId,
+      protocol::AcCmdCLCreateNicknameCancel::Reason::ServerError);
+    return;
   }
 
-  if (error.has_value())
+  if (not locale::IsNameValid(command.nickname, 16)
+    || _serverInstance.GetModerationSystem().Moderate(command.nickname).isPrevented)
   {
-    SendCreateNicknameCancel(clientId, *error);
+    SendCreateNicknameCancel(
+      clientId,
+      protocol::AcCmdCLCreateNicknameCancel::Reason::InvalidCharacterName);
     return;
   }
 
@@ -1409,6 +1446,9 @@ void LobbyNetworkHandler::HandleCreateNickname(
         constexpr uint8_t StartingHorseSlotCount = 3; 
         character.horseSlotCount() = StartingHorseSlotCount;
 
+        // Create the default friend group.
+        character.contacts.groups().try_emplace(0);
+
         userCharacterUid = character.uid();
       });
 
@@ -1474,7 +1514,7 @@ void LobbyNetworkHandler::SendCreateNicknameCancel(
 
 void LobbyNetworkHandler::HandleShowInventory(
   const ClientId clientId,
-  const protocol::AcCmdCLShowInventory& command)
+  const protocol::AcCmdCLShowInventory&)
 {
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
@@ -1601,8 +1641,8 @@ void LobbyNetworkHandler::HandleUpdateUserSettings(
 }
 
 void LobbyNetworkHandler::HandleEnterRoomQuick(
-  const ClientId clientId,
-  const protocol::AcCmdCLEnterRoomQuick& command)
+  const ClientId,
+  const protocol::AcCmdCLEnterRoomQuick&)
 {
   // todo: implement quick room enter
   spdlog::error("Not implemented - enter room quick");
@@ -1611,10 +1651,78 @@ void LobbyNetworkHandler::HandleEnterRoomQuick(
 
 void LobbyNetworkHandler::HandleGoodsShopList(
   const ClientId clientId,
-  const protocol::AcCmdCLGoodsShopList& command)
+  const protocol::AcCmdCLGoodsShopList&)
 {
+  auto shopList = _serverInstance.GetLobbyDirector().GetShopManager().GetSerializedShopList();
+
+  std::vector<std::byte> compressedXml;
+  compressedXml.resize(shopList.size());
+
+  uLongf compressedSize = static_cast<uLongf>(compressedXml.size());
+  compress2(
+    reinterpret_cast<Bytef*>(compressedXml.data()),
+    &compressedSize,
+    reinterpret_cast<const Bytef*>(shopList.c_str()),
+    static_cast<uLongf>(shopList.length()),
+    9);
+
+  compressedXml.resize(compressedSize);
+
+  // TODO: remove this, only used for testing protocol
+  auto now = util::Clock::now() + std::chrono::days(1);
+
+  //! Chunk size as defined in command handler.
+  constexpr auto ChunkSize = 7168;
+
+  // Fragment shop data and send it in parts for the client to reconstruct and store.
+  const auto& dataParts = std::views::chunk(compressedXml, ChunkSize);
+  const auto chunkCount = dataParts.size();
+  const auto chunkedPartsSize = chunkCount * ChunkSize;
+
+  //! Max shop data size as defined in the command handler.
+  constexpr auto MaxShopDataSize = 0x8000;
+  // Check if the total size of chunked parts exceed the size of limit defined in command handler
+  if (chunkedPartsSize > MaxShopDataSize)
+  {
+    spdlog::error("Shop data chunking with {} chunks, totalling {} bytes, exceeds max game shop data size of {} bytes.",
+      chunkCount,
+      chunkedPartsSize,
+      MaxShopDataSize);
+
+    protocol::AcCmdCLGoodsShopListCancel cancel{};
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  // Send each chunk with the appropriate index and chunk count
+  for (size_t index = 0; index < dataParts.size(); ++index)
+  {
+    const auto& dataPart = dataParts[index];
+    protocol::AcCmdLCGoodsShopListData data{
+      .timestamp = now,
+      .index = static_cast<uint8_t>(index),
+      .count = static_cast<uint8_t>(chunkCount),
+      .data = std::vector<std::byte>(
+        dataPart.cbegin(),
+        dataPart.cend())};
+
+    _commandServer.QueueCommand<decltype(data)>(
+      clientId,
+      [data]()
+      {
+        return data;
+      });
+  }
+
+  // TODO: send date time that is now?
   protocol::AcCmdCLGoodsShopListOK response{
-    .data = command.data};
+    .shopTimestamp = now
+  };
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -1622,61 +1730,11 @@ void LobbyNetworkHandler::HandleGoodsShopList(
     {
       return response;
     });
-
-  const std::string xml =
-    "<ShopList>\n"
-    "  <GoodsList>\n"
-    "    <GoodsSQ>0</GoodsSQ>\n"
-    "    <SetType>0</SetType>\n"
-    "    <MoneyType>0</MoneyType>\n"
-    "    <GoodsType>0</GoodsType>\n"
-    "    <RecommendType>1</RecommendType>\n"
-    "    <RecommendNO>1</RecommendNO>\n"
-    "    <GiftType>0</GiftType>\n"
-    "    <SalesRank>1</SalesRank>\n"
-    "    <BonusGameMoney>0</BonusGameMoney>\n"
-    "    <GoodsNM><![CDATA[Goods name]]></GoodsNM>\n"
-    "    <GoodsDesc><![CDATA[Goods desc]]></GoodsDesc>\n"
-    "    <ItemCapacityDesc><![CDATA[Capacity desc]]></ItemCapacityDesc>\n"
-    "    <SellST>0</SellST>\n"
-    "    <ItemUID>30013</ItemUID>\n"
-    "    <ItemElem>\n"
-    "      <Item>\n"
-    "        <PriceID>1</PriceID>\n"
-    "        <PriceRange>1</PriceRange>\n"
-    "        <GoodsPrice>1</GoodsPrice>\n"
-    "      </Item>\n"
-    "    </ItemElem>\n"
-    "  </GoodsList>\n"
-    "</ShopList>\n";
-
-  std::vector<std::byte> compressedXml;
-  compressedXml.resize(xml.size());
-
-  uLongf compressedSize = compressedXml.size();
-  compress(
-    reinterpret_cast<Bytef*>(compressedXml.data()),
-    &compressedSize,
-    reinterpret_cast<const Bytef*>(xml.c_str()),
-    xml.length());
-
-  compressedXml.resize(compressedSize);
-
-  protocol::AcCmdLCGoodsShopListData data{
-    .member3 = 1,
-    .data = compressedXml};
-
-  _commandServer.QueueCommand<decltype(data)>(
-    clientId,
-    [data]()
-    {
-      return data;
-    });
 }
 
 void LobbyNetworkHandler::HandleAchievementCompleteList(
   const ClientId clientId,
-  const protocol::AcCmdCLAchievementCompleteList& command)
+  const protocol::AcCmdCLAchievementCompleteList&)
 {
   const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
@@ -1793,9 +1851,8 @@ void LobbyNetworkHandler::HandleEnterRanch(
 
 void LobbyNetworkHandler::HandleEnterRanchRandomly(
   const ClientId clientId,
-  const protocol::AcCmdCLEnterRanchRandomly& command)
+  const protocol::AcCmdCLEnterRanchRandomly&)
 {
-  // this is just for prototype, it can suck
   auto& clientContext = GetClientContext(clientId);
   const auto requestingCharacterUid = clientContext.characterUid;
 
@@ -1867,15 +1924,15 @@ void LobbyNetworkHandler::SendEnterRanchOK(
 }
 
 void LobbyNetworkHandler::HandleFeatureCommand(
-  const ClientId clientId,
+  const ClientId,
   const protocol::AcCmdCLFeatureCommand& command)
 {
   spdlog::warn("Feature command: {}", command.command);
 }
 
 void LobbyNetworkHandler::HandleRequestFestivalResult(
-  const ClientId clientId,
-  const protocol::AcCmdCLRequestFestivalResult& command)
+  const ClientId,
+  const protocol::AcCmdCLRequestFestivalResult&)
 {
   // todo: implement festival
 }
@@ -1900,12 +1957,32 @@ void LobbyNetworkHandler::HandleSetIntroduction(
 
 void LobbyNetworkHandler::HandleGetMessengerInfo(
   const ClientId clientId,
-  const protocol::AcCmdCLGetMessengerInfo& command)
+  const protocol::AcCmdCLGetMessengerInfo&)
 {
+  const auto& clientContext = GetClientContext(clientId);
+
+  // Get messenger config and check if messenger is enabled
+  const auto& messengerConfig = _serverInstance.GetMessengerDirector().GetConfig();
+
+  if (not messengerConfig.enabled)
+  {
+    // Messenger is not enabled
+    protocol::AcCmdCLGetMessengerInfoCancel cancel{};
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
   const auto& lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
-  
+
+  // Hash character uid with messenger director's otp constant for a unique key
+  size_t identityHash = std::hash<uint32_t>()(clientContext.characterUid);
+  boost::hash_combine(identityHash, MessengerOtpConstant);
+
+  // Grant otp code to character
+  const uint32_t code = _serverInstance.GetOtpSystem().GrantCode(identityHash);
+
   protocol::AcCmdCLGetMessengerInfoOK response{
-    .code = 0xDEAD,
+    .code = code,
     .ip = static_cast<uint32_t>(htonl(lobbyConfig.advertisement.messenger.address.to_uint())),
     .port = lobbyConfig.advertisement.messenger.port,
   };
@@ -1980,14 +2057,23 @@ void LobbyNetworkHandler::HandleUpdateSystemContent(
 
 void LobbyNetworkHandler::HandleEnterRoomQuickStop(
   const ClientId clientId,
-  const protocol::AcCmdCLEnterRoomQuickStop& command)
+  const protocol::AcCmdCLEnterRoomQuickStop&)
 {
   // todo: implement quick enter
+  // Only sending empty response for now so cancelling matchmaking actually gets you out
+  protocol::AcCmdCLEnterRoomQuickStopOK response {};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 void LobbyNetworkHandler::HandleRequestFestivalPrize(
-  const ClientId clientId,
-  const protocol::AcCmdCLRequestFestivalPrize& command)
+  const ClientId,
+  const protocol::AcCmdCLRequestFestivalPrize&)
 {
   // todo: implement festivals
 }
@@ -2033,17 +2119,28 @@ void LobbyNetworkHandler::HandleRequestMountInfo(
     const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(mountUid);
     horseRecord.Immutable([&mountInfo](const data::Horse& horse)
     {
-      mountInfo.boostsInARow = horse.mountInfo.boostsInARow();
-      mountInfo.winsSpeedSingle = horse.mountInfo.winsSpeedSingle();
-      mountInfo.winsSpeedTeam = horse.mountInfo.winsSpeedTeam();
-      mountInfo.winsMagicSingle = horse.mountInfo.winsMagicSingle();
-      mountInfo.winsMagicTeam = horse.mountInfo.winsMagicTeam();
-      mountInfo.totalDistance = horse.mountInfo.totalDistance();
-      mountInfo.topSpeed = horse.mountInfo.topSpeed();
-      mountInfo.longestGlideDistance = horse.mountInfo.longestGlideDistance();
-      mountInfo.participated = horse.mountInfo.participated();
-      mountInfo.cumulativePrize = horse.mountInfo.cumulativePrize();
-      mountInfo.biggestPrize = horse.mountInfo.biggestPrize();
+      mountInfo.boostsInARow = static_cast<uint16_t>(
+        horse.mountInfo.boostsInARow());
+      mountInfo.winsSpeedSingle = static_cast<uint16_t>(
+        horse.mountInfo.winsSpeedSingle());
+      mountInfo.winsSpeedTeam = static_cast<uint16_t>(
+        horse.mountInfo.winsSpeedTeam());
+      mountInfo.winsMagicSingle = static_cast<uint16_t>(
+        horse.mountInfo.winsMagicSingle());
+      mountInfo.winsMagicTeam = static_cast<uint16_t>(
+        horse.mountInfo.winsMagicTeam());
+      mountInfo.totalDistance = static_cast<uint16_t>(
+        horse.mountInfo.totalDistance());
+      mountInfo.topSpeed = static_cast<uint16_t>(
+        horse.mountInfo.topSpeed());
+      mountInfo.longestGlideDistance = static_cast<uint16_t>(
+        horse.mountInfo.longestGlideDistance());
+      mountInfo.participated = static_cast<uint16_t>(
+        horse.mountInfo.participated());
+      mountInfo.cumulativePrize = static_cast<uint16_t>(
+        horse.mountInfo.cumulativePrize());
+      mountInfo.biggestPrize = static_cast<uint16_t>(
+        horse.mountInfo.biggestPrize());
     });
   }
 
@@ -2057,7 +2154,7 @@ void LobbyNetworkHandler::HandleRequestMountInfo(
 
 void LobbyNetworkHandler::HandleInquiryTreecash(
   const ClientId clientId,
-  const protocol::AcCmdCLInquiryTreecash& command)
+  const protocol::AcCmdCLInquiryTreecash&)
 {
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
@@ -2148,7 +2245,7 @@ void LobbyNetworkHandler::HandleAcceptInviteToGuild(
 }
 
 void LobbyNetworkHandler::HandleDeclineInviteToGuild(
-  const ClientId clientId,
+  const ClientId,
   const protocol::AcCmdLCInviteGuildJoinCancel& command)
 {
   // TODO: command data check
@@ -2161,7 +2258,7 @@ void LobbyNetworkHandler::HandleDeclineInviteToGuild(
 }
 
 void LobbyNetworkHandler::HandleClientNotify(
-  const ClientId clientId,
+  const ClientId,
   const protocol::AcCmdClientNotify& command)
 {
   // todo: reset roll code?
@@ -2195,7 +2292,7 @@ void LobbyNetworkHandler::HandleChangeRanchOption(
 
 void LobbyNetworkHandler::HandleRequestDailyQuestList(
   const ClientId clientId,
-  const protocol::AcCmdCLRequestDailyQuestList& command)
+  const protocol::AcCmdCLRequestDailyQuestList&)
 {
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
@@ -2254,7 +2351,7 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
 
 void LobbyNetworkHandler::HandleRequestLeagueInfo(
   const ClientId clientId,
-  const protocol::AcCmdCLRequestLeagueInfo& command)
+  const protocol::AcCmdCLRequestLeagueInfo&)
 {
   protocol::AcCmdCLRequestLeagueInfoOK response{};
 
@@ -2270,7 +2367,7 @@ void LobbyNetworkHandler::HandleRequestLeagueInfo(
 
 void LobbyNetworkHandler::HandleRequestQuestList(
   const ClientId clientId,
-  const protocol::AcCmdCLRequestQuestList& command)
+  const protocol::AcCmdCLRequestQuestList&)
 {
   const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
@@ -2294,7 +2391,7 @@ void LobbyNetworkHandler::HandleRequestQuestList(
 
 void LobbyNetworkHandler::HandleRequestSpecialEventList(
   const ClientId clientId,
-  const protocol::AcCmdCLRequestSpecialEventList& command)
+  const protocol::AcCmdCLRequestSpecialEventList&)
 {
   const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(

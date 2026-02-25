@@ -60,11 +60,11 @@ public:
     if (roomIter == _raceInstances.cend())
       return false;
 
-    return roomIter->second.stage == RaceInstance::Stage::Racing |
+    return roomIter->second.stage == RaceInstance::Stage::Racing ||
       roomIter->second.stage == RaceInstance::Stage::Loading;
   }
 
-  uint32_t GetRoomPlayerCount(uint32_t uid)
+  size_t GetRoomPlayerCount(uint32_t uid)
   {
     const auto roomIter = _raceInstances.find(uid);
     if (roomIter == _raceInstances.cend())
@@ -157,6 +157,10 @@ private:
   void HandleStartRace(
     ClientId clientId,
     const protocol::AcCmdCRStartRace& command);
+
+  void SendStartRaceCancel(
+    ClientId clientId,
+    protocol::AcCmdCRStartRaceCancel::Reason reason);
 
   void HandleRaceTimer(
     ClientId clientId,
@@ -268,6 +272,15 @@ private:
     ClientId clientId,
     const protocol::AcCmdCROpCmd& command);
 
+  //! Race clients can invite characters from ranch or other race rooms.
+  void HandleInviteUser(
+    ClientId clientId,
+    const protocol::AcCmdCRInviteUser& command);
+
+  void HandleKickUser(
+    ClientId clientId,
+    const protocol::AcCmdCRKick& command);
+
   void PrepareItemSpawners(data::Uid roomUid);
 
   //!
@@ -282,7 +295,7 @@ private:
   CommandServer _commandServer;
   //! A map of all client contexts.
   std::unordered_map<ClientId, ClientContext> _clients;
-  //! A map of all room instances.
+  //! A map of all race instanced indexed by room UIDs.
   std::unordered_map<uint32_t, RaceInstance> _raceInstances;
 };
 

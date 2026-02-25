@@ -195,7 +195,7 @@ private:
   //!
   void HandleBreedingWishlist(
     ClientId clientId,
-    const protocol::RanchCommandBreedingWishlist& command);
+    const protocol::AcCmdCRBreedingWishlist& command);
 
   //!
   void HandleCmdAction(
@@ -259,7 +259,11 @@ private:
   void HandleUpdatePet(
     ClientId clientId,
     const protocol::AcCmdCRUpdatePet& command);
-  
+
+  void SendUpdatePetCancel(
+    ClientId clientId,
+    const protocol::AcCmdRCUpdatePetCancel& command);
+
   void HandleIncubateEgg(
     ClientId clientId,
     const protocol::AcCmdCRIncubateEgg& command);
@@ -279,6 +283,16 @@ private:
   void HandleUserPetInfos(
     ClientId clientId,
     const protocol::RanchCommandUserPetInfos& command);
+
+  //! Confirm whether item in the shop can be purchased or gifted.
+  void HandleConfirmItem(
+    ClientId clientId,
+    const protocol::AcCmdCRConfirmItem& command);
+
+  //! Confirm whether item set in the shop can be purchased or gifted.
+  void HandleConfirmSetItem(
+    ClientId clientId,
+    const protocol::AcCmdCRConfirmSetItem& command);
 
   //! Broadcasts an equipment update of the character owned by the client
   //! to the currently connected ranch.
@@ -402,6 +416,31 @@ private:
   void SendChangeNicknameCancel(
     ClientId clientId,
     protocol::ChangeNicknameError reason);
+
+  void HandleBuyOwnItem(
+    ClientId clientId,
+    const protocol::AcCmdCRBuyOwnItem& command);
+
+  void HandleSendGift(
+    ClientId clientId,
+    const protocol::AcCmdCRSendGift& command);
+
+  void HandleOpenRandomBox(
+    ClientId clientId,
+    const protocol::AcCmdCROpenRandomBox& command);
+
+  void HandleUpdateMountInfo(
+    ClientId clientId,
+    const protocol::AcCmdCRUpdateMountInfo command);
+
+  void HandlePasswordAuth(
+    ClientId clientId,
+    const protocol::AcCmdCRPasswordAuth command);
+
+  //! Ranch clients can only invite characters in other ranches.
+  void HandleInviteUser(
+    ClientId clientId,
+    const protocol::AcCmdCRInviteUser& command);
 
   //!
   ServerInstance& _serverInstance;

@@ -43,12 +43,12 @@ void Item::Read(Item& item, SourceStream& stream)
 void StoredItem::Write(const StoredItem& item, SinkStream& stream)
 {
   stream.Write(item.uid)
-    .Write(item.val1)
+    .Write(item.goodsSq)
     .Write(item.status)
     .Write(item.val3)
     .Write(item.val4)
     .Write(item.carrots)
-    .Write(item.val6)
+    .Write(item.priceId)
     .Write(item.sender)
     .Write(item.message)
     .Write(item.dateAndTime);
@@ -57,12 +57,12 @@ void StoredItem::Write(const StoredItem& item, SinkStream& stream)
 void StoredItem::Read(StoredItem& item, SourceStream& stream)
 {
   stream.Read(item.uid)
-    .Read(item.val1)
+    .Read(item.goodsSq)
     .Read(item.status)
     .Read(item.val3)
     .Read(item.val4)
     .Read(item.carrots)
-    .Read(item.val6)
+    .Read(item.priceId)
     .Read(item.sender)
     .Read(item.message)
     .Read(item.dateAndTime);
@@ -162,7 +162,8 @@ void GamepadOptions::Read(GamepadOptions& value, SourceStream& stream)
 
 void Settings::Write(const Settings& value, SinkStream& stream)
 {
-  uint32_t typeValue{value.typeBitset.to_ulong()};
+  const auto typeValue{
+    static_cast<uint32_t>(value.typeBitset.to_ulong())};
   stream.Write(typeValue);
 
   // Write the keyboard options if specified in the option type mask.
@@ -445,7 +446,8 @@ void Horse::Write(const Horse& value, SinkStream& stream)
 
   stream.Write(value.mastery);
 
-  stream.Write(value.val16).Write(value.val17);
+  stream.Write(value.val16)
+    .Write(value.visualCleanlinessBitset);
 }
 
 void Horse::Read(Horse& value, SourceStream& stream)
@@ -500,7 +502,7 @@ void Horse::Read(Horse& value, SourceStream& stream)
   stream.Read(value.mastery);
 
   stream.Read(value.val16)
-    .Read(value.val17);
+    .Read(value.visualCleanlinessBitset);
 }
 
 void Guild::Write(const Guild& value, SinkStream& stream)
@@ -664,7 +666,6 @@ void RanchCharacter::Write(const RanchCharacter& ranchCharacter, SinkStream& str
     .Write(struct6.val2);
 
   // Pet
-  const auto& struct7 = ranchCharacter.pet;
   stream.Write(ranchCharacter.pet)
     .Write(ranchCharacter.unk4)
     .Write(ranchCharacter.unk5);
@@ -804,6 +805,23 @@ void DailyQuest::Read(DailyQuest& value, SourceStream& stream)
     .Read(value.unk_1)
     .Read(value.unk_2)
     .Read(value.unk_3);
+}
+void ShopOrder::Write(
+  const ShopOrder& order,
+  SinkStream& stream)
+{
+  stream.Write(order.goodsSq)
+    .Write(order.equipImmediately)
+    .Write(order.priceId);
+}
+
+void ShopOrder::Read(
+  ShopOrder& order,
+  SourceStream& stream)
+{
+  stream.Read(order.goodsSq)
+    .Read(order.equipImmediately)
+    .Read(order.priceId);
 }
 
 } // namespace server::protocol

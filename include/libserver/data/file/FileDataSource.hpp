@@ -35,6 +35,8 @@ public:
   void Initialize(const std::filesystem::path& path);
   void Terminate();
 
+  void SaveMetadata();
+
   void CreateUser(data::User& user) override;
   void RetrieveUser(const std::string_view& name, data::User& user) override;
   void StoreUser(const std::string_view& name, const data::User& user) override;
@@ -49,6 +51,7 @@ public:
   void RetrieveCharacter(data::Uid uid, data::Character& character) override;
   void StoreCharacter(data::Uid uid, const data::Character& character) override;
   void DeleteCharacter(data::Uid uid) override;
+  data::Uid RetrieveCharacterUidByName(const std::string_view& name) override;
   bool IsCharacterNameUnique(const std::string_view& name) override;
 
   void CreateHorse(data::Horse& horse) override;
@@ -97,6 +100,10 @@ public:
   void StoreDailyQuest(data::Uid uid, const data::DailyQuest& dailyQuest) override;
   void DeleteDailyQuest(data::Uid uid) override;
 
+  void CreateMail(data::Mail& mail) override;
+  void RetrieveMail(data::Uid uid, data::Mail& mail) override;
+  void StoreMail(data::Uid uid, const data::Mail& mail) override;
+  void DeleteMail(data::Uid uid) override;
 private:
   //! A root data path.
   std::filesystem::path _dataPath;
@@ -125,6 +132,8 @@ private:
   std::filesystem::path _settingsDataPath;
   //! A path to the daily quest data files.
   std::filesystem::path _dailyQuestDataPath;
+  //! A path to the mail data files.
+  std::filesystem::path _mailDataPath;
 
   //! A path to meta-data file.
   std::filesystem::path _metaFilePath;
@@ -150,6 +159,8 @@ private:
   std::atomic_uint32_t _settingsSequentialId = 0;
   //! Sequential UID for daily quests.
   std::atomic_uint32_t _dailyQuestSequentialId = 0;
+  //! Sequential UID for mail.
+  std::atomic_uint32_t _mailSequentialId = 0;
 };
 
 } // namespace server
