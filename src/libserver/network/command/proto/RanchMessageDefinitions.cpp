@@ -2657,8 +2657,8 @@ void AcCmdCREmblemListOK::Write(
 }
 
 void AcCmdCRUpdateDailyQuest::Write(
-  const AcCmdCRUpdateDailyQuest& command,
-  SinkStream& stream)
+  const AcCmdCRUpdateDailyQuest&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2671,15 +2671,15 @@ void AcCmdCRUpdateDailyQuest::Read(
 }
 
 void AcCmdCRUpdateDailyQuestCancel::Write(
-  const AcCmdCRUpdateDailyQuestCancel& command,
-  SinkStream& stream)
+  const AcCmdCRUpdateDailyQuestCancel&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRUpdateDailyQuestCancel::Read(
-  AcCmdCRUpdateDailyQuestCancel& command,
-  SourceStream& stream)
+  AcCmdCRUpdateDailyQuestCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2695,15 +2695,15 @@ void AcCmdCRUpdateDailyQuestOK::Write(
 }
 
 void AcCmdCRUpdateDailyQuestOK::Read(
-  AcCmdCRUpdateDailyQuestOK& command,
-  SourceStream& stream)
+  AcCmdCRUpdateDailyQuestOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRRegisterDailyQuestGroup::Write(
-  const AcCmdCRRegisterDailyQuestGroup& command,
-  SinkStream& stream)
+  const AcCmdCRRegisterDailyQuestGroup&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2730,15 +2730,9 @@ void AcCmdCRRegisterDailyQuestGroupOK::Write(
 }
 
 void AcCmdCRRegisterDailyQuestGroupOK::Read(
-  AcCmdCRRegisterDailyQuestGroupOK& command,
-  SourceStream& stream)
-  {
-  throw std::runtime_error("Not implemented");
-}
-void AcCmdCRUpdateMountInfoOK::Read(
-  AcCmdCRUpdateMountInfoOK&,
+  AcCmdCRRegisterDailyQuestGroupOK&,
   SourceStream&)
-{
+  {
   throw std::runtime_error("Not implemented");
 }
 
@@ -2751,8 +2745,8 @@ void AcCmdCRUpdateMountInfoOK::Write(
 }
 
 void AcCmdCRUpdateMountInfoOK::Read(
-  AcCmdCRUpdateMountInfoOK& command,
-  SourceStream& stream)
+  AcCmdCRUpdateMountInfoOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2771,8 +2765,8 @@ void AcCmdRCUpdateDailyQuestNotify::Write(
 }
 
 void AcCmdRCUpdateDailyQuestNotify::Read(
-  AcCmdRCUpdateDailyQuestNotify& command,
-  SourceStream& stream)
+  AcCmdRCUpdateDailyQuestNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -2792,8 +2786,8 @@ void AcCmdRCUpdateDailyQuestNotify::Unk::Read(Unk& value, SourceStream& stream)
 }
 
 void AcCmdCRRequestDailyQuestReward::Write(
-  const AcCmdCRRequestDailyQuestReward& command,
-  SinkStream& stream)
+  const AcCmdCRRequestDailyQuestReward&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2819,8 +2813,8 @@ void AcCmdCRRequestDailyQuestRewardOK::Write(
 }
 
 void AcCmdCRRequestDailyQuestRewardOK::Read(
-  AcCmdCRRequestDailyQuestRewardOK& command,
-  SourceStream& stream)
+  AcCmdCRRequestDailyQuestRewardOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2859,8 +2853,8 @@ void AcCmdCRMountInjuryHealOK::Write(
 }
 
 void AcCmdCRRegisterQuest::Write(
-  const AcCmdCRRegisterQuest& command,
-  SinkStream& stream)
+  const AcCmdCRRegisterQuest&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2889,15 +2883,15 @@ void AcCmdCRRegisterQuestOK::Write(
 }
 
 void AcCmdCRRegisterQuestOK::Read(
-  AcCmdCRRegisterQuestOK& command,
-  SourceStream& stream)
+  AcCmdCRRegisterQuestOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRRequestQuestReward::Write(
-  const AcCmdCRRequestQuestReward& command,
-  SinkStream& stream)
+  const AcCmdCRRequestQuestReward&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -2933,8 +2927,8 @@ void AcCmdCRRequestQuestRewardOK::Write(
 }
 
 void AcCmdCRRequestQuestRewardOK::Read(
-  AcCmdCRRequestQuestRewardOK& command,
-  SourceStream& stream)
+  AcCmdCRRequestQuestRewardOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }

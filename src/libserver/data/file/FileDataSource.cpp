@@ -1319,6 +1319,9 @@ void server::FileDataSource::StoreDailyQuest(data::Uid uid, const data::DailyQue
   json["unk_1"] = dailyQuest.unk_1();
   json["unk_2"] = dailyQuest.unk_2();
   json["unk_3"] = dailyQuest.unk_3();
+  dataFile << json.dump(2);
+}
+
 void server::FileDataSource::CreateMail(data::Mail& mail)
 {
   mail.uid = ++_mailSequentialId;

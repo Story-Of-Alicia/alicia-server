@@ -402,7 +402,6 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleRequestQuestReward(clientId, command);
       });
-}
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRConfirmItem>(
     [this](ClientId clientId, const auto& command)
     {
@@ -5122,6 +5121,31 @@ void RanchDirector::HandleRequestDailyQuestReward(
   {
     response.rewards.items[i] = {0, 0, 0, 0};
   }
+  
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+
+  protocol::AcCmdRCUpdateDailyQuestNotify noti{
+    .characterUid = clientContext.characterUid,
+    .questId = 101,
+    .unk = {1, 1, 10},
+    .unk0 = 3,
+    .unk1 = 12,
+    .unk2 = 100,
+    .unk3 = 0};
+
+  _commandServer.QueueCommand<decltype(noti)>(
+    clientId,
+    [noti]()
+    {
+      return noti;
+    });
+}
+
 void RanchDirector::HandleUpdateMountInfo(
   ClientId clientId,
   const protocol::AcCmdCRUpdateMountInfo command)
@@ -5158,22 +5182,6 @@ void RanchDirector::HandleUpdateMountInfo(
     {
       return response;
     });
-
-    protocol::AcCmdRCUpdateDailyQuestNotify noti{
-    .characterUid = clientContext.characterUid,
-    .questId = 101,
-    .unk = {1, 1, 10},
-    .unk0 = 3,
-    .unk1 = 12,
-    .unk2 = 100,
-    .unk3 = 0};
-
-  _commandServer.QueueCommand<decltype(noti)>(
-    clientId,
-    [noti]()
-    {
-      return noti;
-    });
 }
 
 void RanchDirector::HandleRegisterQuest(
@@ -5205,8 +5213,6 @@ void RanchDirector::HandleRegisterQuest(
     {
       return response;
     });
-}
-  
 }
 
 void RanchDirector::HandleOpenRandomBox(

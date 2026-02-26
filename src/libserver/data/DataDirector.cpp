@@ -1223,15 +1223,13 @@ void DataDirector::ScheduleCharacterLoad(
 
     std::vector<data::Uid> dailyQuests;
 
-    characterRecord.Immutable(
-      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets, &dailyQuests, &settingsUid](
     std::vector<data::Uid> mailbox;
 
     // Friends prefetch
     std::set<data::Uid> friends;
 
     characterRecord.Immutable(
-      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets, &settingsUid, &mailbox, &friends](
+      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets, &settingsUid, &mailbox, &friends, &dailyQuests](
         const data::Character& character)
       {
         guildUid = character.guildUid();
@@ -1339,7 +1337,6 @@ void DataDirector::ScheduleCharacterLoad(
         "Horses or mount not available");
       return;
     }
-
 
     // Require housing records.
     if (not housingRecords)
