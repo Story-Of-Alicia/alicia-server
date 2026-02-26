@@ -64,6 +64,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _housingDataPath = prepareDataPath("housing");
   _guildDataPath = prepareDataPath("guilds");
   _settingsDataPath = prepareDataPath("settings");
+  _dailyQuestDataPath = prepareDataPath("dailyQuests");
   _mailDataPath = prepareDataPath("mails");
 
   // Read the meta-data file and parse the sequential UIDs.
@@ -85,6 +86,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _housingSequentialUid = meta["housingSequentialUid"].get<uint32_t>();
   _guildSequentialId = meta["guildSequentialId"].get<uint32_t>();
   _settingsSequentialId = meta["settingsSequentialId"].get<uint32_t>();
+  _dailyQuestSequentialId = meta["dailyQuestSequentialId"].get<uint32_t>();
   _mailSequentialId = meta["mailSequentialId"].get<uint32_t>();
 }
 
@@ -114,6 +116,7 @@ void server::FileDataSource::SaveMetadata()
   meta["housingSequentialUid"] = _housingSequentialUid.load();
   meta["guildSequentialId"] = _guildSequentialId.load();
   meta["settingsSequentialId"] = _settingsSequentialId.load();
+  meta["dailyQuestSequentialId"] = _dailyQuestSequentialId.load();
   meta["mailSequentialId"] = _mailSequentialId.load();
 
   metaFile << meta.dump(2);
@@ -344,6 +347,7 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   readSkills(character.skills.speed(), skills["speed"]);
   readSkills(character.skills.magic(), skills["magic"]);
 
+  character.dailyQuests = json["dailyQuests"].get<std::vector<data::Uid>>();
   const auto& mailbox = json["mailbox"];
   character.mailbox.hasNewMail = mailbox["hasNewMail"].get<bool>();
   character.mailbox.inbox = mailbox["inbox"].get<std::vector<data::Uid>>();
@@ -457,6 +461,7 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   skills["magic"] = writeSkills(character.skills.magic());
   json["skills"] = skills;
 
+  json["dailyQuests"] = character.dailyQuests();
   nlohmann::json mailbox;
   mailbox["hasNewMail"] = character.mailbox.hasNewMail();
   mailbox["inbox"] = character.mailbox.inbox();
@@ -1271,6 +1276,52 @@ void server::FileDataSource::DeleteSettings(data::Uid uid)
   std::filesystem::remove(dataFilePath);
 }
 
+void server::FileDataSource::CreateDailyQuest(data::DailyQuest& dailyQuest)
+{
+  dailyQuest.uid = ++_dailyQuestSequentialId;
+}
+
+void server::FileDataSource::RetrieveDailyQuest(data::Uid uid, data::DailyQuest& dailyQuest)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _dailyQuestDataPath, std::format("{}", uid));
+
+  std::ifstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Daily quest file '{}' not accessible", dataFilePath.string()));
+  }
+
+  const auto json = nlohmann::json::parse(dataFile);
+  dailyQuest.uid = json["uid"].get<data::Uid>();
+  dailyQuest.unk_0 = json["unk_0"].get<uint16_t>();
+  dailyQuest.unk_1 = json["unk_1"].get<uint32_t>();
+  dailyQuest.unk_2 = json["unk_2"].get<uint8_t>();
+  dailyQuest.unk_3 = json["unk_3"].get<uint8_t>();
+}
+
+void server::FileDataSource::StoreDailyQuest(data::Uid uid, const data::DailyQuest& dailyQuest)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _dailyQuestDataPath, std::format("{}", uid));
+
+  std::ofstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Daily quest file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json;
+  json["uid"] = dailyQuest.uid();
+  json["unk_0"] = dailyQuest.unk_0();
+  json["unk_1"] = dailyQuest.unk_1();
+  json["unk_2"] = dailyQuest.unk_2();
+  json["unk_3"] = dailyQuest.unk_3();
+  dataFile << json.dump(2);
+}
+
 void server::FileDataSource::CreateMail(data::Mail& mail)
 {
   mail.uid = ++_mailSequentialId;
@@ -1337,6 +1388,12 @@ void server::FileDataSource::StoreMail(data::Uid uid, const data::Mail& mail)
   dataFile << json.dump(2);
 }
 
+void server::FileDataSource::DeleteDailyQuest(data::Uid uid)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _dailyQuestDataPath, std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
+}
 void server::FileDataSource::DeleteMail(data::Uid uid)
 {
   const std::filesystem::path dataFilePath = ProduceDataFilePath(

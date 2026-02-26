@@ -4160,6 +4160,76 @@ struct AcCmdCREmblemListOK
     SourceStream& stream);
 };
 
+struct AcCmdCRUpdateDailyQuest
+{
+  DailyQuest quest{};
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdateDailyQuest;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUpdateDailyQuest& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUpdateDailyQuest& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUpdateDailyQuestOK
+{
+  int32_t newCarrotBalance;
+  DailyQuest quest{};
+  uint32_t unk_1;
+  uint32_t unk_2;
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdateDailyQuestOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUpdateDailyQuestOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUpdateDailyQuestOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUpdateDailyQuestCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdateDailyQuestCancel;
+  }
+  
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUpdateDailyQuestCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUpdateDailyQuestCancel& command,
+     SourceStream& stream);
+};
 struct AcCmdCRUpdateMountInfo
 {
   enum class Action : uint8_t
@@ -4214,6 +4284,148 @@ struct AcCmdCRUpdateMountInfoOK
     SourceStream& stream);
 };
 
+struct AcCmdCRRegisterDailyQuestGroup
+{
+  uint16_t unk_0;
+  std::vector<DailyQuest> dailyQuests;
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRegisterDailyQuestGroup;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRegisterDailyQuestGroup& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRegisterDailyQuestGroup& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRegisterDailyQuestGroupOK
+{
+  uint8_t status;
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRegisterDailyQuestGroupOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRegisterDailyQuestGroupOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRegisterDailyQuestGroupOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCUpdateDailyQuestNotify
+{
+  // TODO: implement in every command that could update a daily quest
+  struct Unk
+  {
+    uint8_t unk0;
+    uint32_t unk1;//progress
+    uint8_t unk2;
+
+    static void Write(const Unk& value, SinkStream& stream);
+    static void Read(Unk& value, SourceStream& stream);
+  };
+    
+  uint32_t characterUid;
+  uint16_t questId;
+  Unk unk;
+  uint32_t unk0;
+  uint8_t unk1; // likely max progress
+  uint32_t unk2;
+  uint32_t unk3;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCUpdateDailyQuestNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCUpdateDailyQuestNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCUpdateDailyQuestNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestDailyQuestReward
+{
+  uint16_t unk0;
+  uint16_t unk1;
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestDailyQuestReward;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestDailyQuestReward& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestDailyQuestReward& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestDailyQuestRewardOK
+{
+  struct Reward
+  {
+    std::vector<Item> items;
+
+    static void Write(const Reward& value, SinkStream& stream);
+    static void Read(Reward& value, SourceStream& stream);
+  } rewards;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestDailyQuestRewardOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestDailyQuestRewardOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestDailyQuestRewardOK& command,
+    SourceStream& stream);
+};
+
 struct AcCmdCRMountInjuryHealOK
 {
   uint32_t horseUid{};
@@ -4225,14 +4437,14 @@ struct AcCmdCRMountInjuryHealOK
   {
     return Command::AcCmdCRMountInjuryHealOK;
   }
-
+  
   //! Writes the command to a provided sink stream.
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
     const AcCmdCRMountInjuryHealOK& command,
     SinkStream& stream);
-
+      
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
@@ -4241,6 +4453,122 @@ struct AcCmdCRMountInjuryHealOK
     SourceStream& stream);
 };
 
+struct AcCmdCRRegisterQuest
+{
+  uint16_t questId;
+  uint32_t npcId;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRegisterQuest;
+  }
+  
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRegisterQuest& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRegisterQuest& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRegisterQuestOK
+{
+  uint16_t questId;
+  uint32_t progress;
+  uint8_t isCompleted;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRegisterQuestOK;
+    }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRegisterQuestOK& command,
+     SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRegisterQuestOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestQuestReward
+{
+  uint16_t unk0; // questTid
+  uint32_t unk1; // npcId
+  uint32_t unk2; // questrewardId
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestQuestReward;
+    }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestQuestReward& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestQuestReward& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestQuestRewardOK
+{
+  uint16_t unk0; //questTid
+  uint32_t unk1; //carrots rewarded
+  uint8_t unk2; //Unk counter
+  uint8_t unk3; //Unk1 counter
+    
+  AcCmdCRRequestDailyQuestRewardOK::Reward rewards;//game has no limit
+
+  struct Unk1 // gives a visual effect when receiving the reward
+  {
+    uint32_t unk0;//npc id
+    uint32_t unk1;//effect id
+
+    static void Write(const Unk1& value, SinkStream& stream);
+    static void Read(Unk1& value, SourceStream& stream);
+  };
+
+  std::array<Unk1, 5> unk4;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestQuestRewardOK;
+    }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestQuestRewardOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestQuestRewardOK& command,
+    SourceStream& stream);
+};
 struct AcCmdCRConfirmItem
 {
   std::string recipientCharacterName;

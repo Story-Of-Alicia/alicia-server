@@ -43,6 +43,7 @@ public:
   using HousingStorage = DataStorage<data::Uid, data::Housing>;
   using GuildStorage = DataStorage<data::Uid, data::Guild>;
   using SettingsStorage = DataStorage<data::Uid, data::Settings>;
+  using DailyQuestStorage = DataStorage<data::Uid, data::DailyQuest>;
   using MailStorage = DataStorage<data::Uid, data::Mail>;
 
   //! Default constructor.
@@ -121,6 +122,10 @@ public:
   [[nodiscard]] Record<data::Settings> CreateSettings() noexcept;
   [[nodiscard]] SettingsStorage& GetSettingsCache();
 
+  [[nodiscard]] Record<data::DailyQuest> GetDailyQuest(data::Uid dailyQuestUid) noexcept;
+  [[nodiscard]] Record<data::DailyQuest> CreateDailyQuest() noexcept;
+  [[nodiscard]] DailyQuestStorage& GetDailyQuestCache();
+  
   [[nodiscard]] Record<data::Mail> GetMail(data::Uid mailUid) noexcept;
   [[nodiscard]] Record<data::Mail> CreateMail() noexcept;
   [[nodiscard]] MailStorage& GetMailCache();
@@ -176,6 +181,8 @@ private:
   GuildStorage _guildStorage;
   //! A character Keybind settings storage.
   SettingsStorage _settingsStorage;
+  //! A daily quest storage.
+  DailyQuestStorage _dailyQuestStorage;
   //! A mail storage.
   MailStorage _mailStorage;
 };

@@ -34,20 +34,13 @@ uint8_t ReadGameModeInfo(
   const YAML::Node& section,
   Course::GameModeInfo& gameMode)
 {
-  gameMode.goodJumpStarPoints = section["goodJumpStarPoints"].as<
-    decltype(gameMode.goodJumpStarPoints)>();
-  gameMode.perfectJumpStarPoints = section["perfectJumpStarPoints"].as<
-    decltype(gameMode.perfectJumpStarPoints)>();
-  gameMode.perfectJumpUnitStarPoints = section["perfectJumpUnitStarPoints"].as<
-    decltype(gameMode.perfectJumpUnitStarPoints)>();
-  gameMode.perfectJumpMaxBonusCombo = section["perfectJumpMaxBonusCombo"].as<
-    decltype(gameMode.perfectJumpMaxBonusCombo)>();
-  gameMode.perfectSpurCheckTime = section["perfectSpurCheckTime"].as<
-    decltype(gameMode.perfectSpurCheckTime)>();
-  gameMode.spurConsumeStarPoints = section["spurConsumeStarPoints"].as<
-    decltype(gameMode.spurConsumeStarPoints)>();
-  gameMode.starPointsMax = section["starPointsMax"].as<
-    decltype(gameMode.starPointsMax)>();
+  gameMode.goodJumpStarPoints = section["goodJumpStarPoints"].as<decltype(gameMode.goodJumpStarPoints)>();
+  gameMode.perfectJumpStarPoints = section["perfectJumpStarPoints"].as<decltype(gameMode.perfectJumpStarPoints)>();
+  gameMode.perfectJumpUnitStarPoints = section["perfectJumpUnitStarPoints"].as<decltype(gameMode.perfectJumpUnitStarPoints)>();
+  gameMode.perfectJumpMaxBonusCombo = section["perfectJumpMaxBonusCombo"].as<decltype(gameMode.perfectJumpMaxBonusCombo)>();
+  gameMode.perfectSpurCheckTime = section["perfectSpurCheckTime"].as<decltype(gameMode.perfectSpurCheckTime)>();
+  gameMode.spurConsumeStarPoints = section["spurConsumeStarPoints"].as<decltype(gameMode.spurConsumeStarPoints)>();
+  gameMode.starPointsMax = section["starPointsMax"].as<decltype(gameMode.starPointsMax)>();
   const auto itemSpawnersSection = section["itemSpawners"]["collection"];
   if (itemSpawnersSection)
   {
@@ -75,28 +68,21 @@ uint32_t ReadMapBlockInfo(
   const YAML::Node& section,
   Course::MapBlockInfo& mapBlock)
 {
-  mapBlock.requiredLevel = section["requiredLevel"].as<
-    decltype(mapBlock.requiredLevel)>();
-  mapBlock.podiumId = section["podiumId"].as<
-    decltype(mapBlock.podiumId)>();
+  mapBlock.requiredLevel = section["requiredLevel"].as<decltype(mapBlock.requiredLevel)>();
+  mapBlock.podiumId = section["podiumId"].as<decltype(mapBlock.podiumId)>();
   mapBlock.offset = {
     section["offset"][0].as<float>(),
     section["offset"][1].as<float>(),
-    section["offset"][2].as<float>()
-  };
-  mapBlock.trainingFee = section["trainingFee"].as<
-    decltype(mapBlock.trainingFee)>();
-  mapBlock.timeLimit = section["timeLimit"].as<
-    decltype(mapBlock.timeLimit)>();
-  mapBlock.waitTime = section["waitTime"].as<
-    decltype(mapBlock.waitTime)>();
+    section["offset"][2].as<float>()};
+  mapBlock.trainingFee = section["trainingFee"].as<decltype(mapBlock.trainingFee)>();
+  mapBlock.timeLimit = section["timeLimit"].as<decltype(mapBlock.timeLimit)>();
+  mapBlock.waitTime = section["waitTime"].as<decltype(mapBlock.waitTime)>();
 
   const auto deckItemCollectionSection = section["deckItems"]["collection"];
   for (const auto& deckItemSection : deckItemCollectionSection)
   {
     auto& deckItem = mapBlock.deckItems.emplace_back();
-    deckItem.deckId = deckItemSection["deckId"].as<
-      decltype(Course::MapBlockInfo::DeckItemInstance::deckId)>();
+    deckItem.deckId = deckItemSection["deckId"].as<decltype(Course::MapBlockInfo::DeckItemInstance::deckId)>();
     deckItem.position = {
       deckItemSection["position"][0].as<float>(),
       deckItemSection["position"][1].as<float>(),
@@ -106,7 +92,7 @@ uint32_t ReadMapBlockInfo(
   return section["id"].as<uint32_t>();
 }
 
-} // anon namespace
+} // namespace
 
 CourseRegistry::CourseRegistry()
 {

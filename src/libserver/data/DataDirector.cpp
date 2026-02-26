@@ -514,6 +514,50 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
         }
         return false;
       })
+  , _dailyQuestStorage(
+      [&](const auto& key, auto& quest)
+      {
+        try
+        {
+          _primaryDataSource->RetrieveDailyQuest(key, quest);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception retrieving daily quest {} from the primary data source: {}", key, x.what());
+        }
+
+        return false;
+      },
+      [&](const auto& key, auto& quest)
+      {
+        try
+        {
+          _primaryDataSource->StoreDailyQuest(key, quest);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception storing daily quest {} on the primary data source: {}", key, x.what());
+        }
+        return false;
+      },
+      [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteDailyQuest(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting daily quest {} from the primary data source: {}", key, x.what());
+           }
+        return false;
+      })
   , _mailStorage(
       [&](const auto& key, auto& mail)
       {
@@ -588,6 +632,7 @@ void DataDirector::Terminate()
     _guildStorage.Terminate();
     _housingStorage.Terminate();
     _settingsStorage.Terminate();
+    _dailyQuestStorage.Terminate();
     _mailStorage.Terminate();
   }
   catch (const std::exception& x)
@@ -616,6 +661,7 @@ void DataDirector::Tick()
     _guildStorage.Tick();
     _housingStorage.Tick();
     _settingsStorage.Tick();
+    _dailyQuestStorage.Tick();
     _mailStorage.Tick();
   }
   catch (const std::exception& x)
@@ -1099,6 +1145,30 @@ void DataDirector::ScheduleUserLoad(
   });
 }
 
+Record<data::DailyQuest> DataDirector::GetDailyQuest(data::Uid DailyQuestUid) noexcept
+{
+  if (DailyQuestUid == data::InvalidUid)
+    return {};
+  return _dailyQuestStorage.Get(DailyQuestUid).value_or(Record<data::DailyQuest>{});
+}
+
+Record<data::DailyQuest> DataDirector::CreateDailyQuest() noexcept
+{
+  return _dailyQuestStorage.Create(
+    [this]()
+    {
+      data::DailyQuest dailyQuest;
+      _primaryDataSource->CreateDailyQuest(dailyQuest);
+
+      return std::make_pair(dailyQuest.uid(), std::move(dailyQuest));
+    });
+}
+
+DataDirector::DailyQuestStorage& DataDirector::GetDailyQuestCache()
+{
+  return _dailyQuestStorage;
+}
+
 void DataDirector::ScheduleCharacterLoad(
   UserDataContext& userDataContext,
   data::Uid characterUid)
@@ -1151,13 +1221,15 @@ void DataDirector::ScheduleCharacterLoad(
 
     std::vector<data::Uid> pets;
 
+    std::vector<data::Uid> dailyQuests;
+
     std::vector<data::Uid> mailbox;
 
     // Friends prefetch
     std::set<data::Uid> friends;
 
     characterRecord.Immutable(
-      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets, &settingsUid, &mailbox, &friends](
+      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets, &settingsUid, &mailbox, &friends, &dailyQuests](
         const data::Character& character)
       {
         guildUid = character.guildUid();
@@ -1178,6 +1250,8 @@ void DataDirector::ScheduleCharacterLoad(
         housing = character.housing();
 
         pets = character.pets();
+
+        dailyQuests = character.dailyQuests();
 
         // Add the mount to the horses list,
         // so that it is loaded with all the horses.
@@ -1213,6 +1287,8 @@ void DataDirector::ScheduleCharacterLoad(
     const auto housingRecords = GetHousingCache().Get(housing);
 
     const auto petRecords = GetPetCache().Get(pets);
+
+    const auto dailyQuestRecords = GetDailyQuestCache().Get(dailyQuests);
 
     // Only require guild if the UID is not invalid.
     if (not guildRecord && guildUid != data::InvalidUid)
@@ -1262,7 +1338,6 @@ void DataDirector::ScheduleCharacterLoad(
       return;
     }
 
-
     // Require housing records.
     if (not housingRecords)
     {
@@ -1286,6 +1361,12 @@ void DataDirector::ScheduleCharacterLoad(
       return;
     }
 
+    if (not dailyQuestRecords)
+    {
+      userDataContext.debugMessage = std::format(
+        "Daily quests not available");
+      return;
+    }
     // Require mail records.
     const auto mailRecords = GetMailCache().Get(mailbox);
     if (not mailRecords)
