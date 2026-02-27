@@ -3448,6 +3448,7 @@ void RaceDirector::HandleStampReward(ClientId clientId)
           // Add carrots to character's balance and indicate carrot reward
           character.carrots() += CarrotReward;
           exchange.carrotsRewarded = CarrotReward;
+          exchange.carrotBalance = character.carrots();
           break;
         }
         case StampRewardType::None:
