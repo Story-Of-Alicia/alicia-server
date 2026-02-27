@@ -3338,15 +3338,75 @@ void RaceDirector::HandleStampReward(ClientId clientId)
   GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
     [this, &rewardType, &exchange](data::Character& character)
     {
-      // TODO: get reward type from character's stamp progression
-      rewardType = StampRewardType::Item;
+      // TODO: get completed stamps (after giving stamp) from character's stamp progression
+      // In its current state, only stamps 3 and 5 unlock rewards
+      bool stampHasReward = 
+        exchange.completedStamps == 3 or
+        exchange.completedStamps == 5;
+      if (stampHasReward)
+      {
+        // TODO: get reward type from stamp event (StampEventSystem?)
+        rewardType = StampRewardType::Package;
+      }
 
       // Distribute reward based on collected stamp, if any at all
       switch (rewardType)
       {
         case StampRewardType::Package:
         {
-          // TODO: implement
+          // TODO: giftboxes (package ID 101 -> 111) do not appear to be in the package config 
+          // TODO: get package ID from stamp event (create new StampEventSystem?)
+          // 잭 오 랜턴 미니 햇 7일 (잭 오 랜턴 미니 햇/Jack-o'-lantern mini hat)
+          constexpr uint32_t SamplePackageId = 1033;
+          exchange.packageId = SamplePackageId;
+
+          // Get package entry from item registry
+          const auto& packageEntry = GetServerInstance().GetItemRegistry().GetPackage(SamplePackageId);
+          if (not packageEntry.has_value())
+            // Package somehow does not exist in the server item registry config
+            throw std::runtime_error(
+              std::format(
+                "HandleStampReward: Package '{}' not found",
+                SamplePackageId));
+
+          // Get package item reward metadata
+          const registry::Package& package = packageEntry.value();
+          const auto& registryItemEntry = GetServerInstance().GetItemRegistry().GetItem(package.tid);
+          if (not registryItemEntry.has_value())
+            // Package reward item somehow does not exist in the server item registry config
+            throw std::runtime_error(
+              std::format(
+                "HandleStampReward: Package reward item '{}' not found",
+                package.tid));
+
+          // Check if package reward item is temporary or not (has item duration)
+          const registry::Item& registryItem = registryItemEntry.value();
+          std::vector<data::Uid> newPackageRewardItems{};
+          if (registryItem.type == registry::Item::Type::Temporary)
+          {
+            // Item has duration
+            const auto& duration = std::chrono::days(package.count); // TODO: is this always in days?
+            newPackageRewardItems.emplace_back(
+              GetServerInstance().GetItemSystem().AddItem(
+                character,
+                package.tid,
+                duration)); 
+          }
+          else
+          {
+            // Item has count
+            newPackageRewardItems.emplace_back(
+              GetServerInstance().GetItemSystem().AddItem(
+                character,
+                package.tid,
+                package.count));
+          }
+
+          // Build protocol items for response with package reward items
+          const auto packageRewardItemRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(newPackageRewardItems);
+          protocol::BuildProtocolItems(
+            exchange.newItems,
+            *packageRewardItemRecords);
           break;
         }
         case StampRewardType::Item:
