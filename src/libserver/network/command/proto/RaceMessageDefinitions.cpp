@@ -1915,4 +1915,29 @@ void AcCmdCRKickNotify::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdRCExchangeItem::Write(
+  const AcCmdRCExchangeItem& command,
+  SinkStream& stream)
+{
+  stream.Write(command.packageId)
+    .Write(command.carrotsRewarded)
+    .Write(command.carrotBalance)
+    .Write(command.completedStamps);
+
+  // Deserialiser expects 250 (0xFA) items or less
+  assert(command.newItems.size() <= 250);
+  stream.Write(static_cast<uint8_t>(command.newItems.size()));
+  for (const Item& item : command.newItems)
+  {
+    stream.Write(item);
+  }
+}
+
+void AcCmdRCExchangeItem::Read(
+  AcCmdRCExchangeItem&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol

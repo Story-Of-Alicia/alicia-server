@@ -281,6 +281,9 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRKick& command);
 
+  //! Used internally to indicate to a character of stamp reward progress.
+  void HandleStampReward(ClientId clientId);
+
   void PrepareItemSpawners(data::Uid roomUid);
 
   //!

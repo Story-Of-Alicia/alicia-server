@@ -167,6 +167,8 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRAwardStart>(
     [this](ClientId clientId, const auto& message)
     {
+      // TODO: is this the correct place to process stamp rewards before scoreboard/stamp progress is shown?
+      HandleStampReward(clientId);
       HandleAwardStart(clientId, message);
     });
 
@@ -3306,6 +3308,102 @@ void RaceDirector::HandleKickUser(
         return notify;
       });
   }
+}
+
+void RaceDirector::HandleStampReward(ClientId clientId)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  // TODO: extract this to somewhere suitable, perhaps a StampEventSystem?
+  enum StampRewardType
+  {
+    None,
+    Package,
+    Item,
+    Carrots
+  } rewardType{StampRewardType::None};
+
+  // TODO: track this with every character
+  // Supposedly one stamp per every completed match (check for DNF, completed race etc)
+  constexpr uint32_t CompletedStamps = 3; 
+
+  protocol::AcCmdRCExchangeItem exchange{
+    .packageId = 0,
+    .carrotsRewarded = 0,
+    .carrotBalance = 0,
+    .completedStamps = CompletedStamps,
+    .newItems = {}};
+
+  // Get mutable character record
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+    [this, &rewardType, &exchange](data::Character& character)
+    {
+      // TODO: get reward type from character's stamp progression
+      rewardType = StampRewardType::Item;
+
+      // Distribute reward based on collected stamp, if any at all
+      switch (rewardType)
+      {
+        case StampRewardType::Package:
+        {
+          // TODO: implement
+          break;
+        }
+        case StampRewardType::Item:
+        {
+          // Create and add item(s) to character's inventory
+          // Multiple items can be rewarded, only the last rewarded item will be shown in the popup
+
+          // TODO: get item TID from stamp event (create new StampEventSystem?)
+          // TODO: get item config (duration/count) from stamp event
+          // Sample item rewards (horse armour)
+          std::unordered_map<data::Tid, std::chrono::days> itemRewardDictionary{
+            {20126, std::chrono::days(90)},
+            {20005, std::chrono::days(120)}
+          };
+
+          // Add items to character's inventory and build a list of reward item UIDs
+          std::vector<data::Uid> rewardItemUids{};
+          for (const auto& [itemTid, duration] : itemRewardDictionary)
+          {
+            const data::Uid newItemUid = GetServerInstance().GetItemSystem().AddItem(
+              character,
+              itemTid,
+              duration);
+            rewardItemUids.emplace_back(newItemUid);
+          }
+
+          // Build protocol items for response with reward items
+          const auto rewardItemRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(rewardItemUids);
+          protocol::BuildProtocolItems(
+            exchange.newItems,
+            *rewardItemRecords);
+          break;
+        }
+        case StampRewardType::Carrots:
+        {
+          // TODO: get carrot reward from stamp event (StampEventSystem?)
+          constexpr uint32_t CarrotReward = 10000;
+
+          // Add carrots to character's balance and indicate carrot reward
+          character.carrots() += CarrotReward;
+          exchange.carrotsRewarded = CarrotReward;
+          break;
+        }
+        case StampRewardType::None:
+        {
+          // No reward to distribute, we are done here.
+          break;
+        }
+        default:
+        {
+          throw std::runtime_error("Invalid StampRewardType value");
+        }
+      }
+    });
+
+  // Notify client of stamp progression (even if there is no reward)
+  _commandServer.QueueCommand<decltype(exchange)>(clientId, [exchange]{ return exchange; });
 }
 
 } // namespace server

@@ -2540,6 +2540,54 @@ struct AcCmdCRKickNotify
     SourceStream& stream);
 };
 
+struct AcCmdRCExchangeItem
+{
+  // Rewards the character a stamp upon race completion.
+  // Reward is displayed/given based on the following reward priority:
+  // 1. Package ID
+  // 2. (New) Item TID
+  // 3. New carrots
+
+  // When handing out reward in the form of new item or package, both must be added
+  // to character's inventory before emitting this command to the client.
+
+  // New item TID seems to be detected when a new item is
+  // added to inventory based on the full inventory count.
+
+  //! Corresponds to a Package ID located in libconfig/PackageItemDesc
+  uint32_t packageId{};
+  uint32_t carrotsRewarded{};
+  //! Character's carrot balance.
+  //! Notice: currently seems to do nothing, needs verification
+  int32_t carrotBalance{};
+  //! Position of the completed stamp.
+  //! Zero-indexed, 0 <= x <= 5.
+  uint32_t completedStamps{};
+
+  //! New item(s) added to character's inventory.
+  //! Max 250 (0xFA) items.
+  std::vector<Item> newItems{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCExchangeItem;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCExchangeItem& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCExchangeItem& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RACE_MESSAGE_DEFINES_HPP
