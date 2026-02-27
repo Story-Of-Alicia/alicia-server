@@ -3417,7 +3417,7 @@ void RaceDirector::HandleStampReward(ClientId clientId)
           // TODO: get item TID from stamp event (create new StampEventSystem?)
           // TODO: get item config (duration/count) from stamp event
           // Sample item rewards (horse armour)
-          std::unordered_map<data::Tid, std::chrono::days> itemRewardDictionary{
+          const std::unordered_map<data::Tid, std::chrono::days> itemRewardDictionary{
             {20126, std::chrono::days(90)},
             {20005, std::chrono::days(120)}
           };

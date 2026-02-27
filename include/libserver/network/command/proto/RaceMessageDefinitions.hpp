@@ -2545,20 +2545,17 @@ struct AcCmdRCExchangeItem
   // Rewards the character a stamp upon race completion.
   // Reward is displayed/given based on the following reward priority:
   // 1. Package ID
-  // 2. (New) Item TID
-  // 3. New carrots
+  // 2. Last (New) Item TID
+  // 3. Carrots
 
   // When handing out reward in the form of new item or package, both must be added
   // to character's inventory before emitting this command to the client.
 
-  // New item TID seems to be detected when a new item is
-  // added to inventory based on the full inventory count.
-
-  //! Corresponds to a Package ID located in libconfig/PackageItemDesc
+  //! Corresponds to a `PackageID` located in libconfig/`PackageItemDesc`
   uint32_t packageId{};
+  //! Amount of carrots rewarded.
   uint32_t carrotsRewarded{};
   //! Character's carrot balance.
-  //! Notice: currently seems to do nothing, needs verification
   int32_t carrotBalance{};
   //! Position of the completed stamp.
   //! Zero-indexed, 0 <= x <= 5.
