@@ -17,59 +17,25 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
-#ifndef ALICIA_SERVER_AUTHORIZATIONSERVICE_HPP
-#define ALICIA_SERVER_AUTHORIZATIONSERVICE_HPP
+#ifndef ALICIA_SERVER_LOCALAUTHENTICATIONBACKEND_HPP
+#define ALICIA_SERVER_LOCALAUTHENTICATIONBACKEND_HPP
 
 #include "AuthenticationBackend.hpp"
-
-#include <mutex>
-#include <string>
-#include <queue>
 
 namespace server
 {
 
-class ServerInstance;
-
-class AuthenticationService final
+class LocalAuthenticationBackend final
+  : public AuthenticationBackend
 {
 public:
-  struct Verdict
-  {
-    std::string userName;
-    bool isAuthenticated{false};
-  };
+  ~LocalAuthenticationBackend() override = default;
 
-  explicit AuthenticationService(ServerInstance& serverInstance);
-
-  void Initialize();
-  void Terminate() noexcept;
-  void Tick() noexcept;
-
-  void QueueAuthentication(
+  std::optional<bool> Authenticate(
     const std::string& userName,
-    const std::string& userToken) noexcept;
-
-  [[nodiscard]] std::vector<Verdict> PollAuthentications() noexcept;
-
-private:
-  struct Authentication
-  {
-    std::string userName;
-    std::string userToken;
-  };
-
-  ServerInstance& _serverInstance;
-
-  std::mutex _queueMutex;
-  std::queue<Authentication> _queue{};
-
-  std::mutex _verdictsMutex{};
-  std::vector<Verdict> _verdicts{};
-
-  std::unique_ptr<AuthenticationBackend> _backend;
+    const std::string& userToken) override;
 };
 
 } // namespace server
 
-#endif // ALICIA_SERVER_AUTHORIZATIONSERVICE_HPP
+#endif // ALICIA_SERVER_LOCALAUTHENTICATIONBACKEND_HPP

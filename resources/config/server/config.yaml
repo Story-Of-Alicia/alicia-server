@@ -9,9 +9,10 @@ server:
   authentication:
     # Type of authentication backend.
     backend: postgres
-    # Connection string to the Postgre SQL database.
-    # https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
-    connectionUri: 'postgresql://storyofalicia:dev@127.0.0.1:5481/storyofalicia'
+    postgres:
+      # Connection string to the Postgre SQL database.
+      # https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
+      connectionUri: 'postgresql://storyofalicia:dev@127.0.0.1:5432/storyofalicia'
   # Configuration section of the lobby server.
   lobby:
     # Whether the lobby server is enabled.

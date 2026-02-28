@@ -51,8 +51,13 @@ public:
   //!
   struct Authentication
   {
-    std::string type;
-    std::string connectionUri;
+    std::string backend;
+
+    struct Postgres
+    {
+      std::string connectionUri;
+    } postgres;
+
   } authentication{};
 
   //!

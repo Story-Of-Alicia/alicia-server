@@ -182,8 +182,8 @@ void Config::LoadFromFile(const std::filesystem::path& filePath)
     try
     {
       const auto generalYaml = serverYaml["authentication"];
-      authentication.type = generalYaml["type"].as<std::string>("postgres");
-      authentication.connectionUri = generalYaml["connectionUri"].as<std::string>("");
+      authentication.backend = generalYaml["backend"].as<std::string>("local");
+      authentication.postgres.connectionUri = generalYaml["postgres"]["connectionUri"].as<std::string>("");
     }
     catch (const std::exception& e)
     {

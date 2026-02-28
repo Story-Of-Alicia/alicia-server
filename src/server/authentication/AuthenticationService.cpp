@@ -19,6 +19,8 @@
 
 #include "server/auth/AuthenticationService.hpp"
 
+#include "server/auth/LocalAuthenticationBackend.hpp"
+#include "server/auth/PostgresAuthenticationBackend.hpp"
 #include "server/ServerInstance.hpp"
 
 #include <spdlog/spdlog.h>
@@ -31,22 +33,48 @@ AuthenticationService::AuthenticationService(ServerInstance& serverInstance)
 {
 }
 
-void AuthenticationService::Initialize() noexcept
+void AuthenticationService::Initialize()
 {
-  try
+  const auto& authenticationSettings = _serverInstance.GetSettings().authentication;
+
+  if (authenticationSettings.backend == "postgres")
   {
-    _pqcx = pqxx::connection(
-      _serverInstance.GetSettings().authentication.connectionUri);
+    try
+    {
+      _backend = std::make_unique<PostgresAuthenticationBackend>(
+        authenticationSettings.postgres.connectionUri);
+        spdlog::info("Authentication service is using Postgres backend");
+    }
+    catch (const std::exception& x)
+    {
+      spdlog::error("Exception initializing Postgres backend for authentication service: {}", x.what());
+    }
   }
-  catch (const std::exception& x)
+  else if (authenticationSettings.backend == "local")
   {
-    spdlog::error("Exception wile connecting to the Postgres backend: {}", x.what());
+    try
+    {
+      _backend = std::make_unique<LocalAuthenticationBackend>();
+      spdlog::info("Authentication service is using local backend");
+    }
+    catch (const std::exception& x)
+    {
+      spdlog::error("Exception initializing local backend for authentication service: {}", x.what());
+    }
   }
+  else
+  {
+    spdlog::error("Unknown backend for authentication service: '{}'", authenticationSettings.backend);
+  }
+
+  if (not _backend)
+    throw std::runtime_error("Authentication service backend is not available");
 }
 
 void AuthenticationService::Terminate() noexcept
 {
-  _pqcx.close();
+  if (_backend)
+    _backend.reset();
 }
 
 void AuthenticationService::Tick() noexcept
@@ -54,8 +82,23 @@ void AuthenticationService::Tick() noexcept
   if (_queue.empty())
     return;
 
- [[maybe_unused]] const Authentication& request = _queue.front();
+  if (not _backend)
+    return;
 
+  std::scoped_lock lock(_queueMutex);
+
+  const Authentication& request = _queue.front();
+  const auto result = _backend->Authenticate(request.userName, request.userToken);
+
+  if (not result)
+    return;
+
+  {
+    std::scoped_lock verdictsLock(_verdictsMutex);
+    _verdicts.emplace_back(Verdict{
+      .userName = request.userName,
+      .isAuthenticated = result.value_or(false)});
+  }
 
   _queue.pop();
 }
@@ -64,6 +107,7 @@ void AuthenticationService::QueueAuthentication(
   const std::string& userName,
   const std::string& userToken) noexcept
 {
+  std::scoped_lock lock(_queueMutex);
   _queue.emplace(Authentication{
     .userName = userName,
     .userToken = userToken});
@@ -73,6 +117,9 @@ std::vector<AuthenticationService::Verdict>
 AuthenticationService::PollAuthentications() noexcept
 {
   std::scoped_lock lock(_verdictsMutex);
+
+  if (_verdicts.empty())
+    return {};
 
   const auto results = _verdicts;
   _verdicts.clear();
