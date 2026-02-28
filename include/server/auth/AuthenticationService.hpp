@@ -22,6 +22,7 @@
 
 #include "AuthenticationBackend.hpp"
 
+#include <memory>
 #include <mutex>
 #include <string>
 #include <queue>
