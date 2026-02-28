@@ -21,6 +21,7 @@
 #define INSTANCE_HPP
 
 #include "server/Config.hpp"
+#include "server/auth/AuthenticationService.hpp"
 #include "server/lobby/LobbyDirector.hpp"
 #include "server/chat/AllChatDirector.hpp"
 #include "server/chat/PrivateChatDirector.hpp"
@@ -57,6 +58,10 @@ public:
   void Initialize();
   //! Terminates the server instance.
   void Terminate();
+
+  //! Returns reference to the authentication service.
+  //! @returns Reference to the authentication service.
+  AuthenticationService& GetAuthenticationService();
 
   //! Returns reference to the data director.
   //! @returns Reference to the data director.
@@ -177,6 +182,11 @@ private:
   //! A config.
   Config _config;
 
+  //! A thread of the authentication service.
+  std::thread _authenticationThread;
+  //! An authentication service.
+  AuthenticationService _authenticationService;
+
   //! A thread of the data director.
   std::thread _dataDirectorThread;
   //! A data director.
@@ -233,6 +243,7 @@ private:
   ModerationSystem _moderationSystem;
   //! A room system.
   RoomSystem _roomSystem;
+
 };
 
 } // namespace server

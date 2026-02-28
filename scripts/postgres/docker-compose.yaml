@@ -1,0 +1,12 @@
+# Instance of Postgres for development purposes
+services:
+  instance:
+    image: postgres
+    restart: always
+    shm_size: 128mb
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: storyofalicia
+      POSTGRES_DB: storyofalicia
+      POSTGRES_PASSWORD: dev

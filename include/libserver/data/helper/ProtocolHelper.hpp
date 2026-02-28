@@ -6,11 +6,11 @@
 #define PROTOCOLHELPER_HPP
 
 #include "libserver/data/DataDefinitions.hpp"
-#include "libserver/data/DataStorage.hpp"
+#include "libserver/data/Record.hpp"
+
 #include "libserver/network/command/proto/CommonStructureDefinitions.hpp"
 #include "libserver/network/command/proto/LobbyMessageDefinitions.hpp"
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
-#include "server/ServerInstance.hpp"
 
 namespace server
 {

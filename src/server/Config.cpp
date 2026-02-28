@@ -178,6 +178,18 @@ void Config::LoadFromFile(const std::filesystem::path& filePath)
       spdlog::error("Unhandled exception parsing the general config: {}", e.what());
     }
 
+    // Authentication config
+    try
+    {
+      const auto generalYaml = serverYaml["authentication"];
+      authentication.type = generalYaml["type"].as<std::string>("postgres");
+      authentication.connectionUri = generalYaml["connectionUri"].as<std::string>("");
+    }
+    catch (const std::exception& e)
+    {
+      spdlog::error("Unhandled exception parsing the authentication config: {}", e.what());
+    }
+
     // Lobby config
     try
     {

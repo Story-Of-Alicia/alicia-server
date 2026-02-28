@@ -89,6 +89,7 @@ target_link_libraries(alicia-libserver PUBLIC
 
 # alicia-server target
 add_executable(alicia-server
+        src/server/authentication/AuthenticationService.cpp
         src/server/main.cpp
         src/server/ServerInstance.cpp
         src/server/Config.cpp
@@ -113,7 +114,8 @@ target_include_directories(alicia-server
 target_link_libraries(alicia-server PRIVATE
         project-properties
         platform-properties
-        alicia-libserver)
+        alicia-libserver
+        libpqxx::pqxx)
 target_include_directories(alicia-server PUBLIC
         "${PROJECT_BINARY_DIR}/generated")
 

@@ -1259,7 +1259,7 @@ struct ChatCmdChannelChatTrs
   std::string messageAuthor{};
 
   std::string message{};
-  protocol::ChatCmdChat::Role role{};
+  ChatCmdChat::Role role{};
 
   static ChatterCommand GetCommand()
   {

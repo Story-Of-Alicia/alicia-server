@@ -182,18 +182,25 @@ void AllChatDirector::HandleChatterChat(
   const auto& clientContext = GetClientContext(clientId);
 
   std::string name{};
+  bool isGameMaster = false;
   _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
-    [&name](const data::Character& character)
+    [&name, &isGameMaster](const data::Character& character)
     {
       name = character.name();
+      isGameMaster = character.role() == data::Character::Role::GameMaster;
     });
+
+  if (isGameMaster)
+  {
+    name = std::format("[GM] {}", name);
+  }
 
   // ChatCmdChatTrs did not work in any way shape or form, the handler seemed to just do nothing
   // Opted for ChatCmdChannelChatTrs for global chat
   protocol::ChatCmdChannelChatTrs notify{
     .messageAuthor = name,
-    .message = command.message,
-    .role = command.role};
+    .message = std::format("<a href=\"https://storyofalicia.com\">{}</a>", command.message),
+    .role = protocol::ChatCmdChat::Role::User};
   
   for (const auto& [onlineClientId, onlineClientContext] : _clients)
   {

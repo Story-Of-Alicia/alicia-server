@@ -39,6 +39,7 @@ void DumpStackTrace()
 ServerInstance::ServerInstance(
   const std::filesystem::path& resourceDirectory)
   : _resourceDirectory(resourceDirectory)
+  , _authenticationService(*this)
   , _dataDirector(resourceDirectory / "data")
   , _lobbyDirector(*this)
   , _messengerDirector(*this)
@@ -90,6 +91,24 @@ void ServerInstance::Initialize()
 
   // Initialize the directors and tick them on their own threads.
   // Directors will terminate their tick loop once `_shouldRun` flag is set to false.
+
+  // Authentication service
+  _authenticationThread = std::thread([this]()
+  {
+    try
+    {
+      _authenticationService.Initialize();
+      RunDirectorTaskLoop(_authenticationService);
+      _authenticationService.Terminate();
+    }
+    catch (const std::exception& x)
+    {
+      spdlog::error("Unhandled exception in the authentication: {}", x.what());
+      DumpStackTrace();
+
+      _shouldRun = false;
+    }
+  });
 
   // Data director
   _dataDirectorThread = std::thread([this]()
@@ -230,6 +249,11 @@ void ServerInstance::Initialize()
 void ServerInstance::Terminate()
 {
   _shouldRun.store(false, std::memory_order::relaxed);
+}
+
+AuthenticationService& ServerInstance::GetAuthenticationService()
+{
+  return _authenticationService;
 }
 
 DataDirector& ServerInstance::GetDataDirector()
