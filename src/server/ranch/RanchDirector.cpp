@@ -467,6 +467,18 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleMountRentInfo(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRMountRent>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleMountRent(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRMountRentReset>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleMountRentReset(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -5538,11 +5550,49 @@ void RanchDirector::HandleMountRentInfo(
 {
   protocol::AcCmdCRMountRentInfoOK response{
     .unk0 = 1,
-    .unk1 = 1,
-    .unk2 = 1,
-    .unk3 = 1
+    .rent = protocol::Rent{
+      .mountUid = 1,
+      .val1 = 1,
+      .val2 = 1
+    },
+    .unk2 = 0,
+    .unk3 = 3
   };
 
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+};
+
+void RanchDirector::HandleMountRent(
+  ClientId clientId,
+  const protocol::AcCmdCRMountRent command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid);
+
+  protocol::AcCmdCRMountRentOK response {
+    .rent = command.rent,
+    .status = command.status
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+};
+
+void RanchDirector::HandleMountRentReset(
+  ClientId clientId,
+  const protocol::AcCmdCRMountRentReset /*command*/)
+{
+  protocol::AcCmdCRMountRentResetOK response{};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,

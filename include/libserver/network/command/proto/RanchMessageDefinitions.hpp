@@ -5214,7 +5214,7 @@ struct AcCmdCRMountRentInfo
 struct AcCmdCRMountRentInfoOK
 {
   uint32_t unk0;
-  uint32_t unk1;
+  Rent rent;
   uint16_t unk2;
   uint32_t unk3;
 
@@ -5235,6 +5235,100 @@ struct AcCmdCRMountRentInfoOK
   //! @param stream Source stream.
   static void Read(
     AcCmdCRMountRentInfoOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRMountRent
+{
+  Rent rent;
+  uint8_t status;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRMountRent;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRMountRent& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRMountRent& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRMountRentOK
+{
+  Rent rent;
+  uint8_t status;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRMountRentOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRMountRentOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRMountRentOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRMountRentReset
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRMountRentReset;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRMountRentReset& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRMountRentReset& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRMountRentResetOK
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRMountRentResetOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRMountRentResetOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRMountRentResetOK& command,
     SourceStream& stream);
 };
 

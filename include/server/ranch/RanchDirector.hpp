@@ -454,6 +454,14 @@ private:
     ClientId clientId,
     protocol::AcCmdCRMountRentInfo reason);
 
+  void HandleMountRent(
+    ClientId clientId,
+    const protocol::AcCmdCRMountRent command);
+
+  void HandleMountRentReset(
+    ClientId clientId,
+    const protocol::AcCmdCRMountRentReset command);
+
   //!
   ServerInstance& _serverInstance;
   //!

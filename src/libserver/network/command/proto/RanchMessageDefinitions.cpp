@@ -3318,7 +3318,7 @@ void AcCmdCRMountRentInfoOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.unk0)
-    .Write(command.unk1)
+    .Write(command.rent)
     .Write(command.unk2)
     .Write(command.unk3);
 }
@@ -3328,6 +3328,64 @@ void AcCmdCRMountRentInfoOK::Read(
 {
   throw std::runtime_error("Not implemented");
 }
+
+void AcCmdCRMountRent::Write(
+  const AcCmdCRMountRent&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+};
+
+void AcCmdCRMountRent::Read(
+  AcCmdCRMountRent& command,
+  SourceStream& stream)
+{
+  stream.Read(command.rent)
+    .Read(command.status);
+};
+
+void AcCmdCRMountRentOK::Write(
+  const AcCmdCRMountRentOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.rent)
+    .Write(command.status);
+};
+
+void AcCmdCRMountRentOK::Read(
+  AcCmdCRMountRentOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+};
+
+void AcCmdCRMountRentReset::Write(
+  const AcCmdCRMountRentReset&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+};
+
+void AcCmdCRMountRentReset::Read(
+  AcCmdCRMountRentReset&,
+  SourceStream&)
+{
+  //Empty
+};
+
+void AcCmdCRMountRentResetOK::Write(
+  const AcCmdCRMountRentResetOK&,
+  SinkStream&)
+{
+  //Empty
+};
+
+void AcCmdCRMountRentResetOK::Read(
+  AcCmdCRMountRentResetOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+};
 
 } // namespace server::protocol
 
