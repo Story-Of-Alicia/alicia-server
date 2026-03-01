@@ -115,6 +115,26 @@ public:
       });
   }
 
+  Record<Data> GetOrCreate(DataSupplier supplier)
+  {
+    auto [key, data] = supplier();
+    auto [it, created] = _entries.try_emplace(key);
+    if (not created)
+      return Record(&it->second.value, &it->second.mutex, [this, key]()
+      {
+        RequestStore(key);
+      });
+
+    auto& entry = it->second;
+    entry.value = std::move(data);
+    entry.available = true;
+
+    return Record(&entry.value, &entry.mutex, [this, key]()
+      {
+        RequestStore(key);
+      });
+  }
+
   std::optional<Record<Data>> Get(const Key& key, bool retrieve = true)
   {
     auto [recordIter, created] = _entries.try_emplace(key);

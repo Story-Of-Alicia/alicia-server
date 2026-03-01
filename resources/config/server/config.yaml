@@ -8,7 +8,7 @@ server:
   # Authentication configuration section
   authentication:
     # Type of authentication backend.
-    backend: postgres
+    backend: local
     postgres:
       # Connection string to the Postgre SQL database.
       # https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
