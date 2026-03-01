@@ -144,7 +144,7 @@ size_t ChatterServer::OnClientData(
       break;
     }
 
-    const auto commandDataLength = header.length - sizeof(protocol::ChatterCommandHeader);
+    const size_t commandDataLength = header.length - sizeof(protocol::ChatterCommandHeader);
     std::vector<std::byte> commandData(commandDataLength);
 
     SinkStream commandDataSink({commandData.begin(), commandData.end()});

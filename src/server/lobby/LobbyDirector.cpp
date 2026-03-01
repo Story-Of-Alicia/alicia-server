@@ -299,8 +299,6 @@ void LobbyDirector::ProcessLoginRequest()
     return;
   }
 
-  spdlog::info("User '{}' succeeded in authentication", loginContext.userName);
-
   // Request the load of the user data if not requested yet.
   if (not loginContext.userLoadRequested)
   {

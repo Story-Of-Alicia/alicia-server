@@ -122,8 +122,11 @@ void server::FileDataSource::SaveMetadata()
   metaFile << meta.dump(2);
 }
 
-void server::FileDataSource::CreateUser(data::User&)
+void server::FileDataSource::CreateUser(data::User& user)
 {
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _userDataPath, user.name());
+
 }
 
 void server::FileDataSource::RetrieveUser(const std::string_view& name, data::User& user)

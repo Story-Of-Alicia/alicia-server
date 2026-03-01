@@ -126,8 +126,6 @@ using Clock = std::chrono::system_clock;
 //! User
 struct User
 {
-  //! An UID of the user.
-  dao::Field<Uid> uid{InvalidUid};
   //! A name of the user.
   dao::Field<std::string> name{};
   //! An authorization token of the user.
