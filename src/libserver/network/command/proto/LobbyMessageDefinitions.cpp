@@ -1651,8 +1651,8 @@ void AcCmdLCInviteGuildJoinOK::Write(
 }
 
 void AcCmdLCPTSPremiumInfo::Read(
-  AcCmdLCPTSPremiumInfo& command,
-  SourceStream& stream)
+  AcCmdLCPTSPremiumInfo&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }

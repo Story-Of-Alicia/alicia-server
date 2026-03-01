@@ -3247,14 +3247,14 @@ void AcCmdCROpenRandomBoxCancel::Read(
 }
 
 void AcCmdCRCheckPCBangGiftItem::Write(
-  const AcCmdCRCheckPCBangGiftItem& command,
-  SinkStream& stream)
+  const AcCmdCRCheckPCBangGiftItem&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 void AcCmdCRCheckPCBangGiftItem::Read(
-  AcCmdCRCheckPCBangGiftItem& command,
-  SourceStream& stream)
+  AcCmdCRCheckPCBangGiftItem&,
+  SourceStream&)
 {
   //empty
 }
@@ -3265,15 +3265,15 @@ void AcCmdCRCheckPCBangGiftItemOK::Write(
   stream.Write(command.unk0);
 }
 void AcCmdCRCheckPCBangGiftItemOK::Read(
-  AcCmdCRCheckPCBangGiftItemOK& command,
-  SourceStream& stream)
+  AcCmdCRCheckPCBangGiftItemOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRRequestPCBangGift::Write(
-  const AcCmdCRRequestPCBangGift& command,
-  SinkStream& stream)
+  const AcCmdCRRequestPCBangGift&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -3295,21 +3295,21 @@ void AcCmdCRRequestPCBangGiftOK::Write(
   }
 }
 void AcCmdCRRequestPCBangGiftOK::Read(
-  AcCmdCRRequestPCBangGiftOK& command,
-  SourceStream& stream)
+  AcCmdCRRequestPCBangGiftOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRMountRentInfo::Write(
-  const AcCmdCRMountRentInfo& command,
-  SinkStream& stream)
+  const AcCmdCRMountRentInfo&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 void AcCmdCRMountRentInfo::Read(
-  AcCmdCRMountRentInfo& command,
-  SourceStream& stream)
+  AcCmdCRMountRentInfo&,
+  SourceStream&)
 {
   // empty
 }
@@ -3323,8 +3323,8 @@ void AcCmdCRMountRentInfoOK::Write(
     .Write(command.unk3);
 }
 void AcCmdCRMountRentInfoOK::Read(
-  AcCmdCRMountRentInfoOK& command,
-  SourceStream& stream)
+  AcCmdCRMountRentInfoOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }

@@ -5426,7 +5426,7 @@ void RanchDirector::HandleInviteUser(
 
 void RanchDirector::HandleCheckPCBangGiftItem(
   ClientId clientId,
-  const protocol::AcCmdCRCheckPCBangGiftItem command)
+  const protocol::AcCmdCRCheckPCBangGiftItem /*command*/)
 {
   protocol::AcCmdCRCheckPCBangGiftItemOK response{
     //1 sets carrots to recieved
@@ -5534,7 +5534,7 @@ void RanchDirector::HandleRequestPCBangGift(
 
 void RanchDirector::HandleMountRentInfo(
   ClientId clientId,
-  const protocol::AcCmdCRMountRentInfo command)
+  const protocol::AcCmdCRMountRentInfo /*command*/)
 {
   protocol::AcCmdCRMountRentInfoOK response{
     .unk0 = 1,
