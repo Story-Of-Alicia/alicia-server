@@ -49,158 +49,32 @@ void LobbyDirector::Terminate()
 
 void LobbyDirector::Tick()
 {
-  while (not _loginResponseQueue.empty())
+  // Process the client login response queue.
+  if (not _loginResponseQueue.empty())
   {
-    const network::ClientId clientId = _loginResponseQueue.front();
-    auto& loginContext = _clientLogins[clientId];
-
-    // If the user character load was already requested wait for the load to complete.
-    if (loginContext.userCharacterLoadRequested)
-    {
-      if (_serverInstance.GetDataDirector().AreDataBeingLoaded(loginContext.userName))
-      {
-        continue;
-      }
-    }
-
-    const auto userRecord = _serverInstance.GetDataDirector().GetUser(loginContext.userName);
-    assert(userRecord.IsAvailable());
-
-    auto characterUid = data::InvalidUid;
-    userRecord.Immutable(
-      [&characterUid](const data::User& user)
-      {
-        characterUid = user.characterUid();
-      });
-
-    const bool hasCharacter = characterUid != data::InvalidUid;
-
-    // If the user has a character request the load.
-    if (hasCharacter)
-    {
-      // If the user character is not loaded do not proceed.
-      if (not loginContext.userCharacterLoadRequested)
-      {
-        _serverInstance.GetDataDirector().RequestLoadCharacterData(
-          loginContext.userName,
-          characterUid);
-
-        loginContext.userCharacterLoadRequested = true;
-        continue;
-      }
-    }
-
-    _loginResponseQueue.pop_front();
-
-    // If the character was not loaded reject the login.
-    if (characterUid != data::InvalidUid && not _serverInstance.GetDataDirector().AreCharacterDataLoaded(
-      loginContext.userName))
-    {
-      spdlog::error("User character data for '{}' not available", clientId);
-      _networkHandler->RejectLogin(
-        clientId,
-        protocol::AcCmdCLLoginCancel::Reason::Generic);
-      break;
-    }
-
-    const auto& [iter, inserted] = _userInstances.try_emplace(
-      loginContext.userName);
-    if (not inserted)
-    {
-      _networkHandler->RejectLogin(
-        clientId,
-        protocol::AcCmdCLLoginCancel::Reason::Duplicated);
-      return;
-    }
-
-    const bool requiresCharacterCreator = _charactersForcedIntoCreator.erase(characterUid) > 0
-      || characterUid == data::InvalidUid;
-
-    spdlog::debug("User '{}' succeeded in authentication", loginContext.userName);
-    _networkHandler->AcceptLogin(clientId, requiresCharacterCreator);
-
-    auto& userInstance = iter->second;
-    userInstance.userName = loginContext.userName;
-    userInstance.characterUid = characterUid;
-    spdlog::info("User '{}' (client {}) logged in", loginContext.userName, clientId);
-
-    _clientLogins.erase(clientId);
-
-    // Only one response per tick.
-    break;
+    ProcesLoginResponse();
   }
 
   // Process the client login request queue.
-  while (not _loginRequestQueue.empty())
+  if (not _loginRequestQueue.empty())
   {
-    const network::ClientId clientId = _loginRequestQueue.front();
-    auto& loginContext = _clientLogins[clientId];
+    ProcessLoginRequest();
+  }
 
-    // Request the load of the user data if not requested yet.
-    if (not loginContext.userLoadRequested)
+  if (_serverInstance.GetAuthenticationService().HasAuthenticationVerdicts())
+  {
+    const auto authentications = _serverInstance.GetAuthenticationService().PollAuthenticationVerdicts();
+
+    for (auto& loginContext : _clientLogins |  std::views::values)
     {
-      _serverInstance.GetDataDirector().RequestLoadUserData(loginContext.userName);
-
-      loginContext.userLoadRequested = true;
-      continue;
-    }
-
-    // If the data are still being loaded do not proceed with login.
-    if (_serverInstance.GetDataDirector().AreDataBeingLoaded(loginContext.userName))
-    {
-      continue;
-    }
-
-    _loginRequestQueue.pop_front();
-
-    if (not _serverInstance.GetDataDirector().AreUserDataLoaded(loginContext.userName))
-    {
-      spdlog::error("User data for '{}' not available", loginContext.userName);
-      _networkHandler->RejectLogin(
-        clientId,
-        protocol::AcCmdCLLoginCancel::Reason::Generic);
-      break;
-    }
-
-    const auto userRecord = _serverInstance.GetDataDirector().GetUser(loginContext.userName);
-    assert(userRecord.IsAvailable());
-
-    bool isAuthenticated = false;
-    userRecord.Immutable(
-      [&isAuthenticated, &loginContext](const data::User& user)
+      for (const auto& authenticationVerdict : authentications)
       {
-        isAuthenticated = user.token() == loginContext.userToken;
-      });
+        if (authenticationVerdict.userName != loginContext.userName)
+          continue;
 
-    // If the user is not authenticated reject the login.
-    if (not isAuthenticated)
-    {
-      spdlog::debug("User '{}' failed in authentication", loginContext.userName);
-      _networkHandler->RejectLogin(
-        clientId,
-        protocol::AcCmdCLLoginCancel::Reason::InvalidUser);
-    }
-    else
-    {
-      // Check for any infractions preventing the user from joining.
-      const auto infractionVerdict = _serverInstance.GetInfractionSystem().CheckOutstandingPunishments(
-        loginContext.userName);
-
-      if (infractionVerdict.preventServerJoining)
-      {
-        _networkHandler->RejectLogin(
-          clientId,
-          protocol::AcCmdCLLoginCancel::Reason::DisconnectYourself);
-      }
-      else
-      {
-        // Queue the user response.
-        _loginResponseQueue.emplace_back(clientId);
+        loginContext.isAuthenticated = authenticationVerdict.isAuthenticated;
       }
     }
-
-    // Only one request per tick.
-    break;
   }
 
   _scheduler.Tick();
@@ -393,6 +267,167 @@ ShopManager& LobbyDirector::GetShopManager()
 LobbyNetworkHandler& LobbyDirector::GetNetworkHandler()
 {
   return *_networkHandler;
+}
+
+void LobbyDirector::ProcessLoginRequest()
+{
+  const network::ClientId clientId = _loginRequestQueue.front();
+  auto& loginContext = _clientLogins[clientId];
+
+  // Request authentication of the user if not yet requested.
+  if (not loginContext.userAuthenticationRequested)
+  {
+    _serverInstance.GetAuthenticationService().QueueAuthentication(
+      loginContext.userName,
+      loginContext.userToken);
+
+    loginContext.userAuthenticationRequested = true;
+    return;
+  }
+
+  // If the authentication result is not available skip to the next user.
+  if (not loginContext.isAuthenticated.has_value())
+    return;
+
+  if (not loginContext.isAuthenticated.value())
+  {
+    spdlog::info("User '{}' failed authentication", loginContext.userName);
+    _networkHandler->RejectLogin(
+      clientId,
+      protocol::AcCmdCLLoginCancel::Reason::InvalidUser);
+    _loginRequestQueue.pop_front();
+    return;
+  }
+
+  // Request the load of the user data if not requested yet.
+  if (not loginContext.userLoadRequested)
+  {
+    _serverInstance.GetDataDirector().RequestLoadUserData(loginContext.userName);
+
+    loginContext.userLoadRequested = true;
+    return;
+  }
+
+  // If the data are still being loaded do not proceed with login.
+  if (_serverInstance.GetDataDirector().AreDataBeingLoaded(loginContext.userName))
+  {
+    return;
+  }
+
+  _loginRequestQueue.pop_front();
+
+  if (not _serverInstance.GetDataDirector().AreUserDataLoaded(loginContext.userName))
+  {
+    spdlog::error("User data for '{}' are not available", loginContext.userName);
+    _networkHandler->RejectLogin(
+      clientId,
+      protocol::AcCmdCLLoginCancel::Reason::Generic);
+    spdlog::warn("Rejected login of user '{}' because of a server error", loginContext.userName);
+    return;
+  }
+
+  const auto userRecord = _serverInstance.GetDataDirector().GetUser(
+    loginContext.userName);
+  assert(userRecord.IsAvailable());
+
+  // Check for any infractions preventing the user from joining.
+  const auto infractionVerdict = _serverInstance.GetInfractionSystem().CheckOutstandingPunishments(
+    loginContext.userName);
+
+  if (infractionVerdict.preventServerJoining)
+  {
+    _networkHandler->RejectLogin(
+      clientId,
+      protocol::AcCmdCLLoginCancel::Reason::DisconnectYourself);
+    spdlog::info("Rejected login of user '{}' because of an infraction", loginContext.userName);
+  }
+  else
+  {
+    spdlog::info("Accepted login of user '{}'", loginContext.userName);
+    // Queue the user response.
+    _loginResponseQueue.emplace_back(clientId);
+  }
+}
+
+void LobbyDirector::ProcesLoginResponse()
+{
+  const network::ClientId clientId = _loginResponseQueue.front();
+  auto& loginContext = _clientLogins[clientId];
+
+  // If the user character load was already requested wait for the load to complete.
+  if (loginContext.userCharacterLoadRequested)
+  {
+    if (_serverInstance.GetDataDirector().AreDataBeingLoaded(loginContext.userName))
+    {
+      return;
+    }
+  }
+
+  const auto userRecord = _serverInstance.GetDataDirector().GetUser(loginContext.userName);
+  assert(userRecord.IsAvailable());
+
+  auto characterUid = data::InvalidUid;
+  userRecord.Immutable(
+    [&characterUid](const data::User& user)
+    {
+      characterUid = user.characterUid();
+    });
+
+  const bool hasCharacter = characterUid != data::InvalidUid;
+
+  // If the user has a character request the load.
+  if (hasCharacter)
+  {
+    // If the user character is not loaded do not proceed.
+    if (not loginContext.userCharacterLoadRequested)
+    {
+      _serverInstance.GetDataDirector().RequestLoadCharacterData(
+        loginContext.userName,
+        characterUid);
+
+      loginContext.userCharacterLoadRequested = true;
+      return;
+    }
+  }
+
+  _loginResponseQueue.pop_front();
+
+  // If the character was not loaded reject the login.
+  if (characterUid != data::InvalidUid && not _serverInstance.GetDataDirector().AreCharacterDataLoaded(
+    loginContext.userName))
+  {
+    spdlog::error("User character data for '{}' not available", clientId);
+    _networkHandler->RejectLogin(
+      clientId,
+      protocol::AcCmdCLLoginCancel::Reason::Generic);
+    spdlog::warn("Rejected login of user '{}' because of a server error", loginContext.userName);
+    return;
+  }
+
+  const auto& [iter, inserted] = _userInstances.try_emplace(
+    loginContext.userName);
+  if (not inserted)
+  {
+    _networkHandler->RejectLogin(
+      clientId,
+      protocol::AcCmdCLLoginCancel::Reason::Duplicated);
+    spdlog::warn(
+      "Rejected login of user '{}' because the user is already logged in from different location",
+      loginContext.userName);
+    return;
+  }
+
+  const bool requiresCharacterCreator = _charactersForcedIntoCreator.erase(characterUid) > 0
+    || characterUid == data::InvalidUid;
+
+  _networkHandler->AcceptLogin(clientId, requiresCharacterCreator);
+
+  auto& userInstance = iter->second;
+  userInstance.userName = loginContext.userName;
+  userInstance.characterUid = characterUid;
+  spdlog::info("User '{}' (client {}) logged in", loginContext.userName, clientId);
+
+  _clientLogins.erase(clientId);
 }
 
 } // namespace server

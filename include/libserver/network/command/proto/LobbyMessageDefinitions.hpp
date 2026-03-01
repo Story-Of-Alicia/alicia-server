@@ -36,8 +36,10 @@ struct AcCmdCLLogin
 {
   uint16_t constant0{0x00};
   uint16_t constant1{0x00};
+  //! Max length 48.
   std::string loginId{};
   uint32_t memberNo{0x00};
+  //! Max length 255.
   std::string authKey{};
   uint8_t val0{};
 

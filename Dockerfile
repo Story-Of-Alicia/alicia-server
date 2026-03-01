@@ -3,7 +3,7 @@ FROM gcc:15 AS build
 
 # Setup the build environment
 RUN apt-get update -y
-RUN apt-get install git cmake libboost-dev libicu-dev -y --no-install-recommends
+RUN apt-get install git cmake libboost-dev libicu-dev libpq-dev -y --no-install-recommends
 
 ARG SERVER_BUILD_TYPE=RelWithDebInfo
 
@@ -37,7 +37,7 @@ LABEL org.opencontainers.image.description="Dedicated server implementation for 
 
 # Setup the runtime environent
 RUN apt-get update -y
-RUN apt-get install libicu76 -y --no-install-recommends
+RUN apt-get install libicu76 libpq5 -y --no-install-recommends
 
 WORKDIR /opt/alicia-server
 

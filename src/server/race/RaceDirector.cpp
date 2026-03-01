@@ -2314,18 +2314,6 @@ void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& co
   const auto verdict = _serverInstance.GetChatSystem().ProcessChatMessage(
     clientContext.characterUid, command.message);
 
-  if (verdict.isMuted)
-  {
-    // Invoking character is muted. Notify the invoker of their infraction
-    spdlog::warn("Character '{}' tried to chat in race chat but has an active mute infraction.",
-      clientContext.characterUid);
-    protocol::AcCmdCRChatNotify notify{
-      .message = verdict.message,
-      .isSystem = true};
-    _commandServer.QueueCommand<decltype(notify)>(clientId, [notify](){ return notify; });
-    return;
-  }
-
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
@@ -2340,8 +2328,8 @@ void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& co
 
   spdlog::info("[Room {}] {} ({}): {}",
     clientContext.roomUid,
-    userName,
     characterName,
+    userName,
     command.message);
 
   std::vector<protocol::AcCmdCRChatNotify> response;
@@ -2359,6 +2347,15 @@ void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& co
   }
   else
   {
+    if (verdict.isMuted)
+    {
+      protocol::AcCmdCRChatNotify notify{
+        .message = verdict.message,
+        .isSystem = true};
+      _commandServer.QueueCommand<decltype(notify)>(clientId, [notify](){ return notify; });
+      return;
+    }
+
     response.emplace_back(protocol::AcCmdCRChatNotify{
       .message = verdict.message,
       .author = characterName,

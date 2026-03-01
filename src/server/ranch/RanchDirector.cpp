@@ -1214,10 +1214,10 @@ void RanchDirector::HandleChat(
 
   const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
 
-  std::string sendersName;
-  characterRecord.Immutable([&sendersName](const data::Character& character)
+  std::string characterName;
+  characterRecord.Immutable([&characterName](const data::Character& character)
   {
-    sendersName = character.name();
+    characterName = character.name();
   });
 
   std::string ranchersName;
@@ -1228,10 +1228,11 @@ void RanchDirector::HandleChat(
 
   const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
     clientContext.characterUid).userName;
-  spdlog::debug("[{}'s ranch] {} ({}): {}",
+
+  spdlog::info("[{}'s ranch] {} ({}): {}",
     ranchersName,
+    characterName,
     userName,
-    sendersName,
     chat.message);
 
   const auto sendAllMessages = [this](
@@ -1261,20 +1262,7 @@ void RanchDirector::HandleChat(
   // Process commands, even if user has a mute ban
   if (verdict.commandVerdict)
   {
-    sendAllMessages(clientId, sendersName, true, verdict.commandVerdict->result);
-    return;
-  }
-
-  // Message is not a command, check if user has been muted
-  if (verdict.isMuted)
-  {
-    // Invoking character is muted. Notify the invoker of their infraction and do not broadcast.
-    spdlog::warn("Character '{}' tried to chat in ranch chat but has an active mute infraction.",
-      clientContext.characterUid);
-    protocol::AcCmdCRRanchChatNotify notify{
-      .message = verdict.message,
-      .isSystem = true};
-    _commandServer.QueueCommand<decltype(notify)>(clientId, [notify](){ return notify; });
+    sendAllMessages(clientId, characterName, true, verdict.commandVerdict->result);
     return;
   }
 
@@ -1293,7 +1281,7 @@ void RanchDirector::HandleChat(
 
   for (const auto& ranchClientId : ranchInstance.clients)
   {
-    sendAllMessages(ranchClientId, sendersName, false, {verdict.message});
+    sendAllMessages(ranchClientId, characterName, false, {verdict.message});
   }
 }
 

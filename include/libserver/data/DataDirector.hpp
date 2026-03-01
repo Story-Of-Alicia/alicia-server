@@ -77,6 +77,7 @@ public:
   //! @param userName name of the user.
   bool AreCharacterDataLoaded(const std::string& userName);
 
+  [[nodiscard]] Record<data::User> CreateUser();
   [[nodiscard]] Record<data::User> GetUser(const std::string& userName);
   [[nodiscard]] UserStorage& GetUserCache();
 

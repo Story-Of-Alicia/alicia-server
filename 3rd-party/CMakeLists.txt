@@ -11,9 +11,9 @@ set(ZLIB_BUILD_MINIZIP OFF)
 
 add_subdirectory(zlib)
 
-set(BUILD_SHARED_LIBS OFF)
-set(PostgreSQL_ADDITIONAL_VERSIONS "17")
-
 add_subdirectory(tinyxml2)
 
-#add_subdirectory(libpqxx)
+set(BUILD_SHARED_LIBS OFF)
+set(PostgreSQL_ADDITIONAL_VERSIONS "17")
+find_package(PostgreSQL REQUIRED)
+add_subdirectory(libpqxx)

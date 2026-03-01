@@ -742,6 +742,26 @@ bool DataDirector::AreCharacterDataLoaded(const std::string& userName)
   return userDataContext.isCharacterDataLoaded.load(std::memory_order::relaxed);
 }
 
+Record<data::User> DataDirector::CreateUser()
+{
+  try
+  {
+    return _userStorage.Create(
+      [this]()
+      {
+        data::User user;
+        _primaryDataSource->CreateUser(user);
+
+        return std::make_pair(user.name(), std::move(user));
+      });
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception while creating a character record on the primary data source: {}", x.what());
+    return {};
+  }
+}
+
 Record<data::User> DataDirector::GetUser(const std::string& userName)
 {
   return _userStorage.Get(userName).value_or(Record<data::User>{});
@@ -1119,13 +1139,22 @@ void DataDirector::ScheduleUserLoad(
       ScheduleUserLoad(userDataContext, userName);
     });
 
-    const auto userRecord = GetUser(userName);
-    if (not userRecord)
+    const auto& userRecord = _userStorage.Create([this, userName]() -> std::pair<std::string, data::User>
     {
-      userDataContext.debugMessage = std::format(
-        "User {} is not available", userName);
-      return;
-    }
+      data::User user;
+      try
+      {
+        _primaryDataSource->RetrieveUser(userName, user);
+      }
+      catch (const std::exception&)
+      {
+        user.name = userName;
+        _primaryDataSource->CreateUser(user);
+      }
+
+      return std::pair{user.name(), std::move(user)};
+    });
+
 
     std::vector<data::Uid> infractions;
     userRecord.Immutable([&infractions](const data::User& user)

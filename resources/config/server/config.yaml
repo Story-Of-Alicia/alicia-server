@@ -5,6 +5,14 @@ server:
     brand: "dev"
     # The notice displayed to the player when they join the server.
     notice: "Players online: {players_online}"
+  # Authentication configuration section
+  authentication:
+    # Type of authentication backend.
+    backend: postgres
+    postgres:
+      # Connection string to the Postgre SQL database.
+      # https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
+      connectionUri: 'postgresql://storyofalicia:dev@127.0.0.1:5432/storyofalicia'
   # Configuration section of the lobby server.
   lobby:
     # Whether the lobby server is enabled.
@@ -93,7 +101,7 @@ server:
   # Configuration section of the all chat server.
   all_chat:
     # Whether the all chat server is enabled. This has no effect if messenger is disabled.
-    enabled: false
+    enabled: true
     # Address and port listened to by the all chat server.
     listen:
       # The IPv4 address or a domain the server listens on.
