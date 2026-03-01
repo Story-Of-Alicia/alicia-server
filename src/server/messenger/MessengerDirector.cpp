@@ -1572,7 +1572,7 @@ void MessengerDirector::HandleChatterChatInvite(
     [](const std::vector<data::Uid> list, std::string separator = ", ")
     {
       std::string str{};
-      for (auto i = 0; i < list.size(); ++i)
+      for (size_t i = 0; i < list.size(); ++i)
       {
         str += std::to_string(list[i]);
         if (i + 1 < list.size())
