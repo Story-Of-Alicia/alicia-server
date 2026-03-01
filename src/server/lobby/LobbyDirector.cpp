@@ -61,15 +61,19 @@ void LobbyDirector::Tick()
     ProcessLoginRequest();
   }
 
-  const auto authentications = _serverInstance.GetAuthenticationService().PollAuthentications();
-  for (auto& loginContext : _clientLogins |  std::views::values)
+  if (_serverInstance.GetAuthenticationService().HasAuthenticationVerdicts())
   {
-    for (const auto& authenticationVerdict : authentications)
-    {
-      if (authenticationVerdict.userName != loginContext.userName)
-        continue;
+    const auto authentications = _serverInstance.GetAuthenticationService().PollAuthenticationVerdicts();
 
-      loginContext.isAuthenticated = authenticationVerdict.isAuthenticated;
+    for (auto& loginContext : _clientLogins |  std::views::values)
+    {
+      for (const auto& authenticationVerdict : authentications)
+      {
+        if (authenticationVerdict.userName != loginContext.userName)
+          continue;
+
+        loginContext.isAuthenticated = authenticationVerdict.isAuthenticated;
+      }
     }
   }
 

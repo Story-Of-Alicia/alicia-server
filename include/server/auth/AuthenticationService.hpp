@@ -22,6 +22,7 @@
 
 #include "AuthenticationBackend.hpp"
 
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -47,11 +48,16 @@ public:
   void Terminate() noexcept;
   void Tick() noexcept;
 
+  //! Thread safe
   void QueueAuthentication(
     const std::string& userName,
     const std::string& userToken) noexcept;
 
-  [[nodiscard]] std::vector<Verdict> PollAuthentications() noexcept;
+  //! Thread safe
+  [[nodiscard]] bool HasAuthenticationVerdicts() noexcept;
+
+  //! Thread safe
+  [[nodiscard]] std::vector<Verdict> PollAuthenticationVerdicts() noexcept;
 
 private:
   struct Authentication
@@ -65,6 +71,7 @@ private:
   std::mutex _queueMutex;
   std::queue<Authentication> _queue{};
 
+  std::atomic_bool _hasVerdicts{false};
   std::mutex _verdictsMutex{};
   std::vector<Verdict> _verdicts{};
 

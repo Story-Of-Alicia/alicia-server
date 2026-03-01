@@ -100,6 +100,8 @@ void AuthenticationService::Tick() noexcept
       .isAuthenticated = result.value_or(false)});
   }
 
+  _hasVerdicts.store(true, std::memory_order::release);
+
   _queue.pop();
 }
 
@@ -113,8 +115,13 @@ void AuthenticationService::QueueAuthentication(
     .userToken = userToken});
 }
 
+bool AuthenticationService::HasAuthenticationVerdicts() noexcept
+{
+  return _hasVerdicts.load(std::memory_order::acquire);
+}
+
 std::vector<AuthenticationService::Verdict>
-AuthenticationService::PollAuthentications() noexcept
+AuthenticationService::PollAuthenticationVerdicts() noexcept
 {
   std::scoped_lock lock(_verdictsMutex);
 
@@ -122,7 +129,9 @@ AuthenticationService::PollAuthentications() noexcept
     return {};
 
   const auto results = _verdicts;
+
   _verdicts.clear();
+  _hasVerdicts.store(false, std::memory_order::release);
 
   return results;
 }

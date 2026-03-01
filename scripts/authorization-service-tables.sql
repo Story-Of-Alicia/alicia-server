@@ -4,3 +4,5 @@ create table sessions
     token VARCHAR(64) NOT NULL,
     expires_at TIMESTAMP
 );
+
+
