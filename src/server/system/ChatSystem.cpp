@@ -1615,7 +1615,7 @@ void ChatSystem::RegisterAdminCommands()
           std::string separator = " ") -> const std::string
         {
           std::string str{};
-          for (auto i = 0; i < arguments.size(); ++i)
+          for (size_t i = 0; i < arguments.size(); ++i)
           {
             str += arguments[i];
             if (i + 1 < arguments.size())
