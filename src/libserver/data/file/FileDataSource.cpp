@@ -97,6 +97,10 @@ void server::FileDataSource::Terminate()
 
 void server::FileDataSource::SaveMetadata()
 {
+  // dirty fix to make this thread safe
+  static std::mutex dirty;
+  std::scoped_lock fix(dirty);
+
   const std::filesystem::path metaFilePath = ProduceDataFilePath(
     _metaFilePath, "meta");
 
