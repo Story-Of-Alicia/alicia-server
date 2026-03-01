@@ -72,6 +72,7 @@ ServerInstance::~ServerInstance()
   waitForThread("messenger director", _messengerThread);
   waitForThread("lobby director", _lobbyDirectorThread);
   waitForThread("data director", _dataDirectorThread);
+  waitForThread("authentication", _authenticationThread);
 }
 
 void ServerInstance::Initialize()
