@@ -101,7 +101,7 @@ server:
   # Configuration section of the all chat server.
   all_chat:
     # Whether the all chat server is enabled. This has no effect if messenger is disabled.
-    enabled: false
+    enabled: true
     # Address and port listened to by the all chat server.
     listen:
       # The IPv4 address or a domain the server listens on.

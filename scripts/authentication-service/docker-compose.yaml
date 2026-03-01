@@ -3,6 +3,7 @@ services:
   instance:
     image: ghcr.io/story-of-alicia/authentication-server
     restart: always
+    pull_policy: always
     env_file:
       - .env
     ports:

@@ -107,13 +107,6 @@ void AllChatDirector::HandleChatterEnterRoom(
   network::ClientId clientId,
   const protocol::ChatCmdEnterRoom& command)
 {
-  spdlog::debug("[{}] ChatCmdEnterRoom: {} {} {} {}",
-    clientId,
-    command.code,
-    command.characterUid,
-    command.characterName,
-    command.guildUid);
-
   auto& clientContext = GetClientContext(clientId, false);
 
   // Generate identity hash based on the character uid from the command and
@@ -169,37 +162,67 @@ void AllChatDirector::HandleChatterChat(
   network::ClientId clientId,
   const protocol::ChatCmdChat& command)
 {
-  spdlog::debug("[{}] ChatCmdChat: {} [{}]",
-    clientId,
-    command.message,
-    command.role == protocol::ChatCmdChat::Role::User ? "User" :
-      command.role == protocol::ChatCmdChat::Role::Op ? "Op" :
-      command.role == protocol::ChatCmdChat::Role::GameMaster ? "GameMaster" :
-      std::format(
-        "unknown role {}",
-        static_cast<uint8_t>(command.role)));
-
   const auto& clientContext = GetClientContext(clientId);
 
-  std::string name{};
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  std::string characterName{};
   bool isGameMaster = false;
-  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
-    [&name, &isGameMaster](const data::Character& character)
+  characterRecord.Immutable(
+    [&characterName, &isGameMaster](const data::Character& character)
     {
-      name = character.name();
+      characterName = character.name();
       isGameMaster = character.role() == data::Character::Role::GameMaster;
     });
 
-  if (isGameMaster)
+  const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+    clientContext.characterUid).userName;
+
+  spdlog::info("[Global] {} ({}): {}",
+    characterName,
+    userName,
+    command.message);
+
+  const auto verdict = _serverInstance.GetChatSystem().ProcessChatMessage(
+    clientContext.characterUid, command.message);
+
+  if (verdict.commandVerdict)
   {
-    name = std::format("[GM] {}", name);
+    for (const auto& response : verdict.commandVerdict->result)
+    {
+      _chatterServer.QueueCommand<protocol::ChatCmdChannelChatTrs>(clientId, [response]()
+      {
+        return protocol::ChatCmdChannelChatTrs{
+          .messageAuthor = "",
+          .message = response,
+          .role = protocol::ChatCmdChat::Role::GameMaster};
+      });
+    }
+
+    return;
+  }
+
+  if (verdict.isMuted)
+  {
+    _chatterServer.QueueCommand<protocol::ChatCmdChannelChatTrs>(clientId, [verdict]()
+    {
+      return protocol::ChatCmdChannelChatTrs{
+        .messageAuthor = "",
+        .message = verdict.message,
+        .role = protocol::ChatCmdChat::Role::GameMaster};
+    });
+
+    return;
   }
 
   // ChatCmdChatTrs did not work in any way shape or form, the handler seemed to just do nothing
   // Opted for ChatCmdChannelChatTrs for global chat
   protocol::ChatCmdChannelChatTrs notify{
-    .messageAuthor = name,
-    .message = std::format("<a href=\"https://storyofalicia.com\">{}</a>", command.message),
+    .messageAuthor = isGameMaster
+      ? std::format("[GM] {}", characterName)
+      : characterName,
+    .message = command.message,
     .role = protocol::ChatCmdChat::Role::User};
   
   for (const auto& [onlineClientId, onlineClientContext] : _clients)
@@ -208,7 +231,10 @@ void AllChatDirector::HandleChatterChat(
     if (not onlineClientContext.isAuthenticated)
       continue;
 
-    _chatterServer.QueueCommand<decltype(notify)>(onlineClientId, [notify](){ return notify; });
+    _chatterServer.QueueCommand<decltype(notify)>(onlineClientId, [notify]()
+    {
+      return notify;
+    });
   }
 }
 
@@ -216,10 +242,6 @@ void AllChatDirector::HandleChatterInputState(
   network::ClientId clientId,
   const protocol::ChatCmdInputState& command)
 {
-  spdlog::debug("[{}] ChatCmdInputState: {}",
-    clientId,
-    command.state);
-
   // Note: might have to do with login state i.e. remember last online status (online/offline/away)
   const auto& clientContext = GetClientContext(clientId);
 
