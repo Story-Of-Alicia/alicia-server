@@ -970,9 +970,7 @@ void ChatSystem::RegisterAdminCommands()
     });
 
   // infraction command
-  _commandManager.RegisterCommand(
-    "infraction",
-    [this](
+  const auto infractionHandler = [this](
       const std::span<const std::string>& arguments,
       data::Uid characterUid) -> std::vector<std::string>
     {
@@ -990,19 +988,19 @@ void ChatSystem::RegisterAdminCommands()
         return {};
 
       if (arguments.empty())
-        return {"infraction",
-          "  [add/remove/list]"};
+        return {"(i)nfraction",
+          "  [(a)dd/(r)emove/(l)ist]"};
 
       const std::string& subLiteral = arguments[0];
 
-      if (subLiteral == "add")
+      if (subLiteral == "add" || subLiteral == "a")
       {
         if (arguments.size() < 4)
         {
           return {
             "infraction add",
             "  [user name]",
-            "  [none/mute/ban]",
+            "  [none/(m)ute/(b)an]",
             "  [duration (XXmXXhXXd or forever)]",
             "  [optional: description]"};
         }
@@ -1035,9 +1033,9 @@ void ChatSystem::RegisterAdminCommands()
         // Get the infraction type argument.
         const std::string& typeArgument = arguments[2];
         data::Infraction::Punishment punishmentType;
-        if (typeArgument == "mute")
+        if (typeArgument == "mute" || typeArgument == "m")
           punishmentType = data::Infraction::Punishment::Mute;
-        else if (typeArgument == "ban")
+        else if (typeArgument == "ban" || typeArgument == "b")
           punishmentType = data::Infraction::Punishment::Ban;
         else
           punishmentType = data::Infraction::Punishment::None;
@@ -1046,7 +1044,7 @@ void ChatSystem::RegisterAdminCommands()
         const std::string& durationArgument = arguments[3];
         auto duration = std::chrono::seconds::zero();
 
-        if (durationArgument == "forever")
+        if (durationArgument == "forever" || durationArgument == "f")
         {
           duration = std::chrono::seconds::max();
         }
@@ -1114,7 +1112,7 @@ void ChatSystem::RegisterAdminCommands()
 
         return {std::format("Infraction added to '{}'", userName)};
       }
-      else if (subLiteral == "remove")
+      else if (subLiteral == "remove" || subLiteral == "r")
       {
         if (arguments.size() < 3)
         {
@@ -1167,7 +1165,7 @@ void ChatSystem::RegisterAdminCommands()
 
         return {std::format("Infraction removed from '{}'", userName)};
       }
-      else if (subLiteral == "list")
+      else if (subLiteral == "list" || subLiteral == "l")
       {
         if (arguments.size() < 2)
         {
@@ -1276,7 +1274,10 @@ void ChatSystem::RegisterAdminCommands()
       }
 
       return {"Unknown sub literal"};
-    });
+    };
+
+  _commandManager.RegisterCommand("infraction", infractionHandler);
+  _commandManager.RegisterCommand("i", infractionHandler);
 
   // incognito command
   _commandManager.RegisterCommand(
