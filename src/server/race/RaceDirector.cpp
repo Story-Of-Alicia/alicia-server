@@ -3346,16 +3346,18 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
     5.50f,
     6.50f};
 
-  // FIXME:/TODO: currently this gets live player count, not the confirmed team size which is needed
-  // Get max players in room
-  uint32_t roomPlayerCount{};
-  _serverInstance.GetRoomSystem().GetRoom(clientContext.roomUid,
-    [&roomPlayerCount](Room& room)
-    {
-      roomPlayerCount = room.GetPlayers().size();
-    });
-
-  const auto teamSize = roomPlayerCount / 2;
+  // Get team size from the racer tracker (immutable for the race duration).
+  // Use the max of the two team sizes to handle potentially unbalanced teams.
+  uint32_t redTeamCount = 0;
+  uint32_t blueTeamCount = 0;
+  for (const auto& racer : raceInstance.tracker.GetRacers() | std::views::values)
+  {
+    if (racer.team == tracker::RaceTracker::Racer::Team::Red)
+      ++redTeamCount;
+    else if (racer.team == tracker::RaceTracker::Racer::Team::Blue)
+      ++blueTeamCount;
+  }
+  const auto teamSize = std::max(redTeamCount, blueTeamCount);
 
   // TODO: warning, this doesn't check whether the opposing team has a team spur active!
   team.boostCount += 1;
