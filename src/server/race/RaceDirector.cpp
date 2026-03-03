@@ -3315,7 +3315,10 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
 
   // If race teammode is not team then we are done here.
   // This is necessary to ensure no team-related logic is handled when spur logic is handled.
-  if (raceInstance.raceTeamMode != protocol::TeamMode::Team)
+  // Sanity check for speed gamemode
+  bool isTeamMode = raceInstance.raceTeamMode == protocol::TeamMode::Team;
+  bool isSpeedGameMode = raceInstance.raceGameMode == protocol::GameMode::Speed;
+  if (not isTeamMode or not isSpeedGameMode)
     return;
 
   auto& racer = raceInstance.tracker.GetRacer(
