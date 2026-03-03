@@ -470,6 +470,11 @@ void ChatSystem::RegisterUserCommands()
           return {"Please give yourself eggs to hatch pets."};
         }
 
+        if (itemTid >= 20000 && itemTid <= 29999)
+        {
+          return {"Please use the shop to obtain horse armor."};
+        }
+
         size_t inventoryItemCount{0};
         size_t storedGiftCount{0};
         characterRecord.Immutable(
