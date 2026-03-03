@@ -3443,9 +3443,10 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
           static_cast<uint32_t>(racer.team)));
     beatenTeamInfo.gaugeLocked = true;
 
-    // TODO: 2 seconds is hardcoded, is this correct timing?
+    // TODO: put this into the config somewhere
     // When to begin the spur/reset event.
-    constexpr auto SpurStartDelay = std::chrono::seconds(2);
+    // Reference: `TeamSpurGaugeInfo`/`ReduceWaitTime` in libconfig
+    constexpr auto SpurStartDelay = std::chrono::milliseconds(1500);
 
     _scheduler.Queue(
       [this, &raceInstance, &racer, &beatenTeamInfo, maxPoints, teamSize]()
