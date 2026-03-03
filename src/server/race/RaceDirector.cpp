@@ -61,7 +61,7 @@ const server::registry::Magic::SlotInfo RandomMagicItem(ServerInstance& serverIn
     : serverInstance.GetMagicRegistry().GetTeamPool());
   static std::random_device rd;
   std::uniform_int_distribution distribution(0, static_cast<int>(itemPool.size() - 1));
-  auto magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(distribution(rd));
+  auto magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(itemPool[distribution(rd)]);
   if (RollCritical(racer, magicSlotInfo))
   {
     magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(magicSlotInfo.criticalType);
