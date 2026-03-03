@@ -2938,31 +2938,22 @@ void RaceDirector::HandleActivateSkillEffect(
     return;
   }
 
+  std::optional<std::function<void()>> afterEffectRemoved = std::nullopt;
   switch (magicSlotInfo.type)
   {
       // Darkness
-      // Affects only the target. If critical, affects everyone
-      // TODO: Apply only to opponents ahead of the racer
       case 14:
       case 15:
-        for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
+        targetRacer.darkness = true;
+        afterEffectRemoved = [&targetRacer]()
         {
-          if (command.attackerOid != otherRacer.oid && targetRacer.team == otherRacer.team && (magicSlotInfo.criticalType == 0 || otherRacer.oid == command.targetOid)) {
-            otherRacer.darkness = true;
-            const auto afterEffectRemoved = [&otherRacer]()
-            {
-              otherRacer.darkness = false;
-            };
-            this->ScheduleSkillEffect(raceInstance, command.attackerOid, otherRacer.oid, magicSlotInfo, afterEffectRemoved);
-          }
-        }
-        break;
-      default:
-        this->ScheduleSkillEffect(raceInstance, command.attackerOid, command.targetOid, magicSlotInfo, std::nullopt);
+          targetRacer.darkness = false;
+        };
         break;
   }
 
   // TODO: Remove held item
+  this->ScheduleSkillEffect(raceInstance, command.attackerOid, command.targetOid, magicSlotInfo, afterEffectRemoved);
 }
 
 void RaceDirector::HandleOpCmd(
