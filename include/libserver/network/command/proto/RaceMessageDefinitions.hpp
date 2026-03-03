@@ -42,13 +42,6 @@ enum class RoomOptionType : uint16_t
   NpcDifficulty = 1 << 5,
 };
 
-enum class TeamColor : uint32_t
-{
-  None = 1,
-  Red = 2,
-  Blue = 3
-};
-
 struct Avatar
 {
   // List length specified with a uint8_t
@@ -1711,7 +1704,6 @@ struct AcCmdCRRelayNotify
 
 struct AcCmdRCTeamSpurGauge
 {
-  //! TODO: unify this enum
   TeamColor team{};
   // Team hooves go on fire at 25.0f (maybe higher)
   float currentPoints{};

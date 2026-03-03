@@ -23,6 +23,7 @@
 #include "server/tracker/Tracker.hpp"
 
 #include <libserver/data/DataDefinitions.hpp>
+#include <libserver/network/command/proto/CommonStructureDefinitions.hpp>
 
 #include <array>
 #include <chrono>
@@ -47,12 +48,7 @@ public:
       Finishing,
     };
 
-    enum class Team
-    {
-      Solo = 1,
-      Red = 2,
-      Blue = 3
-    };
+    using Team = protocol::TeamColor;
 
     struct ItemInstance
     {

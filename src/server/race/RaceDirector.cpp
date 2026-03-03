@@ -3336,7 +3336,11 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
   if (team.gaugeLocked)
     return;
 
+  // Track team boost count for gauge fill rate calculation.
+  team.boostCount += 1;
+
   //! Boost fill rates, scaled with team count, iterated with boost count.
+  //! Reference: `TeamSpurGaugeInfo` in libconfig
   // TODO: put this in the config somewhere
   const std::vector<float> baseFillRates{
     1.25f,
@@ -3359,14 +3363,11 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
   }
   const auto teamSize = std::max(redTeamCount, blueTeamCount);
 
-  // TODO: warning, this doesn't check whether the opposing team has a team spur active!
-  team.boostCount += 1;
-
   const auto fillRateIndex = std::min(
     team.boostCount,
     static_cast<uint32_t>(baseFillRates.size() - 1));
   protocol::AcCmdRCTeamSpurGauge spur{
-    .team = static_cast<protocol::TeamColor>(racer.team), // TODO: casts from one enum to other, unify.
+    .team = racer.team,
     .markerSpeed = baseFillRates[fillRateIndex] * teamSize, // Base fill rate * boost count * team size
     .unk5 = 0 // TODO: identify use
   };
@@ -3377,7 +3378,7 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
   constexpr uint32_t BoostPointsDiffBase = 20;
 
   //! Scale points per boost, based on team size.
-  //! Scale = team player count (room player count / 2) - 1 for the formula.
+  //! Scale = team size - 1 for the formula.
   const auto scale = teamSize - 1;
   //! Final points per boost = base boost + additional boost points.
   const auto additionalBoostPoints = (BoostPointsDiffBase * scale) + (10 * scale);
@@ -3442,6 +3443,10 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
           static_cast<uint32_t>(racer.team)));
     beatenTeamInfo.gaugeLocked = true;
 
+    // TODO: 2 seconds is hardcoded, is this correct timing?
+    // When to begin the spur/reset event.
+    constexpr auto SpurStartDelay = std::chrono::seconds(2);
+
     _scheduler.Queue(
       [this, &raceInstance, &racer, &beatenTeamInfo, maxPoints, teamSize]()
       {
@@ -3451,9 +3456,9 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
         // Reset boost gauge for the team that lost it.
         protocol::AcCmdRCTeamSpurGauge beatenSpur{
           .team = 
-            // This is red/blue swap is intentional
-            racer.team == tracker::RaceTracker::Racer::Team::Red ? protocol::TeamColor::Blue :
-            racer.team == tracker::RaceTracker::Racer::Team::Blue ? protocol::TeamColor::Red :
+            // This red/blue swap is intentional, if team A wins, team B is punished and reset.
+            racer.team == tracker::RaceTracker::Racer::Team::Red ? tracker::RaceTracker::Racer::Team::Blue :
+            racer.team == tracker::RaceTracker::Racer::Team::Blue ? tracker::RaceTracker::Racer::Team::Red :
             throw std::runtime_error(
               std::format(
                 "Unrecognised racer team '{}'",
@@ -3466,7 +3471,7 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
 
         // Trigger spur for the team that has won it.
         protocol::AcCmdRCTeamSpurGauge successfulSpur{
-          .team = static_cast<protocol::TeamColor>(racer.team),
+          .team = racer.team,
           .currentPoints = maxPoints / 10.0f,
           .newPoints = 0.0f,
           .markerSpeed = BaseWinTeamSpurConsumeRate * teamSize, // Scales with `WinTeamSpurConsumeRate`
@@ -3507,8 +3512,7 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
             });
         }
       },
-      // TODO: 2 seconds is hardcoded, is this correct timing?
-      Scheduler::Clock::now() + std::chrono::seconds(2)); 
+      Scheduler::Clock::now() + SpurStartDelay); 
   }
 
   // Broadcast invoker's team gauge status
