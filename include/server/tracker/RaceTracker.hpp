@@ -97,6 +97,7 @@ public:
   {
     uint32_t points{0};
     uint32_t boostCount{0};
+    bool gaugeLocked{false};
   };
 
   TeamInfo blueTeam{};

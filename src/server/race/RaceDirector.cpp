@@ -3332,6 +3332,10 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
         clientContext.characterUid,
         static_cast<uint32_t>(racer.team)));
 
+  // If the invoker's team gauge is locked (beaten by opposing team's spur), reject gauge fill.
+  if (team.gaugeLocked)
+    return;
+
   //! Boost fill rates, scaled with team count, iterated with boost count.
   // TODO: put this in the config somewhere
   const std::vector<float> baseFillRates{
@@ -3426,8 +3430,18 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
     redTeam.boostCount = 0;
     blueTeam.boostCount = 0;
 
+    // Lock the beaten team's gauge so it cannot fill during the spur.
+    auto& beatenTeamInfo =
+      racer.team == tracker::RaceTracker::Racer::Team::Red ? blueTeam :
+      racer.team == tracker::RaceTracker::Racer::Team::Blue ? redTeam :
+      throw std::runtime_error(
+        std::format(
+          "Unrecognised racer team '{}'",
+          static_cast<uint32_t>(racer.team)));
+    beatenTeamInfo.gaugeLocked = true;
+
     _scheduler.Queue(
-      [this, &raceInstance, &racer, maxPoints, teamSize]()
+      [this, &raceInstance, &racer, &beatenTeamInfo, maxPoints, teamSize]()
       {
         const float BaseLoseTeamSpurConsumeRate = -10.0f;
         const float BaseWinTeamSpurConsumeRate = -2.5f;
@@ -3457,8 +3471,19 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
           .unk5 = 0
         };
 
-        // TODO: lock it so that team with the winning spur cannot fill the gauge until spur is complete
-        // This is maxPoints / consumeRate. For example 25.0f / abs(-2.5f) = 10s locked
+        // Spur duration = (maxPoints / 10.0f) / (abs(consumeRate) * teamSize)
+        // For example: 25.0f / (2.5f * 1) = 10s for a team of 1.
+        const float spurDurationSeconds =
+          (maxPoints / 10.0f) / (std::abs(BaseWinTeamSpurConsumeRate) * teamSize);
+
+        // Schedule unlock of the beaten team's gauge after the spur completes.
+        _scheduler.Queue(
+          [&beatenTeamInfo]()
+          {
+            beatenTeamInfo.gaugeLocked = false;
+          },
+          Scheduler::Clock::now() + std::chrono::milliseconds(
+            static_cast<int64_t>(spurDurationSeconds * 1000)));
 
         std::scoped_lock lock(raceInstance.clientsMutex);
         for (const ClientId& raceClientId : raceInstance.clients)
