@@ -39,6 +39,15 @@ enum class Gender : uint8_t
   Girl = 0x2
 };
 
+//! Team color for team-based race modes.
+enum class TeamColor : uint32_t
+{
+  None = 1,
+  Solo = None,
+  Red = 2,
+  Blue = 3
+};
+
 //! Item
 struct Item
 {

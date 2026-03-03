@@ -23,6 +23,7 @@
 #include "server/tracker/Tracker.hpp"
 
 #include <libserver/data/DataDefinitions.hpp>
+#include <libserver/network/command/proto/CommonStructureDefinitions.hpp>
 
 #include <array>
 #include <chrono>
@@ -47,10 +48,7 @@ public:
       Finishing,
     };
 
-    enum class Team
-    {
-      Solo, Red, Blue
-    };
+    using Team = protocol::TeamColor;
 
     struct ItemInstance
     {
@@ -90,6 +88,16 @@ public:
     std::chrono::steady_clock::time_point respawnTimePoint{};
     std::array<float, 3> position{};
   };
+
+  struct TeamInfo
+  {
+    uint32_t points{0};
+    uint32_t boostCount{0};
+    bool gaugeLocked{false};
+  };
+
+  TeamInfo blueTeam{};
+  TeamInfo redTeam{};
 
   //! An object map.
   using RacerObjectMap = std::map<data::Uid, Racer>;

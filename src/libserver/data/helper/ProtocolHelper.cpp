@@ -123,12 +123,14 @@ void BuildProtocolHorseAppearance(
   Horse::Appearance& protocolHorseAppearance,
   const data::Horse::Appearance& appearance)
 {
+  // TODO: Make configurable (experimental)
+  constexpr uint8_t MaxAppearanceValue = 10;
   protocolHorseAppearance = {
-    .scale = static_cast<uint8_t>(appearance.scale()),
-    .legLength = static_cast<uint8_t>(appearance.legLength()),
-    .legVolume = static_cast<uint8_t>(appearance.legVolume()),
-    .bodyLength = static_cast<uint8_t>(appearance.bodyLength()),
-    .bodyVolume = static_cast<uint8_t>(appearance.bodyVolume())};
+    .scale = std::min(static_cast<uint8_t>(appearance.scale()), MaxAppearanceValue),
+    .legLength = std::min(static_cast<uint8_t>(appearance.legLength()), MaxAppearanceValue),
+    .legVolume = std::min(static_cast<uint8_t>(appearance.legVolume()), MaxAppearanceValue),
+    .bodyLength = std::min(static_cast<uint8_t>(appearance.bodyLength()), MaxAppearanceValue),
+    .bodyVolume = std::min(static_cast<uint8_t>(appearance.bodyVolume()), MaxAppearanceValue)};
 }
 
 void BuildProtocolHorseStats(

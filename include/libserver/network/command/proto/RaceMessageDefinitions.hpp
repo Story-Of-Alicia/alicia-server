@@ -42,13 +42,6 @@ enum class RoomOptionType : uint16_t
   NpcDifficulty = 1 << 5,
 };
 
-enum class TeamColor : uint32_t
-{
-  None = 1,
-  Red = 2,
-  Blue = 3
-};
-
 struct Avatar
 {
   // List length specified with a uint8_t
@@ -1711,12 +1704,18 @@ struct AcCmdCRRelayNotify
 
 struct AcCmdRCTeamSpurGauge
 {
-  uint32_t member1{};
-  float member2{};
-  float member3{};
-  float member4{};
-  uint16_t member5{};
-  uint32_t member6{};
+  TeamColor team{};
+  // Team hooves go on fire at 25.0f (maybe higher)
+  float currentPoints{};
+  // New points
+  float newPoints{};
+  //! The speed at which the gauge or marker moves at. Can be negative to roll backwards.
+  float markerSpeed{};
+  //! This is deserialised and handled but not used in the `GameMsg` callback.
+  uint16_t reserved1{};
+  // 3 - resets gauge (set member2 + opposingTeamMarker to 0?)
+  // Incident? Mentions of RcIncidentMgr when referenced
+  uint32_t unk5{};
 
   static Command GetCommand()
   {
