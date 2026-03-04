@@ -1128,57 +1128,57 @@ void AcCmdCLEnterGuildPartyOK::Write(
 }
 
 void AcCmdCLStartGuildPartyMatch::Write(
-  const AcCmdCLStartGuildPartyMatch& command,
-  SinkStream& stream)
+  const AcCmdCLStartGuildPartyMatch&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCLStartGuildPartyMatch::Read(
-  AcCmdCLStartGuildPartyMatch& command,
-  SourceStream& stream)
+  AcCmdCLStartGuildPartyMatch&,
+  SourceStream&)
 {
   // Empty.
 }
 
 void AcCmdCLStartGuildPartyMatchOK::Write(
-  const AcCmdCLStartGuildPartyMatchOK& command,
-  SinkStream& stream)
+  const AcCmdCLStartGuildPartyMatchOK&,
+  SinkStream&)
 {
   // Empty.
 }
 
 void AcCmdCLStartGuildPartyMatchOK::Read(
-  AcCmdCLStartGuildPartyMatchOK& command,
-  SourceStream& stream)
+  AcCmdCLStartGuildPartyMatchOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCLStopGuildPartyMatch::Write(
-  const AcCmdCLStopGuildPartyMatch& command,
-  SinkStream& stream)
+  const AcCmdCLStopGuildPartyMatch&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCLStopGuildPartyMatch::Read(
-  AcCmdCLStopGuildPartyMatch& command,
-  SourceStream& stream)
+  AcCmdCLStopGuildPartyMatch&,
+  SourceStream&)
 {
   // Empty.
 }
 
 void AcCmdCLStopGuildPartyMatchOK::Write(
-  const AcCmdCLStopGuildPartyMatchOK& command,
-  SinkStream& stream)
+  const AcCmdCLStopGuildPartyMatchOK&,
+  SinkStream&)
 {
   // Empty.
 }
 
 void AcCmdCLStopGuildPartyMatchOK::Read(
-  AcCmdCLStopGuildPartyMatchOK& command,
-  SourceStream& stream)
+  AcCmdCLStopGuildPartyMatchOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1191,8 +1191,8 @@ void AcCmdLCGuildPartyMatchFound::Write(
 }
 
 void AcCmdLCGuildPartyMatchFound::Read(
-  AcCmdLCGuildPartyMatchFound& command,
-  SourceStream& stream)
+  AcCmdLCGuildPartyMatchFound&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1788,8 +1788,8 @@ void AcCmdLCGuildMatchAvailable::Write(
 }
 
 void AcCmdLCGuildMatchAvailable::Read(
-  AcCmdLCGuildMatchAvailable& command,
-  SourceStream& stream)
+  AcCmdLCGuildMatchAvailable&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }

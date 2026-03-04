@@ -2444,7 +2444,7 @@ void LobbyNetworkHandler::HandleRequestSpecialEventList(
 
 void LobbyNetworkHandler::HandleGuildPartyList(
   const ClientId clientId,
-  const protocol::AcCmdCLGuildPartyList& command)
+  const protocol::AcCmdCLGuildPartyList&)
 {
   protocol::AcCmdCLGuildPartyListOK::Party party{};
   protocol::AcCmdCLGuildPartyListOK response{
@@ -2500,7 +2500,7 @@ void LobbyNetworkHandler::HandleEnterGuildParty(
 
 void LobbyNetworkHandler::HandleStartGuildPartyMatch(
   const ClientId clientId,
-  const protocol::AcCmdCLStartGuildPartyMatch& command)
+  const protocol::AcCmdCLStartGuildPartyMatch&)
 {
   protocol::AcCmdCLStartGuildPartyMatchOK response{};
 
@@ -2554,7 +2554,7 @@ void LobbyNetworkHandler::HandleStartGuildPartyMatch(
 
 void LobbyNetworkHandler::HandleStopGuildPartyMatch(
   const ClientId clientId,
-  const protocol::AcCmdCLStopGuildPartyMatch& command)
+  const protocol::AcCmdCLStopGuildPartyMatch&)
 {
   protocol::AcCmdCLStopGuildPartyMatchOK response{};
 
