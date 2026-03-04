@@ -284,7 +284,7 @@ void ChatSystem::RegisterUserCommands()
         {
           if (character.parts.modelId() != 20)
           {
-            character.appearance.voiceId = voiceId;
+            character.appearance.voiceId() = voiceId;
           } else
           {
             // female modelId has voiceIds 4,5,6 so add 3
