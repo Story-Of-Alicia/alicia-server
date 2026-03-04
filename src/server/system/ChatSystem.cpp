@@ -257,6 +257,44 @@ void ChatSystem::RegisterUserCommands()
       return {std::format("Set your emblem, restart your game.")};
     });
 
+  // voice command
+  _commandManager.RegisterCommand(
+    "voice",
+    [this](
+      const std::span<const std::string>& arguments,
+      data::Uid characterUid) -> std::vector<std::string>
+    {
+      // todo: temporary command until there is a way to change voices
+
+      if (arguments.size() < 1)
+        return {
+          "Invalid command argument.",
+          "(//voice <1/2/3>)"};
+
+      const uint32_t voiceId = std::atoi(arguments[0].c_str());
+
+      if (voiceId < 1 || voiceId > 3)
+        return {
+          "Invalid voice ID.",
+          "(//voice <1/2/3>)"};
+
+      const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+        characterUid);
+      characterRecord.Mutable([voiceId](data::Character& character)
+        {
+          if (character.parts.modelId() != 20)
+          {
+            character.appearance.voiceId() = voiceId;
+          } else
+          {
+            // female modelId has voiceIds 4,5,6 so add 3
+            character.appearance.voiceId() = voiceId+3;
+          }
+        });
+
+      return {std::format("Your voice was changed, restart your game.")};
+    });
+
   // horse command
   _commandManager.RegisterCommand(
     "horse",
@@ -421,6 +459,27 @@ void ChatSystem::RegisterUserCommands()
 
         // todo: fix the broadcast
         return {"Appearance and parts randomized!",
+          "Restart the client."};
+      }
+
+      if (subLiteral == "reset")
+      {
+        characterRecord.Immutable([this](const data::Character& character)
+          {
+            _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Mutable(
+              [](data::Horse& horse)
+              {
+                horse.stats.agility() = 0;
+                horse.stats.ambition() = 0;
+                horse.stats.courage() = 0;
+                horse.stats.endurance() = 0;
+                horse.stats.rush() = 0;
+
+                horse.growthPoints() = 150;
+              });
+          });
+
+        return {"Horse stats reset and growth points reverted!",
           "Restart the client."};
       }
 

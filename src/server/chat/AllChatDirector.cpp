@@ -117,7 +117,8 @@ void AllChatDirector::HandleChatterEnterRoom(
   // Authorise the code received in the command against the calculated identity hash
   clientContext.isAuthenticated = _serverInstance.GetOtpSystem().AuthorizeCode(
     identityHash,
-    command.code);
+    command.code,
+    false);
 
   if (not clientContext.isAuthenticated)
   {

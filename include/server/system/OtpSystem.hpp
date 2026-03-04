@@ -17,7 +17,7 @@ class OtpSystem
 {
 public:
   uint32_t GrantCode(size_t key);
-  bool AuthorizeCode(size_t key, uint32_t code);
+  bool AuthorizeCode(size_t key, uint32_t code, bool consume = true);
 
 private:
   struct Code
