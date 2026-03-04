@@ -553,10 +553,14 @@ struct RanchCharacter
 struct Quest
 {
   uint16_t tid{}; //questid
-  uint32_t member0{};
-  uint8_t member1{}; //can only be 0 or 1, 0 is in progress, 1 is completed
-  uint32_t member2{}; //progress
-  uint8_t member3{};
+  uint32_t member0{};          //maybe turnInNPC? used if the quest is ready to claim
+  enum Status : uint8_t{
+    InProgress = 0,            // Quest started, objectives not yet met
+    ReadyToClaim = 1,          // Objectives met, reward can be claimed
+    Finished = 3               // Reward claimed / quest finished
+  }status{};
+  uint32_t progress{};         // used if the quest is in progress, otherwise unused
+  uint8_t member3{}; 
   uint8_t member4{};
 
   static void Write(const Quest& value, SinkStream& stream);

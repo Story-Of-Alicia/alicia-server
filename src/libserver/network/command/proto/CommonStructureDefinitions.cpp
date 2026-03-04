@@ -707,8 +707,8 @@ void Quest::Write(const Quest& value, SinkStream& stream)
 {
   stream.Write(value.tid)
     .Write(value.member0)
-    .Write(value.member1)
-    .Write(value.member2)
+    .Write(value.status)
+    .Write(value.progress)
     .Write(value.member3)
     .Write(value.member4);
 }
@@ -717,8 +717,8 @@ void Quest::Read(Quest& value, SourceStream& stream)
 {
   stream.Read(value.tid)
     .Read(value.member0)
-    .Read(value.member1)
-    .Read(value.member2)
+    .Read(reinterpret_cast<uint8_t&>(value.status))
+    .Read(value.progress)
     .Read(value.member3)
     .Read(value.member4);
 }

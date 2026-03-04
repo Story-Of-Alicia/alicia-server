@@ -413,6 +413,11 @@ private:
   void HandleRequestQuestReward(
     ClientId clientId,
     const protocol::AcCmdCRRequestQuestReward& command);
+
+  void HandleGiveupQuest(
+    ClientId clientId,
+    const protocol::AcCmdCRGiveupQuest& command);
+
   void SendChangeNicknameCancel(
     ClientId clientId,
     protocol::ChangeNicknameError reason);

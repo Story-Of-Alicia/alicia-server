@@ -387,21 +387,31 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleRegisterDailyQuestGroup(clientId, command);
     });
+
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestDailyQuestReward>(
     [this](ClientId clientId, const auto& command)
     {
       HandleRequestDailyQuestReward(clientId, command);
     });
+
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRRegisterQuest>(
     [this](ClientId clientId, const auto& command)
     {
       HandleRegisterQuest(clientId, command);
     });
+
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestQuestReward>(
     [this](ClientId clientId, const auto& command)
     {
       HandleRequestQuestReward(clientId, command);
       });
+  
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRGiveupQuest>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleGiveupQuest(clientId, command);
+    });
+
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRConfirmItem>(
     [this](ClientId clientId, const auto& command)
     {
@@ -5321,6 +5331,25 @@ void RanchDirector::HandleRequestQuestReward(
       return response;
     });
 }
+
+void RanchDirector::HandleGiveupQuest(
+  ClientId clientId,
+  const protocol::AcCmdCRGiveupQuest& command)
+{
+  //TODO: implement logic
+
+  protocol::AcCmdCRGiveupQuestOK response{
+    .questId = command.questId
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
 void RanchDirector::HandleInviteUser(
   ClientId clientId,
   const protocol::AcCmdCRInviteUser& command)
