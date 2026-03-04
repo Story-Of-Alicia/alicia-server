@@ -462,6 +462,27 @@ void ChatSystem::RegisterUserCommands()
           "Restart the client."};
       }
 
+      if (subLiteral == "reset")
+      {
+        characterRecord.Immutable([this](const data::Character& character)
+          {
+            _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Mutable(
+              [](data::Horse& horse)
+              {
+                horse.stats.agility = 0;
+                horse.stats.ambition = 0;
+                horse.stats.courage = 0;
+                horse.stats.endurance = 0;
+                horse.stats.rush = 0;
+
+                horse.growthPoints = 150;
+              });
+          });
+
+        return {"Horse stats reset and growth points reverted!",
+          "Restart the client."};
+      }
+
       return {"Unknown sub-literal"};
     });
 
