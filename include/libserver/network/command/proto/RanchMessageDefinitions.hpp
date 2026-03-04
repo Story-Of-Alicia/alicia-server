@@ -4569,6 +4569,77 @@ struct AcCmdCRRequestQuestRewardOK
     AcCmdCRRequestQuestRewardOK& command,
     SourceStream& stream);
 };
+
+struct AcCmdCRGiveupQuest
+{
+  uint16_t questId;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRGiveupQuest;
+  }
+  
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRGiveupQuest& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRGiveupQuest& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRGiveupQuestCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRGiveupQuestCancel;
+  }
+  
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRGiveupQuestCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRGiveupQuestCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRGiveupQuestOK
+{
+    uint16_t questId;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRGiveupQuestOK;
+  }
+  
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRGiveupQuestOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRGiveupQuestOK& command,
+    SourceStream& stream);
+};
+
 struct AcCmdCRConfirmItem
 {
   std::string recipientCharacterName;

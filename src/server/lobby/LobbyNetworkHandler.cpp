@@ -2329,40 +2329,61 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
     {
       if (character.dailyQuests().size() == 3)
       {
-        dailyQuestIds = character.dailyQuests();
-        response.unk[0] = {100, 0, 1, 0, 0, 0};
-      } else
-      {
-        response.unk[0] = {0, 0, 2, 0, 0, 0};
-      }
-      
-      response.val0 = character.uid();
-      
-      for (int i = 4; i < 10; i++)
-      { //filler unk entries
-        response.unk[i] = {0, 0, 2, 0, 0, 0};
-      }
-    });
-  for (int i = 0; i < 3; i++)
-    {
-      if (dailyQuestIds != std::vector<uint32_t>{0, 0, 0})
-      {
-        const auto questRecord = _serverInstance.GetDataDirector().GetDailyQuest(dailyQuestIds[i]);
-        questRecord.Immutable(
-          [&response, &i](const data::DailyQuest& quest)
-          {
-            response.dailyQuests[i].questId = static_cast<uint16_t>(quest.unk_0());
-            response.dailyQuests[i].unk_1 = static_cast<uint32_t>(quest.unk_1());
-            response.dailyQuests[i].unk_2 = static_cast<uint8_t>(quest.unk_2());
-            response.dailyQuests[i].unk_3 = static_cast<uint8_t>(quest.unk_3());
-            response.unk[i+1] = {static_cast<uint16_t>(quest.unk_0()), 1, 0, 2, 1, 1};
-          });
+  dailyQuestIds = character.dailyQuests();
+  response.unk[0] = protocol::Quest{100, 0, protocol::Quest::Status::ReadyToClaim, 0, 0, 0};
       }
       else
       {
-        response.unk[i + 1] = {0, 0, 2, 0, 0, 0};
+  response.unk[0] = protocol::Quest{0, 0, static_cast<protocol::Quest::Status>(2), 0, 0, 0};
       }
+
+      response.val0 = character.uid();
+
+      for (int i = 4; i < 10; i++)
+      { // filler unk entries
+  response.unk[i] = protocol::Quest{0, 0, static_cast<protocol::Quest::Status>(2), 0, 0, 0};
+      }
+    });
+
+  // Precompute whether we have any valid daily quest ids (avoid constructing temporaries each iteration)
+  const bool hasDailyQuests = dailyQuestIds != std::vector<uint32_t>{0, 0, 0};
+
+  for (int i = 0; i < 3; ++i)
+  {
+    if (!hasDailyQuests || dailyQuestIds[i] == data::InvalidUid)
+    {
+      response.unk[i + 1] = protocol::Quest{0, 0, static_cast<protocol::Quest::Status>(2), 0, 0, 0};
+      continue;
     }
+
+    const auto questRecord = _serverInstance.GetDataDirector().GetDailyQuest(dailyQuestIds[i]);
+    if (!questRecord)
+    {
+      // Quest record not available, send empty filler
+      response.unk[i + 1] = protocol::Quest{0, 0, static_cast<protocol::Quest::Status>(2), 0, 0, 0};
+      continue;
+    }
+
+    // Capture i by value to avoid any accidental lifetime issues
+    questRecord.Immutable([
+      &response,
+      idx = i
+    ](const data::DailyQuest& quest)
+    {
+      response.dailyQuests[idx].questId = static_cast<uint16_t>(quest.unk_0());
+      response.dailyQuests[idx].unk_1 = static_cast<uint32_t>(quest.unk_1());
+      response.dailyQuests[idx].unk_2 = static_cast<uint8_t>(quest.unk_2());
+      response.dailyQuests[idx].unk_3 = static_cast<uint8_t>(quest.unk_3());
+      response.unk[idx + 1] = protocol::Quest{
+        static_cast<uint16_t>(quest.unk_0()),
+        static_cast<uint32_t>(1),
+        protocol::Quest::Status::InProgress,
+        static_cast<uint32_t>(2),
+        static_cast<uint8_t>(1),
+        static_cast<uint8_t>(1)
+      };
+    });
+  }
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,

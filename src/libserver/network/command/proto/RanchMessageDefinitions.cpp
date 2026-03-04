@@ -2944,6 +2944,49 @@ void AcCmdCRRequestQuestRewardOK::Unk1::Read(Unk1& value, SourceStream& stream)
   stream.Read(value.unk0)
     .Read(value.unk1);
 }
+
+void AcCmdCRGiveupQuest::Write(
+  const AcCmdCRGiveupQuest&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRGiveupQuest::Read(
+  AcCmdCRGiveupQuest& command,
+  SourceStream& stream)
+{
+  stream.Read(command.questId);
+}
+
+void AcCmdCRGiveupQuestCancel::Write(
+  const AcCmdCRGiveupQuestCancel&,
+  SinkStream&)
+{
+  // Empty.
+}
+
+void AcCmdCRGiveupQuestCancel::Read(
+  AcCmdCRGiveupQuestCancel&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRGiveupQuestOK::Write(
+  const AcCmdCRGiveupQuestOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.questId);
+}
+
+void AcCmdCRGiveupQuestOK::Read(
+  AcCmdCRGiveupQuestOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void AcCmdCRConfirmItem::Read(
   AcCmdCRConfirmItem& command,
   SourceStream& stream)

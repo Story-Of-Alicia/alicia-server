@@ -1026,6 +1026,7 @@ struct AcCmdCLRequestQuestList
 struct AcCmdCLRequestQuestListOK
 {
   uint32_t unk0{};
+  // Max 1000 
   std::vector<Quest> quests;
 
   static Command GetCommand()
