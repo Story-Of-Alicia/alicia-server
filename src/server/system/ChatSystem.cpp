@@ -288,7 +288,7 @@ void ChatSystem::RegisterUserCommands()
           } else
           {
             // female modelId has voiceIds 4,5,6 so add 3
-            character.appearance.voiceId = voiceId+3;
+            character.appearance.voiceId() = voiceId+3;
           }
         });
 
@@ -469,13 +469,13 @@ void ChatSystem::RegisterUserCommands()
             _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Mutable(
               [](data::Horse& horse)
               {
-                horse.stats.agility = 0;
-                horse.stats.ambition = 0;
-                horse.stats.courage = 0;
-                horse.stats.endurance = 0;
-                horse.stats.rush = 0;
+                horse.stats.agility() = 0;
+                horse.stats.ambition() = 0;
+                horse.stats.courage() = 0;
+                horse.stats.endurance() = 0;
+                horse.stats.rush() = 0;
 
-                horse.growthPoints = 150;
+                horse.growthPoints() = 150;
               });
           });
 
