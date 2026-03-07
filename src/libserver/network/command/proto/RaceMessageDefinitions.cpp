@@ -1212,7 +1212,6 @@ void AcCmdCRRelay::Read(
       .Read(command.snapshot.animationState)
       .Read(command.snapshot.mountState);
 
-    // TODO: identify this data
     command.snapshot.unidentifiedData.resize(8);
     payload.Read(command.snapshot.unidentifiedData.data(), 8);
 
@@ -1226,6 +1225,13 @@ void AcCmdCRRelay::Read(
       .Read(command.snapshot.forwardSpeed)
       .Read(command.snapshot.reverseSpeed)
       .Read(command.snapshot.turningRate);
+  }
+  else if (command.payloadType == Relay::PayloadType::SyncProgress)
+  {
+    // Sync progress
+    payload.Read(command.syncProgress.racerOid)
+      .Read(command.syncProgress.unk1)
+      .Read(command.syncProgress.unk2);
   }
 }
 

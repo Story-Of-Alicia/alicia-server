@@ -1679,6 +1679,7 @@ struct AcCmdCRRelay
       Jumping = 0x80
     } mountState{};
 
+    // TODO: identify this data
     std::vector<uint8_t> unidentifiedData{};
 
     //! Position vector in XYZ.
@@ -1709,6 +1710,13 @@ struct AcCmdCRRelay
     //! Turning right - > 0.5f
     float turningRate{};
   } snapshot{};
+
+  struct SyncProgress
+  {
+    uint16_t racerOid{};
+    uint32_t unk1{}; // TODO: identify this data
+    uint32_t unk2{}; // TODO: identify this data
+  } syncProgress{};
 
   static Command GetCommand()
   {

@@ -2427,8 +2427,10 @@ void RaceDirector::HandleRelay(
   }
   else
   {
-    spdlog::warn("Unrecognised relay payload type '{}'",
-      static_cast<uint16_t>(command.payloadType));
+    spdlog::warn("Racer '{}' sent an unrecognised relay payload type '{:#04x}': [{}]",
+      command.oid,
+      static_cast<uint16_t>(command.payloadType),
+      std::format("{::02x}", command.data));
   }
 
   // Create relay notify message
