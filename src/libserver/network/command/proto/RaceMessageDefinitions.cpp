@@ -18,8 +18,11 @@
  **/
 
 #include "libserver/network/command/proto/RaceMessageDefinitions.hpp"
-
 #include "libserver/network/chatter/ChatterServer.hpp"
+
+#include "libserver/util/Stream.hpp"
+
+#include <cassert>
 
 namespace server::protocol
 {
@@ -1192,34 +1195,37 @@ void AcCmdCRRelay::Read(
   }
 
   // Parse command parameters
+  const std::span<const std::byte> payloadData = std::as_bytes(
+    std::span{command.data});
+  SourceStream payload(payloadData);
+
   using Relay = protocol::AcCmdCRRelay;
   if (command.payloadType == Relay::PayloadType::Snapshot)
   {
     // Racer snapshot
+    // Payload size for snapshot is 56 bytes.
+    // TODO: if assertion fails, will it break anything with the RaceDirector live?
+    assert(payload.Size() == 56);
 
-    // Helper util to read float from raw bytes (uint8_t)
-    const auto& readFloat = [&](size_t offset) {
-      uint32_t val = 
-        command.data[offset] |
-        (command.data[offset + 1] << 8) |
-        (command.data[offset + 2] << 16) |
-        (command.data[offset + 3] << 24);
-      return std::bit_cast<float>(val);
-    };
-    
-    command.snapshot = Relay::Snapshot{
-      .racerOid = static_cast<uint16_t>(
-        command.data[0] | (command.data[1] << 8)),
-      .networkTickCounter = static_cast<uint32_t>(
-        command.data[2] | (command.data[3] << 8) | (command.data[4] << 16) | (command.data[5] << 24)),
-      .animationState = command.data[6],
-      .mountState = static_cast<Relay::Snapshot::MountState>(command.data[7]),
-      .unidentifiedData = std::vector<uint8_t>{command.data.begin() + 8, command.data.begin() + 16},
-      .position = {readFloat(16), readFloat(20), readFloat(24)},
-      .rotation = {readFloat(28), readFloat(32), readFloat(36), readFloat(40)},
-      .forwardSpeed = readFloat(44),
-      .reverseSpeed = readFloat(48),
-      .turningRate = readFloat(52)};
+    payload.Read(command.snapshot.racerOid)
+      .Read(command.snapshot.networkTickCounter)
+      .Read(command.snapshot.animationState)
+      .Read(command.snapshot.mountState);
+
+    // TODO: identify this data
+    command.snapshot.unidentifiedData.resize(8);
+    payload.Read(command.snapshot.unidentifiedData.data(), 8);
+
+    payload.Read(command.snapshot.position.X)
+      .Read(command.snapshot.position.Y)
+      .Read(command.snapshot.position.Z)
+      .Read(command.snapshot.rotation.X)
+      .Read(command.snapshot.rotation.Y)
+      .Read(command.snapshot.rotation.Z)
+      .Read(command.snapshot.rotation.W)
+      .Read(command.snapshot.forwardSpeed)
+      .Read(command.snapshot.reverseSpeed)
+      .Read(command.snapshot.turningRate);
   }
 }
 
