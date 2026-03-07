@@ -1658,6 +1658,7 @@ struct AcCmdCRRelay
   {
     Snapshot = 0x3,
     SyncProgress = 0x7,
+    SpurLevel = 0x14,
     SlidingMotion = 0x16
   } payloadType{};
   std::vector<uint8_t> data;
@@ -1731,6 +1732,14 @@ struct AcCmdCRRelay
     //! The angle of the slide, in degrees.
     float slidingAngle{};
   } slidingMotion{};
+
+  struct SpurLevel
+  {
+    //! The OID of the affected racer.
+    uint16_t racerOid{};
+    //! The amount of successive spurs by the racer.
+    uint8_t successiveSpurCount{};
+  } spurLevel{};
 
   static Command GetCommand()
   {

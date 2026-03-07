@@ -1200,45 +1200,63 @@ void AcCmdCRRelay::Read(
   SourceStream payload(payloadData);
 
   using Relay = protocol::AcCmdCRRelay;
-  if (command.payloadType == Relay::PayloadType::Snapshot)
+  switch (command.payloadType)
   {
-    // Racer snapshot
-    // Payload size for snapshot is 56 bytes.
-    // TODO: if assertion fails, will it break anything with the RaceDirector live?
-    assert(payload.Size() == 56);
+    case Relay::PayloadType::Snapshot:
+    {
+      // Racer snapshot
+      // Payload size for snapshot is 56 bytes.
+      // TODO: if assertion fails, will it break anything with the RaceDirector live?
+      assert(payload.Size() == 56);
 
-    payload.Read(command.snapshot.racerOid)
-      .Read(command.snapshot.networkTickCounter)
-      .Read(command.snapshot.animationState)
-      .Read(command.snapshot.mountState);
+      payload.Read(command.snapshot.racerOid)
+        .Read(command.snapshot.networkTickCounter)
+        .Read(command.snapshot.animationState)
+        .Read(command.snapshot.mountState);
 
-    command.snapshot.unidentifiedData.resize(8);
-    payload.Read(command.snapshot.unidentifiedData.data(), 8);
+      command.snapshot.unidentifiedData.resize(8);
+      payload.Read(command.snapshot.unidentifiedData.data(), 8);
 
-    payload.Read(command.snapshot.position.X)
-      .Read(command.snapshot.position.Y)
-      .Read(command.snapshot.position.Z)
-      .Read(command.snapshot.rotation.X)
-      .Read(command.snapshot.rotation.Y)
-      .Read(command.snapshot.rotation.Z)
-      .Read(command.snapshot.rotation.W)
-      .Read(command.snapshot.forwardSpeed)
-      .Read(command.snapshot.reverseSpeed)
-      .Read(command.snapshot.turningRate);
-  }
-  else if (command.payloadType == Relay::PayloadType::SyncProgress)
-  {
-    // Sync progress
-    payload.Read(command.syncProgress.racerOid)
-      .Read(command.syncProgress.lapCount)
-      .Read(command.syncProgress.lapProgress);
-  }
-  else if (command.payloadType == Relay::PayloadType::SlidingMotion)
-  {
-    // Sliding motion
-    payload.Read(command.slidingMotion.racerOid)
-      .Read(command.slidingMotion.isSliding)
-      .Read(command.slidingMotion.slidingAngle);
+      payload.Read(command.snapshot.position.X)
+        .Read(command.snapshot.position.Y)
+        .Read(command.snapshot.position.Z)
+        .Read(command.snapshot.rotation.X)
+        .Read(command.snapshot.rotation.Y)
+        .Read(command.snapshot.rotation.Z)
+        .Read(command.snapshot.rotation.W)
+        .Read(command.snapshot.forwardSpeed)
+        .Read(command.snapshot.reverseSpeed)
+        .Read(command.snapshot.turningRate);
+      break;
+    }
+    case Relay::PayloadType::SyncProgress:
+    {
+      // Sync progress
+      payload.Read(command.syncProgress.racerOid)
+        .Read(command.syncProgress.lapCount)
+        .Read(command.syncProgress.lapProgress);
+      break;
+    }
+    case Relay::PayloadType::SpurLevel:
+    {
+      // Spur level
+      payload.Read(command.spurLevel.racerOid)
+        .Read(command.spurLevel.successiveSpurCount);
+      break;
+    }
+    case Relay::PayloadType::SlidingMotion:
+    {
+      // Sliding motion
+      payload.Read(command.slidingMotion.racerOid)
+        .Read(command.slidingMotion.isSliding)
+        .Read(command.slidingMotion.slidingAngle);
+      break;
+    }
+    default:
+    {
+      // Do not process unknown payload
+      break;
+    }
   }
 }
 
