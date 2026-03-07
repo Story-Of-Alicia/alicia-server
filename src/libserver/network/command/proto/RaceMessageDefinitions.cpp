@@ -1230,8 +1230,8 @@ void AcCmdCRRelay::Read(
   {
     // Sync progress
     payload.Read(command.syncProgress.racerOid)
-      .Read(command.syncProgress.unk1)
-      .Read(command.syncProgress.unk2);
+      .Read(command.syncProgress.lapCount)
+      .Read(command.syncProgress.lapProgress);
   }
 }
 

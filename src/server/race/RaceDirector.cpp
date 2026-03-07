@@ -2425,6 +2425,10 @@ void RaceDirector::HandleRelay(
   {
     // Do anything related to `command.snapshot`, if needed
   }
+  else if (command.payloadType == Relay::PayloadType::SyncProgress)
+  {
+    // Do anything related to `command.syncProgress`, if needed
+  }
   else
   {
     spdlog::warn("Racer '{}' sent an unrecognised relay payload type '{:#04x}': [{}]",

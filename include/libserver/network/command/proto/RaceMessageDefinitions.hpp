@@ -1713,9 +1713,12 @@ struct AcCmdCRRelay
 
   struct SyncProgress
   {
+    //! The OID of the updated racer.
     uint16_t racerOid{};
-    uint32_t unk1{}; // TODO: identify this data
-    uint32_t unk2{}; // TODO: identify this data
+    //! The lap count of the racer.
+    uint32_t lapCount{};
+    //! The lap progress of the racer.
+    uint32_t lapProgress{};
   } syncProgress{};
 
   static Command GetCommand()
