@@ -2420,29 +2420,40 @@ void RaceDirector::HandleRelay(
 {
   const auto& clientContext = GetClientContext(clientId);
 
-  using Relay = protocol::AcCmdCRRelay;
-  if (command.payloadType == Relay::PayloadType::Snapshot)
-  {
-    // Do anything related to `command.snapshot`, if needed
-  }
-  else if (command.payloadType == Relay::PayloadType::SyncProgress)
-  {
-    // Do anything related to `command.syncProgress`, if needed
-  }
-  else
-  {
-    spdlog::warn("Racer '{}' sent an unrecognised relay payload type '{:#04x}': [{}]",
-      command.oid,
-      static_cast<uint16_t>(command.payloadType),
-      std::format("{::02x}", command.data));
-  }
-
   // Create relay notify message
   protocol::AcCmdCRRelayNotify notify{
     .oid = command.oid,
     .member2 = command.member2,
     .payloadType = command.payloadType,
     .data = std::move(command.data),};
+
+  using Relay = protocol::AcCmdCRRelay;
+  switch (command.payloadType)
+  {
+    case Relay::PayloadType::Snapshot:
+    {
+      // Do anything related to `command.snapshot`, if needed
+      break;
+    }
+    case Relay::PayloadType::SyncProgress:
+    {
+      // Do anything related to `command.syncProgress`, if needed
+      break;
+    }
+    case Relay::PayloadType::SlidingMotion:
+    {
+      // Do anything related to `command.slidingMotion`, if needed
+      break;
+    }
+    default:
+    {
+      spdlog::warn("Racer '{}' sent an unrecognised relay payload type '{:#04x}': [{}]",
+        command.oid,
+        static_cast<uint16_t>(command.payloadType),
+        std::format("{::02x}", command.data));
+      break;
+    }
+  }
 
   // Get the room instance for this client
   const auto& raceInstance = _raceInstances[clientContext.roomUid];

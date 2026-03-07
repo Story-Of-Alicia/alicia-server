@@ -1657,7 +1657,8 @@ struct AcCmdCRRelay
   enum class PayloadType : uint16_t
   {
     Snapshot = 0x3,
-    SyncProgress = 0x7
+    SyncProgress = 0x7,
+    SlidingMotion = 0x16
   } payloadType{};
   std::vector<uint8_t> data;
   // End protocol data
@@ -1713,13 +1714,23 @@ struct AcCmdCRRelay
 
   struct SyncProgress
   {
-    //! The OID of the updated racer.
+    //! The OID of the affected racer.
     uint16_t racerOid{};
     //! The lap count of the racer.
     uint32_t lapCount{};
     //! The lap progress of the racer.
     uint32_t lapProgress{};
   } syncProgress{};
+
+  struct SlidingMotion
+  {
+    //! The OID of the affected racer.
+    uint16_t racerOid{};
+    //! Is the racer sliding?
+    bool isSliding{};
+    //! The angle of the slide, in degrees.
+    float slidingAngle{};
+  } slidingMotion{};
 
   static Command GetCommand()
   {

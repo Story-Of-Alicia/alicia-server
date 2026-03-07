@@ -1233,6 +1233,13 @@ void AcCmdCRRelay::Read(
       .Read(command.syncProgress.lapCount)
       .Read(command.syncProgress.lapProgress);
   }
+  else if (command.payloadType == Relay::PayloadType::SlidingMotion)
+  {
+    // Sliding motion
+    payload.Read(command.slidingMotion.racerOid)
+      .Read(command.slidingMotion.isSliding)
+      .Read(command.slidingMotion.slidingAngle);
+  }
 }
 
 void AcCmdCRRelayNotify::Write(
