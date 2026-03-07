@@ -2420,11 +2420,22 @@ void RaceDirector::HandleRelay(
 {
   const auto& clientContext = GetClientContext(clientId);
 
+  using Relay = protocol::AcCmdCRRelay;
+  if (command.payloadType == Relay::PayloadType::Snapshot)
+  {
+    // Do anything related to `command.snapshot`, if needed
+  }
+  else
+  {
+    spdlog::warn("Unrecognised relay payload type '{}'",
+      static_cast<uint16_t>(command.payloadType));
+  }
+
   // Create relay notify message
   protocol::AcCmdCRRelayNotify notify{
     .oid = command.oid,
     .member2 = command.member2,
-    .member3 = command.member3,
+    .payloadType = command.payloadType,
     .data = std::move(command.data),};
 
   // Get the room instance for this client

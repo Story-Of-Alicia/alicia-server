@@ -1651,10 +1651,64 @@ struct AcCmdCRRelayCommandNotify
 
 struct AcCmdCRRelay
 {
+  // Begin protocol data
   uint16_t oid;
   uint16_t member2;
-  uint16_t member3;
+  enum class PayloadType : uint16_t
+  {
+    Snapshot = 0x3,
+    SyncProgress = 0x7
+  } payloadType{};
   std::vector<uint8_t> data;
+  // End protocol data
+
+  struct Snapshot
+  {
+    uint16_t racerOid{};
+    uint32_t networkTickCounter{};
+
+    // Seems to be stuff like IDLE, MOVE_4TH_START, GLIDE etc
+    uint8_t animationState{};
+
+    // TODO: confirm if this is really a byte
+    enum class MountState : uint8_t
+    {
+      Reversing = 0x00,
+      Standing = 0x10,
+      MovingForward = 0x20,
+      Jumping = 0x80
+    } mountState{};
+
+    std::vector<uint8_t> unidentifiedData{};
+
+    //! Position vector in XYZ.
+    // TODO: extract this into a common place so others can use this
+    struct Vector3
+    {
+      float X{};
+      float Y{};
+      float Z{};
+    } position{};
+
+    //! Rotation vector in XYZW.
+    // TODO: extract this into a common place so others can use this
+    struct Quarternion
+    {
+      float X{};
+      float Y{};
+      float Z{};
+      float W{};
+    } rotation{};
+
+    //! In meters per second.
+    float forwardSpeed{};
+    //! Likely the same as forward speed, in m/s.
+    float reverseSpeed{};
+    //! No turning - 0.5f
+    //! Turning left - < 0.5f
+    //! Turning right - > 0.5f
+    float turningRate{};
+  } snapshot{};
 
   static Command GetCommand()
   {
@@ -1680,7 +1734,7 @@ struct AcCmdCRRelayNotify
 {
   uint16_t oid;
   uint16_t member2;
-  uint16_t member3;
+  protocol::AcCmdCRRelay::PayloadType payloadType;
   std::vector<uint8_t> data;
 
   static Command GetCommand()

@@ -1180,7 +1180,7 @@ void AcCmdCRRelay::Read(
 {
   stream.Read(command.oid)
     .Read(command.member2)
-    .Read(command.member3);
+    .Read(command.payloadType);
 
   uint16_t bufferSize;
   stream.Read(bufferSize);
@@ -1190,6 +1190,37 @@ void AcCmdCRRelay::Read(
   {
     stream.Read(datum);
   }
+
+  // Parse command parameters
+  using Relay = protocol::AcCmdCRRelay;
+  if (command.payloadType == Relay::PayloadType::Snapshot)
+  {
+    // Racer snapshot
+
+    // Helper util to read float from raw bytes (uint8_t)
+    const auto& readFloat = [&](size_t offset) {
+      uint32_t val = 
+        command.data[offset] |
+        (command.data[offset + 1] << 8) |
+        (command.data[offset + 2] << 16) |
+        (command.data[offset + 3] << 24);
+      return std::bit_cast<float>(val);
+    };
+    
+    command.snapshot = Relay::Snapshot{
+      .racerOid = static_cast<uint16_t>(
+        command.data[0] | (command.data[1] << 8)),
+      .networkTickCounter = static_cast<uint32_t>(
+        command.data[2] | (command.data[3] << 8) | (command.data[4] << 16) | (command.data[5] << 24)),
+      .animationState = command.data[6],
+      .mountState = static_cast<Relay::Snapshot::MountState>(command.data[7]),
+      .unidentifiedData = std::vector<uint8_t>{command.data.begin() + 8, command.data.begin() + 16},
+      .position = {readFloat(16), readFloat(20), readFloat(24)},
+      .rotation = {readFloat(28), readFloat(32), readFloat(36), readFloat(40)},
+      .forwardSpeed = readFloat(44),
+      .reverseSpeed = readFloat(48),
+      .turningRate = readFloat(52)};
+  }
 }
 
 void AcCmdCRRelayNotify::Write(
@@ -1198,7 +1229,7 @@ void AcCmdCRRelayNotify::Write(
 {
   stream.Write(command.oid)
     .Write(command.member2)
-    .Write(command.member3);
+    .Write(command.payloadType);
 
   stream.Write(static_cast<uint16_t>(command.data.size()));
   for (const uint8_t datum : command.data)
