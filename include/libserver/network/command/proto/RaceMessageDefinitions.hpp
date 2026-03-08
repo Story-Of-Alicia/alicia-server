@@ -553,6 +553,9 @@ struct AcCmdCRStartRaceNotify
   //! Weather (MapWeatherInfo)
   //! Snow has snow, rain only has cloudy weather
   uint32_t weatherType{};
+  // Triggers some form of observer system, racer does not spawn
+  // and not show in the list.
+  // Setting this to `1` passes the conditional (if not Single teammode).
   uint8_t unk17{};
 
   // List size specified with a byte. Max size 8
