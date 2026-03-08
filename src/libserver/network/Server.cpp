@@ -220,6 +220,43 @@ void Client::ReadLoop() noexcept
     });
 }
 
+bool ConnectionThrottle::AllowConnection(const asio::ip::address_v4& address, size_t totalConnections) {
+  if (totalConnections >= MaxTotalConnections) return false;
+
+  const auto ipKey = address.to_uint();
+  const auto now = std::chrono::steady_clock::now();
+
+  std::scoped_lock lock(_mutex);
+  auto& ipState = _ipStates[ipKey];
+
+  if (ipState.activeConnections >= MaxConnectionsPerIp) return false;
+
+  // Evict timestamps outside the sliding window.
+  while (not ipState.connectionTimestamps.empty() && (now - ipState.connectionTimestamps.front()) > RateWindow) {
+    ipState.connectionTimestamps.pop_front();
+  }
+
+  if (ipState.connectionTimestamps.size() >= MaxConnectRatePerIp) return false;
+
+  ipState.activeConnections++;
+  ipState.connectionTimestamps.push_back(now);
+  return true;
+}
+
+void ConnectionThrottle::OnDisconnect(const asio::ip::address_v4& address) {
+  const auto ipKey = address.to_uint();
+
+  std::scoped_lock lock(_mutex);
+  const auto it = _ipStates.find(ipKey);
+  if (it == _ipStates.end()) return;
+
+  if (it->second.activeConnections > 0) it->second.activeConnections--;
+
+  if (it->second.activeConnections == 0 && it->second.connectionTimestamps.empty()) {
+    _ipStates.erase(it);
+  }
+}
+
 Server::Server(EventHandlerInterface& networkEventHandler) noexcept
   : _acceptor(_io_ctx)
   , _timer(_io_ctx)
@@ -308,6 +345,13 @@ void Server::OnClientDisconnected(
   ClientId clientId)
 {
   _networkEventHandler.OnClientDisconnected(clientId);
+
+  const auto addrIt = _clientAddresses.find(clientId);
+  if (addrIt != _clientAddresses.end()) {
+    _throttle.OnDisconnect(addrIt->second);
+    _clientAddresses.erase(addrIt);
+  }
+
   _clients.erase(clientId);
 }
 
@@ -331,8 +375,19 @@ void Server::AcceptLoop() noexcept
             fmt::format("Network exception 0x{}", error.value()));
         }
 
+        const auto remoteAddr = client_socket.remote_endpoint().address().to_v4();
+
+        if (not _throttle.AllowConnection(remoteAddr, _clients.size())) {
+          spdlog::warn("Connection rejected from {} (throttled)", remoteAddr.to_string());
+          client_socket.close();
+          AcceptLoop();
+          return;
+        }
+
         // Sequential Id.
         const ClientId clientId = _client_id++;
+
+        _clientAddresses[clientId] = remoteAddr;
 
         // Create the client.
         const auto [itr, emplaced] = _clients.try_emplace(
