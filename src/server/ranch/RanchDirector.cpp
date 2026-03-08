@@ -3879,20 +3879,84 @@ void RanchDirector::HandleStatusPointApply(
   ClientId clientId,
   const protocol::AcCmdCRStatusPointApply command)
 {
-  protocol::AcCmdCRStatusPointApplyOK response {};
+  const auto& clientContext = GetClientContext(clientId);
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
 
-  const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(command.horseUid);
-  horseRecord->Mutable([&command](data::Horse& horse)
+  // Collect the owned horses by the user's character
+  std::vector<data::Uid> ownedHorses;
+  characterRecord.Mutable([&ownedHorses](data::Character& character)
   {
+    ownedHorses.emplace_back(character.mountUid());
+    std::ranges::copy(character.horses(), std::back_inserter(ownedHorses));
+  });
+
+  const bool isHorseOwned = std::ranges::contains(ownedHorses, command.horseUid);
+  if (not isHorseOwned)
+  {
+    spdlog::warn(
+      "Character {} tried to apply status points to unowned horse {}",
+      clientContext.characterUid, command.horseUid);
+
+    _commandServer.QueueCommand<protocol::AcCmdCRStatusPointApplyCancel>(
+      clientId,
+      []()
+      {
+        return protocol::AcCmdCRStatusPointApplyCancel{};
+      });
+    return;
+  }
+
+  const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
+    command.horseUid);
+
+  bool applied = false;
+  horseRecord->Mutable([&command, &applied](data::Horse& horse)
+  {
+    if (horse.growthPoints() == 0)
+      return;
+
+    // Ensure no stat was decreased
+    if (command.stats.agility < horse.stats.agility()
+      || command.stats.ambition < horse.stats.ambition()
+      || command.stats.rush < horse.stats.rush()
+      || command.stats.endurance < horse.stats.endurance()
+      || command.stats.courage < horse.stats.courage())
+      return;
+
+    // Ensure exactly one stat point is allocated
+    const int64_t delta =
+      (static_cast<int64_t>(command.stats.agility) - static_cast<int64_t>(horse.stats.agility())) +
+      (static_cast<int64_t>(command.stats.ambition) - static_cast<int64_t>(horse.stats.ambition())) +
+      (static_cast<int64_t>(command.stats.rush) - static_cast<int64_t>(horse.stats.rush())) +
+      (static_cast<int64_t>(command.stats.endurance) - static_cast<int64_t>(horse.stats.endurance())) +
+      (static_cast<int64_t>(command.stats.courage) - static_cast<int64_t>(horse.stats.courage()));
+
+    if (delta != 1)
+      return;
+
     horse.stats.agility = command.stats.agility;
     horse.stats.ambition = command.stats.ambition;
     horse.stats.rush = command.stats.rush;
     horse.stats.endurance = command.stats.endurance;
     horse.stats.courage = command.stats.courage;
-
     horse.growthPoints() -= 1;
+
+    applied = true;
   });
 
+  if (not applied)
+  {
+    _commandServer.QueueCommand<protocol::AcCmdCRStatusPointApplyCancel>(
+      clientId,
+      []()
+      {
+        return protocol::AcCmdCRStatusPointApplyCancel{};
+      });
+    return;
+  }
+
+  protocol::AcCmdCRStatusPointApplyOK response{};
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
