@@ -26,6 +26,7 @@
 #include <unordered_map>
 #include <span>
 #include <queue>
+#include <mutex>
 
 #include <boost/asio.hpp>
 
@@ -112,6 +113,36 @@ private:
   EventHandlerInterface& _networkEventHandler;
 };
 
+class ConnectionThrottle {
+
+public:
+  //! Maximum number of simultaneous connections from a single IP
+  static constexpr size_t MaxConnectionsPerIp = 3;
+  //! Maximum total number of connected clients
+  static constexpr size_t MaxTotalConnections = 200;
+  //! Maximum number of new connections from one IP within the sliding window
+  static constexpr size_t MaxConnectRatePerIp = 10;
+  //! Duration of the sliding window for rate limiting
+  static constexpr auto RateWindow = std::chrono::seconds(30);
+
+  //! Checks whether a new connection from the given address should be accepted
+  //! If accepted, records the connection internally
+  //! @param address The remote IPv4 address
+  //! @param totalConnections Current total number of connected clients
+  //! @returns true if the connection is allowed
+  bool AllowConnection(const asio::ip::address_v4& address, size_t totalConnections):
+
+  //! Records that a client from the given address has disconnected
+  //! @param address The remote IPv4 address
+  void OnDisconnect(const asio::ip::address_v4& address);
+
+private:
+  struct IpState { size_t activeConnections{0}; std::deque<std::chrono::steady_clock::time_point> connectionTimestamps; };
+
+  std::mutex _mutex;
+  std::unordered_map<uint32_t, IpState> _ipStates;
+}
+
 //! Server with event-driven acceptor, reads and writes.
 class Server :
   public EventHandlerInterface
@@ -154,6 +185,11 @@ private:
   ClientId _client_id = 0;
   //! Map of clients.
   std::unordered_map<ClientId, std::shared_ptr<Client>> _clients;
+  //! Maps client ID to its remote address for disconnect tracking
+  std::unordered_map<ClientId, asio::ip::address_v4> _clientAddresses;
+
+  //! Connection throttle.
+  ConnectionThrottle _throttle;   
 
   //! A network event handler.
   EventHandlerInterface& _networkEventHandler;
