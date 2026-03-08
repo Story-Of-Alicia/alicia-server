@@ -1237,6 +1237,16 @@ void AcCmdCRRelay::Read(
         .Read(command.syncProgress.lapProgress);
       break;
     }
+    case Relay::PayloadType::SyncGoalIn:
+    {
+      // Sync goal in (cross the finish line/DNF)
+      uint32_t raceTimeMs{};
+      payload.Read(command.syncGoalIn.racerOid)
+        .Read(raceTimeMs)
+        .Read(command.syncGoalIn.raceTrackProgress);
+      command.syncGoalIn.raceTimeMs = std::chrono::milliseconds{raceTimeMs};
+      break;
+    }
     case Relay::PayloadType::SpurLevel:
     {
       // Spur level

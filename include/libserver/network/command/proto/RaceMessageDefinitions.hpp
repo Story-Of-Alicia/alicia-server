@@ -1658,6 +1658,7 @@ struct AcCmdCRRelay
   {
     Snapshot = 0x3,
     SyncProgress = 0x7,
+    SyncGoalIn = 0x12, // Finish line
     SpurLevel = 0x14,
     SlidingMotion = 0x16
   } payloadType{};
@@ -1740,6 +1741,17 @@ struct AcCmdCRRelay
     //! The amount of successive spurs by the racer.
     uint8_t successiveSpurCount{};
   } spurLevel{};
+
+  struct SyncGoalIn
+  {
+    //! The OID of the affected racer.
+    uint16_t racerOid{};
+    //! Race time, in milliseconds.
+    std::chrono::milliseconds raceTimeMs{}; 
+    //! The race track progress of the racer upon finish.
+    //! -1 if crossed the finish line, else 0 <= x < 1.0 on DNF.
+    float raceTrackProgress{};
+  } syncGoalIn{};
 
   static Command GetCommand()
   {

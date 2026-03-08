@@ -2440,6 +2440,11 @@ void RaceDirector::HandleRelay(
       // Do anything related to `command.syncProgress`, if needed
       break;
     }
+    case Relay::PayloadType::SyncGoalIn:
+    {
+      // Do anything related to `command.syncGoalIn`, if needed
+      break;
+    }
     case Relay::PayloadType::SpurLevel:
     {
       // Do anything related to `command.spurLevel`, if needed
