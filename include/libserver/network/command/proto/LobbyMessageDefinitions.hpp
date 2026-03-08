@@ -780,6 +780,8 @@ struct AcCmdCLMakeRoom
   };
   ModifiedSet bitset;
 
+  //! Something to do with observer.
+  //! Is `1` when observer makes the room.
   uint8_t unk4;
 
   static Command GetCommand()

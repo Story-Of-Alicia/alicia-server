@@ -63,6 +63,7 @@ public:
 
   struct CommandVerdict
   {
+    std::optional<bool> enableObserver{};
     std::vector<std::string> result;
   };
 

@@ -3571,14 +3571,25 @@ void RanchDirector::HandleOpCmd(
     return;
   }
 
-  for (const auto response : result.commandVerdict->result)
+  const auto& commandVerdict = result.commandVerdict.value();
+  for (const auto message : commandVerdict.result)
   {
-    _commandServer.QueueCommand<protocol::RanchCommandOpCmdOK>(
+    protocol::RanchCommandOpCmdOK response{
+      .feedback = message};
+
+    if (commandVerdict.enableObserver.has_value())
+    {
+      const bool enableObserver = commandVerdict.enableObserver.value();
+      response.observerState = enableObserver ?
+        protocol::RanchCommandOpCmdOK::Observer::Enabled :
+        protocol::RanchCommandOpCmdOK::Observer::Disabled;
+    }
+
+    _commandServer.QueueCommand<decltype(response)>(
       clientId,
-      [response = std::move(response)]()
+      [response]()
       {
-        return protocol::RanchCommandOpCmdOK{
-          .feedback = response};
+        return response;
       });
   }
 }

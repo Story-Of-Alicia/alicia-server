@@ -3115,9 +3115,10 @@ struct RanchCommandOpCmdOK
 
   enum class Observer : uint32_t
   {
+    Noop = 0,
     Enabled = 1,
     Disabled = 2,
-  } observerState;
+  } observerState{Observer::Noop};
 
   static Command GetCommand()
   {
