@@ -138,10 +138,31 @@ ChatSystem::CommandVerdict ChatSystem::ProcessCommandMessage(
   const auto command = util::TokenizeString(
     message, ' ');
 
-  verdict.result = _commandManager.HandleCommand(
-    command[0],
-    characterUid,
-    std::span(command.begin() + 1, command.end()));
+  if (command.size() > 1 and command[0] == "observer")
+  {
+    std::string toggle = command[1];
+    if (toggle == "on")
+    {
+      verdict.enableObserver.emplace(true);
+      verdict.result = {"Observer enabled."};
+    }
+    else if (toggle == "off")
+    {
+      verdict.enableObserver.emplace(false);
+      verdict.result = {"Observer disabled."};
+    }
+    else
+    {
+      verdict.result = {"Toggle option unrecognised."};
+    }
+  }
+  else
+  {
+    verdict.result = _commandManager.HandleCommand(
+      command[0],
+      characterUid,
+      std::span(command.begin() + 1, command.end()));
+  }
 
   return verdict;
 }
