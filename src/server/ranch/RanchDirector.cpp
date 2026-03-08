@@ -3916,25 +3916,27 @@ void RanchDirector::HandleStatusPointApply(
     if (horse.growthPoints() == 0)
       return;
 
-    // Ensure no stat was decreased
-    if (command.stats.agility < horse.stats.agility()
-      || command.stats.ambition < horse.stats.ambition()
-      || command.stats.rush < horse.stats.rush()
-      || command.stats.endurance < horse.stats.endurance()
-      || command.stats.courage < horse.stats.courage())
+    const int64_t agilityDelta = static_cast<int64_t>(command.stats.agility) - static_cast<int64_t>(horse.stats.agility());
+    const int64_t ambitionDelta =  static_cast<int64_t>(command.stats.ambition) - static_cast<int64_t>(horse.stats.ambition());
+    const int64_t rushDelta = static_cast<int64_t>(command.stats.rush) - static_cast<int64_t>(horse.stats.rush());
+    const int64_t enduranceDelta = static_cast<int64_t>(command.stats.endurance) - static_cast<int64_t>(horse.stats.endurance());
+    const int64_t courageDelta = static_cast<int64_t>(command.stats.courage) - static_cast<int64_t>(horse.stats.courage());
+    
+    // Decrease in any of the stats is not allowed.
+    if (cagilityDelta < 0
+      || ambitionDelta < 0 
+      || rushDelta < 0
+      || enduranceDelta < 0
+      || courageDelta < 0)
+    {
       return;
+    }
 
-    // Ensure exactly one stat point is allocated
-    const int64_t delta =
-      (static_cast<int64_t>(command.stats.agility) - static_cast<int64_t>(horse.stats.agility())) +
-      (static_cast<int64_t>(command.stats.ambition) - static_cast<int64_t>(horse.stats.ambition())) +
-      (static_cast<int64_t>(command.stats.rush) - static_cast<int64_t>(horse.stats.rush())) +
-      (static_cast<int64_t>(command.stats.endurance) - static_cast<int64_t>(horse.stats.endurance())) +
-      (static_cast<int64_t>(command.stats.courage) - static_cast<int64_t>(horse.stats.courage()));
+   const auto totalPointsApplied = agilityDelta + ambitionDelta + rushDelta + enduranceDelta + courageDelta;
 
-    if (delta != 1)
+    // Increase  of  more than  one stat at a time is not allowed.
+    if (totalPointsApplied > 1)
       return;
-
     horse.stats.agility = command.stats.agility;
     horse.stats.ambition = command.stats.ambition;
     horse.stats.rush = command.stats.rush;
