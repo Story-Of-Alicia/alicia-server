@@ -529,14 +529,14 @@ void Guild::Read(Guild& value, SourceStream& stream)
 
 void Rent::Write(const Rent& value, SinkStream& stream)
 {
-  stream.Write(value.mountUid)
+  stream.Write(value.mountStatsSum)
     .Write(value.val1)
     .Write(value.val2);
 }
 
 void Rent::Read(Rent& value, SourceStream& stream)
 {
-  stream.Read(value.mountUid)
+  stream.Read(value.mountStatsSum)
     .Read(value.val1)
     .Read(value.val2);
 }
@@ -661,7 +661,7 @@ void RanchCharacter::Write(const RanchCharacter& ranchCharacter, SinkStream& str
 
   // Rent
   const auto& struct6 = ranchCharacter.rent;
-  stream.Write(struct6.mountUid)
+  stream.Write(struct6.mountStatsSum)
     .Write(struct6.val1)
     .Write(struct6.val2);
 

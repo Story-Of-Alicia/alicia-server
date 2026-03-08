@@ -61,7 +61,7 @@ void WriteRacer(SinkStream& stream, const Racer& racer)
   }
 
   stream.Write(racer.unk8.unk0)
-    .Write(racer.unk8.rent.mountUid)
+    .Write(racer.unk8.rent.mountStatsSum)
     .Write(racer.unk8.rent.val1)
     .Write(racer.unk8.rent.val2);
   stream.Write(racer.pet);

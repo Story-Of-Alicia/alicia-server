@@ -25,6 +25,7 @@
 #include <libserver/util/Locale.hpp>
 #include <libserver/util/Util.hpp>
 
+#include <random>
 #include <ranges>
 
 #include <spdlog/spdlog.h>
@@ -5548,12 +5549,17 @@ void RanchDirector::HandleMountRentInfo(
   ClientId clientId,
   const protocol::AcCmdCRMountRentInfo /*command*/)
 {
+  static std::mt19937 rng{std::random_device{}()};
+  static std::uniform_int_distribution<uint32_t> mountUidDist{1, 100};
+  static std::uniform_int_distribution<uint32_t> val1Dist{1, 100};
+  static std::uniform_int_distribution<uint32_t> val2Dist{1, 100};
+
   protocol::AcCmdCRMountRentInfoOK response{
-    .unk0 = 1,
-    .rent = protocol::Rent{
-      .mountUid = 1,
-      .val1 = 1,
-      .val2 = 1
+    .mountUid = 1,
+    .rent = {
+      .mountStatsSum = 100,
+      .val1 = val1Dist(rng),
+      .val2 = val2Dist(rng)
     },
     .unk2 = 0,
     .unk3 = 3
@@ -5574,6 +5580,7 @@ void RanchDirector::HandleMountRent(
 {
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid);
+  spdlog::debug("packet info: {} {} {}", command.rent.mountUid, command.rent.val1, command.rent.val2);
 
   protocol::AcCmdCRMountRentOK response {
     .rent = command.rent,

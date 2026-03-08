@@ -182,7 +182,7 @@ void LobbyCommandLoginOK::Write(
 
   // Rent
   const auto& struct6 = command.val17;
-  stream.Write(struct6.mountUid)
+  stream.Write(struct6.mountStatsSum)
     .Write(struct6.val1)
     .Write(struct6.val2);
 

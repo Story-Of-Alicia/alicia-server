@@ -5213,7 +5213,7 @@ struct AcCmdCRMountRentInfo
 
 struct AcCmdCRMountRentInfoOK
 {
-  uint32_t unk0;
+  uint32_t mountUid;
   Rent rent;
   uint16_t unk2;
   uint32_t unk3;

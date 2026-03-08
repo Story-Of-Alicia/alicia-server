@@ -424,7 +424,7 @@ struct Guild
 //!
 struct Rent
 {
-  uint32_t mountUid{};
+  uint32_t mountStatsSum{};
   uint32_t val1{};
   uint32_t val2{};
 

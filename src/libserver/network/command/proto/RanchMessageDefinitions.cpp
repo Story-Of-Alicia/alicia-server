@@ -3317,7 +3317,7 @@ void AcCmdCRMountRentInfoOK::Write(
   const AcCmdCRMountRentInfoOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0)
+  stream.Write(command.mountUid)
     .Write(command.rent)
     .Write(command.unk2)
     .Write(command.unk3);
