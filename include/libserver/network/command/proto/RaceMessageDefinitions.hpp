@@ -1658,7 +1658,8 @@ struct AcCmdCRRelay
   {
     Snapshot = 0x3,
     SyncProgress = 0x7,
-    SyncGoalIn = 0x12, // Finish line
+    NetSetLayerAnimation = 0xd, // Braking/Stopping horse
+    SyncGoalIn = 0x12, // Crossing finish line or DNF
     SpurLevel = 0x14,
     SlidingMotion = 0x16
   } payloadType{};
@@ -1752,6 +1753,15 @@ struct AcCmdCRRelay
     //! -1 if crossed the finish line, else 0 <= x < 1.0 on DNF.
     float raceTrackProgress{};
   } syncGoalIn{};
+
+  struct NetSetLayerAnimation
+  {
+    //! The OID of the affected racer.
+    uint16_t racerOid{};
+    //! Animation layer.
+    //! Usually 0x0001 (true).
+    uint16_t layerAnimation{};
+  } netSetLayerAnimation{};
 
   static Command GetCommand()
   {

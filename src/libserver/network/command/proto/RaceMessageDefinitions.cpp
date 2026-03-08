@@ -1237,6 +1237,13 @@ void AcCmdCRRelay::Read(
         .Read(command.syncProgress.lapProgress);
       break;
     }
+    case Relay::PayloadType::NetSetLayerAnimation:
+    {
+      // Net set layer animation (braking/stopping)
+      payload.Read(command.netSetLayerAnimation.racerOid)
+        .Read(command.netSetLayerAnimation.layerAnimation);
+      break;
+    }
     case Relay::PayloadType::SyncGoalIn:
     {
       // Sync goal in (cross the finish line/DNF)
