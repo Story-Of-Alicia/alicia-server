@@ -346,7 +346,7 @@ struct Character
     dao::Field<Sets> magic{};
   } skills{};
 
-    dao::Field<std::vector<Uid>> dailyQuests{};
+    dao::Field<Uid> dailyQuestGroupUid{InvalidUid};
   struct Mailbox
   {
     dao::Field<bool> hasNewMail{false};
@@ -471,13 +471,25 @@ struct Egg
   dao::Field<uint32_t> boostsUsed;
 };
 
-struct DailyQuest
+struct DailyQuestEntry
+{
+  //! Template ID of the quest.
+  uint16_t questId{};
+  //! Current progress toward the quest's successValue.
+  uint32_t progress{};
+};
+
+struct DailyQuestGroup
 {
   dao::Field<Uid> uid{InvalidUid};
-  dao::Field<uint16_t> unk_0{};
-  dao::Field<uint32_t> unk_1{};
-  dao::Field<uint8_t> unk_2{};
-  dao::Field<uint8_t> unk_3{};
+  //! Reward entry ID shared by all 3 quests, references quests.rewards in quests.yaml.
+  dao::Field<uint8_t> rewardId{};
+  //! Reward type shared by all 3 quests: 1 = carrots, 2 = exp.
+  dao::Field<uint8_t> rewardType{};
+  //! Accumulated quest reward points. References QuestRewardPoint thresholds in quests.yaml.
+  dao::Field<uint32_t> rewardPoints{};
+  //! The 3 daily quest slots.
+  dao::Field<std::array<DailyQuestEntry, 3>> quests{};
 };
   
 struct Mail

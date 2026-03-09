@@ -662,10 +662,14 @@ enum class ChangeNicknameError : uint8_t
 
 struct DailyQuest
 {
-  uint16_t questId;
-  uint32_t unk_1;
-  uint8_t unk_2; // type of reward: 1 = carrots, 2 = exp
-  uint8_t unk_3;
+  //! Template ID of the quest.
+  uint16_t questId{};
+  //! Current progress toward the quest's successValue.
+  uint32_t progress{};
+  //! Reward type: 1 = carrots, 2 = exp.
+  uint8_t rewardType{};
+  //! Reward entry ID, references quests.rewards in quests.yaml.
+  uint8_t rewardId{};
 
   static void Write(const DailyQuest& value, SinkStream& stream);
   static void Read(DailyQuest& value, SourceStream& stream);
