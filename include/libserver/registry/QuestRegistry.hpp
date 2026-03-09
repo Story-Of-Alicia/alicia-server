@@ -56,6 +56,19 @@ struct QuestReward
   std::vector<QuestRewardItem> items{};
 };
 
+//! A single entry in the QuestRewardPoint table.
+//! Defines the items awarded when a player's accumulated quest points reach
+//! the corresponding threshold.
+struct QuestRewardPoint
+{
+  //! Point threshold (key). The reward is granted at this point value.
+  uint32_t point{};
+  //! Display name of the reward.
+  std::string name{};
+  //! Items included in the reward (all non-zero TID entries from the table).
+  std::vector<QuestRewardItem> items{};
+};
+
 //! Quest data loaded from quests.yaml. Complete Table from  client libconfig_c.dat
 struct Quest
 {
@@ -116,12 +129,15 @@ public:
   void ReadConfig(const std::filesystem::path& configPath);
   [[nodiscard]] std::optional<Quest> GetQuest(uint32_t tid) const;
   [[nodiscard]] std::optional<QuestReward> GetQuestReward(uint32_t id) const;
+  [[nodiscard]] std::optional<QuestRewardPoint> GetQuestRewardPoint(uint32_t point) const;
   [[nodiscard]] const std::unordered_map<uint32_t, Quest>& GetQuests() const;
   [[nodiscard]] const std::unordered_map<uint32_t, QuestReward>& GetQuestRewards() const;
+  [[nodiscard]] const std::unordered_map<uint32_t, QuestRewardPoint>& GetQuestRewardPoints() const;
 
 private:
   std::unordered_map<uint32_t, Quest> _quests{};
   std::unordered_map<uint32_t, QuestReward> _rewards{};
+  std::unordered_map<uint32_t, QuestRewardPoint> _rewardPoints{};
 };
 
 } // namespace server::registry

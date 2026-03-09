@@ -1690,3 +1690,148 @@ quests:
       rewardExp: 0
       rewardGameMoney: 0
       rewardPoint: 0
+
+  # QuestRewardPoint table from libconfig_c.dat
+  # Each entry defines the items granted when the player's accumulated quest
+  # reward points reach the corresponding threshold.
+  rewardPoints:
+    - point: 0
+      name: '얼룩용마른헝겊'  # Spotted dry cloth
+      items:
+        - tid: 41008
+          count: 4
+        - tid: 46011
+          count: 1
+    - point: 200
+      name: '꼬리용 브러시'  # Tail brush
+      items:
+        - tid: 40002
+          count: 4
+        - tid: 46011
+          count: 1
+    - point: 400
+      name: '갈기용 브러시'  # Mane brush
+      items:
+        - tid: 41009
+          count: 3
+        - tid: 46011
+          count: 1
+    - point: 500
+      name: '당근낚시대'  # Carrot fishing rod
+      items:
+        - tid: 42001
+          count: 3
+        - tid: 46011
+          count: 1
+    - point: 600
+      name: '화살'  # Arrow
+      items:
+        - tid: 42002
+          count: 3
+        - tid: 46011
+          count: 1
+    - point: 700
+      name: '성장의 비약'  # Growth potion
+      items:
+        - tid: 43001
+          count: 1
+        - tid: 46011
+          count: 1
+    - point: 800
+      name: '재료용크리스털'  # Material crystal
+      items:
+        - tid: 45001
+          count: 1
+        - tid: 46011
+          count: 1
+    - point: 900
+      name: '그린리브 보호구 (36시간)'  # Greenleaf protector (36h)
+      items:
+        - tid: 20072
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 1000
+      name: '레드실버 보호구 (36시간)'  # Red Silver protector (36h)
+      items:
+        - tid: 20068
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 1100
+      name: '블루드래곤 보호구 (36시간)'  # Blue Dragon protector (36h)
+      items:
+        - tid: 20018
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 1200
+      name: '포레스트 보호구 (36시간)'  # Forest protector (36h)
+      items:
+        - tid: 20008
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 1300
+      name: '유령기사의 보호구 (36시간)'  # Ghost Knight protector (36h)
+      items:
+        - tid: 20015
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 1400
+      name: '유령기사의 보호구 (36시간)'  # Ghost Knight protector (36h)
+      items:
+        - tid: 20015
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 1500
+      name: '유령기사의 보호구 (36시간)'  # Ghost Knight protector (36h)
+      items:
+        - tid: 20015
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 1600
+      name: '유령기사의 보호구 (36시간)'  # Ghost Knight protector (36h)
+      items:
+        - tid: 20015
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 1700
+      name: '유령기사의 보호구 (36시간)'  # Ghost Knight protector (36h)
+      items:
+        - tid: 20015
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 1800
+      name: '유령기사의 보호구 (36시간)'  # Ghost Knight protector (36h)
+      items:
+        - tid: 20015
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 1900
+      name: '유령기사의 보호구 (36시간)'  # Ghost Knight protector (36h)
+      items:
+        - tid: 20015
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 2000
+      name: '유령기사의 보호구 (36시간)'  # Ghost Knight protector (36h)
+      items:
+        - tid: 20015
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 2100
+      name: '유령기사의 보호구 (36시간)'  # Ghost Knight protector (36h)
+      items:
+        - tid: 20015
+          count: 36
+        - tid: 46011
+          count: 1

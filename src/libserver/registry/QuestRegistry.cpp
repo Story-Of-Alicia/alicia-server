@@ -80,6 +80,22 @@ void ReadQuest(Quest& quest, const YAML::Node& yaml)
   }
 }
 
+void ReadQuestRewardPoint(QuestRewardPoint& entry, const YAML::Node& yaml)
+{
+  entry.point = yaml["point"].as<decltype(QuestRewardPoint::point)>(0);
+  entry.name  = yaml["name"].as<decltype(QuestRewardPoint::name)>("");
+
+  if (const auto itemsNode = yaml["items"])
+  {
+    for (const auto& itemNode : itemsNode)
+    {
+      QuestRewardItem item{};
+      ReadQuestRewardItem(item, itemNode);
+      entry.items.push_back(item);
+    }
+  }
+}
+
 } // anonymous namespace
 
 void QuestRegistry::ReadConfig(const std::filesystem::path& configPath)
@@ -100,6 +116,7 @@ void QuestRegistry::ReadConfig(const std::filesystem::path& configPath)
 
   _rewards.clear();
   _quests.clear();
+  _rewardPoints.clear();
 
   for (const auto& rewardNode : rewardsSection)
   {
@@ -115,10 +132,21 @@ void QuestRegistry::ReadConfig(const std::filesystem::path& configPath)
     _quests.try_emplace(quest.tid, quest);
   }
 
+  if (const auto rewardPointsSection = questsSection["rewardPoints"])
+  {
+    for (const auto& entryNode : rewardPointsSection)
+    {
+      QuestRewardPoint entry{};
+      ReadQuestRewardPoint(entry, entryNode);
+      _rewardPoints.try_emplace(entry.point, entry);
+    }
+  }
+
   spdlog::info(
-    "Quest registry loaded {} quests and {} rewards",
+    "Quest registry loaded {} quests, {} rewards and {} reward point entries",
     _quests.size(),
-    _rewards.size());
+    _rewards.size(),
+    _rewardPoints.size());
 }
 
 std::optional<Quest> QuestRegistry::GetQuest(uint32_t tid) const
@@ -145,6 +173,19 @@ const std::unordered_map<uint32_t, Quest>& QuestRegistry::GetQuests() const
 const std::unordered_map<uint32_t, QuestReward>& QuestRegistry::GetQuestRewards() const
 {
   return _rewards;
+}
+
+std::optional<QuestRewardPoint> QuestRegistry::GetQuestRewardPoint(uint32_t point) const
+{
+  const auto iter = _rewardPoints.find(point);
+  if (iter == _rewardPoints.cend())
+    return std::nullopt;
+  return iter->second;
+}
+
+const std::unordered_map<uint32_t, QuestRewardPoint>& QuestRegistry::GetQuestRewardPoints() const
+{
+  return _rewardPoints;
 }
 
 } // namespace server::registry

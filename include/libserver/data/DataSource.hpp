@@ -209,19 +209,19 @@ public:
   //! @param uid UID of the settings.
   virtual void DeleteSettings(data::Uid uid) = 0;
 
-  //! Creates the settings in the data source.
-  //! @param dailyQuest DailyQuest to create.
-  virtual void CreateDailyQuest(data::DailyQuest& dailyQuest) = 0;
-  //! Retrieves the daily quest from the data source.
-  //! @param uid UID of the daily quest.
-  virtual void RetrieveDailyQuest(data::Uid uid, data::DailyQuest& dailyQuest) = 0;
-  //! Stores the daily quest on the data source.
-  //! @param uid UID of the daily quest.
-  //! @param dailyQuest DailyQuest to store.
-  virtual void StoreDailyQuest(data::Uid uid, const data::DailyQuest& dailyQuest) = 0;
-  //! Deletes the daily quest from the data source.
-  //! @param uid UID of the daily quest.
-  virtual void DeleteDailyQuest(data::Uid uid) = 0;
+  //! Creates the daily quest group in the data source.
+  //! @param group DailyQuestGroup to create.
+  virtual void CreateDailyQuestGroup(data::DailyQuestGroup& group) = 0;
+  //! Retrieves the daily quest group from the data source.
+  //! @param uid UID of the daily quest group.
+  virtual void RetrieveDailyQuestGroup(data::Uid uid, data::DailyQuestGroup& group) = 0;
+  //! Stores the daily quest group on the data source.
+  //! @param uid UID of the daily quest group.
+  //! @param group DailyQuestGroup to store.
+  virtual void StoreDailyQuestGroup(data::Uid uid, const data::DailyQuestGroup& group) = 0;
+  //! Deletes the daily quest group from the data source.
+  //! @param uid UID of the daily quest group.
+  virtual void DeleteDailyQuestGroup(data::Uid uid) = 0;
   
   //! Creates the mail in the data source.
   //! @param mail Mail to create.

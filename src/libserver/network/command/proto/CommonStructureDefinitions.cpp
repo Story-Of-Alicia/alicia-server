@@ -794,17 +794,17 @@ void SkillSet::Read(SkillSet& value, SourceStream& stream)
 void DailyQuest::Write(const DailyQuest& value, SinkStream& stream)
 {
   stream.Write(value.questId)
-    .Write(value.unk_1)
-    .Write(value.unk_2)
-    .Write(value.unk_3);
+    .Write(value.progress)
+    .Write(value.rewardType)
+    .Write(value.rewardId);
 }
 
 void DailyQuest::Read(DailyQuest& value, SourceStream& stream)
 {
   stream.Read(value.questId)
-    .Read(value.unk_1)
-    .Read(value.unk_2)
-    .Read(value.unk_3);
+    .Read(value.progress)
+    .Read(value.rewardType)
+    .Read(value.rewardId);
 }
 void ShopOrder::Write(
   const ShopOrder& order,
