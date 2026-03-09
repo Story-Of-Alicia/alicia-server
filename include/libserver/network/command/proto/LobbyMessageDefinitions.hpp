@@ -1792,9 +1792,9 @@ struct AcCmdLCPersonalInfo
     uint16_t magicTeamWinCombo{};
     float averageRank{};
     float completionRate{};
+    //! 체이싱 평균 횟수 — Average chasing count.
     //! Displayed directly as float (txt_record_7), no percentage scaling.
-    //! Exact label unknown — positioned between completionRate and win combos.
-    float record7Stat{};
+    float averageChasingCount{};
     uint32_t highestCarnivalPrize{};
     //! Stored to UI state but not displayed as txt_record.
     //! Possibly race mode counts or internal UI filter state.
@@ -1810,12 +1810,15 @@ struct AcCmdLCPersonalInfo
     uint16_t perfectBoostCombo{};
     uint16_t perfectJumpCombo{};
     uint16_t magicDefenseCombo{};
+    //! 마법구 공격 성공율 — Magic ball attack success rate.
     //! Displayed as percentage (×100) at txt_record_18.
-    float record18Rate{};
+    float magicBallAttackSuccessRate{};
+    //! 화염의 정령 옮기기 성공율 — Fire spirit transfer success rate.
     //! Displayed as percentage (×100) at txt_record_19.
-    float record19Rate{};
+    float fireSpiritTransferSuccessRate{};
+    //! 빙벽 공격 성공율 — Ice wall attack success rate.
     //! Displayed as percentage (×100) at txt_record_17.
-    float record17Rate{};
+    float iceWallAttackSuccessRate{};
     std::string guildName{};
     //! Not accessed in main UI update function. Possibly flags.
     uint8_t flag28{};

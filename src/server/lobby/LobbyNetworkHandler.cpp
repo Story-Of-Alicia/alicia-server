@@ -1824,7 +1824,8 @@ void LobbyNetworkHandler::HandleRequestPersonalInfo(
 
         // Computed stats left as 0 until race result tracking is implemented:
         // jumpSuccessRate, perfectJumpSuccessRate, averageRank, completionRate,
-        // record7Stat, record18Rate, record19Rate, record17Rate,
+        // averageChasingCount, magicBallAttackSuccessRate,
+        // fireSpiritTransferSuccessRate, iceWallAttackSuccessRate,
         // perfectJumpCombo, magicDefenseCombo, levelProgress
 
         break;
