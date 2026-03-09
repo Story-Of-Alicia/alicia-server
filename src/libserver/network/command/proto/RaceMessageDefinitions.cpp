@@ -479,7 +479,7 @@ void AcCmdCRStartRaceNotify::Write(
     .Write(command.unk12)
     .Write(command.racerActiveSkillSet);
 
-  stream.Write(command.unk14)
+  stream.Write(command.isHorseInjuryEnabled)
     .Write(command.carnivalType)
     .Write(command.weatherType)
     .Write(command.unk17);

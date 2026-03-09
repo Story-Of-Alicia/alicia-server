@@ -19,17 +19,27 @@
 
 #include "server/tracker/RanchTracker.hpp"
 
+#include <spdlog/spdlog.h>
+
 namespace server::tracker
 {
 
 Oid RanchTracker::AddCharacter(data::Uid character)
 {
+  // Don't overwrite an already-tracked character.
+  if (_characters.contains(character))
+    return _characters.at(character);
+
   _characters[character] = _nextObjectId;
   return _nextObjectId++;
 }
 
 void RanchTracker::RemoveCharacter(data::Uid character)
 {
+  // Only erase if the character is actually tracked.
+  if (!_characters.contains(character))
+    return;
+
   _characters.erase(character);
 }
 
@@ -49,6 +59,13 @@ Oid RanchTracker::AddHorse(data::Uid horse)
 
 void RanchTracker::RemoveHorse(data::Uid horse)
 {
+  // Only erase if the horse is actually tracked.
+  if (!_horses.contains(horse))
+  {
+    spdlog::debug("Could not remove horse UID {} from ranch tracker - not found", horse);
+    return;
+  }
+
   _horses.erase(horse);
 }
 

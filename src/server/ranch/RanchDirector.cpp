@@ -5171,12 +5171,17 @@ void RanchDirector::HandleUpdateMountInfo(
 
       if (isHorseValid)
       {
-        character.horses().erase(horseIter);
-        _serverInstance.GetDataDirector().GetHorseCache().Delete(command.horse.uid);
-
         // Remove horse from ranch tracker
         auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
         ranchInstance.tracker.RemoveHorse(command.horse.uid);
+
+        // Remove horse from character and delete from cache
+        character.horses().erase(horseIter);
+        _serverInstance.GetDataDirector().GetHorseCache().Delete(command.horse.uid);
+
+        spdlog::info("User {} returned horse {} to nature",
+          clientContext.userName,
+          command.horse.uid);
       }
     });
   }

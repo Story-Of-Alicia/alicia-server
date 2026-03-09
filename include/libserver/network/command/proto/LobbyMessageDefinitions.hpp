@@ -574,6 +574,7 @@ struct AcCmdCLEnterChannel
 //! Clientbound enter channel response.
 struct AcCmdCLEnterChannelOK
 {
+  //! -1 = disables room listing (does not send `AcCmdCLRoomList`)
   uint8_t unk0{};
   uint16_t unk1{};
 

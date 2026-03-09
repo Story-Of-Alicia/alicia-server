@@ -539,7 +539,8 @@ struct AcCmdCRStartRaceNotify
       SourceStream& stream);
   } racerActiveSkillSet{};
 
-  uint8_t unk14{};
+  //! Sets if horses can be injured in this race.
+  bool isHorseInjuryEnabled{false};
   //! Carnival (FestivalMissionInfo)
   uint32_t carnivalType{};
   //! Weather (MapWeatherInfo)

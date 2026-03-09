@@ -32,7 +32,7 @@ RUN cp -r ./resources/* /var/lib/alicia-server/
 FROM debian:forky-slim
 
 LABEL author="Story of Alicia Developers" maintainer="dev@storyofalicia.com"
-LABEL org.opencontainers.image.source=https://github.com/Story-Of-Alicia/alicia-server
+LABEL org.opencontainers.image.source="https://github.com/Story-Of-Alicia/alicia-server"
 LABEL org.opencontainers.image.description="Dedicated server implementation for the Alicia game series"
 
 # Setup the runtime environent
@@ -41,7 +41,7 @@ RUN apt-get install libicu76 libpq5 -y --no-install-recommends
 
 WORKDIR /opt/alicia-server
 
-COPY --from=build /usr/local /usr/local
+COPY --from=build /usr/local/bin/alicia-server /usr/local/bin/alicia-server
 COPY --from=build /var/lib/alicia-server/ /var/lib/alicia-server/
 
 ENTRYPOINT ["/usr/local/bin/alicia-server", "/var/lib/alicia-server"]
