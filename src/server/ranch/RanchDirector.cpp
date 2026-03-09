@@ -1107,7 +1107,7 @@ void RanchDirector::HandleEnterRanch(
       {
         protocol::BuildProtocolHorse(protocolCharacter.mount, horse);
         protocolCharacter.rent = {
-          .mountUid = horse.uid(),
+          .mountStatsSum = horse.uid(),
           .val1 = 0x12};
       });
 
@@ -5580,7 +5580,7 @@ void RanchDirector::HandleMountRent(
 {
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid);
-  spdlog::debug("packet info: {} {} {}", command.rent.mountUid, command.rent.val1, command.rent.val2);
+  spdlog::debug("packet info: {} {} {}", command.rent.mountStatsSum, command.rent.val1, command.rent.val2);
 
   protocol::AcCmdCRMountRentOK response {
     .rent = command.rent,
