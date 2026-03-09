@@ -70,6 +70,7 @@ add_library(alicia-libserver STATIC
         src/libserver/registry/HorseRegistry.cpp
         src/libserver/registry/ItemRegistry.cpp
         src/libserver/registry/PetRegistry.cpp
+        src/libserver/registry/QuestRegistry.cpp
         src/libserver/util/Locale.cpp
         src/libserver/util/Scheduler.cpp
         src/libserver/util/Stream.cpp
