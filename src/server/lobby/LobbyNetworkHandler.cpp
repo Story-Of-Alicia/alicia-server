@@ -1780,6 +1780,7 @@ void LobbyNetworkHandler::HandleRequestPersonalInfo(
     {
       case protocol::AcCmdCLRequestPersonalInfo::Type::Basic:
       {
+        // Guild name
         const auto& guildRecord = _serverInstance.GetDataDirector().GetGuild(
           character.guildUid());
         if (guildRecord.IsAvailable())
@@ -1790,9 +1791,42 @@ void LobbyNetworkHandler::HandleRequestPersonalInfo(
           });
         }
 
+        // Character info
         response.basic.introduction = character.introduction();
         response.basic.level = character.level();
-        // TODO: implement other stats
+
+        // Mount statistics from active mount
+        if (character.mountUid() != data::InvalidUid)
+        {
+          const auto mountRecord = _serverInstance.GetDataDirector().GetHorse(
+            character.mountUid());
+          if (mountRecord.IsAvailable())
+          {
+            mountRecord.Immutable([&response](const data::Horse& horse)
+            {
+              response.basic.distanceTravelled = horse.mountInfo.totalDistance();
+              response.basic.topSpeed = horse.mountInfo.topSpeed();
+              response.basic.longestGlidingDistance = horse.mountInfo.longestGlideDistance();
+              response.basic.speedSingleWinCombo = static_cast<uint16_t>(
+                horse.mountInfo.winsSpeedSingle());
+              response.basic.speedTeamWinCombo = static_cast<uint16_t>(
+                horse.mountInfo.winsSpeedTeam());
+              response.basic.magicSingleWinCombo = static_cast<uint16_t>(
+                horse.mountInfo.winsMagicSingle());
+              response.basic.magicTeamWinCombo = static_cast<uint16_t>(
+                horse.mountInfo.winsMagicTeam());
+              response.basic.highestCarnivalPrize = horse.mountInfo.biggestPrize();
+              response.basic.perfectBoostCombo = static_cast<uint16_t>(
+                horse.mountInfo.boostsInARow());
+            });
+          }
+        }
+
+        // Computed stats left as 0 until race result tracking is implemented:
+        // jumpSuccessRate, perfectJumpSuccessRate, averageRank, completionRate,
+        // record7Stat, record18Rate, record19Rate, record17Rate,
+        // perfectJumpCombo, magicDefenseCombo, levelProgress
+
         break;
       }
       case protocol::AcCmdCLRequestPersonalInfo::Type::Courses:

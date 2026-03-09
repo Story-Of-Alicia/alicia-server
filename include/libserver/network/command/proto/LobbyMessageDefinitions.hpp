@@ -1792,25 +1792,34 @@ struct AcCmdLCPersonalInfo
     uint16_t magicTeamWinCombo{};
     float averageRank{};
     float completionRate{};
-    float member12{};
+    //! Displayed directly as float (txt_record_7), no percentage scaling.
+    //! Exact label unknown — positioned between completionRate and win combos.
+    float record7Stat{};
     uint32_t highestCarnivalPrize{};
-    uint16_t member14{};
-    uint16_t member15{};
-    uint16_t member16{};
+    //! Stored to UI state but not displayed as txt_record.
+    //! Possibly race mode counts or internal UI filter state.
+    uint16_t uiState14{};
+    uint16_t uiState15{};
+    uint16_t uiState16{};
     std::string introduction{};
     uint32_t level{60};
     //! Level progress as dictated by LevelInfo table in libconfig
     uint32_t levelProgress{};
-    std::string member20{};
+    //! Not displayed in Basic info tab. Possibly rank title or legacy field.
+    std::string record20String{};
     uint16_t perfectBoostCombo{};
     uint16_t perfectJumpCombo{};
     uint16_t magicDefenseCombo{};
-    float member24{};
-    float member25{};
-    float member26{};
+    //! Displayed as percentage (×100) at txt_record_18.
+    float record18Rate{};
+    //! Displayed as percentage (×100) at txt_record_19.
+    float record19Rate{};
+    //! Displayed as percentage (×100) at txt_record_17.
+    float record17Rate{};
     std::string guildName{};
-    uint8_t member28{};
-    uint8_t member29{};
+    //! Not accessed in main UI update function. Possibly flags.
+    uint8_t flag28{};
+    uint8_t flag29{};
 
     static void Write(const Basic& command, SinkStream& stream);
     static void Read(Basic& command, SourceStream& stream);
