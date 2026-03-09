@@ -717,7 +717,7 @@ void AcCmdCLRequestDailyQuestListOK::Write(
   const AcCmdCLRequestDailyQuestListOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.val0);
+  stream.Write(command.characterUid);
   stream.Write(static_cast<uint16_t>(command.unk.size()));
  
   for (auto& member : command.unk)
