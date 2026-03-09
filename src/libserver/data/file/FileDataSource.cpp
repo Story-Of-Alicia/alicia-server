@@ -1305,6 +1305,11 @@ void server::FileDataSource::RetrieveDailyQuestGroup(data::Uid uid, data::DailyQ
   group.rewardId     = json["rewardId"].get<uint8_t>();
   group.rewardType   = json["rewardType"].get<uint8_t>();
   group.rewardPoints = json.value("rewardPoints", uint32_t{0});
+  // Support both boolean `true`/`false` and legacy integer `1`/`0` representations.
+  if (const auto it = json.find("carrotsClaimed"); it != json.end())
+    group.carrotsClaimed = it->is_boolean() ? it->get<bool>() : (it->get<int>() != 0);
+  else
+    group.carrotsClaimed = false;
 
   std::array<data::DailyQuestEntry, 3> quests{};
   const auto& questsJson = json["quests"];
@@ -1333,6 +1338,7 @@ void server::FileDataSource::StoreDailyQuestGroup(data::Uid uid, const data::Dai
   json["rewardId"]     = group.rewardId();
   json["rewardType"]   = group.rewardType();
   json["rewardPoints"] = group.rewardPoints();
+  json["carrotsClaimed"] = static_cast<bool>(group.carrotsClaimed());
 
   nlohmann::json questsJson = nlohmann::json::array();
   for (const auto& entry : group.quests())

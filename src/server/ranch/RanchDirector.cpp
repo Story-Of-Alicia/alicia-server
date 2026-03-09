@@ -4521,15 +4521,8 @@ void RanchDirector::HandleUpdateDailyQuest(
     clientContext.characterUid);
 
   protocol::AcCmdCRUpdateDailyQuestOK response{};
-  characterRecord.Mutable(
-    [&response](data::Character& character)
-    {
-      character.carrots() += 1000;
 
-      response.newCarrotBalance = character.carrots();
-    });
-
-  // Persist the updated quest entry in the group.
+  // Get or create the daily quest group for this character.
   data::Uid groupUid = data::InvalidUid;
   characterRecord.Immutable(
     [&groupUid](const data::Character& character)
@@ -4537,31 +4530,62 @@ void RanchDirector::HandleUpdateDailyQuest(
       groupUid = character.dailyQuestGroupUid();
     });
 
-  if (groupUid != data::InvalidUid)
+  const auto groupRecord = groupUid != data::InvalidUid
+    ? _serverInstance.GetDataDirector().GetDailyQuestGroup(groupUid)
+    : _serverInstance.GetDataDirector().CreateDailyQuestGroup();
+
+  if (!groupRecord.IsAvailable())
   {
-    const auto groupRecord = _serverInstance.GetDataDirector().GetDailyQuestGroup(groupUid);
-    if (!groupRecord.IsAvailable())
-    {
-      spdlog::warn(
-        "HandleUpdateDailyQuest: daily quest group uid {} not found for character {}",
-        groupUid,
-        clientContext.characterUid);
-    }
-    else groupRecord.Mutable(
-      [&command](data::DailyQuestGroup& group)
-      {
-        auto quests = group.quests();
-        for (auto& entry : quests)
-        {
-          if (entry.questId == command.quest.questId)
-          {
-            entry.progress = command.quest.progress;
-            break;
-          }
-        }
-        group.quests = quests;
-      });
+    spdlog::warn(
+      "HandleUpdateDailyQuest: daily quest group unavailable for character {}",
+      clientContext.characterUid);
   }
+  else groupRecord.Mutable(
+    [&command, &characterRecord, &response, groupUid](data::DailyQuestGroup& group)
+    {
+      // If this is a newly created group, link it back to the character.
+      if (groupUid == data::InvalidUid)
+      {
+        const data::Uid newGroupUid = group.uid();
+        characterRecord.Mutable(
+          [newGroupUid](data::Character& character)
+          {
+            character.dailyQuestGroupUid() = newGroupUid;
+          });
+      }
+
+      // Update quest progress.
+      auto quests = group.quests();
+      for (auto& entry : quests)
+      {
+        if (entry.questId == command.quest.questId)
+        {
+          entry.progress = command.quest.progress;
+          break;
+        }
+      }
+      group.quests = quests;
+
+      // Only award carrots if they haven't been claimed yet for this group.
+      if (!group.carrotsClaimed())
+      {
+        group.carrotsClaimed = true;
+        characterRecord.Mutable(
+          [&response](data::Character& character)
+          {
+            character.carrots() += 1000;
+            response.newCarrotBalance = character.carrots();
+          });
+      }
+      else
+      {
+        characterRecord.Immutable(
+          [&response](const data::Character& character)
+          {
+            response.newCarrotBalance = character.carrots();
+          });
+      }
+    });
 
   response.quest = {command.quest.questId, command.quest.progress, command.quest.rewardType, 1};
   response.unk_1 = 1;

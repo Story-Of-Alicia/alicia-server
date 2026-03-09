@@ -488,6 +488,8 @@ struct DailyQuestGroup
   dao::Field<uint8_t> rewardType{};
   //! Accumulated quest reward points. References QuestRewardPoint thresholds in quests.yaml.
   dao::Field<uint32_t> rewardPoints{};
+  //! Whether the daily quest carrot reward has been claimed today.
+  dao::Field<bool> carrotsClaimed{false};
   //! The 3 daily quest slots.
   dao::Field<std::array<DailyQuestEntry, 3>> quests{};
 };
