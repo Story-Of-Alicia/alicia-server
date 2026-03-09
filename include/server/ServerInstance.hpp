@@ -40,6 +40,7 @@
 #include <libserver/registry/HorseRegistry.hpp>
 #include <libserver/registry/ItemRegistry.hpp>
 #include <libserver/registry/PetRegistry.hpp>
+#include <libserver/registry/QuestRegistry.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -106,6 +107,10 @@ public:
   //! Returns reference to the Pet registry.
   //! @returns Reference to the Pet registry.
   registry::PetRegistry& GetPetRegistry();
+
+  //! Returns reference to the Quest registry.
+  //! @returns Reference to the Quest registry.
+  registry::QuestRegistry& GetQuestRegistry();
 
   //! Returns reference to the chat system.
   //! @returns Reference to the chat system.
@@ -230,6 +235,8 @@ private:
   registry::ItemRegistry _itemRegistry;
   //! A registry of pets.
   registry::PetRegistry _petRegistry;
+  //! A registry of quests.
+  registry::QuestRegistry _questRegistry;
 
   //! A chat system.
   ChatSystem _chatSystem;
