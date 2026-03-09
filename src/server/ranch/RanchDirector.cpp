@@ -3923,7 +3923,7 @@ void RanchDirector::HandleStatusPointApply(
     const int64_t courageDelta = static_cast<int64_t>(command.stats.courage) - static_cast<int64_t>(horse.stats.courage());
     
     // Decrease in any of the stats is not allowed.
-    if (cagilityDelta < 0
+    if (agilityDelta < 0
       || ambitionDelta < 0 
       || rushDelta < 0
       || enduranceDelta < 0
