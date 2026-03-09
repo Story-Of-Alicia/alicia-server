@@ -1075,7 +1075,7 @@ struct AcCmdCLRequestDailyQuestList
 
 struct AcCmdCLRequestDailyQuestListOK
 {
-  uint32_t val0;
+  uint32_t characterUid{};
   
   std::array<Quest, 10> unk;
   std::array<DailyQuest, 3> dailyQuests;

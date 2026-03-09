@@ -2304,82 +2304,72 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
   characterRecord.Immutable(
     [&response, &groupUid](const data::Character& character)
     {
-      response.val0 = character.uid();
+      response.characterUid = character.uid();
       groupUid = character.dailyQuestGroupUid();
-
-      // Filler entries for unused slots
-      for (int i = 4; i < 10; i++)
-        response.unk[i] = protocol::Quest{0, 0, protocol::Quest::Status::Finished, 0, 0, 0};
     });
 
-  const bool hasGroup = groupUid != data::InvalidUid;
+  // Default all unk slots to InProgress.
+  for (auto& q : response.unk)
+    q.status = protocol::Quest::Status::InProgress;
 
-  if (!hasGroup)
+  if (groupUid != data::InvalidUid)
   {
-    // No quests registered yet — fill all 4 active slots as empty/finished.
-    for (int i = 0; i < 4; ++i)
-      response.unk[i] = protocol::Quest{0, 0, protocol::Quest::Status::Finished, 0, 0, 0};
-
-    _commandServer.QueueCommand<decltype(response)>(
-      clientId,
-      [response]() { return response; });
-    return;
-  }
-
-  const auto groupRecord = _serverInstance.GetDataDirector().GetDailyQuestGroup(groupUid);
-  if (!groupRecord)
-  {
-    for (int i = 0; i < 4; ++i)
-      response.unk[i] = protocol::Quest{0, 0, protocol::Quest::Status::Finished, 0, 0, 0};
-
-    _commandServer.QueueCommand<decltype(response)>(
-      clientId,
-      [response]() { return response; });
-    return;
-  }
-
-  int completedCount = 0;
-  groupRecord.Immutable([&response, &completedCount, this](const data::DailyQuestGroup& group)
-  {
-    const auto rewardId   = static_cast<uint8_t>(group.rewardId());
-    const auto rewardType = static_cast<uint8_t>(group.rewardType());
-    const auto& quests    = group.quests();
-
-    for (size_t i = 0; i < 3; ++i)
+    const auto groupRecord = _serverInstance.GetDataDirector().GetDailyQuestGroup(groupUid);
+    if (groupRecord)
     {
-      const auto questId  = quests[i].questId;
-      const auto progress = quests[i].progress;
+      int completedCount = 0;
+      groupRecord.Immutable([&response, &completedCount, this](const data::DailyQuestGroup& group)
+      {
+        const auto rewardId   = static_cast<uint8_t>(group.rewardId());
+        const auto rewardType = static_cast<uint8_t>(group.rewardType());
+        const auto& quests    = group.quests();
 
-      const auto questTemplate = _serverInstance.GetQuestRegistry().GetQuest(questId);
-      const uint32_t successValue = questTemplate ? questTemplate->successValue : 0;
-      const bool isDone = successValue > 0 && progress >= successValue;
+        for (size_t i = 0; i < 3; ++i)
+        {
+          const auto questId  = quests[i].questId;
+          const auto progress = quests[i].progress;
 
-      if (isDone)
-        ++completedCount;
+          const auto questTemplate = _serverInstance.GetQuestRegistry().GetQuest(questId);
+          const uint32_t successValue = questTemplate ? questTemplate->successValue : 0;
+          const bool isDone = successValue > 0 && progress >= successValue;
 
-      response.dailyQuests[i] = protocol::DailyQuest{questId, progress, rewardType, rewardId};
-      response.unk[i + 1] = protocol::Quest{
-        /*tid=*/questId,
-        /*member0=*/0,
-        isDone ? protocol::Quest::Status::ReadyToClaim : protocol::Quest::Status::InProgress,
-        /*progress=*/isDone ? uint32_t{0} : progress,
-        /*member3=*/rewardType,
-        /*member4=*/rewardId};
+          if (isDone)
+            ++completedCount;
+
+          response.dailyQuests[i] = protocol::DailyQuest{questId, progress, rewardType, rewardId};
+          // Daily quests go into unk[2..4] (slots 0 and 1 are the two Repeatable quests).
+          response.unk[i + 2] = protocol::Quest{
+            /*tid=*/questId,
+            /*member0=*/0,
+            isDone ? protocol::Quest::Status::ReadyToClaim : protocol::Quest::Status::InProgress,
+            /*progress=*/progress,
+            /*member3=*/0,
+            /*member4=*/0};
+        }
+      });
+
+      // Collect both Repeatable quest TIDs (TID 100 and 101) sorted ascending.
+      std::vector<uint16_t> repeatableTids;
+      for (const auto& [tid, quest] : _serverInstance.GetQuestRegistry().GetQuests())
+      {
+        if (quest.type == registry::Quest::Type::Repeatable)
+          repeatableTids.push_back(static_cast<uint16_t>(tid));
+      }
+      std::sort(repeatableTids.begin(), repeatableTids.end());
+
+      // unk[0] = TID 100 (intro/activate) — In Progress if daily carrots not claimed, ReadyToClaim is carrots has been claimed.
+      // unk[1] = TID 101 (collect reward) — In Progress if DailyQuestGroup is not finished, ReadyToClaim if all daily quests are done.
+      if (repeatableTids.size() >= 1)
+        response.unk[0] = protocol::Quest{repeatableTids[0], 0,
+          protocol::Quest::Status::ReadyToClaim, 0, 0, 0};
+      if (repeatableTids.size() >= 2)
+        response.unk[1] = protocol::Quest{repeatableTids[1], 0,
+          completedCount == 3 ? protocol::Quest::Status::InProgress : protocol::Quest::Status::InProgress,
+          0, 0, 0};
     }
-  });
+  }
 
-  // unk[0] is the meta "collect your daily reward" quest (tid 100).
-  if (completedCount == 3)
-    response.unk[0] = protocol::Quest{100, 0, protocol::Quest::Status::ReadyToClaim, 0, 0, 0};
-  else
-    response.unk[0] = protocol::Quest{100, 0, protocol::Quest::Status::InProgress, 0, 0, 0};
-
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [response]()
-    {
-      return response;
-    });
+  _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
 }
 
 void LobbyNetworkHandler::HandleRequestLeagueInfo(
