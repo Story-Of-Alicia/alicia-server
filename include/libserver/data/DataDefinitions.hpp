@@ -431,6 +431,8 @@ struct Horse
     dao::Field<uint32_t> stopAmendsPoint{};
   } mountCondition{};
 
+  dao::Field<uint32_t> tendency{0u};
+
   struct MountInfo
   {
     dao::Field<uint32_t> boostsInARow{};

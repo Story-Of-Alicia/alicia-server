@@ -87,7 +87,7 @@ void BuildProtocolHorse(
     .type = Horse::HorseType::Adult,
     .val1 = 0x00,
     .dateOfBirth = util::TimePointToAliciaTime(horse.dateOfBirth()),
-    .tendency = 0x02,
+    .tendency = static_cast<uint8_t>(horse.tendency()),
     .spirit = 0x00,
     .classProgression = static_cast<uint32_t>(horse.clazzProgress()),
     .val5 = 0x00,

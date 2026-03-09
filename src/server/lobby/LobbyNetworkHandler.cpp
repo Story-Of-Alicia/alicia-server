@@ -1412,6 +1412,7 @@ void LobbyNetworkHandler::HandleCreateNickname(
         horse.dateOfBirth() = data::Clock::now();
         horse.mountCondition.stamina = 3500;
         horse.growthPoints() = 150;
+        horse.tendency() = 1;
 
         _serverInstance.GetHorseRegistry().BuildRandomHorse(
           horse.parts,
