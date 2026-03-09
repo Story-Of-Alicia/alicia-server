@@ -777,7 +777,7 @@ void AcCmdCLEnterRanchCancel::Write(
   const AcCmdCLEnterRanchCancel& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0);
+  stream.Write(command.reason);
 }
 
 void AcCmdCLEnterRanchCancel::Read(

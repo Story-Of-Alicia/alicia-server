@@ -1837,13 +1837,15 @@ void LobbyNetworkHandler::HandleEnterRanch(
 
   if (isRanchLocked && not isEnteringOwnRanch)
   {
-    protocol::AcCmdCLEnterRanchCancel response{};
+    protocol::AcCmdCLEnterRanchCancel response{
+      .reason = 3};
 
     _commandServer.QueueCommand<decltype(response)>(
       clientId, [response]()
       {
         return response;
       });
+    return;
   }
 
   SendEnterRanchOK(clientId, command.rancherUid);

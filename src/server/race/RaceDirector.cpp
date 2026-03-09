@@ -1725,6 +1725,10 @@ void RaceDirector::HandleLoadingComplete(
   // Switch the racer to the racing state.
   racer.state = tracker::RaceTracker::Racer::State::Racing;
 
+  // Enable relay for racer
+  // Note: handler does not use any of the fields
+  protocol::AcCmdCRRelayCommandNotify notify{};
+
   // Notify all clients in the room that this player's loading is complete
   for (const ClientId& raceClientId : raceInstance.clients)
   {
@@ -1734,6 +1738,13 @@ void RaceDirector::HandleLoadingComplete(
       {
         return protocol::AcCmdCRLoadingCompleteNotify{
           .oid = oid};
+      });
+
+    _commandServer.QueueCommand<decltype(notify)>(
+      raceClientId,
+      [notify]()
+      {
+        return notify;
       });
   }
 }

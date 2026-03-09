@@ -1157,7 +1157,8 @@ struct AcCmdCLEnterRanchOK
 //! Serverbound enter ranch command.
 struct AcCmdCLEnterRanchCancel
 {
-  uint16_t unk0;
+  // 3 - indicates that the ranch is locked.
+  uint16_t reason{};
 
   static Command GetCommand()
   {
