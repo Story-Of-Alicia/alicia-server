@@ -1254,14 +1254,16 @@ void DataDirector::ScheduleCharacterLoad(
 
     // Friends prefetch
     std::set<data::Uid> friends;
+    data::Uid dailyQuestGroupUid = data::InvalidUid;
 
     characterRecord.Immutable(
-      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets, &settingsUid, &mailbox, &friends](
+      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets, &settingsUid, &mailbox, &friends, &dailyQuestGroupUid](
         const data::Character& character)
       {
         guildUid = character.guildUid();
         petUid = character.petUid();
         settingsUid = character.settingsUid();
+        dailyQuestGroupUid = character.dailyQuestGroupUid();
 
         gifts = character.gifts();
         purchases = character.purchases();
@@ -1301,6 +1303,7 @@ void DataDirector::ScheduleCharacterLoad(
     const auto guildRecord = GetGuild(guildUid);
     const auto petRecord = GetPet(petUid);
     const auto settingsRecord = GetSettings(settingsUid);
+    const auto dailyQuestGroupRecord = GetDailyQuestGroup(dailyQuestGroupUid);
 
     const auto giftRecords = GetStorageItemCache().Get(gifts);
     const auto purchaseRecords = GetStorageItemCache().Get(purchases);
@@ -1312,17 +1315,6 @@ void DataDirector::ScheduleCharacterLoad(
     const auto housingRecords = GetHousingCache().Get(housing);
 
     const auto petRecords = GetPetCache().Get(pets);
-
-    // Preload the daily quest group if one is assigned (absence is valid — no quests yet).
-    data::Uid dailyQuestGroupUid = data::InvalidUid;
-    characterRecord.Immutable([&dailyQuestGroupUid](const data::Character& character)
-    {
-      dailyQuestGroupUid = character.dailyQuestGroupUid();
-    });
-    if (dailyQuestGroupUid != data::InvalidUid)
-    {
-      const auto dailyQuestGroupRecord = GetDailyQuestGroup(dailyQuestGroupUid);
-    }
 
     // Only require guild if the UID is not invalid.
     if (not guildRecord && guildUid != data::InvalidUid)
@@ -1345,6 +1337,14 @@ void DataDirector::ScheduleCharacterLoad(
     {
       userDataContext.debugMessage = std::format(
         "Settings '{}' not available", settingsUid);
+      return;
+    }
+
+    // Only require daily quest group if one is assigned.
+    if (not dailyQuestGroupRecord && dailyQuestGroupUid != data::InvalidUid)
+    {
+      userDataContext.debugMessage = std::format(
+        "Daily quest group '{}' not available", dailyQuestGroupUid);
       return;
     }
 
