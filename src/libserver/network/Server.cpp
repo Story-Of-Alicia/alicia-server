@@ -17,414 +17,421 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
-#include "libserver/network/Server.hpp"
+ #include "libserver/network/Server.hpp"
 
-#include "libserver/util/Deferred.hpp"
-
-#include <ranges>
-#include <spdlog/spdlog.h>
-#include <stacktrace>
-
-namespace server::network
+ #include "libserver/util/Deferred.hpp"
+ 
+ #include <ranges>
+ #include <spdlog/spdlog.h>
+ #include <stacktrace>
+ 
+ namespace server::network
+ {
+ 
+ Client::Client(
+   ClientId clientId,
+   asio::ip::tcp::socket&& socket,
+   EventHandlerInterface& networkEventHandler) noexcept
+   : _clientId(clientId)
+   , _socket(std::move(socket))
+   , _networkEventHandler(networkEventHandler)
+ {
+ }
+ 
+ void Client::Begin()
+ {
+   if (_shouldRun.exchange(true, std::memory_order::acq_rel))
+     return;
+ 
+   _networkEventHandler.OnClientConnected(_clientId);
+ 
+   ReadLoop();
+ }
+ 
+ void Client::End()
+ {
+   if (not _shouldRun.exchange(false, std::memory_order::seq_cst))
+     return;
+ 
+   try
+   {
+     if (_socket.is_open())
+     {
+       _socket.shutdown(asio::socket_base::shutdown_both);
+       _socket.close();
+     }
+   }
+   catch (const std::exception&)
+   {
+     // Ignore
+   }
+ 
+   _networkEventHandler.OnClientDisconnected(_clientId);
+ }
+ 
+ void Client::QueueWrite(WriteSupplier writeSupplier)
+ {
+   if (not _shouldRun.load(std::memory_order::acquire))
+     return;
+ 
+   {
+     std::scoped_lock lock(_writeMutex);
+     _writeQueue.emplace(writeSupplier);
+   }
+ 
+   WriteLoop();
+ }
+ 
+ asio::ip::address_v4 Client::GetAddress()
+ {
+   return _socket.remote_endpoint().address().to_v4();
+ }
+ 
+ void Client::WriteLoop() noexcept
+ {
+   // todo: forgive me for this, its not clean, its not pretty and i'm pretty sure there some side effects
+   //       i'll nuke it in the future
+ 
+   if (not _shouldRun.load(std::memory_order::acquire))
+     return;
+ 
+   if (_isSending.load(std::memory_order::acquire))
+     return;
+ 
+   std::scoped_lock lock(_writeMutex);
+   if (_writeQueue.empty())
+   {
+     return;
+   }
+ 
+   // Write the suppliers to the write buffer.
+   while (not _writeQueue.empty())
+   {
+     try
+     {
+       const auto& supplier = _writeQueue.front();
+       supplier(_writeBuffer);
+       _writeQueue.pop();
+     }
+     catch (const std::exception& e)
+     {
+       spdlog::error("Unhandled exception in supplier of write data for client {}: {}",
+         _clientId,
+         e.what());
+       End();
+       return;
+     }
+   }
+ 
+   _isSending.store(true, std::memory_order::release);
+ 
+   // Asynchronously write the data to the socket.
+   _socket.async_write_some(
+     _writeBuffer.data(),
+     [clientPtr = this->shared_from_this()](const boost::system::error_code& error, const std::size_t size)
+     {
+       try
+       {
+         if (error)
+         {
+           switch (error.value())
+           {
+             case asio::error::operation_aborted:
+               throw std::runtime_error("Connection aborted by the server");
+             case asio::error::connection_reset:
+               throw std::runtime_error("Connection reset by the client");
+             default:
+               throw std::runtime_error(
+                 std::format("Generic network error {}", error.message()));
+           }
+         }
+ 
+         // Consume the sent bytes.
+         {
+           std::scoped_lock lock(clientPtr->_writeMutex);
+           clientPtr->_writeBuffer.consume(size);
+         }
+       }
+       catch (const std::exception& x)
+       {
+         spdlog::debug(
+           "Client {} is disconnecting because of read loop exception: {}",
+           clientPtr->_clientId,
+           x.what());
+ 
+         clientPtr->End();
+       }
+ 
+       clientPtr->_isSending.store(false, std::memory_order::release);
+       clientPtr->WriteLoop();
+     });
+ }
+ 
+ void Client::ReadLoop() noexcept
+ {
+   if (not _shouldRun.load(std::memory_order::acquire))
+     return;
+ 
+   _socket.async_read_some(
+     _readBuffer.prepare(1024),
+     [clientPtr = this->shared_from_this()](boost::system::error_code error, std::size_t size)
+     {
+       try
+       {
+         if (error)
+         {
+           switch (error.value())
+           {
+             case asio::error::operation_aborted:
+               throw std::runtime_error("Connection aborted by the server");
+             case asio::error::misc_errors::eof:
+             case asio::error::connection_reset:
+               throw std::runtime_error("Connection reset by the client");
+             default:
+               throw std::runtime_error(
+                 std::format("Generic network error {}", error.message()));
+           }
+         }
+ 
+         clientPtr->_readBuffer.commit(size);
+ 
+         const std::span receivedData{
+           static_cast<const std::byte*>(clientPtr->_readBuffer.data().data()),
+           clientPtr->_readBuffer.data().size()};
+ 
+         const auto consumedBytes = clientPtr->_networkEventHandler.OnClientData(
+           clientPtr->_clientId,
+           receivedData);
+ 
+         clientPtr->_readBuffer.consume(consumedBytes);
+ 
+         // Continue the read loop.
+         clientPtr->ReadLoop();
+       }
+       catch (const std::exception& x)
+       {
+         spdlog::debug(
+           "Client {} is disconnecting because of read loop exception: {}",
+           clientPtr->_clientId,
+           x.what());
+ 
+         clientPtr->End();
+       }
+     });
+ }
+ 
+bool Server::AllowConnection(const asio::ip::address_v4& address)
 {
-
-Client::Client(
-  ClientId clientId,
-  asio::ip::tcp::socket&& socket,
-  EventHandlerInterface& networkEventHandler) noexcept
-  : _clientId(clientId)
-  , _socket(std::move(socket))
-  , _networkEventHandler(networkEventHandler)
-{
-}
-
-void Client::Begin()
-{
-  if (_shouldRun.exchange(true, std::memory_order::acq_rel))
-    return;
-
-  _networkEventHandler.OnClientConnected(_clientId);
-
-  ReadLoop();
-}
-
-void Client::End()
-{
-  if (not _shouldRun.exchange(false, std::memory_order::seq_cst))
-    return;
-
-  try
-  {
-    if (_socket.is_open())
-    {
-      _socket.shutdown(asio::socket_base::shutdown_both);
-      _socket.close();
-    }
-  }
-  catch (const std::exception&)
-  {
-    // Ignore
-  }
-
-  _networkEventHandler.OnClientDisconnected(_clientId);
-}
-
-void Client::QueueWrite(WriteSupplier writeSupplier)
-{
-  if (not _shouldRun.load(std::memory_order::acquire))
-    return;
-
-  {
-    std::scoped_lock lock(_writeMutex);
-    _writeQueue.emplace(writeSupplier);
-  }
-
-  WriteLoop();
-}
-
-asio::ip::address_v4 Client::GetAddress()
-{
-  return _socket.remote_endpoint().address().to_v4();
-}
-
-void Client::WriteLoop() noexcept
-{
-  // todo: forgive me for this, its not clean, its not pretty and i'm pretty sure there some side effects
-  //       i'll nuke it in the future
-
-  if (not _shouldRun.load(std::memory_order::acquire))
-    return;
-
-  if (_isSending.load(std::memory_order::acquire))
-    return;
-
-  std::scoped_lock lock(_writeMutex);
-  if (_writeQueue.empty())
-  {
-    return;
-  }
-
-  // Write the suppliers to the write buffer.
-  while (not _writeQueue.empty())
-  {
-    try
-    {
-      const auto& supplier = _writeQueue.front();
-      supplier(_writeBuffer);
-      _writeQueue.pop();
-    }
-    catch (const std::exception& e)
-    {
-      spdlog::error("Unhandled exception in supplier of write data for client {}: {}",
-        _clientId,
-        e.what());
-      End();
-      return;
-    }
-  }
-
-  _isSending.store(true, std::memory_order::release);
-
-  // Asynchronously write the data to the socket.
-  _socket.async_write_some(
-    _writeBuffer.data(),
-    [clientPtr = this->shared_from_this()](const boost::system::error_code& error, const std::size_t size)
-    {
-      try
-      {
-        if (error)
-        {
-          switch (error.value())
-          {
-            case asio::error::operation_aborted:
-              throw std::runtime_error("Connection aborted by the server");
-            case asio::error::connection_reset:
-              throw std::runtime_error("Connection reset by the client");
-            default:
-              throw std::runtime_error(
-                std::format("Generic network error {}", error.message()));
-          }
-        }
-
-        // Consume the sent bytes.
-        {
-          std::scoped_lock lock(clientPtr->_writeMutex);
-          clientPtr->_writeBuffer.consume(size);
-        }
-      }
-      catch (const std::exception& x)
-      {
-        spdlog::debug(
-          "Client {} is disconnecting because of read loop exception: {}",
-          clientPtr->_clientId,
-          x.what());
-
-        clientPtr->End();
-      }
-
-      clientPtr->_isSending.store(false, std::memory_order::release);
-      clientPtr->WriteLoop();
-    });
-}
-
-void Client::ReadLoop() noexcept
-{
-  if (not _shouldRun.load(std::memory_order::acquire))
-    return;
-
-  _socket.async_read_some(
-    _readBuffer.prepare(1024),
-    [clientPtr = this->shared_from_this()](boost::system::error_code error, std::size_t size)
-    {
-      try
-      {
-        if (error)
-        {
-          switch (error.value())
-          {
-            case asio::error::operation_aborted:
-              throw std::runtime_error("Connection aborted by the server");
-            case asio::error::misc_errors::eof:
-            case asio::error::connection_reset:
-              throw std::runtime_error("Connection reset by the client");
-            default:
-              throw std::runtime_error(
-                std::format("Generic network error {}", error.message()));
-          }
-        }
-
-        clientPtr->_readBuffer.commit(size);
-
-        const std::span receivedData{
-          static_cast<const std::byte*>(clientPtr->_readBuffer.data().data()),
-          clientPtr->_readBuffer.data().size()};
-
-        const auto consumedBytes = clientPtr->_networkEventHandler.OnClientData(
-          clientPtr->_clientId,
-          receivedData);
-
-        clientPtr->_readBuffer.consume(consumedBytes);
-
-        // Continue the read loop.
-        clientPtr->ReadLoop();
-      }
-      catch (const std::exception& x)
-      {
-        spdlog::debug(
-          "Client {} is disconnecting because of read loop exception: {}",
-          clientPtr->_clientId,
-          x.what());
-
-        clientPtr->End();
-      }
-    });
-}
-
-bool ConnectionThrottle::AllowConnection(const asio::ip::address_v4& address, size_t totalConnections) {
-  if (totalConnections >= MaxTotalConnections) return false;
+  if (_clients.size() >= MaxTotalConnections)
+    return false;
 
   const auto ipKey = address.to_uint();
   const auto now = std::chrono::steady_clock::now();
 
-  std::scoped_lock lock(_mutex);
+  std::scoped_lock lock(_throttleMutex);
   auto& ipState = _ipStates[ipKey];
 
-  if (ipState.activeConnections >= MaxConnectionsPerIp) return false;
+  if (ipState.activeConnections >= MaxConnectionsPerIp)
+    return false;
 
-  // Evict timestamps outside the sliding window.
-  while (not ipState.connectionTimestamps.empty() && (now - ipState.connectionTimestamps.front()) > RateWindow) {
+  while (not ipState.connectionTimestamps.empty()
+         && (now - ipState.connectionTimestamps.front()) > RateWindow)
+  {
     ipState.connectionTimestamps.pop_front();
   }
 
-  if (ipState.connectionTimestamps.size() >= MaxConnectRatePerIp) return false;
+  if (ipState.connectionTimestamps.size() >= MaxConnectRatePerIp)
+    return false;
 
   ipState.activeConnections++;
   ipState.connectionTimestamps.push_back(now);
   return true;
 }
 
-void ConnectionThrottle::OnDisconnect(const asio::ip::address_v4& address) {
+void Server::OnThrottleDisconnect(const asio::ip::address_v4& address)
+{
   const auto ipKey = address.to_uint();
 
-  std::scoped_lock lock(_mutex);
+  std::scoped_lock lock(_throttleMutex);
   const auto it = _ipStates.find(ipKey);
-  if (it == _ipStates.end()) return;
+  if (it == _ipStates.end())
+    return;
 
-  if (it->second.activeConnections > 0) it->second.activeConnections--;
+  if (it->second.activeConnections > 0)
+    it->second.activeConnections--;
 
-  if (it->second.activeConnections == 0 && it->second.connectionTimestamps.empty()) {
+  if (it->second.activeConnections == 0 && it->second.connectionTimestamps.empty())
     _ipStates.erase(it);
-  }
 }
-
-Server::Server(EventHandlerInterface& networkEventHandler) noexcept
-  : _acceptor(_io_ctx)
-  , _timer(_io_ctx)
-  , _networkEventHandler(networkEventHandler)
-{
-}
-
-void Server::Begin(const asio::ip::address& address, uint16_t port)
-{
-  const asio::ip::tcp::endpoint server_endpoint(address, port);
-
-  try
-  {
-    _acceptor.open(server_endpoint.protocol());
-    _acceptor.bind(server_endpoint);
-    _acceptor.listen();
-  }
-  catch (const std::exception& x)
-  {
-    throw std::runtime_error(
-      std::format(
-        "Exception while trying to host server on {}:{}: {}",
-        address.to_string(),
-        port,
-        x.what()));
-  }
-
-  // Run the accept loop.
-  AcceptLoop();
-
-  try
-  {
-    // Run the tick loop.
-    TickLoop();
-  }
-  catch (const std::exception& x)
-  {
-    throw std::runtime_error(
-      std::format(
-        "Exception in network tick loop: {}",
-        x.what()));
-  }
-
-  try
-  {
-    _io_ctx.run();
-  }
-  catch (const std::exception& x)
-  {
-    throw std::runtime_error(
-      std::format(
-        "Exception in asio IO context: {}",
-        x.what()));
-  }
-}
-
-void Server::End()
-{
-  _acceptor.close();
-  _io_ctx.stop();
-}
-
-std::shared_ptr<Client> Server::GetClient(ClientId clientId)
-{
-  const auto clientItr = _clients.find(clientId);
-  if (clientItr == _clients.end())
-  {
-    throw std::runtime_error("Invalid client");
-  }
-
-  return clientItr->second->shared_from_this();
-}
-
-void Server::HandleNetworkTick()
-{
-
-}
-
-void Server::OnClientConnected(
-  ClientId clientId)
-{
-  _networkEventHandler.OnClientConnected(clientId);
-}
-
-void Server::OnClientDisconnected(
-  ClientId clientId)
-{
-  _networkEventHandler.OnClientDisconnected(clientId);
-
-  const auto addrIt = _clientAddresses.find(clientId);
-  if (addrIt != _clientAddresses.end()) {
-    _throttle.OnDisconnect(addrIt->second);
-    _clientAddresses.erase(addrIt);
-  }
-
-  _clients.erase(clientId);
-}
-
-size_t Server::OnClientData(
-  ClientId clientId,
-  const std::span<const std::byte>& data)
-{
-  return _networkEventHandler.OnClientData(clientId, data);
-}
-
-void Server::AcceptLoop() noexcept
-{
-  _acceptor.async_accept(
-    [&](const boost::system::error_code& error, asio::ip::tcp::socket client_socket)
-    {
-      try
-      {
-        if (error)
-        {
-          throw std::runtime_error(
-            fmt::format("Network exception 0x{}", error.value()));
-        }
-
-        const auto remoteAddr = client_socket.remote_endpoint().address().to_v4();
-
-        if (not _throttle.AllowConnection(remoteAddr, _clients.size())) {
-          spdlog::warn("Connection rejected from {} (throttled)", remoteAddr.to_string());
-          client_socket.close();
-          AcceptLoop();
-          return;
-        }
-
-        // Sequential Id.
-        const ClientId clientId = _client_id++;
-
-        _clientAddresses[clientId] = remoteAddr;
-
-        // Create the client.
-        const auto [itr, emplaced] = _clients.try_emplace(
-          clientId,
-          std::make_shared<Client>(clientId,
-            std::move(client_socket),
-            *this));
-
-        // Id is sequential so emplacement should never fail.
-        assert(emplaced);
-
-        itr->second->Begin();
-
-        // Continue the accept loop.
-        AcceptLoop();
-      }
-      catch (const std::exception& x)
-      {
-        spdlog::error(
-          "Error in the server accept loop: {}",
-          x.what());
-      }
-    });
-}
-
-void Server::TickLoop() noexcept
-{
-  _networkEventHandler.HandleNetworkTick();
-
-  _timer.expires_after(std::chrono::seconds(1));
-  _timer.async_wait([this](const boost::system::error_code& error)
-  {
-    if (error)
-      return;
-
-    TickLoop();
-  });
-}
-
-} // namespace server::network
+ 
+ Server::Server(EventHandlerInterface& networkEventHandler) noexcept
+   : _acceptor(_io_ctx)
+   , _timer(_io_ctx)
+   , _networkEventHandler(networkEventHandler)
+ {
+ }
+ 
+ void Server::Begin(const asio::ip::address& address, uint16_t port)
+ {
+   const asio::ip::tcp::endpoint server_endpoint(address, port);
+ 
+   try
+   {
+     _acceptor.open(server_endpoint.protocol());
+     _acceptor.bind(server_endpoint);
+     _acceptor.listen();
+   }
+   catch (const std::exception& x)
+   {
+     throw std::runtime_error(
+       std::format(
+         "Exception while trying to host server on {}:{}: {}",
+         address.to_string(),
+         port,
+         x.what()));
+   }
+ 
+   // Run the accept loop.
+   AcceptLoop();
+ 
+   try
+   {
+     // Run the tick loop.
+     TickLoop();
+   }
+   catch (const std::exception& x)
+   {
+     throw std::runtime_error(
+       std::format(
+         "Exception in network tick loop: {}",
+         x.what()));
+   }
+ 
+   try
+   {
+     _io_ctx.run();
+   }
+   catch (const std::exception& x)
+   {
+     throw std::runtime_error(
+       std::format(
+         "Exception in asio IO context: {}",
+         x.what()));
+   }
+ }
+ 
+ void Server::End()
+ {
+   _acceptor.close();
+   _io_ctx.stop();
+ }
+ 
+ std::shared_ptr<Client> Server::GetClient(ClientId clientId)
+ {
+   const auto clientItr = _clients.find(clientId);
+   if (clientItr == _clients.end())
+   {
+     throw std::runtime_error("Invalid client");
+   }
+ 
+   return clientItr->second->shared_from_this();
+ }
+ 
+ void Server::HandleNetworkTick()
+ {
+ 
+ }
+ 
+ void Server::OnClientConnected(
+   ClientId clientId)
+ {
+   _networkEventHandler.OnClientConnected(clientId);
+ }
+ 
+ void Server::OnClientDisconnected(
+   ClientId clientId)
+ {
+   _networkEventHandler.OnClientDisconnected(clientId);
+ 
+   const auto addrIt = _clientAddresses.find(clientId);
+   if (addrIt != _clientAddresses.end()) {
+     OnThrottleDisconnect(addrIt->second);
+     _clientAddresses.erase(addrIt);
+   }
+ 
+   _clients.erase(clientId);
+ }
+ 
+ size_t Server::OnClientData(
+   ClientId clientId,
+   const std::span<const std::byte>& data)
+ {
+   return _networkEventHandler.OnClientData(clientId, data);
+ }
+ 
+ void Server::AcceptLoop() noexcept
+ {
+   _acceptor.async_accept(
+     [&](const boost::system::error_code& error, asio::ip::tcp::socket client_socket)
+     {
+       try
+       {
+         if (error)
+         {
+           throw std::runtime_error(
+             fmt::format("Network exception 0x{}", error.value()));
+         }
+ 
+         const auto remoteAddr = client_socket.remote_endpoint().address().to_v4();
+ 
+         if (not AllowConnection(remoteAddr)) {
+           spdlog::warn("Connection rejected from {} (throttled)", remoteAddr.to_string());
+           client_socket.close();
+           AcceptLoop();
+           return;
+         }
+ 
+         // Sequential Id.
+         const ClientId clientId = _client_id++;
+ 
+         _clientAddresses[clientId] = remoteAddr;
+ 
+         // Create the client.
+         const auto [itr, emplaced] = _clients.try_emplace(
+           clientId,
+           std::make_shared<Client>(clientId,
+             std::move(client_socket),
+             *this));
+ 
+         // Id is sequential so emplacement should never fail.
+         assert(emplaced);
+ 
+         itr->second->Begin();
+ 
+         // Continue the accept loop.
+         AcceptLoop();
+       }
+       catch (const std::exception& x)
+       {
+         spdlog::error(
+           "Error in the server accept loop: {}",
+           x.what());
+       }
+     });
+ }
+ 
+ void Server::TickLoop() noexcept
+ {
+   _networkEventHandler.HandleNetworkTick();
+ 
+   _timer.expires_after(std::chrono::seconds(1));
+   _timer.async_wait([this](const boost::system::error_code& error)
+   {
+     if (error)
+       return;
+ 
+     TickLoop();
+   });
+ }
+ 
+ } // namespace server::network
