@@ -1774,15 +1774,15 @@ void AcCmdRCAddSkillEffect::Write(
   {
     case 2:
     case 3:
-      stream.Write(command.defenseMagicEffect.value().unk0)
-        .Write(command.defenseMagicEffect.value().unk1);
+      stream.Write(command.shieldEffect.value().unk0)
+        .Write(command.shieldEffect.value().unk1);
       break;
     case 5:
     case 6:
     case 7:
     case 22:
     case 23:
-      stream.Write(command.attackMagicEffect.value());
+      stream.Write(command.boostEffectMs.value());
       break;
   }
 }
@@ -1803,15 +1803,15 @@ void AcCmdRCAddSkillEffect::Read(
   {
     case 2:
     case 3:
-      stream.Read(command.defenseMagicEffect.emplace().unk0)
-        .Read(command.defenseMagicEffect.value().unk1);
+      stream.Read(command.shieldEffect.emplace().unk0)
+        .Read(command.shieldEffect.value().unk1);
       break;
     case 5:
     case 6:
     case 7:
     case 22:
     case 23:
-      stream.Read(command.attackMagicEffect.emplace());
+      stream.Read(command.boostEffectMs.emplace());
       break;
   }
 }

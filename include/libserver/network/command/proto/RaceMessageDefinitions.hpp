@@ -2332,14 +2332,14 @@ struct AcCmdRCAddSkillEffect
   uint16_t unk3;            // Unused
   uint32_t unk4;            // Posibly intensity, no idea but it it not work
 
-  struct DefenseMagicEffect
+  struct ShieldEffect
   {
-    uint32_t unk0; // Effect time in seconds? It makes the it not work
-    uint32_t unk1; // Unused
+    uint32_t unk0;
+    uint32_t unk1;
   };
-  std::optional<DefenseMagicEffect> defenseMagicEffect;
+  std::optional<ShieldEffect> shieldEffect;
 
-  std::optional<uint32_t> attackMagicEffect; // Effect time in milliseconds
+  std::optional<uint32_t> boostEffectMs; // Effect time in milliseconds
 
   static Command GetCommand()
   {

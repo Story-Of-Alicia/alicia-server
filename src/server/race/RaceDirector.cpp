@@ -3056,6 +3056,7 @@ void RaceDirector::HandleActivateSkillEffect(
   switch (magicSlotInfo.type)
   {
       // Darkness
+      // As it is, this applies darkness to everyone. No idea why. It's the only effect that behaves like this.
       case 14:
       case 15:
         targetRacer.darkness = true;
@@ -3136,6 +3137,7 @@ void RaceDirector::HandleChangeSkillCardPresetId(
 
 void RaceDirector::ScheduleSkillEffect(RaceDirector::RaceInstance& raceInstance, tracker::Oid attackerOid, tracker::Oid targetOid, const server::registry::Magic::SlotInfo& magicSlotInfo, std::optional<std::function<void()>> afterEffectRemoved){
   // Broadcast skill effect activation to all clients in the room
+  // TODO: Verify if characterOid and targetOid should be the same once we have NPCs
   protocol::AcCmdRCAddSkillEffect addSkillEffect{
     .characterOid = targetOid,
     .effectId = magicSlotInfo.skillEffectId,
@@ -3144,11 +3146,12 @@ void RaceDirector::ScheduleSkillEffect(RaceDirector::RaceInstance& raceInstance,
     .unk2 = 0,
     .unk3 = 0,
     .unk4 = 0,
-    .defenseMagicEffect = protocol::AcCmdRCAddSkillEffect::DefenseMagicEffect{
+    .shieldEffect = protocol::AcCmdRCAddSkillEffect::ShieldEffect{
       .unk0 = 0,
       .unk1 = 0,
     },
-    .attackMagicEffect = 0
+    // Not sure this does anything, at all.
+    .boostEffectMs = static_cast<uint32_t>(magicSlotInfo.effectDelay * 1000.0f),
   };
 
   // Broadcast
