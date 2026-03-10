@@ -5316,6 +5316,12 @@ void RanchDirector::HandleRequestDailyQuestReward(
 
       response.rewards.items.emplace_back(
         protocol::Item{.uid = itemUid, .tid = rewardItem.tid, .expiresAt = 0, .count = rewardItem.count});
+      const auto itemRecord = _serverInstance.GetDataDirector().GetItem(itemUid);
+
+        {
+          auto& protocolItem = response.rewards.items.emplace_back();
+          protocol::BuildProtocolItem(protocolItem, item);
+        });      
     }
   });
 
@@ -5329,10 +5335,10 @@ void RanchDirector::HandleRequestDailyQuestReward(
   protocol::AcCmdRCUpdateDailyQuestNotify noti{
     .characterUid = clientContext.characterUid,
     .questId = command.questTid,
-    .unk = {.isCompleted = 1, .progress = 0, .unk2 = 0},
+    .unk = {.isCompleted = 1, .progress = 0, .unk2 = 1},
     .carrotsReward = 0,
     .questType = 0,
-    .unk2 = 0,
+    .unk2 = 1000,
     .mountExp = 0};
 
   _commandServer.QueueCommand<decltype(noti)>(
