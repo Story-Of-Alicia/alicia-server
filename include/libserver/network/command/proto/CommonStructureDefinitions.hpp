@@ -716,6 +716,42 @@ struct ShopOrder
     SourceStream& stream);
 };
 
+//! A common struct used by achievements and quests.
+struct ObjectiveProgress
+{
+  //! Indicates whether the objective is completed.
+  bool isCompleted{};
+
+  //! The progress of the objective.
+  //! This has no effect when it is marked as completed.
+  uint32_t progress{};
+  
+  //! Which tier of the achievement was completed.
+  //! Typically only used by achievement system.
+  enum AchievementTier : uint8_t
+  {
+    None = 0xFF,
+    Bronze = 0x0,
+    Silver = 0x1,
+    Gold = 0x2,
+    Platinum = 0x3
+  } achievementTier{};
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const ObjectiveProgress& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    ObjectiveProgress& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif

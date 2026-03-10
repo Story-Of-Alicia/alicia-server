@@ -1158,7 +1158,8 @@ struct AcCmdCLEnterRanchOK
 //! Serverbound enter ranch command.
 struct AcCmdCLEnterRanchCancel
 {
-  uint16_t unk0;
+  // 3 - indicates that the ranch is locked.
+  uint16_t reason{};
 
   static Command GetCommand()
   {
@@ -2534,6 +2535,33 @@ struct AcCmdLCInviteGuildJoinOK
   //! @param stream Source stream.
   static void Read(
     AcCmdLCInviteGuildJoinOK& command,
+    SourceStream& stream);
+};
+
+//! Server-initiated, clientbound indicating to the user
+//! that an achievement has been rewarded. Can be sent
+//! to a character in ranch, waiting room or race.
+struct AcCmdLCAchievementRewardNotify
+{
+  // Empty
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCAchievementRewardNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCAchievementRewardNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCAchievementRewardNotify& command,
     SourceStream& stream);
 };
 

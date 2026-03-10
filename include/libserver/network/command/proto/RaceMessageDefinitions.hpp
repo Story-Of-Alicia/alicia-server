@@ -2567,6 +2567,46 @@ struct AcCmdRCTimeoutCareUser
     SourceStream& stream);
 };
 
+//! Server-initiated, clientbound command to notify that
+//! an achievement has been updated/completed.
+struct AcCmdRCAchievementUpdateNotify
+{
+  // Example configuration:
+  // 10229/true/0/Bronze/555555
+  // - This will complete 10229 Bronze tier and set carrots to 555555.
+
+  // 10224/false/1/None/1111
+  // - This will progress 10224 None tier by 1, and set carrots to 1111.
+
+  //! The TID of the achievement.
+  //! References libconfig/Achievements table.
+  uint16_t achievementTid{};
+
+  ObjectiveProgress objectiveProgress{};
+
+  //! The final carrot count after the achievement.
+  int32_t carrotBalance{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCAchievementUpdateNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCAchievementUpdateNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCAchievementUpdateNotify& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RACE_MESSAGE_DEFINES_HPP
