@@ -1934,9 +1934,7 @@ void AcCmdRCAchievementUpdateNotify::Write(
   SinkStream& stream)
 {
   stream.Write(command.achievementTid)
-    .Write(command.isCompleted)
-    .Write(command.achievementProgress)
-    .Write(command.achievementTier)
+    .Write(command.objectiveProgress)
     .Write(command.carrotBalance);
 }
 

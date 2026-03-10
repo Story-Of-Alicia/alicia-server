@@ -2582,25 +2582,7 @@ struct AcCmdRCAchievementUpdateNotify
   //! References libconfig/Achievements table.
   uint16_t achievementTid{};
 
-  //! Indicates whether the achievement is completed.
-  //! Handler behaves differently with this set to false.
-  bool isCompleted{};
-
-  //! The progress of the achievement.
-  //! This has no effect when it is marked as completed.
-  uint32_t achievementProgress{};
-  
-  // TODO: move this into a common place so other achievement-related
-  // commands can use this enum
-  //! Which tier of the achievement was completed.
-  enum AchievementTier : uint8_t
-  {
-    None = 0xFF,
-    Bronze = 0x0,
-    Silver = 0x1,
-    Gold = 0x2,
-    Platinum = 0x3
-  } achievementTier{};
+  ObjectiveProgress objectiveProgress{};
 
   //! The final carrot count after the achievement.
   int32_t carrotBalance{};
