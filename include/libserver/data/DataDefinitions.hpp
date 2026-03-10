@@ -450,6 +450,18 @@ struct Horse
     dao::Field<uint32_t> participated{};
     dao::Field<uint32_t> cumulativePrize{};
     dao::Field<uint32_t> biggestPrize{};
+
+    // Race tracking counters
+    dao::Field<uint32_t> totalRaces{};
+    dao::Field<uint32_t> totalFinished{};
+    dao::Field<uint32_t> cumulativeRank{};
+
+    // Jump tracking counters
+    dao::Field<uint32_t> totalJumps{};
+    dao::Field<uint32_t> successfulJumps{};
+    dao::Field<uint32_t> perfectJumps{};
+    dao::Field<uint32_t> bestJumpCombo{};
+    dao::Field<uint32_t> bestMagicDefenseCombo{};
   } mountInfo{};
 };
 

@@ -1818,15 +1818,45 @@ void LobbyNetworkHandler::HandleRequestPersonalInfo(
               response.basic.highestCarnivalPrize = horse.mountInfo.biggestPrize();
               response.basic.perfectBoostCombo = static_cast<uint16_t>(
                 horse.mountInfo.boostsInARow());
+
+              // Computed race stats from persistent counters
+              if (horse.mountInfo.totalJumps() > 0)
+              {
+                response.basic.jumpSuccessRate = static_cast<float>(
+                  horse.mountInfo.successfulJumps()) / static_cast<float>(
+                  horse.mountInfo.totalJumps());
+                response.basic.perfectJumpSuccessRate = static_cast<float>(
+                  horse.mountInfo.perfectJumps()) / static_cast<float>(
+                  horse.mountInfo.totalJumps());
+              }
+
+              if (horse.mountInfo.totalFinished() > 0)
+              {
+                response.basic.averageRank = static_cast<float>(
+                  horse.mountInfo.cumulativeRank()) / static_cast<float>(
+                  horse.mountInfo.totalFinished());
+              }
+
+              if (horse.mountInfo.totalRaces() > 0)
+              {
+                response.basic.completionRate = static_cast<float>(
+                  horse.mountInfo.totalFinished()) / static_cast<float>(
+                  horse.mountInfo.totalRaces());
+              }
+
+              response.basic.perfectJumpCombo = static_cast<uint16_t>(
+                horse.mountInfo.bestJumpCombo());
+              response.basic.magicDefenseCombo = static_cast<uint16_t>(
+                horse.mountInfo.bestMagicDefenseCombo());
+
+              // Not yet implemented (need magic spell event tracking):
+              // averageChasingCount, magicBallAttackSuccessRate,
+              // fireSpiritTransferSuccessRate, iceWallAttackSuccessRate
+              // Not yet implemented (need res.pak level table):
+              // levelProgress
             });
           }
         }
-
-        // Computed stats left as 0 until race result tracking is implemented:
-        // jumpSuccessRate, perfectJumpSuccessRate, averageRank, completionRate,
-        // averageChasingCount, magicBallAttackSuccessRate,
-        // fireSpiritTransferSuccessRate, iceWallAttackSuccessRate,
-        // perfectJumpCombo, magicDefenseCombo, levelProgress
 
         break;
       }

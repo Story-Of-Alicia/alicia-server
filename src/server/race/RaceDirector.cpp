@@ -592,6 +592,36 @@ void RaceDirector::Tick()
       });
     }
 
+    // Update persistent race statistics for each participant
+    uint32_t rank = 0;
+    for (const auto& [courseTime, characterUid] : scoreboard)
+    {
+      rank++;
+      const auto& racer = raceInstance.tracker.GetRacer(characterUid);
+      const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+        characterUid);
+
+      characterRecord.Immutable(
+        [this, &racer, rank](const data::Character& character)
+        {
+          if (character.mountUid() == data::InvalidUid)
+            return;
+
+          _serverInstance.GetDataDirector().GetHorse(
+            character.mountUid()).Mutable(
+            [&racer, rank](data::Horse& horse)
+            {
+              horse.mountInfo.totalRaces = horse.mountInfo.totalRaces() + 1;
+
+              if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
+              {
+                horse.mountInfo.totalFinished = horse.mountInfo.totalFinished() + 1;
+                horse.mountInfo.cumulativeRank = horse.mountInfo.cumulativeRank() + rank;
+              }
+            });
+        });
+    }
+
     // Broadcast the race result
     for (const ClientId raceClientId : raceInstance.clients)
     {
@@ -2030,6 +2060,10 @@ void RaceDirector::HandleHurdleClearResult(
       "Client tried to perform action on behalf of different racer");
   }
 
+  // Resolve mount record for persistent jump tracking
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
   protocol::AcCmdCRHurdleClearResultOK response{
     .characterOid = command.characterOid,
     .hurdleClearType = command.hurdleClearType,
@@ -2073,6 +2107,24 @@ void RaceDirector::HandleHurdleClearResult(
         racer.starPointValue + gameModeTemplate.perfectJumpStarPoints + gainedStarPointsFromCombo,
         gameModeTemplate.starPointsMax);
 
+      // Persistent jump tracking
+      characterRecord.Immutable(
+        [this, &racer](const data::Character& character)
+        {
+          GetServerInstance().GetDataDirector().GetHorse(
+            character.mountUid()).Mutable(
+            [&racer](data::Horse& horse)
+            {
+              horse.mountInfo.totalJumps = horse.mountInfo.totalJumps() + 1;
+              horse.mountInfo.successfulJumps = horse.mountInfo.successfulJumps() + 1;
+              horse.mountInfo.perfectJumps = horse.mountInfo.perfectJumps() + 1;
+              if (racer.jumpComboValue > horse.mountInfo.bestJumpCombo())
+              {
+                horse.mountInfo.bestJumpCombo = racer.jumpComboValue;
+              }
+            });
+        });
+
       // Update boost gauge
       starPointResponse.starPointValue = racer.starPointValue;
       break;
@@ -2095,6 +2147,19 @@ void RaceDirector::HandleHurdleClearResult(
         racer.starPointValue + gainedStarPoints,
         gameModeTemplate.starPointsMax);
 
+      // Persistent jump tracking
+      characterRecord.Immutable(
+        [this](const data::Character& character)
+        {
+          GetServerInstance().GetDataDirector().GetHorse(
+            character.mountUid()).Mutable(
+            [](data::Horse& horse)
+            {
+              horse.mountInfo.totalJumps = horse.mountInfo.totalJumps() + 1;
+              horse.mountInfo.successfulJumps = horse.mountInfo.successfulJumps() + 1;
+            });
+        });
+
       // Update boost gauge
       starPointResponse.starPointValue = racer.starPointValue;
       break;
@@ -2104,6 +2169,18 @@ void RaceDirector::HandleHurdleClearResult(
       // A collision with hurdle, reset the jump combo.
       racer.jumpComboValue = 0;
       response.jumpCombo = racer.jumpComboValue;
+
+      // Persistent jump tracking (collision = failed jump)
+      characterRecord.Immutable(
+        [this](const data::Character& character)
+        {
+          GetServerInstance().GetDataDirector().GetHorse(
+            character.mountUid()).Mutable(
+            [](data::Horse& horse)
+            {
+              horse.mountInfo.totalJumps = horse.mountInfo.totalJumps() + 1;
+            });
+        });
       break;
     }
     default:
