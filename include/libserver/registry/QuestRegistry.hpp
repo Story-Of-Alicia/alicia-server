@@ -115,7 +115,7 @@ struct Quest
   uint32_t functionValue{};
   //! Linked reward ID (references a QuestReward).
   uint32_t rewardId{};
-  //! Direct experience reward.
+  //! horse Exp reward.
   uint32_t rewardExp{};
   //! Direct game money reward.
   uint32_t rewardGameMoney{};

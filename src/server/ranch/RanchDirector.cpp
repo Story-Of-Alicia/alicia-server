@@ -5283,11 +5283,11 @@ void RanchDirector::HandleRequestDailyQuestReward(
 
   // Get the quest registry and find the appropriate reward
   const auto& questRegistry = _serverInstance.GetQuestRegistry();
-  
+
   // Find the highest reward tier that doesn't exceed the command rewardPoints
   std::optional<registry::QuestRewardPoint> bestReward;
   uint32_t bestRewardPoints = 0;
-  
+
   for (const auto& [points, rewardPoint] : questRegistry.GetQuestRewardPoints())
   {
     // Only consider rewards that don't exceed the requested points
@@ -5307,22 +5307,22 @@ void RanchDirector::HandleRequestDailyQuestReward(
 
   // Award the items to the character
   characterRecord.Mutable([this, &response, &rewardPoint](data::Character& character)
-  {
-    for (const auto& rewardItem : rewardPoint.items)
     {
-      const data::Uid itemUid = _serverInstance.GetItemSystem().AddItem(
-        character, rewardItem.tid, rewardItem.count);
+      for (const auto& rewardItem : rewardPoint.items)
+      {
+        const data::Uid itemUid = _serverInstance.GetItemSystem().AddItem(
+          character, rewardItem.tid, rewardItem.count);
 
-      const auto itemRecord = _serverInstance.GetDataDirector().GetItem(itemUid);
+        const auto itemRecord = _serverInstance.GetDataDirector().GetItem(itemUid);
 
-      itemRecord.Immutable(
-        [&response](const data::Item& item)
-        {
-          auto& protocolItem = response.rewards.items.emplace_back();
-          protocol::BuildProtocolItem(protocolItem, item);
-        });      
-    }
-  });
+        itemRecord.Immutable(
+          [&response](const data::Item& item)
+          {
+            auto& protocolItem = response.rewards.items.emplace_back();
+            protocol::BuildProtocolItem(protocolItem, item);
+          });
+      }
+    });
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -5331,20 +5331,21 @@ void RanchDirector::HandleRequestDailyQuestReward(
       return response;
     });
 
-  protocol::AcCmdRCUpdateDailyQuestNotify noti{
-    .characterUid = clientContext.characterUid,
-    .questId = command.questTid,
-    .unk = {.isCompleted = 1, .progress = 0, .unk2 = 1},
-    .carrotsReward = 0,
-    .questType = 0,
-    .unk2 = 1000,
-    .mountExp = 0};
+  protocol::AcCmdCRUpdateDailyQuestOK response2{};
 
-  _commandServer.QueueCommand<decltype(noti)>(
-    clientId,
-    [noti]()
+  characterRecord.Mutable([&response2](data::Character& character)
     {
-      return noti;
+      response2.newCarrotBalance = character.carrots();
+    });
+  response2.quest = {command.questTid, 0, 0, 1};
+  response2.unk_1 = 1;
+  response2.unk_2 = 1;
+
+  _commandServer.QueueCommand<decltype(response2)>(
+    clientId,
+    [response2]()
+    {
+      return response2;
     });
 }
 
@@ -5714,6 +5715,28 @@ void RanchDirector::HandleInviteUser(
   response.recipientCharacterName = command.recipientCharacterName;
 
   _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+}
+
+  data::Uid characterUid, 
+  const protocol::AcCmdRCCompleteDailyQuestNotify& notification)
+{
+  // Find the client for this character
+  for (const auto& [clientId, clientContext] : _clients)
+  {
+    if (clientContext.characterUid == characterUid)
+    {
+      _commandServer.QueueCommand<protocol::AcCmdRCCompleteDailyQuestNotify>(
+        clientId,
+        [notification]()
+        {
+          return notification;
+        });
+      return;
+    }
+  }
+  
+  // Character not found in ranch director context
+  spdlog::debug("RanchDirector::SendDailyQuestNotificationToCharacter: Character {} not found in ranch context", characterUid);
 }
 
 } // namespace server
