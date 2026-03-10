@@ -2567,6 +2567,64 @@ struct AcCmdRCTimeoutCareUser
     SourceStream& stream);
 };
 
+//! Server-initiated, clientbound command to notify that
+//! an achievement has been updated/completed.
+struct AcCmdRCAchievementUpdateNotify
+{
+  // Example configuration:
+  // 10229/true/0/Bronze/555555
+  // - This will complete 10229 Bronze tier and set carrots to 555555.
+
+  // 10224/false/1/None/1111
+  // - This will progress 10224 None tier by 1, and set carrots to 1111.
+
+  //! The TID of the achievement.
+  //! References libconfig/Achievements table.
+  uint16_t achievementTid{};
+
+  //! Indicates whether the achievement is completed.
+  //! Handler behaves differently with this set to false.
+  bool isCompleted{};
+
+  //! The progress of the achievement.
+  //! This has no effect when it is marked as completed.
+  uint32_t achievementProgress{};
+  
+  // TODO: move this into a common place so other achievement-related
+  // commands can use this enum
+  //! Which tier of the achievement was completed.
+  enum AchievementTier : uint8_t
+  {
+    None = 0xFF,
+    Bronze = 0x0,
+    Silver = 0x1,
+    Gold = 0x2,
+    Platinum = 0x3
+  } achievementTier{};
+
+  //! The final carrot count after the achievement.
+  int32_t carrotBalance{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCAchievementUpdateNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCAchievementUpdateNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCAchievementUpdateNotify& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RACE_MESSAGE_DEFINES_HPP

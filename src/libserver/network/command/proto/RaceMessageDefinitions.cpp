@@ -1929,4 +1929,22 @@ void AcCmdRCTimeoutCareUser::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdRCAchievementUpdateNotify::Write(
+  const AcCmdRCAchievementUpdateNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.achievementTid)
+    .Write(command.isCompleted)
+    .Write(command.achievementProgress)
+    .Write(command.achievementTier)
+    .Write(command.carrotBalance);
+}
+
+void AcCmdRCAchievementUpdateNotify::Read(
+  AcCmdRCAchievementUpdateNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
