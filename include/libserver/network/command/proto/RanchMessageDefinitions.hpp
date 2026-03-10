@@ -4531,9 +4531,9 @@ struct AcCmdCRRegisterQuestOK
 
 struct AcCmdCRRequestQuestReward
 {
-  uint16_t unk0; // questTid
-  uint32_t unk1; // npcId
-  uint32_t unk2; // questrewardId
+  uint16_t questTid; // questTid
+  uint32_t npcId; // npcId
+  uint32_t questRewardId; // questrewardId
 
   static Command GetCommand()
   {
@@ -4557,23 +4557,21 @@ struct AcCmdCRRequestQuestReward
 
 struct AcCmdCRRequestQuestRewardOK
 {
-  uint16_t unk0; //questTid
-  uint32_t unk1; //carrots rewarded
-  uint8_t unk2; //Unk counter
-  uint8_t unk3; //Unk1 counter
+  uint16_t questTid; //questTid
+  uint32_t carrotsRewarded; //carrots rewarded
     
   AcCmdCRRequestDailyQuestRewardOK::Reward rewards;//game has no limit
 
-  struct Unk1 // gives a visual effect when receiving the reward
+  struct NpcDressList // gives a visual effect when receiving the reward
   {
-    uint32_t unk0;//npc id
-    uint32_t unk1;//effect id
+    uint32_t npcId;//npc id
+    uint32_t effectId;//effect id
 
-    static void Write(const Unk1& value, SinkStream& stream);
-    static void Read(Unk1& value, SourceStream& stream);
+    static void Write(const NpcDressList& value, SinkStream& stream);
+    static void Read(NpcDressList& value, SourceStream& stream);
   };
 
-  std::array<Unk1, 5> unk4;
+  std::array<NpcDressList, 5> npcEffects;
 
   static Command GetCommand()
   {
