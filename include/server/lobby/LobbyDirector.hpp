@@ -127,6 +127,9 @@ public:
     data::Uid characterUid,
     const std::string& message);
 
+  void NotifyAchievementReward(
+    data::Uid characterUid);
+
   //! Get users
   //! @return Get users.
   [[nodiscard]] std::unordered_map<std::string, UserInstance>& GetUsers();
