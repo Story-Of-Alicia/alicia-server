@@ -86,6 +86,10 @@ public:
     data::Uid characterUid,
     protocol::GuildRole guildRole);
 
+  void SendDailyQuestNotificationToCharacter(
+    data::Uid characterUid, 
+    const protocol::AcCmdRCCompleteDailyQuestNotify& notification);
+
   void SendGuildInviteDeclined(
     data::Uid characterUid,
     data::Uid inviterCharacterUid,

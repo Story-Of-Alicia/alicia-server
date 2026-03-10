@@ -77,6 +77,10 @@ public:
     const data::Uid& roomUid,
     const protocol::AcCmdCRChangeRoomOptionsNotify notify);
 
+  void SendDailyQuestNotificationToCharacter(
+    data::Uid characterUid, 
+    const protocol::AcCmdRCCompleteDailyQuestNotify& notification);
+
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId clientId) override;
 

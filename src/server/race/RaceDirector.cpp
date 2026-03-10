@@ -3136,12 +3136,24 @@ void RaceDirector::ScheduleSkillEffect(
     .attackMagicEffect = 0
   };
 
-  // Broadcast
-  for (const ClientId& raceClientId : raceInstance.clients)
+  // Send only to the target client
+  for (const auto& [characterUid, racer] : raceInstance.tracker.GetRacers())
   {
-    _commandServer.QueueCommand<decltype(addSkillEffect)>(
-      raceClientId,
-      [addSkillEffect]() { return addSkillEffect; });
+    if (racer.oid == targetOid)
+    {
+      // Find the client ID for this character
+      for (const auto& [clientId, clientContext] : _clients)
+      {
+        if (clientContext.characterUid == characterUid)
+        {
+          _commandServer.QueueCommand<decltype(addSkillEffect)>(
+            clientId,
+            [addSkillEffect]() { return addSkillEffect; });
+          break;
+        }
+      }
+      break;
+    }
   }
 
   // Remove the effect after a delay
@@ -3536,6 +3548,51 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
   {
     _commandServer.QueueCommand<decltype(spur)>(raceClientId, [spur](){ return spur; });
   }
+}
+
+void RaceDirector::SendDailyQuestNotificationToCharacter(
+  data::Uid characterUid, 
+  const protocol::AcCmdRCCompleteDailyQuestNotify& notification)
+{
+  protocol::AcCmdRCUpdateDailyQuestNotify notif = {
+      .characterUid = notification.characterUid,
+      .questId = notification.questId,
+      .unk = {
+        .isCompleted = 1,
+        .progress = 9, 
+        .unk2 = 0
+      },
+      .carrotsReward = 0,
+      .questType = 0,
+      .unk2 = 0,
+      .mountExp = 0
+  };
+  
+  // Find the client for this character
+  for (const auto& [clientId, clientContext] : _clients)
+  {
+    if (clientContext.characterUid == characterUid)
+    {
+      _commandServer.QueueCommand<decltype(notif)>(
+        clientId,
+        [notif]()
+        {
+          return notif;
+        });
+
+      _commandServer.QueueCommand<protocol::AcCmdRCCompleteDailyQuestNotify>(
+        clientId,
+        [notification]()
+        {
+          return notification;
+        });
+
+      return;
+    }
+  }
+  
+  // Character not found in race director context
+  spdlog::debug("RaceDirector::SendDailyQuestNotificationToCharacter: Character {} not found in race context", characterUid);
 }
 
 } // namespace server

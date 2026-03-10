@@ -143,6 +143,24 @@ ChatSystem::CommandVerdict ChatSystem::ProcessCommandMessage(
     characterUid,
     std::span(command.begin() + 1, command.end()));
 
+  // Send daily quest notification through appropriate director
+  protocol::AcCmdRCCompleteDailyQuestNotify noti{
+    .characterUid = characterUid,
+    .questId = 1015};
+
+  // Check if character is in a race room first
+  const auto& userInstance = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(characterUid);
+  if (userInstance.roomUid > 0)
+  {
+    // Character is in a race room, send through race director
+    _serverInstance.GetRaceDirector().SendDailyQuestNotificationToCharacter(characterUid, noti);
+  }
+  else
+  {
+    // Character is in ranch/lobby, send through ranch director  
+    _serverInstance.GetRanchDirector().SendDailyQuestNotificationToCharacter(characterUid, noti);
+  }
+
   return verdict;
 }
 

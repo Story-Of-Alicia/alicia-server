@@ -5717,6 +5717,7 @@ void RanchDirector::HandleInviteUser(
   _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }
 
+void RanchDirector::SendDailyQuestNotificationToCharacter(
   data::Uid characterUid, 
   const protocol::AcCmdRCCompleteDailyQuestNotify& notification)
 {
