@@ -22,6 +22,8 @@ public:
     uint32_t maxFailedAttempts{5};
     std::chrono::seconds lockoutDuration{60};
     std::chrono::seconds purgeInterval{60};
+
+    Settings() = default;
   };
 
   explicit OtpSystem(Settings settings = {});
