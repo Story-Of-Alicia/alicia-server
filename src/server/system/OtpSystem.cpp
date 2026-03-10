@@ -9,6 +9,11 @@
 namespace server
 {
 
+OtpSystem::OtpSystem()
+  : OtpSystem(Settings{})
+{
+}
+
 OtpSystem::OtpSystem(Settings settings)
   : _settings(std::move(settings))
   , _rng(std::random_device{}())
