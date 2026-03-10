@@ -4336,8 +4336,8 @@ struct AcCmdRCUpdateDailyQuestNotify
   // TODO: implement in every command that could update a daily quest
   struct Unk
   {
-    uint8_t unk0;
-    uint32_t unk1;//progress
+    uint8_t isCompleted;
+    uint32_t progress;//progress
     uint8_t unk2;
 
     static void Write(const Unk& value, SinkStream& stream);
@@ -4347,10 +4347,10 @@ struct AcCmdRCUpdateDailyQuestNotify
   uint32_t characterUid;
   uint16_t questId;
   Unk unk;
-  uint32_t unk0;
-  uint8_t unk1; // likely max progress
+  uint32_t carrotsReward; //used when questType is 1
+  uint8_t questType; // subtype
   uint32_t unk2;
-  uint32_t unk3;
+  uint32_t mountExp; //used when questType is 2
 
   static Command GetCommand()
   {
@@ -4374,8 +4374,8 @@ struct AcCmdRCUpdateDailyQuestNotify
 
 struct AcCmdCRRequestDailyQuestReward
 {
-  uint16_t unk0;
-  uint16_t unk1;
+  uint16_t questTid;
+  uint16_t rewardPoints;
   static Command GetCommand()
   {
     return Command::AcCmdCRRequestDailyQuestReward;
@@ -4423,6 +4423,31 @@ struct AcCmdCRRequestDailyQuestRewardOK
   //! @param stream Source stream.
   static void Read(
     AcCmdCRRequestDailyQuestRewardOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCCompleteDailyQuestNotify
+{
+  uint32_t characterUid;
+  uint16_t questId;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCCompleteDailyQuestNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCCompleteDailyQuestNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCCompleteDailyQuestNotify& command,
     SourceStream& stream);
 };
 

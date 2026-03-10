@@ -2387,7 +2387,7 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
   // InProgress if not all done, ReadyToClaim if all 3 are completed.
   if (hasQuests && repeatableTids.size() >= 2)
     response.unk[1] = protocol::Quest{repeatableTids[1], 0,
-      completedCount == 3 ? protocol::Quest::Status::ReadyToClaim : protocol::Quest::Status::InProgress,
+      protocol::Quest::Status::InProgress,
       0, 0, 0};
 
   _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
