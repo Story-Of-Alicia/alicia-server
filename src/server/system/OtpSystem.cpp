@@ -31,7 +31,7 @@ uint32_t OtpSystem::GrantCode(const size_t key)
     key,
     Code{
       .expiry = std::chrono::steady_clock::now() + _settings.codeTtl,
-      .code = _rng()});
+      .code = static_cast<uint32_t>(_rng())});
 
   // Reset failed attempts when a new code is granted for this key,
   // since the legitimate server is issuing a fresh code.
