@@ -5247,21 +5247,78 @@ void RanchDirector::HandleRequestDailyQuestReward(
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     clientContext.characterUid);
-  spdlog::debug("packet info: {} {}", command.unk0, command.unk1);
 
   protocol::AcCmdCRRequestDailyQuestRewardOK response{};
 
-  characterRecord.Mutable(
-    [&command, &response](data::Character& /*character*/)
-    {
-      response.rewards.items[0] = {command.unk0, 45001, 0, 1};
-    });
-
-  for (int i = 1; i < 5; i++)
+  // Get character's daily quest group
+  data::Uid groupUid = data::InvalidUid;
+  characterRecord.Immutable([&groupUid](const data::Character& character)
   {
-    response.rewards.items[i] = {0, 0, 0, 0};
+    groupUid = character.dailyQuestGroupUid();
+  });
+
+  if (groupUid == data::InvalidUid)
+  {
+    return;
   }
+
+  const auto groupRecord = _serverInstance.GetDataDirector().GetDailyQuestGroup(groupUid);
+  if (!groupRecord.IsAvailable())
+  {
+    return;
+  }
+
+  // Check if the command rewardPoints match the accumulated points in the group
+  bool pointsMatch = false;
+  groupRecord.Immutable([&pointsMatch, commandPoints = command.rewardPoints](const data::DailyQuestGroup& group)
+  {
+    pointsMatch = (group.rewardPoints() >= commandPoints);
+  });
+
+  if (!pointsMatch)
+  {
+    spdlog::warn("HandleRequestDailyQuestReward: Character {} reward points do not match", clientContext.characterUid);
+    return;
+  }
+
+  // Get the quest registry and find the appropriate reward
+  const auto& questRegistry = _serverInstance.GetQuestRegistry();
   
+  // Find the highest reward tier that doesn't exceed the command rewardPoints
+  std::optional<registry::QuestRewardPoint> bestReward;
+  uint32_t bestRewardPoints = 0;
+  
+  for (const auto& [points, rewardPoint] : questRegistry.GetQuestRewardPoints())
+  {
+    // Only consider rewards that don't exceed the requested points
+    if (points <= command.rewardPoints && points > bestRewardPoints)
+    {
+      bestReward = rewardPoint;
+      bestRewardPoints = points;
+    }
+  }
+
+  if (!bestReward.has_value())
+  {
+    return;
+  }
+
+  const auto& rewardPoint = bestReward.value();
+    rewardPoint.name, bestRewardPoints, command.rewardPoints, rewardPoint.items.size());
+
+  // Award the items to the character
+  characterRecord.Mutable([this, &response, &rewardPoint](data::Character& character)
+  {
+    for (const auto& rewardItem : rewardPoint.items)
+    {
+      const data::Uid itemUid = _serverInstance.GetItemSystem().AddItem(
+        character, rewardItem.tid, rewardItem.count);
+
+      response.rewards.items.emplace_back(
+        protocol::Item{.uid = itemUid, .tid = rewardItem.tid, .expiresAt = 0, .count = rewardItem.count});
+    }
+  });
+
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
@@ -5271,12 +5328,12 @@ void RanchDirector::HandleRequestDailyQuestReward(
 
   protocol::AcCmdRCUpdateDailyQuestNotify noti{
     .characterUid = clientContext.characterUid,
-    .questId = 101,
-    .unk = {1, 1, 10},
-    .unk0 = 3,
-    .unk1 = 12,
-    .unk2 = 100,
-    .unk3 = 0};
+    .questId = command.questTid,
+    .unk = {.isCompleted = 1, .progress = 0, .unk2 = 0},
+    .carrotsReward = 0,
+    .questType = 0,
+    .unk2 = 0,
+    .mountExp = 0};
 
   _commandServer.QueueCommand<decltype(noti)>(
     clientId,
@@ -5568,6 +5625,29 @@ void RanchDirector::HandleInviteUser(
   response.recipientCharacterName = command.recipientCharacterName;
 
   _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+}
+
+void RanchDirector::SendDailyQuestNotificationToCharacter(
+  data::Uid characterUid, 
+  const protocol::AcCmdRCCompleteDailyQuestNotify& notification)
+{
+  // Find the client for this character
+  for (const auto& [clientId, clientContext] : _clients)
+  {
+    if (clientContext.characterUid == characterUid)
+    {
+      _commandServer.QueueCommand<protocol::AcCmdRCCompleteDailyQuestNotify>(
+        clientId,
+        [notification]()
+        {
+          return notification;
+        });
+      return;
+    }
+  }
+  
+  // Character not found in ranch director context
+  spdlog::debug("RanchDirector::SendDailyQuestNotificationToCharacter: Character {} not found in ranch context", characterUid);
 }
 
 } // namespace server

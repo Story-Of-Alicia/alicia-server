@@ -2758,10 +2758,10 @@ void AcCmdRCUpdateDailyQuestNotify::Write(
   stream.Write(command.characterUid);
   stream.Write(command.questId);
   stream.Write(command.unk);
-  stream.Write(command.unk0);
-  stream.Write(command.unk1);
+  stream.Write(command.carrotsReward);
+  stream.Write(command.questType);
   stream.Write(command.unk2);
-  stream.Write(command.unk3);
+  stream.Write(command.mountExp);
 }
 
 void AcCmdRCUpdateDailyQuestNotify::Read(
@@ -2773,15 +2773,15 @@ void AcCmdRCUpdateDailyQuestNotify::Read(
 
 void AcCmdRCUpdateDailyQuestNotify::Unk::Write(const Unk& value, SinkStream& stream)
 {
-  stream.Write(value.unk0)
-    .Write(value.unk1)
+  stream.Write(value.isCompleted)
+    .Write(value.progress)
     .Write(value.unk2);
 }
 
 void AcCmdRCUpdateDailyQuestNotify::Unk::Read(Unk& value, SourceStream& stream)
 {
-  stream.Read(value.unk0)
-    .Read(value.unk1)
+  stream.Read(value.isCompleted)
+    .Read(value.progress)
     .Read(value.unk2);
 }
 
@@ -2796,8 +2796,8 @@ void AcCmdCRRequestDailyQuestReward::Read(
   AcCmdCRRequestDailyQuestReward& command,
   SourceStream& stream)
 {
-  stream.Read(command.unk0);
-  stream.Read(command.unk1);
+  stream.Read(command.questTid);
+  stream.Read(command.rewardPoints);
 }
 
 void AcCmdCRRequestDailyQuestRewardOK::Write(
@@ -2833,6 +2833,21 @@ void AcCmdCRRequestDailyQuestRewardOK::Reward::Read(Reward& value, SourceStream&
   {
     stream.Read(member);
   }
+}
+
+void AcCmdRCCompleteDailyQuestNotify::Write(
+  const AcCmdRCCompleteDailyQuestNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.questId);
+}
+
+void AcCmdRCCompleteDailyQuestNotify::Read(
+  AcCmdRCCompleteDailyQuestNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRMountInjuryHealOK::Read(
