@@ -239,6 +239,12 @@ void LobbyDirector::NotifyCharacter(
   _networkHandler->NotifyCharacter(characterUid, message);
 }
 
+void LobbyDirector::NotifyAchievementReward(
+  const data::Uid characterUid)
+{
+  _networkHandler->NotifyAchievementReward(characterUid);
+}
+
 std::unordered_map<std::string, LobbyDirector::UserInstance>& LobbyDirector::GetUsers()
 {
   return _userInstances;

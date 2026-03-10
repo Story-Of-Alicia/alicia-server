@@ -1650,4 +1650,18 @@ void AcCmdLCInviteGuildJoinOK::Write(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdLCAchievementRewardNotify::Read(
+  AcCmdLCAchievementRewardNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdLCAchievementRewardNotify::Write(
+  const AcCmdLCAchievementRewardNotify&,
+  SinkStream&)
+{
+  // Empty
+}
+
 } // namespace server::protocol
