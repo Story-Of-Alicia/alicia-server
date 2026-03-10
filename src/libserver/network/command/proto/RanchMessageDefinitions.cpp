@@ -2915,27 +2915,27 @@ void AcCmdCRRequestQuestReward::Read(
   AcCmdCRRequestQuestReward& command,
   SourceStream& stream)
 {
-  stream.Read(command.unk0);
-  stream.Read(command.unk1);
-  stream.Read(command.unk2);
+  stream.Read(command.questTid);
+  stream.Read(command.npcId);
+  stream.Read(command.questRewardId);
 }
 
 void AcCmdCRRequestQuestRewardOK::Write(
   const AcCmdCRRequestQuestRewardOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0);
-  stream.Write(command.unk1);
-  stream.Write(command.unk2);
+  stream.Write(command.questTid);
+  stream.Write(command.carrotsRewarded);
+  stream.Write(static_cast<uint8_t>(command.rewards.items.size()));
 
   for (auto& reward : command.rewards.items)
   {
     stream.Write(reward);
   }
 
-  stream.Write(command.unk3);
+  stream.Write(static_cast<uint8_t>(command.npcEffects.size()));
 
-  for (auto& member : command.unk4)
+  for (auto& member : command.npcEffects)
   {
     stream.Write(member);
   }
@@ -2948,16 +2948,16 @@ void AcCmdCRRequestQuestRewardOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
-void AcCmdCRRequestQuestRewardOK::Unk1::Write(const Unk1& value, SinkStream& stream)
+void AcCmdCRRequestQuestRewardOK::NpcDressList::Write(const NpcDressList& value, SinkStream& stream)
 {
-  stream.Write(value.unk0)
-    .Write(value.unk1);
+  stream.Write(value.npcId)
+    .Write(value.effectId);
 }
 
-void AcCmdCRRequestQuestRewardOK::Unk1::Read(Unk1& value, SourceStream& stream)
+void AcCmdCRRequestQuestRewardOK::NpcDressList::Read(NpcDressList& value, SourceStream& stream)
 {
-  stream.Read(value.unk0)
-    .Read(value.unk1);
+  stream.Read(value.npcId)
+    .Read(value.effectId);
 }
 
 void AcCmdCRGiveupQuest::Write(

@@ -5450,22 +5450,106 @@ void RanchDirector::HandleRequestQuestReward(
     clientContext.characterUid);
 
   protocol::AcCmdCRRequestQuestRewardOK response{};
-  response.unk0 = command.unk0;//questTid
-  response.unk1 = 0;//carrots rewarded
-  response.unk2 = 0;//reward count
-  response.unk3 = 1;//effect count
-  response.unk4[0] = {command.unk1, 1};
+  response.questTid = command.questTid;
+  response.carrotsRewarded = 0;
 
-  //TODO: give rewards
-  for (int i = 0; i < response.unk2; i++)
+  // Get the quest registry and quest information
+  const auto& questRegistry = _serverInstance.GetQuestRegistry();
+  const auto questTemplate = questRegistry.GetQuest(command.questTid);
+
+  if (!questTemplate.has_value())
   {
-    response.rewards.items[i] = {0, 0, 0, 0};
+    spdlog::warn("HandleRequestQuestReward: Quest {} not found in registry", command.questTid);
+    return;
   }
 
-  for (int i = 1; i < 5; i++)
+  const auto& quest = questTemplate.value();
+
+  // Award rewards to the character
+  characterRecord.Mutable([this, &response, &quest, command](data::Character& character)
   {
-    response.unk4[i] = {0, 0};
-  }
+    // Award direct carrots (rewardGameMoney from quest)
+    if (quest.rewardGameMoney > 0)
+    {
+      character.carrots() += quest.rewardGameMoney;
+      response.carrotsRewarded = quest.rewardGameMoney;
+    }
+
+    // Award direct experience (rewardExp from quest)
+    if (quest.rewardExp > 0)
+    {
+      // Note: Character doesn't have direct exp field, but this is for future use
+      // or could be used for mount experience
+    }
+
+    // Award items from quest reward ID if it exists
+    if (quest.rewardId > 0)
+    {
+      const auto questReward = _serverInstance.GetQuestRegistry().GetQuestReward(quest.rewardId);
+      if (questReward.has_value())
+      {
+        const auto& reward = questReward.value();
+
+        // Award additional carrots from reward
+        if (reward.carrots > 0)
+        {
+          character.carrots() += reward.carrots;
+          response.carrotsRewarded += reward.carrots;
+        }
+
+        // Award items from the reward
+        for (const auto& rewardItem : reward.items)
+        {
+          data::Uid itemUid{};
+          
+          // Check item type to determine if we should use count or duration
+          const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(rewardItem.tid);
+          if (itemTemplate.has_value() && itemTemplate->type == registry::Item::Type::Temporary)
+          {
+            // For temporary items, count represents hours, so convert to duration
+            itemUid = _serverInstance.GetItemSystem().AddItem(
+              character, rewardItem.tid, std::chrono::hours(rewardItem.count));
+          }
+          else
+          {
+            itemUid = _serverInstance.GetItemSystem().AddItem(
+              character, rewardItem.tid, rewardItem.count);
+          }
+
+          const auto itemRecord = _serverInstance.GetDataDirector().GetItem(itemUid);
+          itemRecord.Immutable([&response](const data::Item& item)
+          {
+            auto& protocolItem = response.rewards.items.emplace_back();
+            protocol::BuildProtocolItem(protocolItem, item);
+          });
+        }
+
+        // Set NPC dress effect if specified
+        if (reward.keyNpcDress > 0)
+        {
+          response.npcEffects[0] = {command.npcId, reward.keyNpcDress};
+        }
+        else
+        {
+          response.npcEffects[0] = {command.npcId, 1}; // Default effect
+        }
+      }
+      else
+      {
+        spdlog::warn("HandleRequestQuestReward: Quest reward {} not found for quest {}", 
+          quest.rewardId, command.questTid);
+        response.npcEffects[0] = {command.npcId, 1}; // Default effect
+      }
+    }
+    else
+    {
+      // No reward ID, just use default effect
+      response.npcEffects[0] = {command.npcId, 1};
+    }
+  });
+
+  spdlog::info("Character {} completed quest {} and received {} carrots and {} items",
+    clientContext.characterUid, command.questTid, response.carrotsRewarded, response.rewards.items.size());
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
