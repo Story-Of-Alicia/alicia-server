@@ -5238,7 +5238,6 @@ void RanchDirector::HandleRequestDailyQuestReward(
   }
 
   const auto& rewardPoint = bestReward.value();
-    rewardPoint.name, bestRewardPoints, command.rewardPoints, rewardPoint.items.size());
 
   // Award the items to the character
   characterRecord.Mutable([this, &response, &rewardPoint](data::Character& character)
@@ -5248,10 +5247,10 @@ void RanchDirector::HandleRequestDailyQuestReward(
       const data::Uid itemUid = _serverInstance.GetItemSystem().AddItem(
         character, rewardItem.tid, rewardItem.count);
 
-      response.rewards.items.emplace_back(
-        protocol::Item{.uid = itemUid, .tid = rewardItem.tid, .expiresAt = 0, .count = rewardItem.count});
       const auto itemRecord = _serverInstance.GetDataDirector().GetItem(itemUid);
 
+      itemRecord.Immutable(
+        [&response](const data::Item& item)
         {
           auto& protocolItem = response.rewards.items.emplace_back();
           protocol::BuildProtocolItem(protocolItem, item);
