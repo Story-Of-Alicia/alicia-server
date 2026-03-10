@@ -5627,27 +5627,4 @@ void RanchDirector::HandleInviteUser(
   _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }
 
-void RanchDirector::SendDailyQuestNotificationToCharacter(
-  data::Uid characterUid, 
-  const protocol::AcCmdRCCompleteDailyQuestNotify& notification)
-{
-  // Find the client for this character
-  for (const auto& [clientId, clientContext] : _clients)
-  {
-    if (clientContext.characterUid == characterUid)
-    {
-      _commandServer.QueueCommand<protocol::AcCmdRCCompleteDailyQuestNotify>(
-        clientId,
-        [notification]()
-        {
-          return notification;
-        });
-      return;
-    }
-  }
-  
-  // Character not found in ranch director context
-  spdlog::debug("RanchDirector::SendDailyQuestNotificationToCharacter: Character {} not found in ranch context", characterUid);
-}
-
 } // namespace server
