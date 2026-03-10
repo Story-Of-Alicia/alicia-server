@@ -26,7 +26,8 @@ public:
     Settings() = default;
   };
 
-  explicit OtpSystem(Settings settings = {});
+  OtpSystem();
+  explicit OtpSystem(Settings settings);
 
   //! Grants a one-time code for the given key.
   //! If a code already exists for this key, it is replaced.
