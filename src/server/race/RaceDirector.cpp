@@ -3296,6 +3296,22 @@ void RaceDirector::HandleKickUser(
     return;
   }
 
+  // Retrieve the clientId of the targeted player (IMPORTANT)
+  ClientId targetClientId{};
+  try
+  {
+    targetClientId = GetClientIdByCharacterUid(command.characterUid);
+  }
+  catch (const std::exception& ex)
+  {
+    spdlog::warn(
+      "Character '{}' tried to kick character '{}' but no active client was found: {}",
+      clientContext.characterUid,
+      command.characterUid,
+      ex.what());
+    return;
+  }
+
   spdlog::info(
     "User '{}' kicked user '{}' from room {}.",
     kickerUserName,
@@ -3315,6 +3331,8 @@ void RaceDirector::HandleKickUser(
         return notify;
       });
   }
+
+  HandleLeaveRoom(targetClientId);
 }
 
 //! Handles team gauge-related logic, including speed and theoretically guild battles.

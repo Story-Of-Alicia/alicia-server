@@ -463,6 +463,27 @@ void LobbyNetworkHandler::NotifyCharacter(
   }
 }
 
+void LobbyNetworkHandler::NotifyAchievementReward(
+  const data::Uid characterUid)
+{
+  try
+  {
+    const auto clientId = GetClientIdByCharacterUid(characterUid);
+
+    protocol::AcCmdLCAchievementRewardNotify notify{};
+    _commandServer.QueueCommand<decltype(notify)>(
+      clientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
+  catch (const std::exception&)
+  {
+    // We really don't care if the user disconnected.
+  }
+}
+
 ClientId LobbyNetworkHandler::GetClientIdByUserName(
   const std::string& userName,
   const bool requiresAuthorization)
