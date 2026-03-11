@@ -33,7 +33,7 @@ public:
   //! If a code already exists for this key, it is replaced.
   //! @param key Identity key the code is bound to.
   //! @return The generated one-time code.
-  uint32_t GrantCode(size_t key);
+  [[nodiscard]] uint32_t GrantCode(size_t key);
 
   //! Authorizes a one-time code for the given key.
   //! Enforces brute-force protection: after too many failed attempts,
