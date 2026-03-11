@@ -317,16 +317,23 @@ void Server::OnClientConnected(
 void Server::OnClientDisconnected(
   ClientId clientId)
 {
-  _networkEventHandler.OnClientDisconnected(clientId);
-
-  const auto addrIt = _clientAddresses.find(clientId);
-  if (addrIt != _clientAddresses.end())
+  const auto clientIt = _clients.find(clientId);
+  if (clientIt != _clients.end())
   {
-    OnThrottleDisconnect(addrIt->second);
-    _clientAddresses.erase(addrIt);
+    try
+    {
+      const auto address = clientIt->second->GetAddress();
+      OnThrottleDisconnect(address);
+    }
+    catch (const std::exception&)
+    {
+      // Ignore address retrieval errors on disconnect.
+    }
+
+    _clients.erase(clientIt);
   }
 
-  _clients.erase(clientId);
+  _networkEventHandler.OnClientDisconnected(clientId);
 }
 
 size_t Server::OnClientData(
@@ -345,9 +352,9 @@ bool Server::IsConnectionThrottled(const asio::ip::address_v4& address)
 
   const auto now = std::chrono::steady_clock::now();
 
-  auto& state = _ipStates[address];
+  auto& state = _addressStates[address];
 
-  if (state.activeConnections >= MaxConnectionsPerIp)
+  if (state.activeConnections >= MaxConnectionsPerAddress)
   {
     return true;
   }
@@ -358,7 +365,7 @@ bool Server::IsConnectionThrottled(const asio::ip::address_v4& address)
     state.connectionTimestamps.pop_front();
   }
 
-  if (state.connectionTimestamps.size() >= MaxConnectRatePerIp)
+  if (state.connectionTimestamps.size() >= MaxConnectRatePerAddress)
   {
     return true;
   }
@@ -371,8 +378,8 @@ bool Server::IsConnectionThrottled(const asio::ip::address_v4& address)
 
 void Server::OnThrottleDisconnect(const asio::ip::address_v4& address)
 {
-  const auto it = _ipStates.find(address);
-  if (it == _ipStates.end())
+  const auto it = _addressStates.find(address);
+  if (it == _addressStates.end())
   {
     return;
   }
@@ -385,7 +392,7 @@ void Server::OnThrottleDisconnect(const asio::ip::address_v4& address)
   if (it->second.activeConnections == 0 &&
       it->second.connectionTimestamps.empty())
   {
-    _ipStates.erase(it);
+    _addressStates.erase(it);
   }
 }
 
@@ -416,8 +423,6 @@ void Server::AcceptLoop() noexcept
 
         // Sequential Id.
         const ClientId clientId = _client_id++;
-
-        _clientAddresses[clientId] = remoteAddr;
 
         // Create the client.
         const auto [itr, emplaced] = _clients.try_emplace(
