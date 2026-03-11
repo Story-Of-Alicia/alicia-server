@@ -41,7 +41,8 @@ public:
   //! @param key Identity key the code is bound to.
   //! @param code The code to verify.
   //! @param consume If true, the code is consumed (erased) on success.
-  //! @return True if the code is valid and the key is not locked out.
+  //! @retval `true` if the code is valid
+  //! @retval `false` if the code is invalid.
     [[nodiscard]] bool AuthorizeCode(size_t key, uint32_t code, bool consume = true);
 
   //! Removes all expired codes and stale lockout entries.
