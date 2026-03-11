@@ -25,7 +25,6 @@
 #include <chrono>
 #include <deque>
 #include <functional>
-#include <mutex>
 #include <queue>
 #include <span>
 #include <unordered_map>
@@ -115,6 +114,13 @@ private:
   EventHandlerInterface& _networkEventHandler;
 };
 
+//! Represents throttling state for a single remote address.
+struct AddressThrottlingState
+{
+  std::size_t activeConnections{0};
+  std::deque<std::chrono::steady_clock::time_point> connectionTimestamps;
+};
+
 //! Server with event-driven acceptor, reads and writes.
 class Server : public EventHandlerInterface
 {
@@ -148,33 +154,12 @@ private:
   void AcceptLoop() noexcept;
   void TickLoop() noexcept;
 
-  //! Checks whether a new connection from the given address should be accepted.
-  //! If accepted, records the connection internally.
-  //! @param address The remote IPv4 address.
-  //! @returns true if the connection is allowed.
-  bool AllowConnection(const asio::ip::address_v4& address);
+  //! Returns true if a connection from the given address should be throttled.
+  //! If not throttled, records the connection internally.
+  bool IsConnectionThrottled(const asio::ip::address_v4& address);
 
   //! Records that a client from the given address has disconnected.
-  //! @param address The remote IPv4 address.
   void OnThrottleDisconnect(const asio::ip::address_v4& address);
-
-  //! Maximum number of simultaneous connections from a single IP.
-  static constexpr size_t MaxConnectionsPerIp = 3;
-  //! Maximum total number of connected clients.
-  static constexpr size_t MaxTotalConnections = 200;
-  //! Maximum number of new connections from one IP within the sliding window.
-  static constexpr size_t MaxConnectRatePerIp = 10;
-  //! Duration of the sliding window for rate limiting.
-  static constexpr auto RateWindow = std::chrono::seconds(30);
-
-  struct IpState
-  {
-    size_t activeConnections{0};
-    std::deque<std::chrono::steady_clock::time_point> connectionTimestamps;
-  };
-
-  std::mutex _throttleMutex;
-  std::unordered_map<uint32_t, IpState> _ipStates;
 
   asio::io_context _io_ctx;
   asio::ip::tcp::acceptor _acceptor;
@@ -186,6 +171,8 @@ private:
   std::unordered_map<ClientId, std::shared_ptr<Client>> _clients;
   //! Maps client ID to its remote address for disconnect tracking.
   std::unordered_map<ClientId, asio::ip::address_v4> _clientAddresses;
+  //! Throttling state per remote address.
+  std::unordered_map<asio::ip::address_v4, AddressThrottlingState> _ipStates;
 
   //! A network event handler.
   EventHandlerInterface& _networkEventHandler;
