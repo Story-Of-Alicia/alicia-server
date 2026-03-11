@@ -114,13 +114,6 @@ private:
   EventHandlerInterface& _networkEventHandler;
 };
 
-//! Represents throttling state for a single remote address.
-struct AddressThrottlingState
-{
-  std::size_t activeConnections{0};
-  std::deque<std::chrono::steady_clock::time_point> connectionTimestamps;
-};
-
 //! Server with event-driven acceptor, reads and writes.
 class Server : public EventHandlerInterface
 {
@@ -151,8 +144,12 @@ public:
   size_t OnClientData(ClientId clientId, const std::span<const std::byte>& data) override;
 
 private:
-  void AcceptLoop() noexcept;
-  void TickLoop() noexcept;
+  //! Represents throttling state for a single remote address.
+  struct AddressThrottlingState
+  {
+    std::size_t activeConnections{0};
+    std::deque<std::chrono::steady_clock::time_point> connectionTimestamps;
+  };
 
   //! Returns true if a connection from the given address should be throttled.
   //! If not throttled, records the connection internally.
@@ -160,6 +157,9 @@ private:
 
   //! Records that a client from the given address has disconnected.
   void OnThrottleDisconnect(const asio::ip::address_v4& address);
+
+  void AcceptLoop() noexcept;
+  void TickLoop() noexcept;
 
   asio::io_context _io_ctx;
   asio::ip::tcp::acceptor _acceptor;
@@ -169,10 +169,8 @@ private:
   ClientId _client_id = 0;
   //! Map of clients.
   std::unordered_map<ClientId, std::shared_ptr<Client>> _clients;
-  //! Maps client ID to its remote address for disconnect tracking.
-  std::unordered_map<ClientId, asio::ip::address_v4> _clientAddresses;
   //! Throttling state per remote address.
-  std::unordered_map<asio::ip::address_v4, AddressThrottlingState> _ipStates;
+  std::unordered_map<asio::ip::address_v4, AddressThrottlingState> _addressStates;
 
   //! A network event handler.
   EventHandlerInterface& _networkEventHandler;
