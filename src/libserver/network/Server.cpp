@@ -28,6 +28,14 @@
 namespace server::network
 {
 
+namespace
+{
+  constexpr std::size_t MaxConnectionsPerIp = 3;
+  constexpr std::size_t MaxTotalConnections = 200;
+  constexpr std::size_t MaxConnectRatePerIp = 10;
+  constexpr auto RateWindow = std::chrono::seconds(30);
+} // namespace
+
 Client::Client(
   ClientId clientId,
   asio::ip::tcp::socket&& socket,
@@ -220,49 +228,6 @@ void Client::ReadLoop() noexcept
     });
 }
 
-bool Server::AllowConnection(const asio::ip::address_v4& address)
-{
-  if (_clients.size() >= MaxTotalConnections)
-    return false;
-
-  const auto ipKey = address.to_uint();
-  const auto now = std::chrono::steady_clock::now();
-
-  std::scoped_lock lock(_throttleMutex);
-  auto& ipState = _ipStates[ipKey];
-
-  if (ipState.activeConnections >= MaxConnectionsPerIp)
-    return false;
-
-  while (not ipState.connectionTimestamps.empty() && (now - ipState.connectionTimestamps.front()) > RateWindow)
-  {
-    ipState.connectionTimestamps.pop_front();
-  }
-
-  if (ipState.connectionTimestamps.size() >= MaxConnectRatePerIp)
-    return false;
-
-  ipState.activeConnections++;
-  ipState.connectionTimestamps.push_back(now);
-  return true;
-}
-
-void Server::OnThrottleDisconnect(const asio::ip::address_v4& address)
-{
-  const auto ipKey = address.to_uint();
-
-  std::scoped_lock lock(_throttleMutex);
-  const auto it = _ipStates.find(ipKey);
-  if (it == _ipStates.end())
-    return;
-
-  if (it->second.activeConnections > 0)
-    it->second.activeConnections--;
-
-  if (it->second.activeConnections == 0 && it->second.connectionTimestamps.empty())
-    _ipStates.erase(it);
-}
-
 Server::Server(EventHandlerInterface& networkEventHandler) noexcept
   : _acceptor(_io_ctx)
   , _timer(_io_ctx)
@@ -338,6 +303,7 @@ std::shared_ptr<Client> Server::GetClient(ClientId clientId)
 
 void Server::HandleNetworkTick()
 {
+
 }
 
 void Server::OnClientConnected(
@@ -368,6 +334,59 @@ size_t Server::OnClientData(
   return _networkEventHandler.OnClientData(clientId, data);
 }
 
+bool Server::IsConnectionThrottled(const asio::ip::address_v4& address)
+{
+  if (_clients.size() >= MaxTotalConnections)
+  {
+    return true;
+  }
+
+  const auto now = std::chrono::steady_clock::now();
+
+  auto& state = _ipStates[address];
+
+  if (state.activeConnections >= MaxConnectionsPerIp)
+  {
+    return true;
+  }
+
+  while (not state.connectionTimestamps.empty() &&
+         (now - state.connectionTimestamps.front()) > RateWindow)
+  {
+    state.connectionTimestamps.pop_front();
+  }
+
+  if (state.connectionTimestamps.size() >= MaxConnectRatePerIp)
+  {
+    return true;
+  }
+
+  state.activeConnections++;
+  state.connectionTimestamps.push_back(now);
+
+  return false;
+}
+
+void Server::OnThrottleDisconnect(const asio::ip::address_v4& address)
+{
+  const auto it = _ipStates.find(address);
+  if (it == _ipStates.end())
+  {
+    return;
+  }
+
+  if (it->second.activeConnections > 0)
+  {
+    --it->second.activeConnections;
+  }
+
+  if (it->second.activeConnections == 0 &&
+      it->second.connectionTimestamps.empty())
+  {
+    _ipStates.erase(it);
+  }
+}
+
 void Server::AcceptLoop() noexcept
 {
   _acceptor.async_accept(
@@ -383,9 +402,11 @@ void Server::AcceptLoop() noexcept
 
         const auto remoteAddr = client_socket.remote_endpoint().address().to_v4();
 
-        if (not AllowConnection(remoteAddr))
+        if (IsConnectionThrottled(remoteAddr))
         {
-          spdlog::warn("Connection rejected from {} (throttled)", remoteAddr.to_string());
+          spdlog::warn(
+            "Connection rejected from {} (throttled)",
+            remoteAddr.to_string());
           client_socket.close();
           AcceptLoop();
           return;
@@ -426,12 +447,12 @@ void Server::TickLoop() noexcept
 
   _timer.expires_after(std::chrono::seconds(1));
   _timer.async_wait([this](const boost::system::error_code& error)
-    {
-      if (error)
-        return;
+  {
+    if (error)
+      return;
 
-      TickLoop();
-    });
+    TickLoop();
+  });
 }
 
 } // namespace server::network
