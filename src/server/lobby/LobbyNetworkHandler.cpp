@@ -2443,9 +2443,16 @@ void LobbyNetworkHandler::HandleRequestQuestList(
   protocol::AcCmdCLRequestQuestListOK response{};
 
   characterRecord.Immutable(
-    [&response](const data::Character& character)
+    [this, &response](const data::Character& character)
     {
       response.unk0 = character.uid();
+
+      const auto questRecords = _serverInstance.GetDataDirector().GetQuestCache().Get(
+        character.quests());
+      if (not questRecords)
+        return;
+
+      protocol::BuildProtocolQuests(response.quests, *questRecords);
     });
 
   _commandServer.QueueCommand<decltype(response)>(

@@ -236,6 +236,21 @@ public:
   //! Deletes the mail from the data source.
   //! @param uid UID of the mail.
   virtual void DeleteMail(data::Uid uid) = 0;
+
+  //! Creates the quest in the data source.
+  //! @param quest Quest to create.
+  virtual void CreateQuest(data::Quest& quest) = 0;
+  //! Retrieves the quest from the data source.
+  //! @param uid UID of the quest.
+  //! @param quest Quest to retrieve.
+  virtual void RetrieveQuest(data::Uid uid, data::Quest& quest) = 0;
+  //! Stores the quest on the data source.
+  //! @param uid UID of the quest.
+  //! @param quest Quest to store.
+  virtual void StoreQuest(data::Uid uid, const data::Quest& quest) = 0;
+  //! Deletes the quest from the data source.
+  //! @param uid UID of the quest.
+  virtual void DeleteQuest(data::Uid uid) = 0;
 };
 
 } // namespace server

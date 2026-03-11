@@ -5400,22 +5400,62 @@ void RanchDirector::HandleRegisterQuest(
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  spdlog::debug("packet info: {} {}", command.questId, command.npcId);
+  spdlog::debug("HandleRegisterQuest: questId={} npcId={}", command.questId, command.npcId);
+
+  // Check if the character already has this quest active.
+  bool alreadyHasQuest = false;
+  characterRecord.Immutable([this, &alreadyHasQuest, questId = command.questId](const data::Character& character)
+  {
+    const auto questRecords = _serverInstance.GetDataDirector().GetQuestCache().Get(character.quests());
+    if (not questRecords)
+      return;
+    for (const auto& questRecord : *questRecords)
+    {
+      questRecord.Immutable([&alreadyHasQuest, questId](const data::Quest& quest)
+      {
+        if (quest.questId() == questId
+          && quest.isCompleted() != data::Quest::Status::Completed)
+          alreadyHasQuest = true;
+      });
+    }
+  });
+
+  if (alreadyHasQuest)
+  {
+    spdlog::warn("HandleRegisterQuest: Character {} already has quest {} active",
+      clientContext.characterUid, command.questId);
+    return;
+  }
+
+  // Create a new quest record, populate it, and attach it to the character.
+  const auto questRecord = _serverInstance.GetDataDirector().CreateQuest();
+  questRecord.Mutable([questId = command.questId](data::Quest& quest)
+  {
+    quest.questId() = questId;
+    quest.isCompleted() = data::Quest::Status::InProgress;
+    quest.progress() = 0;
+  });
+
+  data::Uid newQuestUid = data::InvalidUid;
+  questRecord.Immutable([&newQuestUid](const data::Quest& quest)
+  {
+    newQuestUid = quest.uid();
+  });
+
+  characterRecord.Mutable([newQuestUid](data::Character& character)
+  {
+    character.quests().emplace_back(newQuestUid);
+  });
 
   protocol::AcCmdCRRegisterQuestOK response{};
-  response.questId = command.questId;
-  
-  if (command.questId == 11030 || command.questId == 12010)
+  questRecord.Immutable([&response](const data::Quest& quest)
   {
-    response.progress = 1;
-    response.isCompleted = 1;
-  }
-  else
-  {
-    response.progress = 0;
-    response.isCompleted = 0;
-  }
-   _commandServer.QueueCommand<decltype(response)>(
+    response.questId    = static_cast<uint16_t>(quest.questId());
+    response.progress   = quest.progress();
+    response.isCompleted = static_cast<uint8_t>(quest.isCompleted());
+  });
+
+  _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
     {

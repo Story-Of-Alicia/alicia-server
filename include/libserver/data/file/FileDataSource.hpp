@@ -104,6 +104,11 @@ public:
   void RetrieveMail(data::Uid uid, data::Mail& mail) override;
   void StoreMail(data::Uid uid, const data::Mail& mail) override;
   void DeleteMail(data::Uid uid) override;
+
+  void CreateQuest(data::Quest& quest) override;
+  void RetrieveQuest(data::Uid uid, data::Quest& quest) override;
+  void StoreQuest(data::Uid uid, const data::Quest& quest) override;
+  void DeleteQuest(data::Uid uid) override;
 private:
   //! A root data path.
   std::filesystem::path _dataPath;
@@ -134,6 +139,8 @@ private:
   std::filesystem::path _dailyQuestGroupDataPath;
   //! A path to the mail data files.
   std::filesystem::path _mailDataPath;
+  //! A path to the quest data files.
+  std::filesystem::path _questDataPath;
 
   //! A path to meta-data file.
   std::filesystem::path _metaFilePath;
@@ -161,6 +168,8 @@ private:
   std::atomic_uint32_t _dailyQuestGroupSequentialId = 0;
   //! Sequential UID for mail.
   std::atomic_uint32_t _mailSequentialId = 0;
+  //! Sequential UID for quests.
+  std::atomic_uint32_t _questSequentialId = 0;
 };
 
 } // namespace server

@@ -357,6 +357,32 @@ void BuildProtocolSettings(
   }
 }
 
+void BuildProtocolQuest(
+  Quest& protocolQuest,
+  const data::Quest& quest)
+{
+  protocolQuest.tid      = static_cast<uint16_t>(quest.questId());
+  protocolQuest.member0  = 0;
+  protocolQuest.status   = static_cast<Quest::Status>(quest.isCompleted());
+  protocolQuest.progress = quest.progress();
+  protocolQuest.member3  = 0;
+  protocolQuest.member4  = 0;
+}
+
+void BuildProtocolQuests(
+  std::vector<Quest>& protocolQuests,
+  const std::vector<Record<data::Quest>>& questRecords)
+{
+  for (const auto& questRecord : questRecords)
+  {
+    auto& protocolQuest = protocolQuests.emplace_back();
+    questRecord.Immutable([&protocolQuest](const data::Quest& quest)
+    {
+      BuildProtocolQuest(protocolQuest, quest);
+    });
+  }
+}
+
 } // namespace protocol
 
 } // namespace server

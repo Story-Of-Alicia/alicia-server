@@ -353,6 +353,8 @@ struct Character
     dao::Field<std::vector<Uid>> inbox{};
     dao::Field<std::vector<Uid>> sent{};
   } mailbox{};
+
+  dao::Field<std::vector<Uid>> quests{};
 };
 
 struct Horse
@@ -492,6 +494,21 @@ struct DailyQuestGroup
   dao::Field<bool> carrotsClaimed{false};
   //! The 3 daily quest slots.
   dao::Field<std::array<DailyQuestEntry, 3>> quests{};
+};
+
+struct Quest
+{
+  enum class Status : uint32_t
+  {
+    InProgress = 0,
+    ReadyToClaim = 1,
+    Completed = 3
+  };
+
+  dao::Field<Uid> uid{InvalidUid};
+  dao::Field<uint32_t> questId{};
+  dao::Field<Status> isCompleted{Status::InProgress};
+  dao::Field<uint32_t> progress{};
 };
   
 struct Mail

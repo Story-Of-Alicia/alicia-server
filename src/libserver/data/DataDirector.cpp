@@ -601,6 +601,49 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
         }
         return false;
       })
+  , _questStorage(
+      [&](const auto& key, auto& quest)
+      {
+        try
+        {
+          _primaryDataSource->RetrieveQuest(key, quest);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception retrieving quest {} from the primary data source: {}", key, x.what());
+        }
+        return false;
+      },
+      [&](const auto& key, auto& quest)
+      {
+        try
+        {
+          _primaryDataSource->StoreQuest(key, quest);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception storing quest {} on the primary data source: {}", key, x.what());
+        }
+        return false;
+      },
+      [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteQuest(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting quest {} from the primary data source: {}", key, x.what());
+        }
+        return false;
+      })
 {
   _primaryDataSource = std::make_unique<FileDataSource>();
   if (auto* fileDataSource = dynamic_cast<FileDataSource*>(_primaryDataSource.get()))
@@ -634,6 +677,7 @@ void DataDirector::Terminate()
     _settingsStorage.Terminate();
     _dailyQuestGroupStorage.Terminate();
     _mailStorage.Terminate();
+    _questStorage.Terminate();
   }
   catch (const std::exception& x)
   {
@@ -663,6 +707,7 @@ void DataDirector::Tick()
     _settingsStorage.Tick();
     _dailyQuestGroupStorage.Tick();
     _mailStorage.Tick();
+    _questStorage.Tick();
   }
   catch (const std::exception& x)
   {
@@ -1108,6 +1153,38 @@ DataDirector::MailStorage& DataDirector::GetMailCache()
   return _mailStorage;
 }
 
+Record<data::Quest> DataDirector::GetQuest(data::Uid questUid) noexcept
+{
+  if (questUid == data::InvalidUid)
+    return {};
+  return _questStorage.Get(questUid).value_or(Record<data::Quest>{});
+}
+
+Record<data::Quest> DataDirector::CreateQuest() noexcept
+{
+  try
+  {
+    return _questStorage.Create(
+      [this]()
+      {
+        data::Quest quest;
+        _primaryDataSource->CreateQuest(quest);
+
+        return std::make_pair(quest.uid(), std::move(quest));
+      });
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception while creating a quest record on the primary data source: {}", x.what());
+    return {};
+  }
+}
+
+DataDirector::QuestStorage& DataDirector::GetQuestCache()
+{
+  return _questStorage;
+}
+
 DataSource& DataDirector::GetDataSource() noexcept
 {
   return *_primaryDataSource;
@@ -1252,12 +1329,14 @@ void DataDirector::ScheduleCharacterLoad(
 
     std::vector<data::Uid> mailbox;
 
+    std::vector<data::Uid> quests;
+
     // Friends prefetch
     std::set<data::Uid> friends;
     data::Uid dailyQuestGroupUid = data::InvalidUid;
 
     characterRecord.Immutable(
-      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets, &settingsUid, &mailbox, &friends, &dailyQuestGroupUid](
+      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets, &settingsUid, &mailbox, &quests, &friends, &dailyQuestGroupUid](
         const data::Character& character)
       {
         guildUid = character.guildUid();
@@ -1287,6 +1366,9 @@ void DataDirector::ScheduleCharacterLoad(
         // Mailbox
         std::ranges::copy(character.mailbox.inbox(), std::back_inserter(mailbox));
         std::ranges::copy(character.mailbox.sent(), std::back_inserter(mailbox));
+
+        // Quests
+        quests = character.quests();
 
         // Pending friend requests
         const auto& pending = character.contacts.pending();
@@ -1451,6 +1533,15 @@ void DataDirector::ScheduleCharacterLoad(
         std::vector<data::Uid>(
           mailCharacterUids.begin(),
           mailCharacterUids.end()));
+    }
+
+    // Require quest records.
+    const auto questRecords = GetQuestCache().Get(quests);
+    if (not questRecords)
+    {
+      userDataContext.debugMessage = std::format(
+        "Quests not available");
+      return;
     }
 
     // Preload friend character records

@@ -45,6 +45,7 @@ public:
   using SettingsStorage = DataStorage<data::Uid, data::Settings>;
   using DailyQuestGroupStorage = DataStorage<data::Uid, data::DailyQuestGroup>;
   using MailStorage = DataStorage<data::Uid, data::Mail>;
+  using QuestStorage = DataStorage<data::Uid, data::Quest>;
 
   //! Default constructor.
   explicit DataDirector(const std::filesystem::path& basePath);
@@ -131,6 +132,10 @@ public:
   [[nodiscard]] Record<data::Mail> CreateMail() noexcept;
   [[nodiscard]] MailStorage& GetMailCache();
 
+  [[nodiscard]] Record<data::Quest> GetQuest(data::Uid questUid) noexcept;
+  [[nodiscard]] Record<data::Quest> CreateQuest() noexcept;
+  [[nodiscard]] QuestStorage& GetQuestCache();
+
   [[nodiscard]] DataSource& GetDataSource() noexcept;
 
 private:
@@ -186,6 +191,8 @@ private:
   DailyQuestGroupStorage _dailyQuestGroupStorage;
   //! A mail storage.
   MailStorage _mailStorage;
+  //! A quest storage.
+  QuestStorage _questStorage;
 };
 
 } // namespace server
