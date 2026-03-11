@@ -30,11 +30,13 @@ namespace server::network
 
 namespace
 {
-  constexpr std::size_t MaxConnectionsPerIp = 3;
-  constexpr std::size_t MaxTotalConnections = 200;
-  constexpr std::size_t MaxConnectRatePerIp = 10;
-  constexpr auto RateWindow = std::chrono::seconds(30);
-} // namespace
+
+constexpr std::size_t MaxConnectionsPerAddress = 3;
+constexpr std::size_t MaxTotalConnections = 200;
+constexpr std::size_t MaxConnectRatePerAddress = 10;
+constexpr auto RateWindow = std::chrono::seconds(30);
+
+} // anon namespace
 
 Client::Client(
   ClientId clientId,
