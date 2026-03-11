@@ -1287,6 +1287,26 @@ quests:
       rewardExp: 0
       rewardGameMoney: 0
       rewardPoint: 0
+    - tid: 11045
+      name: '[겨울 이벤트] 목장의 겨울'
+      desc: '토마스와 대화 후 주나와 대화'
+      groupType: 0
+      difficult: 1
+      level: 1
+      gameModeFlag: 0
+      startNpcId: 1
+      endNpcId: 4
+      preceding:
+        - 11030
+        - 12010
+      successType: 0
+      successValue: 1
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 165
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
     - tid: 12010
       name: '스타토의 이야기'
       desc: '스타토와 대화 후 에이프릴과 대화'
@@ -1479,6 +1499,25 @@ quests:
       rewardExp: 0
       rewardGameMoney: 0
       rewardPoint: 0
+    - tid: 12022
+      name: '스타토의 거상 야망 끝 (스타토의 우울)'
+      desc: '스타토와 대화 후 에이프릴과 대화'
+      groupType: 0
+      difficult: 1
+      level: 13
+      gameModeFlag: 0
+      startNpcId: 2
+      endNpcId: 3
+      preceding:
+        - 12021
+      successType: 0
+      successValue: 1
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 159
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
     - tid: 13010
       name: '완벽한 점프'
       desc: '스피드전에서 퍼펙트 점프 20회 달성'
@@ -1553,6 +1592,25 @@ quests:
       function: 'RunMap'
       functionValue: 19
       rewardId: 140
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 13015
+      name: '절벽을 날아 올라가는 기분'
+      desc: '실프 비탈길 경기 5회 진행 (ADV제외)'
+      groupType: 0
+      difficult: 2
+      level: 11
+      gameModeFlag: 111
+      startNpcId: 3
+      endNpcId: 3
+      preceding:
+        - 12010
+      successType: 1
+      successValue: 5
+      function: 'RunMap'
+      functionValue: 25
+      rewardId: 162
       rewardExp: 0
       rewardGameMoney: 0
       rewardPoint: 0
@@ -1687,6 +1745,254 @@ quests:
       function: 'PrizeWinnerInMapForLowLevel'
       functionValue: 40
       rewardId: 148
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14017
+      name: '아킨즈 사막의 특별 훈련'
+      desc: '아킨즈 사막 5회 진행(ADV제외)'
+      groupType: 0
+      difficult: 3
+      level: 3
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 11035
+      successType: 1
+      successValue: 5
+      function: 'RunMap'
+      functionValue: 41
+      rewardId: 149
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14019
+      name: '칼리드 마을 수색'
+      desc: '칼리드 마을에서 시드 크리스털 5개 획득'
+      groupType: 0
+      difficult: 2
+      level: 8
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 14014
+      successType: 1
+      successValue: 5
+      function: 'CollectDropItem'
+      functionValue: 3
+      rewardId: 151
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14020
+      name: '도르프 상회 수색'
+      desc: '도르프 상회에서 시드 크리스털 5개 획득'
+      groupType: 0
+      difficult: 2
+      level: 8
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 14019
+      successType: 1
+      successValue: 5
+      function: 'CollectDropItem'
+      functionValue: 3
+      rewardId: 152
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14021
+      name: '실프 언덕의 상처'
+      desc: '실프 언덕에서 시드 크리스털 3개 획득'
+      groupType: 0
+      difficult: 2
+      level: 10
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 12016
+      successType: 1
+      successValue: 3
+      function: 'CollectDropItem'
+      functionValue: 3
+      rewardId: 153
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14023
+      name: '토마스 할아버지에게 무슨 일이?'
+      desc: '모드 구분 없이 경기 3회 진행'
+      groupType: 0
+      difficult: 2
+      level: 12
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 11043
+      successType: 1
+      successValue: 3
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 155
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14024
+      name: '스타토에게 무슨 일이?'
+      desc: '양이 있는 코스에서 양털 뭉치 10개 획득'
+      groupType: 0
+      difficult: 2
+      level: 13
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 2
+      preceding:
+        - 11044
+      successType: 1
+      successValue: 10
+      function: 'CollectDropItem'
+      functionValue: 6
+      rewardId: 156
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14025
+      name: '특등 기수로의 길'
+      desc: '모드 구분 없이 10경기 진행'
+      groupType: 0
+      difficult: 3
+      level: 13
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 11030
+      successType: 1
+      successValue: 10
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 157
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14027
+      name: '실프 비탈길 질주'
+      desc: '실프 비탈길 경기 입상 3회 (ADV제외)'
+      groupType: 0
+      difficult: 3
+      level: 12
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 14021
+        - 11043
+      successType: 1
+      successValue: 3
+      function: 'PrizeWinnerInMapForLowLevel'
+      functionValue: 25
+      rewardId: 161
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14028
+      name: '[겨울 이벤트] 목장 식구들의 겨울 의상 Ⅰ'
+      desc: '양이 있는 코스에서 양털 뭉치 20개 획득'
+      groupType: 0
+      difficult: 3
+      level: 1
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 11045
+      successType: 1
+      successValue: 20
+      function: 'CollectDropItem'
+      functionValue: 6
+      rewardId: 166
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14029
+      name: '[겨울 이벤트] 목장 식구들의 겨울 의상 Ⅱ'
+      desc: '주나와 대화 후 토마스와 대화'
+      groupType: 0
+      difficult: 1
+      level: 1
+      gameModeFlag: 0
+      startNpcId: 4
+      endNpcId: 1
+      preceding:
+        - 14028
+      successType: 0
+      successValue: 1
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 167
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14030
+      name: '[겨울 이벤트] 목장 식구들의 겨울 의상 Ⅲ'
+      desc: '모드 구분 없이 경기 8회 진행'
+      groupType: 0
+      difficult: 2
+      level: 1
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 14029
+      successType: 1
+      successValue: 8
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 168
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14031
+      name: '[겨울 이벤트] 목장 식구들의 겨울 의상 Ⅳ'
+      desc: '주나와 대화 후 에이프릴과 대화'
+      groupType: 0
+      difficult: 1
+      level: 1
+      gameModeFlag: 0
+      startNpcId: 4
+      endNpcId: 3
+      preceding:
+        - 14030
+      successType: 0
+      successValue: 1
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 169
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14032
+      name: '[겨울 이벤트] 목장 식구들의 겨울 의상 Ⅴ'
+      desc: '주나와 대화 후 스타토와 대화'
+      groupType: 0
+      difficult: 1
+      level: 1
+      gameModeFlag: 0
+      startNpcId: 4
+      endNpcId: 2
+      preceding:
+        - 14031
+      successType: 0
+      successValue: 1
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 170
       rewardExp: 0
       rewardGameMoney: 0
       rewardPoint: 0
