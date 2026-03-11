@@ -2203,12 +2203,32 @@ void LobbyNetworkHandler::HandleAcceptInviteToGuild(
   const ClientId clientId,
   const protocol::AcCmdLCInviteGuildJoinOK& command)
 {
-  // TODO: command data check
-
   const auto& clientContext = GetClientContext(clientId);
 
+  // Basic sanity check: command character must match connected character
+  if (command.characterUid != clientContext.characterUid)
+  {
+    spdlog::warn(
+      "HandleAcceptInviteToGuild: character UID mismatch (command: {}, context: {})",
+      command.characterUid,
+      clientContext.characterUid);
+    return;
+  }
+
+  // Check that the guild instance exists in lobby state
+  auto& guildInstances = _serverInstance.GetLobbyDirector().GetGuilds();
+  const auto guildInstanceIt = guildInstances.find(command.guild.uid);
+  if (guildInstanceIt == guildInstances.end())
+  {
+    spdlog::warn(
+      "HandleAcceptInviteToGuild: guild {} not found for character {}",
+      command.guild.uid,
+      clientContext.characterUid);
+    return;
+  }
+
   // Pending invites for guild
-  auto& pendingGuildInvites = _serverInstance.GetLobbyDirector().GetGuilds()[command.guild.uid].invites;
+  auto& pendingGuildInvites = guildInstanceIt->second.invites;
 
   // Check if the guild has outstanding character invite.
   const auto& guildInvite = std::ranges::find(
@@ -2229,16 +2249,9 @@ void LobbyNetworkHandler::HandleAcceptInviteToGuild(
   }
 
   std::string inviteeCharacterName;
-  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
-    [&inviteeCharacterName, guildUid = command.guild.uid](data::Character& character)
-  {
-    inviteeCharacterName = character.name();
-    character.guildUid() = guildUid;
-  });
-
   bool guildAddSuccess = false;
   _serverInstance.GetDataDirector().GetGuild(command.guild.uid).Mutable(
-    [&guildAddSuccess, inviteeCharacterUid = command.characterUid](data::Guild& guild)
+    [&guildAddSuccess, inviteeCharacterUid = clientContext.characterUid](data::Guild& guild)
     {
       // Check if invitee who accepted is in the guild
       if (std::ranges::contains(guild.members(), inviteeCharacterUid) ||
@@ -2260,9 +2273,17 @@ void LobbyNetworkHandler::HandleAcceptInviteToGuild(
     return;
   }
 
+  // Now that the character has been added to the guild, update its guild UID
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+    [&inviteeCharacterName, guildUid = command.guild.uid](data::Character& character)
+  {
+    inviteeCharacterName = character.name();
+    character.guildUid() = guildUid;
+  });
+
   _serverInstance.GetRanchDirector().SendGuildInviteAccepted(
     command.guild.uid,
-    command.characterUid,
+    clientContext.characterUid,
     inviteeCharacterName
   );
 }
