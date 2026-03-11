@@ -36,8 +36,8 @@ public:
   [[nodiscard]] uint32_t GrantCode(size_t key);
 
   //! Authorizes a one-time code for the given key.
-  //! Enforces brute-force protection: after too many failed attempts,
-  //! the key is temporarily locked out.
+  //! If the code is unsuccessfully authorized multiple times the code is invalidated
+  //! to protect against brute force.
   //! @param key Identity key the code is bound to.
   //! @param code The code to verify.
   //! @param consume If true, the code is consumed (erased) on success.
