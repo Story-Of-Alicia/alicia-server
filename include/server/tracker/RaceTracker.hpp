@@ -79,6 +79,8 @@ public:
     bool critChance{};
     bool gaugeBuff{};
 
+    //! Session boost combo (consecutive boosts without combo break).
+    uint32_t boostComboValue{};
     //! Session magic defense combo (consecutive blocks).
     uint32_t magicDefenseComboValue{};
     //! Session magic item usage counts by item ID.

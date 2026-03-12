@@ -613,15 +613,20 @@ void RaceDirector::Tick()
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
         characterUid);
 
+      const auto gameMode = raceInstance.raceGameMode;
+      const auto teamMode = raceInstance.raceTeamMode;
+      const bool isWinner = rank == 1
+        and racer.state != tracker::RaceTracker::Racer::State::Disconnected;
+
       characterRecord.Immutable(
-        [this, &racer, rank](const data::Character& character)
+        [this, &racer, rank, gameMode, teamMode, isWinner](const data::Character& character)
         {
           if (character.mountUid() == data::InvalidUid)
             return;
 
           _serverInstance.GetDataDirector().GetHorse(
             character.mountUid()).Mutable(
-            [&racer, rank](data::Horse& horse)
+            [&racer, rank, gameMode, teamMode, isWinner](data::Horse& horse)
             {
               horse.mountInfo.totalRaces = horse.mountInfo.totalRaces() + 1;
 
@@ -658,6 +663,41 @@ void RaceDirector::Tick()
                 static_cast<uint32_t>(longestGlide * 10.0f);
               if (sessionLongestGlide > horse.mountInfo.longestGlideDistance())
                 horse.mountInfo.longestGlideDistance = sessionLongestGlide;
+
+              // Flush best boost combo
+              if (racer.boostComboValue > horse.mountInfo.boostsInARow())
+                horse.mountInfo.boostsInARow = racer.boostComboValue;
+
+              // Update win streaks
+              const bool isSolo = teamMode == protocol::TeamMode::Single
+                or teamMode == protocol::TeamMode::FFA;
+
+              if (gameMode == protocol::GameMode::Speed)
+              {
+                if (isSolo)
+                {
+                  horse.mountInfo.winsSpeedSingle = isWinner
+                    ? horse.mountInfo.winsSpeedSingle() + 1 : 0;
+                }
+                else
+                {
+                  horse.mountInfo.winsSpeedTeam = isWinner
+                    ? horse.mountInfo.winsSpeedTeam() + 1 : 0;
+                }
+              }
+              else if (gameMode == protocol::GameMode::Magic)
+              {
+                if (isSolo)
+                {
+                  horse.mountInfo.winsMagicSingle = isWinner
+                    ? horse.mountInfo.winsMagicSingle() + 1 : 0;
+                }
+                else
+                {
+                  horse.mountInfo.winsMagicTeam = isWinner
+                    ? horse.mountInfo.winsMagicTeam() + 1 : 0;
+                }
+              }
             });
         });
     }
@@ -2055,6 +2095,12 @@ void RaceDirector::HandleRequestSpur(
     throw std::runtime_error("Client is dead ass cheating (or is really desynced)");
 
   racer.starPointValue -= gameModeTemplate.spurConsumeStarPoints;
+
+  // Track boost combo
+  if (command.comboBreak)
+    racer.boostComboValue = 1;
+  else
+    racer.boostComboValue++;
 
   protocol::AcCmdCRRequestSpurOK response{
     .characterOid = command.characterOid,
