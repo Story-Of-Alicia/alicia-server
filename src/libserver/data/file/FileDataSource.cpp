@@ -1517,61 +1517,6 @@ void server::FileDataSource::DeleteMail(data::Uid uid)
   std::filesystem::remove(dataFilePath);
 }
 
-void server::FileDataSource::CreateStallion(data::Stallion& stallion)
-{
-  stallion.uid() = ++_stallionSequentialUid;
-}
-
-void server::FileDataSource::RetrieveStallion(data::Uid uid, data::Stallion& stallion)
-{
-  const std::filesystem::path dataFilePath = ProduceDataFilePath(
-    _stallionDataPath, std::format("{}", uid));
-
-  std::ifstream dataFile(dataFilePath);
-  if (not dataFile.is_open())
-  {
-    throw std::runtime_error(
-      std::format("Stallion file '{}' not accessible", dataFilePath.string()));
-  }
-
-  nlohmann::json json = nlohmann::json::parse(dataFile);
-  stallion.uid() = json["uid"];
-  stallion.horseUid() = json["horseUid"];
-  stallion.ownerUid() = json["ownerUid"];
-  stallion.breedingCharge() = json["breedingCharge"];
-  stallion.registeredAt() = data::Clock::time_point(
-    std::chrono::seconds(json["registeredAt"].get<uint64_t>()));
-  stallion.expiresAt() = data::Clock::time_point(
-    std::chrono::seconds(json["expiresAt"].get<uint64_t>()));
-  stallion.timesBreeded() = json.value("timesBreeded", 0u);
-}
-
-void server::FileDataSource::StoreStallion(data::Uid uid, const data::Stallion& stallion)
-{
-  const std::filesystem::path dataFilePath = ProduceDataFilePath(
-    _stallionDataPath, std::format("{}", uid));
-
-  std::ofstream dataFile(dataFilePath);
-  if (not dataFile.is_open())
-  {
-    throw std::runtime_error(
-      std::format("Stallion file '{}' not accessible", dataFilePath.string()));
-  }
-
-  nlohmann::json json;
-  json["uid"] = stallion.uid();
-  json["horseUid"] = stallion.horseUid();
-  json["ownerUid"] = stallion.ownerUid();
-  json["breedingCharge"] = stallion.breedingCharge();
-  json["registeredAt"] = std::chrono::duration_cast<std::chrono::seconds>(
-    stallion.registeredAt().time_since_epoch()).count();
-  json["expiresAt"] = std::chrono::duration_cast<std::chrono::seconds>(
-    stallion.expiresAt().time_since_epoch()).count();
-  json["timesBreeded"] = stallion.timesBreeded();
-
-  dataFile << json.dump(2);
-}
-
 void server::FileDataSource::DeleteStallion(data::Uid uid)
 {
   const std::filesystem::path dataFilePath = ProduceDataFilePath(

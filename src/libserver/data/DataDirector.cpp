@@ -710,7 +710,6 @@ void DataDirector::Tick()
     _settingsStorage.Tick();
     _dailyQuestStorage.Tick();
     _mailStorage.Tick();
-    _stallionStorage.Tick();
   }
   catch (const std::exception& x)
   {
