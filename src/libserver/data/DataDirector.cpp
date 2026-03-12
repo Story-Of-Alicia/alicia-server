@@ -1429,10 +1429,7 @@ void DataDirector::ScheduleCharacterLoad(
           auto ancestorRecord = GetHorse(ancestorUid);
           if (ancestorRecord)
           {
-            ancestorRecord.Immutable([&loadedFirstGen, ancestorUid](const data::Horse& horse)
-            {
-              loadedFirstGen.push_back(ancestorUid);
-            });
+            loadedFirstGen.push_back(ancestorUid);
           }
         }
         
@@ -1457,7 +1454,7 @@ void DataDirector::ScheduleCharacterLoad(
         // Load second generation ancestors (grandparents)
         for (const auto grandparentUid : secondGeneration)
         {
-          GetHorse(grandparentUid);
+          (void)GetHorse(grandparentUid);
         }
       }
     }

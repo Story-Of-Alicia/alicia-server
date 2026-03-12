@@ -611,7 +611,7 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   }
 
   horse.type = json.value("type", uint32_t{0});
-  horse.horseType = json.value("horseType", uint32_t{0});
+  horse.horseType = json.value("horseType", uint8_t{0});
   horse.tendency = json.value("tendency", uint32_t{0});
   horse.spirit = json.value("spirit", uint32_t{0});
   horse.fatigue = json.value("fatigue", uint16_t{0});
@@ -653,7 +653,7 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
     horse.ancestors = std::vector<data::Uid>{};
   }
   
-  horse.lineage = json.value("lineage", uint32_t{1});
+  horse.lineage = json.value("lineage", uint8_t{1});
 }
 
 void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)

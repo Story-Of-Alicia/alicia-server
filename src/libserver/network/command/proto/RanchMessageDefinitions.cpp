@@ -555,15 +555,15 @@ void RanchCommandRanchStuffOK::Read(
 }
 
 void AcCmdCRBreedingFailureCard::Write(
-  const AcCmdCRBreedingFailureCard& command,
-  SinkStream& stream)
+  const AcCmdCRBreedingFailureCard&,
+  SinkStream&)
 {
   // Empty response
 }
 
 void AcCmdCRBreedingFailureCard::Read(
-  AcCmdCRBreedingFailureCard& command,
-  SourceStream& stream)
+  AcCmdCRBreedingFailureCard&,
+  SourceStream&)
 {
   // Empty - statusOrFlag is internal only, not serialized
 }
@@ -583,22 +583,22 @@ void AcCmdCRBreedingFailureCardOK::Read(
 }
 
 void AcCmdCRBreedingFailureCardCancel::Write(
-  const AcCmdCRBreedingFailureCardCancel& command,
-  SinkStream& stream)
+  const AcCmdCRBreedingFailureCardCancel&,
+  SinkStream&)
 {
   // Empty response
 }
 
 void AcCmdCRBreedingFailureCardCancel::Read(
-  AcCmdCRBreedingFailureCardCancel& command,
-  SourceStream& stream)
+  AcCmdCRBreedingFailureCardCancel&,
+  SourceStream&)
 {
   // Empty - statusOrFlag is internal only, not serialized
 }
 
 void AcCmdCRBreedingFailureCardChoose::Write(
-  const AcCmdCRBreedingFailureCardChoose& command,
-  SinkStream& stream)
+  const AcCmdCRBreedingFailureCardChoose&,
+  SinkStream&)
 {
   // Zero payload command - no data to write
 }
@@ -629,22 +629,22 @@ void AcCmdCRBreedingFailureCardChooseOK::Write(
 }
 
 void AcCmdCRBreedingFailureCardChooseOK::Read(
-  AcCmdCRBreedingFailureCardChooseOK& command,
-  SourceStream& stream)
+  AcCmdCRBreedingFailureCardChooseOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRBreedingFailureCardChooseCancel::Write(
-  const AcCmdCRBreedingFailureCardChooseCancel& command,
-  SinkStream& stream)
+  const AcCmdCRBreedingFailureCardChooseCancel&,
+  SinkStream&)
 {
   // Empty response
 }
 
 void AcCmdCRBreedingFailureCardChooseCancel::Read(
-  AcCmdCRBreedingFailureCardChooseCancel& command,
-  SourceStream& stream)
+  AcCmdCRBreedingFailureCardChooseCancel&,
+  SourceStream&)
 {
   // Empty response
 }
@@ -831,8 +831,8 @@ void AcCmdCRUnregisterStallionEstimateInfoCancel::Read(
 }
 
 void AcCmdCRCheckStallionCharge::Write(
-  const AcCmdCRCheckStallionCharge& command,
-  SinkStream& stream)
+  const AcCmdCRCheckStallionCharge&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -856,8 +856,8 @@ void AcCmdCRCheckStallionChargeOK::Write(
 }
 
 void AcCmdCRCheckStallionChargeOK::Read(
-  AcCmdCRCheckStallionChargeOK& command,
-  SourceStream& stream)
+  AcCmdCRCheckStallionChargeOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
