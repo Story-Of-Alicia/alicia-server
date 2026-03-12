@@ -452,16 +452,22 @@ struct Horse
     dao::Field<uint32_t> biggestPrize{};
 
     // Race tracking counters
-    dao::Field<uint32_t> totalRaces{};
-    dao::Field<uint32_t> totalFinished{};
-    dao::Field<uint32_t> cumulativeRank{};
+    dao::Field<uint32_t> totalRaces{0u};
+    dao::Field<uint32_t> totalFinished{0u};
+    dao::Field<uint32_t> cumulativeRank{0u};
 
     // Jump tracking counters
-    dao::Field<uint32_t> totalJumps{};
-    dao::Field<uint32_t> successfulJumps{};
-    dao::Field<uint32_t> perfectJumps{};
-    dao::Field<uint32_t> bestJumpCombo{};
-    dao::Field<uint32_t> bestMagicDefenseCombo{};
+    dao::Field<uint32_t> totalJumps{0u};
+    dao::Field<uint32_t> successfulJumps{0u};
+    dao::Field<uint32_t> perfectJumps{0u};
+    dao::Field<uint32_t> bestJumpCombo{0u};
+    dao::Field<uint32_t> bestMagicDefenseCombo{0u};
+
+    // Magic item usage counters (for success rate calculation).
+    // TODO: Hit counters need relay passthrough parsing to detect hits.
+    dao::Field<uint32_t> magicBallUses{0u};
+    dao::Field<uint32_t> iceWallUses{0u};
+    dao::Field<uint32_t> fireSpiritUses{0u};
   } mountInfo{};
 };
 

@@ -86,6 +86,9 @@ bool SkillIsCritical(uint32_t skillOrEffectId)
   return skillOrEffectId % 2 != 0;
 }
 
+//! Discard position deltas larger than this (teleport protection).
+constexpr float TeleportDistanceThreshold = 500.0f;
+
 } // anon namespace
 
 RaceDirector::RaceDirector(ServerInstance& serverInstance)
@@ -618,6 +621,34 @@ void RaceDirector::Tick()
                 horse.mountInfo.totalFinished = horse.mountInfo.totalFinished() + 1;
                 horse.mountInfo.cumulativeRank = horse.mountInfo.cumulativeRank() + rank;
               }
+
+              // Flush session magic item usage counters to persistent storage
+              horse.mountInfo.magicBallUses =
+                horse.mountInfo.magicBallUses() + racer.magicBallUses;
+              horse.mountInfo.iceWallUses =
+                horse.mountInfo.iceWallUses() + racer.iceWallUses;
+              horse.mountInfo.fireSpiritUses =
+                horse.mountInfo.fireSpiritUses() + racer.fireSpiritUses;
+
+              // Flush session distance/speed/glide tracking
+              horse.mountInfo.totalDistance =
+                horse.mountInfo.totalDistance()
+                + static_cast<uint32_t>(racer.sessionDistance);
+
+              // Speed stored as km/h * 10 (e.g. 1028 = 102.8 km/h)
+              const auto sessionTopSpeed =
+                static_cast<uint32_t>(racer.sessionMaxSpeed * 10.0f);
+              if (sessionTopSpeed > horse.mountInfo.topSpeed())
+                horse.mountInfo.topSpeed = sessionTopSpeed;
+
+              // Finalize any in-progress glide before comparing
+              // Glide stored as metres * 10 (e.g. 710 = 71.0 m)
+              const float longestGlide = std::max(
+                racer.sessionLongestGlide, racer.currentGlideDistance);
+              const auto sessionLongestGlide =
+                static_cast<uint32_t>(longestGlide * 10.0f);
+              if (sessionLongestGlide > horse.mountInfo.longestGlideDistance())
+                horse.mountInfo.longestGlideDistance = sessionLongestGlide;
             });
         });
     }
@@ -2281,6 +2312,42 @@ void RaceDirector::HandleRaceUserPos(
       "Client tried to perform action on behalf of different racer");
   }
 
+  // Track distance, speed and glide from position updates
+  if (racer.previousPosition.has_value())
+  {
+    const auto& prev = racer.previousPosition.value();
+    const auto dx = command.position[0] - prev[0];
+    const auto dy = command.position[1] - prev[1];
+    const auto dz = command.position[2] - prev[2];
+    const float delta = static_cast<float>(
+      std::sqrt(dx * dx + dy * dy + dz * dz));
+
+    if (delta < TeleportDistanceThreshold)
+    {
+      racer.sessionDistance += delta;
+
+      // Accumulate glide distance while airborne
+      const bool isAirborne = command.airborne > 0;
+      if (isAirborne and racer.previousAirborne)
+      {
+        racer.currentGlideDistance += delta;
+      }
+      else if (not isAirborne and racer.previousAirborne)
+      {
+        if (racer.currentGlideDistance > racer.sessionLongestGlide)
+          racer.sessionLongestGlide = racer.currentGlideDistance;
+        racer.currentGlideDistance = 0.0f;
+      }
+
+      racer.previousAirborne = isAirborne;
+    }
+  }
+  racer.previousPosition = command.position;
+
+  // Track max speed
+  if (command.speed > racer.sessionMaxSpeed)
+    racer.sessionMaxSpeed = command.speed;
+
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
     static_cast<uint8_t>(raceInstance.raceGameMode));
 
@@ -2292,9 +2359,9 @@ void RaceDirector::HandleRaceUserPos(
 
     // The distance between the player and the item.
     const auto distanceBetweenPlayerAndItem = std::sqrt(
-      std::pow(command.member2[0] - item.position[0], 2) +
-      std::pow(command.member2[1] - item.position[1], 2) +
-      std::pow(command.member2[2] - item.position[2], 2));
+      std::pow(command.position[0] - item.position[0], 2) +
+      std::pow(command.position[1] - item.position[1], 2) +
+      std::pow(command.position[2] - item.position[2], 2));
 
     // A distance of the player from the item before it can be spawned.
     constexpr double ItemSpawnDistanceThreshold = 90.0;
@@ -2715,6 +2782,23 @@ void RaceDirector::HandleUseMagicItem(
       [usageNotify]() { return usageNotify; });
   }
 
+  // Track magic item usage counts
+  // FireBall = 2/3, IceWall = 10/11, DarkFire (fire spirit) = 14/15
+  switch (command.magicItemId)
+  {
+    case 2: case 3:
+      racer.magicBallUses++;
+      break;
+    case 10: case 11:
+      racer.iceWallUses++;
+      break;
+    case 14: case 15:
+      racer.fireSpiritUses++;
+      break;
+    default:
+      break;
+  }
+
   // Send effect for items that have instant effects
   switch (command.magicItemId)
   {
@@ -3091,8 +3175,32 @@ void RaceDirector::HandleActivateSkillEffect(
     // TODO: Send some kind of notification that the attack was blocked? That picture on the side (PIPEvent?)
     // Maybe i actually need to send the effect but with a different parameter to mean "blocked"
     // Else it doesnt show in the kill list in the corner
+
+    // Track magic defense combo
+    targetRacer.magicDefenseComboValue++;
+    const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+      clientContext.characterUid);
+    characterRecord.Immutable(
+      [this, &targetRacer](const data::Character& character)
+      {
+        if (character.mountUid() == data::InvalidUid)
+          return;
+        GetServerInstance().GetDataDirector().GetHorse(
+          character.mountUid()).Mutable(
+          [&targetRacer](data::Horse& horse)
+          {
+            if (targetRacer.magicDefenseComboValue > horse.mountInfo.bestMagicDefenseCombo())
+            {
+              horse.mountInfo.bestMagicDefenseCombo = targetRacer.magicDefenseComboValue;
+            }
+          });
+      });
+
     return;
   }
+
+  // Attack hit — reset defense combo
+  targetRacer.magicDefenseComboValue = 0;
 
   std::optional<std::function<void()>> afterEffectRemoved = std::nullopt;
   switch (effectiveEffectId)

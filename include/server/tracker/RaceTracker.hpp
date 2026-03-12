@@ -78,6 +78,26 @@ public:
     bool hotRodded{};
     bool critChance{};
     bool gaugeBuff{};
+
+    //! Session magic defense combo (consecutive blocks).
+    uint32_t magicDefenseComboValue{};
+    //! Session magic item usage counts by item ID.
+    uint32_t magicBallUses{};
+    uint32_t iceWallUses{};
+    uint32_t fireSpiritUses{};
+
+    //! Session distance/speed/glide tracking.
+    std::optional<std::array<float, 3>> previousPosition{};
+    //! Accumulated distance in metres during this race.
+    float sessionDistance{};
+    //! Maximum speed observed during this race.
+    float sessionMaxSpeed{};
+    //! Current glide distance accumulator (reset on landing).
+    float currentGlideDistance{};
+    //! Longest glide distance observed during this race.
+    float sessionLongestGlide{};
+    //! Whether the racer was airborne in the previous update.
+    bool previousAirborne{};
   };
 
   //! An item

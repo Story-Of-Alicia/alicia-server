@@ -1849,11 +1849,12 @@ void LobbyNetworkHandler::HandleRequestPersonalInfo(
               response.basic.magicDefenseCombo = static_cast<uint16_t>(
                 horse.mountInfo.bestMagicDefenseCombo());
 
-              // Not yet implemented (need magic spell event tracking):
-              // averageChasingCount, magicBallAttackSuccessRate,
-              // fireSpiritTransferSuccessRate, iceWallAttackSuccessRate
-              // Not yet implemented (need res.pak level table):
-              // levelProgress
+              // TODO: Magic attack SUCCESS RATES require relay passthrough
+              // parsing to detect hits (P2P data). Usage counts are tracked
+              // in mountInfo but hit counts need feature/reverse-relay-data.
+              // Fields: magicBallAttackSuccessRate, fireSpiritTransferSuccessRate,
+              //         iceWallAttackSuccessRate, averageChasingCount
+              // TODO: levelProgress needs res.pak level/XP table extraction
             });
           }
         }

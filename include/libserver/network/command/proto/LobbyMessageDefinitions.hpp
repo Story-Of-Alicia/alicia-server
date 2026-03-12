@@ -1796,17 +1796,16 @@ struct AcCmdLCPersonalInfo
     //! Displayed directly as float (txt_record_7), no percentage scaling.
     float averageChasingCount{};
     uint32_t highestCarnivalPrize{};
-    //! Stored to UI state but not displayed as txt_record.
-    //! Possibly race mode counts or internal UI filter state.
-    uint16_t uiState14{};
-    uint16_t uiState15{};
-    uint16_t uiState16{};
+    //! Equipped achievement ceremony IDs (icon slots in profile).
+    uint16_t ceremonyId1{};
+    uint16_t ceremonyId2{};
+    uint16_t ceremonyId3{};
     std::string introduction{};
     uint32_t level{60};
     //! Level progress as dictated by LevelInfo table in libconfig
     uint32_t levelProgress{};
-    //! Not displayed in Basic info tab. Possibly rank title or legacy field.
-    std::string record20String{};
+    //! Legacy field, not displayed in Basic info tab.
+    std::string legacyGradeString{};
     uint16_t perfectBoostCombo{};
     uint16_t perfectJumpCombo{};
     uint16_t magicDefenseCombo{};
@@ -1820,9 +1819,9 @@ struct AcCmdLCPersonalInfo
     //! Displayed as percentage (×100) at txt_record_17.
     float iceWallAttackSuccessRate{};
     std::string guildName{};
-    //! Not accessed in main UI update function. Possibly flags.
-    uint8_t flag28{};
-    uint8_t flag29{};
+    //! Not accessed by client UI handler. Likely padding.
+    uint8_t padding28{};
+    uint8_t padding29{};
 
     static void Write(const Basic& command, SinkStream& stream);
     static void Read(Basic& command, SourceStream& stream);

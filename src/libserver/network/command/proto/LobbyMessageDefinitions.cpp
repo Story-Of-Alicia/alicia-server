@@ -1155,13 +1155,13 @@ void AcCmdLCPersonalInfo::Basic::Write(
     .Write(command.completionRate)
     .Write(command.averageChasingCount)
     .Write(command.highestCarnivalPrize)
-    .Write(command.uiState14)
-    .Write(command.uiState15)
-    .Write(command.uiState16)
+    .Write(command.ceremonyId1)
+    .Write(command.ceremonyId2)
+    .Write(command.ceremonyId3)
     .Write(command.introduction)
     .Write(command.level)
     .Write(command.levelProgress)
-    .Write(command.record20String)
+    .Write(command.legacyGradeString)
     .Write(command.perfectBoostCombo)
     .Write(command.perfectJumpCombo)
     .Write(command.magicDefenseCombo)
@@ -1169,8 +1169,8 @@ void AcCmdLCPersonalInfo::Basic::Write(
     .Write(command.fireSpiritTransferSuccessRate)
     .Write(command.iceWallAttackSuccessRate)
     .Write(command.guildName)
-    .Write(command.flag28)
-    .Write(command.flag29);
+    .Write(command.padding28)
+    .Write(command.padding29);
 }
 
 void AcCmdLCPersonalInfo::Basic::Read(
