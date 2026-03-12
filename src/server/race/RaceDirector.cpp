@@ -20,9 +20,11 @@
 #include "server/race/RaceDirector.hpp"
 
 #include "server/ServerInstance.hpp"
+#include "server/system/QuestSystem.hpp"
 #include "server/system/RoomSystem.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
+#include <libserver/registry/QuestRegistry.hpp>
 
 #include <boost/container_hash/hash.hpp>
 #include <spdlog/spdlog.h>
@@ -1846,6 +1848,7 @@ void RaceDirector::HandleRaceResult(
   [[maybe_unused]] const protocol::AcCmdCRRaceResult& command)
 {
   const auto& clientContext = GetClientContext(clientId);
+  auto& raceInstance = GetRaceInstance(clientContext);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
@@ -1868,6 +1871,28 @@ void RaceDirector::HandleRaceResult(
             horse.fatigue());
         });
     });
+
+  // Advance 'complete N races' daily quests
+  for (const auto& notify : GetServerInstance().GetQuestSystem().OnQuestEvent(
+    clientContext.characterUid,
+    QuestSystem::QuestEvent::Any,
+    QuestSystem::ToGameModeFlag(raceInstance.raceGameMode, raceInstance.raceTeamMode)))
+  {
+    SendDailyQuestNotificationToCharacter(clientContext.characterUid, notify);
+  }
+
+  // Advance 'run map X' daily quests
+  if (raceInstance.raceMapBlockId != 0)
+  {
+    for (const auto& notify : GetServerInstance().GetQuestSystem().OnQuestEvent(
+      clientContext.characterUid,
+      QuestSystem::QuestEvent::RunMap,
+      QuestSystem::ToGameModeFlag(raceInstance.raceGameMode, raceInstance.raceTeamMode),
+      raceInstance.raceMapBlockId))
+    {
+      SendDailyQuestNotificationToCharacter(clientContext.characterUid, notify);
+    }
+  }
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -2133,9 +2158,17 @@ void RaceDirector::HandleHurdleClearResult(
 
       // Update boost gauge
       starPointResponse.starPointValue = racer.starPointValue;
+
+      // Advance perfect-jump daily quests
+      for (const auto& notify : GetServerInstance().GetQuestSystem().OnQuestEvent(
+        clientContext.characterUid,
+        QuestSystem::QuestEvent::PerfectJump,
+        QuestSystem::ToGameModeFlag(raceInstance.raceGameMode, raceInstance.raceTeamMode)))
+      {
+        SendDailyQuestNotificationToCharacter(clientContext.characterUid, notify);
+      }
       break;
     }
-    case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Good:
     case protocol::AcCmdCRHurdleClearResult::HurdleClearType::DoubleJumpOrGlide:
     {
       // Not a perfect jump over the hurdle, reset the jump combo.
@@ -2838,6 +2871,23 @@ void RaceDirector::HandleUseMagicItem(
           this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 23);
         }
       }
+      break;
+  }
+
+  // Advance 'fireball attack' daily quests for fireball-type magic items
+  switch (command.magicItemId)
+  {
+    case 2:   // FireBall
+    case 3:   // FireBall (critical)
+      for (const auto& notify : GetServerInstance().GetQuestSystem().OnQuestEvent(
+        clientContext.characterUid,
+        QuestSystem::QuestEvent::FireballAttack,
+        QuestSystem::ToGameModeFlag(raceInstance.raceGameMode, raceInstance.raceTeamMode)))
+      {
+        SendDailyQuestNotificationToCharacter(clientContext.characterUid, notify);
+      }
+      break;
+    default:
       break;
   }
 
@@ -3615,48 +3665,23 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
 }
 
 void RaceDirector::SendDailyQuestNotificationToCharacter(
-  data::Uid characterUid, 
-  const protocol::AcCmdRCCompleteDailyQuestNotify& notification)
+  const data::Uid characterUid,
+  const protocol::AcCmdRCUpdateDailyQuestNotify& updateNotify)
 {
-  protocol::AcCmdRCUpdateDailyQuestNotify notif = {
-      .characterUid = notification.characterUid,
-      .questId = notification.questId,
-      .unk = {
-        .isCompleted = 1,
-        .progress = 9, 
-        .unk2 = 0
-      },
-      .carrotsReward = 0,
-      .questType = 0,
-      .unk2 = 0,
-      .mountExp = 0
-  };
-  
-  // Find the client for this character
   for (const auto& [clientId, clientContext] : _clients)
   {
     if (clientContext.characterUid == characterUid)
     {
-      _commandServer.QueueCommand<decltype(notif)>(
-        clientId,
-        [notif]()
-        {
-          return notif;
-        });
-
-      _commandServer.QueueCommand<protocol::AcCmdRCCompleteDailyQuestNotify>(
-        clientId,
-        [notification]()
-        {
-          return notification;
-        });
+      _commandServer.QueueCommand<protocol::AcCmdRCUpdateDailyQuestNotify>(
+        clientId, [updateNotify]() { return updateNotify; });
 
       return;
     }
   }
-  
-  // Character not found in race director context
-  spdlog::debug("RaceDirector::SendDailyQuestNotificationToCharacter: Character {} not found in race context", characterUid);
+
+  spdlog::debug(
+    "RaceDirector::SendDailyQuestNotificationToCharacter: "
+    "Character {} not found in race context", characterUid);
 }
 
 void RaceDirector::HandleTriggerizeAct(

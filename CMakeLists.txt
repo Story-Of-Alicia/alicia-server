@@ -109,6 +109,7 @@ add_executable(alicia-server
         src/server/system/ItemSystem.cpp
         src/server/system/ModerationSystem.cpp
         src/server/system/OtpSystem.cpp
+        src/server/system/QuestSystem.cpp
         src/server/system/RoomSystem.cpp
         src/server/tracker/RaceTracker.cpp
         src/server/tracker/RanchTracker.cpp)

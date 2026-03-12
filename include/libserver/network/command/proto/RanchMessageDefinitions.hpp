@@ -3085,29 +3085,6 @@ struct RanchCommandKickRanchNotify
     SourceStream& stream);
 };
 
-struct AcCmdCROpCmd
-{
-  std::string command{};
-
-  static Command GetCommand()
-  {
-    return Command::AcCmdCROpCmd;
-  }
-
-  //! Writes the command to a provided sink stream.
-  //! @param command Command.
-  //! @param stream Sink stream.
-  static void Write(
-    const AcCmdCROpCmd& command,
-    SinkStream& stream);
-
-  //! Reader a command from a provided source stream.
-  //! @param command Command.
-  //! @param stream Source stream.
-  static void Read(
-    AcCmdCROpCmd& command,
-    SourceStream& stream);
-};
 
 struct RanchCommandOpCmdOK
 {
@@ -4328,47 +4305,6 @@ struct AcCmdCRRegisterDailyQuestGroupOK
   //! @param stream Source stream.
   static void Read(
     AcCmdCRRegisterDailyQuestGroupOK& command,
-    SourceStream& stream);
-};
-
-struct AcCmdRCUpdateDailyQuestNotify
-{
-  // TODO: implement in every command that could update a daily quest
-  struct Unk
-  {
-    uint8_t isCompleted;
-    uint32_t progress;//progress
-    uint8_t unk2;
-
-    static void Write(const Unk& value, SinkStream& stream);
-    static void Read(Unk& value, SourceStream& stream);
-  };
-    
-  uint32_t characterUid;
-  uint16_t questId;
-  Unk unk;
-  uint32_t carrotsReward; //used when questType is 1
-  uint8_t questType; // subtype
-  uint32_t unk2;
-  uint32_t mountExp; //used when questType is 2
-
-  static Command GetCommand()
-  {
-    return Command::AcCmdRCUpdateDailyQuestNotify;
-  }
-
-  //! Writes the command to a provided sink stream.
-  //! @param command Command.
-  //! @param stream Sink stream.
-  static void Write(
-    const AcCmdRCUpdateDailyQuestNotify& command,
-    SinkStream& stream);
-
-  //! Reader a command from a provided source stream.
-  //! @param command Command.
-  //! @param stream Source stream.
-  static void Read(
-    AcCmdRCUpdateDailyQuestNotify& command,
     SourceStream& stream);
 };
 

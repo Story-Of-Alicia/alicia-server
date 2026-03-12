@@ -25,6 +25,7 @@
 
 #include "libserver/network/command/CommandServer.hpp"
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
+#include "libserver/network/command/proto/CommonMessageDefinitions.hpp"
 
 #include <random>
 #include <unordered_map>
@@ -87,8 +88,8 @@ public:
     protocol::GuildRole guildRole);
 
   void SendDailyQuestNotificationToCharacter(
-    data::Uid characterUid, 
-    const protocol::AcCmdRCCompleteDailyQuestNotify& notification);
+    data::Uid characterUid,
+    const protocol::AcCmdRCUpdateDailyQuestNotify& updateNotify);
 
   void SendGuildInviteDeclined(
     data::Uid characterUid,

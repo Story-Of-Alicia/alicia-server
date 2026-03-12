@@ -131,6 +131,65 @@ struct AcCmdRCUpdateQuestNotify
     SourceStream& stream);
 };
 
+struct AcCmdRCUpdateDailyQuestNotify
+{   
+  uint32_t characterUid;
+  uint16_t questId;
+  ObjectiveProgress objectiveProgress;
+  uint32_t carrotsReward; //used when rewardType is Carrots
+  enum class RewardType : uint8_t
+  {
+    None = 0,
+    Carrots = 1,
+    Exp = 2
+  } rewardType{RewardType::None};
+  uint32_t unk2;
+  uint32_t mountExp; //used when rewardType is Exp
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCUpdateDailyQuestNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCUpdateDailyQuestNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCUpdateDailyQuestNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCROpCmd
+{
+  std::string command{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCROpCmd;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCROpCmd& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCROpCmd& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // COMMON_MESSAGE_DEFINES_HPP

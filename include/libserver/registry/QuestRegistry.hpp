@@ -97,8 +97,22 @@ struct Quest
   uint32_t difficult{};
   //! Required player level.
   uint32_t level{};
-  //! Game mode flags.
-  uint32_t gameModeFlag{};
+  //! Game mode flag — bitmask of applicable race modes for this quest.
+  //! Matches DailyQuestInfo::Type values.
+  enum class GameModeFlag : uint32_t
+  {
+    None           = 0,
+    SpeedTeam      = 2,
+    MagicTeam      = 8,
+    WinSpeedSolo   = 33,
+    SpeedSoloAction = 35,  //!< Perfect jumps, boosts
+    WinMagicSolo   = 68,
+    MagicSoloAction = 76,  //!< Bolt attack
+    Any            = 111,
+  };
+
+  //! Game mode flag — bitmask of applicable race modes for this quest.
+  GameModeFlag gameModeFlag{};
   //! NPC ID that starts the quest.
   uint32_t startNpcId{};
   //! NPC ID that ends the quest.
@@ -109,9 +123,25 @@ struct Quest
   uint32_t successType{};
   //! Success condition value.
   uint32_t successValue{};
-  //! Function identifier string.
-  std::string function{};
-  //! Function parameter value.
+  //! Quest completion function / condition type.
+  enum class Function
+  {
+    Unknown,
+    True,                    //!< Always matches — used by "complete N races" quests.
+    RunMap,                  //!< Complete a specific map (matched against functionValue).
+    TeamWin,                 //!< Win a team race.
+    PerfectJump,             //!< Land a perfect jump over a hurdle.
+    FireballAttack,          //!< Hit an opponent with a fireball.
+    CollectDropItem,         //!< Collect a drop item during a race.
+    GlidingDistanceValue,    //!< Accumulate gliding distance.
+    ClearMission,            //!< Clear a mission stage.
+    PrizeWinnerForLowLevel,          //!< Place in the top 3 (low-level variant).
+    PrizeWinnerInMapForLowLevel,     //!< Place in the top 3 on a specific map.
+  };
+
+  //! Quest completion function / condition type.
+  Function function{};
+  //! Parameter value for the function (e.g. map ID, count, etc.).
   uint32_t functionValue{};
   //! Linked reward ID (references a QuestReward).
   uint32_t rewardId{};

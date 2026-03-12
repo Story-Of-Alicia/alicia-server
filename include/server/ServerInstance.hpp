@@ -33,6 +33,7 @@
 #include "server/system/ItemSystem.hpp"
 #include "server/system/OtpSystem.hpp"
 #include "server/system/ModerationSystem.hpp"
+#include "server/system/QuestSystem.hpp"
 #include "server/system/RoomSystem.hpp"
 
 #include <libserver/data/DataDirector.hpp>
@@ -135,6 +136,10 @@ public:
   //! Returns reference to the room system.
   //! @returns Reference to the room system.
   RoomSystem& GetRoomSystem();
+
+  //! Returns reference to the quest system.
+  //! @returns Reference to the quest system.
+  QuestSystem& GetQuestSystem();
 
   //! Returns reference to the settings.
   //! @returns Reference to the settings.
@@ -248,6 +253,8 @@ private:
   OtpSystem _otpSystem;
   //! A moderation system
   ModerationSystem _moderationSystem;
+  //! A quest system.
+  QuestSystem _questSystem;
   //! A room system.
   RoomSystem _roomSystem;
 

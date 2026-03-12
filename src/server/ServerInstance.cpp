@@ -19,6 +19,8 @@
 
 #include "server/ServerInstance.hpp"
 
+#include "server/system/QuestSystem.hpp"
+
 #include <stacktrace>
 
 namespace server
@@ -50,6 +52,7 @@ ServerInstance::ServerInstance(
   , _chatSystem(*this)
   , _infractionSystem(*this)
   , _itemSystem(*this)
+  , _questSystem(*this)
 {
 }
 
@@ -341,6 +344,11 @@ ModerationSystem& ServerInstance::GetModerationSystem()
 RoomSystem& ServerInstance::GetRoomSystem()
 {
   return _roomSystem;
+}
+
+QuestSystem& ServerInstance::GetQuestSystem()
+{
+  return _questSystem;
 }
 
 OtpSystem& ServerInstance::GetOtpSystem()

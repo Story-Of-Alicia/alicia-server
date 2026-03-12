@@ -2757,9 +2757,9 @@ void AcCmdRCUpdateDailyQuestNotify::Write(
 {
   stream.Write(command.characterUid);
   stream.Write(command.questId);
-  stream.Write(command.unk);
+  stream.Write(command.objectiveProgress);
   stream.Write(command.carrotsReward);
-  stream.Write(command.questType);
+  stream.Write(command.rewardType);
   stream.Write(command.unk2);
   stream.Write(command.mountExp);
 }
@@ -2769,20 +2769,6 @@ void AcCmdRCUpdateDailyQuestNotify::Read(
   SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
-}
-
-void AcCmdRCUpdateDailyQuestNotify::Unk::Write(const Unk& value, SinkStream& stream)
-{
-  stream.Write(value.isCompleted)
-    .Write(value.progress)
-    .Write(value.unk2);
-}
-
-void AcCmdRCUpdateDailyQuestNotify::Unk::Read(Unk& value, SourceStream& stream)
-{
-  stream.Read(value.isCompleted)
-    .Read(value.progress)
-    .Read(value.unk2);
 }
 
 void AcCmdCRRequestDailyQuestReward::Write(

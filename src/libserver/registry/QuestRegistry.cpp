@@ -61,12 +61,25 @@ void ReadQuest(Quest& quest, const YAML::Node& yaml)
   quest.type = static_cast<Quest::Type>(yaml["groupType"].as<uint32_t>(0));
   quest.difficult = yaml["difficult"].as<decltype(Quest::difficult)>(0);
   quest.level = yaml["level"].as<decltype(Quest::level)>(0);
-  quest.gameModeFlag = yaml["gameModeFlag"].as<decltype(Quest::gameModeFlag)>(0);
+  quest.gameModeFlag = static_cast<Quest::GameModeFlag>(yaml["gameModeFlag"].as<uint32_t>(0));
   quest.startNpcId = yaml["startNpcId"].as<decltype(Quest::startNpcId)>(0);
   quest.endNpcId = yaml["endNpcId"].as<decltype(Quest::endNpcId)>(0);
   quest.successType = yaml["successType"].as<decltype(Quest::successType)>(0);
   quest.successValue = yaml["successValue"].as<decltype(Quest::successValue)>(0);
-  quest.function = yaml["function"].as<decltype(Quest::function)>("");
+
+  const auto functionStr = yaml["function"].as<std::string>("");
+  if      (functionStr == "TRUE")                        quest.function = Quest::Function::True;
+  else if (functionStr == "RunMap")                      quest.function = Quest::Function::RunMap;
+  else if (functionStr == "TeamWin")                     quest.function = Quest::Function::TeamWin;
+  else if (functionStr == "PerfectJump")                 quest.function = Quest::Function::PerfectJump;
+  else if (functionStr == "FireballAttack")              quest.function = Quest::Function::FireballAttack;
+  else if (functionStr == "CollectDropItem")             quest.function = Quest::Function::CollectDropItem;
+  else if (functionStr == "GlidingDistanceValue")        quest.function = Quest::Function::GlidingDistanceValue;
+  else if (functionStr == "ClearMission")                quest.function = Quest::Function::ClearMission;
+  else if (functionStr == "PrizeWinnerForLowLevel")      quest.function = Quest::Function::PrizeWinnerForLowLevel;
+  else if (functionStr == "PrizeWinnerInMapForLowLevel") quest.function = Quest::Function::PrizeWinnerInMapForLowLevel;
+  else                                                   quest.function = Quest::Function::Unknown;
+
   quest.functionValue = yaml["functionValue"].as<decltype(Quest::functionValue)>(0);
   quest.rewardId = yaml["rewardId"].as<decltype(Quest::rewardId)>(0);
   quest.rewardExp = yaml["rewardExp"].as<decltype(Quest::rewardExp)>(0);
