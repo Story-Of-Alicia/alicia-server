@@ -92,11 +92,6 @@ void BreedingMarket::Tick()
     int loadedCount = 0;
     std::vector<data::Uid> stillPending;
 
-    // Two-pass loading: first collect all stallion data, then process.
-    // This ensures valid registrations are tracked before expired ones
-    // try to reset horse types (a horse may have both an old expired
-    // and a current valid registration).
-
     struct LoadedStallion
     {
       data::Uid stallionUid;
@@ -134,14 +129,11 @@ void BreedingMarket::Tick()
       loadedStallions.push_back(std::move(loaded));
     }
 
-    // Pass 1: Register valid stallions first (populates _horseToStallionMap)
     for (const auto& loaded : loadedStallions)
     {
       if (!loaded.isValid)
         continue;
 
-      // Schedule deferred type set on the data director thread.
-      // Do NOT call GetHorseCache().Get() here - we're on the ranch thread.
       ScheduleHorseTypeSet(loaded.cachedData.horseUid, 2);
 
       _stallionDataCache[loaded.stallionUid] = loaded.cachedData;
@@ -150,7 +142,6 @@ void BreedingMarket::Tick()
       loadedCount++;
     }
 
-    // Pass 2: Handle expired stallions (can now check _horseToStallionMap)
     for (const auto& loaded : loadedStallions)
     {
       if (loaded.isValid)
@@ -161,11 +152,8 @@ void BreedingMarket::Tick()
 
       _serverInstance.GetDataDirector().GetStallionCache().Delete(loaded.stallionUid);
 
-      // Only reset horse type if not re-registered under a newer stallion
       if (!_horseToStallionMap.contains(loaded.cachedData.horseUid))
-      {
         ScheduleHorseTypeSet(loaded.cachedData.horseUid, 0);
-      }
     }
 
     // Update the queue with only pending stallions
@@ -235,7 +223,6 @@ void BreedingMarket::CheckExpiredStallions()
     }
   }
 
-  // Remove expired horses from tracking lists and reset type
   for (data::Uid horseUid : expiredHorseUids)
   {
     _registeredStallions.erase(
@@ -243,11 +230,8 @@ void BreedingMarket::CheckExpiredStallions()
       _registeredStallions.end());
     _horseToStallionMap.erase(horseUid);
 
-    // Only reset horse type if not re-registered under a newer stallion
     if (!_horseToStallionMap.contains(horseUid))
-    {
       ScheduleHorseTypeSet(horseUid, 0);
-    }
   }
 }
 
@@ -489,19 +473,17 @@ void BreedingMarket::ScheduleHorseTypeSet(data::Uid horseUid, uint32_t horseType
       {
         auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(horseUid);
         if (horseRecord)
-          return; // Already processed successfully
-        // Not loaded yet, reschedule
+          return;
         ScheduleHorseTypeSet(horseUid, horseType);
       });
 
       auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(horseUid);
       if (!horseRecord)
-        return; // Deferred will reschedule
+        return;
 
-      horseRecord->Mutable([horseUid, horseType](data::Horse& horse)
+      horseRecord->Mutable([horseType](data::Horse& horse)
       {
         horse.type() = horseType;
-        spdlog::info("Set horse {} type to {}", horseUid, horseType);
       });
     });
 }
