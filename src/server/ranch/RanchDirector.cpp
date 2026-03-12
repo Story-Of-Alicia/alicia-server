@@ -1438,7 +1438,7 @@ void RanchDirector::HandleEnterBreedingMarket(
 
 void RanchDirector::HandleSearchStallion(
   ClientId clientId,
-  const protocol::AcCmdCRSearchStallion&)
+  const protocol::AcCmdCRSearchStallion& command)
 {
   auto& clientContext = GetClientContext(clientId);
 
@@ -1673,7 +1673,7 @@ void RanchDirector::HandleUnregisterStallion(
 
 void RanchDirector::HandleUnregisterStallionEstimateInfo(
   ClientId clientId,
-  const protocol::AcCmdCRUnregisterStallionEstimateInfo&)
+  const protocol::AcCmdCRUnregisterStallionEstimateInfo& command)
 {
   // Delegate to BreedingMarket
   auto estimateOpt = _breedingMarket.GetUnregisterEstimate(command.horseUid);
@@ -4836,7 +4836,7 @@ void RanchDirector::HandleRecoverMount(
 
 void RanchDirector::HandleMountFamilyTree(
   ClientId clientId,
-  const protocol::RanchCommandMountFamilyTree&)
+  const protocol::RanchCommandMountFamilyTree& command)
 {
   protocol::RanchCommandMountFamilyTreeOK response{};
 
