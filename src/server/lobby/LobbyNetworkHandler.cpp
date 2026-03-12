@@ -1803,59 +1803,63 @@ void LobbyNetworkHandler::HandleRequestPersonalInfo(
           if (mountRecord.IsAvailable())
           {
             mountRecord.Immutable([&response](const data::Horse& horse)
-            {
-              response.basic.distanceTravelled = horse.mountInfo.totalDistance();
-              response.basic.topSpeed = horse.mountInfo.topSpeed();
-              response.basic.longestGlidingDistance = horse.mountInfo.longestGlideDistance();
-              response.basic.speedSingleWinCombo = static_cast<uint16_t>(
-                horse.mountInfo.winsSpeedSingle());
-              response.basic.speedTeamWinCombo = static_cast<uint16_t>(
-                horse.mountInfo.winsSpeedTeam());
-              response.basic.magicSingleWinCombo = static_cast<uint16_t>(
-                horse.mountInfo.winsMagicSingle());
-              response.basic.magicTeamWinCombo = static_cast<uint16_t>(
-                horse.mountInfo.winsMagicTeam());
-              response.basic.highestCarnivalPrize = horse.mountInfo.biggestPrize();
-              response.basic.perfectBoostCombo = static_cast<uint16_t>(
-                horse.mountInfo.boostsInARow());
-
-              // Computed race stats from persistent counters
-              if (horse.mountInfo.totalJumps() > 0)
               {
-                response.basic.jumpSuccessRate = static_cast<float>(
-                  horse.mountInfo.successfulJumps()) / static_cast<float>(
-                  horse.mountInfo.totalJumps());
-                response.basic.perfectJumpSuccessRate = static_cast<float>(
-                  horse.mountInfo.perfectJumps()) / static_cast<float>(
-                  horse.mountInfo.totalJumps());
-              }
+                response.basic.distanceTravelled = horse.mountInfo.totalDistance();
+                response.basic.topSpeed = horse.mountInfo.topSpeed();
+                response.basic.longestGlidingDistance = horse.mountInfo.longestGlideDistance();
+                response.basic.speedSingleWinCombo = static_cast<uint16_t>(
+                  horse.mountInfo.winsSpeedSingle());
+                response.basic.speedTeamWinCombo = static_cast<uint16_t>(
+                  horse.mountInfo.winsSpeedTeam());
+                response.basic.magicSingleWinCombo = static_cast<uint16_t>(
+                  horse.mountInfo.winsMagicSingle());
+                response.basic.magicTeamWinCombo = static_cast<uint16_t>(
+                  horse.mountInfo.winsMagicTeam());
+                response.basic.highestCarnivalPrize = horse.mountInfo.biggestPrize();
+                response.basic.perfectBoostCombo = static_cast<uint16_t>(
+                  horse.mountInfo.boostsInARow());
 
-              if (horse.mountInfo.totalFinished() > 0)
-              {
-                response.basic.averageRank = static_cast<float>(
-                  horse.mountInfo.cumulativeRank()) / static_cast<float>(
-                  horse.mountInfo.totalFinished());
-              }
+                // Computed race stats from persistent counters
+                if (horse.mountInfo.totalJumps() > 0)
+                {
+                  response.basic.jumpSuccessRate = static_cast<float>(
+                                                     horse.mountInfo.successfulJumps()) /
+                                                   static_cast<float>(
+                                                     horse.mountInfo.totalJumps());
+                  response.basic.perfectJumpSuccessRate = static_cast<float>(
+                                                            horse.mountInfo.perfectJumps()) /
+                                                          static_cast<float>(
+                                                            horse.mountInfo.totalJumps());
+                }
 
-              if (horse.mountInfo.totalRaces() > 0)
-              {
-                response.basic.completionRate = static_cast<float>(
-                  horse.mountInfo.totalFinished()) / static_cast<float>(
-                  horse.mountInfo.totalRaces());
-              }
+                if (horse.mountInfo.totalFinished() > 0)
+                {
+                  response.basic.averageRank = static_cast<float>(
+                                                 horse.mountInfo.cumulativeRank()) /
+                                               static_cast<float>(
+                                                 horse.mountInfo.totalFinished());
+                }
 
-              response.basic.perfectJumpCombo = static_cast<uint16_t>(
-                horse.mountInfo.bestJumpCombo());
-              response.basic.magicDefenseCombo = static_cast<uint16_t>(
-                horse.mountInfo.bestMagicDefenseCombo());
+                if (horse.mountInfo.totalRaces() > 0)
+                {
+                  response.basic.completionRate = static_cast<float>(
+                                                    horse.mountInfo.totalFinished()) /
+                                                  static_cast<float>(
+                                                    horse.mountInfo.totalRaces());
+                }
 
-              // TODO: Magic attack SUCCESS RATES require relay passthrough
-              // parsing to detect hits (P2P data). Usage counts are tracked
-              // in mountInfo but hit counts need feature/reverse-relay-data.
-              // Fields: magicBallAttackSuccessRate, fireSpiritTransferSuccessRate,
-              //         iceWallAttackSuccessRate, averageChasingCount
-              // TODO: levelProgress needs res.pak level/XP table extraction
-            });
+                response.basic.perfectJumpCombo = static_cast<uint16_t>(
+                  horse.mountInfo.bestJumpCombo());
+                response.basic.magicDefenseCombo = static_cast<uint16_t>(
+                  horse.mountInfo.bestMagicDefenseCombo());
+
+                // TODO: Magic attack SUCCESS RATES require relay passthrough
+                // parsing to detect hits (P2P data). Usage counts are tracked
+                // in mountInfo but hit counts need feature/reverse-relay-data.
+                // Fields: magicBallAttackSuccessRate, fireSpiritTransferSuccessRate,
+                //         iceWallAttackSuccessRate, averageChasingCount
+                // TODO: levelProgress needs res.pak level/XP table extraction
+              });
           }
         }
 
