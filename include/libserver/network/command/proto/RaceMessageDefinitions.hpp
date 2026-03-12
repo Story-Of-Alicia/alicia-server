@@ -2607,6 +2607,37 @@ struct AcCmdRCAchievementUpdateNotify
     SourceStream& stream);
 };
 
+struct AcCmdCRTriggerizeAct
+{
+  // Can either be 1 or 2. Why, I don't know.
+  // But the handler checks for either one of these values.
+  // Gamemode? Teammode?
+  uint8_t unk0{};
+  // Seems to be interactive object ID
+  uint32_t unk1{};
+  // Seems to be event ID
+  uint16_t unk2{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRTriggerizeAct;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRTriggerizeAct& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRTriggerizeAct& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RACE_MESSAGE_DEFINES_HPP
