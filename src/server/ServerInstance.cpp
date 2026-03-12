@@ -52,8 +52,6 @@ ServerInstance::ServerInstance(
   , _itemSystem(*this)
   , _breedingMarket(*this)
   , _genetics(*this)
-  , _itemSystem(*this)
-  , _breedingMarket(*this)
 {
 }
 

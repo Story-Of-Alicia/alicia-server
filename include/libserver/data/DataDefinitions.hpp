@@ -354,8 +354,6 @@ struct Character
     dao::Field<std::vector<Uid>> inbox{};
     dao::Field<std::vector<Uid>> sent{};
   } mailbox{};
-
-  dao::Field<uint32_t> breedingMoneySpent{0u};
 };
 
 struct Horse
