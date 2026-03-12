@@ -2755,6 +2755,7 @@ void RaceDirector::HandleUseMagicItem(
           this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 10);
         }
       }
+      break;
     case 13:
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
