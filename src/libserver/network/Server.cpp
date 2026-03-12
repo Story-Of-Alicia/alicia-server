@@ -345,30 +345,28 @@ size_t Server::OnClientData(
 
 bool Server::IsConnectionThrottled(const asio::ip::address_v4& address)
 {
-  if (_clients.size() >= MaxTotalConnections)
-  {
+  auto& state = _addressStates[address];
+  // If there are more active connections than allowed by `MaxConnectionsPerAddress` 
+  // throttle the connection from the address.
+  if (state.activeConnections >= MaxConnectionsPerAddress)
     return true;
-  }
 
   const auto now = std::chrono::steady_clock::now();
-
-  auto& state = _addressStates[address];
-
-  if (state.activeConnections >= MaxConnectionsPerAddress)
+  
+  // Pop the connection timestamps which are over the rate window and have expired. 
+  while (not state.connectionTimestamps.empty())
   {
-    return true;
-  }
-
-  while (not state.connectionTimestamps.empty() &&
-         (now - state.connectionTimestamps.front()) > RateWindow)
-  {
+    const auto timeSinceConnection = now - state.connectionTimestamps.front();
+    if (timeSinceConnection < RateWindow)
+      break;
+      
     state.connectionTimestamps.pop_front();
   }
 
+  // If there are more connection attempts than allowed by `MaxConnectRatePerAddress` 
+  // throttle the connection from the address.
   if (state.connectionTimestamps.size() >= MaxConnectRatePerAddress)
-  {
     return true;
-  }
 
   state.activeConnections++;
   state.connectionTimestamps.push_back(now);
