@@ -89,6 +89,15 @@ bool SkillIsCritical(uint32_t skillOrEffectId)
 //! Discard position deltas larger than this (teleport protection).
 constexpr float TeleportDistanceThreshold = 500.0f;
 
+//! Magic item IDs (normal/critical variants).
+//! See AcCmdCRUseMagicItem — even = normal, odd = critical.
+constexpr uint32_t MagicItemFireBall = 2;
+constexpr uint32_t MagicItemFireBallCrit = 3;
+constexpr uint32_t MagicItemIceWall = 10;
+constexpr uint32_t MagicItemIceWallCrit = 11;
+constexpr uint32_t MagicItemDarkFire = 14;
+constexpr uint32_t MagicItemDarkFireCrit = 15;
+
 } // anon namespace
 
 RaceDirector::RaceDirector(ServerInstance& serverInstance)
@@ -2142,6 +2151,8 @@ void RaceDirector::HandleHurdleClearResult(
       characterRecord.Immutable(
         [this, &racer](const data::Character& character)
         {
+          if (character.mountUid() == data::InvalidUid)
+            return;
           GetServerInstance().GetDataDirector().GetHorse(
             character.mountUid()).Mutable(
             [&racer](data::Horse& horse)
@@ -2182,6 +2193,8 @@ void RaceDirector::HandleHurdleClearResult(
       characterRecord.Immutable(
         [this](const data::Character& character)
         {
+          if (character.mountUid() == data::InvalidUid)
+            return;
           GetServerInstance().GetDataDirector().GetHorse(
             character.mountUid()).Mutable(
             [](data::Horse& horse)
@@ -2205,6 +2218,8 @@ void RaceDirector::HandleHurdleClearResult(
       characterRecord.Immutable(
         [this](const data::Character& character)
         {
+          if (character.mountUid() == data::InvalidUid)
+            return;
           GetServerInstance().GetDataDirector().GetHorse(
             character.mountUid()).Mutable(
             [](data::Horse& horse)
@@ -2322,25 +2337,34 @@ void RaceDirector::HandleRaceUserPos(
     const float delta = static_cast<float>(
       std::sqrt(dx * dx + dy * dy + dz * dz));
 
+    const bool isAirborne = command.airborne > 0;
+
     if (delta < TeleportDistanceThreshold)
     {
       racer.sessionDistance += delta;
 
       // Accumulate glide distance while airborne
-      const bool isAirborne = command.airborne > 0;
-      if (isAirborne and racer.previousAirborne)
+      if (isAirborne)
       {
         racer.currentGlideDistance += delta;
       }
-      else if (not isAirborne and racer.previousAirborne)
+      else if (racer.previousAirborne)
       {
+        // Just landed — finalize glide segment
         if (racer.currentGlideDistance > racer.sessionLongestGlide)
           racer.sessionLongestGlide = racer.currentGlideDistance;
         racer.currentGlideDistance = 0.0f;
       }
-
-      racer.previousAirborne = isAirborne;
     }
+    else
+    {
+      // Teleport — finalize any in-progress glide
+      if (racer.currentGlideDistance > racer.sessionLongestGlide)
+        racer.sessionLongestGlide = racer.currentGlideDistance;
+      racer.currentGlideDistance = 0.0f;
+    }
+
+    racer.previousAirborne = isAirborne;
   }
   racer.previousPosition = command.position;
 
@@ -2783,16 +2807,15 @@ void RaceDirector::HandleUseMagicItem(
   }
 
   // Track magic item usage counts
-  // FireBall = 2/3, IceWall = 10/11, DarkFire (fire spirit) = 14/15
   switch (command.magicItemId)
   {
-    case 2: case 3:
+    case MagicItemFireBall: case MagicItemFireBallCrit:
       racer.magicBallUses++;
       break;
-    case 10: case 11:
+    case MagicItemIceWall: case MagicItemIceWallCrit:
       racer.iceWallUses++;
       break;
-    case 14: case 15:
+    case MagicItemDarkFire: case MagicItemDarkFireCrit:
       racer.fireSpiritUses++;
       break;
     default:
@@ -3176,7 +3199,9 @@ void RaceDirector::HandleActivateSkillEffect(
     // Maybe i actually need to send the effect but with a different parameter to mean "blocked"
     // Else it doesnt show in the kill list in the corner
 
-    // Track magic defense combo
+    // Track magic defense combo.
+    // Note: this command is sent by the TARGET client (P2P relay),
+    // so clientContext.characterUid is the defender.
     targetRacer.magicDefenseComboValue++;
     const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
       clientContext.characterUid);

@@ -90,7 +90,8 @@ public:
     std::optional<std::array<float, 3>> previousPosition{};
     //! Accumulated distance in metres during this race.
     float sessionDistance{};
-    //! Maximum speed observed during this race.
+    //! Maximum speed observed during this race (km/h from protocol).
+    //! Persisted as km/h * 10 (e.g. 1028 = 102.8 km/h).
     float sessionMaxSpeed{};
     //! Current glide distance accumulator (reset on landing).
     float currentGlideDistance{};
