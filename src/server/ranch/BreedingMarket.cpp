@@ -451,7 +451,7 @@ std::optional<BreedingMarket::StallionBreedingEarnings> BreedingMarket::GetUnreg
   {
     horseRecord->Immutable([&timesMated](const data::Horse& horse)
     {
-      timesMated = horse.timesMated();
+      timesMated = horse.breeding.breedingCount();
     });
   }
 

@@ -1445,13 +1445,13 @@ void RanchDirector::HandleSearchStallion(
   // Update breeding context with search info
   clientContext.breedingContext.lastTick = static_cast<uint32_t>(std::time(nullptr));
 
-  spdlog::debug("SearchStallion: seedOrReqId={}, flags=[{},{},{},{},{},{},{},{}], "
-    "filterLists=[{},{},{}], tailFlag={}, mareId={}",
-    command.seedOrReqId,
-    command.flag0, command.flag1, command.flag2, command.flag3,
-    command.flag4, command.flag5, command.flag6, command.flag7,
-    command.filterLists[0].size(), command.filterLists[1].size(), command.filterLists[2].size(),
-    command.tailFlag, clientContext.breedingContext.mareId);
+  spdlog::debug("SearchStallion: unk0={}, unks=[{},{},{},{},{},{},{},{}], "
+    "filterLists=[{},{},{}], unk10={}, mareId={}",
+    command.unk0,
+    command.unk1, command.unk2, command.unk3, command.unk4,
+    command.unk5, command.unk6, command.unk7, command.unk8,
+    command.unk9[0].size(), command.unk9[1].size(), command.unk9[2].size(),
+    command.unk10, clientContext.breedingContext.mareId);
 
   const auto registeredStallions = _breedingMarket.GetRegisteredStallions();
   spdlog::debug("Registered stallions count: {}", registeredStallions.size());
@@ -1662,19 +1662,6 @@ void RanchDirector::HandleUnregisterStallion(
     });
 
     spdlog::info("UnregisterStallion: Paid {} carrots compensation to player", earnings.compensation);
-  }
-
-  // Look up and delete the stallion registration record
-  auto it = g_horseToStallionMap.find(command.horseUid);
-  if (it != g_horseToStallionMap.end())
-  {
-    data::Uid stallionUid = it->second;
-
-    // Delete the stallion record from database
-    GetServerInstance().GetDataDirector().GetStallionCache().Delete(stallionUid);
-
-    // Remove from map
-    g_horseToStallionMap.erase(it);
   }
 
   protocol::AcCmdCRUnregisterStallionOK response{};
