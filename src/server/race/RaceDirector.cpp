@@ -24,6 +24,7 @@
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
 
+#include <algorithm>
 #include <boost/container_hash/hash.hpp>
 #include <spdlog/spdlog.h>
 
@@ -1616,8 +1617,18 @@ void RaceDirector::HandleStartRace(
         .p2pRelayPort = static_cast<uint16_t>(10500),
         .raceMissionId = raceInstance.raceMissionId,};
 
-      // Build the racers.
-      for (const auto& [characterUid, racer] : raceInstance.tracker.GetRacers())
+      // Build the racers in oid order so that list index matches display/slot order.
+      // GetRacers() iterates by characterUid (map order), but oids are assigned in
+      // room join order (unordered_map). Sending by oid avoids nickname-on-wrong-player bugs.
+      std::vector<std::pair<data::Uid, tracker::RaceTracker::Racer*>> racersByOid;
+      racersByOid.reserve(raceInstance.tracker.GetRacers().size());
+      for (auto& [characterUid, racer] : raceInstance.tracker.GetRacers())
+        racersByOid.emplace_back(characterUid, &racer);
+      std::ranges::sort(racersByOid, [](const auto& a, const auto& b) {
+        return a.second->oid < b.second->oid;
+      });
+
+      for (const auto& [characterUid, racer] : racersByOid)
       {
         std::string characterName;
         GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
@@ -1628,11 +1639,11 @@ void RaceDirector::HandleStartRace(
 
         auto& protocolRacer = notify.racers.emplace_back(
           protocol::AcCmdCRStartRaceNotify::Player{
-            .oid = racer.oid,
+            .oid = racer->oid,
             .name = characterName,
-            .p2dId = racer.oid,});
+            .p2dId = racer->oid,});
 
-        switch (racer.team)
+        switch (racer->team)
         {
           case tracker::RaceTracker::Racer::Team::Solo:
             protocolRacer.teamColor = protocol::TeamColor::None;
