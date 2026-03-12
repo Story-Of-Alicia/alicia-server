@@ -46,12 +46,12 @@ void BuildProtocolHorse(
   protocolHorse.clazz = static_cast<uint8_t>(horse.clazz());
   protocolHorse.val0 = 1;
   protocolHorse.grade = static_cast<uint8_t>(horse.grade());
-  protocolHorse.growthPoints = horse.growthPoints();
+  protocolHorse.growthPoints = static_cast<uint16_t>(horse.growthPoints());
 
   protocolHorse.vals1.type = static_cast<protocol::Horse::HorseType>(horse.type());
-  protocolHorse.vals1.tendency = horse.tendency();
-  protocolHorse.vals1.spirit = horse.spirit();
-  protocolHorse.vals1.fatigue = horse.fatigue();
+  protocolHorse.vals1.tendency = static_cast<uint8_t>(horse.tendency());
+  protocolHorse.vals1.spirit = static_cast<uint8_t>(horse.spirit());
+  protocolHorse.vals1.fatigue = static_cast<uint16_t>(horse.fatigue());
 
   protocolHorse.val16 = 0xb8a167e4,
   protocolHorse.visualCleanlinessBitset = 
@@ -127,11 +127,11 @@ void BuildProtocolHorseParts(
     // Foals can only display colors 1-5
     // TIDs 1-5 map directly
     if (adultTid >= 1 && adultTid <= 5)
-      return adultTid;
-    
+      return static_cast<uint8_t>(adultTid);
+
     // TIDs 6+ map to their color equivalent (cycles every 5)
     // Pattern: 6->1, 7->2, 8->3, 9->4, 10->5, 11->1, 12->2, etc.
-    return ((adultTid - 1) % 5) + 1;
+    return static_cast<uint8_t>(((adultTid - 1) % 5) + 1);
   };
   
   uint8_t maneId = static_cast<uint8_t>(parts.maneTid());
