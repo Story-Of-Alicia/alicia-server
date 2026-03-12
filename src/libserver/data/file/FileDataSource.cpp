@@ -610,6 +610,7 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
     horse.breeding.breedingCombo = json.value("breedingCombo", uint32_t{0});
   }
 
+  horse.type = json.value("type", uint32_t{0});
   horse.horseType = json.value("horseType", uint32_t{0});
   horse.tendency = json.value("tendency", uint32_t{0});
   horse.spirit = json.value("spirit", uint32_t{0});

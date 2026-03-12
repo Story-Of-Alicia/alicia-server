@@ -140,6 +140,9 @@ public:
   [[nodiscard]] StallionStorage& GetStallionCache();
   [[nodiscard]] std::vector<data::Uid> ListRegisteredStallions();
 
+  //! Schedules a task on the data director's scheduler.
+  void ScheduleTask(Scheduler::Task task);
+
   [[nodiscard]] FileDataSource& GetFileDataSource();
 
   [[nodiscard]] DataSource& GetDataSource() noexcept;
