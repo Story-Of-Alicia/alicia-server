@@ -600,13 +600,13 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   
   if (json.contains("breeding"))
   {
-    horse.breeding.timesBreeded = json["breeding"].value("timesBreeded", uint32_t{0});
+    horse.breeding.breedingCount = json["breeding"].value("timesBreeded", uint32_t{0});
     horse.breeding.breedingCombo = json["breeding"].value("breedingCombo", uint32_t{0});
   }
   else
   {
     // Legacy flat structure
-    horse.breeding.timesBreeded = json.value("timesBreeded", uint32_t{0});
+    horse.breeding.breedingCount = json.value("timesBreeded", uint32_t{0});
     horse.breeding.breedingCombo = json.value("breedingCombo", uint32_t{0});
   }
 
@@ -614,14 +614,6 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.tendency = json.value("tendency", uint32_t{0});
   horse.spirit = json.value("spirit", uint32_t{0});
   horse.fatigue = json.value("fatigue", uint16_t{0});
-
-  const auto& breedingJson = json["breeding"];
-  horse.breeding.breedingCount = breedingJson.value("count", uint32_t{0});
-  horse.breeding.breedingCombo = breedingJson.value("combo", uint32_t{0});
-
-  horse.type = json.value("type", uint32_t{0});
-  horse.tendency = json.value("tendency", uint32_t{0});
-  horse.spirit = json.value("spirit", uint32_t{0});
 
   auto potential = json["potential"];
   horse.potential = data::Horse::Potential{

@@ -148,10 +148,6 @@ public:
   //! @returns Reference to the breeding market.
   BreedingMarket& GetBreedingMarket();
 
-  //! Returns reference to the genetics system.
-  //! @returns Reference to the genetics system.
-  Genetics& GetGenetics();
-
   //! Returns reference to the settings.
   //! @returns Reference to the settings.
   Config& GetSettings();
@@ -272,9 +268,6 @@ private:
 
   //! The breeding market system.
   BreedingMarket _breedingMarket;
-
-  //! The genetics calculation system.
-  Genetics _genetics;
 };
 
 } // namespace server
