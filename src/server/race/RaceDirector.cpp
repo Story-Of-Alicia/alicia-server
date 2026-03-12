@@ -21,13 +21,16 @@
 
 #include "server/ServerInstance.hpp"
 #include "server/system/RoomSystem.hpp"
+#include "server/tracker/Tracker.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
 
+#include <algorithm>
 #include <boost/container_hash/hash.hpp>
 #include <spdlog/spdlog.h>
 
 #include <bitset>
+#include <map>
 
 namespace server
 {
@@ -552,21 +555,40 @@ void RaceDirector::Tick()
 
     protocol::AcCmdRCRaceResultNotify raceResult{};
 
-    std::map<uint32_t, data::Uid> scoreboard;
+    struct ScoreEntry
+    {
+      uint32_t courseTime;
+      data::Uid characterUid;
+    };
+
+    std::vector<ScoreEntry> scoreboard;
+    scoreboard.reserve(raceInstance.tracker.GetRacers().size());
+
     for (const auto& [characterUid, racer] : raceInstance.tracker.GetRacers())
     {
-      // todo: do not do this here i guess
-      uint32_t courseTime = std::numeric_limits<uint32_t>::max();
-      if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
-        courseTime = racer.courseTime;
+      const bool isDisconnected =
+        racer.state == tracker::RaceTracker::Racer::State::Disconnected;
 
-      scoreboard.try_emplace(courseTime, characterUid);
+      const uint32_t courseTime =
+        isDisconnected ? std::numeric_limits<uint32_t>::max()
+                       : racer.courseTime;
+
+      scoreboard.push_back(ScoreEntry{courseTime, characterUid});
     }
 
+    std::ranges::sort(
+      scoreboard,
+      [](const ScoreEntry& lhs, const ScoreEntry& rhs)
+      {
+        if (lhs.courseTime != rhs.courseTime)
+          return lhs.courseTime < rhs.courseTime;
+        return lhs.characterUid < rhs.characterUid;
+      });
+
     // Build the score board.
-    for (auto& [courseTime, characterUid] : scoreboard)
+    for (const auto& entry : scoreboard)
     {
-      auto& racer = raceInstance.tracker.GetRacer(characterUid);
+      auto& racer = raceInstance.tracker.GetRacer(entry.characterUid);
       auto& score = raceResult.scores.emplace_back();
 
       // todo: figure out the other bit set values
@@ -577,10 +599,10 @@ void RaceDirector::Tick()
             protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::Connected);
       }
 
-      score.courseTime = courseTime;
+      score.courseTime = entry.courseTime;
       //score.experience = 420;
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
-        characterUid);
+        entry.characterUid);
 
       characterRecord.Immutable([this, &score](const data::Character& character)
       {
@@ -1616,9 +1638,14 @@ void RaceDirector::HandleStartRace(
         .p2pRelayPort = static_cast<uint16_t>(10500),
         .raceMissionId = raceInstance.raceMissionId,};
 
-      // Build the racers.
-      for (const auto& [characterUid, racer] : raceInstance.tracker.GetRacers())
+      // Build the racers in oid order using an ordered map so that list index matches display/slot order.
+      std::map<server::tracker::Oid, std::pair<data::Uid, tracker::RaceTracker::Racer*>> racersByOid;
+      for (auto& [characterUid, racer] : raceInstance.tracker.GetRacers())
+        racersByOid.emplace(racer.oid, std::make_pair(characterUid, &racer));
+
+      for (const auto& [oid, uidAndRacer] : racersByOid)
       {
+        const auto& [characterUid, racer] = uidAndRacer;
         std::string characterName;
         GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
           [&characterName](const data::Character& character)
@@ -1628,11 +1655,11 @@ void RaceDirector::HandleStartRace(
 
         auto& protocolRacer = notify.racers.emplace_back(
           protocol::AcCmdCRStartRaceNotify::Player{
-            .oid = racer.oid,
+            .oid = racer->oid,
             .name = characterName,
-            .p2dId = racer.oid,});
+            .p2dId = racer->oid,});
 
-        switch (racer.team)
+        switch (racer->team)
         {
           case tracker::RaceTracker::Racer::Team::Solo:
             protocolRacer.teamColor = protocol::TeamColor::None;
@@ -2748,6 +2775,7 @@ void RaceDirector::HandleUseMagicItem(
           this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 10);
         }
       }
+      break;
     case 13:
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
