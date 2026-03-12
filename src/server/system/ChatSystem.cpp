@@ -483,6 +483,32 @@ void ChatSystem::RegisterUserCommands()
           "Restart the client."};
       }
 
+      if (subLiteral == "tendency")
+      {
+        if (arguments.size() < 2)
+          return {
+            "Invalid command arguments.",
+            "(//horse tendency <1-6>)"};
+
+        const auto tendencyValue = static_cast<uint8_t>(std::atoi(arguments[1].c_str()));
+        if (tendencyValue < 1 || tendencyValue > 6)
+          return {
+            "Invalid tendency value.",
+            "(//horse tendency <1-6>)"};
+
+        characterRecord.Immutable([this, &tendencyValue](const data::Character& character)
+          {
+            _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Mutable(
+              [&tendencyValue](data::Horse& horse)
+              {
+                horse.tendency() = tendencyValue;
+              });
+          });
+
+        return {"Horse tendency set",
+          "Restart the client."};
+      }
+
       return {"Unknown sub-literal"};
     });
 
@@ -710,6 +736,7 @@ void ChatSystem::RegisterUserCommands()
             horse.dateOfBirth() = data::Clock::now();
             horse.mountCondition.stamina = 3500;
             horse.growthPoints() = 150;
+            horse.tendency() = 1;
 
             // Give horse random parts and appearance
             _serverInstance.GetHorseRegistry().BuildRandomHorse(
