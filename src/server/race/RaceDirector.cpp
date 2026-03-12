@@ -29,6 +29,7 @@
 #include <spdlog/spdlog.h>
 
 #include <bitset>
+#include <map>
 
 namespace server
 {
@@ -1617,19 +1618,14 @@ void RaceDirector::HandleStartRace(
         .p2pRelayPort = static_cast<uint16_t>(10500),
         .raceMissionId = raceInstance.raceMissionId,};
 
-      // Build the racers in oid order so that list index matches display/slot order.
-      // GetRacers() iterates by characterUid (map order), but oids are assigned in
-      // room join order (unordered_map). Sending by oid avoids nickname-on-wrong-player bugs.
-      std::vector<std::pair<data::Uid, tracker::RaceTracker::Racer*>> racersByOid;
-      racersByOid.reserve(raceInstance.tracker.GetRacers().size());
+      // Build the racers in oid order using an ordered map so that list index matches display/slot order.
+      std::map<Oid, std::pair<data::Uid, tracker::RaceTracker::Racer*>> racersByOid;
       for (auto& [characterUid, racer] : raceInstance.tracker.GetRacers())
-        racersByOid.emplace_back(characterUid, &racer);
-      std::ranges::sort(racersByOid, [](const auto& a, const auto& b) {
-        return a.second->oid < b.second->oid;
-      });
+        racersByOid.emplace(racer.oid, std::make_pair(characterUid, &racer));
 
-      for (const auto& [characterUid, racer] : racersByOid)
+      for (const auto& [oid, uidAndRacer] : racersByOid)
       {
+        const auto& [characterUid, racer] = uidAndRacer;
         std::string characterName;
         GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
           [&characterName](const data::Character& character)
