@@ -116,7 +116,6 @@ private:
   //! List of stallion UIDs being loaded
   std::vector<data::Uid> _stallionUidsToLoad;
 
-
   //! Checks and removes expired stallions
   void CheckExpiredStallions();
 
