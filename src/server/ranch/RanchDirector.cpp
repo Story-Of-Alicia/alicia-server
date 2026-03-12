@@ -449,6 +449,18 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleInviteUser(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestGuildRankingInfoList>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleRequestGuildRankingInfoList(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestGuildRankingInfo>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleRequestGuildRankingInfo(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -5468,6 +5480,66 @@ void RanchDirector::HandleInviteUser(
   protocol::AcCmdCRInviteUserOK response{};
   response.recipientCharacterUid = command.recipientCharacterUid;
   response.recipientCharacterName = command.recipientCharacterName;
+
+  _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+}
+
+void RanchDirector::HandleRequestGuildRankingInfoList(
+  ClientId clientId,
+  const protocol::AcCmdCRRequestGuildRankingInfoList& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  spdlog::debug("[{}] '{}' AcCmdCRRequestGuildRankingInfoList: {} {}",
+    clientId,
+    clientContext.characterUid,
+    command.unk0,
+    command.unk1);
+
+  // TODO: populate this list by all registered and active guilds in the server
+  // Active guilds are defined as guilds with more than 0 members (so at least the guild owner)
+
+  protocol::AcCmdCRRequestGuildRankingInfoListOK response{};
+  constexpr uint32_t Count = 128;
+  for (uint32_t i = 0; i < Count; ++i)
+  {
+    auto& info = response.list.emplace_back();
+    info.rank = i + 1;
+    info.score = -1;
+    info.name = std::format("Guild {}", i);
+  }
+
+  _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+}
+
+void RanchDirector::HandleRequestGuildRankingInfo(
+  ClientId clientId,
+  const protocol::AcCmdCRRequestGuildRankingInfo& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  spdlog::debug("[{}] '{}' AcCmdCRRequestGuildRankingInfo: {}",
+    clientId,
+    clientContext.characterUid,
+    command.guildName);
+
+  protocol::AcCmdCRRequestGuildRankingInfoOK response{
+    .guildUid = 87654321,
+    .creationDate = util::TimePointToAliciaTime(util::Clock::now()),
+    .memberCount = 3,
+    .guildName = "hello world",
+    .emblemRevision = 0,
+    .overallRanking = 6,
+    .totalWins = 7,
+    .totalLosses = 8,
+    .unk8 = 9,
+    .score = 10,
+    .unk10 = 11,
+    .seasonalWins = 12,
+    .seasonalLosses = 13,
+    .unk13 = 14,
+    .leaderName = "goodbye world",
+  };
 
   _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }

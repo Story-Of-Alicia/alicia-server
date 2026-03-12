@@ -442,6 +442,14 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRInviteUser& command);
 
+  void HandleRequestGuildRankingInfoList(
+    ClientId clientId,
+    const protocol::AcCmdCRRequestGuildRankingInfoList& command);
+
+  void HandleRequestGuildRankingInfo(
+    ClientId clientId,
+    const protocol::AcCmdCRRequestGuildRankingInfo& command);
+
   //!
   ServerInstance& _serverInstance;
   //!
