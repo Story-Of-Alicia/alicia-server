@@ -153,10 +153,10 @@ private:
 
   //! Returns true if a connection from the given address should be throttled.
   //! If not throttled, records the connection internally.
-  bool IsConnectionThrottled(const asio::ip::address_v4& address);
+  [[nodiscard]] bool IsConnectionThrottled(const asio::ip::address_v4& address) noexcept;
 
   //! Records that a client from the given address has disconnected.
-  void OnThrottleDisconnect(const asio::ip::address_v4& address);
+  void OnThrottleDisconnect(const asio::ip::address_v4& address) noexcept;
 
   void AcceptLoop() noexcept;
   void TickLoop() noexcept;
