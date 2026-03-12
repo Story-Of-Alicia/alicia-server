@@ -1283,6 +1283,11 @@ DataDirector::DailyQuestStorage& DataDirector::GetDailyQuestCache()
   return _dailyQuestStorage;
 }
 
+void DataDirector::ScheduleTask(Scheduler::Task task)
+{
+  _scheduler.Queue(std::move(task));
+}
+
 void DataDirector::ScheduleCharacterLoad(
   UserDataContext& userDataContext,
   data::Uid characterUid)
@@ -1422,11 +1427,14 @@ void DataDirector::ScheduleCharacterLoad(
         
         for (const auto ancestorUid : firstGeneration)
         {
-          // Load ancestor and check if available by attempting to access it
-          GetHorse(ancestorUid).Immutable([&loadedFirstGen, ancestorUid](const data::Horse& horse)
+          auto ancestorRecord = GetHorse(ancestorUid);
+          if (ancestorRecord)
           {
-            loadedFirstGen.push_back(ancestorUid);
-          });
+            ancestorRecord.Immutable([&loadedFirstGen, ancestorUid](const data::Horse& horse)
+            {
+              loadedFirstGen.push_back(ancestorUid);
+            });
+          }
         }
         
         // Collect second generation ancestors (grandparents)
@@ -1450,8 +1458,7 @@ void DataDirector::ScheduleCharacterLoad(
         // Load second generation ancestors (grandparents)
         for (const auto grandparentUid : secondGeneration)
         {
-          GetHorse(grandparentUid).Immutable([](const data::Horse&) {
-          });
+          GetHorse(grandparentUid);
         }
       }
     }

@@ -116,15 +116,12 @@ private:
   //! List of stallion UIDs being loaded
   std::vector<data::Uid> _stallionUidsToLoad;
 
-  //! Horses that need their type reset from Stallion (2) back to Adult (0)
-  //! These are horses whose stallion registration expired but weren't in cache yet
-  std::vector<data::Uid> _horsesNeedingTypeReset;
 
   //! Checks and removes expired stallions
   void CheckExpiredStallions();
 
-  //! Attempts to reset horse types for horses in _horsesNeedingTypeReset
-  void ProcessPendingHorseTypeResets();
+  //! Schedules a deferred task to set a horse's type once it's loaded in cache
+  void ScheduleHorseTypeSet(data::Uid horseUid, uint32_t horseType);
 
   //! Pays a stallion owner immediately, loading from the data source if needed
   void PayOwner(data::Uid ownerUid, uint32_t earnings);

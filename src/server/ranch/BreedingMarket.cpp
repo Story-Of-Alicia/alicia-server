@@ -6,6 +6,7 @@
 #include "server/ServerInstance.hpp"
 
 #include <libserver/data/DataDirector.hpp>
+#include <libserver/util/Deferred.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -91,79 +92,80 @@ void BreedingMarket::Tick()
     int loadedCount = 0;
     std::vector<data::Uid> stillPending;
 
-    // Check each stallion individually
+    // Two-pass loading: first collect all stallion data, then process.
+    // This ensures valid registrations are tracked before expired ones
+    // try to reset horse types (a horse may have both an old expired
+    // and a current valid registration).
+
+    struct LoadedStallion
+    {
+      data::Uid stallionUid;
+      StallionData cachedData;
+      uint32_t timesMated;
+      bool isValid;
+    };
+    std::vector<LoadedStallion> loadedStallions;
+
     for (data::Uid stallionUid : _stallionUidsToLoad)
     {
       auto stallionRecordOpt = _serverInstance.GetDataDirector().GetStallionCache().Get(stallionUid);
       if (!stallionRecordOpt)
       {
-        // Not loaded yet, will try again next tick
         stillPending.push_back(stallionUid);
         continue;
       }
 
-      StallionData cachedData{};
-      bool isValid = true;
-
-      uint32_t timesMated = 0;
+      LoadedStallion loaded{};
+      loaded.stallionUid = stallionUid;
 
       stallionRecordOpt->Immutable([&](const data::Stallion& stallion)
       {
-        cachedData.stallionUid = stallion.uid();
-        cachedData.horseUid = stallion.horseUid();
-        cachedData.ownerUid = stallion.ownerUid();
-        cachedData.breedingCharge = stallion.breedingCharge();
-        cachedData.registeredAt = stallion.registeredAt();
-        timesMated = stallion.timesMated();
+        loaded.cachedData.stallionUid = stallion.uid();
+        loaded.cachedData.horseUid = stallion.horseUid();
+        loaded.cachedData.ownerUid = stallion.ownerUid();
+        loaded.cachedData.breedingCharge = stallion.breedingCharge();
+        loaded.cachedData.registeredAt = stallion.registeredAt();
+        loaded.timesMated = stallion.timesMated();
 
-        // Check if expired immediately (24 hours after registration)
-        const auto expiresAt = cachedData.registeredAt + std::chrono::hours(24);
-        if (util::Clock::now() >= expiresAt)
-        {
-          isValid = false;
-        }
-        else
-        {
-          // Preload the horse (async)
-          _serverInstance.GetDataDirector().GetHorseCache().Get(stallion.horseUid());
-        }
+        const auto expiresAt = loaded.cachedData.registeredAt + std::chrono::hours(24);
+        loaded.isValid = util::Clock::now() < expiresAt;
       });
 
-      if (!isValid)
-      {
-        // Handle expired stallion: pay owner, reset horse type, delete record
-        uint32_t earnings = cachedData.breedingCharge * timesMated;
+      loadedStallions.push_back(std::move(loaded));
+    }
 
-        // Pay the owner
-        PayOwner(cachedData.ownerUid, earnings);
-
-        // Reset horse type back to Adult (0)
-        // Trigger async load of the horse
-        const auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(cachedData.horseUid);
-        if (horseRecord)
-        {
-          horseRecord->Mutable([&cachedData](data::Horse& horse)
-          {
-            horse.type() = 0; // Adult
-          });
-        }
-        else
-        {
-          // Horse not loaded yet - queue it for later processing
-          _horsesNeedingTypeReset.push_back(cachedData.horseUid);
-        }
-
-        // Delete stallion record from database
-        _serverInstance.GetDataDirector().GetStallionCache().Delete(stallionUid);
-
-        // Don't add to stillPending - it's been handled
+    // Pass 1: Register valid stallions first (populates _horseToStallionMap)
+    for (const auto& loaded : loadedStallions)
+    {
+      if (!loaded.isValid)
         continue;
-      }
 
-      _stallionDataCache[stallionUid] = std::move(cachedData);
-      _registeredStallions.emplace_back(cachedData.horseUid);
-      _horseToStallionMap[cachedData.horseUid] = stallionUid;
+      // Schedule deferred type set on the data director thread.
+      // Do NOT call GetHorseCache().Get() here - we're on the ranch thread.
+      ScheduleHorseTypeSet(loaded.cachedData.horseUid, 2);
+
+      _stallionDataCache[loaded.stallionUid] = loaded.cachedData;
+      _registeredStallions.emplace_back(loaded.cachedData.horseUid);
+      _horseToStallionMap[loaded.cachedData.horseUid] = loaded.stallionUid;
       loadedCount++;
+    }
+
+    // Pass 2: Handle expired stallions (can now check _horseToStallionMap)
+    for (const auto& loaded : loadedStallions)
+    {
+      if (loaded.isValid)
+        continue;
+
+      uint32_t earnings = loaded.cachedData.breedingCharge * loaded.timesMated;
+      PayOwner(loaded.cachedData.ownerUid, earnings);
+
+      _serverInstance.GetDataDirector().GetStallionCache().Delete(loaded.stallionUid);
+
+      // Only reset horse type if not re-registered under a newer stallion
+      if (!_horseToStallionMap.contains(loaded.cachedData.horseUid))
+      {
+        ScheduleHorseTypeSet(loaded.cachedData.horseUid, 0);
+      }
     }
 
     // Update the queue with only pending stallions
@@ -186,8 +188,6 @@ void BreedingMarket::Tick()
     CheckExpiredStallions();
   }
 
-  // Try to process pending payments and horse type resets
-  ProcessPendingHorseTypeResets();
 }
 
 void BreedingMarket::CheckExpiredStallions()
@@ -220,26 +220,11 @@ void BreedingMarket::CheckExpiredStallions()
       uint32_t earnings = stallionData.breedingCharge * timesMated;
       PayOwner(stallionData.ownerUid, earnings);
 
-      // Remove from cache
+      // Track for removal from tracking lists
       expiredHorseUids.push_back(stallionData.horseUid);
 
       // Delete stallion record from database
       _serverInstance.GetDataDirector().GetStallionCache().Delete(stallionUid);
-
-      // Reset horse type back to Adult (0)
-      auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(stallionData.horseUid);
-      if (horseRecord)
-      {
-        horseRecord->Mutable([&stallionData](data::Horse& horse)
-        {
-          horse.type() = 0; // Adult
-        });
-      }
-      else
-      {
-        // Horse not loaded yet - queue it for later processing
-        _horsesNeedingTypeReset.push_back(stallionData.horseUid);
-      }
 
       // Erase from cache
       it = _stallionDataCache.erase(it);
@@ -250,16 +235,19 @@ void BreedingMarket::CheckExpiredStallions()
     }
   }
 
-  // Remove expired horses from tracking lists
+  // Remove expired horses from tracking lists and reset type
   for (data::Uid horseUid : expiredHorseUids)
   {
-    // Remove from registered stallions list
     _registeredStallions.erase(
       std::remove(_registeredStallions.begin(), _registeredStallions.end(), horseUid),
       _registeredStallions.end());
-
-    // Remove from horse->stallion map
     _horseToStallionMap.erase(horseUid);
+
+    // Only reset horse type if not re-registered under a newer stallion
+    if (!_horseToStallionMap.contains(horseUid))
+    {
+      ScheduleHorseTypeSet(horseUid, 0);
+    }
   }
 }
 
@@ -492,34 +480,30 @@ std::optional<BreedingMarket::StallionData> BreedingMarket::GetStallionData(data
   return cacheIt->second;
 }
 
-void BreedingMarket::ProcessPendingHorseTypeResets()
+void BreedingMarket::ScheduleHorseTypeSet(data::Uid horseUid, uint32_t horseType)
 {
-  // This is called from Tick() which already holds the mutex
-  if (_horsesNeedingTypeReset.empty())
-  {
-    return;
-  }
-
-  std::vector<data::Uid> stillPending;
-
-  for (data::Uid horseUid : _horsesNeedingTypeReset)
-  {
-    const auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(horseUid);
-    if (horseRecord)
+  _serverInstance.GetDataDirector().ScheduleTask(
+    [this, horseUid, horseType]()
     {
-      horseRecord->Mutable([horseUid](data::Horse& horse)
+      const Deferred deferred([this, horseUid, horseType]()
       {
-        horse.type() = 0; // Adult
+        auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(horseUid);
+        if (horseRecord)
+          return; // Already processed successfully
+        // Not loaded yet, reschedule
+        ScheduleHorseTypeSet(horseUid, horseType);
       });
-    }
-    else
-    {
-      // Still not loaded, keep it in the queue
-      stillPending.push_back(horseUid);
-    }
-  }
 
-  _horsesNeedingTypeReset = std::move(stillPending);
+      auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(horseUid);
+      if (!horseRecord)
+        return; // Deferred will reschedule
+
+      horseRecord->Mutable([horseUid, horseType](data::Horse& horse)
+      {
+        horse.type() = horseType;
+        spdlog::info("Set horse {} type to {}", horseUid, horseType);
+      });
+    });
 }
 
 void BreedingMarket::PayOwner(data::Uid ownerUid, uint32_t earnings)
