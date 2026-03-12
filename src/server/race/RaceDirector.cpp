@@ -21,6 +21,7 @@
 
 #include "server/ServerInstance.hpp"
 #include "server/system/RoomSystem.hpp"
+#include "server/tracker/Tracker.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
 
@@ -1619,7 +1620,7 @@ void RaceDirector::HandleStartRace(
         .raceMissionId = raceInstance.raceMissionId,};
 
       // Build the racers in oid order using an ordered map so that list index matches display/slot order.
-      std::map<Oid, std::pair<data::Uid, tracker::RaceTracker::Racer*>> racersByOid;
+      std::map<server::tracker::Oid, std::pair<data::Uid, tracker::RaceTracker::Racer*>> racersByOid;
       for (auto& [characterUid, racer] : raceInstance.tracker.GetRacers())
         racersByOid.emplace(racer.oid, std::make_pair(characterUid, &racer));
 
