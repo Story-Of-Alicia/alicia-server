@@ -176,17 +176,6 @@ std::vector<protocol::AcCmdRCUpdateDailyQuestNotify> QuestSystem::OnQuestEvent(
         .unk2 = 0,
         .mountExp = mountExp,
       });
-
-      if (completed)
-      {
-        group.rewardPoints = group.rewardPoints() + questDef->rewardPoint;
-
-        spdlog::info(
-          "QuestSystem: Character {} completed daily quest {} (rewardPoints now {})",
-          characterUid,
-          entry.questId,
-          group.rewardPoints());
-      }
     }
 
     // Mark quests field as modified so it gets persisted
