@@ -3264,10 +3264,8 @@ void RaceDirector::HandleActivateSkillEffect(
       {
         if (character.mountUid() == data::InvalidUid)
           return;
-        GetServerInstance().GetDataDirector().GetHorse(
-                                               character.mountUid())
-          .Mutable(
-            [&targetRacer](data::Horse& horse)
+        GetServerInstance().GetDataDirector().GetHorse(character.mountUid())
+          .Mutable([&targetRacer](data::Horse& horse)
             {
               if (targetRacer.magicDefenseComboValue > horse.mountInfo.bestMagicDefenseCombo())
               {
