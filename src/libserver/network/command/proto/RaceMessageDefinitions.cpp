@@ -1601,7 +1601,10 @@ void AcCmdRCMagicExpire::Write(
   const AcCmdRCMagicExpire& command,
   SinkStream& stream)
 {
-  stream.Write(command.characterOid);
+  stream.Write(command.magicItemId)
+    .Write(command.characterOid)
+    .Write(command.unk2)
+    .Write(command.unk3);
 }
 
 void AcCmdCRUseMagicItemNotify::Write(
