@@ -74,6 +74,7 @@ public:
   //! @param socket Underlying socket.
   explicit Client(
     ClientId clientId,
+    asio::ip::address_v4 remoteAddress,
     asio::ip::tcp::socket&& socket,
     EventHandlerInterface& networkEventHandler) noexcept;
 
@@ -84,7 +85,7 @@ public:
   //! Queues a write.
   void QueueWrite(WriteSupplier writeSupplier);
   //!
-  asio::ip::address_v4 GetAddress();
+  [[nodiscard]] asio::ip::address_v4 GetAddress() const noexcept;
 
 private:
   void WriteLoop() noexcept;
@@ -108,6 +109,8 @@ private:
 
   //! A unique-identifier of the client.
   ClientId _clientId;
+  //! Remote client address cached at construction time.
+  asio::ip::address_v4 _remoteAddress;
   //! A client socket.
   asio::ip::tcp::socket _socket;
   //! A network event handling interface
