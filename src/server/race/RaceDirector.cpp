@@ -2658,10 +2658,11 @@ void RaceDirector::HandleUseMagicItem(
   protocol::AcCmdCRUseMagicItemOK response{
     .characterOid = command.characterOid,
     .magicItemId = command.magicItemId,
-    .optional1 = command.optional1,
-    .optional2 = command.optional2,
-    .unk3 = command.characterOid,
-    .unk4 = command.optional3.has_value() ? command.optional3.value().member1 : 0.0f};
+    .iceWallProperties = command.iceWallProperties,
+    .obstacleInstanceIds = command.obstacleInstanceIds,
+    .unk3 = 0,
+    .unk4 = 0
+  };
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -2674,10 +2675,10 @@ void RaceDirector::HandleUseMagicItem(
   protocol::AcCmdCRUseMagicItemNotify usageNotify{
     .characterOid = command.characterOid,
     .magicItemId = command.magicItemId,
-    .optional1 = command.optional1,
-    .optional2 = command.optional2,
-    .unk3 = command.characterOid,
-    .unk4 = command.unk3 // idk man
+    .iceWallProperties = command.iceWallProperties,
+    .obstacleInstanceIds = command.obstacleInstanceIds,
+    .unk3 = 0,
+    .unk4 = 0
   };
 
   // Send usage notification to other players
@@ -2743,6 +2744,30 @@ void RaceDirector::HandleUseMagicItem(
         racer.hotRodded = false;
       };
       this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved);
+      break;
+    }
+    // IceWall
+    case 10:
+    case 11:
+    {
+      // TODO: How do we distinguish between different obstacles?
+      auto magicExpire = protocol::AcCmdRCMagicExpire{
+        .magicType = magicSlotInfo.type,
+        .firstObstacleInstanceId = command.obstacleInstanceIds.value().front(),
+        .obstacleInstanceCount = static_cast<uint16_t>(command.obstacleInstanceIds.value().size()),
+        .breakdown = 0
+      };
+      _scheduler.Queue(
+        [this, magicExpire, &raceInstance]()
+        {
+          for (const ClientId& raceClientId : raceInstance.clients)
+          {
+            _commandServer.QueueCommand<decltype(magicExpire)>(
+              raceClientId,
+              [magicExpire]() { return magicExpire; });
+          }
+        },
+        Scheduler::Clock::now() + std::chrono::seconds(15)); // TODO: Change to 4 seconds
       break;
     }
     // Shackles

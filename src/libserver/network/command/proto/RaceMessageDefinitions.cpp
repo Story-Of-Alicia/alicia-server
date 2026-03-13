@@ -1326,12 +1326,13 @@ void AcCmdCRUseMagicItem::Read(
 
   switch(command.magicItemId)
   {
-    // Case 0xA and 0xB read 2x [3x floats]
+    // Cases 0xA and 0xB (Ice Wall) write 2x [3x floats]
+    // (likely position and rotation)
     // and then fallthrough to read uint16_t vector
     case 0xa:
     case 0xb:
     {
-      auto& optional1 = command.optional1.emplace();
+      auto& optional1 = command.iceWallProperties.emplace();
       for (auto& element : optional1.member1)
       {
         stream.Read(element);
@@ -1353,11 +1354,11 @@ void AcCmdCRUseMagicItem::Read(
     case 0x12:
     case 0x13:
     {
-      auto& optional2 = command.optional2.emplace();
-
-      stream.Read(optional2.size);
-      optional2.list.resize(optional2.size);
-      for (auto& element : optional2.list)
+      auto& ids = command.obstacleInstanceIds.emplace();
+      uint8_t size;
+      stream.Read(size);
+      ids.resize(size);
+      for (auto& element : ids)
       {
         stream.Read(element);
       }
@@ -1413,13 +1414,13 @@ void AcCmdCRUseMagicItemOK::Write(
     case 0xb:
       // TODO: is this correct?
       // Assert that optional1 has value
-      assert(command.optional1.has_value());
+      assert(command.iceWallProperties.has_value());
 
-      for (auto& element : command.optional1.value().member1)
+      for (auto& element : command.iceWallProperties.value().member1)
       {
         stream.Write(element);
       }
-      for (auto& element : command.optional1.value().member2)
+      for (auto& element : command.iceWallProperties.value().member2)
       {
         stream.Write(element);
       }
@@ -1437,11 +1438,11 @@ void AcCmdCRUseMagicItemOK::Write(
     {
       // TODO: is this correct?
       // Assert that optional2 has value
-      assert(command.optional2.has_value());
+      assert(command.obstacleInstanceIds.has_value());
 
       // Expects vector size followed by uint16_t vector itself
-      stream.Write(command.optional2.value().size);
-      for (auto& element : command.optional2.value().list)
+      stream.Write(static_cast<uint8_t>(command.obstacleInstanceIds.value().size()));
+      for (auto& element : command.obstacleInstanceIds.value())
       {
         stream.Write(element);
       }
@@ -1601,10 +1602,10 @@ void AcCmdRCMagicExpire::Write(
   const AcCmdRCMagicExpire& command,
   SinkStream& stream)
 {
-  stream.Write(command.magicItemId)
-    .Write(command.characterOid)
-    .Write(command.unk2)
-    .Write(command.unk3);
+  stream.Write(command.magicType);
+  stream.Write(command.firstObstacleInstanceId);
+  stream.Write(command.obstacleInstanceCount);
+  stream.Write(command.breakdown);
 }
 
 void AcCmdCRUseMagicItemNotify::Write(
@@ -1616,18 +1617,17 @@ void AcCmdCRUseMagicItemNotify::Write(
 
   switch(command.magicItemId)
   {
-    // Case 0xA and 0xB write 2x [3x floats]
+    // Cases 0xA and 0xB (Ice Wall) write 2x [3x floats]
+    // (likely position and rotation)
     // and then fallthrough to write uint16_t vector
     case 0xa:
     case 0xb:
-      // Assert that optional1 has value
-      assert(command.optional1.has_value());
-
-      for (auto& element : command.optional1.value().member1)
+      assert(command.iceWallProperties.has_value());
+      for (auto& element : command.iceWallProperties.value().member1)
       {
         stream.Write(element);
       }
-      for (auto& element : command.optional1.value().member2)
+      for (auto& element : command.iceWallProperties.value().member2)
       {
         stream.Write(element);
       }
@@ -1644,11 +1644,11 @@ void AcCmdCRUseMagicItemNotify::Write(
     case 0x13:
     {
       // Assert that optional2 has value
-      assert(command.optional2.has_value());
+      assert(command.obstacleInstanceIds.has_value());
 
       // Expects vector size followed by uint16_t vector itself
-      stream.Write(command.optional2.value().size);
-      for (auto& element : command.optional2.value().list)
+      stream.Write(static_cast<uint8_t>(command.obstacleInstanceIds.value().size()));
+      for (auto& element : command.obstacleInstanceIds.value())
       {
         stream.Write(element);
       }
@@ -1677,11 +1677,11 @@ void AcCmdCRUseMagicItemNotify::Read(
     // and then fallthrough to read uint16_t vector
     case 0xa:
     case 0xb:
-      for (auto& element : command.optional1.emplace().member1)
+      for (auto& element : command.iceWallProperties.emplace().member1)
       {
         stream.Read(element);
       }
-      for (auto& element : command.optional1.value().member2)
+      for (auto& element : command.iceWallProperties.value().member2)
       {
         stream.Read(element);
       }
@@ -1696,11 +1696,12 @@ void AcCmdCRUseMagicItemNotify::Read(
     case 0x12:
     case 0x13:
     {
-      auto& optional2 = command.optional2.emplace();
+      auto& ids = command.obstacleInstanceIds.emplace();
 
-      stream.Read(optional2.size);
-      optional2.list.resize(optional2.size);
-      for (auto& element : optional2.list)
+      uint8_t size;
+      stream.Read(size);
+      ids.resize(size);
+      for (auto& element : ids)
       {
         stream.Read(element);
       }

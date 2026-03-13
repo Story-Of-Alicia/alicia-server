@@ -1860,20 +1860,18 @@ struct AcCmdCRUseMagicItem
   uint32_t magicItemId;
 
   // sub_45ed60
-  struct Optional1
+  struct IceWallProperties
   {
     std::array<float, 3> member1;
     std::array<float, 3> member2;
   };
-  std::optional<Optional1> optional1;
+  std::optional<IceWallProperties> iceWallProperties;
 
   // sub_4d5460
-  struct Optional2
-  {
-    uint8_t size;
-    std::vector<uint16_t> list;
-  };
-  std::optional<Optional2> optional2;
+  // In the IceWall, normal spawns one icicle and critical spawns three.
+  // This list containes values [2] for normal and [1, 2, 3] for critical.
+  using ObstacleInstanceIds = std::vector<uint16_t>;
+  std::optional<ObstacleInstanceIds> obstacleInstanceIds;
 
   // vFunc_4 @ 0x00698540
   uint32_t unk3;
@@ -1933,9 +1931,9 @@ struct AcCmdCRUseMagicItemOK
   uint32_t magicItemId;
 
   // sub_45ed60
-  std::optional<AcCmdCRUseMagicItem::Optional1> optional1;
+  std::optional<AcCmdCRUseMagicItem::IceWallProperties> iceWallProperties;
   // sub_4d5460
-  std::optional<AcCmdCRUseMagicItem::Optional2> optional2;
+  std::optional<AcCmdCRUseMagicItem::ObstacleInstanceIds> obstacleInstanceIds;
 
   uint16_t unk3;
   // TODO: is this correct type?
@@ -1968,9 +1966,9 @@ struct AcCmdCRUseMagicItemNotify
   uint32_t magicItemId;
 
   // sub_45ed60
-  std::optional<AcCmdCRUseMagicItem::Optional1> optional1;
+  std::optional<AcCmdCRUseMagicItem::IceWallProperties> iceWallProperties;
   // sub_4d5460
-  std::optional<AcCmdCRUseMagicItem::Optional2> optional2;
+  std::optional<AcCmdCRUseMagicItem::ObstacleInstanceIds> obstacleInstanceIds;
 
   uint16_t unk3;
   uint32_t unk4;
@@ -2242,10 +2240,10 @@ struct AcCmdRCRemoveMagicTarget
 
 struct AcCmdRCMagicExpire
 {
-  uint32_t magicItemId;
-  uint16_t characterOid; //confirm if true
-  uint16_t unk2;
-  uint8_t unk3;
+  uint32_t magicType;
+  uint16_t firstObstacleInstanceId;
+  uint16_t obstacleInstanceCount;
+  uint8_t breakdown;
 
   static Command GetCommand()
   {
