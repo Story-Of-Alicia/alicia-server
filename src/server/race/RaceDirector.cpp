@@ -97,6 +97,8 @@ constexpr uint32_t MagicItemIceWall = 10;
 constexpr uint32_t MagicItemIceWallCrit = 11;
 constexpr uint32_t MagicItemDarkFire = 14;
 constexpr uint32_t MagicItemDarkFireCrit = 15;
+constexpr uint32_t MagicItemSummon = 16;
+constexpr uint32_t MagicItemSummonCrit = 17;
 
 } // anon namespace
 
@@ -2862,14 +2864,16 @@ void RaceDirector::HandleUseMagicItem(
   {
     case MagicItemFireBall:
     case MagicItemFireBallCrit:
+    case MagicItemDarkFire:
+    case MagicItemDarkFireCrit:
       racer.magicBallUses++;
       break;
     case MagicItemIceWall:
     case MagicItemIceWallCrit:
       racer.iceWallUses++;
       break;
-    case MagicItemDarkFire:
-    case MagicItemDarkFireCrit:
+    case MagicItemSummon:
+    case MagicItemSummonCrit:
       racer.fireSpiritUses++;
       break;
     default:
