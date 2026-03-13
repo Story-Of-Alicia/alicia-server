@@ -181,9 +181,7 @@ void RoomSystem::CreateRoom(const std::function<void(Room&)>& consumer)
   const auto [it, inserted] = _rooms.try_emplace(
     roomUid,
     std::move(Room(roomUid)));
-  if (not inserted)
-    throw std::runtime_error("CreateRoom: failed to insert room (duplicate uid?)");
-
+  assert(inserted);
   auto& [room, roomMutex] = it->second;
   roomsLock.unlock();
 
