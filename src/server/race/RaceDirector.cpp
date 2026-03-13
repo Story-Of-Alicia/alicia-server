@@ -2246,10 +2246,9 @@ void RaceDirector::HandleHurdleClearResult(
         {
           if (character.mountUid() == data::InvalidUid)
             return;
-          GetServerInstance().GetDataDirector().GetHorse(
-                                                 character.mountUid())
-            .Mutable(
-              [](data::Horse& horse)
+            
+          GetServerInstance().GetDataDirector().GetHorse(character.mountUid())
+            .Mutable([](data::Horse& horse)
               {
                 horse.mountInfo.totalJumps = horse.mountInfo.totalJumps() + 1;
                 horse.mountInfo.successfulJumps = horse.mountInfo.successfulJumps() + 1;
