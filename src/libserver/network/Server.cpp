@@ -320,7 +320,11 @@ void Server::OnClientDisconnected(
   ClientId clientId)
 {
   const auto clientIt = _clients.find(clientId);
-  assert(clientIt != _clients.end());
+  if (clientIt == _clients.end())
+  {
+    spdlog::warn("OnClientDisconnected: client {} not found in client map", clientId);
+    return;
+  }
 
   const auto address = clientIt->second->GetAddress();
   OnThrottleDisconnect(address);
