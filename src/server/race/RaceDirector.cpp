@@ -669,7 +669,9 @@ void RaceDirector::Tick()
                 if (racer.boostComboValue > horse.mountInfo.boostsInARow())
                   horse.mountInfo.boostsInARow = racer.boostComboValue;
 
-                // Update win streaks.
+                // Update win statistics.
+                // Solo modes track win streaks (연승) — reset on loss.
+                // Team modes track total wins (승리) — only increment.
                 // TODO: In team mode, rank 1 is individual — should check
                 // winning team instead once team scoring is implemented.
                 const bool isSolo = teamMode == protocol::TeamMode::Single or teamMode == protocol::TeamMode::FFA;
@@ -682,11 +684,9 @@ void RaceDirector::Tick()
                                                         ? horse.mountInfo.winsSpeedSingle() + 1
                                                         : 0;
                   }
-                  else
+                  else if (isWinner)
                   {
-                    horse.mountInfo.winsSpeedTeam = isWinner
-                                                      ? horse.mountInfo.winsSpeedTeam() + 1
-                                                      : 0;
+                    horse.mountInfo.winsSpeedTeam = horse.mountInfo.winsSpeedTeam() + 1;
                   }
                 }
                 else if (gameMode == protocol::GameMode::Magic)
@@ -697,11 +697,9 @@ void RaceDirector::Tick()
                                                         ? horse.mountInfo.winsMagicSingle() + 1
                                                         : 0;
                   }
-                  else
+                  else if (isWinner)
                   {
-                    horse.mountInfo.winsMagicTeam = isWinner
-                                                      ? horse.mountInfo.winsMagicTeam() + 1
-                                                      : 0;
+                    horse.mountInfo.winsMagicTeam = horse.mountInfo.winsMagicTeam() + 1;
                   }
                 }
               });
