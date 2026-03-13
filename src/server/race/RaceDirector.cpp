@@ -90,7 +90,7 @@ bool SkillIsCritical(uint32_t skillOrEffectId)
 constexpr float TeleportDistanceThreshold = 500.0f;
 
 //! Magic item IDs (normal/critical variants).
-//! See AcCmdCRUseMagicItem — even = normal, odd = critical.
+//! See AcCmdCRUseMagicItem - even = normal, odd = critical.
 constexpr uint32_t MagicItemFireBall = 2;
 constexpr uint32_t MagicItemFireBallCrit = 3;
 constexpr uint32_t MagicItemIceWall = 10;
@@ -670,9 +670,9 @@ void RaceDirector::Tick()
                   horse.mountInfo.boostsInARow = racer.boostComboValue;
 
                 // Update win statistics.
-                // Solo modes track win streaks (연승) — reset on loss.
-                // Team modes track total wins (승리) — only increment.
-                // TODO: In team mode, rank 1 is individual — should check
+                // Solo modes track win streaks (연승) - reset on loss.
+                // Team modes track total wins (승리) - only increment.
+                // TODO: In team mode, rank 1 is individual - should check
                 // winning team instead once team scoring is implemented.
                 const bool isSolo = teamMode == protocol::TeamMode::Single or teamMode == protocol::TeamMode::FFA;
 
@@ -3279,7 +3279,7 @@ void RaceDirector::HandleActivateSkillEffect(
     return;
   }
 
-  // Attack hit — reset defense combo
+  // Attack hit - reset defense combo
   targetRacer.magicDefenseComboValue = 0;
 
   std::optional<std::function<void()>> afterEffectRemoved = std::nullopt;
