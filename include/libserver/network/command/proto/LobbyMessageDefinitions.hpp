@@ -1793,18 +1793,15 @@ struct AcCmdLCPersonalInfo
     float averageRank{};
     float completionRate{};
     //! Average chasing count.
-    //! Displayed as a percentage represented by a floating point in an interval <x, y>.
+    //! Displayed as a float with a "Times" suffix.
     float averageChasingCount{};
     uint32_t highestCarnivalPrize{};
-    //! Achievement ceremony slot 0 (icon_ceremony1 in UI).
-    //! References a ceremony type from the AchievementCeremony table.
-    uint16_t ceremonySlot0{};
-    //! Achievement ceremony slot 1 (icon_ceremony2 in UI).
-    //! References a ceremony type from the AchievementCeremony table.
-    uint16_t ceremonySlot1{};
-    //! Achievement ceremony slot 2 (icon_ceremony3 in UI).
-    //! References a ceremony type from the AchievementCeremony table.
-    uint16_t ceremonySlot2{};
+    //! Achievement showcase slot for post-race ceremony.
+    uint16_t ceremonyAchievementSlot1{};
+    //! Achievement showcase slot for post-race ceremony.
+    uint16_t ceremonyAchievementSlot2{};
+    //! Achievement showcase slot for post-race ceremony.
+    uint16_t ceremonyAchievementSlot3{};
     std::string introduction{};
     uint32_t level{60};
     //! Level progress as dictated by LevelInfo table in libconfig
