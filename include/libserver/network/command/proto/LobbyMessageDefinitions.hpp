@@ -1809,14 +1809,14 @@ struct AcCmdLCPersonalInfo
     uint16_t perfectBoostCombo{};
     uint16_t perfectJumpCombo{};
     uint16_t magicDefenseCombo{};
-    //! 마법구 공격 성공율 — Magic ball attack success rate.
-    //! Displayed as percentage (×100) at txt_record_18.
+    //! Magic ball (Dark fire and Fireball) attack success rate.
+    //! Displayed as a percentage represented by a floating point in an interval <0, 1>.
     float magicBallAttackSuccessRate{};
-    //! 화염의 정령 옮기기 성공율 — Fire spirit transfer success rate.
-    //! Displayed as percentage (×100) at txt_record_19.
+    //! Fire spirit transfer success rate.
+    //! Displayed as a percentage represented by a floating point in an interval <0, 1>.
     float fireSpiritTransferSuccessRate{};
-    //! 빙벽 공격 성공율 — Ice wall attack success rate.
-    //! Displayed as percentage (×100) at txt_record_17.
+    //! Ice wall attack success rate.
+    //! Displayed as a percentage represented by a floating point in an interval <0, 1>.
     float iceWallAttackSuccessRate{};
     std::string guildName{};
     //! Not accessed by client UI handler. Likely padding.
