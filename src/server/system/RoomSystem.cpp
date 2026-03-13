@@ -19,7 +19,6 @@
 
 #include "server/system/RoomSystem.hpp"
 
-#include <cassert>
 #include <ranges>
 #include <stdexcept>
 
@@ -182,7 +181,8 @@ void RoomSystem::CreateRoom(const std::function<void(Room&)>& consumer)
   const auto [it, inserted] = _rooms.try_emplace(
     roomUid,
     std::move(Room(roomUid)));
-  assert(inserted);
+  if (not inserted)
+    throw std::runtime_error("CreateRoom: failed to insert room (duplicate uid?)");
 
   auto& [room, roomMutex] = it->second;
   roomsLock.unlock();
@@ -227,6 +227,7 @@ std::vector<Room::Snapshot> RoomSystem::GetRoomsSnapshot()
 
 void RoomSystem::DeleteRoom(uint32_t uid)
 {
+  std::scoped_lock lock(_roomsLock);
   const auto it = _rooms.find(uid);
   if (it == _rooms.end())
     throw std::runtime_error("Room does not exist");
