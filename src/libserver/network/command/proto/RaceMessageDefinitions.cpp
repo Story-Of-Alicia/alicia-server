@@ -1601,7 +1601,10 @@ void AcCmdRCMagicExpire::Write(
   const AcCmdRCMagicExpire& command,
   SinkStream& stream)
 {
-  stream.Write(command.characterOid);
+  stream.Write(command.magicItemId)
+    .Write(command.characterOid)
+    .Write(command.unk2)
+    .Write(command.unk3);
 }
 
 void AcCmdCRUseMagicItemNotify::Write(
@@ -1943,6 +1946,24 @@ void AcCmdRCAchievementUpdateNotify::Read(
   SourceStream&)
 {
   throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRTriggerizeAct::Write(
+  const AcCmdCRTriggerizeAct& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.unk2);
+}
+
+void AcCmdCRTriggerizeAct::Read(
+  AcCmdCRTriggerizeAct& command,
+  SourceStream& stream)
+{
+  stream.Read(command.unk0)
+    .Read(command.unk1)
+    .Read(command.unk2);
 }
 
 } // namespace server::protocol
