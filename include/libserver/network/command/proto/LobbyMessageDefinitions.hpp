@@ -1792,8 +1792,8 @@ struct AcCmdLCPersonalInfo
     uint16_t magicTeamWinCombo{};
     float averageRank{};
     float completionRate{};
-    //! 체이싱 평균 횟수 — Average chasing count.
-    //! Displayed directly as float (txt_record_7), no percentage scaling.
+    //! Average chasing count.
+    //! Displayed as a percentage represented by a floating point in an interval <x, y>.
     float averageChasingCount{};
     uint32_t highestCarnivalPrize{};
     //! Equipped achievement ceremony IDs (icon slots in profile).
