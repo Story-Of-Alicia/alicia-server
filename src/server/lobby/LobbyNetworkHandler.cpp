@@ -1911,6 +1911,7 @@ void LobbyNetworkHandler::HandleEnterRanch(
       {
         return response;
       });
+    return;
   }
 
   SendEnterRanchOK(clientId, command.rancherUid);
