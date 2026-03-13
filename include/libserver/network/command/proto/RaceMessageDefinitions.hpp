@@ -2640,6 +2640,35 @@ struct AcCmdCRTriggerizeAct
     SourceStream& stream);
 };
 
+struct AcCmdRCCreateItem
+{
+  uint32_t itemId{};
+  uint32_t itemType{};
+  std::array<float, 3> position{};
+  uint32_t spawnStyle{};
+  uint16_t spawnerId{};
+  int32_t sizeLevel{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCCreateItem;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCCreateItem& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCCreateItem& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RACE_MESSAGE_DEFINES_HPP

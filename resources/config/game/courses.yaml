@@ -90,7 +90,54 @@ courses:
         spurConsumeStarPoints: 40000
         starPointsMax: 100000
   deckItemInfo:
-    collection: {}
+    collection:
+      # ID 101: Speed (Gold Horseshoe)
+      - deckId: 101
+        itemTypes: [101]
+      # ID 102: Speed (Silver Horseshoe)
+      - deckId: 102
+        itemTypes: [102]
+      # ID 201: Magic (Initial/Early)
+      - deckId: 201
+        itemTypes: [401, 402, 405, 406, 407, 408, 409, 404]
+      # ID 202: Magic (Midway)
+      - deckId: 202
+        itemTypes: [401, 405, 406, 407, 408]
+      # ID 203: Magic (Final/End)
+      - deckId: 203
+        itemTypes: [401, 405, 406, 407, 408]
+  itemTypeInfo:
+    collection:
+      # Speed Items
+      - id: 101
+        magicSlot: 0
+      - id: 102
+        magicSlot: 0
+      # Magic Items
+      - id: 401
+        magicSlot: 10
+      - id: 402
+        magicSlot: 6
+      - id: 403
+        magicSlot: 8
+      - id: 404
+        magicSlot: 14
+      - id: 405
+        magicSlot: 20
+      - id: 406
+        magicSlot: 12
+      - id: 407
+        magicSlot: 2
+      - id: 408
+        magicSlot: 24
+      - id: 409
+        magicSlot: 16
+      - id: 410
+        magicSlot: 4
+      - id: 411
+        magicSlot: 18
+      - id: 412
+        magicSlot: 27
   mapBlockInfo:
     collection:
       - id:  1

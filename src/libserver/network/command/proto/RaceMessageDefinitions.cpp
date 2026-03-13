@@ -1966,4 +1966,26 @@ void AcCmdCRTriggerizeAct::Read(
     .Read(command.unk2);
 }
 
+void AcCmdRCCreateItem::Write(
+  const AcCmdRCCreateItem& command,
+  SinkStream& stream)
+{
+  stream.Write(command.itemId)
+    .Write(command.itemType);
+  
+  for (const float element : command.position)
+    stream.Write(element);
+
+  stream.Write(command.spawnStyle)
+    .Write(command.spawnerId)
+    .Write(command.sizeLevel);
+}
+
+void AcCmdRCCreateItem::Read(
+  AcCmdRCCreateItem&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
