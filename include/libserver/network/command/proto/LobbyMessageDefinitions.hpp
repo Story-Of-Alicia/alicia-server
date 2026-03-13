@@ -1820,7 +1820,9 @@ struct AcCmdLCPersonalInfo
     float iceWallAttackSuccessRate{};
     std::string guildName{};
     //! Not accessed by client UI handler. Likely padding.
+    //! Not used by client.
     uint8_t padding28{};
+    //! Not used by client.
     uint8_t padding29{};
 
     static void Write(const Basic& command, SinkStream& stream);
