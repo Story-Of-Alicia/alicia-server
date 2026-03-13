@@ -25,9 +25,10 @@
 #include <chrono>
 #include <deque>
 #include <functional>
-#include <queue>
-#include <span>
+#include <map>
 #include <unordered_map>
+#include <span>
+#include <queue>
 
 #include <boost/asio.hpp>
 
@@ -71,6 +72,7 @@ class Client : public std::enable_shared_from_this<Client>
 {
 public:
   //! Default constructor.
+  //! @param remoteAddress Remote address of the client.
   //! @param socket Underlying socket.
   explicit Client(
     ClientId clientId,
@@ -85,7 +87,7 @@ public:
   //! Queues a write.
   void QueueWrite(WriteSupplier writeSupplier);
   //!
-  [[nodiscard]] asio::ip::address_v4 GetAddress() const noexcept;
+  asio::ip::address_v4 GetAddress() const noexcept;
 
 private:
   void WriteLoop() noexcept;
@@ -109,7 +111,7 @@ private:
 
   //! A unique-identifier of the client.
   ClientId _clientId;
-  //! Remote client address cached at construction time.
+  //! Remote address of the client.
   asio::ip::address_v4 _remoteAddress;
   //! A client socket.
   asio::ip::tcp::socket _socket;
@@ -118,7 +120,8 @@ private:
 };
 
 //! Server with event-driven acceptor, reads and writes.
-class Server : public EventHandlerInterface
+class Server :
+  public EventHandlerInterface
 {
 public:
   //! Default constructor.
@@ -147,22 +150,16 @@ public:
   size_t OnClientData(ClientId clientId, const std::span<const std::byte>& data) override;
 
 private:
-  //! Represents throttling state for a single remote address.
-  struct AddressThrottlingState
-  {
-    std::size_t activeConnections{0};
-    std::deque<std::chrono::steady_clock::time_point> connectionTimestamps;
-  };
-
-  //! Returns true if a connection from the given address should be throttled.
-  //! If not throttled, records the connection internally.
-  [[nodiscard]] bool IsConnectionThrottled(const asio::ip::address_v4& address) noexcept;
-
-  //! Records that a client from the given address has disconnected.
-  void OnThrottleDisconnect(const asio::ip::address_v4& address) noexcept;
-
   void AcceptLoop() noexcept;
   void TickLoop() noexcept;
+  bool IsConnectionThrottled(const asio::ip::address_v4& address) noexcept;
+  void OnThrottleDisconnect(const asio::ip::address_v4& address) noexcept;
+
+  struct AddressState
+  {
+    std::size_t activeConnections = 0;
+    std::deque<std::chrono::steady_clock::time_point> connectionTimestamps;
+  };
 
   asio::io_context _io_ctx;
   asio::ip::tcp::acceptor _acceptor;
@@ -172,13 +169,13 @@ private:
   ClientId _client_id = 0;
   //! Map of clients.
   std::unordered_map<ClientId, std::shared_ptr<Client>> _clients;
-  //! Throttling state per remote address.
-  std::unordered_map<asio::ip::address_v4, AddressThrottlingState> _addressStates;
+  //! Per-address state for connection throttling.
+  std::map<asio::ip::address_v4, AddressState> _addressStates;
 
   //! A network event handler.
   EventHandlerInterface& _networkEventHandler;
 };
 
-} // namespace server::network
+} // namespace server
 
 #endif // SERVER_HPP
