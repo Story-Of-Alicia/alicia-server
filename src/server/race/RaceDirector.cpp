@@ -2915,67 +2915,80 @@ void RaceDirector::HandleUserRaceItemGet(
     // TODO: Deduplicate from RequestMagicItem
     case Room::GameMode::Magic:
     {
-        auto& gainedDeckItem = raceInstance.tracker.GetItem(command.itemId);
+      uint32_t magicItem{};
+      if (not racer.magicItem.has_value())
+      {
+        // Racer is empty handed
 
-        uint32_t magicItem{};
-        if (not racer.magicItem.has_value())
-        {
-          // Racer is empty handed
-          const uint32_t gainedMagicItemType = gainedDeckItem.currentType;
+        // Get the item type of the picked up item (408, 409 etc)
+        const uint32_t magicItemType = item.currentType;
 
-          magicItem = _serverInstance.GetCourseRegistry()
-            .GetItemTypeInfo(gainedMagicItemType).magicSlot;
+        // Get the magic slot index to indicate to the racer that they
+        // have the item (water shield, ice wall etc).
+        magicItem = _serverInstance.GetCourseRegistry()
+          .GetItemTypeInfo(magicItemType).magicSlot;
 
-          if (RollCritical(racer))
-            magicItem += 1;
+        // Did the racer crit?
+        if (RollCritical(racer))
+          magicItem += 1;
 
-          protocol::AcCmdCRRequestMagicItemOK magicItemOk{
-            .characterOid = command.characterOid,
-            .magicItemId = racer.magicItem.emplace(magicItem),
-            .member3 = 0};
-
-          _commandServer.QueueCommand<decltype(magicItemOk)>(
-            clientId,
-            [clientId, magicItemOk]()
-            {
-              return magicItemOk;
-            });
-        }
-        else
-        {
-          // Racer is already holding the item
-          magicItem = racer.magicItem.value();
-        }
-
-        // Randomly pick the new item type for the picked up item
-        if (!gainedDeckItem.itemTypes.empty())
-        {
-          static std::random_device rd;
-          std::uniform_int_distribution<size_t> distribution(0, gainedDeckItem.itemTypes.size() - 1);
-          gainedDeckItem.currentType = gainedDeckItem.itemTypes[distribution(rd)];
-        }
-
-        protocol::AcCmdCRRequestMagicItemNotify notify{
-          .magicItemId = racer.magicItem.emplace(magicItem),
+        // Response with OK to the client that they have a new item in hand
+        protocol::AcCmdCRRequestMagicItemOK magicItemOk{
           .characterOid = command.characterOid,
-        };
-        for (const ClientId& roomClientId : raceInstance.clients)
-        {
-          // Prevent self broadcast
-          if (roomClientId == clientId)
-            continue;
+          .magicItemId = racer.magicItem.emplace(magicItem),
+          .member3 = 0};
 
-          _commandServer.QueueCommand<decltype(notify)>(
-            roomClientId,
-            [notify]()
-            {
-              return notify;
-            });
-        }
-
-        // TODO: reset magic gauge to 0?
+        _commandServer.QueueCommand<decltype(magicItemOk)>(
+          clientId,
+          [clientId, magicItemOk]()
+          {
+            return magicItemOk;
+          });
       }
+      else
+      {
+        // Racer is already holding the item, do not replace it
+        magicItem = racer.magicItem.value();
+      }
+
+      // Now that the magic item on the ground has been picked up,
+      // randomly pick the new item type for this picked up item
+      if (!item.itemTypes.empty())
+      {
+        static std::random_device rd;
+        std::uniform_int_distribution<size_t> distribution(0, item.itemTypes.size() - 1);
+        item.currentType = item.itemTypes[distribution(rd)];
+      }
+      else
+      {
+        // TODO: Item types is empty, use deck ID instead?
+      }
+
+      // Notify racers in the race room that the invoking racer is now
+      // holding a new magic item
+      protocol::AcCmdCRRequestMagicItemNotify notify{
+        .magicItemId = racer.magicItem.emplace(magicItem),
+        .characterOid = command.characterOid,
+      };
+
+      for (const ClientId& roomClientId : raceInstance.clients)
+      {
+        // Prevent self broadcast,
+        // this prevents the double pickup UI bug for the invoker)
+        if (roomClientId == clientId)
+          continue;
+
+        _commandServer.QueueCommand<decltype(notify)>(
+          roomClientId,
+          [notify]()
+          {
+            return notify;
+          });
+      }
+
+      // TODO: reset magic gauge to 0?
       break;
+    }
   }
 
   // Notify all clients in the room that this item has been picked up
