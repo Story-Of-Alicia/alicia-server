@@ -2242,8 +2242,10 @@ struct AcCmdRCRemoveMagicTarget
 
 struct AcCmdRCMagicExpire
 {
-  uint16_t characterOid;
   uint32_t magicItemId;
+  uint16_t characterOid; //confirm if true
+  uint16_t unk2;
+  uint8_t unk3;
 
   static Command GetCommand()
   {

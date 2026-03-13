@@ -710,6 +710,7 @@ void ChatSystem::RegisterUserCommands()
             horse.dateOfBirth() = data::Clock::now();
             horse.mountCondition.stamina = 3500;
             horse.growthPoints() = 150;
+            horse.clazz = 1;
 
             // Give horse random parts and appearance
             _serverInstance.GetHorseRegistry().BuildRandomHorse(
