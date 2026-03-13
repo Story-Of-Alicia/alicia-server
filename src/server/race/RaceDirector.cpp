@@ -2401,7 +2401,7 @@ void RaceDirector::HandleRaceUserPos(
       }
       else if (racer.previousAirborne)
       {
-        // Just landed — finalize glide segment
+        // Just landed - finalize glide segment
         if (racer.currentGlideDistance > racer.sessionLongestGlide)
           racer.sessionLongestGlide = racer.currentGlideDistance;
         racer.currentGlideDistance = 0.0f;
@@ -2409,7 +2409,7 @@ void RaceDirector::HandleRaceUserPos(
     }
     else
     {
-      // Teleport — finalize any in-progress glide
+      // Teleport - finalize any in-progress glide
       if (racer.currentGlideDistance > racer.sessionLongestGlide)
         racer.sessionLongestGlide = racer.currentGlideDistance;
       racer.currentGlideDistance = 0.0f;
