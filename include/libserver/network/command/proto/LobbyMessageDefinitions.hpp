@@ -1796,16 +1796,21 @@ struct AcCmdLCPersonalInfo
     //! Displayed as a percentage represented by a floating point in an interval <x, y>.
     float averageChasingCount{};
     uint32_t highestCarnivalPrize{};
-    //! Equipped achievement ceremony IDs (icon slots in profile).
-    uint16_t ceremonyId1{};
-    uint16_t ceremonyId2{};
-    uint16_t ceremonyId3{};
+    //! Achievement ceremony slot 0 (icon_ceremony1 in UI).
+    //! References a ceremony type from the AchievementCeremony table.
+    uint16_t ceremonySlot0{};
+    //! Achievement ceremony slot 1 (icon_ceremony2 in UI).
+    //! References a ceremony type from the AchievementCeremony table.
+    uint16_t ceremonySlot1{};
+    //! Achievement ceremony slot 2 (icon_ceremony3 in UI).
+    //! References a ceremony type from the AchievementCeremony table.
+    uint16_t ceremonySlot2{};
     std::string introduction{};
     uint32_t level{60};
     //! Level progress as dictated by LevelInfo table in libconfig
     uint32_t levelProgress{};
-    //! Legacy field, not displayed in Basic info tab.
-    std::string legacyGradeString{};
+    //! Achievement grade title displayed in profile (txt_grade in UI).
+    std::string gradeTitle{};
     uint16_t perfectBoostCombo{};
     uint16_t perfectJumpCombo{};
     uint16_t magicDefenseCombo{};
