@@ -1824,7 +1824,6 @@ struct AcCmdLCPersonalInfo
     //! Displayed as a percentage represented by a floating point in an interval <0, 1>.
     float iceWallAttackSuccessRate{};
     std::string guildName{};
-    //! Not accessed by client UI handler. Likely padding.
     //! Not used by client.
     uint8_t padding28{};
     //! Not used by client.
