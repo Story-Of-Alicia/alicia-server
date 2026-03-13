@@ -38,7 +38,7 @@ bool QuestSystem::IsModeMatch(
   const registry::Quest::GameModeFlag questFlag,
   const registry::Quest::GameModeFlag eventMode)
 {
-  // Flag None (0): no mode restriction — matches everything (ranch activities, etc.)
+  // Flag None (0): no mode restriction
   if (questFlag == registry::Quest::GameModeFlag::None)
     return true;
   // Flag Any (111): explicitly matches all race modes
@@ -151,7 +151,7 @@ std::vector<protocol::AcCmdRCUpdateDailyQuestNotify> QuestSystem::OnQuestEvent(
 
       const bool completed = entry.progress >= questDef->successValue;
 
-      // Determine reward params — only populated on completion
+      // Determine reward params (only populated on completion)
       const auto rewardType = completed
         ? static_cast<protocol::AcCmdRCUpdateDailyQuestNotify::RewardType>(group.rewardType())
         : protocol::AcCmdRCUpdateDailyQuestNotify::RewardType::None;

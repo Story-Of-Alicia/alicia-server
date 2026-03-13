@@ -41,7 +41,7 @@ public:
   //! Each value corresponds to a quest `function` string in quests.yaml.
   enum class QuestEvent
   {
-    //! Any action — used by quests with function 'TRUE'.
+    //! Any action (used by quests with function 'TRUE').
     Any,
     //! Finished in a placing position (1st–3rd).
     PrizeWinner,

@@ -75,7 +75,7 @@ struct Quest
   //! Classification of a quest by its gameplay role.
   enum class Type : uint32_t
   {
-    //! Main story quest — progresses the campaign narrative.
+    //! Main story quest
     Main = 0,
     //! Repeatable / Daily Reward
     Repeatable = 1,
@@ -97,7 +97,7 @@ struct Quest
   uint32_t difficult{};
   //! Required player level.
   uint32_t level{};
-  //! Game mode flag — bitmask of applicable race modes for this quest.
+  //! Game mode flag (bitmask of applicable race modes for this quest)
   //! Matches DailyQuestInfo::Type values.
   enum class GameModeFlag : uint32_t
   {
@@ -111,7 +111,7 @@ struct Quest
     Any            = 111,
   };
 
-  //! Game mode flag — bitmask of applicable race modes for this quest.
+  //! Game mode flag (bitmask of applicable race modes for this quest).
   GameModeFlag gameModeFlag{};
   //! NPC ID that starts the quest.
   uint32_t startNpcId{};
@@ -127,7 +127,7 @@ struct Quest
   enum class Function
   {
     Unknown,
-    True,                    //!< Always matches — used by "complete N races" quests.
+    True,                    //!< Used by "complete N races" quests.
     RunMap,                  //!< Complete a specific map (matched against functionValue).
     TeamWin,                 //!< Win a team race.
     PerfectJump,             //!< Land a perfect jump over a hurdle.

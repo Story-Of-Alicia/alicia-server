@@ -3678,10 +3678,6 @@ void RaceDirector::SendDailyQuestNotificationToCharacter(
       return;
     }
   }
-
-  spdlog::debug(
-    "RaceDirector::SendDailyQuestNotificationToCharacter: "
-    "Character {} not found in race context", characterUid);
 }
 
 void RaceDirector::HandleTriggerizeAct(

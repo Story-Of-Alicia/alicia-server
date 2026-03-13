@@ -4633,8 +4633,9 @@ void RanchDirector::HandleRegisterDailyQuestGroup(
     }
     group.quests = quests;
 
-    // Sum the rewardPoint of all 3 quest slots — this is the total possible reward,
-    // which determines the reward tier regardless of individual completion state.
+    // Sum the rewardPoint of all 3 quest slots this determines the reward after completing the group of quests, 
+    // not the individual quests themselves. Client sends this after completion too, safety net for us to ensure
+    // that the client isnt cheating.
     uint32_t totalPoints = 0;
     for (const auto& entry : quests)
     {
@@ -4647,7 +4648,6 @@ void RanchDirector::HandleRegisterDailyQuestGroup(
 
   if (existingGroupUid == data::InvalidUid)
   {
-    // No group yet — create one from the 3 quests the client sent.
     const auto groupRecord = GetServerInstance().GetDataDirector().CreateDailyQuestGroup();
     groupRecord.Mutable(
       [&fillGroup, &characterRecord](data::DailyQuestGroup& group)
@@ -4664,8 +4664,7 @@ void RanchDirector::HandleRegisterDailyQuestGroup(
   }
   else
   {
-    // Group already exists — update all 3 slots.
-    spdlog::debug("Updating existing daily quest group uid: {}", existingGroupUid);
+    // If group exists, update all slots (there is no way to update individual slots)
     const auto groupRecord = _serverInstance.GetDataDirector().GetDailyQuestGroup(existingGroupUid);
     groupRecord.Mutable(
       [&fillGroup](data::DailyQuestGroup& group)
@@ -5400,8 +5399,6 @@ void RanchDirector::HandleRegisterQuest(
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  spdlog::debug("HandleRegisterQuest: questId={} npcId={}", command.questId, command.npcId);
-
   // Check if the character already has this quest active.
   bool alreadyHasQuest = false;
   characterRecord.Immutable([this, &alreadyHasQuest, questId = command.questId](const data::Character& character)
@@ -5655,9 +5652,6 @@ void RanchDirector::HandleRequestQuestReward(
     }
   });
 
-  spdlog::info("Character {} completed quest {} and received {} carrots and {} items",
-    clientContext.characterUid, command.questTid, response.carrotsRewarded, response.rewards.items.size());
-
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
@@ -5771,10 +5765,6 @@ void RanchDirector::SendDailyQuestNotificationToCharacter(
       return;
     }
   }
-
-  spdlog::debug(
-    "RanchDirector::SendDailyQuestNotificationToCharacter: "
-    "Character {} not found in ranch context", characterUid);
 }
 
 } // namespace server

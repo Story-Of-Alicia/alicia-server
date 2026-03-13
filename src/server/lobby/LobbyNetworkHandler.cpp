@@ -2400,14 +2400,14 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
     }
   });
 
-  // unk[0] = TID 100 (intro/activate) — InProgress if carrots not yet claimed, ReadyToClaim if they have been.
+  // unk[0] = TID 100 (intro/activate) InProgress if carrots not yet claimed, ReadyToClaim if they have been.
   if (repeatableTids.size() >= 1)
     response.unk[0] = protocol::Quest{repeatableTids[0], 0,
       carrotsClaimed ? protocol::Quest::Status::ReadyToClaim : protocol::Quest::Status::InProgress,
       0, 0, 0};
 
-  // unk[1] = TID 101 (collect reward) — only shown when quests are present;
-  // InProgress if not all done, ReadyToClaim if all 3 are completed.
+  // unk[1] = TID 101 (collect reward) only shown when quests are present;
+  // InProgress if not all done, ReadyToClaim if the quest rewards have been claimed (not indicated in the save data yet)
   if (hasQuests && repeatableTids.size() >= 2)
     response.unk[1] = protocol::Quest{repeatableTids[1], 0,
       protocol::Quest::Status::InProgress,
