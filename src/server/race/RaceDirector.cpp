@@ -2311,9 +2311,9 @@ void RaceDirector::HandleRaceUserPos(
       .itemId = item.oid,
       .itemType = item.currentType,
       .position = item.position,
-      .spawnStyle = 3,
-      .spawnerId = 2,
-      .sizeLevel = 1};
+      .spawnStyle = 0,  // ITEM_SPAWN_STYLE_NONE, fix the item in position
+      .spawnerId = 0,
+      .sizeLevel = 0};
 
     racer.trackedItems.insert(item.oid);
 
