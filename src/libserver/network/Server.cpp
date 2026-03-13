@@ -32,7 +32,7 @@ namespace
 {
 
 constexpr std::size_t MaxConnectionsPerAddress = 3;
-constexpr std::size_t MaxTotalConnections = 200;
+constexpr std::size_t MaxTotalConnections = 1024;
 constexpr std::size_t MaxConnectRatePerAddress = 10;
 constexpr auto RateWindow = std::chrono::seconds(30);
 
@@ -40,9 +40,11 @@ constexpr auto RateWindow = std::chrono::seconds(30);
 
 Client::Client(
   ClientId clientId,
+  asio::ip::address_v4 remoteAddress,
   asio::ip::tcp::socket&& socket,
   EventHandlerInterface& networkEventHandler) noexcept
   : _clientId(clientId)
+  , _remoteAddress(remoteAddress)
   , _socket(std::move(socket))
   , _networkEventHandler(networkEventHandler)
 {
@@ -92,9 +94,9 @@ void Client::QueueWrite(WriteSupplier writeSupplier)
   WriteLoop();
 }
 
-asio::ip::address_v4 Client::GetAddress()
+asio::ip::address_v4 Client::GetAddress() const noexcept
 {
-  return _socket.remote_endpoint().address().to_v4();
+  return _remoteAddress;
 }
 
 void Client::WriteLoop() noexcept
@@ -318,20 +320,12 @@ void Server::OnClientDisconnected(
   ClientId clientId)
 {
   const auto clientIt = _clients.find(clientId);
-  if (clientIt != _clients.end())
-  {
-    try
-    {
-      const auto address = clientIt->second->GetAddress();
-      OnThrottleDisconnect(address);
-    }
-    catch (const std::exception&)
-    {
-      // Ignore address retrieval errors on disconnect.
-    }
+  assert(clientIt != _clients.end());
 
-    _clients.erase(clientIt);
-  }
+  const auto address = clientIt->second->GetAddress();
+  OnThrottleDisconnect(address);
+
+  _clients.erase(clientIt);
 
   _networkEventHandler.OnClientDisconnected(clientId);
 }
@@ -343,7 +337,7 @@ size_t Server::OnClientData(
   return _networkEventHandler.OnClientData(clientId, data);
 }
 
-bool Server::IsConnectionThrottled(const asio::ip::address_v4& address)
+bool Server::IsConnectionThrottled(const asio::ip::address_v4& address) noexcept
 {
   auto& state = _addressStates[address];
   // If there are more active connections than allowed by `MaxConnectionsPerAddress` 
@@ -374,7 +368,7 @@ bool Server::IsConnectionThrottled(const asio::ip::address_v4& address)
   return false;
 }
 
-void Server::OnThrottleDisconnect(const asio::ip::address_v4& address)
+void Server::OnThrottleDisconnect(const asio::ip::address_v4& address) noexcept
 {
   const auto it = _addressStates.find(address);
   if (it == _addressStates.end())
@@ -426,6 +420,7 @@ void Server::AcceptLoop() noexcept
         const auto [itr, emplaced] = _clients.try_emplace(
           clientId,
           std::make_shared<Client>(clientId,
+            remoteAddr,
             std::move(client_socket),
             *this));
 
