@@ -2928,10 +2928,6 @@ void RaceDirector::HandleUserRaceItemGet(
         magicItem = _serverInstance.GetCourseRegistry()
           .GetItemTypeInfo(magicItemType).magicSlot;
 
-        // Did the racer crit?
-        if (RollCritical(racer))
-          magicItem += 1;
-
         // Response with OK to the client that they have a new item in hand
         protocol::AcCmdCRRequestMagicItemOK magicItemOk{
           .characterOid = command.characterOid,
