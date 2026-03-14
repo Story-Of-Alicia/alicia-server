@@ -2915,6 +2915,9 @@ void RaceDirector::HandleUserRaceItemGet(
     // TODO: Deduplicate from RequestMagicItem
     case Room::GameMode::Magic:
     {
+      // Magic items should respawn at a near-instant rate
+      item.respawnTimePoint = std::chrono::steady_clock::now();
+
       uint32_t magicItem{};
       if (not racer.magicItem.has_value())
       {
