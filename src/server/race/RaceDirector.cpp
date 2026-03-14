@@ -2770,7 +2770,7 @@ void RaceDirector::HandleUseMagicItem(
               [magicExpire]() { return magicExpire; });
           }
         },
-        Scheduler::Clock::now() + std::chrono::seconds(15)); // TODO: Change to 4 seconds
+        Scheduler::Clock::now() + std::chrono::seconds(4)); // TODO: Change to 4 seconds
       break;
     }
     // Shackles
