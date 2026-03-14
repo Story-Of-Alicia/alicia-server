@@ -1885,8 +1885,8 @@ void LobbyNetworkHandler::HandleRequestPersonalInfo(
       return response;
     });
 
-  // Send emblem notify via the ranch connection.
-  // EmblemInfo table in libconfig_c.dat has valid IDs 1-35.
+  // Send emblem notify to the requesting client so the emblem
+  // display above the character updates after an emblem change.
   if (emblemId > 0 && emblemId <= 35)
   {
     const auto& lobbyContext = GetClientContext(clientId);

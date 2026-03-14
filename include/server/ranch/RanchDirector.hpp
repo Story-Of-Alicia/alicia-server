@@ -101,14 +101,20 @@ public:
     data::Uid& rancherUid,
     data::Uid& horseUid);
 
-  //! Sends an emblem notify to a character's ranch connection.
-  //! Used by the lobby to display emblems in the MyInfo dialog.
+  //! Sends an emblem notify to a specific client's ranch connection.
   //! @param recipientCharacterUid UID of the character receiving the notify.
   //! @param targetCharacterUid UID of the character whose emblem is shown.
   //! @param emblemId Emblem ID from the EmblemInfo table (1-35).
   void SendEmblemNotify(
     data::Uid recipientCharacterUid,
     data::Uid targetCharacterUid,
+    uint16_t emblemId);
+
+  //! Broadcasts an emblem change to all clients on the character's ranch.
+  //! @param characterUid UID of the character whose emblem changed.
+  //! @param emblemId Emblem ID from the EmblemInfo table (1-35).
+  void BroadcastEmblemNotify(
+    data::Uid characterUid,
     uint16_t emblemId);
 
   ServerInstance& GetServerInstance();

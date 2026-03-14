@@ -629,6 +629,35 @@ void RanchDirector::SendEmblemNotify(
   }
   catch (const std::exception&)
   {
+    // Empty.
+  }
+}
+
+void RanchDirector::BroadcastEmblemNotify(
+  const data::Uid characterUid,
+  const uint16_t emblemId)
+{
+  try
+  {
+    const auto& clientContext = GetClientContextByCharacterUid(characterUid);
+
+    protocol::AcCmdCRSetKeyEmblemNotify notify{
+      .characterUid = static_cast<uint32_t>(characterUid),
+      .emblemId = emblemId};
+
+    for (const ClientId ranchClientId : _ranches[clientContext.visitingRancherUid].clients)
+    {
+      _commandServer.QueueCommand<decltype(notify)>(
+        ranchClientId,
+        [notify]()
+        {
+          return notify;
+        });
+    }
+  }
+  catch (const std::exception&)
+  {
+    // Empty.
   }
 }
 
@@ -4367,23 +4396,7 @@ void RanchDirector::HandleSetKeyEmblem(
     });
 
   // Broadcast the emblem change to all players on the same ranch.
-  const auto ranchIter = _ranches.find(clientContext.visitingRancherUid);
-  if (ranchIter == _ranches.cend())
-    return;
-
-  protocol::AcCmdCRSetKeyEmblemNotify notify{
-    .characterUid = static_cast<uint32_t>(clientContext.characterUid),
-    .emblemId = command.emblemId};
-
-  for (const ClientId ranchClientId : ranchIter->second.clients)
-  {
-    _commandServer.QueueCommand<decltype(notify)>(
-      ranchClientId,
-      [notify]()
-      {
-        return notify;
-      });
-  }
+  BroadcastEmblemNotify(clientContext.characterUid, command.emblemId);
 }
 
 void RanchDirector::HandleChangeNickname(
