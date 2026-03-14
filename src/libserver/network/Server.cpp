@@ -21,6 +21,7 @@
 
 #include "libserver/util/Deferred.hpp"
 
+#include <cassert>
 #include <ranges>
 #include <spdlog/spdlog.h>
 #include <stacktrace>
@@ -36,18 +37,17 @@ constexpr std::size_t MaxTotalConnections = 1024;
 constexpr std::size_t MaxConnectRatePerAddress = 10;
 constexpr auto RateWindow = std::chrono::seconds(30);
 
-} // anon namespace
+} // namespace
 
 Client::Client(
   ClientId clientId,
-  asio::ip::address_v4 remoteAddress,
   asio::ip::tcp::socket&& socket,
   EventHandlerInterface& networkEventHandler) noexcept
   : _clientId(clientId)
-  , _remoteAddress(remoteAddress)
   , _socket(std::move(socket))
   , _networkEventHandler(networkEventHandler)
 {
+  _remoteAddress = _socket.remote_endpoint().address().to_v4();
 }
 
 void Client::Begin()
@@ -307,7 +307,6 @@ std::shared_ptr<Client> Server::GetClient(ClientId clientId)
 
 void Server::HandleNetworkTick()
 {
-
 }
 
 void Server::OnClientConnected(
@@ -320,11 +319,7 @@ void Server::OnClientDisconnected(
   ClientId clientId)
 {
   const auto clientIt = _clients.find(clientId);
-  if (clientIt == _clients.end())
-  {
-    spdlog::warn("OnClientDisconnected: client {} not found in client map", clientId);
-    return;
-  }
+  assert(clientIt != _clients.end());
 
   const auto address = clientIt->second->GetAddress();
   OnThrottleDisconnect(address);
@@ -344,24 +339,24 @@ size_t Server::OnClientData(
 bool Server::IsConnectionThrottled(const asio::ip::address_v4& address) noexcept
 {
   auto& state = _addressStates[address];
-  // If there are more active connections than allowed by `MaxConnectionsPerAddress` 
+  // If there are more active connections than allowed by `MaxConnectionsPerAddress`
   // throttle the connection from the address.
   if (state.activeConnections >= MaxConnectionsPerAddress)
     return true;
 
   const auto now = std::chrono::steady_clock::now();
-  
-  // Pop the connection timestamps which are over the rate window and have expired. 
+
+  // Pop the connection timestamps which are over the rate window and have expired.
   while (not state.connectionTimestamps.empty())
   {
     const auto timeSinceConnection = now - state.connectionTimestamps.front();
     if (timeSinceConnection < RateWindow)
       break;
-      
+
     state.connectionTimestamps.pop_front();
   }
 
-  // If there are more connection attempts than allowed by `MaxConnectRatePerAddress` 
+  // If there are more connection attempts than allowed by `MaxConnectRatePerAddress`
   // throttle the connection from the address.
   if (state.connectionTimestamps.size() >= MaxConnectRatePerAddress)
     return true;
@@ -424,7 +419,6 @@ void Server::AcceptLoop() noexcept
         const auto [itr, emplaced] = _clients.try_emplace(
           clientId,
           std::make_shared<Client>(clientId,
-            remoteAddr,
             std::move(client_socket),
             *this));
 
@@ -451,12 +445,12 @@ void Server::TickLoop() noexcept
 
   _timer.expires_after(std::chrono::seconds(1));
   _timer.async_wait([this](const boost::system::error_code& error)
-  {
-    if (error)
-      return;
+    {
+      if (error)
+        return;
 
-    TickLoop();
-  });
+      TickLoop();
+    });
 }
 
 } // namespace server::network
