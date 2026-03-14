@@ -5138,7 +5138,7 @@ struct AcCmdCRSetKeyEmblem
     SourceStream& stream);
 };
 
-//! Server -> Client response confirming the emblem was set.
+//! Clientbound command to confirm an emblem change request.
 struct AcCmdCRSetKeyEmblemOK
 {
   static Command GetCommand()
