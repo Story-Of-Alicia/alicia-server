@@ -1793,7 +1793,7 @@ struct AcCmdLCPersonalInfo
     float averageRank{};
     float completionRate{};
     //! Average chasing count.
-    //! Displayed as a float with a "Times" suffix.
+    //! Displayed as a float with a "times" suffix.
     float averageChasingCount{};
     uint32_t highestCarnivalPrize{};
     //! Achievement showcase slot for post-race ceremony.
