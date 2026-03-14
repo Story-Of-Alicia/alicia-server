@@ -3087,6 +3087,7 @@ void RaceDirector::HandleActivateSkillEffect(
   }
 
   if ((magicSlotInfo.type == magicSlotInfo.basicType && targetRacer.shield == tracker::RaceTracker::Racer::Shield::Normal)
+  || ((magicSlotInfo.type == 5 /* Crit Ice Wall */ && targetRacer.shield == tracker::RaceTracker::Racer::Shield::Normal))
   || targetRacer.shield == tracker::RaceTracker::Racer::Shield::Critical
   || targetRacer.hotRodded)
   {
