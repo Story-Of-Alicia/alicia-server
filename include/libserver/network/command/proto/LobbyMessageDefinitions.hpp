@@ -1808,7 +1808,7 @@ struct AcCmdLCPersonalInfo
     uint32_t levelProgress{};
     //! Parsed by the client but never read back for display.
     //! The txt_grade label in the profile UI is populated from
-    //! a client-side EmblemTable lookup instead.
+    //! a client-side AchievementGrade table lookup instead.
     std::string unk_gradeString{};
     uint16_t perfectBoostCombo{};
     uint16_t perfectJumpCombo{};
