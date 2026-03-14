@@ -625,10 +625,8 @@ void RaceDirector::Tick()
           if (character.mountUid() == data::InvalidUid)
             return;
 
-          _serverInstance.GetDataDirector().GetHorse(
-                                             character.mountUid())
-            .Mutable(
-              [&racer, rank, gameMode, teamMode, isWinner](data::Horse& horse)
+          _serverInstance.GetDataDirector().GetHorse(character.mountUid())
+            .Mutable([&racer, rank, gameMode, teamMode, isWinner](data::Horse& horse)
               {
                 horse.mountInfo.totalRaces = horse.mountInfo.totalRaces() + 1;
 
