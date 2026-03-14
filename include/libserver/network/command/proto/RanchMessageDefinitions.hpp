@@ -5161,7 +5161,7 @@ struct AcCmdCRSetKeyEmblemOK
     SourceStream& stream);
 };
 
-//! Server -> Client response indicating the emblem change failed.
+//! Clientbound command to cancel an emblem change request.
 struct AcCmdCRSetKeyEmblemCancel
 {
   static Command GetCommand()
