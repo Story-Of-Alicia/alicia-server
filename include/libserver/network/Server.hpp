@@ -32,20 +32,6 @@
 
 #include <boost/asio.hpp>
 
-namespace std
-{
-
-template <>
-struct hash<boost::asio::ip::address_v4>
-{
-  std::size_t operator()(const boost::asio::ip::address_v4& a) const noexcept
-  {
-    return std::hash<std::uint32_t>{}(static_cast<std::uint32_t>(a.to_ulong()));
-  }
-};
-
-} // namespace std
-
 namespace server::network
 {
 
