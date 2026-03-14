@@ -2710,7 +2710,7 @@ void RaceDirector::HandleUseMagicItem(
       {
         racer.shield = tracker::RaceTracker::Racer::Shield::None;
       };
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved);
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, std::nullopt, magicSlotInfo, afterEffectRemoved);
       break;
     }
     case 5:
@@ -2720,13 +2720,13 @@ void RaceDirector::HandleUseMagicItem(
       {
         racer.shield = tracker::RaceTracker::Racer::Shield::None;
       };
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved);
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, std::nullopt, magicSlotInfo, afterEffectRemoved);
       break;
     }
     // Booster
     case 6:
     case 7:
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, std::nullopt);
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, std::nullopt, magicSlotInfo, std::nullopt);
       break;
     // Phoenix
     case 8:
@@ -2736,7 +2736,7 @@ void RaceDirector::HandleUseMagicItem(
       {
         racer.hotRodded = false;
       };
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved);
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, std::nullopt, magicSlotInfo, afterEffectRemoved);
       break;
     }
     case 9:
@@ -2746,7 +2746,7 @@ void RaceDirector::HandleUseMagicItem(
       {
         racer.hotRodded = false;
       };
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved);
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, std::nullopt, magicSlotInfo, afterEffectRemoved);
       break;
     }
     // IceWall
@@ -2782,7 +2782,7 @@ void RaceDirector::HandleUseMagicItem(
         if (racer.oid != otherRacer.oid
         && (racer.team == tracker::RaceTracker::Racer::Team::Solo || racer.team != otherRacer.team))
         {
-          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, std::nullopt);
+          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, std::nullopt, magicSlotInfo, std::nullopt);
         }
       }
       break;
@@ -2799,7 +2799,7 @@ void RaceDirector::HandleUseMagicItem(
           {
             otherRacer.critChance = false;
           };
-          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, afterEffectRemoved);
+          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, std::nullopt, magicSlotInfo, afterEffectRemoved);
         }
       }
       break;
@@ -2816,7 +2816,7 @@ void RaceDirector::HandleUseMagicItem(
           {
             otherRacer.gaugeBuff = false;
           };
-          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, afterEffectRemoved);
+          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, std::nullopt, magicSlotInfo, afterEffectRemoved);
         }
       }
       break;
@@ -2828,7 +2828,7 @@ void RaceDirector::HandleUseMagicItem(
         if (racer.oid == otherRacer.oid
         || (racer.team != tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
         {
-          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, std::nullopt);
+          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, std::nullopt, magicSlotInfo, std::nullopt);
         }
       }
       break;
@@ -3095,8 +3095,13 @@ void RaceDirector::HandleActivateSkillEffect(
         break;
   }
 
+  std::optional<uint16_t> obstacleInstanceId = std::nullopt;
+  if (command.obstacleInstanceId != 0) {
+    obstacleInstanceId = command.obstacleInstanceId;
+  }
+
   // TODO: Remove held item
-  this->ScheduleSkillEffect(raceInstance, command.attackerOid, command.targetOid, magicSlotInfo, afterEffectRemoved);
+  this->ScheduleSkillEffect(raceInstance, command.attackerOid, command.targetOid, obstacleInstanceId, magicSlotInfo, afterEffectRemoved);
 }
 
 void RaceDirector::HandleOpCmd(
@@ -3163,7 +3168,7 @@ void RaceDirector::HandleChangeSkillCardPresetId(
   // No response command
 }
 
-void RaceDirector::ScheduleSkillEffect(RaceDirector::RaceInstance& raceInstance, tracker::Oid attackerOid, tracker::Oid targetOid, const server::registry::Magic::SlotInfo& magicSlotInfo, std::optional<std::function<void()>> afterEffectRemoved){
+void RaceDirector::ScheduleSkillEffect(RaceDirector::RaceInstance& raceInstance, tracker::Oid attackerOid, tracker::Oid targetOid, std::optional<uint16_t> obstacleInstanceId, const server::registry::Magic::SlotInfo& magicSlotInfo, std::optional<std::function<void()>> afterEffectRemoved){
   // Broadcast skill effect activation to all clients in the room
   // TODO: Verify if characterOid and targetOid should be the same once we have NPCs
   protocol::AcCmdRCAddSkillEffect addSkillEffect{
@@ -3182,12 +3187,28 @@ void RaceDirector::ScheduleSkillEffect(RaceDirector::RaceInstance& raceInstance,
     .boostEffectMs = static_cast<uint32_t>(magicSlotInfo.effectDelay * 1000.0f),
   };
 
+  std::optional<protocol::AcCmdRCMagicExpire> magicExpire = obstacleInstanceId.transform([&magicSlotInfo](const auto id){
+    return protocol::AcCmdRCMagicExpire{
+      .magicType = magicSlotInfo.type,
+      .firstObstacleInstanceId = id,
+      .obstacleInstanceCount = 1,
+      .breakdown = 1
+    };
+  });
+
   // Broadcast
   for (const ClientId& raceClientId : raceInstance.clients)
   {
     _commandServer.QueueCommand<decltype(addSkillEffect)>(
       raceClientId,
       [addSkillEffect]() { return addSkillEffect; });
+
+    if (magicExpire.has_value())
+    {
+      _commandServer.QueueCommand<protocol::AcCmdRCMagicExpire>(
+        raceClientId,
+        [magicExpire = magicExpire.value()]() { return magicExpire; });
+    }
   }
 
   // Remove the effect after a delay
