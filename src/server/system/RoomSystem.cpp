@@ -183,6 +183,7 @@ void RoomSystem::CreateRoom(const std::function<void(Room&)>& consumer)
     roomUid,
     std::move(Room(roomUid)));
   assert(inserted);
+  
   auto& [room, roomMutex] = it->second;
   roomsLock.unlock();
 
