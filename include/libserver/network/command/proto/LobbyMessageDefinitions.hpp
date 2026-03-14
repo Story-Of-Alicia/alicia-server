@@ -1796,11 +1796,11 @@ struct AcCmdLCPersonalInfo
     //! Displayed as a float with a "times" suffix.
     float averageChasingCount{};
     uint32_t highestCarnivalPrize{};
-    //! Achievement showcase slot for post-race ceremony.
+    //! First achievement showcase slot.
     uint16_t ceremonyAchievementSlot1{};
-    //! Achievement showcase slot for post-race ceremony.
+    //! Second achievement showcase slot.
     uint16_t ceremonyAchievementSlot2{};
-    //! Achievement showcase slot for post-race ceremony.
+    //! Third achievement showcase slot.
     uint16_t ceremonyAchievementSlot3{};
     std::string introduction{};
     uint32_t level{60};
