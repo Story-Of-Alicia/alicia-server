@@ -3246,5 +3246,60 @@ void AcCmdCROpenRandomBoxCancel::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRSetKeyEmblemNotify::Write(
+  const AcCmdCRSetKeyEmblemNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.emblemId);
+}
+
+void AcCmdCRSetKeyEmblemNotify::Read(
+  AcCmdCRSetKeyEmblemNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRSetKeyEmblem::Write(
+  const AcCmdCRSetKeyEmblem&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRSetKeyEmblem::Read(
+  AcCmdCRSetKeyEmblem& command,
+  SourceStream& stream)
+{
+  stream.Read(command.emblemId);
+}
+
+void AcCmdCRSetKeyEmblemOK::Write(
+  const AcCmdCRSetKeyEmblemOK&,
+  SinkStream&)
+{
+}
+
+void AcCmdCRSetKeyEmblemOK::Read(
+  AcCmdCRSetKeyEmblemOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRSetKeyEmblemCancel::Write(
+  const AcCmdCRSetKeyEmblemCancel&,
+  SinkStream&)
+{
+}
+
+void AcCmdCRSetKeyEmblemCancel::Read(
+  AcCmdCRSetKeyEmblemCancel&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
 

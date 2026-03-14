@@ -1774,7 +1774,9 @@ void LobbyNetworkHandler::HandleRequestPersonalInfo(
     .characterUid = command.characterUid,
     .type = command.type,};
 
-  characterRecord.Immutable([this, &response](const data::Character& character)
+  uint16_t emblemId = 0;
+
+  characterRecord.Immutable([this, &response, &emblemId](const data::Character& character)
   {
     switch (response.type)
     {
@@ -1794,6 +1796,7 @@ void LobbyNetworkHandler::HandleRequestPersonalInfo(
         // Character info
         response.basic.introduction = character.introduction();
         response.basic.level = character.level();
+        emblemId = static_cast<uint16_t>(character.appearance.emblemId());
 
         // Mount statistics from active mount
         if (character.mountUid() == data::InvalidUid)
@@ -1881,6 +1884,17 @@ void LobbyNetworkHandler::HandleRequestPersonalInfo(
     {
       return response;
     });
+
+  // Send emblem notify via the ranch connection.
+  // EmblemInfo table in libconfig_c.dat has valid IDs 1-35.
+  if (emblemId > 0 && emblemId <= 35)
+  {
+    const auto& lobbyContext = GetClientContext(clientId);
+    _serverInstance.GetRanchDirector().SendEmblemNotify(
+      lobbyContext.characterUid,
+      command.characterUid,
+      emblemId);
+  }
 }
 
 void LobbyNetworkHandler::HandleEnterRanch(

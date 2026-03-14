@@ -25,6 +25,7 @@
 #include <libserver/util/Locale.hpp>
 #include <libserver/util/Util.hpp>
 
+#include <numeric>
 #include <ranges>
 
 #include <spdlog/spdlog.h>
@@ -370,6 +371,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       HandleGetEmblemList(clientId, command);
     });
 
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRSetKeyEmblem>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleSetKeyEmblem(clientId, command);
+    });
+
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRChangeNickname>(
     [this](ClientId clientId, const auto& command)
     {
@@ -593,6 +600,31 @@ void RanchDirector::SendStorageNotification(
       [response]()
       {
         return response;
+      });
+  }
+  catch (const std::exception&)
+  {
+  }
+}
+
+void RanchDirector::SendEmblemNotify(
+  const data::Uid recipientCharacterUid,
+  const data::Uid targetCharacterUid,
+  const uint16_t emblemId)
+{
+  try
+  {
+    const auto clientId = GetClientIdByCharacterUid(recipientCharacterUid);
+
+    protocol::AcCmdCRSetKeyEmblemNotify notify{
+      .characterUid = static_cast<uint32_t>(targetCharacterUid),
+      .emblemId = emblemId};
+
+    _commandServer.QueueCommand<decltype(notify)>(
+      clientId,
+      [notify]()
+      {
+        return notify;
       });
   }
   catch (const std::exception&)
@@ -4282,12 +4314,11 @@ void RanchDirector::HandleGetEmblemList(
   }
 
   protocol::AcCmdCREmblemListOK response{};
-  GetServerInstance().GetDataDirector().GetGuild(guildUid).Immutable(
-    [](const data::Guild&)
-    {
-      // TODO: compile emblem list
-    });
-  
+
+  // Populate with all valid EmblemInfo IDs (1-35 from libconfig_c.dat).
+  response.unk0.resize(35);
+  std::iota(response.unk0.begin(), response.unk0.end(), static_cast<uint16_t>(1));
+
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
@@ -4295,6 +4326,65 @@ void RanchDirector::HandleGetEmblemList(
       return response;
     });
 };
+
+void RanchDirector::HandleSetKeyEmblem(
+  ClientId clientId,
+  const protocol::AcCmdCRSetKeyEmblem& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  // Validate emblem ID range (EmblemInfo table has IDs 1-35).
+  if (command.emblemId == 0 || command.emblemId > 35)
+  {
+    spdlog::warn(
+      "Client {} tried to set invalid emblem ID {}",
+      clientId,
+      command.emblemId);
+
+    protocol::AcCmdCRSetKeyEmblemCancel cancel{};
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  // Persist the emblem ID in the character appearance.
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable([&command](data::Character& character)
+    {
+      character.appearance.emblemId = command.emblemId;
+    });
+
+  // Confirm to the requesting client.
+  protocol::AcCmdCRSetKeyEmblemOK ok{};
+  _commandServer.QueueCommand<decltype(ok)>(
+    clientId,
+    [ok]()
+    {
+      return ok;
+    });
+
+  // Broadcast the emblem change to all players on the same ranch.
+  const auto ranchIter = _ranches.find(clientContext.visitingRancherUid);
+  if (ranchIter == _ranches.cend())
+    return;
+
+  protocol::AcCmdCRSetKeyEmblemNotify notify{
+    .characterUid = static_cast<uint32_t>(clientContext.characterUid),
+    .emblemId = command.emblemId};
+
+  for (const ClientId ranchClientId : ranchIter->second.clients)
+  {
+    _commandServer.QueueCommand<decltype(notify)>(
+      ranchClientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
+}
 
 void RanchDirector::HandleChangeNickname(
   ClientId clientId,
