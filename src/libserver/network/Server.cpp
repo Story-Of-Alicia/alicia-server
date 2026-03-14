@@ -324,9 +324,9 @@ void Server::OnClientDisconnected(
   const auto address = clientIt->second->GetAddress();
   OnThrottleDisconnect(address);
 
-  _clients.erase(clientIt);
-
   _networkEventHandler.OnClientDisconnected(clientId);
+
+  _clients.erase(clientIt);
 }
 
 size_t Server::OnClientData(
