@@ -3293,6 +3293,7 @@ void AcCmdCRSetKeyEmblemCancel::Write(
   const AcCmdCRSetKeyEmblemCancel&,
   SinkStream&)
 {
+  // Empty.
 }
 
 void AcCmdCRSetKeyEmblemCancel::Read(
