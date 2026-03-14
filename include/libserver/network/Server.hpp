@@ -23,14 +23,28 @@
 #include "NetworkDefinitions.hpp"
 
 #include <chrono>
+#include <cstdint>
 #include <deque>
 #include <functional>
-#include <map>
-#include <unordered_map>
-#include <span>
 #include <queue>
+#include <span>
+#include <unordered_map>
 
 #include <boost/asio.hpp>
+
+namespace std
+{
+
+template <>
+struct hash<boost::asio::ip::address_v4>
+{
+  std::size_t operator()(const boost::asio::ip::address_v4& a) const noexcept
+  {
+    return std::hash<std::uint32_t>{}(static_cast<std::uint32_t>(a.to_ulong()));
+  }
+};
+
+} // namespace std
 
 namespace server::network
 {
@@ -72,11 +86,9 @@ class Client : public std::enable_shared_from_this<Client>
 {
 public:
   //! Default constructor.
-  //! @param remoteAddress Remote address of the client.
-  //! @param socket Underlying socket.
+  //! @param socket Underlying socket (remote address is read from it).
   explicit Client(
     ClientId clientId,
-    asio::ip::address_v4 remoteAddress,
     asio::ip::tcp::socket&& socket,
     EventHandlerInterface& networkEventHandler) noexcept;
 
@@ -120,8 +132,7 @@ private:
 };
 
 //! Server with event-driven acceptor, reads and writes.
-class Server :
-  public EventHandlerInterface
+class Server : public EventHandlerInterface
 {
 public:
   //! Default constructor.
@@ -149,17 +160,17 @@ public:
   void OnClientDisconnected(ClientId clientId) override;
   size_t OnClientData(ClientId clientId, const std::span<const std::byte>& data) override;
 
-private:
-  void AcceptLoop() noexcept;
-  void TickLoop() noexcept;
-  bool IsConnectionThrottled(const asio::ip::address_v4& address) noexcept;
-  void OnThrottleDisconnect(const asio::ip::address_v4& address) noexcept;
-
   struct AddressState
   {
     std::size_t activeConnections = 0;
     std::deque<std::chrono::steady_clock::time_point> connectionTimestamps;
   };
+
+private:
+  void AcceptLoop() noexcept;
+  void TickLoop() noexcept;
+  bool IsConnectionThrottled(const asio::ip::address_v4& address) noexcept;
+  void OnThrottleDisconnect(const asio::ip::address_v4& address) noexcept;
 
   asio::io_context _io_ctx;
   asio::ip::tcp::acceptor _acceptor;
@@ -170,12 +181,12 @@ private:
   //! Map of clients.
   std::unordered_map<ClientId, std::shared_ptr<Client>> _clients;
   //! Per-address state for connection throttling.
-  std::map<asio::ip::address_v4, AddressState> _addressStates;
+  std::unordered_map<asio::ip::address_v4, AddressState> _addressStates;
 
   //! A network event handler.
   EventHandlerInterface& _networkEventHandler;
 };
 
-} // namespace server
+} // namespace server::network
 
 #endif // SERVER_HPP
