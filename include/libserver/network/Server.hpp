@@ -160,13 +160,13 @@ public:
   void OnClientDisconnected(ClientId clientId) override;
   size_t OnClientData(ClientId clientId, const std::span<const std::byte>& data) override;
 
+private:
   struct AddressState
   {
     std::size_t activeConnections = 0;
     std::deque<std::chrono::steady_clock::time_point> connectionTimestamps;
   };
 
-private:
   void AcceptLoop() noexcept;
   void TickLoop() noexcept;
   bool IsConnectionThrottled(const asio::ip::address_v4& address) noexcept;
