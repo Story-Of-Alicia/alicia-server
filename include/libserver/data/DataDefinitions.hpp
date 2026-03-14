@@ -450,6 +450,32 @@ struct Horse
     dao::Field<uint32_t> participated{};
     dao::Field<uint32_t> cumulativePrize{};
     dao::Field<uint32_t> biggestPrize{};
+
+    //! Count of races participated.
+    dao::Field<uint32_t> totalRaces{};
+    //! Count of finished races.
+    dao::Field<uint32_t> totalFinished{};
+    //! Cumulative rank across all races.
+    dao::Field<uint32_t> cumulativeRank{};
+
+    //! Total count of jumps.
+    dao::Field<uint32_t> totalJumps{};
+    //! Count of successful jumps.
+    dao::Field<uint32_t> successfulJumps{};
+    //! Count of perfect jumps.
+    dao::Field<uint32_t> perfectJumps{};
+    //! Highest consecutive jump count.
+    dao::Field<uint32_t> bestJumpCombo{};
+    //! Highest consecutive magic defense count.
+    dao::Field<uint32_t> bestMagicDefenseCombo{};
+
+    // TODO: Hit counters need relay passthrough parsing to detect hits.
+    //! Count of magic ball (fire ball and dark fire) uses.
+    dao::Field<uint32_t> magicBallUses{};
+    //! Count of ice wall uses.
+    dao::Field<uint32_t> iceWallUses{};
+    //! Count of fire spirit uses.
+    dao::Field<uint32_t> fireSpiritUses{};
   } mountInfo{};
 };
 

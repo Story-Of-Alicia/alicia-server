@@ -617,7 +617,18 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
     .longestGlideDistance = mountInfo["longestGlideDistance"].get<uint32_t>(),
     .participated = mountInfo["participated"].get<uint32_t>(),
     .cumulativePrize = mountInfo["cumulativePrize"].get<uint32_t>(),
-    .biggestPrize = mountInfo["biggestPrize"].get<uint32_t>()};
+    .biggestPrize = mountInfo["biggestPrize"].get<uint32_t>(),
+    .totalRaces = mountInfo.value("totalRaces", 0u),
+    .totalFinished = mountInfo.value("totalFinished", 0u),
+    .cumulativeRank = mountInfo.value("cumulativeRank", 0u),
+    .totalJumps = mountInfo.value("totalJumps", 0u),
+    .successfulJumps = mountInfo.value("successfulJumps", 0u),
+    .perfectJumps = mountInfo.value("perfectJumps", 0u),
+    .bestJumpCombo = mountInfo.value("bestJumpCombo", 0u),
+    .bestMagicDefenseCombo = mountInfo.value("bestMagicDefenseCombo", 0u),
+    .magicBallUses = mountInfo.value("magicBallUses", 0u),
+    .iceWallUses = mountInfo.value("iceWallUses", 0u),
+    .fireSpiritUses = mountInfo.value("fireSpiritUses", 0u)};
 }
 
 void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
@@ -715,6 +726,17 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   mountInfo["participated"] = horse.mountInfo.participated();
   mountInfo["cumulativePrize"] = horse.mountInfo.cumulativePrize();
   mountInfo["biggestPrize"] = horse.mountInfo.biggestPrize();
+  mountInfo["totalRaces"] = horse.mountInfo.totalRaces();
+  mountInfo["totalFinished"] = horse.mountInfo.totalFinished();
+  mountInfo["cumulativeRank"] = horse.mountInfo.cumulativeRank();
+  mountInfo["totalJumps"] = horse.mountInfo.totalJumps();
+  mountInfo["successfulJumps"] = horse.mountInfo.successfulJumps();
+  mountInfo["perfectJumps"] = horse.mountInfo.perfectJumps();
+  mountInfo["bestJumpCombo"] = horse.mountInfo.bestJumpCombo();
+  mountInfo["bestMagicDefenseCombo"] = horse.mountInfo.bestMagicDefenseCombo();
+  mountInfo["magicBallUses"] = horse.mountInfo.magicBallUses();
+  mountInfo["iceWallUses"] = horse.mountInfo.iceWallUses();
+  mountInfo["fireSpiritUses"] = horse.mountInfo.fireSpiritUses();
   json["mountInfo"] = mountInfo;
   dataFile << json.dump(2);
 }

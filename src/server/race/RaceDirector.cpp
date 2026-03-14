@@ -86,6 +86,20 @@ bool SkillIsCritical(uint32_t skillOrEffectId)
   return skillOrEffectId % 2 != 0;
 }
 
+//! Discard position deltas larger than this (teleport protection).
+constexpr float TeleportDistanceThreshold = 500.0f;
+
+//! Magic item IDs (normal/critical variants).
+//! See AcCmdCRUseMagicItem - even = normal, odd = critical.
+constexpr uint32_t MagicItemFireBall = 2;
+constexpr uint32_t MagicItemFireBallCrit = 3;
+constexpr uint32_t MagicItemIceWall = 10;
+constexpr uint32_t MagicItemIceWallCrit = 11;
+constexpr uint32_t MagicItemDarkFire = 14;
+constexpr uint32_t MagicItemDarkFireCrit = 15;
+constexpr uint32_t MagicItemSummon = 16;
+constexpr uint32_t MagicItemSummonCrit = 17;
+
 } // anon namespace
 
 RaceDirector::RaceDirector(ServerInstance& serverInstance)
@@ -596,6 +610,104 @@ void RaceDirector::Tick()
             score.growthPoints = static_cast<uint16_t>(horse.growthPoints());
           });
       });
+    }
+
+    // Update persistent race statistics for each participant
+    uint32_t rank = 0;
+    for (const auto& [courseTime, characterUid] : scoreboard)
+    {
+      rank++;
+      const auto& racer = raceInstance.tracker.GetRacer(characterUid);
+      const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+        characterUid);
+
+      const auto gameMode = raceInstance.raceGameMode;
+      const auto teamMode = raceInstance.raceTeamMode;
+      const bool isWinner = rank == 1 and racer.state != tracker::RaceTracker::Racer::State::Disconnected;
+
+      characterRecord.Immutable(
+        [this, &racer, rank, gameMode, teamMode, isWinner](const data::Character& character)
+        {
+          if (character.mountUid() == data::InvalidUid)
+            return;
+
+          _serverInstance.GetDataDirector().GetHorse(character.mountUid())
+            .Mutable([&racer, rank, gameMode, teamMode, isWinner](data::Horse& horse)
+              {
+                horse.mountInfo.totalRaces = horse.mountInfo.totalRaces() + 1;
+
+                if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
+                {
+                  horse.mountInfo.totalFinished = horse.mountInfo.totalFinished() + 1;
+                  horse.mountInfo.cumulativeRank = horse.mountInfo.cumulativeRank() + rank;
+                }
+
+                // Flush session magic item usage counters to persistent storage
+                horse.mountInfo.magicBallUses =
+                  horse.mountInfo.magicBallUses() + racer.magicBallUses;
+                horse.mountInfo.iceWallUses =
+                  horse.mountInfo.iceWallUses() + racer.iceWallUses;
+                horse.mountInfo.fireSpiritUses =
+                  horse.mountInfo.fireSpiritUses() + racer.fireSpiritUses;
+
+                // Flush session distance/speed/glide tracking
+                horse.mountInfo.totalDistance =
+                  horse.mountInfo.totalDistance() + static_cast<uint32_t>(racer.sessionDistance);
+
+                // Speed stored as km/h * 10 (e.g. 1028 = 102.8 km/h)
+                const auto sessionTopSpeed =
+                  static_cast<uint32_t>(racer.sessionMaxSpeed * 10.0f);
+                if (sessionTopSpeed > horse.mountInfo.topSpeed())
+                  horse.mountInfo.topSpeed = sessionTopSpeed;
+
+                // Finalize any in-progress glide before comparing
+                // Glide stored as metres * 10 (e.g. 710 = 71.0 m)
+                const float longestGlide = std::max(
+                  racer.sessionLongestGlide, racer.currentGlideDistance);
+                const auto sessionLongestGlide =
+                  static_cast<uint32_t>(longestGlide * 10.0f);
+                if (sessionLongestGlide > horse.mountInfo.longestGlideDistance())
+                  horse.mountInfo.longestGlideDistance = sessionLongestGlide;
+
+                // Flush best boost combo
+                if (racer.boostComboValue > horse.mountInfo.boostsInARow())
+                  horse.mountInfo.boostsInARow = racer.boostComboValue;
+
+                // Update win statistics.
+                // Solo modes track win streaks (연승) - reset on loss.
+                // Team modes track total wins (승리) - only increment.
+                // TODO: In team mode, rank 1 is individual - should check
+                // winning team instead once team scoring is implemented.
+                const bool isSolo = teamMode == protocol::TeamMode::Single or teamMode == protocol::TeamMode::FFA;
+
+                if (gameMode == protocol::GameMode::Speed)
+                {
+                  if (isSolo)
+                  {
+                    horse.mountInfo.winsSpeedSingle = isWinner
+                      ? horse.mountInfo.winsSpeedSingle() + 1
+                      : 0;
+                  }
+                  else if (isWinner)
+                  {
+                    horse.mountInfo.winsSpeedTeam = horse.mountInfo.winsSpeedTeam() + 1;
+                  }
+                }
+                else if (gameMode == protocol::GameMode::Magic)
+                {
+                  if (isSolo)
+                  {
+                    horse.mountInfo.winsMagicSingle = isWinner
+                      ? horse.mountInfo.winsMagicSingle() + 1
+                      : 0;
+                  }
+                  else if (isWinner)
+                  {
+                    horse.mountInfo.winsMagicTeam = horse.mountInfo.winsMagicTeam() + 1;
+                  }
+                }
+              });
+        });
     }
 
     // Broadcast the race result
@@ -2054,6 +2166,12 @@ void RaceDirector::HandleRequestSpur(
 
   racer.starPointValue -= gameModeTemplate.spurConsumeStarPoints;
 
+  // Track boost combo
+  if (command.comboBreak)
+    racer.boostComboValue = 1;
+  else
+    racer.boostComboValue++;
+
   protocol::AcCmdCRRequestSpurOK response{
     .characterOid = command.characterOid,
     .activeBoosters = command.activeBoosters,
@@ -2098,6 +2216,10 @@ void RaceDirector::HandleHurdleClearResult(
       "Client tried to perform action on behalf of different racer");
   }
 
+  // Resolve mount record for persistent jump tracking
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
   protocol::AcCmdCRHurdleClearResultOK response{
     .characterOid = command.characterOid,
     .hurdleClearType = command.hurdleClearType,
@@ -2141,6 +2263,27 @@ void RaceDirector::HandleHurdleClearResult(
         racer.starPointValue + gameModeTemplate.perfectJumpStarPoints + gainedStarPointsFromCombo,
         gameModeTemplate.starPointsMax);
 
+      // Persistent jump tracking
+      characterRecord.Immutable(
+        [this, &racer](const data::Character& character)
+        {
+          if (character.mountUid() == data::InvalidUid)
+            return;
+
+          GetServerInstance().GetDataDirector().GetHorse(character.mountUid())
+            .Mutable([&racer](data::Horse& horse)
+              {
+                horse.mountInfo.totalJumps = horse.mountInfo.totalJumps() + 1;
+                horse.mountInfo.successfulJumps = horse.mountInfo.successfulJumps() + 1;
+                horse.mountInfo.perfectJumps = horse.mountInfo.perfectJumps() + 1;
+
+                if (racer.jumpComboValue > horse.mountInfo.bestJumpCombo())
+                {
+                  horse.mountInfo.bestJumpCombo = racer.jumpComboValue;
+                }
+              });
+        });
+
       // Update boost gauge
       starPointResponse.starPointValue = racer.starPointValue;
       break;
@@ -2163,6 +2306,21 @@ void RaceDirector::HandleHurdleClearResult(
         racer.starPointValue + gainedStarPoints,
         gameModeTemplate.starPointsMax);
 
+      // Persistent jump tracking
+      characterRecord.Immutable(
+        [this](const data::Character& character)
+        {
+          if (character.mountUid() == data::InvalidUid)
+            return;
+            
+          GetServerInstance().GetDataDirector().GetHorse(character.mountUid())
+            .Mutable([](data::Horse& horse)
+              {
+                horse.mountInfo.totalJumps = horse.mountInfo.totalJumps() + 1;
+                horse.mountInfo.successfulJumps = horse.mountInfo.successfulJumps() + 1;
+              });
+        });
+
       // Update boost gauge
       starPointResponse.starPointValue = racer.starPointValue;
       break;
@@ -2172,6 +2330,20 @@ void RaceDirector::HandleHurdleClearResult(
       // A collision with hurdle, reset the jump combo.
       racer.jumpComboValue = 0;
       response.jumpCombo = racer.jumpComboValue;
+
+      // Persistent jump tracking (collision = failed jump)
+      characterRecord.Immutable(
+        [this](const data::Character& character)
+        {
+          if (character.mountUid() == data::InvalidUid)
+            return;
+            
+          GetServerInstance().GetDataDirector().GetHorse(character.mountUid())
+            .Mutable([](data::Horse& horse)
+              {
+                horse.mountInfo.totalJumps = horse.mountInfo.totalJumps() + 1;
+              });
+        });
       break;
     }
     default:
@@ -2272,6 +2444,51 @@ void RaceDirector::HandleRaceUserPos(
       "Client tried to perform action on behalf of different racer");
   }
 
+  // Track distance, speed and glide from position updates
+  if (racer.previousPosition.has_value())
+  {
+    const auto& prev = racer.previousPosition.value();
+    const auto dx = command.position[0] - prev[0];
+    const auto dy = command.position[1] - prev[1];
+    const auto dz = command.position[2] - prev[2];
+    const float delta = static_cast<float>(
+      std::sqrt(dx * dx + dy * dy + dz * dz));
+
+    const bool isAirborne = command.airborne > 0;
+
+    if (delta < TeleportDistanceThreshold)
+    {
+      racer.sessionDistance += delta;
+
+      // Accumulate glide distance while airborne
+      if (isAirborne)
+      {
+        racer.currentGlideDistance += delta;
+      }
+      else if (racer.previousAirborne)
+      {
+        // Just landed - finalize glide segment
+        if (racer.currentGlideDistance > racer.sessionLongestGlide)
+          racer.sessionLongestGlide = racer.currentGlideDistance;
+        racer.currentGlideDistance = 0.0f;
+      }
+    }
+    else
+    {
+      // Teleport - finalize any in-progress glide
+      if (racer.currentGlideDistance > racer.sessionLongestGlide)
+        racer.sessionLongestGlide = racer.currentGlideDistance;
+      racer.currentGlideDistance = 0.0f;
+    }
+
+    racer.previousAirborne = isAirborne;
+  }
+  racer.previousPosition = command.position;
+
+  // Track max speed
+  if (command.speed > racer.sessionMaxSpeed)
+    racer.sessionMaxSpeed = command.speed;
+
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
     static_cast<uint8_t>(raceInstance.raceGameMode));
 
@@ -2283,9 +2500,9 @@ void RaceDirector::HandleRaceUserPos(
 
     // The distance between the player and the item.
     const auto distanceBetweenPlayerAndItem = std::sqrt(
-      std::pow(command.member2[0] - item.position[0], 2) +
-      std::pow(command.member2[1] - item.position[1], 2) +
-      std::pow(command.member2[2] - item.position[2], 2));
+      std::pow(command.position[0] - item.position[0], 2) +
+      std::pow(command.position[1] - item.position[1], 2) +
+      std::pow(command.position[2] - item.position[2], 2));
 
     // A distance of the player from the item before it can be spawned.
     constexpr double ItemSpawnDistanceThreshold = 90.0;
@@ -2709,6 +2926,27 @@ void RaceDirector::HandleUseMagicItem(
       [usageNotify]() { return usageNotify; });
   }
 
+  // Track magic item usage counts
+  switch (command.magicItemId)
+  {
+    case MagicItemFireBall:
+    case MagicItemFireBallCrit:
+    case MagicItemDarkFire:
+    case MagicItemDarkFireCrit:
+      racer.magicBallUses++;
+      break;
+    case MagicItemIceWall:
+    case MagicItemIceWallCrit:
+      racer.iceWallUses++;
+      break;
+    case MagicItemSummon:
+    case MagicItemSummonCrit:
+      racer.fireSpiritUses++;
+      break;
+    default:
+      break;
+  }
+
   // Send effect for items that have instant effects
   switch (command.magicItemId)
   {
@@ -3096,8 +3334,33 @@ void RaceDirector::HandleActivateSkillEffect(
     // TODO: Send some kind of notification that the attack was blocked? That picture on the side (PIPEvent?)
     // Maybe i actually need to send the effect but with a different parameter to mean "blocked"
     // Else it doesnt show in the kill list in the corner
+
+    // Track magic defense combo.
+    // Note: this command is sent by the TARGET client (P2P relay),
+    // so clientContext.characterUid is the defender.
+    targetRacer.magicDefenseComboValue++;
+    const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+      clientContext.characterUid);
+    characterRecord.Immutable(
+      [this, &targetRacer](const data::Character& character)
+      {
+        if (character.mountUid() == data::InvalidUid)
+          return;
+        GetServerInstance().GetDataDirector().GetHorse(character.mountUid())
+          .Mutable([&targetRacer](data::Horse& horse)
+            {
+              if (targetRacer.magicDefenseComboValue > horse.mountInfo.bestMagicDefenseCombo())
+              {
+                horse.mountInfo.bestMagicDefenseCombo = targetRacer.magicDefenseComboValue;
+              }
+            });
+      });
+
     return;
   }
+
+  // Attack hit - reset defense combo
+  targetRacer.magicDefenseComboValue = 0;
 
   std::optional<std::function<void()>> afterEffectRemoved = std::nullopt;
   switch (effectiveEffectId)

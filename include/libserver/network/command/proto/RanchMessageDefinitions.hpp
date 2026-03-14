@@ -5084,6 +5084,106 @@ struct AcCmdCROpenRandomBoxCancel
     SourceStream& stream);
 };
 
+//! Clientbound command to set a character's emblem.
+struct AcCmdCRSetKeyEmblemNotify
+{
+  //! UID of the character whose emblem is being set.
+  uint32_t characterUid{};
+  //! Emblem ID from the EmblemInfo table (IDs 1-35 in libconfig_c.dat).
+  uint16_t emblemId{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRSetKeyEmblemNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRSetKeyEmblemNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRSetKeyEmblemNotify& command,
+    SourceStream& stream);
+};
+
+//! Serverbound command to request an emblem change.
+struct AcCmdCRSetKeyEmblem
+{
+  //! Emblem ID from the EmblemInfo table (IDs 1-35 in libconfig_c.dat).
+  uint16_t emblemId{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRSetKeyEmblem;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRSetKeyEmblem& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRSetKeyEmblem& command,
+    SourceStream& stream);
+};
+
+//! Clientbound command to confirm an emblem change request.
+struct AcCmdCRSetKeyEmblemOK
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRSetKeyEmblemOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRSetKeyEmblemOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRSetKeyEmblemOK& command,
+    SourceStream& stream);
+};
+
+//! Clientbound command to cancel an emblem change request.
+struct AcCmdCRSetKeyEmblemCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRSetKeyEmblemCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRSetKeyEmblemCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRSetKeyEmblemCancel& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RANCH_MESSAGE_DEFINES_HPP
