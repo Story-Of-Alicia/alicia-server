@@ -3279,6 +3279,7 @@ void AcCmdCRSetKeyEmblemOK::Write(
   const AcCmdCRSetKeyEmblemOK&,
   SinkStream&)
 {
+  // Empty.
 }
 
 void AcCmdCRSetKeyEmblemOK::Read(
