@@ -681,8 +681,8 @@ void RaceDirector::Tick()
                   if (isSolo)
                   {
                     horse.mountInfo.winsSpeedSingle = isWinner
-                                                        ? horse.mountInfo.winsSpeedSingle() + 1
-                                                        : 0;
+                      ? horse.mountInfo.winsSpeedSingle() + 1
+                      : 0;
                   }
                   else if (isWinner)
                   {
@@ -694,8 +694,8 @@ void RaceDirector::Tick()
                   if (isSolo)
                   {
                     horse.mountInfo.winsMagicSingle = isWinner
-                                                        ? horse.mountInfo.winsMagicSingle() + 1
-                                                        : 0;
+                      ? horse.mountInfo.winsMagicSingle() + 1
+                      : 0;
                   }
                   else if (isWinner)
                   {
@@ -2203,14 +2203,14 @@ void RaceDirector::HandleHurdleClearResult(
         {
           if (character.mountUid() == data::InvalidUid)
             return;
-          GetServerInstance().GetDataDirector().GetHorse(
-                                                 character.mountUid())
-            .Mutable(
-              [&racer](data::Horse& horse)
+
+          GetServerInstance().GetDataDirector().GetHorse(character.mountUid())
+            .Mutable([&racer](data::Horse& horse)
               {
                 horse.mountInfo.totalJumps = horse.mountInfo.totalJumps() + 1;
                 horse.mountInfo.successfulJumps = horse.mountInfo.successfulJumps() + 1;
                 horse.mountInfo.perfectJumps = horse.mountInfo.perfectJumps() + 1;
+
                 if (racer.jumpComboValue > horse.mountInfo.bestJumpCombo())
                 {
                   horse.mountInfo.bestJumpCombo = racer.jumpComboValue;
