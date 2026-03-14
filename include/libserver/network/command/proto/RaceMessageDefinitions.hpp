@@ -1871,7 +1871,7 @@ struct AcCmdCRUseMagicItem
   // In the IceWall, normal spawns one icicle and critical spawns three.
   // This list containes values [2] for normal and [1, 2, 3] for critical.
   using ObstacleInstanceIds = std::vector<uint16_t>;
-  std::optional<ObstacleInstanceIds> obstacleInstanceIds;
+  std::optional<ObstacleInstanceIds> obstacleProperties;
 
   // vFunc_4 @ 0x00698540
   uint32_t unk3;
@@ -1933,9 +1933,9 @@ struct AcCmdCRUseMagicItemOK
   // sub_45ed60
   std::optional<AcCmdCRUseMagicItem::IceWallProperties> iceWallProperties;
   // sub_4d5460
-  std::optional<AcCmdCRUseMagicItem::ObstacleInstanceIds> obstacleInstanceIds;
+  std::optional<AcCmdCRUseMagicItem::ObstacleInstanceIds> obstacleProperties;
 
-  uint16_t unk3;
+  uint16_t nextObstacleInstanceId;
   // TODO: is this correct type?
   float unk4;
   
@@ -1968,9 +1968,9 @@ struct AcCmdCRUseMagicItemNotify
   // sub_45ed60
   std::optional<AcCmdCRUseMagicItem::IceWallProperties> iceWallProperties;
   // sub_4d5460
-  std::optional<AcCmdCRUseMagicItem::ObstacleInstanceIds> obstacleInstanceIds;
+  std::optional<AcCmdCRUseMagicItem::ObstacleInstanceIds> obstacleProperties;
 
-  uint16_t unk3;
+  uint16_t nextObstacleInstanceId;
   uint32_t unk4;
 
   static Command GetCommand()
@@ -2295,10 +2295,10 @@ struct AcCmdRCTriggerActivate
 struct AcCmdCRActivateSkillEffect
 {
   uint16_t targetOid;
-  uint32_t effectId;         // What skill/effect to activate
-  uint16_t attackerOid;       // Unknown parameter
-  uint16_t unk1;            // Unknown parameter
-  uint32_t unk2;            // Unknown parameter
+  uint32_t effectId;           // What skill/effect to activate
+  uint16_t attackerOid;
+  uint16_t obstacleInstanceId;
+  float unk2;
 
   static Command GetCommand()
   {
@@ -2326,8 +2326,8 @@ struct AcCmdRCAddSkillEffect
   uint32_t effectId;        // Effect/animation ID (knockdown, stun, etc.)
   uint16_t targetOid;
   uint16_t attackerOid;
-  uint16_t unk2;            // Unused
-  uint16_t unk3;            // Unused
+  uint16_t unk2;
+  uint16_t unk3;
   uint32_t unk4;            // Posibly intensity, no idea but it it not work
 
   struct ShieldEffect

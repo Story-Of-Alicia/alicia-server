@@ -2655,12 +2655,15 @@ void RaceDirector::HandleUseMagicItem(
     return;
   }
 
+  const uint16_t obstacleInstanceCount = static_cast<uint16_t>(command.obstacleProperties.transform([](const auto& ids) { return ids.size(); }).value_or(0));
+  const uint16_t nextObstacleInstanceId = raceInstance.tracker.GetNextObstacleInstanceIdAndIncrementBy(obstacleInstanceCount);
+
   protocol::AcCmdCRUseMagicItemOK response{
     .characterOid = command.characterOid,
     .magicItemId = command.magicItemId,
     .iceWallProperties = command.iceWallProperties,
-    .obstacleInstanceIds = command.obstacleInstanceIds,
-    .unk3 = 0,
+    .obstacleProperties = command.obstacleProperties,
+    .nextObstacleInstanceId = nextObstacleInstanceId,
     .unk4 = 0
   };
 
@@ -2676,8 +2679,8 @@ void RaceDirector::HandleUseMagicItem(
     .characterOid = command.characterOid,
     .magicItemId = command.magicItemId,
     .iceWallProperties = command.iceWallProperties,
-    .obstacleInstanceIds = command.obstacleInstanceIds,
-    .unk3 = 0,
+    .obstacleProperties = command.obstacleProperties,
+    .nextObstacleInstanceId = nextObstacleInstanceId,
     .unk4 = 0
   };
 
@@ -2753,8 +2756,8 @@ void RaceDirector::HandleUseMagicItem(
       // TODO: How do we distinguish between different obstacles?
       auto magicExpire = protocol::AcCmdRCMagicExpire{
         .magicType = magicSlotInfo.type,
-        .firstObstacleInstanceId = command.obstacleInstanceIds.value().front(),
-        .obstacleInstanceCount = static_cast<uint16_t>(command.obstacleInstanceIds.value().size()),
+        .firstObstacleInstanceId = nextObstacleInstanceId,
+        .obstacleInstanceCount = obstacleInstanceCount,
         .breakdown = 0
       };
       _scheduler.Queue(

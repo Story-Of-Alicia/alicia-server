@@ -1354,7 +1354,7 @@ void AcCmdCRUseMagicItem::Read(
     case 0x12:
     case 0x13:
     {
-      auto& ids = command.obstacleInstanceIds.emplace();
+      auto& ids = command.obstacleProperties.emplace();
       uint8_t size;
       stream.Read(size);
       ids.resize(size);
@@ -1438,11 +1438,11 @@ void AcCmdCRUseMagicItemOK::Write(
     {
       // TODO: is this correct?
       // Assert that optional2 has value
-      assert(command.obstacleInstanceIds.has_value());
+      assert(command.obstacleProperties.has_value());
 
       // Expects vector size followed by uint16_t vector itself
-      stream.Write(static_cast<uint8_t>(command.obstacleInstanceIds.value().size()));
-      for (auto& element : command.obstacleInstanceIds.value())
+      stream.Write(static_cast<uint8_t>(command.obstacleProperties.value().size()));
+      for (auto& element : command.obstacleProperties.value())
       {
         stream.Write(element);
       }
@@ -1454,7 +1454,7 @@ void AcCmdCRUseMagicItemOK::Write(
     }
   }
 
-  stream.Write(command.unk3)
+  stream.Write(command.nextObstacleInstanceId)
     .Write(command.unk4);
 }
 
@@ -1644,11 +1644,11 @@ void AcCmdCRUseMagicItemNotify::Write(
     case 0x13:
     {
       // Assert that optional2 has value
-      assert(command.obstacleInstanceIds.has_value());
+      assert(command.obstacleProperties.has_value());
 
       // Expects vector size followed by uint16_t vector itself
-      stream.Write(static_cast<uint8_t>(command.obstacleInstanceIds.value().size()));
-      for (auto& element : command.obstacleInstanceIds.value())
+      stream.Write(static_cast<uint8_t>(command.obstacleProperties.value().size()));
+      for (auto& element : command.obstacleProperties.value())
       {
         stream.Write(element);
       }
@@ -1660,7 +1660,7 @@ void AcCmdCRUseMagicItemNotify::Write(
     }
   }
   
-  stream.Write(command.unk3)
+  stream.Write(command.nextObstacleInstanceId)
     .Write(command.unk4);
 }
 
@@ -1696,7 +1696,7 @@ void AcCmdCRUseMagicItemNotify::Read(
     case 0x12:
     case 0x13:
     {
-      auto& ids = command.obstacleInstanceIds.emplace();
+      auto& ids = command.obstacleProperties.emplace();
 
       uint8_t size;
       stream.Read(size);
@@ -1713,7 +1713,7 @@ void AcCmdCRUseMagicItemNotify::Read(
     }
   }
 
-  stream.Read(command.unk3)
+  stream.Read(command.nextObstacleInstanceId)
     .Read(command.unk4);
 }
 
@@ -1744,8 +1744,8 @@ void AcCmdCRActivateSkillEffect::Write(
   stream.Write(command.targetOid)
     .Write(command.effectId)
     .Write(command.attackerOid)
-    .Write(command.unk2)
-    .Write(command.unk1);
+    .Write(command.obstacleInstanceId)
+    .Write(command.unk2);
 }
 
 void AcCmdCRActivateSkillEffect::Read(
@@ -1755,7 +1755,7 @@ void AcCmdCRActivateSkillEffect::Read(
   stream.Read(command.targetOid)
     .Read(command.effectId)
     .Read(command.attackerOid)
-    .Read(command.unk1)
+    .Read(command.obstacleInstanceId)
     .Read(command.unk2);
 }
 
