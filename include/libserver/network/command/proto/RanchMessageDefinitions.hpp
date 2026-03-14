@@ -5115,7 +5115,7 @@ struct AcCmdCRSetKeyEmblemNotify
     SourceStream& stream);
 };
 
-//! Client -> Server request to set the player's display emblem.
+//! Serverbound command to request an emblem change.
 struct AcCmdCRSetKeyEmblem
 {
   //! Emblem ID from the EmblemInfo table (IDs 1-35 in libconfig_c.dat).
