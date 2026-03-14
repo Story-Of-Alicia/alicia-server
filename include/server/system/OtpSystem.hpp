@@ -43,7 +43,7 @@ public:
   //! @param consume If true, the code is consumed (erased) on success.
   //! @retval `true` if the code is valid
   //! @retval `false` if the code is invalid.
-    [[nodiscard]] bool AuthorizeCode(size_t key, uint32_t code, bool consume = true);
+  [[nodiscard]] bool AuthorizeCode(size_t key, uint32_t code, bool consume = true);
 
   //! Removes all expired codes and stale lockout entries.
   //! Called automatically on a periodic basis, but can be invoked manually.
