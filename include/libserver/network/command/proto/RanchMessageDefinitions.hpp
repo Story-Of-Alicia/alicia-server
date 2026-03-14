@@ -5084,10 +5084,7 @@ struct AcCmdCROpenRandomBoxCancel
     SourceStream& stream);
 };
 
-//! Server -> Client notification that sets the displayed emblem
-//! in the MyInfo dialog. Client handler (0x00775FA0) fires
-//! g_EmblemChangeEventSignal which PersonalInfoMsgHandler catches
-//! to update img_emblem, star rating, and lb_myinfo_emblem_name.
+//! Clientbound command to set a character's emblem.
 struct AcCmdCRSetKeyEmblemNotify
 {
   //! UID of the character whose emblem is being set.
