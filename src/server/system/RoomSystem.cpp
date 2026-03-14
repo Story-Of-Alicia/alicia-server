@@ -19,6 +19,7 @@
 
 #include "server/system/RoomSystem.hpp"
 
+#include <cassert>
 #include <ranges>
 #include <stdexcept>
 
