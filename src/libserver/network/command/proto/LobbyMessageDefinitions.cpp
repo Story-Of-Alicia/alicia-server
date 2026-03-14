@@ -1161,7 +1161,7 @@ void AcCmdLCPersonalInfo::Basic::Write(
     .Write(command.introduction)
     .Write(command.level)
     .Write(command.levelProgress)
-    .Write(command.gradeTitle)
+    .Write(command.unk_gradeString)
     .Write(command.perfectBoostCombo)
     .Write(command.perfectJumpCombo)
     .Write(command.magicDefenseCombo)

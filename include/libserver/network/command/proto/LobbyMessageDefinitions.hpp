@@ -1806,8 +1806,10 @@ struct AcCmdLCPersonalInfo
     uint32_t level{60};
     //! Level progress as dictated by LevelInfo table in libconfig
     uint32_t levelProgress{};
-    //! Achievement grade title displayed in profile (txt_grade in UI).
-    std::string gradeTitle{};
+    //! Parsed by the client but never read back for display.
+    //! The txt_grade label in the profile UI is populated from
+    //! a client-side EmblemTable lookup instead.
+    std::string unk_gradeString{};
     uint16_t perfectBoostCombo{};
     uint16_t perfectJumpCombo{};
     uint16_t magicDefenseCombo{};
