@@ -1768,8 +1768,7 @@ void AcCmdRCAddSkillEffect::Write(
     .Write(command.targetOid)
     .Write(command.attackerOid)
     .Write(command.unk2)
-    .Write(command.unk3)
-    .Write(command.unk4);
+    .Write(command.unk3);
 
   switch(command.effectId)
   {
@@ -1797,8 +1796,7 @@ void AcCmdRCAddSkillEffect::Read(
     .Read(command.targetOid)
     .Read(command.attackerOid)
     .Read(command.unk2)
-    .Read(command.unk3)
-    .Read(command.unk4);
+    .Read(command.unk3);
   
   switch(command.effectId)
   {

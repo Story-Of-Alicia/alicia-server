@@ -3190,12 +3190,10 @@ void RaceDirector::ScheduleSkillEffect(RaceDirector::RaceInstance& raceInstance,
     .attackerOid = attackerOid,
     .unk2 = 0,
     .unk3 = 0,
-    .unk4 = 0,
     .shieldEffect = protocol::AcCmdRCAddSkillEffect::ShieldEffect{
       .unk0 = 0,
       .unk1 = 0,
     },
-    // Not sure this does anything, at all.
     .boostEffectMs = static_cast<uint32_t>(magicSlotInfo.effectDelay * 1000.0f),
   };
 

@@ -2327,8 +2327,7 @@ struct AcCmdRCAddSkillEffect
   uint16_t targetOid;
   uint16_t attackerOid;
   uint16_t unk2;
-  uint16_t unk3;
-  uint32_t unk4;            // Posibly intensity, no idea but it it not work
+  uint32_t unk3;
 
   struct ShieldEffect
   {
