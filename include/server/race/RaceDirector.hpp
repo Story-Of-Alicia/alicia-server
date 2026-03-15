@@ -24,6 +24,7 @@
 
 #include "server/tracker/RaceTracker.hpp"
 
+#include "libserver/registry/MagicRegistry.hpp"
 #include "libserver/network/command/CommandServer.hpp"
 #include "libserver/network/command/proto/RaceMessageDefinitions.hpp"
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
@@ -136,7 +137,7 @@ private:
   RaceInstance& GetRaceInstance(
     const RaceDirector::ClientContext clientContext,
     const bool checkRacer = true);
-  void ScheduleSkillEffect(server::RaceDirector::RaceInstance& raceInstance, server::tracker::Oid attackerId, server::tracker::Oid targetId, uint16_t effectId, std::optional<std::function<void()>> afterEffectRemoved = std::nullopt);
+  void ScheduleSkillEffect(server::RaceDirector::RaceInstance& raceInstance, server::tracker::Oid attackerId, server::tracker::Oid targetId, const server::registry::Magic::SlotInfo& magicSlotInfo, std::optional<std::function<void()>> afterEffectRemoved = std::nullopt);
 
   void HandleEnterRoom(
     ClientId clientId,

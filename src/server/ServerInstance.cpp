@@ -87,6 +87,7 @@ void ServerInstance::Initialize()
 
   _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
   _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items.yaml");
+  _magicRegistry.ReadConfig(_resourceDirectory / "config/game/magic.yaml");
   _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
 
   _moderationSystem.ReadConfig(_resourceDirectory / "config/server/automod.yaml");
@@ -311,6 +312,11 @@ registry::ItemRegistry& ServerInstance::GetItemRegistry()
 registry::PetRegistry& ServerInstance::GetPetRegistry()
 {
   return _petRegistry;
+}
+
+registry::MagicRegistry& ServerInstance::GetMagicRegistry()
+{
+  return _magicRegistry;
 }
 
 ChatSystem& ServerInstance::GetChatSystem()

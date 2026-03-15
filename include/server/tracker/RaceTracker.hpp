@@ -138,6 +138,10 @@ public:
   //! Returns a reference to all item records.
   //! @return Reference to item records.
   [[nodiscard]] ItemObjectMap& GetItems();
+  //! Returns the next object instance ID and increments the internal counter.
+  //! @param increment The value to increment the internal counter by.
+  //! @returns The next object instance ID before incrementing.
+  uint16_t GetNextObstacleInstanceIdAndIncrementBy(uint16_t increment);
 
   void Clear();
 
@@ -149,6 +153,8 @@ private:
   RacerObjectMap _racers;
   //! Items in the race
   ItemObjectMap _items;
+  //! Next obstacle instance ID.
+  uint16_t _nextObstacleInstanceId = 1;
 };
 
 } // namespace server::tracker
