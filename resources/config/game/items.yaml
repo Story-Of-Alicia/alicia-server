@@ -1213,7 +1213,7 @@ items:
       name: '아이타 머리'
       description:
         - "업데이트 예정"
-      isPurchasable: false
+      isPurchasable: true
       characterPartInfo:
         characterId: 20
         slot: 2
@@ -3111,7 +3111,7 @@ items:
       name: '노멀 타잔복'
       description:
         - "업데이트 예정"
-      isPurchasable: false
+      isPurchasable: true
       characterPartInfo:
         characterId: 20
         slot: 48
@@ -3217,7 +3217,7 @@ items:
       name: '화랑복'
       description:
         - "업데이트 예정"
-      isPurchasable: false
+      isPurchasable: true
       characterPartInfo:
         characterId: 20
         slot: 48
