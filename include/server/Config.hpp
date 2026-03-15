@@ -20,8 +20,10 @@
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
 
-#include <nlohmann/json.hpp>
 #include <boost/asio/ip/address.hpp>
+#include <chrono>
+#include <cstdint>
+#include <nlohmann/json.hpp>
 
 namespace server
 {
@@ -131,7 +133,8 @@ public:
   {
     enum class Source
     {
-      File, Postgres
+      File,
+      Postgres
     } source{Source::File};
 
     struct File
@@ -144,6 +147,14 @@ public:
 
     } postgres{};
   } data{};
+
+  //!
+  struct Otp
+  {
+    std::chrono::seconds codeTtl{30};
+    uint32_t maxFailedAttempts{5};
+    std::chrono::seconds purgeInterval{60};
+  } otp{};
 
   //! Loads the config from the environment.
   void LoadFromEnvironment();

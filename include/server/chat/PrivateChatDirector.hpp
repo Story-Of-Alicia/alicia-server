@@ -14,7 +14,7 @@ namespace server
 {
 
 //! Chat client OTP constant
-constexpr uint32_t PrivateChatOtpConstant = 0x14E05CE5;
+constexpr uint32_t PrivateChatOtpConstant = 0x7C3D91A2;
 
 class ServerInstance;
 
