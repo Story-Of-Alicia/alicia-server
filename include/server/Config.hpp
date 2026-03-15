@@ -153,7 +153,6 @@ public:
   {
     std::chrono::seconds codeTtl{30};
     uint32_t maxFailedAttempts{5};
-    std::chrono::seconds lockoutDuration{60};
     std::chrono::seconds purgeInterval{60};
   } otp{};
 
