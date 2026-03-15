@@ -84,7 +84,8 @@ public:
   struct Item
   {
     Oid oid{};
-    uint32_t deckId{};
+    std::vector<uint32_t> itemTypes{};
+    uint32_t currentType{};
     std::chrono::steady_clock::time_point respawnTimePoint{};
     std::array<float, 3> position{};
   };
