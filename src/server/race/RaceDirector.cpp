@@ -21,16 +21,13 @@
 
 #include "server/ServerInstance.hpp"
 #include "server/system/RoomSystem.hpp"
-#include "server/tracker/Tracker.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
 
-#include <algorithm>
 #include <boost/container_hash/hash.hpp>
 #include <spdlog/spdlog.h>
 
 #include <bitset>
-#include <map>
 
 namespace server
 {
@@ -557,40 +554,22 @@ void RaceDirector::Tick()
 
     protocol::AcCmdRCRaceResultNotify raceResult{};
 
-    struct ScoreEntry
-    {
-      uint32_t courseTime;
-      data::Uid characterUid;
-    };
-
-    std::vector<ScoreEntry> scoreboard;
-    scoreboard.reserve(raceInstance.tracker.GetRacers().size());
-
+    // Collect (courseTime, characterUid) so multiple racers can share the same time.
+    std::vector<std::pair<uint32_t, data::Uid>> scoreboard;
     for (const auto& [characterUid, racer] : raceInstance.tracker.GetRacers())
     {
-      const bool isDisconnected =
-        racer.state == tracker::RaceTracker::Racer::State::Disconnected;
+      uint32_t courseTime = std::numeric_limits<uint32_t>::max();
+      if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
+        courseTime = racer.courseTime;
 
-      const uint32_t courseTime =
-        isDisconnected ? std::numeric_limits<uint32_t>::max()
-                       : racer.courseTime;
-
-      scoreboard.push_back(ScoreEntry{courseTime, characterUid});
+      scoreboard.emplace_back(courseTime, characterUid);
     }
+    std::ranges::sort(scoreboard, std::less{}, &std::pair<uint32_t, data::Uid>::first);
 
-    std::ranges::sort(
-      scoreboard,
-      [](const ScoreEntry& lhs, const ScoreEntry& rhs)
-      {
-        if (lhs.courseTime != rhs.courseTime)
-          return lhs.courseTime < rhs.courseTime;
-        return lhs.characterUid < rhs.characterUid;
-      });
-
-    // Build the score board.
-    for (const auto& entry : scoreboard)
+    // Build the score board (order gives ranking; same time = same rank).
+    for (auto& [courseTime, characterUid] : scoreboard)
     {
-      auto& racer = raceInstance.tracker.GetRacer(entry.characterUid);
+      auto& racer = raceInstance.tracker.GetRacer(characterUid);
       auto& score = raceResult.scores.emplace_back();
 
       // todo: figure out the other bit set values
@@ -601,10 +580,10 @@ void RaceDirector::Tick()
           protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::Connected);
       }
 
-      score.courseTime = entry.courseTime;
+      score.courseTime = courseTime;
       // score.experience = 420;
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
-        entry.characterUid);
+        characterUid);
 
       characterRecord.Immutable([this, &score](const data::Character& character)
         {
@@ -1402,13 +1381,23 @@ void RaceDirector::PrepareItemSpawners(data::Uid roomUid)
     // Spawn items based on map positions and game mode allowed deck IDs
     for (const uint32_t usedDeckItemId : gameModeInfo.usedDeckItemIds)
     {
+      const auto& deckItemInfo = GetServerInstance().GetCourseRegistry().GetDeckItemInfo(usedDeckItemId);
       for (const auto& mapDeckItemInstance : mapBlockInfo.deckItems)
       {
         if (mapDeckItemInstance.deckId != usedDeckItemId)
           continue;
 
         auto& item = raceInstance.tracker.AddItem();
-        item.deckId = mapDeckItemInstance.deckId;
+        item.itemTypes = deckItemInfo.itemTypes;
+
+        // Randomly pick an initial type
+        if (!item.itemTypes.empty())
+        {
+          static std::random_device rd;
+          std::uniform_int_distribution<size_t> distribution(0, item.itemTypes.size() - 1);
+          item.currentType = item.itemTypes[distribution(rd)];
+        }
+
         item.position[0] = mapDeckItemInstance.position[0] + offset[0];
         item.position[1] = mapDeckItemInstance.position[1] + offset[1];
         item.position[2] = mapDeckItemInstance.position[2] + offset[2];
@@ -1631,14 +1620,9 @@ void RaceDirector::HandleStartRace(
         .raceMissionId = raceInstance.raceMissionId,
       };
 
-      // Build the racers in oid order using an ordered map so that list index matches display/slot order.
-      std::map<server::tracker::Oid, std::pair<data::Uid, tracker::RaceTracker::Racer*>> racersByOid;
-      for (auto& [characterUid, racer] : raceInstance.tracker.GetRacers())
-        racersByOid.emplace(racer.oid, std::make_pair(characterUid, &racer));
-
-      for (const auto& [oid, uidAndRacer] : racersByOid)
+      // Build the racers.
+      for (const auto& [characterUid, racer] : raceInstance.tracker.GetRacers())
       {
-        const auto& [characterUid, racer] = uidAndRacer;
         std::string characterName;
         GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable([&characterName](const data::Character& character)
           {
@@ -1647,12 +1631,12 @@ void RaceDirector::HandleStartRace(
 
         auto& protocolRacer = notify.racers.emplace_back(
           protocol::AcCmdCRStartRaceNotify::Player{
-            .oid = racer->oid,
+            .oid = racer.oid,
             .name = characterName,
-            .p2dId = racer->oid,
+            .p2dId = racer.oid,
           });
 
-        switch (racer->team)
+        switch (racer.team)
         {
           case tracker::RaceTracker::Racer::Team::Solo:
             protocolRacer.teamColor = protocol::TeamColor::None;
@@ -2306,12 +2290,13 @@ void RaceDirector::HandleRaceUserPos(
     if (not isItemInPlayerProximity)
       continue;
 
-    protocol::AcCmdGameRaceItemSpawn spawn{
+    protocol::AcCmdRCCreateItem spawn{
       .itemId = item.oid,
-      .itemType = item.deckId,
+      .itemType = item.currentType,
       .position = item.position,
-      .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
-      .removeDelay = -1};
+      .spawnStyle = 0, // ITEM_SPAWN_STYLE_NONE, fix the item in position
+      .spawnerId = 0,
+      .sizeLevel = 0};
 
     racer.trackedItems.insert(item.oid);
 
@@ -2779,7 +2764,6 @@ void RaceDirector::HandleUseMagicItem(
           this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 10);
         }
       }
-      break;
     case 13:
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
@@ -2895,7 +2879,7 @@ void RaceDirector::HandleUserRaceItemGet(
     // TODO: Deduplicate from StarPointGet
     case Room::GameMode::Speed:
       {
-        switch (item.deckId)
+        switch (item.currentType)
         {
           case 101: // Gold horseshoe. Get star points until the next boost
             racer.starPointValue = std::min(((racer.starPointValue / 40000) + 1) * 40000, gameModeInfo.starPointsMax);
@@ -2907,7 +2891,7 @@ void RaceDirector::HandleUserRaceItemGet(
             // TODO: Disconnect?
             spdlog::warn("Player {} picked up unknown item type {}",
               clientId,
-              item.deckId);
+              item.currentType);
             break;
         }
 
@@ -2929,29 +2913,69 @@ void RaceDirector::HandleUserRaceItemGet(
     // TODO: Deduplicate from RequestMagicItem
     case Room::GameMode::Magic:
       {
-        if (racer.magicItem.has_value())
+        // Magic items should respawn at a near-instant rate
+        item.respawnTimePoint = std::chrono::steady_clock::now();
+
+        uint32_t magicItem{};
+        if (not racer.magicItem.has_value())
         {
-          return;
+          // Racer is empty handed
+
+          // Get the item type of the picked up item (408, 409 etc)
+          const uint32_t magicItemType = item.currentType;
+
+          // Get the magic slot index to indicate to the racer that they
+          // have the item (water shield, ice wall etc).
+          magicItem = _serverInstance.GetCourseRegistry()
+                        .GetItemTypeInfo(magicItemType)
+                        .magicSlot;
+
+          // Response with OK to the client that they have a new item in hand
+          protocol::AcCmdCRRequestMagicItemOK magicItemOk{
+            .characterOid = command.characterOid,
+            .magicItemId = racer.magicItem.emplace(magicItem),
+            .member3 = 0};
+
+          _commandServer.QueueCommand<decltype(magicItemOk)>(
+            clientId,
+            [clientId, magicItemOk]()
+            {
+              return magicItemOk;
+            });
+        }
+        else
+        {
+          // Racer is already holding the item, do not replace it
+          magicItem = racer.magicItem.value();
         }
 
-        // TODO: Replace with the item's deckId?
-        const uint32_t gainedMagicItem = RandomMagicItem(racer);
-        protocol::AcCmdCRRequestMagicItemOK magicItemOk{
-          .characterOid = command.characterOid,
-          .magicItemId = racer.magicItem.emplace(gainedMagicItem),
-          .member3 = 0};
-        _commandServer.QueueCommand<decltype(magicItemOk)>(
-          clientId,
-          [clientId, magicItemOk]()
-          {
-            return magicItemOk;
-          });
+        // Now that the magic item on the ground has been picked up,
+        // randomly pick the new item type for this picked up item
+        if (!item.itemTypes.empty())
+        {
+          static std::random_device rd;
+          std::uniform_int_distribution<size_t> distribution(0, item.itemTypes.size() - 1);
+          item.currentType = item.itemTypes[distribution(rd)];
+        }
+        else
+        {
+          // TODO: Item types is empty, use deck ID instead?
+        }
+
+        // Notify racers in the race room that the invoking racer is now
+        // holding a new magic item
         protocol::AcCmdCRRequestMagicItemNotify notify{
-          .magicItemId = racer.magicItem.emplace(gainedMagicItem),
+          .magicItemId = racer.magicItem.emplace(magicItem),
           .characterOid = command.characterOid,
         };
+
         for (const ClientId& roomClientId : raceInstance.clients)
         {
+          // Prevent self broadcast,
+          // this prevents the double pickup UI bug for the invoker)
+          if (roomClientId == clientId)
+            continue;
+
           _commandServer.QueueCommand<decltype(notify)>(
             roomClientId,
             [notify]()
@@ -2961,15 +2985,15 @@ void RaceDirector::HandleUserRaceItemGet(
         }
 
         // TODO: reset magic gauge to 0?
+        break;
       }
-      break;
   }
 
   // Notify all clients in the room that this item has been picked up
   protocol::AcCmdGameRaceItemGet get{
     .characterOid = command.characterOid,
     .itemId = command.itemId,
-    .itemType = item.deckId,
+    .itemType = item.currentType,
   };
 
   for (const ClientId& raceClientId : raceInstance.clients)
@@ -2987,32 +3011,6 @@ void RaceDirector::HandleUserRaceItemGet(
   {
     raceRacer.trackedItems.erase(item.oid);
   }
-
-  // Respawn the item after a delay
-  _scheduler.Queue(
-    [this, item, &raceInstance]()
-    {
-      protocol::AcCmdGameRaceItemSpawn spawn{
-        .itemId = item.oid,
-        .itemType = item.deckId,
-        .position = item.position,
-        .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
-        .sizeLevel = false,
-        .removeDelay = -1};
-
-      std::scoped_lock lock(raceInstance.clientsMutex);
-      for (const ClientId& roomClientId : raceInstance.clients)
-      {
-        _commandServer.QueueCommand<decltype(spawn)>(
-          roomClientId,
-          [spawn]()
-          {
-            return spawn;
-          });
-      }
-    },
-    // only for speed for now, change to itemDeck registry later for magic
-    Scheduler::Clock::now() + std::chrono::milliseconds(500));
 }
 
 // Magic Targeting System Implementation for Bolt
