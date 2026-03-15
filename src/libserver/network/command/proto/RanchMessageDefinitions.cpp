@@ -554,6 +554,101 @@ void RanchCommandRanchStuffOK::Read(
   throw std::runtime_error("Not implemented.");
 }
 
+void AcCmdCRBreedingFailureCard::Write(
+  const AcCmdCRBreedingFailureCard&,
+  SinkStream&)
+{
+  // Empty response
+}
+
+void AcCmdCRBreedingFailureCard::Read(
+  AcCmdCRBreedingFailureCard&,
+  SourceStream&)
+{
+  // Empty - statusOrFlag is internal only, not serialized
+}
+
+void AcCmdCRBreedingFailureCardOK::Write(
+  const AcCmdCRBreedingFailureCardOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.choiceOrFlag);
+}
+
+void AcCmdCRBreedingFailureCardOK::Read(
+  AcCmdCRBreedingFailureCardOK& command,
+  SourceStream& stream)
+{
+  stream.Read(command.choiceOrFlag);
+}
+
+void AcCmdCRBreedingFailureCardCancel::Write(
+  const AcCmdCRBreedingFailureCardCancel&,
+  SinkStream&)
+{
+  // Empty response
+}
+
+void AcCmdCRBreedingFailureCardCancel::Read(
+  AcCmdCRBreedingFailureCardCancel&,
+  SourceStream&)
+{
+  // Empty - statusOrFlag is internal only, not serialized
+}
+
+void AcCmdCRBreedingFailureCardChoose::Write(
+  const AcCmdCRBreedingFailureCardChoose&,
+  SinkStream&)
+{
+  // Zero payload command - no data to write
+}
+
+void AcCmdCRBreedingFailureCardChoose::Read(
+  AcCmdCRBreedingFailureCardChoose& command,
+  SourceStream& stream)
+{
+  stream.Read(command.statusOrFlag);
+}
+
+void AcCmdCRBreedingFailureCardChooseOK::Write(
+  const AcCmdCRBreedingFailureCardChooseOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1)
+    .Write(command.rewardId)
+    .Write(command.member3);
+
+  for (const auto& value : command.member4)
+  {
+    stream.Write(value);
+  }
+
+  stream.Write(command.member5)
+    .Write(command.item)
+    .Write(command.member6);
+}
+
+void AcCmdCRBreedingFailureCardChooseOK::Read(
+  AcCmdCRBreedingFailureCardChooseOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBreedingFailureCardChooseCancel::Write(
+  const AcCmdCRBreedingFailureCardChooseCancel&,
+  SinkStream&)
+{
+  // Empty response
+}
+
+void AcCmdCRBreedingFailureCardChooseCancel::Read(
+  AcCmdCRBreedingFailureCardChooseCancel&,
+  SourceStream&)
+{
+  // Empty response
+}
+
 void AcCmdCRSearchStallion::Write(
   const AcCmdCRSearchStallion&,
   SinkStream&)
@@ -735,6 +830,38 @@ void AcCmdCRUnregisterStallionEstimateInfoCancel::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRCheckStallionCharge::Write(
+  const AcCmdCRCheckStallionCharge&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRCheckStallionCharge::Read(
+  AcCmdCRCheckStallionCharge& command,
+  SourceStream& stream)
+{
+  stream.Read(command.horseUid);
+}
+
+void AcCmdCRCheckStallionChargeOK::Write(
+  const AcCmdCRCheckStallionChargeOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.hasFailed)
+    .Write(command.minCharge)
+    .Write(command.maxCharge)
+    .Write(command.registrationFee)
+    .Write(command.charge);
+}
+
+void AcCmdCRCheckStallionChargeOK::Read(
+  AcCmdCRCheckStallionChargeOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void RanchCommandSearchStallionOK::Write(
   const RanchCommandSearchStallionOK& command,
   SinkStream& stream)
@@ -755,9 +882,9 @@ void RanchCommandSearchStallionOK::Write(
       .Write(stallion.tid)
       .Write(stallion.name)
       .Write(stallion.grade)
-      .Write(stallion.chance)
+      .Write(stallion.inheritanceRate)
       .Write(stallion.matePrice)
-      .Write(stallion.unk7)
+      .Write(stallion.pregnancyChance)
       .Write(stallion.expiresAt)
       .Write(stallion.stats)
       .Write(stallion.parts)
@@ -817,8 +944,8 @@ void RanchCommandEnterBreedingMarketOK::Write(
     stream.Write(stallion.uid)
       .Write(stallion.tid)
       .Write(stallion.combo)
-      .Write(stallion.unk1)
-      .Write(stallion.unk2)
+      .Write(stallion.isRegistered)
+      .Write(stallion.breedingBonus)
       .Write(stallion.lineage);
   }
 }
@@ -923,7 +1050,7 @@ void RanchCommandTryBreedingOK::Write(
     .Write(command.unk3)
     .Write(command.unk4)
     .Write(command.unk5)
-    .Write(command.unk6)
+    .Write(command.potentialType)
     .Write(command.unk7)
     .Write(command.unk8)
     .Write(command.unk9)

@@ -61,6 +61,12 @@ public:
 
   void Terminate()
   {
+    for (const auto& key : _deleteQueue)
+    {
+      _dataSourceDeleteListener(key);
+    }
+    _deleteQueue.clear();
+
     _storeQueue.clear();
     _retrieveQueue.clear();
 
@@ -231,11 +237,8 @@ public:
     // Perform delete operations.
     for (const auto& key : _deleteQueue)
     {
-      auto& entry = _entries[key];
-
-      if (entry.available)
-        if (_dataSourceDeleteListener(key))
-          entry.available.store(false, std::memory_order::relaxed);
+      _dataSourceDeleteListener(key);
+      _entries.erase(key);
     }
     _deleteQueue.clear();
   }
