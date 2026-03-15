@@ -4,18 +4,15 @@
 
 #include "server/system/OtpSystem.hpp"
 
+#include "server/ServerInstance.hpp"
+
 #include <spdlog/spdlog.h>
 
 namespace server
 {
 
-OtpSystem::OtpSystem()
-  : OtpSystem(Settings{})
-{
-}
-
-OtpSystem::OtpSystem(Settings settings)
-  : _settings(std::move(settings))
+OtpSystem::OtpSystem(ServerInstance& serverInstance)
+  : _serverInstance(serverInstance)
   , _rng(std::random_device{}())
   , _lastPurge(std::chrono::steady_clock::now())
 {
@@ -27,10 +24,11 @@ uint32_t OtpSystem::GrantCode(const size_t key)
 
   PurgeExpired();
 
+  const auto& settings = _serverInstance.GetSettings().otp;
   _codes.insert_or_assign(
     key,
     Code{
-      .expiry = std::chrono::steady_clock::now() + _settings.codeTtl,
+      .expiry = std::chrono::steady_clock::now() + settings.codeTtl,
       .code = static_cast<uint32_t>(_rng())});
 
   // Reset failed attempts when a new code is granted for this key,
@@ -44,17 +42,18 @@ bool OtpSystem::AuthorizeCode(const size_t key, const uint32_t code, bool consum
 {
   std::scoped_lock lock(_codesMutex);
 
+  const auto& settings = _serverInstance.GetSettings().otp;
   const auto now = std::chrono::steady_clock::now();
 
   // Check brute-force lockout.
   if (const auto attemptIter = _attempts.find(key); attemptIter != _attempts.end())
   {
     const auto& record = attemptIter->second;
-    if (record.failedAttempts >= _settings.maxFailedAttempts
-        && now < record.lockoutExpiry)
+    if (record.failedAttempts >= settings.maxFailedAttempts && now < record.lockoutExpiry)
     {
       spdlog::warn("OTP authorization for key {} denied: locked out after {} failed attempts",
-        key, record.failedAttempts);
+        key,
+        record.failedAttempts);
       return false;
     }
   }
@@ -64,8 +63,8 @@ bool OtpSystem::AuthorizeCode(const size_t key, const uint32_t code, bool consum
   {
     auto& record = _attempts[key];
     record.failedAttempts++;
-    if (record.failedAttempts >= _settings.maxFailedAttempts)
-      record.lockoutExpiry = now + _settings.lockoutDuration;
+    if (record.failedAttempts >= settings.maxFailedAttempts)
+      record.lockoutExpiry = now + settings.lockoutDuration;
     return false;
   }
 
@@ -86,12 +85,12 @@ bool OtpSystem::AuthorizeCode(const size_t key, const uint32_t code, bool consum
     auto& record = _attempts[key];
     record.failedAttempts++;
 
-    if (record.failedAttempts >= _settings.maxFailedAttempts)
+    if (record.failedAttempts >= settings.maxFailedAttempts)
     {
-      record.lockoutExpiry = now + _settings.lockoutDuration;
+      record.lockoutExpiry = now + settings.lockoutDuration;
       spdlog::warn("OTP key {} locked out for {}s after {} failed attempts",
         key,
-        _settings.lockoutDuration.count(),
+        settings.lockoutDuration.count(),
         record.failedAttempts);
     }
 
@@ -105,8 +104,9 @@ bool OtpSystem::AuthorizeCode(const size_t key, const uint32_t code, bool consum
 void OtpSystem::PurgeExpired()
 {
   const auto now = std::chrono::steady_clock::now();
+  const auto& settings = _serverInstance.GetSettings().otp;
 
-  if (now - _lastPurge < _settings.purgeInterval)
+  if (now - _lastPurge < settings.purgeInterval)
     return;
 
   _lastPurge = now;
@@ -125,11 +125,9 @@ void OtpSystem::PurgeExpired()
   for (auto it = _attempts.begin(); it != _attempts.end();)
   {
     const auto& record = it->second;
-    if (record.failedAttempts >= _settings.maxFailedAttempts
-        && now > record.lockoutExpiry)
+    if (record.failedAttempts >= settings.maxFailedAttempts && now > record.lockoutExpiry)
       it = _attempts.erase(it);
-    else if (record.failedAttempts < _settings.maxFailedAttempts
-             && now > record.lockoutExpiry)
+    else if (record.failedAttempts < settings.maxFailedAttempts && now > record.lockoutExpiry)
       it = _attempts.erase(it);
     else
       ++it;
