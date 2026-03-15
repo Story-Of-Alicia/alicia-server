@@ -5572,20 +5572,6 @@ void RanchDirector::HandleRequestQuestReward(
   // Award rewards to the character
   characterRecord.Mutable([this, &response, &quest, command](data::Character& character)
   {
-    // Award direct carrots (rewardGameMoney from quest)
-    if (quest.rewardGameMoney > 0)
-    {
-      character.carrots() += quest.rewardGameMoney;
-      response.carrotsRewarded = quest.rewardGameMoney;
-    }
-
-    // Award direct experience (rewardExp from quest)
-    if (quest.rewardExp > 0)
-    {
-      // Note: Character doesn't have direct exp field, but this is for future use
-      // or could be used for mount experience
-    }
-
     // Award items from quest reward ID if it exists
     if (quest.rewardId > 0)
     {

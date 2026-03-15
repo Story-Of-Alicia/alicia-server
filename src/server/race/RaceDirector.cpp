@@ -1872,28 +1872,6 @@ void RaceDirector::HandleRaceResult(
         });
     });
 
-  // Advance 'complete N races' daily quests
-  for (const auto& notify : GetServerInstance().GetQuestSystem().OnQuestEvent(
-    clientContext.characterUid,
-    QuestSystem::QuestEvent::Any,
-    QuestSystem::ToGameModeFlag(raceInstance.raceGameMode, raceInstance.raceTeamMode)))
-  {
-    SendDailyQuestNotificationToCharacter(clientContext.characterUid, notify);
-  }
-
-  // Advance 'run map X' daily quests
-  if (raceInstance.raceMapBlockId != 0)
-  {
-    for (const auto& notify : GetServerInstance().GetQuestSystem().OnQuestEvent(
-      clientContext.characterUid,
-      QuestSystem::QuestEvent::RunMap,
-      QuestSystem::ToGameModeFlag(raceInstance.raceGameMode, raceInstance.raceTeamMode),
-      raceInstance.raceMapBlockId))
-    {
-      SendDailyQuestNotificationToCharacter(clientContext.characterUid, notify);
-    }
-  }
-
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
@@ -2158,15 +2136,6 @@ void RaceDirector::HandleHurdleClearResult(
 
       // Update boost gauge
       starPointResponse.starPointValue = racer.starPointValue;
-
-      // Advance perfect-jump daily quests
-      for (const auto& notify : GetServerInstance().GetQuestSystem().OnQuestEvent(
-        clientContext.characterUid,
-        QuestSystem::QuestEvent::PerfectJump,
-        QuestSystem::ToGameModeFlag(raceInstance.raceGameMode, raceInstance.raceTeamMode)))
-      {
-        SendDailyQuestNotificationToCharacter(clientContext.characterUid, notify);
-      }
       break;
     }
     case protocol::AcCmdCRHurdleClearResult::HurdleClearType::DoubleJumpOrGlide:
@@ -2871,23 +2840,6 @@ void RaceDirector::HandleUseMagicItem(
           this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 23);
         }
       }
-      break;
-  }
-
-  // Advance 'fireball attack' daily quests for fireball-type magic items
-  switch (command.magicItemId)
-  {
-    case 2:   // FireBall
-    case 3:   // FireBall (critical)
-      for (const auto& notify : GetServerInstance().GetQuestSystem().OnQuestEvent(
-        clientContext.characterUid,
-        QuestSystem::QuestEvent::FireballAttack,
-        QuestSystem::ToGameModeFlag(raceInstance.raceGameMode, raceInstance.raceTeamMode)))
-      {
-        SendDailyQuestNotificationToCharacter(clientContext.characterUid, notify);
-      }
-      break;
-    default:
       break;
   }
 
