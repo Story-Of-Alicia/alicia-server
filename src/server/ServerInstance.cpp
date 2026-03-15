@@ -34,7 +34,7 @@ void DumpStackTrace()
   }
 }
 
-} // anon namespace
+} // namespace
 
 ServerInstance::ServerInstance(
   const std::filesystem::path& resourceDirectory)
@@ -50,6 +50,7 @@ ServerInstance::ServerInstance(
   , _chatSystem(*this)
   , _infractionSystem(*this)
   , _itemSystem(*this)
+  , _otpSystem(*this)
 {
 }
 
@@ -95,156 +96,156 @@ void ServerInstance::Initialize()
 
   // Authentication service
   _authenticationThread = std::thread([this]()
-  {
-    try
-    {
-      _authenticationService.Initialize();
-      RunDirectorTaskLoop(_authenticationService);
-      _authenticationService.Terminate();
-    }
-    catch (const std::exception& x)
-    {
-      spdlog::error("Unhandled exception in the authentication: {}", x.what());
-      DumpStackTrace();
-
-      _shouldRun = false;
-    }
-  });
-
-  // Data director
-  _dataDirectorThread = std::thread([this]()
-  {
-    try
-    {
-      _dataDirector.Initialize();
-      RunDirectorTaskLoop(_dataDirector);
-      _dataDirector.Terminate();
-    }
-    catch (const std::exception& x)
-    {
-      spdlog::error("Unhandled exception in the data director: {}", x.what());
-      DumpStackTrace();
-
-      _shouldRun = false;
-    }
-  });
-
-  // Lobby director
-  _lobbyDirectorThread = std::thread([this]()
-  {
-    try
-    {
-      _lobbyDirector.Initialize();
-      RunDirectorTaskLoop(_lobbyDirector);
-      _lobbyDirector.Terminate();
-    }
-    catch (const std::exception& x)
-    {
-      spdlog::error("Unhandled exception in the lobby director: {}", x.what());
-      DumpStackTrace();
-
-      _shouldRun = false;
-    }
-  });
-
-  // Messenger director
-  if (_config.messenger.enabled)
-  {
-    _messengerThread = std::thread([this]()
     {
       try
       {
-        _messengerDirector.Initialize();
-        RunDirectorTaskLoop(_messengerDirector);
-        _messengerDirector.Terminate();
+        _authenticationService.Initialize();
+        RunDirectorTaskLoop(_authenticationService);
+        _authenticationService.Terminate();
       }
       catch (const std::exception& x)
       {
-        spdlog::error("Unhandled exception in the messenger director: {}", x.what());
+        spdlog::error("Unhandled exception in the authentication: {}", x.what());
         DumpStackTrace();
 
         _shouldRun = false;
       }
     });
 
-    // All chat director
-    if (_config.allChat.enabled) // All chat depends on messenger
+  // Data director
+  _dataDirectorThread = std::thread([this]()
     {
-      _allChatDirectorThread = std::thread([this]()
+      try
+      {
+        _dataDirector.Initialize();
+        RunDirectorTaskLoop(_dataDirector);
+        _dataDirector.Terminate();
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error("Unhandled exception in the data director: {}", x.what());
+        DumpStackTrace();
+
+        _shouldRun = false;
+      }
+    });
+
+  // Lobby director
+  _lobbyDirectorThread = std::thread([this]()
+    {
+      try
+      {
+        _lobbyDirector.Initialize();
+        RunDirectorTaskLoop(_lobbyDirector);
+        _lobbyDirector.Terminate();
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error("Unhandled exception in the lobby director: {}", x.what());
+        DumpStackTrace();
+
+        _shouldRun = false;
+      }
+    });
+
+  // Messenger director
+  if (_config.messenger.enabled)
+  {
+    _messengerThread = std::thread([this]()
       {
         try
         {
-          _allChatDirector.Initialize();
-          RunDirectorTaskLoop(_allChatDirector);
-          _allChatDirector.Terminate();
+          _messengerDirector.Initialize();
+          RunDirectorTaskLoop(_messengerDirector);
+          _messengerDirector.Terminate();
         }
         catch (const std::exception& x)
         {
-          spdlog::error("Unhandled exception in the messenger (all chat) director: {}", x.what());
+          spdlog::error("Unhandled exception in the messenger director: {}", x.what());
           DumpStackTrace();
 
           _shouldRun = false;
         }
       });
+
+    // All chat director
+    if (_config.allChat.enabled) // All chat depends on messenger
+    {
+      _allChatDirectorThread = std::thread([this]()
+        {
+          try
+          {
+            _allChatDirector.Initialize();
+            RunDirectorTaskLoop(_allChatDirector);
+            _allChatDirector.Terminate();
+          }
+          catch (const std::exception& x)
+          {
+            spdlog::error("Unhandled exception in the messenger (all chat) director: {}", x.what());
+            DumpStackTrace();
+
+            _shouldRun = false;
+          }
+        });
     }
 
     // Private chat director
     if (_config.privateChat.enabled) // Private chat depends on messenger
     {
       _privateChatDirectorThread = std::thread([this]()
-      {
-        try
         {
-          _privateChatDirector.Initialize();
-          RunDirectorTaskLoop(_privateChatDirector);
-          _privateChatDirector.Terminate();
-        }
-        catch (const std::exception& x)
-        {
-          spdlog::error("Unhandled exception in the messenger (private chat) director: {}", x.what());
-          DumpStackTrace();
+          try
+          {
+            _privateChatDirector.Initialize();
+            RunDirectorTaskLoop(_privateChatDirector);
+            _privateChatDirector.Terminate();
+          }
+          catch (const std::exception& x)
+          {
+            spdlog::error("Unhandled exception in the messenger (private chat) director: {}", x.what());
+            DumpStackTrace();
 
-          _shouldRun = false;
-        }
-      });
+            _shouldRun = false;
+          }
+        });
     }
   }
 
   // Ranch director
   _ranchDirectorThread = std::thread([this]()
-  {
-    try
     {
-      _ranchDirector.Initialize();
-      RunDirectorTaskLoop(_ranchDirector);
-      _ranchDirector.Terminate();
-    }
-    catch (const std::exception& x)
-    {
-      spdlog::error("Unhandled exception in the ranch director: {}", x.what());
-      DumpStackTrace();
+      try
+      {
+        _ranchDirector.Initialize();
+        RunDirectorTaskLoop(_ranchDirector);
+        _ranchDirector.Terminate();
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error("Unhandled exception in the ranch director: {}", x.what());
+        DumpStackTrace();
 
-      _shouldRun = false;
-    }
-  });
+        _shouldRun = false;
+      }
+    });
 
   // Race director
   _raceDirectorThread = std::thread([this]()
-  {
-    try
     {
-      _raceDirector.Initialize();
-      RunDirectorTaskLoop(_raceDirector);
-      _raceDirector.Terminate();
-    }
-    catch (const std::exception& x)
-    {
-      spdlog::error("Unhandled exception in the race director: {}", x.what());
-      DumpStackTrace();
+      try
+      {
+        _raceDirector.Initialize();
+        RunDirectorTaskLoop(_raceDirector);
+        _raceDirector.Terminate();
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error("Unhandled exception in the race director: {}", x.what());
+        DumpStackTrace();
 
-      _shouldRun = false;
-    }
-  });
+        _shouldRun = false;
+      }
+    });
 }
 
 void ServerInstance::Terminate()
