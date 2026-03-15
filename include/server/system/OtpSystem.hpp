@@ -38,7 +38,7 @@ public:
   //! @retval `false` if the code is invalid.
   [[nodiscard]] bool AuthorizeCode(size_t key, uint32_t code, bool consume = true);
 
-  //! Removes all expired codes and stale lockout entries.
+  //! Removes all expired codes.
   //! Called automatically on a periodic basis, but can be invoked manually.
   void PurgeExpired();
 
@@ -47,20 +47,17 @@ private:
 
   struct Code
   {
+    //! A time point of when the code expires.
     std::chrono::steady_clock::time_point expiry{};
+    //! A counter of (failed) authorization attempts; code is invalidated after max.
+    size_t authorizationAttempts{};
+    //! A value of the code.
     uint32_t code{};
-  };
-
-  struct AttemptRecord
-  {
-    uint32_t failedAttempts{0};
-    std::chrono::steady_clock::time_point lockoutExpiry{};
   };
 
   std::mutex _codesMutex;
   std::mt19937 _rng;
   std::unordered_map<size_t, Code> _codes;
-  std::unordered_map<size_t, AttemptRecord> _attempts;
   std::chrono::steady_clock::time_point _lastPurge;
 };
 
