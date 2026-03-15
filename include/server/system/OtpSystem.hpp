@@ -6,6 +6,8 @@
 #define OTPSYSTEM_HPP
 
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <mutex>
 #include <random>
 #include <unordered_map>
@@ -13,21 +15,12 @@
 namespace server
 {
 
+class ServerInstance;
+
 class OtpSystem
 {
 public:
-  struct Settings
-  {
-    std::chrono::seconds codeTtl{30};
-    uint32_t maxFailedAttempts{5};
-    std::chrono::seconds lockoutDuration{60};
-    std::chrono::seconds purgeInterval{60};
-
-    Settings() = default;
-  };
-
-  OtpSystem();
-  explicit OtpSystem(Settings settings);
+  explicit OtpSystem(ServerInstance& serverInstance);
 
   //! Grants a one-time code for the given key.
   //! If a code already exists for this key, it is replaced.
@@ -50,7 +43,7 @@ public:
   void PurgeExpired();
 
 private:
-  Settings _settings;
+  ServerInstance& _serverInstance;
 
   struct Code
   {
