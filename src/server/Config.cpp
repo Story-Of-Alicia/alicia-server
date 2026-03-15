@@ -297,7 +297,6 @@ void Config::LoadFromFile(const std::filesystem::path& filePath)
       {
         otp.codeTtl = std::chrono::seconds(otpYaml["code_ttl"].as<int>(30));
         otp.maxFailedAttempts = otpYaml["max_failed_attempts"].as<uint32_t>(5);
-        otp.lockoutDuration = std::chrono::seconds(otpYaml["lockout_duration"].as<int>(60));
         otp.purgeInterval = std::chrono::seconds(otpYaml["purge_interval"].as<int>(60));
       }
     }
