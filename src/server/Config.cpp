@@ -25,8 +25,8 @@
 #include <format>
 #include <fstream>
 
-#include <yaml-cpp/yaml.h>
 #include <spdlog/spdlog.h>
+#include <yaml-cpp/yaml.h>
 
 namespace server
 {
@@ -48,10 +48,10 @@ void Config::LoadFromEnvironment()
   };
 
   const auto getAddressAndPortVariables = [&getEnvValue](
-    const std::string& addressVariableName,
-    const std::string& portVariableName,
-    asio::ip::address_v4& address,
-    uint16_t& port)
+                                            const std::string& addressVariableName,
+                                            const std::string& portVariableName,
+                                            asio::ip::address_v4& address,
+                                            uint16_t& port)
   {
     try
     {
@@ -150,8 +150,7 @@ void Config::LoadFromFile(const std::filesystem::path& filePath)
     {
       return Listen{
         .address = util::ResolveHostName(node["address"].as<std::string>()),
-        .port = node["port"].as<uint16_t>()
-      };
+        .port = node["port"].as<uint16_t>()};
     }
     catch (const std::exception& e)
     {
@@ -288,6 +287,23 @@ void Config::LoadFromFile(const std::filesystem::path& filePath)
     catch (const std::exception& e)
     {
       spdlog::error("Unhandled exception parsing the dat config: {}", e.what());
+    }
+
+    // OTP config
+    try
+    {
+      const auto otpYaml = serverYaml["otp"];
+      if (otpYaml)
+      {
+        otp.codeTtl = std::chrono::seconds(otpYaml["code_ttl"].as<int>(30));
+        otp.maxFailedAttempts = otpYaml["max_failed_attempts"].as<uint32_t>(5);
+        otp.lockoutDuration = std::chrono::seconds(otpYaml["lockout_duration"].as<int>(60));
+        otp.purgeInterval = std::chrono::seconds(otpYaml["purge_interval"].as<int>(60));
+      }
+    }
+    catch (const std::exception& e)
+    {
+      spdlog::error("Unhandled exception parsing the OTP config: {}", e.what());
     }
   }
   catch (const std::exception& e)
