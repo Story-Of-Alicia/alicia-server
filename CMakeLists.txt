@@ -26,6 +26,7 @@ target_compile_features(project-properties
 
 # Platform properties interface library
 add_library(platform-properties INTERFACE)
+
 if (${MSVC})
     target_compile_definitions(platform-properties INTERFACE
             _WIN32_WINNT=_WIN32_WINNT_WIN10
@@ -35,9 +36,15 @@ if (${MSVC})
 elseif(MINGW)
     target_link_libraries(platform-properties INTERFACE
             icuuc icuio icuin ws2_32 mswsock)
+elseif(APPLE)
+    set(ICU_DEBUG on)
+    find_package(ICU COMPONENTS uc i18n REQUIRED)
+    target_link_libraries(platform-properties INTERFACE
+            ICU::uc ICU::i18n)
+    target_compile_definitions(platform-properties INTERFACE DISABLE_STACKTRACE)
 else()
     target_link_libraries(platform-properties INTERFACE
-            icuuc icui18n stdc++exp)
+            icuuc icui18n)
 endif()
 
 if (${MSVC})
@@ -46,6 +53,10 @@ if (${MSVC})
 else()
     target_compile_options(platform-properties INTERFACE
             -Wall -Wextra -Wpedantic -Wdeprecated-declarations)
+endif()
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_link_libraries(project-properties INTERFACE stdc++exp)
 endif()
 
 # alicia-libserver target
