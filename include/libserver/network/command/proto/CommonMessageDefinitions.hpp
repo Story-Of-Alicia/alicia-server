@@ -21,6 +21,7 @@
 #define COMMON_MESSAGE_DEFINES_HPP
 
 #include "libserver/network/command/CommandProtocol.hpp"
+#include "libserver/network/command/proto/CommonStructureDefinitions.hpp"
 #include <libserver/util/Stream.hpp>
 
 #include <string>
@@ -101,6 +102,94 @@ struct AcCmdCRInviteUserOK : AcCmdCRInviteUser
     SourceStream& stream);
 };
 
+//! Server-initiated, clientbound notification indicating to the client
+//! progression of a quest.
+//! Can be used in either ranch or race.
+struct AcCmdRCUpdateQuestNotify
+{
+  uint32_t characterUid{};
+  uint16_t questTid{};
+  ObjectiveProgress objectiveProgress{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCUpdateQuestNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCUpdateQuestNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCUpdateQuestNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCUpdateDailyQuestNotify
+{   
+  uint32_t characterUid;
+  uint16_t questId;
+  ObjectiveProgress objectiveProgress;
+  uint32_t carrotsReward; //used when rewardType is Carrots
+  enum class RewardType : uint8_t
+  {
+    None = 0,
+    Carrots = 1,
+    Exp = 2
+  } rewardType{RewardType::None};
+  uint32_t unk2;
+  uint32_t mountExp; //used when rewardType is Exp
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCUpdateDailyQuestNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCUpdateDailyQuestNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCUpdateDailyQuestNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCROpCmd
+{
+  std::string command{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCROpCmd;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCROpCmd& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCROpCmd& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
-#endif // LOBBY_MESSAGE_DEFINES_HPP
+#endif // COMMON_MESSAGE_DEFINES_HPP

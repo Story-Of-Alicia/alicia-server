@@ -19,6 +19,8 @@
 
 #include "server/ServerInstance.hpp"
 
+#include "server/system/QuestSystem.hpp"
+
 #include <stacktrace>
 
 namespace server
@@ -50,6 +52,7 @@ ServerInstance::ServerInstance(
   , _chatSystem(*this)
   , _infractionSystem(*this)
   , _itemSystem(*this)
+  , _questSystem(*this)
 {
 }
 
@@ -87,6 +90,7 @@ void ServerInstance::Initialize()
   _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
   _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items.yaml");
   _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
+  _questRegistry.ReadConfig(_resourceDirectory / "config/game/quests.yaml");
 
   _moderationSystem.ReadConfig(_resourceDirectory / "config/server/automod.yaml");
 
@@ -312,6 +316,11 @@ registry::PetRegistry& ServerInstance::GetPetRegistry()
   return _petRegistry;
 }
 
+registry::QuestRegistry& ServerInstance::GetQuestRegistry()
+{
+  return _questRegistry;
+}
+
 ChatSystem& ServerInstance::GetChatSystem()
 {
   return _chatSystem;
@@ -335,6 +344,11 @@ ModerationSystem& ServerInstance::GetModerationSystem()
 RoomSystem& ServerInstance::GetRoomSystem()
 {
   return _roomSystem;
+}
+
+QuestSystem& ServerInstance::GetQuestSystem()
+{
+  return _questSystem;
 }
 
 OtpSystem& ServerInstance::GetOtpSystem()

@@ -553,10 +553,14 @@ struct RanchCharacter
 struct Quest
 {
   uint16_t tid{}; //questid
-  uint32_t member0{};
-  uint8_t member1{}; //can only be 0 or 1, 0 is in progress, 1 is completed
-  uint32_t member2{}; //progress
-  uint8_t member3{};
+  uint32_t member0{};          //maybe turnInNPC? used if the quest is ready to claim
+  enum Status : uint8_t{
+    InProgress = 0,            // Quest started, objectives not yet met
+    ReadyToClaim = 1,          // Objectives met, reward can be claimed
+    Finished = 3               // Reward claimed / quest finished
+  }status{};
+  uint32_t progress{};         // used if the quest is in progress, otherwise unused
+  uint8_t member3{}; 
   uint8_t member4{};
 
   static void Write(const Quest& value, SinkStream& stream);
@@ -658,10 +662,14 @@ enum class ChangeNicknameError : uint8_t
 
 struct DailyQuest
 {
-  uint16_t questId;
-  uint32_t unk_1;
-  uint8_t unk_2; // type of reward: 1 = carrots, 2 = exp
-  uint8_t unk_3;
+  //! Template ID of the quest.
+  uint16_t questId{};
+  //! Current progress toward the quest's successValue.
+  uint32_t progress{};
+  //! Reward type: 1 = carrots, 2 = exp.
+  uint8_t rewardType{};
+  //! Reward entry ID, references quests.rewards in quests.yaml.
+  uint8_t rewardId{};
 
   static void Write(const DailyQuest& value, SinkStream& stream);
   static void Read(DailyQuest& value, SourceStream& stream);

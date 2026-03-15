@@ -92,6 +92,14 @@ void BuildProtocolSettings(
   Settings& settings,
   const data::Settings& settingsRecord);
 
+void BuildProtocolQuest(
+  Quest& protocolQuest,
+  const data::Quest& quest);
+
+void BuildProtocolQuests(
+  std::vector<Quest>& protocolQuests,
+  const std::vector<Record<data::Quest>>& questRecords);
+
 
 } // namespace protocol
 

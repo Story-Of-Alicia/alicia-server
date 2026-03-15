@@ -707,8 +707,8 @@ void Quest::Write(const Quest& value, SinkStream& stream)
 {
   stream.Write(value.tid)
     .Write(value.member0)
-    .Write(value.member1)
-    .Write(value.member2)
+    .Write(value.status)
+    .Write(value.progress)
     .Write(value.member3)
     .Write(value.member4);
 }
@@ -717,8 +717,8 @@ void Quest::Read(Quest& value, SourceStream& stream)
 {
   stream.Read(value.tid)
     .Read(value.member0)
-    .Read(value.member1)
-    .Read(value.member2)
+    .Read(reinterpret_cast<uint8_t&>(value.status))
+    .Read(value.progress)
     .Read(value.member3)
     .Read(value.member4);
 }
@@ -794,17 +794,17 @@ void SkillSet::Read(SkillSet& value, SourceStream& stream)
 void DailyQuest::Write(const DailyQuest& value, SinkStream& stream)
 {
   stream.Write(value.questId)
-    .Write(value.unk_1)
-    .Write(value.unk_2)
-    .Write(value.unk_3);
+    .Write(value.progress)
+    .Write(value.rewardType)
+    .Write(value.rewardId);
 }
 
 void DailyQuest::Read(DailyQuest& value, SourceStream& stream)
 {
   stream.Read(value.questId)
-    .Read(value.unk_1)
-    .Read(value.unk_2)
-    .Read(value.unk_3);
+    .Read(value.progress)
+    .Read(value.rewardType)
+    .Read(value.rewardId);
 }
 void ShopOrder::Write(
   const ShopOrder& order,

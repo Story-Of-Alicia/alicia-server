@@ -25,6 +25,7 @@
 
 #include "libserver/network/command/CommandServer.hpp"
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
+#include "libserver/network/command/proto/CommonMessageDefinitions.hpp"
 
 #include <random>
 #include <unordered_map>
@@ -85,6 +86,10 @@ public:
     data::Uid guildUid,
     data::Uid characterUid,
     protocol::GuildRole guildRole);
+
+  void SendDailyQuestNotificationToCharacter(
+    data::Uid characterUid,
+    const protocol::AcCmdRCUpdateDailyQuestNotify& updateNotify);
 
   void SendGuildInviteDeclined(
     data::Uid characterUid,
@@ -413,6 +418,11 @@ private:
   void HandleRequestQuestReward(
     ClientId clientId,
     const protocol::AcCmdCRRequestQuestReward& command);
+
+  void HandleGiveupQuest(
+    ClientId clientId,
+    const protocol::AcCmdCRGiveupQuest& command);
+
   void SendChangeNicknameCancel(
     ClientId clientId,
     protocol::ChangeNicknameError reason);

@@ -20,9 +20,11 @@
 #include "server/race/RaceDirector.hpp"
 
 #include "server/ServerInstance.hpp"
+#include "server/system/QuestSystem.hpp"
 #include "server/system/RoomSystem.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
+#include <libserver/registry/QuestRegistry.hpp>
 
 #include <boost/container_hash/hash.hpp>
 #include <spdlog/spdlog.h>
@@ -1856,6 +1858,7 @@ void RaceDirector::HandleRaceResult(
   [[maybe_unused]] const protocol::AcCmdCRRaceResult& command)
 {
   const auto& clientContext = GetClientContext(clientId);
+  auto& raceInstance = GetRaceInstance(clientContext);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
@@ -2145,7 +2148,6 @@ void RaceDirector::HandleHurdleClearResult(
       starPointResponse.starPointValue = racer.starPointValue;
       break;
     }
-    case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Good:
     case protocol::AcCmdCRHurdleClearResult::HurdleClearType::DoubleJumpOrGlide:
     {
       // Not a perfect jump over the hurdle, reset the jump combo.
@@ -3204,12 +3206,24 @@ void RaceDirector::ScheduleSkillEffect(
     .attackMagicEffect = 0
   };
 
-  // Broadcast
-  for (const ClientId& raceClientId : raceInstance.clients)
+  // Send only to the target client
+  for (const auto& [characterUid, racer] : raceInstance.tracker.GetRacers())
   {
-    _commandServer.QueueCommand<decltype(addSkillEffect)>(
-      raceClientId,
-      [addSkillEffect]() { return addSkillEffect; });
+    if (racer.oid == targetOid)
+    {
+      // Find the client ID for this character
+      for (const auto& [clientId, clientContext] : _clients)
+      {
+        if (clientContext.characterUid == characterUid)
+        {
+          _commandServer.QueueCommand<decltype(addSkillEffect)>(
+            clientId,
+            [addSkillEffect]() { return addSkillEffect; });
+          break;
+        }
+      }
+      break;
+    }
   }
 
   // Remove the effect after a delay
@@ -3621,6 +3635,22 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
   for (const auto& raceClientId : raceInstance.clients)
   {
     _commandServer.QueueCommand<decltype(spur)>(raceClientId, [spur](){ return spur; });
+  }
+}
+
+void RaceDirector::SendDailyQuestNotificationToCharacter(
+  const data::Uid characterUid,
+  const protocol::AcCmdRCUpdateDailyQuestNotify& updateNotify)
+{
+  for (const auto& [clientId, clientContext] : _clients)
+  {
+    if (clientContext.characterUid == characterUid)
+    {
+      _commandServer.QueueCommand<protocol::AcCmdRCUpdateDailyQuestNotify>(
+        clientId, [updateNotify]() { return updateNotify; });
+
+      return;
+    }
   }
 }
 

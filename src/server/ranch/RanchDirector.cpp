@@ -387,21 +387,31 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleRegisterDailyQuestGroup(clientId, command);
     });
+
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestDailyQuestReward>(
     [this](ClientId clientId, const auto& command)
     {
       HandleRequestDailyQuestReward(clientId, command);
     });
+
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRRegisterQuest>(
     [this](ClientId clientId, const auto& command)
     {
       HandleRegisterQuest(clientId, command);
     });
+
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestQuestReward>(
     [this](ClientId clientId, const auto& command)
     {
       HandleRequestQuestReward(clientId, command);
       });
+  
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRGiveupQuest>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleGiveupQuest(clientId, command);
+    });
+
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRConfirmItem>(
     [this](ClientId clientId, const auto& command)
     {
@@ -4511,15 +4521,73 @@ void RanchDirector::HandleUpdateDailyQuest(
     clientContext.characterUid);
 
   protocol::AcCmdCRUpdateDailyQuestOK response{};
-  characterRecord.Mutable(
-    [&response](data::Character& character)
-    {
-      character.carrots() += 1000;
 
-      response.newCarrotBalance = character.carrots();
+  // Get or create the daily quest group for this character.
+  data::Uid groupUid = data::InvalidUid;
+  characterRecord.Immutable(
+    [&groupUid](const data::Character& character)
+    {
+      groupUid = character.dailyQuestGroupUid();
     });
 
-  response.quest = {command.quest.questId, command.quest.unk_1, command.quest.unk_2, 1};
+  const auto groupRecord = groupUid != data::InvalidUid
+    ? _serverInstance.GetDataDirector().GetDailyQuestGroup(groupUid)
+    : _serverInstance.GetDataDirector().CreateDailyQuestGroup();
+
+  if (!groupRecord.IsAvailable())
+  {
+    spdlog::warn(
+      "HandleUpdateDailyQuest: daily quest group unavailable for character {}",
+      clientContext.characterUid);
+  }
+  else groupRecord.Mutable(
+    [&command, &characterRecord, &response, groupUid](data::DailyQuestGroup& group)
+    {
+      // If this is a newly created group, link it back to the character.
+      if (groupUid == data::InvalidUid)
+      {
+        const data::Uid newGroupUid = group.uid();
+        characterRecord.Mutable(
+          [newGroupUid](data::Character& character)
+          {
+            character.dailyQuestGroupUid() = newGroupUid;
+          });
+      }
+
+      // Update quest progress.
+      auto quests = group.quests();
+      for (auto& entry : quests)
+      {
+        if (entry.questId == command.quest.questId)
+        {
+          entry.progress = command.quest.progress;
+          break;
+        }
+      }
+      group.quests = quests;
+
+      // Only award carrots if they haven't been claimed yet for this group.
+      if (!group.carrotsClaimed())
+      {
+        group.carrotsClaimed = true;
+        characterRecord.Mutable(
+          [&response](data::Character& character)
+          {
+            character.carrots() += 1000;
+            response.newCarrotBalance = character.carrots();
+          });
+      }
+      else
+      {
+        characterRecord.Immutable(
+          [&response](const data::Character& character)
+          {
+            response.newCarrotBalance = character.carrots();
+          });
+      }
+    });
+
+  response.quest = {command.quest.questId, command.quest.progress, command.quest.rewardType, 1};
   response.unk_1 = 1;
   response.unk_2 = 1;
 
@@ -4538,58 +4606,71 @@ void RanchDirector::HandleRegisterDailyQuestGroup(
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     clientContext.characterUid);
-  bool hasDailyQuests = false;
-  std::vector<uint32_t> dailyQuests = {0,0,0};
 
-  characterRecord.Mutable(
-    [&command, &hasDailyQuests, &dailyQuests](data::Character& character)
+  data::Uid existingGroupUid = data::InvalidUid;
+  characterRecord.Immutable(
+    [&existingGroupUid](const data::Character& character)
     {
-      if (character.dailyQuests().size() == 3)
-      {
-        hasDailyQuests = true;
-        dailyQuests = character.dailyQuests();
-      }
+      existingGroupUid = character.dailyQuestGroupUid();
     });
 
-  if (!hasDailyQuests)
-  {
-    for (auto& quest : command.dailyQuests)
-    {
-      data::Uid questUid = data::InvalidUid;
-      const auto dailyQuestRecord = GetServerInstance().GetDataDirector().CreateDailyQuest();
-      dailyQuestRecord.Mutable(
-        [&quest, &questUid, &characterRecord](data::DailyQuest& dailyQuest)
-        {
-          questUid = dailyQuest.uid();
-          
-          characterRecord.Mutable(
-            [&questUid](data::Character& character)
-            {
-              character.dailyQuests().emplace_back(questUid);
-            });
+  const auto& questRegistry = _serverInstance.GetQuestRegistry();
 
-          dailyQuest.unk_0 = quest.questId;
-          dailyQuest.unk_1 = quest.unk_1;
-          dailyQuest.unk_2 = quest.unk_2;
-          dailyQuest.unk_3 = quest.unk_3;
-        });
-    }
-  }
-  else if (hasDailyQuests)
+  // Fills a group's fields from the command and calculates total possible rewardPoints.
+  const auto fillGroup = [&command, &questRegistry](data::DailyQuestGroup& group)
   {
-    for (int i = 0; i < 3; i++)
+    if (!command.dailyQuests.empty())
     {
-      spdlog::debug("Quest id: {}", dailyQuests[i]);
-      const auto dailyQuestRecord = _serverInstance.GetDataDirector().GetDailyQuest(dailyQuests[i]);
-      dailyQuestRecord.Mutable(
-        [&command, &i](data::DailyQuest& dailyQuest)
-      {
-          dailyQuest.unk_0 = command.dailyQuests[i].questId;
-          dailyQuest.unk_1 = command.dailyQuests[i].unk_1;
-          dailyQuest.unk_2 = command.dailyQuests[i].unk_2;
-          dailyQuest.unk_3 = command.dailyQuests[i].unk_3;
-       });
+      group.rewardId   = command.dailyQuests[0].rewardId;
+      group.rewardType = command.dailyQuests[0].rewardType;
     }
+
+    std::array<data::DailyQuestEntry, 3> quests{};
+    for (size_t i = 0; i < 3 && i < command.dailyQuests.size(); ++i)
+    {
+      quests[i].questId  = command.dailyQuests[i].questId;
+      quests[i].progress = command.dailyQuests[i].progress;
+    }
+    group.quests = quests;
+
+    // Sum the rewardPoint of all 3 quest slots this determines the reward after completing the group of quests, 
+    // not the individual quests themselves. Client sends this after completion too, safety net for us to ensure
+    // that the client isnt cheating.
+    uint32_t totalPoints = 0;
+    for (const auto& entry : quests)
+    {
+      const auto questTemplate = questRegistry.GetQuest(entry.questId);
+      if (questTemplate)
+        totalPoints += questTemplate->rewardPoint;
+    }
+    group.rewardPoints = totalPoints;
+  };
+
+  if (existingGroupUid == data::InvalidUid)
+  {
+    const auto groupRecord = GetServerInstance().GetDataDirector().CreateDailyQuestGroup();
+    groupRecord.Mutable(
+      [&fillGroup, &characterRecord](data::DailyQuestGroup& group)
+      {
+        fillGroup(group);
+
+        const data::Uid groupUid = group.uid();
+        characterRecord.Mutable(
+          [groupUid](data::Character& character)
+          {
+            character.dailyQuestGroupUid() = groupUid;
+          });
+      });
+  }
+  else
+  {
+    // If group exists, update all slots (there is no way to update individual slots)
+    const auto groupRecord = _serverInstance.GetDataDirector().GetDailyQuestGroup(existingGroupUid);
+    groupRecord.Mutable(
+      [&fillGroup](data::DailyQuestGroup& group)
+      {
+        fillGroup(group);
+      });
   }
 
   protocol::AcCmdCRRegisterDailyQuestGroupOK response{};
@@ -5165,24 +5246,83 @@ void RanchDirector::HandleRequestDailyQuestReward(
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     clientContext.characterUid);
-  std::vector<uint32_t> dailyQuests = {0, 0, 0};
-  spdlog::debug("packet info: {} {}", command.unk0, command.unk1);
 
   protocol::AcCmdCRRequestDailyQuestRewardOK response{};
 
-  characterRecord.Mutable(
-    [&command, &dailyQuests, &response](data::Character& character)
-    {
-      dailyQuests = character.dailyQuests();
+  // Get character's daily quest group
+  data::Uid groupUid = data::InvalidUid;
+  characterRecord.Immutable([&groupUid](const data::Character& character)
+  {
+    groupUid = character.dailyQuestGroupUid();
+  });
 
-      response.rewards.items[0] = {command.unk0, 45001, 0, 1};
+  if (groupUid == data::InvalidUid)
+  {
+    return;
+  }
+
+  const auto groupRecord = _serverInstance.GetDataDirector().GetDailyQuestGroup(groupUid);
+  if (!groupRecord.IsAvailable())
+  {
+    return;
+  }
+
+  // Check if the command rewardPoints match the accumulated points in the group
+  bool pointsMatch = false;
+  groupRecord.Immutable([&pointsMatch, commandPoints = command.rewardPoints](const data::DailyQuestGroup& group)
+  {
+    pointsMatch = (group.rewardPoints() >= commandPoints);
+  });
+
+  if (!pointsMatch)
+  {
+    spdlog::warn("HandleRequestDailyQuestReward: Character {} reward points do not match", clientContext.characterUid);
+    return;
+  }
+
+  // Get the quest registry and find the appropriate reward
+  const auto& questRegistry = _serverInstance.GetQuestRegistry();
+
+  // Find the highest reward tier that doesn't exceed the command rewardPoints
+  std::optional<registry::QuestRewardPoint> bestReward;
+  uint32_t bestRewardPoints = 0;
+
+  for (const auto& [points, rewardPoint] : questRegistry.GetQuestRewardPoints())
+  {
+    // Only consider rewards that don't exceed the requested points
+    if (points <= command.rewardPoints && points > bestRewardPoints)
+    {
+      bestReward = rewardPoint;
+      bestRewardPoints = points;
+    }
+  }
+
+  if (!bestReward.has_value())
+  {
+    return;
+  }
+
+  const auto& rewardPoint = bestReward.value();
+
+  // Award the items to the character
+  characterRecord.Mutable([this, &response, &rewardPoint](data::Character& character)
+    {
+      for (const auto& rewardItem : rewardPoint.items)
+      {
+        const data::Uid itemUid = _serverInstance.GetItemSystem().AddItem(
+          character, rewardItem.tid, rewardItem.count);
+
+        const auto itemRecord = _serverInstance.GetDataDirector().GetItem(itemUid);
+
+        itemRecord.Immutable(
+          [&response](const data::Item& item)
+          {
+            auto& protocolItem = response.rewards.items.emplace_back();
+            protocol::BuildProtocolItem(protocolItem, item);
+          });
+      }
     });
 
-  for (int i = 1; i < 5; i++)
-  {
-    response.rewards.items[i] = {0, 0, 0, 0};
-  }
-  
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
@@ -5190,20 +5330,21 @@ void RanchDirector::HandleRequestDailyQuestReward(
       return response;
     });
 
-  protocol::AcCmdRCUpdateDailyQuestNotify noti{
-    .characterUid = clientContext.characterUid,
-    .questId = 101,
-    .unk = {1, 1, 10},
-    .unk0 = 3,
-    .unk1 = 12,
-    .unk2 = 100,
-    .unk3 = 0};
+  protocol::AcCmdCRUpdateDailyQuestOK response2{};
 
-  _commandServer.QueueCommand<decltype(noti)>(
-    clientId,
-    [noti]()
+  characterRecord.Mutable([&response2](data::Character& character)
     {
-      return noti;
+      response2.newCarrotBalance = character.carrots();
+    });
+  response2.quest = {command.questTid, 0, 0, 1};
+  response2.unk_1 = 1;
+  response2.unk_2 = 1;
+
+  _commandServer.QueueCommand<decltype(response2)>(
+    clientId,
+    [response2]()
+    {
+      return response2;
     });
 }
 
@@ -5258,22 +5399,60 @@ void RanchDirector::HandleRegisterQuest(
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  spdlog::debug("packet info: {} {}", command.questId, command.npcId);
+  // Check if the character already has this quest active.
+  bool alreadyHasQuest = false;
+  characterRecord.Immutable([this, &alreadyHasQuest, questId = command.questId](const data::Character& character)
+  {
+    const auto questRecords = _serverInstance.GetDataDirector().GetQuestCache().Get(character.quests());
+    if (not questRecords)
+      return;
+    for (const auto& questRecord : *questRecords)
+    {
+      questRecord.Immutable([&alreadyHasQuest, questId](const data::Quest& quest)
+      {
+        if (quest.questId() == questId
+          && quest.isCompleted() != data::Quest::Status::Completed)
+          alreadyHasQuest = true;
+      });
+    }
+  });
+
+  if (alreadyHasQuest)
+  {
+    spdlog::warn("HandleRegisterQuest: Character {} already has quest {} active",
+      clientContext.characterUid, command.questId);
+    return;
+  }
+
+  // Create a new quest record, populate it, and attach it to the character.
+  const auto questRecord = _serverInstance.GetDataDirector().CreateQuest();
+  questRecord.Mutable([questId = command.questId](data::Quest& quest)
+  {
+    quest.questId() = questId;
+    quest.isCompleted() = data::Quest::Status::InProgress;
+    quest.progress() = 0;
+  });
+
+  data::Uid newQuestUid = data::InvalidUid;
+  questRecord.Immutable([&newQuestUid](const data::Quest& quest)
+  {
+    newQuestUid = quest.uid();
+  });
+
+  characterRecord.Mutable([newQuestUid](data::Character& character)
+  {
+    character.quests().emplace_back(newQuestUid);
+  });
 
   protocol::AcCmdCRRegisterQuestOK response{};
-  response.questId = command.questId;
-  
-  if (command.questId == 11030 || command.questId == 12010)
+  questRecord.Immutable([&response](const data::Quest& quest)
   {
-    response.progress = 1;
-    response.isCompleted = 1;
-  }
-  else
-  {
-    response.progress = 0;
-    response.isCompleted = 0;
-  }
-   _commandServer.QueueCommand<decltype(response)>(
+    response.questId    = static_cast<uint16_t>(quest.questId());
+    response.progress   = quest.progress();
+    response.isCompleted = static_cast<uint8_t>(quest.isCompleted());
+  });
+
+  _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
     {
@@ -5375,22 +5554,89 @@ void RanchDirector::HandleRequestQuestReward(
     clientContext.characterUid);
 
   protocol::AcCmdCRRequestQuestRewardOK response{};
-  response.unk0 = command.unk0;//questTid
-  response.unk1 = 0;//carrots rewarded
-  response.unk2 = 0;//reward count
-  response.unk3 = 1;//effect count
-  response.unk4[0] = {command.unk1, 1};
+  response.questTid = command.questTid;
+  response.carrotsRewarded = 0;
 
-  //TODO: give rewards
-  for (int i = 0; i < response.unk2; i++)
+  // Get the quest registry and quest information
+  const auto& questRegistry = _serverInstance.GetQuestRegistry();
+  const auto questTemplate = questRegistry.GetQuest(command.questTid);
+
+  if (!questTemplate.has_value())
   {
-    response.rewards.items[i] = {0, 0, 0, 0};
+    spdlog::warn("HandleRequestQuestReward: Quest {} not found in registry", command.questTid);
+    return;
   }
 
-  for (int i = 1; i < 5; i++)
+  const auto& quest = questTemplate.value();
+
+  // Award rewards to the character
+  characterRecord.Mutable([this, &response, &quest, command](data::Character& character)
   {
-    response.unk4[i] = {0, 0};
-  }
+    // Award items from quest reward ID if it exists
+    if (quest.rewardId > 0)
+    {
+      const auto questReward = _serverInstance.GetQuestRegistry().GetQuestReward(quest.rewardId);
+      if (questReward.has_value())
+      {
+        const auto& reward = questReward.value();
+
+        // Award additional carrots from reward
+        if (reward.carrots > 0)
+        {
+          character.carrots() += reward.carrots;
+          response.carrotsRewarded += reward.carrots;
+        }
+
+        // Award items from the reward
+        for (const auto& rewardItem : reward.items)
+        {
+          data::Uid itemUid{};
+          
+          // Check item type to determine if we should use count or duration
+          const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(rewardItem.tid);
+          if (itemTemplate.has_value() && itemTemplate->type == registry::Item::Type::Temporary)
+          {
+            // For temporary items, count represents hours, so convert to duration
+            itemUid = _serverInstance.GetItemSystem().AddItem(
+              character, rewardItem.tid, std::chrono::hours(rewardItem.count));
+          }
+          else
+          {
+            itemUid = _serverInstance.GetItemSystem().AddItem(
+              character, rewardItem.tid, rewardItem.count);
+          }
+
+          const auto itemRecord = _serverInstance.GetDataDirector().GetItem(itemUid);
+          itemRecord.Immutable([&response](const data::Item& item)
+          {
+            auto& protocolItem = response.rewards.items.emplace_back();
+            protocol::BuildProtocolItem(protocolItem, item);
+          });
+        }
+
+        // Set NPC dress effect if specified
+        if (reward.keyNpcDress > 0)
+        {
+          response.npcEffects[0] = {command.npcId, reward.keyNpcDress};
+        }
+        else
+        {
+          response.npcEffects[0] = {command.npcId, 1}; // Default effect
+        }
+      }
+      else
+      {
+        spdlog::warn("HandleRequestQuestReward: Quest reward {} not found for quest {}", 
+          quest.rewardId, command.questTid);
+        response.npcEffects[0] = {command.npcId, 1}; // Default effect
+      }
+    }
+    else
+    {
+      // No reward ID, just use default effect
+      response.npcEffects[0] = {command.npcId, 1};
+    }
+  });
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -5399,6 +5645,25 @@ void RanchDirector::HandleRequestQuestReward(
       return response;
     });
 }
+
+void RanchDirector::HandleGiveupQuest(
+  ClientId clientId,
+  const protocol::AcCmdCRGiveupQuest& command)
+{
+  //TODO: implement logic
+
+  protocol::AcCmdCRGiveupQuestOK response{
+    .questId = command.questId
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
 void RanchDirector::HandleInviteUser(
   ClientId clientId,
   const protocol::AcCmdCRInviteUser& command)
@@ -5470,6 +5735,22 @@ void RanchDirector::HandleInviteUser(
   response.recipientCharacterName = command.recipientCharacterName;
 
   _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+}
+
+void RanchDirector::SendDailyQuestNotificationToCharacter(
+  const data::Uid characterUid,
+  const protocol::AcCmdRCUpdateDailyQuestNotify& updateNotify)
+{
+  for (const auto& [clientId, clientContext] : _clients)
+  {
+    if (clientContext.characterUid == characterUid)
+    {
+      _commandServer.QueueCommand<protocol::AcCmdRCUpdateDailyQuestNotify>(
+        clientId, [updateNotify]() { return updateNotify; });
+
+      return;
+    }
+  }
 }
 
 } // namespace server

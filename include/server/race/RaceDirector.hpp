@@ -26,7 +26,7 @@
 
 #include "libserver/network/command/CommandServer.hpp"
 #include "libserver/network/command/proto/RaceMessageDefinitions.hpp"
-#include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
+#include "libserver/network/command/proto/CommonMessageDefinitions.hpp"
 #include "libserver/util/Scheduler.hpp"
 
 #include <random>
@@ -76,6 +76,10 @@ public:
   void BroadcastChangeRoomOptions(
     const data::Uid& roomUid,
     const protocol::AcCmdCRChangeRoomOptionsNotify notify);
+
+  void SendDailyQuestNotificationToCharacter(
+    data::Uid characterUid,
+    const protocol::AcCmdRCUpdateDailyQuestNotify& updateNotify);
 
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId clientId) override;
