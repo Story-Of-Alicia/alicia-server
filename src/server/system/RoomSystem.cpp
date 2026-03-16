@@ -183,7 +183,7 @@ void RoomSystem::CreateRoom(const std::function<void(Room&)>& consumer)
     roomUid,
     std::move(Room(roomUid)));
   assert(inserted);
-
+  
   auto& [room, roomMutex] = it->second;
   roomsLock.unlock();
 
@@ -227,6 +227,7 @@ std::vector<Room::Snapshot> RoomSystem::GetRoomsSnapshot()
 
 void RoomSystem::DeleteRoom(uint32_t uid)
 {
+  std::scoped_lock lock(_roomsLock);
   const auto it = _rooms.find(uid);
   if (it == _rooms.end())
     throw std::runtime_error("Room does not exist");

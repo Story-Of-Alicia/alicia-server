@@ -21,12 +21,23 @@
 
 #include "libserver/util/Deferred.hpp"
 
+#include <cassert>
 #include <ranges>
 #include <spdlog/spdlog.h>
 #include <stacktrace>
 
 namespace server::network
 {
+
+namespace
+{
+
+constexpr std::size_t MaxConnectionsPerAddress = 3;
+constexpr std::size_t MaxTotalConnections = 1024;
+constexpr std::size_t MaxConnectRatePerAddress = 10;
+constexpr auto RateWindow = std::chrono::seconds(30);
+
+} // namespace
 
 Client::Client(
   ClientId clientId,
@@ -36,6 +47,7 @@ Client::Client(
   , _socket(std::move(socket))
   , _networkEventHandler(networkEventHandler)
 {
+  _remoteAddress = _socket.remote_endpoint().address().to_v4();
 }
 
 void Client::Begin()
@@ -82,9 +94,9 @@ void Client::QueueWrite(WriteSupplier writeSupplier)
   WriteLoop();
 }
 
-asio::ip::address_v4 Client::GetAddress()
+asio::ip::address_v4 Client::GetAddress() const noexcept
 {
-  return _socket.remote_endpoint().address().to_v4();
+  return _remoteAddress;
 }
 
 void Client::WriteLoop() noexcept
@@ -295,7 +307,6 @@ std::shared_ptr<Client> Server::GetClient(ClientId clientId)
 
 void Server::HandleNetworkTick()
 {
-
 }
 
 void Server::OnClientConnected(
@@ -307,8 +318,15 @@ void Server::OnClientConnected(
 void Server::OnClientDisconnected(
   ClientId clientId)
 {
+  const auto clientIt = _clients.find(clientId);
+  assert(clientIt != _clients.end());
+
+  const auto address = clientIt->second->GetAddress();
+  OnThrottleDisconnect(address);
+
   _networkEventHandler.OnClientDisconnected(clientId);
-  _clients.erase(clientId);
+
+  _clients.erase(clientIt);
 }
 
 size_t Server::OnClientData(
@@ -316,6 +334,57 @@ size_t Server::OnClientData(
   const std::span<const std::byte>& data)
 {
   return _networkEventHandler.OnClientData(clientId, data);
+}
+
+bool Server::IsConnectionThrottled(const asio::ip::address_v4& address) noexcept
+{
+  auto& state = _addressStates[address];
+  // If there are more active connections than allowed by `MaxConnectionsPerAddress`
+  // throttle the connection from the address.
+  if (state.activeConnections >= MaxConnectionsPerAddress)
+    return true;
+
+  const auto now = std::chrono::steady_clock::now();
+
+  // Pop the connection timestamps which are over the rate window and have expired.
+  while (not state.connectionTimestamps.empty())
+  {
+    const auto timeSinceConnection = now - state.connectionTimestamps.front();
+    if (timeSinceConnection < RateWindow)
+      break;
+
+    state.connectionTimestamps.pop_front();
+  }
+
+  // If there are more connection attempts than allowed by `MaxConnectRatePerAddress`
+  // throttle the connection from the address.
+  if (state.connectionTimestamps.size() >= MaxConnectRatePerAddress)
+    return true;
+
+  state.activeConnections++;
+  state.connectionTimestamps.push_back(now);
+
+  return false;
+}
+
+void Server::OnThrottleDisconnect(const asio::ip::address_v4& address) noexcept
+{
+  const auto it = _addressStates.find(address);
+  if (it == _addressStates.end())
+  {
+    return;
+  }
+
+  if (it->second.activeConnections > 0)
+  {
+    --it->second.activeConnections;
+  }
+
+  if (it->second.activeConnections == 0 &&
+      it->second.connectionTimestamps.empty())
+  {
+    _addressStates.erase(it);
+  }
 }
 
 void Server::AcceptLoop() noexcept
@@ -329,6 +398,18 @@ void Server::AcceptLoop() noexcept
         {
           throw std::runtime_error(
             fmt::format("Network exception 0x{}", error.value()));
+        }
+
+        const auto remoteAddr = client_socket.remote_endpoint().address().to_v4();
+
+        if (IsConnectionThrottled(remoteAddr))
+        {
+          spdlog::warn(
+            "Connection rejected from {} (throttled)",
+            remoteAddr.to_string());
+          client_socket.close();
+          AcceptLoop();
+          return;
         }
 
         // Sequential Id.
@@ -364,12 +445,12 @@ void Server::TickLoop() noexcept
 
   _timer.expires_after(std::chrono::seconds(1));
   _timer.async_wait([this](const boost::system::error_code& error)
-  {
-    if (error)
-      return;
+    {
+      if (error)
+        return;
 
-    TickLoop();
-  });
+      TickLoop();
+    });
 }
 
 } // namespace server::network

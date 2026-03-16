@@ -40,6 +40,7 @@
 #include <libserver/registry/CourseRegistry.hpp>
 #include <libserver/registry/HorseRegistry.hpp>
 #include <libserver/registry/ItemRegistry.hpp>
+#include <libserver/registry/MagicRegistry.hpp>
 #include <libserver/registry/PetRegistry.hpp>
 #include <libserver/registry/QuestRegistry.hpp>
 
@@ -112,6 +113,10 @@ public:
   //! Returns reference to the Quest registry.
   //! @returns Reference to the Quest registry.
   registry::QuestRegistry& GetQuestRegistry();
+
+  //! Returns reference to the Magic registry.
+  //! @returns Reference to the Magic registry.
+  registry::MagicRegistry& GetMagicRegistry();
 
   //! Returns reference to the chat system.
   //! @returns Reference to the chat system.
@@ -238,6 +243,8 @@ private:
   registry::HorseRegistry _horseRegistry;
   //! A registry of items.
   registry::ItemRegistry _itemRegistry;
+  //! A registry of magic slots.
+  registry::MagicRegistry _magicRegistry;
   //! A registry of pets.
   registry::PetRegistry _petRegistry;
   //! A registry of quests.

@@ -96,7 +96,12 @@ struct Course
 
   struct DeckItemInfo
   {
-    // currently nothing important
+    std::vector<uint32_t> itemTypes;
+  };
+
+  struct ItemTypeInfo
+  {
+    uint32_t magicSlot;
   };
 
 };
@@ -112,6 +117,10 @@ public:
     uint8_t type);
   [[nodiscard]] const Course::MapBlockInfo& GetMapBlockInfo(
     uint32_t id);
+  [[nodiscard]] const Course::DeckItemInfo& GetDeckItemInfo(
+    uint32_t deckId);
+  [[nodiscard]] const Course::ItemTypeInfo& GetItemTypeInfo(
+    uint32_t itemTypeId);
 
 private:
   //! A collection of game mode infos.
@@ -120,6 +129,9 @@ private:
   std::unordered_map<uint32_t, Course::MapBlockInfo> _mapBlockInfo;
   //! A collection of deck item infos.
   std::unordered_map<uint32_t, Course::DeckItemInfo> _deckItemInfo;
+
+  //! A collection of item type infos.
+  std::unordered_map<uint32_t, Course::ItemTypeInfo> _itemTypeInfo;
  };
 
 }

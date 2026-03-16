@@ -92,4 +92,13 @@ void RaceTracker::Clear()
   _nextObjectOid = 1;
 }
 
+uint16_t RaceTracker::GetNextObstacleInstanceIdAndIncrementBy(uint16_t increment)
+{
+  const uint16_t nextId = _nextObstacleInstanceId;
+  _nextObstacleInstanceId += increment;
+  if (_nextObstacleInstanceId == 0) // wrap around, skipping 0 which is used to indicate "no obstacle instance"
+    _nextObstacleInstanceId = 1;
+  return nextId;
+}
+
 } // namespace server::tracker
