@@ -1841,7 +1841,7 @@ void RaceDirector::HandleRaceResult(
   [[maybe_unused]] const protocol::AcCmdCRRaceResult& command)
 {
   const auto& clientContext = GetClientContext(clientId);
-  auto& raceInstance = GetRaceInstance(clientContext);
+  [[maybe_unused]] auto& raceInstance = GetRaceInstance(clientContext);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 

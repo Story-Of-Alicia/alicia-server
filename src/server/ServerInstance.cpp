@@ -320,6 +320,7 @@ registry::PetRegistry& ServerInstance::GetPetRegistry()
 registry::QuestRegistry& ServerInstance::GetQuestRegistry()
 {
   return _questRegistry;
+}
 
 registry::MagicRegistry& ServerInstance::GetMagicRegistry()
 {
