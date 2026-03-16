@@ -281,6 +281,12 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
       HandleInviteUser(clientId, message);
     });
 
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestUser>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleRequestUser(clientId, message);
+    });
+
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRKick>(
     [this](ClientId clientId, const auto& message)
     {
@@ -605,6 +611,21 @@ void RaceDirector::Tick()
           player.SetReady(false);
         }
       });
+  }
+}
+
+void RaceDirector::NotifyRequestUser(
+  data::Uid characterUid,
+  const protocol::AcCmdRCRequestUser& notify) noexcept
+{
+  try
+  {
+     const auto targetClientId = GetClientIdByCharacterUid(characterUid);
+     _commandServer.QueueCommand<protocol::AcCmdRCRequestUser>(targetClientId, [notify](){ return notify; });
+  }
+  catch(const std::exception&)
+  {
+    // Dont care if the client is not found, we just won't send the notification
   }
 }
 
@@ -3292,6 +3313,83 @@ void RaceDirector::HandleInviteUser(
   protocol::AcCmdCRInviteUserOK response{};
   response.recipientCharacterUid = command.recipientCharacterUid;
   response.recipientCharacterName = command.recipientCharacterName;
+
+  _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+}
+
+void RaceDirector::HandleRequestUser(
+  ClientId clientId,
+  const protocol::AcCmdCRRequestUser& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  const auto& invokerCharacterUid = clientContext.characterUid;
+
+  const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(invokerCharacterUid);
+  if (not invokerRecord)
+    return;
+
+  bool isAdmin = false;
+  std::string invokerCharacterName{};
+  invokerRecord.Immutable([&isAdmin, &invokerCharacterName](const data::Character& character)
+    {
+
+      isAdmin = character.role() != data::Character::Role::User;
+      invokerCharacterName = character.name();
+    });
+  const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+    clientContext.characterUid).userName;
+
+  if (not isAdmin)
+  {    spdlog::warn("User '{}'('{}'), which is not an admin, tried to summon character '{}'",
+      userName,
+      invokerCharacterName,
+      command.characterName);
+    return;
+  }
+
+  protocol::AcCmdCRRequestUserCancel cancel{};
+  cancel.force= command.force;
+  cancel.characterName = command.characterName;
+  cancel.roomUid = command.roomUid;
+  cancel.ranchUid = command.ranchUid;
+
+  const data::Uid characterUid = GetServerInstance()
+    .GetDataDirector()
+    .GetDataSource()
+    .RetrieveCharacterUidByName(command.characterName);
+
+  if (characterUid == data::InvalidUid)
+  {
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  try
+  {
+    const auto clientOpt = GetServerInstance()
+    .GetLobbyDirector().GetUserByCharacterUid(characterUid);
+  }
+  catch(const std::exception&)
+  {
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  protocol::AcCmdRCRequestUser notify{};
+  notify.force= command.force;
+  notify.characterName = command.characterName;
+  notify.roomUid = command.roomUid;
+  notify.ranchUid = command.ranchUid;
+
+  GetServerInstance().GetRaceDirector().NotifyRequestUser(characterUid, notify);
+  GetServerInstance().GetRanchDirector().NotifyRequestUser(characterUid, notify);
+
+  protocol::AcCmdCRRequestUserOK response{};
+  response.force= command.force;
+  response.characterName = command.characterName;
+  response.roomUid = command.roomUid;
+  response.ranchUid = command.ranchUid;
 
   _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }

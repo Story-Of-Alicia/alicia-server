@@ -26,6 +26,7 @@
 
 #include "libserver/registry/MagicRegistry.hpp"
 #include "libserver/network/command/CommandServer.hpp"
+#include "libserver/network/command/proto/CommonMessageDefinitions.hpp"
 #include "libserver/network/command/proto/RaceMessageDefinitions.hpp"
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
 #include "libserver/util/Scheduler.hpp"
@@ -77,6 +78,11 @@ public:
   void BroadcastChangeRoomOptions(
     const data::Uid& roomUid,
     const protocol::AcCmdCRChangeRoomOptionsNotify notify);
+
+  //! Send a RequestUser notification to a character connected to this director.
+  void NotifyRequestUser(
+    data::Uid characterUid,
+    const protocol::AcCmdRCRequestUser& notify) noexcept;
 
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId clientId) override;
@@ -280,6 +286,10 @@ private:
   void HandleInviteUser(
     ClientId clientId,
     const protocol::AcCmdCRInviteUser& command);
+
+  void HandleRequestUser(
+    ClientId clientId,
+    const protocol::AcCmdCRRequestUser& command);
 
   void HandleKickUser(
     ClientId clientId,
