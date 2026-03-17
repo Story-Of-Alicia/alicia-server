@@ -48,14 +48,10 @@ public:
   void Terminate();
   void Tick();
 
-  //! Loads registered stallions from database on server startup
-  void LoadRegisteredStallions();
-
   std::vector<data::Uid> GetOnlineCharacters();
 
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId client) override;
-
 
   //!
   void Disconnect(data::Uid characterUid);
@@ -134,12 +130,11 @@ private:
     //! Unique ID of the owner of the ranch the client is visiting.
     data::Uid visitingRancherUid{data::InvalidUid};
 
-    
     uint8_t busyState{0};
     //! Whether there's a pending breeding failure card waiting to be claimed
     bool hasPendingFailureCard{false};
-    //! Current breeding failure card type: 0 = Normal (RED), 1 = Chance (YELLOW)
-    uint8_t pendingCardType{0};
+    //! Current breeding failure card type.
+    protocol::BreedingFailureCardType pendingCardType{};
 
     //! Breeding session context for tracking breeding market flow
     struct BreedingContext
@@ -206,9 +201,15 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRRegisterStallion& command);
 
+  void SendRegisterStallionCancel(
+    ClientId clientId);
+
   void HandleUnregisterStallion(
     ClientId clientId,
     const protocol::AcCmdCRUnregisterStallion& command);
+
+  void SendUnregisterStallionCancel(
+    ClientId clientId);
 
   void HandleUnregisterStallionEstimateInfo(
     ClientId clientId,

@@ -614,7 +614,7 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
     horse.breeding.breedingCombo = json.value("breedingCombo", uint32_t{0});
   }
 
-  horse.type = json.value("type", uint32_t{0});
+  horse.type = static_cast<data::Horse::Type>(json.value("type", uint32_t{0}));
   horse.horseType = json.value("horseType", uint8_t{0});
   horse.tendency = json.value("tendency", uint32_t{0});
   horse.spirit = json.value("spirit", uint32_t{0});
@@ -736,7 +736,7 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["breeding"]["breedingCount"] = horse.breeding.breedingCount();
   json["breeding"]["breedingCombo"] = horse.breeding.breedingCombo();
 
-  json["type"] = horse.type();
+  json["type"] = static_cast<size_t>(horse.type());
   json["horseType"] = horse.horseType();
   json["spirit"] = horse.spirit();
   json["tendency"] = horse.tendency();
