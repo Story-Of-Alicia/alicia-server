@@ -4,11 +4,39 @@
 
 #include "libserver/data/helper/ProtocolHelper.hpp"
 
+#include "libserver/data/DataDefinitions.hpp"
+
 namespace server
 {
 
 namespace protocol
 {
+
+namespace
+{
+
+//! Converts horse type to protocol horse type.
+//! @param value Horse type.
+//! @return Protocol horse type. If un-mapped default of `Adult` is returned.
+Horse::HorseType HorseTypeToProtocolHorseType(
+  const data::Horse::Type value) noexcept
+{
+  switch (value)
+  {
+    case data::Horse::Type::Rent:
+      return Horse::HorseType::Rent;
+    case data::Horse::Type::Stallion:
+      return Horse::HorseType::Stallion;
+    case data::Horse::Type::Foal:
+      return Horse::HorseType::Foal;
+    case data::Horse::Type::Adult:
+    default:
+      static_assert(true && "Unmapped horse type");
+      return Horse::HorseType::Adult;
+  }
+}
+
+} // anon namespace
 
 void BuildProtocolCharacter(
   Character& protocolCharacter,
@@ -48,7 +76,7 @@ void BuildProtocolHorse(
   protocolHorse.grade = static_cast<uint8_t>(horse.grade());
   protocolHorse.growthPoints = static_cast<uint16_t>(horse.growthPoints());
 
-  protocolHorse.vals1.type = static_cast<protocol::Horse::HorseType>(horse.type());
+  protocolHorse.vals1.type = static_cast<Horse::HorseType>(horse.type());
   protocolHorse.vals1.tendency = static_cast<uint8_t>(horse.tendency());
   protocolHorse.vals1.spirit = static_cast<uint8_t>(horse.spirit());
   protocolHorse.vals1.fatigue = static_cast<uint16_t>(horse.fatigue());
@@ -89,7 +117,7 @@ void BuildProtocolHorse(
   };
 
   protocolHorse.vals1 = {
-    .type = static_cast<protocol::Horse::HorseType>(horse.type()),
+    .type = HorseTypeToProtocolHorseType(horse.type()),
     .val1 = 0x00,
     .dateOfBirth = util::TimePointToAliciaTime(horse.dateOfBirth()),
     .tendency = static_cast<uint8_t>(horse.tendency()),
@@ -108,7 +136,7 @@ void BuildProtocolHorse(
     .val14 = 0x00,
     .emblem = static_cast<uint16_t>(horse.emblemUid())};
 
-  BuildProtocolHorseParts(protocolHorse.parts, horse.parts, horse.type() == 1);
+  BuildProtocolHorseParts(protocolHorse.parts, horse.parts, horse.type() == data::Horse::Type::Foal);
   BuildProtocolHorseAppearance(protocolHorse.appearance, horse.appearance);
   BuildProtocolHorseStats(protocolHorse.stats, horse.stats);
   BuildProtocolHorseMastery(protocolHorse.mastery, horse.mastery);
@@ -117,12 +145,12 @@ void BuildProtocolHorse(
 void BuildProtocolHorseParts(
   Horse::Parts& protocolHorseParts,
   const data::Horse::Parts& parts,
-  bool isFoal)
+  const bool isFoal)
 {
   // Helper function to map adult TIDs to foal-safe color TIDs
   // TODO: This is causing a UI mismatch on the horse appearance info window.
   //       Figure out a way to render foals' mane and tail and display UI correctly without crashing the client.
-  auto MapToFoalColorTid = [](data::Tid adultTid) -> uint8_t
+  auto MapToFoalColorTid = [](const data::Tid adultTid) -> uint8_t
   {
     // Foals can only display colors 1-5
     // TIDs 1-5 map directly

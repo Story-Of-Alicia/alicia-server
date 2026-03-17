@@ -23,23 +23,22 @@ class ServerInstance;
 class BreedingMarket
 {
 public:
-  //! Cached stallion metadata for quick access without async loading
-  struct StallionData
+  //! Breeding earnings information
+  struct Earnings
   {
-    data::Uid stallionUid;
-    data::Uid horseUid;
-    data::Uid ownerUid;
-    uint32_t breedingCharge;
-    util::Clock::time_point registeredAt;
-    // Note: Expires 24 hours after registeredAt
+    //! A count of times the horse was mated.
+    uint32_t timesMated{};
+    //! A total earnings of the stallion.
+    uint32_t earnings{};
+    //! A cost of a breed.
+    uint32_t breedingFee{};
   };
 
-  //! Breeding earnings information
-  struct StallionBreedingEarnings
+  //! Breeding fee range of a grade.
+  struct GradeFeeRange
   {
-    uint32_t timesMated;
-    uint32_t compensation;
-    uint32_t breedingCharge;
+    int32_t min{};
+    int32_t max{};
   };
 
   //! Constructor
@@ -60,70 +59,56 @@ public:
   void Tick();
 
 
-  //! Registers a horse as a stallion in the breeding market
-  //! @param characterUid UID of the character registering the stallion
-  //! @param horseUid UID of the horse to register
-  //! @param breedingCharge Price per breeding session in carrots
-  //! @returns Stallion UID if successful, InvalidUid if failed
-  data::Uid RegisterStallion(
+  [[nodiscard]] bool HandleRegisterStallion(
     data::Uid characterUid,
     data::Uid horseUid,
-    uint32_t breedingCharge);
+    int32_t breedingFee) noexcept;
 
-  //! Unregisters a stallion from the breeding market
-  //! @param horseUid UID of the horse to unregister
-  //! @returns Breeding earnings if successful, with compensation=0 if failed
-  StallionBreedingEarnings UnregisterStallion(data::Uid horseUid);
+  [[nodiscard]] bool HandleUnregisterStallion(
+    data::Uid characterUid,
+    data::Uid horseUid) noexcept;
 
-  //! Gets estimate information for unregistering a stallion
+  //! Calculates earnings for unregistering a stallion
   //! @param horseUid UID of the horse
-  //! @returns Breeding earnings if registered, nullopt if not registered
-  std::optional<StallionBreedingEarnings> GetUnregisterEstimate(data::Uid horseUid);
+  //! @returns Breeding earnings if registered, `std::nullopt` if not registered.
+  [[nodiscard]] std::optional<Earnings> CalculateUnregisterEarnings(
+    data::Uid horseUid) const noexcept;
 
   //! Checks if a horse is registered as a stallion
   //! @param horseUid UID of the horse to check
   //! @returns true if registered, false otherwise
-  bool IsRegistered(data::Uid horseUid) const;
+  [[nodiscard]] bool IsRegistered(data::Uid horseUid) const noexcept;
+
+  //! Calculates registration fee for registering a stallion.
+  //! @param breedingFee Breeding fee of a stallion.
+  //! @return Registration fee value.
+  [[nodiscard]] int32_t CalculateRegistrationFee(int32_t breedingFee);
+
+  //! Gets the breeding fee range for a grade.
+  //! @param grade Grade.
+  //! @return Breeding fee range of a grade.
+  //!         If grade is not allowed to breed `std::nullopt` is returned.
+  [[nodiscard]] std::optional<GradeFeeRange> GetGradeFeeRange(
+    uint32_t grade) const noexcept;
 
   //! Gets all registered stallion horse UIDs
   //! @returns Vector of horse UIDs
-  std::vector<data::Uid> GetRegisteredStallions() const;
-
-  //! Gets stallion data for a specific horse
-  //! @param horseUid UID of the horse
-  //! @returns StallionData if found, nullopt otherwise
-  std::optional<StallionData> GetStallionData(data::Uid horseUid) const;
+  [[nodiscard]] std::vector<data::Uid> GetSnapshot() const noexcept;
 
 private:
+  struct Horse
+  {
+    data::Uid stallionUid{data::InvalidUid};
+  };
+
   //! Reference to the server instance
   ServerInstance& _serverInstance;
 
   //! Mutex for thread-safe access to breeding market data
   mutable std::mutex _mutex;
 
-  //! List of all registered horse UIDs (for quick iteration)
-  std::vector<data::Uid> _registeredStallions;
-
-  //! Maps horseUid -> stallionUid for quick lookup
-  std::unordered_map<data::Uid, data::Uid> _horseToStallionMap;
-
-  //! Cached stallion metadata (stallionUid -> data)
-  std::unordered_map<data::Uid, StallionData> _stallionDataCache;
-
-  //! Flag indicating whether stallions are loaded from the database
-  bool _stallionsLoaded{false};
-
-  //! List of stallion UIDs being loaded
-  std::vector<data::Uid> _stallionUidsToLoad;
-
-  //! Checks and removes expired stallions
-  void CheckExpiredStallions();
-
-  //! Schedules a deferred task to set a horse's type once it's loaded in cache
-  void ScheduleHorseTypeSet(data::Uid horseUid, uint32_t horseType);
-
-  //! Pays a stallion owner immediately, loading from the data source if needed
-  void PayOwner(data::Uid ownerUid, uint32_t earnings);
+  //! Set of horses which are stallions.
+  std::unordered_map<data::Uid, Horse> _horses;
 };
 
 } // namespace server
