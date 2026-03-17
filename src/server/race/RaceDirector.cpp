@@ -46,44 +46,27 @@ uint64_t TimePointToRaceTimePoint(const std::chrono::steady_clock::time_point& t
     timePoint.time_since_epoch()).count() / IntervalConstant;
 }
 
-const std::array<uint32_t, 12> magicItems = {
-  2, // FireBall     Team mode 0
-  4, // WaterShield  Team mode 0
-  6, // Booster      Team mode 0
-  8, // HotRodding   Team mode 0
-  10, // IceWall     Team mode 0
-  12, // JumpStun    Team mode 0
-  14, // DarkFire    Team mode 0
-  16, // Summon      Team mode 0
-  18, // Lightning   Team mode 0
-  20, // BufPower    Team mode 1
-  22, // BufGauge    Team mode 1
-  24, // BufSpeed    Team mode 1
-};
-
-bool RollCritical(tracker::RaceTracker::Racer& racer)
+bool RollCritical(tracker::RaceTracker::Racer& racer, const server::registry::Magic::SlotInfo& magicSlotInfo)
 {
-  if (racer.critChance) {
+  if (racer.critChance && magicSlotInfo.affectByCriticalAura) {
     return true;
   }
   return (rand() % 100) < 5;
 }
 
-uint32_t RandomMagicItem(tracker::RaceTracker::Racer& racer)
+const server::registry::Magic::SlotInfo RandomMagicItem(ServerInstance& serverInstance,tracker::RaceTracker::Racer& racer)
 {
+  const auto& itemPool = (racer.team == tracker::RaceTracker::Racer::Team::Solo
+    ? serverInstance.GetMagicRegistry().GetSoloPool()
+    : serverInstance.GetMagicRegistry().GetTeamPool());
   static std::random_device rd;
-  std::uniform_int_distribution distribution(0, racer.team == tracker::RaceTracker::Racer::Team::Solo ? 8 : 11);
-  uint32_t magicItemId = magicItems[distribution(rd)];
-  if (RollCritical(racer))
+  std::uniform_int_distribution distribution(0, static_cast<int>(itemPool.size() - 1));
+  auto magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(itemPool[distribution(rd)]);
+  if (RollCritical(racer, magicSlotInfo))
   {
-    magicItemId += 1;
+    magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(magicSlotInfo.criticalType);
   }
-  return magicItemId;
-}
-
-bool SkillIsCritical(uint32_t skillOrEffectId)
-{
-  return skillOrEffectId % 2 != 0;
+  return magicSlotInfo;
 }
 
 } // anon namespace
@@ -1386,13 +1369,23 @@ void RaceDirector::PrepareItemSpawners(data::Uid roomUid)
     // Spawn items based on map positions and game mode allowed deck IDs
     for (const uint32_t usedDeckItemId : gameModeInfo.usedDeckItemIds)
     {
+      const auto& deckItemInfo = GetServerInstance().GetCourseRegistry().GetDeckItemInfo(usedDeckItemId);
       for (const auto& mapDeckItemInstance : mapBlockInfo.deckItems)
       {
         if (mapDeckItemInstance.deckId != usedDeckItemId)
           continue;
 
         auto& item = raceInstance.tracker.AddItem();
-        item.deckId = mapDeckItemInstance.deckId;
+        item.itemTypes = deckItemInfo.itemTypes;
+        
+        // Randomly pick an initial type
+        if (!item.itemTypes.empty())
+        {
+          static std::random_device rd;
+          std::uniform_int_distribution<size_t> distribution(0, item.itemTypes.size() - 1);
+          item.currentType = item.itemTypes[distribution(rd)];
+        }
+
         item.position[0] = mapDeckItemInstance.position[0] + offset[0];
         item.position[1] = mapDeckItemInstance.position[1] + offset[1];
         item.position[2] = mapDeckItemInstance.position[2] + offset[2];
@@ -2297,12 +2290,13 @@ void RaceDirector::HandleRaceUserPos(
     if (not isItemInPlayerProximity)
       continue;
 
-    protocol::AcCmdGameRaceItemSpawn spawn{
+    protocol::AcCmdRCCreateItem spawn{
       .itemId = item.oid,
-      .itemType = item.deckId,
+      .itemType = item.currentType,
       .position = item.position,
-      .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
-      .removeDelay = -1};
+      .spawnStyle = 0,  // ITEM_SPAWN_STYLE_NONE, fix the item in position
+      .spawnerId = 0,
+      .sizeLevel = 0};
 
     racer.trackedItems.insert(item.oid);
 
@@ -2600,7 +2594,6 @@ void RaceDirector::HandleRequestMagicItem(
     return;
   }
 
-  // TODO: reset magic gauge to 0?
   protocol::AcCmdCRStarPointGetOK starPointResponse{
     .characterOid = command.characterOid,
     .starPointValue = racer.starPointValue = 0,
@@ -2616,7 +2609,7 @@ void RaceDirector::HandleRequestMagicItem(
 
   protocol::AcCmdCRRequestMagicItemOK response{
     .characterOid = command.characterOid,
-    .magicItemId = racer.magicItem.emplace(RandomMagicItem(racer)),
+    .magicItemId = racer.magicItem.emplace(RandomMagicItem(_serverInstance, racer).type),
     .member3 = 0
   };
 
@@ -2662,13 +2655,17 @@ void RaceDirector::HandleUseMagicItem(
     return;
   }
 
+  const uint16_t obstacleInstanceCount = static_cast<uint16_t>(command.obstacleProperties.transform([](const auto& ids) { return ids.size(); }).value_or(0));
+  const uint16_t nextObstacleInstanceId = raceInstance.tracker.GetNextObstacleInstanceIdAndIncrementBy(obstacleInstanceCount);
+
   protocol::AcCmdCRUseMagicItemOK response{
     .characterOid = command.characterOid,
     .magicItemId = command.magicItemId,
-    .optional1 = command.optional1,
-    .optional2 = command.optional2,
-    .unk3 = command.characterOid,
-    .unk4 = command.optional3.has_value() ? command.optional3.value().member1 : 0.0f};
+    .iceWallProperties = command.iceWallProperties,
+    .obstacleProperties = command.obstacleProperties,
+    .nextObstacleInstanceId = nextObstacleInstanceId,
+    .unk4 = 0
+  };
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -2681,10 +2678,10 @@ void RaceDirector::HandleUseMagicItem(
   protocol::AcCmdCRUseMagicItemNotify usageNotify{
     .characterOid = command.characterOid,
     .magicItemId = command.magicItemId,
-    .optional1 = command.optional1,
-    .optional2 = command.optional2,
-    .unk3 = command.characterOid,
-    .unk4 = command.unk3 // idk man
+    .iceWallProperties = command.iceWallProperties,
+    .obstacleProperties = command.obstacleProperties,
+    .nextObstacleInstanceId = nextObstacleInstanceId,
+    .unk4 = 0
   };
 
   // Send usage notification to other players
@@ -2698,144 +2695,140 @@ void RaceDirector::HandleUseMagicItem(
       [usageNotify]() { return usageNotify; });
   }
 
+  const auto& magicSlotInfo = GetServerInstance().GetMagicRegistry().GetSlotInfo(command.magicItemId);
+
   // Send effect for items that have instant effects
-  switch (command.magicItemId)
+  std::vector<std::tuple<server::tracker::Oid, std::optional<std::function<void()>>>> affectedOidsAndAfterEffectCallbacks;
+  switch (magicSlotInfo.type)
   {
     // Shield
     // TODO: Maybe not change it if they already have a stronger shield?
     case 4:
+    {
       racer.shield = tracker::RaceTracker::Racer::Shield::Normal;
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, command.characterOid, 2, [&racer]()
+      const auto afterEffectRemoved = [&racer]()
       {
         racer.shield = tracker::RaceTracker::Racer::Shield::None;
-      });
+      };
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved);
       break;
+    }
     case 5:
+    {
       racer.shield = tracker::RaceTracker::Racer::Shield::Critical;
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, command.characterOid, 3, [&racer]()
+      const auto afterEffectRemoved = [&racer]()
       {
         racer.shield = tracker::RaceTracker::Racer::Shield::None;
-      });
+      };
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved);
       break;
+    }
     // Booster
     case 6:
     case 7:
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, command.characterOid, 5);
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, std::nullopt);
       break;
     // Phoenix
     case 8:
+    {
       racer.hotRodded = true;
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, command.characterOid, 6, [&racer]()
+      const auto afterEffectRemoved = [&racer]()
       {
         racer.hotRodded = false;
-      });
+      };
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved);
       break;
+    }
     case 9:
+    {
       racer.hotRodded = true;
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, command.characterOid, 6, [&racer]()
+      const auto afterEffectRemoved = [&racer]()
       {
         racer.hotRodded = false;
-      });
+      };
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved);
       break;
+    }
+    // IceWall
+    case 10:
+    case 11:
+    {
+      // TODO: How do we distinguish between different obstacles?
+      auto magicExpire = protocol::AcCmdRCMagicExpire{
+        .magicType = magicSlotInfo.type,
+        .firstObstacleInstanceId = nextObstacleInstanceId,
+        .obstacleInstanceCount = obstacleInstanceCount,
+        .breakdown = 0
+      };
+      _scheduler.Queue(
+        [this, magicExpire, &raceInstance]()
+        {
+          for (const ClientId& raceClientId : raceInstance.clients)
+          {
+            _commandServer.QueueCommand<decltype(magicExpire)>(
+              raceClientId,
+              [magicExpire]() { return magicExpire; });
+          }
+        },
+        Scheduler::Clock::now() + std::chrono::seconds(4)); // TODO: Change to 4 seconds
+      break;
+    }
     // Shackles
     // TODO: Apply only to opponents ahead of the racer
     case 12:
-      for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
-      {
-        if (racer.oid != otherRacer.oid
-        && (racer.team == tracker::RaceTracker::Racer::Team::Solo || racer.team != otherRacer.team))
-        {
-          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 10);
-        }
-      }
     case 13:
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
         if (racer.oid != otherRacer.oid
         && (racer.team == tracker::RaceTracker::Racer::Team::Solo || racer.team != otherRacer.team))
         {
-          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 11);
+          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, std::nullopt);
         }
       }
       break;
     // BufPower
     case 20:
-      for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
-      {
-        if (racer.oid == otherRacer.oid
-        || (racer.team != tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
-        {
-          otherRacer.critChance = true;
-          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 18, [&otherRacer]()
-          {
-            otherRacer.critChance = false;
-          });
-        }
-      }
-      break;
     case 21:
-      // TODO: Is the critical "crit chance" buff different from the normal gauge buff?
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
         if (racer.oid == otherRacer.oid
         || (racer.team != tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
         {
           otherRacer.critChance = true;
-          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 19, [&otherRacer]()
+          const auto afterEffectRemoved = [&otherRacer]()
           {
             otherRacer.critChance = false;
-          });
+          };
+          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, afterEffectRemoved);
         }
       }
       break;
     // BufGauge
     case 22:
-      for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
-      {
-        if (racer.oid == otherRacer.oid
-        || (racer.team != tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
-        {
-          otherRacer.gaugeBuff = true;
-          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 20, [&otherRacer]()
-          {
-            otherRacer.gaugeBuff = false;
-          });
-        }
-      }
-      break;
     case 23:
-      // TODO: Is the crit gauge buff different from the normal gauge buff?
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
         if (racer.oid == otherRacer.oid
         || (racer.team != tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
         {
           otherRacer.gaugeBuff = true;
-          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 21, [&otherRacer]()
+          const auto afterEffectRemoved = [&otherRacer]()
           {
             otherRacer.gaugeBuff = false;
-          });
+          };
+          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, afterEffectRemoved);
         }
       }
       break;
     // BufSpeed
     case 24:
-      for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
-      {
-        if (racer.oid == otherRacer.oid
-        || (racer.team != tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
-        {
-          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 22);
-        }
-      }
-      break;
     case 25:
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
         if (racer.oid == otherRacer.oid
         || (racer.team != tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
         {
-          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, 23);
+          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, std::nullopt);
         }
       }
       break;
@@ -2870,7 +2863,7 @@ void RaceDirector::HandleUserRaceItemGet(
     // TODO: Deduplicate from StarPointGet
     case Room::GameMode::Speed:
       {
-        switch (item.deckId)
+        switch (item.currentType)
         {
           case 101: // Gold horseshoe. Get star points until the next boost
             racer.starPointValue = std::min(((racer.starPointValue/40000)+1) * 40000, gameModeInfo.starPointsMax);
@@ -2881,7 +2874,7 @@ void RaceDirector::HandleUserRaceItemGet(
           default:
             // TODO: Disconnect?
             spdlog::warn("Player {} picked up unknown item type {}",
-              clientId, item.deckId);
+              clientId, item.currentType);
             break;
         }
 
@@ -2904,48 +2897,86 @@ void RaceDirector::HandleUserRaceItemGet(
     // TODO: Deduplicate from RequestMagicItem
     case Room::GameMode::Magic:
     {
-        if (racer.magicItem.has_value())
-        {
-          return;
-        }
+      // Magic items should respawn at a near-instant rate
+      item.respawnTimePoint = std::chrono::steady_clock::now();
 
-        // TODO: Replace with the item's deckId?
-        const uint32_t gainedMagicItem = RandomMagicItem(racer);
+      uint32_t magicItem{};
+      if (not racer.magicItem.has_value())
+      {
+        // Racer is empty handed
+
+        // Get the item type of the picked up item (408, 409 etc)
+        const uint32_t magicItemType = item.currentType;
+
+        // Get the magic slot index to indicate to the racer that they
+        // have the item (water shield, ice wall etc).
+        magicItem = _serverInstance.GetCourseRegistry()
+          .GetItemTypeInfo(magicItemType).magicSlot;
+
+        // Response with OK to the client that they have a new item in hand
         protocol::AcCmdCRRequestMagicItemOK magicItemOk{
           .characterOid = command.characterOid,
-          .magicItemId = racer.magicItem.emplace(gainedMagicItem),
-          .member3 = 0
-        };
+          .magicItemId = racer.magicItem.emplace(magicItem),
+          .member3 = 0};
+
         _commandServer.QueueCommand<decltype(magicItemOk)>(
           clientId,
           [clientId, magicItemOk]()
           {
             return magicItemOk;
           });
-        protocol::AcCmdCRRequestMagicItemNotify notify{
-          .magicItemId = racer.magicItem.emplace(gainedMagicItem),
-          .characterOid = command.characterOid,
-        };
-        for (const ClientId& roomClientId : raceInstance.clients)
-        {
-          _commandServer.QueueCommand<decltype(notify)>(
-            roomClientId,
-            [notify]()
-            {
-              return notify;
-            });
-        }
-
-        // TODO: reset magic gauge to 0?
       }
+      else
+      {
+        // Racer is already holding the item, do not replace it
+        magicItem = racer.magicItem.value();
+      }
+
+      // Now that the magic item on the ground has been picked up,
+      // randomly pick the new item type for this picked up item
+      if (!item.itemTypes.empty())
+      {
+        static std::random_device rd;
+        std::uniform_int_distribution<size_t> distribution(0, item.itemTypes.size() - 1);
+        item.currentType = item.itemTypes[distribution(rd)];
+      }
+      else
+      {
+        // TODO: Item types is empty, use deck ID instead?
+      }
+
+      // Notify racers in the race room that the invoking racer is now
+      // holding a new magic item
+      protocol::AcCmdCRRequestMagicItemNotify notify{
+        .magicItemId = racer.magicItem.emplace(magicItem),
+        .characterOid = command.characterOid,
+      };
+
+      for (const ClientId& roomClientId : raceInstance.clients)
+      {
+        // Prevent self broadcast,
+        // this prevents the double pickup UI bug for the invoker)
+        if (roomClientId == clientId)
+          continue;
+
+        _commandServer.QueueCommand<decltype(notify)>(
+          roomClientId,
+          [notify]()
+          {
+            return notify;
+          });
+      }
+
+      // TODO: reset magic gauge to 0?
       break;
+    }
   }
 
   // Notify all clients in the room that this item has been picked up
   protocol::AcCmdGameRaceItemGet get{
     .characterOid = command.characterOid,
     .itemId = command.itemId,
-    .itemType = item.deckId,
+    .itemType = item.currentType,
   };
 
   for (const ClientId& raceClientId : raceInstance.clients)
@@ -2963,33 +2994,6 @@ void RaceDirector::HandleUserRaceItemGet(
   {
     raceRacer.trackedItems.erase(item.oid);
   }
-
-  // Respawn the item after a delay
-  _scheduler.Queue(
-    [this, item, &raceInstance]()
-    {
-      protocol::AcCmdGameRaceItemSpawn spawn{
-        .itemId = item.oid,
-        .itemType = item.deckId,
-        .position = item.position,
-        .orientation = {0.0f, 0.0f, 0.0f, 1.0f},
-        .sizeLevel = false,
-        .removeDelay = -1
-      };
-
-      std::scoped_lock lock(raceInstance.clientsMutex);
-      for (const ClientId& roomClientId : raceInstance.clients)
-      {
-        _commandServer.QueueCommand<decltype(spawn)>(
-          roomClientId,
-          [spawn]()
-          {
-            return spawn;
-          });
-      }
-    },
-    //only for speed for now, change to itemDeck registry later for magic
-    Scheduler::Clock::now() + std::chrono::milliseconds(500));
 }
 
 // Magic Targeting System Implementation for Bolt
@@ -3013,7 +3017,6 @@ void RaceDirector::HandleChangeMagicTarget(
   ClientId clientId,
   const protocol::AcCmdCRChangeMagicTarget& command)
 {
-  // TODO: Throttle how often the same dragon can change between the same two targets
   const auto& clientContext = GetClientContext(clientId);
   auto& raceInstance = GetRaceInstance(clientContext);
   auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
@@ -3061,13 +3064,30 @@ void RaceDirector::HandleActivateSkillEffect(
 
   auto& targetRacer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
-  uint16_t effectiveEffectId = static_cast<uint16_t>(command.effectId);
-  if (targetRacer.darkness && !SkillIsCritical(effectiveEffectId))
+  auto magicSlotInfo = GetServerInstance().GetMagicRegistry().GetSlotInfoByEffectId(command.effectId);
+  if (targetRacer.darkness && magicSlotInfo.criticalByDarkFire)
   {
-    effectiveEffectId += 1; // Use the "critical" version of the skill effect
+    magicSlotInfo = GetServerInstance().GetMagicRegistry().GetSlotInfo(magicSlotInfo.criticalType);
   }
 
-  if ((!SkillIsCritical(effectiveEffectId) && targetRacer.shield == tracker::RaceTracker::Racer::Shield::Normal)
+  // Break down hit ice wall
+  if (command.obstacleInstanceId != 0) {
+    const auto magicExpire = protocol::AcCmdRCMagicExpire{
+      .magicType = magicSlotInfo.type,
+      .firstObstacleInstanceId = command.obstacleInstanceId,
+      .obstacleInstanceCount = 1,
+      .breakdown = 1
+    };
+    for (const ClientId& raceClientId : raceInstance.clients)
+    {
+      _commandServer.QueueCommand<decltype(magicExpire)>(
+        raceClientId,
+        [magicExpire](){ return magicExpire; });
+    }
+  }
+
+  if ((magicSlotInfo.type == magicSlotInfo.basicType && targetRacer.shield == tracker::RaceTracker::Racer::Shield::Normal)
+  || ((magicSlotInfo.type == 5 /* Crit Ice Wall */ && targetRacer.shield == tracker::RaceTracker::Racer::Shield::Normal))
   || targetRacer.shield == tracker::RaceTracker::Racer::Shield::Critical
   || targetRacer.hotRodded)
   {
@@ -3078,12 +3098,12 @@ void RaceDirector::HandleActivateSkillEffect(
   }
 
   std::optional<std::function<void()>> afterEffectRemoved = std::nullopt;
-  switch (effectiveEffectId)
+  switch (magicSlotInfo.type)
   {
       // Darkness
-      case 12:
-      case 13:
-        // TODO: Is crit darkness different from normal darkness?
+      // As it is, this applies darkness to everyone. No idea why. It's the only effect that behaves like this.
+      case 14:
+      case 15:
         targetRacer.darkness = true;
         afterEffectRemoved = [&targetRacer]()
         {
@@ -3093,7 +3113,7 @@ void RaceDirector::HandleActivateSkillEffect(
   }
 
   // TODO: Remove held item
-  this->ScheduleSkillEffect(raceInstance, command.attackerOid, command.targetOid, effectiveEffectId, afterEffectRemoved);
+  this->ScheduleSkillEffect(raceInstance, command.attackerOid, command.targetOid, magicSlotInfo, afterEffectRemoved);
 }
 
 void RaceDirector::HandleOpCmd(
@@ -3160,26 +3180,21 @@ void RaceDirector::HandleChangeSkillCardPresetId(
   // No response command
 }
 
-void RaceDirector::ScheduleSkillEffect(
-  RaceInstance& raceInstance,
-  tracker::Oid attackerOid,
-  tracker::Oid targetOid,
-  uint16_t effectId,
-  std::optional<std::function<void()>> afterEffectRemoved){
+void RaceDirector::ScheduleSkillEffect(RaceDirector::RaceInstance& raceInstance, tracker::Oid attackerOid, tracker::Oid targetOid, const server::registry::Magic::SlotInfo& magicSlotInfo, std::optional<std::function<void()>> afterEffectRemoved){
   // Broadcast skill effect activation to all clients in the room
+  // TODO: Verify if characterOid and targetOid should be the same once we have NPCs
   protocol::AcCmdRCAddSkillEffect addSkillEffect{
     .characterOid = targetOid,
-    .effectId = effectId,
+    .effectId = magicSlotInfo.skillEffectId,
     .targetOid = targetOid,
     .attackerOid = attackerOid,
     .unk2 = 0,
     .unk3 = 0,
-    .unk4 = 0,
-    .defenseMagicEffect = protocol::AcCmdRCAddSkillEffect::DefenseMagicEffect{
+    .shieldEffect = protocol::AcCmdRCAddSkillEffect::ShieldEffect{
       .unk0 = 0,
       .unk1 = 0,
     },
-    .attackMagicEffect = 0
+    .boostEffectMs = static_cast<uint32_t>(magicSlotInfo.effectDelay * 1000.0f),
   };
 
   // Broadcast
@@ -3192,6 +3207,7 @@ void RaceDirector::ScheduleSkillEffect(
 
   // Remove the effect after a delay
   // TODO: Handle overlapping effects of the same type
+  uint32_t effectId = magicSlotInfo.skillEffectId;
   _scheduler.Queue(
     [this, attackerOid, targetOid, effectId, &raceInstance, afterEffectRemoved]()
     {
@@ -3217,7 +3233,7 @@ void RaceDirector::ScheduleSkillEffect(
         afterEffectRemoved.value()();
       }
     },
-    Scheduler::Clock::now() + std::chrono::seconds(3)); // TODO: Different time per effect
+    Scheduler::Clock::now() + std::chrono::milliseconds(static_cast<int64_t>(magicSlotInfo.effectDelay * 1000.0)));
 }
 
 void RaceDirector::HandleInviteUser(

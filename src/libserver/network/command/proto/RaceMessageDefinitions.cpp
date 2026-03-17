@@ -1326,12 +1326,13 @@ void AcCmdCRUseMagicItem::Read(
 
   switch(command.magicItemId)
   {
-    // Case 0xA and 0xB read 2x [3x floats]
+    // Cases 0xA and 0xB (Ice Wall) write 2x [3x floats]
+    // (likely position and rotation)
     // and then fallthrough to read uint16_t vector
     case 0xa:
     case 0xb:
     {
-      auto& optional1 = command.optional1.emplace();
+      auto& optional1 = command.iceWallProperties.emplace();
       for (auto& element : optional1.member1)
       {
         stream.Read(element);
@@ -1353,11 +1354,11 @@ void AcCmdCRUseMagicItem::Read(
     case 0x12:
     case 0x13:
     {
-      auto& optional2 = command.optional2.emplace();
-
-      stream.Read(optional2.size);
-      optional2.list.resize(optional2.size);
-      for (auto& element : optional2.list)
+      auto& ids = command.obstacleProperties.emplace();
+      uint8_t size;
+      stream.Read(size);
+      ids.resize(size);
+      for (auto& element : ids)
       {
         stream.Read(element);
       }
@@ -1413,13 +1414,13 @@ void AcCmdCRUseMagicItemOK::Write(
     case 0xb:
       // TODO: is this correct?
       // Assert that optional1 has value
-      assert(command.optional1.has_value());
+      assert(command.iceWallProperties.has_value());
 
-      for (auto& element : command.optional1.value().member1)
+      for (auto& element : command.iceWallProperties.value().member1)
       {
         stream.Write(element);
       }
-      for (auto& element : command.optional1.value().member2)
+      for (auto& element : command.iceWallProperties.value().member2)
       {
         stream.Write(element);
       }
@@ -1437,11 +1438,11 @@ void AcCmdCRUseMagicItemOK::Write(
     {
       // TODO: is this correct?
       // Assert that optional2 has value
-      assert(command.optional2.has_value());
+      assert(command.obstacleProperties.has_value());
 
       // Expects vector size followed by uint16_t vector itself
-      stream.Write(command.optional2.value().size);
-      for (auto& element : command.optional2.value().list)
+      stream.Write(static_cast<uint8_t>(command.obstacleProperties.value().size()));
+      for (auto& element : command.obstacleProperties.value())
       {
         stream.Write(element);
       }
@@ -1453,7 +1454,7 @@ void AcCmdCRUseMagicItemOK::Write(
     }
   }
 
-  stream.Write(command.unk3)
+  stream.Write(command.nextObstacleInstanceId)
     .Write(command.unk4);
 }
 
@@ -1601,10 +1602,10 @@ void AcCmdRCMagicExpire::Write(
   const AcCmdRCMagicExpire& command,
   SinkStream& stream)
 {
-  stream.Write(command.magicItemId)
-    .Write(command.characterOid)
-    .Write(command.unk2)
-    .Write(command.unk3);
+  stream.Write(command.magicType);
+  stream.Write(command.firstObstacleInstanceId);
+  stream.Write(command.obstacleInstanceCount);
+  stream.Write(command.breakdown);
 }
 
 void AcCmdCRUseMagicItemNotify::Write(
@@ -1616,18 +1617,17 @@ void AcCmdCRUseMagicItemNotify::Write(
 
   switch(command.magicItemId)
   {
-    // Case 0xA and 0xB write 2x [3x floats]
+    // Cases 0xA and 0xB (Ice Wall) write 2x [3x floats]
+    // (likely position and rotation)
     // and then fallthrough to write uint16_t vector
     case 0xa:
     case 0xb:
-      // Assert that optional1 has value
-      assert(command.optional1.has_value());
-
-      for (auto& element : command.optional1.value().member1)
+      assert(command.iceWallProperties.has_value());
+      for (auto& element : command.iceWallProperties.value().member1)
       {
         stream.Write(element);
       }
-      for (auto& element : command.optional1.value().member2)
+      for (auto& element : command.iceWallProperties.value().member2)
       {
         stream.Write(element);
       }
@@ -1644,11 +1644,11 @@ void AcCmdCRUseMagicItemNotify::Write(
     case 0x13:
     {
       // Assert that optional2 has value
-      assert(command.optional2.has_value());
+      assert(command.obstacleProperties.has_value());
 
       // Expects vector size followed by uint16_t vector itself
-      stream.Write(command.optional2.value().size);
-      for (auto& element : command.optional2.value().list)
+      stream.Write(static_cast<uint8_t>(command.obstacleProperties.value().size()));
+      for (auto& element : command.obstacleProperties.value())
       {
         stream.Write(element);
       }
@@ -1660,7 +1660,7 @@ void AcCmdCRUseMagicItemNotify::Write(
     }
   }
   
-  stream.Write(command.unk3)
+  stream.Write(command.nextObstacleInstanceId)
     .Write(command.unk4);
 }
 
@@ -1677,11 +1677,11 @@ void AcCmdCRUseMagicItemNotify::Read(
     // and then fallthrough to read uint16_t vector
     case 0xa:
     case 0xb:
-      for (auto& element : command.optional1.emplace().member1)
+      for (auto& element : command.iceWallProperties.emplace().member1)
       {
         stream.Read(element);
       }
-      for (auto& element : command.optional1.value().member2)
+      for (auto& element : command.iceWallProperties.value().member2)
       {
         stream.Read(element);
       }
@@ -1696,11 +1696,12 @@ void AcCmdCRUseMagicItemNotify::Read(
     case 0x12:
     case 0x13:
     {
-      auto& optional2 = command.optional2.emplace();
+      auto& ids = command.obstacleProperties.emplace();
 
-      stream.Read(optional2.size);
-      optional2.list.resize(optional2.size);
-      for (auto& element : optional2.list)
+      uint8_t size;
+      stream.Read(size);
+      ids.resize(size);
+      for (auto& element : ids)
       {
         stream.Read(element);
       }
@@ -1712,7 +1713,7 @@ void AcCmdCRUseMagicItemNotify::Read(
     }
   }
 
-  stream.Read(command.unk3)
+  stream.Read(command.nextObstacleInstanceId)
     .Read(command.unk4);
 }
 
@@ -1743,8 +1744,8 @@ void AcCmdCRActivateSkillEffect::Write(
   stream.Write(command.targetOid)
     .Write(command.effectId)
     .Write(command.attackerOid)
-    .Write(command.unk2)
-    .Write(command.unk1);
+    .Write(command.obstacleInstanceId)
+    .Write(command.unk2);
 }
 
 void AcCmdCRActivateSkillEffect::Read(
@@ -1754,7 +1755,7 @@ void AcCmdCRActivateSkillEffect::Read(
   stream.Read(command.targetOid)
     .Read(command.effectId)
     .Read(command.attackerOid)
-    .Read(command.unk1)
+    .Read(command.obstacleInstanceId)
     .Read(command.unk2);
 }
 
@@ -1767,22 +1768,21 @@ void AcCmdRCAddSkillEffect::Write(
     .Write(command.targetOid)
     .Write(command.attackerOid)
     .Write(command.unk2)
-    .Write(command.unk3)
-    .Write(command.unk4);
+    .Write(command.unk3);
 
   switch(command.effectId)
   {
     case 2:
     case 3:
-      stream.Write(command.defenseMagicEffect.value().unk0)
-        .Write(command.defenseMagicEffect.value().unk1);
+      stream.Write(command.shieldEffect.value().unk0)
+        .Write(command.shieldEffect.value().unk1);
       break;
     case 5:
     case 6:
     case 7:
     case 22:
     case 23:
-      stream.Write(command.attackMagicEffect.value());
+      stream.Write(command.boostEffectMs.value());
       break;
   }
 }
@@ -1796,22 +1796,21 @@ void AcCmdRCAddSkillEffect::Read(
     .Read(command.targetOid)
     .Read(command.attackerOid)
     .Read(command.unk2)
-    .Read(command.unk3)
-    .Read(command.unk4);
+    .Read(command.unk3);
   
   switch(command.effectId)
   {
     case 2:
     case 3:
-      stream.Read(command.defenseMagicEffect.emplace().unk0)
-        .Read(command.defenseMagicEffect.value().unk1);
+      stream.Read(command.shieldEffect.emplace().unk0)
+        .Read(command.shieldEffect.value().unk1);
       break;
     case 5:
     case 6:
     case 7:
     case 22:
     case 23:
-      stream.Read(command.attackMagicEffect.emplace());
+      stream.Read(command.boostEffectMs.emplace());
       break;
   }
 }
@@ -1964,6 +1963,28 @@ void AcCmdCRTriggerizeAct::Read(
   stream.Read(command.unk0)
     .Read(command.unk1)
     .Read(command.unk2);
+}
+
+void AcCmdRCCreateItem::Write(
+  const AcCmdRCCreateItem& command,
+  SinkStream& stream)
+{
+  stream.Write(command.itemId)
+    .Write(command.itemType);
+  
+  for (const float element : command.position)
+    stream.Write(element);
+
+  stream.Write(command.spawnStyle)
+    .Write(command.spawnerId)
+    .Write(command.sizeLevel);
+}
+
+void AcCmdRCCreateItem::Read(
+  AcCmdRCCreateItem&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
 }
 
 } // namespace server::protocol
