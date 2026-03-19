@@ -40,6 +40,12 @@ namespace server
 
 class ServerInstance;
 
+namespace race::mode
+{
+  class GameModeHandler;
+  class TeamModeHandler;
+}
+
 } // namespace server
 
 namespace server
@@ -48,9 +54,13 @@ namespace server
 class RaceDirector final
   : public CommandServer::EventHandlerInterface
 {
+  friend class race::mode::GameModeHandler;
+  friend class race::mode::TeamModeHandler;
+
 public:
   //!
   explicit RaceDirector(ServerInstance& serverInstance);
+  ~RaceDirector();
 
   void Initialize();
   void Terminate();
@@ -96,6 +106,8 @@ public:
 
   ServerInstance& GetServerInstance();
   Config::Race& GetConfig();
+  CommandServer& GetCommandServer() { return _commandServer; }
+  Scheduler& GetScheduler() { return _scheduler; }
 
 private:
   std::random_device _randomDevice;
@@ -115,6 +127,7 @@ private:
     bool isAuthenticated = false;
   };
 
+public:
   struct RaceInstance
   {
     //! A stage of the room.
@@ -150,6 +163,11 @@ private:
     std::chrono::steady_clock::time_point raceStartTimePoint;
     //! A room clients.
     std::unordered_set<ClientId> clients;
+
+    std::unique_ptr<race::mode::GameModeHandler> gameModeHandler;
+    std::unique_ptr<race::mode::TeamModeHandler> teamModeHandler;
+
+    ~RaceInstance();
   };
 
   ClientContext& GetClientContext(ClientId clientId, bool requireAuthorized = true);

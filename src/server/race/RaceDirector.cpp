@@ -22,6 +22,13 @@
 #include "server/ServerInstance.hpp"
 #include "server/system/RoomSystem.hpp"
 
+#include "server/race/mode/GameModeHandler.hpp"
+#include "server/race/mode/gamemode/SpeedModeHandler.hpp"
+#include "server/race/mode/gamemode/MagicModeHandler.hpp"
+#include "server/race/mode/gamemode/TutorialModeHandler.hpp"
+#include "server/race/mode/teammode/FfaTeamMode.hpp"
+#include "server/race/mode/teammode/TeamRaceMode.hpp"
+
 #include <libserver/data/helper/ProtocolHelper.hpp>
 
 #include <boost/container_hash/hash.hpp>
@@ -70,6 +77,9 @@ const server::registry::Magic::SlotInfo RandomMagicItem(ServerInstance& serverIn
 }
 
 } // anon namespace
+
+RaceDirector::~RaceDirector() = default;
+RaceDirector::RaceInstance::~RaceInstance() = default;
 
 RaceDirector::RaceDirector(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
@@ -1520,6 +1530,35 @@ void RaceDirector::HandleStartRace(
       raceInstance.raceGameMode = static_cast<protocol::GameMode>(details.gameMode);
       raceInstance.raceTeamMode = static_cast<protocol::TeamMode>(details.teamMode);
       raceInstance.raceMissionId = details.missionId;
+
+      switch (raceInstance.raceGameMode)
+      {
+        case protocol::GameMode::Speed:
+          raceInstance.gameModeHandler = std::make_unique<race::mode::SpeedGameMode>();
+          break;
+        case protocol::GameMode::Magic:
+          raceInstance.gameModeHandler = std::make_unique<race::mode::MagicGameMode>();
+          break;
+        case protocol::GameMode::Tutorial:
+          raceInstance.gameModeHandler = std::make_unique<race::mode::TutorialGameMode>();
+          break;
+        default:
+          raceInstance.gameModeHandler = nullptr;
+          spdlog::warn("Started race with unknown game mode!");
+      }
+
+      switch (raceInstance.raceTeamMode)
+      {
+        case protocol::TeamMode::FFA:
+          raceInstance.teamModeHandler = std::make_unique<race::mode::FfaTeamMode>();
+          break;
+        case protocol::TeamMode::Team:
+          raceInstance.teamModeHandler = std::make_unique<race::mode::TeamRaceMode>();
+          break;
+        default:
+          raceInstance.teamModeHandler = nullptr;
+          spdlog::warn("Started race with unknown team mode!");
+      }
 
       roomGameMode = static_cast<uint8_t>(details.gameMode);
       roomSelectedCourses = details.courseId;
