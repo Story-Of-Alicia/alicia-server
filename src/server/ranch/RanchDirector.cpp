@@ -607,32 +607,6 @@ void RanchDirector::SendStorageNotification(
   }
 }
 
-void RanchDirector::SendEmblemNotify(
-  const data::Uid recipientCharacterUid,
-  const data::Uid targetCharacterUid,
-  const uint16_t emblemId)
-{
-  try
-  {
-    const auto clientId = GetClientIdByCharacterUid(recipientCharacterUid);
-
-    protocol::AcCmdCRSetKeyEmblemNotify notify{
-      .characterUid = static_cast<uint32_t>(targetCharacterUid),
-      .emblemId = emblemId};
-
-    _commandServer.QueueCommand<decltype(notify)>(
-      clientId,
-      [notify]()
-      {
-        return notify;
-      });
-  }
-  catch (const std::exception&)
-  {
-    // Empty.
-  }
-}
-
 void RanchDirector::BroadcastEmblemNotify(
   const data::Uid characterUid,
   const uint16_t emblemId)
@@ -649,6 +623,12 @@ void RanchDirector::BroadcastEmblemNotify(
 
     for (const ClientId ranchClientId : _ranches[clientContext.visitingRancherUid].clients)
     {
+      const auto& ranchClientContext = GetClientContext(ranchClientId);
+
+      // Prevent broadcast to self.
+      if (ranchClientContext.characterUid == characterUid)
+        continue;
+
       _commandServer.QueueCommand<decltype(notify)>(
         ranchClientId,
         [notify]()
