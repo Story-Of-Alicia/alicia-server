@@ -630,7 +630,8 @@ void RaceDirector::Tick()
               {
                 horse.mountInfo.totalRaces = horse.mountInfo.totalRaces() + 1;
 
-                if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
+                const bool finished = racer.courseTime >= 0;
+                if (finished)
                 {
                   horse.mountInfo.totalFinished = horse.mountInfo.totalFinished() + 1;
                   horse.mountInfo.cumulativeRank = horse.mountInfo.cumulativeRank() + rank;
