@@ -641,12 +641,20 @@ void RanchDirector::BroadcastEmblemNotify(
   {
     const auto& clientContext = GetClientContextByCharacterUid(characterUid);
 
+    // Send twice - the client's overhead handler reads from a cache
+    // that is updated by a later subscriber in the signal chain.
     protocol::AcCmdCRSetKeyEmblemNotify notify{
       .characterUid = static_cast<uint32_t>(characterUid),
       .emblemId = emblemId};
 
     for (const ClientId ranchClientId : _ranches[clientContext.visitingRancherUid].clients)
     {
+      _commandServer.QueueCommand<decltype(notify)>(
+        ranchClientId,
+        [notify]()
+        {
+          return notify;
+        });
       _commandServer.QueueCommand<decltype(notify)>(
         ranchClientId,
         [notify]()

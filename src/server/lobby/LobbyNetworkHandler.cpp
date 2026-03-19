@@ -1774,9 +1774,7 @@ void LobbyNetworkHandler::HandleRequestPersonalInfo(
     .characterUid = command.characterUid,
     .type = command.type,};
 
-  uint16_t emblemId = 0;
-
-  characterRecord.Immutable([this, &response, &emblemId](const data::Character& character)
+  characterRecord.Immutable([this, &response](const data::Character& character)
   {
     switch (response.type)
     {
@@ -1796,8 +1794,6 @@ void LobbyNetworkHandler::HandleRequestPersonalInfo(
         // Character info
         response.basic.introduction = character.introduction();
         response.basic.level = character.level();
-        emblemId = static_cast<uint16_t>(character.appearance.emblemId());
-
         // Mount statistics from active mount
         if (character.mountUid() == data::InvalidUid)
           return;
@@ -1884,17 +1880,6 @@ void LobbyNetworkHandler::HandleRequestPersonalInfo(
     {
       return response;
     });
-
-  // Send emblem notify to the requesting client so the emblem
-  // display above the character updates after an emblem change.
-  if (emblemId > 0 && emblemId <= 35)
-  {
-    const auto& lobbyContext = GetClientContext(clientId);
-    _serverInstance.GetRanchDirector().SendEmblemNotify(
-      lobbyContext.characterUid,
-      command.characterUid,
-      emblemId);
-  }
 }
 
 void LobbyNetworkHandler::HandleEnterRanch(
