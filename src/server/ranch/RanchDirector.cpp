@@ -582,9 +582,18 @@ void RanchDirector::BroadcastUpdateMountInfoNotify(
 }
 
 void RanchDirector::NotifyRequestUser(
-  data::Uid characterUid,
-  const protocol::AcCmdRCRequestUser& notify) noexcept
+    data::Uid characterUid,
+    bool force,
+    std::string characterName,
+    uint32_t roomUid,
+    uint32_t ranchUid) noexcept
 {
+  protocol::AcCmdRCRequestUser notify{};
+  notify.force = force;
+  notify.characterName = characterName;
+  notify.roomUid = roomUid;
+  notify.ranchUid = ranchUid;
+
   try
   {
      const auto targetClientId = GetClientIdByCharacterUid(characterUid);
@@ -5552,14 +5561,8 @@ void RanchDirector::HandleRequestUser(
     return;
   }
 
-  protocol::AcCmdRCRequestUser notify{};
-  notify.force = command.force;
-  notify.characterName = command.characterName;
-  notify.roomUid = command.roomUid;
-  notify.ranchUid = command.ranchUid;
-
-  GetServerInstance().GetRaceDirector().NotifyRequestUser(characterUid, notify);
-  GetServerInstance().GetRanchDirector().NotifyRequestUser(characterUid, notify);
+  GetServerInstance().GetRaceDirector().NotifyRequestUser(characterUid, command.force, command.characterName, command.roomUid, command.ranchUid);
+  GetServerInstance().GetRanchDirector().NotifyRequestUser(characterUid, command.force, command.characterName, command.roomUid, command.ranchUid);
 
   protocol::AcCmdCRRequestUserOK response{};
   response.force = command.force;

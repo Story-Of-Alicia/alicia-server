@@ -82,7 +82,10 @@ public:
   //! Send a RequestUser notification to a character connected to this director.
   void NotifyRequestUser(
     data::Uid characterUid,
-    const protocol::AcCmdRCRequestUser& notify) noexcept;
+    bool force,
+    std::string characterName,
+    uint32_t roomUid,
+    uint32_t ranchUid) noexcept;
 
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId clientId) override;
