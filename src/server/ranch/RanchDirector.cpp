@@ -590,7 +590,7 @@ void RanchDirector::NotifyRequestUser(
      const auto targetClientId = GetClientIdByCharacterUid(characterUid);
      _commandServer.QueueCommand<protocol::AcCmdRCRequestUser>(targetClientId, [notify](){ return notify; });
   }
-  catch(const std::exception&)
+  catch (const std::exception&)
   {
     // Dont care if the client is not found, we just won't send the notification
   }
@@ -5544,9 +5544,9 @@ void RanchDirector::HandleRequestUser(
   try
   {
     const auto clientOpt = GetServerInstance()
-    .GetLobbyDirector().GetUserByCharacterUid(characterUid);
+      .GetLobbyDirector().GetUserByCharacterUid(characterUid);
   }
-  catch(const std::exception&)
+  catch (const std::exception&)
   {
     _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
     return;
