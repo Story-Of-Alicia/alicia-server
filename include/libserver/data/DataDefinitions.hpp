@@ -348,7 +348,6 @@ struct Character
 
   //! Lifetime riding statistics across all horses.
   //! Per-horse stats remain in Horse::MountInfo.
-  // TODO: Per-horse stats view in the mount info menu.
   struct RidingStats
   {
     dao::Field<uint32_t> totalDistance{};
