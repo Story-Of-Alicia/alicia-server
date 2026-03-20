@@ -23,7 +23,6 @@ bool FfaTeamMode::IsAlly(
 }
 
 void FfaTeamMode::OnTeamGauge(
-  RaceDirector&,
   ClientId,
   RaceDirector::RaceInstance&,
   tracker::RaceTracker::Racer&)

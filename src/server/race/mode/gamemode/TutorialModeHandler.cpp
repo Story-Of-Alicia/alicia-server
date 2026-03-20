@@ -4,7 +4,6 @@ namespace server::race::mode
 {
 
 void TutorialGameMode::OnHurdleClear(
-  [[maybe_unused]] RaceDirector& director,
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
   [[maybe_unused]] tracker::RaceTracker::Racer& racer,
@@ -16,7 +15,6 @@ void TutorialGameMode::OnHurdleClear(
 }
 
 void TutorialGameMode::OnRaceUserPos(
-  [[maybe_unused]] RaceDirector& director,
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
   [[maybe_unused]] tracker::RaceTracker::Racer& racer,
@@ -28,7 +26,6 @@ void TutorialGameMode::OnRaceUserPos(
 }
 
 void TutorialGameMode::OnItemGet(
-  [[maybe_unused]] RaceDirector& director,
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
   [[maybe_unused]] tracker::RaceTracker::Racer& racer,
@@ -41,7 +38,6 @@ void TutorialGameMode::OnItemGet(
 }
 
 void TutorialGameMode::OnRequestSpur(
-  [[maybe_unused]] RaceDirector& director,
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
   [[maybe_unused]] tracker::RaceTracker::Racer& racer,
@@ -53,7 +49,6 @@ void TutorialGameMode::OnRequestSpur(
 }
 
 void TutorialGameMode::OnStartingRate(
-  [[maybe_unused]] RaceDirector& director,
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
   [[maybe_unused]] tracker::RaceTracker::Racer& racer,
@@ -65,7 +60,6 @@ void TutorialGameMode::OnStartingRate(
 }
 
 void TutorialGameMode::OnUseMagicItem(
-  [[maybe_unused]] RaceDirector& director,
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
   [[maybe_unused]] tracker::RaceTracker::Racer& racer,

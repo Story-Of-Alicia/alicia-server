@@ -43,7 +43,6 @@ bool TeamRaceMode::IsAlly(
 }
 
 void TeamRaceMode::OnTeamGauge(
-  [[maybe_unused]] RaceDirector& director,
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
   [[maybe_unused]] tracker::RaceTracker::Racer& racer)

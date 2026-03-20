@@ -28,6 +28,10 @@ namespace server::race::mode
 class FfaTeamMode final : public TeamModeHandler
 {
 public:
+  explicit FfaTeamMode(RaceDirector& director)
+    : TeamModeHandler(director)
+  {}
+
   bool AreTeamsBalanced(server::Room& room) const override;
 
   bool IsEnemy(
@@ -39,7 +43,6 @@ public:
     const tracker::RaceTracker::Racer& b) const override;
 
   void OnTeamGauge(
-    RaceDirector& director,
     ClientId clientId,
     RaceDirector::RaceInstance& raceInstance,
     tracker::RaceTracker::Racer& racer) override;

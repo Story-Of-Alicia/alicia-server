@@ -30,50 +30,51 @@ namespace server::race::mode
 class GameModeHandler
 {
 public:
+  explicit GameModeHandler(RaceDirector& director)
+    : _director(director)
+  {}
+
   virtual ~GameModeHandler() = default;
 
   virtual void OnHurdleClear(
-    RaceDirector& director,
     ClientId clientId,
     RaceDirector::RaceInstance& raceInstance,
     tracker::RaceTracker::Racer& racer,
     const protocol::AcCmdCRHurdleClearResult& command) = 0;
 
   virtual void OnRaceUserPos(
-    RaceDirector& director,
     ClientId clientId,
     RaceDirector::RaceInstance& raceInstance,
     tracker::RaceTracker::Racer& racer,
     const protocol::AcCmdUserRaceUpdatePos& command) = 0;
 
   virtual void OnItemGet(
-    RaceDirector& director,
     ClientId clientId,
     RaceDirector::RaceInstance& raceInstance,
     tracker::RaceTracker::Racer& racer,
-    const protocol::AcCmdUserRaceItemGet&
-    command, tracker::RaceTracker::Item& item) = 0;
+    const protocol::AcCmdUserRaceItemGet& command,
+    tracker::RaceTracker::Item& item) = 0;
 
   virtual void OnRequestSpur(
-    RaceDirector& director,
     ClientId clientId,
     RaceDirector::RaceInstance& raceInstance,
     tracker::RaceTracker::Racer& racer,
     const protocol::AcCmdCRRequestSpur& command) = 0;
 
   virtual void OnStartingRate(
-    RaceDirector& director,
     ClientId clientId,
     RaceDirector::RaceInstance& raceInstance,
     tracker::RaceTracker::Racer& racer,
     const protocol::AcCmdCRStartingRate& command) = 0;
 
   virtual void OnUseMagicItem(
-    RaceDirector& director,
     ClientId clientId,
     RaceDirector::RaceInstance& raceInstance,
     tracker::RaceTracker::Racer& racer,
     const protocol::AcCmdCRUseMagicItem& command) = 0;
+
+protected:
+  RaceDirector& _director;
 };
 
 } // namespace server::race::mode

@@ -1523,7 +1523,7 @@ void RaceDirector::HandleStartRace(
 
   _serverInstance.GetRoomSystem().GetRoom(
     roomUid,
-    [&roomSelectedCourses, &roomGameMode, &raceInstance](Room& room)
+    [this, &roomSelectedCourses, &roomGameMode, &raceInstance](Room& room)
     {
       auto& details = room.GetRoomDetails();
 
@@ -1534,13 +1534,13 @@ void RaceDirector::HandleStartRace(
       switch (raceInstance.raceGameMode)
       {
         case protocol::GameMode::Speed:
-          raceInstance.gameModeHandler = std::make_unique<race::mode::SpeedGameMode>();
+          raceInstance.gameModeHandler = std::make_unique<race::mode::SpeedGameMode>(*this);
           break;
         case protocol::GameMode::Magic:
-          raceInstance.gameModeHandler = std::make_unique<race::mode::MagicGameMode>();
+          raceInstance.gameModeHandler = std::make_unique<race::mode::MagicGameMode>(*this);
           break;
         case protocol::GameMode::Tutorial:
-          raceInstance.gameModeHandler = std::make_unique<race::mode::TutorialGameMode>();
+          raceInstance.gameModeHandler = std::make_unique<race::mode::TutorialGameMode>(*this);
           break;
         default:
           raceInstance.gameModeHandler = nullptr;
@@ -1550,10 +1550,10 @@ void RaceDirector::HandleStartRace(
       switch (raceInstance.raceTeamMode)
       {
         case protocol::TeamMode::FFA:
-          raceInstance.teamModeHandler = std::make_unique<race::mode::FfaTeamMode>();
+          raceInstance.teamModeHandler = std::make_unique<race::mode::FfaTeamMode>(*this);
           break;
         case protocol::TeamMode::Team:
-          raceInstance.teamModeHandler = std::make_unique<race::mode::TeamRaceMode>();
+          raceInstance.teamModeHandler = std::make_unique<race::mode::TeamRaceMode>(*this);
           break;
         default:
           raceInstance.teamModeHandler = nullptr;

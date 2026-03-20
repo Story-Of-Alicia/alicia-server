@@ -4,7 +4,6 @@ namespace server::race::mode
 {
 
 void MagicGameMode::OnHurdleClear(
-  [[maybe_unused]] RaceDirector& director,
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
   [[maybe_unused]] tracker::RaceTracker::Racer& racer,
@@ -15,7 +14,6 @@ void MagicGameMode::OnHurdleClear(
 }
 
 void MagicGameMode::OnRaceUserPos(
-  [[maybe_unused]] RaceDirector& director,
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
   [[maybe_unused]] tracker::RaceTracker::Racer& racer,
@@ -26,7 +24,6 @@ void MagicGameMode::OnRaceUserPos(
 }
 
 void MagicGameMode::OnItemGet(
-  [[maybe_unused]] RaceDirector& director,
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
   [[maybe_unused]] tracker::RaceTracker::Racer& racer,
@@ -38,7 +35,6 @@ void MagicGameMode::OnItemGet(
 }
 
 void MagicGameMode::OnRequestSpur(
-  RaceDirector&,
   ClientId,
   RaceDirector::RaceInstance&,
   tracker::RaceTracker::Racer&,
@@ -48,7 +44,6 @@ void MagicGameMode::OnRequestSpur(
 }
 
 void MagicGameMode::OnStartingRate(
-  [[maybe_unused]] RaceDirector& director,
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
   [[maybe_unused]] tracker::RaceTracker::Racer& racer,
@@ -59,7 +54,6 @@ void MagicGameMode::OnStartingRate(
 }
 
 void MagicGameMode::OnUseMagicItem(
-  [[maybe_unused]] RaceDirector& director,
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
   [[maybe_unused]] tracker::RaceTracker::Racer& racer,
