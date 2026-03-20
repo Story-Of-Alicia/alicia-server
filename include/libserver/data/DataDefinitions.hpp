@@ -346,6 +346,38 @@ struct Character
     dao::Field<Sets> magic{};
   } skills{};
 
+  //! Lifetime riding statistics across all horses.
+  //! Per-horse stats remain in Horse::MountInfo.
+  // TODO: Per-horse stats view in the mount info menu.
+  struct RidingStats
+  {
+    dao::Field<uint32_t> totalDistance{};
+    dao::Field<uint32_t> topSpeed{};
+    dao::Field<uint32_t> longestGlideDistance{};
+    dao::Field<uint32_t> boostsInARow{};
+
+    dao::Field<uint32_t> winsSpeedSingle{};
+    dao::Field<uint32_t> winsSpeedTeam{};
+    dao::Field<uint32_t> winsMagicSingle{};
+    dao::Field<uint32_t> winsMagicTeam{};
+
+    dao::Field<uint32_t> totalRaces{};
+    dao::Field<uint32_t> totalFinished{};
+    dao::Field<uint32_t> cumulativeRank{};
+
+    dao::Field<uint32_t> totalJumps{};
+    dao::Field<uint32_t> successfulJumps{};
+    dao::Field<uint32_t> perfectJumps{};
+    dao::Field<uint32_t> bestJumpCombo{};
+    dao::Field<uint32_t> bestMagicDefenseCombo{};
+
+    dao::Field<uint32_t> biggestPrize{};
+
+    dao::Field<uint32_t> magicBallUses{};
+    dao::Field<uint32_t> iceWallUses{};
+    dao::Field<uint32_t> fireSpiritUses{};
+  } ridingStats{};
+
     dao::Field<std::vector<Uid>> dailyQuests{};
   struct Mailbox
   {

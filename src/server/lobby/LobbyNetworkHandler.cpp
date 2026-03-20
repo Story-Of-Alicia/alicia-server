@@ -1794,101 +1794,56 @@ void LobbyNetworkHandler::HandleRequestPersonalInfo(
         // Character info
         response.basic.introduction = character.introduction();
         response.basic.level = character.level();
-        // Lifetime stats aggregated across all of the player's horses.
-        uint32_t totalDistance = 0;
-        uint32_t maxTopSpeed = 0;
-        uint32_t maxGlideDistance = 0;
-        uint32_t maxWinsSpeedSingle = 0;
-        uint32_t maxWinsSpeedTeam = 0;
-        uint32_t maxWinsMagicSingle = 0;
-        uint32_t maxWinsMagicTeam = 0;
-        uint32_t maxBiggestPrize = 0;
-        uint32_t maxBoostsInARow = 0;
-        uint32_t allTotalJumps = 0;
-        uint32_t allSuccessfulJumps = 0;
-        uint32_t allPerfectJumps = 0;
-        uint32_t allTotalRaces = 0;
-        uint32_t allTotalFinished = 0;
-        uint32_t allCumulativeRank = 0;
-        uint32_t maxJumpCombo = 0;
-        uint32_t maxMagicDefenseCombo = 0;
+        // Lifetime riding stats from character record
+        const auto& stats = character.ridingStats;
 
-        auto allHorses = character.horses();
-        if (character.mountUid() != data::InvalidUid)
-          allHorses.emplace_back(character.mountUid());
+        response.basic.distanceTravelled = stats.totalDistance();
+        response.basic.topSpeed = stats.topSpeed();
+        response.basic.longestGlidingDistance = stats.longestGlideDistance();
+        response.basic.speedSingleWinCombo = static_cast<uint16_t>(
+          stats.winsSpeedSingle());
+        response.basic.speedTeamWinCombo = static_cast<uint16_t>(
+          stats.winsSpeedTeam());
+        response.basic.magicSingleWinCombo = static_cast<uint16_t>(
+          stats.winsMagicSingle());
+        response.basic.magicTeamWinCombo = static_cast<uint16_t>(
+          stats.winsMagicTeam());
+        response.basic.highestCarnivalPrize = stats.biggestPrize();
+        response.basic.perfectBoostCombo = static_cast<uint16_t>(
+          stats.boostsInARow());
 
-        for (const auto horseUid : allHorses)
+        if (stats.totalJumps() > 0)
         {
-          const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(
-            horseUid);
-          if (not horseRecord)
-            continue;
-
-          horseRecord.Immutable([&](const data::Horse& horse)
-          {
-            const auto& info = horse.mountInfo;
-            totalDistance += info.totalDistance();
-            maxTopSpeed = std::max(maxTopSpeed, info.topSpeed());
-            maxGlideDistance = std::max(maxGlideDistance, info.longestGlideDistance());
-            maxWinsSpeedSingle = std::max(maxWinsSpeedSingle, info.winsSpeedSingle());
-            maxWinsSpeedTeam = std::max(maxWinsSpeedTeam, info.winsSpeedTeam());
-            maxWinsMagicSingle = std::max(maxWinsMagicSingle, info.winsMagicSingle());
-            maxWinsMagicTeam = std::max(maxWinsMagicTeam, info.winsMagicTeam());
-            maxBiggestPrize = std::max(maxBiggestPrize, info.biggestPrize());
-            maxBoostsInARow = std::max(maxBoostsInARow, info.boostsInARow());
-            allTotalJumps += info.totalJumps();
-            allSuccessfulJumps += info.successfulJumps();
-            allPerfectJumps += info.perfectJumps();
-            allTotalRaces += info.totalRaces();
-            allTotalFinished += info.totalFinished();
-            allCumulativeRank += info.cumulativeRank();
-            maxJumpCombo = std::max(maxJumpCombo, info.bestJumpCombo());
-            maxMagicDefenseCombo = std::max(
-              maxMagicDefenseCombo, info.bestMagicDefenseCombo());
-          });
-        }
-
-        response.basic.distanceTravelled = totalDistance;
-        response.basic.topSpeed = maxTopSpeed;
-        response.basic.longestGlidingDistance = maxGlideDistance;
-        response.basic.speedSingleWinCombo = static_cast<uint16_t>(maxWinsSpeedSingle);
-        response.basic.speedTeamWinCombo = static_cast<uint16_t>(maxWinsSpeedTeam);
-        response.basic.magicSingleWinCombo = static_cast<uint16_t>(maxWinsMagicSingle);
-        response.basic.magicTeamWinCombo = static_cast<uint16_t>(maxWinsMagicTeam);
-        response.basic.highestCarnivalPrize = maxBiggestPrize;
-        response.basic.perfectBoostCombo = static_cast<uint16_t>(maxBoostsInARow);
-
-        // Computed race stats from aggregated counters
-        if (allTotalJumps > 0)
-        {
-          const float successfulJumps = static_cast<float>(allSuccessfulJumps);
-          const float perfectJumps = static_cast<float>(allPerfectJumps);
-          const float totalJumps = static_cast<float>(allTotalJumps);
+          const float successfulJumps = static_cast<float>(stats.successfulJumps());
+          const float perfectJumps = static_cast<float>(stats.perfectJumps());
+          const float totalJumps = static_cast<float>(stats.totalJumps());
 
           response.basic.jumpSuccessRate = successfulJumps / totalJumps;
           response.basic.perfectJumpSuccessRate = perfectJumps / totalJumps;
         }
 
-        if (allTotalFinished > 0)
+        if (stats.totalFinished() > 0)
         {
-          const float cumulativeRank = static_cast<float>(allCumulativeRank);
-          const float totalFinished = static_cast<float>(allTotalFinished);
+          const float cumulativeRank = static_cast<float>(stats.cumulativeRank());
+          const float totalFinished = static_cast<float>(stats.totalFinished());
           response.basic.averageRank = cumulativeRank / totalFinished;
         }
 
-        if (allTotalRaces > 0)
+        if (stats.totalRaces() > 0)
         {
-          const float totalRaces = static_cast<float>(allTotalRaces);
-          const float totalFinished = static_cast<float>(allTotalFinished);
+          const float totalRaces = static_cast<float>(stats.totalRaces());
+          const float totalFinished = static_cast<float>(stats.totalFinished());
           response.basic.completionRate = totalFinished / totalRaces;
         }
 
-        response.basic.perfectJumpCombo = static_cast<uint16_t>(maxJumpCombo);
-        response.basic.magicDefenseCombo = static_cast<uint16_t>(maxMagicDefenseCombo);
+        response.basic.perfectJumpCombo = static_cast<uint16_t>(
+          stats.bestJumpCombo());
+        response.basic.magicDefenseCombo = static_cast<uint16_t>(
+          stats.bestMagicDefenseCombo());
 
         // TODO: Magic attack SUCCESS RATES require relay passthrough
         // parsing to detect hits (P2P data). Usage counts are tracked
-        // in mountInfo but hit counts need feature/reverse-relay-data.
+        // in ridingStats but hit counts need feature/reverse-relay-data.
         // Fields: magicBallAttackSuccessRate, fireSpiritTransferSuccessRate,
         //         iceWallAttackSuccessRate, averageChasingCount
         // TODO: levelProgress needs res.pak level/XP table extraction
