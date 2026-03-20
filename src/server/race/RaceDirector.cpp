@@ -3341,7 +3341,8 @@ void RaceDirector::HandleRequestUser(
     clientContext.characterUid).userName;
 
   if (not isAdmin)
-  {    spdlog::warn("User '{}'('{}'), which is not an admin, tried to summon character '{}'",
+  {    
+    spdlog::warn("User '{}'('{}'), which is not an admin, tried to summon character '{}'",
       userName,
       invokerCharacterName,
       command.characterName);
@@ -3368,16 +3369,16 @@ void RaceDirector::HandleRequestUser(
   try
   {
     const auto clientOpt = GetServerInstance()
-    .GetLobbyDirector().GetUserByCharacterUid(characterUid);
+      .GetLobbyDirector().GetUserByCharacterUid(characterUid);
   }
-  catch(const std::exception&)
+  catch (const std::exception&)
   {
     _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
     return;
   }
 
   protocol::AcCmdRCRequestUser notify{};
-  notify.force= command.force;
+  notify.force = command.force;
   notify.characterName = command.characterName;
   notify.roomUid = command.roomUid;
   notify.ranchUid = command.ranchUid;
