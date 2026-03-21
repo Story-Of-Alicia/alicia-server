@@ -640,10 +640,11 @@ void RaceDirector::HandleClientDisconnected(ClientId clientId)
   const auto& clientContext = GetClientContext(clientId, false);
   if (clientContext.isAuthenticated)
   {
-    std::scoped_lock lock(_raceInstancesMutex);
+    std::unique_lock lock(_raceInstancesMutex);
     const auto raceIter = _raceInstances.find(clientContext.roomUid);
     if (raceIter != _raceInstances.cend())
     {
+      lock.release();
       HandleLeaveRoom(clientId);
     }
   }
@@ -3351,7 +3352,7 @@ void RaceDirector::HandleKickUser(
 {
   const auto& clientContext = GetClientContext(clientId);
 
-  std::scoped_lock lock(_raceInstancesMutex);
+  std::unique_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext, false);
 
   // Only the room master may kick players.
@@ -3445,6 +3446,7 @@ void RaceDirector::HandleKickUser(
       });
   }
 
+  lock.release();
   HandleLeaveRoom(targetClientId);
 }
 
