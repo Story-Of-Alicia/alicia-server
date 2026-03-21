@@ -777,7 +777,7 @@ void AcCmdCLEnterRanchCancel::Write(
   const AcCmdCLEnterRanchCancel& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0);
+  stream.Write(command.reason);
 }
 
 void AcCmdCLEnterRanchCancel::Read(
@@ -1648,6 +1648,20 @@ void AcCmdLCInviteGuildJoinOK::Write(
 {
   // TODO: Return this back to the client to confirm join?
   throw std::runtime_error("Not implemented");
+}
+
+void AcCmdLCAchievementRewardNotify::Read(
+  AcCmdLCAchievementRewardNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdLCAchievementRewardNotify::Write(
+  const AcCmdLCAchievementRewardNotify&,
+  SinkStream&)
+{
+  // Empty
 }
 
 } // namespace server::protocol

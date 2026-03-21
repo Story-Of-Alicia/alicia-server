@@ -1860,20 +1860,18 @@ struct AcCmdCRUseMagicItem
   uint32_t magicItemId;
 
   // sub_45ed60
-  struct Optional1
+  struct IceWallProperties
   {
     std::array<float, 3> member1;
     std::array<float, 3> member2;
   };
-  std::optional<Optional1> optional1;
+  std::optional<IceWallProperties> iceWallProperties;
 
   // sub_4d5460
-  struct Optional2
-  {
-    uint8_t size;
-    std::vector<uint16_t> list;
-  };
-  std::optional<Optional2> optional2;
+  // In the IceWall, normal spawns one icicle and critical spawns three.
+  // This list containes values [2] for normal and [1, 2, 3] for critical.
+  using ObstacleInstanceIds = std::vector<uint16_t>;
+  std::optional<ObstacleInstanceIds> obstacleProperties;
 
   // vFunc_4 @ 0x00698540
   uint32_t unk3;
@@ -1933,11 +1931,11 @@ struct AcCmdCRUseMagicItemOK
   uint32_t magicItemId;
 
   // sub_45ed60
-  std::optional<AcCmdCRUseMagicItem::Optional1> optional1;
+  std::optional<AcCmdCRUseMagicItem::IceWallProperties> iceWallProperties;
   // sub_4d5460
-  std::optional<AcCmdCRUseMagicItem::Optional2> optional2;
+  std::optional<AcCmdCRUseMagicItem::ObstacleInstanceIds> obstacleProperties;
 
-  uint16_t unk3;
+  uint16_t nextObstacleInstanceId;
   // TODO: is this correct type?
   float unk4;
   
@@ -1968,11 +1966,11 @@ struct AcCmdCRUseMagicItemNotify
   uint32_t magicItemId;
 
   // sub_45ed60
-  std::optional<AcCmdCRUseMagicItem::Optional1> optional1;
+  std::optional<AcCmdCRUseMagicItem::IceWallProperties> iceWallProperties;
   // sub_4d5460
-  std::optional<AcCmdCRUseMagicItem::Optional2> optional2;
+  std::optional<AcCmdCRUseMagicItem::ObstacleInstanceIds> obstacleProperties;
 
-  uint16_t unk3;
+  uint16_t nextObstacleInstanceId;
   uint32_t unk4;
 
   static Command GetCommand()
@@ -2242,8 +2240,10 @@ struct AcCmdRCRemoveMagicTarget
 
 struct AcCmdRCMagicExpire
 {
-  uint16_t characterOid;
-  uint32_t magicItemId;
+  uint32_t magicType;
+  uint16_t firstObstacleInstanceId;
+  uint16_t obstacleInstanceCount;
+  uint8_t breakdown;
 
   static Command GetCommand()
   {
@@ -2295,10 +2295,10 @@ struct AcCmdRCTriggerActivate
 struct AcCmdCRActivateSkillEffect
 {
   uint16_t targetOid;
-  uint32_t effectId;         // What skill/effect to activate
-  uint16_t attackerOid;       // Unknown parameter
-  uint16_t unk1;            // Unknown parameter
-  uint32_t unk2;            // Unknown parameter
+  uint32_t effectId;           // What skill/effect to activate
+  uint16_t attackerOid;
+  uint16_t obstacleInstanceId;
+  float unk2;
 
   static Command GetCommand()
   {
@@ -2326,18 +2326,17 @@ struct AcCmdRCAddSkillEffect
   uint32_t effectId;        // Effect/animation ID (knockdown, stun, etc.)
   uint16_t targetOid;
   uint16_t attackerOid;
-  uint16_t unk2;            // Unused
-  uint16_t unk3;            // Unused
-  uint32_t unk4;            // Posibly intensity, no idea but it it not work
+  uint16_t unk2;
+  uint32_t unk3;
 
-  struct DefenseMagicEffect
+  struct ShieldEffect
   {
-    uint32_t unk0; // Effect time in seconds? It makes the it not work
-    uint32_t unk1; // Unused
+    uint32_t unk0;
+    uint32_t unk1;
   };
-  std::optional<DefenseMagicEffect> defenseMagicEffect;
+  std::optional<ShieldEffect> shieldEffect;
 
-  std::optional<uint32_t> attackMagicEffect; // Effect time in milliseconds
+  std::optional<uint32_t> boostEffectMs; // Effect time in milliseconds
 
   static Command GetCommand()
   {
@@ -2564,6 +2563,106 @@ struct AcCmdRCTimeoutCareUser
   //! @param stream Source stream.
   static void Read(
     AcCmdRCTimeoutCareUser& command,
+    SourceStream& stream);
+};
+
+//! Server-initiated, clientbound command to notify that
+//! an achievement has been updated/completed.
+struct AcCmdRCAchievementUpdateNotify
+{
+  // Example configuration:
+  // 10229/true/0/Bronze/555555
+  // - This will complete 10229 Bronze tier and set carrots to 555555.
+
+  // 10224/false/1/None/1111
+  // - This will progress 10224 None tier by 1, and set carrots to 1111.
+
+  //! The TID of the achievement.
+  //! References libconfig/Achievements table.
+  uint16_t achievementTid{};
+
+  ObjectiveProgress objectiveProgress{};
+
+  //! The final carrot count after the achievement.
+  int32_t carrotBalance{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCAchievementUpdateNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCAchievementUpdateNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCAchievementUpdateNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRTriggerizeAct
+{
+  // Can either be 1 or 2. Why, I don't know.
+  // But the handler checks for either one of these values.
+  // Gamemode? Teammode?
+  uint8_t unk0{};
+  // Seems to be interactive object ID
+  uint32_t unk1{};
+  // Seems to be event ID
+  uint16_t unk2{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRTriggerizeAct;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRTriggerizeAct& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRTriggerizeAct& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCCreateItem
+{
+  uint32_t itemId{};
+  uint32_t itemType{};
+  std::array<float, 3> position{};
+  uint32_t spawnStyle{};
+  uint16_t spawnerId{};
+  int32_t sizeLevel{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCCreateItem;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCCreateItem& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCCreateItem& command,
     SourceStream& stream);
 };
 

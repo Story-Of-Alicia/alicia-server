@@ -463,6 +463,27 @@ void LobbyNetworkHandler::NotifyCharacter(
   }
 }
 
+void LobbyNetworkHandler::NotifyAchievementReward(
+  const data::Uid characterUid)
+{
+  try
+  {
+    const auto clientId = GetClientIdByCharacterUid(characterUid);
+
+    protocol::AcCmdLCAchievementRewardNotify notify{};
+    _commandServer.QueueCommand<decltype(notify)>(
+      clientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
+  catch (const std::exception&)
+  {
+    // We really don't care if the user disconnected.
+  }
+}
+
 ClientId LobbyNetworkHandler::GetClientIdByUserName(
   const std::string& userName,
   const bool requiresAuthorization)
@@ -1412,6 +1433,7 @@ void LobbyNetworkHandler::HandleCreateNickname(
         horse.dateOfBirth() = data::Clock::now();
         horse.mountCondition.stamina = 3500;
         horse.growthPoints() = 150;
+        horse.clazz = 1;
 
         _serverInstance.GetHorseRegistry().BuildRandomHorse(
           horse.parts,
@@ -1892,7 +1914,8 @@ void LobbyNetworkHandler::HandleEnterRanch(
 
   if (isRanchLocked && not isEnteringOwnRanch)
   {
-    protocol::AcCmdCLEnterRanchCancel response{};
+    protocol::AcCmdCLEnterRanchCancel response{
+      .reason = 3};
 
     _commandServer.QueueCommand<decltype(response)>(
       clientId, [response]()
