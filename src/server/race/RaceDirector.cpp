@@ -644,7 +644,7 @@ void RaceDirector::HandleClientDisconnected(ClientId clientId)
     const auto raceIter = _raceInstances.find(clientContext.roomUid);
     if (raceIter != _raceInstances.cend())
     {
-      lock.release();
+      lock.unlock();
       HandleLeaveRoom(clientId);
     }
   }
@@ -797,7 +797,6 @@ void RaceDirector::HandleEnterRoom(
   // that were provided.
   clientContext.characterUid = command.characterUid;
   clientContext.roomUid = command.roomUid;
-
 
   std::scoped_lock lock(_raceInstancesMutex);
   // Try to emplace the room instance.
@@ -3446,7 +3445,7 @@ void RaceDirector::HandleKickUser(
       });
   }
 
-  lock.release();
+  lock.unlock();
   HandleLeaveRoom(targetClientId);
 }
 
