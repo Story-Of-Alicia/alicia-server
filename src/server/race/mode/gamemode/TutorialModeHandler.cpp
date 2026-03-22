@@ -6,7 +6,6 @@ namespace server::race::mode
 void TutorialGameMode::OnHurdleClear(
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
-  [[maybe_unused]] tracker::RaceTracker::Racer& racer,
   [[maybe_unused]] const protocol::AcCmdCRHurdleClearResult& command)
 {
   // TODO: complete implementation with a MissionRegistry, identify speed or magic
@@ -17,7 +16,6 @@ void TutorialGameMode::OnHurdleClear(
 void TutorialGameMode::OnRaceUserPos(
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
-  [[maybe_unused]] tracker::RaceTracker::Racer& racer,
   [[maybe_unused]] const protocol::AcCmdUserRaceUpdatePos& command)
 {
   // TODO: complete implementation with a MissionRegistry, identify speed or magic
@@ -28,7 +26,6 @@ void TutorialGameMode::OnRaceUserPos(
 void TutorialGameMode::OnItemGet(
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
-  [[maybe_unused]] tracker::RaceTracker::Racer& racer,
   [[maybe_unused]] const protocol::AcCmdUserRaceItemGet& command,
   [[maybe_unused]] tracker::RaceTracker::Item& item)
 {
@@ -40,7 +37,6 @@ void TutorialGameMode::OnItemGet(
 void TutorialGameMode::OnRequestSpur(
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
-  [[maybe_unused]] tracker::RaceTracker::Racer& racer,
   [[maybe_unused]] const protocol::AcCmdCRRequestSpur& command)
 {
   // TODO: complete implementation with a MissionRegistry, identify speed or magic
@@ -51,7 +47,6 @@ void TutorialGameMode::OnRequestSpur(
 void TutorialGameMode::OnStartingRate(
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
-  [[maybe_unused]] tracker::RaceTracker::Racer& racer,
   [[maybe_unused]] const protocol::AcCmdCRStartingRate& command)
 {
   // TODO: complete implementation with a MissionRegistry, identify speed or magic
@@ -62,7 +57,6 @@ void TutorialGameMode::OnStartingRate(
 void TutorialGameMode::OnUseMagicItem(
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
-  [[maybe_unused]] tracker::RaceTracker::Racer& racer,
   [[maybe_unused]] const protocol::AcCmdCRUseMagicItem& command)
 {
   // TODO: complete implementation with a MissionRegistry, identify speed or magic

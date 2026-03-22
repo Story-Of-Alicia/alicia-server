@@ -247,10 +247,6 @@ public:
     ClientId clientId,
     const protocol::AcCmdCRStarPointGet& command);
 
-  void HandleRequestSpur(
-    ClientId clientId,
-    const protocol::AcCmdCRRequestSpur& command);
-
   void HandleHurdleClearResult(
     ClientId clientId,
     const protocol::AcCmdCRHurdleClearResult& command);

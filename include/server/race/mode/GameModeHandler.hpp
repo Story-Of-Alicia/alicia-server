@@ -39,38 +39,32 @@ public:
   virtual void OnHurdleClear(
     ClientId clientId,
     RaceDirector::RaceInstance& raceInstance,
-    tracker::RaceTracker::Racer& racer,
     const protocol::AcCmdCRHurdleClearResult& command) = 0;
 
   virtual void OnRaceUserPos(
     ClientId clientId,
     RaceDirector::RaceInstance& raceInstance,
-    tracker::RaceTracker::Racer& racer,
     const protocol::AcCmdUserRaceUpdatePos& command) = 0;
 
   virtual void OnItemGet(
     ClientId clientId,
     RaceDirector::RaceInstance& raceInstance,
-    tracker::RaceTracker::Racer& racer,
     const protocol::AcCmdUserRaceItemGet& command,
     tracker::RaceTracker::Item& item) = 0;
 
   virtual void OnRequestSpur(
     ClientId clientId,
     RaceDirector::RaceInstance& raceInstance,
-    tracker::RaceTracker::Racer& racer,
     const protocol::AcCmdCRRequestSpur& command) = 0;
 
   virtual void OnStartingRate(
     ClientId clientId,
     RaceDirector::RaceInstance& raceInstance,
-    tracker::RaceTracker::Racer& racer,
     const protocol::AcCmdCRStartingRate& command) = 0;
 
   virtual void OnUseMagicItem(
     ClientId clientId,
     RaceDirector::RaceInstance& raceInstance,
-    tracker::RaceTracker::Racer& racer,
     const protocol::AcCmdCRUseMagicItem& command) = 0;
 
 protected:

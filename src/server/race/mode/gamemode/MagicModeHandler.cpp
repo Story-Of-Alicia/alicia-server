@@ -6,7 +6,6 @@ namespace server::race::mode
 void MagicGameMode::OnHurdleClear(
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
-  [[maybe_unused]] tracker::RaceTracker::Racer& racer,
   [[maybe_unused]] const protocol::AcCmdCRHurdleClearResult& command)
 {
   // TODO: copy implementation from RaceDirector
@@ -16,7 +15,6 @@ void MagicGameMode::OnHurdleClear(
 void MagicGameMode::OnRaceUserPos(
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
-  [[maybe_unused]] tracker::RaceTracker::Racer& racer,
   [[maybe_unused]] const protocol::AcCmdUserRaceUpdatePos& command)
 {
   // TODO: copy implementation from RaceDirector
@@ -26,7 +24,6 @@ void MagicGameMode::OnRaceUserPos(
 void MagicGameMode::OnItemGet(
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
-  [[maybe_unused]] tracker::RaceTracker::Racer& racer,
   [[maybe_unused]] const protocol::AcCmdUserRaceItemGet& command,
   [[maybe_unused]] tracker::RaceTracker::Item& item)
 {
@@ -37,7 +34,6 @@ void MagicGameMode::OnItemGet(
 void MagicGameMode::OnRequestSpur(
   ClientId,
   RaceDirector::RaceInstance&,
-  tracker::RaceTracker::Racer&,
   const protocol::AcCmdCRRequestSpur&)
 {
   // Ignore request spur (speed) in magic mode
@@ -46,7 +42,6 @@ void MagicGameMode::OnRequestSpur(
 void MagicGameMode::OnStartingRate(
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
-  [[maybe_unused]] tracker::RaceTracker::Racer& racer,
   [[maybe_unused]] const protocol::AcCmdCRStartingRate& command)
 {
   // TODO: copy implementation from RaceDirector
@@ -56,7 +51,6 @@ void MagicGameMode::OnStartingRate(
 void MagicGameMode::OnUseMagicItem(
   [[maybe_unused]] ClientId clientId,
   [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
-  [[maybe_unused]] tracker::RaceTracker::Racer& racer,
   [[maybe_unused]] const protocol::AcCmdCRUseMagicItem& command)
 {
   // TODO: copy implementation from RaceDirector

@@ -178,7 +178,10 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestSpur>(
     [this](ClientId clientId, const auto& message)
     {
-      HandleRequestSpur(clientId, message);
+      const auto& clientContext = GetClientContext(clientId);
+      auto& raceInstance = GetRaceInstance(clientContext);
+      raceInstance.gameModeHandler->OnRequestSpur(clientId, raceInstance, message);
+
       HandleTeamGauge(clientId);
     });
 
@@ -2102,60 +2105,6 @@ void RaceDirector::HandleStarPointGet(
     [response]()
     {
       return response;
-    });
-}
-
-void RaceDirector::HandleRequestSpur(
-  ClientId clientId,
-  const protocol::AcCmdCRRequestSpur& command)
-{
-  const auto& clientContext = GetClientContext(clientId);
-
-  std::scoped_lock lock(_raceInstancesMutex);
-  auto& raceInstance = GetRaceInstance(clientContext);
-
-  auto& racer = raceInstance.tracker.GetRacer(
-    clientContext.characterUid);
-
-  // TODO: Revise this in NPC races
-  if (command.characterOid != racer.oid)
-  {
-    throw std::runtime_error(
-      "Client tried to perform action on behalf of different racer");
-  }
-
-  const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(raceInstance.raceGameMode));
-
-  if (racer.starPointValue < gameModeTemplate.spurConsumeStarPoints)
-    throw std::runtime_error("Client is dead ass cheating (or is really desynced)");
-
-  racer.starPointValue -= gameModeTemplate.spurConsumeStarPoints;
-
-  protocol::AcCmdCRRequestSpurOK response{
-    .characterOid = command.characterOid,
-    .activeBoosters = command.activeBoosters,
-    .startPointValue = racer.starPointValue,
-    .comboBreak = command.comboBreak};
-
-  protocol::AcCmdCRStarPointGetOK starPointResponse{
-    .characterOid = command.characterOid,
-    .starPointValue = racer.starPointValue,
-    .giveMagicItem = false
-  };
-
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [response]()
-    {
-      return response;
-    });
-
-  _commandServer.QueueCommand<decltype(starPointResponse)>(
-    clientId,
-    [starPointResponse]()
-    {
-      return starPointResponse;
     });
 }
 
