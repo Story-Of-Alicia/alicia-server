@@ -677,7 +677,7 @@ Config::Race& RaceDirector::GetConfig()
 
 RaceDirector::ClientContext& RaceDirector::GetClientContext(ClientId clientId, bool requireAuthorized)
 {
-  auto clientContextIter = _clients.find(clientId);
+  const auto clientContextIter = _clients.find(clientId);
   if (clientContextIter == _clients.end())
     throw std::runtime_error("Race client is not available");
 
@@ -692,8 +692,7 @@ ClientId RaceDirector::GetClientIdByCharacterUid(data::Uid characterUid)
 {
   for (auto& [clientId, clientContext] : _clients)
   {
-    if (clientContext.characterUid == characterUid
-      && clientContext.isAuthenticated)
+    if (clientContext.characterUid == characterUid && clientContext.isAuthenticated)
       return clientId;
   }
 

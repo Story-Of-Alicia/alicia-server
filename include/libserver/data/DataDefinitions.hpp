@@ -255,6 +255,7 @@ struct Character
   dao::Field<uint32_t> level{};
   dao::Field<int32_t> carrots{};
   dao::Field<int32_t> cash{};
+  dao::Field<uint32_t> breedingMoneySpent{0u};
 
   enum class Role
   {
@@ -346,7 +347,7 @@ struct Character
     dao::Field<Sets> magic{};
   } skills{};
 
-    dao::Field<std::vector<Uid>> dailyQuests{};
+  dao::Field<std::vector<Uid>> dailyQuests{};
   struct Mailbox
   {
     dao::Field<bool> hasNewMail{false};
@@ -357,6 +358,19 @@ struct Character
 
 struct Horse
 {
+  //! A horse type.
+  enum class Type
+  {
+    //! An adult horse.
+    Adult,
+    //! A horse foal.
+    Foal,
+    //! An adult horse which is registered in the breeding market.
+    Stallion,
+    //! An adult horse which is rented.
+    Rent
+  };
+
   dao::Field<Uid> uid{InvalidUid};
   dao::Field<Tid> tid{InvalidTid};
   dao::Field<std::string> name{};
@@ -401,6 +415,20 @@ struct Horse
   dao::Field<uint32_t> grade{0u};
   dao::Field<uint32_t> growthPoints{0u};
 
+  struct Breeding
+  {
+    //! A count of how many times the horse was bred.
+    dao::Field<uint32_t> breedingCount{0u};
+    //! A count of successful consecutive breedings.
+    dao::Field<uint32_t> breedingCombo{0u};
+  } breeding{};
+
+  dao::Field<Type> type{Type::Adult};
+  dao::Field<uint8_t> horseType{0u};
+  dao::Field<uint32_t> tendency{0u};
+  dao::Field<uint32_t> spirit{0u};
+  dao::Field<uint32_t> fatigue{0u};
+
   struct Potential
   {
     dao::Field<uint32_t> type{0u};
@@ -409,7 +437,6 @@ struct Horse
   } potential{};
 
   dao::Field<uint32_t> luckState{0u};
-  dao::Field<uint32_t> fatigue{0u};
   dao::Field<uint32_t> emblemUid{0u};
   dao::Field<Clock::time_point> dateOfBirth{};
 
@@ -451,6 +478,15 @@ struct Horse
     dao::Field<uint32_t> cumulativePrize{};
     dao::Field<uint32_t> biggestPrize{};
   } mountInfo{};
+
+  dao::Field<std::vector<uint32_t>> ancestors{};
+
+  //! A value in an interval of <1, 9>.
+  //! Basically a weighted score of number of ancestors that share the same coat as the horse.
+  //! Ancestors of the first generation add two points to the lineage,
+  //! ancestors of the second generation add one point to the lineage
+  //! while the horse itself adds 1.
+  dao::Field<uint32_t> lineage{1u};
 };
 
 struct Housing
@@ -479,7 +515,7 @@ struct DailyQuest
   dao::Field<uint8_t> unk_2{};
   dao::Field<uint8_t> unk_3{};
 };
-  
+
 struct Mail
 {
   //! Mail type.
@@ -512,6 +548,18 @@ struct Mail
 
   dao::Field<Clock::time_point> createdAt{};
   dao::Field<std::string> body{};
+};
+
+struct Stallion
+{
+  dao::Field<Uid> uid{InvalidUid};
+  dao::Field<Uid> horseUid{InvalidUid};     // The horse being registered as stallion
+  dao::Field<Uid> ownerUid{InvalidUid};     // Owner of the stallion
+  dao::Field<uint32_t> breedingCharge{};    // Price in carrots to breed with this stallion
+  dao::Field<uint32_t> timesMated{0u};      // Times bred during current registration
+  dao::Field<Clock::time_point> registeredAt{};
+  dao::Field<Clock::time_point> expiresAt{};
+  // Note: Stallions expire 24 hours after registeredAt
 };
 
 } // namespace data

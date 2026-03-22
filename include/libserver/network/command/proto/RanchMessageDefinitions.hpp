@@ -33,6 +33,13 @@
 namespace server::protocol
 {
 
+enum class BreedingFailureCardType : uint8_t
+{
+  Red,
+  //! Chance
+  Yellow
+};
+
 struct AcCmdCRHeartbeat
 {
   static Command GetCommand()
@@ -422,17 +429,17 @@ struct RanchCommandEnterBreedingMarketOK
 {
   struct Stallion
   {
+    //! UID of the horse.
     uint32_t uid{};
+    //! TID of the horse.
     uint32_t tid{};
-    // Counts of successful breeds (>:o) in succession.
-    uint8_t combo{};
-    uint32_t unk1{};
-
-    uint8_t unk2{};
-    // Basically weighted score of number of ancestors that share the same coat as the horse.
-    // Ancestors of first generation add two points to lineage,
-    // ancestors of the second generation add one point to the lineage,
-    // while the horse itself adds 1.
+    //! Count of successful breeds in succession.
+    uint8_t breedingCombo{};
+    //! Flag indicating whether the horse is registered as a stallion.
+    uint32_t isRegistered{};
+    //! Shows a green badge "BONUS".
+    bool hasBreedingBonus{};
+    //! A value in an interval of <1, 9>.
     uint8_t lineage{};
   };
 
@@ -505,19 +512,57 @@ struct RanchCommandLeaveBreedingMarket
 
 struct AcCmdCRSearchStallion
 {
-  uint32_t unk0{};
-  uint8_t unk1{};
-  uint8_t unk2{};
+  enum class RowSortParameter
+    : int8_t
+  {
+    LineageDescending = -5,
+    TimeLeftDescending = -4,
+    FeeDescending = -3,
+    PregnancyChanceAscending = -1,
+    PregnancyChanceDescending = 1,
+    FeeAscending = 3,
+    TimeLeftAscending = 4,
+    LineageAscending = 5
+  };
+
+  enum class Stat
+    : uint8_t
+  {
+    Agility = 0,
+    Spirit = 1,
+    Speed = 2,
+    Strength = 3,
+    Control = 4,
+  };
+
+  //! A page number.
+  uint32_t page{};
+  //! A minimum required grade.
+  uint8_t filterMinimumGrade{};
+  //! A row sort parameter.
+  RowSortParameter rowSortParameter{};
+  // 2
   uint8_t unk3{};
+  // 251
   uint8_t unk4{};
+  // 3
   uint8_t unk5{};
+  // 4
   uint8_t unk6{};
-  uint8_t unk7{};
-  uint8_t unk8{};
-
-  // Nested list size specified with a uint8_t. Max size 3
-  std::array<std::vector<uint32_t>, 3> unk9{};
-
+  //! A first required stat.
+  Stat firstRequiredStat{};
+  //! A second required stat.
+  Stat secondRequiredStat{};
+  //! A list of filtered coats.
+  //! Max 3 entries.
+  std::vector<uint32_t> filterCoats{};
+  //! A list of filtered manes.
+  //! Max 3 entries.
+  std::vector<uint32_t> filterManes{};
+  //! A list of filtered tails.
+  //! Max 3 entries.
+  std::vector<uint32_t> filterTails{};
+  //
   uint8_t unk10{};
 
   static Command GetCommand()
@@ -542,22 +587,28 @@ struct AcCmdCRSearchStallion
 
 struct RanchCommandSearchStallionOK
 {
-  // Possibly some paging values?
-  // For example, current page/number of pages
-  uint32_t unk0{};
-  uint32_t unk1{};
+  uint32_t page{};
+  uint32_t pageCount{};
 
   struct Stallion
   {
-    std::string member1{};
+    //! Name of the owner of the stallion.
+    //! Max length 16 characters.
+    std::string owner{};
     uint32_t uid{};
     uint32_t tid{};
+    //! Max length 16 characters.
     std::string name{};
+    //! Grade of the stallion.
     uint8_t grade{};
-    uint8_t chance{};
-    uint32_t matePrice{};
-    uint32_t unk7{};
-    // 1304
+    //! The heritability is the probability that a foal will inherit the same markings as the stallion.
+    //! The higher the stallion's consecutive success rate and pregnancy rate, the higher the heritability.
+    //! Represented with colored arrows in-game.
+    uint8_t heritability{};
+    uint32_t breedCharge{};
+    //! The higher the stallion's grade and the bigger the grade gap with the mare, the lower the pregnancy chance.
+    //! Represented with hearts in-game.
+    uint32_t pregnancyChance{};
     uint32_t expiresAt{};
     Horse::Stats stats{};
     Horse::Parts parts{};
@@ -566,7 +617,7 @@ struct RanchCommandSearchStallionOK
     uint8_t lineage{};
   };
 
-  // List size specified with a uint8_t. Max size 10
+  //! Max 3 entries.
   std::vector<Stallion> stallions{};
 
   static Command GetCommand()
@@ -613,8 +664,10 @@ struct RanchCommandSearchStallionCancel
 
 struct AcCmdCRRegisterStallion
 {
+  //! A horse UID.
   uint32_t horseUid{};
-  uint32_t carrots{};
+  //! A breeding fee of the stallion.
+  int32_t breedingFee{};
 
   static Command GetCommand()
   {
@@ -638,7 +691,8 @@ struct AcCmdCRRegisterStallion
 
 struct AcCmdCRRegisterStallionOK
 {
-  uint32_t horseUid{};
+  //! New carrot balance.
+  int32_t carrotBalance{};
 
   static Command GetCommand()
   {
@@ -728,7 +782,7 @@ struct AcCmdCRUnregisterStallionOK
     SourceStream& stream);
 };
 
-struct RanchCommandUnregisterStallionCancel
+struct AcCmdCRUnregisterStallionCancel
 {
   static Command GetCommand()
   {
@@ -739,14 +793,14 @@ struct RanchCommandUnregisterStallionCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandUnregisterStallionCancel& command,
+    const AcCmdCRUnregisterStallionCancel& command,
     SinkStream& stream);
 
   //! Reads a command from the provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandUnregisterStallionCancel& command,
+    AcCmdCRUnregisterStallionCancel& command,
     SourceStream& stream);
 };
 
@@ -780,10 +834,10 @@ struct AcCmdCRUnregisterStallionEstimateInfoOK
   //! A count of times the stallion mated.
   uint32_t timesMated{};
   //! An amount of carrots collected for mating.
-  uint32_t matingCompensation{};
+  uint32_t earnings{};
   uint32_t member4{};
   //! A price for mating.
-  uint32_t matingPrice{};
+  uint32_t breedingFee{};
 
   static Command GetCommand()
   {
@@ -824,6 +878,63 @@ struct AcCmdCRUnregisterStallionEstimateInfoCancel
   //! @param stream Source stream.
   static void Read(
     AcCmdCRUnregisterStallionEstimateInfoCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRCheckStallionCharge
+{
+  uint32_t horseUid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRCheckStallionCharge;
+  }
+
+  //! Writes the command to the provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRCheckStallionCharge& command,
+    SinkStream& stream);
+
+  //! Reads a command from the provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRCheckStallionCharge& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRCheckStallionChargeOK
+{
+  //! Result
+  bool hasFailed{};
+  //! Minimum allowed charge
+  int32_t minFee{};
+  //! Maximum allowed charge
+  int32_t maxFee{};
+  //!
+  uint32_t breedCount{};
+  //! The validated charge amount
+  uint32_t member5{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRCheckStallionChargeOK;
+  }
+
+  //! Writes the command to the provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRCheckStallionChargeOK& command,
+    SinkStream& stream);
+
+  //! Reads a command from the provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRCheckStallionChargeOK& command,
     SourceStream& stream);
 };
 
@@ -1040,7 +1151,7 @@ struct RanchCommandTryBreedingOK
   uint8_t unk3{};
   uint8_t unk4{};
   uint8_t unk5{};
-  uint8_t unk6{};
+  uint8_t potentialType{};
   uint8_t unk7{};
   uint8_t unk8{};
   uint16_t unk9{};
@@ -1379,6 +1490,152 @@ struct RanchCommandRanchStuffOK
   //! @param stream Source stream.
   static void Read(
     RanchCommandRanchStuffOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBreedingFailureCard
+{
+  int16_t statusOrFlag{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBreedingFailureCard;
+  }
+
+  //! Writes the command to the provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBreedingFailureCard& command,
+    SinkStream& stream);
+
+  //! Reads a command from the provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBreedingFailureCard& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBreedingFailureCardOK
+{
+  BreedingFailureCardType cardType{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBreedingFailureCardOK;
+  }
+
+  //! Writes the command to the provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBreedingFailureCardOK& command,
+    SinkStream& stream);
+
+  //! Reads a command from the provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBreedingFailureCardOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBreedingFailureCardCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBreedingFailureCardCancel;
+  }
+
+  //! Writes the command to the provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBreedingFailureCardCancel& command,
+    SinkStream& stream);
+
+  //! Reads a command from the provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBreedingFailureCardCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBreedingFailureCardChoose
+{
+  int16_t statusOrFlag{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBreedingFailureCardChoose;
+  }
+
+  //! Writes the command to the provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBreedingFailureCardChoose& command,
+    SinkStream& stream);
+
+  //! Reads a command from the provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBreedingFailureCardChoose& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBreedingFailureCardChooseOK
+{
+  uint8_t member1{};
+  uint32_t rewardId{};
+  uint8_t member3{};
+  std::array<uint32_t,2> member4{};
+  uint32_t member5{};
+  Item item{};
+  uint32_t member6{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBreedingFailureCardChooseOK;
+  }
+
+  //! Writes the command to the provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBreedingFailureCardChooseOK& command,
+    SinkStream& stream);
+
+  //! Reads a command from the provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBreedingFailureCardChooseOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBreedingFailureCardChooseCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBreedingFailureCardChooseCancel;
+  }
+
+  //! Writes the command to the provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBreedingFailureCardChooseCancel& command,
+    SinkStream& stream);
+
+  //! Reads a command from the provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBreedingFailureCardChooseCancel& command,
     SourceStream& stream);
 };
 
@@ -3370,19 +3627,27 @@ struct RanchCommandMountFamilyTree
     SourceStream& stream);
 };
 
-//!
 struct RanchCommandMountFamilyTreeOK
 {
   struct MountFamilyTreeItem
   {
-    uint8_t id{};
+    enum class Position : uint8_t
+    {
+      Father = 1,
+      Mother = 2,
+      PaternalGrandfather = 3,
+      PaternalGrandmother = 4,
+      MaternalGrandfather = 5,
+      MaternalGrandmother = 6
+    };
+
+    Position id{};
     std::string name{};
     uint8_t grade{};
     uint16_t skinId{};
   };
 
-  // In the packet, the length is specified as a byte
-  // max size 6
+  //! Max 6 entries.
   std::vector<MountFamilyTreeItem> ancestors;
 
   static Command GetCommand()
