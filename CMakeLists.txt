@@ -72,6 +72,7 @@ add_library(alicia-libserver STATIC
         src/libserver/registry/ItemRegistry.cpp
         src/libserver/registry/MagicRegistry.cpp
         src/libserver/registry/PetRegistry.cpp
+        src/libserver/registry/QuestRegistry.cpp
         src/libserver/util/Locale.cpp
         src/libserver/util/Scheduler.cpp
         src/libserver/util/Stream.cpp
@@ -110,6 +111,7 @@ add_executable(alicia-server
         src/server/system/ItemSystem.cpp
         src/server/system/ModerationSystem.cpp
         src/server/system/OtpSystem.cpp
+        src/server/system/QuestSystem.cpp
         src/server/system/RoomSystem.cpp
         src/server/tracker/RaceTracker.cpp
         src/server/tracker/RanchTracker.cpp)

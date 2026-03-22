@@ -33,6 +33,7 @@
 #include "server/system/ItemSystem.hpp"
 #include "server/system/OtpSystem.hpp"
 #include "server/system/ModerationSystem.hpp"
+#include "server/system/QuestSystem.hpp"
 #include "server/system/RoomSystem.hpp"
 
 #include <libserver/data/DataDirector.hpp>
@@ -41,6 +42,7 @@
 #include <libserver/registry/ItemRegistry.hpp>
 #include <libserver/registry/MagicRegistry.hpp>
 #include <libserver/registry/PetRegistry.hpp>
+#include <libserver/registry/QuestRegistry.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -108,6 +110,10 @@ public:
   //! @returns Reference to the Pet registry.
   registry::PetRegistry& GetPetRegistry();
 
+  //! Returns reference to the Quest registry.
+  //! @returns Reference to the Quest registry.
+  registry::QuestRegistry& GetQuestRegistry();
+
   //! Returns reference to the Magic registry.
   //! @returns Reference to the Magic registry.
   registry::MagicRegistry& GetMagicRegistry();
@@ -135,6 +141,10 @@ public:
   //! Returns reference to the room system.
   //! @returns Reference to the room system.
   RoomSystem& GetRoomSystem();
+
+  //! Returns reference to the quest system.
+  //! @returns Reference to the quest system.
+  QuestSystem& GetQuestSystem();
 
   //! Returns reference to the settings.
   //! @returns Reference to the settings.
@@ -237,6 +247,8 @@ private:
   registry::MagicRegistry _magicRegistry;
   //! A registry of pets.
   registry::PetRegistry _petRegistry;
+  //! A registry of quests.
+  registry::QuestRegistry _questRegistry;
 
   //! A chat system.
   ChatSystem _chatSystem;
@@ -248,6 +260,8 @@ private:
   OtpSystem _otpSystem;
   //! A moderation system
   ModerationSystem _moderationSystem;
+  //! A quest system.
+  QuestSystem _questSystem;
   //! A room system.
   RoomSystem _roomSystem;
 

@@ -2757,11 +2757,11 @@ void AcCmdRCUpdateDailyQuestNotify::Write(
 {
   stream.Write(command.characterUid);
   stream.Write(command.questId);
-  stream.Write(command.unk);
-  stream.Write(command.unk0);
-  stream.Write(command.unk1);
+  stream.Write(command.objectiveProgress);
+  stream.Write(command.carrotsReward);
+  stream.Write(command.rewardType);
   stream.Write(command.unk2);
-  stream.Write(command.unk3);
+  stream.Write(command.mountExp);
 }
 
 void AcCmdRCUpdateDailyQuestNotify::Read(
@@ -2769,20 +2769,6 @@ void AcCmdRCUpdateDailyQuestNotify::Read(
   SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
-}
-
-void AcCmdRCUpdateDailyQuestNotify::Unk::Write(const Unk& value, SinkStream& stream)
-{
-  stream.Write(value.unk0)
-    .Write(value.unk1)
-    .Write(value.unk2);
-}
-
-void AcCmdRCUpdateDailyQuestNotify::Unk::Read(Unk& value, SourceStream& stream)
-{
-  stream.Read(value.unk0)
-    .Read(value.unk1)
-    .Read(value.unk2);
 }
 
 void AcCmdCRRequestDailyQuestReward::Write(
@@ -2796,8 +2782,8 @@ void AcCmdCRRequestDailyQuestReward::Read(
   AcCmdCRRequestDailyQuestReward& command,
   SourceStream& stream)
 {
-  stream.Read(command.unk0);
-  stream.Read(command.unk1);
+  stream.Read(command.questTid);
+  stream.Read(command.rewardPoints);
 }
 
 void AcCmdCRRequestDailyQuestRewardOK::Write(
@@ -2833,6 +2819,21 @@ void AcCmdCRRequestDailyQuestRewardOK::Reward::Read(Reward& value, SourceStream&
   {
     stream.Read(member);
   }
+}
+
+void AcCmdRCCompleteDailyQuestNotify::Write(
+  const AcCmdRCCompleteDailyQuestNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.questId);
+}
+
+void AcCmdRCCompleteDailyQuestNotify::Read(
+  AcCmdRCCompleteDailyQuestNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRMountInjuryHealOK::Read(
@@ -2900,27 +2901,27 @@ void AcCmdCRRequestQuestReward::Read(
   AcCmdCRRequestQuestReward& command,
   SourceStream& stream)
 {
-  stream.Read(command.unk0);
-  stream.Read(command.unk1);
-  stream.Read(command.unk2);
+  stream.Read(command.questTid);
+  stream.Read(command.npcId);
+  stream.Read(command.questRewardId);
 }
 
 void AcCmdCRRequestQuestRewardOK::Write(
   const AcCmdCRRequestQuestRewardOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0);
-  stream.Write(command.unk1);
-  stream.Write(command.unk2);
+  stream.Write(command.questTid);
+  stream.Write(command.carrotsRewarded);
+  stream.Write(static_cast<uint8_t>(command.rewards.items.size()));
 
   for (auto& reward : command.rewards.items)
   {
     stream.Write(reward);
   }
 
-  stream.Write(command.unk3);
+  stream.Write(static_cast<uint8_t>(command.npcEffects.size()));
 
-  for (auto& member : command.unk4)
+  for (auto& member : command.npcEffects)
   {
     stream.Write(member);
   }
@@ -2933,17 +2934,60 @@ void AcCmdCRRequestQuestRewardOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
-void AcCmdCRRequestQuestRewardOK::Unk1::Write(const Unk1& value, SinkStream& stream)
+void AcCmdCRRequestQuestRewardOK::NpcDressList::Write(const NpcDressList& value, SinkStream& stream)
 {
-  stream.Write(value.unk0)
-    .Write(value.unk1);
+  stream.Write(value.npcId)
+    .Write(value.effectId);
 }
 
-void AcCmdCRRequestQuestRewardOK::Unk1::Read(Unk1& value, SourceStream& stream)
+void AcCmdCRRequestQuestRewardOK::NpcDressList::Read(NpcDressList& value, SourceStream& stream)
 {
-  stream.Read(value.unk0)
-    .Read(value.unk1);
+  stream.Read(value.npcId)
+    .Read(value.effectId);
 }
+
+void AcCmdCRGiveupQuest::Write(
+  const AcCmdCRGiveupQuest&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRGiveupQuest::Read(
+  AcCmdCRGiveupQuest& command,
+  SourceStream& stream)
+{
+  stream.Read(command.questId);
+}
+
+void AcCmdCRGiveupQuestCancel::Write(
+  const AcCmdCRGiveupQuestCancel&,
+  SinkStream&)
+{
+  // Empty.
+}
+
+void AcCmdCRGiveupQuestCancel::Read(
+  AcCmdCRGiveupQuestCancel&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRGiveupQuestOK::Write(
+  const AcCmdCRGiveupQuestOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.questId);
+}
+
+void AcCmdCRGiveupQuestOK::Read(
+  AcCmdCRGiveupQuestOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void AcCmdCRConfirmItem::Read(
   AcCmdCRConfirmItem& command,
   SourceStream& stream)

@@ -1026,6 +1026,7 @@ struct AcCmdCLRequestQuestList
 struct AcCmdCLRequestQuestListOK
 {
   uint32_t unk0{};
+  // Max 1000 
   std::vector<Quest> quests;
 
   static Command GetCommand()
@@ -1074,7 +1075,7 @@ struct AcCmdCLRequestDailyQuestList
 
 struct AcCmdCLRequestDailyQuestListOK
 {
-  uint32_t val0;
+  uint32_t characterUid{};
   
   std::array<Quest, 10> unk;
   std::array<DailyQuest, 3> dailyQuests;
