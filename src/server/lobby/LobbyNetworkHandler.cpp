@@ -1802,6 +1802,7 @@ void LobbyNetworkHandler::HandleRequestPersonalInfo(
     {
       case protocol::AcCmdCLRequestPersonalInfo::Type::Basic:
       {
+        // Guild name
         const auto& guildRecord = _serverInstance.GetDataDirector().GetGuild(
           character.guildUid());
         if (guildRecord.IsAvailable())
@@ -1812,9 +1813,63 @@ void LobbyNetworkHandler::HandleRequestPersonalInfo(
           });
         }
 
+        // Character info
         response.basic.introduction = character.introduction();
         response.basic.level = character.level();
-        // TODO: implement other stats
+        // Lifetime riding stats from character record
+        const auto& stats = character.ridingStats;
+
+        response.basic.distanceTravelled = stats.totalDistance();
+        response.basic.topSpeed = stats.topSpeed();
+        response.basic.longestGlidingDistance = stats.longestGlideDistance();
+        response.basic.speedSingleWinCombo = static_cast<uint16_t>(
+          stats.winsSpeedSingle());
+        response.basic.speedTeamWinCombo = static_cast<uint16_t>(
+          stats.winsSpeedTeam());
+        response.basic.magicSingleWinCombo = static_cast<uint16_t>(
+          stats.winsMagicSingle());
+        response.basic.magicTeamWinCombo = static_cast<uint16_t>(
+          stats.winsMagicTeam());
+        response.basic.highestCarnivalPrize = stats.biggestPrize();
+        response.basic.perfectBoostCombo = static_cast<uint16_t>(
+          stats.boostsInARow());
+
+        if (stats.totalJumps() > 0)
+        {
+          const float successfulJumps = static_cast<float>(stats.successfulJumps());
+          const float perfectJumps = static_cast<float>(stats.perfectJumps());
+          const float totalJumps = static_cast<float>(stats.totalJumps());
+
+          response.basic.jumpSuccessRate = successfulJumps / totalJumps;
+          response.basic.perfectJumpSuccessRate = perfectJumps / totalJumps;
+        }
+
+        if (stats.totalFinished() > 0)
+        {
+          const float cumulativeRank = static_cast<float>(stats.cumulativeRank());
+          const float totalFinished = static_cast<float>(stats.totalFinished());
+          response.basic.averageRank = cumulativeRank / totalFinished;
+        }
+
+        if (stats.totalRaces() > 0)
+        {
+          const float totalRaces = static_cast<float>(stats.totalRaces());
+          const float totalFinished = static_cast<float>(stats.totalFinished());
+          response.basic.completionRate = totalFinished / totalRaces;
+        }
+
+        response.basic.perfectJumpCombo = static_cast<uint16_t>(
+          stats.bestJumpCombo());
+        response.basic.magicDefenseCombo = static_cast<uint16_t>(
+          stats.bestMagicDefenseCombo());
+
+        // TODO: Magic attack SUCCESS RATES require relay passthrough
+        // parsing to detect hits (P2P data). Usage counts are tracked
+        // in ridingStats but hit counts need feature/reverse-relay-data.
+        // Fields: magicBallAttackSuccessRate, fireSpiritTransferSuccessRate,
+        //         iceWallAttackSuccessRate, averageChasingCount
+        // TODO: levelProgress needs res.pak level/XP table extraction
+
         break;
       }
       case protocol::AcCmdCLRequestPersonalInfo::Type::Courses:

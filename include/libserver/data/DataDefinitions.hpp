@@ -346,6 +346,37 @@ struct Character
     dao::Field<Sets> magic{};
   } skills{};
 
+  //! Lifetime riding statistics across all horses.
+  //! Per-horse stats remain in Horse::MountInfo.
+  struct RidingStats
+  {
+    dao::Field<uint32_t> totalDistance{};
+    dao::Field<uint32_t> topSpeed{};
+    dao::Field<uint32_t> longestGlideDistance{};
+    dao::Field<uint32_t> boostsInARow{};
+
+    dao::Field<uint32_t> winsSpeedSingle{};
+    dao::Field<uint32_t> winsSpeedTeam{};
+    dao::Field<uint32_t> winsMagicSingle{};
+    dao::Field<uint32_t> winsMagicTeam{};
+
+    dao::Field<uint32_t> totalRaces{};
+    dao::Field<uint32_t> totalFinished{};
+    dao::Field<uint32_t> cumulativeRank{};
+
+    dao::Field<uint32_t> totalJumps{};
+    dao::Field<uint32_t> successfulJumps{};
+    dao::Field<uint32_t> perfectJumps{};
+    dao::Field<uint32_t> bestJumpCombo{};
+    dao::Field<uint32_t> bestMagicDefenseCombo{};
+
+    dao::Field<uint32_t> biggestPrize{};
+
+    dao::Field<uint32_t> magicBallUses{};
+    dao::Field<uint32_t> iceWallUses{};
+    dao::Field<uint32_t> fireSpiritUses{};
+  } ridingStats{};
+
     dao::Field<std::vector<Uid>> dailyQuests{};
   struct Mailbox
   {
@@ -450,6 +481,32 @@ struct Horse
     dao::Field<uint32_t> participated{};
     dao::Field<uint32_t> cumulativePrize{};
     dao::Field<uint32_t> biggestPrize{};
+
+    //! Count of races participated.
+    dao::Field<uint32_t> totalRaces{};
+    //! Count of finished races.
+    dao::Field<uint32_t> totalFinished{};
+    //! Cumulative rank across all races.
+    dao::Field<uint32_t> cumulativeRank{};
+
+    //! Total count of jumps.
+    dao::Field<uint32_t> totalJumps{};
+    //! Count of successful jumps.
+    dao::Field<uint32_t> successfulJumps{};
+    //! Count of perfect jumps.
+    dao::Field<uint32_t> perfectJumps{};
+    //! Highest consecutive jump count.
+    dao::Field<uint32_t> bestJumpCombo{};
+    //! Highest consecutive magic defense count.
+    dao::Field<uint32_t> bestMagicDefenseCombo{};
+
+    // TODO: Hit counters need relay passthrough parsing to detect hits.
+    //! Count of magic ball (fire ball and dark fire) uses.
+    dao::Field<uint32_t> magicBallUses{};
+    //! Count of ice wall uses.
+    dao::Field<uint32_t> iceWallUses{};
+    //! Count of fire spirit uses.
+    dao::Field<uint32_t> fireSpiritUses{};
   } mountInfo{};
 };
 

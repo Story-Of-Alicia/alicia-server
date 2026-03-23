@@ -1077,20 +1077,20 @@ void AcCmdUserRaceUpdatePos::Read(
 {
   stream.Read(command.oid);
 
-  for (auto& element : command.member2)
+  for (auto& element : command.position)
   {
     stream.Read(element);
   }
 
-  for (auto& element : command.member3)
+  for (auto& element : command.rotation)
   {
     stream.Read(element);
   }
 
-  stream.Read(command.member4)
-    .Read(command.member5)
-    .Read(command.member6)
-    .Read(command.member7);
+  stream.Read(command.speed)
+    .Read(command.airborne)
+    .Read(command.trackProgress)
+    .Read(command.ticksSinceConnect);
 }
 
 void AcCmdRCRoomCountdown::Write(

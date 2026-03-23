@@ -110,6 +110,13 @@ public:
     data::Uid& rancherUid,
     data::Uid& horseUid);
 
+  //! Broadcasts an emblem change to all clients on the character's ranch.
+  //! @param characterUid UID of the character whose emblem changed.
+  //! @param emblemId Emblem ID from the EmblemInfo table (1-35).
+  void BroadcastEmblemNotify(
+    data::Uid characterUid,
+    uint16_t emblemId);
+
   ServerInstance& GetServerInstance();
   Config::Ranch& GetConfig();
 
@@ -398,6 +405,10 @@ private:
   void HandleGetEmblemList(
     ClientId clientId,
     const protocol::AcCmdCREmblemList& command);
+
+  void HandleSetKeyEmblem(
+    ClientId clientId,
+    const protocol::AcCmdCRSetKeyEmblem& command);
 
   void HandleChangeNickname(
     ClientId clientId, 
