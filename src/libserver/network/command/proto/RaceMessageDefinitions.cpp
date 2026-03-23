@@ -1181,8 +1181,8 @@ void AcCmdCRRelay::Read(
   AcCmdCRRelay& command,
   SourceStream& stream)
 {
-  stream.Read(command.oid)
-    .Read(command.member2)
+  stream.Read(command.fromOid)
+    .Read(command.toOid)
     .Read(command.payloadType);
 
   uint16_t bufferSize;
@@ -1269,6 +1269,12 @@ void AcCmdCRRelay::Read(
         .Read(command.slidingMotion.slidingAngle);
       break;
     }
+    case Relay::PayloadType::BroadcastCharacterUid:
+    {
+      // Self character uid
+      payload.Read(command.broadcastCharacterUid.selfCharacterUid);
+      break;
+    }
     default:
     {
       // Do not process unknown payload
@@ -1281,8 +1287,8 @@ void AcCmdCRRelayNotify::Write(
   const AcCmdCRRelayNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.oid)
-    .Write(command.member2)
+  stream.Write(command.fromOid)
+    .Write(command.toOid)
     .Write(command.payloadType);
 
   stream.Write(static_cast<uint16_t>(command.data.size()));

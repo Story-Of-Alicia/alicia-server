@@ -22,6 +22,7 @@
 
 #include "CommonStructureDefinitions.hpp"
 #include "libserver/network/command/CommandProtocol.hpp"
+#include "libserver/data/DataDefinitions.hpp"
 #include "libserver/util/Util.hpp"
 
 #include <cstdint>
@@ -1652,18 +1653,24 @@ struct AcCmdCRRelayCommandNotify
 struct AcCmdCRRelay
 {
   // Begin protocol data
-  uint16_t oid;
-  uint16_t member2;
+
+  //! Relay packet origin racer oid.
+  uint16_t fromOid;
+  //! Relay packet destination racer oid.
+  //! Can be 0, which indicates broadcast.
+  uint16_t toOid;
   enum class PayloadType : uint16_t
   {
     Snapshot = 0x3,
     SyncProgress = 0x7,
-    NetSetLayerAnimation = 0xd, // Braking/Stopping horse
-    SyncGoalIn = 0x12, // Crossing finish line or DNF
+    NetSetLayerAnimation = 0xd,   // Braking/Stopping horse
+    SyncGoalIn = 0x12,            // Crossing finish line or DNF
+    BroadcastCharacterUid = 0x13, // Sends self character UID
     SpurLevel = 0x14,
     SlidingMotion = 0x16
   } payloadType{};
   std::vector<uint8_t> data;
+
   // End protocol data
 
   struct Snapshot
@@ -1763,6 +1770,11 @@ struct AcCmdCRRelay
     uint16_t layerAnimation{};
   } netSetLayerAnimation{};
 
+  struct BroadcastCharacterUid
+  {
+    uint32_t selfCharacterUid{data::InvalidUid};
+  } broadcastCharacterUid{};
+
   static Command GetCommand()
   {
     return Command::AcCmdCRRelay;
@@ -1785,8 +1797,11 @@ struct AcCmdCRRelay
 
 struct AcCmdCRRelayNotify
 {
-  uint16_t oid;
-  uint16_t member2;
+  //! Relay packet origin racer oid.
+  uint16_t fromOid;
+  //! Relay packet destination racer oid.
+  //! Can be 0, which indicates broadcast.
+  uint16_t toOid;
   protocol::AcCmdCRRelay::PayloadType payloadType;
   std::vector<uint8_t> data;
 

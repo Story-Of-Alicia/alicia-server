@@ -2422,8 +2422,8 @@ void RaceDirector::HandleRelay(
 
   // Create relay notify message
   protocol::AcCmdCRRelayNotify notify{
-    .oid = command.oid,
-    .member2 = command.member2,
+    .fromOid = command.fromOid,
+    .toOid = command.toOid,
     .payloadType = command.payloadType,
     .data = std::move(command.data),};
 
@@ -2460,10 +2460,22 @@ void RaceDirector::HandleRelay(
       // Do anything related to `command.slidingMotion`, if needed
       break;
     }
+    case Relay::PayloadType::BroadcastCharacterUid:
+    {
+      // Do anything related to `command.broadcastCharacterUid`, if needed
+      break;
+    }
     default:
     {
-      spdlog::warn("Racer '{}' sent an unrecognised relay payload type '{:#04x}': [{}]",
-        command.oid,
+      const std::string header = command.toOid == 0 ?
+        std::format("{:#x}->Broadcast", command.fromOid) :
+        std::format("{:#x}->{:#x}",
+          command.fromOid,
+          command.toOid);
+
+      spdlog::warn("Relay payload from client '{}', with oids {}, sent an unrecognised relay payload type '{:#04x}': {}",
+        clientId,
+        header,
         static_cast<uint16_t>(command.payloadType),
         std::format("{::02x}", command.data));
       break;
@@ -2474,6 +2486,9 @@ void RaceDirector::HandleRelay(
   const auto& raceInstance = _raceInstances[clientContext.roomUid];
 
   // Relay the command to all other clients in the room
+
+  // TODO: potential improvement - instead of blindly broadcasting to room,
+  // forward packet to recepient if `toOid` is non-zero.
   for (const ClientId raceClientId : raceInstance.clients)
   {
     if (raceClientId != clientId) // Don't send back to sender
