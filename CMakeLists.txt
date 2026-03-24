@@ -43,6 +43,7 @@ else()
 endif()
 
 if (${MSVC})
+    add_compile_options(/MP)
     target_compile_options(platform-properties INTERFACE
             /utf-8 /bigobj /W4 /permissive- /WX /wd4996 /wd4702)
 else()

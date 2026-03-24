@@ -358,6 +358,19 @@ struct Character
 
 struct Horse
 {
+  //! A horse type.
+  enum class Type
+  {
+    //! An adult horse.
+    Adult,
+    //! A horse foal.
+    Foal,
+    //! An adult horse which is registered in the breeding market.
+    Stallion,
+    //! An adult horse which is rented.
+    Rent
+  };
+
   dao::Field<Uid> uid{InvalidUid};
   dao::Field<Tid> tid{InvalidTid};
   dao::Field<std::string> name{};
@@ -410,7 +423,7 @@ struct Horse
     dao::Field<uint32_t> breedingCombo{0u};
   } breeding{};
 
-  dao::Field<uint32_t> type{0u};
+  dao::Field<Type> type{Type::Adult};
   dao::Field<uint8_t> horseType{0u};
   dao::Field<uint32_t> tendency{0u};
   dao::Field<uint32_t> spirit{0u};
@@ -467,7 +480,13 @@ struct Horse
   } mountInfo{};
 
   dao::Field<std::vector<uint32_t>> ancestors{};
-  dao::Field<uint8_t> lineage{1u};  // Genetic purity: 1 (base) + parents/grandparents with matching coat
+
+  //! A value in an interval of <1, 9>.
+  //! Basically a weighted score of number of ancestors that share the same coat as the horse.
+  //! Ancestors of the first generation add two points to the lineage,
+  //! ancestors of the second generation add one point to the lineage
+  //! while the horse itself adds 1.
+  dao::Field<uint32_t> lineage{1u};
 };
 
 struct Housing
