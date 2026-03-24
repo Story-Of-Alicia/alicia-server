@@ -90,8 +90,28 @@ Sometimes you get a random bonus during breeding:
 
 | Bonus Type          | Effect                            |
 |---------------------|-----------------------------------|
-| Pregnancy Boost     | +5% to +70% success rate          |
+| Pregnancy Boost     | Bonus to success rate (see below) |
 | Fertility Peak      | Improves foal grade (Grade 7-8 only) |
+
+#### Pregnancy Boost by Grade
+
+The boost amount depends on the stallion's grade. Each value has a weighted probability within its tier:
+
+**Grade 4-6 stallions** (10% chance to trigger):
+
+| Boost  | +5%  | +10% | +15% | +20% | +40% | +50% |
+|--------|------|------|------|------|------|------|
+| Weight |  10  |  30  |  35  |  20  |   3  |   2  |
+
+> Most likely outcome: +10% to +20%. The +40% and +50% boosts are very rare.
+
+**Grade 7-8 stallions** (15% chance to trigger):
+
+| Boost  | +40% | +50% | +60% | +70% |
+|--------|------|------|------|------|
+| Weight |  10  |  20  |  10  |  10  |
+
+> Grade 7-8 stallions always get a large boost (+40% minimum) when the bonus triggers.
 
 ---
 
@@ -112,7 +132,44 @@ Sometimes you get a random bonus during breeding:
 
 - Your mare's breeding combo resets to 0
 - You lose your carrots (no refund)
-- But don't give up — try again!
+- But don't give up — the card rewards get better the more you spend!
+
+### Failure Card Rewards
+
+The card you receive contains a reward. The reward **quality** depends on how much total money you've spent on breeding attempts since your last successful breed.
+
+#### Reward Grades
+
+Each card gives a reward from one of three quality tiers:
+
+| Grade   | Normal (Red) Card Rewards     | Chance (Yellow) Card Rewards     |
+|---------|-------------------------------|----------------------------------|
+| Grade A | 100-350 carrots + basic items | 300-1,000 carrots + basic items  |
+| Grade B | 300-1,000 carrots + items     | 1,400-4,000 carrots + items      |
+| Grade C | 2,000-13,000 carrots + items  | 7,000-25,000 carrots + items     |
+
+> Chance (Yellow) cards always give significantly better rewards than Normal (Red) cards at the same grade!
+
+#### How Spending Affects Reward Grade
+
+The more carrots you've spent on breeding (cumulatively since your last success), the higher your reward grade:
+
+```
+  Total Spent     Grade A    Grade B    Grade C
+  ─────────────   ───────    ───────    ───────
+  4k-8k            100%        0%         0%     (all common)
+  10k               90%       10%         0%
+  16k               77%       18%         5%
+  25k               50%       39%        11%
+  35k               22%       60%        18%
+  47k               10%       59%        31%
+  59k                7%       45%        48%
+  77k               10%       20%        70%
+  95k                1%        8%        91%
+  100k+              0%        0%       100%     (guaranteed rare)
+```
+
+> **Important**: Your cumulative spending resets to 0 after a **successful** breeding. So the pity system builds up across consecutive failures only.
 
 ---
 
@@ -257,6 +314,12 @@ The stallion gets an inheritance bonus based on:
 ```
 
 > Higher grade foals unlock access to rarer coats!
+
+---
+
+## Face
+
+The foal's face is inherited directly from one parent — **50% chance** from the mare, **50% chance** from the stallion. No grandparent influence or random selection.
 
 ---
 
