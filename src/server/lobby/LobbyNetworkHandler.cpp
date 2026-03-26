@@ -986,6 +986,42 @@ void LobbyNetworkHandler::HandleRoomList(
         roomSnapshot.details.teamMode == static_cast<server::Room::TeamMode>(command.teamMode);
     });
 
+  // Sort race rooms
+  // Priority ordering (by player count):
+  // - Unlocked and waiting
+  // - Unlocked and racing
+  // - Locked
+  std::ranges::sort(
+    roomSnapshots,
+    [](const server::Room::Snapshot& a, const server::Room::Snapshot& b)
+    {
+      const auto getPriority = [](const server::Room::Snapshot& snapshot)
+      {
+        if (!snapshot.details.password.empty())
+          // Locked
+          return 2;
+        if (snapshot.isPlaying)
+          // Playing
+          return 1;
+        else
+          // Waiting
+          return 0;
+      };
+
+      const auto pA = getPriority(a);
+      const auto pB = getPriority(b);
+
+      // Check if snapshot A shares the same priority as snapshot B
+      if (pA != pB)
+        // Priorities are different, return
+        // compared weight
+        return pA < pB;
+
+      // Both snapshots share the same priority, so
+      // sort by player count.
+      return a.playerCount > b.playerCount; // Descending by player count
+    });
+
   const auto roomChunks = std::views::chunk(
     roomSnapshots,
     RoomsPerPage);
