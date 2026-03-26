@@ -1545,28 +1545,51 @@ void LobbyNetworkHandler::HandleShowInventory(
   if (not characterRecord)
     throw std::runtime_error("Character record unavailable");
 
-  protocol::LobbyCommandShowInventoryOK response{
-    .items = {},
-    .horses = {}};
+  std::vector<protocol::LobbyCommandShowInventoryOK> responses{};
 
   characterRecord.Immutable(
-    [this, &response](const data::Character& character)
+    [this, &responses](const data::Character& character)
     {
+      // 0xFA (250) is the protocol max per response
+      constexpr uint32_t ItemsPerResponse = 250;
       const auto itemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(
         character.inventory());
-      protocol::BuildProtocolItems(response.items, *itemRecords);
 
+      // Produce chunked responses, by ItemsPerResponse
+      const auto itemChunks = std::views::chunk(
+        *itemRecords,
+        ItemsPerResponse);
+      
+      // Create a response per chunk
+      for (const auto& chunk : itemChunks)
+      {
+        auto& response = responses.emplace_back();
+        for (const auto& item : chunk)
+        {
+          auto& protocolItem = response.items.emplace_back();
+          item.Immutable([&protocolItem](const auto& item)
+          {
+            protocol::BuildProtocolItem(protocolItem, item);
+          });
+        }
+      }
+
+      // Create a separate response for horses
+      auto& horseResponse = responses.emplace_back();
       const auto horseRecords = _serverInstance.GetDataDirector().GetHorseCache().Get(
         character.horses());
-      protocol::BuildProtocolHorses(response.horses, *horseRecords);
+      protocol::BuildProtocolHorses(horseResponse.horses, *horseRecords);
     });
 
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [response]()
-    {
-      return response;
-    });
+  for (auto response : responses)
+  {
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]()
+      {
+        return response;
+      });
+  }
 }
 
 void LobbyNetworkHandler::HandleUpdateUserSettings(
