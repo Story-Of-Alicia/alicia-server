@@ -1581,6 +1581,13 @@ void LobbyNetworkHandler::HandleShowInventory(
       protocol::BuildProtocolHorses(horseResponse.horses, *horseRecords);
     });
 
+  // If the character has no items or extra horses
+  // then construct an empty response.
+  // This is needed to prevent the client from soft-locking
+  // and waiting for a response from the server.
+  if (responses.empty())
+    responses.emplace_back();
+
   for (auto response : responses)
   {
     _commandServer.QueueCommand<decltype(response)>(
