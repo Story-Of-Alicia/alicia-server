@@ -808,7 +808,7 @@ void RanchCommandEnterBreedingMarketOK::Write(
 {
   const uint8_t count = std::min(
     static_cast<uint8_t>(command.stallions.size()),
-    uint8_t{10});
+    uint8_t{20});
 
   stream.Write(count);
   for (uint8_t idx = 0; idx < count; ++idx)
