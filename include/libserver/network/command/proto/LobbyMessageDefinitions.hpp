@@ -283,7 +283,9 @@ struct AcCmdCLShowInventory
 //! Clientbound show inventory response.
 struct LobbyCommandShowInventoryOK
 {
+  //! Max 0xFA (250) characters.
   std::vector<Item> items{};
+  //! Max 0x0A (10) horses.
   std::vector<Horse> horses{};
 
   static Command GetCommand()

@@ -233,10 +233,10 @@ void LobbyCommandShowInventoryOK::Write(
   const LobbyCommandShowInventoryOK& command,
   SinkStream& stream)
 {
-  if (command.items.size() > 255)
-    throw std::runtime_error("Item count greater than protocol max (255)");
-  if (command.horses.size() > 255)
-    throw std::runtime_error("Horse count greater than protocol max (255)");
+  if (command.items.size() > 250)
+    throw std::runtime_error("Item count greater than protocol max (250)");
+  if (command.horses.size() > 10)
+    throw std::runtime_error("Horse count greater than protocol max (10)");
 
   stream.Write(static_cast<uint8_t>(command.items.size()));
   for (const auto& item : command.items)

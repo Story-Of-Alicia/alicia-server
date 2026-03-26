@@ -690,7 +690,7 @@ void ChatSystem::RegisterUserCommands()
             horseSlotCount = character.horseSlotCount();
           });
 
-        constexpr uint8_t MaxHorsePerCharacter = 10;
+        constexpr uint8_t MaxHorsePerCharacter = 20;
         if (horseCount >= MaxHorsePerCharacter)
           return {"You already have max amount of horses in your inventory."};
 

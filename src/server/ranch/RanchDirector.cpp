@@ -1014,21 +1014,26 @@ void RanchDirector::HandleEnterRanch(
   // The character that is currently entering the ranch.
   protocol::RanchCharacter characterEnteringRanch;
 
-  // Add the ranch horses.
-  for (auto [horseUid, horseOid] : ranchInstance.tracker.GetHorses())
+  // Disabled in favour of manual mob control `AcCmdRCMobAddMob`
+  constexpr bool PopulateRanchHorses = false;
+  if (PopulateRanchHorses)
   {
-    auto& ranchHorse = response.horses.emplace_back();
-    ranchHorse.horseOid = horseOid;
-
-    auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(horseUid);
-    if (not horseRecord)
-      throw std::runtime_error(
-        std::format("Ranch horse [{}] not available", horseUid));
-
-    horseRecord->Immutable([&ranchHorse](const data::Horse& horse)
+    // Add the ranch horses.
+    for (auto [horseUid, horseOid] : ranchInstance.tracker.GetHorses())
     {
-      protocol::BuildProtocolHorse(ranchHorse.horse, horse);
-    });
+      auto& ranchHorse = response.horses.emplace_back();
+      ranchHorse.horseOid = horseOid;
+
+      auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(horseUid);
+      if (not horseRecord)
+        throw std::runtime_error(
+          std::format("Ranch horse [{}] not available", horseUid));
+
+      horseRecord->Immutable([&ranchHorse](const data::Horse& horse)
+      {
+        protocol::BuildProtocolHorse(ranchHorse.horse, horse);
+      });
+    }
   }
 
   // Add the ranch characters.

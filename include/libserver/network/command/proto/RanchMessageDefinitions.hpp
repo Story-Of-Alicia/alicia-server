@@ -88,8 +88,12 @@ struct AcCmdCREnterRanchOK
   std::string ranchName{};
 
   //! Horses on the ranch.
+  //! Max 0x0A (10) ranch horses.
+  //! Note: the client handler allocates 0x0A in the stack
+  //! and cannot be adjusted.
   std::vector<RanchHorse> horses{};
   //! Characters on the ranch.
+  //! Max 0x14 (20) ranch characters.
   std::vector<RanchCharacter> characters{};
 
   uint64_t member6{0};

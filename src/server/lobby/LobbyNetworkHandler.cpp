@@ -1575,10 +1575,29 @@ void LobbyNetworkHandler::HandleShowInventory(
       }
 
       // Create a separate response for horses
-      auto& horseResponse = responses.emplace_back();
+      // 0x0A (10) is the protocol max per response
+      constexpr uint32_t HorsesPerResponse = 10;
       const auto horseRecords = _serverInstance.GetDataDirector().GetHorseCache().Get(
         character.horses());
-      protocol::BuildProtocolHorses(horseResponse.horses, *horseRecords);
+
+      // Produce chunked responses, by HorsesPerResponse
+      const auto horseChunks = std::views::chunk(
+        *horseRecords,
+        HorsesPerResponse);
+      
+      // Create a response per chunk
+      for (const auto& chunk : horseChunks)
+      {
+        auto& response = responses.emplace_back();
+        for (const auto& horse : chunk)
+        {
+          auto& protocolHorse = response.horses.emplace_back();
+          horse.Immutable([&protocolHorse](const auto& horse)
+          {
+            protocol::BuildProtocolHorse(protocolHorse, horse);
+          });
+        }
+      }
     });
 
   // If the character has no items or extra horses
