@@ -987,7 +987,7 @@ void LobbyNetworkHandler::HandleRoomList(
     });
 
   // Sort race rooms
-  // Priority ordering (by player count):
+  // Priority ordering (ascending by player count):
   // - Unlocked and waiting
   // - Unlocked and racing
   // - Locked
@@ -1019,7 +1019,7 @@ void LobbyNetworkHandler::HandleRoomList(
 
       // Both snapshots share the same priority, so
       // sort by player count.
-      return a.playerCount > b.playerCount; // Descending by player count
+      return a.playerCount < b.playerCount; // Ascending by player count
     });
 
   const auto roomChunks = std::views::chunk(
