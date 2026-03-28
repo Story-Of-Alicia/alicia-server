@@ -372,6 +372,37 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
 
   character.isRanchLocked = json.value("isRanchLocked", bool{});
 
+  if (json.contains("keyAchievements"))
+  {
+    character.keyAchievements =
+      json["keyAchievements"].get<std::array<uint16_t, 3>>();
+  }
+
+  if (json.contains("achievements"))
+  {
+    std::vector<data::Character::AchievementEntry> entries;
+    for (const auto& entry : json["achievements"])
+    {
+      entries.push_back({.tid = entry["tid"].get<uint16_t>(),
+        .completed = entry.value("completed", false),
+        .progress = entry.value("progress", 0u)});
+    }
+    character.achievements = std::move(entries);
+  }
+
+  if (json.contains("achievementBooks"))
+  {
+    std::vector<data::Character::AchievementBookEntry> books;
+    for (const auto& entry : json["achievementBooks"])
+    {
+      books.push_back({.bookId = entry["bookId"].get<uint8_t>(),
+        .grade = entry.value("grade", static_cast<uint8_t>(0)),
+        .tierProgress = entry.value(
+          "tierProgress", std::array<uint32_t, 4>{})});
+    }
+    character.achievementBooks = std::move(books);
+  }
+
   character.settingsUid = json.value("settingsUid", data::Uid{});
 
   const auto readSkills = [](data::Character::Skills::Sets& sets, const nlohmann::json& json)
@@ -488,6 +519,30 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["housing"] = character.housing();
 
   json["isRanchLocked"] = character.isRanchLocked();
+
+  json["keyAchievements"] = character.keyAchievements();
+
+  {
+    auto achievementsJson = nlohmann::json::array();
+    for (const auto& entry : character.achievements())
+    {
+      achievementsJson.push_back({{"tid", entry.tid},
+        {"completed", entry.completed},
+        {"progress", entry.progress}});
+    }
+    json["achievements"] = std::move(achievementsJson);
+  }
+
+  {
+    auto booksJson = nlohmann::json::array();
+    for (const auto& entry : character.achievementBooks())
+    {
+      booksJson.push_back({{"bookId", entry.bookId},
+        {"grade", entry.grade},
+        {"tierProgress", entry.tierProgress}});
+    }
+    json["achievementBooks"] = std::move(booksJson);
+  }
 
   json["settingsUid"] = character.settingsUid();
 

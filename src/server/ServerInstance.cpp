@@ -289,6 +289,7 @@ void ServerInstance::LoadConfigurations()
   _systemContentRegistry.ReadConfig(_resourceDirectory / "config/server/system_content.yaml");
 
   // Read game configurations
+  _achievementRegistry.ReadConfig(_resourceDirectory / "config/game/achievements.yaml");
   _breedingRegistry.ReadConfig(_resourceDirectory / "config/game/breeding.yaml");
   _characterRegistry.ReadConfig(_resourceDirectory / "config/game/character.yaml");
   _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
@@ -337,6 +338,11 @@ AllChatDirector& ServerInstance::GetAllChatDirector()
 PrivateChatDirector& ServerInstance::GetPrivateChatDirector()
 {
   return _privateChatDirector;
+}
+
+registry::AchievementRegistry& ServerInstance::GetAchievementRegistry()
+{
+  return _achievementRegistry;
 }
 
 registry::CharacterRegistry& ServerInstance::GetCharacterRegistry()

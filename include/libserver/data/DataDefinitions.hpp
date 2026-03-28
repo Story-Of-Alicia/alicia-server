@@ -343,6 +343,28 @@ struct Character
 
   dao::Field<bool> isRanchLocked{};
 
+  //! The 3 ceremony achievement showcase slot TIDs.
+  //! Set via AcCmdCRSetKeyAchievement, displayed in personal info.
+  dao::Field<std::array<uint16_t, 3>> keyAchievements{};
+
+  //! Individual achievement completion data.
+  struct AchievementEntry
+  {
+    uint16_t tid{};
+    bool completed{};
+    uint32_t progress{};
+  };
+  dao::Field<std::vector<AchievementEntry>> achievements{};
+
+  //! Per-book achievement grade and tier progress.
+  struct AchievementBookEntry
+  {
+    uint8_t bookId{};
+    uint8_t grade{};
+    std::array<uint32_t, 4> tierProgress{};
+  };
+  dao::Field<std::vector<AchievementBookEntry>> achievementBooks{};
+
   dao::Field<Uid> settingsUid{InvalidUid};
 
   struct Skills

@@ -5701,6 +5701,150 @@ struct AcCmdCRBreedingWishlistDelOK
     SourceStream& stream);
 };
 
+//! Serverbound achievement detail request.
+//! Requests detailed per-tier progress for a specific achievement.
+struct AcCmdCRAchievementDetail
+{
+  //! The character UID whose achievement detail is requested.
+  uint32_t characterUid{};
+
+  //! The achievement TID to query.
+  //! References libconfig `Achievements` table.
+  uint16_t achievementTid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRAchievementDetail;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRAchievementDetail& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRAchievementDetail& command,
+    SourceStream& stream);
+};
+
+//! Clientbound achievement detail response.
+//! Contains per-tier progress data for a specific achievement.
+struct AcCmdCRAchievementDetailOK
+{
+  //! The character UID (echoed from request).
+  uint32_t characterUid{};
+
+  //! The achievement TID.
+  uint16_t achievementTid{};
+
+  //! Per-tier detail data. One value per tier:
+  //! [0] = Bronze, [1] = Silver, [2] = Gold, [3] = Platinum.
+  std::array<uint32_t, 4> tierProgress{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRAchievementDetailOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRAchievementDetailOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRAchievementDetailOK& command,
+    SourceStream& stream);
+};
+
+//! Clientbound achievement detail cancel.
+struct AcCmdCRAchievementDetailCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRAchievementDetailCancel;
+  }
+
+  static void Write(
+    const AcCmdCRAchievementDetailCancel& command,
+    SinkStream& stream);
+
+  static void Read(
+    AcCmdCRAchievementDetailCancel& command,
+    SourceStream& stream);
+};
+
+//! Serverbound set key (ceremony/showcase) achievements.
+//! Sets the 3 achievement showcase slots displayed on the player's profile.
+struct AcCmdCRSetKeyAchievement
+{
+  //! The 3 achievement TIDs for the ceremony showcase slots.
+  //! A value of 0 means the slot is empty.
+  std::array<uint16_t, 3> keyAchievements{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRSetKeyAchievement;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRSetKeyAchievement& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRSetKeyAchievement& command,
+    SourceStream& stream);
+};
+
+//! Clientbound set key achievement response (empty - acknowledgment only).
+struct AcCmdCRSetKeyAchievementOK
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRSetKeyAchievementOK;
+  }
+
+  static void Write(
+    const AcCmdCRSetKeyAchievementOK& command,
+    SinkStream& stream);
+
+  static void Read(
+    AcCmdCRSetKeyAchievementOK& command,
+    SourceStream& stream);
+};
+
+//! Clientbound set key achievement cancel.
+struct AcCmdCRSetKeyAchievementCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRSetKeyAchievementCancel;
+  }
+
+  static void Write(
+    const AcCmdCRSetKeyAchievementCancel& command,
+    SinkStream& stream);
+
+  static void Read(
+    AcCmdCRSetKeyAchievementCancel& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RANCH_MESSAGE_DEFINES_HPP

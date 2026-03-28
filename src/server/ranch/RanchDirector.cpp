@@ -23,6 +23,7 @@
 #include "server/system/ItemSystem.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
+#include <libserver/network/command/proto/RaceMessageDefinitions.hpp>
 #include <libserver/util/Locale.hpp>
 #include <libserver/util/Util.hpp>
 
@@ -625,6 +626,24 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& command)
     {
       HandleBreedingWishlistDelete(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRAchievementUpdateProperty>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleAchievementUpdateProperty(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRAchievementDetail>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleAchievementDetail(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRSetKeyAchievement>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleSetKeyAchievement(clientId, command);
     });
 }
 
@@ -7430,6 +7449,168 @@ void RanchDirector::HandleBreedingWishlistDelete(
     [response]()
     {
       return response;
+    });
+}
+
+void RanchDirector::HandleAchievementDetail(
+  ClientId clientId,
+  const protocol::AcCmdCRAchievementDetail& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  protocol::AcCmdCRAchievementDetailOK response{};
+  response.characterUid = command.characterUid;
+  response.achievementTid = command.achievementTid;
+
+  // TODO: Load actual per-tier progress from persistent data.
+  // For now, send test data so the achievements page renders.
+  response.tierProgress = {10, 5, 2, 0};
+
+  spdlog::debug(
+    "Achievement detail requested by '{}' for TID {}",
+    clientContext.characterUid,
+    command.achievementTid);
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId, [response]()
+    {
+      return response;
+    });
+}
+
+void RanchDirector::HandleSetKeyAchievement(
+  ClientId clientId,
+  const protocol::AcCmdCRSetKeyAchievement& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  spdlog::debug(
+    "Set key achievements for '{}': [{}, {}, {}]",
+    clientContext.characterUid,
+    command.keyAchievements[0],
+    command.keyAchievements[1],
+    command.keyAchievements[2]);
+
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  if (not characterRecord.IsAvailable())
+  {
+    spdlog::warn(
+      "Character '{}' not found for key achievement update",
+      clientContext.characterUid);
+    protocol::AcCmdCRSetKeyAchievementCancel cancel{};
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId, [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  characterRecord.Mutable(
+    [&command](data::Character& character)
+    {
+      character.keyAchievements = command.keyAchievements;
+    });
+
+  protocol::AcCmdCRSetKeyAchievementOK response{};
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId, [response]()
+    {
+      return response;
+    });
+}
+
+void RanchDirector::HandleAchievementUpdateProperty(
+  ClientId clientId,
+  const protocol::AcCmdCRAchievementUpdateProperty& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto characterUid = clientContext.characterUid;
+
+  const auto& achievementRegistry =
+    _serverInstance.GetAchievementRegistry();
+
+  const auto matchingAchievements =
+    achievementRegistry.GetAchievementsByEvent(command.achievementEvent);
+
+  if (matchingAchievements.empty())
+  {
+    spdlog::debug(
+      "No achievements registered for event {}",
+      command.achievementEvent);
+    return;
+  }
+
+  const auto characterRecord =
+    _serverInstance.GetDataDirector().GetCharacter(characterUid);
+
+  if (not characterRecord.IsAvailable())
+    return;
+
+  characterRecord.Mutable(
+    [&](data::Character& character)
+    {
+      for (const auto* achievementInfo : matchingAchievements)
+      {
+        // Find or create the achievement entry.
+        data::Character::AchievementEntry* entry = nullptr;
+        for (auto& existing : character.achievements())
+        {
+          if (existing.tid == achievementInfo->tid)
+          {
+            entry = &existing;
+            break;
+          }
+        }
+
+        if (entry == nullptr)
+        {
+          character.achievements().push_back({.tid = achievementInfo->tid,
+            .completed = false,
+            .progress = 0});
+          entry = &character.achievements().back();
+        }
+
+        if (entry->completed)
+          continue;
+
+        // For "TRUE" function achievements, any matching event increments progress.
+        // For specific functions, the client sends the event only when the condition
+        // is met on client side, so we trust the event and increment.
+        entry->progress++;
+
+        if (entry->progress >= achievementInfo->successValue)
+        {
+          entry->completed = true;
+
+          // Award carrots.
+          character.carrots() +=
+            static_cast<int32_t>(achievementInfo->reward);
+
+          spdlog::info(
+            "Achievement {} completed by character '{}' (+{} carrots)",
+            achievementInfo->tid,
+            characterUid,
+            achievementInfo->reward);
+        }
+
+        // Notify the client of the progress update.
+        protocol::AcCmdRCAchievementUpdateNotify notify{};
+        notify.achievementTid = achievementInfo->tid;
+        notify.objectiveProgress.isCompleted = entry->completed;
+        notify.objectiveProgress.progress = entry->progress;
+        notify.objectiveProgress.achievementTier =
+          protocol::ObjectiveProgress::AchievementTier::None;
+        notify.carrotBalance = character.carrots();
+
+        _commandServer.QueueCommand<decltype(notify)>(
+          clientId, [notify]()
+          {
+            return notify;
+          });
+      }
     });
 }
 

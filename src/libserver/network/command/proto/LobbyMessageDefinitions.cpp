@@ -383,11 +383,22 @@ void AcCmdCLAchievementCompleteListOK::Write(
   const AcCmdCLAchievementCompleteListOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0);
+  stream.Write(command.characterUid);
   stream.Write(static_cast<uint16_t>(command.achievements.size()));
   for (const auto& achievement : command.achievements)
   {
     stream.Write(achievement);
+  }
+
+  stream.Write(static_cast<uint8_t>(command.books.size()));
+  for (const auto& book : command.books)
+  {
+    stream.Write(book.bookId)
+      .Write(book.grade);
+    for (const auto& progress : book.tierProgress)
+    {
+      stream.Write(progress);
+    }
   }
 }
 
@@ -1154,9 +1165,9 @@ void AcCmdLCPersonalInfo::Basic::Write(
     .Write(command.completionRate)
     .Write(command.member12)
     .Write(command.highestCarnivalPrize)
-    .Write(command.member14)
-    .Write(command.member15)
-    .Write(command.member16)
+    .Write(command.keyAchievements[0])
+    .Write(command.keyAchievements[1])
+    .Write(command.keyAchievements[2])
     .Write(command.introduction)
     .Write(command.level)
     .Write(command.levelProgress)

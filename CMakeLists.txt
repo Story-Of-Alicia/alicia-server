@@ -68,6 +68,7 @@ add_library(alicia-libserver STATIC
         src/libserver/network/command/proto/RaceMessageDefinitions.cpp
         src/libserver/network/command/proto/RanchMessageDefinitions.cpp
         src/libserver/network/http/WebSocket.cpp
+        src/libserver/registry/AchievementRegistry.cpp
         src/libserver/registry/CharacterRegistry.cpp
         src/libserver/registry/CourseRegistry.cpp
         src/libserver/registry/BreedingRegistry.cpp

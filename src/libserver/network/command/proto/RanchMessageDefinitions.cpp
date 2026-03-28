@@ -3627,5 +3627,98 @@ void AcCmdCRBreedingWishlistDelOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRAchievementDetail::Write(
+  const AcCmdCRAchievementDetail&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRAchievementDetail::Read(
+  AcCmdCRAchievementDetail& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterUid)
+    .Read(command.achievementTid);
+}
+
+void AcCmdCRAchievementDetailOK::Write(
+  const AcCmdCRAchievementDetailOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.achievementTid);
+  for (const auto& progress : command.tierProgress)
+  {
+    stream.Write(progress);
+  }
+}
+
+void AcCmdCRAchievementDetailOK::Read(
+  AcCmdCRAchievementDetailOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRAchievementDetailCancel::Write(
+  const AcCmdCRAchievementDetailCancel&,
+  SinkStream&)
+{
+  // Empty.
+}
+
+void AcCmdCRAchievementDetailCancel::Read(
+  AcCmdCRAchievementDetailCancel&,
+  SourceStream&)
+{
+  // Empty.
+}
+
+void AcCmdCRSetKeyAchievement::Write(
+  const AcCmdCRSetKeyAchievement&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRSetKeyAchievement::Read(
+  AcCmdCRSetKeyAchievement& command,
+  SourceStream& stream)
+{
+  for (auto& achievement : command.keyAchievements)
+  {
+    stream.Read(achievement);
+  }
+}
+
+void AcCmdCRSetKeyAchievementOK::Write(
+  const AcCmdCRSetKeyAchievementOK&,
+  SinkStream&)
+{
+  // Empty.
+}
+
+void AcCmdCRSetKeyAchievementOK::Read(
+  AcCmdCRSetKeyAchievementOK&,
+  SourceStream&)
+{
+  // Empty.
+}
+
+void AcCmdCRSetKeyAchievementCancel::Write(
+  const AcCmdCRSetKeyAchievementCancel&,
+  SinkStream&)
+{
+  // Empty.
+}
+
+void AcCmdCRSetKeyAchievementCancel::Read(
+  AcCmdCRSetKeyAchievementCancel&,
+  SourceStream&)
+{
+  // Empty.
+}
+
 } // namespace server::protocol
 

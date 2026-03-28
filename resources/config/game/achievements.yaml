@@ -1,0 +1,570 @@
+achievements:
+  collection:
+    # BookType 1 - Consecutive Experience
+    - tid: 10155
+      eventId: 43
+      function: GlidingDistance
+      successValue: 1
+      bookType: 1
+      reward: 400
+      points: 1
+    - tid: 10156
+      eventId: 17
+      function: TRUE
+      successValue: 1
+      bookType: 1
+      reward: 400
+      points: 1
+    - tid: 10157
+      eventId: 27
+      function: GlidingSpur
+      successValue: 1
+      bookType: 1
+      reward: 400
+      points: 1
+    - tid: 10158
+      eventId: 3
+      function: BuyItem
+      successValue: 500
+      bookType: 1
+      reward: 400
+      points: 1
+    - tid: 10159
+      eventId: 28
+      function: PerfectStart
+      successValue: 1
+      bookType: 1
+      reward: 400
+      points: 1
+    - tid: 10160
+      eventId: 29
+      function: PerfectJump
+      successValue: 5
+      bookType: 1
+      reward: 400
+      points: 1
+    - tid: 10161
+      eventId: 2
+      function: GoalIn
+      successValue: 3
+      bookType: 1
+      reward: 400
+      points: 1
+    - tid: 10162
+      eventId: 2
+      function: GoalIn
+      successValue: 2
+      bookType: 1
+      reward: 400
+      points: 1
+    - tid: 10163
+      eventId: 2
+      function: GoalIn_8h_13h
+      successValue: 2
+      bookType: 1
+      reward: 400
+      points: 1
+    - tid: 10164
+      eventId: 2
+      function: GoalIn_16h_18h
+      successValue: 2
+      bookType: 1
+      reward: 400
+      points: 1
+    - tid: 10165
+      eventId: 2
+      function: GoalIn_19h_22h
+      successValue: 2
+      bookType: 1
+      reward: 400
+      points: 1
+    - tid: 10166
+      eventId: 68
+      function: TRUE
+      successValue: 1
+      bookType: 1
+      reward: 400
+      points: 1
+    # BookType 2 - Horse Experience
+    - tid: 10167
+      eventId: 51
+      function: TRUE
+      successValue: 3
+      bookType: 2
+      reward: 400
+      points: 1
+    - tid: 10168
+      eventId: 50
+      function: TRUE
+      successValue: 3
+      bookType: 2
+      reward: 400
+      points: 1
+    - tid: 10169
+      eventId: 52
+      function: TRUE
+      successValue: 3
+      bookType: 2
+      reward: 400
+      points: 1
+    - tid: 10170
+      eventId: 53
+      function: ForciblyFeeding
+      successValue: 3
+      bookType: 2
+      reward: 400
+      points: 1
+    - tid: 10171
+      eventId: 53
+      function: FavoriteFoodsFeeding
+      successValue: 3
+      bookType: 2
+      reward: 400
+      points: 1
+    - tid: 10172
+      eventId: 53
+      function: Stuffed
+      successValue: 3
+      bookType: 2
+      reward: 400
+      points: 1
+    - tid: 10173
+      eventId: 55
+      function: TRUE
+      successValue: 1
+      bookType: 2
+      reward: 400
+      points: 1
+    - tid: 10174
+      eventId: 69
+      function: TRUE
+      successValue: 1
+      bookType: 2
+      reward: 400
+      points: 1
+    - tid: 10175
+      eventId: 71
+      function: TRUE
+      successValue: 1
+      bookType: 2
+      reward: 400
+      points: 1
+    - tid: 10176
+      eventId: 49
+      function: PolishUp
+      successValue: 1
+      bookType: 2
+      reward: 400
+      points: 1
+    - tid: 10177
+      eventId: 54
+      function: TraningSuccess
+      successValue: 1
+      bookType: 2
+      reward: 400
+      points: 1
+    # BookType 3 - Breeding Experience
+    - tid: 10178
+      eventId: 10
+      function: TRUE
+      successValue: 1
+      bookType: 3
+      reward: 400
+      points: 1
+    - tid: 10179
+      eventId: 11
+      function: TRUE
+      successValue: 1
+      bookType: 3
+      reward: 400
+      points: 1
+    - tid: 10180
+      eventId: 12
+      function: TRUE
+      successValue: 1
+      bookType: 3
+      reward: 400
+      points: 1
+    - tid: 10181
+      eventId: 13
+      function: TRUE
+      successValue: 1
+      bookType: 3
+      reward: 400
+      points: 1
+    - tid: 10182
+      eventId: 11
+      function: PotentialCapacities
+      successValue: 1
+      bookType: 3
+      reward: 400
+      points: 1
+    - tid: 10183
+      eventId: 11
+      function: BreedingSuccessCombo
+      successValue: 1
+      bookType: 3
+      reward: 400
+      points: 1
+    - tid: 10184
+      eventId: 10
+      function: TRUE
+      successValue: 2
+      bookType: 3
+      reward: 400
+      points: 1
+    - tid: 10185
+      eventId: 14
+      function: MaleHorseCombo
+      successValue: 1
+      bookType: 3
+      reward: 400
+      points: 1
+    - tid: 10186
+      eventId: 56
+      function: PotentialCapacitiesGrow
+      successValue: 1
+      bookType: 3
+      reward: 400
+      points: 1
+    - tid: 10187
+      eventId: 11
+      function: GradeCompare
+      successValue: 1
+      bookType: 3
+      reward: 400
+      points: 1
+    # BookType 4 - Fun Experience
+    - tid: 10188
+      eventId: 2
+      function: GoalInRanking
+      successValue: 5
+      bookType: 4
+      reward: 400
+      points: 1
+    - tid: 10189
+      eventId: 42
+      function: UseAllMagic
+      successValue: 5
+      bookType: 4
+      reward: 400
+      points: 1
+    - tid: 10190
+      eventId: 24
+      function: Cliff
+      successValue: 1
+      bookType: 4
+      reward: 400
+      points: 1
+    - tid: 10191
+      eventId: 2
+      function: ReversalWinner
+      successValue: 5
+      bookType: 4
+      reward: 400
+      points: 1
+    - tid: 10192
+      eventId: 2
+      function: CarnivalSuccess
+      successValue: 5
+      bookType: 4
+      reward: 400
+      points: 1
+    - tid: 10193
+      eventId: 42
+      function: JumpParalysis
+      successValue: 5
+      bookType: 4
+      reward: 400
+      points: 1
+    - tid: 10194
+      eventId: 35
+      function: HotRoddingReversalCount
+      successValue: 3
+      bookType: 4
+      reward: 400
+      points: 1
+    - tid: 10195
+      eventId: 57
+      function: TRUE
+      successValue: 20
+      bookType: 4
+      reward: 400
+      points: 1
+    - tid: 10196
+      eventId: 58
+      function: TRUE
+      successValue: 20
+      bookType: 4
+      reward: 400
+      points: 1
+    - tid: 10197
+      eventId: 59
+      function: TRUE
+      successValue: 20
+      bookType: 4
+      reward: 400
+      points: 1
+    # BookType 5 - Unique Experience
+    - tid: 10198
+      eventId: 23
+      function: TRUE
+      successValue: 5
+      bookType: 5
+      reward: 400
+      points: 1
+    - tid: 10199
+      eventId: 2
+      function: TeamWinTheLast
+      successValue: 5
+      bookType: 5
+      reward: 400
+      points: 1
+    - tid: 10200
+      eventId: 72
+      function: TRUE
+      successValue: 1
+      bookType: 5
+      reward: 400
+      points: 1
+    - tid: 10201
+      eventId: 57
+      function: Spur3thGoalIn
+      successValue: 1
+      bookType: 5
+      reward: 400
+      points: 1
+    - tid: 10202
+      eventId: 60
+      function: TRUE
+      successValue: 1
+      bookType: 5
+      reward: 400
+      points: 1
+    - tid: 10203
+      eventId: 70
+      function: TRUE
+      successValue: 1
+      bookType: 5
+      reward: 400
+      points: 1
+    - tid: 10204
+      eventId: 11
+      function: PoorHorse
+      successValue: 1
+      bookType: 5
+      reward: 400
+      points: 1
+    - tid: 10205
+      eventId: 11
+      function: GoodHorse
+      successValue: 1
+      bookType: 5
+      reward: 400
+      points: 1
+    # BookType 6 - Thrilling Experience
+    - tid: 10207
+      eventId: 62
+      function: TRUE
+      successValue: 5
+      bookType: 6
+      reward: 400
+      points: 1
+    - tid: 10208
+      eventId: 42
+      function: CriticalFireballAttack
+      successValue: 5
+      bookType: 6
+      reward: 400
+      points: 1
+    - tid: 10209
+      eventId: 42
+      function: RevengeAttackWithFireball
+      successValue: 5
+      bookType: 6
+      reward: 400
+      points: 1
+    - tid: 10210
+      eventId: 42
+      function: ComboAttackSuccessWithFireball
+      successValue: 5
+      bookType: 6
+      reward: 400
+      points: 1
+    - tid: 10211
+      eventId: 42
+      function: ShieldEndAttackWithFireball
+      successValue: 5
+      bookType: 6
+      reward: 400
+      points: 1
+    - tid: 10212
+      eventId: 74
+      function: TRUE
+      successValue: 5
+      bookType: 6
+      reward: 400
+      points: 1
+    - tid: 10213
+      eventId: 2
+      function: Revenge
+      successValue: 3
+      bookType: 6
+      reward: 400
+      points: 1
+    - tid: 10214
+      eventId: 42
+      function: FireBallSuccess
+      successValue: 3
+      bookType: 6
+      reward: 400
+      points: 1
+    # BookType 7 - Victory Experience
+    - tid: 10216
+      eventId: 2
+      function: WinAI
+      successValue: 1
+      bookType: 7
+      reward: 400
+      points: 1
+    - tid: 10217
+      eventId: 2
+      function: WinAI
+      successValue: 1
+      bookType: 7
+      reward: 400
+      points: 1
+    - tid: 10218
+      eventId: 11
+      function: GoodChild
+      successValue: 1
+      bookType: 7
+      reward: 400
+      points: 1
+    - tid: 10219
+      eventId: 42
+      function: LastSpurtAttack
+      successValue: 5
+      bookType: 7
+      reward: 400
+      points: 1
+    - tid: 10220
+      eventId: 61
+      function: PerfectSpurMaster
+      successValue: 3
+      bookType: 7
+      reward: 400
+      points: 1
+    - tid: 10221
+      eventId: 54
+      function: TrainingCombo
+      successValue: 3
+      bookType: 7
+      reward: 400
+      points: 1
+    - tid: 10222
+      eventId: 2
+      function: TeamPerfectWinNew
+      successValue: 3
+      bookType: 7
+      reward: 400
+      points: 1
+    - tid: 10223
+      eventId: 61
+      function: PerfectSpurCombo
+      successValue: 3
+      bookType: 7
+      reward: 400
+      points: 1
+    - tid: 10224
+      eventId: 54
+      function: TrainingCritical
+      successValue: 3
+      bookType: 7
+      reward: 400
+      points: 1
+    # BookType 8 - Skill Experience
+    - tid: 10225
+      eventId: 2
+      function: Win
+      successValue: 1
+      bookType: 8
+      reward: 400
+      points: 1
+    - tid: 10226
+      eventId: 2
+      function: Win
+      successValue: 1
+      bookType: 8
+      reward: 400
+      points: 1
+    - tid: 10227
+      eventId: 2
+      function: TeamWin
+      successValue: 1
+      bookType: 8
+      reward: 400
+      points: 1
+    - tid: 10228
+      eventId: 2
+      function: TeamWin
+      successValue: 1
+      bookType: 8
+      reward: 400
+      points: 1
+    - tid: 10229
+      eventId: 29
+      function: MaxPerfectJumpCombo
+      successValue: 30
+      bookType: 8
+      reward: 400
+      points: 1
+    - tid: 10230
+      eventId: 33
+      function: SlidingTime
+      successValue: 20
+      bookType: 8
+      reward: 400
+      points: 1
+    - tid: 10231
+      eventId: 17
+      function: MaxSpurCount
+      successValue: 4
+      bookType: 8
+      reward: 400
+      points: 1
+    - tid: 10232
+      eventId: 38
+      function: GetMaxSpeed
+      successValue: 110
+      bookType: 8
+      reward: 400
+      points: 1
+    - tid: 10233
+      eventId: 46
+      function: BalloonLapTime
+      successValue: 31
+      bookType: 8
+      reward: 400
+      points: 1
+    - tid: 10234
+      eventId: 2
+      function: MaxWinStop
+      successValue: 3
+      bookType: 8
+      reward: 400
+      points: 1
+    - tid: 10235
+      eventId: 61
+      function: TRUE
+      successValue: 1
+      bookType: 8
+      reward: 400
+      points: 1
+    - tid: 10236
+      eventId: 2
+      function: MaxWinStop
+      successValue: 3
+      bookType: 8
+      reward: 400
+      points: 1
