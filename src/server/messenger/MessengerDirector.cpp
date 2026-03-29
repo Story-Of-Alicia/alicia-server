@@ -411,9 +411,13 @@ void MessengerDirector::HandleChatterBuddyAdd(
     _serverInstance
     .GetDataDirector()
     .GetDataSource()
-    .RetrieveCharacterUidByName(command.characterName);
+    .GetCharacterInterface()
+    .Retrieve([name = command.characterName](data::Character& character)
+    {
+      return character.name() == name;
+    });
 
-  // Check if character by than name exists
+  // Check if character by than name exSists
   if (targetCharacterUid == data::InvalidUid)
   {
     // Character by that name does not exist

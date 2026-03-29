@@ -46,7 +46,7 @@ if (${MSVC})
             /utf-8 /bigobj /W4 /permissive- /WX /wd4996 /wd4702)
 else()
     target_compile_options(platform-properties INTERFACE
-            -Wall -Wextra -Wpedantic -Wdeprecated-declarations)
+            -Wall -Wextra -Wpedantic -Wno-deprecated-declarations)
 endif()
 
 # alicia-libserver target
@@ -87,7 +87,8 @@ target_link_libraries(alicia-libserver PUBLIC
         nlohmann_json::nlohmann_json
         yaml-cpp::yaml-cpp
         zlibstatic
-        tinyxml2)
+        tinyxml2
+        reflectcpp::reflectcpp)
 
 # alicia-server target
 add_executable(alicia-server

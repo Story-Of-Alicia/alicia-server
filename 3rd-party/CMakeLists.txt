@@ -17,3 +17,5 @@ set(BUILD_SHARED_LIBS OFF)
 set(PostgreSQL_ADDITIONAL_VERSIONS "17")
 find_package(PostgreSQL REQUIRED)
 add_subdirectory(libpqxx)
+
+add_subdirectory(reflect-cpp)

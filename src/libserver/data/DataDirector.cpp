@@ -33,7 +33,7 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
       {
         try
         {
-          _primaryDataSource->RetrieveUser(key, user);
+          _primaryDataSource->GetUserInterface().Retrieve(key, user);
           return true;
         }
         catch (const std::exception& x)

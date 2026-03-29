@@ -26,6 +26,8 @@
 
 #include "libserver/util/Scheduler.hpp"
 
+#include <filesystem>
+
 namespace server
 {
 
