@@ -142,7 +142,7 @@ void LobbyDirector::QueueClientLogout(
   {
     userRecord.Mutable([](data::User& user)
     {
-      user.lastSeenOnline(data::Clock::now());
+      user.lastSeenOnline() = data::Clock::now();
     });
   }
 
