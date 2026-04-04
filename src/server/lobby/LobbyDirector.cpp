@@ -447,7 +447,7 @@ void LobbyDirector::ProcesLoginResponse()
   {
     // Set the last seen online time to 1 to indicate that the user is currently online.
     // NOTE: delete this once we have a proper api
-    user.lastSeenOnline(data::Clock::time_point(std::chrono::seconds(1)));
+    user.lastSeenOnline() = data::Clock::time_point(std::chrono::seconds(1));
   });
 
   _clientLogins.erase(clientId);
