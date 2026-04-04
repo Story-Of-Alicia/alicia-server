@@ -136,6 +136,16 @@ void LobbyDirector::QueueClientLogout(
   const std::string& userName)
 {
   spdlog::info("User '{}' (client {}) logged out", userName, clientId);
+
+  const auto userRecord = _serverInstance.GetDataDirector().GetUser(userName);
+  if (userRecord.IsAvailable())
+  {
+    userRecord.Mutable([](data::User& user)
+    {
+      user.lastSeenOnline(data::Clock::now());
+    });
+  }
+
   _userInstances.erase(userName);
 }
 
@@ -432,6 +442,11 @@ void LobbyDirector::ProcesLoginResponse()
   userInstance.userName = loginContext.userName;
   userInstance.characterUid = characterUid;
   spdlog::info("User '{}' (client {}) logged in", loginContext.userName, clientId);
+
+  userRecord.Mutable([](data::User& user)
+  {
+    user.lastSeenOnline(data::Clock::time_point(std::chrono::seconds(1)));
+  });
 
   _clientLogins.erase(clientId);
 }
