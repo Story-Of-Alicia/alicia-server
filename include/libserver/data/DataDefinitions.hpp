@@ -134,7 +134,7 @@ struct User
   dao::Field<std::vector<Uid>> infractions{};
   //! A character UID of the user.
   dao::Field<Uid> characterUid{InvalidUid};
-  //! The last time the user was seen online. Zero means currently online.
+  //! The last time the user was seen online. 1 means currently online.
   dao::Field<Clock::time_point> lastSeenOnline{};
 };
 
