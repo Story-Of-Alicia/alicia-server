@@ -29,7 +29,7 @@ RUN cmake --install ./build --prefix /usr/local
 RUN mkdir /var/lib/alicia-server/
 RUN cp -r ./resources/* /var/lib/alicia-server/
 
-FROM debian:forky-slim
+FROM gcc:15
 
 LABEL author="Story of Alicia Developers" maintainer="dev@storyofalicia.com"
 LABEL org.opencontainers.image.source="https://github.com/Story-Of-Alicia/alicia-server"
@@ -37,7 +37,7 @@ LABEL org.opencontainers.image.description="Dedicated server implementation for 
 
 # Setup the runtime environent
 RUN apt-get update -y
-RUN apt-get install libicu78 libpq5 -y --no-install-recommends
+RUN apt-get install libicu76 libpq5 libstdc++6 -y --no-install-recommends
 
 WORKDIR /opt/alicia-server
 
