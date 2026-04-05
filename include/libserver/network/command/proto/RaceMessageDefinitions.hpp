@@ -1667,6 +1667,7 @@ struct AcCmdCRRelay
     SyncGoalIn = 0x12,            // Crossing finish line or DNF
     BroadcastCharacterUid = 0x13, // Sends self character UID
     SpurLevel = 0x14,
+    ResetPosOther = 0x15,
     SlidingMotion = 0x16
   } payloadType{};
   std::vector<uint8_t> data;
@@ -1774,6 +1775,18 @@ struct AcCmdCRRelay
   {
     uint32_t selfCharacterUid{data::InvalidUid};
   } broadcastCharacterUid{};
+
+  struct ResetPosOther
+  {
+    uint16_t affectedOid{};    // Bytes 0-1: Affected object id
+
+    // Structure and names assumed
+    PackedVector3 right;       // Bytes 2-17: Right Direction (w is always 0.0)
+    PackedVector3 up;          // Bytes 18-33: Up Direction (w is always 0.0)
+    PackedVector3 forward;     // Bytes 34-49: Forward Direction + Packed State in 'w'
+
+    PackedVector3 position;    // Bytes 50-65: World Coordinates + Packed State in 'w'
+  } resetPosOther{};
 
   static Command GetCommand()
   {

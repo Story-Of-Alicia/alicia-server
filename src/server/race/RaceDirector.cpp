@@ -2465,6 +2465,11 @@ void RaceDirector::HandleRelay(
       // Do anything related to `command.broadcastCharacterUid`, if needed
       break;
     }
+    case Relay::PayloadType::ResetPosOther:
+    {
+      // Do anything related to `command.resetPosOther`, if needed
+      break;
+    }
     default:
     {
       const std::string header = command.toOid == 0 ?

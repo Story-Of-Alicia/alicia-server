@@ -824,4 +824,24 @@ void ShopOrder::Read(
     .Read(order.priceId);
 }
 
+void PackedVector3::Write(
+  const PackedVector3& vector,
+  SinkStream& stream)
+{
+  stream.Write(vector.x)
+    .Write(vector.y)
+    .Write(vector.z)
+    .Write(vector.w);
+}
+
+void PackedVector3::Read(
+  PackedVector3& vector,
+  SourceStream& stream)
+{
+  stream.Read(vector.x)
+    .Read(vector.y)
+    .Read(vector.z)
+    .Read(vector.w);
+}
+
 } // namespace server::protocol

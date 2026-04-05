@@ -1275,6 +1275,16 @@ void AcCmdCRRelay::Read(
       payload.Read(command.broadcastCharacterUid.selfCharacterUid);
       break;
     }
+    case Relay::PayloadType::ResetPosOther:
+    {
+      // Reset pos other
+      payload.Read(command.resetPosOther.affectedOid)
+        .Read(command.resetPosOther.right)
+        .Read(command.resetPosOther.up)
+        .Read(command.resetPosOther.forward)
+        .Read(command.resetPosOther.position);
+      break;
+    }
     default:
     {
       // Do not process unknown payload
