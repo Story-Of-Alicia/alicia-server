@@ -2440,6 +2440,12 @@ void RaceDirector::HandleRelay(
       // Do anything related to `command.syncProgress`, if needed
       break;
     }
+    case Relay::PayloadType::SetTargetStateEnabled:
+    case Relay::PayloadType::SetTargetStateDisabled:
+    {
+      // Do anything related to `command.setTargetState`, if needed
+      break;
+    }
     case Relay::PayloadType::NetSetLayerAnimation:
     {
       // Do anything related to `command.netSetLayerAnimation`, if needed

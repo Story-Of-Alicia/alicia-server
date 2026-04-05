@@ -1237,6 +1237,19 @@ void AcCmdCRRelay::Read(
         .Read(command.syncProgress.lapProgress);
       break;
     }
+    case Relay::PayloadType::SetTargetStateEnabled:
+    case Relay::PayloadType::SetTargetStateDisabled:
+    {
+      // Set target state
+      if (command.payloadType == Relay::PayloadType::SetTargetStateEnabled)
+        command.setTargetState.targetLocked = true;
+      
+      payload.Read(command.setTargetState.racerOid)
+        .Read(command.setTargetState.magicEffectId)
+        .Read(command.setTargetState.invokerRacerOid)
+        .Read(command.setTargetState.targetRacerOid);
+      break;
+    }
     case Relay::PayloadType::NetSetLayerAnimation:
     {
       // Net set layer animation (braking/stopping)

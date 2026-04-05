@@ -1663,6 +1663,8 @@ struct AcCmdCRRelay
   {
     Snapshot = 0x3,
     SyncProgress = 0x7,
+    SetTargetStateEnabled = 0x9,  // Magic effect target locked
+    SetTargetStateDisabled = 0xa, // Magic effect target unlocked
     NetSetLayerAnimation = 0xd,   // Braking/Stopping horse
     SyncGoalIn = 0x12,            // Crossing finish line or DNF
     BroadcastCharacterUid = 0x13, // Sends self character UID
@@ -1787,6 +1789,20 @@ struct AcCmdCRRelay
 
     PackedVector3 position;    // Bytes 50-65: World Coordinates + Packed State in 'w'
   } resetPosOther{};
+
+  struct SetTargetState
+  {
+    //! The OID of the affected racer.
+    uint16_t racerOid{};
+    //! Indicates whether the target is locked.
+    bool targetLocked{false};
+    //! The ID of the magic effect.
+    uint32_t magicEffectId{};
+    //! The OID of the invoker.
+    uint16_t invokerRacerOid{};
+    //! The OID of the target.
+    uint16_t targetRacerOid{};
+  } setTargetState{};
 
   static Command GetCommand()
   {
