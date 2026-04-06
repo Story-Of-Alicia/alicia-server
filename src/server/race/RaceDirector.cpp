@@ -3250,7 +3250,8 @@ void RaceDirector::ScheduleSkillEffect(
     return;
   const auto& targetRacer = targetRacerIter->second;
 
-  const bool shieldBlocks = magicSlotInfo.attackValue < static_cast<uint32_t>(targetRacer.shield);
+  const bool shieldBlocks = magicSlotInfo.attackValue > 0
+    && magicSlotInfo.attackValue < static_cast<uint32_t>(targetRacer.shield);
   const uint32_t effectId = shieldBlocks
     ? (targetRacer.shield == tracker::RaceTracker::Racer::Shield::Critical ? 3 : 2)
     : magicSlotInfo.skillEffectId;
