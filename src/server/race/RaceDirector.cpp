@@ -3253,6 +3253,7 @@ void RaceDirector::ScheduleSkillEffect(
   const bool shieldBlocks = magicSlotInfo.attackValue > 0
     && magicSlotInfo.attackValue < static_cast<uint32_t>(targetRacer.shield);
   const uint32_t effectId = shieldBlocks
+  //2 & 3 are shield effects. maybe needs an enum
     ? (targetRacer.shield == tracker::RaceTracker::Racer::Shield::Critical ? 3 : 2)
     : magicSlotInfo.skillEffectId;
 
