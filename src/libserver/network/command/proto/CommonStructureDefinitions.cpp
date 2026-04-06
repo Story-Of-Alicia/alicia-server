@@ -842,6 +842,7 @@ void PackedVector3::Read(
     .Read(vector.y)
     .Read(vector.z)
     .Read(vector.w);
+}
 
 void ObjectiveProgress::Write(
   const ObjectiveProgress& objectiveProgress,
