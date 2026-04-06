@@ -1244,8 +1244,7 @@ void AcCmdCRRelay::Read(
       if (command.payloadType == Relay::PayloadType::SetTargetStateEnabled)
         command.setTargetState.targetLocked = true;
       
-      payload.Read(command.setTargetState.racerOid)
-        .Read(command.setTargetState.magicEffectId)
+      payload.Read(command.setTargetState.magicEffectId)
         .Read(command.setTargetState.invokerRacerOid)
         .Read(command.setTargetState.targetRacerOid);
       break;

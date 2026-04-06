@@ -1792,8 +1792,6 @@ struct AcCmdCRRelay
 
   struct SetTargetState
   {
-    //! The OID of the affected racer.
-    uint16_t racerOid{};
     //! Indicates whether the target is locked.
     bool targetLocked{false};
     //! The ID of the magic effect.
