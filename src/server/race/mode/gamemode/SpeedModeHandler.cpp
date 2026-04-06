@@ -24,12 +24,119 @@ namespace server::race::mode
 {
 
 void SpeedGameMode::OnHurdleClear(
-  [[maybe_unused]] ClientId clientId,
-  [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
-  [[maybe_unused]] const protocol::AcCmdCRHurdleClearResult& command)
+  ClientId clientId,
+  RaceDirector::RaceInstance& raceInstance,
+  const protocol::AcCmdCRHurdleClearResult& command)
 {
-  // TODO: copy implementation from RaceDirector
-  throw std::logic_error("Not implemented");
+  const auto& clientContext = _director.GetClientContext(clientId);
+
+  auto& racer = raceInstance.tracker.GetRacer(
+    clientContext.characterUid);
+
+  // TODO: Revise this in NPC races
+  if (command.characterOid != racer.oid)
+  {
+    throw std::runtime_error(
+      "Client tried to perform action on behalf of different racer");
+  }
+
+  protocol::AcCmdCRHurdleClearResultOK response{
+    .characterOid = command.characterOid,
+    .hurdleClearType = command.hurdleClearType,
+    .jumpCombo = 0,
+    .unk3 = 0
+  };
+
+  protocol::AcCmdCRStarPointGetOK starPointResponse{
+    .characterOid = command.characterOid,
+    .starPointValue = racer.starPointValue,
+    .giveMagicItem = false
+  };
+
+  const auto& gameModeTemplate = _director.GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
+    static_cast<uint8_t>(protocol::GameMode::Speed));
+
+  switch (command.hurdleClearType)
+  {
+    case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Perfect:
+    {
+      // Perfect jump over the hurdle.
+      racer.jumpComboValue = std::min(
+        static_cast<uint32_t>(99),
+        racer.jumpComboValue + 1);
+
+      // Set jump combo counter value (applies to speed)
+      response.jumpCombo = racer.jumpComboValue;
+
+      // Calculate max applicable combo
+      const auto& applicableComboCount = std::min(
+        gameModeTemplate.perfectJumpMaxBonusCombo,
+        racer.jumpComboValue);
+      // Calculate max combo count * perfect jump boost unit points
+      const auto& gainedStarPointsFromCombo = applicableComboCount * gameModeTemplate.perfectJumpUnitStarPoints;
+      // Add boost points to character boost tracker
+      racer.starPointValue = std::min(
+        racer.starPointValue + gameModeTemplate.perfectJumpStarPoints + gainedStarPointsFromCombo,
+        gameModeTemplate.starPointsMax);
+
+      // Update boost gauge
+      starPointResponse.starPointValue = racer.starPointValue;
+      break;
+    }
+    case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Good:
+    case protocol::AcCmdCRHurdleClearResult::HurdleClearType::DoubleJumpOrGlide:
+    {
+      // Not a perfect jump over the hurdle, reset the jump combo.
+      racer.jumpComboValue = 0;
+      response.jumpCombo = racer.jumpComboValue;
+
+      uint32_t gainedStarPoints = gameModeTemplate.goodJumpStarPoints;
+      if (racer.gaugeBuff) {
+        // TODO: Something sensible, idk what the bonus does
+        gainedStarPoints *= 2;
+      }
+
+      // Increment boost gauge by a good jump
+      racer.starPointValue = std::min(
+        racer.starPointValue + gainedStarPoints,
+        gameModeTemplate.starPointsMax);
+
+      // Update boost gauge
+      starPointResponse.starPointValue = racer.starPointValue;
+      break;
+    }
+    case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Collision:
+    {
+      // A collision with hurdle, reset the jump combo.
+      racer.jumpComboValue = 0;
+      response.jumpCombo = racer.jumpComboValue;
+      break;
+    }
+    default:
+    {
+      spdlog::warn("Unhandled hurdle clear type {}",
+        static_cast<uint8_t>(command.hurdleClearType));
+      return;
+    }
+  }
+
+  // Update the star point value if the jump was not a collision.
+  if (command.hurdleClearType != protocol::AcCmdCRHurdleClearResult::HurdleClearType::Collision)
+  {
+    _director.GetCommandServer().QueueCommand<decltype(starPointResponse)>(
+      clientId,
+      [clientId, starPointResponse]()
+      {
+        return starPointResponse;
+      });
+  }
+
+  _director.GetCommandServer().QueueCommand<decltype(response)>(
+    clientId,
+    [clientId, response]()
+    {
+      return response;
+    });
 }
 
 void SpeedGameMode::OnRaceUserPos(
@@ -70,7 +177,7 @@ void SpeedGameMode::OnRequestSpur(
   }
 
   const auto& gameModeTemplate = _director.GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(raceInstance.raceGameMode));
+    static_cast<uint8_t>(protocol::GameMode::Speed));
 
   if (racer.starPointValue < gameModeTemplate.spurConsumeStarPoints)
     throw std::runtime_error("Client is dead ass cheating (or is really desynced)");
