@@ -1249,6 +1249,13 @@ void AcCmdCRRelay::Read(
         .Read(command.setTargetState.targetRacerOid);
       break;
     }
+    case Relay::PayloadType::NetSetState:
+    {
+      payload.Read(command.netSetState.racerOid)
+        .Read(command.netSetState.state.val1)
+        .Read(command.netSetState.state.val2);
+      break;
+    }
     case Relay::PayloadType::NetSetLayerAnimation:
     {
       // Net set layer animation (braking/stopping)

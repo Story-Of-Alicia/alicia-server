@@ -2446,6 +2446,11 @@ void RaceDirector::HandleRelay(
       // Do anything related to `command.setTargetState`, if needed
       break;
     }
+    case Relay::PayloadType::NetSetState:
+    {
+      // Do anything related to `command.netSetState`, if needed
+      break;
+    }
     case Relay::PayloadType::NetSetLayerAnimation:
     {
       // Do anything related to `command.netSetLayerAnimation`, if needed
