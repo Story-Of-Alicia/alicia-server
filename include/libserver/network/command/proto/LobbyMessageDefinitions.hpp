@@ -1793,25 +1793,41 @@ struct AcCmdLCPersonalInfo
     uint16_t magicTeamWinCombo{};
     float averageRank{};
     float completionRate{};
-    float member12{};
+    //! Average chasing count.
+    //! Displayed as a float with a "times" suffix.
+    float averageChasingCount{};
     uint32_t highestCarnivalPrize{};
-    uint16_t member14{};
-    uint16_t member15{};
-    uint16_t member16{};
+    //! First achievement showcase slot.
+    uint16_t ceremonyAchievementSlot1{};
+    //! Second achievement showcase slot.
+    uint16_t ceremonyAchievementSlot2{};
+    //! Third achievement showcase slot.
+    uint16_t ceremonyAchievementSlot3{};
     std::string introduction{};
     uint32_t level{60};
     //! Level progress as dictated by LevelInfo table in libconfig
     uint32_t levelProgress{};
-    std::string member20{};
+    //! Parsed by the client but never read back for display.
+    //! The txt_grade label in the profile UI is populated from
+    //! a client-side AchievementGrade table lookup instead.
+    std::string unk_gradeString{};
     uint16_t perfectBoostCombo{};
     uint16_t perfectJumpCombo{};
     uint16_t magicDefenseCombo{};
-    float member24{};
-    float member25{};
-    float member26{};
+    //! Magic ball (Dark fire and Fireball) attack success rate.
+    //! Displayed as a percentage represented by a floating point in an interval <0, 1>.
+    float magicBallAttackSuccessRate{};
+    //! Fire spirit transfer success rate.
+    //! Displayed as a percentage represented by a floating point in an interval <0, 1>.
+    float fireSpiritTransferSuccessRate{};
+    //! Ice wall attack success rate.
+    //! Displayed as a percentage represented by a floating point in an interval <0, 1>.
+    float iceWallAttackSuccessRate{};
     std::string guildName{};
-    uint8_t member28{};
-    uint8_t member29{};
+    //! Not used by client.
+    uint8_t padding28{};
+    //! Not used by client.
+    uint8_t padding29{};
 
     static void Write(const Basic& command, SinkStream& stream);
     static void Read(Basic& command, SourceStream& stream);

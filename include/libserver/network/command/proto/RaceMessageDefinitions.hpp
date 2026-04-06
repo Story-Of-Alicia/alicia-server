@@ -1493,17 +1493,17 @@ struct AcCmdUserRaceUpdatePos
   //! Character oid
   uint16_t oid{};
   //! Position
-  std::array<float, 3> member2{};
+  std::array<float, 3> position{};
   //! Rotation
-  std::array<float, 3> member3{};
-  //! Speed
-  float member4{};
+  std::array<float, 3> rotation{};
+  //! Speed in km/h.
+  float speed{};
   //! 1 = In the air
-  uint16_t member5{};
+  uint16_t airborne{};
   //! Race track progress
-  float member6{};
+  float trackProgress{};
   //! Ticks since connected to race director?
-  uint32_t member7{};
+  uint32_t ticksSinceConnect{};
 
   static Command GetCommand()
   {
