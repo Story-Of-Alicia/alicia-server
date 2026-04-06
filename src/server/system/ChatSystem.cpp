@@ -710,6 +710,7 @@ void ChatSystem::RegisterUserCommands()
             horse.dateOfBirth() = data::Clock::now();
             horse.mountCondition.stamina = 3500;
             horse.growthPoints() = 150;
+            horse.clazz = 1;
 
             // Give horse random parts and appearance
             _serverInstance.GetHorseRegistry().BuildRandomHorse(
@@ -1650,7 +1651,8 @@ void ChatSystem::RegisterAdminCommands()
         if (arguments.size() < 2)
           return {
             "mod rename",
-            "  [horse/pet/guild/room] [uid] [name]"};
+            "  [horse/pet/guild/room] [uid] [name]",
+            "  [macro] [username]"};
 
         const auto& concatString = [](
           const std::span<const std::string>& arguments,
@@ -1840,6 +1842,58 @@ void ChatSystem::RegisterAdminCommands()
               roomUid,
               previousName,
               newName)};
+        }
+        else if (option == "macro")
+        {
+          // mod rename macro [username]
+          if (arguments.size() < 3)
+            return {
+              "mod rename macro",
+              "   [username]"};
+
+          const std::string& targetUserName = arguments[2];
+
+          const auto userRecord = _serverInstance.GetDataDirector().GetUser(targetUserName);
+          if (not userRecord.IsAvailable())
+            return {std::format("User '{}' does not exist or is currently unavailable", targetUserName)};
+
+          data::Uid targetCharacterUid{data::InvalidUid};
+          userRecord.Immutable([&targetCharacterUid](const data::User& user)
+          {
+            targetCharacterUid = user.characterUid();
+          });
+
+          if (targetCharacterUid == data::InvalidUid)
+            return {std::format("User '{}' does not have a character", targetUserName)};
+
+          const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(targetCharacterUid);
+          if (not characterRecord)
+            return {std::format("Character for user '{}' is unavailable", targetUserName)};
+
+          data::Uid settingsUid{data::InvalidUid};
+          characterRecord.Immutable([&settingsUid](const data::Character& character)
+          {
+            settingsUid = character.settingsUid();
+          });
+
+          if (settingsUid == data::InvalidUid)
+            return {std::format("User '{}' does not have a settings record", targetUserName)};
+
+          const auto settingsRecord = _serverInstance.GetDataDirector().GetSettings(settingsUid);
+          if (not settingsRecord)
+            return {std::format("Settings record for user '{}' is unavailable", targetUserName)};
+
+          settingsRecord.Mutable(
+            [](data::Settings& settings)
+            {
+              settings.macros() = std::array<std::string, 8>{};
+            });
+
+          spdlog::info("GM '{}' cleared all macros for user '{}'",
+            invokerCharacterName,
+            targetUserName);
+
+          return {std::format("All macros cleared for user '{}'", targetUserName)};
         }
       }
 

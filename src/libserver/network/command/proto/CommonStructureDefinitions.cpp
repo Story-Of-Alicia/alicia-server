@@ -842,6 +842,23 @@ void PackedVector3::Read(
     .Read(vector.y)
     .Read(vector.z)
     .Read(vector.w);
+
+void ObjectiveProgress::Write(
+  const ObjectiveProgress& objectiveProgress,
+  SinkStream& stream)
+{
+  stream.Write(objectiveProgress.isCompleted)
+    .Write(objectiveProgress.progress)
+    .Write(objectiveProgress.achievementTier);
+}
+
+void ObjectiveProgress::Read(
+  ObjectiveProgress& objectiveProgress,
+  SourceStream& stream)
+{
+  stream.Read(objectiveProgress.isCompleted)
+    .Read(objectiveProgress.progress)
+    .Read(objectiveProgress.achievementTier);
 }
 
 } // namespace server::protocol

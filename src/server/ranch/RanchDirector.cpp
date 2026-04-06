@@ -449,6 +449,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleInviteUser(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestUser>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleRequestUser(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -572,6 +578,30 @@ void RanchDirector::BroadcastUpdateMountInfoNotify(
       {
         return notify;
       });
+  }
+}
+
+void RanchDirector::NotifyRequestUser(
+    data::Uid characterUid,
+    bool force,
+    std::string characterName,
+    uint32_t roomUid,
+    uint32_t ranchUid) noexcept
+{
+  protocol::AcCmdRCRequestUser notify{};
+  notify.force = force;
+  notify.characterName = characterName;
+  notify.roomUid = roomUid;
+  notify.ranchUid = ranchUid;
+
+  try
+  {
+     const auto targetClientId = GetClientIdByCharacterUid(characterUid);
+     _commandServer.QueueCommand<protocol::AcCmdRCRequestUser>(targetClientId, [notify](){ return notify; });
+  }
+  catch (const std::exception&)
+  {
+    // Dont care if the client is not found, we just won't send the notification
   }
 }
 
@@ -3879,20 +3909,86 @@ void RanchDirector::HandleStatusPointApply(
   ClientId clientId,
   const protocol::AcCmdCRStatusPointApply command)
 {
-  protocol::AcCmdCRStatusPointApplyOK response {};
+  const auto& clientContext = GetClientContext(clientId);
+  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
 
-  const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(command.horseUid);
-  horseRecord->Mutable([&command](data::Horse& horse)
+  // Collect the owned horses by the user's character
+  std::vector<data::Uid> ownedHorses;
+  characterRecord.Mutable([&ownedHorses](data::Character& character)
   {
+    ownedHorses.emplace_back(character.mountUid());
+    std::ranges::copy(character.horses(), std::back_inserter(ownedHorses));
+  });
+
+  const bool isHorseOwned = std::ranges::contains(ownedHorses, command.horseUid);
+  if (not isHorseOwned)
+  {
+    spdlog::warn(
+      "Character {} tried to apply status points to unowned horse {}",
+      clientContext.characterUid, command.horseUid);
+
+    _commandServer.QueueCommand<protocol::AcCmdCRStatusPointApplyCancel>(
+      clientId,
+      []()
+      {
+        return protocol::AcCmdCRStatusPointApplyCancel{};
+      });
+    return;
+  }
+
+  const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
+    command.horseUid);
+
+  bool applied = false;
+  horseRecord->Mutable([&command, &applied](data::Horse& horse)
+  {
+    if (horse.growthPoints() == 0)
+      return;
+
+    const int64_t agilityDelta = static_cast<int64_t>(command.stats.agility) - static_cast<int64_t>(horse.stats.agility());
+    const int64_t ambitionDelta =  static_cast<int64_t>(command.stats.ambition) - static_cast<int64_t>(horse.stats.ambition());
+    const int64_t rushDelta = static_cast<int64_t>(command.stats.rush) - static_cast<int64_t>(horse.stats.rush());
+    const int64_t enduranceDelta = static_cast<int64_t>(command.stats.endurance) - static_cast<int64_t>(horse.stats.endurance());
+    const int64_t courageDelta = static_cast<int64_t>(command.stats.courage) - static_cast<int64_t>(horse.stats.courage());
+    
+    // Decrease in any of the stats is not allowed.
+    if (agilityDelta < 0
+      || ambitionDelta < 0 
+      || rushDelta < 0
+      || enduranceDelta < 0
+      || courageDelta < 0)
+    {
+      return;
+    }
+
+   const auto totalPointsApplied = agilityDelta + ambitionDelta + rushDelta + enduranceDelta + courageDelta;
+
+    // Increase  of  more than  one stat at a time is not allowed.
+    if (totalPointsApplied > 1)
+      return;
     horse.stats.agility = command.stats.agility;
     horse.stats.ambition = command.stats.ambition;
     horse.stats.rush = command.stats.rush;
     horse.stats.endurance = command.stats.endurance;
     horse.stats.courage = command.stats.courage;
-
     horse.growthPoints() -= 1;
+
+    applied = true;
   });
 
+  if (not applied)
+  {
+    _commandServer.QueueCommand<protocol::AcCmdCRStatusPointApplyCancel>(
+      clientId,
+      []()
+      {
+        return protocol::AcCmdCRStatusPointApplyCancel{};
+      });
+    return;
+  }
+
+  protocol::AcCmdCRStatusPointApplyOK response{};
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
@@ -5402,6 +5498,77 @@ void RanchDirector::HandleInviteUser(
   protocol::AcCmdCRInviteUserOK response{};
   response.recipientCharacterUid = command.recipientCharacterUid;
   response.recipientCharacterName = command.recipientCharacterName;
+
+  _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+}
+
+void RanchDirector::HandleRequestUser(
+  ClientId clientId,
+  const protocol::AcCmdCRRequestUser& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  const auto& invokerCharacterUid = clientContext.characterUid;
+
+  const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(invokerCharacterUid);
+  if (not invokerRecord)
+    return;
+
+  bool isAdmin = false;
+  std::string invokerCharacterName{};
+  invokerRecord.Immutable([&isAdmin, &invokerCharacterName](const data::Character& character)
+    {
+      isAdmin = character.role() != data::Character::Role::User;
+      invokerCharacterName = character.name();
+    });
+  const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+    clientContext.characterUid).userName;
+
+  if (not isAdmin)
+  {
+    spdlog::warn("User '{}'('{}'), which is not an admin, tried to summon character '{}'",
+      userName,
+      invokerCharacterName,
+      command.characterName);
+    return;
+  }
+
+  protocol::AcCmdCRRequestUserCancel cancel{};
+  cancel.force = command.force;
+  cancel.characterName = command.characterName;
+  cancel.roomUid = command.roomUid;
+  cancel.ranchUid = command.ranchUid;
+
+  const data::Uid characterUid = GetServerInstance()
+    .GetDataDirector()
+    .GetDataSource()
+    .RetrieveCharacterUidByName(command.characterName);
+
+  if (characterUid == data::InvalidUid)
+  {
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  try
+  {
+    const auto clientOpt = GetServerInstance()
+      .GetLobbyDirector().GetUserByCharacterUid(characterUid);
+  }
+  catch (const std::exception&)
+  {
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  GetServerInstance().GetRaceDirector().NotifyRequestUser(characterUid, command.force, command.characterName, command.roomUid, command.ranchUid);
+  GetServerInstance().GetRanchDirector().NotifyRequestUser(characterUid, command.force, command.characterName, command.roomUid, command.ranchUid);
+
+  protocol::AcCmdCRRequestUserOK response{};
+  response.force = command.force;
+  response.characterName = command.characterName;
+  response.roomUid = command.roomUid;
+  response.ranchUid = command.ranchUid;
 
   _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }

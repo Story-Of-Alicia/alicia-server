@@ -91,6 +91,30 @@ uint32_t ReadMapBlockInfo(
 
   return section["id"].as<uint32_t>();
 }
+ 
+uint32_t ReadDeckItemInfo(
+  const YAML::Node& section,
+  Course::DeckItemInfo& deckItem)
+{
+  const auto itemTypesSection = section["itemTypes"];
+  if (itemTypesSection)
+  {
+    for (const auto& itemType : itemTypesSection)
+    {
+      deckItem.itemTypes.emplace_back(itemType.as<uint32_t>());
+    }
+  }
+ 
+  return section["deckId"].as<uint32_t>();
+}
+ 
+uint32_t ReadItemTypeInfo(
+  const YAML::Node& section,
+  Course::ItemTypeInfo& itemType)
+{
+  itemType.magicSlot = section["magicSlot"].as<uint32_t>();
+  return section["id"].as<uint32_t>();
+}
 
 } // namespace
 
@@ -143,11 +167,48 @@ void CourseRegistry::ReadConfig(
     }
   }
 
+  // Deck items
+  {
+    const auto deckItemInfosSection = coursesSection["deckItemInfo"];
+    if (deckItemInfosSection)
+    {
+      const auto collection = deckItemInfosSection["collection"];
+      if (collection)
+      {
+        for (const auto& deckItemInfoSection : collection)
+        {
+          Course::DeckItemInfo deckItem;
+          const auto id = ReadDeckItemInfo(deckItemInfoSection, deckItem);
+          _deckItemInfo.emplace(id, deckItem);
+        }
+      }
+    }
+  }
+
+  // Item types
+  {
+    const auto itemTypeInfosSection = coursesSection["itemTypeInfo"];
+    if (itemTypeInfosSection)
+    {
+      const auto collection = itemTypeInfosSection["collection"];
+      if (collection)
+      {
+        for (const auto& itemTypeInfoSection : collection)
+        {
+          Course::ItemTypeInfo itemType;
+          const auto id = ReadItemTypeInfo(itemTypeInfoSection, itemType);
+          _itemTypeInfo.emplace(id, itemType);
+        }
+      }
+    }
+  }
+
   spdlog::info(
-    "Course registry loaded {} game modes, {} maps and {} deck items",
+    "Course registry loaded {} game modes, {} maps, {} deck items and {} item types",
     _gameModeInfo.size(),
     _mapBlockInfo.size(),
-    _deckItemInfo.size());
+    _deckItemInfo.size(),
+    _itemTypeInfo.size());
 }
 
 const Course::GameModeInfo& CourseRegistry::GetCourseGameModeInfo(
@@ -165,6 +226,22 @@ const Course::MapBlockInfo& CourseRegistry::GetMapBlockInfo(uint32_t id)
   if (mapBlockInfo == _mapBlockInfo.cend())
     throw std::runtime_error("Invalid course map block");
   return mapBlockInfo->second;
+}
+ 
+const Course::DeckItemInfo& CourseRegistry::GetDeckItemInfo(uint32_t deckId)
+{
+  const auto deckItemInfo = _deckItemInfo.find(deckId);
+  if (deckItemInfo == _deckItemInfo.cend())
+    throw std::runtime_error("Invalid deck item ID");
+  return deckItemInfo->second;
+}
+
+const Course::ItemTypeInfo& CourseRegistry::GetItemTypeInfo(uint32_t itemTypeId)
+{
+  const auto itemTypeInfo = _itemTypeInfo.find(itemTypeId);
+  if (itemTypeInfo == _itemTypeInfo.cend())
+    throw std::runtime_error("Invalid item type ID");
+  return itemTypeInfo->second;
 }
 
 } // namespace server::registry

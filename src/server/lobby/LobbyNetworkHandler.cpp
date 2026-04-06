@@ -463,6 +463,27 @@ void LobbyNetworkHandler::NotifyCharacter(
   }
 }
 
+void LobbyNetworkHandler::NotifyAchievementReward(
+  const data::Uid characterUid)
+{
+  try
+  {
+    const auto clientId = GetClientIdByCharacterUid(characterUid);
+
+    protocol::AcCmdLCAchievementRewardNotify notify{};
+    _commandServer.QueueCommand<decltype(notify)>(
+      clientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
+  catch (const std::exception&)
+  {
+    // We really don't care if the user disconnected.
+  }
+}
+
 ClientId LobbyNetworkHandler::GetClientIdByUserName(
   const std::string& userName,
   const bool requiresAuthorization)
@@ -965,6 +986,42 @@ void LobbyNetworkHandler::HandleRoomList(
         roomSnapshot.details.teamMode == static_cast<server::Room::TeamMode>(command.teamMode);
     });
 
+  // Sort race rooms
+  // Priority ordering (ascending by player count):
+  // - Unlocked and waiting
+  // - Unlocked and racing
+  // - Locked
+  std::ranges::sort(
+    roomSnapshots,
+    [](const server::Room::Snapshot& a, const server::Room::Snapshot& b)
+    {
+      const auto getPriority = [](const server::Room::Snapshot& snapshot)
+      {
+        if (!snapshot.details.password.empty())
+          // Locked
+          return 2;
+        if (snapshot.isPlaying)
+          // Playing
+          return 1;
+        else
+          // Waiting
+          return 0;
+      };
+
+      const auto pA = getPriority(a);
+      const auto pB = getPriority(b);
+
+      // Check if snapshot A shares the same priority as snapshot B
+      if (pA != pB)
+        // Priorities are different, return
+        // compared weight
+        return pA < pB;
+
+      // Both snapshots share the same priority, so
+      // sort by player count.
+      return a.playerCount < b.playerCount; // Ascending by player count
+    });
+
   const auto roomChunks = std::views::chunk(
     roomSnapshots,
     RoomsPerPage);
@@ -1412,6 +1469,7 @@ void LobbyNetworkHandler::HandleCreateNickname(
         horse.dateOfBirth() = data::Clock::now();
         horse.mountCondition.stamina = 3500;
         horse.growthPoints() = 150;
+        horse.clazz = 1;
 
         _serverInstance.GetHorseRegistry().BuildRandomHorse(
           horse.parts,
@@ -1523,28 +1581,58 @@ void LobbyNetworkHandler::HandleShowInventory(
   if (not characterRecord)
     throw std::runtime_error("Character record unavailable");
 
-  protocol::LobbyCommandShowInventoryOK response{
-    .items = {},
-    .horses = {}};
+  std::vector<protocol::LobbyCommandShowInventoryOK> responses{};
 
   characterRecord.Immutable(
-    [this, &response](const data::Character& character)
+    [this, &responses](const data::Character& character)
     {
+      // 0xFA (250) is the protocol max per response
+      constexpr uint32_t ItemsPerResponse = 250;
       const auto itemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(
         character.inventory());
-      protocol::BuildProtocolItems(response.items, *itemRecords);
 
+      // Produce chunked responses, by ItemsPerResponse
+      const auto itemChunks = std::views::chunk(
+        *itemRecords,
+        ItemsPerResponse);
+      
+      // Create a response per chunk
+      for (const auto& chunk : itemChunks)
+      {
+        auto& response = responses.emplace_back();
+        for (const auto& item : chunk)
+        {
+          auto& protocolItem = response.items.emplace_back();
+          item.Immutable([&protocolItem](const auto& item)
+          {
+            protocol::BuildProtocolItem(protocolItem, item);
+          });
+        }
+      }
+
+      // Create a separate response for horses
+      auto& horseResponse = responses.emplace_back();
       const auto horseRecords = _serverInstance.GetDataDirector().GetHorseCache().Get(
         character.horses());
-      protocol::BuildProtocolHorses(response.horses, *horseRecords);
+      protocol::BuildProtocolHorses(horseResponse.horses, *horseRecords);
     });
 
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [response]()
-    {
-      return response;
-    });
+  // If the character has no items or extra horses
+  // then construct an empty response.
+  // This is needed to prevent the client from soft-locking
+  // and waiting for a response from the server.
+  if (responses.empty())
+    responses.emplace_back();
+
+  for (auto response : responses)
+  {
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]()
+      {
+        return response;
+      });
+  }
 }
 
 void LobbyNetworkHandler::HandleUpdateUserSettings(
@@ -1837,13 +1925,15 @@ void LobbyNetworkHandler::HandleEnterRanch(
 
   if (isRanchLocked && not isEnteringOwnRanch)
   {
-    protocol::AcCmdCLEnterRanchCancel response{};
+    protocol::AcCmdCLEnterRanchCancel response{
+      .reason = 3};
 
     _commandServer.QueueCommand<decltype(response)>(
       clientId, [response]()
       {
         return response;
       });
+    return;
   }
 
   SendEnterRanchOK(clientId, command.rancherUid);
