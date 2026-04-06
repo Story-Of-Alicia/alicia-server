@@ -57,9 +57,9 @@ public:
 
     enum class Shield
     {
-      None,
-      Normal,
-      Critical
+      None = 0,
+      Normal = 100,
+      Critical = 200
     };
 
     Oid oid{InvalidEntityOid};

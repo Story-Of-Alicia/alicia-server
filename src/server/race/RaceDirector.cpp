@@ -2765,22 +2765,22 @@ void RaceDirector::HandleUseMagicItem(
     // TODO: Maybe not change it if they already have a stronger shield?
     case 4:
     {
-      racer.shield = tracker::RaceTracker::Racer::Shield::Normal;
       const auto afterEffectRemoved = [&racer]()
       {
         racer.shield = tracker::RaceTracker::Racer::Shield::None;
       };
       this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved);
+      racer.shield = tracker::RaceTracker::Racer::Shield::Normal;
       break;
     }
     case 5:
     {
-      racer.shield = tracker::RaceTracker::Racer::Shield::Critical;
       const auto afterEffectRemoved = [&racer]()
       {
         racer.shield = tracker::RaceTracker::Racer::Shield::None;
       };
       this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved);
+      racer.shield = tracker::RaceTracker::Racer::Shield::Critical;
       break;
     }
     // Booster
@@ -2791,22 +2791,22 @@ void RaceDirector::HandleUseMagicItem(
     // Phoenix
     case 8:
     {
-      racer.hotRodded = true;
       const auto afterEffectRemoved = [&racer]()
       {
         racer.hotRodded = false;
       };
       this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved);
+      racer.hotRodded = true;
       break;
     }
     case 9:
     {
-      racer.hotRodded = true;
       const auto afterEffectRemoved = [&racer]()
       {
         racer.hotRodded = false;
       };
       this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved);
+      racer.hotRodded = true;
       break;
     }
     // IceWall
@@ -3154,17 +3154,6 @@ void RaceDirector::HandleActivateSkillEffect(
     }
   }
 
-  if ((magicSlotInfo.type == magicSlotInfo.basicType && targetRacer.shield == tracker::RaceTracker::Racer::Shield::Normal)
-  || ((magicSlotInfo.type == 5 /* Crit Ice Wall */ && targetRacer.shield == tracker::RaceTracker::Racer::Shield::Normal))
-  || targetRacer.shield == tracker::RaceTracker::Racer::Shield::Critical
-  || targetRacer.hotRodded)
-  {
-    // TODO: Send some kind of notification that the attack was blocked? That picture on the side (PIPEvent?)
-    // Maybe i actually need to send the effect but with a different parameter to mean "blocked"
-    // Else it doesnt show in the kill list in the corner
-    return;
-  }
-
   std::optional<std::function<void()>> afterEffectRemoved = std::nullopt;
   switch (magicSlotInfo.type)
   {
@@ -3254,17 +3243,28 @@ void RaceDirector::ScheduleSkillEffect(
   const registry::Magic::SlotInfo& magicSlotInfo,
   std::optional<std::function<void()>> afterEffectRemoved)
 {
-  // Broadcast skill effect activation to all clients in the room
+  auto& racers = raceInstance.tracker.GetRacers();
+  const auto targetRacerIter = std::ranges::find_if(
+    racers, [targetOid](const auto& pair) { return pair.second.oid == targetOid; });
+  if (targetRacerIter == racers.cend())
+    return;
+  const auto& targetRacer = targetRacerIter->second;
+
+  const bool shieldBlocks = magicSlotInfo.attackValue < static_cast<uint32_t>(targetRacer.shield);
+  const uint32_t effectId = shieldBlocks
+    ? (targetRacer.shield == tracker::RaceTracker::Racer::Shield::Critical ? 3 : 2)
+    : magicSlotInfo.skillEffectId;
+
   // TODO: Verify if characterOid and targetOid should be the same once we have NPCs
-  protocol::AcCmdRCAddSkillEffect addSkillEffect{
+  const protocol::AcCmdRCAddSkillEffect addSkillEffect{
     .characterOid = targetOid,
-    .effectId = magicSlotInfo.skillEffectId,
+    .effectId = effectId,
     .targetOid = targetOid,
     .attackerOid = attackerOid,
-    .unk2 = 0,
-    .unk3 = 0,
+    .unk2 = shieldBlocks ? static_cast<uint32_t>(targetOid) : 0u,
+    .unk3 = targetRacer.hotRodded ? 1u : 0u,
     .shieldEffect = protocol::AcCmdRCAddSkillEffect::ShieldEffect{
-      .unk0 = 0,
+      .unk0 = shieldBlocks ? 2: 0u,
       .unk1 = 0,
     },
     .boostEffectMs = static_cast<uint32_t>(magicSlotInfo.effectDelay * 1000.0f),
@@ -3278,9 +3278,11 @@ void RaceDirector::ScheduleSkillEffect(
       [addSkillEffect]() { return addSkillEffect; });
   }
 
+  if (shieldBlocks)
+    return;
+
   // Remove the effect after a delay
   // TODO: Handle overlapping effects of the same type
-  uint32_t effectId = magicSlotInfo.skillEffectId;
   _scheduler.Queue(
     [this, roomUid = raceInstance.roomUid, attackerOid, targetOid, effectId, afterEffectRemoved]()
     {
@@ -3292,7 +3294,7 @@ void RaceDirector::ScheduleSkillEffect(
       auto& raceInstance = raceInstanceIter->second;
 
       // Broadcast skill effect deactivation to all clients in the room
-      protocol::AcCmdRCRemoveSkillEffect removeSkillEffect{
+      const protocol::AcCmdRCRemoveSkillEffect removeSkillEffect{
         .characterOid = targetOid,
         .effectId = effectId,
         .targetOid = targetOid,
