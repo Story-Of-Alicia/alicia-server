@@ -28,9 +28,7 @@ namespace server::race::mode
 class TutorialGameMode : public GameModeHandler
 {
 public:
-  explicit TutorialGameMode(RaceDirector& director)
-    : GameModeHandler(director)
-  {}
+  explicit TutorialGameMode(RaceDirector& director, uint32_t missionId);
 
   void OnHurdleClear(
     ClientId clientId,
@@ -62,6 +60,10 @@ public:
     ClientId clientId,
     RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdCRUseMagicItem& command) override;
+
+private:
+  uint32_t _missionId;
+  std::unique_ptr<GameModeHandler> _gamemodeHandler;
 };
 
 } // namespace server::race::mode

@@ -1543,7 +1543,7 @@ void RaceDirector::HandleStartRace(
           raceInstance.gameModeHandler = std::make_unique<race::mode::MagicGameMode>(*this);
           break;
         case protocol::GameMode::Tutorial:
-          raceInstance.gameModeHandler = std::make_unique<race::mode::TutorialGameMode>(*this);
+          raceInstance.gameModeHandler = std::make_unique<race::mode::TutorialGameMode>(*this, raceInstance.raceMissionId);
           break;
         default:
           raceInstance.gameModeHandler = nullptr;
