@@ -1,0 +1,203 @@
+character:
+  levelInfo:
+    collection:
+      - level: 1
+        expRequired: 0
+      - level: 2
+        expRequired: 2000
+      - level: 3
+        expRequired: 4200
+      - level: 4
+        expRequired: 6600
+      - level: 5
+        expRequired: 9200
+      - level: 6
+        expRequired: 12000
+      - level: 7
+        expRequired: 14800
+      - level: 8
+        expRequired: 17600
+      - level: 9
+        expRequired: 20600
+      - level: 10
+        expRequired: 24600
+      - level: 11
+        expRequired: 29000
+      - level: 12
+        expRequired: 34400
+      - level: 13
+        expRequired: 39400
+      - level: 14
+        expRequired: 44800
+      - level: 15
+        expRequired: 50800
+      - level: 16
+        expRequired: 58000
+      - level: 17
+        expRequired: 67600
+      - level: 18
+        expRequired: 76000
+      - level: 19
+        expRequired: 84800
+      - level: 20
+        expRequired: 94800
+      - level: 21
+        expRequired: 106000
+      - level: 22
+        expRequired: 118800
+      - level: 23
+        expRequired: 131200
+      - level: 24
+        expRequired: 145000
+      - level: 25
+        expRequired: 160200
+      - level: 26
+        expRequired: 176800
+      - level: 27
+        expRequired: 196300
+      - level: 28
+        expRequired: 214100
+      - level: 29
+        expRequired: 233300
+      - level: 30
+        expRequired: 254500
+      - level: 31
+        expRequired: 277100
+      - level: 32
+        expRequired: 302300
+      - level: 33
+        expRequired: 326700
+      - level: 34
+        expRequired: 353100
+      - level: 35
+        expRequired: 382100
+      - level: 36
+        expRequired: 413100
+      - level: 37
+        expRequired: 448100
+      - level: 38
+        expRequired: 481500
+      - level: 39
+        expRequired: 517900
+      - level: 40
+        expRequired: 557300
+      - level: 41
+        expRequired: 599100
+      - level: 42
+        expRequired: 645000
+      - level: 43
+        expRequired: 689200
+      - level: 44
+        expRequired: 736600
+      - level: 45
+        expRequired: 787200
+      - level: 46
+        expRequired: 841600
+      - level: 47
+        expRequired: 901000
+      - level: 48
+        expRequired: 957800
+      - level: 49
+        expRequired: 1018200
+      - level: 50
+        expRequired: 1082200
+      - level: 51
+        expRequired: 1150400
+      - level: 52
+        expRequired: 1223700
+      - level: 53
+        expRequired: 1294900
+      - level: 54
+        expRequired: 1369900
+      - level: 55
+        expRequired: 1450900
+      - level: 56
+        expRequired: 1529500
+      - level: 57
+        expRequired: 1612300
+      - level: 58
+        expRequired: 1699500
+      - level: 59
+        expRequired: 1791100
+      - level: 60
+        expRequired: 1888300
+      - level: 61
+        expRequired: 1982900
+      - level: 62
+        expRequired: 2082300
+      - level: 63
+        expRequired: 2186100
+      - level: 64
+        expRequired: 2294300
+      - level: 65
+        expRequired: 2409500
+      - level: 66
+        expRequired: 2521300
+      - level: 67
+        expRequired: 2638900
+      - level: 68
+        expRequired: 2761300
+      - level: 69
+        expRequired: 2888500
+      - level: 70
+        expRequired: 3022400
+      - level: 71
+        expRequired: 3153800
+      - level: 72
+        expRequired: 3290400
+      - level: 73
+        expRequired: 3432400
+      - level: 74
+        expRequired: 3579200
+      - level: 75
+        expRequired: 3734000
+      - level: 76
+        expRequired: 3885000
+      - level: 77
+        expRequired: 4042200
+      - level: 78
+        expRequired: 4205200
+      - level: 79
+        expRequired: 4373400
+      - level: 80
+        expRequired: 4548900
+      - level: 81
+        expRequired: 4721900
+      - level: 82
+        expRequired: 4901100
+      - level: 83
+        expRequired: 5086100
+      - level: 84
+        expRequired: 5276900
+      - level: 85
+        expRequired: 5475600
+      - level: 86
+        expRequired: 5671200
+      - level: 87
+        expRequired: 5874000
+      - level: 88
+        expRequired: 6083000
+      - level: 89
+        expRequired: 6298200
+      - level: 90
+        expRequired: 6519500
+      - level: 91
+        expRequired: 6740100
+      - level: 92
+        expRequired: 6967900
+      - level: 93
+        expRequired: 7201900
+      - level: 94
+        expRequired: 7442700
+      - level: 95
+        expRequired: 7689400
+      - level: 96
+        expRequired: 7935600
+      - level: 97
+        expRequired: 8189000
+      - level: 98
+        expRequired: 8449200
+      - level: 99
+        expRequired: 8715600
+      - level: 100
+        expRequired: 8988800

@@ -567,15 +567,27 @@ void RaceDirector::Tick()
       }
 
       score.courseTime = courseTime;
-      //score.experience = 420;
+      score.experience = 420;
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
         characterUid);
 
-      characterRecord.Immutable([this, &score](const data::Character& character)
+      characterRecord.Mutable([this, &score](data::Character& character)
       {
+        character.experience() += score.experience;
+
+        const uint32_t newLevel = _serverInstance.GetCharacterRegistry().GetLevelForExp(character.experience());
+        if (newLevel > character.level())
+        {
+          character.level() = newLevel;
+          score.bitset = static_cast<protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset>(
+            score.bitset | protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::LevelUpBonusCarrots);
+        }
+
+        //populate the score info with the character data
         score.uid = character.uid();
         score.name = character.name();
         score.level = character.level();
+        score.levelProgress = character.experience();
 
         _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Immutable(
           [&score](const data::Horse& horse)

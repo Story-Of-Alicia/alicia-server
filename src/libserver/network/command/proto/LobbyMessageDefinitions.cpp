@@ -101,7 +101,7 @@ void LobbyCommandLoginOK::Write(
   //
   stream.Write(command.level)
     .Write(command.carrots)
-    .Write(command.val1)
+    .Write(command.levelProgress)
     .Write(command.role)
     .Write(command.val3);
 
