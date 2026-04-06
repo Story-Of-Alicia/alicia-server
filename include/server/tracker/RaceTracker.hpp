@@ -143,6 +143,8 @@ public:
   //! @returns The next object instance ID before incrementing.
   uint16_t GetNextObstacleInstanceIdAndIncrementBy(uint16_t increment);
 
+  uint16_t GetNextEffectInstanceIdAndIncrementBy(uint16_t increment);
+
   void Clear();
 
 
@@ -155,6 +157,8 @@ private:
   ItemObjectMap _items;
   //! Next obstacle instance ID.
   uint16_t _nextObstacleInstanceId = 1;
+  // Next effect instance ID.
+  uint16_t _nextEffectInstanceId = 0;
 };
 
 } // namespace server::tracker

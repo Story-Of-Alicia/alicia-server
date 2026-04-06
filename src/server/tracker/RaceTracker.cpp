@@ -89,7 +89,7 @@ void RaceTracker::Clear()
 {
   _racers.clear();
   _items.clear();
-  _nextObjectOid = 1;
+  _nextObjectOid = 100;
 }
 
 uint16_t RaceTracker::GetNextObstacleInstanceIdAndIncrementBy(uint16_t increment)
@@ -98,6 +98,15 @@ uint16_t RaceTracker::GetNextObstacleInstanceIdAndIncrementBy(uint16_t increment
   _nextObstacleInstanceId += increment;
   if (_nextObstacleInstanceId == 0) // wrap around, skipping 0 which is used to indicate "no obstacle instance"
     _nextObstacleInstanceId = 1;
+  return nextId;
+}
+
+uint16_t RaceTracker::GetNextEffectInstanceIdAndIncrementBy(uint16_t increment)
+{
+  const uint16_t nextId = _nextEffectInstanceId;
+  _nextEffectInstanceId += increment;
+  if (_nextEffectInstanceId == 0) // wrap around, skipping 0 which is used to indicate "no effect instance"
+    _nextEffectInstanceId = 1;
   return nextId;
 }
 

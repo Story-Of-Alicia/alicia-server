@@ -148,7 +148,12 @@ private:
   RaceInstance& GetRaceInstance(
     const RaceDirector::ClientContext& clientContext,
     const bool checkRacer = true);
-  void ScheduleSkillEffect(server::RaceDirector::RaceInstance& raceInstance, server::tracker::Oid attackerId, server::tracker::Oid targetId, const server::registry::Magic::SlotInfo& magicSlotInfo, std::optional<std::function<void()>> afterEffectRemoved = std::nullopt);
+  void ScheduleSkillEffect(
+    server::RaceDirector::RaceInstance& raceInstance, 
+    server::tracker::Oid attackerId, server::tracker::Oid targetId, 
+    const server::registry::Magic::SlotInfo& magicSlotInfo, 
+    std::optional<std::function<void()>> afterEffectRemoved = std::nullopt,
+    const uint16_t effectInstanceId = 0);
 
   void HandleEnterRoom(
     ClientId clientId,
