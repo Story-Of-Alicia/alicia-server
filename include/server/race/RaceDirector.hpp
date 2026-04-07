@@ -247,17 +247,9 @@ public:
     ClientId clientId,
     const protocol::AcCmdCRStarPointGet& command);
 
-  void HandleHurdleClearResult(
-    ClientId clientId,
-    const protocol::AcCmdCRHurdleClearResult& command);
-
   void HandleStartingRate(
     ClientId clientId,
     const protocol::AcCmdCRStartingRate& command);
-
-  void HandleRaceUserPos(
-    ClientId clientId,
-    const protocol::AcCmdUserRaceUpdatePos& command);
 
   void HandleChat(
     ClientId clientId,

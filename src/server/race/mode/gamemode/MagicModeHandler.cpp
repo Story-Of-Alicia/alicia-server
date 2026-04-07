@@ -146,12 +146,70 @@ void MagicGameMode::OnHurdleClear(
 }
 
 void MagicGameMode::OnRaceUserPos(
-  [[maybe_unused]] ClientId clientId,
-  [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
-  [[maybe_unused]] const protocol::AcCmdUserRaceUpdatePos& command)
+  ClientId clientId,
+  RaceDirector::RaceInstance& raceInstance,
+  const protocol::AcCmdUserRaceUpdatePos& command)
 {
-  // TODO: copy implementation from RaceDirector
-  throw std::logic_error("Not implemented");
+  // Handle general command functionality (item spawning)
+  GameModeHandler::OnRaceUserPos(clientId, raceInstance, command);
+
+  const auto& clientContext = _director.GetClientContext(clientId);
+  auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
+
+  const auto& gameModeTemplate = _director.GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
+    static_cast<uint8_t>(protocol::GameMode::Magic));
+
+  // Only regenerate magic during active race (after countdown finishes)
+  // Check if game mode is magic, race is active, countdown finished, and not holding an item
+  const bool raceActuallyStarted = std::chrono::steady_clock::now() >= raceInstance.raceStartTimePoint;
+
+  if (raceInstance.raceGameMode == protocol::GameMode::Magic
+    && racer.state == tracker::RaceTracker::Racer::State::Racing
+    && raceActuallyStarted
+    && not racer.magicItem.has_value())
+  {
+    if (racer.starPointValue < gameModeTemplate.starPointsMax)
+    {
+      // TODO: add these to configuration somewhere
+      // Eyeballed these values from watching videos
+      constexpr uint32_t NoItemHeldBoostAmount = 2000;
+      // TODO: does holding an item and with certain equipment give you magic? At a reduced rate?
+      constexpr uint32_t ItemHeldWithEquipmentBoostAmount = 1000;
+      uint32_t gainedStarPoints;
+      if (racer.magicItem.has_value()) {
+        gainedStarPoints = ItemHeldWithEquipmentBoostAmount;
+      } else {
+        gainedStarPoints = NoItemHeldBoostAmount;
+      }
+      if (racer.gaugeBuff) {
+        // TODO: Something sensible, idk what the bonus does
+        gainedStarPoints *= 2;
+      }
+      racer.starPointValue = std::min(gameModeTemplate.starPointsMax, racer.starPointValue + gainedStarPoints);
+    }
+
+    // Conditional already checks if there is no magic item and gamemode is magic,
+    // only check if racer has max magic gauge to give magic item
+    protocol::AcCmdCRStarPointGetOK starPointResponse{
+      .characterOid = command.oid,
+      .starPointValue = racer.starPointValue,
+      .giveMagicItem = racer.starPointValue >= gameModeTemplate.starPointsMax
+    };
+
+    _director.GetCommandServer().QueueCommand<decltype(starPointResponse)>(
+      clientId,
+      [starPointResponse]
+      {
+        return starPointResponse;
+      });
+  }
+
+  for (const auto& raceClientId : raceInstance.clients)
+  {
+    // Prevent broadcast to self.
+    if (clientId == raceClientId)
+      continue;
+  }
 }
 
 void MagicGameMode::OnItemGet(

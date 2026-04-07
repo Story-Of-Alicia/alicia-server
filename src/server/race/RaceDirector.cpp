@@ -179,6 +179,8 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& message)
     {
       const auto& clientContext = GetClientContext(clientId);
+
+      std::scoped_lock lock(_raceInstancesMutex);
       auto& raceInstance = GetRaceInstance(clientContext);
       raceInstance.gameModeHandler->OnRequestSpur(clientId, raceInstance, message);
 
@@ -189,6 +191,8 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& message)
     {
       const auto& clientContext = GetClientContext(clientId);
+
+      std::scoped_lock lock(_raceInstancesMutex);
       auto& raceInstance = GetRaceInstance(clientContext);
       raceInstance.gameModeHandler->OnHurdleClear(clientId, raceInstance, message);
     });
@@ -202,7 +206,11 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
   _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceUpdatePos>(
     [this](ClientId clientId, const auto& message)
     {
-      HandleRaceUserPos(clientId, message);
+      const auto& clientContext = GetClientContext(clientId);
+
+      std::scoped_lock lock(_raceInstancesMutex);
+      auto& raceInstance = GetRaceInstance(clientContext);
+      raceInstance.gameModeHandler->OnRaceUserPos(clientId, raceInstance, message);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRChat>(
@@ -2160,127 +2168,6 @@ void RaceDirector::HandleStartingRate(
     });
 }
 
-void RaceDirector::HandleRaceUserPos(
-  ClientId clientId,
-  const protocol::AcCmdUserRaceUpdatePos& command)
-{
-  const auto& clientContext = GetClientContext(clientId);
-
-  std::scoped_lock lock(_raceInstancesMutex);
-  auto& raceInstance = GetRaceInstance(clientContext);
-  auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
-
-  // TODO: Revise this in NPC races
-  if (command.oid != racer.oid)
-  {
-    throw std::runtime_error(
-      "Client tried to perform action on behalf of different racer");
-  }
-
-  const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(raceInstance.raceGameMode));
-
-  for (const auto& [itemOid, item] : raceInstance.tracker.GetItems())
-  {
-    const bool canItemRespawn = std::chrono::steady_clock::now() >= item.respawnTimePoint;
-    if (not canItemRespawn)
-      continue;
-
-    // The distance between the player and the item.
-    const auto distanceBetweenPlayerAndItem = std::sqrt(
-      std::pow(command.member2[0] - item.position[0], 2) +
-      std::pow(command.member2[1] - item.position[1], 2) +
-      std::pow(command.member2[2] - item.position[2], 2));
-
-    // A distance of the player from the item before it can be spawned.
-    constexpr double ItemSpawnDistanceThreshold = 90.0;
-
-    const bool isItemInPlayerProximity = distanceBetweenPlayerAndItem < ItemSpawnDistanceThreshold;
-    const bool isItemAlreadyTracked = racer.trackedItems.contains(itemOid);
-
-    if (isItemAlreadyTracked)
-    {
-      // If the item is not in the player's proximity anymore
-      // then remove it from the tracked items.
-      if (not isItemInPlayerProximity)
-        racer.trackedItems.erase(itemOid);
-
-      continue;
-    }
-
-    // If the item is not in player's proximity do not spawn it.
-    if (not isItemInPlayerProximity)
-      continue;
-
-    protocol::AcCmdRCCreateItem spawn{
-      .itemId = item.oid,
-      .itemType = item.currentType,
-      .position = item.position,
-      .spawnStyle = 0,  // ITEM_SPAWN_STYLE_NONE, fix the item in position
-      .spawnerId = 0,
-      .sizeLevel = 0};
-
-    racer.trackedItems.insert(item.oid);
-
-    _commandServer.QueueCommand<decltype(spawn)>(clientId, [spawn]()
-    {
-      return spawn;
-    });
-  }
-
-  // Only regenerate magic during active race (after countdown finishes)
-  // Check if game mode is magic, race is active, countdown finished, and not holding an item
-  const bool raceActuallyStarted = std::chrono::steady_clock::now() >= raceInstance.raceStartTimePoint;
-
-  if (raceInstance.raceGameMode == protocol::GameMode::Magic
-    && racer.state == tracker::RaceTracker::Racer::State::Racing
-    && raceActuallyStarted
-    && not racer.magicItem.has_value())
-  {
-    if (racer.starPointValue < gameModeTemplate.starPointsMax)
-    {
-      // TODO: add these to configuration somewhere
-      // Eyeballed these values from watching videos
-      constexpr uint32_t NoItemHeldBoostAmount = 2000;
-      // TODO: does holding an item and with certain equipment give you magic? At a reduced rate?
-      constexpr uint32_t ItemHeldWithEquipmentBoostAmount = 1000;
-      uint32_t gainedStarPoints;
-      if (racer.magicItem.has_value()) {
-        gainedStarPoints = ItemHeldWithEquipmentBoostAmount;
-      } else {
-        gainedStarPoints = NoItemHeldBoostAmount;
-      }
-      if (racer.gaugeBuff) {
-        // TODO: Something sensible, idk what the bonus does
-        gainedStarPoints *= 2;
-      }
-      racer.starPointValue = std::min(gameModeTemplate.starPointsMax, racer.starPointValue + gainedStarPoints);
-    }
-
-    // Conditional already checks if there is no magic item and gamemode is magic,
-    // only check if racer has max magic gauge to give magic item
-    protocol::AcCmdCRStarPointGetOK starPointResponse{
-      .characterOid = command.oid,
-      .starPointValue = racer.starPointValue,
-      .giveMagicItem = racer.starPointValue >= gameModeTemplate.starPointsMax
-    };
-
-    _commandServer.QueueCommand<decltype(starPointResponse)>(
-      clientId,
-      [starPointResponse]
-      {
-        return starPointResponse;
-      });
-  }
-
-  for (const auto& raceClientId : raceInstance.clients)
-  {
-    // Prevent broadcast to self.
-    if (clientId == raceClientId)
-      continue;
-  }
-}
-
 void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& command)
 {
   const auto& clientContext = GetClientContext(clientId);
@@ -3493,8 +3380,6 @@ void RaceDirector::HandleKickUser(
 void RaceDirector::HandleTeamGauge(const ClientId clientId)
 {
   const auto& clientContext = GetClientContext(clientId);
-
-  std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
 
   // If race teammode is not team then we are done here.

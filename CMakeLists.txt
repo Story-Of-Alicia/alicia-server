@@ -104,6 +104,7 @@ add_executable(alicia-server
         src/server/chat/PrivateChatDirector.cpp
         src/server/messenger/MessengerDirector.cpp
         src/server/race/RaceDirector.cpp
+        src/server/race/mode/GameModeHandler.cpp
         src/server/race/mode/gamemode/SpeedModeHandler.cpp
         src/server/race/mode/gamemode/MagicModeHandler.cpp
         src/server/race/mode/gamemode/TutorialModeHandler.cpp

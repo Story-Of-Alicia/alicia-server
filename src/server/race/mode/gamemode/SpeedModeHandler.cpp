@@ -140,11 +140,12 @@ void SpeedGameMode::OnHurdleClear(
 }
 
 void SpeedGameMode::OnRaceUserPos(
-  ClientId,
-  RaceDirector::RaceInstance&,
-  const protocol::AcCmdUserRaceUpdatePos&)
+  ClientId clientId,
+  RaceDirector::RaceInstance& raceInstance,
+  const protocol::AcCmdUserRaceUpdatePos& command)
 {
-  // Base handler handles item spawning, do any speed related functions here
+  // Base handler handles item spawning
+  GameModeHandler::OnRaceUserPos(clientId, raceInstance, command);
 }
 
 void SpeedGameMode::OnItemGet(
@@ -163,9 +164,6 @@ void SpeedGameMode::OnRequestSpur(
   const protocol::AcCmdCRRequestSpur& command)
 {
   const auto& clientContext = _director.GetClientContext(clientId);
-
-  std::scoped_lock lock(_director._raceInstancesMutex);
-
   auto& racer = raceInstance.tracker.GetRacer(
     clientContext.characterUid);
 
