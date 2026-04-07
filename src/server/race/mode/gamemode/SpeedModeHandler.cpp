@@ -18,7 +18,6 @@
  **/
 
 #include "server/race/mode/gamemode/SpeedModeHandler.hpp"
-#include "server/ServerInstance.hpp"
 
 namespace server::race::mode
 {
@@ -53,9 +52,6 @@ void SpeedGameMode::OnHurdleClear(
     .giveMagicItem = false
   };
 
-  const auto& gameModeTemplate = _director.GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(protocol::GameMode::Speed));
-
   switch (command.hurdleClearType)
   {
     case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Perfect:
@@ -70,14 +66,14 @@ void SpeedGameMode::OnHurdleClear(
 
       // Calculate max applicable combo
       const auto& applicableComboCount = std::min(
-        gameModeTemplate.perfectJumpMaxBonusCombo,
+        _gameModeInfo.perfectJumpMaxBonusCombo,
         racer.jumpComboValue);
       // Calculate max combo count * perfect jump boost unit points
-      const auto& gainedStarPointsFromCombo = applicableComboCount * gameModeTemplate.perfectJumpUnitStarPoints;
+      const auto& gainedStarPointsFromCombo = applicableComboCount * _gameModeInfo.perfectJumpUnitStarPoints;
       // Add boost points to character boost tracker
       racer.starPointValue = std::min(
-        racer.starPointValue + gameModeTemplate.perfectJumpStarPoints + gainedStarPointsFromCombo,
-        gameModeTemplate.starPointsMax);
+        racer.starPointValue + _gameModeInfo.perfectJumpStarPoints + gainedStarPointsFromCombo,
+        _gameModeInfo.starPointsMax);
 
       // Update boost gauge
       starPointResponse.starPointValue = racer.starPointValue;
@@ -90,7 +86,7 @@ void SpeedGameMode::OnHurdleClear(
       racer.jumpComboValue = 0;
       response.jumpCombo = racer.jumpComboValue;
 
-      uint32_t gainedStarPoints = gameModeTemplate.goodJumpStarPoints;
+      uint32_t gainedStarPoints = _gameModeInfo.goodJumpStarPoints;
       if (racer.gaugeBuff) {
         // TODO: Something sensible, idk what the bonus does
         gainedStarPoints *= 2;
@@ -99,7 +95,7 @@ void SpeedGameMode::OnHurdleClear(
       // Increment boost gauge by a good jump
       racer.starPointValue = std::min(
         racer.starPointValue + gainedStarPoints,
-        gameModeTemplate.starPointsMax);
+        _gameModeInfo.starPointsMax);
 
       // Update boost gauge
       starPointResponse.starPointValue = racer.starPointValue;
@@ -174,13 +170,10 @@ void SpeedGameMode::OnRequestSpur(
       "Client tried to perform action on behalf of different racer");
   }
 
-  const auto& gameModeTemplate = _director.GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(protocol::GameMode::Speed));
-
-  if (racer.starPointValue < gameModeTemplate.spurConsumeStarPoints)
+  if (racer.starPointValue < _gameModeInfo.spurConsumeStarPoints)
     throw std::runtime_error("Client is dead ass cheating (or is really desynced)");
 
-  racer.starPointValue -= gameModeTemplate.spurConsumeStarPoints;
+  racer.starPointValue -= _gameModeInfo.spurConsumeStarPoints;
 
   protocol::AcCmdCRRequestSpurOK response{
     .characterOid = command.characterOid,
@@ -233,13 +226,10 @@ void SpeedGameMode::OnStartingRate(
       "Client tried to perform action on behalf of different racer");
   }
 
-  const auto& gameModeTemplate = _director.GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(protocol::GameMode::Speed));
-
   // TODO: validate boost gained against a table and determine good/perfect start
   racer.starPointValue = std::min(
     racer.starPointValue + command.boostGained,
-    gameModeTemplate.starPointsMax);
+    _gameModeInfo.starPointsMax);
 
   // Only send this on good/perfect starts
   protocol::AcCmdCRStarPointGetOK response{

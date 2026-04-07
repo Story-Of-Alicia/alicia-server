@@ -18,7 +18,6 @@
  **/
 
 #include "server/race/mode/gamemode/MagicModeHandler.hpp"
-#include "server/ServerInstance.hpp"
 
 namespace server::race::mode
 {
@@ -54,9 +53,6 @@ void MagicGameMode::OnHurdleClear(
     .giveMagicItem = false
   };
 
-  const auto& gameModeTemplate = _director.GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-      static_cast<uint8_t>(protocol::GameMode::Magic));
-
   switch (command.hurdleClearType)
   {
     case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Perfect:
@@ -68,14 +64,14 @@ void MagicGameMode::OnHurdleClear(
 
       // Calculate max applicable combo
       const auto& applicableComboCount = std::min(
-        gameModeTemplate.perfectJumpMaxBonusCombo,
+        _gameModeInfo.perfectJumpMaxBonusCombo,
         racer.jumpComboValue);
       // Calculate max combo count * perfect jump boost unit points
-      const auto& gainedStarPointsFromCombo = applicableComboCount * gameModeTemplate.perfectJumpUnitStarPoints;
+      const auto& gainedStarPointsFromCombo = applicableComboCount * _gameModeInfo.perfectJumpUnitStarPoints;
       // Add boost points to character boost tracker
       racer.starPointValue = std::min(
-        racer.starPointValue + gameModeTemplate.perfectJumpStarPoints + gainedStarPointsFromCombo,
-        gameModeTemplate.starPointsMax);
+        racer.starPointValue + _gameModeInfo.perfectJumpStarPoints + gainedStarPointsFromCombo,
+        _gameModeInfo.starPointsMax);
 
       // Update boost gauge
       starPointResponse.starPointValue = racer.starPointValue;
@@ -88,7 +84,7 @@ void MagicGameMode::OnHurdleClear(
       racer.jumpComboValue = 0;
       response.jumpCombo = racer.jumpComboValue;
 
-      uint32_t gainedStarPoints = gameModeTemplate.goodJumpStarPoints;
+      uint32_t gainedStarPoints = _gameModeInfo.goodJumpStarPoints;
       if (racer.gaugeBuff) {
         // TODO: Something sensible, idk what the bonus does
         gainedStarPoints *= 2;
@@ -97,7 +93,7 @@ void MagicGameMode::OnHurdleClear(
       // Increment boost gauge by a good jump
       racer.starPointValue = std::min(
         racer.starPointValue + gainedStarPoints,
-        gameModeTemplate.starPointsMax);
+        _gameModeInfo.starPointsMax);
 
       // Update boost gauge
       starPointResponse.starPointValue = racer.starPointValue;
@@ -123,7 +119,7 @@ void MagicGameMode::OnHurdleClear(
   // TODO: is there only perfect clears in magic race?
   starPointResponse.giveMagicItem =
     raceInstance.raceGameMode == protocol::GameMode::Magic &&
-    racer.starPointValue >= gameModeTemplate.starPointsMax &&
+    racer.starPointValue >= _gameModeInfo.starPointsMax &&
     command.hurdleClearType == protocol::AcCmdCRHurdleClearResult::HurdleClearType::Perfect;
 
   // Update the star point value if the jump was not a collision.
@@ -156,9 +152,6 @@ void MagicGameMode::OnRaceUserPos(
   const auto& clientContext = _director.GetClientContext(clientId);
   auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
-  const auto& gameModeTemplate = _director.GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(protocol::GameMode::Magic));
-
   // Only regenerate magic during active race (after countdown finishes)
   // Check if game mode is magic, race is active, countdown finished, and not holding an item
   const bool raceActuallyStarted = std::chrono::steady_clock::now() >= raceInstance.raceStartTimePoint;
@@ -168,7 +161,7 @@ void MagicGameMode::OnRaceUserPos(
     && raceActuallyStarted
     && not racer.magicItem.has_value())
   {
-    if (racer.starPointValue < gameModeTemplate.starPointsMax)
+    if (racer.starPointValue < _gameModeInfo.starPointsMax)
     {
       // TODO: add these to configuration somewhere
       // Eyeballed these values from watching videos
@@ -185,7 +178,7 @@ void MagicGameMode::OnRaceUserPos(
         // TODO: Something sensible, idk what the bonus does
         gainedStarPoints *= 2;
       }
-      racer.starPointValue = std::min(gameModeTemplate.starPointsMax, racer.starPointValue + gainedStarPoints);
+      racer.starPointValue = std::min(_gameModeInfo.starPointsMax, racer.starPointValue + gainedStarPoints);
     }
 
     // Conditional already checks if there is no magic item and gamemode is magic,
@@ -193,7 +186,7 @@ void MagicGameMode::OnRaceUserPos(
     protocol::AcCmdCRStarPointGetOK starPointResponse{
       .characterOid = command.oid,
       .starPointValue = racer.starPointValue,
-      .giveMagicItem = racer.starPointValue >= gameModeTemplate.starPointsMax
+      .giveMagicItem = racer.starPointValue >= _gameModeInfo.starPointsMax
     };
 
     _director.GetCommandServer().QueueCommand<decltype(starPointResponse)>(
@@ -254,13 +247,10 @@ void MagicGameMode::OnStartingRate(
       "Client tried to perform action on behalf of different racer");
   }
 
-  const auto& gameModeTemplate = _director.GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(protocol::GameMode::Magic));
-
   // TODO: validate boost gained against a table and determine good/perfect start
   racer.starPointValue = std::min(
     racer.starPointValue + command.boostGained,
-    gameModeTemplate.starPointsMax);
+    _gameModeInfo.starPointsMax);
 
   // Only send this on good/perfect starts
   protocol::AcCmdCRStarPointGetOK response{

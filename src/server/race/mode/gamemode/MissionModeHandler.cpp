@@ -25,7 +25,7 @@ namespace server::race::mode
 {
 
 MissionGameMode::MissionGameMode(RaceDirector& director, uint32_t missionId)
-  : GameModeHandler(director), _missionId(missionId)
+  : GameModeHandler(director, protocol::GameMode::Mission), _missionId(missionId)
 {
   // Mission 32 is tutorial speed mode (hardcoded for now as per user request)
   // TODO: add MissionRegistry to get the mode from missionId

@@ -20,6 +20,7 @@
 #ifndef GAMEMODE_HANDLER_HPP
 #define GAMEMODE_HANDLER_HPP
 
+#include "libserver/registry/CourseRegistry.hpp"
 #include "libserver/network/command/proto/RaceMessageDefinitions.hpp"
 
 #include "server/race/RaceDirector.hpp"
@@ -30,8 +31,8 @@ namespace server::race::mode
 class GameModeHandler
 {
 public:
-  explicit GameModeHandler(RaceDirector& director)
-    : _director(director)
+  explicit GameModeHandler(RaceDirector& director, const protocol::GameMode gameMode)
+    : _director(director), _gameMode(gameMode)
   {}
 
   virtual ~GameModeHandler() = default;
@@ -69,6 +70,7 @@ public:
 
 protected:
   RaceDirector& _director;
+  const protocol::GameMode _gameMode;
 };
 
 } // namespace server::race::mode

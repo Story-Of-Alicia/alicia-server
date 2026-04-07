@@ -21,6 +21,7 @@
 #define SPEED_GAMEMODE_HANDLER_HPP
 
 #include "server/race/mode/GameModeHandler.hpp"
+#include "server/ServerInstance.hpp"
 
 namespace server::race::mode
 {
@@ -29,7 +30,7 @@ class SpeedGameMode : public GameModeHandler
 {
 public:
   explicit SpeedGameMode(RaceDirector& director)
-    : GameModeHandler(director)
+    : GameModeHandler(director, protocol::GameMode::Speed)
   {}
 
   void OnHurdleClear(
@@ -62,6 +63,10 @@ public:
     ClientId clientId,
     RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdCRUseMagicItem& command) override;
+
+private:
+  const registry::Course::GameModeInfo& _gameModeInfo = _director.GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
+    static_cast<uint8_t>(_gameMode));
 };
 
 } // namespace server::race::mode
