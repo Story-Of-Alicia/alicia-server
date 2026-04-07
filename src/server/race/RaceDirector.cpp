@@ -2765,48 +2765,55 @@ void RaceDirector::HandleUseMagicItem(
     // TODO: Maybe not change it if they already have a stronger shield?
     case 4:
     {
-      racer.shield = tracker::RaceTracker::Racer::Shield::Normal;
       const auto afterEffectRemoved = [&racer]()
       {
         racer.shield = tracker::RaceTracker::Racer::Shield::None;
       };
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved);
+      const auto effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved, effectInstanceId);
+      racer.shield = tracker::RaceTracker::Racer::Shield::Normal;
       break;
     }
     case 5:
     {
-      racer.shield = tracker::RaceTracker::Racer::Shield::Critical;
       const auto afterEffectRemoved = [&racer]()
       {
         racer.shield = tracker::RaceTracker::Racer::Shield::None;
       };
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved);
+      const auto effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved, effectInstanceId);
+      racer.shield = tracker::RaceTracker::Racer::Shield::Critical;
       break;
     }
     // Booster
     case 6:
     case 7:
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, std::nullopt);
+    {
+      const auto effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, std::nullopt, effectInstanceId);
       break;
+    }
     // Phoenix
     case 8:
     {
-      racer.hotRodded = true;
       const auto afterEffectRemoved = [&racer]()
       {
         racer.hotRodded = false;
       };
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved);
+      const auto effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved, effectInstanceId);
+      racer.hotRodded = true;
       break;
     }
     case 9:
     {
-      racer.hotRodded = true;
       const auto afterEffectRemoved = [&racer]()
       {
         racer.hotRodded = false;
       };
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved);
+      const auto effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved, effectInstanceId);
+      racer.hotRodded = true;
       break;
     }
     // IceWall
@@ -2837,18 +2844,23 @@ void RaceDirector::HandleUseMagicItem(
     // TODO: Apply only to opponents ahead of the racer
     case 12:
     case 13:
+    {
+      const auto effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
         if (racer.oid != otherRacer.oid
         && (racer.team == tracker::RaceTracker::Racer::Team::Solo || racer.team != otherRacer.team))
         {
-          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, std::nullopt);
+          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, std::nullopt, effectInstanceId);
         }
       }
       break;
+    }
     // BufPower
     case 20:
     case 21:
+    {
+      const auto effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
         if (racer.oid == otherRacer.oid
@@ -2859,13 +2871,16 @@ void RaceDirector::HandleUseMagicItem(
           {
             otherRacer.critChance = false;
           };
-          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, afterEffectRemoved);
+          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, afterEffectRemoved, effectInstanceId);
         }
       }
       break;
+    }
     // BufGauge
     case 22:
     case 23:
+    {
+      const auto effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
         if (racer.oid == otherRacer.oid
@@ -2876,22 +2891,26 @@ void RaceDirector::HandleUseMagicItem(
           {
             otherRacer.gaugeBuff = false;
           };
-          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, afterEffectRemoved);
+          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, afterEffectRemoved, effectInstanceId);
         }
       }
       break;
+    }
     // BufSpeed
     case 24:
     case 25:
+    {
+      const auto effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
         if (racer.oid == otherRacer.oid
         || (racer.team != tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
         {
-          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, std::nullopt);
+          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, std::nullopt, effectInstanceId);
         }
       }
       break;
+    }
   }
 
   racer.magicItem.reset();
@@ -3139,7 +3158,7 @@ void RaceDirector::HandleActivateSkillEffect(
   }
 
   // Break down hit ice wall
-  if (command.obstacleInstanceId != 0) {
+  if (command.effectId == 10 || command.effectId == 11) {
     const auto magicExpire = protocol::AcCmdRCMagicExpire{
       .magicType = magicSlotInfo.type,
       .firstObstacleInstanceId = command.obstacleInstanceId,
@@ -3152,17 +3171,6 @@ void RaceDirector::HandleActivateSkillEffect(
         raceClientId,
         [magicExpire](){ return magicExpire; });
     }
-  }
-
-  if ((magicSlotInfo.type == magicSlotInfo.basicType && targetRacer.shield == tracker::RaceTracker::Racer::Shield::Normal)
-  || ((magicSlotInfo.type == 5 /* Crit Ice Wall */ && targetRacer.shield == tracker::RaceTracker::Racer::Shield::Normal))
-  || targetRacer.shield == tracker::RaceTracker::Racer::Shield::Critical
-  || targetRacer.hotRodded)
-  {
-    // TODO: Send some kind of notification that the attack was blocked? That picture on the side (PIPEvent?)
-    // Maybe i actually need to send the effect but with a different parameter to mean "blocked"
-    // Else it doesnt show in the kill list in the corner
-    return;
   }
 
   std::optional<std::function<void()>> afterEffectRemoved = std::nullopt;
@@ -3181,7 +3189,8 @@ void RaceDirector::HandleActivateSkillEffect(
   }
 
   // TODO: Remove held item
-  this->ScheduleSkillEffect(raceInstance, command.attackerOid, command.targetOid, magicSlotInfo, afterEffectRemoved);
+  const auto effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
+  this->ScheduleSkillEffect(raceInstance, command.attackerOid, command.targetOid, magicSlotInfo, afterEffectRemoved, effectInstanceId);
 }
 
 void RaceDirector::HandleOpCmd(
@@ -3252,19 +3261,33 @@ void RaceDirector::ScheduleSkillEffect(
   RaceInstance& raceInstance,
   tracker::Oid attackerOid, tracker::Oid targetOid,
   const registry::Magic::SlotInfo& magicSlotInfo,
-  std::optional<std::function<void()>> afterEffectRemoved)
+  std::optional<std::function<void()>> afterEffectRemoved,
+  const uint16_t effectInstanceId)
 {
-  // Broadcast skill effect activation to all clients in the room
+  auto& racers = raceInstance.tracker.GetRacers();
+  const auto targetRacerIter = std::ranges::find_if(
+    racers, [targetOid](const auto& pair) { return pair.second.oid == targetOid; });
+  if (targetRacerIter == racers.cend())
+    return;
+  const auto& targetRacer = targetRacerIter->second;
+
+  const bool shieldBlocks = magicSlotInfo.attackValue > 0
+    && magicSlotInfo.attackValue < static_cast<uint32_t>(targetRacer.shield);
+  const uint32_t effectId = shieldBlocks
+  //2 & 3 are shield effects. maybe needs an enum
+    ? (targetRacer.shield == tracker::RaceTracker::Racer::Shield::Critical ? 3 : 2)
+    : magicSlotInfo.skillEffectId;
+
   // TODO: Verify if characterOid and targetOid should be the same once we have NPCs
-  protocol::AcCmdRCAddSkillEffect addSkillEffect{
+  const protocol::AcCmdRCAddSkillEffect addSkillEffect{
     .characterOid = targetOid,
-    .effectId = magicSlotInfo.skillEffectId,
+    .effectId = effectId,
     .targetOid = targetOid,
     .attackerOid = attackerOid,
-    .unk2 = 0,
-    .unk3 = 0,
+    .unk2 = effectInstanceId,
+    .unk3 = targetRacer.hotRodded ? 1u : 0u,
     .shieldEffect = protocol::AcCmdRCAddSkillEffect::ShieldEffect{
-      .unk0 = 0,
+      .unk0 = shieldBlocks ? 2: 0u,
       .unk1 = 0,
     },
     .boostEffectMs = static_cast<uint32_t>(magicSlotInfo.effectDelay * 1000.0f),
@@ -3278,9 +3301,11 @@ void RaceDirector::ScheduleSkillEffect(
       [addSkillEffect]() { return addSkillEffect; });
   }
 
+  if (shieldBlocks)
+    return;
+
   // Remove the effect after a delay
   // TODO: Handle overlapping effects of the same type
-  uint32_t effectId = magicSlotInfo.skillEffectId;
   _scheduler.Queue(
     [this, roomUid = raceInstance.roomUid, attackerOid, targetOid, effectId, afterEffectRemoved]()
     {
@@ -3292,7 +3317,7 @@ void RaceDirector::ScheduleSkillEffect(
       auto& raceInstance = raceInstanceIter->second;
 
       // Broadcast skill effect deactivation to all clients in the room
-      protocol::AcCmdRCRemoveSkillEffect removeSkillEffect{
+      const protocol::AcCmdRCRemoveSkillEffect removeSkillEffect{
         .characterOid = targetOid,
         .effectId = effectId,
         .targetOid = targetOid,
