@@ -157,7 +157,7 @@ private:
   ItemObjectMap _items;
   //! Next obstacle instance ID.
   uint16_t _nextObstacleInstanceId = 1;
-  // Next effect instance ID.
+  //! Next effect instance ID.
   uint16_t _nextEffectInstanceId = 0;
 };
 
