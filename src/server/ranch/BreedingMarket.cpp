@@ -274,5 +274,145 @@ std::optional<BreedingMarket::GradeFeeRange> BreedingMarket::GetGradeFeeRange(
   }
 }
 
+std::vector<data::Uid> BreedingMarket::CollectMarketSnapshot(
+  const SnapshotOrder order,
+  const SnapshotFilter filter) const noexcept
+{
+  std::vector<data::Uid> result{};
+
+  for (const auto& horseUid : _horses | std::views::keys)
+  {
+    const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(horseUid);
+    if (not horseRecord)
+      continue;
+
+    bool isMatch = true;
+    horseRecord.Immutable([&filter, &isMatch](const data::Horse& horse)
+    {
+      if (!filter.coats.empty() && !filter.coats.contains(horse.parts.skinTid()))
+        isMatch = false;
+      if (!filter.manes.empty() && !filter.manes.contains(horse.parts.maneTid()))
+        isMatch = false;
+      if (!filter.tails.empty() && !filter.tails.contains(horse.parts.tailTid()))
+        isMatch = false;
+
+      // todo: filter major stats
+    });
+
+    if (isMatch)
+      result.emplace_back(horseUid);
+  }
+
+  std::ranges::sort(
+    result,
+    [order, this](
+    const data::Uid firstHorseUid,
+    const data::Uid secondHorseUid) -> bool
+    {
+      const auto firstStallionIterator = _horses.find(firstHorseUid);
+      const auto secondStallionIterator = _horses.find(secondHorseUid);
+      if (firstStallionIterator == _horses.cend() || secondStallionIterator == _horses.cend())
+        return false;
+
+      const auto firstHorseRecord = _serverInstance.GetDataDirector().GetHorse(firstHorseUid);
+      const auto firstStallionRecord = _serverInstance.GetDataDirector().GetStallion(
+        firstStallionIterator->second.stallionUid);
+
+      if (!firstHorseRecord || !firstStallionRecord)
+        return false;
+
+      const auto secondHorseRecord = _serverInstance.GetDataDirector().GetHorse(secondHorseUid);
+      const auto secondStallionRecord = _serverInstance.GetDataDirector().GetStallion(
+        secondStallionIterator->second.stallionUid);
+
+      if (!secondHorseRecord || !secondStallionRecord)
+        return false;
+
+      // Sort to order by lineage.
+      if (order == SnapshotOrder::LineageAscending || order == SnapshotOrder::LineageDescending)
+      {
+        size_t firstLineage{};
+        size_t secondLineage{};
+
+        firstHorseRecord.Immutable([&firstLineage](
+          const data::Horse& horse)
+        {
+          firstLineage = horse.lineage();
+        });
+
+        secondHorseRecord.Immutable([&secondLineage](
+          const data::Horse& horse)
+        {
+          secondLineage = horse.lineage();
+        });
+
+        // If the sort order is descending, the greater lineage should appear first.
+        // Otherwise, the lesser lineage should appear first.
+        return order == SnapshotOrder::LineageDescending
+          ? firstLineage > secondLineage
+          : firstLineage < secondLineage;
+      }
+
+      if (order == SnapshotOrder::TimeLeftAscending || order == SnapshotOrder::TimeLeftDescending)
+      {
+        data::Clock::time_point firstExpiresAt{};
+        data::Clock::time_point secondExpiresAt{};
+
+        firstStallionRecord.Immutable([&firstExpiresAt](
+          const data::Stallion& horse)
+        {
+          firstExpiresAt = horse.expiresAt();
+        });
+
+        secondStallionRecord.Immutable([&secondExpiresAt](
+          const data::Stallion& horse)
+        {
+          secondExpiresAt = horse.expiresAt();
+        });
+
+        // If the sort order is descending, the expiration time further in the future should appear first.
+        // Otherwise, the expiration time sooner in future should appear first.
+        return order == SnapshotOrder::TimeLeftDescending
+          ? firstExpiresAt > secondExpiresAt
+          : firstExpiresAt < secondExpiresAt;
+      }
+
+      if (order == SnapshotOrder::FeeAscending || order == SnapshotOrder::FeeDescending)
+      {
+        size_t firstFee{};
+        size_t secondFee{};
+
+        firstStallionRecord.Immutable([&firstFee](
+          const data::Stallion& horse)
+        {
+          firstFee = horse.breedingCharge();
+        });
+
+        secondStallionRecord.Immutable([&secondFee](
+          const data::Stallion& horse)
+        {
+          secondFee = horse.breedingCharge();
+        });
+
+        // If the sort order is descending, the greater breeding fee should appear first.
+        // Otherwise, the lesser breeding fee should appear first.
+        return order == SnapshotOrder::FeeDescending
+          ? firstFee > secondFee
+          : firstFee < secondFee;
+      }
+
+      if (order == SnapshotOrder::PregnancyChanceAscending
+        || order == SnapshotOrder::PregnancyChanceDescending)
+      {
+        // todo: pregnancy chance
+        return std::less<data::Uid>()(firstHorseUid, secondHorseUid);
+      }
+
+      return true;
+    });
+
+  return result;
+}
+
 } // namespace server
 

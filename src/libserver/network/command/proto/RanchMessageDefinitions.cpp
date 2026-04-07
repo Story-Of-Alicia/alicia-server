@@ -18,6 +18,7 @@
  **/
 
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
+#include "libserver/util/Util.hpp"
 
 #include <cassert>
 #include <algorithm>
@@ -662,7 +663,7 @@ void AcCmdCRSearchStallion::Read(
 {
   stream.Read(command.page)
     .Read(command.filterMinimumGrade)
-    .Read(command.rowSortParameter)
+    .Read(command.order)
     .Read(command.unk3)
     .Read(command.unk4)
     .Read(command.unk5)
@@ -901,9 +902,9 @@ void RanchCommandSearchStallionOK::Write(
       .Write(stallion.name)
       .Write(stallion.grade)
       .Write(stallion.heritability)
-      .Write(stallion.breedCharge)
+      .Write(stallion.breedFee)
       .Write(stallion.pregnancyChance)
-      .Write(stallion.expiresAt)
+      .Write(util::TimePointToAliciaTime(stallion.expiresAt))
       .Write(stallion.stats)
       .Write(stallion.parts)
       .Write(stallion.appearance)

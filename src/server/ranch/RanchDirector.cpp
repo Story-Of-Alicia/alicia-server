@@ -19,6 +19,8 @@
  **/
 
 #include "server/ranch/RanchDirector.hpp"
+
+#include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
 #include "server/ServerInstance.hpp"
 #include "server/system/ItemSystem.hpp"
 
@@ -55,6 +57,33 @@ constexpr uint16_t MaxCharm = 1000;
 constexpr uint16_t MaxFriendliness = 1000;
 constexpr uint16_t MaxAttachment = 1000;
 constexpr uint16_t MaxPlenitude = 1200;
+
+BreedingMarket::SnapshotOrder ConvertProtocolStallionOrderToSnapshotOrder(
+  const protocol::AcCmdCRSearchStallion::StallionOrder order)
+{
+  switch (order)
+  {
+    case protocol::AcCmdCRSearchStallion::StallionOrder::LineageDescending:
+      return BreedingMarket::SnapshotOrder::LineageDescending;
+    case protocol::AcCmdCRSearchStallion::StallionOrder::TimeLeftDescending:
+      return BreedingMarket::SnapshotOrder::TimeLeftDescending;
+    case protocol::AcCmdCRSearchStallion::StallionOrder::FeeDescending:
+      return BreedingMarket::SnapshotOrder::FeeDescending;
+    case protocol::AcCmdCRSearchStallion::StallionOrder::PregnancyChanceAscending:
+      return BreedingMarket::SnapshotOrder::PregnancyChanceAscending;
+    case protocol::AcCmdCRSearchStallion::StallionOrder::PregnancyChanceDescending:
+      return BreedingMarket::SnapshotOrder::PregnancyChanceDescending;
+    case protocol::AcCmdCRSearchStallion::StallionOrder::FeeAscending:
+      return BreedingMarket::SnapshotOrder::FeeAscending;
+    case protocol::AcCmdCRSearchStallion::StallionOrder::TimeLeftAscending:
+      return BreedingMarket::SnapshotOrder::TimeLeftAscending;
+    case protocol::AcCmdCRSearchStallion::StallionOrder::LineageAscending:
+      return BreedingMarket::SnapshotOrder::LineageAscending;
+    default:
+      // todo: what should the default be?
+      return BreedingMarket::SnapshotOrder::TimeLeftDescending;
+  }
+}
 
 } // namespace anon
 
@@ -1474,41 +1503,81 @@ void RanchDirector::HandleSearchStallion(
   const ClientId clientId,
   const protocol::AcCmdCRSearchStallion& command)
 {
-  auto& clientContext = GetClientContext(clientId);
+  const auto& clientContext = GetClientContext(clientId);
+  clientContext;
 
-  // Update breeding context with search info
-  clientContext.breedingContext.lastTick = static_cast<uint32_t>(std::time(nullptr));
+  BreedingMarket::SnapshotFilter snapshotFilter{};
+
+  for (const auto coatUid : command.filterCoats)
+  {
+    // todo: verify coat
+    snapshotFilter.coats.insert(coatUid);
+  }
+
+  for (const auto maneUid : command.filterManes)
+  {
+    // todo: verify mane
+    snapshotFilter.manes.insert(maneUid);
+  }
+
+  for (const auto tailUid : command.filterTails)
+  {
+    // todo: verify mane
+    snapshotFilter.tails.insert(tailUid);
+  }
+
+  const auto snapshotOrder = ConvertProtocolStallionOrderToSnapshotOrder(
+    command.order);
+
+  // todo: cache this
+  const auto result = _breedingMarket.CollectMarketSnapshot(
+    snapshotOrder,
+    snapshotFilter);
+
+  constexpr size_t StallionsPerPage = 10;
+  const auto pages = std::views::chunk(result, StallionsPerPage);
+
+  // Client sends page number, convert that to an index and sanitize it within page bounds.
+  const size_t pageIndex = std::max(size_t{0}, std::min(pages.size(), size_t{command.page - 1}));
 
   protocol::RanchCommandSearchStallionOK response{
-    .page = command.page,
-    .pageCount = 5};
+    .page = static_cast<uint32_t>(pageIndex + 1),
+    .pageCount = static_cast<uint32_t>(pages.size())};
 
-  spdlog::info("uuiiiaauuuiiaa: {}", command.page);
+  if (not pages.empty())
+  {
+    const auto& page = pages[pageIndex];
+    for (const data::Uid horseUid : page)
+    {
+      const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(horseUid);
+      if (not horseRecord)
+        continue;
 
-  auto& protocolStallion = response.stallions.emplace_back();
+      auto& protocolStallion = response.stallions.emplace_back();
 
-  protocolStallion.owner = "dev";
-  protocolStallion.uid = 1000;
-  protocolStallion.tid = 20001;
-  protocolStallion.name = "hors";
-  protocolStallion.grade = 1;
+      horseRecord.Immutable([&protocolStallion](const data::Horse& horse)
+      {
+        protocolStallion.owner = "dev";
+        protocolStallion.uid = horse.uid();
+        protocolStallion.tid = horse.tid();
+        protocolStallion.name = horse.name();
+        protocolStallion.grade = static_cast<uint8_t>(horse.grade());
 
-  //
-  protocolStallion.pregnancyChance = 1;
-  protocolStallion.heritability = 0;
-  protocolStallion.lineage = 0;
-  protocolStallion.parts = protocol::Horse::Parts{
-    .skinId = 1,
-    .maneId = 1,
-    .tailId = 1,
-    .faceId = 1
-  };
+        //
+        protocolStallion.pregnancyChance = 1;
+        protocolStallion.heritability = 0;
+        protocolStallion.lineage = static_cast<uint8_t>(horse.lineage());
 
-  protocolStallion.breedCharge = 1;
-  protocolStallion.expiresAt = util::TimePointToAliciaTime(
-    std::chrono::system_clock::now() + std::chrono::hours(1));
+        protocol::BuildProtocolHorseParts(protocolStallion.parts, horse.parts);
+        protocol::BuildProtocolHorseAppearance(protocolStallion.appearance, horse.appearance);
 
-  protocolStallion.unk11 = 0;   // Unknown field
+        protocolStallion.breedFee = 1;
+        protocolStallion.expiresAt = std::chrono::system_clock::now() + std::chrono::hours(1);
+
+        protocolStallion.unk11 = 0;   // Unknown field
+      });
+    }
+  }
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,

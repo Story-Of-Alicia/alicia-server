@@ -26,6 +26,7 @@
 
 #include <array>
 #include <cstdint>
+#include <chrono>
 #include <optional>
 #include <string>
 #include <vector>
@@ -512,7 +513,7 @@ struct RanchCommandLeaveBreedingMarket
 
 struct AcCmdCRSearchStallion
 {
-  enum class RowSortParameter
+  enum class StallionOrder
     : int8_t
   {
     LineageDescending = -5,
@@ -529,10 +530,14 @@ struct AcCmdCRSearchStallion
     : uint8_t
   {
     Agility = 0,
-    Spirit = 1,
-    Speed = 2,
-    Strength = 3,
-    Control = 4,
+    //! Also known as spirit.
+    Ambition = 1,
+    //! Also known as speed.
+    Rush = 2,
+    //! Also known as strength.
+    Endurance = 3,
+    //! Also known as control.
+    Courage = 4,
   };
 
   //! A page number.
@@ -540,7 +545,7 @@ struct AcCmdCRSearchStallion
   //! A minimum required grade.
   uint8_t filterMinimumGrade{};
   //! A row sort parameter.
-  RowSortParameter rowSortParameter{};
+  StallionOrder order{};
   // 2
   uint8_t unk3{};
   // 251
@@ -605,11 +610,11 @@ struct RanchCommandSearchStallionOK
     //! The higher the stallion's consecutive success rate and pregnancy rate, the higher the heritability.
     //! Represented with colored arrows in-game.
     uint8_t heritability{};
-    uint32_t breedCharge{};
+    uint32_t breedFee{};
     //! The higher the stallion's grade and the bigger the grade gap with the mare, the lower the pregnancy chance.
     //! Represented with hearts in-game.
     uint32_t pregnancyChance{};
-    uint32_t expiresAt{};
+    std::chrono::system_clock::time_point expiresAt{};
     Horse::Stats stats{};
     Horse::Parts parts{};
     Horse::Appearance appearance{};
@@ -617,7 +622,7 @@ struct RanchCommandSearchStallionOK
     uint8_t lineage{};
   };
 
-  //! Max 3 entries.
+  //! Max 10 entries.
   std::vector<Stallion> stallions{};
 
   static Command GetCommand()

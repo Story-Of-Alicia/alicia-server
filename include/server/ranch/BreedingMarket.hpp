@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <optional>
 #include <mutex>
+#include <set>
 
 namespace server
 {
@@ -41,6 +42,41 @@ public:
     int32_t max{};
   };
 
+  enum class SnapshotOrder
+  {
+    LineageDescending,
+    TimeLeftDescending,
+    FeeDescending,
+    PregnancyChanceAscending,
+    PregnancyChanceDescending,
+    FeeAscending,
+    TimeLeftAscending,
+    LineageAscending
+  };
+
+  struct SnapshotFilter
+  {
+    enum class Stat
+    {
+      None,
+      Agility,
+      //! Also known as spirit.
+      Ambition,
+      //! Also known as speed.
+      Rush,
+      //! Also known as strength.
+      Endurance,
+      //! Also known as control.
+      Courage,
+    };
+
+    std::set<data::Tid> coats;
+    std::set<data::Tid> manes;
+    std::set<data::Tid> tails;
+    Stat firstPreferredStat{Stat::None};
+    Stat secondPreferred{Stat::None};
+  };
+
   //! Constructor
   //! @param serverInstance Reference to the server instance
   explicit BreedingMarket(ServerInstance& serverInstance);
@@ -57,7 +93,6 @@ public:
 
   //! Ticks the breeding market (checks for expired stallions)
   void Tick();
-
 
   [[nodiscard]] bool HandleRegisterStallion(
     data::Uid characterUid,
@@ -93,7 +128,9 @@ public:
 
   //! Gets all registered stallion horse UIDs
   //! @returns Vector of horse UIDs
-  [[nodiscard]] std::vector<data::Uid> GetSnapshot() const noexcept;
+  [[nodiscard]] std::vector<data::Uid> CollectMarketSnapshot(
+    SnapshotOrder order,
+    SnapshotFilter) const noexcept;
 
 private:
   struct Horse
