@@ -210,12 +210,50 @@ void SpeedGameMode::OnRequestSpur(
 }
 
 void SpeedGameMode::OnStartingRate(
-  [[maybe_unused]] ClientId clientId,
-  [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
-  [[maybe_unused]] const protocol::AcCmdCRStartingRate& command)
+  ClientId clientId,
+  RaceDirector::RaceInstance& raceInstance,
+  const protocol::AcCmdCRStartingRate& command)
 {
-  // TODO: copy implementation from RaceDirector
-  throw std::logic_error("Not implemented");
+  // TODO: check for sensible values
+  if (command.unk1 < 1 && command.boostGained < 1)
+  {
+    // Velocity and boost gained is not valid
+    // TODO: throw?
+    return;
+  }
+
+  const auto& clientContext = _director.GetClientContext(clientId);
+  auto& racer = raceInstance.tracker.GetRacer(
+    clientContext.characterUid);
+
+  // TODO: Revise this in NPC races
+  if (command.characterOid != racer.oid)
+  {
+    throw std::runtime_error(
+      "Client tried to perform action on behalf of different racer");
+  }
+
+  const auto& gameModeTemplate = _director.GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
+    static_cast<uint8_t>(protocol::GameMode::Speed));
+
+  // TODO: validate boost gained against a table and determine good/perfect start
+  racer.starPointValue = std::min(
+    racer.starPointValue + command.boostGained,
+    gameModeTemplate.starPointsMax);
+
+  // Only send this on good/perfect starts
+  protocol::AcCmdCRStarPointGetOK response{
+    .characterOid = command.characterOid,
+    .starPointValue = racer.starPointValue,
+    .giveMagicItem = false // TODO: this would never give a magic item on race start, right?
+  };
+
+  _director.GetCommandServer().QueueCommand<decltype(response)>(
+    clientId,
+    [clientId, response]()
+    {
+      return response;
+    });
 }
 
 void SpeedGameMode::OnUseMagicItem(

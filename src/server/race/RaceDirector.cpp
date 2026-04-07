@@ -200,7 +200,11 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRStartingRate>(
     [this](ClientId clientId, const auto& message)
     {
-      HandleStartingRate(clientId, message);
+      const auto& clientContext = GetClientContext(clientId);
+
+      std::scoped_lock lock(_raceInstancesMutex);
+      auto& raceInstance = GetRaceInstance(clientContext);
+      raceInstance.gameModeHandler->OnStartingRate(clientId, raceInstance, message);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceUpdatePos>(
@@ -2113,56 +2117,6 @@ void RaceDirector::HandleStarPointGet(
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
-    {
-      return response;
-    });
-}
-
-void RaceDirector::HandleStartingRate(
-  ClientId clientId,
-  const protocol::AcCmdCRStartingRate& command)
-{
-  // TODO: check for sensible values
-  if (command.unk1 < 1 && command.boostGained < 1)
-  {
-    // Velocity and boost gained is not valid
-    // TODO: throw?
-    return;
-  }
-
-  const auto& clientContext = GetClientContext(clientId);
-
-  std::scoped_lock lock(_raceInstancesMutex);
-  auto& raceInstance = GetRaceInstance(clientContext);
-
-  auto& racer = raceInstance.tracker.GetRacer(
-    clientContext.characterUid);
-
-  // TODO: Revise this in NPC races
-  if (command.characterOid != racer.oid)
-  {
-    throw std::runtime_error(
-      "Client tried to perform action on behalf of different racer");
-  }
-
-  const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(raceInstance.raceGameMode));
-
-  // TODO: validate boost gained against a table and determine good/perfect start
-  racer.starPointValue = std::min(
-    racer.starPointValue + command.boostGained,
-    gameModeTemplate.starPointsMax);
-
-  // Only send this on good/perfect starts
-  protocol::AcCmdCRStarPointGetOK response{
-    .characterOid = command.characterOid,
-    .starPointValue = racer.starPointValue,
-    .giveMagicItem = false // TODO: this would never give a magic item on race start, right?
-  };
-
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [clientId, response]()
     {
       return response;
     });

@@ -247,10 +247,6 @@ public:
     ClientId clientId,
     const protocol::AcCmdCRStarPointGet& command);
 
-  void HandleStartingRate(
-    ClientId clientId,
-    const protocol::AcCmdCRStartingRate& command);
-
   void HandleChat(
     ClientId clientId,
     const protocol::AcCmdCRChat& command);
