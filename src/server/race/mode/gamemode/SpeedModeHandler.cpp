@@ -22,6 +22,12 @@
 namespace server::race::mode
 {
 
+SpeedGameMode::SpeedGameMode(RaceDirector& director)
+  : GameModeHandler(director, protocol::GameMode::Speed)
+{}
+
+SpeedGameMode::~SpeedGameMode() = default;
+
 void SpeedGameMode::OnHurdleClear(
   ClientId clientId,
   RaceDirector::RaceInstance& raceInstance,

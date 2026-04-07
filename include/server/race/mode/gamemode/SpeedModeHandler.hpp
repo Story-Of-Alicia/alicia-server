@@ -29,9 +29,8 @@ namespace server::race::mode
 class SpeedGameMode : public GameModeHandler
 {
 public:
-  explicit SpeedGameMode(RaceDirector& director)
-    : GameModeHandler(director, protocol::GameMode::Speed)
-  {}
+  explicit SpeedGameMode(RaceDirector& director);
+  ~SpeedGameMode();
 
   void OnHurdleClear(
     ClientId clientId,

@@ -29,6 +29,7 @@ class MissionGameMode : public GameModeHandler
 {
 public:
   explicit MissionGameMode(RaceDirector& director, uint32_t missionId);
+  ~MissionGameMode();
 
   void OnHurdleClear(
     ClientId clientId,

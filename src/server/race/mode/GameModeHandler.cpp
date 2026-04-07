@@ -23,6 +23,12 @@
 namespace server::race::mode
 {
 
+GameModeHandler::GameModeHandler(RaceDirector& director, const protocol::GameMode gameMode)
+  : _director(director), _gameMode(gameMode)
+{}
+
+GameModeHandler::~GameModeHandler() = default;
+
 void GameModeHandler::OnRaceUserPos(
   ClientId clientId,
   RaceDirector::RaceInstance& raceInstance,

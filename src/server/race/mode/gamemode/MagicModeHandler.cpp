@@ -22,6 +22,12 @@
 namespace server::race::mode
 {
 
+MagicGameMode::MagicGameMode(RaceDirector& director)
+  : GameModeHandler(director, protocol::GameMode::Magic)
+{}
+
+MagicGameMode::~MagicGameMode() = default;
+
 void MagicGameMode::OnHurdleClear(
   ClientId clientId,
   RaceDirector::RaceInstance& raceInstance,

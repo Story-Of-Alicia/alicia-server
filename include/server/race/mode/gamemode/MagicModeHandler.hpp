@@ -29,9 +29,8 @@ namespace server::race::mode
 class MagicGameMode : public GameModeHandler
 {
 public:
-  explicit MagicGameMode(RaceDirector& director)
-    : GameModeHandler(director, protocol::GameMode::Magic)
-  {}
+  explicit MagicGameMode(RaceDirector& director);
+  ~MagicGameMode();
 
   void OnHurdleClear(
     ClientId clientId,

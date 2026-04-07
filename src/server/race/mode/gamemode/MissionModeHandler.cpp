@@ -41,6 +41,8 @@ MissionGameMode::MissionGameMode(RaceDirector& director, uint32_t missionId)
   }
 }
 
+MissionGameMode::~MissionGameMode() = default;
+
 void MissionGameMode::OnHurdleClear(
   ClientId clientId,
   RaceDirector::RaceInstance& raceInstance,

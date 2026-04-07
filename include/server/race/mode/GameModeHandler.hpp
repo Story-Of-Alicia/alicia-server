@@ -31,11 +31,8 @@ namespace server::race::mode
 class GameModeHandler
 {
 public:
-  explicit GameModeHandler(RaceDirector& director, const protocol::GameMode gameMode)
-    : _director(director), _gameMode(gameMode)
-  {}
-
-  virtual ~GameModeHandler() = default;
+  explicit GameModeHandler(RaceDirector& director, const protocol::GameMode gameMode);
+  ~GameModeHandler();
 
   virtual void OnHurdleClear(
     ClientId clientId,
