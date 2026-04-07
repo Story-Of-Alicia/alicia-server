@@ -25,7 +25,7 @@
 #include "server/race/mode/GameModeHandler.hpp"
 #include "server/race/mode/gamemode/SpeedModeHandler.hpp"
 #include "server/race/mode/gamemode/MagicModeHandler.hpp"
-#include "server/race/mode/gamemode/TutorialModeHandler.hpp"
+#include "server/race/mode/gamemode/MissionModeHandler.hpp"
 #include "server/race/mode/teammode/FfaTeamMode.hpp"
 #include "server/race/mode/teammode/TeamRaceMode.hpp"
 
@@ -1156,8 +1156,8 @@ void RaceDirector::HandleChangeRoomOptions(
           case protocol::GameMode::Magic:
             roomDetails.gameMode = Room::GameMode::Magic;
             break;
-          case protocol::GameMode::Tutorial:
-            roomDetails.gameMode = Room::GameMode::Tutorial;
+          case protocol::GameMode::Mission:
+            roomDetails.gameMode = Room::GameMode::Mission;
             break;
           default:
             spdlog::error("Unknown game mode '{}'", static_cast<uint32_t>(command.gameMode));
@@ -1556,8 +1556,8 @@ void RaceDirector::HandleStartRace(
         case protocol::GameMode::Magic:
           raceInstance.gameModeHandler = std::make_unique<race::mode::MagicGameMode>(*this);
           break;
-        case protocol::GameMode::Tutorial:
-          raceInstance.gameModeHandler = std::make_unique<race::mode::TutorialGameMode>(*this, raceInstance.raceMissionId);
+        case protocol::GameMode::Mission:
+          raceInstance.gameModeHandler = std::make_unique<race::mode::MissionGameMode>(*this, raceInstance.raceMissionId);
           break;
         default:
           raceInstance.gameModeHandler = nullptr;

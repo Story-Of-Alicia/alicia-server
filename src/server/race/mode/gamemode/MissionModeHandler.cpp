@@ -17,17 +17,17 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
-#include "server/race/mode/gamemode/TutorialModeHandler.hpp"
+#include "server/race/mode/gamemode/MissionModeHandler.hpp"
 #include "server/race/mode/gamemode/SpeedModeHandler.hpp"
 #include "server/race/mode/gamemode/MagicModeHandler.hpp"
 
 namespace server::race::mode
 {
 
-TutorialGameMode::TutorialGameMode(RaceDirector& director, uint32_t missionId)
+MissionGameMode::MissionGameMode(RaceDirector& director, uint32_t missionId)
   : GameModeHandler(director), _missionId(missionId)
 {
-  // Mission 32 is speed mode (hardcoded for now as per user request)
+  // Mission 32 is tutorial speed mode (hardcoded for now as per user request)
   // TODO: add MissionRegistry to get the mode from missionId
   switch (_missionId)
   {
@@ -37,11 +37,11 @@ TutorialGameMode::TutorialGameMode(RaceDirector& director, uint32_t missionId)
       break;
     default:
       throw std::runtime_error(
-        std::format("Tutorial mission {} is not implemented!", _missionId));
+        std::format("Mission {} is not implemented!", _missionId));
   }
 }
 
-void TutorialGameMode::OnHurdleClear(
+void MissionGameMode::OnHurdleClear(
   ClientId clientId,
   RaceDirector::RaceInstance& raceInstance,
   const protocol::AcCmdCRHurdleClearResult& command)
@@ -49,7 +49,7 @@ void TutorialGameMode::OnHurdleClear(
   _gamemodeHandler->OnHurdleClear(clientId, raceInstance, command);
 }
 
-void TutorialGameMode::OnRaceUserPos(
+void MissionGameMode::OnRaceUserPos(
   ClientId clientId,
   RaceDirector::RaceInstance& raceInstance,
   const protocol::AcCmdUserRaceUpdatePos& command)
@@ -57,7 +57,7 @@ void TutorialGameMode::OnRaceUserPos(
   _gamemodeHandler->OnRaceUserPos(clientId, raceInstance, command);
 }
 
-void TutorialGameMode::OnItemGet(
+void MissionGameMode::OnItemGet(
   ClientId clientId,
   RaceDirector::RaceInstance& raceInstance,
   const protocol::AcCmdUserRaceItemGet& command,
@@ -66,7 +66,7 @@ void TutorialGameMode::OnItemGet(
   _gamemodeHandler->OnItemGet(clientId, raceInstance, command, item);
 }
 
-void TutorialGameMode::OnRequestSpur(
+void MissionGameMode::OnRequestSpur(
   ClientId clientId,
   RaceDirector::RaceInstance& raceInstance,
   const protocol::AcCmdCRRequestSpur& command)
@@ -74,7 +74,7 @@ void TutorialGameMode::OnRequestSpur(
   _gamemodeHandler->OnRequestSpur(clientId, raceInstance, command);
 }
 
-void TutorialGameMode::OnStartingRate(
+void MissionGameMode::OnStartingRate(
   ClientId clientId,
   RaceDirector::RaceInstance& raceInstance,
   const protocol::AcCmdCRStartingRate& command)
@@ -82,7 +82,7 @@ void TutorialGameMode::OnStartingRate(
   _gamemodeHandler->OnStartingRate(clientId, raceInstance, command);
 }
 
-void TutorialGameMode::OnUseMagicItem(
+void MissionGameMode::OnUseMagicItem(
   ClientId clientId,
   RaceDirector::RaceInstance& raceInstance,
   const protocol::AcCmdCRUseMagicItem& command)

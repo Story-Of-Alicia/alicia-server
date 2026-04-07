@@ -107,7 +107,7 @@ add_executable(alicia-server
         src/server/race/mode/GameModeHandler.cpp
         src/server/race/mode/gamemode/SpeedModeHandler.cpp
         src/server/race/mode/gamemode/MagicModeHandler.cpp
-        src/server/race/mode/gamemode/TutorialModeHandler.cpp
+        src/server/race/mode/gamemode/MissionModeHandler.cpp
         src/server/race/mode/teammode/FfaTeamMode.cpp
         src/server/race/mode/teammode/TeamRaceMode.cpp
         src/server/ranch/RanchDirector.cpp

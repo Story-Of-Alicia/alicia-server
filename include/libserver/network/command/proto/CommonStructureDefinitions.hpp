@@ -608,7 +608,7 @@ enum class GameMode : uint8_t
   Speed = 1,
   Magic = 2,
   Unk4 = 4,
-  Tutorial = 6,
+  Mission = 6,
 };
 
 struct SkillSet

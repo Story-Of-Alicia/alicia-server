@@ -17,18 +17,18 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
-#ifndef TUTORIAL_GAMEMODE_HANDLER_HPP
-#define TUTORIAL_GAMEMODE_HANDLER_HPP
+#ifndef MISSION_GAMEMODE_HANDLER_HPP
+#define MISSION_GAMEMODE_HANDLER_HPP
 
 #include "server/race/mode/GameModeHandler.hpp"
 
 namespace server::race::mode
 {
 
-class TutorialGameMode : public GameModeHandler
+class MissionGameMode : public GameModeHandler
 {
 public:
-  explicit TutorialGameMode(RaceDirector& director, uint32_t missionId);
+  explicit MissionGameMode(RaceDirector& director, uint32_t missionId);
 
   void OnHurdleClear(
     ClientId clientId,
@@ -68,4 +68,4 @@ private:
 
 } // namespace server::race::mode
 
-#endif // TUTORIAL_GAMEMODE_HANDLER_HPP
+#endif // MISSION_GAMEMODE_HANDLER_HPP

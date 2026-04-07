@@ -40,7 +40,7 @@ struct Course
       Speed = 1,
       Magic = 2,
       Guild = 3,
-      Tutorial = 6
+      Mission = 6
     };
 
     //! An amount of star points awarded for a good jump.

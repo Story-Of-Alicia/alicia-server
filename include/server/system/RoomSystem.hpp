@@ -37,7 +37,7 @@ class Room
 public:
   enum class GameMode
   {
-    Speed = 1, Magic = 2, Guild, Tutorial = 6
+    Speed = 1, Magic = 2, Guild, Mission = 6
   };
 
   enum class TeamMode
