@@ -42,10 +42,11 @@ public:
     const tracker::RaceTracker::Racer& a,
     const tracker::RaceTracker::Racer& b) const override;
 
+  //! Handles team gauge-related logic, including speed and theoretically guild battles.
+  //! Primary logic reference: `TeamSpurGaugeInfo` in libconfig
   void OnTeamGauge(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
-    tracker::RaceTracker::Racer& racer) override;
+    RaceDirector::RaceInstance& raceInstance) override;
 };
 
 } // namespace server::race::mode

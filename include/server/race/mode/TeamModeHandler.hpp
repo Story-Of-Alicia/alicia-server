@@ -51,8 +51,7 @@ public:
 
   virtual void OnTeamGauge(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
-    tracker::RaceTracker::Racer& racer) = 0;
+    RaceDirector::RaceInstance& raceInstance) = 0;
 
 protected:
   RaceDirector& _director;

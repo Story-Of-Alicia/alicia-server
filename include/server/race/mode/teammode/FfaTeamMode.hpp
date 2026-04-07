@@ -44,8 +44,7 @@ public:
 
   void OnTeamGauge(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
-    tracker::RaceTracker::Racer& racer) override;
+    RaceDirector::RaceInstance& raceInstance) override;
 };
 
 } // namespace server::race::mode

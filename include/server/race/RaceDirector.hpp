@@ -318,9 +318,6 @@ public:
     ClientId clientId,
     const protocol::AcCmdCRKick& command);
 
-  //! Handles the team gauges in team races only.
-  void HandleTeamGauge(const ClientId clientId);
-
   void HandleTriggerizeAct(
     ClientId clientId,
     const protocol::AcCmdCRTriggerizeAct& command);
