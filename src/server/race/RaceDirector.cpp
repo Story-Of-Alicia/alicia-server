@@ -179,8 +179,6 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& message)
     {
       const auto& clientContext = GetClientContext(clientId);
-
-      std::scoped_lock lock(_raceInstancesMutex);
       auto& raceInstance = GetRaceInstance(clientContext);
       raceInstance.gameModeHandler->OnRequestSpur(clientId, raceInstance, message);
 
@@ -191,8 +189,6 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& message)
     {
       const auto& clientContext = GetClientContext(clientId);
-
-      std::scoped_lock lock(_raceInstancesMutex);
       auto& raceInstance = GetRaceInstance(clientContext);
       raceInstance.gameModeHandler->OnHurdleClear(clientId, raceInstance, message);
     });
