@@ -129,23 +129,19 @@ void TeamRaceMode::OnTeamGauge(
     .unk5 = 0 // TODO: identify use
   };
 
-  //! Base point for a successful boost.
-  constexpr uint32_t BaseBoostPoints = 50;
-  //! Base point difference per team member in a team.
-  constexpr uint32_t BoostPointsDiffBase = 20;
+  const std::vector<float> basePoints{3.50f, 3.75f, 4.50f, 5.00f, 6.00f, 7.00f};
 
-  //! Scale points per boost, based on team size.
-  //! Scale = team size - 1 for the formula.
-  const auto scale = teamSize - 1;
-  //! Final points per boost = base boost + additional boost points.
-  const auto additionalBoostPoints = (BoostPointsDiffBase * scale) + (10 * scale);
+  // Final points per boost = Table reference * team size
+  const uint32_t pointsPerBoost = 
+    static_cast<uint32_t>(basePoints[fillRateIndex] * teamSize * 10.0f);
   
-  //! Base max points.
-  constexpr uint32_t BaseMaxPoints = 250;
-  //! Max points difference per team member.
-  constexpr uint32_t MaxPointsDiffBase = 150;
-  //! Final max points for team size.
-  const uint32_t maxPoints = BaseMaxPoints + (MaxPointsDiffBase * scale);
+  // Final max points for team size.
+  // Reference: `TeamSpurGaugeInfo` `TeamSpurMax`
+  const uint32_t maxPoints = 
+    teamSize == 1 ? 250 :
+    teamSize == 2 ? 400 :
+    teamSize == 3 ? 650 :
+    1000; // 4v4
 
   auto& blueTeamPoints = blueTeam.points;
   auto& redTeamPoints = redTeam.points;
@@ -161,7 +157,7 @@ void TeamRaceMode::OnTeamGauge(
   spur.currentPoints = teamPoints / 10.0f;
   teamPoints = std::min(
     maxPoints,
-    teamPoints + BaseBoostPoints + additionalBoostPoints);
+    teamPoints + pointsPerBoost);
   spur.newPoints = teamPoints / 10.0f;
 
   // If any of the teams got max points to spur, reset points and broadcast team spur
