@@ -3157,20 +3157,19 @@ void RaceDirector::HandleActivateSkillEffect(
     magicSlotInfo = GetServerInstance().GetMagicRegistry().GetSlotInfo(magicSlotInfo.criticalType);
   }
 
-  // Break down hit ice wall
-  if (command.effectId == 10 || command.effectId == 11) {
-    const auto magicExpire = protocol::AcCmdRCMagicExpire{
-      .magicType = magicSlotInfo.type,
-      .firstObstacleInstanceId = command.obstacleInstanceId,
-      .obstacleInstanceCount = 1,
-      .breakdown = 1
-    };
-    for (const ClientId& raceClientId : raceInstance.clients)
-    {
-      _commandServer.QueueCommand<decltype(magicExpire)>(
-        raceClientId,
-        [magicExpire](){ return magicExpire; });
-    }
+  const auto magicExpire = protocol::AcCmdRCMagicExpire{
+    .magicType = magicSlotInfo.type,
+    .firstObstacleInstanceId = command.obstacleInstanceId,
+    .obstacleInstanceCount = 1,
+    .breakdown = 1};
+  for (const ClientId& raceClientId : raceInstance.clients)
+  {
+    _commandServer.QueueCommand<decltype(magicExpire)>(
+      raceClientId,
+      [magicExpire]()
+      {
+        return magicExpire;
+      });
   }
 
   std::optional<std::function<void()>> afterEffectRemoved = std::nullopt;
