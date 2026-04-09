@@ -61,7 +61,7 @@ const server::registry::Magic::SlotInfo RandomMagicItem(ServerInstance& serverIn
     : serverInstance.GetMagicRegistry().GetTeamPool());
   static std::random_device rd;
   std::uniform_int_distribution distribution(0, static_cast<int>(itemPool.size() - 1));
-  auto magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(10);
+  auto magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(itemPool[distribution(rd)]);
   if (RollCritical(racer, magicSlotInfo))
   {
     magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(magicSlotInfo.criticalType);
@@ -2718,6 +2718,8 @@ void RaceDirector::HandleUseMagicItem(
 
   auto targetList = command.targetList;
 
+    const auto& magicSlotInfo = GetServerInstance().GetMagicRegistry().GetSlotInfo(command.magicItemId);
+
   // Darkfire should only affect one target
   // Client sends all targets infront of them but we should only apply the effect to the targeted one (the arrow above their head)
   if (command.magicItemId == 14)
@@ -2729,7 +2731,7 @@ void RaceDirector::HandleUseMagicItem(
     .iceWallProperties = command.iceWallProperties,
     .targetList = targetList,
     .effectInstanceId = effectInstanceId,
-    .unk4 = 1.0f
+    .unk4 = magicSlotInfo.castingTime
   };
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -2746,7 +2748,7 @@ void RaceDirector::HandleUseMagicItem(
     .iceWallProperties = command.iceWallProperties,
     .targetList = targetList,
     .effectInstanceId = effectInstanceId,
-    .unk4 = 0
+    .unk4 = magicSlotInfo.castingTime
   };
 
   // Send usage notification to other players
@@ -2760,7 +2762,6 @@ void RaceDirector::HandleUseMagicItem(
       [usageNotify]() { return usageNotify; });
   }
 
-  const auto& magicSlotInfo = GetServerInstance().GetMagicRegistry().GetSlotInfo(command.magicItemId);
 
   // Send effect for items that have instant effects
   std::vector<std::tuple<server::tracker::Oid, std::optional<std::function<void()>>>> affectedOidsAndAfterEffectCallbacks;
