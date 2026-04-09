@@ -34,6 +34,7 @@ namespace server::protocol
 
 enum class RoomOptionType : uint16_t
 {
+  None = 0,
   Name = 1 << 0,
   PlayerCount = 1 << 1,
   Password = 1 << 2,

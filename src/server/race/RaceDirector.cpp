@@ -1074,6 +1074,11 @@ void RaceDirector::HandleChangeRoomOptions(
   // todo: validate command fields
   const auto& clientContext = GetClientContext(clientId);
 
+  if (command.optionsBitfield == protocol::RoomOptionType::None)
+    // If no options have been changed then do not broadcast notify
+    // This prevents a bug with the race elapsed time from occurring
+    return;
+
   const std::bitset<6> options(
     static_cast<uint16_t>(command.optionsBitfield));
 
