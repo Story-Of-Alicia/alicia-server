@@ -136,6 +136,8 @@ private:
     //! A mission ID of the race.
     uint16_t raceMissionId{};
 
+    //! Represents when a room started loading.
+    std::chrono::steady_clock::time_point loadingStartTimePoint;
     //! A time point of when the race is actually started (a countdown is finished).
     std::chrono::steady_clock::time_point raceStartTimePoint;
     //! A room clients.

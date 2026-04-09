@@ -860,6 +860,13 @@ void RaceDirector::HandleEnterRoom(
     .isRoomWaiting = raceInstance.stage == RaceInstance::Stage::Waiting,
     .uid = command.roomUid};
 
+  // If race instance exists and race is not waiting then
+  // set the elapsed time since loading started
+  if (not inserted and raceInstance.stage != RaceInstance::Stage::Waiting)
+    response.elapsedTime = static_cast<uint32_t>(
+      std::chrono::duration_cast<std::chrono::seconds>(
+        std::chrono::steady_clock::now() - raceInstance.loadingStartTimePoint).count());
+
   try
   {
     _serverInstance.GetRoomSystem().GetRoom(
@@ -1622,7 +1629,9 @@ void RaceDirector::HandleStartRace(
     });
 
   raceInstance.stage = RaceInstance::Stage::Loading;
-  raceInstance.stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(30);
+  // Mark the start time of when race started loading
+  raceInstance.loadingStartTimePoint = std::chrono::steady_clock::now();
+  raceInstance.stageTimeoutTimePoint = raceInstance.loadingStartTimePoint + std::chrono::seconds(30);
 
   _serverInstance.GetRoomSystem().GetRoom(
     roomUid,
