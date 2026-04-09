@@ -1354,11 +1354,10 @@ void AcCmdCRUseMagicItem::Read(
     case 0x12:
     case 0x13:
     {
-      auto& ids = command.obstacleProperties.emplace();
       uint8_t size;
       stream.Read(size);
-      ids.resize(size);
-      for (auto& element : ids)
+      command.targetList.resize(size);
+      for (auto& element : command.targetList)
       {
         stream.Read(element);
       }
@@ -1436,13 +1435,9 @@ void AcCmdCRUseMagicItemOK::Write(
     case 0x12:
     case 0x13:
     {
-      // TODO: is this correct?
-      // Assert that optional2 has value
-      assert(command.obstacleProperties.has_value());
-
       // Expects vector size followed by uint16_t vector itself
-      stream.Write(static_cast<uint8_t>(command.obstacleProperties.value().size()));
-      for (auto& element : command.obstacleProperties.value())
+      stream.Write(static_cast<uint8_t>(command.targetList.size()));
+      for (auto& element : command.targetList)
       {
         stream.Write(element);
       }
@@ -1454,7 +1449,7 @@ void AcCmdCRUseMagicItemOK::Write(
     }
   }
 
-  stream.Write(command.nextObstacleInstanceId)
+  stream.Write(command.effectInstanceId)
     .Write(command.unk4);
 }
 
@@ -1463,6 +1458,30 @@ void AcCmdCRUseMagicItemOK::Read(
   SourceStream&)
 {
   throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRUseItemSlotOK::Write(
+  const AcCmdCRUseItemSlotOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.magicItemId)
+    .Write(command.characterOid);
+}
+
+void AcCmdCRUseItemSlotOK::Read(
+  AcCmdCRUseItemSlotOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRUseItemSlotNotify::Write(
+  const AcCmdCRUseItemSlotNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.magicItemId)
+    .Write(command.characterOid)
+    .Write(command.unk);
 }
 
 void AcCmdGameRaceItemSpawn::Write(
@@ -1643,12 +1662,9 @@ void AcCmdCRUseMagicItemNotify::Write(
     case 0x12:
     case 0x13:
     {
-      // Assert that optional2 has value
-      assert(command.obstacleProperties.has_value());
-
       // Expects vector size followed by uint16_t vector itself
-      stream.Write(static_cast<uint8_t>(command.obstacleProperties.value().size()));
-      for (auto& element : command.obstacleProperties.value())
+      stream.Write(static_cast<uint8_t>(command.targetList.size()));
+      for (auto& element : command.targetList)
       {
         stream.Write(element);
       }
@@ -1660,7 +1676,7 @@ void AcCmdCRUseMagicItemNotify::Write(
     }
   }
   
-  stream.Write(command.nextObstacleInstanceId)
+  stream.Write(command.effectInstanceId)
     .Write(command.unk4);
 }
 
@@ -1696,12 +1712,10 @@ void AcCmdCRUseMagicItemNotify::Read(
     case 0x12:
     case 0x13:
     {
-      auto& ids = command.obstacleProperties.emplace();
-
       uint8_t size;
       stream.Read(size);
-      ids.resize(size);
-      for (auto& element : ids)
+      command.targetList.resize(size);
+      for (auto& element : command.targetList)
       {
         stream.Read(element);
       }
@@ -1713,7 +1727,7 @@ void AcCmdCRUseMagicItemNotify::Read(
     }
   }
 
-  stream.Read(command.nextObstacleInstanceId)
+  stream.Read(command.effectInstanceId)
     .Read(command.unk4);
 }
 
@@ -1744,7 +1758,7 @@ void AcCmdCRActivateSkillEffect::Write(
   stream.Write(command.targetOid)
     .Write(command.effectId)
     .Write(command.attackerOid)
-    .Write(command.obstacleInstanceId)
+    .Write(command.effectInstanceId)
     .Write(command.unk2);
 }
 
@@ -1755,7 +1769,7 @@ void AcCmdCRActivateSkillEffect::Read(
   stream.Read(command.targetOid)
     .Read(command.effectId)
     .Read(command.attackerOid)
-    .Read(command.obstacleInstanceId)
+    .Read(command.effectInstanceId)
     .Read(command.unk2);
 }
 

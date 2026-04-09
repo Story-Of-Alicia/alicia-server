@@ -61,7 +61,7 @@ const server::registry::Magic::SlotInfo RandomMagicItem(ServerInstance& serverIn
     : serverInstance.GetMagicRegistry().GetTeamPool());
   static std::random_device rd;
   std::uniform_int_distribution distribution(0, static_cast<int>(itemPool.size() - 1));
-  auto magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(itemPool[distribution(rd)]);
+  auto magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(10);
   if (RollCritical(racer, magicSlotInfo))
   {
     magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(magicSlotInfo.criticalType);
@@ -2714,17 +2714,22 @@ void RaceDirector::HandleUseMagicItem(
     spdlog::warn("Client tried to perform action on behalf of different racer");
     return;
   }
+  const uint16_t effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
 
-  const uint16_t obstacleInstanceCount = static_cast<uint16_t>(command.obstacleProperties.transform([](const auto& ids) { return ids.size(); }).value_or(0));
-  const uint16_t nextObstacleInstanceId = raceInstance.tracker.GetNextObstacleInstanceIdAndIncrementBy(obstacleInstanceCount);
+  auto targetList = command.targetList;
+
+  // Darkfire should only affect one target
+  // Client sends all targets infront of them but we should only apply the effect to the targeted one (the arrow above their head)
+  if (command.magicItemId == 14)
+    targetList.resize(1);
 
   protocol::AcCmdCRUseMagicItemOK response{
     .characterOid = command.characterOid,
     .magicItemId = command.magicItemId,
     .iceWallProperties = command.iceWallProperties,
-    .obstacleProperties = command.obstacleProperties,
-    .nextObstacleInstanceId = nextObstacleInstanceId,
-    .unk4 = 0
+    .targetList = targetList,
+    .effectInstanceId = effectInstanceId,
+    .unk4 = 1.0f
   };
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -2739,8 +2744,8 @@ void RaceDirector::HandleUseMagicItem(
     .characterOid = command.characterOid,
     .magicItemId = command.magicItemId,
     .iceWallProperties = command.iceWallProperties,
-    .obstacleProperties = command.obstacleProperties,
-    .nextObstacleInstanceId = nextObstacleInstanceId,
+    .targetList = targetList,
+    .effectInstanceId = effectInstanceId,
     .unk4 = 0
   };
 
@@ -2769,7 +2774,6 @@ void RaceDirector::HandleUseMagicItem(
       {
         racer.shield = tracker::RaceTracker::Racer::Shield::None;
       };
-      const auto effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
       this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved, effectInstanceId);
       racer.shield = tracker::RaceTracker::Racer::Shield::Normal;
       break;
@@ -2780,7 +2784,6 @@ void RaceDirector::HandleUseMagicItem(
       {
         racer.shield = tracker::RaceTracker::Racer::Shield::None;
       };
-      const auto effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
       this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved, effectInstanceId);
       racer.shield = tracker::RaceTracker::Racer::Shield::Critical;
       break;
@@ -2789,7 +2792,6 @@ void RaceDirector::HandleUseMagicItem(
     case 6:
     case 7:
     {
-      const auto effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
       this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, std::nullopt, effectInstanceId);
       break;
     }
@@ -2800,7 +2802,6 @@ void RaceDirector::HandleUseMagicItem(
       {
         racer.hotRodded = false;
       };
-      const auto effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
       this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved, effectInstanceId);
       racer.hotRodded = true;
       break;
@@ -2811,7 +2812,6 @@ void RaceDirector::HandleUseMagicItem(
       {
         racer.hotRodded = false;
       };
-      const auto effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
       this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved, effectInstanceId);
       racer.hotRodded = true;
       break;
@@ -2820,10 +2820,15 @@ void RaceDirector::HandleUseMagicItem(
     case 10:
     case 11:
     {
-      // TODO: How do we distinguish between different obstacles?
+      const uint16_t obstacleInstanceCount = static_cast<uint16_t>(command.targetList.size());
+      if (obstacleInstanceCount > 1)
+      {
+        // If its a crit ice wall, add the 2 missing InstanceIds to the tracker so that they can be used for the breakdown and expiration of the effect
+        raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(obstacleInstanceCount - 1);
+      }
       auto magicExpire = protocol::AcCmdRCMagicExpire{
         .magicType = magicSlotInfo.type,
-        .firstObstacleInstanceId = nextObstacleInstanceId,
+        .firstObstacleInstanceId = effectInstanceId,
         .obstacleInstanceCount = obstacleInstanceCount,
         .breakdown = 0
       };
@@ -2845,7 +2850,6 @@ void RaceDirector::HandleUseMagicItem(
     case 12:
     case 13:
     {
-      const auto effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
         if (racer.oid != otherRacer.oid
@@ -2860,7 +2864,6 @@ void RaceDirector::HandleUseMagicItem(
     case 20:
     case 21:
     {
-      const auto effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
         if (racer.oid == otherRacer.oid
@@ -2880,7 +2883,6 @@ void RaceDirector::HandleUseMagicItem(
     case 22:
     case 23:
     {
-      const auto effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
         if (racer.oid == otherRacer.oid
@@ -2900,7 +2902,6 @@ void RaceDirector::HandleUseMagicItem(
     case 24:
     case 25:
     {
-      const auto effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
       {
         if (racer.oid == otherRacer.oid
@@ -3159,7 +3160,7 @@ void RaceDirector::HandleActivateSkillEffect(
 
   const auto magicExpire = protocol::AcCmdRCMagicExpire{
     .magicType = magicSlotInfo.type,
-    .firstObstacleInstanceId = command.obstacleInstanceId,
+    .firstObstacleInstanceId = command.effectInstanceId,
     .obstacleInstanceCount = 1,
     .breakdown = 1};
   for (const ClientId& raceClientId : raceInstance.clients)
@@ -3188,8 +3189,7 @@ void RaceDirector::HandleActivateSkillEffect(
   }
 
   // TODO: Remove held item
-  const auto effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
-  this->ScheduleSkillEffect(raceInstance, command.attackerOid, command.targetOid, magicSlotInfo, afterEffectRemoved, effectInstanceId);
+  this->ScheduleSkillEffect(raceInstance, command.attackerOid, command.targetOid, magicSlotInfo, afterEffectRemoved, command.effectInstanceId);
 }
 
 void RaceDirector::HandleOpCmd(
