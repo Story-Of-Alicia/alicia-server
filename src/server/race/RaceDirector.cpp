@@ -1919,22 +1919,22 @@ void RaceDirector::HandleRaceResult(
 }
 
 void RaceDirector::HandleP2PRaceResult(
-  ClientId clientId,
+  ClientId,
   const protocol::AcCmdCRP2PResult&)
 {
-  const auto& clientContext = GetClientContext(clientId);
+  // const auto& clientContext = GetClientContext(clientId);
 
-  std::scoped_lock lock(_raceInstancesMutex);
-  auto& raceInstance = GetRaceInstance(clientContext);
+  // std::scoped_lock lock(_raceInstancesMutex);
+  // auto& raceInstance = GetRaceInstance(clientContext);
 
-  protocol::AcCmdGameRaceP2PResult result{};
-  for (const auto & [uid, racer] : raceInstance.tracker.GetRacers())
-  {
-    auto& protocolRacer = result.member1.emplace_back();
-    protocolRacer.oid = racer.oid;
-  }
+  // protocol::AcCmdGameRaceP2PResult result{};
+  // for (const auto & [uid, racer] : raceInstance.tracker.GetRacers())
+  // {
+  //   auto& protocolRacer = result.member1.emplace_back();
+  //   protocolRacer.oid = racer.oid;
+  // }
 
-  _commandServer.QueueCommand<decltype(result)>(clientId, [result](){return result;});
+  // _commandServer.QueueCommand<decltype(result)>(clientId, [result](){return result;});
 }
 
 void RaceDirector::HandleP2PUserRaceResult(
