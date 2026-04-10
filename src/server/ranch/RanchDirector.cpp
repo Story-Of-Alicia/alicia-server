@@ -2727,17 +2727,7 @@ void RanchDirector::HandleIncubateEgg(
           character.eggs().emplace_back(egg.uid());
 
           // Fill the response with egg information.
-          auto eggUid = egg.uid();
-          auto eggItemTid = egg.itemTid();
-          auto eggHatchDuration = eggTemplate.value().hatchDuration;
-
-          response.egg.uid = eggUid;
-          response.egg.itemTid = eggItemTid;
-          response.egg.timeRemaining = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
-            eggHatchDuration).count());
-          response.egg.boost = 400000;
-          response.egg.totalHatchingTime = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
-            eggHatchDuration).count());
+          protocol::BuildProtocolEgg(response.egg, egg, eggTemplate.value().hatchDuration);
         });
     });
 
@@ -2825,17 +2815,7 @@ void RanchDirector::HandleBoostIncubateEgg(
                 eggData.itemTid());
 
               eggData.boostsUsed() += 1;
-              response.egg = {
-                .uid = eggData.uid(),
-                .itemTid = eggData.itemTid(),
-                .timeRemaining = static_cast<uint32_t>(
-                  std::chrono::duration_cast<std::chrono::seconds>(
-                                    eggTemplate.hatchDuration -
-                                    (std::chrono::system_clock::now() - eggData.incubatedAt()) -
-                                    (eggData.boostsUsed() * std::chrono::hours(8))).count()),
-                .boost = 400000,
-                .totalHatchingTime = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
-                                    eggTemplate.hatchDuration).count())};
+              protocol::BuildProtocolEgg(response.egg, eggData, eggTemplate.hatchDuration);
             };
           });
       };

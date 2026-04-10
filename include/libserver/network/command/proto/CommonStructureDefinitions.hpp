@@ -458,13 +458,13 @@ struct Egg
 {
   uint32_t uid{};
   uint32_t itemTid{};
-  uint32_t member3{};
+  uint32_t member3{};    // member 3 & 4 are suspected to be some kind of filetime
   uint8_t member4{};
-  uint32_t member5{};
+  uint32_t elapsedHatchingTime{};
   uint32_t timeRemaining{};
-  uint32_t boost{}; //needs further investigation and possibly a rename
-  uint32_t totalHatchingTime{};
-  uint32_t member9{};
+  uint32_t boostPreviewValue{}; //needs further investigation and possibly a rename
+  uint32_t hatchingProgress{};
+  uint32_t boostCooldown{};
 
   static void Write(const Egg& value, SinkStream& stream);
   static void Read(Egg& value, SourceStream& stream);

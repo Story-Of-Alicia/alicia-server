@@ -302,19 +302,21 @@ void BuildProtocolEgg(
   protocolEgg.uid = eggRecord.uid();
   protocolEgg.itemTid = eggRecord.itemTid();
 
-  protocolEgg.totalHatchingTime = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
-    hatchDuration).count());
-
   const auto totalHatchingDuration = std::chrono::system_clock::now() - eggRecord.incubatedAt();
   const auto totalBoostedDuration = eggRecord.boostsUsed() * std::chrono::hours(8);
   const auto hatchTimeRemaining = hatchDuration - totalHatchingDuration - totalBoostedDuration;
 
-  protocolEgg.timeRemaining = std::max(
-    static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
-      hatchTimeRemaining).count()),
-    uint32_t{0});
-  
-  protocolEgg.boost = 400000;
+  const auto totalHatchingProgress = totalHatchingDuration + totalBoostedDuration;
+  const auto remainingHatchingProgress = hatchDuration - totalHatchingProgress;
+
+  protocolEgg.remainingHatchingTime = static_cast<uint32_t>(
+    std::chrono::duration_cast<std::chrono::seconds>(remainingHatchingProgress).count());
+  protocolEgg.timeRemaining = static_cast<uint32_t>(
+    std::chrono::duration_cast<std::chrono::seconds>(remainingHatchingProgress).count());
+  protocolEgg.boostPreviewValue = static_cast<uint32_t>(
+    std::chrono::duration_cast<std::chrono::seconds>(totalHatchingProgress + std::chrono::hours(8)).count());
+  protocolEgg.hatchingProgress = static_cast<uint32_t>(
+    std::chrono::duration_cast<std::chrono::seconds>(totalHatchingProgress).count());
 }
 
 void BuildProtocolSettings(
