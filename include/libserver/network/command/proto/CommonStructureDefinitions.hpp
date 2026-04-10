@@ -460,7 +460,7 @@ struct Egg
   uint32_t itemTid{};
   uint32_t member3{};    // member 3 & 4 are suspected to be some kind of filetime
   uint8_t member4{};
-  uint32_t elapsedHatchingTime{};
+  uint32_t remainingHatchingTime{};
   uint32_t timeRemaining{};
   uint32_t boostPreviewValue{}; //needs further investigation and possibly a rename
   uint32_t hatchingProgress{};
