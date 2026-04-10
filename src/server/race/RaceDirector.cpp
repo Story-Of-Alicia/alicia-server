@@ -2750,7 +2750,6 @@ void RaceDirector::HandleUseMagicItem(
         targetList.push_back(otherRacer.oid);
       }
     }
-    targetList.resize(1);
   }
 
   protocol::AcCmdCRUseMagicItemOK response{
