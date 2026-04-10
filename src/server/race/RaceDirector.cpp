@@ -2739,6 +2739,20 @@ void RaceDirector::HandleUseMagicItem(
   if (command.magicItemId == 14)
     targetList.resize(1);
 
+  if (command.magicItemId == 12 || command.magicItemId == 13)
+  {
+    targetList = std::vector<server::tracker::Oid>{};
+    for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
+    {
+      if (racer.oid != otherRacer.oid
+      && (racer.team == tracker::RaceTracker::Racer::Team::Solo || racer.team != otherRacer.team))
+      {
+        targetList.push_back(otherRacer.oid);
+      }
+    }
+    targetList.resize(1);
+  }
+
   protocol::AcCmdCRUseMagicItemOK response{
     .characterOid = command.characterOid,
     .magicItemId = command.magicItemId,
@@ -2858,21 +2872,6 @@ void RaceDirector::HandleUseMagicItem(
           }
         },
         Scheduler::Clock::now() + std::chrono::seconds(4)); // TODO: Change to 4 seconds
-      break;
-    }
-    // Shackles
-    // TODO: Apply only to opponents ahead of the racer
-    case 12:
-    case 13:
-    {
-      for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
-      {
-        if (racer.oid != otherRacer.oid
-        && (racer.team == tracker::RaceTracker::Racer::Team::Solo || racer.team != otherRacer.team))
-        {
-          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, std::nullopt, effectInstanceId);
-        }
-      }
       break;
     }
     // BufPower
