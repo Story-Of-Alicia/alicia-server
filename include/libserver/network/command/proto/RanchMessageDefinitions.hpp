@@ -2753,9 +2753,6 @@ struct RanchCommandUserPetInfos
 
 struct RanchCommandUserPetInfosOK
 {
-  uint32_t member1;
-  uint16_t petCount;
-  uint16_t member3;
   std::vector<Pet> pets{};
 
   static Command GetCommand()

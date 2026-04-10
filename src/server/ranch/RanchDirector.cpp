@@ -2654,15 +2654,11 @@ void RanchDirector::HandleUserPetInfos(
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  protocol::RanchCommandUserPetInfosOK response{
-    .member1 = 0,
-    .member3 = 0
-  };
+  protocol::RanchCommandUserPetInfosOK response{};
 
   characterRecord.Mutable(
     [this, &command, &response](data::Character& character)
     {
-      response.petCount = static_cast<uint16_t>(character.pets().size());
       auto storedPetRecords = GetServerInstance().GetDataDirector().GetPetCache().Get(
         character.pets());
       if (!storedPetRecords || storedPetRecords->empty())
