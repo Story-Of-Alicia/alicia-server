@@ -228,6 +228,13 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleRequestPetBirth(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRPetBornResult>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandlePetBornResult(clientId, command);
+    });
+
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRBoostIncubateInfoList>(
     [this](ClientId clientId, auto& command)
     {
@@ -2892,7 +2899,7 @@ void RanchDirector::HandleRequestPetBirth(
               hatchingEggTid = eggData.itemTid();
               hatchingEggItemUid = eggData.itemUid();
 
-              response.petBirthInfo.petInfo.itemUid = hatchingEggUid;
+              response.petBirthInfo.petInfo.itemUid = hatchingEggItemUid;
             };
           });
       }
@@ -2943,11 +2950,7 @@ void RanchDirector::HandleRequestPetBirth(
       }
 
       if (petAlreadyExists)
-      {
-        // Pet already exists, need to create pity item outside lambda
-        petAlreadyExists = true;
         return;
-      }
 
       // Create the pet
       const auto bornPet = GetServerInstance().GetDataDirector().CreatePet();
@@ -3035,6 +3038,37 @@ void RanchDirector::HandleRequestPetBirth(
       });
   }
 };
+
+void RanchDirector::HandlePetBornResult(
+  ClientId clientId,
+  const protocol::AcCmdCRPetBornResult& command)
+{
+  // This command is sent by the client after receiving the pet birth notification,
+  // this signals the clients to remove the pet from the incubator
+
+  protocol::AcCmdCRPetBornResultNotify response{
+    .member1 = command.member1,
+    .member2 = command.member2
+  };
+
+  // broadcast to all the ranch clients.
+  const auto& clientContext = GetClientContext(clientId);
+  const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+  for (ClientId ranchClient : ranchInstance.clients)
+  {
+    // Prevent broadcasting to self.
+    if (ranchClient == clientId)
+      continue;
+    
+    _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+  }
+  
+}
 
 void RanchDirector::BroadcastEquipmentUpdate(ClientId clientId)
 {

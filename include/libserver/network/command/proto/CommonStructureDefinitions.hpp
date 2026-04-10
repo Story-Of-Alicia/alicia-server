@@ -456,7 +456,7 @@ struct Pet
 //!
 struct Egg
 {
-  uint32_t uid{};
+  uint32_t uid{}; // itemUid of the egg
   uint32_t itemTid{};
   uint32_t member3{};    // member 3 & 4 are suspected to be some kind of filetime
   uint8_t member4{};

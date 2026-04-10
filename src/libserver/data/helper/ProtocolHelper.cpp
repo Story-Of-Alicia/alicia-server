@@ -299,7 +299,7 @@ void BuildProtocolEgg(
   const data::Egg& eggRecord,
   const data::Clock::duration hatchDuration)
 {
-  protocolEgg.uid = eggRecord.uid();
+  protocolEgg.uid = eggRecord.itemUid();
   protocolEgg.itemTid = eggRecord.itemTid();
 
   const auto totalHatchingDuration = std::chrono::system_clock::now() - eggRecord.incubatedAt();
