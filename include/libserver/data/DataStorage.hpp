@@ -61,14 +61,20 @@ public:
 
   void Terminate()
   {
-    _storeQueue.clear();
-    _retrieveQueue.clear();
-
-    for (auto& entry : _entries)
     {
-      if (entry.second.available)
-        _dataSourceStoreListener(entry.first, entry.second.value);
+      std::scoped_lock lock(_entriesMutex);
+      for (auto& entry : _entries)
+      {
+        if (not entry.second.available)
+          continue;
+        RequestStore(entry.first);
+      }
     }
+
+    // Process the queued operations.
+    ProcessRetrieveQueue();
+    ProcessStoreQueue();
+    ProcessDeleteQueue();
 
     _entries.clear();
   }
@@ -100,6 +106,8 @@ public:
 
   Record<Data> Create(DataSupplier supplier)
   {
+    std::scoped_lock lock(_entriesMutex);
+
     auto [key, data] = supplier();
     auto [it, created] = _entries.try_emplace(key);
     if (not created)
@@ -117,8 +125,11 @@ public:
       });
   }
 
+
   Record<Data> GetOrCreate(DataSupplier supplier)
   {
+    std::scoped_lock lock(_entriesMutex);
+
     auto [key, data] = supplier();
     auto [it, created] = _entries.try_emplace(key);
     if (not created)
@@ -141,6 +152,8 @@ public:
 
   std::optional<Record<Data>> Get(const Key& key, bool retrieve = true)
   {
+    std::scoped_lock lock(_entriesMutex);
+
     auto [recordIter, created] = _entries.try_emplace(key);
     auto& record = recordIter->second;
 
@@ -180,14 +193,8 @@ public:
     return std::nullopt;
   }
 
-  void Invalidate(const Key& key)
-  {
-    _entries.erase(key);
-  }
-
   void Delete(const Key& key)
   {
-    Invalidate(key);
     RequestDelete(key);
   }
 
@@ -208,29 +215,64 @@ public:
 
   void Tick()
   {
-    // Perform retrieve operations.
+    ProcessRetrieveQueue();
+    ProcessStoreQueue();
+    ProcessDeleteQueue();
+  }
+
+private:
+  void RequestRetrieve(const Key& key)
+  {
+    std::scoped_lock lock(_retrieveQueueMutex);
+    _retrieveQueue.insert(key);
+  }
+
+  void RequestStore(const Key& key)
+  {
+    std::scoped_lock lock(_storeQueueMutex);
+    _storeQueue.insert(key);
+  }
+
+  void RequestDelete(const Key& key)
+  {
+    std::scoped_lock lock(_deleteQueueMutex);
+    _deleteQueue.insert(key);
+  }
+
+  void ProcessRetrieveQueue()
+  {
+    std::scoped_lock retrieveQueueLock(_retrieveQueueMutex);
     for (const auto& key : _retrieveQueue)
     {
+      std::scoped_lock lock(_entriesMutex);
       auto& entry = _entries[key];
 
       if (_dataSourceRetrieveListener(key, entry.value))
         entry.available.store(true, std::memory_order::relaxed);
     }
     _retrieveQueue.clear();
+  }
 
-    // Perform store operations.
+  void ProcessStoreQueue()
+  {
+    std::scoped_lock retrieveQueueLock(_storeQueueMutex);
     for (const auto& key : _storeQueue)
     {
+      std::scoped_lock lock(_entriesMutex);
       auto& entry = _entries[key];
 
       if (entry.available)
         _dataSourceStoreListener(key, entry.value);
     }
     _storeQueue.clear();
+  }
 
-    // Perform delete operations.
+  void ProcessDeleteQueue()
+  {
+    std::scoped_lock retrieveQueueLock(_deleteQueueMutex);
     for (const auto& key : _deleteQueue)
     {
+      std::scoped_lock lock(_entriesMutex);
       auto& entry = _entries[key];
 
       if (entry.available)
@@ -239,28 +281,6 @@ public:
     }
     _deleteQueue.clear();
   }
-
-private:
-  void RequestRetrieve(const Key& key)
-  {
-    _retrieveQueue.insert(key);
-  }
-
-  void RequestStore(const Key& key)
-  {
-    _storeQueue.insert(key);
-  }
-
-  void RequestDelete(const Key& key)
-  {
-    _deleteQueue.insert(key);
-  }
-
-  enum class Event
-  {
-    Store,
-    Retrieve,
-  };
 
   struct Entry
   {
@@ -271,10 +291,14 @@ private:
     Data value;
   };
 
+  std::mutex _retrieveQueueMutex;
   std::unordered_set<Key> _retrieveQueue;
+  std::mutex _storeQueueMutex;
   std::unordered_set<Key> _storeQueue;
+  std::mutex _deleteQueueMutex;
   std::unordered_set<Key> _deleteQueue;
 
+  std::mutex _entriesMutex;
   std::unordered_map<Key, Entry> _entries{};
 
   DataSourceRetrieveListener _dataSourceRetrieveListener;
