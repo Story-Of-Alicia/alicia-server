@@ -2739,19 +2739,6 @@ void RaceDirector::HandleUseMagicItem(
   if (command.magicItemId == 14)
     targetList.resize(1);
 
-  if (command.magicItemId == 12 || command.magicItemId == 13)
-  {
-    targetList = std::vector<server::tracker::Oid>{};
-    for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
-    {
-      if (racer.oid != otherRacer.oid
-      && (racer.team == tracker::RaceTracker::Racer::Team::Solo || racer.team != otherRacer.team))
-      {
-        targetList.push_back(otherRacer.oid);
-      }
-    }
-  }
-
   protocol::AcCmdCRUseMagicItemOK response{
     .characterOid = command.characterOid,
     .magicItemId = command.magicItemId,
