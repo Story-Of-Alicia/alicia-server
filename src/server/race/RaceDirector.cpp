@@ -585,6 +585,25 @@ void RaceDirector::Tick()
             score.growthPoints = static_cast<uint16_t>(horse.growthPoints());
           });
       });
+
+      score.member23 = protocol::AcCmdCRStartRaceNotify::Struct1{
+        .member1 = raceInstance.raceMapBlockId,
+        .gameMode = raceInstance.raceGameMode,
+        .teamMode = raceInstance.raceTeamMode,
+        .member4 = 123456,
+        .member5 = {4,4,4,4,4,4,4,4},
+        .member13 = 234567};
+
+      if (score.member23.teamMode == protocol::TeamMode::Single)
+      {
+        score.member23.timeAttackResults = protocol::AcCmdCRStartRaceNotify::Struct1::TimeAttackResults{
+          .totalNumberOfSpurs = 1,
+          .maximumContinuousSpurs = 2,
+          .numberOfPerfectSpurs = 5,
+          .perfectJumpMaximumCombo = 4,
+          .numberOfJumpObstacleCollisions = 3,
+          .member12 = 0};
+      }
     }
 
     // Broadcast the race result

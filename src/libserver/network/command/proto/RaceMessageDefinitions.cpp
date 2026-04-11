@@ -374,8 +374,8 @@ void AcCmdCRStartRaceNotify::Struct1::Write(
   SinkStream& stream)
 {
   stream.Write(command.member1)
-   .Write(command.member2)
-   .Write(command.member3)
+   .Write(command.gameMode)
+   .Write(command.teamMode)
    .Write(command.member4);
 
   stream.Write(static_cast<uint8_t>(
@@ -385,14 +385,14 @@ void AcCmdCRStartRaceNotify::Struct1::Write(
     stream.Write(element);
   }
 
-  if (command.member4 == 3)
+  if (command.teamMode == protocol::TeamMode::Single)
   {
-    stream.Write(command.optional.member6)
-      .Write(command.optional.member8)
-      .Write(command.optional.member9)
-      .Write(command.optional.member10)
-      .Write(command.optional.member11)
-      .Write(command.optional.member12);
+    stream.Write(command.timeAttackResults.totalNumberOfSpurs)
+      .Write(command.timeAttackResults.maximumContinuousSpurs)
+      .Write(command.timeAttackResults.numberOfPerfectSpurs)
+      .Write(command.timeAttackResults.perfectJumpMaximumCombo)
+      .Write(command.timeAttackResults.numberOfJumpObstacleCollisions)
+      .Write(command.timeAttackResults.member12);
   }
 
   stream.Write(command.member13);

@@ -477,22 +477,25 @@ struct AcCmdCRStartRaceNotify
   struct Struct1
   {
     uint16_t member1{};
-    uint8_t member2{};
-    uint8_t member3{};
+    //! Assumed!
+    //! Game mode of the race.
+    GameMode gameMode{};
+    //! Team mode of the race.
+    TeamMode teamMode{};
     uint32_t member4{};
     // List size specified with a uint8_t. Max size 20
     std::vector<uint32_t> member5{};
 
-    // only present if member4 == 3
-    struct Optional
+    //! TeamMode::Single only.
+    struct TimeAttackResults
     {
-      uint16_t member6{};
-      uint16_t member8{};
-      uint16_t member9{};
-      uint16_t member10{};
-      uint16_t member11{};
+      uint16_t totalNumberOfSpurs{};
+      uint16_t maximumContinuousSpurs{};
+      uint16_t numberOfPerfectSpurs{};
+      uint16_t perfectJumpMaximumCombo{};
+      uint16_t numberOfJumpObstacleCollisions{};
       uint8_t member12{};
-    } optional{};
+    } timeAttackResults{};
 
     uint32_t member13{};
 
