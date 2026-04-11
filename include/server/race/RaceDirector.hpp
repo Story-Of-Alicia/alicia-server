@@ -100,6 +100,14 @@ public:
 private:
   std::random_device _randomDevice;
 
+  enum class EffectVerdict : uint8_t
+  {
+    Shielded,
+    Applied,
+    Duplicated,
+    Failed
+  };
+
   struct ClientContext
   {
     data::Uid characterUid{data::InvalidUid};
@@ -150,7 +158,8 @@ private:
   RaceInstance& GetRaceInstance(
     const RaceDirector::ClientContext& clientContext,
     const bool checkRacer = true);
-  void ScheduleSkillEffect(
+
+  EffectVerdict ScheduleSkillEffect(
     server::RaceDirector::RaceInstance& raceInstance, 
     server::tracker::Oid attackerId, server::tracker::Oid targetId, 
     const server::registry::Magic::SlotInfo& magicSlotInfo, 

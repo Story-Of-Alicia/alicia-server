@@ -78,6 +78,7 @@ public:
     bool hotRodded{};
     bool critChance{};
     bool gaugeBuff{};
+    bool attacked{};
   };
 
   //! An item
