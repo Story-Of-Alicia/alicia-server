@@ -482,7 +482,8 @@ struct AcCmdCRStartRaceNotify
     GameMode gameMode{};
     //! Team mode of the race.
     TeamMode teamMode{};
-    uint32_t member4{};
+    //! Final record time, in milliseconds.
+    uint32_t finalRecordMs{};
     // List size specified with a uint8_t. Max size 20
     std::vector<uint32_t> member5{};
 

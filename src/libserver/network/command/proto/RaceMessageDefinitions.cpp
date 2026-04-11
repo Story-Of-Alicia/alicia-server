@@ -376,7 +376,7 @@ void AcCmdCRStartRaceNotify::Struct1::Write(
   stream.Write(command.member1)
    .Write(command.gameMode)
    .Write(command.teamMode)
-   .Write(command.member4);
+   .Write(command.finalRecordMs);
 
   stream.Write(static_cast<uint8_t>(
     command.member5.size()));

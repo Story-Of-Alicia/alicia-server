@@ -590,7 +590,9 @@ void RaceDirector::Tick()
         .member1 = raceInstance.raceMapBlockId,
         .gameMode = raceInstance.raceGameMode,
         .teamMode = raceInstance.raceTeamMode,
-        .member4 = 123456,
+        .finalRecordMs = static_cast<uint32_t>(
+          std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::minutes(1) + std::chrono::seconds(23) + std::chrono::milliseconds(450)).count()),
         .member5 = {4,4,4,4,4,4,4,4},
         .member13 = 234567};
 
