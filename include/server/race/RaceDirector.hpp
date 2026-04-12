@@ -275,10 +275,6 @@ public:
     ClientId clientId,
     const protocol::AcCmdCRRequestMagicItem& command);
 
-  void HandleUseMagicItem(
-    ClientId clientId,
-    const protocol::AcCmdCRUseMagicItem& command);
-
   // Magic Targeting Commands for Bolt System
   void HandleStartMagicTarget(
     ClientId clientId,
