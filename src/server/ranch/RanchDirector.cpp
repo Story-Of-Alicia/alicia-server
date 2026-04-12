@@ -2525,106 +2525,113 @@ void RanchDirector::HandleUpdatePet(
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  auto petUid = data::InvalidUid;
-  bool hasUsedItem = false;
+  response.petInfo.characterUid = clientContext.characterUid;
 
-  characterRecord.Mutable(
-    [this, &command, &petUid, &hasUsedItem](data::Character& character)
-    {
-      // The pets of the character.
-      const auto storedPetRecords = GetServerInstance().GetDataDirector().GetPetCache().Get(
-        character.pets());
-
-      if (not storedPetRecords || storedPetRecords->empty())
+  // petId of 0 means deequip the active pet.
+  if (command.petInfo.pet.petId == 0)
+  {
+    characterRecord.Mutable(
+      [](data::Character& character)
       {
+        character.petUid = data::InvalidUid;
+      });
+  }
+  else
+  {
+    auto petUid = data::InvalidUid;
+    bool hasUsedItem = false;
+
+    characterRecord.Mutable(
+      [this, &command, &petUid, &hasUsedItem](data::Character& character)
+      {
+        // The pets of the character.
+        const auto storedPetRecords = GetServerInstance().GetDataDirector().GetPetCache().Get(
+          character.pets());
+
+        if (not storedPetRecords || storedPetRecords->empty())
+        {
+          return;
+        }
+
+        // Find the pet record based on the item used.
+        for (const auto& petRecord : *storedPetRecords)
+        {
+          petRecord.Immutable(
+            [&command, &petUid](const data::Pet& pet)
+            {
+              if (pet.itemUid() == command.petInfo.itemUid)
+              {
+                petUid = pet.uid();
+              }
+            });
+        }
+
+        if (command.itemUid)
+        {
+          hasUsedItem = GetServerInstance().GetItemSystem().HasItemInstance(
+           character,
+           *command.itemUid);
+        }
+
+        if (not hasUsedItem && petUid != data::InvalidUid)
+        {
+          character.petUid = petUid;
+        }
+      });
+
+    if (petUid == data::InvalidUid)
+    {
+      throw std::runtime_error(std::format(
+        "Character {} has no pet with petId {}",
+        clientContext.characterUid,
+        command.petInfo.pet.petId));
+    }
+
+    const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
+    petRecord.Immutable(
+      [&response](const data::Pet& pet)
+      {
+        response.petInfo.pet.name = pet.name();
+        response.petInfo.pet.birthDate = util::TimePointToAliciaTime(pet.birthDate());
+      });
+
+    if (hasUsedItem)
+    {
+      const auto isNameValid = locale::IsNameValid(command.petInfo.pet.name);
+      const auto moderationVerdict = _serverInstance.GetModerationSystem().Moderate(
+        command.petInfo.pet.name);
+
+      if (not isNameValid || moderationVerdict.isPrevented)
+      {
+        SendUpdatePetCancel(clientId, protocol::AcCmdRCUpdatePetCancel{
+          .petInfo = response.petInfo,
+          .error = protocol::ChangeNicknameError::InvalidNickname});
         return;
       }
 
-      // Find the pet record based on the item used.
-      for (const auto& petRecord : *storedPetRecords)
-      {
-        petRecord.Immutable(
-          [&command, &petUid](const data::Pet& pet)
-          {
-            if (pet.itemUid() == command.petInfo.itemUid)
-            {
-              petUid = pet.uid();
-            }
-          });
-      }
+      // TODO: actually reduce the item count or remove it
+      std::string currentName{};
+      petRecord.Mutable(
+        [&command, &currentName](data::Pet& pet)
+        {
+          currentName = pet.name();
+          pet.name() = command.petInfo.pet.name;
+        });
 
-      if (command.itemUid)
-      {
-        hasUsedItem = GetServerInstance().GetItemSystem().HasItemInstance(
-         character,
-         *command.itemUid);
-      }
+      response.petInfo.pet.name = command.petInfo.pet.name;
 
-      if (not hasUsedItem)
-      {
-        character.petUid = petUid;
-      }
-    });
-
-  if (petUid == data::InvalidUid)
-  {
-    throw std::runtime_error(std::format(
-      "Character {} has no pet with petId {}",
-      clientContext.characterUid,
-      command.petInfo.pet.petId));
-    return;
-  }
-
-  // Fill the pet info with the record data.
-
-  response.petInfo.characterUid = clientContext.characterUid;
-
-  const auto petRecord = GetServerInstance().GetDataDirector().GetPet(petUid);
-  petRecord.Immutable(
-    [&response](const data::Pet& pet)
-    {
-      response.petInfo.pet.name = pet.name();
-      response.petInfo.pet.birthDate = util::TimePointToAliciaTime(pet.birthDate());
-    });
-
-  if (hasUsedItem)
-  {
-    const auto isNameValid = locale::IsNameValid(command.petInfo.pet.name);
-    const auto moderationVerdict = _serverInstance.GetModerationSystem().Moderate(
-      command.petInfo.pet.name);
-
-    if (not isNameValid || moderationVerdict.isPrevented)
-    {
-      SendUpdatePetCancel(clientId, protocol::AcCmdRCUpdatePetCancel{
-        .petInfo = response.petInfo,
-        .error =  protocol::ChangeNicknameError::InvalidNickname});
-      return;
+      // Log for moderation
+      const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+        clientContext.characterUid).userName;
+      spdlog::info("User '{}' changed the name of a pet ({}) from '{}' to '{}'",
+        userName,
+        petUid,
+        currentName,
+        command.petInfo.pet.name);
     }
-
-    // TODO: actually reduce the item count or remove it
-    std::string currentName{};
-    petRecord.Mutable(
-      [&command, &currentName](data::Pet& pet)
-      {
-        currentName = pet.name();
-        pet.name() = command.petInfo.pet.name;
-      });
-
-    // Update the response.
-    response.petInfo.pet.name = command.petInfo.pet.name;
-
-    // Log for moderation
-    const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
-      clientContext.characterUid).userName;
-    spdlog::info("User '{}' changed the name of a pet ({}) from '{}' to '{}'",
-      userName,
-      petUid,
-      currentName,
-      command.petInfo.pet.name);
   }
 
   const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
-
   for (const ClientId ranchClientId : ranchInstance.clients)
   {
     _commandServer.QueueCommand<decltype(response)>(ranchClientId, [response]()
