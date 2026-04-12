@@ -28,9 +28,18 @@ namespace server::race::mode
 
 class MagicGameMode : public GameModeHandler
 {
+private:
+  const registry::MagicRegistry& _magicRegistry = _director.GetServerInstance().GetMagicRegistry();
+  // Store reference to item pool based on race team mode
+  const std::vector<uint32_t>& _itemPool = _raceInstance.raceTeamMode == protocol::TeamMode::Team
+    ? _magicRegistry.GetTeamPool()
+    : _magicRegistry.GetSoloPool();
+
 public:
   explicit MagicGameMode(RaceDirector& director, RaceDirector::RaceInstance& raceInstance);
   ~MagicGameMode();
+
+  const server::registry::Magic::SlotInfo RandomMagicItem(tracker::RaceTracker::Racer& racer) const;
 
   void OnHurdleClear(
     ClientId clientId,

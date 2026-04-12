@@ -28,25 +28,30 @@ MagicGameMode::MagicGameMode(RaceDirector& director, RaceDirector::RaceInstance&
 
 MagicGameMode::~MagicGameMode() = default;
 
-bool RollCritical(tracker::RaceTracker::Racer& racer, const server::registry::Magic::SlotInfo& magicSlotInfo)
+const bool RollCritical(
+  tracker::RaceTracker::Racer& racer,
+  const server::registry::Magic::SlotInfo& magicSlotInfo)
 {
+  // If the racer has crit chance effect and
+  // this magic can be affected by this crit chance effect
   if (racer.critChance && magicSlotInfo.affectByCriticalAura) {
     return true;
   }
   return (rand() % 100) < 5;
 }
 
-const server::registry::Magic::SlotInfo RandomMagicItem(ServerInstance& serverInstance,tracker::RaceTracker::Racer& racer)
+const server::registry::Magic::SlotInfo MagicGameMode::RandomMagicItem(tracker::RaceTracker::Racer& racer) const
 {
-  const auto& itemPool = (racer.team == tracker::RaceTracker::Racer::Team::Solo
-    ? serverInstance.GetMagicRegistry().GetSoloPool()
-    : serverInstance.GetMagicRegistry().GetTeamPool());
+  // Get random item from the race item pool
   static std::random_device rd;
-  std::uniform_int_distribution distribution(0, static_cast<int>(itemPool.size() - 1));
-  auto magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(itemPool[distribution(rd)]);
+  std::uniform_int_distribution distribution(0, static_cast<int>(_itemPool.size() - 1));
+  auto magicSlotInfo = _magicRegistry.GetSlotInfo(_itemPool[distribution(rd)]);
+
+  // Roll critical based on racer's current effects
   if (RollCritical(racer, magicSlotInfo))
   {
-    magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(magicSlotInfo.criticalType);
+    // Racer has crit
+    magicSlotInfo = _magicRegistry.GetSlotInfo(magicSlotInfo.criticalType);
   }
   return magicSlotInfo;
 }
@@ -621,10 +626,10 @@ void MagicGameMode::OnRequestMagicItem(
       return starPointResponse;
     });
 
+  const auto& magicItem = RandomMagicItem(racer);
   protocol::AcCmdCRRequestMagicItemOK response{
     .characterOid = command.characterOid,
-    .magicItemId = racer.magicItem.emplace(
-      RandomMagicItem(_director.GetServerInstance(), racer).type),
+    .magicItemId = racer.magicItem.emplace(magicItem.type),
     .member3 = 0
   };
 
