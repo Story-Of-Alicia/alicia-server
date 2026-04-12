@@ -76,7 +76,10 @@ public:
     ProcessStoreQueue();
     ProcessDeleteQueue();
 
-    _entries.clear();
+    {
+      std::scoped_lock lock(_entriesMutex);
+      _entries.clear();
+    }
   }
 
   //! Whether data record is available.
@@ -124,7 +127,6 @@ public:
         RequestStore(key);
       });
   }
-
 
   Record<Data> GetOrCreate(DataSupplier supplier)
   {
@@ -223,26 +225,32 @@ public:
 private:
   void RequestRetrieve(const Key& key)
   {
-    std::scoped_lock lock(_retrieveQueueMutex);
-    _retrieveQueue.insert(key);
+    std::scoped_lock lock(_retrieveQueue.mutex);
+    _retrieveQueue.data.insert(key);
+    _retrieveQueue.dataFlag.store(true, std::memory_order::relaxed);
   }
 
   void RequestStore(const Key& key)
   {
-    std::scoped_lock lock(_storeQueueMutex);
-    _storeQueue.insert(key);
+    std::scoped_lock lock(_storeQueue.mutex);
+    _storeQueue.data.insert(key);
+    _storeQueue.dataFlag.store(true, std::memory_order::relaxed);
   }
 
   void RequestDelete(const Key& key)
   {
-    std::scoped_lock lock(_deleteQueueMutex);
-    _deleteQueue.insert(key);
+    std::scoped_lock lock(_deleteQueue.mutex);
+    _deleteQueue.data.insert(key);
+    _deleteQueue.dataFlag.store(true, std::memory_order::relaxed);
   }
 
   void ProcessRetrieveQueue()
   {
-    std::scoped_lock retrieveQueueLock(_retrieveQueueMutex);
-    for (const auto& key : _retrieveQueue)
+    if (not _retrieveQueue.dataFlag.exchange(false, std::memory_order::relaxed))
+      return;
+
+    std::scoped_lock queueLock(_retrieveQueue.mutex);
+    for (const auto& key : _retrieveQueue.data)
     {
       std::scoped_lock lock(_entriesMutex);
       auto& entry = _entries[key];
@@ -250,13 +258,16 @@ private:
       if (_dataSourceRetrieveListener(key, entry.value))
         entry.available.store(true, std::memory_order::relaxed);
     }
-    _retrieveQueue.clear();
+    _retrieveQueue.data.clear();
   }
 
   void ProcessStoreQueue()
   {
-    std::scoped_lock retrieveQueueLock(_storeQueueMutex);
-    for (const auto& key : _storeQueue)
+    if (not _storeQueue.dataFlag.exchange(false, std::memory_order::relaxed))
+      return;
+
+    std::scoped_lock queueLock(_storeQueue.mutex);
+    for (const auto& key : _storeQueue.data)
     {
       std::scoped_lock lock(_entriesMutex);
       auto& entry = _entries[key];
@@ -264,13 +275,16 @@ private:
       if (entry.available)
         _dataSourceStoreListener(key, entry.value);
     }
-    _storeQueue.clear();
+    _storeQueue.data.clear();
   }
 
   void ProcessDeleteQueue()
   {
-    std::scoped_lock retrieveQueueLock(_deleteQueueMutex);
-    for (const auto& key : _deleteQueue)
+    if (not _deleteQueue.dataFlag.exchange(false, std::memory_order::relaxed))
+      return;
+
+    std::scoped_lock queueLock(_deleteQueue.mutex);
+    for (const auto& key : _deleteQueue.data)
     {
       std::scoped_lock lock(_entriesMutex);
       auto& entry = _entries[key];
@@ -279,7 +293,7 @@ private:
         if (_dataSourceDeleteListener(key))
           entry.available.store(false, std::memory_order::relaxed);
     }
-    _deleteQueue.clear();
+    _deleteQueue.data.clear();
   }
 
   struct Entry
@@ -291,12 +305,16 @@ private:
     Data value;
   };
 
-  std::mutex _retrieveQueueMutex;
-  std::unordered_set<Key> _retrieveQueue;
-  std::mutex _storeQueueMutex;
-  std::unordered_set<Key> _storeQueue;
-  std::mutex _deleteQueueMutex;
-  std::unordered_set<Key> _deleteQueue;
+  struct Queue
+  {
+    std::mutex mutex;
+    std::atomic_bool dataFlag;
+    std::unordered_set<Key> data;
+  };
+
+  Queue _retrieveQueue;
+  Queue _storeQueue;
+  Queue _deleteQueue;
 
   std::mutex _entriesMutex;
   std::unordered_map<Key, Entry> _entries{};
