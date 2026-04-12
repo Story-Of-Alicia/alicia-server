@@ -31,42 +31,39 @@ namespace server::race::mode
 class GameModeHandler
 {
 public:
-  explicit GameModeHandler(RaceDirector& director, const protocol::GameMode gameMode);
+  explicit GameModeHandler(
+    RaceDirector& director,
+    RaceDirector::RaceInstance& raceInstance,
+    const protocol::GameMode gameMode);
   ~GameModeHandler();
 
   virtual void OnHurdleClear(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdCRHurdleClearResult& command) = 0;
 
   virtual void OnRaceUserPos(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdUserRaceUpdatePos& command) = 0;
 
   virtual void OnItemGet(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
-    const protocol::AcCmdUserRaceItemGet& command,
-    tracker::RaceTracker::Item& item) = 0;
+    const protocol::AcCmdUserRaceItemGet& command) = 0;
 
   virtual void OnRequestSpur(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdCRRequestSpur& command) = 0;
 
   virtual void OnStartingRate(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdCRStartingRate& command) = 0;
 
   virtual void OnUseMagicItem(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdCRUseMagicItem& command) = 0;
 
 protected:
   RaceDirector& _director;
+  RaceDirector::RaceInstance& _raceInstance;
   const protocol::GameMode _gameMode;
 };
 

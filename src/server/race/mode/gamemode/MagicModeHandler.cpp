@@ -22,20 +22,19 @@
 namespace server::race::mode
 {
 
-MagicGameMode::MagicGameMode(RaceDirector& director)
-  : GameModeHandler(director, protocol::GameMode::Magic)
+MagicGameMode::MagicGameMode(RaceDirector& director, RaceDirector::RaceInstance& raceInstance)
+  : GameModeHandler(director, raceInstance, protocol::GameMode::Magic)
 {}
 
 MagicGameMode::~MagicGameMode() = default;
 
 void MagicGameMode::OnHurdleClear(
   ClientId clientId,
-  RaceDirector::RaceInstance& raceInstance,
   const protocol::AcCmdCRHurdleClearResult& command)
 {
   const auto& clientContext = _director.GetClientContext(clientId);
 
-  auto& racer = raceInstance.tracker.GetRacer(
+  auto& racer = _raceInstance.tracker.GetRacer(
     clientContext.characterUid);
 
   // TODO: Revise this in NPC races
@@ -124,7 +123,7 @@ void MagicGameMode::OnHurdleClear(
   // Triggers magic item request when set to true (if gamemode is magic and magic gauge is max)
   // TODO: is there only perfect clears in magic race?
   starPointResponse.giveMagicItem =
-    raceInstance.raceGameMode == protocol::GameMode::Magic &&
+    _raceInstance.raceGameMode == protocol::GameMode::Magic &&
     racer.starPointValue >= _gameModeInfo.starPointsMax &&
     command.hurdleClearType == protocol::AcCmdCRHurdleClearResult::HurdleClearType::Perfect;
 
@@ -149,20 +148,19 @@ void MagicGameMode::OnHurdleClear(
 
 void MagicGameMode::OnRaceUserPos(
   ClientId clientId,
-  RaceDirector::RaceInstance& raceInstance,
   const protocol::AcCmdUserRaceUpdatePos& command)
 {
   // Handle general command functionality (item spawning)
-  GameModeHandler::OnRaceUserPos(clientId, raceInstance, command);
+  GameModeHandler::OnRaceUserPos(clientId, command);
 
   const auto& clientContext = _director.GetClientContext(clientId);
-  auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
+  auto& racer = _raceInstance.tracker.GetRacer(clientContext.characterUid);
 
   // Only regenerate magic during active race (after countdown finishes)
   // Check if game mode is magic, race is active, countdown finished, and not holding an item
-  const bool raceActuallyStarted = std::chrono::steady_clock::now() >= raceInstance.raceStartTimePoint;
+  const bool raceActuallyStarted = std::chrono::steady_clock::now() >= _raceInstance.raceStartTimePoint;
 
-  if (raceInstance.raceGameMode == protocol::GameMode::Magic
+  if (_raceInstance.raceGameMode == protocol::GameMode::Magic
     && racer.state == tracker::RaceTracker::Racer::State::Racing
     && raceActuallyStarted
     && not racer.magicItem.has_value())
@@ -203,7 +201,7 @@ void MagicGameMode::OnRaceUserPos(
       });
   }
 
-  for (const auto& raceClientId : raceInstance.clients)
+  for (const auto& raceClientId : _raceInstance.clients)
   {
     // Prevent broadcast to self.
     if (clientId == raceClientId)
@@ -213,9 +211,7 @@ void MagicGameMode::OnRaceUserPos(
 
 void MagicGameMode::OnItemGet(
   [[maybe_unused]] ClientId clientId,
-  [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
-  [[maybe_unused]] const protocol::AcCmdUserRaceItemGet& command,
-  [[maybe_unused]] tracker::RaceTracker::Item& item)
+  [[maybe_unused]] const protocol::AcCmdUserRaceItemGet& command)
 {
   // TODO: copy implementation from RaceDirector
   throw std::logic_error("Not implemented");
@@ -223,7 +219,6 @@ void MagicGameMode::OnItemGet(
 
 void MagicGameMode::OnRequestSpur(
   ClientId,
-  RaceDirector::RaceInstance&,
   const protocol::AcCmdCRRequestSpur&)
 {
   // Ignore request spur (speed) in magic mode
@@ -231,7 +226,6 @@ void MagicGameMode::OnRequestSpur(
 
 void MagicGameMode::OnStartingRate(
   ClientId clientId,
-  RaceDirector::RaceInstance& raceInstance,
   const protocol::AcCmdCRStartingRate& command)
 {
   // TODO: check for sensible values
@@ -243,7 +237,7 @@ void MagicGameMode::OnStartingRate(
   }
 
   const auto& clientContext = _director.GetClientContext(clientId);
-  auto& racer = raceInstance.tracker.GetRacer(
+  auto& racer = _raceInstance.tracker.GetRacer(
     clientContext.characterUid);
 
   // TODO: Revise this in NPC races
@@ -275,7 +269,6 @@ void MagicGameMode::OnStartingRate(
 
 void MagicGameMode::OnUseMagicItem(
   [[maybe_unused]] ClientId clientId,
-  [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
   [[maybe_unused]] const protocol::AcCmdCRUseMagicItem& command)
 {
   // TODO: copy implementation from RaceDirector

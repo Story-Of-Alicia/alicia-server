@@ -28,8 +28,8 @@ namespace server::race::mode
 class TeamRaceMode final : public TeamModeHandler
 {
 public:
-  explicit TeamRaceMode(RaceDirector& director)
-    : TeamModeHandler(director)
+  explicit TeamRaceMode(RaceDirector& director, RaceDirector::RaceInstance& raceInstance)
+    : TeamModeHandler(director, raceInstance)
   {}
 
   bool AreTeamsBalanced(server::Room& room) const override;
@@ -45,8 +45,7 @@ public:
   //! Handles team gauge-related logic, including speed and theoretically guild battles.
   //! Primary logic reference: `TeamSpurGaugeInfo` in libconfig
   void OnTeamGauge(
-    ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance) override;
+    ClientId clientId) override;
 };
 
 } // namespace server::race::mode

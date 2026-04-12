@@ -62,24 +62,23 @@ bool TeamRaceMode::IsAlly(
 }
 
 void TeamRaceMode::OnTeamGauge(
-  ClientId clientId,
-  RaceDirector::RaceInstance& raceInstance)
+  ClientId clientId)
 {
   const auto& clientContext = _director.GetClientContext(clientId);
 
   // If race teammode is not team then we are done here.
   // This is necessary to ensure no team-related logic is handled when spur logic is handled.
   // Sanity check for speed gamemode
-  bool isTeamMode = raceInstance.raceTeamMode == protocol::TeamMode::Team;
-  bool isSpeedGameMode = raceInstance.raceGameMode == protocol::GameMode::Speed;
+  bool isTeamMode = _raceInstance.raceTeamMode == protocol::TeamMode::Team;
+  bool isSpeedGameMode = _raceInstance.raceGameMode == protocol::GameMode::Speed;
   if (not isTeamMode or not isSpeedGameMode)
     return;
 
-  auto& racer = raceInstance.tracker.GetRacer(
+  auto& racer = _raceInstance.tracker.GetRacer(
     clientContext.characterUid);
 
-  auto& blueTeam = raceInstance.tracker.blueTeam;
-  auto& redTeam = raceInstance.tracker.redTeam;
+  auto& blueTeam = _raceInstance.tracker.blueTeam;
+  auto& redTeam = _raceInstance.tracker.redTeam;
   auto& team = 
     racer.team == tracker::RaceTracker::Racer::Team::Red ? redTeam :
     racer.team == tracker::RaceTracker::Racer::Team::Blue ? blueTeam :
@@ -111,7 +110,7 @@ void TeamRaceMode::OnTeamGauge(
   // Use the max of the two team sizes to handle potentially unbalanced teams.
   uint32_t redTeamCount = 0;
   uint32_t blueTeamCount = 0;
-  for (const auto& _ : raceInstance.tracker.GetRacers() | std::views::values)
+  for (const auto& _ : _raceInstance.tracker.GetRacers() | std::views::values)
   {
     if (_.team == tracker::RaceTracker::Racer::Team::Red)
       ++redTeamCount;
@@ -202,7 +201,7 @@ void TeamRaceMode::OnTeamGauge(
     constexpr auto SpurStartDelay = std::chrono::milliseconds(1500);
 
     _director.GetScheduler().Queue(
-      [this, roomUid = raceInstance.roomUid, &racer, &spurringTeamInfo, maxPoints, teamSize]()
+      [this, roomUid = _raceInstance.roomUid, &racer, &spurringTeamInfo, maxPoints, teamSize]()
       {
         std::scoped_lock lock(_director._raceInstancesMutex);
         const auto raceInstanceIter = _director._raceInstances.find(roomUid);;
@@ -276,7 +275,7 @@ void TeamRaceMode::OnTeamGauge(
   }
 
   // Broadcast invoker's team gauge status
-  for (const auto& raceClientId : raceInstance.clients)
+  for (const auto& raceClientId : _raceInstance.clients)
   {
     _director.GetCommandServer().QueueCommand<decltype(spur)>(raceClientId, [spur](){ return spur; });
   }

@@ -28,8 +28,8 @@ namespace server::race::mode
 class FfaTeamMode final : public TeamModeHandler
 {
 public:
-  explicit FfaTeamMode(RaceDirector& director)
-    : TeamModeHandler(director)
+  explicit FfaTeamMode(RaceDirector& director, RaceDirector::RaceInstance& raceInstance)
+    : TeamModeHandler(director, raceInstance)
   {}
 
   bool AreTeamsBalanced(server::Room& room) const override;
@@ -43,8 +43,7 @@ public:
     const tracker::RaceTracker::Racer& b) const override;
 
   void OnTeamGauge(
-    ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance) override;
+    ClientId clientId) override;
 };
 
 } // namespace server::race::mode

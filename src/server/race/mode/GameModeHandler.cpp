@@ -23,19 +23,18 @@
 namespace server::race::mode
 {
 
-GameModeHandler::GameModeHandler(RaceDirector& director, const protocol::GameMode gameMode)
-  : _director(director), _gameMode(gameMode)
+GameModeHandler::GameModeHandler(RaceDirector& director, RaceDirector::RaceInstance& raceInstance, const protocol::GameMode gameMode)
+  : _director(director), _raceInstance(raceInstance), _gameMode(gameMode)
 {}
 
 GameModeHandler::~GameModeHandler() = default;
 
 void GameModeHandler::OnRaceUserPos(
   ClientId clientId,
-  RaceDirector::RaceInstance& raceInstance,
   const protocol::AcCmdUserRaceUpdatePos& command)
 {
   const auto& clientContext = _director.GetClientContext(clientId);
-  auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
+  auto& racer = _raceInstance.tracker.GetRacer(clientContext.characterUid);
 
   // TODO: Revise this in NPC races
   if (command.oid != racer.oid)
@@ -44,7 +43,7 @@ void GameModeHandler::OnRaceUserPos(
       "Client tried to perform action on behalf of different racer");
   }
 
-  for (const auto& [itemOid, item] : raceInstance.tracker.GetItems())
+  for (const auto& [itemOid, item] : _raceInstance.tracker.GetItems())
   {
     const bool canItemRespawn = std::chrono::steady_clock::now() >= item.respawnTimePoint;
     if (not canItemRespawn)

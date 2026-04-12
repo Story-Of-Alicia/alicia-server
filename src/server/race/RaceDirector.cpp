@@ -182,8 +182,8 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
 
       std::scoped_lock lock(_raceInstancesMutex);
       auto& raceInstance = GetRaceInstance(clientContext);
-      raceInstance.gameModeHandler->OnRequestSpur(clientId, raceInstance, message);
-      raceInstance.teamModeHandler->OnTeamGauge(clientId, raceInstance);
+      raceInstance.gameModeHandler->OnRequestSpur(clientId, message);
+      raceInstance.teamModeHandler->OnTeamGauge(clientId);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRHurdleClearResult>(
@@ -193,7 +193,7 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
 
       std::scoped_lock lock(_raceInstancesMutex);
       auto& raceInstance = GetRaceInstance(clientContext);
-      raceInstance.gameModeHandler->OnHurdleClear(clientId, raceInstance, message);
+      raceInstance.gameModeHandler->OnHurdleClear(clientId, message);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRStartingRate>(
@@ -203,7 +203,7 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
 
       std::scoped_lock lock(_raceInstancesMutex);
       auto& raceInstance = GetRaceInstance(clientContext);
-      raceInstance.gameModeHandler->OnStartingRate(clientId, raceInstance, message);
+      raceInstance.gameModeHandler->OnStartingRate(clientId, message);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceUpdatePos>(
@@ -213,7 +213,7 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
 
       std::scoped_lock lock(_raceInstancesMutex);
       auto& raceInstance = GetRaceInstance(clientContext);
-      raceInstance.gameModeHandler->OnRaceUserPos(clientId, raceInstance, message);
+      raceInstance.gameModeHandler->OnRaceUserPos(clientId, message);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRChat>(
@@ -1550,13 +1550,13 @@ void RaceDirector::HandleStartRace(
       switch (raceInstance.raceGameMode)
       {
         case protocol::GameMode::Speed:
-          raceInstance.gameModeHandler = std::make_unique<race::mode::SpeedGameMode>(*this);
+          raceInstance.gameModeHandler = std::make_unique<race::mode::SpeedGameMode>(*this, raceInstance);
           break;
         case protocol::GameMode::Magic:
-          raceInstance.gameModeHandler = std::make_unique<race::mode::MagicGameMode>(*this);
+          raceInstance.gameModeHandler = std::make_unique<race::mode::MagicGameMode>(*this, raceInstance);
           break;
         case protocol::GameMode::Mission:
-          raceInstance.gameModeHandler = std::make_unique<race::mode::MissionGameMode>(*this, raceInstance.raceMissionId);
+          raceInstance.gameModeHandler = std::make_unique<race::mode::MissionGameMode>(*this, raceInstance, raceInstance.raceMissionId);
           break;
         default:
           raceInstance.gameModeHandler = nullptr;
@@ -1566,10 +1566,10 @@ void RaceDirector::HandleStartRace(
       switch (raceInstance.raceTeamMode)
       {
         case protocol::TeamMode::FFA:
-          raceInstance.teamModeHandler = std::make_unique<race::mode::FfaTeamMode>(*this);
+          raceInstance.teamModeHandler = std::make_unique<race::mode::FfaTeamMode>(*this, raceInstance);
           break;
         case protocol::TeamMode::Team:
-          raceInstance.teamModeHandler = std::make_unique<race::mode::TeamRaceMode>(*this);
+          raceInstance.teamModeHandler = std::make_unique<race::mode::TeamRaceMode>(*this, raceInstance);
           break;
         default:
           raceInstance.teamModeHandler = nullptr;

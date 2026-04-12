@@ -28,38 +28,34 @@ namespace server::race::mode
 class MissionGameMode : public GameModeHandler
 {
 public:
-  explicit MissionGameMode(RaceDirector& director, uint32_t missionId);
+  explicit MissionGameMode(
+    RaceDirector& director,
+    RaceDirector::RaceInstance& raceInstance,
+    uint32_t missionId);
   ~MissionGameMode();
 
   void OnHurdleClear(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdCRHurdleClearResult& command) override;
 
   void OnRaceUserPos(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdUserRaceUpdatePos& command) override;
 
   void OnItemGet(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
-    const protocol::AcCmdUserRaceItemGet& command,
-    tracker::RaceTracker::Item& item) override;
+    const protocol::AcCmdUserRaceItemGet& command) override;
 
   void OnRequestSpur(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdCRRequestSpur& command) override;
 
   void OnStartingRate(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdCRStartingRate& command) override;
 
   void OnUseMagicItem(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdCRUseMagicItem& command) override;
 
 private:

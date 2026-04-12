@@ -33,8 +33,8 @@ namespace server::race::mode
 class TeamModeHandler
 {
 public:
-  explicit TeamModeHandler(RaceDirector& director)
-    : _director(director)
+  explicit TeamModeHandler(RaceDirector& director, RaceDirector::RaceInstance& raceInstance)
+    : _director(director), _raceInstance(raceInstance)
   {}
 
   virtual ~TeamModeHandler() = default;
@@ -50,11 +50,11 @@ public:
     const tracker::RaceTracker::Racer& b) const = 0;
 
   virtual void OnTeamGauge(
-    ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance) = 0;
+    ClientId clientId) = 0;
 
 protected:
   RaceDirector& _director;
+  RaceDirector::RaceInstance& _raceInstance;
 };
 
 } // namespace server::race::mode

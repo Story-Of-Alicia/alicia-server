@@ -29,38 +29,31 @@ namespace server::race::mode
 class SpeedGameMode : public GameModeHandler
 {
 public:
-  explicit SpeedGameMode(RaceDirector& director);
+  explicit SpeedGameMode(RaceDirector& director, RaceDirector::RaceInstance& raceInstance);
   ~SpeedGameMode();
 
   void OnHurdleClear(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdCRHurdleClearResult& command) override;
 
   void OnRaceUserPos(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdUserRaceUpdatePos& command) override;
 
   void OnItemGet(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
-    const protocol::AcCmdUserRaceItemGet& command,
-    tracker::RaceTracker::Item& item) override;
+    const protocol::AcCmdUserRaceItemGet& command) override;
 
   void OnRequestSpur(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdCRRequestSpur& command) override;
 
   void OnStartingRate(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdCRStartingRate& command) override;
 
   void OnUseMagicItem(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdCRUseMagicItem& command) override;
 
 private:

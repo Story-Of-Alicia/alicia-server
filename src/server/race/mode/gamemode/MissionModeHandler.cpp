@@ -24,8 +24,8 @@
 namespace server::race::mode
 {
 
-MissionGameMode::MissionGameMode(RaceDirector& director, uint32_t missionId)
-  : GameModeHandler(director, protocol::GameMode::Mission), _missionId(missionId)
+MissionGameMode::MissionGameMode(RaceDirector& director, RaceDirector::RaceInstance& raceInstance, uint32_t missionId)
+  : GameModeHandler(director, raceInstance, protocol::GameMode::Mission), _missionId(missionId)
 {
   // Mission 32 is tutorial speed mode (hardcoded for now as per user request)
   // TODO: add MissionRegistry to get the mode from missionId
@@ -33,7 +33,7 @@ MissionGameMode::MissionGameMode(RaceDirector& director, uint32_t missionId)
   {
     case 31:
     case 32:
-      _gamemodeHandler = std::make_unique<SpeedGameMode>(_director);
+      _gamemodeHandler = std::make_unique<SpeedGameMode>(_director, raceInstance);
       break;
     default:
       throw std::runtime_error(
@@ -45,51 +45,44 @@ MissionGameMode::~MissionGameMode() = default;
 
 void MissionGameMode::OnHurdleClear(
   ClientId clientId,
-  RaceDirector::RaceInstance& raceInstance,
   const protocol::AcCmdCRHurdleClearResult& command)
 {
-  _gamemodeHandler->OnHurdleClear(clientId, raceInstance, command);
+  _gamemodeHandler->OnHurdleClear(clientId, command);
 }
 
 void MissionGameMode::OnRaceUserPos(
   ClientId clientId,
-  RaceDirector::RaceInstance& raceInstance,
   const protocol::AcCmdUserRaceUpdatePos& command)
 {
-  _gamemodeHandler->OnRaceUserPos(clientId, raceInstance, command);
+  _gamemodeHandler->OnRaceUserPos(clientId, command);
 }
 
 void MissionGameMode::OnItemGet(
   ClientId clientId,
-  RaceDirector::RaceInstance& raceInstance,
-  const protocol::AcCmdUserRaceItemGet& command,
-  tracker::RaceTracker::Item& item)
+  const protocol::AcCmdUserRaceItemGet& command)
 {
-  _gamemodeHandler->OnItemGet(clientId, raceInstance, command, item);
+  _gamemodeHandler->OnItemGet(clientId, command);
 }
 
 void MissionGameMode::OnRequestSpur(
   ClientId clientId,
-  RaceDirector::RaceInstance& raceInstance,
   const protocol::AcCmdCRRequestSpur& command)
 {
-  _gamemodeHandler->OnRequestSpur(clientId, raceInstance, command);
+  _gamemodeHandler->OnRequestSpur(clientId, command);
 }
 
 void MissionGameMode::OnStartingRate(
   ClientId clientId,
-  RaceDirector::RaceInstance& raceInstance,
   const protocol::AcCmdCRStartingRate& command)
 {
-  _gamemodeHandler->OnStartingRate(clientId, raceInstance, command);
+  _gamemodeHandler->OnStartingRate(clientId, command);
 }
 
 void MissionGameMode::OnUseMagicItem(
   ClientId clientId,
-  RaceDirector::RaceInstance& raceInstance,
   const protocol::AcCmdCRUseMagicItem& command)
 {
-  _gamemodeHandler->OnUseMagicItem(clientId, raceInstance, command);
+  _gamemodeHandler->OnUseMagicItem(clientId, command);
 }
 
 } // namespace server::race::mode

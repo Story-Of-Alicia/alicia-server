@@ -42,8 +42,7 @@ bool FfaTeamMode::IsAlly(
 }
 
 void FfaTeamMode::OnTeamGauge(
-  ClientId,
-  RaceDirector::RaceInstance&)
+  ClientId)
 {
   // No team gauge in FFA
 }

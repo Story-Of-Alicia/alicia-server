@@ -22,20 +22,19 @@
 namespace server::race::mode
 {
 
-SpeedGameMode::SpeedGameMode(RaceDirector& director)
-  : GameModeHandler(director, protocol::GameMode::Speed)
+SpeedGameMode::SpeedGameMode(RaceDirector& director, RaceDirector::RaceInstance& raceInstance)
+  : GameModeHandler(director, raceInstance, protocol::GameMode::Speed)
 {}
 
 SpeedGameMode::~SpeedGameMode() = default;
 
 void SpeedGameMode::OnHurdleClear(
   ClientId clientId,
-  RaceDirector::RaceInstance& raceInstance,
   const protocol::AcCmdCRHurdleClearResult& command)
 {
   const auto& clientContext = _director.GetClientContext(clientId);
 
-  auto& racer = raceInstance.tracker.GetRacer(
+  auto& racer = _raceInstance.tracker.GetRacer(
     clientContext.characterUid);
 
   // TODO: Revise this in NPC races
@@ -143,18 +142,15 @@ void SpeedGameMode::OnHurdleClear(
 
 void SpeedGameMode::OnRaceUserPos(
   ClientId clientId,
-  RaceDirector::RaceInstance& raceInstance,
   const protocol::AcCmdUserRaceUpdatePos& command)
 {
   // Base handler handles item spawning
-  GameModeHandler::OnRaceUserPos(clientId, raceInstance, command);
+  GameModeHandler::OnRaceUserPos(clientId, command);
 }
 
 void SpeedGameMode::OnItemGet(
   [[maybe_unused]] ClientId clientId,
-  [[maybe_unused]] RaceDirector::RaceInstance& raceInstance,
-  [[maybe_unused]] const protocol::AcCmdUserRaceItemGet& command,
-  [[maybe_unused]] tracker::RaceTracker::Item& item)
+  [[maybe_unused]] const protocol::AcCmdUserRaceItemGet& command)
 {
   // TODO: copy implementation from RaceDirector
   throw std::logic_error("Not implemented");
@@ -162,11 +158,10 @@ void SpeedGameMode::OnItemGet(
 
 void SpeedGameMode::OnRequestSpur(
   ClientId clientId,
-  RaceDirector::RaceInstance& raceInstance,
   const protocol::AcCmdCRRequestSpur& command)
 {
   const auto& clientContext = _director.GetClientContext(clientId);
-  auto& racer = raceInstance.tracker.GetRacer(
+  auto& racer = _raceInstance.tracker.GetRacer(
     clientContext.characterUid);
 
   // TODO: Revise this in NPC races
@@ -210,7 +205,6 @@ void SpeedGameMode::OnRequestSpur(
 
 void SpeedGameMode::OnStartingRate(
   ClientId clientId,
-  RaceDirector::RaceInstance& raceInstance,
   const protocol::AcCmdCRStartingRate& command)
 {
   // TODO: check for sensible values
@@ -222,7 +216,7 @@ void SpeedGameMode::OnStartingRate(
   }
 
   const auto& clientContext = _director.GetClientContext(clientId);
-  auto& racer = raceInstance.tracker.GetRacer(
+  auto& racer = _raceInstance.tracker.GetRacer(
     clientContext.characterUid);
 
   // TODO: Revise this in NPC races
@@ -254,7 +248,6 @@ void SpeedGameMode::OnStartingRate(
 
 void SpeedGameMode::OnUseMagicItem(
   ClientId,
-  RaceDirector::RaceInstance&,
   const protocol::AcCmdCRUseMagicItem&)
 {
   // Ignore in speed mode

@@ -29,38 +29,31 @@ namespace server::race::mode
 class MagicGameMode : public GameModeHandler
 {
 public:
-  explicit MagicGameMode(RaceDirector& director);
+  explicit MagicGameMode(RaceDirector& director, RaceDirector::RaceInstance& raceInstance);
   ~MagicGameMode();
 
   void OnHurdleClear(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdCRHurdleClearResult& command) override;
 
   void OnRaceUserPos(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdUserRaceUpdatePos& command) override;
 
   void OnItemGet(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
-    const protocol::AcCmdUserRaceItemGet& command,
-    tracker::RaceTracker::Item& item) override;
+    const protocol::AcCmdUserRaceItemGet& command) override;
 
   void OnRequestSpur(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdCRRequestSpur& command) override;
 
   void OnStartingRate(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdCRStartingRate& command) override;
 
   void OnUseMagicItem(
     ClientId clientId,
-    RaceDirector::RaceInstance& raceInstance,
     const protocol::AcCmdCRUseMagicItem& command) override;
 
 private:
