@@ -58,6 +58,10 @@ public:
     ClientId clientId,
     const protocol::AcCmdCRUseMagicItem& command) override;
 
+  void OnRequestMagicItem(
+    ClientId clientId,
+    const protocol::AcCmdCRRequestMagicItem& command) override;
+
 private:
   uint32_t _missionId;
   std::unique_ptr<GameModeHandler> _gamemodeHandler;

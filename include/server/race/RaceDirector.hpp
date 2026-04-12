@@ -271,10 +271,6 @@ public:
     ClientId clientId,
     const protocol::AcCmdUserRaceDeactivateEvent& command);
 
-  void HandleRequestMagicItem(
-    ClientId clientId,
-    const protocol::AcCmdCRRequestMagicItem& command);
-
   // Magic Targeting Commands for Bolt System
   void HandleStartMagicTarget(
     ClientId clientId,

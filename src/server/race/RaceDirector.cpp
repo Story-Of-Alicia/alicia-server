@@ -53,29 +53,6 @@ uint64_t TimePointToRaceTimePoint(const std::chrono::steady_clock::time_point& t
     timePoint.time_since_epoch()).count() / IntervalConstant;
 }
 
-bool RollCritical(tracker::RaceTracker::Racer& racer, const server::registry::Magic::SlotInfo& magicSlotInfo)
-{
-  if (racer.critChance && magicSlotInfo.affectByCriticalAura) {
-    return true;
-  }
-  return (rand() % 100) < 5;
-}
-
-const server::registry::Magic::SlotInfo RandomMagicItem(ServerInstance& serverInstance,tracker::RaceTracker::Racer& racer)
-{
-  const auto& itemPool = (racer.team == tracker::RaceTracker::Racer::Team::Solo
-    ? serverInstance.GetMagicRegistry().GetSoloPool()
-    : serverInstance.GetMagicRegistry().GetTeamPool());
-  static std::random_device rd;
-  std::uniform_int_distribution distribution(0, static_cast<int>(itemPool.size() - 1));
-  auto magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(itemPool[distribution(rd)]);
-  if (RollCritical(racer, magicSlotInfo))
-  {
-    magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(magicSlotInfo.criticalType);
-  }
-  return magicSlotInfo;
-}
-
 } // anon namespace
 
 RaceDirector::~RaceDirector() = default;
@@ -255,7 +232,11 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestMagicItem>(
     [this](ClientId clientId, const auto& message)
     {
-      HandleRequestMagicItem(clientId, message);
+      const auto& clientContext = GetClientContext(clientId);
+
+      std::scoped_lock lock(_raceInstancesMutex);
+      auto& raceInstance = GetRaceInstance(clientContext);
+      raceInstance.gameModeHandler->OnRequestMagicItem(clientId, message);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRUseMagicItem>(
@@ -2347,76 +2328,6 @@ void RaceDirector::HandleUserRaceDeactivateEvent
     _commandServer.QueueCommand<decltype(notify)>(
       raceClientId,
       [notify]{return notify;});
-  }
-}
-
-void RaceDirector::HandleRequestMagicItem(
-  ClientId clientId,
-  const protocol::AcCmdCRRequestMagicItem& command)
-{
-  const auto& clientContext = GetClientContext(clientId);
-
-  std::scoped_lock lock(_raceInstancesMutex);
-  auto& raceInstance = GetRaceInstance(clientContext);
-  auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
-
-  // TODO: Revise this on NPC races
-  if (command.characterOid != racer.oid)
-  {
-    spdlog::warn("Client tried to perform action on behalf of different racer");
-    return;
-  }
-
-  // Check if racer is already holding a magic item
-  if (racer.magicItem.has_value())
-  {
-    // todo: this seems to happen a lot, figure it out
-    return;
-  }
-
-  protocol::AcCmdCRStarPointGetOK starPointResponse{
-    .characterOid = command.characterOid,
-    .starPointValue = racer.starPointValue = 0,
-    .giveMagicItem = false
-  };
-
-  _commandServer.QueueCommand<decltype(starPointResponse)>(
-    clientId,
-    [starPointResponse]
-    {
-      return starPointResponse;
-    });
-
-  protocol::AcCmdCRRequestMagicItemOK response{
-    .characterOid = command.characterOid,
-    .magicItemId = racer.magicItem.emplace(RandomMagicItem(_serverInstance, racer).type),
-    .member3 = 0
-  };
-
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [response]
-    {
-      return response;
-    });
-
-  protocol::AcCmdCRRequestMagicItemNotify notify{
-    .magicItemId = response.magicItemId,
-    .characterOid = response.characterOid
-  };
-
-  for (const auto& raceClientId : raceInstance.clients)
-  {
-    // Prevent broadcast to self
-    if (raceClientId == clientId)
-      continue;
-
-    _commandServer.QueueCommand<decltype(notify)>(
-      raceClientId,
-      [notify]
-      {
-        return notify;
-      });
   }
 }
 

@@ -85,4 +85,11 @@ void MissionGameMode::OnUseMagicItem(
   _gamemodeHandler->OnUseMagicItem(clientId, command);
 }
 
+void MissionGameMode::OnRequestMagicItem(
+  ClientId clientId,
+  const protocol::AcCmdCRRequestMagicItem& command)
+{
+  _gamemodeHandler->OnRequestMagicItem(clientId, command);
+}
+
 } // namespace server::race::mode

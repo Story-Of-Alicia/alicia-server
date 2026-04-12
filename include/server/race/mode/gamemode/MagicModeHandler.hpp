@@ -55,6 +55,10 @@ public:
   void OnUseMagicItem(
     ClientId clientId,
     const protocol::AcCmdCRUseMagicItem& command) override;
+
+  void OnRequestMagicItem(
+    ClientId clientId,
+    const protocol::AcCmdCRRequestMagicItem& command) override;
 };
 
 } // namespace server::race::mode

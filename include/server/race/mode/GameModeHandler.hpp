@@ -60,6 +60,10 @@ public:
     ClientId clientId,
     const protocol::AcCmdCRUseMagicItem& command) = 0;
 
+  virtual void OnRequestMagicItem(
+    ClientId clientId,
+    const protocol::AcCmdCRRequestMagicItem& command) = 0;
+
 protected:
   RaceDirector& _director;
   RaceDirector::RaceInstance& _raceInstance;

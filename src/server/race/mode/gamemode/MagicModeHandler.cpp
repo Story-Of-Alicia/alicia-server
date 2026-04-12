@@ -28,6 +28,29 @@ MagicGameMode::MagicGameMode(RaceDirector& director, RaceDirector::RaceInstance&
 
 MagicGameMode::~MagicGameMode() = default;
 
+bool RollCritical(tracker::RaceTracker::Racer& racer, const server::registry::Magic::SlotInfo& magicSlotInfo)
+{
+  if (racer.critChance && magicSlotInfo.affectByCriticalAura) {
+    return true;
+  }
+  return (rand() % 100) < 5;
+}
+
+const server::registry::Magic::SlotInfo RandomMagicItem(ServerInstance& serverInstance,tracker::RaceTracker::Racer& racer)
+{
+  const auto& itemPool = (racer.team == tracker::RaceTracker::Racer::Team::Solo
+    ? serverInstance.GetMagicRegistry().GetSoloPool()
+    : serverInstance.GetMagicRegistry().GetTeamPool());
+  static std::random_device rd;
+  std::uniform_int_distribution distribution(0, static_cast<int>(itemPool.size() - 1));
+  auto magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(itemPool[distribution(rd)]);
+  if (RollCritical(racer, magicSlotInfo))
+  {
+    magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(magicSlotInfo.criticalType);
+  }
+  return magicSlotInfo;
+}
+
 void MagicGameMode::OnHurdleClear(
   ClientId clientId,
   const protocol::AcCmdCRHurdleClearResult& command)
@@ -562,6 +585,74 @@ void MagicGameMode::OnUseMagicItem(
   }
 
   racer.magicItem.reset();
+}
+
+void MagicGameMode::OnRequestMagicItem(
+  ClientId clientId,
+  const protocol::AcCmdCRRequestMagicItem& command)
+{
+  const auto& clientContext = _director.GetClientContext(clientId);
+  auto& racer = _raceInstance.tracker.GetRacer(clientContext.characterUid);
+
+  // TODO: Revise this on NPC races
+  if (command.characterOid != racer.oid)
+  {
+    spdlog::warn("Client tried to perform action on behalf of different racer");
+    return;
+  }
+
+  // Check if racer is already holding a magic item
+  if (racer.magicItem.has_value())
+  {
+    // todo: this seems to happen a lot, figure it out
+    return;
+  }
+
+  protocol::AcCmdCRStarPointGetOK starPointResponse{
+    .characterOid = command.characterOid,
+    .starPointValue = racer.starPointValue = 0,
+    .giveMagicItem = false
+  };
+
+  _director.GetCommandServer().QueueCommand<decltype(starPointResponse)>(
+    clientId,
+    [starPointResponse]
+    {
+      return starPointResponse;
+    });
+
+  protocol::AcCmdCRRequestMagicItemOK response{
+    .characterOid = command.characterOid,
+    .magicItemId = racer.magicItem.emplace(
+      RandomMagicItem(_director.GetServerInstance(), racer).type),
+    .member3 = 0
+  };
+
+  _director.GetCommandServer().QueueCommand<decltype(response)>(
+    clientId,
+    [response]
+    {
+      return response;
+    });
+
+  protocol::AcCmdCRRequestMagicItemNotify notify{
+    .magicItemId = response.magicItemId,
+    .characterOid = response.characterOid
+  };
+
+  for (const auto& raceClientId : _raceInstance.clients)
+  {
+    // Prevent broadcast to self
+    if (raceClientId == clientId)
+      continue;
+
+    _director.GetCommandServer().QueueCommand<decltype(notify)>(
+      raceClientId,
+      [notify]
+      {
+        return notify;
+      });
+  }
 }
 
 } // namespace server::race::mode

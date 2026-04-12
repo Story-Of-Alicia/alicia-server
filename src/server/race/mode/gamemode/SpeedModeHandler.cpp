@@ -310,4 +310,11 @@ void SpeedGameMode::OnUseMagicItem(
   // Ignore in speed mode
 }
 
+void SpeedGameMode::OnRequestMagicItem(
+  ClientId,
+  const protocol::AcCmdCRRequestMagicItem&)
+{
+  // Ignore in speed mode
+}
+
 } // namespace server::race::mode
