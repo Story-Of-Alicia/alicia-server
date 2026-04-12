@@ -33,8 +33,7 @@ class GameModeHandler
 public:
   explicit GameModeHandler(
     RaceDirector& director,
-    RaceDirector::RaceInstance& raceInstance,
-    const protocol::GameMode gameMode);
+    RaceDirector::RaceInstance& raceInstance);
   ~GameModeHandler();
 
   virtual void OnHurdleClear(
@@ -64,7 +63,7 @@ public:
 protected:
   RaceDirector& _director;
   RaceDirector::RaceInstance& _raceInstance;
-  const protocol::GameMode _gameMode;
+  const registry::Course::GameModeInfo& _gameModeInfo;
 };
 
 } // namespace server::race::mode

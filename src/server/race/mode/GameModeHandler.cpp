@@ -23,8 +23,10 @@
 namespace server::race::mode
 {
 
-GameModeHandler::GameModeHandler(RaceDirector& director, RaceDirector::RaceInstance& raceInstance, const protocol::GameMode gameMode)
-  : _director(director), _raceInstance(raceInstance), _gameMode(gameMode)
+GameModeHandler::GameModeHandler(RaceDirector& director, RaceDirector::RaceInstance& raceInstance)
+  : _director(director), _raceInstance(raceInstance), _gameModeInfo(
+      _director.GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
+        static_cast<uint8_t>(_raceInstance.raceGameMode)))
 {}
 
 GameModeHandler::~GameModeHandler() = default;

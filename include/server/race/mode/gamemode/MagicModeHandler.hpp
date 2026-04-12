@@ -55,10 +55,6 @@ public:
   void OnUseMagicItem(
     ClientId clientId,
     const protocol::AcCmdCRUseMagicItem& command) override;
-
-private:
-  const registry::Course::GameModeInfo& _gameModeInfo = _director.GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(_gameMode));
 };
 
 } // namespace server::race::mode

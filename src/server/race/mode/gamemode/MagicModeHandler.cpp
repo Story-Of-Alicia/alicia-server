@@ -23,7 +23,7 @@ namespace server::race::mode
 {
 
 MagicGameMode::MagicGameMode(RaceDirector& director, RaceDirector::RaceInstance& raceInstance)
-  : GameModeHandler(director, raceInstance, protocol::GameMode::Magic)
+  : GameModeHandler(director, raceInstance)
 {}
 
 MagicGameMode::~MagicGameMode() = default;

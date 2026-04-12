@@ -23,7 +23,7 @@ namespace server::race::mode
 {
 
 SpeedGameMode::SpeedGameMode(RaceDirector& director, RaceDirector::RaceInstance& raceInstance)
-  : GameModeHandler(director, raceInstance, protocol::GameMode::Speed)
+  : GameModeHandler(director, raceInstance)
 {}
 
 SpeedGameMode::~SpeedGameMode() = default;
