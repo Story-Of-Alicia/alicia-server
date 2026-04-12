@@ -149,11 +149,68 @@ void SpeedGameMode::OnRaceUserPos(
 }
 
 void SpeedGameMode::OnItemGet(
-  [[maybe_unused]] ClientId clientId,
-  [[maybe_unused]] const protocol::AcCmdUserRaceItemGet& command)
+  ClientId clientId,
+  const protocol::AcCmdUserRaceItemGet& command)
 {
-  // TODO: copy implementation from RaceDirector
-  throw std::logic_error("Not implemented");
+  const auto& clientContext = _director.GetClientContext(clientId);
+  auto& item = _raceInstance.tracker.GetItems().at(command.itemId);
+
+  constexpr auto ItemRespawnDuration = std::chrono::milliseconds(500);
+  item.respawnTimePoint = std::chrono::steady_clock::now() + ItemRespawnDuration;
+
+  auto& racer = _raceInstance.tracker.GetRacer(clientContext.characterUid);
+
+  switch (item.currentType)
+  {
+    case 101: // Gold horseshoe. Get star points until the next boost
+      racer.starPointValue = std::min(((racer.starPointValue/40000)+1) * 40000, _gameModeInfo.starPointsMax);
+      break;
+    case 102: // Silver horseshoe. Get 10k star points
+      racer.starPointValue = std::min(racer.starPointValue+10000, _gameModeInfo.starPointsMax);
+      break;
+    default:
+      // TODO: Disconnect?
+      spdlog::warn("Player {} picked up unknown item type {}",
+        clientId, item.currentType);
+      break;
+  }
+
+  // Only send this on good/perfect starts
+  protocol::AcCmdCRStarPointGetOK starPointResponse{
+    .characterOid = command.characterOid,
+    .starPointValue = racer.starPointValue,
+    .giveMagicItem = false
+  };
+
+  _director.GetCommandServer().QueueCommand<decltype(starPointResponse)>(
+    clientId,
+    [clientId, starPointResponse]()
+    {
+      return starPointResponse;
+    });
+
+  // Notify all clients in the room that this item has been picked up
+  protocol::AcCmdGameRaceItemGet get{
+    .characterOid = command.characterOid,
+    .itemId = command.itemId,
+    .itemType = item.currentType,
+  };
+
+  for (const ClientId& raceClientId : _raceInstance.clients)
+  {
+    _director.GetCommandServer().QueueCommand<decltype(get)>(
+      raceClientId,
+      [get]()
+      {
+        return get;
+      });
+  }
+
+  // Erase the item from item instances of each client.
+  for (auto& raceRacer : _raceInstance.tracker.GetRacers() | std::views::values)
+  {
+    raceRacer.trackedItems.erase(item.oid);
+  }
 }
 
 void SpeedGameMode::OnRequestSpur(

@@ -267,7 +267,11 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
   _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceItemGet>(
     [this](ClientId clientId, const auto& message)
     {
-      HandleUserRaceItemGet(clientId, message);
+      const auto& clientContext = GetClientContext(clientId);
+
+      std::scoped_lock lock(_raceInstancesMutex);
+      auto& raceInstance = GetRaceInstance(clientContext);
+      raceInstance.gameModeHandler->OnItemGet(clientId, message);
     });
 
   // Magic Targeting Commands for Bolt System
@@ -2612,167 +2616,6 @@ void RaceDirector::HandleUseMagicItem(
   }
 
   racer.magicItem.reset();
-}
-
-void RaceDirector::HandleUserRaceItemGet(
-  ClientId clientId,
-  const protocol::AcCmdUserRaceItemGet& command)
-{
-  const auto& clientContext = GetClientContext(clientId);
-
-  std::scoped_lock lock(_raceInstancesMutex);
-  auto& raceInstance = GetRaceInstance(clientContext);
-  auto& item = raceInstance.tracker.GetItems().at(command.itemId);
-
-  constexpr auto ItemRespawnDuration = std::chrono::milliseconds(500);
-  item.respawnTimePoint = std::chrono::steady_clock::now() + ItemRespawnDuration;
-
-  auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
-
-  Room::GameMode gameMode;
-  registry::Course::GameModeInfo gameModeInfo;
-  _serverInstance.GetRoomSystem().GetRoom(clientContext.roomUid, [this, &gameMode, &gameModeInfo](const Room& room)
-  {
-    gameMode = room.GetRoomSnapshot().details.gameMode;
-    gameModeInfo = this->GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(static_cast<uint8_t>(gameMode));
-  });
-
-  switch(gameMode)
-  {
-    // TODO: Deduplicate from StarPointGet
-    case Room::GameMode::Speed:
-      {
-        switch (item.currentType)
-        {
-          case 101: // Gold horseshoe. Get star points until the next boost
-            racer.starPointValue = std::min(((racer.starPointValue/40000)+1) * 40000, gameModeInfo.starPointsMax);
-            break;
-          case 102: // Silver horseshoe. Get 10k star points
-            racer.starPointValue = std::min(racer.starPointValue+10000, gameModeInfo.starPointsMax);
-            break;
-          default:
-            // TODO: Disconnect?
-            spdlog::warn("Player {} picked up unknown item type {}",
-              clientId, item.currentType);
-            break;
-        }
-
-        // Only send this on good/perfect starts
-        protocol::AcCmdCRStarPointGetOK starPointResponse{
-          .characterOid = command.characterOid,
-          .starPointValue = racer.starPointValue,
-          .giveMagicItem = false
-        };
-
-        _commandServer.QueueCommand<decltype(starPointResponse)>(
-          clientId,
-          [clientId, starPointResponse]()
-          {
-            return starPointResponse;
-          });
-      }
-      break;
-
-    // TODO: Deduplicate from RequestMagicItem
-    case Room::GameMode::Magic:
-    {
-      // Magic items should respawn at a near-instant rate
-      item.respawnTimePoint = std::chrono::steady_clock::now();
-
-      uint32_t magicItem{};
-      if (not racer.magicItem.has_value())
-      {
-        // Racer is empty handed
-
-        // Get the item type of the picked up item (408, 409 etc)
-        const uint32_t magicItemType = item.currentType;
-
-        // Get the magic slot index to indicate to the racer that they
-        // have the item (water shield, ice wall etc).
-        magicItem = _serverInstance.GetCourseRegistry()
-          .GetItemTypeInfo(magicItemType).magicSlot;
-
-        // Response with OK to the client that they have a new item in hand
-        protocol::AcCmdCRRequestMagicItemOK magicItemOk{
-          .characterOid = command.characterOid,
-          .magicItemId = racer.magicItem.emplace(magicItem),
-          .member3 = 0};
-
-        _commandServer.QueueCommand<decltype(magicItemOk)>(
-          clientId,
-          [clientId, magicItemOk]()
-          {
-            return magicItemOk;
-          });
-      }
-      else
-      {
-        // Racer is already holding the item, do not replace it
-        magicItem = racer.magicItem.value();
-      }
-
-      // Now that the magic item on the ground has been picked up,
-      // randomly pick the new item type for this picked up item
-      if (!item.itemTypes.empty())
-      {
-        static std::random_device rd;
-        std::uniform_int_distribution<size_t> distribution(0, item.itemTypes.size() - 1);
-        item.currentType = item.itemTypes[distribution(rd)];
-      }
-      else
-      {
-        // TODO: Item types is empty, use deck ID instead?
-      }
-
-      // Notify racers in the race room that the invoking racer is now
-      // holding a new magic item
-      protocol::AcCmdCRRequestMagicItemNotify notify{
-        .magicItemId = racer.magicItem.emplace(magicItem),
-        .characterOid = command.characterOid,
-      };
-
-      for (const ClientId& roomClientId : raceInstance.clients)
-      {
-        // Prevent self broadcast,
-        // this prevents the double pickup UI bug for the invoker)
-        if (roomClientId == clientId)
-          continue;
-
-        _commandServer.QueueCommand<decltype(notify)>(
-          roomClientId,
-          [notify]()
-          {
-            return notify;
-          });
-      }
-
-      // TODO: reset magic gauge to 0?
-      break;
-    }
-  }
-
-  // Notify all clients in the room that this item has been picked up
-  protocol::AcCmdGameRaceItemGet get{
-    .characterOid = command.characterOid,
-    .itemId = command.itemId,
-    .itemType = item.currentType,
-  };
-
-  for (const ClientId& raceClientId : raceInstance.clients)
-  {
-    _commandServer.QueueCommand<decltype(get)>(
-      raceClientId,
-      [get]()
-      {
-        return get;
-      });
-  }
-
-  // Erase the item from item instances of each client.
-  for (auto& raceRacer : raceInstance.tracker.GetRacers() | std::views::values)
-  {
-    raceRacer.trackedItems.erase(item.oid);
-  }
 }
 
 // Magic Targeting System Implementation for Bolt

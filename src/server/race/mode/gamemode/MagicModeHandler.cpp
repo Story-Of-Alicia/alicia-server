@@ -210,11 +210,109 @@ void MagicGameMode::OnRaceUserPos(
 }
 
 void MagicGameMode::OnItemGet(
-  [[maybe_unused]] ClientId clientId,
-  [[maybe_unused]] const protocol::AcCmdUserRaceItemGet& command)
+  ClientId clientId,
+  const protocol::AcCmdUserRaceItemGet& command)
 {
-  // TODO: copy implementation from RaceDirector
-  throw std::logic_error("Not implemented");
+  const auto& clientContext = _director.GetClientContext(clientId);
+  auto& item = _raceInstance.tracker.GetItems().at(command.itemId);
+
+  constexpr auto ItemRespawnDuration = std::chrono::milliseconds(500);
+  item.respawnTimePoint = std::chrono::steady_clock::now() + ItemRespawnDuration;
+
+  auto& racer = _raceInstance.tracker.GetRacer(clientContext.characterUid);
+
+  // Magic items should respawn at a near-instant rate
+  item.respawnTimePoint = std::chrono::steady_clock::now();
+
+  uint32_t magicItem{};
+  if (not racer.magicItem.has_value())
+  {
+    // Racer is empty handed
+
+    // Get the item type of the picked up item (408, 409 etc)
+    const uint32_t magicItemType = item.currentType;
+
+    // Get the magic slot index to indicate to the racer that they
+    // have the item (water shield, ice wall etc).
+    magicItem = _director.GetServerInstance().GetCourseRegistry()
+      .GetItemTypeInfo(magicItemType).magicSlot;
+
+    // Response with OK to the client that they have a new item in hand
+    protocol::AcCmdCRRequestMagicItemOK magicItemOk{
+      .characterOid = command.characterOid,
+      .magicItemId = racer.magicItem.emplace(magicItem),
+      .member3 = 0};
+
+    _director.GetCommandServer().QueueCommand<decltype(magicItemOk)>(
+      clientId,
+      [clientId, magicItemOk]()
+      {
+        return magicItemOk;
+      });
+  }
+  else
+  {
+    // Racer is already holding the item, do not replace it
+    magicItem = racer.magicItem.value();
+  }
+
+  // Now that the magic item on the ground has been picked up,
+  // randomly pick the new item type for this picked up item
+  if (!item.itemTypes.empty())
+  {
+    static std::random_device rd;
+    std::uniform_int_distribution<size_t> distribution(0, item.itemTypes.size() - 1);
+    item.currentType = item.itemTypes[distribution(rd)];
+  }
+  else
+  {
+    // TODO: Item types is empty, use deck ID instead?
+  }
+
+  // Notify racers in the race room that the invoking racer is now
+  // holding a new magic item
+  protocol::AcCmdCRRequestMagicItemNotify notify{
+    .magicItemId = racer.magicItem.emplace(magicItem),
+    .characterOid = command.characterOid,
+  };
+
+  for (const ClientId& roomClientId : _raceInstance.clients)
+  {
+    // Prevent self broadcast,
+    // this prevents the double pickup UI bug for the invoker)
+    if (roomClientId == clientId)
+      continue;
+
+    _director.GetCommandServer().QueueCommand<decltype(notify)>(
+      roomClientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
+
+  // Notify all clients in the room that this item has been picked up
+  protocol::AcCmdGameRaceItemGet get{
+    .characterOid = command.characterOid,
+    .itemId = command.itemId,
+    .itemType = item.currentType,
+  };
+
+  for (const ClientId& raceClientId : _raceInstance.clients)
+  {
+    _director.GetCommandServer().QueueCommand<decltype(get)>(
+      raceClientId,
+      [get]()
+      {
+        return get;
+      });
+  }
+
+  // Erase the item from item instances of each client.
+  for (auto& raceRacer : _raceInstance.tracker.GetRacers() | std::views::values)
+  {
+    raceRacer.trackedItems.erase(item.oid);
+  }
 }
 
 void MagicGameMode::OnRequestSpur(
