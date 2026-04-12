@@ -3314,15 +3314,16 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
     return EffectVerdict::Failed;
   const auto& targetRacer = targetRacerIter->second;
 
-  const bool shieldBlocks = magicSlotInfo.attackValue > 0
-    && magicSlotInfo.attackValue < static_cast<uint32_t>(targetRacer.shield);
+  const bool isAttack =  magicSlotInfo.attackValue > 0;
+
+  const bool shieldBlocks = isAttack && magicSlotInfo.attackValue < static_cast<uint32_t>(targetRacer.shield);
 
   //2 & 3 are shield effects. maybe needs an enum
   const uint32_t effectId = shieldBlocks
     ? (targetRacer.shield == tracker::RaceTracker::Racer::Shield::Critical ? 3 : 2)
     : magicSlotInfo.skillEffectId;
 
-  bool duplicated = targetRacer.hotRodded || targetRacer.attacked;
+  bool duplicated = isAttack && (targetRacer.hotRodded || targetRacer.attacked);
 
   // TODO: Verify if characterOid and targetOid should be the same once we have NPCs
   const protocol::AcCmdRCAddSkillEffect addSkillEffect{
