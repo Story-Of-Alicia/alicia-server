@@ -36,6 +36,22 @@ namespace server
 template <typename Key, typename Data>
 class DataStorage
 {
+  struct Entry
+  {
+    std::atomic_bool available{false};
+    std::atomic_bool dirty{false};
+    Record<Data>::PatchListener listener;
+    std::shared_mutex mutex{};
+    Data value;
+  };
+
+  struct Queue
+  {
+    std::mutex mutex;
+    std::atomic_bool dataFlag;
+    std::unordered_set<Key> data;
+  };
+
 public:
   using KeySpan = std::span<const Key>;
 
@@ -244,73 +260,89 @@ private:
     _deleteQueue.dataFlag.store(true, std::memory_order::relaxed);
   }
 
-  void ProcessRetrieveQueue()
+  template <typename LockType>
+  void InternalProcessQueue(
+    Queue& queue,
+    bool p_createIfMissing,
+    auto action)
   {
-    if (not _retrieveQueue.dataFlag.exchange(false, std::memory_order::relaxed))
+    if (not queue.dataFlag.exchange(false, std::memory_order::relaxed))
       return;
 
-    std::scoped_lock queueLock(_retrieveQueue.mutex);
-    for (const auto& key : _retrieveQueue.data)
+    std::unordered_set<Key> keys;
     {
-      std::scoped_lock lock(_entriesMutex);
-      auto& entry = _entries[key];
-
-      if (_dataSourceRetrieveListener(key, entry.value))
-        entry.available.store(true, std::memory_order::relaxed);
+      std::scoped_lock queueLock(queue.mutex);
+      keys = std::move(queue.data);
+      queue.data.clear();
     }
-    _retrieveQueue.data.clear();
+
+    for (const auto& key : keys)
+    {
+      std::shared_mutex* entryMutex = nullptr;
+      Data* entryValue = nullptr;
+      std::atomic_bool* entryAvailable = nullptr;
+      bool shouldProcess = false;
+
+      {
+        std::scoped_lock lock(_entriesMutex);
+        if (p_createIfMissing)
+        {
+          auto& entry = _entries[key];
+          entryMutex = &entry.mutex;
+          entryValue = &entry.value;
+          entryAvailable = &entry.available;
+          shouldProcess = true;
+        }
+        else
+        {
+          const auto iterator = _entries.find(key);
+          if (iterator != _entries.cend())
+          {
+            auto& entry = iterator->second;
+            entryMutex = &entry.mutex;
+            entryValue = &entry.value;
+            entryAvailable = &entry.available;
+            shouldProcess = entry.available;
+          }
+        }
+      }
+
+      if (shouldProcess)
+      {
+        LockType lock(*entryMutex);
+        action(key, *entryValue, *entryAvailable);
+      }
+    }
+  }
+
+  void ProcessRetrieveQueue()
+  {
+    InternalProcessQueue<std::unique_lock<std::shared_mutex>>(
+      _retrieveQueue, true, [&](const auto& key, auto& value, auto& available)
+      {
+        if (_dataSourceRetrieveListener(key, value))
+          available.store(true, std::memory_order::relaxed);
+      });
   }
 
   void ProcessStoreQueue()
   {
-    if (not _storeQueue.dataFlag.exchange(false, std::memory_order::relaxed))
-      return;
-
-    std::scoped_lock queueLock(_storeQueue.mutex);
-    for (const auto& key : _storeQueue.data)
-    {
-      std::scoped_lock lock(_entriesMutex);
-      auto& entry = _entries[key];
-
-      if (entry.available)
-        _dataSourceStoreListener(key, entry.value);
-    }
-    _storeQueue.data.clear();
+    InternalProcessQueue<std::shared_lock<std::shared_mutex>>(
+      _storeQueue, false, [&](const auto& key, auto& value, auto&)
+      {
+        _dataSourceStoreListener(key, value);
+      });
   }
 
   void ProcessDeleteQueue()
   {
-    if (not _deleteQueue.dataFlag.exchange(false, std::memory_order::relaxed))
-      return;
-
-    std::scoped_lock queueLock(_deleteQueue.mutex);
-    for (const auto& key : _deleteQueue.data)
-    {
-      std::scoped_lock lock(_entriesMutex);
-      auto& entry = _entries[key];
-
-      if (entry.available)
+    InternalProcessQueue<std::unique_lock<std::shared_mutex>>(
+      _deleteQueue, false, [&](const auto& key, auto&, auto& available)
+      {
         if (_dataSourceDeleteListener(key))
-          entry.available.store(false, std::memory_order::relaxed);
-    }
-    _deleteQueue.data.clear();
+          available.store(false, std::memory_order::relaxed);
+      });
   }
-
-  struct Entry
-  {
-    std::atomic_bool available{false};
-    std::atomic_bool dirty{false};
-    Record<Data>::PatchListener listener;
-    std::shared_mutex mutex{};
-    Data value;
-  };
-
-  struct Queue
-  {
-    std::mutex mutex;
-    std::atomic_bool dataFlag;
-    std::unordered_set<Key> data;
-  };
 
   Queue _retrieveQueue;
   Queue _storeQueue;
