@@ -109,10 +109,12 @@ public:
 
   Record<Data> Create(DataSupplier supplier)
   {
-    std::scoped_lock lock(_entriesMutex);
-
     auto [key, data] = supplier();
+
+    std::unique_lock lock(_entriesMutex);
     auto [it, created] = _entries.try_emplace(key);
+    lock.unlock();
+
     if (not created)
       throw std::runtime_error(std::format("Entry with key {} already exists", key));
 
@@ -130,10 +132,12 @@ public:
 
   Record<Data> GetOrCreate(DataSupplier supplier)
   {
-    std::scoped_lock lock(_entriesMutex);
-
     auto [key, data] = supplier();
+
+    std::unique_lock lock(_entriesMutex);
     auto [it, created] = _entries.try_emplace(key);
+    lock.unlock();
+
     if (not created)
       return Record(&it->second.value, &it->second.mutex, [this, key]()
       {
@@ -154,9 +158,10 @@ public:
 
   std::optional<Record<Data>> Get(const Key& key, bool retrieve = true)
   {
-    std::scoped_lock lock(_entriesMutex);
-
+    std::unique_lock lock(_entriesMutex);
     auto [recordIter, created] = _entries.try_emplace(key);
+    lock.unlock();
+
     auto& record = recordIter->second;
 
     if (created && retrieve)
@@ -252,8 +257,9 @@ private:
     std::scoped_lock queueLock(_retrieveQueue.mutex);
     for (const auto& key : _retrieveQueue.data)
     {
-      std::scoped_lock lock(_entriesMutex);
+      std::unique_lock lock(_entriesMutex);
       auto& entry = _entries[key];
+      lock.unlock();
 
       if (_dataSourceRetrieveListener(key, entry.value))
         entry.available.store(true, std::memory_order::relaxed);
@@ -269,8 +275,9 @@ private:
     std::scoped_lock queueLock(_storeQueue.mutex);
     for (const auto& key : _storeQueue.data)
     {
-      std::scoped_lock lock(_entriesMutex);
+      std::unique_lock lock(_entriesMutex);
       auto& entry = _entries[key];
+      lock.unlock();
 
       if (entry.available)
         _dataSourceStoreListener(key, entry.value);
@@ -286,8 +293,9 @@ private:
     std::scoped_lock queueLock(_deleteQueue.mutex);
     for (const auto& key : _deleteQueue.data)
     {
-      std::scoped_lock lock(_entriesMutex);
+      std::unique_lock lock(_entriesMutex);
       auto& entry = _entries[key];
+      lock.unlock();
 
       if (entry.available)
         if (_dataSourceDeleteListener(key))
