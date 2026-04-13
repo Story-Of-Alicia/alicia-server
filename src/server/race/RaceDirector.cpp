@@ -565,14 +565,20 @@ void RaceDirector::Tick()
         score.bitset = static_cast<protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset>(
             protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::Connected);
       }
+      
+      score.bitset = static_cast<protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset>(
+        score.bitset | protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::Carrots);
+
 
       score.courseTime = courseTime;
       score.experience = 420;
+      score.carrots = 420;
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
         characterUid);
 
       characterRecord.Mutable([this, &score](data::Character& character)
       {
+        character.carrots() += score.carrots;
         character.experience() += score.experience;
 
         const uint32_t newLevel = _serverInstance.GetCharacterRegistry().GetLevelForExp(character.experience());

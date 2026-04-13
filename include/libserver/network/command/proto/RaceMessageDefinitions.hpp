@@ -989,6 +989,7 @@ struct AcCmdRCRaceResultNotify
     enum Bitset : uint32_t
     {
       LevelUp = 1 << 1,
+      Carrots = 1 << 2,
       Connected = 1 << 6,
       LevelUpBonusCarrots = 1 << 7,
       RankingBonusCarrotsAndExperience = 1 << 8,

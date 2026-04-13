@@ -1495,7 +1495,8 @@ void LobbyNetworkHandler::HandleCreateNickname(
           character.name = command.nickname;
 
         // todo: default level configured
-        character.level = 60;
+        character.level = 30;
+        character.experience() = 254500;
         // todo: default carrots configured
         character.carrots = 10'000;
 
