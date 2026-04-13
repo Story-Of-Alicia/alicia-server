@@ -580,7 +580,7 @@ void RaceDirector::Tick()
         {
           character.level() = newLevel;
           score.bitset = static_cast<protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset>(
-            score.bitset | protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::LevelUpBonusCarrots);
+            score.bitset | protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::LevelUp);
         }
 
         //populate the score info with the character data

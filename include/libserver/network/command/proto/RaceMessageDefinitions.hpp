@@ -984,10 +984,11 @@ struct AcCmdRCRaceResultNotify
     //! Time in milliseconds.
     uint32_t recordTimeDifference{};
     uint32_t levelProgress{};
-    uint32_t horseClassProgress{500};
+    uint32_t horseClassProgress{};
     AcCmdCRStartRaceNotify::Struct2 achievements{};
     enum Bitset : uint32_t
     {
+      LevelUp = 1 << 1,
       Connected = 1 << 6,
       LevelUpBonusCarrots = 1 << 7,
       RankingBonusCarrotsAndExperience = 1 << 8,
