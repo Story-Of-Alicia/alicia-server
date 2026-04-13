@@ -684,7 +684,6 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
   protocol::LobbyCommandLoginOK response{
     .lobbyTime = util::TimePointToFileTime(util::Clock::now()),
     // .member0 = 0xCA794,
-    .val1 = 0x0,
     .val3 = 0x0,
 
     .missions = {
@@ -782,6 +781,7 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
         : protocol::Gender::Girl;
 
       response.level = static_cast<uint16_t>(character.level());
+      response.levelProgress = character.experience();
       response.carrots = character.carrots();
       response.role = std::bit_cast<protocol::LobbyCommandLoginOK::Role>(
         character.role());
@@ -1496,7 +1496,8 @@ void LobbyNetworkHandler::HandleCreateNickname(
           character.name = command.nickname;
 
         // todo: default level configured
-        character.level = 60;
+        character.level = 30;
+        character.experience() = 254500;
         // todo: default carrots configured
         character.carrots = 10'000;
 
@@ -1881,6 +1882,7 @@ void LobbyNetworkHandler::HandleRequestPersonalInfo(
 
         response.basic.introduction = character.introduction();
         response.basic.level = character.level();
+        response.basic.levelProgress = character.experience();
         // TODO: implement other stats
         break;
       }

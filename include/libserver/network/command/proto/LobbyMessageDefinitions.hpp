@@ -86,7 +86,7 @@ struct LobbyCommandLoginOK
   uint16_t level{};
   int32_t carrots{};
 
-  uint32_t val1{};
+  uint32_t levelProgress{};
 
   enum class Role : uint32_t
   {
@@ -1799,7 +1799,7 @@ struct AcCmdLCPersonalInfo
     uint16_t member15{};
     uint16_t member16{};
     std::string introduction{};
-    uint32_t level{60};
+    uint32_t level{0};
     //! Level progress as dictated by LevelInfo table in libconfig
     uint32_t levelProgress{};
     std::string member20{};

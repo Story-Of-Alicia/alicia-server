@@ -565,17 +565,30 @@ void RaceDirector::Tick()
         score.bitset = static_cast<protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset>(
             protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::Connected);
       }
-
       score.courseTime = courseTime;
-      //score.experience = 420;
+      score.experience = 420;
+      score.carrots = 420;
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
         characterUid);
 
-      characterRecord.Immutable([this, &score](const data::Character& character)
+      characterRecord.Mutable([this, &score](data::Character& character)
       {
+        character.carrots() += score.carrots;
+        character.experience() += score.experience;
+
+        const uint32_t newLevel = _serverInstance.GetCharacterRegistry().GetLevelForExp(character.experience());
+        if (newLevel > character.level())
+        {
+          character.level() = newLevel;
+          score.bitset = static_cast<protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset>(
+            score.bitset | protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::LevelUp);
+        }
+
+        //populate the score info with the character data
         score.uid = character.uid();
         score.name = character.name();
         score.level = character.level();
+        score.levelProgress = character.experience();
 
         _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Immutable(
           [&score](const data::Horse& horse)
@@ -603,12 +616,27 @@ void RaceDirector::Tick()
     raceInstance.stage = RaceInstance::Stage::Waiting;
     _serverInstance.GetRoomSystem().GetRoom(
       raceUid,
-      [](Room& room)
+      [this](Room& room)
       {
         room.SetRoomPlaying(false);
         for (auto& [uid, player] : room.GetPlayers())
         {
           player.SetReady(false);
+
+          const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(uid);
+          protocol::AcCmdRCUpdateGameMoney updateGameMoney{};
+          characterRecord.Immutable(
+            [&player, &updateGameMoney](const data::Character& character)
+            {
+              updateGameMoney.carrotBalance = character.carrots();
+            });
+
+          _commandServer.QueueCommand<protocol::AcCmdRCUpdateGameMoney>(
+            GetClientIdByCharacterUid(uid),
+            [updateGameMoney]()
+            {
+              return updateGameMoney;
+            });
         }
       });
   }

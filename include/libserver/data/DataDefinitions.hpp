@@ -255,6 +255,7 @@ struct Character
   dao::Field<std::string> introduction{};
 
   dao::Field<uint32_t> level{};
+  dao::Field<uint32_t> experience{};
   dao::Field<int32_t> carrots{};
   dao::Field<int32_t> cash{};
 

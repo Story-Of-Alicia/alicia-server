@@ -758,7 +758,7 @@ void AcCmdRCRaceResultNotify::Write(
       .Write(score.member11)
       .Write(score.member12)
       .Write(score.recordTimeDifference)
-      .Write(score.member14)
+      .Write(score.levelProgress)
       .Write(score.horseClassProgress)
       .Write(score.achievements)
       .Write(score.bitset)
@@ -1996,6 +1996,22 @@ void AcCmdRCCreateItem::Write(
 
 void AcCmdRCCreateItem::Read(
   AcCmdRCCreateItem&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCUpdateGameMoney::Write(
+  const AcCmdRCUpdateGameMoney& command,
+  SinkStream& stream)
+{
+  stream.Write(command.carrotBalance)
+    .Write(command.unk1)
+    .Write(command.unk2);
+}
+
+void AcCmdRCUpdateGameMoney::Read(
+  AcCmdRCUpdateGameMoney&,
   SourceStream&)
 {
   throw std::runtime_error("Not implemented");

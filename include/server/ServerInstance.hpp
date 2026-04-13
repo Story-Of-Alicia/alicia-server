@@ -36,6 +36,7 @@
 #include "server/system/RoomSystem.hpp"
 
 #include <libserver/data/DataDirector.hpp>
+#include <libserver/registry/CharacterRegistry.hpp>
 #include <libserver/registry/CourseRegistry.hpp>
 #include <libserver/registry/HorseRegistry.hpp>
 #include <libserver/registry/ItemRegistry.hpp>
@@ -91,6 +92,10 @@ public:
   //! Returns reference to the private chat director.
   //! @returns Reference to the private chat director.
   PrivateChatDirector& GetPrivateChatDirector();
+
+  //! Returns reference to the Character registry.
+  //! @returns Reference to the Character registry.
+  registry::CharacterRegistry& GetCharacterRegistry();
 
   //! Returns reference to the Course registry.
   //! @returns Reference to the Course registry.
@@ -227,6 +232,8 @@ private:
   //! A race director.
   RaceDirector _raceDirector;
 
+  //! A registry of character level info.
+  registry::CharacterRegistry _characterRegistry;
   //! A registry of courses.
   registry::CourseRegistry _courseRegistry;
   //! A registry of horses.
