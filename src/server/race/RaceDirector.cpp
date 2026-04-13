@@ -565,11 +565,6 @@ void RaceDirector::Tick()
         score.bitset = static_cast<protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset>(
             protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::Connected);
       }
-      
-      score.bitset = static_cast<protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset>(
-        score.bitset | protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::Carrots);
-
-
       score.courseTime = courseTime;
       score.experience = 420;
       score.carrots = 420;
@@ -621,12 +616,27 @@ void RaceDirector::Tick()
     raceInstance.stage = RaceInstance::Stage::Waiting;
     _serverInstance.GetRoomSystem().GetRoom(
       raceUid,
-      [](Room& room)
+      [this](Room& room)
       {
         room.SetRoomPlaying(false);
         for (auto& [uid, player] : room.GetPlayers())
         {
           player.SetReady(false);
+
+          const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(uid);
+          protocol::AcCmdRCUpdateGameMoney updateGameMoney{};
+          characterRecord.Immutable(
+            [&player, &updateGameMoney](const data::Character& character)
+            {
+              updateGameMoney.carrotBalance = character.carrots();
+            });
+
+          _commandServer.QueueCommand<protocol::AcCmdRCUpdateGameMoney>(
+            GetClientIdByCharacterUid(uid),
+            [updateGameMoney]()
+            {
+              return updateGameMoney;
+            });
         }
       });
   }

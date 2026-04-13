@@ -992,7 +992,7 @@ struct AcCmdRCRaceResultNotify
     enum Bitset : uint32_t
     {
       LevelUp = 1 << 1,
-      Carrots = 1 << 2,
+      NewRecord = 1 << 2,
       Connected = 1 << 6,
       LevelUpBonusCarrots = 1 << 7,
       RankingBonusCarrotsAndExperience = 1 << 8,
@@ -2718,6 +2718,32 @@ struct AcCmdRCCreateItem
   //! @param stream Source stream.
   static void Read(
     AcCmdRCCreateItem& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCUpdateGameMoney
+{
+    uint32_t carrotBalance;
+    uint32_t unk1;
+    uint32_t unk2;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCUpdateGameMoney;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCUpdateGameMoney& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCUpdateGameMoney& command,
     SourceStream& stream);
 };
 

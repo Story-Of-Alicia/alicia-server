@@ -2001,4 +2001,20 @@ void AcCmdRCCreateItem::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdRCUpdateGameMoney::Write(
+  const AcCmdRCUpdateGameMoney& command,
+  SinkStream& stream)
+{
+  stream.Write(command.carrotBalance)
+    .Write(command.unk1)
+    .Write(command.unk2);
+}
+
+void AcCmdRCUpdateGameMoney::Read(
+  AcCmdRCUpdateGameMoney&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
