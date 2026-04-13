@@ -588,12 +588,10 @@ void RaceDirector::Tick()
 
       score.member23 = protocol::AcCmdCRStartRaceNotify::Struct1{
         .member1 = raceInstance.raceMapBlockId,
-        .gameMode = raceInstance.raceGameMode,
         .teamMode = raceInstance.raceTeamMode,
         .finalRecordMs = static_cast<uint32_t>(
           std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::minutes(1) + std::chrono::seconds(23) + std::chrono::milliseconds(450)).count()),
-        .member5 = {4,4,4,4,4,4,4,4},
         .member13 = 234567};
 
       if (score.member23.teamMode == protocol::TeamMode::Single)
@@ -1705,6 +1703,28 @@ void RaceDirector::HandleStartRace(
             protocolRacer.teamColor = protocol::TeamColor::Blue;
             break;
         }
+      }
+
+      // Lap records are known to work only on speed modes (all team modes)
+      if (raceInstance.raceGameMode == protocol::GameMode::Speed)
+      {
+        // TODO: remove this, only used for experimenting with lap records
+        const auto& generateLapRecords = [](protocol::AcCmdCRStartRaceNotify& notify)
+        {
+          constexpr uint32_t TestTimeDiff = 20000;
+          constexpr uint32_t LapCount = 2; // TODO: populate this from the CourseRegistry
+
+          notify.unk9.lapRecords.resize(LapCount);
+          uint32_t currentTimeDiff = 0;
+          for (auto& lapRecord : notify.unk9.lapRecords)
+          {
+            lapRecord.sector1Ms = currentTimeDiff += TestTimeDiff;
+            lapRecord.sector2Ms = currentTimeDiff += TestTimeDiff;
+            lapRecord.sector3Ms = currentTimeDiff += TestTimeDiff;
+          }
+        };
+
+        generateLapRecords(notify);
       }
 
       const bool isEligibleForSkills = (notify.raceGameMode == protocol::GameMode::Speed

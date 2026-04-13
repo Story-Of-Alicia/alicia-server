@@ -477,15 +477,32 @@ struct AcCmdCRStartRaceNotify
   struct Struct1
   {
     uint16_t member1{};
-    //! Assumed!
-    //! Game mode of the race.
-    GameMode gameMode{};
+    uint8_t member2{};
     //! Team mode of the race.
     TeamMode teamMode{};
     //! Final record time, in milliseconds.
     uint32_t finalRecordMs{};
-    // List size specified with a uint8_t. Max size 20
-    std::vector<uint32_t> member5{};
+
+    //! Sector times in a lap, in milliseconds.
+    struct LapRecord
+    {
+      //! Time for sector 1, in milliseconds.
+      //! Also known as the early section.
+      uint32_t sector1Ms{};
+      //! Time for sector 2, in milliseconds.
+      //! Also known as the middle section.
+      uint32_t sector2Ms{};
+      //! Time for sector 3, in milliseconds.
+      //! Also known as the late section.
+      uint32_t sector3Ms{};
+    };
+
+    //! Lap sector times in milliseconds, per lap, for this race.
+    //! Start race notify - indicates the lap sector times to beat.
+    //! Race result notify - unknown.
+    //! Max (underlying protocol) count is 32 (0x20) values.
+    //! Max lap count is 10 laps.
+    std::vector<LapRecord> lapRecords{};
 
     //! TeamMode::Single only.
     struct TimeAttackResults
@@ -905,8 +922,11 @@ struct AcCmdCRRaceResult
   uint32_t member7{};
   uint32_t member8{};
   uint32_t member9{};
-  //! Max count 32
-  std::vector<uint32_t> member10{};
+  //! Recorded lap sector times in milliseconds, per lap, for this race.
+  //! Each lap contains 3 sectors.
+  //! Max (underlying protocol) count is 32 (0x20) values.
+  //! Max lap count is 10 laps.
+  std::vector<protocol::AcCmdCRStartRaceNotify::Struct1::LapRecord> lapRecords{};
   uint8_t member11{};
   uint32_t member12{};
   uint16_t member13{};
