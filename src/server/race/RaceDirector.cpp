@@ -3379,8 +3379,7 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
   if (shieldBlocks)
     return EffectVerdict::Shielded;
 
-  // For now pheonix feather has that effect, should be changed later
-  if (targetRacer.hotRodded)
+  if (duplicated)
     return EffectVerdict::Duplicated;
 
   // Remove the effect after a delay
