@@ -34,6 +34,7 @@ namespace server::protocol
 
 enum class RoomOptionType : uint16_t
 {
+  None = 0,
   Name = 1 << 0,
   PlayerCount = 1 << 1,
   Password = 1 << 2,
@@ -141,7 +142,9 @@ struct AcCmdCREnterRoomOK
   uint16_t unk3{};
   uint32_t unk4{};
   uint32_t unk5{};
-  uint32_t unk6{};
+  //! The elapsed time of the race, in seconds.
+  //! This is visually presented in minutes.
+  uint32_t elapsedTime{};
 
   uint32_t unk7{};
   uint16_t unk8{};
@@ -1872,8 +1875,7 @@ struct AcCmdCRUseMagicItem
   // sub_4d5460
   // In the IceWall, normal spawns one icicle and critical spawns three.
   // This list containes values [2] for normal and [1, 2, 3] for critical.
-  using ObstacleInstanceIds = std::vector<uint16_t>;
-  std::optional<ObstacleInstanceIds> obstacleProperties;
+  std::vector<uint16_t> targetList;
 
   // vFunc_4 @ 0x00698540
   uint32_t unk3;
@@ -1935,9 +1937,9 @@ struct AcCmdCRUseMagicItemOK
   // sub_45ed60
   std::optional<AcCmdCRUseMagicItem::IceWallProperties> iceWallProperties;
   // sub_4d5460
-  std::optional<AcCmdCRUseMagicItem::ObstacleInstanceIds> obstacleProperties;
+  std::vector<uint16_t> targetList;
 
-  uint16_t nextObstacleInstanceId;
+  uint16_t effectInstanceId;
   // TODO: is this correct type?
   float unk4;
   
@@ -1970,10 +1972,10 @@ struct AcCmdCRUseMagicItemNotify
   // sub_45ed60
   std::optional<AcCmdCRUseMagicItem::IceWallProperties> iceWallProperties;
   // sub_4d5460
-  std::optional<AcCmdCRUseMagicItem::ObstacleInstanceIds> obstacleProperties;
+  std::vector<uint16_t> targetList;
 
-  uint16_t nextObstacleInstanceId;
-  uint32_t unk4;
+  uint16_t effectInstanceId;
+  float unk4;
 
   static Command GetCommand()
   {
@@ -1992,6 +1994,57 @@ struct AcCmdCRUseMagicItemNotify
   //! @param stream Source stream.
   static void Read(
     AcCmdCRUseMagicItemNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUseItemSlotOK 
+{
+  uint32_t magicItemId;  
+  uint16_t characterOid;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUseItemSlotOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUseItemSlotOK& command,
+    SinkStream& stream);
+
+  //! Reads the command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUseItemSlotOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUseItemSlotNotify 
+{
+  uint32_t magicItemId;   
+  uint16_t characterOid;
+  uint16_t unk;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUseItemSlotNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUseItemSlotNotify& command,
+    SinkStream& stream);
+
+  //! Reads the command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUseItemSlotNotify& command,
     SourceStream& stream);
 };
 
@@ -2299,7 +2352,7 @@ struct AcCmdCRActivateSkillEffect
   uint16_t targetOid;
   uint32_t effectId;           // What skill/effect to activate
   uint16_t attackerOid;
-  uint16_t obstacleInstanceId;
+  uint16_t effectInstanceId;    // Unique ID for this effect instance
   float unk2;
 
   static Command GetCommand()

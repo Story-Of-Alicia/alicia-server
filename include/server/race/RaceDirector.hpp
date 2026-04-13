@@ -100,6 +100,14 @@ public:
 private:
   std::random_device _randomDevice;
 
+  enum class EffectVerdict : uint8_t
+  {
+    Shielded,
+    Applied,
+    Duplicated,
+    Failed
+  };
+
   struct ClientContext
   {
     data::Uid characterUid{data::InvalidUid};
@@ -136,6 +144,8 @@ private:
     //! A mission ID of the race.
     uint16_t raceMissionId{};
 
+    //! Represents when a room started loading.
+    std::chrono::steady_clock::time_point loadingStartTimePoint;
     //! A time point of when the race is actually started (a countdown is finished).
     std::chrono::steady_clock::time_point raceStartTimePoint;
     //! A room clients.
@@ -148,7 +158,13 @@ private:
   RaceInstance& GetRaceInstance(
     const RaceDirector::ClientContext& clientContext,
     const bool checkRacer = true);
-  void ScheduleSkillEffect(server::RaceDirector::RaceInstance& raceInstance, server::tracker::Oid attackerId, server::tracker::Oid targetId, const server::registry::Magic::SlotInfo& magicSlotInfo, std::optional<std::function<void()>> afterEffectRemoved = std::nullopt);
+
+  EffectVerdict ScheduleSkillEffect(
+    server::RaceDirector::RaceInstance& raceInstance, 
+    server::tracker::Oid attackerId, server::tracker::Oid targetId, 
+    const server::registry::Magic::SlotInfo& magicSlotInfo, 
+    std::optional<std::function<void()>> afterEffectRemoved = std::nullopt,
+    const uint16_t effectInstanceId = 0);
 
   void HandleEnterRoom(
     ClientId clientId,

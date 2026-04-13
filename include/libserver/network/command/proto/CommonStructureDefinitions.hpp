@@ -42,8 +42,10 @@ enum class Gender : uint8_t
 //! Team color for team-based race modes.
 enum class TeamColor : uint32_t
 {
-  None = 1,
+  //! Important for shackles!
+  None = 0,
   Solo = None,
+  Unknown = 1,
   Red = 2,
   Blue = 3
 };
