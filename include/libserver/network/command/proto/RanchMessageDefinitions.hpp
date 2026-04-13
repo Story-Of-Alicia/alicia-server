@@ -2468,6 +2468,56 @@ struct RanchCommandPetBirthNotify
     SourceStream& stream);
 };
 
+struct AcCmdCRPetBornResult
+{
+  uint32_t member1{};
+  uint32_t member2{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRPetBornResult;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRPetBornResult& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRPetBornResult& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRPetBornResultNotify
+{
+  uint32_t member1{};
+  uint32_t member2{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRPetBornResultNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRPetBornResultNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRPetBornResultNotify& command,
+    SourceStream& stream);
+};
+
 struct AcCmdCRIncubateEgg
 {
   uint32_t itemUid{};
@@ -2703,9 +2753,6 @@ struct RanchCommandUserPetInfos
 
 struct RanchCommandUserPetInfosOK
 {
-  uint32_t member1;
-  uint16_t petCount;
-  uint16_t member3;
   std::vector<Pet> pets{};
 
   static Command GetCommand()

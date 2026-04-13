@@ -563,11 +563,11 @@ void Egg::Write(const Egg& value, SinkStream& stream)
     .Write(value.itemTid)
     .Write(value.member3)
     .Write(value.member4)
-    .Write(value.member5)
+    .Write(value.remainingHatchingTime)
     .Write(value.timeRemaining)
-    .Write(value.boost)
-    .Write(value.totalHatchingTime)
-    .Write(value.member9);
+    .Write(value.boostPreviewValue)
+    .Write(value.hatchingProgress)
+    .Write(value.boostCooldown);
 }
 
 void Egg::Read(Egg& value, SourceStream& stream)
@@ -576,11 +576,11 @@ void Egg::Read(Egg& value, SourceStream& stream)
     .Read(value.itemTid)
     .Read(value.member3)
     .Read(value.member4)
-    .Read(value.member5)
+    .Read(value.remainingHatchingTime)
     .Read(value.timeRemaining)
-    .Read(value.boost)
-    .Read(value.totalHatchingTime)
-    .Read(value.member9);
+    .Read(value.boostPreviewValue)
+    .Read(value.hatchingProgress)
+    .Read(value.boostCooldown);
 }
 
 void PetInfo::Write(const PetInfo& value, SinkStream& stream)

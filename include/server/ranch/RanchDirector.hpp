@@ -289,6 +289,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRRequestPetBirth& command);
 
+  void HandlePetBornResult(
+    ClientId clientId,
+    const protocol::AcCmdCRPetBornResult& command);
+
   void HandleUserPetInfos(
     ClientId clientId,
     const protocol::RanchCommandUserPetInfos& command);
