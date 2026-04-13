@@ -10,7 +10,7 @@ services:
    image: 'ghcr.io/story-of-alicia/alicia-server:latest'
    restart: unless-stopped
    ports:
-     - '10030-10033:10030-10033/tcp'
+     - '10030-10035:10030-10035/tcp'
    ulimits:
      core: -1
    volumes:
@@ -26,7 +26,7 @@ services:
 ```
 
 #### Server configuration
-By default, the game uses ports `10030`-`10033`. The default configuration of the server should be sufficient for development purposes.
+By default, the game uses ports `10030`-`10035`. The default configuration of the server should be sufficient for development purposes.
 
 On the server there is two categories of configurations, one for the general server settings and one for the game settings, located at `./config/server` and `./config/game` respectively.
 

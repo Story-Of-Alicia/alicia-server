@@ -54,6 +54,9 @@ void Scheduler::Tick()
       }
       catch (const std::exception& x)
       {
+        // Executing task for job threw an error, erase the job
+        // and move onto the next one
+        _jobIterator = _jobs.erase(_jobIterator);
         throw x;
       }
 

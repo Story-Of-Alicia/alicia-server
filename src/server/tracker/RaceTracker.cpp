@@ -89,7 +89,16 @@ void RaceTracker::Clear()
 {
   _racers.clear();
   _items.clear();
-  _nextObjectOid = 1;
+  _nextObjectOid = 100;
+}
+
+uint16_t RaceTracker::GetNextEffectInstanceIdAndIncrementBy(uint16_t increment)
+{
+  const uint16_t nextId = _nextEffectInstanceId;
+  _nextEffectInstanceId += increment;
+  if (_nextEffectInstanceId == 0)
+    _nextEffectInstanceId = 1;
+  return nextId;
 }
 
 } // namespace server::tracker

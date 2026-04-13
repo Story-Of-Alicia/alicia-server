@@ -41,6 +41,7 @@ else()
 endif()
 
 if (${MSVC})
+    add_compile_options(/MP)
     target_compile_options(platform-properties INTERFACE
             /utf-8 /bigobj /W4 /permissive- /WX /wd4996 /wd4702)
 else()
@@ -69,6 +70,7 @@ add_library(alicia-libserver STATIC
         src/libserver/registry/CourseRegistry.cpp
         src/libserver/registry/HorseRegistry.cpp
         src/libserver/registry/ItemRegistry.cpp
+        src/libserver/registry/MagicRegistry.cpp
         src/libserver/registry/PetRegistry.cpp
         src/libserver/util/Locale.cpp
         src/libserver/util/Scheduler.cpp

@@ -57,9 +57,9 @@ public:
 
     enum class Shield
     {
-      None,
-      Normal,
-      Critical
+      None = 0,
+      Normal = 100,
+      Critical = 200
     };
 
     Oid oid{InvalidEntityOid};
@@ -78,13 +78,15 @@ public:
     bool hotRodded{};
     bool critChance{};
     bool gaugeBuff{};
+    bool attacked{};
   };
 
   //! An item
   struct Item
   {
     Oid oid{};
-    uint32_t deckId{};
+    std::vector<uint32_t> itemTypes{};
+    uint32_t currentType{};
     std::chrono::steady_clock::time_point respawnTimePoint{};
     std::array<float, 3> position{};
   };
@@ -137,6 +139,12 @@ public:
   //! Returns a reference to all item records.
   //! @return Reference to item records.
   [[nodiscard]] ItemObjectMap& GetItems();
+  //! Returns the next object instance ID and increments the internal counter.
+  //! @param increment The value to increment the internal counter by.
+  //! @returns The next object instance ID before incrementing.
+  uint16_t GetNextObstacleInstanceIdAndIncrementBy(uint16_t increment);
+
+  uint16_t GetNextEffectInstanceIdAndIncrementBy(uint16_t increment);
 
   void Clear();
 
@@ -148,6 +156,8 @@ private:
   RacerObjectMap _racers;
   //! Items in the race
   ItemObjectMap _items;
+  //! Next effect instance ID.
+  uint16_t _nextEffectInstanceId = 0;
 };
 
 } // namespace server::tracker

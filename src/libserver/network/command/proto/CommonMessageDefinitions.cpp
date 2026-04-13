@@ -67,5 +67,73 @@ void AcCmdCRInviteUserOK::Write(
     .Write(command.recipientCharacterName);
 }
 
+void AcCmdCRRequestUser::Read(
+  AcCmdCRRequestUser& command,
+  SourceStream& stream)
+{
+  stream.Read(command.force)
+    .Read(command.characterName)
+    .Read(command.roomUid)
+    .Read(command.ranchUid);
+}
+
+void AcCmdCRRequestUser::Write(
+  const AcCmdCRRequestUser&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+};
+
+void AcCmdCRRequestUserOK::Read(
+  AcCmdCRRequestUserOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRequestUserOK::Write(
+  const AcCmdCRRequestUserOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.force)
+    .Write(command.characterName)
+    .Write(command.roomUid)
+    .Write(command.ranchUid);
+}
+
+void AcCmdCRRequestUserCancel::Read(
+  AcCmdCRRequestUserCancel&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRequestUserCancel::Write(
+  const AcCmdCRRequestUserCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.force)
+    .Write(command.characterName)
+    .Write(command.roomUid)
+    .Write(command.ranchUid);
+}
+
+void AcCmdRCRequestUser::Read(
+  AcCmdRCRequestUser&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+};
+
+void AcCmdRCRequestUser::Write(
+  const AcCmdRCRequestUser& command,
+  SinkStream& stream)
+{
+  stream.Write(command.force)
+    .Write(command.characterName)
+    .Write(command.roomUid)
+    .Write(command.ranchUid);
+}
+
 } // namespace server::protocol
 

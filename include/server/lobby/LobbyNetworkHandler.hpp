@@ -48,6 +48,9 @@ public:
     data::Uid characterUid,
     const std::string& message);
 
+  void NotifyAchievementReward(
+    data::Uid characterUid);
+
 private:
   struct ClientContext
   {

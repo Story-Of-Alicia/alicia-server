@@ -24,6 +24,7 @@
 #include "server/tracker/RanchTracker.hpp"
 
 #include "libserver/network/command/CommandServer.hpp"
+#include "libserver/network/command/proto/CommonMessageDefinitions.hpp"
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
 
 #include <random>
@@ -65,6 +66,14 @@ public:
     data::Uid characterUid,
     data::Uid rancherUid,
     data::Uid horseUid);
+
+  //! Send a RequestUser notification to a character connected to this director.
+  void NotifyRequestUser(
+    data::Uid characterUid,
+    bool force,
+    std::string characterName,
+    uint32_t roomUid,
+    uint32_t ranchUid) noexcept;
 
   //! Show popup notification for client indicating a new item in storage, by character UID
   void SendStorageNotification(
@@ -441,6 +450,10 @@ private:
   void HandleInviteUser(
     ClientId clientId,
     const protocol::AcCmdCRInviteUser& command);
+
+  void HandleRequestUser(
+    ClientId clientId,
+    const protocol::AcCmdCRRequestUser& command);
 
   //!
   ServerInstance& _serverInstance;

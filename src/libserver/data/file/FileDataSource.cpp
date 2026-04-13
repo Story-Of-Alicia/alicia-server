@@ -152,6 +152,8 @@ void server::FileDataSource::RetrieveUser(const std::string_view& name, data::Us
   user.token = json["token"].get<std::string>();
   user.characterUid = json["characterUid"].get<data::Uid>();
   user.infractions = json["infractions"].get<std::vector<data::Uid>>();
+  user.lastSeenOnline = data::Clock::time_point(std::chrono::seconds(
+    json.value("lastSeenOnline", int64_t(0))));
 }
 
 void server::FileDataSource::StoreUser(const std::string_view&, const data::User& user)
@@ -171,6 +173,8 @@ void server::FileDataSource::StoreUser(const std::string_view&, const data::User
   json["token"] = user.token();
   json["characterUid"] = user.characterUid();
   json["infractions"] = user.infractions();
+  json["lastSeenOnline"] = std::chrono::ceil<std::chrono::seconds>(
+    user.lastSeenOnline().time_since_epoch()).count();
 
   dataFile << json.dump(2);
 }

@@ -69,7 +69,7 @@ std::optional<bool> PostgresAuthenticationBackend::Authenticate(
   }
   catch (const std::exception& x)
   {
-    spdlog::warn("Exception while authentication user: {}", x.what());
+    spdlog::warn("Exception while authenticating user: {}", x.what());
     return std::nullopt;
   }
 }

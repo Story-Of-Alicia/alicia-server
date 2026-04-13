@@ -90,19 +90,8 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
   {
     ++goodsSequenceId;
 
-    // Check if item can be shown in shop
-    const bool isInShop = item.isPurchasable;
 
-    // Handmade filter to only show character and horse equipment and care items
-    const bool isPermittedCategory = 
-      item.careParameters ||
-      item.cureParameters ||
-      item.foodParameters ||
-      item.playParameters ||
-      item.characterPartInfo ||
-      item.mountPartInfo;
-
-    if (not isInShop or not isPermittedCategory)
+    if (not item.isPurchasable)
       continue;
 
     if (item.type == registry::Item::Type::Permanent || item.type == registry::Item::Type::Consumable)

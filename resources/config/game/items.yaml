@@ -1213,7 +1213,7 @@ items:
       name: '아이타 머리'
       description:
         - "업데이트 예정"
-      isPurchasable: false
+      isPurchasable: true
       characterPartInfo:
         characterId: 20
         slot: 2
@@ -3111,7 +3111,7 @@ items:
       name: '노멀 타잔복'
       description:
         - "업데이트 예정"
-      isPurchasable: false
+      isPurchasable: true
       characterPartInfo:
         characterId: 20
         slot: 48
@@ -3217,7 +3217,7 @@ items:
       name: '화랑복'
       description:
         - "업데이트 예정"
-      isPurchasable: false
+      isPurchasable: true
       characterPartInfo:
         characterId: 20
         slot: 48
@@ -6851,35 +6851,35 @@ items:
       name: 'Foret Fortune Egg (Lv.2)'
       description:
         - "Foret Fortune Egg (Lv.2)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 90002
       type: 0
       level: 1
       name: 'Foret Fortune Egg (Lv.3)'
       description:
         - "Foret Fortune Egg (Lv.3)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 90003
       type: 0
       level: 1
       name: 'Foret Fortune Egg (Lv.4)'
       description:
         - "Foret Fortune Egg (Lv.4)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 90004
       type: 0
       level: 1
       name: 'Dran Fortune Egg (Lv.1)'
       description:
         - "Dran Fortune Egg (Lv.1)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 90005
       type: 0
       level: 1
       name: 'Dran Fortune Egg (Lv.2)'
       description:
         - "Dran Fortune Egg (Lv.2)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 98001
       type: 2
       level: 1
@@ -7069,35 +7069,35 @@ items:
       name: 'Dran Fortune Egg (Lv.3)'
       description:
         - "Dran Fortune Egg (Lv.3)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 90012
       type: 0
       level: 1
       name: 'Dran Fortune Egg (Lv.4)'
       description:
         - "Dran Fortune Egg (Lv.4)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 90006
       type: 0
       level: 1
       name: 'Dorf Fortune Egg (Lv.1)'
       description:
         - "Dorf Fortune Egg (Lv.1)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 90007
       type: 0
       level: 1
       name: 'Dorf Fortune Egg (Lv.2)'
       description:
         - "Dorf Fortune Egg (Lv.2)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 90010
       type: 0
       level: 1
       name: 'Foret Fortune Egg (Lv.1)'
       description:
         - "Foret Fortune Egg (Lv.1)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 97001
       type: 2
       level: 1
@@ -7283,210 +7283,210 @@ items:
       name: 'Tabia Fortune Egg (Lv.1)'
       description:
         - "Tabia Fortune Egg (Lv.1)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 90014
       type: 0
       level: 1
       name: 'Tabia Fortune Egg (Lv.2)'
       description:
         - "Tabia Fortune Egg (Lv.2)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 90008
       type: 0
       level: 1
       name: 'Dorf Fortune Egg (Lv.3)'
       description:
         - "Dorf Fortune Egg (Lv.3)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 90009
       type: 0
       level: 1
       name: 'Dorf Fortune Egg (Lv.4)'
       description:
         - "Dorf Fortune Egg (Lv.4)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 90015
       type: 0
       level: 1
       name: 'Tabia Fortune Egg (Lv.3)'
       description:
         - "Tabia Fortune Egg (Lv.3)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 90016
       type: 0
       level: 1
       name: 'Tabia Fortune Egg (Lv.4)'
       description:
         - "Tabia Fortune Egg (Lv.4)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99026
       type: 0
       level: 1
       name: '흔한 형광나비 (노랑)'
       description:
         - "드랜지역 흔한 나비(노랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99027
       type: 0
       level: 1
       name: '흔한 형광나비 (파랑)'
       description:
         - "드랜지역 흔한 나비(파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99028
       type: 0
       level: 1
       name: '흔한 형광나비 (빨강)'
       description:
         - "드랜지역 흔한 나비(빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99029
       type: 0
       level: 1
       name: '흔한 형광나비 (녹색)'
       description:
         - "드랜지역 흔한 나비(녹색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99030
       type: 0
       level: 1
       name: '보통 형광나비 (노랑)'
       description:
         - "드랜지역 희귀 나비(노랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99031
       type: 0
       level: 1
       name: '보통 형광나비 (파랑)'
       description:
         - "드랜지역 희귀 나비(파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99032
       type: 0
       level: 1
       name: '보통 형광나비 (빨강)'
       description:
         - "드랜지역 희귀 나비(빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99033
       type: 0
       level: 1
       name: '보통 형광나비 (녹색)'
       description:
         - "드랜지역 희귀 나비(녹색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99034
       type: 0
       level: 1
       name: '희귀한 형광나비 (노랑)'
       description:
         - "드랜지역 에픽 나비(노랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99035
       type: 0
       level: 1
       name: '희귀한 형광나비 (파랑)'
       description:
         - "드랜지역 에픽 나비(파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99036
       type: 0
       level: 1
       name: '희귀한 형광나비 (빨강)'
       description:
         - "드랜지역 에픽 나비(빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99037
       type: 0
       level: 1
       name: '희귀한 형광나비 (녹색)'
       description:
         - "드랜지역 에픽 나비(녹색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99038
       type: 0
       level: 1
       name: '전설의 형광나비 (노랑)'
       description:
         - "드랜지역 전설 나비(노랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99039
       type: 0
       level: 0
       name: '전설의 형광나비 (파랑)'
       description:
         - "드랜지역 전설 나비(파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99040
       type: 0
       level: 1
       name: '전설의 형광나비 (빨강)'
       description:
         - "드랜지역 전설 나비(빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99041
       type: 0
       level: 1
       name: '전설의 형광나비 (녹색)'
       description:
         - "드랜지역 전설 나비(녹색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99042
       type: 0
       level: 1
       name: '볼품없는 정령여우 (갈색)'
       description:
         - "드랜지역 흔한 사막여우(갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99043
       type: 0
       level: 1
       name: '볼품없는 정령여우 (분홍)'
       description:
         - "드랜지역 흔한 사막여우(분홍)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99044
       type: 0
       level: 1
       name: '평범한 정령여우 (갈색)'
       description:
         - "드랜지역 희귀 사막여우(갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99045
       type: 0
       level: 1
       name: '평범한 정령여우 (분홍)'
       description:
         - "드랜지역 희귀 사막여우(분홍)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99046
       type: 0
       level: 1
       name: '귀티나는 정령여우 (갈색)'
       description:
         - "드랜지역 에픽 사막여우(갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99047
       type: 0
       level: 1
       name: '귀티나는 정령여우 (분홍)'
       description:
         - "드랜지역 에픽 사막여우(분홍)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99048
       type: 0
       level: 1
       name: '기품있는 정령여우 (갈색)'
       description:
         - "드랜지역 전설 사막여우(갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99049
       type: 0
       level: 1
       name: '기품있는 정령여우 (분홍)'
       description:
         - "드랜지역 전설 사막여우(분홍)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 46012
       type: 2
       level: 1
@@ -7602,21 +7602,21 @@ items:
     '
       description:
         - "도르프 평민 갈매기(파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99059
       type: 0
       level: 1
       name: '이병 스타갈매기 (녹색)'
       description:
         - "도르프 평민 갈매기(녹색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99060
       type: 0
       level: 1
       name: '이병 스타갈매기 (빨강)'
       description:
         - "도르프 평민 갈매기(빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 46015
       type: 2
       level: 1
@@ -7637,91 +7637,91 @@ items:
       name: '이병 스타갈매기 (검정)'
       description:
         - "도르프 평민 갈매기(검정)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99062
       type: 0
       level: 1
       name: '일병 스타갈매기 (파랑)'
       description:
         - "도르프 중민 갈매기(파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99063
       type: 0
       level: 1
       name: '일병 스타갈매기 (녹색)'
       description:
         - "도르프 중민 갈매기(녹색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99064
       type: 0
       level: 1
       name: '일병 스타갈매기 (빨강)'
       description:
         - "도르프 중민 갈매기(빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99065
       type: 0
       level: 1
       name: '일병 스타갈매기 (검정)'
       description:
         - "도르프 중민 갈매기(검정)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99066
       type: 0
       level: 1
       name: '상병 스타갈매기 (파랑)'
       description:
         - "도르프 상류층 갈매기(파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99067
       type: 0
       level: 1
       name: '상병 스타갈매기 (녹색)'
       description:
         - "도르프 상류층 갈매기(녹색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99068
       type: 0
       level: 1
       name: '상병 스타갈매기 (빨강)'
       description:
         - "도르프 상류층 갈매기(빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99069
       type: 0
       level: 1
       name: '상병 스타갈매기 (검정)'
       description:
         - "도르프 상류층 갈매기(검정)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99070
       type: 0
       level: 1
       name: '말년 스타갈매기 (파랑)'
       description:
         - "도르프 왕족 갈매기(파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99071
       type: 0
       level: 1
       name: '말년 스타갈매기 (녹색)'
       description:
         - "도르프 왕족 갈매기(녹색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99072
       type: 0
       level: 1
       name: '말년 스타갈매기 (빨강)'
       description:
         - "도르프 왕족 갈매기(빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99073
       type: 0
       level: 1
       name: '말년 스타갈매기 (검정)'
       description:
         - "도르프 왕족 갈매기(검정)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 10155
       type: 0
       level: 40
@@ -7784,84 +7784,84 @@ items:
       name: '잡종 꽃잎뱀 (갈색)'
       description:
         - "잡뱀 (빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99075
       type: 0
       level: 1
       name: '잡종 꽃잎뱀 (녹색)'
       description:
         - "잡종 꽃잎뱀 (녹색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99076
       type: 0
       level: 1
       name: '잡종 꽃잎뱀 (검정)'
       description:
         - "잡뱀 (녹색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99077
       type: 0
       level: 1
       name: '변종 꽃잎뱀 (갈색)'
       description:
         - "걍뱀 (빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99078
       type: 0
       level: 1
       name: '변종 꽃잎뱀 (녹색)'
       description:
         - "걍뱀 (파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99079
       type: 0
       level: 1
       name: '변종 꽃잎뱀 (검정)'
       description:
         - "걍뱀 (녹색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99080
       type: 0
       level: 1
       name: '순종 꽃잎뱀 (갈색)'
       description:
         - "비단뱀 (빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99081
       type: 0
       level: 1
       name: '순종 꽃잎뱀 (녹색)'
       description:
         - "비단뱀 (파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99082
       type: 0
       level: 1
       name: '순종 꽃잎뱀 (검정)'
       description:
         - "포레 비단뱀 (녹색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99083
       type: 0
       level: 1
       name: '왕족 꽃잎뱀 (갈색)'
       description:
         - "왕뱀 (빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99084
       type: 0
       level: 1
       name: '왕족 꽃잎뱀 (녹색)'
       description:
         - "왕뱀 (파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99085
       type: 0
       level: 1
       name: '왕족 꽃잎뱀 (검정)'
       description:
         - "왕뱀 (녹색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 89901
       type: 2
       level: 1
@@ -7875,336 +7875,336 @@ items:
       name: '흔한 아머비틀 (빨강)'
       description:
         - "포레 흔한 무당벌레 (빨강) "
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99087
       type: 0
       level: 1
       name: '흔한 아머비틀 (파랑)'
       description:
         - "포레 흔한 무당벌레 (파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99088
       type: 0
       level: 1
       name: '흔한 아머비틀 (노랑)'
       description:
         - "포레 흔한 무당벌레 (노랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99089
       type: 0
       level: 1
       name: '보통 아머비틀 (빨강)'
       description:
         - "포레 희귀 무당벌레 (빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99090
       type: 0
       level: 1
       name: '보통 아머비틀 (파랑)'
       description:
         - "포레 희귀 무당벌레 (파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99091
       type: 0
       level: 1
       name: '보통 아머비틀 (노랑)'
       description:
         - "포레 희귀 무당벌레 (노랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99092
       type: 0
       level: 1
       name: '희귀 아머비틀 (빨강)'
       description:
         - "포레 에픽 무당벌레 (빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99093
       type: 0
       level: 1
       name: '희귀 아머비틀 (파랑)'
       description:
         - "포레 에픽 무당벌레 (파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99094
       type: 0
       level: 1
       name: '희귀 아머비틀 (노랑)'
       description:
         - "포레 에픽 무당벌레 (노랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99095
       type: 0
       level: 1
       name: '전설의 아머비틀 (빨강)'
       description:
         - "포레 전설 무당벌레 (빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99096
       type: 0
       level: 1
       name: '전설의 아머비틀 (파랑)'
       description:
         - "포레 전설 무당벌레 (파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99097
       type: 0
       level: 1
       name: '전설의 아머비틀 (노랑)'
       description:
         - "포레 전설 무당벌레 (노랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99098
       type: 0
       level: 1
       name: '추레한 프리우끼 (갈색)'
       description:
         - "포레 잡원숭이 (갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99099
       type: 0
       level: 1
       name: '추레한 프리우끼 (보라)'
       description:
         - "포레 잡원숭이 (보라)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99100
       type: 0
       level: 1
       name: '추레한 프리우끼 (녹색)'
       description:
         - "포레 잡원숭이 (녹색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99101
       type: 0
       level: 1
       name: '깔끔한 프리우끼 (갈색)'
       description:
         - "포레 애완원숭이 (갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99102
       type: 0
       level: 1
       name: '깔끔한 프리우끼 (보라)'
       description:
         - "포레 애완원숭이 (보라)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99103
       type: 0
       level: 1
       name: '깔끔한 프리우끼 (녹색)'
       description:
         - "포레 애완원숭이 (녹색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99104
       type: 0
       level: 1
       name: '세련된 프리우끼 (갈색)'
       description:
         - "포레 멍tothe키 (갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99105
       type: 0
       level: 1
       name: '세련된 프리우끼 (보라)'
       description:
         - "포레 멍tothe키 (보라)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99106
       type: 0
       level: 1
       name: '세련된 프리우끼 (녹색)'
       description:
         - "포레 멍tothe키 (녹색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99107
       type: 0
       level: 1
       name: '패션왕 프리우끼 (갈색)'
       description:
         - "포레 손오공 (갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99108
       type: 0
       level: 1
       name: '패션왕 프리우끼 (보라)'
       description:
         - "포레 손오공 (보라)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99109
       type: 0
       level: 1
       name: '패션왕 프리우끼 (녹색)'
       description:
         - "포레 손오공 (녹색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99110
       type: 0
       level: 1
       name: '이병 골목너굴 (회색)'
       description:
         - "걍 너구리 (회색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99111
       type: 0
       level: 1
       name: '이병 골목너굴 (갈색)'
       description:
         - "걍 너구리 (갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99112
       type: 0
       level: 1
       name: '이병 골목너굴 (파랑)'
       description:
         - "걍 너구리 (파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99113
       type: 0
       level: 1
       name: '일병 골목너굴 (회색)'
       description:
         - "토종 너구리 (회색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99114
       type: 0
       level: 1
       name: '일병 골목너굴 (갈색)'
       description:
         - "토종 너구리 (갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99115
       type: 0
       level: 1
       name: '일병 골목너굴 (파랑)'
       description:
         - "토종 너구리 (파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99116
       type: 0
       level: 1
       name: '상병 골목너굴 (회색)'
       description:
         - "농심 너구리 (회색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99117
       type: 0
       level: 1
       name: '상병 골목너굴 (갈색)'
       description:
         - "농심 너구리 (갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99118
       type: 0
       level: 1
       name: '상병 골목너굴 (파랑)'
       description:
         - "상병 골목너굴 (파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99119
       type: 0
       level: 1
       name: '병장 골목너굴 (회색)'
       description:
         - "오동통 너구리 (회색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99120
       type: 0
       level: 1
       name: '병장 골목너굴 (갈색)'
       description:
         - "병장 골목너굴 (갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99121
       type: 0
       level: 1
       name: '병장 골목너굴 (파랑)'
       description:
         - "오동통 너구리 (파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99122
       type: 0
       level: 1
       name: '볼품없는 킹스캐럽 (보라)'
       description:
         - "외껍질 투구벌레 (보라)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99123
       type: 0
       level: 1
       name: '볼품없는 킹스캐럽 (빨강)'
       description:
         - "외껍질 투구벌레 (빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99124
       type: 0
       level: 1
       name: '볼품없는 킹스캐럽 (파랑)'
       description:
         - "외껍질 투구벌레 (파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99125
       type: 0
       level: 1
       name: '평범한 킹스캐럽 (보라)'
       description:
         - "곁껍질 투구벌레 (보라)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99126
       type: 0
       level: 1
       name: '평범한 킹스캐럽 (빨강)'
       description:
         - "곁껍질 투구벌레 (빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99127
       type: 0
       level: 1
       name: '평범한 킹스캐럽 (파랑)'
       description:
         - "곁껍질 투구벌레 (파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99128
       type: 0
       level: 1
       name: '귀티나는 킹스캐럽 (보라)'
       description:
         - "중갑 투구벌레 (보라)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99129
       type: 0
       level: 1
       name: '귀티나는 킹스캐럽 (빨강)'
       description:
         - "중갑 투구벌레 (빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99130
       type: 0
       level: 1
       name: '귀티나는 킹스캐럽 (파랑)'
       description:
         - "중갑 투구벌레 (파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99131
       type: 0
       level: 1
       name: '기품있는 킹스캐럽 (보라)'
       description:
         - "판금 투구벌레 (보라)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99132
       type: 0
       level: 1
       name: '기품있는 킹스캐럽 (빨강)'
       description:
         - "판금 투구벌레 (빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99133
       type: 0
       level: 1
       name: '기품있는 킹스캐럽 (파랑)'
       description:
         - "판금 투구벌레 (파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 10157
       type: 0
       level: 1
@@ -8339,112 +8339,112 @@ items:
       name: '추레한 스피드꼬꼬 (빨강)'
       description:
         - "꼬꼬 (빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99135
       type: 0
       level: 1
       name: '추레한 스피드꼬꼬 (갈색)'
       description:
         - "꼬꼬 (갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99136
       type: 0
       level: 1
       name: '추레한 스피드꼬꼬 (검정)'
       description:
         - "꼬꼬 (검정)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99137
       type: 0
       level: 1
       name: '깔끔한 스피드꼬꼬 (빨강)'
       description:
         - "벼슬꼬꼬 (빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99138
       type: 0
       level: 1
       name: '깔끔한 스피드꼬꼬 (갈색)'
       description:
         - "벼슬꼬꼬 (갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99139
       type: 0
       level: 1
       name: '깔끔한 스피드꼬꼬 (검정)'
       description:
         - "벼슬꼬꼬 (검정)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99140
       type: 0
       level: 1
       name: '세련된 스피드꼬꼬 (빨강)'
       description:
         - "아프로꼬꼬 (빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99141
       type: 0
       level: 1
       name: '세련된 스피드꼬꼬 (갈색)'
       description:
         - "아프로꼬꼬 (갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99142
       type: 0
       level: 1
       name: '세련된 스피드꼬꼬 (검정)'
       description:
         - "아프로꼬꼬 (검정)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99143
       type: 0
       level: 1
       name: '패션왕 스피드꼬꼬 (빨강)'
       description:
         - "리젠트꼬꼬 (빨강)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99144
       type: 0
       level: 1
       name: '패션왕 스피드꼬꼬 (갈색)'
       description:
         - "리젠트꼬꼬 (갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99145
       type: 0
       level: 1
       name: '패션왕 스피드꼬꼬 (검정)'
       description:
         - "리젠트꼬꼬 (검정)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99146
       type: 0
       level: 1
       name: '볼품없는 정령여우 (검정)'
       description:
         - "드랜지역 흔한 사막여우(검정)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99147
       type: 0
       level: 1
       name: '평범한 정령여우 (검정)'
       description:
         - "드랜지역 희귀 사막여우(검정)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99148
       type: 0
       level: 1
       name: '귀티나는 정령여우 (검정)'
       description:
         - "드랜지역 에픽 사막여우(검정)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99149
       type: 0
       level: 1
       name: '기품있는 정령여우 (검정)'
       description:
         - "드랜지역 전설 사막여우(검정)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 41010
       type: 2
       level: 3
@@ -8505,84 +8505,84 @@ items:
       name: '하급 퓨어미믹 (갈색)'
       description:
         - "갈색 곰팡이 미믹"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99151
       type: 0
       level: 1
       name: '하급 퓨어미믹 (녹색)'
       description:
         - "녹색 곰팡이 미믹"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99152
       type: 0
       level: 1
       name: '하급 퓨어미믹 (빨강)'
       description:
         - "빨간 곰팡이 미믹"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99153
       type: 0
       level: 1
       name: '중급 퓨어미믹 (갈색)'
       description:
         - "갈색 가죽벨트 미믹"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99154
       type: 0
       level: 1
       name: '중급 퓨어미믹 (녹색)'
       description:
         - "녹색 가죽벨트 미믹"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99155
       type: 0
       level: 1
       name: '중급 퓨어미믹 (빨강)'
       description:
         - "빨간 가죽벨트 미믹"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99156
       type: 0
       level: 1
       name: '고급 퓨어미믹 (갈색)'
       description:
         - "갈색 땜장이 미믹"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99157
       type: 0
       level: 1
       name: '고급 퓨어미믹 (녹색)'
       description:
         - "녹색 땜장이 미믹"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99158
       type: 0
       level: 1
       name: '고급 퓨어미믹 (빨강)'
       description:
         - "빨간 땜장이 미믹"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99159
       type: 0
       level: 1
       name: '최상급 퓨어미믹 (갈색)'
       description:
         - "갈색 도금 미믹"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99160
       type: 0
       level: 1
       name: '최상급 퓨어미믹 (녹색)'
       description:
         - "녹색 도금 미믹"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99161
       type: 0
       level: 1
       name: '최상급 퓨어미믹 (빨강)'
       description:
         - "빨간 도금 미믹"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 46016
       type: 1
       level: 1
@@ -9061,196 +9061,196 @@ items:
       name: 'Pregria Fortune Egg (Lv. 1)'
       description:
         - "Pregria Fortune Egg (Lv. 1)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 90018
       type: 0
       level: 1
       name: 'Pregria Fortune Egg (Lv. 2)'
       description:
         - "Pregria Fortune Egg (Lv. 2)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 90019
       type: 0
       level: 1
       name: 'Pregria Fortune Egg (Lv. 3)'
       description:
         - "Pregria Fortune Egg (Lv. 3)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 90020
       type: 0
       level: 1
       name: 'Pregria Fortune Egg (Lv. 4)'
       description:
         - "Pregria Fortune Egg (Lv. 4)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99162
       type: 0
       level: 1
       name: '아기 눈길바다표범 (파랑)'
       description:
         - "아기 눈길바다표범 (파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99163
       type: 0
       level: 1
       name: '아기 눈길바다표범 (갈색)'
       description:
         - "아기 눈길바다표범 (갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99164
       type: 0
       level: 1
       name: '아기 눈길바다표범 (분홍)'
       description:
         - "아기 눈길바다표범 (분홍)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99165
       type: 0
       level: 1
       name: '소년 눈길바다표범 (파랑)'
       description:
         - "소년 눈길바다표범 (파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99166
       type: 0
       level: 1
       name: '소년 눈길바다표범 (갈색)'
       description:
         - "소년 눈길바다표범 (갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99167
       type: 0
       level: 1
       name: '소년 눈길바다표범 (분홍)'
       description:
         - "소년 눈길바다표범 (분홍)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99168
       type: 0
       level: 1
       name: '청년 눈길바다표범 (파랑)'
       description:
         - "청년 눈길바다표범 (파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99169
       type: 0
       level: 1
       name: '청년 눈길바다표범 (갈색)'
       description:
         - "청년 눈길바다표범 (갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99170
       type: 0
       level: 1
       name: '청년 눈길바다표범 (분홍)'
       description:
         - "청년 눈길바다표범 (분홍)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99171
       type: 0
       level: 1
       name: '중년 눈길바다표범 (파랑)'
       description:
         - "중년 눈길바다표범 (파랑)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99172
       type: 0
       level: 1
       name: '중년 눈길바다표범 (갈색)'
       description:
         - "중년 눈길바다표범 (갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99173
       type: 0
       level: 1
       name: '중년 눈길바다표범 (분홍)'
       description:
         - "중년 눈길바다표범 (분홍)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99174
       type: 0
       level: 1
       name: '막내 호빵펭귄 (검정)'
       description:
         - "막내 호빵펭귄 (검정)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99175
       type: 0
       level: 1
       name: '막내 호빵펭귄 (갈색)'
       description:
         - "막내 호빵펭귄 (갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99176
       type: 0
       level: 1
       name: '막내 호빵펭귄 (분홍)'
       description:
         - "막내 호빵펭귄 (분홍)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99177
       type: 0
       level: 1
       name: '고참 호빵펭귄 (검정)'
       description:
         - "고참 호빵펭귄 (검정)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99178
       type: 0
       level: 1
       name: '고참 호빵펭귄 (갈색)'
       description:
         - "고참 호빵펭귄 (갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99179
       type: 0
       level: 1
       name: '고참 호빵펭귄 (분홍)'
       description:
         - "고참 호빵펭귄 (분홍)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99180
       type: 0
       level: 1
       name: '대장 호빵펭귄 (검정)'
       description:
         - "대장 호빵펭귄 (검정)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99181
       type: 0
       level: 1
       name: '대장 호빵펭귄 (갈색)'
       description:
         - "대장 호빵펭귄 (갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99182
       type: 0
       level: 1
       name: '대장 호빵펭귄 (분홍)'
       description:
         - "대장 호빵펭귄 (분홍)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99183
       type: 0
       level: 1
       name: '왕고 호빵펭귄 (검정)'
       description:
         - "왕고 호빵펭귄 (검정)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99184
       type: 0
       level: 1
       name: '왕고 호빵펭귄 (갈색)'
       description:
         - "왕고 호빵펭귄 (갈색)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 99185
       type: 0
       level: 1
       name: '왕고 호빵펭귄 (분홍)'
       description:
         - "왕고 호빵펭귄 (분홍)"
-      isPurchasable: true
+      isPurchasable: false
     - tid: 28002
       type: 0
       level: 1
