@@ -1621,8 +1621,9 @@ void RaceDirector::HandleStartRace(
     raceInstance.raceMapBlockId = roomSelectedCourses;
   }
 
+  constexpr uint32_t GameCountdownKey = 17;
   const protocol::AcCmdRCRoomCountdown roomCountdown{
-    .countdown = 3000,
+    .countdown = GetServerInstance().GetSystemContentRegistry().GetValue(GameCountdownKey),
     .mapBlockId = raceInstance.raceMapBlockId};
 
   // Broadcast room countdown.
