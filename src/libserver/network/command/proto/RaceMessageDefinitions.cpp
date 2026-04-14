@@ -1099,7 +1099,7 @@ void AcCmdRCRoomCountdown::Write(
 {
   stream.Write(command.countdown)
     .Write(command.mapBlockId)
-    .Write(command.member2);
+    .Write(command.bonusCourseType);
 }
 
 void AcCmdRCRoomCountdown::Read(

@@ -1535,7 +1535,13 @@ struct AcCmdRCRoomCountdown
   //! In milliseconds.
   uint32_t countdown{};
   uint16_t mapBlockId{};
-  uint16_t member2{};
+
+  enum class BonusCourseType : uint16_t
+  {
+    None = 0,
+    Carrots = 1,
+    Experience = 2
+  } bonusCourseType{};
 
   static Command GetCommand()
   {
