@@ -5275,7 +5275,7 @@ void RanchDirector::HandleUpdateMountInfo(
       if (isHorseValid)
       {
         // Remove horse from ranch tracker
-        auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+        auto& ranchInstance = _ranches[clientContext.characterUid];
         ranchInstance.tracker.RemoveHorse(command.horse.uid);
 
         // Remove horse from character and delete from cache
