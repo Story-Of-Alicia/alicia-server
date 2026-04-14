@@ -17,16 +17,16 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
-#include "server/system/SystemManager.hpp"
+#include "libserver/registry/SystemContentRegistry.hpp"
 
 #include <spdlog/spdlog.h>
 #include <yaml-cpp/yaml.h>
 #include <fstream>
 
-namespace server
+namespace server::registry
 {
 
-void SystemManager::ReadConfig(const std::filesystem::path& configPath)
+void SystemContentRegistry::ReadConfig(const std::filesystem::path& configPath)
 {
   _configPath = configPath;
 
@@ -62,10 +62,10 @@ void SystemManager::ReadConfig(const std::filesystem::path& configPath)
     }
   }
 
-  spdlog::info("System manager loaded {} parameters", _entries.size());
+  spdlog::info("System content registry loaded {} parameters", _entries.size());
 }
 
-void SystemManager::Save() const
+void SystemContentRegistry::Save() const
 {
   YAML::Node root;
 
@@ -87,7 +87,7 @@ void SystemManager::Save() const
   fout << root;
 }
 
-uint32_t SystemManager::GetValue(uint32_t type) const
+uint32_t SystemContentRegistry::GetValue(uint32_t type) const
 {
   std::scoped_lock lock(_mutex);
   const auto it = std::find_if(
@@ -106,7 +106,7 @@ uint32_t SystemManager::GetValue(uint32_t type) const
   return 0;
 }
 
-void SystemManager::SetValue(uint32_t type, uint32_t value)
+void SystemContentRegistry::SetValue(uint32_t type, uint32_t value)
 {
   {
     std::scoped_lock lock(_mutex);
@@ -131,7 +131,7 @@ void SystemManager::SetValue(uint32_t type, uint32_t value)
   Save();
 }
 
-const std::unordered_map<uint32_t, uint32_t> SystemManager::GetSystemContent() const
+const std::unordered_map<uint32_t, uint32_t> SystemContentRegistry::GetSystemContent() const
 {
   std::unordered_map<uint32_t, uint32_t> content{};
   
@@ -144,4 +144,4 @@ const std::unordered_map<uint32_t, uint32_t> SystemManager::GetSystemContent() c
   return content;
 }
 
-} // namespace server
+} // namespace server::registry

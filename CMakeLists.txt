@@ -73,6 +73,7 @@ add_library(alicia-libserver STATIC
         src/libserver/registry/ItemRegistry.cpp
         src/libserver/registry/MagicRegistry.cpp
         src/libserver/registry/PetRegistry.cpp
+        src/libserver/registry/SystemContentRegistry.cpp
         src/libserver/util/Locale.cpp
         src/libserver/util/Scheduler.cpp
         src/libserver/util/Stream.cpp
@@ -112,7 +113,6 @@ add_executable(alicia-server
         src/server/system/ModerationSystem.cpp
         src/server/system/OtpSystem.cpp
         src/server/system/RoomSystem.cpp
-        src/server/system/SystemManager.cpp
         src/server/tracker/RaceTracker.cpp
         src/server/tracker/RanchTracker.cpp)
 target_include_directories(alicia-server

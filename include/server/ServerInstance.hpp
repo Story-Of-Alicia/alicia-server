@@ -34,7 +34,6 @@
 #include "server/system/OtpSystem.hpp"
 #include "server/system/ModerationSystem.hpp"
 #include "server/system/RoomSystem.hpp"
-#include "server/system/SystemManager.hpp"
 
 #include <libserver/data/DataDirector.hpp>
 #include <libserver/registry/CharacterRegistry.hpp>
@@ -43,6 +42,7 @@
 #include <libserver/registry/ItemRegistry.hpp>
 #include <libserver/registry/MagicRegistry.hpp>
 #include <libserver/registry/PetRegistry.hpp>
+#include <libserver/registry/SystemContentRegistry.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -118,6 +118,10 @@ public:
   //! @returns Reference to the Magic registry.
   registry::MagicRegistry& GetMagicRegistry();
 
+  //! Returns reference to the system content registry.
+  //! @returns Reference to the system content registry.
+  registry::SystemContentRegistry& GetSystemContentRegistry();
+
   //! Returns reference to the chat system.
   //! @returns Reference to the chat system.
   ChatSystem& GetChatSystem();
@@ -141,10 +145,6 @@ public:
   //! Returns reference to the room system.
   //! @returns Reference to the room system.
   RoomSystem& GetRoomSystem();
-
-  //! Returns reference to the system manager.
-  //! @returns Reference to the system manager.
-  SystemManager& GetSystemManager();
 
   //! Returns reference to the settings.
   //! @returns Reference to the settings.
@@ -249,6 +249,8 @@ private:
   registry::MagicRegistry _magicRegistry;
   //! A registry of pets.
   registry::PetRegistry _petRegistry;
+  //! The system content registry.
+  registry::SystemContentRegistry _systemContentRegistry;
 
   //! A chat system.
   ChatSystem _chatSystem;
@@ -262,8 +264,6 @@ private:
   ModerationSystem _moderationSystem;
   //! A room system.
   RoomSystem _roomSystem;
-  //! A system manager.
-  SystemManager _systemManager;
 
 };
 

@@ -763,7 +763,7 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
   };
 
   // Populate system content values
-  response.systemContent.values = _serverInstance.GetSystemManager().GetSystemContent();
+  response.systemContent.values = _serverInstance.GetSystemContentRegistry().GetSystemContent();
   
   data::Uid characterMountUid{
     data::InvalidUid};
@@ -2136,7 +2136,7 @@ void LobbyNetworkHandler::HandleUpdateSystemContent(
     return;
 
   // Set system content setting
-  _serverInstance.GetSystemManager().SetValue(command.key, command.value);
+  _serverInstance.GetSystemContentRegistry().SetValue(command.key, command.value);
 
   // Notify only the changed setting
   protocol::AcCmdLCUpdateSystemContent notify{};

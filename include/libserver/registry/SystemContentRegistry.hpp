@@ -17,20 +17,19 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
-#ifndef SYSTEMMANAGER_HPP
-#define SYSTEMMANAGER_HPP
-
-#include "libserver/network/command/proto/LobbyMessageDefinitions.hpp"
+#ifndef SYSTEMCONTENTREGISTRY_HPP
+#define SYSTEMCONTENTREGISTRY_HPP
 
 #include <filesystem>
 #include <mutex>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
-namespace server
+namespace server::registry
 {
 
-class SystemManager
+class SystemContentRegistry
 {
 public:
   struct SystemEntry
@@ -78,6 +77,6 @@ private:
   std::vector<SystemEntry> _entries;
 };
 
-} // namespace server
+} // namespace server::registry
 
-#endif // SYSTEMMANAGER_HPP
+#endif // SYSTEMCONTENTREGISTRY_HPP
