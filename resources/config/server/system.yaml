@@ -1,277 +1,276 @@
-# System Content Configuration
-
-# Speed Solo
 - type: 0
   value: true
-
-# Speed Team
+  name: "Speed Solo"
+  description: ""
 - type: 1
   value: true
-
-# Magic Solo
+  name: "Speed Team"
+  description: ""
 - type: 2
   value: true
-
-# Magic Team
+  name: "Magic Solo"
+  description: ""
 - type: 3
   value: true
-
-# Entering the store
+  name: "Magic Team"
+  description: ""
 - type: 4
   value: true
-
-# Shop purchases
+  name: "Entering the store"
+  description: ""
 - type: 5
   value: true
-
-# Team Battle 1 vs 1
+  name: "Shop purchases"
+  description: ""
 - type: 6
   value: true
-
-# Stop service: Maintenance
+  name: "Team Battle 1 vs 1"
+  description: ""
 - type: 7
   value: false
-
-# [Packet] Server 8T(7.5/s)
+  name: "Stop service: Maintenance"
+  description: ""
 - type: 8
   value: false
-
-# [Packet] Server 15T(4/s)
+  name: "[Packet] Server 8T(7.5/s)"
+  description: ""
 - type: 9
   value: true
-
-# [Packet] P2P 6T (10/s)
+  name: "[Packet] Server 15T(4/s)"
+  description: ""
 - type: 10
   value: false
-
-# [Packet] P2P 8T(7.5/s)
+  name: "[Packet] P2P 6T (10/s)"
+  description: ""
 - type: 11
   value: false
-
-# [Packet] Pasture 15T(4/s)
+  name: "[Packet] P2P 8T(7.5/s)"
+  description: ""
 - type: 12
   value: false
-
-# Display AI player checkbox in the waiting room
+  name: "[Packet] Pasture 15T(4/s)"
+  description: ""
 - type: 13
   value: true
-
-# Festival activation
+  name: "Display AI player checkbox in the waiting room"
+  description: ""
 - type: 14
   value: true
-
-# Channel window game mode
+  name: "Festival activation"
+  description: ""
 - type: 15
-  value: 1 # 1:Speed Solo,2:Speed Team,4:Magic Solo,8:Magic Team
-
-# Allow singleplayer
+  value: 1
+  name: "Channel window game mode"
+  description: "1:Speed Solo,2:Speed Team,4:Magic Solo,8:Magic Team"
 - type: 16
   value: false
-
-# Game countdown [ms]
+  name: "Allow singleplayer"
+  description: ""
 - type: 17
   value: 5310
-
-# Exp&Carrot Boost [%]
+  name: "Game countdown [ms]"
+  description: ""
 - type: 18
   value: 100
-
-# Always a new record for ghost
+  name: "Exp&Carrot Boost [%]"
+  description: ""
 - type: 19
   value: false
-
-# Mating
+  name: "Always a new record for ghost"
+  description: ""
 - type: 20
   value: true
-
-# Training
+  name: "Mating"
+  description: ""
 - type: 21
   value: true
-
-# Singleplayer
+  name: "Training"
+  description: ""
 - type: 22
   value: true
-
-# Ranch management
+  name: "Singleplayer"
+  description: ""
 - type: 23
   value: true
-
-# Starting injury level
+  name: "Ranch management"
+  description: ""
 - type: 24
   value: 3
-
-# Is TCP relay working?
+  name: "Starting injury level"
+  description: ""
 - type: 25
   value: true
-
-# How many times to send via TCP?
+  name: "Is TCP relay working?"
+  description: ""
 - type: 26
-  value: 2 # 1:Everytime,2:Every 2 times,3:Every 3 times,4:Every 4 times
-
-# Block detection time (s) before TCP Relay starts
+  value: 2
+  name: "How many times to send via TCP?"
+  description: "1:Everytime,2:Every 2 times,3:Every 3 times,4:Every 4 times"
 - type: 27
   value: 5
-
-# Speed Team entry level
+  name: "Block detection time (s) before TCP Relay starts"
+  description: ""
 - type: 28
   value: 8
-
-# Magic Team entry level
+  name: "Speed Team entry level"
+  description: ""
 - type: 29
   value: 4
-
-# Whether 2fa works
+  name: "Magic Team entry level"
+  description: ""
 - type: 30
   value: 1
-
-# 2fa mating
+  name: "Whether 2fa works"
+  description: ""
 - type: 31
   value: 1
-
-# 2fa - send gift
+  name: "2fa mating"
+  description: ""
 - type: 32
   value: 1
-
-# 2fa return to nature
+  name: "2fa - send gift"
+  description: ""
 - type: 33
   value: 1
-
-# Real-time server statistics
+  name: "2fa return to nature"
+  description: ""
 - type: 34
   value: true
-
-# Adjust horse size
+  name: "Real-time server statistics"
+  description: ""
 - type: 35
   value: 100
-
-# PC room premium horse rental
+  name: "Adjust horse size"
+  description: ""
 - type: 36
   value: true
-
-# Experience/carrots boost
+  name: "PC room premium horse rental"
+  description: ""
 - type: 37
-  value: 0 # Default value 0 (no boost)
-
-# PC room premium regen cycle [min]
+  value: 0
+  name: "Experience/carrots boost"
+  description: "Default value 0 (no boost)"
 - type: 38
   value: 60
-
-# Entry validity period upon invitation/summon (def:180 seconds)
+  name: "PC room premium regen cycle [min]"
+  description: ""
 - type: 39
   value: 180
-
-# Stamp Event
+  name: "Entry validity period upon invitation/summon (def:180 seconds)"
+  description: ""
 - type: 40
   value: true
-
-# Pet system
+  name: "Stamp Event"
+  description: ""
 - type: 41
-  value: true # Pet System Test
-
-# Request League Ranking (client only)
+  value: true
+  name: "Pet system"
+  description: "Pet System Test"
 - type: 42
   value: true
-
-# Use cash recharge ?
+  name: "Request League Ranking (client only)"
+  description: ""
 - type: 43
   value: true
-
-# Display webpage when exiting ?
+  name: "Use cash recharge ?"
+  description: ""
 - type: 44
   value: false
-
-# Monday league tally
+  name: "Display webpage when exiting ?"
+  description: ""
 - type: 45
   value: false
-
-# Tuesday league tally
+  name: "Monday league tally"
+  description: ""
 - type: 46
   value: false
-
-# Wednesday league tally
+  name: "Tuesday league tally"
+  description: ""
 - type: 47
   value: true
-
-# Thursday league tally
+  name: "Wednesday league tally"
+  description: ""
 - type: 48
   value: false
-
-# Friday league tally
+  name: "Thursday league tally"
+  description: ""
 - type: 49
   value: false
-
-# Saturday league tally
+  name: "Friday league tally"
+  description: ""
 - type: 50
   value: false
-
-# Sunday league tally
+  name: "Saturday league tally"
+  description: ""
 - type: 51
   value: false
-
-# Guild Match start time
+  name: "Sunday league tally"
+  description: ""
 - type: 52
   value: 19
-
-# Guild Match duration
+  name: "Guild Match start time"
+  description: ""
 - type: 53
   value: 2
-
-# Guilds
+  name: "Guild Match duration"
+  description: ""
 - type: 54
   value: true
-
-# Match interval (U:seconds, Def:30)
+  name: "Guilds"
+  description: ""
 - type: 55
   value: 30
-
-# Field Item Acquisiton event
+  name: "Match interval (U:seconds, Def:30)"
+  description: ""
 - type: 56
   value: false
-
-# Ranch Shepherd Carrot Payment
+  name: "Field Item Acquisiton event"
+  description: ""
 - type: 57
   value: true
-
-# Minimum people required for guild match
+  name: "Ranch Shepherd Carrot Payment"
+  description: ""
 - type: 58
   value: 4
-
-# Weekly reset day
+  name: "Minimum people required for guild match"
+  description: ""
 - type: 59
-  value: 3 # 0:Sunday,1:Monday,2:Tuesday,3:Wednesday,4:Thursday,5:Friday,6:Saturday
-
-# Weekly reset hour(0~23)
+  value: 3
+  name: "Weekly reset day"
+  description: "0:Sunday,1:Monday,2:Tuesday,3:Wednesday,4:Thursday,5:Friday,6:Saturday"
 - type: 60
   value: 6
-
-# Min level required to acquire eggs (during map generation)
+  name: "Weekly reset hour(0~23)"
+  description: ""
 - type: 61
   value: 12
-
-# Shutdown system
+  name: "Min level required to acquire eggs (during map generation)"
+  description: ""
 - type: 62
   value: true
-
-# Default visit ranch UID (for testing)
+  name: "Shutdown system"
+  description: ""
 - type: 63
   value: 0
-
-# Egg hatching/boosting time ratio (10000%)
+  name: "Default visit ranch UID (for testing)"
+  description: ""
 - type: 64
   value: 10000
-
-# Ranch Weather Features
+  name: "Egg hatching/boosting time ratio (10000%)"
+  description: ""
 - type: 65
   value: false
-
-# In-Game Weather
+  name: "Ranch Weather Features"
+  description: ""
 - type: 66
-  value: 0 # 0:Not specified,1:Light snow,2:Moderate snow,3:Heavy snow,-1:No snow
-
-# Force random weather during match
+  value: 0
+  name: "In-Game Weather"
+  description: "0:Not specified,1:Light snow,2:Moderate snow,3:Heavy snow,-1:No snow"
 - type: 67
-  value: 0 # 0:Not specified,1:No snow,2:Light snow 01,3:Light snow 02,4:Moderate snow,5:Heavy snow
-
-# PC specification log
+  value: 0
+  name: "Force random weather during match"
+  description: "0:Not specified,1:No snow,2:Light snow 01,3:Light snow 02,4:Moderate snow,5:Heavy snow"
 - type: 68
   value: false
+  name: "PC specification log"
+  description: ""

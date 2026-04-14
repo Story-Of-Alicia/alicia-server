@@ -37,6 +37,8 @@ public:
   {
     uint32_t type{};
     uint32_t value{};
+    std::string name{};
+    std::string description{};
   };
 
   /**

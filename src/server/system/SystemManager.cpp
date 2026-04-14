@@ -54,6 +54,9 @@ void SystemManager::ReadConfig(const std::filesystem::path& configPath)
       {
         entry.value = node["value"].as<bool>();
       }
+
+      entry.name = node["name"].as<std::string>();
+      entry.description = node["description"].as<std::string>();
       
       _entries.push_back(entry);
     }
@@ -73,6 +76,8 @@ void SystemManager::Save() const
       YAML::Node node;
       node["type"] = entry.type;
       node["value"] = entry.value;
+      node["name"] = entry.name;
+      node["description"] = entry.description;
 
       root.push_back(node);
     }
