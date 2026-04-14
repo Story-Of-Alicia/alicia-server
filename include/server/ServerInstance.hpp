@@ -34,6 +34,7 @@
 #include "server/system/OtpSystem.hpp"
 #include "server/system/ModerationSystem.hpp"
 #include "server/system/RoomSystem.hpp"
+#include "server/system/SystemManager.hpp"
 
 #include <libserver/data/DataDirector.hpp>
 #include <libserver/registry/CharacterRegistry.hpp>
@@ -140,6 +141,10 @@ public:
   //! Returns reference to the room system.
   //! @returns Reference to the room system.
   RoomSystem& GetRoomSystem();
+
+  //! Returns reference to the system manager.
+  //! @returns Reference to the system manager.
+  SystemManager& GetSystemManager();
 
   //! Returns reference to the settings.
   //! @returns Reference to the settings.
@@ -257,6 +262,8 @@ private:
   ModerationSystem _moderationSystem;
   //! A room system.
   RoomSystem _roomSystem;
+  //! A system manager.
+  SystemManager _systemManager;
 
 };
 

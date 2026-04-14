@@ -1,0 +1,277 @@
+# System Content Configuration
+
+# Speed Solo
+- type: 0
+  value: true
+
+# Speed Team
+- type: 1
+  value: true
+
+# Magic Solo
+- type: 2
+  value: true
+
+# Magic Team
+- type: 3
+  value: true
+
+# Entering the store
+- type: 4
+  value: true
+
+# Shop purchases
+- type: 5
+  value: true
+
+# Team Battle 1 vs 1
+- type: 6
+  value: true
+
+# Stop service: Maintenance
+- type: 7
+  value: false
+
+# [Packet] Server 8T(7.5/s)
+- type: 8
+  value: false
+
+# [Packet] Server 15T(4/s)
+- type: 9
+  value: true
+
+# [Packet] P2P 6T (10/s)
+- type: 10
+  value: false
+
+# [Packet] P2P 8T(7.5/s)
+- type: 11
+  value: false
+
+# [Packet] Pasture 15T(4/s)
+- type: 12
+  value: false
+
+# Display AI player checkbox in the waiting room
+- type: 13
+  value: true
+
+# Festival activation
+- type: 14
+  value: true
+
+# Channel window game mode
+- type: 15
+  value: 1 # 1:Speed Solo,2:Speed Team,4:Magic Solo,8:Magic Team
+
+# Allow singleplayer
+- type: 16
+  value: false
+
+# Game countdown [ms]
+- type: 17
+  value: 5310
+
+# Exp&Carrot Boost [%]
+- type: 18
+  value: 100
+
+# Always a new record for ghost
+- type: 19
+  value: false
+
+# Mating
+- type: 20
+  value: true
+
+# Training
+- type: 21
+  value: true
+
+# Singleplayer
+- type: 22
+  value: true
+
+# Ranch management
+- type: 23
+  value: true
+
+# Starting injury level
+- type: 24
+  value: 3
+
+# Is TCP relay working?
+- type: 25
+  value: true
+
+# How many times to send via TCP?
+- type: 26
+  value: 2 # 1:Everytime,2:Every 2 times,3:Every 3 times,4:Every 4 times
+
+# Block detection time (s) before TCP Relay starts
+- type: 27
+  value: 5
+
+# Speed Team entry level
+- type: 28
+  value: 8
+
+# Magic Team entry level
+- type: 29
+  value: 4
+
+# Whether 2fa works
+- type: 30
+  value: 1
+
+# 2fa mating
+- type: 31
+  value: 1
+
+# 2fa - send gift
+- type: 32
+  value: 1
+
+# 2fa return to nature
+- type: 33
+  value: 1
+
+# Real-time server statistics
+- type: 34
+  value: true
+
+# Adjust horse size
+- type: 35
+  value: 100
+
+# PC room premium horse rental
+- type: 36
+  value: true
+
+# Experience/carrots boost
+- type: 37
+  value: 0 # Default value 0 (no boost)
+
+# PC room premium regen cycle [min]
+- type: 38
+  value: 60
+
+# Entry validity period upon invitation/summon (def:180 seconds)
+- type: 39
+  value: 180
+
+# Stamp Event
+- type: 40
+  value: true
+
+# Pet system
+- type: 41
+  value: true # Pet System Test
+
+# Request League Ranking (client only)
+- type: 42
+  value: true
+
+# Use cash recharge ?
+- type: 43
+  value: true
+
+# Display webpage when exiting ?
+- type: 44
+  value: false
+
+# Monday league tally
+- type: 45
+  value: false
+
+# Tuesday league tally
+- type: 46
+  value: false
+
+# Wednesday league tally
+- type: 47
+  value: true
+
+# Thursday league tally
+- type: 48
+  value: false
+
+# Friday league tally
+- type: 49
+  value: false
+
+# Saturday league tally
+- type: 50
+  value: false
+
+# Sunday league tally
+- type: 51
+  value: false
+
+# Guild Match start time
+- type: 52
+  value: 19
+
+# Guild Match duration
+- type: 53
+  value: 2
+
+# Guilds
+- type: 54
+  value: true
+
+# Match interval (U:seconds, Def:30)
+- type: 55
+  value: 30
+
+# Field Item Acquisiton event
+- type: 56
+  value: false
+
+# Ranch Shepherd Carrot Payment
+- type: 57
+  value: true
+
+# Minimum people required for guild match
+- type: 58
+  value: 4
+
+# Weekly reset day
+- type: 59
+  value: 3 # 0:Sunday,1:Monday,2:Tuesday,3:Wednesday,4:Thursday,5:Friday,6:Saturday
+
+# Weekly reset hour(0~23)
+- type: 60
+  value: 6
+
+# Min level required to acquire eggs (during map generation)
+- type: 61
+  value: 12
+
+# Shutdown system
+- type: 62
+  value: true
+
+# Default visit ranch UID (for testing)
+- type: 63
+  value: 0
+
+# Egg hatching/boosting time ratio (10000%)
+- type: 64
+  value: 10000
+
+# Ranch Weather Features
+- type: 65
+  value: false
+
+# In-Game Weather
+- type: 66
+  value: 0 # 0:Not specified,1:Light snow,2:Moderate snow,3:Heavy snow,-1:No snow
+
+# Force random weather during match
+- type: 67
+  value: 0 # 0:Not specified,1:No snow,2:Light snow 01,3:Light snow 02,4:Moderate snow,5:Heavy snow
+
+# PC specification log
+- type: 68
+  value: false

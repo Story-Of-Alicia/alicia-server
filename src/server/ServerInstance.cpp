@@ -91,6 +91,7 @@ void ServerInstance::Initialize()
   _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
 
   _moderationSystem.ReadConfig(_resourceDirectory / "config/server/automod.yaml");
+  _systemManager.ReadConfig(_resourceDirectory / "config/server/system.yaml");
 
   // Initialize the directors and tick them on their own threads.
   // Directors will terminate their tick loop once `_shouldRun` flag is set to false.
@@ -352,6 +353,11 @@ RoomSystem& ServerInstance::GetRoomSystem()
 OtpSystem& ServerInstance::GetOtpSystem()
 {
   return _otpSystem;
+}
+
+SystemManager& ServerInstance::GetSystemManager()
+{
+  return _systemManager;
 }
 
 Config& ServerInstance::GetSettings()
