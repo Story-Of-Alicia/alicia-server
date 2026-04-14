@@ -55,13 +55,6 @@ public:
       std::chrono::steady_clock::time_point expiryTimePoint;
     };
 
-    enum class Shield
-    {
-      None = 0,
-      Normal = 100,
-      Critical = 200
-    };
-
     Oid oid{InvalidEntityOid};
     State state{State::Disconnected};
     Team team{Team::Solo};
@@ -73,12 +66,14 @@ public:
     //! A set of tracked items in racer's proximity.
     std::unordered_set<Oid> trackedItems;
 
-    Shield shield{Shield::None};
-    bool darkness{};
-    bool hotRodded{};
-    bool critChance{};
-    bool gaugeBuff{};
-    bool attacked{};
+    //! Active skill effects indexed by skillEffectId (0-23).
+    static constexpr size_t EffectCount = 24;
+    std::array<bool, EffectCount> effects{};
+    //! Per-effect generation counter — incremented on each apply, used to invalidate stale removal timers.
+    std::array<uint32_t, EffectCount> effectGenerations{};
+
+    //! Rank of the currently active removeMagic attack (0 = none active).
+    uint32_t attackRank{};
   };
 
   //! An item

@@ -65,6 +65,7 @@ uint32_t ReadSlotInfo(const YAML::Node& section, Magic::SlotInfo& slot)
 
   slot.affectByCriticalAura = section["affectByCriticalAura"].as<uint32_t>();
   slot.criticalByDarkFire = section["criticalByDarkFire"].as<uint32_t>();
+  slot.attackRank = section["attackRank"].as<uint32_t>(0);
 
   return slot.type;
 }

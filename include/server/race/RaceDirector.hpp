@@ -160,11 +160,15 @@ private:
     const bool checkRacer = true);
 
   EffectVerdict ScheduleSkillEffect(
-    server::RaceDirector::RaceInstance& raceInstance, 
-    server::tracker::Oid attackerId, server::tracker::Oid targetId, 
-    const server::registry::Magic::SlotInfo& magicSlotInfo, 
-    std::optional<std::function<void()>> afterEffectRemoved = std::nullopt,
+    server::RaceDirector::RaceInstance& raceInstance,
+    server::tracker::Oid attackerId, server::tracker::Oid targetId,
+    const server::registry::Magic::SlotInfo& magicSlotInfo,
     const uint16_t effectInstanceId = 0);
+
+  void RemoveEffect(
+    server::RaceDirector::RaceInstance& raceInstance,
+    server::tracker::RaceTracker::Racer& racer,
+    uint32_t effectId);
 
   void HandleEnterRoom(
     ClientId clientId,
