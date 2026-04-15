@@ -29,9 +29,9 @@ RaceTracker::Racer& RaceTracker::AddRacer(data::Uid characterUid)
     throw std::runtime_error("Character is already a racer");
 
   // Reuse the OID from a previous race if the player was here before, otherwise assign a new one.
-  const auto [oidIter, isNew] = _racerOids.try_emplace(characterUid, _nextRacerOid);
+  const auto [oidIter, isNew] = _characterOids.try_emplace(characterUid, _nextCharacterOid);
   if (isNew)
-    ++_nextRacerOid;
+    ++_nextCharacterOid;
 
   racerIter->second.oid = oidIter->second;
 
