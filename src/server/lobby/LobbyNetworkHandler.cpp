@@ -970,7 +970,6 @@ void LobbyNetworkHandler::HandleRoomList(
   constexpr uint32_t RoomsPerPage = 9;
 
   protocol::LobbyCommandRoomListOK response{
-    .page = command.page,
     .gameMode = command.gameMode,
     .teamMode = command.teamMode};
 
@@ -1028,12 +1027,15 @@ void LobbyNetworkHandler::HandleRoomList(
 
   if (not roomChunks.empty())
   {
-    // Clamp the page index to the la
+    // Clamp the page index to the last chunk
     const auto pageIndex = std::max(
       std::min(
         roomChunks.size() - 1,
         static_cast<size_t>(command.page)),
       size_t{0});
+
+    // Set the response page index based on chunk index
+    response.page = static_cast<uint8_t>(pageIndex);
 
     for (const auto& room : roomChunks[pageIndex])
     {
