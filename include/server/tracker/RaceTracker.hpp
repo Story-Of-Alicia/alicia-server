@@ -28,6 +28,7 @@
 #include <array>
 #include <chrono>
 #include <map>
+#include <unordered_map>
 #include <unordered_set>
 
 namespace server::tracker
@@ -145,8 +146,12 @@ public:
 
 
 private:
-  //! The next entity OID.
-  Oid _nextObjectOid = 1;
+  //! Permanent OID assignments per character — never cleared, so the same player always gets the same OID.
+  std::unordered_map<data::Uid, Oid> _racerOids;
+  //! Next OID for new racer entities (100+).
+  Oid _nextRacerOid = 100;
+  //! Next OID for item entities (1–99, reset each race).
+  Oid _nextItemOid = 1;
   //! Horse entities in the race.
   RacerObjectMap _racers;
   //! Items in the race
