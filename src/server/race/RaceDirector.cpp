@@ -1679,6 +1679,9 @@ void RaceDirector::HandleStartRace(
       // Build the racers.
       for (const auto& [characterUid, racer] : raceInstance.tracker.GetRacers())
       {
+        if (racer.state == tracker::RaceTracker::Racer::State::Disconnected)
+          continue;
+
         std::string characterName;
         GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
           [&characterName](const data::Character& character)
