@@ -587,6 +587,7 @@ void RaceDirector::Tick()
           {
             score.mountName = horse.name();
             score.horseClass = static_cast<uint8_t>(horse.clazz());
+            score.horseClassProgress = horse.clazzProgress();
             score.growthPoints = static_cast<uint16_t>(horse.growthPoints());
           });
       });
@@ -1918,15 +1919,25 @@ void RaceDirector::HandleRaceResult(
   protocol::AcCmdCRRaceResultOK response{};
 
   characterRecord.Immutable(
-    [this, &response](const data::Character& character)
+    [this, &response, gainedClazzProgress = command.member2](const data::Character& character)
     {
       response.currentCarrots = character.carrots();
 
-      GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Immutable(
-        [&response](const data::Horse& horse)
+      GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Mutable(
+        [&response, gainedClazzProgress](data::Horse& horse)
         {
           response.horseFatigue = static_cast<uint16_t>(
             horse.fatigue());
+          horse.clazzProgress() += static_cast<uint32_t>(gainedClazzProgress);
+          auto classUpDiff = gainedClazzProgress % 6650;
+          if (classUpDiff >= 1)
+          {
+            //Needs revision because lvl1-10,10-20 and 20-30 have different thresholds for class ups
+            // Add to HorseRegistry
+            horse.clazzProgress() -= 6650*classUpDiff;
+            horse.clazz() += 1;
+            horse.growthPoints() += 1;
+          }
         });
     });
 
