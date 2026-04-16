@@ -1676,12 +1676,13 @@ void RaceDirector::HandleStartRace(
       // Get race instance (and check if added as racer)
       auto& raceInstance = GetRaceInstance(clientContext);
 
+      const auto& lobbyConfig = GetServerInstance().GetLobbyDirector().GetConfig();
       protocol::AcCmdCRStartRaceNotify notify{
         .raceGameMode = raceInstance.raceGameMode,
         .raceTeamMode = raceInstance.raceTeamMode,
         .raceMapBlockId = raceInstance.raceMapBlockId,
-        .p2pRelayAddress = asio::ip::address_v4::loopback().to_uint(),
-        .p2pRelayPort = static_cast<uint16_t>(10500),
+        .p2pRelayAddress = lobbyConfig.advertisement.udpRaceRelay.address.to_uint(),
+        .p2pRelayPort = lobbyConfig.advertisement.udpRaceRelay.port,
         .raceMissionId = raceInstance.raceMissionId,};
 
       // Build the racers.
