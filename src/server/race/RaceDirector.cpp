@@ -3308,11 +3308,15 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
     targetRacer.effects[2] ? 100u : 0u;
   const bool shieldBlocks = isAttack && magicSlotInfo.attackValue < shieldThreshold;
 
-  // Normal hotrodding (effectId 6) blocks attacks unless the spell has removeHotRodding set (Lightning).
-  // Crit hotrodding (effectId 7) blocks attacks including Lightning, but not crit Lightning (crit variant with removeHotRodding).
-  const bool isCritLightning = magicSlotInfo.basicType != magicSlotInfo.type && magicSlotInfo.removeHotRodding;
+  // Any removeHotRodding attack is considered part of the lightning family.
+  // For the current registry, critical variants have criticalType == 0.
+  const bool isLightning = isAttack && magicSlotInfo.removeHotRodding;
+  const bool isCritLightning = isLightning && magicSlotInfo.criticalType == 0;
+
+  // Normal hotrodding (effectId 6): blocked by non-lightning attacks, canceled by any lightning.
+  // Crit hotrodding (effectId 7): blocks everything except crit lightning.
   const bool hotroddingBlocks =
-    (targetRacer.effects[6] && isAttack && !magicSlotInfo.removeHotRodding) ||
+    (targetRacer.effects[6] && isAttack && !isLightning) ||
     (targetRacer.effects[7] && isAttack && !isCritLightning);
 
   const uint32_t effectId = shieldBlocks
