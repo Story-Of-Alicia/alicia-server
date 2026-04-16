@@ -672,7 +672,7 @@ magic:
         removeMagic: 0
         removeHotRodding: 0
         removeSummonTarget: 0
-        replaceEffect: 0
+        replaceEffect: 1
         massEffect: 0
         affectByCriticalAura: 1
         criticalByDarkFire: 0
@@ -701,7 +701,7 @@ magic:
         removeMagic: 0
         removeHotRodding: 0
         removeSummonTarget: 0
-        replaceEffect: 0
+        replaceEffect: 1
         massEffect: 0
         affectByCriticalAura: 0
         criticalByDarkFire: 0

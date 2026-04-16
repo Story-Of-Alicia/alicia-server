@@ -974,6 +974,7 @@ struct AcCmdRCRaceResultNotify
     std::string name{};
     //! Time in milliseconds.
     uint32_t courseTime{};
+    //! Room Average Time Record in milliseconds
     uint32_t member4{};
     uint32_t experience{};
     uint32_t member6{};
@@ -1005,6 +1006,7 @@ struct AcCmdRCRaceResultNotify
     uint16_t growthPoints{};
     uint8_t horseClass{};
     uint32_t bonusCarrots{};
+    // ! Revenge something
     uint32_t member22{};
     AcCmdCRStartRaceNotify::Struct1 member23{};
     uint32_t member24{};

@@ -52,7 +52,15 @@ const server::registry::Magic::SlotInfo RandomMagicItem(ServerInstance& serverIn
     ? serverInstance.GetMagicRegistry().GetSoloPool()
     : serverInstance.GetMagicRegistry().GetTeamPool());
   static std::random_device rd;
-  std::uniform_int_distribution distribution(0, static_cast<int>(itemPool.size() - 1));
+
+  // Build weights: Lightning (type 18) gets a reduced roll chance.
+  // TODO: Replace with a proper per-spell weight system.
+  std::vector<uint32_t> weights;
+  weights.reserve(itemPool.size());
+  for (const uint32_t type : itemPool)
+    weights.push_back(type == 18 ? 1u : 3u);
+
+  std::discrete_distribution<size_t> distribution(weights.begin(), weights.end());
   auto magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(itemPool[distribution(rd)]);
   if ((rand() % 100) < 5)
   {
@@ -3299,8 +3307,12 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
     targetRacer.effects[2] ? 100u : 0u;
   const bool shieldBlocks = isAttack && magicSlotInfo.attackValue < shieldThreshold;
 
-  // Hotrodding (effectId 6) blocks attacks unless the spell has removeHotRodding set (Lightning)
-  const bool hotroddingBlocks = targetRacer.effects[6] && isAttack && !magicSlotInfo.removeHotRodding;
+  // Normal hotrodding (effectId 6) blocks attacks unless the spell has removeHotRodding set (Lightning).
+  // Crit hotrodding (effectId 7) blocks attacks including Lightning, but not crit Lightning (crit variant with removeHotRodding).
+  const bool isCritLightning = magicSlotInfo.basicType != magicSlotInfo.type && magicSlotInfo.removeHotRodding;
+  const bool hotroddingBlocks =
+    (targetRacer.effects[6] && isAttack && !magicSlotInfo.removeHotRodding) ||
+    (targetRacer.effects[7] && isAttack && !isCritLightning);
 
   const uint32_t effectId = shieldBlocks
     ? (targetRacer.effects[3] ? 3u : 2u)
@@ -3309,10 +3321,15 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
   // For removeMagic attacks: blocked if an equal-or-higher-rank attack is already active.
   // For other attacks (attackValue > 0): blocked if the same effect is already active.
   // For pure buffs: blocked only if already active and not replaceable (replaceEffect == 0 means no extension).
+  // Duplication is checked against the basic-type effect slot so crit variants share occupancy with their base,
+  // except for replaceEffect spells which track their own slot independently.
+  const uint32_t checkEffectId = magicSlotInfo.replaceEffect
+    ? magicSlotInfo.skillEffectId
+    : GetServerInstance().GetMagicRegistry().GetSlotInfo(magicSlotInfo.basicType).skillEffectId;
   const bool isDuplicated = hotroddingBlocks
     || (magicSlotInfo.attackRank > 0
       ? targetRacer.attackRank >= magicSlotInfo.attackRank
-      : targetRacer.effects[magicSlotInfo.skillEffectId] && (isAttack || !magicSlotInfo.replaceEffect));
+      : targetRacer.effects[checkEffectId] && (isAttack || !magicSlotInfo.replaceEffect));
 
   // TODO: Verify if characterOid and targetOid should be the same once we have NPCs
   const protocol::AcCmdRCAddSkillEffect addSkillEffect{
@@ -3347,6 +3364,21 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
   const uint32_t generation = ++targetRacer.effectGenerations[effectId];
   if (magicSlotInfo.attackRank > 0)
     targetRacer.attackRank = magicSlotInfo.attackRank;
+
+  // Cancel any active adjustMotionSpeed buffs when an attack lands.
+  // HotRodding (effectIds 6 and 7) is excluded — it has its own removal priority via removeHotRodding.
+  if (isAttack)
+  {
+    for (const auto& [type, slot] : GetServerInstance().GetMagicRegistry().GetSlotInfoMap())
+    {
+      if (slot.adjustMotionSpeed && slot.attackValue == 0
+        && slot.skillEffectId != 6 && slot.skillEffectId != 7
+        && targetRacer.effects[slot.skillEffectId])
+      {
+        RemoveEffect(raceInstance, targetRacer, slot.skillEffectId);
+      }
+    }
+  }
 
   _scheduler.Queue(
     [this, roomUid = raceInstance.roomUid, targetOid, targetCharacterUid, effectId,
