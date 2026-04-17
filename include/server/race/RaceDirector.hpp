@@ -20,9 +20,9 @@
 #ifndef RACEDIRECTOR_HPP
 #define RACEDIRECTOR_HPP
 
-#include "server/Config.hpp"
+#include "RaceInstance.hpp"
 
-#include "server/tracker/RaceTracker.hpp"
+#include "server/Config.hpp"
 
 #include "libserver/registry/MagicRegistry.hpp"
 #include "libserver/network/command/CommandServer.hpp"
@@ -32,8 +32,6 @@
 #include "libserver/util/Scheduler.hpp"
 
 #include <random>
-#include <unordered_map>
-#include <unordered_set>
 
 namespace server
 {
@@ -115,43 +113,6 @@ private:
     bool isAuthenticated = false;
   };
 
-  struct RaceInstance
-  {
-    //! A stage of the room.
-    enum class Stage
-    {
-      Waiting,
-      Loading,
-      Racing,
-      Finishing,
-    } stage{Stage::Waiting};
-    //! A time point of when the stage timeout occurs.
-    std::chrono::steady_clock::time_point stageTimeoutTimePoint;
-
-    uint32_t roomUid{};
-
-    //! A master's character UID.
-    data::Uid masterUid{data::InvalidUid};
-    //! A race object tracker.
-    tracker::RaceTracker tracker;
-
-    //! A game mode of the race.
-    protocol::GameMode raceGameMode;
-    //! A team mode of the race.
-    protocol::TeamMode raceTeamMode;
-    //! A map block ID of the race.
-    uint16_t raceMapBlockId{};
-    //! A mission ID of the race.
-    uint16_t raceMissionId{};
-
-    //! Represents when a room started loading.
-    std::chrono::steady_clock::time_point loadingStartTimePoint;
-    //! A time point of when the race is actually started (a countdown is finished).
-    std::chrono::steady_clock::time_point raceStartTimePoint;
-    //! A room clients.
-    std::unordered_set<ClientId> clients;
-  };
-
   ClientContext& GetClientContext(ClientId clientId, bool requireAuthorized = true);
   ClientId GetClientIdByCharacterUid(data::Uid characterUid);
   ClientContext& GetClientContextByCharacterUid(data::Uid characterUid);
@@ -160,7 +121,7 @@ private:
     const bool checkRacer = true);
 
   EffectVerdict ScheduleSkillEffect(
-    server::RaceDirector::RaceInstance& raceInstance, 
+    RaceInstance& raceInstance, 
     server::tracker::Oid attackerId, server::tracker::Oid targetId, 
     const server::registry::Magic::SlotInfo& magicSlotInfo, 
     std::optional<std::function<void()>> afterEffectRemoved = std::nullopt,

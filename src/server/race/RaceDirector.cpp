@@ -771,7 +771,7 @@ RaceDirector::ClientContext& RaceDirector::GetClientContextByCharacterUid(
   throw std::runtime_error("Character not associated with any client");
 }
 
-RaceDirector::RaceInstance& RaceDirector::GetRaceInstance(
+RaceInstance& RaceDirector::GetRaceInstance(
   const ClientContext& clientContext,
   const bool checkRacer)
 {
