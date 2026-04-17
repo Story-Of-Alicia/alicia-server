@@ -3,3 +3,4 @@ out/
 cmake-build-*/
 dist/
 .vscode/
+.vs/
