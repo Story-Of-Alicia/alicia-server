@@ -92,27 +92,6 @@ public:
   void Terminate();
   void Tick();
 
-  bool IsRoomRacing(uint32_t uid)
-  {
-    std::scoped_lock lock(_raceInstancesMutex);
-    const auto roomIter = _raceInstances.find(uid);
-    if (roomIter == _raceInstances.cend())
-      return false;
-
-    return roomIter->second.stage == RaceInstance::Stage::Racing ||
-      roomIter->second.stage == RaceInstance::Stage::Loading;
-  }
-
-  size_t GetRoomPlayerCount(uint32_t uid)
-  {
-    std::scoped_lock lock(_raceInstancesMutex);
-    const auto roomIter = _raceInstances.find(uid);
-    if (roomIter == _raceInstances.cend())
-      return 0;
-
-    return roomIter->second.tracker.GetRacers().size();
-  }
-
   void BroadcastChangeRoomOptions(
     const data::Uid& roomUid,
     const protocol::AcCmdCRChangeRoomOptionsNotify notify);
