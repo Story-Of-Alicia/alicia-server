@@ -388,63 +388,6 @@ void RaceDirector::Tick()
     raceInstance.Tick();
   }
 
-  // Process rooms which are racing
-  for (auto& [raceUid, raceInstance] : _raceInstances)
-  {
-    if (raceInstance.stage != RaceInstance::Stage::Racing)
-      continue;
-
-    const bool raceTimeoutReached = std::chrono::steady_clock::now() >= raceInstance.stageTimeoutTimePoint;
-
-    const bool isFinishing = std::ranges::any_of(
-      std::views::values(raceInstance.tracker.GetRacers()),
-      [](const tracker::RaceTracker::Racer& racer)
-      {
-        return racer.state == tracker::RaceTracker::Racer::State::Finishing;
-      });
-
-    // If the race is not finishing and the timeout was not reached
-    // do not finish the race.
-    if (not isFinishing && not raceTimeoutReached)
-      continue;
-
-    raceInstance.stage = RaceInstance::Stage::Finishing;
-    raceInstance.stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(15);
-
-    // If the race timeout was reached notify the clients about the finale.
-    if (raceTimeoutReached)
-    {
-      protocol::AcCmdUserRaceFinalNotify notify{};
-
-      // Broadcast the race final.
-      for (const ClientId& raceClientId : raceInstance.clients)
-      {
-        bool isParticipant = false;
-        try
-        {
-          const auto& raceClientContext = GetClientContext(raceClientId);
-          isParticipant = raceInstance.tracker.IsRacer(
-            raceClientContext.characterUid);
-        }
-        catch ([[maybe_unused]] const std::exception& x)
-        {
-          // the client has disconnected
-          // this is a data race
-        }
-
-        if (not isParticipant)
-          continue;
-
-        _commandServer.QueueCommand<decltype(notify)>(
-          raceClientId,
-          [notify]()
-          {
-            return notify;
-          });
-      }
-    }
-  }
-
   // Process rooms which are finishing
   for (auto& [raceUid, raceInstance] : _raceInstances)
   {

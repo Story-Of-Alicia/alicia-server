@@ -106,7 +106,39 @@ void RaceInstance::TickLoading()
 
 void RaceInstance::TickRacing()
 {
+  const bool raceTimeoutReached = std::chrono::steady_clock::now() >= stageTimeoutTimePoint;
 
+  const bool isFinishing = std::ranges::any_of(
+    std::views::values(tracker.GetRacers()),
+    [](const tracker::RaceTracker::Racer& racer)
+    {
+      return racer.state == tracker::RaceTracker::Racer::State::Finishing;
+    });
+
+  // If the race is not finishing and the timeout was not reached
+  // do not finish the race.
+  if (not isFinishing && not raceTimeoutReached)
+    return;
+
+  stage = RaceInstance::Stage::Finishing;
+  stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(15);
+
+  // If the race timeout was reached notify the clients about the finale.
+  if (raceTimeoutReached)
+  {
+    const protocol::AcCmdUserRaceFinalNotify notify{};
+
+    // Broadcast the race final to client (does not break for waiting room racers)
+    for (const ClientId& raceClientId : clients)
+    {
+      _commandServer.QueueCommand<decltype(notify)>(
+        raceClientId,
+        [notify]()
+        {
+          return notify;
+        });
+    }
+  }
 }
 
 void RaceInstance::TickFinishing()
