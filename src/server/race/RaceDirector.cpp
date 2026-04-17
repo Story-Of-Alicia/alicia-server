@@ -589,6 +589,24 @@ void RaceDirector::NotifyRequestUser(
   }
 }
 
+void RaceDirector::RefreshCharacterCarrotBalance(const data::Uid characterUid)
+{
+  protocol::AcCmdRCUpdateGameMoney updateGameMoney{};
+  _serverInstance.GetDataDirector().GetCharacter(characterUid).Immutable(
+    [&updateGameMoney](const data::Character& character)
+    {
+      updateGameMoney.carrotBalance = character.carrots();
+    });
+
+  const ClientId clientId = GetClientIdByCharacterUid(characterUid);
+  _commandServer.QueueCommand<protocol::AcCmdRCUpdateGameMoney>(
+    clientId,
+    [updateGameMoney]()
+    {
+      return updateGameMoney;
+    });
+}
+
 void RaceDirector::BroadcastChangeRoomOptions(
   const data::Uid& roomUid,
   const protocol::AcCmdCRChangeRoomOptionsNotify notify)

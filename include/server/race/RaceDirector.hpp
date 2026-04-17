@@ -104,6 +104,8 @@ public:
     uint32_t roomUid,
     uint32_t ranchUid) noexcept;
 
+  void RefreshCharacterCarrotBalance(const data::Uid characterUid);
+
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId clientId) override;
 
