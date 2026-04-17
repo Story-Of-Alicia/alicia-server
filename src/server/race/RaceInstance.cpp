@@ -32,6 +32,7 @@ RaceInstance::RaceInstance(
   ServerInstance& serverInstance,
   CommandServer& commandServer) : _serverInstance(serverInstance), _commandServer(commandServer)
 {}
+
 RaceInstance::~RaceInstance() = default;
 
 //! Converts a steady clock's time point to a race clock's time point.
