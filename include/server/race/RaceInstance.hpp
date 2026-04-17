@@ -22,16 +22,24 @@
 
 #include "server/tracker/RaceTracker.hpp"
 
+#include "libserver/network/command/CommandServer.hpp"
+
 #include <libserver/network/NetworkDefinitions.hpp>
 
 namespace server
 {
 
+class ServerInstance;
+
 class RaceInstance
 {
 public:
-  explicit RaceInstance();
+  explicit RaceInstance(
+    ServerInstance& serverInstance,
+    CommandServer& commandServer);
   ~RaceInstance();
+
+  static uint64_t TimePointToRaceTimePoint(const std::chrono::steady_clock::time_point& timePoint);
 
 private:
   friend class RaceDirector;
@@ -75,6 +83,10 @@ private:
 
   //! A room clients.
   std::unordered_set<network::ClientId> clients;
+  //! A server instance.
+  ServerInstance& _serverInstance;
+  //! A command server instance.
+  CommandServer& _commandServer;
 };
 
 }

@@ -389,70 +389,14 @@ void RaceDirector::Tick()
     spdlog::error("Exception ticking a race scheduler: {}", x.what());
   }
 
+  // Lock race instances mutex for processing
   std::scoped_lock lock(_raceInstancesMutex);
 
-  // Process rooms which are loading
+  // TODO: do we parallelise this?
+  // See: std::execution::par_unseq
   for (auto& [raceUid, raceInstance] : _raceInstances)
   {
-    if (raceInstance.stage != RaceInstance::Stage::Loading)
-      continue;
-
-    // Determine whether all racers have started racing.
-    const bool allRacersLoaded = std::ranges::all_of(
-      std::views::values(raceInstance.tracker.GetRacers()),
-      [](const tracker::RaceTracker::Racer& racer)
-      {
-        return racer.state == tracker::RaceTracker::Racer::State::Racing
-          || racer.state == tracker::RaceTracker::Racer::State::Disconnected;
-      });
-
-    const bool loadTimeoutReached = std::chrono::steady_clock::now() >= raceInstance.stageTimeoutTimePoint;
-
-    // If not all the racers have loaded yet and the timeout has not been reached yet
-    // do not start the race.
-    if (not allRacersLoaded && not loadTimeoutReached)
-      continue;
-
-    if (loadTimeoutReached)
-    {
-      spdlog::warn("Room {} has reached the loading timeout threshold", raceUid);
-    }
-
-    for (auto& racer : raceInstance.tracker.GetRacers() | std::views::values)
-    {
-      // todo: handle the players that did not load in to the race.
-      // for now just consider them disconnected
-      if (racer.state != tracker::RaceTracker::Racer::State::Racing)
-        racer.state = tracker::RaceTracker::Racer::State::Disconnected;
-    }
-
-    const auto mapBlockTemplate = _serverInstance.GetCourseRegistry().GetMapBlockInfo(
-      raceInstance.raceMapBlockId);
-
-    // Switch to the racing stage and set the timeout time point.
-    raceInstance.stage = RaceInstance::Stage::Racing;
-    raceInstance.stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(
-      mapBlockTemplate.timeLimit);
-
-    // Set up the race start time point.
-    const auto now = std::chrono::steady_clock::now();
-    raceInstance.raceStartTimePoint = now + std::chrono::seconds(
-      mapBlockTemplate.waitTime);
-
-    const protocol::AcCmdUserRaceCountdown raceCountdown{
-      .raceStartTimestamp = TimePointToRaceTimePoint(
-        raceInstance.raceStartTimePoint)};
-
-    // Broadcast the race countdown.
-    for (const ClientId& raceClientId : raceInstance.clients)
-    {
-      _commandServer.QueueCommand<protocol::AcCmdUserRaceCountdown>(
-        raceClientId,
-        [&raceCountdown]()
-        {
-          return raceCountdown;
-        });
-    }
+    raceInstance.Tick();
   }
 
   // Process rooms which are racing
@@ -707,7 +651,7 @@ void RaceDirector::BroadcastChangeRoomOptions(
   const protocol::AcCmdCRChangeRoomOptionsNotify notify)
 {
   std::scoped_lock raceLock(_raceInstancesMutex);
-  auto& raceInstance = _raceInstances[roomUid];
+  auto& raceInstance = _raceInstances.at(roomUid);
   for (const auto raceClientId : raceInstance.clients)
   {
     _commandServer.QueueCommand<decltype(notify)>(
@@ -840,7 +784,7 @@ RaceInstance& RaceDirector::GetRaceInstance(
         clientContext.characterUid,
         clientContext.roomUid));
 
-  auto& raceInstance = _raceInstances[clientContext.roomUid];
+  auto& raceInstance = _raceInstances.at(clientContext.roomUid);
   
   // If not racing command then we are done here
   // HurdleClearResult, HandleSpur etc.
@@ -911,7 +855,9 @@ void RaceDirector::HandleEnterRoom(
   std::scoped_lock lock(_raceInstancesMutex);
   // Try to emplace the room instance.
   const auto& [raceInstanceIter, inserted] = _raceInstances.try_emplace(
-    command.roomUid);
+    command.roomUid,
+    _serverInstance,
+    _commandServer);
 
   auto& raceInstance = raceInstanceIter->second;
   raceInstance.roomUid = command.roomUid;
@@ -1888,7 +1834,7 @@ void RaceDirector::HandleRaceTimer(
 {
   protocol::AcCmdUserRaceTimerOK response{
     .clientRaceClock = command.clientClock,
-    .serverRaceClock = TimePointToRaceTimePoint(
+    .serverRaceClock = RaceInstance::TimePointToRaceTimePoint(
       std::chrono::steady_clock::now()),};
 
   _commandServer.QueueCommand<decltype(response)>(
