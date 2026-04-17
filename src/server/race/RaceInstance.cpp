@@ -143,7 +143,116 @@ void RaceInstance::TickRacing()
 
 void RaceInstance::TickFinishing()
 {
+  // Determine whether all racers have finished.
+  const bool allRacersFinished = std::ranges::all_of(
+    std::views::values(tracker.GetRacers()),
+    [](const tracker::RaceTracker::Racer& racer)
+    {
+      return racer.state == tracker::RaceTracker::Racer::State::Finishing
+        || racer.state == tracker::RaceTracker::Racer::State::Disconnected;
+    });
 
+  const bool finishTimeoutReached = std::chrono::steady_clock::now() >= stageTimeoutTimePoint;
+
+  // If not all of the racer have finished yet and the timeout has not been reached yet
+  // do not finish the race.
+  if (not allRacersFinished && not finishTimeoutReached)
+    return;
+
+  if (finishTimeoutReached)
+  {
+    spdlog::warn("Room {} has reached the race timeout threshold", roomUid);
+  }
+
+  protocol::AcCmdRCRaceResultNotify raceResult{};
+
+  std::map<uint32_t, data::Uid> scoreboard;
+  for (const auto& [characterUid, racer] : tracker.GetRacers())
+  {
+    // todo: do not do this here i guess
+    uint32_t courseTime = std::numeric_limits<uint32_t>::max();
+    if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
+      courseTime = racer.courseTime;
+
+    scoreboard.try_emplace(courseTime, characterUid);
+  }
+
+  // Build the score board.
+  for (auto& [courseTime, characterUid] : scoreboard)
+  {
+    auto& racer = tracker.GetRacer(characterUid);
+    auto& score = raceResult.scores.emplace_back();
+
+    // todo: figure out the other bit set values
+
+    if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
+    {
+      score.bitset = static_cast<protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset>(
+          protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::Connected);
+    }
+    score.courseTime = courseTime;
+    score.experience = 420;
+    score.carrots = 420;
+    const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+      characterUid);
+
+    characterRecord.Mutable([this, &score](data::Character& character)
+    {
+      character.carrots() += score.carrots;
+      character.experience() += score.experience;
+
+      const uint32_t newLevel = _serverInstance.GetCharacterRegistry().GetLevelForExp(character.experience());
+      if (newLevel > character.level())
+      {
+        character.level() = newLevel;
+        score.bitset = static_cast<protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset>(
+          score.bitset | protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::LevelUp);
+      }
+
+      //populate the score info with the character data
+      score.uid = character.uid();
+      score.name = character.name();
+      score.level = character.level();
+      score.levelProgress = character.experience();
+
+      _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Immutable(
+        [&score](const data::Horse& horse)
+        {
+          score.mountName = horse.name();
+          score.horseClass = static_cast<uint8_t>(horse.clazz());
+          score.growthPoints = static_cast<uint16_t>(horse.growthPoints());
+        });
+    });
+  }
+
+  // Broadcast the race result
+  for (const ClientId raceClientId : clients)
+  {
+    _commandServer.QueueCommand<decltype(raceResult)>(
+      raceClientId,
+      [raceResult]()
+      {
+        return raceResult;
+      });
+  }
+
+  // Clear the ready state of oll of the players.
+  // todo: this should have been reset with the room instance data
+  stage = RaceInstance::Stage::Waiting;
+  _serverInstance.GetRoomSystem().GetRoom(
+    roomUid,
+    [this](Room& room)
+    {
+      room.SetRoomPlaying(false);
+      for (auto& [uid, player] : room.GetPlayers())
+      {
+        player.SetReady(false);
+
+        // Refresh this character's carrot balance
+        // TODO: should this do it players in the Room or the current RaceInstance?
+        _serverInstance.GetRaceDirector().RefreshCharacterCarrotBalance(uid);
+      }
+    });
 }
 
 void RaceInstance::Tick()
