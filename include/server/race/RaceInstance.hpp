@@ -29,8 +29,17 @@ namespace server
 
 class RaceInstance
 {
+public:
+  explicit RaceInstance();
+  ~RaceInstance();
+
 private:
   friend class RaceDirector;
+
+  void Tick();
+  void TickLoading();
+  void TickRacing();
+  void TickFinishing();
 
   //! A stage of the room.
   enum class Stage
