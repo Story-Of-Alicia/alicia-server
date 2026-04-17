@@ -569,11 +569,6 @@ void ChatSystem::RegisterUserCommands()
             inventoryItemCount = character.inventory().size();
           });
 
-        if (inventoryItemCount > 250)
-        {
-          return {"You have too many items."};
-        }
-
         if (storedGiftCount > 32)
         {
           return {"You have too many unclaimed gifts."};

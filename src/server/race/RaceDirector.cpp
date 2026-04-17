@@ -3370,14 +3370,16 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
   if (magicSlotInfo.attackRank > 0)
     targetRacer.attackRank = magicSlotInfo.attackRank;
 
-  // Cancel any active adjustMotionSpeed buffs when an attack lands.
-  // HotRodding (effectIds 6 and 7) is excluded — it has its own removal priority via removeHotRodding.
-  if (isAttack)
+  // Cancel any active adjustMotionSpeed buffs only when a removeMagic attack lands.
+  // HotRodding (effectIds 6 and 7), crit chance buffs (18 and 19), and BufGauge buffs (20 and 21) are excluded.
+  if (isAttack && magicSlotInfo.removeMagic)
   {
     for (const auto& [type, slot] : GetServerInstance().GetMagicRegistry().GetSlotInfoMap())
     {
       if (slot.adjustMotionSpeed && slot.attackValue == 0
         && slot.skillEffectId != 6 && slot.skillEffectId != 7
+        && slot.skillEffectId != 18 && slot.skillEffectId != 19
+        && slot.skillEffectId != 20 && slot.skillEffectId != 21
         && targetRacer.effects[slot.skillEffectId])
       {
         RemoveEffect(raceInstance, targetRacer, slot.skillEffectId);
