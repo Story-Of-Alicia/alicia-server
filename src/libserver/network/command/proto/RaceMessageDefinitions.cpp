@@ -1201,7 +1201,7 @@ void AcCmdCRRelay::Read(
 
   switch (command.payloadType)
   {
-    case protocol::relay::PayloadType::Snapshot:
+    case protocol::relay::RelayCommandId::Snapshot:
     {
       // Racer snapshot
       // Payload size for snapshot is 56 bytes.
@@ -1228,7 +1228,7 @@ void AcCmdCRRelay::Read(
         .Read(command.snapshot.turningRate);
       break;
     }
-    case protocol::relay::PayloadType::SyncProgress:
+    case protocol::relay::RelayCommandId::SyncProgress:
     {
       // Sync progress
       payload.Read(command.syncProgress.racerOid)
@@ -1236,11 +1236,11 @@ void AcCmdCRRelay::Read(
         .Read(command.syncProgress.lapProgress);
       break;
     }
-    case protocol::relay::PayloadType::SetTargetStateEnabled:
-    case protocol::relay::PayloadType::SetTargetStateDisabled:
+    case protocol::relay::RelayCommandId::SetTargetStateEnabled:
+    case protocol::relay::RelayCommandId::SetTargetStateDisabled:
     {
       // Set target state
-      if (command.payloadType == protocol::relay::PayloadType::SetTargetStateEnabled)
+      if (command.payloadType == protocol::relay::RelayCommandId::SetTargetStateEnabled)
         command.setTargetState.targetLocked = true;
       
       payload.Read(command.setTargetState.magicEffectId)
@@ -1248,21 +1248,21 @@ void AcCmdCRRelay::Read(
         .Read(command.setTargetState.targetRacerOid);
       break;
     }
-    case protocol::relay::PayloadType::NetSetState:
+    case protocol::relay::RelayCommandId::NetSetState:
     {
       payload.Read(command.netSetState.racerOid)
         .Read(command.netSetState.state.val1)
         .Read(command.netSetState.state.val2);
       break;
     }
-    case protocol::relay::PayloadType::NetSetLayerAnimation:
+    case protocol::relay::RelayCommandId::NetSetLayerAnimation:
     {
       // Net set layer animation (braking/stopping)
       payload.Read(command.netSetLayerAnimation.racerOid)
         .Read(command.netSetLayerAnimation.layerAnimation);
       break;
     }
-    case protocol::relay::PayloadType::SyncGoalIn:
+    case protocol::relay::RelayCommandId::SyncGoalIn:
     {
       // Sync goal in (cross the finish line/DNF)
       uint32_t raceTimeMs{};
@@ -1272,14 +1272,14 @@ void AcCmdCRRelay::Read(
       command.syncGoalIn.raceTimeMs = std::chrono::milliseconds{raceTimeMs};
       break;
     }
-    case protocol::relay::PayloadType::SpurLevel:
+    case protocol::relay::RelayCommandId::SpurLevel:
     {
       // Spur level
       payload.Read(command.spurLevel.racerOid)
         .Read(command.spurLevel.successiveSpurCount);
       break;
     }
-    case protocol::relay::PayloadType::SlidingMotion:
+    case protocol::relay::RelayCommandId::SlidingMotion:
     {
       // Sliding motion
       payload.Read(command.slidingMotion.racerOid)
@@ -1287,13 +1287,13 @@ void AcCmdCRRelay::Read(
         .Read(command.slidingMotion.slidingAngle);
       break;
     }
-    case protocol::relay::PayloadType::BroadcastCharacterUid:
+    case protocol::relay::RelayCommandId::BroadcastCharacterUid:
     {
       // Self character uid
       payload.Read(command.broadcastCharacterUid.selfCharacterUid);
       break;
     }
-    case protocol::relay::PayloadType::ResetPosOther:
+    case protocol::relay::RelayCommandId::ResetPosOther:
     {
       // Reset pos other
       payload.Read(command.resetPosOther.affectedOid)

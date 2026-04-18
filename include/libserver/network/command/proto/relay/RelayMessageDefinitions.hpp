@@ -27,7 +27,7 @@
 namespace server::protocol::relay
 {
 
-enum class PayloadType : uint16_t
+enum class RelayCommandId : uint16_t
 {
   Snapshot = 0x3,
   SyncProgress = 0x7,

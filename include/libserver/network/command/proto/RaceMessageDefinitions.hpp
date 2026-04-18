@@ -1662,7 +1662,7 @@ struct AcCmdCRRelay
   //! Relay packet destination racer oid.
   //! Can be 0, which indicates broadcast.
   uint16_t toOid;
-  protocol::relay::PayloadType payloadType{};
+  protocol::relay::RelayCommandId payloadType{};
   std::vector<uint8_t> data;
 
   // End protocol data
@@ -1705,7 +1705,7 @@ struct AcCmdCRRelayNotify
   //! Relay packet destination racer oid.
   //! Can be 0, which indicates broadcast.
   uint16_t toOid;
-  protocol::relay::PayloadType payloadType;
+  protocol::relay::RelayCommandId payloadType;
   std::vector<uint8_t> data;
 
   static Command GetCommand()

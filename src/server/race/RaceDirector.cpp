@@ -2533,53 +2533,53 @@ void RaceDirector::HandleRelay(
 
   switch (command.payloadType)
   {
-    case protocol::relay::PayloadType::Snapshot:
+    case protocol::relay::RelayCommandId::Snapshot:
     {
       // Do anything related to `command.snapshot`, if needed
       break;
     }
-    case protocol::relay::PayloadType::SyncProgress:
+    case protocol::relay::RelayCommandId::SyncProgress:
     {
       // Do anything related to `command.syncProgress`, if needed
       break;
     }
-    case protocol::relay::PayloadType::SetTargetStateEnabled:
-    case protocol::relay::PayloadType::SetTargetStateDisabled:
+    case protocol::relay::RelayCommandId::SetTargetStateEnabled:
+    case protocol::relay::RelayCommandId::SetTargetStateDisabled:
     {
       // Do anything related to `command.setTargetState`, if needed
       break;
     }
-    case protocol::relay::PayloadType::NetSetState:
+    case protocol::relay::RelayCommandId::NetSetState:
     {
       // Do anything related to `command.netSetState`, if needed
       break;
     }
-    case protocol::relay::PayloadType::NetSetLayerAnimation:
+    case protocol::relay::RelayCommandId::NetSetLayerAnimation:
     {
       // Do anything related to `command.netSetLayerAnimation`, if needed
       break;
     }
-    case protocol::relay::PayloadType::SyncGoalIn:
+    case protocol::relay::RelayCommandId::SyncGoalIn:
     {
       // Do anything related to `command.syncGoalIn`, if needed
       break;
     }
-    case protocol::relay::PayloadType::SpurLevel:
+    case protocol::relay::RelayCommandId::SpurLevel:
     {
       // Do anything related to `command.spurLevel`, if needed
       break;
     }
-    case protocol::relay::PayloadType::SlidingMotion:
+    case protocol::relay::RelayCommandId::SlidingMotion:
     {
       // Do anything related to `command.slidingMotion`, if needed
       break;
     }
-    case protocol::relay::PayloadType::BroadcastCharacterUid:
+    case protocol::relay::RelayCommandId::BroadcastCharacterUid:
     {
       // Do anything related to `command.broadcastCharacterUid`, if needed
       break;
     }
-    case protocol::relay::PayloadType::ResetPosOther:
+    case protocol::relay::RelayCommandId::ResetPosOther:
     {
       // Do anything related to `command.resetPosOther`, if needed
       break;
