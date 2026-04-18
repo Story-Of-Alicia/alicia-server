@@ -2572,16 +2572,89 @@ void RaceDirector::HandleRelay(
 
   // Create relay notify message
   protocol::AcCmdCRRelayNotify notify{
-    .oid = command.oid,
-    .member2 = command.member2,
-    .member3 = command.member3,
+    .fromOid = command.fromOid,
+    .toOid = command.toOid,
+    .payloadType = command.payloadType,
     .data = std::move(command.data),};
+
+  switch (command.payloadType)
+  {
+    case protocol::relay::RelayCommandId::Snapshot:
+    {
+      // Do anything related to `command.snapshot`, if needed
+      break;
+    }
+    case protocol::relay::RelayCommandId::SyncProgress:
+    {
+      // Do anything related to `command.syncProgress`, if needed
+      break;
+    }
+    case protocol::relay::RelayCommandId::SetTargetStateEnabled:
+    case protocol::relay::RelayCommandId::SetTargetStateDisabled:
+    {
+      // Do anything related to `command.setTargetState`, if needed
+      break;
+    }
+    case protocol::relay::RelayCommandId::NetSetState:
+    {
+      // Do anything related to `command.netSetState`, if needed
+      break;
+    }
+    case protocol::relay::RelayCommandId::NetSetLayerAnimation:
+    {
+      // Do anything related to `command.netSetLayerAnimation`, if needed
+      break;
+    }
+    case protocol::relay::RelayCommandId::SyncGoalIn:
+    {
+      // Do anything related to `command.syncGoalIn`, if needed
+      break;
+    }
+    case protocol::relay::RelayCommandId::SpurLevel:
+    {
+      // Do anything related to `command.spurLevel`, if needed
+      break;
+    }
+    case protocol::relay::RelayCommandId::SlidingMotion:
+    {
+      // Do anything related to `command.slidingMotion`, if needed
+      break;
+    }
+    case protocol::relay::RelayCommandId::BroadcastCharacterUid:
+    {
+      // Do anything related to `command.broadcastCharacterUid`, if needed
+      break;
+    }
+    case protocol::relay::RelayCommandId::ResetPosOther:
+    {
+      // Do anything related to `command.resetPosOther`, if needed
+      break;
+    }
+    default:
+    {
+      const std::string header = command.toOid == 0 ?
+        std::format("{:#x}->Broadcast", command.fromOid) :
+        std::format("{:#x}->{:#x}",
+          command.fromOid,
+          command.toOid);
+
+      spdlog::warn("Relay payload from client '{}', with oids {}, sent an unrecognised relay payload type '{:#04x}': {}",
+        clientId,
+        header,
+        static_cast<uint16_t>(command.payloadType),
+        std::format("{::02x}", command.data));
+      break;
+    }
+  }
 
   std::scoped_lock lock(_raceInstancesMutex);
   // Get the room instance for this client
   const auto& raceInstance = GetRaceInstance(clientContext);
 
   // Relay the command to all other clients in the room
+
+  // TODO: potential improvement - instead of blindly broadcasting to room,
+  // forward packet to recepient if `toOid` is non-zero.
   for (const ClientId raceClientId : raceInstance.clients)
   {
     if (raceClientId != clientId) // Don't send back to sender
