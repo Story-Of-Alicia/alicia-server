@@ -759,6 +759,20 @@ void ChatSystem::RegisterUserCommands()
       }
       else if (subLiteral == "carrots")
       {
+        // Only allow admins (character.role != User) to use this subcommand.
+        const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+        if (not invokerRecord)
+          return {"Server error"};
+
+        bool isAdmin = false;
+        invokerRecord.Immutable([&isAdmin](const data::Character& character)
+          {
+            isAdmin = character.role() != data::Character::Role::User;
+          });
+
+        if (not isAdmin)
+          return {"You don't have permission to use this command."};
+
         if (arguments.size() < 2)
           return {
             "Invalid command arguments.",
