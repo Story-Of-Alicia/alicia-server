@@ -708,6 +708,16 @@ void RaceDirector::HandleClientDisconnected(ClientId clientId)
     }
   }
 
+  // TODO: experimental!
+  // If client had a P2DID, erase it from client map and release it from the pool
+  if (_p2dIds.contains(clientId))
+  {
+    // Erase client P2DID and release it
+    const uint16_t p2dId = _p2dIds.at(clientId);
+    _p2dIds.erase(clientId);
+    _p2dPool.Release(p2dId);
+  }
+
   spdlog::info("Client {} disconnected from the race server", clientId);
   _clients.erase(clientId);
 }
@@ -1702,8 +1712,14 @@ void RaceDirector::HandleStartRace(
         auto& protocolRacer = notify.racers.emplace_back(
           protocol::AcCmdCRStartRaceNotify::Player{
             .oid = racer.oid,
-            .name = characterName,
-            .p2dId = racer.oid,});
+            .name = characterName});
+
+        // TODO: experimental!
+        // Assign the racer a unique P2DID
+        const std::optional<uint16_t> p2dId = _p2dPool.Acquire();
+        if (not p2dId.has_value())
+          throw std::runtime_error("We've exhaused all the available P2DIDs.");
+        protocolRacer.p2dId = p2dId.value();
 
         switch (racer.team)
         {

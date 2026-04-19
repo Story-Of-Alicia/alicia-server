@@ -45,6 +45,44 @@ class ServerInstance;
 namespace server
 {
 
+class P2dPool
+{
+private:
+  std::mutex _mutex;
+  uint16_t _next_new_id = 0;
+  std::vector<uint16_t> _free_list;
+
+public:
+  // Get a ticket
+  std::optional<uint16_t> Acquire()
+  {
+    std::scoped_lock lock(_mutex);
+
+    // 1. Check if we have any recycled IDs first
+    if (not _free_list.empty())
+    {
+      uint16_t id = _free_list.back();
+      _free_list.pop_back();
+      return id;
+    }
+
+    // 2. Otherwise, take the next one from the sequence
+    if (_next_new_id <= 0xFFFF)
+    {
+      return _next_new_id++;
+    }
+
+    return std::nullopt; // Truly exhausted
+  }
+
+  // Return a ticket for others to use
+  void Release(uint16_t id)
+  {
+    std::scoped_lock lock(_mutex);
+    _free_list.push_back(id);
+  }
+};
+
 class RaceDirector final
   : public CommandServer::EventHandlerInterface
 {
@@ -341,6 +379,9 @@ private:
   CommandServer _commandServer;
   //! A map of all client contexts.
   std::unordered_map<ClientId, ClientContext> _clients;
+  //! A map of all p2ds for UDP relay.
+  std::unordered_map<ClientId, uint16_t> _p2dIds;
+  P2dPool _p2dPool;
 
   std::mutex _raceInstancesMutex;
   //! A map of all race instanced indexed by room UIDs.
