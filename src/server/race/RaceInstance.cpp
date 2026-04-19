@@ -172,7 +172,7 @@ void RaceInstance::TickFinishing()
 
   protocol::AcCmdRCRaceResultNotify raceResult{};
 
-  std::map<uint32_t, data::Uid> scoreboard;
+  std::map<data::Uid, uint32_t> scoreboard;
   for (const auto& [characterUid, racer] : tracker.GetRacers())
   {
     // todo: do not do this here i guess
@@ -180,11 +180,11 @@ void RaceInstance::TickFinishing()
     if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
       courseTime = racer.courseTime;
 
-    scoreboard.try_emplace(courseTime, characterUid);
+    scoreboard.try_emplace(characterUid, courseTime);
   }
 
   // Build the score board.
-  for (auto& [courseTime, characterUid] : scoreboard)
+  for (auto& [characterUid, courseTime] : scoreboard)
   {
     auto& racer = tracker.GetRacer(characterUid);
     auto& score = raceResult.scores.emplace_back();
@@ -230,6 +230,15 @@ void RaceInstance::TickFinishing()
         });
     });
   }
+  
+  // Sort scoreboard based on course time
+  std::sort(
+    raceResult.scores.begin(),
+    raceResult.scores.end(),
+    [](const auto& a, const auto& b)
+    {
+      return a.courseTime < b.courseTime; 
+    });
 
   // Broadcast the race result
   for (const auto& [racerCharacterUid, racerClientId] : clients)
