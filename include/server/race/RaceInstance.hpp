@@ -81,8 +81,8 @@ private:
   //! A mission ID of the race.
   uint16_t raceMissionId{};
 
-  //! A room clients.
-  std::unordered_set<network::ClientId> clients;
+  //! Room clients, mapped by their character UID.
+  std::unordered_map<data::Uid, network::ClientId> clients;
   //! A server instance.
   ServerInstance& _serverInstance;
   //! A command server instance.

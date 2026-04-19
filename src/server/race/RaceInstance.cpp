@@ -94,10 +94,10 @@ void RaceInstance::TickLoading()
   const protocol::AcCmdUserRaceCountdown raceCountdown{
     .raceStartTimestamp = TimePointToRaceTimePoint(raceStartTimePoint)};
 
-  for (const network::ClientId clientId : clients)
+  for (const network::ClientId racerClientId : clients | std::views::values)
   {
     _commandServer.QueueCommand<protocol::AcCmdUserRaceCountdown>(
-      clientId,
+      racerClientId,
       [&raceCountdown]()
       {
         return raceCountdown;
@@ -130,10 +130,15 @@ void RaceInstance::TickRacing()
     const protocol::AcCmdUserRaceFinalNotify notify{};
 
     // Broadcast the race final to client (does not break for waiting room racers)
-    for (const ClientId& raceClientId : clients)
+    for (const auto& [racerCharacterUid, racerClientId] : clients)
     {
+      // TODO: is this needed?
+      // If client is not a racer, move on to the next client
+      if (not tracker.IsRacer(racerCharacterUid))
+        continue;
+
       _commandServer.QueueCommand<decltype(notify)>(
-        raceClientId,
+        racerClientId,
         [notify]()
         {
           return notify;
@@ -227,10 +232,15 @@ void RaceInstance::TickFinishing()
   }
 
   // Broadcast the race result
-  for (const ClientId raceClientId : clients)
+  for (const auto& [racerCharacterUid, racerClientId] : clients)
   {
+    // TODO: is this needed?
+    // If client is not an active (finishing) racer, move on to the next client
+    if (not tracker.IsRacer(racerCharacterUid))
+      continue;
+
     _commandServer.QueueCommand<decltype(raceResult)>(
-      raceClientId,
+      racerClientId,
       [raceResult]()
       {
         return raceResult;
