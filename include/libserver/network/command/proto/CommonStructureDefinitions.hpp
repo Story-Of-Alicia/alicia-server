@@ -710,6 +710,24 @@ struct ShopOrder
     SourceStream& stream);
 };
 
+//! Represents a standard 3D vector, plus the 'w' component used for packed data.
+struct PackedVector3
+{
+  float x{};
+  float y{};
+  float z{};
+  // Assumed `w`
+  float w{};
+
+  static void Write(
+    const PackedVector3& vector,
+    SinkStream& stream);
+
+  static void Read(
+    PackedVector3& vector,
+    SourceStream& stream);
+};
+
 //! A common struct used by achievements and quests.
 struct ObjectiveProgress
 {

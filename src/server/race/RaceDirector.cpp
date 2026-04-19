@@ -35,23 +35,34 @@ namespace server
 namespace
 {
 
-bool RollCritical(tracker::RaceTracker::Racer& racer, const server::registry::Magic::SlotInfo& magicSlotInfo)
+//! Converts a steady clock's time point to a race clock's time point.
+//! @param timePoint Time point.
+//! @return Race clock time point.
+uint64_t TimePointToRaceTimePoint(const std::chrono::steady_clock::time_point& timePoint)
 {
-  if (racer.critChance && magicSlotInfo.affectByCriticalAura) {
-    return true;
-  }
-  return (rand() % 100) < 5;
+  // Amount of 100ns
+  constexpr uint64_t IntervalConstant = 100;
+  return std::chrono::duration_cast<std::chrono::nanoseconds>(
+    timePoint.time_since_epoch()).count() / IntervalConstant;
 }
 
-const server::registry::Magic::SlotInfo RandomMagicItem(ServerInstance& serverInstance,tracker::RaceTracker::Racer& racer)
+const server::registry::Magic::SlotInfo RandomMagicItem(ServerInstance& serverInstance, tracker::RaceTracker::Racer& racer)
 {
   const auto& itemPool = (racer.team == tracker::RaceTracker::Racer::Team::Solo
     ? serverInstance.GetMagicRegistry().GetSoloPool()
     : serverInstance.GetMagicRegistry().GetTeamPool());
   static std::random_device rd;
-  std::uniform_int_distribution distribution(0, static_cast<int>(itemPool.size() - 1));
+
+  // Build weights: Lightning (type 18) gets a reduced roll chance.
+  // TODO: Replace with a proper per-spell weight system.
+  std::vector<uint32_t> weights;
+  weights.reserve(itemPool.size());
+  for (const uint32_t type : itemPool)
+    weights.push_back(type == 18 ? 1u : 3u);
+
+  std::discrete_distribution<size_t> distribution(weights.begin(), weights.end());
   auto magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(itemPool[distribution(rd)]);
-  if (RollCritical(racer, magicSlotInfo))
+  if ((rand() % 100) < 5)
   {
     magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(magicSlotInfo.criticalType);
   }
@@ -1463,17 +1474,21 @@ void RaceDirector::HandleStartRace(
       // Get race instance (and check if added as racer)
       auto& raceInstance = GetRaceInstance(clientContext);
 
+      const auto& lobbyConfig = GetServerInstance().GetLobbyDirector().GetConfig();
       protocol::AcCmdCRStartRaceNotify notify{
         .raceGameMode = raceInstance.raceGameMode,
         .raceTeamMode = raceInstance.raceTeamMode,
         .raceMapBlockId = raceInstance.raceMapBlockId,
-        .p2pRelayAddress = asio::ip::address_v4::loopback().to_uint(),
-        .p2pRelayPort = static_cast<uint16_t>(10500),
+        .p2pRelayAddress = lobbyConfig.advertisement.udpRaceRelay.address.to_uint(),
+        .p2pRelayPort = lobbyConfig.advertisement.udpRaceRelay.port,
         .raceMissionId = raceInstance.raceMissionId,};
 
       // Build the racers.
       for (const auto& [characterUid, racer] : raceInstance.tracker.GetRacers())
       {
+        if (racer.state == tracker::RaceTracker::Racer::State::Disconnected)
+          continue;
+
         std::string characterName;
         GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
           [&characterName](const data::Character& character)
@@ -1857,7 +1872,7 @@ void RaceDirector::HandleStarPointGet(
     static_cast<uint8_t>(raceInstance.raceGameMode));
 
   uint32_t gainedStarPoints = command.gainedStarPoints;
-  if (racer.gaugeBuff) {
+  if (racer.effects[20] || racer.effects[21]) {
     // TODO: Something sensible, idk what the bonus does
     gainedStarPoints *= 2;
   }
@@ -2009,7 +2024,7 @@ void RaceDirector::HandleHurdleClearResult(
       response.jumpCombo = racer.jumpComboValue;
 
       uint32_t gainedStarPoints = gameModeTemplate.goodJumpStarPoints;
-      if (racer.gaugeBuff) {
+      if (racer.effects[20] || racer.effects[21]) {
         // TODO: Something sensible, idk what the bonus does
         gainedStarPoints *= 2;
       }
@@ -2205,7 +2220,7 @@ void RaceDirector::HandleRaceUserPos(
       } else {
         gainedStarPoints = NoItemHeldBoostAmount;
       }
-      if (racer.gaugeBuff) {
+      if (racer.effects[20] || racer.effects[21]) {
         // TODO: Something sensible, idk what the bonus does
         gainedStarPoints *= 2;
       }
@@ -2355,16 +2370,89 @@ void RaceDirector::HandleRelay(
 
   // Create relay notify message
   protocol::AcCmdCRRelayNotify notify{
-    .oid = command.oid,
-    .member2 = command.member2,
-    .member3 = command.member3,
+    .fromOid = command.fromOid,
+    .toOid = command.toOid,
+    .payloadType = command.payloadType,
     .data = std::move(command.data),};
+
+  switch (command.payloadType)
+  {
+    case protocol::relay::RelayCommandId::Snapshot:
+    {
+      // Do anything related to `command.snapshot`, if needed
+      break;
+    }
+    case protocol::relay::RelayCommandId::SyncProgress:
+    {
+      // Do anything related to `command.syncProgress`, if needed
+      break;
+    }
+    case protocol::relay::RelayCommandId::SetTargetStateEnabled:
+    case protocol::relay::RelayCommandId::SetTargetStateDisabled:
+    {
+      // Do anything related to `command.setTargetState`, if needed
+      break;
+    }
+    case protocol::relay::RelayCommandId::NetSetState:
+    {
+      // Do anything related to `command.netSetState`, if needed
+      break;
+    }
+    case protocol::relay::RelayCommandId::NetSetLayerAnimation:
+    {
+      // Do anything related to `command.netSetLayerAnimation`, if needed
+      break;
+    }
+    case protocol::relay::RelayCommandId::SyncGoalIn:
+    {
+      // Do anything related to `command.syncGoalIn`, if needed
+      break;
+    }
+    case protocol::relay::RelayCommandId::SpurLevel:
+    {
+      // Do anything related to `command.spurLevel`, if needed
+      break;
+    }
+    case protocol::relay::RelayCommandId::SlidingMotion:
+    {
+      // Do anything related to `command.slidingMotion`, if needed
+      break;
+    }
+    case protocol::relay::RelayCommandId::BroadcastCharacterUid:
+    {
+      // Do anything related to `command.broadcastCharacterUid`, if needed
+      break;
+    }
+    case protocol::relay::RelayCommandId::ResetPosOther:
+    {
+      // Do anything related to `command.resetPosOther`, if needed
+      break;
+    }
+    default:
+    {
+      const std::string header = command.toOid == 0 ?
+        std::format("{:#x}->Broadcast", command.fromOid) :
+        std::format("{:#x}->{:#x}",
+          command.fromOid,
+          command.toOid);
+
+      spdlog::warn("Relay payload from client '{}', with oids {}, sent an unrecognised relay payload type '{:#04x}': {}",
+        clientId,
+        header,
+        static_cast<uint16_t>(command.payloadType),
+        std::format("{::02x}", command.data));
+      break;
+    }
+  }
 
   std::scoped_lock lock(_raceInstancesMutex);
   // Get the room instance for this client
   const auto& raceInstance = GetRaceInstance(clientContext);
 
   // Relay the command to all other clients in the room
+
+  // TODO: potential improvement - instead of blindly broadcasting to room,
+  // forward packet to recepient if `toOid` is non-zero.
   for (const ClientId raceClientId : raceInstance.clients | std::views::values)
   {
     if (raceClientId != clientId) // Don't send back to sender
@@ -2549,10 +2637,16 @@ void RaceDirector::HandleUseMagicItem(
 
   auto magicSlotInfo = GetServerInstance().GetMagicRegistry().GetSlotInfo(command.magicItemId);
 
-  //TODO: Remove the crit chance imediatly after throwing the crit effect.
-  if (racer.critChance && (magicSlotInfo.criticalType != 0))
+  if ((racer.effects[18] || racer.effects[19]) && (magicSlotInfo.criticalType != 0))
   {
     magicSlotInfo = GetServerInstance().GetMagicRegistry().GetSlotInfo(magicSlotInfo.criticalType);
+
+    // Consume the crit chance buff immediately
+    for (const uint32_t critEffectId : {18u, 19u})
+    {
+      if (racer.effects[critEffectId])
+        RemoveEffect(raceInstance, racer, critEffectId);
+    }
   }
 
   // Darkfire should only affect one target
@@ -2599,50 +2693,17 @@ void RaceDirector::HandleUseMagicItem(
 
 
   // Send effect for items that have instant effects
-  std::vector<std::tuple<server::tracker::Oid, std::optional<std::function<void()>>>> affectedOidsAndAfterEffectCallbacks;
   switch (magicSlotInfo.type)
   {
-    // Shield
-    // TODO: Maybe not change it if they already have a stronger shield?
-    case 4:
-    {
-      const auto afterEffectRemoved = [&racer]()
-      {
-        racer.shield = tracker::RaceTracker::Racer::Shield::None;
-      };
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved, effectInstanceId);
-      racer.shield = tracker::RaceTracker::Racer::Shield::Normal;
-      break;
-    }
+    // Shield, Booster, Phoenix
+    case 4: 
     case 5:
-    {
-      const auto afterEffectRemoved = [&racer]()
-      {
-        racer.shield = tracker::RaceTracker::Racer::Shield::None;
-      };
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved, effectInstanceId);
-      racer.shield = tracker::RaceTracker::Racer::Shield::Critical;
-      break;
-    }
-    // Booster
-    case 6:
+    case 6: 
     case 7:
-    {
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, std::nullopt, effectInstanceId);
-      break;
-    }
-    // Phoenix
-    case 8:
+    case 8: 
     case 9:
-    {
-      const auto afterEffectRemoved = [&racer]()
-      {
-        racer.hotRodded = false;
-      };
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, afterEffectRemoved, effectInstanceId);
-      racer.hotRodded = true;
+      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, effectInstanceId);
       break;
-    }
     // IceWall
     case 10:
     case 11:
@@ -2672,46 +2733,12 @@ void RaceDirector::HandleUseMagicItem(
         Scheduler::Clock::now() + std::chrono::seconds(4)); // TODO: Change to 4 seconds
       break;
     }
-    // BufPower
-    case 20:
+    // BufPower, BufGauge, BufSpeed
+    case 20: 
     case 21:
-    {
-      for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
-      {
-        if (racer.oid == otherRacer.oid
-        || (racer.team != tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
-        {
-          otherRacer.critChance = true;
-          const auto afterEffectRemoved = [&otherRacer]()
-          {
-            otherRacer.critChance = false;
-          };
-          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, afterEffectRemoved, effectInstanceId);
-        }
-      }
-      break;
-    }
-    // BufGauge
-    case 22:
+    case 22: 
     case 23:
-    {
-      for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
-      {
-        if (racer.oid == otherRacer.oid
-        || (racer.team != tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
-        {
-          otherRacer.gaugeBuff = true;
-          const auto afterEffectRemoved = [&otherRacer]()
-          {
-            otherRacer.gaugeBuff = false;
-          };
-          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, afterEffectRemoved, effectInstanceId);
-        }
-      }
-      break;
-    }
-    // BufSpeed
-    case 24:
+    case 24: 
     case 25:
     {
       for (auto& otherRacer : raceInstance.tracker.GetRacers() | std::views::values)
@@ -2719,7 +2746,7 @@ void RaceDirector::HandleUseMagicItem(
         if (racer.oid == otherRacer.oid
         || (racer.team != tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
         {
-          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, std::nullopt, effectInstanceId);
+          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, effectInstanceId);
         }
       }
       break;
@@ -2965,8 +2992,8 @@ void RaceDirector::HandleActivateSkillEffect(
   auto& targetRacer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
   auto magicSlotInfo = GetServerInstance().GetMagicRegistry().GetSlotInfoByEffectId(command.effectId);
-  // If the target has darkness and the magic is critical by dark fire, use the critical type slot info instead
-  if (targetRacer.darkness && magicSlotInfo.criticalByDarkFire)
+  // If the target has a DarkFire effect active and the magic crits by dark fire, use the critical type instead
+  if ((targetRacer.effects[12] || targetRacer.effects[13]) && magicSlotInfo.criticalByDarkFire)
   {
     magicSlotInfo = GetServerInstance().GetMagicRegistry().GetSlotInfo(magicSlotInfo.criticalType);
   }
@@ -2989,34 +3016,11 @@ void RaceDirector::HandleActivateSkillEffect(
     }
   }
 
-  std::optional<std::function<void()>> afterEffectRemoved = std::nullopt;
-  switch (magicSlotInfo.type)
-  {
-      // Darkness
-      case 14:
-      case 15:
-        targetRacer.darkness = true;
-        afterEffectRemoved = [&targetRacer]()
-        {
-          targetRacer.darkness = false;
-        };
-        break;
-  }
-
-  // This needs reworking. 
-  if (magicSlotInfo.removeMagic == 1)
-  {
-    afterEffectRemoved = [&targetRacer]()
-    {
-      targetRacer.attacked = false;
-    };
-  }
-  EffectVerdict verdict = this->ScheduleSkillEffect(raceInstance, command.attackerOid, command.targetOid, magicSlotInfo, afterEffectRemoved, command.effectInstanceId);
+  EffectVerdict verdict = this->ScheduleSkillEffect(raceInstance, command.attackerOid, command.targetOid, magicSlotInfo, command.effectInstanceId);
 
   // TODO:: Add a Conditional for the SystemContent that can enable/disable this behavior
   if (verdict == EffectVerdict::Applied && magicSlotInfo.removeMagic == 1)
   {
-    targetRacer.attacked = true;
     protocol::AcCmdCRUseItemSlotOK response{
       .magicItemId = 0,
       .characterOid = command.targetOid};
@@ -3113,32 +3117,95 @@ void RaceDirector::HandleChangeSkillCardPresetId(
   // No response command
 }
 
+void RaceDirector::RemoveEffect(
+  RaceInstance& raceInstance,
+  tracker::RaceTracker::Racer& racer,
+  uint32_t effectId)
+{
+  if (effectId >= tracker::RaceTracker::Racer::EffectCount)
+  {
+    spdlog::error("RemoveEffect: effectId {} out of range", effectId);
+    return;
+  }
+  racer.effects[effectId] = false;
+  ++racer.effectGenerations[effectId];
+
+  const protocol::AcCmdRCRemoveSkillEffect removeSkillEffect{
+    .characterOid = racer.oid,
+    .effectId = effectId,
+    .targetOid = racer.oid,
+    .unk1 = 0,
+  };
+  for (const ClientId& raceClientId : raceInstance.clients)
+  {
+    _commandServer.QueueCommand<decltype(removeSkillEffect)>(
+      raceClientId,
+      [removeSkillEffect]() { return removeSkillEffect; });
+  }
+}
+
 RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
   RaceInstance& raceInstance,
   tracker::Oid attackerOid, tracker::Oid targetOid,
   const registry::Magic::SlotInfo& magicSlotInfo,
-  std::optional<std::function<void()>> afterEffectRemoved,
   const uint16_t effectInstanceId)
 {
   auto& racers = raceInstance.tracker.GetRacers();
   const auto targetRacerIter = std::ranges::find_if(
     racers, [targetOid](const auto& pair) { return pair.second.oid == targetOid; });
-  
+
   // Target racer not found
   if (targetRacerIter == racers.cend())
     return EffectVerdict::Failed;
-  const auto& targetRacer = targetRacerIter->second;
 
-  const bool isAttack =  magicSlotInfo.attackValue > 0;
+  // Guard against misconfigured skillEffectId crashing the server
+  if (magicSlotInfo.skillEffectId >= tracker::RaceTracker::Racer::EffectCount)
+  {
+    spdlog::error(
+      "ScheduleSkillEffect: skillEffectId {} out of range (max {})",
+      magicSlotInfo.skillEffectId,
+      tracker::RaceTracker::Racer::EffectCount - 1);
+    return EffectVerdict::Failed;
+  }
 
-  const bool shieldBlocks = isAttack && magicSlotInfo.attackValue < static_cast<uint32_t>(targetRacer.shield);
+  const data::Uid targetCharacterUid = targetRacerIter->first;
+  auto& targetRacer = targetRacerIter->second;
 
-  //2 & 3 are shield effects. maybe needs an enum
+  const bool isAttack = magicSlotInfo.attackValue > 0;
+
+  // Shield check: effectId 2 = WaterShield Normal (threshold 100), effectId 3 = WaterShield Critical (threshold 200)
+  const uint32_t shieldThreshold =
+    targetRacer.effects[3] ? 200u :
+    targetRacer.effects[2] ? 100u : 0u;
+  const bool shieldBlocks = isAttack && magicSlotInfo.attackValue < shieldThreshold;
+
+  // Any removeHotRodding attack is considered part of the lightning family.
+  // For the current registry, critical variants have criticalType == 0.
+  const bool isLightning = isAttack && magicSlotInfo.removeHotRodding;
+  const bool isCritLightning = isLightning && magicSlotInfo.criticalType == 0;
+
+  // Normal hotrodding (effectId 6): blocked by non-lightning attacks, canceled by any lightning.
+  // Crit hotrodding (effectId 7): blocks everything except crit lightning.
+  const bool hotroddingBlocks =
+    (targetRacer.effects[6] && isAttack && !isLightning) ||
+    (targetRacer.effects[7] && isAttack && !isCritLightning);
+
   const uint32_t effectId = shieldBlocks
-    ? (targetRacer.shield == tracker::RaceTracker::Racer::Shield::Critical ? 3 : 2)
+    ? (targetRacer.effects[3] ? 3u : 2u)
     : magicSlotInfo.skillEffectId;
 
-  bool duplicated = isAttack && (targetRacer.hotRodded || targetRacer.attacked);
+  // For removeMagic attacks: blocked if an equal-or-higher-rank attack is already active.
+  // For other attacks (attackValue > 0): blocked if the same effect is already active.
+  // For pure buffs: blocked only if already active and not replaceable (replaceEffect == 0 means no extension).
+  // Duplication is checked against the basic-type effect slot so crit variants share occupancy with their base,
+  // except for replaceEffect spells which track their own slot independently.
+  const uint32_t checkEffectId = magicSlotInfo.replaceEffect
+    ? magicSlotInfo.skillEffectId
+    : GetServerInstance().GetMagicRegistry().GetSlotInfo(magicSlotInfo.basicType).skillEffectId;
+  const bool isDuplicated = hotroddingBlocks
+    || (magicSlotInfo.attackRank > 0
+      ? targetRacer.attackRank >= magicSlotInfo.attackRank
+      : targetRacer.effects[checkEffectId] && (isAttack || !magicSlotInfo.replaceEffect));
 
   // TODO: Verify if characterOid and targetOid should be the same once we have NPCs
   const protocol::AcCmdRCAddSkillEffect addSkillEffect{
@@ -3147,9 +3214,9 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
     .targetOid = targetOid,
     .attackerOid = attackerOid,
     .unk2 = effectInstanceId,
-    .unk3 = duplicated ? 1u : 0u,
+    .unk3 = isDuplicated ? 1u : 0u,
     .shieldEffect = protocol::AcCmdRCAddSkillEffect::ShieldEffect{
-      .unk0 = shieldBlocks ? 2: 0u,
+      .unk0 = shieldBlocks ? 2u : 0u,
       .unk1 = 0,
     },
     .boostEffectMs = static_cast<uint32_t>(magicSlotInfo.effectDelay * 1000.0f),
@@ -3166,13 +3233,34 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
   if (shieldBlocks)
     return EffectVerdict::Shielded;
 
-  if (duplicated)
+  if (isDuplicated)
     return EffectVerdict::Duplicated;
 
-  // Remove the effect after a delay
-  // TODO: Handle overlapping effects of the same type
+  targetRacer.effects[effectId] = true;
+  const uint32_t generation = ++targetRacer.effectGenerations[effectId];
+  if (magicSlotInfo.attackRank > 0)
+    targetRacer.attackRank = magicSlotInfo.attackRank;
+
+  // Cancel any active adjustMotionSpeed buffs only when a removeMagic attack lands.
+  // HotRodding (effectIds 6 and 7), crit chance buffs (18 and 19), and BufGauge buffs (20 and 21) are excluded.
+  if (isAttack && magicSlotInfo.removeMagic)
+  {
+    for (const auto& [type, slot] : GetServerInstance().GetMagicRegistry().GetSlotInfoMap())
+    {
+      if (slot.adjustMotionSpeed && slot.attackValue == 0
+        && slot.skillEffectId != 6 && slot.skillEffectId != 7
+        && slot.skillEffectId != 18 && slot.skillEffectId != 19
+        && slot.skillEffectId != 20 && slot.skillEffectId != 21
+        && targetRacer.effects[slot.skillEffectId])
+      {
+        RemoveEffect(raceInstance, targetRacer, slot.skillEffectId);
+      }
+    }
+  }
+
   _scheduler.Queue(
-    [this, roomUid = raceInstance.roomUid, attackerOid, targetOid, effectId, afterEffectRemoved]()
+    [this, roomUid = raceInstance.roomUid, targetOid, targetCharacterUid, effectId,
+      attackRank = magicSlotInfo.attackRank, generation]()
     {
       std::scoped_lock raceInstanceLock(_raceInstancesMutex);
       const auto raceInstanceIter = _raceInstances.find(roomUid);
@@ -3181,7 +3269,20 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
 
       auto& raceInstance = raceInstanceIter->second;
 
-      // Broadcast skill effect deactivation to all clients in the room
+      if (!raceInstance.tracker.IsRacer(targetCharacterUid))
+        return;
+
+      auto& racer = raceInstance.tracker.GetRacer(targetCharacterUid);
+
+      // If the generation has changed, this effect was extended — skip the removal
+      if (racer.effectGenerations[effectId] != generation)
+        return;
+
+      racer.effects[effectId] = false;
+      // Only clear attackRank if a higher-rank attack hasn't replaced this one
+      if (attackRank > 0 && racer.attackRank == attackRank)
+        racer.attackRank = 0;
+
       const protocol::AcCmdRCRemoveSkillEffect removeSkillEffect{
         .characterOid = targetOid,
         .effectId = effectId,
@@ -3195,11 +3296,6 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
         _commandServer.QueueCommand<decltype(removeSkillEffect)>(
           raceClientId,
           [removeSkillEffect]() { return removeSkillEffect; });
-      }
-
-      if (afterEffectRemoved.has_value())
-      {
-        afterEffectRemoved.value()();
       }
     },
     Scheduler::Clock::now() + std::chrono::milliseconds(static_cast<int64_t>(magicSlotInfo.effectDelay * 1000.0)));

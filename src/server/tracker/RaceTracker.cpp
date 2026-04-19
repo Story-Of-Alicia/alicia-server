@@ -28,7 +28,12 @@ RaceTracker::Racer& RaceTracker::AddRacer(data::Uid characterUid)
   if (not created)
     throw std::runtime_error("Character is already a racer");
 
-  racerIter->second.oid = _nextObjectOid++;
+  // Reuse the OID from a previous race if the player was here before, otherwise assign a new one.
+  const auto [oidIter, isNew] = _characterOids.try_emplace(characterUid, _nextCharacterOid);
+  if (isNew)
+    ++_nextCharacterOid;
+
+  racerIter->second.oid = oidIter->second;
 
   return racerIter->second;
 }
@@ -59,11 +64,11 @@ RaceTracker::RacerObjectMap& RaceTracker::GetRacers()
 
 RaceTracker::Item& RaceTracker::AddItem()
 {
-  const auto [itemIter, created] = _items.try_emplace(_nextObjectOid);
+  const auto [itemIter, created] = _items.try_emplace(_nextItemOid);
   if (not created)
     throw std::runtime_error("Item is already added to the race map");
 
-  itemIter->second.oid = _nextObjectOid++;
+  itemIter->second.oid = _nextItemOid++;
   return itemIter->second;
 }
 
@@ -89,7 +94,7 @@ void RaceTracker::Clear()
 {
   _racers.clear();
   _items.clear();
-  _nextObjectOid = 100;
+  _nextItemOid = 1;
 }
 
 uint16_t RaceTracker::GetNextEffectInstanceIdAndIncrementBy(uint16_t increment)

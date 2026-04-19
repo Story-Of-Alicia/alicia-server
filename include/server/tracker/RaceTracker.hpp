@@ -28,6 +28,7 @@
 #include <array>
 #include <chrono>
 #include <map>
+#include <unordered_map>
 #include <unordered_set>
 
 namespace server::tracker
@@ -55,13 +56,6 @@ public:
       std::chrono::steady_clock::time_point expiryTimePoint;
     };
 
-    enum class Shield
-    {
-      None = 0,
-      Normal = 100,
-      Critical = 200
-    };
-
     Oid oid{InvalidEntityOid};
     State state{State::Disconnected};
     Team team{Team::Solo};
@@ -73,12 +67,14 @@ public:
     //! A set of tracked items in racer's proximity.
     std::unordered_set<Oid> trackedItems;
 
-    Shield shield{Shield::None};
-    bool darkness{};
-    bool hotRodded{};
-    bool critChance{};
-    bool gaugeBuff{};
-    bool attacked{};
+    //! Active skill effects indexed by skillEffectId (0-23).
+    static constexpr size_t EffectCount = 24;
+    std::array<bool, EffectCount> effects{};
+    //! Per-effect generation counter — incremented on each apply, used to invalidate stale removal timers.
+    std::array<uint32_t, EffectCount> effectGenerations{};
+
+    //! Rank of the currently active removeMagic attack (0 = none active).
+    uint32_t attackRank{};
   };
 
   //! An item
@@ -150,8 +146,13 @@ public:
 
 
 private:
-  //! The next entity OID.
-  Oid _nextObjectOid = 1;
+  //! Mapping between character UIDs and their assigned OIDs.
+  //! It's important these persist across races in a room as the client does not clear assignments internally. 
+  std::unordered_map<data::Uid, Oid> _characterOids;
+  //! Next OID for new character entities (100+).
+  Oid _nextCharacterOid = 100;
+  //! Next OID for item entities (1–99, reset each race).
+  Oid _nextItemOid = 1;
   //! Horse entities in the race.
   RacerObjectMap _racers;
   //! Items in the race

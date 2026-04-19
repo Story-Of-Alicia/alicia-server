@@ -4901,11 +4901,24 @@ void RanchDirector::HandleBuyOwnItem(
         {
           // TODO: sanity check, see if the item is equipable
 
-          // Item duration is the price range field.
-          const data::Uid itemUid = GetServerInstance().GetItemSystem().AddItem(
-            character,
-            itemRegistryRecord->tid,
-            std::chrono::hours(priceRange));
+          // Add item based on type
+          data::Uid itemUid{data::InvalidUid};
+          if (itemRegistryRecord.value().type == registry::Item::Type::Temporary)
+          {
+            // Item has expiration, duration is the price range field as hours.
+            itemUid = GetServerInstance().GetItemSystem().AddItem(
+              character,
+              itemRegistryRecord->tid,
+              std::chrono::hours(priceRange));
+          }
+          else
+          {
+            // Item has quantity, amount is the price range field.
+            itemUid = GetServerInstance().GetItemSystem().AddItem(
+              character,
+              itemRegistryRecord->tid,
+              priceRange);
+          }
 
           // Append the purchase result into the response
           GetServerInstance().GetDataDirector().GetItem(itemUid).Immutable(
@@ -5275,7 +5288,7 @@ void RanchDirector::HandleUpdateMountInfo(
       if (isHorseValid)
       {
         // Remove horse from ranch tracker
-        auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+        auto& ranchInstance = _ranches[clientContext.characterUid];
         ranchInstance.tracker.RemoveHorse(command.horse.uid);
 
         // Remove horse from character and delete from cache

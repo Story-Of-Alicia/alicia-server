@@ -21,7 +21,11 @@
 #define RACE_MESSAGE_DEFINES_HPP
 
 #include "CommonStructureDefinitions.hpp"
+
+#include "relay/RelayMessageDefinitions.hpp"
+
 #include "libserver/network/command/CommandProtocol.hpp"
+#include "libserver/data/DataDefinitions.hpp"
 #include "libserver/util/Util.hpp"
 
 #include <cstdint>
@@ -974,6 +978,7 @@ struct AcCmdRCRaceResultNotify
     std::string name{};
     //! Time in milliseconds.
     uint32_t courseTime{};
+    //! Room Average Time Record in milliseconds
     uint32_t member4{};
     uint32_t experience{};
     uint32_t member6{};
@@ -1005,6 +1010,7 @@ struct AcCmdRCRaceResultNotify
     uint16_t growthPoints{};
     uint8_t horseClass{};
     uint32_t bonusCarrots{};
+    // ! Revenge something
     uint32_t member22{};
     AcCmdCRStartRaceNotify::Struct1 member23{};
     uint32_t member24{};
@@ -1535,7 +1541,13 @@ struct AcCmdRCRoomCountdown
   //! In milliseconds.
   uint32_t countdown{};
   uint16_t mapBlockId{};
-  uint16_t member2{};
+
+  enum class BonusCourseType : uint16_t
+  {
+    None = 0,
+    Carrots = 1,
+    Experience = 2
+  } bonusCourseType{};
 
   static Command GetCommand()
   {
@@ -1656,10 +1668,28 @@ struct AcCmdCRRelayCommandNotify
 
 struct AcCmdCRRelay
 {
-  uint16_t oid;
-  uint16_t member2;
-  uint16_t member3;
+  // Begin protocol data
+
+  //! Relay packet origin racer oid.
+  uint16_t fromOid;
+  //! Relay packet destination racer oid.
+  //! Can be 0, which indicates broadcast.
+  uint16_t toOid;
+  protocol::relay::RelayCommandId payloadType{};
   std::vector<uint8_t> data;
+
+  // End protocol data
+
+  protocol::relay::Snapshot snapshot{};
+  protocol::relay::SyncProgress syncProgress{};
+  protocol::relay::SlidingMotion slidingMotion{};
+  protocol::relay::SpurLevel spurLevel{};
+  protocol::relay::SyncGoalIn syncGoalIn{};
+  protocol::relay::NetSetLayerAnimation netSetLayerAnimation{};
+  protocol::relay::BroadcastCharacterUid broadcastCharacterUid{};
+  protocol::relay::ResetPosOther resetPosOther{};
+  protocol::relay::SetTargetState setTargetState{};
+  protocol::relay::NetSetState netSetState{};
 
   static Command GetCommand()
   {
@@ -1683,9 +1713,12 @@ struct AcCmdCRRelay
 
 struct AcCmdCRRelayNotify
 {
-  uint16_t oid;
-  uint16_t member2;
-  uint16_t member3;
+  //! Relay packet origin racer oid.
+  uint16_t fromOid;
+  //! Relay packet destination racer oid.
+  //! Can be 0, which indicates broadcast.
+  uint16_t toOid;
+  protocol::relay::RelayCommandId payloadType;
   std::vector<uint8_t> data;
 
   static Command GetCommand()
