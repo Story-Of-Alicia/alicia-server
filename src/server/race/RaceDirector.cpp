@@ -504,7 +504,7 @@ void RaceDirector::Tick()
     });
 
     // Broadcast the race result
-    for (const ClientId raceClientId : raceInstance.clients)
+    for (const ClientId raceClientId : raceInstance.clients | std::views::values)
     {
       _commandServer.QueueCommand<decltype(raceResult)>(
         raceClientId,
@@ -523,7 +523,7 @@ void RaceDirector::Tick()
       protocol::AcCmdCRChangeMasterNotify masterNotify{
         .masterUid = newMasterUid};
 
-      for (const ClientId raceClientId : raceInstance.clients)
+      for (const ClientId raceClientId : raceInstance.clients | std::views::values)
       {
         _commandServer.QueueCommand<decltype(masterNotify)>(
           raceClientId,
@@ -613,8 +613,10 @@ void RaceDirector::BroadcastChangeRoomOptions(
 {
   std::scoped_lock raceLock(_raceInstancesMutex);
   auto& raceInstance = _raceInstances.at(roomUid);
-  for (const auto raceClientId : raceInstance.clients)
+  for (const auto raceClientId : raceInstance.clients | std::views::values)
   {
+    // Note: broadcasting changed room options to waiting room racers in active races
+    // might break the race elapsed timer
     _commandServer.QueueCommand<decltype(notify)>(
       raceClientId,
       [notify]()
@@ -767,7 +769,9 @@ void RaceDirector::HandleEnterRoom(
   ClientId clientId,
   const protocol::AcCmdCREnterRoom& command)
 {
-  auto& clientContext = _clients[clientId];
+  // Get client context without authentication required
+  // Needed to get the client context object to set it up
+  auto& clientContext = GetClientContext(clientId, false);
 
   size_t identityHash = std::hash<uint32_t>()(command.characterUid);
   boost::hash_combine(identityHash, command.roomUid);
@@ -877,6 +881,20 @@ void RaceDirector::HandleEnterRoom(
   catch (const std::exception&)
   {
     throw std::runtime_error("Client tried entering a deleted room");
+  }
+
+  // Attempt to add the character to the race instance clients map
+  const auto [clientMapIter, clientMapInserted] = raceInstance.clients.try_emplace(clientContext.characterUid);
+  if (not clientMapInserted)
+  {
+    // Some undefined behaviour has happened,
+    // a client has been added to the same race instance twice
+    throw std::runtime_error("Client '{}' was added to the same race room twice");
+  }
+  else
+  {
+    // Assign this character UID its client id
+    clientMapIter->second = clientId;
   }
 
   protocol::Racer joiningRacer;
@@ -1048,8 +1066,12 @@ void RaceDirector::HandleEnterRoom(
     .racer = joiningRacer,
     .averageTimeRecord = clientContext.characterUid};
 
-  for (const ClientId& raceClientId : raceInstance.clients)
+  for (const ClientId& raceClientId : raceInstance.clients | std::views::values)
   {
+    // Do not self broadcast
+    if (raceClientId == clientId)
+      continue;
+
     _commandServer.QueueCommand<decltype(notify)>(
       raceClientId,
       [notify]()
@@ -1057,8 +1079,6 @@ void RaceDirector::HandleEnterRoom(
         return notify;
       });
   }
-
-  raceInstance.clients.insert(clientId);
 }
 
 void RaceDirector::HandleChangeRoomOptions(
@@ -1193,7 +1213,7 @@ void RaceDirector::HandleChangeTeam(
     .teamColor = command.teamColor};
 
   // Notify all other clients in the room
-  for (const auto& roomClientId : raceInstance.clients)
+  for (const auto& roomClientId : raceInstance.clients | std::views::values)
   {
     // Prevent broadcast to self.
     if (clientId == roomClientId)
@@ -1234,7 +1254,7 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
     // Notify all the other racers that the client has disconnected
     protocol::AcCmdUserRaceDeleteNotify deleteNotify{
       .racerOid = racer.oid};
-    for (const auto& raceClientId : raceInstance.clients)
+    for (const auto& raceClientId : raceInstance.clients | std::views::values)
     {
       // Prevent self broadcast
       if (raceClientId == clientId)
@@ -1249,7 +1269,7 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
     }
   }
 
-  raceInstance.clients.erase(clientId);
+  raceInstance.clients.erase(clientContext.characterUid);
 
   _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid,
@@ -1267,7 +1287,7 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
       .characterId = clientContext.characterUid,
       .unk0 = 1};
 
-    for (const ClientId& raceClientId : raceInstance.clients)
+    for (const ClientId& raceClientId : raceInstance.clients | std::views::values)
     {
       if (raceClientId == clientId)
         continue;
@@ -1323,7 +1343,7 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
       protocol::AcCmdCRChangeMasterNotify notify{
         .masterUid = raceInstance.masterUid};
 
-      for (const ClientId& raceClientId : raceInstance.clients)
+      for (const ClientId& raceClientId : raceInstance.clients | std::views::values)
       {
         _commandServer.QueueCommand<decltype(notify)>(
           raceClientId,
@@ -1372,7 +1392,7 @@ void RaceDirector::HandleReadyRace(
 
   std::scoped_lock lock(_raceInstancesMutex);
   const auto& raceInstance = GetRaceInstance(clientContext, false);
-  for (const ClientId& raceClientId : raceInstance.clients)
+  for (const ClientId& raceClientId : raceInstance.clients | std::views::values)
   {
     _commandServer.QueueCommand<decltype(response)>(
       raceClientId,
@@ -1576,7 +1596,7 @@ void RaceDirector::HandleStartRace(
     .mapBlockId = raceInstance.raceMapBlockId};
 
   // Broadcast room countdown.
-  for (const ClientId& raceClientId : raceInstance.clients)
+  for (const ClientId& raceClientId : raceInstance.clients | std::views::values)
   {
     _commandServer.QueueCommand<decltype(roomCountdown)>(
       raceClientId,
@@ -1699,7 +1719,7 @@ void RaceDirector::HandleStartRace(
         && notify.raceTeamMode == protocol::TeamMode::FFA;
 
       // Send to all clients participating in the race.
-      for (const ClientId& raceClientId : raceInstance.clients)
+      for (const ClientId& raceClientId : raceInstance.clients | std::views::values)
       {
         const auto& raceClientContext = GetClientContext(raceClientId);
 
@@ -1821,7 +1841,7 @@ void RaceDirector::HandleLoadingComplete(
   racer.state = tracker::RaceTracker::Racer::State::Racing;
 
   // Notify all clients in the room that this player's loading is complete
-  for (const ClientId& raceClientId : raceInstance.clients)
+  for (const ClientId& raceClientId : raceInstance.clients | std::views::values)
   {
     _commandServer.QueueCommand<protocol::AcCmdCRLoadingCompleteNotify>(
       raceClientId,
@@ -1868,7 +1888,7 @@ void RaceDirector::HandleUserRaceFinal(
       command.courseTime :
       std::chrono::milliseconds{-1}};
 
-  for (const ClientId& raceClientId : raceInstance.clients)
+  for (const ClientId& raceClientId : raceInstance.clients | std::views::values)
   {
     _commandServer.QueueCommand<decltype(notify)>(
       raceClientId,
@@ -1952,9 +1972,9 @@ void RaceDirector::HandleAwardStart(
     .member1 = command.member1};
 
   // Send to clients not participating in races.
-  for (const auto raceClientId : raceInstance.clients)
+  for (const auto raceClientId : raceInstance.clients | std::views::values)
   {
-    const auto& raceClientContext = _clients[raceClientId];
+    const auto& raceClientContext = GetClientContext(raceClientId);
 
     // Whether the client is a participating racer that did not disconnect.
     bool isParticipatingRacer = false;
@@ -2408,7 +2428,7 @@ void RaceDirector::HandleRaceUserPos(
       });
   }
 
-  for (const auto& raceClientId : raceInstance.clients)
+  for (const auto& raceClientId : raceInstance.clients | std::views::values)
   {
     // Prevent broadcast to self.
     if (clientId == raceClientId)
@@ -2506,7 +2526,7 @@ void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& co
 
     for (const auto& notify : response)
     {
-      for (const ClientId raceClientId : raceInstance.clients)
+      for (const ClientId raceClientId : raceInstance.clients | std::views::values)
       {
         _commandServer.QueueCommand<protocol::AcCmdCRChatNotify>(
           raceClientId,
@@ -2532,7 +2552,7 @@ void RaceDirector::HandleRelayCommand(
   const auto& raceInstance = GetRaceInstance(clientContext);
 
   // Relay the command to all other clients in the room
-  for (const ClientId raceClientId : raceInstance.clients)
+  for (const ClientId raceClientId : raceInstance.clients | std::views::values)
   {
     if (raceClientId != clientId) // Don't send back to sender
     {
@@ -2634,7 +2654,7 @@ void RaceDirector::HandleRelay(
 
   // TODO: potential improvement - instead of blindly broadcasting to room,
   // forward packet to recepient if `toOid` is non-zero.
-  for (const ClientId raceClientId : raceInstance.clients)
+  for (const ClientId raceClientId : raceInstance.clients | std::views::values)
   {
     if (raceClientId != clientId) // Don't send back to sender
     {
@@ -2664,7 +2684,7 @@ void RaceDirector::HandleUserRaceActivateInteractiveEvent(
   };
 
   // Broadcast to all clients in the room
-  for (const ClientId raceClientId : raceInstance.clients)
+  for (const ClientId raceClientId : raceInstance.clients | std::views::values)
   {
     _commandServer.QueueCommand<decltype(notify)>(
       raceClientId,
@@ -2702,7 +2722,7 @@ void RaceDirector::HandleUserRaceActivateEvent(
     .characterOid = racer.oid};
 
   // Broadcast to all active racers in the race
-  for (const ClientId racerClientId : raceInstance.clients)
+  for (const ClientId racerClientId : raceInstance.clients | std::views::values)
   {
     _commandServer.QueueCommand<decltype(notify)>(
       racerClientId,
@@ -2732,7 +2752,7 @@ void RaceDirector::HandleUserRaceDeactivateEvent(
     .characterOid = racer.oid};
 
   // Broadcast to all active racers in the race
-  for (const ClientId racerClientId : raceInstance.clients)
+  for (const ClientId racerClientId : raceInstance.clients | std::views::values)
   {
     _commandServer.QueueCommand<decltype(notify)>(
       racerClientId,
@@ -2795,7 +2815,7 @@ void RaceDirector::HandleRequestMagicItem(
     .characterOid = response.characterOid
   };
 
-  for (const auto& raceClientId : raceInstance.clients)
+  for (const auto& raceClientId : raceInstance.clients | std::views::values)
   {
     // Prevent broadcast to self
     if (raceClientId == clientId)
@@ -2906,7 +2926,7 @@ void RaceDirector::HandleUseMagicItem(
   };
 
   // Send usage notification to other players
-  for (const auto& raceClientId : raceInstance.clients)
+  for (const auto& raceClientId : raceInstance.clients | std::views::values)
   {
     if (raceClientId == clientId)
       continue;
@@ -2948,7 +2968,7 @@ void RaceDirector::HandleUseMagicItem(
       _scheduler.Queue(
         [this, magicExpire, &raceInstance]()
         {
-          for (const ClientId& raceClientId : raceInstance.clients)
+          for (const ClientId& raceClientId : raceInstance.clients | std::views::values)
           {
             _commandServer.QueueCommand<decltype(magicExpire)>(
               raceClientId,
@@ -3098,7 +3118,7 @@ void RaceDirector::HandleUserRaceItemGet(
         .characterOid = command.characterOid,
       };
 
-      for (const ClientId& roomClientId : raceInstance.clients)
+      for (const ClientId& roomClientId : raceInstance.clients | std::views::values)
       {
         // Prevent self broadcast,
         // this prevents the double pickup UI bug for the invoker)
@@ -3125,7 +3145,7 @@ void RaceDirector::HandleUserRaceItemGet(
     .itemType = item.currentType,
   };
 
-  for (const ClientId& raceClientId : raceInstance.clients)
+  for (const ClientId& raceClientId : raceInstance.clients | std::views::values)
   {
     _commandServer.QueueCommand<decltype(get)>(
       raceClientId,
@@ -3274,7 +3294,7 @@ void RaceDirector::HandleChangeMagicTarget(
     .targetOid2 = command.targetOid2
   };
 
-  for (const ClientId& raceClientId : raceInstance.clients)
+  for (const ClientId& raceClientId : raceInstance.clients | std::views::values)
   {
     _commandServer.QueueCommand<decltype(targetNotify)>(
       raceClientId,
@@ -3307,7 +3327,7 @@ void RaceDirector::HandleActivateSkillEffect(
       .firstObstacleInstanceId = command.effectInstanceId,
       .obstacleInstanceCount = 1,
       .breakdown = 1};
-    for (const ClientId& raceClientId : raceInstance.clients)
+    for (const ClientId& raceClientId : raceInstance.clients | std::views::values)
     {
       _commandServer.QueueCommand<decltype(magicExpire)>(
         raceClientId,
@@ -3328,7 +3348,7 @@ void RaceDirector::HandleActivateSkillEffect(
       .targetOid = command.targetOid,
       .targetOid2 = command.targetOid};
 
-    for (const ClientId& raceClientId : raceInstance.clients)
+    for (const ClientId& raceClientId : raceInstance.clients | std::views::values)
     {
       _commandServer.QueueCommand<decltype(removeMagicTarget)>(
         raceClientId,
@@ -3358,7 +3378,7 @@ void RaceDirector::HandleActivateSkillEffect(
       .characterOid = command.targetOid,
       .unk = 1};
 
-    for (const ClientId& raceClientId : raceInstance.clients)
+    for (const ClientId& raceClientId : raceInstance.clients | std::views::values)
     {
       _commandServer.QueueCommand<decltype(notify)>(
         raceClientId,
@@ -3458,7 +3478,7 @@ void RaceDirector::RemoveEffect(
     .targetOid = racer.oid,
     .unk1 = 0,
   };
-  for (const ClientId& raceClientId : raceInstance.clients)
+  for (const ClientId& raceClientId : raceInstance.clients | std::views::values)
   {
     _commandServer.QueueCommand<decltype(removeSkillEffect)>(
       raceClientId,
@@ -3547,7 +3567,7 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
   };
 
   // Broadcast
-  for (const ClientId& raceClientId : raceInstance.clients)
+  for (const ClientId& raceClientId : raceInstance.clients | std::views::values)
   {
     _commandServer.QueueCommand<decltype(addSkillEffect)>(
       raceClientId,
@@ -3617,7 +3637,8 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
         .unk1 = 0,
       };
 
-      for (const ClientId& raceClientId : raceInstance.clients)
+      // Broadcast
+      for (const ClientId& raceClientId : raceInstance.clients | std::views::values)
       {
         _commandServer.QueueCommand<decltype(removeSkillEffect)>(
           raceClientId,
@@ -3789,14 +3810,8 @@ void RaceDirector::HandleKickUser(
   }
 
   // Verify the target character is actually in this room.
-  const bool targetInRoom = std::ranges::any_of(
-    raceInstance.clients,
-    [this, &command](const ClientId& raceClientId)
-    {
-      return _clients[raceClientId].characterUid == command.characterUid;
-    });
-
-  if (!targetInRoom)
+  const bool targetInRoom = raceInstance.clients.contains(command.characterUid);
+  if (not targetInRoom)
   {
     spdlog::warn(
       "Character '{}' tried to kick character '{}' who is not in the room.",
@@ -3850,7 +3865,7 @@ void RaceDirector::HandleKickUser(
   protocol::AcCmdCRKickNotify notify{};
   notify.characterUid = command.characterUid;
 
-  for (const auto& raceClientId : raceInstance.clients)
+  for (const auto& raceClientId : raceInstance.clients | std::views::values)
   {
     _commandServer.QueueCommand<decltype(notify)>(
       raceClientId,
@@ -4063,7 +4078,7 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
           Scheduler::Clock::now() + std::chrono::milliseconds(
             static_cast<int64_t>(spurDurationSeconds * 1000)));
 
-        for (const ClientId& raceClientId : raceInstance.clients)
+        for (const ClientId& raceClientId : raceInstance.clients | std::views::values)
         {
           // Broadcast losing team's gauge status
           _commandServer.QueueCommand<decltype(beatenSpur)>(
@@ -4086,7 +4101,7 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
   }
 
   // Broadcast invoker's team gauge status
-  for (const auto& raceClientId : raceInstance.clients)
+  for (const auto& raceClientId : raceInstance.clients | std::views::values)
   {
     _commandServer.QueueCommand<decltype(spur)>(raceClientId, [spur](){ return spur; });
   }
@@ -4121,7 +4136,7 @@ void RaceDirector::HandleTriggerizeAct(
     .unk1 = command.unk1,
     .unk2 = command.unk2};
 
-  for (const auto& raceClientId : raceInstance.clients)
+  for (const auto& raceClientId : raceInstance.clients | std::views::values)
   {
     // Do not broadcast to self
     if (raceClientId == clientId)
