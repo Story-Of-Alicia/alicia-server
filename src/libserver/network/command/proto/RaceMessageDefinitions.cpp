@@ -756,7 +756,7 @@ void AcCmdRCRaceResultNotify::Write(
       .Write(score.member6)
       .Write(score.carrots)
       .Write(score.level)
-      .Write(score.member9)
+      .Write(score.teamColor)
       .Write(score.member10)
       .Write(score.member11)
       .Write(score.member12)

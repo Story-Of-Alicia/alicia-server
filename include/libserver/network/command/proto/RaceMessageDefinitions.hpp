@@ -985,7 +985,7 @@ struct AcCmdRCRaceResultNotify
     uint32_t carrots{};
     uint32_t level{};
     // this is copied as memcpy
-    uint32_t member9{};
+    TeamColor teamColor{};
     uint32_t member10{};
     uint16_t member11{};
     uint16_t member12{};

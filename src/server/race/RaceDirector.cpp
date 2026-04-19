@@ -568,6 +568,7 @@ void RaceDirector::Tick()
       score.courseTime = courseTime;
       score.experience = 420;
       score.carrots = 420;
+      score.teamColor = racer.team;
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
         characterUid);
 
