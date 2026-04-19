@@ -3136,7 +3136,7 @@ void RaceDirector::RemoveEffect(
     .targetOid = racer.oid,
     .unk1 = 0,
   };
-  for (const ClientId& raceClientId : raceInstance.clients)
+  for (const ClientId& raceClientId : raceInstance.clients | std::views::values)
   {
     _commandServer.QueueCommand<decltype(removeSkillEffect)>(
       raceClientId,
