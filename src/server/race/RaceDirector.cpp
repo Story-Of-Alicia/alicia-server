@@ -1681,7 +1681,7 @@ void RaceDirector::HandleStartRace(
 
   // Queue race start after room countdown.
   _scheduler.Queue(
-    [this, clientContext]()
+    [this, clientId, clientContext]()
     {
       std::scoped_lock raceInstanceLock(_raceInstancesMutex);
       // Get race instance (and check if added as racer)
@@ -1715,11 +1715,20 @@ void RaceDirector::HandleStartRace(
             .name = characterName});
 
         // TODO: experimental!
-        // Assign the racer a unique P2DID
-        const std::optional<uint16_t> p2dId = _p2dPool.Acquire();
-        if (not p2dId.has_value())
-          throw std::runtime_error("We've exhaused all the available P2DIDs.");
-        protocolRacer.p2dId = p2dId.value();
+        // Assign the racer P2DID
+        if (_p2dIds.contains(clientId))
+        {
+          // Client already has an existing P2DID, assign it
+          protocolRacer.p2dId = _p2dIds.at(clientId);
+        }
+        else
+        {
+          // Assign the racer a unique P2DID
+          const std::optional<uint16_t> p2dId = _p2dPool.Acquire();
+          if (not p2dId.has_value())
+            throw std::runtime_error("We've exhaused all the available P2DIDs.");
+          protocolRacer.p2dId = p2dId.value();
+        }
 
         switch (racer.team)
         {
