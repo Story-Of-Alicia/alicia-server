@@ -87,23 +87,24 @@ void SystemContentRegistry::Save() const
   fout << root;
 }
 
-uint32_t SystemContentRegistry::GetValue(uint32_t type) const
+std::optional<uint32_t> SystemContentRegistry::GetValue(uint32_t type) const
 {
-  std::scoped_lock lock(_mutex);
-  const auto it = std::find_if(
-    _entries.cbegin(),
-    _entries.cend(),
-    [type](const SystemEntry& entry)
-    {
-      return entry.type == type;
-    });
-
-  if (it != _entries.cend())
   {
-    return it->value;
+    std::scoped_lock lock(_mutex);
+    const auto it = std::ranges::find_if(
+      _entries,
+      [type](const SystemEntry& entry)
+      {
+        return entry.type == type;
+      });
+
+    if (it != _entries.cend())
+    {
+      return it->value;
+    }
   }
 
-  return 0;
+  return std::nullopt;
 }
 
 void SystemContentRegistry::SetValue(uint32_t type, uint32_t value)

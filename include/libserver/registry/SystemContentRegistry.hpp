@@ -54,9 +54,9 @@ public:
   /**
    * Gets the value for a specific system type.
    * @param type The type key.
-   * @return The current value.
+   * @return The current value, if any.
    */
-  [[nodiscard]] uint32_t GetValue(uint32_t type) const;
+  [[nodiscard]] std::optional<uint32_t> GetValue(uint32_t type) const;
 
   /**
    * Sets the value for a specific system type and persists the change.
