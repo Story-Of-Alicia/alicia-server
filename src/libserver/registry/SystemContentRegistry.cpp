@@ -87,7 +87,7 @@ void SystemContentRegistry::Save() const
   fout << root;
 }
 
-std::optional<uint32_t> SystemContentRegistry::GetValue(uint32_t type) const
+std::optional<int32_t> SystemContentRegistry::GetValue(uint32_t type) const
 {
   {
     std::scoped_lock lock(_mutex);
@@ -107,7 +107,7 @@ std::optional<uint32_t> SystemContentRegistry::GetValue(uint32_t type) const
   return std::nullopt;
 }
 
-void SystemContentRegistry::SetValue(uint32_t type, uint32_t value)
+void SystemContentRegistry::SetValue(uint32_t type, int32_t value)
 {
   {
     std::scoped_lock lock(_mutex);

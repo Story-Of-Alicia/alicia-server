@@ -35,7 +35,7 @@ public:
   struct SystemEntry
   {
     uint32_t type{};
-    uint32_t value{};
+    int32_t value{};
     std::string name{};
     std::string description{};
   };
@@ -56,14 +56,14 @@ public:
    * @param type The type key.
    * @return The current value, if any.
    */
-  [[nodiscard]] std::optional<uint32_t> GetValue(uint32_t type) const;
+  [[nodiscard]] std::optional<int32_t> GetValue(uint32_t type) const;
 
   /**
    * Sets the value for a specific system type and persists the change.
    * @param type The type key.
    * @param value The new value.
    */
-  void SetValue(uint32_t type, uint32_t value);
+  void SetValue(uint32_t type, int32_t value);
 
   /**
    * Returns the system content for protocol responses.
