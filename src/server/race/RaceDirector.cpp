@@ -2913,16 +2913,17 @@ void RaceDirector::HandleUseMagicItem(
 
       if (targetIter == racers.end())
       {
-        spdlog::warn("Target OID {} not found in HandleStartMagicTarget", targetOid);
-        return;
-      }
-
-      auto& targetRacer = targetIter->second;
-
-      // If target has already a dragon, miss
-      if (targetRacer.hasDragon)
-      {
         targetList.clear();
+      }
+      else
+      {
+        auto& targetRacer = targetIter->second;
+
+        // If target has already a dragon, miss
+        if (targetRacer.hasDragon)
+        {
+          targetList.clear();
+        }
       }
     }
   }
