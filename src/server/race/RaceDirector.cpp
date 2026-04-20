@@ -3369,6 +3369,9 @@ void RaceDirector::HandleActivateSkillEffect(
 
     targetRacer.magicItem.reset();
   }
+
+  if (magicSlotInfo.basicType == 16)
+    targetRacer.hasDragon = false;
 }
 
 void RaceDirector::HandleOpCmd(
