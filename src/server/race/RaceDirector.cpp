@@ -541,31 +541,37 @@ void RaceDirector::Tick()
 
     protocol::AcCmdRCRaceResultNotify raceResult{};
 
-    std::map<uint32_t, data::Uid> scoreboard;
-    for (const auto& [characterUid, racer] : raceInstance.tracker.GetRacers())
-    {
-      // todo: do not do this here i guess
-      uint32_t courseTime = std::numeric_limits<uint32_t>::max();
-      if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
-        courseTime = racer.courseTime;
+    using Team = tracker::RaceTracker::Racer::Team;
+    using State = tracker::RaceTracker::Racer::State;
 
-      scoreboard.try_emplace(courseTime, characterUid);
+    // Determine winning team (team of the first finisher). Solo/FFA leaves winningTeam as Solo.
+    Team winningTeam = Team::Solo;
+    if (raceInstance.raceTeamMode == protocol::TeamMode::Team)
+    {
+      int32_t best = std::numeric_limits<int32_t>::max();
+      for (const auto& [uid, racer] : raceInstance.tracker.GetRacers())
+      {
+        if (racer.state != State::Disconnected && racer.courseTime < best)
+        {
+          best = racer.courseTime;
+          winningTeam = racer.team;
+        }
+      }
     }
 
     // Build the score board.
-    for (auto& [courseTime, characterUid] : scoreboard)
+    for (const auto& [characterUid, racer] : raceInstance.tracker.GetRacers())
     {
-      auto& racer = raceInstance.tracker.GetRacer(characterUid);
       auto& score = raceResult.scores.emplace_back();
 
       // todo: figure out the other bit set values
 
-      if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
+      if (racer.state != State::Disconnected)
       {
         score.bitset = static_cast<protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset>(
             protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::Connected);
       }
-      score.courseTime = courseTime;
+      score.courseTime = racer.state != State::Disconnected ? racer.courseTime : std::numeric_limits<int32_t>::max();
       score.experience = 420;
       score.carrots = 420;
       score.teamColor = racer.team;
@@ -600,6 +606,15 @@ void RaceDirector::Tick()
           });
       });
     }
+
+    // Sort: winning team first, then by courseTime ascending.
+    std::ranges::sort(raceResult.scores, [winningTeam](const auto& a, const auto& b)
+    {
+      auto priority = [winningTeam](const auto& s) {
+        return std::make_pair(s.teamColor != winningTeam ? 1 : 0, s.courseTime);
+      };
+      return priority(a) < priority(b);
+    });
 
     // Broadcast the race result
     for (const ClientId raceClientId : raceInstance.clients)
