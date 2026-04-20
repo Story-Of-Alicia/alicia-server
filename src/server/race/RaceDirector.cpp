@@ -2897,6 +2897,35 @@ void RaceDirector::HandleUseMagicItem(
   if (magicSlotInfo.type == 14)
     targetList.resize(1);
 
+  // Dragon handling
+  if (magicSlotInfo.basicType == 16)
+  {
+    if (!targetList.empty())
+    {
+      auto& racers = raceInstance.tracker.GetRacers();
+      const auto targetOid = targetList[0];
+      const auto targetIter = std::ranges::find_if(
+        racers,
+        [targetOid](const auto& entry)
+        {
+          return entry.second.oid == targetOid;
+        });
+
+      if (targetIter == racers.end())
+      {
+        spdlog::warn("Target OID {} not found in HandleStartMagicTarget", targetOid);
+        return;
+      }
+
+      auto& targetRacer = targetIter->second;
+
+      // If target has already a dragon, miss
+      if (targetRacer.hasDragon)
+      {
+        targetList.clear();
+      }
+    }
+  }
   protocol::AcCmdCRUseMagicItemOK response{
     .characterOid = command.characterOid,
     .magicItemId = magicSlotInfo.type,
