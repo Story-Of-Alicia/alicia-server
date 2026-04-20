@@ -2166,10 +2166,10 @@ struct AcCmdGameRaceItemGet
 // Magic Targeting Commands for Bolt System
 struct AcCmdCRStartMagicTarget
 {
-  uint16_t characterOid;
-  uint16_t unk1;
-  uint16_t unk2;
-  uint16_t unk3;
+  uint16_t effectInstanceId;
+  uint16_t casterOid;
+  uint16_t targetOid;
+  uint16_t targetOid2;
 
   static Command GetCommand()
   {
@@ -2193,10 +2193,10 @@ struct AcCmdCRStartMagicTarget
 
 struct AcCmdCRChangeMagicTarget
 {
-  uint16_t unk0;
-  uint16_t unk1;
-  uint16_t oldTargetOid;
-  uint16_t newTargetOid;
+  uint16_t effectInstanceId;
+  uint16_t casterOid;
+  uint16_t targetOid;
+  uint16_t targetOid2;
 
   static Command GetCommand()
   {
@@ -2220,10 +2220,10 @@ struct AcCmdCRChangeMagicTarget
 
 struct AcCmdCRChangeMagicTargetNotify
 {
-  uint16_t unk0;
-  uint16_t unk1;
-  uint16_t oldTargetOid;
-  uint16_t newTargetOid;
+  uint16_t effectInstanceId;
+  uint16_t casterOid;
+  uint16_t targetOid;
+  uint16_t targetOid2;
 
   static Command GetCommand()
   {
@@ -2247,10 +2247,10 @@ struct AcCmdCRChangeMagicTargetNotify
 
 struct AcCmdCRChangeMagicTargetOK
 {
-  uint16_t unk0;
-  uint16_t unk1;
-  uint16_t oldTargetOid;
-  uint16_t newTargetOid;
+  uint16_t effectInstanceId;
+  uint16_t casterOid;
+  uint16_t targetOid;
+  uint16_t targetOid2;
 
   static Command GetCommand()
   {
@@ -2274,10 +2274,10 @@ struct AcCmdCRChangeMagicTargetOK
 
 struct AcCmdCRChangeMagicTargetCancel
 {
-  uint16_t characterOid;
-  uint16_t unk1;
-  uint16_t unk2;
-  uint16_t unk3;
+  uint16_t effectInstanceId;
+  uint16_t casterOid;
+  uint16_t targetOid;
+  uint16_t targetOid2;
 
   static Command GetCommand()
   {
@@ -2301,10 +2301,10 @@ struct AcCmdCRChangeMagicTargetCancel
 
 struct AcCmdRCRemoveMagicTarget
 {
-  uint16_t characterOid;
-  uint16_t unk1;
-  uint16_t unk2;
-  uint16_t unk3;
+  uint16_t effectInstanceId;
+  uint16_t casterOid;
+  uint16_t targetOid;
+  uint16_t targetOid2;
 
   static Command GetCommand()
   {

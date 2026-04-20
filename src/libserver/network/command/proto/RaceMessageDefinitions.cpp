@@ -1670,70 +1670,70 @@ void AcCmdCRStartMagicTarget::Read(
   AcCmdCRStartMagicTarget& command,
   SourceStream& stream)
 {
-  stream.Read(command.characterOid)
-    .Read(command.unk1)
-    .Read(command.unk2)
-    .Read(command.unk3);
+  stream.Read(command.effectInstanceId)
+    .Read(command.casterOid)
+    .Read(command.targetOid)
+    .Read(command.targetOid2);
 }
 
 void AcCmdCRChangeMagicTarget::Read(
   AcCmdCRChangeMagicTarget& command,
   SourceStream& stream)
 {
-  stream.Read(command.unk0)
-    .Read(command.unk1)
-    .Read(command.oldTargetOid)
-    .Read(command.newTargetOid);
+  stream.Read(command.effectInstanceId)
+    .Read(command.casterOid)
+    .Read(command.targetOid)
+    .Read(command.targetOid2);
 }
 
 void AcCmdCRChangeMagicTargetNotify::Write(
   const AcCmdCRChangeMagicTargetNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0)
-    .Write(command.unk1)
-    .Write(command.oldTargetOid)
-    .Write(command.newTargetOid);
+  stream.Write(command.effectInstanceId)
+    .Write(command.casterOid)
+    .Write(command.targetOid)
+    .Write(command.targetOid2);
 }
 
 void AcCmdCRChangeMagicTargetNotify::Read(
   AcCmdCRChangeMagicTargetNotify& command,
   SourceStream& stream)
 {
-  stream.Read(command.unk0)
-    .Read(command.unk1)
-    .Read(command.oldTargetOid)
-    .Read(command.newTargetOid);
+  stream.Read(command.effectInstanceId)
+    .Read(command.casterOid)
+    .Read(command.targetOid)
+    .Read(command.targetOid2);
 }
 
 void AcCmdCRChangeMagicTargetOK::Write(
   const AcCmdCRChangeMagicTargetOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0)
-    .Write(command.unk1)
-    .Write(command.oldTargetOid)
-    .Write(command.newTargetOid);
+  stream.Write(command.effectInstanceId)
+    .Write(command.casterOid)
+    .Write(command.targetOid)
+    .Write(command.targetOid2);
 }
 
 void AcCmdCRChangeMagicTargetCancel::Write(
   const AcCmdCRChangeMagicTargetCancel& command,
   SinkStream& stream)
 {
-  stream.Write(command.characterOid)
-    .Write(command.unk1)
-    .Write(command.unk2)
-    .Write(command.unk3);
+  stream.Write(command.effectInstanceId)
+    .Write(command.casterOid)
+    .Write(command.targetOid)
+    .Write(command.targetOid2);
 }
 
 void AcCmdRCRemoveMagicTarget::Write(
   const AcCmdRCRemoveMagicTarget& command,
   SinkStream& stream)
 {
-  stream.Write(command.characterOid)
-    .Write(command.unk1)
-    .Write(command.unk2)
-    .Write(command.unk3);
+  stream.Write(command.effectInstanceId)
+    .Write(command.casterOid)
+    .Write(command.targetOid)
+    .Write(command.targetOid2);
 }
 
 void AcCmdRCMagicExpire::Write(

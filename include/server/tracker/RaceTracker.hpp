@@ -70,11 +70,13 @@ public:
     //! Active skill effects indexed by skillEffectId (0-23).
     static constexpr size_t EffectCount = 24;
     std::array<bool, EffectCount> effects{};
-    //! Per-effect generation counter — incremented on each apply, used to invalidate stale removal timers.
+    //! Per-effect generation counter, incremented on each apply, used to invalidate stale removal timers.
     std::array<uint32_t, EffectCount> effectGenerations{};
 
     //! Rank of the currently active removeMagic attack (0 = none active).
     uint32_t attackRank{};
+    bool hasDragon{false};
+    std::chrono::steady_clock::time_point dragonReceivedAt{};
   };
 
   //! An item

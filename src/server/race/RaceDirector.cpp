@@ -3172,11 +3172,29 @@ void RaceDirector::HandleStartMagicTarget(
   auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
   // TODO: Revise this in NPC races
-  if (command.characterOid != racer.oid)
+  if (command.casterOid != racer.oid)
   {
     spdlog::warn("Character OID mismatch in HandleStartMagicTarget");
     return;
   }
+
+  auto& racers = raceInstance.tracker.GetRacers();
+  const auto targetIter = std::ranges::find_if(
+    racers,
+    [&command](const auto& entry)
+    {
+      return entry.second.oid == command.targetOid;
+    });
+
+  if (targetIter == racers.end())
+  {
+    spdlog::warn("Target OID {} not found in HandleStartMagicTarget", command.targetOid);
+    return;
+  }
+
+  auto& targetRacer = targetIter->second;
+  targetRacer.hasDragon = true;
+  targetRacer.dragonReceivedAt = std::chrono::steady_clock::now();
 }
 
 void RaceDirector::HandleChangeMagicTarget(
@@ -3189,19 +3207,78 @@ void RaceDirector::HandleChangeMagicTarget(
   auto& raceInstance = GetRaceInstance(clientContext);
   auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
-  // TODO: Revise this in NPC races
-  if (command.oldTargetOid != racer.oid)
+  if (command.targetOid!= racer.oid)
   {
-    spdlog::warn("Character OID mismatch in HandleChangeMagicTargetNotify");
+    spdlog::warn("Character OID mismatch in HandleChangeMagicTarget");
     return;
   }
 
+  if (!racer.hasDragon)
+  {
+    spdlog::warn("Caster does not have dragon in HandleChangeMagicTarget");
+    return;
+  }
+
+  // Find the target racer based on targetOid2
+  auto& racers = raceInstance.tracker.GetRacers();
+  const auto targetIter = std::ranges::find_if(
+    racers,
+    [&command](const auto& entry)
+    {
+      return entry.second.oid == command.targetOid2;
+    });
+
+  if (targetIter == racers.end())
+  {
+    spdlog::warn("Target OID {} not found in HandleStartMagicTarget", command.targetOid);
+    return;
+  }
+
+  auto& targetRacer = targetIter->second;
+
+  // Enforce cooldown: dragon cannot be passed until 5s after it was received
+  constexpr auto DragonPassCooldown = std::chrono::milliseconds(500);
+  if (std::chrono::steady_clock::now() - racer.dragonReceivedAt < DragonPassCooldown)
+  {
+    protocol::AcCmdCRChangeMagicTargetCancel response{
+      .effectInstanceId = command.effectInstanceId,
+      .casterOid = command.casterOid,
+      .targetOid = command.targetOid,
+      .targetOid2 = command.targetOid2
+    };
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]() { return response; });
+    return;
+  }
+
+  // Send Cancel if the target already has dragon, otherwise send OK and update the target's dragon status
+  if (targetRacer.hasDragon)
+  {
+    // Send Cancel response
+    protocol::AcCmdCRChangeMagicTargetCancel response{
+      .effectInstanceId = command.effectInstanceId,
+      .casterOid = command.casterOid,
+      .targetOid = command.targetOid,
+      .targetOid2 = command.targetOid2
+    };
+
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]() { return response; });
+
+    return;
+  }
+  targetRacer.hasDragon = true;
+  targetRacer.dragonReceivedAt = std::chrono::steady_clock::now();
+  racer.hasDragon = false;
+
   // Send OK response
   protocol::AcCmdCRChangeMagicTargetOK response{
-    .unk0 = command.unk0,
-    .unk1 = command.unk1,
-    .oldTargetOid = command.oldTargetOid,
-    .newTargetOid = command.newTargetOid
+    .effectInstanceId = command.effectInstanceId,
+    .casterOid = command.casterOid,
+    .targetOid = command.targetOid,
+    .targetOid2 = command.targetOid2
   };
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -3209,10 +3286,10 @@ void RaceDirector::HandleChangeMagicTarget(
 
   // Send targeting notification to the target
   protocol::AcCmdCRChangeMagicTargetNotify targetNotify{
-    .unk0 = command.unk0,
-    .unk1 = command.unk1,
-    .oldTargetOid = command.oldTargetOid,
-    .newTargetOid = command.newTargetOid
+    .effectInstanceId = command.effectInstanceId,
+    .casterOid = command.casterOid,
+    .targetOid = command.targetOid,
+    .targetOid2 = command.targetOid2
   };
 
   for (const ClientId& raceClientId : raceInstance.clients)
@@ -3278,12 +3355,10 @@ void RaceDirector::HandleActivateSkillEffect(
     protocol::AcCmdCRUseItemSlotNotify notify{
       .magicItemId = 0,
       .characterOid = command.targetOid,
-      .unk = 0};
+      .unk = 1};
 
     for (const ClientId& raceClientId : raceInstance.clients)
     {
-      if (raceClientId == clientId)
-        continue;
       _commandServer.QueueCommand<decltype(notify)>(
         raceClientId,
         [notify]()
