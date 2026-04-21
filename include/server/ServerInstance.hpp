@@ -42,6 +42,7 @@
 #include <libserver/registry/ItemRegistry.hpp>
 #include <libserver/registry/MagicRegistry.hpp>
 #include <libserver/registry/PetRegistry.hpp>
+#include <libserver/registry/SystemContentRegistry.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -116,6 +117,10 @@ public:
   //! Returns reference to the Magic registry.
   //! @returns Reference to the Magic registry.
   registry::MagicRegistry& GetMagicRegistry();
+
+  //! Returns reference to the system content registry.
+  //! @returns Reference to the system content registry.
+  registry::SystemContentRegistry& GetSystemContentRegistry();
 
   //! Returns reference to the chat system.
   //! @returns Reference to the chat system.
@@ -244,6 +249,8 @@ private:
   registry::MagicRegistry _magicRegistry;
   //! A registry of pets.
   registry::PetRegistry _petRegistry;
+  //! The system content registry.
+  registry::SystemContentRegistry _systemContentRegistry;
 
   //! A chat system.
   ChatSystem _chatSystem;

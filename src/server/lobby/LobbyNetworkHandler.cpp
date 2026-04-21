@@ -752,8 +752,6 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
     .ranchPort = lobbyConfig.advertisement.ranch.port,
     .scramblingConstant = 0,
 
-    .systemContent = _systemContent,
-
     // .managementSkills = {4, 0x2B, 4},
     // .skillRanks = {.values = {{1,1}}},
     // .val14 = 0xca1b87db,
@@ -763,6 +761,9 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
     // .val19 = 0x38d,
     //.val20 = 0x1c7
   };
+
+  // Populate system content values
+  response.systemContent.values = _serverInstance.GetSystemContentRegistry().GetSystemContent();
   
   data::Uid characterMountUid{
     data::InvalidUid};
@@ -2134,10 +2135,12 @@ void LobbyNetworkHandler::HandleUpdateSystemContent(
   if (not hasPermission)
     return;
 
-  _systemContent.values[command.key] = command.value;
+  // Set system content setting
+  _serverInstance.GetSystemContentRegistry().SetValue(command.key, command.value);
 
-  protocol::AcCmdLCUpdateSystemContent notify{
-    .systemContent = _systemContent};
+  // Notify only the changed setting
+  protocol::AcCmdLCUpdateSystemContent notify{};
+  notify.systemContent.values = {{command.key, command.value}};
 
   for (const auto& connectedClientId : _clients | std::views::keys)
   {

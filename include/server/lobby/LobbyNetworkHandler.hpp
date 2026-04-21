@@ -69,16 +69,6 @@ private:
     data::Uid rancherVisitPreference = data::InvalidUid;
   };
 
-  protocol::LobbyCommandLoginOK::SystemContent _systemContent{
-    .values = {
-      {0x1a, 1}, // How many times to send via TCP? (Everytime)
-      {0x1b, 0}  // Block detection time(s) before TCP Relay (0)
-      // {4, 0},
-      // {16, 0},
-      // {21, 0},
-      // {22, 0},
-      // {30, 0}
-    }};
 
   ClientId GetClientIdByUserName(
     const std::string& userName,

@@ -1,0 +1,276 @@
+- type: 0
+  value: true
+  name: "Speed Solo"
+  description: ""
+- type: 1
+  value: true
+  name: "Speed Team"
+  description: ""
+- type: 2
+  value: true
+  name: "Magic Solo"
+  description: ""
+- type: 3
+  value: true
+  name: "Magic Team"
+  description: ""
+- type: 4
+  value: true
+  name: "Entering the store"
+  description: ""
+- type: 5
+  value: true
+  name: "Shop purchases"
+  description: ""
+- type: 6
+  value: true
+  name: "Team Battle 1 vs 1"
+  description: ""
+- type: 7
+  value: false
+  name: "Stop service: Maintenance"
+  description: ""
+- type: 8
+  value: false
+  name: "[Packet] Server 8T(7.5/s)"
+  description: ""
+- type: 9
+  value: true
+  name: "[Packet] Server 15T(4/s)"
+  description: ""
+- type: 10
+  value: false
+  name: "[Packet] P2P 6T (10/s)"
+  description: ""
+- type: 11
+  value: false
+  name: "[Packet] P2P 8T(7.5/s)"
+  description: ""
+- type: 12
+  value: false
+  name: "[Packet] Pasture 15T(4/s)"
+  description: ""
+- type: 13
+  value: true
+  name: "Display AI player checkbox in the waiting room"
+  description: ""
+- type: 14
+  value: true
+  name: "Festival activation"
+  description: ""
+- type: 15
+  value: 1
+  name: "Channel window game mode"
+  description: "1:Speed Solo,2:Speed Team,4:Magic Solo,8:Magic Team"
+- type: 16
+  value: false
+  name: "Allow singleplayer"
+  description: ""
+- type: 17
+  value: 5310
+  name: "Game countdown [ms]"
+  description: ""
+- type: 18
+  value: 100
+  name: "Exp&Carrot Boost [%]"
+  description: ""
+- type: 19
+  value: false
+  name: "Always a new record for ghost"
+  description: ""
+- type: 20
+  value: true
+  name: "Mating"
+  description: ""
+- type: 21
+  value: true
+  name: "Training"
+  description: ""
+- type: 22
+  value: true
+  name: "Singleplayer"
+  description: ""
+- type: 23
+  value: true
+  name: "Ranch management"
+  description: ""
+- type: 24
+  value: 3
+  name: "Starting injury level"
+  description: ""
+- type: 25
+  value: true
+  name: "Is TCP relay working?"
+  description: ""
+- type: 26
+  value: 2
+  name: "How many times to send via TCP?"
+  description: "1:Everytime,2:Every 2 times,3:Every 3 times,4:Every 4 times"
+- type: 27
+  value: 5
+  name: "Block detection time (s) before TCP Relay starts"
+  description: ""
+- type: 28
+  value: 8
+  name: "Speed Team entry level"
+  description: ""
+- type: 29
+  value: 4
+  name: "Magic Team entry level"
+  description: ""
+- type: 30
+  value: 1
+  name: "Whether 2fa works"
+  description: ""
+- type: 31
+  value: 1
+  name: "2fa mating"
+  description: ""
+- type: 32
+  value: 1
+  name: "2fa - send gift"
+  description: ""
+- type: 33
+  value: 1
+  name: "2fa return to nature"
+  description: ""
+- type: 34
+  value: true
+  name: "Real-time server statistics"
+  description: ""
+- type: 35
+  value: 100
+  name: "Adjust horse size"
+  description: ""
+- type: 36
+  value: true
+  name: "PC room premium horse rental"
+  description: ""
+- type: 37
+  value: 0
+  name: "Experience/carrots boost"
+  description: "Default value 0 (no boost)"
+- type: 38
+  value: 60
+  name: "PC room premium regen cycle [min]"
+  description: ""
+- type: 39
+  value: 180
+  name: "Entry validity period upon invitation/summon (def:180 seconds)"
+  description: ""
+- type: 40
+  value: true
+  name: "Stamp Event"
+  description: ""
+- type: 41
+  value: true
+  name: "Pet system"
+  description: "Pet System Test"
+- type: 42
+  value: true
+  name: "Request League Ranking (client only)"
+  description: ""
+- type: 43
+  value: true
+  name: "Use cash recharge ?"
+  description: ""
+- type: 44
+  value: false
+  name: "Display webpage when exiting ?"
+  description: ""
+- type: 45
+  value: false
+  name: "Monday league tally"
+  description: ""
+- type: 46
+  value: false
+  name: "Tuesday league tally"
+  description: ""
+- type: 47
+  value: true
+  name: "Wednesday league tally"
+  description: ""
+- type: 48
+  value: false
+  name: "Thursday league tally"
+  description: ""
+- type: 49
+  value: false
+  name: "Friday league tally"
+  description: ""
+- type: 50
+  value: false
+  name: "Saturday league tally"
+  description: ""
+- type: 51
+  value: false
+  name: "Sunday league tally"
+  description: ""
+- type: 52
+  value: 19
+  name: "Guild Match start time"
+  description: ""
+- type: 53
+  value: 2
+  name: "Guild Match duration"
+  description: ""
+- type: 54
+  value: true
+  name: "Guilds"
+  description: ""
+- type: 55
+  value: 30
+  name: "Match interval (U:seconds, Def:30)"
+  description: ""
+- type: 56
+  value: false
+  name: "Field Item Acquisiton event"
+  description: ""
+- type: 57
+  value: true
+  name: "Ranch Shepherd Carrot Payment"
+  description: ""
+- type: 58
+  value: 4
+  name: "Minimum people required for guild match"
+  description: ""
+- type: 59
+  value: 3
+  name: "Weekly reset day"
+  description: "0:Sunday,1:Monday,2:Tuesday,3:Wednesday,4:Thursday,5:Friday,6:Saturday"
+- type: 60
+  value: 6
+  name: "Weekly reset hour(0~23)"
+  description: ""
+- type: 61
+  value: 12
+  name: "Min level required to acquire eggs (during map generation)"
+  description: ""
+- type: 62
+  value: true
+  name: "Shutdown system"
+  description: ""
+- type: 63
+  value: 0
+  name: "Default visit ranch UID (for testing)"
+  description: ""
+- type: 64
+  value: 10000
+  name: "Egg hatching/boosting time ratio (10000%)"
+  description: ""
+- type: 65
+  value: false
+  name: "Ranch Weather Features"
+  description: ""
+- type: 66
+  value: 0
+  name: "In-Game Weather"
+  description: "0:Not specified,1:Light snow,2:Moderate snow,3:Heavy snow,-1:No snow"
+- type: 67
+  value: 0
+  name: "Force random weather during match"
+  description: "0:Not specified,1:No snow,2:Light snow 01,3:Light snow 02,4:Moderate snow,5:Heavy snow"
+- type: 68
+  value: false
+  name: "PC specification log"
+  description: ""

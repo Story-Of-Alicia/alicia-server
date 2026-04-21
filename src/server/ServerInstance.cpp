@@ -91,6 +91,7 @@ void ServerInstance::Initialize()
   _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
 
   _moderationSystem.ReadConfig(_resourceDirectory / "config/server/automod.yaml");
+  _systemContentRegistry.ReadConfig(_resourceDirectory / "config/server/system_content.yaml");
 
   // Initialize the directors and tick them on their own threads.
   // Directors will terminate their tick loop once `_shouldRun` flag is set to false.
@@ -322,6 +323,11 @@ registry::PetRegistry& ServerInstance::GetPetRegistry()
 registry::MagicRegistry& ServerInstance::GetMagicRegistry()
 {
   return _magicRegistry;
+}
+
+registry::SystemContentRegistry& ServerInstance::GetSystemContentRegistry()
+{
+  return _systemContentRegistry;
 }
 
 ChatSystem& ServerInstance::GetChatSystem()
