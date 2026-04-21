@@ -28,10 +28,11 @@ Oid RanchTracker::AddCharacter(data::Uid character)
 {
   // Don't overwrite an already-tracked character.
   if (_characters.contains(character))
-    return _characters.at(character);
+    return _characters.at(character).oid;
 
-  _characters[character] = _nextObjectId;
-  return _nextObjectId++;
+  const Oid oid = _nextObjectId++;
+  _characters[character] = Entity{.oid = oid};
+  return oid;
 }
 
 void RanchTracker::RemoveCharacter(data::Uid character)
@@ -48,13 +49,14 @@ Oid RanchTracker::GetCharacterOid(data::Uid character) const
   const auto itr = _characters.find(character);
   if (itr == _characters.cend())
     return InvalidEntityOid;
-  return itr->second;
+  return itr->second.oid;
 }
 
 Oid RanchTracker::AddHorse(data::Uid horse)
 {
-  _horses[horse] = _nextObjectId;
-  return _nextObjectId++;
+  const Oid oid = _nextObjectId++;
+  _horses[horse] = Entity{.oid = oid};
+  return oid;
 }
 
 void RanchTracker::RemoveHorse(data::Uid horse)
@@ -74,7 +76,12 @@ Oid RanchTracker::GetHorseOid(data::Uid horse) const
   const auto itr = _horses.find(horse);
   if (itr == _horses.cend())
     return InvalidEntityOid;
-  return itr->second;
+  return itr->second.oid;
+}
+
+RanchTracker::Entity& RanchTracker::GetHorseEntity(data::Uid horse)
+{
+  return _horses.at(horse);
 }
 
 const RanchTracker::ObjectMap& RanchTracker::GetCharacters() const

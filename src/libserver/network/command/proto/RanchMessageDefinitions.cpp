@@ -3274,5 +3274,91 @@ void AcCmdCROpenRandomBoxCancel::Read(
   throw std::runtime_error("Not implemented");
 }
 
-} // namespace server::protocol
+void AcCmdRCMobMove::Read(
+  AcCmdRCMobMove&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
 
+void AcCmdRCMobMove::Write(
+  const AcCmdRCMobMove& command,
+  SinkStream& stream)
+{
+  stream.Write(command.mobOid)
+    .Write(command.position.X)
+    .Write(command.position.Y)
+    .Write(command.position.Z);
+
+  if (command.type == protocol::AcCmdRCMobMove::Type::Minimal)
+    return;
+  else if (command.type == protocol::AcCmdRCMobMove::Type::Partial)
+    stream.Write(command.unk2);
+  else if (command.type == protocol::AcCmdRCMobMove::Type::Full)
+    for (const auto& element : command.unk3)
+      stream.Write(element);
+}
+
+void AcCmdRCMobResetPos::Read(
+  AcCmdRCMobResetPos&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCMobResetPos::Write(
+  const AcCmdRCMobResetPos& command,
+  SinkStream& stream)
+{
+  stream.Write(command.mobOid)
+    .Write(command.position.X)
+    .Write(command.position.Y)
+    .Write(command.position.Z);
+}
+
+void AcCmdRCMobSetState::Read(
+  AcCmdRCMobSetState&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCMobSetState::Write(
+  const AcCmdRCMobSetState& command,
+  SinkStream& stream)
+{
+  stream.Write(command.mobOid)
+    .Write(command.state)
+    .Write(command.subState);
+}
+
+void AcCmdRCMobSetVelocity::Read(
+  AcCmdRCMobSetVelocity&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCMobSetVelocity::Write(
+  const AcCmdRCMobSetVelocity& command,
+  SinkStream& stream)
+{
+  stream.Write(command.mobOid)
+    .Write(command.velocity);
+}
+
+void AcCmdRCAddIdleMountInfoNotify::Read(
+  AcCmdRCAddIdleMountInfoNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCAddIdleMountInfoNotify::Write(
+  const AcCmdRCAddIdleMountInfoNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.ranchHorse);
+}
+
+} // namespace server::protocol

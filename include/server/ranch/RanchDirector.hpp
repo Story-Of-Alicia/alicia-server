@@ -27,6 +27,9 @@
 #include "libserver/network/command/proto/CommonMessageDefinitions.hpp"
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
 
+#include <nlohmann/json.hpp>
+
+#include <array>
 #include <random>
 #include <unordered_map>
 #include <unordered_set>
@@ -131,12 +134,26 @@ private:
     uint8_t busyState{0};
   };
 
+  struct HorseAI
+  {
+    enum class State : uint8_t { Idle, Moving } state{State::Idle};
+    std::array<float, 3> spawnPos{};
+    std::array<float, 3> position{};
+    std::array<float, 3> targetPos{};
+    float idleTimer{0.0f};
+    float travelTimer{0.0f};
+  };
+
   struct RanchInstance
   {
     //! A world tracker of the ranch.
     tracker::RanchTracker tracker;
     //! A set of clients connected to the ranch.
     std::unordered_set<ClientId> clients;
+    //! Per-horse AI state.
+    std::unordered_map<data::Uid, HorseAI> horseAIs;
+    //! Tick count.
+    uint8_t ticks;
   };
 
   //! Get client context.

@@ -5131,6 +5131,286 @@ struct AcCmdCROpenRandomBoxCancel
     SourceStream& stream);
 };
 
+struct AcCmdRCMobMove
+{
+  struct Position
+  {
+    float X{0};
+    float Y{0};
+    float Z{0};
+  };
+
+  // Used to dictate move type, determines which values are handled by the client.
+  // Note: this field is not used deserialised in the protocol.
+  // TODO: confirm enum names matches the semantics
+  enum class Type
+  {
+    Minimal,
+    Partial,
+    Full
+  } type{};
+
+  uint16_t mobOid{};
+  Position position{};
+  uint16_t unk2{};
+  std::array<float, 3> unk3{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCMobMove;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCMobMove& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCMobMove& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCMobSetVelocity
+{
+  uint16_t mobOid{};
+  float velocity{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCMobSetVelocity;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCMobSetVelocity& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCMobSetVelocity& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCAddIdleMountInfoNotify
+{
+  RanchHorse ranchHorse{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCAddIdleMountInfoNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCAddIdleMountInfoNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCAddIdleMountInfoNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCMobRun
+{
+    uint16_t mobOid{};
+    uint16_t unk1{};        // secondary entity ID (skill / mount context)
+    AcCmdRCMobMove::Position position{};
+    uint8_t gaitFlag{};     // likely switches walk vs. run animation
+    float speed{};
+ 
+    static Command GetCommand()
+    {
+        return Command::AcCmdRCMobRun;
+    }
+ 
+    static void Write(
+        const AcCmdRCMobRun& command,
+        SinkStream& stream);
+ 
+    static void Read(
+        AcCmdRCMobRun& command,
+        SourceStream& stream);
+};
+
+struct AcCmdRCMobResetPos
+{
+    uint16_t mobOid{};
+    AcCmdRCMobMove::Position position{};
+ 
+    static Command GetCommand()
+    {
+        return Command::AcCmdRCMobResetPos;
+    }
+ 
+    static void Write(
+        const AcCmdRCMobResetPos& command,
+        SinkStream& stream);
+ 
+    static void Read(
+        AcCmdRCMobResetPos& command,
+        SourceStream& stream);
+};
+ 
+struct AcCmdRCMobLead
+{
+    uint16_t mobOid{};
+    uint16_t targetOid{};       // entity being led (e.g. the player leading)
+    uint32_t leadType{};        // behaviour / lead mode enum
+    AcCmdRCMobMove::Position destination{};
+ 
+    static Command GetCommand()
+    {
+        return Command::AcCmdRCMobLead;
+    }
+ 
+    static void Write(
+        const AcCmdRCMobLead& command,
+        SinkStream& stream);
+ 
+    static void Read(
+        AcCmdRCMobLead& command,
+        SourceStream& stream);
+};
+ 
+struct AcCmdRCMobThrust
+{
+    uint16_t mobOid{};
+    uint16_t sourceOid{};       // entity / skill that caused the push
+    AcCmdRCMobMove::Position direction{};  // world-space push direction
+    float magnitude{};
+ 
+    static Command GetCommand()
+    {
+        return Command::AcCmdRCMobThrust;
+    }
+ 
+    static void Write(
+        const AcCmdRCMobThrust& command,
+        SinkStream& stream);
+ 
+    static void Read(
+        AcCmdRCMobThrust& command,
+        SourceStream& stream);
+};
+ 
+struct AcCmdRCMobKnockback
+{
+    // When true, unk3 is written to the stream.
+    bool hasUnk3{false};
+ 
+    uint16_t mobOid{};
+    AcCmdRCMobMove::Position direction{};  // knockback origin / direction
+    float horizontalForce{};
+    float verticalArc{};        // controls the parabolic arc height
+    uint32_t unk3{};            // only present when hasUnk3 == true
+ 
+    static Command GetCommand()
+    {
+        return Command::AcCmdRCMobKnockback;
+    }
+ 
+    static void Write(
+        const AcCmdRCMobKnockback& command,
+        SinkStream& stream);
+ 
+    static void Read(
+        AcCmdRCMobKnockback& command,
+        SourceStream& stream);
+};
+
+struct AcCmdRCMobSetState
+{
+    uint16_t mobOid{};
+    uint32_t state{};       // behaviour state enum (idle, alert, etc.)
+    uint8_t subState{};     // variant / sub-mode within the state
+ 
+    static Command GetCommand()
+    {
+        return Command::AcCmdRCMobSetState;
+    }
+ 
+    static void Write(
+        const AcCmdRCMobSetState& command,
+        SinkStream& stream);
+ 
+    static void Read(
+        AcCmdRCMobSetState& command,
+        SourceStream& stream);
+};
+ 
+struct AcCmdRCMobSetDefaultState
+{
+    uint16_t mobOid{};
+    uint32_t defaultState{};    // primary idle / roam state
+    uint32_t fallbackState{};   // secondary state the AI returns to
+ 
+    static Command GetCommand()
+    {
+        return Command::AcCmdRCMobSetDefaultState;
+    }
+ 
+    static void Write(
+        const AcCmdRCMobSetDefaultState& command,
+        SinkStream& stream);
+ 
+    static void Read(
+        AcCmdRCMobSetDefaultState& command,
+        SourceStream& stream);
+};
+ 
+struct AcCmdRCMobSetMoveType
+{
+    uint16_t mobOid{};
+    uint32_t moveType{};    // gait / locomotion mode enum (walk, trot, gallop, etc.)
+ 
+    static Command GetCommand()
+    {
+        return Command::AcCmdRCMobSetMoveType;
+    }
+ 
+    static void Write(
+        const AcCmdRCMobSetMoveType& command,
+        SinkStream& stream);
+ 
+    static void Read(
+        AcCmdRCMobSetMoveType& command,
+        SourceStream& stream);
+};
+ 
+struct AcCmdRCMobGazeAt
+{
+    uint16_t mobOid{};
+    uint16_t targetOid{};   // entity to look at
+    uint32_t gazeType{};    // focus mode (soft head-turn vs. hard lock-on, etc.)
+ 
+    static Command GetCommand()
+    {
+        return Command::AcCmdRCMobGazeAt;
+    }
+ 
+    static void Write(
+        const AcCmdRCMobGazeAt& command,
+        SinkStream& stream);
+ 
+    static void Read(
+        AcCmdRCMobGazeAt& command,
+        SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RANCH_MESSAGE_DEFINES_HPP
