@@ -650,6 +650,7 @@ void RaceDirector::Tick()
     // Clear the ready state of oll of the players.
     // todo: this should have been reset with the room instance data
     raceInstance.stage = RaceInstance::Stage::Waiting;
+    raceInstance.stageStartTimePoint = std::chrono::steady_clock::now();
     _serverInstance.GetRoomSystem().GetRoom(
       raceUid,
       [this](Room& room)
@@ -676,6 +677,108 @@ void RaceDirector::Tick()
         }
       });
   }
+
+  if (_monitorTick == 0)
+    GetServerInstance().GetMonitorServer().UpdateSection("race", BuildMonitorStatus());
+  _monitorTick = (_monitorTick + 1) % 50;
+}
+
+nlohmann::json RaceDirector::BuildMonitorStatus() const
+{
+  nlohmann::json rooms = nlohmann::json::array();
+  for (const auto& [roomUid, room] : _raceInstances)
+  {
+    if (room.clients.empty())
+      continue;
+
+    const char* stage = "Unknown";
+    switch (room.stage)
+    {
+      case RaceInstance::Stage::Waiting:   stage = "Waiting";   break;
+      case RaceInstance::Stage::Loading:   stage = "Loading";   break;
+      case RaceInstance::Stage::Racing:    stage = "Racing";    break;
+      case RaceInstance::Stage::Finishing: stage = "Finishing"; break;
+    }
+
+    nlohmann::json clients = nlohmann::json::array();
+    for (const ClientId clientId : room.clients)
+    {
+      const auto it = _clients.find(clientId);
+      if (it == _clients.end())
+        continue;
+      const auto& ctx = it->second;
+      std::string characterName;
+      _serverInstance.GetDataDirector().GetCharacter(ctx.characterUid).Immutable(
+        [&characterName](const data::Character& character)
+        {
+          characterName = character.name();
+        });
+      clients.push_back({
+        {"username", ctx.userName},
+        {"character_uid", ctx.characterUid},
+        {"character_name", characterName}
+      });
+    }
+
+    std::string masterName;
+    _serverInstance.GetDataDirector().GetCharacter(room.masterUid).Immutable(
+      [&masterName](const data::Character& character)
+      {
+        masterName = character.name();
+      });
+
+    uint32_t maxPlayerCount = 0;
+    uint16_t selectedCourseId = 0;
+    std::string roomName;
+    const char* gameMode = "Unknown";
+    const char* teamMode = "Unknown";
+    _serverInstance.GetRoomSystem().GetRoom(
+      roomUid,
+      [&maxPlayerCount, &selectedCourseId, &roomName, &gameMode, &teamMode](Room& r)
+      {
+        const auto& details = r.GetRoomDetails();
+        maxPlayerCount = details.maxPlayerCount;
+        selectedCourseId = details.courseId;
+        roomName = details.name;
+        switch (details.gameMode)
+        {
+          case Room::GameMode::Speed:    gameMode = "Speed";    break;
+          case Room::GameMode::Magic:    gameMode = "Magic";    break;
+          case Room::GameMode::Tutorial: gameMode = "Tutorial"; break;
+          default: break;
+        }
+        switch (details.teamMode)
+        {
+          case Room::TeamMode::FFA:    teamMode = "FFA";    break;
+          case Room::TeamMode::Team:   teamMode = "Team";   break;
+          case Room::TeamMode::Single: teamMode = "Single"; break;
+          default: break;
+        }
+      });
+
+    const auto stageSecs = std::chrono::duration_cast<std::chrono::seconds>(
+      std::chrono::steady_clock::now() - room.stageStartTimePoint).count();
+
+    rooms.push_back({
+      {"room_uid",           roomUid},
+      {"room_name",          roomName},
+      {"game_mode",          gameMode},
+      {"team_mode",          teamMode},
+      {"current_players",    room.clients.size()},
+      {"max_players",        maxPlayerCount},
+      {"stage",              stage},
+      {"stage_secs",         stageSecs},
+      {"selected_course_id", selectedCourseId},
+      {"map_block_id",       room.stage == RaceInstance::Stage::Waiting ? 0 : room.raceMapBlockId},
+      {"master_name",        masterName},
+      {"clients",            std::move(clients)}
+    });
+  }
+
+  return {
+    {"total_clients", _clients.size()},
+    {"rooms", std::move(rooms)}
+  };
 }
 
 void RaceDirector::NotifyRequestUser(
@@ -901,6 +1004,8 @@ void RaceDirector::HandleEnterRoom(
   // that were provided.
   clientContext.characterUid = command.characterUid;
   clientContext.roomUid = command.roomUid;
+  clientContext.userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+    clientContext.characterUid).userName;
 
   std::scoped_lock lock(_raceInstancesMutex);
   // Try to emplace the room instance.
@@ -1705,9 +1810,9 @@ void RaceDirector::HandleStartRace(
     });
 
   raceInstance.stage = RaceInstance::Stage::Loading;
-  // Mark the start time of when race started loading
-  raceInstance.loadingStartTimePoint = std::chrono::steady_clock::now();
-  raceInstance.stageTimeoutTimePoint = raceInstance.loadingStartTimePoint + std::chrono::seconds(30);
+  raceInstance.stageStartTimePoint = std::chrono::steady_clock::now();
+  raceInstance.loadingStartTimePoint = raceInstance.stageStartTimePoint;
+  raceInstance.stageTimeoutTimePoint = raceInstance.stageStartTimePoint + std::chrono::seconds(30);
 
   _serverInstance.GetRoomSystem().GetRoom(
     roomUid,

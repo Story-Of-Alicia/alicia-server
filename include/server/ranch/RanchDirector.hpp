@@ -27,6 +27,8 @@
 #include "libserver/network/command/proto/CommonMessageDefinitions.hpp"
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
 
+#include <nlohmann/json.hpp>
+
 #include <random>
 #include <unordered_map>
 #include <unordered_set>
@@ -459,6 +461,8 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRRequestUser& command);
 
+  [[nodiscard]] nlohmann::json BuildMonitorStatus() const;
+
   //!
   ServerInstance& _serverInstance;
   //!
@@ -468,6 +472,8 @@ private:
   std::unordered_map<ClientId, ClientContext> _clients;
   //!
   std::unordered_map<data::Uid, RanchInstance> _ranches;
+
+  uint8_t _monitorTick{0};
 };
 
 } // namespace server

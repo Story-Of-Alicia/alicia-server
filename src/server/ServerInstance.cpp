@@ -66,6 +66,7 @@ ServerInstance::~ServerInstance()
     }
   };
 
+  waitForThread("monitor", _monitorThread);
   waitForThread("race director", _raceDirectorThread);
   waitForThread("ranch director", _ranchDirectorThread);
   waitForThread("private chat director", _privateChatDirectorThread);
@@ -232,6 +233,18 @@ void ServerInstance::Initialize()
     }
   });
 
+  // Monitor WebSocket server
+  if (_config.monitor.enabled)
+  {
+    _monitorServer.Listen(
+      _config.monitor.listen.address,
+      _config.monitor.listen.port);
+    _monitorThread = std::thread([this]()
+    {
+      _monitorServer.Run();
+    });
+  }
+
   // Race director
   _raceDirectorThread = std::thread([this]()
   {
@@ -254,6 +267,7 @@ void ServerInstance::Initialize()
 void ServerInstance::Terminate()
 {
   _shouldRun.store(false, std::memory_order::relaxed);
+  _monitorServer.Stop();
 }
 
 AuthenticationService& ServerInstance::GetAuthenticationService()
@@ -369,6 +383,11 @@ OtpSystem& ServerInstance::GetOtpSystem()
 Config& ServerInstance::GetSettings()
 {
   return _config;
+}
+
+websocket::Server& ServerInstance::GetMonitorServer()
+{
+  return _monitorServer;
 }
 
 } // namespace server

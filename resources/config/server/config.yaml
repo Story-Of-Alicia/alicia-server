@@ -141,6 +141,14 @@ server:
       # The port the server listens on.
       # Additionally configurable through environment variable UDP_RACE_RELAY_SERVER_PORT.
       port: 10500
+  # Configuration section of the monitor WebSocket server.
+  monitor:
+    # Whether the monitor WebSocket server is enabled.
+    enabled: true
+    # Address and port listened to by the monitor server.
+    listen:
+      address: "0.0.0.0"
+      port: 10090
   data:
     source: file
     file:

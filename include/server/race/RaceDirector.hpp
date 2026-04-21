@@ -31,6 +31,8 @@
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
 #include "libserver/util/Scheduler.hpp"
 
+#include <nlohmann/json.hpp>
+
 #include <random>
 #include <unordered_map>
 #include <unordered_set>
@@ -148,6 +150,7 @@ private:
 
   struct ClientContext
   {
+    std::string userName;
     data::Uid characterUid{data::InvalidUid};
     data::Uid roomUid{data::InvalidUid};
     bool isAuthenticated = false;
@@ -165,6 +168,8 @@ private:
     } stage{Stage::Waiting};
     //! A time point of when the stage timeout occurs.
     std::chrono::steady_clock::time_point stageTimeoutTimePoint;
+    //! A time point of when the current stage started.
+    std::chrono::steady_clock::time_point stageStartTimePoint{std::chrono::steady_clock::now()};
 
     uint32_t roomUid{};
 
@@ -383,9 +388,14 @@ private:
   std::unordered_map<ClientId, uint16_t> _p2dIds;
   P2dPool _p2dPool;
 
+  //! Builds monitor status JSON. Must be called with _raceInstancesMutex held.
+  [[nodiscard]] nlohmann::json BuildMonitorStatus() const;
+
   std::mutex _raceInstancesMutex;
   //! A map of all race instanced indexed by room UIDs.
   std::unordered_map<uint32_t, RaceInstance> _raceInstances;
+
+  uint8_t _monitorTick{0};
 };
 
 } // namespace server

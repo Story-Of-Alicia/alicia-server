@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alicia Server Monitor</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: monospace; background: #0e0e0e; color: #d4d4d4; padding: 20px; }
+  h1 { font-size: 1.1rem; color: #9cdcfe; margin-bottom: 16px; letter-spacing: 0.05em; }
+  #status-bar {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 20px; font-size: 0.8rem; color: #888;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #555; transition: background 0.3s;
+  }
+  .dot.connected { background: #4ec9b0; }
+  .dot.error { background: #f44747; }
+
+  .server-card {
+    background: #1e1e1e; border: 1px solid #333;
+    border-radius: 4px; margin-bottom: 16px; overflow: hidden;
+  }
+  .server-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; background: #252526; border-bottom: 1px solid #333;
+  }
+  .server-name { font-size: 0.85rem; color: #ce9178; font-weight: bold; }
+  .server-count {
+    font-size: 0.75rem; color: #888;
+    background: #333; padding: 2px 8px; border-radius: 10px;
+  }
+  .server-count span { color: #4ec9b0; font-weight: bold; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  th {
+    text-align: left; padding: 6px 14px;
+    color: #569cd6; border-bottom: 1px solid #2d2d2d;
+    font-weight: normal; text-transform: uppercase; font-size: 0.7rem;
+    letter-spacing: 0.05em;
+  }
+  td { padding: 5px 14px; border-bottom: 1px solid #1a1a1a; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #252526; }
+
+  .ranch-label {
+    display: inline-block; padding: 1px 6px;
+    background: #2d2d2d; border-radius: 3px;
+    color: #dcdcaa; font-size: 0.72rem;
+  }
+  .uid { color: #888; font-size: 0.72rem; }
+  .empty { padding: 12px 14px; color: #555; font-size: 0.78rem; }
+
+  #updated { font-size: 0.72rem; color: #555; margin-top: 12px; }
+</style>
+</head>
+<body>
+<h1>&#9670; Alicia Server Monitor</h1>
+<div id="status-bar">
+  <div class="dot" id="dot"></div>
+  <span id="status-text">Connecting...</span>
+</div>
+<div id="content"></div>
+<div id="updated"></div>
+
+<script>
+const WS_URL = `ws://${location.hostname}:10090`;
+let socket = null;
+let reconnectTimer = null;
+
+function connect() {
+  clearTimeout(reconnectTimer);
+  socket = new WebSocket(WS_URL);
+
+  socket.onopen = () => {
+    setStatus('connected', 'Connected');
+  };
+
+  socket.onmessage = (evt) => {
+    try {
+      render(JSON.parse(evt.data));
+    } catch (e) {
+      console.error('Parse error', e);
+    }
+  };
+
+  socket.onclose = () => {
+    setStatus('error', 'Disconnected — retrying in 3s...');
+    reconnectTimer = setTimeout(connect, 3000);
+  };
+
+  socket.onerror = () => {
+    setStatus('error', 'Connection error');
+  };
+}
+
+function setStatus(cls, text) {
+  const dot = document.getElementById('dot');
+  dot.className = 'dot ' + cls;
+  document.getElementById('status-text').textContent = text;
+}
+
+function fmtDuration(secs) {
+  const m = Math.floor(secs / 60).toString().padStart(2, '0');
+  const s = (secs % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function courseLabel(id) {
+  if (id == 10000) return 'All Maps';
+  if (id == 10001) return 'New Maps';
+  if (id == 10002) return 'Hot Maps';
+  return esc(id);
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function render(data) {
+  const content = document.getElementById('content');
+  let html = '';
+
+  if (data.ranch) {
+    const ranch = data.ranch;
+    const ranches = ranch.ranches || [];
+    html += `<div class="server-card">`;
+    html += `<div class="server-header">
+      <span class="server-name">Ranch Server</span>
+      <span class="server-count">Total connected: <span>${ranch.total_clients ?? 0}</span></span>
+    </div>`;
+
+    if (ranches.length === 0) {
+      html += `<div class="empty">No active ranches</div>`;
+    } else {
+      html += `<table>
+        <tr>
+          <th>Ranch (owner UID)</th>
+          <th>Players</th>
+          <th>Client</th>
+        </tr>`;
+      for (const r of ranches) {
+        const clients = r.clients || [];
+        clients.forEach((c, i) => {
+          html += `<tr>
+            <td>${i === 0 ? `<span class="ranch-label">${esc(r.rancher_uid)}</span>` : ''}</td>
+            <td>${i === 0 ? `<span>${esc(r.client_count)}</span>` : ''}</td>
+            <td>${esc(c.username || '—')} <span class="uid">(${esc(c.character_uid)})</span> <span class="uid">${esc(c.character_name || '')}</span></td>
+          </tr>`;
+        });
+      }
+      html += `</table>`;
+    }
+    html += `</div>`;
+  }
+
+  if (data.race) {
+    const race = data.race;
+    const rooms = race.rooms || [];
+    html += `<div class="server-card">`;
+    html += `<div class="server-header">
+      <span class="server-name">Race Server</span>
+      <span class="server-count">Total connected: <span>${race.total_clients ?? 0}</span></span>
+    </div>`;
+
+    if (rooms.length === 0) {
+      html += `<div class="empty">No active rooms</div>`;
+    } else {
+      html += `<table>
+        <tr>
+          <th>Room</th>
+          <th>Mode</th>
+          <th>Players</th>
+          <th>Stage</th>
+          <th>Selected / Race Map</th>
+          <th>Master</th>
+          <th>Player</th>
+        </tr>`;
+      for (const r of rooms) {
+        const clients = r.clients || [];
+        const rowspan = Math.max(clients.length, 1);
+        clients.forEach((c, i) => {
+          html += `<tr>
+            ${i === 0 ? `
+            <td rowspan="${rowspan}"><span class="ranch-label">${esc(r.room_name || r.room_uid)}</span> <span class="uid">#${esc(r.room_uid)}</span></td>
+            <td rowspan="${rowspan}">${esc(r.game_mode)} / ${esc(r.team_mode)}</td>
+            <td rowspan="${rowspan}">${esc(r.current_players)} / ${esc(r.max_players)}</td>
+            <td rowspan="${rowspan}">${esc(r.stage)} <span class="uid">${fmtDuration(r.stage_secs ?? 0)}</span></td>
+            <td rowspan="${rowspan}" class="uid">${courseLabel(r.selected_course_id)} / ${esc(r.map_block_id)}</td>
+            <td rowspan="${rowspan}">${esc(r.master_name || '—')}</td>` : ''}
+            <td>${esc(c.username || '—')} <span class="uid">(${esc(c.character_uid)})</span> <span class="uid">${esc(c.character_name || '')}</span></td>
+          </tr>`;
+        });
+      }
+      html += `</table>`;
+    }
+    html += `</div>`;
+  }
+
+  content.innerHTML = html || '<div class="empty">No data received yet</div>';
+  document.getElementById('updated').textContent =
+    'Last update: ' + new Date().toLocaleTimeString();
+}
+
+connect();
+</script>
+</body>
+</html>

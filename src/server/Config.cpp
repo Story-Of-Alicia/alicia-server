@@ -296,6 +296,18 @@ void Config::LoadFromFile(const std::filesystem::path& filePath)
       spdlog::error("Unhandled exception parsing the udp race relay config: {}", e.what());
     }
 
+    // Monitor config
+    try
+    {
+      const auto monitorYaml = serverYaml["monitor"];
+      monitor.enabled = monitorYaml["enabled"].as<bool>(true);
+      monitor.listen = parseListenSection(monitorYaml["listen"]);
+    }
+    catch (const std::exception& e)
+    {
+      spdlog::error("Unhandled exception parsing the monitor config: {}", e.what());
+    }
+
     // Messenger config
     try
     {

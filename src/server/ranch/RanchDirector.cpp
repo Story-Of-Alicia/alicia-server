@@ -481,6 +481,48 @@ void RanchDirector::Terminate()
 
 void RanchDirector::Tick()
 {
+  if (_monitorTick == 0)
+    GetServerInstance().GetMonitorServer().UpdateSection("ranch", BuildMonitorStatus());
+  _monitorTick = (_monitorTick + 1) % 50;
+}
+
+nlohmann::json RanchDirector::BuildMonitorStatus() const
+{
+  nlohmann::json ranches = nlohmann::json::array();
+  for (const auto& [rancherUid, ranch] : _ranches)
+  {
+    nlohmann::json clients = nlohmann::json::array();
+    for (const ClientId clientId : ranch.clients)
+    {
+      const auto it = _clients.find(clientId);
+      if (it == _clients.end())
+        continue;
+      const auto& ctx = it->second;
+      std::string characterName;
+      _serverInstance.GetDataDirector().GetCharacter(ctx.characterUid).Immutable(
+        [&characterName](const data::Character& character)
+        {
+          characterName = character.name();
+        });
+      clients.push_back({
+        {"username", ctx.userName},
+        {"character_uid", ctx.characterUid},
+        {"character_name", characterName}
+      });
+    }
+    if (ranch.clients.empty())
+      continue;
+    ranches.push_back({
+      {"rancher_uid", rancherUid},
+      {"client_count", ranch.clients.size()},
+      {"clients", std::move(clients)}
+    });
+  }
+
+  return {
+    {"total_clients", _clients.size()},
+    {"ranches", std::move(ranches)}
+  };
 }
 
 std::vector<data::Uid> RanchDirector::GetOnlineCharacters()

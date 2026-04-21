@@ -139,6 +139,14 @@ public:
   } udpRaceRelay{};
 
   //!
+  struct Monitor
+  {
+    bool enabled{true};
+    Listen listen{
+      .port = 10090};
+  } monitor{};
+
+  //!
   struct Data
   {
     enum class Source
