@@ -551,7 +551,7 @@ void RaceDirector::Tick()
       int32_t best = std::numeric_limits<int32_t>::max();
       for (const auto& [uid, racer] : raceInstance.tracker.GetRacers())
       {
-        if (racer.state != State::Disconnected && racer.courseTime < best)
+        if (racer.state != State::Disconnected && racer.courseTime != -1 && racer.courseTime < best)
         {
           best = racer.courseTime;
           winningTeam = racer.team;
