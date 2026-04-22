@@ -1412,7 +1412,7 @@ void RaceDirector::PrepareItemSpawners(RaceInstance& raceInstance)
       raceInstance.raceMapBlockId);
 
     // Get the map position offset
-    const auto& offset = mapBlockInfo.offset;
+    const Vector3& offset = mapBlockInfo.offset;
 
     // Spawn items based on map positions and game mode allowed deck IDs
     for (const uint32_t usedDeckItemId : gameModeInfo.usedDeckItemIds)
@@ -1434,9 +1434,7 @@ void RaceDirector::PrepareItemSpawners(RaceInstance& raceInstance)
           item.currentType = item.itemTypes[distribution(rd)];
         }
 
-        item.position[0] = mapDeckItemInstance.position[0] + offset[0];
-        item.position[1] = mapDeckItemInstance.position[1] + offset[1];
-        item.position[2] = mapDeckItemInstance.position[2] + offset[2];
+        item.position = mapDeckItemInstance.position + offset;
       }
     }
 
@@ -2332,6 +2330,11 @@ void RaceDirector::HandleRaceUserPos(
       "Client tried to perform action on behalf of different racer");
   }
 
+  // TODO: Anti-cheat needed here, validate user position?
+  {
+    racer.position = command.position;
+  }
+
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
     static_cast<uint8_t>(raceInstance.raceGameMode));
 
@@ -2342,10 +2345,7 @@ void RaceDirector::HandleRaceUserPos(
       continue;
 
     // The distance between the player and the item.
-    const auto distanceBetweenPlayerAndItem = std::sqrt(
-      std::pow(command.member2[0] - item.position[0], 2) +
-      std::pow(command.member2[1] - item.position[1], 2) +
-      std::pow(command.member2[2] - item.position[2], 2));
+    const float distanceBetweenPlayerAndItem = Vector3::Magnitude(command.position, item.position);
 
     // A distance of the player from the item before it can be spawned.
     constexpr double ItemSpawnDistanceThreshold = 90.0;

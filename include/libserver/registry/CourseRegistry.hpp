@@ -20,6 +20,8 @@
 #ifndef COURSEREGISTRY_HPP
 #define COURSEREGISTRY_HPP
 
+#include "Vector3.hpp"
+
 #include <array>
 #include <cstdint>
 
@@ -74,7 +76,7 @@ struct Course
     //! A podium ID.
     uint32_t podiumId{};
     //! An offset to apply to all deck item positions.
-    std::array<float, 3> offset{};
+    Vector3 offset{};
     //! A fee for training on the map.
     uint32_t trainingFee{};
     //! A map time limit in seconds.
@@ -87,7 +89,7 @@ struct Course
       //! A deck item ID;
       uint32_t deckId;
       //! A position of the deck item.
-      std::array<float, 3> position;
+      Vector3 position;
     };
 
     //! A collection of deck item instances.

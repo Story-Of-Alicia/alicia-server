@@ -25,6 +25,8 @@
 #include <libserver/data/DataDefinitions.hpp>
 #include <libserver/network/command/proto/CommonStructureDefinitions.hpp>
 
+#include "Vector3.hpp"
+
 #include <array>
 #include <chrono>
 #include <map>
@@ -83,6 +85,8 @@ public:
       uint16_t effectInstanceId;
     };
     std::optional<MagicTargetInfo> pendingMagicTarget{};
+    //! The position of the race.
+    Vector3 position{};
   };
 
   //! An item
@@ -92,7 +96,7 @@ public:
     std::vector<uint32_t> itemTypes{};
     uint32_t currentType{};
     std::chrono::steady_clock::time_point respawnTimePoint{};
-    std::array<float, 3> position{};
+    Vector3 position{};
   };
 
   //! An event

@@ -28,6 +28,8 @@
 #include "libserver/data/DataDefinitions.hpp"
 #include "libserver/util/Util.hpp"
 
+#include "Vector3.hpp"
+
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -1504,7 +1506,7 @@ struct AcCmdUserRaceUpdatePos
   //! Character oid
   uint16_t oid{};
   //! Position
-  std::array<float, 3> member2{};
+  Vector3 position{};
   //! Rotation
   std::array<float, 3> member3{};
   //! Speed
@@ -2729,7 +2731,7 @@ struct AcCmdRCCreateItem
 {
   uint32_t itemId{};
   uint32_t itemType{};
-  std::array<float, 3> position{};
+  Vector3 position{};
   uint32_t spawnStyle{};
   uint16_t spawnerId{};
   int32_t sizeLevel{};

@@ -1080,10 +1080,9 @@ void AcCmdUserRaceUpdatePos::Read(
 {
   stream.Read(command.oid);
 
-  for (auto& element : command.member2)
-  {
-    stream.Read(element);
-  }
+  stream.Read(command.position.X)
+    .Read(command.position.Y)
+    .Read(command.position.Z);
 
   for (auto& element : command.member3)
   {
@@ -2104,9 +2103,10 @@ void AcCmdRCCreateItem::Write(
 {
   stream.Write(command.itemId)
     .Write(command.itemType);
-  
-  for (const float element : command.position)
-    stream.Write(element);
+
+  stream.Write(command.position.X)
+    .Write(command.position.Y)
+    .Write(command.position.Z);
 
   stream.Write(command.spawnStyle)
     .Write(command.spawnerId)
