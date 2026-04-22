@@ -627,6 +627,26 @@ void RaceDirector::Tick()
         });
     }
 
+    // Assign room master to the first-place finisher.
+    if (!raceResult.scores.empty())
+    {
+      const auto newMasterUid = raceResult.scores[0].uid;
+      raceInstance.masterUid = newMasterUid;
+
+      protocol::AcCmdCRChangeMasterNotify masterNotify{
+        .masterUid = newMasterUid};
+
+      for (const ClientId raceClientId : raceInstance.clients)
+      {
+        _commandServer.QueueCommand<decltype(masterNotify)>(
+          raceClientId,
+          [masterNotify]()
+          {
+            return masterNotify;
+          });
+      }
+    }
+
     // Clear the ready state of oll of the players.
     // todo: this should have been reset with the room instance data
     raceInstance.stage = RaceInstance::Stage::Waiting;
