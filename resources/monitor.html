@@ -140,7 +140,7 @@ function render(data) {
     } else {
       html += `<table>
         <tr>
-          <th>Ranch (owner UID)</th>
+          <th>Ranch</th>
           <th>Players</th>
           <th>Client</th>
         </tr>`;
@@ -148,7 +148,7 @@ function render(data) {
         const clients = r.clients || [];
         clients.forEach((c, i) => {
           html += `<tr>
-            <td>${i === 0 ? `<span class="ranch-label">${esc(r.rancher_uid)}</span>` : ''}</td>
+            <td>${i === 0 ? `<span class="ranch-label">${esc(r.ranch_name || '—')}</span> <span class="uid">#${esc(r.rancher_uid)}</span>` : ''}</td>
             <td>${i === 0 ? `<span>${esc(r.client_count)}</span>` : ''}</td>
             <td>${esc(c.username || '—')} <span class="uid">(${esc(c.character_uid)})</span> <span class="uid">${esc(c.character_name || '')}</span></td>
           </tr>`;

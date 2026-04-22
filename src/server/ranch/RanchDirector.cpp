@@ -512,8 +512,22 @@ nlohmann::json RanchDirector::BuildMonitorStatus() const
     }
     if (ranch.clients.empty())
       continue;
+
+    std::string ranchName;
+    const auto rancherRecord = _serverInstance.GetDataDirector().GetCharacter(rancherUid);
+    if (rancherRecord)
+    {
+      rancherRecord.Immutable([&ranchName](const data::Character& rancher)
+      {
+        const auto& name = rancher.name();
+        const bool endsWithPlural = name.ends_with("s") || name.ends_with("S");
+        ranchName = std::format("{}{} ranch", name, endsWithPlural ? "'" : "'s");
+      });
+    }
+
     ranches.push_back({
       {"rancher_uid", rancherUid},
+      {"ranch_name", ranchName},
       {"client_count", ranch.clients.size()},
       {"clients", std::move(clients)}
     });
