@@ -6,31 +6,61 @@
 #define OTPSYSTEM_HPP
 
 #include <chrono>
-#include <random>
+#include <cstddef>
+#include <cstdint>
 #include <mutex>
+#include <random>
 #include <unordered_map>
 
 namespace server
 {
 
+class ServerInstance;
+
 class OtpSystem
 {
 public:
-  uint32_t GrantCode(size_t key);
-  bool AuthorizeCode(size_t key, uint32_t code, bool consume = true);
+  explicit OtpSystem(ServerInstance& serverInstance);
+
+  //! Grants a one-time code for the given key.
+  //! If a code already exists for this key, it is replaced.
+  //! @param key Identity key the code is bound to.
+  //! @return The generated one-time code.
+  [[nodiscard]] uint32_t GrantCode(size_t key);
+
+  //! Authorizes a one-time code for the given key.
+  //! If the code is unsuccessfully authorized multiple times the code is invalidated
+  //! to protect against brute force.
+  //! @param key Identity key the code is bound to.
+  //! @param code The code to verify.
+  //! @param consume If true, the code is consumed (erased) on success.
+  //! @retval `true` if the code is valid
+  //! @retval `false` if the code is invalid.
+  [[nodiscard]] bool AuthorizeCode(size_t key, uint32_t code, bool consume = true);
+
+  //! Removes all expired codes.
+  //! Called automatically on a periodic basis, but can be invoked manually.
+  void PurgeExpired();
 
 private:
+  ServerInstance& _serverInstance;
+
   struct Code
   {
+    //! A time point of when the code expires.
     std::chrono::steady_clock::time_point expiry{};
+    //! A counter of (failed) authorization attempts; code is invalidated after max.
+    size_t authorizationAttempts{};
+    //! A value of the code.
     uint32_t code{};
   };
 
   std::mutex _codesMutex;
-  std::random_device _rd;
+  std::mt19937 _rng;
   std::unordered_map<size_t, Code> _codes;
+  std::chrono::steady_clock::time_point _lastPurge;
 };
 
 } // namespace server
 
-#endif //OTPSYSTEM_HPP
+#endif // OTPSYSTEM_HPP
