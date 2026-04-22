@@ -105,6 +105,64 @@ void RaceInstance::TickLoading()
   }
 }
 
+void RaceInstance::TickItemSpawners()
+{
+  for (const auto& [itemOid, item] : tracker.GetItems())
+  {
+    const bool canItemRespawn = std::chrono::steady_clock::now() >= item.respawnTimePoint;
+    if (not canItemRespawn)
+      continue;
+
+    for (auto& [racerCharacterUid, racer] : tracker.GetRacers())
+    {
+      // Skip this racer if they are not connected
+      if (not clients.contains(racerCharacterUid))
+        continue;
+
+      // The distance between the player and the item.
+      const float distanceBetweenPlayerAndItem = Vector3::Magnitude(racer.position, item.position);
+
+      // A distance of the player from the item before it can be spawned.
+      constexpr double ItemSpawnDistanceThreshold = 90.0;
+
+      const bool isItemInPlayerProximity = distanceBetweenPlayerAndItem < ItemSpawnDistanceThreshold;
+      const bool isItemAlreadyTracked = racer.trackedItems.contains(itemOid);
+
+      if (isItemAlreadyTracked)
+      {
+        // If the item is not in the player's proximity anymore
+        // then remove it from the tracked items.
+        if (not isItemInPlayerProximity)
+          racer.trackedItems.erase(itemOid);
+
+        continue;
+      }
+
+      // If the item is not in player's proximity do not spawn it.
+      if (not isItemInPlayerProximity)
+        continue;
+
+      const protocol::AcCmdRCCreateItem spawn{
+        .itemId = item.oid,
+        .itemType = item.currentType,
+        .position = item.position,
+        .spawnStyle = 0,  // ITEM_SPAWN_STYLE_NONE, fix the item in position
+        .spawnerId = 0,
+        .sizeLevel = 0};
+
+      // Insert newly created item into the list of tracked items for this racer
+      racer.trackedItems.insert(item.oid);
+
+      // Notify racer of newly spawned item
+      const ClientId racerClientId = clients.at(racerCharacterUid);
+      _commandServer.QueueCommand<decltype(spawn)>(racerClientId, [spawn]()
+      {
+        return spawn;
+      });
+    }
+  }
+}
+
 void RaceInstance::TickRacing()
 {
   const bool raceTimeoutReached = std::chrono::steady_clock::now() >= stageTimeoutTimePoint;
@@ -119,7 +177,11 @@ void RaceInstance::TickRacing()
   // If the race is not finishing and the timeout was not reached
   // do not finish the race.
   if (not isFinishing && not raceTimeoutReached)
+  {
+    // Tick the item spawners while racing
+    TickItemSpawners();
     return;
+  }
 
   stage = RaceInstance::Stage::Finishing;
   stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(15);

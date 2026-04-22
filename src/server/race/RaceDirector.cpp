@@ -2338,51 +2338,6 @@ void RaceDirector::HandleRaceUserPos(
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
     static_cast<uint8_t>(raceInstance.raceGameMode));
 
-  for (const auto& [itemOid, item] : raceInstance.tracker.GetItems())
-  {
-    const bool canItemRespawn = std::chrono::steady_clock::now() >= item.respawnTimePoint;
-    if (not canItemRespawn)
-      continue;
-
-    // The distance between the player and the item.
-    const float distanceBetweenPlayerAndItem = Vector3::Magnitude(command.position, item.position);
-
-    // A distance of the player from the item before it can be spawned.
-    constexpr double ItemSpawnDistanceThreshold = 90.0;
-
-    const bool isItemInPlayerProximity = distanceBetweenPlayerAndItem < ItemSpawnDistanceThreshold;
-    const bool isItemAlreadyTracked = racer.trackedItems.contains(itemOid);
-
-    if (isItemAlreadyTracked)
-    {
-      // If the item is not in the player's proximity anymore
-      // then remove it from the tracked items.
-      if (not isItemInPlayerProximity)
-        racer.trackedItems.erase(itemOid);
-
-      continue;
-    }
-
-    // If the item is not in player's proximity do not spawn it.
-    if (not isItemInPlayerProximity)
-      continue;
-
-    protocol::AcCmdRCCreateItem spawn{
-      .itemId = item.oid,
-      .itemType = item.currentType,
-      .position = item.position,
-      .spawnStyle = 0,  // ITEM_SPAWN_STYLE_NONE, fix the item in position
-      .spawnerId = 0,
-      .sizeLevel = 0};
-
-    racer.trackedItems.insert(item.oid);
-
-    _commandServer.QueueCommand<decltype(spawn)>(clientId, [spawn]()
-    {
-      return spawn;
-    });
-  }
-
   // Only regenerate magic during active race (after countdown finishes)
   // Check if game mode is magic, race is active, countdown finished, and not holding an item
   const bool raceActuallyStarted = std::chrono::steady_clock::now() >= raceInstance.raceStartTimePoint;

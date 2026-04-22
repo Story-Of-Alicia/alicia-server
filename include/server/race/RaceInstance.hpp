@@ -46,6 +46,7 @@ private:
 
   void Tick();
   void TickLoading();
+  void TickItemSpawners();
   void TickRacing();
   void TickFinishing();
 
