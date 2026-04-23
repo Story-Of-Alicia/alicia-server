@@ -25,13 +25,13 @@
 namespace server
 {
 
-class SpeedRaceInstance final : RaceInstance
+class SpeedRaceInstance final : public RaceInstance
 {
 public:
   explicit SpeedRaceInstance(
     ServerInstance& serverInstance,
     CommandServer& commandServer);
-  ~SpeedRaceInstance();
+  ~SpeedRaceInstance() override;
 };
 
 }

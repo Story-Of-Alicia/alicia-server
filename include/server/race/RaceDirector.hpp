@@ -23,6 +23,7 @@
 #include "RaceInstance.hpp"
 
 #include "server/Config.hpp"
+#include "server/system/RoomSystem.hpp"
 
 #include "libserver/registry/MagicRegistry.hpp"
 #include "libserver/network/command/CommandServer.hpp"
@@ -31,6 +32,7 @@
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
 #include "libserver/util/Scheduler.hpp"
 
+#include <memory>
 #include <random>
 
 namespace server
@@ -142,6 +144,7 @@ private:
   RaceInstance& GetRaceInstance(
     const RaceDirector::ClientContext& clientContext,
     const bool checkRacer = true);
+  std::unique_ptr<RaceInstance> CreateRaceInstance(Room::GameMode roomGameMode);
 
   EffectVerdict ScheduleSkillEffect(
     RaceInstance& raceInstance,
@@ -331,7 +334,7 @@ private:
 
   std::mutex _raceInstancesMutex;
   //! A map of all race instanced indexed by room UIDs.
-  std::unordered_map<uint32_t, RaceInstance> _raceInstances;
+  std::unordered_map<uint32_t, std::unique_ptr<RaceInstance>> _raceInstances;
 };
 
 } // namespace server

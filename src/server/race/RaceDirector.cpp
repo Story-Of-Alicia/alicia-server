@@ -20,6 +20,8 @@
 #include "server/race/RaceDirector.hpp"
 
 #include "server/ServerInstance.hpp"
+#include "server/race/mode/MagicRaceInstance.hpp"
+#include "server/race/mode/SpeedRaceInstance.hpp"
 #include "server/system/RoomSystem.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
@@ -396,7 +398,7 @@ void RaceDirector::Tick()
   // See: std::execution::par_unseq
   for (auto& [raceUid, raceInstance] : _raceInstances)
   {
-    raceInstance.Tick();
+    raceInstance->Tick();
   }
 
   // Process rooms which are finishing
@@ -612,7 +614,7 @@ void RaceDirector::BroadcastChangeRoomOptions(
   const protocol::AcCmdCRChangeRoomOptionsNotify notify)
 {
   std::scoped_lock raceLock(_raceInstancesMutex);
-  auto& raceInstance = _raceInstances.at(roomUid);
+  auto& raceInstance = *_raceInstances.at(roomUid);
   for (const auto raceClientId : raceInstance.clients | std::views::values)
   {
     // Note: broadcasting changed room options to waiting room racers in active races
@@ -692,6 +694,23 @@ Config::Race& RaceDirector::GetConfig()
   return GetServerInstance().GetSettings().race;
 }
 
+std::unique_ptr<RaceInstance> RaceDirector::CreateRaceInstance(
+  const Room::GameMode roomGameMode)
+{
+  switch (roomGameMode)
+  {
+    case Room::GameMode::Speed:
+      return std::make_unique<SpeedRaceInstance>(_serverInstance, _commandServer);
+    case Room::GameMode::Magic:
+      return std::make_unique<MagicRaceInstance>(_serverInstance, _commandServer);
+    default:
+      throw std::runtime_error(
+        std::format(
+          "Unsupported room game mode '{}' for instance creation",
+          static_cast<uint8_t>(roomGameMode)));
+  }
+}
+
 RaceDirector::ClientContext& RaceDirector::GetClientContext(ClientId clientId, bool requireAuthorized)
 {
   auto clientContextIter = _clients.find(clientId);
@@ -747,7 +766,7 @@ RaceInstance& RaceDirector::GetRaceInstance(
         clientContext.characterUid,
         clientContext.roomUid));
 
-  auto& raceInstance = _raceInstances.at(clientContext.roomUid);
+  auto& raceInstance = *_raceInstances.at(clientContext.roomUid);
   
   // If not racing command then we are done here
   // HurdleClearResult, HandleSpur etc.
@@ -783,16 +802,19 @@ void RaceDirector::HandleEnterRoom(
   const bool doesRoomExist = _serverInstance.GetRoomSystem().RoomExists(
     command.roomUid);
 
+  // Keep note of the room gamemode to instantiate race instance
+  Room::GameMode roomGameMode{};
   // Determine the racer count and whether the room is full.
   bool isOvercrowded = false;
   if (clientContext.isAuthenticated)
   {
     _serverInstance.GetRoomSystem().GetRoom(
       command.roomUid,
-      [&isOvercrowded, characterUid = command.characterUid](Room& room)
+      [&isOvercrowded, &roomGameMode, characterUid = command.characterUid](Room& room)
       {
         // If the player is not able to be added, the room is full.
         isOvercrowded = not room.AddPlayer(characterUid);
+        roomGameMode = room.GetRoomDetails().gameMode;
       });
   }
 
@@ -812,6 +834,28 @@ void RaceDirector::HandleEnterRoom(
     return;
   }
 
+  // TODO: better way to determine which race instance is implemented
+  const bool isSpeedRoom = roomGameMode == Room::GameMode::Speed;
+  const bool isMagicRoom = roomGameMode == Room::GameMode::Magic;
+  if (not isSpeedRoom and not isMagicRoom)
+  {
+    // Room is neither speed nor magic, abort
+    _serverInstance.GetRoomSystem().GetRoom(
+      command.roomUid,
+      [characterUid = command.characterUid](Room& room)
+      {
+        room.RemovePlayer(characterUid);
+      });
+
+    // Disconnect racer from race director
+    _commandServer.DisconnectClient(clientId);
+    throw std::runtime_error(
+      std::format(
+        "Unsupported game mode '{}' while entering room '{}'",
+        static_cast<uint32_t>(roomGameMode),
+        command.roomUid));
+  }
+
   // The client is authorized so we can trust the identifiers
   // that were provided.
   clientContext.characterUid = command.characterUid;
@@ -819,12 +863,21 @@ void RaceDirector::HandleEnterRoom(
 
   std::scoped_lock lock(_raceInstancesMutex);
   // Try to emplace the room instance.
-  const auto& [raceInstanceIter, inserted] = _raceInstances.try_emplace(
-    command.roomUid,
-    _serverInstance,
-    _commandServer);
+  auto raceInstanceIter = _raceInstances.find(command.roomUid);
+  bool inserted = false;
+  if (raceInstanceIter == _raceInstances.end())
+  {
+    auto raceInstance = CreateRaceInstance(roomGameMode);
+    raceInstance->roomUid = command.roomUid;
+    raceInstance->masterUid = command.characterUid;
+    const auto [newIter, wasInserted] = _raceInstances.emplace(
+      command.roomUid,
+      std::move(raceInstance));
+    raceInstanceIter = newIter;
+    inserted = wasInserted;
+  }
 
-  auto& raceInstance = raceInstanceIter->second;
+  auto& raceInstance = *(raceInstanceIter->second);
   raceInstance.roomUid = command.roomUid;
 
   // If the room instance was just created, set it up.
@@ -3567,7 +3620,7 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
       if (raceInstanceIter == _raceInstances.cend())
         return;
 
-      auto& raceInstance = raceInstanceIter->second;
+      auto& raceInstance = *(raceInstanceIter->second);
 
       if (!raceInstance.tracker.IsRacer(targetCharacterUid))
         return;
@@ -3989,7 +4042,7 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
         if (raceInstanceIter == _raceInstances.cend())
           return;
 
-        const auto& raceInstance = raceInstanceIter->second;
+        const auto& raceInstance = *(raceInstanceIter->second);
 
         const float BaseLoseTeamSpurConsumeRate = -10.0f;
         const float BaseWinTeamSpurConsumeRate = -2.5f;

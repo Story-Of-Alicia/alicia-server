@@ -37,7 +37,7 @@ public:
   explicit RaceInstance(
     ServerInstance& serverInstance,
     CommandServer& commandServer);
-  ~RaceInstance();
+  virtual ~RaceInstance();
 
   static uint64_t TimePointToRaceTimePoint(const std::chrono::steady_clock::time_point& timePoint);
 

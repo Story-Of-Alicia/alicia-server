@@ -25,13 +25,13 @@
 namespace server
 {
 
-class MagicRaceInstance final : RaceInstance
+class MagicRaceInstance final : public RaceInstance
 {
 public:
   explicit MagicRaceInstance(
     ServerInstance& serverInstance,
     CommandServer& commandServer);
-  ~MagicRaceInstance();
+  ~MagicRaceInstance() override;
 };
 
 }
