@@ -5,6 +5,8 @@
 #ifndef ALICIA_SERVER_LOBBYNETWORKHANDLER_HPP
 #define ALICIA_SERVER_LOBBYNETWORKHANDLER_HPP
 
+#include "server/system/MatchmakingSystem.hpp"
+
 #include <libserver/data/DataDefinitions.hpp>
 #include <libserver/network/command/CommandServer.hpp>
 #include <libserver/network/command/proto/LobbyMessageDefinitions.hpp>
@@ -50,6 +52,9 @@ public:
 
   void NotifyAchievementReward(
     data::Uid characterUid);
+  void NotifyMatchmakeResult(
+    const data::Uid characterUid,
+    const MatchmakingSystem::Result& result);
 
 private:
   struct ClientContext

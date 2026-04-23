@@ -50,6 +50,7 @@ ServerInstance::ServerInstance(
   , _chatSystem(*this)
   , _infractionSystem(*this)
   , _itemSystem(*this)
+  , _matchmakingSystem(*this)
 {
 }
 
@@ -353,6 +354,11 @@ ModerationSystem& ServerInstance::GetModerationSystem()
 RoomSystem& ServerInstance::GetRoomSystem()
 {
   return _roomSystem;
+}
+
+MatchmakingSystem& ServerInstance::GetMatchmakingSystem()
+{
+  return _matchmakingSystem;
 }
 
 OtpSystem& ServerInstance::GetOtpSystem()

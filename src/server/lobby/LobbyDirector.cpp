@@ -255,6 +255,15 @@ void LobbyDirector::NotifyAchievementReward(
   _networkHandler->NotifyAchievementReward(characterUid);
 }
 
+void LobbyDirector::NotifyMatchmakeResult(
+  const data::Uid characterUid,
+  const MatchmakingSystem::Result& result)
+{
+  _networkHandler->NotifyMatchmakeResult(
+    characterUid,
+    result);
+}
+
 std::unordered_map<std::string, LobbyDirector::UserInstance>& LobbyDirector::GetUsers()
 {
   return _userInstances;

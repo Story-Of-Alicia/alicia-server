@@ -22,6 +22,7 @@
 
 #include "server/Config.hpp"
 
+#include "server/system/MatchmakingSystem.hpp"
 #include "server/lobby/shop/Shop.hpp"
 
 #include <libserver/data/DataDefinitions.hpp>
@@ -129,6 +130,10 @@ public:
 
   void NotifyAchievementReward(
     data::Uid characterUid);
+
+  void NotifyMatchmakeResult(
+    const data::Uid characterUid,
+    const MatchmakingSystem::Result& result);
 
   //! Get users
   //! @return Get users.

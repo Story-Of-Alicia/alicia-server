@@ -113,6 +113,7 @@ add_executable(alicia-server
         src/server/system/ModerationSystem.cpp
         src/server/system/OtpSystem.cpp
         src/server/system/RoomSystem.cpp
+        src/server/system/MatchmakingSystem.cpp
         src/server/tracker/RaceTracker.cpp
         src/server/tracker/RanchTracker.cpp)
 target_include_directories(alicia-server

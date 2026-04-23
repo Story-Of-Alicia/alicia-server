@@ -34,6 +34,7 @@
 #include "server/system/OtpSystem.hpp"
 #include "server/system/ModerationSystem.hpp"
 #include "server/system/RoomSystem.hpp"
+#include "server/system/MatchmakingSystem.hpp"
 
 #include <libserver/data/DataDirector.hpp>
 #include <libserver/registry/CharacterRegistry.hpp>
@@ -145,6 +146,10 @@ public:
   //! Returns reference to the room system.
   //! @returns Reference to the room system.
   RoomSystem& GetRoomSystem();
+
+  //! Returns reference to the matchmaking system.
+  //! @returns Reference to the matchmaking system.
+  MatchmakingSystem& GetMatchmakingSystem();
 
   //! Returns reference to the settings.
   //! @returns Reference to the settings.
@@ -264,7 +269,8 @@ private:
   ModerationSystem _moderationSystem;
   //! A room system.
   RoomSystem _roomSystem;
-
+  //! A matchmaking system.
+  MatchmakingSystem _matchmakingSystem;
 };
 
 } // namespace server

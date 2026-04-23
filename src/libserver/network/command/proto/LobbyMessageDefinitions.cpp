@@ -1518,8 +1518,8 @@ void AcCmdCLEnterRoomQuick::Read(
   AcCmdCLEnterRoomQuick& command,
   SourceStream& stream)
 {
-  stream.Read(command.member1)
-    .Read(command.member2);
+  stream.Read(command.gameMode)
+    .Read(command.teamMode);
 }
 
 void AcCmdCLEnterRoomQuickCancel::Write(
@@ -1662,6 +1662,20 @@ void AcCmdLCAchievementRewardNotify::Write(
   SinkStream&)
 {
   // Empty
+}
+
+void AcCmdCLEnterRoomQuickSuccess::Read(
+  AcCmdCLEnterRoomQuickSuccess&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLEnterRoomQuickSuccess::Write(
+  const AcCmdCLEnterRoomQuickSuccess& command,
+  SinkStream& stream)
+{
+  stream.Write(command.result);
 }
 
 } // namespace server::protocol
