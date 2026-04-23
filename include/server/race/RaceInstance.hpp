@@ -25,6 +25,7 @@
 #include "libserver/network/command/CommandServer.hpp"
 
 #include <libserver/network/NetworkDefinitions.hpp>
+#include <libserver/registry/CourseRegistry.hpp>
 
 namespace server
 {
@@ -36,7 +37,8 @@ class RaceInstance
 public:
   explicit RaceInstance(
     ServerInstance& serverInstance,
-    CommandServer& commandServer);
+    CommandServer& commandServer,
+    const registry::Course::GameModeInfo& gameModeInfo);
   virtual ~RaceInstance();
 
   static uint64_t TimePointToRaceTimePoint(const std::chrono::steady_clock::time_point& timePoint);
@@ -83,6 +85,8 @@ protected:
   uint16_t raceMapBlockId{};
   //! A mission ID of the race.
   uint16_t raceMissionId{};
+  //! The gamemode info for this race instance.
+  const registry::Course::GameModeInfo& _gameModeInfo;
 
   //! Room clients, mapped by their character UID.
   std::unordered_map<data::Uid, network::ClientId> clients;

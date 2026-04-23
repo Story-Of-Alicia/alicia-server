@@ -33,7 +33,11 @@ namespace server
 
 MagicRaceInstance::MagicRaceInstance(
   ServerInstance& serverInstance,
-  CommandServer& commandServer) : RaceInstance(serverInstance, commandServer)
+  CommandServer& commandServer) : RaceInstance(
+    serverInstance,
+    commandServer,
+    serverInstance.GetCourseRegistry().GetCourseGameModeInfo(
+      static_cast<uint8_t>(protocol::GameMode::Magic)))
 {}
 
 MagicRaceInstance::~MagicRaceInstance() = default;
@@ -57,10 +61,6 @@ void MagicRaceInstance::TickGauge()
   if (now < _nextMagicGaugeTickTimePoint)
     return;
 
-  // TODO: extract this into the magic instance
-  const auto& gameModeTemplate = _serverInstance.GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(raceGameMode));
-
   for (auto& [racerCharacterUid, racer] : tracker.GetRacers())
   {
     const bool isRacing = racer.state == tracker::RaceTracker::Racer::State::Racing;
@@ -68,7 +68,7 @@ void MagicRaceInstance::TickGauge()
     // Check if racer is actively racing and not holding an item
     if (isRacing and not isHoldingMagicItem)
     {
-      if (racer.starPointValue < gameModeTemplate.starPointsMax)
+      if (racer.starPointValue < _gameModeInfo.starPointsMax)
       {
         uint32_t multiplier = 1;
         const bool isNormalTeamMagicBoostActive = racer.effects[20];
@@ -85,15 +85,15 @@ void MagicRaceInstance::TickGauge()
           ItemHeldWithEquipmentBoostAmount :
           NoItemHeldBoostAmount) * multiplier;
         
-        racer.starPointValue = std::min(gameModeTemplate.starPointsMax, racer.starPointValue + gainedStarPoints);
+        racer.starPointValue = std::min(_gameModeInfo.starPointsMax, racer.starPointValue + gainedStarPoints);
       }
 
       // Conditional already checks if there is no magic item and gamemode is magic,
       // only check if racer has max magic gauge to give magic item
-      protocol::AcCmdCRStarPointGetOK starPointResponse{
+      const protocol::AcCmdCRStarPointGetOK starPointResponse{
         .characterOid = racer.oid,
         .starPointValue = racer.starPointValue,
-        .giveMagicItem = racer.starPointValue >= gameModeTemplate.starPointsMax
+        .giveMagicItem = racer.starPointValue >= _gameModeInfo.starPointsMax
       };
 
       const ClientId racerClientId = clients.at(racerCharacterUid);

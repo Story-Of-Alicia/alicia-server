@@ -39,6 +39,7 @@ private:
 
   std::chrono::steady_clock::time_point _nextMagicGaugeTickTimePoint{};
 
+  // TODO: add these to configuration in the Course::GameModeInfo block
   static inline const std::chrono::milliseconds MagicGaugeTickInterval{250}; // TODO: is this the correct interval?
 
   // TODO: add these to configuration somewhere

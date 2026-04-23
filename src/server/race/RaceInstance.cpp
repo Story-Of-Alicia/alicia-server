@@ -30,7 +30,11 @@ namespace server
 
 RaceInstance::RaceInstance(
   ServerInstance& serverInstance,
-  CommandServer& commandServer) : _serverInstance(serverInstance), _commandServer(commandServer)
+  CommandServer& commandServer,
+  const registry::Course::GameModeInfo& gameModeInfo) :
+    _serverInstance(serverInstance),
+    _commandServer(commandServer), 
+    _gameModeInfo(gameModeInfo)
 {}
 
 RaceInstance::~RaceInstance() = default;

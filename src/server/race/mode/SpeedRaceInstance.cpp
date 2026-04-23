@@ -28,7 +28,11 @@ namespace server
 
 SpeedRaceInstance::SpeedRaceInstance(
   ServerInstance& serverInstance,
-  CommandServer& commandServer) : RaceInstance(serverInstance, commandServer)
+  CommandServer& commandServer) : RaceInstance(
+    serverInstance,
+    commandServer,
+    serverInstance.GetCourseRegistry().GetCourseGameModeInfo(
+      static_cast<uint8_t>(protocol::GameMode::Speed)))
 {}
 
 SpeedRaceInstance::~SpeedRaceInstance() = default;
