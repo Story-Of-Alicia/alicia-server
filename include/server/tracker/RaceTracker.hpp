@@ -75,8 +75,14 @@ public:
 
     //! Rank of the currently active removeMagic attack (0 = none active).
     uint32_t attackRank{};
-    bool hasDragon{false};
     std::chrono::steady_clock::time_point dragonReceivedAt{};
+
+    struct MagicTargetInfo
+    {
+      uint16_t casterOid;
+      uint16_t effectInstanceId;
+    };
+    std::optional<MagicTargetInfo> pendingMagicTarget{};
   };
 
   //! An item

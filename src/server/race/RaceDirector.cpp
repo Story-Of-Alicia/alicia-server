@@ -1238,7 +1238,6 @@ void RaceDirector::HandleChangeTeam(
 {
   const auto& clientContext = GetClientContext(clientId);
 
-  // todo: team balancing
   _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid,
     [&command](Room& room)
@@ -1976,7 +1975,6 @@ void RaceDirector::HandleRaceResult(
     clientContext.characterUid);
 
   // todo:
-  //  - award carrots and experience,
   //  - record replays,
   //  - mount emblem unlocked
   //  - implement mount fatigue
@@ -2310,7 +2308,6 @@ void RaceDirector::HandleHurdleClearResult(
 
   // Needs to be assigned after hurdle clear result calculations
   // Triggers magic item request when set to true (if gamemode is magic and magic gauge is max)
-  // TODO: is there only perfect clears in magic race?
   starPointResponse.giveMagicItem =
     raceInstance.raceGameMode == protocol::GameMode::Magic &&
     racer.starPointValue >= gameModeTemplate.starPointsMax &&
@@ -2932,7 +2929,7 @@ void RaceDirector::HandleUseMagicItem(
         auto& targetRacer = targetIter->second;
 
         // If target has already a dragon, miss
-        if (targetRacer.hasDragon)
+        if (targetRacer.pendingMagicTarget.has_value())
         {
           targetList.clear();
         }
@@ -3154,7 +3151,7 @@ void RaceDirector::HandleUserRaceItemGet(
       // Notify racers in the race room that the invoking racer is now
       // holding a new magic item
       protocol::AcCmdCRRequestMagicItemNotify notify{
-        .magicItemId = racer.magicItem.emplace(magicItem),
+        .magicItemId = magicItem,
         .characterOid = command.characterOid,
       };
 
@@ -3235,8 +3232,8 @@ void RaceDirector::HandleStartMagicTarget(
   }
 
   auto& targetRacer = targetIter->second;
-  targetRacer.hasDragon = true;
   targetRacer.dragonReceivedAt = std::chrono::steady_clock::now();
+  targetRacer.pendingMagicTarget = {command.casterOid, command.effectInstanceId};
 }
 
 void RaceDirector::HandleChangeMagicTarget(
@@ -3255,7 +3252,7 @@ void RaceDirector::HandleChangeMagicTarget(
     return;
   }
 
-  if (!racer.hasDragon)
+  if (!racer.pendingMagicTarget.has_value())
   {
     spdlog::warn("Caster does not have dragon in HandleChangeMagicTarget");
     return;
@@ -3295,7 +3292,7 @@ void RaceDirector::HandleChangeMagicTarget(
   }
 
   // Send Cancel if the target already has dragon, otherwise send OK and update the target's dragon status
-  if (targetRacer.hasDragon)
+  if (targetRacer.pendingMagicTarget.has_value())
   {
     // Send Cancel response
     protocol::AcCmdCRChangeMagicTargetCancel response{
@@ -3311,9 +3308,9 @@ void RaceDirector::HandleChangeMagicTarget(
 
     return;
   }
-  targetRacer.hasDragon = true;
   targetRacer.dragonReceivedAt = std::chrono::steady_clock::now();
-  racer.hasDragon = false;
+  targetRacer.pendingMagicTarget = {command.casterOid, command.effectInstanceId};
+  racer.pendingMagicTarget.reset();
 
   // Send OK response
   protocol::AcCmdCRChangeMagicTargetOK response{
@@ -3380,8 +3377,27 @@ void RaceDirector::HandleActivateSkillEffect(
 
   EffectVerdict verdict = this->ScheduleSkillEffect(raceInstance, command.attackerOid, command.targetOid, magicSlotInfo, command.effectInstanceId);
 
+  if (verdict == EffectVerdict::Applied && magicSlotInfo.attackRank > 1 && targetRacer.pendingMagicTarget)
+  {
+    const protocol::AcCmdRCRemoveMagicTarget removeMagicTarget{
+      .effectInstanceId = targetRacer.pendingMagicTarget->effectInstanceId,
+      .casterOid = targetRacer.pendingMagicTarget->casterOid,
+      .targetOid = command.targetOid,
+      .targetOid2 = command.targetOid};
+
+    for (const ClientId& raceClientId : raceInstance.clients)
+    {
+      _commandServer.QueueCommand<decltype(removeMagicTarget)>(
+        raceClientId,
+        [removeMagicTarget]()
+        {
+          return removeMagicTarget;
+        });
+    }
+  }
+
   // TODO:: Add a Conditional for the SystemContent that can enable/disable this behavior
-  if (verdict == EffectVerdict::Applied && magicSlotInfo.removeMagic == 1)
+  if (verdict == EffectVerdict::Applied && magicSlotInfo.removeMagic == 1 && targetRacer.magicItem.has_value())
   {
     protocol::AcCmdCRUseItemSlotOK response{
       .magicItemId = 0,
@@ -3413,7 +3429,7 @@ void RaceDirector::HandleActivateSkillEffect(
   }
 
   if (magicSlotInfo.basicType == 16)
-    targetRacer.hasDragon = false;
+    targetRacer.pendingMagicTarget.reset();
 }
 
 void RaceDirector::HandleOpCmd(
@@ -3562,10 +3578,12 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
   // For pure buffs: blocked only if already active and not replaceable (replaceEffect == 0 means no extension).
   // Duplication is checked against the basic-type effect slot so crit variants share occupancy with their base,
   // except for replaceEffect spells which track their own slot independently.
+  // Attacks with rank < 2 are blocked if a rank-2+ attack (fireball/lightning) is already active.
   const uint32_t checkEffectId = magicSlotInfo.replaceEffect
     ? magicSlotInfo.skillEffectId
     : GetServerInstance().GetMagicRegistry().GetSlotInfo(magicSlotInfo.basicType).skillEffectId;
   const bool isDuplicated = hotroddingBlocks
+    || (isAttack && magicSlotInfo.attackRank < 2 && targetRacer.attackRank >= 2)
     || (magicSlotInfo.attackRank > 0
       ? targetRacer.attackRank >= magicSlotInfo.attackRank
       : targetRacer.effects[checkEffectId] && (isAttack || !magicSlotInfo.replaceEffect));
@@ -3623,7 +3641,8 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
 
   _scheduler.Queue(
     [this, roomUid = raceInstance.roomUid, targetOid, targetCharacterUid, effectId,
-      attackRank = magicSlotInfo.attackRank, generation]()
+      attackRank = magicSlotInfo.attackRank, generation,
+      clearMagicTarget = magicSlotInfo.attackRank > 1]()
     {
       std::scoped_lock raceInstanceLock(_raceInstancesMutex);
       const auto raceInstanceIter = _raceInstances.find(roomUid);
@@ -3645,6 +3664,8 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
       // Only clear attackRank if a higher-rank attack hasn't replaced this one
       if (attackRank > 0 && racer.attackRank == attackRank)
         racer.attackRank = 0;
+      if (clearMagicTarget)
+        racer.pendingMagicTarget.reset();
 
       const protocol::AcCmdRCRemoveSkillEffect removeSkillEffect{
         .characterOid = targetOid,
