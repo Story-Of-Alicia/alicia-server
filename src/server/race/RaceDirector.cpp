@@ -2387,61 +2387,6 @@ void RaceDirector::HandleRaceUserPos(
   {
     racer.position = command.position;
   }
-
-  const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(raceInstance.raceGameMode));
-
-  // Only regenerate magic during active race (after countdown finishes)
-  // Check if game mode is magic, race is active, countdown finished, and not holding an item
-  const bool raceActuallyStarted = std::chrono::steady_clock::now() >= raceInstance.raceStartTimePoint;
-
-  if (raceInstance.raceGameMode == protocol::GameMode::Magic
-    && racer.state == tracker::RaceTracker::Racer::State::Racing
-    && raceActuallyStarted
-    && not racer.magicItem.has_value())
-  {
-    if (racer.starPointValue < gameModeTemplate.starPointsMax)
-    {
-      // TODO: add these to configuration somewhere
-      // Eyeballed these values from watching videos
-      constexpr uint32_t NoItemHeldBoostAmount = 2000;
-      // TODO: does holding an item and with certain equipment give you magic? At a reduced rate?
-      constexpr uint32_t ItemHeldWithEquipmentBoostAmount = 1000;
-      uint32_t gainedStarPoints;
-      if (racer.magicItem.has_value()) {
-        gainedStarPoints = ItemHeldWithEquipmentBoostAmount;
-      } else {
-        gainedStarPoints = NoItemHeldBoostAmount;
-      }
-      if (racer.effects[20] || racer.effects[21]) {
-        // TODO: Something sensible, idk what the bonus does
-        gainedStarPoints *= 2;
-      }
-      racer.starPointValue = std::min(gameModeTemplate.starPointsMax, racer.starPointValue + gainedStarPoints);
-    }
-
-    // Conditional already checks if there is no magic item and gamemode is magic,
-    // only check if racer has max magic gauge to give magic item
-    protocol::AcCmdCRStarPointGetOK starPointResponse{
-      .characterOid = command.oid,
-      .starPointValue = racer.starPointValue,
-      .giveMagicItem = racer.starPointValue >= gameModeTemplate.starPointsMax
-    };
-
-    _commandServer.QueueCommand<decltype(starPointResponse)>(
-      clientId,
-      [starPointResponse]
-      {
-        return starPointResponse;
-      });
-  }
-
-  for (const auto& raceClientId : raceInstance.clients | std::views::values)
-  {
-    // Prevent broadcast to self.
-    if (clientId == raceClientId)
-      continue;
-  }
 }
 
 void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& command)

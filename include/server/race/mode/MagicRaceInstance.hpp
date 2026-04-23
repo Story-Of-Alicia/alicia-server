@@ -32,6 +32,20 @@ public:
     ServerInstance& serverInstance,
     CommandServer& commandServer);
   ~MagicRaceInstance() override;
+
+private:
+  void TickRacing() override;
+  void TickGauge();
+
+  std::chrono::steady_clock::time_point _nextMagicGaugeTickTimePoint{};
+
+  static inline const std::chrono::milliseconds MagicGaugeTickInterval{250}; // TODO: is this the correct interval?
+
+  // TODO: add these to configuration somewhere
+  // Eyeballed these values from watching videos
+  static const uint32_t NoItemHeldBoostAmount{2000};
+  // TODO: does holding an item and with certain equipment give you magic? At a reduced rate?
+  static const uint32_t ItemHeldWithEquipmentBoostAmount{1000};
 };
 
 }

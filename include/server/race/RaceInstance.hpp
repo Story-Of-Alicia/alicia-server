@@ -44,11 +44,13 @@ public:
 private:
   friend class RaceDirector;
 
-  void Tick();
-  void TickLoading();
   void TickItemSpawners();
-  void TickRacing();
-  void TickFinishing();
+
+protected:
+  virtual void Tick();
+  virtual void TickLoading();
+  virtual void TickRacing();
+  virtual void TickFinishing();
 
   //! A stage of the room.
   enum class Stage
