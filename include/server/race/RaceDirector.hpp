@@ -21,6 +21,7 @@
 #define RACEDIRECTOR_HPP
 
 #include "server/Config.hpp"
+#include "server/race/RaceSnapshot.hpp"
 
 #include "server/tracker/RaceTracker.hpp"
 
@@ -31,11 +32,12 @@
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
 #include "libserver/util/Scheduler.hpp"
 
-#include <nlohmann/json.hpp>
-
 #include <random>
+#include <mutex>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace server
 {
@@ -136,6 +138,9 @@ public:
 
   ServerInstance& GetServerInstance();
   Config::Race& GetConfig();
+
+  //! Returns a snapshot of current race director state.
+  RaceSnapshot GetSnapshot() const;
 
 private:
   std::random_device _randomDevice;
@@ -388,14 +393,13 @@ private:
   std::unordered_map<ClientId, uint16_t> _p2dIds;
   P2dPool _p2dPool;
 
-  //! Builds monitor status JSON. Must be called with _raceInstancesMutex held.
-  [[nodiscard]] nlohmann::json BuildMonitorStatus() const;
+  mutable std::mutex _snapshotMutex;
+  RaceSnapshot _snapshot;
+  uint8_t _monitorTick{0};
 
   std::mutex _raceInstancesMutex;
   //! A map of all race instanced indexed by room UIDs.
   std::unordered_map<uint32_t, RaceInstance> _raceInstances;
-
-  uint8_t _monitorTick{0};
 };
 
 } // namespace server

@@ -34,9 +34,9 @@
 #include "server/system/OtpSystem.hpp"
 #include "server/system/ModerationSystem.hpp"
 #include "server/system/RoomSystem.hpp"
+#include "server/monitor/Monitor.hpp"
 #include "server/system/MatchmakingSystem.hpp"
 
-#include <libserver/network/http/WebSocket.hpp>
 #include <libserver/data/DataDirector.hpp>
 #include <libserver/registry/CharacterRegistry.hpp>
 #include <libserver/registry/CourseRegistry.hpp>
@@ -156,9 +156,6 @@ public:
   //! @returns Reference to the settings.
   Config& GetSettings();
 
-  //! Returns reference to the monitor WebSocket server.
-  //! @returns Reference to the monitor server.
-  websocket::Server& GetMonitorServer();
 
 private:
 
@@ -276,10 +273,10 @@ private:
   RoomSystem _roomSystem;
   //! A matchmaking system.
   MatchmakingSystem _matchmakingSystem;
-  //! A thread of the monitor WebSocket server.
+  //! A thread of the monitor director.
   std::thread _monitorThread;
-  //! A monitor WebSocket server.
-  websocket::Server _monitorServer;
+  //! A monitor director.
+  MonitorDirector _monitorDirector;
 
 };
 

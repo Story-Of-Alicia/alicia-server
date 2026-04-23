@@ -102,7 +102,8 @@ function setStatus(cls, text) {
   document.getElementById('status-text').textContent = text;
 }
 
-function fmtDuration(secs) {
+function fmtDuration(startMs) {
+  const secs = Math.floor((Date.now() - startMs) / 1000);
   const m = Math.floor(secs / 60).toString().padStart(2, '0');
   const s = (secs % 60).toString().padStart(2, '0');
   return `${m}:${s}`;
@@ -190,7 +191,7 @@ function render(data) {
             <td rowspan="${rowspan}"><span class="ranch-label">${esc(r.room_name || r.room_uid)}</span> <span class="uid">#${esc(r.room_uid)}</span></td>
             <td rowspan="${rowspan}">${esc(r.game_mode)} / ${esc(r.team_mode)}</td>
             <td rowspan="${rowspan}">${esc(r.current_players)} / ${esc(r.max_players)}</td>
-            <td rowspan="${rowspan}">${esc(r.stage)} <span class="uid">${fmtDuration(r.stage_secs ?? 0)}</span></td>
+            <td rowspan="${rowspan}">${esc(r.stage)} <span class="uid">${fmtDuration(r.stage_start_ms ?? Date.now())}</span></td>
             <td rowspan="${rowspan}" class="uid">${courseLabel(r.selected_course_id)} / ${esc(r.map_block_id)}</td>
             <td rowspan="${rowspan}">${esc(r.master_name || '—')}</td>` : ''}
             <td>${esc(c.username || '—')} <span class="uid">(${esc(c.character_uid)})</span> <span class="uid">${esc(c.character_name || '')}</span></td>

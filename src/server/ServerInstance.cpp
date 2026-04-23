@@ -47,6 +47,7 @@ ServerInstance::ServerInstance(
   , _privateChatDirector(*this)
   , _ranchDirector(*this)
   , _raceDirector(*this)
+  , _monitorDirector(*this)
   , _chatSystem(*this)
   , _infractionSystem(*this)
   , _itemSystem(*this)
@@ -233,15 +234,24 @@ void ServerInstance::Initialize()
     }
   });
 
-  // Monitor WebSocket server
+  // Monitor director
   if (_config.monitor.enabled)
   {
-    _monitorServer.Listen(
-      _config.monitor.listen.address,
-      _config.monitor.listen.port);
     _monitorThread = std::thread([this]()
     {
-      _monitorServer.Run();
+      try
+      {
+        _monitorDirector.Initialize();
+        _monitorDirector.Run();
+        _monitorDirector.Terminate();
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error("Unhandled exception in the monitor director: {}", x.what());
+        DumpStackTrace();
+
+        _shouldRun = false;
+      }
     });
   }
 
@@ -267,7 +277,7 @@ void ServerInstance::Initialize()
 void ServerInstance::Terminate()
 {
   _shouldRun.store(false, std::memory_order::relaxed);
-  _monitorServer.Stop();
+  _monitorDirector.Terminate();
 }
 
 AuthenticationService& ServerInstance::GetAuthenticationService()
@@ -383,11 +393,6 @@ OtpSystem& ServerInstance::GetOtpSystem()
 Config& ServerInstance::GetSettings()
 {
   return _config;
-}
-
-websocket::Server& ServerInstance::GetMonitorServer()
-{
-  return _monitorServer;
 }
 
 } // namespace server

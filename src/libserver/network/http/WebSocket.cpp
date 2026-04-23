@@ -124,9 +124,44 @@ void Server::Listen(asio::ip::address_v4 address, uint16_t port)
   DoAccept();
 }
 
+void Server::RegisterProvider(std::string key, Provider provider)
+{
+  _providers.emplace(std::move(key), std::move(provider));
+}
+
 void Server::Run()
 {
+  ScheduleBroadcast();
   _ioc.run();
+}
+
+void Server::ScheduleBroadcast()
+{
+  _broadcastTimer.expires_after(std::chrono::seconds(1));
+  _broadcastTimer.async_wait(
+    [this](boost::system::error_code ec)
+    {
+      if (ec)
+        return;
+      for (auto& [key, provider] : _providers)
+      {
+        try
+        {
+          _statusJson[key] = provider();
+        }
+        catch (const std::exception& e)
+        {
+          spdlog::warn("Monitor provider '{}' threw: {}", key, e.what());
+        }
+      }
+      if (not _providers.empty() && not _sessions.empty())
+      {
+        _lastStatus = _statusJson.dump();
+        for (auto& [id, session] : _sessions)
+          session->Send(_lastStatus);
+      }
+      ScheduleBroadcast();
+    });
 }
 
 void Server::Stop()

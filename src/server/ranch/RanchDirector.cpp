@@ -481,17 +481,28 @@ void RanchDirector::Terminate()
 
 void RanchDirector::Tick()
 {
-  if (_monitorTick == 0)
-    GetServerInstance().GetMonitorServer().UpdateSection("ranch", BuildMonitorStatus());
-  _monitorTick = (_monitorTick + 1) % 50;
-}
+  if ((_monitorTick++ % 50) != 0)
+    return;
 
-nlohmann::json RanchDirector::BuildMonitorStatus() const
-{
-  nlohmann::json ranches = nlohmann::json::array();
+  RanchSnapshot snap;
+  snap.totalClients = _clients.size();
+
   for (const auto& [rancherUid, ranch] : _ranches)
   {
-    nlohmann::json clients = nlohmann::json::array();
+    if (ranch.clients.empty())
+      continue;
+
+    RanchSnapshot::RanchInfo ranchInfo;
+    ranchInfo.rancherUid = rancherUid;
+
+    _serverInstance.GetDataDirector().GetCharacter(rancherUid).Immutable(
+      [&ranchInfo](const data::Character& rancher)
+      {
+        const auto& name = rancher.name();
+        const bool endsWithS = name.ends_with("s") || name.ends_with("S");
+        ranchInfo.ranchName = std::format("{}{} ranch", name, endsWithS ? "'" : "'s");
+      });
+
     for (const ClientId clientId : ranch.clients)
     {
       const auto it = _clients.find(clientId);
@@ -504,39 +515,22 @@ nlohmann::json RanchDirector::BuildMonitorStatus() const
         {
           characterName = character.name();
         });
-      clients.push_back({
-        {"username", ctx.userName},
-        {"character_uid", ctx.characterUid},
-        {"character_name", characterName}
-      });
-    }
-    if (ranch.clients.empty())
-      continue;
-
-    std::string ranchName;
-    const auto rancherRecord = _serverInstance.GetDataDirector().GetCharacter(rancherUid);
-    if (rancherRecord)
-    {
-      rancherRecord.Immutable([&ranchName](const data::Character& rancher)
-      {
-        const auto& name = rancher.name();
-        const bool endsWithPlural = name.ends_with("s") || name.ends_with("S");
-        ranchName = std::format("{}{} ranch", name, endsWithPlural ? "'" : "'s");
-      });
+      ranchInfo.clients.push_back({ctx.characterUid, ctx.userName, std::move(characterName)});
     }
 
-    ranches.push_back({
-      {"rancher_uid", rancherUid},
-      {"ranch_name", ranchName},
-      {"client_count", ranch.clients.size()},
-      {"clients", std::move(clients)}
-    });
+    snap.ranches.push_back(std::move(ranchInfo));
   }
 
-  return {
-    {"total_clients", _clients.size()},
-    {"ranches", std::move(ranches)}
-  };
+  {
+    std::scoped_lock lock(_snapshotMutex);
+    _snapshot = std::move(snap);
+  }
+}
+
+RanchSnapshot RanchDirector::GetSnapshot() const
+{
+  std::scoped_lock lock(_snapshotMutex);
+  return _snapshot;
 }
 
 std::vector<data::Uid> RanchDirector::GetOnlineCharacters()

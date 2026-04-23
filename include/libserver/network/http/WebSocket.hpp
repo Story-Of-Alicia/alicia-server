@@ -10,6 +10,7 @@
 #include <boost/beast.hpp>
 #include <boost/beast/websocket.hpp>
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -54,9 +55,16 @@ public:
   Server(const Server&) = delete;
   Server& operator=(const Server&) = delete;
 
+  //! A provider supplies a JSON value for one named section on each broadcast cycle.
+  using Provider = std::function<nlohmann::json()>;
+
   void Listen(asio::ip::address_v4 address, uint16_t port);
   void Run();
   void Stop();
+
+  //! Register a data provider for a named section.
+  //! The provider is called on the monitor thread every broadcast interval.
+  void RegisterProvider(std::string key, Provider provider);
 
   void UpdateAndBroadcast(nlohmann::json data);
   void UpdateSection(std::string key, nlohmann::json data);
@@ -64,10 +72,13 @@ public:
 private:
   void DoAccept();
   void UnregisterSession(size_t id);
+  void ScheduleBroadcast();
 
   asio::io_context _ioc;
   asio::ip::tcp::acceptor _acceptor{_ioc};
+  asio::steady_timer _broadcastTimer{_ioc};
   std::unordered_map<size_t, std::shared_ptr<Session>> _sessions;
+  std::unordered_map<std::string, Provider> _providers;
   size_t _nextSessionId{0};
   nlohmann::json _statusJson;
   std::string _lastStatus;

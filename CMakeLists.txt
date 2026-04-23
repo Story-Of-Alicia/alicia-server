@@ -97,6 +97,7 @@ add_executable(alicia-server
         src/server/authentication/LocalAuthenticationBackend.cpp
         src/server/authentication/PostgresAuthenticationBackend.cpp
         src/server/main.cpp
+        src/server/monitor/Monitor.cpp
         src/server/ServerInstance.cpp
         src/server/Config.cpp
         src/server/lobby/shop/Shop.cpp

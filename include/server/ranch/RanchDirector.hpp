@@ -21,17 +21,20 @@
 #define RANCHDIRECTOR_HPP
 
 #include "server/Config.hpp"
+#include "server/ranch/RanchSnapshot.hpp"
+
 #include "server/tracker/RanchTracker.hpp"
 
 #include "libserver/network/command/CommandServer.hpp"
 #include "libserver/network/command/proto/CommonMessageDefinitions.hpp"
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
 
-#include <nlohmann/json.hpp>
-
+#include <mutex>
 #include <random>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace server
 {
@@ -50,6 +53,9 @@ public:
   void Tick();
 
   std::vector<data::Uid> GetOnlineCharacters();
+
+  //! Returns a snapshot of current ranch director state.
+  RanchSnapshot GetSnapshot() const;
 
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId client) override;
@@ -129,7 +135,6 @@ private:
     //! Unique ID of the owner of the ranch the client is visiting.
     data::Uid visitingRancherUid{data::InvalidUid};
 
-    
     uint8_t busyState{0};
   };
 
@@ -461,7 +466,9 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRRequestUser& command);
 
-  [[nodiscard]] nlohmann::json BuildMonitorStatus() const;
+  mutable std::mutex _snapshotMutex;
+  RanchSnapshot _snapshot;
+  uint8_t _monitorTick{0};
 
   //!
   ServerInstance& _serverInstance;
@@ -472,8 +479,6 @@ private:
   std::unordered_map<ClientId, ClientContext> _clients;
   //!
   std::unordered_map<data::Uid, RanchInstance> _ranches;
-
-  uint8_t _monitorTick{0};
 };
 
 } // namespace server
