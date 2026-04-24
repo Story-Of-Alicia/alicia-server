@@ -2171,8 +2171,30 @@ void RaceDirector::HandleRequestSpur(
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
     static_cast<uint8_t>(raceInstance.raceGameMode));
 
-  if (racer.starPointValue < gameModeTemplate.spurConsumeStarPoints)
-    throw std::runtime_error("Client is dead ass cheating (or is really desynced)");
+    if (racer.starPointValue < gameModeTemplate.spurConsumeStarPoints)
+    {
+      spdlog::warn(
+        "Rejecting spur request from client {} (characterOid={}): starPointValue={} < required={} – resyncing client (possible desync/cheat)",
+        clientId,
+        command.characterOid,
+        racer.starPointValue,
+        gameModeTemplate.spurConsumeStarPoints);
+  
+      // Resynchronise the client with the authoritative star point value instead of treating this as a fatal error.
+      protocol::AcCmdCRStarPointGetOK desyncedStarPointResponse{
+        .characterOid = command.characterOid,
+        .starPointValue = racer.starPointValue,
+        .giveMagicItem = false};
+  
+      _commandServer.QueueCommand<decltype(desyncedStarPointResponse)>(
+        clientId,
+        [desyncedStarPointResponse]()
+        {
+          return desyncedStarPointResponse;
+        });
+  
+      return;
+    }
 
   racer.starPointValue -= gameModeTemplate.spurConsumeStarPoints;
 
