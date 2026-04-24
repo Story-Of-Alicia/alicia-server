@@ -193,6 +193,23 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRChat>(
     [this](ClientId clientId, const auto& message)
     {
+      const auto& clientContext = GetClientContext(clientId);
+      auto& raceInstance = _raceInstances[clientContext.roomUid];
+      auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
+
+      protocol::AcCmdRCGameCreateClientItem response{
+        .racerOid = racer.oid,
+        .unk1 = 0};
+
+      _commandServer.QueueCommand<decltype(response)>(
+        clientId,
+        [response]()
+        {
+          return response;
+        });
+
+      return;
+
       HandleChat(clientId, message);
     });
 
@@ -297,6 +314,12 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& message)
     {
       HandleTriggerizeAct(clientId, message);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRGameCreateClientItem>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleGameCreateClientItem(clientId, message);
     });
 }
 
@@ -4200,6 +4223,33 @@ void RaceDirector::HandleTriggerizeAct(
 
     _commandServer.QueueCommand<decltype(response)>(raceClientId, [response](){ return response; });
   }
+}
+
+void RaceDirector::HandleGameCreateClientItem(
+  ClientId clientId,
+  const protocol::AcCmdCRGameCreateClientItem& command)
+{
+  spdlog::debug(
+    "AcCmdCRGameCreateClientItem: {} {} [{}, {}, {}] [{}, {}, {}, {}]",
+    command.someonesOid,
+    command.unk1,
+    command.position[0], command.position[1], command.position[2],
+    command.unk3[0], command.unk3[1], command.unk3[2], command.unk3[3]);
+
+  protocol::AcCmdGameRaceItemSpawn spawn{
+    .itemId = 202,
+    .itemType = 909,
+    .position = command.position,
+    .orientation = command.unk3,
+    .sizeLevel = command.unk1,
+    .removeDelay = -1};
+
+  _commandServer.QueueCommand<decltype(spawn)>(
+    clientId,
+    [spawn]()
+    {
+      return spawn;
+    });
 }
 
 } // namespace server
