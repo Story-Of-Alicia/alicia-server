@@ -81,6 +81,7 @@ void PetRegistry::ReadConfig(const std::filesystem::path& configPath)
   {
     EggInfo info;
     const auto eggItemTid = ReadEggInfo(eggSection, info);
+    info.tid = eggItemTid;
     _eggs.try_emplace(eggItemTid, info);
   }
 

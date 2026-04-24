@@ -3131,7 +3131,7 @@ void RaceDirector::HandleUserRaceItemGet(
             protocol::AcCmdRCObtainEgg obtainEgg{
               .characterUid = clientContext.characterUid,
               .ItemUid = itemUid,
-              .ItemTid = eggInfo.deckItemId};
+              .ItemTid = eggInfo.tid};
             _commandServer.QueueCommand<decltype(obtainEgg)>(
               clientId,
               [obtainEgg]() { return obtainEgg; });

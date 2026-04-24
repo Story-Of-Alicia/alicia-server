@@ -31,6 +31,8 @@ namespace server::registry
 
 struct EggInfo
 {
+  //! The egg item TID (key in the registry).
+  data::Tid tid{};
   //! A deck item ID of the egg.
   data::Tid deckItemId;
   //! A time duration it takes the egg to hatch.
