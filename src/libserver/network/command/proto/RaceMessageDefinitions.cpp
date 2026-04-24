@@ -2176,4 +2176,20 @@ void AcCmdCRGameCreateClientItem::Read(
   }
 }
 
+void AcCmdRCObtainEgg::Write(
+  const AcCmdRCObtainEgg& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.ItemUid)
+    .Write(command.ItemTid);
+}
+
+void AcCmdRCObtainEgg::Read(
+  AcCmdRCObtainEgg&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol

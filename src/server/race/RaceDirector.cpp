@@ -3083,7 +3083,14 @@ void RaceDirector::HandleUserRaceItemGet(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
-  auto& item = raceInstance.tracker.GetItems().at(command.itemId);
+  auto& items = raceInstance.tracker.GetItems();
+  const auto itemIter = items.find(command.itemId);
+  if (itemIter == items.end())
+  {
+    spdlog::warn("Client {} picked up untracked item {}", clientId, command.itemId);
+    return;
+  }
+  auto& item = itemIter->second;
 
   constexpr auto ItemRespawnDuration = std::chrono::milliseconds(500);
   item.respawnTimePoint = std::chrono::steady_clock::now() + ItemRespawnDuration;
@@ -3111,8 +3118,26 @@ void RaceDirector::HandleUserRaceItemGet(
           case 102: // Silver horseshoe. Get 10k star points
             racer.starPointValue = std::min(racer.starPointValue+10000, gameModeInfo.starPointsMax);
             break;
+          case 909:
+          {
+            const auto eggInfo = _serverInstance.GetPetRegistry().GetEggInfoByDeckId(item.currentType);
+            auto itemUid = data::InvalidUid;
+            const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+              clientContext.characterUid);
+            characterRecord.Mutable([this, &eggInfo, &itemUid](data::Character& character)
+            {
+              itemUid = _serverInstance.GetItemSystem().AddItem(character, eggInfo.deckItemId, 1);
+            });
+            protocol::AcCmdRCObtainEgg obtainEgg{
+              .characterUid = clientContext.characterUid,
+              .ItemUid = itemUid,
+              .ItemTid = eggInfo.deckItemId};
+            _commandServer.QueueCommand<decltype(obtainEgg)>(
+              clientId,
+              [obtainEgg]() { return obtainEgg; });
+            break;
+          }
           default:
-            // TODO: Disconnect?
             spdlog::warn("Player {} picked up unknown item type {}",
               clientId, item.currentType);
             break;
@@ -4236,8 +4261,15 @@ void RaceDirector::HandleGameCreateClientItem(
     command.position[0], command.position[1], command.position[2],
     command.unk3[0], command.unk3[1], command.unk3[2], command.unk3[3]);
 
+  const auto& clientContext = GetClientContext(clientId);
+  auto& raceInstance = _raceInstances[clientContext.roomUid];
+
+  auto& item = raceInstance.tracker.AddItem();
+  item.position = command.position;
+  item.currentType = 909;
+
   protocol::AcCmdGameRaceItemSpawn spawn{
-    .itemId = 202,
+    .itemId = item.oid,
     .itemType = 909,
     .position = command.position,
     .orientation = command.unk3,

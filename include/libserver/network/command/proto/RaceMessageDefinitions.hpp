@@ -2835,6 +2835,32 @@ struct AcCmdCRGameCreateClientItem
     SourceStream& stream);
 };
 
+struct AcCmdRCObtainEgg
+{
+  uint32_t characterUid;
+  uint32_t ItemUid;
+  uint32_t ItemTid;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCObtainEgg;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCObtainEgg& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCObtainEgg& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RACE_MESSAGE_DEFINES_HPP

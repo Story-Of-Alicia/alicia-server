@@ -98,11 +98,20 @@ EggInfo PetRegistry::GetEggInfo(server::data::Tid tid)
 {
   auto it = _eggs.find(tid);
   if (it != _eggs.end())
-  {
     return it->second;
-  }
 
   throw std::runtime_error("Egg with given TID not found.");
+}
+
+EggInfo PetRegistry::GetEggInfoByDeckId(data::Tid deckItemId)
+{
+  for (const auto& [tid, info] : _eggs)
+  {
+    if (info.deckItemId == deckItemId)
+      return info;
+  }
+
+  throw std::runtime_error("Egg with given deck item ID not found.");
 }
 
 PetInfo PetRegistry::GetPetInfo(server::data::Tid tid)

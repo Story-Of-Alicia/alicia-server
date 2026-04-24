@@ -51,6 +51,7 @@ public:
   void ReadConfig(const std::filesystem::path& configPath);
 
   EggInfo GetEggInfo(data::Tid eggItemTid);
+  EggInfo GetEggInfoByDeckId(data::Tid deckItemId);
   PetInfo GetPetInfo(data::Tid petItemTid);
 
 private:
