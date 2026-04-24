@@ -2751,6 +2751,7 @@ void RaceDirector::HandleUserRaceActivateEvent(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
+  const auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
   // Check if event is throttled, or add event if it is a new one
   if (raceInstance.tracker.IsEventThrottled(command.eventId))
@@ -2760,17 +2761,12 @@ void RaceDirector::HandleUserRaceActivateEvent(
   }
 
   protocol::AcCmdUserRaceActivateEventNotify notify{
-    .eventId = command.eventId};
+    .eventId = command.eventId,
+    .characterOid = racer.oid};
 
   // Broadcast to all active racers in the race
-  for (const auto& [racerCharacterUid, racer] : raceInstance.tracker.GetRacers())
+  for (const ClientId racerClientId : raceInstance.clients)
   {
-    if (racer.state != tracker::RaceTracker::Racer::State::Racing)
-      continue;
-
-    notify.characterOid = racer.oid;
-
-    const ClientId racerClientId = GetClientIdByCharacterUid(racerCharacterUid);
     _commandServer.QueueCommand<decltype(notify)>(
       racerClientId,
       [notify]{return notify;});
@@ -2785,6 +2781,7 @@ void RaceDirector::HandleUserRaceDeactivateEvent(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
+  const auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
   // Check if event is throttled, or add event if it is a new one
   if (raceInstance.tracker.IsEventThrottled(command.eventId))
@@ -2794,17 +2791,12 @@ void RaceDirector::HandleUserRaceDeactivateEvent(
   }
 
   protocol::AcCmdUserRaceDeactivateEventNotify notify{
-    .eventId = command.eventId};
+    .eventId = command.eventId,
+    .characterOid = racer.oid};
 
   // Broadcast to all active racers in the race
-  for (const auto& [racerCharacterUid, racer] : raceInstance.tracker.GetRacers())
+  for (const ClientId racerClientId : raceInstance.clients)
   {
-    if (racer.state != tracker::RaceTracker::Racer::State::Racing)
-      continue;
-
-    notify.characterOid = racer.oid;
-
-    const ClientId racerClientId = GetClientIdByCharacterUid(racerCharacterUid);
     _commandServer.QueueCommand<decltype(notify)>(
       racerClientId,
       [notify]{return notify;});
