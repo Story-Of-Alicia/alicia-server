@@ -35,6 +35,10 @@ struct EggInfo
   data::Tid tid{};
   //! A deck item ID of the egg.
   data::Tid deckItemId;
+  //! A region this egg belongs to (1=meadow, 2=forest, 3=city, 4=desert, 5=ice).
+  uint32_t region{};
+  //! Relative probability of obtaining this egg.
+  uint32_t obtainRatio{};
   //! A time duration it takes the egg to hatch.
   data::Clock::duration hatchDuration{0};
   //! A vector of pets that can hatch from the egg.
@@ -55,6 +59,8 @@ public:
   EggInfo GetEggInfo(data::Tid eggItemTid);
   EggInfo GetEggInfoByDeckId(data::Tid deckItemId);
   PetInfo GetPetInfo(data::Tid petItemTid);
+  //! Returns all eggs belonging to a given region.
+  std::vector<EggInfo> GetEggsByRegion(uint32_t region) const;
 
 private:
   std::unordered_map<data::Tid, EggInfo> _eggs;

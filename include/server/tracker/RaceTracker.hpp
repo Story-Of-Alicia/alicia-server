@@ -38,6 +38,14 @@ namespace server::tracker
 class RaceTracker
 {
 public:
+  //! A per-racer event item (e.g. egg) visible only to one racer.
+  struct EventItem
+  {
+    Oid oid{};
+    uint32_t itemType{};
+    std::array<float, 3> position{};
+  };
+
   //! A racer.
   struct Racer
   {
@@ -66,6 +74,8 @@ public:
 
     //! A set of tracked items in racer's proximity.
     std::unordered_set<Oid> trackedItems;
+    //! Per-racer event items (e.g. eggs) visible only to this racer.
+    std::vector<EventItem> eventItems;
 
     //! Active skill effects indexed by skillEffectId (0-23).
     static constexpr size_t EffectCount = 24;
@@ -166,6 +176,14 @@ public:
   //! @param eventId Event ID.
   //! @returns True if event exists and is throttled, else event is tracked.
   bool IsEventThrottled(uint32_t eventId);
+
+  //! Adds a per-racer event item for the given character.
+  //! @returns Reference to the new event item record.
+  EventItem& AddEventItem(data::Uid characterUid);
+  //! Finds a per-racer event item by OID. Returns nullptr if not found.
+  EventItem* FindEventItem(data::Uid characterUid, Oid oid);
+  //! Removes a per-racer event item by OID.
+  void RemoveEventItem(data::Uid characterUid, Oid oid);
 
   void Clear();
 

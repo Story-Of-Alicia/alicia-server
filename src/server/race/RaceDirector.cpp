@@ -193,23 +193,6 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRChat>(
     [this](ClientId clientId, const auto& message)
     {
-      const auto& clientContext = GetClientContext(clientId);
-      auto& raceInstance = _raceInstances[clientContext.roomUid];
-      auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
-
-      protocol::AcCmdRCGameCreateClientItem response{
-        .racerOid = racer.oid,
-        .unk1 = 0};
-
-      _commandServer.QueueCommand<decltype(response)>(
-        clientId,
-        [response]()
-        {
-          return response;
-        });
-
-      return;
-
       HandleChat(clientId, message);
     });
 
@@ -1941,6 +1924,24 @@ void RaceDirector::HandleLoadingComplete(
           .oid = oid};
       });
   }
+  static std::random_device rd;
+  if (rd() % 2 != 0)
+    return;
+  try
+  {
+    protocol::AcCmdRCGameCreateClientItem spawnClientItem{
+      .racerOid = racer.oid,
+      .unk1 = 0};
+    _commandServer.QueueCommand<decltype(spawnClientItem)>(
+      clientId,
+      [spawnClientItem]()
+      {
+        return spawnClientItem;
+      });
+  }
+  catch ([[maybe_unused]] const std::exception&)
+  {
+  }
 }
 
 void RaceDirector::HandleUserRaceFinal(
@@ -2425,53 +2426,49 @@ void RaceDirector::HandleRaceUserPos(
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
     static_cast<uint8_t>(raceInstance.raceGameMode));
 
-  for (const auto& [itemOid, item] : raceInstance.tracker.GetItems())
+  constexpr double ItemSpawnDistanceThreshold = 90.0;
+
+  auto processItemSpawn = [&](tracker::Oid oid, uint32_t itemType, const std::array<float, 3>& position)
   {
-    const bool canItemRespawn = std::chrono::steady_clock::now() >= item.respawnTimePoint;
-    if (not canItemRespawn)
-      continue;
+    const auto distance = std::sqrt(
+      std::pow(command.member2[0] - position[0], 2) +
+      std::pow(command.member2[1] - position[1], 2) +
+      std::pow(command.member2[2] - position[2], 2));
 
-    // The distance between the player and the item.
-    const auto distanceBetweenPlayerAndItem = std::sqrt(
-      std::pow(command.member2[0] - item.position[0], 2) +
-      std::pow(command.member2[1] - item.position[1], 2) +
-      std::pow(command.member2[2] - item.position[2], 2));
+    const bool isInProximity = distance < ItemSpawnDistanceThreshold;
+    const bool isAlreadyTracked = racer.trackedItems.contains(oid);
 
-    // A distance of the player from the item before it can be spawned.
-    constexpr double ItemSpawnDistanceThreshold = 90.0;
-
-    const bool isItemInPlayerProximity = distanceBetweenPlayerAndItem < ItemSpawnDistanceThreshold;
-    const bool isItemAlreadyTracked = racer.trackedItems.contains(itemOid);
-
-    if (isItemAlreadyTracked)
+    if (isAlreadyTracked)
     {
-      // If the item is not in the player's proximity anymore
-      // then remove it from the tracked items.
-      if (not isItemInPlayerProximity)
-        racer.trackedItems.erase(itemOid);
-
-      continue;
+      if (not isInProximity)
+        racer.trackedItems.erase(oid);
+      return;
     }
 
-    // If the item is not in player's proximity do not spawn it.
-    if (not isItemInPlayerProximity)
-      continue;
+    if (not isInProximity)
+      return;
 
     protocol::AcCmdRCCreateItem spawn{
-      .itemId = item.oid,
-      .itemType = item.currentType,
-      .position = item.position,
+      .itemId = oid,
+      .itemType = itemType,
+      .position = position,
       .spawnStyle = 0,  // ITEM_SPAWN_STYLE_NONE, fix the item in position
       .spawnerId = 0,
       .sizeLevel = 0};
 
-    racer.trackedItems.insert(item.oid);
+    racer.trackedItems.insert(oid);
+    _commandServer.QueueCommand<decltype(spawn)>(clientId, [spawn]() { return spawn; });
+  };
 
-    _commandServer.QueueCommand<decltype(spawn)>(clientId, [spawn]()
-    {
-      return spawn;
-    });
+  for (const auto& [itemOid, item] : raceInstance.tracker.GetItems())
+  {
+    if (std::chrono::steady_clock::now() < item.respawnTimePoint)
+      continue;
+    processItemSpawn(item.oid, item.currentType, item.position);
   }
+
+  for (const auto& eventItem : racer.eventItems)
+    processItemSpawn(eventItem.oid, eventItem.itemType, eventItem.position);
 
   // Only regenerate magic during active race (after countdown finishes)
   // Check if game mode is magic, race is active, countdown finished, and not holding an item
@@ -3083,6 +3080,45 @@ void RaceDirector::HandleUserRaceItemGet(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
+  auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
+
+  // Check event items first (eggs, etc.)
+  if (const auto* eventItem = raceInstance.tracker.FindEventItem(clientContext.characterUid, command.itemId))
+  {
+    const auto eggInfo = _serverInstance.GetPetRegistry().GetEggInfoByDeckId(eventItem->itemType);
+    auto itemUid = data::InvalidUid;
+    const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+      clientContext.characterUid);
+
+    characterRecord.Mutable([this, &eggInfo, &itemUid](data::Character& character)
+    {
+      itemUid = _serverInstance.GetItemSystem().AddItem(character, eggInfo.tid, 1);
+    });
+
+    protocol::AcCmdRCObtainEgg obtainEgg{
+      .characterUid = clientContext.characterUid,
+      .ItemUid = itemUid,
+      .ItemTid = eggInfo.tid};
+    for (const ClientId raceClientId : raceInstance.clients)
+      _commandServer.QueueCommand<decltype(obtainEgg)>(
+        raceClientId,
+        [obtainEgg]()
+      {
+        return obtainEgg;
+      });
+
+    protocol::AcCmdGameRaceItemGet itemGet{
+      .characterOid = command.characterOid,
+      .itemId = command.itemId,
+      .itemType = eventItem->itemType};
+    for (const ClientId raceClientId : raceInstance.clients)
+      _commandServer.QueueCommand<decltype(itemGet)>(raceClientId, [itemGet]() { return itemGet; });
+
+    raceInstance.tracker.RemoveEventItem(clientContext.characterUid, command.itemId);
+    racer.trackedItems.erase(command.itemId);
+    return;
+  }
+
   auto& items = raceInstance.tracker.GetItems();
   const auto itemIter = items.find(command.itemId);
   if (itemIter == items.end())
@@ -3094,8 +3130,6 @@ void RaceDirector::HandleUserRaceItemGet(
 
   constexpr auto ItemRespawnDuration = std::chrono::milliseconds(500);
   item.respawnTimePoint = std::chrono::steady_clock::now() + ItemRespawnDuration;
-
-  auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
   Room::GameMode gameMode;
   registry::Course::GameModeInfo gameModeInfo;
@@ -3118,25 +3152,6 @@ void RaceDirector::HandleUserRaceItemGet(
           case 102: // Silver horseshoe. Get 10k star points
             racer.starPointValue = std::min(racer.starPointValue+10000, gameModeInfo.starPointsMax);
             break;
-          case 909:
-          {
-            const auto eggInfo = _serverInstance.GetPetRegistry().GetEggInfoByDeckId(item.currentType);
-            auto itemUid = data::InvalidUid;
-            const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
-              clientContext.characterUid);
-            characterRecord.Mutable([this, &eggInfo, &itemUid](data::Character& character)
-            {
-              itemUid = _serverInstance.GetItemSystem().AddItem(character, eggInfo.deckItemId, 1);
-            });
-            protocol::AcCmdRCObtainEgg obtainEgg{
-              .characterUid = clientContext.characterUid,
-              .ItemUid = itemUid,
-              .ItemTid = eggInfo.tid};
-            _commandServer.QueueCommand<decltype(obtainEgg)>(
-              clientId,
-              [obtainEgg]() { return obtainEgg; });
-            break;
-          }
           default:
             spdlog::warn("Player {} picked up unknown item type {}",
               clientId, item.currentType);
@@ -4264,24 +4279,40 @@ void RaceDirector::HandleGameCreateClientItem(
   const auto& clientContext = GetClientContext(clientId);
   auto& raceInstance = _raceInstances[clientContext.roomUid];
 
-  auto& item = raceInstance.tracker.AddItem();
+  // Get region for this map.
+  const auto& mapBlockInfo = _serverInstance.GetCourseRegistry().GetMapBlockInfo(
+    raceInstance.raceMapBlockId);
+  const auto regionEggs = _serverInstance.GetPetRegistry().GetEggsByRegion(mapBlockInfo.region);
+  if (regionEggs.empty())
+    return;
+
+  // Weighted random selection using ObtainRatio (owned eggs still included in weight pool).
+  std::vector<uint32_t> weights;
+  weights.reserve(regionEggs.size());
+  for (const auto& egg : regionEggs)
+    weights.push_back(egg.obtainRatio);
+
+  static std::random_device rd;
+  std::discrete_distribution<size_t> dist(weights.begin(), weights.end());
+  const auto& selectedEgg = regionEggs[dist(rd)];
+
+  // Check if the player already owns this egg.
+  bool alreadyOwned = false;
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+  characterRecord.Immutable([&](const data::Character& character)
+  {
+    alreadyOwned = _serverInstance.GetItemSystem().HasItem(character, selectedEgg.tid);
+  });
+
+  // Add to per-racer event item tracker regardless of ownership.
+  auto& item = raceInstance.tracker.AddEventItem(clientContext.characterUid);
   item.position = command.position;
-  item.currentType = 909;
+  item.itemType = selectedEgg.deckItemId;
 
-  protocol::AcCmdGameRaceItemSpawn spawn{
-    .itemId = item.oid,
-    .itemType = 909,
-    .position = command.position,
-    .orientation = command.unk3,
-    .sizeLevel = command.unk1,
-    .removeDelay = -1};
-
-  _commandServer.QueueCommand<decltype(spawn)>(
-    clientId,
-    [spawn]()
-    {
-      return spawn;
-    });
+  // Only spawn visually if the player doesn't already own this egg.
+  if (alreadyOwned)
+    return;
 }
 
 } // namespace server
