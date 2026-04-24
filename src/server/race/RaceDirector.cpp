@@ -2760,6 +2760,14 @@ void RaceDirector::HandleUserRaceActivateEvent(
     return;
   }
 
+  // Schedule a deactivate event notify
+  _scheduler.Queue([this, clientId, eventId = command.eventId]()
+  {
+    protocol::AcCmdUserRaceDeactivateEvent deactivateCommand{
+      .eventId = eventId};
+    this->HandleUserRaceDeactivateEvent(clientId, deactivateCommand);
+  }, std::chrono::steady_clock::now() + tracker::RaceTracker::ThrottleDurationMs);
+
   protocol::AcCmdUserRaceActivateEventNotify notify{
     .eventId = command.eventId,
     .characterOid = racer.oid};
