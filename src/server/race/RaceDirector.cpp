@@ -214,17 +214,17 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
       HandleUserRaceActivateInteractiveEvent(clientId, message);
     });
 
-  // _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceActivateEvent>(
-  //   [this](ClientId clientId, const auto& message)
-  //    {
-  //      HandleUserRaceActivateEvent(clientId, message);
-  //    });
+  _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceActivateEvent>(
+    [this](ClientId clientId, const auto& message)
+     {
+       HandleUserRaceActivateEvent(clientId, message);
+     });
 
-  // _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceDeactivateEvent>(
-  //   [this](ClientId clientId, const auto& message)
-  //   {
-  //     HandleUserRaceDeactivateEvent(clientId, message);
-  //   });
+  _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceDeactivateEvent>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleUserRaceDeactivateEvent(clientId, message);
+    });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestMagicItem>(
     [this](ClientId clientId, const auto& message)
@@ -2743,8 +2743,7 @@ void RaceDirector::HandleUserRaceActivateInteractiveEvent(
   }
 }
 
-void RaceDirector::HandleUserRaceActivateEvent
-(
+void RaceDirector::HandleUserRaceActivateEvent(
   ClientId clientId,
   const protocol::AcCmdUserRaceActivateEvent& command)
 {
@@ -2753,25 +2752,32 @@ void RaceDirector::HandleUserRaceActivateEvent
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
 
-  // Get the sender's OID from the room tracker
-  auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
+  // Check if event is throttled, or add event if it is a new one
+  if (raceInstance.tracker.IsEventThrottled(command.eventId))
+  {
+    // Event throttled
+    return;
+  }
 
   protocol::AcCmdUserRaceActivateEventNotify notify{
-    .eventId = command.eventId,
-    .characterOid = racer.oid, // sender oid
-  };
+    .eventId = command.eventId};
 
-  // Broadcast to all clients in the room
-  for (const ClientId raceClientId : raceInstance.clients)
+  // Broadcast to all active racers in the race
+  for (const auto& [racerCharacterUid, racer] : raceInstance.tracker.GetRacers())
   {
+    if (racer.state != tracker::RaceTracker::Racer::State::Racing)
+      continue;
+
+    notify.characterOid = racer.oid;
+
+    const ClientId racerClientId = GetClientIdByCharacterUid(racerCharacterUid);
     _commandServer.QueueCommand<decltype(notify)>(
-      raceClientId,
+      racerClientId,
       [notify]{return notify;});
   }
 }
 
-void RaceDirector::HandleUserRaceDeactivateEvent
-(
+void RaceDirector::HandleUserRaceDeactivateEvent(
   ClientId clientId,
   const protocol::AcCmdUserRaceDeactivateEvent& command)
 {
@@ -2780,19 +2786,27 @@ void RaceDirector::HandleUserRaceDeactivateEvent
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
 
-  // Get the sender's OID from the room tracker
-  auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
+  // Check if event is throttled, or add event if it is a new one
+  if (raceInstance.tracker.IsEventThrottled(command.eventId))
+  {
+    // Event throttled
+    return;
+  }
 
   protocol::AcCmdUserRaceDeactivateEventNotify notify{
-    .eventId = command.eventId,
-    .characterOid = racer.oid, // sender oid
-  };
+    .eventId = command.eventId};
 
-  // Broadcast to all clients in the room
-  for (const ClientId raceClientId : raceInstance.clients)
+  // Broadcast to all active racers in the race
+  for (const auto& [racerCharacterUid, racer] : raceInstance.tracker.GetRacers())
   {
+    if (racer.state != tracker::RaceTracker::Racer::State::Racing)
+      continue;
+
+    notify.characterOid = racer.oid;
+
+    const ClientId racerClientId = GetClientIdByCharacterUid(racerCharacterUid);
     _commandServer.QueueCommand<decltype(notify)>(
-      raceClientId,
+      racerClientId,
       [notify]{return notify;});
   }
 }

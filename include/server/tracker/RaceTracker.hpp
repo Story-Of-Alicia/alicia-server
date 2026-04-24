@@ -95,6 +95,13 @@ public:
     std::array<float, 3> position{};
   };
 
+  //! An event
+  struct Event
+  {
+    uint32_t id{};
+    std::chrono::steady_clock::time_point throttledUntil{};
+  };
+
   struct TeamInfo
   {
     uint32_t points{0};
@@ -110,6 +117,8 @@ public:
   //! An item object map.
   //! Maps itemId -> Item (in the race)
   using ItemObjectMap = std::map<uint16_t, Item>;
+  //! An event map.
+  using EventMap = std::unordered_map<uint32_t, Event>;
 
   //! Adds a racer for tracking.
   //! @param characterUid Character UID.
@@ -150,6 +159,14 @@ public:
 
   uint16_t GetNextEffectInstanceIdAndIncrementBy(uint16_t increment);
 
+  //! Returns a reference to all of the event records.
+  //! @return Reference to event records.
+  [[nodiscard]] EventMap& GetEvents();
+  //! Checks and throttles an event.
+  //! @param eventId Event ID.
+  //! @returns True if event exists and is throttled, else event is tracked.
+  bool IsEventThrottled(uint32_t eventId);
+
   void Clear();
 
 
@@ -165,6 +182,8 @@ private:
   RacerObjectMap _racers;
   //! Items in the race
   ItemObjectMap _items;
+  //! Tracked race map events.
+  EventMap _events;
   //! Next effect instance ID.
   uint16_t _nextEffectInstanceId = 0;
 };
