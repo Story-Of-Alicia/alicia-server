@@ -175,17 +175,24 @@ struct LobbyCommandLoginOK
     std::vector<Skill> values;
   } skillRanks{};
 
-  struct Struct4
+  struct TrainingProgression
   {
-    struct Unk
+    struct MapProgressInfo
     {
-      uint16_t val0{};
-      uint8_t val1{};
-      uint8_t val2{};
+      uint16_t mapBlockId{};
+      GameMode gameMode{};
+      enum class ClearStage : uint8_t
+      {
+        None = 0,
+        Easy = 1,
+        Normal = 2,
+        Hard = 3,
+        VeryHard = 4
+      } clearStage{ClearStage::None};
     };
 
-    std::vector<Unk> values;
-  } val13{};
+    std::vector<MapProgressInfo> mapProggressInfos;
+  } trainingProgression{};
 
   uint32_t val14{};
   Guild guild{};
