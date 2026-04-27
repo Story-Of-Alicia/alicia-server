@@ -96,7 +96,7 @@ words:
     - word: '\bl+o+l+i+\b'
       prevent: true
     # Common Polish slurs and phrases.
-    - word: '\bk+u+r+w+a+\b'
+    - word: '\bk+u+r+[wv]+a+\b'
       prevent: true
     - word: '\bp+[i1l]+z+d+a+\b'
       prevent: true
@@ -105,4 +105,13 @@ words:
     - word: '\bc+h+u+j+[o0]+w+y+\b'
       prevent: true
     - word: '\bj+e+b+a+[cć]+\b'
+      prevent: true
+    # Common Slovak/Czech slurs and phrases.
+    - word: '\b(?:d[o0])p+i+[cč]+[ae]+\b'
+      prevent: true
+    - word: '\bk+[o0]+k+[o0]+t+\b'
+      prevent: true
+    - word: '\b(?:vy|na)j+e+b+a+[tť]+\b'
+      prevent: true
+    - word: 'j+e+b+e+'
       prevent: true
