@@ -1,5 +1,6 @@
 words:
   collection:
+    # Common English (Uk/Us/Aus) slurs and phrases.
     # Explanation: Neo-nazi symbol
     - word: '\b1488\b'
       prevent: true
@@ -93,4 +94,15 @@ words:
     - word: '\bt+w+a+t+\b'
       prevent: true
     - word: '\bl+o+l+i+\b'
+      prevent: true
+    # Common Polish slurs and phrases.
+    - word: '\bk+u+r+w+a+\b'
+      prevent: true
+    - word: '\bp+[i1l]+z+d+a+\b'
+      prevent: true
+    - word: '\bc+h+u+j+\b'
+      prevent: true
+    - word: '\bc+h+u+j+[o0]+w+y+\b'
+      prevent: true
+    - word: '\bj+e+b+a+[cć]+\b'
       prevent: true
