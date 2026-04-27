@@ -1456,47 +1456,6 @@ void RaceDirector::HandleReadyRace(
   }
 }
 
-void RaceDirector::PrepareItemSpawners(RaceInstance& raceInstance)
-{
-  try {
-    const auto& gameModeInfo = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-      static_cast<uint32_t>(raceInstance.raceGameMode));
-    const auto& mapBlockInfo = GetServerInstance().GetCourseRegistry().GetMapBlockInfo(
-      raceInstance.raceMapBlockId);
-
-    // Get the map position offset
-    const Vector3& offset = mapBlockInfo.offset;
-
-    // Spawn items based on map positions and game mode allowed deck IDs
-    for (const uint32_t usedDeckItemId : gameModeInfo.usedDeckItemIds)
-    {
-      const auto& deckItemInfo = GetServerInstance().GetCourseRegistry().GetDeckItemInfo(usedDeckItemId);
-      for (const auto& mapDeckItemInstance : mapBlockInfo.deckItems)
-      {
-        if (mapDeckItemInstance.deckId != usedDeckItemId)
-          continue;
-
-        auto& item = raceInstance.tracker.AddItem();
-        item.itemTypes = deckItemInfo.itemTypes;
-        
-        // Randomly pick an initial type
-        if (!item.itemTypes.empty())
-        {
-          static std::random_device rd;
-          std::uniform_int_distribution<size_t> distribution(0, item.itemTypes.size() - 1);
-          item.currentType = item.itemTypes[distribution(rd)];
-        }
-
-        item.position = mapDeckItemInstance.position + offset;
-      }
-    }
-
-  }
-  catch (const std::exception& e) {
-    spdlog::warn("Failed to prepare item spawners for room {}: {}", raceInstance.roomUid, e.what());
-  }
-}
-
 void RaceDirector::HandleStartRace(
   const ClientId clientId,
   [[maybe_unused]] const protocol::AcCmdCRStartRace& command)
@@ -1661,7 +1620,7 @@ void RaceDirector::HandleStartRace(
   raceInstance.tracker.Clear();
 
   // Add the items.
-  PrepareItemSpawners(raceInstance);
+  raceInstance.PrepareItemSpawners();
 
   // Add the racers.
   _serverInstance.GetRoomSystem().GetRoom(

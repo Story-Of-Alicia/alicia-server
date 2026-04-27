@@ -314,8 +314,6 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRTriggerizeAct& command);
 
-  void PrepareItemSpawners(RaceInstance& raceInstance);
-
   //!
   std::thread test;
   std::atomic_bool run_test{true};

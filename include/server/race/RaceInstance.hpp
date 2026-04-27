@@ -38,10 +38,12 @@ public:
   explicit RaceInstance(
     ServerInstance& serverInstance,
     CommandServer& commandServer,
-    const registry::Course::GameModeInfo& gameModeInfo);
+    protocol::GameMode gameMode);
   virtual ~RaceInstance();
 
   static uint64_t TimePointToRaceTimePoint(const std::chrono::steady_clock::time_point& timePoint);
+
+  void PrepareItemSpawners();
 
 private:
   friend class RaceDirector;

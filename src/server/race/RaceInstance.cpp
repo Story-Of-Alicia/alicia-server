@@ -31,10 +31,12 @@ namespace server
 RaceInstance::RaceInstance(
   ServerInstance& serverInstance,
   CommandServer& commandServer,
-  const registry::Course::GameModeInfo& gameModeInfo) :
+  protocol::GameMode gameMode) :
+    raceGameMode(gameMode),
     _serverInstance(serverInstance),
-    _commandServer(commandServer), 
-    _gameModeInfo(gameModeInfo)
+    _commandServer(commandServer),
+    _gameModeInfo(serverInstance.GetCourseRegistry().GetCourseGameModeInfo(
+      static_cast<uint8_t>(gameMode)))
 {}
 
 RaceInstance::~RaceInstance() = default;
@@ -360,6 +362,45 @@ void RaceInstance::Tick()
       break;
     default:
       throw std::runtime_error("Race instance stage is not recognised");
+  }
+}
+
+void RaceInstance::PrepareItemSpawners()
+{
+  try {
+    const auto& mapBlockInfo = _serverInstance.GetCourseRegistry().GetMapBlockInfo(
+      raceMapBlockId);
+
+    // Get the map position offset
+    const Vector3& offset = mapBlockInfo.offset;
+
+    // Spawn items based on map positions and game mode allowed deck IDs
+    for (const uint32_t usedDeckItemId : _gameModeInfo.usedDeckItemIds)
+    {
+      const auto& deckItemInfo = _serverInstance.GetCourseRegistry().GetDeckItemInfo(usedDeckItemId);
+      for (const auto& mapDeckItemInstance : mapBlockInfo.deckItems)
+      {
+        if (mapDeckItemInstance.deckId != usedDeckItemId)
+          continue;
+
+        auto& item = tracker.AddItem();
+        item.itemTypes = deckItemInfo.itemTypes;
+        
+        // Randomly pick an initial type
+        if (!item.itemTypes.empty())
+        {
+          static std::random_device rd;
+          std::uniform_int_distribution<size_t> distribution(0, item.itemTypes.size() - 1);
+          item.currentType = item.itemTypes[distribution(rd)];
+        }
+
+        item.position = mapDeckItemInstance.position + offset;
+      }
+    }
+
+  }
+  catch (const std::exception& e) {
+    spdlog::warn("Failed to prepare item spawners for room {}: {}", roomUid, e.what());
   }
 }
 

@@ -36,8 +36,7 @@ MagicRaceInstance::MagicRaceInstance(
   CommandServer& commandServer) : RaceInstance(
     serverInstance,
     commandServer,
-    serverInstance.GetCourseRegistry().GetCourseGameModeInfo(
-      static_cast<uint8_t>(protocol::GameMode::Magic)))
+    protocol::GameMode::Magic)
 {}
 
 MagicRaceInstance::~MagicRaceInstance() = default;

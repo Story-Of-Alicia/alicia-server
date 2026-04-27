@@ -31,8 +31,7 @@ SpeedRaceInstance::SpeedRaceInstance(
   CommandServer& commandServer) : RaceInstance(
     serverInstance,
     commandServer,
-    serverInstance.GetCourseRegistry().GetCourseGameModeInfo(
-      static_cast<uint8_t>(protocol::GameMode::Speed)))
+    protocol::GameMode::Speed)
 {}
 
 SpeedRaceInstance::~SpeedRaceInstance() = default;
