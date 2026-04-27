@@ -51,6 +51,7 @@ ServerInstance::ServerInstance(
   , _infractionSystem(*this)
   , _itemSystem(*this)
   , _matchmakingSystem(*this)
+  , _telemetry(*this)
 {
 }
 
@@ -249,6 +250,27 @@ void ServerInstance::Initialize()
       _shouldRun = false;
     }
   });
+
+  if (GetSettings().telemetry.enabled)
+  {
+    // Telemetry
+    _telemetryThread = std::thread([this]()
+    {
+      try
+      {
+        _telemetry.Initialize();
+        RunDirectorTaskLoop(_telemetry);
+        _telemetry.Terminate();
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error("Unhandled exception in telemetry: {}", x.what());
+        DumpStackTrace();
+
+        _shouldRun = false;
+      }
+    });
+  }
 }
 
 void ServerInstance::Terminate()

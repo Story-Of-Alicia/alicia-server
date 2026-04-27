@@ -17,10 +17,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
-#include "server/auth/AuthenticationService.hpp"
+#include "server/authentication/AuthenticationService.hpp"
 
-#include "server/auth/LocalAuthenticationBackend.hpp"
-#include "server/auth/PostgresAuthenticationBackend.hpp"
+#include "server/authentication/LocalAuthenticationBackend.hpp"
+#include "server/authentication/PostgresAuthenticationBackend.hpp"
 #include "server/ServerInstance.hpp"
 
 #include <spdlog/spdlog.h>

@@ -769,6 +769,12 @@ void RaceDirector::DisconnectCharacter(data::Uid characterUid)
   }
 }
 
+size_t RaceDirector::GetRoomCount()
+{
+  std::scoped_lock lock(_raceInstancesMutex);
+  return _raceInstances.size();
+}
+
 ServerInstance& RaceDirector::GetServerInstance()
 {
   return _serverInstance;

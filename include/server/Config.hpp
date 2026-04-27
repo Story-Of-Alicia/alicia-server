@@ -51,7 +51,7 @@ public:
   //!
   struct Authentication
   {
-    std::string backend;
+    std::string backend{};
 
     struct Postgres
     {
@@ -59,6 +59,18 @@ public:
     } postgres;
 
   } authentication{};
+
+  //!
+  struct Telemetry
+  {
+    bool enabled;
+    std::string backend;
+
+    struct Postgres
+    {
+      std::string connectionUri;
+    } postgres{};
+  } telemetry{};
 
   //!
   struct Lobby
