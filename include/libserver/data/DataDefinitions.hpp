@@ -561,7 +561,6 @@ struct Stallion
   dao::Field<uint32_t> timesMated{0u};      // Times bred during current registration
   dao::Field<Clock::time_point> registeredAt{};
   dao::Field<Clock::time_point> expiresAt{};
-  // Note: Stallions expire 24 hours after registeredAt
 };
 
 } // namespace data

@@ -42,10 +42,40 @@ BreedingMarket::BreedingMarket(ServerInstance& serverInstance)
 
 void BreedingMarket::Initialize()
 {
-  for (data::Uid stallionUid : _serverInstance.GetDataDirector().ListRegisteredStallions())
+  auto stallionUids = _serverInstance.GetDataDirector().ListRegisteredStallions();
+
+  auto iterator = stallionUids.begin();
+  while (not stallionUids.empty())
   {
-    _serverInstance.GetDataDirector().GetStallionCache().Get(stallionUid);
+    if (iterator == stallionUids.end())
+    {
+      iterator = stallionUids.begin();
+    }
+
+    const auto stallionUid = *iterator;
+    const auto stallionRecord = _serverInstance.GetDataDirector().GetStallionCache().Get(
+      stallionUid);
+
+    if (not stallionRecord)
+    {
+      ++iterator;
+      continue;
+    }
+
+    auto horseUid = data::InvalidUid;
+
+    stallionRecord->Immutable([&horseUid](const data::Stallion& stallion)
+    {
+      horseUid = stallion.horseUid();
+    });
+
+    iterator = stallionUids.erase(iterator);
+
+    _horses.try_emplace(horseUid, Horse{
+      .stallionUid = stallionUid});
   }
+
+  ScheduleExpirationCheck();
 }
 
 void BreedingMarket::Terminate()
@@ -55,6 +85,7 @@ void BreedingMarket::Terminate()
 
 void BreedingMarket::Tick()
 {
+  _scheduler.Tick();
 }
 
 bool BreedingMarket::HandleRegisterStallion(
@@ -62,13 +93,15 @@ bool BreedingMarket::HandleRegisterStallion(
   const data::Uid horseUid,
   const int32_t breedingFee) noexcept
 {
-  const std::scoped_lock lock(_mutex);
-  
-  const auto stallionIterator = _horses.find(horseUid);
+  {
+    const std::shared_lock lock(_mutex);
 
-  // If the horse is a registered stallion do an early return.
-  if (stallionIterator != _horses.end())
-    return false;
+    const auto stallionIterator = _horses.find(horseUid);
+
+    // If the horse is a registered stallion do an early return.
+    if (stallionIterator != _horses.end())
+      return false;
+  }
 
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     characterUid);
@@ -120,31 +153,16 @@ bool BreedingMarket::HandleRegisterStallion(
   if (not canAffordRegistrationFee)
     return false;
 
-  // Set horse type to Stallion
-  horseRecord.Mutable([](data::Horse& horse)
+  const auto stallionUid = RegisterStallion(characterUid, horseUid, breedingFee);
+  if (stallionUid == data::InvalidUid)
+    return false;
+
   {
-    horse.type() = data::Horse::Type::Stallion;
-  });
+    std::scoped_lock lock(_mutex);
 
-  // Create the stallion record.
-  const auto stallionRecord = _serverInstance.GetDataDirector().CreateStallion();
-
-  data::Uid stallionUid = data::InvalidUid;
-  
-  stallionRecord.Mutable([&](data::Stallion& stallion)
-  {
-    stallion.horseUid() = horseUid;
-    stallion.ownerUid() = characterUid;
-    stallion.breedingCharge() = breedingFee;
-    stallion.registeredAt() = util::Clock::now();
-    // todo: this should be configurable if the client supports it.
-
-    stallion.expiresAt() = util::Clock::now() + MarketDuration;
-    stallionUid = stallion.uid();;
-  });
-
-  _horses.emplace(horseUid, Horse{
-    .stallionUid = stallionUid});
+    _horses.emplace(horseUid, Horse{
+      .stallionUid = stallionUid});
+  }
 
   return true;
 }
@@ -186,29 +204,10 @@ bool BreedingMarket::HandleUnregisterStallion(
   if (not canUnregisterStallion)
     return false;
 
-  // Populate the earnings.
-  Earnings earnings{};
-  stallionRecord->Immutable([&earnings](
-    const data::Stallion& stallion)
-    {
-      earnings.timesMated = stallion.timesMated();
-      earnings.breedingFee = stallion.breedingCharge();
-    });
-
-  earnings.earnings = earnings.timesMated * earnings.breedingFee;
-
-  // todo: payout the earnings
+  UnregisterStallion(horseUid, stallionUid);
 
   // Delete the stallion record.
-  _serverInstance.GetDataDirector().GetStallionCache().Delete(stallionUid);
   _horses.erase(stallionIterator);
-
-  horseRecord->Mutable([timesMated = earnings.timesMated](
-    data::Horse& horse)
-    {
-      horse.type() = data::Horse::Type::Adult;
-      horse.breeding.breedingCount() += timesMated;
-    });
 
   return true;
 }
@@ -216,14 +215,18 @@ bool BreedingMarket::HandleUnregisterStallion(
 std::optional<BreedingMarket::Earnings> BreedingMarket::CalculateUnregisterEarnings(
   const data::Uid horseUid) const noexcept
 {
-  std::scoped_lock lock(_mutex);
-  
-  // If the horse is not a registered stallion do an early return.
-  const auto horseIterator = _horses.find(horseUid);
-  if (horseIterator == _horses.end())
-    return std::nullopt;
+  data::Uid stallionUid = data::InvalidUid;
 
-  const data::Uid stallionUid = horseIterator->second.stallionUid;
+  {
+    std::shared_lock lock(_mutex);
+
+    // If the horse is not a registered stallion do an early return.
+    const auto horseIterator = _horses.find(horseUid);
+    if (horseIterator == _horses.end())
+      return std::nullopt;
+
+    stallionUid = horseIterator->second.stallionUid;
+  }
 
   const auto stallionRecord = _serverInstance.GetDataDirector().GetStallionCache().Get(
     stallionUid);
@@ -251,13 +254,13 @@ std::optional<BreedingMarket::Earnings> BreedingMarket::CalculateUnregisterEarni
 bool BreedingMarket::IsRegistered(
   const data::Uid horseUid) const noexcept
 {
-  const std::scoped_lock lock(_mutex);
+  const std::shared_lock lock(_mutex);
   return _horses.contains(horseUid);
 }
 
 int32_t BreedingMarket::CalculateRegistrationFee(const int32_t breedingFee)
 {
-  return static_cast<int32_t>(std::ceilf(breedingFee * RegistrationFee));
+  return static_cast<int32_t>(std::ceilf(static_cast<float>(breedingFee) * RegistrationFee));
 }
 
 std::optional<BreedingMarket::GradeFeeRange> BreedingMarket::GetGradeFeeRange(
@@ -278,6 +281,8 @@ std::vector<data::Uid> BreedingMarket::CollectMarketSnapshot(
   const SnapshotOrder order,
   const SnapshotFilter filter) const noexcept
 {
+  std::shared_lock lock(_mutex);
+
   std::vector<data::Uid> result{};
 
   for (const auto& horseUid : _horses | std::views::keys)
@@ -412,6 +417,143 @@ std::vector<data::Uid> BreedingMarket::CollectMarketSnapshot(
     });
 
   return result;
+}
+
+data::Uid BreedingMarket::RegisterStallion(
+  const data::Uid characterUid,
+  const data::Uid horseUid,
+  const int32_t breedingFee) const noexcept
+{
+  const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(
+    horseUid);
+
+  if (not horseRecord)
+    return data::InvalidUid;
+
+  // Set horse type to Stallion
+  horseRecord.Mutable([](data::Horse& horse)
+  {
+    horse.type() = data::Horse::Type::Stallion;
+  });
+
+  // Create the stallion record.
+  const auto stallionRecord = _serverInstance.GetDataDirector().CreateStallion();
+
+  data::Uid stallionUid = data::InvalidUid;
+
+  stallionRecord.Mutable([&](data::Stallion& stallion)
+  {
+    stallion.horseUid() = horseUid;
+    stallion.ownerUid() = characterUid;
+    stallion.breedingCharge() = breedingFee;
+    stallion.registeredAt() = util::Clock::now();
+    // todo: this should be configurable if the client supports it.
+
+    stallion.expiresAt() = util::Clock::now() + MarketDuration;
+    stallionUid = stallion.uid();;
+  });
+
+  return stallionUid;
+}
+
+void BreedingMarket::UnregisterStallion(
+  const data::Uid horseUid,
+  const data::Uid stallionUid) const noexcept
+{
+  const auto stallionRecord = _serverInstance.GetDataDirector().GetStallionCache().Get(
+    stallionUid);
+  const auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(
+    horseUid);
+
+  if (not stallionRecord || not horseRecord)
+    return;
+
+  // Populate the earnings.
+  Earnings earnings{};
+  stallionRecord->Immutable([&earnings](
+    const data::Stallion& stallion)
+    {
+      earnings.timesMated = stallion.timesMated();
+      earnings.breedingFee = stallion.breedingCharge();
+    });
+
+  earnings.earnings = earnings.timesMated * earnings.breedingFee;
+
+  // todo: payout the earnings
+
+  // Update the horse status and statistics.
+  horseRecord->Mutable([timesMated = earnings.timesMated](
+    data::Horse& horse)
+    {
+      horse.type() = data::Horse::Type::Adult;
+      horse.breeding.breedingCount() += timesMated;
+    });
+
+  // Delete the stallion record.
+  _serverInstance.GetDataDirector().GetStallionCache().Delete(stallionUid);
+}
+
+void BreedingMarket::ScheduleExpirationCheck() noexcept
+{
+  _scheduler.Queue(
+    [this]()
+    {
+      RunExpirationCheck();
+      ScheduleExpirationCheck();
+    },
+    Scheduler::Clock::now() + std::chrono::seconds(60));
+}
+
+void BreedingMarket::RunExpirationCheck() noexcept
+{
+  struct Entry
+  {
+    data::Uid horseUid{data::InvalidUid};
+    data::Uid stallionUid{data::InvalidUid};
+  };
+
+  std::vector<Entry> expiredHorseUids;
+
+  // Collect expired horse stallion registrations.
+  {
+    std::shared_lock lock(_mutex);
+
+    for (const auto& [horseUid, horseData] : _horses)
+    {
+      const auto stallionRecord = _serverInstance.GetDataDirector().GetStallion(
+        horseData.stallionUid);
+
+      if (not stallionRecord)
+        continue;
+
+      data::Clock::time_point expiresAt;
+      stallionRecord.Immutable([&expiresAt](const data::Stallion& stallion)
+      {
+        expiresAt = stallion.expiresAt();
+      });
+
+      const auto now = data::Clock::now();
+      if (now > expiresAt)
+      {
+        expiredHorseUids.emplace_back(Entry{
+          .horseUid = horseUid,
+          .stallionUid = horseData.stallionUid});
+      }
+    }
+  }
+
+  // Erase collected horse stallion registrations.
+  {
+    std::scoped_lock lock(_mutex);
+
+    for (const auto [horseUid, stallionUid] : expiredHorseUids)
+    {
+      UnregisterStallion(horseUid, stallionUid);
+
+      // Remove from horse market.
+      _horses.erase(horseUid);
+    }
+  }
 }
 
 } // namespace server

@@ -6,12 +6,13 @@
 #define BREEDING_MARKET_HPP
 
 #include <libserver/data/DataDefinitions.hpp>
+#include <libserver/util/Scheduler.hpp>
 #include <libserver/util/Util.hpp>
 
 #include <vector>
 #include <unordered_map>
 #include <optional>
-#include <mutex>
+#include <shared_mutex>
 #include <set>
 
 namespace server
@@ -138,11 +139,24 @@ private:
     data::Uid stallionUid{data::InvalidUid};
   };
 
+  data::Uid RegisterStallion(
+    data::Uid characterUid,
+    data::Uid horseUid,
+    int32_t breedingFee) const noexcept;
+  void UnregisterStallion(
+    data::Uid horseUid,
+    data::Uid stallionUid) const noexcept;
+  void ScheduleExpirationCheck() noexcept;
+  void RunExpirationCheck() noexcept;
+
   //! Reference to the server instance
   ServerInstance& _serverInstance;
 
+  //! Job scheduler.
+  Scheduler _scheduler;
+
   //! Mutex for thread-safe access to breeding market data
-  mutable std::mutex _mutex;
+  mutable std::shared_mutex _mutex;
 
   //! Set of horses which are stallions.
   std::unordered_map<data::Uid, Horse> _horses;
