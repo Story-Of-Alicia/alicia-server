@@ -197,7 +197,7 @@ bool BreedingMarket::HandleUnregisterStallion(
 
   earnings.earnings = earnings.timesMated * earnings.breedingFee;
 
-  // todo payout
+  // todo: payout the earnings
 
   // Delete the stallion record.
   _serverInstance.GetDataDirector().GetStallionCache().Delete(stallionUid);
