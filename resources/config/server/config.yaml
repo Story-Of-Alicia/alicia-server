@@ -17,7 +17,7 @@ server:
   # Telemetry and metrics collection
   telemetry:
     # Whether metric collection is enabled.
-    enabled: true
+    enabled: false
     # Type of telemetry backend.
     # Supported types are `none` and `postgres`.
     backend: postgres
