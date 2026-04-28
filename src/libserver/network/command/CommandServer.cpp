@@ -23,7 +23,10 @@
 #include "libserver/util/Util.hpp"
 
 #include <ranges>
+
+#ifndef DISABLE_STACKTRACE
 #include <stacktrace>
+#endif
 
 #include <spdlog/spdlog.h>
 
@@ -134,10 +137,12 @@ void CommandServer::BeginHost(const asio::ip::address& address, uint16_t port)
       {
         spdlog::error("Unhandled command server network exception: {}", x.what());
 
+        #ifndef DISABLE_STACKTRACE
         for (const auto& entry : std::stacktrace::current())
         {
           spdlog::error("[Stack] {}({}): {}", entry.source_file(), entry.source_line(), entry.description());
         }
+        #endif
 
         _server.End();
       }
