@@ -952,9 +952,10 @@ void ChatSystem::RegisterAdminCommands()
     "promote",
     [this](
       const std::span<const std::string>& arguments,
-      data::Uid characterUid) -> std::vector<std::string>
+      data::Uid invokerCharacterUid) -> std::vector<std::string>
     {
-      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(
+        invokerCharacterUid);
       if (not invokerRecord)
         return {"Server error"};
 
@@ -968,20 +969,29 @@ void ChatSystem::RegisterAdminCommands()
         return {};
 
       if (arguments.empty())
-      {
         return {"Specify user name"};
-      }
 
-      const auto userName = arguments[0];
+      const auto& userName = arguments[0];
 
-      const auto userInstance = _serverInstance.GetLobbyDirector().GetUser(userName);
+      const auto userInstance = _serverInstance.GetDataDirector().GetUser(
+        userName);
       if (not _serverInstance.GetLobbyDirector().IsUserOnline(userName))
       {
-        return {std::format("User '{}' is not online", userName)};
+        return {
+          std::format("Either the user '{}' does not exist ", userName),
+          "or is being loaded.",
+          "Try again later."};
       }
 
+      auto characterUid = data::InvalidUid;
+
+      userInstance.Immutable([&characterUid](const data::User& user)
+      {
+        characterUid = user.characterUid();
+      });
+
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
-        userInstance.characterUid);
+        characterUid);
       if (not characterRecord)
       {
         return {std::format("User '{}' does not have a character", userName)};
@@ -1002,9 +1012,10 @@ void ChatSystem::RegisterAdminCommands()
     "demote",
     [this](
       const std::span<const std::string>& arguments,
-      data::Uid characterUid) -> std::vector<std::string>
+      data::Uid invokerCharacterUid) -> std::vector<std::string>
     {
-      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(
+        invokerCharacterUid);
       if (not invokerRecord)
         return {"Server error"};
 
@@ -1018,20 +1029,29 @@ void ChatSystem::RegisterAdminCommands()
         return {};
 
       if (arguments.empty())
-      {
         return {"Specify user name"};
-      }
 
-      const auto userName = arguments[0];
+      const auto& userName = arguments[0];
 
-      const auto userInstance = _serverInstance.GetLobbyDirector().GetUser(userName);
+      const auto userInstance = _serverInstance.GetDataDirector().GetUser(
+        userName);
       if (not _serverInstance.GetLobbyDirector().IsUserOnline(userName))
       {
-        return {std::format("User '{}' is not online", userName)};
+        return {
+          std::format("Either the user '{}' does not exist ", userName),
+          "or is being loaded.",
+          "Try again later."};
       }
 
+      auto characterUid = data::InvalidUid;
+
+      userInstance.Immutable([&characterUid](const data::User& user)
+      {
+        characterUid = user.characterUid();
+      });
+
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
-        userInstance.characterUid);
+        characterUid);
       if (not characterRecord)
       {
         return {std::format("User '{}' does not have a character", userName)};
