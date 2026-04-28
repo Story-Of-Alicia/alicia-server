@@ -43,7 +43,7 @@ void AuthenticationService::Initialize()
     {
       _backend = std::make_unique<PostgresAuthenticationBackend>(
         authenticationSettings.postgres.connectionUri);
-        spdlog::info("Authentication service is using Postgres backend");
+      spdlog::info("Authentication service is using Postgres backend");
     }
     catch (const std::exception& x)
     {

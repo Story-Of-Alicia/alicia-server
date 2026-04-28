@@ -23,7 +23,7 @@
 #include <libserver/util/Scheduler.hpp>
 #include <libserver/util/TimeSeriesData.hpp>
 
-#include <memory>
+#include <optional>
 
 #include <pqxx/pqxx>
 
@@ -43,12 +43,14 @@ public:
 
 private:
   //! Time series data tracking the player count.
-  TimeSeriesData<size_t, 4096> _playerCountTimeSeries;
+  TimeSeriesData<size_t, 3600> _playerCountMetric;
   //! Time series data tracking the race count.
-  TimeSeriesData<size_t, 4096> _roomCountTimeSeries;
+  TimeSeriesData<size_t, 3600> _roomCountMetric;
 
   //! Flag indicating whether telemetry is enabled.
   bool enabled = false;
+
+  void ConnectPostgresBackend();
 
   void CollectData();
   void ScheduleCollectData();
@@ -62,7 +64,7 @@ private:
   Scheduler _scheduler;
 
   // telemetry data source
-  std::unique_ptr<pqxx::connection> _connection;
+  std::optional<pqxx::connection> _connection;
 };
 
 } // namespace server

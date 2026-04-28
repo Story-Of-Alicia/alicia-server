@@ -251,9 +251,9 @@ void ServerInstance::Initialize()
     }
   });
 
+  // Telemetry.
   if (GetSettings().telemetry.enabled)
   {
-    // Telemetry
     _telemetryThread = std::thread([this]()
     {
       try
@@ -270,6 +270,10 @@ void ServerInstance::Initialize()
         _shouldRun = false;
       }
     });
+  }
+  else
+  {
+    spdlog::info("Metric collection is disabled");
   }
 }
 
@@ -381,6 +385,11 @@ RoomSystem& ServerInstance::GetRoomSystem()
 MatchmakingSystem& ServerInstance::GetMatchmakingSystem()
 {
   return _matchmakingSystem;
+}
+
+Telemetry& ServerInstance::GetTelemetry()
+{
+  return _telemetry;
 }
 
 OtpSystem& ServerInstance::GetOtpSystem()

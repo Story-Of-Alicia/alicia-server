@@ -30,8 +30,11 @@ namespace
 void PrepareTables(pqxx::connection& connection)
 {
   pqxx::work tx(connection);
-  tx.exec("create table player_count_time_series(time timestamp, value int);");
-  tx.exec("create table room_count_time_series(time timestamp, value int);");
+  tx.exec("create schema if not exists telemetry");
+  tx.exec("create table if not exists telemetry.player_count_time_series(time bigint primary key, value int);");
+  tx.exec("create table if not exists telemetry.room_count_time_series(time bigint primary key, value int);");
+
+  tx.commit();
 }
 
 } // anon namespace
@@ -45,17 +48,26 @@ void Telemetry::Initialize()
 {
   const auto& settings = _serverInstance.GetSettings();
 
+  if (settings.telemetry.backend == "none")
+  {
+    spdlog::info("Telemetry is not using any backend");
+    ScheduleCollectData();
+  }
   if (settings.telemetry.backend == "postgres")
   {
-    _connection = std::make_unique<pqxx::connection>(settings.telemetry.backend);
+    spdlog::info("Telemetry is using PostgreSQL backend");
 
-    PrepareTables(*_connection);
+    ConnectPostgresBackend();
 
     ScheduleCollectData();
     ScheduleSynchronizeData();
-
-    spdlog::info("Telemetry is using PostgreSQL backend");
   }
+  else
+  {
+    spdlog::warn("Telemetry is using an unknown backend");
+  }
+
+  spdlog::info("Telemetry is collecting metrics");
 }
 
 void Telemetry::Terminate()
@@ -69,13 +81,36 @@ void Telemetry::Tick()
   _scheduler.Tick();
 }
 
+void Telemetry::ConnectPostgresBackend()
+{
+  const auto& settings = _serverInstance.GetSettings();
+
+  try
+  {
+    const auto timerBegin = std::chrono::steady_clock::now();
+
+    _connection.emplace(
+      settings.telemetry.postgres.connectionUri);
+    PrepareTables(*_connection);
+
+    const auto time = std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::steady_clock::now() - timerBegin);
+    spdlog::info("Connection to telemetry backend established in {}ms", time.count());
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::warn("Telemetry backend exception: {}", x.what());
+    spdlog::error("Telemetry backend is not functional, data are not synchronized");
+  }
+}
+
 void Telemetry::CollectData()
 {
   const auto playerCount = _serverInstance.GetLobbyDirector().GetUserCount();
   const auto roomCount = _serverInstance.GetRaceDirector().GetRoomCount();
 
-  _playerCountTimeSeries.Collect(playerCount);
-  _roomCountTimeSeries.Collect(roomCount);
+  _playerCountMetric.Collect(playerCount);
+  _roomCountMetric.Collect(roomCount);
 }
 
 void Telemetry::ScheduleCollectData()
@@ -83,37 +118,61 @@ void Telemetry::ScheduleCollectData()
   _scheduler.Queue(
     [this]()
     {
-      CollectData();
-      ScheduleCollectData();
+      try
+      {
+        CollectData();
+        ScheduleCollectData();
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error("Exception occurred while collecting metrics: {}", x.what());
+      }
     },
-    Scheduler::Clock::now() + std::chrono::seconds(5));
+    Scheduler::Clock::now() + std::chrono::seconds(1));
 }
 
 void Telemetry::SynchronizeData()
 {
-  pqxx::work tx(*_connection);
+  if (not _connection)
+    return;
 
-  _playerCountTimeSeries.GetAndClearData([&tx](auto& data)
-    {
-      for (const auto& [timePoint, value] : data)
-      {
-        tx.exec(std::format(
-            "insert into player_count_time_series (%ld, %ld)",
-            timePoint.time_since_epoch(),
-            value));
-      }
-    });
+  try
+  {
+    pqxx::work tx(*_connection);
 
-  _roomCountTimeSeries.GetAndClearData([&tx](auto& data)
-    {
-      for (const auto& [timePoint, value] : data)
+    auto playerCountStream = pqxx::stream_to::raw_table(tx, "telemetry.player_count_time_series");
+    _playerCountMetric.GetAndClearData([&playerCountStream](auto& data)
       {
-        tx.exec(std::format(
-            "insert into room_count_time_series (%ld, %ld)",
-            timePoint.time_since_epoch(),
-            value));
-      }
-    });
+        for (const auto& [timePoint, value] : data)
+        {
+          if (timePoint == decltype(_playerCountMetric)::Clock::time_point::min())
+            continue;
+
+          playerCountStream.write_values(timePoint.time_since_epoch().count(), value);
+        }
+      });
+    playerCountStream.complete();
+
+    auto roomCountStream = pqxx::stream_to::raw_table(tx, "telemetry.room_count_time_series");
+    _roomCountMetric.GetAndClearData([&roomCountStream](auto& data)
+      {
+        for (const auto& [timePoint, value] : data)
+        {
+          if (timePoint == decltype(_playerCountMetric)::Clock::time_point::min())
+            continue;
+
+          roomCountStream.write_values(timePoint.time_since_epoch().count(), value);
+        }
+      });
+
+    roomCountStream.complete();
+    tx.commit();
+  }
+  catch (const pqxx::broken_connection&)
+  {
+    spdlog::warn("Lost connection to telemetry backend, attempting to perform a reconnect");
+    ConnectPostgresBackend();
+  }
 }
 
 void Telemetry::ScheduleSynchronizeData()
@@ -121,8 +180,15 @@ void Telemetry::ScheduleSynchronizeData()
   _scheduler.Queue(
     [this]()
     {
-      SynchronizeData();
-      ScheduleSynchronizeData();
+      try
+      {
+        SynchronizeData();
+        ScheduleSynchronizeData();
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error("Exception occurred while synchronizing data with telemetry backend: {}", x.what());
+      }
     },
     Scheduler::Clock::now() + std::chrono::minutes(1));
 }
