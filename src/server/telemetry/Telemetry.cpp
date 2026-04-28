@@ -148,7 +148,9 @@ void Telemetry::SynchronizeData()
           if (timePoint == decltype(_playerCountMetric)::Clock::time_point::min())
             continue;
 
-          playerCountStream.write_values(timePoint.time_since_epoch().count(), value);
+          playerCountStream.write_values(
+            std::chrono::duration_cast<std::chrono::seconds>(timePoint.time_since_epoch()).count(),
+            value);
         }
       });
     playerCountStream.complete();
@@ -161,7 +163,9 @@ void Telemetry::SynchronizeData()
           if (timePoint == decltype(_playerCountMetric)::Clock::time_point::min())
             continue;
 
-          roomCountStream.write_values(timePoint.time_since_epoch().count(), value);
+          roomCountStream.write_values(
+            std::chrono::duration_cast<std::chrono::seconds>(timePoint.time_since_epoch()).count(),
+            value);
         }
       });
 
