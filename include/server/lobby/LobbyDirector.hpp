@@ -138,6 +138,9 @@ public:
   //! Get users
   //! @return Get users.
   [[nodiscard]] std::unordered_map<std::string, UserInstance>& GetUsers();
+  //! Get user count.
+  //! @return User count.
+  [[nodiscard]] size_t GetUserCount();
   //! Get guilds
   //! @return Get guilds.
   [[nodiscard]] std::unordered_map<data::Uid, GuildInstance>& GetGuilds();

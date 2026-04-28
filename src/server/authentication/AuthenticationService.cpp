@@ -17,10 +17,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
-#include "server/auth/AuthenticationService.hpp"
+#include "server/authentication/AuthenticationService.hpp"
 
-#include "server/auth/LocalAuthenticationBackend.hpp"
-#include "server/auth/PostgresAuthenticationBackend.hpp"
+#include "server/authentication/LocalAuthenticationBackend.hpp"
+#include "server/authentication/PostgresAuthenticationBackend.hpp"
 #include "server/ServerInstance.hpp"
 
 #include <spdlog/spdlog.h>
@@ -43,7 +43,7 @@ void AuthenticationService::Initialize()
     {
       _backend = std::make_unique<PostgresAuthenticationBackend>(
         authenticationSettings.postgres.connectionUri);
-        spdlog::info("Authentication service is using Postgres backend");
+      spdlog::info("Authentication service is using Postgres backend");
     }
     catch (const std::exception& x)
     {

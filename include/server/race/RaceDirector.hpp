@@ -132,6 +132,10 @@ public:
 
   void DisconnectCharacter(data::Uid characterUid);
 
+  //! Get room count.
+  //! @return Room count.
+  [[nodiscard]] size_t GetRoomCount();
+
   ServerInstance& GetServerInstance();
   Config::Race& GetConfig();
 
