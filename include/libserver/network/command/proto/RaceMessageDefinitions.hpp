@@ -2780,6 +2780,87 @@ struct AcCmdRCUpdateGameMoney
     SourceStream& stream);
 };
 
+struct AcCmdRCGameCreateClientItem
+{
+  //! Invoker's character OID.
+  uint16_t racerOid{};
+  // Some kind of flag (valid values: 0, 1 only)
+  uint8_t unk1{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCGameCreateClientItem;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCGameCreateClientItem& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCGameCreateClientItem& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRGameCreateClientItem
+{
+  uint16_t someonesOid{};
+  uint8_t unk1{};
+  std::array<float, 3> position{};
+  // Rotation?
+  std::array<float, 4> unk3{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRGameCreateClientItem;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRGameCreateClientItem& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRGameCreateClientItem& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCObtainEgg
+{
+  uint32_t characterUid;
+  uint32_t ItemUid;
+  uint32_t ItemTid;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCObtainEgg;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCObtainEgg& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCObtainEgg& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RACE_MESSAGE_DEFINES_HPP
