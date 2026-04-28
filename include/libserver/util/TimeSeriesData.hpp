@@ -35,7 +35,7 @@ template <typename T, size_t HistorySize>
 class TimeSeriesData
 {
 public:
-  using Clock = std::chrono::steady_clock;
+  using Clock = std::chrono::system_clock;
 
   struct Datum
   {
