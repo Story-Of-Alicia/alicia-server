@@ -30,9 +30,9 @@ namespace
 void PrepareTables(pqxx::connection& connection)
 {
   pqxx::work tx(connection);
-  tx.exec("create schema if not exists telemetry");
-  tx.exec("create table if not exists telemetry.player_count_time_series(time bigint primary key, value int);");
-  tx.exec("create table if not exists telemetry.room_count_time_series(time bigint primary key, value int);");
+  tx.exec("create schema if not exists metrics");
+  tx.exec("create table if not exists metrics.player_count_time_series(time bigint primary key, value int);");
+  tx.exec("create table if not exists metrics.room_count_time_series(time bigint primary key, value int);");
 
   tx.commit();
 }
@@ -140,7 +140,7 @@ void Telemetry::SynchronizeData()
   {
     pqxx::work tx(*_connection);
 
-    auto playerCountStream = pqxx::stream_to::raw_table(tx, "telemetry.player_count_time_series");
+    auto playerCountStream = pqxx::stream_to::raw_table(tx, "metrics.player_count_time_series");
     _playerCountMetric.GetAndClearData([&playerCountStream](auto& data)
       {
         for (const auto& [timePoint, value] : data)
@@ -153,7 +153,7 @@ void Telemetry::SynchronizeData()
       });
     playerCountStream.complete();
 
-    auto roomCountStream = pqxx::stream_to::raw_table(tx, "telemetry.room_count_time_series");
+    auto roomCountStream = pqxx::stream_to::raw_table(tx, "metrics.room_count_time_series");
     _roomCountMetric.GetAndClearData([&roomCountStream](auto& data)
       {
         for (const auto& [timePoint, value] : data)
