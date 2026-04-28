@@ -35,7 +35,7 @@ data::Tid ReadEggInfo(
   EggInfo& info)
 {
   info.deckItemId = node["deckId"].as<decltype(info.deckItemId)>();
-  info.region = node["region"].as<uint32_t>();
+  info.region = static_cast<Region>(node["region"].as<uint32_t>());
   info.obtainRatio = node["obtainRatio"].as<uint32_t>();
 
   const auto hatchSection = node["hatch"];
@@ -126,7 +126,7 @@ PetInfo PetRegistry::GetPetInfo(server::data::Tid tid)
   throw std::runtime_error("Pet with given TID not found");
 }
 
-std::vector<EggInfo> PetRegistry::GetEggsByRegion(uint32_t region) const
+std::vector<EggInfo> PetRegistry::GetEggsByRegion(Region region) const
 {
   std::vector<EggInfo> result;
   for (const auto& [tid, info] : _eggs)

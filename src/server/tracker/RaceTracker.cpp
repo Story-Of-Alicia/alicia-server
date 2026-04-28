@@ -98,15 +98,27 @@ RaceTracker::EventItem& RaceTracker::AddEventItem(data::Uid characterUid)
   return eventItem;
 }
 
-RaceTracker::EventItem* RaceTracker::FindEventItem(data::Uid characterUid, Oid oid)
+Oid RaceTracker::FindEventItem(data::Uid characterUid, Oid oid)
 {
   auto& racer = GetRacer(characterUid);
   for (auto& eventItem : racer.eventItems)
   {
     if (eventItem.oid == oid)
-      return &eventItem;
+      return eventItem.oid;
   }
-  return nullptr;
+  return InvalidEntityOid;
+}
+
+RaceTracker::EventItem& RaceTracker::GetEventItem(data::Uid characterUid, Oid oid)
+{
+  auto& racer = GetRacer(characterUid);
+  for (auto& eventItem : racer.eventItems)
+  {
+    if (eventItem.oid == oid)
+      return eventItem;
+  }
+
+  throw std::runtime_error("Event item is not tracked for racer");
 }
 
 void RaceTracker::RemoveEventItem(data::Uid characterUid, Oid oid)

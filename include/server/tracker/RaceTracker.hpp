@@ -180,8 +180,12 @@ public:
   //! Adds a per-racer event item for the given character.
   //! @returns Reference to the new event item record.
   EventItem& AddEventItem(data::Uid characterUid);
-  //! Finds a per-racer event item by OID. Returns nullptr if not found.
-  EventItem* FindEventItem(data::Uid characterUid, Oid oid);
+  //! Finds a per-racer event item by OID.
+  //! @returns The OID if found, otherwise InvalidEntityOid.
+  Oid FindEventItem(data::Uid characterUid, Oid oid);
+  //! Returns reference to a per-racer event item by OID.
+  //! @throws std::runtime_error if not found.
+  [[nodiscard]] EventItem& GetEventItem(data::Uid characterUid, Oid oid);
   //! Removes a per-racer event item by OID.
   void RemoveEventItem(data::Uid characterUid, Oid oid);
 

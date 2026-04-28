@@ -3083,9 +3083,11 @@ void RaceDirector::HandleUserRaceItemGet(
   auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
   // Check event items first (eggs, etc.)
-  if (const auto* eventItem = raceInstance.tracker.FindEventItem(clientContext.characterUid, command.itemId))
+  const auto eventItemOid = raceInstance.tracker.FindEventItem(clientContext.characterUid, command.itemId);
+  if (eventItemOid != tracker::InvalidEntityOid)
   {
-    const auto eggInfo = _serverInstance.GetPetRegistry().GetEggInfoByDeckId(eventItem->itemType);
+    auto& eventItem = raceInstance.tracker.GetEventItem(clientContext.characterUid, eventItemOid);
+    const auto eggInfo = _serverInstance.GetPetRegistry().GetEggInfoByDeckId(eventItem.itemType);
     auto itemUid = data::InvalidUid;
     const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
       clientContext.characterUid);
@@ -3110,7 +3112,7 @@ void RaceDirector::HandleUserRaceItemGet(
     protocol::AcCmdGameRaceItemGet itemGet{
       .characterOid = command.characterOid,
       .itemId = command.itemId,
-      .itemType = eventItem->itemType};
+      .itemType = eventItem.itemType};
     for (const ClientId raceClientId : raceInstance.clients)
       _commandServer.QueueCommand<decltype(itemGet)>(raceClientId, [itemGet]() { return itemGet; });
 

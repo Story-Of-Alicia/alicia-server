@@ -20,6 +20,8 @@
 #ifndef COURSEREGISTRY_HPP
 #define COURSEREGISTRY_HPP
 
+#include "libserver/registry/RegistryDefinitions.hpp"
+
 #include <array>
 #include <cstdint>
 
@@ -69,8 +71,8 @@ struct Course
 
   struct MapBlockInfo
   {
-    //! A region this map belongs to (1=meadow, 2=forest, 3=city, 4=desert, 5=ice).
-    uint32_t region{};
+    //! A region this map belongs to.
+    Region region{Region::Unknown};
     //! A required level to play the map.
     uint32_t requiredLevel{};
     //! A podium ID.
