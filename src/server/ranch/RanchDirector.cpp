@@ -26,6 +26,7 @@
 #include <libserver/util/Util.hpp>
 
 #include <cmath>
+#include <cstring>
 #include <ranges>
 
 #include <spdlog/spdlog.h>
@@ -269,14 +270,36 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
   _commandServer.RegisterCommandHandler<protocol::AcCmdRCMissionEvent>(
     [this](ClientId clientId, auto& command)
     {
-      protocol::AcCmdRCMissionEvent event
-      {
-        .event = protocol::AcCmdRCMissionEvent::Event::EVENT_CALL_NPC_RESULT,
-        .callerOid = command.callerOid,
-        .calledOid = 0x40'00'00'00,
-      };
+      if (command.event != protocol::AcCmdRCMissionEvent::Event::EVENT_CALL_NPC)
+        return;
 
-      _commandServer.QueueCommand<decltype(event)>(clientId, [event](){return event;});
+      const auto& clientContext = GetClientContext(clientId);
+      auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+
+      // Reverse-lookup horse UID from the OID the client sent.
+      data::Uid horseUid = data::InvalidUid;
+      for (const auto& [uid, entity] : ranchInstance.tracker.GetHorses())
+      {
+        if (entity.oid == static_cast<uint16_t>(command.calledOid))
+        {
+          horseUid = uid;
+          break;
+        }
+      }
+
+      if (horseUid == data::InvalidUid)
+        return;
+
+      const auto aiIt = ranchInstance.horseAIs.find(horseUid);
+      if (aiIt == ranchInstance.horseAIs.end())
+        return;
+
+      const uint16_t horseOid  = static_cast<uint16_t>(command.calledOid);
+      const uint16_t callerOid = static_cast<uint16_t>(command.callerOid);
+
+      // AI drives the full response sequence (CALLED_NPC, FOLLOW_START, CALL_NPC_RESULT, etc.)
+      aiIt->second.TriggerCall(
+        callerOid, horseOid, ranchInstance.clients, _commandServer, _randomDevice);
     });
 
   _commandServer.RegisterCommandHandler<protocol::RanchCommandKickRanch>(
@@ -488,134 +511,22 @@ void RanchDirector::Terminate()
 
 void RanchDirector::Tick()
 {
-  constexpr float kDt = 1.0f / 50.0f;
-  constexpr float kWalkSpeed = 1.4f;
-  constexpr float kIdleMin = 35.0f;
-  constexpr float kIdleMax = 55.0f;
-  constexpr float kFirstIdleMin = 5.0f;
-  constexpr float kFirstIdleMax = 25.0f;
-  constexpr float kArrivalDist = 1.5f;
-
-  std::uniform_real_distribution<float> firstIdleDist(kFirstIdleMin, kFirstIdleMax);
-  std::uniform_real_distribution<float> idleDist(kIdleMin, kIdleMax);
-  std::uniform_real_distribution<float> xDist(kPaddockMinX, kPaddockMaxX);
-  std::uniform_real_distribution<float> zDist(kPaddockMinZ, kPaddockMaxZ);
-
   for (auto& [rancherUid, ranchInstance] : _ranches)
   {
     if (ranchInstance.clients.empty())
       continue;
 
-    for (auto& [horseUid, horseEntity] : ranchInstance.tracker.GetHorses())
+    for (const auto& [horseUid, horseEntity] : ranchInstance.tracker.GetHorses())
     {
-      const auto [aiIt, inserted] = ranchInstance.horseAIs.try_emplace(horseUid);
-      auto& ai = aiIt->second;
-
-      if (inserted)
-      {
-        // Scatter horses randomly within the paddock AABB on spawn.
-        const std::array<float, 3> spawnPos{
-          xDist(_randomDevice),
-          0.0f,
-          zDist(_randomDevice)};
-
-        ai.spawnPos = spawnPos;
-        ai.position = spawnPos;
-        ai.idleTimer = firstIdleDist(_randomDevice);
-        ai.state = HorseAI::State::Idle;
-
-        spdlog::debug(
-          "HorseAI oid={} spawn at ({:.2f}, {:.2f}, {:.2f})",
-          horseEntity.oid, spawnPos[0], spawnPos[1], spawnPos[2]);
-
-        const protocol::AcCmdRCMobResetPos resetCmd{
-          .mobOid = horseEntity.oid,
-          .position = {.X = spawnPos[0], .Y = spawnPos[1], .Z = spawnPos[2]}};
-
-        // STATE_ATTACK1 = 9 is the wandering state in the horse AI.
-        // Skipping STATE_IDLE (1) avoids triggering the GRAZE_IDLE animation.
-        const protocol::AcCmdRCMobSetState stateCmd{
-          .mobOid = horseEntity.oid,
-          .state = 5,
-          .subState = 2};
-
-        for (const ClientId clientId : ranchInstance.clients)
-        {
-          _commandServer.QueueCommand<protocol::AcCmdRCMobResetPos>(
-            clientId, [resetCmd]() { return resetCmd; });
-          _commandServer.QueueCommand<protocol::AcCmdRCMobSetState>(
-            clientId, [stateCmd]() { return stateCmd; });
-        }
-      }
-
-      if (ai.state == HorseAI::State::Idle)
-      {
-        ai.idleTimer -= kDt;
-        if (ai.idleTimer > 0.0f)
-          continue;
-
-        // Pick a uniformly random point within the paddock AABB.
-        const float tx = xDist(_randomDevice);
-        const float tz = zDist(_randomDevice);
-        const float ty = ai.spawnPos[1];
-        ai.targetPos = {tx, ty, tz};
-
-        const float dx = tx - ai.position[0];
-        const float dz = tz - ai.position[2];
-        const float dist = std::sqrt(dx * dx + dz * dz);
-        ai.travelTimer = dist / kWalkSpeed;
-        ai.state = HorseAI::State::Moving;
-
-        spdlog::debug(
-          "HorseAI oid={} move to ({:.2f}, {:.2f}, {:.2f})",
-          horseEntity.oid, tx, ty, tz);
-
-        const protocol::AcCmdRCMobMove moveCmd{
-          .type = protocol::AcCmdRCMobMove::Type::Partial,
-          .mobOid = horseEntity.oid,
-          .position = {.X = tx, .Y = ty, .Z = tz},
-          .unk2 = 2};
-
-        for (const ClientId clientId : ranchInstance.clients)
-          _commandServer.QueueCommand<protocol::AcCmdRCMobMove>(
-            clientId, [moveCmd]() { return moveCmd; });
-      }
-      else
-      {
-        ai.travelTimer -= kDt;
-
-        const float dx = ai.targetPos[0] - ai.position[0];
-        const float dz = ai.targetPos[2] - ai.position[2];
-        const float dist = std::sqrt(dx * dx + dz * dz);
-        const float step = kWalkSpeed * kDt;
-
-        if (dist > step)
-        {
-          ai.position[0] += (dx / dist) * step;
-          ai.position[2] += (dz / dist) * step;
-        }
-        else
-        {
-          ai.position = ai.targetPos;
-        }
-
-        ranchInstance.tracker.GetHorseEntity(horseUid).position = ai.position;
-
-        if (ai.travelTimer <= 0.0f || dist < kArrivalDist)
-        {
-          ai.position = ai.targetPos;
-          ranchInstance.tracker.GetHorseEntity(horseUid).position = ai.targetPos;
-          ai.state = HorseAI::State::Idle;
-          ai.idleTimer = idleDist(_randomDevice);
-        }
-      }
+      auto& ai = ranchInstance.horseAIs.try_emplace(horseUid).first->second;
+      ai.Tick(
+        ranchInstance.tracker,
+        horseUid,
+        ranchInstance.clients,
+        _commandServer,
+        _randomDevice);
     }
   }
-
-  // Broadcast monitor status once per second (every 50 ticks at 50 Hz).
-  if (_monitorTick == 0)
-    GetServerInstance().GetMonitorServer().UpdateAndBroadcast(BuildMonitorStatus());
-  _monitorTick = (_monitorTick + 1) % 50;
 }
 
 std::vector<data::Uid> RanchDirector::GetOnlineCharacters()
@@ -1462,12 +1373,21 @@ void RanchDirector::HandleSnapshot(
   const protocol::AcCmdCRRanchSnapshot& command)
 {
   const auto& clientContext = GetClientContext(clientId);
-  const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+  auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
 
   protocol::RanchCommandRanchSnapshotNotify notify{
     .ranchIndex = ranchInstance.tracker.GetCharacterOid(
       clientContext.characterUid),
     .type = command.type,
+  };
+
+  // member4 is 12 bytes interpreted as XYZ position (3 × float32).
+  // TODO: verify byte layout against the game client.
+  const auto ExtractPosition = [](const std::array<std::byte, 12>& src) -> std::array<float, 3>
+  {
+    std::array<float, 3> pos{};
+    std::memcpy(pos.data(), src.data(), sizeof(pos));
+    return pos;
   };
 
   switch (command.type)
@@ -1477,6 +1397,8 @@ void RanchDirector::HandleSnapshot(
       if (command.full.ranchIndex != notify.ranchIndex)
         throw std::runtime_error("Client sent a snapshot for an entity it's not controlling");
       notify.full = command.full;
+      ranchInstance.tracker.UpdateCharacterPosition(
+        clientContext.characterUid, ExtractPosition(command.full.member4));
       break;
     }
     case protocol::AcCmdCRRanchSnapshot::Partial:
@@ -1484,6 +1406,8 @@ void RanchDirector::HandleSnapshot(
       if (command.full.ranchIndex != notify.ranchIndex)
         throw std::runtime_error("Client sent a snapshot for an entity it's not controlling");
       notify.partial = command.partial;
+      ranchInstance.tracker.UpdateCharacterPosition(
+        clientContext.characterUid, ExtractPosition(command.partial.member4));
       break;
     }
   }

@@ -3361,4 +3361,70 @@ void AcCmdRCAddIdleMountInfoNotify::Write(
   stream.Write(command.ranchHorse);
 }
 
+void AcCmdRCMobSetMoveType::Read(
+  AcCmdRCMobSetMoveType&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCMobSetMoveType::Write(
+  const AcCmdRCMobSetMoveType& command,
+  SinkStream& stream)
+{
+  stream.Write(command.mobOid)
+    .Write(command.moveType);
+}
+
+void AcCmdRCMobLead::Read(
+  AcCmdRCMobLead&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCMobLead::Write(
+  const AcCmdRCMobLead& command,
+  SinkStream& stream)
+{
+  stream.Write(command.mobOid)
+    .Write(command.targetOid)
+    .Write(command.leadType)
+    .Write(command.destination.X)
+    .Write(command.destination.Y)
+    .Write(command.destination.Z);
+}
+
+void AcCmdRCMobSetDefaultState::Read(
+  AcCmdRCMobSetDefaultState&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCMobSetDefaultState::Write(
+  const AcCmdRCMobSetDefaultState& command,
+  SinkStream& stream)
+{
+  stream.Write(command.mobOid)
+    .Write(command.defaultState)
+    .Write(command.fallbackState);
+}
+
+void AcCmdRCMobGazeAt::Read(
+  AcCmdRCMobGazeAt&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCMobGazeAt::Write(
+  const AcCmdRCMobGazeAt& command,
+  SinkStream& stream)
+{
+  stream.Write(command.mobOid)
+    .Write(command.targetOid)
+    .Write(command.gazeType);
+}
+
 } // namespace server::protocol

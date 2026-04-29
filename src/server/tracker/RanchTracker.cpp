@@ -52,6 +52,14 @@ Oid RanchTracker::GetCharacterOid(data::Uid character) const
   return itr->second.oid;
 }
 
+void RanchTracker::UpdateCharacterPosition(data::Uid character, std::array<float, 3> position)
+{
+  const auto itr = _characters.find(character);
+  if (itr == _characters.end())
+    return;
+  itr->second.position = position;
+}
+
 Oid RanchTracker::AddHorse(data::Uid horse)
 {
   const Oid oid = _nextObjectId++;

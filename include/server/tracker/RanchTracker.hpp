@@ -38,6 +38,8 @@ public:
   {
     uint16_t oid{};
     std::array<float, 3> position{};
+    std::array<float, 3> targetPosition{}; // claimed move destination (cleared on arrival)
+    bool hasTarget{false};
   };
 
   //! An object map.
@@ -53,6 +55,10 @@ public:
   //! Returns the tracker OID assigned to the specified character.
   //! @returns The OID assigned to the character.
   [[nodiscard]] Oid GetCharacterOid(data::Uid character) const;
+  //! Updates the world position of a tracked character.
+  //! @param character Character UID.
+  //! @param position World-space XYZ position.
+  void UpdateCharacterPosition(data::Uid character, std::array<float, 3> position);
 
   //! Adds a horse for tracking.
   //! @param horse Horse UID.

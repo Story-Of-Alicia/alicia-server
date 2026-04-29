@@ -21,6 +21,7 @@
 #define RANCHDIRECTOR_HPP
 
 #include "server/Config.hpp"
+#include "server/ranch/RanchHorseAI.hpp"
 #include "server/tracker/RanchTracker.hpp"
 
 #include "libserver/network/command/CommandServer.hpp"
@@ -134,16 +135,6 @@ private:
     uint8_t busyState{0};
   };
 
-  struct HorseAI
-  {
-    enum class State : uint8_t { Idle, Moving } state{State::Idle};
-    std::array<float, 3> spawnPos{};
-    std::array<float, 3> position{};
-    std::array<float, 3> targetPos{};
-    float idleTimer{0.0f};
-    float travelTimer{0.0f};
-  };
-
   struct RanchInstance
   {
     //! A world tracker of the ranch.
@@ -151,7 +142,7 @@ private:
     //! A set of clients connected to the ranch.
     std::unordered_set<ClientId> clients;
     //! Per-horse AI state.
-    std::unordered_map<data::Uid, HorseAI> horseAIs;
+    std::unordered_map<data::Uid, RanchHorseAI> horseAIs;
     //! Tick count.
     uint8_t ticks;
   };
