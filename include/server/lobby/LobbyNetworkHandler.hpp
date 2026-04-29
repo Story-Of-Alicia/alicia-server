@@ -5,6 +5,8 @@
 #ifndef ALICIA_SERVER_LOBBYNETWORKHANDLER_HPP
 #define ALICIA_SERVER_LOBBYNETWORKHANDLER_HPP
 
+#include "server/system/MatchmakingSystem.hpp"
+
 #include <libserver/data/DataDefinitions.hpp>
 #include <libserver/network/command/CommandServer.hpp>
 #include <libserver/network/command/proto/LobbyMessageDefinitions.hpp>
@@ -50,6 +52,9 @@ public:
 
   void NotifyAchievementReward(
     data::Uid characterUid);
+  void NotifyMatchmakeResult(
+    const data::Uid characterUid,
+    const MatchmakingSystem::Result& result);
 
 private:
   struct ClientContext
@@ -69,16 +74,6 @@ private:
     data::Uid rancherVisitPreference = data::InvalidUid;
   };
 
-  protocol::LobbyCommandLoginOK::SystemContent _systemContent{
-    .values = {
-      {0x1a, 1}, // How many times to send via TCP? (Everytime)
-      {0x1b, 0}  // Block detection time(s) before TCP Relay (0)
-      // {4, 0},
-      // {16, 0},
-      // {21, 0},
-      // {22, 0},
-      // {30, 0}
-    }};
 
   ClientId GetClientIdByUserName(
     const std::string& userName,

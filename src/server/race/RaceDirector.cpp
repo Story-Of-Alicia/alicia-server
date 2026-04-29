@@ -214,17 +214,17 @@ RaceDirector::RaceDirector(ServerInstance& serverInstance)
       HandleUserRaceActivateInteractiveEvent(clientId, message);
     });
 
-  // _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceActivateEvent>(
-  //   [this](ClientId clientId, const auto& message)
-  //    {
-  //      HandleUserRaceActivateEvent(clientId, message);
-  //    });
+  _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceActivateEvent>(
+    [this](ClientId clientId, const auto& message)
+     {
+       HandleUserRaceActivateEvent(clientId, message);
+     });
 
-  // _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceDeactivateEvent>(
-  //   [this](ClientId clientId, const auto& message)
-  //   {
-  //     HandleUserRaceDeactivateEvent(clientId, message);
-  //   });
+  _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceDeactivateEvent>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleUserRaceDeactivateEvent(clientId, message);
+    });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestMagicItem>(
     [this](ClientId clientId, const auto& message)
@@ -551,7 +551,7 @@ void RaceDirector::Tick()
       int32_t best = std::numeric_limits<int32_t>::max();
       for (const auto& [uid, racer] : raceInstance.tracker.GetRacers())
       {
-        if (racer.state != State::Disconnected && racer.courseTime < best)
+        if (racer.state != State::Disconnected && racer.courseTime != -1 && racer.courseTime < best)
         {
           best = racer.courseTime;
           winningTeam = racer.team;
@@ -625,6 +625,26 @@ void RaceDirector::Tick()
         {
           return raceResult;
         });
+    }
+
+    // Assign room master to the first-place finisher.
+    if (!raceResult.scores.empty())
+    {
+      const auto newMasterUid = raceResult.scores[0].uid;
+      raceInstance.masterUid = newMasterUid;
+
+      protocol::AcCmdCRChangeMasterNotify masterNotify{
+        .masterUid = newMasterUid};
+
+      for (const ClientId raceClientId : raceInstance.clients)
+      {
+        _commandServer.QueueCommand<decltype(masterNotify)>(
+          raceClientId,
+          [masterNotify]()
+          {
+            return masterNotify;
+          });
+      }
     }
 
     // Clear the ready state of oll of the players.
@@ -747,6 +767,12 @@ void RaceDirector::DisconnectCharacter(data::Uid characterUid)
   {
     // We really don't care.
   }
+}
+
+size_t RaceDirector::GetRoomCount()
+{
+  std::scoped_lock lock(_raceInstancesMutex);
+  return _raceInstances.size();
 }
 
 ServerInstance& RaceDirector::GetServerInstance()
@@ -1218,7 +1244,6 @@ void RaceDirector::HandleChangeTeam(
 {
   const auto& clientContext = GetClientContext(clientId);
 
-  // todo: team balancing
   _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid,
     [&command](Room& room)
@@ -1636,8 +1661,11 @@ void RaceDirector::HandleStartRace(
     raceInstance.raceMapBlockId = roomSelectedCourses;
   }
 
+  constexpr uint32_t GameCountdownKey = 17;
+  constexpr uint32_t DefaultCountdownMs = 5310;
+  const auto& countdown = GetServerInstance().GetSystemContentRegistry().GetValue(GameCountdownKey);
   const protocol::AcCmdRCRoomCountdown roomCountdown{
-    .countdown = 3000,
+    .countdown = countdown.has_value() ? countdown.value() : DefaultCountdownMs,
     .mapBlockId = raceInstance.raceMapBlockId};
 
   // Broadcast room countdown.
@@ -1885,10 +1913,6 @@ void RaceDirector::HandleLoadingComplete(
   // Switch the racer to the racing state.
   racer.state = tracker::RaceTracker::Racer::State::Racing;
 
-  // Enable relay for racer
-  // Note: handler does not use any of the fields
-  protocol::AcCmdCRRelayCommandNotify notify{};
-
   // Notify all clients in the room that this player's loading is complete
   for (const ClientId& raceClientId : raceInstance.clients)
   {
@@ -1898,13 +1922,6 @@ void RaceDirector::HandleLoadingComplete(
       {
         return protocol::AcCmdCRLoadingCompleteNotify{
           .oid = oid};
-      });
-
-    _commandServer.QueueCommand<decltype(notify)>(
-      raceClientId,
-      [notify]()
-      {
-        return notify;
       });
   }
 }
@@ -1964,7 +1981,6 @@ void RaceDirector::HandleRaceResult(
     clientContext.characterUid);
 
   // todo:
-  //  - award carrots and experience,
   //  - record replays,
   //  - mount emblem unlocked
   //  - implement mount fatigue
@@ -2298,7 +2314,6 @@ void RaceDirector::HandleHurdleClearResult(
 
   // Needs to be assigned after hurdle clear result calculations
   // Triggers magic item request when set to true (if gamemode is magic and magic gauge is max)
-  // TODO: is there only perfect clears in magic race?
   starPointResponse.giveMagicItem =
     raceInstance.raceGameMode == protocol::GameMode::Magic &&
     racer.starPointValue >= gameModeTemplate.starPointsMax &&
@@ -2734,8 +2749,7 @@ void RaceDirector::HandleUserRaceActivateInteractiveEvent(
   }
 }
 
-void RaceDirector::HandleUserRaceActivateEvent
-(
+void RaceDirector::HandleUserRaceActivateEvent(
   ClientId clientId,
   const protocol::AcCmdUserRaceActivateEvent& command)
 {
@@ -2743,26 +2757,37 @@ void RaceDirector::HandleUserRaceActivateEvent
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
+  const auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
-  // Get the sender's OID from the room tracker
-  auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
+  // Check if event is throttled, or add event if it is a new one
+  if (raceInstance.tracker.IsEventThrottled(command.eventId))
+  {
+    // Event throttled
+    return;
+  }
+
+  // Schedule a deactivate event notify
+  _scheduler.Queue([this, clientId, eventId = command.eventId]()
+  {
+    protocol::AcCmdUserRaceDeactivateEvent deactivateCommand{
+      .eventId = eventId};
+    this->HandleUserRaceDeactivateEvent(clientId, deactivateCommand);
+  }, std::chrono::steady_clock::now() + tracker::RaceTracker::ThrottleDurationMs);
 
   protocol::AcCmdUserRaceActivateEventNotify notify{
     .eventId = command.eventId,
-    .characterOid = racer.oid, // sender oid
-  };
+    .characterOid = racer.oid};
 
-  // Broadcast to all clients in the room
-  for (const ClientId raceClientId : raceInstance.clients)
+  // Broadcast to all active racers in the race
+  for (const ClientId racerClientId : raceInstance.clients)
   {
     _commandServer.QueueCommand<decltype(notify)>(
-      raceClientId,
+      racerClientId,
       [notify]{return notify;});
   }
 }
 
-void RaceDirector::HandleUserRaceDeactivateEvent
-(
+void RaceDirector::HandleUserRaceDeactivateEvent(
   ClientId clientId,
   const protocol::AcCmdUserRaceDeactivateEvent& command)
 {
@@ -2770,20 +2795,24 @@ void RaceDirector::HandleUserRaceDeactivateEvent
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
+  const auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
-  // Get the sender's OID from the room tracker
-  auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
+  // Check if event is throttled, or add event if it is a new one
+  if (raceInstance.tracker.IsEventThrottled(command.eventId))
+  {
+    // Event throttled
+    return;
+  }
 
   protocol::AcCmdUserRaceDeactivateEventNotify notify{
     .eventId = command.eventId,
-    .characterOid = racer.oid, // sender oid
-  };
+    .characterOid = racer.oid};
 
-  // Broadcast to all clients in the room
-  for (const ClientId raceClientId : raceInstance.clients)
+  // Broadcast to all active racers in the race
+  for (const ClientId racerClientId : raceInstance.clients)
   {
     _commandServer.QueueCommand<decltype(notify)>(
-      raceClientId,
+      racerClientId,
       [notify]{return notify;});
   }
 }
@@ -2920,7 +2949,7 @@ void RaceDirector::HandleUseMagicItem(
         auto& targetRacer = targetIter->second;
 
         // If target has already a dragon, miss
-        if (targetRacer.hasDragon)
+        if (targetRacer.pendingMagicTarget.has_value())
         {
           targetList.clear();
         }
@@ -3142,7 +3171,7 @@ void RaceDirector::HandleUserRaceItemGet(
       // Notify racers in the race room that the invoking racer is now
       // holding a new magic item
       protocol::AcCmdCRRequestMagicItemNotify notify{
-        .magicItemId = racer.magicItem.emplace(magicItem),
+        .magicItemId = magicItem,
         .characterOid = command.characterOid,
       };
 
@@ -3223,8 +3252,8 @@ void RaceDirector::HandleStartMagicTarget(
   }
 
   auto& targetRacer = targetIter->second;
-  targetRacer.hasDragon = true;
   targetRacer.dragonReceivedAt = std::chrono::steady_clock::now();
+  targetRacer.pendingMagicTarget = {command.casterOid, command.effectInstanceId};
 }
 
 void RaceDirector::HandleChangeMagicTarget(
@@ -3243,7 +3272,7 @@ void RaceDirector::HandleChangeMagicTarget(
     return;
   }
 
-  if (!racer.hasDragon)
+  if (!racer.pendingMagicTarget.has_value())
   {
     spdlog::warn("Caster does not have dragon in HandleChangeMagicTarget");
     return;
@@ -3283,7 +3312,7 @@ void RaceDirector::HandleChangeMagicTarget(
   }
 
   // Send Cancel if the target already has dragon, otherwise send OK and update the target's dragon status
-  if (targetRacer.hasDragon)
+  if (targetRacer.pendingMagicTarget.has_value())
   {
     // Send Cancel response
     protocol::AcCmdCRChangeMagicTargetCancel response{
@@ -3299,9 +3328,9 @@ void RaceDirector::HandleChangeMagicTarget(
 
     return;
   }
-  targetRacer.hasDragon = true;
   targetRacer.dragonReceivedAt = std::chrono::steady_clock::now();
-  racer.hasDragon = false;
+  targetRacer.pendingMagicTarget = {command.casterOid, command.effectInstanceId};
+  racer.pendingMagicTarget.reset();
 
   // Send OK response
   protocol::AcCmdCRChangeMagicTargetOK response{
@@ -3368,8 +3397,27 @@ void RaceDirector::HandleActivateSkillEffect(
 
   EffectVerdict verdict = this->ScheduleSkillEffect(raceInstance, command.attackerOid, command.targetOid, magicSlotInfo, command.effectInstanceId);
 
+  if (verdict == EffectVerdict::Applied && magicSlotInfo.attackRank > 1 && targetRacer.pendingMagicTarget)
+  {
+    const protocol::AcCmdRCRemoveMagicTarget removeMagicTarget{
+      .effectInstanceId = targetRacer.pendingMagicTarget->effectInstanceId,
+      .casterOid = targetRacer.pendingMagicTarget->casterOid,
+      .targetOid = command.targetOid,
+      .targetOid2 = command.targetOid};
+
+    for (const ClientId& raceClientId : raceInstance.clients)
+    {
+      _commandServer.QueueCommand<decltype(removeMagicTarget)>(
+        raceClientId,
+        [removeMagicTarget]()
+        {
+          return removeMagicTarget;
+        });
+    }
+  }
+
   // TODO:: Add a Conditional for the SystemContent that can enable/disable this behavior
-  if (verdict == EffectVerdict::Applied && magicSlotInfo.removeMagic == 1)
+  if (verdict == EffectVerdict::Applied && magicSlotInfo.removeMagic == 1 && targetRacer.magicItem.has_value())
   {
     protocol::AcCmdCRUseItemSlotOK response{
       .magicItemId = 0,
@@ -3401,7 +3449,7 @@ void RaceDirector::HandleActivateSkillEffect(
   }
 
   if (magicSlotInfo.basicType == 16)
-    targetRacer.hasDragon = false;
+    targetRacer.pendingMagicTarget.reset();
 }
 
 void RaceDirector::HandleOpCmd(
@@ -3550,10 +3598,12 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
   // For pure buffs: blocked only if already active and not replaceable (replaceEffect == 0 means no extension).
   // Duplication is checked against the basic-type effect slot so crit variants share occupancy with their base,
   // except for replaceEffect spells which track their own slot independently.
+  // Attacks with rank < 2 are blocked if a rank-2+ attack (fireball/lightning) is already active.
   const uint32_t checkEffectId = magicSlotInfo.replaceEffect
     ? magicSlotInfo.skillEffectId
     : GetServerInstance().GetMagicRegistry().GetSlotInfo(magicSlotInfo.basicType).skillEffectId;
   const bool isDuplicated = hotroddingBlocks
+    || (isAttack && magicSlotInfo.attackRank < 2 && targetRacer.attackRank >= 2)
     || (magicSlotInfo.attackRank > 0
       ? targetRacer.attackRank >= magicSlotInfo.attackRank
       : targetRacer.effects[checkEffectId] && (isAttack || !magicSlotInfo.replaceEffect));
@@ -3611,7 +3661,8 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
 
   _scheduler.Queue(
     [this, roomUid = raceInstance.roomUid, targetOid, targetCharacterUid, effectId,
-      attackRank = magicSlotInfo.attackRank, generation]()
+      attackRank = magicSlotInfo.attackRank, generation,
+      clearMagicTarget = magicSlotInfo.attackRank > 1]()
     {
       std::scoped_lock raceInstanceLock(_raceInstancesMutex);
       const auto raceInstanceIter = _raceInstances.find(roomUid);
@@ -3633,6 +3684,8 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
       // Only clear attackRank if a higher-rank attack hasn't replaced this one
       if (attackRank > 0 && racer.attackRank == attackRank)
         racer.attackRank = 0;
+      if (clearMagicTarget)
+        racer.pendingMagicTarget.reset();
 
       const protocol::AcCmdRCRemoveSkillEffect removeSkillEffect{
         .characterOid = targetOid,

@@ -175,17 +175,24 @@ struct LobbyCommandLoginOK
     std::vector<Skill> values;
   } skillRanks{};
 
-  struct Struct4
+  struct TrainingProgression
   {
-    struct Unk
+    struct MapProgressInfo
     {
-      uint16_t val0{};
-      uint8_t val1{};
-      uint8_t val2{};
+      uint16_t mapBlockId{};
+      GameMode gameMode{};
+      enum class ClearStage : uint8_t
+      {
+        None = 0,
+        Easy = 1,
+        Normal = 2,
+        Hard = 3,
+        VeryHard = 4
+      } clearStage{ClearStage::None};
     };
 
-    std::vector<Unk> values;
-  } val13{};
+    std::vector<MapProgressInfo> mapProggressInfos;
+  } trainingProgression{};
 
   uint32_t val14{};
   Guild guild{};
@@ -2400,8 +2407,8 @@ struct AcCmdCLUpdateUserSettingsOK
 
 struct AcCmdCLEnterRoomQuick
 {
-  uint8_t member1{};
-  uint8_t member2{};
+  protocol::GameMode gameMode{};
+  protocol::TeamMode teamMode{};
 
   static Command GetCommand()
   {
@@ -2561,6 +2568,34 @@ struct AcCmdLCAchievementRewardNotify
   //! @param stream Source stream.
   static void Read(
     AcCmdLCAchievementRewardNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLEnterRoomQuickSuccess
+{
+  enum class SuccessResult : uint8_t
+  {
+    QuickJoin = 1,
+    MakeRoom = 4
+  } result{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLEnterRoomQuickSuccess;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLEnterRoomQuickSuccess& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLEnterRoomQuickSuccess& command,
     SourceStream& stream);
 };
 

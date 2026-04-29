@@ -94,6 +94,7 @@ void RaceTracker::Clear()
 {
   _racers.clear();
   _items.clear();
+  _events.clear();
   _nextItemOid = 1;
 }
 
@@ -104,6 +105,31 @@ uint16_t RaceTracker::GetNextEffectInstanceIdAndIncrementBy(uint16_t increment)
   if (_nextEffectInstanceId == 0)
     _nextEffectInstanceId = 1;
   return nextId;
+}
+
+bool RaceTracker::IsEventThrottled(uint32_t eventId)
+{
+  const auto& now = std::chrono::steady_clock::now();
+
+  const auto& [eventIter, inserted] = _events.try_emplace(eventId);
+  if (not inserted and eventIter->second.throttledUntil > now)
+  {
+    // Existing event was throttled
+    return true;
+  }
+  else if (inserted)
+  {
+    eventIter->second.id = eventId;
+  }
+
+  // New event or event expired, update throttle time
+  eventIter->second.throttledUntil = now + ThrottleDurationMs;
+  return false;
+}
+
+RaceTracker::EventMap& RaceTracker::GetEvents()
+{
+  return _events;
 }
 
 } // namespace server::tracker

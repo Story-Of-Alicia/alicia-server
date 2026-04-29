@@ -8,7 +8,19 @@ server:
   # Authentication configuration section
   authentication:
     # Type of authentication backend.
+    # Supported types are `local` and `postgres`.
     backend: local
+    postgres:
+      # Connection string to the Postgre SQL database.
+      # https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
+      connectionUri: 'postgresql://storyofalicia:dev@127.0.0.1:5432/storyofalicia'
+  # Telemetry and metrics collection
+  telemetry:
+    # Whether metric collection is enabled.
+    enabled: false
+    # Type of telemetry backend.
+    # Supported types are `none` and `postgres`.
+    backend: postgres
     postgres:
       # Connection string to the Postgre SQL database.
       # https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
