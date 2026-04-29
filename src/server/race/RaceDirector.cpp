@@ -2529,12 +2529,6 @@ void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& co
   const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
     clientContext.characterUid).userName;
 
-  spdlog::info("[Room {}] {} ({}): {}",
-    clientContext.roomUid,
-    characterName,
-    userName,
-    command.message);
-
   std::vector<protocol::AcCmdCRChatNotify> response;
   const bool isCommand = verdict.commandVerdict.has_value();
 
@@ -2552,12 +2546,34 @@ void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& co
   {
     if (verdict.isMuted)
     {
+      if (verdict.isPrevented)
+      {
+        spdlog::info("[Room {}] (prevented) {} ({}): {}",
+          clientContext.roomUid,
+          characterName,
+          userName,
+          command.message);
+      }
+      else
+      {
+        spdlog::info("[Room {}] (muted) {} ({}): {}",
+          clientContext.roomUid,
+          characterName,
+          userName,
+          command.message);
+      }
       protocol::AcCmdCRChatNotify notify{
         .message = verdict.message,
         .isSystem = true};
       _commandServer.QueueCommand<decltype(notify)>(clientId, [notify](){ return notify; });
       return;
     }
+
+    spdlog::info("[Room {}] {} ({}): {}",
+      clientContext.roomUid,
+      characterName,
+      userName,
+      command.message);
 
     response.emplace_back(protocol::AcCmdCRChatNotify{
       .message = verdict.message,

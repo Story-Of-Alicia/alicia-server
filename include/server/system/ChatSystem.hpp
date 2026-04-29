@@ -69,6 +69,7 @@ public:
   struct ChatVerdict
   {
     bool isMuted{false};
+    bool isPrevented{false};
     std::string message;
     std::optional<CommandVerdict> commandVerdict;
   };

@@ -1,6 +1,5 @@
 words:
   collection:
-    # Common English (Uk/Us/Aus) slurs and phrases.
     # Explanation: Neo-nazi symbol
     - word: '\b1488\b'
       prevent: true
@@ -34,6 +33,15 @@ words:
     - word: '\be+s+e+x+\b'
       prevent: true
     - word: '\bf+a+[g6]+\b'
+      prevent: true
+    # Covers f@g, f4g and other substitutions for 'a'
+    - word: '\bf+[@4a]+[g6q]+\b'
+      prevent: true
+    # faggot / f4gg0t and variants
+    - word: '\bf+[@4a]+[g6q]+[o0]+t+\b'
+      prevent: true
+    # Explanation: Homophobic slur
+    - word: '\bh+[o0]+m+[o0]+\b'
       prevent: true
     - word: '\bf+u+t+a+\b'
       prevent: true
@@ -95,23 +103,132 @@ words:
       prevent: true
     - word: '\bl+o+l+i+\b'
       prevent: true
-    # Common Polish slurs and phrases.
-    - word: '\bk+u+r+[wv]+a+\b'
+    - word: '\ba+s+s+h+o+l+e+\b'
+      prevent: true
+    - word: '\bd+[i1l]+c+k+\b'
+      prevent: true
+    - word: '\bc+o+c+k+\b'
+      prevent: true
+    - word: '\bp+u+s+s+y+\b'
+      prevent: true
+    - word: '\bb+[i1l]+t+c+h+\b'
+      prevent: true
+    - word: '\bw+h+o+r+e+\b'
+      prevent: true
+    - word: '\br+a+p+[e3]+\b'
+      prevent: true
+    - word: '\br+[e3]+t+a+r+d+\b'
+      prevent: true
+    - word: '\bj+[i1l]+z+z+\b'
+      prevent: true
+    - word: '\ba+n+a+l+\b'
+      prevent: true
+    - word: '\bh+o+r+n+y+\b'
+      prevent: true
+    - word: '\bw+a+n+k+\b'
+      prevent: true
+    - word: '\bd+[i1l]+l+d+[o0]+\b'
+      prevent: true
+    - word: '\bn+u+d+[e3]+s*\b'
+      prevent: true
+    - word: '\bn+s+f+w+\b'
+      prevent: true
+    # Explanation: Slur for Jewish people
+    - word: '\bk+[i1l]+k+[e3]+\b'
+      prevent: true
+    # Explanation: Slur for Hispanic people
+    - word: '\bs+p+[i1l]+c+\b'
+      prevent: true
+    # Explanation: Slur for Asian people
+    - word: '\bc+h+[i1l]+n+k+\b'
+      prevent: true
+    # Explanation: Slur for Asian people
+    - word: '\bg+[o0]+[o0]+k+\b'
+      prevent: true
+    # Explanation: Slur for lesbian women
+    - word: '\bd+y+k+e+\b'
+      prevent: true
+    - word: '\bp+[e3]+d+[o0]+\b'
+      prevent: true
+    - word: '\bp+[e3]+d+[o0]+p+h+[i1l]+l+[e3]+\b'
+      prevent: true
+    # ---- Russian (Latin transliteration) ----
+    # Explanation: Russian homophobic slur
+    - word: '\bp+[i1l]+d+[o0]+r+\b'
+      prevent: true
+    - word: '\bp+[i1l]+d+a+r+\b'
+      prevent: true
+    # Explanation: Russian antisemitic slur for Jewish people
+    - word: '\bz+h+[i1l]+d+\b'
+      prevent: true
+    - word: '\by+[e3]+b+a+t+\b'
+      prevent: true
+    - word: '\b[e3]+b+a+t+\b'
+      prevent: true
+    - word: '\bb+l+y+a+d+\b'
+      prevent: true
+    - word: '\bk+h+u+y+\b'
       prevent: true
     - word: '\bp+[i1l]+z+d+a+\b'
       prevent: true
+    # ---- German ----
+    - word: '\bf+[o0]+t+z+[e3]+\b'
+      prevent: true
+    - word: '\bs+c+h+l+a+m+p+[e3]+\b'
+      prevent: true
+    - word: '\bh+u+r+[e3]+n+s+[o0]+h+n+\b'
+      prevent: true
+    - word: '\bw+[i1l]+c+h+s+[e3]+r+\b'
+      prevent: true
+    - word: '\ba+r+s+c+h+l+[o0]+c+h+\b'
+      prevent: true
+    # ---- Spanish ----
+    # Explanation: Spanish homophobic slur
+    - word: '\bm+a+r+[i1l]+c+[o0]+n+\b'
+      prevent: true
+    - word: '\bp+u+t+a+\b'
+      prevent: true
+    - word: '\bp+[e3]+n+d+[e3]+j+[o0]+\b'
+      prevent: true
+    - word: '\bc+[o0]+n+[o0]+\b'
+      prevent: true
+    # ---- French ----
+    # Explanation: French homophobic slur
+    - word: '\bp+[e3]+d+[e3]+\b'
+      prevent: true
+    - word: '\bs+a+l+[o0]+p+[e3]+\b'
+      prevent: true
+    - word: '\bc+[o0]+n+n+a+r+d+\b'
+      prevent: true
+    # ---- Polish ----
+    # Explanation: Polish homophobic slur
+    - word: '\bp+[e3]+d+a+[l1]+\b'
+      prevent: true
+    - word: '\bk+u+r+w+a+\b'
+      prevent: true
     - word: '\bc+h+u+j+\b'
       prevent: true
-    - word: '\bc+h+u+j+[o0]+w+y+\b'
+    - word: '\bj+[e3]+b+a+[c]+\b'
       prevent: true
-    - word: '\bj+e+b+a+[cć]+\b'
+    # ---- Dutch ----
+    # Explanation: Dutch homophobic slur
+    - word: '\bf+l+[i1l]+k+k+[e3]+r+\b'
       prevent: true
-    # Common Slovak/Czech slurs and phrases.
-    - word: '\b(?:d[o0])p+i+[cč]+[ae]+\b'
+    - word: '\bk+u+t+\b'
       prevent: true
-    - word: '\bk+[o0]+k+[o0]+t+\b'
+    - word: '\bh+[o0]+[e3]+r+\b'
       prevent: true
-    - word: '\b(?:vy|na)j+e+b+a+[tť]+\b'
+    # ---- Italian ----
+    - word: '\bc+a+z+z+[o0]+\b'
       prevent: true
-    - word: 'j+e+b+e+'
+    - word: '\bp+u+t+t+a+n+a+\b'
+      prevent: true
+    - word: '\bs+t+r+[o0]+n+z+[o0]+\b'
+      prevent: true
+    - word: '\bv+a+f+f+a+n+c+u+l+[o0]+\b'
+      prevent: true
+    # ---- Portuguese ----
+    - word: '\bc+a+r+a+l+h+[o0]+\b'
+      prevent: true
+    - word: '\bb+u+c+[e3]+t+a+\b'
       prevent: true

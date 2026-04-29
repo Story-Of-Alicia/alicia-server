@@ -120,8 +120,9 @@ ChatSystem::ChatVerdict ChatSystem::ProcessChatMessage(
   // Check  if the moderation verdict prevented the message.
   if (moderationVerdict.isPrevented)
   {
-    verdict.isMuted = true;
-    verdict.message = "Your message was prevented by the automod.";
+    verdict.isMuted     = true;
+    verdict.isPrevented = true;
+    verdict.message     = "Your message was prevented by the automod.";
     return verdict;
   }
 
