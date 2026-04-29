@@ -973,9 +973,9 @@ void ChatSystem::RegisterAdminCommands()
 
       const auto& userName = arguments[0];
 
-      const auto userInstance = _serverInstance.GetDataDirector().GetUser(
+      const auto userRecord = _serverInstance.GetDataDirector().GetUser(
         userName);
-      if (not _serverInstance.GetLobbyDirector().IsUserOnline(userName))
+      if (not userRecord)
       {
         return {
           std::format("Either the user '{}' does not exist ", userName),
@@ -985,7 +985,7 @@ void ChatSystem::RegisterAdminCommands()
 
       auto characterUid = data::InvalidUid;
 
-      userInstance.Immutable([&characterUid](const data::User& user)
+      userRecord.Immutable([&characterUid](const data::User& user)
       {
         characterUid = user.characterUid();
       });
@@ -1033,9 +1033,9 @@ void ChatSystem::RegisterAdminCommands()
 
       const auto& userName = arguments[0];
 
-      const auto userInstance = _serverInstance.GetDataDirector().GetUser(
+      const auto userRecord = _serverInstance.GetDataDirector().GetUser(
         userName);
-      if (not _serverInstance.GetLobbyDirector().IsUserOnline(userName))
+      if (not userRecord)
       {
         return {
           std::format("Either the user '{}' does not exist ", userName),
@@ -1045,7 +1045,7 @@ void ChatSystem::RegisterAdminCommands()
 
       auto characterUid = data::InvalidUid;
 
-      userInstance.Immutable([&characterUid](const data::User& user)
+      userRecord.Immutable([&characterUid](const data::User& user)
       {
         characterUid = user.characterUid();
       });
