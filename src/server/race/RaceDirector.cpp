@@ -2579,7 +2579,8 @@ void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& co
           command.message);
       }
       protocol::AcCmdCRChatNotify notify{
-        .message = verdict.message,
+        .message  = verdict.message,
+        .author   = verdict.isPrevented ? "AutoMod" : "System",
         .isSystem = true};
       _commandServer.QueueCommand<decltype(notify)>(clientId, [notify](){ return notify; });
       return;

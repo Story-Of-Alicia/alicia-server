@@ -1317,7 +1317,8 @@ void RanchDirector::HandleChat(
         chat.message);
     }
     protocol::AcCmdCRRanchChatNotify notify{
-      .message = verdict.message,
+      .author   = verdict.isPrevented ? "AutoMod" : "System",
+      .message  = verdict.message,
       .isSystem = true};
     _commandServer.QueueCommand<decltype(notify)>(clientId, [notify](){ return notify; });
     return;

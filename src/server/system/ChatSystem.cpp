@@ -122,7 +122,7 @@ ChatSystem::ChatVerdict ChatSystem::ProcessChatMessage(
   {
     verdict.isMuted     = true;
     verdict.isPrevented = true;
-    verdict.message     = "Your message was prevented by the automod.";
+    verdict.message     = "Your message contains blocked words.";
     return verdict;
   }
 
