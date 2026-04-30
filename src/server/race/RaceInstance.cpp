@@ -240,33 +240,40 @@ void RaceInstance::TickFinishing()
 
   protocol::AcCmdRCRaceResultNotify raceResult{};
 
-  std::map<data::Uid, uint32_t> scoreboard;
-  for (const auto& [characterUid, racer] : tracker.GetRacers())
-  {
-    // todo: do not do this here i guess
-    uint32_t courseTime = std::numeric_limits<uint32_t>::max();
-    if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
-      courseTime = racer.courseTime;
+  using Team = tracker::RaceTracker::Racer::Team;
+  using State = tracker::RaceTracker::Racer::State;
 
-    scoreboard.try_emplace(characterUid, courseTime);
+  // Determine winning team (team of the first finisher). Solo/FFA leaves winningTeam as Solo.
+  Team winningTeam = Team::Solo;
+  if (raceTeamMode == protocol::TeamMode::Team)
+  {
+    int32_t best = std::numeric_limits<int32_t>::max();
+    for (const auto& [uid, racer] : tracker.GetRacers())
+    {
+      if (racer.state != State::Disconnected && racer.courseTime != -1 && racer.courseTime < best)
+      {
+        best = racer.courseTime;
+        winningTeam = racer.team;
+      }
+    }
   }
 
   // Build the score board.
-  for (auto& [characterUid, courseTime] : scoreboard)
+  for (const auto& [characterUid, racer] : tracker.GetRacers())
   {
-    auto& racer = tracker.GetRacer(characterUid);
     auto& score = raceResult.scores.emplace_back();
 
     // todo: figure out the other bit set values
 
-    if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
+    if (racer.state != State::Disconnected)
     {
       score.bitset = static_cast<protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset>(
           protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::Connected);
     }
-    score.courseTime = courseTime;
+    score.courseTime = racer.state != State::Disconnected ? racer.courseTime : std::numeric_limits<int32_t>::max();
     score.experience = 420;
     score.carrots = 420;
+    score.teamColor = racer.team;
     const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
       characterUid);
 
@@ -298,30 +305,45 @@ void RaceInstance::TickFinishing()
         });
     });
   }
-  
-  // Sort scoreboard based on course time
-  std::sort(
-    raceResult.scores.begin(),
-    raceResult.scores.end(),
-    [](const auto& a, const auto& b)
-    {
-      return a.courseTime < b.courseTime; 
-    });
+
+  // Sort: winning team first, then by courseTime ascending.
+  std::ranges::sort(raceResult.scores, [winningTeam](const auto& a, const auto& b)
+  {
+    auto priority = [winningTeam](const auto& s) {
+      return std::make_pair(s.teamColor != winningTeam ? 1 : 0, s.courseTime);
+    };
+    return priority(a) < priority(b);
+  });
 
   // Broadcast the race result
-  for (const auto& [racerCharacterUid, racerClientId] : clients)
+  for (const ClientId raceClientId : clients | std::views::values)
   {
-    // TODO: is this needed?
-    // If client is not an active (finishing) racer, move on to the next client
-    if (not tracker.IsRacer(racerCharacterUid))
-      continue;
-
     _commandServer.QueueCommand<decltype(raceResult)>(
-      racerClientId,
+      raceClientId,
       [raceResult]()
       {
         return raceResult;
       });
+  }
+
+  // Assign room master to the first-place finisher.
+  if (!raceResult.scores.empty())
+  {
+    const auto newMasterUid = raceResult.scores[0].uid;
+    masterUid = newMasterUid;
+
+    protocol::AcCmdCRChangeMasterNotify masterNotify{
+      .masterUid = newMasterUid};
+
+    for (const ClientId raceClientId : clients | std::views::values)
+    {
+      _commandServer.QueueCommand<decltype(masterNotify)>(
+        raceClientId,
+        [masterNotify]()
+        {
+          return masterNotify;
+        });
+    }
   }
 
   // Clear the ready state of oll of the players.
