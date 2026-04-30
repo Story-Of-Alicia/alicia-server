@@ -1635,10 +1635,12 @@ void ChatSystem::RegisterAdminCommands()
 
       bool isAdmin = false;
       std::string invokerCharacterName{};
-      invokerRecord.Immutable([&isAdmin](const data::Character& character)
+      invokerRecord.Immutable([&isAdmin, &invokerCharacterName](const data::Character& character)
       {
         isAdmin = character.role() != data::Character::Role::User;
+        invokerCharacterName = character.name();
       });
+      const auto invokerUserName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(characterUid).userName;
 
       if (not isAdmin)
         return {};
@@ -1692,7 +1694,8 @@ void ChatSystem::RegisterAdminCommands()
           _serverInstance.GetRanchDirector().Disconnect(targetCharacterUid);
           _serverInstance.GetLobbyDirector().DisconnectCharacter(targetCharacterUid);
 
-          spdlog::info("GM '{}' has reset user '{}' whose character uid was '{}'",
+          spdlog::info("GM {} ({}) has reset user '{}' whose character uid was '{}'",
+            invokerUserName,
             invokerCharacterName,
             username,
             targetCharacterUid);
@@ -1756,7 +1759,8 @@ void ChatSystem::RegisterAdminCommands()
             horse.name() = newName;
           });
 
-          spdlog::info("GM '{}' has renamed horse '{}' from '{}' to '{}'",
+          spdlog::info("GM {} ({}) has renamed horse '{}' from '{}' to '{}'",
+            invokerUserName,
             invokerCharacterName,
             horseUid,
             previousName,
@@ -1798,7 +1802,8 @@ void ChatSystem::RegisterAdminCommands()
             pet.name() = newName;
           });
 
-          spdlog::info("GM '{}' has renamed pet '{}' from '{}' to '{}'",
+          spdlog::info("GM {} ({}) has renamed pet '{}' from '{}' to '{}'",
+            invokerUserName,
             invokerCharacterName,
             petUid,
             previousName,
@@ -1840,7 +1845,8 @@ void ChatSystem::RegisterAdminCommands()
             guild.name() = newName;
           });
 
-          spdlog::info("GM '{}' has renamed guild '{}' from '{}' to '{}'",
+          spdlog::info("GM {} ({}) has renamed guild '{}' from '{}' to '{}'",
+            invokerUserName,
             invokerCharacterName,
             guildUid,
             previousName,
@@ -1888,7 +1894,8 @@ void ChatSystem::RegisterAdminCommands()
             .name = newName};
           _serverInstance.GetRaceDirector().BroadcastChangeRoomOptions(roomUid, notify);
 
-          spdlog::info("GM '{}' has renamed room '{}' from '{}' to '{}'",
+          spdlog::info("GM {} ({}) has renamed room '{}' from '{}' to '{}'",
+            invokerUserName,
             invokerCharacterName,
             roomUid,
             previousName,
@@ -1946,7 +1953,8 @@ void ChatSystem::RegisterAdminCommands()
               settings.macros() = std::array<std::string, 8>{};
             });
 
-          spdlog::info("GM '{}' cleared all macros for user '{}'",
+          spdlog::info("GM {} ({}) cleared all macros for user '{}'",
+            invokerUserName,
             invokerCharacterName,
             targetUserName);
 
