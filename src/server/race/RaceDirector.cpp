@@ -743,14 +743,13 @@ void RaceDirector::HandleClientDisconnected(ClientId clientId)
     }
   }
 
-  // TODO: experimental!
-  // If client had a P2DID, erase it from client map and release it from the pool
+  // If client had a P2dId, erase it from client map and release it from the pool
   if (_p2dIds.contains(clientId))
   {
-    // Erase client P2DID and release it
-    const uint16_t p2dId = _p2dIds.at(clientId);
+    // Erase client P2dId and release it
+    const race::P2dId p2dId = _p2dIds.at(clientId);
     _p2dIds.erase(clientId);
-    _p2dPool.Release(p2dId);
+    _p2dIdPool.Release(p2dId);
   }
 
   spdlog::info("Client {} disconnected from the race server", clientId);
@@ -783,6 +782,20 @@ ServerInstance& RaceDirector::GetServerInstance()
 Config::Race& RaceDirector::GetConfig()
 {
   return GetServerInstance().GetSettings().race;
+}
+
+uint16_t RaceDirector::GetOrCreateP2dId(ClientId clientId)
+{
+  const auto existingP2dIdIter = _p2dIds.find(clientId);
+  if (existingP2dIdIter != _p2dIds.end())
+    return existingP2dIdIter->second;
+
+  const std::optional<race::P2dId> p2dId = _p2dIdPool.Acquire();
+  if (not p2dId.has_value())
+    throw std::runtime_error("P2dId pool has been exhausted.");
+
+  _p2dIds.emplace(clientId, p2dId.value());
+  return p2dId.value();
 }
 
 RaceDirector::ClientContext& RaceDirector::GetClientContext(ClientId clientId, bool requireAuthorized)
@@ -1757,21 +1770,9 @@ void RaceDirector::HandleStartRace(
             .oid = racer.oid,
             .name = characterName});
 
-        // TODO: experimental!
-        // Assign the racer P2DID
-        if (_p2dIds.contains(clientId))
-        {
-          // Client already has an existing P2DID, assign it
-          protocolRacer.p2dId = _p2dIds.at(clientId);
-        }
-        else
-        {
-          // Assign the racer a unique P2DID
-          const std::optional<uint16_t> p2dId = _p2dPool.Acquire();
-          if (not p2dId.has_value())
-            throw std::runtime_error("We've exhaused all the available P2DIDs.");
-          protocolRacer.p2dId = p2dId.value();
-        }
+        // Assign the racer P2dId
+        const ClientId racerClientId = GetClientIdByCharacterUid(characterUid);
+        protocolRacer.p2dId = GetOrCreateP2dId(racerClientId);
 
         switch (racer.team)
         {
