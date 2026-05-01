@@ -156,14 +156,13 @@ void LobbyCommandLoginOK::Write(
       .Write(value.rank);
   }
 
-  const auto& struct4 = command.val13;
   stream.Write(
-    static_cast<uint8_t>(struct4.values.size()));
-  for (const auto& value : struct4.values)
+    static_cast<uint8_t>(command.trainingProgression.mapProggressInfos.size()));
+  for (const auto& value : command.trainingProgression.mapProggressInfos)
   {
-    stream.Write(value.val0)
-      .Write(value.val1)
-      .Write(value.val2);
+    stream.Write(value.mapBlockId)
+      .Write(value.gameMode)
+      .Write(value.clearStage);
   }
 
   stream.Write(command.val14);

@@ -176,6 +176,7 @@ public:
   //! @param eventId Event ID.
   //! @returns True if event exists and is throttled, else event is tracked.
   bool IsEventThrottled(uint32_t eventId);
+  static inline const std::chrono::milliseconds ThrottleDurationMs{250};
 
   //! Adds a per-racer event item for the given character.
   //! @returns Reference to the new event item record.

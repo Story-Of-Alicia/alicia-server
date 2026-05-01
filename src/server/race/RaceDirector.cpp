@@ -749,14 +749,13 @@ void RaceDirector::HandleClientDisconnected(ClientId clientId)
     }
   }
 
-  // TODO: experimental!
-  // If client had a P2DID, erase it from client map and release it from the pool
+  // If client had a P2dId, erase it from client map and release it from the pool
   if (_p2dIds.contains(clientId))
   {
-    // Erase client P2DID and release it
-    const uint16_t p2dId = _p2dIds.at(clientId);
+    // Erase client P2dId and release it
+    const race::P2dId p2dId = _p2dIds.at(clientId);
     _p2dIds.erase(clientId);
-    _p2dPool.Release(p2dId);
+    _p2dIdPool.Release(p2dId);
   }
 
   spdlog::info("Client {} disconnected from the race server", clientId);
@@ -775,6 +774,12 @@ void RaceDirector::DisconnectCharacter(data::Uid characterUid)
   }
 }
 
+size_t RaceDirector::GetRoomCount()
+{
+  std::scoped_lock lock(_raceInstancesMutex);
+  return _raceInstances.size();
+}
+
 ServerInstance& RaceDirector::GetServerInstance()
 {
   return _serverInstance;
@@ -783,6 +788,20 @@ ServerInstance& RaceDirector::GetServerInstance()
 Config::Race& RaceDirector::GetConfig()
 {
   return GetServerInstance().GetSettings().race;
+}
+
+uint16_t RaceDirector::GetOrCreateP2dId(ClientId clientId)
+{
+  const auto existingP2dIdIter = _p2dIds.find(clientId);
+  if (existingP2dIdIter != _p2dIds.end())
+    return existingP2dIdIter->second;
+
+  const std::optional<race::P2dId> p2dId = _p2dIdPool.Acquire();
+  if (not p2dId.has_value())
+    throw std::runtime_error("P2dId pool has been exhausted.");
+
+  _p2dIds.emplace(clientId, p2dId.value());
+  return p2dId.value();
 }
 
 RaceDirector::ClientContext& RaceDirector::GetClientContext(ClientId clientId, bool requireAuthorized)
@@ -1757,21 +1776,9 @@ void RaceDirector::HandleStartRace(
             .oid = racer.oid,
             .name = characterName});
 
-        // TODO: experimental!
-        // Assign the racer P2DID
-        if (_p2dIds.contains(clientId))
-        {
-          // Client already has an existing P2DID, assign it
-          protocolRacer.p2dId = _p2dIds.at(clientId);
-        }
-        else
-        {
-          // Assign the racer a unique P2DID
-          const std::optional<uint16_t> p2dId = _p2dPool.Acquire();
-          if (not p2dId.has_value())
-            throw std::runtime_error("We've exhaused all the available P2DIDs.");
-          protocolRacer.p2dId = p2dId.value();
-        }
+        // Assign the racer P2dId
+        const ClientId racerClientId = GetClientIdByCharacterUid(characterUid);
+        protocolRacer.p2dId = GetOrCreateP2dId(racerClientId);
 
         switch (racer.team)
         {
@@ -2543,12 +2550,6 @@ void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& co
   const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
     clientContext.characterUid).userName;
 
-  spdlog::info("[Room {}] {} ({}): {}",
-    clientContext.roomUid,
-    characterName,
-    userName,
-    command.message);
-
   std::vector<protocol::AcCmdCRChatNotify> response;
   const bool isCommand = verdict.commandVerdict.has_value();
 
@@ -2566,12 +2567,34 @@ void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& co
   {
     if (verdict.isMuted)
     {
+      if (verdict.isPrevented)
+      {
+        spdlog::info("[Room {}] (prevented) {} ({}): {}",
+          clientContext.roomUid,
+          characterName,
+          userName,
+          command.message);
+      }
+      else
+      {
+        spdlog::info("[Room {}] (muted) {} ({}): {}",
+          clientContext.roomUid,
+          characterName,
+          userName,
+          command.message);
+      }
       protocol::AcCmdCRChatNotify notify{
         .message = verdict.message,
         .isSystem = true};
       _commandServer.QueueCommand<decltype(notify)>(clientId, [notify](){ return notify; });
       return;
     }
+
+    spdlog::info("[Room {}] {} ({}): {}",
+      clientContext.roomUid,
+      characterName,
+      userName,
+      command.message);
 
     response.emplace_back(protocol::AcCmdCRChatNotify{
       .message = verdict.message,
@@ -2771,6 +2794,7 @@ void RaceDirector::HandleUserRaceActivateEvent(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
+  const auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
   // Check if event is throttled, or add event if it is a new one
   if (raceInstance.tracker.IsEventThrottled(command.eventId))
@@ -2779,18 +2803,21 @@ void RaceDirector::HandleUserRaceActivateEvent(
     return;
   }
 
+  // Schedule a deactivate event notify
+  _scheduler.Queue([this, clientId, eventId = command.eventId]()
+  {
+    protocol::AcCmdUserRaceDeactivateEvent deactivateCommand{
+      .eventId = eventId};
+    this->HandleUserRaceDeactivateEvent(clientId, deactivateCommand);
+  }, std::chrono::steady_clock::now() + tracker::RaceTracker::ThrottleDurationMs);
+
   protocol::AcCmdUserRaceActivateEventNotify notify{
-    .eventId = command.eventId};
+    .eventId = command.eventId,
+    .characterOid = racer.oid};
 
   // Broadcast to all active racers in the race
-  for (const auto& [racerCharacterUid, racer] : raceInstance.tracker.GetRacers())
+  for (const ClientId racerClientId : raceInstance.clients)
   {
-    if (racer.state != tracker::RaceTracker::Racer::State::Racing)
-      continue;
-
-    notify.characterOid = racer.oid;
-
-    const ClientId racerClientId = GetClientIdByCharacterUid(racerCharacterUid);
     _commandServer.QueueCommand<decltype(notify)>(
       racerClientId,
       [notify]{return notify;});
@@ -2805,6 +2832,7 @@ void RaceDirector::HandleUserRaceDeactivateEvent(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
+  const auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
   // Check if event is throttled, or add event if it is a new one
   if (raceInstance.tracker.IsEventThrottled(command.eventId))
@@ -2814,17 +2842,12 @@ void RaceDirector::HandleUserRaceDeactivateEvent(
   }
 
   protocol::AcCmdUserRaceDeactivateEventNotify notify{
-    .eventId = command.eventId};
+    .eventId = command.eventId,
+    .characterOid = racer.oid};
 
   // Broadcast to all active racers in the race
-  for (const auto& [racerCharacterUid, racer] : raceInstance.tracker.GetRacers())
+  for (const ClientId racerClientId : raceInstance.clients)
   {
-    if (racer.state != tracker::RaceTracker::Racer::State::Racing)
-      continue;
-
-    notify.characterOid = racer.oid;
-
-    const ClientId racerClientId = GetClientIdByCharacterUid(racerCharacterUid);
     _commandServer.QueueCommand<decltype(notify)>(
       racerClientId,
       [notify]{return notify;});

@@ -17,7 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
-#include "server/auth/PostgresAuthenticationBackend.hpp"
+#include "server/authentication/PostgresAuthenticationBackend.hpp"
 
 #include "spdlog/spdlog.h"
 
@@ -33,16 +33,11 @@ constexpr std::string_view GetUserSessionTokenName = "GetUserSessionToken";
 
 } // anon namespace
 
-
 PostgresAuthenticationBackend::PostgresAuthenticationBackend(
   const std::string& connectionUri)
-  : _pqcx(connectionUri)
+  : _uri(connectionUri)
 {
-  _pqcx.emplace(connectionUri);
-
-  _pqcx->prepare(
-    GetUserSessionTokenName.data(),
-    "SELECT token, expires_at FROM sessions WHERE username = $1");
+  Connect();
 }
 
 std::optional<bool> PostgresAuthenticationBackend::Authenticate(
@@ -67,11 +62,31 @@ std::optional<bool> PostgresAuthenticationBackend::Authenticate(
 
     return sessionToken == userToken;
   }
+  catch (const pqxx::broken_connection&)
+  {
+    spdlog::warn("Lost connection to authentication backend, attempting to perform a reconnect");
+    Connect();
+    return std::nullopt;
+  }
   catch (const std::exception& x)
   {
     spdlog::warn("Exception while authenticating user: {}", x.what());
     return std::nullopt;
   }
+}
+
+void PostgresAuthenticationBackend::Connect() noexcept
+{
+  const auto timerBegin = std::chrono::steady_clock::now();
+
+  _pqcx.emplace(_uri);
+  _pqcx->prepare(
+    GetUserSessionTokenName.data(),
+    "SELECT token, expires_at FROM sessions WHERE username = $1");
+
+  const auto time = std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::steady_clock::now() - timerBegin);
+  spdlog::info("Connection to authentication backend established in {}ms", time.count());
 }
 
 } // namespace server

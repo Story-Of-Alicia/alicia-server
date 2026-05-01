@@ -269,6 +269,11 @@ std::unordered_map<std::string, LobbyDirector::UserInstance>& LobbyDirector::Get
   return _userInstances;
 }
 
+size_t LobbyDirector::GetUserCount()
+{
+  return _userInstances.size();
+}
+
 std::unordered_map<data::Uid, LobbyDirector::GuildInstance>& LobbyDirector::GetGuilds()
 {
   return _guildInstances;

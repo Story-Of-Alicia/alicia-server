@@ -159,9 +159,6 @@ bool RaceTracker::IsEventThrottled(uint32_t eventId)
     eventIter->second.id = eventId;
   }
 
-  // TODO: make this somewhat configurable
-  constexpr std::chrono::milliseconds ThrottleDurationMs{250};
-
   // New event or event expired, update throttle time
   eventIter->second.throttledUntil = now + ThrottleDurationMs;
   return false;

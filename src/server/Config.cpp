@@ -195,9 +195,22 @@ void Config::LoadFromFile(const std::filesystem::path& filePath)
     // Authentication config
     try
     {
-      const auto generalYaml = serverYaml["authentication"];
-      authentication.backend = generalYaml["backend"].as<std::string>("local");
-      authentication.postgres.connectionUri = generalYaml["postgres"]["connectionUri"].as<std::string>("");
+      const auto authenticationYaml = serverYaml["authentication"];
+      authentication.backend = authenticationYaml["backend"].as<std::string>("local");
+      authentication.postgres.connectionUri = authenticationYaml["postgres"]["connectionUri"].as<std::string>("");
+    }
+    catch (const std::exception& e)
+    {
+      spdlog::error("Unhandled exception parsing the authentication config: {}", e.what());
+    }
+
+    // Telemetry config
+    try
+    {
+      const auto telemetryYaml = serverYaml["telemetry"];
+      telemetry.enabled = telemetryYaml["enabled"].as<bool>(false);
+      telemetry.backend = telemetryYaml["backend"].as<std::string>("none");
+      telemetry.postgres.connectionUri = telemetryYaml["postgres"]["connectionUri"].as<std::string>("");
     }
     catch (const std::exception& e)
     {

@@ -51,6 +51,7 @@ ServerInstance::ServerInstance(
   , _infractionSystem(*this)
   , _itemSystem(*this)
   , _matchmakingSystem(*this)
+  , _telemetry(*this)
 {
 }
 
@@ -249,6 +250,31 @@ void ServerInstance::Initialize()
       _shouldRun = false;
     }
   });
+
+  // Telemetry.
+  if (GetSettings().telemetry.enabled)
+  {
+    _telemetryThread = std::thread([this]()
+    {
+      try
+      {
+        _telemetry.Initialize();
+        RunDirectorTaskLoop(_telemetry);
+        _telemetry.Terminate();
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error("Unhandled exception in telemetry: {}", x.what());
+        DumpStackTrace();
+
+        _shouldRun = false;
+      }
+    });
+  }
+  else
+  {
+    spdlog::info("Metric collection is disabled");
+  }
 }
 
 void ServerInstance::Terminate()
@@ -359,6 +385,11 @@ RoomSystem& ServerInstance::GetRoomSystem()
 MatchmakingSystem& ServerInstance::GetMatchmakingSystem()
 {
   return _matchmakingSystem;
+}
+
+Telemetry& ServerInstance::GetTelemetry()
+{
+  return _telemetry;
 }
 
 OtpSystem& ServerInstance::GetOtpSystem()

@@ -959,6 +959,14 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
   {
     response.notice = notice;
   }
+  protocol::LobbyCommandLoginOK::TrainingProgression::MapProgressInfo mapProgressInfo{
+    .mapBlockId= 1,
+    .gameMode = protocol::GameMode::Speed,
+    .clearStage = protocol::LobbyCommandLoginOK::TrainingProgression::MapProgressInfo::ClearStage::None,
+  };
+
+  response.trainingProgression.mapProggressInfos = {
+    mapProgressInfo};
 
   _commandServer.SetCode(clientId, {});
 
@@ -1234,7 +1242,8 @@ void LobbyNetworkHandler::HandleMakeRoom(
     .roomUid = createdRoomUid,
     .oneTimePassword = roomOtp,
     .raceServerAddress = lobbyConfig.advertisement.race.address.to_uint(),
-    .raceServerPort = lobbyConfig.advertisement.race.port};
+    .raceServerPort = lobbyConfig.advertisement.race.port,
+    .unk2 = command.unk4};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -1344,7 +1353,8 @@ void LobbyNetworkHandler::HandleEnterRoom(
     .roomUid = command.roomUid,
     .oneTimePassword = roomOtp,
     .raceServerAddress = lobbyConfig.advertisement.race.address.to_uint(),
-    .raceServerPort = lobbyConfig.advertisement.race.port};
+    .raceServerPort = lobbyConfig.advertisement.race.port,
+    .member6 = 1};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
