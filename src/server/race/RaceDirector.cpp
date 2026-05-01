@@ -1928,15 +1928,32 @@ void RaceDirector::HandleRaceResult(
         {
           response.horseFatigue = static_cast<uint16_t>(
             horse.fatigue());
-          horse.clazzProgress() += static_cast<uint32_t>(gainedClazzProgress);
-          auto classUpDiff = gainedClazzProgress % 6650;
-          if (classUpDiff >= 1)
+
+          // TODO: Add the thresholds to the horse registry and reference them here instead of hardcoding them
+          if (horse.clazz() < 30)
           {
-            //Needs revision because lvl1-10,10-20 and 20-30 have different thresholds for class ups
-            // Add to HorseRegistry
-            horse.clazzProgress() -= 6650*classUpDiff;
-            horse.clazz() += 1;
-            horse.growthPoints() += 1;
+            horse.clazzProgress() += static_cast<uint32_t>(gainedClazzProgress);
+
+            while (horse.clazz() < 30)
+            {
+              uint32_t threshold;
+              if (horse.clazz() < 10)
+                threshold = 6650;
+              else if (horse.clazz() < 20)
+                threshold = 13250;
+              else
+                threshold = 16550;
+
+              if (horse.clazzProgress() < threshold)
+                break;
+
+              horse.clazzProgress() -= threshold;
+              horse.clazz() += 1;
+              horse.growthPoints() += 1;
+            }
+
+            if (horse.clazz() >= 30)
+              horse.clazzProgress() = 0;
           }
         });
     });
