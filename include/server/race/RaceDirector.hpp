@@ -119,6 +119,7 @@ private:
     data::Uid characterUid{data::InvalidUid};
     data::Uid roomUid{data::InvalidUid};
     bool isAuthenticated = false;
+    std::string userName;
   };
 
   struct RaceInstance

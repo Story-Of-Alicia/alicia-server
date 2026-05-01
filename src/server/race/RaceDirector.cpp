@@ -633,6 +633,12 @@ void RaceDirector::Tick()
       const auto newMasterUid = raceResult.scores[0].uid;
       raceInstance.masterUid = newMasterUid;
 
+      const auto& winnerClientContext = GetClientContextByCharacterUid(newMasterUid);
+      spdlog::info("Player {} ({}) has won the match and is now master of [Room {}]",
+        winnerClientContext.userName,
+        raceResult.scores[0].name,
+        raceUid);
+
       protocol::AcCmdCRChangeMasterNotify masterNotify{
         .masterUid = newMasterUid};
 
@@ -920,6 +926,8 @@ void RaceDirector::HandleEnterRoom(
   // that were provided.
   clientContext.characterUid = command.characterUid;
   clientContext.roomUid = command.roomUid;
+  clientContext.userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+    clientContext.characterUid).userName;
 
   std::scoped_lock lock(_raceInstancesMutex);
   // Try to emplace the room instance.
@@ -936,13 +944,18 @@ void RaceDirector::HandleEnterRoom(
   }
 
   _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
-    [roomUid = clientContext.roomUid, inserted](
-      const data::Character& character)
+    [inserted, clientContext](const data::Character& character)
     {
       if (inserted)
-        spdlog::info("Player '{}' has created a room {}", character.name(), roomUid);
+        spdlog::info("Player {} ({}) has created [Room {}]",
+          clientContext.userName,
+          character.name(),
+          clientContext.roomUid);
       else
-        spdlog::info("Player '{}' has joined the room {}", character.name(), roomUid);
+        spdlog::info("Player {} ({}) has joined [Room {}]",
+          clientContext.userName,
+          character.name(),
+          clientContext.roomUid);
     });
 
   // Todo: Roll the code for the connecting client.
@@ -1185,11 +1198,13 @@ void RaceDirector::HandleChangeRoomOptions(
   if (options.test(0))
   {
     _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
-      [this, roomUid = clientContext.roomUid, &command](const data::Character& character)
+      [this, &command, clientContext](const data::Character& character)
       {
-        const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
-          character.uid()).userName;
-        spdlog::info("Room {}'s name changed by '{}' to '{}'", roomUid, userName, command.name);
+        spdlog::info("Room {}'s name changed by '{}' ('{}') to '{}'",
+          clientContext.roomUid,
+          clientContext.userName,
+          character.name(),
+          command.name);
       });
   }
 
@@ -1326,10 +1341,12 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
   auto& raceInstance = GetRaceInstance(clientContext, false);
 
   _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
-    [roomUid = clientContext.roomUid](
-      const data::Character& character)
+    [clientContext](const data::Character& character)
     {
-      spdlog::info("Character '{}' has left the room {}", character.name(), roomUid);
+      spdlog::info("Player {} ({}) has left [Room {}]",
+        clientContext.userName,
+        character.name(),
+        clientContext.roomUid);
     });
 
   if (raceInstance.tracker.IsRacer(clientContext.characterUid))
@@ -1421,8 +1438,18 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
     {
       raceInstance.masterUid = nextMasterUid;
 
-      spdlog::info("Player {} became the master of room {} after the previous master left",
-        raceInstance.masterUid,
+      const auto& newMasterClientContext = GetClientContextByCharacterUid(nextMasterUid);
+
+      std::string newMasterCharacterName;
+      _serverInstance.GetDataDirector().GetCharacter(nextMasterUid).Immutable(
+        [&newMasterCharacterName](const data::Character& character)
+        {
+          newMasterCharacterName = character.name();
+        });
+
+      spdlog::info("Player {} ({}) became the master of [Room {}] after the previous master left",
+        newMasterClientContext.userName,
+        newMasterCharacterName,
         clientContext.roomUid);
 
       // Notify other clients in the room about the new master.
@@ -2527,8 +2554,7 @@ void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& co
     characterName = character.name();
   });
 
-  const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
-    clientContext.characterUid).userName;
+  const auto& userName = clientContext.userName;
 
   std::vector<protocol::AcCmdCRChatNotify> response;
   const bool isCommand = verdict.commandVerdict.has_value();
@@ -2564,7 +2590,8 @@ void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& co
           command.message);
       }
       protocol::AcCmdCRChatNotify notify{
-        .message = verdict.message,
+        .message  = verdict.message,
+        .author   = verdict.isPrevented ? "AutoMod" : "System",
         .isSystem = true};
       _commandServer.QueueCommand<decltype(notify)>(clientId, [notify](){ return notify; });
       return;
@@ -3802,8 +3829,7 @@ void RaceDirector::HandleRequestUser(
       isAdmin = character.role() != data::Character::Role::User;
       invokerCharacterName = character.name();
     });
-  const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
-    clientContext.characterUid).userName;
+  const auto& userName = clientContext.userName;
 
   if (not isAdmin)
   {    
@@ -3863,13 +3889,32 @@ void RaceDirector::HandleKickUser(
   std::unique_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext, false);
 
+  std::string kickerCharacterName;
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [&kickerCharacterName](const data::Character& character)
+    {
+      kickerCharacterName = character.name();
+    });
+
+  std::string targetCharacterName;
+  _serverInstance.GetDataDirector().GetCharacter(command.characterUid).Immutable(
+    [&targetCharacterName](const data::Character& character)
+    {
+      targetCharacterName = character.name();
+    });
+
+  const auto& kickerUserName = clientContext.userName;
+  const auto targetUserName = GetClientContextByCharacterUid(command.characterUid).userName;
+
   // Only the room master may kick players.
   if (clientContext.characterUid != raceInstance.masterUid)
   {
     spdlog::warn(
-      "Character '{}' tried to kick character '{}' but is not the room master.",
-      clientContext.characterUid,
-      command.characterUid);
+      "Player {} ({}) tried to kick Player {} ({}) but is not the room master.",
+      kickerUserName,
+      kickerCharacterName,
+      targetUserName,
+      targetCharacterName);
     return;
   }
 
@@ -3877,8 +3922,9 @@ void RaceDirector::HandleKickUser(
   if (command.characterUid == clientContext.characterUid)
   {
     spdlog::warn(
-      "Character '{}' tried to kick themselves.",
-      clientContext.characterUid);
+      "Player {} ({}) tried to kick themselves.",
+      kickerUserName,
+      kickerCharacterName);
     return;
   }
 
@@ -3893,28 +3939,30 @@ void RaceDirector::HandleKickUser(
   if (!targetInRoom)
   {
     spdlog::warn(
-      "Character '{}' tried to kick character '{}' who is not in the room.",
-      clientContext.characterUid,
-      command.characterUid);
+      "Player {} ({}) tried to kick Player {} ({}) who is not in the room.",
+      kickerUserName,
+      kickerCharacterName,
+      targetUserName,
+      targetCharacterName);
     return;
   }
 
   // GameMasters (role 2) cannot be kicked.
   bool targetIsGameMaster = false;
-  _serverInstance.GetDataDirector().GetCharacter(command.characterUid).Immutable([&targetIsGameMaster](const data::Character& character)
+  _serverInstance.GetDataDirector().GetCharacter(command.characterUid).Immutable(
+    [&targetIsGameMaster](const data::Character& character)
     {
       targetIsGameMaster = character.role() == data::Character::Role::GameMaster;
     });
 
-  const auto kickerUserName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(clientContext.characterUid).userName;
-  const auto targetUserName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(command.characterUid).userName;
-
   if (targetIsGameMaster)
   {
     spdlog::info(
-      "User '{}' tried to kick user '{}' who is a GameMaster.",
+      "Player {} ({}) tried to kick Player {} ({}) who is a GameMaster.",
       kickerUserName,
-      targetUserName);
+      kickerCharacterName,
+      targetUserName,
+      targetCharacterName);
     return;
   }
 
@@ -3927,17 +3975,21 @@ void RaceDirector::HandleKickUser(
   catch (const std::exception& ex)
   {
     spdlog::warn(
-      "Character '{}' tried to kick character '{}' but no active client was found: {}",
-      clientContext.characterUid,
-      command.characterUid,
+      "Player {} ({}) tried to kick Player {} ({}) but no active client was found: {}",
+      kickerUserName,
+      kickerCharacterName,
+      targetUserName,
+      targetCharacterName,
       ex.what());
     return;
   }
 
   spdlog::info(
-    "User '{}' kicked user '{}' from room {}.",
+    "Player {} ({}) kicked Player {} ({}) from [Room {}].",
     kickerUserName,
+    kickerCharacterName,
     targetUserName,
+    targetCharacterName,
     clientContext.roomUid);
 
   // Broadcast the kick notification to all clients in the room.
