@@ -202,6 +202,7 @@ struct LobbyCommandLoginOK
   // Something with rental horse
   Rent val17{};
 
+  //! Housing bonus progression counter
   uint32_t val18{};
   uint32_t val19{};
   uint32_t val20{};
