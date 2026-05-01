@@ -695,7 +695,7 @@ void AcCmdCRRaceResult::Read(
   SourceStream& stream)
 {
   stream.Read(command.member1)
-    .Read(command.member2)
+    .Read(command.gainedClazzProgress)
     .Read(command.member3)
     .Read(command.member4)
     .Read(command.member5)

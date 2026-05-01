@@ -1919,7 +1919,7 @@ void RaceDirector::HandleRaceResult(
   protocol::AcCmdCRRaceResultOK response{};
 
   characterRecord.Immutable(
-    [this, &response, gainedClazzProgress = command.member2](const data::Character& character)
+    [this, &response, gainedClazzProgress = command.gainedClazzProgress](const data::Character& character)
     {
       response.currentCarrots = character.carrots();
 
