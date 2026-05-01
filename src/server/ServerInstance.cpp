@@ -50,6 +50,8 @@ ServerInstance::ServerInstance(
   , _chatSystem(*this)
   , _infractionSystem(*this)
   , _itemSystem(*this)
+  , _matchmakingSystem(*this)
+  , _telemetry(*this)
 {
 }
 
@@ -91,6 +93,7 @@ void ServerInstance::Initialize()
   _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
 
   _moderationSystem.ReadConfig(_resourceDirectory / "config/server/automod.yaml");
+  _systemContentRegistry.ReadConfig(_resourceDirectory / "config/server/system_content.yaml");
 
   // Initialize the directors and tick them on their own threads.
   // Directors will terminate their tick loop once `_shouldRun` flag is set to false.
@@ -247,6 +250,31 @@ void ServerInstance::Initialize()
       _shouldRun = false;
     }
   });
+
+  // Telemetry.
+  if (GetSettings().telemetry.enabled)
+  {
+    _telemetryThread = std::thread([this]()
+    {
+      try
+      {
+        _telemetry.Initialize();
+        RunDirectorTaskLoop(_telemetry);
+        _telemetry.Terminate();
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error("Unhandled exception in telemetry: {}", x.what());
+        DumpStackTrace();
+
+        _shouldRun = false;
+      }
+    });
+  }
+  else
+  {
+    spdlog::info("Metric collection is disabled");
+  }
 }
 
 void ServerInstance::Terminate()
@@ -324,6 +352,11 @@ registry::MagicRegistry& ServerInstance::GetMagicRegistry()
   return _magicRegistry;
 }
 
+registry::SystemContentRegistry& ServerInstance::GetSystemContentRegistry()
+{
+  return _systemContentRegistry;
+}
+
 ChatSystem& ServerInstance::GetChatSystem()
 {
   return _chatSystem;
@@ -347,6 +380,16 @@ ModerationSystem& ServerInstance::GetModerationSystem()
 RoomSystem& ServerInstance::GetRoomSystem()
 {
   return _roomSystem;
+}
+
+MatchmakingSystem& ServerInstance::GetMatchmakingSystem()
+{
+  return _matchmakingSystem;
+}
+
+Telemetry& ServerInstance::GetTelemetry()
+{
+  return _telemetry;
 }
 
 OtpSystem& ServerInstance::GetOtpSystem()

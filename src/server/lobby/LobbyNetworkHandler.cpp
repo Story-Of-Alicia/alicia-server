@@ -484,6 +484,51 @@ void LobbyNetworkHandler::NotifyAchievementReward(
   }
 }
 
+void LobbyNetworkHandler::NotifyMatchmakeResult(
+  const data::Uid characterUid,
+  const MatchmakingSystem::Result& result)
+{
+  const ClientId characterClientId = GetClientIdByCharacterUid(characterUid);
+
+  switch (result.verdict)
+  {
+    case MatchmakingSystem::Result::Verdict::NoRoom:
+    {
+      // Matchmaking unsuccessful, no room found
+      const protocol::AcCmdCLEnterRoomQuickCancel cancel{};
+      _commandServer.QueueCommand<decltype(cancel)>(characterClientId, [cancel](){ return cancel; });
+      break;
+    }
+    case MatchmakingSystem::Result::Verdict::MakeRoom:
+    {
+      throw new std::runtime_error("Matchmaking system verdict make room not implemented");
+
+      // This response is partial, you also need to create a room on the serverside and then
+      // enter room. The client does not send a make room request with some random details.
+      const protocol::AcCmdCLEnterRoomQuickSuccess makeRoom{
+        .result = protocol::AcCmdCLEnterRoomQuickSuccess::SuccessResult::MakeRoom};
+      _commandServer.QueueCommand<decltype(makeRoom)>(characterClientId, [makeRoom](){ return makeRoom; });
+      break;
+    }
+    case MatchmakingSystem::Result::Verdict::FoundRoom:
+    {
+      const protocol::AcCmdCLEnterRoomQuickSuccess quickJoin{
+        .result = protocol::AcCmdCLEnterRoomQuickSuccess::SuccessResult::QuickJoin};
+      _commandServer.QueueCommand<decltype(quickJoin)>(characterClientId, [quickJoin](){ return quickJoin; });
+
+      // Leverage existing handler to trigger join for client
+      const protocol::AcCmdCLEnterRoom enter{
+        .roomUid = result.roomUid};
+      this->HandleEnterRoom(characterClientId, enter);
+      break;
+    }
+    default:
+    {
+      throw new std::runtime_error("Unrecognised matchmaking system result verdict");
+    }
+  }
+}
+
 ClientId LobbyNetworkHandler::GetClientIdByUserName(
   const std::string& userName,
   const bool requiresAuthorization)
@@ -752,8 +797,6 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
     .ranchPort = lobbyConfig.advertisement.ranch.port,
     .scramblingConstant = 0,
 
-    .systemContent = _systemContent,
-
     // .managementSkills = {4, 0x2B, 4},
     // .skillRanks = {.values = {{1,1}}},
     // .val14 = 0xca1b87db,
@@ -763,6 +806,9 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
     // .val19 = 0x38d,
     //.val20 = 0x1c7
   };
+
+  // Populate system content values
+  response.systemContent.values = _serverInstance.GetSystemContentRegistry().GetSystemContent();
   
   data::Uid characterMountUid{
     data::InvalidUid};
@@ -913,6 +959,14 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
   {
     response.notice = notice;
   }
+  protocol::LobbyCommandLoginOK::TrainingProgression::MapProgressInfo mapProgressInfo{
+    .mapBlockId= 1,
+    .gameMode = protocol::GameMode::Speed,
+    .clearStage = protocol::LobbyCommandLoginOK::TrainingProgression::MapProgressInfo::ClearStage::None,
+  };
+
+  response.trainingProgression.mapProggressInfos = {
+    mapProgressInfo};
 
   _commandServer.SetCode(clientId, {});
 
@@ -970,7 +1024,6 @@ void LobbyNetworkHandler::HandleRoomList(
   constexpr uint32_t RoomsPerPage = 9;
 
   protocol::LobbyCommandRoomListOK response{
-    .page = command.page,
     .gameMode = command.gameMode,
     .teamMode = command.teamMode};
 
@@ -1028,12 +1081,15 @@ void LobbyNetworkHandler::HandleRoomList(
 
   if (not roomChunks.empty())
   {
-    // Clamp the page index to the la
+    // Clamp the page index to the last chunk
     const auto pageIndex = std::max(
       std::min(
         roomChunks.size() - 1,
         static_cast<size_t>(command.page)),
       size_t{0});
+
+    // Set the response page index based on chunk index
+    response.page = static_cast<uint8_t>(pageIndex);
 
     for (const auto& room : roomChunks[pageIndex])
     {
@@ -1186,7 +1242,8 @@ void LobbyNetworkHandler::HandleMakeRoom(
     .roomUid = createdRoomUid,
     .oneTimePassword = roomOtp,
     .raceServerAddress = lobbyConfig.advertisement.race.address.to_uint(),
-    .raceServerPort = lobbyConfig.advertisement.race.port};
+    .raceServerPort = lobbyConfig.advertisement.race.port,
+    .unk2 = command.unk4};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -1296,7 +1353,8 @@ void LobbyNetworkHandler::HandleEnterRoom(
     .roomUid = command.roomUid,
     .oneTimePassword = roomOtp,
     .raceServerAddress = lobbyConfig.advertisement.race.address.to_uint(),
-    .raceServerPort = lobbyConfig.advertisement.race.port};
+    .raceServerPort = lobbyConfig.advertisement.race.port,
+    .member6 = 1};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -1731,12 +1789,23 @@ void LobbyNetworkHandler::HandleUpdateUserSettings(
 }
 
 void LobbyNetworkHandler::HandleEnterRoomQuick(
-  const ClientId,
-  const protocol::AcCmdCLEnterRoomQuick&)
+  const ClientId clientId,
+  const protocol::AcCmdCLEnterRoomQuick& command)
 {
-  // todo: implement quick room enter
-  spdlog::error("Not implemented - enter room quick");
-  // AcCmdCLEnterRoomQuickSuccess
+  const auto& clientContext = GetClientContext(clientId);
+
+  const bool hasQueued = _serverInstance.GetMatchmakingSystem().Queue(
+    clientContext.characterUid,
+    command.gameMode,
+    command.teamMode);
+
+  if (hasQueued)
+    // Queued successfully, no need to send a response
+    return;
+
+  // This character was not queued in the matchmaking system
+  const protocol::AcCmdCLEnterRoomQuickCancel cancel{};
+  _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
 }
 
 void LobbyNetworkHandler::HandleGoodsShopList(
@@ -2132,10 +2201,12 @@ void LobbyNetworkHandler::HandleUpdateSystemContent(
   if (not hasPermission)
     return;
 
-  _systemContent.values[command.key] = command.value;
+  // Set system content setting
+  _serverInstance.GetSystemContentRegistry().SetValue(command.key, command.value);
 
-  protocol::AcCmdLCUpdateSystemContent notify{
-    .systemContent = _systemContent};
+  // Notify only the changed setting
+  protocol::AcCmdLCUpdateSystemContent notify{};
+  notify.systemContent.values = {{command.key, command.value}};
 
   for (const auto& connectedClientId : _clients | std::views::keys)
   {
@@ -2152,10 +2223,22 @@ void LobbyNetworkHandler::HandleEnterRoomQuickStop(
   const ClientId clientId,
   const protocol::AcCmdCLEnterRoomQuickStop&)
 {
-  // todo: implement quick enter
-  // Only sending empty response for now so cancelling matchmaking actually gets you out
-  protocol::AcCmdCLEnterRoomQuickStopOK response {};
+  const auto& clientContext = GetClientContext(clientId);
 
+  const bool dequeued = _serverInstance.GetMatchmakingSystem().Dequeue(
+    clientContext.characterUid);
+
+  if (not dequeued)
+  {
+    // Character was not dequeued from the matchmaking system,
+    // maybe character was not queued in the first place?
+    const protocol::AcCmdCLEnterRoomQuickStopCancel cancel{};
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  // Successfully dequeued from the matchmaking system
+  const protocol::AcCmdCLEnterRoomQuickStopOK response {};
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()

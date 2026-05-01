@@ -28,7 +28,12 @@ RaceTracker::Racer& RaceTracker::AddRacer(data::Uid characterUid)
   if (not created)
     throw std::runtime_error("Character is already a racer");
 
-  racerIter->second.oid = _nextObjectOid++;
+  // Reuse the OID from a previous race if the player was here before, otherwise assign a new one.
+  const auto [oidIter, isNew] = _characterOids.try_emplace(characterUid, _nextCharacterOid);
+  if (isNew)
+    ++_nextCharacterOid;
+
+  racerIter->second.oid = oidIter->second;
 
   return racerIter->second;
 }
@@ -59,11 +64,11 @@ RaceTracker::RacerObjectMap& RaceTracker::GetRacers()
 
 RaceTracker::Item& RaceTracker::AddItem()
 {
-  const auto [itemIter, created] = _items.try_emplace(_nextObjectOid);
+  const auto [itemIter, created] = _items.try_emplace(_nextItemOid);
   if (not created)
     throw std::runtime_error("Item is already added to the race map");
 
-  itemIter->second.oid = _nextObjectOid++;
+  itemIter->second.oid = _nextItemOid++;
   return itemIter->second;
 }
 
@@ -89,7 +94,8 @@ void RaceTracker::Clear()
 {
   _racers.clear();
   _items.clear();
-  _nextObjectOid = 100;
+  _events.clear();
+  _nextItemOid = 1;
 }
 
 uint16_t RaceTracker::GetNextEffectInstanceIdAndIncrementBy(uint16_t increment)
@@ -99,6 +105,31 @@ uint16_t RaceTracker::GetNextEffectInstanceIdAndIncrementBy(uint16_t increment)
   if (_nextEffectInstanceId == 0)
     _nextEffectInstanceId = 1;
   return nextId;
+}
+
+bool RaceTracker::IsEventThrottled(uint32_t eventId)
+{
+  const auto& now = std::chrono::steady_clock::now();
+
+  const auto& [eventIter, inserted] = _events.try_emplace(eventId);
+  if (not inserted and eventIter->second.throttledUntil > now)
+  {
+    // Existing event was throttled
+    return true;
+  }
+  else if (inserted)
+  {
+    eventIter->second.id = eventId;
+  }
+
+  // New event or event expired, update throttle time
+  eventIter->second.throttledUntil = now + ThrottleDurationMs;
+  return false;
+}
+
+RaceTracker::EventMap& RaceTracker::GetEvents()
+{
+  return _events;
 }
 
 } // namespace server::tracker

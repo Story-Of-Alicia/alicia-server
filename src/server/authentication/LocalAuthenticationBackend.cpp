@@ -17,7 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
-#include "server/auth/LocalAuthenticationBackend.hpp"
+#include "server/authentication/LocalAuthenticationBackend.hpp"
 
 namespace server
 {

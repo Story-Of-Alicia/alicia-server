@@ -18,8 +18,11 @@
  **/
 
 #include "libserver/network/command/proto/RaceMessageDefinitions.hpp"
-
 #include "libserver/network/chatter/ChatterServer.hpp"
+
+#include "libserver/util/Stream.hpp"
+
+#include <cassert>
 
 namespace server::protocol
 {
@@ -753,7 +756,7 @@ void AcCmdRCRaceResultNotify::Write(
       .Write(score.member6)
       .Write(score.carrots)
       .Write(score.level)
-      .Write(score.member9)
+      .Write(score.teamColor)
       .Write(score.member10)
       .Write(score.member11)
       .Write(score.member12)
@@ -1178,9 +1181,9 @@ void AcCmdCRRelay::Read(
   AcCmdCRRelay& command,
   SourceStream& stream)
 {
-  stream.Read(command.oid)
-    .Read(command.member2)
-    .Read(command.member3);
+  stream.Read(command.fromOid)
+    .Read(command.toOid)
+    .Read(command.payloadType);
 
   uint16_t bufferSize;
   stream.Read(bufferSize);
@@ -1190,15 +1193,131 @@ void AcCmdCRRelay::Read(
   {
     stream.Read(datum);
   }
+
+  // Parse command parameters
+  const std::span<const std::byte> payloadData = std::as_bytes(
+    std::span{command.data});
+  SourceStream payload(payloadData);
+
+  switch (command.payloadType)
+  {
+    case protocol::relay::RelayCommandId::Snapshot:
+    {
+      // Racer snapshot
+      // Payload size for snapshot is 56 bytes.
+      // TODO: if assertion fails, will it break anything with the RaceDirector live?
+      assert(payload.Size() == 56);
+
+      payload.Read(command.snapshot.racerOid)
+        .Read(command.snapshot.networkTickCounter)
+        .Read(command.snapshot.animationState)
+        .Read(command.snapshot.mountState);
+
+      command.snapshot.unidentifiedData.resize(8);
+      payload.Read(command.snapshot.unidentifiedData.data(), 8);
+
+      payload.Read(command.snapshot.position.X)
+        .Read(command.snapshot.position.Y)
+        .Read(command.snapshot.position.Z)
+        .Read(command.snapshot.rotation.X)
+        .Read(command.snapshot.rotation.Y)
+        .Read(command.snapshot.rotation.Z)
+        .Read(command.snapshot.rotation.W)
+        .Read(command.snapshot.forwardSpeed)
+        .Read(command.snapshot.reverseSpeed)
+        .Read(command.snapshot.turningRate);
+      break;
+    }
+    case protocol::relay::RelayCommandId::SyncProgress:
+    {
+      // Sync progress
+      payload.Read(command.syncProgress.racerOid)
+        .Read(command.syncProgress.lapCount)
+        .Read(command.syncProgress.lapProgress);
+      break;
+    }
+    case protocol::relay::RelayCommandId::SetTargetStateEnabled:
+    case protocol::relay::RelayCommandId::SetTargetStateDisabled:
+    {
+      // Set target state
+      if (command.payloadType == protocol::relay::RelayCommandId::SetTargetStateEnabled)
+        command.setTargetState.targetLocked = true;
+      
+      payload.Read(command.setTargetState.magicEffectId)
+        .Read(command.setTargetState.invokerRacerOid)
+        .Read(command.setTargetState.targetRacerOid);
+      break;
+    }
+    case protocol::relay::RelayCommandId::NetSetState:
+    {
+      payload.Read(command.netSetState.racerOid)
+        .Read(command.netSetState.state.val1)
+        .Read(command.netSetState.state.val2);
+      break;
+    }
+    case protocol::relay::RelayCommandId::NetSetLayerAnimation:
+    {
+      // Net set layer animation (braking/stopping)
+      payload.Read(command.netSetLayerAnimation.racerOid)
+        .Read(command.netSetLayerAnimation.layerAnimation);
+      break;
+    }
+    case protocol::relay::RelayCommandId::SyncGoalIn:
+    {
+      // Sync goal in (cross the finish line/DNF)
+      uint32_t raceTimeMs{};
+      payload.Read(command.syncGoalIn.racerOid)
+        .Read(raceTimeMs)
+        .Read(command.syncGoalIn.raceTrackProgress);
+      command.syncGoalIn.raceTimeMs = std::chrono::milliseconds{raceTimeMs};
+      break;
+    }
+    case protocol::relay::RelayCommandId::SpurLevel:
+    {
+      // Spur level
+      payload.Read(command.spurLevel.racerOid)
+        .Read(command.spurLevel.successiveSpurCount);
+      break;
+    }
+    case protocol::relay::RelayCommandId::SlidingMotion:
+    {
+      // Sliding motion
+      payload.Read(command.slidingMotion.racerOid)
+        .Read(command.slidingMotion.isSliding)
+        .Read(command.slidingMotion.slidingAngle);
+      break;
+    }
+    case protocol::relay::RelayCommandId::BroadcastCharacterUid:
+    {
+      // Self character uid
+      payload.Read(command.broadcastCharacterUid.selfCharacterUid);
+      break;
+    }
+    case protocol::relay::RelayCommandId::ResetPosOther:
+    {
+      // Reset pos other
+      payload.Read(command.resetPosOther.affectedOid)
+        .Read(command.resetPosOther.right)
+        .Read(command.resetPosOther.up)
+        .Read(command.resetPosOther.forward)
+        .Read(command.resetPosOther.position);
+      break;
+    }
+    default:
+    {
+      // Do not process unknown payload
+      break;
+    }
+  }
 }
 
 void AcCmdCRRelayNotify::Write(
   const AcCmdCRRelayNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.oid)
-    .Write(command.member2)
-    .Write(command.member3);
+  stream.Write(command.fromOid)
+    .Write(command.toOid)
+    .Write(command.payloadType);
 
   stream.Write(static_cast<uint16_t>(command.data.size()));
   for (const uint8_t datum : command.data)
@@ -1551,70 +1670,70 @@ void AcCmdCRStartMagicTarget::Read(
   AcCmdCRStartMagicTarget& command,
   SourceStream& stream)
 {
-  stream.Read(command.characterOid)
-    .Read(command.unk1)
-    .Read(command.unk2)
-    .Read(command.unk3);
+  stream.Read(command.effectInstanceId)
+    .Read(command.casterOid)
+    .Read(command.targetOid)
+    .Read(command.targetOid2);
 }
 
 void AcCmdCRChangeMagicTarget::Read(
   AcCmdCRChangeMagicTarget& command,
   SourceStream& stream)
 {
-  stream.Read(command.unk0)
-    .Read(command.unk1)
-    .Read(command.oldTargetOid)
-    .Read(command.newTargetOid);
+  stream.Read(command.effectInstanceId)
+    .Read(command.casterOid)
+    .Read(command.targetOid)
+    .Read(command.targetOid2);
 }
 
 void AcCmdCRChangeMagicTargetNotify::Write(
   const AcCmdCRChangeMagicTargetNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0)
-    .Write(command.unk1)
-    .Write(command.oldTargetOid)
-    .Write(command.newTargetOid);
+  stream.Write(command.effectInstanceId)
+    .Write(command.casterOid)
+    .Write(command.targetOid)
+    .Write(command.targetOid2);
 }
 
 void AcCmdCRChangeMagicTargetNotify::Read(
   AcCmdCRChangeMagicTargetNotify& command,
   SourceStream& stream)
 {
-  stream.Read(command.unk0)
-    .Read(command.unk1)
-    .Read(command.oldTargetOid)
-    .Read(command.newTargetOid);
+  stream.Read(command.effectInstanceId)
+    .Read(command.casterOid)
+    .Read(command.targetOid)
+    .Read(command.targetOid2);
 }
 
 void AcCmdCRChangeMagicTargetOK::Write(
   const AcCmdCRChangeMagicTargetOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0)
-    .Write(command.unk1)
-    .Write(command.oldTargetOid)
-    .Write(command.newTargetOid);
+  stream.Write(command.effectInstanceId)
+    .Write(command.casterOid)
+    .Write(command.targetOid)
+    .Write(command.targetOid2);
 }
 
 void AcCmdCRChangeMagicTargetCancel::Write(
   const AcCmdCRChangeMagicTargetCancel& command,
   SinkStream& stream)
 {
-  stream.Write(command.characterOid)
-    .Write(command.unk1)
-    .Write(command.unk2)
-    .Write(command.unk3);
+  stream.Write(command.effectInstanceId)
+    .Write(command.casterOid)
+    .Write(command.targetOid)
+    .Write(command.targetOid2);
 }
 
 void AcCmdRCRemoveMagicTarget::Write(
   const AcCmdRCRemoveMagicTarget& command,
   SinkStream& stream)
 {
-  stream.Write(command.characterOid)
-    .Write(command.unk1)
-    .Write(command.unk2)
-    .Write(command.unk3);
+  stream.Write(command.effectInstanceId)
+    .Write(command.casterOid)
+    .Write(command.targetOid)
+    .Write(command.targetOid2);
 }
 
 void AcCmdRCMagicExpire::Write(

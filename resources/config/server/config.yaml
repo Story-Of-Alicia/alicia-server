@@ -8,7 +8,19 @@ server:
   # Authentication configuration section
   authentication:
     # Type of authentication backend.
+    # Supported types are `local` and `postgres`.
     backend: local
+    postgres:
+      # Connection string to the Postgre SQL database.
+      # https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
+      connectionUri: 'postgresql://storyofalicia:dev@127.0.0.1:5432/storyofalicia'
+  # Telemetry and metrics collection
+  telemetry:
+    # Whether metric collection is enabled.
+    enabled: false
+    # Type of telemetry backend.
+    # Supported types are `none` and `postgres`.
+    backend: postgres
     postgres:
       # Connection string to the Postgre SQL database.
       # https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
@@ -62,6 +74,13 @@ server:
         # The port of the advertised private chat server.
         # Additionally configurable through environment variable LOBBY_ADVERTISED_PRIVATE_CHAT_PORT.
         port: 10035
+      udp_race_relay:
+        # The IPv4 address or a domain of the advertised UDP race relay server.
+        # Additionally configurable through environment variable LOBBY_ADVERTISED_UDP_RACE_RELAY_ADDRESS.
+        address: "127.0.0.1"
+        # The port of the advertised UDP race relay server.
+        # Additionally configurable through environment variable LOBBY_ADVERTISED_UDP_RACE_RELAY_PORT.
+        port: 10500
   # Configuration section of the ranch server.
   ranch:
     # Whether the ranch server is enabled.
@@ -122,6 +141,18 @@ server:
       # The port the server listens on.
       # Additionally configurable through environment variable PRIVATE_CHAT_SERVER_PORT.
       port: 10035
+  # Configuration section of the UDP race relay server.
+  udp_race_relay:
+    # Whether the UDP race relay server is enabled.
+    enabled: true
+    # Address and port listened to by the UDP race relay server.
+    listen:
+      # The IPv4 address or a domain the server listens on.
+      # Additionally configurable through environment variable UDP_RACE_RELAY_SERVER_ADDRESS.
+      address: "0.0.0.0"
+      # The port the server listens on.
+      # Additionally configurable through environment variable UDP_RACE_RELAY_SERVER_PORT.
+      port: 10500
   data:
     source: file
     file:

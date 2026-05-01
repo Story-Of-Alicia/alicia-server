@@ -21,7 +21,11 @@
 #define RACE_MESSAGE_DEFINES_HPP
 
 #include "CommonStructureDefinitions.hpp"
+
+#include "relay/RelayMessageDefinitions.hpp"
+
 #include "libserver/network/command/CommandProtocol.hpp"
+#include "libserver/data/DataDefinitions.hpp"
 #include "libserver/util/Util.hpp"
 
 #include <cstdint>
@@ -974,13 +978,14 @@ struct AcCmdRCRaceResultNotify
     std::string name{};
     //! Time in milliseconds.
     uint32_t courseTime{};
+    //! Room Average Time Record in milliseconds
     uint32_t member4{};
     uint32_t experience{};
     uint32_t member6{};
     uint32_t carrots{};
     uint32_t level{};
     // this is copied as memcpy
-    uint32_t member9{};
+    TeamColor teamColor{};
     uint32_t member10{};
     uint16_t member11{};
     uint16_t member12{};
@@ -1005,6 +1010,7 @@ struct AcCmdRCRaceResultNotify
     uint16_t growthPoints{};
     uint8_t horseClass{};
     uint32_t bonusCarrots{};
+    // ! Revenge something
     uint32_t member22{};
     AcCmdCRStartRaceNotify::Struct1 member23{};
     uint32_t member24{};
@@ -1662,10 +1668,28 @@ struct AcCmdCRRelayCommandNotify
 
 struct AcCmdCRRelay
 {
-  uint16_t oid;
-  uint16_t member2;
-  uint16_t member3;
+  // Begin protocol data
+
+  //! Relay packet origin racer oid.
+  uint16_t fromOid;
+  //! Relay packet destination racer oid.
+  //! Can be 0, which indicates broadcast.
+  uint16_t toOid;
+  protocol::relay::RelayCommandId payloadType{};
   std::vector<uint8_t> data;
+
+  // End protocol data
+
+  protocol::relay::Snapshot snapshot{};
+  protocol::relay::SyncProgress syncProgress{};
+  protocol::relay::SlidingMotion slidingMotion{};
+  protocol::relay::SpurLevel spurLevel{};
+  protocol::relay::SyncGoalIn syncGoalIn{};
+  protocol::relay::NetSetLayerAnimation netSetLayerAnimation{};
+  protocol::relay::BroadcastCharacterUid broadcastCharacterUid{};
+  protocol::relay::ResetPosOther resetPosOther{};
+  protocol::relay::SetTargetState setTargetState{};
+  protocol::relay::NetSetState netSetState{};
 
   static Command GetCommand()
   {
@@ -1689,9 +1713,12 @@ struct AcCmdCRRelay
 
 struct AcCmdCRRelayNotify
 {
-  uint16_t oid;
-  uint16_t member2;
-  uint16_t member3;
+  //! Relay packet origin racer oid.
+  uint16_t fromOid;
+  //! Relay packet destination racer oid.
+  //! Can be 0, which indicates broadcast.
+  uint16_t toOid;
+  protocol::relay::RelayCommandId payloadType;
   std::vector<uint8_t> data;
 
   static Command GetCommand()
@@ -2139,10 +2166,10 @@ struct AcCmdGameRaceItemGet
 // Magic Targeting Commands for Bolt System
 struct AcCmdCRStartMagicTarget
 {
-  uint16_t characterOid;
-  uint16_t unk1;
-  uint16_t unk2;
-  uint16_t unk3;
+  uint16_t effectInstanceId;
+  uint16_t casterOid;
+  uint16_t targetOid;
+  uint16_t targetOid2;
 
   static Command GetCommand()
   {
@@ -2166,10 +2193,10 @@ struct AcCmdCRStartMagicTarget
 
 struct AcCmdCRChangeMagicTarget
 {
-  uint16_t unk0;
-  uint16_t unk1;
-  uint16_t oldTargetOid;
-  uint16_t newTargetOid;
+  uint16_t effectInstanceId;
+  uint16_t casterOid;
+  uint16_t targetOid;
+  uint16_t targetOid2;
 
   static Command GetCommand()
   {
@@ -2193,10 +2220,10 @@ struct AcCmdCRChangeMagicTarget
 
 struct AcCmdCRChangeMagicTargetNotify
 {
-  uint16_t unk0;
-  uint16_t unk1;
-  uint16_t oldTargetOid;
-  uint16_t newTargetOid;
+  uint16_t effectInstanceId;
+  uint16_t casterOid;
+  uint16_t targetOid;
+  uint16_t targetOid2;
 
   static Command GetCommand()
   {
@@ -2220,10 +2247,10 @@ struct AcCmdCRChangeMagicTargetNotify
 
 struct AcCmdCRChangeMagicTargetOK
 {
-  uint16_t unk0;
-  uint16_t unk1;
-  uint16_t oldTargetOid;
-  uint16_t newTargetOid;
+  uint16_t effectInstanceId;
+  uint16_t casterOid;
+  uint16_t targetOid;
+  uint16_t targetOid2;
 
   static Command GetCommand()
   {
@@ -2247,10 +2274,10 @@ struct AcCmdCRChangeMagicTargetOK
 
 struct AcCmdCRChangeMagicTargetCancel
 {
-  uint16_t characterOid;
-  uint16_t unk1;
-  uint16_t unk2;
-  uint16_t unk3;
+  uint16_t effectInstanceId;
+  uint16_t casterOid;
+  uint16_t targetOid;
+  uint16_t targetOid2;
 
   static Command GetCommand()
   {
@@ -2274,10 +2301,10 @@ struct AcCmdCRChangeMagicTargetCancel
 
 struct AcCmdRCRemoveMagicTarget
 {
-  uint16_t characterOid;
-  uint16_t unk1;
-  uint16_t unk2;
-  uint16_t unk3;
+  uint16_t effectInstanceId;
+  uint16_t casterOid;
+  uint16_t targetOid;
+  uint16_t targetOid2;
 
   static Command GetCommand()
   {

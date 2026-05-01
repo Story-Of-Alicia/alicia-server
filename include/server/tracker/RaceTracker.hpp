@@ -28,6 +28,7 @@
 #include <array>
 #include <chrono>
 #include <map>
+#include <unordered_map>
 #include <unordered_set>
 
 namespace server::tracker
@@ -69,11 +70,19 @@ public:
     //! Active skill effects indexed by skillEffectId (0-23).
     static constexpr size_t EffectCount = 24;
     std::array<bool, EffectCount> effects{};
-    //! Per-effect generation counter — incremented on each apply, used to invalidate stale removal timers.
+    //! Per-effect generation counter, incremented on each apply, used to invalidate stale removal timers.
     std::array<uint32_t, EffectCount> effectGenerations{};
 
     //! Rank of the currently active removeMagic attack (0 = none active).
     uint32_t attackRank{};
+    std::chrono::steady_clock::time_point dragonReceivedAt{};
+
+    struct MagicTargetInfo
+    {
+      uint16_t casterOid;
+      uint16_t effectInstanceId;
+    };
+    std::optional<MagicTargetInfo> pendingMagicTarget{};
   };
 
   //! An item
@@ -84,6 +93,13 @@ public:
     uint32_t currentType{};
     std::chrono::steady_clock::time_point respawnTimePoint{};
     std::array<float, 3> position{};
+  };
+
+  //! An event
+  struct Event
+  {
+    uint32_t id{};
+    std::chrono::steady_clock::time_point throttledUntil{};
   };
 
   struct TeamInfo
@@ -101,6 +117,8 @@ public:
   //! An item object map.
   //! Maps itemId -> Item (in the race)
   using ItemObjectMap = std::map<uint16_t, Item>;
+  //! An event map.
+  using EventMap = std::unordered_map<uint32_t, Event>;
 
   //! Adds a racer for tracking.
   //! @param characterUid Character UID.
@@ -141,16 +159,32 @@ public:
 
   uint16_t GetNextEffectInstanceIdAndIncrementBy(uint16_t increment);
 
+  //! Returns a reference to all of the event records.
+  //! @return Reference to event records.
+  [[nodiscard]] EventMap& GetEvents();
+  //! Checks and throttles an event.
+  //! @param eventId Event ID.
+  //! @returns True if event exists and is throttled, else event is tracked.
+  bool IsEventThrottled(uint32_t eventId);
+  static inline const std::chrono::milliseconds ThrottleDurationMs{250};
+
   void Clear();
 
 
 private:
-  //! The next entity OID.
-  Oid _nextObjectOid = 1;
+  //! Mapping between character UIDs and their assigned OIDs.
+  //! It's important these persist across races in a room as the client does not clear assignments internally. 
+  std::unordered_map<data::Uid, Oid> _characterOids;
+  //! Next OID for new character entities (100+).
+  Oid _nextCharacterOid = 100;
+  //! Next OID for item entities (1–99, reset each race).
+  Oid _nextItemOid = 1;
   //! Horse entities in the race.
   RacerObjectMap _racers;
   //! Items in the race
   ItemObjectMap _items;
+  //! Tracked race map events.
+  EventMap _events;
   //! Next effect instance ID.
   uint16_t _nextEffectInstanceId = 0;
 };

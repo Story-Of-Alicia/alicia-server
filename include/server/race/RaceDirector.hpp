@@ -20,6 +20,8 @@
 #ifndef RACEDIRECTOR_HPP
 #define RACEDIRECTOR_HPP
 
+#include "P2dIdPool.hpp"
+
 #include "server/Config.hpp"
 
 #include "server/tracker/RaceTracker.hpp"
@@ -94,6 +96,10 @@ public:
 
   void DisconnectCharacter(data::Uid characterUid);
 
+  //! Get room count.
+  //! @return Room count.
+  [[nodiscard]] size_t GetRoomCount();
+
   ServerInstance& GetServerInstance();
   Config::Race& GetConfig();
 
@@ -151,6 +157,8 @@ private:
     //! A room clients.
     std::unordered_set<ClientId> clients;
   };
+
+  race::P2dId GetOrCreateP2dId(ClientId clientId);
 
   ClientContext& GetClientContext(ClientId clientId, bool requireAuthorized = true);
   ClientId GetClientIdByCharacterUid(data::Uid characterUid);
@@ -341,6 +349,10 @@ private:
   CommandServer _commandServer;
   //! A map of all client contexts.
   std::unordered_map<ClientId, ClientContext> _clients;
+  //! A map of all p2ds for UDP relay.
+  std::unordered_map<ClientId, race::P2dId> _p2dIds;
+  //! A pool for active race clients with P2dIds.
+  race::P2dIdPool _p2dIdPool;
 
   std::mutex _raceInstancesMutex;
   //! A map of all race instanced indexed by room UIDs.
