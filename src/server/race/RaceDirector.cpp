@@ -913,6 +913,8 @@ void RaceDirector::HandleEnterRoom(
   // that were provided.
   clientContext.characterUid = command.characterUid;
   clientContext.roomUid = command.roomUid;
+  clientContext.userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
+    clientContext.characterUid).userName;
 
   std::scoped_lock lock(_raceInstancesMutex);
   // Try to emplace the room instance.
@@ -928,9 +930,8 @@ void RaceDirector::HandleEnterRoom(
     raceInstance.masterUid = command.characterUid;
   }
 
-  const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(clientContext.characterUid).userName;
   _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
-    [roomUid = clientContext.roomUid, inserted, userName](
+    [roomUid = clientContext.roomUid, inserted, userName = clientContext.userName](
       const data::Character& character)
     {
       if (inserted)
@@ -1179,10 +1180,8 @@ void RaceDirector::HandleChangeRoomOptions(
   if (options.test(0))
   {
     _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
-      [this, roomUid = clientContext.roomUid, &command](const data::Character& character)
+      [this, roomUid = clientContext.roomUid, userName = clientContext.userName, &command](const data::Character& character)
       {
-        const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
-          character.uid()).userName;
         spdlog::info("Room {}'s name changed by '{}' to '{}'", roomUid, userName, command.name);
       });
   }
@@ -1319,9 +1318,8 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext, false);
 
-  const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(clientContext.characterUid).userName;
   _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
-    [roomUid = clientContext.roomUid, userName](
+    [roomUid = clientContext.roomUid, userName = clientContext.userName](
       const data::Character& character)
     {
       spdlog::info("Player {} ({}) has left [Room {}]", userName, character.name(), roomUid);
@@ -2542,8 +2540,7 @@ void RaceDirector::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& co
     characterName = character.name();
   });
 
-  const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
-    clientContext.characterUid).userName;
+  const auto& userName = clientContext.userName;
 
   std::vector<protocol::AcCmdCRChatNotify> response;
   const bool isCommand = verdict.commandVerdict.has_value();
@@ -3818,8 +3815,7 @@ void RaceDirector::HandleRequestUser(
       isAdmin = character.role() != data::Character::Role::User;
       invokerCharacterName = character.name();
     });
-  const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
-    clientContext.characterUid).userName;
+  const auto& userName = clientContext.userName;
 
   if (not isAdmin)
   {    
@@ -3879,7 +3875,7 @@ void RaceDirector::HandleKickUser(
   std::unique_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext, false);
 
-  const auto kickerUserName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(clientContext.characterUid).userName;
+  const auto& kickerUserName = clientContext.userName;
   const auto targetUserName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(command.characterUid).userName;
   std::string kickerCharacterName;
   std::string targetCharacterName;
