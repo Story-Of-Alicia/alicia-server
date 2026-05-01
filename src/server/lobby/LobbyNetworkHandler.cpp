@@ -818,8 +818,9 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
     {
       response.uid = character.uid();
       response.name = character.name();
-
       response.introduction = character.introduction();
+      // TODO: implement the storing of character creation date
+      // response.characterCreationDate = util::TimePointToAliciaTime(character.creationDate()),
 
       // todo: model constant
       response.gender = character.parts.modelId() == 10

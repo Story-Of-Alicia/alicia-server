@@ -194,7 +194,8 @@ struct LobbyCommandLoginOK
     std::vector<MapProgressInfo> mapProggressInfos;
   } trainingProgression{};
 
-  uint32_t val14{};
+  //! Time point indicating when the account was created.
+  uint32_t characterCreationDate{};
   Guild guild{};
   uint8_t val16{};
 

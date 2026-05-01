@@ -165,7 +165,7 @@ void LobbyCommandLoginOK::Write(
       .Write(value.clearStage);
   }
 
-  stream.Write(command.val14);
+  stream.Write(command.characterCreationDate);
 
   // Guild
   const auto& struct5 = command.guild;
