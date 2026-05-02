@@ -1931,24 +1931,56 @@ void RaceDirector::HandleLoadingComplete(
           .oid = oid};
       });
   }
-  static std::random_device rd;
-  if (rd() % 2 != 0)
-    return;
-  try
+
+  // Egg spawning mechanism
+
+  // Character eligibility check
+  const auto& isCharacterEligible = [this](data::Uid characterUid) -> bool
   {
-    protocol::AcCmdRCGameCreateClientItem spawnClientItem{
-      .racerOid = racer.oid,
-      .unk1 = 0};
-    _commandServer.QueueCommand<decltype(spawnClientItem)>(
-      clientId,
-      [spawnClientItem]()
+    // Get character level to check min level
+    uint32_t characterLevel{};
+    GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
+      [&characterLevel](const data::Character& character)
       {
-        return spawnClientItem;
+        characterLevel = character.level();
       });
-  }
-  catch ([[maybe_unused]] const std::exception&)
+
+    // Get configured minimum level required for egg spawning
+    constexpr uint32_t MinCharLevelForEggSpawningKey = 61u;
+    constexpr uint32_t DefaultMinCharLevelForEggSpawning = 12u;
+    const auto& minCharacterLevelOpt = GetServerInstance().GetSystemContentRegistry().GetValue(
+      MinCharLevelForEggSpawningKey);
+
+    // Simple existence check in the system content registry, fallback to default
+    const uint32_t minCharacterLevel = minCharacterLevelOpt.has_value() ?
+      minCharacterLevelOpt.value() :
+      DefaultMinCharLevelForEggSpawning;
+
+    // If character level is above minimum level then character is eligible
+    return characterLevel > minCharacterLevel;
+  };
+
+  // Randomness check
+  const auto& shouldEggSpawn = []() -> bool
   {
-  }
+    static std::random_device rd;
+    // TODO: verify if egg spawning probability is truly 50%
+    return rd() % 2 != 0;
+  };
+
+  if (not isCharacterEligible(clientContext.characterUid) or not shouldEggSpawn())
+    return;
+
+  const protocol::AcCmdRCGameCreateClientItem spawnClientItem{
+    .racerOid = racer.oid,
+    .unk1 = 0};
+
+  _commandServer.QueueCommand<decltype(spawnClientItem)>(
+    clientId,
+    [spawnClientItem]()
+    {
+      return spawnClientItem;
+    });
 }
 
 void RaceDirector::HandleUserRaceFinal(
@@ -4330,14 +4362,14 @@ void RaceDirector::HandleGameCreateClientItem(
     alreadyOwned = _serverInstance.GetItemSystem().HasItem(character, selectedEgg.tid);
   });
 
+  // Only spawn visually if the player doesn't already own this egg.
+  if (alreadyOwned)
+    return;
+
   // Add to per-racer event item tracker regardless of ownership.
   auto& item = raceInstance.tracker.AddEventItem(clientContext.characterUid);
   item.position = command.position;
   item.itemType = selectedEgg.deckItemId;
-
-  // Only spawn visually if the player doesn't already own this egg.
-  if (alreadyOwned)
-    return;
 }
 
 } // namespace server
