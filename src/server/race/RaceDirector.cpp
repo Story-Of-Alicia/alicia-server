@@ -1968,7 +1968,21 @@ void RaceDirector::HandleLoadingComplete(
     return rd() % 2 != 0;
   };
 
-  if (not isCharacterEligible(clientContext.characterUid) or not shouldEggSpawn())
+  // Check gamemode eligibility
+  // All teammodes including single (training, level 1 eggs only) can spawn eggs
+  const bool isGameModeEligible =
+    raceInstance.raceGameMode == protocol::GameMode::Speed or
+    raceInstance.raceGameMode == protocol::GameMode::Magic;
+
+  // If gamemode and character is eligible, and egg should spawn (chance)
+  // then spawn egg
+  const bool isEggSpawnEligible =
+    isGameModeEligible and
+    isCharacterEligible(clientContext.characterUid) and
+    shouldEggSpawn();
+
+  if (not isEggSpawnEligible)
+    // Egg spawn not eligible, we are done here
     return;
 
   const protocol::AcCmdRCGameCreateClientItem spawnClientItem{
