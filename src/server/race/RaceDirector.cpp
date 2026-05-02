@@ -4333,6 +4333,10 @@ void RaceDirector::HandleGameCreateClientItem(
     command.position[0], command.position[1], command.position[2],
     command.unk3[0], command.unk3[1], command.unk3[2], command.unk3[3]);
 
+  if (command.unk1 != 0)
+    // Only egg spawning (unk1 == 0) is implemented
+    throw new std::runtime_error("AcCmdCRGameCreateClientItem::unk1 != 0, other case not implemented");
+
   const auto& clientContext = GetClientContext(clientId);
   auto& raceInstance = _raceInstances[clientContext.roomUid];
 
