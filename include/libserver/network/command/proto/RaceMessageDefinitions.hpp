@@ -2785,6 +2785,8 @@ struct AcCmdRCGameCreateClientItem
   //! Invoker's character OID.
   uint16_t racerOid{};
   // Some kind of flag (valid values: 0, 1 only)
+  // 0 - related to egg
+  // 1 - possibly quest items?
   uint8_t unk1{};
 
   static Command GetCommand()
@@ -2810,6 +2812,7 @@ struct AcCmdRCGameCreateClientItem
 struct AcCmdCRGameCreateClientItem
 {
   uint16_t someonesOid{};
+  // Same value as received in AcCmdRCGameCreateClientItem::unk1 by client
   uint8_t unk1{};
   std::array<float, 3> position{};
   // Rotation?
