@@ -4380,7 +4380,7 @@ void RaceDirector::HandleGameCreateClientItem(
     alreadyOwned = _serverInstance.GetItemSystem().HasItem(character, selectedEgg.tid);
   });
 
-  // Only spawn visually if the player doesn't already own this egg.
+  // If player already owns the egg, do nothing.
   if (alreadyOwned)
     return;
 
