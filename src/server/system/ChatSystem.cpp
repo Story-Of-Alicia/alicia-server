@@ -531,6 +531,19 @@ void ChatSystem::RegisterUserCommands()
 
       if (subLiteral == "item")
       {
+        // Only allow admins (character.role != User) to use this subcommand.
+        if (not characterRecord)
+          return {"Server error"};
+
+        bool isAdmin = false;
+        characterRecord.Immutable([&isAdmin](const data::Character& character)
+          {
+            isAdmin = character.role() != data::Character::Role::User;
+          });
+
+        if (not isAdmin)
+          return {"You don't have permission to use this command."};
+
         if (arguments.size() < 3)
           return {
             "Invalid command arguments.",
