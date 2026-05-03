@@ -90,6 +90,43 @@ RaceTracker::ItemObjectMap& RaceTracker::GetItems()
 {
   return _items;
 }
+RaceTracker::EventItem& RaceTracker::AddEventItem(data::Uid characterUid)
+{
+  auto& racer = GetRacer(characterUid);
+  auto& eventItem = racer.eventItems.emplace_back();
+  eventItem.oid = _nextItemOid++;
+  return eventItem;
+}
+
+Oid RaceTracker::FindEventItem(data::Uid characterUid, Oid oid)
+{
+  auto& racer = GetRacer(characterUid);
+  for (auto& eventItem : racer.eventItems)
+  {
+    if (eventItem.oid == oid)
+      return eventItem.oid;
+  }
+  return InvalidEntityOid;
+}
+
+RaceTracker::EventItem& RaceTracker::GetEventItem(data::Uid characterUid, Oid oid)
+{
+  auto& racer = GetRacer(characterUid);
+  for (auto& eventItem : racer.eventItems)
+  {
+    if (eventItem.oid == oid)
+      return eventItem;
+  }
+
+  throw std::runtime_error("Event item is not tracked for racer");
+}
+
+void RaceTracker::RemoveEventItem(data::Uid characterUid, Oid oid)
+{
+  auto& racer = GetRacer(characterUid);
+  std::erase_if(racer.eventItems, [oid](const EventItem& e) { return e.oid == oid; });
+}
+
 void RaceTracker::Clear()
 {
   _racers.clear();

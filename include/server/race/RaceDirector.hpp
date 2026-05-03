@@ -336,6 +336,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRTriggerizeAct& command);
 
+  void HandleGameCreateClientItem(
+    ClientId clientId,
+    const protocol::AcCmdCRGameCreateClientItem& command);
+
   void PrepareItemSpawners(RaceInstance& raceInstance);
 
   //!

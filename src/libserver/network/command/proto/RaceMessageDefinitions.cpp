@@ -2136,4 +2136,60 @@ void AcCmdRCUpdateGameMoney::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdRCGameCreateClientItem::Write(
+  const AcCmdRCGameCreateClientItem& command,
+  SinkStream& stream)
+{
+  stream.Write(command.racerOid)
+    .Write(command.unk1);
+}
+
+void AcCmdRCGameCreateClientItem::Read(
+  AcCmdRCGameCreateClientItem&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRGameCreateClientItem::Write(
+  const AcCmdCRGameCreateClientItem&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRGameCreateClientItem::Read(
+  AcCmdCRGameCreateClientItem& command,
+  SourceStream& stream)
+{
+  stream.Read(command.someonesOid)
+    .Read(command.unk1);
+
+  for (auto& element : command.position)
+  {
+    stream.Read(element);
+  }
+
+  for (auto& element : command.unk3)
+  {
+    stream.Read(element);
+  }
+}
+
+void AcCmdRCObtainEgg::Write(
+  const AcCmdRCObtainEgg& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.ItemUid)
+    .Write(command.ItemTid);
+}
+
+void AcCmdRCObtainEgg::Read(
+  AcCmdRCObtainEgg&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
