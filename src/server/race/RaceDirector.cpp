@@ -679,12 +679,19 @@ void RaceDirector::Tick()
               updateGameMoney.carrotBalance = character.carrots();
             });
 
-          _commandServer.QueueCommand<protocol::AcCmdRCUpdateGameMoney>(
-            GetClientIdByCharacterUid(uid),
-            [updateGameMoney]()
-            {
-              return updateGameMoney;
-            });
+          try
+          {
+            _commandServer.QueueCommand<protocol::AcCmdRCUpdateGameMoney>(
+              GetClientIdByCharacterUid(uid),
+              [updateGameMoney]()
+              {
+                return updateGameMoney;
+              });
+          }
+          catch (const std::exception&)
+          {
+            // The client has disconnected.
+          }
         }
       });
   }
