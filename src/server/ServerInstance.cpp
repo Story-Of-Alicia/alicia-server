@@ -19,7 +19,9 @@
 
 #include "server/ServerInstance.hpp"
 
+#ifndef DISABLE_STACKTRACE
 #include <stacktrace>
+#endif
 
 namespace server
 {
@@ -28,10 +30,12 @@ namespace
 {
 void DumpStackTrace()
 {
+  #ifndef DISABLE_STACKTRACE
   for (const auto& entry : std::stacktrace::current())
   {
     spdlog::error("[Stack] {}({}): {}", entry.source_file(), entry.source_line(), entry.description());
   }
+  #endif
 }
 
 } // anon namespace
