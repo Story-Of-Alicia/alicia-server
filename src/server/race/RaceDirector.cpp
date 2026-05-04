@@ -633,20 +633,44 @@ void RaceDirector::Tick()
         });
     }
 
-    // Assign room master to the first-place finisher.
-    if (!raceResult.scores.empty())
+    // Pick the top contender as a new master.
+    for (const auto& contender : raceResult.scores)
     {
-      const auto newMasterUid = raceResult.scores[0].uid;
-      raceInstance.masterUid = newMasterUid;
+      const auto newMasterCharacterUid = contender.uid;
+      ClientId newMasterClientId = 0;
 
-      const auto& winnerClientContext = GetClientContextByCharacterUid(newMasterUid);
+      try
+      {
+        newMasterClientId = GetClientIdByCharacterUid(newMasterCharacterUid);
+      }
+      catch (const std::exception&)
+      {
+        // The client has disconnected.
+        // Try to pick the next candidate.
+        continue;
+      }
+
+      // If the client ID is invalid,
+      // try to pick the next candidate.
+      if (newMasterClientId == 0)
+        continue;
+
+      const auto& clientContext = GetClientContext(newMasterClientId, false);
+
+      // If the client is somehow not authenticated,
+      // try to pick the next candidate.
+      if (not clientContext.isAuthenticated)
+        continue;
+
+      raceInstance.masterUid = newMasterCharacterUid;
+
       spdlog::info("Player {} ({}) has won the match and is now master of [Room {}]",
-        winnerClientContext.userName,
-        raceResult.scores[0].name,
+        clientContext.userName,
+        contender.name,
         raceUid);
 
-      protocol::AcCmdCRChangeMasterNotify masterNotify{
-        .masterUid = newMasterUid};
+      const protocol::AcCmdCRChangeMasterNotify masterNotify{
+        .masterUid = newMasterCharacterUid};
 
       for (const ClientId raceClientId : raceInstance.clients)
       {
@@ -662,6 +686,7 @@ void RaceDirector::Tick()
     // Clear the ready state of oll of the players.
     // todo: this should have been reset with the room instance data
     raceInstance.stage = RaceInstance::Stage::Waiting;
+
     _serverInstance.GetRoomSystem().GetRoom(
       raceUid,
       [this](Room& room)
@@ -672,9 +697,10 @@ void RaceDirector::Tick()
           player.SetReady(false);
 
           const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(uid);
+
           protocol::AcCmdRCUpdateGameMoney updateGameMoney{};
           characterRecord.Immutable(
-            [&player, &updateGameMoney](const data::Character& character)
+            [&updateGameMoney](const data::Character& character)
             {
               updateGameMoney.carrotBalance = character.carrots();
             });
