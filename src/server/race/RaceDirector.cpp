@@ -681,6 +681,8 @@ void RaceDirector::Tick()
             return masterNotify;
           });
       }
+
+      break;
     }
 
     // Clear the ready state of oll of the players.
