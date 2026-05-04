@@ -42,19 +42,39 @@ void TestLocale()
 void TestNameValidation()
 {
   constexpr std::array validNames = {
-    "validName1",
-    "valid-name2",
-    "valid_name3",
-    "valid.name4",
-    "가123-",
-    "가가.가가9"};
+    // ASCII range boundaries
+    "AZaz09",
+    // Accepted punctuation
+    "Name(1)",
+    "Name[2]",
+    "Name{3}",
+    "([]{})",
+    // Korean range boundaries: U+AC00 and U+D7A3
+    "\xEA\xB0\x80" "\xED\x9E\xA3",
+    // Mixed Korean, latin and digit characters
+    "\xEA\xB0\x80" "A0"};
 
   constexpr std::array invalidNames = {
     // Invalid because of length
-    "invalidLatinNameBEcauseOfLength211",
+    "",
+    "ab",
+    "ABCDEFGHIJKLMNOPQ",
     // Invalid because of symbols
     "%!@^",
-    "가가가가가가가가가가가가"};
+    "Name-With-Hyphen",
+    "Name_With_Underscore",
+    "Name.With.Dot",
+    "AB/C",
+    "AB:C",
+    "AB\\C",
+    "AB^C",
+    "AB`C",
+    "AB|C",
+    // Korean range boundaries: U+ABFF and U+D7A4
+    "\xEA\xAF\xBF" "ab",
+    "\xED\x9E\xA4" "ab",
+    "\xEA\xB0\x80" "\xEA\xB0\x80" "\xEA\xB0\x80" "\xEA\xB0\x80" "\xEA\xB0\x80"
+    "\xEA\xB0\x80" "\xEA\xB0\x80" "\xEA\xB0\x80" "\xEA\xB0\x80"};
 
   for (const auto& entry : validNames)
   {
