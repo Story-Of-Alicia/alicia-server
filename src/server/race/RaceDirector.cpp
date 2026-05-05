@@ -26,6 +26,7 @@
 
 #include <boost/container_hash/hash.hpp>
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/bin_to_hex.h>
 
 #include <bitset>
 
@@ -2839,11 +2840,11 @@ void RaceDirector::HandleRelay(
           command.fromOid,
           command.toOid);
 
-      spdlog::warn("Relay payload from client '{}', with oids {}, sent an unrecognised relay payload type '{:#04x}': {}",
+      spdlog::warn("Relay payload from client '{}', with oids {}, sent an unrecognised relay payload type '{:#04x}': {:02X}",
         clientId,
         header,
         static_cast<uint16_t>(command.payloadType),
-        std::format("{::02x}", command.data));
+        spdlog::to_hex(command.data));
       break;
     }
   }
