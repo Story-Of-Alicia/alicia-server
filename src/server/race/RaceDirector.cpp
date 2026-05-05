@@ -608,6 +608,7 @@ void RaceDirector::Tick()
           {
             score.mountName = horse.name();
             score.horseClass = static_cast<uint8_t>(horse.clazz());
+            score.horseClassProgress = horse.clazzProgress();
             score.growthPoints = static_cast<uint16_t>(horse.growthPoints());
           });
       });
@@ -2120,15 +2121,42 @@ void RaceDirector::HandleRaceResult(
   protocol::AcCmdCRRaceResultOK response{};
 
   characterRecord.Immutable(
-    [this, &response](const data::Character& character)
+    [this, &response, gainedClazzProgress = command.gainedClazzProgress](const data::Character& character)
     {
       response.currentCarrots = character.carrots();
 
-      GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Immutable(
-        [&response](const data::Horse& horse)
+      GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Mutable(
+        [&response, gainedClazzProgress](data::Horse& horse)
         {
           response.horseFatigue = static_cast<uint16_t>(
             horse.fatigue());
+
+          // TODO: Add the thresholds to the horse registry and reference them here instead of hardcoding them
+          if (horse.clazz() < 30)
+          {
+            horse.clazzProgress() += static_cast<uint32_t>(gainedClazzProgress);
+
+            while (horse.clazz() < 30)
+            {
+              uint32_t threshold;
+              if (horse.clazz() < 10)
+                threshold = 6650;
+              else if (horse.clazz() < 20)
+                threshold = 13250;
+              else
+                threshold = 16550;
+
+              if (horse.clazzProgress() < threshold)
+                break;
+
+              horse.clazzProgress() -= threshold;
+              horse.clazz() += 1;
+              horse.growthPoints() += 1;
+            }
+
+            if (horse.clazz() >= 30)
+              horse.clazzProgress() = 0;
+          }
         });
     });
 
