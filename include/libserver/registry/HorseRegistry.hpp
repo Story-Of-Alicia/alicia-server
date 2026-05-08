@@ -20,7 +20,10 @@
 #ifndef HORSEREGISTRY_HPP
 #define HORSEREGISTRY_HPP
 
+#include <array>
+#include <filesystem>
 #include <random>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -39,10 +42,79 @@ enum class Color
   Black = 6
 };
 
-struct ColorGroup
+struct PotentialGrowth
 {
-  int32_t id{0};
-  std::vector<Color> colors;
+  uint32_t type{0};
+  std::array<float, 10> weights{};
+};
+
+struct PotentialLevel
+{
+  uint32_t level{0};
+  int32_t exp{0};
+};
+
+struct PotentialInfo
+{
+  uint32_t type{0};
+  std::string name;
+};
+
+struct MasteryParams
+{
+  uint32_t spurMagicCount{600};
+  uint32_t jumpCount{1200};
+  uint32_t slidingTime{900};
+  uint32_t glidingDistance{8000};
+};
+
+struct MasteryReward
+{
+  uint32_t percent{0};
+  uint32_t userExpAdd{0};
+  uint32_t gameMoneyAdd{0};
+};
+
+struct TendencyRatio
+{
+  uint32_t tendency{0};
+  int32_t buyRatio{0};
+  int32_t breedingRatio{0};
+};
+
+struct GroupForceCondition
+{
+  int32_t tendency{0};
+  int32_t count{0};
+};
+
+struct GroupForceEffect
+{
+  int32_t effect{0};
+  std::string param;
+};
+
+struct GroupForce
+{
+  uint32_t id{0};
+  bool affectToAll{false};
+  int32_t action{0};
+  std::vector<GroupForceCondition> conditions;
+  std::vector<GroupForceEffect> effects;
+};
+
+struct LevelUpPoints
+{
+  int32_t base{6650};
+  int32_t exp10{13250};
+  int32_t exp20{16550};
+};
+
+struct GradeInfo
+{
+  uint32_t grade{0};
+  int32_t minStatSum{0};
+  int32_t pregnantValue{0};
 };
 
 struct Coat
@@ -59,13 +131,10 @@ struct Coat
   int32_t faceType{0};
   int32_t minGrade{1};
   Tier tier{Tier::Common};
-  //! Star rating (1-3) - affects potential probability
-  int32_t stars{1};
   //! Base probability weight for this coat (from DNA_SkinInfo)
   float inheritanceRate{1.0f};
-  //! A list of color groups used with this coat.
-  //! Derived from https://aliciaonheart.weebly.com/breeding.html
-  std::vector<int32_t> allowedColorGroups; 
+  //! Color group index (0-3) from MountSkinInfo/MountColorGroupInfo
+  int32_t allowedColorGroups{0};
 };
 
 struct Face
@@ -81,6 +150,7 @@ struct Mane
   int32_t shape{0};
   float inheritanceRate{1.0f};
   int32_t minGrade{1};
+  int32_t tier{1};
 };
 
 struct Tail
@@ -90,6 +160,7 @@ struct Tail
   int32_t shape{0};
   float inheritanceRate{1.0f};
   int32_t minGrade{1};
+  int32_t tier{1};
 };
 
 
@@ -98,7 +169,7 @@ class HorseRegistry
 public:
   HorseRegistry();
 
-  void ReadConfig();
+  void ReadConfig(const std::filesystem::path& configPath);
 
   void BuildRandomHorse(
     data::Horse::Parts& parts,
@@ -156,13 +227,43 @@ public:
   //! @returns Reference to Tail, with fallback to default if not found.
   const Tail& GetTail(data::Tid tid) const;
 
+  //! Gets potential info for a given type ID.
+  //! @returns Pointer to PotentialInfo, or nullptr if type not found.
+  const PotentialInfo* GetPotentialInfo(uint32_t type) const;
+
+  //! Gets all valid potential type IDs.
+  const std::vector<uint32_t>& GetPotentialTypes() const;
+
+  //! Gets potential growth entry by type.
+  //! @returns Pointer to PotentialGrowth, or nullptr if not found.
+  const PotentialGrowth* GetPotentialGrowth(uint32_t type) const;
+
+  const std::vector<PotentialLevel>& GetPotentialLevels() const;
+  const MasteryParams& GetMasteryParams() const;
+  const std::vector<MasteryReward>& GetMasteryRewards() const;
+
+  //! Gets tendency ratio for a given tendency ID.
+  //! @returns Pointer to TendencyRatio, or nullptr if not found.
+  const TendencyRatio* GetTendencyRatio(uint32_t tendency) const;
+
+  //! Gets group force entry by ID.
+  //! @returns Pointer to GroupForce, or nullptr if not found.
+  const GroupForce* GetGroupForce(uint32_t id) const;
+
+  const LevelUpPoints& GetLevelUpPoints() const;
+
+  //! Gets grade info by grade number.
+  //! @returns Pointer to GradeInfo, or nullptr if not found.
+  const GradeInfo* GetGradeInfo(uint32_t grade) const;
+
 private:
   std::random_device _randomDevice;
   mutable std::mt19937 _randomEngine;
 
+  std::vector<std::vector<Color>> _colorGroups;
+
   std::unordered_map<data::Tid, Coat> _coats;
   std::unordered_map<data::Tid, Face> _faces;
-  std::unordered_map<int32_t, ColorGroup> _colorGroups;
 
   std::unordered_map<data::Tid, Mane> _manes;
   std::unordered_map<data::Tid, Tail> _tails;
@@ -172,7 +273,16 @@ private:
   std::vector<data::Tid> _possibleManes;
   std::vector<data::Tid> _possibleTails;
 
-  std::vector<data::Tid> _potentials;
+  std::unordered_map<uint32_t, PotentialGrowth> _potentialGrowth;
+  std::vector<PotentialLevel> _potentialLevels;
+  std::unordered_map<uint32_t, PotentialInfo> _potentials;
+  std::vector<uint32_t> _potentialTypes;
+  MasteryParams _masteryParams;
+  std::vector<MasteryReward> _masteryRewards;
+  std::unordered_map<uint32_t, TendencyRatio> _tendencies;
+  std::unordered_map<uint32_t, GroupForce> _groupForces;
+  LevelUpPoints _levelUpPoints;
+  std::unordered_map<uint32_t, GradeInfo> _grades;
 
   struct ManeTailColorGroup
   {

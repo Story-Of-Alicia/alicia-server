@@ -22,6 +22,7 @@
 #include <spdlog/spdlog.h>
 #include <yaml-cpp/yaml.h>
 
+#include <filesystem>
 #include <ranges>
 
 namespace server::registry
@@ -33,205 +34,243 @@ namespace
 constexpr uint32_t FigureScaleMin = 2;
 constexpr uint32_t FigureScaleMax = 10;
 
+Color ParseColor(const std::string& str)
+{
+  if (str == "White")      return Color::White;
+  if (str == "LightBrown") return Color::LightBrown;
+  if (str == "Brown")      return Color::Brown;
+  if (str == "DarkBrown")  return Color::DarkBrown;
+  if (str == "Grey")       return Color::Grey;
+  if (str == "Black")      return Color::Black;
+  throw std::runtime_error("Unknown color: " + str);
+}
+
+// Maps ManeTailColor IDs (from MountColorGroupInfo) to Color enum.
+// 1=Black, 2=White, 3=Brown, 4=DarkBrown, 5=Grey
+Color ParseManeTailColorId(int id)
+{
+  switch (id)
+  {
+    case 1: return Color::Black;
+    case 2: return Color::White;
+    case 3: return Color::Brown;
+    case 4: return Color::DarkBrown;
+    case 5: return Color::Grey;
+    default: throw std::runtime_error("Unknown ManeTailColor ID: " + std::to_string(id));
+  }
+}
+
 } // anon namespace
 
 HorseRegistry::HorseRegistry()
   : _randomEngine(_randomDevice())
 {
-  // Define color groups
-  // Color group 1: White, Light Brown, Dark Brown
-  // Color group 2: Grey, White, Black  
-  // Color group 3: Grey, White, Light Brown (Champagne special)
-  _colorGroups = {
-    {1, ColorGroup{.id = 1, .colors = {Color::White, Color::LightBrown, Color::DarkBrown}}},
-    {2, ColorGroup{.id = 2, .colors = {Color::Grey, Color::White, Color::Black}}},
-    {3, ColorGroup{.id = 3, .colors = {Color::Grey, Color::White, Color::Brown}}},
-  };
+}
 
-  _coats = {
-  // 1 Star Coats: Chestnut, Bay, Champagne Sabino, Chestnut Stockings, Buckskin, Champagne, Leopard Appaloosa
-  {1, Coat{.tid = 1, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .stars = 1, .inheritanceRate = 30.0f, .allowedColorGroups = {1}}},   // Chestnut
-  {2, Coat{.tid = 2, .faceType = -1, .minGrade = 1, .tier = Coat::Tier::Common, .stars = 1, .inheritanceRate = 25.0f, .allowedColorGroups = {1}}},  // Bay
-  {3, Coat{.tid = 3, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .stars = 1, .inheritanceRate = 30.0f, .allowedColorGroups = {2}}},   // Champagne Sabino
-  {4, Coat{.tid = 4, .faceType = 0, .minGrade = 2, .tier = Coat::Tier::Common, .stars = 1, .inheritanceRate = 21.0f, .allowedColorGroups = {1}}},   // Chestnut Stockings
-  {5, Coat{.tid = 5, .faceType = -1, .minGrade = 3, .tier = Coat::Tier::Common, .stars = 1, .inheritanceRate = 23.0f, .allowedColorGroups = {2}}},  // Buckskin
-  {6, Coat{.tid = 6, .faceType = 0, .minGrade = 3, .tier = Coat::Tier::Common, .stars = 1, .inheritanceRate = 21.0f, .allowedColorGroups = {3}}},   // Champagne
-  {7, Coat{.tid = 7, .faceType = 0, .minGrade = 5, .tier = Coat::Tier::Common, .stars = 1, .inheritanceRate = 21.0f, .allowedColorGroups = {1}}},   // Leopard Appaloosa
-  // 2 Star Coats: Blanket Appaloosa, Dapple Grey, Chestnut Pinto, Palomino, Black Pinto, Sooty Bay
-  {8, Coat{.tid = 8, .faceType = -1, .minGrade = 6, .tier = Coat::Tier::Uncommon, .stars = 2, .inheritanceRate = 15.0f, .allowedColorGroups = {2}}},  // Blanket Appaloosa
-  {10, Coat{.tid = 10, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .stars = 2, .inheritanceRate = 15.0f, .allowedColorGroups = {2}}}, // Dapple Grey
-  {11, Coat{.tid = 11, .faceType = -1, .minGrade = 6, .tier = Coat::Tier::Uncommon, .stars = 2, .inheritanceRate = 18.0f, .allowedColorGroups = {1}}}, // Chestnut Pinto
-  {13, Coat{.tid = 13, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .stars = 2, .inheritanceRate = 15.0f, .allowedColorGroups = {1}}}, // Palomino
-  {14, Coat{.tid = 14, .faceType = 0, .minGrade = 7, .tier = Coat::Tier::Uncommon, .stars = 2, .inheritanceRate = 19.0f, .allowedColorGroups = {2}}}, // Black Pinto
-  {12, Coat{.tid = 12, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .stars = 2, .inheritanceRate = 11.0f, .allowedColorGroups = {1}}}, // Sooty Bay
-  // 3 Star Coats: White Grey, Chestnut Sabino, Black, Mealy Bay, Amber Cream, Black Sabino, Dapple Bay
-  {9, Coat{.tid = 9, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Uncommon, .stars = 3, .inheritanceRate = 7.0f, .allowedColorGroups = {2}}},   // White Grey
-  {16, Coat{.tid = 16, .faceType = 0, .minGrade = 6, .tier = Coat::Tier::Rare, .stars = 3, .inheritanceRate = 12.0f, .allowedColorGroups = {1}}}, // Chestnut Sabino
-  {15, Coat{.tid = 15, .faceType = -1, .minGrade = 7, .tier = Coat::Tier::Rare, .stars = 3, .inheritanceRate = 7.0f, .allowedColorGroups = {2}}}, // Black
-  {18, Coat{.tid = 18, .faceType = 0, .minGrade = 7, .tier = Coat::Tier::Rare, .stars = 3, .inheritanceRate = 10.0f, .allowedColorGroups = {1}}}, // Mealy Bay
-  {17, Coat{.tid = 17, .faceType = 0, .minGrade = 8, .tier = Coat::Tier::Rare, .stars = 3, .inheritanceRate = 10.0f, .allowedColorGroups = {1}}}, // Amber Cream
-  {19, Coat{.tid = 19, .faceType = -1, .minGrade = 8, .tier = Coat::Tier::Rare, .stars = 3, .inheritanceRate = 10.0f, .allowedColorGroups = {2}}}, // Black Sabino
-  {20, Coat{.tid = 20, .faceType = 0, .minGrade = 8, .tier = Coat::Tier::Rare, .stars = 3, .inheritanceRate = 5.0f, .allowedColorGroups = {1}}}, // Dapple Bay
-  };
+void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
+{
+  const auto root = YAML::LoadFile(configPath.string())["horses"];
 
-  for (const auto& coatTid : _coats | std::views::keys)
+  _colorGroups.clear();
+  for (const auto& node : root["colorGroups"])
   {
-    _possibleCoats.emplace_back(coatTid);
+    std::vector<Color> colors;
+    for (const auto& idNode : node["colorIds"])
+    {
+      const Color c = ParseManeTailColorId(idNode.as<int32_t>());
+      if (std::find(colors.begin(), colors.end(), c) == colors.end())
+        colors.push_back(c);
+    }
+    _colorGroups.push_back(std::move(colors));
   }
 
-  _faces = {
-    {1, Face{.tid = 1, .type = -1}},
-    {2, Face{.tid = 2, .type = -1}},
-    {3, Face{.tid = 3, .type = -1}},
-    {5, Face{.tid = 5, .type = -1}},
-    {7, Face{.tid = 7, .type = -1}},
-  };
-
-  for (const auto& faceTid : _faces | std::views::keys)
+  _coats.clear();
+  _possibleCoats.clear();
+  for (const auto& node : root["coats"])
   {
-    _possibleFaces.emplace_back(faceTid);
+    const auto tid = node["tid"].as<data::Tid>();
+    _coats[tid] = Coat{
+      .tid = tid,
+      .faceType = node["faceType"].as<int32_t>(),
+      .minGrade = node["minGrade"].as<int32_t>(),
+      .tier = static_cast<Coat::Tier>(node["tier"].as<int32_t>()),
+      .inheritanceRate = node["inheritanceRate"].as<float>(),
+      .allowedColorGroups = node["allowedColorGroups"].as<int32_t>(),
+    };
+    _possibleCoats.emplace_back(tid);
   }
 
-  // Mane TIDs 1-40: 8 shapes x 5 colors
-  // Pattern: TID = (shape * 5) + color
-
-  _manes = {
-    // Shape 0 (Medium short): 30% inheritance, grade 1+
-    {1, Mane{.tid = 1, .color = Color::White, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {2, Mane{.tid = 2, .color = Color::LightBrown, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {3, Mane{.tid = 3, .color = Color::Brown, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {4, Mane{.tid = 4, .color = Color::DarkBrown, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {5, Mane{.tid = 5, .color = Color::Grey, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1}},
-    // Shape 1 (Medium): 20% inheritance, grade 6+
-    {6, Mane{.tid = 6, .color = Color::White, .shape = 1, .inheritanceRate = 20.0f, .minGrade = 6}},
-    {7, Mane{.tid = 7, .color = Color::LightBrown, .shape = 1, .inheritanceRate = 20.0f, .minGrade = 6}},
-    {8, Mane{.tid = 8, .color = Color::Brown, .shape = 1, .inheritanceRate = 20.0f, .minGrade = 6}},
-    {9, Mane{.tid = 9, .color = Color::DarkBrown, .shape = 1, .inheritanceRate = 20.0f, .minGrade = 6}},
-    {10, Mane{.tid = 10, .color = Color::Grey, .shape = 1, .inheritanceRate = 20.0f, .minGrade = 6}},
-    // Shape 2 (Shaved): 30% inheritance, grade 1+
-    {11, Mane{.tid = 11, .color = Color::White, .shape = 2, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {12, Mane{.tid = 12, .color = Color::LightBrown, .shape = 2, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {13, Mane{.tid = 13, .color = Color::Brown, .shape = 2, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {14, Mane{.tid = 14, .color = Color::DarkBrown, .shape = 2, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {15, Mane{.tid = 15, .color = Color::Grey, .shape = 2, .inheritanceRate = 30.0f, .minGrade = 1}},
-    // Shape 3 (Short): 30% inheritance, grade 1+
-    {16, Mane{.tid = 16, .color = Color::White, .shape = 3, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {17, Mane{.tid = 17, .color = Color::LightBrown, .shape = 3, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {18, Mane{.tid = 18, .color = Color::Brown, .shape = 3, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {19, Mane{.tid = 19, .color = Color::DarkBrown, .shape = 3, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {20, Mane{.tid = 20, .color = Color::Grey, .shape = 3, .inheritanceRate = 30.0f, .minGrade = 1}},
-    // Shape 4 (Extremely short): 30% inheritance, grade 1+
-    {21, Mane{.tid = 21, .color = Color::White, .shape = 4, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {22, Mane{.tid = 22, .color = Color::LightBrown, .shape = 4, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {23, Mane{.tid = 23, .color = Color::Brown, .shape = 4, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {24, Mane{.tid = 24, .color = Color::DarkBrown, .shape = 4, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {25, Mane{.tid = 25, .color = Color::Grey, .shape = 4, .inheritanceRate = 30.0f, .minGrade = 1}},
-    // Shape 5 (Spiky): 30% inheritance, grade 4+
-    {26, Mane{.tid = 26, .color = Color::White, .shape = 5, .inheritanceRate = 30.0f, .minGrade = 4}},
-    {27, Mane{.tid = 27, .color = Color::LightBrown, .shape = 5, .inheritanceRate = 30.0f, .minGrade = 4}},
-    {28, Mane{.tid = 28, .color = Color::Brown, .shape = 5, .inheritanceRate = 30.0f, .minGrade = 4}},
-    {29, Mane{.tid = 29, .color = Color::DarkBrown, .shape = 5, .inheritanceRate = 30.0f, .minGrade = 4}},
-    {30, Mane{.tid = 30, .color = Color::Grey, .shape = 5, .inheritanceRate = 30.0f, .minGrade = 4}},
-    // Shape 6 (Long): 15% inheritance, grade 6+
-    {31, Mane{.tid = 31, .color = Color::White, .shape = 6, .inheritanceRate = 15.0f, .minGrade = 6}},
-    {32, Mane{.tid = 32, .color = Color::LightBrown, .shape = 6, .inheritanceRate = 15.0f, .minGrade = 6}},
-    {33, Mane{.tid = 33, .color = Color::Brown, .shape = 6, .inheritanceRate = 15.0f, .minGrade = 6}},
-    {34, Mane{.tid = 34, .color = Color::DarkBrown, .shape = 6, .inheritanceRate = 15.0f, .minGrade = 6}},
-    {35, Mane{.tid = 35, .color = Color::Grey, .shape = 6, .inheritanceRate = 15.0f, .minGrade = 6}},
-    // Shape 7 (Curly): 5% inheritance, grade 7+
-    {36, Mane{.tid = 36, .color = Color::White, .shape = 7, .inheritanceRate = 5.0f, .minGrade = 7}},
-    {37, Mane{.tid = 37, .color = Color::LightBrown, .shape = 7, .inheritanceRate = 5.0f, .minGrade = 7}},
-    {38, Mane{.tid = 38, .color = Color::Brown, .shape = 7, .inheritanceRate = 5.0f, .minGrade = 7}},
-    {39, Mane{.tid = 39, .color = Color::DarkBrown, .shape = 7, .inheritanceRate = 5.0f, .minGrade = 7}},
-    {40, Mane{.tid = 40, .color = Color::Grey, .shape = 7, .inheritanceRate = 5.0f, .minGrade = 7}},
-  };
-
-  for (const auto& maneTid : _manes | std::views::keys)
+  _faces.clear();
+  _possibleFaces.clear();
+  for (const auto& node : root["faces"])
   {
-    _possibleManes.emplace_back(maneTid);
+    const auto tid = node["tid"].as<data::Tid>();
+    _faces[tid] = Face{
+      .tid = tid,
+      .type = node["type"].as<int32_t>(),
+    };
+    _possibleFaces.emplace_back(tid);
   }
 
-  // Tail TIDs 1-30: 6 shapes x 5 colors
-  // Pattern: TID = (shape * 5) + color
-  _tails = {
-    // Shape 0 (Medium): 30% inheritance
-    {1, Tail{.tid = 1, .color = Color::White, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {2, Tail{.tid = 2, .color = Color::LightBrown, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {3, Tail{.tid = 3, .color = Color::Brown, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {4, Tail{.tid = 4, .color = Color::DarkBrown, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {5, Tail{.tid = 5, .color = Color::Grey, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1}},
-    // Shape 1 (Long Thick): 30% inheritance
-    {6, Tail{.tid = 6, .color = Color::White, .shape = 1, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {7, Tail{.tid = 7, .color = Color::LightBrown, .shape = 1, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {8, Tail{.tid = 8, .color = Color::Brown, .shape = 1, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {9, Tail{.tid = 9, .color = Color::DarkBrown, .shape = 1, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {10, Tail{.tid = 10, .color = Color::Grey, .shape = 1, .inheritanceRate = 30.0f, .minGrade = 1}},
-    // Shape 2 (Cropped): 20% inheritance
-    {11, Tail{.tid = 11, .color = Color::White, .shape = 2, .inheritanceRate = 20.0f, .minGrade = 1}},
-    {12, Tail{.tid = 12, .color = Color::LightBrown, .shape = 2, .inheritanceRate = 20.0f, .minGrade = 1}},
-    {13, Tail{.tid = 13, .color = Color::Brown, .shape = 2, .inheritanceRate = 20.0f, .minGrade = 1}},
-    {14, Tail{.tid = 14, .color = Color::DarkBrown, .shape = 2, .inheritanceRate = 20.0f, .minGrade = 1}},
-    {15, Tail{.tid = 15, .color = Color::Grey, .shape = 2, .inheritanceRate = 20.0f, .minGrade = 1}},
-    // Shape 3 (Long Thin): 30% inheritance
-    {16, Tail{.tid = 16, .color = Color::White, .shape = 3, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {17, Tail{.tid = 17, .color = Color::LightBrown, .shape = 3, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {18, Tail{.tid = 18, .color = Color::Brown, .shape = 3, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {19, Tail{.tid = 19, .color = Color::DarkBrown, .shape = 3, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {20, Tail{.tid = 20, .color = Color::Grey, .shape = 3, .inheritanceRate = 30.0f, .minGrade = 1}},
-    // Shape 4 (Short Thin): 30% inheritance
-    {21, Tail{.tid = 21, .color = Color::White, .shape = 4, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {22, Tail{.tid = 22, .color = Color::LightBrown, .shape = 4, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {23, Tail{.tid = 23, .color = Color::Brown, .shape = 4, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {24, Tail{.tid = 24, .color = Color::DarkBrown, .shape = 4, .inheritanceRate = 30.0f, .minGrade = 1}},
-    {25, Tail{.tid = 25, .color = Color::Grey, .shape = 4, .inheritanceRate = 30.0f, .minGrade = 1}},
-    // Shape 5 (Long Curly): 30% inheritance, grade 7+
-    {26, Tail{.tid = 26, .color = Color::White, .shape = 5, .inheritanceRate = 30.0f, .minGrade = 7}},
-    {27, Tail{.tid = 27, .color = Color::LightBrown, .shape = 5, .inheritanceRate = 30.0f, .minGrade = 7}},
-    {28, Tail{.tid = 28, .color = Color::Brown, .shape = 5, .inheritanceRate = 30.0f, .minGrade = 7}},
-    {29, Tail{.tid = 29, .color = Color::DarkBrown, .shape = 5, .inheritanceRate = 30.0f, .minGrade = 7}},
-    {30, Tail{.tid = 30, .color = Color::Grey, .shape = 5, .inheritanceRate = 30.0f, .minGrade = 7}},
-  };
-
-  for (const auto& tailTid : _tails | std::views::keys)
+  _manes.clear();
+  _possibleManes.clear();
+  for (const auto& node : root["manes"])
   {
-    _possibleTails.emplace_back(tailTid);
+    const auto tid = node["tid"].as<data::Tid>();
+    _manes[tid] = Mane{
+      .tid = tid,
+      .color = ParseColor(node["color"].as<std::string>()),
+      .shape = node["shape"].as<int32_t>(),
+      .inheritanceRate = node["inheritanceRate"].as<float>(),
+      .minGrade = node["minGrade"].as<int32_t>(),
+      .tier = node["tier"].as<int32_t>(),
+    };
+    _possibleManes.emplace_back(tid);
   }
 
-  // Build lookup tables for efficient querying
+  _tails.clear();
+  _possibleTails.clear();
+  for (const auto& node : root["tails"])
+  {
+    const auto tid = node["tid"].as<data::Tid>();
+    _tails[tid] = Tail{
+      .tid = tid,
+      .color = ParseColor(node["color"].as<std::string>()),
+      .shape = node["shape"].as<int32_t>(),
+      .inheritanceRate = node["inheritanceRate"].as<float>(),
+      .minGrade = node["minGrade"].as<int32_t>(),
+      .tier = node["tier"].as<int32_t>(),
+    };
+    _possibleTails.emplace_back(tid);
+  }
+
+  _potentialGrowth.clear();
+  for (const auto& node : root["potentialGrowth"])
+  {
+    const auto type = node["type"].as<uint32_t>();
+    PotentialGrowth pg{ .type = type };
+    const auto weightsNode = node["weights"];
+    for (size_t i = 0; i < pg.weights.size(); ++i)
+      pg.weights[i] = weightsNode[i].as<float>();
+    _potentialGrowth[type] = pg;
+  }
+
+  _potentialLevels.clear();
+  for (const auto& node : root["potentialLevels"])
+  {
+    _potentialLevels.push_back(PotentialLevel{
+      .level = node["level"].as<uint32_t>(),
+      .exp = node["exp"].as<int32_t>(),
+    });
+  }
+
+  _potentials.clear();
+  _potentialTypes.clear();
+  for (const auto& node : root["potentials"])
+  {
+    const auto type = node["type"].as<uint32_t>();
+    _potentials[type] = PotentialInfo{
+      .type = type,
+      .name = node["name"].as<std::string>(),
+    };
+    _potentialTypes.push_back(type);
+  }
+
+  {
+    const auto& params = root["mastery"]["params"];
+    _masteryParams = MasteryParams{
+      .spurMagicCount = params["spurMagicCount"].as<uint32_t>(),
+      .jumpCount = params["jumpCount"].as<uint32_t>(),
+      .slidingTime = params["slidingTime"].as<uint32_t>(),
+      .glidingDistance = params["glidingDistance"].as<uint32_t>(),
+    };
+  }
+
+  _masteryRewards.clear();
+  for (const auto& node : root["mastery"]["rewards"])
+  {
+    _masteryRewards.push_back(MasteryReward{
+      .percent = node["percent"].as<uint32_t>(),
+      .userExpAdd = node["userExpAdd"].as<uint32_t>(),
+      .gameMoneyAdd = node["gameMoneyAdd"].as<uint32_t>(),
+    });
+  }
+
+  _tendencies.clear();
+  for (const auto& node : root["tendencies"])
+  {
+    const auto tendency = node["tendency"].as<uint32_t>();
+    _tendencies[tendency] = TendencyRatio{
+      .tendency = tendency,
+      .buyRatio = node["buyRatio"].as<int32_t>(),
+      .breedingRatio = node["breedingRatio"].as<int32_t>(),
+    };
+  }
+
+  _groupForces.clear();
+  for (const auto& node : root["groupForces"])
+  {
+    const auto id = node["id"].as<uint32_t>();
+    GroupForce gf{
+      .id = id,
+      .affectToAll = node["affectToAll"].as<bool>(),
+      .action = node["action"].as<int32_t>(),
+    };
+    for (const auto& cNode : node["conditions"])
+      gf.conditions.push_back({
+        .tendency = cNode["tendency"].as<int32_t>(),
+        .count = cNode["count"].as<int32_t>(),
+      });
+    for (const auto& eNode : node["effects"])
+      gf.effects.push_back({
+        .effect = eNode["effect"].as<int32_t>(),
+        .param = eNode["param"].as<std::string>(),
+      });
+    _groupForces[id] = std::move(gf);
+  }
+
+  {
+    const auto& lup = root["levelUpPoints"];
+    _levelUpPoints = LevelUpPoints{
+      .base = lup["base"].as<int32_t>(),
+      .exp10 = lup["exp10"].as<int32_t>(),
+      .exp20 = lup["exp20"].as<int32_t>(),
+    };
+  }
+
+  _grades.clear();
+  for (const auto& node : root["grades"])
+  {
+    const auto grade = node["grade"].as<uint32_t>();
+    _grades[grade] = GradeInfo{
+      .grade = grade,
+      .minStatSum = node["minStatSum"].as<int32_t>(),
+      .pregnantValue = node["pregnantValue"].as<int32_t>(),
+    };
+  }
+
+  _manesByColorAndShape.clear();
+  _tailsByColorAndShape.clear();
+
   for (const auto& [tid, mane] : _manes)
   {
-    // Map each color to its color group(s)
-    for (const auto& [groupId, group] : _colorGroups)
+    for (int32_t groupId = 0; groupId < static_cast<int32_t>(_colorGroups.size()); ++groupId)
     {
-      if (std::find(group.colors.begin(), group.colors.end(), mane.color) != group.colors.end())
-      {
+      const auto& colors = _colorGroups[groupId];
+      if (std::find(colors.begin(), colors.end(), mane.color) != colors.end())
         _manesByColorAndShape[groupId][mane.shape].push_back(tid);
-      }
     }
   }
 
   for (const auto& [tid, tail] : _tails)
   {
-    // Map each color to its color group(s)
-    for (const auto& [groupId, group] : _colorGroups)
+    for (int32_t groupId = 0; groupId < static_cast<int32_t>(_colorGroups.size()); ++groupId)
     {
-      if (std::find(group.colors.begin(), group.colors.end(), tail.color) != group.colors.end())
-      {
+      const auto& colors = _colorGroups[groupId];
+      if (std::find(colors.begin(), colors.end(), tail.color) != colors.end())
         _tailsByColorAndShape[groupId][tail.shape].push_back(tid);
-      }
     }
   }
-}
-
-void HorseRegistry::ReadConfig()
-{
-  const YAML::Node config = YAML::Load("./config/game/horses.yaml");
-  const auto root = config["horses"];
-
-  const auto facesConfig = root["faces"];
-  const auto coatsConfig = root["coats"];
-  const auto manesConfig = root["manes"];
-  const auto tailsConfig = root["tails"];
 }
 
 void HorseRegistry::BuildRandomHorse(
@@ -285,17 +324,9 @@ void HorseRegistry::BuildRandomHorse(
 void HorseRegistry::GiveHorseRandomPotential(
   data::Horse::Potential& potential)
 {
-  uint32_t type;
-  std::uniform_int_distribution<uint32_t> typeDist(1, 15);
-
-  // Horse type cannot be 12 as it does not exist in original Alicia
-  do
-  {
-    type = typeDist(_randomDevice);
-  } while (type == 12);
-
+  std::uniform_int_distribution<size_t> typeDist(0, _potentialTypes.size() - 1);
   std::uniform_int_distribution<uint32_t> randomDist(0, 255);
-  potential.type = type;
+  potential.type = _potentialTypes[typeDist(_randomDevice)];
   potential.level = randomDist(_randomDevice);
   potential.value = randomDist(_randomDevice);
 }
@@ -309,7 +340,7 @@ const Coat& HorseRegistry::GetCoatInfo(data::Tid coatTid) const
   }
   
   // Fallback to Chestnut (coat 1) if not found
-  static const Coat invalidCoat{.tid = 1, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .allowedColorGroups = {1}};
+  static const Coat invalidCoat{.tid = 1, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .allowedColorGroups = 0};
   return invalidCoat;
 }
 
@@ -355,44 +386,34 @@ int32_t HorseRegistry::GetManeColorGroupId(data::Tid maneTid) const
 {
   auto it = _manes.find(maneTid);
   if (it == _manes.end())
-  {
-    return 0;
-  }
+    return -1;
 
   const Color maneColor = it->second.color;
-  
-  // Find which color group(s) contain this color
-  for (const auto& [groupId, group] : _colorGroups)
+  for (int32_t groupId = 0; groupId < static_cast<int32_t>(_colorGroups.size()); ++groupId)
   {
-    if (std::find(group.colors.begin(), group.colors.end(), maneColor) != group.colors.end())
-    {
+    const auto& colors = _colorGroups[groupId];
+    if (std::find(colors.begin(), colors.end(), maneColor) != colors.end())
       return groupId;
-    }
   }
-  
-  return 0;
+
+  return -1;
 }
 
 int32_t HorseRegistry::GetTailColorGroupId(data::Tid tailTid) const
 {
   auto it = _tails.find(tailTid);
   if (it == _tails.end())
-  {
-    return 0;
-  }
+    return -1;
 
   const Color tailColor = it->second.color;
-  
-  // Find which color group(s) contain this color
-  for (const auto& [groupId, group] : _colorGroups)
+  for (int32_t groupId = 0; groupId < static_cast<int32_t>(_colorGroups.size()); ++groupId)
   {
-    if (std::find(group.colors.begin(), group.colors.end(), tailColor) != group.colors.end())
-    {
+    const auto& colors = _colorGroups[groupId];
+    if (std::find(colors.begin(), colors.end(), tailColor) != colors.end())
       return groupId;
-    }
   }
-  
-  return 0;
+
+  return -1;
 }
 
 data::Tid HorseRegistry::FindTailByColorAndShape(Color color, int32_t shape) const
@@ -416,7 +437,7 @@ const Mane& HorseRegistry::GetMane(data::Tid tid) const
   }
   
   // Fallback to white short mane (TID 1) if not found
-  static const Mane invalidMane{.tid = 1, .color = Color::White, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1};
+  static const Mane invalidMane{.tid = 1, .color = Color::White, .shape = 1, .inheritanceRate = 30.0f, .minGrade = 1, .tier = 1};
   return invalidMane;
 }
 
@@ -429,8 +450,63 @@ const Tail& HorseRegistry::GetTail(data::Tid tid) const
   }
   
   // Fallback to white medium tail (TID 1) if not found
-  static const Tail invalidTail{.tid = 1, .color = Color::White, .shape = 0, .inheritanceRate = 30.0f, .minGrade = 1};
+  static const Tail invalidTail{.tid = 1, .color = Color::White, .shape = 1, .inheritanceRate = 30.0f, .minGrade = 1, .tier = 1};
   return invalidTail;
+}
+
+const PotentialInfo* HorseRegistry::GetPotentialInfo(uint32_t type) const
+{
+  auto it = _potentials.find(type);
+  return it != _potentials.end() ? &it->second : nullptr;
+}
+
+const std::vector<uint32_t>& HorseRegistry::GetPotentialTypes() const
+{
+  return _potentialTypes;
+}
+
+const PotentialGrowth* HorseRegistry::GetPotentialGrowth(uint32_t type) const
+{
+  auto it = _potentialGrowth.find(type);
+  return it != _potentialGrowth.end() ? &it->second : nullptr;
+}
+
+const std::vector<PotentialLevel>& HorseRegistry::GetPotentialLevels() const
+{
+  return _potentialLevels;
+}
+
+const MasteryParams& HorseRegistry::GetMasteryParams() const
+{
+  return _masteryParams;
+}
+
+const std::vector<MasteryReward>& HorseRegistry::GetMasteryRewards() const
+{
+  return _masteryRewards;
+}
+
+const TendencyRatio* HorseRegistry::GetTendencyRatio(uint32_t tendency) const
+{
+  auto it = _tendencies.find(tendency);
+  return it != _tendencies.end() ? &it->second : nullptr;
+}
+
+const GroupForce* HorseRegistry::GetGroupForce(uint32_t id) const
+{
+  auto it = _groupForces.find(id);
+  return it != _groupForces.end() ? &it->second : nullptr;
+}
+
+const LevelUpPoints& HorseRegistry::GetLevelUpPoints() const
+{
+  return _levelUpPoints;
+}
+
+const GradeInfo* HorseRegistry::GetGradeInfo(uint32_t grade) const
+{
+  auto it = _grades.find(grade);
+  return it != _grades.end() ? &it->second : nullptr;
 }
 
 } // namespace server
