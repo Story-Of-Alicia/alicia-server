@@ -418,13 +418,10 @@ struct Horse
   dao::Field<uint32_t> grade{0u};
   dao::Field<uint32_t> growthPoints{0u};
 
-  struct Breeding
-  {
-    //! A count of how many times the horse was bred.
-    dao::Field<uint32_t> breedingCount{0u};
-    //! A count of successful consecutive breedings.
-    dao::Field<uint32_t> breedingCombo{0u};
-  } breeding{};
+  //! A count of how many times the horse was bred.
+  dao::Field<uint32_t> breedingCount{0u};
+  //! A count of successful consecutive breeds.
+  dao::Field<uint32_t> breedingCombo{0u};
 
   dao::Field<Type> type{Type::Adult};
   dao::Field<uint8_t> horseType{0u};

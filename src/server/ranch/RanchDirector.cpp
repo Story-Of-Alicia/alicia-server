@@ -716,7 +716,7 @@ void RanchDirector::SendStorageNotification(
 }
 
 void RanchDirector::BroadcastChangeAgeNotify(
-  data::Uid characterUid,
+  const data::Uid characterUid,
   const data::Uid rancherUid,
   protocol::AcCmdCRChangeAge::Age age
 )
@@ -744,7 +744,7 @@ void RanchDirector::BroadcastChangeAgeNotify(
 }
 
 void RanchDirector::BroadcastHideAgeNotify(
-  data::Uid characterUid,
+  const data::Uid characterUid,
   const data::Uid rancherUid,
   protocol::AcCmdCRHideAge::Option option
 )

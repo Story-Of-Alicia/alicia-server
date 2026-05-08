@@ -551,52 +551,52 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.tid = json["tid"].get<data::Tid>();
   horse.name = json["name"].get<std::string>();
 
-  auto parts = json["parts"];
+  const auto& partsJson = json["parts"];
   horse.parts = data::Horse::Parts{
-    .skinTid = parts["skinId"].get<uint32_t>(),
-    .faceTid = parts["faceId"].get<uint32_t>(),
-    .maneTid = parts["maneId"].get<uint32_t>(),
-    .tailTid = parts["tailId"].get<uint32_t>()};
+    .skinTid = partsJson["skinId"].get<uint32_t>(),
+    .faceTid = partsJson["faceId"].get<uint32_t>(),
+    .maneTid = partsJson["maneId"].get<uint32_t>(),
+    .tailTid = partsJson["tailId"].get<uint32_t>()};
 
-  auto appearance = json["appearance"];
+  const auto& appearanceJson = json["appearance"];
   horse.appearance = data::Horse::Appearance{
-    .scale = appearance["scale"].get<uint32_t>(),
-    .legLength = appearance["legLength"].get<uint32_t>(),
-    .legVolume = appearance["legVolume"].get<uint32_t>(),
-    .bodyLength = appearance["bodyLength"].get<uint32_t>(),
-    .bodyVolume = appearance["bodyVolume"].get<uint32_t>()};
+    .scale = appearanceJson["scale"].get<uint32_t>(),
+    .legLength = appearanceJson["legLength"].get<uint32_t>(),
+    .legVolume = appearanceJson["legVolume"].get<uint32_t>(),
+    .bodyLength = appearanceJson["bodyLength"].get<uint32_t>(),
+    .bodyVolume = appearanceJson["bodyVolume"].get<uint32_t>()};
 
-  auto stats = json["stats"];
+  const auto& statsJson = json["stats"];
   horse.stats = data::Horse::Stats{
-    .agility = stats["agility"].get<uint32_t>(),
-    .courage = stats["courage"].get<uint32_t>(),
-    .rush = stats["rush"].get<uint32_t>(),
-    .endurance = stats["endurance"].get<uint32_t>(),
-    .ambition = stats["ambition"].get<uint32_t>()};
+    .agility = statsJson["agility"].get<uint32_t>(),
+    .courage = statsJson["courage"].get<uint32_t>(),
+    .rush = statsJson["rush"].get<uint32_t>(),
+    .endurance = statsJson["endurance"].get<uint32_t>(),
+    .ambition = statsJson["ambition"].get<uint32_t>()};
 
-  auto mastery = json["mastery"];
+  const auto& masteryJson = json["mastery"];
   horse.mastery = data::Horse::Mastery{
-    .spurMagicCount = mastery["spurMagicCount"].get<uint32_t>(),
-    .jumpCount = mastery["jumpCount"].get<uint32_t>(),
-    .slidingTime = mastery["slidingTime"].get<uint32_t>(),
-    .glidingDistance = mastery["glidingDistance"].get<uint32_t>()};
+    .spurMagicCount = masteryJson["spurMagicCount"].get<uint32_t>(),
+    .jumpCount = masteryJson["jumpCount"].get<uint32_t>(),
+    .slidingTime = masteryJson["slidingTime"].get<uint32_t>(),
+    .glidingDistance = masteryJson["glidingDistance"].get<uint32_t>()};
 
-  auto mountCondition = json["mountCondition"];
+  const auto& mountConditionJson = json["mountCondition"];
   horse.mountCondition = data::Horse::MountCondition{
-    .stamina = mountCondition["stamina"].get<uint32_t>(),
-    .charm = mountCondition["charm"].get<uint32_t>(),
-    .friendliness = mountCondition["friendliness"].get<uint32_t>(),
-    .injury = mountCondition["injury"].get<uint32_t>(),
-    .plenitude = mountCondition["plenitude"].get<uint32_t>(),
-    .bodyDirtiness = mountCondition["bodyDirtiness"].get<uint32_t>(),
-    .maneDirtiness = mountCondition["maneDirtiness"].get<uint32_t>(),
-    .tailDirtiness = mountCondition["tailDirtiness"].get<uint32_t>(),
-    .bodyPolish = mountCondition["bodyPolish"].get<uint32_t>(),
-    .manePolish = mountCondition["manePolish"].get<uint32_t>(),
-    .tailPolish = mountCondition["tailPolish"].get<uint32_t>(),
-    .attachment = mountCondition["attachment"].get<uint32_t>(),
-    .boredom = mountCondition["boredom"].get<uint32_t>(),
-    .stopAmendsPoint = mountCondition["stopAmendsPoint"].get<uint32_t>()};
+    .stamina = mountConditionJson["stamina"].get<uint32_t>(),
+    .charm = mountConditionJson["charm"].get<uint32_t>(),
+    .friendliness = mountConditionJson["friendliness"].get<uint32_t>(),
+    .injury = mountConditionJson["injury"].get<uint32_t>(),
+    .plenitude = mountConditionJson["plenitude"].get<uint32_t>(),
+    .bodyDirtiness = mountConditionJson["bodyDirtiness"].get<uint32_t>(),
+    .maneDirtiness = mountConditionJson["maneDirtiness"].get<uint32_t>(),
+    .tailDirtiness = mountConditionJson["tailDirtiness"].get<uint32_t>(),
+    .bodyPolish = mountConditionJson["bodyPolish"].get<uint32_t>(),
+    .manePolish = mountConditionJson["manePolish"].get<uint32_t>(),
+    .tailPolish = mountConditionJson["tailPolish"].get<uint32_t>(),
+    .attachment = mountConditionJson["attachment"].get<uint32_t>(),
+    .boredom = mountConditionJson["boredom"].get<uint32_t>(),
+    .stopAmendsPoint = mountConditionJson["stopAmendsPoint"].get<uint32_t>()};
 
   horse.rating = json["rating"].get<uint32_t>();
   horse.clazz = json["clazz"].get<uint32_t>();
@@ -604,52 +604,37 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.grade = json["grade"].get<uint32_t>();
   horse.growthPoints = json.value("growthPoints", uint16_t{0});
   
-  if (json.contains("breeding"))
-  {
-    horse.breeding.breedingCount = json["breeding"].value("timesBreeded", uint32_t{0});
-    horse.breeding.breedingCombo = json["breeding"].value("breedingCombo", uint32_t{0});
-  }
-  else
-  {
-    // Legacy flat structure
-    horse.breeding.breedingCount = json.value("timesBreeded", uint32_t{0});
-    horse.breeding.breedingCombo = json.value("breedingCombo", uint32_t{0});
-  }
+  horse.breedingCount = json.value("timesBred", uint32_t{0});
+  horse.breedingCombo = json.value("breedingCombo", uint32_t{0});
 
   horse.type = static_cast<data::Horse::Type>(json.value("type", uint32_t{0}));
-  horse.horseType = json.value("horseType", uint8_t{0});
-  horse.tendency = json.value("tendency", uint32_t{0});
-  horse.spirit = json.value("spirit", uint32_t{0});
-  horse.fatigue = json.value("fatigue", uint16_t{0});
-
-  auto potential = json["potential"];
-  horse.potential = data::Horse::Potential{
-    .type = potential["type"].get<uint32_t>(),
-    .level = potential["level"].get<uint32_t>(),
-    .value = potential["value"].get<uint32_t>()
-  };
-
   horse.luckState = json["luckState"].get<uint32_t>();
   horse.fatigue = json["fatigue"].get<uint32_t>();
   horse.emblemUid = json["emblem"].get<uint32_t>();
   horse.tendency = json["tendency"].get<uint32_t>();
 
+  const auto& potentialJson = json["potential"];
+  horse.potential = data::Horse::Potential{
+    .type = potentialJson["type"].get<uint32_t>(),
+    .level = potentialJson["level"].get<uint32_t>(),
+    .value = potentialJson["value"].get<uint32_t>()};
+
   horse.dateOfBirth = data::Clock::time_point(std::chrono::seconds(
     json["dateOfBirth"].get<uint64_t>()));
 
-  auto mountInfo = json["mountInfo"];
+  const auto& mountJson = json["mountInfo"];
   horse.mountInfo = data::Horse::MountInfo{
-    .boostsInARow = mountInfo["boostsInARow"].get<uint32_t>(),
-    .winsSpeedSingle = mountInfo["winsSpeedSingle"].get<uint32_t>(),
-    .winsSpeedTeam = mountInfo["winsSpeedTeam"].get<uint32_t>(),
-    .winsMagicSingle = mountInfo["winsMagicSingle"].get<uint32_t>(),
-    .winsMagicTeam = mountInfo["winsMagicTeam"].get<uint32_t>(),
-    .totalDistance = mountInfo["totalDistance"].get<uint32_t>(),
-    .topSpeed = mountInfo["topSpeed"].get<uint32_t>(),
-    .longestGlideDistance = mountInfo["longestGlideDistance"].get<uint32_t>(),
-    .participated = mountInfo["participated"].get<uint32_t>(),
-    .cumulativePrize = mountInfo["cumulativePrize"].get<uint32_t>(),
-    .biggestPrize = mountInfo["biggestPrize"].get<uint32_t>()};
+    .boostsInARow = mountJson["boostsInARow"].get<uint32_t>(),
+    .winsSpeedSingle = mountJson["winsSpeedSingle"].get<uint32_t>(),
+    .winsSpeedTeam = mountJson["winsSpeedTeam"].get<uint32_t>(),
+    .winsMagicSingle = mountJson["winsMagicSingle"].get<uint32_t>(),
+    .winsMagicTeam = mountJson["winsMagicTeam"].get<uint32_t>(),
+    .totalDistance = mountJson["totalDistance"].get<uint32_t>(),
+    .topSpeed = mountJson["topSpeed"].get<uint32_t>(),
+    .longestGlideDistance = mountJson["longestGlideDistance"].get<uint32_t>(),
+    .participated = mountJson["participated"].get<uint32_t>(),
+    .cumulativePrize = mountJson["cumulativePrize"].get<uint32_t>(),
+    .biggestPrize = mountJson["biggestPrize"].get<uint32_t>()};
   
   if (json.contains("ancestors"))
   {
@@ -731,15 +716,13 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["grade"] = horse.grade();
   json["growthPoints"] = horse.growthPoints();
   
-  json["breeding"]["count"] = horse.breeding.breedingCount();
-  json["breeding"]["combo"] = horse.breeding.breedingCombo();
+  json["breedingCount"] = horse.breedingCount();
+  json["breedingCombo"] = horse.breedingCombo();
 
-  json["breeding"]["breedingCount"] = horse.breeding.breedingCount();
-  json["breeding"]["breedingCombo"] = horse.breeding.breedingCombo();
-
-  json["type"] = static_cast<size_t>(horse.type());
-  json["horseType"] = horse.horseType();
-  json["spirit"] = horse.spirit();
+  json["type"] = horse.type();
+  json["luckState"] = horse.luckState();
+  json["fatigue"] = horse.fatigue();
+  json["emblem"] = horse.emblemUid();
   json["tendency"] = horse.tendency();
 
   nlohmann::json potential;
@@ -747,11 +730,6 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   potential["level"] = horse.potential.level();
   potential["value"] = horse.potential.value();
   json["potential"] = potential;
-
-  json["luckState"] = horse.luckState();
-  json["fatigue"] = horse.fatigue();
-  json["emblem"] = horse.emblemUid();
-  json["tendency"] = horse.tendency();
 
   json["dateOfBirth"] = std::chrono::ceil<std::chrono::seconds>(
     horse.dateOfBirth().time_since_epoch()).count();
@@ -1207,64 +1185,6 @@ bool server::FileDataSource::IsGuildNameUnique(const std::string_view& name)
   return true;
 }
 
-void server::FileDataSource::CreateStallion(data::Stallion& stallion)
-{
-  stallion.uid() = ++_stallionSequentialUid;
-}
-
-void server::FileDataSource::RetrieveStallion(data::Uid uid, data::Stallion& stallion)
-{
-  const std::filesystem::path dataFilePath = ProduceDataFilePath(
-    _stallionDataPath, std::format("{}", uid));
-
-  std::ifstream dataFile(dataFilePath);
-  if (not dataFile.is_open())
-  {
-    throw std::runtime_error(
-      std::format("Stallion file '{}' not accessible", dataFilePath.string()));
-  }
-
-  nlohmann::json json = nlohmann::json::parse(dataFile);
-  stallion.uid() = json["uid"];
-  stallion.horseUid() = json["horseUid"];
-  stallion.ownerUid() = json["ownerUid"];
-  stallion.breedingCharge() = json["breedingCharge"];
-  stallion.timesMated() = json.value("timesMated", uint32_t{0});
-  stallion.registeredAt() = data::Clock::time_point(
-    std::chrono::seconds(json["registeredAt"].get<uint64_t>()));
-  if (json.contains("expiresAt"))
-  {
-    stallion.expiresAt() = data::Clock::time_point(
-      std::chrono::seconds(json["expiresAt"].get<uint64_t>()));
-  }
-}
-
-void server::FileDataSource::StoreStallion(data::Uid uid, const data::Stallion& stallion)
-{
-  const std::filesystem::path dataFilePath = ProduceDataFilePath(
-    _stallionDataPath, std::format("{}", uid));
-
-  std::ofstream dataFile(dataFilePath);
-  if (not dataFile.is_open())
-  {
-    throw std::runtime_error(
-      std::format("Stallion file '{}' not accessible", dataFilePath.string()));
-  }
-
-  nlohmann::json json;
-  json["uid"] = stallion.uid();
-  json["horseUid"] = stallion.horseUid();
-  json["ownerUid"] = stallion.ownerUid();
-  json["breedingCharge"] = stallion.breedingCharge();
-  json["timesMated"] = stallion.timesMated();
-  json["registeredAt"] = std::chrono::duration_cast<std::chrono::seconds>(
-    stallion.registeredAt().time_since_epoch()).count();
-  json["expiresAt"] = std::chrono::duration_cast<std::chrono::seconds>(
-    stallion.expiresAt().time_since_epoch()).count();
-
-  dataFile << json.dump(2);
-}
-
 void server::FileDataSource::CreateSettings(data::Settings& settings)
 {
   settings.uid = ++_settingsSequentialId;
@@ -1528,6 +1448,61 @@ void server::FileDataSource::DeleteMail(data::Uid uid)
   std::filesystem::remove(dataFilePath);
 }
 
+void server::FileDataSource::CreateStallion(data::Stallion& stallion)
+{
+  stallion.uid() = ++_stallionSequentialUid;
+}
+
+void server::FileDataSource::RetrieveStallion(data::Uid uid, data::Stallion& stallion)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _stallionDataPath, std::format("{}", uid));
+
+  std::ifstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Stallion file '{}' not accessible", dataFilePath.string()));
+  }
+
+  const auto json = nlohmann::json::parse(dataFile);
+  stallion.uid() = json.value("uid", data::InvalidUid);
+  stallion.horseUid() = json.value("horseUid", data::InvalidUid);
+  stallion.ownerUid() = json.value("ownerUid", data::InvalidUid);
+  stallion.breedingCharge() = json.value("breedingCharge", data::InvalidUid);
+  stallion.timesMated() = json.value("timesMated", uint32_t{0});
+  stallion.registeredAt() = data::Clock::time_point(
+    std::chrono::seconds(json.value("registeredAt", int64_t{0})));
+  stallion.expiresAt() = data::Clock::time_point(
+    std::chrono::seconds(json.value("expiresAt", int64_t{0})));
+}
+
+void server::FileDataSource::StoreStallion(data::Uid uid, const data::Stallion& stallion)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _stallionDataPath, std::format("{}", uid));
+
+  std::ofstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Stallion file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json;
+  json["uid"] = stallion.uid();
+  json["horseUid"] = stallion.horseUid();
+  json["ownerUid"] = stallion.ownerUid();
+  json["breedingCharge"] = stallion.breedingCharge();
+  json["timesMated"] = stallion.timesMated();
+  json["registeredAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+    stallion.registeredAt().time_since_epoch()).count();
+  json["expiresAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+    stallion.expiresAt().time_since_epoch()).count();
+
+  dataFile << json.dump(2);
+}
+
 void server::FileDataSource::DeleteStallion(data::Uid uid)
 {
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
@@ -1537,7 +1512,7 @@ void server::FileDataSource::DeleteStallion(data::Uid uid)
 
 std::vector<server::data::Uid> server::FileDataSource::ListRegisteredStallions()
 {
-  std::vector<server::data::Uid> stallionUids;
+  std::vector<data::Uid> stallionUids;
 
   if (!std::filesystem::exists(_stallionDataPath))
   {
@@ -1552,7 +1527,7 @@ std::vector<server::data::Uid> server::FileDataSource::ListRegisteredStallions()
     try
     {
       // Extract stallion UID from filename (e.g., "123.json" -> 123)
-      server::data::Uid stallionUid = std::stoul(entry.path().stem().string());
+      data::Uid stallionUid = std::stoul(entry.path().stem().string());
       stallionUids.push_back(stallionUid);
     }
     catch (const std::exception&)
