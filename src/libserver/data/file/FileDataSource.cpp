@@ -608,10 +608,11 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.breedingCombo = json.value("breedingCombo", uint32_t{0});
 
   horse.type = static_cast<data::Horse::Type>(json.value("type", uint32_t{0}));
-  horse.luckState = json["luckState"].get<uint32_t>();
-  horse.fatigue = json["fatigue"].get<uint32_t>();
-  horse.emblemUid = json["emblem"].get<uint32_t>();
-  horse.tendency = json["tendency"].get<uint32_t>();
+  horse.dateOfBirth = data::Clock::time_point(std::chrono::seconds(
+    json["dateOfBirth"].get<uint64_t>()));
+
+  horse.tendency = json.value("tendency", 0);
+  horse.spirit = json.value("spirit", 0);
 
   const auto& potentialJson = json["potential"];
   horse.potential = data::Horse::Potential{
@@ -619,8 +620,9 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
     .level = potentialJson["level"].get<uint32_t>(),
     .value = potentialJson["value"].get<uint32_t>()};
 
-  horse.dateOfBirth = data::Clock::time_point(std::chrono::seconds(
-    json["dateOfBirth"].get<uint64_t>()));
+  horse.luckState = json["luckState"].get<uint32_t>();
+  horse.fatigue = json["fatigue"].get<uint32_t>();
+  horse.emblemUid = json["emblem"].get<uint32_t>();
 
   const auto& mountJson = json["mountInfo"];
   horse.mountInfo = data::Horse::MountInfo{
@@ -720,10 +722,11 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["breedingCombo"] = horse.breedingCombo();
 
   json["type"] = horse.type();
-  json["luckState"] = horse.luckState();
-  json["fatigue"] = horse.fatigue();
-  json["emblem"] = horse.emblemUid();
+  json["dateOfBirth"] = std::chrono::ceil<std::chrono::seconds>(
+    horse.dateOfBirth().time_since_epoch()).count();
+
   json["tendency"] = horse.tendency();
+  json["spirit"] = horse.spirit();
 
   nlohmann::json potential;
   potential["type"] = horse.potential.type();
@@ -731,8 +734,9 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   potential["value"] = horse.potential.value();
   json["potential"] = potential;
 
-  json["dateOfBirth"] = std::chrono::ceil<std::chrono::seconds>(
-    horse.dateOfBirth().time_since_epoch()).count();
+  json["luckState"] = horse.luckState();
+  json["fatigue"] = horse.fatigue();
+  json["emblem"] = horse.emblemUid();
 
   nlohmann::json mountInfo;
   mountInfo["boostsInARow"] = horse.mountInfo.boostsInARow();

@@ -424,10 +424,10 @@ struct Horse
   dao::Field<uint32_t> breedingCombo{0u};
 
   dao::Field<Type> type{Type::Adult};
-  dao::Field<uint8_t> horseType{0u};
+  dao::Field<Clock::time_point> dateOfBirth{};
+
   dao::Field<uint32_t> tendency{0u};
   dao::Field<uint32_t> spirit{0u};
-  dao::Field<uint32_t> fatigue{0u};
 
   struct Potential
   {
@@ -437,8 +437,8 @@ struct Horse
   } potential{};
 
   dao::Field<uint32_t> luckState{0u};
+  dao::Field<uint32_t> fatigue{0u};
   dao::Field<uint32_t> emblemUid{0u};
-  dao::Field<Clock::time_point> dateOfBirth{};
 
   struct MountCondition
   {
