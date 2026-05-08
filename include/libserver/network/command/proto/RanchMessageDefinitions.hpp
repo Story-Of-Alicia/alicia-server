@@ -3655,7 +3655,7 @@ struct AcCmdCRUseItemCancel
 };
 
 //!
-struct RanchCommandMountFamilyTree
+struct AcCmdCRMountFamilyTree
 {
   uint32_t horseUid{};
 
@@ -3668,18 +3668,19 @@ struct RanchCommandMountFamilyTree
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandMountFamilyTree& command,
+    const AcCmdCRMountFamilyTree& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandMountFamilyTree& command,
+    AcCmdCRMountFamilyTree& command,
     SourceStream& stream);
 };
 
-struct RanchCommandMountFamilyTreeOK
+//!
+struct AcCmdCRMountFamilyTreeOK
 {
   struct MountFamilyTreeItem
   {
@@ -3711,19 +3712,19 @@ struct RanchCommandMountFamilyTreeOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandMountFamilyTreeOK& command,
+    const AcCmdCRMountFamilyTreeOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandMountFamilyTreeOK& command,
+    AcCmdCRMountFamilyTreeOK& command,
     SourceStream& stream);
 };
 
-//! Serverbound get messenger info command.
-struct RanchCommandMountFamilyTreeCancel
+//!
+struct AcCmdCRMountFamilyTreeCancel
 {
   static Command GetCommand()
   {
@@ -3734,14 +3735,14 @@ struct RanchCommandMountFamilyTreeCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandMountFamilyTreeCancel& command,
+    const AcCmdCRMountFamilyTreeCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandMountFamilyTreeCancel& command,
+    AcCmdCRMountFamilyTreeCancel& command,
     SourceStream& stream);
 };
 

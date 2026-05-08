@@ -87,22 +87,22 @@ void AcCmdCRUseItemCancel::Read(
   throw std::runtime_error("Not implemented.");
 }
 
-void RanchCommandMountFamilyTree::Write(
-  const RanchCommandMountFamilyTree&,
+void AcCmdCRMountFamilyTree::Write(
+  const AcCmdCRMountFamilyTree&,
   SinkStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void RanchCommandMountFamilyTree::Read(
-  RanchCommandMountFamilyTree& command,
+void AcCmdCRMountFamilyTree::Read(
+  AcCmdCRMountFamilyTree& command,
   SourceStream& stream)
 {
   stream.Read(command.horseUid);
 }
 
-void RanchCommandMountFamilyTreeOK::Write(
-  const RanchCommandMountFamilyTreeOK& command,
+void AcCmdCRMountFamilyTreeOK::Write(
+  const AcCmdCRMountFamilyTreeOK& command,
   SinkStream& stream)
 {
   stream.Write(static_cast<uint8_t>(command.ancestors.size()));
@@ -115,22 +115,22 @@ void RanchCommandMountFamilyTreeOK::Write(
   }
 }
 
-void RanchCommandMountFamilyTreeOK::Read(
-  RanchCommandMountFamilyTreeOK&,
+void AcCmdCRMountFamilyTreeOK::Read(
+  AcCmdCRMountFamilyTreeOK&,
   SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void RanchCommandMountFamilyTreeCancel::Write(
-  const RanchCommandMountFamilyTreeCancel&,
+void AcCmdCRMountFamilyTreeCancel::Write(
+  const AcCmdCRMountFamilyTreeCancel&,
   SinkStream&)
 {
   // Empty.
 }
 
-void RanchCommandMountFamilyTreeCancel::Read(
-  RanchCommandMountFamilyTreeCancel&,
+void AcCmdCRMountFamilyTreeCancel::Read(
+  AcCmdCRMountFamilyTreeCancel&,
   SourceStream&)
 {
   throw std::runtime_error("Not implemented.");

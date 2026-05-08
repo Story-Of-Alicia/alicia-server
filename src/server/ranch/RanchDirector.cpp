@@ -91,6 +91,10 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
   , _commandServer(*this)
   , _breedingMarket(serverInstance)
+  , _mountFamilyTreeDeferrer([this](const network::ClientId clientId, const protocol::AcCmdCRMountFamilyTree& command)
+  {
+    HandleMountFamilyTree(clientId, command);
+  })
 {
   _commandServer.RegisterCommandHandler<protocol::AcCmdCREnterRanch>(
     [this](ClientId clientId, const auto& message)
@@ -362,10 +366,11 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       HandleRequestLeagueTeamList(clientId, command);
     });
 
-  _commandServer.RegisterCommandHandler<protocol::RanchCommandMountFamilyTree>(
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRMountFamilyTree>(
     [this](ClientId clientId, auto& command)
     {
-      HandleMountFamilyTree(clientId, command);
+      if (HandleMountFamilyTree(clientId, command))
+        _mountFamilyTreeDeferrer.Defer(clientId, command);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRRecoverMount>(
@@ -556,6 +561,18 @@ std::vector<data::Uid> RanchDirector::GetOnlineCharacters()
   }
 
   return onlineCharacterUids;
+}
+
+void RanchDirector::HandleNetworkTick()
+{
+  try
+  {
+    _mountFamilyTreeDeferrer.Tick();
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception in a network tick of ranch director: {}", x.what());
+  }
 }
 
 void RanchDirector::HandleClientConnected(ClientId clientId)
@@ -4228,9 +4245,9 @@ void RanchDirector::HandleRecoverMount(
 
 bool RanchDirector::HandleMountFamilyTree(
   const ClientId clientId,
-  const protocol::RanchCommandMountFamilyTree& command)
+  const protocol::AcCmdCRMountFamilyTree& command)
 {
-  protocol::RanchCommandMountFamilyTreeOK response{};
+  protocol::AcCmdCRMountFamilyTreeOK response{};
   const auto& horseRecord = GetServerInstance().GetDataDirector().GetHorse(
     command.horseUid);
 
@@ -4332,13 +4349,13 @@ bool RanchDirector::HandleMountFamilyTree(
   if (not paternalAncestors || not maternalAncestors)
     return true;
 
-  using HierarchyPosition = protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem::Position;
+  using HierarchyPosition = protocol::AcCmdCRMountFamilyTreeOK::MountFamilyTreeItem::Position;
 
   const auto AddProtocolAncestor = [&response](
     const Ancestors::Ancestor& ancestor,
     const HierarchyPosition position)
   {
-    response.ancestors.emplace_back(protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem{
+    response.ancestors.emplace_back(protocol::AcCmdCRMountFamilyTreeOK::MountFamilyTreeItem{
       .hierarchyPosition = position,
       .name = ancestor.name,
       .grade = static_cast<uint8_t>(ancestor.grade),
@@ -4350,8 +4367,8 @@ bool RanchDirector::HandleMountFamilyTree(
   AddProtocolAncestor(paternalAncestors->mother, HierarchyPosition::PaternalGrandmother);
 
   AddProtocolAncestor(directAncestors->mother, HierarchyPosition::Mother);
-  AddProtocolAncestor(maternalAncestors->father, HierarchyPosition::PaternalGrandfather);
-  AddProtocolAncestor(maternalAncestors->mother, HierarchyPosition::PaternalGrandmother);
+  AddProtocolAncestor(maternalAncestors->father, HierarchyPosition::MaternalGrandfather);
+  AddProtocolAncestor(maternalAncestors->mother, HierarchyPosition::MaternalGrandmother);
 
   _commandServer.QueueCommand<decltype(response)>(clientId, [response]()
   {

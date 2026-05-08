@@ -20,6 +20,7 @@
 #ifndef RANCHDIRECTOR_HPP
 #define RANCHDIRECTOR_HPP
 
+#include "libserver/network/command/CommandDeferrer.hpp"
 #include "server/Config.hpp"
 #include "server/ranch/BreedingMarket.hpp"
 #include "server/tracker/RanchTracker.hpp"
@@ -50,6 +51,7 @@ public:
 
   std::vector<data::Uid> GetOnlineCharacters();
 
+  void HandleNetworkTick() override;
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId client) override;
 
@@ -390,7 +392,7 @@ private:
     const protocol::RanchCommandRequestLeagueTeamList& command);
 
   bool HandleMountFamilyTree(ClientId clientId,
-    const protocol::RanchCommandMountFamilyTree& command);
+    const protocol::AcCmdCRMountFamilyTree& command);
 
   void HandleRecoverMount(
     ClientId clientId,
@@ -505,6 +507,9 @@ private:
   std::unordered_map<ClientId, ClientContext> _clients;
   //!
   std::unordered_map<data::Uid, RanchInstance> _ranches;
+
+  //! A command deferrer for the `AcCmdCRMountFamilyTree` command.
+  CommandDeferrer<protocol::AcCmdCRMountFamilyTree> _mountFamilyTreeDeferrer;
 };
 
 } // namespace server
