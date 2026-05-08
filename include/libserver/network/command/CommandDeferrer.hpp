@@ -23,6 +23,7 @@
 #include "libserver/network/NetworkDefinitions.hpp"
 
 #include <functional>
+#include <list>
 
 namespace server
 {
