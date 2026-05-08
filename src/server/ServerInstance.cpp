@@ -88,6 +88,7 @@ void ServerInstance::Initialize()
 
   // Read configurations
 
+  _breedingRegistry.ReadConfig(_resourceDirectory / "config/game/breeding.yaml");
   _characterRegistry.ReadConfig(_resourceDirectory / "config/game/character.yaml");
   _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
   _horseRegistry.ReadConfig(_resourceDirectory / "config/game/horses.yaml");
@@ -359,6 +360,11 @@ registry::MagicRegistry& ServerInstance::GetMagicRegistry()
 registry::SystemContentRegistry& ServerInstance::GetSystemContentRegistry()
 {
   return _systemContentRegistry;
+}
+
+registry::BreedingRegistry& ServerInstance::GetBreedingRegistry()
+{
+  return _breedingRegistry;
 }
 
 ChatSystem& ServerInstance::GetChatSystem()

@@ -40,6 +40,7 @@
 #include "server/telemetry/Telemetry.hpp"
 
 #include <libserver/data/DataDirector.hpp>
+#include <libserver/registry/BreedingRegistry.hpp>
 #include <libserver/registry/CharacterRegistry.hpp>
 #include <libserver/registry/CourseRegistry.hpp>
 #include <libserver/registry/HorseRegistry.hpp>
@@ -125,6 +126,10 @@ public:
   //! Returns reference to the system content registry.
   //! @returns Reference to the system content registry.
   registry::SystemContentRegistry& GetSystemContentRegistry();
+
+  //! Returns reference to the breeding registry.
+  //! @returns Reference to the breeding registry.
+  registry::BreedingRegistry& GetBreedingRegistry();
 
   //! Returns reference to the chat system.
   //! @returns Reference to the chat system.
@@ -271,6 +276,8 @@ private:
   registry::PetRegistry _petRegistry;
   //! The system content registry.
   registry::SystemContentRegistry _systemContentRegistry;
+  //! A registry of breeding config data.
+  registry::BreedingRegistry _breedingRegistry;
 
   //! A chat system.
   ChatSystem _chatSystem;
