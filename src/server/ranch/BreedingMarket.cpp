@@ -493,7 +493,7 @@ void BreedingMarket::UnregisterStallion(
     data::Horse& horse)
     {
       horse.type() = data::Horse::Type::Adult;
-      horse.breeding.breedingCount() += timesMated;
+      horse.breedingCount() += timesMated;
     });
 
   // Delete the stallion record.

@@ -18,10 +18,3 @@ Testing/
 
 # Secrets
 .env
-
-# Claude Code / Coral
-.claude/
-claude
-CLAUDE.md
-**/CLAUDE.md
-.coral/

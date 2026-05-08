@@ -32,8 +32,6 @@ if (${MSVC})
             NTDDI_VERSION=NTDDI_WIN10_19H1)
     target_link_libraries(platform-properties INTERFACE
             icu.lib)
-    target_compile_options(platform-properties INTERFACE
-            /utf-8 /bigobj)
 elseif(MINGW)
     target_link_libraries(platform-properties INTERFACE
             icuuc icuio icuin ws2_32 mswsock)

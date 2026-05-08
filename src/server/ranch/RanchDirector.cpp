@@ -1,4 +1,3 @@
-
 /**
  * Alicia Server - dedicated server software
  * Copyright (C) 2024 Story Of Alicia
@@ -20,7 +19,6 @@
 
 #include "server/ranch/RanchDirector.hpp"
 
-#include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
 #include "server/ServerInstance.hpp"
 #include "server/system/ItemSystem.hpp"
 
@@ -28,17 +26,9 @@
 #include <libserver/util/Locale.hpp>
 #include <libserver/util/Util.hpp>
 
-#include <algorithm>
 #include <ranges>
-#include <random>
-#include <unordered_map>
-#include <format>
-#include <fstream>
-#include <format>
-#include <filesystem>
 
 #include <spdlog/spdlog.h>
-#include <nlohmann/json.hpp>
 
 namespace server
 {
@@ -1489,7 +1479,7 @@ void RanchDirector::HandleEnterBreedingMarket(
           protocolHorse.uid = horse.uid();
           protocolHorse.tid = horse.tid();
           protocolHorse.breedingCombo = static_cast<uint8_t>(
-            horse.breeding.breedingCombo());
+            horse.breedingCombo());
           protocolHorse.isRegistered = _breedingMarket.IsRegistered(horse.uid());
           protocolHorse.lineage = static_cast<uint8_t>(
             horse.lineage());
@@ -1721,7 +1711,7 @@ void RanchDirector::HandleCheckStallionCharge(
   horseRecord->Immutable([&horseGrade, &horseBreeds](const data::Horse& horse)
   {
     horseGrade = horse.grade();
-    horseBreeds = horse.breeding.breedingCount();
+    horseBreeds = horse.breedingCount();
   });
 
   const auto gradeFeeRange = _breedingMarket.GetGradeFeeRange(horseGrade);
@@ -2434,6 +2424,7 @@ void RanchDirector::HandleGetItemFromStorage(
 
       // Add the collected carrots.
       character.carrots() += collectedCarrots;
+      response.updatedCarrots = character.carrots();
     });
 
   GetServerInstance().GetDataDirector().GetStorageItemCache().Delete(
@@ -2868,7 +2859,7 @@ void RanchDirector::HandleRequestGuildInfo(
       .member11 = 0};
   });
 
-_commandServer.QueueCommand<decltype(response)>(
+  _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
     {
