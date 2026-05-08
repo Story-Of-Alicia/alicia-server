@@ -80,17 +80,14 @@ public:
     data::Uid characterUid,
     protocol::AcCmdCRRequestStorage::Category category);
 
-  //! Send inventory update notification to refresh client inventory display
-  void SendInventoryUpdate(ClientId clientId);
-
   void BroadcastChangeAgeNotify(
     data::Uid characterUid,
-    const data::Uid rancherUid,
+    data::Uid rancherUid,
     protocol::AcCmdCRChangeAge::Age age);
 
   void BroadcastHideAgeNotify(
     data::Uid characterUid,
-    const data::Uid rancherUid,
+    data::Uid rancherUid,
     protocol::AcCmdCRHideAge::Option option);
 
   void BroadcastUpdateGuildMemberGradeNotify(
@@ -392,7 +389,7 @@ private:
   void HandleRequestLeagueTeamList(ClientId clientId,
     const protocol::RanchCommandRequestLeagueTeamList& command);
 
-  void HandleMountFamilyTree(ClientId clientId,
+  bool HandleMountFamilyTree(ClientId clientId,
     const protocol::RanchCommandMountFamilyTree& command);
 
   void HandleRecoverMount(

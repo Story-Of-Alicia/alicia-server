@@ -3693,10 +3693,10 @@ struct RanchCommandMountFamilyTreeOK
       MaternalGrandmother = 6
     };
 
-    Position id{};
+    Position hierarchyPosition{};
     std::string name{};
     uint8_t grade{};
-    uint16_t skinId{};
+    uint16_t skinTid{};
   };
 
   //! Max 6 entries.

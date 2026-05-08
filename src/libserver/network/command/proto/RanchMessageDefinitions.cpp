@@ -108,10 +108,10 @@ void RanchCommandMountFamilyTreeOK::Write(
   stream.Write(static_cast<uint8_t>(command.ancestors.size()));
   for (const auto& item : command.ancestors)
   {
-    stream.Write(item.id)
+    stream.Write(item.hierarchyPosition)
       .Write(item.name)
       .Write(item.grade)
-      .Write(item.skinId);
+      .Write(item.skinTid);
   }
 }
 

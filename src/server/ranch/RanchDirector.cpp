@@ -698,37 +698,6 @@ void RanchDirector::SendStorageNotification(
   }
 }
 
-void RanchDirector::SendInventoryUpdate(ClientId clientId)
-{
-  const auto& clientContext = GetClientContext(clientId);
-  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
-    clientContext.characterUid);
-
-  if (not characterRecord)
-    return;
-
-  protocol::AcCmdCRGetItemFromStorageOK response{
-    .storageItemUid = 0,
-    .items = {},
-    .updatedCarrots = 0};
-
-  characterRecord.Immutable(
-    [this, &response](const data::Character& character)
-    {
-      const auto itemRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(
-        character.inventory());
-      protocol::BuildProtocolItems(response.items, *itemRecords);
-      response.updatedCarrots = character.carrots();
-    });
-
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [response]()
-    {
-      return response;
-    });
-}
-
 void RanchDirector::BroadcastChangeAgeNotify(
   data::Uid characterUid,
   const data::Uid rancherUid,
@@ -2074,9 +2043,6 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     {
       return response;
     });
-
-  // Send inventory update notification to refresh client inventory
-  SendInventoryUpdate(clientId);
 }
 
 void RanchDirector::HandleCmdAction(
@@ -2217,13 +2183,16 @@ void RanchDirector::HandleUpdateMountNickname(
 
   uint32_t remainingItemCount = 0;
 
-
   if (requireItem)
   {
     bool itemConsumed = false;
     characterRecord.Mutable([this, &itemConsumed, &remainingItemCount](data::Character& character)
     {
       constexpr data::Tid HorseRenameItemTid = 45003;
+
+      // todo: To reconsider, the client sends us UID of the item that was used
+      //       to rename the horse. This would allow us to not remember `HorseRenameItemTid` and
+      //       to use the item UID to find the item.
 
       const auto consumeResult = GetServerInstance().GetItemSystem().ConsumeItem(
         character, HorseRenameItemTid, 1);
@@ -2450,11 +2419,6 @@ void RanchDirector::HandleGetItemFromStorage(
       character.carrots() += collectedCarrots;
     });
 
-  characterRecord.Immutable([&response](const data::Character& character)
-    {
-      response.updatedCarrots = character.carrots();
-  });
-
   GetServerInstance().GetDataDirector().GetStorageItemCache().Delete(
     response.storageItemUid);
 
@@ -2464,8 +2428,6 @@ void RanchDirector::HandleGetItemFromStorage(
     {
       return response;
     });
-
-  SendInventoryUpdate(clientId);
 }
 
 void RanchDirector::HandleRequestNpcDressList(
@@ -2587,11 +2549,11 @@ void RanchDirector::HandleWearEquipment(
         {
           // Only compare character parts if the existing equipment template
           if (equipmentTemplate.has_value() && equipmentTemplate->characterPartInfo.has_value())
-        {
-          if (static_cast<uint32_t>(equipmentTemplate->characterPartInfo->slot)
-            & static_cast<uint32_t>(equippedItemTemplate->characterPartInfo->slot))
           {
-            equipmentToReplace.emplace_back(equipmentUid);
+            if (static_cast<uint32_t>(equipmentTemplate->characterPartInfo->slot)
+              & static_cast<uint32_t>(equippedItemTemplate->characterPartInfo->slot))
+            {
+              equipmentToReplace.emplace_back(equipmentUid);
             }
           }
         }
@@ -2599,12 +2561,12 @@ void RanchDirector::HandleWearEquipment(
         {
           // Only compare mount parts if the existing equipment template
           if (equipmentTemplate.has_value() 
-          && equipmentTemplate->mountPartInfo.has_value())
-        {
-          if (static_cast<uint32_t>(equipmentTemplate->mountPartInfo->slot)
-            & static_cast<uint32_t>(equippedItemTemplate->mountPartInfo->slot))
+            && equipmentTemplate->mountPartInfo.has_value())
           {
-            equipmentToReplace.emplace_back(equipmentUid);
+            if (static_cast<uint32_t>(equipmentTemplate->mountPartInfo->slot)
+              & static_cast<uint32_t>(equippedItemTemplate->mountPartInfo->slot))
+            {
+              equipmentToReplace.emplace_back(equipmentUid);
             }
           }
         }
@@ -2624,7 +2586,7 @@ void RanchDirector::HandleWearEquipment(
       equipmentUids.emplace_back(equippedItemUid);
 
       // Persist back into the unified character equipment list.
-        character.characterEquipment = equipmentUids;
+      character.characterEquipment = equipmentUids;
 
       // Remove the newly equipped item from the inventory.
       const auto equippedItemsToRemove = std::ranges::remove(
@@ -2712,7 +2674,7 @@ void RanchDirector::HandleRemoveEquipment(
 }
 
 void RanchDirector::HandleCreateGuild(
-  ClientId clientId,
+  const ClientId clientId,
   const protocol::RanchCommandCreateGuild& command)
 {
   const auto& clientContext = GetClientContext(clientId);
@@ -2814,7 +2776,7 @@ void RanchDirector::HandleCreateGuild(
     guild.members().emplace_back(characterUid);
   });
 
-  characterRecord.Mutable([&response, GuildCost](data::Character& character)
+  characterRecord.Mutable([&response](data::Character& character)
   {
     character.carrots() -= GuildCost;
     response.updatedCarrots = character.carrots();
@@ -2838,7 +2800,7 @@ void RanchDirector::HandleCreateGuild(
 }
 
 void RanchDirector::HandleRequestGuildInfo(
-  ClientId clientId,
+  const ClientId clientId,
   const protocol::RanchCommandRequestGuildInfo&)
 {
   const auto& clientContext = GetClientContext(clientId);
@@ -2847,9 +2809,9 @@ void RanchDirector::HandleRequestGuildInfo(
 
   auto guildUid = data::InvalidUid;
   characterRecord.Immutable([&guildUid](const data::Character& character)
-    {
-      guildUid = character.guildUid();
-    });
+  {
+    guildUid = character.guildUid();
+  });
 
   if (guildUid == data::InvalidUid)
   {
@@ -2868,14 +2830,14 @@ void RanchDirector::HandleRequestGuildInfo(
 
   protocol::RanchCommandRequestGuildInfoOK response{};
 
-    const auto guildRecord = GetServerInstance().GetDataDirector().GetGuild(guildUid);
-    if (not guildRecord)
-      throw std::runtime_error("Guild unavailable");
+  const auto guildRecord = GetServerInstance().GetDataDirector().GetGuild(guildUid);
+  if (not guildRecord)
+    throw std::runtime_error("Guild unavailable");
 
-    guildRecord.Immutable([&response](const data::Guild& guild)
-    {
-      response.guildInfo = {
-        .uid = guild.uid(),
+  guildRecord.Immutable([&response](const data::Guild& guild)
+  {
+    response.guildInfo = {
+      .uid = guild.uid(),
       .member1 = 0,
       .member2 = 0,
       .member3 = 0,
@@ -2886,11 +2848,10 @@ void RanchDirector::HandleRequestGuildInfo(
       .inviteCooldown = 0,
       .member9 = 0,
       .member10 = 0,
-      .member11 = 0
-    };
+      .member11 = 0};
   });
 
-  _commandServer.QueueCommand<decltype(response)>(
+_commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
     {
@@ -4265,87 +4226,139 @@ void RanchDirector::HandleRecoverMount(
     });
 }
 
-void RanchDirector::HandleMountFamilyTree(
-  ClientId clientId,
+bool RanchDirector::HandleMountFamilyTree(
+  const ClientId clientId,
   const protocol::RanchCommandMountFamilyTree& command)
 {
   protocol::RanchCommandMountFamilyTreeOK response{};
+  const auto& horseRecord = GetServerInstance().GetDataDirector().GetHorse(
+    command.horseUid);
 
-  const auto& horseRecord = GetServerInstance().GetDataDirector().GetHorse(command.horseUid);
-  if (not horseRecord.IsAvailable())
+  if (not horseRecord)
   {
-    _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
-    return;
-  }
-
-  std::vector<data::Uid> parents;
-  horseRecord.Immutable([&parents](const data::Horse& horse) { parents = horse.ancestors(); });
-
-  // If there are not exactly two parents, return empty response
-  if (parents.size() != 2)
-  {
-    _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
-    return;
-  }
-
-  // Map of position ID to UID for family tree
-  using Position = protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem::Position;
-  std::map<Position, data::Uid> ancestorPositions;
-  
-  // BFS queue in Position enum order: Father(1) → Mother(2) → grandparents
-  std::queue<std::pair<data::Uid, Position>> bfs;
-  bfs.emplace(parents[0], Position::Father);
-  bfs.emplace(parents[1], Position::Mother);
-
-  // BFS for 2 generations
-  while (not bfs.empty())
-  {
-    auto [uid, pos] = bfs.front();
-    bfs.pop();
-    ancestorPositions[pos] = uid;
-
-    if (pos == Position::Father || pos == Position::Mother)
+    _commandServer.QueueCommand<decltype(response)>(clientId, [response]()
     {
-      const auto ancestorHorseRecord = GetServerInstance().GetDataDirector().GetHorse(uid);
-      if (ancestorHorseRecord.IsAvailable())
-      {
-        std::vector<data::Uid> ancestors;
-        ancestorHorseRecord.Immutable([&ancestors](const data::Horse& h)
-          {
-            ancestors = h.ancestors();
-          });
+      return response;
+    });
+    return false;
+  }
 
-        if (ancestors.size() == 2)
-        {
-          auto [grandfather, grandmother] = pos == Position::Father
-          ? std::make_pair(Position::PaternalGrandfather, Position::PaternalGrandmother)
-          : std::make_pair(Position::MaternalGrandfather, Position::MaternalGrandmother);
+  // todo: cache this
 
-          bfs.emplace(ancestors[0], grandfather);
-          bfs.emplace(ancestors[1], grandmother);
-        }
-      }
+  struct Ancestors
+  {
+    struct Ancestor
+    {
+      data::Uid uid{data::InvalidUid};
+      std::string name{"Runaway"};
+      uint32_t grade{};
+      uint32_t skinTid{};
+    };
+
+    Ancestor father{};
+    Ancestor mother{};
+  };
+
+  // Collects ancestor data from a horse.
+  const auto GetAncestors = [this](const data::Uid horseUid) noexcept -> std::optional<Ancestors>
+  {
+    const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(
+      horseUid);
+    if (not horseRecord)
+      return std::nullopt;
+
+    // Get the horse's ancestors.
+    data::Horse::Ancestors ancestorUids;
+    horseRecord.Immutable([&ancestorUids](const data::Horse& horse)
+    {
+      ancestorUids = horse.ancestors;
+    });
+
+    const auto fatherHorseRecord = _serverInstance.GetDataDirector().GetHorse(
+      ancestorUids.father);
+    const auto motherHorseRecord = _serverInstance.GetDataDirector().GetHorse(
+      ancestorUids.mother);
+
+    if (ancestorUids.father != data::InvalidUid && not fatherHorseRecord
+      || ancestorUids.mother != data::InvalidUid && not motherHorseRecord)
+    {
+      return std::nullopt;
     }
-  }
 
-  // Build response from ancestor positions
-  for (const auto& [positionId, horseUid] : ancestorPositions)
-  {
-    const auto ancestorHorseRecord = GetServerInstance().GetDataDirector().GetHorse(horseUid);
-    if (ancestorHorseRecord.IsAvailable())
+    Ancestors ancestors{};
+
+    // Collects data from a horse.
+    const auto CollectAncestor = [](const data::Horse& horse) -> Ancestors::Ancestor
     {
-      ancestorHorseRecord.Immutable([&](const data::Horse& horse) {
-        auto item = protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem{};
-        item.id = positionId;
-        item.name = horse.name();
-        item.grade = static_cast<uint8_t>(horse.grade());
-        item.skinId = static_cast<uint16_t>(horse.parts.skinTid());
-        response.ancestors.push_back(item);
+      return {
+        .uid = horse.uid(),
+        .name = horse.name(),
+        .grade = horse.grade(),
+        .skinTid = horse.parts.skinTid()
+      };
+    };
+
+    // Collect father ancestor data.
+    if (fatherHorseRecord)
+    {
+      fatherHorseRecord.Immutable([&ancestors, &CollectAncestor](const data::Horse& horse)
+      {
+        ancestors.father = CollectAncestor(horse);
       });
     }
-  }
 
-  _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
+    // Collect mother ancestor data.
+    if (motherHorseRecord)
+    {
+      motherHorseRecord.Immutable([&ancestors, &CollectAncestor](const data::Horse& horse)
+      {
+        ancestors.mother = CollectAncestor(horse);
+      });
+    }
+
+    return ancestors;
+  };
+
+  // Get direct ancestors.
+  const auto directAncestors = GetAncestors(command.horseUid);
+  if (not directAncestors)
+    return true;
+
+  // Get ancestors in the paternal line.
+  const auto paternalAncestors = GetAncestors(directAncestors->father.uid);
+  // Get ancestors in the maternal line.
+  const auto maternalAncestors = GetAncestors(directAncestors->mother.uid);
+
+  if (not paternalAncestors || not maternalAncestors)
+    return true;
+
+  using HierarchyPosition = protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem::Position;
+
+  const auto AddProtocolAncestor = [&response](
+    const Ancestors::Ancestor& ancestor,
+    const HierarchyPosition position)
+  {
+    response.ancestors.emplace_back(protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem{
+      .hierarchyPosition = position,
+      .name = ancestor.name,
+      .grade = static_cast<uint8_t>(ancestor.grade),
+      .skinTid = static_cast<uint16_t>(ancestor.skinTid)});
+  };
+
+  AddProtocolAncestor(directAncestors->father, HierarchyPosition::Father);
+  AddProtocolAncestor(paternalAncestors->father, HierarchyPosition::PaternalGrandfather);
+  AddProtocolAncestor(paternalAncestors->mother, HierarchyPosition::PaternalGrandmother);
+
+  AddProtocolAncestor(directAncestors->mother, HierarchyPosition::Mother);
+  AddProtocolAncestor(maternalAncestors->father, HierarchyPosition::PaternalGrandfather);
+  AddProtocolAncestor(maternalAncestors->mother, HierarchyPosition::PaternalGrandmother);
+
+  _commandServer.QueueCommand<decltype(response)>(clientId, [response]()
+  {
+    return response;
+  });
+
+  return false;
 }
 
 void RanchDirector::HandleCheckStorageItem(
@@ -4382,7 +4395,7 @@ void RanchDirector::HandleCheckStorageItem(
 //! Changes the age of the calling character
 //! If this is called, it implicitly means "hide age" is not selected on the client, so we show age
 void RanchDirector::HandleChangeAge(
-  ClientId clientId,
+  const ClientId clientId,
   const protocol::AcCmdCRChangeAge command)
 {
   const auto& clientContext = GetClientContext(clientId);
@@ -4411,7 +4424,7 @@ void RanchDirector::HandleChangeAge(
           if (character.settingsUid() == data::InvalidUid)
             character.settingsUid = settings.uid();
         });
-  });
+    });
 
   protocol::AcCmdCRChangeAgeOK response {
     .age = command.age};
@@ -4999,6 +5012,10 @@ void RanchDirector::HandleChangeNickname(
     [this, &itemConsumed, &remainingItemCount](data::Character& character)
     {
       const data::Tid CharacterRenameItem = 46002;
+
+      // todo: To reconsider, the client sends us UID of the item that was used
+      //       to rename the character. This would allow us to not remember `CharacterRenameItem` and
+      //       to use the item UID to find the item.
 
       const auto consumeResult = GetServerInstance().GetItemSystem().ConsumeItem(
         character, CharacterRenameItem, 1);

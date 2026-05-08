@@ -1282,11 +1282,6 @@ DataDirector::DailyQuestStorage& DataDirector::GetDailyQuestCache()
   return _dailyQuestStorage;
 }
 
-void DataDirector::ScheduleTask(Scheduler::Task task)
-{
-  _scheduler.Queue(std::move(task));
-}
-
 void DataDirector::ScheduleCharacterLoad(
   UserDataContext& userDataContext,
   data::Uid characterUid)
@@ -1399,65 +1394,6 @@ void DataDirector::ScheduleCharacterLoad(
     const auto purchaseRecords = GetStorageItemCache().Get(purchases);
 
     const auto horseRecords = GetHorseCache().Get(horses);
-
-    // Queue all ancestors (including grandparents) for loading to support family tree feature
-    if (horseRecords)
-    {
-      std::vector<data::Uid> allAncestors;
-      
-      // Collect direct parents (first generation)
-      for (const auto& horseRecord : *horseRecords)
-      {
-        horseRecord.Immutable([&allAncestors](const data::Horse& horse)
-        {
-          const auto& ancestors = horse.ancestors();
-          for (const auto ancestorUid : ancestors)
-          {
-            allAncestors.push_back(ancestorUid);
-          }
-        });
-      }
-    
-      if (!allAncestors.empty())
-      {
-        // Load first generation ancestors (parents)
-        std::vector<data::Uid> firstGeneration = allAncestors;
-        std::vector<data::Uid> loadedFirstGen;
-        
-        for (const auto ancestorUid : firstGeneration)
-        {
-          auto ancestorRecord = GetHorse(ancestorUid);
-          if (ancestorRecord)
-          {
-            loadedFirstGen.push_back(ancestorUid);
-          }
-        }
-        
-        // Collect second generation ancestors (grandparents)
-        std::vector<data::Uid> secondGeneration;
-        for (const auto ancestorUid : loadedFirstGen)
-        {
-          const auto ancestorRecord = GetHorseCache().Get(ancestorUid);
-          if (ancestorRecord)
-          {
-            ancestorRecord->Immutable([&secondGeneration](const data::Horse& horse)
-            {
-              const auto& grandparents = horse.ancestors();
-              for (const auto grandparentUid : grandparents)
-              {
-                secondGeneration.push_back(grandparentUid);
-              }
-            });
-          }
-        }
-        
-        // Load second generation ancestors (grandparents)
-        for (const auto grandparentUid : secondGeneration)
-        {
-          (void)GetHorse(grandparentUid);
-        }
-      }
-    }
 
     const auto eggRecords = GetEggCache().Get(eggs);
 

@@ -482,7 +482,11 @@ struct Horse
     dao::Field<uint32_t> biggestPrize{};
   } mountInfo{};
 
-  dao::Field<std::vector<uint32_t>> ancestors{};
+  struct Ancestors
+  {
+    Uid father{InvalidUid};
+    Uid mother{InvalidUid};
+  } ancestors{};
 
   //! A value in an interval of <1, 9>.
   //! Basically a weighted score of number of ancestors that share the same coat as the horse.
