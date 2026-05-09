@@ -4407,8 +4407,16 @@ void RanchDirector::HandleStatusPointApply(
   const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
     command.horseUid);
 
+  uint32_t horseGrade = 0;
+  horseRecord->Immutable([&horseGrade](const data::Horse& horse)
+  {
+    horseGrade = horse.grade();
+  });
+
+  const auto* nextGradeInfo = GetServerInstance().GetHorseRegistry().GetGradeInfo(horseGrade + 1);
+
   bool applied = false;
-  horseRecord->Mutable([&command, &applied](data::Horse& horse)
+  horseRecord->Mutable([&command, &applied, nextGradeInfo](data::Horse& horse)
   {
     if (horse.growthPoints() == 0)
       return;
@@ -4418,10 +4426,10 @@ void RanchDirector::HandleStatusPointApply(
     const int64_t rushDelta = static_cast<int64_t>(command.stats.rush) - static_cast<int64_t>(horse.stats.rush());
     const int64_t enduranceDelta = static_cast<int64_t>(command.stats.endurance) - static_cast<int64_t>(horse.stats.endurance());
     const int64_t courageDelta = static_cast<int64_t>(command.stats.courage) - static_cast<int64_t>(horse.stats.courage());
-    
+
     // Decrease in any of the stats is not allowed.
     if (agilityDelta < 0
-      || ambitionDelta < 0 
+      || ambitionDelta < 0
       || rushDelta < 0
       || enduranceDelta < 0
       || courageDelta < 0)
@@ -4434,12 +4442,22 @@ void RanchDirector::HandleStatusPointApply(
     // Increase  of  more than  one stat at a time is not allowed.
     if (totalPointsApplied > 1)
       return;
+
+    const int32_t currentStatSum = horse.stats.agility() + horse.stats.ambition()
+      + horse.stats.rush() + horse.stats.endurance() + horse.stats.courage();
+
+    if (nextGradeInfo && currentStatSum >= nextGradeInfo->minStatSum)
+      return;
+
     horse.stats.agility = command.stats.agility;
     horse.stats.ambition = command.stats.ambition;
     horse.stats.rush = command.stats.rush;
     horse.stats.endurance = command.stats.endurance;
     horse.stats.courage = command.stats.courage;
     horse.growthPoints() -= 1;
+
+    if (nextGradeInfo && currentStatSum + 1 >= nextGradeInfo->minStatSum)
+      horse.grade() += 1;
 
     applied = true;
   });
