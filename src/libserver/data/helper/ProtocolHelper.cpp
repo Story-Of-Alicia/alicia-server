@@ -87,7 +87,7 @@ void BuildProtocolHorse(
     .type = Horse::HorseType::Adult,
     .val1 = 0x00,
     .dateOfBirth = util::TimePointToAliciaTime(horse.dateOfBirth()),
-    .tendency = 0x02,
+    .tendency = static_cast<uint8_t>(horse.tendency()),
     .spirit = 0x00,
     .classProgression = static_cast<uint32_t>(horse.clazzProgress()),
     .val5 = 0x00,
@@ -299,22 +299,24 @@ void BuildProtocolEgg(
   const data::Egg& eggRecord,
   const data::Clock::duration hatchDuration)
 {
-  protocolEgg.uid = eggRecord.uid();
+  protocolEgg.uid = eggRecord.itemUid();
   protocolEgg.itemTid = eggRecord.itemTid();
-
-  protocolEgg.totalHatchingTime = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
-    hatchDuration).count());
 
   const auto totalHatchingDuration = std::chrono::system_clock::now() - eggRecord.incubatedAt();
   const auto totalBoostedDuration = eggRecord.boostsUsed() * std::chrono::hours(8);
   const auto hatchTimeRemaining = hatchDuration - totalHatchingDuration - totalBoostedDuration;
 
-  protocolEgg.timeRemaining = std::max(
-    static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
-      hatchTimeRemaining).count()),
-    uint32_t{0});
-  
-  protocolEgg.boost = 400000;
+  const auto totalHatchingProgress = totalHatchingDuration + totalBoostedDuration;
+  const auto remainingHatchingProgress = hatchDuration - totalHatchingProgress;
+
+  protocolEgg.remainingHatchingTime = static_cast<uint32_t>(
+    std::chrono::duration_cast<std::chrono::seconds>(remainingHatchingProgress).count());
+  protocolEgg.timeRemaining = static_cast<uint32_t>(
+    std::chrono::duration_cast<std::chrono::seconds>(remainingHatchingProgress).count());
+  protocolEgg.boostPreviewValue = static_cast<uint32_t>(
+    std::chrono::duration_cast<std::chrono::seconds>(totalHatchingProgress + std::chrono::hours(8)).count());
+  protocolEgg.hatchingProgress = static_cast<uint32_t>(
+    std::chrono::duration_cast<std::chrono::seconds>(totalHatchingProgress).count());
 }
 
 void BuildProtocolSettings(

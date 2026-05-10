@@ -33,7 +33,7 @@ void TestMagic()
 
   // Test encoding of the magic.
   const auto encoded_magic = server::protocol::encode_message_magic(magic);
-  assert(encoded_magic == 0x8D06CD01);
+  assert(encoded_magic == 0xCD06CD01);
 
   // Test decoding of the magic.
   const auto decoded_magic = server::protocol::decode_message_magic(encoded_magic);

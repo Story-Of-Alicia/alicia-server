@@ -1,6 +1,6 @@
 /**
  * Alicia Server - dedicated server software
- * Copyright (C) 2024 Story Of Alicia
+ * Copyright (C) 2026 Story Of Alicia
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,16 +17,24 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
-#include "server/authentication/LocalAuthenticationBackend.hpp"
+#ifndef REGISTRYDEFINITIONS_HPP
+#define REGISTRYDEFINITIONS_HPP
 
-namespace server
+#include <cstdint>
+
+namespace server::registry
 {
 
-std::optional<bool> LocalAuthenticationBackend::Authenticate(
-  [[maybe_unused]] const std::string& userName,
-  [[maybe_unused]] const std::string& userToken)
+enum class Region : uint32_t
 {
-  return true;
-}
+  Unknown = 0,
+  Meadow = 1,
+  Forest = 2,
+  City = 3,
+  Desert = 4,
+  Ice = 5
+};
 
-} // namespace server
+} // namespace server::registry
+
+#endif // REGISTRYDEFINITIONS_HPP

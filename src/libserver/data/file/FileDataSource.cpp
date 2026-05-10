@@ -155,6 +155,8 @@ void server::FileDataSource::RetrieveUser(const std::string_view& name, data::Us
   user.token = json["token"].get<std::string>();
   user.characterUid = json["characterUid"].get<data::Uid>();
   user.infractions = json["infractions"].get<std::vector<data::Uid>>();
+  user.lastSeenOnline = data::Clock::time_point(std::chrono::seconds(
+    json.value("lastSeenOnline", int64_t(0))));
 }
 
 void server::FileDataSource::StoreUser(const std::string_view&, const data::User& user)
@@ -174,6 +176,8 @@ void server::FileDataSource::StoreUser(const std::string_view&, const data::User
   json["token"] = user.token();
   json["characterUid"] = user.characterUid();
   json["infractions"] = user.infractions();
+  json["lastSeenOnline"] = std::chrono::ceil<std::chrono::seconds>(
+    user.lastSeenOnline().time_since_epoch()).count();
 
   dataFile << json.dump(2);
 }
@@ -278,6 +282,7 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.introduction = json["introduction"].get<std::string>();
 
   character.level = json["level"].get<uint32_t>();
+  character.experience = json["experience"].get<uint32_t>();
   character.carrots = json["carrots"].get<int32_t>();
   character.cash = json["cash"].get<uint32_t>();
 
@@ -385,6 +390,7 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["introduction"] = character.introduction();
 
   json["level"] = character.level();
+  json["experience"] = character.experience();
   json["carrots"] = character.carrots();
   json["cash"] = character.cash();
 
@@ -608,6 +614,7 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.luckState = json["luckState"].get<uint32_t>();
   horse.fatigue = json["fatigue"].get<uint32_t>();
   horse.emblemUid = json["emblem"].get<uint32_t>();
+  horse.tendency = json["tendency"].get<uint32_t>();
 
   horse.dateOfBirth = data::Clock::time_point(std::chrono::seconds(
     json["dateOfBirth"].get<uint64_t>()));
@@ -706,6 +713,7 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   json["luckState"] = horse.luckState();
   json["fatigue"] = horse.fatigue();
   json["emblem"] = horse.emblemUid();
+  json["tendency"] = horse.tendency();
 
   json["dateOfBirth"] = std::chrono::ceil<std::chrono::seconds>(
     horse.dateOfBirth().time_since_epoch()).count();

@@ -41,6 +41,7 @@ else()
 endif()
 
 if (${MSVC})
+    add_compile_options(/MP)
     target_compile_options(platform-properties INTERFACE
             /utf-8 /bigobj /W4 /permissive- /WX /wd4996 /wd4702)
 else()
@@ -66,12 +67,14 @@ add_library(alicia-libserver STATIC
         src/libserver/network/command/proto/RaceMessageDefinitions.cpp
         src/libserver/network/command/proto/RanchMessageDefinitions.cpp
         src/libserver/network/http/WebSocket.cpp
+        src/libserver/registry/CharacterRegistry.cpp
         src/libserver/registry/CourseRegistry.cpp
         src/libserver/registry/HorseRegistry.cpp
         src/libserver/registry/ItemRegistry.cpp
         src/libserver/registry/MagicRegistry.cpp
         src/libserver/registry/PetRegistry.cpp
         src/libserver/registry/QuestRegistry.cpp
+        src/libserver/registry/SystemContentRegistry.cpp
         src/libserver/util/Locale.cpp
         src/libserver/util/Scheduler.cpp
         src/libserver/util/Stream.cpp
@@ -112,6 +115,8 @@ add_executable(alicia-server
         src/server/system/OtpSystem.cpp
         src/server/system/QuestSystem.cpp
         src/server/system/RoomSystem.cpp
+        src/server/system/MatchmakingSystem.cpp
+        src/server/telemetry/Telemetry.cpp
         src/server/tracker/RaceTracker.cpp
         src/server/tracker/RanchTracker.cpp)
 target_include_directories(alicia-server

@@ -134,6 +134,8 @@ struct User
   dao::Field<std::vector<Uid>> infractions{};
   //! A character UID of the user.
   dao::Field<Uid> characterUid{InvalidUid};
+  //! The last time the user was seen online. 1 means currently online.
+  dao::Field<Clock::time_point> lastSeenOnline{};
 };
 
 //! Infraction
@@ -253,6 +255,7 @@ struct Character
   dao::Field<std::string> introduction{};
 
   dao::Field<uint32_t> level{};
+  dao::Field<uint32_t> experience{};
   dao::Field<int32_t> carrots{};
   dao::Field<int32_t> cash{};
 
@@ -432,6 +435,8 @@ struct Horse
     dao::Field<uint32_t> boredom{};
     dao::Field<uint32_t> stopAmendsPoint{};
   } mountCondition{};
+
+  dao::Field<uint32_t> tendency{0u};
 
   struct MountInfo
   {

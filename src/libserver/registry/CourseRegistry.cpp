@@ -68,6 +68,7 @@ uint32_t ReadMapBlockInfo(
   const YAML::Node& section,
   Course::MapBlockInfo& mapBlock)
 {
+  mapBlock.region = static_cast<Region>(section["region"].as<uint32_t>(0));
   mapBlock.requiredLevel = section["requiredLevel"].as<decltype(mapBlock.requiredLevel)>();
   mapBlock.podiumId = section["podiumId"].as<decltype(mapBlock.podiumId)>();
   mapBlock.offset = {

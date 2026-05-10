@@ -141,6 +141,7 @@ courses:
   mapBlockInfo:
     collection:
       - id:  1
+        region: 1
         name: 'ri_land01'
         requiredLevel: 0
         podiumId: 0
@@ -247,6 +248,7 @@ courses:
             - deckId: 201
               position: [206.680, 2.160, 83.750]
       - id:  2
+        region: 1
         name: 'ri_land02'
         requiredLevel: 15
         podiumId: 0
@@ -323,6 +325,7 @@ courses:
             - deckId: 201
               position: [-176.690, -18.500, -302.360]
       - id:  3
+        region: 1
         name: 'ri_land03'
         requiredLevel: 17
         podiumId: 0
@@ -405,6 +408,7 @@ courses:
             - deckId: 102
               position: [67.830, -9.640, 138.550]
       - id:  4
+        region: 1
         name: 'ri_land04'
         requiredLevel: 16
         podiumId: 0
@@ -475,6 +479,7 @@ courses:
             - deckId: 102
               position: [-21.860, 35.900, -48.200]
       - id:  5
+        region: 2
         name: 'ri_fore02'
         requiredLevel: 19
         podiumId: 0
@@ -555,6 +560,7 @@ courses:
             - deckId: 201
               position: [117.260, 10.660, -235.930]
       - id:  22
+        region: 3
         name: 'ri_dorf03'
         requiredLevel: 14
         podiumId: 0
@@ -615,6 +621,7 @@ courses:
             - deckId: 101
               position: [-363.660, 22.100, 172.800]
       - id:  38
+        region: 0
         name: 'ri_pgri01_test01'
         requiredLevel: 1
         podiumId: 0
@@ -625,6 +632,7 @@ courses:
         deckItems:
           collection: {}
       - id:  17
+        region: 0
         name: 'ri_land01_r'
         requiredLevel: 0
         podiumId: 0
@@ -635,6 +643,7 @@ courses:
         deckItems:
           collection: {}
       - id:  20001
+        region: 0
         name: 'readyroom01'
         requiredLevel: 0
         podiumId: 0
@@ -645,6 +654,7 @@ courses:
         deckItems:
           collection: {}
       - id:  8
+        region: 3
         name: 'ri_dorf02'
         requiredLevel: 9
         podiumId: 0
@@ -737,6 +747,7 @@ courses:
             - deckId: 201
               position: [223.410, 0.010, -17.350]
       - id:  20000
+        region: 0
         name: 'ranch_00'
         requiredLevel: 0
         podiumId: 0
@@ -747,6 +758,7 @@ courses:
         deckItems:
           collection: {}
       - id:  6
+        region: 2
         name: 'ri_fore03'
         requiredLevel: 16
         podiumId: 0
@@ -869,6 +881,7 @@ courses:
             - deckId: 101
               position: [-82.530, -59.590, 376.330]
       - id:  10
+        region: 4
         name: 'li_tabi02'
         requiredLevel: 7
         podiumId: 20008
@@ -967,6 +980,7 @@ courses:
             - deckId: 101
               position: [-75.400, -5.240, -100.540]
       - id:  9
+        region: 3
         name: 'ri_dorf04'
         requiredLevel: 18
         podiumId: 0
@@ -1043,6 +1057,7 @@ courses:
             - deckId: 101
               position: [112.720, 51.230, -107.240]
       - id:  20003
+        region: 0
         name: 'set_waterfall'
         requiredLevel: 0
         podiumId: 0
@@ -1053,6 +1068,7 @@ courses:
         deckItems:
           collection: {}
       - id:  40
+        region: 1
         name: 'ri_land05'
         requiredLevel: 2
         podiumId: 0
@@ -1117,6 +1133,7 @@ courses:
             - deckId: 201
               position: [-86.390, 4.400, 37.470]
       - id:  41
+        region: 4
         name: 'li_tabi01'
         requiredLevel: 1
         podiumId: 20008
@@ -1197,6 +1214,7 @@ courses:
             - deckId: 102
               position: [-355.610, 17.480, 20.580]
       - id:  7
+        region: 2
         name: 'ri_fore01'
         requiredLevel: 22
         podiumId: 0
@@ -1273,6 +1291,7 @@ courses:
             - deckId: 101
               position: [-559.020, 14.630, 112.830]
       - id:  71
+        region: 0
         name: 'b_tuto_test'
         requiredLevel: 0
         podiumId: 0
@@ -1283,6 +1302,7 @@ courses:
         deckItems:
           collection: {}
       - id:  11
+        region: 3
         name: 'ri_dorf02'
         requiredLevel: 20
         podiumId: 0
@@ -1375,6 +1395,7 @@ courses:
             - deckId: 201
               position: [223.410, 0.010, -17.350]
       - id:  67
+        region: 0
         name: 'ri_land01'
         requiredLevel: 1000
         podiumId: 0
@@ -1481,6 +1502,7 @@ courses:
             - deckId: 201
               position: [206.680, 2.160, 83.750]
       - id:  73
+        region: 0
         name: 'ri_land08'
         requiredLevel: 0
         podiumId: 0
@@ -1491,6 +1513,7 @@ courses:
         deckItems:
           collection: {}
       - id:  77
+        region: 0
         name: 'li_tabi04'
         requiredLevel: 1000
         podiumId: 0
@@ -1501,6 +1524,7 @@ courses:
         deckItems:
           collection: {}
       - id:  610
+        region: 0
         name: 'b_ranch_01'
         requiredLevel: 0
         podiumId: 0
@@ -1521,6 +1545,7 @@ courses:
         deckItems:
           collection: {}
       - id:  19
+        region: 2
         name: 'ri_fore04'
         requiredLevel: 5
         podiumId: 0
@@ -1601,6 +1626,7 @@ courses:
             - deckId: 102
               position: [-126.130, 35.760, 189.280]
       - id:  20002
+        region: 0
         name: 'award'
         requiredLevel: 0
         podiumId: 0
@@ -1611,6 +1637,7 @@ courses:
         deckItems:
           collection: {}
       - id:  13
+        region: 1
         name: 'ri_land03'
         requiredLevel: 0
         podiumId: 0
@@ -1693,6 +1720,7 @@ courses:
             - deckId: 102
               position: [67.830, -9.640, 138.550]
       - id:  14
+        region: 1
         name: 'ri_land02'
         requiredLevel: 3
         podiumId: 0
@@ -1769,6 +1797,7 @@ courses:
             - deckId: 201
               position: [-176.690, -18.500, -302.360]
       - id:  15
+        region: 1
         name: 'ri_land04'
         requiredLevel: 8
         podiumId: 0
@@ -1839,6 +1868,7 @@ courses:
             - deckId: 102
               position: [-21.860, 35.900, -48.200]
       - id:  16
+        region: 2
         name: 'ri_fore02'
         requiredLevel: 11
         podiumId: 0
@@ -1919,6 +1949,7 @@ courses:
             - deckId: 201
               position: [117.260, 10.660, -235.930]
       - id:  35
+        region: 0
         name: 'test_small'
         requiredLevel: 0
         podiumId: 0
@@ -1929,6 +1960,7 @@ courses:
         deckItems:
           collection: {}
       - id:  879
+        region: 0
         name: 'running_test'
         requiredLevel: 1000
         podiumId: 0
@@ -1939,6 +1971,7 @@ courses:
         deckItems:
           collection: {}
       - id:  735
+        region: 0
         name: 'color_bboo01'
         requiredLevel: 1000
         podiumId: 0
@@ -1949,6 +1982,7 @@ courses:
         deckItems:
           collection: {}
       - id:  12
+        region: 4
         name: 'li_tabi02'
         requiredLevel: 17
         podiumId: 20008
@@ -2047,6 +2081,7 @@ courses:
             - deckId: 101
               position: [-75.400, -5.240, -100.540]
       - id:  18
+        region: 3
         name: 'ri_dorf04'
         requiredLevel: 6
         podiumId: 0
@@ -2123,6 +2158,7 @@ courses:
             - deckId: 101
               position: [112.720, 51.230, -107.240]
       - id:  20004
+        region: 0
         name: 'select_bg_tuto02'
         requiredLevel: 1000
         podiumId: 0
@@ -2133,6 +2169,7 @@ courses:
         deckItems:
           collection: {}
       - id:  42
+        region: 4
         name: 'li_tabi01'
         requiredLevel: 14
         podiumId: 20008
@@ -2213,6 +2250,7 @@ courses:
             - deckId: 102
               position: [-355.610, 17.480, 20.580]
       - id:  78
+        region: 0
         name: 'sdc001'
         requiredLevel: 1000
         podiumId: 0
@@ -2223,6 +2261,7 @@ courses:
         deckItems:
           collection: {}
       - id:  46
+        region: 5
         name: 'ri_pgri01'
         requiredLevel: 1
         podiumId: 20007
@@ -2293,6 +2332,7 @@ courses:
             - deckId: 2001
               position: [82.380, -0.360, -216.440]
       - id:  21
+        region: 3
         name: 'ri_dorf03'
         requiredLevel: 3
         podiumId: 0
@@ -2345,6 +2385,7 @@ courses:
             - deckId: 203
               position: [-263.640, 17.620, 214.980]
       - id:  44
+        region: 0
         name: 'town_test01'
         requiredLevel: 0
         podiumId: 0
@@ -2355,6 +2396,7 @@ courses:
         deckItems:
           collection: {}
       - id:  76
+        region: 0
         name: 'li_tabi03_test'
         requiredLevel: 1000
         podiumId: 0
@@ -2365,6 +2407,7 @@ courses:
         deckItems:
           collection: {}
       - id:  20
+        region: 2
         name: 'ri_fore03'
         requiredLevel: 5
         podiumId: 0
@@ -2487,6 +2530,7 @@ courses:
             - deckId: 101
               position: [-82.530, -59.590, 376.330]
       - id:  68
+        region: 0
         name: 'tuto_03'
         requiredLevel: 1000
         podiumId: 0
@@ -2497,6 +2541,7 @@ courses:
         deckItems:
           collection: {}
       - id:  23
+        region: 1
         name: 'ri_land07'
         requiredLevel: 15
         podiumId: 0
@@ -2553,6 +2598,7 @@ courses:
             - deckId: 102
               position: [-15.110, 36.640, -48.930]
       - id:  24
+        region: 1
         name: 'ri_land06'
         requiredLevel: 7
         podiumId: 0
@@ -2627,6 +2673,7 @@ courses:
             - deckId: 102
               position: [40.920, 7.360, 50.470]
       - id:  25
+        region: 1
         name: 'ri_land07'
         requiredLevel: 10
         podiumId: 0
@@ -2683,6 +2730,7 @@ courses:
             - deckId: 102
               position: [-15.110, 36.640, -48.930]
       - id:  800
+        region: 0
         name: 'gp_01'
         requiredLevel: 1000
         podiumId: 0
@@ -2693,6 +2741,7 @@ courses:
         deckItems:
           collection: {}
       - id:  20005
+        region: 0
         name: 'ranch_w'
         requiredLevel: 0
         podiumId: 0
@@ -2703,6 +2752,7 @@ courses:
         deckItems:
           collection: {}
       - id:  26
+        region: 0
         name: 'ri_fore05'
         requiredLevel: 0
         podiumId: 0
@@ -2713,6 +2763,7 @@ courses:
         deckItems:
           collection: {}
       - id:  20006
+        region: 0
         name: 'readyroom01_w'
         requiredLevel: 0
         podiumId: 0
@@ -2723,6 +2774,7 @@ courses:
         deckItems:
           collection: {}
       - id:  20007
+        region: 0
         name: 'bg_award03'
         requiredLevel: 0
         podiumId: 0
@@ -2733,6 +2785,7 @@ courses:
         deckItems:
           collection: {}
       - id:  20008
+        region: 0
         name: 'bg_award02'
         requiredLevel: 0
         podiumId: 0
@@ -2743,6 +2796,7 @@ courses:
         deckItems:
           collection: {}
       - id:  20009
+        region: 0
         name: 'set_waterfall'
         requiredLevel: 0
         podiumId: 0

@@ -103,6 +103,13 @@ void Config::LoadFromEnvironment()
     lobby.advertisement.race.address,
     lobby.advertisement.race.port);
 
+  // Lobby advertised address and port for udp race relay.
+  getAddressAndPortVariables(
+    std::format("LOBBY_ADVERTISED_UDP_RACE_RELAY_ADDRESS"),
+    std::format("LOBBY_ADVERTISED_UDP_RACE_RELAY_PORT"),
+    lobby.advertisement.udpRaceRelay.address,
+    lobby.advertisement.udpRaceRelay.port);
+
   // Ranch address and port.
   getAddressAndPortVariables(
     std::format("RANCH_SERVER_ADDRESS"),
@@ -130,6 +137,13 @@ void Config::LoadFromEnvironment()
     std::format("PRIVATE_CHAT_SERVER_PORT"),
     privateChat.listen.address,
     privateChat.listen.port);
+
+  // UDP race relay address and port.
+  getAddressAndPortVariables(
+    std::format("UDP_RACE_RELAY_SERVER_ADDRESS"),
+    std::format("UDP_RACE_RELAY_SERVER_PORT"),
+    udpRaceRelay.listen.address,
+    udpRaceRelay.listen.port);
 }
 
 void Config::LoadFromFile(const std::filesystem::path& filePath)
@@ -181,9 +195,22 @@ void Config::LoadFromFile(const std::filesystem::path& filePath)
     // Authentication config
     try
     {
-      const auto generalYaml = serverYaml["authentication"];
-      authentication.backend = generalYaml["backend"].as<std::string>("local");
-      authentication.postgres.connectionUri = generalYaml["postgres"]["connectionUri"].as<std::string>("");
+      const auto authenticationYaml = serverYaml["authentication"];
+      authentication.backend = authenticationYaml["backend"].as<std::string>("local");
+      authentication.postgres.connectionUri = authenticationYaml["postgres"]["connectionUri"].as<std::string>("");
+    }
+    catch (const std::exception& e)
+    {
+      spdlog::error("Unhandled exception parsing the authentication config: {}", e.what());
+    }
+
+    // Telemetry config
+    try
+    {
+      const auto telemetryYaml = serverYaml["telemetry"];
+      telemetry.enabled = telemetryYaml["enabled"].as<bool>(false);
+      telemetry.backend = telemetryYaml["backend"].as<std::string>("none");
+      telemetry.postgres.connectionUri = telemetryYaml["postgres"]["connectionUri"].as<std::string>("");
     }
     catch (const std::exception& e)
     {
@@ -203,6 +230,7 @@ void Config::LoadFromFile(const std::filesystem::path& filePath)
       lobby.advertisement.messenger = parseListenSection(lobbyAdvertisementYaml["messenger"]);
       lobby.advertisement.allChat = parseListenSection(lobbyAdvertisementYaml["all_chat"]);
       lobby.advertisement.privateChat = parseListenSection(lobbyAdvertisementYaml["private_chat"]);
+      lobby.advertisement.udpRaceRelay = parseListenSection(lobbyAdvertisementYaml["udp_race_relay"]);
     }
     catch (const std::exception& e)
     {
@@ -267,6 +295,18 @@ void Config::LoadFromFile(const std::filesystem::path& filePath)
     catch (const std::exception& e)
     {
       spdlog::error("Unhandled exception parsing the private chat config: {}", e.what());
+    }
+
+    // UDP race relay config
+    try
+    {
+      const auto udpYaml = serverYaml["udp_race_relay"];
+      udpRaceRelay.enabled = udpYaml["enabled"].as<bool>();
+      udpRaceRelay.listen = parseListenSection(udpYaml["listen"]);
+    }
+    catch (const std::exception& e)
+    {
+      spdlog::error("Unhandled exception parsing the udp race relay config: {}", e.what());
     }
 
     // Messenger config

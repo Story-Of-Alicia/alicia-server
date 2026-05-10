@@ -39,6 +39,9 @@ public:
     const std::string& userToken) override;
 
 private:
+  void Connect() noexcept;
+
+  std::string _uri;
   std::optional<pqxx::connection> _pqcx;
 };
 

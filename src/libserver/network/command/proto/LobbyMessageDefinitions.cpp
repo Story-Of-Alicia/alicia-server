@@ -101,7 +101,7 @@ void LobbyCommandLoginOK::Write(
   //
   stream.Write(command.level)
     .Write(command.carrots)
-    .Write(command.val1)
+    .Write(command.levelProgress)
     .Write(command.role)
     .Write(command.val3);
 
@@ -156,17 +156,16 @@ void LobbyCommandLoginOK::Write(
       .Write(value.rank);
   }
 
-  const auto& struct4 = command.val13;
   stream.Write(
-    static_cast<uint8_t>(struct4.values.size()));
-  for (const auto& value : struct4.values)
+    static_cast<uint8_t>(command.trainingProgression.mapProggressInfos.size()));
+  for (const auto& value : command.trainingProgression.mapProggressInfos)
   {
-    stream.Write(value.val0)
-      .Write(value.val1)
-      .Write(value.val2);
+    stream.Write(value.mapBlockId)
+      .Write(value.gameMode)
+      .Write(value.clearStage);
   }
 
-  stream.Write(command.val14);
+  stream.Write(command.characterCreationDate);
 
   // Guild
   const auto& struct5 = command.guild;
@@ -1518,8 +1517,8 @@ void AcCmdCLEnterRoomQuick::Read(
   AcCmdCLEnterRoomQuick& command,
   SourceStream& stream)
 {
-  stream.Read(command.member1)
-    .Read(command.member2);
+  stream.Read(command.gameMode)
+    .Read(command.teamMode);
 }
 
 void AcCmdCLEnterRoomQuickCancel::Write(
@@ -1662,6 +1661,20 @@ void AcCmdLCAchievementRewardNotify::Write(
   SinkStream&)
 {
   // Empty
+}
+
+void AcCmdCLEnterRoomQuickSuccess::Read(
+  AcCmdCLEnterRoomQuickSuccess&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLEnterRoomQuickSuccess::Write(
+  const AcCmdCLEnterRoomQuickSuccess& command,
+  SinkStream& stream)
+{
+  stream.Write(command.result);
 }
 
 } // namespace server::protocol

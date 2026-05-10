@@ -52,7 +52,9 @@ ServerInstance::ServerInstance(
   , _chatSystem(*this)
   , _infractionSystem(*this)
   , _itemSystem(*this)
+  , _matchmakingSystem(*this)
   , _questSystem(*this)
+  , _telemetry(*this)
 {
 }
 
@@ -87,6 +89,7 @@ void ServerInstance::Initialize()
 
   // Read configurations
 
+  _characterRegistry.ReadConfig(_resourceDirectory / "config/game/character.yaml");
   _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
   _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items.yaml");
   _magicRegistry.ReadConfig(_resourceDirectory / "config/game/magic.yaml");
@@ -94,6 +97,7 @@ void ServerInstance::Initialize()
   _questRegistry.ReadConfig(_resourceDirectory / "config/game/quests.yaml");
 
   _moderationSystem.ReadConfig(_resourceDirectory / "config/server/automod.yaml");
+  _systemContentRegistry.ReadConfig(_resourceDirectory / "config/server/system_content.yaml");
 
   // Initialize the directors and tick them on their own threads.
   // Directors will terminate their tick loop once `_shouldRun` flag is set to false.
@@ -250,6 +254,31 @@ void ServerInstance::Initialize()
       _shouldRun = false;
     }
   });
+
+  // Telemetry.
+  if (GetSettings().telemetry.enabled)
+  {
+    _telemetryThread = std::thread([this]()
+    {
+      try
+      {
+        _telemetry.Initialize();
+        RunDirectorTaskLoop(_telemetry);
+        _telemetry.Terminate();
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error("Unhandled exception in telemetry: {}", x.what());
+        DumpStackTrace();
+
+        _shouldRun = false;
+      }
+    });
+  }
+  else
+  {
+    spdlog::info("Metric collection is disabled");
+  }
 }
 
 void ServerInstance::Terminate()
@@ -297,6 +326,11 @@ PrivateChatDirector& ServerInstance::GetPrivateChatDirector()
   return _privateChatDirector;
 }
 
+registry::CharacterRegistry& ServerInstance::GetCharacterRegistry()
+{
+  return _characterRegistry;
+}
+
 registry::CourseRegistry& ServerInstance::GetCourseRegistry()
 {
   return _courseRegistry;
@@ -327,6 +361,11 @@ registry::MagicRegistry& ServerInstance::GetMagicRegistry()
   return _magicRegistry;
 }
 
+registry::SystemContentRegistry& ServerInstance::GetSystemContentRegistry()
+{
+  return _systemContentRegistry;
+}
+
 ChatSystem& ServerInstance::GetChatSystem()
 {
   return _chatSystem;
@@ -352,9 +391,19 @@ RoomSystem& ServerInstance::GetRoomSystem()
   return _roomSystem;
 }
 
+MatchmakingSystem& ServerInstance::GetMatchmakingSystem()
+{
+  return _matchmakingSystem;
+}
+
 QuestSystem& ServerInstance::GetQuestSystem()
 {
   return _questSystem;
+}
+
+Telemetry& ServerInstance::GetTelemetry()
+{
+  return _telemetry;
 }
 
 OtpSystem& ServerInstance::GetOtpSystem()

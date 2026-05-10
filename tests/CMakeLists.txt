@@ -30,9 +30,16 @@ target_sources(util_test_alicia_shop_time PRIVATE
 target_link_libraries(util_test_alicia_shop_time
         PRIVATE project-properties alicia-libserver)
 
+add_executable(race_test_p2did_pool)
+target_sources(race_test_p2did_pool PRIVATE
+        src/race/TestP2dIdPool.cpp)
+target_link_libraries(race_test_p2did_pool
+        PRIVATE project-properties alicia-libserver)
+
 add_test(NAME ProtocolTestMagic COMMAND protocol_test_magic)
 add_test(NAME UtilTestStream COMMAND util_test_stream)
 add_test(NAME UtilTestScheduler COMMAND util_test_scheduler)
 add_test(NAME UtilTestLocale COMMAND util_test_locale)
 add_test(NAME UtilTestAliciaShopTime COMMAND util_test_alicia_shop_time)
+add_test(NAME RaceTestP2dIdPool COMMAND race_test_p2did_pool)
 

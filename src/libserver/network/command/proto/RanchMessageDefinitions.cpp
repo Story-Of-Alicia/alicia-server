@@ -1687,6 +1687,36 @@ void RanchCommandPetBirthNotify::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRPetBornResult::Write(
+  const AcCmdCRPetBornResult&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRPetBornResult::Read(
+  AcCmdCRPetBornResult& command,
+  SourceStream& stream)
+{
+  stream.Read(command.member1)
+    .Read(command.member2);
+}
+
+void AcCmdCRPetBornResultNotify::Write(
+  const AcCmdCRPetBornResultNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1)
+    .Write(command.member2);
+}
+
+void AcCmdCRPetBornResultNotify::Read(
+  AcCmdCRPetBornResultNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void AcCmdCRIncubateEgg::Write(
   const AcCmdCRIncubateEgg&,
   SinkStream&)
@@ -1771,9 +1801,7 @@ void RanchCommandUserPetInfosOK::Write(
   const RanchCommandUserPetInfosOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.member1)
-    .Write(command.petCount)
-    .Write(command.member3);
+  stream.Write(static_cast<uint16_t>(command.pets.size()));
   for (const auto& pet : command.pets)
   {
     stream.Write(pet);

@@ -30,6 +30,7 @@ magic:
         massEffect: 0
         affectByCriticalAura: 1
         criticalByDarkFire: 1
+        attackRank: 2
 
       - type: 3               # FireBall (Critical)
         basicType: 2
@@ -59,6 +60,7 @@ magic:
         massEffect: 0
         affectByCriticalAura: 0
         criticalByDarkFire: 0
+        attackRank: 2
 
       - type: 4               # WaterShield
         basicType: 4
@@ -208,7 +210,7 @@ magic:
       - type: 9               # HotRodding (Critical)
         basicType: 8
         criticalType: 0
-        skillEffectId: 6
+        skillEffectId: 7
         attackValue: 0
         defenseValue: 0
         castingTime: 0.0
@@ -262,6 +264,7 @@ magic:
         massEffect: 0
         affectByCriticalAura: 1
         criticalByDarkFire: 0
+        attackRank: 1
 
       - type: 11              # IceWall (Critical)
         basicType: 10
@@ -291,6 +294,7 @@ magic:
         massEffect: 0
         affectByCriticalAura: 0
         criticalByDarkFire: 0
+        attackRank: 1
 
       - type: 12              # JumpStun
         basicType: 12
@@ -436,6 +440,7 @@ magic:
         massEffect: 0
         affectByCriticalAura: 1
         criticalByDarkFire: 0
+        attackRank: 2
 
       - type: 17              # Summon (Critical)
         basicType: 16
@@ -465,6 +470,7 @@ magic:
         massEffect: 0
         affectByCriticalAura: 0
         criticalByDarkFire: 0
+        attackRank: 2
 
       - type: 18              # Lightning
         basicType: 18
@@ -494,6 +500,7 @@ magic:
         massEffect: 0
         affectByCriticalAura: 1
         criticalByDarkFire: 1
+        attackRank: 3
 
       - type: 19              # Lightning (Critical)
         basicType: 18
@@ -523,6 +530,7 @@ magic:
         massEffect: 0
         affectByCriticalAura: 0
         criticalByDarkFire: 0
+        attackRank: 3
 
       - type: 20              # BufPower
         basicType: 20
@@ -664,7 +672,7 @@ magic:
         removeMagic: 0
         removeHotRodding: 0
         removeSummonTarget: 0
-        replaceEffect: 0
+        replaceEffect: 1
         massEffect: 0
         affectByCriticalAura: 1
         criticalByDarkFire: 0
@@ -693,7 +701,7 @@ magic:
         removeMagic: 0
         removeHotRodding: 0
         removeSummonTarget: 0
-        replaceEffect: 0
+        replaceEffect: 1
         massEffect: 0
         affectByCriticalAura: 0
         criticalByDarkFire: 0

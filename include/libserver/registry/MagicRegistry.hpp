@@ -63,6 +63,7 @@ struct Magic
     uint32_t removeSummonTarget{};
     uint32_t replaceEffect{};
     uint32_t massEffect{};
+    uint32_t attackRank{}; //!< Priority rank for removeMagic attacks (0 = not an attack, 1-3 = IceWall/FireBall+Summon/Lightning)
 
     uint32_t affectByCriticalAura{};
     uint32_t criticalByDarkFire{};

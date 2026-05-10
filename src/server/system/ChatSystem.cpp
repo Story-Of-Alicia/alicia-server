@@ -120,8 +120,9 @@ ChatSystem::ChatVerdict ChatSystem::ProcessChatMessage(
   // Check  if the moderation verdict prevented the message.
   if (moderationVerdict.isPrevented)
   {
-    verdict.isMuted = true;
-    verdict.message = "Your message was prevented by the automod.";
+    verdict.isMuted     = true;
+    verdict.isPrevented = true;
+    verdict.message     = "Your message contains blocked words.";
     return verdict;
   }
 
@@ -483,6 +484,32 @@ void ChatSystem::RegisterUserCommands()
           "Restart the client."};
       }
 
+      if (subLiteral == "tendency")
+      {
+        if (arguments.size() < 2)
+          return {
+            "Invalid command arguments.",
+            "(//horse tendency <1-6>)"};
+
+        const auto tendencyValue = static_cast<uint8_t>(std::atoi(arguments[1].c_str()));
+        if (tendencyValue < 1 || tendencyValue > 6)
+          return {
+            "Invalid tendency value.",
+            "(//horse tendency <1-6>)"};
+
+        characterRecord.Immutable([this, &tendencyValue](const data::Character& character)
+          {
+            _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Mutable(
+              [&tendencyValue](data::Horse& horse)
+              {
+                horse.tendency() = tendencyValue;
+              });
+          });
+
+        return {"Horse tendency set",
+          "Restart the client."};
+      }
+
       return {"Unknown sub-literal"};
     });
 
@@ -504,6 +531,19 @@ void ChatSystem::RegisterUserCommands()
 
       if (subLiteral == "item")
       {
+        // Only allow admins (character.role != User) to use this subcommand.
+        if (not characterRecord)
+          return {"Server error"};
+
+        bool isAdmin = false;
+        characterRecord.Immutable([&isAdmin](const data::Character& character)
+          {
+            isAdmin = character.role() != data::Character::Role::User;
+          });
+
+        if (not isAdmin)
+          return {"You don't have permission to use this command."};
+
         if (arguments.size() < 3)
           return {
             "Invalid command arguments.",
@@ -542,11 +582,6 @@ void ChatSystem::RegisterUserCommands()
             storedGiftCount = character.gifts().size();
             inventoryItemCount = character.inventory().size();
           });
-
-        if (inventoryItemCount > 250)
-        {
-          return {"You have too many items."};
-        }
 
         if (storedGiftCount > 32)
         {
@@ -711,6 +746,7 @@ void ChatSystem::RegisterUserCommands()
             horse.mountCondition.stamina = 3500;
             horse.growthPoints() = 150;
             horse.clazz = 1;
+            horse.tendency() = 1;
 
             // Give horse random parts and appearance
             _serverInstance.GetHorseRegistry().BuildRandomHorse(
@@ -737,6 +773,20 @@ void ChatSystem::RegisterUserCommands()
       }
       else if (subLiteral == "carrots")
       {
+        // Only allow admins (character.role != User) to use this subcommand.
+        const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+        if (not invokerRecord)
+          return {"Server error"};
+
+        bool isAdmin = false;
+        invokerRecord.Immutable([&isAdmin](const data::Character& character)
+          {
+            isAdmin = character.role() != data::Character::Role::User;
+          });
+
+        if (not isAdmin)
+          return {"You don't have permission to use this command."};
+
         if (arguments.size() < 2)
           return {
             "Invalid command arguments.",
@@ -916,9 +966,10 @@ void ChatSystem::RegisterAdminCommands()
     "promote",
     [this](
       const std::span<const std::string>& arguments,
-      data::Uid characterUid) -> std::vector<std::string>
+      data::Uid invokerCharacterUid) -> std::vector<std::string>
     {
-      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(
+        invokerCharacterUid);
       if (not invokerRecord)
         return {"Server error"};
 
@@ -932,20 +983,29 @@ void ChatSystem::RegisterAdminCommands()
         return {};
 
       if (arguments.empty())
-      {
         return {"Specify user name"};
-      }
 
-      const auto userName = arguments[0];
+      const auto& userName = arguments[0];
 
-      const auto userInstance = _serverInstance.GetLobbyDirector().GetUser(userName);
-      if (not _serverInstance.GetLobbyDirector().IsUserOnline(userName))
+      const auto userRecord = _serverInstance.GetDataDirector().GetUser(
+        userName);
+      if (not userRecord)
       {
-        return {std::format("User '{}' is not online", userName)};
+        return {
+          std::format("Either the user '{}' does not exist ", userName),
+          "or is being loaded.",
+          "Try again later."};
       }
+
+      auto characterUid = data::InvalidUid;
+
+      userRecord.Immutable([&characterUid](const data::User& user)
+      {
+        characterUid = user.characterUid();
+      });
 
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
-        userInstance.characterUid);
+        characterUid);
       if (not characterRecord)
       {
         return {std::format("User '{}' does not have a character", userName)};
@@ -966,9 +1026,10 @@ void ChatSystem::RegisterAdminCommands()
     "demote",
     [this](
       const std::span<const std::string>& arguments,
-      data::Uid characterUid) -> std::vector<std::string>
+      data::Uid invokerCharacterUid) -> std::vector<std::string>
     {
-      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(
+        invokerCharacterUid);
       if (not invokerRecord)
         return {"Server error"};
 
@@ -982,20 +1043,29 @@ void ChatSystem::RegisterAdminCommands()
         return {};
 
       if (arguments.empty())
-      {
         return {"Specify user name"};
-      }
 
-      const auto userName = arguments[0];
+      const auto& userName = arguments[0];
 
-      const auto userInstance = _serverInstance.GetLobbyDirector().GetUser(userName);
-      if (not _serverInstance.GetLobbyDirector().IsUserOnline(userName))
+      const auto userRecord = _serverInstance.GetDataDirector().GetUser(
+        userName);
+      if (not userRecord)
       {
-        return {std::format("User '{}' is not online", userName)};
+        return {
+          std::format("Either the user '{}' does not exist ", userName),
+          "or is being loaded.",
+          "Try again later."};
       }
+
+      auto characterUid = data::InvalidUid;
+
+      userRecord.Immutable([&characterUid](const data::User& user)
+      {
+        characterUid = user.characterUid();
+      });
 
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
-        userInstance.characterUid);
+        characterUid);
       if (not characterRecord)
       {
         return {std::format("User '{}' does not have a character", userName)};
@@ -1578,10 +1648,12 @@ void ChatSystem::RegisterAdminCommands()
 
       bool isAdmin = false;
       std::string invokerCharacterName{};
-      invokerRecord.Immutable([&isAdmin](const data::Character& character)
+      invokerRecord.Immutable([&isAdmin, &invokerCharacterName](const data::Character& character)
       {
         isAdmin = character.role() != data::Character::Role::User;
+        invokerCharacterName = character.name();
       });
+      const auto invokerUserName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(characterUid).userName;
 
       if (not isAdmin)
         return {};
@@ -1635,7 +1707,8 @@ void ChatSystem::RegisterAdminCommands()
           _serverInstance.GetRanchDirector().Disconnect(targetCharacterUid);
           _serverInstance.GetLobbyDirector().DisconnectCharacter(targetCharacterUid);
 
-          spdlog::info("GM '{}' has reset user '{}' whose character uid was '{}'",
+          spdlog::info("GM {} ({}) has reset user '{}' whose character uid was '{}'",
+            invokerUserName,
             invokerCharacterName,
             username,
             targetCharacterUid);
@@ -1699,7 +1772,8 @@ void ChatSystem::RegisterAdminCommands()
             horse.name() = newName;
           });
 
-          spdlog::info("GM '{}' has renamed horse '{}' from '{}' to '{}'",
+          spdlog::info("GM {} ({}) has renamed horse '{}' from '{}' to '{}'",
+            invokerUserName,
             invokerCharacterName,
             horseUid,
             previousName,
@@ -1741,7 +1815,8 @@ void ChatSystem::RegisterAdminCommands()
             pet.name() = newName;
           });
 
-          spdlog::info("GM '{}' has renamed pet '{}' from '{}' to '{}'",
+          spdlog::info("GM {} ({}) has renamed pet '{}' from '{}' to '{}'",
+            invokerUserName,
             invokerCharacterName,
             petUid,
             previousName,
@@ -1783,7 +1858,8 @@ void ChatSystem::RegisterAdminCommands()
             guild.name() = newName;
           });
 
-          spdlog::info("GM '{}' has renamed guild '{}' from '{}' to '{}'",
+          spdlog::info("GM {} ({}) has renamed guild '{}' from '{}' to '{}'",
+            invokerUserName,
             invokerCharacterName,
             guildUid,
             previousName,
@@ -1831,7 +1907,8 @@ void ChatSystem::RegisterAdminCommands()
             .name = newName};
           _serverInstance.GetRaceDirector().BroadcastChangeRoomOptions(roomUid, notify);
 
-          spdlog::info("GM '{}' has renamed room '{}' from '{}' to '{}'",
+          spdlog::info("GM {} ({}) has renamed room '{}' from '{}' to '{}'",
+            invokerUserName,
             invokerCharacterName,
             roomUid,
             previousName,
@@ -1889,7 +1966,8 @@ void ChatSystem::RegisterAdminCommands()
               settings.macros() = std::array<std::string, 8>{};
             });
 
-          spdlog::info("GM '{}' cleared all macros for user '{}'",
+          spdlog::info("GM {} ({}) cleared all macros for user '{}'",
+            invokerUserName,
             invokerCharacterName,
             targetUserName);
 

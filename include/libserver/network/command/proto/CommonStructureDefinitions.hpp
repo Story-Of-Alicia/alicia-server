@@ -42,8 +42,10 @@ enum class Gender : uint8_t
 //! Team color for team-based race modes.
 enum class TeamColor : uint32_t
 {
-  None = 1,
+  //! Important for shackles!
+  None = 0,
   Solo = None,
+  Unknown = 1,
   Red = 2,
   Blue = 3
 };
@@ -456,15 +458,15 @@ struct Pet
 //!
 struct Egg
 {
-  uint32_t uid{};
+  uint32_t uid{}; // itemUid of the egg
   uint32_t itemTid{};
-  uint32_t member3{};
+  uint32_t member3{};    // member 3 & 4 are suspected to be some kind of filetime
   uint8_t member4{};
-  uint32_t member5{};
+  uint32_t remainingHatchingTime{};
   uint32_t timeRemaining{};
-  uint32_t boost{}; //needs further investigation and possibly a rename
-  uint32_t totalHatchingTime{};
-  uint32_t member9{};
+  uint32_t boostPreviewValue{}; //needs further investigation and possibly a rename
+  uint32_t hatchingProgress{};
+  uint32_t boostCooldown{};
 
   static void Write(const Egg& value, SinkStream& stream);
   static void Read(Egg& value, SourceStream& stream);
@@ -713,6 +715,24 @@ struct ShopOrder
   //! @param stream Source stream.
   static void Read(
     ShopOrder& command,
+    SourceStream& stream);
+};
+
+//! Represents a standard 3D vector, plus the 'w' component used for packed data.
+struct PackedVector3
+{
+  float x{};
+  float y{};
+  float z{};
+  // Assumed `w`
+  float w{};
+
+  static void Write(
+    const PackedVector3& vector,
+    SinkStream& stream);
+
+  static void Read(
+    PackedVector3& vector,
     SourceStream& stream);
 };
 

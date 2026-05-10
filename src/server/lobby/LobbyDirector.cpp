@@ -136,6 +136,16 @@ void LobbyDirector::QueueClientLogout(
   const std::string& userName)
 {
   spdlog::info("User '{}' (client {}) logged out", userName, clientId);
+
+  const auto userRecord = _serverInstance.GetDataDirector().GetUser(userName);
+  if (userRecord.IsAvailable())
+  {
+    userRecord.Mutable([](data::User& user)
+    {
+      user.lastSeenOnline() = data::Clock::now();
+    });
+  }
+
   _userInstances.erase(userName);
 }
 
@@ -245,9 +255,23 @@ void LobbyDirector::NotifyAchievementReward(
   _networkHandler->NotifyAchievementReward(characterUid);
 }
 
+void LobbyDirector::NotifyMatchmakeResult(
+  const data::Uid characterUid,
+  const MatchmakingSystem::Result& result)
+{
+  _networkHandler->NotifyMatchmakeResult(
+    characterUid,
+    result);
+}
+
 std::unordered_map<std::string, LobbyDirector::UserInstance>& LobbyDirector::GetUsers()
 {
   return _userInstances;
+}
+
+size_t LobbyDirector::GetUserCount()
+{
+  return _userInstances.size();
 }
 
 std::unordered_map<data::Uid, LobbyDirector::GuildInstance>& LobbyDirector::GetGuilds()
@@ -432,6 +456,13 @@ void LobbyDirector::ProcesLoginResponse()
   userInstance.userName = loginContext.userName;
   userInstance.characterUid = characterUid;
   spdlog::info("User '{}' (client {}) logged in", loginContext.userName, clientId);
+
+  userRecord.Mutable([](data::User& user)
+  {
+    // Set the last seen online time to 1 to indicate that the user is currently online.
+    // NOTE: delete this once we have a proper api
+    user.lastSeenOnline() = data::Clock::time_point(std::chrono::seconds(1));
+  });
 
   _clientLogins.erase(clientId);
 }

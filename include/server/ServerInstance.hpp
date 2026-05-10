@@ -20,29 +20,33 @@
 #ifndef INSTANCE_HPP
 #define INSTANCE_HPP
 
-#include "server/Config.hpp"
-#include "server/auth/AuthenticationService.hpp"
-#include "server/lobby/LobbyDirector.hpp"
+#include "authentication/AuthenticationService.hpp"
 #include "server/chat/AllChatDirector.hpp"
 #include "server/chat/PrivateChatDirector.hpp"
+#include "server/Config.hpp"
+#include "server/lobby/LobbyDirector.hpp"
 #include "server/messenger/MessengerDirector.hpp"
 #include "server/race/RaceDirector.hpp"
 #include "server/ranch/RanchDirector.hpp"
 #include "server/system/ChatSystem.hpp"
 #include "server/system/InfractionSystem.hpp"
 #include "server/system/ItemSystem.hpp"
-#include "server/system/OtpSystem.hpp"
+#include "server/system/MatchmakingSystem.hpp"
 #include "server/system/ModerationSystem.hpp"
+#include "server/system/OtpSystem.hpp"
 #include "server/system/QuestSystem.hpp"
 #include "server/system/RoomSystem.hpp"
+#include "server/telemetry/Telemetry.hpp"
 
 #include <libserver/data/DataDirector.hpp>
+#include <libserver/registry/CharacterRegistry.hpp>
 #include <libserver/registry/CourseRegistry.hpp>
 #include <libserver/registry/HorseRegistry.hpp>
 #include <libserver/registry/ItemRegistry.hpp>
 #include <libserver/registry/MagicRegistry.hpp>
 #include <libserver/registry/PetRegistry.hpp>
 #include <libserver/registry/QuestRegistry.hpp>
+#include <libserver/registry/SystemContentRegistry.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -94,6 +98,10 @@ public:
   //! @returns Reference to the private chat director.
   PrivateChatDirector& GetPrivateChatDirector();
 
+  //! Returns reference to the Character registry.
+  //! @returns Reference to the Character registry.
+  registry::CharacterRegistry& GetCharacterRegistry();
+
   //! Returns reference to the Course registry.
   //! @returns Reference to the Course registry.
   registry::CourseRegistry& GetCourseRegistry();
@@ -117,6 +125,10 @@ public:
   //! Returns reference to the Magic registry.
   //! @returns Reference to the Magic registry.
   registry::MagicRegistry& GetMagicRegistry();
+
+  //! Returns reference to the system content registry.
+  //! @returns Reference to the system content registry.
+  registry::SystemContentRegistry& GetSystemContentRegistry();
 
   //! Returns reference to the chat system.
   //! @returns Reference to the chat system.
@@ -145,6 +157,14 @@ public:
   //! Returns reference to the quest system.
   //! @returns Reference to the quest system.
   QuestSystem& GetQuestSystem();
+
+  //! Returns reference to the matchmaking system.
+  //! @returns Reference to the matchmaking system.
+  MatchmakingSystem& GetMatchmakingSystem();
+
+  //! Returns reference to the telemetry.
+  //! @returns Reference to the telemetry.
+  Telemetry& GetTelemetry();
 
   //! Returns reference to the settings.
   //! @returns Reference to the settings.
@@ -237,6 +257,8 @@ private:
   //! A race director.
   RaceDirector _raceDirector;
 
+  //! A registry of character level info.
+  registry::CharacterRegistry _characterRegistry;
   //! A registry of courses.
   registry::CourseRegistry _courseRegistry;
   //! A registry of horses.
@@ -249,6 +271,8 @@ private:
   registry::PetRegistry _petRegistry;
   //! A registry of quests.
   registry::QuestRegistry _questRegistry;
+  //! The system content registry.
+  registry::SystemContentRegistry _systemContentRegistry;
 
   //! A chat system.
   ChatSystem _chatSystem;
@@ -264,7 +288,13 @@ private:
   QuestSystem _questSystem;
   //! A room system.
   RoomSystem _roomSystem;
+  //! A matchmaking system.
+  MatchmakingSystem _matchmakingSystem;
 
+  //! A thread for telemetry.
+  std::thread _telemetryThread;
+  //! Telemetry.
+  Telemetry _telemetry;
 };
 
 } // namespace server

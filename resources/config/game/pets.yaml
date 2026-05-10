@@ -3,106 +3,146 @@ pets:
     collection:
       # City Eggs
       - eggItemTid: 90006
+        obtainRatio: 50
         deckId: 909
+        region: 3
         hatch:
           duration: '9h'
           pets: [99150, 99151, 99152, 99058, 99059, 99060, 99061]
       - eggItemTid: 90007
+        obtainRatio: 30
         deckId: 910
+        region: 3
         hatch:
           duration: '41h'
           pets: [99153, 99154, 99155, 99062, 99063, 99064, 99065]
       - eggItemTid: 90008
+        obtainRatio: 15
         deckId: 911
+        region: 3
         hatch:
           duration: '73h'
           pets: [99156, 99157, 99158, 99066, 99067, 99068, 99069]
       - eggItemTid: 90009
+        obtainRatio: 5
         deckId: 912
+        region: 3
         hatch:
           duration: '105h'
           pets: [99159, 99160, 99161, 99070, 99071, 99072, 99073]
       # Forest Eggs
       - eggItemTid: 90010
+        obtainRatio: 50
         deckId: 905
+        region: 2
         hatch:
           duration: '9h'
           pets: [99098, 99099, 99100, 99086, 99087, 99088]
       - eggItemTid: 90001
+        obtainRatio: 30
         deckId: 906
+        region: 2
         hatch:
           duration: '41h'
           pets: [99101, 99102, 99103, 99089, 99090, 99091]
       - eggItemTid: 90002
+        obtainRatio: 15
         deckId: 907
+        region: 2
         hatch:
           duration: '73h'
           pets: [99104, 99105, 99106, 99092, 99093, 99094]
       - eggItemTid: 90003
+        obtainRatio: 5
         deckId: 908
+        region: 2
         hatch:
           duration: '105h'
           pets: [99107, 99108, 99109, 99095, 99096, 99097]
       # Meadow Eggs
       - eggItemTid: 90004
+        obtainRatio: 50
         deckId: 901
+        region: 1
         hatch:
           duration: '9h'
           pets: [99134, 99135, 99136, 99026, 99027, 99028, 99029, 99110, 99111, 99112]
       - eggItemTid: 90005
+        obtainRatio: 30
         deckId: 902
+        region: 1
         hatch:
           duration: '41h'
           pets: [99137, 99138, 99139, 99030, 99031, 99032, 99033, 99113, 99114, 99115]
       - eggItemTid: 90011
+        obtainRatio: 15
         deckId: 903
+        region: 1
         hatch:
           duration: '73h'
           pets: [99140, 99141, 99142, 99034, 99035, 99036, 99037, 99116, 99117, 99118]
       - eggItemTid: 90012
+        obtainRatio: 5
         deckId: 904
+        region: 1
         hatch:
           duration: '105h'
           pets: [99143, 99144, 99145, 99038, 99039, 99040, 99041, 99119, 99120, 99121]
       # Ice Eggs
       - eggItemTid: 90017
+        obtainRatio: 50
         deckId: 917
+        region: 5
         hatch:
           duration: '9h'
           pets: [99162, 99163, 99164, 99174, 99175, 99176]
       - eggItemTid: 90018
+        obtainRatio: 30
         deckId: 918
+        region: 5
         hatch:
           duration: '41h'
           pets: [99165, 99166, 99167, 99177, 99178, 99179]
       - eggItemTid: 90019
+        obtainRatio: 15
         deckId: 919
+        region: 5
         hatch:
           duration: '73h'
           pets: [99168, 99169, 99170, 99180, 99181, 99182]
       - eggItemTid: 90020
+        obtainRatio: 5
         deckId: 920
+        region: 5
         hatch:
           duration: '105h'
           pets: [99171, 99172, 99173, 99183, 99184, 99185]
       # Desert Eggs
       - eggItemTid: 90013
+        obtainRatio: 50
         deckId: 913
+        region: 4
         hatch:
           duration: '9h'
           pets: [99042, 99043, 99146, 99074, 99075, 99076, 99122, 99123, 99124]
       - eggItemTid: 90014
+        obtainRatio: 30
         deckId: 914
+        region: 4
         hatch:
           duration: '41h'
           pets: [99044, 99045, 99147, 99077, 99078, 99079, 99125, 99126, 99127]
       - eggItemTid: 90015
+        obtainRatio: 15
         deckId: 915
+        region: 4
         hatch:
           duration: '73h'
           pets: [99046, 99047, 99148, 99080, 99081, 99082, 99128, 99129, 99130]
       - eggItemTid: 90016
+        obtainRatio: 5
         deckId: 916
+        region: 4
         hatch:
           duration: '105h'
           pets: [99048, 99049, 99149, 99083, 99084, 99085, 99131, 99132, 99133]
