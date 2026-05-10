@@ -43,7 +43,7 @@ void RaceTracker::RemoveRacer(data::Uid characterUid)
   _racers.erase(characterUid);
 }
 
-bool RaceTracker::IsRacer(data::Uid characterUid)
+bool RaceTracker::IsRacer(data::Uid characterUid) const
 {
   return _racers.contains(characterUid);
 }

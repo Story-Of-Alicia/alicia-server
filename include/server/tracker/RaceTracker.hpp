@@ -141,7 +141,7 @@ public:
   //! @param characterUid Character UID.
   //! @return `true` if the character is a racer,
   //!          otherwise returns `false`;
-  bool IsRacer(data::Uid characterUid);
+  bool IsRacer(data::Uid characterUid) const;
   //! Returns reference to the racer record.
   //! @returns Racer record.
   [[nodiscard]] Racer& GetRacer(data::Uid characterUid);
