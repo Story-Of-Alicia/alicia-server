@@ -971,11 +971,11 @@ struct ChatCmdChatInvite
 struct ChatCmdChatInvitationTrs
 {
   uint32_t unk0{};
-  uint32_t unk1{};
-  uint32_t unk2{};
+  uint32_t selfCharacterUid{};
+  uint32_t otp{};
   std::string hostname{};
   uint16_t port{};
-  uint32_t unk5{};
+  uint32_t targetCharacterUid{};
   
   static ChatterCommand GetCommand()
   {

@@ -1622,20 +1622,17 @@ void MessengerDirector::HandleChatterChatInvite(
   // TODO: use unk2 as OTP value for both clients to authenticate with the server for the same conversation
 
   protocol::ChatCmdChatInvitationTrs notify{
-    //.unk0 = 0xABCDEF09, // TODO: discover if this is even used by the client
-    //.unk1 = 131,
-    .unk2 = 0xABCDEF09, // TODO: potentially otp code?
+    .otp = 0xABCDEF09, // TODO: Implement per-chat otp
     .hostname = hostname,
-    .port = port
-  };
+    .port = port};
 
   for (const auto& targetClientId : clientIdsToNotify)
   {
     const auto& targetClientContext = GetClientContext(targetClientId);
 
     // Initiate chat window for the invoker
-    notify.unk1 = clientContext.characterUid;
-    notify.unk5 = targetClientContext.characterUid;
+    notify.selfCharacterUid = clientContext.characterUid;
+    notify.targetCharacterUid = targetClientContext.characterUid;
     _chatterServer.QueueCommand<decltype(notify)>(
       clientId,
       [notify]()
@@ -1644,8 +1641,8 @@ void MessengerDirector::HandleChatterChatInvite(
       });
 
     // Initiate chat window for the target character
-    notify.unk1 = targetClientContext.characterUid;
-    notify.unk5 = clientContext.characterUid;
+    notify.selfCharacterUid = targetClientContext.characterUid;
+    notify.targetCharacterUid = clientContext.characterUid;
     _chatterServer.QueueCommand<decltype(notify)>(
       targetClientId,
       [notify]()

@@ -706,11 +706,11 @@ void server::protocol::ChatCmdChatInvitationTrs::Write(
   SinkStream& stream)
 {
   stream.Write(command.unk0)
-    .Write(command.unk1)
-    .Write(command.unk2)
+    .Write(command.selfCharacterUid)
+    .Write(command.otp)
     .Write(command.hostname)
     .Write(command.port)
-    .Write(command.unk5);
+    .Write(command.targetCharacterUid);
 }
 
 void server::protocol::ChatCmdChatInvitationTrs::Read(
