@@ -67,13 +67,17 @@ void PrivateChatDirector::Terminate()
 
 PrivateChatDirector::ConversationContext& PrivateChatDirector::GetConversationContext(
   const network::ClientId clientId,
-  [[maybe_unused]] const bool requireAuthentication)
+  const bool requireAuthentication)
 {
   auto conversationContextIter = _conversations.find(clientId);
   if (conversationContextIter == _conversations.end())
     throw std::runtime_error("Private chat client is not available");
 
-  return conversationContextIter->second;
+  auto& conversationContext = conversationContextIter->second;
+  if (requireAuthentication && not conversationContext.isAuthenticated)
+    throw std::runtime_error("Private chat client is not authenticated");
+
+  return conversationContext;
 }
 
 void PrivateChatDirector::Tick()
@@ -85,30 +89,56 @@ Config::PrivateChat& PrivateChatDirector::GetConfig()
   return _serverInstance.GetSettings().privateChat;
 }
 
+uint32_t PrivateChatDirector::GrantConversationCode(
+  const data::Uid characterUid,
+  const data::Uid targetCharacterUid)
+{
+  // Store the code separately from OtpSystem so EnterRoom can resolve it back
+  // to the target participant after the client presents the OTP
+
+  // The OTP must be valid only for this directed participant pair
+  std::size_t identityHash = std::hash<uint32_t>()(characterUid);
+  boost::hash_combine(identityHash, targetCharacterUid);
+  boost::hash_combine(identityHash, PrivateChatOtpConstant);
+  const uint32_t code = _serverInstance.GetOtpSystem().GrantCode(identityHash);
+
+  constexpr auto PrivateChatOtpLifetimeSeconds = std::chrono::seconds(30);
+  const PendingConversation pendingConversation{
+    .characterUid = characterUid,
+    .targetCharacterUid = targetCharacterUid,
+    .identityHash = identityHash,
+    .expiry = std::chrono::steady_clock::now() + PrivateChatOtpLifetimeSeconds};
+
+  std::scoped_lock lock(_pendingConversationsMutex);
+  _pendingConversations[characterUid].insert_or_assign(code, pendingConversation);
+
+  return code;
+}
+
 const std::optional<network::ClientId> PrivateChatDirector::GetTargetClientIdByContext(
   const ConversationContext& conversationContext) const
 {
-  std::optional<ClientId> clientId{};
-
   // Check if any character uids are invalid 
-  if (conversationContext.characterUid == data::InvalidUid or
+  if (not conversationContext.isAuthenticated or
+      conversationContext.characterUid == data::InvalidUid or
       conversationContext.targetCharacterUid == data::InvalidUid)
-    return clientId;
+    return std::nullopt;
 
   for (const auto& [targetClientId, targetConversationContext] : _conversations)
   {
     // Find target conversation based on invoker and target character uids
     bool isTargetConversation = 
+      targetConversationContext.isAuthenticated and
       targetConversationContext.characterUid == conversationContext.targetCharacterUid and
       targetConversationContext.targetCharacterUid == conversationContext.characterUid;
     if (isTargetConversation)
     {
       // This is the target conversation
-      clientId.emplace(targetClientId);
-      return clientId;
+      return targetClientId;
     }
   }
-  return clientId;
+  
+  return std::nullopt;
 }
 
 void PrivateChatDirector::HandleClientConnected(network::ClientId clientId)
@@ -144,56 +174,163 @@ void PrivateChatDirector::HandleChatterEnterRoom(
   network::ClientId clientId,
   const protocol::ChatCmdEnterRoom& command)
 {
-  // This arrangement is specific to private chats only
-  const data::Uid targetCharacterUid = command.code;
-  const data::Uid invokerCharacterUid = command.characterUid;
-  const std::string& invokerCharacterName = command.characterName;
-  // Always 0 for private chats
-  const uint32_t unk3 = command.guildUid;
-
   spdlog::debug("[{}] (Private) ChatCmdEnterRoom: {} {} {} {}",
     clientId,
-    targetCharacterUid,
-    invokerCharacterUid,
-    invokerCharacterName,
-    unk3);
+    command.code,
+    command.characterUid,
+    command.characterName,
+    command.guildUid);
 
-  // TODO: there is no authentication mechanism here
-  auto& conversationContext = GetConversationContext(clientId);
+  auto& conversationContext = GetConversationContext(clientId, false);
 
-  // Confirm invoking character of that uid exists
-  const auto& invokerCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(invokerCharacterUid);
-  if (not invokerCharacterRecord.IsAvailable())
+  const auto rejectPrivateChatLogin = [this, clientId]()
   {
-    // TODO: return cancel
+    protocol::ChatCmdEnterRoomAckCancel cancel{
+      .errorCode = protocol::ChatterErrorCode::ChatLoginFailed};
+    _chatterServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    _chatterServer.DisconnectClient(clientId);
+  };
+
+  PendingConversation pendingConversation{};
+  // A code is consumed on successful auth and on OTP auth failure. Other validation
+  // failures leave the ticket until its own OTP expiry rejects it.
+  const auto erasePendingConversation =
+    [this, characterUid = command.characterUid, code = command.code]()
+    {
+      std::scoped_lock lock(_pendingConversationsMutex);
+      const auto characterIter = _pendingConversations.find(characterUid);
+      if (characterIter == _pendingConversations.end())
+        return;
+
+      characterIter->second.erase(code);
+      if (characterIter->second.empty())
+        _pendingConversations.erase(characterIter);
+    };
+
+  {
+    std::scoped_lock lock(_pendingConversationsMutex);
+
+    // Resolve the client-supplied (character uid, code) pair into the pending
+    // directed conversation created by MessengerDirector.
+    const auto characterIter = _pendingConversations.find(command.characterUid);
+    if (characterIter == _pendingConversations.cend())
+    {
+      spdlog::warn(
+        "Client {} tried to enter private chat as character {} with unknown auth code {}",
+        clientId,
+        command.characterUid,
+        command.code);
+    }
+    else if (const auto pendingConversationIter = characterIter->second.find(command.code);
+             pendingConversationIter == characterIter->second.cend())
+    {
+      spdlog::warn(
+        "Client {} tried to enter private chat as character {} with unknown auth code {}",
+        clientId,
+        command.characterUid,
+        command.code);
+    }
+    else if (std::chrono::steady_clock::now() > pendingConversationIter->second.expiry)
+    {
+      // Mirror the short-lived OTP behavior and remove the stale ticket lazily.
+      spdlog::warn(
+        "Client {} tried to enter private chat as character {} with expired auth code {}",
+        clientId,
+        command.characterUid,
+        command.code);
+      characterIter->second.erase(pendingConversationIter);
+      if (characterIter->second.empty())
+        _pendingConversations.erase(characterIter);
+    }
+    else
+    {
+      pendingConversation = pendingConversationIter->second;
+    }
+  }
+
+  if (pendingConversation.characterUid == data::InvalidUid)
+  {
+    rejectPrivateChatLogin();
     return;
   }
 
-  // Confirm target character of that uid exists
-  const auto& targetCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(targetCharacterUid);
+  if (command.guildUid != 0)
+  {
+    spdlog::warn(
+      "Client {} tried to enter private chat as character {} with guild uid {}",
+      clientId,
+      command.characterUid,
+      command.guildUid);
+    rejectPrivateChatLogin();
+    return;
+  }
+
+  const auto& characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    command.characterUid);
+  if (not characterRecord.IsAvailable())
+  {
+    spdlog::warn(
+      "Client {} tried to enter private chat as unavailable character {}",
+      clientId,
+      command.characterUid);
+    rejectPrivateChatLogin();
+    return;
+  }
+
+  const auto& targetCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    pendingConversation.targetCharacterUid);
   if (not targetCharacterRecord.IsAvailable())
   {
-    // TODO: return cancel
+    spdlog::warn(
+      "Client {} tried to enter private chat with unavailable target character {}",
+      clientId,
+      pendingConversation.targetCharacterUid);
+    rejectPrivateChatLogin();
     return;
   }
 
-  // Check if invoker's character name provided in command matches server record
-  bool isNameMatch{false};
-  invokerCharacterRecord.Immutable([&isNameMatch, invokerCharacterName](const data::Character& character)
-  {
-    isNameMatch = invokerCharacterName == character.name();
-  });
+  bool characterNameMatches{false};
+  characterRecord.Immutable(
+    [&characterNameMatches, &command](const data::Character& character)
+    {
+      characterNameMatches = command.characterName == character.name();
+    });
 
-  if (not isNameMatch)
+  if (not characterNameMatches)
   {
-    // TODO: return cancel
+    spdlog::warn(
+      "Client {} tried to enter private chat as character {} with an unexpected character name",
+      clientId,
+      command.characterUid);
+    rejectPrivateChatLogin();
     return;
   }
 
-  // Set values for the conversation context (participants)
-  conversationContext.characterUid = invokerCharacterUid;
-  // TODO: Can there be multiple people in a single conversation? Group chat?
-  conversationContext.targetCharacterUid = targetCharacterUid;
+  // Validate the server-side OTP after resolving the ticket so the code remains
+  // tied to the expected participant pair.
+  const bool isAuthorized = _serverInstance.GetOtpSystem().AuthorizeCode(
+    pendingConversation.identityHash,
+    command.code);
+  if (not isAuthorized)
+  {
+    spdlog::warn(
+      "Client {} tried to enter private chat as character {} but failed authentication with auth code {}",
+      clientId,
+      command.characterUid,
+      command.code);
+
+    erasePendingConversation();
+    rejectPrivateChatLogin();
+    return;
+  }
+
+  erasePendingConversation();
+
+  // At this point future chat/input-state commands can use the participant pair
+  // without trusting client-provided EnterRoom fields again.
+  conversationContext.isAuthenticated = true;
+  conversationContext.characterUid = pendingConversation.characterUid;
+  conversationContext.targetCharacterUid = pendingConversation.targetCharacterUid;
 
   // Deserialises but has no handler
   protocol::ChatCmdEnterRoomAckOk response{};

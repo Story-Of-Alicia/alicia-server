@@ -993,9 +993,14 @@ struct ChatCmdChatInvitationTrs
 
 struct ChatCmdEnterRoom
 {
+  //! The one-time password to enter the room.
   uint32_t code{};
+  //! The UID of the invoker's character.
   data::Uid characterUid{};
+  //! The character name of the invoker.
   std::string characterName{};
+  //! The UID of the guild.
+  //! This is 0 for private chats.
   data::Uid guildUid{};
 
   static ChatterCommand GetCommand()

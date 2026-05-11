@@ -1594,6 +1594,10 @@ void MessengerDirector::HandleChatterChatInvite(
     // Skip unauthenticated clients
     if (not targetClientContext.isAuthenticated)
       continue;
+
+    // Skip the invoker if the client includes their own character in the request
+    if (targetClientContext.characterUid == clientContext.characterUid)
+      continue;
     
     bool isRequestedParticipant = std::ranges::contains(
       command.chatParticipantUids,
@@ -1619,35 +1623,42 @@ void MessengerDirector::HandleChatterChatInvite(
   const std::string hostname = lobbyConfig.advertisement.privateChat.address.to_string();
   const uint16_t port = lobbyConfig.advertisement.privateChat.port;
 
-  // TODO: use unk2 as OTP value for both clients to authenticate with the server for the same conversation
-
-  protocol::ChatCmdChatInvitationTrs notify{
-    .otp = 0xABCDEF09, // TODO: Implement per-chat otp
-    .hostname = hostname,
-    .port = port};
-
   for (const auto& targetClientId : clientIdsToNotify)
   {
     const auto& targetClientContext = GetClientContext(targetClientId);
+    auto& privateChatDirector = _serverInstance.GetPrivateChatDirector();
 
-    // Initiate chat window for the invoker
-    notify.selfCharacterUid = clientContext.characterUid;
-    notify.targetCharacterUid = targetClientContext.characterUid;
-    _chatterServer.QueueCommand<decltype(notify)>(
+    // Each side receives its own directed OTP so PrivateChatDirector can resolve
+    // EnterRoom back to the expected target character
+    const protocol::ChatCmdChatInvitationTrs invokerNotify{
+      .selfCharacterUid = clientContext.characterUid,
+      .otp = privateChatDirector.GrantConversationCode(
+        clientContext.characterUid,
+        targetClientContext.characterUid),
+      .hostname = hostname,
+      .port = port,
+      .targetCharacterUid = targetClientContext.characterUid};
+    _chatterServer.QueueCommand<decltype(invokerNotify)>(
       clientId,
-      [notify]()
+      [invokerNotify]()
       {
-        return notify;
+        return invokerNotify;
       });
 
-    // Initiate chat window for the target character
-    notify.selfCharacterUid = targetClientContext.characterUid;
-    notify.targetCharacterUid = clientContext.characterUid;
-    _chatterServer.QueueCommand<decltype(notify)>(
+    // Mirror the ticket direction for the target character's private chat client
+    const protocol::ChatCmdChatInvitationTrs targetNotify{
+      .selfCharacterUid = 0, // Prevents the window from popping up on the target
+      .otp = privateChatDirector.GrantConversationCode(
+        targetClientContext.characterUid,
+        clientContext.characterUid),
+      .hostname = hostname,
+      .port = port,
+      .targetCharacterUid = clientContext.characterUid};
+    _chatterServer.QueueCommand<decltype(targetNotify)>(
       targetClientId,
-      [notify]()
+      [targetNotify]()
       {
-        return notify;
+        return targetNotify;
       });
   }
 }

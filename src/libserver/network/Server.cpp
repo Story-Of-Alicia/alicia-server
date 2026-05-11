@@ -32,7 +32,7 @@ namespace server::network
 namespace
 {
 
-constexpr std::size_t MaxConnectionsPerAddress = 3;
+constexpr std::size_t MaxConnectionsPerAddress = 15;
 constexpr std::size_t MaxTotalConnections = 1024;
 constexpr std::size_t MaxConnectRatePerAddress = 10;
 constexpr auto RateWindow = std::chrono::seconds(30);
