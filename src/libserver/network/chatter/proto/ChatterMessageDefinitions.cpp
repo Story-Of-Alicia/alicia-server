@@ -696,7 +696,9 @@ void server::protocol::ChatCmdChatInvite::Read(
   stream.Read(length);
 
   command.chatParticipantUids.resize(length);
-  stream.Read(command.chatParticipantUids.data(), length);
+  stream.Read(
+    command.chatParticipantUids.data(),
+    command.chatParticipantUids.size() * sizeof(uint32_t));
 }
 
 void server::protocol::ChatCmdChatInvitationTrs::Write(
