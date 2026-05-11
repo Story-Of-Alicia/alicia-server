@@ -16,14 +16,15 @@ namespace server
 class OtpSystem
 {
 public:
-  uint32_t GrantCode(size_t key);
-  bool AuthorizeCode(size_t key, uint32_t code, bool consume = true);
+  uint32_t GrantCode(size_t key, bool ltk = false);
+  bool AuthorizeCode(size_t key, uint32_t code);
 
 private:
   struct Code
   {
     std::chrono::steady_clock::time_point expiry{};
     uint32_t code{};
+    bool ltk{false};
   };
 
   std::mutex _codesMutex;

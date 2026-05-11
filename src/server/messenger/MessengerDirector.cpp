@@ -1709,7 +1709,7 @@ void MessengerDirector::HandleChatterChannelInfo(
   // Hash character uid with chat director's otp constant for a unique key
   size_t identityHash = std::hash<uint32_t>()(clientContext.characterUid);
   boost::hash_combine(identityHash, AllChatOtpConstant);
-  const uint32_t code = _serverInstance.GetOtpSystem().GrantCode(identityHash);
+  const uint32_t code = _serverInstance.GetOtpSystem().GrantCode(identityHash, true);
 
   // Send response for all chat
   protocol::ChatCmdChannelInfoAckOk response{
