@@ -1726,26 +1726,25 @@ void MessengerDirector::HandleChatterChannelInfo(
     .code = code};
   _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 
-  bool isInGuild{false};
+  data::Uid guildUid{data::InvalidUid};
   _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
-    [&isInGuild](const data::Character& character)
+    [&guildUid](const data::Character& character)
     {
-      isInGuild = character.guildUid() != 0;
+      guildUid = character.guildUid();
     });
 
   // If not in a guild, then we're done handling the command
-  if (not isInGuild)
+  if (guildUid == data::InvalidUid)
     return;
 
   // Not sending this internally disables the guild chat on the client,
   // even if the client says that guild chat is connected
 
-  // Send response for guild chat (which uses private chat type)
-  // TODO: this is broken, needs proper implementing
-  protocol::ChatCmdChannelInfoGuildRoomAckOk guildResponse{};
-  guildResponse.hostname = lobbyConfig.advertisement.privateChat.address.to_string();
-  guildResponse.port = lobbyConfig.advertisement.privateChat.port;
-  guildResponse.code = code; // This value seemingly has no effect
+  // Send response for guild chat (which uses private chat director)
+  const protocol::ChatCmdChannelInfoGuildRoomAckOk guildResponse{
+    .hostname = lobbyConfig.advertisement.privateChat.address.to_string(),
+    .port = lobbyConfig.advertisement.privateChat.port,
+    .guildUid = guildUid};
   _chatterServer.QueueCommand<decltype(guildResponse)>(clientId, [guildResponse](){ return guildResponse; });
 }
 

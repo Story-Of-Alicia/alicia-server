@@ -109,6 +109,13 @@ void AllChatDirector::HandleChatterEnterRoom(
 {
   auto& clientContext = GetClientContext(clientId, false);
 
+  spdlog::debug("[{}] (All Chat) ChatCmdEnterRoom: {} {} {} {}",
+    clientId,
+    command.code,
+    command.characterUid,
+    command.characterName,
+    command.guildUid);
+
   // Generate identity hash based on the character uid from the command and
   // the chat otp constant
   size_t identityHash = std::hash<uint32_t>()(command.characterUid);

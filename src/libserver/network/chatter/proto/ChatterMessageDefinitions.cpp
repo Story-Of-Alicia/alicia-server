@@ -1063,7 +1063,7 @@ void server::protocol::ChatCmdChannelInfoGuildRoomAckOk::Write(
 {
   stream.Write(command.hostname)
     .Write(command.port)
-    .Write(command.code);
+    .Write(command.guildUid);
 }
 
 void server::protocol::ChatCmdChannelInfoGuildRoomAckOk::Read(

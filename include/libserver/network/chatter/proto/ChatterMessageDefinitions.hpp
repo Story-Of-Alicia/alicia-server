@@ -1430,9 +1430,15 @@ struct ChatCmdUpdateGuildMemberStateTrs : ChatCmdUpdateStateTrs
     SourceStream& stream);
 };
 
-struct ChatCmdChannelInfoGuildRoomAckOk : ChatCmdChannelInfoAckOk
+struct ChatCmdChannelInfoGuildRoomAckOk
 {
   // Protocol mirror copy of `ChatCmdChannelInfoAckOk`
+
+  std::string hostname{};
+  uint16_t port{};
+  //! The UID of the guild.
+  //! This is necessary in order to trigger the enter room logic.
+  data::Uid guildUid{};
 
   static ChatterCommand GetCommand()
   {
