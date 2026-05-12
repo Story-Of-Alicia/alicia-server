@@ -249,6 +249,26 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     };
   }
 
+  _emblems.clear();
+  for (const auto& node : root["emblems"])
+  {
+    const auto id = node["id"].as<uint32_t>();
+    _emblems[id] = EmblemInfo{
+      .id = id,
+      .odds = node["odds"].as<uint32_t>(),
+    };
+  }
+
+  _emblemRatios.clear();
+  for (const auto& node : root["emblemRatios"])
+  {
+    const auto odds = node["odds"].as<uint32_t>();
+    _emblemRatios[odds] = EmblemRatio{
+      .odds = odds,
+      .ratio = node["ratio"].as<int32_t>(),
+    };
+  }
+
   _manesByColorAndShape.clear();
   _tailsByColorAndShape.clear();
 
@@ -507,6 +527,18 @@ const GradeInfo* HorseRegistry::GetGradeInfo(uint32_t grade) const
 {
   auto it = _grades.find(grade);
   return it != _grades.end() ? &it->second : nullptr;
+}
+
+const EmblemInfo* HorseRegistry::GetEmblemInfo(uint32_t id) const
+{
+  auto it = _emblems.find(id);
+  return it != _emblems.end() ? &it->second : nullptr;
+}
+
+const EmblemRatio* HorseRegistry::GetEmblemRatio(uint32_t odds) const
+{
+  auto it = _emblemRatios.find(odds);
+  return it != _emblemRatios.end() ? &it->second : nullptr;
 }
 
 } // namespace server

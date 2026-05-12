@@ -117,6 +117,18 @@ struct GradeInfo
   int32_t pregnantValue{0};
 };
 
+struct EmblemInfo
+{
+  uint32_t id{0};
+  uint32_t odds{0};
+};
+
+struct EmblemRatio
+{
+  uint32_t odds{0};
+  int32_t ratio{0};
+};
+
 struct Coat
 {
   enum class Tier
@@ -256,6 +268,14 @@ public:
   //! @returns Pointer to GradeInfo, or nullptr if not found.
   const GradeInfo* GetGradeInfo(uint32_t grade) const;
 
+  //! Gets emblem info by ID.
+  //! @returns Pointer to EmblemInfo, or nullptr if not found.
+  const EmblemInfo* GetEmblemInfo(uint32_t id) const;
+
+  //! Gets emblem ratio entry by odds key.
+  //! @returns Pointer to EmblemRatio, or nullptr if not found.
+  const EmblemRatio* GetEmblemRatio(uint32_t odds) const;
+
 private:
   std::random_device _randomDevice;
   mutable std::mt19937 _randomEngine;
@@ -283,6 +303,8 @@ private:
   std::unordered_map<uint32_t, GroupForce> _groupForces;
   LevelUpPoints _levelUpPoints;
   std::unordered_map<uint32_t, GradeInfo> _grades;
+  std::unordered_map<uint32_t, EmblemInfo> _emblems;
+  std::unordered_map<uint32_t, EmblemRatio> _emblemRatios;
 
   struct ManeTailColorGroup
   {
