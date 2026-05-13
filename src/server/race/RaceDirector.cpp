@@ -872,7 +872,7 @@ ClientId RaceDirector::GetClientIdByCharacterUid(data::Uid characterUid)
 }
 
 RaceDirector::ClientContext& RaceDirector::GetClientContextByCharacterUid(
-  data::Uid characterUid)
+  const data::Uid characterUid)
 {
   for (auto& clientContext : _clients | std::views::values)
   {
@@ -1448,64 +1448,69 @@ void RaceDirector::HandleLeaveRoom(ClientId clientId)
 
   if (wasMaster)
   {
-    // Try to find the next master.
-    auto nextMasterUid{data::InvalidUid};
+    std::vector<data::Uid> candidates;
 
-    // todo: improve this
-    // If the room is waiting, pick from room users.
+    // If the race room is waiting pick from room users,
+    // otherwise we have to pick a player from the race.
+    // This prevents the new leader from being able to start
+    // next race and cause confusion.
     if (raceInstance.stage == RaceInstance::Stage::Waiting)
     {
       _serverInstance.GetRoomSystem().GetRoom(
         clientContext.roomUid,
-        [&nextMasterUid](Room& room)
+        [&candidates](Room& room)
         {
-          for (const auto characterUid : room.GetPlayers() | std::views::keys)
-          {
-            // todo: assign mastership to the best player
-            nextMasterUid = characterUid;
-            break;
-          }
+          std::ranges::copy(
+            room.GetPlayers() | std::views::keys,
+            std::back_inserter(candidates));
         });
     }
     else
     {
-      for (const auto& characterUid : raceInstance.tracker.GetRacers() | std::views::keys)
-      {
-        nextMasterUid = characterUid;
-        break;
-      }
+      std::ranges::copy(
+         raceInstance.tracker.GetRacers() | std::views::keys,
+         std::back_inserter(candidates));
     }
 
-    if (nextMasterUid != data::InvalidUid)
+    // todo: sort by performance
+    for (const data::Uid candidate : candidates)
     {
-      raceInstance.masterUid = nextMasterUid;
-
-      const auto& newMasterClientContext = GetClientContextByCharacterUid(nextMasterUid);
-
-      std::string newMasterCharacterName;
-      _serverInstance.GetDataDirector().GetCharacter(nextMasterUid).Immutable(
-        [&newMasterCharacterName](const data::Character& character)
-        {
-          newMasterCharacterName = character.name();
-        });
-
-      spdlog::info("Player {} ({}) became the master of [Room {}] after the previous master left",
-        newMasterClientContext.userName,
-        newMasterCharacterName,
-        clientContext.roomUid);
-
-      // Notify other clients in the room about the new master.
-      protocol::AcCmdCRChangeMasterNotify notify{
-        .masterUid = raceInstance.masterUid};
-
-      for (const ClientId& raceClientId : raceInstance.clients)
+      try
       {
-        _commandServer.QueueCommand<decltype(notify)>(
-          raceClientId,
-          [notify]()
+        const auto& newMasterClientContext = GetClientContextByCharacterUid(
+          candidate);
+
+        raceInstance.masterUid = candidate;
+
+        std::string newMasterCharacterName;
+        _serverInstance.GetDataDirector().GetCharacter(candidate).Immutable(
+          [&newMasterCharacterName](const data::Character& character)
           {
-            return notify;
+            newMasterCharacterName = character.name();
           });
+
+        spdlog::info("Player {} ({}) became the master of [Room {}] after the previous master left",
+          newMasterClientContext.userName,
+          newMasterCharacterName,
+          clientContext.roomUid);
+
+        // Notify other clients in the room about the new master.
+        protocol::AcCmdCRChangeMasterNotify notify{
+          .masterUid = raceInstance.masterUid};
+
+        for (const ClientId& raceClientId : raceInstance.clients)
+        {
+          _commandServer.QueueCommand<decltype(notify)>(
+            raceClientId,
+            [notify]()
+            {
+              return notify;
+            });
+        }
+      }
+      catch (const std::exception&)
+      {
+        // The candidate client either disconnected or is not valid.
       }
     }
   }
