@@ -9644,6 +9644,142 @@ items:
       characterPartInfo:
         characterId: 10
         slot: 32
+    - tid: 10178
+      type: 0
+      level: 0
+      name: '얼굴 뿔테 안경 (여)'
+      description:
+        - "테스트 중인 액세서리"
+      isPurchasable: true
+      characterPartInfo:
+        characterId: 20
+        slot: 64
+    - tid: 10179
+      type: 0
+      level: 0
+      name: '얼굴 안대 (여)'
+      description:
+        - "테스트 중인 액세서리"
+      isPurchasable: true
+      characterPartInfo:
+        characterId: 20
+        slot: 64
+    - tid: 10180
+      type: 0
+      level: 10
+      name: '클로에 은테 안경'
+      description:
+        - "<font color=#c2afa3>세련되면서 학구적인 이미지를 연출할 수 있는 </font><font color=#ff7e00>은테 안경</font><font color=#c2afa3>이에요."
+        - ""
+        - "은으로 만든 얇은 테두리는 렌즈 전면을 감싸 안정감을 주며, 네모난 프레임은 둥근 얼굴을 </font><font color=#FFFFFF>지적이고 성실한 이미지</font><font color=#c2afa3>로 만들어줘요.</font>"
+      isPurchasable: true
+      characterPartInfo:
+        characterId: 20
+        slot: 64
+    - tid: 10181
+      type: 0
+      level: 0
+      name: '얼굴 붕대 (여)'
+      description:
+        - "테스트 중인 액세서리"
+      isPurchasable: true
+      characterPartInfo:
+        characterId: 20
+        slot: 64
+    - tid: 10182
+      type: 0
+      level: 0
+      name: '얼굴 해적 안대 (여)'
+      description:
+        - "테스트 중인 액세서리"
+      isPurchasable: true
+      characterPartInfo:
+        characterId: 20
+        slot: 64
+    - tid: 10183
+      type: 0
+      level: 0
+      name: '얼굴 십자 안대 (여)'
+      description:
+        - "테스트 중인 액세서리"
+      isPurchasable: true
+      characterPartInfo:
+        characterId: 20
+        slot: 64
+    - tid: 10184
+      type: 0
+      level: 0
+      name: '얼굴 라운드 안경 (여)'
+      description:
+        - "테스트 중인 액세서리"
+      isPurchasable: true
+      characterPartInfo:
+        characterId: 20
+        slot: 64
+    - tid: 10185
+      type: 0
+      level: 20
+      name: '클로에 빨강 뿔테 안경'
+      description:
+        - "<font color=#c2afa3>부드러우면서도 개성 있는 스타일을 원한다면 </font><font color=#ff7e00>빨강 뿔테 안경</font><font color=#c2afa3>을 추천해요."
+        - ""
+        - "빨강 뿔테는 개성 있고 강한 느낌을 주면서도 소재 특유의 따뜻함이 조화돼 </font><font color=#FFFFFF>순수하고 선한 이미지</font><font color=#c2afa3>를 연출해줘요.</font>"
+      isPurchasable: true
+      characterPartInfo:
+        characterId: 20
+        slot: 64
+    - tid: 10186
+      type: 0
+      level: 5
+      name: '클로에 토끼 마스크'
+      description:
+        - "<font color=#c2afa3>분홍색 토끼가 그려진 마스크에요"
+        - ""
+        - "인체공학적 디자인으로 얼굴형에 관계 없이 자연스럽게 밀착되며, 특수 소재를 사용해 모래나 먼지로부터 완벽히 보호해주죠.</font>"
+      isPurchasable: true
+      characterPartInfo:
+        characterId: 20
+        slot: 128
+    - tid: 10187
+      type: 0
+      level: 0
+      name: '얼굴 해적 마스크 (여)'
+      description:
+        - "테스트 중인 액세서리"
+      isPurchasable: true
+      characterPartInfo:
+        characterId: 20
+        slot: 128
+    - tid: 10188
+      type: 0
+      level: 0
+      name: '얼굴 신사 수염 (여)'
+      description:
+        - "테스트 중인 액세서리"
+      isPurchasable: true
+      characterPartInfo:
+        characterId: 20
+        slot: 128
+    - tid: 10189
+      type: 0
+      level: 0
+      name: '얼굴 로망 풀잎 (여)'
+      description:
+        - "테스트 중인 액세서리"
+      isPurchasable: true
+      characterPartInfo:
+        characterId: 20
+        slot: 128
+    - tid: 10190
+      type: 0
+      level: 0
+      name: '얼굴 로망 꽃잎 (여)'
+      description:
+        - "테스트 중인 액세서리"
+      isPurchasable: true
+      characterPartInfo:
+        characterId: 20
+        slot: 128
 packages:
   collection:
     - packageId: 1001
