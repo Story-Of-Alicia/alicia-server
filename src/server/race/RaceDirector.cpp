@@ -1800,7 +1800,7 @@ void RaceDirector::HandleStartRace(
   raceInstance.stage = RaceInstance::Stage::Loading;
   // Mark the start time of when race started loading
   raceInstance.loadingStartTimePoint = std::chrono::steady_clock::now();
-  raceInstance.stageTimeoutTimePoint = raceInstance.loadingStartTimePoint + std::chrono::seconds(30);
+  raceInstance.stageTimeoutTimePoint = raceInstance.loadingStartTimePoint + std::chrono::seconds(60);
 
   _serverInstance.GetRoomSystem().GetRoom(
     roomUid,
