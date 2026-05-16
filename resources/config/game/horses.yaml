@@ -1,0 +1,1089 @@
+horses:
+  figureScale:
+    min: 2
+    max: 10
+
+  # Color groups from MountColorGroupInfo. Color IDs from ManeTailColor: 1=Black 2=White 3=Brown 4=DarkBrown 5=Grey
+  colorGroups:
+    - id: 0
+      colorIds: [4, 2, 1]
+    - id: 1
+      colorIds: [5, 1, 2]
+    - id: 2
+      colorIds: [3, 4, 1]
+    - id: 3
+      colorIds: [4, 1, 1]
+
+  coats:
+    # 1 Star Coats
+    - tid: 1
+      name: 'Chestnut'
+      faceType: 0
+      minGrade: 1
+      tier: 1
+      inheritanceRate: 30.0
+      allowedColorGroups: 0
+    - tid: 2
+      name: 'Bay'
+      faceType: -1
+      minGrade: 1
+      tier: 1
+      inheritanceRate: 25.0
+      allowedColorGroups: 0
+    - tid: 3
+      name: 'Champagne Sabino'
+      faceType: 0
+      minGrade: 1
+      tier: 1
+      inheritanceRate: 30.0
+      allowedColorGroups: 1
+    - tid: 4
+      name: 'Chestnut Stockings'
+      faceType: 0
+      minGrade: 2
+      tier: 1
+      inheritanceRate: 21.0
+      allowedColorGroups: 0
+    - tid: 5
+      name: 'Buckskin'
+      faceType: -1
+      minGrade: 3
+      tier: 1
+      inheritanceRate: 23.0
+      allowedColorGroups: 1
+    - tid: 6
+      name: 'Champagne'
+      faceType: 0
+      minGrade: 3
+      tier: 1
+      inheritanceRate: 21.0
+      allowedColorGroups: 1
+    - tid: 7
+      name: 'Leopard Appaloosa'
+      faceType: 0
+      minGrade: 5
+      tier: 1
+      inheritanceRate: 21.0
+      allowedColorGroups: 3
+    # 2 Star Coats
+    - tid: 8
+      name: 'Blanket Appaloosa'
+      faceType: -1
+      minGrade: 6
+      tier: 2
+      inheritanceRate: 15.0
+      allowedColorGroups: 1
+    - tid: 10
+      name: 'Dapple Grey'
+      faceType: 0
+      minGrade: 6
+      tier: 2
+      inheritanceRate: 15.0
+      allowedColorGroups: 1
+    - tid: 11
+      name: 'Chestnut Pinto'
+      faceType: -1
+      minGrade: 6
+      tier: 2
+      inheritanceRate: 18.0
+      allowedColorGroups: 0
+    - tid: 12
+      name: 'Sooty Bay'
+      faceType: 0
+      minGrade: 6
+      tier: 2
+      inheritanceRate: 11.0
+      allowedColorGroups: 3
+    - tid: 13
+      name: 'Palomino'
+      faceType: 0
+      minGrade: 6
+      tier: 2
+      inheritanceRate: 15.0
+      allowedColorGroups: 2
+    - tid: 14
+      name: 'Black Pinto'
+      faceType: 0
+      minGrade: 7
+      tier: 2
+      inheritanceRate: 19.0
+      allowedColorGroups: 1
+    # 3 Star Coats
+    - tid: 9
+      name: 'White Grey'
+      faceType: 0
+      minGrade: 6
+      tier: 3
+      inheritanceRate: 7.0
+      allowedColorGroups: 1
+    - tid: 15
+      name: 'Black'
+      faceType: -1
+      minGrade: 7
+      tier: 3
+      inheritanceRate: 7.0
+      allowedColorGroups: 1
+    - tid: 16
+      name: 'Brown Sabino'
+      faceType: 0
+      minGrade: 6
+      tier: 3
+      inheritanceRate: 12.0
+      allowedColorGroups: 3
+    - tid: 17
+      name: 'Amber Cream'
+      faceType: 0
+      minGrade: 8
+      tier: 3
+      inheritanceRate: 10.0
+      allowedColorGroups: 0
+    - tid: 18
+      name: 'Mealy Bay'
+      faceType: 0
+      minGrade: 7
+      tier: 3
+      inheritanceRate: 10.0
+      allowedColorGroups: 2
+    - tid: 19
+      name: 'Black Sabino'
+      faceType: -1
+      minGrade: 8
+      tier: 3
+      inheritanceRate: 10.0
+      allowedColorGroups: 1
+    - tid: 20
+      name: 'Dapple Bay'
+      faceType: 0
+      minGrade: 10
+      tier: 3
+      inheritanceRate: 5.0
+      allowedColorGroups: 0
+
+  faces:
+    - tid: 1
+      type: -1
+    - tid: 2
+      type: -1
+    - tid: 3
+      type: -1
+    - tid: 5
+      type: -1
+    - tid: 7
+      type: -1
+
+  manes:
+    # Shape 1 (Medium short)
+    - tid: 1
+      color: 'White'
+      shape: 1
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 2
+      color: 'LightBrown'
+      shape: 1
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 3
+      color: 'Brown'
+      shape: 1
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 4
+      color: 'DarkBrown'
+      shape: 1
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 5
+      color: 'Grey'
+      shape: 1
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    # Shape 3 (Medium)
+    - tid: 6
+      color: 'White'
+      shape: 3
+      inheritanceRate: 20.0
+      minGrade: 6
+      tier: 1
+    - tid: 7
+      color: 'LightBrown'
+      shape: 3
+      inheritanceRate: 20.0
+      minGrade: 6
+      tier: 1
+    - tid: 8
+      color: 'Brown'
+      shape: 3
+      inheritanceRate: 20.0
+      minGrade: 6
+      tier: 1
+    - tid: 9
+      color: 'DarkBrown'
+      shape: 3
+      inheritanceRate: 20.0
+      minGrade: 6
+      tier: 1
+    - tid: 10
+      color: 'Grey'
+      shape: 3
+      inheritanceRate: 20.0
+      minGrade: 6
+      tier: 1
+    # Shape 4 (Shaved)
+    - tid: 11
+      color: 'White'
+      shape: 4
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 12
+      color: 'LightBrown'
+      shape: 4
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 13
+      color: 'Brown'
+      shape: 4
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 14
+      color: 'DarkBrown'
+      shape: 4
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 15
+      color: 'Grey'
+      shape: 4
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    # Shape 5 (Short)
+    - tid: 16
+      color: 'White'
+      shape: 5
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 17
+      color: 'LightBrown'
+      shape: 5
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 18
+      color: 'Brown'
+      shape: 5
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 19
+      color: 'DarkBrown'
+      shape: 5
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 20
+      color: 'Grey'
+      shape: 5
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    # Shape 6 (Extremely short)
+    - tid: 21
+      color: 'White'
+      shape: 6
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 22
+      color: 'LightBrown'
+      shape: 6
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 23
+      color: 'Brown'
+      shape: 6
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 24
+      color: 'DarkBrown'
+      shape: 6
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 25
+      color: 'Grey'
+      shape: 6
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    # Shape 7 (Spiky)
+    - tid: 26
+      color: 'White'
+      shape: 7
+      inheritanceRate: 30.0
+      minGrade: 4
+      tier: 2
+    - tid: 27
+      color: 'LightBrown'
+      shape: 7
+      inheritanceRate: 30.0
+      minGrade: 4
+      tier: 2
+    - tid: 28
+      color: 'Brown'
+      shape: 7
+      inheritanceRate: 30.0
+      minGrade: 4
+      tier: 2
+    - tid: 29
+      color: 'DarkBrown'
+      shape: 7
+      inheritanceRate: 30.0
+      minGrade: 4
+      tier: 2
+    - tid: 30
+      color: 'Grey'
+      shape: 7
+      inheritanceRate: 30.0
+      minGrade: 4
+      tier: 2
+    # Shape 2 (Long)
+    - tid: 31
+      color: 'White'
+      shape: 2
+      inheritanceRate: 15.0
+      minGrade: 6
+      tier: 2
+    - tid: 32
+      color: 'LightBrown'
+      shape: 2
+      inheritanceRate: 15.0
+      minGrade: 6
+      tier: 2
+    - tid: 33
+      color: 'Brown'
+      shape: 2
+      inheritanceRate: 15.0
+      minGrade: 6
+      tier: 2
+    - tid: 34
+      color: 'DarkBrown'
+      shape: 2
+      inheritanceRate: 15.0
+      minGrade: 6
+      tier: 2
+    - tid: 35
+      color: 'Grey'
+      shape: 2
+      inheritanceRate: 15.0
+      minGrade: 6
+      tier: 2
+    # Shape 8 (Curly)
+    - tid: 36
+      color: 'White'
+      shape: 8
+      inheritanceRate: 5.0
+      minGrade: 7
+      tier: 2
+    - tid: 37
+      color: 'LightBrown'
+      shape: 8
+      inheritanceRate: 5.0
+      minGrade: 7
+      tier: 2
+    - tid: 38
+      color: 'Brown'
+      shape: 8
+      inheritanceRate: 5.0
+      minGrade: 7
+      tier: 2
+    - tid: 39
+      color: 'DarkBrown'
+      shape: 8
+      inheritanceRate: 5.0
+      minGrade: 7
+      tier: 2
+    - tid: 40
+      color: 'Grey'
+      shape: 8
+      inheritanceRate: 5.0
+      minGrade: 7
+      tier: 2
+
+  tails:
+    # Shape 1 (Medium)
+    - tid: 1
+      color: 'White'
+      shape: 1
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 2
+      color: 'LightBrown'
+      shape: 1
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 3
+      color: 'Brown'
+      shape: 1
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 4
+      color: 'DarkBrown'
+      shape: 1
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 5
+      color: 'Grey'
+      shape: 1
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    # Shape 2 (Long Thick)
+    - tid: 6
+      color: 'White'
+      shape: 2
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 7
+      color: 'LightBrown'
+      shape: 2
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 8
+      color: 'Brown'
+      shape: 2
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 9
+      color: 'DarkBrown'
+      shape: 2
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 10
+      color: 'Grey'
+      shape: 2
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    # Shape 4 (Cropped)
+    - tid: 11
+      color: 'White'
+      shape: 4
+      inheritanceRate: 20.0
+      minGrade: 1
+      tier: 2
+    - tid: 12
+      color: 'LightBrown'
+      shape: 4
+      inheritanceRate: 20.0
+      minGrade: 1
+      tier: 2
+    - tid: 13
+      color: 'Brown'
+      shape: 4
+      inheritanceRate: 20.0
+      minGrade: 1
+      tier: 2
+    - tid: 14
+      color: 'DarkBrown'
+      shape: 4
+      inheritanceRate: 20.0
+      minGrade: 1
+      tier: 2
+    - tid: 15
+      color: 'Grey'
+      shape: 4
+      inheritanceRate: 20.0
+      minGrade: 1
+      tier: 2
+    # Shape 5 (Long Thin)
+    - tid: 16
+      color: 'White'
+      shape: 5
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 17
+      color: 'LightBrown'
+      shape: 5
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 18
+      color: 'Brown'
+      shape: 5
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 19
+      color: 'DarkBrown'
+      shape: 5
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 20
+      color: 'Grey'
+      shape: 5
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    # Shape 6 (Short Thin)
+    - tid: 21
+      color: 'White'
+      shape: 6
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 22
+      color: 'LightBrown'
+      shape: 6
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 23
+      color: 'Brown'
+      shape: 6
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 24
+      color: 'DarkBrown'
+      shape: 6
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    - tid: 25
+      color: 'Grey'
+      shape: 6
+      inheritanceRate: 30.0
+      minGrade: 1
+      tier: 1
+    # Shape 3 (Long Curly)
+    - tid: 26
+      color: 'White'
+      shape: 3
+      inheritanceRate: 30.0
+      minGrade: 7
+      tier: 1
+    - tid: 27
+      color: 'LightBrown'
+      shape: 3
+      inheritanceRate: 30.0
+      minGrade: 7
+      tier: 1
+    - tid: 28
+      color: 'Brown'
+      shape: 3
+      inheritanceRate: 30.0
+      minGrade: 7
+      tier: 1
+    - tid: 29
+      color: 'DarkBrown'
+      shape: 3
+      inheritanceRate: 30.0
+      minGrade: 7
+      tier: 1
+    - tid: 30
+      color: 'Grey'
+      shape: 3
+      inheritanceRate: 30.0
+      minGrade: 7
+      tier: 1
+
+  # Potential growth probability weights (Plus1-Plus10) from PotentialGrowthInfo
+  potentialGrowth:
+    - type: 1
+      weights: [100.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - type: 2
+      weights: [25.0, 25.0, 12.0, 7.0, 6.0, 5.0, 5.0, 5.0, 5.0, 5.0]
+    - type: 3
+      weights: [20.0, 15.0, 12.0, 11.0, 10.0, 9.0, 8.0, 5.0, 5.0, 5.0]
+    - type: 4
+      weights: [1.0, 1.0, 1.0, 3.0, 4.0, 5.0, 5.0, 10.0, 20.0, 50.0]
+    - type: 5
+      weights: [3.0, 5.0, 10.0, 14.0, 18.0, 18.0, 14.0, 10.0, 5.0, 3.0]
+    - type: 6
+      weights: [3.0, 3.0, 3.0, 11.0, 30.0, 30.0, 11.0, 3.0, 3.0, 3.0]
+    - type: 7
+      weights: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
+    - type: 8
+      weights: [30.0, 10.0, 5.0, 3.0, 2.0, 2.0, 3.0, 5.0, 10.0, 30.0]
+    - type: 9
+      weights: [50.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 50.0]
+    - type: 10
+      weights: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0]
+    - type: 11
+      weights: [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 73.0]
+    - type: 12
+      weights: [0.0, 0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 20.0, 2.0, 3.0]
+    - type: 13
+      weights: [2.0, 3.0, 5.0, 10.0, 10.0, 10.0, 20.0, 20.0, 10.0, 10.0]
+    - type: 14
+      weights: [10.0, 10.0, 10.0, 3.0, 3.0, 10.0, 20.0, 24.0, 5.0, 5.0]
+    - type: 15
+      weights: [5.0, 5.0, 10.0, 10.0, 10.0, 20.0, 20.0, 10.0, 5.0, 5.0]
+    - type: 16
+      weights: [5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 30.0, 30.0]
+    - type: 17
+      weights: [5.0, 5.0, 5.0, 5.0, 10.0, 10.0, 10.0, 10.0, 20.0, 20.0]
+    - type: 18
+      weights: [2.0, 2.0, 2.0, 2.0, 4.0, 4.0, 4.0, 20.0, 30.0, 30.0]
+    - type: 19
+      weights: [20.0, 0.0, 20.0, 0.0, 20.0, 0.0, 20.0, 0.0, 20.0, 0.0]
+    - type: 20
+      weights: [10.0, 20.0, 20.0, 20.0, 12.0, 2.0, 5.0, 4.0, 3.0, 4.0]
+    - type: 21
+      weights: [0.0, 5.0, 5.0, 5.0, 5.0, 20.0, 10.0, 20.0, 10.0, 20.0]
+    - type: 22
+      weights: [5.0, 5.0, 5.0, 20.0, 5.0, 5.0, 10.0, 5.0, 10.0, 30.0]
+    - type: 23
+      weights: [0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 10.0, 15.0, 15.0, 55.0]
+    - type: 24
+      weights: [20.0, 10.0, 25.0, 10.0, 5.0, 5.0, 5.0, 5.0, 15.0, 0.0]
+    - type: 25
+      weights: [10.0, 20.0, 20.0, 30.0, 1.0, 1.0, 3.0, 5.0, 5.0, 5.0]
+    - type: 26
+      weights: [10.0, 10.0, 20.0, 10.0, 20.0, 5.0, 7.0, 8.0, 7.0, 3.0]
+    - type: 27
+      weights: [5.0, 5.0, 30.0, 5.0, 40.0, 3.0, 3.0, 3.0, 3.0, 3.0]
+    - type: 28
+      weights: [5.0, 5.0, 5.0, 5.0, 0.0, 5.0, 20.0, 20.0, 30.0, 5.0]
+    - type: 29
+      weights: [0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.0, 30.0, 10.0, 30.0]
+    - type: 30
+      weights: [3.0, 3.0, 3.0, 5.0, 32.0, 10.0, 5.0, 4.0, 5.0, 30.0]
+
+  # Potential level exp thresholds from PotentialLevelInfo
+  potentialLevels:
+    - level: 1
+      exp: 0
+    - level: 2
+      exp: 24750
+    - level: 3
+      exp: 49500
+    - level: 4
+      exp: 74250
+    - level: 5
+      exp: 99000
+    - level: 6
+      exp: 123750
+    - level: 7
+      exp: 148500
+    - level: 8
+      exp: 173250
+    - level: 9
+      exp: 198000
+    - level: 10
+      exp: 222750
+    - level: 11
+      exp: 247500
+
+  # Potential types from MountPotentialInfo. Type 12 does not exist.
+  potentials:
+    - type: 1
+      name: 'Natural Talent'
+    - type: 2
+      name: 'Speed Addict'
+    - type: 3
+      name: 'Lucky Charm'
+    - type: 4
+      name: 'Iron Heart'
+    - type: 5
+      name: 'One Plus One'
+    - type: 6
+      name: 'Superior Reward'
+    - type: 7
+      name: 'Perfectionist'
+    - type: 8
+      name: 'Sniper'
+    - type: 9
+      name: 'Iron Wall'
+    - type: 10
+      name: 'Opportunity'
+    - type: 11
+      name: 'Fearless'
+    - type: 13
+      name: 'Superior Start'
+    - type: 14
+      name: 'Two Hearts'
+    - type: 15
+      name: 'Bulldozer'
+
+  # Mastery thresholds from MountMasteryParam and rewards from MountMasteryRewardInfo
+  mastery:
+    params:
+      spurMagicCount: 600
+      jumpCount: 1200
+      slidingTime: 900
+      glidingDistance: 8000
+    rewards:
+      - percent: 25
+        userExpAdd: 500
+        gameMoneyAdd: 0
+      - percent: 50
+        userExpAdd: 400
+        gameMoneyAdd: 0
+      - percent: 75
+        userExpAdd: 300
+        gameMoneyAdd: 0
+      - percent: 100
+        userExpAdd: 200
+        gameMoneyAdd: 500
+
+  # Ranch group force rules from MountGroupForceSelect
+  groupForces:
+    - id: 0
+      affectToAll: true
+      action: 0
+      conditions: []
+      effects: []
+    - id: 1
+      affectToAll: true
+      action: 1
+      conditions:
+        - tendency: 1
+          count: 2
+      effects:
+        - effect: 2
+          param: 'value * 0.8'
+    - id: 2
+      affectToAll: false
+      action: 1
+      conditions:
+        - tendency: 1
+          count: 5
+        - tendency: 5
+          count: 2
+      effects:
+        - effect: 2
+          param: 'value * 0.8'
+        - effect: 9
+          param: '10'
+    - id: 3
+      affectToAll: true
+      action: 4
+      conditions:
+        - tendency: 2
+          count: 3
+      effects:
+        - effect: 4
+          param: 'value * 1.1'
+    - id: 4
+      affectToAll: true
+      action: 2
+      conditions:
+        - tendency: 2
+          count: 4
+        - tendency: 4
+          count: 2
+      effects:
+        - effect: 6
+          param: 'value + 5'
+    - id: 5
+      affectToAll: true
+      action: 8
+      conditions:
+        - tendency: 2
+          count: 8
+      effects:
+        - effect: 8
+          param: '1'
+        - effect: 3
+          param: 'value * 1.2'
+    - id: 6
+      affectToAll: true
+      action: 3
+      conditions:
+        - tendency: 3
+          count: 2
+      effects:
+        - effect: 3
+          param: 'value - value * 0.2'
+    - id: 7
+      affectToAll: false
+      action: 5
+      conditions:
+        - tendency: 3
+          count: 5
+        - tendency: 5
+          count: 2
+      effects:
+        - effect: 3
+          param: 'value - value * 0.2'
+        - effect: 9
+          param: '0'
+    - id: 8
+      affectToAll: true
+      action: 1
+      conditions:
+        - tendency: 1
+          count: 4
+      effects:
+        - effect: 2
+          param: 'value * 0.8'
+        - effect: 1
+          param: 'value - value * 0.3'
+    - id: 9
+      affectToAll: true
+      action: 3
+      conditions:
+        - tendency: 3
+          count: 4
+      effects:
+        - effect: 5
+          param: 'value * 1.1'
+    - id: 10
+      affectToAll: false
+      action: 4
+      conditions:
+        - tendency: 4
+          count: 3
+      effects:
+        - effect: 10
+          param: 'value + 1'
+        - effect: 1
+          param: 'value * 1.3'
+    - id: 11
+      affectToAll: false
+      action: 6
+      conditions:
+        - tendency: 5
+          count: 3
+        - tendency: 3
+          count: 3
+      effects:
+        - effect: 11
+          param: 'value + (10 * 100)'
+    - id: 12
+      affectToAll: false
+      action: 6
+      conditions:
+        - tendency: 5
+          count: 3
+        - tendency: 1
+          count: 3
+      effects:
+        - effect: 12
+          param: '5'
+    - id: 13
+      affectToAll: false
+      action: 6
+      conditions:
+        - tendency: 5
+          count: 4
+        - tendency: 4
+          count: 4
+      effects:
+        - effect: 13
+          param: '10'
+    - id: 14
+      affectToAll: true
+      action: 0
+      conditions:
+        - tendency: 5
+          count: 2
+      effects:
+        - effect: 7
+          param: 'value * 1.2'
+
+  # Grade thresholds from MountGradeInfo. LevelUpExp values are identical across all grades.
+  levelUpPoints:
+    base: 6650
+    exp10: 13250
+    exp20: 16550
+
+  grades:
+    - grade: 1
+      minStatSum: 0
+      pregnantValue: 0
+    - grade: 2
+      minStatSum: 10
+      pregnantValue: 0
+    - grade: 3
+      minStatSum: 20
+      pregnantValue: 0
+    - grade: 4
+      minStatSum: 30
+      pregnantValue: 84
+    - grade: 5
+      minStatSum: 40
+      pregnantValue: 77
+    - grade: 6
+      minStatSum: 50
+      pregnantValue: 70
+    - grade: 7
+      minStatSum: 60
+      pregnantValue: 63
+    - grade: 8
+      minStatSum: 70
+      pregnantValue: 56
+    - grade: 9
+      minStatSum: 80
+      pregnantValue: 56
+    - grade: 10
+      minStatSum: 90
+      pregnantValue: 56
+    - grade: 11
+      minStatSum: 100
+      pregnantValue: 56
+    - grade: 12
+      minStatSum: 110
+      pregnantValue: 56
+    - grade: 13
+      minStatSum: 120
+      pregnantValue: 56
+    - grade: 14
+      minStatSum: 130
+      pregnantValue: 56
+    - grade: 15
+      minStatSum: 140
+      pregnantValue: 56
+    - grade: 16
+      minStatSum: 150
+      pregnantValue: 56
+    - grade: 17
+      minStatSum: 160
+      pregnantValue: 56
+    - grade: 18
+      minStatSum: 170
+      pregnantValue: 56
+    - grade: 19
+      minStatSum: 180
+      pregnantValue: 56
+    - grade: 20
+      minStatSum: 190
+      pregnantValue: 56
+    - grade: 21
+      minStatSum: 200
+      pregnantValue: 56
+    - grade: 22
+      minStatSum: 210
+      pregnantValue: 56
+    - grade: 23
+      minStatSum: 220
+      pregnantValue: 56
+    - grade: 24
+      minStatSum: 230
+      pregnantValue: 56
+
+  # Emblem definitions from EmblemInfo
+  emblems:
+    - id: 1
+      odds: 1
+    - id: 2
+      odds: 1
+    - id: 3
+      odds: 1
+    - id: 4
+      odds: 1
+    - id: 5
+      odds: 1
+    - id: 6
+      odds: 1
+    - id: 7
+      odds: 1
+    - id: 8
+      odds: 1
+    - id: 9
+      odds: 1
+    - id: 10
+      odds: 1
+    - id: 11
+      odds: 1
+    - id: 12
+      odds: 1
+    - id: 13
+      odds: 1
+    - id: 14
+      odds: 1
+    - id: 15
+      odds: 1
+    - id: 16
+      odds: 2
+    - id: 17
+      odds: 2
+    - id: 18
+      odds: 2
+    - id: 19
+      odds: 2
+    - id: 20
+      odds: 2
+    - id: 21
+      odds: 2
+    - id: 22
+      odds: 2
+    - id: 23
+      odds: 2
+    - id: 24
+      odds: 2
+    - id: 25
+      odds: 2
+    - id: 26
+      odds: 3
+    - id: 27
+      odds: 3
+    - id: 28
+      odds: 3
+    - id: 29
+      odds: 3
+    - id: 30
+      odds: 3
+    - id: 31
+      odds: 3
+    - id: 32
+      odds: 3
+    - id: 33
+      odds: 3
+    - id: 34
+      odds: 3
+    - id: 35
+      odds: 3
+
+  # Emblem odds ratios from EmblemRatioInfo
+  emblemRatios:
+    - odds: 1
+      ratio: 77
+    - odds: 2
+      ratio: 13
+    - odds: 3
+      ratio: 2
+
+  # Tendency spawn/breeding weights from MountTendencyRatioInfo
+  tendencies:
+    - tendency: 1
+      buyRatio: 35
+      breedingRatio: 35
+    - tendency: 2
+      buyRatio: 35
+      breedingRatio: 30
+    - tendency: 3
+      buyRatio: 20
+      breedingRatio: 20
+    - tendency: 4
+      buyRatio: 10
+      breedingRatio: 10
+    - tendency: 5
+      buyRatio: 0
+      breedingRatio: 5
+    - tendency: 6
+      buyRatio: 0
+      breedingRatio: 0

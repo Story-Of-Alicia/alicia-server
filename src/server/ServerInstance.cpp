@@ -52,6 +52,8 @@ ServerInstance::ServerInstance(
   , _itemSystem(*this)
   , _matchmakingSystem(*this)
   , _telemetry(*this)
+  , _breedingMarket(*this)
+  , _genetics(*this)
 {
 }
 
@@ -86,8 +88,10 @@ void ServerInstance::Initialize()
 
   // Read configurations
 
+  _breedingRegistry.ReadConfig(_resourceDirectory / "config/game/breeding.yaml");
   _characterRegistry.ReadConfig(_resourceDirectory / "config/game/character.yaml");
   _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
+  _horseRegistry.ReadConfig(_resourceDirectory / "config/game/horses.yaml");
   _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items.yaml");
   _magicRegistry.ReadConfig(_resourceDirectory / "config/game/magic.yaml");
   _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
@@ -280,6 +284,7 @@ void ServerInstance::Initialize()
 void ServerInstance::Terminate()
 {
   _shouldRun.store(false, std::memory_order::relaxed);
+  _breedingMarket.Terminate();
 }
 
 AuthenticationService& ServerInstance::GetAuthenticationService()
@@ -357,6 +362,11 @@ registry::SystemContentRegistry& ServerInstance::GetSystemContentRegistry()
   return _systemContentRegistry;
 }
 
+registry::BreedingRegistry& ServerInstance::GetBreedingRegistry()
+{
+  return _breedingRegistry;
+}
+
 ChatSystem& ServerInstance::GetChatSystem()
 {
   return _chatSystem;
@@ -395,6 +405,16 @@ Telemetry& ServerInstance::GetTelemetry()
 OtpSystem& ServerInstance::GetOtpSystem()
 {
   return _otpSystem;
+}
+
+Genetics& ServerInstance::GetGenetics()
+{
+  return _genetics;
+}
+
+BreedingMarket& ServerInstance::GetBreedingMarket()
+{
+  return _breedingMarket;
 }
 
 Config& ServerInstance::GetSettings()

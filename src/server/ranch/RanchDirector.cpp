@@ -18,6 +18,7 @@
  **/
 
 #include "server/ranch/RanchDirector.hpp"
+
 #include "server/ServerInstance.hpp"
 #include "server/system/ItemSystem.hpp"
 
@@ -47,11 +48,43 @@ constexpr uint16_t MaxFriendliness = 1000;
 constexpr uint16_t MaxAttachment = 1000;
 constexpr uint16_t MaxPlenitude = 1200;
 
+BreedingMarket::SnapshotOrder ConvertProtocolStallionOrderToSnapshotOrder(
+  const protocol::AcCmdCRSearchStallion::StallionOrder order)
+{
+  switch (order)
+  {
+    case protocol::AcCmdCRSearchStallion::StallionOrder::LineageDescending:
+      return BreedingMarket::SnapshotOrder::LineageDescending;
+    case protocol::AcCmdCRSearchStallion::StallionOrder::TimeLeftDescending:
+      return BreedingMarket::SnapshotOrder::TimeLeftDescending;
+    case protocol::AcCmdCRSearchStallion::StallionOrder::FeeDescending:
+      return BreedingMarket::SnapshotOrder::FeeDescending;
+    case protocol::AcCmdCRSearchStallion::StallionOrder::PregnancyChanceAscending:
+      return BreedingMarket::SnapshotOrder::PregnancyChanceAscending;
+    case protocol::AcCmdCRSearchStallion::StallionOrder::PregnancyChanceDescending:
+      return BreedingMarket::SnapshotOrder::PregnancyChanceDescending;
+    case protocol::AcCmdCRSearchStallion::StallionOrder::FeeAscending:
+      return BreedingMarket::SnapshotOrder::FeeAscending;
+    case protocol::AcCmdCRSearchStallion::StallionOrder::TimeLeftAscending:
+      return BreedingMarket::SnapshotOrder::TimeLeftAscending;
+    case protocol::AcCmdCRSearchStallion::StallionOrder::LineageAscending:
+      return BreedingMarket::SnapshotOrder::LineageAscending;
+    default:
+      // todo: what should the default be?
+      return BreedingMarket::SnapshotOrder::TimeLeftDescending;
+  }
+}
+
 } // namespace anon
 
 RanchDirector::RanchDirector(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
   , _commandServer(*this)
+  , _breedingMarket(serverInstance)
+  , _mountFamilyTreeDeferrer([this](const network::ClientId clientId, const protocol::AcCmdCRMountFamilyTree& command)
+  {
+    HandleMountFamilyTree(clientId, command);
+  })
 {
   _commandServer.RegisterCommandHandler<protocol::AcCmdCREnterRanch>(
     [this](ClientId clientId, const auto& message)
@@ -107,6 +140,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       HandleUnregisterStallionEstimateInfo(clientId, command);
     });
 
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRCheckStallionCharge>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleCheckStallionCharge(clientId, command);
+    });
+
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRStatusPointApply>(
     [this](ClientId clientId, auto& command)
     {
@@ -131,6 +170,18 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, auto& command)
     {
       HandleBreedingWishlist(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRBreedingFailureCard>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleBreedingFailureCard(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRBreedingFailureCardChoose>(
+    [this](ClientId clientId, auto& command)
+    {
+      HandleBreedingFailureCardChoose(clientId, command);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRRanchCmdAction>(
@@ -305,10 +356,11 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
       HandleRequestLeagueTeamList(clientId, command);
     });
 
-  _commandServer.RegisterCommandHandler<protocol::RanchCommandMountFamilyTree>(
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRMountFamilyTree>(
     [this](ClientId clientId, auto& command)
     {
-      HandleMountFamilyTree(clientId, command);
+      if (HandleMountFamilyTree(clientId, command))
+        _mountFamilyTreeDeferrer.Defer(clientId, command);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRRecoverMount>(
@@ -466,6 +518,8 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
 
 void RanchDirector::Initialize()
 {
+  _breedingMarket.Initialize();
+
   spdlog::debug(
     "Ranch server listening on {}:{}",
     GetConfig().listen.address.to_string(),
@@ -476,11 +530,13 @@ void RanchDirector::Initialize()
 
 void RanchDirector::Terminate()
 {
+  _breedingMarket.Terminate();
   _commandServer.EndHost();
 }
 
 void RanchDirector::Tick()
 {
+  _breedingMarket.Tick();
 }
 
 std::vector<data::Uid> RanchDirector::GetOnlineCharacters()
@@ -495,6 +551,18 @@ std::vector<data::Uid> RanchDirector::GetOnlineCharacters()
   }
 
   return onlineCharacterUids;
+}
+
+void RanchDirector::HandleNetworkTick()
+{
+  try
+  {
+    _mountFamilyTreeDeferrer.Tick();
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception in a network tick of ranch director: {}", x.what());
+  }
 }
 
 void RanchDirector::HandleClientConnected(ClientId clientId)
@@ -638,7 +706,7 @@ void RanchDirector::SendStorageNotification(
 }
 
 void RanchDirector::BroadcastChangeAgeNotify(
-  data::Uid characterUid,
+  const data::Uid characterUid,
   const data::Uid rancherUid,
   protocol::AcCmdCRChangeAge::Age age
 )
@@ -666,7 +734,7 @@ void RanchDirector::BroadcastChangeAgeNotify(
 }
 
 void RanchDirector::BroadcastHideAgeNotify(
-  data::Uid characterUid,
+  const data::Uid characterUid,
   const data::Uid rancherUid,
   protocol::AcCmdCRHideAge::Option option
 )
@@ -1237,7 +1305,6 @@ void RanchDirector::HandleRanchLeave(ClientId clientId)
   }
 }
 
-
 void RanchDirector::HandleChat(
   ClientId clientId,
   const protocol::AcCmdCRRanchChat& chat)
@@ -1383,11 +1450,11 @@ void RanchDirector::HandleSnapshot(
 }
 
 void RanchDirector::HandleEnterBreedingMarket(
-  ClientId clientId,
+  const ClientId clientId,
   const protocol::AcCmdCREnterBreedingMarket&)
 {
   const auto& clientContext = GetClientContext(clientId);
-  auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
   protocol::RanchCommandEnterBreedingMarketOK response;
@@ -1395,19 +1462,27 @@ void RanchDirector::HandleEnterBreedingMarket(
   characterRecord.Immutable(
     [this, &response](const data::Character& character)
     {
+      // Include all horses in the response
+      auto horses = character.horses();
+      horses.emplace_back(character.mountUid());
+
       const auto horseRecords = GetServerInstance().GetDataDirector().GetHorseCache().Get(
-        character.horses());
+        horses);
 
       for (const auto& horseRecord : *horseRecords)
       {
         auto& protocolHorse = response.stallions.emplace_back();
 
-        horseRecord.Immutable([&protocolHorse](const data::Horse& horse)
+        // Get the horse data (EnterBreedingMarket has simpler struct)
+        horseRecord.Immutable([&protocolHorse, this](const data::Horse& horse)
         {
           protocolHorse.uid = horse.uid();
           protocolHorse.tid = horse.tid();
-
-          // todo figure out the rest
+          protocolHorse.breedingCombo = static_cast<uint8_t>(
+            horse.breedingCombo());
+          protocolHorse.isRegistered = _breedingMarket.IsRegistered(horse.uid());
+          protocolHorse.lineage = static_cast<uint8_t>(
+            horse.lineage());
         });
       }
     });
@@ -1420,38 +1495,90 @@ void RanchDirector::HandleEnterBreedingMarket(
     });
 }
 
-static std::vector<data::Uid> g_stallions;
-
 void RanchDirector::HandleSearchStallion(
-  ClientId clientId,
-  const protocol::AcCmdCRSearchStallion&)
+  const ClientId clientId,
+  const protocol::AcCmdCRSearchStallion& command)
 {
-  protocol::RanchCommandSearchStallionOK response{
-    .unk0 = 0,
-    .unk1 = 0};
+  const auto& clientContext = GetClientContext(clientId);
+  clientContext;
 
-  for (const data::Uid& stallionUid : g_stallions)
+  BreedingMarket::SnapshotFilter snapshotFilter{};
+
+  for (const auto coatUid : command.filterCoats)
   {
-    const auto stallionRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
-      stallionUid);
+    // todo: verify coat
+    snapshotFilter.coats.insert(coatUid);
+  }
 
-    auto& protocolStallion = response.stallions.emplace_back();
-    stallionRecord->Immutable([&protocolStallion](const data::Horse& stallion)
+  for (const auto maneUid : command.filterManes)
+  {
+    // todo: verify mane
+    snapshotFilter.manes.insert(maneUid);
+  }
+
+  for (const auto tailUid : command.filterTails)
+  {
+    // todo: verify mane
+    snapshotFilter.tails.insert(tailUid);
+  }
+
+  const auto snapshotOrder = ConvertProtocolStallionOrderToSnapshotOrder(
+    command.order);
+
+  // todo: cache this
+  const auto result = _breedingMarket.CollectMarketSnapshot(
+    snapshotOrder,
+    snapshotFilter);
+
+  constexpr size_t StallionsPerPage = 10;
+  const auto pages = std::views::chunk(result.registrations, StallionsPerPage);
+
+  // Client sends page number, convert that to an index and sanitize it within page bounds.
+  const size_t pageIndex = std::max(size_t{0}, std::min(pages.size(), size_t{command.page - 1}));
+
+  protocol::RanchCommandSearchStallionOK response{
+    .page = static_cast<uint32_t>(pageIndex + 1),
+    .pageCount = static_cast<uint32_t>(pages.size())};
+
+  if (not pages.empty())
+  {
+    const auto& page = pages[pageIndex];
+    for (const auto& registration : page)
     {
-      protocolStallion.member1 = "unknown";
-      protocolStallion.uid = stallion.uid();
-      protocolStallion.tid = stallion.tid();
+      const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(
+        registration.horseUid);
+      const auto stallionRecord = _serverInstance.GetDataDirector().GetStallion(
+        registration.stallionUid);
 
-      protocolStallion.name = stallion.name();
-      protocolStallion.grade = static_cast<uint8_t>(stallion.grade());
+      if (not horseRecord || not stallionRecord)
+        continue;
 
-      protocolStallion.expiresAt = util::TimePointToAliciaTime(
-        util::Clock::now() + std::chrono::hours(1));
+      auto& protocolStallion = response.stallions.emplace_back();
 
-      protocol::BuildProtocolHorseStats(protocolStallion.stats, stallion.stats);
-      protocol::BuildProtocolHorseParts(protocolStallion.parts, stallion.parts);
-      protocol::BuildProtocolHorseAppearance(protocolStallion.appearance, stallion.appearance);
-    });
+      horseRecord.Immutable([&protocolStallion](const data::Horse& horse)
+      {
+        protocolStallion.owner = "dev";
+        protocolStallion.uid = horse.uid();
+        protocolStallion.tid = horse.tid();
+        protocolStallion.name = horse.name();
+        protocolStallion.grade = static_cast<uint8_t>(horse.grade());
+
+        protocol::BuildProtocolHorseParts(protocolStallion.parts, horse.parts);
+        protocol::BuildProtocolHorseAppearance(protocolStallion.appearance, horse.appearance);
+
+        protocolStallion.pregnancyChance = 1;
+        protocolStallion.heritability = 0;
+        // todo: figure out unk11
+        protocolStallion.unk11 = 0;
+        protocolStallion.lineage = static_cast<uint8_t>(horse.lineage());
+      });
+
+      stallionRecord.Immutable([&protocolStallion](const data::Stallion& stallion)
+      {
+        protocolStallion.breedFee = stallion.breedingCharge();
+        protocolStallion.expiresAt = stallion.expiresAt();
+      });
+    }
   }
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -1463,48 +1590,150 @@ void RanchDirector::HandleSearchStallion(
 }
 
 void RanchDirector::HandleRegisterStallion(
-  ClientId clientId,
+  const ClientId clientId,
   const protocol::AcCmdCRRegisterStallion& command)
 {
-  g_stallions.emplace_back(command.horseUid);
+  const auto& clientContext = GetClientContext(clientId);
+
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+      clientContext.characterUid);
+
+  const bool isStallionRegistered = _breedingMarket.HandleRegisterStallion(
+    clientContext.characterUid,
+    command.horseUid,
+    command.breedingFee);
+
+  [[unlikely]] if (not isStallionRegistered)
+  {
+    SendRegisterStallionCancel(clientId);
+    return;
+  }
+
+  // Get the current carrot balance of the character.
+  int32_t carrotBalance{};
+  characterRecord.Immutable([&carrotBalance](const data::Character& character)
+  {
+    carrotBalance = character.carrots();
+  });
 
   protocol::AcCmdCRRegisterStallionOK response{
-    .horseUid = command.horseUid};
+    .carrotBalance = carrotBalance};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
     {
       return response;
+    });
+}
+
+void RanchDirector::SendRegisterStallionCancel(const ClientId clientId)
+{
+  _commandServer.QueueCommand<protocol::RanchCommandRegisterStallionCancel>(
+    clientId,
+    []()
+    {
+      return protocol::RanchCommandRegisterStallionCancel{};
     });
 }
 
 void RanchDirector::HandleUnregisterStallion(
-  ClientId clientId,
+  const ClientId clientId,
   const protocol::AcCmdCRUnregisterStallion& command)
 {
-  g_stallions.erase(std::ranges::find(g_stallions, command.horseUid));
+  const auto& clientContext = GetClientContext(clientId);
+
+  const bool isStallionUnregistered = _breedingMarket.HandleUnregisterStallion(
+    clientContext.characterUid,
+    command.horseUid);
+
+  [[unlikely]] if (not isStallionUnregistered)
+  {
+    SendUnregisterStallionCancel(clientId);
+    return;
+  }
 
   protocol::AcCmdCRUnregisterStallionOK response{};
+  _commandServer.QueueCommand<decltype(response)>(clientId, [response]()
+  {
+    return response;
+  });
+}
 
-  _commandServer.QueueCommand<decltype(response)>(
+void RanchDirector::SendUnregisterStallionCancel(const ClientId clientId)
+{
+  _commandServer.QueueCommand<protocol::AcCmdCRUnregisterStallionCancel>(
     clientId,
-    [response]()
+    []()
     {
-      return response;
+      return protocol::AcCmdCRUnregisterStallionCancel{};
     });
 }
 
 void RanchDirector::HandleUnregisterStallionEstimateInfo(
-  ClientId clientId,
-  const protocol::AcCmdCRUnregisterStallionEstimateInfo&)
+  const ClientId clientId,
+  const protocol::AcCmdCRUnregisterStallionEstimateInfo& command)
 {
+  const auto estimate = _breedingMarket.CalculateUnregisterEarnings(
+    command.horseUid);
+  
+  [[unlikely]] if (not estimate)
+  {
+    _commandServer.QueueCommand<protocol::AcCmdCRUnregisterStallionEstimateInfoCancel>(
+      clientId,
+      [] { return protocol::AcCmdCRUnregisterStallionEstimateInfoCancel{}; });
+    return;
+  }
+
+  // todo: Figure out member1 and member4 of AcCmdCRUnregisterStallionEstimateInfoOK
   protocol::AcCmdCRUnregisterStallionEstimateInfoOK response{
-    .member1 = 0xFFFF'FFFF,
-    .timesMated = 0,
-    .matingCompensation = 0,
-    .member4 = 0xFFFF'FFFF,
-    .matingPrice = 0};
+    .timesMated = estimate->timesMated,
+    .earnings = estimate->earnings,
+    .breedingFee = estimate->breedingFee};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]() { return response; });
+}
+
+void RanchDirector::HandleCheckStallionCharge(
+  const ClientId clientId,
+  const protocol::AcCmdCRCheckStallionCharge& command)
+{
+  const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
+    command.horseUid);
+
+  if (not horseRecord)
+    return;
+
+  uint32_t horseGrade = 0;
+  uint32_t horseBreeds = 0;
+  horseRecord->Immutable([&horseGrade, &horseBreeds](const data::Horse& horse)
+  {
+    horseGrade = horse.grade();
+    horseBreeds = horse.breedingCount();
+  });
+
+  const auto gradeFeeRange = _breedingMarket.GetGradeFeeRange(horseGrade);
+
+  [[unlikely]] if (not gradeFeeRange)
+  {
+    protocol::AcCmdCRCheckStallionChargeOK response{
+      .hasFailed = true};
+
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response] { return response; });
+    return;
+  }
+
+  // Validate and return breeding charge information
+  protocol::AcCmdCRCheckStallionChargeOK response{
+    .hasFailed = false,
+    .minFee = gradeFeeRange->min,
+    .maxFee = gradeFeeRange->max,
+    .breedCount = horseBreeds,
+    .member5 = 0};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -1515,33 +1744,23 @@ void RanchDirector::HandleUnregisterStallionEstimateInfo(
 }
 
 void RanchDirector::HandleTryBreeding(
-  ClientId clientId,
-  const protocol::AcCmdCRTryBreeding& command)
+  const ClientId,
+  const protocol::AcCmdCRTryBreeding&)
 {
-  protocol::RanchCommandTryBreedingOK response{
-    .uid = command.mareUid,
-    .tid = command.stallionUid,
-    .val = 0,
-    .count = 0,
-    .unk0 = 0,
-    .parts = {
-      .skinId = 1,
-      .maneId = 4,
-      .tailId = 4,
-      .faceId = 5},
-    .appearance = {.scale = 4, .legLength = 4, .legVolume = 5, .bodyLength = 3, .bodyVolume = 4},
-    .stats = {.agility = 9, .ambition = 9, .rush = 9, .endurance = 9, .courage = 9},
-    .unk1 = 0,
-    .unk2 = 0,
-    .unk3 = 0,
-    .unk4 = 0,
-    .unk5 = 0,
-    .unk6 = 0,
-    .unk7 = 0,
-    .unk8 = 0,
-    .unk9 = 0,
-    .unk10 = 0,
-  };
+
+}
+
+void RanchDirector::HandleBreedingAbandon(
+  const ClientId,
+  const protocol::AcCmdCRBreedingAbandon&)
+{
+}
+
+void RanchDirector::HandleBreedingWishlist(
+  const ClientId clientId,
+  const protocol::AcCmdCRBreedingWishlist&)
+{
+  protocol::AcCmdCRBreedingWishlistOK response{};
 
   // TODO: Actually do something
   _commandServer.QueueCommand<decltype(response)>(
@@ -1552,19 +1771,156 @@ void RanchDirector::HandleTryBreeding(
     });
 }
 
-void RanchDirector::HandleBreedingAbandon(
-  ClientId,
-  const protocol::AcCmdCRBreedingAbandon&)
+void RanchDirector::HandleBreedingFailureCard(
+  const ClientId clientId,
+  const protocol::AcCmdCRBreedingFailureCard& command)
 {
+  const auto& clientContext = GetClientContext(clientId);
+
+  // Only show the card if there's a pending failure card from breeding
+  [[unlikely]] if (not clientContext.hasPendingFailureCard)
+    return;
+
+  spdlog::info("AcCmdCRBreedingFailureCard: {}", command.statusOrFlag);
+
+  protocol::AcCmdCRBreedingFailureCardOK response{
+    .cardType = clientContext.pendingCardType};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]
+    {
+      return response;
+    });
 }
 
-void RanchDirector::HandleBreedingWishlist(
-  ClientId clientId,
-  const protocol::AcCmdCRBreedingWishlist&)
+void RanchDirector::HandleBreedingFailureCardChoose(
+  const ClientId clientId,
+  const protocol::AcCmdCRBreedingFailureCardChoose& command)
 {
-  protocol::AcCmdCRBreedingWishlistOK response{};
+  spdlog::info("BreedingFailureCardChoose: statusOrFlag = {}", command.statusOrFlag);
 
-  // TODO: Actually do something
+  auto& clientContext = GetClientContext(clientId);
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  protocol::AcCmdCRBreedingFailureCardChooseOK response;
+
+  // Get player's total breeding money spent for reward grade calculation
+  uint32_t moneySpent = 0;
+  characterRecord.Immutable([&moneySpent](const data::Character& character)
+  {
+    moneySpent = character.breedingMoneySpent();
+  });
+
+  const auto& probEntry = GetServerInstance().GetBreedingRegistry().GetFailureCardProb(moneySpent);
+
+  std::uniform_int_distribution<int> gradeDist(1, 100);
+  int gradeRoll = gradeDist(_randomDevice);
+
+  int rewardGrade = 0;
+  if (gradeRoll <= probEntry.probA) {
+    rewardGrade = 0;
+  } else if (gradeRoll <= probEntry.probA + probEntry.probB) {
+    rewardGrade = 1;
+  } else {
+    rewardGrade = 2;
+  }
+
+  // Use the card type that was already determined in HandleBreedingFailureCard
+  const bool isChanceCard = clientContext.pendingCardType == protocol::BreedingFailureCardType::Yellow;
+
+  auto& breedingRegistry = GetServerInstance().GetBreedingRegistry();
+
+  uint32_t rewardId = 0;
+  const registry::FailureCardReward* rewardData = nullptr;
+
+  if (isChanceCard) {
+    const auto* gradeRange = breedingRegistry.GetChanceCardGradeRange(rewardGrade);
+    if (gradeRange)
+    {
+      std::uniform_int_distribution<uint32_t> chanceDist(gradeRange->minId, gradeRange->maxId);
+      rewardId = chanceDist(_randomDevice);
+      rewardData = breedingRegistry.GetChanceCardReward(rewardId);
+    }
+  } else {
+    const auto* gradeRange = breedingRegistry.GetNormalCardGradeRange(rewardGrade);
+    if (gradeRange)
+    {
+      std::uniform_int_distribution<uint32_t> normalDist(gradeRange->minId, gradeRange->maxId);
+      rewardId = normalDist(_randomDevice);
+      rewardData = breedingRegistry.GetNormalCardReward(rewardId);
+    }
+  }
+
+  static const registry::FailureCardReward fallbackReward = {45001, 1, 120};
+  if (!rewardData) {
+    rewardData = &fallbackReward;
+  }
+
+  data::Uid itemUid = 0;
+  bool foundExistingItem = false;
+
+  characterRecord.Immutable([&itemUid, &foundExistingItem, rewardData, this](const data::Character& character) {
+    for (const auto& existingItemUid : character.inventory()) {
+      const auto existingItemRecord = GetServerInstance().GetDataDirector().GetItem(existingItemUid);
+      if (existingItemRecord) {
+        existingItemRecord.Immutable([&itemUid, &foundExistingItem, rewardData](const data::Item& existingItem) {
+          if (existingItem.tid() == rewardData->itemTid) {
+            itemUid = existingItem.uid();
+            foundExistingItem = true;
+          }
+        });
+        if (foundExistingItem) break;
+      }
+    }
+  });
+
+  if (foundExistingItem) {
+    const auto existingItemRecord = GetServerInstance().GetDataDirector().GetItem(itemUid);
+    existingItemRecord.Mutable([rewardData, &response](data::Item& item) {
+      item.count() += rewardData->itemCount;
+      response.item.uid = item.uid();
+      response.item.tid = item.tid();
+      response.item.expiresAt = 0;
+      response.item.count = item.count();
+    });
+  } else {
+    const auto newItem = GetServerInstance().GetDataDirector().CreateItem();
+    newItem.Mutable([&itemUid, rewardData, &response](data::Item& item) {
+      item.tid() = rewardData->itemTid;
+      item.count() = rewardData->itemCount;
+      itemUid = item.uid();
+      response.item.uid = item.uid();
+      response.item.tid = item.tid();
+      response.item.expiresAt = 0;
+      response.item.count = item.count();
+    });
+    characterRecord.Mutable([itemUid](data::Character& character) {
+      character.inventory().emplace_back(itemUid);
+    });
+  }
+
+  characterRecord.Mutable([rewardData](data::Character& character) {
+    character.carrots() += rewardData->gameMoney;
+  });
+
+  response.member1 = 0;
+  response.rewardId = rewardId;
+  response.member3 = 0;
+  response.member4 = {1, 0};
+  response.member5 = 0;
+  response.member6 = rewardData->gameMoney;
+
+  spdlog::info("BreedingFailureCard: {} CARD (Grade {})! MoneySpent: {}, GradeRoll: {}, RewardId {}, gave {} carrots + item {} x{}",
+    isChanceCard ? "CHANCE (YELLOW)" : "NORMAL (RED)",
+    rewardGrade, moneySpent, gradeRoll, rewardId,
+    rewardData->gameMoney, rewardData->itemTid, rewardData->itemCount);
+
+  // Clear the pending card flag after claiming
+  auto& ctx = GetClientContext(clientId);
+  ctx.hasPendingFailureCard = false;
+
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
@@ -1770,7 +2126,7 @@ void RanchDirector::HandleUpdateMountNickname(
     {
       return response;
     });
-  
+
   for (const ClientId& ranchClientId : _ranches[clientContext.visitingRancherUid].clients)
   {
     // Prevent broadcast to self.
@@ -2090,7 +2446,7 @@ void RanchDirector::HandleWearEquipment(
         {
           // Only compare mount parts if the existing equipment template
           if (equipmentTemplate.has_value() 
-          && equipmentTemplate->mountPartInfo.has_value())
+            && equipmentTemplate->mountPartInfo.has_value())
           {
             if (static_cast<uint32_t>(equipmentTemplate->mountPartInfo->slot)
               & static_cast<uint32_t>(equippedItemTemplate->mountPartInfo->slot))
@@ -2203,7 +2559,7 @@ void RanchDirector::HandleRemoveEquipment(
 }
 
 void RanchDirector::HandleCreateGuild(
-  ClientId clientId,
+  const ClientId clientId,
   const protocol::RanchCommandCreateGuild& command)
 {
   const auto& clientContext = GetClientContext(clientId);
@@ -2305,7 +2661,7 @@ void RanchDirector::HandleCreateGuild(
     guild.members().emplace_back(characterUid);
   });
 
-  characterRecord.Mutable([&response, GuildCost](data::Character& character)
+  characterRecord.Mutable([&response](data::Character& character)
   {
     character.carrots() -= GuildCost;
     response.updatedCarrots = character.carrots();
@@ -2329,7 +2685,7 @@ void RanchDirector::HandleCreateGuild(
 }
 
 void RanchDirector::HandleRequestGuildInfo(
-  ClientId clientId,
+  const ClientId clientId,
   const protocol::RanchCommandRequestGuildInfo&)
 {
   const auto& clientContext = GetClientContext(clientId);
@@ -2377,8 +2733,7 @@ void RanchDirector::HandleRequestGuildInfo(
       .inviteCooldown = 0,
       .member9 = 0,
       .member10 = 0,
-      .member11 = 0
-    };
+      .member11 = 0};
   });
 
   _commandServer.QueueCommand<decltype(response)>(
@@ -3756,58 +4111,139 @@ void RanchDirector::HandleRecoverMount(
     });
 }
 
-void RanchDirector::HandleMountFamilyTree(
-  ClientId clientId,
-  const protocol::RanchCommandMountFamilyTree&)
+bool RanchDirector::HandleMountFamilyTree(
+  const ClientId clientId,
+  const protocol::AcCmdCRMountFamilyTree& command)
 {
-  // todo: implement horse family tree
+  protocol::AcCmdCRMountFamilyTreeOK response{};
+  const auto& horseRecord = GetServerInstance().GetDataDirector().GetHorse(
+    command.horseUid);
 
-  protocol::RanchCommandMountFamilyTreeOK response{
-    .ancestors = {
-      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
-        .id = 1,
-        .name = "1",
-        .grade = 1,
-        .skinId = 1
-      },
-      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
-        .id = 2,
-        .name = "2",
-        .grade = 4,
-        .skinId = 1
-      },
-      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
-        .id = 3,
-        .name = "3",
-        .grade = 1,
-        .skinId = 1
-      },
-      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
-        .id = 4,
-        .name = "4",
-        .grade = 1,
-        .skinId = 1
-      },
-      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
-        .id = 5,
-        .name = "5",
-        .grade = 1,
-        .skinId = 1
-      },
-      protocol::RanchCommandMountFamilyTreeOK::MountFamilyTreeItem {
-        .id = 6,
-        .name = "6",
-        .grade = 1,
-        .skinId = 1
-      }}
-  };
-
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [response]()
+  if (not horseRecord)
+  {
+    _commandServer.QueueCommand<decltype(response)>(clientId, [response]()
     {
       return response;
     });
+    return false;
+  }
+
+  // todo: cache this
+
+  struct Ancestors
+  {
+    struct Ancestor
+    {
+      data::Uid uid{data::InvalidUid};
+      std::string name{"Runaway"};
+      uint32_t grade{};
+      uint32_t skinTid{};
+    };
+
+    Ancestor father{};
+    Ancestor mother{};
+  };
+
+  // Collects ancestor data from a horse.
+  const auto GetAncestors = [this](const data::Uid horseUid) noexcept -> std::optional<Ancestors>
+  {
+    const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(
+      horseUid);
+    if (not horseRecord)
+      return std::nullopt;
+
+    // Get the horse's ancestors.
+    data::Horse::Ancestors ancestorUids;
+    horseRecord.Immutable([&ancestorUids](const data::Horse& horse)
+    {
+      ancestorUids = horse.ancestors;
+    });
+
+    const auto fatherHorseRecord = _serverInstance.GetDataDirector().GetHorse(
+      ancestorUids.father);
+    const auto motherHorseRecord = _serverInstance.GetDataDirector().GetHorse(
+      ancestorUids.mother);
+
+    if (ancestorUids.father != data::InvalidUid && not fatherHorseRecord
+      || ancestorUids.mother != data::InvalidUid && not motherHorseRecord)
+    {
+      return std::nullopt;
+    }
+
+    Ancestors ancestors{};
+
+    // Collects data from a horse.
+    const auto CollectAncestor = [](const data::Horse& horse) -> Ancestors::Ancestor
+    {
+      return {
+        .uid = horse.uid(),
+        .name = horse.name(),
+        .grade = horse.grade(),
+        .skinTid = horse.parts.skinTid()
+      };
+    };
+
+    // Collect father ancestor data.
+    if (fatherHorseRecord)
+    {
+      fatherHorseRecord.Immutable([&ancestors, &CollectAncestor](const data::Horse& horse)
+      {
+        ancestors.father = CollectAncestor(horse);
+      });
+    }
+
+    // Collect mother ancestor data.
+    if (motherHorseRecord)
+    {
+      motherHorseRecord.Immutable([&ancestors, &CollectAncestor](const data::Horse& horse)
+      {
+        ancestors.mother = CollectAncestor(horse);
+      });
+    }
+
+    return ancestors;
+  };
+
+  // Get direct ancestors.
+  const auto directAncestors = GetAncestors(command.horseUid);
+  if (not directAncestors)
+    return true;
+
+  // Get ancestors in the paternal line.
+  const auto paternalAncestors = GetAncestors(directAncestors->father.uid);
+  // Get ancestors in the maternal line.
+  const auto maternalAncestors = GetAncestors(directAncestors->mother.uid);
+
+  if (not paternalAncestors || not maternalAncestors)
+    return true;
+
+  using HierarchyPosition = protocol::AcCmdCRMountFamilyTreeOK::MountFamilyTreeItem::Position;
+
+  const auto AddProtocolAncestor = [&response](
+    const Ancestors::Ancestor& ancestor,
+    const HierarchyPosition position)
+  {
+    response.ancestors.emplace_back(protocol::AcCmdCRMountFamilyTreeOK::MountFamilyTreeItem{
+      .hierarchyPosition = position,
+      .name = ancestor.name,
+      .grade = static_cast<uint8_t>(ancestor.grade),
+      .skinTid = static_cast<uint16_t>(ancestor.skinTid)});
+  };
+
+  AddProtocolAncestor(directAncestors->father, HierarchyPosition::Father);
+  AddProtocolAncestor(paternalAncestors->father, HierarchyPosition::PaternalGrandfather);
+  AddProtocolAncestor(paternalAncestors->mother, HierarchyPosition::PaternalGrandmother);
+
+  AddProtocolAncestor(directAncestors->mother, HierarchyPosition::Mother);
+  AddProtocolAncestor(maternalAncestors->father, HierarchyPosition::MaternalGrandfather);
+  AddProtocolAncestor(maternalAncestors->mother, HierarchyPosition::MaternalGrandmother);
+
+  _commandServer.QueueCommand<decltype(response)>(clientId, [response]()
+  {
+    return response;
+  });
+
+  return false;
 }
 
 void RanchDirector::HandleCheckStorageItem(
@@ -3844,7 +4280,7 @@ void RanchDirector::HandleCheckStorageItem(
 //! Changes the age of the calling character
 //! If this is called, it implicitly means "hide age" is not selected on the client, so we show age
 void RanchDirector::HandleChangeAge(
-  ClientId clientId,
+  const ClientId clientId,
   const protocol::AcCmdCRChangeAge command)
 {
   const auto& clientContext = GetClientContext(clientId);
@@ -3918,7 +4354,7 @@ void RanchDirector::HandleHideAge(
           if (character.settingsUid() == data::InvalidUid)
             character.settingsUid = settings.uid();
         });
-    });
+  });
 
   protocol::AcCmdCRHideAgeOK response {
     .option = command.option};
@@ -3971,8 +4407,16 @@ void RanchDirector::HandleStatusPointApply(
   const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
     command.horseUid);
 
+  uint32_t horseGrade = 0;
+  horseRecord->Immutable([&horseGrade](const data::Horse& horse)
+  {
+    horseGrade = horse.grade();
+  });
+
+  const auto* nextGradeInfo = GetServerInstance().GetHorseRegistry().GetGradeInfo(horseGrade + 1);
+
   bool applied = false;
-  horseRecord->Mutable([&command, &applied](data::Horse& horse)
+  horseRecord->Mutable([&command, &applied, nextGradeInfo](data::Horse& horse)
   {
     if (horse.growthPoints() == 0)
       return;
@@ -3982,10 +4426,10 @@ void RanchDirector::HandleStatusPointApply(
     const int64_t rushDelta = static_cast<int64_t>(command.stats.rush) - static_cast<int64_t>(horse.stats.rush());
     const int64_t enduranceDelta = static_cast<int64_t>(command.stats.endurance) - static_cast<int64_t>(horse.stats.endurance());
     const int64_t courageDelta = static_cast<int64_t>(command.stats.courage) - static_cast<int64_t>(horse.stats.courage());
-    
+
     // Decrease in any of the stats is not allowed.
     if (agilityDelta < 0
-      || ambitionDelta < 0 
+      || ambitionDelta < 0
       || rushDelta < 0
       || enduranceDelta < 0
       || courageDelta < 0)
@@ -3998,12 +4442,22 @@ void RanchDirector::HandleStatusPointApply(
     // Increase  of  more than  one stat at a time is not allowed.
     if (totalPointsApplied > 1)
       return;
+
+    const int32_t currentStatSum = horse.stats.agility() + horse.stats.ambition()
+      + horse.stats.rush() + horse.stats.endurance() + horse.stats.courage();
+
+    if (nextGradeInfo && currentStatSum >= nextGradeInfo->minStatSum)
+      return;
+
     horse.stats.agility = command.stats.agility;
     horse.stats.ambition = command.stats.ambition;
     horse.stats.rush = command.stats.rush;
     horse.stats.endurance = command.stats.endurance;
     horse.stats.courage = command.stats.courage;
     horse.growthPoints() -= 1;
+
+    if (nextGradeInfo && currentStatSum + 1 >= nextGradeInfo->minStatSum)
+      horse.grade() += 1;
 
     applied = true;
   });

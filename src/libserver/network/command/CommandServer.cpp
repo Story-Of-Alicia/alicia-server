@@ -117,10 +117,6 @@ CommandServer::CommandServer(
 {
 }
 
-CommandServer::~CommandServer()
-{
-}
-
 void CommandServer::BeginHost(const asio::ip::address& address, uint16_t port)
 {
   _serverThread = std::thread(
@@ -153,17 +149,21 @@ void CommandServer::EndHost()
   _serverThread.join();
 }
 
-asio::ip::address_v4 CommandServer::GetClientAddress(ClientId clientId)
+asio::ip::address_v4 CommandServer::GetClientAddress(
+  const ClientId clientId)
 {
   return _server.GetClient(clientId)->GetAddress();
 }
 
-void CommandServer::DisconnectClient(ClientId clientId)
+void CommandServer::DisconnectClient(
+  const ClientId clientId)
 {
   _server.GetClient(clientId)->End();
 }
 
-void CommandServer::SetCode(ClientId client, protocol::XorCode code)
+void CommandServer::SetCode(
+  const ClientId client,
+  const protocol::XorCode code)
 {
   _clients[client].SetCode(code);
 }
