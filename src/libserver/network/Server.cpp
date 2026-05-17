@@ -400,13 +400,24 @@ void Server::AcceptLoop() noexcept
             fmt::format("Network exception 0x{}", error.value()));
         }
 
-        const auto remoteAddr = client_socket.remote_endpoint().address().to_v4();
+        asio::ip::address_v4 remoteAddress;
+        try
+        {
+          remoteAddress = client_socket.remote_endpoint().address().to_v4();
+        }
+        catch (const std::exception&)
+        {
+          // The connection was broken too early.
+          // Continue the accept loop.
+          AcceptLoop();
+          return;
+        }
 
-        if (IsConnectionThrottled(remoteAddr))
+        if (IsConnectionThrottled(remoteAddress))
         {
           spdlog::warn(
             "Connection rejected from {} (throttled)",
-            remoteAddr.to_string());
+            remoteAddress.to_string());
           client_socket.close();
           AcceptLoop();
           return;
