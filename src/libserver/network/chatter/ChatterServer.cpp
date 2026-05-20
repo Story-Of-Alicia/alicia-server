@@ -21,7 +21,9 @@
 #include "libserver/util/Stream.hpp"
 #include "libserver/util/Util.hpp"
 
+#ifndef DISABLE_STACKTRACE
 #include <stacktrace>
+#endif
 
 #include <spdlog/spdlog.h>
 
@@ -68,10 +70,12 @@ void ChatterServer::BeginHost(network::asio::ip::address_v4 address, uint16_t po
     {
       spdlog::error("Unhandled chatter server network exception: {}", x.what());
 
+      #ifndef DISABLE_STACKTRACE
       for (const auto& entry : std::stacktrace::current())
       {
         spdlog::error("[Stack] {}({}): {}", entry.source_file(), entry.source_line(), entry.description());
       }
+      #endif
 
       _server.End();
     }

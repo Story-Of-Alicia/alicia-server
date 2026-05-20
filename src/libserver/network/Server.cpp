@@ -24,7 +24,10 @@
 #include <cassert>
 #include <ranges>
 #include <spdlog/spdlog.h>
+
+#ifndef DISABLE_STACKTRACE
 #include <stacktrace>
+#endif
 
 namespace server::network
 {
