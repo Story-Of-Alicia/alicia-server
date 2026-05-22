@@ -3058,6 +3058,32 @@ void RaceDirector::HandleUseMagicItem(
     spdlog::warn("Client tried to perform action on behalf of different racer");
     return;
   }
+
+  const auto sendCancel = [&]()
+  {
+    protocol::AcCmdCRUseMagicItemCancel cancel{};
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel](){ 
+        return cancel;
+      });
+  };
+
+  if (!racer.magicItem.has_value())
+  {
+    spdlog::warn("[{}] UseMagicItem: racer has no magic item (may have been stripped)", clientId);
+    sendCancel();
+    return;
+  }
+
+  if (racer.magicItem.value() != command.magicItemId)
+  {
+    spdlog::warn("[{}] UseMagicItem: item mismatch (server: {}, client: {})",
+      clientId, racer.magicItem.value(), command.magicItemId);
+    sendCancel();
+    return;
+  }
+
   const uint16_t effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
 
   auto targetList = command.targetList;
@@ -3390,7 +3416,20 @@ void RaceDirector::HandleUserRaceItemGet(
           });
       }
 
-      // TODO: reset magic gauge to 0?
+      racer.starPointValue = 0;
+
+      protocol::AcCmdCRStarPointGetOK starPointResponse{
+        .characterOid = command.characterOid,
+        .starPointValue = 0,
+        .giveMagicItem = false};
+
+      _commandServer.QueueCommand<decltype(starPointResponse)>(
+        clientId,
+        [starPointResponse]()
+        {
+          return starPointResponse;
+        });
+
       break;
     }
   }
@@ -3568,7 +3607,15 @@ void RaceDirector::HandleActivateSkillEffect(
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
 
-  auto& targetRacer = raceInstance.tracker.GetRacer(clientContext.characterUid);
+  auto& racers = raceInstance.tracker.GetRacers();
+  const auto targetRacerIter = std::ranges::find_if(
+    racers, [&command](const auto& entry) { return entry.second.oid == command.targetOid; });
+  if (targetRacerIter == racers.end())
+  {
+    spdlog::warn("[{}] HandleActivateSkillEffect: target OID {} not found", clientId, command.targetOid);
+    return;
+  }
+  auto& targetRacer = targetRacerIter->second;
 
   auto magicSlotInfo = GetServerInstance().GetMagicRegistry().GetSlotInfoByEffectId(command.effectId);
   // If the target has a DarkFire effect active and the magic crits by dark fire, use the critical type instead
