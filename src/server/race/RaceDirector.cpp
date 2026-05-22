@@ -3005,10 +3005,8 @@ void RaceDirector::HandleRequestMagicItem(
     return;
   }
 
-  // Item is pre-assigned in HandleUserPos when giveMagicItem=true is sent.
-  // If somehow RequestMagicItem arrives without a pre-assigned item, assign one now.
   if (!racer.magicItem.has_value())
-    racer.magicItem.emplace(RandomMagicItem(_serverInstance, racer).type);
+    return;
 
   protocol::AcCmdCRStarPointGetOK starPointResponse{
     .characterOid = command.characterOid,
