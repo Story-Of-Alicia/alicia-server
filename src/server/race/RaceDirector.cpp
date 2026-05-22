@@ -2460,7 +2460,17 @@ void RaceDirector::HandleHurdleClearResult(
   starPointResponse.giveMagicItem =
     raceInstance.raceGameMode == protocol::GameMode::Magic &&
     racer.starPointValue >= gameModeTemplate.starPointsMax &&
+    not racer.magicItem.has_value() &&
     command.hurdleClearType == protocol::AcCmdCRHurdleClearResult::HurdleClearType::Perfect;
+
+  if (giveItem)
+  {
+    racer.magicItem.emplace(RandomMagicItem(_serverInstance, racer).type);
+    racer.starPointValue = 0;
+    starPointResponse.starPointValue = 0;
+  }
+
+  starPointResponse.giveMagicItem = giveItem;
 
   // Update the star point value if the jump was not a collision.
   if (command.hurdleClearType != protocol::AcCmdCRHurdleClearResult::HurdleClearType::Collision)
