@@ -2454,10 +2454,7 @@ void RaceDirector::HandleHurdleClearResult(
       return;
     }
   }
-
-  // Needs to be assigned after hurdle clear result calculations
-  // Triggers magic item request when set to true (if gamemode is magic and magic gauge is max)
-  starPointResponse.giveMagicItem =
+  const bool giveItem =
     raceInstance.raceGameMode == protocol::GameMode::Magic &&
     racer.starPointValue >= gameModeTemplate.starPointsMax &&
     not racer.magicItem.has_value() &&
