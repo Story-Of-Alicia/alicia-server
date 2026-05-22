@@ -3073,31 +3073,6 @@ void RaceDirector::HandleUseMagicItem(
     return;
   }
 
-  const auto sendCancel = [&]()
-  {
-    protocol::AcCmdCRUseMagicItemCancel cancel{};
-    _commandServer.QueueCommand<decltype(cancel)>(
-      clientId,
-      [cancel](){ 
-        return cancel;
-      });
-  };
-
-  if (!racer.magicItem.has_value())
-  {
-    spdlog::warn("[{}] UseMagicItem: racer has no magic item (may have been stripped)", clientId);
-    sendCancel();
-    return;
-  }
-
-  if (racer.magicItem.value() != command.magicItemId)
-  {
-    spdlog::warn("[{}] UseMagicItem: item mismatch (server: {}, client: {})",
-      clientId, racer.magicItem.value(), command.magicItemId);
-    sendCancel();
-    return;
-  }
-
   const uint16_t effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
 
   auto targetList = command.targetList;
