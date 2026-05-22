@@ -2626,10 +2626,19 @@ void RaceDirector::HandleRaceUserPos(
 
     // Conditional already checks if there is no magic item and gamemode is magic,
     // only check if racer has max magic gauge to give magic item
+    const bool giveItem = racer.starPointValue >= gameModeTemplate.starPointsMax;
+    if (giveItem)
+    {
+      // Pre-assign the item now so the server state is consistent even if the client
+      // never sends RequestMagicItem (e.g. knocked down during the handshake window).
+      racer.magicItem.emplace(RandomMagicItem(_serverInstance, racer).type);
+      racer.starPointValue = 0;
+    }
+
     protocol::AcCmdCRStarPointGetOK starPointResponse{
       .characterOid = command.oid,
       .starPointValue = racer.starPointValue,
-      .giveMagicItem = racer.starPointValue >= gameModeTemplate.starPointsMax
+      .giveMagicItem = giveItem
     };
 
     _commandServer.QueueCommand<decltype(starPointResponse)>(
@@ -2989,16 +2998,14 @@ void RaceDirector::HandleRequestMagicItem(
     return;
   }
 
-  // Check if racer is already holding a magic item
-  if (racer.magicItem.has_value())
-  {
-    // todo: this seems to happen a lot, figure it out
-    return;
-  }
+  // Item is pre-assigned in HandleUserPos when giveMagicItem=true is sent.
+  // If somehow RequestMagicItem arrives without a pre-assigned item, assign one now.
+  if (!racer.magicItem.has_value())
+    racer.magicItem.emplace(RandomMagicItem(_serverInstance, racer).type);
 
   protocol::AcCmdCRStarPointGetOK starPointResponse{
     .characterOid = command.characterOid,
-    .starPointValue = racer.starPointValue = 0,
+    .starPointValue = racer.starPointValue,
     .giveMagicItem = false
   };
 
@@ -3011,7 +3018,7 @@ void RaceDirector::HandleRequestMagicItem(
 
   protocol::AcCmdCRRequestMagicItemOK response{
     .characterOid = command.characterOid,
-    .magicItemId = racer.magicItem.emplace(RandomMagicItem(_serverInstance, racer).type),
+    .magicItemId = racer.magicItem.value(),
     .member3 = 0
   };
 
@@ -3374,6 +3381,20 @@ void RaceDirector::HandleUserRaceItemGet(
           {
             return magicItemOk;
           });
+
+        racer.starPointValue = 0;
+
+        protocol::AcCmdCRStarPointGetOK starPointResponse{
+          .characterOid = command.characterOid,
+          .starPointValue = 0,
+          .giveMagicItem = false};
+
+        _commandServer.QueueCommand<decltype(starPointResponse)>(
+          clientId,
+          [starPointResponse]()
+          {
+            return starPointResponse;
+          });
       }
       else
       {
@@ -3415,20 +3436,6 @@ void RaceDirector::HandleUserRaceItemGet(
             return notify;
           });
       }
-
-      racer.starPointValue = 0;
-
-      protocol::AcCmdCRStarPointGetOK starPointResponse{
-        .characterOid = command.characterOid,
-        .starPointValue = 0,
-        .giveMagicItem = false};
-
-      _commandServer.QueueCommand<decltype(starPointResponse)>(
-        clientId,
-        [starPointResponse]()
-        {
-          return starPointResponse;
-        });
 
       break;
     }
