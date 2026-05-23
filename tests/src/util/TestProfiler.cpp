@@ -78,6 +78,24 @@ void TestScopeGuard()
   assert(profiler.Average().value().count() > 0 && "ScopeGuard sample duration should be greater than zero");
 }
 
+void TestScopeGuardOnException()
+{
+  server::Profiler profiler;
+
+  try
+  {
+    auto guard = profiler.Scope();
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    throw std::runtime_error("test");
+  }
+  catch (...)
+  {
+  }
+
+  assert(profiler.Count() == 1 && "ScopeGuard should record a sample even when an exception is thrown");
+  assert(profiler.Average().value().count() > 0 && "ScopeGuard duration should be valid after exception");
+}
+
 void TestRingBufferWraparound()
 {
   constexpr std::size_t Capacity = 5;
@@ -139,6 +157,7 @@ int main()
   TestSingleSample();
   TestMultipleSamples();
   TestScopeGuard();
+  TestScopeGuardOnException();
   TestRingBufferWraparound();
   TestCustomCapacity();
   TestMinMaxOrdering();
