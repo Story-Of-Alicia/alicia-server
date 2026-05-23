@@ -2460,13 +2460,6 @@ void RaceDirector::HandleHurdleClearResult(
     not racer.magicItem.has_value() &&
     command.hurdleClearType == protocol::AcCmdCRHurdleClearResult::HurdleClearType::Perfect;
 
-  if (giveItem)
-  {
-    racer.magicItem.emplace(RandomMagicItem(_serverInstance, racer).type);
-    racer.starPointValue = 0;
-    starPointResponse.starPointValue = 0;
-  }
-
   starPointResponse.giveMagicItem = giveItem;
 
   // Update the star point value if the jump was not a collision.
@@ -2608,10 +2601,11 @@ void RaceDirector::HandleRaceUserPos(
 
   if (raceInstance.raceGameMode == protocol::GameMode::Magic
     && racer.state == tracker::RaceTracker::Racer::State::Racing
-    && raceActuallyStarted
-    && not racer.magicItem.has_value())
+    && raceActuallyStarted)
   {
-    if (racer.starPointValue < gameModeTemplate.starPointsMax)
+    // Pos-update fill only happens while empty-handed.
+    if (not racer.magicItem.has_value()
+      && racer.starPointValue < gameModeTemplate.starPointsMax)
     {
       // TODO: add these to configuration somewhere
       // Eyeballed these values from watching videos
@@ -2631,16 +2625,8 @@ void RaceDirector::HandleRaceUserPos(
       racer.starPointValue = std::min(gameModeTemplate.starPointsMax, racer.starPointValue + gainedStarPoints);
     }
 
-    // Conditional already checks if there is no magic item and gamemode is magic,
-    // only check if racer has max magic gauge to give magic item
-    const bool giveItem = racer.starPointValue >= gameModeTemplate.starPointsMax;
-    if (giveItem)
-    {
-      // Pre-assign the item now so the server state is consistent even if the client
-      // never sends RequestMagicItem (e.g. knocked down during the handshake window).
-      racer.magicItem.emplace(RandomMagicItem(_serverInstance, racer).type);
-      racer.starPointValue = 0;
-    }
+    const bool giveItem = not racer.magicItem.has_value()
+      && racer.starPointValue >= gameModeTemplate.starPointsMax;
 
     protocol::AcCmdCRStarPointGetOK starPointResponse{
       .characterOid = command.oid,
@@ -3005,8 +2991,17 @@ void RaceDirector::HandleRequestMagicItem(
     return;
   }
 
-  if (!racer.magicItem.has_value())
+  const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
+    static_cast<uint8_t>(raceInstance.raceGameMode));
+
+  // Only assign + respond if the gauge is full and the racer is empty-handed.
+  // Anything else (stale request, duplicate after assignment, request while holding an item) drops.
+  if (racer.magicItem.has_value()
+    || racer.starPointValue < gameModeTemplate.starPointsMax)
     return;
+
+  racer.magicItem.emplace(RandomMagicItem(_serverInstance, racer).type);
+  racer.starPointValue = 0;
 
   protocol::AcCmdCRStarPointGetOK starPointResponse{
     .characterOid = command.characterOid,
