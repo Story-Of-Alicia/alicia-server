@@ -20,6 +20,7 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
+#include "libserver/util/Profiler.hpp"
 #include "NetworkDefinitions.hpp"
 
 #include <chrono>
@@ -115,6 +116,11 @@ private:
   asio::ip::tcp::socket _socket;
   //! A network event handling interface
   EventHandlerInterface& _networkEventHandler;
+
+  //! Profiler for monitoring async write operations.
+  Profiler _writeProfiler;
+  //! Profiler for monitoring async read operations.
+  Profiler _readProfiler;
 };
 
 //! Server with event-driven acceptor, reads and writes.
