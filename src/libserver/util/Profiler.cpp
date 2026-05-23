@@ -21,12 +21,6 @@
 
 namespace server
 {
-Profiler::Profiler(std::size_t capacity)
-  : _capacity(capacity)
-{
-  _samples.resize(capacity);
-}
-
 void Profiler::Start()
 {
   _start = Clock::now();
@@ -38,9 +32,7 @@ void Profiler::Stop()
 
   std::scoped_lock lock(_mutex);
 
-  _samples.at(_index) = duration;
-  _index = (_index + 1) % _capacity;
-  _count = std::min(_count + 1, _capacity);
+  _lastSample = duration;
 }
 
 Profiler::ScopeGuard Profiler::Scope()
@@ -48,45 +40,9 @@ Profiler::ScopeGuard Profiler::Scope()
   return ScopeGuard(*this);
 }
 
-std::optional<Profiler::Microseconds> Profiler::Average() const
+std::optional<Profiler::Microseconds> Profiler::Result() const
 {
   std::scoped_lock lock(_mutex);
-
-  if (_count == 0)
-    return {};
-
-  return std::reduce(_samples.begin(),
-           _samples.begin() +
-             static_cast<std::ptrdiff_t>(std::min(_count, _capacity)),
-           Microseconds{}) /
-         _count;
-}
-
-std::optional<Profiler::Microseconds> Profiler::Max() const
-{
-  std::scoped_lock lock(_mutex);
-
-  if (_count == 0)
-    return {};
-  return *std::max_element(_samples.begin(),
-    _samples.begin() +
-      static_cast<std::ptrdiff_t>(std::min(_count, _capacity)));
-}
-
-std::optional<Profiler::Microseconds> Profiler::Min() const
-{
-  std::scoped_lock lock(_mutex);
-
-  if (_count == 0)
-    return {};
-  return *std::min_element(_samples.begin(),
-    _samples.begin() +
-      static_cast<std::ptrdiff_t>(std::min(_count, _capacity)));
-}
-
-std::size_t Profiler::Count() const
-{
-  std::scoped_lock lock(_mutex);
-  return _count;
+  return _lastSample;
 }
 } // namespace server

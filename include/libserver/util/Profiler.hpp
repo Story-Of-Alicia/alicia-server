@@ -22,8 +22,6 @@
 
 #include <chrono>
 #include <mutex>
-#include <vector>
-#include <numeric>
 #include <optional>
 
 namespace server
@@ -32,8 +30,7 @@ namespace server
 /**
  * A lightweight micro-profiler for measuring operation durations.
  *
- * Collects timing samples in a fixed-size ring buffer and provides
- * basic statistics (average, min, max) over the recorded samples.
+ * Records timing samples using std::chrono::steady_clock.
  * Supports both manual Start()/Stop() calls and RAII-based scoped measurement.
  *
  * @example
@@ -48,7 +45,7 @@ namespace server
  *   // Scoped usage:
  *   { auto guard = profiler.Scope(); doWork(); }
  *
- *   auto avg = profiler.Average();
+ *   auto result = profiler.Result();
  * @endcode
  */
 class Profiler
@@ -78,11 +75,7 @@ public:
     Profiler & profile;
   };
 
-  /**
-   * Constructs the profiler with a ring buffer of the given capacity.
-   * @param capacity Maximum number of samples to retain. Defaults to 1000.
-   */
-  explicit Profiler(std::size_t capacity = 1000);
+  Profiler() = default;
   ~Profiler() = default;
 
   /** Begins a timing measurement. */
@@ -97,25 +90,10 @@ public:
    */
   ScopeGuard Scope();
 
-  /**
-   * @return Average duration across all recorded samples.
+  /** Returns the most recently recorded sample duration, or empty if no samples have been recorded.
+   * @return The most recent sample
    */
-  [[nodiscard]] std::optional<Microseconds> Average() const;
-
-  /**
-   * @return Maximum duration across all recorded samples.
-   */
-  [[nodiscard]] std::optional<Microseconds> Max() const;
-
-  /**
-   * @return Minimum duration across all recorded samples.
-   */
-  [[nodiscard]] std::optional<Microseconds> Min() const;
-
-  /**
-   * @return Number of samples recorded, up to capacity.
-   */
-  [[nodiscard]] std::size_t Count() const;
+  std::optional<Microseconds> Result() const;
 
 private:
 
@@ -124,10 +102,7 @@ private:
 
   mutable std::mutex _mutex;
   TimePoint _start {};
-  std::size_t _count {};
-  std::size_t _capacity {};
-  std::size_t _index {};
-  std::vector<Microseconds> _samples {};
+  std::optional<Microseconds> _lastSample;
 };
 
 } // namespace server
