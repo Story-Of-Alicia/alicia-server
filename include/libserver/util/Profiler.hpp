@@ -80,7 +80,7 @@ public:
   void Stop() noexcept;
 
   //! Returns a ScopeGuard that times the enclosing scope automatically.
-  ScopeGuard Scope();
+  [[nodiscard]] ScopeGuard Scope() noexcept;
 
   //! Returns the most recently recorded sample duration, or empty if no samples have been recorded.
   std::optional<Microseconds> Result() const;
