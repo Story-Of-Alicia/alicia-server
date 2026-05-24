@@ -48,4 +48,5 @@ std::optional<Profiler::Microseconds> Profiler::Result() const
   std::scoped_lock lock(_mutex);
   return _lastSample;
 }
+
 } // namespace server
