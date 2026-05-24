@@ -56,7 +56,7 @@ public:
     explicit ScopeGuard(Profiler & profile) noexcept
       : _profile(profile)
     {
-      profile.Start();
+      _profile.Start();
     }
 
     ~ScopeGuard() noexcept
@@ -65,7 +65,7 @@ public:
     }
 
     //! Default move constructor.
-    ScopeGuard(ScopeGuard&&) noexcept = default;
+    ScopeGuard(ScopeGuard &&) noexcept = default;
     //! Default move assignment operator.
     ScopeGuard& operator=(ScopeGuard &&) noexcept = default;
 
