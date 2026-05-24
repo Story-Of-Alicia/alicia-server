@@ -72,16 +72,21 @@ const server::registry::Magic::SlotInfo RandomMagicItem(
   static std::random_device rd;
 
   // Build weights: Lightning (type 18) gets a reduced roll chance.
+  // Team-only items get a slightly reduced chance as well.
   // TODO: Replace with a proper per-spell weight system.
+  const auto& magicRegistry = serverInstance.GetMagicRegistry();
   std::vector<uint32_t> weights;
   weights.reserve(itemPool.size());
   for (const uint32_t type : itemPool)
-    weights.push_back(type == 18 ? 1u : 3u);
+  {
+    const uint32_t w = (type == 18) ? 1u
+      : (magicRegistry.GetSlotInfo(type).teamMode != 0) ? 2u
+      : 3u;
+    weights.push_back(w);
+  }
 
   std::discrete_distribution<size_t> distribution(weights.begin(), weights.end());
-  auto magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(itemPool[distribution(rd)]);
-
-  const auto& magicRegistry = serverInstance.GetMagicRegistry();
+  auto magicSlotInfo = magicRegistry.GetSlotInfo(itemPool[distribution(rd)]);
   uint32_t critChanceBp = magicRegistry.GetBaseCritChanceBp();
   if (magicSlotInfo.criticalType != 0)
   {
