@@ -1,5 +1,5 @@
 /**
-* Alicia Server - dedicated server software
+ * Alicia Server - dedicated server software
  * Copyright (C) 2026 Story Of Alicia
  *
  * This program is free software; you can redistribute it and/or modify
@@ -55,7 +55,7 @@ public:
   //! Non-copyable but movable.
   struct ScopeGuard
   {
-    explicit ScopeGuard(Profiler & profile) noexcept
+    explicit ScopeGuard(Profiler& profile) noexcept
       : _profile(profile)
     {
       _profile.Start();
@@ -67,10 +67,11 @@ public:
     }
 
     //! Default move constructor.
-    ScopeGuard(ScopeGuard &&) noexcept = default;
-    ScopeGuard & operator=(ScopeGuard &&) noexcept = default;
+    ScopeGuard(ScopeGuard&&) noexcept = default;
+    //! Default move assignment operator.
+    ScopeGuard& operator=(ScopeGuard&&) noexcept = default;
 
-    Profiler & _profile;
+    Profiler& _profile;
   };
 
   Profiler() noexcept = default;
@@ -93,7 +94,7 @@ private:
   using TimePoint = std::chrono::time_point<Clock>;
 
   mutable std::mutex _mutex;
-  TimePoint _start {};
+  TimePoint _start{};
   std::optional<Microseconds> _lastSample;
 };
 
