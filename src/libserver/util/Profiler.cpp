@@ -47,4 +47,5 @@ std::optional<Profiler::Microseconds> Profiler::Result() const noexcept
   return _lastSample;
 }
 
+
 } // namespace server
