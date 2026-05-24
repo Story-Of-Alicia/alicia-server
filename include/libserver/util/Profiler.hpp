@@ -75,8 +75,8 @@ public:
     Profiler & profile;
   };
 
-  Profiler() = default;
-  ~Profiler() = default;
+  Profiler() noexcept = default;
+  ~Profiler() noexcept = default;
 
   /** Begins a timing measurement. */
   void Start();
