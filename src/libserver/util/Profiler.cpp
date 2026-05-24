@@ -47,4 +47,6 @@ std::optional<Profiler::Duration> Profiler::Result() const noexcept
   return _lastSample;
 }
 
+
+
 } // namespace server
