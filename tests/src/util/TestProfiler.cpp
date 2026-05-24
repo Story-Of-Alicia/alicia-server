@@ -1,6 +1,6 @@
 /**
  * Alicia Server - dedicated server software
- * Copyright (C) 2024 Story Of Alicia
+ * Copyright (C) 2026 Story Of Alicia
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
