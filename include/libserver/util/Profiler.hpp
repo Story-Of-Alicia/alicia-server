@@ -49,7 +49,8 @@ namespace server
 class Profiler
 {
 public:
-  using Microseconds = std::chrono::microseconds;
+  using Clock = std::chrono::steady_clock;
+  using Duration = Clock::duration;
 
   //! RAII wrapper that calls Start() on construction and Stop() on destruction.
   //! Non-copyable but movable.
@@ -87,15 +88,14 @@ public:
   [[nodiscard]] ScopeGuard Scope() noexcept;
 
   //! Returns the most recently recorded sample duration, or empty if no samples have been recorded.
-  [[nodiscard]] std::optional<Microseconds> Result() const noexcept;
+  [[nodiscard]] std::optional<Duration> Result() const noexcept;
 
 private:
-  using Clock = std::chrono::steady_clock;
   using TimePoint = std::chrono::time_point<Clock>;
 
   mutable std::mutex _mutex;
   TimePoint _start{};
-  std::optional<Microseconds> _lastSample;
+  std::optional<Duration> _lastSample;
 };
 
 } // namespace server

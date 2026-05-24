@@ -33,7 +33,7 @@ void Profiler::Stop() noexcept
 {
   std::scoped_lock lock(_mutex);
 
-  _lastSample = std::chrono::duration_cast<Microseconds>(Clock::now() - _start);
+  _lastSample = Clock::now() - _start;
 }
 
 Profiler::ScopeGuard Profiler::Scope() noexcept
@@ -41,7 +41,7 @@ Profiler::ScopeGuard Profiler::Scope() noexcept
   return ScopeGuard(*this);
 }
 
-std::optional<Profiler::Microseconds> Profiler::Result() const noexcept
+std::optional<Profiler::Duration> Profiler::Result() const noexcept
 {
   std::scoped_lock lock(_mutex);
   return _lastSample;
