@@ -65,7 +65,7 @@ public:
       profile.Start();
     }
 
-    ~ScopeGuard()
+    ~ScopeGuard() noexcept
     {
       profile.Stop();
     }
