@@ -97,7 +97,6 @@ public:
   std::optional<Microseconds> Result() const;
 
 private:
-
   using Clock = std::chrono::steady_clock;
   using TimePoint = std::chrono::time_point<Clock>;
 
