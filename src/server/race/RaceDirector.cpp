@@ -3279,8 +3279,21 @@ void RaceDirector::HandleUserRaceItemGet(
   }
   auto& item = itemIter->second;
 
+  const auto now = std::chrono::steady_clock::now();
   constexpr auto ItemRespawnDuration = std::chrono::milliseconds(500);
-  item.respawnTimePoint = std::chrono::steady_clock::now() + ItemRespawnDuration;
+  constexpr auto SpawnerPickupCooldown = std::chrono::seconds(10);
+  const auto cooldownIter = racer.spawnerCooldowns.find(command.itemId);
+  if (cooldownIter != racer.spawnerCooldowns.end() && cooldownIter->second > now)
+  {
+    // Picker's client predictively hid the item on collision; untrack it
+    // so processItemSpawn re-broadcasts the spawn for them next tick.
+    item.respawnTimePoint = now + ItemRespawnDuration;
+    racer.trackedItems.erase(command.itemId);
+    return;
+  }
+  racer.spawnerCooldowns[command.itemId] = now + SpawnerPickupCooldown;
+
+  item.respawnTimePoint = now + ItemRespawnDuration;
 
   Room::GameMode gameMode;
   registry::Course::GameModeInfo gameModeInfo;
