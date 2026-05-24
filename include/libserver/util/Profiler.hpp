@@ -76,14 +76,14 @@ public:
   //! Begins a timing measurement.
   void Start() noexcept;
 
-  /** Ends the current timing measurement and records the elapsed duration. */
+  //! Ends the current timing measurement and records the elapsed duration.
   void Stop() noexcept;
 
   //! Returns a ScopeGuard that times the enclosing scope automatically.
   [[nodiscard]] ScopeGuard Scope() noexcept;
 
   //! Returns the most recently recorded sample duration, or empty if no samples have been recorded.
-  [[nodiscard]] std::optional<Microseconds> Result() noexcept const;
+  [[nodiscard]] std::optional<Microseconds> Result() const noexcept;
 
 private:
   using Clock = std::chrono::steady_clock;
