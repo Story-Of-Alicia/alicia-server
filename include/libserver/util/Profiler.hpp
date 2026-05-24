@@ -74,10 +74,10 @@ public:
   ~Profiler() noexcept = default;
 
   //! Begins a timing measurement.
-  void Start();
+  void Start() noexcept;
 
-  //! Ends the current timing measurement and records the elapsed duration.
-  void Stop();
+  /** Ends the current timing measurement and records the elapsed duration. */
+  void Stop() noexcept;
 
   //! Returns a ScopeGuard that times the enclosing scope automatically.
   ScopeGuard Scope();
