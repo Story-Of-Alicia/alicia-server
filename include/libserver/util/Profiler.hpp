@@ -83,7 +83,7 @@ public:
   [[nodiscard]] ScopeGuard Scope() noexcept;
 
   //! Returns the most recently recorded sample duration, or empty if no samples have been recorded.
-  std::optional<Microseconds> Result() const;
+  [[nodiscard]] std::optional<Microseconds> Result() noexcept const;
 
 private:
   using Clock = std::chrono::steady_clock;
