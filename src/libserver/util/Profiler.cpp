@@ -22,28 +22,26 @@
 namespace server
 {
 
-void Profiler::Start()
+void Profiler::Start() noexcept
 {
   std::scoped_lock lock(_mutex);
 
   _start = Clock::now();
 }
 
-void Profiler::Stop()
+void Profiler::Stop() noexcept
 {
-  const auto duration = std::chrono::duration_cast<Microseconds>(Clock::now() - _start);
-
   std::scoped_lock lock(_mutex);
 
-  _lastSample = duration;
+  _lastSample = std::chrono::duration_cast<Microseconds>(Clock::now() - _start);
 }
 
-Profiler::ScopeGuard Profiler::Scope()
+Profiler::ScopeGuard Profiler::Scope() noexcept
 {
   return ScopeGuard(*this);
 }
 
-std::optional<Profiler::Microseconds> Profiler::Result() const
+std::optional<Profiler::Microseconds> Profiler::Result() const noexcept
 {
   std::scoped_lock lock(_mutex);
   return _lastSample;
