@@ -47,7 +47,24 @@ uint64_t TimePointToRaceTimePoint(const std::chrono::steady_clock::time_point& t
     timePoint.time_since_epoch()).count() / IntervalConstant;
 }
 
-const server::registry::Magic::SlotInfo RandomMagicItem(ServerInstance& serverInstance, tracker::RaceTracker::Racer& racer)
+uint32_t MountStatValue(
+  const tracker::RaceTracker::Racer::MountStatsSnapshot& stats,
+  server::registry::Magic::MountStat which)
+{
+  switch (which)
+  {
+    case server::registry::Magic::MountStat::Agility:   return stats.agility;
+    case server::registry::Magic::MountStat::Ambition:  return stats.ambition;
+    case server::registry::Magic::MountStat::Rush:      return stats.rush;
+    case server::registry::Magic::MountStat::Endurance: return stats.endurance;
+    case server::registry::Magic::MountStat::Courage:   return stats.courage;
+  }
+  return 0;
+}
+
+const server::registry::Magic::SlotInfo RandomMagicItem(
+  ServerInstance& serverInstance,
+  tracker::RaceTracker::Racer& racer)
 {
   const auto& itemPool = (racer.team == tracker::RaceTracker::Racer::Team::Solo
     ? serverInstance.GetMagicRegistry().GetSoloPool()
@@ -63,7 +80,19 @@ const server::registry::Magic::SlotInfo RandomMagicItem(ServerInstance& serverIn
 
   std::discrete_distribution<size_t> distribution(weights.begin(), weights.end());
   auto magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(itemPool[distribution(rd)]);
-  if ((rand() % 100) < 5)
+
+  const auto& magicRegistry = serverInstance.GetMagicRegistry();
+  uint32_t critChanceBp = magicRegistry.GetBaseCritChanceBp();
+  if (magicSlotInfo.criticalType != 0)
+  {
+    if (const auto* scaling = magicRegistry.GetStatScaling(magicSlotInfo.basicType))
+    {
+      const uint32_t statValue = MountStatValue(racer.mountStats, scaling->stat);
+      critChanceBp += scaling->critStepBp * (statValue / 10u);
+    }
+  }
+
+  if ((rand() % 10000) < static_cast<int>(critChanceBp))
   {
     magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(magicSlotInfo.criticalType);
   }
@@ -1992,6 +2021,23 @@ void RaceDirector::HandleLoadingComplete(
   // Switch the racer to the racing state.
   racer.state = tracker::RaceTracker::Racer::State::Racing;
 
+  // Snapshot mount stats so per-tick magic calculations don't hit the data store on every pos-update.
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [this, &racer](const data::Character& character)
+    {
+      GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Immutable(
+        [&racer](const data::Horse& horse)
+        {
+          racer.mountStats = {
+            .agility = horse.stats.agility(),
+            .ambition = horse.stats.ambition(),
+            .rush = horse.stats.rush(),
+            .endurance = horse.stats.endurance(),
+            .courage = horse.stats.courage(),
+          };
+        });
+    });
+
   // Notify all clients in the room that this player's loading is complete
   for (const ClientId& raceClientId : raceInstance.clients)
   {
@@ -2595,34 +2641,45 @@ void RaceDirector::HandleRaceUserPos(
   for (const auto& eventItem : racer.eventItems)
     processItemSpawn(eventItem.oid, eventItem.itemType, eventItem.position);
 
-  // Only regenerate magic during active race (after countdown finishes)
-  // Check if game mode is magic, race is active, countdown finished, and not holding an item
-  const bool raceActuallyStarted = std::chrono::steady_clock::now() >= raceInstance.raceStartTimePoint;
+  const auto now = std::chrono::steady_clock::now();
+  const bool raceActuallyStarted = raceInstance.stage == RaceInstance::Stage::Racing
+    && now >= raceInstance.raceStartTimePoint;
 
   if (raceInstance.raceGameMode == protocol::GameMode::Magic
     && racer.state == tracker::RaceTracker::Racer::State::Racing
     && raceActuallyStarted)
   {
-    // Pos-update fill only happens while empty-handed.
-    if (not racer.magicItem.has_value()
-      && racer.starPointValue < gameModeTemplate.starPointsMax)
+    const auto& regen = GetServerInstance().GetMagicRegistry().GetRegenInfo();
+    const auto tickInterval = std::chrono::milliseconds(regen.intervalMs);
+
+    // Anchor at race start so fill time is consistent regardless of when the first pos-update arrives.
+    if (racer.lastMagicRegenTimePoint.time_since_epoch().count() == 0)
+      racer.lastMagicRegenTimePoint = raceInstance.raceStartTimePoint;
+
+    const auto elapsed = now - racer.lastMagicRegenTimePoint;
+    const auto tickCount = elapsed / tickInterval;
+
+    if (tickCount > 0)
     {
-      // TODO: add these to configuration somewhere
-      // Eyeballed these values from watching videos
-      constexpr uint32_t NoItemHeldBoostAmount = 2000;
-      // TODO: does holding an item and with certain equipment give you magic? At a reduced rate?
-      constexpr uint32_t ItemHeldWithEquipmentBoostAmount = 1000;
-      uint32_t gainedStarPoints;
-      if (racer.magicItem.has_value()) {
-        gainedStarPoints = ItemHeldWithEquipmentBoostAmount;
-      } else {
-        gainedStarPoints = NoItemHeldBoostAmount;
+      // Always advance so off-states (holding item, full gauge) don't burst when conditions re-open.
+      racer.lastMagicRegenTimePoint += tickInterval * tickCount;
+
+      if (not racer.magicItem.has_value()
+        && racer.starPointValue < gameModeTemplate.starPointsMax)
+      {
+        // gainedPerTick = pointPerTick * (1000 + courageScaleBp * courage) / 1000
+        uint32_t gainedPerTick = regen.pointPerTick
+          * (1000u + regen.courageScaleBp * racer.mountStats.courage) / 1000u;
+
+        // BufGauge buff doubles regen while active.
+        if (racer.effects[20] || racer.effects[21])
+          gainedPerTick *= 2;
+
+        const uint32_t totalGain = gainedPerTick * static_cast<uint32_t>(tickCount);
+        racer.starPointValue = std::min(
+          gameModeTemplate.starPointsMax,
+          racer.starPointValue + totalGain);
       }
-      if (racer.effects[20] || racer.effects[21]) {
-        // TODO: Something sensible, idk what the bonus does
-        gainedStarPoints *= 2;
-      }
-      racer.starPointValue = std::min(gameModeTemplate.starPointsMax, racer.starPointValue + gainedStarPoints);
     }
 
     const bool giveItem = not racer.magicItem.has_value()
@@ -3785,6 +3842,47 @@ void RaceDirector::RemoveEffect(
   }
 }
 
+uint32_t RaceDirector::ComputeEffectDurationMs(
+  const registry::Magic::SlotInfo& magicSlotInfo,
+  tracker::Oid attackerOid,
+  const tracker::RaceTracker::Racer& targetRacer,
+  const tracker::RaceTracker::RacerObjectMap& racers) const
+{
+  uint32_t effectDurationMs = static_cast<uint32_t>(magicSlotInfo.effectDelay * 1000.0f);
+
+  const auto* scaling = _serverInstance.GetMagicRegistry().GetStatScaling(
+    magicSlotInfo.basicType);
+  if (scaling == nullptr)
+    return effectDurationMs;
+
+  // Caster-side bonus, capped at +115% to prevent runaway durations on high stats.
+  if (scaling->durationScaleBp > 0)
+  {
+    const auto attackerRacerIter = std::ranges::find_if(
+      racers, [attackerOid](const auto& pair) { return pair.second.oid == attackerOid; });
+    if (attackerRacerIter != racers.cend())
+    {
+      const uint32_t statValue = MountStatValue(
+        attackerRacerIter->second.mountStats, scaling->stat);
+      constexpr uint32_t MaxDurationBonusBp = 1150;
+      const uint32_t bonusBp = std::min(
+        scaling->durationScaleBp * statValue, MaxDurationBonusBp);
+      effectDurationMs = effectDurationMs * (1000u + bonusBp) / 1000u;
+    }
+  }
+
+  // Target-side reduction (e.g. IceWall shock mitigation), clamped to 100%.
+  if (scaling->targetDurationReductionBp > 0)
+  {
+    const uint32_t statValue = MountStatValue(targetRacer.mountStats, scaling->stat);
+    const uint32_t reductionBp = std::min<uint32_t>(
+      scaling->targetDurationReductionBp * statValue, 1000u);
+    effectDurationMs = effectDurationMs * (1000u - reductionBp) / 1000u;
+  }
+
+  return effectDurationMs;
+}
+
 RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
   RaceInstance& raceInstance,
   tracker::Oid attackerOid, tracker::Oid targetOid,
@@ -3850,6 +3948,9 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
       ? targetRacer.attackRank >= magicSlotInfo.attackRank
       : targetRacer.effects[checkEffectId] && (isAttack || !magicSlotInfo.replaceEffect));
 
+  const uint32_t effectDurationMs = ComputeEffectDurationMs(
+    magicSlotInfo, attackerOid, targetRacer, racers);
+
   // TODO: Verify if characterOid and targetOid should be the same once we have NPCs
   const protocol::AcCmdRCAddSkillEffect addSkillEffect{
     .characterOid = targetOid,
@@ -3862,7 +3963,7 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
       .unk0 = shieldBlocks ? 2u : 0u,
       .unk1 = 0,
     },
-    .boostEffectMs = static_cast<uint32_t>(magicSlotInfo.effectDelay * 1000.0f),
+    .boostEffectMs = effectDurationMs,
   };
 
   // Broadcast
@@ -3943,7 +4044,7 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
           [removeSkillEffect]() { return removeSkillEffect; });
       }
     },
-    Scheduler::Clock::now() + std::chrono::milliseconds(static_cast<int64_t>(magicSlotInfo.effectDelay * 1000.0)));
+    Scheduler::Clock::now() + std::chrono::milliseconds(effectDurationMs));
   return EffectVerdict::Applied;
 }
 

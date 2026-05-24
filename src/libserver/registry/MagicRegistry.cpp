@@ -108,6 +108,44 @@ void MagicRegistry::ReadConfig(const std::filesystem::path& configPath)
       _soloPool.push_back(type);
   }
 
+  if (const auto regenSection = magicSection["regen"])
+  {
+    _regenInfo.pointPerTick = regenSection["pointPerTick"].as<uint32_t>(_regenInfo.pointPerTick);
+    _regenInfo.intervalMs = regenSection["intervalMs"].as<uint32_t>(_regenInfo.intervalMs);
+    _regenInfo.courageScaleBp = regenSection["courageScaleBp"].as<uint32_t>(_regenInfo.courageScaleBp);
+  }
+
+  _baseCritChanceBp = magicSection["critChanceBp"].as<uint32_t>(_baseCritChanceBp);
+
+  if (const auto scalingsSection = magicSection["statScalings"])
+  {
+    for (const auto& entry : scalingsSection)
+    {
+      const auto basicType = entry["basicType"].as<uint32_t>();
+      const auto statName = entry["stat"].as<std::string>();
+
+      Magic::StatScaling scaling{};
+      if (statName == "agility")
+        scaling.stat = Magic::MountStat::Agility;
+      else if (statName == "ambition")
+        scaling.stat = Magic::MountStat::Ambition;
+      else if (statName == "rush")
+        scaling.stat = Magic::MountStat::Rush;
+      else if (statName == "endurance")
+        scaling.stat = Magic::MountStat::Endurance;
+      else if (statName == "courage")
+        scaling.stat = Magic::MountStat::Courage;
+      else
+        throw std::runtime_error("Unknown stat in statScalings: " + statName);
+
+      scaling.durationScaleBp = entry["durationScaleBp"].as<uint32_t>(0);
+      scaling.critStepBp = entry["critStepBp"].as<uint32_t>(0);
+      scaling.targetDurationReductionBp = entry["targetDurationReductionBp"].as<uint32_t>(0);
+
+      _statScalings.emplace(basicType, scaling);
+    }
+  }
+
   spdlog::info(
     "Magic registry loaded {} slot(s) ({} solo, {} team)",
     _slotInfo.size(),
@@ -146,6 +184,22 @@ const std::vector<uint32_t>& MagicRegistry::GetSoloPool() const
 const std::vector<uint32_t>& MagicRegistry::GetTeamPool() const
 {
   return _teamPool;
+}
+
+const Magic::RegenInfo& MagicRegistry::GetRegenInfo() const
+{
+  return _regenInfo;
+}
+
+uint32_t MagicRegistry::GetBaseCritChanceBp() const
+{
+  return _baseCritChanceBp;
+}
+
+const Magic::StatScaling* MagicRegistry::GetStatScaling(uint32_t basicType) const
+{
+  const auto it = _statScalings.find(basicType);
+  return it == _statScalings.cend() ? nullptr : &it->second;
 }
 
 } // namespace server::registry
