@@ -70,7 +70,6 @@ void TestScopeGuardOnException()
   assert(profiler.Result().value().count() > 0 && "ScopeGuard duration should be valid after exception");
 }
 
-
 } // namespace
 
 int main()
