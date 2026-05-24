@@ -74,6 +74,8 @@ public:
 
     //! A set of tracked items in racer's proximity.
     std::unordered_set<Oid> trackedItems;
+    //! Per-racer per-spawner pickup cooldown expiry times.
+    std::unordered_map<uint16_t, std::chrono::steady_clock::time_point> spawnerCooldowns;
     //! Per-racer event items (e.g. eggs) visible only to this racer.
     std::vector<EventItem> eventItems;
 
