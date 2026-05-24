@@ -64,8 +64,10 @@ public:
       _profile.Stop();
     }
 
-    ScopeGuard(const ScopeGuard &) = delete;
-    ScopeGuard & operator=(const ScopeGuard &) = delete;
+    //! Default move constructor.
+    ScopeGuard(ScopeGuard&&) noexcept = default;
+    //! Default move assignment operator.
+    ScopeGuard& operator=(ScopeGuard &&) noexcept = default;
 
     Profiler & _profile;
   };
