@@ -73,7 +73,7 @@ public:
     ScopeGuard(const ScopeGuard &) = delete;
     ScopeGuard & operator=(const ScopeGuard &) = delete;
 
-    Profiler & profile;
+    Profiler & _profile;
   };
 
   Profiler() noexcept = default;
