@@ -59,7 +59,8 @@ public:
    */
   struct ScopeGuard
   {
-    explicit ScopeGuard(Profiler & profile) : profile(profile)
+    explicit ScopeGuard(Profiler & profile) noexcept 
+      : profile(profile)
     {
       profile.Start();
     }
