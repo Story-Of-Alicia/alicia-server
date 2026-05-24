@@ -69,6 +69,35 @@ struct Magic
     uint32_t criticalByDarkFire{};
   };
 
+  //! Magic gauge (SP) regen settings for Magic mode.
+  struct RegenInfo
+  {
+    uint32_t pointPerTick{1000};
+    uint32_t intervalMs{200};
+    uint32_t courageScaleBp{9};
+  };
+
+  //! Identifies which mount stat field drives a scaling.
+  enum class MountStat : uint8_t
+  {
+    Agility = 0,
+    Ambition = 1,
+    Rush = 2,
+    Endurance = 3,
+    Courage = 4,
+  };
+
+  //! Per-spell stat scaling. The named stat scales the spell's duration and crit chance.
+  struct StatScaling
+  {
+    MountStat stat{MountStat::Agility};
+    //! Fractional duration bonus per caster stat point in bp. e.g. 10 → +1%/pt.
+    uint32_t durationScaleBp{};
+    //! Crit bonus per full 10 caster stat points in bp (stepped). e.g. 250 → +2.5%/10pts.
+    uint32_t critStepBp{};
+    //! Fractional duration reduction per target stat point in bp. e.g. 5 → -0.5%/pt.
+    uint32_t targetDurationReductionBp{};
+  };
 };
 
 class MagicRegistry
@@ -87,10 +116,20 @@ public:
   //! Basic-type slot IDs available in team mode (all teamMode values).
   [[nodiscard]] const std::vector<uint32_t>& GetTeamPool() const;
 
+  [[nodiscard]] const Magic::RegenInfo& GetRegenInfo() const;
+  //! Base magic crit chance in basis points (1bp = 0.01%).
+  [[nodiscard]] uint32_t GetBaseCritChanceBp() const;
+  //! Returns the stat scaling for a basicType, or nullptr if none applies.
+  [[nodiscard]] const Magic::StatScaling* GetStatScaling(uint32_t basicType) const;
+
 private:
   std::unordered_map<uint32_t, Magic::SlotInfo> _slotInfo{};
   std::vector<uint32_t> _soloPool{};
   std::vector<uint32_t> _teamPool{};
+  Magic::RegenInfo _regenInfo{};
+  uint32_t _baseCritChanceBp{500};
+  //! Keyed by basicType.
+  std::unordered_map<uint32_t, Magic::StatScaling> _statScalings{};
 };
 
 } // namespace server::registry
