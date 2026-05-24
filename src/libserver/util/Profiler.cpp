@@ -23,6 +23,8 @@ namespace server
 {
 void Profiler::Start()
 {
+  std::scoped_lock lock(_mutex);
+
   _start = Clock::now();
 }
 
