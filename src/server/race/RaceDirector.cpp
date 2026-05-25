@@ -2647,11 +2647,13 @@ void RaceDirector::HandleRaceUserPos(
     processItemSpawn(eventItem.oid, eventItem.itemType, eventItem.position);
 
   const auto now = std::chrono::steady_clock::now();
-  const bool raceActuallyStarted = raceInstance.stage == RaceInstance::Stage::Racing
+  const bool raceActuallyStarted = (raceInstance.stage == RaceInstance::Stage::Racing
+    || raceInstance.stage == RaceInstance::Stage::Finishing)
     && now >= raceInstance.raceStartTimePoint;
 
   if (raceInstance.raceGameMode == protocol::GameMode::Magic
-    && racer.state == tracker::RaceTracker::Racer::State::Racing
+    && (racer.state == tracker::RaceTracker::Racer::State::Racing
+      || racer.state == tracker::RaceTracker::Racer::State::Finishing)
     && raceActuallyStarted)
   {
     const auto& regen = GetServerInstance().GetMagicRegistry().GetRegenInfo();
