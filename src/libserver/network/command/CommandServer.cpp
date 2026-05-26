@@ -67,20 +67,7 @@ void XorAlgorithm(
 
 bool IsMuted(protocol::Command id)
 {
-  return id == protocol::Command::AcCmdCLHeartbeat
-    || id == protocol::Command::AcCmdCLRoomList
-    || id == protocol::Command::AcCmdCLRoomListOK
-    || id == protocol::Command::AcCmdCRHeartbeat
-    || id == protocol::Command::AcCmdCRRanchSnapshot
-    || id == protocol::Command::AcCmdCRRanchSnapshotNotify
-    || id == protocol::Command::AcCmdUserRaceUpdatePos
-    || id == protocol::Command::AcCmdCRRelay
-    || id == protocol::Command::AcCmdCRRelayNotify
-    || id == protocol::Command::AcCmdCRRelayCommand
-    || id == protocol::Command::AcCmdCRRelayCommandNotify
-    || id == protocol::Command::AcCmdUserRaceActivateEvent
-    || id == protocol::Command::AcCmdCRStarPointGet
-    || id == protocol::Command::AcCmdCRStarPointGetOK;
+  return id == protocol::Command::AcCmdCLHeartbeat || id == protocol::Command::AcCmdCLRoomList || id == protocol::Command::AcCmdCLRoomListOK || id == protocol::Command::AcCmdCRHeartbeat || id == protocol::Command::AcCmdCRRanchSnapshot || id == protocol::Command::AcCmdCRRanchSnapshotNotify || id == protocol::Command::AcCmdUserRaceUpdatePos || id == protocol::Command::AcCmdCRRelay || id == protocol::Command::AcCmdCRRelayNotify || id == protocol::Command::AcCmdCRRelayCommand || id == protocol::Command::AcCmdCRRelayCommandNotify || id == protocol::Command::AcCmdUserRaceActivateEvent || id == protocol::Command::AcCmdCRStarPointGet || id == protocol::Command::AcCmdCRStarPointGetOK;
 }
 
 } // namespace
@@ -318,14 +305,13 @@ size_t CommandServer::NetworkEventHandler::OnClientData(
       commandDataStream = std::move(SourceStream(
         {commandDataBuffer.begin(), actualCommandDataSize}));
 
-      if (_commandServer.debugIncomingCommandData
-        && not IsMuted(commandId))
+      if (_commandServer.debugIncomingCommandData && not IsMuted(commandId))
       {
         spdlog::debug("Read data for command '{}' (0x{:X}),\n\n"
-          "XOR code: {:#X},\n"
-          "Command data size: {} (padding: {}),\n"
-          "Actual command data size: {}\n"
-          "Processed data dump: \n\n{}\n",
+                      "XOR code: {:#X},\n"
+                      "Command data size: {} (padding: {}),\n"
+                      "Actual command data size: {}\n"
+                      "Processed data dump: \n\n{}\n",
           GetCommandName(commandId),
           magic.id,
           code,
@@ -340,8 +326,7 @@ size_t CommandServer::NetworkEventHandler::OnClientData(
     const auto handlerIter = _commandServer._handlers.find(commandId);
     if (handlerIter == _commandServer._handlers.cend())
     {
-      if (_commandServer.debugCommands
-        && not IsMuted(commandId))
+      if (_commandServer.debugCommands && not IsMuted(commandId))
       {
         spdlog::warn(
           "Unhandled command '{}' (0x{:x})",
@@ -357,8 +342,15 @@ size_t CommandServer::NetworkEventHandler::OnClientData(
 
       try
       {
+        Profiler processingTimeProfiler;
+        processingTimeProfiler.Start();
         // Call the handler.
         handler(clientId, commandDataStream);
+        processingTimeProfiler.Stop();
+
+        if (const auto result = processingTimeProfiler.Result())
+          _commandServer._processingTimeStatistics.Collect(
+            std::chrono::duration_cast<std::chrono::microseconds>(*result).count());
       }
       catch (const std::exception& x)
       {
@@ -372,8 +364,7 @@ size_t CommandServer::NetworkEventHandler::OnClientData(
       // There shouldn't be any left-over data in the stream.
       assert(commandDataStream.GetCursor() == commandDataStream.Size());
 
-      if (_commandServer.debugCommands
-        && not IsMuted(commandId))
+      if (_commandServer.debugCommands && not IsMuted(commandId))
       {
         spdlog::debug(
           "Handled command '{}' (0x{:x})",
@@ -412,12 +403,11 @@ void CommandServer::SendCommand(
         // Command size is the size of the whole command.
         const size_t commandSize = commandSink.GetCursor();
 
-        if (debugOutgoingCommandData
-          && not IsMuted(commandId))
+        if (debugOutgoingCommandData && not IsMuted(commandId))
         {
           spdlog::debug("Write data for command '{}' (0x{:X}),\n\n"
-            "Command data size: {} \n"
-            "Data dump: \n\n{}\n",
+                        "Command data size: {} \n"
+                        "Data dump: \n\n{}\n",
             GetCommandName(commandId),
             static_cast<uint32_t>(commandId),
             commandSize,
@@ -439,12 +429,11 @@ void CommandServer::SendCommand(
         commandSink.Write(encode_message_magic(magic));
         writeBuffer.commit(magic.length);
 
-        if (debugCommands
-          && not IsMuted(commandId))
+        if (debugCommands && not IsMuted(commandId))
         {
           spdlog::debug("Sent command message '{}' (0x{:X})",
-          GetCommandName(commandId),
-          static_cast<uint32_t>(commandId));
+            GetCommandName(commandId),
+            static_cast<uint32_t>(commandId));
         }
 
         return commandSize;
@@ -454,6 +443,16 @@ void CommandServer::SendCommand(
   {
     // the client disconnected, todo dont use client ids, or dont
   }
+}
+
+network::Server& CommandServer::GetServer()
+{
+  return _server;
+}
+
+CommandServer::TimeStatistics& CommandServer::GetProcessingTimeStatistics()
+{
+  return _processingTimeStatistics;
 }
 
 } // namespace server

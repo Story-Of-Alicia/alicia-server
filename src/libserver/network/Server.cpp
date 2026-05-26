@@ -163,6 +163,11 @@ void Client::WriteLoop() noexcept
           std::scoped_lock lock(clientPtr->_writeMutex);
           clientPtr->_writeBuffer.consume(size);
         }
+
+        // Stop measuring and send the result (moved so it only stores the result on success)
+        clientPtr->_writeProfiler.Stop();
+        if (const auto result = clientPtr->_writeProfiler.Result())
+          clientPtr->_networkEventHandler.OnSendTime(*result);
       }
       catch (const std::exception& x)
       {
@@ -175,7 +180,6 @@ void Client::WriteLoop() noexcept
       }
 
       clientPtr->_isSending.store(false, std::memory_order::release);
-      clientPtr->_writeProfiler.Stop();
       clientPtr->WriteLoop();
     });
 }
@@ -219,8 +223,11 @@ void Client::ReadLoop() noexcept
 
         clientPtr->_readBuffer.consume(consumedBytes);
 
-        // Continue the read loop.
         clientPtr->_readProfiler.Stop();
+        if (const auto result = clientPtr->_readProfiler.Result())
+          clientPtr->_networkEventHandler.OnReceiveTime(*result);
+
+        // Continue the read loop.
         clientPtr->ReadLoop();
       }
       catch (const std::exception& x)
@@ -370,6 +377,16 @@ bool Server::IsConnectionThrottled(const asio::ip::address_v4& address) noexcept
   return false;
 }
 
+void Server::OnSendTime(Duration duration)
+{
+  _sendTimeStatistics.Collect(std::chrono::duration_cast<std::chrono::microseconds>(duration).count());
+}
+
+void Server::OnReceiveTime(Duration duration)
+{
+  _receiveTimeStatistics.Collect(std::chrono::duration_cast<std::chrono::microseconds>(duration).count());
+}
+
 void Server::OnThrottleDisconnect(const asio::ip::address_v4& address) noexcept
 {
   const auto it = _addressStates.find(address);
@@ -465,6 +482,16 @@ void Server::TickLoop() noexcept
 
       TickLoop();
     });
+}
+
+Server::TimeStatistics& Server::GetSendTimeStatistics() noexcept
+{
+  return _sendTimeStatistics;
+}
+
+Server::TimeStatistics& Server::GetReceiveTimeStatistics() noexcept
+{
+  return _receiveTimeStatistics;
 }
 
 } // namespace server::network

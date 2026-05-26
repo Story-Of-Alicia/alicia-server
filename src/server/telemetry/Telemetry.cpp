@@ -19,6 +19,7 @@
 
 #include "server/telemetry/Telemetry.hpp"
 
+#include "server/lobby/LobbyNetworkHandler.hpp"
 #include "server/ServerInstance.hpp"
 
 namespace server
@@ -34,10 +35,58 @@ void PrepareTables(pqxx::connection& connection)
   tx.exec("create table if not exists metrics.player_count_time_series(time bigint primary key, value int);");
   tx.exec("create table if not exists metrics.room_count_time_series(time bigint primary key, value int);");
 
+  tx.exec("create table if not exists metrics.lobby_send_time_series(time bigint, value int);");
+  tx.exec("create table if not exists metrics.lobby_receive_time_series(time bigint, value int);");
+  tx.exec("create table if not exists metrics.ranch_send_time_series(time bigint, value int);");
+  tx.exec("create table if not exists metrics.ranch_receive_time_series(time bigint, value int);");
+  tx.exec("create table if not exists metrics.race_send_time_series(time bigint, value int);");
+  tx.exec("create table if not exists metrics.race_receive_time_series(time bigint, value int);");
+  tx.exec("create table if not exists metrics.allchat_send_time_series(time bigint, value int);");
+  tx.exec("create table if not exists metrics.allchat_receive_time_series(time bigint, value int);");
+  tx.exec("create table if not exists metrics.messenger_send_time_series(time bigint, value int);");
+  tx.exec("create table if not exists metrics.messenger_receive_time_series(time bigint, value int);");
+
+  tx.exec("create table if not exists metrics.lobby_processing_time_series(time bigint, value int);");
+  tx.exec("create table if not exists metrics.ranch_processing_time_series(time bigint, value int);");
+  tx.exec("create table if not exists metrics.race_processing_time_series(time bigint, value int);");
+  tx.exec("create table if not exists metrics.messenger_processing_time_series(time bigint, value int);");
+  tx.exec("create table if not exists metrics.allchat_processing_time_series(time bigint, value int);");
+
   tx.commit();
 }
 
-} // anon namespace
+void CleanOldData(pqxx::connection& connection)
+{
+  pqxx::work tx(connection);
+
+  const auto cutoff = std::chrono::duration_cast<std::chrono::seconds>(
+    (std::chrono::system_clock::now() - std::chrono::hours(24 * 30)).time_since_epoch())
+                        .count();
+
+  spdlog::info("Cleaning up metric data older than 30 days");
+
+  tx.exec(std::format("delete from metrics.player_count_time_series where time < {};", cutoff));
+  tx.exec(std::format("delete from metrics.room_count_time_series where time < {};", cutoff));
+  tx.exec(std::format("delete from metrics.lobby_send_time_series where time < {};", cutoff));
+  tx.exec(std::format("delete from metrics.lobby_receive_time_series where time < {};", cutoff));
+  tx.exec(std::format("delete from metrics.ranch_send_time_series where time < {};", cutoff));
+  tx.exec(std::format("delete from metrics.ranch_receive_time_series where time < {};", cutoff));
+  tx.exec(std::format("delete from metrics.race_send_time_series where time < {};", cutoff));
+  tx.exec(std::format("delete from metrics.race_receive_time_series where time < {};", cutoff));
+  tx.exec(std::format("delete from metrics.allchat_send_time_series where time < {};", cutoff));
+  tx.exec(std::format("delete from metrics.allchat_receive_time_series where time < {};", cutoff));
+  tx.exec(std::format("delete from metrics.messenger_send_time_series where time < {};", cutoff));
+  tx.exec(std::format("delete from metrics.messenger_receive_time_series where time < {};", cutoff));
+  tx.exec(std::format("delete from metrics.lobby_processing_time_series where time < {};", cutoff));
+  tx.exec(std::format("delete from metrics.ranch_processing_time_series where time < {};", cutoff));
+  tx.exec(std::format("delete from metrics.race_processing_time_series where time < {};", cutoff));
+  tx.exec(std::format("delete from metrics.messenger_processing_time_series where time < {};", cutoff));
+  tx.exec(std::format("delete from metrics.allchat_processing_time_series where time < {};", cutoff));
+
+  tx.commit();
+}
+
+} // namespace
 
 Telemetry::Telemetry(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
@@ -53,7 +102,7 @@ void Telemetry::Initialize()
     spdlog::info("Telemetry is not using any backend");
     ScheduleCollectData();
   }
-  if (settings.telemetry.backend == "postgres")
+  else if (settings.telemetry.backend == "postgres")
   {
     spdlog::info("Telemetry is using PostgreSQL backend");
 
@@ -92,6 +141,7 @@ void Telemetry::ConnectPostgresBackend()
     _connection.emplace(
       settings.telemetry.postgres.connectionUri);
     PrepareTables(*_connection);
+    CleanOldData(*_connection);
 
     const auto time = std::chrono::duration_cast<std::chrono::milliseconds>(
       std::chrono::steady_clock::now() - timerBegin);
@@ -168,8 +218,225 @@ void Telemetry::SynchronizeData()
             value);
         }
       });
-
     roomCountStream.complete();
+
+    auto lobbySendStream = pqxx::stream_to::raw_table(tx, "metrics.lobby_send_time_series");
+    _serverInstance.GetLobbyDirector().GetNetworkHandler().GetCommandServer().GetServer().GetSendTimeStatistics().GetAndClearData([&lobbySendStream](auto& data)
+      {
+        for (const auto& [timePoint, value] : data)
+        {
+          // TimeSeriesData uses system_clock, so the sentinel must match that clock.
+          if (timePoint == std::chrono::system_clock::time_point::min())
+            continue;
+
+          lobbySendStream.write_values(
+            std::chrono::duration_cast<std::chrono::seconds>(timePoint.time_since_epoch()).count(),
+            value);
+        }
+      });
+    lobbySendStream.complete();
+
+    auto lobbyReceiveStream = pqxx::stream_to::raw_table(tx, "metrics.lobby_receive_time_series");
+    _serverInstance.GetLobbyDirector().GetNetworkHandler().GetCommandServer().GetServer().GetReceiveTimeStatistics().GetAndClearData([&lobbyReceiveStream](auto& data)
+      {
+        for (const auto& [timePoint, value] : data)
+        {
+          if (timePoint == std::chrono::system_clock::time_point::min())
+            continue;
+
+          lobbyReceiveStream.write_values(
+            std::chrono::duration_cast<std::chrono::seconds>(timePoint.time_since_epoch()).count(),
+            value);
+        }
+      });
+    lobbyReceiveStream.complete();
+
+    auto ranchSendStream = pqxx::stream_to::raw_table(tx, "metrics.ranch_send_time_series");
+    _serverInstance.GetRanchDirector().GetCommandServer().GetServer().GetSendTimeStatistics().GetAndClearData([&ranchSendStream](auto& data)
+      {
+        for (const auto& [timePoint, value] : data)
+        {
+          if (timePoint == std::chrono::system_clock::time_point::min())
+            continue;
+
+          ranchSendStream.write_values(
+            std::chrono::duration_cast<std::chrono::seconds>(timePoint.time_since_epoch()).count(),
+            value);
+        }
+      });
+    ranchSendStream.complete();
+
+    auto ranchReceiveStream = pqxx::stream_to::raw_table(tx, "metrics.ranch_receive_time_series");
+    _serverInstance.GetRanchDirector().GetCommandServer().GetServer().GetReceiveTimeStatistics().GetAndClearData([&ranchReceiveStream](auto& data)
+      {
+        for (const auto& [timePoint, value] : data)
+        {
+          if (timePoint == std::chrono::system_clock::time_point::min())
+            continue;
+
+          ranchReceiveStream.write_values(
+            std::chrono::duration_cast<std::chrono::seconds>(timePoint.time_since_epoch()).count(),
+            value);
+        }
+      });
+    ranchReceiveStream.complete();
+
+    auto raceSendStream = pqxx::stream_to::raw_table(tx, "metrics.race_send_time_series");
+    _serverInstance.GetRaceDirector().GetCommandServer().GetServer().GetSendTimeStatistics().GetAndClearData([&raceSendStream](auto& data)
+      {
+        for (const auto& [timePoint, value] : data)
+        {
+          if (timePoint == std::chrono::system_clock::time_point::min())
+            continue;
+
+          raceSendStream.write_values(
+            std::chrono::duration_cast<std::chrono::seconds>(timePoint.time_since_epoch()).count(),
+            value);
+        }
+      });
+    raceSendStream.complete();
+
+    auto raceReceiveStream = pqxx::stream_to::raw_table(tx, "metrics.race_receive_time_series");
+    _serverInstance.GetRaceDirector().GetCommandServer().GetServer().GetReceiveTimeStatistics().GetAndClearData([&raceReceiveStream](auto& data)
+      {
+        for (const auto& [timePoint, value] : data)
+        {
+          if (timePoint == std::chrono::system_clock::time_point::min())
+            continue;
+
+          raceReceiveStream.write_values(
+            std::chrono::duration_cast<std::chrono::seconds>(timePoint.time_since_epoch()).count(),
+            value);
+        }
+      });
+    raceReceiveStream.complete();
+
+    auto allchatSendStream = pqxx::stream_to::raw_table(tx, "metrics.allchat_send_time_series");
+    _serverInstance.GetAllChatDirector().GetChatterServer().GetServer().GetSendTimeStatistics().GetAndClearData([&allchatSendStream](auto& data)
+      {
+        for (const auto& [timePoint, value] : data)
+        {
+          if (timePoint == std::chrono::system_clock::time_point::min())
+            continue;
+          allchatSendStream.write_values(
+            std::chrono::duration_cast<std::chrono::seconds>(timePoint.time_since_epoch()).count(),
+            value);
+        }
+      });
+    allchatSendStream.complete();
+
+    auto allchatRecieveStream = pqxx::stream_to::raw_table(tx, "metrics.allchat_receive_time_series");
+    _serverInstance.GetAllChatDirector().GetChatterServer().GetServer().GetReceiveTimeStatistics().GetAndClearData([&allchatRecieveStream](auto& data)
+      {
+        for (const auto& [timePoint, value] : data)
+        {
+          if (timePoint == std::chrono::system_clock::time_point::min())
+            continue;
+          allchatRecieveStream.write_values(
+            std::chrono::duration_cast<std::chrono::seconds>(timePoint.time_since_epoch()).count(),
+            value);
+        }
+      });
+    allchatRecieveStream.complete();
+
+    auto messengerSendStream = pqxx::stream_to::raw_table(tx, "metrics.messenger_send_time_series");
+    _serverInstance.GetMessengerDirector().GetChatterServer().GetServer().GetSendTimeStatistics().GetAndClearData([&messengerSendStream](auto& data)
+      {
+        for (const auto& [timePoint, value] : data)
+        {
+          if (timePoint == std::chrono::system_clock::time_point::min())
+            continue;
+          messengerSendStream.write_values(
+            std::chrono::duration_cast<std::chrono::seconds>(timePoint.time_since_epoch()).count(),
+            value);
+        }
+      });
+    messengerSendStream.complete();
+
+    auto messengerRecieveStream = pqxx::stream_to::raw_table(tx, "metrics.messenger_receive_time_series");
+    _serverInstance.GetMessengerDirector().GetChatterServer().GetServer().GetReceiveTimeStatistics().GetAndClearData([&messengerRecieveStream](auto& data)
+      {
+        for (const auto& [timePoint, value] : data)
+        {
+          if (timePoint == std::chrono::system_clock::time_point::min())
+            continue;
+          messengerRecieveStream.write_values(
+            std::chrono::duration_cast<std::chrono::seconds>(timePoint.time_since_epoch()).count(),
+            value);
+        }
+      });
+    messengerRecieveStream.complete();
+
+    auto lobbyProcessingStream = pqxx::stream_to::raw_table(tx, "metrics.lobby_processing_time_series");
+    _serverInstance.GetLobbyDirector().GetNetworkHandler().GetCommandServer().GetProcessingTimeStatistics().GetAndClearData([&lobbyProcessingStream](auto& data)
+      {
+        for (const auto& [timePoint, value] : data)
+        {
+          if (timePoint == std::chrono::system_clock::time_point::min())
+            continue;
+          lobbyProcessingStream.write_values(
+            std::chrono::duration_cast<std::chrono::seconds>(timePoint.time_since_epoch()).count(),
+            value);
+        }
+      });
+    lobbyProcessingStream.complete();
+
+    auto ranchProcessingStream = pqxx::stream_to::raw_table(tx, "metrics.ranch_processing_time_series");
+    _serverInstance.GetRanchDirector().GetCommandServer().GetProcessingTimeStatistics().GetAndClearData([&ranchProcessingStream](auto& data)
+      {
+        for (const auto& [timePoint, value] : data)
+        {
+          if (timePoint == std::chrono::system_clock::time_point::min())
+            continue;
+          ranchProcessingStream.write_values(
+            std::chrono::duration_cast<std::chrono::seconds>(timePoint.time_since_epoch()).count(),
+            value);
+        }
+      });
+    ranchProcessingStream.complete();
+
+    auto raceProcessingStream = pqxx::stream_to::raw_table(tx, "metrics.race_processing_time_series");
+    _serverInstance.GetRaceDirector().GetCommandServer().GetProcessingTimeStatistics().GetAndClearData([&raceProcessingStream](auto& data)
+      {
+        for (const auto& [timePoint, value] : data)
+        {
+          if (timePoint == std::chrono::system_clock::time_point::min())
+            continue;
+          raceProcessingStream.write_values(
+            std::chrono::duration_cast<std::chrono::seconds>(timePoint.time_since_epoch()).count(),
+            value);
+        }
+      });
+    raceProcessingStream.complete();
+
+    auto messengerProcessingStream = pqxx::stream_to::raw_table(tx, "metrics.messenger_processing_time_series");
+    _serverInstance.GetMessengerDirector().GetChatterServer().GetProcessingTimeStatistics().GetAndClearData([&messengerProcessingStream](auto& data)
+      {
+        for (const auto& [timePoint, value] : data)
+        {
+          if (timePoint == std::chrono::system_clock::time_point::min())
+            continue;
+          messengerProcessingStream.write_values(
+            std::chrono::duration_cast<std::chrono::seconds>(timePoint.time_since_epoch()).count(),
+            value);
+        }
+      });
+    messengerProcessingStream.complete();
+
+    auto allchatProcessingStream = pqxx::stream_to::raw_table(tx, "metrics.allchat_processing_time_series");
+    _serverInstance.GetAllChatDirector().GetChatterServer().GetProcessingTimeStatistics().GetAndClearData([&allchatProcessingStream](auto& data)
+      {
+        for (const auto& [timePoint, value] : data)
+        {
+          if (timePoint == std::chrono::system_clock::time_point::min())
+            continue;
+          allchatProcessingStream.write_values(
+            std::chrono::duration_cast<std::chrono::seconds>(timePoint.time_since_epoch()).count(),
+            value);
+        }
+      });
+    allchatProcessingStream.complete();
+
     tx.commit();
   }
   catch (const pqxx::broken_connection&)

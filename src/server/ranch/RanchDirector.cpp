@@ -5617,4 +5617,9 @@ void RanchDirector::HandleRequestUser(
   _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }
 
+CommandServer & RanchDirector::GetCommandServer()
+{
+  return _commandServer;
+}
+
 } // namespace server

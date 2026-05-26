@@ -112,6 +112,7 @@ public:
 
   ServerInstance& GetServerInstance();
   Config::Ranch& GetConfig();
+  CommandServer & GetCommandServer();
 
 private:
   std::random_device _randomDevice;

@@ -271,4 +271,9 @@ void AllChatDirector::HandleChatterInputState(
   }
 }
 
+ChatterServer& AllChatDirector::GetChatterServer()
+{
+  return _chatterServer;
+}
+
 } // namespace server
