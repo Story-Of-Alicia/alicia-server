@@ -163,10 +163,10 @@ public:
   void OnSendTime(Duration duration) override;
   void OnReceiveTime(Duration duration) override;
 
-  //! Returns reference to collected sendt time statistics
-  [[nodiscard]] TimeStatistics & GetSendTimeStatistics() noexcept;
-  //! Returns reference to collected received time statistics
-  [[nodiscard]] TimeStatistics & GetReceiveTimeStatistics() noexcept;
+  //! Returns the send time statistics.
+  [[nodiscard]] TimeStatistics& GetSendTimeStatistics() noexcept;
+  //! Returns the receive time statistics.
+  [[nodiscard]] TimeStatistics& GetReceiveTimeStatistics() noexcept;
 
 private:
   struct AddressState
@@ -194,9 +194,9 @@ private:
   //! A network event handler.
   EventHandlerInterface& _networkEventHandler;
 
-  //! Storage for send time statistics
+  //! Statistics for network send durations.
   TimeStatistics _sendTimeStatistics;
-  //! Storage for received time statistics
+  //! Statistics for network receive durations.
   TimeStatistics _receiveTimeStatistics;
 };
 

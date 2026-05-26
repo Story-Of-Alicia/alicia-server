@@ -131,7 +131,9 @@ public:
 
   void SetCode(ClientId client, protocol::XorCode code);
 
-  network::Server & GetServer();
+  //! Returns the underlying network server.
+  network::Server& GetServer();
+  //! Returns the command processing time statistics.
   TimeStatistics& GetProcessingTimeStatistics();
 
 private:
@@ -169,6 +171,7 @@ private:
   network::Server _server;
   std::thread _serverThread;
 
+  //! Statistics for command handler processing durations.
   TimeStatistics _processingTimeStatistics;
 };
 

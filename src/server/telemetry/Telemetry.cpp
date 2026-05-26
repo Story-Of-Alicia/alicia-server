@@ -55,6 +55,7 @@ void PrepareTables(pqxx::connection& connection)
   tx.commit();
 }
 
+//! Deletes metric rows older than 30 days. Run once on startup.
 void CleanOldData(pqxx::connection& connection)
 {
   pqxx::work tx(connection);
@@ -220,6 +221,7 @@ void Telemetry::SynchronizeData()
       });
     roomCountStream.complete();
 
+    // Drain per-server network and processing timing statistics to their tables.
     auto lobbySendStream = pqxx::stream_to::raw_table(tx, "metrics.lobby_send_time_series");
     _serverInstance.GetLobbyDirector().GetNetworkHandler().GetCommandServer().GetServer().GetSendTimeStatistics().GetAndClearData([&lobbySendStream](auto& data)
       {

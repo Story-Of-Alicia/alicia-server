@@ -46,7 +46,8 @@ public:
     bool requireAuthentication = true);
   void Tick();
 
-  ChatterServer & GetChatterServer();
+  //! Returns the chatter server.
+  ChatterServer& GetChatterServer();
 
 private:
   void HandleClientConnected(network::ClientId clientId) override;

@@ -162,8 +162,10 @@ public:
     });
   }
 
-  network::Server & GetServer();
-  TimeStatistics & GetProcessingTimeStatistics();
+  //! Returns the underlying network server.
+  network::Server& GetServer();
+  //! Returns the command-processing time statistics.
+  TimeStatistics& GetProcessingTimeStatistics();
 
 private:
   void HandleNetworkTick() override;
@@ -182,6 +184,7 @@ private:
   bool debugOutgoingCommandData = constants::DebugCommands;
   bool debugCommands = constants::DebugCommands;
 
+  //! Statistics for command handler processing durations.
   TimeStatistics _processingTimeStatistics;
 };
 

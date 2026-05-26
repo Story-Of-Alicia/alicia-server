@@ -56,7 +56,8 @@ public:
     const data::Uid characterUid,
     const MatchmakingSystem::Result& result);
 
-  CommandServer & GetCommandServer();
+  //! Returns the command server.
+  CommandServer& GetCommandServer();
 
 private:
   struct ClientContext

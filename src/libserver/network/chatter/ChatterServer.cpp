@@ -186,6 +186,9 @@ size_t ChatterServer::OnClientData(
       const auto& handler = handlerIter->second;
       try
       {
+        // Measure the time spent in the command handler.
+        // A local profiler is used (not a shared member) so concurrent dispatches
+        // on different threads don't share timing state.
         Profiler processingTimeProfiler;
         processingTimeProfiler.Start();
         handler(clientId, commandDataSource);

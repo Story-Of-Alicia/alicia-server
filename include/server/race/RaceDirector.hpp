@@ -102,7 +102,9 @@ public:
 
   ServerInstance& GetServerInstance();
   Config::Race& GetConfig();
-  CommandServer & GetCommandServer();
+
+  //! Returns the command server.
+  CommandServer& GetCommandServer();
 
 private:
   std::random_device _randomDevice;
