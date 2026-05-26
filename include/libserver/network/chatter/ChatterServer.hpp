@@ -20,12 +20,12 @@
 #ifndef CHATTER_SERVER_HPP
 #define CHATTER_SERVER_HPP
 
-#include "libserver/Constants.hpp"
 #include "libserver/network/Server.hpp"
-#include "libserver/util/Profiler.hpp"
 #include "libserver/util/Stream.hpp"
-#include "libserver/util/TimeSeriesData.hpp"
+#include "libserver/Constants.hpp"
 #include "libserver/util/Util.hpp"
+#include "libserver/util/TimeSeriesData.hpp"
+#include "libserver/util/Profiler.hpp"
 
 #include "proto/ChatterMessageDefinitions.hpp"
 
@@ -52,8 +52,9 @@ using RawChatterCommandHandler = std::function<void(network::ClientId, SourceStr
 
 //! Concept for readable command structs.
 template <typename T>
-concept ReadableChatterCommandStruct = ReadableStruct<T> and requires {
-  { T::GetCommand() } -> std::convertible_to<protocol::ChatterCommand>;
+concept ReadableChatterCommandStruct = ReadableStruct<T> and requires
+{
+  {T::GetCommand()} -> std::convertible_to<protocol::ChatterCommand>;
 };
 
 class ChatterServer final
@@ -78,90 +79,91 @@ public:
   {
     _handlers[static_cast<uint16_t>(C::GetCommand())] =
       [handler](network::ClientId clientId, SourceStream& source)
-    {
-      C command;
-      C::Read(command, source);
-      handler(clientId, command);
-    };
+      {
+        C command;
+        C::Read(command, source);
+        handler(clientId, command);
+      };
   }
 
-  template <typename T>
+  template<typename T>
   void QueueCommand(network::ClientId clientId, std::function<T()> commandSupplier)
   {
     _server.GetClient(clientId)->QueueWrite([this, commandSupplier = std::move(commandSupplier)](
-                                              network::asio::streambuf& buf)
+      network::asio::streambuf& buf)
+    {
+      // todo: this templated function should just write the bytes to the buffer,
+      //       rest of the logic should be moved to non-templated function which deals with buffer directly.
+
+      const auto buffer = buf.prepare(4092);
+      SinkStream bufferSink({
+        static_cast<std::byte*>(buffer.data()),
+        buffer.size()});
+
+      // reserve the space for the header
+      bufferSink.Write(0);
+
+      // write the command data
+      T command = commandSupplier();
+      bufferSink.Write(command);
+
+      const protocol::ChatterCommandHeader header {
+        .length = static_cast<uint16_t>(bufferSink.GetCursor()),
+        .commandId = static_cast<uint16_t>(T::GetCommand()),};
+
+      if (debugOutgoingCommandData)
       {
-        // todo: this templated function should just write the bytes to the buffer,
-        //       rest of the logic should be moved to non-templated function which deals with buffer directly.
+        spdlog::debug("Write data for command '{}' (0x{:X}),\n\n"
+          "Command data size: {} \n"
+          "Data dump: \n\n{}\n",
+          GetChatterCommandName(T::GetCommand()),
+          static_cast<uint16_t>(T::GetCommand()),
+          header.length,
+          util::GenerateByteDump(
+            std::span(
+              static_cast<std::byte*>(buffer.data()) + sizeof(protocol::ChatterCommandHeader),
+              header.length - sizeof(protocol::ChatterCommandHeader))));
+      }
 
-        const auto buffer = buf.prepare(4092);
-        SinkStream bufferSink({static_cast<std::byte*>(buffer.data()),
-          buffer.size()});
+      bufferSink.Seek(0);
+      bufferSink.Write(header.length)
+        .Write(header.commandId);
 
-        // reserve the space for the header
-        bufferSink.Write(0);
+      // scramble the message
+      SourceStream bufferSource({
+        static_cast<std::byte*>(buffer.data()),
+        header.length});
 
-        // write the command data
-        T command = commandSupplier();
-        bufferSink.Write(command);
+      bufferSink.Seek(0);
 
-        const protocol::ChatterCommandHeader header{
-          .length = static_cast<uint16_t>(bufferSink.GetCursor()),
-          .commandId = static_cast<uint16_t>(T::GetCommand()),
-        };
+      constexpr std::array XorCode{
+        static_cast<std::byte>(0x2B),
+        static_cast<std::byte>(0xFE),
+        static_cast<std::byte>(0xB8),
+        static_cast<std::byte>(0x02)};
 
-        if (debugOutgoingCommandData)
-        {
-          spdlog::debug("Write data for command '{}' (0x{:X}),\n\n"
-                        "Command data size: {} \n"
-                        "Data dump: \n\n{}\n",
-            GetChatterCommandName(T::GetCommand()),
-            static_cast<uint16_t>(T::GetCommand()),
-            header.length,
-            util::GenerateByteDump(
-              std::span(
-                static_cast<std::byte*>(buffer.data()) + sizeof(protocol::ChatterCommandHeader),
-                header.length - sizeof(protocol::ChatterCommandHeader))));
-        }
+      while (bufferSource.GetCursor() != bufferSource.Size())
+      {
+        std::byte val;
+        bufferSource.Read(val);
+        val ^= XorCode[(bufferSource.GetCursor() - 1) % 4];
+        bufferSink.Write(val);
+      }
 
-        bufferSink.Seek(0);
-        bufferSink.Write(header.length)
-          .Write(header.commandId);
+      if (debugCommands)
+      {
+        spdlog::debug("Sent chatter command message '{}' (0x{:X})",
+          GetChatterCommandName(T::GetCommand()),
+          static_cast<uint16_t>(T::GetCommand()));
+      }
 
-        // scramble the message
-        SourceStream bufferSource({static_cast<std::byte*>(buffer.data()),
-          header.length});
-
-        bufferSink.Seek(0);
-
-        constexpr std::array XorCode{
-          static_cast<std::byte>(0x2B),
-          static_cast<std::byte>(0xFE),
-          static_cast<std::byte>(0xB8),
-          static_cast<std::byte>(0x02)};
-
-        while (bufferSource.GetCursor() != bufferSource.Size())
-        {
-          std::byte val;
-          bufferSource.Read(val);
-          val ^= XorCode[(bufferSource.GetCursor() - 1) % 4];
-          bufferSink.Write(val);
-        }
-
-        if (debugCommands)
-        {
-          spdlog::debug("Sent chatter command message '{}' (0x{:X})",
-            GetChatterCommandName(T::GetCommand()),
-            static_cast<uint16_t>(T::GetCommand()));
-        }
-
-        buf.commit(bufferSource.GetCursor());
-        return bufferSource.GetCursor();
-      });
+      buf.commit(bufferSource.GetCursor());
+      return bufferSource.GetCursor();
+    });
   }
 
-  network::Server& GetServer();
-  TimeStatistics& GetProcessingTimeStatistics();
+  network::Server & GetServer();
+  TimeStatistics & GetProcessingTimeStatistics();
 
 private:
   void HandleNetworkTick() override;
