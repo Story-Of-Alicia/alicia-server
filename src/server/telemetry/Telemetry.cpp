@@ -45,12 +45,15 @@ void PrepareTables(pqxx::connection& connection)
   tx.exec("create table if not exists metrics.allchat_receive_time_series(time bigint, value int);");
   tx.exec("create table if not exists metrics.messenger_send_time_series(time bigint, value int);");
   tx.exec("create table if not exists metrics.messenger_receive_time_series(time bigint, value int);");
+  tx.exec("create table if not exists metrics.privatechat_send_time_series(time bigint, value int);");
+  tx.exec("create table if not exists metrics.privatechat_receive_time_series(time bigint, value int);");
 
   tx.exec("create table if not exists metrics.lobby_processing_time_series(time bigint, value int);");
   tx.exec("create table if not exists metrics.ranch_processing_time_series(time bigint, value int);");
   tx.exec("create table if not exists metrics.race_processing_time_series(time bigint, value int);");
   tx.exec("create table if not exists metrics.messenger_processing_time_series(time bigint, value int);");
   tx.exec("create table if not exists metrics.allchat_processing_time_series(time bigint, value int);");
+  tx.exec("create table if not exists metrics.privatechat_processing_time_series(time bigint, value int);");
 
   tx.commit();
 }
@@ -68,6 +71,7 @@ void CleanOldData(pqxx::connection& connection)
 
   tx.exec(std::format("delete from metrics.player_count_time_series where time < {};", cutoff));
   tx.exec(std::format("delete from metrics.room_count_time_series where time < {};", cutoff));
+
   tx.exec(std::format("delete from metrics.lobby_send_time_series where time < {};", cutoff));
   tx.exec(std::format("delete from metrics.lobby_receive_time_series where time < {};", cutoff));
   tx.exec(std::format("delete from metrics.ranch_send_time_series where time < {};", cutoff));
@@ -78,11 +82,15 @@ void CleanOldData(pqxx::connection& connection)
   tx.exec(std::format("delete from metrics.allchat_receive_time_series where time < {};", cutoff));
   tx.exec(std::format("delete from metrics.messenger_send_time_series where time < {};", cutoff));
   tx.exec(std::format("delete from metrics.messenger_receive_time_series where time < {};", cutoff));
+  tx.exec(std::format("delete from metrics.privatechat_send_time_series where time < {};", cutoff));
+  tx.exec(std::format("delete from metrics.privatechat_receive_time_series where time < {};", cutoff));
+
   tx.exec(std::format("delete from metrics.lobby_processing_time_series where time < {};", cutoff));
   tx.exec(std::format("delete from metrics.ranch_processing_time_series where time < {};", cutoff));
   tx.exec(std::format("delete from metrics.race_processing_time_series where time < {};", cutoff));
   tx.exec(std::format("delete from metrics.messenger_processing_time_series where time < {};", cutoff));
   tx.exec(std::format("delete from metrics.allchat_processing_time_series where time < {};", cutoff));
+  tx.exec(std::format("delete from metrics.privatechat_processing_time_series where time < {};", cutoff));
 
   tx.commit();
 }
@@ -369,6 +377,34 @@ void Telemetry::SynchronizeData()
       });
     messengerRecieveStream.complete();
 
+    auto privatechatSendStream = pqxx::stream_to::raw_table(tx, "metrics.privatechat_send_time_series");
+    _serverInstance.GetPrivateChatDirector().GetChatterServer().GetServer().GetSendTimeStatistics().GetAndClearData([&privatechatSendStream](auto& data)
+    {
+      for (const auto& [timePoint, value] : data)
+      {
+        if (timePoint == std::chrono::system_clock::time_point::min())
+          continue;
+        privatechatSendStream.write_values(
+          std::chrono::duration_cast<std::chrono::seconds>(timePoint.time_since_epoch()).count(),
+          value);
+      }
+    });
+    privatechatSendStream.complete();
+
+    auto privatechatRecieveStream = pqxx::stream_to::raw_table(tx, "metrics.privatechat_receive_time_series");
+    _serverInstance.GetPrivateChatDirector().GetChatterServer().GetServer().GetReceiveTimeStatistics().GetAndClearData([&privatechatRecieveStream](auto& data)
+    {
+      for (const auto& [timePoint, value] : data)
+      {
+        if (timePoint == std::chrono::system_clock::time_point::min())
+          continue;
+        privatechatRecieveStream.write_values(
+          std::chrono::duration_cast<std::chrono::seconds>(timePoint.time_since_epoch()).count(),
+          value);
+      }
+    });
+    privatechatRecieveStream.complete();
+
     auto lobbyProcessingStream = pqxx::stream_to::raw_table(tx, "metrics.lobby_processing_time_series");
     _serverInstance.GetLobbyDirector().GetNetworkHandler().GetCommandServer().GetProcessingTimeStatistics().GetAndClearData([&lobbyProcessingStream](auto& data)
       {
@@ -438,6 +474,20 @@ void Telemetry::SynchronizeData()
         }
       });
     allchatProcessingStream.complete();
+
+    auto privatechatProcessingStream = pqxx::stream_to::raw_table(tx, "metrics.privatechat_processing_time_series");
+    _serverInstance.GetPrivateChatDirector().GetChatterServer().GetProcessingTimeStatistics().GetAndClearData([&privatechatProcessingStream](auto& data)
+    {
+      for (const auto& [timePoint, value] : data)
+      {
+        if (timePoint == std::chrono::system_clock::time_point::min())
+          continue;
+        privatechatProcessingStream.write_values(
+          std::chrono::duration_cast<std::chrono::seconds>(timePoint.time_since_epoch()).count(),
+          value);
+      }
+    });
+    privatechatProcessingStream.complete();
 
     tx.commit();
   }
