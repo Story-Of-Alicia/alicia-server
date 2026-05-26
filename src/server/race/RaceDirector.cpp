@@ -3130,8 +3130,6 @@ void RaceDirector::HandleUseMagicItem(
     return;
   }
 
-  const uint16_t effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
-
   auto targetList = command.targetList;
 
   auto magicSlotInfo = GetServerInstance().GetMagicRegistry().GetSlotInfo(command.magicItemId);
@@ -3147,6 +3145,10 @@ void RaceDirector::HandleUseMagicItem(
         RemoveEffect(raceInstance, racer, critEffectId);
     }
   }
+
+  const bool isIceWall = magicSlotInfo.type == 10 || magicSlotInfo.type == 11;
+  const uint16_t effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(
+    isIceWall ? static_cast<uint16_t>(command.targetList.size()) : 1u);
 
   // Darkfire should only affect one target
   // Client sends all targets infront of them but we should only apply the effect to the targeted one (the arrow above their head)
@@ -3238,11 +3240,6 @@ void RaceDirector::HandleUseMagicItem(
     case 11:
     {
       const uint16_t obstacleInstanceCount = static_cast<uint16_t>(command.targetList.size());
-      if (obstacleInstanceCount > 1)
-      {
-        // If its a crit ice wall, add the 2 missing InstanceIds to the tracker so that they can be used for the breakdown and expiration of the effect
-        raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(obstacleInstanceCount - 1);
-      }
       auto magicExpire = protocol::AcCmdRCMagicExpire{
         .magicType = magicSlotInfo.type,
         .firstObstacleInstanceId = effectInstanceId,
