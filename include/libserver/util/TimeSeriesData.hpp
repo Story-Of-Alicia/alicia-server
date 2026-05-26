@@ -1,5 +1,5 @@
 /**
- * Alicia Server - dedicated server software
+* Alicia Server - dedicated server software
  * Copyright (C) 2026 Story Of Alicia
  *
  * This program is free software; you can redistribute it and/or modify
@@ -86,6 +86,6 @@ private:
   Data _data{};
 };
 
-} // namespace server
+}
 
 #endif // ALICIA_SERVER_TIMESERIESDATA_HPP
