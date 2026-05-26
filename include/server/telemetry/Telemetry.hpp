@@ -47,6 +47,7 @@ private:
   //! Time series data tracking the race count.
   TimeSeriesData<size_t, 3600> _roomCountMetric;
 
+
   //! Flag indicating whether telemetry is enabled.
   bool enabled = false;
 
