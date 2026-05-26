@@ -81,7 +81,7 @@ const server::registry::Magic::SlotInfo RandomMagicItem(
   {
     const auto& slotInfo = magicRegistry.GetSlotInfo(type);
     const uint32_t w = (type == 18) ? 1u
-      : (slotInfo.basicType == 6 || slotInfo.basicType == 8) ? 2u
+      : (slotInfo.basicType == 6 || slotInfo.basicType == 8 || slotInfo.basicType == 12) ? 2u
       : (slotInfo.teamMode != 0) ? 2u
       : 4u;
     weights.push_back(w);
