@@ -67,8 +67,6 @@ void CleanOldData(pqxx::connection& connection)
     (std::chrono::system_clock::now() - std::chrono::hours(24 * 30)).time_since_epoch())
                         .count();
 
-  spdlog::info("Cleaning up metric data older than 30 days");
-
   tx.exec(std::format("delete from metrics.player_count_time_series where time < {};", cutoff));
   tx.exec(std::format("delete from metrics.room_count_time_series where time < {};", cutoff));
 
