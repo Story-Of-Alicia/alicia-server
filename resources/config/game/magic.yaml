@@ -724,12 +724,12 @@ magic:
       critStepBp: 250
     - basicType: 24  # BufSpeed (Magic Scroll)
       stat: rush
-      durationScaleBp: 10
+      durationScaleBp: 7
       critStepBp: 250
     - basicType: 8   # HotRodding
       stat: endurance
       durationScaleBp: 5
-      critStepBp: 0
+      critStepBp: 250
     - basicType: 10  # IceWall (target's ambition reduces shock duration)
       stat: ambition
       critStepBp: 250

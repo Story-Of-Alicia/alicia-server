@@ -72,18 +72,20 @@ const server::registry::Magic::SlotInfo RandomMagicItem(
   static std::random_device rd;
 
   // Build weights: Lightning (type 18) gets a reduced roll chance.
-  // Team-only items get a slightly reduced chance as well.
+  // Booster, HotRodding, and team-only items get a slightly reduced chance as well.
   // TODO: Replace with a proper per-spell weight system.
   const auto& magicRegistry = serverInstance.GetMagicRegistry();
   std::vector<uint32_t> weights;
   weights.reserve(itemPool.size());
   for (const uint32_t type : itemPool)
   {
+    const auto& slotInfo = magicRegistry.GetSlotInfo(type);
     const uint32_t w = (type == 18) ? 1u
-      : (magicRegistry.GetSlotInfo(type).teamMode != 0) ? 2u
-      : 3u;
+      : (slotInfo.basicType == 6 || slotInfo.basicType == 8 || slotInfo.basicType == 12) ? 2u
+      : (slotInfo.teamMode != 0) ? 2u
+      : 4u;
     weights.push_back(w);
-  }
+  } 
 
   std::discrete_distribution<size_t> distribution(weights.begin(), weights.end());
   auto magicSlotInfo = magicRegistry.GetSlotInfo(itemPool[distribution(rd)]);
@@ -2604,7 +2606,7 @@ void RaceDirector::HandleRaceUserPos(
 
   constexpr double ItemSpawnDistanceThreshold = 90.0;
 
-  auto processItemSpawn = [&](tracker::Oid oid, uint32_t itemType, const std::array<float, 3>& position)
+  auto processItemSpawn = [&](tracker::Oid oid, uint32_t itemType, const std::array<float, 3>& position, uint32_t spawnStyle = 0)
   {
     const auto distance = std::sqrt(
       std::pow(command.member2[0] - position[0], 2) +
@@ -2628,7 +2630,7 @@ void RaceDirector::HandleRaceUserPos(
       .itemId = oid,
       .itemType = itemType,
       .position = position,
-      .spawnStyle = 0,  // ITEM_SPAWN_STYLE_NONE, fix the item in position
+      .spawnStyle = spawnStyle,
       .spawnerId = 0,
       .sizeLevel = 0};
 
@@ -2644,14 +2646,16 @@ void RaceDirector::HandleRaceUserPos(
   }
 
   for (const auto& eventItem : racer.eventItems)
-    processItemSpawn(eventItem.oid, eventItem.itemType, eventItem.position);
+    processItemSpawn(eventItem.oid, eventItem.itemType, eventItem.position, 3);
 
   const auto now = std::chrono::steady_clock::now();
-  const bool raceActuallyStarted = raceInstance.stage == RaceInstance::Stage::Racing
+  const bool raceActuallyStarted = (raceInstance.stage == RaceInstance::Stage::Racing
+    || raceInstance.stage == RaceInstance::Stage::Finishing)
     && now >= raceInstance.raceStartTimePoint;
 
   if (raceInstance.raceGameMode == protocol::GameMode::Magic
-    && racer.state == tracker::RaceTracker::Racer::State::Racing
+    && (racer.state == tracker::RaceTracker::Racer::State::Racing
+      || racer.state == tracker::RaceTracker::Racer::State::Finishing)
     && raceActuallyStarted)
   {
     const auto& regen = GetServerInstance().GetMagicRegistry().GetRegenInfo();
@@ -3128,8 +3132,6 @@ void RaceDirector::HandleUseMagicItem(
     return;
   }
 
-  const uint16_t effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(1);
-
   auto targetList = command.targetList;
 
   auto magicSlotInfo = GetServerInstance().GetMagicRegistry().GetSlotInfo(command.magicItemId);
@@ -3145,6 +3147,10 @@ void RaceDirector::HandleUseMagicItem(
         RemoveEffect(raceInstance, racer, critEffectId);
     }
   }
+
+  const bool isIceWall = magicSlotInfo.type == 10 || magicSlotInfo.type == 11;
+  const uint16_t effectInstanceId = raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(
+    isIceWall ? static_cast<uint16_t>(command.targetList.size()) : 1u);
 
   // Darkfire should only affect one target
   // Client sends all targets infront of them but we should only apply the effect to the targeted one (the arrow above their head)
@@ -3236,25 +3242,23 @@ void RaceDirector::HandleUseMagicItem(
     case 11:
     {
       const uint16_t obstacleInstanceCount = static_cast<uint16_t>(command.targetList.size());
-      if (obstacleInstanceCount > 1)
-      {
-        // If its a crit ice wall, add the 2 missing InstanceIds to the tracker so that they can be used for the breakdown and expiration of the effect
-        raceInstance.tracker.GetNextEffectInstanceIdAndIncrementBy(obstacleInstanceCount - 1);
-      }
-      auto magicExpire = protocol::AcCmdRCMagicExpire{
-        .magicType = magicSlotInfo.type,
-        .firstObstacleInstanceId = effectInstanceId,
-        .obstacleInstanceCount = obstacleInstanceCount,
-        .breakdown = 0
-      };
       _scheduler.Queue(
-        [this, magicExpire, &raceInstance]()
+        [this, effectInstanceId, obstacleInstanceCount, magicType = magicSlotInfo.type, &raceInstance]()
         {
-          for (const ClientId& raceClientId : raceInstance.clients)
+          for (uint16_t i = 0; i < obstacleInstanceCount; ++i)
           {
-            _commandServer.QueueCommand<decltype(magicExpire)>(
-              raceClientId,
-              [magicExpire]() { return magicExpire; });
+            const auto magicExpire = protocol::AcCmdRCMagicExpire{
+              .magicType = magicType,
+              .firstObstacleInstanceId = static_cast<uint16_t>(effectInstanceId + i),
+              .obstacleInstanceCount = 1,
+              .breakdown = 0
+            };
+            for (const ClientId& raceClientId : raceInstance.clients)
+            {
+              _commandServer.QueueCommand<decltype(magicExpire)>(
+                raceClientId,
+                [magicExpire]() { return magicExpire; });
+            }
           }
         },
         Scheduler::Clock::now() + std::chrono::seconds(4)); // TODO: Change to 4 seconds

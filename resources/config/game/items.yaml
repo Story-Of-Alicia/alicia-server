@@ -9816,11 +9816,6 @@ packages:
       count: 1
       itemName: 퍼펙트 스타트 뱃지
       tid: 46021
-    - packageId: 1041
-      packageName: 안전 박차 뱃지 1일
-      count: 1
-      itemName: 글라이딩 스타터
-      tid: 46023
     - packageId: 1042
       packageName: Dorf Fortune Egg (Lv.1)
       count: 1
