@@ -88,7 +88,7 @@ const server::registry::Magic::SlotInfo RandomMagicItem(
   }
 
   std::discrete_distribution<size_t> distribution(weights.begin(), weights.end());
-  auto magicSlotInfo = magicRegistry.GetSlotInfo(11);
+  auto magicSlotInfo = magicRegistry.GetSlotInfo(itemPool[distribution(rd)]);
   uint32_t critChanceBp = magicRegistry.GetBaseCritChanceBp();
   if (magicSlotInfo.criticalType != 0)
   {
