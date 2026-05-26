@@ -85,7 +85,7 @@ const server::registry::Magic::SlotInfo RandomMagicItem(
       : (slotInfo.teamMode != 0) ? 2u
       : 4u;
     weights.push_back(w);
-  }
+  } 
 
   std::discrete_distribution<size_t> distribution(weights.begin(), weights.end());
   auto magicSlotInfo = magicRegistry.GetSlotInfo(itemPool[distribution(rd)]);
