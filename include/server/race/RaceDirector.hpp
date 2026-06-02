@@ -119,6 +119,15 @@ private:
     const server::registry::Magic::SlotInfo& magicSlotInfo,
     const uint16_t effectInstanceId = 0);
 
+  //! Computes an effect's effective duration in milliseconds, applying any
+  //! caster-stat duration bonus and any target-stat duration reduction from
+  //! the spell's stat scaling (see magic.yaml statScalings).
+  uint32_t ComputeEffectDurationMs(
+    const server::registry::Magic::SlotInfo& magicSlotInfo,
+    server::tracker::Oid attackerOid,
+    const server::tracker::RaceTracker::Racer& targetRacer,
+    const server::tracker::RaceTracker::RacerObjectMap& racers) const;
+
   void RemoveEffect(
     server::RaceInstance& raceInstance,
     server::tracker::RaceTracker::Racer& racer,

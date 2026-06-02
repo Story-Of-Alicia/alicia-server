@@ -77,7 +77,8 @@ add_library(alicia-libserver STATIC
         src/libserver/util/Locale.cpp
         src/libserver/util/Scheduler.cpp
         src/libserver/util/Stream.cpp
-        src/libserver/util/Util.cpp)
+        src/libserver/util/Util.cpp
+        src/libserver/util/Profiler.cpp)
 target_include_directories(alicia-libserver PUBLIC
         include/)
 target_link_libraries(alicia-libserver PRIVATE

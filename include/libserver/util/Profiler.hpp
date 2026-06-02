@@ -1,0 +1,103 @@
+/**
+ * Alicia Server - dedicated server software
+ * Copyright (C) 2026 Story Of Alicia
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ **/
+
+#ifndef ALICIA_SERVER_PROFILER_HPP
+#define ALICIA_SERVER_PROFILER_HPP
+
+#include <chrono>
+#include <mutex>
+#include <optional>
+
+namespace server
+{
+
+//! A lightweight micro-profiler for measuring operation durations.
+//!
+//! Records timing samples using std::chrono::steady_clock.
+//! Supports both manual Start()/Stop() calls and RAII-based scoped measurement.
+//!
+//! @example
+//! @code
+//!   Profiler profiler;
+//!
+//!   // Manual usage:
+//!   profiler.Start();
+//!   doWork();
+//!   profiler.Stop();
+//!
+//!   // Scoped usage:
+//!   { auto guard = profiler.Scope(); doWork(); }
+//!
+//!   auto result = profiler.Result();
+//! @endcode
+class Profiler
+{
+public:
+  using Clock = std::chrono::steady_clock;
+  using Duration = Clock::duration;
+
+  //! RAII wrapper that calls Start() on construction and Stop() on destruction.
+  //! Non-copyable but movable.
+  struct ScopeGuard
+  {
+    explicit ScopeGuard(Profiler& profile) noexcept
+      : _profile(profile)
+    {
+      _profile.Start();
+    }
+
+    ~ScopeGuard() noexcept
+    {
+      _profile.Stop();
+    }
+
+    //! Default move constructor.
+    ScopeGuard(ScopeGuard&&) noexcept = default;
+    //! Default move assignment operator.
+    ScopeGuard& operator=(ScopeGuard&&) noexcept = default;
+
+    Profiler& _profile;
+  };
+
+  Profiler() noexcept = default;
+  ~Profiler() noexcept = default;
+
+  //! Begins a timing measurement.
+  void Start() noexcept;
+
+  //! Ends the current timing measurement and records the elapsed duration.
+  void Stop() noexcept;
+
+  //! Returns a ScopeGuard that times the enclosing scope automatically.
+  [[nodiscard]] ScopeGuard Scope() noexcept;
+
+  //! Returns the most recently recorded sample duration, or empty if no samples have been recorded.
+  [[nodiscard]] std::optional<Duration> Result() const noexcept;
+
+private:
+  using TimePoint = std::chrono::time_point<Clock>;
+
+  mutable std::mutex _mutex;
+  TimePoint _start{};
+  std::optional<Duration> _lastSample;
+};
+
+} // namespace server
+
+#endif // ALICIA_SERVER_PROFILER_HPP
