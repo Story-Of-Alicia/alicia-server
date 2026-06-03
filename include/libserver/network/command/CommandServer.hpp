@@ -24,6 +24,8 @@
 #include "libserver/Constants.hpp"
 #include "libserver/network/Server.hpp"
 #include "libserver/util/Stream.hpp"
+#include "libserver/util/Profiler.hpp"
+#include "libserver/util/TimeSeriesData.hpp"
 
 #include <queue>
 #include <unordered_map>
@@ -71,6 +73,8 @@ concept WritableCommandStruct = WritableStruct<T> and requires
 class CommandServer final
 {
 public:
+  using TimeStatistics = TimeSeriesData<int64_t, 3600>;
+
   class EventHandlerInterface
   {
   public:
@@ -127,6 +131,11 @@ public:
 
   void SetCode(ClientId client, protocol::XorCode code);
 
+  //! Returns the underlying network server.
+  network::Server& GetServer();
+  //! Returns the command processing time statistics.
+  TimeStatistics& GetProcessingTimeStatistics();
+
 private:
   class NetworkEventHandler
     : public network::EventHandlerInterface
@@ -161,6 +170,9 @@ private:
 
   network::Server _server;
   std::thread _serverThread;
+
+  //! Statistics for command handler processing durations.
+  TimeStatistics _processingTimeStatistics;
 };
 
 } // namespace server

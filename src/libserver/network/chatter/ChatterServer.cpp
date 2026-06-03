@@ -176,7 +176,7 @@ size_t ChatterServer::OnClientData(
     {
       if (debugCommands)
       {
-        spdlog::warn("Unhandled chatter command: {} ({:#x})", 
+        spdlog::warn("Unhandled chatter command: {} ({:#x})",
           GetChatterCommandName(static_cast<protocol::ChatterCommand>(header.commandId)),
           header.commandId);
       }
@@ -186,11 +186,21 @@ size_t ChatterServer::OnClientData(
       const auto& handler = handlerIter->second;
       try
       {
+        // Measure the time spent in the command handler.
+        // A local profiler is used (not a shared member) so concurrent dispatches
+        // on different threads don't share timing state.
+        Profiler processingTimeProfiler;
+        processingTimeProfiler.Start();
         handler(clientId, commandDataSource);
-        
+        processingTimeProfiler.Stop();
+
+        if (const auto result = processingTimeProfiler.Result())
+          _processingTimeStatistics.Collect(
+            std::chrono::duration_cast<std::chrono::microseconds>(*result).count());
+
         if (debugCommands)
         {
-          spdlog::debug("Handled chatter command: {} ({:#x})", 
+          spdlog::debug("Handled chatter command: {} ({:#x})",
             GetChatterCommandName(static_cast<protocol::ChatterCommand>(header.commandId)),
             header.commandId);
         }
@@ -216,6 +226,16 @@ network::asio::ip::address_v4 ChatterServer::GetClientAddress(const network::Cli
 void ChatterServer::DisconnectClient(network::ClientId clientId)
 {
   _server.GetClient(clientId)->End();
+}
+
+network::Server & ChatterServer::GetServer()
+{
+  return _server;
+}
+
+ChatterServer::TimeStatistics & ChatterServer::GetProcessingTimeStatistics()
+{
+  return _processingTimeStatistics;
 }
 
 } // namespace server

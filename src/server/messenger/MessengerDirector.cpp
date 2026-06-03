@@ -1864,4 +1864,9 @@ void MessengerDirector::HandleChatterGuildLogin(
       .presence = clientContext.presence});
 }
 
+ChatterServer& MessengerDirector::GetChatterServer()
+{
+  return _chatterServer;
+}
+
 } // namespace server

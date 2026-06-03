@@ -4639,4 +4639,9 @@ void RaceDirector::HandleGameCreateClientItem(
   item.itemType = selectedEgg.deckItemId;
 }
 
+CommandServer& RaceDirector::GetCommandServer()
+{
+  return _commandServer;
+}
+
 } // namespace server

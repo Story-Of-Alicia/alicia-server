@@ -357,8 +357,19 @@ size_t CommandServer::NetworkEventHandler::OnClientData(
 
       try
       {
+        // Measure the time spent in the command handler.
+        // A local profiler is used (not a shared member) so concurrent dispatches
+        // on different threads don't share timing state.
+        Profiler processingTimeProfiler;
+        processingTimeProfiler.Start();
         // Call the handler.
         handler(clientId, commandDataStream);
+        processingTimeProfiler.Stop();
+
+        // Only record successful handler executions.
+        if (const auto result = processingTimeProfiler.Result())
+          _commandServer._processingTimeStatistics.Collect(
+            std::chrono::duration_cast<std::chrono::microseconds>(*result).count());
       }
       catch (const std::exception& x)
       {
@@ -454,6 +465,16 @@ void CommandServer::SendCommand(
   {
     // the client disconnected, todo dont use client ids, or dont
   }
+}
+
+network::Server & CommandServer::GetServer()
+{
+  return _server;
+}
+
+CommandServer::TimeStatistics & CommandServer::GetProcessingTimeStatistics()
+{
+  return _processingTimeStatistics;
 }
 
 } // namespace server

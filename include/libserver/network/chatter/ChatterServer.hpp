@@ -24,6 +24,8 @@
 #include "libserver/util/Stream.hpp"
 #include "libserver/Constants.hpp"
 #include "libserver/util/Util.hpp"
+#include "libserver/util/TimeSeriesData.hpp"
+#include "libserver/util/Profiler.hpp"
 
 #include "proto/ChatterMessageDefinitions.hpp"
 
@@ -59,6 +61,8 @@ class ChatterServer final
   : public network::EventHandlerInterface
 {
 public:
+  using TimeStatistics = TimeSeriesData<int64_t, 3600>;
+
   explicit ChatterServer(IChatterServerEventsHandler& chatterServerEventsHandler);
   ~ChatterServer();
 
@@ -73,7 +77,7 @@ public:
   void RegisterCommandHandler(
     std::function<void(network::ClientId clientId, const C& command)> handler)
   {
-    _handlers[static_cast<uint16_t>(C::GetCommand())] = 
+    _handlers[static_cast<uint16_t>(C::GetCommand())] =
       [handler](network::ClientId clientId, SourceStream& source)
       {
         C command;
@@ -145,7 +149,7 @@ public:
         val ^= XorCode[(bufferSource.GetCursor() - 1) % 4];
         bufferSink.Write(val);
       }
-      
+
       if (debugCommands)
       {
         spdlog::debug("Sent chatter command message '{}' (0x{:X})",
@@ -157,6 +161,11 @@ public:
       return bufferSource.GetCursor();
     });
   }
+
+  //! Returns the underlying network server.
+  network::Server& GetServer();
+  //! Returns the command-processing time statistics.
+  TimeStatistics& GetProcessingTimeStatistics();
 
 private:
   void HandleNetworkTick() override;
@@ -174,6 +183,9 @@ private:
   bool debugIncomingCommandData = constants::DebugCommands;
   bool debugOutgoingCommandData = constants::DebugCommands;
   bool debugCommands = constants::DebugCommands;
+
+  //! Statistics for command handler processing durations.
+  TimeStatistics _processingTimeStatistics;
 };
 
 } // namespace server

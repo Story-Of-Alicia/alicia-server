@@ -2586,4 +2586,9 @@ void LobbyNetworkHandler::HandleRequestSpecialEventList(
     });
 }
 
+CommandServer& LobbyNetworkHandler::GetCommandServer()
+{
+  return _commandServer;
+}
+
 } // namespace server

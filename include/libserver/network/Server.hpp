@@ -21,6 +21,7 @@
 #define SERVER_HPP
 
 #include "libserver/util/Profiler.hpp"
+#include "libserver/util/TimeSeriesData.hpp"
 #include "NetworkDefinitions.hpp"
 
 #include <chrono>
@@ -40,6 +41,8 @@ namespace asio = boost::asio;
 
 //! A write handler.
 using WriteSupplier = std::function<size_t(asio::streambuf&)>;
+
+using Duration = std::chrono::steady_clock::duration;
 
 //!
 class EventHandlerInterface
@@ -65,6 +68,11 @@ public:
   virtual size_t OnClientData(
     ClientId clientId,
     const std::span<const std::byte>& data) = 0;
+
+  //! Reports the duration of a completed send operation
+  virtual void OnSendTime(Duration duration) {};
+  //! Reports the duration of a completed receive operation
+  virtual void OnReceiveTime(Duration duration) {};
 };
 
 //! Client with event driven reads and writes
@@ -127,6 +135,7 @@ private:
 class Server : public EventHandlerInterface
 {
 public:
+  using TimeStatistics = TimeSeriesData<int64_t, 3600>;
   //! Default constructor.
   explicit Server(
     EventHandlerInterface& networkEventHandler) noexcept;
@@ -151,6 +160,13 @@ public:
   void OnClientConnected(ClientId clientId) override;
   void OnClientDisconnected(ClientId clientId) override;
   size_t OnClientData(ClientId clientId, const std::span<const std::byte>& data) override;
+  void OnSendTime(Duration duration) override;
+  void OnReceiveTime(Duration duration) override;
+
+  //! Returns the send time statistics.
+  [[nodiscard]] TimeStatistics& GetSendTimeStatistics() noexcept;
+  //! Returns the receive time statistics.
+  [[nodiscard]] TimeStatistics& GetReceiveTimeStatistics() noexcept;
 
 private:
   struct AddressState
@@ -177,6 +193,11 @@ private:
 
   //! A network event handler.
   EventHandlerInterface& _networkEventHandler;
+
+  //! Statistics for network send durations.
+  TimeStatistics _sendTimeStatistics;
+  //! Statistics for network receive durations.
+  TimeStatistics _receiveTimeStatistics;
 };
 
 } // namespace server::network
