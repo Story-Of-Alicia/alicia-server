@@ -1316,8 +1316,25 @@ void LobbyNetworkHandler::HandleEnterRoom(
 
   if (not isAuthorized)
   {
-    protocol::AcCmdCLEnterRoomCancel response{
-      .status = protocol::AcCmdCLEnterRoomCancel::Status::CR_BAD_PASSWORD};
+    protocol::AcCmdCLEnterRoomCancel response{};
+
+    switch (command.enterRoomType)
+    {
+      case protocol::AcCmdCLEnterRoom::EnterRoomType::RoomList:
+        // Respond with a cancel indicating bad password
+        response.status = protocol::AcCmdCLEnterRoomCancel::Status::CR_BAD_PASSWORD;
+        break;
+      case protocol::AcCmdCLEnterRoom::EnterRoomType::TournamentInvite:
+      case protocol::AcCmdCLEnterRoom::EnterRoomType::RoomCode:
+        // Indicates to the player that the room is locked and shows the password popup
+        response.status = protocol::AcCmdCLEnterRoomCancel::Status::ShowRoomPassword;
+        break;
+      default:
+        spdlog::warn(
+          "Unknown AcCmdCLEnterRoom::EnterRoomType type '{}'",
+          static_cast<uint32_t>(command.enterRoomType));
+        break;
+    }
 
     _commandServer.QueueCommand<decltype(response)>(
       clientId,
