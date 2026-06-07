@@ -5595,7 +5595,7 @@ void RanchDirector::HandleRequestUser(
     return;
   }
 
-  GetServerInstance().GetRaceDirector().SummonCharacter(characterUid, command.force, command.characterName, command.roomUid, command.ranchUid);
+  GetServerInstance().GetRaceDirector().NotifySummonCharacter(characterUid, command.force, command.characterName, command.roomUid, command.ranchUid);
   GetServerInstance().GetRanchDirector().SummonCharacter(characterUid, command.force, command.characterName, command.roomUid, command.ranchUid);
 
   protocol::AcCmdCRRequestUserOK response{};

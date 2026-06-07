@@ -59,6 +59,9 @@ void RaceDirector::Tick()
   {
     spdlog::error("Exception ticking a race scheduler: {}", x.what());
   }
+
+  // todo: temporarily also tick network handler until everything is migrated
+  GetNetworkHandler().Tick();
 }
 
 void RaceDirector::DisconnectCharacter(const data::Uid characterUid)
@@ -67,7 +70,7 @@ void RaceDirector::DisconnectCharacter(const data::Uid characterUid)
     characterUid);
 }
 
-void RaceDirector::SummonCharacter(
+void RaceDirector::NotifySummonCharacter(
   const data::Uid characterUid,
   const bool force,
   const std::string& characterName,

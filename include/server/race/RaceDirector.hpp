@@ -46,7 +46,7 @@ public:
   void Tick();
 
   void DisconnectCharacter(data::Uid characterUid);
-  void SummonCharacter(
+  void NotifySummonCharacter(
     data::Uid characterUid,
     bool force,
     const std::string& characterName,

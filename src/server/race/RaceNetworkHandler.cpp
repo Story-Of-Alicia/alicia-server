@@ -3622,7 +3622,7 @@ void RaceNetworkHandler::HandleRequestUser(
     return;
   }
 
-  GetServerInstance().GetRaceDirector().SummonCharacter(
+  GetServerInstance().GetRaceDirector().NotifySummonCharacter(
     characterUid,
     command.force,
     command.characterName,
