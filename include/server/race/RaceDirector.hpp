@@ -307,7 +307,7 @@ private:
     raceInstance.GetRoom(
       [this, command](const Room& room)
       {
-        for (const auto& [characterUid, player] : room.GetPlayers())
+        for (const auto& player : room.GetPlayers() | std::views::values)
           _commandServer.QueueCommand<C>(
             player.GetClientId(),
             [command]()

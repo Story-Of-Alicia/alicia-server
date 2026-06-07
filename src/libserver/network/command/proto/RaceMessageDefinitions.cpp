@@ -668,7 +668,7 @@ void AcCmdUserRaceFinal::Read(
   stream.Read(courseTime);
   command.courseTime = std::chrono::milliseconds{courseTime};
 
-  stream.Read(command.member3);
+  stream.Read(command.raceTrackProgress);
 }
 
 void AcCmdUserRaceFinalNotify::Write(

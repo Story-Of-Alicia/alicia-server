@@ -845,7 +845,7 @@ struct AcCmdUserRaceFinal
   std::chrono::milliseconds courseTime{};
   //! Race track progress. Scales with lap count.
   //! `-1` indicates all laps completed.
-  float member3{};
+  float raceTrackProgress{};
 
   static Command GetCommand()
   {

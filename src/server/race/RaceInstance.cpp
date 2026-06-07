@@ -44,6 +44,26 @@ uint32_t RaceInstance::GetRoomUid()
   return _roomUid;
 }
 
+RaceInstance::Parameters& RaceInstance::GetParameters()
+{
+  return _parameters;
+}
+
+const RaceInstance::Parameters& RaceInstance::GetParameters() const
+{
+  return _parameters;
+}
+
+tracker::RaceTracker& RaceInstance::GetTracker()
+{
+  return _tracker;
+}
+
+const tracker::RaceTracker& RaceInstance::GetTracker() const
+{
+  return _tracker;
+}
+
 void RaceInstance::GetRoom(const std::function<void(Room&)>& consumer)
 {
   _raceDirector._serverInstance.GetRoomSystem().GetRoom(
@@ -56,6 +76,29 @@ void RaceInstance::GetRoom(const std::function<void(const Room&)>& consumer) con
   _raceDirector._serverInstance.GetRoomSystem().GetRoom(
     _roomUid,
     consumer);
+}
+
+void RaceInstance::Tick()
+{
+  const auto& parameters = this->GetParameters();
+  switch (parameters.stage)
+  {
+    case Parameters::Stage::Waiting:
+      // Do nothing on waiting stage
+      break;
+    case Parameters::Stage::Loading:
+      // Process rooms which are loading
+      this->TickLoading();
+      break;
+    case Parameters::Stage::Racing:
+      // Process rooms which are racing
+      this->TickRacing();
+      break;
+    case Parameters::Stage::Finishing:
+      // Process rooms which are finishing
+      this->TickFinishing();
+      break;
+  }
 }
 
 void RaceInstance::TickLoading()
@@ -115,7 +158,7 @@ void RaceInstance::TickLoading()
 
 void RaceInstance::TickRacing()
 {
-  auto& parameters = this->GetParameters(); 
+  auto& parameters = this->GetParameters();
 
   const bool raceTimeoutReached = std::chrono::steady_clock::now() >= parameters.stageTimeoutTimePoint;
 
@@ -137,17 +180,17 @@ void RaceInstance::TickRacing()
   // If the race timeout was reached notify the clients about the finale.
   if (not raceTimeoutReached)
     return;
-  
+
   // Broadcast the race final (only to participants).
-  this->GetRoom([this](const server::Room& room)
+  this->GetRoom([this](const Room& room)
   {
-    const protocol::AcCmdUserRaceFinalNotify notify{};
     for (const auto& [characterUid, player] : room.GetPlayers())
     {
       const bool isParticipant = _tracker.IsRacer(characterUid);
       if (not isParticipant)
         continue;
 
+      const protocol::AcCmdUserRaceFinalNotify notify{};
       _raceDirector.GetCommandServer().QueueCommand<decltype(notify)>(
         player.GetClientId(),
         [notify]()
@@ -173,7 +216,7 @@ void RaceInstance::TickFinishing()
 
   const bool finishTimeoutReached = std::chrono::steady_clock::now() >= parameters.stageTimeoutTimePoint;
 
-  // If not all of the racer have finished yet and the timeout has not been reached yet
+  // If not all the racers have finished yet and the timeout has not been reached yet
   // do not finish the race.
   if (not allRacersFinished && not finishTimeoutReached)
     return;
@@ -189,7 +232,8 @@ void RaceInstance::TickFinishing()
   using Team = tracker::RaceTracker::Racer::Team;
   using State = tracker::RaceTracker::Racer::State;
 
-  // Determine winning team (team of the first finisher). Solo/FFA leaves winningTeam as Solo.
+  // Determine winning team (team of the first finisher).
+  // Solo/FFA leaves `winningTeam` as Solo.
   Team winningTeam = Team::Solo;
   if (parameters.raceTeamMode == protocol::TeamMode::Team)
   {
@@ -213,10 +257,13 @@ void RaceInstance::TickFinishing()
 
     if (racer.state != State::Disconnected)
     {
-      score.bitset = static_cast<protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset>(
-          protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::Connected);
+      score.bitset = protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::Connected;
     }
-    score.courseTime = racer.state != State::Disconnected ? racer.courseTime : std::numeric_limits<int32_t>::max();
+
+    score.courseTime = racer.state != State::Disconnected
+      ? racer.courseTime
+      : std::numeric_limits<int32_t>::max();
+
     score.experience = 420;
     score.carrots = 420;
     score.teamColor = racer.team;
@@ -314,7 +361,7 @@ void RaceInstance::TickFinishing()
           // Check that this next best player is in room
           if (not room.HasPlayer(score.uid))
             continue;
-          
+
           // Character is in room, set room master to new uid
           newMasterUid = details.masterUid = score.uid;
           newMasterName = score.name;
@@ -332,7 +379,7 @@ void RaceInstance::TickFinishing()
         winnerClientContext.userName,
         newMasterName,
         this->GetRoomUid());
-      
+
       const protocol::AcCmdCRChangeMasterNotify masterNotify{
         .masterUid = newMasterUid};
       _raceDirector.Broadcast(*this, masterNotify);
@@ -367,49 +414,6 @@ void RaceInstance::TickFinishing()
           });
       }
     });
-}
-
-void RaceInstance::Tick()
-{
-  const auto& parameters = this->GetParameters();
-  switch (parameters.stage)
-  {
-    case Parameters::Stage::Waiting:
-      // Do nothing on waiting stage
-      break;
-    case Parameters::Stage::Loading:
-      // Process rooms which are loading
-      this->TickLoading();
-      break;
-    case Parameters::Stage::Racing:
-      // Process rooms which are racing
-      this->TickRacing();
-      break;
-    case Parameters::Stage::Finishing:
-      // Process rooms which are finishing
-      this->TickFinishing();
-      break;
-  }
-}
-
-RaceInstance::Parameters& RaceInstance::GetParameters()
-{
-  return _parameters;
-}
-
-const RaceInstance::Parameters& RaceInstance::GetParameters() const
-{
-  return _parameters;
-}
-
-tracker::RaceTracker& RaceInstance::GetTracker()
-{
-  return _tracker;
-}
-
-const tracker::RaceTracker& RaceInstance::GetTracker() const
-{
-  return _tracker;
 }
 
 } // namespace server
