@@ -741,7 +741,7 @@ void RanchDirector::SendGuildInviteDeclined(
   data::Uid guildUid)
 {
   // Send AcCmdCRInviteGuildJoinCancel?
-  protocol::AcCmdCRInviteGuildJoinCancel reply{
+  const protocol::AcCmdCRInviteGuildJoinCancel reply{
     .unk0 = characterUid,
     .unk1 = inviterCharacterUid,
     .unk2 = inviterCharacterName,
@@ -749,36 +749,19 @@ void RanchDirector::SendGuildInviteDeclined(
     .unk4 = guildUid // is this true?
   };
 
-  for (const auto& client : _clients)
+  try
   {
-    const auto& clientContext = client.second;
-    // Notify online characters only
-    if (not clientContext.isAuthenticated)
-    {
-      continue;
-    }
-
-    const auto& clientId = client.first;
-    bool foundInviter = false;
-    GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
-      [&foundInviter, inviterCharacterUid](const data::Character& character){
-        if (character.uid() == inviterCharacterUid)
-        {
-          foundInviter = true;
-        }
-      }
-    );
-
-    if (foundInviter)
-    {
-      _commandServer.QueueCommand<decltype(reply)>(
-        clientId,
-        [reply]()
-        {
-          return reply;
-        });
-      break;
-    }
+    _commandServer.QueueCommand<decltype(reply)>(
+      GetClientIdByCharacterUid(inviterCharacterUid),
+      [reply]()
+      {
+        return reply;
+      });
+  }
+  catch (const std::exception&)
+  {
+    // Inviter is no longer offline
+    return;
   }
 }
 
