@@ -869,7 +869,13 @@ struct AcCmdCLEnterRoom
 {
   uint32_t roomUid{};
   std::string password{};
-  uint32_t member3{};
+
+  enum class EnterRoomType : uint32_t
+  {
+    RoomList = 0,
+    TournamentInvite = 3, // GM window invite
+    RoomCode = 5          // Room code via the room list
+  } enterRoomType{};
 
   static Command GetCommand()
   {
@@ -940,6 +946,7 @@ struct AcCmdCLEnterRoomCancel
     CR_PRACTICE_ROOM2 = 14,
     CR_PRACTICE_ROOM_SPEEDTEAM = 15,
     CR_PRACTICE_ROOM_MAGICTEAM = 16,
+    ShowRoomPassword = 17
   } status{};
 
   static Command GetCommand()

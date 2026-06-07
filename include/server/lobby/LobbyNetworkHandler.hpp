@@ -37,7 +37,7 @@ public:
     data::Uid guildUid,
     data::Uid inviterUid);
 
-  [[deprecated]] void SetCharacterVisitPreference(
+  void SetCharacterVisitPreference(
     data::Uid characterUid,
     data::Uid rancherUid);
 
