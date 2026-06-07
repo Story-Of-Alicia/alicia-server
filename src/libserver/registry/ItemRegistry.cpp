@@ -125,6 +125,25 @@ void ReadPlayParameters(
     Item::PlayParameters::maxAttachment)>();
 }
 
+void ReadShopInfo(
+  Item::ShopInfo& shopInfo,
+  const YAML::Node& yaml)
+{
+  shopInfo.isPurchasable = yaml["isPurchasable"].as<bool>(true);
+  shopInfo.moneyType = static_cast<Item::ShopInfo::MoneyType>(
+    yaml["moneyType"].as<uint32_t>(0));
+
+  if (const auto priceRangesNode = yaml["priceRanges"])
+  {
+    for (const auto& node : priceRangesNode)
+    {
+      shopInfo.priceRanges.push_back({
+        .range = node["range"].as<uint32_t>(),
+        .price = node["price"].as<int32_t>()});
+    }
+  }
+}
+
 } // anon namespace
 
 void ItemRegistry::ReadConfig(const std::filesystem::path& configPath)
@@ -157,8 +176,7 @@ void ItemRegistry::ReadConfig(const std::filesystem::path& configPath)
         itemSection["type"].as<uint32_t>()),
       .level = itemSection["level"].as<decltype(Item::level)>(0),
       .name = itemSection["name"].as<decltype(Item::name)>(""),
-      .description = itemSection["description"].as<decltype(Item::description)>(),
-      .isPurchasable = itemSection["isPurchasable"].as<bool>()};
+      .description = itemSection["description"].as<decltype(Item::description)>(decltype(Item::description){})};
 
     // Read ItemPartInfo
 
@@ -186,6 +204,29 @@ void ItemRegistry::ReadConfig(const std::filesystem::path& configPath)
     // Read PlayParameters
     else if (const auto playParametersSection = itemSection["playParameters"])
       ReadPlayParameters(item.playParameters.emplace(), playParametersSection);
+
+    // Read ItemIndex
+    if (const auto itemIndexSection = itemSection["itemIndex"])
+    {
+      item.itemIndex.category = itemIndexSection["category"].as<uint32_t>(0);
+      item.itemIndex.subcategory = itemIndexSection["subcategory"].as<uint32_t>(0);
+    }
+
+    // Read ShopInfo
+    if (const auto shopInfoSection = itemSection["shopInfo"])
+      ReadShopInfo(item.shopInfo.emplace(), shopInfoSection);
+
+    // Read MountAbility
+    if (const auto mountAbilitySection = itemSection["mountAbility"])
+    {
+      auto& ma = item.mountAbility.emplace();
+      ma.grade     = mountAbilitySection["grade"].as<uint32_t>(0);
+      ma.agility   = mountAbilitySection["agility"].as<uint32_t>(0);
+      ma.ambition  = mountAbilitySection["ambition"].as<uint32_t>(0);
+      ma.courage   = mountAbilitySection["courage"].as<uint32_t>(0);
+      ma.endurance = mountAbilitySection["endurance"].as<uint32_t>(0);
+      ma.rush      = mountAbilitySection["rush"].as<uint32_t>(0);
+    }
 
     _items.try_emplace(item.tid, item);
   }

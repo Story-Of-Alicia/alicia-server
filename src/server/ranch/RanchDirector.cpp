@@ -4821,8 +4821,9 @@ void RanchDirector::HandleBuyOwnItem(
   const auto& shopList = GetServerInstance().GetLobbyDirector().GetShopManager().GetShopList();
 
   std::vector<data::Uid> newEquipmentUids{};
+  std::vector<std::pair<data::Uid, protocol::Horse>> newHorseUids{};
   GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
-    [this, &shopList, &command, &response, &newEquipmentUids](data::Character& character)
+    [this, &shopList, &command, &response, &newEquipmentUids, &newHorseUids](data::Character& character)
     {
       for (const auto& order : command.orders)
       {
@@ -4893,7 +4894,7 @@ void RanchDirector::HandleBuyOwnItem(
         const bool hasSufficientCash = character.cash() >= cost;
         const bool canPurchaseCashItem = isCashItem and hasSufficientCash;
 
-        const bool hasItem = GetServerInstance().GetItemSystem().HasItem(character, itemRegistryRecord->tid);
+        const bool hasItem = GetServerInstance().GetItemSystem().HasItem(character, itemRegistryRecord.value().tid);
 
         if (not canPurchaseCarrotItem and not canPurchaseCashItem)
         {
@@ -4909,82 +4910,108 @@ void RanchDirector::HandleBuyOwnItem(
         else
           character.carrots() -= cost;
 
-        // Add item to character's inventory if equip on purchase,
-        // or increment/duration if character already owns it
-        if (order.equipImmediately || hasItem)
+        // Horse purchase — create a horse record and add it to the stable
+        if (itemRegistryRecord.value().mountPartSetInfo.has_value())
         {
-          // TODO: sanity check, see if the item is equipable
-
-          // Add item based on type
-          data::Uid itemUid{data::InvalidUid};
-          if (itemRegistryRecord.value().type == registry::Item::Type::Temporary)
+          const auto& partSetInfo = itemRegistryRecord.value().mountPartSetInfo.value();
+          const auto& horseRecord = GetServerInstance().GetDataDirector().CreateHorse();
+          if (not horseRecord)
           {
-            // Item has expiration, duration is the price range field as hours.
-            itemUid = GetServerInstance().GetItemSystem().AddItem(
-              character,
-              itemRegistryRecord->tid,
-              std::chrono::hours(priceRange));
-          }
-          else
-          {
-            // Item has quantity, amount is the price range field.
-            itemUid = GetServerInstance().GetItemSystem().AddItem(
-              character,
-              itemRegistryRecord->tid,
-              priceRange);
+            // Refund and report error
+            if (isCashItem)
+              character.cash() += cost;
+            else
+              character.carrots() += cost;
+            orderResult.result = OrderResult::Result::UnknownError;
+            continue;
           }
 
-          // Append the purchase result into the response
-          GetServerInstance().GetDataDirector().GetItem(itemUid).Immutable(
-            [&order, &response](const data::Item& item)
+          data::Uid horseUid{data::InvalidUid};
+          const auto* mountAbility = itemRegistryRecord.value().mountAbility.has_value()
+            ? &itemRegistryRecord.value().mountAbility.value() : nullptr;
+
+          horseRecord.Mutable(
+            [&horseUid, tid = itemRegistryRecord.value().tid, &partSetInfo, mountAbility](data::Horse& horse)
             {
-              auto& purchase = response.purchases.emplace_back(
-                Purchase{
-                  .equipImmediately = order.equipImmediately});
-              protocol::BuildProtocolItem(purchase.item, item);
+              horse.tid() = tid;
+              horse.dateOfBirth() = data::Clock::now();
+              horse.mountCondition.stamina = 4000;
+              horse.growthPoints() = 0;
+              horse.clazz = 1;
+              horse.tendency() = 1;
+              horse.luckState = 4;
+              if (mountAbility)
+              {
+                horse.grade() = mountAbility->grade;
+                horse.stats.agility() = mountAbility->agility;
+                horse.stats.ambition() = mountAbility->ambition;
+                horse.stats.courage() = mountAbility->courage;
+                horse.stats.endurance() = mountAbility->endurance;
+                horse.stats.rush() = mountAbility->rush;
+              }
+              horse.parts.skinTid() = partSetInfo.skinId;
+              horse.parts.faceTid() = partSetInfo.faceId;
+              horse.parts.maneTid() = partSetInfo.maneId;
+              horse.parts.tailTid() = partSetInfo.tailId;
+              horse.appearance.scale() = partSetInfo.scale;
+              horse.appearance.legLength() = partSetInfo.legLength;
+              horse.appearance.legVolume() = partSetInfo.legVolume;
+              horse.appearance.bodyLength() = partSetInfo.bodyLength;
+              horse.appearance.bodyVolume() = partSetInfo.bodyVolume;
+              horse.emblemUid() = partSetInfo.emblemId;
+              horseUid = horse.uid();
             });
 
-          // Add newly purchased equipment to the list of equipments to handle for equipping
-          if (not hasItem)
-            newEquipmentUids.emplace_back(itemUid);
+          character.horseSlotCount() += 1;
+          character.horses().emplace_back(horseUid);
+
+          // Add to the buy response so the client registers the horse purchase
+          // (triggers horse naming dialog and stable update)
+          auto& purchase = response.purchases.emplace_back(
+            Purchase{.equipImmediately = false});
+          purchase.item.uid = static_cast<uint32_t>(horseUid);
+          purchase.item.tid = static_cast<uint32_t>(itemRegistryRecord.value().tid);
+          purchase.item.count = 1;
+
+          protocol::Horse protocolHorse{};
+          horseRecord.Immutable([&protocolHorse](const data::Horse& horse)
+          {
+            protocol::BuildProtocolHorse(protocolHorse, horse);
+          });
+          newHorseUids.emplace_back(horseUid, protocolHorse);
+          continue;
+        }
+
+        // Add item directly to character's inventory
+        data::Uid itemUid{data::InvalidUid};
+        if (itemRegistryRecord.value().type == registry::Item::Type::Temporary)
+        {
+          itemUid = GetServerInstance().GetItemSystem().AddItem(
+            character,
+            itemRegistryRecord.value().tid,
+            std::chrono::hours(priceRange));
         }
         else
         {
-          // Send purchase to storage for the character to claim
-          data::Uid storageItemUid{data::InvalidUid};
-          const auto& storageItemRecord = GetServerInstance().GetDataDirector().CreateStorageItem();
-          storageItemRecord.Mutable(
-            [
-              &storageItemUid,
-              &goods,
-              tid = itemRegistryRecord->tid,
-              itemCount = priceRange,
-              duration = std::chrono::hours(priceRange),
-              priceId = order.priceId](
-                data::StorageItem& storageItem)
-            {
-              storageItemUid = storageItem.uid();
-              storageItem.carrots() = goods.bonusGameMoney;
-              storageItem.createdAt() = util::Clock::now();
-              storageItem.duration() = std::chrono::days(7); // TODO: configurable?
-              storageItem.items() = {
-                data::StorageItem::Item{
-                  .tid = tid,
-                  .count = itemCount,
-                  .duration = duration}
-              };
-              storageItem.goodsSq() = goods.goodsSq;
-              storageItem.priceId() = priceId;
-            });
-
-          // Add purchase to the purchase storage
-          character.purchases().emplace_back(storageItemUid);
-
-          // Send purchase notification to character
-          GetServerInstance().GetRanchDirector().SendStorageNotification(
-            character.uid(),
-            protocol::AcCmdCRRequestStorage::Category::Purchases);
+          itemUid = GetServerInstance().GetItemSystem().AddItem(
+            character,
+            itemRegistryRecord.value().tid,
+            priceRange);
         }
+
+        // Append the purchase result into the response
+        GetServerInstance().GetDataDirector().GetItem(itemUid).Immutable(
+          [&order, &response](const data::Item& item)
+          {
+            auto& purchase = response.purchases.emplace_back(
+              Purchase{
+                .equipImmediately = order.equipImmediately});
+            protocol::BuildProtocolItem(purchase.item, item);
+          });
+
+        // Queue for equipping only if the player requested it and doesn't own it yet
+        if (order.equipImmediately && not hasItem)
+          newEquipmentUids.emplace_back(itemUid);
       }
 
       // Update character's balance
@@ -4994,6 +5021,19 @@ void RanchDirector::HandleBuyOwnItem(
 
   // All checks are completed and transaction can go ahead
   _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+
+  // Register purchased horses with the ranch tracker and notify the client
+  for (auto& [horseUid, protocolHorse] : newHorseUids)
+  {
+    AddRanchHorse(clientContext.characterUid, horseUid);
+
+    protocol::AcCmdRCAddIdleMountInfoNotify notify{};
+    notify.horse.horseOid = _ranches[clientContext.characterUid].tracker.GetHorseOid(horseUid);
+    notify.horse.horse = std::move(protocolHorse);
+
+    _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
+      clientId, [notify]() { return notify; });
+  }
 
   // Process all the equipment marked for equipping
   for (const auto& equipmentUid : newEquipmentUids)
