@@ -42,7 +42,7 @@ public:
   bool RoomExists(uint32_t uid);
   void DeleteRoom(uint32_t uid);
 
-  std::vector<Room::Snapshot> GetRoomsSnapshot();
+  [[nodiscard]] std::vector<Room::Snapshot> GetRoomsSnapshot();
 
 private:
   struct Entry

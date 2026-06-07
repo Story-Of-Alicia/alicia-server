@@ -26,13 +26,16 @@
 namespace server
 {
 
-void RoomSystem::CreateRoom(const std::function<void(Room&)>& consumer)
+void RoomSystem::CreateRoom(
+  const std::function<void(Room&)>& consumer)
 {
   std::unique_lock roomsLock(_roomsLock);
+
   const auto roomUid = ++_sequencedId;
   const auto [it, inserted] = _rooms.try_emplace(
     roomUid,
-    std::move(Room(roomUid)));
+    Room{roomUid});
+
   assert(inserted);
   
   auto& [room, roomMutex] = it->second;
@@ -42,9 +45,12 @@ void RoomSystem::CreateRoom(const std::function<void(Room&)>& consumer)
   consumer(room);
 }
 
-void RoomSystem::GetRoom(const uint32_t uid, const std::function<void(Room&)>& consumer)
+void RoomSystem::GetRoom(
+  const uint32_t uid,
+  const std::function<void(Room&)>& consumer)
 {
   std::unique_lock roomsLock(_roomsLock);
+
   const auto it = _rooms.find(uid);
   if (it == _rooms.end())
     throw std::runtime_error("Room does not exist");
@@ -56,7 +62,8 @@ void RoomSystem::GetRoom(const uint32_t uid, const std::function<void(Room&)>& c
   consumer(it->second.room);
 }
 
-bool RoomSystem::RoomExists(uint32_t uid)
+bool RoomSystem::RoomExists(
+  const uint32_t uid)
 {
   std::scoped_lock lock(_roomsLock);
   return _rooms.contains(uid);
@@ -67,21 +74,22 @@ std::vector<Room::Snapshot> RoomSystem::GetRoomsSnapshot()
   std::scoped_lock roomsLock(_roomsLock);
 
   std::vector<Room::Snapshot> rooms;
-  for (auto& entry : _rooms)
+  for (auto& entry : _rooms | std::views::values)
   {
-    std::scoped_lock roomLock(entry.second.mutex);
-    rooms.emplace_back(entry.second.room.GetRoomSnapshot());
+    std::scoped_lock roomLock(entry.mutex);
+    rooms.emplace_back(entry.room.GetRoomSnapshot());
   }
 
   return rooms;
 }
 
-void RoomSystem::DeleteRoom(uint32_t uid)
+void RoomSystem::DeleteRoom(const uint32_t uid)
 {
   std::scoped_lock lock(_roomsLock);
   const auto it = _rooms.find(uid);
   if (it == _rooms.end())
     throw std::runtime_error("Room does not exist");
+
   _rooms.erase(it);
 }
 

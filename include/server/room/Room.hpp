@@ -55,7 +55,7 @@ public:
       Solo, Red, Blue
     };
 
-    Player(network::ClientId clientId) : _clientId(clientId) {}
+    explicit Player(network::ClientId clientId) : _clientId(clientId) {}
 
     bool ToggleReady();
     void SetReady(bool ready);
