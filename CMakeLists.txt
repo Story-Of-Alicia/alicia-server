@@ -106,8 +106,10 @@ add_executable(alicia-server
         src/server/chat/AllChatDirector.cpp
         src/server/chat/PrivateChatDirector.cpp
         src/server/messenger/MessengerDirector.cpp
+        src/server/race/RaceInstance.cpp
         src/server/race/RaceDirector.cpp
         src/server/ranch/RanchDirector.cpp
+        src/server/room/Room.cpp
         src/server/system/ChatSystem.cpp
         src/server/system/InfractionSystem.cpp
         src/server/system/ItemSystem.cpp
