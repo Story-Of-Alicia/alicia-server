@@ -2402,15 +2402,14 @@ void RanchDirector::HandleWithdrawGuild(
     ? command.characterUid
     : clientContext.characterUid;
 
-  auto guildUid = data::InvalidUid;
-  const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacter(characterUid);
-  characterRecord.Mutable([&guildUid](data::Character& character)
-  {
-    guildUid = character.guildUid();
-    character.guildUid() = data::InvalidUid;
-  });
+  data::Uid guildUid{data::InvalidUid};
+  GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
+    [&guildUid](const data::Character& character)
+    {
+      guildUid = character.guildUid();
+    });
 
-  std::optional<protocol::GuildError> error;
+  std::optional<protocol::GuildError> error{};
   const auto& guildRecord = GetServerInstance().GetDataDirector().GetGuild(guildUid);
   guildRecord.Mutable([&characterUid, &error, option = command.option](data::Guild& guild)
   {
@@ -2461,9 +2460,15 @@ void RanchDirector::HandleWithdrawGuild(
     return;
   }
 
-  protocol::AcCmdCRWithdrawGuildMemberOK response{
-    .option = command.option
-  };
+  // Reset character guild uid
+  GetServerInstance().GetDataDirector().GetCharacter(characterUid).Mutable(
+    [&guildUid](data::Character& character)
+    {
+      character.guildUid() = data::InvalidUid;
+    });
+
+  const protocol::AcCmdCRWithdrawGuildMemberOK response{
+    .option = command.option};
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
