@@ -351,7 +351,7 @@ void LobbyNetworkHandler::SendCharacterGuildInvitation(
   const ClientId inviteeClientId = GetClientIdByCharacterUid(inviteeUid);
 
   std::string inviterName;
-  _serverInstance.GetDataDirector().GetCharacter(inviteeUid).Immutable(
+  _serverInstance.GetDataDirector().GetCharacter(inviterUid).Immutable(
     [&inviterName](const data::Character& character)
     {
       inviterName = character.name();
