@@ -93,4 +93,10 @@ void RoomSystem::DeleteRoom(const uint32_t uid)
   _rooms.erase(it);
 }
 
+size_t RoomSystem::GetRoomCount() noexcept
+{
+  std::scoped_lock lock(_roomsLock);
+  return _rooms.size();
+}
+
 } // namespace server

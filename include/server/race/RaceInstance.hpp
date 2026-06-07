@@ -32,7 +32,7 @@
 namespace server
 {
 
-class RaceDirector;
+class RaceNetworkHandler;
 class Room;
 
 class RaceInstance
@@ -67,7 +67,7 @@ public:
   };
 
   explicit RaceInstance(
-    RaceDirector& raceDirector,
+    RaceNetworkHandler& raceDirector,
     uint32_t roomUid);
   ~RaceInstance() = default;
 
@@ -92,7 +92,7 @@ private:
   //! A race object tracker.
   tracker::RaceTracker _tracker;
 
-  RaceDirector& _raceDirector;
+  RaceNetworkHandler& _raceDirector;
   const uint32_t _roomUid{};
 };
 

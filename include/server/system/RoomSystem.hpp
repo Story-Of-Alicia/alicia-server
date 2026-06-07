@@ -41,6 +41,7 @@ public:
   void GetRoom(uint32_t uid, const std::function<void(Room&)>& consumer);
   bool RoomExists(uint32_t uid);
   void DeleteRoom(uint32_t uid);
+  [[nodiscard]] size_t GetRoomCount() noexcept;
 
   [[nodiscard]] std::vector<Room::Snapshot> GetRoomsSnapshot();
 

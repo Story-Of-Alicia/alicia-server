@@ -19,8 +19,8 @@
 
 #include "server/ServerInstance.hpp"
 
-#include "server/race/RaceDirector.hpp"
 #include "server/race/RaceInstance.hpp"
+#include "server/race/RaceNetworkHandler.hpp"
 
 #include <libserver/util/Util.hpp>
 
@@ -31,7 +31,7 @@ namespace server
 {
 
 RaceInstance::RaceInstance(
-  RaceDirector& raceDirector,
+  RaceNetworkHandler& raceDirector,
   uint32_t roomUid) :
     _raceDirector(raceDirector),
     _roomUid(roomUid)
@@ -237,10 +237,12 @@ void RaceInstance::TickFinishing()
   Team winningTeam = Team::Solo;
   if (parameters.raceTeamMode == protocol::TeamMode::Team)
   {
-    int32_t best = std::numeric_limits<int32_t>::max();
-    for (const auto& [uid, racer] : _tracker.GetRacers())
+    uint32_t best = std::numeric_limits<uint32_t>::max();
+    for (const auto& racer : _tracker.GetRacers() | std::views::values)
     {
-      if (racer.state != State::Disconnected && racer.courseTime != -1 && racer.courseTime < best)
+      if (racer.state != State::Disconnected
+        && racer.courseTime != std::numeric_limits<uint32_t>::max()
+        && racer.courseTime < best)
       {
         best = racer.courseTime;
         winningTeam = racer.team;
