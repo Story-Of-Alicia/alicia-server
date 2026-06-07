@@ -2377,10 +2377,12 @@ void RanchDirector::HandleWithdrawGuild(
   const protocol::AcCmdCRWithdrawGuildMember& command)
 {
   const auto& clientContext = GetClientContext(clientId);
+
   // If leave and characterUid is not self
   // If kick and characterUid is self (cannot kick self, only leave)
-  if ((command.option == protocol::AcCmdCRWithdrawGuildMember::Option::Leave && command.characterUid != clientContext.characterUid) ||
-       command.option == protocol::AcCmdCRWithdrawGuildMember::Option::Kicked && command.characterUid == clientContext.characterUid)
+  using WithdrawOption = protocol::AcCmdCRWithdrawGuildMember::Option;
+  if ((command.option == WithdrawOption::Leave and command.characterUid != clientContext.characterUid) or
+       command.option == WithdrawOption::Kicked and command.characterUid == clientContext.characterUid)
   {
     protocol::AcCmdCRWithdrawGuildMemberCancel response{
       .status = protocol::GuildError::Unknown // ERROR_FAIL_UNKNOWN
@@ -2396,7 +2398,7 @@ void RanchDirector::HandleWithdrawGuild(
 
   // If kick - use command.characterUid as target
   // If leave - use clientContext.characterUid as target
-  const auto& characterUid = command.option == protocol::AcCmdCRWithdrawGuildMember::Option::Kicked
+  const auto& characterUid = command.option == WithdrawOption::Kicked
     ? command.characterUid
     : clientContext.characterUid;
 
@@ -2412,8 +2414,7 @@ void RanchDirector::HandleWithdrawGuild(
   const auto& guildRecord = GetServerInstance().GetDataDirector().GetGuild(guildUid);
   guildRecord.Mutable([&characterUid, &error, option = command.option](data::Guild& guild)
   {
-
-    if (option == protocol::AcCmdCRWithdrawGuildMember::Option::Disband)
+    if (option == WithdrawOption::Disband)
     {
       if (guild.owner() != characterUid)
       {
@@ -2475,37 +2476,38 @@ void RanchDirector::HandleWithdrawGuild(
   {
     // Notify online characters only
     if (not onlineClientContext.isAuthenticated)
-    {
       continue;
-    }
 
-    if (command.option == protocol::AcCmdCRWithdrawGuildMember::Option::Leave &&
-        onlineClientContext.characterUid == characterUid)
-    {
+    // Leave option should not have a notify be sent to the leaver
+    if (command.option == WithdrawOption::Leave and onlineClientContext.characterUid == characterUid)
       continue;
-    }
 
-    const auto& clientRecord = GetServerInstance().GetDataDirector().GetCharacter(
-      onlineClientContext.characterUid);
-
-    clientRecord.Immutable(
-      [this, onlineClientId, guildUid, option = command.option, characterUid, authorityCharacterUid]
-      (const data::Character& character)
+    // Check if this client is in the same guild as the withdrawn member
+    // TODO: guild uid could be cached under client context for cheaper checks
+    data::Uid onlineClientGuildUid{data::InvalidUid};
+    GetServerInstance().GetDataDirector().GetCharacter(onlineClientContext.characterUid).Immutable(
+      [&onlineClientGuildUid](const data::Character& character)
       {
-        protocol::AcCmdRCWithdrawGuildMemberNotify notify{
-          .guildUid = guildUid,
-          .guildMemberCharacterUid = option == protocol::AcCmdCRWithdrawGuildMember::Option::Kicked ?
-            authorityCharacterUid : character.uid(),
-          .withdrawnCharacterUid = characterUid,
-          .option = option
-        };
+        onlineClientGuildUid = character.guildUid();
+      });
 
-        _commandServer.QueueCommand<decltype(notify)>(
-          onlineClientId,
-          [notify]()
-          {
-            return notify;
-          });
+    if (onlineClientGuildUid != guildUid)
+      continue;
+
+    const protocol::AcCmdRCWithdrawGuildMemberNotify notify{
+      .guildUid = guildUid,
+      .guildMemberCharacterUid =
+        command.option == WithdrawOption::Kicked ?
+          authorityCharacterUid :
+          onlineClientContext.characterUid,
+      .withdrawnCharacterUid = characterUid,
+      .option = command.option};
+
+    _commandServer.QueueCommand<decltype(notify)>(
+      onlineClientId,
+      [notify]()
+      {
+        return notify;
       });
   }
 }
