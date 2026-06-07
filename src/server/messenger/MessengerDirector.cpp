@@ -156,7 +156,7 @@ void MessengerDirector::Terminate()
 
 MessengerDirector::ClientContext& MessengerDirector::GetClientContext(
   const network::ClientId clientId,
-  bool requireAuthentication)
+  const bool requireAuthentication)
 {
   auto clientContextIter = _clients.find(clientId);
   if (clientContextIter == _clients.end())
@@ -209,7 +209,7 @@ Config::Messenger& MessengerDirector::GetConfig()
   return _serverInstance.GetSettings().messenger;
 }
 
-void MessengerDirector::HandleClientConnected(network::ClientId clientId)
+void MessengerDirector::HandleClientConnected(const network::ClientId clientId)
 {
   spdlog::debug("Client {} connected to the messenger server from {}",
     clientId,
@@ -217,7 +217,7 @@ void MessengerDirector::HandleClientConnected(network::ClientId clientId)
   _clients.try_emplace(clientId);
 }
 
-void MessengerDirector::HandleClientDisconnected(network::ClientId clientId)
+void MessengerDirector::HandleClientDisconnected(const network::ClientId clientId)
 {
   spdlog::debug("Client {} disconnected from the messenger server", clientId);
 
@@ -235,7 +235,7 @@ void MessengerDirector::HandleClientDisconnected(network::ClientId clientId)
 }
 
 void MessengerDirector::HandleChatterLogin(
-  network::ClientId clientId,
+  const network::ClientId clientId,
   const protocol::ChatCmdLogin& command)
 {
   spdlog::debug("[{}] ChatCmdLogin: {} {} {} {}",
@@ -401,7 +401,7 @@ void MessengerDirector::HandleChatterLogin(
 }
 
 void MessengerDirector::HandleChatterBuddyAdd(
-  network::ClientId clientId,
+  const network::ClientId clientId,
   const protocol::ChatCmdBuddyAdd& command)
 {
   const auto& clientContext = GetClientContext(clientId);
@@ -485,7 +485,7 @@ void MessengerDirector::HandleChatterBuddyAdd(
 }
 
 void MessengerDirector::HandleChatterBuddyAddReply(
-  network::ClientId clientId,
+  const network::ClientId clientId,
   const protocol::ChatCmdBuddyAddReply& command)
 {
   spdlog::debug("ChatCmdBuddyAddReply: {} {}",
@@ -531,7 +531,7 @@ void MessengerDirector::HandleChatterBuddyAddReply(
   {
     // Helper lambda to add a character to character's friends list
     const auto& acceptFriendRequest = [](
-      const server::Record<data::Character>& characterRecord,
+      const Record<data::Character>& characterRecord,
       const data::Uid characterUid)
     {
       characterRecord.Mutable(
@@ -544,6 +544,7 @@ void MessengerDirector::HandleChatterBuddyAddReply(
           // Friends group might not be initially initialised, try create it
           auto [friendsGroupIter, created] = groups.try_emplace(FriendsCategoryUid);
           auto& friendsGroup = friendsGroupIter->second;
+
           if (created)
           {
             // Label the group for internal use only
@@ -551,6 +552,7 @@ void MessengerDirector::HandleChatterBuddyAddReply(
             friendsGroup.name = "_internal_friends_group_";
             friendsGroup.createdAt = util::Clock::now();
           }
+
           friendsGroup.members.emplace(characterUid);
         });
     };
@@ -564,7 +566,7 @@ void MessengerDirector::HandleChatterBuddyAddReply(
     // Check if requesting character is online, if so send response live,
     // else simply add responding character to friends list
     const auto clientsSnapshot = _clients;
-    auto requestingClient = std::ranges::find_if(
+    const auto requestingClient = std::ranges::find_if(
       clientsSnapshot,
       [requestingCharacterUid = command.requestingCharacterUid](const auto& client)
       {
@@ -596,8 +598,10 @@ void MessengerDirector::HandleChatterBuddyAddReply(
 
       // Notify the requesting client of the (invoker) new friend's online state  
       protocol::ChatCmdUpdateStateTrs stateNotify{
-        .affectedCharacterUid = clientContext.characterUid};
-      stateNotify.presence = clientContext.presence;
+        protocol::ChatCmdUpdateState{
+          clientContext.presence},
+        clientContext.characterUid};
+
       _chatterServer.QueueCommand<decltype(stateNotify)>(requestingClientId, [stateNotify](){ return stateNotify; });
     }
 
@@ -608,7 +612,9 @@ void MessengerDirector::HandleChatterBuddyAddReply(
 
     // Prepare update state for invoker of new friend's online presence
     protocol::ChatCmdUpdateStateTrs stateNotify{
-      .affectedCharacterUid = command.requestingCharacterUid};
+      protocol::ChatCmdUpdateState{
+        protocol::Status::Offline},
+      command.requestingCharacterUid};
 
     if (requestingCharacterPresence.has_value())
     {
@@ -1518,9 +1524,9 @@ void MessengerDirector::HandleChatterUpdateState(
         onlineCharacterGuildUid = character.guildUid();
       });
 
-    bool isInvokerInAGuild = guildUid != data::InvalidUid;
-    bool isOnlineCharacterInAGuild = onlineCharacterGuildUid != data::InvalidUid;
-    bool isInvokerAndOnlineCharacterInSameGuild = guildUid == onlineCharacterGuildUid;
+    const bool isInvokerInAGuild = guildUid != data::InvalidUid;
+    const bool isOnlineCharacterInAGuild = onlineCharacterGuildUid != data::InvalidUid;
+    const bool isInvokerAndOnlineCharacterInSameGuild = guildUid == onlineCharacterGuildUid;
 
     // If invoker is in a guild and other client is in the same guild
     if (isInvokerInAGuild and isOnlineCharacterInAGuild and isInvokerAndOnlineCharacterInSameGuild)
@@ -1532,8 +1538,9 @@ void MessengerDirector::HandleChatterUpdateState(
   if (not friendsToNotify.empty())
   {
     protocol::ChatCmdUpdateStateTrs notify{
-      .affectedCharacterUid = clientContext.characterUid};
-    notify.presence = command.presence;
+      protocol::ChatCmdUpdateState{
+        command.presence,},
+      clientContext.characterUid};
 
     for (const auto& targetClientId : friendsToNotify)
     {
@@ -1595,7 +1602,7 @@ void MessengerDirector::HandleChatterChatInvite(
     if (not targetClientContext.isAuthenticated)
       continue;
     
-    bool isRequestedParticipant = std::ranges::contains(
+    const bool isRequestedParticipant = std::ranges::contains(
       command.chatParticipantUids,
       targetClientContext.characterUid);
     if (isRequestedParticipant)
@@ -1656,7 +1663,7 @@ void MessengerDirector::HandleChatterChatInvite(
 }
 
 void MessengerDirector::HandleChatterGameInvite(
-  network::ClientId clientId,
+  const network::ClientId clientId,
   const protocol::ChatCmdGameInvite& command)
 {
   const auto& clientContext = GetClientContext(clientId);
@@ -1686,7 +1693,7 @@ void MessengerDirector::HandleChatterGameInvite(
 }
 
 void MessengerDirector::HandleChatterChannelInfo(
-  network::ClientId clientId,
+  const network::ClientId clientId,
   const protocol::ChatCmdChannelInfo&)
 {
   spdlog::debug("[{}] ChatCmdChannelInfo", clientId);
@@ -1742,7 +1749,7 @@ void MessengerDirector::HandleChatterChannelInfo(
 }
 
 void MessengerDirector::HandleChatterGuildLogin(
-  network::ClientId clientId,
+  const network::ClientId clientId,
   const protocol::ChatCmdGuildLogin& command)
 {
   // ChatCmdGuildLogin is sent after ChatCmdLogin

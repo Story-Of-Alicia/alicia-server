@@ -783,14 +783,14 @@ void RanchDirector::SendGuildInviteDeclined(
 }
 
 void RanchDirector::SendGuildInviteAccepted(
-  data::Uid guildUid,
-  data::Uid characterUid,
-  std::string newMemberCharacterName)
+  const data::Uid guildUid,
+  const data::Uid characterUid,
+  const std::string& newMemberCharacterName)
 {
   protocol::AcCmdRCAcceptGuildJoinNotify notify{
+    .guildMemberCharacterUid = 0,
     .newMemberCharacterUid = characterUid,
-    .newMemberCharacterName = newMemberCharacterName
-  };
+    .newMemberCharacterName = newMemberCharacterName};
   
   // Notify (online) guild members that a new member is in
   for (const auto& client : _clients)
@@ -829,8 +829,8 @@ void RanchDirector::SendGuildInviteAccepted(
 }
 
 void RanchDirector::AddRanchHorse(
-  data::Uid& rancherUid,
-  data::Uid& horseUid)
+  const data::Uid rancherUid,
+  const data::Uid horseUid)
 {
   auto& ranchInstance = _ranches[rancherUid];
   ranchInstance.tracker.AddHorse(horseUid);

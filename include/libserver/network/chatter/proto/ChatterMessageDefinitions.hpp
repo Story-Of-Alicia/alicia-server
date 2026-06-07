@@ -82,7 +82,7 @@ enum class ChatterErrorCode : uint32_t
 
 struct Presence
 {
-  Status status{protocol::Status::Offline};
+  Status status{Status::Offline};
   enum class Scene : uint32_t
   {
     Ranch = 0,
@@ -278,9 +278,10 @@ struct ChatCmdBuddyAddRequestTrs
 //! Serverbound command containing the response by the character for a friend request.
 struct ChatCmdBuddyAddReply
 {
-  //! The uid of the requesting character.
+  //! The uid of the character that requested the friend request.
   data::Uid requestingCharacterUid{};
-  //! Indicates whether the replying character has accepted the friend request.
+  //! Indicates whether the character replying to the friend request
+  //! has accepted the invite.
   bool requestAccepted{};
 
   static ChatterCommand GetCommand()

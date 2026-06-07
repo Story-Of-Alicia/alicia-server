@@ -51,8 +51,8 @@ public:
     data::Uid characterUid{data::InvalidUid};
     data::Uid roomUid{data::InvalidUid};
 
-    //! Only until the messenger is not implemented.
-    [[deprecated]] data::Uid visitPreference{data::InvalidUid};
+    //! Track the user's visit preference for the visit command.
+    data::Uid visitPreference{data::InvalidUid};
   };
 
   struct GuildInstance
@@ -114,8 +114,7 @@ public:
     data::Uid guildUid,
     data::Uid inviterCharacterUid);
 
-  // prototype function
-  [[deprecated]] void SetCharacterVisitPreference(
+  void SetCharacterVisitPreference(
     data::Uid characterUid,
     data::Uid rancherUid);
 

@@ -3776,20 +3776,21 @@ void RaceDirector::HandleOpCmd(
     return;
   }
 
-  for (const auto response : result.commandVerdict->result)
+  for (const auto& response : result.commandVerdict->result)
   {
     _commandServer.QueueCommand<protocol::RanchCommandOpCmdOK>(
       clientId,
       [response = std::move(response)]()
       {
         return protocol::RanchCommandOpCmdOK{
-          .feedback = response};
+          .feedback = response,
+          .observerState = protocol::RanchCommandOpCmdOK::Observer::Disabled};
       });
   }
 }
 
 void RaceDirector::HandleChangeSkillCardPresetId(
-  ClientId clientId,
+  const ClientId clientId,
   const protocol::AcCmdCRChangeSkillCardPresetID& command)
 {
   if (command.setId < 0 || command.setId > 2)

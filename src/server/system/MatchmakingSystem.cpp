@@ -108,7 +108,7 @@ std::optional<data::Uid> MatchmakingSystem::Matchmake(const Entry& entry)
   return selectedRoomUid;
 }
 
-const void MatchmakingSystem::Search(
+void MatchmakingSystem::Search(
   const data::Uid characterUid,
   const protocol::GameMode gameMode,
   const protocol::TeamMode teamMode)
@@ -168,7 +168,7 @@ const void MatchmakingSystem::Search(
     Scheduler::Clock::now() + MatchmakingIntervalMs);
 }
 
-const bool MatchmakingSystem::Queue(
+bool MatchmakingSystem::Queue(
   const data::Uid characterUid,
   const protocol::GameMode gameMode,
   const protocol::TeamMode teamMode)
@@ -190,7 +190,7 @@ const bool MatchmakingSystem::Queue(
   return true;
 }
 
-const bool MatchmakingSystem::Dequeue(const data::Uid characterUid)
+bool MatchmakingSystem::Dequeue(const data::Uid characterUid)
 {
   // Remove character by character uid and return if character was erased
   // from the matchmaking queue
