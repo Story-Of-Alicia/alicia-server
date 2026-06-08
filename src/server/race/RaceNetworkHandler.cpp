@@ -2027,7 +2027,7 @@ void RaceNetworkHandler::HandleHurdleClearResult(
   };
 
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-      static_cast<uint8_t>(parameters.raceGameMode));
+    static_cast<uint8_t>(parameters.raceGameMode));
 
   switch (command.hurdleClearType)
   {
@@ -2234,6 +2234,7 @@ void RaceNetworkHandler::HandleRaceUserPos(
   {
     if (std::chrono::steady_clock::now() < item.respawnTimePoint)
       continue;
+
     processItemSpawn(item.oid, item.currentType, item.position);
   }
 
@@ -2283,14 +2284,13 @@ void RaceNetworkHandler::HandleRaceUserPos(
       }
     }
 
-    const bool giveItem = not racer.magicItem.has_value()
+    const bool shouldGiveItem = not racer.magicItem.has_value()
       && racer.starPointValue >= gameModeTemplate.starPointsMax;
 
     protocol::AcCmdCRStarPointGetOK starPointResponse{
       .characterOid = command.oid,
       .starPointValue = racer.starPointValue,
-      .giveMagicItem = giveItem
-    };
+      .giveMagicItem = shouldGiveItem};
 
     _commandServer.QueueCommand<decltype(starPointResponse)>(
       clientId,
@@ -2301,7 +2301,9 @@ void RaceNetworkHandler::HandleRaceUserPos(
   }
 }
 
-void RaceNetworkHandler::HandleChat(ClientId clientId, const protocol::AcCmdCRChat& command)
+void RaceNetworkHandler::HandleChat(
+  const ClientId clientId,
+  const protocol::AcCmdCRChat& command)
 {
   const auto& clientContext = GetClientContext(clientId);
 
@@ -2590,7 +2592,7 @@ void RaceNetworkHandler::HandleUserRaceDeactivateEvent(
 }
 
 void RaceNetworkHandler::HandleRequestMagicItem(
-  ClientId clientId,
+  const ClientId clientId,
   const protocol::AcCmdCRRequestMagicItem& command)
 {
   const auto& clientContext = GetClientContext(clientId);
@@ -2614,7 +2616,9 @@ void RaceNetworkHandler::HandleRequestMagicItem(
   // Anything else (stale request, duplicate after assignment, request while holding an item) drops.
   if (racer.magicItem.has_value()
     || racer.starPointValue < gameModeTemplate.starPointsMax)
+  {
     return;
+  }
 
   racer.magicItem.emplace(RandomMagicItem(_serverInstance, racer).type);
   racer.starPointValue = 0;
@@ -2622,8 +2626,7 @@ void RaceNetworkHandler::HandleRequestMagicItem(
   protocol::AcCmdCRStarPointGetOK starPointResponse{
     .characterOid = command.characterOid,
     .starPointValue = racer.starPointValue,
-    .giveMagicItem = false
-  };
+    .giveMagicItem = false};
 
   _commandServer.QueueCommand<decltype(starPointResponse)>(
     clientId,
@@ -2635,8 +2638,7 @@ void RaceNetworkHandler::HandleRequestMagicItem(
   protocol::AcCmdCRRequestMagicItemOK response{
     .characterOid = command.characterOid,
     .magicItemId = racer.magicItem.value(),
-    .member3 = 0
-  };
+    .member3 = 0};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -2653,7 +2655,7 @@ void RaceNetworkHandler::HandleRequestMagicItem(
 }
 
 void RaceNetworkHandler::HandleUseMagicItem(
-  ClientId clientId,
+  const ClientId clientId,
   const protocol::AcCmdCRUseMagicItem& command)
 {
   const auto& clientContext = GetClientContext(clientId);
@@ -2700,6 +2702,7 @@ void RaceNetworkHandler::HandleUseMagicItem(
     if (!targetList.empty())
     {
       auto& racers = raceInstance.GetTracker().GetRacers();
+
       const auto targetOid = targetList[0];
       const auto targetIter = std::ranges::find_if(
         racers,
@@ -2724,6 +2727,7 @@ void RaceNetworkHandler::HandleUseMagicItem(
       }
     }
   }
+
   protocol::AcCmdCRUseMagicItemOK response{
     .characterOid = command.characterOid,
     .magicItemId = magicSlotInfo.type,
@@ -3021,7 +3025,7 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
 
 // Magic Targeting System Implementation for Bolt
 void RaceNetworkHandler::HandleStartMagicTarget(
-  ClientId clientId,
+  const ClientId clientId,
   const protocol::AcCmdCRStartMagicTarget& command)
 {
   const auto& clientContext = GetClientContext(clientId);
@@ -3052,12 +3056,16 @@ void RaceNetworkHandler::HandleStartMagicTarget(
   }
 
   auto& targetRacer = targetIter->second;
+
+  if (targetRacer.pendingMagicTarget.has_value())
+    return;
+
   targetRacer.dragonReceivedAt = std::chrono::steady_clock::now();
   targetRacer.pendingMagicTarget = {command.casterOid, command.effectInstanceId};
 }
 
 void RaceNetworkHandler::HandleChangeMagicTarget(
-  ClientId clientId,
+  const ClientId clientId,
   const protocol::AcCmdCRChangeMagicTarget& command)
 {
   const auto& clientContext = GetClientContext(clientId);
@@ -3105,6 +3113,7 @@ void RaceNetworkHandler::HandleChangeMagicTarget(
       .targetOid = command.targetOid,
       .targetOid2 = command.targetOid2
     };
+
     _commandServer.QueueCommand<decltype(response)>(
       clientId,
       [response]() { return response; });
@@ -3128,6 +3137,7 @@ void RaceNetworkHandler::HandleChangeMagicTarget(
 
     return;
   }
+
   targetRacer.dragonReceivedAt = std::chrono::steady_clock::now();
   targetRacer.pendingMagicTarget = {command.casterOid, command.effectInstanceId};
   racer.pendingMagicTarget.reset();
