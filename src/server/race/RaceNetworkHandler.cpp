@@ -36,7 +36,7 @@ namespace server
 namespace
 {
 
-uint32_t MountStatValue(
+uint32_t GetMountStatValue(
   const tracker::RaceTracker::Racer::MountStatsSnapshot& stats,
   registry::Magic::MountStat which)
 {
@@ -83,7 +83,7 @@ const registry::Magic::SlotInfo RandomMagicItem(
   {
     if (const auto* scaling = magicRegistry.GetStatScaling(magicSlotInfo.basicType))
     {
-      const uint32_t statValue = MountStatValue(racer.mountStats, scaling->stat);
+      const uint32_t statValue = GetMountStatValue(racer.mountStats, scaling->stat);
       critChanceBp += scaling->critStepBp * (statValue / 10u);
     }
   }
@@ -3164,7 +3164,7 @@ void RaceNetworkHandler::HandleChangeMagicTarget(
 }
 
 void RaceNetworkHandler::HandleActivateSkillEffect(
-  ClientId clientId,
+  const ClientId clientId,
   const protocol::AcCmdCRActivateSkillEffect& command)
 {
   const auto& clientContext = GetClientContext(clientId);
@@ -3180,6 +3180,7 @@ void RaceNetworkHandler::HandleActivateSkillEffect(
   {
     magicSlotInfo = GetServerInstance().GetMagicRegistry().GetSlotInfo(magicSlotInfo.criticalType);
   }
+
   // only send the magic expire for icewall. other magic cant do anything with it.
   if (magicSlotInfo.type == 10 || magicSlotInfo.type == 11)
   {
@@ -3334,13 +3335,18 @@ uint32_t RaceNetworkHandler::ComputeEffectDurationMs(
   {
     const auto attackerRacerIter = std::ranges::find_if(
       racers, [attackerOid](const auto& pair) { return pair.second.oid == attackerOid; });
+
     if (attackerRacerIter != racers.cend())
     {
-      const uint32_t statValue = MountStatValue(
-        attackerRacerIter->second.mountStats, scaling->stat);
+      const uint32_t statValue = GetMountStatValue(
+        attackerRacerIter->second.mountStats,
+        scaling->stat);
+
       constexpr uint32_t MaxDurationBonusBp = 1150;
       const uint32_t bonusBp = std::min(
-        scaling->durationScaleBp * statValue, MaxDurationBonusBp);
+        scaling->durationScaleBp * statValue,
+        MaxDurationBonusBp);
+
       effectDurationMs = effectDurationMs * (1000u + bonusBp) / 1000u;
     }
   }
@@ -3348,9 +3354,13 @@ uint32_t RaceNetworkHandler::ComputeEffectDurationMs(
   // Target-side reduction (e.g. IceWall shock mitigation), clamped to 100%.
   if (scaling->targetDurationReductionBp > 0)
   {
-    const uint32_t statValue = MountStatValue(targetRacer.mountStats, scaling->stat);
+    const uint32_t statValue = GetMountStatValue(
+      targetRacer.mountStats,
+      scaling->stat);
+
     const uint32_t reductionBp = std::min<uint32_t>(
       scaling->targetDurationReductionBp * statValue, 1000u);
+
     effectDurationMs = effectDurationMs * (1000u - reductionBp) / 1000u;
   }
 
