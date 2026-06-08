@@ -237,11 +237,11 @@ void RaceInstance::TickFinishing()
   Team winningTeam = Team::Solo;
   if (parameters.raceTeamMode == protocol::TeamMode::Team)
   {
-    uint32_t best = std::numeric_limits<uint32_t>::max();
+    uint32_t best = tracker::InvalidCourseTime;
     for (const auto& racer : _tracker.GetRacers() | std::views::values)
     {
       if (racer.state != State::Disconnected
-        && racer.courseTime != std::numeric_limits<uint32_t>::max()
+        && racer.courseTime != tracker::InvalidCourseTime
         && racer.courseTime < best)
       {
         best = racer.courseTime;
@@ -262,9 +262,10 @@ void RaceInstance::TickFinishing()
       score.bitset = protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::Connected;
     }
 
+    // If the player has disconnected
     score.courseTime = racer.state != State::Disconnected
       ? racer.courseTime
-      : std::numeric_limits<int32_t>::max();
+      : tracker::InvalidCourseTime;
 
     score.experience = 420;
     score.carrots = 420;
@@ -311,8 +312,7 @@ void RaceInstance::TickFinishing()
       const uint32_t bitset = static_cast<uint32_t>(score.bitset);
       const bool isConnected = (bitset & static_cast<uint32_t>(
         ScoreInfo::Bitset::Connected)) != 0;
-      const bool hasValidTime = score.courseTime < static_cast<uint32_t>(
-        std::numeric_limits<int32_t>::max());
+      const bool hasValidTime = score.courseTime < tracker::InvalidCourseTime;
 
       // Connected racers with no valid finish time are time-over/DNF and should rank
       // below timed finishers but above disconnected racers.

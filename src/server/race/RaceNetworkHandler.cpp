@@ -1741,14 +1741,12 @@ void RaceNetworkHandler::HandleUserRaceFinal(
 
   racer.state = tracker::RaceTracker::Racer::State::Finishing;
   racer.courseTime = didNotFinish
-    ? std::numeric_limits<int32_t>::max()
-    : static_cast<int32_t>(command.courseTime.count());
+    ? tracker::InvalidCourseTime
+    : static_cast<uint32_t>(command.courseTime.count());
 
   const protocol::AcCmdUserRaceFinalNotify notify{
     .oid = racer.oid,
-    .courseTime = command.raceTrackProgress < 0 ?
-      command.courseTime :
-      std::chrono::milliseconds{-1}};
+    .courseTime = command.courseTime};
 
   this->Broadcast(raceInstance, notify);
 }
