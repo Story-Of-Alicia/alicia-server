@@ -95,7 +95,8 @@ public:
 
     //! Anchor for time-based magic gauge regen. Default-constructed = uninitialized,
     //! lazily set to raceStartTimePoint on the first regen tick.
-    std::chrono::steady_clock::time_point lastMagicRegenTimePoint{};
+    std::chrono::steady_clock::time_point lastMagicRegenTimePoint{
+      std::chrono::steady_clock::time_point::max()};
 
     //! Snapshot of the racer's mount stats taken at race start, used by per-tick
     //! magic-mode calculations to avoid a DataDirector lookup on every pos-update.

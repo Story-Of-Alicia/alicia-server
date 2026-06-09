@@ -2262,16 +2262,20 @@ void RaceNetworkHandler::HandleRaceUserPos(
     const auto tickInterval = std::chrono::milliseconds(regen.intervalMs);
 
     // Anchor at race start so fill time is consistent regardless of when the first pos-update arrives.
-    if (racer.lastMagicRegenTimePoint.time_since_epoch().count() == 0)
+    if (racer.lastMagicRegenTimePoint == std::chrono::steady_clock::time_point::max())
       racer.lastMagicRegenTimePoint = parameters.raceStartTimePoint;
 
     const auto elapsed = now - racer.lastMagicRegenTimePoint;
-    const auto tickCount = elapsed / tickInterval;
+    const auto elapsedTickCount = elapsed / tickInterval;
 
-    if (tickCount > 0)
+    spdlog::debug("[{}] Elapsed tick count since last magic regeneration: {}",
+      clientContext.characterUid,
+      elapsedTickCount);
+
+    if (elapsedTickCount > 0)
     {
       // Always advance so off-states (holding item, full gauge) don't burst when conditions re-open.
-      racer.lastMagicRegenTimePoint += tickInterval * tickCount;
+      racer.lastMagicRegenTimePoint += tickInterval * elapsedTickCount;
 
       if (not racer.magicItem.has_value()
         && racer.starPointValue < gameModeTemplate.starPointsMax)
@@ -2284,7 +2288,7 @@ void RaceNetworkHandler::HandleRaceUserPos(
         if (racer.effects[20] || racer.effects[21])
           gainedPerTick *= 2;
 
-        const uint32_t totalGain = gainedPerTick * static_cast<uint32_t>(tickCount);
+        const uint32_t totalGain = gainedPerTick * static_cast<uint32_t>(elapsedTickCount);
         racer.starPointValue = std::min(
           gameModeTemplate.starPointsMax,
           racer.starPointValue + totalGain);
