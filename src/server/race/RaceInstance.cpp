@@ -26,17 +26,86 @@
 
 #include <limits>
 #include <tuple>
+#include <format>
 
 namespace server
 {
 
-RaceInstance::RaceInstance(
-  RaceNetworkHandler& raceDirector,
-  uint32_t roomUid) :
-    _raceDirector(raceDirector),
-    _roomUid(roomUid)
+namespace
 {
 
+constexpr registry::MapBlockId AllMapsCourseId = 10000;
+constexpr registry::MapBlockId NewMapsCourseId = 10001;
+constexpr registry::MapBlockId HotMapsCourseId = 10002;
+
+std::random_device _randomDevice;
+
+} // anon namespace
+
+RaceInstance::RaceInstance(
+  RaceNetworkHandler& raceDirector,
+  const uint32_t roomUid)
+  : _roomUid(roomUid)
+  , _raceNetworkHandler(raceDirector)
+{
+
+}
+
+void RaceInstance::GetRoom(const std::function<void(Room&)>& consumer)
+{
+  _raceNetworkHandler._serverInstance.GetRoomSystem().GetRoom(
+    _roomUid,
+    consumer);
+}
+
+void RaceInstance::GetRoom(const std::function<void(const Room&)>& consumer) const
+{
+  _raceNetworkHandler._serverInstance.GetRoomSystem().GetRoom(
+    _roomUid,
+    consumer);
+}
+
+void RaceInstance::Start(
+  const Parameters& parameters)
+{
+  _parameters = parameters;
+
+  try
+  {
+    PrepareGameMode();
+    PrepareMap();
+  }
+  catch (const std::runtime_error& e)
+  {
+    spdlog::error("Failed to start race: {}", e.what());
+  }
+
+  _stage = Stage::Loading;
+  _loadingStartTimePoint = Clock::now();
+  // todo: configurable loading timeout
+  _stageTimeoutTimePoint = _loadingStartTimePoint+ std::chrono::seconds(60);
+}
+
+void RaceInstance::Tick()
+{
+  switch (_stage)
+  {
+    case Stage::Waiting:
+      // Do nothing on waiting stage
+      break;
+    case Stage::Loading:
+      // Process rooms which are loading
+      this->TickLoading();
+      break;
+    case Stage::Racing:
+      // Process rooms which are racing
+      this->TickRacing();
+      break;
+    case Stage::Finishing:
+      // Process rooms which are finishing
+      this->TickFinishing();
+      break;
+  }
 }
 
 uint32_t RaceInstance::GetRoomUid()
@@ -44,14 +113,39 @@ uint32_t RaceInstance::GetRoomUid()
   return _roomUid;
 }
 
-RaceInstance::Parameters& RaceInstance::GetParameters()
+const RaceInstance::Parameters& RaceInstance::GetParameters() const
 {
   return _parameters;
 }
 
-const RaceInstance::Parameters& RaceInstance::GetParameters() const
+registry::GameModeId RaceInstance::GetGameModeId() const
 {
-  return _parameters;
+  return _gameModeId;
+}
+
+registry::MapBlockId RaceInstance::GetMapBlockId() const
+{
+  return _mapBlockId;
+}
+
+std::chrono::steady_clock::time_point RaceInstance::GetLoadingStartTimePoint() const noexcept
+{
+  return _loadingStartTimePoint;
+}
+
+std::chrono::steady_clock::time_point RaceInstance::GetRaceStartTimePoint() const noexcept
+{
+  return _raceStartTimePoint;
+}
+
+RaceInstance::Stage RaceInstance::GetStage() const noexcept
+{
+  return _stage;
+}
+
+std::chrono::steady_clock::time_point RaceInstance::GetStageTimeoutTimePoint() const noexcept
+{
+  return _stageTimeoutTimePoint;
 }
 
 tracker::RaceTracker& RaceInstance::GetTracker()
@@ -62,43 +156,6 @@ tracker::RaceTracker& RaceInstance::GetTracker()
 const tracker::RaceTracker& RaceInstance::GetTracker() const
 {
   return _tracker;
-}
-
-void RaceInstance::GetRoom(const std::function<void(Room&)>& consumer)
-{
-  _raceDirector._serverInstance.GetRoomSystem().GetRoom(
-    _roomUid,
-    consumer);
-}
-
-void RaceInstance::GetRoom(const std::function<void(const Room&)>& consumer) const
-{
-  _raceDirector._serverInstance.GetRoomSystem().GetRoom(
-    _roomUid,
-    consumer);
-}
-
-void RaceInstance::Tick()
-{
-  const auto& parameters = this->GetParameters();
-  switch (parameters.stage)
-  {
-    case Parameters::Stage::Waiting:
-      // Do nothing on waiting stage
-      break;
-    case Parameters::Stage::Loading:
-      // Process rooms which are loading
-      this->TickLoading();
-      break;
-    case Parameters::Stage::Racing:
-      // Process rooms which are racing
-      this->TickRacing();
-      break;
-    case Parameters::Stage::Finishing:
-      // Process rooms which are finishing
-      this->TickFinishing();
-      break;
-  }
 }
 
 void RaceInstance::TickLoading()
@@ -114,7 +171,7 @@ void RaceInstance::TickLoading()
         || racer.state == tracker::RaceTracker::Racer::State::Disconnected;
     });
 
-  const bool loadTimeoutReached = std::chrono::steady_clock::now() >= parameters.stageTimeoutTimePoint;
+  const bool loadTimeoutReached = std::chrono::steady_clock::now() >= _stageTimeoutTimePoint;
 
   // If not all the racers have loaded yet and the timeout has not been reached yet
   // do not start the race.
@@ -135,32 +192,30 @@ void RaceInstance::TickLoading()
       racer.state = tracker::RaceTracker::Racer::State::Disconnected;
   }
 
-  const auto& mapBlockTemplate = _raceDirector._serverInstance.GetCourseRegistry().GetMapBlockInfo(
-    parameters.raceMapBlockId);
+  const auto& mapBlockTemplate = _raceNetworkHandler._serverInstance.GetCourseRegistry().GetMapBlockInfo(
+    parameters.mapBlockId);
 
   // Switch to the racing stage and set the timeout time point.
-  parameters.stage = Parameters::Stage::Racing;
-  parameters.stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(
+  _stage = Stage::Racing;
+  _stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(
     mapBlockTemplate.timeLimit);
 
   // Set up the race start time point.
   const auto now = std::chrono::steady_clock::now();
-  parameters.raceStartTimePoint = now + std::chrono::seconds(
+  _raceStartTimePoint = now + std::chrono::seconds(
     mapBlockTemplate.waitTime);
 
   const protocol::AcCmdUserRaceCountdown raceCountdown{
     .raceStartTimestamp = util::TimePointToRaceTimePoint(
-      parameters.raceStartTimePoint)};
+      _raceStartTimePoint)};
 
   // Broadcast the race countdown.
-  _raceDirector.Broadcast(*this, raceCountdown);
+  _raceNetworkHandler.Broadcast(*this, raceCountdown);
 }
 
 void RaceInstance::TickRacing()
 {
-  auto& parameters = this->GetParameters();
-
-  const bool raceTimeoutReached = std::chrono::steady_clock::now() >= parameters.stageTimeoutTimePoint;
+  const bool raceTimeoutReached = std::chrono::steady_clock::now() >= _stageTimeoutTimePoint;
 
   const bool isFinishing = std::ranges::any_of(
     std::views::values(_tracker.GetRacers()),
@@ -174,8 +229,8 @@ void RaceInstance::TickRacing()
   if (not isFinishing && not raceTimeoutReached)
     return;
 
-  parameters.stage = Parameters::Stage::Finishing;
-  parameters.stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(15);
+  _stage = Stage::Finishing;
+  _stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(15);
 
   // If the race timeout was reached notify the clients about the finale.
   if (not raceTimeoutReached)
@@ -191,7 +246,7 @@ void RaceInstance::TickRacing()
         continue;
 
       const protocol::AcCmdUserRaceFinalNotify notify{};
-      _raceDirector.GetCommandServer().QueueCommand<decltype(notify)>(
+      _raceNetworkHandler.GetCommandServer().QueueCommand<decltype(notify)>(
         player.GetClientId(),
         [notify]()
         {
@@ -203,8 +258,6 @@ void RaceInstance::TickRacing()
 
 void RaceInstance::TickFinishing()
 {
-  auto& parameters = this->GetParameters();
-
   // Determine whether all racers have finished.
   const bool allRacersFinished = std::ranges::all_of(
     std::views::values(_tracker.GetRacers()),
@@ -214,7 +267,7 @@ void RaceInstance::TickFinishing()
         || racer.state == tracker::RaceTracker::Racer::State::Disconnected;
     });
 
-  const bool finishTimeoutReached = std::chrono::steady_clock::now() >= parameters.stageTimeoutTimePoint;
+  const bool finishTimeoutReached = std::chrono::steady_clock::now() >= _stageTimeoutTimePoint;
 
   // If not all the racers have finished yet and the timeout has not been reached yet
   // do not finish the race.
@@ -235,7 +288,7 @@ void RaceInstance::TickFinishing()
   // Determine winning team (team of the first finisher).
   // Solo/FFA leaves `winningTeam` as Solo.
   Team winningTeam = Team::Solo;
-  if (parameters.raceTeamMode == protocol::TeamMode::Team)
+  if (_parameters.teamMode == protocol::TeamMode::Team)
   {
     uint32_t best = tracker::InvalidCourseTime;
     for (const auto& racer : _tracker.GetRacers() | std::views::values)
@@ -270,7 +323,7 @@ void RaceInstance::TickFinishing()
     score.experience = 420;
     score.carrots = 420;
     score.teamColor = racer.team;
-    const auto characterRecord = _raceDirector._serverInstance.GetDataDirector().GetCharacter(
+    const auto characterRecord = _raceNetworkHandler._serverInstance.GetDataDirector().GetCharacter(
       characterUid);
 
     characterRecord.Mutable([this, &score](data::Character& character)
@@ -278,7 +331,7 @@ void RaceInstance::TickFinishing()
       character.carrots() += score.carrots;
       character.experience() += score.experience;
 
-      const uint32_t newLevel = _raceDirector._serverInstance.GetCharacterRegistry().GetLevelForExp(character.experience());
+      const uint32_t newLevel = _raceNetworkHandler._serverInstance.GetCharacterRegistry().GetLevelForExp(character.experience());
       if (newLevel > character.level())
       {
         character.level() = newLevel;
@@ -292,7 +345,7 @@ void RaceInstance::TickFinishing()
       score.level = character.level();
       score.levelProgress = character.experience();
 
-      _raceDirector._serverInstance.GetDataDirector().GetHorse(character.mountUid()).Immutable(
+      _raceNetworkHandler._serverInstance.GetDataDirector().GetHorse(character.mountUid()).Immutable(
         [&score](const data::Horse& horse)
         {
           score.mountName = horse.name();
@@ -327,7 +380,7 @@ void RaceInstance::TickFinishing()
   });
 
   // Broadcast the race result
-  _raceDirector.Broadcast(*this, raceResult);
+  _raceNetworkHandler.Broadcast(*this, raceResult);
 
   // Assign room master to the first-place finisher.
   if (not raceResult.scores.empty())
@@ -376,7 +429,7 @@ void RaceInstance::TickFinishing()
 
     if (newMasterUid != data::InvalidUid)
     {
-      const auto& winnerClientContext = _raceDirector.GetClientContextByCharacterUid(newMasterUid);
+      const auto& winnerClientContext = _raceNetworkHandler.GetClientContextByCharacterUid(newMasterUid);
       spdlog::info("Player {} ({}) has won the match and is now master of [Room {}]",
         winnerClientContext.userName,
         newMasterName,
@@ -384,13 +437,13 @@ void RaceInstance::TickFinishing()
 
       const protocol::AcCmdCRChangeMasterNotify masterNotify{
         .masterUid = newMasterUid};
-      _raceDirector.Broadcast(*this, masterNotify);
+      _raceNetworkHandler.Broadcast(*this, masterNotify);
     }
   }
 
   // Clear the ready state of all of the players.
   // todo: this should have been reset with the room instance data
-  parameters.stage = Parameters::Stage::Waiting;
+  _stage = Stage::Waiting;
   this->GetRoom(
     [this](Room& room)
     {
@@ -402,13 +455,13 @@ void RaceInstance::TickFinishing()
 
         // Update this racer's carrot balance
         protocol::AcCmdRCUpdateGameMoney updateGameMoney{};
-        _raceDirector.GetServerInstance().GetDataDirector().GetCharacter(uid).Immutable(
+        _raceNetworkHandler.GetServerInstance().GetDataDirector().GetCharacter(uid).Immutable(
           [&updateGameMoney](const data::Character& character)
           {
             updateGameMoney.carrotBalance = character.carrots();
           });
 
-        _raceDirector.GetCommandServer().QueueCommand<protocol::AcCmdRCUpdateGameMoney>(
+        _raceNetworkHandler.GetCommandServer().QueueCommand<protocol::AcCmdRCUpdateGameMoney>(
           player.GetClientId(),
           [updateGameMoney]()
           {
@@ -416,6 +469,121 @@ void RaceInstance::TickFinishing()
           });
       }
     });
+}
+
+void RaceInstance::PrepareGameMode()
+{
+  _gameModeId = static_cast<registry::GameModeId>(_parameters.gameMode);
+  _gameModeInfo = _raceNetworkHandler
+    .GetServerInstance()
+    .GetCourseRegistry()
+    .GetCourseGameModeInfo(_gameModeId);
+}
+
+void RaceInstance::PickRandomMapFromCourse()
+{
+  uint32_t masterLevel{};
+  // Use the room master's level to filter the maps
+  _raceNetworkHandler.GetServerInstance()
+    .GetDataDirector()
+    .GetCharacter(_parameters.masterUid)
+    .Immutable(
+      [&masterLevel](const data::Character& character)
+      {
+        masterLevel = character.level();
+      });
+
+  // Filter out the maps that are above the master's level.
+  std::vector<registry::MapBlockId> filtered;
+  std::ranges::copy_if(
+    std::as_const(_gameModeInfo.mapBlockPool),
+    std::back_inserter(filtered),
+    [this, masterLevel](registry::MapBlockId mapBlockId)
+    {
+      try
+      {
+        const auto& mapBlockInfo = _raceNetworkHandler.GetServerInstance()
+          .GetCourseRegistry()
+          .GetMapBlockInfo(
+            mapBlockId);
+        return mapBlockInfo.requiredLevel <= masterLevel;
+      }
+      catch (const std::exception& e)
+      {
+        spdlog::warn("Failed to get map block info for mapBlockId {}: {}", mapBlockId, e.what());
+        return false;
+      }
+    });
+
+  // Select a random map from the pool.
+  std::uniform_int_distribution<registry::MapBlockId> distribution(
+    0,
+    static_cast<int>(filtered.size() - 1));
+
+  _mapBlockId = filtered[distribution(_randomDevice)];
+}
+
+void RaceInstance::PrepareMap()
+{
+  if (_gameModeInfo.mapBlockPool.empty())
+  {
+    throw std::runtime_error(
+      std::format("Game mode {} does not have any maps", static_cast<uint8_t>(_parameters.gameMode)));
+  }
+
+  // If the map is set to a course pick a random map.
+  if (_parameters.mapBlockId == AllMapsCourseId
+    || _parameters.mapBlockId == NewMapsCourseId
+    || _parameters.mapBlockId == HotMapsCourseId)
+  {
+    PickRandomMapFromCourse();
+  }
+
+  _mapBlockInfo = _raceNetworkHandler
+    .GetServerInstance()
+    .GetCourseRegistry()
+    .GetMapBlockInfo(_mapBlockId);
+
+  // Prepare the item decks on the map.
+  PrepareItemDecks();
+}
+
+void RaceInstance::PickRandomItemFromDeck(tracker::RaceTracker::ItemDeck& deck)
+{
+  if (deck.items.empty())
+    return;
+
+  std::uniform_int_distribution<size_t> distribution(0, deck.items.size() - 1);
+  deck.currentItem = deck.items[distribution(_randomDevice)];
+}
+
+void RaceInstance::PrepareItemDecks()
+{
+  // Get the map position offset
+  const auto& offset = _mapBlockInfo.offset;
+
+  // Create item decks based on the game mode.
+  for (const registry::DeckId usedDeckId : _gameModeInfo.usedDeckIds)
+  {
+    const auto& deckInfo = _raceNetworkHandler.GetServerInstance().GetCourseRegistry().GetDeckInfo(
+      usedDeckId);
+
+    for (const auto& deckInstance : _mapBlockInfo.itemDecks)
+    {
+      if (deckInstance.deckId != usedDeckId)
+        continue;
+
+      auto& deck = _tracker.AddItemDeck();
+      deck.items = deckInfo.items;
+      deck.respawnTime = deckInfo.respawnTime;
+
+      deck.position[0] = deckInstance.position[0] + offset[0];
+      deck.position[1] = deckInstance.position[1] + offset[1];
+      deck.position[2] = deckInstance.position[2] + offset[2];
+
+      PickRandomItemFromDeck(deck);
+    }
+  }
 }
 
 } // namespace server

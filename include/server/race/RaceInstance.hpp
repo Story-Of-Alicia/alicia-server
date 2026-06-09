@@ -24,6 +24,7 @@
 
 #include <libserver/data/DataDefinitions.hpp>
 #include <libserver/network/NetworkDefinitions.hpp>
+#include <libserver/registry/CourseRegistry.hpp>
 
 #include <chrono>
 #include <functional>
@@ -38,35 +39,28 @@ class Room;
 class RaceInstance
 {
 public:
+  using Clock = std::chrono::steady_clock;
+  
+  enum class Stage
+  {
+    Waiting,
+    Loading,
+    Racing,
+    Finishing,
+  };
+
   struct Parameters
   {
     //! A game mode of the race.
-    protocol::GameMode raceGameMode{};
+    protocol::GameMode gameMode{};
     //! A team mode of the race.
-    protocol::TeamMode raceTeamMode{};
+    protocol::TeamMode teamMode{};
     //! A map block ID of the race.
-    uint16_t raceMapBlockId{};
+    registry::MapBlockId mapBlockId{};
     //! A mission ID of the race.
-    uint16_t raceMissionId{};
-
-    //! The current stage of the race.
-    enum class Stage
-    {
-      Waiting,
-      Loading,
-      Racing,
-      Finishing,
-    } stage{Stage::Waiting};
-
-    //! Represents when a room started loading.
-    std::chrono::steady_clock::time_point loadingStartTimePoint{
-      std::chrono::steady_clock::time_point::max()};
-    //! A time point of when the race is actually started (a countdown is finished).
-    std::chrono::steady_clock::time_point raceStartTimePoint{
-      std::chrono::steady_clock::time_point::max()};
-    //! A time point of when the stage timeout occurs.
-    std::chrono::steady_clock::time_point stageTimeoutTimePoint{
-      std::chrono::steady_clock::time_point::max()};
+    uint16_t missionId{};
+    //! A UID of the master.
+    data::Uid masterUid{};
   };
 
   explicit RaceInstance(
@@ -74,29 +68,71 @@ public:
     uint32_t roomUid);
   ~RaceInstance() = default;
 
-  uint32_t GetRoomUid();
-  Parameters& GetParameters();
-  const Parameters& GetParameters() const;
-  tracker::RaceTracker& GetTracker();
-  const tracker::RaceTracker& GetTracker() const;
-
   void GetRoom(const std::function<void(Room&)>& consumer);
   void GetRoom(const std::function<void(const Room&)>& consumer) const;
 
+  void Start(const Parameters& parameters);
+
   void Tick();
+
+  uint32_t GetRoomUid();
+
+  const Parameters& GetParameters() const;
+
+  [[nodiscard]] registry::GameModeId GetGameModeId() const;
+  [[nodiscard]] registry::MapBlockId GetMapBlockId() const;
+
+  [[nodiscard]] Clock::time_point GetLoadingStartTimePoint() const noexcept;
+  [[nodiscard]] Clock::time_point GetRaceStartTimePoint() const noexcept;
+  [[nodiscard]] Stage GetStage() const noexcept;
+  [[nodiscard]] Clock::time_point GetStageTimeoutTimePoint() const noexcept;
+
+  [[nodiscard]] tracker::RaceTracker& GetTracker();
+  [[nodiscard]] const tracker::RaceTracker& GetTracker() const;
 
 private:
   void TickLoading();
   void TickRacing();
   void TickFinishing();
 
+  void PrepareGameMode();
+  void PickRandomMapFromCourse();
+  void PrepareMap();
+
+public:
+  // todo: this needs to be fixed
+  void PickRandomItemFromDeck(tracker::RaceTracker::ItemDeck& deck);
+
+private:
+  void PrepareItemDecks();
+
+  const uint32_t _roomUid{};
+
   //! The race parameters.
   Parameters _parameters;
+
+  registry::GameModeId _gameModeId{};
+  registry::Course::GameModeInfo _gameModeInfo;
+  registry::MapBlockId _mapBlockId;
+  registry::Course::MapBlockInfo _mapBlockInfo;
+  
+  //! Represents when the race started loading.
+  Clock::time_point _loadingStartTimePoint{
+    Clock::time_point::max()};
+  //! A time point of when the race started.
+  Clock::time_point _raceStartTimePoint{
+    Clock::time_point::max()};
+
+  //! The current stage of the race.
+  Stage _stage{Stage::Waiting};
+  //! A time point of when the stage timeout occurs.
+  Clock::time_point _stageTimeoutTimePoint{
+    Clock::time_point::max()};
+
   //! A race object tracker.
   tracker::RaceTracker _tracker;
 
-  RaceNetworkHandler& _raceDirector;
-  const uint32_t _roomUid{};
+  RaceNetworkHandler& _raceNetworkHandler;
 };
 
 } // namespace server

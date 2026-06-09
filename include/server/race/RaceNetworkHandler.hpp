@@ -289,8 +289,6 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRGameCreateClientItem& command);
 
-  void PrepareItemDecks(RaceInstance& raceInstance);
-
   ServerInstance& GetServerInstance();
   CommandServer& GetCommandServer();
 
