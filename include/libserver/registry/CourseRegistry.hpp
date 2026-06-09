@@ -32,6 +32,9 @@
 namespace server::registry
 {
 
+using DeckId = uint32_t;
+using DeckItemId = uint32_t;
+
 struct Course
 {
   struct GameModeInfo
@@ -60,7 +63,7 @@ struct Course
     //! A maximum amount of star points collectable.
     uint32_t starPointsMax{};
     //! A list of used item decks.
-    std::vector<uint32_t> usedDeckItemIds{};
+    std::vector<DeckId> usedDeckIds{};
     //! A map pool
     std::vector<uint32_t> mapPool{};
   };
@@ -77,7 +80,7 @@ struct Course
     uint32_t requiredLevel{};
     //! A podium ID.
     uint32_t podiumId{};
-    //! An offset to apply to all deck item positions.
+    //! An offset to apply to all item deck positions.
     std::array<float, 3> offset{};
     //! A fee for training on the map.
     uint32_t trainingFee{};
@@ -88,19 +91,22 @@ struct Course
 
     struct DeckItemInstance
     {
-      //! A deck item ID;
-      uint32_t deckId;
-      //! A position of the deck item.
+      //! An item deck ID.
+      DeckId deckId;
+      //! A position of the item deck.
       std::array<float, 3> position;
     };
 
-    //! A collection of deck item instances.
-    std::vector<DeckItemInstance> deckItems;
+    //! A collection of item deck instances.
+    std::vector<DeckItemInstance> itemDecks;
   };
 
-  struct DeckItemInfo
+  struct DeckInfo
   {
-    std::vector<uint32_t> itemTypes;
+    //! A regeneration time for items in this deck.
+    std::chrono::milliseconds respawnTime{};
+    //! A list of items spawned in this deck.
+    std::vector<DeckItemId> items;
   };
 
   struct ItemTypeInfo
@@ -121,7 +127,7 @@ public:
     uint8_t type);
   [[nodiscard]] const Course::MapBlockInfo& GetMapBlockInfo(
     uint32_t id);
-  [[nodiscard]] const Course::DeckItemInfo& GetDeckItemInfo(
+  [[nodiscard]] const Course::DeckInfo& GetDeckInfo(
     uint32_t deckId);
   [[nodiscard]] const Course::ItemTypeInfo& GetItemTypeInfo(
     uint32_t itemTypeId);
@@ -132,7 +138,7 @@ private:
   //! A collection of map block infos.
   std::unordered_map<uint32_t, Course::MapBlockInfo> _mapBlockInfo;
   //! A collection of deck item infos.
-  std::unordered_map<uint32_t, Course::DeckItemInfo> _deckItemInfo;
+  std::unordered_map<uint32_t, Course::DeckInfo> _deckItemInfo;
 
   //! A collection of item type infos.
   std::unordered_map<uint32_t, Course::ItemTypeInfo> _itemTypeInfo;

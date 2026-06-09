@@ -1643,7 +1643,7 @@ void AcCmdUserRaceItemGet::Read(
   SourceStream& stream)
 {
   stream.Read(command.characterOid)
-    .Read(command.itemId)
+    .Read(command.itemDeckId)
     .Read(command.unk3);
 }
 

@@ -46,7 +46,7 @@ uint8_t ReadGameModeInfo(
   {
     for (const auto& itemSpawnerSection : itemSpawnersSection)
     {
-      gameMode.usedDeckItemIds.emplace_back(
+      gameMode.usedDeckIds.emplace_back(
         itemSpawnerSection["deckId"].as<uint32_t>());
     }
   }
@@ -82,7 +82,7 @@ uint32_t ReadMapBlockInfo(
   const auto deckItemCollectionSection = section["deckItems"]["collection"];
   for (const auto& deckItemSection : deckItemCollectionSection)
   {
-    auto& deckItem = mapBlock.deckItems.emplace_back();
+    auto& deckItem = mapBlock.itemDecks.emplace_back();
     deckItem.deckId = deckItemSection["deckId"].as<decltype(Course::MapBlockInfo::DeckItemInstance::deckId)>();
     deckItem.position = {
       deckItemSection["position"][0].as<float>(),
@@ -95,14 +95,17 @@ uint32_t ReadMapBlockInfo(
  
 uint32_t ReadDeckItemInfo(
   const YAML::Node& section,
-  Course::DeckItemInfo& deckItem)
+  Course::DeckInfo& deckItem)
 {
+  deckItem.respawnTime = std::chrono::milliseconds(
+    section["respawnTime"].as<int64_t>(0));
+
   const auto itemTypesSection = section["itemTypes"];
   if (itemTypesSection)
   {
     for (const auto& itemType : itemTypesSection)
     {
-      deckItem.itemTypes.emplace_back(itemType.as<uint32_t>());
+      deckItem.items.emplace_back(itemType.as<uint32_t>());
     }
   }
  
@@ -178,7 +181,7 @@ void CourseRegistry::ReadConfig(
       {
         for (const auto& deckItemInfoSection : collection)
         {
-          Course::DeckItemInfo deckItem;
+          Course::DeckInfo deckItem;
           const auto id = ReadDeckItemInfo(deckItemInfoSection, deckItem);
           _deckItemInfo.emplace(id, deckItem);
         }
@@ -229,7 +232,7 @@ const Course::MapBlockInfo& CourseRegistry::GetMapBlockInfo(uint32_t id)
   return mapBlockInfo->second;
 }
  
-const Course::DeckItemInfo& CourseRegistry::GetDeckItemInfo(uint32_t deckId)
+const Course::DeckInfo& CourseRegistry::GetDeckInfo(uint32_t deckId)
 {
   const auto deckItemInfo = _deckItemInfo.find(deckId);
   if (deckItemInfo == _deckItemInfo.cend())

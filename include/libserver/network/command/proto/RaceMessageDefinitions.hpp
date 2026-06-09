@@ -2114,7 +2114,7 @@ struct AcCmdGameRaceItemSpawn
 struct AcCmdUserRaceItemGet
 {
   uint16_t characterOid;
-  uint16_t itemId;
+  uint16_t itemDeckId;
   uint32_t unk3;
 
   static Command GetCommand()

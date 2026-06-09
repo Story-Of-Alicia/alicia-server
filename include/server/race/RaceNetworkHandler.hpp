@@ -289,7 +289,7 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRGameCreateClientItem& command);
 
-  void PrepareItemSpawners(RaceInstance& raceInstance);
+  void PrepareItemDecks(RaceInstance& raceInstance);
 
   ServerInstance& GetServerInstance();
   CommandServer& GetCommandServer();

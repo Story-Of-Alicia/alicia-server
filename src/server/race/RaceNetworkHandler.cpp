@@ -568,7 +568,7 @@ RaceInstance& RaceNetworkHandler::GetRaceInstance(
 
   auto& raceInstance = _raceInstances.at(clientContext.roomUid);
 
-  // If not racing command then we are done here
+  // If not racing cqommand then we are done here
   // HurdleClearResult, HandleSpur etc.
   if (not checkRacer)
     return raceInstance;
@@ -1117,7 +1117,7 @@ void RaceNetworkHandler::HandleLeaveRoom(ClientId clientId)
     {
       _serverInstance.GetRoomSystem().GetRoom(
         clientContext.roomUid,
-        [&candidates](Room& room)
+        [&candidates](const Room& room)
         {
           std::ranges::copy(
             room.GetPlayers() | std::views::keys,
@@ -1166,7 +1166,7 @@ void RaceNetworkHandler::HandleLeaveRoom(ClientId clientId)
     // Delete room if empty
     bool roomEmpty{false};
     raceInstance.GetRoom(
-      [this, &roomEmpty, roomUid = clientContext.roomUid](const Room& room)
+      [this, &roomEmpty](const Room& room)
       {
         if (room.GetPlayerCount() != 0)
           // Room is not empty
@@ -1193,7 +1193,7 @@ void RaceNetworkHandler::HandleLeaveRoom(ClientId clientId)
 }
 
 void RaceNetworkHandler::HandleReadyRace(
-  ClientId clientId,
+  const ClientId clientId,
   const protocol::AcCmdCRReadyRace&)
 {
   const auto& clientContext = GetClientContext(clientId);
@@ -1215,9 +1215,10 @@ void RaceNetworkHandler::HandleReadyRace(
   this->Broadcast(raceInstance, notify);
 }
 
-void RaceNetworkHandler::PrepareItemSpawners(RaceInstance& raceInstance)
+void RaceNetworkHandler::PrepareItemDecks(RaceInstance& raceInstance)
 {
   const auto& parameters = raceInstance.GetParameters();
+
   try {
     const auto& gameModeInfo = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
       static_cast<uint32_t>(parameters.raceGameMode));
@@ -1227,32 +1228,33 @@ void RaceNetworkHandler::PrepareItemSpawners(RaceInstance& raceInstance)
     // Get the map position offset
     const auto& offset = mapBlockInfo.offset;
 
-    // Spawn items based on map positions and game mode allowed deck IDs
-    for (const uint32_t usedDeckItemId : gameModeInfo.usedDeckItemIds)
+    // Create item decks based on the game mode.
+    for (const registry::DeckId usedDeckId : gameModeInfo.usedDeckIds)
     {
-      const auto& deckItemInfo = GetServerInstance().GetCourseRegistry().GetDeckItemInfo(usedDeckItemId);
-      for (const auto& mapDeckItemInstance : mapBlockInfo.deckItems)
+      const auto& deckInfo = GetServerInstance().GetCourseRegistry().GetDeckInfo(
+        usedDeckId);
+
+      for (const auto& deckInstance : mapBlockInfo.itemDecks)
       {
-        if (mapDeckItemInstance.deckId != usedDeckItemId)
+        if (deckInstance.deckId != usedDeckId)
           continue;
 
-        auto& item = raceInstance.GetTracker().AddItem();
-        item.itemTypes = deckItemInfo.itemTypes;
+        auto& deck = raceInstance.GetTracker().AddItemDeck();
+        deck.items = deckInfo.items;
+        deck.respawnTime = deckInfo.respawnTime;
 
-        // Randomly pick an initial type
-        if (!item.itemTypes.empty())
+        // Randomly pick an initial item to be spawned at the deck.
+        if (!deck.items.empty())
         {
-          static std::random_device rd;
-          std::uniform_int_distribution<size_t> distribution(0, item.itemTypes.size() - 1);
-          item.currentType = item.itemTypes[distribution(rd)];
+          std::uniform_int_distribution<size_t> distribution(0, deck.items.size() - 1);
+          deck.currentItem = deck.items[distribution(_randomDevice)];
         }
 
-        item.position[0] = mapDeckItemInstance.position[0] + offset[0];
-        item.position[1] = mapDeckItemInstance.position[1] + offset[1];
-        item.position[2] = mapDeckItemInstance.position[2] + offset[2];
+        deck.position[0] = deckInstance.position[0] + offset[0];
+        deck.position[1] = deckInstance.position[1] + offset[1];
+        deck.position[2] = deckInstance.position[2] + offset[2];
       }
     }
-
   }
   catch (const std::exception& e)
   {
@@ -1390,7 +1392,7 @@ void RaceNetworkHandler::HandleStartRace(
   raceInstance.GetTracker().Clear();
 
   // Add the items.
-  PrepareItemSpawners(raceInstance);
+  PrepareItemDecks(raceInstance);
 
   // Add the racers.
   _serverInstance.GetRoomSystem().GetRoom(
@@ -2198,7 +2200,11 @@ void RaceNetworkHandler::HandleRaceUserPos(
 
   constexpr double ItemSpawnDistanceThreshold = 90.0;
 
-  auto processItemSpawn = [&](tracker::Oid oid, uint32_t itemType, const std::array<float, 3>& position, uint32_t spawnStyle = 0)
+  const auto processItemSpawn = [&](
+    const tracker::Oid oid,
+    const uint32_t itemType,
+    const std::array<float, 3>& position,
+    const uint32_t spawnStyle = 0)
   {
     const auto distance = std::sqrt(
       std::pow(command.member2[0] - position[0], 2) +
@@ -2206,19 +2212,20 @@ void RaceNetworkHandler::HandleRaceUserPos(
       std::pow(command.member2[2] - position[2], 2));
 
     const bool isInProximity = distance < ItemSpawnDistanceThreshold;
-    const bool isAlreadyTracked = racer.trackedItems.contains(oid);
+    const bool isAlreadyTracked = racer.trackedDecks.contains(oid);
 
     if (isAlreadyTracked)
     {
       if (not isInProximity)
-        racer.trackedItems.erase(oid);
+        racer.trackedDecks.erase(oid);
+
       return;
     }
 
     if (not isInProximity)
       return;
 
-    protocol::AcCmdRCCreateItem spawn{
+    const protocol::AcCmdRCCreateItem spawn{
       .itemId = oid,
       .itemType = itemType,
       .position = position,
@@ -2226,16 +2233,16 @@ void RaceNetworkHandler::HandleRaceUserPos(
       .spawnerId = 0,
       .sizeLevel = 0};
 
-    racer.trackedItems.insert(oid);
+    racer.trackedDecks.insert(oid);
     _commandServer.QueueCommand<decltype(spawn)>(clientId, [spawn]() { return spawn; });
   };
 
-  for (const auto& [itemOid, item] : raceInstance.GetTracker().GetItems())
+  for (const auto& item : raceInstance.GetTracker().GetItemDecks() | std::views::values)
   {
     if (std::chrono::steady_clock::now() < item.respawnTimePoint)
       continue;
 
-    processItemSpawn(item.oid, item.currentType, item.position);
+    processItemSpawn(item.oid, item.currentItem, item.position);
   }
 
   for (const auto& eventItem : racer.eventItems)
@@ -2814,17 +2821,21 @@ void RaceNetworkHandler::HandleUseMagicItem(
 }
 
 void RaceNetworkHandler::HandleUserRaceItemGet(
-  ClientId clientId,
+  const ClientId clientId,
   const protocol::AcCmdUserRaceItemGet& command)
 {
   const auto& clientContext = GetClientContext(clientId);
 
   std::scoped_lock lock(_raceInstancesMutex);
+
   auto& raceInstance = GetRaceInstance(clientContext);
   auto& racer = raceInstance.GetTracker().GetRacer(clientContext.characterUid);
 
   // Check event items first (eggs, etc.)
-  const auto eventItemOid = raceInstance.GetTracker().FindEventItem(clientContext.characterUid, command.itemId);
+  const auto eventItemOid = raceInstance.GetTracker().FindEventItem(
+    clientContext.characterUid,
+    command.itemDeckId);
+
   if (eventItemOid != tracker::InvalidEntityOid)
   {
     auto& eventItem = raceInstance.GetTracker().GetEventItem(clientContext.characterUid, eventItemOid);
@@ -2839,7 +2850,6 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
     });
 
     // Notify racers that invoker got the egg
-
     const protocol::AcCmdRCObtainEgg obtainEgg{
       .characterUid = clientContext.characterUid,
       .ItemUid = itemUid,
@@ -2848,39 +2858,44 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
 
     const protocol::AcCmdGameRaceItemGet itemGet{
       .characterOid = command.characterOid,
-      .itemId = command.itemId,
+      .itemId = command.itemDeckId,
       .itemType = eventItem.itemType};
     this->Broadcast(raceInstance, itemGet);
 
-    raceInstance.GetTracker().RemoveEventItem(clientContext.characterUid, command.itemId);
-    racer.trackedItems.erase(command.itemId);
+    raceInstance.GetTracker().RemoveEventItem(clientContext.characterUid, command.itemDeckId);
+    racer.trackedDecks.erase(command.itemDeckId);
+
     return;
   }
 
-  auto& items = raceInstance.GetTracker().GetItems();
-  const auto itemIter = items.find(command.itemId);
-  if (itemIter == items.end())
+  auto& items = raceInstance.GetTracker().GetItemDecks();
+  const auto deckIter = items.find(command.itemDeckId);
+  if (deckIter == items.end())
   {
-    spdlog::warn("Client {} picked up untracked item {}", clientId, command.itemId);
+    spdlog::warn("Client {} picked up untracked item deck {}", clientId, command.itemDeckId);
     return;
   }
-  auto& item = itemIter->second;
+
+  auto& deck = deckIter->second;
 
   const auto now = std::chrono::steady_clock::now();
-  constexpr auto ItemRespawnDuration = std::chrono::milliseconds(500);
-  constexpr auto SpawnerPickupCooldown = std::chrono::seconds(10);
-  const auto cooldownIter = racer.spawnerCooldowns.find(command.itemId);
-  if (cooldownIter != racer.spawnerCooldowns.end() && cooldownIter->second > now)
+
+  constexpr auto ItemDeckPickupCooldown = std::chrono::seconds(10);
+  const auto deckCooldownIter = racer.deckCooldown.find(
+    command.itemDeckId);
+
+  if (deckCooldownIter != racer.deckCooldown.end()
+    && deckCooldownIter->second > now)
   {
     // Picker's client predictively hid the item on collision; untrack it
     // so processItemSpawn re-broadcasts the spawn for them next tick.
-    item.respawnTimePoint = now + ItemRespawnDuration;
-    racer.trackedItems.erase(command.itemId);
+    deck.respawnTimePoint = now + deck.respawnTime;
+    racer.trackedDecks.erase(command.itemDeckId);
     return;
   }
-  racer.spawnerCooldowns[command.itemId] = now + SpawnerPickupCooldown;
 
-  item.respawnTimePoint = now + ItemRespawnDuration;
+  racer.deckCooldown[command.itemDeckId] = now + ItemDeckPickupCooldown;
+  deck.respawnTimePoint = now + deck.respawnTime;
 
   Room::GameMode gameMode;
   registry::Course::GameModeInfo gameModeInfo;
@@ -2895,7 +2910,7 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
     // TODO: Deduplicate from StarPointGet
     case Room::GameMode::Speed:
       {
-        switch (item.currentType)
+        switch (deck.currentItem)
         {
           case 101: // Gold horseshoe. Get star points until the next boost
             racer.starPointValue = std::min(((racer.starPointValue/40000)+1) * 40000, gameModeInfo.starPointsMax);
@@ -2905,7 +2920,7 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
             break;
           default:
             spdlog::warn("Player {} picked up unknown item type {}",
-              clientId, item.currentType);
+              clientId, deck.currentItem);
             break;
         }
 
@@ -2929,7 +2944,7 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
     case Room::GameMode::Magic:
     {
       // Magic items should respawn at a near-instant rate
-      item.respawnTimePoint = std::chrono::steady_clock::now();
+      deck.respawnTimePoint = std::chrono::steady_clock::now();
 
       uint32_t magicItem{};
       if (not racer.magicItem.has_value())
@@ -2937,7 +2952,7 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
         // Racer is empty handed
 
         // Get the item type of the picked up item (408, 409 etc)
-        const uint32_t magicItemType = item.currentType;
+        const uint32_t magicItemType = deck.currentItem;
 
         // Get the magic slot index to indicate to the racer that they
         // have the item (water shield, ice wall etc).
@@ -2979,15 +2994,11 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
 
       // Now that the magic item on the ground has been picked up,
       // randomly pick the new item type for this picked up item
-      if (!item.itemTypes.empty())
+      if (!deck.items.empty())
       {
         static std::random_device rd;
-        std::uniform_int_distribution<size_t> distribution(0, item.itemTypes.size() - 1);
-        item.currentType = item.itemTypes[distribution(rd)];
-      }
-      else
-      {
-        // TODO: Item types is empty, use deck ID instead?
+        std::uniform_int_distribution<size_t> distribution(0, deck.items.size() - 1);
+        deck.currentItem = deck.items[distribution(rd)];
       }
 
       // Notify racers in the race room that the invoking racer is now
@@ -3011,15 +3022,15 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
   // Notify all clients in the room that this item has been picked up
   const protocol::AcCmdGameRaceItemGet get{
     .characterOid = command.characterOid,
-    .itemId = command.itemId,
-    .itemType = item.currentType,
+    .itemId = command.itemDeckId,
+    .itemType = deck.currentItem,
   };
   this->Broadcast(raceInstance, get);
 
   // Erase the item from item instances of each client.
   for (auto& raceRacer : raceInstance.GetTracker().GetRacers() | std::views::values)
   {
-    raceRacer.trackedItems.erase(item.oid);
+    raceRacer.trackedDecks.erase(deck.oid);
   }
 }
 

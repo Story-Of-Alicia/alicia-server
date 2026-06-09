@@ -76,9 +76,10 @@ public:
     std::optional<uint32_t> magicItem{};
 
     //! A set of tracked items in racer's proximity.
-    std::unordered_set<Oid> trackedItems;
-    //! Per-racer per-spawner pickup cooldown expiry times.
-    std::unordered_map<uint16_t, std::chrono::steady_clock::time_point> spawnerCooldowns;
+    std::unordered_set<Oid> trackedDecks;
+    //! A deck cooldown time point tracker.
+    std::unordered_map<Oid, std::chrono::steady_clock::time_point> deckCooldown;
+
     //! Per-racer event items (e.g. eggs) visible only to this racer.
     std::vector<EventItem> eventItems;
 
@@ -116,12 +117,18 @@ public:
     std::optional<MagicTargetInfo> pendingMagicTarget{};
   };
 
-  //! An item
-  struct Item
+  //! An item deck.
+  struct ItemDeck
   {
+    //! An object identifier.
     Oid oid{};
-    std::vector<uint32_t> itemTypes{};
-    uint32_t currentType{};
+    //! A list of items spawnable in this item deck.
+    std::vector<uint32_t> items{};
+    //!
+    uint32_t currentItem{};
+    //! A respawn time for the items in the deck.
+    std::chrono::milliseconds respawnTime{};
+    //! A time point of the next respawn.
     std::chrono::steady_clock::time_point respawnTimePoint{};
     std::array<float, 3> position{};
   };
@@ -147,7 +154,7 @@ public:
   using RacerObjectMap = std::map<data::Uid, Racer>;
   //! An item object map.
   //! Maps itemId -> Item (in the race)
-  using ItemObjectMap = std::map<uint16_t, Item>;
+  using ItemObjectMap = std::map<uint16_t, ItemDeck>;
   //! An event map.
   using EventMap = std::unordered_map<uint32_t, Event>;
 
@@ -172,17 +179,17 @@ public:
 
   //! Adds an item for tracking.
   //! @returns A reference to the new item record.
-  Item& AddItem();
+  ItemDeck& AddItemDeck();
   //! Removes an item from tracking.
   //! @param itemId Item OID.
-  void RemoveItem(Oid itemId);
+  void RemoveItemDeck(Oid itemId);
   //! Returns reference to the item record.
   //! @param itemId Item OID.
   //! @returns Item record.
-  [[nodiscard]] Item& GetItem(Oid itemId);
+  [[nodiscard]] ItemDeck& GetItemDeck(Oid itemId);
   //! Returns a reference to all item records.
   //! @return Reference to item records.
-  [[nodiscard]] ItemObjectMap& GetItems();
+  [[nodiscard]] ItemObjectMap& GetItemDecks();
   //! Returns the next object instance ID and increments the internal counter.
   //! @param increment The value to increment the internal counter by.
   //! @returns The next object instance ID before incrementing.
@@ -221,11 +228,11 @@ private:
   //! Next OID for new character entities (100+).
   Oid _nextCharacterOid = 100;
   //! Next OID for item entities (1–99, reset each race).
-  Oid _nextItemOid = 1;
+  Oid _nextItemDeckOid = 1;
   //! Horse entities in the race.
   RacerObjectMap _racers;
   //! Items in the race
-  ItemObjectMap _items;
+  ItemObjectMap _itemDecks;
   //! Tracked race map events.
   EventMap _events;
   //! Next effect instance ID.
