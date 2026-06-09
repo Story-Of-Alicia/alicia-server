@@ -1274,6 +1274,9 @@ void RaceNetworkHandler::HandleStartRace(
 
   parameters.masterUid = roomMasterUid;
 
+  // Clear the tracker before the race.
+  raceInstance.GetTracker().Clear();
+
   if (not raceInstance.Start(parameters))
   {
     return;
@@ -1294,9 +1297,6 @@ void RaceNetworkHandler::HandleStartRace(
 
   // Broadcast room countdown.
   this->Broadcast(raceInstance, roomCountdown);
-
-  // Clear the tracker before the race.
-  raceInstance.GetTracker().Clear();
 
   // Add the racers.
   _serverInstance.GetRoomSystem().GetRoom(
@@ -2082,10 +2082,12 @@ void RaceNetworkHandler::HandleRaceUserPos(
   const auto& clientContext = GetClientContext(clientId);
 
   std::scoped_lock lock(_raceInstancesMutex);
+
   auto& raceInstance = GetRaceInstance(clientContext);
   const auto& parameters = raceInstance.GetParameters();
 
-  auto& racer = raceInstance.GetTracker().GetRacer(clientContext.characterUid);
+  auto& racer = raceInstance.GetTracker().GetRacer(
+    clientContext.characterUid);
 
   // TODO: Revise this in NPC races
   if (command.oid != racer.oid)
@@ -2094,8 +2096,10 @@ void RaceNetworkHandler::HandleRaceUserPos(
       "Client tried to perform action on behalf of different racer");
   }
 
-  const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(parameters.gameMode));
+  const auto& gameModeTemplate = GetServerInstance()
+    .GetCourseRegistry()
+    .GetCourseGameModeInfo(
+      raceInstance.GetGameModeId());
 
   constexpr double ItemSpawnDistanceThreshold = 90.0;
 
@@ -2842,9 +2846,6 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
     // TODO: Deduplicate from RequestMagicItem
     case Room::GameMode::Magic:
     {
-      // Magic items should respawn at a near-instant rate
-      deck.respawnTimePoint = std::chrono::steady_clock::now();
-
       uint32_t magicItem{};
       if (not racer.magicItem.has_value())
       {

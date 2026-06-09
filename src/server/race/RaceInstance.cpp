@@ -541,7 +541,9 @@ void RaceInstance::PrepareMap()
   if (_gameModeInfo.mapBlockPool.empty())
   {
     throw std::runtime_error(
-      std::format("Game mode {} does not have any maps", static_cast<uint8_t>(_parameters.gameMode)));
+      std::format(
+        "Game mode {} does not have any maps",
+        _gameModeId));
   }
 
   // If the map is set to a course pick a random map.
@@ -561,8 +563,19 @@ void RaceInstance::PrepareMap()
     .GetCourseRegistry()
     .GetMapBlockInfo(_mapBlockId);
 
-  // Prepare the item decks on the map.
-  PrepareItemDecks();
+  try
+  {
+    // Prepare the item decks on the map.
+    PrepareItemDecks();
+  }
+  catch (const std::exception& e)
+  {
+    throw std::runtime_error(
+      std::format(
+        "Exception while preparing items for game mode {} and map id {}",
+        _gameModeId,
+        _mapBlockId));
+  }
 }
 
 void RaceInstance::PickRandomItemFromDeck(tracker::RaceTracker::ItemDeck& deck)

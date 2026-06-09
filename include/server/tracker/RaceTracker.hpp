@@ -130,7 +130,8 @@ public:
     //! A respawn time for the items in the deck.
     std::chrono::milliseconds respawnTime{};
     //! A time point of the next respawn.
-    std::chrono::steady_clock::time_point respawnTimePoint{};
+    std::chrono::steady_clock::time_point respawnTimePoint{
+      std::chrono::steady_clock::time_point::min()};
     std::array<float, 3> position{};
   };
 
