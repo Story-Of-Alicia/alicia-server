@@ -33,6 +33,8 @@ namespace server::registry
 {
 
 using GameModeId = uint32_t;
+using TeamModeId = uint32_t;
+
 using MapBlockId = uint32_t;
 using DeckId = uint32_t;
 using DeckItemId = uint32_t;

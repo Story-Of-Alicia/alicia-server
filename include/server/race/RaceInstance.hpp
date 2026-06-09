@@ -71,7 +71,8 @@ public:
   void GetRoom(const std::function<void(Room&)>& consumer);
   void GetRoom(const std::function<void(const Room&)>& consumer) const;
 
-  void Start(const Parameters& parameters);
+  bool Start(const Parameters& parameters);
+  void Stop();
 
   void Tick();
 
@@ -84,6 +85,7 @@ public:
 
   [[nodiscard]] Clock::time_point GetLoadingStartTimePoint() const noexcept;
   [[nodiscard]] Clock::time_point GetRaceStartTimePoint() const noexcept;
+
   [[nodiscard]] Stage GetStage() const noexcept;
   [[nodiscard]] Clock::time_point GetStageTimeoutTimePoint() const noexcept;
 
@@ -113,7 +115,7 @@ private:
 
   registry::GameModeId _gameModeId{};
   registry::Course::GameModeInfo _gameModeInfo;
-  registry::MapBlockId _mapBlockId;
+  registry::MapBlockId _mapBlockId{};
   registry::Course::MapBlockInfo _mapBlockInfo;
   
   //! Represents when the race started loading.

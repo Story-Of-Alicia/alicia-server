@@ -65,7 +65,7 @@ void RaceInstance::GetRoom(const std::function<void(const Room&)>& consumer) con
     consumer);
 }
 
-void RaceInstance::Start(
+bool RaceInstance::Start(
   const Parameters& parameters)
 {
   _parameters = parameters;
@@ -77,209 +77,20 @@ void RaceInstance::Start(
   }
   catch (const std::runtime_error& e)
   {
-    spdlog::error("Failed to start race: {}", e.what());
+    spdlog::error("Failed to start race instance: {}", e.what());
+    return false;
   }
 
   _stage = Stage::Loading;
   _loadingStartTimePoint = Clock::now();
   // todo: configurable loading timeout
   _stageTimeoutTimePoint = _loadingStartTimePoint+ std::chrono::seconds(60);
+
+  return true;
 }
 
-void RaceInstance::Tick()
+void RaceInstance::Stop()
 {
-  switch (_stage)
-  {
-    case Stage::Waiting:
-      // Do nothing on waiting stage
-      break;
-    case Stage::Loading:
-      // Process rooms which are loading
-      this->TickLoading();
-      break;
-    case Stage::Racing:
-      // Process rooms which are racing
-      this->TickRacing();
-      break;
-    case Stage::Finishing:
-      // Process rooms which are finishing
-      this->TickFinishing();
-      break;
-  }
-}
-
-uint32_t RaceInstance::GetRoomUid()
-{
-  return _roomUid;
-}
-
-const RaceInstance::Parameters& RaceInstance::GetParameters() const
-{
-  return _parameters;
-}
-
-registry::GameModeId RaceInstance::GetGameModeId() const
-{
-  return _gameModeId;
-}
-
-registry::MapBlockId RaceInstance::GetMapBlockId() const
-{
-  return _mapBlockId;
-}
-
-std::chrono::steady_clock::time_point RaceInstance::GetLoadingStartTimePoint() const noexcept
-{
-  return _loadingStartTimePoint;
-}
-
-std::chrono::steady_clock::time_point RaceInstance::GetRaceStartTimePoint() const noexcept
-{
-  return _raceStartTimePoint;
-}
-
-RaceInstance::Stage RaceInstance::GetStage() const noexcept
-{
-  return _stage;
-}
-
-std::chrono::steady_clock::time_point RaceInstance::GetStageTimeoutTimePoint() const noexcept
-{
-  return _stageTimeoutTimePoint;
-}
-
-tracker::RaceTracker& RaceInstance::GetTracker()
-{
-  return _tracker;
-}
-
-const tracker::RaceTracker& RaceInstance::GetTracker() const
-{
-  return _tracker;
-}
-
-void RaceInstance::TickLoading()
-{
-  auto& parameters = this->GetParameters();
-
-  // Determine whether all racers have started racing.
-  const bool allRacersLoaded = std::ranges::all_of(
-    std::views::values(_tracker.GetRacers()),
-    [](const tracker::RaceTracker::Racer& racer)
-    {
-      return racer.state == tracker::RaceTracker::Racer::State::Racing
-        || racer.state == tracker::RaceTracker::Racer::State::Disconnected;
-    });
-
-  const bool loadTimeoutReached = std::chrono::steady_clock::now() >= _stageTimeoutTimePoint;
-
-  // If not all the racers have loaded yet and the timeout has not been reached yet
-  // do not start the race.
-  if (not allRacersLoaded && not loadTimeoutReached)
-    return;
-
-  if (loadTimeoutReached)
-  {
-    spdlog::warn("Room {} has reached the loading timeout threshold",
-      this->GetRoomUid());
-  }
-
-  for (auto& racer : _tracker.GetRacers() | std::views::values)
-  {
-    // todo: handle the players that did not load in to the race.
-    // for now just consider them disconnected
-    if (racer.state != tracker::RaceTracker::Racer::State::Racing)
-      racer.state = tracker::RaceTracker::Racer::State::Disconnected;
-  }
-
-  const auto& mapBlockTemplate = _raceNetworkHandler._serverInstance.GetCourseRegistry().GetMapBlockInfo(
-    parameters.mapBlockId);
-
-  // Switch to the racing stage and set the timeout time point.
-  _stage = Stage::Racing;
-  _stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(
-    mapBlockTemplate.timeLimit);
-
-  // Set up the race start time point.
-  const auto now = std::chrono::steady_clock::now();
-  _raceStartTimePoint = now + std::chrono::seconds(
-    mapBlockTemplate.waitTime);
-
-  const protocol::AcCmdUserRaceCountdown raceCountdown{
-    .raceStartTimestamp = util::TimePointToRaceTimePoint(
-      _raceStartTimePoint)};
-
-  // Broadcast the race countdown.
-  _raceNetworkHandler.Broadcast(*this, raceCountdown);
-}
-
-void RaceInstance::TickRacing()
-{
-  const bool raceTimeoutReached = std::chrono::steady_clock::now() >= _stageTimeoutTimePoint;
-
-  const bool isFinishing = std::ranges::any_of(
-    std::views::values(_tracker.GetRacers()),
-    [](const tracker::RaceTracker::Racer& racer)
-    {
-      return racer.state == tracker::RaceTracker::Racer::State::Finishing;
-    });
-
-  // If the race is not finishing and the timeout was not reached
-  // do not finish the race.
-  if (not isFinishing && not raceTimeoutReached)
-    return;
-
-  _stage = Stage::Finishing;
-  _stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(15);
-
-  // If the race timeout was reached notify the clients about the finale.
-  if (not raceTimeoutReached)
-    return;
-
-  // Broadcast the race final (only to participants).
-  this->GetRoom([this](const Room& room)
-  {
-    for (const auto& [characterUid, player] : room.GetPlayers())
-    {
-      const bool isParticipant = _tracker.IsRacer(characterUid);
-      if (not isParticipant)
-        continue;
-
-      const protocol::AcCmdUserRaceFinalNotify notify{};
-      _raceNetworkHandler.GetCommandServer().QueueCommand<decltype(notify)>(
-        player.GetClientId(),
-        [notify]()
-        {
-          return notify;
-        });
-    }
-  });
-}
-
-void RaceInstance::TickFinishing()
-{
-  // Determine whether all racers have finished.
-  const bool allRacersFinished = std::ranges::all_of(
-    std::views::values(_tracker.GetRacers()),
-    [](const tracker::RaceTracker::Racer& racer)
-    {
-      return racer.state == tracker::RaceTracker::Racer::State::Finishing
-        || racer.state == tracker::RaceTracker::Racer::State::Disconnected;
-    });
-
-  const bool finishTimeoutReached = std::chrono::steady_clock::now() >= _stageTimeoutTimePoint;
-
-  // If not all the racers have finished yet and the timeout has not been reached yet
-  // do not finish the race.
-  if (not allRacersFinished && not finishTimeoutReached)
-    return;
-
-  if (finishTimeoutReached)
-  {
-    spdlog::warn("Room {} has reached the race timeout threshold",
-      this->GetRoomUid());
-  }
-
   protocol::AcCmdRCRaceResultNotify raceResult{};
 
   using Team = tracker::RaceTracker::Racer::Team;
@@ -441,9 +252,7 @@ void RaceInstance::TickFinishing()
     }
   }
 
-  // Clear the ready state of all of the players.
-  // todo: this should have been reset with the room instance data
-  _stage = Stage::Waiting;
+  // Clear the ready state of all of the players and update their balances.
   this->GetRoom(
     [this](Room& room)
     {
@@ -469,6 +278,210 @@ void RaceInstance::TickFinishing()
           });
       }
     });
+}
+
+void RaceInstance::Tick()
+{
+  try
+  {
+    switch (_stage)
+    {
+      case Stage::Waiting:
+        // Do nothing on waiting stage
+        break;
+      case Stage::Loading:
+        // Process rooms which are loading
+        this->TickLoading();
+        break;
+      case Stage::Racing:
+        // Process rooms which are racing
+        this->TickRacing();
+        break;
+      case Stage::Finishing:
+        // Process rooms which are finishing
+        this->TickFinishing();
+        break;
+    }
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception ticking race instance {}: {}", GetRoomUid(), x.what());
+  }
+}
+
+uint32_t RaceInstance::GetRoomUid()
+{
+  return _roomUid;
+}
+
+const RaceInstance::Parameters& RaceInstance::GetParameters() const
+{
+  return _parameters;
+}
+
+registry::GameModeId RaceInstance::GetGameModeId() const
+{
+  return _gameModeId;
+}
+
+registry::MapBlockId RaceInstance::GetMapBlockId() const
+{
+  return _mapBlockId;
+}
+
+std::chrono::steady_clock::time_point RaceInstance::GetLoadingStartTimePoint() const noexcept
+{
+  return _loadingStartTimePoint;
+}
+
+std::chrono::steady_clock::time_point RaceInstance::GetRaceStartTimePoint() const noexcept
+{
+  return _raceStartTimePoint;
+}
+
+RaceInstance::Stage RaceInstance::GetStage() const noexcept
+{
+  return _stage;
+}
+
+std::chrono::steady_clock::time_point RaceInstance::GetStageTimeoutTimePoint() const noexcept
+{
+  return _stageTimeoutTimePoint;
+}
+
+tracker::RaceTracker& RaceInstance::GetTracker()
+{
+  return _tracker;
+}
+
+const tracker::RaceTracker& RaceInstance::GetTracker() const
+{
+  return _tracker;
+}
+
+void RaceInstance::TickLoading()
+{
+  // Determine whether all racers have started racing.
+  const bool allRacersLoaded = std::ranges::all_of(
+    std::views::values(_tracker.GetRacers()),
+    [](const tracker::RaceTracker::Racer& racer)
+    {
+      return racer.state == tracker::RaceTracker::Racer::State::Racing
+        || racer.state == tracker::RaceTracker::Racer::State::Disconnected;
+    });
+
+  const bool loadTimeoutReached = std::chrono::steady_clock::now() >= _stageTimeoutTimePoint;
+
+  // If not all the racers have loaded yet and the timeout has not been reached yet
+  // do not start the race.
+  if (not allRacersLoaded && not loadTimeoutReached)
+    return;
+
+  if (loadTimeoutReached)
+  {
+    spdlog::warn("Room {} has reached the loading timeout threshold",
+      this->GetRoomUid());
+  }
+
+  for (auto& racer : _tracker.GetRacers() | std::views::values)
+  {
+    // todo: handle the players that did not load in to the race.
+    // for now just consider them disconnected
+    if (racer.state != tracker::RaceTracker::Racer::State::Racing)
+      racer.state = tracker::RaceTracker::Racer::State::Disconnected;
+  }
+
+  const auto& mapBlockTemplate = _raceNetworkHandler._serverInstance
+    .GetCourseRegistry()
+    .GetMapBlockInfo(GetMapBlockId());
+
+  // Switch to the racing stage and set the timeout time point.
+  _stage = Stage::Racing;
+  _stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(
+    mapBlockTemplate.timeLimit);
+
+  // Set up the race start time point.
+  const auto now = std::chrono::steady_clock::now();
+  _raceStartTimePoint = now + std::chrono::seconds(
+    mapBlockTemplate.waitTime);
+
+  const protocol::AcCmdUserRaceCountdown raceCountdown{
+    .raceStartTimestamp = util::TimePointToRaceTimePoint(
+      _raceStartTimePoint)};
+
+  // Broadcast the race countdown.
+  _raceNetworkHandler.Broadcast(*this, raceCountdown);
+}
+
+void RaceInstance::TickRacing()
+{
+  const bool raceTimeoutReached = std::chrono::steady_clock::now() >= _stageTimeoutTimePoint;
+
+  const bool isFinishing = std::ranges::any_of(
+    std::views::values(_tracker.GetRacers()),
+    [](const tracker::RaceTracker::Racer& racer)
+    {
+      return racer.state == tracker::RaceTracker::Racer::State::Finishing;
+    });
+
+  // If the race is not finishing and the timeout was not reached
+  // do not finish the race.
+  if (not isFinishing && not raceTimeoutReached)
+    return;
+
+  _stage = Stage::Finishing;
+  _stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(15);
+
+  // If the race timeout was reached notify the clients about the finale.
+  if (not raceTimeoutReached)
+    return;
+
+  // Broadcast the race final (only to participants).
+  this->GetRoom([this](const Room& room)
+  {
+    for (const auto& [characterUid, player] : room.GetPlayers())
+    {
+      const bool isParticipant = _tracker.IsRacer(characterUid);
+      if (not isParticipant)
+        continue;
+
+      const protocol::AcCmdUserRaceFinalNotify notify{};
+      _raceNetworkHandler.GetCommandServer().QueueCommand<decltype(notify)>(
+        player.GetClientId(),
+        [notify]()
+        {
+          return notify;
+        });
+    }
+  });
+}
+
+void RaceInstance::TickFinishing()
+{
+  // Determine whether all racers have finished.
+  const bool allRacersFinished = std::ranges::all_of(
+    std::views::values(_tracker.GetRacers()),
+    [](const tracker::RaceTracker::Racer& racer)
+    {
+      return racer.state == tracker::RaceTracker::Racer::State::Finishing
+        || racer.state == tracker::RaceTracker::Racer::State::Disconnected;
+    });
+
+  const bool finishTimeoutReached = std::chrono::steady_clock::now() >= _stageTimeoutTimePoint;
+
+  // If not all the racers have finished yet and the timeout has not been reached yet
+  // do not finish the race.
+  if (not allRacersFinished && not finishTimeoutReached)
+    return;
+
+  if (finishTimeoutReached)
+  {
+    spdlog::warn("Room {} has reached the race timeout threshold",
+      this->GetRoomUid());
+  }
+
+  Stop();
+ _stage = Stage::Waiting;
 }
 
 void RaceInstance::PrepareGameMode()
@@ -537,6 +550,10 @@ void RaceInstance::PrepareMap()
     || _parameters.mapBlockId == HotMapsCourseId)
   {
     PickRandomMapFromCourse();
+  }
+  else
+  {
+    _mapBlockId = _parameters.mapBlockId;
   }
 
   _mapBlockInfo = _raceNetworkHandler

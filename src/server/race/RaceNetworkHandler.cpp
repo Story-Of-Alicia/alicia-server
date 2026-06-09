@@ -1272,7 +1272,12 @@ void RaceNetworkHandler::HandleStartRace(
       parameters.mapBlockId = details.courseId;
     });
 
-  raceInstance.Start(parameters);
+  parameters.masterUid = roomMasterUid;
+
+  if (not raceInstance.Start(parameters))
+  {
+    return;
+  }
 
   constexpr uint32_t GameCountdownKey = 17;
   constexpr uint32_t DefaultCountdownMs = 5310;
@@ -3913,7 +3918,11 @@ void RaceNetworkHandler::HandleTriggerizeAct(
   const auto& parameters = raceInstance.GetParameters();
 
   const bool isSpeedGameMode = parameters.gameMode == protocol::GameMode::Speed;
-  const auto& mapBlockInfo = _serverInstance.GetCourseRegistry().GetMapBlockInfo(parameters.mapBlockId);
+
+  const auto& mapBlockInfo = _serverInstance.GetCourseRegistry()
+    .GetMapBlockInfo(
+      raceInstance.GetMapBlockId());
+
   const bool isAdvMap = mapBlockInfo.trainingFee > 0;
 
   // The racer is neither in a speed mode or adv map
@@ -3955,7 +3964,7 @@ void RaceNetworkHandler::HandleGameCreateClientItem(
 
   // Get region for this map.
   const auto& mapBlockInfo = _serverInstance.GetCourseRegistry().GetMapBlockInfo(
-    parameters.mapBlockId);
+    raceInstance.GetMapBlockId());
   const auto regionEggs = _serverInstance.GetPetRegistry().GetEggsByRegion(mapBlockInfo.region);
   if (regionEggs.empty())
     return;
