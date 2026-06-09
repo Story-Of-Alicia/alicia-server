@@ -1748,7 +1748,7 @@ void RaceNetworkHandler::HandleUserRaceFinal(
 
   const protocol::AcCmdUserRaceFinalNotify notify{
     .oid = racer.oid,
-    .courseTime = command.courseTime};
+    .courseTime = racer.courseTime};
 
   this->Broadcast(raceInstance, notify);
 }
@@ -2177,7 +2177,7 @@ void RaceNetworkHandler::HandleStartingRate(
 }
 
 void RaceNetworkHandler::HandleRaceUserPos(
-  ClientId clientId,
+  const ClientId clientId,
   const protocol::AcCmdUserRaceUpdatePos& command)
 {
   const auto& clientContext = GetClientContext(clientId);
@@ -2248,7 +2248,7 @@ void RaceNetworkHandler::HandleRaceUserPos(
   for (const auto& eventItem : racer.eventItems)
     processItemSpawn(eventItem.oid, eventItem.itemType, eventItem.position, 3);
 
-  // Only regenerate magic during active race (after countdown finishes)
+  // Only regenerate magic during an active race (after the countdown finishes).
   // Check if game mode is magic, race is active, countdown finished, and not holding an item
   const auto& now = std::chrono::steady_clock::now();
   const bool raceActuallyStarted = now >= parameters.raceStartTimePoint;

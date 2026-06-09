@@ -676,7 +676,7 @@ void AcCmdUserRaceFinalNotify::Write(
   SinkStream& stream)
 {
   stream.Write(command.oid)
-    .Write(static_cast<int32_t>(command.courseTime.count()));
+    .Write(command.courseTime);
 }
 
 void AcCmdUserRaceFinalNotify::Read(

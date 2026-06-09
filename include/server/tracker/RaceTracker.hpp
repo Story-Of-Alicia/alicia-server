@@ -152,9 +152,8 @@ public:
 
   //! An object map.
   using RacerObjectMap = std::map<data::Uid, Racer>;
-  //! An item object map.
-  //! Maps itemId -> Item (in the race)
-  using ItemObjectMap = std::map<uint16_t, ItemDeck>;
+  //! A deck item object map.
+  using ItemDeckMap = std::map<Oid, ItemDeck>;
   //! An event map.
   using EventMap = std::unordered_map<uint32_t, Event>;
 
@@ -189,7 +188,7 @@ public:
   [[nodiscard]] ItemDeck& GetItemDeck(Oid itemId);
   //! Returns a reference to all item records.
   //! @return Reference to item records.
-  [[nodiscard]] ItemObjectMap& GetItemDecks();
+  [[nodiscard]] ItemDeckMap& GetItemDecks();
   //! Returns the next object instance ID and increments the internal counter.
   //! @param increment The value to increment the internal counter by.
   //! @returns The next object instance ID before incrementing.
@@ -220,7 +219,6 @@ public:
 
   void Clear();
 
-
 private:
   //! Mapping between character UIDs and their assigned OIDs.
   //! It's important these persist across races in a room as the client does not clear assignments internally. 
@@ -232,7 +230,7 @@ private:
   //! Horse entities in the race.
   RacerObjectMap _racers;
   //! Items in the race
-  ItemObjectMap _itemDecks;
+  ItemDeckMap _itemDecks;
   //! Tracked race map events.
   EventMap _events;
   //! Next effect instance ID.

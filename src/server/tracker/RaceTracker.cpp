@@ -88,7 +88,7 @@ RaceTracker::ItemDeck& RaceTracker::GetItemDeck(
   return itemIter->second;
 }
 
-RaceTracker::ItemObjectMap& RaceTracker::GetItemDecks()
+RaceTracker::ItemDeckMap& RaceTracker::GetItemDecks()
 {
   return _itemDecks;
 }

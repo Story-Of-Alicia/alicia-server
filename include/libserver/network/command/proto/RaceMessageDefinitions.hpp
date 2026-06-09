@@ -871,8 +871,9 @@ struct AcCmdUserRaceFinalNotify
 {
   //! Racer character OID.
   uint16_t oid{};
-  //! Race course time in milliseconds. Anything negative indicates DNF/Time Over.
-  std::chrono::milliseconds courseTime{};
+  //! Race course time in milliseconds.
+  //! Anything negative indicates DNF/Time Over.
+  uint32_t courseTime{};
 
   static Command GetCommand()
   {
