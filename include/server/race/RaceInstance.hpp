@@ -59,11 +59,14 @@ public:
     } stage{Stage::Waiting};
 
     //! Represents when a room started loading.
-    std::chrono::steady_clock::time_point loadingStartTimePoint{};
+    std::chrono::steady_clock::time_point loadingStartTimePoint{
+      std::chrono::steady_clock::time_point::max()};
     //! A time point of when the race is actually started (a countdown is finished).
-    std::chrono::steady_clock::time_point raceStartTimePoint{};
+    std::chrono::steady_clock::time_point raceStartTimePoint{
+      std::chrono::steady_clock::time_point::max()};
     //! A time point of when the stage timeout occurs.
-    std::chrono::steady_clock::time_point stageTimeoutTimePoint{};
+    std::chrono::steady_clock::time_point stageTimeoutTimePoint{
+      std::chrono::steady_clock::time_point::max()};
   };
 
   explicit RaceInstance(

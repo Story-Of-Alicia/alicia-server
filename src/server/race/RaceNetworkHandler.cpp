@@ -2250,11 +2250,13 @@ void RaceNetworkHandler::HandleRaceUserPos(
 
   // Only regenerate magic during an active race (after the countdown finishes).
   // Check if game mode is magic, race is active, countdown finished, and not holding an item
-  const auto& now = std::chrono::steady_clock::now();
+  const auto now = std::chrono::steady_clock::now();
+
   const bool raceActuallyStarted = now >= parameters.raceStartTimePoint;
 
   if (parameters.raceGameMode == protocol::GameMode::Magic
-    && racer.state == tracker::RaceTracker::Racer::State::Racing
+    && (racer.state == tracker::RaceTracker::Racer::State::Racing
+      || racer.state == tracker::RaceTracker::Racer::State::Finishing)
     && raceActuallyStarted
     && not racer.magicItem.has_value())
   {
