@@ -2255,36 +2255,29 @@ void RaceNetworkHandler::HandleRaceUserPos(
   const bool raceActuallyStarted = now >= parameters.raceStartTimePoint;
 
   if (parameters.raceGameMode == protocol::GameMode::Magic
-    && (racer.state == tracker::RaceTracker::Racer::State::Racing
-      || racer.state == tracker::RaceTracker::Racer::State::Finishing)
-    && raceActuallyStarted
-    && not racer.magicItem.has_value())
+    && raceActuallyStarted)
   {
-    const auto& regen = GetServerInstance().GetMagicRegistry().GetRegenInfo();
-    const auto tickInterval = std::chrono::milliseconds(regen.intervalMs);
+    const auto& regenerationInfo = GetServerInstance().GetMagicRegistry().GetRegenInfo();
+    const auto tickInterval = std::chrono::milliseconds(
+      regenerationInfo.intervalMs);
 
     // Anchor at race start so fill time is consistent regardless of when the first pos-update arrives.
-    if (racer.lastMagicRegenTimePoint == std::chrono::steady_clock::time_point::max())
-      racer.lastMagicRegenTimePoint = parameters.raceStartTimePoint;
+    if (racer.lastGaugeUpdateTimePoint == std::chrono::steady_clock::time_point::max())
+      racer.lastGaugeUpdateTimePoint = parameters.raceStartTimePoint;
 
-    const auto elapsed = now - racer.lastMagicRegenTimePoint;
+    // Elapsed time since the last gauge update.
+    const auto elapsed = now - racer.lastGaugeUpdateTimePoint;
     const auto elapsedTickCount = elapsed / tickInterval;
-
-    spdlog::debug("[{}] Elapsed tick count since last magic regeneration: {}",
-      clientContext.characterUid,
-      elapsedTickCount);
 
     if (elapsedTickCount > 0)
     {
-      // Always advance so off-states (holding item, full gauge) don't burst when conditions re-open.
-      racer.lastMagicRegenTimePoint += tickInterval * elapsedTickCount;
+      racer.lastGaugeUpdateTimePoint = now;
 
       if (not racer.magicItem.has_value()
         && racer.starPointValue < gameModeTemplate.starPointsMax)
       {
-        // gainedPerTick = pointPerTick * (1000 + courageScaleBp * courage) / 1000
-        uint32_t gainedPerTick = regen.pointPerTick
-          * (1000u + regen.courageScaleBp * racer.mountStats.courage) / 1000u;
+        uint32_t gainedPerTick = regenerationInfo.pointPerTick
+          * (1000u + regenerationInfo.courageScaleBp * racer.mountStats.courage) / 1000u;
 
         // BufGauge buff doubles regen while active.
         if (racer.effects[20] || racer.effects[21])
