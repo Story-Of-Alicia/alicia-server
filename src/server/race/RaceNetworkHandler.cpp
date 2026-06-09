@@ -36,6 +36,8 @@ namespace server
 namespace
 {
 
+std::random_device _randomDevice;
+
 uint32_t GetMountStatValue(
   const tracker::RaceTracker::Racer::MountStatsSnapshot& stats,
   registry::Magic::MountStat which)
@@ -51,14 +53,13 @@ uint32_t GetMountStatValue(
   return 0;
 }
 
-const registry::Magic::SlotInfo RandomMagicItem(
+registry::Magic::SlotInfo RandomMagicItem(
   ServerInstance& serverInstance,
-  tracker::RaceTracker::Racer& racer)
+  const tracker::RaceTracker::Racer& racer)
 {
   const auto& itemPool = (racer.team == tracker::RaceTracker::Racer::Team::Solo
     ? serverInstance.GetMagicRegistry().GetSoloPool()
     : serverInstance.GetMagicRegistry().GetTeamPool());
-  static std::random_device rd;
 
   // Build weights: Lightning (type 18) gets a reduced roll chance.
   // Booster, HotRodding, and team-only items get a slightly reduced chance as well.
@@ -77,7 +78,7 @@ const registry::Magic::SlotInfo RandomMagicItem(
   }
 
   std::discrete_distribution<size_t> distribution(weights.begin(), weights.end());
-  auto magicSlotInfo = magicRegistry.GetSlotInfo(itemPool[distribution(rd)]);
+  auto magicSlotInfo = magicRegistry.GetSlotInfo(itemPool[distribution(_randomDevice)]);
   uint32_t critChanceBp = magicRegistry.GetBaseCritChanceBp();
   if (magicSlotInfo.criticalType != 0)
   {
@@ -344,7 +345,6 @@ void RaceNetworkHandler::Initialize()
 
 void RaceNetworkHandler::Terminate()
 {
-  run_test = false;
   _commandServer.EndHost();
 }
 
@@ -482,6 +482,11 @@ size_t RaceNetworkHandler::GetRoomCount()
   return _raceInstances.size();
 }
 
+Config::Race& RaceNetworkHandler::GetConfig()
+{
+  return GetServerInstance().GetSettings().race;
+}
+
 ServerInstance& RaceNetworkHandler::GetServerInstance()
 {
   return _serverInstance;
@@ -490,11 +495,6 @@ ServerInstance& RaceNetworkHandler::GetServerInstance()
 CommandServer& RaceNetworkHandler::GetCommandServer()
 {
   return _commandServer;
-}
-
-Config::Race& RaceNetworkHandler::GetConfig()
-{
-  return GetServerInstance().GetSettings().race;
 }
 
 uint16_t RaceNetworkHandler::GetOrCreateP2dId(ClientId clientId)
@@ -644,7 +644,6 @@ void RaceNetworkHandler::HandleEnterRoom(
     command.roomUid);
 
   auto& raceInstance = raceInstanceIter->second;
-  const auto& parameters = raceInstance.GetParameters();
 
   // If the room instance was just created, set it up.
   if (inserted)
@@ -1021,7 +1020,6 @@ void RaceNetworkHandler::HandleChangeTeam(
 
   std::scoped_lock lock(_raceInstancesMutex);
   const auto& raceInstance = GetRaceInstance(clientContext, false);
-  const auto& parameters = raceInstance.GetParameters();
 
   if (raceInstance.GetStage() != RaceInstance::Stage::Waiting)
   {
@@ -1061,7 +1059,6 @@ void RaceNetworkHandler::HandleLeaveRoom(ClientId clientId)
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext, false);
-  const auto& parameters = raceInstance.GetParameters();
 
   _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
     [clientContext](const data::Character& character)
@@ -1568,11 +1565,10 @@ void RaceNetworkHandler::HandleLoadingComplete(
   };
 
   // Randomness check
-  const auto& shouldEggSpawn = []() -> bool
+  const auto& shouldEggSpawn = [this]() -> bool
   {
-    static std::random_device rd;
     // TODO: verify if egg spawning probability is truly 50%
-    return rd() % 2 != 0;
+    return _randomDevice() % 2 != 0;
   };
 
   // Check gamemode eligibility
@@ -2468,7 +2464,7 @@ void RaceNetworkHandler::HandleUserRaceActivateEvent(
     protocol::AcCmdUserRaceDeactivateEvent deactivateCommand{
       .eventId = eventId};
     this->HandleUserRaceDeactivateEvent(clientId, deactivateCommand);
-  }, std::chrono::steady_clock::now() + tracker::RaceTracker::ThrottleDurationMs);
+  }, std::chrono::steady_clock::now() + tracker::EventThrottleDuration);
 
   // Broadcast to all active racers in the race
   const protocol::AcCmdUserRaceActivateEventNotify notify{
@@ -3961,7 +3957,6 @@ void RaceNetworkHandler::HandleGameCreateClientItem(
 
   const auto& clientContext = GetClientContext(clientId);
   auto& raceInstance = GetRaceInstance(clientContext);
-  const auto& parameters = raceInstance.GetParameters();
 
   // Get region for this map.
   const auto& mapBlockInfo = _serverInstance.GetCourseRegistry().GetMapBlockInfo(
@@ -3976,9 +3971,8 @@ void RaceNetworkHandler::HandleGameCreateClientItem(
   for (const auto& egg : regionEggs)
     weights.push_back(egg.obtainRatio);
 
-  static std::random_device rd;
   std::discrete_distribution<size_t> dist(weights.begin(), weights.end());
-  const auto& selectedEgg = regionEggs[dist(rd)];
+  const auto& selectedEgg = regionEggs[dist(_randomDevice)];
 
   // Check if the player already owns this egg.
   bool alreadyOwned = false;

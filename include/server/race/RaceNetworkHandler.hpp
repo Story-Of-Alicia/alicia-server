@@ -75,11 +75,52 @@ public:
 
   Config::Race& GetConfig();
 
+  ServerInstance& GetServerInstance();
+  CommandServer& GetCommandServer();
+
+  template <WritableStruct C>
+  void Broadcast(
+    const RaceInstance& raceInstance,
+    const C& command)
+  {
+    raceInstance.GetRoom(
+      [this, command](const Room& room)
+      {
+        for (const auto& player : room.GetPlayers() | std::views::values)
+          _commandServer.QueueCommand<C>(
+            player.GetClientId(),
+            [command]()
+            {
+              return command;
+            });
+      });
+  }
+
+  template <WritableStruct C>
+  void BroadcastExceptCharacterUid(
+    const RaceInstance& raceInstance,
+    const C& command,
+    data::Uid skipCharacterUid)
+  {
+    raceInstance.GetRoom(
+      [this, command, skipCharacterUid](const Room& room)
+      {
+        for (const auto& [characterUid, player] : room.GetPlayers())
+        {
+          if (characterUid == skipCharacterUid)
+            continue;
+
+          _commandServer.QueueCommand<C>(
+            player.GetClientId(),
+            [command]()
+            {
+              return command;
+            });
+        }
+      });
+  }
+
 private:
-  friend class RaceInstance;
-
-  std::random_device _randomDevice;
-
   enum class EffectVerdict : uint8_t
   {
     Shielded,
@@ -288,55 +329,6 @@ private:
   void HandleGameCreateClientItem(
     ClientId clientId,
     const protocol::AcCmdCRGameCreateClientItem& command);
-
-  ServerInstance& GetServerInstance();
-  CommandServer& GetCommandServer();
-
-  template <WritableStruct C>
-  void Broadcast(
-    const RaceInstance& raceInstance,
-    const C& command)
-  {
-    raceInstance.GetRoom(
-      [this, command](const Room& room)
-      {
-        for (const auto& player : room.GetPlayers() | std::views::values)
-          _commandServer.QueueCommand<C>(
-            player.GetClientId(),
-            [command]()
-            {
-              return command;
-            });
-      });
-  }
-
-  template <WritableStruct C>
-  void BroadcastExceptCharacterUid(
-    const RaceInstance& raceInstance,
-    const C& command,
-    data::Uid skipCharacterUid)
-  {
-    raceInstance.GetRoom(
-      [this, command, skipCharacterUid](const Room& room)
-      {
-        for (const auto& [characterUid, player] : room.GetPlayers())
-        {
-          if (characterUid == skipCharacterUid)
-            continue;
-
-          _commandServer.QueueCommand<C>(
-            player.GetClientId(),
-            [command]()
-            {
-              return command;
-            });
-        }
-      });
-  }
-
-  //!
-  std::thread test;
-  std::atomic_bool run_test{true};
 
   //! A scheduler instance.
   Scheduler _scheduler;

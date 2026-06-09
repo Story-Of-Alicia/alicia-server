@@ -24,7 +24,6 @@
 
 #include <libserver/util/Util.hpp>
 
-#include <limits>
 #include <tuple>
 #include <format>
 
@@ -53,14 +52,14 @@ RaceInstance::RaceInstance(
 
 void RaceInstance::GetRoom(const std::function<void(Room&)>& consumer)
 {
-  _raceNetworkHandler._serverInstance.GetRoomSystem().GetRoom(
+  _raceNetworkHandler.GetServerInstance().GetRoomSystem().GetRoom(
     _roomUid,
     consumer);
 }
 
 void RaceInstance::GetRoom(const std::function<void(const Room&)>& consumer) const
 {
-  _raceNetworkHandler._serverInstance.GetRoomSystem().GetRoom(
+  _raceNetworkHandler.GetServerInstance().GetRoomSystem().GetRoom(
     _roomUid,
     consumer);
 }
@@ -134,7 +133,7 @@ void RaceInstance::Stop()
     score.experience = 420;
     score.carrots = 420;
     score.teamColor = racer.team;
-    const auto characterRecord = _raceNetworkHandler._serverInstance.GetDataDirector().GetCharacter(
+    const auto characterRecord = _raceNetworkHandler.GetServerInstance().GetDataDirector().GetCharacter(
       characterUid);
 
     characterRecord.Mutable([this, &score](data::Character& character)
@@ -142,7 +141,7 @@ void RaceInstance::Stop()
       character.carrots() += score.carrots;
       character.experience() += score.experience;
 
-      const uint32_t newLevel = _raceNetworkHandler._serverInstance.GetCharacterRegistry().GetLevelForExp(character.experience());
+      const uint32_t newLevel = _raceNetworkHandler.GetServerInstance().GetCharacterRegistry().GetLevelForExp(character.experience());
       if (newLevel > character.level())
       {
         character.level() = newLevel;
@@ -156,7 +155,7 @@ void RaceInstance::Stop()
       score.level = character.level();
       score.levelProgress = character.experience();
 
-      _raceNetworkHandler._serverInstance.GetDataDirector().GetHorse(character.mountUid()).Immutable(
+      _raceNetworkHandler.GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Immutable(
         [&score](const data::Horse& horse)
         {
           score.mountName = horse.name();
@@ -240,9 +239,10 @@ void RaceInstance::Stop()
 
     if (newMasterUid != data::InvalidUid)
     {
-      const auto& winnerClientContext = _raceNetworkHandler.GetClientContextByCharacterUid(newMasterUid);
+      const auto userName = _raceNetworkHandler.GetServerInstance().GetLobbyDirector().GetUserByCharacterUid(
+        newMasterUid).userName;
       spdlog::info("Player {} ({}) has won the match and is now master of [Room {}]",
-        winnerClientContext.userName,
+        userName,
         newMasterName,
         this->GetRoomUid());
 
@@ -391,7 +391,8 @@ void RaceInstance::TickLoading()
       racer.state = tracker::RaceTracker::Racer::State::Disconnected;
   }
 
-  const auto& mapBlockTemplate = _raceNetworkHandler._serverInstance
+  const auto& mapBlockTemplate = _raceNetworkHandler
+    .GetServerInstance()
     .GetCourseRegistry()
     .GetMapBlockInfo(GetMapBlockId());
 

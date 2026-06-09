@@ -37,6 +37,8 @@ namespace server::tracker
 //! Invalid course time represents a did not finish state in the client scoreboard.
 constexpr uint32_t InvalidCourseTime = std::numeric_limits<uint32_t>::max();
 
+constexpr std::chrono::milliseconds EventThrottleDuration{250};
+
 //! A race tracker.
 class RaceTracker
 {

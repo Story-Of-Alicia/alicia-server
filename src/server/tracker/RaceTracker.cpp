@@ -22,13 +22,6 @@
 namespace server::tracker
 {
 
-namespace
-{
-
-constexpr std::chrono::milliseconds ThrottleDurationMs{250};
-
-}
-
 RaceTracker::Racer& RaceTracker::AddRacer(data::Uid characterUid)
 {
   const auto [racerIter, created] = _racers.try_emplace(characterUid);
@@ -116,7 +109,7 @@ bool RaceTracker::IsEventThrottled(uint32_t eventId)
   }
 
   // New event or event expired, update throttle time
-  eventIter->second.throttledUntil = now + ThrottleDurationMs;
+  eventIter->second.throttledUntil = now + EventThrottleDuration;
   return false;
 }
 
