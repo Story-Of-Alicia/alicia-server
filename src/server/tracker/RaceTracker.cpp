@@ -22,6 +22,13 @@
 namespace server::tracker
 {
 
+namespace
+{
+
+constexpr std::chrono::milliseconds ThrottleDurationMs{250};
+
+}
+
 RaceTracker::Racer& RaceTracker::AddRacer(data::Uid characterUid)
 {
   const auto [racerIter, created] = _racers.try_emplace(characterUid);
@@ -79,7 +86,7 @@ void RaceTracker::RemoveItemDeck(
 }
 
 RaceTracker::ItemDeck& RaceTracker::GetItemDeck(
-  const uint16_t itemId)
+  const Oid itemId)
 {
   const auto itemIter = _itemDecks.find(itemId);
   if (itemIter == _itemDecks.cend())
@@ -91,6 +98,31 @@ RaceTracker::ItemDeck& RaceTracker::GetItemDeck(
 RaceTracker::ItemDeckMap& RaceTracker::GetItemDecks()
 {
   return _itemDecks;
+}
+
+bool RaceTracker::IsEventThrottled(uint32_t eventId)
+{
+  const auto& now = std::chrono::steady_clock::now();
+
+  const auto& [eventIter, inserted] = _events.try_emplace(eventId);
+  if (not inserted and eventIter->second.throttledUntil > now)
+  {
+    // Existing event was throttled
+    return true;
+  }
+  else if (inserted)
+  {
+    eventIter->second.id = eventId;
+  }
+
+  // New event or event expired, update throttle time
+  eventIter->second.throttledUntil = now + ThrottleDurationMs;
+  return false;
+}
+
+RaceTracker::EventMap& RaceTracker::GetEvents()
+{
+  return _events;
 }
 
 RaceTracker::EventItem& RaceTracker::AddEventItem(data::Uid characterUid)
@@ -130,14 +162,6 @@ void RaceTracker::RemoveEventItem(data::Uid characterUid, Oid oid)
   std::erase_if(racer.eventItems, [oid](const EventItem& e) { return e.oid == oid; });
 }
 
-void RaceTracker::Clear()
-{
-  _racers.clear();
-  _itemDecks.clear();
-  _events.clear();
-  _nextItemDeckOid = 1;
-}
-
 uint16_t RaceTracker::GetNextEffectInstanceIdAndIncrementBy(uint16_t increment)
 {
   const uint16_t nextId = _nextEffectInstanceId;
@@ -147,29 +171,12 @@ uint16_t RaceTracker::GetNextEffectInstanceIdAndIncrementBy(uint16_t increment)
   return nextId;
 }
 
-bool RaceTracker::IsEventThrottled(uint32_t eventId)
+void RaceTracker::Clear()
 {
-  const auto& now = std::chrono::steady_clock::now();
-
-  const auto& [eventIter, inserted] = _events.try_emplace(eventId);
-  if (not inserted and eventIter->second.throttledUntil > now)
-  {
-    // Existing event was throttled
-    return true;
-  }
-  else if (inserted)
-  {
-    eventIter->second.id = eventId;
-  }
-
-  // New event or event expired, update throttle time
-  eventIter->second.throttledUntil = now + ThrottleDurationMs;
-  return false;
-}
-
-RaceTracker::EventMap& RaceTracker::GetEvents()
-{
-  return _events;
+  _racers.clear();
+  _itemDecks.clear();
+  _events.clear();
+  _nextItemDeckOid = 1;
 }
 
 } // namespace server::tracker

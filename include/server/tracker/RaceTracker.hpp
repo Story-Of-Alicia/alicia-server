@@ -191,12 +191,6 @@ public:
   //! Returns a reference to all item records.
   //! @return Reference to item records.
   [[nodiscard]] ItemDeckMap& GetItemDecks();
-  //! Returns the next object instance ID and increments the internal counter.
-  //! @param increment The value to increment the internal counter by.
-  //! @returns The next object instance ID before incrementing.
-  uint16_t GetNextObstacleInstanceIdAndIncrementBy(uint16_t increment);
-
-  uint16_t GetNextEffectInstanceIdAndIncrementBy(uint16_t increment);
 
   //! Returns a reference to all of the event records.
   //! @return Reference to event records.
@@ -205,7 +199,6 @@ public:
   //! @param eventId Event ID.
   //! @returns True if event exists and is throttled, else event is tracked.
   bool IsEventThrottled(uint32_t eventId);
-  static inline const std::chrono::milliseconds ThrottleDurationMs{250};
 
   //! Adds a per-racer event item for the given character.
   //! @returns Reference to the new event item record.
@@ -219,6 +212,11 @@ public:
   //! Removes a per-racer event item by OID.
   void RemoveEventItem(data::Uid characterUid, Oid oid);
 
+  //! Returns the next object instance ID and increments the internal counter.
+  //! @param increment The value to increment the internal counter by.
+  //! @returns The next object instance ID before incrementing.
+  uint16_t GetNextEffectInstanceIdAndIncrementBy(uint16_t increment);
+
   void Clear();
 
 private:
@@ -229,9 +227,9 @@ private:
   Oid _nextCharacterOid = 100;
   //! Next OID for item entities (1–99, reset each race).
   Oid _nextItemDeckOid = 1;
-  //! Horse entities in the race.
+  //! Racer entities.
   RacerObjectMap _racers;
-  //! Items in the race
+  //! Item deck entities.
   ItemDeckMap _itemDecks;
   //! Tracked race map events.
   EventMap _events;
