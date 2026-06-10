@@ -569,7 +569,7 @@ void RaceInstance::PrepareMap()
     // Prepare the item decks on the map.
     PrepareItemDecks();
   }
-  catch (const std::exception& e)
+  catch (const std::exception&)
   {
     throw std::runtime_error(
       std::format(
