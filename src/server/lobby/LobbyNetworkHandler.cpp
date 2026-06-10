@@ -529,6 +529,11 @@ void LobbyNetworkHandler::NotifyMatchmakeResult(
   }
 }
 
+CommandServer& LobbyNetworkHandler::GetCommandServer() noexcept
+{
+  return _commandServer;
+}
+
 ClientId LobbyNetworkHandler::GetClientIdByUserName(
   const std::string& userName,
   const bool requiresAuthorization)
@@ -619,7 +624,8 @@ void LobbyNetworkHandler::HandleNetworkTick()
   }
 }
 
-void LobbyNetworkHandler::HandleClientConnected(ClientId clientId)
+void LobbyNetworkHandler::HandleClientConnected(
+  const ClientId clientId)
 {
   const auto iter = _clients.try_emplace(clientId).first;
   iter->second.lastHeartbeat = std::chrono::steady_clock::now();
