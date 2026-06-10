@@ -69,6 +69,7 @@ add_library(alicia-libserver STATIC
         src/libserver/network/http/WebSocket.cpp
         src/libserver/registry/CharacterRegistry.cpp
         src/libserver/registry/CourseRegistry.cpp
+        src/libserver/registry/BreedingRegistry.cpp
         src/libserver/registry/HorseRegistry.cpp
         src/libserver/registry/ItemRegistry.cpp
         src/libserver/registry/MagicRegistry.cpp
@@ -107,6 +108,8 @@ add_executable(alicia-server
         src/server/chat/PrivateChatDirector.cpp
         src/server/messenger/MessengerDirector.cpp
         src/server/race/RaceDirector.cpp
+        src/server/ranch/BreedingMarket.cpp
+        src/server/ranch/Genetics.cpp
         src/server/ranch/RanchDirector.cpp
         src/server/system/ChatSystem.cpp
         src/server/system/InfractionSystem.cpp

@@ -20,7 +20,9 @@
 #ifndef RANCHDIRECTOR_HPP
 #define RANCHDIRECTOR_HPP
 
+#include "libserver/network/command/CommandDeferrer.hpp"
 #include "server/Config.hpp"
+#include "server/ranch/BreedingMarket.hpp"
 #include "server/tracker/RanchTracker.hpp"
 
 #include "libserver/network/command/CommandServer.hpp"
@@ -49,9 +51,9 @@ public:
 
   std::vector<data::Uid> GetOnlineCharacters();
 
+  void HandleNetworkTick() override;
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId client) override;
-
 
   //!
   void Disconnect(data::Uid characterUid);
@@ -82,12 +84,12 @@ public:
 
   void BroadcastChangeAgeNotify(
     data::Uid characterUid,
-    const data::Uid rancherUid,
+    data::Uid rancherUid,
     protocol::AcCmdCRChangeAge::Age age);
 
   void BroadcastHideAgeNotify(
     data::Uid characterUid,
-    const data::Uid rancherUid,
+    data::Uid rancherUid,
     protocol::AcCmdCRHideAge::Option option);
 
   void BroadcastUpdateGuildMemberGradeNotify(
@@ -127,8 +129,21 @@ private:
     //! Unique ID of the owner of the ranch the client is visiting.
     data::Uid visitingRancherUid{data::InvalidUid};
 
-    
     uint8_t busyState{0};
+    //! Whether there's a pending breeding failure card waiting to be claimed
+    bool hasPendingFailureCard{false};
+    //! Current breeding failure card type.
+    protocol::BreedingFailureCardType pendingCardType{};
+
+    //! Breeding session context for tracking breeding market flow
+    struct BreedingContext
+    {
+      uint32_t sessionId{0};        // Non-zero, stable for the dialog
+      uint32_t mareId{0};           // Player's horse involved in breeding
+      uint32_t stallionId{0};       // Last stallion searched/selected
+      uint8_t choice{0};            // Choice from failure card (0x212)
+      uint32_t lastTick{0};         // Server tick/timestamp
+    } breedingContext;
   };
 
   struct RanchInstance
@@ -185,13 +200,23 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRRegisterStallion& command);
 
+  void SendRegisterStallionCancel(
+    ClientId clientId);
+
   void HandleUnregisterStallion(
     ClientId clientId,
     const protocol::AcCmdCRUnregisterStallion& command);
 
+  void SendUnregisterStallionCancel(
+    ClientId clientId);
+
   void HandleUnregisterStallionEstimateInfo(
     ClientId clientId,
     const protocol::AcCmdCRUnregisterStallionEstimateInfo& command);
+
+  void HandleCheckStallionCharge(
+    ClientId clientId,
+    const protocol::AcCmdCRCheckStallionCharge& command);
 
   void HandleTryBreeding(
     ClientId clientId,
@@ -205,6 +230,16 @@ private:
   void HandleBreedingWishlist(
     ClientId clientId,
     const protocol::AcCmdCRBreedingWishlist& command);
+
+  //!
+  void HandleBreedingFailureCard(
+    ClientId clientId,
+    const protocol::AcCmdCRBreedingFailureCard& command);
+
+  //!
+  void HandleBreedingFailureCardChoose(
+    ClientId clientId,
+    const protocol::AcCmdCRBreedingFailureCardChoose& command);
 
   //!
   void HandleCmdAction(
@@ -356,8 +391,8 @@ private:
   void HandleRequestLeagueTeamList(ClientId clientId,
     const protocol::RanchCommandRequestLeagueTeamList& command);
 
-  void HandleMountFamilyTree(ClientId clientId,
-    const protocol::RanchCommandMountFamilyTree& command);
+  bool HandleMountFamilyTree(ClientId clientId,
+    const protocol::AcCmdCRMountFamilyTree& command);
 
   void HandleRecoverMount(
     ClientId clientId,
@@ -416,16 +451,17 @@ private:
     const protocol::AcCmdCRRegisterDailyQuestGroup& command);
 
   void HandleRequestDailyQuestReward(
-      ClientId clientId, 
+      ClientId clientId,
       const protocol::AcCmdCRRequestDailyQuestReward& command);
-  
+
   void HandleRegisterQuest(
       ClientId clientId,
       const protocol::AcCmdCRRegisterQuest& command);
-  
+
   void HandleRequestQuestReward(
     ClientId clientId,
     const protocol::AcCmdCRRequestQuestReward& command);
+
   void SendChangeNicknameCancel(
     ClientId clientId,
     protocol::ChangeNicknameError reason);
@@ -464,10 +500,16 @@ private:
   //!
   CommandServer _commandServer;
 
+  //! The breeding market system.
+  BreedingMarket _breedingMarket;
+
   //!
   std::unordered_map<ClientId, ClientContext> _clients;
   //!
   std::unordered_map<data::Uid, RanchInstance> _ranches;
+
+  //! A command deferrer for the `AcCmdCRMountFamilyTree` command.
+  CommandDeferrer<protocol::AcCmdCRMountFamilyTree> _mountFamilyTreeDeferrer;
 };
 
 } // namespace server

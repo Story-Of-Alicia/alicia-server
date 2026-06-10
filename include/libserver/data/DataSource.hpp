@@ -222,7 +222,7 @@ public:
   //! Deletes the daily quest from the data source.
   //! @param uid UID of the daily quest.
   virtual void DeleteDailyQuest(data::Uid uid) = 0;
-  
+
   //! Creates the mail in the data source.
   //! @param mail Mail to create.
   virtual void CreateMail(data::Mail& mail) = 0;
@@ -236,6 +236,24 @@ public:
   //! Deletes the mail from the data source.
   //! @param uid UID of the mail.
   virtual void DeleteMail(data::Uid uid) = 0;
+
+  //! Creates the stallion in the data source.
+  //! @param stallion Stallion to create.
+  virtual void CreateStallion(data::Stallion& stallion) = 0;
+  //! Retrieves the stallion from the data source.
+  //! @param uid UID of the stallion.
+  //! @param stallion Stallion to retrieve.
+  virtual void RetrieveStallion(data::Uid uid, data::Stallion& stallion) = 0;
+  //! Stores the stallion on the data source.
+  //! @param uid UID of the stallion.
+  //! @param stallion Stallion to store.
+  virtual void StoreStallion(data::Uid uid, const data::Stallion& stallion) = 0;
+  //! Deletes the stallion from the data source.
+  //! @param uid UID of the stallion.
+  virtual void DeleteStallion(data::Uid uid) = 0;
+  //! Lists all registered stallion UIDs from the data source.
+  //! @returns Vector of stallion UIDs.
+  virtual std::vector<data::Uid> ListRegisteredStallions() = 0;
 };
 
 } // namespace server
