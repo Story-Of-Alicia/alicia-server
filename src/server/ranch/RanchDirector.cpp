@@ -809,7 +809,7 @@ void RanchDirector::SendGuildInviteDeclined(
   data::Uid guildUid)
 {
   // Send AcCmdCRInviteGuildJoinCancel?
-  protocol::AcCmdCRInviteGuildJoinCancel reply{
+  const protocol::AcCmdCRInviteGuildJoinCancel reply{
     .unk0 = characterUid,
     .unk1 = inviterCharacterUid,
     .unk2 = inviterCharacterName,
@@ -817,48 +817,31 @@ void RanchDirector::SendGuildInviteDeclined(
     .unk4 = guildUid // is this true?
   };
 
-  for (const auto& client : _clients)
+  try
   {
-    const auto& clientContext = client.second;
-    // Notify online characters only
-    if (not clientContext.isAuthenticated)
-    {
-      continue;
-    }
-
-    const auto& clientId = client.first;
-    bool foundInviter = false;
-    GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
-      [&foundInviter, inviterCharacterUid](const data::Character& character){
-        if (character.uid() == inviterCharacterUid)
-        {
-          foundInviter = true;
-        }
-      }
-    );
-
-    if (foundInviter)
-    {
-      _commandServer.QueueCommand<decltype(reply)>(
-        clientId,
-        [reply]()
-        {
-          return reply;
-        });
-      break;
-    }
+    _commandServer.QueueCommand<decltype(reply)>(
+      GetClientIdByCharacterUid(inviterCharacterUid),
+      [reply]()
+      {
+        return reply;
+      });
+  }
+  catch (const std::exception&)
+  {
+    // Inviter is no longer offline
+    return;
   }
 }
 
 void RanchDirector::SendGuildInviteAccepted(
-  data::Uid guildUid,
-  data::Uid characterUid,
-  std::string newMemberCharacterName)
+  const data::Uid guildUid,
+  const data::Uid characterUid,
+  const std::string& newMemberCharacterName)
 {
   protocol::AcCmdRCAcceptGuildJoinNotify notify{
+    .guildMemberCharacterUid = 0,
     .newMemberCharacterUid = characterUid,
-    .newMemberCharacterName = newMemberCharacterName
-  };
+    .newMemberCharacterName = newMemberCharacterName};
   
   // Notify (online) guild members that a new member is in
   for (const auto& client : _clients)
@@ -897,8 +880,8 @@ void RanchDirector::SendGuildInviteAccepted(
 }
 
 void RanchDirector::AddRanchHorse(
-  data::Uid& rancherUid,
-  data::Uid& horseUid)
+  const data::Uid rancherUid,
+  const data::Uid horseUid)
 {
   auto& ranchInstance = _ranches[rancherUid];
   ranchInstance.tracker.AddHorse(horseUid);
@@ -2749,10 +2732,12 @@ void RanchDirector::HandleWithdrawGuild(
   const protocol::AcCmdCRWithdrawGuildMember& command)
 {
   const auto& clientContext = GetClientContext(clientId);
+
   // If leave and characterUid is not self
   // If kick and characterUid is self (cannot kick self, only leave)
-  if ((command.option == protocol::AcCmdCRWithdrawGuildMember::Option::Leave && command.characterUid != clientContext.characterUid) ||
-       command.option == protocol::AcCmdCRWithdrawGuildMember::Option::Kicked && command.characterUid == clientContext.characterUid)
+  using WithdrawOption = protocol::AcCmdCRWithdrawGuildMember::Option;
+  if ((command.option == WithdrawOption::Leave and command.characterUid != clientContext.characterUid) or
+       command.option == WithdrawOption::Kicked and command.characterUid == clientContext.characterUid)
   {
     protocol::AcCmdCRWithdrawGuildMemberCancel response{
       .status = protocol::GuildError::Unknown // ERROR_FAIL_UNKNOWN
@@ -2768,24 +2753,22 @@ void RanchDirector::HandleWithdrawGuild(
 
   // If kick - use command.characterUid as target
   // If leave - use clientContext.characterUid as target
-  const auto& characterUid = command.option == protocol::AcCmdCRWithdrawGuildMember::Option::Kicked
+  const auto& characterUid = command.option == WithdrawOption::Kicked
     ? command.characterUid
     : clientContext.characterUid;
 
-  auto guildUid = data::InvalidUid;
-  const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacter(characterUid);
-  characterRecord.Mutable([&guildUid](data::Character& character)
-  {
-    guildUid = character.guildUid();
-    character.guildUid() = data::InvalidUid;
-  });
+  data::Uid guildUid{data::InvalidUid};
+  GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
+    [&guildUid](const data::Character& character)
+    {
+      guildUid = character.guildUid();
+    });
 
-  std::optional<protocol::GuildError> error;
+  std::optional<protocol::GuildError> error{};
   const auto& guildRecord = GetServerInstance().GetDataDirector().GetGuild(guildUid);
   guildRecord.Mutable([&characterUid, &error, option = command.option](data::Guild& guild)
   {
-
-    if (option == protocol::AcCmdCRWithdrawGuildMember::Option::Disband)
+    if (option == WithdrawOption::Disband)
     {
       if (guild.owner() != characterUid)
       {
@@ -2832,9 +2815,15 @@ void RanchDirector::HandleWithdrawGuild(
     return;
   }
 
-  protocol::AcCmdCRWithdrawGuildMemberOK response{
-    .option = command.option
-  };
+  // Reset character guild uid
+  GetServerInstance().GetDataDirector().GetCharacter(characterUid).Mutable(
+    [&guildUid](data::Character& character)
+    {
+      character.guildUid() = data::InvalidUid;
+    });
+
+  const protocol::AcCmdCRWithdrawGuildMemberOK response{
+    .option = command.option};
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
@@ -2847,37 +2836,38 @@ void RanchDirector::HandleWithdrawGuild(
   {
     // Notify online characters only
     if (not onlineClientContext.isAuthenticated)
-    {
       continue;
-    }
 
-    if (command.option == protocol::AcCmdCRWithdrawGuildMember::Option::Leave &&
-        onlineClientContext.characterUid == characterUid)
-    {
+    // Leave option should not have a notify be sent to the leaver
+    if (command.option == WithdrawOption::Leave and onlineClientContext.characterUid == characterUid)
       continue;
-    }
 
-    const auto& clientRecord = GetServerInstance().GetDataDirector().GetCharacter(
-      onlineClientContext.characterUid);
-
-    clientRecord.Immutable(
-      [this, onlineClientId, guildUid, option = command.option, characterUid, authorityCharacterUid]
-      (const data::Character& character)
+    // Check if this client is in the same guild as the withdrawn member
+    // TODO: guild uid could be cached under client context for cheaper checks
+    data::Uid onlineClientGuildUid{data::InvalidUid};
+    GetServerInstance().GetDataDirector().GetCharacter(onlineClientContext.characterUid).Immutable(
+      [&onlineClientGuildUid](const data::Character& character)
       {
-        protocol::AcCmdRCWithdrawGuildMemberNotify notify{
-          .guildUid = guildUid,
-          .guildMemberCharacterUid = option == protocol::AcCmdCRWithdrawGuildMember::Option::Kicked ?
-            authorityCharacterUid : character.uid(),
-          .withdrawnCharacterUid = characterUid,
-          .option = option
-        };
+        onlineClientGuildUid = character.guildUid();
+      });
 
-        _commandServer.QueueCommand<decltype(notify)>(
-          onlineClientId,
-          [notify]()
-          {
-            return notify;
-          });
+    if (onlineClientGuildUid != guildUid)
+      continue;
+
+    const protocol::AcCmdRCWithdrawGuildMemberNotify notify{
+      .guildUid = guildUid,
+      .guildMemberCharacterUid =
+        command.option == WithdrawOption::Kicked ?
+          authorityCharacterUid :
+          onlineClientContext.characterUid,
+      .withdrawnCharacterUid = characterUid,
+      .option = command.option};
+
+    _commandServer.QueueCommand<decltype(notify)>(
+      onlineClientId,
+      [notify]()
+      {
+        return notify;
       });
   }
 }

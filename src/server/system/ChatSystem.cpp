@@ -1662,7 +1662,8 @@ void ChatSystem::RegisterAdminCommands()
       if (arguments.empty())
         return {"mod",
           " reset user [name]",
-          " rename [horse/pet/guild/room] [uid] [name]"};
+          " rename [horse/pet/guild/room] [uid] [name]",
+          " transfer guild [guildUid] [newOwnerUsername]"};
 
       const auto& subcommand = arguments[0];
       if (subcommand == "reset")
@@ -1973,6 +1974,87 @@ void ChatSystem::RegisterAdminCommands()
             targetUserName);
 
           return {std::format("All macros cleared for user '{}'", targetUserName)};
+        }
+      }
+
+      else if (subcommand == "transfer")
+      {
+        if (arguments.size() < 2)
+          return {
+            "mod transfer",
+            "  guild [guildUid] [newOwnerUsername]"};
+
+        const auto& subject = arguments[1];
+        if (subject == "guild")
+        {
+          if (arguments.size() < 3)
+            return {
+              "mod transfer guild",
+              "   [guildUid] [newOwnerUsername]"};
+
+          const auto guildUid = std::atoi(arguments[2].c_str());
+          if (guildUid == data::InvalidUid)
+            return {"Invalid guild UID"};
+
+          const auto& guildRecord = _serverInstance.GetDataDirector().GetGuild(guildUid);
+          if (not guildRecord.IsAvailable())
+            return {
+              std::format("Guild '{}' does not exist or is currently unavailable", guildUid)};
+
+          if (arguments.size() < 4)
+            return {
+              std::format("mod transfer guild {}", guildUid),
+              "    [newOwnerUsername]"};
+
+          const std::string& newOwnerUserName = arguments[3];
+          const auto newOwnerUserRecord = _serverInstance.GetDataDirector().GetUser(newOwnerUserName);
+          if (not newOwnerUserRecord.IsAvailable())
+            return {std::format("User '{}' does not exist or is currently unavailable", newOwnerUserName)};
+
+          data::Uid newOwnerCharacterUid{data::InvalidUid};
+          newOwnerUserRecord.Immutable([&newOwnerCharacterUid](const data::User& user)
+          {
+            newOwnerCharacterUid = user.characterUid();
+          });
+
+          if (newOwnerCharacterUid == data::InvalidUid)
+            return {std::format("User '{}' does not have a character", newOwnerUserName)};
+
+          bool isMember = false;
+          guildRecord.Immutable([&isMember, newOwnerCharacterUid](const data::Guild& guild)
+          {
+            const auto& members = guild.members();
+            isMember = std::find(members.begin(), members.end(), newOwnerCharacterUid) != members.end();
+          });
+
+          if (not isMember)
+            return {std::format("User '{}' is not a member of guild '{}'", newOwnerUserName, guildUid)};
+
+          std::string guildName{};
+          data::Uid previousOwnerUid{data::InvalidUid};
+          guildRecord.Mutable([&guildName, &previousOwnerUid, newOwnerCharacterUid](data::Guild& guild)
+          {
+            guildName = guild.name();
+            previousOwnerUid = guild.owner();
+            guild.owner() = newOwnerCharacterUid;
+            // Remove new owner from officers if they were one, and ensure
+            // old owner is not lingering in the officers list.
+            auto& officers = guild.officers();
+            std::erase(officers, newOwnerCharacterUid);
+            std::erase(officers, previousOwnerUid);
+          });
+
+          spdlog::info("GM {} ({}) transferred ownership of guild '{}' ({}) from uid {} to {} ({})",
+            invokerUserName,
+            invokerCharacterName,
+            guildName,
+            guildUid,
+            previousOwnerUid,
+            newOwnerCharacterUid,
+            newOwnerUserName);
+
+          return {
+            std::format("Guild '{}' ownership transferred to '{}'", guildName, newOwnerUserName)};
         }
       }
 

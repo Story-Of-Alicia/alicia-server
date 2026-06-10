@@ -144,7 +144,7 @@ magic:
         removeMagic: 0
         removeHotRodding: 0
         removeSummonTarget: 0
-        replaceEffect: 0
+        replaceEffect: 1
         massEffect: 0
         affectByCriticalAura: 1
         criticalByDarkFire: 0
@@ -156,7 +156,7 @@ magic:
         attackValue: 0
         defenseValue: 0
         castingTime: 0.0
-        effectDelay: 3.0
+        effectDelay: 4.0
         effectDisappearDelay: 0.0
         targetingDelay: 0.0
         getStartDelay: 0.5
@@ -173,7 +173,7 @@ magic:
         removeMagic: 0
         removeHotRodding: 0
         removeSummonTarget: 0
-        replaceEffect: 0
+        replaceEffect: 1
         massEffect: 0
         affectByCriticalAura: 0
         criticalByDarkFire: 0
@@ -202,7 +202,7 @@ magic:
         removeMagic: 0
         removeHotRodding: 0
         removeSummonTarget: 0
-        replaceEffect: 0
+        replaceEffect: 1
         massEffect: 0
         affectByCriticalAura: 1
         criticalByDarkFire: 0
@@ -231,7 +231,7 @@ magic:
         removeMagic: 0
         removeHotRodding: 0
         removeSummonTarget: 0
-        replaceEffect: 0
+        replaceEffect: 1
         massEffect: 0
         affectByCriticalAura: 0
         criticalByDarkFire: 0
@@ -705,3 +705,32 @@ magic:
         massEffect: 0
         affectByCriticalAura: 0
         criticalByDarkFire: 0
+
+  regen:
+    pointPerTick: 1000
+    intervalMs: 200
+    courageScaleBp: 9
+
+  critChanceBp: 500
+
+  statScalings:
+    - basicType: 4   # WaterShield
+      stat: agility
+      durationScaleBp: 10
+      critStepBp: 250
+    - basicType: 6   # Booster
+      stat: rush
+      durationScaleBp: 10
+      critStepBp: 250
+    - basicType: 24  # BufSpeed (Magic Scroll)
+      stat: rush
+      durationScaleBp: 7
+      critStepBp: 250
+    - basicType: 8   # HotRodding
+      stat: endurance
+      durationScaleBp: 5
+      critStepBp: 250
+    - basicType: 10  # IceWall (target's ambition reduces shock duration)
+      stat: ambition
+      critStepBp: 250
+      targetDurationReductionBp: 5

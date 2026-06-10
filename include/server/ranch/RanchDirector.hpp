@@ -106,11 +106,11 @@ public:
   void SendGuildInviteAccepted(
     data::Uid guildUid,
     data::Uid characterUid,
-    std::string newMemberCharacterName);
+    const std::string& newMemberCharacterName);
 
   void AddRanchHorse(
-    data::Uid& rancherUid,
-    data::Uid& horseUid);
+    data::Uid rancherUid,
+    data::Uid horseUid);
 
   ServerInstance& GetServerInstance();
   Config::Ranch& GetConfig();

@@ -18,7 +18,6 @@
  **/
 
 #include "libserver/network/Server.hpp"
-
 #include "libserver/util/Deferred.hpp"
 
 #include <cassert>
@@ -138,6 +137,7 @@ void Client::WriteLoop() noexcept
   _isSending.store(true, std::memory_order::release);
 
   // Asynchronously write the data to the socket.
+  _writeProfiler.Start();
   _socket.async_write_some(
     _writeBuffer.data(),
     [clientPtr = this->shared_from_this()](const boost::system::error_code& error, const std::size_t size)
@@ -175,6 +175,7 @@ void Client::WriteLoop() noexcept
       }
 
       clientPtr->_isSending.store(false, std::memory_order::release);
+      clientPtr->_writeProfiler.Stop();
       clientPtr->WriteLoop();
     });
 }
@@ -184,6 +185,7 @@ void Client::ReadLoop() noexcept
   if (not _shouldRun.load(std::memory_order::acquire))
     return;
 
+  _readProfiler.Start();
   _socket.async_read_some(
     _readBuffer.prepare(1024),
     [clientPtr = this->shared_from_this()](boost::system::error_code error, std::size_t size)
@@ -218,6 +220,7 @@ void Client::ReadLoop() noexcept
         clientPtr->_readBuffer.consume(consumedBytes);
 
         // Continue the read loop.
+        clientPtr->_readProfiler.Stop();
         clientPtr->ReadLoop();
       }
       catch (const std::exception& x)
@@ -400,13 +403,24 @@ void Server::AcceptLoop() noexcept
             fmt::format("Network exception 0x{}", error.value()));
         }
 
-        const auto remoteAddr = client_socket.remote_endpoint().address().to_v4();
+        asio::ip::address_v4 remoteAddress;
+        try
+        {
+          remoteAddress = client_socket.remote_endpoint().address().to_v4();
+        }
+        catch (const std::exception&)
+        {
+          // The connection was broken too early.
+          // Continue the accept loop.
+          AcceptLoop();
+          return;
+        }
 
-        if (IsConnectionThrottled(remoteAddr))
+        if (IsConnectionThrottled(remoteAddress))
         {
           spdlog::warn(
             "Connection rejected from {} (throttled)",
-            remoteAddr.to_string());
+            remoteAddress.to_string());
           client_socket.close();
           AcceptLoop();
           return;

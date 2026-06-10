@@ -57,7 +57,7 @@ void Scheduler::Tick()
         // Executing task for job threw an error, erase the job
         // and move onto the next one
         _jobIterator = _jobs.erase(_jobIterator);
-        throw x;
+        throw std::runtime_error(std::format("{}", x.what()));
       }
 
       break;
