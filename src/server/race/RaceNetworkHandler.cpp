@@ -1276,6 +1276,7 @@ void RaceNetworkHandler::HandleStartRace(
 
   if (not raceInstance.Start(parameters))
   {
+    SendStartRaceCancel(clientId, protocol::AcCmdCRStartRaceCancel::Reason::Generic);
     return;
   }
 
