@@ -7,6 +7,8 @@
 #include "libserver/registry/ItemRegistry.hpp"
 
 #include <tinyxml2.h>
+#include <algorithm>
+#include <vector>
 
 namespace server
 {
@@ -86,7 +88,20 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
   uint32_t goodsSequenceId = 0;
   uint32_t recommendNoId = 0;
 
-  for (const auto& [tid, item] : itemRegistry.GetItems())
+  auto items = itemRegistry.GetItems();
+  std::vector<std::pair<uint32_t, registry::Item>> sortedItems(items.begin(), items.end());
+  // Sort by unlock level ascending, then by TID as a tiebreaker.
+  std::sort(sortedItems.begin(), sortedItems.end(),
+    [](const auto& first, const auto& second)
+    {
+      const auto& [firstTid, firstItem] = first;
+      const auto& [secondTid, secondItem] = second;
+      if (firstItem.level != secondItem.level)
+        return firstItem.level < secondItem.level;
+      return firstTid < secondTid;
+    });
+
+  for (const auto& [tid, item] : sortedItems)
   {
     ++goodsSequenceId;
 

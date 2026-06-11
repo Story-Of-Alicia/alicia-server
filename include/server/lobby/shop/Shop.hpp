@@ -8,9 +8,9 @@
 #include <libserver/util/Locale.hpp>
 
 #include <cstdint>
+#include <map>
 #include <string>
 #include <vector>
-#include <unordered_map>
 
 namespace server
 {
@@ -86,7 +86,7 @@ struct ShopList
     std::vector<Item> items{};
   };
 
-  std::unordered_map<uint32_t, Goods> goodsList{};
+  std::map<uint32_t, Goods> goodsList{};
 };
 
 class ShopManager

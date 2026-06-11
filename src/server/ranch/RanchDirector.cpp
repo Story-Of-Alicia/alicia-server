@@ -4894,7 +4894,9 @@ void RanchDirector::HandleBuyOwnItem(
         const bool hasSufficientCash = character.cash() >= cost;
         const bool canPurchaseCashItem = isCashItem and hasSufficientCash;
 
-        const bool hasItem = GetServerInstance().GetItemSystem().HasItem(character, itemRegistryRecord.value().tid);
+        const bool hasItem = GetServerInstance().GetItemSystem().HasItem(
+          character, 
+          itemRegistryRecord.value().tid);
 
         if (not canPurchaseCarrotItem and not canPurchaseCashItem)
         {
@@ -4928,7 +4930,8 @@ void RanchDirector::HandleBuyOwnItem(
 
           data::Uid horseUid{data::InvalidUid};
           const auto* mountAbility = itemRegistryRecord.value().mountAbility.has_value()
-            ? &itemRegistryRecord.value().mountAbility.value() : nullptr;
+                                       ? &itemRegistryRecord.value().mountAbility.value()
+                                       : nullptr;
 
           horseRecord.Mutable(
             [&horseUid, tid = itemRegistryRecord.value().tid, &partSetInfo, mountAbility](data::Horse& horse)
@@ -4975,9 +4978,9 @@ void RanchDirector::HandleBuyOwnItem(
 
           protocol::Horse protocolHorse{};
           horseRecord.Immutable([&protocolHorse](const data::Horse& horse)
-          {
-            protocol::BuildProtocolHorse(protocolHorse, horse);
-          });
+            {
+              protocol::BuildProtocolHorse(protocolHorse, horse);
+            });
           newHorseUids.emplace_back(horseUid, protocolHorse);
           continue;
         }
@@ -5032,7 +5035,10 @@ void RanchDirector::HandleBuyOwnItem(
     notify.horse.horse = std::move(protocolHorse);
 
     _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
-      clientId, [notify]() { return notify; });
+      clientId, [notify]()
+      {
+        return notify;
+      });
   }
 
   // Process all the equipment marked for equipping
