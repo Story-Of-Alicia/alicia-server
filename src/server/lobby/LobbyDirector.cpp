@@ -455,7 +455,11 @@ void LobbyDirector::ProcesLoginResponse()
   auto& userInstance = iter->second;
   userInstance.userName = loginContext.userName;
   userInstance.characterUid = characterUid;
-  spdlog::info("User '{}' (client {}) logged in", loginContext.userName, clientId);
+  spdlog::info(
+    "User '{}' (client {}) logged in from {}",
+    loginContext.userName,
+    clientId,
+    _networkHandler->GetCommandServer().GetClientAddress(clientId).to_string());
 
   userRecord.Mutable([](data::User& user)
   {

@@ -37,7 +37,7 @@ public:
     data::Uid guildUid,
     data::Uid inviterUid);
 
-  [[deprecated]] void SetCharacterVisitPreference(
+  void SetCharacterVisitPreference(
     data::Uid characterUid,
     data::Uid rancherUid);
 
@@ -55,6 +55,8 @@ public:
   void NotifyMatchmakeResult(
     const data::Uid characterUid,
     const MatchmakingSystem::Result& result);
+
+  [[nodiscard]] CommandServer& GetCommandServer() noexcept;
 
 private:
   struct ClientContext

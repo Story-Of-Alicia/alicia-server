@@ -602,7 +602,7 @@ void AcCmdCLEnterRoom::Read(
 {
   stream.Read(command.roomUid)
     .Read(command.password)
-    .Read(command.member3);
+    .Read(command.enterRoomType);
 }
 
 void AcCmdCLEnterRoomOK::Write(
