@@ -135,5 +135,21 @@ void AcCmdRCRequestUser::Write(
     .Write(command.ranchUid);
 }
 
+void AcCmdRCUpdateQuestNotify::Read(
+  AcCmdRCUpdateQuestNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCUpdateQuestNotify::Write(
+  const AcCmdRCUpdateQuestNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.questTid)
+    .Write(command.objectiveProgress);
+}
+
 } // namespace server::protocol
 

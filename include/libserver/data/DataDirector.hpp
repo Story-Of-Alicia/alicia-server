@@ -43,8 +43,9 @@ public:
   using HousingStorage = DataStorage<data::Uid, data::Housing>;
   using GuildStorage = DataStorage<data::Uid, data::Guild>;
   using SettingsStorage = DataStorage<data::Uid, data::Settings>;
-  using DailyQuestStorage = DataStorage<data::Uid, data::DailyQuest>;
+  using DailyQuestGroupStorage = DataStorage<data::Uid, data::DailyQuestGroup>;
   using MailStorage = DataStorage<data::Uid, data::Mail>;
+  using QuestStorage = DataStorage<data::Uid, data::Quest>;
 
   //! Default constructor.
   explicit DataDirector(const std::filesystem::path& basePath);
@@ -123,13 +124,17 @@ public:
   [[nodiscard]] Record<data::Settings> CreateSettings() noexcept;
   [[nodiscard]] SettingsStorage& GetSettingsCache();
 
-  [[nodiscard]] Record<data::DailyQuest> GetDailyQuest(data::Uid dailyQuestUid) noexcept;
-  [[nodiscard]] Record<data::DailyQuest> CreateDailyQuest() noexcept;
-  [[nodiscard]] DailyQuestStorage& GetDailyQuestCache();
+  [[nodiscard]] Record<data::DailyQuestGroup> GetDailyQuestGroup(data::Uid dailyQuestGroupUid) noexcept;
+  [[nodiscard]] Record<data::DailyQuestGroup> CreateDailyQuestGroup() noexcept;
+  [[nodiscard]] DailyQuestGroupStorage& GetDailyQuestGroupCache();
   
   [[nodiscard]] Record<data::Mail> GetMail(data::Uid mailUid) noexcept;
   [[nodiscard]] Record<data::Mail> CreateMail() noexcept;
   [[nodiscard]] MailStorage& GetMailCache();
+
+  [[nodiscard]] Record<data::Quest> GetQuest(data::Uid questUid) noexcept;
+  [[nodiscard]] Record<data::Quest> CreateQuest() noexcept;
+  [[nodiscard]] QuestStorage& GetQuestCache();
 
   [[nodiscard]] DataSource& GetDataSource() noexcept;
 
@@ -182,10 +187,12 @@ private:
   GuildStorage _guildStorage;
   //! A character Keybind settings storage.
   SettingsStorage _settingsStorage;
-  //! A daily quest storage.
-  DailyQuestStorage _dailyQuestStorage;
+  //! A daily quest group storage.
+  DailyQuestGroupStorage _dailyQuestGroupStorage;
   //! A mail storage.
   MailStorage _mailStorage;
+  //! A quest storage.
+  QuestStorage _questStorage;
 };
 
 } // namespace server
