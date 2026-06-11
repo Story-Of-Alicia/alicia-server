@@ -845,7 +845,7 @@ struct AcCmdUserRaceFinal
   std::chrono::milliseconds courseTime{};
   //! Race track progress. Scales with lap count.
   //! `-1` indicates all laps completed.
-  float member3{};
+  float raceTrackProgress{};
 
   static Command GetCommand()
   {
@@ -871,8 +871,9 @@ struct AcCmdUserRaceFinalNotify
 {
   //! Racer character OID.
   uint16_t oid{};
-  //! Race course time in milliseconds. Anything negative indicates DNF/Time Over.
-  std::chrono::milliseconds courseTime{};
+  //! Race course time in milliseconds.
+  //! Anything negative indicates DNF/Time Over.
+  uint32_t courseTime{};
 
   static Command GetCommand()
   {
@@ -2114,7 +2115,7 @@ struct AcCmdGameRaceItemSpawn
 struct AcCmdUserRaceItemGet
 {
   uint16_t characterOid;
-  uint16_t itemId;
+  uint16_t itemDeckId;
   uint32_t unk3;
 
   static Command GetCommand()

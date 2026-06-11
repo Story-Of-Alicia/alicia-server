@@ -34,6 +34,11 @@
 namespace server::tracker
 {
 
+//! Invalid course time represents a did not finish state in the client scoreboard.
+constexpr uint32_t InvalidCourseTime = std::numeric_limits<uint32_t>::max();
+
+constexpr std::chrono::milliseconds EventThrottleDuration{250};
+
 //! A race tracker.
 class RaceTracker
 {
@@ -69,13 +74,14 @@ public:
     Team team{Team::Solo};
     uint32_t starPointValue{};
     uint32_t jumpComboValue{};
-    int32_t courseTime{std::numeric_limits<int32_t>::max()};
+    uint32_t courseTime{InvalidCourseTime};
     std::optional<uint32_t> magicItem{};
 
     //! A set of tracked items in racer's proximity.
-    std::unordered_set<Oid> trackedItems;
-    //! Per-racer per-spawner pickup cooldown expiry times.
-    std::unordered_map<uint16_t, std::chrono::steady_clock::time_point> spawnerCooldowns;
+    std::unordered_set<Oid> trackedDecks;
+    //! A deck cooldown time point tracker.
+    std::unordered_map<Oid, std::chrono::steady_clock::time_point> deckCooldown;
+
     //! Per-racer event items (e.g. eggs) visible only to this racer.
     std::vector<EventItem> eventItems;
 
@@ -91,7 +97,8 @@ public:
 
     //! Anchor for time-based magic gauge regen. Default-constructed = uninitialized,
     //! lazily set to raceStartTimePoint on the first regen tick.
-    std::chrono::steady_clock::time_point lastMagicRegenTimePoint{};
+    std::chrono::steady_clock::time_point lastGaugeUpdateTimePoint{
+      std::chrono::steady_clock::time_point::max()};
 
     //! Snapshot of the racer's mount stats taken at race start, used by per-tick
     //! magic-mode calculations to avoid a DataDirector lookup on every pos-update.
@@ -113,13 +120,20 @@ public:
     std::optional<MagicTargetInfo> pendingMagicTarget{};
   };
 
-  //! An item
-  struct Item
+  //! An item deck.
+  struct ItemDeck
   {
+    //! An object identifier.
     Oid oid{};
-    std::vector<uint32_t> itemTypes{};
-    uint32_t currentType{};
-    std::chrono::steady_clock::time_point respawnTimePoint{};
+    //! A list of items spawnable in this item deck.
+    std::vector<uint32_t> items{};
+    //!
+    uint32_t currentItem{};
+    //! A respawn time for the items in the deck.
+    std::chrono::milliseconds respawnTime{};
+    //! A time point of the next respawn.
+    std::chrono::steady_clock::time_point respawnTimePoint{
+      std::chrono::steady_clock::time_point::min()};
     std::array<float, 3> position{};
   };
 
@@ -142,9 +156,8 @@ public:
 
   //! An object map.
   using RacerObjectMap = std::map<data::Uid, Racer>;
-  //! An item object map.
-  //! Maps itemId -> Item (in the race)
-  using ItemObjectMap = std::map<uint16_t, Item>;
+  //! A deck item object map.
+  using ItemDeckMap = std::map<Oid, ItemDeck>;
   //! An event map.
   using EventMap = std::unordered_map<uint32_t, Event>;
 
@@ -159,7 +172,7 @@ public:
   //! @param characterUid Character UID.
   //! @return `true` if the character is a racer,
   //!          otherwise returns `false`;
-  bool IsRacer(data::Uid characterUid);
+  bool IsRacer(data::Uid characterUid) const;
   //! Returns reference to the racer record.
   //! @returns Racer record.
   [[nodiscard]] Racer& GetRacer(data::Uid characterUid);
@@ -169,23 +182,17 @@ public:
 
   //! Adds an item for tracking.
   //! @returns A reference to the new item record.
-  Item& AddItem();
+  ItemDeck& AddItemDeck();
   //! Removes an item from tracking.
   //! @param itemId Item OID.
-  void RemoveItem(Oid itemId);
+  void RemoveItemDeck(Oid itemId);
   //! Returns reference to the item record.
   //! @param itemId Item OID.
   //! @returns Item record.
-  [[nodiscard]] Item& GetItem(Oid itemId);
+  [[nodiscard]] ItemDeck& GetItemDeck(Oid itemId);
   //! Returns a reference to all item records.
   //! @return Reference to item records.
-  [[nodiscard]] ItemObjectMap& GetItems();
-  //! Returns the next object instance ID and increments the internal counter.
-  //! @param increment The value to increment the internal counter by.
-  //! @returns The next object instance ID before incrementing.
-  uint16_t GetNextObstacleInstanceIdAndIncrementBy(uint16_t increment);
-
-  uint16_t GetNextEffectInstanceIdAndIncrementBy(uint16_t increment);
+  [[nodiscard]] ItemDeckMap& GetItemDecks();
 
   //! Returns a reference to all of the event records.
   //! @return Reference to event records.
@@ -194,7 +201,6 @@ public:
   //! @param eventId Event ID.
   //! @returns True if event exists and is throttled, else event is tracked.
   bool IsEventThrottled(uint32_t eventId);
-  static inline const std::chrono::milliseconds ThrottleDurationMs{250};
 
   //! Adds a per-racer event item for the given character.
   //! @returns Reference to the new event item record.
@@ -208,8 +214,12 @@ public:
   //! Removes a per-racer event item by OID.
   void RemoveEventItem(data::Uid characterUid, Oid oid);
 
-  void Clear();
+  //! Returns the next object instance ID and increments the internal counter.
+  //! @param increment The value to increment the internal counter by.
+  //! @returns The next object instance ID before incrementing.
+  uint16_t GetNextEffectInstanceIdAndIncrementBy(uint16_t increment);
 
+  void Clear();
 
 private:
   //! Mapping between character UIDs and their assigned OIDs.
@@ -218,11 +228,11 @@ private:
   //! Next OID for new character entities (100+).
   Oid _nextCharacterOid = 100;
   //! Next OID for item entities (1–99, reset each race).
-  Oid _nextItemOid = 1;
-  //! Horse entities in the race.
+  Oid _nextItemDeckOid = 1;
+  //! Racer entities.
   RacerObjectMap _racers;
-  //! Items in the race
-  ItemObjectMap _items;
+  //! Item deck entities.
+  ItemDeckMap _itemDecks;
   //! Tracked race map events.
   EventMap _events;
   //! Next effect instance ID.

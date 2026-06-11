@@ -90,6 +90,11 @@ Clock::time_point AliciaShopTimeToTimePoint(const std::array<uint32_t, 3>& times
 /// @return Alicia shop timestamp representing the date and time
 std::array<uint32_t, 3> TimePointToAliciaShopTime(const Clock::time_point& timestamp);
 
+//! Converts a steady clock's time point to a race clock's time point.
+//! @param timePoint Time point.
+//! @return Race clock time point.
+uint64_t TimePointToRaceTimePoint(const std::chrono::steady_clock::time_point& timePoint);
+
 asio::ip::address_v4 ResolveHostName(const std::string& host);
 
 std::string GenerateByteDump(std::span<const std::byte> data);

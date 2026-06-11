@@ -588,7 +588,7 @@ void RanchDirector::BroadcastUpdateMountInfoNotify(
   }
 }
 
-void RanchDirector::NotifyRequestUser(
+void RanchDirector::SummonCharacter(
     data::Uid characterUid,
     bool force,
     std::string characterName,
@@ -5595,8 +5595,8 @@ void RanchDirector::HandleRequestUser(
     return;
   }
 
-  GetServerInstance().GetRaceDirector().NotifyRequestUser(characterUid, command.force, command.characterName, command.roomUid, command.ranchUid);
-  GetServerInstance().GetRanchDirector().NotifyRequestUser(characterUid, command.force, command.characterName, command.roomUid, command.ranchUid);
+  GetServerInstance().GetRaceDirector().NotifySummonCharacter(characterUid, command.force, command.characterName, command.roomUid, command.ranchUid);
+  GetServerInstance().GetRanchDirector().SummonCharacter(characterUid, command.force, command.characterName, command.roomUid, command.ranchUid);
 
   protocol::AcCmdCRRequestUserOK response{};
   response.force = command.force;

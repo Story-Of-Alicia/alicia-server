@@ -668,7 +668,7 @@ void AcCmdUserRaceFinal::Read(
   stream.Read(courseTime);
   command.courseTime = std::chrono::milliseconds{courseTime};
 
-  stream.Read(command.member3);
+  stream.Read(command.raceTrackProgress);
 }
 
 void AcCmdUserRaceFinalNotify::Write(
@@ -676,7 +676,7 @@ void AcCmdUserRaceFinalNotify::Write(
   SinkStream& stream)
 {
   stream.Write(command.oid)
-    .Write(static_cast<int32_t>(command.courseTime.count()));
+    .Write(command.courseTime);
 }
 
 void AcCmdUserRaceFinalNotify::Read(
@@ -1643,7 +1643,7 @@ void AcCmdUserRaceItemGet::Read(
   SourceStream& stream)
 {
   stream.Read(command.characterOid)
-    .Read(command.itemId)
+    .Read(command.itemDeckId)
     .Read(command.unk3);
 }
 

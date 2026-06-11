@@ -68,7 +68,7 @@ public:
     data::Uid horseUid);
 
   //! Send a RequestUser notification to a character connected to this director.
-  void NotifyRequestUser(
+  void SummonCharacter(
     data::Uid characterUid,
     bool force,
     std::string characterName,

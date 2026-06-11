@@ -78,7 +78,8 @@ add_library(alicia-libserver STATIC
         src/libserver/util/Scheduler.cpp
         src/libserver/util/Stream.cpp
         src/libserver/util/Util.cpp
-        src/libserver/util/Profiler.cpp)
+        src/libserver/util/Profiler.cpp
+        include/server/race/RaceDirector.hpp)
 target_include_directories(alicia-libserver PUBLIC
         include/)
 target_link_libraries(alicia-libserver PRIVATE
@@ -106,8 +107,10 @@ add_executable(alicia-server
         src/server/chat/AllChatDirector.cpp
         src/server/chat/PrivateChatDirector.cpp
         src/server/messenger/MessengerDirector.cpp
-        src/server/race/RaceDirector.cpp
+        src/server/race/RaceInstance.cpp
+        src/server/race/RaceNetworkHandler.cpp
         src/server/ranch/RanchDirector.cpp
+        src/server/room/Room.cpp
         src/server/system/ChatSystem.cpp
         src/server/system/InfractionSystem.cpp
         src/server/system/ItemSystem.cpp
@@ -117,7 +120,8 @@ add_executable(alicia-server
         src/server/system/MatchmakingSystem.cpp
         src/server/telemetry/Telemetry.cpp
         src/server/tracker/RaceTracker.cpp
-        src/server/tracker/RanchTracker.cpp)
+        src/server/tracker/RanchTracker.cpp
+        src/server/race/RaceDirector.cpp)
 target_include_directories(alicia-server
         PRIVATE include/)
 target_link_libraries(alicia-server PRIVATE
