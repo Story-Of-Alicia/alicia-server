@@ -416,10 +416,6 @@ void RaceInstance::TickLoading()
 
 void RaceInstance::TickRacing()
 {
-  if (this->GetParameters().gameMode == protocol::GameMode::Magic)
-    // Tick magic gauge
-    this->TickMagicGauge();
-
   const bool raceTimeoutReached = std::chrono::steady_clock::now() >= _stageTimeoutTimePoint;
 
   const bool isFinishing = std::ranges::any_of(
@@ -432,7 +428,14 @@ void RaceInstance::TickRacing()
   // If the race is not finishing and the timeout was not reached
   // do not finish the race.
   if (not isFinishing && not raceTimeoutReached)
+  {
+    // Tick main race functions
+    this->TickItemSpawners();
+    if (this->GetParameters().gameMode == protocol::GameMode::Magic)
+      // Tick magic gauge
+      this->TickMagicGauge();
     return;
+  }
 
   _stage = Stage::Finishing;
   _stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(15);
@@ -487,6 +490,91 @@ void RaceInstance::TickFinishing()
 
   Stop();
  _stage = Stage::Waiting;
+}
+
+void RaceInstance::TickItemSpawners()
+{
+  constexpr double ItemSpawnDistanceThreshold = 90.0;
+
+  const auto processItemSpawn = [&](
+    ClientId clientId,
+    tracker::RaceTracker::Racer& racer,
+    const tracker::Oid oid,
+    const uint32_t itemType,
+    const std::array<float, 3>& position,
+    const uint32_t spawnStyle = 0)
+  {
+    const auto distance = std::sqrt(
+      std::pow(racer.position.x - position[0], 2) +
+      std::pow(racer.position.y - position[1], 2) +
+      std::pow(racer.position.z - position[2], 2));
+
+    const bool isInProximity = distance < ItemSpawnDistanceThreshold;
+    const bool isAlreadyTracked = racer.trackedDecks.contains(oid);
+
+    if (isAlreadyTracked)
+    {
+      if (not isInProximity)
+        racer.trackedDecks.erase(oid);
+
+      return;
+    }
+
+    if (not isInProximity)
+      return;
+
+    const protocol::AcCmdRCCreateItem spawn{
+      .itemId = oid,
+      .itemType = itemType,
+      .position = position,
+      .spawnStyle = spawnStyle,
+      .spawnerId = 0,
+      .sizeLevel = 0};
+
+    racer.trackedDecks.insert(oid);
+    _raceNetworkHandler.GetCommandServer().QueueCommand<decltype(spawn)>(
+      clientId,
+      [spawn]()
+      {
+        return spawn;
+      });
+  };
+
+  // Loop through each player in the room
+  this->GetRoom([this, &processItemSpawn](const Room& room)
+  {
+    for (const auto& [characterUid, player] : room.GetPlayers())
+    {
+      // Check if this player is an active racer
+      if (not this->GetTracker().IsRacer(characterUid))
+        continue;
+
+      auto& racer = this->GetTracker().GetRacer(characterUid);
+      for (const auto& item : this->GetTracker().GetItemDecks() | std::views::values)
+      {
+        if (std::chrono::steady_clock::now() < item.respawnTimePoint)
+          continue;
+
+        processItemSpawn(
+          player.GetClientId(),
+          racer,
+          item.oid,
+          item.currentItem,
+          item.position);
+      }
+
+      for (const auto& eventItem : racer.eventItems)
+        processItemSpawn(
+          player.GetClientId(),
+          racer,
+          eventItem.oid,
+          eventItem.itemType,
+          eventItem.position,
+          3);
+    }
+  });
+
+
 }
 
 void RaceInstance::TickMagicGauge()

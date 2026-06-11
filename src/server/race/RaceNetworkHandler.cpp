@@ -2090,55 +2090,7 @@ void RaceNetworkHandler::HandleRaceUserPos(
       "Client tried to perform action on behalf of different racer");
   }
 
-  constexpr double ItemSpawnDistanceThreshold = 90.0;
-
-  const auto processItemSpawn = [&](
-    const tracker::Oid oid,
-    const uint32_t itemType,
-    const std::array<float, 3>& position,
-    const uint32_t spawnStyle = 0)
-  {
-    const auto distance = std::sqrt(
-      std::pow(command.member2[0] - position[0], 2) +
-      std::pow(command.member2[1] - position[1], 2) +
-      std::pow(command.member2[2] - position[2], 2));
-
-    const bool isInProximity = distance < ItemSpawnDistanceThreshold;
-    const bool isAlreadyTracked = racer.trackedDecks.contains(oid);
-
-    if (isAlreadyTracked)
-    {
-      if (not isInProximity)
-        racer.trackedDecks.erase(oid);
-
-      return;
-    }
-
-    if (not isInProximity)
-      return;
-
-    const protocol::AcCmdRCCreateItem spawn{
-      .itemId = oid,
-      .itemType = itemType,
-      .position = position,
-      .spawnStyle = spawnStyle,
-      .spawnerId = 0,
-      .sizeLevel = 0};
-
-    racer.trackedDecks.insert(oid);
-    _commandServer.QueueCommand<decltype(spawn)>(clientId, [spawn]() { return spawn; });
-  };
-
-  for (const auto& item : raceInstance.GetTracker().GetItemDecks() | std::views::values)
-  {
-    if (std::chrono::steady_clock::now() < item.respawnTimePoint)
-      continue;
-
-    processItemSpawn(item.oid, item.currentItem, item.position);
-  }
-
-  for (const auto& eventItem : racer.eventItems)
-    processItemSpawn(eventItem.oid, eventItem.itemType, eventItem.position, 3);
+  racer.position = tracker::Vector3{command.member2};
 }
 
 void RaceNetworkHandler::HandleChat(

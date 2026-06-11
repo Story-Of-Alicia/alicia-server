@@ -72,6 +72,7 @@ public:
     Oid oid{InvalidEntityOid};
     State state{State::Disconnected};
     Team team{Team::Solo};
+    Vector3 position{};
     uint32_t starPointValue{};
     uint32_t jumpComboValue{};
     uint32_t courseTime{InvalidCourseTime};

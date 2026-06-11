@@ -97,6 +97,7 @@ private:
   void TickRacing();
   void TickFinishing();
 
+  void TickItemSpawners();
   void TickMagicGauge();
 
   void PrepareGameMode();
