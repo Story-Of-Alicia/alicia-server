@@ -569,13 +569,14 @@ void RaceInstance::PrepareMap()
     // Prepare the item decks on the map.
     PrepareItemDecks();
   }
-  catch (const std::exception&)
+  catch (const std::exception& e)
   {
     throw std::runtime_error(
       std::format(
-        "Exception while preparing items for game mode {} and map id {}",
+        "Exception while preparing items for game mode {} and map id {}: {}",
         _gameModeId,
-        _mapBlockId));
+        _mapBlockId,
+        e.what()));
   }
 }
 

@@ -118,7 +118,7 @@ private:
   registry::MapBlockId _mapBlockId{};
   registry::Course::MapBlockInfo _mapBlockInfo;
   
-  //! Represents when the race started loading.
+  //! A time point of when the race started loading.
   Clock::time_point _loadingStartTimePoint{
     Clock::time_point::max()};
   //! A time point of when the race started.
