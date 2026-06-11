@@ -97,6 +97,8 @@ private:
   void TickRacing();
   void TickFinishing();
 
+  void TickMagicGauge();
+
   void PrepareGameMode();
   void PickRandomMapFromCourse();
   void PrepareMap();

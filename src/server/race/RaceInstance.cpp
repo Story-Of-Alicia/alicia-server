@@ -416,6 +416,10 @@ void RaceInstance::TickLoading()
 
 void RaceInstance::TickRacing()
 {
+  if (this->GetParameters().gameMode == protocol::GameMode::Magic)
+    // Tick magic gauge
+    this->TickMagicGauge();
+
   const bool raceTimeoutReached = std::chrono::steady_clock::now() >= _stageTimeoutTimePoint;
 
   const bool isFinishing = std::ranges::any_of(
@@ -483,6 +487,74 @@ void RaceInstance::TickFinishing()
 
   Stop();
  _stage = Stage::Waiting;
+}
+
+void RaceInstance::TickMagicGauge()
+{
+  // Only regenerate magic during an active race (after the countdown finishes)
+  const auto now = std::chrono::steady_clock::now();
+  if (now <= this->GetRaceStartTimePoint())
+    return;
+
+  this->GetRoom([this, &now](const Room& room)
+  {
+    const auto& regenerationInfo = _raceNetworkHandler.GetServerInstance().GetMagicRegistry().GetRegenInfo();
+    const auto tickInterval = std::chrono::milliseconds(regenerationInfo.intervalMs);
+
+    for (const auto& [characterUid, player] : room.GetPlayers())
+    {
+      // Check if this player is an active racer
+      if (not this->GetTracker().IsRacer(characterUid))
+        continue;
+
+      auto& racer = this->GetTracker().GetRacer(characterUid);
+      const bool isRacerHoldingItem = racer.magicItem.has_value();
+
+      // Anchor at race start so fill time is consistent regardless of when the first pos-update arrives.
+      if (racer.lastGaugeUpdateTimePoint == std::chrono::steady_clock::time_point::max())
+        racer.lastGaugeUpdateTimePoint = this->GetRaceStartTimePoint();
+
+      // Elapsed time since the last gauge update.
+      const auto elapsed = now - racer.lastGaugeUpdateTimePoint;
+      const auto elapsedTickCount = elapsed / tickInterval;
+
+      if (elapsedTickCount > 0)
+      {
+        racer.lastGaugeUpdateTimePoint = now;
+
+        if (not isRacerHoldingItem and racer.starPointValue < _gameModeInfo.starPointsMax)
+        {
+          uint32_t gainedPerTick = regenerationInfo.pointPerTick
+            * (1000u + regenerationInfo.courageScaleBp * racer.mountStats.courage) / 1000u;
+
+          // BufGauge buff doubles regen while active.
+          if (racer.effects[20] or racer.effects[21])
+            gainedPerTick *= 2;
+
+          const uint32_t totalGain = gainedPerTick * static_cast<uint32_t>(elapsedTickCount);
+          racer.starPointValue = std::min(
+            _gameModeInfo.starPointsMax,
+            racer.starPointValue + totalGain);
+        }
+      }
+
+      const bool shouldGiveItem =
+        not isRacerHoldingItem and
+        racer.starPointValue >= _gameModeInfo.starPointsMax;
+
+      const protocol::AcCmdCRStarPointGetOK starPointResponse{
+        .characterOid = racer.oid,
+        .starPointValue = racer.starPointValue,
+        .giveMagicItem = shouldGiveItem};
+
+      _raceNetworkHandler.GetCommandServer().QueueCommand<decltype(starPointResponse)>(
+        player.GetClientId(),
+        [starPointResponse]
+        {
+          return starPointResponse;
+        });
+    }
+  });
 }
 
 void RaceInstance::PrepareGameMode()

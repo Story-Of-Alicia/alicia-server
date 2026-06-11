@@ -2079,10 +2079,7 @@ void RaceNetworkHandler::HandleRaceUserPos(
   const auto& clientContext = GetClientContext(clientId);
 
   std::scoped_lock lock(_raceInstancesMutex);
-
   auto& raceInstance = GetRaceInstance(clientContext);
-  const auto& parameters = raceInstance.GetParameters();
-
   auto& racer = raceInstance.GetTracker().GetRacer(
     clientContext.characterUid);
 
@@ -2092,11 +2089,6 @@ void RaceNetworkHandler::HandleRaceUserPos(
     throw std::runtime_error(
       "Client tried to perform action on behalf of different racer");
   }
-
-  const auto& gameModeTemplate = GetServerInstance()
-    .GetCourseRegistry()
-    .GetCourseGameModeInfo(
-      raceInstance.GetGameModeId());
 
   constexpr double ItemSpawnDistanceThreshold = 90.0;
 
@@ -2147,65 +2139,6 @@ void RaceNetworkHandler::HandleRaceUserPos(
 
   for (const auto& eventItem : racer.eventItems)
     processItemSpawn(eventItem.oid, eventItem.itemType, eventItem.position, 3);
-
-  // Only regenerate magic during an active race (after the countdown finishes).
-  // Check if game mode is magic, race is active, countdown finished, and not holding an item
-  const auto now = std::chrono::steady_clock::now();
-
-  const bool raceActuallyStarted = now >= raceInstance.GetRaceStartTimePoint();
-  const bool isRacerHoldingItem = racer.magicItem.has_value();
-
-  if (parameters.gameMode == protocol::GameMode::Magic
-    && raceActuallyStarted)
-  {
-    const auto& regenerationInfo = GetServerInstance().GetMagicRegistry().GetRegenInfo();
-    const auto tickInterval = std::chrono::milliseconds(
-      regenerationInfo.intervalMs);
-
-    // Anchor at race start so fill time is consistent regardless of when the first pos-update arrives.
-    if (racer.lastGaugeUpdateTimePoint == std::chrono::steady_clock::time_point::max())
-      racer.lastGaugeUpdateTimePoint = raceInstance.GetRaceStartTimePoint();;
-
-    // Elapsed time since the last gauge update.
-    const auto elapsed = now - racer.lastGaugeUpdateTimePoint;
-    const auto elapsedTickCount = elapsed / tickInterval;
-
-    if (elapsedTickCount > 0)
-    {
-      racer.lastGaugeUpdateTimePoint = now;
-
-      if (not isRacerHoldingItem
-        && racer.starPointValue < gameModeTemplate.starPointsMax)
-      {
-        uint32_t gainedPerTick = regenerationInfo.pointPerTick
-          * (1000u + regenerationInfo.courageScaleBp * racer.mountStats.courage) / 1000u;
-
-        // BufGauge buff doubles regen while active.
-        if (racer.effects[20] || racer.effects[21])
-          gainedPerTick *= 2;
-
-        const uint32_t totalGain = gainedPerTick * static_cast<uint32_t>(elapsedTickCount);
-        racer.starPointValue = std::min(
-          gameModeTemplate.starPointsMax,
-          racer.starPointValue + totalGain);
-      }
-    }
-
-    const bool shouldGiveItem = not isRacerHoldingItem
-      && racer.starPointValue >= gameModeTemplate.starPointsMax;
-
-    protocol::AcCmdCRStarPointGetOK starPointResponse{
-      .characterOid = command.oid,
-      .starPointValue = racer.starPointValue,
-      .giveMagicItem = shouldGiveItem};
-
-    _commandServer.QueueCommand<decltype(starPointResponse)>(
-      clientId,
-      [starPointResponse]
-      {
-        return starPointResponse;
-      });
-  }
 }
 
 void RaceNetworkHandler::HandleChat(
