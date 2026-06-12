@@ -1505,7 +1505,7 @@ struct AcCmdUserRaceUpdatePos
   //! Character oid
   uint16_t oid{};
   //! Position
-  std::array<float, 3> member2{};
+  protocol::Vector3 position{};
   //! Rotation
   std::array<float, 3> member3{};
   //! Speed
@@ -2730,7 +2730,7 @@ struct AcCmdRCCreateItem
 {
   uint32_t itemId{};
   uint32_t itemType{};
-  std::array<float, 3> position{};
+  protocol::Vector3 position{};
   uint32_t spawnStyle{};
   uint16_t spawnerId{};
   int32_t sizeLevel{};
@@ -2815,7 +2815,7 @@ struct AcCmdCRGameCreateClientItem
   uint16_t someonesOid{};
   // Same value as received in AcCmdRCGameCreateClientItem::unk1 by client
   uint8_t unk1{};
-  std::array<float, 3> position{};
+  protocol::Vector3 position{};
   // Rotation?
   std::array<float, 4> unk3{};
 

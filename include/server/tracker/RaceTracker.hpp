@@ -48,7 +48,7 @@ public:
   {
     Oid oid{};
     uint32_t itemType{};
-    std::array<float, 3> position{};
+    protocol::Vector3 position{};
   };
 
   //! A racer.
@@ -72,7 +72,7 @@ public:
     Oid oid{InvalidEntityOid};
     State state{State::Disconnected};
     Team team{Team::Solo};
-    Vector3 position{};
+    protocol::Vector3 position{};
     uint32_t starPointValue{};
     uint32_t jumpComboValue{};
     uint32_t courseTime{InvalidCourseTime};
@@ -135,7 +135,7 @@ public:
     //! A time point of the next respawn.
     std::chrono::steady_clock::time_point respawnTimePoint{
       std::chrono::steady_clock::time_point::min()};
-    std::array<float, 3> position{};
+    protocol::Vector3 position{};
   };
 
   //! An event

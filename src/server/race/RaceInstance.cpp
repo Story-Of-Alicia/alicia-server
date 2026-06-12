@@ -501,13 +501,10 @@ void RaceInstance::TickItemSpawners()
     tracker::RaceTracker::Racer& racer,
     const tracker::Oid oid,
     const uint32_t itemType,
-    const std::array<float, 3>& position,
+    const protocol::Vector3& position,
     const uint32_t spawnStyle = 0)
   {
-    const auto distance = std::sqrt(
-      std::pow(racer.position.x - position[0], 2) +
-      std::pow(racer.position.y - position[1], 2) +
-      std::pow(racer.position.z - position[2], 2));
+    const auto distance = (racer.position - position).Length();
 
     const bool isInProximity = distance < ItemSpawnDistanceThreshold;
     const bool isAlreadyTracked = racer.trackedDecks.contains(oid);
@@ -769,9 +766,7 @@ void RaceInstance::PrepareItemDecks()
       deck.items = deckInfo.items;
       deck.respawnTime = deckInfo.respawnTime;
 
-      deck.position[0] = deckInstance.position[0] + offset[0];
-      deck.position[1] = deckInstance.position[1] + offset[1];
-      deck.position[2] = deckInstance.position[2] + offset[2];
+      deck.position = deckInstance.position + offset;
 
       PickRandomItemFromDeck(deck);
     }

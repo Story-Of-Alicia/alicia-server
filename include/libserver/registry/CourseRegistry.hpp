@@ -20,6 +20,7 @@
 #ifndef COURSEREGISTRY_HPP
 #define COURSEREGISTRY_HPP
 
+#include "libserver/network/command/proto/CommonStructureDefinitions.hpp"
 #include "libserver/registry/RegistryDefinitions.hpp"
 
 #include <array>
@@ -85,7 +86,7 @@ struct Course
     //! A podium ID.
     uint32_t podiumId{};
     //! An offset to apply to all item deck positions.
-    std::array<float, 3> offset{};
+    protocol::Vector3 offset{};
     //! A fee for training on the map.
     uint32_t trainingFee{};
     //! A map time limit in seconds.
@@ -98,7 +99,7 @@ struct Course
       //! An item deck ID.
       DeckId deckId;
       //! A position of the item deck.
-      std::array<float, 3> position;
+      protocol::Vector3 position;
     };
 
     //! A collection of item deck instances.

@@ -2090,7 +2090,9 @@ void RaceNetworkHandler::HandleRaceUserPos(
       "Client tried to perform action on behalf of different racer");
   }
 
-  racer.position = tracker::Vector3{command.member2};
+  // TODO: player position anticheat
+
+  racer.position = command.position;
 }
 
 void RaceNetworkHandler::HandleChat(
@@ -3834,7 +3836,7 @@ void RaceNetworkHandler::HandleGameCreateClientItem(
     "AcCmdCRGameCreateClientItem: {} {} [{}, {}, {}] [{}, {}, {}, {}]",
     command.someonesOid,
     command.unk1,
-    command.position[0], command.position[1], command.position[2],
+    command.position.x, command.position.y, command.position.z,
     command.unk3[0], command.unk3[1], command.unk3[2], command.unk3[3]);
 
   if (command.unk1 != 0)

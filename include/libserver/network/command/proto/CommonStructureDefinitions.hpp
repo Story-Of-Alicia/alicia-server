@@ -764,6 +764,36 @@ struct ObjectiveProgress
     SourceStream& stream);
 };
 
+struct Vector3
+{
+  float x{};
+  float y{};
+  float z{};
+
+  Vector3 operator+(const Vector3& other) const
+  {
+    return Vector3(x + other.x, y + other.y, z + other.z);
+  }
+
+  Vector3 operator-(const Vector3& other) const
+  {
+    return Vector3(x - other.x, y - other.y, z - other.z);
+  }
+
+  float Length() const
+  {
+    return std::sqrt(x * x + y * y + z * z);
+  }
+
+  static void Write(
+    const Vector3& vector,
+    SinkStream& stream);
+
+  static void Read(
+    Vector3& vector,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif

@@ -1078,12 +1078,8 @@ void AcCmdUserRaceUpdatePos::Read(
   AcCmdUserRaceUpdatePos& command,
   SourceStream& stream)
 {
-  stream.Read(command.oid);
-
-  for (auto& element : command.member2)
-  {
-    stream.Read(element);
-  }
+  stream.Read(command.oid)
+    .Read(command.position);
 
   for (auto& element : command.member3)
   {
@@ -1216,9 +1212,7 @@ void AcCmdCRRelay::Read(
       command.snapshot.unidentifiedData.resize(8);
       payload.Read(command.snapshot.unidentifiedData.data(), 8);
 
-      payload.Read(command.snapshot.position.X)
-        .Read(command.snapshot.position.Y)
-        .Read(command.snapshot.position.Z)
+      payload.Read(command.snapshot.position)
         .Read(command.snapshot.rotation.X)
         .Read(command.snapshot.rotation.Y)
         .Read(command.snapshot.rotation.Z)
@@ -2103,12 +2097,9 @@ void AcCmdRCCreateItem::Write(
   SinkStream& stream)
 {
   stream.Write(command.itemId)
-    .Write(command.itemType);
-  
-  for (const float element : command.position)
-    stream.Write(element);
-
-  stream.Write(command.spawnStyle)
+    .Write(command.itemType)
+    .Write(command.position)
+    .Write(command.spawnStyle)
     .Write(command.spawnerId)
     .Write(command.sizeLevel);
 }
@@ -2163,12 +2154,8 @@ void AcCmdCRGameCreateClientItem::Read(
   SourceStream& stream)
 {
   stream.Read(command.someonesOid)
-    .Read(command.unk1);
-
-  for (auto& element : command.position)
-  {
-    stream.Read(element);
-  }
+    .Read(command.unk1)
+    .Read(command.position);
 
   for (auto& element : command.unk3)
   {
