@@ -3978,25 +3978,12 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
     .boostEffectMs = effectDurationMs,
   };
 
-  // Send only to the target client
-  for (const auto& [characterUid, racer] : raceInstance.tracker.GetRacers())
+  // Broadcast
+  for (const ClientId& raceClientId : raceInstance.clients)
   {
-    if (racer.oid == targetOid)
-    {
-      // Find the client ID for this character
-      for (const auto& [clientId, clientContext] : _clients)
-      {
-        if (clientContext.characterUid == characterUid)
-        {
-          _commandServer.QueueCommand<decltype(addSkillEffect)>(
-            clientId,
-            [addSkillEffect]() { return addSkillEffect; });
-          break;
-        }
-      }
-      break;
-    }
-  }
+    _commandServer.QueueCommand<decltype(addSkillEffect)>(
+      raceClientId,
+      [addSkillEffect]() { return addSkillEffect; });
 
   if (shieldBlocks)
     return EffectVerdict::Shielded;
