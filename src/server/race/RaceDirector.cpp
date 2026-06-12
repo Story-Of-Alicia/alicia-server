@@ -3984,6 +3984,7 @@ RaceDirector::EffectVerdict RaceDirector::ScheduleSkillEffect(
     _commandServer.QueueCommand<decltype(addSkillEffect)>(
       raceClientId,
       [addSkillEffect]() { return addSkillEffect; });
+  }
 
   if (shieldBlocks)
     return EffectVerdict::Shielded;
