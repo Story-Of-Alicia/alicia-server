@@ -2175,7 +2175,6 @@ void RaceDirector::HandleRaceResult(
   [[maybe_unused]] const protocol::AcCmdCRRaceResult& command)
 {
   const auto& clientContext = GetClientContext(clientId);
-  [[maybe_unused]] auto& raceInstance = GetRaceInstance(clientContext);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
@@ -2474,6 +2473,7 @@ void RaceDirector::HandleHurdleClearResult(
       starPointResponse.starPointValue = racer.starPointValue;
       break;
     }
+    case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Good:
     case protocol::AcCmdCRHurdleClearResult::HurdleClearType::DoubleJumpOrGlide:
     {
       // Not a perfect jump over the hurdle, reset the jump combo.
