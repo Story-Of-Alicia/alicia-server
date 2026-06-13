@@ -155,6 +155,9 @@ public:
   TeamInfo blueTeam{};
   TeamInfo redTeam{};
 
+  //! A flag to indicate whether all items should be spawned.
+  bool firstPassItemSpawn{true};
+
   //! An object map.
   using RacerObjectMap = std::map<data::Uid, Racer>;
   //! A deck item object map.

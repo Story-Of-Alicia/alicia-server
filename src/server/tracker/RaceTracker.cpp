@@ -170,6 +170,7 @@ void RaceTracker::Clear()
   _itemDecks.clear();
   _events.clear();
   _nextItemDeckOid = 1;
+  firstPassItemSpawn = true;
 }
 
 } // namespace server::tracker

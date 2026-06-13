@@ -517,7 +517,9 @@ void RaceInstance::TickItemSpawners()
       return;
     }
 
-    if (not isInProximity)
+    // If item is not in proximity or this is not the first pass
+    // then do not trigger item spawn
+    if (not isInProximity and not this->GetTracker().firstPassItemSpawn)
       return;
 
     const protocol::AcCmdRCCreateItem spawn{
@@ -571,7 +573,9 @@ void RaceInstance::TickItemSpawners()
     }
   });
 
-
+  // Flip first pass item spawn logic
+  if (this->GetTracker().firstPassItemSpawn)
+    this->GetTracker().firstPassItemSpawn = false;
 }
 
 void RaceInstance::TickMagicGauge()
