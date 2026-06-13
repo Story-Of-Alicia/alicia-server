@@ -112,6 +112,36 @@ struct Item
     uint32_t maxAttachment{};
   };
 
+  //! Classification from libconfig itemIndex (category/subcategory, e.g. 1/2, 2/3, 3/1)
+  struct ItemIndex
+  {
+    //! 1=character part, 2=mount part, 3=item
+    uint32_t category{};
+    //! category-dependent slot/kind
+    uint32_t subcategory{};
+  };
+
+  //! Server-side shop configuration (not in client libconfig)
+  struct ShopInfo
+  {
+    bool isPurchasable{true};
+
+    enum class MoneyType
+    {
+      Carrots = 0,
+      Cash = 1,
+    } moneyType{MoneyType::Carrots};
+
+    struct PriceRange
+    {
+      //! item count, or duration in hours for temporary items
+      uint32_t range{};
+      int32_t price{};
+    };
+
+    std::vector<PriceRange> priceRanges{};
+  };
+
   uint32_t tid{};
 
   enum class Type
@@ -125,11 +155,26 @@ struct Item
 
   std::string name;
   std::vector<std::string> description;
-  bool isPurchasable{false};
+  ItemIndex itemIndex{};
+  std::optional<ShopInfo> shopInfo{};
+
+  //! Stats and grade from the libconfig MountMultiAbility table.
+  struct MountAbility
+  {
+    uint32_t grade{};
+    uint32_t agility{};
+    //! "Ambitious" in libconfig
+    uint32_t ambition{};
+    //! "Inherent" in libconfig
+    uint32_t courage{};
+    uint32_t endurance{};
+    uint32_t rush{};
+  };
 
   std::optional<CharacterPartInfo> characterPartInfo{};
   std::optional<MountPartInfo> mountPartInfo{};
   std::optional<MountPartSetInfo> mountPartSetInfo{};
+  std::optional<MountAbility> mountAbility{};
 
   std::optional<CareParameters> careParameters{};
   std::optional<CureParameters> cureParameters{};
@@ -162,4 +207,4 @@ private:
 
 } // namespace server::registry
 
-#endif //ITEMREGISTRY_HPP
+#endif // ITEMREGISTRY_HPP
