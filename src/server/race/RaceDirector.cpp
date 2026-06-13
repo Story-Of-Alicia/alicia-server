@@ -20,9 +20,11 @@
 #include "server/race/RaceDirector.hpp"
 
 #include "server/ServerInstance.hpp"
+#include "server/system/QuestSystem.hpp"
 #include "server/system/RoomSystem.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
+#include <libserver/registry/QuestRegistry.hpp>
 
 #include <boost/container_hash/hash.hpp>
 #include <spdlog/spdlog.h>
@@ -4544,6 +4546,22 @@ void RaceDirector::HandleTeamGauge(const ClientId clientId)
   for (const auto& raceClientId : raceInstance.clients)
   {
     _commandServer.QueueCommand<decltype(spur)>(raceClientId, [spur](){ return spur; });
+  }
+}
+
+void RaceDirector::SendDailyQuestNotificationToCharacter(
+  const data::Uid characterUid,
+  const protocol::AcCmdRCUpdateDailyQuestNotify& updateNotify)
+{
+  for (const auto& [clientId, clientContext] : _clients)
+  {
+    if (clientContext.characterUid == characterUid)
+    {
+      _commandServer.QueueCommand<protocol::AcCmdRCUpdateDailyQuestNotify>(
+        clientId, [updateNotify]() { return updateNotify; });
+
+      return;
+    }
   }
 }
 

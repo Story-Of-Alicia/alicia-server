@@ -57,7 +57,7 @@ ModerationSystem::Verdict ModerationSystem::Moderate(
   for (const auto& word : _words)
   {
     // Check if any part of the input matches the word.
-    if (!std::regex_match(input, word.regex))
+    if (!std::regex_search(input, word.regex))
       continue;
 
     // Check if the word is prevented or just censored.
