@@ -146,25 +146,18 @@ void ReadShopInfo(
 
 } // anon namespace
 
-void ItemRegistry::ReadConfig(const std::filesystem::path& configPath)
+void ItemRegistry::ReadConfig(const std::filesystem::path& configDir)
 {
-  const auto root = YAML::LoadFile(configPath.string());
+  const auto itemsRoot = YAML::LoadFile((configDir / "items.yaml").string());
+  const auto packagesRoot = YAML::LoadFile((configDir / "packages.yaml").string());
 
-  const auto itemsSection = root["items"];
-  if (not itemsSection)
-    throw std::runtime_error("Missing items section");
-
-  const auto collectionSection = itemsSection["collection"];
+  const auto collectionSection = itemsRoot["collection"];
   if (not collectionSection)
-    throw std::runtime_error("Missing collection section");
+    throw std::runtime_error("Missing collection section in items.yaml");
 
-  const auto packagesSection = root["packages"];
-  if (not packagesSection)
-    throw std::runtime_error("Missing packages section");
-
-  const auto packagesCollectionSection = packagesSection["collection"];
+  const auto packagesCollectionSection = packagesRoot["collection"];
   if (not packagesCollectionSection)
-    throw std::runtime_error("Missing packages collection section");
+    throw std::runtime_error("Missing collection section in packages.yaml");
 
   _items.clear();
 
