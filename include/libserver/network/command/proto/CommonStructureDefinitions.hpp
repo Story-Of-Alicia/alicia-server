@@ -39,6 +39,17 @@ enum class Gender : uint8_t
   Girl = 0x2
 };
 
+//! Team color for team-based race modes.
+enum class TeamColor : uint32_t
+{
+  //! Important for shackles!
+  None = 0,
+  Solo = None,
+  Unknown = 1,
+  Red = 2,
+  Blue = 3
+};
+
 //! Item
 struct Item
 {
@@ -60,13 +71,19 @@ struct StoredItem
   };
 
   uint32_t uid{};
-  uint32_t val1{};
+  //! The `GoodsSQ` of the shop goods.
+  //! Only valid for purchases.
+  uint32_t goodsSq{};
   Status status{};
-  // hide sender and message.
+  //! 0 stato shop
+  //! >0 system, allow send mail
   uint32_t val3{};
   uint32_t val4{};
-  uint32_t val5{};
-  uint32_t val6{};
+  //! carrots
+  uint32_t carrots{};
+  //! The corresponding `PriceID` for the shop goods.
+  //! Only valid for purchases.
+  uint32_t priceId{};
   std::string sender;
   std::string message;
   //! [0000'00][00'0000]'[0000'0000]'[0000]'[0000'0000'0000]
@@ -281,8 +298,8 @@ struct Horse
     //! A plenitude value in a range of <0, 1200>.
     //! 910 is a little full, 1200 is full
     uint16_t plenitude{};
-    //! A dirty value in a range of <0, 600>. for all body parts.
-    //! 600 is fully dirty, 0 is clean.
+    //! A dirty value in a range of <0, 1200>. for all body parts.
+    //! 1200 is fully dirty, 0 is clean.
     uint16_t bodyDirtiness{};
     //! Referred to as `ManeTwisted` by the client.
     uint16_t maneDirtiness{};
@@ -298,7 +315,7 @@ struct Horse
     //! 1 is a little bored
     //! 11 wants to play a little
     //! 21 wants to play.
-    uint16_t boredom{};
+    uint16_t boredom{21};
 
     uint16_t bodyPolish{};
     uint16_t manePolish{};
@@ -358,7 +375,36 @@ struct Horse
   } mastery{};
 
   uint32_t val16{};
-  uint32_t val17{};
+
+  //! Bitshifted values for horse visual cleanliness
+  enum class VisualCleanlinessBitset : uint32_t
+  {
+    Default = 0,
+    //! Body
+    BodySlightlyDirty = 1 << 0,
+    BodyVeryDirty = 1 << 1,
+    BodyLightSparkles = 1 << 2,
+    BodyMediumSparkles = 1 << 3,
+    BodyHeavySparkles = 1 << 4,
+    //! Mane (has only 1 dirty texture)
+    ManeSlightlyDirty = 1 << 10,
+    ManeVeryDirty = 1 << 11,
+    ManeLightSparkles = 1 << 12,
+    ManeMediumSparkles = 1 << 13,
+    ManeHeavySparkles = 1 << 14,
+    //! Tail
+    TailSlightlyDirty = 1 << 20,
+    TailVeryDirty = 1 << 21,
+    TailLightSparkles = 1 << 22,
+    TailMediumSparkles = 1 << 23,
+    TailHeavySparkles = 1 << 24,
+    //! For testing, do not use
+    AllSlightlyDirty = BodySlightlyDirty | ManeSlightlyDirty | TailSlightlyDirty,
+    AllVeryDirty = BodyVeryDirty | ManeVeryDirty | TailVeryDirty,
+    AllLightSparkles = BodyLightSparkles | ManeLightSparkles | TailLightSparkles,
+    AllMediumSparkles = BodyMediumSparkles | ManeMediumSparkles | TailMediumSparkles,
+    AllHeavySparkles = BodyHeavySparkles | ManeHeavySparkles | TailHeavySparkles
+  } visualCleanlinessBitset{VisualCleanlinessBitset::Default};
 
   static void Write(const Horse& value, SinkStream& stream);
   static void Read(Horse& value, SourceStream& stream);
@@ -412,15 +458,15 @@ struct Pet
 //!
 struct Egg
 {
-  uint32_t uid{};
+  uint32_t uid{}; // itemUid of the egg
   uint32_t itemTid{};
-  uint32_t member3{};
+  uint32_t member3{};    // member 3 & 4 are suspected to be some kind of filetime
   uint8_t member4{};
-  uint32_t member5{};
+  uint32_t remainingHatchingTime{};
   uint32_t timeRemaining{};
-  uint32_t boost{}; //needs further investigation and possibly a rename
-  uint32_t totalHatchingTime{};
-  uint32_t member9{};
+  uint32_t boostPreviewValue{}; //needs further investigation and possibly a rename
+  uint32_t hatchingProgress{};
+  uint32_t boostCooldown{};
 
   static void Write(const Egg& value, SinkStream& stream);
   static void Read(Egg& value, SourceStream& stream);
@@ -508,11 +554,15 @@ struct RanchCharacter
 //!
 struct Quest
 {
-  uint16_t tid{};
-  uint32_t member0{};
-  uint8_t member1{};
-  uint32_t member2{};
-  uint8_t member3{};
+  uint16_t tid{}; //questid
+  uint32_t member0{};          //maybe turnInNPC? used if the quest is ready to claim
+  enum Status : uint8_t{
+    InProgress = 0,            // Quest started, objectives not yet met
+    ReadyToClaim = 1,          // Objectives met, reward can be claimed
+    Finished = 3               // Reward claimed / quest finished
+  }status{};
+  uint32_t progress{};         // used if the quest is in progress, otherwise unused
+  uint8_t member3{}; 
   uint8_t member4{};
 
   static void Write(const Quest& value, SinkStream& stream);
@@ -600,6 +650,126 @@ enum class GuildError : uint8_t {
   CannotInviteSelf = 9,
   NotAlone = 10,
   Unknown = 255
+};
+
+//! Corresponds to values in CharNameChangeUIStrings
+enum class ChangeNicknameError : uint8_t
+{
+  UnknownError = 0x1,       // CEC_UNDEFINED
+  NoOrIncorrectItem = 0x1a, // CEC_HAS_NO_RIGHT_ITEM
+  InvalidNickname = 0x1b,   // CEC_INVALID_NICKNAME
+  DuplicateNickname = 0x1c, // CEC_DUPLICATED_NICKNAME
+  NicknameCooldown = 0x1d   // CEC_NICKNAME_NOT_AVAILABE_DAY
+};
+
+struct DailyQuest
+{
+  //! Template ID of the quest.
+  uint16_t questId{};
+  //! Current progress toward the quest's successValue.
+  uint32_t progress{};
+  //! Reward type: 1 = carrots, 2 = exp.
+  uint8_t rewardType{};
+  //! Reward entry ID, references quests.rewards in quests.yaml.
+  uint8_t rewardId{};
+
+  static void Write(const DailyQuest& value, SinkStream& stream);
+  static void Read(DailyQuest& value, SourceStream& stream);
+};
+  
+enum class OpenRandomBoxError : uint8_t
+{
+  ServerError = 0,   // CR_ERROR
+  ItemNotExists = 1, // CR_NOT_EXISTS
+  UnknownError = 2,  // UnknownError
+};
+
+// HorseNameStrings
+enum class HorseNicknameUpdateError : uint8_t
+{
+  ServerError = 0, // ServerError
+  DuplicateHorseName = 1, // DUPLICATED
+  InvalidNickname = 2, // CR_INVALID_NICKNAME
+  NoHorseRenameItem = 3, // CR_ITEM_NOT_FOUND,
+  WrongItem = 4, // CR_WRONG_ITEM
+};
+
+struct ShopOrder
+{
+  //! Shop item ID (corresponds to `GoodsSQ`).
+  uint32_t goodsSq{};
+  //! Equip item immediately after the purchase.
+  bool equipImmediately{};
+  //! Selected price (corresponds to `PriceID`).
+  uint16_t priceId{};
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const ShopOrder& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    ShopOrder& command,
+    SourceStream& stream);
+};
+
+//! Represents a standard 3D vector, plus the 'w' component used for packed data.
+struct PackedVector3
+{
+  float x{};
+  float y{};
+  float z{};
+  // Assumed `w`
+  float w{};
+
+  static void Write(
+    const PackedVector3& vector,
+    SinkStream& stream);
+
+  static void Read(
+    PackedVector3& vector,
+    SourceStream& stream);
+};
+
+//! A common struct used by achievements and quests.
+struct ObjectiveProgress
+{
+  //! Indicates whether the objective is completed.
+  bool isCompleted{};
+
+  //! The progress of the objective.
+  //! This has no effect when it is marked as completed.
+  uint32_t progress{};
+  
+  //! Which tier of the achievement was completed.
+  //! Typically only used by achievement system.
+  enum AchievementTier : uint8_t
+  {
+    None = 0xFF,
+    Bronze = 0x0,
+    Silver = 0x1,
+    Gold = 0x2,
+    Platinum = 0x3
+  } achievementTier{};
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const ObjectiveProgress& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    ObjectiveProgress& command,
+    SourceStream& stream);
 };
 
 } // namespace server::protocol

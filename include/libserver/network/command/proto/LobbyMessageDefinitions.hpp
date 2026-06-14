@@ -36,8 +36,10 @@ struct AcCmdCLLogin
 {
   uint16_t constant0{0x00};
   uint16_t constant1{0x00};
+  //! Max length 48.
   std::string loginId{};
   uint32_t memberNo{0x00};
+  //! Max length 255.
   std::string authKey{};
   uint8_t val0{};
 
@@ -71,20 +73,20 @@ struct LobbyCommandLoginOK
   //! Max length 16
   std::string name{};
   //! Max length 255
-  std::string motd{};
+  std::string notice{};
   Gender gender{Gender::Unspecified};
   //! Max length 255
   std::string introduction{};
 
   //! Max 16 elements.
-  std::vector<Item> characterEquipment{};
+  std::vector<Item> equipmentItems{};
   //! Max 16 elements.
-  std::vector<Item> mountEquipment{};
+  std::vector<Item> expiredItems{};
 
   uint16_t level{};
   int32_t carrots{};
 
-  uint32_t val1{};
+  uint32_t levelProgress{};
 
   enum class Role : uint32_t
   {
@@ -173,25 +175,34 @@ struct LobbyCommandLoginOK
     std::vector<Skill> values;
   } skillRanks{};
 
-  struct Struct4
+  struct TrainingProgression
   {
-    struct Unk
+    struct MapProgressInfo
     {
-      uint16_t val0{};
-      uint8_t val1{};
-      uint8_t val2{};
+      uint16_t mapBlockId{};
+      GameMode gameMode{};
+      enum class ClearStage : uint8_t
+      {
+        None = 0,
+        Easy = 1,
+        Normal = 2,
+        Hard = 3,
+        VeryHard = 4
+      } clearStage{ClearStage::None};
     };
 
-    std::vector<Unk> values;
-  } val13{};
+    std::vector<MapProgressInfo> mapProggressInfos;
+  } trainingProgression{};
 
-  uint32_t val14{};
+  //! Time point indicating when the account was created.
+  uint32_t characterCreationDate{};
   Guild guild{};
   uint8_t val16{};
 
   // Something with rental horse
   Rent val17{};
 
+  //! Housing bonus progression counter
   uint32_t val18{};
   uint32_t val19{};
   uint32_t val20{};
@@ -350,12 +361,11 @@ struct LobbyCommandCreateNicknameNotify
     SourceStream& stream);
 };
 
-//! Serverbound create nickname ok command.
 struct AcCmdCLCreateNickname
 {
   std::string nickname{};
   Character character{};
-  uint32_t unk0{};
+  uint32_t requestedHorseTid{};
 
   static Command GetCommand()
   {
@@ -377,10 +387,15 @@ struct AcCmdCLCreateNickname
     SourceStream& stream);
 };
 
-//! Serverbound create nickname cancel command.
-struct LobbyCommandCreateNicknameCancel
+struct AcCmdCLCreateNicknameCancel
 {
-  uint8_t error{};
+  enum class Reason : uint8_t
+  {
+    ServerError = 0,
+    InvalidRequestedNotLoggedIn = 1,
+    DuplicateCharacterName = 2,
+    InvalidCharacterName = 3
+  } error{};
 
   static Command GetCommand()
   {
@@ -391,14 +406,14 @@ struct LobbyCommandCreateNicknameCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const LobbyCommandCreateNicknameCancel& command,
+    const AcCmdCLCreateNicknameCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    LobbyCommandCreateNicknameCancel& command,
+    AcCmdCLCreateNicknameCancel& command,
     SourceStream& stream);
 };
 
@@ -568,6 +583,7 @@ struct AcCmdCLEnterChannel
 //! Clientbound enter channel response.
 struct AcCmdCLEnterChannelOK
 {
+  //! -1 = disables room listing (does not send `AcCmdCLRoomList`)
   uint8_t unk0{};
   uint16_t unk1{};
 
@@ -724,7 +740,7 @@ struct LobbyCommandRoomListOK
     static void Read(Room& value, SourceStream& stream);
   };
 
-  std::vector<Room> rooms;
+  std::vector<Room> rooms{};
 
   struct
   {
@@ -853,7 +869,13 @@ struct AcCmdCLEnterRoom
 {
   uint32_t roomUid{};
   std::string password{};
-  uint32_t member3{};
+
+  enum class EnterRoomType : uint32_t
+  {
+    RoomList = 0,
+    TournamentInvite = 3, // GM window invite
+    RoomCode = 5          // Room code via the room list
+  } enterRoomType{};
 
   static Command GetCommand()
   {
@@ -924,6 +946,7 @@ struct AcCmdCLEnterRoomCancel
     CR_PRACTICE_ROOM2 = 14,
     CR_PRACTICE_ROOM_SPEEDTEAM = 15,
     CR_PRACTICE_ROOM_MAGICTEAM = 16,
+    ShowRoomPassword = 17
   } status{};
 
   static Command GetCommand()
@@ -1019,6 +1042,7 @@ struct AcCmdCLRequestQuestList
 struct AcCmdCLRequestQuestListOK
 {
   uint32_t unk0{};
+  // Max 1000 
   std::vector<Quest> quests;
 
   static Command GetCommand()
@@ -1067,19 +1091,10 @@ struct AcCmdCLRequestDailyQuestList
 
 struct AcCmdCLRequestDailyQuestListOK
 {
-  uint32_t val0{};
-  //! Size specified with uint16
-  std::vector<Quest> quests;
-
-  struct Unk
-  {
-    uint16_t val0{};
-    uint32_t val1{};
-    uint8_t val2{};
-    uint8_t val3{};
-  };
-  //! Size specified with uint16
-  std::vector<Unk> val1;
+  uint32_t characterUid{};
+  
+  std::array<Quest, 10> unk;
+  std::array<DailyQuest, 3> dailyQuests;
 
   static Command GetCommand()
   {
@@ -1159,7 +1174,8 @@ struct AcCmdCLEnterRanchOK
 //! Serverbound enter ranch command.
 struct AcCmdCLEnterRanchCancel
 {
-  uint16_t unk0;
+  // 3 - indicates that the ranch is locked.
+  uint16_t reason{};
 
   static Command GetCommand()
   {
@@ -1280,7 +1296,7 @@ struct AcCmdCLCheckWaitingSeqno
 
 struct AcCmdCLCheckWaitingSeqnoOK
 {
-  uint32_t uid{};
+  uint32_t time{};
   uint32_t position{};
 
   static Command GetCommand()
@@ -1306,7 +1322,7 @@ struct AcCmdCLCheckWaitingSeqnoOK
 //! Serverbound request special event list command.
 struct AcCmdCLRequestSpecialEventList
 {
-  uint32_t unk0;
+  uint32_t unk0{};
 
   static Command GetCommand()
   {
@@ -1387,7 +1403,8 @@ struct AcCmdCLHeartbeat
 //! Serverboud goods message
 struct AcCmdCLGoodsShopList
 {
-  std::array<uint8_t, 12> data;
+  //! Timestamp of the shop cached by the client
+  util::Clock::time_point cachedShopTimestamp{};
 
   static Command GetCommand()
   {
@@ -1412,7 +1429,8 @@ struct AcCmdCLGoodsShopList
 //! Clientbound shop goods message
 struct AcCmdCLGoodsShopListOK
 {
-  std::array<uint8_t, 12> data;
+  //! New shop timestamp
+  util::Clock::time_point shopTimestamp{};
 
   static Command GetCommand()
   {
@@ -1459,9 +1477,13 @@ struct AcCmdCLGoodsShopListCancel
 
 struct AcCmdLCGoodsShopListData
 {
-  std::array<uint8_t, 12> member1;
-  uint8_t member2;
-  uint8_t member3;
+  //! Shop timestamp.
+  util::Clock::time_point timestamp;
+  //! The index of the current chunk being sent.
+  uint8_t index;
+  //! The amount of chunks being sent.
+  uint8_t count;
+  //! Shop data, compressed using zlib.
   std::vector<std::byte> data;
 
   static Command GetCommand()
@@ -1794,7 +1816,7 @@ struct AcCmdLCPersonalInfo
     uint16_t member15{};
     uint16_t member16{};
     std::string introduction{};
-    uint32_t level{60};
+    uint32_t level{0};
     //! Level progress as dictated by LevelInfo table in libconfig
     uint32_t levelProgress{};
     std::string member20{};
@@ -2395,8 +2417,8 @@ struct AcCmdCLUpdateUserSettingsOK
 
 struct AcCmdCLEnterRoomQuick
 {
-  uint8_t member1{};
-  uint8_t member2{};
+  protocol::GameMode gameMode{};
+  protocol::TeamMode teamMode{};
 
   static Command GetCommand()
   {
@@ -2529,6 +2551,61 @@ struct AcCmdLCInviteGuildJoinOK
   //! @param stream Source stream.
   static void Read(
     AcCmdLCInviteGuildJoinOK& command,
+    SourceStream& stream);
+};
+
+//! Server-initiated, clientbound indicating to the user
+//! that an achievement has been rewarded. Can be sent
+//! to a character in ranch, waiting room or race.
+struct AcCmdLCAchievementRewardNotify
+{
+  // Empty
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCAchievementRewardNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCAchievementRewardNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCAchievementRewardNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLEnterRoomQuickSuccess
+{
+  enum class SuccessResult : uint8_t
+  {
+    QuickJoin = 1,
+    MakeRoom = 4
+  } result{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLEnterRoomQuickSuccess;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLEnterRoomQuickSuccess& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLEnterRoomQuickSuccess& command,
     SourceStream& stream);
 };
 

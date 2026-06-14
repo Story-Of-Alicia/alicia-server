@@ -28,6 +28,8 @@
 #include <vector>
 #include <optional>
 #include <unordered_set>
+#include <set>
+#include <map>
 
 namespace server
 {
@@ -124,8 +126,6 @@ using Clock = std::chrono::system_clock;
 //! User
 struct User
 {
-  //! An UID of the user.
-  dao::Field<Uid> uid{InvalidUid};
   //! A name of the user.
   dao::Field<std::string> name{};
   //! An authorization token of the user.
@@ -134,6 +134,8 @@ struct User
   dao::Field<std::vector<Uid>> infractions{};
   //! A character UID of the user.
   dao::Field<Uid> characterUid{InvalidUid};
+  //! The last time the user was seen online. 1 means currently online.
+  dao::Field<Clock::time_point> lastSeenOnline{};
 };
 
 //! Infraction
@@ -147,7 +149,7 @@ struct Infraction
   dao::Field<Uid> uid{InvalidUid};
   dao::Field<std::string> description;
   dao::Field<Punishment> punishment{Punishment::None};
-  dao::Field<Clock::duration> duration;
+  dao::Field<std::chrono::seconds> duration;
   dao::Field<Clock::time_point> createdAt;
 };
 
@@ -158,10 +160,12 @@ struct Item
   dao::Field<Uid> uid{InvalidUid};
   //! A type identifier.
   dao::Field<Tid> tid{InvalidTid};
-  //! A time point of when the item expires.
-  dao::Field<Clock::time_point> expiresAt{};
-  //! Amount of an item.
+  //! An amount of an item.
   dao::Field<uint32_t> count{};
+  //! A duration of an item.
+  dao::Field<std::chrono::seconds> duration{};
+  //! A time point of when the item was created.
+  dao::Field<Clock::time_point> createdAt{};
 };
 
 //! Pet
@@ -182,14 +186,25 @@ struct Pet
 //! Stored item
 struct StorageItem
 {
+  struct Item
+  {
+    Tid tid{InvalidTid};
+    uint32_t count{};
+    std::chrono::seconds duration{};
+  };
+
   //! A unique identifier.
   dao::Field<Uid> uid{InvalidUid};
-  dao::Field<std::vector<Uid>> items{};
   dao::Field<std::string> sender{};
   dao::Field<std::string> message{};
-  dao::Field<Clock::time_point> created{};
+  dao::Field<int32_t> carrots{};
+  dao::Field<std::vector<Item>> items{};
   dao::Field<bool> checked{false};
-  dao::Field<bool> expired{false};
+  dao::Field<Clock::time_point> createdAt{};
+  dao::Field<std::chrono::seconds> duration{};
+
+  dao::Field<uint32_t> goodsSq{};
+  dao::Field<uint32_t> priceId{};
 };
 
 //! Guild
@@ -240,8 +255,9 @@ struct Character
   dao::Field<std::string> introduction{};
 
   dao::Field<uint32_t> level{};
+  dao::Field<uint32_t> experience{};
   dao::Field<int32_t> carrots{};
-  dao::Field<uint32_t> cash{};
+  dao::Field<int32_t> cash{};
 
   enum class Role
   {
@@ -274,15 +290,31 @@ struct Character
   } appearance{};
 
   dao::Field<Uid> guildUid{InvalidUid};
+
+  struct Contacts
+  {
+    struct Group
+    {
+      Uid uid{};
+      std::string name{};
+      std::set<Uid> members{};
+      Clock::time_point createdAt{};
+    };
+
+    dao::Field<std::set<Uid>> pending{};
+    dao::Field<std::map<Uid, Group>> groups{};
+  } contacts{};
   
   dao::Field<std::vector<Uid>> gifts{};
   dao::Field<std::vector<Uid>> purchases{};
   
   dao::Field<std::vector<Uid>> inventory{};
   dao::Field<std::vector<Uid>> characterEquipment{};
-  dao::Field<std::vector<Uid>> mountEquipment{};
+  dao::Field<std::vector<Uid>> expiredEquipment{};
   
   dao::Field<std::vector<Uid>> horses{};
+  dao::Field<uint32_t> horseSlotCount{0u};
+
   dao::Field<std::vector<Uid>> pets{};
   dao::Field<Uid> mountUid{InvalidUid};
   dao::Field<Uid> petUid{InvalidUid};
@@ -310,12 +342,22 @@ struct Character
 
       Set set1{};
       Set set2{};
-      uint8_t activeSetId{0};
+      uint32_t activeSetId{0};
     };
 
     dao::Field<Sets> speed{};
     dao::Field<Sets> magic{};
   } skills{};
+
+    dao::Field<Uid> dailyQuestGroupUid{InvalidUid};
+  struct Mailbox
+  {
+    dao::Field<bool> hasNewMail{false};
+    dao::Field<std::vector<Uid>> inbox{};
+    dao::Field<std::vector<Uid>> sent{};
+  } mailbox{};
+
+  dao::Field<std::vector<Uid>> quests{};
 };
 
 struct Horse
@@ -366,40 +408,43 @@ struct Horse
 
   struct Potential
   {
-    dao::Field<uint8_t> type{0u};
-    dao::Field<uint8_t> level{0u};
-    dao::Field<uint8_t> value{0u};
+    dao::Field<uint32_t> type{0u};
+    dao::Field<uint32_t> level{0u};
+    dao::Field<uint32_t> value{0u};
   } potential{};
 
   dao::Field<uint32_t> luckState{0u};
+  dao::Field<uint32_t> fatigue{0u};
   dao::Field<uint32_t> emblemUid{0u};
   dao::Field<Clock::time_point> dateOfBirth{};
 
   struct MountCondition
   {
-    dao::Field<uint16_t> stamina{};
-    dao::Field<uint16_t> charm{};
-    dao::Field<uint16_t> friendliness{};
-    dao::Field<uint16_t> injury{};
-    dao::Field<uint16_t> plenitude{};
-    dao::Field<uint16_t> bodyDirtiness{};
-    dao::Field<uint16_t> maneDirtiness{};
-    dao::Field<uint16_t> tailDirtiness{};
-    dao::Field<uint16_t> bodyPolish{};
-    dao::Field<uint16_t> manePolish{};
-    dao::Field<uint16_t> tailPolish{};
-    dao::Field<uint16_t> attachment{};
-    dao::Field<uint16_t> boredom{};
-    dao::Field<uint16_t> stopAmendsPoint{};
+    dao::Field<uint32_t> stamina{};
+    dao::Field<uint32_t> charm{};
+    dao::Field<uint32_t> friendliness{};
+    dao::Field<uint32_t> injury{};
+    dao::Field<uint32_t> plenitude{};
+    dao::Field<uint32_t> bodyDirtiness{};
+    dao::Field<uint32_t> maneDirtiness{};
+    dao::Field<uint32_t> tailDirtiness{};
+    dao::Field<uint32_t> bodyPolish{};
+    dao::Field<uint32_t> manePolish{};
+    dao::Field<uint32_t> tailPolish{};
+    dao::Field<uint32_t> attachment{};
+    dao::Field<uint32_t> boredom{};
+    dao::Field<uint32_t> stopAmendsPoint{};
   } mountCondition{};
+
+  dao::Field<uint32_t> tendency{0u};
 
   struct MountInfo
   {
-    dao::Field<uint16_t> boostsInARow{};
-    dao::Field<uint16_t> winsSpeedSingle{};
-    dao::Field<uint16_t> winsSpeedTeam{};
-    dao::Field<uint16_t> winsMagicSingle{};
-    dao::Field<uint16_t> winsMagicTeam{};
+    dao::Field<uint32_t> boostsInARow{};
+    dao::Field<uint32_t> winsSpeedSingle{};
+    dao::Field<uint32_t> winsSpeedTeam{};
+    dao::Field<uint32_t> winsMagicSingle{};
+    dao::Field<uint32_t> winsMagicTeam{};
 
     // Store in metres, displayed in kilometres
     dao::Field<uint32_t> totalDistance{};
@@ -418,7 +463,7 @@ struct Horse
 struct Housing
 {
   dao::Field<Uid> uid{InvalidUid};
-  dao::Field<uint16_t> housingId{};
+  dao::Field<uint32_t> housingId{};
   dao::Field<Clock::time_point> expiresAt{};
   dao::Field<uint32_t> durability{};
 };
@@ -431,6 +476,78 @@ struct Egg
   dao::Field<Clock::time_point> incubatedAt{};
   dao::Field<uint32_t> incubatorSlot{};
   dao::Field<uint32_t> boostsUsed;
+};
+
+struct DailyQuestEntry
+{
+  //! Template ID of the quest.
+  uint16_t questId{};
+  //! Current progress toward the quest's successValue.
+  uint32_t progress{};
+};
+
+struct DailyQuestGroup
+{
+  dao::Field<Uid> uid{InvalidUid};
+  //! Reward entry ID shared by all 3 quests, references quests.rewards in quests.yaml.
+  dao::Field<uint8_t> rewardId{};
+  //! Reward type shared by all 3 quests: 1 = carrots, 2 = exp.
+  dao::Field<uint8_t> rewardType{};
+  //! Accumulated quest reward points. References QuestRewardPoint thresholds in quests.yaml.
+  dao::Field<uint32_t> rewardPoints{};
+  //! Whether the daily quest carrot reward has been claimed today.
+  dao::Field<bool> carrotsClaimed{false};
+  //! The 3 daily quest slots.
+  dao::Field<std::array<DailyQuestEntry, 3>> quests{};
+};
+
+struct Quest
+{
+  enum class Status : uint32_t
+  {
+    InProgress = 0,
+    ReadyToClaim = 1,
+    Completed = 3
+  };
+
+  dao::Field<Uid> uid{InvalidUid};
+  dao::Field<uint32_t> questId{};
+  dao::Field<Status> isCompleted{Status::InProgress};
+  dao::Field<uint32_t> progress{};
+};
+  
+struct Mail
+{
+  //! Mail type.
+  //! Dictates whether or not the inbox mail can be replied to, including system mails, or contains rewards.
+  enum class MailType : uint32_t
+  {
+    CanReply = 0,
+    NoReply = 1,
+    CarnivalReward = 2, //! Requests AcCmdCLRequestFestivalResult
+    BreedingReward = 3, //! Requests AcCmdCRBreedingTakeMoney
+  };
+
+  //! Flags whether the mail is a system or a character mail.
+  //! The game client uses this to filter for system mails only.
+  enum class MailOrigin : uint32_t
+  {
+    Character = 0,
+    System = 1
+  };
+
+  dao::Field<Uid> uid{InvalidUid};
+  dao::Field<Uid> from{InvalidUid};
+  dao::Field<Uid> to{InvalidUid};
+
+  dao::Field<bool> isRead{false};
+  dao::Field<bool> isDeleted{false};
+
+  dao::Field<MailType> type{};
+  dao::Field<MailOrigin> origin{};
+
+  dao::Field<Clock::time_point> createdAt{};
+  dao::Field<std::string> body{};
 };
 
 } // namespace data

@@ -22,6 +22,8 @@
 #include <spdlog/spdlog.h>
 #include <yaml-cpp/yaml.h>
 
+#include <ranges>
+
 namespace server::registry
 {
 
@@ -58,6 +60,11 @@ HorseRegistry::HorseRegistry()
     {20, Coat{.tid = 20, .faceType = 0}},
   };
 
+  for (const auto& coatTid : _coats | std::views::keys)
+  {
+    _possibleCoats.emplace_back(coatTid);
+  }
+
   _faces = {
     {1, Face{.tid = 1, .type = -1}},
     {2, Face{.tid = 2, .type = -1}},
@@ -65,6 +72,11 @@ HorseRegistry::HorseRegistry()
     {5, Face{.tid = 5, .type = -1}},
     {7, Face{.tid = 7, .type = -1}},
   };
+
+  for (const auto& faceTid : _faces | std::views::keys)
+  {
+    _possibleFaces.emplace_back(faceTid);
+  }
 
   _manes = {
     {1, Mane{.tid = 1, .colorGroup = 1}},
@@ -109,6 +121,11 @@ HorseRegistry::HorseRegistry()
     {40, Mane{.tid = 40, .colorGroup = 5}},
   };
 
+  for (const auto& maneTid : _manes | std::views::keys)
+  {
+    _possibleManes.emplace_back(maneTid);
+  }
+
   _tails = {
     {1, Tail{.tid = 1, .colorGroup = 1}},
     {2, Tail{.tid = 2, .colorGroup = 2}},
@@ -141,6 +158,11 @@ HorseRegistry::HorseRegistry()
     {29, Tail{.tid = 29, .colorGroup = 4}},
     {30, Tail{.tid = 30, .colorGroup = 5}},
   };
+
+  for (const auto& tailTid : _tails | std::views::keys)
+  {
+    _possibleTails.emplace_back(tailTid);
+  }
 }
 
 void HorseRegistry::ReadConfig()
@@ -159,40 +181,37 @@ void HorseRegistry::BuildRandomHorse(
   data::Horse::Appearance& appearance)
 {
   // Pick a random coat.
-  std::uniform_int_distribution<data::Tid> coatRandomDist(
-    1, _coats.size());
+  std::uniform_int_distribution<size_t> coatRandomDist(
+    0, _possibleCoats.size() - 1);
 
-  const Coat& coat = _coats[coatRandomDist(_randomDevice)];
-  assert(coat.tid != 0);
+  const Coat& coat = _coats[_possibleCoats[coatRandomDist(_randomDevice)]];
   parts.skinTid = coat.tid;
 
   // If the coat has a face available, pick a random face.
   if (coat.faceType != 0)
   {
-    std::uniform_int_distribution<data::Tid> faceRandomDist(
-      1, _faces.size());
+    std::uniform_int_distribution<size_t> faceRandomDist(
+      0, _possibleFaces.size() - 1);
 
-    const Face& face = _faces[faceRandomDist(_randomDevice)];
+    const Face& face = _faces[_possibleFaces[faceRandomDist(_randomDevice)]];
     parts.faceTid = face.tid;
   }
 
   {
     // Pick a random mane.
-    std::uniform_int_distribution<data::Tid> maneRandomDist(
-      1, _manes.size());
+    std::uniform_int_distribution<size_t> maneRandomDist(
+      0, _possibleManes.size() - 1);
 
-    const Mane& mane = _manes[maneRandomDist(_randomDevice)];
-    assert(mane.tid != 0);
+    const Mane& mane = _manes[_possibleManes[maneRandomDist(_randomDevice)]];
     parts.maneTid = mane.tid;
   }
 
   {
     // Pick a random tail.
-    std::uniform_int_distribution<data::Tid> tailRandomDist(
-      1, _tails.size());
+    std::uniform_int_distribution<size_t> tailRandomDist(
+      0, _possibleFaces.size() - 1);
 
-    const Tail& tail = _tails[tailRandomDist(_randomDevice)];
-    assert(tail.tid != 0);
+    const Tail& tail = _tails[_possibleFaces[tailRandomDist(_randomDevice)]];
     parts.tailTid = tail.tid;
   }
 
@@ -205,22 +224,12 @@ void HorseRegistry::BuildRandomHorse(
   appearance.bodyVolume = scale;
 }
 
-void HorseRegistry::SetHorsePotential(
-  data::Horse::Potential& potential,
-  uint8_t type,
-  uint8_t level,
-  uint8_t value)
-{
-  potential.type = type;
-  potential.level = level;
-  potential.value = value;
-}
-
 void HorseRegistry::GiveHorseRandomPotential(
   data::Horse::Potential& potential)
 {
-  uint8_t type;
+  uint32_t type;
   std::uniform_int_distribution<uint32_t> typeDist(1, 15);
+
   // Horse type cannot be 12 as it does not exist in original Alicia
   do
   {
@@ -228,11 +237,9 @@ void HorseRegistry::GiveHorseRandomPotential(
   } while (type == 12);
 
   std::uniform_int_distribution<uint32_t> randomDist(0, 255);
-  SetHorsePotential(
-    potential,
-    type,
-    randomDist(_randomDevice),
-    randomDist(_randomDevice));
+  potential.type = type;
+  potential.level = randomDist(_randomDevice);
+  potential.value = randomDist(_randomDevice);
 }
 
 } // namespace server

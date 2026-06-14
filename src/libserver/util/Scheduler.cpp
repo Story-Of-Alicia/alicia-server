@@ -47,8 +47,19 @@ void Scheduler::Tick()
     const auto& job = *_jobIterator;
     if (Clock::now() >= job.when)
     {
-      job.task();
-      _jobIterator = _jobs.erase(_jobIterator);
+      try
+      {
+        job.task();
+        _jobIterator = _jobs.erase(_jobIterator);
+      }
+      catch (const std::exception& x)
+      {
+        // Executing task for job threw an error, erase the job
+        // and move onto the next one
+        _jobIterator = _jobs.erase(_jobIterator);
+        throw std::runtime_error(std::format("{}", x.what()));
+      }
+
       break;
     }
 

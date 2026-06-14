@@ -18,14 +18,25 @@
  **/
 
 #include "libserver/network/Server.hpp"
-
 #include "libserver/util/Deferred.hpp"
 
+#include <cassert>
 #include <ranges>
 #include <spdlog/spdlog.h>
+#include <stacktrace>
 
 namespace server::network
 {
+
+namespace
+{
+
+constexpr std::size_t MaxConnectionsPerAddress = 3;
+constexpr std::size_t MaxTotalConnections = 1024;
+constexpr std::size_t MaxConnectRatePerAddress = 10;
+constexpr auto RateWindow = std::chrono::seconds(30);
+
+} // namespace
 
 Client::Client(
   ClientId clientId,
@@ -35,6 +46,7 @@ Client::Client(
   , _socket(std::move(socket))
   , _networkEventHandler(networkEventHandler)
 {
+  _remoteAddress = _socket.remote_endpoint().address().to_v4();
 }
 
 void Client::Begin()
@@ -60,9 +72,9 @@ void Client::End()
       _socket.close();
     }
   }
-  catch (const std::exception& x)
+  catch (const std::exception&)
   {
-    spdlog::error("Exception ending client: {}", x.what());
+    // Ignore
   }
 
   _networkEventHandler.OnClientDisconnected(_clientId);
@@ -79,6 +91,11 @@ void Client::QueueWrite(WriteSupplier writeSupplier)
   }
 
   WriteLoop();
+}
+
+asio::ip::address_v4 Client::GetAddress() const noexcept
+{
+  return _remoteAddress;
 }
 
 void Client::WriteLoop() noexcept
@@ -101,14 +118,26 @@ void Client::WriteLoop() noexcept
   // Write the suppliers to the write buffer.
   while (not _writeQueue.empty())
   {
-    const auto& supplier = _writeQueue.front();
-    supplier(_writeBuffer);
-    _writeQueue.pop();
+    try
+    {
+      const auto& supplier = _writeQueue.front();
+      supplier(_writeBuffer);
+      _writeQueue.pop();
+    }
+    catch (const std::exception& e)
+    {
+      spdlog::error("Unhandled exception in supplier of write data for client {}: {}",
+        _clientId,
+        e.what());
+      End();
+      return;
+    }
   }
 
   _isSending.store(true, std::memory_order::release);
 
   // Asynchronously write the data to the socket.
+  _writeProfiler.Start();
   _socket.async_write_some(
     _writeBuffer.data(),
     [clientPtr = this->shared_from_this()](const boost::system::error_code& error, const std::size_t size)
@@ -137,8 +166,8 @@ void Client::WriteLoop() noexcept
       }
       catch (const std::exception& x)
       {
-        spdlog::error(
-          "Exception in the write chain of client {}: {}",
+        spdlog::debug(
+          "Client {} is disconnecting because of read loop exception: {}",
           clientPtr->_clientId,
           x.what());
 
@@ -146,6 +175,7 @@ void Client::WriteLoop() noexcept
       }
 
       clientPtr->_isSending.store(false, std::memory_order::release);
+      clientPtr->_writeProfiler.Stop();
       clientPtr->WriteLoop();
     });
 }
@@ -155,6 +185,7 @@ void Client::ReadLoop() noexcept
   if (not _shouldRun.load(std::memory_order::acquire))
     return;
 
+  _readProfiler.Start();
   _socket.async_read_some(
     _readBuffer.prepare(1024),
     [clientPtr = this->shared_from_this()](boost::system::error_code error, std::size_t size)
@@ -189,12 +220,13 @@ void Client::ReadLoop() noexcept
         clientPtr->_readBuffer.consume(consumedBytes);
 
         // Continue the read loop.
+        clientPtr->_readProfiler.Stop();
         clientPtr->ReadLoop();
       }
       catch (const std::exception& x)
       {
-        spdlog::error(
-          "Exception in the read chain of client {}: {}",
+        spdlog::debug(
+          "Client {} is disconnecting because of read loop exception: {}",
           clientPtr->_clientId,
           x.what());
 
@@ -205,6 +237,7 @@ void Client::ReadLoop() noexcept
 
 Server::Server(EventHandlerInterface& networkEventHandler) noexcept
   : _acceptor(_io_ctx)
+  , _timer(_io_ctx)
   , _networkEventHandler(networkEventHandler)
 {
 }
@@ -213,27 +246,49 @@ void Server::Begin(const asio::ip::address& address, uint16_t port)
 {
   const asio::ip::tcp::endpoint server_endpoint(address, port);
 
-  _acceptor.open(server_endpoint.protocol());
-
   try
   {
+    _acceptor.open(server_endpoint.protocol());
     _acceptor.bind(server_endpoint);
+    _acceptor.listen();
   }
   catch (const std::exception& x)
   {
-    spdlog::error(
-      "Failed to host server on {}:{}: {}",
-      address.to_string(),
-      port,
-      x.what());
+    throw std::runtime_error(
+      std::format(
+        "Exception while trying to host server on {}:{}: {}",
+        address.to_string(),
+        port,
+        x.what()));
   }
-
-  _acceptor.listen();
 
   // Run the accept loop.
   AcceptLoop();
 
-  _io_ctx.run();
+  try
+  {
+    // Run the tick loop.
+    TickLoop();
+  }
+  catch (const std::exception& x)
+  {
+    throw std::runtime_error(
+      std::format(
+        "Exception in network tick loop: {}",
+        x.what()));
+  }
+
+  try
+  {
+    _io_ctx.run();
+  }
+  catch (const std::exception& x)
+  {
+    throw std::runtime_error(
+      std::format(
+        "Exception in asio IO context: {}",
+        x.what()));
+  }
 }
 
 void Server::End()
@@ -253,6 +308,10 @@ std::shared_ptr<Client> Server::GetClient(ClientId clientId)
   return clientItr->second->shared_from_this();
 }
 
+void Server::HandleNetworkTick()
+{
+}
+
 void Server::OnClientConnected(
   ClientId clientId)
 {
@@ -262,8 +321,15 @@ void Server::OnClientConnected(
 void Server::OnClientDisconnected(
   ClientId clientId)
 {
+  const auto clientIt = _clients.find(clientId);
+  assert(clientIt != _clients.end());
+
+  const auto address = clientIt->second->GetAddress();
+  OnThrottleDisconnect(address);
+
   _networkEventHandler.OnClientDisconnected(clientId);
-  _clients.erase(clientId);
+
+  _clients.erase(clientIt);
 }
 
 size_t Server::OnClientData(
@@ -271,6 +337,57 @@ size_t Server::OnClientData(
   const std::span<const std::byte>& data)
 {
   return _networkEventHandler.OnClientData(clientId, data);
+}
+
+bool Server::IsConnectionThrottled(const asio::ip::address_v4& address) noexcept
+{
+  auto& state = _addressStates[address];
+  // If there are more active connections than allowed by `MaxConnectionsPerAddress`
+  // throttle the connection from the address.
+  if (state.activeConnections >= MaxConnectionsPerAddress)
+    return true;
+
+  const auto now = std::chrono::steady_clock::now();
+
+  // Pop the connection timestamps which are over the rate window and have expired.
+  while (not state.connectionTimestamps.empty())
+  {
+    const auto timeSinceConnection = now - state.connectionTimestamps.front();
+    if (timeSinceConnection < RateWindow)
+      break;
+
+    state.connectionTimestamps.pop_front();
+  }
+
+  // If there are more connection attempts than allowed by `MaxConnectRatePerAddress`
+  // throttle the connection from the address.
+  if (state.connectionTimestamps.size() >= MaxConnectRatePerAddress)
+    return true;
+
+  state.activeConnections++;
+  state.connectionTimestamps.push_back(now);
+
+  return false;
+}
+
+void Server::OnThrottleDisconnect(const asio::ip::address_v4& address) noexcept
+{
+  const auto it = _addressStates.find(address);
+  if (it == _addressStates.end())
+  {
+    return;
+  }
+
+  if (it->second.activeConnections > 0)
+  {
+    --it->second.activeConnections;
+  }
+
+  if (it->second.activeConnections == 0 &&
+      it->second.connectionTimestamps.empty())
+  {
+    _addressStates.erase(it);
+  }
 }
 
 void Server::AcceptLoop() noexcept
@@ -284,6 +401,29 @@ void Server::AcceptLoop() noexcept
         {
           throw std::runtime_error(
             fmt::format("Network exception 0x{}", error.value()));
+        }
+
+        asio::ip::address_v4 remoteAddress;
+        try
+        {
+          remoteAddress = client_socket.remote_endpoint().address().to_v4();
+        }
+        catch (const std::exception&)
+        {
+          // The connection was broken too early.
+          // Continue the accept loop.
+          AcceptLoop();
+          return;
+        }
+
+        if (IsConnectionThrottled(remoteAddress))
+        {
+          spdlog::warn(
+            "Connection rejected from {} (throttled)",
+            remoteAddress.to_string());
+          client_socket.close();
+          AcceptLoop();
+          return;
         }
 
         // Sequential Id.
@@ -310,6 +450,20 @@ void Server::AcceptLoop() noexcept
           "Error in the server accept loop: {}",
           x.what());
       }
+    });
+}
+
+void Server::TickLoop() noexcept
+{
+  _networkEventHandler.HandleNetworkTick();
+
+  _timer.expires_after(std::chrono::seconds(1));
+  _timer.async_wait([this](const boost::system::error_code& error)
+    {
+      if (error)
+        return;
+
+      TickLoop();
     });
 }
 

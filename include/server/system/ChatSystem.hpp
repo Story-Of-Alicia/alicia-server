@@ -68,6 +68,8 @@ public:
 
   struct ChatVerdict
   {
+    bool isMuted{false};
+    bool isPrevented{false};
     std::string message;
     std::optional<CommandVerdict> commandVerdict;
   };
@@ -86,8 +88,6 @@ public:
 private:
   void RegisterUserCommands();
   void RegisterAdminCommands();
-
-  void Broadcast(std::string message);
 
   //! A server instance.
   ServerInstance& _serverInstance;

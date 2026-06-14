@@ -20,18 +20,20 @@
 #ifndef RANCH_MESSAGE_DEFINES_HPP
 #define RANCH_MESSAGE_DEFINES_HPP
 
+#include "CommonMessageDefinitions.hpp"
 #include "CommonStructureDefinitions.hpp"
 #include "libserver/network/command/CommandProtocol.hpp"
 
 #include <array>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
 namespace server::protocol
 {
 
-struct RanchCommandHeartbeat
+struct AcCmdCRHeartbeat
 {
   static Command GetCommand()
   {
@@ -42,14 +44,14 @@ struct RanchCommandHeartbeat
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandHeartbeat& command,
+    const AcCmdCRHeartbeat& command,
     SinkStream& stream);
 
   //! Reads a command from the provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandHeartbeat& command,
+    AcCmdCRHeartbeat& command,
     SourceStream& stream);
 };
 
@@ -97,7 +99,7 @@ struct AcCmdCREnterRanchOK
   // List size as a byte. Max length 13
   std::vector<Housing> housing{};
 
-  uint8_t horseSlots{5};
+  uint8_t horseSlots{};
   uint32_t member11{};
 
   enum class Bitset : uint32_t
@@ -280,8 +282,8 @@ struct AcCmdCRRanchChatNotify
 {
   std::string author;
   std::string message;
-  uint8_t isSystem{};
-  uint8_t unknown2{};
+  bool isSystem{};
+  bool unknown2{};
 
   static Command GetCommand()
   {
@@ -880,7 +882,7 @@ struct AcCmdCRRecoverMountOK
 {
   uint32_t horseUid{};
   uint16_t stamina{};
-  uint32_t updatedCarrots{};
+  int32_t updatedCarrots{};
 
   static Command GetCommand()
   {
@@ -1117,7 +1119,7 @@ struct AcCmdCRBreedingAbandon
     SourceStream& stream);
 };
 
-struct RanchCommandBreedingAbandonOK
+struct AcCmdCRBreedingAbandonOK
 {
   static Command GetCommand()
   {
@@ -1139,7 +1141,7 @@ struct RanchCommandBreedingAbandonOK
     SourceStream& stream);
 };
 
-struct RanchCommandBreedingAbandonCancel
+struct AcCmdCRBreedingAbandonCancel
 {
   static Command GetCommand()
   {
@@ -1161,7 +1163,7 @@ struct RanchCommandBreedingAbandonCancel
     SourceStream& stream);
 };
 
-struct RanchCommandAchievementUpdateProperty
+struct AcCmdCRAchievementUpdateProperty
 {
   //! 75 - level up
   //! Table `Achievements`
@@ -1177,18 +1179,18 @@ struct RanchCommandAchievementUpdateProperty
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandAchievementUpdateProperty& command,
+    const AcCmdCRAchievementUpdateProperty& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandAchievementUpdateProperty& command,
+    AcCmdCRAchievementUpdateProperty& command,
     SourceStream& stream);
 };
 
-struct RanchCommandBreedingWishlist
+struct AcCmdCRBreedingWishlist
 {
   static Command GetCommand()
   {
@@ -1199,18 +1201,18 @@ struct RanchCommandBreedingWishlist
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandBreedingWishlist& command,
+    const AcCmdCRBreedingWishlist& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandBreedingWishlist& command,
+    AcCmdCRBreedingWishlist& command,
     SourceStream& stream);
 };
 
-struct RanchCommandBreedingWishlistOK
+struct AcCmdCRBreedingWishlistOK
 {
   struct WishlistElement
   {
@@ -1245,18 +1247,18 @@ struct RanchCommandBreedingWishlistOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandBreedingWishlistOK& command,
+    const AcCmdCRBreedingWishlistOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandBreedingWishlistOK& command,
+    AcCmdCRBreedingWishlistOK& command,
     SourceStream& stream);
 };
 
-struct RanchCommandBreedingWishlistCancel
+struct AcCmdCRBreedingWishlistCancel
 {
   static Command GetCommand()
   {
@@ -1267,14 +1269,14 @@ struct RanchCommandBreedingWishlistCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandBreedingWishlistCancel& command,
+    const AcCmdCRBreedingWishlistCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandBreedingWishlistCancel& command,
+    AcCmdCRBreedingWishlistCancel& command,
     SourceStream& stream);
 };
 
@@ -1430,11 +1432,11 @@ struct RanchCommandUpdateBusyStateNotify
 };
 
 //! Serverbound get messenger info command.
-struct RanchCommandUpdateMountNickname
+struct AcCmdCRUpdateMountNickname
 {
   uint32_t horseUid{};
   std::string name{};
-  uint32_t unk1{};
+  uint32_t itemUid{};
 
   static Command GetCommand()
   {
@@ -1445,24 +1447,24 @@ struct RanchCommandUpdateMountNickname
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandUpdateMountNickname& command,
+    const AcCmdCRUpdateMountNickname& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandUpdateMountNickname& command,
+    AcCmdCRUpdateMountNickname& command,
     SourceStream& stream);
 };
 
 //! Clientbound get messenger info response.
-struct RanchCommandUpdateMountNicknameOK
+struct AcCmdCRUpdateMountNicknameOK
 {
   uint32_t horseUid{};
   std::string nickname{};
-  uint32_t unk1{};
-  uint32_t unk2{};
+  uint32_t itemUid{};
+  uint32_t itemCount{};
 
   static Command GetCommand()
   {
@@ -1473,21 +1475,21 @@ struct RanchCommandUpdateMountNicknameOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandUpdateMountNicknameOK& command,
+    const AcCmdCRUpdateMountNicknameOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandUpdateMountNicknameOK& command,
+    AcCmdCRUpdateMountNicknameOK& command,
     SourceStream& stream);
 };
 
 //! Serverbound get messenger info command.
-struct RanchCommandUpdateMountNicknameCancel
+struct AcCmdCRUpdateMountNicknameCancel
 {
-  uint8_t unk0{};
+  HorseNicknameUpdateError error{};
 
   static Command GetCommand()
   {
@@ -1498,32 +1500,41 @@ struct RanchCommandUpdateMountNicknameCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandUpdateMountNicknameCancel& command,
+    const AcCmdCRUpdateMountNicknameCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandUpdateMountNicknameCancel& command,
+    AcCmdCRUpdateMountNicknameCancel& command,
     SourceStream& stream);
 };
 
 struct AcCmdRCUpdateMountInfoNotify
 {
-  enum class Action
+  // TODO: confirm these values
+  enum class Action : uint8_t
   {
+    // Takes horse name + type (type foal interacts with graze)
     Default = 0,
-    UpdateConditionAndName = 4,
-    SetMountStateAndBreedData = 5,
-    SomeItemManip0 = 9,
-    SomeItemManip1 = 10,
-    SomeItemManip2 = 12,
-    SomeItemManip3 = 13,
+    // Has gMsgSetMountInfo/RanchCare_ResetAmends//Ranch_UpdateMountName
+    // [Ranch_UpdateMountName] characterUid = 0
+    // This appears to do the horse change animation
+    MaybeRentHorseOrReturnToNature = 4,
+    // Has gMsgSetMountState/Breed_SuccessData_MountSeed
+    // [Breed_SuccessData_MountSeed] seed? = 0
+    PutHorseInRentOrBreedingSystem = 5,
+    // Takes potentialLevel and potentialValue
+    ProgressHorsePotential = 9,
+    // Just takes luck.
+    SomethingWithHorseLuck = 10,
+    UpdateInjuryState = 11,
+    SomethingWithInjuryAndLuck = 12
   };
 
-  Action action{Action::UpdateConditionAndName};
-  uint8_t member1{};
+  uint32_t characterUid{};
+  Action action{Action::Default};
   Horse horse{};
 
   static Command GetCommand()
@@ -1635,7 +1646,7 @@ struct AcCmdCRRequestStorageCancel
 
 struct AcCmdCRGetItemFromStorage
 {
-  uint32_t storedItemUid{};
+  uint32_t storageItemUid{};
 
   static Command GetCommand()
   {
@@ -1686,7 +1697,7 @@ struct AcCmdCRGetItemFromStorageOK
 
 struct AcCmdCRGetItemFromStorageCancel
 {
-  uint32_t storedItemUid{};
+  uint32_t storageItemUid{};
   uint8_t status{};
 
   static Command GetCommand()
@@ -1711,7 +1722,7 @@ struct AcCmdCRGetItemFromStorageCancel
 
 struct RanchCommandCheckStorageItem
 {
-  uint32_t storedItemUid{};
+  uint32_t storageItemUid{};
 
   //! Writes the command to a provided sink stream.
   //! @param command Command.
@@ -1829,6 +1840,8 @@ struct AcCmdCRWearEquipment
 struct AcCmdCRWearEquipmentOK
 {
   uint32_t itemUid{};
+  // When set only to 1, invokes game message `GameMsg::gMsgWearRiderGrazeMount` with itemUid and 1.
+  // Game message is seemingly never handled internally. Seemingly unused.
   uint8_t member{};
 
   static Command GetCommand()
@@ -2024,9 +2037,10 @@ struct RanchCommandCreateGuildOK
     SourceStream& stream);
 };
 
-struct RanchCommandCreateGuildCancel
+struct AcCmdCRCreateGuildCancel
 {
   //! See CDATA[ERROR_FAIL_SYSTEMERROR]
+  //! See FAIL_BADGUILDNAME
   uint8_t status{};
   uint32_t member2{};
 
@@ -2039,14 +2053,14 @@ struct RanchCommandCreateGuildCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandCreateGuildCancel& command,
+    const AcCmdCRCreateGuildCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandCreateGuildCancel& command,
+    AcCmdCRCreateGuildCancel& command,
     SourceStream& stream);
 };
 
@@ -2257,7 +2271,10 @@ struct AcCmdRCWithdrawGuildMemberNotify
 struct AcCmdCRUpdatePet
 {
   PetInfo petInfo{};
-  uint32_t itemUid; // 
+  //! Client bleeds stack instead of skipping out write
+  //! of the un-initialized value.
+  //! The optional is always present.
+  std::optional<uint32_t> itemUid{std::nullopt};
 
   static Command GetCommand()
   {
@@ -2307,7 +2324,7 @@ struct AcCmdRCUpdatePetCancel
 {
   PetInfo petInfo{};
   uint32_t member2{};
-  uint8_t member3{};
+  ChangeNicknameError error{};
 
   static Command GetCommand()
   {
@@ -2448,6 +2465,56 @@ struct RanchCommandPetBirthNotify
   //! @param stream Source stream.
   static void Read(
     RanchCommandPetBirthNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRPetBornResult
+{
+  uint32_t member1{};
+  uint32_t member2{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRPetBornResult;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRPetBornResult& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRPetBornResult& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRPetBornResultNotify
+{
+  uint32_t member1{};
+  uint32_t member2{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRPetBornResultNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRPetBornResultNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRPetBornResultNotify& command,
     SourceStream& stream);
 };
 
@@ -2686,9 +2753,6 @@ struct RanchCommandUserPetInfos
 
 struct RanchCommandUserPetInfosOK
 {
-  uint32_t member1;
-  uint16_t petCount;
-  uint16_t member3;
   std::vector<Pet> pets{};
 
   static Command GetCommand()
@@ -3068,29 +3132,6 @@ struct RanchCommandKickRanchNotify
     SourceStream& stream);
 };
 
-struct RanchCommandOpCmd
-{
-  std::string command{};
-
-  static Command GetCommand()
-  {
-    return Command::AcCmdCROpCmd;
-  }
-
-  //! Writes the command to a provided sink stream.
-  //! @param command Command.
-  //! @param stream Sink stream.
-  static void Write(
-    const RanchCommandOpCmd& command,
-    SinkStream& stream);
-
-  //! Reader a command from a provided source stream.
-  //! @param command Command.
-  //! @param stream Source stream.
-  static void Read(
-    RanchCommandOpCmd& command,
-    SourceStream& stream);
-};
 
 struct RanchCommandOpCmdOK
 {
@@ -3272,7 +3313,7 @@ struct AcCmdCRUseItemOK
   uint32_t itemUid{};
   //! Updates the client-side count of the item used for care.
   //! Setting it to 0 removes the item completely.
-  uint16_t updatedItemCount{};
+  uint16_t remainingItemCount{};
   //! Action type.
   ActionType type{};
   //! An optional reward of experience points,
@@ -3632,6 +3673,83 @@ struct AcCmdRCHideAgeNotify
   //! @param stream Source stream.
   static void Read(
     AcCmdRCHideAgeNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRChangeNickname
+{
+  uint32_t itemUid{};
+  std::string newNickname{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeNickname;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeNickname& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeNickname& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRChangeNicknameCancel
+{
+  // Likely itemUid
+  uint32_t member1{};
+  ChangeNicknameError error{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeNicknameCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeNicknameCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeNicknameCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRChangeNicknameOK
+{
+  uint32_t itemUid{};
+  uint16_t remainingItemCount{};
+  std::string newNickname{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRChangeNicknameOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRChangeNicknameOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRChangeNicknameOK& command,
     SourceStream& stream);
 };
 
@@ -4063,6 +4181,983 @@ struct AcCmdCREmblemListOK
   //! @param stream Source stream.
   static void Read(
     AcCmdCREmblemListOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUpdateDailyQuest
+{
+  DailyQuest quest{};
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdateDailyQuest;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUpdateDailyQuest& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUpdateDailyQuest& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUpdateDailyQuestOK
+{
+  int32_t newCarrotBalance;
+  DailyQuest quest{};
+  uint32_t unk_1;
+  uint32_t unk_2;
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdateDailyQuestOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUpdateDailyQuestOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUpdateDailyQuestOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUpdateDailyQuestCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdateDailyQuestCancel;
+  }
+  
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUpdateDailyQuestCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUpdateDailyQuestCancel& command,
+     SourceStream& stream);
+};
+struct AcCmdCRUpdateMountInfo
+{
+  enum class Action : uint8_t
+  {
+    ReturnToNature = 3,
+    Rename = 4
+  } action;
+  Horse horse{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdateMountInfo;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUpdateMountInfo& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUpdateMountInfo& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUpdateMountInfoOK
+{
+  AcCmdCRUpdateMountInfo::Action action{};
+  Horse horse{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdateMountInfoOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUpdateMountInfoOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUpdateMountInfoOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRegisterDailyQuestGroup
+{
+  uint16_t unk_0;
+  std::vector<DailyQuest> dailyQuests;
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRegisterDailyQuestGroup;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRegisterDailyQuestGroup& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRegisterDailyQuestGroup& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRegisterDailyQuestGroupOK
+{
+  uint8_t status;
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRegisterDailyQuestGroupOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRegisterDailyQuestGroupOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRegisterDailyQuestGroupOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestDailyQuestReward
+{
+  uint16_t questTid;
+  uint16_t rewardPoints;
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestDailyQuestReward;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestDailyQuestReward& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestDailyQuestReward& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestDailyQuestRewardOK
+{
+  struct Reward
+  {
+    std::vector<Item> items;
+
+    static void Write(const Reward& value, SinkStream& stream);
+    static void Read(Reward& value, SourceStream& stream);
+  } rewards;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestDailyQuestRewardOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestDailyQuestRewardOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestDailyQuestRewardOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCCompleteDailyQuestNotify
+{
+  uint32_t characterUid;
+  uint16_t questId;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCCompleteDailyQuestNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCCompleteDailyQuestNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCCompleteDailyQuestNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRMountInjuryHealOK
+{
+  uint32_t horseUid{};
+  uint32_t unk1{};
+  uint8_t unk2{};
+  uint32_t updatedCarrotCount{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRMountInjuryHealOK;
+  }
+  
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRMountInjuryHealOK& command,
+    SinkStream& stream);
+      
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRMountInjuryHealOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRegisterQuest
+{
+  uint16_t questId;
+  uint32_t npcId;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRegisterQuest;
+  }
+  
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRegisterQuest& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRegisterQuest& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRegisterQuestOK
+{
+  uint16_t questId;
+  uint32_t progress;
+  uint8_t isCompleted;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRegisterQuestOK;
+    }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRegisterQuestOK& command,
+     SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRegisterQuestOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestQuestReward
+{
+  uint16_t questTid; // questTid
+  uint32_t npcId; // npcId
+  uint32_t questRewardId; // questrewardId
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestQuestReward;
+    }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestQuestReward& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestQuestReward& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRequestQuestRewardOK
+{
+  uint16_t questTid; //questTid
+  uint32_t carrotsRewarded; //carrots rewarded
+    
+  AcCmdCRRequestDailyQuestRewardOK::Reward rewards;//game has no limit
+
+  struct NpcDressList // gives a visual effect when receiving the reward
+  {
+    uint32_t npcId;//npc id
+    uint32_t effectId;//effect id
+
+    static void Write(const NpcDressList& value, SinkStream& stream);
+    static void Read(NpcDressList& value, SourceStream& stream);
+  };
+
+  std::array<NpcDressList, 5> npcEffects;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRequestQuestRewardOK;
+    }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRequestQuestRewardOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRequestQuestRewardOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRGiveupQuest
+{
+  uint16_t questId;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRGiveupQuest;
+  }
+  
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRGiveupQuest& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRGiveupQuest& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRGiveupQuestCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRGiveupQuestCancel;
+  }
+  
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRGiveupQuestCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRGiveupQuestCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRGiveupQuestOK
+{
+    uint16_t questId;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRGiveupQuestOK;
+  }
+  
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRGiveupQuestOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRGiveupQuestOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRConfirmItem
+{
+  std::string recipientCharacterName;
+  uint32_t goodsSq;
+  uint8_t member3;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRConfirmItem;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRConfirmItem& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRConfirmItem& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRConfirmItemOK
+{
+  std::string recipientCharacterName;
+  uint32_t goodsSq;
+  bool canPurchase;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRConfirmItemOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRConfirmItemOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRConfirmItemOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRConfirmItemCancel
+{
+  // Has `ShopHandlerStrings` -> `NotExistUser` hardcoded, is not affected by response values.
+
+  std::string member1;
+  uint32_t member2;
+  uint8_t member3;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRConfirmItemCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRConfirmItemCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRConfirmItemCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRConfirmSetItem
+{
+  uint32_t goodsSq{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRConfirmSetItem;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRConfirmSetItem& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRConfirmSetItem& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRConfirmSetItemOK
+{
+  // TODO: suspected values
+  uint32_t goodsSq{};
+  enum Result : uint8_t
+  {
+    Unowned = 0,
+    Owned = 1
+  } result{Result::Unowned};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRConfirmSetItemOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRConfirmSetItemOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRConfirmSetItemOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRConfirmSetItemCancel
+{
+  //! Verified unused, handler always uses table "ShopHandlerStrings" entry "UnknownError"
+  uint32_t unk0{};
+  //! Verified unused, handler always uses table "ShopHandlerStrings" entry "UnknownError"
+  uint8_t unk1{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRConfirmSetItemCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRConfirmSetItemCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRConfirmSetItemCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBuyOwnItem
+{
+  //! Max 32 (0x20) items.
+  std::vector<ShopOrder> orders{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBuyOwnItem;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBuyOwnItem& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBuyOwnItem& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBuyOwnItemCancel
+{
+  //! Values as used in the `ShopHandlerStrings` table in libconfig.
+  enum class Error : uint8_t
+  {
+    //! `CR_ERROR`
+    GeneralError = 0,
+    //! `CR_OUT_OF_MONEY`
+    OutOfMoney = 1,
+    //! `CR_NOT_AVAILABLE`
+    NotAvailable = 2,
+    //! `CR_OUT_OF_STOCK`
+    OutOfStock = 3,
+    //! `CR_OUT_OF_TIME`
+    OutOfTime = 4,
+    //! `CR_DUP_CHAR_BUY`
+    DupCharBuy = 5,
+    //! `CR_TOO_MANY_OWNS`
+    TooManyOwns = 6,
+    //! `CR_SHOP_BUY_UNAVAILABLE`
+    ShopBuyUnavailable = 7
+  } error{Error::GeneralError};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBuyOwnItemCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBuyOwnItemCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBuyOwnItemCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBuyOwnItemOK
+{
+  struct OrderResult
+  {
+    ShopOrder order{};
+
+    //! Corresponds to `ShopHandlerStrings`
+    enum class Result : uint8_t
+    {
+      Success = 0,
+      //! `UnknownError`
+      UnknownError = 1,
+      //! `CEC_OUT_OF_MONEY`
+      OutOfMoney = 0xC,
+      //! `CEC_NOT_AVAILABLE`
+      NotAvailable = 0xD,
+      //! `CEC_OUT_OF_STOCK`
+      OutOfStock = 0xE,
+      //! `CEC_OUT_OF_TIME`
+      OutOfTime = 0xF,
+      //! `CEC_DUPLICATED_CHAR`
+      DuplicatedChar = 0x11,
+      //! `CEC_NO_MORE_MOUNT`
+      NoMoreMount = 0x13,
+    } result{Result::Success};
+  };
+
+  struct Purchase
+  {
+    //! Indicates whether the character should equip this item
+    //! immediately after the purchase.
+    bool equipImmediately{false};
+    //! Purchased item.
+    Item item{};
+  };
+
+  // Max 32 (0x20)
+  std::vector<OrderResult> orderResults{};
+
+  //! Successful purchases by the character.
+  //! Max 250 (0xfa) items.
+  std::vector<Purchase> purchases{};
+
+  uint32_t newCarrots{};
+  uint32_t newCash{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBuyOwnItemOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBuyOwnItemOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBuyOwnItemOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRSendGift
+{
+  std::string recipientCharacterName{};
+  std::string message{};
+  ShopOrder order{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRSendGift;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRSendGift& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRSendGift& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRSendGiftCancel
+{
+  // Cancel is hardcoded to `ShopHandlerStrings` -> `GiftFail`.
+  uint8_t unused{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRSendGiftCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRSendGiftCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRSendGiftCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRSendGiftOK
+{
+  struct GiftOrderResult
+  {
+    ShopOrder order{};
+    bool error{true};
+  } giftOrderResult{};
+  int32_t carrots{};
+  uint32_t cash{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRSendGiftOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRSendGiftOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRSendGiftOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRPasswordAuth
+{
+  uint16_t unk1{};
+  uint32_t unk2{};
+  std::string unk3{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRPasswordAuth;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRPasswordAuth& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRPasswordAuth& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRPasswordAuthOK
+{
+  enum class Action : uint16_t
+  {
+    Request2FA = 1,
+    Register2FA = 2,
+    Authenticated = 3,
+    Reset2FA = 7
+  } action;
+  //! Duration of the authorization validity window in minutes.
+  uint32_t duration{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRPasswordAuthOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRPasswordAuthOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRPasswordAuthOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCROpenRandomBox
+{
+  uint32_t itemUid{};
+  uint32_t unk1{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCROpenRandomBox;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCROpenRandomBox& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCROpenRandomBox& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCROpenRandomBoxOK
+{
+  uint32_t unk0{};
+  uint32_t unk1{};
+  //! If package ID is invalid (set to `0`) the reward is carrots.
+  uint32_t packageId{};
+  uint32_t carrotsObtained{};
+  uint32_t newBalance{};
+  std::vector<Item> items;
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCROpenRandomBoxOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCROpenRandomBoxOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCROpenRandomBoxOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCROpenRandomBoxCancel
+{
+  // Likely itemUid
+  uint32_t member1{};
+  OpenRandomBoxError error{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCROpenRandomBoxCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCROpenRandomBoxCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCROpenRandomBoxCancel& command,
     SourceStream& stream);
 };
 

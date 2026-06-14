@@ -75,6 +75,7 @@ public:
   {
   public:
     virtual ~EventHandlerInterface() = default;
+    virtual void HandleNetworkTick() {}
     virtual void HandleClientConnected(ClientId clientId) = 0;
     virtual void HandleClientDisconnected(ClientId clientId) = 0;
   };
@@ -92,6 +93,7 @@ public:
   //! Ends the server.
   void EndHost();
 
+  asio::ip::address_v4 GetClientAddress(ClientId);
   void DisconnectClient(ClientId clientId);
 
   //! Registers a command handler.
@@ -132,6 +134,7 @@ private:
   public:
     NetworkEventHandler(CommandServer& commandServer);
 
+    void HandleNetworkTick() override;
     void OnClientConnected(network::ClientId clientId) override;
     void OnClientDisconnected(network::ClientId clientId) override;
     size_t OnClientData(network::ClientId clientId, const std::span<const std::byte>& data) override;

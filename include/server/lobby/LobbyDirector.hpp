@@ -22,11 +22,15 @@
 
 #include "server/Config.hpp"
 
+#include "server/system/MatchmakingSystem.hpp"
+#include "server/lobby/shop/Shop.hpp"
+
 #include <libserver/data/DataDefinitions.hpp>
+#include <libserver/network/NetworkDefinitions.hpp>
 #include <libserver/util/Scheduler.hpp>
 
 #include <unordered_map>
-#include <queue>
+#include <list>
 
 namespace server
 {
@@ -47,8 +51,8 @@ public:
     data::Uid characterUid{data::InvalidUid};
     data::Uid roomUid{data::InvalidUid};
 
-    //! Only until the messenger is not implemented.
-    [[deprecated]] data::Uid visitPreference{data::InvalidUid};
+    //! Track the user's visit preference for the visit command.
+    data::Uid visitPreference{data::InvalidUid};
   };
 
   struct GuildInstance
@@ -78,16 +82,26 @@ public:
   //! Tick the director.
   void Tick();
 
-  void QueueUserLogin(
+  bool QueueClientConnect(
+    network::ClientId clientId);
+  size_t QueueClientLogin(
+    network::ClientId clientId,
     const std::string& userName,
     const std::string& userToken);
-  void QueueCharacterCreated(
-    const std::string& userName);
-  size_t GetUserQueuePosition(
+  size_t GetClientQueuePosition(
+      network::ClientId clientId);
+
+  void QueueClientDisconnect(
+    network::ClientId clientId);
+  void QueueClientLogout(
+    network::ClientId clientId,
     const std::string& userName);
 
-  void QueueUserLogout(
-    const std::string& userName);
+  bool IsUserOnline(const std::string& userName);
+  UserInstance& GetUser(const std::string& userName);
+  const UserInstance& GetUserByCharacterUid(data::Uid characterUid);
+
+  void SetUserRoom(const std::string& userName, data::Uid roomUid);
 
   void SetCharacterForcedIntoCreator(
     data::Uid characterUid,
@@ -100,8 +114,7 @@ public:
     data::Uid guildUid,
     data::Uid inviterCharacterUid);
 
-  // prototype function
-  [[deprecated]] void SetCharacterVisitPreference(
+  void SetCharacterVisitPreference(
     data::Uid characterUid,
     data::Uid rancherUid);
 
@@ -114,9 +127,19 @@ public:
     data::Uid characterUid,
     const std::string& message);
 
+  void NotifyAchievementReward(
+    data::Uid characterUid);
+
+  void NotifyMatchmakeResult(
+    const data::Uid characterUid,
+    const MatchmakingSystem::Result& result);
+
   //! Get users
   //! @return Get users.
   [[nodiscard]] std::unordered_map<std::string, UserInstance>& GetUsers();
+  //! Get user count.
+  //! @return User count.
+  [[nodiscard]] size_t GetUserCount();
   //! Get guilds
   //! @return Get guilds.
   [[nodiscard]] std::unordered_map<data::Uid, GuildInstance>& GetGuilds();
@@ -127,6 +150,9 @@ public:
   //! Get lobby scheduler.
   //! @return Lobby scheduler.
   [[nodiscard]] Scheduler& GetScheduler();
+  //! Get shop manager.
+  //! @return Shop manager.
+  [[nodiscard]] ShopManager& GetShopManager();
   //! Get lobby network handler.
   //! @return Lobby network handler.
   [[nodiscard]] LobbyNetworkHandler& GetNetworkHandler();
@@ -134,27 +160,38 @@ public:
 private:
   struct QueuedLogin
   {
+    //! A user name.
+    std::string userName;
     //! A user token.
     std::string userToken;
+    //!
+    std::optional<bool> isAuthenticated;
+    //!
+    bool userAuthenticationRequested{false};
     //! A flag indicating whether the load of the user was requested.
     bool userLoadRequested{false};
     //! A flag indicating whether the load of the user's character was requested.
     bool userCharacterLoadRequested{false};
   };
 
-  std::unordered_map<std::string, QueuedLogin> _userLogins;
+  void ProcessLoginRequest();
+  void ProcesLoginResponse();
+
+  std::unordered_map<network::ClientId, QueuedLogin> _clientLogins;
 
   std::unordered_map<std::string, UserInstance> _userInstances;
   std::unordered_map<data::Uid, GuildInstance> _guildInstances;
   std::unordered_set<data::Uid> _charactersForcedIntoCreator;
 
-  std::queue<std::string> _loginRequestQueue;
-  std::queue<std::string> _loginResponseQueue;
+  std::list<network::ClientId> _loginRequestQueue;
+  std::list<network::ClientId> _loginResponseQueue;
 
   //! A server instance.
   ServerInstance& _serverInstance;
   //! A scheduler.
   Scheduler _scheduler;
+  //! A shop manager.
+  ShopManager _shopManager;
 
   //! A network handler.
   LobbyNetworkHandler* _networkHandler;

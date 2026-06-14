@@ -22,6 +22,7 @@
 #include <cassert>
 #include <ranges>
 #include <stdexcept>
+
 namespace server
 {
 
@@ -31,12 +32,17 @@ bool Room::Player::ToggleReady()
   return _isReady;
 }
 
+void Room::Player::SetReady(bool ready)
+{
+  _isReady = ready;
+}
+
 bool Room::Player::IsReady() const
 {
   return _isReady;
 }
 
-void Room::Player::SetTeam(Room::Player::Team team)
+void Room::Player::SetTeam(Team team)
 {
   _team = team;
 }
@@ -75,14 +81,14 @@ bool Room::AddPlayer(data::Uid characterUid)
   if (_players.size() >= _details.maxPlayerCount)
     return false;
 
-  Player player {};
+  Player player{};
   if (_details.teamMode == TeamMode::Team)
   {
       size_t redTeamCount = 0;
       size_t blueTeamCount = 0;
-      for (const auto& [_, player] : _players)
+      for (const auto& roomPlayer : _players | std::views::values)
       {
-        switch (player.GetTeam())
+        switch (roomPlayer.GetTeam())
         {
           case Player::Team::Red:
             ++redTeamCount;
@@ -177,7 +183,7 @@ void RoomSystem::CreateRoom(const std::function<void(Room&)>& consumer)
     roomUid,
     std::move(Room(roomUid)));
   assert(inserted);
-
+  
   auto& [room, roomMutex] = it->second;
   roomsLock.unlock();
 
@@ -221,6 +227,7 @@ std::vector<Room::Snapshot> RoomSystem::GetRoomsSnapshot()
 
 void RoomSystem::DeleteRoom(uint32_t uid)
 {
+  std::scoped_lock lock(_roomsLock);
   const auto it = _rooms.find(uid);
   if (it == _rooms.end())
     throw std::runtime_error("Room does not exist");

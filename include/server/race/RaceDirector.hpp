@@ -20,12 +20,17 @@
 #ifndef RACEDIRECTOR_HPP
 #define RACEDIRECTOR_HPP
 
+#include "P2dIdPool.hpp"
+
 #include "server/Config.hpp"
 
 #include "server/tracker/RaceTracker.hpp"
 
+#include "libserver/registry/MagicRegistry.hpp"
 #include "libserver/network/command/CommandServer.hpp"
+#include "libserver/network/command/proto/CommonMessageDefinitions.hpp"
 #include "libserver/network/command/proto/RaceMessageDefinitions.hpp"
+#include "libserver/network/command/proto/CommonMessageDefinitions.hpp"
 #include "libserver/util/Scheduler.hpp"
 
 #include <random>
@@ -55,16 +60,18 @@ public:
 
   bool IsRoomRacing(uint32_t uid)
   {
+    std::scoped_lock lock(_raceInstancesMutex);
     const auto roomIter = _raceInstances.find(uid);
     if (roomIter == _raceInstances.cend())
       return false;
 
-    return roomIter->second.stage == RoomInstance::Stage::Racing |
-      roomIter->second.stage == RoomInstance::Stage::Loading;
+    return roomIter->second.stage == RaceInstance::Stage::Racing ||
+      roomIter->second.stage == RaceInstance::Stage::Loading;
   }
 
-  uint32_t GetRoomPlayerCount(uint32_t uid)
+  size_t GetRoomPlayerCount(uint32_t uid)
   {
+    std::scoped_lock lock(_raceInstancesMutex);
     const auto roomIter = _raceInstances.find(uid);
     if (roomIter == _raceInstances.cend())
       return 0;
@@ -72,8 +79,30 @@ public:
     return roomIter->second.tracker.GetRacers().size();
   }
 
+  void BroadcastChangeRoomOptions(
+    const data::Uid& roomUid,
+    const protocol::AcCmdCRChangeRoomOptionsNotify notify);
+
+  void SendDailyQuestNotificationToCharacter(
+    data::Uid characterUid,
+    const protocol::AcCmdRCUpdateDailyQuestNotify& updateNotify);
+
+  //! Send a RequestUser notification to a character connected to this director.
+  void NotifyRequestUser(
+    data::Uid characterUid,
+    bool force,
+    std::string characterName,
+    uint32_t roomUid,
+    uint32_t ranchUid) noexcept;
+
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId clientId) override;
+
+  void DisconnectCharacter(data::Uid characterUid);
+
+  //! Get room count.
+  //! @return Room count.
+  [[nodiscard]] size_t GetRoomCount();
 
   ServerInstance& GetServerInstance();
   Config::Race& GetConfig();
@@ -81,11 +110,20 @@ public:
 private:
   std::random_device _randomDevice;
 
+  enum class EffectVerdict : uint8_t
+  {
+    Shielded,
+    Applied,
+    Duplicated,
+    Failed
+  };
+
   struct ClientContext
   {
     data::Uid characterUid{data::InvalidUid};
     data::Uid roomUid{data::InvalidUid};
     bool isAuthenticated = false;
+    std::string userName;
   };
 
   //! AI Rider structure for single player mode
@@ -98,7 +136,7 @@ private:
     tracker::RaceTracker::Racer::Team team;          //! 队伍
   };
 
-  struct RoomInstance
+  struct RaceInstance
   {
     //! A stage of the room.
     enum class Stage
@@ -109,6 +147,8 @@ private:
     } stage{Stage::Waiting};
     //! A time point of when the stage timeout occurs.
     std::chrono::steady_clock::time_point stageTimeoutTimePoint;
+
+    uint32_t roomUid{};
 
     //! A master's character UID.
     data::Uid masterUid{data::InvalidUid};
@@ -124,6 +164,8 @@ private:
     //! A mission ID of the race.
     uint16_t raceMissionId{};
 
+    //! Represents when a room started loading.
+    std::chrono::steady_clock::time_point loadingStartTimePoint;
     //! A time point of when the race is actually started (a countdown is finished).
     std::chrono::steady_clock::time_point raceStartTimePoint;
     //! A room clients.
@@ -133,9 +175,34 @@ private:
     std::vector<AIRider> aiRiders;
   };
 
+  race::P2dId GetOrCreateP2dId(ClientId clientId);
+
   ClientContext& GetClientContext(ClientId clientId, bool requireAuthorized = true);
   ClientId GetClientIdByCharacterUid(data::Uid characterUid);
   ClientContext& GetClientContextByCharacterUid(data::Uid characterUid);
+  RaceInstance& GetRaceInstance(
+    const RaceDirector::ClientContext& clientContext,
+    const bool checkRacer = true);
+
+  EffectVerdict ScheduleSkillEffect(
+    server::RaceDirector::RaceInstance& raceInstance,
+    server::tracker::Oid attackerId, server::tracker::Oid targetId,
+    const server::registry::Magic::SlotInfo& magicSlotInfo,
+    const uint16_t effectInstanceId = 0);
+
+  //! Computes an effect's effective duration in milliseconds, applying any
+  //! caster-stat duration bonus and any target-stat duration reduction from
+  //! the spell's stat scaling (see magic.yaml statScalings).
+  uint32_t ComputeEffectDurationMs(
+    const server::registry::Magic::SlotInfo& magicSlotInfo,
+    server::tracker::Oid attackerOid,
+    const server::tracker::RaceTracker::Racer& targetRacer,
+    const server::tracker::RaceTracker::RacerObjectMap& racers) const;
+
+  void RemoveEffect(
+    server::RaceDirector::RaceInstance& raceInstance,
+    server::tracker::RaceTracker::Racer& racer,
+    uint32_t effectId);
 
   void HandleEnterRoom(
     ClientId clientId,
@@ -159,6 +226,10 @@ private:
   void HandleStartRace(
     ClientId clientId,
     const protocol::AcCmdCRStartRace& command);
+
+  void SendStartRaceCancel(
+    ClientId clientId,
+    protocol::AcCmdCRStartRaceCancel::Reason reason);
 
   void HandleRaceTimer(
     ClientId clientId,
@@ -232,6 +303,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdUserRaceActivateEvent& command);
 
+  void HandleUserRaceDeactivateEvent(
+    ClientId clientId,
+    const protocol::AcCmdUserRaceDeactivateEvent& command);
+
   void HandleRequestMagicItem(
     ClientId clientId,
     const protocol::AcCmdCRRequestMagicItem& command);
@@ -262,28 +337,48 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRStartMagicTarget& command);
 
-  void HandleChangeMagicTargetNotify(
+  void HandleChangeMagicTarget(
     ClientId clientId,
-    const protocol::AcCmdCRChangeMagicTargetNotify& command);
-
-  void HandleChangeMagicTargetOK(
-    ClientId clientId,
-    const protocol::AcCmdCRChangeMagicTargetOK& command);
-
-  void HandleChangeMagicTargetCancel(
-    ClientId clientId,
-    const protocol::AcCmdCRChangeMagicTargetCancel& command);
+    const protocol::AcCmdCRChangeMagicTarget& command);
 
   void HandleChangeSkillCardPresetId(
     ClientId clientId,
     const protocol::AcCmdCRChangeSkillCardPresetID& command);
 
   // Note: HandleActivateSkillEffect commented out due to build issues
-  // void HandleActivateSkillEffect(
-  //   ClientId clientId,
-  //   const protocol::AcCmdCRActivateSkillEffect& command);
+  void HandleActivateSkillEffect(
+    ClientId clientId,
+    const protocol::AcCmdCRActivateSkillEffect& command);
 
-  void PrepareItemSpawners(data::Uid roomUid);
+  void HandleOpCmd(
+    ClientId clientId,
+    const protocol::AcCmdCROpCmd& command);
+
+  //! Race clients can invite characters from ranch or other race rooms.
+  void HandleInviteUser(
+    ClientId clientId,
+    const protocol::AcCmdCRInviteUser& command);
+
+  void HandleRequestUser(
+    ClientId clientId,
+    const protocol::AcCmdCRRequestUser& command);
+
+  void HandleKickUser(
+    ClientId clientId,
+    const protocol::AcCmdCRKick& command);
+
+  //! Handles the team gauges in team races only.
+  void HandleTeamGauge(const ClientId clientId);
+
+  void HandleTriggerizeAct(
+    ClientId clientId,
+    const protocol::AcCmdCRTriggerizeAct& command);
+
+  void HandleGameCreateClientItem(
+    ClientId clientId,
+    const protocol::AcCmdCRGameCreateClientItem& command);
+
+  void PrepareItemSpawners(RaceInstance& raceInstance);
 
   //!
   std::thread test;
@@ -297,8 +392,14 @@ private:
   CommandServer _commandServer;
   //! A map of all client contexts.
   std::unordered_map<ClientId, ClientContext> _clients;
-  //! A map of all room instances.
-  std::unordered_map<uint32_t, RoomInstance> _raceInstances;
+  //! A map of all p2ds for UDP relay.
+  std::unordered_map<ClientId, race::P2dId> _p2dIds;
+  //! A pool for active race clients with P2dIds.
+  race::P2dIdPool _p2dIdPool;
+
+  std::mutex _raceInstancesMutex;
+  //! A map of all race instanced indexed by room UIDs.
+  std::unordered_map<uint32_t, RaceInstance> _raceInstances;
 };
 
 } // namespace server

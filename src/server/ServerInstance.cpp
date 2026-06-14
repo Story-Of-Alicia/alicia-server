@@ -1,22 +1,60 @@
-//
-// Created by rgnter on 14/06/2025.
-//
+/**
+ * Alicia Server - dedicated server software
+ * Copyright (C) 2024 Story Of Alicia
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ **/
 
 #include "server/ServerInstance.hpp"
+
+#include "server/system/QuestSystem.hpp"
+
+#include <stacktrace>
 
 namespace server
 {
 
+namespace
+{
+void DumpStackTrace()
+{
+  for (const auto& entry : std::stacktrace::current())
+  {
+    spdlog::error("[Stack] {}({}): {}", entry.source_file(), entry.source_line(), entry.description());
+  }
+}
+
+} // anon namespace
+
 ServerInstance::ServerInstance(
   const std::filesystem::path& resourceDirectory)
   : _resourceDirectory(resourceDirectory)
+  , _authenticationService(*this)
   , _dataDirector(resourceDirectory / "data")
   , _lobbyDirector(*this)
   , _messengerDirector(*this)
+  , _allChatDirector(*this)
+  , _privateChatDirector(*this)
   , _ranchDirector(*this)
   , _raceDirector(*this)
   , _chatSystem(*this)
   , _infractionSystem(*this)
+  , _itemSystem(*this)
+  , _matchmakingSystem(*this)
+  , _questSystem(*this)
+  , _telemetry(*this)
 {
 }
 
@@ -34,9 +72,12 @@ ServerInstance::~ServerInstance()
 
   waitForThread("race director", _raceDirectorThread);
   waitForThread("ranch director", _ranchDirectorThread);
+  waitForThread("private chat director", _privateChatDirectorThread);
+  waitForThread("all chat director", _allChatDirectorThread);
   waitForThread("messenger director", _messengerThread);
   waitForThread("lobby director", _lobbyDirectorThread);
   waitForThread("data director", _dataDirectorThread);
+  waitForThread("authentication", _authenticationThread);
 }
 
 void ServerInstance::Initialize()
@@ -48,57 +89,206 @@ void ServerInstance::Initialize()
 
   // Read configurations
 
+  _characterRegistry.ReadConfig(_resourceDirectory / "config/game/character.yaml");
   _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
   _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items.yaml");
+  _magicRegistry.ReadConfig(_resourceDirectory / "config/game/magic.yaml");
   _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
+  _questRegistry.ReadConfig(_resourceDirectory / "config/game/quests.yaml");
+
+  _moderationSystem.ReadConfig(_resourceDirectory / "config/server/automod.yaml");
+  _systemContentRegistry.ReadConfig(_resourceDirectory / "config/server/system_content.yaml");
 
   // Initialize the directors and tick them on their own threads.
   // Directors will terminate their tick loop once `_shouldRun` flag is set to false.
 
+  // Authentication service
+  _authenticationThread = std::thread([this]()
+  {
+    try
+    {
+      _authenticationService.Initialize();
+      RunDirectorTaskLoop(_authenticationService);
+      _authenticationService.Terminate();
+    }
+    catch (const std::exception& x)
+    {
+      spdlog::error("Unhandled exception in the authentication: {}", x.what());
+      DumpStackTrace();
+
+      _shouldRun = false;
+    }
+  });
+
   // Data director
   _dataDirectorThread = std::thread([this]()
   {
-    _dataDirector.Initialize();
-    RunDirectorTaskLoop(_dataDirector);
-    _dataDirector.Terminate();
+    try
+    {
+      _dataDirector.Initialize();
+      RunDirectorTaskLoop(_dataDirector);
+      _dataDirector.Terminate();
+    }
+    catch (const std::exception& x)
+    {
+      spdlog::error("Unhandled exception in the data director: {}", x.what());
+      DumpStackTrace();
+
+      _shouldRun = false;
+    }
   });
 
   // Lobby director
   _lobbyDirectorThread = std::thread([this]()
   {
-    _lobbyDirector.Initialize();
-    RunDirectorTaskLoop(_lobbyDirector);
-    _lobbyDirector.Terminate();
+    try
+    {
+      _lobbyDirector.Initialize();
+      RunDirectorTaskLoop(_lobbyDirector);
+      _lobbyDirector.Terminate();
+    }
+    catch (const std::exception& x)
+    {
+      spdlog::error("Unhandled exception in the lobby director: {}", x.what());
+      DumpStackTrace();
+
+      _shouldRun = false;
+    }
   });
 
   // Messenger director
-  _messengerThread = std::thread([this]()
+  if (_config.messenger.enabled)
   {
-    _messengerDirector.Initialize();
-    RunDirectorTaskLoop(_messengerDirector);
-    _messengerDirector.Terminate();
-  });
+    _messengerThread = std::thread([this]()
+    {
+      try
+      {
+        _messengerDirector.Initialize();
+        RunDirectorTaskLoop(_messengerDirector);
+        _messengerDirector.Terminate();
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error("Unhandled exception in the messenger director: {}", x.what());
+        DumpStackTrace();
+
+        _shouldRun = false;
+      }
+    });
+
+    // All chat director
+    if (_config.allChat.enabled) // All chat depends on messenger
+    {
+      _allChatDirectorThread = std::thread([this]()
+      {
+        try
+        {
+          _allChatDirector.Initialize();
+          RunDirectorTaskLoop(_allChatDirector);
+          _allChatDirector.Terminate();
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error("Unhandled exception in the messenger (all chat) director: {}", x.what());
+          DumpStackTrace();
+
+          _shouldRun = false;
+        }
+      });
+    }
+
+    // Private chat director
+    if (_config.privateChat.enabled) // Private chat depends on messenger
+    {
+      _privateChatDirectorThread = std::thread([this]()
+      {
+        try
+        {
+          _privateChatDirector.Initialize();
+          RunDirectorTaskLoop(_privateChatDirector);
+          _privateChatDirector.Terminate();
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error("Unhandled exception in the messenger (private chat) director: {}", x.what());
+          DumpStackTrace();
+
+          _shouldRun = false;
+        }
+      });
+    }
+  }
 
   // Ranch director
   _ranchDirectorThread = std::thread([this]()
   {
-    _ranchDirector.Initialize();
-    RunDirectorTaskLoop(_ranchDirector);
-    _ranchDirector.Terminate();
+    try
+    {
+      _ranchDirector.Initialize();
+      RunDirectorTaskLoop(_ranchDirector);
+      _ranchDirector.Terminate();
+    }
+    catch (const std::exception& x)
+    {
+      spdlog::error("Unhandled exception in the ranch director: {}", x.what());
+      DumpStackTrace();
+
+      _shouldRun = false;
+    }
   });
 
   // Race director
   _raceDirectorThread = std::thread([this]()
   {
-    _raceDirector.Initialize();
-    RunDirectorTaskLoop(_raceDirector);
-    _raceDirector.Terminate();
+    try
+    {
+      _raceDirector.Initialize();
+      RunDirectorTaskLoop(_raceDirector);
+      _raceDirector.Terminate();
+    }
+    catch (const std::exception& x)
+    {
+      spdlog::error("Unhandled exception in the race director: {}", x.what());
+      DumpStackTrace();
+
+      _shouldRun = false;
+    }
   });
+
+  // Telemetry.
+  if (GetSettings().telemetry.enabled)
+  {
+    _telemetryThread = std::thread([this]()
+    {
+      try
+      {
+        _telemetry.Initialize();
+        RunDirectorTaskLoop(_telemetry);
+        _telemetry.Terminate();
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error("Unhandled exception in telemetry: {}", x.what());
+        DumpStackTrace();
+
+        _shouldRun = false;
+      }
+    });
+  }
+  else
+  {
+    spdlog::info("Metric collection is disabled");
+  }
 }
 
 void ServerInstance::Terminate()
 {
   _shouldRun.store(false, std::memory_order::relaxed);
+}
+
+AuthenticationService& ServerInstance::GetAuthenticationService()
+{
+  return _authenticationService;
 }
 
 DataDirector& ServerInstance::GetDataDirector()
@@ -121,6 +311,26 @@ RaceDirector& ServerInstance::GetRaceDirector()
   return _raceDirector;
 }
 
+MessengerDirector& ServerInstance::GetMessengerDirector()
+{
+  return _messengerDirector;
+}
+
+AllChatDirector& ServerInstance::GetAllChatDirector()
+{
+  return _allChatDirector;
+}
+
+PrivateChatDirector& ServerInstance::GetPrivateChatDirector()
+{
+  return _privateChatDirector;
+}
+
+registry::CharacterRegistry& ServerInstance::GetCharacterRegistry()
+{
+  return _characterRegistry;
+}
+
 registry::CourseRegistry& ServerInstance::GetCourseRegistry()
 {
   return _courseRegistry;
@@ -141,6 +351,21 @@ registry::PetRegistry& ServerInstance::GetPetRegistry()
   return _petRegistry;
 }
 
+registry::QuestRegistry& ServerInstance::GetQuestRegistry()
+{
+  return _questRegistry;
+}
+
+registry::MagicRegistry& ServerInstance::GetMagicRegistry()
+{
+  return _magicRegistry;
+}
+
+registry::SystemContentRegistry& ServerInstance::GetSystemContentRegistry()
+{
+  return _systemContentRegistry;
+}
+
 ChatSystem& ServerInstance::GetChatSystem()
 {
   return _chatSystem;
@@ -151,9 +376,34 @@ InfractionSystem& ServerInstance::GetInfractionSystem()
   return _infractionSystem;
 }
 
+ItemSystem& ServerInstance::GetItemSystem()
+{
+  return _itemSystem;
+}
+
+ModerationSystem& ServerInstance::GetModerationSystem()
+{
+  return _moderationSystem;
+}
+
 RoomSystem& ServerInstance::GetRoomSystem()
 {
   return _roomSystem;
+}
+
+MatchmakingSystem& ServerInstance::GetMatchmakingSystem()
+{
+  return _matchmakingSystem;
+}
+
+QuestSystem& ServerInstance::GetQuestSystem()
+{
+  return _questSystem;
+}
+
+Telemetry& ServerInstance::GetTelemetry()
+{
+  return _telemetry;
 }
 
 OtpSystem& ServerInstance::GetOtpSystem()

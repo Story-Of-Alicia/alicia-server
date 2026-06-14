@@ -35,8 +35,12 @@ public:
   void Initialize(const std::filesystem::path& path);
   void Terminate();
 
-  void RetrieveUser(std::string name, data::User& user) override;
-  void StoreUser(std::string name, const data::User& user) override;
+  void SaveMetadata();
+
+  void CreateUser(data::User& user) override;
+  void RetrieveUser(const std::string_view& name, data::User& user) override;
+  void StoreUser(const std::string_view& name, const data::User& user) override;
+  bool IsUserNameUnique(const std::string_view& name) override;
 
   void CreateInfraction(data::Infraction& infraction) override;
   void RetrieveInfraction(data::Uid uid, data::Infraction& infraction) override;
@@ -47,6 +51,8 @@ public:
   void RetrieveCharacter(data::Uid uid, data::Character& character) override;
   void StoreCharacter(data::Uid uid, const data::Character& character) override;
   void DeleteCharacter(data::Uid uid) override;
+  data::Uid RetrieveCharacterUidByName(const std::string_view& name) override;
+  bool IsCharacterNameUnique(const std::string_view& name) override;
 
   void CreateHorse(data::Horse& horse) override;
   void RetrieveHorse(data::Uid uid, data::Horse& horse) override;
@@ -82,11 +88,27 @@ public:
   void RetrieveGuild(data::Uid uid, data::Guild& guild) override;
   void StoreGuild(data::Uid uid, const data::Guild& guild) override;
   void DeleteGuild(data::Uid uid) override;
+  bool IsGuildNameUnique(const std::string_view& name) override;
 
   void CreateSettings(data::Settings& settings) override;
   void RetrieveSettings(data::Uid uid, data::Settings& settings) override;
   void StoreSettings(data::Uid uid, const data::Settings& settings) override;
   void DeleteSettings(data::Uid uid) override;
+
+  void CreateDailyQuestGroup(data::DailyQuestGroup& group) override;
+  void RetrieveDailyQuestGroup(data::Uid uid, data::DailyQuestGroup& group) override;
+  void StoreDailyQuestGroup(data::Uid uid, const data::DailyQuestGroup& group) override;
+  void DeleteDailyQuestGroup(data::Uid uid) override;
+
+  void CreateMail(data::Mail& mail) override;
+  void RetrieveMail(data::Uid uid, data::Mail& mail) override;
+  void StoreMail(data::Uid uid, const data::Mail& mail) override;
+  void DeleteMail(data::Uid uid) override;
+
+  void CreateQuest(data::Quest& quest) override;
+  void RetrieveQuest(data::Uid uid, data::Quest& quest) override;
+  void StoreQuest(data::Uid uid, const data::Quest& quest) override;
+  void DeleteQuest(data::Uid uid) override;
 private:
   //! A root data path.
   std::filesystem::path _dataPath;
@@ -113,6 +135,12 @@ private:
   std::filesystem::path _guildDataPath;
   //! A path to the settings data files.
   std::filesystem::path _settingsDataPath;
+  //! A path to the daily quest group data files.
+  std::filesystem::path _dailyQuestGroupDataPath;
+  //! A path to the mail data files.
+  std::filesystem::path _mailDataPath;
+  //! A path to the quest data files.
+  std::filesystem::path _questDataPath;
 
   //! A path to meta-data file.
   std::filesystem::path _metaFilePath;
@@ -136,6 +164,12 @@ private:
   std::atomic_uint32_t _guildSequentialId = 0;
   //! Sequential UID for settings.
   std::atomic_uint32_t _settingsSequentialId = 0;
+  //! Sequential UID for daily quest groups.
+  std::atomic_uint32_t _dailyQuestGroupSequentialId = 0;
+  //! Sequential UID for mail.
+  std::atomic_uint32_t _mailSequentialId = 0;
+  //! Sequential UID for quests.
+  std::atomic_uint32_t _questSequentialId = 0;
 };
 
 } // namespace server

@@ -21,9 +21,9 @@
 #define DATADIRECTOR_HPP
 
 #include "DataDefinitions.hpp"
+#include "DataSource.hpp"
 #include "DataStorage.hpp"
-// #include "pq/PqDataSource.hpp"
-#include "file/FileDataSource.hpp"
+
 #include "libserver/util/Scheduler.hpp"
 
 namespace server
@@ -43,6 +43,9 @@ public:
   using HousingStorage = DataStorage<data::Uid, data::Housing>;
   using GuildStorage = DataStorage<data::Uid, data::Guild>;
   using SettingsStorage = DataStorage<data::Uid, data::Settings>;
+  using DailyQuestGroupStorage = DataStorage<data::Uid, data::DailyQuestGroup>;
+  using MailStorage = DataStorage<data::Uid, data::Mail>;
+  using QuestStorage = DataStorage<data::Uid, data::Quest>;
 
   //! Default constructor.
   explicit DataDirector(const std::filesystem::path& basePath);
@@ -75,6 +78,7 @@ public:
   //! @param userName name of the user.
   bool AreCharacterDataLoaded(const std::string& userName);
 
+  [[nodiscard]] Record<data::User> CreateUser();
   [[nodiscard]] Record<data::User> GetUser(const std::string& userName);
   [[nodiscard]] UserStorage& GetUserCache();
 
@@ -120,9 +124,23 @@ public:
   [[nodiscard]] Record<data::Settings> CreateSettings() noexcept;
   [[nodiscard]] SettingsStorage& GetSettingsCache();
 
+  [[nodiscard]] Record<data::DailyQuestGroup> GetDailyQuestGroup(data::Uid dailyQuestGroupUid) noexcept;
+  [[nodiscard]] Record<data::DailyQuestGroup> CreateDailyQuestGroup() noexcept;
+  [[nodiscard]] DailyQuestGroupStorage& GetDailyQuestGroupCache();
+  
+  [[nodiscard]] Record<data::Mail> GetMail(data::Uid mailUid) noexcept;
+  [[nodiscard]] Record<data::Mail> CreateMail() noexcept;
+  [[nodiscard]] MailStorage& GetMailCache();
+
+  [[nodiscard]] Record<data::Quest> GetQuest(data::Uid questUid) noexcept;
+  [[nodiscard]] Record<data::Quest> CreateQuest() noexcept;
+  [[nodiscard]] QuestStorage& GetQuestCache();
+
+  [[nodiscard]] DataSource& GetDataSource() noexcept;
+
 private:
   //! An underlying data source of the data director.
-  std::unique_ptr<FileDataSource> _primaryDataSource;
+  std::unique_ptr<DataSource> _primaryDataSource;
 
   Scheduler _scheduler;
 
@@ -169,6 +187,12 @@ private:
   GuildStorage _guildStorage;
   //! A character Keybind settings storage.
   SettingsStorage _settingsStorage;
+  //! A daily quest group storage.
+  DailyQuestGroupStorage _dailyQuestGroupStorage;
+  //! A mail storage.
+  MailStorage _mailStorage;
+  //! A quest storage.
+  QuestStorage _questStorage;
 };
 
 } // namespace server

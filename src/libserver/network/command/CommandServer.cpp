@@ -23,6 +23,7 @@
 #include "libserver/util/Util.hpp"
 
 #include <ranges>
+#include <stacktrace>
 
 #include <spdlog/spdlog.h>
 
@@ -33,7 +34,7 @@ namespace
 {
 
 //! Max size of the command data.
-constexpr std::size_t MaxCommandDataSize = 4092;
+constexpr std::size_t MaxCommandDataSize = 8192;
 
 //! Max size of the whole command payload.
 //! That is command data size + size of the message magic.
@@ -77,7 +78,9 @@ bool IsMuted(protocol::Command id)
     || id == protocol::Command::AcCmdCRRelayNotify
     || id == protocol::Command::AcCmdCRRelayCommand
     || id == protocol::Command::AcCmdCRRelayCommandNotify
-    || id == protocol::Command::AcCmdUserRaceActivateEvent;
+    || id == protocol::Command::AcCmdUserRaceActivateEvent
+    || id == protocol::Command::AcCmdCRStarPointGet
+    || id == protocol::Command::AcCmdCRStarPointGetOK;
 }
 
 } // namespace
@@ -123,7 +126,21 @@ void CommandServer::BeginHost(const asio::ip::address& address, uint16_t port)
   _serverThread = std::thread(
     [this, address, port]()
     {
-      _server.Begin(address, port);
+      try
+      {
+        _server.Begin(address, port);
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error("Unhandled command server network exception: {}", x.what());
+
+        for (const auto& entry : std::stacktrace::current())
+        {
+          spdlog::error("[Stack] {}({}): {}", entry.source_file(), entry.source_line(), entry.description());
+        }
+
+        _server.End();
+      }
     });
 }
 
@@ -134,6 +151,11 @@ void CommandServer::EndHost()
 
   _server.End();
   _serverThread.join();
+}
+
+asio::ip::address_v4 CommandServer::GetClientAddress(ClientId clientId)
+{
+  return _server.GetClient(clientId)->GetAddress();
 }
 
 void CommandServer::DisconnectClient(ClientId clientId)
@@ -150,6 +172,11 @@ CommandServer::NetworkEventHandler::NetworkEventHandler(
   CommandServer& commandServer)
   : _commandServer(commandServer)
 {
+}
+
+void CommandServer::NetworkEventHandler::HandleNetworkTick()
+{
+  _commandServer._eventHandler.HandleNetworkTick();
 }
 
 void CommandServer::NetworkEventHandler::OnClientConnected(
@@ -172,6 +199,14 @@ size_t CommandServer::NetworkEventHandler::OnClientData(
 
   while (commandStream.GetCursor() != commandStream.Size())
   {
+    // The size of the buffer that was not read yet.
+    const size_t bufferedDataSize = commandStream.Size() - commandStream.GetCursor();
+
+    // Do not continue if the available data does not contain the data
+    // for the message magic.
+    if (bufferedDataSize < sizeof(protocol::MessageMagic))
+      break;
+
     // Store the origin cursor position before reading the command.
     // This is so we can return to it if the command is not completely buffered.
     const auto streamOrigin = commandStream.GetCursor();
@@ -216,12 +251,12 @@ size_t CommandServer::NetworkEventHandler::OnClientData(
 
     // Size of the data portion of the command.
     const size_t commandDataSize = static_cast<size_t>(magic.length) - sizeof(protocol::MessageMagic);
-    // The size of data that is available and was not yet read.
-    const size_t bufferedDataSize = commandStream.Size() - commandStream.GetCursor();
+    // Size of the available data.
+    const size_t availableDataSize = bufferedDataSize - sizeof(protocol::MessageMagic);
 
     // If all the required command data are not buffered,
     // wait for them to arrive.
-    if (commandDataSize > bufferedDataSize)
+    if (commandDataSize > availableDataSize)
     {
       isCommandBufferedWhole = false;
       break;
@@ -375,7 +410,7 @@ void CommandServer::SendCommand(
         supplier(commandSink);
 
         // Command size is the size of the whole command.
-        const uint16_t commandSize = commandSink.GetCursor();
+        const size_t commandSize = commandSink.GetCursor();
 
         if (debugOutgoingCommandData
           && not IsMuted(commandId))
@@ -399,7 +434,7 @@ void CommandServer::SendCommand(
         // Write the message magic.
         const protocol::MessageMagic magic{
           .id = static_cast<uint16_t>(commandId),
-          .length = commandSize};
+          .length = static_cast<uint16_t>(commandSize)};
 
         commandSink.Write(encode_message_magic(magic));
         writeBuffer.commit(magic.length);
@@ -415,7 +450,7 @@ void CommandServer::SendCommand(
         return commandSize;
       });
   }
-  catch (std::exception& x)
+  catch (std::exception&)
   {
     // the client disconnected, todo dont use client ids, or dont
   }

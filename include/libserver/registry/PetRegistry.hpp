@@ -21,6 +21,7 @@
 #define PETREGISTRY_HPP
 
 #include "libserver/data/DataDefinitions.hpp"
+#include "libserver/registry/RegistryDefinitions.hpp"
 
 #include <filesystem>
 #include <unordered_map>
@@ -31,8 +32,14 @@ namespace server::registry
 
 struct EggInfo
 {
+  //! The egg item TID (key in the registry).
+  data::Tid tid{};
   //! A deck item ID of the egg.
   data::Tid deckItemId;
+  //! A region this egg belongs to.
+  Region region{Region::Unknown};
+  //! Relative probability of obtaining this egg.
+  uint32_t obtainRatio{};
   //! A time duration it takes the egg to hatch.
   data::Clock::duration hatchDuration{0};
   //! A vector of pets that can hatch from the egg.
@@ -51,7 +58,10 @@ public:
   void ReadConfig(const std::filesystem::path& configPath);
 
   EggInfo GetEggInfo(data::Tid eggItemTid);
+  EggInfo GetEggInfoByDeckId(data::Tid deckItemId);
   PetInfo GetPetInfo(data::Tid petItemTid);
+  //! Returns all eggs belonging to a given region.
+  std::vector<EggInfo> GetEggsByRegion(Region region) const;
 
 private:
   std::unordered_map<data::Tid, EggInfo> _eggs;

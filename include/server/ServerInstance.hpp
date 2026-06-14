@@ -1,10 +1,28 @@
-//
-// Created by rgnter on 14/06/2025.
-//
+/**
+ * Alicia Server - dedicated server software
+ * Copyright (C) 2024 Story Of Alicia
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ **/
 
 #ifndef INSTANCE_HPP
 #define INSTANCE_HPP
 
+#include "authentication/AuthenticationService.hpp"
+#include "server/chat/AllChatDirector.hpp"
+#include "server/chat/PrivateChatDirector.hpp"
 #include "server/Config.hpp"
 #include "server/lobby/LobbyDirector.hpp"
 #include "server/messenger/MessengerDirector.hpp"
@@ -12,14 +30,23 @@
 #include "server/ranch/RanchDirector.hpp"
 #include "server/system/ChatSystem.hpp"
 #include "server/system/InfractionSystem.hpp"
+#include "server/system/ItemSystem.hpp"
+#include "server/system/MatchmakingSystem.hpp"
+#include "server/system/ModerationSystem.hpp"
 #include "server/system/OtpSystem.hpp"
+#include "server/system/QuestSystem.hpp"
 #include "server/system/RoomSystem.hpp"
+#include "server/telemetry/Telemetry.hpp"
 
 #include <libserver/data/DataDirector.hpp>
+#include <libserver/registry/CharacterRegistry.hpp>
 #include <libserver/registry/CourseRegistry.hpp>
 #include <libserver/registry/HorseRegistry.hpp>
 #include <libserver/registry/ItemRegistry.hpp>
+#include <libserver/registry/MagicRegistry.hpp>
 #include <libserver/registry/PetRegistry.hpp>
+#include <libserver/registry/QuestRegistry.hpp>
+#include <libserver/registry/SystemContentRegistry.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -39,6 +66,10 @@ public:
   //! Terminates the server instance.
   void Terminate();
 
+  //! Returns reference to the authentication service.
+  //! @returns Reference to the authentication service.
+  AuthenticationService& GetAuthenticationService();
+
   //! Returns reference to the data director.
   //! @returns Reference to the data director.
   DataDirector& GetDataDirector();
@@ -54,6 +85,22 @@ public:
   //! Returns reference to the race director.
   //! @returns Reference to the race director.
   RaceDirector& GetRaceDirector();
+
+  //! Returns reference to the messenger director.
+  //! @returns Reference to the messenger director.
+  MessengerDirector& GetMessengerDirector();
+
+  //! Returns reference to the all chat director.
+  //! @returns Reference to the all chat director.
+  AllChatDirector& GetAllChatDirector();
+
+  //! Returns reference to the private chat director.
+  //! @returns Reference to the private chat director.
+  PrivateChatDirector& GetPrivateChatDirector();
+
+  //! Returns reference to the Character registry.
+  //! @returns Reference to the Character registry.
+  registry::CharacterRegistry& GetCharacterRegistry();
 
   //! Returns reference to the Course registry.
   //! @returns Reference to the Course registry.
@@ -71,6 +118,18 @@ public:
   //! @returns Reference to the Pet registry.
   registry::PetRegistry& GetPetRegistry();
 
+  //! Returns reference to the Quest registry.
+  //! @returns Reference to the Quest registry.
+  registry::QuestRegistry& GetQuestRegistry();
+
+  //! Returns reference to the Magic registry.
+  //! @returns Reference to the Magic registry.
+  registry::MagicRegistry& GetMagicRegistry();
+
+  //! Returns reference to the system content registry.
+  //! @returns Reference to the system content registry.
+  registry::SystemContentRegistry& GetSystemContentRegistry();
+
   //! Returns reference to the chat system.
   //! @returns Reference to the chat system.
   ChatSystem& GetChatSystem();
@@ -79,6 +138,14 @@ public:
   //! @returns Reference to the infraction system.
   InfractionSystem& GetInfractionSystem();
 
+  //! Returns reference to the item system.
+  //! @returns Reference to the item system.
+  ItemSystem& GetItemSystem();
+
+  //! Returns reference to the moderation system.
+  //! @return Reference to the moderation system.
+  ModerationSystem& GetModerationSystem();
+
   //! Returns reference to the OTP system.
   //! @returns Reference to the OTP system.
   OtpSystem& GetOtpSystem();
@@ -86,6 +153,18 @@ public:
   //! Returns reference to the room system.
   //! @returns Reference to the room system.
   RoomSystem& GetRoomSystem();
+
+  //! Returns reference to the quest system.
+  //! @returns Reference to the quest system.
+  QuestSystem& GetQuestSystem();
+
+  //! Returns reference to the matchmaking system.
+  //! @returns Reference to the matchmaking system.
+  MatchmakingSystem& GetMatchmakingSystem();
+
+  //! Returns reference to the telemetry.
+  //! @returns Reference to the telemetry.
+  Telemetry& GetTelemetry();
 
   //! Returns reference to the settings.
   //! @returns Reference to the settings.
@@ -98,7 +177,7 @@ private:
   {
     using Clock = std::chrono::steady_clock;
 
-    constexpr float TicksPerSecond = 50;
+    constexpr uint64_t TicksPerSecond = 50;
     constexpr uint64_t millisPerTick = 1000ull / TicksPerSecond;
 
     Clock::time_point lastTick;
@@ -126,7 +205,6 @@ private:
       catch (const std::exception& x)
       {
         spdlog::error("Exception in tick loop: {}", x.what());
-        break;
       }
     }
   }
@@ -138,6 +216,11 @@ private:
   std::filesystem::path _resourceDirectory;
   //! A config.
   Config _config;
+
+  //! A thread of the authentication service.
+  std::thread _authenticationThread;
+  //! An authentication service.
+  AuthenticationService _authenticationService;
 
   //! A thread of the data director.
   std::thread _dataDirectorThread;
@@ -154,6 +237,16 @@ private:
   //! A messenger director.
   MessengerDirector _messengerDirector;
 
+  //! A thread for the all chat director.
+  std::thread _allChatDirectorThread;
+  //! An all chat director.
+  AllChatDirector _allChatDirector;
+
+  //! A thread for the private chat director.
+  std::thread _privateChatDirectorThread;
+  //! A private chat director.
+  PrivateChatDirector _privateChatDirector;
+
   //! A thread of the ranch director.
   std::thread _ranchDirectorThread;
   //! A ranch director.
@@ -164,23 +257,44 @@ private:
   //! A race director.
   RaceDirector _raceDirector;
 
+  //! A registry of character level info.
+  registry::CharacterRegistry _characterRegistry;
   //! A registry of courses.
   registry::CourseRegistry _courseRegistry;
   //! A registry of horses.
   registry::HorseRegistry _horseRegistry;
   //! A registry of items.
   registry::ItemRegistry _itemRegistry;
+  //! A registry of magic slots.
+  registry::MagicRegistry _magicRegistry;
   //! A registry of pets.
   registry::PetRegistry _petRegistry;
+  //! A registry of quests.
+  registry::QuestRegistry _questRegistry;
+  //! The system content registry.
+  registry::SystemContentRegistry _systemContentRegistry;
 
   //! A chat system.
   ChatSystem _chatSystem;
   //! An infraction system.
   InfractionSystem _infractionSystem;
+  //! An item system.
+  ItemSystem _itemSystem;
   //! An OTP system.
   OtpSystem _otpSystem;
+  //! A moderation system
+  ModerationSystem _moderationSystem;
+  //! A quest system.
+  QuestSystem _questSystem;
   //! A room system.
   RoomSystem _roomSystem;
+  //! A matchmaking system.
+  MatchmakingSystem _matchmakingSystem;
+
+  //! A thread for telemetry.
+  std::thread _telemetryThread;
+  //! Telemetry.
+  Telemetry _telemetry;
 };
 
 } // namespace server

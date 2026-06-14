@@ -5,6 +5,8 @@
 #ifndef ALICIA_SERVER_LOBBYNETWORKHANDLER_HPP
 #define ALICIA_SERVER_LOBBYNETWORKHANDLER_HPP
 
+#include "server/system/MatchmakingSystem.hpp"
+
 #include <libserver/data/DataDefinitions.hpp>
 #include <libserver/network/command/CommandServer.hpp>
 #include <libserver/network/command/proto/LobbyMessageDefinitions.hpp>
@@ -24,10 +26,10 @@ public:
   void Terminate();
 
   void AcceptLogin(
-    const std::string& userName,
+    ClientId clientId,
     bool sendToCharacterCreator = false);
   void RejectLogin(
-    const std::string& userName,
+    ClientId clientId,
     protocol::AcCmdCLLoginCancel::Reason reason);
 
   void SendCharacterGuildInvitation(
@@ -35,7 +37,7 @@ public:
     data::Uid guildUid,
     data::Uid inviterUid);
 
-  [[deprecated]] void SetCharacterVisitPreference(
+  void SetCharacterVisitPreference(
     data::Uid characterUid,
     data::Uid rancherUid);
 
@@ -48,27 +50,32 @@ public:
     data::Uid characterUid,
     const std::string& message);
 
+  void NotifyAchievementReward(
+    data::Uid characterUid);
+  void NotifyMatchmakeResult(
+    const data::Uid characterUid,
+    const MatchmakingSystem::Result& result);
+
+  [[nodiscard]] CommandServer& GetCommandServer() noexcept;
+
 private:
   struct ClientContext
   {
     //! A flag indicating whether the client is authenticated.
     bool isAuthenticated{false};
+    //! A flag indicating whether the client is in the character creator.
+    bool isInCharacterCreator{false};
     //! A flag indicating whether the client just created a character.
     bool justCreatedCharacter{false};
+
+    //! A time point of the last heartbeat.
+    std::chrono::steady_clock::time_point lastHeartbeat{};
 
     std::string userName{};
     data::Uid characterUid = data::InvalidUid;
     data::Uid rancherVisitPreference = data::InvalidUid;
   };
 
-  protocol::LobbyCommandLoginOK::SystemContent _systemContent{
-    .values = {
-      // {4, 0},
-      // {16, 0},
-      // {21, 0},
-      // {22, 0},
-      // {30, 0}
-    }};
 
   ClientId GetClientIdByUserName(
     const std::string& userName,
@@ -80,8 +87,8 @@ private:
     ClientId clientId,
     bool requireAuthentication = true);
 
+  void HandleNetworkTick() override;
   void HandleClientConnected(ClientId clientId) override;
-
   void HandleClientDisconnected(ClientId clientId) override;
 
   void HandleLogin(
@@ -111,8 +118,7 @@ private:
     const protocol::AcCmdCLEnterRoom& command);
 
   void HandleLeaveRoom(
-    ClientId clientId,
-    const protocol::AcCmdCLLeaveRoom& command);
+    ClientId clientId);
 
   void HandleEnterChannel(
     ClientId clientId,
@@ -128,6 +134,10 @@ private:
   void HandleCreateNickname(
     ClientId clientId,
     const protocol::AcCmdCLCreateNickname& command);
+
+  void SendCreateNicknameCancel(
+    ClientId clientId,
+    protocol::AcCmdCLCreateNicknameCancel::Reason reason);
 
   void HandleShowInventory(
     ClientId clientId,
@@ -184,6 +194,10 @@ private:
   void HandleCheckWaitingSeqno(
     ClientId clientId,
     const protocol::AcCmdCLCheckWaitingSeqno& command);
+
+  void SendWaitingSeqno(
+    ClientId clientId,
+    size_t queuePosition);
 
   void HandleUpdateSystemContent(
     ClientId clientId,

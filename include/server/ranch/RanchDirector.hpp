@@ -24,7 +24,9 @@
 #include "server/tracker/RanchTracker.hpp"
 
 #include "libserver/network/command/CommandServer.hpp"
+#include "libserver/network/command/proto/CommonMessageDefinitions.hpp"
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
+#include "libserver/network/command/proto/CommonMessageDefinitions.hpp"
 
 #include <random>
 #include <unordered_map>
@@ -66,6 +68,14 @@ public:
     data::Uid rancherUid,
     data::Uid horseUid);
 
+  //! Send a RequestUser notification to a character connected to this director.
+  void NotifyRequestUser(
+    data::Uid characterUid,
+    bool force,
+    std::string characterName,
+    uint32_t roomUid,
+    uint32_t ranchUid) noexcept;
+
   //! Show popup notification for client indicating a new item in storage, by character UID
   void SendStorageNotification(
     data::Uid characterUid,
@@ -86,6 +96,10 @@ public:
     data::Uid characterUid,
     protocol::GuildRole guildRole);
 
+  void SendDailyQuestNotificationToCharacter(
+    data::Uid characterUid,
+    const protocol::AcCmdRCUpdateDailyQuestNotify& updateNotify);
+
   void SendGuildInviteDeclined(
     data::Uid characterUid,
     data::Uid inviterCharacterUid,
@@ -95,7 +109,11 @@ public:
   void SendGuildInviteAccepted(
     data::Uid guildUid,
     data::Uid characterUid,
-    std::string newMemberCharacterName);
+    const std::string& newMemberCharacterName);
+
+  void AddRanchHorse(
+    data::Uid rancherUid,
+    data::Uid horseUid);
 
   ServerInstance& GetServerInstance();
   Config::Ranch& GetConfig();
@@ -105,6 +123,8 @@ private:
 
   struct ClientContext
   {
+    //! User name.
+    std::string userName;
     //! Whether the client is authenticated.
     bool isAuthenticated{false};
     //! Unique ID of the client's character.
@@ -189,7 +209,7 @@ private:
   //!
   void HandleBreedingWishlist(
     ClientId clientId,
-    const protocol::RanchCommandBreedingWishlist& command);
+    const protocol::AcCmdCRBreedingWishlist& command);
 
   //!
   void HandleCmdAction(
@@ -209,7 +229,11 @@ private:
   //!
   void HandleUpdateMountNickname(
     ClientId clientId,
-    const protocol::RanchCommandUpdateMountNickname& command);
+    const protocol::AcCmdCRUpdateMountNickname& command);
+
+  void SendUpdateMountNicknameCancel(
+    ClientId clientId,
+    protocol::HorseNicknameUpdateError reason);
 
   //!
   void HandleRequestStorage(
@@ -249,7 +273,11 @@ private:
   void HandleUpdatePet(
     ClientId clientId,
     const protocol::AcCmdCRUpdatePet& command);
-  
+
+  void SendUpdatePetCancel(
+    ClientId clientId,
+    const protocol::AcCmdRCUpdatePetCancel& command);
+
   void HandleIncubateEgg(
     ClientId clientId,
     const protocol::AcCmdCRIncubateEgg& command);
@@ -266,9 +294,23 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRRequestPetBirth& command);
 
+  void HandlePetBornResult(
+    ClientId clientId,
+    const protocol::AcCmdCRPetBornResult& command);
+
   void HandleUserPetInfos(
     ClientId clientId,
     const protocol::RanchCommandUserPetInfos& command);
+
+  //! Confirm whether item in the shop can be purchased or gifted.
+  void HandleConfirmItem(
+    ClientId clientId,
+    const protocol::AcCmdCRConfirmItem& command);
+
+  //! Confirm whether item set in the shop can be purchased or gifted.
+  void HandleConfirmSetItem(
+    ClientId clientId,
+    const protocol::AcCmdCRConfirmSetItem& command);
 
   //! Broadcasts an equipment update of the character owned by the client
   //! to the currently connected ranch.
@@ -314,7 +356,7 @@ private:
     const protocol::AcCmdCRHousingRepair& command);
   
   void HandleOpCmd(ClientId clientId,
-    const protocol::RanchCommandOpCmd& command);
+    const protocol::AcCmdCROpCmd& command);
 
   void HandleRequestLeagueTeamList(ClientId clientId,
     const protocol::RanchCommandRequestLeagueTeamList& command);
@@ -365,6 +407,67 @@ private:
   void HandleGetEmblemList(
     ClientId clientId,
     const protocol::AcCmdCREmblemList& command);
+
+  void HandleChangeNickname(
+    ClientId clientId, 
+    const protocol::AcCmdCRChangeNickname& command);
+
+  void HandleUpdateDailyQuest(
+    ClientId clientId,
+    const protocol::AcCmdCRUpdateDailyQuest& command);
+
+  void HandleRegisterDailyQuestGroup(
+    ClientId clientId,
+    const protocol::AcCmdCRRegisterDailyQuestGroup& command);
+
+  void HandleRequestDailyQuestReward(
+      ClientId clientId, 
+      const protocol::AcCmdCRRequestDailyQuestReward& command);
+  
+  void HandleRegisterQuest(
+      ClientId clientId,
+      const protocol::AcCmdCRRegisterQuest& command);
+  
+  void HandleRequestQuestReward(
+    ClientId clientId,
+    const protocol::AcCmdCRRequestQuestReward& command);
+
+  void HandleGiveupQuest(
+    ClientId clientId,
+    const protocol::AcCmdCRGiveupQuest& command);
+
+  void SendChangeNicknameCancel(
+    ClientId clientId,
+    protocol::ChangeNicknameError reason);
+
+  void HandleBuyOwnItem(
+    ClientId clientId,
+    const protocol::AcCmdCRBuyOwnItem& command);
+
+  void HandleSendGift(
+    ClientId clientId,
+    const protocol::AcCmdCRSendGift& command);
+
+  void HandleOpenRandomBox(
+    ClientId clientId,
+    const protocol::AcCmdCROpenRandomBox& command);
+
+  void HandleUpdateMountInfo(
+    ClientId clientId,
+    const protocol::AcCmdCRUpdateMountInfo command);
+
+  void HandlePasswordAuth(
+    ClientId clientId,
+    const protocol::AcCmdCRPasswordAuth command);
+
+  //! Ranch clients can only invite characters in other ranches.
+  void HandleInviteUser(
+    ClientId clientId,
+    const protocol::AcCmdCRInviteUser& command);
+
+  void HandleRequestUser(
+    ClientId clientId,
+    const protocol::AcCmdCRRequestUser& command);
 
   //!
   ServerInstance& _serverInstance;

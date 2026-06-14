@@ -19,8 +19,11 @@
 
 #include <libserver/util/Locale.hpp>
 
+#include <array>
 #include <cassert>
 #include <locale>
+#include <regex>
+#include <cstdio>
 
 namespace
 {
@@ -36,9 +39,58 @@ void TestLocale()
   assert(eucOutput == eucSource);
 }
 
+void TestNameValidation()
+{
+  constexpr std::array validNames = {
+    // ASCII range boundaries
+    "AZaz09",
+    // Accepted punctuation
+    "Name(1)",
+    "Name[2]",
+    "Name{3}",
+    "([]{})",
+    // Korean range boundaries: U+AC00 and U+D7A3
+    "\xEA\xB0\x80" "\xED\x9E\xA3",
+    // Mixed Korean, latin and digit characters
+    "\xEA\xB0\x80" "A0"};
+
+  constexpr std::array invalidNames = {
+    // Invalid because of length
+    "",
+    "ab",
+    "ABCDEFGHIJKLMNOPQ",
+    // Invalid because of symbols
+    "%!@^",
+    "Name-With-Hyphen",
+    "Name_With_Underscore",
+    "Name.With.Dot",
+    "AB/C",
+    "AB:C",
+    "AB\\C",
+    "AB^C",
+    "AB`C",
+    "AB|C",
+    // Korean range boundaries: U+ABFF and U+D7A4
+    "\xEA\xAF\xBF" "ab",
+    "\xED\x9E\xA4" "ab",
+    "\xEA\xB0\x80" "\xEA\xB0\x80" "\xEA\xB0\x80" "\xEA\xB0\x80" "\xEA\xB0\x80"
+    "\xEA\xB0\x80" "\xEA\xB0\x80" "\xEA\xB0\x80" "\xEA\xB0\x80"};
+
+  for (const auto& entry : validNames)
+  {
+    assert(server::locale::IsNameValid(entry) == true);
+  }
+
+  for (const auto& entry : invalidNames)
+  {
+    assert(server::locale::IsNameValid(entry) == false);
+  }
+}
+
 } // namespace
 
 int main()
 {
   TestLocale();
+  TestNameValidation();
 }

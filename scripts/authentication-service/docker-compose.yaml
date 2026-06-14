@@ -1,0 +1,20 @@
+# Instance of Postgres for development purposes
+services:
+  instance:
+    image: ghcr.io/story-of-alicia/authentication-server
+    restart: always
+    pull_policy: always
+    env_file:
+      - .env
+    ports:
+      - '8080:8080'
+  postgres:
+    image: postgres
+    restart: always
+    shm_size: 128mb
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: storyofalicia
+      POSTGRES_DB: storyofalicia
+      POSTGRES_PASSWORD: dev

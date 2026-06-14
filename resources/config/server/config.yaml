@@ -3,6 +3,28 @@ server:
   general:
     # The name of the group or an individual running and managing this instance of the server.
     brand: "dev"
+    # The notice displayed to the player when they join the server.
+    notice: "Players online: {players_online}"
+  # Authentication configuration section
+  authentication:
+    # Type of authentication backend.
+    # Supported types are `local` and `postgres`.
+    backend: local
+    postgres:
+      # Connection string to the Postgre SQL database.
+      # https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
+      connectionUri: 'postgresql://storyofalicia:dev@127.0.0.1:5432/storyofalicia'
+  # Telemetry and metrics collection
+  telemetry:
+    # Whether metric collection is enabled.
+    enabled: false
+    # Type of telemetry backend.
+    # Supported types are `none` and `postgres`.
+    backend: postgres
+    postgres:
+      # Connection string to the Postgre SQL database.
+      # https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
+      connectionUri: 'postgresql://storyofalicia:dev@127.0.0.1:5432/storyofalicia'
   # Configuration section of the lobby server.
   lobby:
     # Whether the lobby server is enabled.
@@ -38,6 +60,27 @@ server:
         # The port of the advertised messenger server.
         # Additionally configurable through environment variable LOBBY_ADVERTISED_MESSENGER_PORT.
         port: 10033
+      all_chat:
+        # The IPv4 address or a domain of the advertised all chat server.
+        # Additionally configurable through environment variable LOBBY_ADVERTISED_ALL_CHAT_ADDRESS.
+        address: "127.0.0.1"
+        # The port of the advertised all chat server.
+        # Additionally configurable through environment variable LOBBY_ADVERTISED_ALL_CHAT_PORT.
+        port: 10034
+      private_chat:
+        # The IPv4 address or a domain of the advertised private chat server.
+        # Additionally configurable through environment variable LOBBY_ADVERTISED_PRIVATE_CHAT_ADDRESS.
+        address: "127.0.0.1"
+        # The port of the advertised private chat server.
+        # Additionally configurable through environment variable LOBBY_ADVERTISED_PRIVATE_CHAT_PORT.
+        port: 10035
+      udp_race_relay:
+        # The IPv4 address or a domain of the advertised UDP race relay server.
+        # Additionally configurable through environment variable LOBBY_ADVERTISED_UDP_RACE_RELAY_ADDRESS.
+        address: "127.0.0.1"
+        # The port of the advertised UDP race relay server.
+        # Additionally configurable through environment variable LOBBY_ADVERTISED_UDP_RACE_RELAY_PORT.
+        port: 10500
   # Configuration section of the ranch server.
   ranch:
     # Whether the ranch server is enabled.
@@ -65,15 +108,51 @@ server:
   # Configuration section of the messenger server.
   messenger:
     # Whether the messenger server is enabled.
-    enabled: false
+    enabled: true
     # Address and port listened to by the messenger server.
     listen:
       # The IPv4 address or a domain the server listens on.
       # Additionally configurable through environment variable MESSENGER_SERVER_ADDRESS.
       address: "0.0.0.0"
       # The port the server listens on.
-      # Additionally configurable through environment variabl MESSENGER_SERVER_PORT.
+      # Additionally configurable through environment variable MESSENGER_SERVER_PORT.
       port: 10033
+  # Configuration section of the all chat server.
+  all_chat:
+    # Whether the all chat server is enabled. This has no effect if messenger is disabled.
+    enabled: true
+    # Address and port listened to by the all chat server.
+    listen:
+      # The IPv4 address or a domain the server listens on.
+      # Additionally configurable through environment variable ALL_CHAT_SERVER_ADDRESS.
+      address: "0.0.0.0"
+      # The port the server listens on.
+      # Additionally configurable through environment variable ALL_CHAT_SERVER_PORT.
+      port: 10034
+  # Configuration section of the private chat server.
+  private_chat:
+    # Whether the private chat server is enabled. This has no effect if messenger is disabled.
+    enabled: false
+    # Address and port listened to by the private chat server.
+    listen:
+      # The IPv4 address or a domain the server listens on.
+      # Additionally configurable through environment variable PRIVATE_CHAT_SERVER_ADDRESS.
+      address: "0.0.0.0"
+      # The port the server listens on.
+      # Additionally configurable through environment variable PRIVATE_CHAT_SERVER_PORT.
+      port: 10035
+  # Configuration section of the UDP race relay server.
+  udp_race_relay:
+    # Whether the UDP race relay server is enabled.
+    enabled: true
+    # Address and port listened to by the UDP race relay server.
+    listen:
+      # The IPv4 address or a domain the server listens on.
+      # Additionally configurable through environment variable UDP_RACE_RELAY_SERVER_ADDRESS.
+      address: "0.0.0.0"
+      # The port the server listens on.
+      # Additionally configurable through environment variable UDP_RACE_RELAY_SERVER_PORT.
+      port: 10500
   data:
     source: file
     file:

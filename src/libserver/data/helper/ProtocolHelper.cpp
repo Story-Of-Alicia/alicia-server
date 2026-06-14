@@ -49,30 +49,45 @@ void BuildProtocolHorse(
   protocolHorse.growthPoints = static_cast<uint16_t>(horse.growthPoints());
 
   protocolHorse.val16 = 0xb8a167e4,
-  protocolHorse.val17 = 0;
+  protocolHorse.visualCleanlinessBitset = 
+    Horse::VisualCleanlinessBitset::AllLightSparkles;
 
   protocolHorse.mountCondition = {
-    .stamina = horse.mountCondition.stamina(),
-    .charmPoint = horse.mountCondition.charm(),
-    .friendlyPoint = horse.mountCondition.friendliness(),
-    .injuryPoint = horse.mountCondition.injury(),
-    .plenitude = horse.mountCondition.plenitude(),
-    .bodyDirtiness = horse.mountCondition.bodyDirtiness(),
-    .maneDirtiness = horse.mountCondition.maneDirtiness(),
-    .tailDirtiness = horse.mountCondition.tailDirtiness(),
-    .attachment = horse.mountCondition.attachment(),
-    .boredom = horse.mountCondition.boredom(),
-    .bodyPolish = horse.mountCondition.bodyPolish(),
-    .manePolish = horse.mountCondition.manePolish(),
-    .tailPolish = horse.mountCondition.tailPolish(),
-    .stopAmendsPoint = horse.mountCondition.stopAmendsPoint()
+    .stamina = static_cast<uint16_t>(
+      horse.mountCondition.stamina()),
+    .charmPoint = static_cast<uint16_t>(
+      horse.mountCondition.charm()),
+    .friendlyPoint = static_cast<uint16_t>(
+      horse.mountCondition.friendliness()),
+    .injuryPoint = static_cast<uint16_t>(
+      horse.mountCondition.injury()),
+    .plenitude = static_cast<uint16_t>(
+      horse.mountCondition.plenitude()),
+    .bodyDirtiness = static_cast<uint16_t>(
+      horse.mountCondition.bodyDirtiness()),
+    .maneDirtiness = static_cast<uint16_t>(
+      horse.mountCondition.maneDirtiness()),
+    .tailDirtiness = static_cast<uint16_t>(
+      horse.mountCondition.tailDirtiness()),
+    .attachment = static_cast<uint16_t>(
+      horse.mountCondition.attachment()),
+    .boredom = static_cast<uint16_t>(
+      horse.mountCondition.boredom()),
+    .bodyPolish = static_cast<uint16_t>(
+      horse.mountCondition.bodyPolish()),
+    .manePolish = static_cast<uint16_t>(
+      horse.mountCondition.manePolish()),
+    .tailPolish = static_cast<uint16_t>(
+      horse.mountCondition.tailPolish()),
+    .stopAmendsPoint = static_cast<uint16_t>(
+      horse.mountCondition.stopAmendsPoint())
   };
 
   protocolHorse.vals1 = {
     .type = Horse::HorseType::Adult,
     .val1 = 0x00,
     .dateOfBirth = util::TimePointToAliciaTime(horse.dateOfBirth()),
-    .tendency = 0x02,
+    .tendency = static_cast<uint8_t>(horse.tendency()),
     .spirit = 0x00,
     .classProgression = static_cast<uint32_t>(horse.clazzProgress()),
     .val5 = 0x00,
@@ -83,7 +98,7 @@ void BuildProtocolHorse(
     .luck = static_cast<uint8_t>(horse.luckState()),
     .injury = Horse::Injury::None,
     .val12 = 0x00,
-    .fatigue = 0x00,
+    .fatigue = static_cast<uint16_t>(horse.fatigue()),
     .val14 = 0x00,
     .emblem = static_cast<uint16_t>(horse.emblemUid())};
 
@@ -108,12 +123,14 @@ void BuildProtocolHorseAppearance(
   Horse::Appearance& protocolHorseAppearance,
   const data::Horse::Appearance& appearance)
 {
+  // TODO: Make configurable (experimental)
+  constexpr uint8_t MaxAppearanceValue = 10;
   protocolHorseAppearance = {
-    .scale = static_cast<uint8_t>(appearance.scale()),
-    .legLength = static_cast<uint8_t>(appearance.legLength()),
-    .legVolume = static_cast<uint8_t>(appearance.legVolume()),
-    .bodyLength = static_cast<uint8_t>(appearance.bodyLength()),
-    .bodyVolume = static_cast<uint8_t>(appearance.bodyVolume())};
+    .scale = std::min(static_cast<uint8_t>(appearance.scale()), MaxAppearanceValue),
+    .legLength = std::min(static_cast<uint8_t>(appearance.legLength()), MaxAppearanceValue),
+    .legVolume = std::min(static_cast<uint8_t>(appearance.legVolume()), MaxAppearanceValue),
+    .bodyLength = std::min(static_cast<uint8_t>(appearance.bodyLength()), MaxAppearanceValue),
+    .bodyVolume = std::min(static_cast<uint8_t>(appearance.bodyVolume()), MaxAppearanceValue)};
 }
 
 void BuildProtocolHorseStats(
@@ -160,8 +177,9 @@ void BuildProtocolItem(
 {
   protocolItem.uid = item.uid();
   protocolItem.tid = item.tid();
-  protocolItem.expiresAt = util::TimePointToAliciaTime(item.expiresAt());
   protocolItem.count = item.count();
+  protocolItem.expiresAt = util::TimePointToAliciaTime(
+    item.createdAt() + item.duration());
 }
 
 void BuildProtocolItems(
@@ -178,37 +196,45 @@ void BuildProtocolItems(
   }
 }
 
-void BuildProtocolStoredItem(
-  StoredItem& protocolStoredItem,
-  const data::StorageItem& storedItem)
+void BuildProtocolStorageItem(
+  StoredItem& protocolStorageItem,
+  const data::StorageItem& storageItem)
 {
-  protocolStoredItem.uid = storedItem.uid();
-  if (storedItem.expired())
+  protocolStorageItem.uid = storageItem.uid();
+
+  const bool hasExpiration = storageItem.duration() != std::chrono::seconds(0);
+  const bool isExpired = storageItem.createdAt() + storageItem.duration() < data::Clock::now();
+  if (hasExpiration && isExpired)
   {
-    protocolStoredItem.status = StoredItem::Status::Expired;
+    protocolStorageItem.status = StoredItem::Status::Expired;
   }
   else
   {
-      protocolStoredItem.status = storedItem.checked() 
-        ? StoredItem::Status::Read 
-        : StoredItem::Status::Unread;
+    protocolStorageItem.status = storageItem.checked()
+      ? StoredItem::Status::Read
+      : StoredItem::Status::Unread;
   }
-  protocolStoredItem.sender = storedItem.sender();
-  protocolStoredItem.message = storedItem.message();
-  protocolStoredItem.dateAndTime = util::TimePointToAliciaTime(storedItem.created());
+
+  protocolStorageItem.sender = storageItem.sender();
+  protocolStorageItem.message = storageItem.message();
+  protocolStorageItem.carrots = storageItem.carrots();
+  protocolStorageItem.dateAndTime = util::TimePointToAliciaTime(storageItem.createdAt());
+
+  protocolStorageItem.goodsSq = storageItem.goodsSq();
+  protocolStorageItem.priceId = storageItem.priceId();
 }
 
-void BuildProtocolStoredItems(
-  std::vector<StoredItem>& protocolStoredItems,
-  const std::span<const Record<data::StorageItem>>& storedItemRecords)
+void BuildProtocolStorageItems(
+  std::vector<StoredItem>& protocolStorageItems,
+  const std::span<const Record<data::StorageItem>>& storageItemRecords)
 {
-  for (const auto& storedItem : storedItemRecords)
+  for (const auto& storageItem : storageItemRecords)
   {
-    auto& protocolStoredItem = protocolStoredItems.emplace_back();
-    storedItem.Immutable([&protocolStoredItem](const auto& storedItem)
-      {
-        BuildProtocolStoredItem(protocolStoredItem, storedItem);
-      });
+    auto& protocolStoredItem = protocolStorageItems.emplace_back();
+    storageItem.Immutable([&protocolStoredItem](const auto& storedItem)
+    {
+      BuildProtocolStorageItem(protocolStoredItem, storedItem);
+    });
   }
 }
 
@@ -246,7 +272,8 @@ void BuildProtocolHousing(
   bool hasDurability)
 {
   protocolHousing.uid = housingRecord.uid();
-  protocolHousing.tid = housingRecord.housingId();
+  protocolHousing.tid = static_cast<uint16_t>(
+    housingRecord.housingId());
   protocolHousing.durability = hasDurability 
     ? housingRecord.durability() 
     : util::TimePointToAliciaTime(housingRecord.expiresAt());
@@ -272,21 +299,24 @@ void BuildProtocolEgg(
   const data::Egg& eggRecord,
   const data::Clock::duration hatchDuration)
 {
-  protocolEgg.uid = eggRecord.uid();
+  protocolEgg.uid = eggRecord.itemUid();
   protocolEgg.itemTid = eggRecord.itemTid();
-
-  protocolEgg.totalHatchingTime = std::chrono::duration_cast<std::chrono::seconds>(
-    hatchDuration).count();
 
   const auto totalHatchingDuration = std::chrono::system_clock::now() - eggRecord.incubatedAt();
   const auto totalBoostedDuration = eggRecord.boostsUsed() * std::chrono::hours(8);
   const auto hatchTimeRemaining = hatchDuration - totalHatchingDuration - totalBoostedDuration;
 
-  protocolEgg.timeRemaining = std::max(
-    std::chrono::duration_cast<std::chrono::seconds>(hatchTimeRemaining).count(),
-    int64_t{0});
-  
-  protocolEgg.boost = 400000;
+  const auto totalHatchingProgress = totalHatchingDuration + totalBoostedDuration;
+  const auto remainingHatchingProgress = hatchDuration - totalHatchingProgress;
+
+  protocolEgg.remainingHatchingTime = static_cast<uint32_t>(
+    std::chrono::duration_cast<std::chrono::seconds>(remainingHatchingProgress).count());
+  protocolEgg.timeRemaining = static_cast<uint32_t>(
+    std::chrono::duration_cast<std::chrono::seconds>(remainingHatchingProgress).count());
+  protocolEgg.boostPreviewValue = static_cast<uint32_t>(
+    std::chrono::duration_cast<std::chrono::seconds>(totalHatchingProgress + std::chrono::hours(8)).count());
+  protocolEgg.hatchingProgress = static_cast<uint32_t>(
+    std::chrono::duration_cast<std::chrono::seconds>(totalHatchingProgress).count());
 }
 
 void BuildProtocolSettings(
@@ -300,9 +330,9 @@ void BuildProtocolSettings(
     for (const auto& keyboardBinding : settingsRecord.keyboardBindings().value())
     {
       auto& protocolBinding = settings.keyboardOptions.bindings.emplace_back();
-      protocolBinding.primaryKey = keyboardBinding.primaryKey;
-      protocolBinding.type = keyboardBinding.type;
-      protocolBinding.secondaryKey = keyboardBinding.secondaryKey;
+      protocolBinding.primaryKey = static_cast<uint8_t>(keyboardBinding.primaryKey);
+      protocolBinding.type = static_cast<uint8_t>(keyboardBinding.type);
+      protocolBinding.secondaryKey = static_cast<uint8_t>(keyboardBinding.secondaryKey);
       protocolBinding.unused = 0; // Unused
     }
   }
@@ -314,9 +344,9 @@ void BuildProtocolSettings(
     for (const auto& keyboardBinding : settingsRecord.gamepadBindings().value())
     {
       auto& protocolBinding = settings.gamepadOptions.bindings.emplace_back();
-      protocolBinding.primaryButton = keyboardBinding.primaryKey;
-      protocolBinding.type = keyboardBinding.type;
-      protocolBinding.secondaryButton = keyboardBinding.secondaryKey;
+      protocolBinding.primaryButton = static_cast<uint8_t>(keyboardBinding.primaryKey);
+      protocolBinding.type = static_cast<uint8_t>(keyboardBinding.type);
+      protocolBinding.secondaryButton = static_cast<uint8_t>(keyboardBinding.secondaryKey);
       protocolBinding.unused = 0; // Unused
     }
   }
@@ -326,6 +356,32 @@ void BuildProtocolSettings(
     settings.typeBitset.set(Settings::Macros);
 
     settings.macroOptions.macros = settingsRecord.macros().value();
+  }
+}
+
+void BuildProtocolQuest(
+  Quest& protocolQuest,
+  const data::Quest& quest)
+{
+  protocolQuest.tid      = static_cast<uint16_t>(quest.questId());
+  protocolQuest.member0  = 0;
+  protocolQuest.status   = static_cast<Quest::Status>(quest.isCompleted());
+  protocolQuest.progress = quest.progress();
+  protocolQuest.member3  = 0;
+  protocolQuest.member4  = 0;
+}
+
+void BuildProtocolQuests(
+  std::vector<Quest>& protocolQuests,
+  const std::vector<Record<data::Quest>>& questRecords)
+{
+  for (const auto& questRecord : questRecords)
+  {
+    auto& protocolQuest = protocolQuests.emplace_back();
+    questRecord.Immutable([&protocolQuest](const data::Quest& quest)
+    {
+      BuildProtocolQuest(protocolQuest, quest);
+    });
   }
 }
 

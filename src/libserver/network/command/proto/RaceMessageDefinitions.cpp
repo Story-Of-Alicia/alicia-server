@@ -18,8 +18,11 @@
  **/
 
 #include "libserver/network/command/proto/RaceMessageDefinitions.hpp"
-
 #include "libserver/network/chatter/ChatterServer.hpp"
+
+#include "libserver/util/Stream.hpp"
+
+#include <cassert>
 
 namespace server::protocol
 {
@@ -73,10 +76,10 @@ void WriteRacer(SinkStream& stream, const Racer& racer)
     .Write(racer.guild.val5)
     .Write(racer.guild.val6);
   stream.Write(racer.unk9);
-  stream.Write(racer.unk10)
+  stream.Write(racer.role)
     .Write(racer.unk11)
     .Write(racer.unk12)
-    .Write(racer.unk13);
+    .Write(racer.gender);
 }
 
 void WriteRoomDescription(SinkStream& stream, const RoomDescription& roomDescription)
@@ -94,8 +97,8 @@ void WriteRoomDescription(SinkStream& stream, const RoomDescription& roomDescrip
 }
 
 void AcCmdCREnterRoom::Write(
-  const AcCmdCREnterRoom& command,
-  SinkStream& stream)
+  const AcCmdCREnterRoom&,
+  SinkStream&)
 {
   throw std::logic_error("Not implemented.");
 }
@@ -133,7 +136,7 @@ void AcCmdCREnterRoomOK::Write(
     .Write(command.unk3)
     .Write(command.unk4)
     .Write(command.unk5)
-    .Write(command.unk6);
+    .Write(command.elapsedTime);
 
   stream.Write(command.unk7)
     .Write(command.unk8);
@@ -153,21 +156,21 @@ void AcCmdCREnterRoomOK::Write(
 }
 
 void AcCmdCREnterRoomOK::Read(
-  AcCmdCREnterRoomOK& command,
-  SourceStream& stream)
+  AcCmdCREnterRoomOK&,
+  SourceStream&)
 {
   throw std::logic_error("Not implemented.");
 }
 
 void AcCmdCREnterRoomCancel::Write(
-  const AcCmdCREnterRoomCancel& command,
-  SinkStream& stream)
+  const AcCmdCREnterRoomCancel&,
+  SinkStream&)
 {
 }
 
 void AcCmdCREnterRoomCancel::Read(
-  AcCmdCREnterRoomCancel& command,
-  SourceStream& stream)
+  AcCmdCREnterRoomCancel&,
+  SourceStream&)
 {
 }
 
@@ -180,15 +183,15 @@ void AcCmdCREnterRoomNotify::Write(
 }
 
 void AcCmdCREnterRoomNotify::Read(
-  AcCmdCREnterRoomNotify& command,
-  SourceStream& stream)
+  AcCmdCREnterRoomNotify&,
+  SourceStream&)
 {
   throw std::logic_error("Not implemented.");
 }
 
 void AcCmdCRChangeRoomOptions::Write(
-  const AcCmdCRChangeRoomOptions& command,
-  SinkStream& stream)
+  const AcCmdCRChangeRoomOptions&,
+  SinkStream&)
 {
   throw std::logic_error("Not implemented.");
 }
@@ -218,9 +221,9 @@ void AcCmdCRChangeRoomOptions::Read(
   {
     stream.Read(command.mapBlockId);
   }
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::NPCRace)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::NpcDifficulty)
   {
-    stream.Read(command.npcRace);
+    stream.Read(command.npcDifficulty);
   }
 }
 
@@ -249,22 +252,22 @@ void AcCmdCRChangeRoomOptionsNotify::Write(
   {
     stream.Write(command.mapBlockId);
   }
-  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::NPCRace)
+  if ((uint16_t)command.optionsBitfield & (uint16_t)RoomOptionType::NpcDifficulty)
   {
-    stream.Write(command.npcRace);
+    stream.Write(command.npcDifficulty);
   }
 }
 
 void AcCmdCRChangeRoomOptionsNotify::Read(
-  AcCmdCRChangeRoomOptionsNotify& command,
-  SourceStream& stream)
+  AcCmdCRChangeRoomOptionsNotify&,
+  SourceStream&)
 {
   throw std::logic_error("Not implemented.");
 }
 
 void AcCmdCRChangeTeam::Write(
-  const AcCmdCRChangeTeam& command,
-  SinkStream& stream)
+  const AcCmdCRChangeTeam&,
+  SinkStream&)
 {
   throw std::logic_error("Not implemented.");
 }
@@ -286,8 +289,8 @@ void AcCmdCRChangeTeamOK::Write(
 }
 
 void AcCmdCRChangeTeamOK::Read(
-  AcCmdCRChangeTeamOK& command,
-  SourceStream& stream)
+  AcCmdCRChangeTeamOK&,
+  SourceStream&)
 {
   throw std::logic_error("Not implemented.");
 }
@@ -301,35 +304,35 @@ void AcCmdCRChangeTeamNotify::Write(
 }
 
 void AcCmdCRChangeTeamNotify::Read(
-  AcCmdCRChangeTeamNotify& command,
-  SourceStream& stream)
+  AcCmdCRChangeTeamNotify&,
+  SourceStream&)
 {
   throw std::logic_error("Not implemented.");
 }
 
 void AcCmdCRLeaveRoom::Write(
-  const AcCmdCRLeaveRoom& command,
-  SinkStream& stream)
+  const AcCmdCRLeaveRoom&,
+  SinkStream&)
 {
   throw std::logic_error("Not implemented.");
 }
 
 void AcCmdCRLeaveRoom::Read(
-  AcCmdCRLeaveRoom& command,
-  SourceStream& stream)
+  AcCmdCRLeaveRoom&,
+  SourceStream&)
 {
   // Empty
 }
 void AcCmdCRLeaveRoomOK::Write(
-  const AcCmdCRLeaveRoomOK& command,
-  SinkStream& stream)
+  const AcCmdCRLeaveRoomOK&,
+  SinkStream&)
 {
   // Empty
 }
 
 void AcCmdCRLeaveRoomOK::Read(
-  AcCmdCRLeaveRoomOK& command,
-  SourceStream& stream)
+  AcCmdCRLeaveRoomOK&,
+  SourceStream&)
 {
   throw std::logic_error("Not implemented.");
 }
@@ -343,15 +346,15 @@ void AcCmdCRLeaveRoomNotify::Write(
 }
 
 void AcCmdCRLeaveRoomNotify::Read(
-  AcCmdCRLeaveRoomNotify& command,
-  SourceStream& stream)
+  AcCmdCRLeaveRoomNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
 void AcCmdCRStartRace::Write(
-  const AcCmdCRStartRace& command,
-  SinkStream& stream)
+  const AcCmdCRStartRace&,
+  SinkStream&)
 {
   throw std::logic_error("Not implemented.");
 }
@@ -399,8 +402,8 @@ void AcCmdCRStartRaceNotify::Struct1::Write(
 }
 
 void AcCmdCRStartRaceNotify::Struct1::Read(
-  Struct1& command,
-  SourceStream& stream)
+  Struct1&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -416,8 +419,8 @@ void AcCmdCRStartRaceNotify::Struct2::Write(
 }
 
 void AcCmdCRStartRaceNotify::Struct2::Read(
-  Struct2& command,
-  SourceStream& stream)
+  Struct2&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -438,8 +441,8 @@ void AcCmdCRStartRaceNotify::ActiveSkillSet::Write(
 }
 
 void AcCmdCRStartRaceNotify::ActiveSkillSet::Read(
-  ActiveSkillSet& command,
-  SourceStream& stream)
+  ActiveSkillSet&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
@@ -479,7 +482,7 @@ void AcCmdCRStartRaceNotify::Write(
     .Write(command.unk12)
     .Write(command.racerActiveSkillSet);
 
-  stream.Write(command.unk14)
+  stream.Write(command.isHorseInjuryEnabled)
     .Write(command.carnivalType)
     .Write(command.weatherType)
     .Write(command.unk17);
@@ -497,8 +500,8 @@ void AcCmdCRStartRaceNotify::Write(
 }
 
 void AcCmdCRStartRaceNotify::Read(
-  AcCmdCRStartRaceNotify& command,
-  SourceStream& stream)
+  AcCmdCRStartRaceNotify&,
+  SourceStream&)
 {
   throw std::logic_error("Not implemented.");
 }
@@ -511,15 +514,15 @@ void AcCmdCRStartRaceCancel::Write(
 }
 
 void AcCmdCRStartRaceCancel::Read(
-  AcCmdCRStartRaceCancel& command,
-  SourceStream& stream)
+  AcCmdCRStartRaceCancel&,
+  SourceStream&)
 {
   throw std::logic_error("Not implemented.");
 }
 
 void AcCmdUserRaceTimer::Write(
-  const AcCmdUserRaceTimer& command,
-  SinkStream& stream)
+  const AcCmdUserRaceTimer&,
+  SinkStream&)
 {
   throw std::logic_error("Not implemented.");
 }
@@ -540,22 +543,22 @@ void AcCmdUserRaceTimerOK::Write(
 }
 
 void AcCmdUserRaceTimerOK::Read(
-  AcCmdUserRaceTimerOK& command,
-  SourceStream& stream)
+  AcCmdUserRaceTimerOK&,
+  SourceStream&)
 {
   throw std::logic_error("Not implemented.");
 }
 
 void AcCmdCRLoadingComplete::Write(
-  const AcCmdCRLoadingComplete& command,
-  SinkStream& stream)
+  const AcCmdCRLoadingComplete&,
+  SinkStream&)
 {
   throw std::logic_error("Not implemented.");
 }
 
 void AcCmdCRLoadingComplete::Read(
-  AcCmdCRLoadingComplete& command,
-  SourceStream& stream)
+  AcCmdCRLoadingComplete&,
+  SourceStream&)
 {
   // Empty.
 }
@@ -568,15 +571,15 @@ void AcCmdCRLoadingCompleteNotify::Write(
 }
 
 void AcCmdCRLoadingCompleteNotify::Read(
-  AcCmdCRLoadingCompleteNotify& command,
-  SourceStream& stream)
+  AcCmdCRLoadingCompleteNotify&,
+  SourceStream&)
 {
   throw std::logic_error("Not implemented.");
 }
 
 void AcCmdCRChat::Write(
-  const AcCmdCRChat& command,
-  SinkStream& stream)
+  const AcCmdCRChat&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -599,22 +602,22 @@ void AcCmdCRChatNotify::Write(
 }
 
 void AcCmdCRChatNotify::Read(
-  AcCmdCRChatNotify& command,
-  SourceStream& stream)
+  AcCmdCRChatNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRReadyRace::Write(
-  const AcCmdCRReadyRace& command,
-  SinkStream& stream)
+  const AcCmdCRReadyRace&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRReadyRace::Read(
-  AcCmdCRReadyRace& command,
-  SourceStream& stream)
+  AcCmdCRReadyRace&,
+  SourceStream&)
 {
   // Empty.
 }
@@ -628,8 +631,8 @@ void AcCmdCRReadyRaceNotify::Write(
 }
 
 void AcCmdCRReadyRaceNotify::Read(
-  AcCmdCRReadyRaceNotify& command,
-  SourceStream& stream)
+  AcCmdCRReadyRaceNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -642,15 +645,15 @@ void AcCmdUserRaceCountdown::Write(
 }
 
 void AcCmdUserRaceCountdown::Read(
-  AcCmdUserRaceCountdown& command,
-  SourceStream& stream)
+  AcCmdUserRaceCountdown&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdUserRaceFinal::Write(
-  const AcCmdUserRaceFinal& command,
-  SinkStream& stream)
+  const AcCmdUserRaceFinal&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -659,9 +662,13 @@ void AcCmdUserRaceFinal::Read(
   AcCmdUserRaceFinal& command,
   SourceStream& stream)
 {
-  stream.Read(command.oid)
-    .Read(command.courseTime)
-    .Read(command.member3);
+  stream.Read(command.oid);
+
+  uint32_t courseTime;
+  stream.Read(courseTime);
+  command.courseTime = std::chrono::milliseconds{courseTime};
+
+  stream.Read(command.member3);
 }
 
 void AcCmdUserRaceFinalNotify::Write(
@@ -669,19 +676,19 @@ void AcCmdUserRaceFinalNotify::Write(
   SinkStream& stream)
 {
   stream.Write(command.oid)
-    .Write(command.courseTime);
+    .Write(static_cast<int32_t>(command.courseTime.count()));
 }
 
 void AcCmdUserRaceFinalNotify::Read(
-  AcCmdUserRaceFinalNotify& command,
-  SourceStream& stream)
+  AcCmdUserRaceFinalNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRRaceResult::Write(
-  const AcCmdCRRaceResult& command,
-  SinkStream& stream)
+  const AcCmdCRRaceResult&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -719,17 +726,17 @@ void AcCmdCRRaceResultOK::Write(
   const AcCmdCRRaceResultOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.member1)
-    .Write(command.member2)
-    .Write(command.member3)
+  stream.Write(command.recordReplay)
+    .Write(command.resultKey)
+    .Write(command.horseFatigue)
     .Write(command.member4)
-    .Write(command.member5)
+    .Write(command.notifyEmblemUnlocked)
     .Write(command.currentCarrots);
 }
 
 void AcCmdCRRaceResultOK::Read(
-  AcCmdCRRaceResultOK& command,
-  SourceStream& stream)
+  AcCmdCRRaceResultOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -749,18 +756,18 @@ void AcCmdRCRaceResultNotify::Write(
       .Write(score.member6)
       .Write(score.carrots)
       .Write(score.level)
-      .Write(score.member9)
+      .Write(score.teamColor)
       .Write(score.member10)
       .Write(score.member11)
       .Write(score.member12)
       .Write(score.recordTimeDifference)
-      .Write(score.member14)
-      .Write(score.member15)
+      .Write(score.levelProgress)
+      .Write(score.horseClassProgress)
       .Write(score.achievements)
       .Write(score.bitset)
       .Write(score.mountName)
-      .Write(score.member19)
-      .Write(score.member20)
+      .Write(score.growthPoints)
+      .Write(score.horseClass)
       .Write(score.bonusCarrots)
       .Write(score.member22)
       .Write(score.member23)
@@ -777,15 +784,15 @@ void AcCmdRCRaceResultNotify::Write(
 }
 
 void AcCmdRCRaceResultNotify::Read(
-  AcCmdRCRaceResultNotify& command,
-  SourceStream& stream)
+  AcCmdRCRaceResultNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRP2PResult::Write(
-  const AcCmdCRP2PResult& command,
-  SinkStream& stream)
+  const AcCmdCRP2PResult&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -803,8 +810,8 @@ void AcCmdCRP2PResult::Read(
 }
 
 void AcCmdUserRaceP2PResult::Write(
-  const AcCmdUserRaceP2PResult& command,
-  SinkStream& stream)
+  const AcCmdUserRaceP2PResult&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -839,15 +846,15 @@ void AcCmdGameRaceP2PResult::Write(
 }
 
 void AcCmdGameRaceP2PResult::Read(
-  AcCmdGameRaceP2PResult& command,
-  SourceStream& stream)
+  AcCmdGameRaceP2PResult&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRAwardStart::Write(
-  const AcCmdCRAwardStart& command,
-  SinkStream& stream)
+  const AcCmdCRAwardStart&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -860,15 +867,15 @@ void AcCmdCRAwardStart::Read(
 }
 
 void AcCmdCRAwardEnd::Write(
-  const AcCmdCRAwardEnd& command,
-  SinkStream& stream)
+  const AcCmdCRAwardEnd&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRAwardEnd::Read(
-  AcCmdCRAwardEnd& command,
-  SourceStream& stream)
+  AcCmdCRAwardEnd&,
+  SourceStream&)
 {
   // Empty.
 }
@@ -881,8 +888,8 @@ void AcCmdRCAwardNotify::Write(
 }
 
 void AcCmdRCAwardNotify::Read(
-  AcCmdRCAwardNotify& command,
-  SourceStream& stream)
+  AcCmdRCAwardNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -891,19 +898,19 @@ void AcCmdCRAwardEndNotify::Write(
   const AcCmdCRAwardEndNotify& command,
   SinkStream& stream)
 {
-  // Empty.
+  stream.Write(command.unk0);
 }
 
 void AcCmdCRAwardEndNotify::Read(
-  AcCmdCRAwardEndNotify& command,
-  SourceStream& stream)
+  AcCmdCRAwardEndNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRStarPointGet::Write(
-  const AcCmdCRStarPointGet& command,
-  SinkStream& stream)
+  const AcCmdCRStarPointGet&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -927,15 +934,15 @@ void AcCmdCRStarPointGetOK::Write(
 }
 
 void AcCmdCRStarPointGetOK::Read(
-  AcCmdCRStarPointGetOK& command,
-  SourceStream& stream)
+  AcCmdCRStarPointGetOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRRequestSpur::Write(
-  const AcCmdCRRequestSpur& command,
-  SinkStream& stream)
+  const AcCmdCRRequestSpur&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -960,15 +967,15 @@ void AcCmdCRRequestSpurOK::Write(
 }
 
 void AcCmdCRRequestSpurOK::Read(
-  AcCmdCRRequestSpurOK& command,
-  SourceStream& stream)
+  AcCmdCRRequestSpurOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRHurdleClearResult::Write(
-  const AcCmdCRHurdleClearResult& command,
-  SinkStream& stream)
+  const AcCmdCRHurdleClearResult&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -992,15 +999,15 @@ void AcCmdCRHurdleClearResultOK::Write(
 }
 
 void AcCmdCRHurdleClearResultOK::Read(
-  AcCmdCRHurdleClearResultOK& command,
-  SourceStream& stream)
+  AcCmdCRHurdleClearResultOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRStartingRate::Write(
-  const AcCmdCRStartingRate& command,
-  SinkStream& stream)
+  const AcCmdCRStartingRate&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1015,8 +1022,8 @@ void AcCmdCRStartingRate::Read(
 }
 
 void AcCmdCRRequestMagicItem::Write(
-  const AcCmdCRRequestMagicItem& command,
-  SinkStream& stream)
+  const AcCmdCRRequestMagicItem&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1025,7 +1032,7 @@ void AcCmdCRRequestMagicItem::Read(
   AcCmdCRRequestMagicItem& command,
   SourceStream& stream)
 {
-  stream.Read(command.member1)
+  stream.Read(command.characterOid)
     .Read(command.member2);
 }
 
@@ -1033,14 +1040,14 @@ void AcCmdCRRequestMagicItemOK::Write(
   const AcCmdCRRequestMagicItemOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.member1)
-    .Write(command.member2)
+  stream.Write(command.characterOid)
+    .Write(command.magicItemId)
     .Write(command.member3);
 }
 
 void AcCmdCRRequestMagicItemOK::Read(
-  AcCmdCRRequestMagicItemOK& command,
-  SourceStream& stream)
+  AcCmdCRRequestMagicItemOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1049,20 +1056,20 @@ void AcCmdCRRequestMagicItemNotify::Write(
   const AcCmdCRRequestMagicItemNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.member1)
-    .Write(command.member2);
+  stream.Write(command.magicItemId)
+    .Write(command.characterOid);
 }
 
 void AcCmdCRRequestMagicItemNotify::Read(
-  AcCmdCRRequestMagicItemNotify& command,
-  SourceStream& stream)
+  AcCmdCRRequestMagicItemNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdUserRaceUpdatePos::Write(
-  const AcCmdUserRaceUpdatePos& command,
-  SinkStream& stream)
+  const AcCmdUserRaceUpdatePos&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1095,26 +1102,26 @@ void AcCmdRCRoomCountdown::Write(
 {
   stream.Write(command.countdown)
     .Write(command.mapBlockId)
-    .Write(command.member2);
+    .Write(command.bonusCourseType);
 }
 
 void AcCmdRCRoomCountdown::Read(
-  AcCmdRCRoomCountdown& command,
-  SourceStream& stream)
+  AcCmdRCRoomCountdown&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdRCRoomCountdownCancel::Write(
-  const AcCmdRCRoomCountdownCancel& command,
-  SinkStream& stream)
+  const AcCmdRCRoomCountdownCancel&,
+  SinkStream&)
 {
   // Empty.
 }
 
 void AcCmdRCRoomCountdownCancel::Read(
-  AcCmdRCRoomCountdownCancel& command,
-  SourceStream& stream)
+  AcCmdRCRoomCountdownCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1127,15 +1134,15 @@ void AcCmdCRChangeMasterNotify::Write(
 }
 
 void AcCmdCRChangeMasterNotify::Read(
-  AcCmdCRChangeMasterNotify& command,
-  SourceStream& stream)
+  AcCmdCRChangeMasterNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRRelayCommand::Write(
-  const AcCmdCRRelayCommand& command,
-  SinkStream& stream)
+  const AcCmdCRRelayCommand&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1157,15 +1164,15 @@ void AcCmdCRRelayCommandNotify::Write(
 }
 
 void AcCmdCRRelayCommandNotify::Read(
-  AcCmdCRRelayCommandNotify& command,
-  SourceStream& stream)
+  AcCmdCRRelayCommandNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRRelay::Write(
-  const AcCmdCRRelay& command,
-  SinkStream& stream)
+  const AcCmdCRRelay&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1174,9 +1181,9 @@ void AcCmdCRRelay::Read(
   AcCmdCRRelay& command,
   SourceStream& stream)
 {
-  stream.Read(command.oid)
-    .Read(command.member2)
-    .Read(command.member3);
+  stream.Read(command.fromOid)
+    .Read(command.toOid)
+    .Read(command.payloadType);
 
   uint16_t bufferSize;
   stream.Read(bufferSize);
@@ -1186,15 +1193,131 @@ void AcCmdCRRelay::Read(
   {
     stream.Read(datum);
   }
+
+  // Parse command parameters
+  const std::span<const std::byte> payloadData = std::as_bytes(
+    std::span{command.data});
+  SourceStream payload(payloadData);
+
+  switch (command.payloadType)
+  {
+    case protocol::relay::RelayCommandId::Snapshot:
+    {
+      // Racer snapshot
+      // Payload size for snapshot is 56 bytes.
+      // TODO: if assertion fails, will it break anything with the RaceDirector live?
+      assert(payload.Size() == 56);
+
+      payload.Read(command.snapshot.racerOid)
+        .Read(command.snapshot.networkTickCounter)
+        .Read(command.snapshot.animationState)
+        .Read(command.snapshot.mountState);
+
+      command.snapshot.unidentifiedData.resize(8);
+      payload.Read(command.snapshot.unidentifiedData.data(), 8);
+
+      payload.Read(command.snapshot.position.X)
+        .Read(command.snapshot.position.Y)
+        .Read(command.snapshot.position.Z)
+        .Read(command.snapshot.rotation.X)
+        .Read(command.snapshot.rotation.Y)
+        .Read(command.snapshot.rotation.Z)
+        .Read(command.snapshot.rotation.W)
+        .Read(command.snapshot.forwardSpeed)
+        .Read(command.snapshot.reverseSpeed)
+        .Read(command.snapshot.turningRate);
+      break;
+    }
+    case protocol::relay::RelayCommandId::SyncProgress:
+    {
+      // Sync progress
+      payload.Read(command.syncProgress.racerOid)
+        .Read(command.syncProgress.lapCount)
+        .Read(command.syncProgress.lapProgress);
+      break;
+    }
+    case protocol::relay::RelayCommandId::SetTargetStateEnabled:
+    case protocol::relay::RelayCommandId::SetTargetStateDisabled:
+    {
+      // Set target state
+      if (command.payloadType == protocol::relay::RelayCommandId::SetTargetStateEnabled)
+        command.setTargetState.targetLocked = true;
+      
+      payload.Read(command.setTargetState.magicEffectId)
+        .Read(command.setTargetState.invokerRacerOid)
+        .Read(command.setTargetState.targetRacerOid);
+      break;
+    }
+    case protocol::relay::RelayCommandId::NetSetState:
+    {
+      payload.Read(command.netSetState.racerOid)
+        .Read(command.netSetState.state.val1)
+        .Read(command.netSetState.state.val2);
+      break;
+    }
+    case protocol::relay::RelayCommandId::NetSetLayerAnimation:
+    {
+      // Net set layer animation (braking/stopping)
+      payload.Read(command.netSetLayerAnimation.racerOid)
+        .Read(command.netSetLayerAnimation.layerAnimation);
+      break;
+    }
+    case protocol::relay::RelayCommandId::SyncGoalIn:
+    {
+      // Sync goal in (cross the finish line/DNF)
+      uint32_t raceTimeMs{};
+      payload.Read(command.syncGoalIn.racerOid)
+        .Read(raceTimeMs)
+        .Read(command.syncGoalIn.raceTrackProgress);
+      command.syncGoalIn.raceTimeMs = std::chrono::milliseconds{raceTimeMs};
+      break;
+    }
+    case protocol::relay::RelayCommandId::SpurLevel:
+    {
+      // Spur level
+      payload.Read(command.spurLevel.racerOid)
+        .Read(command.spurLevel.successiveSpurCount);
+      break;
+    }
+    case protocol::relay::RelayCommandId::SlidingMotion:
+    {
+      // Sliding motion
+      payload.Read(command.slidingMotion.racerOid)
+        .Read(command.slidingMotion.isSliding)
+        .Read(command.slidingMotion.slidingAngle);
+      break;
+    }
+    case protocol::relay::RelayCommandId::BroadcastCharacterUid:
+    {
+      // Self character uid
+      payload.Read(command.broadcastCharacterUid.selfCharacterUid);
+      break;
+    }
+    case protocol::relay::RelayCommandId::ResetPosOther:
+    {
+      // Reset pos other
+      payload.Read(command.resetPosOther.affectedOid)
+        .Read(command.resetPosOther.right)
+        .Read(command.resetPosOther.up)
+        .Read(command.resetPosOther.forward)
+        .Read(command.resetPosOther.position);
+      break;
+    }
+    default:
+    {
+      // Do not process unknown payload
+      break;
+    }
+  }
 }
 
 void AcCmdCRRelayNotify::Write(
   const AcCmdCRRelayNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.oid)
-    .Write(command.member2)
-    .Write(command.member3);
+  stream.Write(command.fromOid)
+    .Write(command.toOid)
+    .Write(command.payloadType);
 
   stream.Write(static_cast<uint16_t>(command.data.size()));
   for (const uint8_t datum : command.data)
@@ -1204,8 +1327,8 @@ void AcCmdCRRelayNotify::Write(
 }
 
 void AcCmdCRRelayNotify::Read(
-  AcCmdCRRelayNotify& command,
-  SourceStream& stream)
+  AcCmdCRRelayNotify&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1214,17 +1337,17 @@ void AcCmdRCTeamSpurGauge::Write(
   const AcCmdRCTeamSpurGauge& command,
   SinkStream& stream)
 {
-  stream.Write(command.member1)
-    .Write(command.member2)
-    .Write(command.member3)
-    .Write(command.member4)
-    .Write(command.member5)
-    .Write(command.member6);
+  stream.Write(command.team)
+    .Write(command.currentPoints)
+    .Write(command.newPoints)
+    .Write(command.markerSpeed)
+    .Write(command.reserved1)
+    .Write(command.unk5);
 }
 
 void AcCmdRCTeamSpurGauge::Read(
-  AcCmdRCTeamSpurGauge& command,
-  SourceStream& stream)
+  AcCmdRCTeamSpurGauge&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");  
 }
@@ -1250,8 +1373,7 @@ void AcCmdUserRaceActivateEvent::Write(
   const AcCmdUserRaceActivateEvent& command,
   SinkStream& stream)
 {
-  stream.Write(command.eventId)
-    .Write(command.characterOid);
+  stream.Write(command.eventId);
 }
 
 void AcCmdUserRaceActivateEvent::Read(
@@ -1261,9 +1383,55 @@ void AcCmdUserRaceActivateEvent::Read(
   stream.Read(command.eventId);
 }
 
-void AcCmdCRUseMagicItem::Write(
-  const AcCmdCRUseMagicItem& command,
+void AcCmdUserRaceActivateEventNotify::Write(
+  const AcCmdUserRaceActivateEventNotify& command,
   SinkStream& stream)
+{
+  stream.Write(command.eventId)
+    .Write(command.characterOid);
+}
+
+void AcCmdUserRaceActivateEventNotify::Read(
+  AcCmdUserRaceActivateEventNotify& command,
+  SourceStream& stream)
+{
+  stream.Read(command.eventId)
+    .Read(command.characterOid);
+}
+
+void AcCmdUserRaceDeactivateEvent::Write(
+  const AcCmdUserRaceDeactivateEvent& command,
+  SinkStream& stream)
+{
+  stream.Write(command.eventId);
+}
+
+void AcCmdUserRaceDeactivateEvent::Read(
+  AcCmdUserRaceDeactivateEvent& command,
+  SourceStream& stream)
+{
+  stream.Read(command.eventId);
+}
+
+void AcCmdUserRaceDeactivateEventNotify::Write(
+  const AcCmdUserRaceDeactivateEventNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.eventId)
+    .Write(command.characterOid);
+}
+
+void AcCmdUserRaceDeactivateEventNotify::Read(
+  AcCmdUserRaceDeactivateEventNotify& command,
+  SourceStream& stream)
+{
+  stream.Read(command.eventId)
+    .Read(command.characterOid);
+}
+
+void AcCmdCRUseMagicItem::Write(
+  const AcCmdCRUseMagicItem&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1277,12 +1445,13 @@ void AcCmdCRUseMagicItem::Read(
 
   switch(command.magicItemId)
   {
-    // Case 0xA and 0xB read 2x [3x floats]
+    // Cases 0xA and 0xB (Ice Wall) write 2x [3x floats]
+    // (likely position and rotation)
     // and then fallthrough to read uint16_t vector
     case 0xa:
     case 0xb:
     {
-      auto& optional1 = command.optional1.emplace();
+      auto& optional1 = command.iceWallProperties.emplace();
       for (auto& element : optional1.member1)
       {
         stream.Read(element);
@@ -1299,59 +1468,51 @@ void AcCmdCRUseMagicItem::Read(
     case 0xd:
     case 0xe:
     case 0xf:
+    case 0x10:
     case 0x11:
     case 0x12:
     case 0x13:
     {
-      auto& optional2 = command.optional2.emplace();
-
-      stream.Read(optional2.size);
-      optional2.list.resize(optional2.size);
-      for (auto& element : optional2.list)
+      uint8_t size;
+      stream.Read(size);
+      command.targetList.resize(size);
+      for (auto& element : command.targetList)
       {
         stream.Read(element);
       }
       break;
     }
-    default:
-    {
-      break;
-    }
   }
 
   stream.Read(command.unk3);
-  // FIXME: wtf am i switching
   switch (command.magicItemId)
   {
     case 0x2:
     case 0x3:
     case 0xe:
     case 0xf:
+    case 0x10:
     case 0x11:
     case 0x12:
     case 0x13:
     {
-      stream.Read(command.optional3.emplace())
-        .Read(command.optional4.emplace());
-      break;
-    }
-    default:
-    {
+      stream.Read(command.optional3.emplace().member1)
+        .Read(command.optional3.value().member2);
       break;
     }
   }
 }
 
 void AcCmdCRUseMagicItemCancel::Write(
-  const AcCmdCRUseMagicItemCancel& command,
-  SinkStream& stream)
+  const AcCmdCRUseMagicItemCancel&,
+  SinkStream&)
 {
   // Empty
 }
 
 void AcCmdCRUseMagicItemCancel::Read(
-  AcCmdCRUseMagicItemCancel& command,
-  SourceStream& stream)
+  AcCmdCRUseMagicItemCancel&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1371,13 +1532,13 @@ void AcCmdCRUseMagicItemOK::Write(
     case 0xb:
       // TODO: is this correct?
       // Assert that optional1 has value
-      assert(command.optional1.has_value());
+      assert(command.iceWallProperties.has_value());
 
-      for (auto& element : command.optional1.value().member1)
+      for (auto& element : command.iceWallProperties.value().member1)
       {
         stream.Write(element);
       }
-      for (auto& element : command.optional1.value().member2)
+      for (auto& element : command.iceWallProperties.value().member2)
       {
         stream.Write(element);
       }
@@ -1388,17 +1549,14 @@ void AcCmdCRUseMagicItemOK::Write(
     case 0xd:
     case 0xe:
     case 0xf:
+    case 0x10:
     case 0x11:
     case 0x12:
     case 0x13:
     {
-      // TODO: is this correct?
-      // Assert that optional2 has value
-      assert(command.optional2.has_value());
-
       // Expects vector size followed by uint16_t vector itself
-      stream.Write(command.optional2.value().size);
-      for (auto& element : command.optional2.value().list)
+      stream.Write(static_cast<uint8_t>(command.targetList.size()));
+      for (auto& element : command.targetList)
       {
         stream.Write(element);
       }
@@ -1410,15 +1568,39 @@ void AcCmdCRUseMagicItemOK::Write(
     }
   }
 
-  stream.Write(command.unk3)
+  stream.Write(command.effectInstanceId)
     .Write(command.unk4);
 }
 
 void AcCmdCRUseMagicItemOK::Read(
-  AcCmdCRUseMagicItemOK& command,
-  SourceStream& stream)
+  AcCmdCRUseMagicItemOK&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRUseItemSlotOK::Write(
+  const AcCmdCRUseItemSlotOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.magicItemId)
+    .Write(command.characterOid);
+}
+
+void AcCmdCRUseItemSlotOK::Read(
+  AcCmdCRUseItemSlotOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRUseItemSlotNotify::Write(
+  const AcCmdCRUseItemSlotNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.magicItemId)
+    .Write(command.characterOid)
+    .Write(command.unk);
 }
 
 void AcCmdGameRaceItemSpawn::Write(
@@ -1443,15 +1625,15 @@ void AcCmdGameRaceItemSpawn::Write(
 }
 
 void AcCmdGameRaceItemSpawn::Read(
-  AcCmdGameRaceItemSpawn& command,
-  SourceStream& stream)
+  AcCmdGameRaceItemSpawn&,
+  SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdUserRaceItemGet::Write(
-  const AcCmdUserRaceItemGet& command,
-  SinkStream& stream)
+  const AcCmdUserRaceItemGet&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1488,52 +1670,80 @@ void AcCmdCRStartMagicTarget::Read(
   AcCmdCRStartMagicTarget& command,
   SourceStream& stream)
 {
-  stream.Read(command.characterOid);
+  stream.Read(command.effectInstanceId)
+    .Read(command.casterOid)
+    .Read(command.targetOid)
+    .Read(command.targetOid2);
+}
+
+void AcCmdCRChangeMagicTarget::Read(
+  AcCmdCRChangeMagicTarget& command,
+  SourceStream& stream)
+{
+  stream.Read(command.effectInstanceId)
+    .Read(command.casterOid)
+    .Read(command.targetOid)
+    .Read(command.targetOid2);
 }
 
 void AcCmdCRChangeMagicTargetNotify::Write(
   const AcCmdCRChangeMagicTargetNotify& command,
   SinkStream& stream)
 {
-  stream.Write(command.characterOid)
-    .Write(command.targetOid);
+  stream.Write(command.effectInstanceId)
+    .Write(command.casterOid)
+    .Write(command.targetOid)
+    .Write(command.targetOid2);
 }
 
 void AcCmdCRChangeMagicTargetNotify::Read(
   AcCmdCRChangeMagicTargetNotify& command,
   SourceStream& stream)
 {
-  stream.Read(command.characterOid)
-    .Read(command.targetOid);
+  stream.Read(command.effectInstanceId)
+    .Read(command.casterOid)
+    .Read(command.targetOid)
+    .Read(command.targetOid2);
 }
 
-void AcCmdCRChangeMagicTargetOK::Read(
-  AcCmdCRChangeMagicTargetOK& command,
-  SourceStream& stream)
+void AcCmdCRChangeMagicTargetOK::Write(
+  const AcCmdCRChangeMagicTargetOK& command,
+  SinkStream& stream)
 {
-  stream.Read(command.characterOid)
-    .Read(command.targetOid);
+  stream.Write(command.effectInstanceId)
+    .Write(command.casterOid)
+    .Write(command.targetOid)
+    .Write(command.targetOid2);
 }
 
-void AcCmdCRChangeMagicTargetCancel::Read(
-  AcCmdCRChangeMagicTargetCancel& command,
-  SourceStream& stream)
+void AcCmdCRChangeMagicTargetCancel::Write(
+  const AcCmdCRChangeMagicTargetCancel& command,
+  SinkStream& stream)
 {
-  stream.Read(command.characterOid);
+  stream.Write(command.effectInstanceId)
+    .Write(command.casterOid)
+    .Write(command.targetOid)
+    .Write(command.targetOid2);
 }
 
 void AcCmdRCRemoveMagicTarget::Write(
   const AcCmdRCRemoveMagicTarget& command,
   SinkStream& stream)
 {
-  stream.Write(command.characterOid);
+  stream.Write(command.effectInstanceId)
+    .Write(command.casterOid)
+    .Write(command.targetOid)
+    .Write(command.targetOid2);
 }
 
 void AcCmdRCMagicExpire::Write(
   const AcCmdRCMagicExpire& command,
   SinkStream& stream)
 {
-  stream.Write(command.characterOid);
+  stream.Write(command.magicType);
+  stream.Write(command.firstObstacleInstanceId);
+  stream.Write(command.obstacleInstanceCount);
+  stream.Write(command.breakdown);
 }
 
 void AcCmdCRUseMagicItemNotify::Write(
@@ -1545,18 +1755,17 @@ void AcCmdCRUseMagicItemNotify::Write(
 
   switch(command.magicItemId)
   {
-    // Case 0xA and 0xB write 2x [3x floats]
+    // Cases 0xA and 0xB (Ice Wall) write 2x [3x floats]
+    // (likely position and rotation)
     // and then fallthrough to write uint16_t vector
     case 0xa:
     case 0xb:
-      // Assert that optional1 has value
-      assert(command.optional1.has_value());
-
-      for (auto& element : command.optional1.value().member1)
+      assert(command.iceWallProperties.has_value());
+      for (auto& element : command.iceWallProperties.value().member1)
       {
         stream.Write(element);
       }
-      for (auto& element : command.optional1.value().member2)
+      for (auto& element : command.iceWallProperties.value().member2)
       {
         stream.Write(element);
       }
@@ -1567,16 +1776,14 @@ void AcCmdCRUseMagicItemNotify::Write(
     case 0xd:
     case 0xe:
     case 0xf:
+    case 0x10:
     case 0x11:
     case 0x12:
     case 0x13:
     {
-      // Assert that optional2 has value
-      assert(command.optional2.has_value());
-
       // Expects vector size followed by uint16_t vector itself
-      stream.Write(command.optional2.value().size);
-      for (auto& element : command.optional2.value().list)
+      stream.Write(static_cast<uint8_t>(command.targetList.size()));
+      for (auto& element : command.targetList)
       {
         stream.Write(element);
       }
@@ -1587,32 +1794,9 @@ void AcCmdCRUseMagicItemNotify::Write(
       break;
     }
   }
-
-  // FIXME: wtf am i switching
-  switch (command.magicItemId)
-  {
-    case 0x2:
-    case 0x3:
-    case 0xe:
-    case 0xf:
-    case 0x11:
-    case 0x12:
-    case 0x13:
-    {
-      // Assert that optional3 and optional4 have values
-      assert(command.optional3.has_value());
-      assert(command.optional4.has_value());
-      stream.Write(command.optional3.value())
-        .Write(command.optional4.value());
-      break;
-    }
-    default:
-    {
-      break;
-    }
-  }
-
-  stream.Write(command.unk3);
+  
+  stream.Write(command.effectInstanceId)
+    .Write(command.unk4);
 }
 
 void AcCmdCRUseMagicItemNotify::Read(
@@ -1628,11 +1812,11 @@ void AcCmdCRUseMagicItemNotify::Read(
     // and then fallthrough to read uint16_t vector
     case 0xa:
     case 0xb:
-      for (auto& element : command.optional1.emplace().member1)
+      for (auto& element : command.iceWallProperties.emplace().member1)
       {
         stream.Read(element);
       }
-      for (auto& element : command.optional1.value().member2)
+      for (auto& element : command.iceWallProperties.value().member2)
       {
         stream.Read(element);
       }
@@ -1647,11 +1831,10 @@ void AcCmdCRUseMagicItemNotify::Read(
     case 0x12:
     case 0x13:
     {
-      auto& optional2 = command.optional2.emplace();
-
-      stream.Read(optional2.size);
-      optional2.list.resize(optional2.size);
-      for (auto& element : optional2.list)
+      uint8_t size;
+      stream.Read(size);
+      command.targetList.resize(size);
+      for (auto& element : command.targetList)
       {
         stream.Read(element);
       }
@@ -1663,27 +1846,8 @@ void AcCmdCRUseMagicItemNotify::Read(
     }
   }
 
-  stream.Read(command.unk3);
-  // FIXME: wtf am i switching
-  switch (command.magicItemId)
-  {
-    case 0x2:
-    case 0x3:
-    case 0xe:
-    case 0xf:
-    case 0x11:
-    case 0x12:
-    case 0x13:
-    {
-      stream.Read(command.optional3.emplace())
-        .Read(command.optional4.emplace());
-      break;
-    }
-    default:
-    {
-      break;
-    }
-  }
+  stream.Read(command.effectInstanceId)
+    .Read(command.unk4);
 }
 
 void AcCmdRCTriggerActivate::Write(
@@ -1710,9 +1874,10 @@ void AcCmdCRActivateSkillEffect::Write(
   const AcCmdCRActivateSkillEffect& command,
   SinkStream& stream)
 {
-  stream.Write(command.characterOid)
-    .Write(command.skillId)
-    .Write(command.unk1)
+  stream.Write(command.targetOid)
+    .Write(command.effectId)
+    .Write(command.attackerOid)
+    .Write(command.effectInstanceId)
     .Write(command.unk2);
 }
 
@@ -1720,9 +1885,10 @@ void AcCmdCRActivateSkillEffect::Read(
   AcCmdCRActivateSkillEffect& command,
   SourceStream& stream)
 {
-  stream.Read(command.characterOid)
-    .Read(command.skillId)
-    .Read(command.unk1)
+  stream.Read(command.targetOid)
+    .Read(command.effectId)
+    .Read(command.attackerOid)
+    .Read(command.effectInstanceId)
     .Read(command.unk2);
 }
 
@@ -1732,8 +1898,26 @@ void AcCmdRCAddSkillEffect::Write(
 {
   stream.Write(command.characterOid)
     .Write(command.effectId)
-    .Write(command.duration)
-    .Write(command.intensity);
+    .Write(command.targetOid)
+    .Write(command.attackerOid)
+    .Write(command.unk2)
+    .Write(command.unk3);
+
+  switch(command.effectId)
+  {
+    case 2:
+    case 3:
+      stream.Write(command.shieldEffect.value().unk0)
+        .Write(command.shieldEffect.value().unk1);
+      break;
+    case 5:
+    case 6:
+    case 7:
+    case 22:
+    case 23:
+      stream.Write(command.boostEffectMs.value());
+      break;
+  }
 }
 
 void AcCmdRCAddSkillEffect::Read(
@@ -1742,13 +1926,51 @@ void AcCmdRCAddSkillEffect::Read(
 {
   stream.Read(command.characterOid)
     .Read(command.effectId)
-    .Read(command.duration)
-    .Read(command.intensity);
+    .Read(command.targetOid)
+    .Read(command.attackerOid)
+    .Read(command.unk2)
+    .Read(command.unk3);
+  
+  switch(command.effectId)
+  {
+    case 2:
+    case 3:
+      stream.Read(command.shieldEffect.emplace().unk0)
+        .Read(command.shieldEffect.value().unk1);
+      break;
+    case 5:
+    case 6:
+    case 7:
+    case 22:
+    case 23:
+      stream.Read(command.boostEffectMs.emplace());
+      break;
+  }
+}
+
+void AcCmdRCRemoveSkillEffect::Write(
+  const AcCmdRCRemoveSkillEffect& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterOid)
+    .Write(command.effectId)
+    .Write(command.targetOid)
+    .Write(command.unk1);
+}
+
+void AcCmdRCRemoveSkillEffect::Read(
+  AcCmdRCRemoveSkillEffect& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterOid)
+    .Read(command.effectId)
+    .Read(command.targetOid)
+    .Read(command.unk1);
 }
 
 void AcCmdCRChangeSkillCardPresetID::Write(
-  const AcCmdCRChangeSkillCardPresetID& command,
-  SinkStream& stream)
+  const AcCmdCRChangeSkillCardPresetID&,
+  SinkStream&)
 {
   throw std::runtime_error("Not implemented");
 }
@@ -1762,6 +1984,212 @@ void AcCmdCRChangeSkillCardPresetID::Read(
   stream.Read(command.setId)
     .Read(commandGameMode);
   command.gamemode = static_cast<GameMode>(commandGameMode);
+}
+
+void AcCmdRCCreateObstacle::Write(
+  const AcCmdRCCreateObstacle& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.unk2);
+  for (const float& value : command.position)
+  {
+    stream.Write(value);
+  }
+}
+
+void AcCmdRCObstacleStatus::Write(
+  const AcCmdRCObstacleStatus& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.deactivate)
+    .Write(command.unk2);
+}
+
+void AcCmdUserRaceDeleteNotify::Write(
+  const AcCmdUserRaceDeleteNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.racerOid);
+}
+
+void AcCmdUserRaceDeleteNotify::Read(
+  AcCmdUserRaceDeleteNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRKick::Write(
+  const AcCmdCRKick&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRKick::Read(
+  AcCmdCRKick& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterUid);
+}
+
+void AcCmdCRKickNotify::Write(
+  const AcCmdCRKickNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid);
+}
+
+void AcCmdCRKickNotify::Read(
+  AcCmdCRKickNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCTimeoutCareUser::Write(
+  const AcCmdRCTimeoutCareUser& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid);
+}
+
+void AcCmdRCTimeoutCareUser::Read(
+  AcCmdRCTimeoutCareUser&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCAchievementUpdateNotify::Write(
+  const AcCmdRCAchievementUpdateNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.achievementTid)
+    .Write(command.objectiveProgress)
+    .Write(command.carrotBalance);
+}
+
+void AcCmdRCAchievementUpdateNotify::Read(
+  AcCmdRCAchievementUpdateNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRTriggerizeAct::Write(
+  const AcCmdCRTriggerizeAct& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.unk2);
+}
+
+void AcCmdCRTriggerizeAct::Read(
+  AcCmdCRTriggerizeAct& command,
+  SourceStream& stream)
+{
+  stream.Read(command.unk0)
+    .Read(command.unk1)
+    .Read(command.unk2);
+}
+
+void AcCmdRCCreateItem::Write(
+  const AcCmdRCCreateItem& command,
+  SinkStream& stream)
+{
+  stream.Write(command.itemId)
+    .Write(command.itemType);
+  
+  for (const float element : command.position)
+    stream.Write(element);
+
+  stream.Write(command.spawnStyle)
+    .Write(command.spawnerId)
+    .Write(command.sizeLevel);
+}
+
+void AcCmdRCCreateItem::Read(
+  AcCmdRCCreateItem&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCUpdateGameMoney::Write(
+  const AcCmdRCUpdateGameMoney& command,
+  SinkStream& stream)
+{
+  stream.Write(command.carrotBalance)
+    .Write(command.unk1)
+    .Write(command.unk2);
+}
+
+void AcCmdRCUpdateGameMoney::Read(
+  AcCmdRCUpdateGameMoney&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCGameCreateClientItem::Write(
+  const AcCmdRCGameCreateClientItem& command,
+  SinkStream& stream)
+{
+  stream.Write(command.racerOid)
+    .Write(command.unk1);
+}
+
+void AcCmdRCGameCreateClientItem::Read(
+  AcCmdRCGameCreateClientItem&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRGameCreateClientItem::Write(
+  const AcCmdCRGameCreateClientItem&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRGameCreateClientItem::Read(
+  AcCmdCRGameCreateClientItem& command,
+  SourceStream& stream)
+{
+  stream.Read(command.someonesOid)
+    .Read(command.unk1);
+
+  for (auto& element : command.position)
+  {
+    stream.Read(element);
+  }
+
+  for (auto& element : command.unk3)
+  {
+    stream.Read(element);
+  }
+}
+
+void AcCmdRCObtainEgg::Write(
+  const AcCmdRCObtainEgg& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.ItemUid)
+    .Write(command.ItemTid);
+}
+
+void AcCmdRCObtainEgg::Read(
+  AcCmdRCObtainEgg&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
 }
 
 } // namespace server::protocol

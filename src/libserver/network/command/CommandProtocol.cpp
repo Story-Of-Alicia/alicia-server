@@ -345,6 +345,7 @@ const std::unordered_map<Command, std::string_view> commands = {
   {Command::AcCmdCRMountFamilyTree, "AcCmdCRMountFamilyTree"},
   {Command::AcCmdCRMountFamilyTreeOK, "AcCmdCRMountFamilyTreeOK"},
   {Command::AcCmdCRMountFamilyTreeCancel, "AcCmdCRMountFamilyTreeCancel"},
+  {Command::AcCmdCRChangeMagicTarget, "AcCmdCRChangeMagicTarget"},
   {Command::AcCmdCRChangeMagicTargetOK, "AcCmdCRChangeMagicTargetOK"},
   {Command::AcCmdCRChangeMagicTargetCancel, "AcCmdCRChangeMagicTargetCancel"},
   {Command::AcCmdCRChangeMagicTargetNotify, "AcCmdCRChangeMagicTargetNotify"},
@@ -682,7 +683,7 @@ MessageMagic decode_message_magic(uint32_t value)
   if (value & 1 << 15)
   {
     const uint16_t section = value & 0x3FFF;
-    magic.length = (value & 0xFF) << 4 | section >> 8 & 0xF | section & 0xF000;
+    magic.length = (value & 0xFF) << 4 | (section >> 8 & 0xF) | (section & 0xF000);
   }
 
   const uint16_t firstTwoBytes = value & 0xFFFF;
@@ -701,8 +702,8 @@ uint32_t encode_message_magic(MessageMagic magic)
   const uint32_t length = BufferSize << 16 | magic.length;
 
   uint32_t encoded = length;
-  encoded = (encoded & 0x3FFF | encoded << 14) & 0xFFFF;
-  encoded = ((encoded & 0xF | 0xFF80) << 8 | length >> 4 & 0xFF | encoded & 0xF000) & 0xFFFF;
+  encoded = ((encoded & 0x3FFF) | encoded << 14) & 0xFFFF;
+  encoded = ((((encoded & 0xF) | 0xFF80) << 8) | (length >> 4 & 0xFF) | (encoded & 0xF000)) & 0xFFFF;
   encoded |= (encoded ^ id) << 16;
   return encoded;
 }

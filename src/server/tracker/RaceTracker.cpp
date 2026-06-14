@@ -28,7 +28,12 @@ RaceTracker::Racer& RaceTracker::AddRacer(data::Uid characterUid)
   if (not created)
     throw std::runtime_error("Character is already a racer");
 
-  racerIter->second.oid = _nextRacerOid++;
+  // Reuse the OID from a previous race if the player was here before, otherwise assign a new one.
+  const auto [oidIter, isNew] = _characterOids.try_emplace(characterUid, _nextCharacterOid);
+  if (isNew)
+    ++_nextCharacterOid;
+
+  racerIter->second.oid = oidIter->second;
 
   return racerIter->second;
 }
@@ -52,7 +57,7 @@ RaceTracker::Racer& RaceTracker::GetRacer(data::Uid characterUid)
   return racerIter->second;
 }
 
-RaceTracker::ObjectMap& RaceTracker::GetRacers()
+RaceTracker::RacerObjectMap& RaceTracker::GetRacers()
 {
   return _racers;
 }
@@ -85,12 +90,83 @@ RaceTracker::ItemObjectMap& RaceTracker::GetItems()
 {
   return _items;
 }
+RaceTracker::EventItem& RaceTracker::AddEventItem(data::Uid characterUid)
+{
+  auto& racer = GetRacer(characterUid);
+  auto& eventItem = racer.eventItems.emplace_back();
+  eventItem.oid = _nextItemOid++;
+  return eventItem;
+}
+
+Oid RaceTracker::FindEventItem(data::Uid characterUid, Oid oid)
+{
+  auto& racer = GetRacer(characterUid);
+  for (auto& eventItem : racer.eventItems)
+  {
+    if (eventItem.oid == oid)
+      return eventItem.oid;
+  }
+  return InvalidEntityOid;
+}
+
+RaceTracker::EventItem& RaceTracker::GetEventItem(data::Uid characterUid, Oid oid)
+{
+  auto& racer = GetRacer(characterUid);
+  for (auto& eventItem : racer.eventItems)
+  {
+    if (eventItem.oid == oid)
+      return eventItem;
+  }
+
+  throw std::runtime_error("Event item is not tracked for racer");
+}
+
+void RaceTracker::RemoveEventItem(data::Uid characterUid, Oid oid)
+{
+  auto& racer = GetRacer(characterUid);
+  std::erase_if(racer.eventItems, [oid](const EventItem& e) { return e.oid == oid; });
+}
+
 void RaceTracker::Clear()
 {
   _racers.clear();
   _items.clear();
-  _nextRacerOid = 1;
+  _events.clear();
   _nextItemOid = 1;
+}
+
+uint16_t RaceTracker::GetNextEffectInstanceIdAndIncrementBy(uint16_t increment)
+{
+  const uint16_t nextId = _nextEffectInstanceId;
+  _nextEffectInstanceId += increment;
+  if (_nextEffectInstanceId == 0)
+    _nextEffectInstanceId = 1;
+  return nextId;
+}
+
+bool RaceTracker::IsEventThrottled(uint32_t eventId)
+{
+  const auto& now = std::chrono::steady_clock::now();
+
+  const auto& [eventIter, inserted] = _events.try_emplace(eventId);
+  if (not inserted and eventIter->second.throttledUntil > now)
+  {
+    // Existing event was throttled
+    return true;
+  }
+  else if (inserted)
+  {
+    eventIter->second.id = eventId;
+  }
+
+  // New event or event expired, update throttle time
+  eventIter->second.throttledUntil = now + ThrottleDurationMs;
+  return false;
+}
+
+RaceTracker::EventMap& RaceTracker::GetEvents()
+{
+  return _events;
 }
 
 } // namespace server::tracker

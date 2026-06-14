@@ -77,7 +77,7 @@ uint32_t DurationToAliciaTime(const Clock::duration& duration)
   // The extracted date time from the duration.
   DateTime dateTime{};
   // Total time of the duration in seconds.
-  uint32_t timeLeft = std::chrono::duration_cast<
+  auto timeLeft = std::chrono::duration_cast<
     std::chrono::seconds>(duration).count();
 
   // Convert the remaining time to time unit, subtract equivalent of the time unit in seconds from the time left
@@ -116,6 +116,91 @@ uint32_t DurationToAliciaTime(const Clock::duration& duration)
   return DateTimeToAliciaTime(dateTime);
 }
 
+DateTime AliciaShopTimeToDateTime(const std::array<uint32_t, 3> timestamp)
+{
+  // "2025-10-31 23:59:59"
+  // 000a07e9 0017001f 003b003b
+
+  // 2025-10 = 0x000a07e9
+  // 31 23   = 0x0017001f
+  // 59:59   = 0x003b003b
+
+  return DateTime{
+    .years = static_cast<uint16_t>(timestamp[0]),
+    .months = static_cast<uint16_t>((timestamp[0] >> 16)),
+    .days = static_cast<uint16_t>(timestamp[1]),
+    .hours = static_cast<uint16_t>((timestamp[1] >> 16)),
+    .minutes = static_cast<uint16_t>(timestamp[2]),
+    .seconds = static_cast<uint16_t>((timestamp[2] >> 16))
+  };
+}
+
+std::array<uint32_t, 3> DateTimeToAliciaShopTime(const DateTime& dateTime)
+{
+  uint32_t monthYear, hourDay, secondMinute;
+  monthYear = (dateTime.months << 16) | dateTime.years;
+  hourDay = (dateTime.hours << 16) | dateTime.days;
+  secondMinute = (dateTime.seconds<< 16) | dateTime.minutes;
+
+  return {monthYear, hourDay, secondMinute};
+}
+
+Clock::time_point AliciaShopTimeToTimePoint(const std::array<uint32_t, 3>& timestamp)
+{
+  // "2025-10-31 23:59:59"
+  // 000a07e9 0017001f 003b003b
+
+  // 2025-10 = 0x000a07e9
+  // 31 23   = 0x0017001f
+  // 59:59   = 0x003b003b
+
+  const uint16_t year = static_cast<uint16_t>(timestamp[0]);
+  const uint16_t month = static_cast<uint16_t>(timestamp[0] >> 16);
+  const uint16_t day = static_cast<uint16_t>(timestamp[1]);
+  const uint16_t hour = static_cast<uint16_t>(timestamp[1] >> 16);
+  const uint16_t minute = static_cast<uint16_t>(timestamp[2]);
+  const uint16_t second = static_cast<uint16_t>(timestamp[2] >> 16);
+
+  std::chrono::year y{static_cast<int32_t>(year)};
+  std::chrono::month m{static_cast<uint32_t>(month)};
+  std::chrono::day d{static_cast<uint32_t>(day)};
+
+  std::chrono::year_month_day ymd{y, m, d};
+  std::chrono::sys_days days{ymd};
+  std::chrono::sys_seconds tp_seconds = 
+    days + 
+    std::chrono::hours{hour} + 
+    std::chrono::minutes{minute} + 
+    std::chrono::seconds{second};
+
+  // convert to system_clock::time_point (sys_seconds is based on system_clock on most platforms)
+  return std::chrono::system_clock::time_point(tp_seconds);
+}
+
+std::array<uint32_t, 3> TimePointToAliciaShopTime(const Clock::time_point& timePoint)
+{
+  const std::chrono::year_month_day date{
+    std::chrono::floor<std::chrono::days>(timePoint)};
+  if (not date.ok())
+    throw std::runtime_error("Invalid date");
+
+  const std::chrono::hh_mm_ss time{
+    timePoint - std::chrono::floor<std::chrono::days>(timePoint)};
+
+  // Pack according to spec:
+  // word0: high16 = month, low16 = year
+  // word1: high16 = hour,  low16 = day
+  // word2: high16 = second, low16 = minute
+  uint32_t w0 = 
+    (static_cast<uint32_t>(date.month()) << 16) | static_cast<int32_t>(date.year());
+  uint32_t w1 = 
+    (static_cast<int32_t>(time.hours().count()) << 16) | static_cast<uint32_t>(date.day());
+  uint32_t w2 = 
+    (static_cast<int32_t>(time.seconds().count()) << 16) | static_cast<int32_t>(time.minutes().count());
+
+  return std::array<uint32_t, 3>{w0, w1, w2};
+}
+
 asio::ip::address_v4 ResolveHostName(const std::string& host)
 {
   try
@@ -124,7 +209,7 @@ asio::ip::address_v4 ResolveHostName(const std::string& host)
     const auto address = asio::ip::make_address(host);
     return address.to_v4();
   }
-  catch (const std::exception& ignored)
+  catch (const std::exception&)
   {
   }
 

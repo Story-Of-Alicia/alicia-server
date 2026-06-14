@@ -23,6 +23,8 @@
 #include "libserver/data/DataDefinitions.hpp"
 #include "server/Config.hpp"
 
+#include <string_view>
+
 namespace server
 {
 
@@ -33,14 +35,20 @@ public:
   //! Default destructor.
   virtual ~DataSource() = default;
 
+  //! Creates the user in the data source.
+  //! @param user User to ccreate.
+  virtual void CreateUser(data::User& user) = 0;
   //! Retrieves the user from the data source.
   //! @param name Name of the user.
   //! @param user User to retrieve.
-  virtual void RetrieveUser(std::string name, data::User& user) = 0;
+  virtual void RetrieveUser(const std::string_view& name, data::User& user) = 0;
   //! Stores the user on the data source.
   //! @param name Name of the user.
   //! @param user User to store.
-  virtual void StoreUser(std::string name, const data::User& user) = 0;
+  virtual void StoreUser(const std::string_view& name, const data::User& user) = 0;
+  //! Returns whether the user name is unique.
+  //! @return `true` if the user name is unique, otherwise returns `false`.
+  virtual bool IsUserNameUnique(const std::string_view& name) = 0;
 
   //! Creates the infraction in the data source.
   //! @param infraction Infraction to create.
@@ -71,6 +79,13 @@ public:
   //! Deletes the character from the data source.
   //! @param uid UID of the character.
   virtual void DeleteCharacter(data::Uid uid) = 0;
+  //! Retrieves the character by character name from the data source.
+  //! @param name Name of the character.
+  //! @return `data::InvalidUid` if character by that name does not exist, otherwise returns `data::Uid` of the character.
+  virtual data::Uid RetrieveCharacterUidByName(const std::string_view& name) = 0;
+  //! Returns whether the character name is unique.
+  //! @return `server::data::InvalidUid` if the character name is unique, otherwise returns the existing character UID.
+  virtual bool IsCharacterNameUnique(const std::string_view& name) = 0;
 
   //! Creates the horse in the data source.
   //! @param horse Horse to create.
@@ -176,6 +191,9 @@ public:
   //! Deletes the guild from the data source.
   //! @param uid UID of the guild.
   virtual void DeleteGuild(data::Uid uid) = 0;
+  //! Returns whether the guild name is unique.
+  //! @return `true` if the guild name is unique, otherwise returns `false`.
+  virtual bool IsGuildNameUnique(const std::string_view& name) = 0;
 
   //! Creates the settings in the data source.
   //! @param settings Settings to create.
@@ -190,6 +208,49 @@ public:
   //! Deletes the settings from the data source.
   //! @param uid UID of the settings.
   virtual void DeleteSettings(data::Uid uid) = 0;
+
+  //! Creates the daily quest group in the data source.
+  //! @param group DailyQuestGroup to create.
+  virtual void CreateDailyQuestGroup(data::DailyQuestGroup& group) = 0;
+  //! Retrieves the daily quest group from the data source.
+  //! @param uid UID of the daily quest group.
+  virtual void RetrieveDailyQuestGroup(data::Uid uid, data::DailyQuestGroup& group) = 0;
+  //! Stores the daily quest group on the data source.
+  //! @param uid UID of the daily quest group.
+  //! @param group DailyQuestGroup to store.
+  virtual void StoreDailyQuestGroup(data::Uid uid, const data::DailyQuestGroup& group) = 0;
+  //! Deletes the daily quest group from the data source.
+  //! @param uid UID of the daily quest group.
+  virtual void DeleteDailyQuestGroup(data::Uid uid) = 0;
+  
+  //! Creates the mail in the data source.
+  //! @param mail Mail to create.
+  virtual void CreateMail(data::Mail& mail) = 0;
+  //! Retrieves the mail from the data source.
+  //! @param uid UID of the mail.
+  virtual void RetrieveMail(data::Uid uid, data::Mail& mail) = 0;
+  //! Stores the mail on the data source.
+  //! @param uid UID of the mail.
+  //! @param mail Mail to store.
+  virtual void StoreMail(data::Uid uid, const data::Mail& mail) = 0;
+  //! Deletes the mail from the data source.
+  //! @param uid UID of the mail.
+  virtual void DeleteMail(data::Uid uid) = 0;
+
+  //! Creates the quest in the data source.
+  //! @param quest Quest to create.
+  virtual void CreateQuest(data::Quest& quest) = 0;
+  //! Retrieves the quest from the data source.
+  //! @param uid UID of the quest.
+  //! @param quest Quest to retrieve.
+  virtual void RetrieveQuest(data::Uid uid, data::Quest& quest) = 0;
+  //! Stores the quest on the data source.
+  //! @param uid UID of the quest.
+  //! @param quest Quest to store.
+  virtual void StoreQuest(data::Uid uid, const data::Quest& quest) = 0;
+  //! Deletes the quest from the data source.
+  //! @param uid UID of the quest.
+  virtual void DeleteQuest(data::Uid uid) = 0;
 };
 
 } // namespace server

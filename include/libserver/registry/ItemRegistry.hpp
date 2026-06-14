@@ -25,6 +25,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace server::registry
 {
@@ -112,18 +113,37 @@ struct Item
   };
 
   uint32_t tid{};
-  std::string name;
-  std::string description;
+
+  enum class Type
+  {
+    Permanent = 0,
+    Temporary = 1,
+    Consumable = 2
+  } type{Type::Permanent};
+
   uint32_t level{};
 
-  std::optional<CharacterPartInfo> characterPartInfo;
-  std::optional<MountPartInfo> mountPartInfo;
-  std::optional<MountPartSetInfo> mountPartSetInfo;
+  std::string name;
+  std::vector<std::string> description;
+  bool isPurchasable{false};
 
-  std::optional<CareParameters> careParameters;
-  std::optional<CureParameters> cureParameters;
-  std::optional<FoodParameters> foodParameters;
-  std::optional<PlayParameters> playParameters;
+  std::optional<CharacterPartInfo> characterPartInfo{};
+  std::optional<MountPartInfo> mountPartInfo{};
+  std::optional<MountPartSetInfo> mountPartSetInfo{};
+
+  std::optional<CareParameters> careParameters{};
+  std::optional<CureParameters> cureParameters{};
+  std::optional<FoodParameters> foodParameters{};
+  std::optional<PlayParameters> playParameters{};
+};
+
+struct Package
+{
+  uint32_t packageId{};
+  std::string packageName{};
+  uint32_t count{};
+  std::string itemName{};
+  uint32_t tid{};
 };
 
 class ItemRegistry
@@ -131,9 +151,13 @@ class ItemRegistry
 public:
   void ReadConfig(const std::filesystem::path& configPath);
   [[nodiscard]] std::optional<Item> GetItem(uint32_t tid);
+  [[nodiscard]] std::unordered_map<uint32_t, Item> GetItems();
+  [[nodiscard]] std::optional<Package> GetPackage(uint32_t packageId);
+  [[nodiscard]] std::unordered_map<uint32_t, Package> GetPackages();
 
 private:
   std::unordered_map<uint32_t, Item> _items;
+  std::unordered_map<uint32_t, Package> _packages;
 };
 
 } // namespace server::registry

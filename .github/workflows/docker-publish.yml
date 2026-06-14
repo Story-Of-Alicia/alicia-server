@@ -42,12 +42,14 @@ jobs:
           if [ "${{ github.event_name }}" != "pull_request" ]; then
             echo "authorised=true" >> $GITHUB_OUTPUT
           else
-            if [ "${{ github.event.pull_request.author_association }}" = "MEMBER" ] || [ "${{ github.event.pull_request.author_association }}" = "OWNER" ]; then
+            association="${{ github.event.pull_request.author_association }}"
+            if [ "$association" = "MEMBER" ] || [ "$association" = "OWNER" ] || [ "$association" = "CONTRIBUTOR" ]; then
               echo "authorised=true" >> $GITHUB_OUTPUT
             else
               echo "authorised=false" >> $GITHUB_OUTPUT
             fi
           fi
+          echo "Author association: $association"
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer

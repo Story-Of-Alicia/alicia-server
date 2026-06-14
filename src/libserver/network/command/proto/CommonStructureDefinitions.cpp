@@ -43,12 +43,12 @@ void Item::Read(Item& item, SourceStream& stream)
 void StoredItem::Write(const StoredItem& item, SinkStream& stream)
 {
   stream.Write(item.uid)
-    .Write(item.val1)
+    .Write(item.goodsSq)
     .Write(item.status)
     .Write(item.val3)
     .Write(item.val4)
-    .Write(item.val5)
-    .Write(item.val6)
+    .Write(item.carrots)
+    .Write(item.priceId)
     .Write(item.sender)
     .Write(item.message)
     .Write(item.dateAndTime);
@@ -57,12 +57,12 @@ void StoredItem::Write(const StoredItem& item, SinkStream& stream)
 void StoredItem::Read(StoredItem& item, SourceStream& stream)
 {
   stream.Read(item.uid)
-    .Read(item.val1)
+    .Read(item.goodsSq)
     .Read(item.status)
     .Read(item.val3)
     .Read(item.val4)
-    .Read(item.val5)
-    .Read(item.val6)
+    .Read(item.carrots)
+    .Read(item.priceId)
     .Read(item.sender)
     .Read(item.message)
     .Read(item.dateAndTime);
@@ -162,7 +162,8 @@ void GamepadOptions::Read(GamepadOptions& value, SourceStream& stream)
 
 void Settings::Write(const Settings& value, SinkStream& stream)
 {
-  uint32_t typeValue{value.typeBitset.to_ulong()};
+  const auto typeValue{
+    static_cast<uint32_t>(value.typeBitset.to_ulong())};
   stream.Write(typeValue);
 
   // Write the keyboard options if specified in the option type mask.
@@ -445,7 +446,8 @@ void Horse::Write(const Horse& value, SinkStream& stream)
 
   stream.Write(value.mastery);
 
-  stream.Write(value.val16).Write(value.val17);
+  stream.Write(value.val16)
+    .Write(value.visualCleanlinessBitset);
 }
 
 void Horse::Read(Horse& value, SourceStream& stream)
@@ -500,7 +502,7 @@ void Horse::Read(Horse& value, SourceStream& stream)
   stream.Read(value.mastery);
 
   stream.Read(value.val16)
-    .Read(value.val17);
+    .Read(value.visualCleanlinessBitset);
 }
 
 void Guild::Write(const Guild& value, SinkStream& stream)
@@ -561,11 +563,11 @@ void Egg::Write(const Egg& value, SinkStream& stream)
     .Write(value.itemTid)
     .Write(value.member3)
     .Write(value.member4)
-    .Write(value.member5)
+    .Write(value.remainingHatchingTime)
     .Write(value.timeRemaining)
-    .Write(value.boost)
-    .Write(value.totalHatchingTime)
-    .Write(value.member9);
+    .Write(value.boostPreviewValue)
+    .Write(value.hatchingProgress)
+    .Write(value.boostCooldown);
 }
 
 void Egg::Read(Egg& value, SourceStream& stream)
@@ -574,11 +576,11 @@ void Egg::Read(Egg& value, SourceStream& stream)
     .Read(value.itemTid)
     .Read(value.member3)
     .Read(value.member4)
-    .Read(value.member5)
+    .Read(value.remainingHatchingTime)
     .Read(value.timeRemaining)
-    .Read(value.boost)
-    .Read(value.totalHatchingTime)
-    .Read(value.member9);
+    .Read(value.boostPreviewValue)
+    .Read(value.hatchingProgress)
+    .Read(value.boostCooldown);
 }
 
 void PetInfo::Write(const PetInfo& value, SinkStream& stream)
@@ -664,7 +666,6 @@ void RanchCharacter::Write(const RanchCharacter& ranchCharacter, SinkStream& str
     .Write(struct6.val2);
 
   // Pet
-  const auto& struct7 = ranchCharacter.pet;
   stream.Write(ranchCharacter.pet)
     .Write(ranchCharacter.unk4)
     .Write(ranchCharacter.unk5);
@@ -706,8 +707,8 @@ void Quest::Write(const Quest& value, SinkStream& stream)
 {
   stream.Write(value.tid)
     .Write(value.member0)
-    .Write(value.member1)
-    .Write(value.member2)
+    .Write(value.status)
+    .Write(value.progress)
     .Write(value.member3)
     .Write(value.member4);
 }
@@ -716,8 +717,8 @@ void Quest::Read(Quest& value, SourceStream& stream)
 {
   stream.Read(value.tid)
     .Read(value.member0)
-    .Read(value.member1)
-    .Read(value.member2)
+    .Read(reinterpret_cast<uint8_t&>(value.status))
+    .Read(value.progress)
     .Read(value.member3)
     .Read(value.member4);
 }
@@ -788,6 +789,77 @@ void SkillSet::Read(SkillSet& value, SourceStream& stream)
   {
     stream.Read(element);
   }
+}
+
+void DailyQuest::Write(const DailyQuest& value, SinkStream& stream)
+{
+  stream.Write(value.questId)
+    .Write(value.progress)
+    .Write(value.rewardType)
+    .Write(value.rewardId);
+}
+
+void DailyQuest::Read(DailyQuest& value, SourceStream& stream)
+{
+  stream.Read(value.questId)
+    .Read(value.progress)
+    .Read(value.rewardType)
+    .Read(value.rewardId);
+}
+void ShopOrder::Write(
+  const ShopOrder& order,
+  SinkStream& stream)
+{
+  stream.Write(order.goodsSq)
+    .Write(order.equipImmediately)
+    .Write(order.priceId);
+}
+
+void ShopOrder::Read(
+  ShopOrder& order,
+  SourceStream& stream)
+{
+  stream.Read(order.goodsSq)
+    .Read(order.equipImmediately)
+    .Read(order.priceId);
+}
+
+void PackedVector3::Write(
+  const PackedVector3& vector,
+  SinkStream& stream)
+{
+  stream.Write(vector.x)
+    .Write(vector.y)
+    .Write(vector.z)
+    .Write(vector.w);
+}
+
+void PackedVector3::Read(
+  PackedVector3& vector,
+  SourceStream& stream)
+{
+  stream.Read(vector.x)
+    .Read(vector.y)
+    .Read(vector.z)
+    .Read(vector.w);
+}
+
+void ObjectiveProgress::Write(
+  const ObjectiveProgress& objectiveProgress,
+  SinkStream& stream)
+{
+  stream.Write(objectiveProgress.isCompleted)
+    .Write(objectiveProgress.progress)
+    .Write(objectiveProgress.achievementTier);
+}
+
+void ObjectiveProgress::Read(
+  ObjectiveProgress& objectiveProgress,
+  SourceStream& stream)
+{
+  stream.Read(objectiveProgress.isCompleted)
+    .Read(objectiveProgress.progress)
+    .Read(objectiveProgress.achievementTier);
 }
 
 } // namespace server::protocol

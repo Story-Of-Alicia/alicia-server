@@ -71,7 +71,7 @@ BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
 }
 #else
 
-void handler(int sig, siginfo_t* info, void* ucontext)
+void handler(int sig, siginfo_t*, void*)
 {
   if (sig == SIGTERM)
   {

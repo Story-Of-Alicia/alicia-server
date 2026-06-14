@@ -21,6 +21,8 @@
 #include "libserver/util/Stream.hpp"
 #include "libserver/util/Util.hpp"
 
+#include <stacktrace>
+
 #include <spdlog/spdlog.h>
 
 namespace server
@@ -29,15 +31,20 @@ namespace server
 namespace
 {
 
+// The base XOR scrambling constant, which seems to not roll.
+constexpr std::array XorCode{
+  static_cast<std::byte>(0x2B),
+  static_cast<std::byte>(0xFE),
+  static_cast<std::byte>(0xB8),
+  static_cast<std::byte>(0x02)};
+
 // todo: de/serializer map, handler map
 
 } // anon namespace
 
 ChatterServer::ChatterServer(
-  IChatterServerEventsHandler& chatterServerEventsHandler,
-  IChatterCommandHandler& chatterCommandHandler)
+  IChatterServerEventsHandler& chatterServerEventsHandler)
   : _chatterServerEventsHandler(chatterServerEventsHandler)
-  , _chatterCommandHandler(chatterCommandHandler)
   , _server(*this)
 {
 }
@@ -53,17 +60,35 @@ void ChatterServer::BeginHost(network::asio::ip::address_v4 address, uint16_t po
 {
   _serverThread = std::thread([this, address, port]()
   {
-    _server.Begin(address, port);
+    try
+    {
+      _server.Begin(address, port);
+    }
+    catch (const std::exception& x)
+    {
+      spdlog::error("Unhandled chatter server network exception: {}", x.what());
+
+      for (const auto& entry : std::stacktrace::current())
+      {
+        spdlog::error("[Stack] {}({}): {}", entry.source_file(), entry.source_line(), entry.description());
+      }
+
+      _server.End();
+    }
   });
 }
 
 void ChatterServer::EndHost()
 {
-  if (_serverThread.joinable())
-  {
-    _server.End();
-    _serverThread.join();
-  }
+  if (not _serverThread.joinable())
+    return;
+
+  _server.End();
+  _serverThread.join();
+}
+
+void ChatterServer::HandleNetworkTick()
+{
 }
 
 void ChatterServer::OnClientConnected(network::ClientId clientId)
@@ -82,26 +107,50 @@ size_t ChatterServer::OnClientData(
 {
   SourceStream commandStream{data};
 
-  // The base XOR scrambling constant, which seems to not roll.
-  constexpr std::array XorCode{
-    static_cast<std::byte>(0x2B),
-    static_cast<std::byte>(0xFE),
-    static_cast<std::byte>(0xB8),
-    static_cast<std::byte>(0x02)};
-
-  protocol::ChatterCommandHeader header;
-  commandStream.Read(header.length)
-    .Read(header.commandId);
-  header.length ^= *reinterpret_cast<const uint16_t*>(XorCode.data());
-  header.commandId ^= *reinterpret_cast<const uint16_t*>(XorCode.data() + 2);
-
-  if (header.commandId == static_cast<uint16_t>(
-    protocol::ChatterCommand::ChatCmdLogin))
+  while (commandStream.GetCursor() != commandStream.Size())
   {
-    std::vector<std::byte> commandData(header.length);
+    const auto origin = commandStream.GetCursor();
+
+    const auto bufferedDataSize = commandStream.Size() - commandStream.GetCursor();
+
+    // If there's not enough buffered data to read the header,
+    // break out of the loop.
+    if (bufferedDataSize < sizeof(protocol::ChatterCommandHeader))
+      break;
+
+    // Read the header.
+    protocol::ChatterCommandHeader header{};
+    commandStream.Read(header.length)
+      .Read(header.commandId);
+
+    // Decrypt the header.
+    header.length ^= *reinterpret_cast<const uint16_t*>(XorCode.data());
+    header.commandId ^= *reinterpret_cast<const uint16_t*>(XorCode.data() + 2);
+
+    // If the the length of the command is notat least the size of the header
+    // or is more than 4KB discard the command.
+    if (header.length < sizeof(protocol::ChatterCommandHeader) ||  header.length > 4092)
+    {
+      break;
+    }
+
+    // todo: verify length, verify command, consume the rest of data even if handler does not exist.
+
+    // If there's not enough data to read the command
+    // restore the read cursor so the command may be processed later when more data arrive.
+    if (bufferedDataSize < header.length)
+    {
+      commandStream.Seek(origin);
+      break;
+    }
+
+    const size_t commandDataLength = header.length - sizeof(protocol::ChatterCommandHeader);
+    std::vector<std::byte> commandData(commandDataLength);
+
     SinkStream commandDataSink({commandData.begin(), commandData.end()});
 
-    for (uint16_t idx = 0; idx < header.length - sizeof(protocol::ChatterCommandHeader); ++idx)
+    // Read the command data from the command stream.
+    for (size_t idx = 0; idx < commandDataLength; ++idx)
     {
       std::byte& val = commandData[idx];
       commandStream.Read(val);
@@ -110,20 +159,63 @@ size_t ChatterServer::OnClientData(
 
     SourceStream commandDataSource({commandData.begin(), commandData.end()});
 
-    if (header.commandId == 1)
+    if (debugIncomingCommandData)
     {
-      // todo: deserialization and handler call
-      protocol::ChatCmdLogin command;
-      commandDataSource.Read(command);
-      _chatterCommandHandler.HandleChatterLogin(clientId, command);
+      spdlog::debug("Read data for command '{}' (0x{:X}),\n\n"
+        "Command data size: {} \n"
+        "Data dump: \n\n{}\n",
+        GetChatterCommandName(static_cast<protocol::ChatterCommand>(header.commandId)),
+        header.commandId,
+        commandDataLength,
+        util::GenerateByteDump({commandData.data(), commandData.size()}));
     }
-  }
-  else
-  {
-    spdlog::warn("Unhandled chatter: {}", header.commandId);
+
+    // Find the handler of the command.
+    const auto handlerIter = _handlers.find(header.commandId);
+    if (handlerIter == _handlers.cend())
+    {
+      if (debugCommands)
+      {
+        spdlog::warn("Unhandled chatter command: {} ({:#x})", 
+          GetChatterCommandName(static_cast<protocol::ChatterCommand>(header.commandId)),
+          header.commandId);
+      }
+    }
+    else
+    {
+      const auto& handler = handlerIter->second;
+      try
+      {
+        handler(clientId, commandDataSource);
+        
+        if (debugCommands)
+        {
+          spdlog::debug("Handled chatter command: {} ({:#x})", 
+            GetChatterCommandName(static_cast<protocol::ChatterCommand>(header.commandId)),
+            header.commandId);
+        }
+      }
+      catch (const std::exception& ex)
+      {
+        spdlog::error("Unhandled exception handling chatter command {} ({:#x}): {}",
+          GetChatterCommandName(static_cast<protocol::ChatterCommand>(header.commandId)),
+          header.commandId,
+          ex.what());
+      }
+    }
   }
 
   return commandStream.GetCursor();
+}
+
+network::asio::ip::address_v4 ChatterServer::GetClientAddress(const network::ClientId clientId)
+{
+  return _server.GetClient(clientId)->GetAddress();
+}
+
+void ChatterServer::DisconnectClient(network::ClientId clientId)
+{
+  _server.GetClient(clientId)->End();
 }
 
 } // namespace server

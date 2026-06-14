@@ -35,6 +35,8 @@ data::Tid ReadEggInfo(
   EggInfo& info)
 {
   info.deckItemId = node["deckId"].as<decltype(info.deckItemId)>();
+  info.region = static_cast<Region>(node["region"].as<uint32_t>());
+  info.obtainRatio = node["obtainRatio"].as<uint32_t>();
 
   const auto hatchSection = node["hatch"];
 
@@ -81,6 +83,7 @@ void PetRegistry::ReadConfig(const std::filesystem::path& configPath)
   {
     EggInfo info;
     const auto eggItemTid = ReadEggInfo(eggSection, info);
+    info.tid = eggItemTid;
     _eggs.try_emplace(eggItemTid, info);
   }
 
@@ -98,11 +101,20 @@ EggInfo PetRegistry::GetEggInfo(server::data::Tid tid)
 {
   auto it = _eggs.find(tid);
   if (it != _eggs.end())
-  {
     return it->second;
-  }
 
   throw std::runtime_error("Egg with given TID not found.");
+}
+
+EggInfo PetRegistry::GetEggInfoByDeckId(data::Tid deckItemId)
+{
+  for (const auto& [tid, info] : _eggs)
+  {
+    if (info.deckItemId == deckItemId)
+      return info;
+  }
+
+  throw std::runtime_error("Egg with given deck item ID not found.");
 }
 
 PetInfo PetRegistry::GetPetInfo(server::data::Tid tid)
@@ -112,6 +124,17 @@ PetInfo PetRegistry::GetPetInfo(server::data::Tid tid)
     return it->second;
 
   throw std::runtime_error("Pet with given TID not found");
+}
+
+std::vector<EggInfo> PetRegistry::GetEggsByRegion(Region region) const
+{
+  std::vector<EggInfo> result;
+  for (const auto& [tid, info] : _eggs)
+  {
+    if (info.region == region)
+      result.push_back(info);
+  }
+  return result;
 }
 
 } // namespace server::registry

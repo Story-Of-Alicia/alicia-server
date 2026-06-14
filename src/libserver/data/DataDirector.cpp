@@ -18,6 +18,8 @@
  **/
 
 #include "libserver/data/DataDirector.hpp"
+
+#include "libserver/data/file/FileDataSource.hpp"
 #include "libserver/util/Deferred.hpp"
 
 #include <spdlog/spdlog.h>
@@ -512,9 +514,142 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
         }
         return false;
       })
+  , _dailyQuestGroupStorage(
+      [&](const auto& key, auto& group)
+      {
+        try
+        {
+          _primaryDataSource->RetrieveDailyQuestGroup(key, group);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception retrieving daily quest group {} from the primary data source: {}", key, x.what());
+        }
+
+        return false;
+      },
+      [&](const auto& key, auto& group)
+      {
+        try
+        {
+          _primaryDataSource->StoreDailyQuestGroup(key, group);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception storing daily quest group {} on the primary data source: {}", key, x.what());
+        }
+        return false;
+      },
+      [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteDailyQuestGroup(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting daily quest group {} from the primary data source: {}", key, x.what());
+           }
+        return false;
+      })
+  , _mailStorage(
+      [&](const auto& key, auto& mail)
+      {
+        try
+        {
+          _primaryDataSource->RetrieveMail(key, mail);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception retrieving mail {} from the primary data source: {}", key, x.what());
+        }
+        return false;
+      },
+      [&](const auto& key, auto& mail)
+      {
+        try
+        {
+          _primaryDataSource->StoreMail(key, mail);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception storing mail {} on the primary data source: {}", key, x.what());
+        }
+        return false;
+      },
+      [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteMail(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting mail {} from the primary data source: {}", key, x.what());
+        }
+        return false;
+      })
+  , _questStorage(
+      [&](const auto& key, auto& quest)
+      {
+        try
+        {
+          _primaryDataSource->RetrieveQuest(key, quest);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception retrieving quest {} from the primary data source: {}", key, x.what());
+        }
+        return false;
+      },
+      [&](const auto& key, auto& quest)
+      {
+        try
+        {
+          _primaryDataSource->StoreQuest(key, quest);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception storing quest {} on the primary data source: {}", key, x.what());
+        }
+        return false;
+      },
+      [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteQuest(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting quest {} from the primary data source: {}", key, x.what());
+        }
+        return false;
+      })
 {
   _primaryDataSource = std::make_unique<FileDataSource>();
-  _primaryDataSource->Initialize(basePath);
+  if (auto* fileDataSource = dynamic_cast<FileDataSource*>(_primaryDataSource.get()))
+  {
+    fileDataSource->Initialize(basePath);
+  }
 }
 
 DataDirector::~DataDirector()
@@ -540,13 +675,19 @@ void DataDirector::Terminate()
     _guildStorage.Terminate();
     _housingStorage.Terminate();
     _settingsStorage.Terminate();
+    _dailyQuestGroupStorage.Terminate();
+    _mailStorage.Terminate();
+    _questStorage.Terminate();
   }
   catch (const std::exception& x)
   {
-    spdlog::error("Unhandled in exception while terminating data director: {}", x.what());
+    spdlog::error("Unhandled exception while terminating data director: {}", x.what());
   }
 
-  _primaryDataSource->Terminate();
+  if (auto* fileDataSource = dynamic_cast<FileDataSource*>(_primaryDataSource.get()))
+  {
+    fileDataSource->Terminate();
+  }
 }
 
 void DataDirector::Tick()
@@ -564,10 +705,13 @@ void DataDirector::Tick()
     _guildStorage.Tick();
     _housingStorage.Tick();
     _settingsStorage.Tick();
+    _dailyQuestGroupStorage.Tick();
+    _mailStorage.Tick();
+    _questStorage.Tick();
   }
   catch (const std::exception& x)
   {
-    spdlog::error("Unhandled in exception ticking the storages in data director: {}", x.what());
+    spdlog::error("Unhandled exception ticking the storages in data director: {}", x.what());
   }
 
   try
@@ -576,7 +720,7 @@ void DataDirector::Tick()
   }
   catch (std::exception& x)
   {
-    spdlog::error("Unhandled in exception ticking the scheduler in the data director: {}", x.what());
+    spdlog::error("Unhandled exception ticking the scheduler in the data director: {}", x.what());
   }
 }
 
@@ -643,6 +787,26 @@ bool DataDirector::AreCharacterDataLoaded(const std::string& userName)
   return userDataContext.isCharacterDataLoaded.load(std::memory_order::relaxed);
 }
 
+Record<data::User> DataDirector::CreateUser()
+{
+  try
+  {
+    return _userStorage.Create(
+      [this]()
+      {
+        data::User user;
+        _primaryDataSource->CreateUser(user);
+
+        return std::make_pair(user.name(), std::move(user));
+      });
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception while creating a character record on the primary data source: {}", x.what());
+    return {};
+  }
+}
+
 Record<data::User> DataDirector::GetUser(const std::string& userName)
 {
   return _userStorage.Get(userName).value_or(Record<data::User>{});
@@ -662,14 +826,22 @@ Record<data::Character> DataDirector::GetCharacter(data::Uid characterUid) noexc
 
 Record<data::Character> DataDirector::CreateCharacter() noexcept
 {
-  return _characterStorage.Create(
-    [this]()
-    {
-      data::Character character;
-      _primaryDataSource->CreateCharacter(character);
+  try
+  {
+    return _characterStorage.Create(
+      [this]()
+      {
+        data::Character character;
+        _primaryDataSource->CreateCharacter(character);
 
-      return std::make_pair(character.uid(), std::move(character));
-    });
+        return std::make_pair(character.uid(), std::move(character));
+      });
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception while creating a character record on the primary data source: {}", x.what());
+    return {};
+  }
 }
 
 DataDirector::CharacterStorage& DataDirector::GetCharacterCache()
@@ -679,7 +851,9 @@ DataDirector::CharacterStorage& DataDirector::GetCharacterCache()
 
 Record<data::Infraction> DataDirector::CreateInfraction() noexcept
 {
-  return _infractionStorage.Create(
+  try
+  {
+    return _infractionStorage.Create(
     [this]()
     {
       data::Infraction infraction;
@@ -687,6 +861,12 @@ Record<data::Infraction> DataDirector::CreateInfraction() noexcept
 
       return std::make_pair(infraction.uid(), std::move(infraction));
     });
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception while creating infraction record on the primary data source: {}", x.what());
+    return {};
+  }
 }
 
 DataDirector::InfractionStorage& DataDirector::GetInfractionCache()
@@ -703,14 +883,22 @@ Record<data::Horse> DataDirector::GetHorse(data::Uid horseUid) noexcept
 
 Record<data::Horse> DataDirector::CreateHorse() noexcept
 {
-  return _horseStorage.Create(
-    [this]()
-    {
-      data::Horse horse;
-      _primaryDataSource->CreateHorse(horse);
+  try
+  {
+    return _horseStorage.Create(
+      [this]()
+      {
+        data::Horse horse;
+        _primaryDataSource->CreateHorse(horse);
 
-      return std::make_pair(horse.uid(), std::move(horse));
-    });
+        return std::make_pair(horse.uid(), std::move(horse));
+      });
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception while creating a horse record on the primary data source: {}", x.what());
+    return {};
+  }
 }
 
 DataDirector::HorseStorage& DataDirector::GetHorseCache()
@@ -727,14 +915,21 @@ Record<data::Item> DataDirector::GetItem(data::Uid itemUid) noexcept
 
 Record<data::Item> DataDirector::CreateItem() noexcept
 {
-  return _itemStorage.Create(
-    [this]()
-    {
-      data::Item item;
-      _primaryDataSource->CreateItem(item);
+  try {
+    return _itemStorage.Create(
+      [this]()
+      {
+        data::Item item;
+        _primaryDataSource->CreateItem(item);
 
-      return std::make_pair(item.uid(), std::move(item));
-    });
+        return std::make_pair(item.uid(), std::move(item));
+      });
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception while creating an item record on the primary data source: {}", x.what());
+    return {};
+  }
 }
 
 DataDirector::ItemStorage& DataDirector::GetItemCache()
@@ -751,14 +946,22 @@ Record<data::StorageItem> DataDirector::GetStorageItemCache(data::Uid storedItem
 
 Record<data::StorageItem> DataDirector::CreateStorageItem() noexcept
 {
-  return _storageItemStorage.Create(
-    [this]()
-    {
-      data::StorageItem item;
-      _primaryDataSource->CreateStorageItem(item);
+  try
+  {
+    return _storageItemStorage.Create(
+      [this]()
+      {
+        data::StorageItem item;
+        _primaryDataSource->CreateStorageItem(item);
 
-      return std::make_pair(item.uid(), std::move(item));
-    });
+        return std::make_pair(item.uid(), std::move(item));
+      });
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception while creating a storage item record on the primary data source: {}", x.what());
+    return {};
+  }
 }
 
 DataDirector::StorageItemStorage& DataDirector::GetStorageItemCache()
@@ -775,14 +978,22 @@ Record<data::Egg> DataDirector::GetEgg(data::Uid eggUid) noexcept
 
 Record<data::Egg> DataDirector::CreateEgg() noexcept
 {
-  return _eggStorage.Create(
-    [this]()
-    {
-      data::Egg egg;
-      _primaryDataSource->CreateEgg(egg);
+  try
+  {
+    return _eggStorage.Create(
+      [this]()
+      {
+        data::Egg egg;
+        _primaryDataSource->CreateEgg(egg);
 
-      return std::make_pair(egg.uid(), std::move(egg));
-    });
+        return std::make_pair(egg.uid(), std::move(egg));
+      });
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception while creating a egg recird on the data source: {}", x.what());
+    return {};
+  }
 }
 
 DataDirector::EggStorage& DataDirector::GetEggCache()
@@ -814,6 +1025,38 @@ DataDirector::PetStorage& DataDirector::GetPetCache()
   return _petStorage;
 }
 
+Record<data::Guild> DataDirector::GetGuild(data::Uid guildUid) noexcept
+{
+  if (guildUid == data::InvalidUid)
+    return {};
+  return _guildStorage.Get(guildUid).value_or(Record<data::Guild>{});
+}
+
+Record<data::Guild> DataDirector::CreateGuild() noexcept
+{
+  try
+  {
+    return _guildStorage.Create(
+      [this]()
+      {
+        data::Guild guild;
+        _primaryDataSource->CreateGuild(guild);
+
+        return std::make_pair(guild.uid(), std::move(guild));
+      });
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception while creating a guild record on the primary data source: {}", x.what());
+    return {};
+  }
+}
+
+DataDirector::GuildStorage& DataDirector::GetGuildCache()
+{
+  return _guildStorage;
+}
+
 Record<data::Housing> DataDirector::GetHousingCache(data::Uid housingUid) noexcept
 {
   if (housingUid == data::InvalidUid)
@@ -823,19 +1066,128 @@ Record<data::Housing> DataDirector::GetHousingCache(data::Uid housingUid) noexce
 
 Record<data::Housing> DataDirector::CreateHousing() noexcept
 {
-  return _housingStorage.Create(
-    [this]()
-    {
-      data::Housing housing;
-      _primaryDataSource->CreateHousing(housing);
+  try
+  {
+    return _housingStorage.Create(
+      [this]()
+      {
+        data::Housing housing;
+        _primaryDataSource->CreateHousing(housing);
 
-      return std::make_pair(housing.uid(), std::move(housing));
-    });
+        return std::make_pair(housing.uid(), std::move(housing));
+      });
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception while creating a housing record on the primary data source: {}", x.what());
+    return {};
+  }
 }
 
 DataDirector::HousingStorage& DataDirector::GetHousingCache()
 {
   return _housingStorage;
+}
+
+Record<data::Settings> DataDirector::GetSettings(data::Uid settingsUid) noexcept
+{
+  if (settingsUid == data::InvalidUid)
+    return {};
+  return _settingsStorage.Get(settingsUid).value_or(Record<data::Settings>{});
+}
+
+Record<data::Settings> DataDirector::CreateSettings() noexcept
+{
+  try
+  {
+    return _settingsStorage.Create(
+      [this]()
+      {
+        data::Settings settings;
+        _primaryDataSource->CreateSettings(settings);
+
+        return std::make_pair(settings.uid(), std::move(settings));
+      });
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception while creating a settings record on the primary data source: {}", x.what());
+    return {};
+  }
+}
+
+DataDirector::SettingsStorage& DataDirector::GetSettingsCache()
+{
+  return _settingsStorage;
+}
+
+Record<data::Mail> DataDirector::GetMail(data::Uid mailUid) noexcept
+{
+  if (mailUid == data::InvalidUid)
+    return {};
+  return _mailStorage.Get(mailUid).value_or(Record<data::Mail>{});
+}
+
+Record<data::Mail> DataDirector::CreateMail() noexcept
+{
+  try
+  {
+    return _mailStorage.Create(
+      [this]()
+      {
+        data::Mail mail;
+        _primaryDataSource->CreateMail(mail);
+
+        return std::make_pair(mail.uid(), std::move(mail));
+      });
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception while creating a mail record on the primary data source: {}", x.what());
+    return {};
+  }
+}
+
+DataDirector::MailStorage& DataDirector::GetMailCache()
+{
+  return _mailStorage;
+}
+
+Record<data::Quest> DataDirector::GetQuest(data::Uid questUid) noexcept
+{
+  if (questUid == data::InvalidUid)
+    return {};
+  return _questStorage.Get(questUid).value_or(Record<data::Quest>{});
+}
+
+Record<data::Quest> DataDirector::CreateQuest() noexcept
+{
+  try
+  {
+    return _questStorage.Create(
+      [this]()
+      {
+        data::Quest quest;
+        _primaryDataSource->CreateQuest(quest);
+
+        return std::make_pair(quest.uid(), std::move(quest));
+      });
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception while creating a quest record on the primary data source: {}", x.what());
+    return {};
+  }
+}
+
+DataDirector::QuestStorage& DataDirector::GetQuestCache()
+{
+  return _questStorage;
+}
+
+DataSource& DataDirector::GetDataSource() noexcept
+{
+  return *_primaryDataSource;
 }
 
 void DataDirector::ScheduleUserLoad(
@@ -864,13 +1216,22 @@ void DataDirector::ScheduleUserLoad(
       ScheduleUserLoad(userDataContext, userName);
     });
 
-    const auto userRecord = GetUser(userName);
-    if (not userRecord)
+    const auto& userRecord = _userStorage.GetOrCreate([this, userName]() -> std::pair<std::string, data::User>
     {
-      userDataContext.debugMessage = std::format(
-        "User {} is not available", userName);
-      return;
-    }
+      data::User user;
+      try
+      {
+        _primaryDataSource->RetrieveUser(userName, user);
+      }
+      catch (const std::exception&)
+      {
+        user.name = userName;
+        _primaryDataSource->CreateUser(user);
+      }
+
+      return std::pair{user.name(), std::move(user)};
+    });
+
 
     std::vector<data::Uid> infractions;
     userRecord.Immutable([&infractions](const data::User& user)
@@ -890,52 +1251,28 @@ void DataDirector::ScheduleUserLoad(
   });
 }
 
-Record<data::Guild> DataDirector::GetGuild(data::Uid guildUid) noexcept
+Record<data::DailyQuestGroup> DataDirector::GetDailyQuestGroup(data::Uid dailyQuestGroupUid) noexcept
 {
-  if (guildUid == data::InvalidUid)
+  if (dailyQuestGroupUid == data::InvalidUid)
     return {};
-  return _guildStorage.Get(guildUid).value_or(Record<data::Guild>{});
+  return _dailyQuestGroupStorage.Get(dailyQuestGroupUid).value_or(Record<data::DailyQuestGroup>{});
 }
 
-Record<data::Guild> DataDirector::CreateGuild() noexcept
+Record<data::DailyQuestGroup> DataDirector::CreateDailyQuestGroup() noexcept
 {
-  return _guildStorage.Create(
+  return _dailyQuestGroupStorage.Create(
     [this]()
     {
-      data::Guild guild;
-      _primaryDataSource->CreateGuild(guild);
+      data::DailyQuestGroup group;
+      _primaryDataSource->CreateDailyQuestGroup(group);
 
-      return std::make_pair(guild.uid(), std::move(guild));
+      return std::make_pair(group.uid(), std::move(group));
     });
 }
 
-DataDirector::GuildStorage& DataDirector::GetGuildCache()
+DataDirector::DailyQuestGroupStorage& DataDirector::GetDailyQuestGroupCache()
 {
-  return _guildStorage;
-}
-
-Record<data::Settings> DataDirector::GetSettings(data::Uid settingsUid) noexcept
-{
-  if (settingsUid == data::InvalidUid)
-    return {};
-  return _settingsStorage.Get(settingsUid).value_or(Record<data::Settings>{});
-}
-
-Record<data::Settings> DataDirector::CreateSettings() noexcept
-{
-  return _settingsStorage.Create(
-    [this]()
-    {
-      data::Settings settings;
-      _primaryDataSource->CreateSettings(settings);
-
-      return std::make_pair(settings.uid(), std::move(settings));
-    });
-}
-
-DataDirector::SettingsStorage& DataDirector::GetSettingsCache()
-{
-  return _settingsStorage;
+  return _dailyQuestGroupStorage;
 }
 
 void DataDirector::ScheduleCharacterLoad(
@@ -990,20 +1327,29 @@ void DataDirector::ScheduleCharacterLoad(
 
     std::vector<data::Uid> pets;
 
+    std::vector<data::Uid> mailbox;
+
+    std::vector<data::Uid> quests;
+
+    // Friends prefetch
+    std::set<data::Uid> friends;
+    data::Uid dailyQuestGroupUid = data::InvalidUid;
+
     characterRecord.Immutable(
-      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets, &settingsUid](
+      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets, &settingsUid, &mailbox, &quests, &friends, &dailyQuestGroupUid](
         const data::Character& character)
       {
         guildUid = character.guildUid();
         petUid = character.petUid();
         settingsUid = character.settingsUid();
+        dailyQuestGroupUid = character.dailyQuestGroupUid();
 
         gifts = character.gifts();
         purchases = character.purchases();
 
         std::ranges::copy(character.inventory(), std::back_inserter(items));
         std::ranges::copy(character.characterEquipment(), std::back_inserter(items));
-        std::ranges::copy(character.mountEquipment(), std::back_inserter(items));
+        std::ranges::copy(character.expiredEquipment(), std::back_inserter(items));
 
         horses = character.horses();
 
@@ -1016,11 +1362,30 @@ void DataDirector::ScheduleCharacterLoad(
         // Add the mount to the horses list,
         // so that it is loaded with all the horses.
         horses.emplace_back(character.mountUid());
+
+        // Mailbox
+        std::ranges::copy(character.mailbox.inbox(), std::back_inserter(mailbox));
+        std::ranges::copy(character.mailbox.sent(), std::back_inserter(mailbox));
+
+        // Quests
+        quests = character.quests();
+
+        // Pending friend requests
+        const auto& pending = character.contacts.pending();
+        friends.insert(pending.begin(), pending.end());
+
+        // All friends (including ones not in a group)
+        for (const auto& [groupUid, group] : character.contacts.groups())
+        {
+          const auto& members = group.members;
+          friends.insert(members.cbegin(), members.cend());
+        }
       });
 
     const auto guildRecord = GetGuild(guildUid);
     const auto petRecord = GetPet(petUid);
     const auto settingsRecord = GetSettings(settingsUid);
+    const auto dailyQuestGroupRecord = GetDailyQuestGroup(dailyQuestGroupUid);
 
     const auto giftRecords = GetStorageItemCache().Get(gifts);
     const auto purchaseRecords = GetStorageItemCache().Get(purchases);
@@ -1057,36 +1422,20 @@ void DataDirector::ScheduleCharacterLoad(
       return;
     }
 
+    // Only require daily quest group if one is assigned.
+    if (not dailyQuestGroupRecord && dailyQuestGroupUid != data::InvalidUid)
+    {
+      userDataContext.debugMessage = std::format(
+        "Daily quest group '{}' not available", dailyQuestGroupUid);
+      return;
+    }
+
     // Require gifts and purchases for the storage and items for the inventory.
     if (not giftRecords || not purchaseRecords)
     {
       userDataContext.debugMessage = std::format(
         "Gifts or purchases not available");
       return;
-    }
-
-    // Add items referenced by the purchase records to the item list.
-    for (const auto& purchaseRecord : *purchaseRecords)
-    {
-      purchaseRecord.Immutable([&items](const data::StorageItem& storageItem)
-      {
-        for (const auto& itemUid : storageItem.items())
-        {
-          items.emplace_back(itemUid);
-        }
-      });
-    }
-
-    // Add items referenced by the gift records to the item list.
-    for (const auto& giftRecord : *giftRecords)
-    {
-      giftRecord.Immutable([&items](const data::StorageItem& storageItem)
-      {
-        for (const auto& itemUid : storageItem.items())
-        {
-          items.emplace_back(itemUid);
-        }
-      });
     }
 
     const auto itemRecords = GetItemCache().Get(items);
@@ -1104,7 +1453,6 @@ void DataDirector::ScheduleCharacterLoad(
         "Horses or mount not available");
       return;
     }
-
 
     // Require housing records.
     if (not housingRecords)
@@ -1127,6 +1475,88 @@ void DataDirector::ScheduleCharacterLoad(
       userDataContext.debugMessage = std::format(
         "Eggs not available");
       return;
+    }
+
+    // Require mail records.
+    const auto mailRecords = GetMailCache().Get(mailbox);
+    if (not mailRecords)
+    {
+      userDataContext.debugMessage = std::format(
+        "Mails not available");
+      return;
+    }
+    else
+    {
+      // Preload character records for character names in letter list
+      std::unordered_set<data::Uid> mailCharacterUids{};
+
+      // Process every mail belonging to the loading character
+      for (const auto& mailRecord : mailRecords.value())
+      {
+        // Get character uids from mail record
+        data::Uid mailUid, from, to;
+        mailRecord.Immutable(
+          [&mailUid, &from, &to](const data::Mail& mail)
+          {
+            mailUid = mail.uid();
+            from = mail.from();
+            to = mail.to();
+          });
+
+        // Mail ownership logic
+        bool isInboxMail = to == characterUid && from != characterUid;
+        bool isSentMail = from == characterUid && to != characterUid;
+        bool isSelfMail = from == characterUid && to == characterUid;
+
+        bool isOwnedMail = isInboxMail || isSentMail || isSelfMail;
+        bool isAnyInvalid = from == data::InvalidUid || to == data::InvalidUid;
+
+        if (isAnyInvalid or not isOwnedMail)
+        {
+          // Mail is in another mailbox instead of self-sender's, or one of the UIDs are invalid
+          userDataContext.debugMessage =
+            std::format("Error processing mail {} - character {} from {} to {}",
+              mailUid,
+              characterUid,
+              from,
+              to);
+          return;
+        }
+
+        mailCharacterUids.emplace(from);
+        mailCharacterUids.emplace(to);
+      }
+
+      // Preload characters from uids
+      // TODO: is this the best way forward? `Get` doesn't take unordered_set
+      GetCharacterCache().Get(
+        std::vector<data::Uid>(
+          mailCharacterUids.begin(),
+          mailCharacterUids.end()));
+    }
+
+    // Require quest records.
+    const auto questRecords = GetQuestCache().Get(quests);
+    if (not questRecords)
+    {
+      userDataContext.debugMessage = std::format(
+        "Quests not available");
+      return;
+    }
+
+    // Preload friend character records
+    if (!friends.empty())
+    {
+      const auto friendRecords = GetCharacterCache().Get(
+        std::vector<data::Uid>(
+          friends.cbegin(),
+          friends.cend()));
+      if (!friendRecords)
+      {
+        userDataContext.debugMessage = std::format(
+          "Friend character records not available");
+        return;
+      }
     }
 
     userDataContext.isCharacterDataLoaded.store(true, std::memory_order::release);

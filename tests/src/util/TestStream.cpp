@@ -52,9 +52,11 @@ struct Datum
 void TestStreams()
 {
   boost::asio::streambuf buf;
-  auto mutableBuffer = buf.prepare(16);
+  auto mutableBuffer = buf.prepare(17);
   server::SinkStream sink(std::span(static_cast<std::byte*>(mutableBuffer.data()), mutableBuffer.size()));
 
+  const bool value = true;
+  sink.Write(value);
   sink.Write(0xCAFE);
   sink.Write(0xBABE);
 
@@ -63,34 +65,27 @@ void TestStreams()
     .val1 = 0xF00D};
   sink.Write(structToWrite);
 
-  assert(sink.GetCursor() == 4 * sizeof(uint32_t));
+  assert(sink.GetCursor() == 4 * sizeof(uint32_t) + 1);
   buf.commit(sink.GetCursor());
 
   auto constBuffer = buf.data();
   server::SourceStream source(std::span(static_cast<const std::byte*>(constBuffer.data()), constBuffer.size()));
 
+  bool status{false};
   uint32_t cafe{};
   uint32_t babe{};
   Datum structToRead{};
 
-  source.Read(cafe)
+  source.Read(status)
+    .Read(cafe)
     .Read(babe)
     .Read(structToRead);
 
+  assert(status);
   assert(cafe == 0xCAFE && babe == 0xBABE);
   assert(structToRead.val0 == structToWrite.val0);
   assert(structToRead.val1 == structToWrite.val1);
-  assert(source.GetCursor() == 4 * sizeof(uint32_t));
-
-  while (true)
-  {
-    auto mutableBuffer2 = buf.prepare(16);
-    server::SinkStream sink2(std::span(static_cast<std::byte*>(mutableBuffer2.data()), mutableBuffer2.size()));
-
-    sink2.Write(0x5757'5757);
-    buf.commit(16);
-    buf.consume(16);
-  }
+  assert(source.GetCursor() == 4 * sizeof(uint32_t) + 1);
 }
 
 } // namespace
