@@ -129,11 +129,15 @@ private:
   //! AI Rider structure for single player mode
   struct AIRider
   {
-    uint32_t oid;                                    //! AI对象ID (服务器分配)
-    std::string name;                                //! AI名称
-    uint32_t aiDifficulty;                           //! AI难度 (1=简单, 2=普通, 3=困难)
-    uint32_t aiPersonality;                          //! AI个性ID (1-7对应不同角色)
-    tracker::RaceTracker::Racer::Team team;          //! 队伍
+    uint32_t oid{0};
+    uint32_t uid{0};
+    std::string name;
+    uint32_t lookPresetId{1};
+    uint32_t charId{10};   // 10=male, 20=female (from PlayerLookPreset)
+    uint32_t level{1};
+    uint32_t aiDifficulty{2};
+    uint32_t aiPersonality{1};
+    tracker::RaceTracker::Racer::Team team{tracker::RaceTracker::Racer::Team::Solo};
   };
 
   struct RaceInstance
@@ -144,6 +148,7 @@ private:
       Waiting,
       Loading,
       Racing,
+      Finishing,
     } stage{Stage::Waiting};
     //! A time point of when the stage timeout occurs.
     std::chrono::steady_clock::time_point stageTimeoutTimePoint;
@@ -170,7 +175,7 @@ private:
     std::chrono::steady_clock::time_point raceStartTimePoint;
     //! A room clients.
     std::unordered_set<ClientId> clients;
-    
+
     //! AI riders in this room (for single player mode)
     std::vector<AIRider> aiRiders;
   };
@@ -178,15 +183,19 @@ private:
   race::P2dId GetOrCreateP2dId(ClientId clientId);
 
   ClientContext& GetClientContext(ClientId clientId, bool requireAuthorized = true);
+
   ClientId GetClientIdByCharacterUid(data::Uid characterUid);
+
   ClientContext& GetClientContextByCharacterUid(data::Uid characterUid);
+
   RaceInstance& GetRaceInstance(
     const RaceDirector::ClientContext& clientContext,
     const bool checkRacer = true);
 
   EffectVerdict ScheduleSkillEffect(
     server::RaceDirector::RaceInstance& raceInstance,
-    server::tracker::Oid attackerId, server::tracker::Oid targetId,
+    server::tracker::Oid attackerId,
+    server::tracker::Oid targetId,
     const server::registry::Magic::SlotInfo& magicSlotInfo,
     const uint16_t effectInstanceId = 0);
 
@@ -321,15 +330,16 @@ private:
 
   //! Spawn AI riders for single player mode
   void SpawnAIRiders(
-    RoomInstance& roomInstance,
-    data::Uid roomUid);
+    RaceInstance& roomInstance,
+    data::Uid roomUid,
+    uint32_t difficulty);
 
   //! Auto-complete AI loading
-  void AutoCompleteAILoading(RoomInstance& roomInstance);
+  void AutoCompleteAILoading(RaceInstance& roomInstance);
 
   //! Generate AI race results
   void GenerateAIRaceResults(
-    RoomInstance& roomInstance,
+    RaceInstance& roomInstance,
     uint32_t playerTime);
 
   // Magic Targeting Commands for Bolt System
@@ -400,6 +410,9 @@ private:
   std::mutex _raceInstancesMutex;
   //! A map of all race instanced indexed by room UIDs.
   std::unordered_map<uint32_t, RaceInstance> _raceInstances;
+
+  //! AI presets loaded from aipresets.yaml, keyed by AIDifficultyLevel.
+  std::unordered_map<uint32_t, std::vector<AIRider>> _aiPresets;
 };
 
 } // namespace server

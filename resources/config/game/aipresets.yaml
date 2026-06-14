@@ -1,0 +1,2255 @@
+﻿presets:
+  - id: 1
+    name: "김태희짱"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 2
+    name: "얼라이언스도둑"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 3
+    name: "새발의피"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 4
+    name: "군옹"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 5
+    name: "크리미"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 6
+    name: "세뉴타"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 7
+    name: "해발200"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 8
+    name: "쿠키"
+    lookPresetId: 6
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20036
+  - id: 9
+    name: "제이크"
+    lookPresetId: 7
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20036
+  - id: 10
+    name: "제이드"
+    lookPresetId: 8
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20036
+  - id: 11
+    name: "앤"
+    lookPresetId: 9
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20036
+  - id: 12
+    name: "세인트"
+    lookPresetId: 10
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20036
+  - id: 13
+    name: "제니스"
+    lookPresetId: 11
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20036
+  - id: 14
+    name: "캐시"
+    lookPresetId: 12
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20036
+  - id: 15
+    name: "카림"
+    lookPresetId: 13
+    charId: 10
+    level: 35
+    difficultyLevel: 2
+    mountPartTid: 20003
+  - id: 16
+    name: "이든"
+    lookPresetId: 14
+    charId: 10
+    level: 40
+    difficultyLevel: 2
+    mountPartTid: 20003
+  - id: 17
+    name: "워렌"
+    lookPresetId: 15
+    charId: 10
+    level: 31
+    difficultyLevel: 2
+    mountPartTid: 20003
+  - id: 18
+    name: "티엔"
+    lookPresetId: 16
+    charId: 10
+    level: 41
+    difficultyLevel: 2
+    mountPartTid: 20003
+  - id: 19
+    name: "데인즈"
+    lookPresetId: 17
+    charId: 20
+    level: 40
+    difficultyLevel: 2
+    mountPartTid: 20003
+  - id: 20
+    name: "글렌"
+    lookPresetId: 18
+    charId: 20
+    level: 35
+    difficultyLevel: 2
+    mountPartTid: 20003
+  - id: 21
+    name: "메이린"
+    lookPresetId: 19
+    charId: 20
+    level: 51
+    difficultyLevel: 2
+    mountPartTid: 20003
+  - id: 22
+    name: "멀린"
+    lookPresetId: 20
+    charId: 10
+    level: 140
+    difficultyLevel: 3
+    mountPartTid: 20087
+  - id: 23
+    name: "델타"
+    lookPresetId: 21
+    charId: 10
+    level: 160
+    difficultyLevel: 3
+    mountPartTid: 20087
+  - id: 24
+    name: "엔쥬"
+    lookPresetId: 22
+    charId: 10
+    level: 140
+    difficultyLevel: 3
+    mountPartTid: 20087
+  - id: 25
+    name: "크리스틴"
+    lookPresetId: 23
+    charId: 20
+    level: 155
+    difficultyLevel: 3
+    mountPartTid: 20087
+  - id: 26
+    name: "라이라"
+    lookPresetId: 24
+    charId: 20
+    level: 150
+    difficultyLevel: 3
+    mountPartTid: 20087
+  - id: 27
+    name: "해피"
+    lookPresetId: 25
+    charId: 20
+    level: 130
+    difficultyLevel: 3
+    mountPartTid: 20087
+  - id: 28
+    name: "페퍼"
+    lookPresetId: 26
+    charId: 20
+    level: 130
+    difficultyLevel: 3
+    mountPartTid: 20087
+  - id: 29
+    name: "4등급_AI고수A"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29040
+  - id: 30
+    name: "4등급_AI고수B"
+    lookPresetId: 2
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29040
+  - id: 31
+    name: "4등급_AI하수A"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29040
+  - id: 32
+    name: "4등급_AI중수A"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29040
+  - id: 33
+    name: "4등급_AI초고수"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29040
+  - id: 34
+    name: "4등급_AI하수B"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29040
+  - id: 35
+    name: "4등급_AI중수B"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29040
+  - id: 36
+    name: "5등급_AI고수A"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29050
+  - id: 37
+    name: "5등급_AI고수B"
+    lookPresetId: 2
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29050
+  - id: 38
+    name: "5등급_AI하수A"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29050
+  - id: 39
+    name: "5등급_AI중수A"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29050
+  - id: 40
+    name: "5등급_AI초고수"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29050
+  - id: 41
+    name: "5등급_AI하수B"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29050
+  - id: 42
+    name: "5등급_AI중수B"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29050
+  - id: 43
+    name: "6등급_AI고수A"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29060
+  - id: 44
+    name: "6등급_AI고수B"
+    lookPresetId: 2
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29060
+  - id: 45
+    name: "6등급_AI하수A"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29060
+  - id: 46
+    name: "6등급_AI중수A"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29060
+  - id: 47
+    name: "6등급_AI초고수"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29060
+  - id: 48
+    name: "6등급_AI하수B"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29060
+  - id: 49
+    name: "6등급_AI중수B"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29060
+  - id: 50
+    name: "7등급_AI고수A"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29070
+  - id: 51
+    name: "7등급_AI고수B"
+    lookPresetId: 2
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29070
+  - id: 52
+    name: "7등급_AI하수A"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29070
+  - id: 53
+    name: "7등급_AI중수A"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29070
+  - id: 54
+    name: "7등급_AI초고수"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29070
+  - id: 55
+    name: "7등급_AI하수B"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29070
+  - id: 56
+    name: "7등급_AI중수B"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29070
+  - id: 57
+    name: "8등급_AI고수A"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29080
+  - id: 58
+    name: "8등급_AI고수B"
+    lookPresetId: 2
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29080
+  - id: 59
+    name: "8등급_AI하수A"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29080
+  - id: 60
+    name: "8등급_AI중수A"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29080
+  - id: 61
+    name: "8등급_AI초고수"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29080
+  - id: 62
+    name: "8등급_AI하수B"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29080
+  - id: 63
+    name: "8등급_AI중수B"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29080
+  - id: 64
+    name: "9등급_AI고수A"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29090
+  - id: 65
+    name: "9등급_AI고수B"
+    lookPresetId: 2
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29090
+  - id: 66
+    name: "9등급_AI하수A"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29090
+  - id: 67
+    name: "9등급_AI중수A"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29090
+  - id: 68
+    name: "9등급_AI초고수"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29090
+  - id: 69
+    name: "9등급_AI하수B"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29090
+  - id: 70
+    name: "9등급_AI중수B"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29090
+  - id: 71
+    name: "10등급_AI고수A"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29100
+  - id: 72
+    name: "10등급_AI고수B"
+    lookPresetId: 2
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29100
+  - id: 73
+    name: "10등급_AI하수A"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29100
+  - id: 74
+    name: "10등급_AI중수A"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29100
+  - id: 75
+    name: "10등급_AI초고수"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29100
+  - id: 76
+    name: "10등급_AI하수B"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29100
+  - id: 77
+    name: "10등급_AI중수B"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29100
+  - id: 78
+    name: "11등급_AI고수A"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29110
+  - id: 79
+    name: "11등급_AI고수B"
+    lookPresetId: 2
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29110
+  - id: 80
+    name: "11등급_AI하수A"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29110
+  - id: 81
+    name: "11등급_AI중수A"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29110
+  - id: 82
+    name: "11등급_AI초고수"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29110
+  - id: 83
+    name: "11등급_AI하수B"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29110
+  - id: 84
+    name: "11등급_AI중수B"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29110
+  - id: 85
+    name: "12등급_AI고수A"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29120
+  - id: 86
+    name: "12등급_AI고수B"
+    lookPresetId: 2
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29120
+  - id: 87
+    name: "12등급_AI하수A"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29120
+  - id: 88
+    name: "12등급_AI중수A"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29120
+  - id: 89
+    name: "12등급_AI초고수"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29120
+  - id: 90
+    name: "12등급_AI하수B"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29120
+  - id: 91
+    name: "12등급_AI중수B"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29120
+  - id: 92
+    name: "13등급_AI고수A"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29130
+  - id: 93
+    name: "13등급_AI고수B"
+    lookPresetId: 2
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29130
+  - id: 94
+    name: "13등급_AI하수A"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29130
+  - id: 95
+    name: "13등급_AI중수A"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29130
+  - id: 96
+    name: "13등급_AI초고수"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29130
+  - id: 97
+    name: "13등급_AI하수B"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29130
+  - id: 98
+    name: "13등급_AI중수B"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29130
+  - id: 99
+    name: "14등급_AI고수A"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29140
+  - id: 100
+    name: "14등급_AI고수B"
+    lookPresetId: 2
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29140
+  - id: 101
+    name: "14등급_AI하수A"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29140
+  - id: 102
+    name: "14등급_AI중수A"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29140
+  - id: 103
+    name: "14등급_AI초고수"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29140
+  - id: 104
+    name: "14등급_AI하수B"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29140
+  - id: 105
+    name: "14등급_AI중수B"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29140
+  - id: 106
+    name: "15등급_AI고수A"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29150
+  - id: 107
+    name: "15등급_AI고수B"
+    lookPresetId: 2
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29150
+  - id: 108
+    name: "15등급_AI하수A"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29150
+  - id: 109
+    name: "15등급_AI중수A"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29150
+  - id: 110
+    name: "15등급_AI초고수"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29150
+  - id: 111
+    name: "15등급_AI하수B"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29150
+  - id: 112
+    name: "15등급_AI중수B"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29150
+  - id: 113
+    name: "16등급_AI고수A"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29160
+  - id: 114
+    name: "16등급_AI고수B"
+    lookPresetId: 2
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29160
+  - id: 115
+    name: "16등급_AI하수A"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29160
+  - id: 116
+    name: "16등급_AI중수A"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29160
+  - id: 117
+    name: "16등급_AI초고수"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29160
+  - id: 118
+    name: "16등급_AI하수B"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29160
+  - id: 119
+    name: "16등급_AI중수B"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29160
+  - id: 120
+    name: "17등급_AI고수A"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29170
+  - id: 121
+    name: "17등급_AI고수B"
+    lookPresetId: 2
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29170
+  - id: 122
+    name: "17등급_AI하수A"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29170
+  - id: 123
+    name: "17등급_AI중수A"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29170
+  - id: 124
+    name: "17등급_AI초고수"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29170
+  - id: 125
+    name: "17등급_AI하수B"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29170
+  - id: 126
+    name: "17등급_AI중수B"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29170
+  - id: 127
+    name: "18등급_AI고수A"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29180
+  - id: 128
+    name: "18등급_AI고수B"
+    lookPresetId: 2
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29180
+  - id: 129
+    name: "18등급_AI하수A"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29180
+  - id: 130
+    name: "18등급_AI중수A"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29180
+  - id: 131
+    name: "18등급_AI초고수"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29180
+  - id: 132
+    name: "18등급_AI하수B"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29180
+  - id: 133
+    name: "18등급_AI중수B"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29180
+  - id: 134
+    name: "19등급_AI고수A"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29190
+  - id: 135
+    name: "19등급_AI고수B"
+    lookPresetId: 2
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29190
+  - id: 136
+    name: "19등급_AI하수A"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29190
+  - id: 137
+    name: "19등급_AI중수A"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29190
+  - id: 138
+    name: "19등급_AI초고수"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29190
+  - id: 139
+    name: "19등급_AI하수B"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29190
+  - id: 140
+    name: "19등급_AI중수B"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29190
+  - id: 141
+    name: "20등급_AI고수A"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29200
+  - id: 142
+    name: "20등급_AI고수B"
+    lookPresetId: 2
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29200
+  - id: 143
+    name: "20등급_AI하수A"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29200
+  - id: 144
+    name: "20등급_AI중수A"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29200
+  - id: 145
+    name: "20등급_AI초고수"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29200
+  - id: 146
+    name: "20등급_AI하수B"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29200
+  - id: 147
+    name: "20등급_AI중수B"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29200
+  - id: 148
+    name: "21등급_AI고수A"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29210
+  - id: 149
+    name: "21등급_AI고수B"
+    lookPresetId: 2
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29210
+  - id: 150
+    name: "21등급_AI하수A"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29210
+  - id: 151
+    name: "21등급_AI중수A"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29210
+  - id: 152
+    name: "21등급_AI초고수"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29210
+  - id: 153
+    name: "21등급_AI하수B"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29210
+  - id: 154
+    name: "21등급_AI중수B"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29210
+  - id: 155
+    name: "22등급_AI고수A"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29220
+  - id: 156
+    name: "22등급_AI고수B"
+    lookPresetId: 2
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29220
+  - id: 157
+    name: "22등급_AI하수A"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29220
+  - id: 158
+    name: "22등급_AI중수A"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29220
+  - id: 159
+    name: "22등급_AI초고수"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29220
+  - id: 160
+    name: "22등급_AI하수B"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29220
+  - id: 161
+    name: "22등급_AI중수B"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29220
+  - id: 162
+    name: "23등급_AI고수A"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29230
+  - id: 163
+    name: "23등급_AI고수B"
+    lookPresetId: 2
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29230
+  - id: 164
+    name: "23등급_AI하수A"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29230
+  - id: 165
+    name: "23등급_AI중수A"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29230
+  - id: 166
+    name: "23등급_AI초고수"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29230
+  - id: 167
+    name: "23등급_AI하수B"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29230
+  - id: 168
+    name: "23등급_AI중수B"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29230
+  - id: 169
+    name: "24등급_AI고수A"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29240
+  - id: 170
+    name: "24등급_AI고수B"
+    lookPresetId: 2
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29240
+  - id: 171
+    name: "24등급_AI하수A"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29240
+  - id: 172
+    name: "24등급_AI중수A"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29240
+  - id: 173
+    name: "24등급_AI초고수"
+    lookPresetId: 1
+    charId: 10
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29240
+  - id: 174
+    name: "24등급_AI하수B"
+    lookPresetId: 3
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29240
+  - id: 175
+    name: "24등급_AI중수B"
+    lookPresetId: 4
+    charId: 20
+    level: 500
+    difficultyLevel: 0
+    mountPartTid: 29240
+  - id: 176
+    name: "니콜키크더만"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 177
+    name: "머리아파캐리"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 178
+    name: "크리스티나아기"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 179
+    name: "오드리될뻔"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 180
+    name: "하마삼킨아유미"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 181
+    name: "장글로드분당"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 182
+    name: "니꼬라지게이지"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 183
+    name: "오야마돈라덴"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 184
+    name: "안토니오반"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 185
+    name: "안졸리나젤리"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 186
+    name: "통키"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 187
+    name: "슛돌이"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 188
+    name: "카드값줘체리"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 189
+    name: "짱구는목말라"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 190
+    name: "태권부인"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 191
+    name: "맏인가제트"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 192
+    name: "빨간망삐리리"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 193
+    name: "돌장비소년캔디"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 194
+    name: "중년탐정김전일"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 195
+    name: "아기곰용돌이"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 196
+    name: "삐리리몽"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 197
+    name: "독수리이혁재"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 198
+    name: "무즙파워레인져"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 199
+    name: "울트라면"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 200
+    name: "슈퍼말이오"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 201
+    name: "이웃집또털어"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 202
+    name: "엄마찾아삼천포"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 203
+    name: "기동전사건달"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 204
+    name: "목각기동대"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 205
+    name: "다이아본드"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 206
+    name: "글래머에디터"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 207
+    name: "두사부잡채"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 208
+    name: "번지의제왕"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 209
+    name: "미선입아파서"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 210
+    name: "뷁투더잡쳐"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 211
+    name: "해적디스크"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 212
+    name: "성냥팔이소년"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 213
+    name: "폭행몬스터"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 214
+    name: "살인의추녀"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 215
+    name: "폭하리수웨트"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20001
+  - id: 216
+    name: "초급훈련조교"
+    lookPresetId: 27
+    charId: 10
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20002
+  - id: 217
+    name: "중급훈련조교"
+    lookPresetId: 28
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20003
+  - id: 218
+    name: "상급훈련조교"
+    lookPresetId: 29
+    charId: 20
+    level: 1
+    difficultyLevel: 0
+    mountPartTid: 20036
+  - id: 219
+    name: "데이브"
+    lookPresetId: 30
+    charId: 10
+    level: 250
+    difficultyLevel: 4
+    mountPartTid: 20002
+  - id: 220
+    name: "앤디"
+    lookPresetId: 31
+    charId: 10
+    level: 260
+    difficultyLevel: 4
+    mountPartTid: 20002
+  - id: 221
+    name: "레드"
+    lookPresetId: 32
+    charId: 10
+    level: 240
+    difficultyLevel: 4
+    mountPartTid: 20002
+  - id: 222
+    name: "메이"
+    lookPresetId: 33
+    charId: 20
+    level: 230
+    difficultyLevel: 4
+    mountPartTid: 20002
+  - id: 223
+    name: "아그네스"
+    lookPresetId: 34
+    charId: 20
+    level: 255
+    difficultyLevel: 4
+    mountPartTid: 20002
+  - id: 224
+    name: "미아"
+    lookPresetId: 35
+    charId: 20
+    level: 240
+    difficultyLevel: 4
+    mountPartTid: 20002
+  - id: 225
+    name: "매를린"
+    lookPresetId: 36
+    charId: 20
+    level: 230
+    difficultyLevel: 4
+    mountPartTid: 20002
+  - id: 226
+    name: "오힌근"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 227
+    name: "푸른하늘"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 228
+    name: "크리스티나"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 229
+    name: "달리자기사단"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 230
+    name: "solojjang"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 231
+    name: "엘리요3"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 232
+    name: "강서구"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 233
+    name: "Metalkid4"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 234
+    name: "DOTORIS"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 235
+    name: "아롱아롱2"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 236
+    name: "아름아름"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 237
+    name: "약크르트4"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 238
+    name: "kavin"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 239
+    name: "dragonlee"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 240
+    name: "부활2"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 241
+    name: "진저애일"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 242
+    name: "이승환"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 243
+    name: "l번개l"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 244
+    name: "말사랑"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 245
+    name: "a아기곰a"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 246
+    name: "짭짭든"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 247
+    name: "무링요"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 248
+    name: "박jisong"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 249
+    name: "테란king2"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 250
+    name: "고수i고수"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 251
+    name: "어장관리2"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 252
+    name: "피들밤비"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 253
+    name: "Tolos3"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 254
+    name: "samsin"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 255
+    name: "사이먼K"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 256
+    name: "NO트러블2"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 257
+    name: "l강서구화곡l"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 258
+    name: "나이롱89"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 259
+    name: "프레츠난드"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 260
+    name: "캬바예프2"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 261
+    name: "UKlove"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 262
+    name: "여름달"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 263
+    name: "그해겨울2"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 264
+    name: "아메리카노맨"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 265
+    name: "지민이"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 266
+    name: "서울나그네"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 267
+    name: "부산광역시"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 268
+    name: "KungKung"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 269
+    name: "leeSmore2"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 270
+    name: "크리미S"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 271
+    name: "[꼬냑]"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 272
+    name: "냉면이좋아"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 300
+    name: "훈련교관"
+    lookPresetId: 29
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 301
+    name: "훈련교관"
+    lookPresetId: 29
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 302
+    name: "경기중짱"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 303
+    name: "피쳐링고"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 304
+    name: "고고VW"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 305
+    name: "o빰빠람o"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 306
+    name: "짠짜잔짜2"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 307
+    name: "PONY84"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 308
+    name: "포탈V"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 309
+    name: "AslongAs"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 310
+    name: "[플라워]"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 311
+    name: "EvilE"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 312
+    name: "통키통키3"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 313
+    name: "포니테일lk"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 314
+    name: "본투1991"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 315
+    name: "이세민"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 316
+    name: "치약과9"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 317
+    name: "붉은범선"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 318
+    name: "가을야구L"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 319
+    name: "김슬기2"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 320
+    name: "the추추"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 321
+    name: "공돌지니"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 322
+    name: "프루프ME"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 323
+    name: "Korea만만"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 324
+    name: "[Fight]2no"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 325
+    name: "3nom"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 326
+    name: "kisscool2"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 327
+    name: "사이다7"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 328
+    name: "the문"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 329
+    name: "지옥처리1"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 330
+    name: "0삼0삼"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 331
+    name: "다이아몬드0"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 332
+    name: "말초롱2"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 333
+    name: "크리에이트K"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 334
+    name: "반지의피더2"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 335
+    name: "햇님달님"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 336
+    name: "모두의테일"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 337
+    name: "신덕학교ll"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 338
+    name: "성냥팔이G"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 339
+    name: "그녀의추억4"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 340
+    name: "진도막창9"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 341
+    name: "조종성"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 342
+    name: "필승전략S"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 343
+    name: "크루세이더"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 344
+    name: "클라우드7"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 345
+    name: "군계12"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 346
+    name: "믿고말껴"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 347
+    name: "m트레일러m"
+    lookPresetId: 2
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 348
+    name: "[V]채널"
+    lookPresetId: 1
+    charId: 10
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001
+  - id: 349
+    name: "훈련교관"
+    lookPresetId: 29
+    charId: 20
+    level: 1
+    difficultyLevel: 1
+    mountPartTid: 20001

@@ -215,9 +215,9 @@ private:
   //! Mapping between character UIDs and their assigned OIDs.
   //! It's important these persist across races in a room as the client does not clear assignments internally. 
   std::unordered_map<data::Uid, Oid> _characterOids;
-  //! Next OID for new character entities (100+).
-  Oid _nextCharacterOid = 100;
-  //! Next OID for item entities (1–99, reset each race).
+  //! Next OID for new character entities.
+  Oid _nextCharacterOid = 1;
+  //! Next OID for item entities, reset each race.
   Oid _nextItemOid = 1;
   //! Horse entities in the race.
   RacerObjectMap _racers;

@@ -416,4 +416,9 @@ Config& ServerInstance::GetSettings()
   return _config;
 }
 
+const std::filesystem::path& ServerInstance::GetResourceDirectory() const
+{
+  return _resourceDirectory;
+}
+
 } // namespace server

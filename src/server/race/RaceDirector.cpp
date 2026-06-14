@@ -29,6 +29,7 @@
 #include <boost/container_hash/hash.hpp>
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/bin_to_hex.h>
+#include <yaml-cpp/yaml.h>
 
 #include <bitset>
 
@@ -49,45 +50,30 @@ uint64_t TimePointToRaceTimePoint(const std::chrono::steady_clock::time_point& t
     timePoint.time_since_epoch()).count() / IntervalConstant;
 }
 
-// AI名称列表 - 简单难度 (对应客户端SAI_easy1-7) (AI name list - Easy difficulty, corresponds to client SAI_easy1-7)
-const std::vector<std::string> AI_EASY_NAMES = {
-  "Cookie",   // 쿠키
-  "Jake",     // 제이크
-  "Jade",     // 제이드
-  "Ann",      // 앤
-  "Saint",    // 세인트
-  "Janis",    // 제니스
-  "Cathy"     // 캐시
-};
-
-// AI名称列表 - 普通难度 (对应客户端SAI_nomal1-7) (AI name list - Normal difficulty, corresponds to client SAI_nomal1-7)
-const std::vector<std::string> AI_NORMAL_NAMES = {
-  "Karim",    // 카림
-  "Eden",     // 이든
-  "Warren",   // 워렌
-  "Tien",     // 티엔
-  "Dains",    // 데인즈
-  "Glen",     // 글렌
-  "Marin"     // 마린
-};
-
-// AI名称列表 - 困难难度 (对应客户端SAI_hard1-7) (AI name list - Hard difficulty, corresponds to client SAI_hard1-7)
-const std::vector<std::string> AI_HARD_NAMES = {
-  "Mullin",     // 멀린
-  "Delta",      // 델타
-  "Anju",       // 앤주
-  "Christian",  // 크리스챤
-  "Lyra",       // 라이라
-  "Happy",      // 해피
-  "Pepper"      // 페퍼
-};
 
 // 2 - Bolt
 // 4 - Shield
 // 10 - Ice wall
 const std::array<uint32_t, 3> magicItems = {2, 4, 10};
 
-uint32_t RandomMagicItem()
+uint32_t MountStatValue(
+  const tracker::RaceTracker::Racer::MountStatsSnapshot& stats,
+  registry::Magic::MountStat stat)
+{
+  switch (stat)
+  {
+    case registry::Magic::MountStat::Agility:   return stats.agility;
+    case registry::Magic::MountStat::Ambition:  return stats.ambition;
+    case registry::Magic::MountStat::Rush:      return stats.rush;
+    case registry::Magic::MountStat::Endurance: return stats.endurance;
+    case registry::Magic::MountStat::Courage:   return stats.courage;
+    default: return 0;
+  }
+}
+
+registry::Magic::SlotInfo RandomMagicItem(
+  ServerInstance& serverInstance,
+  const tracker::RaceTracker::Racer& racer)
 {
   const auto& itemPool = (racer.team == tracker::RaceTracker::Racer::Team::Solo
     ? serverInstance.GetMagicRegistry().GetSoloPool()
@@ -435,6 +421,41 @@ void RaceDirector::Initialize()
   });
   test.detach();
 
+  // Load AI presets from aipresets.yaml (sourced from libconfig_c.dat AIPreset table).
+  // difficultyLevel mapping: 1=easy, 2=normal, 3=hard, 4=expert; 0=generic/unused.
+  try
+  {
+    const auto presetsPath = _serverInstance.GetResourceDirectory() / "config/game/aipresets.yaml";
+    const auto root = YAML::LoadFile(presetsPath.string());
+    const auto presets = root["presets"];
+    if (presets)
+    {
+      for (const auto& entry : presets)
+      {
+        const uint32_t diff = entry["difficultyLevel"].as<uint32_t>(0);
+        if (diff == 0)
+          continue;
+        _aiPresets[diff].push_back(AIRider{
+          .oid = 0,
+          .name = entry["name"].as<std::string>(),
+          .lookPresetId = entry["lookPresetId"].as<uint32_t>(1),
+          .charId = entry["charId"].as<uint32_t>(10),
+          .level = entry["level"].as<uint32_t>(1),
+          .aiDifficulty = diff,
+          .aiPersonality = 1,
+          .team = tracker::RaceTracker::Racer::Team::Solo,
+        });
+      }
+      uint32_t total = 0;
+      for (const auto& [d, v] : _aiPresets) total += static_cast<uint32_t>(v.size());
+      spdlog::info("Loaded {} AI presets across {} difficulty levels", total, _aiPresets.size());
+    }
+  }
+  catch (const std::exception& e)
+  {
+    spdlog::warn("Could not load AI presets: {}", e.what());
+  }
+
   _commandServer.BeginHost(GetConfig().listen.address, GetConfig().listen.port);
 }
 
@@ -660,8 +681,8 @@ void RaceDirector::Tick()
           score.level = 1;  // AI默认等级 (AI default level)
           score.mountName = "AI Horse";  // AI马匹名称 (AI horse name)
           
-          spdlog::debug("Added AI {} to scoreboard: time={}ms, rank={}", 
-                       aiIt->name, courseTime, raceResult.scores.size());
+          spdlog::debug("Added AI {} to scoreboard: time={}ms, rank={}",
+                       aiIt->name, score.courseTime, raceResult.scores.size());
         }
         else
         {
@@ -706,8 +727,8 @@ void RaceDirector::Tick()
             });
         });
         
-        spdlog::debug("Added player {} to scoreboard: time={}ms, rank={}", 
-                     score.name, courseTime, raceResult.scores.size());
+        spdlog::debug("Added player {} to scoreboard: time={}ms, rank={}",
+                     score.name, score.courseTime, raceResult.scores.size());
       }
     }
 
@@ -1093,6 +1114,16 @@ void RaceDirector::HandleEnterRoom(
   if (inserted)
   {
     raceInstance.masterUid = command.characterUid;
+    uint32_t difficulty = 2;
+    _serverInstance.GetRoomSystem().GetRoom(
+      command.roomUid,
+      [&difficulty](Room& room)
+      {
+        const auto d = room.GetRoomDetails().npcDifficulty;
+        if (d > 0)
+          difficulty = d;
+      });
+    SpawnAIRiders(raceInstance, command.roomUid, difficulty);
   }
 
   _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
@@ -1315,6 +1346,29 @@ void RaceDirector::HandleEnterRoom(
       return response;
     });
 
+  // Notify the joining client of each AI rider as if they joined the room.
+  for (const auto& aiRider : raceInstance.aiRiders)
+  {
+    protocol::Racer aiRacerProto{};
+    aiRacerProto.isNPC = true;
+    aiRacerProto.uid = aiRider.uid;
+    aiRacerProto.oid = aiRider.oid;
+    aiRacerProto.npcTid = aiRider.lookPresetId;
+    aiRacerProto.name = aiRider.name;
+    aiRacerProto.level = aiRider.level;
+
+    protocol::AcCmdCREnterRoomNotify aiNotify{
+      .racer = aiRacerProto,
+      .averageTimeRecord = 0};
+
+    _commandServer.QueueCommand<decltype(aiNotify)>(
+      clientId,
+      [aiNotify]()
+      {
+        return aiNotify;
+      });
+  }
+
   protocol::AcCmdCREnterRoomNotify notify{
     .racer = joiningRacer,
     .averageTimeRecord = clientContext.characterUid};
@@ -1338,6 +1392,11 @@ void RaceDirector::HandleChangeRoomOptions(
 {
   // todo: validate command fields
   const auto& clientContext = GetClientContext(clientId);
+
+  spdlog::debug(
+    "ChangeRoomOptions: optionsBitfield={} npcDifficulty={}",
+    static_cast<uint16_t>(command.optionsBitfield),
+    command.npcDifficulty);
 
   if (command.optionsBitfield == protocol::RoomOptionType::None)
     // If no options have been changed then do not broadcast notify
@@ -1416,6 +1475,50 @@ void RaceDirector::HandleChangeRoomOptions(
     .npcDifficulty = command.npcDifficulty};
 
   BroadcastChangeRoomOptions(clientContext.roomUid, notify);
+
+  if (options.test(5) && command.npcDifficulty > 0)
+  {
+    std::scoped_lock raceLock(_raceInstancesMutex);
+    auto& raceInstance = _raceInstances[clientContext.roomUid];
+
+    spdlog::info(
+      "Difficulty changed to {} for room {}, replacing {} AI riders",
+      command.npcDifficulty,
+      clientContext.roomUid,
+      raceInstance.aiRiders.size());
+
+    for (const auto& aiRider : raceInstance.aiRiders)
+    {
+      protocol::AcCmdCRLeaveRoomNotify leaveNotify{
+        .characterId = aiRider.uid,
+        .unk0 = 1};
+      for (const ClientId& id : raceInstance.clients)
+        _commandServer.QueueCommand<decltype(leaveNotify)>(
+          id, [leaveNotify]() { return leaveNotify; });
+    }
+
+    raceInstance.aiRiders.clear();
+    SpawnAIRiders(raceInstance, clientContext.roomUid, command.npcDifficulty);
+
+    for (const auto& aiRider : raceInstance.aiRiders)
+    {
+      protocol::Racer aiRacerProto{};
+      aiRacerProto.isNPC = true;
+      aiRacerProto.uid = aiRider.uid;
+      aiRacerProto.oid = aiRider.oid;
+      aiRacerProto.npcTid = aiRider.lookPresetId;
+      aiRacerProto.name = aiRider.name;
+      aiRacerProto.level = aiRider.level;
+
+      protocol::AcCmdCREnterRoomNotify aiNotify{
+        .racer = aiRacerProto,
+        .averageTimeRecord = 0};
+
+      for (const ClientId& id : raceInstance.clients)
+        _commandServer.QueueCommand<decltype(aiNotify)>(
+          id, [aiNotify]() { return aiNotify; });
+    }
+  }
 }
 
 void RaceDirector::HandleChangeTeam(
@@ -1909,6 +2012,18 @@ void RaceDirector::HandleStartRace(
       }
     });
 
+  if (playerCount == 1)
+  {
+    for (size_t i = 0; i < raceInstance.aiRiders.size(); ++i)
+    {
+      auto& aiRider = raceInstance.aiRiders[i];
+      auto& aiRacer = raceInstance.tracker.AddRacer(static_cast<data::Uid>(1000000 + i));
+      aiRacer.state = tracker::RaceTracker::Racer::State::Loading;
+      aiRacer.team = tracker::RaceTracker::Racer::Team::Solo;
+      aiRider.oid = aiRacer.oid;
+    }
+  }
+
   raceInstance.stage = RaceInstance::Stage::Loading;
   // Mark the start time of when race started loading
   raceInstance.loadingStartTimePoint = std::chrono::steady_clock::now();
@@ -1937,6 +2052,8 @@ void RaceDirector::HandleStartRace(
       protocol::AcCmdCRStartRaceNotify notify{
         .raceGameMode = raceInstance.raceGameMode,
         .raceTeamMode = raceInstance.raceTeamMode,
+        .hostOid = static_cast<uint16_t>(raceInstance.tracker.GetRacer(raceInstance.masterUid).oid),
+        .member4 = raceInstance.roomUid,
         .raceMapBlockId = raceInstance.raceMapBlockId,
         .p2pRelayAddress = lobbyConfig.advertisement.udpRaceRelay.address.to_uint(),
         .p2pRelayPort = lobbyConfig.advertisement.udpRaceRelay.port,
@@ -1949,23 +2066,17 @@ void RaceDirector::HandleStartRace(
           continue;
 
         std::string characterName;
-        GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
-          [&characterName](const data::Character& character)
-          {
-            characterName = character.name();
-          });
         uint8_t aiPersonality = 0;
         uint32_t aiDifficulty = 0;
         bool isAI = (characterUid >= 1000000 && characterUid < 2000000);
         
         if (isAI)
         {
-          // 从AI列表获取名称和属性 (Get name and attributes from AI list)
           auto aiIt = std::find_if(
             raceInstance.aiRiders.begin(),
             raceInstance.aiRiders.end(),
             [oid = racer.oid](const AIRider& ai) { return ai.oid == oid; });
-          
+
           if (aiIt != raceInstance.aiRiders.end())
           {
             characterName = aiIt->name;
@@ -1990,18 +2101,15 @@ void RaceDirector::HandleStartRace(
             });
         }
 
-        // 计算参赛者索引 (Calculate racer index)
-        uint16_t racerIndex = static_cast<uint16_t>(notify.racers.size());
-
         auto& protocolRacer = notify.racers.emplace_back(
           protocol::AcCmdCRStartRaceNotify::Player{
             .oid = racer.oid,
             .name = characterName,
-            .unk2 = isAI ? static_cast<uint8_t>(1) : static_cast<uint8_t>(0),  // AI=1, 玩家=0 (AI=1, Player=0)
-            .unk3 = isAI ? aiPersonality : static_cast<uint8_t>(0),  // AI个性ID (AI personality ID)
+            .unk2 = isAI ? static_cast<uint8_t>(1) : static_cast<uint8_t>(0),
+            .unk3 = isAI ? aiPersonality : static_cast<uint8_t>(0),
             .p2dId = racer.oid,
-            .unk6 = isAI ? static_cast<uint16_t>(1) : racerIndex,  // AI都用1，玩家用正常索引 (AI all use 1, player use normal index)
-            .unk7 = isAI ? static_cast<uint32_t>(1) : static_cast<uint32_t>(0),  // AI=1 (AI=1)
+            .unk6 = isAI ? static_cast<uint16_t>(1) : static_cast<uint16_t>(0),
+            .unk7 = isAI ? static_cast<uint32_t>(1) : static_cast<uint32_t>(0),
           });
 
         switch (racer.team)
@@ -2291,7 +2399,7 @@ void RaceDirector::HandleUserRaceFinal(
   // 如果有AI骑手，生成它们的比赛结果 (If there are AI riders, generate their race results)
   if (!raceInstance.aiRiders.empty())
   {
-    GenerateAIRaceResults(raceInstance, command.courseTime);
+    GenerateAIRaceResults(raceInstance, static_cast<uint32_t>(command.courseTime.count()));
   }
 }
 
@@ -4354,32 +4462,6 @@ void RaceDirector::HandleKickUser(
     return;
   }
   
-  // Send remove target notification to the current target (if any)
-  if (racer.currentTarget != tracker::InvalidEntityOid)
-  {
-    protocol::AcCmdRCRemoveMagicTarget removeNotify{
-      .characterOid = command.characterOid
-    };
-    
-    // Find the client ID for the current target
-    for (const ClientId& raceClientId : raceInstance.clients)
-    {
-      const auto& targetClientContext = _clients[raceClientId];
-      if (raceInstance.tracker.GetRacer(targetClientContext.characterUid).oid == racer.currentTarget)
-      {
-        _commandServer.QueueCommand<decltype(removeNotify)>(
-          raceClientId,
-          [removeNotify]() { return removeNotify; });
-        break;
-      }
-    }
-  }
-  
-  // Reset targeting state
-  racer.isTargeting = false;
-  racer.currentTarget = tracker::InvalidEntityOid;
-  
-  spdlog::info("Character {} exited targeting mode", command.characterOid);
 }
 
 /*
@@ -4433,154 +4515,56 @@ void RaceDirector::HandleActivateSkillEffect(
 }
 */
 
-void RaceDirector::HandleChangeSkillCardPresetId(
-  ClientId clientId,
-  const protocol::AcCmdCRChangeSkillCardPresetID& command)
-{
-  if (command.setId < 0 || command.setId > 2)
-  {
-    // TODO: throw? return?
-    // Calling client requested to change skill preset to something out of range
-    // 0 < setId < 3
-    return;
-  }
-
-  if (command.gamemode != protocol::GameMode::Speed && command.gamemode != protocol::GameMode::Magic)
-  {
-    // TODO: throw? return?
-    // Gamemode can either be speed (1) or magic (2)
-    return;
-  }
-
-  const auto& clientContext = _clients[clientId];
-  auto& raceInstance = _raceInstances[clientContext.roomUid];
-  auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
-
-  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
-    [&racer, &command](data::Character& character)
-    {
-      // Get skill sets by gamemode
-      auto& skillSets =
-        command.gamemode == protocol::GameMode::Speed ? character.skills.speed() :
-        command.gamemode == protocol::GameMode::Magic ? character.skills.magic() :
-        throw std::runtime_error("Invalid gamemode");
-      // Set character's active skill set in the record
-      skillSets.activeSetId = command.setId;
-    }
-  );
-
-  // Add to per-racer event item tracker regardless of ownership.
-  auto& item = raceInstance.tracker.AddEventItem(clientContext.characterUid);
-  item.position = command.position;
-  item.itemType = selectedEgg.deckItemId;
-}
-
 void RaceDirector::SpawnAIRiders(
-  RoomInstance& roomInstance,
-  data::Uid roomUid)
+  RaceInstance& roomInstance,
+  [[maybe_unused]] data::Uid roomUid,
+  uint32_t difficulty)
 {
-  // 默认使用普通难度 (Default to normal difficulty)
-  uint32_t aiDifficulty = 2;
-  
-  // 尝试从房间详情获取AI难度设置（如果有的话） (Try to get AI difficulty setting from room details if available)
-  // 当前Room类没有aiDifficulty字段，使用默认值 (Current Room class has no aiDifficulty field, using default value)
-  
-  // 验证难度值有效性 (Validate difficulty value)
-  if (aiDifficulty < 1 || aiDifficulty > 3)
+  constexpr size_t maxAIRiders = 7;
+
+  const auto it = _aiPresets.find(difficulty);
+  if (it == _aiPresets.end() || it->second.empty())
   {
-    spdlog::warn("Invalid AI difficulty {}, using default (2)", aiDifficulty);
-    aiDifficulty = 2;
+    spdlog::warn("No AI presets loaded for difficulty {}, skipping AI spawn", difficulty);
+    return;
   }
-  
-  // 选择对应难度的AI名称列表 (Select AI name list for corresponding difficulty)
-  const std::vector<std::string>* aiNames = &AI_NORMAL_NAMES;
-  const char* difficultyName = "Normal";
-  
-  switch (aiDifficulty)
+
+  const auto& pool = it->second;
+  const size_t count = std::min(pool.size(), maxAIRiders);
+  for (size_t i = 0; i < count; ++i)
   {
-    case 1:
-      aiNames = &AI_EASY_NAMES;
-      difficultyName = "Easy";
-      break;
-    case 2:
-      aiNames = &AI_NORMAL_NAMES;
-      difficultyName = "Normal";
-      break;
-    case 3:
-      aiNames = &AI_HARD_NAMES;
-      difficultyName = "Hard";
-      break;
+    AIRider rider = pool[i];
+    rider.oid = static_cast<uint32_t>(i + 2);  // Human always gets OID 1, AI start at 2
+    rider.uid = static_cast<uint32_t>(1000000 + i);
+    rider.aiPersonality = static_cast<uint32_t>(i + 1);
+    roomInstance.aiRiders.push_back(std::move(rider));
   }
-  
-  spdlog::info("Spawning {} AI riders for single player race (difficulty: {} - {})", 
-               aiNames->size(), aiDifficulty, difficultyName);
-  
-  // 生成7个AI骑手 (Spawn 7 AI riders)
-  for (size_t i = 0; i < aiNames->size(); ++i)
-  {
-    // 创建AI角色UID (使用特殊范围避免与真实玩家冲突) (Create AI character UID, using special range to avoid conflicts with real players)
-    // AI UID范围: 1000000 - 1999999 (AI UID range: 1000000 - 1999999)
-    data::Uid aiCharacterUid = 1000000 + i;
-    
-    // 添加到比赛追踪器 (Add to race tracker)
-    auto& aiRacer = roomInstance.tracker.AddRacer(aiCharacterUid);
-    
-    // 设置AI状态为加载中（与真实玩家一样） (Set AI state to loading, same as real players)
-    aiRacer.state = tracker::RaceTracker::Racer::State::Loading;
-    aiRacer.team = tracker::RaceTracker::Racer::Team::Solo;
-    
-    // 创建AI骑手信息 (Create AI rider information)
-    AIRider aiRider{
-      .oid = aiRacer.oid,
-      .name = (*aiNames)[i],
-      .aiDifficulty = aiDifficulty,
-      .aiPersonality = static_cast<uint32_t>(i + 1),
-      .team = tracker::RaceTracker::Racer::Team::Solo
-    };
-    
-    // 存储到房间实例 (Store to room instance)
-    roomInstance.aiRiders.push_back(aiRider);
-    
-    spdlog::info("  Spawned AI rider #{}: {} (OID: {}, UID: {}, personality: {})",
-                 i + 1, aiRider.name, aiRider.oid, aiCharacterUid, aiRider.aiPersonality);
-  }
-  
-  spdlog::info("Total racers in room: {} (1 player + {} AI)", 
-               roomInstance.tracker.GetRacers().size(), 
-               roomInstance.aiRiders.size());
+
+  spdlog::info("Prepared {} AI riders (difficulty: {})", roomInstance.aiRiders.size(), difficulty);
 }
 
-void RaceDirector::AutoCompleteAILoading(RoomInstance& roomInstance)
+void RaceDirector::AutoCompleteAILoading(RaceInstance& roomInstance)
 {
   if (roomInstance.aiRiders.empty())
     return;
-    
-  spdlog::info("Auto-completing AI loading for {} AI riders", 
-               roomInstance.aiRiders.size());
-  
+
   for (const auto& aiRider : roomInstance.aiRiders)
   {
-    // 查找对应的racer并标记为Racing (Find corresponding racer and mark as Racing)
     for (auto& [uid, racer] : roomInstance.tracker.GetRacers())
     {
       if (racer.oid == aiRider.oid)
       {
-        // 只有在Loading状态才切换到Racing (Only switch to Racing if in Loading state)
         if (racer.state == tracker::RaceTracker::Racer::State::Loading)
         {
           racer.state = tracker::RaceTracker::Racer::State::Racing;
-          
-          spdlog::info("  AI rider {} (OID: {}) loading complete", 
-                       aiRider.name, racer.oid);
-          
-          // 通知所有客户端此AI加载完成 (Notify all clients that this AI has completed loading)
-          for (const ClientId& roomClientId : roomInstance.clients)
+          const auto aiOid = racer.oid;
+          for (const ClientId& raceClientId : roomInstance.clients)
           {
             _commandServer.QueueCommand<protocol::AcCmdCRLoadingCompleteNotify>(
-              roomClientId,
-              [oid = racer.oid]()
+              raceClientId,
+              [aiOid]()
               {
-                return protocol::AcCmdCRLoadingCompleteNotify{.oid = oid};
+                return protocol::AcCmdCRLoadingCompleteNotify{.oid = aiOid};
               });
           }
         }
@@ -4591,7 +4575,7 @@ void RaceDirector::AutoCompleteAILoading(RoomInstance& roomInstance)
 }
 
 void RaceDirector::GenerateAIRaceResults(
-  RoomInstance& roomInstance,
+  RaceInstance& roomInstance,
   uint32_t playerTime)
 {
   if (roomInstance.aiRiders.empty())
@@ -4648,7 +4632,7 @@ void RaceDirector::GenerateAIRaceResults(
         // 发送AI完成通知给所有客户端 (Send AI completion notification to all clients)
         protocol::AcCmdUserRaceFinalNotify notify{
           .oid = racer.oid,
-          .courseTime = aiTime
+          .courseTime = std::chrono::milliseconds{aiTime}
         };
         
         for (const ClientId& roomClientId : roomInstance.clients)
@@ -4663,6 +4647,289 @@ void RaceDirector::GenerateAIRaceResults(
   }
   
   spdlog::info("AI race results generated for {} AI riders", roomInstance.aiRiders.size());
+}
+
+void RaceDirector::HandleTeamGauge(const ClientId clientId)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  std::scoped_lock lock(_raceInstancesMutex);
+  auto& raceInstance = GetRaceInstance(clientContext);
+
+  bool isTeamMode = raceInstance.raceTeamMode == protocol::TeamMode::Team;
+  bool isSpeedGameMode = raceInstance.raceGameMode == protocol::GameMode::Speed;
+  if (not isTeamMode or not isSpeedGameMode)
+    return;
+
+  auto& racer = raceInstance.tracker.GetRacer(
+    clientContext.characterUid);
+
+  auto& blueTeam = raceInstance.tracker.blueTeam;
+  auto& redTeam = raceInstance.tracker.redTeam;
+  auto& team =
+    racer.team == tracker::RaceTracker::Racer::Team::Red ? redTeam :
+    racer.team == tracker::RaceTracker::Racer::Team::Blue ? blueTeam :
+    throw std::runtime_error(
+      std::format(
+        "Racer character uid {} is on unrecognised team {}",
+        clientContext.characterUid,
+        static_cast<uint32_t>(racer.team)));
+
+  if (team.gaugeLocked)
+    return;
+
+  team.boostCount += 1;
+
+  const std::vector<float> baseFillRates{
+    1.25f,
+    2.50f,
+    3.00f,
+    3.75f,
+    5.50f,
+    6.50f};
+
+  uint32_t redTeamCount = 0;
+  uint32_t blueTeamCount = 0;
+  for (const auto& _ : raceInstance.tracker.GetRacers() | std::views::values)
+  {
+    if (_.team == tracker::RaceTracker::Racer::Team::Red)
+      ++redTeamCount;
+    else if (_.team == tracker::RaceTracker::Racer::Team::Blue)
+      ++blueTeamCount;
+  }
+  const auto teamSize = std::max(redTeamCount, blueTeamCount);
+
+  const auto fillRateIndex = std::min(
+    team.boostCount,
+    static_cast<uint32_t>(baseFillRates.size() - 1));
+  protocol::AcCmdRCTeamSpurGauge spur{
+    .team = racer.team,
+    .markerSpeed = baseFillRates[fillRateIndex] * teamSize,
+    .unk5 = 0
+  };
+
+  constexpr uint32_t BaseBoostPoints = 50;
+  constexpr uint32_t BoostPointsDiffBase = 20;
+  const auto scale = teamSize - 1;
+  const auto additionalBoostPoints = (BoostPointsDiffBase * scale) + (10 * scale);
+
+  constexpr uint32_t BaseMaxPoints = 250;
+  constexpr uint32_t MaxPointsDiffBase = 150;
+  const uint32_t maxPoints = BaseMaxPoints + (MaxPointsDiffBase * scale);
+
+  auto& blueTeamPoints = blueTeam.points;
+  auto& redTeamPoints = redTeam.points;
+  auto& teamPoints =
+    racer.team == tracker::RaceTracker::Racer::Team::Red ? redTeamPoints :
+    racer.team == tracker::RaceTracker::Racer::Team::Blue ? blueTeamPoints :
+    throw std::runtime_error(
+      std::format(
+        "Racer character uid {} is on unrecognised team {}",
+        clientContext.characterUid,
+        static_cast<uint32_t>(racer.team)));
+
+  spur.currentPoints = teamPoints / 10.0f;
+  teamPoints = std::min(
+    maxPoints,
+    teamPoints + BaseBoostPoints + additionalBoostPoints);
+  spur.newPoints = teamPoints / 10.0f;
+
+  bool isTeamRed = racer.team == tracker::RaceTracker::Racer::Team::Red;
+  bool isTeamBlue = racer.team == tracker::RaceTracker::Racer::Team::Blue;
+
+  bool isTeamSpur = false;
+  if (redTeamPoints >= maxPoints or blueTeamPoints >= maxPoints)
+  {
+    isTeamSpur = (isTeamRed and redTeamPoints >= maxPoints) or
+      (isTeamBlue and blueTeamPoints >= maxPoints);
+    redTeamPoints = 0;
+    blueTeamPoints = 0;
+  }
+
+  if (isTeamSpur)
+  {
+    redTeam.boostCount = 0;
+    blueTeam.boostCount = 0;
+
+    auto& spurringTeamInfo =
+      racer.team == tracker::RaceTracker::Racer::Team::Red ? redTeam :
+      racer.team == tracker::RaceTracker::Racer::Team::Blue ? blueTeam :
+      throw std::runtime_error(
+        std::format(
+          "Unrecognised racer team '{}'",
+          static_cast<uint32_t>(racer.team)));
+    spurringTeamInfo.gaugeLocked = true;
+
+    constexpr auto SpurStartDelay = std::chrono::milliseconds(1500);
+
+    _scheduler.Queue(
+      [this, roomUid = raceInstance.roomUid, &racer, &spurringTeamInfo, maxPoints, teamSize]()
+      {
+        std::scoped_lock lock(_raceInstancesMutex);
+        const auto raceInstanceIter = _raceInstances.find(roomUid);
+        if (raceInstanceIter == _raceInstances.cend())
+          return;
+
+        const auto& raceInstance = raceInstanceIter->second;
+
+        const float BaseLoseTeamSpurConsumeRate = -10.0f;
+        const float BaseWinTeamSpurConsumeRate = -2.5f;
+
+        protocol::AcCmdRCTeamSpurGauge beatenSpur{
+          .team =
+            racer.team == tracker::RaceTracker::Racer::Team::Red ? tracker::RaceTracker::Racer::Team::Blue :
+            racer.team == tracker::RaceTracker::Racer::Team::Blue ? tracker::RaceTracker::Racer::Team::Red :
+            throw std::runtime_error(
+              std::format(
+                "Unrecognised racer team '{}'",
+                static_cast<uint32_t>(racer.team))),
+          .currentPoints = 0.0f,
+          .newPoints = 0.0f,
+          .markerSpeed = BaseLoseTeamSpurConsumeRate * teamSize,
+          .unk5 = 3
+        };
+
+        protocol::AcCmdRCTeamSpurGauge successfulSpur{
+          .team = racer.team,
+          .currentPoints = maxPoints / 10.0f,
+          .newPoints = 0.0f,
+          .markerSpeed = BaseWinTeamSpurConsumeRate * teamSize,
+          .unk5 = 0
+        };
+
+        const float spurDurationSeconds =
+          (maxPoints / 10.0f) / (std::abs(BaseWinTeamSpurConsumeRate) * teamSize);
+
+        _scheduler.Queue(
+          [&spurringTeamInfo]()
+          {
+            spurringTeamInfo.gaugeLocked = false;
+          },
+          Scheduler::Clock::now() + std::chrono::milliseconds(
+            static_cast<int64_t>(spurDurationSeconds * 1000)));
+
+        for (const ClientId& raceClientId : raceInstance.clients)
+        {
+          _commandServer.QueueCommand<decltype(beatenSpur)>(
+            raceClientId,
+            [beatenSpur]()
+            {
+              return beatenSpur;
+            });
+
+          _commandServer.QueueCommand<decltype(successfulSpur)>(
+            raceClientId,
+            [successfulSpur]()
+            {
+              return successfulSpur;
+            });
+        }
+      },
+      Scheduler::Clock::now() + SpurStartDelay);
+  }
+
+  for (const auto& raceClientId : raceInstance.clients)
+  {
+    _commandServer.QueueCommand<decltype(spur)>(raceClientId, [spur](){ return spur; });
+  }
+}
+
+void RaceDirector::SendDailyQuestNotificationToCharacter(
+  const data::Uid characterUid,
+  const protocol::AcCmdRCUpdateDailyQuestNotify& updateNotify)
+{
+  for (const auto& [clientId, clientContext] : _clients)
+  {
+    if (clientContext.characterUid == characterUid)
+    {
+      _commandServer.QueueCommand<protocol::AcCmdRCUpdateDailyQuestNotify>(
+        clientId, [updateNotify]() { return updateNotify; });
+
+      return;
+    }
+  }
+}
+
+void RaceDirector::HandleTriggerizeAct(
+  ClientId clientId,
+  const protocol::AcCmdCRTriggerizeAct& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  std::scoped_lock lock(_raceInstancesMutex);
+  auto& raceInstance = GetRaceInstance(clientContext);
+
+  const bool isSpeedGameMode = raceInstance.raceGameMode == protocol::GameMode::Speed;
+  const auto& mapBlockInfo = _serverInstance.GetCourseRegistry().GetMapBlockInfo(raceInstance.raceMapBlockId);
+  const bool isAdvMap = mapBlockInfo.trainingFee > 0;
+
+  if (not isSpeedGameMode or not isAdvMap)
+  {
+    spdlog::warn("Character '{}' tried to trigger an interactive object but is not in a speed adv map race.",
+      clientContext.characterUid);
+    return;
+  }
+
+  protocol::AcCmdCRTriggerizeAct response{
+    .unk0 = 1,
+    .unk1 = command.unk1,
+    .unk2 = command.unk2};
+
+  for (const auto& raceClientId : raceInstance.clients)
+  {
+    if (raceClientId == clientId)
+      continue;
+
+    _commandServer.QueueCommand<decltype(response)>(raceClientId, [response](){ return response; });
+  }
+}
+
+void RaceDirector::HandleGameCreateClientItem(
+  ClientId clientId,
+  const protocol::AcCmdCRGameCreateClientItem& command)
+{
+  spdlog::debug(
+    "AcCmdCRGameCreateClientItem: {} {} [{}, {}, {}] [{}, {}, {}, {}]",
+    command.someonesOid,
+    command.unk1,
+    command.position[0], command.position[1], command.position[2],
+    command.unk3[0], command.unk3[1], command.unk3[2], command.unk3[3]);
+
+  if (command.unk1 != 0)
+    throw new std::runtime_error("AcCmdCRGameCreateClientItem::unk1 != 0, other case not implemented");
+
+  const auto& clientContext = GetClientContext(clientId);
+  auto& raceInstance = _raceInstances[clientContext.roomUid];
+
+  const auto& mapBlockInfo = _serverInstance.GetCourseRegistry().GetMapBlockInfo(
+    raceInstance.raceMapBlockId);
+  const auto regionEggs = _serverInstance.GetPetRegistry().GetEggsByRegion(mapBlockInfo.region);
+  if (regionEggs.empty())
+    return;
+
+  std::vector<uint32_t> weights;
+  weights.reserve(regionEggs.size());
+  for (const auto& egg : regionEggs)
+    weights.push_back(egg.obtainRatio);
+
+  static std::random_device rd;
+  std::discrete_distribution<size_t> dist(weights.begin(), weights.end());
+  const auto& selectedEgg = regionEggs[dist(rd)];
+
+  bool alreadyOwned = false;
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+  characterRecord.Immutable([&](const data::Character& character)
+  {
+    alreadyOwned = _serverInstance.GetItemSystem().HasItem(character, selectedEgg.tid);
+  });
+
+  if (alreadyOwned)
+    return;
+
+  auto& item = raceInstance.tracker.AddEventItem(clientContext.characterUid);
+  item.position = command.position;
+  item.itemType = selectedEgg.deckItemId;
 }
 
 } // namespace server

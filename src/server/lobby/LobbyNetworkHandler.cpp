@@ -969,7 +969,7 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
   protocol::LobbyCommandLoginOK::TrainingProgression::MapProgressInfo mapProgressInfo{
     .mapBlockId= 1,
     .gameMode = protocol::GameMode::Speed,
-    .clearStage = protocol::LobbyCommandLoginOK::TrainingProgression::MapProgressInfo::ClearStage::None,
+    .clearStage = protocol::LobbyCommandLoginOK::TrainingProgression::MapProgressInfo::ClearStage::VeryHard,
   };
 
   response.trainingProgression.mapProggressInfos = {

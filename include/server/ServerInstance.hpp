@@ -170,6 +170,10 @@ public:
   //! @returns Reference to the settings.
   Config& GetSettings();
 
+  //! Returns the resource directory path.
+  //! @returns Resource directory path.
+  const std::filesystem::path& GetResourceDirectory() const;
+
 private:
 
   template<typename T>
