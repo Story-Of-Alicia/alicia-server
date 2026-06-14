@@ -131,8 +131,10 @@ private:
   {
     uint32_t oid{0};
     uint32_t uid{0};
+    uint32_t presetId{0};
     std::string name;
     uint32_t lookPresetId{1};
+    uint32_t mountPartTid{20001};
     uint32_t charId{10};   // 10=male, 20=female (from PlayerLookPreset)
     uint32_t level{1};
     uint32_t aiDifficulty{2};
@@ -175,6 +177,9 @@ private:
     std::chrono::steady_clock::time_point raceStartTimePoint;
     //! A room clients.
     std::unordered_set<ClientId> clients;
+
+    //! Counter for allocating AI rider UIDs; advances on each spawn so old and new UIDs never collide.
+    uint32_t nextAiUid{1000000};
 
     //! AI riders in this room (for single player mode)
     std::vector<AIRider> aiRiders;

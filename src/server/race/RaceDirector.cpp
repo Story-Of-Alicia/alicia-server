@@ -39,6 +39,16 @@ namespace server
 namespace
 {
 
+//! Finds a racer in the tracker by OID. Returns nullptr if not found.
+tracker::RaceTracker::Racer* FindRacerByOid(
+  tracker::RaceTracker::RacerObjectMap& racers, uint32_t oid)
+{
+  for (auto& [uid, racer] : racers)
+    if (racer.oid == oid)
+      return &racer;
+  return nullptr;
+}
+
 //! Converts a steady clock's time point to a race clock's time point.
 //! @param timePoint Time point.
 //! @return Race clock time point.
@@ -437,8 +447,10 @@ void RaceDirector::Initialize()
           continue;
         _aiPresets[diff].push_back(AIRider{
           .oid = 0,
+          .presetId = entry["id"].as<uint32_t>(0),
           .name = entry["name"].as<std::string>(),
           .lookPresetId = entry["lookPresetId"].as<uint32_t>(1),
+          .mountPartTid = entry["mountPartTid"].as<uint32_t>(20001),
           .charId = entry["charId"].as<uint32_t>(10),
           .level = entry["level"].as<uint32_t>(1),
           .aiDifficulty = diff,
@@ -1114,16 +1126,15 @@ void RaceDirector::HandleEnterRoom(
   if (inserted)
   {
     raceInstance.masterUid = command.characterUid;
-    uint32_t difficulty = 2;
+    uint32_t difficulty = 0;
     _serverInstance.GetRoomSystem().GetRoom(
       command.roomUid,
       [&difficulty](Room& room)
       {
-        const auto d = room.GetRoomDetails().npcDifficulty;
-        if (d > 0)
-          difficulty = d;
+        difficulty = room.GetRoomDetails().npcDifficulty;
       });
-    SpawnAIRiders(raceInstance, command.roomUid, difficulty);
+    if (difficulty > 0)
+      SpawnAIRiders(raceInstance, command.roomUid, difficulty);
   }
 
   _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
@@ -1346,29 +1357,6 @@ void RaceDirector::HandleEnterRoom(
       return response;
     });
 
-  // Notify the joining client of each AI rider as if they joined the room.
-  for (const auto& aiRider : raceInstance.aiRiders)
-  {
-    protocol::Racer aiRacerProto{};
-    aiRacerProto.isNPC = true;
-    aiRacerProto.uid = aiRider.uid;
-    aiRacerProto.oid = aiRider.oid;
-    aiRacerProto.npcTid = aiRider.lookPresetId;
-    aiRacerProto.name = aiRider.name;
-    aiRacerProto.level = aiRider.level;
-
-    protocol::AcCmdCREnterRoomNotify aiNotify{
-      .racer = aiRacerProto,
-      .averageTimeRecord = 0};
-
-    _commandServer.QueueCommand<decltype(aiNotify)>(
-      clientId,
-      [aiNotify]()
-      {
-        return aiNotify;
-      });
-  }
-
   protocol::AcCmdCREnterRoomNotify notify{
     .racer = joiningRacer,
     .averageTimeRecord = clientContext.characterUid};
@@ -1384,6 +1372,25 @@ void RaceDirector::HandleEnterRoom(
   }
 
   raceInstance.clients.insert(clientId);
+
+  // Notify the joining client of each AI rider already in the room.
+  for (const auto& aiRider : raceInstance.aiRiders)
+  {
+    protocol::Racer aiRacerProto{};
+    aiRacerProto.isNPC = true;
+    aiRacerProto.isHidden = true;
+    aiRacerProto.uid = aiRider.uid;
+    aiRacerProto.oid = aiRider.oid;
+    aiRacerProto.npcTid = aiRider.presetId;
+    aiRacerProto.name = aiRider.name;
+    aiRacerProto.level = aiRider.level;
+
+    protocol::AcCmdCREnterRoomNotify aiNotify{
+      .racer = aiRacerProto,
+      .averageTimeRecord = aiRider.uid};
+    _commandServer.QueueCommand<decltype(aiNotify)>(
+      clientId, [aiNotify]() { return aiNotify; });
+  }
 }
 
 void RaceDirector::HandleChangeRoomOptions(
@@ -1393,7 +1400,7 @@ void RaceDirector::HandleChangeRoomOptions(
   // todo: validate command fields
   const auto& clientContext = GetClientContext(clientId);
 
-  spdlog::debug(
+  spdlog::info(
     "ChangeRoomOptions: optionsBitfield={} npcDifficulty={}",
     static_cast<uint16_t>(command.optionsBitfield),
     command.npcDifficulty);
@@ -1476,16 +1483,10 @@ void RaceDirector::HandleChangeRoomOptions(
 
   BroadcastChangeRoomOptions(clientContext.roomUid, notify);
 
-  if (options.test(5) && command.npcDifficulty > 0)
+  if (options.test(5))
   {
     std::scoped_lock raceLock(_raceInstancesMutex);
     auto& raceInstance = _raceInstances[clientContext.roomUid];
-
-    spdlog::info(
-      "Difficulty changed to {} for room {}, replacing {} AI riders",
-      command.npcDifficulty,
-      clientContext.roomUid,
-      raceInstance.aiRiders.size());
 
     for (const auto& aiRider : raceInstance.aiRiders)
     {
@@ -1498,26 +1499,34 @@ void RaceDirector::HandleChangeRoomOptions(
     }
 
     raceInstance.aiRiders.clear();
-    SpawnAIRiders(raceInstance, clientContext.roomUid, command.npcDifficulty);
+
+    if (command.npcDifficulty > 0)
+      SpawnAIRiders(raceInstance, clientContext.roomUid, command.npcDifficulty);
 
     for (const auto& aiRider : raceInstance.aiRiders)
     {
       protocol::Racer aiRacerProto{};
       aiRacerProto.isNPC = true;
+      aiRacerProto.isHidden = true;
       aiRacerProto.uid = aiRider.uid;
       aiRacerProto.oid = aiRider.oid;
-      aiRacerProto.npcTid = aiRider.lookPresetId;
+      aiRacerProto.npcTid = aiRider.presetId;
       aiRacerProto.name = aiRider.name;
       aiRacerProto.level = aiRider.level;
 
       protocol::AcCmdCREnterRoomNotify aiNotify{
         .racer = aiRacerProto,
-        .averageTimeRecord = 0};
-
+        .averageTimeRecord = aiRider.uid};
       for (const ClientId& id : raceInstance.clients)
         _commandServer.QueueCommand<decltype(aiNotify)>(
           id, [aiNotify]() { return aiNotify; });
     }
+
+    spdlog::info(
+      "Difficulty changed to {} for room {}, now has {} AI riders",
+      command.npcDifficulty,
+      clientContext.roomUid,
+      raceInstance.aiRiders.size());
   }
 }
 
@@ -2548,15 +2557,10 @@ void RaceDirector::HandleStarPointGet(
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
 
-  auto& racer = raceInstance.tracker.GetRacer(
-    clientContext.characterUid);
-
-  // TODO: Revise this in NPC races
-  if (command.characterOid != racer.oid)
-  {
-    throw std::runtime_error(
-      "Client tried to perform action on behalf of different racer");
-  }
+  auto* racerPtr = FindRacerByOid(raceInstance.tracker.GetRacers(), command.characterOid);
+  if (!racerPtr)
+    throw std::runtime_error("Client tried to perform action on behalf of unknown racer");
+  auto& racer = *racerPtr;
 
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
     static_cast<uint8_t>(raceInstance.raceGameMode));
@@ -2595,15 +2599,10 @@ void RaceDirector::HandleRequestSpur(
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
 
-  auto& racer = raceInstance.tracker.GetRacer(
-    clientContext.characterUid);
-
-  // TODO: Revise this in NPC races
-  if (command.characterOid != racer.oid)
-  {
-    throw std::runtime_error(
-      "Client tried to perform action on behalf of different racer");
-  }
+  auto* racerPtr = FindRacerByOid(raceInstance.tracker.GetRacers(), command.characterOid);
+  if (!racerPtr)
+    throw std::runtime_error("Client tried to perform action on behalf of unknown racer");
+  auto& racer = *racerPtr;
 
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
     static_cast<uint8_t>(raceInstance.raceGameMode));
@@ -2649,15 +2648,10 @@ void RaceDirector::HandleHurdleClearResult(
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
 
-  auto& racer = raceInstance.tracker.GetRacer(
-    clientContext.characterUid);
-
-  // TODO: Revise this in NPC races
-  if (command.characterOid != racer.oid)
-  {
-    throw std::runtime_error(
-      "Client tried to perform action on behalf of different racer");
-  }
+  auto* racerPtr = FindRacerByOid(raceInstance.tracker.GetRacers(), command.characterOid);
+  if (!racerPtr)
+    throw std::runtime_error("Client tried to perform action on behalf of unknown racer");
+  auto& racer = *racerPtr;
 
   protocol::AcCmdCRHurdleClearResultOK response{
     .characterOid = command.characterOid,
@@ -2786,15 +2780,10 @@ void RaceDirector::HandleStartingRate(
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
 
-  auto& racer = raceInstance.tracker.GetRacer(
-    clientContext.characterUid);
-
-  // TODO: Revise this in NPC races
-  if (command.characterOid != racer.oid)
-  {
-    throw std::runtime_error(
-      "Client tried to perform action on behalf of different racer");
-  }
+  auto* racerPtr = FindRacerByOid(raceInstance.tracker.GetRacers(), command.characterOid);
+  if (!racerPtr)
+    throw std::runtime_error("Client tried to perform action on behalf of unknown racer");
+  auto& racer = *racerPtr;
 
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
     static_cast<uint8_t>(raceInstance.raceGameMode));
@@ -2827,14 +2816,11 @@ void RaceDirector::HandleRaceUserPos(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
-  auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
-  // TODO: Revise this in NPC races
-  if (command.oid != racer.oid)
-  {
-    throw std::runtime_error(
-      "Client tried to perform action on behalf of different racer");
-  }
+  auto* racerPtr = FindRacerByOid(raceInstance.tracker.GetRacers(), command.oid);
+  if (!racerPtr)
+    throw std::runtime_error("Client tried to perform action on behalf of unknown racer");
+  auto& racer = *racerPtr;
 
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
     static_cast<uint8_t>(raceInstance.raceGameMode));
@@ -3283,22 +3269,24 @@ void RaceDirector::HandleRequestMagicItem(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
-  auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
-  // TODO: Revise this on NPC races
-  if (command.characterOid != racer.oid)
-  {
-    spdlog::warn("Client tried to perform action on behalf of different racer");
+  auto* racerPtr = FindRacerByOid(raceInstance.tracker.GetRacers(), command.characterOid);
+  if (!racerPtr)
     return;
-  }
+  auto& racer = *racerPtr;
+
+  // Already holding an item — drop regardless of who's asking.
+  if (racer.magicItem.has_value())
+    return;
 
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
     static_cast<uint8_t>(raceInstance.raceGameMode));
 
-  // Only assign + respond if the gauge is full and the racer is empty-handed.
-  // Anything else (stale request, duplicate after assignment, request while holding an item) drops.
-  if (racer.magicItem.has_value()
-    || racer.starPointValue < gameModeTemplate.starPointsMax)
+  // For the human player, enforce the full-gauge requirement.
+  // For AI racers the server doesn't track their gauge (position updates are
+  // skipped for AI), so trust the client's AI logic and give the item directly.
+  const auto& playerRacer = raceInstance.tracker.GetRacer(clientContext.characterUid);
+  if (racer.oid == playerRacer.oid && racer.starPointValue < gameModeTemplate.starPointsMax)
     return;
 
   racer.magicItem.emplace(RandomMagicItem(_serverInstance, racer).type);
@@ -3358,14 +3346,11 @@ void RaceDirector::HandleUseMagicItem(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
-  auto& racer = raceInstance.tracker.GetRacer(clientContext.characterUid);
 
-  // TODO: Revise this in NPC races
-  if (command.characterOid != racer.oid)
-  {
-    spdlog::warn("Client tried to perform action on behalf of different racer");
+  auto* racerPtr = FindRacerByOid(raceInstance.tracker.GetRacers(), command.characterOid);
+  if (!racerPtr)
     return;
-  }
+  auto& racer = *racerPtr;
 
   auto targetList = command.targetList;
 
@@ -4535,7 +4520,7 @@ void RaceDirector::SpawnAIRiders(
   {
     AIRider rider = pool[i];
     rider.oid = static_cast<uint32_t>(i + 2);  // Human always gets OID 1, AI start at 2
-    rider.uid = static_cast<uint32_t>(1000000 + i);
+    rider.uid = roomInstance.nextAiUid++;
     rider.aiPersonality = static_cast<uint32_t>(i + 1);
     roomInstance.aiRiders.push_back(std::move(rider));
   }
