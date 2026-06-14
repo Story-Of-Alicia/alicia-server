@@ -706,6 +706,41 @@ void RaceDirector::Tick()
       }
     }
 
+    // AI difficulty step-up: in an NPC race, a human who beats every AI rider has
+    // cleared this difficulty. Populate the score's member23 so the client shows the
+    // Ai_StepUp/Ai_ClearAll popup and unlocks the next difficulty. The client reads the
+    // optional block only when member3 == 3, keying the clearStage on (member1, member2)
+    // and taking the beaten difficulty from optional.member12.
+    if (not raceInstance.aiRiders.empty())
+    {
+      const uint8_t clearedDifficulty =
+        static_cast<uint8_t>(raceInstance.aiRiders.front().aiDifficulty);
+
+      // Fastest AI time; a human must finish ahead of every AI to clear the difficulty.
+      int32_t bestAiTime = std::numeric_limits<int32_t>::max();
+      for (const auto& score : raceResult.scores)
+      {
+        if (score.uid >= 1000000 && score.uid < 2000000)
+          bestAiTime = std::min(bestAiTime, static_cast<int32_t>(score.courseTime));
+      }
+
+      for (auto& score : raceResult.scores)
+      {
+        const bool isHuman = score.uid < 1000000;
+        if (not isHuman || static_cast<int32_t>(score.courseTime) >= bestAiTime)
+          continue;
+
+        // member3 is the team mode; the client only reads the optional block (which
+        // carries the cleared difficulty) when it is Single — i.e. an NPC race.
+        score.member23.member1 = raceInstance.raceMapBlockId;
+        score.member23.member2 = static_cast<uint8_t>(raceInstance.raceGameMode);
+        score.member23.member3 = static_cast<uint8_t>(protocol::TeamMode::Single);
+        score.member23.optional.member12 = clearedDifficulty+1;
+        score.member23.member13 = 10;
+        score.member24 = 100;
+      }
+    }
+
     // Log final scoreboard
     if (!raceInstance.aiRiders.empty())
     {
@@ -4556,7 +4591,7 @@ void RaceDirector::GenerateAIRaceResults(
       case 3:  // 困难 - AI比玩家快5-15% (Hard - AI is 5-15% faster than player)
       {
         std::uniform_int_distribution<> dis(5, 15);
-        aiTime -= aiTime * dis(gen) / 100;
+        aiTime += aiTime * dis(gen) / 100;
         break;
       }
     }

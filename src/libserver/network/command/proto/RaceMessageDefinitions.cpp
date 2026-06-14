@@ -388,7 +388,7 @@ void AcCmdCRStartRaceNotify::Struct1::Write(
     stream.Write(element);
   }
 
-  if (command.member4 == 3)
+  if (command.member3 == 3)
   {
     stream.Write(command.optional.member6)
       .Write(command.optional.member8)

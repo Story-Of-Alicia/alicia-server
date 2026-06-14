@@ -480,21 +480,21 @@ struct AcCmdCRStartRaceNotify
 
   struct Struct1
   {
-    uint16_t member1{};
-    uint8_t member2{};
-    uint8_t member3{};
-    uint32_t member4{};
+    uint16_t member1{1};
+    uint8_t member2{1};
+    uint8_t member3{3};
+    uint32_t member4{3};
     // List size specified with a uint8_t. Max size 20
     std::vector<uint32_t> member5{};
 
     // only present if member4 == 3
     struct Optional
     {
-      uint16_t member6{};
-      uint16_t member8{};
-      uint16_t member9{};
-      uint16_t member10{};
-      uint16_t member11{};
+      uint16_t member6{1};
+      uint16_t member8{2};
+      uint16_t member9{3};
+      uint16_t member10{4};
+      uint16_t member11{5};
       uint8_t member12{};
     } optional{};
 
