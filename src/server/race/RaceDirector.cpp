@@ -585,26 +585,6 @@ void RaceDirector::Tick()
             score.growthPoints = static_cast<uint16_t>(horse.growthPoints());
           });
       });
-
-      score.raceRecord = protocol::AcCmdCRStartRaceNotify::RaceRecord{
-        .mapBlockId = raceInstance.raceMapBlockId,
-        .gameMode = raceInstance.raceGameMode,
-        .teamMode = raceInstance.raceTeamMode,
-        .finalRecordMs = static_cast<uint32_t>(
-          std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::minutes(1) + std::chrono::seconds(23) + std::chrono::milliseconds(450)).count()),
-        .member13 = 234567};
-
-      if (score.raceRecord.teamMode == protocol::TeamMode::Single)
-      {
-        score.raceRecord.trainingRecord = protocol::AcCmdCRStartRaceNotify::RaceRecord::TrainingRecord{
-          .totalNumberOfSpurs = 1,
-          .maximumContinuousSpurs = 2,
-          .numberOfPerfectSpurs = 5,
-          .perfectJumpMaximumCombo = 4,
-          .numberOfJumpObstacleCollisions = 3,
-          .clearedDifficulty = 1};
-      }
     }
 
     // Broadcast the race result
@@ -1704,28 +1684,6 @@ void RaceDirector::HandleStartRace(
             protocolRacer.teamColor = protocol::TeamColor::Blue;
             break;
         }
-      }
-
-      // Lap records are known to work only on speed modes (all team modes)
-      if (raceInstance.raceGameMode == protocol::GameMode::Speed)
-      {
-        // TODO: remove this, only used for experimenting with lap records
-        const auto& generateLapRecords = [](protocol::AcCmdCRStartRaceNotify& notify)
-        {
-          constexpr uint32_t TestTimeDiff = 20000;
-          constexpr uint32_t LapCount = 2; // TODO: populate this from the CourseRegistry
-
-          notify.raceRecord.lapRecords.resize(LapCount);
-          uint32_t currentTimeDiff = 0;
-          for (auto& lapRecord : notify.raceRecord.lapRecords)
-          {
-            lapRecord.sector1Ms = currentTimeDiff += TestTimeDiff;
-            lapRecord.sector2Ms = currentTimeDiff += TestTimeDiff;
-            lapRecord.sector3Ms = currentTimeDiff += TestTimeDiff;
-          }
-        };
-
-        generateLapRecords(notify);
       }
 
       const bool isEligibleForSkills = (notify.raceGameMode == protocol::GameMode::Speed
