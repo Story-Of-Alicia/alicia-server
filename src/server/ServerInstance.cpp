@@ -89,6 +89,7 @@ void ServerInstance::Initialize()
 
   // Read configurations
 
+  _aiRiderRegistry.ReadConfig(_resourceDirectory / "config/game/aipresets.yaml");
   _characterRegistry.ReadConfig(_resourceDirectory / "config/game/character.yaml");
   _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
   _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items.yaml");
@@ -324,6 +325,11 @@ AllChatDirector& ServerInstance::GetAllChatDirector()
 PrivateChatDirector& ServerInstance::GetPrivateChatDirector()
 {
   return _privateChatDirector;
+}
+
+registry::AiRiderRegistry& ServerInstance::GetAiRiderRegistry()
+{
+  return _aiRiderRegistry;
 }
 
 registry::CharacterRegistry& ServerInstance::GetCharacterRegistry()

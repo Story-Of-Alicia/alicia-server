@@ -126,20 +126,16 @@ private:
     std::string userName;
   };
 
-  //! AI Rider structure for single player mode
+  //! A spawned AI rider in a race instance.
   struct AIRider
   {
     uint32_t oid{0};
     uint32_t uid{0};
     uint32_t presetId{0};
     std::string name;
-    uint32_t lookPresetId{1};
-    uint32_t mountPartTid{20001};
-    uint32_t charId{10};   // 10=male, 20=female (from PlayerLookPreset)
-    uint32_t level{1};
-    uint32_t aiDifficulty{2};
-    uint32_t aiPersonality{1};
-    tracker::RaceTracker::Racer::Team team{tracker::RaceTracker::Racer::Team::Solo};
+    uint32_t aiDifficulty{0};
+    //! AIParam.Type sent to the client as unk7 in StartRaceNotify.
+    uint32_t aiType{5};
   };
 
   struct RaceInstance
@@ -416,8 +412,6 @@ private:
   //! A map of all race instanced indexed by room UIDs.
   std::unordered_map<uint32_t, RaceInstance> _raceInstances;
 
-  //! AI presets loaded from aipresets.yaml, keyed by AIDifficultyLevel.
-  std::unordered_map<uint32_t, std::vector<AIRider>> _aiPresets;
 };
 
 } // namespace server

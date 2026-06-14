@@ -468,8 +468,8 @@ struct AcCmdCRStartRaceNotify
     uint8_t unk3{};
     uint16_t p2dId{};
     TeamColor teamColor{};
-    uint16_t unk6{}; // Index?
-    uint32_t unk7{};
+    uint16_t isNpc{};
+    uint32_t aiType{};
   };
   std::vector<Player> racers{};
 

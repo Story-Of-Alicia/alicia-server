@@ -29,7 +29,6 @@
 #include <boost/container_hash/hash.hpp>
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/bin_to_hex.h>
-#include <yaml-cpp/yaml.h>
 
 #include <bitset>
 
@@ -430,43 +429,6 @@ void RaceDirector::Initialize()
     }
   });
   test.detach();
-
-  // Load AI presets from aipresets.yaml (sourced from libconfig_c.dat AIPreset table).
-  // difficultyLevel mapping: 1=easy, 2=normal, 3=hard, 4=expert; 0=generic/unused.
-  try
-  {
-    const auto presetsPath = _serverInstance.GetResourceDirectory() / "config/game/aipresets.yaml";
-    const auto root = YAML::LoadFile(presetsPath.string());
-    const auto presets = root["presets"];
-    if (presets)
-    {
-      for (const auto& entry : presets)
-      {
-        const uint32_t diff = entry["difficultyLevel"].as<uint32_t>(0);
-        if (diff == 0)
-          continue;
-        _aiPresets[diff].push_back(AIRider{
-          .oid = 0,
-          .presetId = entry["id"].as<uint32_t>(0),
-          .name = entry["name"].as<std::string>(),
-          .lookPresetId = entry["lookPresetId"].as<uint32_t>(1),
-          .mountPartTid = entry["mountPartTid"].as<uint32_t>(20001),
-          .charId = entry["charId"].as<uint32_t>(10),
-          .level = entry["level"].as<uint32_t>(1),
-          .aiDifficulty = diff,
-          .aiPersonality = 1,
-          .team = tracker::RaceTracker::Racer::Team::Solo,
-        });
-      }
-      uint32_t total = 0;
-      for (const auto& [d, v] : _aiPresets) total += static_cast<uint32_t>(v.size());
-      spdlog::info("Loaded {} AI presets across {} difficulty levels", total, _aiPresets.size());
-    }
-  }
-  catch (const std::exception& e)
-  {
-    spdlog::warn("Could not load AI presets: {}", e.what());
-  }
 
   _commandServer.BeginHost(GetConfig().listen.address, GetConfig().listen.port);
 }
@@ -1383,7 +1345,7 @@ void RaceDirector::HandleEnterRoom(
     aiRacerProto.oid = aiRider.oid;
     aiRacerProto.npcTid = aiRider.presetId;
     aiRacerProto.name = aiRider.name;
-    aiRacerProto.level = aiRider.level;
+    aiRacerProto.level = 1;
 
     protocol::AcCmdCREnterRoomNotify aiNotify{
       .racer = aiRacerProto,
@@ -1512,7 +1474,7 @@ void RaceDirector::HandleChangeRoomOptions(
       aiRacerProto.oid = aiRider.oid;
       aiRacerProto.npcTid = aiRider.presetId;
       aiRacerProto.name = aiRider.name;
-      aiRacerProto.level = aiRider.level;
+      aiRacerProto.level = 1;
 
       protocol::AcCmdCREnterRoomNotify aiNotify{
         .racer = aiRacerProto,
@@ -2075,7 +2037,7 @@ void RaceDirector::HandleStartRace(
           continue;
 
         std::string characterName;
-        uint8_t aiPersonality = 0;
+        uint8_t aiType = 0;
         uint32_t aiDifficulty = 0;
         bool isAI = (characterUid >= 1000000 && characterUid < 2000000);
         
@@ -2089,13 +2051,13 @@ void RaceDirector::HandleStartRace(
           if (aiIt != raceInstance.aiRiders.end())
           {
             characterName = aiIt->name;
-            aiPersonality = static_cast<uint8_t>(aiIt->aiPersonality);
+            aiType = static_cast<uint8_t>(aiIt->aiType);
             aiDifficulty = aiIt->aiDifficulty;
           }
           else
           {
             characterName = "AI Rider";
-            aiPersonality = 1;
+            aiType = 5;
             aiDifficulty = 2;
           }
         }
@@ -2114,11 +2076,9 @@ void RaceDirector::HandleStartRace(
           protocol::AcCmdCRStartRaceNotify::Player{
             .oid = racer.oid,
             .name = characterName,
-            .unk2 = isAI ? static_cast<uint8_t>(1) : static_cast<uint8_t>(0),
-            .unk3 = isAI ? aiPersonality : static_cast<uint8_t>(0),
             .p2dId = racer.oid,
-            .unk6 = isAI ? static_cast<uint16_t>(1) : static_cast<uint16_t>(0),
-            .unk7 = isAI ? static_cast<uint32_t>(1) : static_cast<uint32_t>(0),
+            .isNpc = isAI ? static_cast<uint16_t>(1) : static_cast<uint16_t>(0),
+            .aiType = isAI ? static_cast<uint32_t>(aiType) : static_cast<uint32_t>(0),
           });
 
         switch (racer.team)
@@ -4507,22 +4467,25 @@ void RaceDirector::SpawnAIRiders(
 {
   constexpr size_t maxAIRiders = 7;
 
-  const auto it = _aiPresets.find(difficulty);
-  if (it == _aiPresets.end() || it->second.empty())
+  const auto* pool = _serverInstance.GetAiRiderRegistry().GetPresetsForDifficulty(difficulty);
+  if (pool == nullptr || pool->empty())
   {
     spdlog::warn("No AI presets loaded for difficulty {}, skipping AI spawn", difficulty);
     return;
   }
 
-  const auto& pool = it->second;
-  const size_t count = std::min(pool.size(), maxAIRiders);
+  const size_t count = std::min(pool->size(), maxAIRiders);
   for (size_t i = 0; i < count; ++i)
   {
-    AIRider rider = pool[i];
-    rider.oid = static_cast<uint32_t>(i + 2);  // Human always gets OID 1, AI start at 2
-    rider.uid = roomInstance.nextAiUid++;
-    rider.aiPersonality = static_cast<uint32_t>(i + 1);
-    roomInstance.aiRiders.push_back(std::move(rider));
+    const auto& preset = (*pool)[i];
+    roomInstance.aiRiders.push_back(AIRider{
+      .oid = static_cast<uint32_t>(i + 2),
+      .uid = roomInstance.nextAiUid++,
+      .presetId = preset.id,
+      .name = preset.name,
+      .aiDifficulty = difficulty,
+      .aiType = preset.aiType,
+    });
   }
 
   spdlog::info("Prepared {} AI riders (difficulty: {})", roomInstance.aiRiders.size(), difficulty);

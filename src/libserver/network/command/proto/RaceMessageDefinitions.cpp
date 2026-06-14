@@ -466,8 +466,8 @@ void AcCmdCRStartRaceNotify::Write(
       .Write(element.unk3)
       .Write(element.p2dId)
       .Write(element.teamColor)
-      .Write(element.unk6)
-      .Write(element.unk7);
+      .Write(element.isNpc)
+      .Write(element.aiType);
   }
 
   stream.Write(
