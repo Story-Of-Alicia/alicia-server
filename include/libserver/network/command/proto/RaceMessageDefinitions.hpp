@@ -474,10 +474,12 @@ struct AcCmdCRStartRaceNotify
 
   uint8_t unk6{};
 
-  struct Struct1
+  struct RaceRecord
   {
-    uint16_t member1{};
-    uint8_t member2{};
+    // The ID of the map.
+    uint16_t mapBlockId{};
+    //! Game mode of the race.
+    GameMode gameMode{};
     //! Team mode of the race.
     TeamMode teamMode{};
     //! Final record time, in milliseconds.
@@ -504,27 +506,28 @@ struct AcCmdCRStartRaceNotify
     //! Max lap count is 10 laps.
     std::vector<LapRecord> lapRecords{};
 
-    //! TeamMode::Single only.
-    struct TimeAttackResults
+    //! Team mode Single only.
+    struct TrainingRecord
     {
       uint16_t totalNumberOfSpurs{};
       uint16_t maximumContinuousSpurs{};
       uint16_t numberOfPerfectSpurs{};
       uint16_t perfectJumpMaximumCombo{};
       uint16_t numberOfJumpObstacleCollisions{};
-      uint8_t member12{};
-    } timeAttackResults{};
+      //! The difficulty that was cleared for training.
+      uint8_t clearedDifficulty{};
+    } trainingRecord{};
 
     uint32_t member13{};
 
     static void Write(
-      const Struct1& command,
+      const RaceRecord& command,
       SinkStream& stream);
 
     static void Read(
-      Struct1& command,
+      RaceRecord& command,
       SourceStream& stream);
-  } unk9{};
+  } raceRecord{};
 
   struct Struct2
   {
@@ -926,7 +929,7 @@ struct AcCmdCRRaceResult
   //! Each lap contains 3 sectors.
   //! Max (underlying protocol) count is 32 (0x20) values.
   //! Max lap count is 10 laps.
-  std::vector<protocol::AcCmdCRStartRaceNotify::Struct1::LapRecord> lapRecords{};
+  std::vector<protocol::AcCmdCRStartRaceNotify::RaceRecord::LapRecord> lapRecords{};
   uint8_t member11{};
   uint32_t member12{};
   uint16_t member13{};
@@ -1028,8 +1031,10 @@ struct AcCmdRCRaceResultNotify
     uint8_t horseClass{};
     uint32_t bonusCarrots{};
     uint32_t member22{};
-    AcCmdCRStartRaceNotify::Struct1 member23{};
-    uint32_t member24{};
+    AcCmdCRStartRaceNotify::RaceRecord raceRecord{};
+    //! The reward given to the racer upon successfully beating the speed/magic training.
+    //! Relates to `AcCmdCRStartRaceNotify::Struct1::clearedDifficulty`
+    uint32_t trainingCarrotReward{};
     uint8_t member25{};
     uint32_t member26{};
     uint32_t member27{};

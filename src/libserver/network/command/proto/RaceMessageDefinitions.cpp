@@ -369,12 +369,12 @@ void AcCmdCRStartRace::Read(
   }
 }
 
-void AcCmdCRStartRaceNotify::Struct1::Write(
-  const Struct1& command,
+void AcCmdCRStartRaceNotify::RaceRecord::Write(
+  const RaceRecord& command,
   SinkStream& stream)
 {
-  stream.Write(command.member1)
-   .Write(command.member2)
+  stream.Write(command.mapBlockId)
+   .Write(command.gameMode)
    .Write(command.teamMode)
    .Write(command.finalRecordMs);
 
@@ -394,19 +394,19 @@ void AcCmdCRStartRaceNotify::Struct1::Write(
 
   if (command.teamMode == protocol::TeamMode::Single)
   {
-    stream.Write(command.timeAttackResults.totalNumberOfSpurs)
-      .Write(command.timeAttackResults.maximumContinuousSpurs)
-      .Write(command.timeAttackResults.numberOfPerfectSpurs)
-      .Write(command.timeAttackResults.perfectJumpMaximumCombo)
-      .Write(command.timeAttackResults.numberOfJumpObstacleCollisions)
-      .Write(command.timeAttackResults.member12);
+    stream.Write(command.trainingRecord.totalNumberOfSpurs)
+      .Write(command.trainingRecord.maximumContinuousSpurs)
+      .Write(command.trainingRecord.numberOfPerfectSpurs)
+      .Write(command.trainingRecord.perfectJumpMaximumCombo)
+      .Write(command.trainingRecord.numberOfJumpObstacleCollisions)
+      .Write(command.trainingRecord.clearedDifficulty);
   }
 
   stream.Write(command.member13);
 }
 
-void AcCmdCRStartRaceNotify::Struct1::Read(
-  Struct1&,
+void AcCmdCRStartRaceNotify::RaceRecord::Read(
+  RaceRecord&,
   SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
@@ -479,7 +479,7 @@ void AcCmdCRStartRaceNotify::Write(
       command.p2pRelayAddress))
     .Write(command.p2pRelayPort)
     .Write(command.unk6)
-    .Write(command.unk9)
+    .Write(command.raceRecord)
     .Write(command.unk10);
 
   stream.Write(command.raceMissionId)
@@ -784,8 +784,8 @@ void AcCmdRCRaceResultNotify::Write(
       .Write(score.horseClass)
       .Write(score.bonusCarrots)
       .Write(score.member22)
-      .Write(score.member23)
-      .Write(score.member24)
+      .Write(score.raceRecord)
+      .Write(score.trainingCarrotReward)
       .Write(score.member25)
       .Write(score.member26)
       .Write(score.member27);

@@ -586,23 +586,24 @@ void RaceDirector::Tick()
           });
       });
 
-      score.member23 = protocol::AcCmdCRStartRaceNotify::Struct1{
-        .member1 = raceInstance.raceMapBlockId,
+      score.raceRecord = protocol::AcCmdCRStartRaceNotify::RaceRecord{
+        .mapBlockId = raceInstance.raceMapBlockId,
+        .gameMode = raceInstance.raceGameMode,
         .teamMode = raceInstance.raceTeamMode,
         .finalRecordMs = static_cast<uint32_t>(
           std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::minutes(1) + std::chrono::seconds(23) + std::chrono::milliseconds(450)).count()),
         .member13 = 234567};
 
-      if (score.member23.teamMode == protocol::TeamMode::Single)
+      if (score.raceRecord.teamMode == protocol::TeamMode::Single)
       {
-        score.member23.timeAttackResults = protocol::AcCmdCRStartRaceNotify::Struct1::TimeAttackResults{
+        score.raceRecord.trainingRecord = protocol::AcCmdCRStartRaceNotify::RaceRecord::TrainingRecord{
           .totalNumberOfSpurs = 1,
           .maximumContinuousSpurs = 2,
           .numberOfPerfectSpurs = 5,
           .perfectJumpMaximumCombo = 4,
           .numberOfJumpObstacleCollisions = 3,
-          .member12 = 0};
+          .clearedDifficulty = 1};
       }
     }
 
@@ -1714,9 +1715,9 @@ void RaceDirector::HandleStartRace(
           constexpr uint32_t TestTimeDiff = 20000;
           constexpr uint32_t LapCount = 2; // TODO: populate this from the CourseRegistry
 
-          notify.unk9.lapRecords.resize(LapCount);
+          notify.raceRecord.lapRecords.resize(LapCount);
           uint32_t currentTimeDiff = 0;
-          for (auto& lapRecord : notify.unk9.lapRecords)
+          for (auto& lapRecord : notify.raceRecord.lapRecords)
           {
             lapRecord.sector1Ms = currentTimeDiff += TestTimeDiff;
             lapRecord.sector2Ms = currentTimeDiff += TestTimeDiff;
