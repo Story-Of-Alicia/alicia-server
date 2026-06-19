@@ -1518,6 +1518,18 @@ void server::FileDataSource::DeleteQuest(data::Uid uid)
 {
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _questDataPath, std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
+}
+
+void server::FileDataSource::CreateStallion(data::Stallion& stallion)
+{
+  stallion.uid = ++_stallionSequentialUid;
+  SaveMetadata();
+}
+
+void server::FileDataSource::RetrieveStallion(data::Uid uid, data::Stallion& stallion)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _stallionDataPath, std::format("{}", uid));
 
   std::ifstream dataFile(dataFilePath);
