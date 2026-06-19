@@ -372,37 +372,44 @@ void AcCmdCRStartRace::Read(
   }
 }
 
-void AcCmdCRStartRaceNotify::Struct1::Write(
-  const Struct1& command,
+void AcCmdCRStartRaceNotify::RaceRecord::Write(
+  const RaceRecord& command,
   SinkStream& stream)
 {
-  stream.Write(command.member1)
-   .Write(command.member2)
-   .Write(command.member3)
-   .Write(command.member4);
+  stream.Write(command.mapBlockId)
+   .Write(command.gameMode)
+   .Write(command.teamMode)
+   .Write(command.finalRecordMs);
 
-  stream.Write(static_cast<uint8_t>(
-    command.member5.size()));
-  for (const auto& element : command.member5)
+  // Max 10 laps (3 sectors per lap * 10 laps)
+  assert(command.lapRecords.size() <= 10);
+  // Max (underlying protocol) count is 32 (0x20).
+  constexpr auto SectorsPerLap = 3u;
+  assert(command.lapRecords.size() * 3 <= 32);
+
+  stream.Write(static_cast<uint8_t>(command.lapRecords.size() * SectorsPerLap));
+  for (const auto& lapRecord : command.lapRecords)
   {
-    stream.Write(element);
+    stream.Write(lapRecord.sector1Ms)
+      .Write(lapRecord.sector2Ms)
+      .Write(lapRecord.sector3Ms);
   }
 
-  if (command.member4 == 3)
+  if (command.teamMode == protocol::TeamMode::Single)
   {
-    stream.Write(command.optional.member6)
-      .Write(command.optional.member8)
-      .Write(command.optional.member9)
-      .Write(command.optional.member10)
-      .Write(command.optional.member11)
-      .Write(command.optional.member12);
+    stream.Write(command.trainingRecord.totalNumberOfSpurs)
+      .Write(command.trainingRecord.maximumContinuousSpurs)
+      .Write(command.trainingRecord.numberOfPerfectSpurs)
+      .Write(command.trainingRecord.perfectJumpMaximumCombo)
+      .Write(command.trainingRecord.numberOfJumpObstacleCollisions)
+      .Write(command.trainingRecord.clearedDifficulty);
   }
 
   stream.Write(command.member13);
 }
 
-void AcCmdCRStartRaceNotify::Struct1::Read(
-  Struct1&,
+void AcCmdCRStartRaceNotify::RaceRecord::Read(
+  RaceRecord&,
   SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
@@ -475,7 +482,7 @@ void AcCmdCRStartRaceNotify::Write(
       command.p2pRelayAddress))
     .Write(command.p2pRelayPort)
     .Write(command.unk6)
-    .Write(command.unk9)
+    .Write(command.raceRecord)
     .Write(command.unk10);
 
   stream.Write(command.raceMissionId)
@@ -710,10 +717,20 @@ void AcCmdCRRaceResult::Read(
   uint8_t size{};
   stream.Read(size);
 
-  command.member10.resize(size);
-  for (auto& value : command.member10)
+  //! Client is expected to send at most 32 (0x20) sector time values.
+  //! TODO: Maybe client sends more if maps are modified for more laps.
+  assert(size <= 32);
+  //! Round down the size of the incoming array count to the nearest integer
+  constexpr auto SectorsPerLap = 3;
+  command.lapRecords.resize(
+    static_cast<size_t>(
+      std::floor(size / SectorsPerLap)));
+
+  for (auto& lapRecord : command.lapRecords)
   {
-    stream.Read(value);
+    stream.Read(lapRecord.sector1Ms)
+      .Read(lapRecord.sector2Ms)
+      .Read(lapRecord.sector3Ms);
   }
 
   stream.Read(command.member11)
@@ -770,8 +787,8 @@ void AcCmdRCRaceResultNotify::Write(
       .Write(score.horseClass)
       .Write(score.bonusCarrots)
       .Write(score.member22)
-      .Write(score.member23)
-      .Write(score.member24)
+      .Write(score.raceRecord)
+      .Write(score.trainingCarrotReward)
       .Write(score.member25)
       .Write(score.member26)
       .Write(score.member27);

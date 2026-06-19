@@ -478,36 +478,60 @@ struct AcCmdCRStartRaceNotify
 
   uint8_t unk6{};
 
-  struct Struct1
+  struct RaceRecord
   {
-    uint16_t member1{};
-    uint8_t member2{};
-    uint8_t member3{};
-    uint32_t member4{};
-    // List size specified with a uint8_t. Max size 20
-    std::vector<uint32_t> member5{};
+    // The ID of the map.
+    uint16_t mapBlockId{};
+    //! Game mode of the race.
+    GameMode gameMode{};
+    //! Team mode of the race.
+    TeamMode teamMode{};
+    //! Final record time, in milliseconds.
+    uint32_t finalRecordMs{};
 
-    // only present if member4 == 3
-    struct Optional
+    //! Sector times in a lap, in milliseconds.
+    struct LapRecord
     {
-      uint16_t member6{};
-      uint16_t member8{};
-      uint16_t member9{};
-      uint16_t member10{};
-      uint16_t member11{};
-      uint8_t member12{};
-    } optional{};
+      //! Time for sector 1, in milliseconds.
+      //! Also known as the early section.
+      uint32_t sector1Ms{};
+      //! Time for sector 2, in milliseconds.
+      //! Also known as the middle section.
+      uint32_t sector2Ms{};
+      //! Time for sector 3, in milliseconds.
+      //! Also known as the late section.
+      uint32_t sector3Ms{};
+    };
+
+    //! Lap sector times in milliseconds, per lap, for this race.
+    //! Start race notify - indicates the lap sector times to beat.
+    //! Race result notify - unknown.
+    //! Max (underlying protocol) count is 32 (0x20) values.
+    //! Max lap count is 10 laps.
+    std::vector<LapRecord> lapRecords{};
+
+    //! Team mode Single only.
+    struct TrainingRecord
+    {
+      uint16_t totalNumberOfSpurs{};
+      uint16_t maximumContinuousSpurs{};
+      uint16_t numberOfPerfectSpurs{};
+      uint16_t perfectJumpMaximumCombo{};
+      uint16_t numberOfJumpObstacleCollisions{};
+      //! The difficulty that was cleared for training.
+      uint8_t clearedDifficulty{};
+    } trainingRecord{};
 
     uint32_t member13{};
 
     static void Write(
-      const Struct1& command,
+      const RaceRecord& command,
       SinkStream& stream);
 
     static void Read(
-      Struct1& command,
+      RaceRecord& command,
       SourceStream& stream);
-  } unk9{};
+  } raceRecord{};
 
   struct Struct2
   {
@@ -906,8 +930,11 @@ struct AcCmdCRRaceResult
   uint32_t member7{};
   uint32_t member8{};
   uint32_t member9{};
-  //! Max count 32
-  std::vector<uint32_t> member10{};
+  //! Recorded lap sector times in milliseconds, per lap, for this race.
+  //! Each lap contains 3 sectors.
+  //! Max (underlying protocol) count is 32 (0x20) values.
+  //! Max lap count is 10 laps.
+  std::vector<protocol::AcCmdCRStartRaceNotify::RaceRecord::LapRecord> lapRecords{};
   uint8_t member11{};
   uint32_t member12{};
   uint16_t member13{};
@@ -1013,8 +1040,10 @@ struct AcCmdRCRaceResultNotify
     uint32_t bonusCarrots{};
     // ! Revenge something
     uint32_t member22{};
-    AcCmdCRStartRaceNotify::Struct1 member23{};
-    uint32_t member24{};
+    AcCmdCRStartRaceNotify::RaceRecord raceRecord{};
+    //! The reward given to the racer upon successfully beating the speed/magic training.
+    //! Relates to `AcCmdCRStartRaceNotify::Struct1::clearedDifficulty`
+    uint32_t trainingCarrotReward{};
     uint8_t member25{};
     uint32_t member26{};
     uint32_t member27{};
