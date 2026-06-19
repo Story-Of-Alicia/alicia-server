@@ -4115,134 +4115,90 @@ bool RanchDirector::HandleMountFamilyTree(
   const ClientId clientId,
   const protocol::AcCmdCRMountFamilyTree& command)
 {
-  protocol::AcCmdCRMountFamilyTreeOK response{};
-  const auto& horseRecord = GetServerInstance().GetDataDirector().GetHorse(
-    command.horseUid);
+  using HierarchyPosition = protocol::AcCmdCRMountFamilyTreeOK::MountFamilyTreeItem::Position;
 
-  if (not horseRecord)
+  auto& dataDirector = GetServerInstance().GetDataDirector();
+  protocol::AcCmdCRMountFamilyTreeOK response{};
+
+  const auto sendResponse = [this, clientId, &response]()
   {
     _commandServer.QueueCommand<decltype(response)>(clientId, [response]()
     {
       return response;
     });
+  };
+
+  const auto mountRecord = dataDirector.GetHorse(command.horseUid);
+  if (not mountRecord)
+  {
+    sendResponse();
     return false;
   }
 
   // todo: cache this
 
-  struct Ancestors
+  // Set if a needed ancestor record isn't loaded yet; the command is then
+  // deferred and retried once the record becomes available.
+  bool defer = false;
+
+  // Reads a horse's parent UIDs (InvalidUid when unknown).
+  const auto getParents = [&dataDirector, &defer](const data::Uid horseUid) -> data::Horse::Ancestors
   {
-    struct Ancestor
+    if (horseUid == data::InvalidUid)
+      return {};
+
+    const auto record = dataDirector.GetHorse(horseUid);
+    if (not record)
     {
-      data::Uid uid{data::InvalidUid};
-      std::string name{"Runaway"};
-      uint32_t grade{};
-      uint32_t skinTid{};
-    };
-
-    Ancestor father{};
-    Ancestor mother{};
-  };
-
-  // Collects ancestor data from a horse.
-  const auto GetAncestors = [this](const data::Uid horseUid) noexcept -> std::optional<Ancestors>
-  {
-    const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(
-      horseUid);
-    if (not horseRecord)
-      return std::nullopt;
-
-    // Get the horse's ancestors.
-    data::Horse::Ancestors ancestorUids;
-    horseRecord.Immutable([&ancestorUids](const data::Horse& horse)
-    {
-      ancestorUids = horse.ancestors;
-    });
-
-    const auto fatherHorseRecord = _serverInstance.GetDataDirector().GetHorse(
-      ancestorUids.father);
-    const auto motherHorseRecord = _serverInstance.GetDataDirector().GetHorse(
-      ancestorUids.mother);
-
-    if (ancestorUids.father != data::InvalidUid && not fatherHorseRecord
-      || ancestorUids.mother != data::InvalidUid && not motherHorseRecord)
-    {
-      return std::nullopt;
+      defer = true;
+      return {};
     }
 
-    Ancestors ancestors{};
+    data::Horse::Ancestors parents;
+    record.Immutable([&parents](const data::Horse& horse) { parents = horse.ancestors; });
+    return parents;
+  };
 
-    // Collects data from a horse.
-    const auto CollectAncestor = [](const data::Horse& horse) -> Ancestors::Ancestor
+  const auto addAncestor = [&dataDirector, &response, &defer](
+    const data::Uid horseUid, const HierarchyPosition position)
+  {
+    if (horseUid == data::InvalidUid)
+      return;
+
+    const auto record = dataDirector.GetHorse(horseUid);
+    if (not record)
     {
-      return {
-        .uid = horse.uid(),
+      defer = true;
+      return;
+    }
+
+    record.Immutable([&response, position](const data::Horse& horse)
+    {
+      response.ancestors.emplace_back(protocol::AcCmdCRMountFamilyTreeOK::MountFamilyTreeItem{
+        .hierarchyPosition = position,
         .name = horse.name(),
-        .grade = horse.grade(),
-        .skinTid = horse.parts.skinTid()
-      };
-    };
-
-    // Collect father ancestor data.
-    if (fatherHorseRecord)
-    {
-      fatherHorseRecord.Immutable([&ancestors, &CollectAncestor](const data::Horse& horse)
-      {
-        ancestors.father = CollectAncestor(horse);
-      });
-    }
-
-    // Collect mother ancestor data.
-    if (motherHorseRecord)
-    {
-      motherHorseRecord.Immutable([&ancestors, &CollectAncestor](const data::Horse& horse)
-      {
-        ancestors.mother = CollectAncestor(horse);
-      });
-    }
-
-    return ancestors;
+        .grade = static_cast<uint8_t>(horse.grade()),
+        .skinTid = static_cast<uint16_t>(horse.parts.skinTid())});
+    });
   };
 
-  // Get direct ancestors.
-  const auto directAncestors = GetAncestors(command.horseUid);
-  if (not directAncestors)
+  data::Horse::Ancestors parents;
+  mountRecord.Immutable([&parents](const data::Horse& horse) { parents = horse.ancestors; });
+
+  const auto paternal = getParents(parents.father);
+  const auto maternal = getParents(parents.mother);
+
+  addAncestor(parents.father, HierarchyPosition::Father);
+  addAncestor(paternal.father, HierarchyPosition::PaternalGrandfather);
+  addAncestor(paternal.mother, HierarchyPosition::PaternalGrandmother);
+  addAncestor(parents.mother, HierarchyPosition::Mother);
+  addAncestor(maternal.father, HierarchyPosition::MaternalGrandfather);
+  addAncestor(maternal.mother, HierarchyPosition::MaternalGrandmother);
+
+  if (defer)
     return true;
 
-  // Get ancestors in the paternal line.
-  const auto paternalAncestors = GetAncestors(directAncestors->father.uid);
-  // Get ancestors in the maternal line.
-  const auto maternalAncestors = GetAncestors(directAncestors->mother.uid);
-
-  if (not paternalAncestors || not maternalAncestors)
-    return true;
-
-  using HierarchyPosition = protocol::AcCmdCRMountFamilyTreeOK::MountFamilyTreeItem::Position;
-
-  const auto AddProtocolAncestor = [&response](
-    const Ancestors::Ancestor& ancestor,
-    const HierarchyPosition position)
-  {
-    response.ancestors.emplace_back(protocol::AcCmdCRMountFamilyTreeOK::MountFamilyTreeItem{
-      .hierarchyPosition = position,
-      .name = ancestor.name,
-      .grade = static_cast<uint8_t>(ancestor.grade),
-      .skinTid = static_cast<uint16_t>(ancestor.skinTid)});
-  };
-
-  AddProtocolAncestor(directAncestors->father, HierarchyPosition::Father);
-  AddProtocolAncestor(paternalAncestors->father, HierarchyPosition::PaternalGrandfather);
-  AddProtocolAncestor(paternalAncestors->mother, HierarchyPosition::PaternalGrandmother);
-
-  AddProtocolAncestor(directAncestors->mother, HierarchyPosition::Mother);
-  AddProtocolAncestor(maternalAncestors->father, HierarchyPosition::MaternalGrandfather);
-  AddProtocolAncestor(maternalAncestors->mother, HierarchyPosition::MaternalGrandmother);
-
-  _commandServer.QueueCommand<decltype(response)>(clientId, [response]()
-  {
-    return response;
-  });
-
+  sendResponse();
   return false;
 }
 

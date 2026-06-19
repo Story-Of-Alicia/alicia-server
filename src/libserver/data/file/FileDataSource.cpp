@@ -622,6 +622,17 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
   horse.fatigue = json.value("fatigue", uint32_t{});
   horse.emblemUid = json.value("emblem", uint32_t{});
   horse.tendency = json.value("tendency", uint32_t{});
+  horse.spirit = json.value("spirit", uint32_t{});
+
+  horse.type = json.value("type", data::Horse::Type{});
+  horse.breedingCount = json.value("breedingCount", uint32_t{});
+  horse.breedingCombo = json.value("breedingCombo", uint32_t{});
+  horse.lineage = json.value("lineage", uint32_t{1});
+
+  const auto& ancestors = json.value("ancestors", nlohmann::json::object());
+  horse.ancestors = data::Horse::Ancestors{
+    .father = ancestors.value("father", data::Uid{data::InvalidUid}),
+    .mother = ancestors.value("mother", data::Uid{data::InvalidUid})};
 
   horse.dateOfBirth = data::Clock::time_point(std::chrono::seconds(
     json.value("dateOfBirth", uint64_t{})));
