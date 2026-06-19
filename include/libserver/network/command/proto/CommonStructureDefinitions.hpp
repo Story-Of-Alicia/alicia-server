@@ -24,6 +24,7 @@
 
 #include <array>
 #include <bitset>
+#include <cmath>
 #include <cstdint>
 #include <string>
 #include <vector>
