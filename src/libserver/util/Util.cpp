@@ -275,4 +275,12 @@ std::vector<std::string> TokenizeString(const std::string& value, char delimiter
   return tokens;
 }
 
+uint64_t TimePointToRaceTimePoint(const std::chrono::steady_clock::time_point& timePoint)
+{
+  // Amount of 100ns
+  constexpr uint64_t IntervalConstant = 100;
+  return std::chrono::duration_cast<std::chrono::nanoseconds>(
+    timePoint.time_since_epoch()).count() / IntervalConstant;
+}
+
 } // namespace server

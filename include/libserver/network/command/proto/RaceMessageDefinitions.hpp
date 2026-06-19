@@ -869,7 +869,7 @@ struct AcCmdUserRaceFinal
   std::chrono::milliseconds courseTime{};
   //! Race track progress. Scales with lap count.
   //! `-1` indicates all laps completed.
-  float member3{};
+  float raceTrackProgress{};
 
   static Command GetCommand()
   {
@@ -895,8 +895,9 @@ struct AcCmdUserRaceFinalNotify
 {
   //! Racer character OID.
   uint16_t oid{};
-  //! Race course time in milliseconds. Anything negative indicates DNF/Time Over.
-  std::chrono::milliseconds courseTime{};
+  //! Race course time in milliseconds.
+  //! Anything negative indicates DNF/Time Over.
+  uint32_t courseTime{};
 
   static Command GetCommand()
   {
@@ -1533,7 +1534,7 @@ struct AcCmdUserRaceUpdatePos
   //! Character oid
   uint16_t oid{};
   //! Position
-  std::array<float, 3> member2{};
+  protocol::Vector3 position{};
   //! Rotation
   std::array<float, 3> member3{};
   //! Speed
@@ -2143,7 +2144,7 @@ struct AcCmdGameRaceItemSpawn
 struct AcCmdUserRaceItemGet
 {
   uint16_t characterOid;
-  uint16_t itemId;
+  uint16_t itemDeckId;
   uint32_t unk3;
 
   static Command GetCommand()
@@ -2758,7 +2759,7 @@ struct AcCmdRCCreateItem
 {
   uint32_t itemId{};
   uint32_t itemType{};
-  std::array<float, 3> position{};
+  protocol::Vector3 position{};
   uint32_t spawnStyle{};
   uint16_t spawnerId{};
   int32_t sizeLevel{};
@@ -2843,7 +2844,7 @@ struct AcCmdCRGameCreateClientItem
   uint16_t someonesOid{};
   // Same value as received in AcCmdRCGameCreateClientItem::unk1 by client
   uint8_t unk1{};
-  std::array<float, 3> position{};
+  protocol::Vector3 position{};
   // Rotation?
   std::array<float, 4> unk3{};
 

@@ -89,23 +89,34 @@ courses:
         perfectSpurCheckTime: 0
         spurConsumeStarPoints: 40000
         starPointsMax: 100000
+  # A deck represents a set of items spawnable on a track.
+  # Originates from
+  # This should be called `decks`
   deckItemInfo:
     collection:
       # ID 101: Speed (Gold Horseshoe)
       - deckId: 101
+        respawnTime: 500
         itemTypes: [101]
       # ID 102: Speed (Silver Horseshoe)
       - deckId: 102
+        respawnTime: 500
         itemTypes: [102]
       # ID 201: Magic (Initial/Early)
       - deckId: 201
+        respawnTime: 0
         itemTypes: [401, 402, 405, 406, 407, 408, 409, 404]
       # ID 202: Magic (Midway)
       - deckId: 202
+        respawnTime: 0
         itemTypes: [401, 405, 406, 407, 408]
       # ID 203: Magic (Final/End)
       - deckId: 203
+        respawnTime: 0
         itemTypes: [401, 405, 406, 407, 408]
+  # A deck item parameters.
+  # Originates from the `ItemDeckList` table in the client.
+  # This should be called `deckItems`
   itemTypeInfo:
     collection:
       # Speed Items
