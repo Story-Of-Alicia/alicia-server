@@ -55,7 +55,7 @@ words:
       prevent: true
     - word: '\bn+g+r+\b'
       prevent: true
-    - word: '\bn+e+g+r+[o0]+\b'
+    - word: '\bn+[e3]+g+r+[o0]+\b'
       prevent: true
     - word: '\bn+[i1l]+g+\b'
       prevent: true

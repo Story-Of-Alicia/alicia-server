@@ -56,6 +56,8 @@ public:
     const data::Uid characterUid,
     const MatchmakingSystem::Result& result);
 
+  [[nodiscard]] CommandServer& GetCommandServer() noexcept;
+
 private:
   struct ClientContext
   {

@@ -19,6 +19,8 @@
 
 #include "server/ServerInstance.hpp"
 
+#include "server/system/QuestSystem.hpp"
+
 #include <stacktrace>
 
 namespace server
@@ -51,6 +53,7 @@ ServerInstance::ServerInstance(
   , _infractionSystem(*this)
   , _itemSystem(*this)
   , _matchmakingSystem(*this)
+  , _questSystem(*this)
   , _telemetry(*this)
   , _breedingMarket(*this)
   , _genetics(*this)
@@ -95,6 +98,7 @@ void ServerInstance::Initialize()
   _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items.yaml");
   _magicRegistry.ReadConfig(_resourceDirectory / "config/game/magic.yaml");
   _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
+  _questRegistry.ReadConfig(_resourceDirectory / "config/game/quests.yaml");
 
   _moderationSystem.ReadConfig(_resourceDirectory / "config/server/automod.yaml");
   _systemContentRegistry.ReadConfig(_resourceDirectory / "config/server/system_content.yaml");
@@ -352,6 +356,11 @@ registry::PetRegistry& ServerInstance::GetPetRegistry()
   return _petRegistry;
 }
 
+registry::QuestRegistry& ServerInstance::GetQuestRegistry()
+{
+  return _questRegistry;
+}
+
 registry::MagicRegistry& ServerInstance::GetMagicRegistry()
 {
   return _magicRegistry;
@@ -395,6 +404,11 @@ RoomSystem& ServerInstance::GetRoomSystem()
 MatchmakingSystem& ServerInstance::GetMatchmakingSystem()
 {
   return _matchmakingSystem;
+}
+
+QuestSystem& ServerInstance::GetQuestSystem()
+{
+  return _questSystem;
 }
 
 Telemetry& ServerInstance::GetTelemetry()

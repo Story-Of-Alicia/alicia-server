@@ -514,33 +514,33 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
         }
         return false;
       })
-  , _dailyQuestStorage(
-      [&](const auto& key, auto& quest)
+  , _dailyQuestGroupStorage(
+      [&](const auto& key, auto& group)
       {
         try
         {
-          _primaryDataSource->RetrieveDailyQuest(key, quest);
+          _primaryDataSource->RetrieveDailyQuestGroup(key, group);
           return true;
         }
         catch (const std::exception& x)
         {
           spdlog::error(
-            "Exception retrieving daily quest {} from the primary data source: {}", key, x.what());
+            "Exception retrieving daily quest group {} from the primary data source: {}", key, x.what());
         }
 
         return false;
       },
-      [&](const auto& key, auto& quest)
+      [&](const auto& key, auto& group)
       {
         try
         {
-          _primaryDataSource->StoreDailyQuest(key, quest);
+          _primaryDataSource->StoreDailyQuestGroup(key, group);
           return true;
         }
         catch (const std::exception& x)
         {
           spdlog::error(
-            "Exception storing daily quest {} on the primary data source: {}", key, x.what());
+            "Exception storing daily quest group {} on the primary data source: {}", key, x.what());
         }
         return false;
       },
@@ -548,14 +548,14 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
       {
         try
         {
-          _primaryDataSource->DeleteDailyQuest(key);
+          _primaryDataSource->DeleteDailyQuestGroup(key);
           return true;
         }
         catch (const std::exception& x)
         {
           spdlog::error(
-            "Exception deleting daily quest {} from the primary data source: {}", key, x.what());
-        }
+            "Exception deleting daily quest group {} from the primary data source: {}", key, x.what());
+           }
         return false;
       })
   , _mailStorage(
@@ -598,6 +598,49 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
         {
           spdlog::error(
             "Exception deleting mail {} from the primary data source: {}", key, x.what());
+        }
+        return false;
+      })
+  , _questStorage(
+      [&](const auto& key, auto& quest)
+      {
+        try
+        {
+          _primaryDataSource->RetrieveQuest(key, quest);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception retrieving quest {} from the primary data source: {}", key, x.what());
+        }
+        return false;
+      },
+      [&](const auto& key, auto& quest)
+      {
+        try
+        {
+          _primaryDataSource->StoreQuest(key, quest);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception storing quest {} on the primary data source: {}", key, x.what());
+        }
+        return false;
+      },
+      [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteQuest(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting quest {} from the primary data source: {}", key, x.what());
         }
         return false;
       })
@@ -678,8 +721,9 @@ void DataDirector::Terminate()
     _stallionStorage.Terminate();
     _housingStorage.Terminate();
     _settingsStorage.Terminate();
-    _dailyQuestStorage.Terminate();
+    _dailyQuestGroupStorage.Terminate();
     _mailStorage.Terminate();
+    _questStorage.Terminate();
   }
   catch (const std::exception& x)
   {
@@ -708,8 +752,9 @@ void DataDirector::Tick()
     _housingStorage.Tick();
     _stallionStorage.Tick();
     _settingsStorage.Tick();
-    _dailyQuestStorage.Tick();
+    _dailyQuestGroupStorage.Tick();
     _mailStorage.Tick();
+    _questStorage.Tick();
   }
   catch (const std::exception& x)
   {
@@ -1155,6 +1200,38 @@ DataDirector::MailStorage& DataDirector::GetMailCache()
   return _mailStorage;
 }
 
+Record<data::Quest> DataDirector::GetQuest(data::Uid questUid) noexcept
+{
+  if (questUid == data::InvalidUid)
+    return {};
+  return _questStorage.Get(questUid).value_or(Record<data::Quest>{});
+}
+
+Record<data::Quest> DataDirector::CreateQuest() noexcept
+{
+  try
+  {
+    return _questStorage.Create(
+      [this]()
+      {
+        data::Quest quest;
+        _primaryDataSource->CreateQuest(quest);
+
+        return std::make_pair(quest.uid(), std::move(quest));
+      });
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception while creating a quest record on the primary data source: {}", x.what());
+    return {};
+  }
+}
+
+DataDirector::QuestStorage& DataDirector::GetQuestCache()
+{
+  return _questStorage;
+}
+
 Record<data::Stallion> DataDirector::GetStallion(data::Uid stallionUid) noexcept
 {
   if (stallionUid == data::InvalidUid)
@@ -1258,28 +1335,28 @@ void DataDirector::ScheduleUserLoad(
   });
 }
 
-Record<data::DailyQuest> DataDirector::GetDailyQuest(data::Uid DailyQuestUid) noexcept
+Record<data::DailyQuestGroup> DataDirector::GetDailyQuestGroup(data::Uid dailyQuestGroupUid) noexcept
 {
-  if (DailyQuestUid == data::InvalidUid)
+  if (dailyQuestGroupUid == data::InvalidUid)
     return {};
-  return _dailyQuestStorage.Get(DailyQuestUid).value_or(Record<data::DailyQuest>{});
+  return _dailyQuestGroupStorage.Get(dailyQuestGroupUid).value_or(Record<data::DailyQuestGroup>{});
 }
 
-Record<data::DailyQuest> DataDirector::CreateDailyQuest() noexcept
+Record<data::DailyQuestGroup> DataDirector::CreateDailyQuestGroup() noexcept
 {
-  return _dailyQuestStorage.Create(
+  return _dailyQuestGroupStorage.Create(
     [this]()
     {
-      data::DailyQuest dailyQuest;
-      _primaryDataSource->CreateDailyQuest(dailyQuest);
+      data::DailyQuestGroup group;
+      _primaryDataSource->CreateDailyQuestGroup(group);
 
-      return std::make_pair(dailyQuest.uid(), std::move(dailyQuest));
+      return std::make_pair(group.uid(), std::move(group));
     });
 }
 
-DataDirector::DailyQuestStorage& DataDirector::GetDailyQuestCache()
+DataDirector::DailyQuestGroupStorage& DataDirector::GetDailyQuestGroupCache()
 {
-  return _dailyQuestStorage;
+  return _dailyQuestGroupStorage;
 }
 
 void DataDirector::ScheduleCharacterLoad(
@@ -1334,20 +1411,22 @@ void DataDirector::ScheduleCharacterLoad(
 
     std::vector<data::Uid> pets;
 
-    std::vector<data::Uid> dailyQuests;
-
     std::vector<data::Uid> mailbox;
+
+    std::vector<data::Uid> quests;
 
     // Friends prefetch
     std::set<data::Uid> friends;
+    data::Uid dailyQuestGroupUid = data::InvalidUid;
 
     characterRecord.Immutable(
-      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets, &settingsUid, &mailbox, &friends, &dailyQuests](
+      [&guildUid, &petUid, &gifts, &items, &purchases, &horses, &eggs, &housing, &pets, &settingsUid, &mailbox, &quests, &friends, &dailyQuestGroupUid](
         const data::Character& character)
       {
         guildUid = character.guildUid();
         petUid = character.petUid();
         settingsUid = character.settingsUid();
+        dailyQuestGroupUid = character.dailyQuestGroupUid();
 
         gifts = character.gifts();
         purchases = character.purchases();
@@ -1364,8 +1443,6 @@ void DataDirector::ScheduleCharacterLoad(
 
         pets = character.pets();
 
-        dailyQuests = character.dailyQuests();
-
         // Add the mount to the horses list,
         // so that it is loaded with all the horses.
         horses.emplace_back(character.mountUid());
@@ -1373,6 +1450,9 @@ void DataDirector::ScheduleCharacterLoad(
         // Mailbox
         std::ranges::copy(character.mailbox.inbox(), std::back_inserter(mailbox));
         std::ranges::copy(character.mailbox.sent(), std::back_inserter(mailbox));
+
+        // Quests
+        quests = character.quests();
 
         // Pending friend requests
         const auto& pending = character.contacts.pending();
@@ -1389,6 +1469,7 @@ void DataDirector::ScheduleCharacterLoad(
     const auto guildRecord = GetGuild(guildUid);
     const auto petRecord = GetPet(petUid);
     const auto settingsRecord = GetSettings(settingsUid);
+    const auto dailyQuestGroupRecord = GetDailyQuestGroup(dailyQuestGroupUid);
 
     const auto giftRecords = GetStorageItemCache().Get(gifts);
     const auto purchaseRecords = GetStorageItemCache().Get(purchases);
@@ -1400,8 +1481,6 @@ void DataDirector::ScheduleCharacterLoad(
     const auto housingRecords = GetHousingCache().Get(housing);
 
     const auto petRecords = GetPetCache().Get(pets);
-
-    const auto dailyQuestRecords = GetDailyQuestCache().Get(dailyQuests);
 
     // Only require guild if the UID is not invalid.
     if (not guildRecord && guildUid != data::InvalidUid)
@@ -1424,6 +1503,14 @@ void DataDirector::ScheduleCharacterLoad(
     {
       userDataContext.debugMessage = std::format(
         "Settings '{}' not available", settingsUid);
+      return;
+    }
+
+    // Only require daily quest group if one is assigned.
+    if (not dailyQuestGroupRecord && dailyQuestGroupUid != data::InvalidUid)
+    {
+      userDataContext.debugMessage = std::format(
+        "Daily quest group '{}' not available", dailyQuestGroupUid);
       return;
     }
 
@@ -1474,12 +1561,6 @@ void DataDirector::ScheduleCharacterLoad(
       return;
     }
 
-    if (not dailyQuestRecords)
-    {
-      userDataContext.debugMessage = std::format(
-        "Daily quests not available");
-      return;
-    }
     // Require mail records.
     const auto mailRecords = GetMailCache().Get(mailbox);
     if (not mailRecords)
@@ -1536,6 +1617,15 @@ void DataDirector::ScheduleCharacterLoad(
         std::vector<data::Uid>(
           mailCharacterUids.begin(),
           mailCharacterUids.end()));
+    }
+
+    // Require quest records.
+    const auto questRecords = GetQuestCache().Get(quests);
+    if (not questRecords)
+    {
+      userDataContext.debugMessage = std::format(
+        "Quests not available");
+      return;
     }
 
     // Preload friend character records
