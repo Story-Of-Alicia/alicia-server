@@ -90,6 +90,25 @@ void RaceDirector::NotifyRoomNameChanged(const uint32_t roomUid) noexcept
   GetNetworkHandler().NotifyRoomNameChanged(roomUid);
 }
 
+void RaceDirector::SendDailyQuestNotificationToCharacter(
+  uint32_t characterUid,
+  uint16_t questId,
+  const protocol::ObjectiveProgress& objectiveProgress,
+  uint32_t carrotsReward,
+  protocol::QuestRewardType rewardType,
+  uint32_t unk2,
+  uint32_t mountExp)
+{
+  GetNetworkHandler().SendDailyQuestNotificationToCharacter(
+    characterUid,
+    questId,
+    objectiveProgress,
+    carrotsReward,
+    rewardType,
+    unk2,
+    mountExp);
+}
+
 RaceNetworkHandler& RaceDirector::GetNetworkHandler()
 {
   if (_networkHandler == nullptr)

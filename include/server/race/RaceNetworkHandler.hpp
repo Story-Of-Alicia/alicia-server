@@ -64,6 +64,15 @@ public:
     uint32_t roomUid,
     uint32_t ranchUid) noexcept;
 
+  void SendDailyQuestNotificationToCharacter(
+    uint32_t characterUid,
+    uint16_t questId,
+    const protocol::ObjectiveProgress& objectiveProgress,
+    uint32_t carrotsReward,
+    protocol::QuestRewardType rewardType,
+    uint32_t unk2,
+    uint32_t mountExp);
+
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId clientId) override;
 

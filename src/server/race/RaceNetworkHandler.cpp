@@ -427,6 +427,40 @@ void RaceNetworkHandler::NotifyRoomNameChanged(
     });
 }
 
+void RaceNetworkHandler::SendDailyQuestNotificationToCharacter(
+  uint32_t characterUid,
+  uint16_t questId,
+  const protocol::ObjectiveProgress& objectiveProgress,
+  uint32_t carrotsReward,
+  protocol::QuestRewardType rewardType,
+  uint32_t unk2,
+  uint32_t mountExp)
+{
+  const protocol::AcCmdRCUpdateDailyQuestNotify updateNotify{
+    .characterUid = characterUid,
+    .questId = questId,
+    .objectiveProgress = objectiveProgress,
+    .carrotsReward = carrotsReward,
+    .rewardType = rewardType,
+    .unk2 = unk2,
+    .mountExp = mountExp};
+
+  try
+  {
+    const ClientId clientId = GetClientIdByCharacterUid(characterUid);
+    _commandServer.QueueCommand<protocol::AcCmdRCUpdateDailyQuestNotify>(
+      clientId,
+      [updateNotify]()
+      {
+        return updateNotify;
+      });
+  }
+  catch (const std::exception&)
+  {
+    // Ignore
+  }
+}
+
 void RaceNetworkHandler::HandleClientConnected(ClientId clientId)
 {
   _clients.try_emplace(clientId);

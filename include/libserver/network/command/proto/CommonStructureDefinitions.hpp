@@ -736,6 +736,13 @@ struct PackedVector3
     SourceStream& stream);
 };
 
+enum class QuestRewardType : uint8_t
+{
+  None = 0,
+  Carrots = 1,
+  Exp = 2
+};
+
 //! A common struct used by achievements and quests.
 struct ObjectiveProgress
 {
