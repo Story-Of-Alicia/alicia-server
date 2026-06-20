@@ -20,6 +20,7 @@
 #include "server/race/RaceNetworkHandler.hpp"
 
 #include "server/ServerInstance.hpp"
+#include "server/race/magic/MagicSelector.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
 
@@ -55,45 +56,15 @@ uint32_t GetMountStatValue(
 
 registry::Magic::SlotInfo RandomMagicItem(
   ServerInstance& serverInstance,
-  const tracker::RaceTracker::Racer& racer)
+  const tracker::RaceTracker::Racer& racer,
+  data::Uid characterUid,
+  const std::vector<tracker::RaceTracker::RacerPositionInfo>& racePositions)
 {
-  const auto& itemPool = (racer.team == tracker::RaceTracker::Racer::Team::Solo
-    ? serverInstance.GetMagicRegistry().GetSoloPool()
-    : serverInstance.GetMagicRegistry().GetTeamPool());
+  // Use the new MagicSelector with official 4-layer hierarchical filter
+  magic::MagicSelector selector(serverInstance.GetMagicRegistry());
+  auto slotInfo = selector.SelectItem(racer, characterUid, racePositions);
 
-  // Build weights: Lightning (type 18) gets a reduced roll chance.
-  // Booster, HotRodding, and team-only items get a slightly reduced chance as well.
-  // TODO: Replace with a proper per-spell weight system.
-  const auto& magicRegistry = serverInstance.GetMagicRegistry();
-  std::vector<uint32_t> weights;
-  weights.reserve(itemPool.size());
-  for (const uint32_t type : itemPool)
-  {
-    const auto& slotInfo = magicRegistry.GetSlotInfo(type);
-    const uint32_t w = (type == 18) ? 1u
-      : (slotInfo.basicType == 6 || slotInfo.basicType == 8 || slotInfo.basicType == 12) ? 2u
-      : (slotInfo.teamMode != 0) ? 2u
-      : 4u;
-    weights.push_back(w);
-  }
-
-  std::discrete_distribution<size_t> distribution(weights.begin(), weights.end());
-  auto magicSlotInfo = magicRegistry.GetSlotInfo(itemPool[distribution(_randomDevice)]);
-  uint32_t critChanceBp = magicRegistry.GetBaseCritChanceBp();
-  if (magicSlotInfo.criticalType != 0)
-  {
-    if (const auto* scaling = magicRegistry.GetStatScaling(magicSlotInfo.basicType))
-    {
-      const uint32_t statValue = GetMountStatValue(racer.mountStats, scaling->stat);
-      critChanceBp += scaling->critStepBp * (statValue / 10u);
-    }
-  }
-
-  if ((rand() % 10000) < static_cast<int>(critChanceBp))
-  {
-    magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(magicSlotInfo.criticalType);
-  }
-  return magicSlotInfo;
+  return slotInfo;
 }
 
 } // anon namespace
@@ -1325,17 +1296,17 @@ void RaceNetworkHandler::HandleStartRace(
     return;
   }
 
-  constexpr uint32_t GameCountdownKey = 17;
-  constexpr uint32_t DefaultCountdownMs = 5310;
-
-  const auto& countdown = GetServerInstance()
-    .GetSystemContentRegistry()
-    .GetValue(GameCountdownKey);
+  uint32_t roomCountdownMs = 0;
+  if (parameters.gameMode != protocol::GameMode::Tutorial)
+  {
+    constexpr uint32_t GameCountdownKey = 17;
+    constexpr uint32_t DefaultCountdownMs = 5310;
+    const auto& countdown = GetServerInstance().GetSystemContentRegistry().GetValue(GameCountdownKey);
+    roomCountdownMs = countdown.has_value() ? countdown.value() : DefaultCountdownMs;
+  }
 
   const protocol::AcCmdRCRoomCountdown roomCountdown{
-    .countdown = countdown.has_value()
-      ? countdown.value()
-      : DefaultCountdownMs,
+    .countdown = roomCountdownMs,
     .mapBlockId = static_cast<uint16_t>(raceInstance.GetMapBlockId())};
 
   // Broadcast room countdown.
@@ -2138,6 +2109,9 @@ void RaceNetworkHandler::HandleRaceUserPos(
   // TODO: player position anticheat
 
   racer.position = command.position;
+
+  // Store track progress from member6 for position-based magic distribution
+  racer.trackProgress = command.member6;
 }
 
 void RaceNetworkHandler::HandleChat(
@@ -2459,7 +2433,11 @@ void RaceNetworkHandler::HandleRequestMagicItem(
     return;
   }
 
-  racer.magicItem.emplace(RandomMagicItem(_serverInstance, racer).type);
+  // Get current race positions for position-based distribution
+  auto racePositions = raceInstance.GetTracker().GetRacePositions();
+
+  // Select magic item based on racer's position
+  racer.magicItem.emplace(RandomMagicItem(_serverInstance, racer, clientContext.characterUid, racePositions).type);
   racer.starPointValue = 0;
 
   protocol::AcCmdCRStarPointGetOK starPointResponse{

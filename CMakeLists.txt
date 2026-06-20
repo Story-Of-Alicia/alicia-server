@@ -109,6 +109,8 @@ add_executable(alicia-server
         src/server/messenger/MessengerDirector.cpp
         src/server/race/RaceInstance.cpp
         src/server/race/RaceNetworkHandler.cpp
+        src/server/race/magic/MagicConfig.cpp
+        src/server/race/magic/MagicSelector.cpp
         src/server/ranch/RanchDirector.cpp
         src/server/room/Room.cpp
         src/server/system/ChatSystem.cpp

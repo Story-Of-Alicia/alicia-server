@@ -19,6 +19,10 @@
 
 #include "server/tracker/RaceTracker.hpp"
 
+#include "spdlog/spdlog.h"
+
+#include <algorithm>
+
 namespace server::tracker
 {
 
@@ -171,6 +175,64 @@ void RaceTracker::Clear()
   _events.clear();
   _nextItemDeckOid = 1;
   firstPassItemSpawn = true;
+}
+
+std::vector<RaceTracker::RacerPositionInfo> RaceTracker::GetRacePositions() const
+{
+  std::vector<RacerPositionInfo> positions;
+  positions.reserve(_racers.size());
+
+  spdlog::debug("=== Race Positions Debug ===");
+  for (const auto& [characterUid, racer] : _racers) {
+    if (racer.state == Racer::State::Disconnected ||
+        racer.state == Racer::State::Finishing) {
+      continue;
+    }
+
+    spdlog::debug(
+      "Racer {}: trackProgress = {}, oid = {}",
+      characterUid,
+      racer.trackProgress,
+      racer.oid);
+    positions.push_back({
+      characterUid,
+      racer.trackProgress,
+      0,
+      racer.oid
+    });
+  }
+
+  // Sort by trackProgress DESCENDING (higher = better position, further ahead)
+  // Note: AcCmdUserRaceUpdatePos::member6 represents track progress where
+  // higher values = further ahead = better position (e.g., 1st: 0.3, 2nd: 0.2, 3rd: 0.1)
+  std::sort(positions.begin(), positions.end(), [](const auto& a, const auto& b) {
+      return a.trackProgress > b.trackProgress;
+  });
+
+  // Assign ranks (1-indexed)
+  for (size_t i = 0; i < positions.size(); ++i) {
+      positions[i].rank = static_cast<uint32_t>(i) + 1;
+      spdlog::debug("Rank {}: characterUid = {}, trackProgress = {}",
+          positions[i].rank, positions[i].characterUid, positions[i].trackProgress);
+  }
+  spdlog::debug("=== End Race Positions Debug ===");
+
+  return positions;
+}
+
+std::optional<RaceTracker::RacerPositionInfo> RaceTracker::GetRacerPosition(
+    data::Uid characterUid) const
+{
+  auto positions = GetRacePositions();
+
+  auto it = std::find_if(positions.begin(), positions.end(), [characterUid](const auto& p) {
+    return p.characterUid == characterUid;
+  });
+
+  if (it != positions.end()) {
+    return *it;
+  }
+  return std::nullopt;
 }
 
 } // namespace server::tracker

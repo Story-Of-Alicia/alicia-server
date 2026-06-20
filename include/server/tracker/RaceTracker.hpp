@@ -113,6 +113,9 @@ public:
     };
     MountStatsSnapshot mountStats{};
 
+    // Track progress from client updates (AcCmdUserRaceUpdatePos::member6)
+    float trackProgress = 0.0f;
+
     struct MagicTargetInfo
     {
       uint16_t casterOid;
@@ -224,6 +227,21 @@ public:
   uint16_t GetNextEffectInstanceIdAndIncrementBy(uint16_t increment);
 
   void Clear();
+
+  // Position tracking for magic item distribution
+  struct RacerPositionInfo
+  {
+    data::Uid characterUid{};
+    float trackProgress = 0.0f;
+    uint32_t rank = 0;
+    Oid oid{};
+  };
+
+  // Get all racers sorted by track progress (best to worst)
+  std::vector<RacerPositionInfo> GetRacePositions() const;
+
+  // Get position info for a specific racer
+  std::optional<RacerPositionInfo> GetRacerPosition(data::Uid characterUid) const;
 
 private:
   //! Mapping between character UIDs and their assigned OIDs.
