@@ -13815,7 +13815,7 @@ collection:
     category: 1
     subcategory: 2
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     priceRanges:
     - range: 1
@@ -13827,7 +13827,7 @@ collection:
     category: 1
     subcategory: 2
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     priceRanges:
     - range: 1
