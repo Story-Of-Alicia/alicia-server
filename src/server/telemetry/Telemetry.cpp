@@ -107,7 +107,7 @@ void Telemetry::ConnectPostgresBackend()
 void Telemetry::CollectData()
 {
   const auto playerCount = _serverInstance.GetLobbyDirector().GetUserCount();
-  const auto roomCount = _serverInstance.GetRaceDirector().GetRoomCount();
+  const auto roomCount = _serverInstance.GetRoomSystem().GetRoomCount();
 
   _playerCountMetric.Collect(playerCount);
   _roomCountMetric.Collect(roomCount);

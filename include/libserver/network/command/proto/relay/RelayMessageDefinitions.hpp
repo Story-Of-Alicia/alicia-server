@@ -63,13 +63,7 @@ struct Snapshot
   std::vector<uint8_t> unidentifiedData{};
 
   //! Position vector in XYZ.
-  // TODO: extract this into a common place so others can use this
-  struct Vector3
-  {
-    float X{};
-    float Y{};
-    float Z{};
-  } position{};
+  protocol::Vector3 position{};
 
   //! Rotation vector in XYZW.
   // TODO: extract this into a common place so others can use this

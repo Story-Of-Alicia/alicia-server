@@ -862,4 +862,22 @@ void ObjectiveProgress::Read(
     .Read(objectiveProgress.achievementTier);
 }
 
+void Vector3::Write(
+  const Vector3& vector,
+  SinkStream& stream)
+{
+  stream.Write(vector.x)
+    .Write(vector.y)
+    .Write(vector.z);
+}
+
+void Vector3::Read(
+  Vector3& vector,
+  SourceStream& stream)
+{
+  stream.Read(vector.x)
+    .Read(vector.y)
+    .Read(vector.z);
+}
+
 } // namespace server::protocol

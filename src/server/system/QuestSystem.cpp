@@ -153,14 +153,14 @@ std::vector<protocol::AcCmdRCUpdateDailyQuestNotify> QuestSystem::OnQuestEvent(
 
       // Determine reward params (only populated on completion)
       const auto rewardType = completed
-        ? static_cast<protocol::AcCmdRCUpdateDailyQuestNotify::RewardType>(group.rewardType())
-        : protocol::AcCmdRCUpdateDailyQuestNotify::RewardType::None;
+        ? static_cast<protocol::QuestRewardType>(group.rewardType())
+        : protocol::QuestRewardType::None;
       const uint32_t carrotsReward =
-        rewardType == protocol::AcCmdRCUpdateDailyQuestNotify::RewardType::Carrots
+        rewardType == protocol::QuestRewardType::Carrots
           ? questDef->rewardGameMoney
           : 0;
       const uint32_t mountExp =
-        rewardType == protocol::AcCmdRCUpdateDailyQuestNotify::RewardType::Exp
+        rewardType == protocol::QuestRewardType::Exp
           ? questDef->rewardExp
           : 0;
 

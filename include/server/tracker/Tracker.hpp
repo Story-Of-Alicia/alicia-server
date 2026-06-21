@@ -6,6 +6,7 @@
 #define TRACKER_HPP
 
 #include <cstdint>
+#include <array>
 
 namespace server::tracker
 {

@@ -236,12 +236,7 @@ struct AcCmdRCUpdateDailyQuestNotify
   uint16_t questId;
   ObjectiveProgress objectiveProgress;
   uint32_t carrotsReward; //used when rewardType is Carrots
-  enum class RewardType : uint8_t
-  {
-    None = 0,
-    Carrots = 1,
-    Exp = 2
-  } rewardType{RewardType::None};
+  QuestRewardType rewardType{QuestRewardType::None};
   uint32_t unk2;
   uint32_t mountExp; //used when rewardType is Exp
 
