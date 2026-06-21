@@ -681,18 +681,23 @@ uint32_t MagicSelector::NormalizeRank(uint32_t rank, uint32_t totalPlayers) cons
     return 1;
   }
 
-  // Normalize rank from [1, totalPlayers] to [1, 8]
-  // This ensures last place (rank N) maps to normalized rank 8,
-  // and first place (rank 1) maps to normalized rank 1.
-  // The formula: normalized = 1 + (rank-1) * 7 / (totalPlayers-1)
-  //
-  // Examples:
-  // - 4 players: rank 1->1, rank 2->3, rank 3->5, rank 4->8
-  // - 8 players: rank 1->1, rank 2->2, rank 3->3, ..., rank 8->8
-  // - 2 players: rank 1->1, rank 2->8
+  rank = std::clamp(rank, 1u, totalPlayers);
 
-  float ratio = static_cast<float>(rank - 1) / (totalPlayers - 1);
-  return 1 + static_cast<uint32_t>(ratio * 7.0f);
+  // The XML tables are 8-position tables, but they should not be stretched
+  // linearly for very small races. In a 1v1, the trailing racer is last, but
+  // treating it as normalized rank 8 makes it behave like 8th of 8 and gives
+  // rank-8 catch-up items such as Booster/HotRodding far too often. Clamp the
+  // normalized scale so 2-player races use the rank-2 part of the tables.
+  if (totalPlayers == 2)
+  {
+    return std::clamp(rank, 1u, 2u);
+  }
+
+  // Normalize rank from [1, totalPlayers] to [1, 8] for larger races.
+  // This keeps 3-player races closer to the official table shape while still
+  // preserving first/last scaling for normal 4-8 player races.
+  float ratio = static_cast<float>(rank - 1) / static_cast<float>(totalPlayers - 1);
+  return std::clamp(1u + static_cast<uint32_t>(ratio * 7.0f), 1u, 8u);
 }
 
 RaceContext MagicSelector::BuildContext(
