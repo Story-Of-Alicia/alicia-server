@@ -131,7 +131,7 @@ void RaceInstance::Stop()
       : tracker::InvalidCourseTime;
 
     score.experience = 420;
-    score.carrots = 420;
+    score.carrots = 2500;
     score.teamColor = racer.team;
     const auto characterRecord = _raceNetworkHandler.GetServerInstance().GetDataDirector().GetCharacter(
       characterUid);

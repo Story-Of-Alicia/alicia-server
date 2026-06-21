@@ -2,7 +2,7 @@ collection:
 - tid: 10004
   type: 0
   level: 5
-  name: '베이비돌 쉬폰 원피스'
+  name: 'Chiffon Slip Dress'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -14,11 +14,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 45000
 - tid: 10005
   type: 0
   level: 25
-  name: '전통 리비안 스타일'
+  name: 'Traditional Livian Style'
   characterPartInfo:
     characterId: 20
     slot: 2
@@ -30,7 +30,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 14000
 - tid: 20001
   type: 0
   level: 1
@@ -76,11 +76,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 900
     - range: 168
-      price: 10
+      price: 5000
     - range: 720
-      price: 100
+      price: 18000
   mountAbility:
     grade: 0
     agility: 5
@@ -102,11 +102,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 1300
     - range: 168
-      price: 10
+      price: 7500
     - range: 720
-      price: 100
+      price: 26400
   mountAbility:
     grade: 0
     agility: 7
@@ -117,7 +117,7 @@ collection:
 - tid: 20002
   type: 0
   level: 1
-  name: 'Grade 1 Chestnut Stockings Thoroughbred'
+  name: 'Chestnut Stockings Thoroughbred'
   mountPartSetInfo:
     skinId: 4
     maneId: 1
@@ -134,7 +134,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 4000
@@ -148,7 +148,7 @@ collection:
 - tid: 20003
   type: 0
   level: 1
-  name: 'Grade 1 Chestnut Pinto Thoroughbred'
+  name: 'Chestnut Pinto Thoroughbred'
   mountPartSetInfo:
     skinId: 11
     maneId: 1
@@ -165,7 +165,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 4000
@@ -190,11 +190,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 700
     - range: 168
-      price: 10
+      price: 3700
     - range: 720
-      price: 100
+      price: 13200
   mountAbility:
     grade: 0
     agility: 0
@@ -216,11 +216,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 1000
     - range: 168
-      price: 10
+      price: 5000
     - range: 720
-      price: 100
+      price: 18000
   mountAbility:
     grade: 0
     agility: 0
@@ -242,11 +242,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 900
     - range: 168
-      price: 10
+      price: 4500
     - range: 720
-      price: 100
+      price: 15800
   mountAbility:
     grade: 0
     agility: 0
@@ -268,11 +268,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 400
     - range: 168
-      price: 10
+      price: 2000
     - range: 720
-      price: 100
+      price: 7200
   mountAbility:
     grade: 0
     agility: 0
@@ -294,11 +294,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 600
     - range: 168
-      price: 10
+      price: 3000
     - range: 720
-      price: 100
+      price: 10600
   mountAbility:
     grade: 0
     agility: 0
@@ -309,7 +309,7 @@ collection:
 - tid: 10002
   type: 0
   level: 5
-  name: '스쿨룩 블라우스'
+  name: 'School Blouse'
   characterPartInfo:
     characterId: 20
     slot: 16
@@ -321,11 +321,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 16000
 - tid: 10003
   type: 0
   level: 5
-  name: '스쿨룩 스커트'
+  name: 'School Skirt'
   characterPartInfo:
     characterId: 20
     slot: 32
@@ -337,7 +337,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 20011
   type: 1
   level: 1
@@ -352,11 +352,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 900
     - range: 168
-      price: 10
+      price: 4500
     - range: 720
-      price: 100
+      price: 15800
   mountAbility:
     grade: 0
     agility: 0
@@ -367,7 +367,7 @@ collection:
 - tid: 10006
   type: 0
   level: 5
-  name: '리비안 민속 원피스'
+  name: 'Livian Folk Dress'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -379,11 +379,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 35000
 - tid: 10007
   type: 0
   level: 25
-  name: '블랙캣 경갑 원피스'
+  name: 'Gilded Cat Armour'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -395,11 +395,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 46000
 - tid: 10008
   type: 0
   level: 15
-  name: '래빗 테일 코트'
+  name: 'Satin Rabbit Tailcoat'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -411,11 +411,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 42000
 - tid: 10009
   type: 0
   level: 5
-  name: '미니 치파오'
+  name: 'Mini Qipao'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -427,7 +427,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 39000
 - tid: 20012
   type: 1
   level: 1
@@ -442,11 +442,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 1800
     - range: 168
-      price: 10
+      price: 9700
     - range: 720
-      price: 100
+      price: 34200
   mountAbility:
     grade: 0
     agility: 10
@@ -468,11 +468,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 500
     - range: 168
-      price: 10
+      price: 2500
     - range: 720
-      price: 100
+      price: 9000
   mountAbility:
     grade: 0
     agility: 0
@@ -494,11 +494,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 500
     - range: 168
-      price: 10
+      price: 2500
     - range: 720
-      price: 100
+      price: 9000
   mountAbility:
     grade: 0
     agility: 0
@@ -520,11 +520,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 1700
     - range: 168
-      price: 10
+      price: 9500
     - range: 720
-      price: 100
+      price: 33600
   mountAbility:
     grade: 0
     agility: 7
@@ -546,11 +546,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 800
     - range: 168
-      price: 10
+      price: 4800
     - range: 720
-      price: 100
+      price: 16800
   mountAbility:
     grade: 0
     agility: 0
@@ -572,11 +572,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 1300
     - range: 168
-      price: 10
+      price: 7500
     - range: 720
-      price: 100
+      price: 26400
   mountAbility:
     grade: 0
     agility: 7
@@ -598,11 +598,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 700
     - range: 168
-      price: 10
+      price: 3700
     - range: 720
-      price: 100
+      price: 13200
   mountAbility:
     grade: 0
     agility: 0
@@ -624,11 +624,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 600
     - range: 168
-      price: 10
+      price: 3000
     - range: 720
-      price: 100
+      price: 10600
   mountAbility:
     grade: 0
     agility: 0
@@ -650,11 +650,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 900
     - range: 168
-      price: 10
+      price: 4500
     - range: 720
-      price: 100
+      price: 15800
   mountAbility:
     grade: 0
     agility: 0
@@ -678,7 +678,7 @@ collection:
 - tid: 10011
   type: 0
   level: 5
-  name: '견습기사 블라우스'
+  name: 'Beginner Knight Blouse'
   characterPartInfo:
     characterId: 20
     slot: 16
@@ -690,11 +690,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 10012
   type: 0
   level: 5
-  name: '견습기사 체크 스커트'
+  name: 'Beginner Knight Skirt'
   characterPartInfo:
     characterId: 20
     slot: 32
@@ -706,11 +706,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 9000
 - tid: 10013
   type: 0
   level: 5
-  name: '스포티 후드 티셔츠'
+  name: 'Sporty Carrot Hoodie'
   characterPartInfo:
     characterId: 20
     slot: 16
@@ -722,11 +722,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 16000
 - tid: 10014
   type: 0
   level: 5
-  name: '스포티 미니 스커트'
+  name: 'Sporty Mini Skirt'
   characterPartInfo:
     characterId: 20
     slot: 32
@@ -738,11 +738,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 10015
   type: 0
   level: 1
-  name: '에이프릴 메이드 블라우스'
+  name: 'Shieldmaiden Blouse'
   characterPartInfo:
     characterId: 20
     slot: 16
@@ -754,11 +754,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 18000
 - tid: 10016
   type: 0
   level: 1
-  name: '에이프릴 메이드 스커트'
+  name: 'Shieldmaiden Skirt'
   characterPartInfo:
     characterId: 20
     slot: 32
@@ -770,11 +770,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 17000
 - tid: 10017
   type: 0
   level: 1
-  name: '블루진 카우걸 재킷'
+  name: 'Cowgirl Denim Jacket'
   characterPartInfo:
     characterId: 20
     slot: 16
@@ -786,11 +786,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 13000
 - tid: 10018
   type: 0
   level: 1
-  name: '블루진 카우걸 반바지'
+  name: 'Cowgirl Denim Shorts'
   characterPartInfo:
     characterId: 20
     slot: 32
@@ -802,11 +802,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 10019
   type: 0
   level: 1
-  name: '견습기사 가죽 블라우스'
+  name: 'Squire Leather Blouse'
   characterPartInfo:
     characterId: 20
     slot: 16
@@ -818,11 +818,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 4000
 - tid: 10020
   type: 0
   level: 1
-  name: '견습기사 가죽 스커트'
+  name: 'Squire Leather Skirt'
   characterPartInfo:
     characterId: 20
     slot: 32
@@ -834,11 +834,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 3000
 - tid: 10021
   type: 0
   level: 1
-  name: '메이그린 체크 재킷'
+  name: 'Spring Plaid Jacket'
   characterPartInfo:
     characterId: 20
     slot: 16
@@ -850,11 +850,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 4000
 - tid: 10022
   type: 0
   level: 1
-  name: '메이그린 심플 스커트'
+  name: 'Spring Pleated Skirt'
   characterPartInfo:
     characterId: 20
     slot: 32
@@ -866,11 +866,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 3000
 - tid: 10023
   type: 0
   level: 25
-  name: '블랙캣 헬름'
+  name: 'Gilded Cat Helm'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -882,7 +882,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 20022
   type: 1
   level: 1
@@ -897,11 +897,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 600
     - range: 168
-      price: 10
+      price: 3400
     - range: 720
-      price: 100
+      price: 12000
   mountAbility:
     grade: 0
     agility: 5
@@ -912,7 +912,7 @@ collection:
 - tid: 10024
   type: 0
   level: 15
-  name: '래빗 헤어 밴드'
+  name: 'Satin Rabbit Ears'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -924,11 +924,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 10025
   type: 0
   level: 1
-  name: '실버캣 헬름'
+  name: 'Silver Cat Helm'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -940,11 +940,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 10026
   type: 0
   level: 15
-  name: '세일러 베레모'
+  name: 'Sailor Beret'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -956,11 +956,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 9000
 - tid: 10027
   type: 0
   level: 5
-  name: '스포티 캡'
+  name: 'Sporty Cap'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -972,11 +972,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 7000
 - tid: 10028
   type: 0
   level: 25
-  name: '샹프리네 튜닉'
+  name: 'Chanfreine Tunic'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -988,11 +988,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 42000
 - tid: 10029
   type: 0
   level: 1
-  name: '실버캣 중갑 원피스'
+  name: 'Silver Cat Armour'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -1004,11 +1004,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 30000
 - tid: 10031
   type: 0
   level: 15
-  name: '블루진 멜빵 원피스'
+  name: 'Frolla Flocktender Dress'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -1020,11 +1020,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 39000
 - tid: 10032
   type: 0
   level: 1
-  name: '어쌔신 원피스'
+  name: 'Vigorous Kunoichi Outfit'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -1036,11 +1036,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 30000
 - tid: 10033
   type: 0
   level: 15
-  name: '무희의 밸리 탑'
+  name: 'Dancer''s Liante Top'
   characterPartInfo:
     characterId: 20
     slot: 16
@@ -1052,11 +1052,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 18000
 - tid: 10034
   type: 0
   level: 15
-  name: '무희의 하램 바지'
+  name: 'Dancer''s Liante Bloomers'
   characterPartInfo:
     characterId: 20
     slot: 32
@@ -1068,11 +1068,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 17000
 - tid: 10035
   type: 0
   level: 15
-  name: '세일러 블라우스'
+  name: 'Sailor Blouse'
   characterPartInfo:
     characterId: 20
     slot: 16
@@ -1084,11 +1084,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20000
 - tid: 10036
   type: 0
   level: 15
-  name: '세일러 스커트'
+  name: 'Sailor Skirt'
   characterPartInfo:
     characterId: 20
     slot: 32
@@ -1100,7 +1100,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 19000
 - tid: 20023
   type: 1
   level: 1
@@ -1115,11 +1115,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 1100
     - range: 168
-      price: 10
+      price: 6500
     - range: 720
-      price: 100
+      price: 22700
   mountAbility:
     grade: 0
     agility: 0
@@ -1141,11 +1141,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 1500
     - range: 168
-      price: 10
+      price: 8700
     - range: 720
-      price: 100
+      price: 30600
   mountAbility:
     grade: 0
     agility: 0
@@ -1156,7 +1156,7 @@ collection:
 - tid: 30001
   type: 0
   level: 1
-  name: '프레피룩 재킷'
+  name: 'Prep Jacket'
   characterPartInfo:
     characterId: 10
     slot: 16
@@ -1168,11 +1168,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 4000
 - tid: 30002
   type: 0
   level: 1
-  name: '프레피룩 팬츠'
+  name: 'Prep Trousers'
   characterPartInfo:
     characterId: 10
     slot: 32
@@ -1184,11 +1184,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 3000
 - tid: 30003
   type: 0
   level: 15
-  name: '테일 코트'
+  name: 'Gentleman''s Tailcoat'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -1200,11 +1200,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 42000
 - tid: 30004
   type: 0
   level: 25
-  name: '블랙캣 투구'
+  name: 'Gilded Tomcat Helmet'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -1216,7 +1216,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 20025
   type: 1
   level: 1
@@ -1231,11 +1231,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 600
     - range: 168
-      price: 10
+      price: 3400
     - range: 720
-      price: 100
+      price: 12000
   mountAbility:
     grade: 0
     agility: 5
@@ -1257,11 +1257,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 300
     - range: 168
-      price: 10
+      price: 1800
     - range: 720
-      price: 100
+      price: 6400
   mountAbility:
     grade: 0
     agility: 3
@@ -1283,11 +1283,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 400
     - range: 168
-      price: 10
+      price: 2500
     - range: 720
-      price: 100
+      price: 8800
   mountAbility:
     grade: 0
     agility: 3
@@ -1309,11 +1309,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 900
     - range: 168
-      price: 10
+      price: 5000
     - range: 720
-      price: 100
+      price: 18000
   mountAbility:
     grade: 0
     agility: 5
@@ -1324,7 +1324,7 @@ collection:
 - tid: 20029
   type: 1
   level: 1
-  name: 'Elite Knight Protector'
+  name: 'Elite Knight Trinket'
   mountPartInfo:
     slot: 16
   itemIndex:
@@ -1335,11 +1335,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 300
     - range: 168
-      price: 10
+      price: 2000
     - range: 720
-      price: 100
+      price: 6800
   mountAbility:
     grade: 0
     agility: 0
@@ -1361,11 +1361,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 300
     - range: 168
-      price: 10
+      price: 1500
     - range: 720
-      price: 100
+      price: 5400
   mountAbility:
     grade: 0
     agility: 0
@@ -1387,11 +1387,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 400
     - range: 168
-      price: 10
+      price: 2400
     - range: 720
-      price: 100
+      price: 8200
   mountAbility:
     grade: 0
     agility: 0
@@ -1413,11 +1413,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 700
     - range: 168
-      price: 10
+      price: 3800
     - range: 720
-      price: 100
+      price: 13600
   mountAbility:
     grade: 0
     agility: 3
@@ -1428,7 +1428,7 @@ collection:
 - tid: 20033
   type: 1
   level: 1
-  name: 'Cardinal Hunter Protector'
+  name: 'Cardinal Hunter Trinket'
   mountPartInfo:
     slot: 16
   itemIndex:
@@ -1439,11 +1439,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 300
     - range: 168
-      price: 10
+      price: 2000
     - range: 720
-      price: 100
+      price: 6800
   mountAbility:
     grade: 0
     agility: 0
@@ -1465,11 +1465,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 600
     - range: 168
-      price: 10
+      price: 3000
     - range: 720
-      price: 100
+      price: 10600
   mountAbility:
     grade: 0
     agility: 0
@@ -1491,11 +1491,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 500
     - range: 168
-      price: 10
+      price: 3100
     - range: 720
-      price: 100
+      price: 10800
   mountAbility:
     grade: 0
     agility: 0
@@ -1522,7 +1522,7 @@ collection:
 - tid: 10038
   type: 0
   level: 5
-  name: '산타 원피스'
+  name: 'Santa Claws Dress'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -1534,11 +1534,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 39000
 - tid: 10039
   type: 0
   level: 25
-  name: '샤먼의 중갑 상의'
+  name: 'Shaman''s Magic Cuirass'
   characterPartInfo:
     characterId: 20
     slot: 16
@@ -1550,11 +1550,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 25000
 - tid: 10040
   type: 0
   level: 25
-  name: '슬리크 백 포니테일'
+  name: 'Slick Ponytail'
   characterPartInfo:
     characterId: 20
     slot: 2
@@ -1566,11 +1566,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 14000
 - tid: 10041
   type: 0
   level: 1
-  name: '레트로 볼륨 단발'
+  name: 'Lop Bobcut'
   characterPartInfo:
     characterId: 20
     slot: 2
@@ -1582,11 +1582,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 10043
   type: 0
   level: 5
-  name: '붉은 꽃 머리'
+  name: 'Bloom Buns'
   characterPartInfo:
     characterId: 20
     slot: 2
@@ -1598,11 +1598,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 10044
   type: 0
   level: 15
-  name: '오리엔탈 테일'
+  name: 'Far Eastern Bun'
   characterPartInfo:
     characterId: 20
     slot: 2
@@ -1614,11 +1614,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 14000
 - tid: 10045
   type: 0
   level: 1
-  name: '무희 머리'
+  name: 'Dancer''s Twintails'
   characterPartInfo:
     characterId: 20
     slot: 2
@@ -1634,7 +1634,7 @@ collection:
 - tid: 10046
   type: 0
   level: 1
-  name: '플렛 웨이브 펌'
+  name: 'Rolling Waves Perm'
   characterPartInfo:
     characterId: 20
     slot: 2
@@ -1646,7 +1646,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 21000
 - tid: 10047
   type: 0
   level: 1
@@ -1666,7 +1666,7 @@ collection:
 - tid: 10048
   type: 0
   level: 5
-  name: '보브 컷'
+  name: 'Razor Bobcut'
   characterPartInfo:
     characterId: 20
     slot: 2
@@ -1678,11 +1678,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 14000
 - tid: 10049
   type: 0
   level: 1
-  name: '아이타 머리'
+  name: 'Aretha Twinbraids'
   characterPartInfo:
     characterId: 20
     slot: 2
@@ -1694,11 +1694,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 14000
 - tid: 10050
   type: 0
   level: 1
-  name: '블루진 카우걸 모자'
+  name: 'Cowgirl Denim Hat'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -1710,11 +1710,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 6000
 - tid: 10051
   type: 0
   level: 25
-  name: '샹프리네 베일'
+  name: 'Chanfreine Veil'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -1726,11 +1726,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 10052
   type: 0
   level: 5
-  name: '레드캣 산타모'
+  name: 'Santa Claws Hat'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -1742,11 +1742,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 9000
 - tid: 10053
   type: 0
   level: 25
-  name: '샤먼의 중갑 하의'
+  name: 'Shaman''s Magic Sabatons'
   characterPartInfo:
     characterId: 20
     slot: 32
@@ -1758,11 +1758,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 24000
 - tid: 20036
   type: 0
   level: 1
-  name: 'Grade 1 Blanket Appaloosa Thoroughbred'
+  name: 'Blanket Appaloosa Thoroughbred'
   mountPartSetInfo:
     skinId: 8
     maneId: 1
@@ -1779,7 +1779,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 4000
@@ -1948,7 +1948,7 @@ collection:
 - tid: 30005
   type: 0
   level: 5
-  name: '데님 재킷'
+  name: 'Casual Denim Jacket'
   characterPartInfo:
     characterId: 10
     slot: 16
@@ -1960,11 +1960,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 16000
 - tid: 30006
   type: 0
   level: 1
-  name: '블루진 카우보이 재킷'
+  name: 'Cowboy Denim Jacket'
   characterPartInfo:
     characterId: 10
     slot: 16
@@ -1976,11 +1976,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 13000
 - tid: 30007
   type: 0
   level: 1
-  name: '견습기사 가죽재킷'
+  name: 'Rookie Knight Jacket'
   characterPartInfo:
     characterId: 10
     slot: 16
@@ -1992,11 +1992,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 4000
 - tid: 30008
   type: 0
   level: 25
-  name: '블랙캣 경갑 슈트'
+  name: 'Gilded Tomcat Suit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -2008,11 +2008,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 46000
 - tid: 30009
   type: 0
   level: 5
-  name: '용무늬 창파오'
+  name: 'Dragon Changpao'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -2024,11 +2024,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 39000
 - tid: 30010
   type: 0
   level: 5
-  name: '스쿨룩 셔츠'
+  name: 'School Shirt'
   characterPartInfo:
     characterId: 10
     slot: 16
@@ -2040,11 +2040,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 16000
 - tid: 30011
   type: 0
   level: 5
-  name: '포레스트 중갑 상의'
+  name: 'Verdant Cuirass'
   characterPartInfo:
     characterId: 10
     slot: 16
@@ -2056,11 +2056,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 18000
 - tid: 30013
   type: 0
   level: 15
-  name: '블랙 실크해트'
+  name: 'Gentleman''s Tophat'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -2072,11 +2072,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 30014
   type: 0
   level: 5
-  name: '그린체크 베레모'
+  name: 'Verdant Beret'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -2088,11 +2088,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 8000
 - tid: 30015
   type: 0
   level: 5
-  name: '견습기사 팬츠'
+  name: 'Novice Rider Trousers'
   characterPartInfo:
     characterId: 10
     slot: 32
@@ -2104,11 +2104,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 9000
 - tid: 30017
   type: 0
   level: 15
-  name: '빈티지 블랙 팬츠'
+  name: 'Vintage Greaves'
   characterPartInfo:
     characterId: 10
     slot: 32
@@ -2120,11 +2120,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 30018
   type: 0
   level: 5
-  name: '카고 팬츠'
+  name: 'Cargo Trousers'
   characterPartInfo:
     characterId: 10
     slot: 32
@@ -2136,11 +2136,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 30019
   type: 0
   level: 1
-  name: '블루진 카우보이 팬츠'
+  name: 'Cowboy Denim Shorts'
   characterPartInfo:
     characterId: 10
     slot: 32
@@ -2152,11 +2152,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 30020
   type: 0
   level: 1
-  name: '견습기사 가죽 팬츠'
+  name: 'Rookie Knight Trousers'
   characterPartInfo:
     characterId: 10
     slot: 32
@@ -2168,11 +2168,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 3000
 - tid: 30016
   type: 0
   level: 5
-  name: '스쿨룩 팬츠'
+  name: 'School Trousers'
   characterPartInfo:
     characterId: 10
     slot: 32
@@ -2184,11 +2184,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 30021
   type: 0
   level: 5
-  name: '포레스트 중갑 하의'
+  name: 'Verdant Greaves'
   characterPartInfo:
     characterId: 10
     slot: 32
@@ -2200,11 +2200,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 17000
 - tid: 30022
   type: 0
   level: 5
-  name: '산타 슈트'
+  name: 'Rudolph''s Santa Suit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -2216,11 +2216,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 39000
 - tid: 30023
   type: 0
   level: 5
-  name: '루돌프 산타모'
+  name: 'Rudolph''s Santa Hat'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -2232,11 +2232,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 9000
 - tid: 30024
   type: 0
   level: 25
-  name: '용사의 중갑 상의'
+  name: 'Hero''s Magic Cuirass'
   characterPartInfo:
     characterId: 10
     slot: 16
@@ -2248,11 +2248,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 25000
 - tid: 30025
   type: 0
   level: 25
-  name: '용사의 중갑 하의'
+  name: 'Hero''s Magic Sabatons'
   characterPartInfo:
     characterId: 10
     slot: 32
@@ -2264,11 +2264,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 24000
 - tid: 30028
   type: 0
   level: 1
-  name: '울프컷 머리'
+  name: 'Leo''s Wolfcut'
   characterPartInfo:
     characterId: 10
     slot: 2
@@ -2284,7 +2284,7 @@ collection:
 - tid: 30029
   type: 0
   level: 5
-  name: '견습기사 후드 티셔츠'
+  name: 'Novice Rider Hoodie'
   characterPartInfo:
     characterId: 10
     slot: 16
@@ -2296,11 +2296,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 30032
   type: 0
   level: 15
-  name: '모히칸 컷'
+  name: 'Spirited Mohawk'
   characterPartInfo:
     characterId: 10
     slot: 2
@@ -2312,11 +2312,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 14000
 - tid: 30035
   type: 0
   level: 5
-  name: '레이어 볼륨'
+  name: 'Effortless Layers'
   characterPartInfo:
     characterId: 10
     slot: 2
@@ -2328,11 +2328,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 30026
   type: 0
   level: 1
-  name: '블루진 카우보이 모자'
+  name: 'Denim Cowboy Hat'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -2344,11 +2344,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 6000
 - tid: 30030
   type: 0
   level: 15
-  name: '와일드 테일'
+  name: 'Wild Tail'
   characterPartInfo:
     characterId: 10
     slot: 2
@@ -2360,11 +2360,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 16000
 - tid: 30031
   type: 0
   level: 25
-  name: '네츄럴 웨이브 펌'
+  name: 'Natural Perm'
   characterPartInfo:
     characterId: 10
     slot: 2
@@ -2376,11 +2376,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 14000
 - tid: 30027
   type: 0
   level: 5
-  name: '머쉬룸 댄디'
+  name: 'Mushroom Dandy'
   characterPartInfo:
     characterId: 10
     slot: 2
@@ -2392,7 +2392,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 14000
 - tid: 10054
   type: 0
   level: 1
@@ -3219,7 +3219,7 @@ collection:
 - tid: 30036
   type: 0
   level: 1
-  name: '어쌔신 슈트'
+  name: 'Cunning Shinobi Outfit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -3231,11 +3231,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 30000
 - tid: 30037
   type: 0
   level: 25
-  name: '샹프리네 슈트'
+  name: 'Chamfered Robe'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -3247,7 +3247,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 42000
 - tid: 30038
   type: 0
   level: 1
@@ -3360,11 +3360,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 120
     - range: 10
-      price: 10
+      price: 1200
     - range: 30
-      price: 30
+      price: 3600
 - tid: 41001
   type: 2
   level: 2
@@ -3382,11 +3382,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 60
     - range: 10
-      price: 10
+      price: 600
     - range: 30
-      price: 30
+      price: 1800
 - tid: 41002
   type: 2
   level: 2
@@ -3404,11 +3404,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 120
     - range: 10
-      price: 10
+      price: 1200
     - range: 30
-      price: 30
+      price: 3600
 - tid: 41003
   type: 2
   level: 2
@@ -3426,11 +3426,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 80
     - range: 10
-      price: 10
+      price: 800
     - range: 30
-      price: 30
+      price: 2400
 - tid: 41004
   type: 2
   level: 2
@@ -3448,11 +3448,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 100
     - range: 10
-      price: 10
+      price: 1000
     - range: 30
-      price: 30
+      price: 3000
 - tid: 41005
   type: 2
   level: 2
@@ -3470,11 +3470,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 120
     - range: 10
-      price: 10
+      price: 1200
     - range: 30
-      price: 30
+      price: 3600
 - tid: 41006
   type: 2
   level: 2
@@ -3492,11 +3492,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 50
     - range: 10
-      price: 10
+      price: 500
     - range: 30
-      price: 30
+      price: 1500
 - tid: 41007
   type: 2
   level: 2
@@ -3514,11 +3514,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20
     - range: 10
-      price: 10
+      price: 200
     - range: 30
-      price: 30
+      price: 600
 - tid: 20042
   type: 0
   level: 1
@@ -4328,7 +4328,7 @@ collection:
 - tid: 30042
   type: 0
   level: 15
-  name: '세일러 셔츠'
+  name: 'Sailor Shirt'
   characterPartInfo:
     characterId: 10
     slot: 16
@@ -4340,11 +4340,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20000
 - tid: 30043
   type: 0
   level: 15
-  name: '세일러 팬츠'
+  name: 'Sailor Shorts'
   characterPartInfo:
     characterId: 10
     slot: 32
@@ -4356,11 +4356,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 19000
 - tid: 30044
   type: 0
   level: 15
-  name: '세일러 모자'
+  name: 'Sailor Hat'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -4372,7 +4372,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 9000
 - tid: 41008
   type: 2
   level: 2
@@ -4389,11 +4389,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 100
     - range: 10
-      price: 10
+      price: 1000
     - range: 30
-      price: 30
+      price: 3000
 - tid: 41009
   type: 2
   level: 2
@@ -4410,11 +4410,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 120
     - range: 10
-      price: 10
+      price: 1200
     - range: 30
-      price: 30
+      price: 3600
 - tid: 28001
   type: 0
   level: 1
@@ -4451,11 +4451,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 1000
     - range: 10
-      price: 10
+      price: 10000
     - range: 30
-      price: 30
+      price: 30000
 - tid: 10059
   type: 0
   level: 1
@@ -4475,7 +4475,7 @@ collection:
 - tid: 10060
   type: 0
   level: 1
-  name: '치어리더 원피스'
+  name: 'Cheer Troupe Dress'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -4487,11 +4487,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 40000
 - tid: 10061
   type: 0
   level: 25
-  name: '파이어릿 블라우스'
+  name: 'Pirate Blouse'
   characterPartInfo:
     characterId: 20
     slot: 16
@@ -4503,11 +4503,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 22000
 - tid: 10062
   type: 0
   level: 1
-  name: '아이비 정글 비키니'
+  name: 'Ivy Bikini'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -4519,7 +4519,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 47000
 - tid: 10063
   type: 0
   level: 1
@@ -4531,7 +4531,7 @@ collection:
     category: 1
     subcategory: 2
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     priceRanges:
     - range: 1
@@ -4555,7 +4555,7 @@ collection:
 - tid: 10066
   type: 0
   level: 25
-  name: '파이어릿 핫팬츠'
+  name: 'Pirate Shorts'
   characterPartInfo:
     characterId: 20
     slot: 32
@@ -4567,11 +4567,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20000
 - tid: 30045
   type: 0
   level: 1
-  name: '응원단장 슈트'
+  name: 'Cheer Squad Outfit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -4583,11 +4583,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 30000
 - tid: 30046
   type: 0
   level: 25
-  name: '파이어릿 셔츠'
+  name: 'Pirate Shirt'
   characterPartInfo:
     characterId: 10
     slot: 16
@@ -4599,11 +4599,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 22000
 - tid: 30047
   type: 0
   level: 15
-  name: '댄서의 밸리 탑'
+  name: 'Belly Dancer''s Crop Top'
   characterPartInfo:
     characterId: 10
     slot: 16
@@ -4615,11 +4615,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 18000
 - tid: 30049
   type: 0
   level: 25
-  name: '파이어릿 팬츠'
+  name: 'Pirate Trousers'
   characterPartInfo:
     characterId: 10
     slot: 32
@@ -4631,11 +4631,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20000
 - tid: 30050
   type: 0
   level: 15
-  name: '댄서의 하램 팬츠'
+  name: 'Belly Dancer''s Bloomers'
   characterPartInfo:
     characterId: 10
     slot: 32
@@ -4647,7 +4647,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 17000
 - tid: 10067
   type: 0
   level: 1
@@ -4659,7 +4659,7 @@ collection:
     category: 1
     subcategory: 2
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     priceRanges:
     - range: 1
@@ -4683,7 +4683,7 @@ collection:
 - tid: 10068
   type: 0
   level: 15
-  name: '롱 스트레이트'
+  name: 'Long Straight Style'
   characterPartInfo:
     characterId: 20
     slot: 2
@@ -4695,7 +4695,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20000
 - tid: 42002
   type: 2
   level: 2
@@ -4715,11 +4715,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 200
     - range: 10
-      price: 10
+      price: 2000
     - range: 30
-      price: 30
+      price: 6000
 - tid: 44001
   type: 2
   level: 3
@@ -4734,11 +4734,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 300
     - range: 10
-      price: 10
+      price: 3000
     - range: 30
-      price: 30
+      price: 9000
 - tid: 44002
   type: 2
   level: 3
@@ -4753,11 +4753,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 800
     - range: 10
-      price: 10
+      price: 8000
     - range: 30
-      price: 30
+      price: 24000
 - tid: 44003
   type: 2
   level: 3
@@ -4772,11 +4772,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 300
     - range: 10
-      price: 10
+      price: 3000
     - range: 30
-      price: 30
+      price: 9000
 - tid: 44004
   type: 2
   level: 3
@@ -4791,11 +4791,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 1500
     - range: 10
-      price: 10
+      price: 15000
     - range: 30
-      price: 30
+      price: 45000
 - tid: 44005
   type: 2
   level: 3
@@ -4810,11 +4810,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 300
     - range: 10
-      price: 10
+      price: 3000
     - range: 30
-      price: 30
+      price: 9000
 - tid: 44006
   type: 2
   level: 3
@@ -4829,11 +4829,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 1200
     - range: 10
-      price: 10
+      price: 12000
     - range: 30
-      price: 30
+      price: 36000
 - tid: 45001
   type: 2
   level: 12
@@ -4846,11 +4846,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 900
     - range: 10
-      price: 10
+      price: 9000
     - range: 30
-      price: 30
+      price: 27000
 - tid: 10069
   type: 0
   level: 15
@@ -4862,7 +4862,7 @@ collection:
     category: 1
     subcategory: 2
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     priceRanges:
     - range: 1
@@ -4870,7 +4870,7 @@ collection:
 - tid: 10070
   type: 0
   level: 1
-  name: '기마병 모자'
+  name: 'Queen''s Cavalry Helm'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -4882,11 +4882,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 10071
   type: 0
   level: 1
-  name: '기마병 제복'
+  name: 'Queen''s Cavalry Outfit'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -4898,11 +4898,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 30000
 - tid: 10073
   type: 0
   level: 1
-  name: '엔젤 캡'
+  name: 'Angel Cap'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -4914,11 +4914,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 10074
   type: 0
   level: 1
-  name: '엔젤 원피스'
+  name: 'Angel Dress'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -4930,11 +4930,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20000
 - tid: 10075
   type: 0
   level: 1
-  name: '매지션 캡'
+  name: 'Lunar Sorceress Hat'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -4946,11 +4946,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 10076
   type: 0
   level: 1
-  name: '매지션 원피스'
+  name: 'Lunar Sorceress Dress'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -4962,11 +4962,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 30000
 - tid: 30052
   type: 0
   level: 15
-  name: '블루진 멜빵 슈트'
+  name: 'Frolla Shepherd Overalls'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -4978,7 +4978,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 39000
 - tid: 30053
   type: 0
   level: 1
@@ -4998,7 +4998,7 @@ collection:
 - tid: 30054
   type: 0
   level: 1
-  name: '기마병 투구'
+  name: 'King''s Cavalry Helmet'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -5010,11 +5010,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 30055
   type: 0
   level: 1
-  name: '기마병 슈트'
+  name: 'King''s Cavalry Outfit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -5026,11 +5026,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 30000
 - tid: 30057
   type: 0
   level: 1
-  name: '위자드캡'
+  name: 'Lunar Sorcerer Hat'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -5042,11 +5042,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 30058
   type: 0
   level: 1
-  name: '위자드 슈트'
+  name: 'Lunar Sorcerer Robe'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -5058,7 +5058,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 30000
 - tid: 30059
   type: 0
   level: 1
@@ -5126,15 +5126,15 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 200
     - range: 10
-      price: 10
+      price: 2000
     - range: 30
-      price: 30
+      price: 6000
 - tid: 30064
   type: 0
   level: 5
-  name: '리비안 민속 슈트'
+  name: 'Livian Folk Suit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -5146,11 +5146,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 35000
 - tid: 30065
   type: 0
   level: 25
-  name: '샹프리네 모관'
+  name: 'Chamfered Cowl'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -5162,7 +5162,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 20068
   type: 1
   level: 1
@@ -5177,11 +5177,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 1300
     - range: 168
-      price: 10
+      price: 7500
     - range: 720
-      price: 100
+      price: 26400
   mountAbility:
     grade: 0
     agility: 7
@@ -5192,7 +5192,7 @@ collection:
 - tid: 20069
   type: 1
   level: 1
-  name: 'Scarlet Silver Protector'
+  name: 'Scarlet Silver Trinket'
   mountPartInfo:
     slot: 16
   itemIndex:
@@ -5203,11 +5203,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 700
     - range: 168
-      price: 10
+      price: 3700
     - range: 720
-      price: 100
+      price: 13200
   mountAbility:
     grade: 0
     agility: 0
@@ -5229,11 +5229,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 500
     - range: 168
-      price: 10
+      price: 3100
     - range: 720
-      price: 100
+      price: 10800
   mountAbility:
     grade: 0
     agility: 0
@@ -5255,11 +5255,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 700
     - range: 168
-      price: 10
+      price: 4000
     - range: 720
-      price: 100
+      price: 14400
   mountAbility:
     grade: 0
     agility: 0
@@ -5281,11 +5281,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 1300
     - range: 168
-      price: 10
+      price: 7500
     - range: 720
-      price: 100
+      price: 26400
   mountAbility:
     grade: 0
     agility: 7
@@ -5296,7 +5296,7 @@ collection:
 - tid: 20073
   type: 1
   level: 1
-  name: 'Greenleaf Protector'
+  name: 'Greenleaf Trinket'
   mountPartInfo:
     slot: 16
   itemIndex:
@@ -5307,11 +5307,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 300
     - range: 168
-      price: 10
+      price: 2000
     - range: 720
-      price: 100
+      price: 6800
   mountAbility:
     grade: 0
     agility: 0
@@ -5333,11 +5333,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 500
     - range: 168
-      price: 10
+      price: 3100
     - range: 720
-      price: 100
+      price: 10800
   mountAbility:
     grade: 0
     agility: 0
@@ -5359,11 +5359,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 400
     - range: 168
-      price: 10
+      price: 2000
     - range: 720
-      price: 100
+      price: 7200
   mountAbility:
     grade: 0
     agility: 0
@@ -5385,11 +5385,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 700
     - range: 168
-      price: 10
+      price: 3900
     - range: 720
-      price: 100
+      price: 14000
   mountAbility:
     grade: 0
     agility: 5
@@ -5411,11 +5411,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 1200
     - range: 168
-      price: 10
+      price: 6700
     - range: 720
-      price: 100
+      price: 2400
   mountAbility:
     grade: 0
     agility: 5
@@ -5437,11 +5437,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 500
     - range: 168
-      price: 10
+      price: 2100
     - range: 720
-      price: 100
+      price: 7400
   mountAbility:
     grade: 0
     agility: 0
@@ -5463,11 +5463,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 1200
     - range: 168
-      price: 10
+      price: 6700
     - range: 720
-      price: 100
+      price: 24000
   mountAbility:
     grade: 0
     agility: 5
@@ -5489,11 +5489,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 500
     - range: 168
-      price: 10
+      price: 2100
     - range: 720
-      price: 100
+      price: 7400
   mountAbility:
     grade: 0
     agility: 0
@@ -5515,11 +5515,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 700
     - range: 168
-      price: 10
+      price: 3900
     - range: 720
-      price: 100
+      price: 14000
   mountAbility:
     grade: 0
     agility: 5
@@ -5541,11 +5541,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 900
     - range: 168
-      price: 10
+      price: 5000
     - range: 720
-      price: 100
+      price: 18000
   mountAbility:
     grade: 0
     agility: 5
@@ -5556,7 +5556,7 @@ collection:
 - tid: 20083
   type: 1
   level: 1
-  name: 'Blue Whelpling Protector'
+  name: 'Blue Whelpling Trinket'
   mountPartInfo:
     slot: 16
   itemIndex:
@@ -5567,11 +5567,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 500
     - range: 168
-      price: 10
+      price: 2500
     - range: 720
-      price: 100
+      price: 9000
   mountAbility:
     grade: 0
     agility: 0
@@ -5593,11 +5593,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 500
     - range: 168
-      price: 10
+      price: 3100
     - range: 720
-      price: 100
+      price: 10800
   mountAbility:
     grade: 0
     agility: 0
@@ -5619,11 +5619,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 600
     - range: 168
-      price: 10
+      price: 3000
     - range: 720
-      price: 100
+      price: 10600
   mountAbility:
     grade: 0
     agility: 0
@@ -5634,7 +5634,7 @@ collection:
 - tid: 10077
   type: 0
   level: 25
-  name: '파이어릿 트리콘'
+  name: 'Pirate Tricorne'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -5646,11 +5646,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 10078
   type: 0
   level: 1
-  name: '퍼플 어쌔신 플라워'
+  name: 'Vigorous Kunoichi Flower'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -5662,11 +5662,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 10079
   type: 0
   level: 1
-  name: '치어리더 베레모'
+  name: 'Cheer Troupe Beret'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -5678,11 +5678,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 10080
   type: 0
   level: 1
-  name: '스카이 윙 캡'
+  name: 'Sky Wing Cap'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -5694,11 +5694,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 10081
   type: 0
   level: 1
-  name: '골드캣 헬름'
+  name: 'Gold Cat Helm'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -5710,11 +5710,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20000
 - tid: 10082
   type: 0
   level: 1
-  name: '근위대 모자'
+  name: 'Empress'' Guard Hat'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -5726,11 +5726,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 10083
   type: 0
   level: 1
-  name: '시크릿 엔젤 캡'
+  name: 'Archangel Cap'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -5742,11 +5742,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 10084
   type: 0
   level: 1
-  name: '다크 매지션 캡'
+  name: 'Umbral Sorceress Hat'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -5758,11 +5758,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20000
 - tid: 10085
   type: 0
   level: 1
-  name: '와일드 윙 캡'
+  name: 'Wild Wing Cap'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -5774,11 +5774,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 10086
   type: 0
   level: 1
-  name: '다크 치어리더 베레모'
+  name: 'Cheerleader Beret'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -5790,11 +5790,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20000
 - tid: 10087
   type: 0
   level: 1
-  name: '레드 어쌔신 플라워'
+  name: 'Enthralling Kunoichi Flower'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -5806,11 +5806,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20000
 - tid: 10089
   type: 0
   level: 1
-  name: '프로페셔널 캐스캣'
+  name: 'Professional Newsgirl Cap'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -5822,11 +5822,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 25000
 - tid: 10090
   type: 0
   level: 1
-  name: '스카이 윙 세트'
+  name: 'Sky Wing Outfit'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -5838,11 +5838,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20000
 - tid: 10092
   type: 0
   level: 1
-  name: '프로페셔널 세트'
+  name: 'Professional Newsgirl Outfit'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -5854,11 +5854,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 50000
 - tid: 10093
   type: 0
   level: 1
-  name: '다크 치어리더 원피스'
+  name: 'Cheerleader Dress'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -5870,11 +5870,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 40000
 - tid: 10094
   type: 0
   level: 1
-  name: '근위대 제복'
+  name: 'Empress'' Guard Outfit'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -5886,11 +5886,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 40000
 - tid: 10095
   type: 0
   level: 1
-  name: '와일드 윙 세트'
+  name: 'Wild Wing Outfit'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -5902,11 +5902,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 30000
 - tid: 10096
   type: 0
   level: 1
-  name: '다크 매지션 원피스'
+  name: 'Umbral Sorceress Dress'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -5918,11 +5918,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 40000
 - tid: 10097
   type: 0
   level: 1
-  name: '시크릿 엔젤 원피스'
+  name: 'Archangel Dress'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -5934,11 +5934,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 30000
 - tid: 10098
   type: 0
   level: 1
-  name: '골드캣 중갑 원피스'
+  name: 'Gold Cat Armour'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -5950,11 +5950,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 40000
 - tid: 10099
   type: 0
   level: 1
-  name: '다크 어쌔신 원피스'
+  name: 'Enthralling Kunoichi Outfit'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -5966,11 +5966,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 40000
 - tid: 30066
   type: 0
   level: 25
-  name: '파이어릿 두건'
+  name: 'Pirate Bandana'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -5982,11 +5982,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 30067
   type: 0
   level: 15
-  name: '빈티지 레드체크 셔츠'
+  name: 'Vintage Braced Flannel'
   characterPartInfo:
     characterId: 10
     slot: 16
@@ -5998,11 +5998,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 13000
 - tid: 30068
   type: 0
   level: 1
-  name: '다크 엔젤 캡'
+  name: 'Cupid Cap'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -6014,11 +6014,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 30069
   type: 0
   level: 1
-  name: '화이트 엔젤 캡'
+  name: 'Cherub Cap'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -6030,11 +6030,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 30070
   type: 0
   level: 1
-  name: '프로페셔널 뉴스보이캡'
+  name: 'Professional Newsboy Cap'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -6046,11 +6046,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 25000
 - tid: 30072
   type: 0
   level: 1
-  name: '근위대 투구'
+  name: 'Emperor''s Guard Hat'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -6062,11 +6062,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 30073
   type: 0
   level: 1
-  name: '골드캣 투구'
+  name: 'Gold Tomcat Helmet'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -6078,11 +6078,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20000
 - tid: 30075
   type: 0
   level: 1
-  name: '터프 윙 캡'
+  name: 'Tough Wing Cap'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -6094,11 +6094,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 30076
   type: 0
   level: 1
-  name: '네이비 윙 캡'
+  name: 'Navy Wing Cap'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -6110,11 +6110,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 30077
   type: 0
   level: 1
-  name: '다크 응원단장 베레모'
+  name: 'Cheercaptain Beret'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -6126,11 +6126,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20000
 - tid: 30078
   type: 0
   level: 1
-  name: '응원단장 베레모'
+  name: 'Cheer Squad Beret'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -6142,11 +6142,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 30079
   type: 0
   level: 1
-  name: '다크 위자드 캡'
+  name: 'Umbral Sorcerer Hat'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -6158,11 +6158,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20000
 - tid: 30080
   type: 0
   level: 1
-  name: '레드 어쌔신 마스크'
+  name: 'Tenacious Kitsune Mask'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -6174,11 +6174,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20000
 - tid: 30081
   type: 0
   level: 1
-  name: '블루 어쌔신 마스크'
+  name: 'Cunning Kitsune Mask'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -6190,11 +6190,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 30083
   type: 0
   level: 1
-  name: '네이비 윙 슈트'
+  name: 'Navy Wing Outfit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -6206,11 +6206,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20000
 - tid: 30084
   type: 0
   level: 1
-  name: '화이트 엔젤 슈트'
+  name: 'Cherub Outfit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -6222,11 +6222,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20000
 - tid: 30085
   type: 0
   level: 1
-  name: '프로페셔널 슈트'
+  name: 'Professional Newsboy Outfit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -6238,11 +6238,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 50000
 - tid: 30086
   type: 0
   level: 1
-  name: '다크 응원단장 슈트'
+  name: 'Cheer Captain Outfit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -6254,11 +6254,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 40000
 - tid: 30087
   type: 0
   level: 1
-  name: 'Tough wing suit'
+  name: 'Tough Wing Outfit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -6270,11 +6270,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 30000
 - tid: 30088
   type: 0
   level: 1
-  name: '다크 엔젤 슈트'
+  name: 'Cupid Outfit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -6286,11 +6286,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 30000
 - tid: 30089
   type: 0
   level: 1
-  name: '다크 어쌔신 슈트'
+  name: 'Tenacious Shinobi Outfit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -6302,11 +6302,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 40000
 - tid: 30090
   type: 0
   level: 1
-  name: '근위대 슈트'
+  name: 'Emperor''s Guard Outfit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -6318,11 +6318,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 40000
 - tid: 30091
   type: 0
   level: 1
-  name: '다크 위자드 슈트'
+  name: 'Umbral Sorcerer Robe'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -6334,11 +6334,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 40000
 - tid: 30092
   type: 0
   level: 1
-  name: '골드캣 중갑 슈트'
+  name: 'Gold Tomcat Armour'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -6350,11 +6350,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 40000
 - tid: 30093
   type: 0
   level: 1
-  name: '실버캣 중갑 슈트'
+  name: 'Silver Tomcat Armour'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -6366,11 +6366,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 30000
 - tid: 30094
   type: 0
   level: 1
-  name: '트레이너 뉴스보이캡'
+  name: 'Trainer Newsboy Cap'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -6382,11 +6382,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20000
 - tid: 30095
   type: 0
   level: 1
-  name: '트레이너 슈트'
+  name: 'Trainer Newsboy Outfit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -6398,11 +6398,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 40000
 - tid: 10100
   type: 0
   level: 1
-  name: '트레이너 캐스캣'
+  name: 'Trainer Newsgirl Cap'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -6414,11 +6414,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20000
 - tid: 10101
   type: 0
   level: 1
-  name: '트레이너 세트'
+  name: 'Trainer Newsgirl Outfit'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -6430,11 +6430,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 40000
 - tid: 30096
   type: 0
   level: 1
-  name: '실버 캣 투구'
+  name: 'Silver Tomcat Helmet'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -6446,7 +6446,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 29241
   type: 0
   level: 1
@@ -7009,7 +7009,7 @@ collection:
 - tid: 10102
   type: 0
   level: 1
-  name: '프리뷰 티롤모'
+  name: 'Vanguard Tyrol'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -7021,11 +7021,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 4000
 - tid: 30100
   type: 0
   level: 1
-  name: '프리뷰  티롤모'
+  name: 'Preview Tyrol'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -7037,7 +7037,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 4000
 - tid: 10103
   type: 0
   level: 1
@@ -7065,12 +7065,8 @@ collection:
     isPurchasable: true
     moneyType: 0
     priceRanges:
-    - range: 1
-      price: 1
     - range: 10
-      price: 10
-    - range: 30
-      price: 30
+      price: 21000
 - tid: 46002
   type: 2
   level: 1
@@ -7083,11 +7079,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
-    - range: 10
-      price: 10
-    - range: 30
-      price: 30
+      price: 28000
 - tid: 46003
   type: 1
   level: 1
@@ -7099,12 +7091,12 @@ collection:
     isPurchasable: true
     moneyType: 0
     priceRanges:
-    - range: 24
-      price: 1
     - range: 168
-      price: 10
+      price: 18000
     - range: 720
-      price: 100
+      price: 54000
+    - range: 2160
+      price: 140000
 - tid: 46004
   type: 1
   level: 1
@@ -7116,12 +7108,12 @@ collection:
     isPurchasable: true
     moneyType: 0
     priceRanges:
-    - range: 24
-      price: 1
     - range: 168
-      price: 10
+      price: 5000
     - range: 720
-      price: 100
+      price: 16000
+    - range: 2160
+      price: 41000
 - tid: 46005
   type: 2
   level: 1
@@ -7130,7 +7122,7 @@ collection:
     category: 3
     subcategory: 5
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     priceRanges:
     - range: 1
@@ -7159,7 +7151,7 @@ collection:
 - tid: 10104
   type: 0
   level: 10
-  name: '피치 래빗 윈터캡 & 고글'
+  name: 'Peachy-Rabbit Pilot Cap'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -7171,11 +7163,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 10105
   type: 0
   level: 20
-  name: '스웨이드 체크 캡'
+  name: 'Suede Wayfarer Cap'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -7187,11 +7179,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 10106
   type: 0
   level: 20
-  name: '와인체크 헤드 드레스'
+  name: 'Plaid Half Bonnet'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -7203,11 +7195,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 10107
   type: 0
   level: 10
-  name: '캐롯 심볼 피치 윈터 룩'
+  name: 'Peachy-Rabbit Dress'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -7219,11 +7211,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 42000
 - tid: 10108
   type: 0
   level: 20
-  name: '레이스업 스타일 웨스턴 룩'
+  name: 'Suede Wayfarer Doublet'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -7235,11 +7227,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 42000
 - tid: 10109
   type: 0
   level: 20
-  name: '플레드리스 고딕 드레스'
+  name: 'Plaid Patrician Dress'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -7251,11 +7243,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 42000
 - tid: 30101
   type: 0
   level: 10
-  name: '핑키 래빗 윈터캡 & 고글'
+  name: 'Pinky-Rabbit Pilot Cap'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -7267,11 +7259,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 30102
   type: 0
   level: 20
-  name: '스웨이드 헌터 캡'
+  name: 'Suede Drifter Cap'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -7283,11 +7275,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 30103
   type: 0
   level: 20
-  name: '플레드리스 체인 미니햇'
+  name: 'Fleur-de-lis Linked Fascinator'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -7299,11 +7291,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 30104
   type: 0
   level: 10
-  name: '캐롯 심볼 핑키 윈터 룩'
+  name: 'Pinky-Rabbit Overalls'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -7315,11 +7307,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 42000
 - tid: 30105
   type: 0
   level: 20
-  name: '레이스업 패턴 웨스턴 룩'
+  name: 'Western Drifter Outfit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -7331,11 +7323,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 42000
 - tid: 30106
   type: 0
   level: 20
-  name: '템플고딕 와인 슈트(반팔)'
+  name: 'Fleur-de-lis Patrician Suit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -7347,7 +7339,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 42000
 - tid: 46006
   type: 0
   level: 1
@@ -7360,7 +7352,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 72000
 - tid: 46007
   type: 0
   level: 1
@@ -7373,7 +7365,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 72000
 - tid: 46008
   type: 0
   level: 1
@@ -7386,7 +7378,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 72000
 - tid: 46009
   type: 0
   level: 1
@@ -7399,7 +7391,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 72000
 - tid: 46010
   type: 0
   level: 1
@@ -7412,11 +7404,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 72000
 - tid: 10110
   type: 0
   level: 10
-  name: '양 머리 장식 후드'
+  name: 'Fluffy Sheep Hood'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -7428,11 +7420,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 10111
   type: 0
   level: 1
-  name: '다크 세일러 베레모'
+  name: 'Gothic Sailor Beret'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -7444,11 +7436,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 10112
   type: 0
   level: 1
-  name: '블랙 펠트 플룸 햇'
+  name: 'Duelist Cavalier Hat'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -7460,11 +7452,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 10113
   type: 0
   level: 1
-  name: '고딕 펑크 세일러 블라우스'
+  name: 'Gothic Sailor Blouse'
   characterPartInfo:
     characterId: 20
     slot: 16
@@ -7476,11 +7468,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 23000
 - tid: 10114
   type: 0
   level: 10
-  name: '블루 리본 솜구름 윈터 룩'
+  name: 'Fluffy Cloud Dress'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -7492,11 +7484,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 42000
 - tid: 10115
   type: 0
   level: 1
-  name: '머스킷티어 브레이스 폼'
+  name: 'Duelist Braced Doublet'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -7508,11 +7500,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 43000
 - tid: 10116
   type: 0
   level: 1
-  name: '네츄럴 스트링 튜닉 드레스'
+  name: 'Fateful Chiffon Dress'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -7524,11 +7516,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 50000
 - tid: 10117
   type: 0
   level: 1
-  name: '고딕 펑크 플리츠 스커트'
+  name: 'Gothic Sailor Skirt'
   characterPartInfo:
     characterId: 20
     slot: 32
@@ -7540,11 +7532,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 23000
 - tid: 30107
   type: 0
   level: 10
-  name: 'Woolly Sheep Hood'
+  name: 'Plush Ram Hood'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -7556,11 +7548,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 30108
   type: 0
   level: 1
-  name: '다크 세일러 모자'
+  name: 'Punk Sailor Hat'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -7572,11 +7564,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 30109
   type: 0
   level: 1
-  name: '다크 펠트 플룸 햇'
+  name: 'Musketeer Cavalier Hat'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -7588,11 +7580,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 30110
   type: 0
   level: 1
-  name: '고딕 펑크 세일러 셔츠'
+  name: 'Punk Sailor Shirt'
   characterPartInfo:
     characterId: 10
     slot: 16
@@ -7604,11 +7596,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 23000
 - tid: 30111
   type: 0
   level: 10
-  name: '블루 워머 솜구름 윈터 룩'
+  name: 'Plush Cloud Outfit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -7620,11 +7612,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 42000
 - tid: 30112
   type: 0
   level: 1
-  name: '머스킷티어 브레이스 슈트'
+  name: 'Musketeer Braced Doublet'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -7636,11 +7628,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 43000
 - tid: 30113
   type: 0
   level: 1
-  name: '네츄럴 스트링 튜닉 슈트'
+  name: 'Ancient Sage Tunic'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -7652,11 +7644,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 50000
 - tid: 30114
   type: 0
   level: 1
-  name: '고딕 펑크 세일러 팬츠'
+  name: 'Punk Sailor Shorts'
   characterPartInfo:
     characterId: 10
     slot: 32
@@ -7668,7 +7660,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 23000
 - tid: 86868
   type: 2
   level: 1
@@ -7700,11 +7692,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 700
     - range: 168
-      price: 10
+      price: 3800
     - range: 720
-      price: 100
+      price: 13400
   mountAbility:
     grade: 0
     agility: 0
@@ -7715,7 +7707,7 @@ collection:
 - tid: 10122
   type: 0
   level: 1
-  name: '네츄럴 밴딩 단발'
+  name: 'Free-spirited Bobcut'
   characterPartInfo:
     characterId: 20
     slot: 2
@@ -7727,11 +7719,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 10123
   type: 0
   level: 1
-  name: '다크 블러드 고딕 드레스'
+  name: 'Vampire Countess Gown'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -7743,11 +7735,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 43000
 - tid: 30115
   type: 0
   level: 1
-  name: '미디엄 소프트 샤기 컷'
+  name: 'Rebellious Bobcut'
   characterPartInfo:
     characterId: 10
     slot: 2
@@ -7759,11 +7751,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 14000
 - tid: 30116
   type: 0
   level: 25
-  name: '보헤미안 롱 스타일'
+  name: 'Bohemian Long Style'
   characterPartInfo:
     characterId: 10
     slot: 2
@@ -7775,11 +7767,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 14000
 - tid: 30117
   type: 0
   level: 1
-  name: '스파이크 레이어'
+  name: 'Thorn Cut'
   characterPartInfo:
     characterId: 10
     slot: 2
@@ -7791,11 +7783,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 30118
   type: 0
   level: 1
-  name: '볼륨 스트레이트'
+  name: 'Classic Cut'
   characterPartInfo:
     characterId: 10
     slot: 2
@@ -7807,11 +7799,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 30119
   type: 0
   level: 1
-  name: '비대칭 댄디 콘로우'
+  name: 'Side Cornrows'
   characterPartInfo:
     characterId: 10
     slot: 2
@@ -7823,11 +7815,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 21000
 - tid: 30120
   type: 0
   level: 1
-  name: '다크 블러드 고딕 슈트'
+  name: 'Vampire Lord Regalia'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -7839,11 +7831,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 43000
 - tid: 10124
   type: 0
   level: 25
-  name: '퓨어 화이트 플라워'
+  name: 'Moonflower Corsage'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -7859,7 +7851,7 @@ collection:
 - tid: 10125
   type: 0
   level: 25
-  name: '블루 플라워링 베이비 돌'
+  name: 'Moonflower Slip Dress'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -7871,11 +7863,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 46000
 - tid: 10126
   type: 0
   level: 1
-  name: '바이올렛 코사지 헤어밴드'
+  name: 'Elegant Violet Corsage'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -7887,11 +7879,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 30121
   type: 0
   level: 25
-  name: '블루 실크 플라워링 슈트'
+  name: 'Blooming Moonflower Suit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -7903,7 +7895,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 46000
 - tid: 30122
   type: 0
   level: 1
@@ -7919,11 +7911,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 30123
   type: 0
   level: 1
-  name: '쥬얼 바이올렛 포멀 슈트'
+  name: 'Royal Violet Suit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -7935,11 +7927,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 43000
 - tid: 30124
   type: 0
   level: 1
-  name: '라이딩 포멀 페브릭 캡'
+  name: 'Formal Riding Cap'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -7951,11 +7943,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 4000
 - tid: 30125
   type: 0
   level: 1
-  name: '라이딩 포멀 셔츠'
+  name: 'Formal Riding Shirt'
   characterPartInfo:
     characterId: 10
     slot: 16
@@ -7967,11 +7959,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 30126
   type: 0
   level: 1
-  name: '라이딩 포멀 트라우저'
+  name: 'Formal Riding Trousers'
   characterPartInfo:
     characterId: 10
     slot: 32
@@ -7983,7 +7975,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 9000
 - tid: 30127
   type: 0
   level: 35
@@ -7999,11 +7991,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 30128
   type: 0
   level: 35
-  name: '이퀘스트리언 라이딩 슈트'
+  name: 'Fortune Riding Suit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -8015,11 +8007,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 53000
 - tid: 10127
   type: 0
   level: 1
-  name: '바이올렛 코사지 베이비 돌'
+  name: 'Elegant Violet Dress'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -8031,11 +8023,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 43000
 - tid: 10128
   type: 0
   level: 1
-  name: '라이딩 포멀 스트랩 캡'
+  name: 'Official Riding Cap'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -8047,11 +8039,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 4000
 - tid: 10129
   type: 0
   level: 1
-  name: '라이딩 포멀 블라우스'
+  name: 'Official Riding Blouse'
   characterPartInfo:
     characterId: 20
     slot: 16
@@ -8063,11 +8055,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10000
 - tid: 10130
   type: 0
   level: 1
-  name: '라이딩 포멀 팬츠'
+  name: 'Official Riding Trousers'
   characterPartInfo:
     characterId: 20
     slot: 32
@@ -8079,11 +8071,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 9000
 - tid: 10131
   type: 0
   level: 35
-  name: '이퀘스트리언 리본 라이딩 캡'
+  name: 'Rosette Riding Cap'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -8095,11 +8087,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 10132
   type: 0
   level: 35
-  name: '이퀘스트리언 라이딩 드레스'
+  name: 'Rosette Riding Suit'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -8111,11 +8103,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 53000
 - tid: 20087
   type: 0
   level: 4
-  name: 'Grade 4 Chestnut Thoroughbred [Agility]'
+  name: 'Grade 4 Thoroughbred [Agility]'
   mountPartSetInfo:
     skinId: 1
     maneId: 3
@@ -8132,7 +8124,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 11000
@@ -8146,7 +8138,7 @@ collection:
 - tid: 20088
   type: 0
   level: 4
-  name: 'Grade 4 Chestnut Thoroughbred [Control]'
+  name: 'Grade 4 Thoroughbred [Control]'
   mountPartSetInfo:
     skinId: 1
     maneId: 3
@@ -8163,7 +8155,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 11000
@@ -8177,7 +8169,7 @@ collection:
 - tid: 20089
   type: 0
   level: 4
-  name: 'Grade 4 Chestnut Thoroughbred [Speed]'
+  name: 'Grade 4 Thoroughbred [Speed]'
   mountPartSetInfo:
     skinId: 1
     maneId: 3
@@ -8194,7 +8186,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 11000
@@ -8208,7 +8200,7 @@ collection:
 - tid: 20090
   type: 0
   level: 4
-  name: 'Grade 4 Chestnut Thoroughbred [Strength]'
+  name: 'Grade 4 Thoroughbred [Strength]'
   mountPartSetInfo:
     skinId: 1
     maneId: 3
@@ -8225,7 +8217,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 11000
@@ -8239,7 +8231,7 @@ collection:
 - tid: 20091
   type: 0
   level: 4
-  name: 'Grade 4 Chestnut Thoroughbred [Spirit]'
+  name: 'Grade 4 Thoroughbred [Spirit]'
   mountPartSetInfo:
     skinId: 1
     maneId: 3
@@ -8256,7 +8248,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 11000
@@ -8270,7 +8262,7 @@ collection:
 - tid: 20092
   type: 0
   level: 4
-  name: 'Grade 5 Chestnut Thoroughbred [Agility]'
+  name: 'Grade 5 Thoroughbred [Agility]'
   mountPartSetInfo:
     skinId: 1
     maneId: 3
@@ -8287,7 +8279,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 18000
@@ -8301,7 +8293,7 @@ collection:
 - tid: 20093
   type: 0
   level: 4
-  name: 'Grade 5 Chestnut Thoroughbred [Control]'
+  name: 'Grade 5 Thoroughbred [Control]'
   mountPartSetInfo:
     skinId: 1
     maneId: 3
@@ -8318,7 +8310,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 18000
@@ -8332,7 +8324,7 @@ collection:
 - tid: 20094
   type: 0
   level: 4
-  name: 'Grade 5 Chestnut Thoroughbred [Speed]'
+  name: 'Grade 5 Thoroughbred [Speed]'
   mountPartSetInfo:
     skinId: 1
     maneId: 3
@@ -8349,7 +8341,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 18000
@@ -8363,7 +8355,7 @@ collection:
 - tid: 20095
   type: 0
   level: 4
-  name: 'Grade 5 Chestnut Thoroughbred [Strength]'
+  name: 'Grade 5 Thoroughbred [Strength]'
   mountPartSetInfo:
     skinId: 1
     maneId: 3
@@ -8380,7 +8372,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 18000
@@ -8394,7 +8386,7 @@ collection:
 - tid: 20096
   type: 0
   level: 4
-  name: 'Grade 5 Chestnut Thoroughbred [Spirit]'
+  name: 'Grade 5 Thoroughbred [Spirit]'
   mountPartSetInfo:
     skinId: 1
     maneId: 3
@@ -8411,7 +8403,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 18000
@@ -8425,7 +8417,7 @@ collection:
 - tid: 20097
   type: 0
   level: 4
-  name: 'Grade 6 Chestnut Thoroughbred [Agility]'
+  name: 'Grade 6 Thoroughbred [Agility]'
   mountPartSetInfo:
     skinId: 1
     maneId: 3
@@ -8442,7 +8434,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 30000
@@ -8456,7 +8448,7 @@ collection:
 - tid: 20098
   type: 0
   level: 4
-  name: 'Grade 6 Chestnut Thoroughbred [Control]'
+  name: 'Grade 6 Thoroughbred [Control]'
   mountPartSetInfo:
     skinId: 1
     maneId: 3
@@ -8473,7 +8465,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 30000
@@ -8487,7 +8479,7 @@ collection:
 - tid: 20099
   type: 0
   level: 4
-  name: 'Grade 6 Chestnut Thoroughbred [Speed]'
+  name: 'Grade 6 Thoroughbred [Speed]'
   mountPartSetInfo:
     skinId: 1
     maneId: 3
@@ -8504,7 +8496,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 30000
@@ -8518,7 +8510,7 @@ collection:
 - tid: 20100
   type: 0
   level: 4
-  name: 'Grade 6 Chestnut Thoroughbred [Strength]'
+  name: 'Grade 6 Thoroughbred [Strength]'
   mountPartSetInfo:
     skinId: 1
     maneId: 3
@@ -8535,7 +8527,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 30000
@@ -8549,7 +8541,7 @@ collection:
 - tid: 20101
   type: 0
   level: 4
-  name: 'Grade 6 Chestnut Thoroughbred [Spirit]'
+  name: 'Grade 6 Thoroughbred [Spirit]'
   mountPartSetInfo:
     skinId: 1
     maneId: 3
@@ -8566,7 +8558,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 30000
@@ -8580,7 +8572,7 @@ collection:
 - tid: 20102
   type: 0
   level: 4
-  name: 'Grade 7 Chestnut Thoroughbred [Agility]'
+  name: 'Grade 7 Thoroughbred [Agility]'
   mountPartSetInfo:
     skinId: 1
     maneId: 3
@@ -8597,7 +8589,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 47000
@@ -8611,7 +8603,7 @@ collection:
 - tid: 20103
   type: 0
   level: 4
-  name: 'Grade 7 Chestnut Thoroughbred [Control]'
+  name: 'Grade 7 Thoroughbred [Control]'
   mountPartSetInfo:
     skinId: 1
     maneId: 3
@@ -8628,7 +8620,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 47000
@@ -8642,7 +8634,7 @@ collection:
 - tid: 20104
   type: 0
   level: 4
-  name: 'Grade 7 Chestnut Thoroughbred [Speed]'
+  name: 'Grade 7 Thoroughbred [Speed]'
   mountPartSetInfo:
     skinId: 1
     maneId: 3
@@ -8659,7 +8651,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 47000
@@ -8673,7 +8665,7 @@ collection:
 - tid: 20105
   type: 0
   level: 4
-  name: 'Grade 7 Chestnut Thoroughbred [Strength]'
+  name: 'Grade 7 Thoroughbred [Strength]'
   mountPartSetInfo:
     skinId: 1
     maneId: 3
@@ -8690,7 +8682,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 47000
@@ -8704,7 +8696,7 @@ collection:
 - tid: 20106
   type: 0
   level: 4
-  name: 'Grade 7 Chestnut Thoroughbred [Spirit]'
+  name: 'Grade 7 Thoroughbred [Spirit]'
   mountPartSetInfo:
     skinId: 1
     maneId: 3
@@ -8721,7 +8713,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 0
+    moneyType: 1
     priceRanges:
     - range: 1
       price: 47000
@@ -8735,7 +8727,7 @@ collection:
 - tid: 10133
   type: 0
   level: 30
-  name: '퓨어 로우 포니테일'
+  name: 'Bow Ponytail'
   characterPartInfo:
     characterId: 20
     slot: 2
@@ -8747,11 +8739,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20000
 - tid: 10134
   type: 0
   level: 30
-  name: '원랭스 러블리 보브'
+  name: 'Uniform Bobcut'
   characterPartInfo:
     characterId: 20
     slot: 2
@@ -8763,11 +8755,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 16000
 - tid: 10135
   type: 0
   level: 1
-  name: '레트로 글램 웨이브'
+  name: 'Vintage Curls'
   characterPartInfo:
     characterId: 20
     slot: 2
@@ -8779,11 +8771,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 21000
 - tid: 10136
   type: 0
   level: 57
-  name: '라이딩 포멀 프라임 캡'
+  name: 'Deluxe Riding Cap'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -8795,11 +8787,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 17000
 - tid: 10137
   type: 0
   level: 1
-  name: '크림슨 원더 헤어 리본'
+  name: 'Crimson Wonder Ribbon'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -8811,11 +8803,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 10138
   type: 0
   level: 57
-  name: '라이딩 포멀 슬림 코트'
+  name: 'Deluxe Riding Attire'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -8827,11 +8819,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 74000
 - tid: 10139
   type: 0
   level: 1
-  name: '크림슨 원더 에이프런 드레스'
+  name: 'Crimson Wonder Dress'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -8843,11 +8835,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 43000
 - tid: 30129
   type: 0
   level: 30
-  name: '매쉬 업 모히칸 스타일'
+  name: 'Combat Mohawk'
   characterPartInfo:
     characterId: 10
     slot: 2
@@ -8859,11 +8851,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 16000
 - tid: 30130
   type: 0
   level: 30
-  name: '소프트 크림 웨이브'
+  name: 'Sculpted Waves'
   characterPartInfo:
     characterId: 10
     slot: 2
@@ -8875,11 +8867,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 20000
 - tid: 30131
   type: 0
   level: 1
-  name: '클래식 로우 포니테일'
+  name: 'Scholar Braid'
   characterPartInfo:
     characterId: 10
     slot: 2
@@ -8891,11 +8883,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 21000
 - tid: 30132
   type: 0
   level: 57
-  name: '라이딩 포멀 프리미엄 캡'
+  name: 'Premium Riding Cap'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -8907,11 +8899,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 17000
 - tid: 30133
   type: 0
   level: 1
-  name: '원더 레빗 헤어밴드'
+  name: 'Wonder-Rabbit Ears'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -8923,11 +8915,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 30134
   type: 0
   level: 57
-  name: '라이딩 포멀 펜슬 코트'
+  name: 'Premium Riding Attire'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -8939,11 +8931,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 74000
 - tid: 30135
   type: 0
   level: 1
-  name: '크림슨 체크 원더 슈트'
+  name: 'Wonder-rabbit Suit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -8955,11 +8947,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 43000
 - tid: 10140
   type: 0
   level: 1
-  name: '블루 토파즈 미니 크라운'
+  name: 'Blue Topaz Tiara'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -8971,11 +8963,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 10141
   type: 0
   level: 30
-  name: '블랙 스터드 미니햇'
+  name: 'Rogue Racer''s Fascinator'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -8987,11 +8979,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 10142
   type: 0
   level: 1
-  name: '뱅가드 플리티드 드레스'
+  name: 'Blue Topaz Dress'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -9003,11 +8995,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 50000
 - tid: 10143
   type: 0
   level: 1
-  name: '오리엔탈 뱅가드 드레스'
+  name: 'Far Eastern Chaser'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -9019,11 +9011,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 43000
 - tid: 10144
   type: 0
   level: 30
-  name: '로그 레이서 벨티드 재킷'
+  name: 'Rogue Racer''s Jacket'
   characterPartInfo:
     characterId: 20
     slot: 16
@@ -9035,11 +9027,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 31000
 - tid: 10145
   type: 0
   level: 30
-  name: '로그 레이서 스키니 진'
+  name: 'Rogue Racer''s Jeans'
   characterPartInfo:
     characterId: 20
     slot: 32
@@ -9051,11 +9043,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 29000
 - tid: 30136
   type: 0
   level: 1
-  name: '아쿠아 토파즈 미니 크라운'
+  name: 'Aqua Topaz Coronet'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -9067,11 +9059,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 30137
   type: 0
   level: 30
-  name: '다크 스터드 미니햇'
+  name: 'Rebel Racer''s Fascinator'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -9083,11 +9075,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 30138
   type: 0
   level: 1
-  name: '뱅가드 레이스 러플 코트'
+  name: 'Aqua Topaz Ruffle Coat'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -9099,11 +9091,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 50000
 - tid: 30139
   type: 0
   level: 1
-  name: '오리엔탈 뱅가드 슈트'
+  name: 'Far Eastern General Suit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -9115,11 +9107,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 43000
 - tid: 30140
   type: 0
   level: 30
-  name: '로그 레이서 본디지 재킷'
+  name: 'Rebel Racer''s Jacket'
   characterPartInfo:
     characterId: 10
     slot: 16
@@ -9131,11 +9123,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 31000
 - tid: 30141
   type: 0
   level: 30
-  name: '로그 레이서 스터드 벨트 진'
+  name: 'Rebel Racer''s Jeans'
   characterPartInfo:
     characterId: 10
     slot: 32
@@ -9147,7 +9139,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 29000
 - tid: 50001
   type: 0
   level: 1
@@ -9182,7 +9174,7 @@ collection:
     category: 3
     subcategory: 5
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     priceRanges:
     - range: 1
@@ -9310,7 +9302,7 @@ collection:
 - tid: 10146
   type: 0
   level: 1
-  name: '타이거 스킨 비키니'
+  name: 'Cheetah Print Bikini'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -9322,11 +9314,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 47000
 - tid: 10147
   type: 0
   level: 1
-  name: '레트로 핑크 수영복'
+  name: 'Retro Plaid Swimsuit'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -9338,11 +9330,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 47000
 - tid: 10148
   type: 0
   level: 1
-  name: '엘레강스 버클 수영복'
+  name: 'Halterneck Swimsuit'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -9354,11 +9346,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 47000
 - tid: 30142
   type: 0
   level: 1
-  name: '타이거 스킨 팬츠'
+  name: 'Leopard Print Swimsuit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -9370,11 +9362,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 47000
 - tid: 30143
   type: 0
   level: 1
-  name: '아이비 정글 팬츠'
+  name: 'Jungle Swimsuit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -9386,11 +9378,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 47000
 - tid: 30144
   type: 0
   level: 1
-  name: '알로하 비치 트렁크'
+  name: 'Tropical Beach Trunks'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -9402,11 +9394,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 47000
 - tid: 30145
   type: 0
   level: 1
-  name: '롤리팝 비치 트렁크'
+  name: 'Striped Beach Trunks'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -9418,11 +9410,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 47000
 - tid: 10149
   type: 0
   level: 35
-  name: '아킨즈 뷰티 터번'
+  name: 'Akins Beauty Turban'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -9434,11 +9426,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 10150
   type: 0
   level: 35
-  name: '아킨즈 뷰티 드레스'
+  name: 'Akins Beauty Outfit'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -9450,11 +9442,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 53000
 - tid: 30146
   type: 0
   level: 35
-  name: '아킨즈 노블 터번'
+  name: 'Akins Noble Turban'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -9466,11 +9458,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 30147
   type: 0
   level: 35
-  name: '아킨즈 칼릭 슈트'
+  name: 'Akins Calyx Suit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -9482,7 +9474,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 53000
 - tid: 90011
   type: 0
   level: 1
@@ -9568,7 +9560,7 @@ collection:
 - tid: 20108
   type: 1
   level: 1
-  name: 'Divine Platinum Protector'
+  name: 'Divine Platinum Trinket'
   mountPartInfo:
     slot: 16
   itemIndex:
@@ -9579,11 +9571,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 1000
     - range: 168
-      price: 10
+      price: 5000
     - range: 720
-      price: 100
+      price: 18000
   mountAbility:
     grade: 0
     agility: 0
@@ -9605,11 +9597,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 800
     - range: 168
-      price: 10
+      price: 4200
     - range: 720
-      price: 100
+      price: 14700
   mountAbility:
     grade: 0
     agility: 0
@@ -9631,11 +9623,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 1600
     - range: 168
-      price: 10
+      price: 9500
     - range: 720
-      price: 100
+      price: 33600
   mountAbility:
     grade: 0
     agility: 0
@@ -9657,11 +9649,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 1900
     - range: 168
-      price: 10
+      price: 10900
     - range: 720
-      price: 100
+      price: 38900
   mountAbility:
     grade: 0
     agility: 8
@@ -10287,11 +10279,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
-    - range: 10
-      price: 10
-    - range: 30
-      price: 30
+      price: 28000
 - tid: 46013
   type: 1
   level: 1
@@ -10300,7 +10288,7 @@ collection:
     category: 3
     subcategory: 5
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     priceRanges:
     - range: 24
@@ -10317,7 +10305,7 @@ collection:
     category: 3
     subcategory: 5
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     priceRanges:
     - range: 24
@@ -10346,7 +10334,7 @@ collection:
 - tid: 10153
   type: 0
   level: 1
-  name: '동방 사관수기생 붉은 관모'
+  name: 'Eastern Cadet Headdress'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -10358,11 +10346,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 10154
   type: 0
   level: 1
-  name: '동방 사관수기생 붉은 관복'
+  name: 'Eastern Cadet Dress'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -10374,11 +10362,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 43000
 - tid: 30148
   type: 0
   level: 1
-  name: '동방 사관수기생 적색 관모'
+  name: 'Eastern Aspiring Officer Hat'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -10390,11 +10378,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 30149
   type: 0
   level: 1
-  name: '동방 사관수기생 적색 관복'
+  name: 'Eastern Aspiring Officer Robe'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -10406,7 +10394,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 43000
 - tid: 99058
   type: 0
   level: 1
@@ -10454,7 +10442,7 @@ collection:
     category: 3
     subcategory: 5
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     priceRanges:
     - range: 1
@@ -10648,7 +10636,7 @@ collection:
 - tid: 10155
   type: 0
   level: 40
-  name: '포레 레인저 티롤모'
+  name: 'Foret Ranger Tyrolean'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -10660,11 +10648,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 14000
 - tid: 10156
   type: 0
   level: 40
-  name: '포레 레인저 아처리 폼'
+  name: 'Foret Ranger Outfit'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -10676,11 +10664,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 60000
 - tid: 30150
   type: 0
   level: 40
-  name: '우드 레인저 티롤모'
+  name: 'Foret Archer Tyrolean'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -10692,11 +10680,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 14000
 - tid: 30151
   type: 0
   level: 40
-  name: '우드 레인저 아처리 슈트'
+  name: 'Foret Archer Suit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -10708,7 +10696,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 60000
 - tid: 99074
   type: 0
   level: 1
@@ -11509,7 +11497,7 @@ collection:
 - tid: 10157
   type: 0
   level: 1
-  name: '이퀘스트리언 트윙클 드레스'
+  name: 'Twilight Riding Suit'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -11521,11 +11509,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 30000
 - tid: 30152
   type: 0
   level: 1
-  name: '이퀘스트리언 트윙클 슈트'
+  name: 'Starry Riding Suit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -11537,7 +11525,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 30000
 - tid: 20119
   type: 0
   level: 1
@@ -11552,7 +11540,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 18000
   mountAbility:
     grade: 0
     agility: 7
@@ -11563,7 +11551,7 @@ collection:
 - tid: 20120
   type: 0
   level: 1
-  name: 'Starry Knight Protector'
+  name: 'Starry Knight Trinket'
   mountPartInfo:
     slot: 16
   itemIndex:
@@ -11574,7 +11562,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 13200
   mountAbility:
     grade: 0
     agility: 0
@@ -11596,7 +11584,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 10600
   mountAbility:
     grade: 0
     agility: 0
@@ -11618,7 +11606,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15800
   mountAbility:
     grade: 0
     agility: 0
@@ -11629,7 +11617,7 @@ collection:
 - tid: 10158
   type: 0
   level: 1
-  name: '이퀘스트리언 트윙클 라인 캡'
+  name: 'Twilight Riding Cap'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -11641,11 +11629,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 3000
 - tid: 30153
   type: 0
   level: 1
-  name: '이퀘스트리언 트윙클 심볼 캡'
+  name: 'Starry Riding Cap'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -11657,7 +11645,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 3000
 - tid: 99134
   type: 0
   level: 1
@@ -12144,7 +12132,7 @@ collection:
     category: 3
     subcategory: 5
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     priceRanges:
     - range: 24
@@ -12161,7 +12149,7 @@ collection:
     category: 3
     subcategory: 5
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     priceRanges:
     - range: 24
@@ -12173,7 +12161,7 @@ collection:
 - tid: 10159
   type: 1
   level: 1
-  name: '할로윈 블랙 위치 햇'
+  name: 'Spooky Witch Hat'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -12184,16 +12172,12 @@ collection:
     isPurchasable: true
     moneyType: 0
     priceRanges:
-    - range: 24
-      price: 1
-    - range: 168
-      price: 10
-    - range: 720
-      price: 100
+    - range: 1
+      price: 6000
 - tid: 10160
   type: 1
   level: 1
-  name: '잭 오 랜턴 미니 햇'
+  name: 'Jack-O''-Lantern Munchkin Hat'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -12204,16 +12188,12 @@ collection:
     isPurchasable: true
     moneyType: 0
     priceRanges:
-    - range: 24
-      price: 1
-    - range: 168
-      price: 10
-    - range: 720
-      price: 100
+    - range: 1
+      price: 2000
 - tid: 30154
   type: 1
   level: 1
-  name: '할로윈 다크 위자드 햇'
+  name: 'Spooky Wizard Hat'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -12224,16 +12204,12 @@ collection:
     isPurchasable: true
     moneyType: 0
     priceRanges:
-    - range: 24
-      price: 1
-    - range: 168
-      price: 10
-    - range: 720
-      price: 100
+    - range: 1
+      price: 6000
 - tid: 30155
   type: 1
   level: 1
-  name: '잭 오 랜턴 체크 햇'
+  name: 'Jack-O''-Lantern Bulb Cap'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -12244,12 +12220,8 @@ collection:
     isPurchasable: true
     moneyType: 0
     priceRanges:
-    - range: 24
-      price: 1
-    - range: 168
-      price: 10
-    - range: 720
-      price: 100
+    - range: 1
+      price: 2000
 - tid: 46018
   type: 2
   level: 1
@@ -12262,11 +12234,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 1800
     - range: 10
-      price: 10
+      price: 18000
     - range: 30
-      price: 30
+      price: 54000
 - tid: 92001
   type: 2
   level: 1
@@ -12309,7 +12281,7 @@ collection:
     category: 3
     subcategory: 5
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     priceRanges:
     - range: 24
@@ -12329,12 +12301,12 @@ collection:
     isPurchasable: true
     moneyType: 0
     priceRanges:
-    - range: 24
-      price: 1
     - range: 168
-      price: 10
+      price: 3000
     - range: 720
-      price: 100
+      price: 10000
+    - range: 2160
+      price: 27000
 - tid: 45003
   type: 2
   level: 1
@@ -12347,11 +12319,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
-    - range: 10
-      price: 10
-    - range: 30
-      price: 30
+      price: 14000
 - tid: 46020
   type: 1
   level: 1
@@ -12363,12 +12331,12 @@ collection:
     isPurchasable: true
     moneyType: 0
     priceRanges:
-    - range: 24
-      price: 1
     - range: 168
-      price: 10
+      price: 3000
     - range: 720
-      price: 100
+      price: 10000
+    - range: 2160
+      price: 27000
 - tid: 46021
   type: 1
   level: 1
@@ -12377,7 +12345,7 @@ collection:
     category: 3
     subcategory: 5
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     priceRanges:
     - range: 24
@@ -12415,11 +12383,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
-    - range: 10
-      price: 10
-    - range: 30
-      price: 30
+      price: 7000
 - tid: 45004
   type: 2
   level: 1
@@ -12431,12 +12395,8 @@ collection:
     isPurchasable: true
     moneyType: 0
     priceRanges:
-    - range: 1
-      price: 1
     - range: 10
-      price: 10
-    - range: 30
-      price: 30
+      price: 10000
 - tid: 50005
   type: 2
   level: 1
@@ -12445,7 +12405,7 @@ collection:
     category: 3
     subcategory: 5
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     priceRanges:
     - range: 1
@@ -12479,7 +12439,7 @@ collection:
     category: 3
     subcategory: 5
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     priceRanges:
     - range: 24
@@ -12508,7 +12468,7 @@ collection:
 - tid: 10161
   type: 0
   level: 1
-  name: '브레이드 헤어 슬리크 스타일'
+  name: 'Sleek Braid'
   characterPartInfo:
     characterId: 20
     slot: 2
@@ -12520,11 +12480,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 21000
 - tid: 10162
   type: 0
   level: 1
-  name: '러블리 웨이브 벼머리 스타일'
+  name: 'Lovely Braided Waves'
   characterPartInfo:
     characterId: 20
     slot: 2
@@ -12536,11 +12496,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 21000
 - tid: 10163
   type: 0
   level: 1
-  name: '러블리 리본 피크닉 햇'
+  name: 'Lovely Sun Hat'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -12552,11 +12512,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 10164
   type: 0
   level: 1
-  name: '로맨틱 컨트리 피크닉 원피스'
+  name: 'Lovely Picnic Dress'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -12568,11 +12528,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 43000
 - tid: 30156
   type: 0
   level: 1
-  name: '스틱 드레드 헤어'
+  name: 'Styled Dreads'
   characterPartInfo:
     characterId: 10
     slot: 2
@@ -12584,11 +12544,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 21000
 - tid: 30157
   type: 0
   level: 1
-  name: '릴렉싱 숏 테일'
+  name: 'Relaxed Ponytail'
   characterPartInfo:
     characterId: 10
     slot: 2
@@ -12600,7 +12560,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 21000
 - tid: 30158
   type: 0
   level: 1
@@ -12616,11 +12576,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 30159
   type: 0
   level: 1
-  name: '로맨틱 컨트리 피크닉 룩'
+  name: 'Romantic Picnic Overalls'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -12632,7 +12592,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 43000
 - tid: 50007
   type: 2
   level: 1
@@ -12641,7 +12601,7 @@ collection:
     category: 3
     subcategory: 5
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     priceRanges:
     - range: 1
@@ -12653,7 +12613,7 @@ collection:
 - tid: 10165
   type: 1
   level: 1
-  name: '루돌프 코 헤어밴드'
+  name: 'Rudolph''s Festive Nose'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -12664,16 +12624,12 @@ collection:
     isPurchasable: true
     moneyType: 0
     priceRanges:
-    - range: 24
-      price: 1
-    - range: 168
-      price: 10
-    - range: 720
-      price: 100
+    - range: 1
+      price: 2000
 - tid: 30160
   type: 1
   level: 1
-  name: '루돌프 뿔 헤어밴드'
+  name: 'Rudolph''s Dashing Antlers'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -12684,12 +12640,8 @@ collection:
     isPurchasable: true
     moneyType: 0
     priceRanges:
-    - range: 24
-      price: 1
-    - range: 168
-      price: 10
-    - range: 720
-      price: 100
+    - range: 1
+      price: 2000
 - tid: 20123
   type: 1
   level: 1
@@ -12704,11 +12656,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 1800
     - range: 168
-      price: 10
+      price: 10500
     - range: 720
-      price: 100
+      price: 36900
   mountAbility:
     grade: 0
     agility: 10
@@ -12730,11 +12682,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 900
     - range: 168
-      price: 10
+      price: 5200
     - range: 720
-      price: 100
+      price: 18500
   mountAbility:
     grade: 0
     agility: 0
@@ -12756,11 +12708,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 800
     - range: 168
-      price: 10
+      price: 4200
     - range: 720
-      price: 100
+      price: 14700
   mountAbility:
     grade: 0
     agility: 0
@@ -12782,11 +12734,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 24
-      price: 1
+      price: 1600
     - range: 168
-      price: 10
+      price: 9500
     - range: 720
-      price: 100
+      price: 33600
   mountAbility:
     grade: 0
     agility: 0
@@ -12802,7 +12754,7 @@ collection:
     category: 3
     subcategory: 5
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     priceRanges:
     - range: 1
@@ -13257,7 +13209,7 @@ collection:
 - tid: 10167
   type: 0
   level: 1
-  name: '라프리아 바이킹 헬름 S'
+  name: 'Lafria Pioneer Helm'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -13269,11 +13221,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 10168
   type: 0
   level: 1
-  name: '터틀넥 눈꽃 니트'
+  name: 'Cosy Knit Turtleneck'
   characterPartInfo:
     characterId: 20
     slot: 16
@@ -13285,11 +13237,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 23000
 - tid: 10166
   type: 0
   level: 1
-  name: '라프리아 개척민 전통 원피스'
+  name: 'Lafria Pioneer Dress'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -13301,11 +13253,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 43000
 - tid: 10169
   type: 0
   level: 1
-  name: '폭스테일 태그 미니스커트'
+  name: 'Cosy Foxtail Skirt'
   characterPartInfo:
     characterId: 20
     slot: 32
@@ -13317,11 +13269,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 23000
 - tid: 10170
   type: 0
   level: 1
-  name: '왕 방울 니트 비니'
+  name: 'Cosy Pom-Pom Beanie'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -13333,11 +13285,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 10171
   type: 0
   level: 1
-  name: '사슴뿔 헤어밴드 S'
+  name: 'Velvet Reindeer Antlers'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -13349,11 +13301,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 2000
 - tid: 30161
   type: 0
   level: 1
-  name: '라프리아 개척민 전통의상'
+  name: 'Lafria Viking Outfit'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -13365,11 +13317,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 43000
 - tid: 30162
   type: 0
   level: 1
-  name: '라프리아 바이킹 헬름 R'
+  name: 'Lafria Viking Helmet'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -13381,11 +13333,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 30163
   type: 0
   level: 1
-  name: '믹스 매치 패딩 베스트'
+  name: 'Snug Winter Vest'
   characterPartInfo:
     characterId: 10
     slot: 16
@@ -13397,11 +13349,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 23000
 - tid: 30164
   type: 0
   level: 1
-  name: '폭스테일 태그 워싱진'
+  name: 'Snug Foxtail Trousers'
   characterPartInfo:
     characterId: 10
     slot: 32
@@ -13413,11 +13365,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 23000
 - tid: 30165
   type: 0
   level: 1
-  name: '핀 태그 니트 비니'
+  name: 'Snug Knit Beanie'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -13429,11 +13381,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 12000
 - tid: 30166
   type: 0
   level: 1
-  name: '사슴뿔 헤어밴드 R'
+  name: 'Cotton Reindeer Antlers'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -13445,7 +13397,7 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 2000
 - tid: 50009
   type: 0
   level: 1
@@ -13454,7 +13406,7 @@ collection:
     category: 3
     subcategory: 5
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     priceRanges:
     - range: 1
@@ -13467,7 +13419,7 @@ collection:
     category: 3
     subcategory: 5
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     priceRanges:
     - range: 1
@@ -13475,7 +13427,7 @@ collection:
 - tid: 10172
   type: 0
   level: 1
-  name: '풀꽃 연지 머리띠'
+  name: 'Wildflower Hairband'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -13487,11 +13439,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 10173
   type: 0
   level: 1
-  name: '꽃자수 나들이 전모'
+  name: 'Butterfly Paper Jeonmo'
   characterPartInfo:
     characterId: 20
     slot: 1
@@ -13503,11 +13455,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 10174
   type: 0
   level: 30
-  name: '스터드 컴뱃 코르셋톱'
+  name: 'Frontline Leather Corset'
   characterPartInfo:
     characterId: 20
     slot: 16
@@ -13519,11 +13471,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 31000
 - tid: 10175
   type: 0
   level: 1
-  name: '풀꽃 연지 한복'
+  name: 'Wildflower Hanbok'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -13535,11 +13487,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 50000
 - tid: 10176
   type: 0
   level: 1
-  name: '꽃자수 나들이 한복'
+  name: 'Butterfly Silk Hanbok'
   characterPartInfo:
     characterId: 20
     slot: 48
@@ -13551,11 +13503,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 50000
 - tid: 10177
   type: 0
   level: 30
-  name: '스터드 컴뱃 핫팬츠'
+  name: 'Frontline Leather Shorts'
   characterPartInfo:
     characterId: 20
     slot: 32
@@ -13567,11 +13519,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 29000
 - tid: 30167
   type: 0
   level: 1
-  name: '풀꽃 도령 머리띠'
+  name: 'Grassflower Headband'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -13583,11 +13535,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 30168
   type: 0
   level: 1
-  name: '꽃자수 도령 복건'
+  name: 'Floral Silk Bokgeon'
   characterPartInfo:
     characterId: 10
     slot: 1
@@ -13599,11 +13551,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 15000
 - tid: 30169
   type: 0
   level: 30
-  name: '스터드 컴뱃 가죽재킷'
+  name: 'Tactical Leather Jacket'
   characterPartInfo:
     characterId: 10
     slot: 16
@@ -13615,11 +13567,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 31000
 - tid: 30170
   type: 0
   level: 1
-  name: '풀꽃 도령 한복'
+  name: 'Grassflower Hanbok'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -13631,11 +13583,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 50000
 - tid: 30171
   type: 0
   level: 1
-  name: '꽃자수 도령 한복'
+  name: 'Floral Silk Hanbok'
   characterPartInfo:
     characterId: 10
     slot: 48
@@ -13647,11 +13599,11 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 50000
 - tid: 30172
   type: 0
   level: 30
-  name: '스터드 컴뱃 가죽팬츠'
+  name: 'Tactical Leather Trousers'
   characterPartInfo:
     characterId: 10
     slot: 32
@@ -13663,4 +13615,484 @@ collection:
     moneyType: 0
     priceRanges:
     - range: 1
-      price: 1
+      price: 29000
+- tid: 10197
+  type: 0
+  name: Rubashka Blouse
+  itemIndex:
+    category: 1
+    subcategory: 2
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 8000
+- tid: 10198
+  type: 0
+  name: Tabia Peplos
+  itemIndex:
+    category: 1
+    subcategory: 2
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 8000
+- tid: 10199
+  type: 0
+  name: Timberclad Shirt
+  itemIndex:
+    category: 1
+    subcategory: 2
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 6000
+- tid: 10200
+  type: 0
+  name: Gold Spur Crewneck
+  itemIndex:
+    category: 1
+    subcategory: 2
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 6000
+- tid: 10201
+  type: 0
+  name: Layered Blouse
+  itemIndex:
+    category: 1
+    subcategory: 2
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 8000
+- tid: 10202
+  type: 0
+  name: Drawstring Tee
+  itemIndex:
+    category: 1
+    subcategory: 2
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 4000
+- tid: 10203
+  type: 0
+  name: Adaptable Short Cloak
+  itemIndex:
+    category: 1
+    subcategory: 2
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 4000
+- tid: 10204
+  type: 0
+  name: Summer Sports Vest
+  itemIndex:
+    category: 1
+    subcategory: 2
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 4000
+- tid: 10205
+  type: 0
+  name: Rubashka Skirt
+  itemIndex:
+    category: 1
+    subcategory: 3
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 7000
+- tid: 10206
+  type: 0
+  name: Slim Turkish Trousers
+  itemIndex:
+    category: 1
+    subcategory: 3
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 5000
+- tid: 10207
+  type: 0
+  name: Timberclad Double Shorts
+  itemIndex:
+    category: 1
+    subcategory: 3
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 6000
+- tid: 10208
+  type: 0
+  name: Practical Trousers
+  itemIndex:
+    category: 1
+    subcategory: 3
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 7000
+- tid: 10209
+  type: 0
+  name: Modest Flareskirt
+  itemIndex:
+    category: 1
+    subcategory: 3
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 7000
+- tid: 10210
+  type: 0
+  name: Drawstring Shorts
+  itemIndex:
+    category: 1
+    subcategory: 3
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 3000
+- tid: 10211
+  type: 0
+  name: Patchwork Corduroy Trousers
+  itemIndex:
+    category: 1
+    subcategory: 3
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 3000
+- tid: 10212
+  type: 0
+  name: Summer Sports Skirt
+  itemIndex:
+    category: 1
+    subcategory: 3
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 3000
+- tid: 10400
+  type: 0
+  name: Shoreline Bikini
+  itemIndex:
+    category: 1
+    subcategory: 2
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 47000
+- tid: 10401
+  type: 0
+  name: Seafarer Bikini
+  itemIndex:
+    category: 1
+    subcategory: 2
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 47000
+- tid: 10402
+  type: 0
+  name: Wandering Envoy Dress
+  itemIndex:
+    category: 1
+    subcategory: 2
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 35000
+- tid: 10403
+  type: 0
+  name: Jellicle Trendy Vest
+  itemIndex:
+    category: 1
+    subcategory: 2
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 16000
+- tid: 10404
+  type: 0
+  name: Jellicle Trendy Cap
+  itemIndex:
+    category: 1
+    subcategory: 4
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 9000
+- tid: 10405
+  type: 0
+  name: Wandering Envoy Headdress
+  itemIndex:
+    category: 1
+    subcategory: 4
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 5000
+- tid: 30193
+  type: 0
+  name: Rubashka Shirt
+  itemIndex:
+    category: 1
+    subcategory: 2
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 8000
+- tid: 30194
+  type: 0
+  name: Tabia Turtleneck
+  itemIndex:
+    category: 1
+    subcategory: 2
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 8000
+- tid: 30195
+  type: 0
+  name: Timberguard Shirt
+  itemIndex:
+    category: 1
+    subcategory: 2
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 6000
+- tid: 30196
+  type: 0
+  name: Gold Horseshoe T-Shirt
+  itemIndex:
+    category: 1
+    subcategory: 2
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 6000
+- tid: 30197
+  type: 0
+  name: Layered Shirt
+  itemIndex:
+    category: 1
+    subcategory: 2
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 8000
+- tid: 30198
+  type: 0
+  name: Laced Shirt
+  itemIndex:
+    category: 1
+    subcategory: 2
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 4000
+- tid: 30199
+  type: 0
+  name: All-round Short Jacket
+  itemIndex:
+    category: 1
+    subcategory: 2
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 4000
+- tid: 30200
+  type: 0
+  name: Athletic Vest
+  itemIndex:
+    category: 1
+    subcategory: 2
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 4000
+- tid: 30201
+  type: 0
+  name: Rubashka Trousers
+  itemIndex:
+    category: 1
+    subcategory: 3
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 7000
+- tid: 30202
+  type: 0
+  name: Turkish Trousers
+  itemIndex:
+    category: 1
+    subcategory: 3
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 5000
+- tid: 30203
+  type: 0
+  name: Timberguard Double Shorts
+  itemIndex:
+    category: 1
+    subcategory: 3
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 6000
+- tid: 30204
+  type: 0
+  name: Training Trousers
+  itemIndex:
+    category: 1
+    subcategory: 3
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 7000
+- tid: 30205
+  type: 0
+  name: Roll-up Trousers
+  itemIndex:
+    category: 1
+    subcategory: 3
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 7000
+- tid: 30206
+  type: 0
+  name: Laced Shorts
+  itemIndex:
+    category: 1
+    subcategory: 3
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 3000
+- tid: 30207
+  type: 0
+  name: Hybrid Corduroy Jeans
+  itemIndex:
+    category: 1
+    subcategory: 3
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 3000
+- tid: 30208
+  type: 0
+  name: Athletic Cargo Shorts
+  itemIndex:
+    category: 1
+    subcategory: 3
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 3000
+- tid: 30400
+  type: 0
+  name: Travelling Merchant Attire
+  itemIndex:
+    category: 1
+    subcategory: 2
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 35000
+- tid: 30401
+  type: 0
+  name: Travelling Merchant Hat
+  itemIndex:
+    category: 1
+    subcategory: 4
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 5000
