@@ -13619,6 +13619,9 @@ collection:
 - tid: 10197
   type: 0
   name: Rubashka Blouse
+  characterPartInfo:
+    characterId: 20
+    slot: 16
   itemIndex:
     category: 1
     subcategory: 2
@@ -13631,6 +13634,9 @@ collection:
 - tid: 10198
   type: 0
   name: Tabia Peplos
+  characterPartInfo:
+    characterId: 20
+    slot: 16
   itemIndex:
     category: 1
     subcategory: 2
@@ -13643,6 +13649,9 @@ collection:
 - tid: 10199
   type: 0
   name: Timberclad Shirt
+  characterPartInfo:
+    characterId: 20
+    slot: 16
   itemIndex:
     category: 1
     subcategory: 2
@@ -13655,6 +13664,9 @@ collection:
 - tid: 10200
   type: 0
   name: Gold Spur Crewneck
+  characterPartInfo:
+    characterId: 20
+    slot: 16
   itemIndex:
     category: 1
     subcategory: 2
@@ -13667,6 +13679,9 @@ collection:
 - tid: 10201
   type: 0
   name: Layered Blouse
+  characterPartInfo:
+    characterId: 20
+    slot: 16
   itemIndex:
     category: 1
     subcategory: 2
@@ -13679,6 +13694,9 @@ collection:
 - tid: 10202
   type: 0
   name: Drawstring Tee
+  characterPartInfo:
+    characterId: 20
+    slot: 16
   itemIndex:
     category: 1
     subcategory: 2
@@ -13691,6 +13709,9 @@ collection:
 - tid: 10203
   type: 0
   name: Adaptable Short Cloak
+  characterPartInfo:
+    characterId: 20
+    slot: 16
   itemIndex:
     category: 1
     subcategory: 2
@@ -13703,6 +13724,9 @@ collection:
 - tid: 10204
   type: 0
   name: Summer Sports Vest
+  characterPartInfo:
+    characterId: 20
+    slot: 16
   itemIndex:
     category: 1
     subcategory: 2
@@ -13715,6 +13739,9 @@ collection:
 - tid: 10205
   type: 0
   name: Rubashka Skirt
+  characterPartInfo:
+    characterId: 20
+    slot: 32
   itemIndex:
     category: 1
     subcategory: 3
@@ -13727,6 +13754,9 @@ collection:
 - tid: 10206
   type: 0
   name: Slim Turkish Trousers
+  characterPartInfo:
+    characterId: 20
+    slot: 32
   itemIndex:
     category: 1
     subcategory: 3
@@ -13739,6 +13769,9 @@ collection:
 - tid: 10207
   type: 0
   name: Timberclad Double Shorts
+  characterPartInfo:
+    characterId: 20
+    slot: 32
   itemIndex:
     category: 1
     subcategory: 3
@@ -13751,6 +13784,9 @@ collection:
 - tid: 10208
   type: 0
   name: Practical Trousers
+  characterPartInfo:
+    characterId: 20
+    slot: 32
   itemIndex:
     category: 1
     subcategory: 3
@@ -13763,6 +13799,9 @@ collection:
 - tid: 10209
   type: 0
   name: Modest Flareskirt
+  characterPartInfo:
+    characterId: 20
+    slot: 32
   itemIndex:
     category: 1
     subcategory: 3
@@ -13775,6 +13814,9 @@ collection:
 - tid: 10210
   type: 0
   name: Drawstring Shorts
+  characterPartInfo:
+    characterId: 20
+    slot: 32
   itemIndex:
     category: 1
     subcategory: 3
@@ -13787,6 +13829,9 @@ collection:
 - tid: 10211
   type: 0
   name: Patchwork Corduroy Trousers
+  characterPartInfo:
+    characterId: 20
+    slot: 32
   itemIndex:
     category: 1
     subcategory: 3
@@ -13799,6 +13844,9 @@ collection:
 - tid: 10212
   type: 0
   name: Summer Sports Skirt
+  characterPartInfo:
+    characterId: 20
+    slot: 32
   itemIndex:
     category: 1
     subcategory: 3
@@ -13811,6 +13859,9 @@ collection:
 - tid: 10400
   type: 0
   name: Shoreline Bikini
+  characterPartInfo:
+    characterId: 20
+    slot: 48
   itemIndex:
     category: 1
     subcategory: 2
@@ -13823,6 +13874,9 @@ collection:
 - tid: 10401
   type: 0
   name: Seafarer Bikini
+  characterPartInfo:
+    characterId: 20
+    slot: 48
   itemIndex:
     category: 1
     subcategory: 2
@@ -13835,6 +13889,9 @@ collection:
 - tid: 10402
   type: 0
   name: Wandering Envoy Dress
+  characterPartInfo:
+    characterId: 20
+    slot: 48
   itemIndex:
     category: 1
     subcategory: 2
@@ -13847,6 +13904,9 @@ collection:
 - tid: 10403
   type: 0
   name: Jellicle Trendy Vest
+  characterPartInfo:
+    characterId: 20
+    slot: 16
   itemIndex:
     category: 1
     subcategory: 2
@@ -13859,6 +13919,9 @@ collection:
 - tid: 10404
   type: 0
   name: Jellicle Trendy Cap
+  characterPartInfo:
+    characterId: 20
+    slot: 1
   itemIndex:
     category: 1
     subcategory: 4
@@ -13871,6 +13934,9 @@ collection:
 - tid: 10405
   type: 0
   name: Wandering Envoy Headdress
+  characterPartInfo:
+    characterId: 20
+    slot: 1
   itemIndex:
     category: 1
     subcategory: 4
@@ -13883,6 +13949,9 @@ collection:
 - tid: 30193
   type: 0
   name: Rubashka Shirt
+  characterPartInfo:
+    characterId: 10
+    slot: 16
   itemIndex:
     category: 1
     subcategory: 2
@@ -13895,6 +13964,9 @@ collection:
 - tid: 30194
   type: 0
   name: Tabia Turtleneck
+  characterPartInfo:
+    characterId: 10
+    slot: 16
   itemIndex:
     category: 1
     subcategory: 2
@@ -13907,6 +13979,9 @@ collection:
 - tid: 30195
   type: 0
   name: Timberguard Shirt
+  characterPartInfo:
+    characterId: 10
+    slot: 16
   itemIndex:
     category: 1
     subcategory: 2
@@ -13919,6 +13994,9 @@ collection:
 - tid: 30196
   type: 0
   name: Gold Horseshoe T-Shirt
+  characterPartInfo:
+    characterId: 10
+    slot: 16
   itemIndex:
     category: 1
     subcategory: 2
@@ -13931,6 +14009,9 @@ collection:
 - tid: 30197
   type: 0
   name: Layered Shirt
+  characterPartInfo:
+    characterId: 10
+    slot: 16
   itemIndex:
     category: 1
     subcategory: 2
@@ -13943,6 +14024,9 @@ collection:
 - tid: 30198
   type: 0
   name: Laced Shirt
+  characterPartInfo:
+    characterId: 10
+    slot: 16
   itemIndex:
     category: 1
     subcategory: 2
@@ -13955,6 +14039,9 @@ collection:
 - tid: 30199
   type: 0
   name: All-round Short Jacket
+  characterPartInfo:
+    characterId: 10
+    slot: 16
   itemIndex:
     category: 1
     subcategory: 2
@@ -13967,6 +14054,9 @@ collection:
 - tid: 30200
   type: 0
   name: Athletic Vest
+  characterPartInfo:
+    characterId: 10
+    slot: 16
   itemIndex:
     category: 1
     subcategory: 2
@@ -13979,6 +14069,9 @@ collection:
 - tid: 30201
   type: 0
   name: Rubashka Trousers
+  characterPartInfo:
+    characterId: 10
+    slot: 32
   itemIndex:
     category: 1
     subcategory: 3
@@ -13991,6 +14084,9 @@ collection:
 - tid: 30202
   type: 0
   name: Turkish Trousers
+  characterPartInfo:
+    characterId: 10
+    slot: 32
   itemIndex:
     category: 1
     subcategory: 3
@@ -14003,6 +14099,9 @@ collection:
 - tid: 30203
   type: 0
   name: Timberguard Double Shorts
+  characterPartInfo:
+    characterId: 10
+    slot: 32
   itemIndex:
     category: 1
     subcategory: 3
@@ -14015,6 +14114,9 @@ collection:
 - tid: 30204
   type: 0
   name: Training Trousers
+  characterPartInfo:
+    characterId: 10
+    slot: 32
   itemIndex:
     category: 1
     subcategory: 3
@@ -14027,6 +14129,9 @@ collection:
 - tid: 30205
   type: 0
   name: Roll-up Trousers
+  characterPartInfo:
+    characterId: 10
+    slot: 32
   itemIndex:
     category: 1
     subcategory: 3
@@ -14039,6 +14144,9 @@ collection:
 - tid: 30206
   type: 0
   name: Laced Shorts
+  characterPartInfo:
+    characterId: 10
+    slot: 32
   itemIndex:
     category: 1
     subcategory: 3
@@ -14051,6 +14159,9 @@ collection:
 - tid: 30207
   type: 0
   name: Hybrid Corduroy Jeans
+  characterPartInfo:
+    characterId: 10
+    slot: 32
   itemIndex:
     category: 1
     subcategory: 3
@@ -14063,6 +14174,9 @@ collection:
 - tid: 30208
   type: 0
   name: Athletic Cargo Shorts
+  characterPartInfo:
+    characterId: 10
+    slot: 32
   itemIndex:
     category: 1
     subcategory: 3
@@ -14075,6 +14189,9 @@ collection:
 - tid: 30400
   type: 0
   name: Travelling Merchant Attire
+  characterPartInfo:
+    characterId: 10
+    slot: 48
   itemIndex:
     category: 1
     subcategory: 2
@@ -14087,6 +14204,9 @@ collection:
 - tid: 30401
   type: 0
   name: Travelling Merchant Hat
+  characterPartInfo:
+    characterId: 10
+    slot: 1
   itemIndex:
     category: 1
     subcategory: 4
