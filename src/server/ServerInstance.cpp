@@ -91,7 +91,7 @@ void ServerInstance::Initialize()
 
   _characterRegistry.ReadConfig(_resourceDirectory / "config/game/character.yaml");
   _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
-  _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items.yaml");
+  _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items");
   _magicRegistry.ReadConfig(_resourceDirectory / "config/game/magic.yaml");
   _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
   _questRegistry.ReadConfig(_resourceDirectory / "config/game/quests.yaml");
