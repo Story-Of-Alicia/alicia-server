@@ -284,6 +284,7 @@ void RaceInstance::Tick()
 {
   try
   {
+    // Stage tick
     switch (_stage)
     {
       case Stage::Waiting:
@@ -305,7 +306,29 @@ void RaceInstance::Tick()
   }
   catch (const std::exception& x)
   {
-    spdlog::error("Exception ticking race instance {}: {}", GetRoomUid(), x.what());
+    spdlog::error("Exception ticking race instance {} stage: {}", GetRoomUid(), x.what());
+  }
+
+  try
+  {
+    // Post-stage tick
+    switch (_stage)
+    {
+      case Stage::Waiting:
+        break;
+      case Stage::Loading:
+        break;
+      case Stage::Racing:
+        this->TickActiveRaceContent();
+        break;
+      case Stage::Finishing:
+        this->TickActiveRaceContent();
+        break;
+    }
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception ticking race instance {} post-stage: {}", GetRoomUid(), x.what());
   }
 }
 
@@ -428,14 +451,7 @@ void RaceInstance::TickRacing()
   // If the race is not finishing and the timeout was not reached
   // do not finish the race.
   if (not isFinishing && not raceTimeoutReached)
-  {
-    // Tick main race functions
-    this->TickItemSpawners();
-    if (this->GetParameters().gameMode == protocol::GameMode::Magic)
-      // Tick magic gauge
-      this->TickMagicGauge();
     return;
-  }
 
   _stage = Stage::Finishing;
   _stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(15);
@@ -490,6 +506,15 @@ void RaceInstance::TickFinishing()
 
   Stop();
  _stage = Stage::Waiting;
+}
+
+void RaceInstance::TickActiveRaceContent()
+{
+  // Tick active race content
+  this->TickItemSpawners();
+  if (this->GetParameters().gameMode == protocol::GameMode::Magic)
+    // Tick magic gauge
+    this->TickMagicGauge();
 }
 
 void RaceInstance::TickItemSpawners()
