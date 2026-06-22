@@ -1160,25 +1160,28 @@ void RaceNetworkHandler::HandleLeaveRoom(ClientId clientId)
     }
     else
     {
-      std::ranges::copy(
-         raceInstance.GetTracker().GetRacers() | std::views::keys,
-         std::back_inserter(candidates));
+      // Get active racers (that are still connected)
+      auto& tracker = raceInstance.GetTracker();
+      std::ranges::copy_if(
+        tracker.GetRacers() | std::views::keys,
+        std::back_inserter(candidates),
+        [&tracker](const data::Uid characterUid)
+        {
+          const auto& racer = tracker.GetRacer(characterUid);
+          return racer.state != tracker::RaceTracker::Racer::State::Disconnected;
+        });
     }
 
+    // Pick a candidate
+    // For now, we pick the first racer
     // todo: sort by performance
-    for (const data::Uid candidate : candidates)
+    if (not candidates.empty())
     {
-      // Set new room master
-      raceInstance.GetRoom([candidate](Room& room)
-      {
-        auto& details = room.GetRoomDetails();
-        details.masterUid = candidate;
-      });
-
-      const auto& newMasterClientContext = GetClientContextByCharacterUid(candidate);
+      const data::Uid firstCandidateUid = candidates.front();
+      const auto& newMasterClientContext = GetClientContextByCharacterUid(firstCandidateUid);
 
       std::string newMasterCharacterName;
-      _serverInstance.GetDataDirector().GetCharacter(candidate).Immutable(
+      _serverInstance.GetDataDirector().GetCharacter(newMasterClientContext.characterUid).Immutable(
         [&newMasterCharacterName](const data::Character& character)
         {
           newMasterCharacterName = character.name();
@@ -1191,7 +1194,7 @@ void RaceNetworkHandler::HandleLeaveRoom(ClientId clientId)
 
       // Notify other clients in the room about the new master.
       const protocol::AcCmdCRChangeMasterNotify notify{
-        .masterUid = candidate};
+        .masterUid = newMasterClientContext.characterUid};
       this->Broadcast(raceInstance, notify);
     }
   }
