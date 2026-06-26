@@ -43,6 +43,15 @@ public:
     int32_t max{};
   };
 
+  //! Data of a registered stallion needed to perform a breeding.
+  struct StallionData
+  {
+    //! UID of the stallion data record (not the horse).
+    data::Uid stallionUid{data::InvalidUid};
+    //! Price in carrots to breed with this stallion.
+    uint32_t breedingCharge{0};
+  };
+
   enum class SnapshotOrder
   {
     LineageDescending,
@@ -115,6 +124,12 @@ public:
   //! @param horseUid UID of the horse
   //! @returns Breeding earnings if registered, `std::nullopt` if not registered.
   [[nodiscard]] std::optional<Earnings> CalculateUnregisterEarnings(
+    data::Uid horseUid) const noexcept;
+
+  //! Gets the stallion data for a registered horse.
+  //! @param horseUid UID of the horse registered as a stallion.
+  //! @returns Stallion data if registered, `std::nullopt` otherwise.
+  [[nodiscard]] std::optional<StallionData> GetStallionData(
     data::Uid horseUid) const noexcept;
 
   //! Checks if a horse is registered as a stallion

@@ -139,16 +139,8 @@ private:
     bool hasPendingFailureCard{false};
     //! Current breeding failure card type.
     protocol::BreedingFailureCardType pendingCardType{};
-
-    //! Breeding session context for tracking breeding market flow
-    struct BreedingContext
-    {
-      uint32_t sessionId{0};        // Non-zero, stable for the dialog
-      uint32_t mareId{0};           // Player's horse involved in breeding
-      uint32_t stallionId{0};       // Last stallion searched/selected
-      uint8_t choice{0};            // Choice from failure card (0x212)
-      uint32_t lastTick{0};         // Server tick/timestamp
-    } breedingContext;
+    //! Fee paid for the failed breeding; scales the failure-card reward grade.
+    uint32_t pendingFailureCardSpend{0};
   };
 
   struct RanchInstance
@@ -226,6 +218,42 @@ private:
   void HandleTryBreeding(
     ClientId clientId,
     const protocol::AcCmdCRTryBreeding& command);
+
+  //! A breeding bonus rolled from the BonusProbInfo table.
+  struct BreedingBonus
+  {
+    //! Entry id (0 = no bonus).
+    uint32_t id{0};
+    //! 0 = pregnancy success % increase, 1 = fertility peak level.
+    uint32_t type{0};
+    //! Bonus value (success % for type 0, fertility peak level for type 1).
+    uint32_t value{0};
+  };
+
+  //! Rolls a breeding bonus based on the stallion's grade.
+  //! @param stallionGrade Grade of the stallion.
+  //! @returns The rolled bonus, or a default (id 0) bonus if none activated.
+  [[nodiscard]] BreedingBonus RollBreedingBonus(uint32_t stallionGrade);
+
+  //! Calculates the breeding success rate (0-100).
+  //! @param stallionGrade Grade of the stallion.
+  //! @param stallionBreedingCount Lifetime breeding count of the stallion.
+  //! @param bonus Rolled breeding bonus.
+  //! @returns Success rate as a percentage capped at 100.
+  [[nodiscard]] uint32_t CalculateBreedingSuccessRate(
+    uint32_t stallionGrade,
+    uint32_t stallionBreedingCount,
+    const BreedingBonus& bonus);
+
+  //! Creates a foal from a successful breeding and fills the breeding response.
+  //! @param command Breeding command (holds mare/stallion horse UIDs).
+  //! @param bonus Rolled breeding bonus.
+  //! @param response Response to populate with the foal's details.
+  //! @returns UID of the created foal.
+  data::Uid CreateBredFoal(
+    const protocol::AcCmdCRTryBreeding& command,
+    const BreedingBonus& bonus,
+    protocol::RanchCommandTryBreedingOK& response);
 
   void HandleBreedingAbandon(
     ClientId clientId,

@@ -55,7 +55,8 @@ void ReadFailureCardTable(const YAML::Node& node, FailureCardTable& table)
 void BreedingRegistry::ReadConfig(const std::filesystem::path& configPath)
 {
   const auto root = YAML::LoadFile(configPath.string());
-  const auto failureCards = root["breeding"]["failureCards"];
+  const auto breeding = root["breeding"];
+  const auto failureCards = breeding["failureCards"];
 
   for (const auto& probNode : failureCards["probabilities"])
   {
@@ -70,11 +71,65 @@ void BreedingRegistry::ReadConfig(const std::filesystem::path& configPath)
   ReadFailureCardTable(failureCards["normalCard"], _normalCard);
   ReadFailureCardTable(failureCards["chanceCard"], _chanceCard);
 
+  if (const auto params = breeding["params"])
+  {
+    _params.childGradeLimit = params["childGradeLimit"].as<int32_t>(_params.childGradeLimit);
+    _params.successDecayPerBreeding = params["successDecayPerBreeding"].as<int32_t>(
+      _params.successDecayPerBreeding);
+    _params.minSuccessRate = params["minSuccessRate"].as<int32_t>(_params.minSuccessRate);
+    _params.chanceCardChance = params["chanceCardChance"].as<int32_t>(_params.chanceCardChance);
+    _params.appearanceVariation = params["appearanceVariation"].as<int32_t>(
+      _params.appearanceVariation);
+    _params.inheritanceRateBonusUnit = params["inheritanceRateBonusUnit"].as<int32_t>(
+      _params.inheritanceRateBonusUnit);
+  }
+
+  if (const auto genetics = breeding["genetics"])
+  {
+    for (const auto& rowNode : genetics["gradeProbabilities"])
+    {
+      GradeProbabilityRow row;
+      row.gradeDistance = rowNode["gradeDistance"].as<uint32_t>();
+      row.minus3 = rowNode["minus3"].as<float>();
+      row.minus2 = rowNode["minus2"].as<float>();
+      row.minus1 = rowNode["minus1"].as<float>();
+      for (const auto& plusNode : rowNode["plus"])
+        row.plus.push_back(plusNode.as<float>());
+      _gradeProbabilities.push_back(row);
+    }
+  }
+
+  if (const auto bonus = breeding["bonus"])
+  {
+    const auto readBand = [](const YAML::Node& node, BreedingBonusBand& band)
+    {
+      band.minGrade = node["min"].as<uint32_t>();
+      band.maxGrade = node["max"].as<uint32_t>();
+      band.activationChance = node["activationChance"].as<int32_t>();
+    };
+    readBand(bonus["smallGrade"], _smallGradeBand);
+    readBand(bonus["bigGrade"], _bigGradeBand);
+
+    for (const auto& entryNode : bonus["entries"])
+    {
+      BreedingBonusEntry entry;
+      entry.id = entryNode["id"].as<uint32_t>();
+      entry.type = entryNode["type"].as<uint32_t>();
+      entry.value = entryNode["value"].as<uint32_t>();
+      entry.ratioSmall = entryNode["ratioSmall"].as<int32_t>();
+      entry.ratioBig = entryNode["ratioBig"].as<int32_t>();
+      _bonusEntries.push_back(entry);
+    }
+  }
+
   spdlog::info(
-    "Breeding registry loaded {} prob entries, {} normal rewards, {} chance rewards",
+    "Breeding registry loaded {} prob entries, {} normal rewards, {} chance rewards, "
+    "{} bonus entries, {} grade-probability rows",
     _failureCardProbs.size(),
     _normalCard.rewards.size(),
-    _chanceCard.rewards.size());
+    _chanceCard.rewards.size(),
+    _bonusEntries.size(),
+    _gradeProbabilities.size());
 }
 
 const FailureCardProbEntry& BreedingRegistry::GetFailureCardProb(uint32_t moneySpent) const
@@ -121,6 +176,41 @@ const FailureCardReward* BreedingRegistry::GetChanceCardReward(uint32_t rewardId
   if (it != _chanceCard.rewards.end())
     return &it->second;
   return nullptr;
+}
+
+const BreedingParams& BreedingRegistry::GetBreedingParams() const
+{
+  return _params;
+}
+
+const GradeProbabilityRow& BreedingRegistry::GetGradeProbability(uint32_t gradeDistance) const
+{
+  static const GradeProbabilityRow fallback{};
+  if (_gradeProbabilities.empty())
+    return fallback;
+
+  for (const auto& row : _gradeProbabilities)
+  {
+    if (row.gradeDistance == gradeDistance)
+      return row;
+  }
+  // Distances beyond the table clamp to the largest configured row.
+  return _gradeProbabilities.back();
+}
+
+const BreedingBonusBand& BreedingRegistry::GetSmallGradeBonusBand() const
+{
+  return _smallGradeBand;
+}
+
+const BreedingBonusBand& BreedingRegistry::GetBigGradeBonusBand() const
+{
+  return _bigGradeBand;
+}
+
+const std::vector<BreedingBonusEntry>& BreedingRegistry::GetBonusEntries() const
+{
+  return _bonusEntries;
 }
 
 } // namespace server::registry

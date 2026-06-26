@@ -372,8 +372,6 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.mailbox.sent = mailbox.value("sent", std::vector<data::Uid>{});
 
   character.quests = json.value("quests", std::vector<data::Uid>{});
-
-  character.breedingMoneySpent = json.value("breedingMoneySpent", uint32_t{0});
 }
 
 void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
@@ -483,8 +481,6 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   skills["speed"] = writeSkills(character.skills.speed());
   skills["magic"] = writeSkills(character.skills.magic());
   json["skills"] = skills;
-
-  json["breedingMoneySpent"] = character.breedingMoneySpent();
 
   json["dailyQuestGroupUid"] = character.dailyQuestGroupUid();
   nlohmann::json mailbox;

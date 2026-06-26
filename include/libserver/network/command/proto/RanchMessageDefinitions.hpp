@@ -1151,7 +1151,8 @@ struct RanchCommandTryBreedingOK
   Horse::Appearance appearance{};
   Horse::Stats stats{};
 
-  uint32_t unk1{};
+  //! Character's carrot balance after the breeding fee was charged.
+  uint32_t carrots{};
   uint8_t unk2{};
   uint8_t unk3{};
   uint8_t unk4{};
@@ -1159,7 +1160,8 @@ struct RanchCommandTryBreedingOK
   uint8_t potentialType{};
   uint8_t unk7{};
   uint8_t unk8{};
-  uint16_t unk9{};
+  //! Foal's emblem ID.
+  uint16_t emblemId{};
   uint8_t unk10{};
 
   static Command GetCommand()
@@ -1184,12 +1186,18 @@ struct RanchCommandTryBreedingOK
 
 struct RanchCommandTryBreedingCancel
 {
-  uint8_t unk0{};
-  uint32_t unk1{};
-  uint8_t unk2{};
-  uint8_t unk3{};
-  uint8_t unk4{};
-  uint8_t unk5{};
+  //! 1 = soft success / consolation (failure-card) path, otherwise a hard cancel.
+  uint8_t resultCode{};
+  //! Character's carrot balance after the breeding fee (same role as TryBreedingOK).
+  uint32_t carrots{};
+  //! Passed as Breed_SuccessData_Bonus arg 3.
+  uint8_t bonusByte{};
+  //! Passed as Breed_SuccessData_Bonus arg 1.
+  uint8_t bonusVal1{};
+  //! Passed as Breed_SuccessData_Bonus arg 2.
+  uint8_t bonusVal2{};
+  //! Passed as the Breed_StallionReturnRanch argument.
+  uint8_t stallionReturn{};
 
   static Command GetCommand()
   {
@@ -1500,8 +1508,6 @@ struct RanchCommandRanchStuffOK
 
 struct AcCmdCRBreedingFailureCard
 {
-  int16_t statusOrFlag{};
-
   static Command GetCommand()
   {
     return Command::AcCmdCRBreedingFailureCard;

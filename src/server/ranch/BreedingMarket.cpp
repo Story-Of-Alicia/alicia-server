@@ -251,6 +251,37 @@ std::optional<BreedingMarket::Earnings> BreedingMarket::CalculateUnregisterEarni
   return earnings;
 }
 
+std::optional<BreedingMarket::StallionData> BreedingMarket::GetStallionData(
+  const data::Uid horseUid) const noexcept
+{
+  data::Uid stallionUid = data::InvalidUid;
+
+  {
+    std::shared_lock lock(_mutex);
+
+    // If the horse is not a registered stallion do an early return.
+    const auto horseIterator = _horseRegistrations.find(horseUid);
+    if (horseIterator == _horseRegistrations.end())
+      return std::nullopt;
+
+    stallionUid = horseIterator->second.stallionUid;
+  }
+
+  const auto stallionRecord = _serverInstance.GetDataDirector().GetStallionCache().Get(
+    stallionUid);
+  if (not stallionRecord)
+    return std::nullopt;
+
+  StallionData data;
+  data.stallionUid = stallionUid;
+  stallionRecord->Immutable([&data](const data::Stallion& stallion)
+    {
+      data.breedingCharge = stallion.breedingCharge();
+    });
+
+  return data;
+}
+
 bool BreedingMarket::IsRegistered(
   const data::Uid horseUid) const noexcept
 {

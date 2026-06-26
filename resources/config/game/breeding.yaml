@@ -116,6 +116,15 @@ breeding:
     childGradeLimit: 8
     inheritanceRateBonusUnit: 2
     warningBreedingProbability: 20
+    # Breeding success roll tuning.
+    # Each prior breeding lowers the stallion's success rate by successDecayPerBreeding (%),
+    # floored at minSuccessRate (%).
+    successDecayPerBreeding: 2
+    minSuccessRate: 4
+    # Probability (%) that a breeding-failure card is a Chance (yellow) card instead of a Normal (red) one.
+    chanceCardChance: 15
+    # +/- variation (%) applied when inheriting a foal's appearance from the average of its parents.
+    appearanceVariation: 20
 
   # Breeding cost per parent horse grade
   costInfo:
@@ -977,3 +986,84 @@ breeding:
           itemTid: 45001
           itemCount: 3
           gameMoney: 25000
+
+  # Breeding bonus roll (BonusProbInfo).
+  # When breeding, a bonus may activate based on the stallion's grade band.
+  # On activation, one entry is picked by weighted ratio (ratioSmall for the small band,
+  # ratioBig for the big band).
+  # type: 0 = pregnancy success % increase, 1 = fertility peak level (boosts foal grade)
+  bonus:
+    smallGrade:
+      min: 4
+      max: 6
+      activationChance: 10
+    bigGrade:
+      min: 7
+      max: 8
+      activationChance: 15
+    entries:
+      - id: 1
+        type: 0
+        value: 5
+        ratioSmall: 10
+        ratioBig: 0
+      - id: 2
+        type: 0
+        value: 10
+        ratioSmall: 30
+        ratioBig: 0
+      - id: 3
+        type: 0
+        value: 15
+        ratioSmall: 35
+        ratioBig: 0
+      - id: 4
+        type: 0
+        value: 20
+        ratioSmall: 20
+        ratioBig: 0
+      - id: 5
+        type: 0
+        value: 40
+        ratioSmall: 3
+        ratioBig: 0
+      - id: 6
+        type: 0
+        value: 50
+        ratioSmall: 2
+        ratioBig: 0
+      - id: 7
+        type: 0
+        value: 40
+        ratioSmall: 0
+        ratioBig: 10
+      - id: 8
+        type: 0
+        value: 50
+        ratioSmall: 0
+        ratioBig: 20
+      - id: 9
+        type: 0
+        value: 60
+        ratioSmall: 0
+        ratioBig: 10
+      - id: 10
+        type: 0
+        value: 70
+        ratioSmall: 0
+        ratioBig: 10
+      - id: 11
+        type: 1
+        value: 1
+        ratioSmall: 0
+        ratioBig: 15
+      - id: 12
+        type: 1
+        value: 2
+        ratioSmall: 0
+        ratioBig: 15
+      - id: 13
+        type: 1
+        value: 3
+        ratioSmall: 0
+        ratioBig: 20

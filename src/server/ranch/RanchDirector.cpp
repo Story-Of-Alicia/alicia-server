@@ -26,6 +26,9 @@
 #include <libserver/util/Locale.hpp>
 #include <libserver/util/Util.hpp>
 
+#include <algorithm>
+#include <cmath>
+#include <ctime>
 #include <ranges>
 
 #include <spdlog/spdlog.h>
@@ -1558,6 +1561,7 @@ void RanchDirector::HandleSearchStallion(
 
         protocol::BuildProtocolHorseParts(protocolStallion.parts, horse.parts);
         protocol::BuildProtocolHorseAppearance(protocolStallion.appearance, horse.appearance);
+        protocol::BuildProtocolHorseStats(protocolStallion.stats, horse.stats);
 
         protocolStallion.pregnancyChance = 1;
         protocolStallion.heritability = 0;
@@ -1737,10 +1741,253 @@ void RanchDirector::HandleCheckStallionCharge(
 }
 
 void RanchDirector::HandleTryBreeding(
-  const ClientId,
-  const protocol::AcCmdCRTryBreeding&)
+  const ClientId clientId,
+  const protocol::AcCmdCRTryBreeding& command)
 {
+  auto& clientContext = GetClientContext(clientId);
+  auto& dataDirector = GetServerInstance().GetDataDirector();
 
+  // Hard cancel (resultCode 0, i.e. not the consolation path) for validation failures,
+  // so the client doesn't hang.
+  const auto sendBreedingCancel = [this, clientId]()
+  {
+    _commandServer.QueueCommand<protocol::RanchCommandTryBreedingCancel>(
+      clientId, []() { return protocol::RanchCommandTryBreedingCancel{.resultCode = 0}; });
+  };
+
+  const auto mareRecord = dataDirector.GetHorseCache().Get(command.mareUid);
+  const auto stallionRecord = dataDirector.GetHorseCache().Get(command.stallionUid);
+  if (not mareRecord || not stallionRecord)
+  {
+    spdlog::warn("TryBreeding: mare {} or stallion {} not found",
+      command.mareUid, command.stallionUid);
+    sendBreedingCancel();
+    return;
+  }
+
+  // The stallion must be registered in the breeding market.
+  const auto stallionData = _breedingMarket.GetStallionData(command.stallionUid);
+  if (not stallionData)
+  {
+    spdlog::warn("TryBreeding: stallion {} is not registered in the breeding market",
+      command.stallionUid);
+    sendBreedingCancel();
+    return;
+  }
+
+  // Charge the breeding fee.
+  const auto characterRecord = dataDirector.GetCharacter(clientContext.characterUid);
+  bool charged = false;
+  characterRecord.Mutable([&charged, &stallionData](data::Character& character)
+  {
+    const auto fee = static_cast<int32_t>(stallionData->breedingCharge);
+    if (character.carrots() < fee)
+      return;
+    character.carrots() = character.carrots() - fee;
+    charged = true;
+  });
+
+  if (not charged)
+  {
+    spdlog::warn("TryBreeding: character {} cannot afford breeding fee {}",
+      clientContext.characterUid, stallionData->breedingCharge);
+    sendBreedingCancel();
+    return;
+  }
+
+  // Read the stallion grade and breeding count needed for the success roll.
+  uint32_t stallionGrade = 0;
+  uint32_t stallionBreedingCount = 0;
+  stallionRecord->Immutable([&stallionGrade, &stallionBreedingCount](const data::Horse& stallion)
+  {
+    stallionGrade = stallion.grade();
+    stallionBreedingCount = stallion.breedingCount();
+  });
+
+  const BreedingBonus bonus = RollBreedingBonus(stallionGrade);
+  const uint32_t successRate = CalculateBreedingSuccessRate(
+    stallionGrade, stallionBreedingCount, bonus);
+
+  std::uniform_int_distribution<uint32_t> successRoll(1, 100);
+  const bool success = successRoll(_randomDevice) <= successRate;
+
+  if (not success)
+  {
+    spdlog::info("TryBreeding: failed (grade={}, count={}, rate={}%)",
+      stallionGrade, stallionBreedingCount, successRate);
+  }
+  else
+  {
+    spdlog::info("TryBreeding: succeeded (grade={}, count={}, rate={}%)",
+      stallionGrade, stallionBreedingCount, successRate);
+  }
+
+  const auto applyBreedingAttemptUpdates = [&]()
+  {
+    mareRecord->Mutable([success](data::Horse& mare)
+    {
+      mare.breedingCombo() = success ? mare.breedingCombo() + 1 : 0;
+    });
+
+    // The stallion's lifetime and market counters advance for any paid attempt.
+    stallionRecord->Mutable([](data::Horse& stallion)
+    {
+      stallion.breedingCount() = stallion.breedingCount() + 1;
+    });
+
+    if (const auto stallionDbRecord = dataDirector.GetStallionCache().Get(stallionData->stallionUid))
+    {
+      stallionDbRecord->Mutable([](data::Stallion& stallion)
+      {
+        stallion.timesMated() = stallion.timesMated() + 1;
+      });
+    }
+  };
+
+  if (success)
+  {
+    protocol::RanchCommandTryBreedingOK response{};
+    const data::Uid foalUid = CreateBredFoal(command, bonus, response);
+
+    characterRecord.Mutable([foalUid, &response](data::Character& character)
+    {
+      character.horses().emplace_back(foalUid);
+      response.carrots = character.carrots();
+    });
+
+    applyBreedingAttemptUpdates();
+
+    spdlog::info("TryBreeding: created foal {}", foalUid);
+
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]() { return response; });
+    return;
+  }
+
+  applyBreedingAttemptUpdates();
+
+  clientContext.hasPendingFailureCard = true;
+  clientContext.pendingFailureCardSpend = stallionData->breedingCharge;
+
+  protocol::RanchCommandTryBreedingCancel response{
+    .resultCode = 1};
+  characterRecord.Immutable([&response](const data::Character& character)
+  {
+    response.carrots = character.carrots();
+  });
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
+RanchDirector::BreedingBonus RanchDirector::RollBreedingBonus(const uint32_t stallionGrade)
+{
+  const auto& breedingRegistry = GetServerInstance().GetBreedingRegistry();
+  const auto& smallBand = breedingRegistry.GetSmallGradeBonusBand();
+  const auto& bigBand = breedingRegistry.GetBigGradeBonusBand();
+
+  const bool isSmall = stallionGrade >= smallBand.minGrade && stallionGrade <= smallBand.maxGrade;
+  const bool isBig = stallionGrade >= bigBand.minGrade && stallionGrade <= bigBand.maxGrade;
+  if (not isSmall && not isBig)
+    return {};
+
+  // Roll whether a bonus activates at all.
+  const int32_t activationChance = isSmall ? smallBand.activationChance : bigBand.activationChance;
+  std::uniform_int_distribution<int32_t> activationRoll(1, 100);
+  if (activationRoll(_randomDevice) > activationChance)
+    return {};
+
+  // Build the selection weights for the active grade band.
+  const auto& entries = breedingRegistry.GetBonusEntries();
+  std::vector<int32_t> weights;
+  weights.reserve(entries.size());
+  int32_t weightSum = 0;
+  for (const auto& entry : entries)
+  {
+    const int32_t weight = isSmall ? entry.ratioSmall : entry.ratioBig;
+    weights.push_back(weight);
+    weightSum += weight;
+  }
+
+  if (weightSum <= 0)
+    return {};
+
+  std::discrete_distribution<size_t> bonusDist(weights.begin(), weights.end());
+  const auto& selected = entries[bonusDist(_randomDevice)];
+
+  spdlog::info("TryBreeding: rolled bonus id {} (type {}, value {}) for grade {} ({} band)",
+    selected.id, selected.type, selected.value, stallionGrade, isSmall ? "small" : "big");
+
+  return BreedingBonus{
+    .id = selected.id,
+    .type = selected.type,
+    .value = selected.value};
+}
+
+uint32_t RanchDirector::CalculateBreedingSuccessRate(
+  const uint32_t stallionGrade,
+  const uint32_t stallionBreedingCount,
+  const BreedingBonus& bonus)
+{
+  const auto& horseRegistry = GetServerInstance().GetHorseRegistry();
+  const auto& params = GetServerInstance().GetBreedingRegistry().GetBreedingParams();
+
+  // Base success rate comes from the stallion grade (horses.yaml -> grades.pregnantValue).
+  int32_t rate = params.minSuccessRate;
+  if (const auto* gradeInfo = horseRegistry.GetGradeInfo(stallionGrade))
+    rate = gradeInfo->pregnantValue;
+
+  // Each prior breeding lowers the rate, floored at the configured minimum.
+  rate -= static_cast<int32_t>(stallionBreedingCount) * params.successDecayPerBreeding;
+  rate = std::max(rate, params.minSuccessRate);
+
+  // A type-0 bonus increases the pregnancy success rate.
+  if (bonus.type == 0)
+    rate += static_cast<int32_t>(bonus.value);
+
+  return static_cast<uint32_t>(std::clamp(rate, 0, 100));
+}
+
+data::Uid RanchDirector::CreateBredFoal(
+  const protocol::AcCmdCRTryBreeding& command,
+  const BreedingBonus& bonus,
+  protocol::RanchCommandTryBreedingOK& response)
+{
+  auto& serverInstance = GetServerInstance();
+  auto& dataDirector = serverInstance.GetDataDirector();
+  auto& genetics = serverInstance.GetGenetics();
+
+  // A fertility-peak bonus (type 1) adds to the foal's grade; genetics owns the rest.
+  const uint32_t gradeBonus = bonus.type == 1 ? bonus.value : 0;
+
+  const auto foalRecord = dataDirector.CreateHorse();
+  data::Uid foalUid = data::InvalidUid;
+
+  foalRecord.Mutable([&](data::Horse& foal)
+  {
+    genetics.CreateFoal(foal, command.mareUid, command.stallionUid, gradeBonus);
+    foalUid = foal.uid();
+
+    // Populate the response from the freshly bred foal.
+    response.uid = foal.uid();
+    response.tid = foal.tid();
+    response.val = 0;
+    response.count = 1;
+    response.unk0 = static_cast<uint8_t>(foal.grade());
+    protocol::BuildProtocolHorseParts(response.parts, foal.parts, true);
+    protocol::BuildProtocolHorseAppearance(response.appearance, foal.appearance);
+    protocol::BuildProtocolHorseStats(response.stats, foal.stats);
+    response.unk2 = static_cast<uint8_t>(bonus.id);
+    response.potentialType = static_cast<uint8_t>(foal.potential.type());
+    response.emblemId = static_cast<uint16_t>(foal.emblemUid());
+  });
+
+  return foalUid;
 }
 
 void RanchDirector::HandleBreedingAbandon(
@@ -1766,15 +2013,21 @@ void RanchDirector::HandleBreedingWishlist(
 
 void RanchDirector::HandleBreedingFailureCard(
   const ClientId clientId,
-  const protocol::AcCmdCRBreedingFailureCard& command)
+  const protocol::AcCmdCRBreedingFailureCard&)
 {
-  const auto& clientContext = GetClientContext(clientId);
+  auto& clientContext = GetClientContext(clientId);
 
   // Only show the card if there's a pending failure card from breeding
   [[unlikely]] if (not clientContext.hasPendingFailureCard)
     return;
 
-  spdlog::info("AcCmdCRBreedingFailureCard: {}", command.statusOrFlag);
+  // Roll the card type (Chance/yellow vs Normal/red) now that the client is asking for it,
+  // and remember it so the subsequent Choose draws from the matching reward table.
+  const auto& params = GetServerInstance().GetBreedingRegistry().GetBreedingParams();
+  std::uniform_int_distribution<int32_t> cardRoll(1, 100);
+  clientContext.pendingCardType = cardRoll(_randomDevice) <= params.chanceCardChance
+    ? protocol::BreedingFailureCardType::Yellow
+    : protocol::BreedingFailureCardType::Red;
 
   protocol::AcCmdCRBreedingFailureCardOK response{
     .cardType = clientContext.pendingCardType};
@@ -1799,13 +2052,8 @@ void RanchDirector::HandleBreedingFailureCardChoose(
 
   protocol::AcCmdCRBreedingFailureCardChooseOK response;
 
-  // Get player's total breeding money spent for reward grade calculation
-  uint32_t moneySpent = 0;
-  characterRecord.Immutable([&moneySpent](const data::Character& character)
-  {
-    moneySpent = character.breedingMoneySpent();
-  });
-
+  // Reward grade scales with the fee paid for the failed breeding that earned this card.
+  const uint32_t moneySpent = clientContext.pendingFailureCardSpend;
   const auto& probEntry = GetServerInstance().GetBreedingRegistry().GetFailureCardProb(moneySpent);
 
   std::uniform_int_distribution<int> gradeDist(1, 100);

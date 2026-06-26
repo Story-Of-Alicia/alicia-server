@@ -605,10 +605,10 @@ void AcCmdCRBreedingFailureCardChoose::Write(
 }
 
 void AcCmdCRBreedingFailureCardChoose::Read(
-  AcCmdCRBreedingFailureCardChoose& command,
-  SourceStream& stream)
+  AcCmdCRBreedingFailureCardChoose&,
+  SourceStream&)
 {
-  stream.Read(command.statusOrFlag);
+  // Zero payload command - statusOrFlag is internal only, not serialized.
 }
 
 void AcCmdCRBreedingFailureCardChooseOK::Write(
@@ -995,12 +995,12 @@ void RanchCommandTryBreedingCancel::Write(
   const RanchCommandTryBreedingCancel& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0)
-    .Write(command.unk1)
-    .Write(command.unk2)
-    .Write(command.unk3)
-    .Write(command.unk4)
-    .Write(command.unk5);
+  stream.Write(command.resultCode)
+    .Write(command.carrots)
+    .Write(command.bonusByte)
+    .Write(command.bonusVal1)
+    .Write(command.bonusVal2)
+    .Write(command.stallionReturn);
 }
 
 void RanchCommandTryBreedingCancel::Read(
@@ -1064,7 +1064,7 @@ void RanchCommandTryBreedingOK::Write(
     .Write(command.parts)
     .Write(command.appearance)
     .Write(command.stats)
-    .Write(command.unk1)
+    .Write(command.carrots)
     .Write(command.unk2)
     .Write(command.unk3)
     .Write(command.unk4)
@@ -1072,7 +1072,7 @@ void RanchCommandTryBreedingOK::Write(
     .Write(command.potentialType)
     .Write(command.unk7)
     .Write(command.unk8)
-    .Write(command.unk9)
+    .Write(command.emblemId)
     .Write(command.unk10);
 }
 

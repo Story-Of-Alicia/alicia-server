@@ -56,6 +56,59 @@ struct FailureCardTable
   std::unordered_map<uint32_t, FailureCardReward> rewards;
 };
 
+//! Foal grade outcome distribution for a given grade distance between parents.
+//! See breeding.yaml -> breeding.genetics.gradeProbabilities.
+struct GradeProbabilityRow
+{
+  //! abs(mareGrade - stallionGrade) this row applies to.
+  uint32_t gradeDistance{0};
+  //! Probability (%) the foal is 3/2/1 grades below the lower parent.
+  float minus3{0.0f};
+  float minus2{0.0f};
+  float minus1{0.0f};
+  //! Probability (%) weights for plus0 (same as lower parent) upwards.
+  std::vector<float> plus;
+};
+
+//! Tunable parameters for the breeding success roll. See breeding.yaml -> breeding.params.
+struct BreedingParams
+{
+  //! Foal grade is capped at this value.
+  int32_t childGradeLimit{8};
+  //! Success rate (%) lost per prior breeding of the stallion.
+  int32_t successDecayPerBreeding{2};
+  //! Minimum breeding success rate (%) floor.
+  int32_t minSuccessRate{4};
+  //! Probability (%) of a Chance (yellow) failure card.
+  int32_t chanceCardChance{15};
+  //! +/- variation (%) applied when inheriting foal appearance.
+  int32_t appearanceVariation{20};
+  //! Coat inheritance-rate bonus (%) granted per breeding-combo success.
+  int32_t inheritanceRateBonusUnit{2};
+};
+
+//! A grade band for the breeding bonus roll (e.g. small/big grades).
+struct BreedingBonusBand
+{
+  uint32_t minGrade{0};
+  uint32_t maxGrade{0};
+  //! Probability (%) that a bonus activates for a stallion in this band.
+  int32_t activationChance{0};
+};
+
+//! A single breeding bonus entry from the BonusProbInfo table.
+struct BreedingBonusEntry
+{
+  uint32_t id{0};
+  //! 0 = pregnancy success % increase, 1 = fertility peak level.
+  uint32_t type{0};
+  uint32_t value{0};
+  //! Selection weight when the small grade band activates.
+  int32_t ratioSmall{0};
+  //! Selection weight when the big grade band activates.
+  int32_t ratioBig{0};
+};
+
 class BreedingRegistry
 {
 public:
@@ -81,10 +134,32 @@ public:
   //! @returns Pointer to FailureCardReward, or nullptr if not found.
   const FailureCardReward* GetChanceCardReward(uint32_t rewardId) const;
 
+  //! Returns the breeding success/roll tuning parameters.
+  const BreedingParams& GetBreedingParams() const;
+
+  //! Returns the foal-grade probability row for the given grade distance.
+  //! Clamps to the largest configured distance when out of range.
+  const GradeProbabilityRow& GetGradeProbability(uint32_t gradeDistance) const;
+
+  //! Returns the small-grade breeding bonus band.
+  const BreedingBonusBand& GetSmallGradeBonusBand() const;
+
+  //! Returns the big-grade breeding bonus band.
+  const BreedingBonusBand& GetBigGradeBonusBand() const;
+
+  //! Returns all breeding bonus entries (BonusProbInfo table).
+  const std::vector<BreedingBonusEntry>& GetBonusEntries() const;
+
 private:
   std::vector<FailureCardProbEntry> _failureCardProbs;
   FailureCardTable _normalCard;
   FailureCardTable _chanceCard;
+
+  BreedingParams _params;
+  std::vector<GradeProbabilityRow> _gradeProbabilities;
+  BreedingBonusBand _smallGradeBand;
+  BreedingBonusBand _bigGradeBand;
+  std::vector<BreedingBonusEntry> _bonusEntries;
 };
 
 } // namespace server::registry
