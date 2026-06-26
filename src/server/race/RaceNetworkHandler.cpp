@@ -53,32 +53,79 @@ uint32_t GetMountStatValue(
   return 0;
 }
 
+// Function to select a random item based on position weights
+uint32_t SelectMagicTypeByPosition(uint32_t position, bool isTeam)
+{
+  // Validate position
+  if (position > 7)
+    throw std::out_of_range("Position must be between 0 and 7");
+
+  // Weights for each position (P1 to P8)
+  // Each inner vector corresponds to the weights for:
+  // Bolt, Shield, Boost, Feather, Ice, Chains, Haze, Dragon, Lightning, Wand, Gauge Boost, Team Boost
+  const std::vector<std::vector<uint32_t>> positionWeights = {
+    {5, 100, 10, 0, 70, 0, 0, 5, 0, 10, 0, 10},     // P1
+    {30, 25, 45, 5, 15, 10, 30, 20, 5, 10, 0, 5},   // P2
+    {35, 10, 35, 5, 10, 10, 35, 35, 5, 15, 0, 10},  // P3
+    {35, 5, 35, 5, 10, 15, 30, 45, 5, 10, 0, 10},   // P4
+    {25, 5, 45, 5, 5, 20, 30, 35, 5, 10, 0, 10},    // P5
+    {40, 5, 45, 5, 5, 20, 30, 25, 5, 10, 0, 10},    // P6
+    {20, 5, 55, 15, 5, 10, 30, 25, 10, 10, 0, 10},  // P7
+    {10, 5, 70, 35, 5, 10, 15, 10, 10, 15, 0, 10}   // P8
+  };
+
+  // Get the weights for the specified position
+  const std::vector<uint32_t>& weights = positionWeights[position];
+  auto weightsEndIter = weights.end();
+  if (not isTeam)
+    // Exclude team item weights
+    weightsEndIter -= 3;
+
+  // Create a discrete distribution based on the weights
+  std::discrete_distribution<uint32_t> dist(weights.begin(), weightsEndIter);
+
+  // Random number generator
+  static std::random_device rd;
+  static std::mt19937 gen(rd());
+
+  // Select a random index based on the distribution
+  // and map the discrete index to the corresponding magic item
+  const uint32_t selectedWeight = dist(gen);
+  
+  // Discrete weights to magic item id mapping example:
+  // TODO: sensitive to weights ordering
+  // 0: (0 + 1) * 2 = 2 (Bolt)
+  // 5: (5 + 1) * 2 = 12 (Chains)
+  // 8: (8 + 1) * 2 = 18 (Lightning)
+  return (selectedWeight + 1) * 2;
+}
+
 registry::Magic::SlotInfo RandomMagicItem(
   ServerInstance& serverInstance,
-  const tracker::RaceTracker::Racer& racer)
+  tracker::RaceTracker& tracker,
+  data::Uid racerUid)
 {
-  const auto& itemPool = (racer.team == tracker::RaceTracker::Racer::Team::Solo
-    ? serverInstance.GetMagicRegistry().GetSoloPool()
-    : serverInstance.GetMagicRegistry().GetTeamPool());
+  const auto& racer = tracker.GetRacer(racerUid);
 
-  // Build weights: Lightning (type 18) gets a reduced roll chance.
-  // Booster, HotRodding, and team-only items get a slightly reduced chance as well.
-  // TODO: Replace with a proper per-spell weight system.
-  const auto& magicRegistry = serverInstance.GetMagicRegistry();
-  std::vector<uint32_t> weights;
-  weights.reserve(itemPool.size());
-  for (const uint32_t type : itemPool)
+  // Get this racer's track progress
+  const float racerTrackProgress = racer.progress;
+
+  // Determine the racer's position (0 = 1st place)
+  uint32_t racerPosition = 0;
+  for (const auto& [uid, instanceRacer] : tracker.GetRacers())
   {
-    const auto& slotInfo = magicRegistry.GetSlotInfo(type);
-    const uint32_t w = (type == 18) ? 1u
-      : (slotInfo.basicType == 6 || slotInfo.basicType == 8 || slotInfo.basicType == 12) ? 2u
-      : (slotInfo.teamMode != 0) ? 2u
-      : 4u;
-    weights.push_back(w);
+    if (uid == racerUid)
+      continue;
+    if (instanceRacer.progress > racerTrackProgress)
+      racerPosition++;
   }
+  
+  const uint32_t positionMagicType = SelectMagicTypeByPosition(
+    racerPosition,
+    racer.team == protocol::TeamColor::Red or racer.team == protocol::TeamColor::Blue);
 
-  std::discrete_distribution<size_t> distribution(weights.begin(), weights.end());
-  auto magicSlotInfo = magicRegistry.GetSlotInfo(itemPool[distribution(_randomDevice)]);
+  const auto& magicRegistry = serverInstance.GetMagicRegistry();
+  auto magicSlotInfo = magicRegistry.GetSlotInfo(positionMagicType);
   uint32_t critChanceBp = magicRegistry.GetBaseCritChanceBp();
   if (magicSlotInfo.criticalType != 0)
   {
@@ -2130,6 +2177,7 @@ void RaceNetworkHandler::HandleRaceUserPos(
   // TODO: player position anticheat
 
   racer.position = command.position;
+  racer.progress = command.member6;
 }
 
 void RaceNetworkHandler::HandleChat(
@@ -2431,7 +2479,8 @@ void RaceNetworkHandler::HandleRequestMagicItem(
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
   const auto& parameters = raceInstance.GetParameters();
-  auto& racer = raceInstance.GetTracker().GetRacer(clientContext.characterUid);
+  auto& tracker = raceInstance.GetTracker();
+  auto& racer = tracker.GetRacer(clientContext.characterUid);
 
   // TODO: Revise this on NPC races
   if (command.characterOid != racer.oid)
@@ -2451,7 +2500,11 @@ void RaceNetworkHandler::HandleRequestMagicItem(
     return;
   }
 
-  racer.magicItem.emplace(RandomMagicItem(_serverInstance, racer).type);
+  const auto& magicItemSlotInfo = RandomMagicItem(
+    _serverInstance,
+    tracker,
+    clientContext.characterUid);
+  racer.magicItem.emplace(magicItemSlotInfo.type);
   racer.starPointValue = 0;
 
   protocol::AcCmdCRStarPointGetOK starPointResponse{

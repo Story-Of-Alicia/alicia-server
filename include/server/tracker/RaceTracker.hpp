@@ -77,6 +77,7 @@ public:
     uint32_t jumpComboValue{};
     uint32_t courseTime{InvalidCourseTime};
     std::optional<uint32_t> magicItem{};
+    float progress{};
 
     //! A set of tracked items in racer's proximity.
     std::unordered_set<Oid> trackedDecks;
