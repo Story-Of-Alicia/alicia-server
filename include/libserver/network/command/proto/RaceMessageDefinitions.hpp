@@ -1542,7 +1542,7 @@ struct AcCmdUserRaceUpdatePos
   //! 1 = In the air
   uint16_t member5{};
   //! Race track progress
-  float member6{};
+  float progress{};
   //! Ticks since connected to race director?
   uint32_t member7{};
 
