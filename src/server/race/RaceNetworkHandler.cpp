@@ -55,7 +55,7 @@ uint32_t GetMountStatValue(
 
 // Function to select a random item based on position weights
 uint32_t SelectMagicTypeByPosition(
-  const registry::MagicRegistry& registry,
+  const registry::MagicRegistry& magicRegistry,
   uint32_t position,
   bool isTeam)
 {
@@ -64,7 +64,7 @@ uint32_t SelectMagicTypeByPosition(
     throw std::out_of_range("Position must be between 0 and 7");
 
   // Get the weights for the specified position
-  const std::vector<uint32_t>& weights = registry.GetPositionWeights(position);
+  const std::vector<uint32_t>& weights = magicRegistry.GetPositionWeights(position);
   auto weightsEndIter = weights.end();
   if (not isTeam)
     // Exclude team item weights
@@ -90,7 +90,7 @@ uint32_t SelectMagicTypeByPosition(
 }
 
 registry::Magic::SlotInfo RandomMagicItem(
-  ServerInstance& serverInstance,
+  const registry::MagicRegistry& magicRegistry,
   tracker::RaceTracker& tracker,
   data::Uid racerUid)
 {
@@ -110,11 +110,10 @@ registry::Magic::SlotInfo RandomMagicItem(
   }
   
   const uint32_t positionMagicType = SelectMagicTypeByPosition(
-    serverInstance.GetMagicRegistry(),
+    magicRegistry,
     racerPosition,
     racer.team == protocol::TeamColor::Red or racer.team == protocol::TeamColor::Blue);
 
-  const auto& magicRegistry = serverInstance.GetMagicRegistry();
   auto magicSlotInfo = magicRegistry.GetSlotInfo(positionMagicType);
   uint32_t critChanceBp = magicRegistry.GetBaseCritChanceBp();
   if (magicSlotInfo.criticalType != 0)
@@ -128,7 +127,7 @@ registry::Magic::SlotInfo RandomMagicItem(
 
   if ((rand() % 10000) < static_cast<int>(critChanceBp))
   {
-    magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(magicSlotInfo.criticalType);
+    magicSlotInfo = magicRegistry.GetSlotInfo(magicSlotInfo.criticalType);
   }
   return magicSlotInfo;
 }
@@ -2491,7 +2490,7 @@ void RaceNetworkHandler::HandleRequestMagicItem(
   }
 
   const auto& magicItemSlotInfo = RandomMagicItem(
-    _serverInstance,
+    _serverInstance.GetMagicRegistry(),
     tracker,
     clientContext.characterUid);
   racer.magicItem.emplace(magicItemSlotInfo.type);
