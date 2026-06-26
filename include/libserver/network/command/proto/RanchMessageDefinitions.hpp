@@ -1190,11 +1190,10 @@ struct RanchCommandTryBreedingCancel
   uint8_t resultCode{};
   //! Character's carrot balance after the breeding fee (same role as TryBreedingOK).
   uint32_t carrots{};
-  //! Passed as Breed_SuccessData_Bonus arg 3.
+  //! these bonus vals are passed in the Client Handler to GameMsg:Breed_Data_Bonus
+  //! but still are undiscovered what exactly they are used for
   uint8_t bonusByte{};
-  //! Passed as Breed_SuccessData_Bonus arg 1.
   uint8_t bonusVal1{};
-  //! Passed as Breed_SuccessData_Bonus arg 2.
   uint8_t bonusVal2{};
   //! Passed as the Breed_StallionReturnRanch argument.
   uint8_t stallionReturn{};
