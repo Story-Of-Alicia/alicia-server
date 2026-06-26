@@ -54,7 +54,7 @@ uint32_t GetMountStatValue(
 }
 
 // Function to select a random item based on position weights
-uint32_t SelectMagicTypeByPosition(
+const registry::Magic::SlotInfo& SelectMagicTypeByPosition(
   const registry::MagicRegistry& magicRegistry,
   uint32_t position,
   bool isTeam)
@@ -83,10 +83,10 @@ uint32_t SelectMagicTypeByPosition(
   // Select a random index based on the distribution
   // and map the discrete index to the corresponding magic item
   const uint32_t selectedIndex = dist(gen);
-  return positionSlotInfoWeights[selectedIndex].second.type;
+  return positionSlotInfoWeights[selectedIndex].second;
 }
 
-registry::Magic::SlotInfo RandomMagicItem(
+const registry::Magic::SlotInfo& RandomMagicItem(
   const registry::MagicRegistry& magicRegistry,
   tracker::RaceTracker& tracker,
   data::Uid racerUid)
@@ -106,12 +106,11 @@ registry::Magic::SlotInfo RandomMagicItem(
       racerPosition++;
   }
   
-  const uint32_t positionMagicType = SelectMagicTypeByPosition(
+  const registry::Magic::SlotInfo& magicSlotInfo = SelectMagicTypeByPosition(
     magicRegistry,
     racerPosition,
     racer.team == protocol::TeamColor::Red or racer.team == protocol::TeamColor::Blue);
 
-  auto magicSlotInfo = magicRegistry.GetSlotInfo(positionMagicType);
   uint32_t critChanceBp = magicRegistry.GetBaseCritChanceBp();
   if (magicSlotInfo.criticalType != 0)
   {
@@ -123,9 +122,8 @@ registry::Magic::SlotInfo RandomMagicItem(
   }
 
   if ((rand() % 10000) < static_cast<int>(critChanceBp))
-  {
-    magicSlotInfo = magicRegistry.GetSlotInfo(magicSlotInfo.criticalType);
-  }
+    return magicRegistry.GetSlotInfo(magicSlotInfo.criticalType);
+  
   return magicSlotInfo;
 }
 
