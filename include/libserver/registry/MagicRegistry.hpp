@@ -122,6 +122,9 @@ public:
   //! Returns the stat scaling for a basicType, or nullptr if none applies.
   [[nodiscard]] const Magic::StatScaling* GetStatScaling(uint32_t basicType) const;
 
+  //! Returns the position weights for use in random magic selection.
+  [[nodiscard]] const std::vector<uint32_t>& GetPositionWeights(uint32_t position) const;
+
 private:
   std::unordered_map<uint32_t, Magic::SlotInfo> _slotInfo{};
   std::vector<uint32_t> _soloPool{};
@@ -130,6 +133,8 @@ private:
   uint32_t _baseCritChanceBp{500};
   //! Keyed by basicType.
   std::unordered_map<uint32_t, Magic::StatScaling> _statScalings{};
+  //! Position weights for use in random magic selection.
+  std::vector<std::vector<uint32_t>> _positionWeights;
 };
 
 } // namespace server::registry

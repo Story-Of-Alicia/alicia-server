@@ -54,28 +54,17 @@ uint32_t GetMountStatValue(
 }
 
 // Function to select a random item based on position weights
-uint32_t SelectMagicTypeByPosition(uint32_t position, bool isTeam)
+uint32_t SelectMagicTypeByPosition(
+  const registry::MagicRegistry& registry,
+  uint32_t position,
+  bool isTeam)
 {
   // Validate position
   if (position > 7)
     throw std::out_of_range("Position must be between 0 and 7");
 
-  // Weights for each position (P1 to P8)
-  // Each inner vector corresponds to the weights for:
-  // Bolt, Shield, Boost, Feather, Ice, Chains, Haze, Dragon, Lightning, Wand, Gauge Boost, Team Boost
-  const std::vector<std::vector<uint32_t>> positionWeights = {
-    {5, 100, 10, 0, 70, 0, 0, 5, 0, 10, 0, 10},     // P1
-    {30, 25, 45, 5, 15, 10, 30, 20, 5, 10, 0, 5},   // P2
-    {35, 10, 35, 5, 10, 10, 35, 35, 5, 15, 0, 10},  // P3
-    {35, 5, 35, 5, 10, 15, 30, 45, 5, 10, 0, 10},   // P4
-    {25, 5, 45, 5, 5, 20, 30, 35, 5, 10, 0, 10},    // P5
-    {40, 5, 45, 5, 5, 20, 30, 25, 5, 10, 0, 10},    // P6
-    {20, 5, 55, 15, 5, 10, 30, 25, 10, 10, 0, 10},  // P7
-    {10, 5, 70, 35, 5, 10, 15, 10, 10, 15, 0, 10}   // P8
-  };
-
   // Get the weights for the specified position
-  const std::vector<uint32_t>& weights = positionWeights[position];
+  const std::vector<uint32_t>& weights = registry.GetPositionWeights(position);
   auto weightsEndIter = weights.end();
   if (not isTeam)
     // Exclude team item weights
@@ -121,6 +110,7 @@ registry::Magic::SlotInfo RandomMagicItem(
   }
   
   const uint32_t positionMagicType = SelectMagicTypeByPosition(
+    serverInstance.GetMagicRegistry(),
     racerPosition,
     racer.team == protocol::TeamColor::Red or racer.team == protocol::TeamColor::Blue);
 

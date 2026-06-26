@@ -713,6 +713,19 @@ magic:
 
   critChanceBp: 500
 
+  # Weights for each position (P1 to P8)
+  # Each inner vector corresponds to the weights for:
+  # Bolt, Shield, Boost, Feather, Ice, Chains, Haze, Dragon, Lightning, Wand, Gauge Boost, Team Boost
+  positionWeights:
+    - [5,  100, 10, 0,  70, 0,  0,  5,  0,  10, 0, 10] # P1
+    - [30, 25,  45, 5,  15, 10, 30, 20, 5,  10, 0, 5 ] # P2
+    - [35, 10,  35, 5,  10, 10, 35, 35, 5,  15, 0, 10] # P3
+    - [35, 5,   35, 5,  10, 15, 30, 45, 5,  10, 0, 10] # P4
+    - [25, 5,   45, 5,  5,  20, 30, 35, 5,  10, 0, 10] # P5
+    - [40, 5,   45, 5,  5,  20, 30, 25, 5,  10, 0, 10] # P6
+    - [20, 5,   55, 15, 5,  10, 30, 25, 10, 10, 0, 10] # P7
+    - [10, 5,   70, 35, 5,  10, 15, 10, 10, 15, 0, 10] # P8
+
   statScalings:
     - basicType: 4   # WaterShield
       stat: agility

@@ -80,6 +80,16 @@ void MagicRegistry::ReadConfig(const std::filesystem::path& configPath)
   if (not magicSection)
     throw std::runtime_error("Missing magic section");
 
+  // Position weights
+  {
+    const auto positionWeightsSection = magicSection["positionWeights"];
+    if (not positionWeightsSection)
+      throw std::runtime_error("Missing magic positionWeights section");
+
+    for (const auto& entry : positionWeightsSection)
+      _positionWeights.push_back(entry.as<std::vector<uint32_t>>());
+  }
+
   // Slot info
   {
     const auto slotSection = magicSection["slotInfo"];
@@ -200,6 +210,11 @@ const Magic::StatScaling* MagicRegistry::GetStatScaling(uint32_t basicType) cons
 {
   const auto it = _statScalings.find(basicType);
   return it == _statScalings.cend() ? nullptr : &it->second;
+}
+
+const std::vector<uint32_t>& MagicRegistry::GetPositionWeights(uint32_t position) const
+{
+  return _positionWeights.at(position);
 }
 
 } // namespace server::registry
