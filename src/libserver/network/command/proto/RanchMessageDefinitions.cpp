@@ -1175,6 +1175,20 @@ void AcCmdCRUpdateMountNicknameCancel::Read(
   throw std::runtime_error("Not implemented.");
 }
 
+void AcCmdRCAddIdleMountInfoNotify::Write(
+  const AcCmdRCAddIdleMountInfoNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.horse);
+}
+
+void AcCmdRCAddIdleMountInfoNotify::Read(
+  AcCmdRCAddIdleMountInfoNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
 void AcCmdRCUpdateMountInfoNotify::Write(
   const AcCmdRCUpdateMountInfoNotify& command,
   SinkStream& stream)

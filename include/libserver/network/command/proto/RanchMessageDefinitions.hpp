@@ -1773,6 +1773,19 @@ struct AcCmdCRUpdateMountNicknameCancel
     SourceStream& stream);
 };
 
+struct AcCmdRCAddIdleMountInfoNotify
+{
+  RanchHorse horse{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCAddIdleMountInfoNotify;
+  }
+
+  static void Write(const AcCmdRCAddIdleMountInfoNotify& command, SinkStream& stream);
+  static void Read(AcCmdRCAddIdleMountInfoNotify& command, SourceStream& stream);
+};
+
 struct AcCmdRCUpdateMountInfoNotify
 {
   // TODO: confirm these values

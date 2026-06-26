@@ -26,162 +26,16 @@
 namespace server
 {
 
-bool Room::Player::ToggleReady()
-{
-  _isReady = not _isReady;
-  return _isReady;
-}
-
-void Room::Player::SetReady(bool ready)
-{
-  _isReady = ready;
-}
-
-bool Room::Player::IsReady() const
-{
-  return _isReady;
-}
-
-void Room::Player::SetTeam(Team team)
-{
-  _team = team;
-}
-
-Room::Player::Team Room::Player::GetTeam() const
-{
-  return _team;
-}
-
-Room::Room(uint32_t uid)
-  : _uid(uid)
-{
-}
-
-bool Room::IsRoomFull() const
-{
-  return _players.size() + _queuedPlayers.size() >= _details.maxPlayerCount;
-}
-
-bool Room::QueuePlayer(data::Uid characterUid)
-{
-  if (IsRoomFull())
-    return false;
-
-  _queuedPlayers.emplace(characterUid);
-  return true;
-}
-
-bool Room::DequeuePlayer(data::Uid characterUid)
-{
-  return _queuedPlayers.erase(characterUid) != 0;
-}
-
-bool Room::AddPlayer(data::Uid characterUid)
-{
-  if (_players.size() >= _details.maxPlayerCount)
-    return false;
-
-  Player player{};
-  if (_details.teamMode == TeamMode::Team)
-  {
-      size_t redTeamCount = 0;
-      size_t blueTeamCount = 0;
-      for (const auto& roomPlayer : _players | std::views::values)
-      {
-        switch (roomPlayer.GetTeam())
-        {
-          case Player::Team::Red:
-            ++redTeamCount;
-            break;
-          case Player::Team::Blue:
-            ++blueTeamCount;
-            break;
-          default:
-            break;
-        }
-      }
-
-      if (redTeamCount > blueTeamCount)
-      {
-        player.SetTeam(Player::Team::Blue);
-      }
-      else if (blueTeamCount > redTeamCount)
-      {
-        player.SetTeam(Player::Team::Red);
-      }
-      else
-      {
-        player.SetTeam(
-          (std::rand() % 2 == 0) ? Player::Team::Red : Player::Team::Blue);
-      }
-  }
-
-  _queuedPlayers.erase(characterUid);
-  _players.try_emplace(characterUid, player);
-
-  return true;
-}
-
-void Room::RemovePlayer(data::Uid characterUid)
-{
-  _players.erase(characterUid);
-}
-
-Room::Player& Room::GetPlayer(data::Uid characterUid)
-{
-  const auto playerIter = _players.find(characterUid);
-  if (playerIter == _players.cend())
-    throw std::runtime_error("Room player does not exist");
-  return playerIter->second;
-}
-
-void Room::SetRoomPlaying(bool state)
-{
-  _roomIsPlaying = state;
-}
-
-uint32_t Room::GetUid() const
-{
-  return _uid;
-}
-
-bool Room::IsRoomPlaying() const
-{
-  return _roomIsPlaying;
-}
-
-size_t Room::GetPlayerCount() const
-{
-  return _players.size();
-}
-
-Room::Details& Room::GetRoomDetails()
-{
-  return _details;
-}
-
-Room::Snapshot Room::GetRoomSnapshot() const
-{
-  return Snapshot{
-    .uid = _uid,
-    .details = _details,
-    .playerCount = _players.size(),
-    .isPlaying = _roomIsPlaying,
-  };
-}
-
-std::unordered_map<data::Uid, Room::Player>& Room::GetPlayers()
-{
-  return _players;
-}
-
-void RoomSystem::CreateRoom(const std::function<void(Room&)>& consumer)
+void RoomSystem::CreateRoom(
+  const std::function<void(Room&)>& consumer)
 {
   std::unique_lock roomsLock(_roomsLock);
+
   const auto roomUid = ++_sequencedId;
   const auto [it, inserted] = _rooms.try_emplace(
     roomUid,
-    std::move(Room(roomUid)));
+    Room{roomUid});
+
   assert(inserted);
   
   auto& [room, roomMutex] = it->second;
@@ -191,9 +45,12 @@ void RoomSystem::CreateRoom(const std::function<void(Room&)>& consumer)
   consumer(room);
 }
 
-void RoomSystem::GetRoom(const uint32_t uid, const std::function<void(Room&)>& consumer)
+void RoomSystem::GetRoom(
+  const uint32_t uid,
+  const std::function<void(Room&)>& consumer)
 {
   std::unique_lock roomsLock(_roomsLock);
+
   const auto it = _rooms.find(uid);
   if (it == _rooms.end())
     throw std::runtime_error("Room does not exist");
@@ -205,7 +62,8 @@ void RoomSystem::GetRoom(const uint32_t uid, const std::function<void(Room&)>& c
   consumer(it->second.room);
 }
 
-bool RoomSystem::RoomExists(uint32_t uid)
+bool RoomSystem::RoomExists(
+  const uint32_t uid)
 {
   std::scoped_lock lock(_roomsLock);
   return _rooms.contains(uid);
@@ -216,22 +74,29 @@ std::vector<Room::Snapshot> RoomSystem::GetRoomsSnapshot()
   std::scoped_lock roomsLock(_roomsLock);
 
   std::vector<Room::Snapshot> rooms;
-  for (auto& entry : _rooms)
+  for (auto& entry : _rooms | std::views::values)
   {
-    std::scoped_lock roomLock(entry.second.mutex);
-    rooms.emplace_back(entry.second.room.GetRoomSnapshot());
+    std::scoped_lock roomLock(entry.mutex);
+    rooms.emplace_back(entry.room.GetRoomSnapshot());
   }
 
   return rooms;
 }
 
-void RoomSystem::DeleteRoom(uint32_t uid)
+void RoomSystem::DeleteRoom(const uint32_t uid)
 {
   std::scoped_lock lock(_roomsLock);
   const auto it = _rooms.find(uid);
   if (it == _rooms.end())
     throw std::runtime_error("Room does not exist");
+
   _rooms.erase(it);
+}
+
+size_t RoomSystem::GetRoomCount() noexcept
+{
+  std::scoped_lock lock(_roomsLock);
+  return _rooms.size();
 }
 
 } // namespace server

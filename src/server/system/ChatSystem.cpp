@@ -1904,10 +1904,7 @@ void ChatSystem::RegisterAdminCommands()
               room.GetRoomDetails().name = newName;
             });
 
-          protocol::AcCmdCRChangeRoomOptionsNotify notify{
-            .optionsBitfield = protocol::RoomOptionType::Name,
-            .name = newName};
-          _serverInstance.GetRaceDirector().BroadcastChangeRoomOptions(roomUid, notify);
+          _serverInstance.GetRaceDirector().NotifyRoomNameChanged(roomUid);
 
           spdlog::info("GM {} ({}) has renamed room '{}' from '{}' to '{}'",
             invokerUserName,
