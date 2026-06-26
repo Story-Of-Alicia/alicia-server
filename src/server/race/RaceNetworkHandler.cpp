@@ -64,14 +64,17 @@ uint32_t SelectMagicTypeByPosition(
     throw std::out_of_range("Position must be between 0 and 7");
 
   // Get the weights for the specified position
-  const std::vector<uint32_t>& weights = magicRegistry.GetPositionWeights(position);
-  auto weightsEndIter = weights.end();
-  if (not isTeam)
-    // Exclude team item weights
-    weightsEndIter -= 3;
+  const auto& positionSlotInfoWeights = isTeam ?
+    magicRegistry.GetTeamPositionWeights(position) :
+    magicRegistry.GetSoloPositionWeights(position);
+
+  // Keep reference to weights only for the discrete distribution
+  const auto& positionWeights = positionSlotInfoWeights | std::views::keys;
 
   // Create a discrete distribution based on the weights
-  std::discrete_distribution<uint32_t> dist(weights.begin(), weightsEndIter);
+  std::discrete_distribution<uint32_t> dist(
+    positionWeights.cbegin(),
+    positionWeights.cend());
 
   // Random number generator
   static std::random_device rd;
@@ -79,14 +82,8 @@ uint32_t SelectMagicTypeByPosition(
 
   // Select a random index based on the distribution
   // and map the discrete index to the corresponding magic item
-  const uint32_t selectedWeight = dist(gen);
-  
-  // Discrete weights to magic item id mapping example:
-  // TODO: sensitive to weights ordering
-  // 0: (0 + 1) * 2 = 2 (Bolt)
-  // 5: (5 + 1) * 2 = 12 (Chains)
-  // 8: (8 + 1) * 2 = 18 (Lightning)
-  return (selectedWeight + 1) * 2;
+  const uint32_t selectedIndex = dist(gen);
+  return positionSlotInfoWeights[selectedIndex].second.type;
 }
 
 registry::Magic::SlotInfo RandomMagicItem(

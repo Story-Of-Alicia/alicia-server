@@ -67,6 +67,10 @@ uint32_t ReadSlotInfo(const YAML::Node& section, Magic::SlotInfo& slot)
   slot.criticalByDarkFire = section["criticalByDarkFire"].as<uint32_t>();
   slot.attackRank = section["attackRank"].as<uint32_t>(0);
 
+  // Crit items do not need the positional weights defined, base items carry that info
+  if (slot.type == slot.basicType)
+    slot.positionalWeights = section["positionalWeights"].as<std::array<uint32_t, 8>>();
+
   return slot.type;
 }
 
@@ -79,16 +83,6 @@ void MagicRegistry::ReadConfig(const std::filesystem::path& configPath)
   const auto magicSection = root["magic"];
   if (not magicSection)
     throw std::runtime_error("Missing magic section");
-
-  // Position weights
-  {
-    const auto positionWeightsSection = magicSection["positionWeights"];
-    if (not positionWeightsSection)
-      throw std::runtime_error("Missing magic positionWeights section");
-
-    for (const auto& entry : positionWeightsSection)
-      _positionWeights.push_back(entry.as<std::vector<uint32_t>>());
-  }
 
   // Slot info
   {
@@ -108,7 +102,7 @@ void MagicRegistry::ReadConfig(const std::filesystem::path& configPath)
     }
   }
 
-  // Pre-build the pick pools so RandomMagicItem never has to filter at runtime.
+  // Pre-build the pick pools and positional weights so RandomMagicItem never has to filter at runtime.
   for (const auto& [type, slot] : _slotInfo)
   {
     if (slot.basicType != type)
@@ -116,6 +110,26 @@ void MagicRegistry::ReadConfig(const std::filesystem::path& configPath)
     _teamPool.push_back(type);
     if (slot.teamMode == 0)
       _soloPool.push_back(type);
+
+    // Only compile weights from base type
+    if (slot.type != slot.basicType)
+      continue;
+
+    for (size_t i = 0; i < slot.positionalWeights.size(); ++i)
+    {
+      const auto& pair = std::make_pair(
+        slot.positionalWeights[i],
+        slot);
+
+      // Add to team magic item weights since team is a superset of solo
+      _teamPositionWeights[i].emplace_back(pair);
+
+      // Do not add to solo position weights if team item
+      if (slot.teamMode != 0)
+        continue;
+
+      _soloPositionWeights[i].emplace_back(pair);
+    }
   }
 
   if (const auto regenSection = magicSection["regen"])
@@ -212,9 +226,14 @@ const Magic::StatScaling* MagicRegistry::GetStatScaling(uint32_t basicType) cons
   return it == _statScalings.cend() ? nullptr : &it->second;
 }
 
-const std::vector<uint32_t>& MagicRegistry::GetPositionWeights(uint32_t position) const
+const std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>& MagicRegistry::GetSoloPositionWeights(uint32_t position) const
 {
-  return _positionWeights.at(position);
+  return _soloPositionWeights.at(position);
+}
+
+const std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>& MagicRegistry::GetTeamPositionWeights(uint32_t position) const
+{
+  return _teamPositionWeights.at(position);
 }
 
 } // namespace server::registry
