@@ -161,7 +161,20 @@ data::Uid ItemSystem::AddItem(
   itemRecord->Mutable(
     [&duration](data::Item& item)
     {
-      item.duration() += duration;
+      const auto now = data::Clock::now();
+      const auto expiresAt = item.createdAt() + item.duration();
+
+      if (expiresAt <= now)
+      {
+        // The item is already expired, restart its lifetime from now
+        // instead of extending an expired duration.
+        item.createdAt() = now;
+        item.duration() = duration;
+      }
+      else
+      {
+        item.duration() += duration;
+      }
     });
 
   return itemUid;
