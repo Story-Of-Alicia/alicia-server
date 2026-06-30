@@ -226,7 +226,7 @@ struct Horse
     Adult = 0,
     Foal = 1,
     Stallion = 2,
-    Rented = 3
+    Rent = 3
   };
 
   //!

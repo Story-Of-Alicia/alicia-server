@@ -1568,6 +1568,7 @@ void LobbyNetworkHandler::HandleCreateNickname(
         horse.growthPoints() = 150;
         horse.tendency() = 1;
         horse.clazz = 1;
+        horse.grade = 1;
 
         _serverInstance.GetHorseRegistry().BuildRandomHorse(
           horse.parts,

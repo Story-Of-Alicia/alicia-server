@@ -1,0 +1,1069 @@
+breeding:
+  genetics:
+    # Foal grade outcome probabilities based on grade distance between parents
+    # gradeDistance = abs(parent1Grade - parent2Grade)
+    # minus1/2/3: probability of foal being 1/2/3 grades below the lower parent
+    # plus: probability weights for plus0 (same as lower parent) through plus17
+    gradeProbabilities:
+      - gradeDistance: 0
+        minus3: 6.0
+        minus2: 20.0
+        minus1: 34.0
+        plus: [40.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - gradeDistance: 1
+        minus3: 6.0
+        minus2: 20.0
+        minus1: 34.0
+        plus: [26.21, 13.79, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - gradeDistance: 2
+        minus3: 6.0
+        minus2: 20.0
+        minus1: 34.0
+        plus: [21.18, 12.94, 5.88, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - gradeDistance: 3
+        minus3: 6.0
+        minus2: 20.0
+        minus1: 34.0
+        plus: [17.66, 12.47, 7.27, 2.60, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - gradeDistance: 4
+        minus3: 6.0
+        minus2: 20.0
+        minus1: 34.0
+        plus: [13.91, 11.30, 7.83, 4.78, 2.18, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - gradeDistance: 5
+        minus3: 6.0
+        minus2: 20.0
+        minus1: 34.0
+        plus: [11.01, 10.28, 8.07, 6.24, 2.57, 1.83, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - gradeDistance: 6
+        minus3: 6.0
+        minus2: 20.0
+        minus1: 34.0
+        plus: [8.75, 9.38, 8.13, 7.19, 2.81, 2.19, 1.55, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - gradeDistance: 7
+        minus3: 6.0
+        minus2: 20.0
+        minus1: 34.0
+        plus: [6.98, 8.59, 8.05, 7.79, 2.95, 2.42, 1.88, 1.34, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - gradeDistance: 8
+        minus3: 6.0
+        minus2: 20.0
+        minus1: 34.0
+        plus: [5.58, 7.91, 7.91, 8.14, 3.02, 2.56, 2.09, 1.63, 1.16, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - gradeDistance: 9
+        minus3: 6.0
+        minus2: 20.0
+        minus1: 34.0
+        plus: [4.47, 7.31, 7.72, 8.32, 3.05, 2.64, 2.23, 1.83, 1.42, 1.01, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - gradeDistance: 10
+        minus3: 6.0
+        minus2: 20.0
+        minus1: 34.0
+        plus: [3.57, 6.79, 7.50, 8.39, 3.04, 2.68, 2.32, 1.96, 1.61, 1.25, 0.89, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - gradeDistance: 11
+        minus3: 6.0
+        minus2: 20.0
+        minus1: 34.0
+        plus: [2.85, 6.32, 7.27, 8.38, 3.00, 2.69, 2.37, 2.06, 1.74, 1.42, 1.11, 0.79, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - gradeDistance: 12
+        minus3: 6.0
+        minus2: 20.0
+        minus1: 34.0
+        plus: [2.25, 5.92, 7.04, 8.31, 2.96, 2.68, 2.39, 2.11, 1.83, 1.55, 1.27, 0.99, 0.70, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - gradeDistance: 13
+        minus3: 6.0
+        minus2: 20.0
+        minus1: 34.0
+        plus: [1.77, 5.55, 6.81, 8.20, 2.90, 2.65, 2.40, 2.15, 1.89, 1.64, 1.39, 1.14, 0.88, 0.63, 0.0, 0.0, 0.0, 0.0]
+      - gradeDistance: 14
+        minus3: 6.0
+        minus2: 20.0
+        minus1: 34.0
+        plus: [1.36, 5.23, 6.59, 8.07, 2.84, 2.61, 2.39, 2.16, 1.93, 1.70, 1.48, 1.25, 1.02, 0.80, 0.57, 0.0, 0.0, 0.0]
+      - gradeDistance: 15
+        minus3: 6.0
+        minus2: 20.0
+        minus1: 34.0
+        plus: [1.03, 4.94, 6.38, 7.92, 2.78, 2.57, 2.37, 2.16, 1.95, 1.75, 1.54, 1.34, 1.13, 0.93, 0.72, 0.49, 0.0, 0.0]
+      - gradeDistance: 16
+        minus3: 6.0
+        minus2: 20.0
+        minus1: 34.0
+        plus: [0.75, 4.67, 6.17, 7.76, 2.71, 2.52, 2.34, 2.15, 1.96, 1.78, 1.59, 1.40, 1.21, 1.03, 0.84, 0.65, 0.47, 0.0]
+      - gradeDistance: 17
+        minus3: 6.0
+        minus2: 20.0
+        minus1: 34.0
+        plus: [0.51, 4.43, 5.97, 7.59, 2.64, 2.47, 2.30, 2.13, 1.96, 1.79, 1.62, 1.45, 1.28, 1.11, 0.94, 0.77, 0.60, 0.44]
+      - gradeDistance: 18
+        minus3: 6.0
+        minus2: 20.0
+        minus1: 34.0
+        plus: [0.32, 4.26, 5.84, 7.50, 2.60, 2.45, 2.29, 2.13, 1.97, 1.81, 1.66, 1.50, 1.34, 1.18, 1.03, 0.87, 0.71, 0.54]
+      - gradeDistance: 19
+        minus3: 6.0
+        minus2: 20.0
+        minus1: 34.0
+        plus: [0.32, 4.26, 5.84, 7.50, 2.60, 2.45, 2.29, 2.13, 1.97, 1.81, 1.66, 1.50, 1.34, 1.18, 1.03, 0.87, 0.71, 0.54]
+      - gradeDistance: 20
+        minus3: 6.0
+        minus2: 20.0
+        minus1: 34.0
+        plus: [0.32, 4.26, 5.84, 7.50, 2.60, 2.45, 2.29, 2.13, 1.97, 1.81, 1.66, 1.50, 1.34, 1.18, 1.03, 0.87, 0.71, 0.54]
+
+  params:
+    registrationFeeRate: 0.5
+    childGradeLimit: 8
+    inheritanceRateBonusUnit: 2
+    warningBreedingProbability: 20
+    # Breeding success roll tuning.
+    # Each prior breeding lowers the stallion's success rate by successDecayPerBreeding (%),
+    # floored at minSuccessRate (%).
+    successDecayPerBreeding: 2
+    minSuccessRate: 4
+    # Probability (%) that a breeding-failure card is a Chance (yellow) card instead of a Normal (red) one.
+    chanceCardChance: 15
+    # +/- variation (%) applied when inheriting a foal's appearance from the average of its parents.
+    appearanceVariation: 20
+
+  # Breeding cost per parent horse grade
+  costInfo:
+    - mountGrade: 1
+      minimumCharge: 1000
+      registrationFee: 500
+      commissionFee: 10
+      maximumCharge: 4000
+    - mountGrade: 2
+      minimumCharge: 1000
+      registrationFee: 500
+      commissionFee: 10
+      maximumCharge: 4000
+    - mountGrade: 3
+      minimumCharge: 1000
+      registrationFee: 500
+      commissionFee: 10
+      maximumCharge: 4000
+    - mountGrade: 4
+      minimumCharge: 4000
+      registrationFee: 1000
+      commissionFee: 10
+      maximumCharge: 12000
+    - mountGrade: 5
+      minimumCharge: 5000
+      registrationFee: 1500
+      commissionFee: 10
+      maximumCharge: 15000
+    - mountGrade: 6
+      minimumCharge: 6000
+      registrationFee: 2000
+      commissionFee: 10
+      maximumCharge: 18000
+    - mountGrade: 7
+      minimumCharge: 8000
+      registrationFee: 3000
+      commissionFee: 10
+      maximumCharge: 24000
+    - mountGrade: 8
+      minimumCharge: 10000
+      registrationFee: 4000
+      commissionFee: 10
+      maximumCharge: 30000
+    - mountGrade: 9
+      minimumCharge: 13000
+      registrationFee: 5000
+      commissionFee: 10
+      maximumCharge: 39000
+    - mountGrade: 10
+      minimumCharge: 13000
+      registrationFee: 6000
+      commissionFee: 10
+      maximumCharge: 39000
+    - mountGrade: 11
+      minimumCharge: 13000
+      registrationFee: 8000
+      commissionFee: 10
+      maximumCharge: 39000
+    - mountGrade: 12
+      minimumCharge: 17000
+      registrationFee: 9500
+      commissionFee: 10
+      maximumCharge: 51000
+    - mountGrade: 13
+      minimumCharge: 21000
+      registrationFee: 11000
+      commissionFee: 10
+      maximumCharge: 63000
+    - mountGrade: 14
+      minimumCharge: 25000
+      registrationFee: 13500
+      commissionFee: 10
+      maximumCharge: 75000
+    - mountGrade: 15
+      minimumCharge: 31000
+      registrationFee: 16000
+      commissionFee: 10
+      maximumCharge: 93000
+    - mountGrade: 16
+      minimumCharge: 34000
+      registrationFee: 19000
+      commissionFee: 10
+      maximumCharge: 102000
+    - mountGrade: 17
+      minimumCharge: 41000
+      registrationFee: 21000
+      commissionFee: 10
+      maximumCharge: 123000
+    - mountGrade: 18
+      minimumCharge: 42000
+      registrationFee: 24500
+      commissionFee: 10
+      maximumCharge: 126000
+    - mountGrade: 19
+      minimumCharge: 46000
+      registrationFee: 26000
+      commissionFee: 10
+      maximumCharge: 138000
+    - mountGrade: 20
+      minimumCharge: 49000
+      registrationFee: 27500
+      commissionFee: 10
+      maximumCharge: 147000
+    - mountGrade: 21
+      minimumCharge: 50000
+      registrationFee: 27500
+      commissionFee: 10
+      maximumCharge: 150000
+    - mountGrade: 22
+      minimumCharge: 50000
+      registrationFee: 27500
+      commissionFee: 10
+      maximumCharge: 150000
+    - mountGrade: 23
+      minimumCharge: 50000
+      registrationFee: 27500
+      commissionFee: 10
+      maximumCharge: 150000
+    - mountGrade: 24
+      minimumCharge: 50000
+      registrationFee: 27500
+      commissionFee: 10
+      maximumCharge: 150000
+
+  # Breeding fee multiplier based on how many times a horse has been bred
+  countInfo:
+    - breedingCount: 0
+      multiplier: 1.2
+    - breedingCount: 3
+      multiplier: 1.1
+    - breedingCount: 5
+      multiplier: 1.0
+    - breedingCount: 7
+      multiplier: 0.9
+    - breedingCount: 10
+      multiplier: 0.8
+    - breedingCount: 13
+      multiplier: 0.6
+    - breedingCount: 16
+      multiplier: 0.5
+    - breedingCount: 19
+      multiplier: 0.4
+    - breedingCount: 22
+      multiplier: 0.3
+    - breedingCount: 25
+      multiplier: 0.2
+    - breedingCount: 28
+      multiplier: 0.1
+    - breedingCount: 31
+      multiplier: 0.09
+    - breedingCount: 34
+      multiplier: 0.08
+    - breedingCount: 37
+      multiplier: 0.07
+    - breedingCount: 40
+      multiplier: 0.06
+    - breedingCount: 43
+      multiplier: 0.05
+    - breedingCount: 46
+      multiplier: 0.04
+    - breedingCount: 49
+      multiplier: 0.03
+    - breedingCount: 52
+      multiplier: 0.02
+    - breedingCount: 55
+      multiplier: 0.01
+
+  failureCards:
+    # Probability of each reward grade based on cumulative breeding money spent
+    # Grade 0 = common (A), Grade 1 = uncommon (B), Grade 2 = rare (C)
+    probabilities:
+      - moneySpent: 4000
+        probA: 100
+        probB: 0
+        probC: 0
+      - moneySpent: 5000
+        probA: 100
+        probB: 0
+        probC: 0
+      - moneySpent: 6000
+        probA: 100
+        probB: 0
+        probC: 0
+      - moneySpent: 7000
+        probA: 100
+        probB: 0
+        probC: 0
+      - moneySpent: 8000
+        probA: 100
+        probB: 0
+        probC: 0
+      - moneySpent: 9000
+        probA: 96
+        probB: 4
+        probC: 0
+      - moneySpent: 10000
+        probA: 90
+        probB: 10
+        probC: 0
+      - moneySpent: 11000
+        probA: 89
+        probB: 10
+        probC: 1
+      - moneySpent: 12000
+        probA: 87
+        probB: 11
+        probC: 2
+      - moneySpent: 13000
+        probA: 86
+        probB: 11
+        probC: 3
+      - moneySpent: 16000
+        probA: 77
+        probB: 18
+        probC: 5
+      - moneySpent: 19000
+        probA: 68
+        probB: 25
+        probC: 7
+      - moneySpent: 22000
+        probA: 57
+        probB: 34
+        probC: 9
+      - moneySpent: 25000
+        probA: 50
+        probB: 39
+        probC: 11
+      - moneySpent: 28000
+        probA: 40
+        probB: 47
+        probC: 13
+      - moneySpent: 31000
+        probA: 33
+        probB: 52
+        probC: 15
+      - moneySpent: 35000
+        probA: 22
+        probB: 60
+        probC: 18
+      - moneySpent: 39000
+        probA: 16
+        probB: 62
+        probC: 22
+      - moneySpent: 43000
+        probA: 8
+        probB: 66
+        probC: 26
+      - moneySpent: 47000
+        probA: 10
+        probB: 59
+        probC: 31
+      - moneySpent: 51000
+        probA: 7
+        probB: 57
+        probC: 36
+      - moneySpent: 55000
+        probA: 6
+        probB: 52
+        probC: 42
+      - moneySpent: 59000
+        probA: 7
+        probB: 45
+        probC: 48
+      - moneySpent: 65000
+        probA: 10
+        probB: 35
+        probC: 55
+      - moneySpent: 71000
+        probA: 10
+        probB: 28
+        probC: 62
+      - moneySpent: 77000
+        probA: 10
+        probB: 20
+        probC: 70
+      - moneySpent: 83000
+        probA: 7
+        probB: 15
+        probC: 78
+      - moneySpent: 89000
+        probA: 4
+        probB: 11
+        probC: 85
+      - moneySpent: 95000
+        probA: 1
+        probB: 8
+        probC: 91
+      - moneySpent: 100000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 125000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 140000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 155000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 170000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 185000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 200000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 215000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 230000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 245000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 260000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 275000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 290000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 305000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 320000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 335000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 350000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 365000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 380000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 395000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 410000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 425000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 440000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 455000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 470000
+        probA: 0
+        probB: 0
+        probC: 100
+      - moneySpent: 1000000
+        probA: 0
+        probB: 0
+        probC: 100
+
+    normalCard:
+      gradeRanges:
+        - grade: 0
+          minId: 1
+          maxId: 20
+        - grade: 1
+          minId: 21
+          maxId: 38
+        - grade: 2
+          minId: 39
+          maxId: 63
+      rewards:
+        - id: 1
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 100
+        - id: 2
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 100
+        - id: 3
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 120
+        - id: 4
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 140
+        - id: 5
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 120
+        - id: 6
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 100
+        - id: 7
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 120
+        - id: 8
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 100
+        - id: 9
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 120
+        - id: 10
+          itemTid: 41001
+          itemCount: 5
+          gameMoney: 120
+        - id: 11
+          itemTid: 41009
+          itemCount: 3
+          gameMoney: 150
+        - id: 12
+          itemTid: 41007
+          itemCount: 3
+          gameMoney: 150
+        - id: 13
+          itemTid: 40002
+          itemCount: 2
+          gameMoney: 150
+        - id: 14
+          itemTid: 41004
+          itemCount: 2
+          gameMoney: 150
+        - id: 15
+          itemTid: 41003
+          itemCount: 2
+          gameMoney: 180
+        - id: 16
+          itemTid: 41002
+          itemCount: 3
+          gameMoney: 180
+        - id: 17
+          itemTid: 41001
+          itemCount: 4
+          gameMoney: 200
+        - id: 18
+          itemTid: 41009
+          itemCount: 2
+          gameMoney: 240
+        - id: 19
+          itemTid: 41008
+          itemCount: 2
+          gameMoney: 300
+        - id: 20
+          itemTid: 40002
+          itemCount: 3
+          gameMoney: 350
+        - id: 21
+          itemTid: 45001
+          itemCount: 3
+          gameMoney: 300
+        - id: 22
+          itemTid: 45001
+          itemCount: 2
+          gameMoney: 350
+        - id: 23
+          itemTid: 45001
+          itemCount: 2
+          gameMoney: 400
+        - id: 24
+          itemTid: 45001
+          itemCount: 2
+          gameMoney: 450
+        - id: 25
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 500
+        - id: 26
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 550
+        - id: 27
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 600
+        - id: 28
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 650
+        - id: 29
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 700
+        - id: 30
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 700
+        - id: 31
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 800
+        - id: 32
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 800
+        - id: 33
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 900
+        - id: 34
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 900
+        - id: 35
+          itemTid: 44001
+          itemCount: 1
+          gameMoney: 1000
+        - id: 36
+          itemTid: 44005
+          itemCount: 1
+          gameMoney: 1000
+        - id: 37
+          itemTid: 44003
+          itemCount: 1
+          gameMoney: 1000
+        - id: 38
+          itemTid: 44001
+          itemCount: 1
+          gameMoney: 1000
+        - id: 39
+          itemTid: 44006
+          itemCount: 3
+          gameMoney: 2000
+        - id: 40
+          itemTid: 44004
+          itemCount: 3
+          gameMoney: 2100
+        - id: 41
+          itemTid: 44002
+          itemCount: 3
+          gameMoney: 2200
+        - id: 42
+          itemTid: 43001
+          itemCount: 3
+          gameMoney: 2300
+        - id: 43
+          itemTid: 43001
+          itemCount: 1
+          gameMoney: 2400
+        - id: 44
+          itemTid: 43001
+          itemCount: 1
+          gameMoney: 2500
+        - id: 45
+          itemTid: 44006
+          itemCount: 2
+          gameMoney: 2600
+        - id: 46
+          itemTid: 44004
+          itemCount: 2
+          gameMoney: 2700
+        - id: 47
+          itemTid: 44002
+          itemCount: 2
+          gameMoney: 2800
+        - id: 48
+          itemTid: 43001
+          itemCount: 2
+          gameMoney: 2900
+        - id: 49
+          itemTid: 43001
+          itemCount: 2
+          gameMoney: 3000
+        - id: 50
+          itemTid: 43001
+          itemCount: 2
+          gameMoney: 3200
+        - id: 51
+          itemTid: 43001
+          itemCount: 2
+          gameMoney: 3400
+        - id: 52
+          itemTid: 43001
+          itemCount: 2
+          gameMoney: 3600
+        - id: 53
+          itemTid: 45001
+          itemCount: 3
+          gameMoney: 3800
+        - id: 54
+          itemTid: 45001
+          itemCount: 3
+          gameMoney: 4300
+        - id: 55
+          itemTid: 45001
+          itemCount: 3
+          gameMoney: 4800
+        - id: 56
+          itemTid: 45001
+          itemCount: 2
+          gameMoney: 5300
+        - id: 57
+          itemTid: 45001
+          itemCount: 2
+          gameMoney: 5800
+        - id: 58
+          itemTid: 45001
+          itemCount: 2
+          gameMoney: 6300
+        - id: 59
+          itemTid: 45001
+          itemCount: 3
+          gameMoney: 6800
+        - id: 60
+          itemTid: 45001
+          itemCount: 3
+          gameMoney: 7300
+        - id: 61
+          itemTid: 45001
+          itemCount: 2
+          gameMoney: 7800
+        - id: 62
+          itemTid: 45001
+          itemCount: 3
+          gameMoney: 10000
+        - id: 63
+          itemTid: 45001
+          itemCount: 3
+          gameMoney: 13000
+
+    chanceCard:
+      gradeRanges:
+        - grade: 0
+          minId: 1
+          maxId: 16
+        - grade: 1
+          minId: 17
+          maxId: 32
+        - grade: 2
+          minId: 33
+          maxId: 48
+      rewards:
+        - id: 1
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 300
+        - id: 2
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 350
+        - id: 3
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 400
+        - id: 4
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 420
+        - id: 5
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 450
+        - id: 6
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 550
+        - id: 7
+          itemTid: 45001
+          itemCount: 1
+          gameMoney: 600
+        - id: 8
+          itemTid: 44006
+          itemCount: 1
+          gameMoney: 620
+        - id: 9
+          itemTid: 44005
+          itemCount: 1
+          gameMoney: 700
+        - id: 10
+          itemTid: 44004
+          itemCount: 1
+          gameMoney: 800
+        - id: 11
+          itemTid: 44003
+          itemCount: 1
+          gameMoney: 800
+        - id: 12
+          itemTid: 44002
+          itemCount: 1
+          gameMoney: 900
+        - id: 13
+          itemTid: 44001
+          itemCount: 1
+          gameMoney: 900
+        - id: 14
+          itemTid: 43001
+          itemCount: 1
+          gameMoney: 950
+        - id: 15
+          itemTid: 44002
+          itemCount: 1
+          gameMoney: 1000
+        - id: 16
+          itemTid: 43001
+          itemCount: 2
+          gameMoney: 1000
+        - id: 17
+          itemTid: 42002
+          itemCount: 7
+          gameMoney: 1400
+        - id: 18
+          itemTid: 42001
+          itemCount: 10
+          gameMoney: 1800
+        - id: 19
+          itemTid: 43001
+          itemCount: 1
+          gameMoney: 2000
+        - id: 20
+          itemTid: 44006
+          itemCount: 1
+          gameMoney: 2000
+        - id: 21
+          itemTid: 44004
+          itemCount: 2
+          gameMoney: 2000
+        - id: 22
+          itemTid: 44002
+          itemCount: 2
+          gameMoney: 2000
+        - id: 23
+          itemTid: 43001
+          itemCount: 1
+          gameMoney: 2100
+        - id: 24
+          itemTid: 45001
+          itemCount: 2
+          gameMoney: 2200
+        - id: 25
+          itemTid: 45001
+          itemCount: 2
+          gameMoney: 2300
+        - id: 26
+          itemTid: 45001
+          itemCount: 2
+          gameMoney: 2500
+        - id: 27
+          itemTid: 45001
+          itemCount: 2
+          gameMoney: 2800
+        - id: 28
+          itemTid: 45001
+          itemCount: 2
+          gameMoney: 3000
+        - id: 29
+          itemTid: 45001
+          itemCount: 2
+          gameMoney: 3500
+        - id: 30
+          itemTid: 45001
+          itemCount: 2
+          gameMoney: 3800
+        - id: 31
+          itemTid: 45001
+          itemCount: 2
+          gameMoney: 4000
+        - id: 32
+          itemTid: 45001
+          itemCount: 3
+          gameMoney: 4000
+        - id: 33
+          itemTid: 45001
+          itemCount: 3
+          gameMoney: 7000
+        - id: 34
+          itemTid: 45001
+          itemCount: 3
+          gameMoney: 8000
+        - id: 35
+          itemTid: 45001
+          itemCount: 3
+          gameMoney: 9000
+        - id: 36
+          itemTid: 45001
+          itemCount: 3
+          gameMoney: 10000
+        - id: 37
+          itemTid: 45001
+          itemCount: 3
+          gameMoney: 11000
+        - id: 38
+          itemTid: 45001
+          itemCount: 3
+          gameMoney: 12000
+        - id: 39
+          itemTid: 45001
+          itemCount: 3
+          gameMoney: 13000
+        - id: 40
+          itemTid: 45001
+          itemCount: 3
+          gameMoney: 14000
+        - id: 41
+          itemTid: 44006
+          itemCount: 3
+          gameMoney: 15000
+        - id: 42
+          itemTid: 44004
+          itemCount: 3
+          gameMoney: 16000
+        - id: 43
+          itemTid: 44002
+          itemCount: 3
+          gameMoney: 17000
+        - id: 44
+          itemTid: 44001
+          itemCount: 3
+          gameMoney: 18000
+        - id: 45
+          itemTid: 44003
+          itemCount: 3
+          gameMoney: 19000
+        - id: 46
+          itemTid: 45001
+          itemCount: 3
+          gameMoney: 20000
+        - id: 47
+          itemTid: 45001
+          itemCount: 3
+          gameMoney: 25000
+        - id: 48
+          itemTid: 45001
+          itemCount: 3
+          gameMoney: 25000
+
+  # Breeding bonus roll (BonusProbInfo).
+  # When breeding, a bonus may activate based on the stallion's grade band.
+  # On activation, one entry is picked by weighted ratio (ratioSmall for the small band,
+  # ratioBig for the big band).
+  # type: 0 = pregnancy success % increase, 1 = fertility peak level (boosts foal grade)
+  bonus:
+    smallGrade:
+      min: 4
+      max: 6
+      activationChance: 10
+    bigGrade:
+      min: 7
+      max: 8
+      activationChance: 15
+    entries:
+      - id: 1
+        type: 0
+        value: 5
+        ratioSmall: 10
+        ratioBig: 0
+      - id: 2
+        type: 0
+        value: 10
+        ratioSmall: 30
+        ratioBig: 0
+      - id: 3
+        type: 0
+        value: 15
+        ratioSmall: 35
+        ratioBig: 0
+      - id: 4
+        type: 0
+        value: 20
+        ratioSmall: 20
+        ratioBig: 0
+      - id: 5
+        type: 0
+        value: 40
+        ratioSmall: 3
+        ratioBig: 0
+      - id: 6
+        type: 0
+        value: 50
+        ratioSmall: 2
+        ratioBig: 0
+      - id: 7
+        type: 0
+        value: 40
+        ratioSmall: 0
+        ratioBig: 10
+      - id: 8
+        type: 0
+        value: 50
+        ratioSmall: 0
+        ratioBig: 20
+      - id: 9
+        type: 0
+        value: 60
+        ratioSmall: 0
+        ratioBig: 10
+      - id: 10
+        type: 0
+        value: 70
+        ratioSmall: 0
+        ratioBig: 10
+      - id: 11
+        type: 1
+        value: 1
+        ratioSmall: 0
+        ratioBig: 15
+      - id: 12
+        type: 1
+        value: 2
+        ratioSmall: 0
+        ratioBig: 15
+      - id: 13
+        type: 1
+        value: 3
+        ratioSmall: 0
+        ratioBig: 20

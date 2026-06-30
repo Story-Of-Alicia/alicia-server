@@ -644,6 +644,51 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
         }
         return false;
       })
+  , _stallionStorage(
+      [&](const auto& key, auto& stallion)
+      {
+        try
+        {
+          _primaryDataSource->RetrieveStallion(key, stallion);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception retrieving stallion {} from the primary data source: {}", key, x.what());
+        }
+
+        return false;
+      },
+      [&](const auto& key, auto& stallion)
+      {
+        try
+        {
+          _primaryDataSource->StoreStallion(key, stallion);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception storing stallion {} on the primary data source: {}", key, x.what());
+        }
+
+        return false;
+      },
+      [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteStallion(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting stallion {} from the primary data source: {}", key, x.what());
+        }
+        return false;
+      })
 {
   _primaryDataSource = std::make_unique<FileDataSource>();
   if (auto* fileDataSource = dynamic_cast<FileDataSource*>(_primaryDataSource.get()))
@@ -673,6 +718,7 @@ void DataDirector::Terminate()
     _eggStorage.Terminate();
     _petStorage.Terminate();
     _guildStorage.Terminate();
+    _stallionStorage.Terminate();
     _housingStorage.Terminate();
     _settingsStorage.Terminate();
     _dailyQuestGroupStorage.Terminate();
@@ -704,6 +750,7 @@ void DataDirector::Tick()
     _petStorage.Tick();
     _guildStorage.Tick();
     _housingStorage.Tick();
+    _stallionStorage.Tick();
     _settingsStorage.Tick();
     _dailyQuestGroupStorage.Tick();
     _mailStorage.Tick();
@@ -1185,9 +1232,46 @@ DataDirector::QuestStorage& DataDirector::GetQuestCache()
   return _questStorage;
 }
 
+Record<data::Stallion> DataDirector::GetStallion(data::Uid stallionUid) noexcept
+{
+  if (stallionUid == data::InvalidUid)
+    return {};
+  return _stallionStorage.Get(stallionUid).value_or(Record<data::Stallion>{});
+}
+
+Record<data::Stallion> DataDirector::CreateStallion() noexcept
+{
+  try
+  {
+    return _stallionStorage.Create(
+      [this]()
+      {
+        data::Stallion stallion;
+        _primaryDataSource->CreateStallion(stallion);
+
+        return std::make_pair(stallion.uid(), std::move(stallion));
+      });
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception while creating a stallion record on the primary data source: {}", x.what());
+    return {};
+  }
+}
+
+DataDirector::StallionStorage& DataDirector::GetStallionCache()
+{
+  return _stallionStorage;
+}
+
 DataSource& DataDirector::GetDataSource() noexcept
 {
   return *_primaryDataSource;
+}
+
+std::vector<data::Uid> DataDirector::ListRegisteredStallions()
+{
+  return _primaryDataSource->ListRegisteredStallions();
 }
 
 void DataDirector::ScheduleUserLoad(

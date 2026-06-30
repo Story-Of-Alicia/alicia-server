@@ -747,6 +747,7 @@ void ChatSystem::RegisterUserCommands()
             horse.growthPoints() = 150;
             horse.clazz = 1;
             horse.tendency() = 1;
+            horse.grade = 1;
 
             // Give horse random parts and appearance
             _serverInstance.GetHorseRegistry().BuildRandomHorse(
