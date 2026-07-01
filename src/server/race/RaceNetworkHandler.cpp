@@ -17,6 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
+#include "server/race/MagicSystem.hpp"
 #include "server/race/RaceNetworkHandler.hpp"
 
 #include "server/ServerInstance.hpp"
@@ -38,96 +39,7 @@ namespace
 
 std::random_device _randomDevice;
 
-uint32_t GetMountStatValue(
-  const tracker::RaceTracker::Racer::MountStatsSnapshot& stats,
-  registry::Magic::MountStat which)
-{
-  switch (which)
-  {
-    case registry::Magic::MountStat::Agility:   return stats.agility;
-    case registry::Magic::MountStat::Ambition:  return stats.ambition;
-    case registry::Magic::MountStat::Rush:      return stats.rush;
-    case registry::Magic::MountStat::Endurance: return stats.endurance;
-    case registry::Magic::MountStat::Courage:   return stats.courage;
-  }
-  return 0;
 }
-
-// Function to select a random item based on position weights
-const registry::Magic::SlotInfo& SelectMagicTypeByPosition(
-  const registry::MagicRegistry& magicRegistry,
-  uint32_t position,
-  bool isTeam)
-{
-  // Validate position
-  if (position > 7)
-    throw std::out_of_range("Position must be between 0 and 7");
-
-  // Get the weights for the specified position
-  const auto& positionSlotInfoWeights = isTeam ?
-    magicRegistry.GetTeamPositionWeights(position) :
-    magicRegistry.GetSoloPositionWeights(position);
-
-  // Keep reference to weights only for the discrete distribution
-  const auto& positionWeights = positionSlotInfoWeights | std::views::keys;
-
-  // Create a discrete distribution based on the weights
-  std::discrete_distribution<uint32_t> dist(
-    positionWeights.cbegin(),
-    positionWeights.cend());
-
-  // Random number generator
-  static std::random_device rd;
-  static std::mt19937 gen(rd());
-
-  // Select a random index based on the distribution
-  // and map the discrete index to the corresponding magic item
-  const uint32_t selectedIndex = dist(gen);
-  return positionSlotInfoWeights[selectedIndex].second;
-}
-
-const registry::Magic::SlotInfo& RandomMagicItem(
-  const registry::MagicRegistry& magicRegistry,
-  tracker::RaceTracker& tracker,
-  data::Uid racerUid)
-{
-  const auto& racer = tracker.GetRacer(racerUid);
-
-  // Get this racer's track progress
-  const float racerTrackProgress = racer.progress;
-
-  // Determine the racer's position (0 = 1st place)
-  uint32_t racerPosition = 0;
-  for (const auto& [uid, instanceRacer] : tracker.GetRacers())
-  {
-    if (uid == racerUid)
-      continue;
-    if (instanceRacer.progress > racerTrackProgress)
-      racerPosition++;
-  }
-  
-  const registry::Magic::SlotInfo& magicSlotInfo = SelectMagicTypeByPosition(
-    magicRegistry,
-    racerPosition,
-    racer.team == protocol::TeamColor::Red or racer.team == protocol::TeamColor::Blue);
-
-  uint32_t critChanceBp = magicRegistry.GetBaseCritChanceBp();
-  if (magicSlotInfo.criticalType != 0)
-  {
-    if (const auto* scaling = magicRegistry.GetStatScaling(magicSlotInfo.basicType))
-    {
-      const uint32_t statValue = GetMountStatValue(racer.mountStats, scaling->stat);
-      critChanceBp += scaling->critStepBp * (statValue / 10u);
-    }
-  }
-
-  if ((rand() % 10000) < static_cast<int>(critChanceBp))
-    return magicRegistry.GetSlotInfo(magicSlotInfo.criticalType);
-  
-  return magicSlotInfo;
-}
-
-} // anon namespace
 
 RaceNetworkHandler::RaceNetworkHandler(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
@@ -2484,7 +2396,7 @@ void RaceNetworkHandler::HandleRequestMagicItem(
     return;
   }
 
-  const auto& magicItemSlotInfo = RandomMagicItem(
+  const auto& magicItemSlotInfo = race::MagicSystem::RandomMagicItem(
     _serverInstance.GetMagicRegistry(),
     tracker,
     clientContext.characterUid);
@@ -3200,7 +3112,7 @@ uint32_t RaceNetworkHandler::ComputeEffectDurationMs(
 
     if (attackerRacerIter != racers.cend())
     {
-      const uint32_t statValue = GetMountStatValue(
+      const uint32_t statValue = race::MagicSystem::GetMountStatValue(
         attackerRacerIter->second.mountStats,
         scaling->stat);
 
@@ -3216,7 +3128,7 @@ uint32_t RaceNetworkHandler::ComputeEffectDurationMs(
   // Target-side reduction (e.g. IceWall shock mitigation), clamped to 100%.
   if (scaling->targetDurationReductionBp > 0)
   {
-    const uint32_t statValue = GetMountStatValue(
+    const uint32_t statValue = race::MagicSystem::GetMountStatValue(
       targetRacer.mountStats,
       scaling->stat);
 
