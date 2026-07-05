@@ -150,7 +150,7 @@ magic:
         massEffect: 0
         affectByCriticalAura: 1
         criticalByDarkFire: 0
-        positionalWeights: [10, 45, 35, 35, 45, 45, 55, 70]
+        positionalWeights: [0, 5, 10, 10, 45, 45, 55, 70]
 
       - type: 7               # Booster (Critical)
         basicType: 6
@@ -209,7 +209,7 @@ magic:
         massEffect: 0
         affectByCriticalAura: 1
         criticalByDarkFire: 0
-        positionalWeights: [0, 5, 5, 5, 5, 5, 15, 35]
+        positionalWeights: [0, 0, 0, 0, 5, 5, 15, 35]
 
       - type: 9               # HotRodding (Critical)
         basicType: 8
