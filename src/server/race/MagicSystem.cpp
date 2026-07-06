@@ -24,6 +24,14 @@
 #include <random>
 #include <ranges>
 
+namespace
+{
+
+std::random_device _randomDevice;
+std::mt19937 mt(_randomDevice());
+
+} // namespace
+
 namespace server::race
 {
 
@@ -63,13 +71,9 @@ const registry::Magic::SlotInfo& MagicSystem::SelectMagicTypeByPosition(
     positionWeights.cbegin(),
     positionWeights.cend());
 
-  // Random number generator
-  static std::random_device rd;
-  static std::mt19937 gen(rd());
-
   // Select a random index based on the distribution
   // and map the discrete index to the corresponding magic item
-  const uint32_t selectedIndex = dist(gen);
+  const uint32_t selectedIndex = dist(mt);
   return positionSlotInfoWeights[selectedIndex].second;
 }
 
