@@ -529,7 +529,7 @@ void RaceInstance::TickItemSpawners()
     const protocol::Vector3& position,
     const uint32_t spawnStyle = 0)
   {
-    const auto distance = (racer.position - position).Length();
+    const auto distance = (racer.worldPosition - position).Length();
 
     const bool isInProximity = distance < ItemSpawnDistanceThreshold;
     const bool isAlreadyTracked = racer.trackedDecks.contains(oid);

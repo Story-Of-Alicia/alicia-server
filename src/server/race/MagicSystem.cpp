@@ -84,9 +84,6 @@ const registry::Magic::SlotInfo& MagicSystem::RandomMagicItem(
 {
   const auto& racer = tracker.GetRacer(racerUid);
 
-  // Get this racer's track progress
-  const float racerTrackProgress = racer.progress;
-
   // Determine the racer's position (0 = 1st place)
   uint32_t racerPosition = 0;
   const auto& allRacers = tracker.GetRacers();
@@ -99,7 +96,8 @@ const registry::Magic::SlotInfo& MagicSystem::RandomMagicItem(
 
     // TODO: do we ignore disconnected racers too?
 
-    if (instanceRacer.progress > racerTrackProgress)
+    // Check if instance racer is ahead of the racer requesting item
+    if (instanceRacer.raceProgress > racer.raceProgress)
       racerPosition++;
   }
 

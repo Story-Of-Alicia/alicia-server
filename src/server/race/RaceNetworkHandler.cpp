@@ -2072,8 +2072,8 @@ void RaceNetworkHandler::HandleRaceUserPos(
 
   // TODO: player position anticheat
 
-  racer.position = command.position;
-  racer.progress = command.progress;
+  racer.worldPosition = command.position;
+  racer.raceProgress = command.progress;
 }
 
 void RaceNetworkHandler::HandleChat(
