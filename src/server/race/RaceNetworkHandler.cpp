@@ -1177,8 +1177,8 @@ void RaceNetworkHandler::HandleLeaveRoom(ClientId clientId)
     // todo: sort by performance
     if (not candidates.empty())
     {
-      const data::Uid firstCandidateUid = candidates.front();
-      const auto& newMasterClientContext = GetClientContextByCharacterUid(firstCandidateUid);
+      const data::Uid candidateUid = candidates.front();
+      const auto& newMasterClientContext = GetClientContextByCharacterUid(candidateUid);
 
       std::string newMasterCharacterName;
       _serverInstance.GetDataDirector().GetCharacter(newMasterClientContext.characterUid).Immutable(
@@ -1191,6 +1191,14 @@ void RaceNetworkHandler::HandleLeaveRoom(ClientId clientId)
         newMasterClientContext.userName,
         newMasterCharacterName,
         clientContext.roomUid);
+
+      // Update the room details to make the new master official
+      _serverInstance.GetRoomSystem().GetRoom(
+        clientContext.roomUid,
+        [masterUid = newMasterClientContext.characterUid](Room& room)
+        {
+          room.GetRoomDetails().masterUid = masterUid;
+        });
 
       // Notify other clients in the room about the new master.
       const protocol::AcCmdCRChangeMasterNotify notify{
