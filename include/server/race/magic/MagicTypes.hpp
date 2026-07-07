@@ -25,13 +25,10 @@
 #include <unordered_map>
 #include <vector>
 
-namespace server::magic
+namespace server::race::magic
 {
 
-// ============================================================================
-// MAGIC TYPES
-// ============================================================================
-
+//! Magic Types
 enum class MagicType : uint8_t
 {
   Invalid = 0,
@@ -68,10 +65,7 @@ inline uint32_t ToUnderlying(MagicType type)
   return static_cast<uint32_t>(type);
 }
 
-// ============================================================================
-// MAGIC GROUPS
-// ============================================================================
-
+//! Magic Groups
 enum class MagicGroup : uint8_t
 {
   Invalid = 0,
@@ -85,10 +79,7 @@ enum class MagicGroup : uint8_t
   MaxGroups = 8
 };
 
-// ============================================================================
-// BASIC TYPES
-// ============================================================================
-
+//! Basic Types
 enum class BasicType : uint8_t
 {
   Invalid = 0,
@@ -107,10 +98,7 @@ enum class BasicType : uint8_t
   MaxBasicTypes = 25
 };
 
-// ============================================================================
-// RACE CONTEXT
-// ============================================================================
-
+//! Race Context
 struct RaceContext
 {
   uint32_t rank = 0;           // 1-N (1 = first, N = last, where N = totalPlayers)
@@ -122,10 +110,7 @@ struct RaceContext
   MagicGroup group = MagicGroup::Invalid;
 };
 
-// ============================================================================
-// ALLOCATION RULES (from MagicAllocInfo.xml, Table 216)
-// ============================================================================
-
+//! Allocations Rules (from MagicAllocInfo, Table 216)
 struct AllocationRule
 {
   uint32_t minRank = 1;
@@ -139,31 +124,24 @@ struct AllocationRule
   float conditionValue = 0.0f;
 };
 
-// ============================================================================
-// SLOT RATIOS (from MagicSlotRatio.xml, Table 199)
-// ============================================================================
+//! Slot Ratios (from MagicSlotRatio, Table 199)
 
-// Slot ratio for each magic type by rank (1-8)
-// Values represent percentage probability * 100 (e.g., 70 = 70%)
+//! Slot ratio for each magic type by rank (1-8)
+//! Values represent percentage probability * 100 (e.g., 70 = 70%)
 struct SlotRatio
 {
   std::array<uint32_t, 8> rankWeights; // [0] = rank 1, [7] = rank 8
 };
 
-// ============================================================================
-// GROUP RATIOS (from MagicGroupRatio.xml, Table 214)
-// ============================================================================
+//! Group Ratios (from MagicGroupRatio, Table 214)
 
-// Group probability by rank
+//! Group probability by rank
 struct GroupRatio
 {
   std::array<uint32_t, 8> rankWeights; // Weight for each rank 1-8
 };
 
-// ============================================================================
-// TEAM MODIFIERS (from MagicGroupTeamModifier.xml, Table 270)
-// ============================================================================
-
+//! Team Modifiers (from MagicGroupTeamModifier, Table 270)
 struct TeamModifier
 {
   int32_t ahead1 = 0;              // Modifier when 1 player ahead
@@ -173,10 +151,7 @@ struct TeamModifier
   bool appliesWhenLeading = false; // true if this applies when leading
 };
 
-// ============================================================================
-// SLOT TEAM MODIFIERS (from MagicSlotTeamModifier.xml, Table 271)
-// ============================================================================
-
+//! Slot Team Modifiers (from MagicSlotTeamModifier, Table 271)
 struct SlotTeamModifier
 {
   int32_t ahead1 = 0;              // Modifier when 1 player ahead
@@ -186,6 +161,6 @@ struct SlotTeamModifier
   bool appliesWhenLeading = false; // true if this applies when leading
 };
 
-} // namespace server::magic
+} // namespace server::race::magic
 
 #endif // ALICIA_SERVER_RACE_MAGIC_TYPES_HPP

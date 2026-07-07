@@ -61,7 +61,7 @@ registry::Magic::SlotInfo RandomMagicItem(
   const std::vector<tracker::RaceTracker::RacerPositionInfo>& racePositions)
 {
   // Use the new MagicSelector with official 4-layer hierarchical filter
-  magic::MagicSelector selector(serverInstance.GetMagicRegistry());
+  race::magic::MagicSelector selector(serverInstance.GetMagicRegistry());
   auto slotInfo = selector.SelectItem(racer, characterUid, racePositions);
 
   return slotInfo;
@@ -2767,7 +2767,7 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
           .GetDeckItemInfo(magicItemType).magicSlot;
 
         // Apply critical upgrade chance
-        magic::MagicSelector selector(_serverInstance.GetMagicRegistry());
+        race::magic::MagicSelector selector(_serverInstance.GetMagicRegistry());
         auto slotInfo = selector.HandleCriticalChance(
           _serverInstance.GetMagicRegistry().GetSlotInfo(magicItem), racer);
         magicItem = slotInfo.type;

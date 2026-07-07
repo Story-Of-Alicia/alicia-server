@@ -19,7 +19,7 @@
 
 #include "server/race/magic/MagicConfig.hpp"
 
-namespace server::magic
+namespace server::race::magic
 {
 
 MagicConfig::MagicConfig()
@@ -34,7 +34,7 @@ MagicConfig::MagicConfig()
 void MagicConfig::InitializeAllocationRules()
 {
   // Initialize all rules with default values (allow all ranks and player counts)
-  // Then override specific types with data from MagicAllocInfo.xml
+  // Then override specific types with data from MagicAllocInfo
   for (auto& rule : allocationRules_)
   {
     rule = {
@@ -49,7 +49,7 @@ void MagicConfig::InitializeAllocationRules()
       .conditionValue = 0.0f};
   }
 
-  // Data from MagicAllocInfo.xml (Table 216)
+  // Data from MagicAllocInfo (Table 216)
   // Only types with specific rules are overridden
   allocationRules_[ToUnderlying(MagicType::WaterShieldCritical)] = {
     .minRank = 3,
@@ -85,7 +85,7 @@ void MagicConfig::InitializeGroupRatios()
     ratio = GroupRatio{};
   }
 
-  // Data from MagicGroupRatio.xml (Table 214) - Solo mode
+  // Data from MagicGroupRatio (Table 214) - Solo mode
   soloGroupRatios_[static_cast<uint32_t>(MagicGroup::Offensive)].rankWeights = {0, 45, 60, 65, 65, 60, 44, 11};
   soloGroupRatios_[static_cast<uint32_t>(MagicGroup::Defensive)].rankWeights = {60, 15, 0, 0, 0, 0, 0, 0};
   soloGroupRatios_[static_cast<uint32_t>(MagicGroup::SpeedUtility)].rankWeights = {5, 40, 30, 25, 40, 35, 44, 82};
@@ -94,7 +94,7 @@ void MagicConfig::InitializeGroupRatios()
   soloGroupRatios_[static_cast<uint32_t>(MagicGroup::RareSpeed)].rankWeights = {0, 0, 0, 0, 0, 0, 4, 11};
   soloGroupRatios_[static_cast<uint32_t>(MagicGroup::RareUtility)].rankWeights = {0, 0, 0, 0, 0, 0, 22, 22};
 
-  // Data from MagicGroupTeamRatio.xml (Table 355) - Team mode
+  // Data from MagicGroupTeamRatio (Table 355) - Team mode
   teamGroupRatios_[static_cast<uint32_t>(MagicGroup::Offensive)].rankWeights = {0, 45, 50, 65, 65, 60, 44, 11};
   teamGroupRatios_[static_cast<uint32_t>(MagicGroup::Defensive)].rankWeights = {60, 15, 0, 0, 0, 0, 0, 0};
   teamGroupRatios_[static_cast<uint32_t>(MagicGroup::SpeedUtility)].rankWeights = {5, 40, 30, 25, 40, 35, 44, 82};
@@ -115,18 +115,18 @@ void MagicConfig::InitializeSlotRatios()
     ratio = defaultRatio;
   }
 
-  // DEFENSIVE ITEMS (Group 2) - MagicSlotRatio (Table 199)
+  // Defensive Items (Group 2) - MagicSlotRatio (Table 199)
   slotRatios_[ToUnderlying(MagicType::WaterShield)].rankWeights = {15, 5, 5, 0, 0, 0, 0, 0};
   slotRatios_[ToUnderlying(MagicType::WaterShieldCritical)].rankWeights = {15, 5, 5, 0, 0, 0, 0, 0};
   slotRatios_[ToUnderlying(MagicType::IceWall)].rankWeights = {25, 0, 0, 0, 0, 0, 0, 0};
   slotRatios_[ToUnderlying(MagicType::IceWallCritical)].rankWeights = {25, 0, 0, 0, 0, 0, 0, 0};
 
-  // SPEED/UTILITY ITEMS (Group 3) - MagicSlotRatio (Table 199)
+  // Speed/Utility Items (Group 3) - MagicSlotRatio (Table 199)
   slotRatios_[ToUnderlying(MagicType::Booster)].rankWeights = {0, 0, 0, 10, 20, 40, 70, 70};
   slotRatios_[ToUnderlying(MagicType::BoosterCritical)].rankWeights = {0, 0, 0, 10, 20, 40, 70, 70};
   slotRatios_[ToUnderlying(MagicType::HotRodding)].rankWeights = {0, 0, 0, 0, 0, 0, 10, 30};
   slotRatios_[ToUnderlying(MagicType::HotRoddingCritical)].rankWeights = {0, 0, 0, 0, 0, 0, 10, 30};
-  
+
   // MagicGroupTeamAssistanceRatio (Table 278)
   slotRatios_[ToUnderlying(MagicType::BufPower)].rankWeights = {0, 0, 0, 0, 0, 0, 20, 20};
   slotRatios_[ToUnderlying(MagicType::BufPowerCritical)].rankWeights = {0, 0, 0, 0, 0, 0, 20, 20};
@@ -135,7 +135,7 @@ void MagicConfig::InitializeSlotRatios()
   slotRatios_[ToUnderlying(MagicType::BufSpeed)].rankWeights = {0, 0, 0, 0, 0, 0, 80, 80};
   slotRatios_[ToUnderlying(MagicType::BufSpeedCritical)].rankWeights = {0, 0, 0, 0, 0, 0, 80, 80};
 
-  // OFFENSIVE ITEMS (Group 1) - MagicGroupAttackRatio (Table 217)
+  // Offensive Items (Group 1) - MagicGroupAttackRatio (Table 217)
   slotRatios_[ToUnderlying(MagicType::FireBall)].rankWeights = {0, 15, 15, 10, 10, 25, 5, 10};
   slotRatios_[ToUnderlying(MagicType::FireBallCritical)].rankWeights = {0, 15, 15, 10, 10, 25, 5, 10};
 
@@ -263,8 +263,8 @@ std::vector<MagicType> MagicConfig::GetValidTypesForContext(const RaceContext& c
 
     const AllocationRule* rule = GetAllocationRule(type);
 
-    if (rule && (context.totalPlayers < rule->minPlayerCount ||
-                  context.rank < rule->minRank ||
+    if (rule and (context.totalPlayers < rule->minPlayerCount or
+                  context.rank < rule->minRank or
                   context.rank > rule->maxRank))
     {
       continue;
@@ -276,4 +276,4 @@ std::vector<MagicType> MagicConfig::GetValidTypesForContext(const RaceContext& c
   return validTypes;
 }
 
-} // namespace server::magic
+} // namespace server::race::magic

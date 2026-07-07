@@ -22,14 +22,11 @@
 
 #include "MagicTypes.hpp"
 
-namespace server::magic
+namespace server::race::magic
 {
 
-// ============================================================================
-// MAGIC CONFIGURATION
-// Static data loaded from XML config files (MagicAllocInfo, MagicGroupRatio, etc.)
-// ============================================================================
-
+//! Magic Configuration
+//! Static data loaded from XML config files (MagicAllocInfo, MagicGroupRatio, etc.)
 class MagicConfig
 {
 public:
@@ -82,9 +79,7 @@ private:
   void InitializeTeamModifiers();
   void InitializeTypeMappings();
 
-  // ========================================================================
-  // STATIC DATA FROM XML FILES
-  // ========================================================================
+  //! Static data from tables in XML config
 
   // All magic types in the game
   std::vector<MagicType> allMagicTypes_;
@@ -223,6 +218,6 @@ inline const std::vector<MagicType>& MagicConfig::GetAllMagicTypes() const
   return allMagicTypes_;
 }
 
-} // namespace server::magic
+} // namespace server::race::magic
 
 #endif // ALICIA_SERVER_RACE_MAGIC_CONFIG_HPP

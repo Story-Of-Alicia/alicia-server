@@ -28,7 +28,7 @@
 #include <random>
 #include <vector>
 
-namespace server::magic
+namespace server::race::magic
 {
 
 /**
@@ -183,6 +183,6 @@ private:
   const std::vector<uint32_t>& GetItemPool(const tracker::RaceTracker::Racer& racer) const;
 };
 
-} // namespace server::magic
+} // namespace server::race::magic
 
 #endif // ALICIA_SERVER_RACE_MAGIC_SELECTOR_HPP

@@ -21,19 +21,16 @@
 
 #include <algorithm>
 #include <numeric>
+
 #include <spdlog/spdlog.h>
 
-namespace server::magic
+namespace server::race::magic
 {
 
 MagicSelector::MagicSelector(const registry::MagicRegistry& magicRegistry)
   : _magicRegistry(magicRegistry)
 {
 }
-
-// ============================================================================
-// PUBLIC API
-// ============================================================================
 
 registry::Magic::SlotInfo MagicSelector::SelectItem(
   const tracker::RaceTracker::Racer& racer,
@@ -360,10 +357,6 @@ registry::Magic::SlotInfo MagicSelector::SelectItem(
   uint32_t totalActiveRacers = static_cast<uint32_t>(racePositions.size());
   return SelectItem(racer, *positionIt, totalActiveRacers);
 }
-
-// ============================================================================
-// PRIVATE IMPLEMENTATION
-// ============================================================================
 
 MagicGroup MagicSelector::SelectGroupByRank(uint32_t rank, bool isTeamMode) const
 {
@@ -820,4 +813,4 @@ registry::Magic::SlotInfo MagicSelector::HandleCriticalChance(
   return slotInfo;
 }
 
-} // namespace server::magic
+} // namespace server::race::magic
