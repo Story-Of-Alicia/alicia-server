@@ -62,7 +62,7 @@ void MagicConfig::InitializeAllocationRules()
     .conditionType = 1,
     .conditionValue = 200.0f};
 
-  allocationRules_[ToUnderlying(MagicType::Booster)] = {
+  allocationRules_[ToUnderlying(MagicType::BoosterCritical)] = {
     .minRank = 7,
     .maxRank = 8,
     .minPlayerCount = 3,
