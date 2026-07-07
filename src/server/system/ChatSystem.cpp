@@ -542,7 +542,8 @@ void ChatSystem::RegisterUserCommands()
           });
 
         if (not isAdmin)
-          return {"You don't have permission to use this command."};
+          return {"You don't have permission to use this command.",
+            "Use shop to obtain items."};
 
         if (arguments.size() < 3)
           return {
