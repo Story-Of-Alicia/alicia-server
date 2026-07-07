@@ -76,6 +76,17 @@ public:
     data::Uid characterUid,
     const std::vector<tracker::RaceTracker::RacerPositionInfo>& racePositions) const;
 
+  /**
+   * @brief Handle critical chance for the selected item.
+   *
+   * @param slotInfo The selected slot info
+   * @param racer The racer
+   * @return Final slot info (possibly critical version)
+   */
+  registry::Magic::SlotInfo HandleCriticalChance(
+    registry::Magic::SlotInfo slotInfo,
+    const tracker::RaceTracker::Racer& racer) const;
+
 private:
   const registry::MagicRegistry& _magicRegistry;
   mutable std::random_device _randomDevice;
@@ -87,9 +98,10 @@ private:
    * for the current rank. This is the primary group selection layer.
    *
    * @param rank The racer's rank (1-8)
+   * @param isTeamMode Whether it's team mode
    * @return The selected magic group
    */
-  MagicGroup SelectGroupByRank(uint32_t rank) const;
+  MagicGroup SelectGroupByRank(uint32_t rank, bool isTeamMode) const;
 
   /**
    * @brief Select a group from weighted options.
@@ -169,18 +181,6 @@ private:
    * @return The appropriate item pool (solo or team)
    */
   const std::vector<uint32_t>& GetItemPool(const tracker::RaceTracker::Racer& racer) const;
-
-  /**
-   * @brief Handle critical chance for the selected item.
-   *
-   * @param slotInfo The selected slot info
-   * @param racer The racer
-   * @param magicRegistry The magic registry
-   * @return Final slot info (possibly critical version)
-   */
-  registry::Magic::SlotInfo HandleCriticalChance(
-    registry::Magic::SlotInfo slotInfo,
-    const tracker::RaceTracker::Racer& racer) const;
 };
 
 } // namespace server::magic

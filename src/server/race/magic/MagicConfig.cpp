@@ -76,20 +76,32 @@ void MagicConfig::InitializeAllocationRules()
 
 void MagicConfig::InitializeGroupRatios()
 {
-  for (auto& ratio : groupRatios_)
+  for (auto& ratio : soloGroupRatios_)
+  {
+    ratio = GroupRatio{};
+  }
+  for (auto& ratio : teamGroupRatios_)
   {
     ratio = GroupRatio{};
   }
 
-  // Data from MagicGroupTeamRatio.xml (Table 355)
-  // Exact values from the XML table
-  groupRatios_[static_cast<uint32_t>(MagicGroup::Offensive)].rankWeights = {0, 45, 50, 65, 65, 60, 44, 11};
-  groupRatios_[static_cast<uint32_t>(MagicGroup::Defensive)].rankWeights = {60, 15, 0, 0, 0, 0, 0, 0};
-  groupRatios_[static_cast<uint32_t>(MagicGroup::SpeedUtility)].rankWeights = {5, 40, 30, 25, 40, 35, 44, 82};
-  groupRatios_[static_cast<uint32_t>(MagicGroup::Special)].rankWeights = {35, 0, 0, 0, 0, 0, 0, 0};
-  groupRatios_[static_cast<uint32_t>(MagicGroup::RareOffensive)].rankWeights = {0, 0, 5, 3, 3, 3, 0, 0};
-  groupRatios_[static_cast<uint32_t>(MagicGroup::RareSpeed)].rankWeights = {0, 0, 0, 0, 0, 0, 4, 11};
-  groupRatios_[static_cast<uint32_t>(MagicGroup::RareUtility)].rankWeights = {0, 0, 0, 0, 0, 0, 22, 22};
+  // Data from MagicGroupRatio.xml (Table 214) - Solo mode
+  soloGroupRatios_[static_cast<uint32_t>(MagicGroup::Offensive)].rankWeights = {0, 45, 60, 65, 65, 60, 44, 11};
+  soloGroupRatios_[static_cast<uint32_t>(MagicGroup::Defensive)].rankWeights = {60, 15, 0, 0, 0, 0, 0, 0};
+  soloGroupRatios_[static_cast<uint32_t>(MagicGroup::SpeedUtility)].rankWeights = {5, 40, 30, 25, 40, 35, 44, 82};
+  soloGroupRatios_[static_cast<uint32_t>(MagicGroup::Special)].rankWeights = {35, 0, 0, 0, 0, 0, 0, 0};
+  soloGroupRatios_[static_cast<uint32_t>(MagicGroup::RareOffensive)].rankWeights = {0, 0, 5, 3, 3, 3, 0, 0};
+  soloGroupRatios_[static_cast<uint32_t>(MagicGroup::RareSpeed)].rankWeights = {0, 0, 0, 0, 0, 0, 4, 11};
+  soloGroupRatios_[static_cast<uint32_t>(MagicGroup::RareUtility)].rankWeights = {0, 0, 0, 0, 0, 0, 22, 22};
+
+  // Data from MagicGroupTeamRatio.xml (Table 355) - Team mode
+  teamGroupRatios_[static_cast<uint32_t>(MagicGroup::Offensive)].rankWeights = {0, 45, 50, 65, 65, 60, 44, 11};
+  teamGroupRatios_[static_cast<uint32_t>(MagicGroup::Defensive)].rankWeights = {60, 15, 0, 0, 0, 0, 0, 0};
+  teamGroupRatios_[static_cast<uint32_t>(MagicGroup::SpeedUtility)].rankWeights = {5, 40, 30, 25, 40, 35, 44, 82};
+  teamGroupRatios_[static_cast<uint32_t>(MagicGroup::Special)].rankWeights = {35, 0, 0, 0, 0, 0, 0, 0};
+  teamGroupRatios_[static_cast<uint32_t>(MagicGroup::RareOffensive)].rankWeights = {0, 0, 5, 3, 3, 3, 0, 0};
+  teamGroupRatios_[static_cast<uint32_t>(MagicGroup::RareSpeed)].rankWeights = {0, 0, 0, 0, 0, 0, 4, 11};
+  teamGroupRatios_[static_cast<uint32_t>(MagicGroup::RareUtility)].rankWeights = {0, 0, 0, 0, 0, 0, 22, 22};
 }
 
 void MagicConfig::InitializeSlotRatios()
@@ -103,61 +115,42 @@ void MagicConfig::InitializeSlotRatios()
     ratio = defaultRatio;
   }
 
-  // DEFENSIVE ITEMS (Group 2)
-  slotRatios_[ToUnderlying(MagicType::WaterShield)].rankWeights = {60, 15, 0, 0, 0, 0, 0, 0};
-  slotRatios_[ToUnderlying(MagicType::WaterShieldCritical)].rankWeights = {60, 15, 0, 0, 0, 0, 0, 0};
-  slotRatios_[ToUnderlying(MagicType::IceWall)].rankWeights = {50, 15, 0, 0, 0, 0, 0, 0};
-  slotRatios_[ToUnderlying(MagicType::IceWallCritical)].rankWeights = {50, 15, 0, 0, 0, 0, 0, 0};
+  // DEFENSIVE ITEMS (Group 2) - MagicSlotRatio (Table 199)
+  slotRatios_[ToUnderlying(MagicType::WaterShield)].rankWeights = {15, 5, 5, 0, 0, 0, 0, 0};
+  slotRatios_[ToUnderlying(MagicType::WaterShieldCritical)].rankWeights = {15, 5, 5, 0, 0, 0, 0, 0};
+  slotRatios_[ToUnderlying(MagicType::IceWall)].rankWeights = {25, 0, 0, 0, 0, 0, 0, 0};
+  slotRatios_[ToUnderlying(MagicType::IceWallCritical)].rankWeights = {25, 0, 0, 0, 0, 0, 0, 0};
 
-  // SPEED/UTILITY ITEMS (Group 3)
-  // Based on original game: Booster & HotRodding had half weight (2 vs 4)
-  // So their slot ratios are ~50% of other items
-  // Matching MagicGroupAttackRatio scale for other items
-  slotRatios_[ToUnderlying(MagicType::Booster)].rankWeights = {0, 10, 17, 15, 17, 17, 22, 32};
-  slotRatios_[ToUnderlying(MagicType::BoosterCritical)].rankWeights = {0, 10, 17, 15, 17, 17, 22, 32};
-  slotRatios_[ToUnderlying(MagicType::HotRodding)].rankWeights = {0, 7, 15, 12, 15, 15, 20, 27};
-  slotRatios_[ToUnderlying(MagicType::HotRoddingCritical)].rankWeights = {0, 7, 15, 12, 15, 15, 20, 27};
-  slotRatios_[ToUnderlying(MagicType::BufGauge)].rankWeights = {0, 0, 0, 0, 0, 0, 5, 5};
-  slotRatios_[ToUnderlying(MagicType::BufGaugeCritical)].rankWeights = {0, 0, 0, 0, 0, 0, 5, 5};
-  slotRatios_[ToUnderlying(MagicType::BufSpeed)].rankWeights = {0, 0, 0, 0, 0, 0, 20, 20};
-  slotRatios_[ToUnderlying(MagicType::BufSpeedCritical)].rankWeights = {0, 0, 0, 0, 0, 0, 20, 20};
+  // SPEED/UTILITY ITEMS (Group 3) - MagicSlotRatio (Table 199)
+  slotRatios_[ToUnderlying(MagicType::Booster)].rankWeights = {0, 0, 0, 10, 20, 40, 70, 70};
+  slotRatios_[ToUnderlying(MagicType::BoosterCritical)].rankWeights = {0, 0, 0, 10, 20, 40, 70, 70};
+  slotRatios_[ToUnderlying(MagicType::HotRodding)].rankWeights = {0, 0, 0, 0, 0, 0, 10, 30};
+  slotRatios_[ToUnderlying(MagicType::HotRoddingCritical)].rankWeights = {0, 0, 0, 0, 0, 0, 10, 30};
+  
+  // MagicGroupTeamAssistanceRatio (Table 278)
+  slotRatios_[ToUnderlying(MagicType::BufPower)].rankWeights = {0, 0, 0, 0, 0, 0, 20, 20};
+  slotRatios_[ToUnderlying(MagicType::BufPowerCritical)].rankWeights = {0, 0, 0, 0, 0, 0, 20, 20};
+  slotRatios_[ToUnderlying(MagicType::BufGauge)].rankWeights = {0, 0, 0, 0, 0, 0, 0, 0};
+  slotRatios_[ToUnderlying(MagicType::BufGaugeCritical)].rankWeights = {0, 0, 0, 0, 0, 0, 0, 0};
+  slotRatios_[ToUnderlying(MagicType::BufSpeed)].rankWeights = {0, 0, 0, 0, 0, 0, 80, 80};
+  slotRatios_[ToUnderlying(MagicType::BufSpeedCritical)].rankWeights = {0, 0, 0, 0, 0, 0, 80, 80};
 
-  // OFFENSIVE ITEMS (Group 1)
-  // Directly from MagicGroupAttackRatio (Table 217):
-  // Type 2 (FireBall):  0-15-15-10-10-25-5-10
-  // Type 14 (DarkFire): 0-20-17-10-10-15-10-10
-  // Type 16 (Summon):   0-5-15-15-15-10-10-5
-  // Type 12 (JumpStun): 0-0-0-0-5-25-0-0
-  // Type 18 (Lightning): NOT in table -> use legacy reduced weight
-
-  // FireBall - directly from MagicGroupAttackRatio
+  // OFFENSIVE ITEMS (Group 1) - MagicGroupAttackRatio (Table 217)
   slotRatios_[ToUnderlying(MagicType::FireBall)].rankWeights = {0, 15, 15, 10, 10, 25, 5, 10};
   slotRatios_[ToUnderlying(MagicType::FireBallCritical)].rankWeights = {0, 15, 15, 10, 10, 25, 5, 10};
 
-  // DarkFire - directly from MagicGroupAttackRatio
   slotRatios_[ToUnderlying(MagicType::DarkFire)].rankWeights = {0, 20, 17, 10, 10, 15, 10, 10};
   slotRatios_[ToUnderlying(MagicType::DarkFireCritical)].rankWeights = {0, 20, 17, 10, 10, 15, 10, 10};
 
-  // Summon - directly from MagicGroupAttackRatio
   slotRatios_[ToUnderlying(MagicType::Summon)].rankWeights = {0, 5, 15, 15, 15, 10, 10, 5};
   slotRatios_[ToUnderlying(MagicType::SummonCritical)].rankWeights = {0, 5, 15, 15, 15, 10, 10, 5};
 
-  // JumpStun - directly from MagicGroupAttackRatio
   slotRatios_[ToUnderlying(MagicType::JumpStun)].rankWeights = {0, 0, 0, 0, 5, 25, 0, 0};
   slotRatios_[ToUnderlying(MagicType::JumpStunCritical)].rankWeights = {0, 0, 0, 0, 5, 25, 0, 0};
 
-  // Lightning - NOT in MagicGroupAttackRatio
-  // Legacy code gives it weight=1 (vs 4 for others), so ~25% of normal offensive items
-  // Since it's not in the attack ratio table, use 25% of FireBall/DarkFire ratios
-  // FireBall: {0, 15, 15, 10, 10, 25, 5, 10}
-  // DarkFire: {0, 20, 17, 10, 10, 15, 10, 10}
-  // Lightning (25% of average): {0, 3, 4, 2, 2, 6, 2, 3}
+  // Lightning (not in Table 217, using average legacy values)
   slotRatios_[ToUnderlying(MagicType::Lightning)].rankWeights = {0, 3, 4, 2, 2, 6, 2, 3};
   slotRatios_[ToUnderlying(MagicType::LightningCritical)].rankWeights = {0, 3, 4, 2, 2, 6, 2, 3};
-
-  // TEAM ASSISTANCE ITEMS
-  slotRatios_[ToUnderlying(MagicType::BufPower)].rankWeights = {0, 0, 0, 0, 0, 0, 20, 20};
-  slotRatios_[ToUnderlying(MagicType::BufPowerCritical)].rankWeights = {0, 0, 0, 0, 0, 0, 20, 20};
 }
 
 void MagicConfig::InitializeTeamModifiers()
@@ -170,18 +163,32 @@ void MagicConfig::InitializeTeamModifiers()
     }
   }
 
+  for (auto& mod : slotTeamModifiers_)
+  {
+    mod = SlotTeamModifier{};
+  }
+
+  // MagicGroupTeamModifier (Table 270)
   teamModifiers_[static_cast<uint32_t>(MagicGroup::Offensive)][0] = {
     .ahead1 = 10, .ahead2 = 10, .ahead3 = 10, .ahead4 = 10, .appliesWhenLeading = false};
   teamModifiers_[static_cast<uint32_t>(MagicGroup::Offensive)][1] = {
     .ahead1 = -10, .ahead2 = -10, .ahead3 = -10, .ahead4 = -10, .appliesWhenLeading = true};
   teamModifiers_[static_cast<uint32_t>(MagicGroup::Defensive)][1] = {
     .ahead1 = 10, .ahead2 = 5, .ahead3 = 0, .ahead4 = 0, .appliesWhenLeading = true};
-  teamModifiers_[static_cast<uint32_t>(MagicGroup::SpeedUtility)][1] = {
-    .ahead1 = 10, .ahead2 = 5, .ahead3 = 0, .ahead4 = 0, .appliesWhenLeading = true};
   teamModifiers_[static_cast<uint32_t>(MagicGroup::RareOffensive)][1] = {
     .ahead1 = -100, .ahead2 = -100, .ahead3 = -100, .ahead4 = -100, .appliesWhenLeading = true};
   teamModifiers_[static_cast<uint32_t>(MagicGroup::RareUtility)][1] = {
     .ahead1 = -10, .ahead2 = -10, .ahead3 = -20, .ahead4 = -20, .appliesWhenLeading = true};
+
+  // MagicSlotTeamModifier (Table 271)
+  slotTeamModifiers_[ToUnderlying(MagicType::BufPower)] = {
+    .ahead1 = 10, .ahead2 = 20, .ahead3 = 30, .ahead4 = 40, .appliesWhenLeading = false};
+  slotTeamModifiers_[ToUnderlying(MagicType::BufPowerCritical)] = {
+    .ahead1 = 10, .ahead2 = 20, .ahead3 = 30, .ahead4 = 40, .appliesWhenLeading = false};
+  slotTeamModifiers_[ToUnderlying(MagicType::BufSpeed)] = {
+    .ahead1 = 10, .ahead2 = 20, .ahead3 = 30, .ahead4 = 40, .appliesWhenLeading = false};
+  slotTeamModifiers_[ToUnderlying(MagicType::BufSpeedCritical)] = {
+    .ahead1 = 10, .ahead2 = 20, .ahead3 = 30, .ahead4 = 40, .appliesWhenLeading = false};
 }
 
 void MagicConfig::InitializeTypeMappings()

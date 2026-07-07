@@ -47,6 +47,7 @@ registry::Magic::SlotInfo MagicSelector::SelectItem(
 
   // Build context
   RaceContext context = BuildContext(positionInfo, totalActiveRacers);
+  context.isTeamMode = (racer.team != tracker::RaceTracker::Racer::Team::Solo);
   spdlog::debug("Context: rank={}, totalPlayers={}, aheadCount={}, isLeading={}, isTeamMode={}",
     context.rank,
     context.totalPlayers,
@@ -107,7 +108,7 @@ registry::Magic::SlotInfo MagicSelector::SelectItem(
     }());
 
   // Layer 2: Select group by normalized rank (scales with race size)
-  MagicGroup selectedGroup = SelectGroupByRank(context.normalizedRank);
+  MagicGroup selectedGroup = SelectGroupByRank(context.normalizedRank, context.isTeamMode);
   context.group = selectedGroup;
 
   spdlog::debug("Rank={}, normalizedRank={}, selectedGroup={}",
@@ -155,7 +156,7 @@ registry::Magic::SlotInfo MagicSelector::SelectItem(
       if (group == selectedGroup)
         continue;
 
-      const GroupRatio* ratio = config.GetGroupRatio(group);
+      const GroupRatio* ratio = config.GetGroupRatio(group, context.isTeamMode);
       if (ratio && ratio->rankWeights[context.normalizedRank - 1] > 0)
       {
         alternativeGroups.emplace_back(group, ratio->rankWeights[context.normalizedRank - 1]);
@@ -244,7 +245,7 @@ registry::Magic::SlotInfo MagicSelector::SelectItem(
       if (group == selectedGroup)
         continue;
 
-      const GroupRatio* ratio = config.GetGroupRatio(group);
+      const GroupRatio* ratio = config.GetGroupRatio(group, context.isTeamMode);
       if (ratio && ratio->rankWeights[context.normalizedRank - 1] > 0)
       {
         alternativeGroups.emplace_back(group, ratio->rankWeights[context.normalizedRank - 1]);
@@ -364,13 +365,13 @@ registry::Magic::SlotInfo MagicSelector::SelectItem(
 // PRIVATE IMPLEMENTATION
 // ============================================================================
 
-MagicGroup MagicSelector::SelectGroupByRank(uint32_t rank) const
+MagicGroup MagicSelector::SelectGroupByRank(uint32_t rank, bool isTeamMode) const
 {
   // Use normalized rank if provided (from RaceContext), otherwise use the raw rank
   // This allows for consistent distribution across different race sizes
   const auto& config = MagicConfig::GetInstance();
 
-  // Use MagicGroupTeamRatio data (Table 355) for weighted group selection
+  // Use MagicGroupRatio or MagicGroupTeamRatio data for weighted group selection
   // This defines the probability percentage for each group at each rank
   // We need to select a group based on these weights
 
@@ -380,14 +381,14 @@ MagicGroup MagicSelector::SelectGroupByRank(uint32_t rank) const
   if (rank > 8)
     rank = 8;
 
-  // Build weighted group selection based on MagicGroupTeamRatio
+  // Build weighted group selection based on group ratios
   // Only include groups that have non-zero weight for this rank
   std::vector<std::pair<MagicGroup, uint32_t>> groupWeights;
 
   for (uint32_t g = 1; g < static_cast<uint32_t>(MagicGroup::MaxGroups); ++g)
   {
     MagicGroup group = static_cast<MagicGroup>(g);
-    const GroupRatio* ratio = config.GetGroupRatio(group);
+    const GroupRatio* ratio = config.GetGroupRatio(group, isTeamMode);
 
     if (ratio && ratio->rankWeights[rank - 1] > 0)
     {
@@ -495,7 +496,7 @@ std::vector<std::pair<MagicType, uint32_t>> MagicSelector::ApplySlotRatios(
 
     // Handle team assistance items (BufPower=20, BufGauge=22, BufSpeed=24)
     // These have special ratios from MagicGroupTeamAssistanceRatio
-    if (underlyingType == 20 || underlyingType == 22 || underlyingType == 24)
+    if (underlyingType >= 20 && underlyingType <= 25)
     {
       // For team items, check if rank allows them
       // BufPower (20): ranks 7-8 only, 20% each
@@ -602,6 +603,41 @@ void MagicSelector::ApplyDynamicModifiers(
 
       // Apply modifier as percentage (negative values reduce, positive increase)
       // Convert modValue to a multiplier: -10 = -10%, +10 = +10%
+      int32_t adjustedWeight = static_cast<int32_t>(weight) +
+                               static_cast<int32_t>((weight * modValue) / 100);
+
+      // Ensure weight doesn't go negative
+      weight = static_cast<uint32_t>(std::max(1, adjustedWeight));
+    }
+
+    // Get slot team modifier for this type
+    const SlotTeamModifier* slotModifier = config.GetSlotTeamModifier(type);
+
+    if (slotModifier && slotModifier->appliesWhenLeading == context.isLeading)
+    {
+      // Apply modifier based on how many players are ahead
+      int32_t modValue = 0;
+
+      switch (context.aheadCount)
+      {
+        case 1:
+          modValue = slotModifier->ahead1;
+          break;
+        case 2:
+          modValue = slotModifier->ahead2;
+          break;
+        case 3:
+          modValue = slotModifier->ahead3;
+          break;
+        case 4:
+          modValue = slotModifier->ahead4;
+          break;
+        default:
+          modValue = 0;
+          break;
+      }
+
+      // Apply modifier as percentage
       int32_t adjustedWeight = static_cast<int32_t>(weight) +
                                static_cast<int32_t>((weight * modValue) / 100);
 

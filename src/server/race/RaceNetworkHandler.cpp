@@ -2766,6 +2766,12 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
         magicItem = _serverInstance.GetCourseRegistry()
           .GetDeckItemInfo(magicItemType).magicSlot;
 
+        // Apply critical upgrade chance
+        magic::MagicSelector selector(_serverInstance.GetMagicRegistry());
+        auto slotInfo = selector.HandleCriticalChance(
+          _serverInstance.GetMagicRegistry().GetSlotInfo(magicItem), racer);
+        magicItem = slotInfo.type;
+
         // Response with OK to the client that they have a new item in hand
         protocol::AcCmdCRRequestMagicItemOK magicItemOk{
           .characterOid = command.characterOid,

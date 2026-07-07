@@ -44,13 +44,16 @@ public:
   const AllocationRule* GetAllocationRule(MagicType type) const;
 
   // Get group ratio for a magic group
-  const GroupRatio* GetGroupRatio(MagicGroup group) const;
+  const GroupRatio* GetGroupRatio(MagicGroup group, bool isTeamMode) const;
 
   // Get slot ratio for a magic type
   const SlotRatio* GetSlotRatio(MagicType type) const;
 
   // Get team modifier for a group and lead status
   const TeamModifier* GetTeamModifier(MagicGroup group, bool isLeading) const;
+
+  // Get slot team modifier for a magic type
+  const SlotTeamModifier* GetSlotTeamModifier(MagicType type) const;
 
   // Map magic type to group
   MagicGroup GetGroupForType(MagicType type) const;
@@ -89,8 +92,10 @@ private:
   // MagicAllocInfo (Table 216): Allocation rules per magic type
   std::array<AllocationRule, 26> allocationRules_; // Indexed by MagicType
 
-  // MagicGroupRatio (Table 214): Group probabilities by rank
-  std::array<GroupRatio, 8> groupRatios_; // Indexed by MagicGroup
+  // MagicGroupRatio (Table 214): Group probabilities by rank (Solo)
+  std::array<GroupRatio, 8> soloGroupRatios_; // Indexed by MagicGroup
+  // MagicGroupTeamRatio (Table 355): Group probabilities by rank (Team)
+  std::array<GroupRatio, 8> teamGroupRatios_; // Indexed by MagicGroup
 
   // MagicSlotRatio (Table 199): Slot probabilities by rank
   std::array<SlotRatio, 26> slotRatios_; // Indexed by MagicType
@@ -98,6 +103,9 @@ private:
   // MagicGroupTeamModifier (Table 270): Dynamic modifiers
   std::array<std::array<TeamModifier, 2>, 8> teamModifiers_;
   // [group][isLeading] -> TeamModifier
+
+  // MagicSlotTeamModifier (Table 271): Dynamic slot modifiers
+  std::array<SlotTeamModifier, 26> slotTeamModifiers_; // Indexed by MagicType
 
   // Type to group mapping
   std::array<MagicGroup, 26> typeToGroup_;      // [MagicType] -> MagicGroup
@@ -115,12 +123,22 @@ inline const AllocationRule* MagicConfig::GetAllocationRule(MagicType type) cons
   return nullptr;
 }
 
-inline const GroupRatio* MagicConfig::GetGroupRatio(MagicGroup group) const
+inline const GroupRatio* MagicConfig::GetGroupRatio(MagicGroup group, bool isTeamMode) const
 {
   uint32_t index = static_cast<uint32_t>(group);
-  if (index < groupRatios_.size())
+  if (isTeamMode)
   {
-    return &groupRatios_[index];
+    if (index < teamGroupRatios_.size())
+    {
+      return &teamGroupRatios_[index];
+    }
+  }
+  else
+  {
+    if (index < soloGroupRatios_.size())
+    {
+      return &soloGroupRatios_[index];
+    }
   }
   return nullptr;
 }
@@ -142,6 +160,16 @@ inline const TeamModifier* MagicConfig::GetTeamModifier(MagicGroup group, bool i
   if (g < teamModifiers_.size() && l < teamModifiers_[g].size())
   {
     return &teamModifiers_[g][l];
+  }
+  return nullptr;
+}
+
+inline const SlotTeamModifier* MagicConfig::GetSlotTeamModifier(MagicType type) const
+{
+  uint32_t index = ToUnderlying(type);
+  if (index < slotTeamModifiers_.size())
+  {
+    return &slotTeamModifiers_[index];
   }
   return nullptr;
 }
@@ -179,7 +207,7 @@ inline MagicGroup MagicConfig::GetPrimaryGroupForRank(uint32_t rank) const
 
   for (uint32_t g = 1; g < static_cast<uint32_t>(MagicGroup::MaxGroups); ++g)
   {
-    const auto* ratio = GetGroupRatio(static_cast<MagicGroup>(g));
+    const auto* ratio = GetGroupRatio(static_cast<MagicGroup>(g), false);
     if (ratio && ratio->rankWeights[rank - 1] > bestWeight)
     {
       bestWeight = ratio->rankWeights[rank - 1];

@@ -173,6 +173,19 @@ struct TeamModifier
   bool appliesWhenLeading = false; // true if this applies when leading
 };
 
+// ============================================================================
+// SLOT TEAM MODIFIERS (from MagicSlotTeamModifier.xml, Table 271)
+// ============================================================================
+
+struct SlotTeamModifier
+{
+  int32_t ahead1 = 0;              // Modifier when 1 player ahead
+  int32_t ahead2 = 0;              // Modifier when 2 players ahead
+  int32_t ahead3 = 0;              // Modifier when 3 players ahead
+  int32_t ahead4 = 0;              // Modifier when 4 players ahead
+  bool appliesWhenLeading = false; // true if this applies when leading
+};
+
 } // namespace server::magic
 
 #endif // ALICIA_SERVER_RACE_MAGIC_TYPES_HPP
