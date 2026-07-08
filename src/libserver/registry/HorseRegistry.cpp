@@ -23,6 +23,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include <filesystem>
+#include <map>
 #include <ranges>
 
 namespace server::registry
@@ -472,6 +473,59 @@ const Tail& HorseRegistry::GetTail(data::Tid tid) const
   // Fallback to white medium tail (TID 1) if not found
   static const Tail invalidTail{.tid = 1, .color = Color::White, .shape = 1, .inheritanceRate = 30.0f, .minGrade = 1, .tier = 1};
   return invalidTail;
+}
+
+const std::vector<data::Tid>& HorseRegistry::GetPossibleCoats() const
+{
+  return _possibleCoats;
+}
+
+namespace
+{
+
+template <typename PartMap>
+std::vector<ShapeInheritance> AggregateShapeInheritance(const PartMap& parts)
+{
+  struct Aggregate
+  {
+    data::Tid representativeTid{data::InvalidTid};
+    int32_t minGrade{0};
+    float inheritanceRate{0.0f};
+  };
+
+  std::map<int32_t, Aggregate> byShape;
+  for (const auto& [tid, part] : parts)
+  {
+    auto [it, inserted] = byShape.try_emplace(
+      part.shape, Aggregate{tid, part.minGrade, part.inheritanceRate});
+    if (inserted)
+      continue;
+
+    it->second.minGrade = std::min(it->second.minGrade, part.minGrade);
+    if (tid < it->second.representativeTid)
+    {
+      it->second.representativeTid = tid;
+      it->second.inheritanceRate = part.inheritanceRate;
+    }
+  }
+
+  std::vector<ShapeInheritance> result;
+  result.reserve(byShape.size());
+  for (const auto& [shape, aggregate] : byShape)
+    result.push_back({shape, aggregate.minGrade, aggregate.inheritanceRate});
+  return result;
+}
+
+} // namespace
+
+std::vector<ShapeInheritance> HorseRegistry::GetManeShapeInheritance() const
+{
+  return AggregateShapeInheritance(_manes);
+}
+
+std::vector<ShapeInheritance> HorseRegistry::GetTailShapeInheritance() const
+{
+  return AggregateShapeInheritance(_tails);
 }
 
 const PotentialInfo* HorseRegistry::GetPotentialInfo(uint32_t type) const

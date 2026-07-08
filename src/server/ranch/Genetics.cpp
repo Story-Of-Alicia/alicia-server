@@ -38,14 +38,6 @@ constexpr int kMareChance = 10;
 constexpr int kStallionChance = 20;
 constexpr int kGrandparentStep = 5;
 
-//! Highest mane shape index (0-7).
-constexpr int32_t kMaxManeShape = 7;
-//! Highest tail shape index (0-5).
-constexpr int32_t kMaxTailShape = 5;
-
-//! Number of colour variants per shape, used to build a representative TID for a shape.
-constexpr int32_t kColorVariantsPerShape = 5;
-
 } // namespace
 
 Genetics::Genetics(ServerInstance& serverInstance)
@@ -129,7 +121,7 @@ void Genetics::CreateFoal(
   foal.name() = std::string{}; // Empty until the player names it.
   foal.type() = data::Horse::Type::Foal;
   foal.dateOfBirth() = data::Clock::now();
-  foal.clazz() = 0;
+  foal.clazz() = 1;
   foal.clazzProgress() = 0;
   foal.growthPoints() = 0;
   foal.mountCondition.stamina() = 4000;
@@ -299,13 +291,12 @@ int32_t Genetics::InheritManeShape(const Ancestry& ancestry, const uint8_t foalG
   // No inheritance: weight each grade-eligible shape by its inheritance rate.
   std::vector<int32_t> shapes;
   std::vector<float> weights;
-  for (int32_t shape = 0; shape <= kMaxManeShape; ++shape)
+  for (const auto& shapeInfo : registry.GetManeShapeInheritance())
   {
-    const auto& maneInfo = registry.GetMane((shape * kColorVariantsPerShape) + 1);
-    if (maneInfo.minGrade <= foalGrade)
+    if (shapeInfo.minGrade <= foalGrade)
     {
-      shapes.push_back(shape);
-      weights.push_back(maneInfo.inheritanceRate);
+      shapes.push_back(shapeInfo.shape);
+      weights.push_back(shapeInfo.inheritanceRate);
     }
   }
 
@@ -329,13 +320,12 @@ int32_t Genetics::InheritTailShape(const Ancestry& ancestry, const uint8_t foalG
 
   std::vector<int32_t> shapes;
   std::vector<float> weights;
-  for (int32_t shape = 0; shape <= kMaxTailShape; ++shape)
+  for (const auto& shapeInfo : registry.GetTailShapeInheritance())
   {
-    const auto& tailInfo = registry.GetTail((shape * kColorVariantsPerShape) + 1);
-    if (tailInfo.minGrade <= foalGrade)
+    if (shapeInfo.minGrade <= foalGrade)
     {
-      shapes.push_back(shape);
-      weights.push_back(tailInfo.inheritanceRate);
+      shapes.push_back(shapeInfo.shape);
+      weights.push_back(shapeInfo.inheritanceRate);
     }
   }
 
@@ -425,27 +415,6 @@ uint8_t Genetics::CalculateFoalGrade(const uint8_t mareGrade, const uint8_t stal
   return static_cast<uint8_t>(std::clamp(finalGrade, 1, childGradeLimit));
 }
 
-uint32_t Genetics::CalculateFoalStat(const uint32_t mareStat, const uint32_t stallionStat)
-{
-  const uint32_t avgStat = (mareStat + stallionStat) / 2;
-
-  // Symmetric variance of +/-20% around the parent average.
-  const int32_t variance = static_cast<int32_t>((avgStat * 20) / 100);
-  const int32_t offset = std::uniform_int_distribution<int32_t>(-variance, variance)(_randomEngine);
-
-  return static_cast<uint32_t>(std::clamp(static_cast<int32_t>(avgStat) + offset, 0, 100));
-}
-
-uint8_t Genetics::CalculateGradeFromStats(const uint32_t totalStats)
-{
-  // Grade buckets: grade N covers a total of [(N-1)*10, N*10), capped at grade 8 (>= 79).
-  if (totalStats < 10)
-    return 1;
-  if (totalStats >= 79)
-    return 8;
-  return static_cast<uint8_t>(totalStats / 10 + 1);
-}
-
 data::Horse::Stats Genetics::CalculateFoalStats(
   const data::Horse::Stats& mareStats,
   const data::Horse::Stats& stallionStats,
@@ -453,13 +422,9 @@ data::Horse::Stats Genetics::CalculateFoalStats(
 {
   data::Horse::Stats result;
 
-  // Target total for the grade: grade N occupies [(N-1)*10, N*10), special-cased at the ends.
-  uint32_t minTotal = (targetGrade - 1) * 10;
-  uint32_t maxTotal = targetGrade * 10 - 1;
-  if (targetGrade == 1)
-    minTotal = 0;
-  if (targetGrade == 8)
-    maxTotal = 79;
+  // Target total for the grade: grade N occupies [(N-1)*10, N*10-1], matching the
+  const uint32_t minTotal = (targetGrade - 1) * 10;
+  const uint32_t maxTotal = targetGrade * 10 - 1;
 
   const uint32_t targetTotal =
     std::uniform_int_distribution<uint32_t>(minTotal, maxTotal)(_randomEngine);
@@ -663,7 +628,7 @@ data::Tid Genetics::CalculateFoalSkin(
   {
     std::vector<data::Tid> tids;
     std::vector<float> weights;
-    for (data::Tid tid = 1; tid <= 20; ++tid)
+    for (const data::Tid tid : registry.GetPossibleCoats())
     {
       const auto& coatInfo = registry.GetCoatInfo(tid);
       if (coatInfo.minGrade <= foalGrade)

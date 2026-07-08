@@ -85,17 +85,6 @@ public:
   //! @returns Foal's grade (1-8)
   uint8_t CalculateFoalGrade(uint8_t mareGrade, uint8_t stallionGrade);
 
-  //! Calculates foal stat based on parent stats.
-  //! @param mareStat Mare's stat value
-  //! @param stallionStat Stallion's stat value
-  //! @returns Foal's stat value
-  uint32_t CalculateFoalStat(uint32_t mareStat, uint32_t stallionStat);
-
-  //! Calculates grade from total stats.
-  //! @param totalStats Sum of all 5 stats
-  //! @returns Grade (1-8) based on total stats
-  static uint8_t CalculateGradeFromStats(uint32_t totalStats);
-
   //! Calculates all foal stats based on parents and target grade.
   //! @param mareStats Parent mare's stats.
   //! @param stallionStats Parent stallion's stats.

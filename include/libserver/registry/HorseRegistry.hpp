@@ -175,6 +175,16 @@ struct Tail
   int32_t tier{1};
 };
 
+//! Per-shape inheritance info, aggregated across every colour variant of a shape.
+//! Used to roll a grade-eligible mane/tail shape weighted by its inheritance rate,
+//! without assuming any particular TID layout.
+struct ShapeInheritance
+{
+  int32_t shape{0};
+  int32_t minGrade{1};
+  float inheritanceRate{1.0f};
+};
+
 
 class HorseRegistry
 {
@@ -238,6 +248,17 @@ public:
   //! @param tid Tail TID.
   //! @returns Reference to Tail, with fallback to default if not found.
   const Tail& GetTail(data::Tid tid) const;
+
+  //! Returns every configured coat TID (for weighted random coat selection).
+  const std::vector<data::Tid>& GetPossibleCoats() const;
+
+  //! Returns one entry per distinct mane shape, ordered by shape, with the
+  //! shape's lowest minGrade and a representative inheritance rate.
+  std::vector<ShapeInheritance> GetManeShapeInheritance() const;
+
+  //! Returns one entry per distinct tail shape, ordered by shape, with the
+  //! shape's lowest minGrade and a representative inheritance rate.
+  std::vector<ShapeInheritance> GetTailShapeInheritance() const;
 
   //! Gets potential info for a given type ID.
   //! @returns Pointer to PotentialInfo, or nullptr if type not found.
