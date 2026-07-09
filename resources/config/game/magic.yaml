@@ -31,7 +31,7 @@ magic:
         affectByCriticalAura: 1
         criticalByDarkFire: 1
         attackRank: 2
-        positionalWeights: [5, 30, 35, 35, 25, 40, 20, 10]
+        positionalWeights: [1, 45, 45, 45, 30, 20, 3, 3]
 
       - type: 3               # FireBall (Critical)
         basicType: 2
@@ -91,7 +91,7 @@ magic:
         massEffect: 0
         affectByCriticalAura: 1
         criticalByDarkFire: 0
-        positionalWeights: [100, 25, 10, 5, 5, 5, 5, 5]
+        positionalWeights: [103, 10, 10, 5, 4, 3, 3, 3]
 
       - type: 5               # WaterShield (Critical)
         basicType: 4
@@ -150,7 +150,7 @@ magic:
         massEffect: 0
         affectByCriticalAura: 1
         criticalByDarkFire: 0
-        positionalWeights: [0, 5, 10, 10, 45, 45, 55, 70]
+        positionalWeights: [0, 10, 15, 18, 45, 55, 105, 105]
 
       - type: 7               # Booster (Critical)
         basicType: 6
@@ -209,7 +209,7 @@ magic:
         massEffect: 0
         affectByCriticalAura: 1
         criticalByDarkFire: 0
-        positionalWeights: [0, 0, 0, 0, 5, 5, 15, 35]
+        positionalWeights: [0, 0, 0, 0, 5, 20, 50, 50]
 
       - type: 9               # HotRodding (Critical)
         basicType: 8
@@ -269,7 +269,7 @@ magic:
         affectByCriticalAura: 1
         criticalByDarkFire: 0
         attackRank: 1
-        positionalWeights: [70, 15, 10, 10, 5, 5, 5, 5]
+        positionalWeights: [89, 35, 20, 20, 10, 12, 3, 3]
 
       - type: 11              # IceWall (Critical)
         basicType: 10
@@ -329,7 +329,7 @@ magic:
         massEffect: 0
         affectByCriticalAura: 1
         criticalByDarkFire: 0
-        positionalWeights: [0, 10, 10, 15, 20, 20, 10, 10]
+        positionalWeights: [0, 5, 20, 20, 30, 20, 3, 3]
 
       - type: 13              # JumpStun (Critical)
         basicType: 12
@@ -388,7 +388,7 @@ magic:
         massEffect: 0
         affectByCriticalAura: 1
         criticalByDarkFire: 0
-        positionalWeights: [0, 30, 35, 30, 30, 30, 30, 15]
+        positionalWeights: [5, 31, 20, 20, 17, 22, 8, 8]
 
       - type: 15              # DarkFire (Critical)
         basicType: 14
@@ -448,7 +448,7 @@ magic:
         affectByCriticalAura: 1
         criticalByDarkFire: 0
         attackRank: 2
-        positionalWeights: [5, 20, 35, 45, 35, 25, 25, 10]
+        positionalWeights: [1, 45, 45, 50, 35, 20, 3, 3]
 
       - type: 17              # Summon (Critical)
         basicType: 16
@@ -509,7 +509,7 @@ magic:
         affectByCriticalAura: 1
         criticalByDarkFire: 1
         attackRank: 3
-        positionalWeights: [0, 5, 5, 5, 5, 5, 10, 10]
+        positionalWeights: [0, 3, 3, 3, 4, 4, 4, 4]
 
       - type: 19              # Lightning (Critical)
         basicType: 18
@@ -569,7 +569,7 @@ magic:
         massEffect: 0
         affectByCriticalAura: 1
         criticalByDarkFire: 0
-        positionalWeights: [10, 10, 15, 10, 10, 10, 10, 15]
+        positionalWeights: [1, 6, 10, 7, 8, 8, 4, 4]
 
       - type: 21              # BufPower (Critical)
         basicType: 20
@@ -687,7 +687,7 @@ magic:
         massEffect: 0
         affectByCriticalAura: 1
         criticalByDarkFire: 0
-        positionalWeights: [10, 5, 10, 10, 10, 10, 10, 10]
+        positionalWeights: [0, 10, 12, 12, 12, 16, 14, 14]
 
       - type: 25              # BufSpeed (Critical)
         basicType: 24
