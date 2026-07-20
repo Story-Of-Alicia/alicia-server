@@ -562,9 +562,6 @@ Genetics::PotentialResult Genetics::CalculateFoalPotential(
   }
   probability += parentsWithPotential * 10;
 
-  // TESTING: always grant a potential to exercise the potential flow. Remove this.
-  probability = 100;
-
   if (RollPercent() >= probability)
   {
     spdlog::debug("Genetics: foal gets no potential (needed < {})", probability);

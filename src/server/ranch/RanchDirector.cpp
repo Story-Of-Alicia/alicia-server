@@ -1549,11 +1549,20 @@ void RanchDirector::HandleSearchStallion(
       if (not horseRecord || not stallionRecord)
         continue;
 
+      // Filter by grade, only keep horses of the requested grade (4-8).
+      uint8_t horseGrade = 0;
+      horseRecord.Immutable([&horseGrade](const data::Horse& horse)
+      {
+        horseGrade = static_cast<uint8_t>(horse.grade());
+      });
+
+      if (horseGrade != command.filterMinimumGrade)
+        continue;
+
       auto& protocolStallion = response.stallions.emplace_back();
 
       horseRecord.Immutable([&protocolStallion](const data::Horse& horse)
       {
-        protocolStallion.owner = "dev";
         protocolStallion.uid = horse.uid();
         protocolStallion.tid = horse.tid();
         protocolStallion.name = horse.name();
@@ -1563,18 +1572,29 @@ void RanchDirector::HandleSearchStallion(
         protocol::BuildProtocolHorseAppearance(protocolStallion.appearance, horse.appearance);
         protocol::BuildProtocolHorseStats(protocolStallion.stats, horse.stats);
 
-        protocolStallion.pregnancyChance = 1;
+        protocolStallion.pregnancyChance = horse.breedingCount();
         protocolStallion.heritability = 0;
         // todo: figure out unk11
         protocolStallion.unk11 = 0;
         protocolStallion.lineage = static_cast<uint8_t>(horse.lineage());
       });
 
-      stallionRecord.Immutable([&protocolStallion](const data::Stallion& stallion)
+      data::Uid ownerUid = data::InvalidUid;
+      stallionRecord.Immutable([&protocolStallion, &ownerUid](const data::Stallion& stallion)
       {
         protocolStallion.breedFee = stallion.breedingCharge();
         protocolStallion.expiresAt = stallion.expiresAt();
+        ownerUid = stallion.ownerUid();
       });
+
+      const auto ownerRecord = _serverInstance.GetDataDirector().GetCharacter(ownerUid);
+      if (ownerRecord)
+      {
+        ownerRecord.Immutable([&protocolStallion](const data::Character& character)
+        {
+          protocolStallion.owner = character.name();
+        });
+      }
     }
   }
 
