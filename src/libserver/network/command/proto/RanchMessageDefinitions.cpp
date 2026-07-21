@@ -1189,22 +1189,6 @@ void AcCmdRCAddIdleMountInfoNotify::Read(
   throw std::runtime_error("Not implemented.");
 }
 
-void AcCmdRCUpdateMountInfoNotify::Write(
-  const AcCmdRCUpdateMountInfoNotify& command,
-  SinkStream& stream)
-{
-  stream.Write(command.characterUid)
-    .Write(command.action)
-    .Write(command.horse);
-}
-
-void AcCmdRCUpdateMountInfoNotify::Read(
-  AcCmdRCUpdateMountInfoNotify&,
-  SourceStream&)
-{
-  throw std::runtime_error("Not implemented.");
-}
-
 void AcCmdCRUpdateMountNicknameOK::Write(
   const AcCmdCRUpdateMountNicknameOK& command,
   SinkStream& stream)
