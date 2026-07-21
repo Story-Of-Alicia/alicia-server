@@ -1701,15 +1701,18 @@ void RaceNetworkHandler::HandleRaceResult(
   protocol::AcCmdCRRaceResultOK response{};
 
   characterRecord.Immutable(
-    [this, &response](const data::Character& character)
+    [this, &response, gainedClassProgress = command.gainedClassProgress](const data::Character& character)
     {
       response.currentCarrots = character.carrots();
 
-      GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Immutable(
-        [&response](const data::Horse& horse)
+      GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Mutable(
+        [this, &response, gainedClassProgress](data::Horse& horse)
         {
           response.horseFatigue = static_cast<uint16_t>(
             horse.fatigue());
+
+          GetServerInstance().GetHorseRegistry().ApplyClassProgress(
+            horse, gainedClassProgress);
         });
     });
 

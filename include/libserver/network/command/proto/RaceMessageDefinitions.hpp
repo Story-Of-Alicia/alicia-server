@@ -922,7 +922,7 @@ struct AcCmdUserRaceFinalNotify
 struct AcCmdCRRaceResult
 {
   uint8_t member1{};
-  uint32_t member2{};
+  uint32_t gainedClassProgress{};
   uint32_t member3{};
   uint32_t member4{};
   uint32_t member5{};

@@ -285,6 +285,20 @@ public:
 
   const LevelUpPoints& GetLevelUpPoints() const;
 
+  //! Total class exp required to reach a given class level (level 1 == 0).
+  //! Per-level costs come from LevelUpPoints: levels 1-10 use `base`,
+  //! 11-20 use `exp10`, 21-30 use `exp20`.
+  //! @param level Class level (1-30).
+  //! @returns Cumulative exp required to be at that level.
+  uint32_t GetCumulativeClassExp(uint32_t level) const;
+
+  //! Applies gained class exp to a horse. `clazzProgress` stores the lifetime
+  //! total and `clazz` the cached level; the level is advanced incrementally
+  //! and one growth point is awarded per level gained. Caps at class 30.
+  //! @param horse Horse to mutate.
+  //! @param gainedExp Class exp gained.
+  void ApplyClassProgress(data::Horse& horse, uint32_t gainedExp) const;
+
   //! Gets grade info by grade number.
   //! @returns Pointer to GradeInfo, or nullptr if not found.
   const GradeInfo* GetGradeInfo(uint32_t grade) const;

@@ -577,6 +577,50 @@ const LevelUpPoints& HorseRegistry::GetLevelUpPoints() const
   return _levelUpPoints;
 }
 
+uint32_t HorseRegistry::GetCumulativeClassExp(uint32_t level) const
+{
+  if (level <= 1)
+    return 0;
+
+  const auto base = static_cast<uint32_t>(_levelUpPoints.base);
+  const auto exp10 = static_cast<uint32_t>(_levelUpPoints.exp10);
+  const auto exp20 = static_cast<uint32_t>(_levelUpPoints.exp20);
+
+  // Number of level-ups needed to reach `level` from level 1.
+  const uint32_t transitions = level - 1;
+
+  // Levels 1-10 cost `base`, 11-20 cost `exp10`, 21-30 cost `exp20`.
+  uint32_t total = std::min<uint32_t>(transitions, 10) * base;
+  if (transitions > 10)
+    total += std::min<uint32_t>(transitions - 10, 10) * exp10;
+  if (transitions > 20)
+    total += (transitions - 20) * exp20;
+
+  return total;
+}
+
+void HorseRegistry::ApplyClassProgress(data::Horse& horse, uint32_t gainedExp) const
+{
+  constexpr uint32_t MaxClass = 30;
+
+  uint32_t level = std::max<uint32_t>(horse.clazz(), 1);
+  if (level >= MaxClass)
+    return;
+
+  // clazzProgress is the lifetime total; advance the cached class while the
+  // next level's cumulative requirement is met.
+  horse.clazzProgress() += gainedExp;
+
+  while (level < MaxClass
+    && horse.clazzProgress() >= GetCumulativeClassExp(level + 1))
+  {
+    level += 1;
+    horse.growthPoints() += 1;
+  }
+
+  horse.clazz() = level;
+}
+
 const GradeInfo* HorseRegistry::GetGradeInfo(uint32_t grade) const
 {
   auto it = _grades.find(grade);
