@@ -4502,7 +4502,8 @@ struct AcCmdCRUpdateMountInfo
   enum class Action : uint8_t
   {
     ReturnToNature = 3,
-    Rename = 4
+    Rename = 4,
+    GrowUp = 5
   } action;
   Horse horse{};
 

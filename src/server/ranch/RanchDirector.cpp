@@ -51,6 +51,10 @@ constexpr uint16_t MaxFriendliness = 1000;
 constexpr uint16_t MaxAttachment = 1000;
 constexpr uint16_t MaxPlenitude = 1200;
 
+//! The item template ID of the instant grow-up item,
+//! which matures a foal into an adult horse.
+constexpr data::Tid InstantGrowUpItemTid = 43001;
+
 BreedingMarket::SnapshotOrder ConvertProtocolStallionOrderToSnapshotOrder(
   const protocol::AcCmdCRSearchStallion::StallionOrder order)
 {
@@ -4061,6 +4065,29 @@ void RanchDirector::HandleUseItem(
       {
         return cure;
       });
+  }
+  else if (usedItemTid == InstantGrowUpItemTid)
+  {
+    // Instantly matures a foal into an adult horse.
+    protocol::AcCmdCRUpdateMountInfoOK growUp{
+      .action = protocol::AcCmdCRUpdateMountInfo::Action::GrowUp};
+
+    mountRecord.Mutable([&growUp](data::Horse& horse)
+    {
+      if (horse.type() == data::Horse::Type::Foal)
+        horse.type() = data::Horse::Type::Adult;
+
+      protocol::BuildProtocolHorse(growUp.horse, horse);
+    });
+
+    _commandServer.QueueCommand<decltype(growUp)>(
+      clientId,
+      [growUp]()
+      {
+        return growUp;
+      });
+
+    consumeItem = true;
   }
   else
   {
