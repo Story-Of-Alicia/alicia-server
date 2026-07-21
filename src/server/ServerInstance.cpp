@@ -94,7 +94,7 @@ void ServerInstance::Initialize()
   _breedingRegistry.ReadConfig(_resourceDirectory / "config/game/breeding.yaml");
   _characterRegistry.ReadConfig(_resourceDirectory / "config/game/character.yaml");
   _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
-  _horseRegistry.ReadConfig(_resourceDirectory / "config/game/horses.yaml");
+  _horseRegistry.ReadConfig(_resourceDirectory / "config/game/horses");
   _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items");
   _magicRegistry.ReadConfig(_resourceDirectory / "config/game/magic.yaml");
   _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");

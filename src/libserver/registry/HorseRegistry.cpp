@@ -70,7 +70,16 @@ HorseRegistry::HorseRegistry()
 
 void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
 {
-  const auto root = YAML::LoadFile(configPath.string())["horses"];
+  // Horse tables are split across category files under the config directory.
+  // Merge their top-level sections into a single node so the parsing below
+  // stays uniform regardless of which file a section lives in.
+  YAML::Node root;
+  for (const auto* file : {"appearance.yaml", "potential.yaml", "progression.yaml", "emblems.yaml"})
+  {
+    const auto node = YAML::LoadFile((configPath / file).string());
+    for (const auto& entry : node)
+      root[entry.first.as<std::string>()] = entry.second;
+  }
 
   _colorGroups.clear();
   for (const auto& node : root["colorGroups"])
