@@ -38,6 +38,23 @@ constexpr int kMareChance = 10;
 constexpr int kStallionChance = 20;
 constexpr int kGrandparentStep = 5;
 
+//! Stallion breeding count is capped here before it feeds the pregnancy/coat bonus.
+constexpr uint32_t kMaxPregnancyChance = 30;
+
+//! Picks one value weighted by its parallel weight, or returns the fallback when empty.
+template <typename T, typename W>
+T PickWeighted(
+  std::mt19937& engine,
+  const std::vector<T>& values,
+  const std::vector<W>& weights,
+  const T fallback)
+{
+  if (values.empty())
+    return fallback;
+  std::discrete_distribution<size_t> dist(weights.begin(), weights.end());
+  return values[dist(engine)];
+}
+
 } // namespace
 
 Genetics::Genetics(ServerInstance& serverInstance)
@@ -66,11 +83,31 @@ uint32_t Genetics::RollTendency()
     }
   }
 
-  if (tendencies.empty())
-    return 1;
+  return PickWeighted(_randomEngine, tendencies, weights, uint32_t{1});
+}
 
-  std::discrete_distribution<size_t> dist(weights.begin(), weights.end());
-  return tendencies[dist(_randomEngine)];
+uint32_t Genetics::RollEmblem()
+{
+  const auto& horseRegistry = _serverInstance.GetHorseRegistry();
+
+  // Pick a rarity tier weighted by its ratio (emblems.yaml -> emblemRatios).
+  std::vector<uint32_t> tiers;
+  std::vector<int32_t> ratios;
+  for (const auto& ratio : horseRegistry.GetEmblemRatios())
+  {
+    if (ratio.ratio > 0)
+    {
+      tiers.push_back(ratio.odds);
+      ratios.push_back(ratio.ratio);
+    }
+  }
+  const uint32_t tier = PickWeighted(_randomEngine, tiers, ratios, uint32_t{1});
+
+  // Pick a uniform emblem within the chosen tier.
+  const std::vector<uint32_t> emblems = horseRegistry.GetEmblemsByOdds(tier);
+  if (emblems.empty())
+    return 1;
+  return emblems[std::uniform_int_distribution<size_t>(0, emblems.size() - 1)(_randomEngine)];
 }
 
 void Genetics::CreateFoal(
@@ -128,6 +165,7 @@ void Genetics::CreateFoal(
 
   foal.tid() = mare.tid; // Foal uses the mare's breed/TID.
   foal.tendency() = RollTendency();
+  foal.emblemUid() = RollEmblem();
 
   // Grade: base genetics plus any fertility-peak bonus, capped at the child grade limit.
   const auto childGradeLimit = static_cast<uint32_t>(
@@ -137,7 +175,7 @@ void Genetics::CreateFoal(
   foal.grade() = foalGrade;
 
   // Skin/coat, influenced by parent combos and the stallion's pregnancy chance.
-  const uint32_t pregnancyChance = std::min(stallion.breedingCount, 30u);
+  const uint32_t pregnancyChance = std::min(stallion.breedingCount, kMaxPregnancyChance);
   const data::Tid foalSkin = CalculateFoalSkin(
     mareUid, stallionUid, foalGrade, mare.combo, stallion.combo, pregnancyChance);
   foal.parts.skinTid() = foalSkin;
@@ -247,51 +285,51 @@ data::Uid Genetics::RollInheritedDonor(const Ancestry& ancestry)
   return data::InvalidUid; // Random (60%).
 }
 
-int32_t Genetics::GetShapeFromTid(const data::Tid tid, const bool isMane)
+int32_t Genetics::GetShapeFromTid(const data::Tid tid, const Part part)
 {
   const auto& registry = _serverInstance.GetHorseRegistry();
-  return isMane ? registry.GetMane(tid).shape : registry.GetTail(tid).shape;
+  return part == Part::Mane ? registry.GetMane(tid).shape : registry.GetTail(tid).shape;
 }
 
-void Genetics::ValidateManeShape(int32_t& maneShape, const uint8_t foalGrade)
-{
-  // Basic shapes (0-4) are always allowed; the longer shapes need a higher grade.
-  int32_t maxAllowedShape = 4;
-  if (foalGrade >= 7)
-    maxAllowedShape = 7; // Long Curly
-  else if (foalGrade >= 6)
-    maxAllowedShape = 6; // Long
-  else if (foalGrade >= 4)
-    maxAllowedShape = 5; // Spiky
-
-  if (maneShape > maxAllowedShape)
-    maneShape = std::uniform_int_distribution<int32_t>(0, maxAllowedShape)(_randomEngine);
-}
-
-void Genetics::ValidateTailShape(int32_t& tailShape, const uint8_t foalGrade)
-{
-  // Only Long Curly (5) is grade-restricted for tails.
-  const int32_t maxAllowedShape = (foalGrade >= 7) ? 5 : 4;
-
-  if (tailShape > maxAllowedShape)
-    tailShape = std::uniform_int_distribution<int32_t>(0, maxAllowedShape)(_randomEngine);
-}
-
-int32_t Genetics::InheritManeShape(const Ancestry& ancestry, const uint8_t foalGrade)
+void Genetics::ValidateShape(int32_t& shape, const uint8_t foalGrade, const Part part)
 {
   const auto& registry = _serverInstance.GetHorseRegistry();
+  const auto& inheritance = part == Part::Mane
+    ? registry.GetManeShapeInheritance()
+    : registry.GetTailShapeInheritance();
+
+  // Highest shape the foal's grade may wear, per the registry's per-shape minGrade.
+  int32_t maxAllowedShape = 0;
+  for (const auto& shapeInfo : inheritance)
+  {
+    if (shapeInfo.minGrade <= foalGrade)
+      maxAllowedShape = std::max(maxAllowedShape, shapeInfo.shape);
+  }
+
+  if (shape > maxAllowedShape)
+    shape = std::uniform_int_distribution<int32_t>(0, maxAllowedShape)(_randomEngine);
+}
+
+int32_t Genetics::InheritShape(const Ancestry& ancestry, const uint8_t foalGrade, const Part part)
+{
+  const auto& registry = _serverInstance.GetHorseRegistry();
+  const bool isMane = (part == Part::Mane);
 
   if (const data::Uid donor = RollInheritedDonor(ancestry); donor != data::InvalidUid)
   {
-    int32_t shape = GetShapeFromTid(ReadPart(donor, Part::Mane), true);
-    ValidateManeShape(shape, foalGrade);
+    int32_t shape = GetShapeFromTid(ReadPart(donor, part), part);
+    ValidateShape(shape, foalGrade, part);
     return shape;
   }
 
   // No inheritance: weight each grade-eligible shape by its inheritance rate.
+  const auto& inheritance = isMane
+    ? registry.GetManeShapeInheritance()
+    : registry.GetTailShapeInheritance();
+
   std::vector<int32_t> shapes;
   std::vector<float> weights;
-  for (const auto& shapeInfo : registry.GetManeShapeInheritance())
+  for (const auto& shapeInfo : inheritance)
   {
     if (shapeInfo.minGrade <= foalGrade)
     {
@@ -300,40 +338,7 @@ int32_t Genetics::InheritManeShape(const Ancestry& ancestry, const uint8_t foalG
     }
   }
 
-  if (shapes.empty())
-    return 0;
-
-  std::discrete_distribution<size_t> dist(weights.begin(), weights.end());
-  return shapes[dist(_randomEngine)];
-}
-
-int32_t Genetics::InheritTailShape(const Ancestry& ancestry, const uint8_t foalGrade)
-{
-  const auto& registry = _serverInstance.GetHorseRegistry();
-
-  if (const data::Uid donor = RollInheritedDonor(ancestry); donor != data::InvalidUid)
-  {
-    int32_t shape = GetShapeFromTid(ReadPart(donor, Part::Tail), false);
-    ValidateTailShape(shape, foalGrade);
-    return shape;
-  }
-
-  std::vector<int32_t> shapes;
-  std::vector<float> weights;
-  for (const auto& shapeInfo : registry.GetTailShapeInheritance())
-  {
-    if (shapeInfo.minGrade <= foalGrade)
-    {
-      shapes.push_back(shapeInfo.shape);
-      weights.push_back(shapeInfo.inheritanceRate);
-    }
-  }
-
-  if (shapes.empty())
-    return 0;
-
-  std::discrete_distribution<size_t> dist(weights.begin(), weights.end());
-  return shapes[dist(_randomEngine)];
+  return PickWeighted(_randomEngine, shapes, weights, int32_t{0});
 }
 
 Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
@@ -352,8 +357,8 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
   const int32_t colorGroupId = registry.GetCoatInfo(foalSkinTid).allowedColorGroups;
 
   // Shapes are inherited independently from the colour group.
-  const int32_t maneShape = InheritManeShape(ancestry, foalGrade);
-  const int32_t tailShape = InheritTailShape(ancestry, foalGrade);
+  const int32_t maneShape = InheritShape(ancestry, foalGrade, Part::Mane);
+  const int32_t tailShape = InheritShape(ancestry, foalGrade, Part::Tail);
 
   // Resolve the mane from the coat's colour group and the chosen shape.
   result.maneTid = registry.GetRandomManeFromColorAndShape(colorGroupId, maneShape);
@@ -374,10 +379,6 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
       result.tailTid = 1; // White short tail.
   }
 
-  result.maneColor = colorGroupId;
-  result.maneShape = maneShape;
-  result.tailColor = colorGroupId;
-  result.tailShape = tailShape;
   return result;
 }
 
@@ -420,9 +421,6 @@ data::Horse::Stats Genetics::CalculateFoalStats(
   const data::Horse::Stats& stallionStats,
   const uint8_t targetGrade)
 {
-  data::Horse::Stats result;
-
-  // Target total for the grade: grade N occupies [(N-1)*10, N*10-1], matching the
   const uint32_t minTotal = (targetGrade - 1) * 10;
   const uint32_t maxTotal = targetGrade * 10 - 1;
 
@@ -452,49 +450,46 @@ data::Horse::Stats Genetics::CalculateFoalStats(
     return static_cast<uint32_t>(std::clamp(static_cast<int32_t>(avgStat) + offset, 0, 100));
   };
 
-  uint32_t agility = calcBaseStat(mareStats.agility(), stallionStats.agility());
-  uint32_t courage = calcBaseStat(mareStats.courage(), stallionStats.courage());
-  uint32_t rush = calcBaseStat(mareStats.rush(), stallionStats.rush());
-  uint32_t endurance = calcBaseStat(mareStats.endurance(), stallionStats.endurance());
-  uint32_t ambition = calcBaseStat(mareStats.ambition(), stallionStats.ambition());
+  std::array<uint32_t, 5> stats{
+    calcBaseStat(mareStats.agility(), stallionStats.agility()),
+    calcBaseStat(mareStats.courage(), stallionStats.courage()),
+    calcBaseStat(mareStats.rush(), stallionStats.rush()),
+    calcBaseStat(mareStats.endurance(), stallionStats.endurance()),
+    calcBaseStat(mareStats.ambition(), stallionStats.ambition())};
 
-  const uint32_t currentTotal = agility + courage + rush + endurance + ambition;
+  uint32_t currentTotal = 0;
+  for (const uint32_t stat : stats)
+    currentTotal += stat;
 
   // Scale the stats proportionally so their sum lands inside the target grade's bucket.
   if (currentTotal != targetTotal && currentTotal > 0)
   {
     const double scale = static_cast<double>(targetTotal) / static_cast<double>(currentTotal);
-    agility = static_cast<uint32_t>(agility * scale);
-    courage = static_cast<uint32_t>(courage * scale);
-    rush = static_cast<uint32_t>(rush * scale);
-    endurance = static_cast<uint32_t>(endurance * scale);
-    ambition = static_cast<uint32_t>(ambition * scale);
+    uint32_t scaledTotal = 0;
+    for (uint32_t& stat : stats)
+    {
+      stat = static_cast<uint32_t>(stat * scale);
+      scaledTotal += stat;
+    }
 
     // Absorb the rounding remainder into the largest stat.
-    const uint32_t scaledTotal = agility + courage + rush + endurance + ambition;
     const int32_t difference = static_cast<int32_t>(targetTotal) - static_cast<int32_t>(scaledTotal);
     if (difference != 0)
     {
-      uint32_t* largest = &agility;
-      if (courage > *largest) largest = &courage;
-      if (rush > *largest) largest = &rush;
-      if (endurance > *largest) largest = &endurance;
-      if (ambition > *largest) largest = &ambition;
-      *largest = static_cast<uint32_t>(static_cast<int32_t>(*largest) + difference);
+      uint32_t& largest = *std::max_element(stats.begin(), stats.end());
+      largest = static_cast<uint32_t>(static_cast<int32_t>(largest) + difference);
     }
 
-    agility = std::min(agility, 100u);
-    courage = std::min(courage, 100u);
-    rush = std::min(rush, 100u);
-    endurance = std::min(endurance, 100u);
-    ambition = std::min(ambition, 100u);
+    for (uint32_t& stat : stats)
+      stat = std::min(stat, 100u);
   }
 
-  result.agility = agility;
-  result.courage = courage;
-  result.rush = rush;
-  result.endurance = endurance;
-  result.ambition = ambition;
+  data::Horse::Stats result;
+  result.agility = stats[0];
+  result.courage = stats[1];
+  result.rush = stats[2];
+  result.endurance = stats[3];
+  result.ambition = stats[4];
 
   return result;
 }
@@ -568,17 +563,34 @@ Genetics::PotentialResult Genetics::CalculateFoalPotential(
     return result;
   }
 
-  // Pick a random potential type in [1, 15] excluding 12.
-  result.hasPotential = true;
-  std::uniform_int_distribution<int> typeDist(1, 15);
-  uint8_t type = 0;
-  do
+  // Pick a random potential type from the registry
+  const auto& potentialTypes = registry.GetPotentialTypes();
+  if (potentialTypes.empty())
   {
-    type = static_cast<uint8_t>(typeDist(_randomEngine));
-  } while (type == 12);
-  result.type = type;
+    spdlog::warn("Genetics: no potential types configured");
+    return result;
+  }
+  std::uniform_int_distribution<size_t> typeDist(0, potentialTypes.size() - 1);
+  result.type = static_cast<uint8_t>(potentialTypes[typeDist(_randomEngine)]);
+  result.level = 1;
 
   return result;
+}
+
+float Genetics::StallionCoatBonusMultiplier(
+  const uint32_t mareCombo,
+  const uint32_t stallionCombo,
+  const uint32_t pregnancyChance,
+  const uint32_t stallionLineage)
+{
+  // Bonuses all push the foal towards the stallion's coat.
+  const int32_t bonusUnit = _serverInstance.GetBreedingRegistry().GetBreedingParams().inheritanceRateBonusUnit;
+  const uint32_t comboBonus = (mareCombo + stallionCombo) * static_cast<uint32_t>(bonusUnit);
+  const uint32_t pregnancyBonus = kMaxPregnancyChance - std::min(pregnancyChance, kMaxPregnancyChance);
+  const uint32_t lineageBonus = (stallionLineage > 1) ? (stallionLineage - 1) : 0;
+  const uint16_t totalBonus = static_cast<uint16_t>(
+    std::min<uint32_t>(comboBonus + pregnancyBonus + lineageBonus, 100u));
+  return 1.0f + (totalBonus / 100.0f);
 }
 
 data::Tid Genetics::CalculateFoalSkin(
@@ -604,13 +616,8 @@ data::Tid Genetics::CalculateFoalSkin(
   if (const auto record = _serverInstance.GetDataDirector().GetHorse(stallionUid))
     record.Immutable([&](const data::Horse& stallion) { stallionLineage = stallion.lineage(); });
 
-  // Bonuses all push the foal towards the stallion's coat.
-  const int32_t bonusUnit = _serverInstance.GetBreedingRegistry().GetBreedingParams().inheritanceRateBonusUnit;
-  const uint16_t comboBonus = static_cast<uint16_t>((mareCombo + stallionCombo) * bonusUnit);
-  const uint16_t pregnancyBonus = static_cast<uint16_t>(30 - std::min<uint32_t>(pregnancyChance, 30u));
-  const uint16_t lineageBonus = (stallionLineage > 1) ? static_cast<uint16_t>(stallionLineage - 1) : 0;
-  const uint16_t totalBonus = std::min<uint16_t>(comboBonus + pregnancyBonus + lineageBonus, 100);
-  const float bonusMultiplier = 1.0f + (totalBonus / 100.0f);
+  const float bonusMultiplier =
+    StallionCoatBonusMultiplier(mareCombo, stallionCombo, pregnancyChance, stallionLineage);
 
   // Grandparent coats, in roll order (maternal then paternal).
   std::vector<data::Tid> gpSkins;
@@ -634,10 +641,7 @@ data::Tid Genetics::CalculateFoalSkin(
         weights.push_back(coatInfo.inheritanceRate);
       }
     }
-    if (tids.empty())
-      return 1;
-    std::discrete_distribution<size_t> dist(weights.begin(), weights.end());
-    return tids[dist(_randomEngine)];
+    return PickWeighted(_randomEngine, tids, weights, data::Tid{1});
   };
 
   // Keeps an inherited coat only if the foal's grade can wear it, else rolls random.
@@ -646,42 +650,25 @@ data::Tid Genetics::CalculateFoalSkin(
     return registry.GetCoatInfo(skinTid).minGrade <= foalGrade ? skinTid : getRandomValidSkin();
   };
 
-  // Build weighted bands: mare, stallion (boosted), up to four grandparents, then random.
   const float mareWeight = registry.GetCoatInfo(mareSkin).inheritanceRate;
   const float stallionWeight = registry.GetCoatInfo(stallionSkin).inheritanceRate * bonusMultiplier;
   const float gpUnitWeight = 0.5f;
   const auto gpCount = std::min<size_t>(gpSkins.size(), 4);
-  const float totalGpWeight = gpUnitWeight * gpCount;
 
-  const float parentWeight = mareWeight + stallionWeight + totalGpWeight;
-  const float randomWeight = std::max(30.0f, 60.0f - parentWeight * 0.2f);
-
-  const float totalWeight = parentWeight + randomWeight;
-  const float mareThreshold = (mareWeight / totalWeight) * 100.0f;
-  const float stallionThreshold = mareThreshold + (stallionWeight / totalWeight) * 100.0f;
-  const float gpBand = (gpUnitWeight / totalWeight) * 100.0f;
-
-  float gpThresholds[4];
-  float running = stallionThreshold;
-  for (size_t i = 0; i < 4; ++i)
-  {
-    if (i < gpCount)
-      running += gpBand;
-    gpThresholds[i] = running;
-  }
-
-  const float roll = std::uniform_real_distribution<float>(0.0f, 100.0f)(_randomEngine);
-
-  if (roll < mareThreshold)
-    return getValidSkinOrRandom(mareSkin);
-  if (roll < stallionThreshold)
-    return getValidSkinOrRandom(stallionSkin);
+  std::vector<data::Tid> candidates{mareSkin, stallionSkin};
+  std::vector<float> weights{mareWeight, stallionWeight};
   for (size_t i = 0; i < gpCount; ++i)
   {
-    if (roll < gpThresholds[i])
-      return getValidSkinOrRandom(gpSkins[i]);
+    candidates.push_back(gpSkins[i]);
+    weights.push_back(gpUnitWeight);
   }
-  return getRandomValidSkin();
+
+  const float parentWeight = mareWeight + stallionWeight + gpUnitWeight * gpCount;
+  candidates.push_back(data::InvalidTid);
+  weights.push_back(std::max(30.0f, 60.0f - parentWeight * 0.2f));
+
+  const data::Tid chosen = PickWeighted(_randomEngine, candidates, weights, data::InvalidTid);
+  return chosen == data::InvalidTid ? getRandomValidSkin() : getValidSkinOrRandom(chosen);
 }
 
 uint32_t Genetics::CalculateLineage(

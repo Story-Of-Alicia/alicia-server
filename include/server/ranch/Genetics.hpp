@@ -43,10 +43,6 @@ public:
   {
     data::Tid maneTid{0};
     data::Tid tailTid{0};
-    int32_t maneColor{0};
-    int32_t maneShape{0};
-    int32_t tailColor{0};
-    int32_t tailShape{0};
   };
 
   //! Calculates mane and tail genetics based on parents and grandparents.
@@ -108,9 +104,8 @@ public:
   //! Result of potential genetics calculation
   struct PotentialResult
   {
-    bool hasPotential{false};
     uint8_t type{0};
-    uint8_t level{0};  // Always 0 for newborns
+    uint8_t level{0};  // 1 when the foal has a potential, else 0
     uint8_t value{0};  // Always 0 for newborns
   };
 
@@ -156,6 +151,10 @@ private:
   //! Rolls a foal tendency weighted by horses.yaml -> tendencyRatios.breedingRatio.
   uint32_t RollTendency();
 
+  //! Rolls a foal emblem: a rarity tier weighted by emblems.yaml -> emblemRatios,
+  //! then a uniform emblem within that tier. Always returns an emblem.
+  uint32_t RollEmblem();
+
   //! Selects which body part of a horse to read.
   enum class Part
   {
@@ -193,23 +192,24 @@ private:
 
   //! Extracts shape from a mane or tail TID.
   //! @param tid Mane or tail TID.
-  //! @param isMane True if mane, false if tail.
+  //! @param part Part::Mane or Part::Tail.
   //! @returns Shape (0-7 for manes, 0-5 for tails).
-  int32_t GetShapeFromTid(data::Tid tid, bool isMane);
+  int32_t GetShapeFromTid(data::Tid tid, Part part);
 
-  //! Inherits a mane shape from an ancestor, or rolls a grade-weighted random one.
-  int32_t InheritManeShape(const Ancestry& ancestry, uint8_t foalGrade);
+  //! Inherits a mane or tail shape from an ancestor, or rolls a grade-weighted random one.
+  int32_t InheritShape(const Ancestry& ancestry, uint8_t foalGrade, Part part);
 
-  //! Inherits a tail shape from an ancestor, or rolls a grade-weighted random one.
-  int32_t InheritTailShape(const Ancestry& ancestry, uint8_t foalGrade);
+  //! Clamps a mane or tail shape to the highest shape the foal's grade may wear,
+  //! per the registry's per-shape minGrade data. Rerolls uniformly if out of range.
+  void ValidateShape(int32_t& shape, uint8_t foalGrade, Part part);
 
-  //! Clamps a mane shape to the highest shape the given grade is allowed to have.
-  //! Spiky (5) needs grade 4, Long (6) grade 6, Long Curly (7) grade 7.
-  void ValidateManeShape(int32_t& maneShape, uint8_t foalGrade);
-
-  //! Clamps a tail shape to the highest shape the given grade is allowed to have.
-  //! Long Curly (5) needs grade 7.
-  void ValidateTailShape(int32_t& tailShape, uint8_t foalGrade);
+  //! Combines the combo, pregnancy and lineage bonuses into a multiplier (1.0-2.0)
+  //! that biases coat inheritance towards the stallion.
+  float StallionCoatBonusMultiplier(
+    uint32_t mareCombo,
+    uint32_t stallionCombo,
+    uint32_t pregnancyChance,
+    uint32_t stallionLineage);
 };
 
 } // namespace server

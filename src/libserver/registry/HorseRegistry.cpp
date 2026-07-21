@@ -648,4 +648,24 @@ const EmblemRatio* HorseRegistry::GetEmblemRatio(uint32_t odds) const
   return it != _emblemRatios.end() ? &it->second : nullptr;
 }
 
+std::vector<EmblemRatio> HorseRegistry::GetEmblemRatios() const
+{
+  std::vector<EmblemRatio> result;
+  result.reserve(_emblemRatios.size());
+  for (const auto& [odds, ratio] : _emblemRatios)
+    result.push_back(ratio);
+  return result;
+}
+
+std::vector<uint32_t> HorseRegistry::GetEmblemsByOdds(uint32_t odds) const
+{
+  std::vector<uint32_t> result;
+  for (const auto& [id, emblem] : _emblems)
+  {
+    if (emblem.odds == odds)
+      result.push_back(id);
+  }
+  return result;
+}
+
 } // namespace server

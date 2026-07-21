@@ -311,6 +311,12 @@ public:
   //! @returns Pointer to EmblemRatio, or nullptr if not found.
   const EmblemRatio* GetEmblemRatio(uint32_t odds) const;
 
+  //! Returns every emblem rarity tier (odds + ratio weight).
+  std::vector<EmblemRatio> GetEmblemRatios() const;
+
+  //! Returns the ids of every emblem in the given odds tier.
+  std::vector<uint32_t> GetEmblemsByOdds(uint32_t odds) const;
+
 private:
   std::random_device _randomDevice;
   mutable std::mt19937 _randomEngine;
