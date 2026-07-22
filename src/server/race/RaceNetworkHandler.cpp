@@ -17,6 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
+#include "server/race/MagicSystem.hpp"
 #include "server/race/RaceNetworkHandler.hpp"
 
 #include "server/ServerInstance.hpp"
@@ -38,65 +39,7 @@ namespace
 
 std::random_device _randomDevice;
 
-uint32_t GetMountStatValue(
-  const tracker::RaceTracker::Racer::MountStatsSnapshot& stats,
-  registry::Magic::MountStat which)
-{
-  switch (which)
-  {
-    case registry::Magic::MountStat::Agility:   return stats.agility;
-    case registry::Magic::MountStat::Ambition:  return stats.ambition;
-    case registry::Magic::MountStat::Rush:      return stats.rush;
-    case registry::Magic::MountStat::Endurance: return stats.endurance;
-    case registry::Magic::MountStat::Courage:   return stats.courage;
-  }
-  return 0;
 }
-
-registry::Magic::SlotInfo RandomMagicItem(
-  ServerInstance& serverInstance,
-  const tracker::RaceTracker::Racer& racer)
-{
-  const auto& itemPool = (racer.team == tracker::RaceTracker::Racer::Team::Solo
-    ? serverInstance.GetMagicRegistry().GetSoloPool()
-    : serverInstance.GetMagicRegistry().GetTeamPool());
-
-  // Build weights: Lightning (type 18) gets a reduced roll chance.
-  // Booster, HotRodding, and team-only items get a slightly reduced chance as well.
-  // TODO: Replace with a proper per-spell weight system.
-  const auto& magicRegistry = serverInstance.GetMagicRegistry();
-  std::vector<uint32_t> weights;
-  weights.reserve(itemPool.size());
-  for (const uint32_t type : itemPool)
-  {
-    const auto& slotInfo = magicRegistry.GetSlotInfo(type);
-    const uint32_t w = (type == 18) ? 1u
-      : (slotInfo.basicType == 6 || slotInfo.basicType == 8 || slotInfo.basicType == 12) ? 2u
-      : (slotInfo.teamMode != 0) ? 2u
-      : 4u;
-    weights.push_back(w);
-  }
-
-  std::discrete_distribution<size_t> distribution(weights.begin(), weights.end());
-  auto magicSlotInfo = magicRegistry.GetSlotInfo(itemPool[distribution(_randomDevice)]);
-  uint32_t critChanceBp = magicRegistry.GetBaseCritChanceBp();
-  if (magicSlotInfo.criticalType != 0)
-  {
-    if (const auto* scaling = magicRegistry.GetStatScaling(magicSlotInfo.basicType))
-    {
-      const uint32_t statValue = GetMountStatValue(racer.mountStats, scaling->stat);
-      critChanceBp += scaling->critStepBp * (statValue / 10u);
-    }
-  }
-
-  if ((rand() % 10000) < static_cast<int>(critChanceBp))
-  {
-    magicSlotInfo = serverInstance.GetMagicRegistry().GetSlotInfo(magicSlotInfo.criticalType);
-  }
-  return magicSlotInfo;
-}
-
-} // anon namespace
 
 RaceNetworkHandler::RaceNetworkHandler(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
@@ -2137,7 +2080,8 @@ void RaceNetworkHandler::HandleRaceUserPos(
 
   // TODO: player position anticheat
 
-  racer.position = command.position;
+  racer.worldPosition = command.position;
+  racer.raceProgress = command.progress;
 }
 
 void RaceNetworkHandler::HandleChat(
@@ -2439,7 +2383,8 @@ void RaceNetworkHandler::HandleRequestMagicItem(
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
   const auto& parameters = raceInstance.GetParameters();
-  auto& racer = raceInstance.GetTracker().GetRacer(clientContext.characterUid);
+  auto& tracker = raceInstance.GetTracker();
+  auto& racer = tracker.GetRacer(clientContext.characterUid);
 
   // TODO: Revise this on NPC races
   if (command.characterOid != racer.oid)
@@ -2459,7 +2404,11 @@ void RaceNetworkHandler::HandleRequestMagicItem(
     return;
   }
 
-  racer.magicItem.emplace(RandomMagicItem(_serverInstance, racer).type);
+  const auto& magicItemSlotInfo = race::MagicSystem::RandomMagicItem(
+    _serverInstance.GetMagicRegistry(),
+    tracker,
+    clientContext.characterUid);
+  racer.magicItem.emplace(magicItemSlotInfo.type);
   racer.starPointValue = 0;
 
   protocol::AcCmdCRStarPointGetOK starPointResponse{
@@ -3171,7 +3120,7 @@ uint32_t RaceNetworkHandler::ComputeEffectDurationMs(
 
     if (attackerRacerIter != racers.cend())
     {
-      const uint32_t statValue = GetMountStatValue(
+      const uint32_t statValue = race::MagicSystem::GetMountStatValue(
         attackerRacerIter->second.mountStats,
         scaling->stat);
 
@@ -3187,7 +3136,7 @@ uint32_t RaceNetworkHandler::ComputeEffectDurationMs(
   // Target-side reduction (e.g. IceWall shock mitigation), clamped to 100%.
   if (scaling->targetDurationReductionBp > 0)
   {
-    const uint32_t statValue = GetMountStatValue(
+    const uint32_t statValue = race::MagicSystem::GetMountStatValue(
       targetRacer.mountStats,
       scaling->stat);
 

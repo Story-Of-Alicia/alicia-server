@@ -20,6 +20,7 @@
 #ifndef MAGICREGISTRY_HPP
 #define MAGICREGISTRY_HPP
 
+#include <array>
 #include <cstdint>
 #include <filesystem>
 #include <unordered_map>
@@ -30,6 +31,8 @@ namespace server::registry
 
 struct Magic
 {
+  using SlotWeight = uint32_t;
+
   //! Per-magic-slot definition (MagicSlotInfo).
   struct SlotInfo
   {
@@ -67,6 +70,8 @@ struct Magic
 
     uint32_t affectByCriticalAura{};
     uint32_t criticalByDarkFire{};
+    //! Weights for each position on the scoreboard.
+    std::array<SlotWeight, 8> positionalWeights{};
   };
 
   //! Magic gauge (SP) regen settings for Magic mode.
@@ -122,6 +127,10 @@ public:
   //! Returns the stat scaling for a basicType, or nullptr if none applies.
   [[nodiscard]] const Magic::StatScaling* GetStatScaling(uint32_t basicType) const;
 
+  //! Returns the position weights for use in random magic selection.
+  [[nodiscard]] const std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>& GetSoloPositionWeights(uint32_t position) const;
+  [[nodiscard]] const std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>& GetTeamPositionWeights(uint32_t position) const;
+
 private:
   std::unordered_map<uint32_t, Magic::SlotInfo> _slotInfo{};
   std::vector<uint32_t> _soloPool{};
@@ -130,6 +139,9 @@ private:
   uint32_t _baseCritChanceBp{500};
   //! Keyed by basicType.
   std::unordered_map<uint32_t, Magic::StatScaling> _statScalings{};
+  //! Position weights for use in random magic selection.
+  std::array<std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>, 8> _soloPositionWeights;
+  std::array<std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>, 8> _teamPositionWeights;
 };
 
 } // namespace server::registry
