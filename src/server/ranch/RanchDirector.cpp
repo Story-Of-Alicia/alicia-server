@@ -1474,7 +1474,8 @@ void RanchDirector::HandleEnterBreedingMarket(
         auto& protocolHorse = response.stallions.emplace_back();
 
         // Get the horse data (EnterBreedingMarket has simpler struct)
-        horseRecord.Immutable([&protocolHorse, this](const data::Horse& horse)
+        bool isRegistered = false;
+        horseRecord.Immutable([this, &protocolHorse, &isRegistered](const data::Horse& horse)
         {
           protocolHorse.uid = horse.uid();
           protocolHorse.tid = horse.tid();
@@ -1483,22 +1484,25 @@ void RanchDirector::HandleEnterBreedingMarket(
           protocolHorse.lineage = static_cast<uint8_t>(
             horse.lineage());
 
-          if (not _breedingMarket.IsRegistered(horse.uid()))
-            return;
-
-          protocolHorse.expiresAt = 1;
-
-          const auto& stallionData = _breedingMarket.GetStallionData(horse.uid());
-          if (not stallionData.has_value())
-            return;
-
-          const uint32_t stallionUid = stallionData.value().stallionUid;
-          GetServerInstance().GetDataDirector().GetStallion(stallionUid).Immutable(
-            [&protocolHorse](const data::Stallion& stallion)
-            {
-              protocolHorse.expiresAt = util::TimePointToAliciaTime(stallion.expiresAt());
-            });
+          // Keep track of whether this horse is a registered stallion
+          isRegistered = _breedingMarket.IsRegistered(horse.uid());
         });
+
+        if (not isRegistered)
+          continue;
+
+        // Get stallion data and populate the expiresAt field
+        const auto& stallionData = _breedingMarket.GetStallionData(protocolHorse.uid);
+        if (not stallionData.has_value())
+          // Some fatal error occurred, this horse is a stallion but no stallion data
+          throw std::runtime_error("Horse is a registered stallion but no stallion data");
+
+        const uint32_t stallionUid = stallionData.value().stallionUid;
+        GetServerInstance().GetDataDirector().GetStallion(stallionUid).Immutable(
+          [&protocolHorse](const data::Stallion& stallion)
+          {
+            protocolHorse.expiresAt = util::TimePointToAliciaTime(stallion.expiresAt());
+          });
       }
     });
 
