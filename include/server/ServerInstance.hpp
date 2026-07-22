@@ -38,6 +38,7 @@
 #include "server/system/ModerationSystem.hpp"
 #include "server/system/OtpSystem.hpp"
 #include "server/system/QuestSystem.hpp"
+#include "server/system/RewardSystem.hpp"
 #include "server/system/RoomSystem.hpp"
 #include "server/telemetry/Telemetry.hpp"
 
@@ -173,6 +174,10 @@ public:
   //! Returns reference to the matchmaking system.
   //! @returns Reference to the matchmaking system.
   MatchmakingSystem& GetMatchmakingSystem();
+
+  //! Returns reference to the reward system.
+  //! @returns Reference to the reward system.
+  RewardSystem& GetRewardSystem();
 
   //! Returns reference to the telemetry.
   //! @returns Reference to the telemetry.
@@ -314,6 +319,8 @@ private:
   RoomSystem _roomSystem;
   //! A matchmaking system.
   MatchmakingSystem _matchmakingSystem;
+  //! A reward system.
+  RewardSystem _rewardSystem;
 
   //! A thread for telemetry.
   std::thread _telemetryThread;

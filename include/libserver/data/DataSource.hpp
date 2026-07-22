@@ -269,6 +269,21 @@ public:
   //! Lists all registered stallion UIDs from the data source.
   //! @returns Vector of stallion UIDs.
   virtual std::vector<data::Uid> ListRegisteredStallions() = 0;
+
+  //! Creates the reward in the data source.
+  //! @param reward Reward to create.
+  virtual void CreateReward(data::Reward& reward) = 0;
+  //! Retrieves the reward from the data source.
+  //! @param claimUid Claim UID of the reward.
+  //! @param reward Reward to retrieve.
+  virtual void RetrieveReward(data::Uid claimUid, data::Reward& reward) = 0;
+  //! Stores the reward on the data source.
+  //! @param claimUid Claim UID of the reward.
+  //! @param reward Reward to store.
+  virtual void StoreReward(data::Uid claimUid, const data::Reward& reward) = 0;
+  //! Deletes the reward from the data source.
+  //! @param claimUid Claim UID of the reward.
+  virtual void DeleteReward(data::Uid claimUid) = 0;
 };
 
 } // namespace server

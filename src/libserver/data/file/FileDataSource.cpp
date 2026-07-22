@@ -68,6 +68,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _mailDataPath = prepareDataPath("mails");
   _questDataPath = prepareDataPath("quests");
   _stallionDataPath = prepareDataPath("stallions");
+  _rewardDataPath = prepareDataPath("rewards");
 
   // Read the meta-data file and parse the sequential UIDs.
   const std::filesystem::path metaFilePath = ProduceDataFilePath(
@@ -92,6 +93,7 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _mailSequentialId = meta.value("mailSequentialId", uint32_t{0});
   _questSequentialId = meta.value("questSequentialId", uint32_t{0});
   _stallionSequentialUid = meta.value("stallionSequentialUid", uint32_t{0});
+  _rewardSequentialUid = meta.value("rewardSequentialUid", uint32_t{0});
 }
 
 void server::FileDataSource::Terminate()
@@ -128,6 +130,7 @@ void server::FileDataSource::SaveMetadata()
   meta["mailSequentialId"] = _mailSequentialId.load();
   meta["questSequentialId"] = _questSequentialId.load();
   meta["stallionSequentialUid"] = _stallionSequentialUid.load();
+  meta["rewardSequentialUid"] = _rewardSequentialUid.load();
 
   metaFile << meta.dump(2);
 }
@@ -1618,4 +1621,67 @@ std::vector<server::data::Uid> server::FileDataSource::ListRegisteredStallions()
   }
 
   return stallionUids;
+}
+
+void server::FileDataSource::CreateReward(data::Reward& reward)
+{
+  reward.claimUid = ++_rewardSequentialUid;
+  SaveMetadata();
+}
+
+void server::FileDataSource::RetrieveReward(data::Uid claimUid, data::Reward& reward)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _rewardDataPath, std::format("{}", claimUid));
+
+  std::ifstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Reward file '{}' not accessible", dataFilePath.string()));
+  }
+
+  const auto json = nlohmann::json::parse(dataFile);
+  reward.claimUid() = json.value("claimUid", data::InvalidUid);
+  reward.characterUid() = json.value("characterUid", data::InvalidUid);
+  reward.type() = static_cast<data::Reward::Type>(json.value("type", uint32_t{0}));
+  reward.carrots() = json.value("carrots", uint32_t{0});
+  reward.isClaimed() = json.value("isClaimed", false);
+  reward.createdAt() = data::Clock::time_point(
+    std::chrono::seconds(json.value("createdAt", int64_t{0})));
+  reward.claimedAt() = data::Clock::time_point(
+    std::chrono::seconds(json.value("claimedAt", int64_t{0})));
+}
+
+void server::FileDataSource::StoreReward(data::Uid claimUid, const data::Reward& reward)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _rewardDataPath, std::format("{}", claimUid));
+
+  std::ofstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+  {
+    throw std::runtime_error(
+      std::format("Reward file '{}' not accessible", dataFilePath.string()));
+  }
+
+  nlohmann::json json;
+  json["claimUid"] = reward.claimUid();
+  json["characterUid"] = reward.characterUid();
+  json["type"] = static_cast<uint32_t>(reward.type());
+  json["carrots"] = reward.carrots();
+  json["isClaimed"] = reward.isClaimed();
+  json["createdAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+    reward.createdAt().time_since_epoch()).count();
+  json["claimedAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+    reward.claimedAt().time_since_epoch()).count();
+
+  dataFile << json.dump(2);
+}
+
+void server::FileDataSource::DeleteReward(data::Uid claimUid)
+{
+  const std::filesystem::path dataFilePath = ProduceDataFilePath(
+    _rewardDataPath, std::format("{}", claimUid));
+  std::filesystem::remove(dataFilePath);
 }

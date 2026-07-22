@@ -55,6 +55,7 @@ ServerInstance::ServerInstance(
   , _horseSystem(*this)
   , _matchmakingSystem(*this)
   , _questSystem(*this)
+  , _rewardSystem(*this)
   , _telemetry(*this)
   , _breedingMarket(*this)
   , _genetics(*this)
@@ -410,6 +411,11 @@ RoomSystem& ServerInstance::GetRoomSystem()
 MatchmakingSystem& ServerInstance::GetMatchmakingSystem()
 {
   return _matchmakingSystem;
+}
+
+RewardSystem& ServerInstance::GetRewardSystem()
+{
+  return _rewardSystem;
 }
 
 QuestSystem& ServerInstance::GetQuestSystem()

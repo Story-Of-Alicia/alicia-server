@@ -688,6 +688,51 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
             "Exception deleting stallion {} from the primary data source: {}", key, x.what());
         }
         return false;
+      }),
+  _rewardStorage(
+      [&](const auto& key, auto& reward)
+      {
+        try
+        {
+          _primaryDataSource->RetrieveReward(key, reward);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception retrieving reward {} from the primary data source: {}", key, x.what());
+        }
+
+        return false;
+      },
+      [&](const auto& key, auto& reward)
+      {
+        try
+        {
+          _primaryDataSource->StoreReward(key, reward);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception storing reward {} on the primary data source: {}", key, x.what());
+        }
+
+        return false;
+      },
+      [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteReward(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting reward {} from the primary data source: {}", key, x.what());
+        }
+        return false;
       })
 {
   _primaryDataSource = std::make_unique<FileDataSource>();
@@ -724,6 +769,7 @@ void DataDirector::Terminate()
     _dailyQuestGroupStorage.Terminate();
     _mailStorage.Terminate();
     _questStorage.Terminate();
+    _rewardStorage.Terminate();
   }
   catch (const std::exception& x)
   {
@@ -755,6 +801,7 @@ void DataDirector::Tick()
     _dailyQuestGroupStorage.Tick();
     _mailStorage.Tick();
     _questStorage.Tick();
+    _rewardStorage.Tick();
   }
   catch (const std::exception& x)
   {
@@ -1272,6 +1319,38 @@ DataSource& DataDirector::GetDataSource() noexcept
 std::vector<data::Uid> DataDirector::ListRegisteredStallions()
 {
   return _primaryDataSource->ListRegisteredStallions();
+}
+
+Record<data::Reward> DataDirector::GetReward(data::Uid claimUid) noexcept
+{
+  if (claimUid == data::InvalidUid)
+    return {};
+  return _rewardStorage.Get(claimUid).value_or(Record<data::Reward>{});
+}
+
+Record<data::Reward> DataDirector::CreateReward() noexcept
+{
+  try
+  {
+    return _rewardStorage.Create(
+      [this]()
+      {
+        data::Reward reward;
+        _primaryDataSource->CreateReward(reward);
+
+        return std::make_pair(reward.claimUid(), std::move(reward));
+      });
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception while creating a reward record on the primary data source: {}", x.what());
+    return {};
+  }
+}
+
+DataDirector::RewardStorage& DataDirector::GetRewardCache()
+{
+  return _rewardStorage;
 }
 
 void DataDirector::ScheduleUserLoad(

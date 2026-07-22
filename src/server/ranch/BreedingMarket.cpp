@@ -522,9 +522,14 @@ void BreedingMarket::UnregisterStallion(
     });
 
   earnings.revenue = earnings.timesMated * earnings.breedingFee;
+  earnings.earnings = earnings.revenue - static_cast<uint32_t>(
+    static_cast<float>(earnings.revenue) * earnings.taxRate);
 
-  // TODO: register payout in the claim system
-  earnings.claimUid = 0xAABBCCDD;
+  // Register payout in the RewardSystem
+  earnings.claimUid = _serverInstance.GetRewardSystem().CreateReward(
+    ownerUid,
+    data::Reward::Type::Breeding,
+    earnings.earnings);
 
   // Send mail with payout information
   _serverInstance.GetMessengerDirector().SendStallionReward(

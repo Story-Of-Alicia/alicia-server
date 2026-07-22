@@ -589,6 +589,23 @@ struct Stallion
   dao::Field<Clock::time_point> expiresAt{};
 };
 
+struct Reward
+{
+  enum class Type : uint32_t
+  {
+    Breeding = 0,
+    Carnival = 1
+  };
+
+  dao::Field<Uid> claimUid{InvalidUid};
+  dao::Field<Uid> characterUid{InvalidUid};
+  dao::Field<Type> type{Type::Breeding};
+  dao::Field<uint32_t> carrots{0u};
+  dao::Field<bool> isClaimed{false};
+  dao::Field<Clock::time_point> createdAt{};
+  dao::Field<Clock::time_point> claimedAt{};
+};
+
 } // namespace data
 
 } // namespace server
