@@ -2206,10 +2206,6 @@ void RanchDirector::HandleBreedingFailureCardChoose(
   spdlog::info("BreedingFailureCardChoose: statusOrFlag = {}", command.statusOrFlag);
 
   auto& clientContext = GetClientContext(clientId);
-  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
-    clientContext.characterUid);
-
-  protocol::AcCmdCRBreedingFailureCardChooseOK response;
 
   // Reward grade scales with the fee paid for the failed breeding that earned this card.
   const uint32_t moneySpent = clientContext.pendingFailureCardSpend;
@@ -2258,59 +2254,28 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     rewardData = &fallbackReward;
   }
 
-  data::Uid itemUid = 0;
-  bool foundExistingItem = false;
-
-  characterRecord.Immutable([&itemUid, &foundExistingItem, rewardData, this](const data::Character& character) {
-    for (const auto& existingItemUid : character.inventory()) {
-      const auto existingItemRecord = GetServerInstance().GetDataDirector().GetItem(existingItemUid);
-      if (existingItemRecord) {
-        existingItemRecord.Immutable([&itemUid, &foundExistingItem, rewardData](const data::Item& existingItem) {
-          if (existingItem.tid() == rewardData->itemTid) {
-            itemUid = existingItem.uid();
-            foundExistingItem = true;
-          }
-        });
-        if (foundExistingItem) break;
-      }
-    }
-  });
-
-  if (foundExistingItem) {
-    const auto existingItemRecord = GetServerInstance().GetDataDirector().GetItem(itemUid);
-    existingItemRecord.Mutable([rewardData, &response](data::Item& item) {
-      item.count() += rewardData->itemCount;
-      response.item.uid = item.uid();
-      response.item.tid = item.tid();
-      response.item.expiresAt = 0;
-      response.item.count = item.count();
+  data::Uid itemUid{data::InvalidUid};
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+    [this, &itemUid, &rewardData](data::Character& character)
+    {
+      character.carrots() += rewardData->gameMoney;
+      itemUid = GetServerInstance().GetItemSystem().AddItem(
+        character,
+        rewardData->itemTid,
+        rewardData->itemCount);
     });
-  } else {
-    const auto newItem = GetServerInstance().GetDataDirector().CreateItem();
-    newItem.Mutable([&itemUid, rewardData, &response](data::Item& item) {
-      item.tid() = rewardData->itemTid;
-      item.count() = rewardData->itemCount;
-      itemUid = item.uid();
-      response.item.uid = item.uid();
-      response.item.tid = item.tid();
-      response.item.expiresAt = 0;
-      response.item.count = item.count();
-    });
-    characterRecord.Mutable([itemUid](data::Character& character) {
-      character.inventory().emplace_back(itemUid);
-    });
-  }
 
-  characterRecord.Mutable([rewardData](data::Character& character) {
-    character.carrots() += rewardData->gameMoney;
-  });
+  protocol::AcCmdCRBreedingFailureCardChooseOK response{
+    .isChanceCard = isChanceCard,
+    .rewardId = rewardId,
+    .member4 = {},
+    .rewardedCarrots = rewardData->gameMoney};
 
-  response.member1 = 0;
-  response.rewardId = rewardId;
-  response.member3 = 0;
-  response.member4 = {1, 0};
-  response.member5 = 0;
-  response.member6 = rewardData->gameMoney;
+  GetServerInstance().GetDataDirector().GetItem(itemUid).Immutable(
+    [&response](const data::Item& item)
+    {
+      protocol::BuildProtocolItem(response.item, item);
+    });
 
   spdlog::info("BreedingFailureCard: {} CARD (Grade {})! MoneySpent: {}, GradeRoll: {}, RewardId {}, gave {} carrots + item {} x{}",
     isChanceCard ? "CHANCE (YELLOW)" : "NORMAL (RED)",
@@ -2318,8 +2283,7 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     rewardData->gameMoney, rewardData->itemTid, rewardData->itemCount);
 
   // Clear the pending card flag after claiming
-  auto& ctx = GetClientContext(clientId);
-  ctx.hasPendingFailureCard = false;
+  clientContext.hasPendingFailureCard = false;
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,

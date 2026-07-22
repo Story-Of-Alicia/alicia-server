@@ -1601,13 +1601,11 @@ struct AcCmdCRBreedingFailureCardChoose
 
 struct AcCmdCRBreedingFailureCardChooseOK
 {
-  uint8_t member1{};
+  bool isChanceCard{};
   uint32_t rewardId{};
-  uint8_t member3{};
-  std::array<uint32_t,2> member4{};
-  uint32_t member5{};
+  std::vector<uint32_t> member4{};
   Item item{};
-  uint32_t member6{};
+  uint32_t rewardedCarrots{};
 
   static Command GetCommand()
   {

@@ -615,18 +615,19 @@ void AcCmdCRBreedingFailureCardChooseOK::Write(
   const AcCmdCRBreedingFailureCardChooseOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.member1)
-    .Write(command.rewardId)
-    .Write(command.member3);
+  stream.Write(command.isChanceCard)
+    .Write(command.rewardId);
 
+  // There can be at most 2 elements in this array
+  assert(command.member4.size() <= 2);
+  stream.Write(static_cast<uint8_t>(command.member4.size()));
   for (const auto& value : command.member4)
   {
     stream.Write(value);
   }
 
-  stream.Write(command.member5)
-    .Write(command.item)
-    .Write(command.member6);
+  stream.Write(command.item)
+    .Write(command.rewardedCarrots);
 }
 
 void AcCmdCRBreedingFailureCardChooseOK::Read(
