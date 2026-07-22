@@ -52,6 +52,7 @@ ServerInstance::ServerInstance(
   , _chatSystem(*this)
   , _infractionSystem(*this)
   , _itemSystem(*this)
+  , _horseSystem(*this)
   , _matchmakingSystem(*this)
   , _questSystem(*this)
   , _telemetry(*this)
@@ -389,6 +390,11 @@ InfractionSystem& ServerInstance::GetInfractionSystem()
 ItemSystem& ServerInstance::GetItemSystem()
 {
   return _itemSystem;
+}
+
+HorseSystem& ServerInstance::GetHorseSystem()
+{
+  return _horseSystem;
 }
 
 ModerationSystem& ServerInstance::GetModerationSystem()

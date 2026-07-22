@@ -31,6 +31,7 @@
 #include "server/ranch/Genetics.hpp"
 #include "server/ranch/RanchDirector.hpp"
 #include "server/system/ChatSystem.hpp"
+#include "server/system/HorseSystem.hpp"
 #include "server/system/InfractionSystem.hpp"
 #include "server/system/ItemSystem.hpp"
 #include "server/system/MatchmakingSystem.hpp"
@@ -148,6 +149,10 @@ public:
   //! Returns reference to the item system.
   //! @returns Reference to the item system.
   ItemSystem& GetItemSystem();
+
+  //! Returns reference to the horse system.
+  //! @returns Reference to the horse system.
+  HorseSystem& GetHorseSystem();
 
   //! Returns reference to the moderation system.
   //! @return Reference to the moderation system.
@@ -297,6 +302,8 @@ private:
   InfractionSystem _infractionSystem;
   //! An item system.
   ItemSystem _itemSystem;
+  //! A horse system.
+  HorseSystem _horseSystem;
   //! An OTP system.
   OtpSystem _otpSystem;
   //! A moderation system

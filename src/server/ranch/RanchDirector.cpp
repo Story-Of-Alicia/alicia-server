@@ -55,6 +55,9 @@ constexpr uint16_t MaxPlenitude = 1200;
 //! which matures a foal into an adult horse.
 constexpr data::Tid InstantGrowUpItemTid = 43001;
 
+//! How often the foal maturity sweep runs while players are on their ranch.
+constexpr auto FoalMaturityCheckInterval = std::chrono::seconds(60);
+
 BreedingMarket::SnapshotOrder ConvertProtocolStallionOrderToSnapshotOrder(
   const protocol::AcCmdCRSearchStallion::StallionOrder order)
 {
@@ -537,6 +540,8 @@ void RanchDirector::Initialize()
 {
   _breedingMarket.Initialize();
 
+  ScheduleFoalMaturityCheck();
+
   spdlog::debug(
     "Ranch server listening on {}:{}",
     GetConfig().listen.address.to_string(),
@@ -554,6 +559,105 @@ void RanchDirector::Terminate()
 void RanchDirector::Tick()
 {
   _breedingMarket.Tick();
+  _scheduler.Tick();
+}
+
+void RanchDirector::RefreshMaturingFoals(
+  const data::Uid characterUid,
+  ClientContext& clientContext)
+{
+  clientContext.maturingFoals = GetServerInstance().GetHorseSystem().PromoteMaturedFoals(characterUid);
+}
+
+void RanchDirector::ScheduleFoalMaturityCheck() noexcept
+{
+  _scheduler.Queue(
+    [this]()
+    {
+      RunFoalMaturityCheck();
+      ScheduleFoalMaturityCheck();
+    },
+    Scheduler::Clock::now() + FoalMaturityCheckInterval);
+}
+
+void RanchDirector::RunFoalMaturityCheck()
+{
+  const auto now = data::Clock::now();
+
+  for (auto& [clientId, clientContext] : _clients)
+  {
+    if (not clientContext.isAuthenticated
+      || clientContext.visitingRancherUid != clientContext.characterUid
+      || clientContext.maturingFoals.empty())
+    {
+      continue;
+    }
+
+    for (auto foalIter = clientContext.maturingFoals.begin();
+      foalIter != clientContext.maturingFoals.end();)
+    {
+      if (now < foalIter->second)
+      {
+        ++foalIter;
+        continue;
+      }
+
+      const auto horseUid = foalIter->first;
+      const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(horseUid);
+
+      bool isFoal = false;
+      if (horseRecord)
+      {
+        horseRecord->Immutable([&isFoal](const data::Horse& horse)
+        {
+          isFoal = horse.type() == data::Horse::Type::Foal;
+        });
+      }
+
+      if (isFoal)
+      {
+        horseRecord->Mutable([](data::Horse& horse)
+        {
+          horse.type() = data::Horse::Type::Adult;
+        });
+
+        AnnounceFoalGrewUp(
+          clientId,
+          clientContext.visitingRancherUid,
+          clientContext.characterUid,
+          horseUid);
+      }
+
+      foalIter = clientContext.maturingFoals.erase(foalIter);
+    }
+  }
+}
+
+void RanchDirector::AnnounceFoalGrewUp(
+  const ClientId clientId,
+  const data::Uid rancherUid,
+  const data::Uid characterUid,
+  const data::Uid horseUid)
+{
+  const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(horseUid);
+  if (not horseRecord)
+    return;
+
+  protocol::AcCmdCRUpdateMountInfoOK growUp{
+    .action = protocol::AcCmdCRUpdateMountInfo::Action::GrowUp};
+  horseRecord->Immutable([&growUp](const data::Horse& horse)
+  {
+    protocol::BuildProtocolHorse(growUp.horse, horse);
+  });
+
+  _commandServer.QueueCommand<decltype(growUp)>(
+    clientId,
+    [growUp]()
+    {
+      return growUp;
+    });
+
+  BroadcastUpdateMountInfoNotify(characterUid, rancherUid, horseUid);
 }
 
 std::vector<data::Uid> RanchDirector::GetOnlineCharacters()
@@ -1005,6 +1109,9 @@ void RanchDirector::HandleEnterRanch(
 
   clientContext.userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
     clientContext.characterUid).userName;
+
+  if (command.characterUid == command.rancherUid)
+    RefreshMaturingFoals(command.characterUid, clientContext);
 
   protocol::AcCmdCREnterRanchOK response{
     .rancherUid = command.rancherUid,
@@ -1897,6 +2004,9 @@ void RanchDirector::HandleTryBreeding(
       character.horses().emplace_back(foalUid);
       response.carrots = character.carrots();
     });
+
+    clientContext.maturingFoals.emplace(
+      foalUid, data::Clock::now() + HorseSystem::FoalGrowUpDuration);
 
     applyBreedingAttemptUpdates();
 
@@ -3988,7 +4098,7 @@ void RanchDirector::HandleUseItem(
     response.remainingItemCount = command.always1,
     response.type = protocol::AcCmdCRUseItemOK::ActionType::Generic};
 
-  const auto& clientContext = GetClientContext(clientId);
+  auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
@@ -4098,6 +4208,8 @@ void RanchDirector::HandleUseItem(
 
       protocol::BuildProtocolHorse(growUp.horse, horse);
     });
+
+    clientContext.maturingFoals.erase(command.horseUid);
 
     _commandServer.QueueCommand<decltype(growUp)>(
       clientId,

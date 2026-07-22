@@ -21,6 +21,7 @@
 #define RANCHDIRECTOR_HPP
 
 #include "libserver/network/command/CommandDeferrer.hpp"
+#include "libserver/util/Scheduler.hpp"
 #include "server/Config.hpp"
 #include "server/ranch/BreedingMarket.hpp"
 #include "server/tracker/RanchTracker.hpp"
@@ -33,6 +34,7 @@
 #include <random>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace server
 {
@@ -141,6 +143,12 @@ private:
     protocol::BreedingFailureCardType pendingCardType{};
     //! Fee paid for the failed breeding; scales the failure-card reward grade.
     uint32_t pendingFailureCardSpend{0};
+
+    //! The client's foals still maturing into adults, each mapped to the time
+    //! it becomes an adult. Rebuilt on ranch entry and appended to when a foal
+    //! is bred; the maturity sweep only looks at these, and only does a record
+    //! lookup once an entry's deadline has passed.
+    std::unordered_map<data::Uid, data::Clock::time_point> maturingFoals;
   };
 
   struct RanchInstance
@@ -176,6 +184,34 @@ private:
 
   void HandleRanchLeave(
     ClientId clientId);
+
+  //! Rebuilds the client's set of maturing foals, promoting any that already
+  //! reached the grow-up duration to adults in the data store. Called on ranch
+  //! entry so foals matured while away are adults before the snapshot is sent.
+  //! @param characterUid UID of the owning character.
+  //! @param clientContext Context of the owning client to refresh.
+  void RefreshMaturingFoals(data::Uid characterUid, ClientContext& clientContext);
+
+  //! Promotes matured foals for every character currently standing on their
+  //! own ranch, announcing the grow-up to that ranch. Only the tracked
+  //! maturing foals are inspected.
+  void RunFoalMaturityCheck();
+
+  //! Queues the next foal maturity check on the scheduler, re-scheduling
+  //! itself so the sweep runs on a fixed interval.
+  void ScheduleFoalMaturityCheck() noexcept;
+
+  //! Announces that a foal grew up to an adult to the owning client and the
+  //! visitors of its ranch.
+  //! @param clientId ID of the owning client.
+  //! @param rancherUid UID of the ranch the horse resides on.
+  //! @param characterUid UID of the owning character.
+  //! @param horseUid UID of the horse that grew up.
+  void AnnounceFoalGrewUp(
+    ClientId clientId,
+    data::Uid rancherUid,
+    data::Uid characterUid,
+    data::Uid horseUid);
 
   void HandleChat(
     ClientId clientId,
@@ -547,6 +583,9 @@ private:
 
   //! A command deferrer for the `AcCmdCRMountFamilyTree` command.
   CommandDeferrer<protocol::AcCmdCRMountFamilyTree> _mountFamilyTreeDeferrer;
+
+  //! Drives periodic ranch chores, such as the foal maturity sweep.
+  Scheduler _scheduler;
 };
 
 } // namespace server
