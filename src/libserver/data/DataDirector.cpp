@@ -1650,20 +1650,22 @@ void DataDirector::ScheduleCharacterLoad(
     }
     else
     {
-      // Preload character records for character names in letter list
+      // Preload character records for character names in letter list and reward records for system mail
       std::unordered_set<data::Uid> mailCharacterUids{};
+      std::unordered_set<data::Uid> rewardUids{};
 
       // Process every mail belonging to the loading character
       for (const auto& mailRecord : mailRecords.value())
       {
-        // Get character uids from mail record
-        data::Uid mailUid, from, to;
+        // Get character uids and claim uid from mail record
+        data::Uid mailUid, from, to, claimUid;
         mailRecord.Immutable(
-          [&mailUid, &from, &to](const data::Mail& mail)
+          [&mailUid, &from, &to, &claimUid](const data::Mail& mail)
           {
             mailUid = mail.uid();
             from = mail.from();
             to = mail.to();
+            claimUid = mail.claimUid();
           });
 
         // Mail ownership logic
@@ -1691,6 +1693,8 @@ void DataDirector::ScheduleCharacterLoad(
           mailCharacterUids.emplace(from);
         if (to != data::InvalidUid)
           mailCharacterUids.emplace(to);
+        if (claimUid != data::InvalidUid)
+          rewardUids.emplace(claimUid);
       }
 
       // Preload characters from uids
@@ -1699,6 +1703,21 @@ void DataDirector::ScheduleCharacterLoad(
         std::vector<data::Uid>(
           mailCharacterUids.begin(),
           mailCharacterUids.end()));
+
+      // Preload rewards from claim uids
+      if (!rewardUids.empty())
+      {
+        const auto rewardRecords = GetRewardCache().Get(
+          std::vector<data::Uid>(
+            rewardUids.begin(),
+            rewardUids.end()));
+        if (not rewardRecords)
+        {
+          userDataContext.debugMessage = std::format(
+            "Reward records not available");
+          return;
+        }
+      }
     }
 
     // Require quest records.
