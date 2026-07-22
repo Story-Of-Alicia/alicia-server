@@ -1480,9 +1480,24 @@ void RanchDirector::HandleEnterBreedingMarket(
           protocolHorse.tid = horse.tid();
           protocolHorse.breedingCombo = static_cast<uint8_t>(
             horse.breedingCombo());
-          protocolHorse.isRegistered = _breedingMarket.IsRegistered(horse.uid());
           protocolHorse.lineage = static_cast<uint8_t>(
             horse.lineage());
+
+          if (not _breedingMarket.IsRegistered(horse.uid()))
+            return;
+
+          protocolHorse.expiresAt = 1;
+
+          const auto& stallionData = _breedingMarket.GetStallionData(horse.uid());
+          if (not stallionData.has_value())
+            return;
+
+          const uint32_t stallionUid = stallionData.value().stallionUid;
+          GetServerInstance().GetDataDirector().GetStallion(stallionUid).Immutable(
+            [&protocolHorse](const data::Stallion& stallion)
+            {
+              protocolHorse.expiresAt = util::TimePointToAliciaTime(stallion.expiresAt());
+            });
         });
       }
     });

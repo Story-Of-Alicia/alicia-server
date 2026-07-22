@@ -436,8 +436,8 @@ struct RanchCommandEnterBreedingMarketOK
     uint32_t tid{};
     //! Count of successful breeds in succession.
     uint8_t breedingCombo{};
-    //! Flag indicating whether the horse is registered as a stallion.
-    uint32_t isRegistered{};
+    //! The time point at which the stallion is removed from the breeding market.
+    uint32_t expiresAt{};
     //! Shows a green badge "BONUS".
     bool hasBreedingBonus{};
     //! A value in an interval of <1, 9>.
