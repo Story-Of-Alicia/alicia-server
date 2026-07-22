@@ -630,6 +630,55 @@ void HorseRegistry::ApplyClassProgress(data::Horse& horse, uint32_t gainedExp) c
   horse.clazz() = level;
 }
 
+uint32_t HorseRegistry::ApplyPotentialGrowth(data::Horse& horse) const
+{
+  constexpr uint32_t MaxTransitionLevel = 10;
+  constexpr uint32_t MaxPotentialValue = 100;
+  constexpr uint32_t MaxPotentialPoints = 15;
+
+  if (horse.potential.type() == 0)
+    return 0;
+
+  uint32_t targetLevel = 1;
+  for (const auto& potentialLevel : _potentialLevels)
+  {
+    if (static_cast<int32_t>(horse.clazzProgress()) >= potentialLevel.exp)
+      targetLevel = std::max(targetLevel, potentialLevel.level);
+  }
+
+  uint32_t level = std::max<uint32_t>(horse.potential.level(), 1);
+
+  uint32_t gained = 0;
+  while (level < targetLevel && level <= MaxTransitionLevel)
+  {
+    const size_t columnIndex = level - 1;
+
+    std::vector<uint32_t> points;
+    std::vector<float> weights;
+    points.reserve(_potentialGrowth.size());
+    weights.reserve(_potentialGrowth.size());
+    for (const auto& [pointAmount, growth] : _potentialGrowth)
+    {
+      if (pointAmount > MaxPotentialPoints)
+        continue;
+      points.emplace_back(pointAmount);
+      weights.emplace_back(growth.weights[columnIndex]);
+    }
+
+    std::discrete_distribution<size_t> raffle(weights.begin(), weights.end());
+    gained += points[raffle(_randomEngine)];
+
+    level += 1;
+  }
+
+  if (gained == 0)
+    return 0;
+
+  horse.potential.value() = std::min(horse.potential.value() + gained, MaxPotentialValue);
+  horse.potential.level() = level;
+  return gained;
+}
+
 const GradeInfo* HorseRegistry::GetGradeInfo(uint32_t grade) const
 {
   auto it = _grades.find(grade);

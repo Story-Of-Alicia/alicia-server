@@ -299,6 +299,11 @@ public:
   //! @param gainedExp Class exp gained.
   void ApplyClassProgress(data::Horse& horse, uint32_t gainedExp) const;
 
+  //! Advances a horse's potential to the level its `clazzProgress` has reached
+  //! @param horse Horse to mutate.
+  //! @returns The total points added to the potential value (0 if none).
+  uint32_t ApplyPotentialGrowth(data::Horse& horse) const;
+
   //! Gets grade info by grade number.
   //! @returns Pointer to GradeInfo, or nullptr if not found.
   const GradeInfo* GetGradeInfo(uint32_t grade) const;
