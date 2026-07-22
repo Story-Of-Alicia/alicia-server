@@ -1461,7 +1461,7 @@ void server::FileDataSource::StoreMail(data::Uid uid, const data::Mail& mail)
   json["isDeleted"] = mail.isDeleted();
 
   json["type"] = mail.type();
-  json["origin"] = mail.claimUid();
+  json["claimUid"] = mail.claimUid();
 
   json["createdAt"] = std::chrono::duration_cast<
     std::chrono::seconds>(
