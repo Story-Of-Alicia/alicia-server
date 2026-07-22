@@ -30,10 +30,16 @@ public:
   {
     //! A count of times the horse was mated.
     uint32_t timesMated{};
-    //! A total earnings of the stallion.
-    uint32_t earnings{};
+    //! The total revenue accrued by the stallion.
+    uint32_t revenue{};
     //! A cost of a breed.
     uint32_t breedingFee{};
+    //! Final earnings for the character, after fees.
+    uint32_t earnings{};
+    //! Current tax rate.
+    float taxRate{};
+    //! The generated UID of this earning's claim.
+    data::Uid claimUid{};
   };
 
   //! Breeding fee range of a grade.

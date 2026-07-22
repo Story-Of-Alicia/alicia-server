@@ -218,8 +218,18 @@ bool MessengerDirector::IsCharacterOnline(const data::Uid characterUid) const
   return GetClientByCharacterUid(characterUid).has_value();
 }
 
-void MessengerDirector::SendStallionReward(data::Uid characterUid, data::Uid horseUid, data::Uid claimUid)
+void MessengerDirector::SendStallionReward(
+  data::Uid characterUid,
+  data::Uid horseUid,
+  const BreedingMarket::Earnings& earnings)
 {
+  std::string characterName{};
+  _serverInstance.GetDataDirector().GetCharacter(characterUid).Immutable(
+    [&characterName](const data::Character& character)
+    {
+      characterName = character.name();
+    });
+
   std::string horseName{};
   _serverInstance.GetDataDirector().GetHorse(horseUid).Immutable(
     [&horseName](const data::Horse& horse)
@@ -231,17 +241,25 @@ void MessengerDirector::SendStallionReward(data::Uid characterUid, data::Uid hor
   const auto& utcNow = std::chrono::floor<std::chrono::seconds>(util::Clock::now());
   const auto& formattedDt = std::format(DateTimeFormat, utcNow);
 
-  // Create and store mail
-  data::Uid mailUid{data::InvalidUid};
-  std::string mailBody = std::format(
-    "Breeding rewards for {}\n\n"
-    "Total Breeding Price / Revenue (총 교배 금액): 20,000 Carrots\n\n"
-    "Fee / Tax Rate (수수료율): 13.00%\n\n"
-    "Final Payout Amount (최종 지급금액): 17,400 Carrots",
-    horseName); // TODO: populate these fields
+  // Prepare mail body
+  const std::string mailBody = std::format(
+    "Hello {}~\n"
+    "Your breeding registration at the Stato Breeding Centre for\nyour horse \"{}\" has ended.\n\n"
+    "Times Bred: {}\n"
+    "Total Revenue: {} Carrots\n"
+    "Tax: {:.2f}%\n"
+    "Final Payout: <font color=#C36A0C>{} Carrots</font>",
+    characterName,
+    horseName,
+    earnings.timesMated,
+    earnings.revenue,
+    earnings.taxRate * 100.0f,
+    earnings.earnings); // TODO: populate these fields
 
+  // Create and store mail
   auto mailRecord = _serverInstance.GetDataDirector().CreateMail();
-  mailRecord.Mutable([&mailUid, mailBody, utcNow, characterUid, claimUid](data::Mail& mail)
+  data::Uid mailUid{data::InvalidUid};
+  mailRecord.Mutable([&mailUid, mailBody, utcNow, characterUid, claimUid = earnings.claimUid](data::Mail& mail)
   {
     // Set mail parameters
     mail.from() = 0; // System
@@ -286,7 +304,7 @@ void MessengerDirector::SendStallionReward(data::Uid characterUid, data::Uid hor
   const protocol::ChatCmdLetterArriveTrs notify{
     .mailUid = mailUid,
     .mailType = data::Mail::MailType::BreedingReward,
-    .claimUid = claimUid,
+    .claimUid = earnings.claimUid,
     .sender = GetSystemNameFromType(data::Mail::MailType::BreedingReward),
     .date = formattedDt,
     .body = mailBody

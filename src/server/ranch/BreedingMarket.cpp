@@ -238,7 +238,8 @@ std::optional<BreedingMarket::Earnings> BreedingMarket::CalculateUnregisterEarni
     return std::nullopt;
 
   // Populate the earnings.
-  Earnings earnings;
+  Earnings earnings{
+    .taxRate = EarningTaxes};
   stallionRecord->Immutable([&earnings](
     const data::Stallion& stallion)
     {
@@ -246,7 +247,7 @@ std::optional<BreedingMarket::Earnings> BreedingMarket::CalculateUnregisterEarni
       earnings.breedingFee = stallion.breedingCharge();
     });
 
-  earnings.earnings = earnings.timesMated * earnings.breedingFee;
+  earnings.revenue = earnings.timesMated * earnings.breedingFee;
 
   return earnings;
 }
@@ -495,8 +496,8 @@ data::Uid BreedingMarket::RegisterStallion(
 }
 
 void BreedingMarket::UnregisterStallion(
-  const data::Uid horseUid,
-  const data::Uid stallionUid) const noexcept
+  data::Uid horseUid,
+  data::Uid stallionUid) const noexcept
 {
   const auto stallionRecord = _serverInstance.GetDataDirector().GetStallionCache().Get(
     stallionUid);
@@ -507,17 +508,29 @@ void BreedingMarket::UnregisterStallion(
     return;
 
   // Populate the earnings.
-  Earnings earnings{};
-  stallionRecord->Immutable([&earnings](
+  Earnings earnings{
+    .taxRate = EarningTaxes};
+
+  data::Uid ownerUid{data::InvalidUid};
+  stallionRecord->Immutable([&earnings, &ownerUid](
     const data::Stallion& stallion)
     {
+      ownerUid = stallion.ownerUid();
+
       earnings.timesMated = stallion.timesMated();
       earnings.breedingFee = stallion.breedingCharge();
     });
 
-  earnings.earnings = earnings.timesMated * earnings.breedingFee;
+  earnings.revenue = earnings.timesMated * earnings.breedingFee;
 
-  // todo: payout the earnings
+  // TODO: register payout in the claim system
+  earnings.claimUid = 0xAABBCCDD;
+
+  // Send mail with payout information
+  _serverInstance.GetMessengerDirector().SendStallionReward(
+    ownerUid,
+    horseUid,
+    earnings);
 
   // Update the horse status and statistics.
   horseRecord->Mutable([timesMated = earnings.timesMated](

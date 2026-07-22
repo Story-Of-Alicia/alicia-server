@@ -1835,7 +1835,7 @@ void RanchDirector::HandleUnregisterStallionEstimateInfo(
   // todo: Figure out member1 and member4 of AcCmdCRUnregisterStallionEstimateInfoOK
   protocol::AcCmdCRUnregisterStallionEstimateInfoOK response{
     .timesMated = estimate->timesMated,
-    .earnings = estimate->earnings,
+    .earnings = estimate->revenue,
     .breedingFee = estimate->breedingFee};
 
   _commandServer.QueueCommand<decltype(response)>(

@@ -5,6 +5,8 @@
 #ifndef MESSENGERDIRECTOR_HPP
 #define MESSENGERDIRECTOR_HPP
 
+#include "server/ranch/BreedingMarket.hpp"
+
 #include <libserver/network/chatter/ChatterServer.hpp>
 #include <libserver/data/DataDefinitions.hpp>
 
@@ -56,7 +58,10 @@ public:
 
   [[nodiscard]] std::optional<Client> GetClientByCharacterUid(const data::Uid characterUid) const;
   [[nodiscard]] bool IsCharacterOnline(const data::Uid characterUid) const;
-  void SendStallionReward(data::Uid characterUid, data::Uid horseUid, data::Uid claimUid);
+  void SendStallionReward(
+    data::Uid characterUid,
+    data::Uid horseUid,
+    const BreedingMarket::Earnings& earnings);
 
   void Tick();
 
