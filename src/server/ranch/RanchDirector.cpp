@@ -534,6 +534,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleRequestUser(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRBreedingTakeMoney>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleBreedingTakeMoney(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -6768,6 +6774,48 @@ void RanchDirector::SendDailyQuestNotificationToCharacter(
       return;
     }
   }
+}
+
+void RanchDirector::HandleBreedingTakeMoney(
+  ClientId clientId,
+  const protocol::AcCmdCRBreedingTakeMoney& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  // Check if claim is validate and successful, by claimUid
+  const bool claimSuccessful = GetServerInstance().GetRewardSystem().ClaimReward(
+    command.claimUid,
+    clientContext.characterUid);
+
+  if (not claimSuccessful)
+  {
+    spdlog::error(
+      "Character '{}' was unsuccessful at claiming '{}'",
+      clientContext.characterUid,
+      command.claimUid);
+    const protocol::AcCmdCRBreedingTakeMoneyCancel cancel{};
+    _commandServer.QueueCommand<protocol::AcCmdCRBreedingTakeMoneyCancel>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  protocol::AcCmdCRBreedingTakeMoneyOK response{};
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+    [&response](const data::Character& character)
+    {
+      response.carrotBalance = character.carrots();
+    });
+
+  _commandServer.QueueCommand<protocol::AcCmdCRBreedingTakeMoneyOK>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 } // namespace server

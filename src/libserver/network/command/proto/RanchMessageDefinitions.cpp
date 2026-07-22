@@ -3462,5 +3462,48 @@ void AcCmdCROpenRandomBoxCancel::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRBreedingTakeMoney::Write(
+  const AcCmdCRBreedingTakeMoney&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBreedingTakeMoney::Read(
+  AcCmdCRBreedingTakeMoney& command,
+  SourceStream& stream)
+{
+  stream.Read(command.claimUid);
+}
+
+void AcCmdCRBreedingTakeMoneyCancel::Write(
+  const AcCmdCRBreedingTakeMoneyCancel&,
+  SinkStream&)
+{
+  // Empty
+}
+
+void AcCmdCRBreedingTakeMoneyCancel::Read(
+  AcCmdCRBreedingTakeMoneyCancel&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBreedingTakeMoneyOK::Write(
+  const AcCmdCRBreedingTakeMoneyOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.carrotBalance);
+}
+
+void AcCmdCRBreedingTakeMoneyOK::Read(
+  AcCmdCRBreedingTakeMoneyOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
 

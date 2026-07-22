@@ -22,7 +22,9 @@
 
 #include "CommonMessageDefinitions.hpp"
 #include "CommonStructureDefinitions.hpp"
-#include "libserver/network/command/CommandProtocol.hpp"
+
+#include <libserver/data/DataDefinitions.hpp>
+#include <libserver/network/command/CommandProtocol.hpp>
 
 #include <array>
 #include <cstdint>
@@ -5402,6 +5404,79 @@ struct AcCmdCROpenRandomBoxCancel
   //! @param stream Source stream.
   static void Read(
     AcCmdCROpenRandomBoxCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBreedingTakeMoney
+{
+  data::Uid claimUid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBreedingTakeMoney;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBreedingTakeMoney& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBreedingTakeMoney& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBreedingTakeMoneyCancel
+{
+  // Empty
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBreedingTakeMoneyCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBreedingTakeMoneyCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBreedingTakeMoneyCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBreedingTakeMoneyOK
+{
+  uint32_t unk0{};
+  uint32_t carrotBalance{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBreedingTakeMoneyOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBreedingTakeMoneyOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBreedingTakeMoneyOK& command,
     SourceStream& stream);
 };
 

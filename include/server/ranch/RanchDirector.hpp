@@ -568,6 +568,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRRequestUser& command);
 
+  void HandleBreedingTakeMoney(
+    ClientId clientId,
+    const protocol::AcCmdCRBreedingTakeMoney& command);
+
   //!
   ServerInstance& _serverInstance;
   //!
