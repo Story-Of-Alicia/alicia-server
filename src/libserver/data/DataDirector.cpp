@@ -1593,11 +1593,12 @@ void DataDirector::ScheduleCharacterLoad(
         bool isSelfMail = from == characterUid && to == characterUid;
 
         bool isOwnedMail = isInboxMail || isSentMail || isSelfMail;
-        bool isAnyInvalid = from == data::InvalidUid || to == data::InvalidUid;
+        // System cannot send to system
+        bool isAnyInvalid = from == data::InvalidUid and to == data::InvalidUid;
 
         if (isAnyInvalid or not isOwnedMail)
         {
-          // Mail is in another mailbox instead of self-sender's, or one of the UIDs are invalid
+          // Mail is in another mailbox instead of self-sender's, or both of the UIDs are invalid
           userDataContext.debugMessage =
             std::format("Error processing mail {} - character {} from {} to {}",
               mailUid,
@@ -1607,8 +1608,10 @@ void DataDirector::ScheduleCharacterLoad(
           return;
         }
 
-        mailCharacterUids.emplace(from);
-        mailCharacterUids.emplace(to);
+        if (from != data::InvalidUid)
+          mailCharacterUids.emplace(from);
+        if (to != data::InvalidUid)
+          mailCharacterUids.emplace(to);
       }
 
       // Preload characters from uids

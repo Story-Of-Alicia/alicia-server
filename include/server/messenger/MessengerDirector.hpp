@@ -56,6 +56,7 @@ public:
 
   [[nodiscard]] std::optional<Client> GetClientByCharacterUid(const data::Uid characterUid) const;
   [[nodiscard]] bool IsCharacterOnline(const data::Uid characterUid) const;
+  void SendStallionReward(data::Uid characterUid, data::Uid horseUid, data::Uid claimUid);
 
   void Tick();
 

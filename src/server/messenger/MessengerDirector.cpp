@@ -31,6 +31,24 @@ constexpr auto FriendsCategoryUid = 0;
 constexpr auto OnlinePlayersCategoryUid = std::numeric_limits<uint32_t>::max() - 2;
 constexpr std::string_view DateTimeFormat = "{:%H:%M:%S %d/%m/%Y} UTC";
 
+const std::string GetSystemNameFromType(data::Mail::MailType type)
+{
+  switch (type)
+  {
+    case data::Mail::MailType::BreedingReward:
+      return "Breeding System";
+    case data::Mail::MailType::CarnivalReward:
+      return "Carnival System";
+    case data::Mail::MailType::NoReply:
+      return "System";
+    default:
+      throw std::runtime_error(
+        std::format(
+          "Unsupported system mail type '{}'",
+          static_cast<uint32_t>(type)));
+  }
+}
+
 MessengerDirector::MessengerDirector(ServerInstance& serverInstance)
   : _chatterServer(*this)
   , _serverInstance(serverInstance)
@@ -198,6 +216,84 @@ std::optional<MessengerDirector::Client> MessengerDirector::GetClientByCharacter
 bool MessengerDirector::IsCharacterOnline(const data::Uid characterUid) const
 {
   return GetClientByCharacterUid(characterUid).has_value();
+}
+
+void MessengerDirector::SendStallionReward(data::Uid characterUid, data::Uid horseUid, data::Uid claimUid)
+{
+  std::string horseName{};
+  _serverInstance.GetDataDirector().GetHorse(horseUid).Immutable(
+    [&horseName](const data::Horse& horse)
+    {
+      horseName = horse.name();
+    });
+
+  // UTC now in seconds
+  const auto& utcNow = std::chrono::floor<std::chrono::seconds>(util::Clock::now());
+  const auto& formattedDt = std::format(DateTimeFormat, utcNow);
+
+  // Create and store mail
+  data::Uid mailUid{data::InvalidUid};
+  std::string mailBody = std::format(
+    "Breeding rewards for {}\n\n"
+    "Total Breeding Price / Revenue (총 교배 금액): 20,000 Carrots\n\n"
+    "Fee / Tax Rate (수수료율): 13.00%\n\n"
+    "Final Payout Amount (최종 지급금액): 17,400 Carrots",
+    horseName); // TODO: populate these fields
+
+  auto mailRecord = _serverInstance.GetDataDirector().CreateMail();
+  mailRecord.Mutable([&mailUid, mailBody, utcNow, characterUid, claimUid](data::Mail& mail)
+  {
+    // Set mail parameters
+    mail.from() = 0; // System
+    mail.to() = characterUid;
+
+    mail.type() = data::Mail::MailType::BreedingReward;
+    mail.claimUid() = claimUid; // TODO: implement and use claim system to generate a claim uid
+
+    mail.createdAt() = utcNow;
+    mail.body() = mailBody;
+
+    // Get mailUid to store in character record
+    mailUid = mail.uid();
+  });
+
+  // Add the new mail to the recipient's inbox
+  _serverInstance.GetDataDirector().GetCharacter(characterUid).Mutable(
+    [mailUid](data::Character& character)
+    {
+      // Insert new mail to the beginning of the list
+      // TODO: this operation is O(n), does dao support std::deque?
+      character.mailbox.inbox().insert(
+        character.mailbox.inbox().begin(),
+        mailUid);
+
+      // Set mail alarm
+      character.mailbox.hasNewMail() = true;
+    });
+
+  // Check if recipient is online for live mail delivery
+  auto client = std::ranges::find_if(
+    _clients,
+    [characterUid](const std::pair<network::ClientId, ClientContext>& client)
+    {
+      return client.second.characterUid == characterUid;
+    });
+
+  if (client == _clients.cend())
+    // Character is not online, all good and handled
+    return;
+
+  const protocol::ChatCmdLetterArriveTrs notify{
+    .mailUid = mailUid,
+    .mailType = data::Mail::MailType::BreedingReward,
+    .claimUid = claimUid,
+    .sender = GetSystemNameFromType(data::Mail::MailType::BreedingReward),
+    .date = formattedDt,
+    .body = mailBody
+  };
+
+  const network::ClientId recipientClientId = client->first;
+  _chatterServer.QueueCommand<decltype(notify)>(recipientClientId, [notify](){ return notify; });
 }
 
 void MessengerDirector::Tick()
@@ -1071,12 +1167,20 @@ void MessengerDirector::HandleChatterLetterList(
           correspondentUid = mail.from();
 
         // Get correspondent's name to render mail response
-        std::string correspondentName{};
-        _serverInstance.GetDataDirector().GetCharacter(correspondentUid).Immutable(
-          [&correspondentName](const data::Character& character)
-          {
-            correspondentName = character.name();
-          });
+        std::string correspondentName{"System"};
+        
+        if (correspondentUid == data::InvalidUid)
+        {
+          correspondentName = GetSystemNameFromType(mail.type());
+        }
+        else
+        {
+          _serverInstance.GetDataDirector().GetCharacter(correspondentUid).Immutable(
+            [&correspondentName](const data::Character& character)
+            {
+              correspondentName = character.name();
+            });
+        }
 
         // Format mail createdAt based on format
         const auto& createdAt = std::format(
@@ -1101,7 +1205,7 @@ void MessengerDirector::HandleChatterLetterList(
             protocol::ChatCmdLetterListAckOk::InboxMail{
               .uid = mail.uid(),
               .type = mail.type(),
-              .origin = mail.origin(),
+              .claimUid = mail.claimUid(),
               .sender = correspondentName,
               .date = createdAt,
               .struct0 = protocol::ChatCmdLetterListAckOk::InboxMail::Struct0{
@@ -1173,7 +1277,7 @@ void MessengerDirector::HandleChatterLetterSend(
     mail.to() = recipientCharacterUid;
 
     mail.type() = data::Mail::MailType::CanReply;
-    mail.origin() = data::Mail::MailOrigin::Character;
+    mail.claimUid() = data::InvalidUid;
 
     mail.createdAt() = utcNow;
     mail.body() = command.body;
@@ -1231,7 +1335,7 @@ void MessengerDirector::HandleChatterLetterSend(
   protocol::ChatCmdLetterArriveTrs notify{
     .mailUid = mailUid,
     .mailType = data::Mail::MailType::CanReply,
-    .mailOrigin = data::Mail::MailOrigin::Character,
+    .claimUid = data::InvalidUid,
     .sender = senderName,
     .date = formattedDt,
     .body = command.body

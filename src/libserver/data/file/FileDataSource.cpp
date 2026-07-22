@@ -1429,7 +1429,7 @@ void server::FileDataSource::RetrieveMail(data::Uid uid, data::Mail& mail)
   mail.isDeleted = json.value("isDeleted", bool{});
 
   mail.type = json.value("type", data::Mail::MailType{});
-  mail.origin = json.value("origin", data::Mail::MailOrigin{});
+  mail.claimUid = json.value("claimUid", data::Uid{});
 
   mail.createdAt = data::Clock::time_point(
     std::chrono::seconds(
@@ -1458,7 +1458,7 @@ void server::FileDataSource::StoreMail(data::Uid uid, const data::Mail& mail)
   json["isDeleted"] = mail.isDeleted();
 
   json["type"] = mail.type();
-  json["origin"] = mail.origin();
+  json["origin"] = mail.claimUid();
 
   json["createdAt"] = std::chrono::duration_cast<
     std::chrono::seconds>(

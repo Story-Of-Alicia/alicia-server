@@ -562,14 +562,6 @@ struct Mail
     BreedingReward = 3, //! Requests AcCmdCRBreedingTakeMoney
   };
 
-  //! Flags whether the mail is a system or a character mail.
-  //! The game client uses this to filter for system mails only.
-  enum class MailOrigin : uint32_t
-  {
-    Character = 0,
-    System = 1
-  };
-
   dao::Field<Uid> uid{InvalidUid};
   dao::Field<Uid> from{InvalidUid};
   dao::Field<Uid> to{InvalidUid};
@@ -578,7 +570,9 @@ struct Mail
   dao::Field<bool> isDeleted{false};
 
   dao::Field<MailType> type{};
-  dao::Field<MailOrigin> origin{};
+  //! The UID of either breeding or carnival reward.
+  //! Non-zero values indicate system mail.
+  dao::Field<uint32_t> claimUid{};
 
   dao::Field<Clock::time_point> createdAt{};
   dao::Field<std::string> body{};
