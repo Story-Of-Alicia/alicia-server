@@ -666,6 +666,41 @@ void RanchDirector::AnnounceFoalGrewUp(
   BroadcastUpdateMountInfoNotify(characterUid, rancherUid, horseUid);
 }
 
+void RanchDirector::ReturnHorseToNature(
+  data::Uid characterUid,
+  data::Uid horseUid,
+  std::string userName,
+  bool breedingAbandon)
+{
+  bool isHorseValid = false;
+  GetServerInstance().GetDataDirector().GetCharacter(characterUid).Mutable(
+    [&isHorseValid, horseUid](data::Character& character)
+    {
+      const auto horseIter = std::ranges::find(character.horses(), horseUid);
+      isHorseValid = horseIter != character.horses().end();
+      if (not isHorseValid)
+        return;
+      
+        // Remove horse from character
+      character.horses().erase(horseIter);
+    });
+
+  if (not isHorseValid)
+    // TODO: log?
+    return;
+
+  // Remove horse from ranch tracker
+  auto& ranchInstance = _ranches[characterUid];
+  ranchInstance.tracker.RemoveHorse(horseUid);
+
+  // Keep horse record in cache for the family tree
+
+  spdlog::info("User {} returned horse {} to nature (breeding abandon: {})",
+    userName,
+    horseUid,
+    breedingAbandon);
+}
+
 std::vector<data::Uid> RanchDirector::GetOnlineCharacters()
 {
   std::vector<data::Uid> onlineCharacterUids;
@@ -2153,9 +2188,65 @@ data::Uid RanchDirector::CreateBredFoal(
 }
 
 void RanchDirector::HandleBreedingAbandon(
-  const ClientId,
-  const protocol::AcCmdCRBreedingAbandon&)
+  const ClientId clientId,
+  const protocol::AcCmdCRBreedingAbandon& command)
 {
+  const auto& clientContext = GetClientContext(clientId);
+  const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid);
+
+  // Check if character owns the horse
+  bool hasFoal = false;
+  characterRecord.Immutable(
+    [&hasFoal, foalUid = command.foalUid](const data::Character& character)
+    {
+      hasFoal = std::ranges::contains(character.horses(), foalUid);
+    });
+
+  const protocol::AcCmdCRBreedingAbandonCancel cancel{};
+  if (not hasFoal)
+  {
+    _commandServer.QueueCommand<protocol::AcCmdCRBreedingAbandonCancel>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  // Check if the horse is a foal
+  bool isFoal = false;
+  GetServerInstance().GetDataDirector().GetHorse(command.foalUid).Immutable(
+    [&isFoal](const data::Horse& horse)
+    {
+      // Check if character owns the horse
+      isFoal = horse.type() == data::Horse::Type::Foal;
+    });
+
+  if (not isFoal)
+  {
+    _commandServer.QueueCommand<protocol::AcCmdCRBreedingAbandonCancel>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  ReturnHorseToNature(
+    clientContext.characterUid,
+    command.foalUid,
+    clientContext.userName,
+    true);
+
+  const protocol::AcCmdCRBreedingAbandonOK response{};
+  _commandServer.QueueCommand<protocol::AcCmdCRBreedingAbandonOK>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 void RanchDirector::HandleBreedingWishlist(
@@ -6272,36 +6363,19 @@ void RanchDirector::HandleUpdateMountInfo(
   const protocol::AcCmdCRUpdateMountInfo command)
 {
   const auto& clientContext = GetClientContext(clientId);
-  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid);
-
-  protocol::AcCmdCRUpdateMountInfoOK response {
-    .action = command.action,
-    .horse = command.horse};
 
   if (command.action == protocol::AcCmdCRUpdateMountInfo::Action::ReturnToNature)
   {
-    characterRecord.Mutable([this, command, &clientContext](data::Character& character)
-    {
-      const auto horseIter = std::ranges::find(character.horses(),command.horse.uid);
-      const bool isHorseValid = horseIter != character.horses().end();
-
-      if (isHorseValid)
-      {
-        // Remove horse from ranch tracker
-        auto& ranchInstance = _ranches[clientContext.characterUid];
-        ranchInstance.tracker.RemoveHorse(command.horse.uid);
-
-        // Remove horse from character and delete from cache
-        character.horses().erase(horseIter);
-        _serverInstance.GetDataDirector().GetHorseCache().Delete(command.horse.uid);
-
-        spdlog::info("User {} returned horse {} to nature",
-          clientContext.userName,
-          command.horse.uid);
-      }
-    });
+    ReturnHorseToNature(
+      clientContext.characterUid,
+      command.horse.uid,
+      clientContext.userName,
+      false);
   }
 
+  const protocol::AcCmdCRUpdateMountInfoOK response{
+    .action = command.action,
+    .horse = command.horse};
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()

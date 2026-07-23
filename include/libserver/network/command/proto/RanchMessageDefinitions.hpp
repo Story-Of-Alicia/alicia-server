@@ -1211,7 +1211,8 @@ struct RanchCommandTryBreedingCancel
 
 struct AcCmdCRBreedingAbandon
 {
-  uint32_t horseUid{};
+  //! The UID of the foal to abandon.
+  uint32_t foalUid{};
 
   static Command GetCommand()
   {
@@ -1244,14 +1245,14 @@ struct AcCmdCRBreedingAbandonOK
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const AcCmdCRBreedingAbandon& command,
+    const AcCmdCRBreedingAbandonOK& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    AcCmdCRBreedingAbandon& command,
+    AcCmdCRBreedingAbandonOK& command,
     SourceStream& stream);
 };
 
@@ -1266,14 +1267,14 @@ struct AcCmdCRBreedingAbandonCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const AcCmdCRBreedingAbandon& command,
+    const AcCmdCRBreedingAbandonCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    AcCmdCRBreedingAbandon& command,
+    AcCmdCRBreedingAbandonCancel& command,
     SourceStream& stream);
 };
 

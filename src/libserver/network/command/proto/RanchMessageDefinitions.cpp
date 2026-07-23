@@ -1020,32 +1020,32 @@ void AcCmdCRBreedingAbandon::Read(
   AcCmdCRBreedingAbandon& command,
   SourceStream& stream)
 {
-  stream.Read(command.horseUid);
+  stream.Read(command.foalUid);
 }
 
 void AcCmdCRBreedingAbandonOK::Write(
-  const AcCmdCRBreedingAbandon& command,
-  SinkStream& stream)
+  const AcCmdCRBreedingAbandonOK&,
+  SinkStream&)
 {
-  stream.Write(command.horseUid);
+  // Empty
 }
 
 void AcCmdCRBreedingAbandonOK::Read(
-  AcCmdCRBreedingAbandon&,
+  AcCmdCRBreedingAbandonOK&,
   SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRBreedingAbandonCancel::Write(
-  const AcCmdCRBreedingAbandon& command,
-  SinkStream& stream)
+  const AcCmdCRBreedingAbandonCancel&,
+  SinkStream&)
 {
-  stream.Write(command.horseUid);
+  // Empty
 }
 
 void AcCmdCRBreedingAbandonCancel::Read(
-  AcCmdCRBreedingAbandon&,
+  AcCmdCRBreedingAbandonCancel&,
   SourceStream&)
 {
   throw std::runtime_error("Not implemented");

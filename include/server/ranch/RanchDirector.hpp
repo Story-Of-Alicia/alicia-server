@@ -213,6 +213,12 @@ private:
     data::Uid characterUid,
     data::Uid horseUid);
 
+  void ReturnHorseToNature(
+    data::Uid characterUid,
+    data::Uid horseUid,
+    std::string userName,
+    bool breedingAbandon);
+
   void HandleChat(
     ClientId clientId,
     const protocol::AcCmdCRRanchChat& command);
