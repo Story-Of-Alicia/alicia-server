@@ -2038,7 +2038,7 @@ void RanchDirector::HandleTryBreeding(
   if (success)
   {
     protocol::RanchCommandTryBreedingOK response{};
-    const data::Uid foalUid = CreateBredFoal(command, bonus, response);
+    const data::Uid foalUid = CreateBredFoal(clientContext, command, bonus, response);
 
     characterRecord.Mutable([foalUid, &response](data::Character& character)
     {
@@ -2148,6 +2148,7 @@ uint32_t RanchDirector::CalculateBreedingSuccessRate(
 }
 
 data::Uid RanchDirector::CreateBredFoal(
+  const ClientContext& clientContext,
   const protocol::AcCmdCRTryBreeding& command,
   const protocol::BreedingBonus& bonus,
   protocol::RanchCommandTryBreedingOK& response)
@@ -2174,7 +2175,7 @@ data::Uid RanchDirector::CreateBredFoal(
       .expiresAt = 0,
       .count = 1};
     response.grade = static_cast<uint8_t>(foal.grade());
-    protocol::BuildProtocolHorseParts(response.parts, foal.parts, true);
+    protocol::BuildProtocolHorseParts(response.parts, foal.parts);
     protocol::BuildProtocolHorseAppearance(response.appearance, foal.appearance);
     protocol::BuildProtocolHorseStats(response.stats, foal.stats);
     response.breedingBonus = bonus;
@@ -2183,6 +2184,28 @@ data::Uid RanchDirector::CreateBredFoal(
     response.lineage = static_cast<uint8_t>(foal.lineage());
     response.emblemId = static_cast<uint16_t>(foal.emblemUid());
   });
+
+  // Register the freshly bred foal with the ranch and spawn it for everyone
+  // present (the owner included, since it isn't on their ranch view yet).
+  AddRanchHorse(clientContext.characterUid, foalUid);
+
+  protocol::AcCmdRCAddIdleMountInfoNotify addNotify{};
+  addNotify.horse.horseOid =
+    _ranches[clientContext.characterUid].tracker.GetHorseOid(foalUid);
+  foalRecord.Immutable([&addNotify](const data::Horse& horse)
+  {
+    protocol::BuildProtocolHorse(addNotify.horse.horse, horse);
+  });
+
+  for (const ClientId& ranchClientId : _ranches[clientContext.visitingRancherUid].clients)
+  {
+    _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
+      ranchClientId,
+      [addNotify]()
+      {
+        return addNotify;
+      });
+  }
 
   return foalUid;
 }
@@ -4269,6 +4292,7 @@ void RanchDirector::HandleUseItem(
     {
       if (horse.type() == data::Horse::Type::Foal)
         horse.type() = data::Horse::Type::Adult;
+        horse.tid() = 20002;
 
       protocol::BuildProtocolHorse(growUp.horse, horse);
     });

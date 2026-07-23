@@ -130,7 +130,7 @@ void BuildProtocolHorse(
     .val14 = 0x00,
     .emblem = static_cast<uint16_t>(horse.emblemUid())};
 
-  BuildProtocolHorseParts(protocolHorse.parts, horse.parts, horse.type() == data::Horse::Type::Foal);
+  BuildProtocolHorseParts(protocolHorse.parts, horse.parts);
   BuildProtocolHorseAppearance(protocolHorse.appearance, horse.appearance);
   BuildProtocolHorseStats(protocolHorse.stats, horse.stats);
   BuildProtocolHorseMastery(protocolHorse.mastery, horse.mastery);
@@ -138,8 +138,7 @@ void BuildProtocolHorse(
 
 void BuildProtocolHorseParts(
   Horse::Parts& protocolHorseParts,
-  const data::Horse::Parts& parts,
-  const bool isFoal)
+  const data::Horse::Parts& parts)
 {
   // Helper function to map adult TIDs to foal-safe color TIDs
   // TODO: This is causing a UI mismatch on the horse appearance info window.
@@ -156,20 +155,10 @@ void BuildProtocolHorseParts(
     return static_cast<uint8_t>(((adultTid - 1) % 5) + 1);
   };
 
-  uint8_t maneId = static_cast<uint8_t>(parts.maneTid());
-  uint8_t tailId = static_cast<uint8_t>(parts.tailTid());
-
-  // If this is a foal, map to foal-safe color TIDs
-  if (isFoal)
-  {
-    maneId = MapToFoalColorTid(parts.maneTid());
-    tailId = MapToFoalColorTid(parts.tailTid());
-  }
-
   protocolHorseParts = {
     .skinId = static_cast<uint8_t>(parts.skinTid()),
-    .maneId = maneId,
-    .tailId = tailId,
+    .maneId = static_cast<uint8_t>(parts.maneTid()),
+    .tailId = static_cast<uint8_t>(parts.tailTid()),
     .faceId = static_cast<uint8_t>(parts.faceTid())};
 }
 
