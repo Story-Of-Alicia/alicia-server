@@ -1147,7 +1147,7 @@ struct RanchCommandTryBreedingOK
   uint32_t val{};
   uint32_t count{};
 
-  uint8_t unk0{};
+  uint8_t grade{};
 
   Horse::Parts parts{};
   Horse::Appearance appearance{};
@@ -1158,13 +1158,13 @@ struct RanchCommandTryBreedingOK
   uint8_t unk2{};
   uint8_t unk3{};
   uint8_t unk4{};
-  uint8_t unk5{};
+  uint8_t tendency{};
   uint8_t potentialType{};
-  uint8_t unk7{};
-  uint8_t unk8{};
+  uint8_t unk7{3};
+  uint8_t lineage{};
   //! Foal's emblem ID.
   uint16_t emblemId{};
-  uint8_t unk10{};
+  uint8_t unk10{1};
 
   static Command GetCommand()
   {

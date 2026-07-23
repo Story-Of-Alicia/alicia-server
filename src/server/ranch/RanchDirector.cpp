@@ -2137,12 +2137,14 @@ data::Uid RanchDirector::CreateBredFoal(
     response.tid = foal.tid();
     response.val = 0;
     response.count = 1;
-    response.unk0 = static_cast<uint8_t>(foal.grade());
+    response.grade = static_cast<uint8_t>(foal.grade());
     protocol::BuildProtocolHorseParts(response.parts, foal.parts, true);
     protocol::BuildProtocolHorseAppearance(response.appearance, foal.appearance);
     protocol::BuildProtocolHorseStats(response.stats, foal.stats);
     response.unk2 = static_cast<uint8_t>(bonus.id);
+    response.tendency = static_cast<uint8_t>(foal.tendency());
     response.potentialType = static_cast<uint8_t>(foal.potential.type());
+    response.lineage = static_cast<uint8_t>(foal.lineage());
     response.emblemId = static_cast<uint16_t>(foal.emblemUid());
   });
 

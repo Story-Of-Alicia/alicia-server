@@ -1061,7 +1061,7 @@ void RanchCommandTryBreedingOK::Write(
     .Write(command.tid)
     .Write(command.val)
     .Write(command.count)
-    .Write(command.unk0)
+    .Write(command.grade)
     .Write(command.parts)
     .Write(command.appearance)
     .Write(command.stats)
@@ -1069,10 +1069,10 @@ void RanchCommandTryBreedingOK::Write(
     .Write(command.unk2)
     .Write(command.unk3)
     .Write(command.unk4)
-    .Write(command.unk5)
+    .Write(command.tendency)
     .Write(command.potentialType)
     .Write(command.unk7)
-    .Write(command.unk8)
+    .Write(command.lineage)
     .Write(command.emblemId)
     .Write(command.unk10);
 }
