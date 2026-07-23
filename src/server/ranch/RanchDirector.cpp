@@ -649,8 +649,9 @@ void RanchDirector::AnnounceFoalGrewUp(
   if (not horseRecord)
     return;
 
-  protocol::AcCmdCRUpdateMountInfoOK growUp{
-    .action = protocol::AcCmdCRUpdateMountInfo::Action::GrowUp};
+  protocol::AcCmdRCUpdateMountInfoNotify growUp{
+      .characterUid = characterUid,
+      .action = protocol::AcCmdRCUpdateMountInfoNotify::Action::PutHorseInRentOrBreedingSystem};
   horseRecord->Immutable([&growUp](const data::Horse& horse)
   {
     protocol::BuildProtocolHorse(growUp.horse, horse);
@@ -662,8 +663,6 @@ void RanchDirector::AnnounceFoalGrewUp(
     {
       return growUp;
     });
-
-  BroadcastUpdateMountInfoNotify(characterUid, rancherUid, horseUid);
 }
 
 void RanchDirector::ReturnHorseToNature(
@@ -2038,7 +2037,7 @@ void RanchDirector::HandleTryBreeding(
   if (success)
   {
     protocol::RanchCommandTryBreedingOK response{};
-    const data::Uid foalUid = CreateBredFoal(clientContext, command, bonus, response);
+    const data::Uid foalUid = CreateBredFoal(clientId, clientContext, command, bonus, response);
 
     characterRecord.Mutable([foalUid, &response](data::Character& character)
     {
@@ -2148,6 +2147,7 @@ uint32_t RanchDirector::CalculateBreedingSuccessRate(
 }
 
 data::Uid RanchDirector::CreateBredFoal(
+  const ClientId clientId,
   const ClientContext& clientContext,
   const protocol::AcCmdCRTryBreeding& command,
   const protocol::BreedingBonus& bonus,
@@ -2197,10 +2197,22 @@ data::Uid RanchDirector::CreateBredFoal(
     protocol::BuildProtocolHorse(addNotify.horse.horse, horse);
   });
 
-  for (const ClientId& ranchClientId : _ranches[clientContext.visitingRancherUid].clients)
+  if (clientContext.visitingRancherUid == clientContext.characterUid)
+  {
+    for (const ClientId& ranchClientId : _ranches[clientContext.characterUid].clients)
+    {
+      _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
+        ranchClientId,
+        [addNotify]()
+        {
+          return addNotify;
+        });
+    }
+  }
+  else
   {
     _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
-      ranchClientId,
+      clientId,
       [addNotify]()
       {
         return addNotify;
@@ -4293,7 +4305,6 @@ void RanchDirector::HandleUseItem(
     {
       if (horse.type() == data::Horse::Type::Foal)
         horse.type() = data::Horse::Type::Adult;
-        horse.tid() = 20001;
 
       protocol::BuildProtocolHorse(growUp.horse, horse);
     });
@@ -4306,6 +4317,36 @@ void RanchDirector::HandleUseItem(
       {
         return growUp;
       });
+
+    protocol::AcCmdRCAddIdleMountInfoNotify addNotify{};
+    addNotify.horse.horseOid =
+      _ranches[clientContext.characterUid].tracker.GetHorseOid(command.horseUid);
+    mountRecord.Immutable([&addNotify](const data::Horse& horse)
+    {
+      protocol::BuildProtocolHorse(addNotify.horse.horse, horse);
+    });
+
+    if (clientContext.visitingRancherUid == clientContext.characterUid)
+    {
+      for (const ClientId& ranchClientId : _ranches[clientContext.characterUid].clients)
+      {
+        _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
+          ranchClientId,
+          [addNotify]()
+          {
+            return addNotify;
+          });
+      }
+    }
+    else
+    {
+      _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
+        clientId,
+        [addNotify]()
+        {
+          return addNotify;
+        });
+    }
 
     consumeItem = true;
   }

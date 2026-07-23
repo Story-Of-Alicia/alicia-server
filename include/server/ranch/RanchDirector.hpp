@@ -278,12 +278,14 @@ private:
 
   //! Creates a foal from a successful breeding, spawns it on the ranch and fills
   //! the breeding response.
+  //! @param clientId Client that triggered the breeding.
   //! @param clientContext Context of the breeding client (owner and visited ranch).
   //! @param command Breeding command (holds mare/stallion horse UIDs).
   //! @param bonus Rolled breeding bonus.
   //! @param response Response to populate with the foal's details.
   //! @returns UID of the created foal.
   data::Uid CreateBredFoal(
+    ClientId clientId,
     const ClientContext& clientContext,
     const protocol::AcCmdCRTryBreeding& command,
     const protocol::BreedingBonus& bonus,
