@@ -998,10 +998,8 @@ void RanchCommandTryBreedingCancel::Write(
 {
   stream.Write(command.resultCode)
     .Write(command.carrots)
-    .Write(command.bonusByte)
-    .Write(command.bonusVal1)
-    .Write(command.bonusVal2)
-    .Write(command.stallionReturn);
+    .Write(command.breedingBonus)
+    .Write(command.stallionReturnedToRanch);
 }
 
 void RanchCommandTryBreedingCancel::Read(
@@ -1057,24 +1055,19 @@ void RanchCommandTryBreedingOK::Write(
   const RanchCommandTryBreedingOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.uid)
-    .Write(command.tid)
-    .Write(command.val)
-    .Write(command.count)
+  stream.Write(command.item)
     .Write(command.grade)
     .Write(command.parts)
     .Write(command.appearance)
     .Write(command.stats)
     .Write(command.carrots)
-    .Write(command.unk2)
-    .Write(command.unk3)
-    .Write(command.unk4)
+    .Write(command.breedingBonus)
     .Write(command.tendency)
     .Write(command.potentialType)
     .Write(command.unk7)
     .Write(command.lineage)
     .Write(command.emblemId)
-    .Write(command.unk10);
+    .Write(command.stallionReturnedToRanch);
 }
 
 void RanchCommandTryBreedingOK::Read(

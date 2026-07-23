@@ -113,9 +113,9 @@ void BreedingRegistry::ReadConfig(const std::filesystem::path& configPath)
     for (const auto& entryNode : bonus["entries"])
     {
       BreedingBonusEntry entry;
-      entry.id = entryNode["id"].as<uint32_t>();
-      entry.type = entryNode["type"].as<uint32_t>();
-      entry.value = entryNode["value"].as<uint32_t>();
+      entry.id = entryNode["id"].as<uint8_t>();
+      entry.type = entryNode["type"].as<uint8_t>();
+      entry.value = entryNode["value"].as<uint8_t>();
       entry.ratioSmall = entryNode["ratioSmall"].as<int32_t>();
       entry.ratioBig = entryNode["ratioBig"].as<int32_t>();
       _bonusEntries.push_back(entry);

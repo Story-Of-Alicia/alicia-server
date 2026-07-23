@@ -255,21 +255,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRTryBreeding& command);
 
-  //! A breeding bonus rolled from the BonusProbInfo table.
-  struct BreedingBonus
-  {
-    //! Entry id (0 = no bonus).
-    uint32_t id{0};
-    //! 0 = pregnancy success % increase, 1 = fertility peak level.
-    uint32_t type{0};
-    //! Bonus value (success % for type 0, fertility peak level for type 1).
-    uint32_t value{0};
-  };
-
   //! Rolls a breeding bonus based on the stallion's grade.
   //! @param stallionGrade Grade of the stallion.
   //! @returns The rolled bonus, or a default (id 0) bonus if none activated.
-  [[nodiscard]] BreedingBonus RollBreedingBonus(uint32_t stallionGrade);
+  [[nodiscard]] protocol::BreedingBonus RollBreedingBonus(uint32_t stallionGrade);
 
   //! Calculates the breeding success rate (0-100).
   //! @param stallionGrade Grade of the stallion.
@@ -279,7 +268,7 @@ private:
   [[nodiscard]] uint32_t CalculateBreedingSuccessRate(
     uint32_t stallionGrade,
     uint32_t stallionBreedingCount,
-    const BreedingBonus& bonus);
+    const protocol::BreedingBonus& bonus);
 
   //! Creates a foal from a successful breeding and fills the breeding response.
   //! @param command Breeding command (holds mare/stallion horse UIDs).
@@ -288,7 +277,7 @@ private:
   //! @returns UID of the created foal.
   data::Uid CreateBredFoal(
     const protocol::AcCmdCRTryBreeding& command,
-    const BreedingBonus& bonus,
+    const protocol::BreedingBonus& bonus,
     protocol::RanchCommandTryBreedingOK& response);
 
   void HandleBreedingAbandon(

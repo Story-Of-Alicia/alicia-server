@@ -1960,7 +1960,7 @@ void RanchDirector::HandleTryBreeding(
     stallionBreedingCount = stallion.breedingCount();
   });
 
-  const BreedingBonus bonus = RollBreedingBonus(stallionGrade);
+  const protocol::BreedingBonus bonus = RollBreedingBonus(stallionGrade);
   const uint32_t successRate = CalculateBreedingSuccessRate(
     stallionGrade, stallionBreedingCount, bonus);
 
@@ -2044,7 +2044,7 @@ void RanchDirector::HandleTryBreeding(
     });
 }
 
-RanchDirector::BreedingBonus RanchDirector::RollBreedingBonus(const uint32_t stallionGrade)
+protocol::BreedingBonus RanchDirector::RollBreedingBonus(const uint32_t stallionGrade)
 {
   const auto& breedingRegistry = GetServerInstance().GetBreedingRegistry();
   const auto& smallBand = breedingRegistry.GetSmallGradeBonusBand();
@@ -2082,7 +2082,7 @@ RanchDirector::BreedingBonus RanchDirector::RollBreedingBonus(const uint32_t sta
   spdlog::info("TryBreeding: rolled bonus id {} (type {}, value {}) for grade {} ({} band)",
     selected.id, selected.type, selected.value, stallionGrade, isSmall ? "small" : "big");
 
-  return BreedingBonus{
+  return protocol::BreedingBonus{
     .id = selected.id,
     .type = selected.type,
     .value = selected.value};
@@ -2091,7 +2091,7 @@ RanchDirector::BreedingBonus RanchDirector::RollBreedingBonus(const uint32_t sta
 uint32_t RanchDirector::CalculateBreedingSuccessRate(
   const uint32_t stallionGrade,
   const uint32_t stallionBreedingCount,
-  const BreedingBonus& bonus)
+  const protocol::BreedingBonus& bonus)
 {
   const auto& horseRegistry = GetServerInstance().GetHorseRegistry();
   const auto& params = GetServerInstance().GetBreedingRegistry().GetBreedingParams();
@@ -2114,7 +2114,7 @@ uint32_t RanchDirector::CalculateBreedingSuccessRate(
 
 data::Uid RanchDirector::CreateBredFoal(
   const protocol::AcCmdCRTryBreeding& command,
-  const BreedingBonus& bonus,
+  const protocol::BreedingBonus& bonus,
   protocol::RanchCommandTryBreedingOK& response)
 {
   auto& serverInstance = GetServerInstance();
@@ -2133,15 +2133,16 @@ data::Uid RanchDirector::CreateBredFoal(
     foalUid = foal.uid();
 
     // Populate the response from the freshly bred foal.
-    response.uid = foal.uid();
-    response.tid = foal.tid();
-    response.val = 0;
-    response.count = 1;
+    response.item = protocol::Item{
+      .uid = foal.uid(),
+      .tid = foal.tid(),
+      .expiresAt = 0,
+      .count = 1};
     response.grade = static_cast<uint8_t>(foal.grade());
     protocol::BuildProtocolHorseParts(response.parts, foal.parts, true);
     protocol::BuildProtocolHorseAppearance(response.appearance, foal.appearance);
     protocol::BuildProtocolHorseStats(response.stats, foal.stats);
-    response.unk2 = static_cast<uint8_t>(bonus.id);
+    response.breedingBonus = bonus;
     response.tendency = static_cast<uint8_t>(foal.tendency());
     response.potentialType = static_cast<uint8_t>(foal.potential.type());
     response.lineage = static_cast<uint8_t>(foal.lineage());

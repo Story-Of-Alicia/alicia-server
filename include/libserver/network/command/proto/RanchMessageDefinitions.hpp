@@ -1142,29 +1142,22 @@ struct AcCmdCRTryBreeding
 
 struct RanchCommandTryBreedingOK
 {
-  uint32_t uid{};
-  uint32_t tid{};
-  uint32_t val{};
-  uint32_t count{};
-
+  Item item{};
   uint8_t grade{};
-
   Horse::Parts parts{};
   Horse::Appearance appearance{};
   Horse::Stats stats{};
-
   //! Character's carrot balance after the breeding fee was charged.
-  uint32_t carrots{};
-  uint8_t unk2{};
-  uint8_t unk3{};
-  uint8_t unk4{};
+  int32_t carrots{};
+  BreedingBonus breedingBonus{};
   uint8_t tendency{};
   uint8_t potentialType{};
   uint8_t unk7{};
   uint8_t lineage{};
   //! Foal's emblem ID.
   uint16_t emblemId{};
-  uint8_t unk10{};
+  //! Indicates that the stallion has returned to the ranch.
+  bool stallionReturnedToRanch{};
 
   static Command GetCommand()
   {
@@ -1192,13 +1185,9 @@ struct RanchCommandTryBreedingCancel
   uint8_t resultCode{};
   //! Character's carrot balance after the breeding fee (same role as TryBreedingOK).
   uint32_t carrots{};
-  //! these bonus vals are passed in the Client Handler to GameMsg:Breed_Data_Bonus
-  //! but still are undiscovered what exactly they are used for
-  uint8_t bonusByte{};
-  uint8_t bonusVal1{};
-  uint8_t bonusVal2{};
+  protocol::BreedingBonus breedingBonus{};
   //! Passed as the Breed_StallionReturnRanch argument.
-  uint8_t stallionReturn{};
+  uint8_t stallionReturnedToRanch{};
 
   static Command GetCommand()
   {

@@ -810,6 +810,25 @@ struct Vector3
     SourceStream& stream);
 };
 
+//! A breeding bonus rolled from the BonusProbInfo table.
+struct BreedingBonus
+{
+  //! Entry id (0 = no bonus).
+  uint8_t id{0};
+  //! 0 = pregnancy success % increase, 1 = fertility peak level.
+  uint8_t type{0};
+  //! Bonus value (success % for type 0, fertility peak level for type 1).
+  uint8_t value{0};
+
+  static void Write(
+    const BreedingBonus& bonus,
+    SinkStream& stream);
+
+  static void Read(
+  BreedingBonus& bonus,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif

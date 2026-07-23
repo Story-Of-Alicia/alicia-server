@@ -99,10 +99,10 @@ struct BreedingBonusBand
 //! A single breeding bonus entry from the BonusProbInfo table.
 struct BreedingBonusEntry
 {
-  uint32_t id{0};
+  uint8_t id{0};
   //! 0 = pregnancy success % increase, 1 = fertility peak level.
-  uint32_t type{0};
-  uint32_t value{0};
+  uint8_t type{0};
+  uint8_t value{0};
   //! Selection weight when the small grade band activates.
   int32_t ratioSmall{0};
   //! Selection weight when the big grade band activates.
