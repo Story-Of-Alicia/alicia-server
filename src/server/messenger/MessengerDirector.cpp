@@ -248,7 +248,8 @@ void MessengerDirector::SendStallionReward(
 
   const std::string mailHeader = std::format(
     "Hello {}~\n"
-    "Your breeding registration at the Stato Breeding Centre for\nyour horse \"{}\" has ended.\n\n",
+    "Your breeding registration at the Stato Breeding Centre for\n"
+    "your horse \"{}\" has ended.\n\n",
     characterName,
     horseName);
 
@@ -269,7 +270,9 @@ void MessengerDirector::SendStallionReward(
   }
   else
   {
-    mailBody = mailHeader + "Unfortunately, your horse was not mated during this period.";
+    mailBody =
+      mailHeader +
+      "Unfortunately, your horse was not mated during this period.";
   }
 
   // Create and store mail
