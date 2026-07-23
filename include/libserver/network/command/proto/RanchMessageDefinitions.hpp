@@ -1160,11 +1160,11 @@ struct RanchCommandTryBreedingOK
   uint8_t unk4{};
   uint8_t tendency{};
   uint8_t potentialType{};
-  uint8_t unk7{3};
+  uint8_t unk7{};
   uint8_t lineage{};
   //! Foal's emblem ID.
   uint16_t emblemId{};
-  uint8_t unk10{1};
+  uint8_t unk10{};
 
   static Command GetCommand()
   {
