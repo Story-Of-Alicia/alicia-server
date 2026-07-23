@@ -526,10 +526,13 @@ void BreedingMarket::UnregisterStallion(
     static_cast<float>(earnings.revenue) * earnings.taxRate);
 
   // Register payout in the RewardSystem
-  earnings.claimUid = _serverInstance.GetRewardSystem().CreateReward(
-    ownerUid,
-    data::Reward::Type::Breeding,
-    earnings.earnings);
+  if (earnings.timesMated > 0)
+  {
+    earnings.claimUid = _serverInstance.GetRewardSystem().CreateReward(
+      ownerUid,
+      data::Reward::Type::Breeding,
+      earnings.earnings);
+  }
 
   // Send mail with payout information
   _serverInstance.GetMessengerDirector().SendStallionReward(

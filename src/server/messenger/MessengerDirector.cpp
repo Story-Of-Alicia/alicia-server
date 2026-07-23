@@ -242,32 +242,46 @@ void MessengerDirector::SendStallionReward(
   const auto& utcNow = std::chrono::floor<std::chrono::seconds>(util::Clock::now());
   const auto& formattedDt = std::format(DateTimeFormat, utcNow);
 
-  // Prepare mail body
-  const std::string mailBody = std::format(
-    std::locale(""),
+  const auto mailType = earnings.timesMated > 0
+    ? data::Mail::MailType::BreedingReward
+    : data::Mail::MailType::NoReply;
+
+  const std::string mailHeader = std::format(
     "Hello {}~\n"
-    "Your breeding registration at the Stato Breeding Centre for\nyour horse \"{}\" has ended.\n\n"
-    "Times Bred: {}\n"
-    "Total Revenue: {:L} Carrots\n"
-    "Tax: {:.1Lf}%\n"
-    "Final Payout: <font color=#C36A0C>{:L} Carrots</font>",
+    "Your breeding registration at the Stato Breeding Centre for\nyour horse \"{}\" has ended.\n\n",
     characterName,
-    horseName,
-    earnings.timesMated,
-    earnings.revenue,
-    earnings.taxRate * 100.0f,
-    earnings.earnings);
+    horseName);
+
+  // Prepare mail body
+  std::string mailBody;
+  if (earnings.timesMated > 0)
+  {
+    mailBody = mailHeader + std::format(
+      std::locale(""),
+      "Times Bred: {}\n"
+      "Total Revenue: {:L} Carrots\n"
+      "Tax: {:.1Lf}%\n"
+      "Final Payout: <font color=#C36A0C>{:L} Carrots</font>",
+      earnings.timesMated,
+      earnings.revenue,
+      earnings.taxRate * 100.0f,
+      earnings.earnings);
+  }
+  else
+  {
+    mailBody = mailHeader + "Unfortunately, your horse was not mated during this period.";
+  }
 
   // Create and store mail
   auto mailRecord = _serverInstance.GetDataDirector().CreateMail();
   data::Uid mailUid{data::InvalidUid};
-  mailRecord.Mutable([&mailUid, mailBody, utcNow, characterUid, claimUid = earnings.claimUid](data::Mail& mail)
+  mailRecord.Mutable([&mailUid, mailBody, utcNow, characterUid, claimUid = earnings.claimUid, mailType](data::Mail& mail)
   {
     // Set mail parameters
     mail.from() = 0; // System
     mail.to() = characterUid;
 
-    mail.type() = data::Mail::MailType::BreedingReward;
+    mail.type() = mailType;
     mail.claimUid() = claimUid; // TODO: implement and use claim system to generate a claim uid
 
     mail.createdAt() = utcNow;
@@ -305,9 +319,9 @@ void MessengerDirector::SendStallionReward(
 
   const protocol::ChatCmdLetterArriveTrs notify{
     .mailUid = mailUid,
-    .mailType = data::Mail::MailType::BreedingReward,
+    .mailType = mailType,
     .claimUid = earnings.claimUid,
-    .sender = GetSystemNameFromType(data::Mail::MailType::BreedingReward),
+    .sender = GetSystemNameFromType(mailType),
     .date = formattedDt,
     .body = mailBody
   };
