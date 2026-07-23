@@ -135,7 +135,7 @@ void Genetics::CreateFoal(
     {
       record.Immutable([&info](const data::Horse& horse)
       {
-        info.tid = 28001;
+        info.tid = 28000;
         info.faceTid = horse.parts.faceTid();
         info.grade = static_cast<uint8_t>(horse.grade());
         info.combo = horse.breedingCombo();

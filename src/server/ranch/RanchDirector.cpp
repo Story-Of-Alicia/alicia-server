@@ -4285,14 +4285,15 @@ void RanchDirector::HandleUseItem(
   else if (usedItemTid == InstantGrowUpItemTid)
   {
     // Instantly matures a foal into an adult horse.
-    protocol::AcCmdCRUpdateMountInfoOK growUp{
-      .action = protocol::AcCmdCRUpdateMountInfo::Action::GrowUp};
+    protocol::AcCmdRCUpdateMountInfoNotify growUp{
+      .characterUid = clientContext.characterUid,
+      .action = protocol::AcCmdRCUpdateMountInfoNotify::Action::PutHorseInRentOrBreedingSystem};
 
     mountRecord.Mutable([&growUp](data::Horse& horse)
     {
       if (horse.type() == data::Horse::Type::Foal)
         horse.type() = data::Horse::Type::Adult;
-        horse.tid() = 20002;
+        horse.tid() = 20001;
 
       protocol::BuildProtocolHorse(growUp.horse, horse);
     });
@@ -4336,21 +4337,25 @@ void RanchDirector::HandleUseItem(
     });
 
   // Perform a mount update
-  protocol::AcCmdCRUpdateMountInfoOK mountOk{
-    .action = protocol::AcCmdCRUpdateMountInfo::Action::Rename,};
-
-  const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(horseUid);
-  horseRecord.Immutable([&mountOk](const data::Horse& horse)
+  constexpr uint32_t HorseRenameItemTid = 45003;
+  if (usedItemTid == HorseRenameItemTid)
   {
-    protocol::BuildProtocolHorse(mountOk.horse, horse);
-  });
+    protocol::AcCmdCRUpdateMountInfoOK mountOk{
+      .action = protocol::AcCmdCRUpdateMountInfo::Action::Rename,};
 
-  _commandServer.QueueCommand<decltype(mountOk)>(
-    clientId,
-    [mountOk]()
+    const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(horseUid);
+    horseRecord.Immutable([&mountOk](const data::Horse& horse)
     {
-      return mountOk;
+      protocol::BuildProtocolHorse(mountOk.horse, horse);
     });
+
+    _commandServer.QueueCommand<decltype(mountOk)>(
+      clientId,
+      [mountOk]()
+      {
+        return mountOk;
+      });
+  }
 }
 
 void RanchDirector::HandleHousingBuild(
