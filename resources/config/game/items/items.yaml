@@ -134,7 +134,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 4000
@@ -165,7 +165,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 4000
@@ -1779,7 +1779,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 4000
@@ -8124,7 +8124,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 11000
@@ -8155,7 +8155,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 11000
@@ -8186,7 +8186,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 11000
@@ -8217,7 +8217,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 11000
@@ -8248,7 +8248,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 11000
@@ -8279,7 +8279,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 18000
@@ -8310,7 +8310,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 18000
@@ -8341,7 +8341,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 18000
@@ -8372,7 +8372,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 18000
@@ -8403,7 +8403,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 18000
@@ -8434,7 +8434,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 30000
@@ -8465,7 +8465,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 30000
@@ -8496,7 +8496,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 30000
@@ -8527,7 +8527,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 30000
@@ -8558,7 +8558,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 30000
@@ -8589,7 +8589,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 47000
@@ -8620,7 +8620,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 47000
@@ -8651,7 +8651,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 47000
@@ -8682,7 +8682,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 47000
@@ -8713,7 +8713,7 @@ collection:
     subcategory: 1
   shopInfo:
     isPurchasable: true
-    moneyType: 1
+    moneyType: 0
     priceRanges:
     - range: 1
       price: 47000
