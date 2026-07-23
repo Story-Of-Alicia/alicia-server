@@ -171,6 +171,9 @@ void ItemRegistry::ReadConfig(const std::filesystem::path& configDir)
       .name = itemSection["name"].as<decltype(Item::name)>(""),
       .description = itemSection["description"].as<decltype(Item::description)>(decltype(Item::description){})};
 
+    if (const auto prerequisiteLevelNode = itemSection["prerequisiteLevel"])
+      item.prerequisiteLevel = prerequisiteLevelNode.as<uint8_t>();
+
     // Read ItemPartInfo
 
     // Read CharacterPartInfo

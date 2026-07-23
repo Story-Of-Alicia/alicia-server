@@ -6981,21 +6981,11 @@ void RanchDirector::HandleExpandMountSlot(
     return;
   }
 
-  [[maybe_unused]] const registry::Item& registryItem = registryItemResult.value();
-
-  // TODO: encode this in items.yaml to mark each item by the prerequisite horse slot count
-  constexpr data::Tid HorseSlotExpansionLevel1ItemTid = 46006;
-  constexpr data::Tid HorseSlotExpansionLevel2ItemTid = 46007;
-  constexpr data::Tid HorseSlotExpansionLevel3ItemTid = 46008;
-  constexpr data::Tid HorseSlotExpansionLevel4ItemTid = 46009;
-  constexpr data::Tid HorseSlotExpansionLevel5ItemTid = 46010;
+  const registry::Item& registryItem = registryItemResult.value();
 
   bool isValidSlotExpansionItem =
-    (horseSlotCount == 5 and itemTid == HorseSlotExpansionLevel1ItemTid) or
-    (horseSlotCount == 6 and itemTid == HorseSlotExpansionLevel2ItemTid) or
-    (horseSlotCount == 7 and itemTid == HorseSlotExpansionLevel3ItemTid) or
-    (horseSlotCount == 8 and itemTid == HorseSlotExpansionLevel4ItemTid) or
-    (horseSlotCount == 9 and itemTid == HorseSlotExpansionLevel5ItemTid);
+    registryItem.prerequisiteLevel.has_value() and
+    registryItem.prerequisiteLevel.value() == horseSlotCount;
 
   if (not isValidSlotExpansionItem)
   {

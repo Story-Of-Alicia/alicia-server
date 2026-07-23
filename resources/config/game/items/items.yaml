@@ -7343,6 +7343,7 @@ collection:
 - tid: 46006
   type: 0
   level: 1
+  prerequisiteLevel: 5
   name: 'Additional Horse Permit I'
   itemIndex:
     category: 3
@@ -7356,6 +7357,7 @@ collection:
 - tid: 46007
   type: 0
   level: 1
+  prerequisiteLevel: 6
   name: 'Additional Horse Permit II'
   itemIndex:
     category: 3
@@ -7369,6 +7371,7 @@ collection:
 - tid: 46008
   type: 0
   level: 1
+  prerequisiteLevel: 7
   name: 'Additional Horse Permit III'
   itemIndex:
     category: 3
@@ -7382,6 +7385,7 @@ collection:
 - tid: 46009
   type: 0
   level: 1
+  prerequisiteLevel: 8
   name: 'Additional Horse Permit IV'
   itemIndex:
     category: 3
@@ -7395,6 +7399,7 @@ collection:
 - tid: 46010
   type: 0
   level: 1
+  prerequisiteLevel: 9
   name: 'Additional Horse Permit V'
   itemIndex:
     category: 3
