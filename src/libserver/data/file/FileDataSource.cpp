@@ -1332,6 +1332,7 @@ void server::FileDataSource::DeleteSettings(data::Uid uid)
 void server::FileDataSource::CreateDailyQuestGroup(data::DailyQuestGroup& group)
 {
   group.uid = ++_dailyQuestGroupSequentialId;
+  SaveMetadata();
 }
 
 void server::FileDataSource::RetrieveDailyQuestGroup(data::Uid uid, data::DailyQuestGroup& group)

@@ -72,11 +72,15 @@ public:
     Oid oid{InvalidEntityOid};
     State state{State::Disconnected};
     Team team{Team::Solo};
-    protocol::Vector3 position{};
+    //! The racer's position in the world, as a vector.
+    protocol::Vector3 worldPosition{};
     uint32_t starPointValue{};
     uint32_t jumpComboValue{};
     uint32_t courseTime{InvalidCourseTime};
     std::optional<uint32_t> magicItem{};
+    //! The racer's progress on the race track.
+    //! Normalised by the client to: 0.0f <= x <= 1.0f
+    float raceProgress{};
 
     //! A set of tracked items in racer's proximity.
     std::unordered_set<Oid> trackedDecks;

@@ -1105,7 +1105,7 @@ void AcCmdUserRaceUpdatePos::Read(
 
   stream.Read(command.member4)
     .Read(command.member5)
-    .Read(command.member6)
+    .Read(command.progress)
     .Read(command.member7);
 }
 

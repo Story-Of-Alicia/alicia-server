@@ -1456,7 +1456,7 @@ void DataDirector::ScheduleCharacterLoad(
       // If the timeout is reached we should return and warn about the timeout.
       if (Scheduler::Clock::now() > userDataContext.timeout)
       {
-        spdlog::warn("Timeout reached loading data for character '{}'", characterUid);
+        spdlog::warn("Timeout reached loading data for character '{}': {}", characterUid, userDataContext.debugMessage);
         userDataContext.isBeingLoaded.store(false, std::memory_order::relaxed);
         return;
       }
