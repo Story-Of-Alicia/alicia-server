@@ -22,6 +22,7 @@
 #include "server/ServerInstance.hpp"
 
 #include <boost/container_hash/hash.hpp>
+#include <locale>
 
 namespace server
 {
@@ -243,18 +244,19 @@ void MessengerDirector::SendStallionReward(
 
   // Prepare mail body
   const std::string mailBody = std::format(
+    std::locale(""),
     "Hello {}~\n"
     "Your breeding registration at the Stato Breeding Centre for\nyour horse \"{}\" has ended.\n\n"
     "Times Bred: {}\n"
-    "Total Revenue: {} Carrots\n"
-    "Tax: {:.2f}%\n"
-    "Final Payout: <font color=#C36A0C>{} Carrots</font>",
+    "Total Revenue: {:L} Carrots\n"
+    "Tax: {:.1Lf}%\n"
+    "Final Payout: <font color=#C36A0C>{:L} Carrots</font>",
     characterName,
     horseName,
     earnings.timesMated,
     earnings.revenue,
     earnings.taxRate * 100.0f,
-    earnings.earnings); // TODO: populate these fields
+    earnings.earnings);
 
   // Create and store mail
   auto mailRecord = _serverInstance.GetDataDirector().CreateMail();
