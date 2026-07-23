@@ -209,7 +209,6 @@ private:
   //! @param horseUid UID of the horse that grew up.
   void AnnounceFoalGrewUp(
     ClientId clientId,
-    data::Uid rancherUid,
     data::Uid characterUid,
     data::Uid horseUid);
 

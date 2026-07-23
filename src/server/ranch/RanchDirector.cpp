@@ -629,7 +629,6 @@ void RanchDirector::RunFoalMaturityCheck()
 
         AnnounceFoalGrewUp(
           clientId,
-          clientContext.visitingRancherUid,
           clientContext.characterUid,
           horseUid);
       }
@@ -641,7 +640,6 @@ void RanchDirector::RunFoalMaturityCheck()
 
 void RanchDirector::AnnounceFoalGrewUp(
   const ClientId clientId,
-  const data::Uid rancherUid,
   const data::Uid characterUid,
   const data::Uid horseUid)
 {
