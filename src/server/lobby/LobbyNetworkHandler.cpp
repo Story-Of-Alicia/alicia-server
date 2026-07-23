@@ -1606,7 +1606,7 @@ void LobbyNetworkHandler::HandleCreateNickname(
 
         character.mountUid() = mountUid;
 
-        constexpr uint8_t StartingHorseSlotCount = 3; 
+        constexpr uint8_t StartingHorseSlotCount = 5; 
         character.horseSlotCount() = StartingHorseSlotCount;
 
         // Create the default friend group.

@@ -337,7 +337,7 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.expiredEquipment = json.value("horseEquipment", std::vector<data::Uid>{});
 
   character.horses = json.value("horses", std::vector<data::Uid>{});
-  character.horseSlotCount = json.value("horseSlotCount", uint32_t{});
+  character.horseSlotCount = json.value("horseSlotCount", uint8_t{});
 
   character.pets = json.value("pets", std::vector<data::Uid>{});
   character.mountUid = json.value("mountUid", data::Uid{});

@@ -571,6 +571,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRBreedingTakeMoney& command);
 
+  void HandleExpandMountSlot(
+    ClientId clientId,
+    const protocol::AcCmdCRExpandMountSlot& command);
+
   //!
   ServerInstance& _serverInstance;
   //!

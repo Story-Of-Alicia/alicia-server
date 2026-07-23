@@ -3499,5 +3499,47 @@ void AcCmdCRBreedingTakeMoneyOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRExpandMountSlot::Write(
+  const AcCmdCRExpandMountSlot&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRExpandMountSlot::Read(
+  AcCmdCRExpandMountSlot& command,
+  SourceStream& stream)
+{
+  stream.Read(command.itemUid);
+}
+
+void AcCmdCRExpandMountSlotCancel::Write(
+  const AcCmdCRExpandMountSlotCancel&,
+  SinkStream&)
+{
+  // Empty
+}
+
+void AcCmdCRExpandMountSlotCancel::Read(
+  AcCmdCRExpandMountSlotCancel&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRExpandMountSlotOK::Write(
+  const AcCmdCRExpandMountSlotOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.mountSlots);
+}
+
+void AcCmdCRExpandMountSlotOK::Read(
+  AcCmdCRExpandMountSlotOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
 

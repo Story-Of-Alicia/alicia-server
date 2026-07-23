@@ -540,6 +540,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleBreedingTakeMoney(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRExpandMountSlot>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleExpandMountSlot(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -6920,6 +6926,98 @@ void RanchDirector::HandleBreedingTakeMoney(
     });
 
   _commandServer.QueueCommand<protocol::AcCmdCRBreedingTakeMoneyOK>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void RanchDirector::HandleExpandMountSlot(
+  ClientId clientId,
+  const protocol::AcCmdCRExpandMountSlot& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  // Check if character has expand slot item in inventory, track horse slots
+  uint32_t horseSlotCount = 0;
+  bool hasItem = false;
+  characterRecord.Immutable([this, &hasItem, &horseSlotCount, itemUid = command.itemUid](const data::Character& character)
+  {
+    horseSlotCount = character.horseSlotCount();
+    hasItem = GetServerInstance().GetItemSystem().HasItemInstance(character, itemUid);
+  });
+
+  const protocol::AcCmdCRExpandMountSlotCancel cancel{};
+  if (not hasItem)
+  {
+    _commandServer.QueueCommand<protocol::AcCmdCRExpandMountSlotCancel>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  data::Tid itemTid{data::InvalidTid};
+  GetServerInstance().GetDataDirector().GetItem(command.itemUid).Immutable(
+    [this, &itemTid](const data::Item& item)
+    {
+      itemTid = item.tid();
+    });
+
+  const auto& registryItemResult = GetServerInstance().GetItemRegistry().GetItem(itemTid);
+  if (not registryItemResult.has_value())
+  {
+    _commandServer.QueueCommand<protocol::AcCmdCRExpandMountSlotCancel>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  [[maybe_unused]] const registry::Item& registryItem = registryItemResult.value();
+
+  // TODO: encode this in items.yaml to mark each item by the prerequisite horse slot count
+  constexpr data::Tid HorseSlotExpansionLevel1ItemTid = 46006;
+  constexpr data::Tid HorseSlotExpansionLevel2ItemTid = 46007;
+  constexpr data::Tid HorseSlotExpansionLevel3ItemTid = 46008;
+  constexpr data::Tid HorseSlotExpansionLevel4ItemTid = 46009;
+  constexpr data::Tid HorseSlotExpansionLevel5ItemTid = 46010;
+
+  bool isValidSlotExpansionItem =
+    (horseSlotCount == 5 and itemTid == HorseSlotExpansionLevel1ItemTid) or
+    (horseSlotCount == 6 and itemTid == HorseSlotExpansionLevel2ItemTid) or
+    (horseSlotCount == 7 and itemTid == HorseSlotExpansionLevel3ItemTid) or
+    (horseSlotCount == 8 and itemTid == HorseSlotExpansionLevel4ItemTid) or
+    (horseSlotCount == 9 and itemTid == HorseSlotExpansionLevel5ItemTid);
+
+  if (not isValidSlotExpansionItem)
+  {
+    _commandServer.QueueCommand<protocol::AcCmdCRExpandMountSlotCancel>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  uint8_t newHorseSlotCount = 0;
+  characterRecord.Mutable([&newHorseSlotCount](data::Character& character)
+  {
+    character.horseSlotCount() += 1;
+    newHorseSlotCount = character.horseSlotCount();
+  });
+
+  const protocol::AcCmdCRExpandMountSlotOK response{
+    .mountSlots = newHorseSlotCount};
+  _commandServer.QueueCommand<protocol::AcCmdCRExpandMountSlotOK>(
     clientId,
     [response]()
     {
