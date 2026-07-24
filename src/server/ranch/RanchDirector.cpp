@@ -632,7 +632,6 @@ void RanchDirector::RunFoalMaturityCheck()
   for (auto& [clientId, clientContext] : _clients)
   {
     if (not clientContext.isAuthenticated
-      || clientContext.visitingRancherUid != clientContext.characterUid
       || clientContext.maturingFoals.empty())
     {
       continue;
@@ -700,6 +699,46 @@ void RanchDirector::AnnounceFoalGrewUp(
     {
       return growUp;
     });
+
+  protocol::AcCmdRCAddIdleMountInfoNotify addNotify{};
+  addNotify.horse.horseOid = _ranches[characterUid].tracker.GetHorseOid(horseUid);
+  horseRecord->Immutable([&addNotify](const data::Horse& horse)
+  {
+    protocol::BuildProtocolHorse(addNotify.horse.horse, horse);
+  });
+
+  const auto& clientContext = GetClientContext(clientId);
+  if (clientContext.visitingRancherUid == characterUid)
+  {
+    // The owner is on their own ranch; broadcast the new idle mount to everyone there.
+    for (const ClientId& ranchClientId : _ranches[characterUid].clients)
+    {
+      _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
+        ranchClientId,
+        [addNotify]()
+        {
+          return addNotify;
+        });
+    }
+  }
+  else
+  {
+    _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
+      clientId,
+      [addNotify]()
+      {
+        return addNotify;
+      });
+
+    protocol::AcCmdRCMobDead mobDead{
+      .mobOid = addNotify.horse.horseOid};
+    _commandServer.QueueCommand<protocol::AcCmdRCMobDead>(
+      clientId,
+      [mobDead]()
+      {
+        return mobDead;
+      });
+  }
 }
 
 void RanchDirector::ReturnHorseToNature(
@@ -4453,6 +4492,7 @@ void RanchDirector::HandleUseItem(
 
     if (clientContext.visitingRancherUid == clientContext.characterUid)
     {
+      // The owner is on their own ranch; broadcast the new idle mount to everyone there.
       for (const ClientId& ranchClientId : _ranches[clientContext.characterUid].clients)
       {
         _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
@@ -4470,6 +4510,15 @@ void RanchDirector::HandleUseItem(
         [addNotify]()
         {
           return addNotify;
+        });
+
+      protocol::AcCmdRCMobDead mobDead{
+        .mobOid = addNotify.horse.horseOid};
+      _commandServer.QueueCommand<protocol::AcCmdRCMobDead>(
+        clientId,
+        [mobDead]()
+        {
+          return mobDead;
         });
     }
 

@@ -167,5 +167,19 @@ void AcCmdRCUpdateMountInfoNotify::Read(
   throw std::runtime_error("Not implemented.");
 }
 
+void AcCmdRCMobDead::Write(
+  const AcCmdRCMobDead& command,
+  SinkStream& stream)
+{
+  stream.Write(command.mobOid);
+}
+
+void AcCmdRCMobDead::Read(
+  AcCmdRCMobDead& command,
+  SourceStream& stream)
+{
+  stream.Read(command.mobOid);
+}
+
 } // namespace server::protocol
 
