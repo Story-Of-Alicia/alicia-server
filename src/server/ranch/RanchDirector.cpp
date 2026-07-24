@@ -546,6 +546,18 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleExpandMountSlot(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRBreedingWishlistAdd>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleBreedingWishlistAdd(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRBreedingWishlistDel>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleBreedingWishlistDelete(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -2297,9 +2309,87 @@ void RanchDirector::HandleBreedingWishlist(
   const ClientId clientId,
   const protocol::AcCmdCRBreedingWishlist&)
 {
-  protocol::AcCmdCRBreedingWishlistOK response{};
+  const auto& clientContext = GetClientContext(clientId);
 
-  // TODO: Actually do something
+  std::vector<data::Uid> wishlist{};
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [&wishlist](const data::Character& character)
+    {
+      wishlist = std::vector<data::Uid>{
+        character.breedingWishlist().cbegin(),
+        character.breedingWishlist().cend()};
+    });
+
+  const auto& horseRecords = GetServerInstance().GetDataDirector().GetHorseCache().Get(wishlist);
+  if (not horseRecords.has_value())
+  {
+    const protocol::AcCmdCRBreedingWishlistCancel cancel{};
+    _commandServer.QueueCommand<protocol::AcCmdCRBreedingWishlistCancel>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  protocol::AcCmdCRBreedingWishlistOK response{};
+  using FavouritedStallion = protocol::AcCmdCRBreedingWishlistOK::FavouritedStallion;
+
+  size_t count = 0;
+  for (const auto& horseRecord : *horseRecords)
+  {
+    // Max 8 stallions in a wishlist
+    if (count >= 8)
+      break;
+
+    horseRecord.Immutable([this, &response](const data::Horse& horse)
+    {
+      auto& favouritedStallion = response.wishlist.emplace_back(FavouritedStallion{
+        .uid = horse.uid(),
+        .tid = horse.tid(),
+        .grade = static_cast<uint8_t>(horse.grade()),
+        .name = horse.name(),
+        .heritability = 0, // Keep this 0, the client automatically derives it
+        .breedingCount = horse.breedingCount(),
+        .unk7 = 0,
+        .unk8 = 0,
+        .registrationEnded = true,
+        .unk10 = 0,
+        .lineage = static_cast<uint8_t>(horse.lineage())
+      });
+
+      protocol::BuildProtocolHorseStats(favouritedStallion.stats, horse.stats);
+      protocol::BuildProtocolHorseParts(favouritedStallion.parts, horse.parts);
+      protocol::BuildProtocolHorseAppearance(favouritedStallion.appearance, horse.appearance);
+
+      // Check if this horse is a stallion, else we are done with this horse
+      const auto& stallionDataResult = _breedingMarket.GetStallionData(horse.uid());
+      if (not stallionDataResult.has_value())
+        return;
+      
+      const BreedingMarket::StallionData& stallionData = stallionDataResult.value();
+      favouritedStallion.registrationEnded = false;
+      favouritedStallion.breedingFee = stallionData.breedingCharge;
+      
+      data::Uid ownerUid{data::InvalidUid};
+      GetServerInstance().GetDataDirector().GetStallion(stallionData.stallionUid).Immutable(
+        [&favouritedStallion, &ownerUid](const data::Stallion& stallion)
+        {
+          ownerUid = stallion.ownerUid();
+          favouritedStallion.expiresAt = util::TimePointToAliciaTime(stallion.expiresAt());
+        });
+
+      GetServerInstance().GetDataDirector().GetCharacter(ownerUid).Immutable(
+        [&favouritedStallion](const data::Character& character)
+        {
+          favouritedStallion.ownerName = character.name();
+        });
+    });
+
+    count++;
+  }
+
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
@@ -7013,6 +7103,103 @@ void RanchDirector::HandleExpandMountSlot(
   const protocol::AcCmdCRExpandMountSlotOK response{
     .mountSlots = newHorseSlotCount};
   _commandServer.QueueCommand<protocol::AcCmdCRExpandMountSlotOK>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void RanchDirector::HandleBreedingWishlistAdd(
+  ClientId clientId,
+  const protocol::AcCmdCRBreedingWishlistAdd& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  const auto& cancelResponse = [this](ClientId clientId)
+  {
+    const protocol::AcCmdCRBreedingWishlistAddCancel cancel{};
+    _commandServer.QueueCommand<protocol::AcCmdCRBreedingWishlistAddCancel>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+  };
+
+  // Confirm that the horse exists
+  const auto& horseRecord = GetServerInstance().GetDataDirector().GetHorse(command.horseUid);
+  if (not horseRecord)
+  {
+    cancelResponse(clientId);
+    return;
+  }
+
+  // Confirm that the horse is a stallion
+  // TODO: maybe check if a stallion record exists too?
+  bool isHorseStallion = false;
+  horseRecord.Immutable([&isHorseStallion](const data::Horse& horse)
+  {
+    isHorseStallion = horse.type() == data::Horse::Type::Stallion;
+  });
+
+  if (not isHorseStallion)
+  {
+    cancelResponse(clientId);
+    return;
+  }
+
+  // Add horse to character's wishlist
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+    [horseUid = command.horseUid](data::Character& character)
+    {
+      character.breedingWishlist().insert(horseUid);
+    });
+
+  const protocol::AcCmdCRBreedingWishlistAddOK response{};
+  _commandServer.QueueCommand<protocol::AcCmdCRBreedingWishlistAddOK>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void RanchDirector::HandleBreedingWishlistDelete(
+  ClientId clientId,
+  const protocol::AcCmdCRBreedingWishlistDel& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  
+  // Check that the character has this stallion favourited and then delete
+  // No need to check if the horse exists, better to remove from the list (implicit)
+  bool success = false;
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+    [&success, horseUid = command.horseUid](data::Character& character)
+    {
+      // Check if this character has the horse in the wishlist
+      if (not std::ranges::contains(character.breedingWishlist(), horseUid))
+        return;
+
+      // Character has the horse in the wishlist, remove it
+      character.breedingWishlist().erase(horseUid);
+      success = true;
+    });
+
+  if (not success)
+  {
+    const protocol::AcCmdCRBreedingWishlistDelCancel cancel{};
+    _commandServer.QueueCommand<protocol::AcCmdCRBreedingWishlistDelCancel>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  const protocol::AcCmdCRBreedingWishlistDelOK response{};
+  _commandServer.QueueCommand<protocol::AcCmdCRBreedingWishlistDelOK>(
     clientId,
     [response]()
     {

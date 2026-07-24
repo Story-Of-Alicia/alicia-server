@@ -575,6 +575,14 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRExpandMountSlot& command);
 
+  void HandleBreedingWishlistAdd(
+    ClientId clientId,
+    const protocol::AcCmdCRBreedingWishlistAdd& command);
+
+  void HandleBreedingWishlistDelete(
+    ClientId clientId,
+    const protocol::AcCmdCRBreedingWishlistDel& command);
+
   //!
   ServerInstance& _serverInstance;
   //!

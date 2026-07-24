@@ -1333,29 +1333,34 @@ struct AcCmdCRBreedingWishlist
 
 struct AcCmdCRBreedingWishlistOK
 {
-  struct WishlistElement
+  struct FavouritedStallion
   {
-    std::string unk0{};
+    //! The name of the owner of the stallion.
+    //! The client internally checks this against the player's name.
+    std::string ownerName{};
     uint32_t uid{};
     uint32_t tid{};
-    uint8_t unk1{};
-    std::string unk2{};
-    uint8_t unk3{};
-    uint32_t unk4{};
-    uint32_t unk5{};
-    uint32_t unk6{};
+    uint8_t grade{};
+    std::string name{};
+    //! Also known as genetics, dictates the coloured arrows.
+    uint8_t heritability{};
+    //! Also known as pregnancy chance.
+    uint32_t breedingCount{};
+    uint32_t breedingFee{};
+    uint32_t expiresAt{};
     uint32_t unk7{};
     uint32_t unk8{};
     Horse::Stats stats{};
     Horse::Parts parts{};
     Horse::Appearance appearance{};
-    uint8_t unk9{};
+    //! Indicates that the stallion is off the breeding market.
+    bool registrationEnded{};
     uint8_t unk10{};
-    uint8_t unk11{};
+    uint8_t lineage{};
   };
 
   // List length specified with a uint8_t, max size 8
-  std::vector<WishlistElement> wishlist{};
+  std::vector<FavouritedStallion> wishlist{};
 
   static Command GetCommand()
   {
@@ -5541,6 +5546,150 @@ struct AcCmdCRExpandMountSlotOK
   //! @param stream Source stream.
   static void Read(
     AcCmdCRExpandMountSlotOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBreedingWishlistAdd
+{
+  data::Uid horseUid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBreedingWishlistAdd;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBreedingWishlistAdd& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBreedingWishlistAdd& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBreedingWishlistAddCancel
+{
+  // Empty
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBreedingWishlistAddCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBreedingWishlistAddCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBreedingWishlistAddCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBreedingWishlistAddOK
+{
+  // Empty
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBreedingWishlistAddOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBreedingWishlistAddOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBreedingWishlistAddOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBreedingWishlistDel
+{
+  data::Uid horseUid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBreedingWishlistDel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBreedingWishlistDel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBreedingWishlistDel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBreedingWishlistDelCancel
+{
+  // Empty
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBreedingWishlistDelCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBreedingWishlistDelCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBreedingWishlistDelCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRBreedingWishlistDelOK
+{
+  // Empty
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRBreedingWishlistDelOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRBreedingWishlistDelOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRBreedingWishlistDelOK& command,
     SourceStream& stream);
 };
 

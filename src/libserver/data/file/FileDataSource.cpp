@@ -339,6 +339,8 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.horses = json.value("horses", std::vector<data::Uid>{});
   character.horseSlotCount = json.value("horseSlotCount", uint8_t{});
 
+  character.breedingWishlist = json.value("breedingWishlist", std::set<data::Uid>{});
+
   character.pets = json.value("pets", std::vector<data::Uid>{});
   character.mountUid = json.value("mountUid", data::Uid{});
   character.petUid = json.value("petUid", data::Uid{});
@@ -449,6 +451,8 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
 
   json["horses"] = character.horses();
   json["horseSlotCount"] = character.horseSlotCount();
+
+  json["breedingWishlist"] = character.breedingWishlist();
 
   json["pets"] = character.pets();
   json["mountUid"] = character.mountUid();

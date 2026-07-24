@@ -1109,26 +1109,28 @@ void AcCmdCRBreedingWishlistOK::Write(
   const AcCmdCRBreedingWishlistOK& command,
   SinkStream& stream)
 {
+  // Wishlist can have at most 8 elements
+  assert(command.wishlist.size() <= 8);
   stream.Write(static_cast<uint8_t>(command.wishlist.size()));
   for (auto& wishlistElement : command.wishlist)
   {
-    stream.Write(wishlistElement.unk0)
+    stream.Write(wishlistElement.ownerName)
       .Write(wishlistElement.uid)
       .Write(wishlistElement.tid)
-      .Write(wishlistElement.unk1)
-      .Write(wishlistElement.unk2)
-      .Write(wishlistElement.unk3)
-      .Write(wishlistElement.unk4)
-      .Write(wishlistElement.unk5)
-      .Write(wishlistElement.unk6)
+      .Write(wishlistElement.grade)
+      .Write(wishlistElement.name)
+      .Write(wishlistElement.heritability)
+      .Write(wishlistElement.breedingCount)
+      .Write(wishlistElement.breedingFee)
+      .Write(wishlistElement.expiresAt)
       .Write(wishlistElement.unk7)
       .Write(wishlistElement.unk8)
       .Write(wishlistElement.stats)
       .Write(wishlistElement.parts)
       .Write(wishlistElement.appearance)
-      .Write(wishlistElement.unk9)
+      .Write(wishlistElement.registrationEnded)
       .Write(wishlistElement.unk10)
-      .Write(wishlistElement.unk11);
+      .Write(wishlistElement.lineage);
   }
 }
 
@@ -3536,6 +3538,90 @@ void AcCmdCRExpandMountSlotOK::Write(
 
 void AcCmdCRExpandMountSlotOK::Read(
   AcCmdCRExpandMountSlotOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBreedingWishlistAdd::Write(
+  const AcCmdCRBreedingWishlistAdd&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBreedingWishlistAdd::Read(
+  AcCmdCRBreedingWishlistAdd& command,
+  SourceStream& stream)
+{
+  stream.Read(command.horseUid);
+}
+
+void AcCmdCRBreedingWishlistAddCancel::Write(
+  const AcCmdCRBreedingWishlistAddCancel&,
+  SinkStream&)
+{
+  // Empty
+}
+
+void AcCmdCRBreedingWishlistAddCancel::Read(
+  AcCmdCRBreedingWishlistAddCancel&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBreedingWishlistAddOK::Write(
+  const AcCmdCRBreedingWishlistAddOK&,
+  SinkStream&)
+{
+  // Empty
+}
+
+void AcCmdCRBreedingWishlistAddOK::Read(
+  AcCmdCRBreedingWishlistAddOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBreedingWishlistDel::Write(
+  const AcCmdCRBreedingWishlistDel&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBreedingWishlistDel::Read(
+  AcCmdCRBreedingWishlistDel& command,
+  SourceStream& stream)
+{
+  stream.Read(command.horseUid);
+}
+
+void AcCmdCRBreedingWishlistDelCancel::Write(
+  const AcCmdCRBreedingWishlistDelCancel&,
+  SinkStream&)
+{
+  // Empty
+}
+
+void AcCmdCRBreedingWishlistDelCancel::Read(
+  AcCmdCRBreedingWishlistDelCancel&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBreedingWishlistDelOK::Write(
+  const AcCmdCRBreedingWishlistDelOK&,
+  SinkStream&)
+{
+  // Empty
+}
+
+void AcCmdCRBreedingWishlistDelOK::Read(
+  AcCmdCRBreedingWishlistDelOK&,
   SourceStream&)
 {
   throw std::runtime_error("Not implemented");
