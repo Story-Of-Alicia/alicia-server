@@ -6037,8 +6037,9 @@ void RanchDirector::HandleBuyOwnItem(
 
   std::vector<data::Uid> newEquipmentUids{};
   std::vector<std::pair<data::Uid, protocol::Horse>> newHorseUids{};
+  std::vector<std::pair<uint8_t, data::Uid>> expandMountSlotItems{};
   GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
-    [this, &shopList, &command, &response, &newEquipmentUids, &newHorseUids](data::Character& character)
+    [this, &shopList, &command, &response, &newEquipmentUids, &newHorseUids, &expandMountSlotItems](data::Character& character)
     {
       for (const auto& order : command.orders)
       {
@@ -6227,6 +6228,15 @@ void RanchDirector::HandleBuyOwnItem(
             protocol::BuildProtocolItem(purchase.item, item);
           });
 
+        if (itemRegistryRecord.value().prerequisiteLevel.has_value())
+        {
+          // This item is a horse slot expansion item, store it to send to the client
+          // and instantly unlock the slots (bypasses AcCmdCRGetItemFromStorageOK handler logic)
+          expandMountSlotItems.emplace_back(
+            itemRegistryRecord.value().prerequisiteLevel.value(),
+            itemUid);
+        }
+
         // Queue for equipping only if the player requested it and doesn't own it yet
         if (order.equipImmediately && not hasItem)
           newEquipmentUids.emplace_back(itemUid);
@@ -6239,6 +6249,23 @@ void RanchDirector::HandleBuyOwnItem(
 
   // All checks are completed and transaction can go ahead
   _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+
+  // Sort horse slot expansion items by prerequisite level to,
+  // send it in the correct oder
+  std::sort(
+    expandMountSlotItems.begin(),
+    expandMountSlotItems.end(),
+    [](const auto& a, const auto& b)
+    {
+      return a.first < b.first;
+    });
+
+  // Handle horse slot expansion items
+  for (const data::Uid itemUid : expandMountSlotItems | std::views::values)
+  {
+    HandleExpandMountSlot(clientId, protocol::AcCmdCRExpandMountSlot{
+      .itemUid = itemUid});
+  }
 
   // Register purchased horses with the ranch tracker and notify the client
   for (auto& [horseUid, protocolHorse] : newHorseUids)
