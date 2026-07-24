@@ -308,6 +308,12 @@ public:
   //! @returns Pointer to GradeInfo, or nullptr if not found.
   const GradeInfo* GetGradeInfo(uint32_t grade) const;
 
+  //! Derives a horse's grade from its total stat sum: the highest grade whose
+  //! minStatSum the sum reaches (the same rule training uses to promote a horse).
+  //! @param statSum Sum of the horse's five stats.
+  //! @returns Grade for the stat sum, at least 1.
+  uint32_t GetGradeForStatSum(int32_t statSum) const;
+
   //! Gets emblem info by ID.
   //! @returns Pointer to EmblemInfo, or nullptr if not found.
   const EmblemInfo* GetEmblemInfo(uint32_t id) const;

@@ -167,11 +167,22 @@ void Genetics::CreateFoal(
   foal.tendency() = RollTendency();
   foal.emblemUid() = RollEmblem();
 
-  // Grade: base genetics plus any fertility-peak bonus, capped at the child grade limit.
   const auto childGradeLimit = static_cast<uint32_t>(
     _serverInstance.GetBreedingRegistry().GetBreedingParams().childGradeLimit);
-  const auto foalGrade = static_cast<uint8_t>(
+  const auto targetGrade = static_cast<uint8_t>(
     std::min(CalculateFoalGrade(mare.grade, stallion.grade) + gradeBonus, childGradeLimit));
+
+  const auto stats = CalculateFoalStats(mare.stats, stallion.stats, targetGrade);
+  foal.stats.agility() = stats.agility();
+  foal.stats.courage() = stats.courage();
+  foal.stats.rush() = stats.rush();
+  foal.stats.endurance() = stats.endurance();
+  foal.stats.ambition() = stats.ambition();
+
+  const auto statSum = static_cast<int32_t>(
+    stats.agility() + stats.courage() + stats.rush() + stats.endurance() + stats.ambition());
+  const auto foalGrade = static_cast<uint8_t>(std::min<uint32_t>(
+    _serverInstance.GetHorseRegistry().GetGradeForStatSum(statSum), childGradeLimit));
   foal.grade() = foalGrade;
 
   // Skin/coat, influenced by parent combos and the stallion's pregnancy chance.
@@ -194,13 +205,6 @@ void Genetics::CreateFoal(
   foal.appearance.legVolume() = appearance.legVolume();
   foal.appearance.bodyLength() = appearance.bodyLength();
   foal.appearance.bodyVolume() = appearance.bodyVolume();
-
-  const auto stats = CalculateFoalStats(mare.stats, stallion.stats, foalGrade);
-  foal.stats.agility() = stats.agility();
-  foal.stats.courage() = stats.courage();
-  foal.stats.rush() = stats.rush();
-  foal.stats.endurance() = stats.endurance();
-  foal.stats.ambition() = stats.ambition();
 
   // CalculateFoalPotential already zeroes type/level/value when the foal has no potential.
   const auto potential = CalculateFoalPotential(mareUid, stallionUid, foalSkin);
@@ -294,20 +298,26 @@ int32_t Genetics::GetShapeFromTid(const data::Tid tid, const Part part)
 void Genetics::ValidateShape(int32_t& shape, const uint8_t foalGrade, const Part part)
 {
   const auto& registry = _serverInstance.GetHorseRegistry();
-  const auto& inheritance = part == Part::Mane
+  const auto inheritance = part == Part::Mane
     ? registry.GetManeShapeInheritance()
     : registry.GetTailShapeInheritance();
 
-  // Highest shape the foal's grade may wear, per the registry's per-shape minGrade.
-  int32_t maxAllowedShape = 0;
+  bool inheritedIsValid = false;
+  std::vector<int32_t> eligibleShapes;
+  std::vector<float> eligibleWeights;
   for (const auto& shapeInfo : inheritance)
   {
-    if (shapeInfo.minGrade <= foalGrade)
-      maxAllowedShape = std::max(maxAllowedShape, shapeInfo.shape);
+    if (shapeInfo.minGrade > foalGrade)
+      continue;
+
+    eligibleShapes.push_back(shapeInfo.shape);
+    eligibleWeights.push_back(shapeInfo.inheritanceRate);
+    if (shapeInfo.shape == shape)
+      inheritedIsValid = true;
   }
 
-  if (shape > maxAllowedShape)
-    shape = std::uniform_int_distribution<int32_t>(0, maxAllowedShape)(_randomEngine);
+  if (not inheritedIsValid)
+    shape = PickWeighted(_randomEngine, eligibleShapes, eligibleWeights, int32_t{0});
 }
 
 int32_t Genetics::InheritShape(const Ancestry& ancestry, const uint8_t foalGrade, const Part part)

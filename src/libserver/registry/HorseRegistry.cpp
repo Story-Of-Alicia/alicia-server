@@ -685,6 +685,18 @@ const GradeInfo* HorseRegistry::GetGradeInfo(uint32_t grade) const
   return it != _grades.end() ? &it->second : nullptr;
 }
 
+uint32_t HorseRegistry::GetGradeForStatSum(int32_t statSum) const
+{
+  // The highest grade whose minStatSum the stat sum reaches; never below 1.
+  uint32_t result = 1;
+  for (const auto& [grade, info] : _grades)
+  {
+    if (statSum >= info.minStatSum && grade > result)
+      result = grade;
+  }
+  return result;
+}
+
 const EmblemInfo* HorseRegistry::GetEmblemInfo(uint32_t id) const
 {
   auto it = _emblems.find(id);

@@ -153,7 +153,7 @@ coats:
   - tid: 20
     name: 'Dapple Bay'
     faceType: 0
-    minGrade: 10
+    minGrade: 8
     tier: 3
     inheritanceRate: 5.0
     allowedColorGroups: 0
