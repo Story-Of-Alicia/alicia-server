@@ -7410,6 +7410,146 @@ collection:
     priceRanges:
     - range: 1
       price: 72000
+- tid: 46111
+  type: 0
+  level: 1
+  prerequisiteLevel: 10
+  name: 'Additional Horse Permit VI'
+  itemIndex:
+    category: 3
+    subcategory: 5
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 72000
+- tid: 46112
+  type: 0
+  level: 1
+  prerequisiteLevel: 11
+  name: 'Additional Horse Permit VII'
+  itemIndex:
+    category: 3
+    subcategory: 5
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 72000
+- tid: 46113
+  type: 0
+  level: 1
+  prerequisiteLevel: 12
+  name: 'Additional Horse Permit VIII'
+  itemIndex:
+    category: 3
+    subcategory: 5
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 72000
+- tid: 46114
+  type: 0
+  level: 1
+  prerequisiteLevel: 13
+  name: 'Additional Horse Permit IX'
+  itemIndex:
+    category: 3
+    subcategory: 5
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 72000
+- tid: 46115
+  type: 0
+  level: 1
+  prerequisiteLevel: 14
+  name: 'Additional Horse Permit X'
+  itemIndex:
+    category: 3
+    subcategory: 5
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 72000
+- tid: 46116
+  type: 0
+  level: 1
+  prerequisiteLevel: 15
+  name: 'Additional Horse Permit XI'
+  itemIndex:
+    category: 3
+    subcategory: 5
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 72000
+- tid: 46117
+  type: 0
+  level: 1
+  prerequisiteLevel: 16
+  name: 'Additional Horse Permit XII'
+  itemIndex:
+    category: 3
+    subcategory: 5
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 72000
+- tid: 46118
+  type: 0
+  level: 1
+  prerequisiteLevel: 17
+  name: 'Additional Horse Permit XIII'
+  itemIndex:
+    category: 3
+    subcategory: 5
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 72000
+- tid: 46119
+  type: 0
+  level: 1
+  prerequisiteLevel: 18
+  name: 'Additional Horse Permit XIV'
+  itemIndex:
+    category: 3
+    subcategory: 5
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 72000
+- tid: 46120
+  type: 0
+  level: 1
+  prerequisiteLevel: 19
+  name: 'Additional Horse Permit XV'
+  itemIndex:
+    category: 3
+    subcategory: 5
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 72000
 - tid: 10110
   type: 0
   level: 10
