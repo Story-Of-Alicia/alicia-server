@@ -523,7 +523,7 @@ void ChatSystem::RegisterUserCommands()
       if (arguments.size() < 1)
         return {
           "Invalid command sub-literal.",
-          " (//give <item/horse/preset/carrots>)"};
+          " (//give <item/preset/carrots>)"};
 
       const auto& subLiteral = arguments[0];
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
@@ -715,6 +715,16 @@ void ChatSystem::RegisterUserCommands()
       }
       else if (subLiteral == "horse")
       {
+        bool isAdmin = false;
+        characterRecord.Immutable([&isAdmin](const data::Character& character)
+          {
+            isAdmin = character.role() != data::Character::Role::User;
+          });
+
+        if (not isAdmin)
+          return {"You don't have permission to use this command.",
+            "Go breed some horses!"};
+
         // Check if character has max amount of horses
         auto horseCount = 0;
         auto horseSlotCount = 0;
@@ -748,6 +758,7 @@ void ChatSystem::RegisterUserCommands()
             horse.growthPoints() = 150;
             horse.clazz = 1;
             horse.tendency() = 1;
+            horse.grade = 1;
 
             // Give horse random parts and appearance
             _serverInstance.GetHorseRegistry().BuildRandomHorse(

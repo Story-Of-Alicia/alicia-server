@@ -880,4 +880,22 @@ void Vector3::Read(
     .Read(vector.z);
 }
 
+void BreedingBonus::Write(
+  const BreedingBonus& bonus,
+  SinkStream& stream)
+{
+  stream.Write(bonus.id)
+    .Write(bonus.type)
+    .Write(bonus.value);
+}
+
+void BreedingBonus::Read(
+  BreedingBonus& bonus,
+  SourceStream& stream)
+{
+  stream.Read(bonus.id)
+    .Read(bonus.type)
+    .Read(bonus.value);
+}
+
 } // namespace server::protocol

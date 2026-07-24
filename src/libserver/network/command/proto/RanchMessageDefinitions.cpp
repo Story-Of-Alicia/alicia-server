@@ -18,6 +18,7 @@
  **/
 
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
+#include "libserver/util/Util.hpp"
 
 #include <cassert>
 #include <algorithm>
@@ -86,50 +87,50 @@ void AcCmdCRUseItemCancel::Read(
   throw std::runtime_error("Not implemented.");
 }
 
-void RanchCommandMountFamilyTree::Write(
-  const RanchCommandMountFamilyTree&,
+void AcCmdCRMountFamilyTree::Write(
+  const AcCmdCRMountFamilyTree&,
   SinkStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void RanchCommandMountFamilyTree::Read(
-  RanchCommandMountFamilyTree& command,
+void AcCmdCRMountFamilyTree::Read(
+  AcCmdCRMountFamilyTree& command,
   SourceStream& stream)
 {
   stream.Read(command.horseUid);
 }
 
-void RanchCommandMountFamilyTreeOK::Write(
-  const RanchCommandMountFamilyTreeOK& command,
+void AcCmdCRMountFamilyTreeOK::Write(
+  const AcCmdCRMountFamilyTreeOK& command,
   SinkStream& stream)
 {
   stream.Write(static_cast<uint8_t>(command.ancestors.size()));
-  for (auto& item : command.ancestors)
+  for (const auto& item : command.ancestors)
   {
-    stream.Write(item.id)
+    stream.Write(item.hierarchyPosition)
       .Write(item.name)
       .Write(item.grade)
-      .Write(item.skinId);
+      .Write(item.skinTid);
   }
 }
 
-void RanchCommandMountFamilyTreeOK::Read(
-  RanchCommandMountFamilyTreeOK&,
+void AcCmdCRMountFamilyTreeOK::Read(
+  AcCmdCRMountFamilyTreeOK&,
   SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void RanchCommandMountFamilyTreeCancel::Write(
-  const RanchCommandMountFamilyTreeCancel&,
+void AcCmdCRMountFamilyTreeCancel::Write(
+  const AcCmdCRMountFamilyTreeCancel&,
   SinkStream&)
 {
   // Empty.
 }
 
-void RanchCommandMountFamilyTreeCancel::Read(
-  RanchCommandMountFamilyTreeCancel&,
+void AcCmdCRMountFamilyTreeCancel::Read(
+  AcCmdCRMountFamilyTreeCancel&,
   SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
@@ -554,6 +555,102 @@ void RanchCommandRanchStuffOK::Read(
   throw std::runtime_error("Not implemented.");
 }
 
+void AcCmdCRBreedingFailureCard::Write(
+  const AcCmdCRBreedingFailureCard&,
+  SinkStream&)
+{
+  // Empty response
+}
+
+void AcCmdCRBreedingFailureCard::Read(
+  AcCmdCRBreedingFailureCard&,
+  SourceStream&)
+{
+  // Empty - statusOrFlag is internal only, not serialized
+}
+
+void AcCmdCRBreedingFailureCardOK::Write(
+  const AcCmdCRBreedingFailureCardOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.cardType);
+}
+
+void AcCmdCRBreedingFailureCardOK::Read(
+  AcCmdCRBreedingFailureCardOK& command,
+  SourceStream& stream)
+{
+  stream.Read(command.cardType);
+}
+
+void AcCmdCRBreedingFailureCardCancel::Write(
+  const AcCmdCRBreedingFailureCardCancel&,
+  SinkStream&)
+{
+  // Empty response
+}
+
+void AcCmdCRBreedingFailureCardCancel::Read(
+  AcCmdCRBreedingFailureCardCancel&,
+  SourceStream&)
+{
+  // Empty - statusOrFlag is internal only, not serialized
+}
+
+void AcCmdCRBreedingFailureCardChoose::Write(
+  const AcCmdCRBreedingFailureCardChoose&,
+  SinkStream&)
+{
+  // Zero payload command - no data to write
+}
+
+void AcCmdCRBreedingFailureCardChoose::Read(
+  AcCmdCRBreedingFailureCardChoose&,
+  SourceStream&)
+{
+  // Zero payload command - statusOrFlag is internal only, not serialized.
+}
+
+void AcCmdCRBreedingFailureCardChooseOK::Write(
+  const AcCmdCRBreedingFailureCardChooseOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.isChanceCard)
+    .Write(command.rewardId);
+
+  // There can be at most 2 elements in this array
+  assert(command.member4.size() <= 2);
+  stream.Write(static_cast<uint8_t>(command.member4.size()));
+  for (const auto& value : command.member4)
+  {
+    stream.Write(value);
+  }
+
+  stream.Write(command.item)
+    .Write(command.rewardedCarrots);
+}
+
+void AcCmdCRBreedingFailureCardChooseOK::Read(
+  AcCmdCRBreedingFailureCardChooseOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBreedingFailureCardChooseCancel::Write(
+  const AcCmdCRBreedingFailureCardChooseCancel&,
+  SinkStream&)
+{
+  // Empty response
+}
+
+void AcCmdCRBreedingFailureCardChooseCancel::Read(
+  AcCmdCRBreedingFailureCardChooseCancel&,
+  SourceStream&)
+{
+  // Empty response
+}
+
 void AcCmdCRSearchStallion::Write(
   const AcCmdCRSearchStallion&,
   SinkStream&)
@@ -565,26 +662,44 @@ void AcCmdCRSearchStallion::Read(
   AcCmdCRSearchStallion& command,
   SourceStream& stream)
 {
-  stream.Read(command.unk0)
-    .Read(command.unk1)
-    .Read(command.unk2)
+  stream.Read(command.page)
+    .Read(command.filterMinimumGrade)
+    .Read(command.order)
     .Read(command.unk3)
     .Read(command.unk4)
     .Read(command.unk5)
     .Read(command.unk6)
-    .Read(command.unk7)
-    .Read(command.unk8);
+    .Read(command.firstRequiredStat)
+    .Read(command.secondRequiredStat);
 
-  for (size_t i = 0; i < 3; i++)
+  uint8_t filteredCoatsSize{};
+  stream.Read(filteredCoatsSize);
+
+  for (size_t i = 0; i < filteredCoatsSize; i++)
   {
-    uint8_t listSize;
-    stream.Read(listSize);
-    for (size_t j = 0; j < listSize; j++)
-    {
-      uint32_t value;
-      stream.Read(value);
-      command.unk9[i].push_back(value);
-    }
+    uint32_t value{};
+    stream.Read(value);
+    command.filterCoats.emplace_back(value);
+  }
+
+  uint8_t filteredManesSize{};
+  stream.Read(filteredManesSize);
+
+  for (size_t i = 0; i < filteredManesSize; i++)
+  {
+    uint32_t value{};
+    stream.Read(value);
+    command.filterManes.emplace_back(value);
+  }
+
+  uint8_t filteredTailsSize{};
+  stream.Read(filteredTailsSize);
+
+  for (size_t i = 0; i < filteredTailsSize; i++)
+  {
+    uint32_t value{};
+    stream.Read(value);
+    command.filterTails.emplace_back(value);
   }
 
   stream.Read(command.unk10);
@@ -616,14 +731,14 @@ void AcCmdCRRegisterStallion::Read(
   SourceStream& stream)
 {
   stream.Read(command.horseUid)
-    .Read(command.carrots);
+    .Read(command.breedingFee);
 }
 
 void AcCmdCRRegisterStallionOK::Write(
   const AcCmdCRRegisterStallionOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.horseUid);
+  stream.Write(command.carrotBalance);
 }
 
 void AcCmdCRRegisterStallionOK::Read(
@@ -675,15 +790,15 @@ void AcCmdCRUnregisterStallionOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
-void RanchCommandUnregisterStallionCancel::Write(
-  const RanchCommandUnregisterStallionCancel&,
+void AcCmdCRUnregisterStallionCancel::Write(
+  const AcCmdCRUnregisterStallionCancel&,
   SinkStream&)
 {
   // Empty.
 }
 
-void RanchCommandUnregisterStallionCancel::Read(
-  RanchCommandUnregisterStallionCancel&,
+void AcCmdCRUnregisterStallionCancel::Read(
+  AcCmdCRUnregisterStallionCancel&,
   SourceStream&)
 {
   throw std::runtime_error("Not implemented");
@@ -709,9 +824,9 @@ void AcCmdCRUnregisterStallionEstimateInfoOK::Write(
 {
   stream.Write(command.member1)
     .Write(command.timesMated)
-    .Write(command.matingCompensation)
+    .Write(command.earnings)
     .Write(command.member4)
-    .Write(command.matingPrice);
+    .Write(command.breedingFee);
 }
 
 void AcCmdCRUnregisterStallionEstimateInfoOK::Read(
@@ -735,12 +850,44 @@ void AcCmdCRUnregisterStallionEstimateInfoCancel::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRCheckStallionCharge::Write(
+  const AcCmdCRCheckStallionCharge&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRCheckStallionCharge::Read(
+  AcCmdCRCheckStallionCharge& command,
+  SourceStream& stream)
+{
+  stream.Read(command.horseUid);
+}
+
+void AcCmdCRCheckStallionChargeOK::Write(
+  const AcCmdCRCheckStallionChargeOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.hasFailed)
+    .Write(command.minFee)
+    .Write(command.maxFee)
+    .Write(command.breedCount)
+    .Write(command.member5);
+}
+
+void AcCmdCRCheckStallionChargeOK::Read(
+  AcCmdCRCheckStallionChargeOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 void RanchCommandSearchStallionOK::Write(
   const RanchCommandSearchStallionOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0)
-    .Write(command.unk1);
+  stream.Write(command.page)
+    .Write(command.pageCount);
 
   assert(command.stallions.size() <= 10);
   const uint8_t count = std::min(
@@ -750,15 +897,15 @@ void RanchCommandSearchStallionOK::Write(
   for (uint8_t idx = 0; idx < count; ++idx)
   {
     const auto& stallion = command.stallions[idx];
-    stream.Write(stallion.member1)
+    stream.Write(stallion.owner)
       .Write(stallion.uid)
       .Write(stallion.tid)
       .Write(stallion.name)
       .Write(stallion.grade)
-      .Write(stallion.chance)
-      .Write(stallion.matePrice)
-      .Write(stallion.unk7)
-      .Write(stallion.expiresAt)
+      .Write(stallion.heritability)
+      .Write(stallion.breedFee)
+      .Write(stallion.pregnancyChance)
+      .Write(util::TimePointToAliciaTime(stallion.expiresAt))
       .Write(stallion.stats)
       .Write(stallion.parts)
       .Write(stallion.appearance)
@@ -816,9 +963,9 @@ void RanchCommandEnterBreedingMarketOK::Write(
     const auto& stallion = command.stallions[idx];
     stream.Write(stallion.uid)
       .Write(stallion.tid)
-      .Write(stallion.combo)
-      .Write(stallion.unk1)
-      .Write(stallion.unk2)
+      .Write(stallion.breedingCombo)
+      .Write(stallion.expiresAt)
+      .Write(stallion.hasBreedingBonus)
       .Write(stallion.lineage);
   }
 }
@@ -849,12 +996,10 @@ void RanchCommandTryBreedingCancel::Write(
   const RanchCommandTryBreedingCancel& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0)
-    .Write(command.unk1)
-    .Write(command.unk2)
-    .Write(command.unk3)
-    .Write(command.unk4)
-    .Write(command.unk5);
+  stream.Write(command.resultCode)
+    .Write(command.carrots)
+    .Write(command.breedingBonus)
+    .Write(command.stallionReturnedToRanch);
 }
 
 void RanchCommandTryBreedingCancel::Read(
@@ -875,32 +1020,32 @@ void AcCmdCRBreedingAbandon::Read(
   AcCmdCRBreedingAbandon& command,
   SourceStream& stream)
 {
-  stream.Read(command.horseUid);
+  stream.Read(command.foalUid);
 }
 
 void AcCmdCRBreedingAbandonOK::Write(
-  const AcCmdCRBreedingAbandon& command,
-  SinkStream& stream)
+  const AcCmdCRBreedingAbandonOK&,
+  SinkStream&)
 {
-  stream.Write(command.horseUid);
+  // Empty
 }
 
 void AcCmdCRBreedingAbandonOK::Read(
-  AcCmdCRBreedingAbandon&,
+  AcCmdCRBreedingAbandonOK&,
   SourceStream&)
 {
   throw std::runtime_error("Not implemented");
 }
 
 void AcCmdCRBreedingAbandonCancel::Write(
-  const AcCmdCRBreedingAbandon& command,
-  SinkStream& stream)
+  const AcCmdCRBreedingAbandonCancel&,
+  SinkStream&)
 {
-  stream.Write(command.horseUid);
+  // Empty
 }
 
 void AcCmdCRBreedingAbandonCancel::Read(
-  AcCmdCRBreedingAbandon&,
+  AcCmdCRBreedingAbandonCancel&,
   SourceStream&)
 {
   throw std::runtime_error("Not implemented");
@@ -910,24 +1055,19 @@ void RanchCommandTryBreedingOK::Write(
   const RanchCommandTryBreedingOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.uid)
-    .Write(command.tid)
-    .Write(command.val)
-    .Write(command.count)
-    .Write(command.unk0)
+  stream.Write(command.item)
+    .Write(command.grade)
     .Write(command.parts)
     .Write(command.appearance)
     .Write(command.stats)
-    .Write(command.unk1)
-    .Write(command.unk2)
-    .Write(command.unk3)
-    .Write(command.unk4)
-    .Write(command.unk5)
-    .Write(command.unk6)
+    .Write(command.carrots)
+    .Write(command.breedingBonus)
+    .Write(command.tendency)
+    .Write(command.potentialType)
     .Write(command.unk7)
-    .Write(command.unk8)
-    .Write(command.unk9)
-    .Write(command.unk10);
+    .Write(command.lineage)
+    .Write(command.emblemId)
+    .Write(command.stallionReturnedToRanch);
 }
 
 void RanchCommandTryBreedingOK::Read(
@@ -1038,22 +1178,6 @@ void AcCmdRCAddIdleMountInfoNotify::Write(
 
 void AcCmdRCAddIdleMountInfoNotify::Read(
   AcCmdRCAddIdleMountInfoNotify&,
-  SourceStream&)
-{
-  throw std::runtime_error("Not implemented.");
-}
-
-void AcCmdRCUpdateMountInfoNotify::Write(
-  const AcCmdRCUpdateMountInfoNotify& command,
-  SinkStream& stream)
-{
-  stream.Write(command.characterUid)
-    .Write(command.action)
-    .Write(command.horse);
-}
-
-void AcCmdRCUpdateMountInfoNotify::Read(
-  AcCmdRCUpdateMountInfoNotify&,
   SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
@@ -3327,6 +3451,91 @@ void AcCmdCROpenRandomBoxCancel::Write(
 }
 void AcCmdCROpenRandomBoxCancel::Read(
   AcCmdCROpenRandomBoxCancel&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBreedingTakeMoney::Write(
+  const AcCmdCRBreedingTakeMoney&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBreedingTakeMoney::Read(
+  AcCmdCRBreedingTakeMoney& command,
+  SourceStream& stream)
+{
+  stream.Read(command.claimUid);
+}
+
+void AcCmdCRBreedingTakeMoneyCancel::Write(
+  const AcCmdCRBreedingTakeMoneyCancel&,
+  SinkStream&)
+{
+  // Empty
+}
+
+void AcCmdCRBreedingTakeMoneyCancel::Read(
+  AcCmdCRBreedingTakeMoneyCancel&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRBreedingTakeMoneyOK::Write(
+  const AcCmdCRBreedingTakeMoneyOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.carrotBalance);
+}
+
+void AcCmdCRBreedingTakeMoneyOK::Read(
+  AcCmdCRBreedingTakeMoneyOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRExpandMountSlot::Write(
+  const AcCmdCRExpandMountSlot&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRExpandMountSlot::Read(
+  AcCmdCRExpandMountSlot& command,
+  SourceStream& stream)
+{
+  stream.Read(command.itemUid);
+}
+
+void AcCmdCRExpandMountSlotCancel::Write(
+  const AcCmdCRExpandMountSlotCancel&,
+  SinkStream&)
+{
+  // Empty
+}
+
+void AcCmdCRExpandMountSlotCancel::Read(
+  AcCmdCRExpandMountSlotCancel&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRExpandMountSlotOK::Write(
+  const AcCmdCRExpandMountSlotOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.mountSlots);
+}
+
+void AcCmdCRExpandMountSlotOK::Read(
+  AcCmdCRExpandMountSlotOK&,
   SourceStream&)
 {
   throw std::runtime_error("Not implemented");

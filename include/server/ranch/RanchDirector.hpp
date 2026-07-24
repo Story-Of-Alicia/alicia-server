@@ -20,7 +20,10 @@
 #ifndef RANCHDIRECTOR_HPP
 #define RANCHDIRECTOR_HPP
 
+#include "libserver/network/command/CommandDeferrer.hpp"
+#include "libserver/util/Scheduler.hpp"
 #include "server/Config.hpp"
+#include "server/ranch/BreedingMarket.hpp"
 #include "server/tracker/RanchTracker.hpp"
 
 #include "libserver/network/command/CommandServer.hpp"
@@ -31,6 +34,7 @@
 #include <random>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace server
 {
@@ -50,9 +54,9 @@ public:
 
   std::vector<data::Uid> GetOnlineCharacters();
 
+  void HandleNetworkTick() override;
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId client) override;
-
 
   //!
   void Disconnect(data::Uid characterUid);
@@ -83,12 +87,12 @@ public:
 
   void BroadcastChangeAgeNotify(
     data::Uid characterUid,
-    const data::Uid rancherUid,
+    data::Uid rancherUid,
     protocol::AcCmdCRChangeAge::Age age);
 
   void BroadcastHideAgeNotify(
     data::Uid characterUid,
-    const data::Uid rancherUid,
+    data::Uid rancherUid,
     protocol::AcCmdCRHideAge::Option option);
 
   void BroadcastUpdateGuildMemberGradeNotify(
@@ -132,8 +136,19 @@ private:
     //! Unique ID of the owner of the ranch the client is visiting.
     data::Uid visitingRancherUid{data::InvalidUid};
 
-    
     uint8_t busyState{0};
+    //! Whether there's a pending breeding failure card waiting to be claimed
+    bool hasPendingFailureCard{false};
+    //! Current breeding failure card type.
+    protocol::BreedingFailureCardType pendingCardType{};
+    //! Fee paid for the failed breeding; scales the failure-card reward grade.
+    uint32_t pendingFailureCardSpend{0};
+
+    //! The client's foals still maturing into adults, each mapped to the time
+    //! it becomes an adult. Rebuilt on ranch entry and appended to when a foal
+    //! is bred; the maturity sweep only looks at these, and only does a record
+    //! lookup once an entry's deadline has passed.
+    std::unordered_map<data::Uid, data::Clock::time_point> maturingFoals;
   };
 
   struct RanchInstance
@@ -170,6 +185,39 @@ private:
   void HandleRanchLeave(
     ClientId clientId);
 
+  //! Rebuilds the client's set of maturing foals, promoting any that already
+  //! reached the grow-up duration to adults in the data store. Called on ranch
+  //! entry so foals matured while away are adults before the snapshot is sent.
+  //! @param characterUid UID of the owning character.
+  //! @param clientContext Context of the owning client to refresh.
+  void RefreshMaturingFoals(data::Uid characterUid, ClientContext& clientContext);
+
+  //! Promotes matured foals for every character currently standing on their
+  //! own ranch, announcing the grow-up to that ranch. Only the tracked
+  //! maturing foals are inspected.
+  void RunFoalMaturityCheck();
+
+  //! Queues the next foal maturity check on the scheduler, re-scheduling
+  //! itself so the sweep runs on a fixed interval.
+  void ScheduleFoalMaturityCheck() noexcept;
+
+  //! Announces that a foal grew up to an adult to the owning client and the
+  //! visitors of its ranch.
+  //! @param clientId ID of the owning client.
+  //! @param rancherUid UID of the ranch the horse resides on.
+  //! @param characterUid UID of the owning character.
+  //! @param horseUid UID of the horse that grew up.
+  void AnnounceFoalGrewUp(
+    ClientId clientId,
+    data::Uid characterUid,
+    data::Uid horseUid);
+
+  void ReturnHorseToNature(
+    data::Uid characterUid,
+    data::Uid horseUid,
+    std::string userName,
+    bool breedingAbandon);
+
   void HandleChat(
     ClientId clientId,
     const protocol::AcCmdCRRanchChat& command);
@@ -190,17 +238,57 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRRegisterStallion& command);
 
+  void SendRegisterStallionCancel(
+    ClientId clientId);
+
   void HandleUnregisterStallion(
     ClientId clientId,
     const protocol::AcCmdCRUnregisterStallion& command);
+
+  void SendUnregisterStallionCancel(
+    ClientId clientId);
 
   void HandleUnregisterStallionEstimateInfo(
     ClientId clientId,
     const protocol::AcCmdCRUnregisterStallionEstimateInfo& command);
 
+  void HandleCheckStallionCharge(
+    ClientId clientId,
+    const protocol::AcCmdCRCheckStallionCharge& command);
+
   void HandleTryBreeding(
     ClientId clientId,
     const protocol::AcCmdCRTryBreeding& command);
+
+  //! Rolls a breeding bonus based on the stallion's grade.
+  //! @param stallionGrade Grade of the stallion.
+  //! @returns The rolled bonus, or a default (id 0) bonus if none activated.
+  [[nodiscard]] protocol::BreedingBonus RollBreedingBonus(uint32_t stallionGrade);
+
+  //! Calculates the breeding success rate (0-100).
+  //! @param stallionGrade Grade of the stallion.
+  //! @param stallionBreedingCount Lifetime breeding count of the stallion.
+  //! @param bonus Rolled breeding bonus.
+  //! @returns Success rate as a percentage capped at 100.
+  [[nodiscard]] uint32_t CalculateBreedingSuccessRate(
+    uint32_t stallionGrade,
+    uint32_t stallionBreedingCount,
+    const protocol::BreedingBonus& bonus);
+
+  //! Creates a foal from a successful breeding, spawns it on the ranch and fills
+  //! the breeding response.
+  //! @param clientId Client that triggered the breeding.
+  //! @param clientContext Context of the breeding client (owner and visited ranch).
+  //! @param command Breeding command (holds mare/stallion horse UIDs).
+  //! @param bonus Rolled breeding bonus.
+  //! @param response Response to populate with the foal's details.
+  //! @returns UID of the created foal.
+  data::Uid CreateBredFoal(
+    ClientId clientId,
+    const ClientContext& clientContext,
+    const protocol::AcCmdCRTryBreeding& command,
+    const protocol::BreedingBonus& bonus,
+    protocol::RanchCommandTryBreedingOK& response);
 
   void HandleBreedingAbandon(
     ClientId clientId,
@@ -210,6 +298,16 @@ private:
   void HandleBreedingWishlist(
     ClientId clientId,
     const protocol::AcCmdCRBreedingWishlist& command);
+
+  //!
+  void HandleBreedingFailureCard(
+    ClientId clientId,
+    const protocol::AcCmdCRBreedingFailureCard& command);
+
+  //!
+  void HandleBreedingFailureCardChoose(
+    ClientId clientId,
+    const protocol::AcCmdCRBreedingFailureCardChoose& command);
 
   //!
   void HandleCmdAction(
@@ -361,8 +459,8 @@ private:
   void HandleRequestLeagueTeamList(ClientId clientId,
     const protocol::RanchCommandRequestLeagueTeamList& command);
 
-  void HandleMountFamilyTree(ClientId clientId,
-    const protocol::RanchCommandMountFamilyTree& command);
+  bool HandleMountFamilyTree(ClientId clientId,
+    const protocol::AcCmdCRMountFamilyTree& command);
 
   void HandleRecoverMount(
     ClientId clientId,
@@ -421,13 +519,13 @@ private:
     const protocol::AcCmdCRRegisterDailyQuestGroup& command);
 
   void HandleRequestDailyQuestReward(
-      ClientId clientId, 
+      ClientId clientId,
       const protocol::AcCmdCRRequestDailyQuestReward& command);
-  
+
   void HandleRegisterQuest(
       ClientId clientId,
       const protocol::AcCmdCRRegisterQuest& command);
-  
+
   void HandleRequestQuestReward(
     ClientId clientId,
     const protocol::AcCmdCRRequestQuestReward& command);
@@ -469,15 +567,32 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRRequestUser& command);
 
+  void HandleBreedingTakeMoney(
+    ClientId clientId,
+    const protocol::AcCmdCRBreedingTakeMoney& command);
+
+  void HandleExpandMountSlot(
+    ClientId clientId,
+    const protocol::AcCmdCRExpandMountSlot& command);
+
   //!
   ServerInstance& _serverInstance;
   //!
   CommandServer _commandServer;
 
+  //! The breeding market system.
+  BreedingMarket _breedingMarket;
+
   //!
   std::unordered_map<ClientId, ClientContext> _clients;
   //!
   std::unordered_map<data::Uid, RanchInstance> _ranches;
+
+  //! A command deferrer for the `AcCmdCRMountFamilyTree` command.
+  CommandDeferrer<protocol::AcCmdCRMountFamilyTree> _mountFamilyTreeDeferrer;
+
+  //! Drives periodic ranch chores, such as the foal maturity sweep.
+  Scheduler _scheduler;
 };
 
 } // namespace server

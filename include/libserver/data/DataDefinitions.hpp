@@ -313,7 +313,7 @@ struct Character
   dao::Field<std::vector<Uid>> expiredEquipment{};
   
   dao::Field<std::vector<Uid>> horses{};
-  dao::Field<uint32_t> horseSlotCount{0u};
+  dao::Field<uint8_t> horseSlotCount{0u};
 
   dao::Field<std::vector<Uid>> pets{};
   dao::Field<Uid> mountUid{InvalidUid};
@@ -362,6 +362,19 @@ struct Character
 
 struct Horse
 {
+  //! A horse type.
+  enum class Type
+  {
+    //! An adult horse.
+    Adult,
+    //! A horse foal.
+    Foal,
+    //! An adult horse which is registered in the breeding market.
+    Stallion,
+    //! An adult horse which is rented.
+    Rent
+  };
+
   dao::Field<Uid> uid{InvalidUid};
   dao::Field<Tid> tid{InvalidTid};
   dao::Field<std::string> name{};
@@ -406,6 +419,17 @@ struct Horse
   dao::Field<uint32_t> grade{0u};
   dao::Field<uint32_t> growthPoints{0u};
 
+  //! A count of how many times the horse was bred.
+  dao::Field<uint32_t> breedingCount{0u};
+  //! A count of successful consecutive breeds.
+  dao::Field<uint32_t> breedingCombo{0u};
+
+  dao::Field<Type> type{Type::Adult};
+  dao::Field<Clock::time_point> dateOfBirth{};
+
+  dao::Field<uint32_t> tendency{0u};
+  dao::Field<uint32_t> spirit{0u};
+
   struct Potential
   {
     dao::Field<uint32_t> type{0u};
@@ -416,7 +440,6 @@ struct Horse
   dao::Field<uint32_t> luckState{0u};
   dao::Field<uint32_t> fatigue{0u};
   dao::Field<uint32_t> emblemUid{0u};
-  dao::Field<Clock::time_point> dateOfBirth{};
 
   struct MountCondition
   {
@@ -435,8 +458,6 @@ struct Horse
     dao::Field<uint32_t> boredom{};
     dao::Field<uint32_t> stopAmendsPoint{};
   } mountCondition{};
-
-  dao::Field<uint32_t> tendency{0u};
 
   struct MountInfo
   {
@@ -458,6 +479,19 @@ struct Horse
     dao::Field<uint32_t> cumulativePrize{};
     dao::Field<uint32_t> biggestPrize{};
   } mountInfo{};
+
+  struct Ancestors
+  {
+    Uid father{InvalidUid};
+    Uid mother{InvalidUid};
+  } ancestors{};
+
+  //! A value in an interval of <1, 9>.
+  //! Basically a weighted score of number of ancestors that share the same coat as the horse.
+  //! Ancestors of the first generation add two points to the lineage,
+  //! ancestors of the second generation add one point to the lineage
+  //! while the horse itself adds 1.
+  dao::Field<uint32_t> lineage{1u};
 };
 
 struct Housing
@@ -515,7 +549,7 @@ struct Quest
   dao::Field<Status> isCompleted{Status::InProgress};
   dao::Field<uint32_t> progress{};
 };
-  
+
 struct Mail
 {
   //! Mail type.
@@ -528,14 +562,6 @@ struct Mail
     BreedingReward = 3, //! Requests AcCmdCRBreedingTakeMoney
   };
 
-  //! Flags whether the mail is a system or a character mail.
-  //! The game client uses this to filter for system mails only.
-  enum class MailOrigin : uint32_t
-  {
-    Character = 0,
-    System = 1
-  };
-
   dao::Field<Uid> uid{InvalidUid};
   dao::Field<Uid> from{InvalidUid};
   dao::Field<Uid> to{InvalidUid};
@@ -544,10 +570,40 @@ struct Mail
   dao::Field<bool> isDeleted{false};
 
   dao::Field<MailType> type{};
-  dao::Field<MailOrigin> origin{};
+  //! The UID of either breeding or carnival reward.
+  //! Non-zero values indicate system mail.
+  dao::Field<uint32_t> claimUid{};
 
   dao::Field<Clock::time_point> createdAt{};
   dao::Field<std::string> body{};
+};
+
+struct Stallion
+{
+  dao::Field<Uid> uid{InvalidUid};
+  dao::Field<Uid> horseUid{InvalidUid};     // The horse being registered as stallion
+  dao::Field<Uid> ownerUid{InvalidUid};     // Owner of the stallion
+  dao::Field<uint32_t> breedingCharge{};    // Price in carrots to breed with this stallion
+  dao::Field<uint32_t> timesMated{0u};      // Times bred during current registration
+  dao::Field<Clock::time_point> registeredAt{};
+  dao::Field<Clock::time_point> expiresAt{};
+};
+
+struct Reward
+{
+  enum class Type : uint32_t
+  {
+    Breeding = 0,
+    Carnival = 1
+  };
+
+  dao::Field<Uid> claimUid{InvalidUid};
+  dao::Field<Uid> characterUid{InvalidUid};
+  dao::Field<Type> type{Type::Breeding};
+  dao::Field<uint32_t> carrots{0u};
+  dao::Field<bool> isClaimed{false};
+  dao::Field<Clock::time_point> createdAt{};
+  dao::Field<Clock::time_point> claimedAt{};
 };
 
 } // namespace data

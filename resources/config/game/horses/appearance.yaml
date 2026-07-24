@@ -1,0 +1,609 @@
+figureScale:
+  min: 2
+  max: 10
+
+# Color groups from MountColorGroupInfo. Color IDs from ManeTailColor: 1=Black 2=White 3=Brown 4=DarkBrown 5=Grey
+colorGroups:
+  - id: 0
+    colorIds: [4, 2, 1]
+  - id: 1
+    colorIds: [5, 1, 2]
+  - id: 2
+    colorIds: [3, 4, 1]
+  - id: 3
+    colorIds: [4, 1, 1]
+
+coats:
+  # 1 Star Coats
+  - tid: 1
+    name: 'Chestnut'
+    faceType: 0
+    minGrade: 1
+    tier: 1
+    inheritanceRate: 30.0
+    allowedColorGroups: 0
+  - tid: 2
+    name: 'Bay'
+    faceType: -1
+    minGrade: 1
+    tier: 1
+    inheritanceRate: 25.0
+    allowedColorGroups: 0
+  - tid: 3
+    name: 'Champagne Sabino'
+    faceType: 0
+    minGrade: 1
+    tier: 1
+    inheritanceRate: 30.0
+    allowedColorGroups: 1
+  - tid: 4
+    name: 'Chestnut Stockings'
+    faceType: 0
+    minGrade: 2
+    tier: 1
+    inheritanceRate: 21.0
+    allowedColorGroups: 0
+  - tid: 5
+    name: 'Buckskin'
+    faceType: -1
+    minGrade: 3
+    tier: 1
+    inheritanceRate: 23.0
+    allowedColorGroups: 1
+  - tid: 6
+    name: 'Champagne'
+    faceType: 0
+    minGrade: 3
+    tier: 1
+    inheritanceRate: 21.0
+    allowedColorGroups: 1
+  - tid: 7
+    name: 'Leopard Appaloosa'
+    faceType: 0
+    minGrade: 5
+    tier: 1
+    inheritanceRate: 21.0
+    allowedColorGroups: 3
+  # 2 Star Coats
+  - tid: 8
+    name: 'Blanket Appaloosa'
+    faceType: -1
+    minGrade: 6
+    tier: 2
+    inheritanceRate: 15.0
+    allowedColorGroups: 1
+  - tid: 10
+    name: 'Dapple Grey'
+    faceType: 0
+    minGrade: 6
+    tier: 2
+    inheritanceRate: 15.0
+    allowedColorGroups: 1
+  - tid: 11
+    name: 'Chestnut Pinto'
+    faceType: -1
+    minGrade: 6
+    tier: 2
+    inheritanceRate: 18.0
+    allowedColorGroups: 0
+  - tid: 12
+    name: 'Sooty Bay'
+    faceType: 0
+    minGrade: 6
+    tier: 2
+    inheritanceRate: 11.0
+    allowedColorGroups: 3
+  - tid: 13
+    name: 'Palomino'
+    faceType: 0
+    minGrade: 6
+    tier: 2
+    inheritanceRate: 15.0
+    allowedColorGroups: 2
+  - tid: 14
+    name: 'Black Pinto'
+    faceType: 0
+    minGrade: 7
+    tier: 2
+    inheritanceRate: 19.0
+    allowedColorGroups: 1
+  # 3 Star Coats
+  - tid: 9
+    name: 'White Grey'
+    faceType: 0
+    minGrade: 6
+    tier: 3
+    inheritanceRate: 7.0
+    allowedColorGroups: 1
+  - tid: 15
+    name: 'Black'
+    faceType: -1
+    minGrade: 7
+    tier: 3
+    inheritanceRate: 7.0
+    allowedColorGroups: 1
+  - tid: 16
+    name: 'Brown Sabino'
+    faceType: 0
+    minGrade: 6
+    tier: 3
+    inheritanceRate: 12.0
+    allowedColorGroups: 3
+  - tid: 17
+    name: 'Amber Cream'
+    faceType: 0
+    minGrade: 8
+    tier: 3
+    inheritanceRate: 10.0
+    allowedColorGroups: 0
+  - tid: 18
+    name: 'Mealy Bay'
+    faceType: 0
+    minGrade: 7
+    tier: 3
+    inheritanceRate: 10.0
+    allowedColorGroups: 2
+  - tid: 19
+    name: 'Black Sabino'
+    faceType: -1
+    minGrade: 8
+    tier: 3
+    inheritanceRate: 10.0
+    allowedColorGroups: 1
+  - tid: 20
+    name: 'Dapple Bay'
+    faceType: 0
+    minGrade: 10
+    tier: 3
+    inheritanceRate: 5.0
+    allowedColorGroups: 0
+
+faces:
+  - tid: 1
+    type: -1
+  - tid: 2
+    type: -1
+  - tid: 3
+    type: -1
+  - tid: 5
+    type: -1
+  - tid: 7
+    type: -1
+
+manes:
+  # Shape 1 (Medium short)
+  - tid: 1
+    color: 'White'
+    shape: 1
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 2
+    color: 'LightBrown'
+    shape: 1
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 3
+    color: 'Brown'
+    shape: 1
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 4
+    color: 'DarkBrown'
+    shape: 1
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 5
+    color: 'Grey'
+    shape: 1
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  # Shape 3 (Medium)
+  - tid: 6
+    color: 'White'
+    shape: 3
+    inheritanceRate: 20.0
+    minGrade: 6
+    tier: 1
+  - tid: 7
+    color: 'LightBrown'
+    shape: 3
+    inheritanceRate: 20.0
+    minGrade: 6
+    tier: 1
+  - tid: 8
+    color: 'Brown'
+    shape: 3
+    inheritanceRate: 20.0
+    minGrade: 6
+    tier: 1
+  - tid: 9
+    color: 'DarkBrown'
+    shape: 3
+    inheritanceRate: 20.0
+    minGrade: 6
+    tier: 1
+  - tid: 10
+    color: 'Grey'
+    shape: 3
+    inheritanceRate: 20.0
+    minGrade: 6
+    tier: 1
+  # Shape 4 (Shaved)
+  - tid: 11
+    color: 'White'
+    shape: 4
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 12
+    color: 'LightBrown'
+    shape: 4
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 13
+    color: 'Brown'
+    shape: 4
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 14
+    color: 'DarkBrown'
+    shape: 4
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 15
+    color: 'Grey'
+    shape: 4
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  # Shape 5 (Short)
+  - tid: 16
+    color: 'White'
+    shape: 5
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 17
+    color: 'LightBrown'
+    shape: 5
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 18
+    color: 'Brown'
+    shape: 5
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 19
+    color: 'DarkBrown'
+    shape: 5
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 20
+    color: 'Grey'
+    shape: 5
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  # Shape 6 (Extremely short)
+  - tid: 21
+    color: 'White'
+    shape: 6
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 22
+    color: 'LightBrown'
+    shape: 6
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 23
+    color: 'Brown'
+    shape: 6
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 24
+    color: 'DarkBrown'
+    shape: 6
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 25
+    color: 'Grey'
+    shape: 6
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  # Shape 7 (Spiky)
+  - tid: 26
+    color: 'White'
+    shape: 7
+    inheritanceRate: 30.0
+    minGrade: 4
+    tier: 2
+  - tid: 27
+    color: 'LightBrown'
+    shape: 7
+    inheritanceRate: 30.0
+    minGrade: 4
+    tier: 2
+  - tid: 28
+    color: 'Brown'
+    shape: 7
+    inheritanceRate: 30.0
+    minGrade: 4
+    tier: 2
+  - tid: 29
+    color: 'DarkBrown'
+    shape: 7
+    inheritanceRate: 30.0
+    minGrade: 4
+    tier: 2
+  - tid: 30
+    color: 'Grey'
+    shape: 7
+    inheritanceRate: 30.0
+    minGrade: 4
+    tier: 2
+  # Shape 2 (Long)
+  - tid: 31
+    color: 'White'
+    shape: 2
+    inheritanceRate: 15.0
+    minGrade: 6
+    tier: 2
+  - tid: 32
+    color: 'LightBrown'
+    shape: 2
+    inheritanceRate: 15.0
+    minGrade: 6
+    tier: 2
+  - tid: 33
+    color: 'Brown'
+    shape: 2
+    inheritanceRate: 15.0
+    minGrade: 6
+    tier: 2
+  - tid: 34
+    color: 'DarkBrown'
+    shape: 2
+    inheritanceRate: 15.0
+    minGrade: 6
+    tier: 2
+  - tid: 35
+    color: 'Grey'
+    shape: 2
+    inheritanceRate: 15.0
+    minGrade: 6
+    tier: 2
+  # Shape 8 (Curly)
+  - tid: 36
+    color: 'White'
+    shape: 8
+    inheritanceRate: 5.0
+    minGrade: 7
+    tier: 2
+  - tid: 37
+    color: 'LightBrown'
+    shape: 8
+    inheritanceRate: 5.0
+    minGrade: 7
+    tier: 2
+  - tid: 38
+    color: 'Brown'
+    shape: 8
+    inheritanceRate: 5.0
+    minGrade: 7
+    tier: 2
+  - tid: 39
+    color: 'DarkBrown'
+    shape: 8
+    inheritanceRate: 5.0
+    minGrade: 7
+    tier: 2
+  - tid: 40
+    color: 'Grey'
+    shape: 8
+    inheritanceRate: 5.0
+    minGrade: 7
+    tier: 2
+
+tails:
+  # Shape 1 (Medium)
+  - tid: 1
+    color: 'White'
+    shape: 1
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 2
+    color: 'LightBrown'
+    shape: 1
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 3
+    color: 'Brown'
+    shape: 1
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 4
+    color: 'DarkBrown'
+    shape: 1
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 5
+    color: 'Grey'
+    shape: 1
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  # Shape 2 (Long Thick)
+  - tid: 6
+    color: 'White'
+    shape: 2
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 7
+    color: 'LightBrown'
+    shape: 2
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 8
+    color: 'Brown'
+    shape: 2
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 9
+    color: 'DarkBrown'
+    shape: 2
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 10
+    color: 'Grey'
+    shape: 2
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  # Shape 4 (Cropped)
+  - tid: 11
+    color: 'White'
+    shape: 4
+    inheritanceRate: 20.0
+    minGrade: 1
+    tier: 2
+  - tid: 12
+    color: 'LightBrown'
+    shape: 4
+    inheritanceRate: 20.0
+    minGrade: 1
+    tier: 2
+  - tid: 13
+    color: 'Brown'
+    shape: 4
+    inheritanceRate: 20.0
+    minGrade: 1
+    tier: 2
+  - tid: 14
+    color: 'DarkBrown'
+    shape: 4
+    inheritanceRate: 20.0
+    minGrade: 1
+    tier: 2
+  - tid: 15
+    color: 'Grey'
+    shape: 4
+    inheritanceRate: 20.0
+    minGrade: 1
+    tier: 2
+  # Shape 5 (Long Thin)
+  - tid: 16
+    color: 'White'
+    shape: 5
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 17
+    color: 'LightBrown'
+    shape: 5
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 18
+    color: 'Brown'
+    shape: 5
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 19
+    color: 'DarkBrown'
+    shape: 5
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 20
+    color: 'Grey'
+    shape: 5
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  # Shape 6 (Short Thin)
+  - tid: 21
+    color: 'White'
+    shape: 6
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 22
+    color: 'LightBrown'
+    shape: 6
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 23
+    color: 'Brown'
+    shape: 6
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 24
+    color: 'DarkBrown'
+    shape: 6
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  - tid: 25
+    color: 'Grey'
+    shape: 6
+    inheritanceRate: 30.0
+    minGrade: 1
+    tier: 1
+  # Shape 3 (Long Curly)
+  - tid: 26
+    color: 'White'
+    shape: 3
+    inheritanceRate: 30.0
+    minGrade: 7
+    tier: 1
+  - tid: 27
+    color: 'LightBrown'
+    shape: 3
+    inheritanceRate: 30.0
+    minGrade: 7
+    tier: 1
+  - tid: 28
+    color: 'Brown'
+    shape: 3
+    inheritanceRate: 30.0
+    minGrade: 7
+    tier: 1
+  - tid: 29
+    color: 'DarkBrown'
+    shape: 3
+    inheritanceRate: 30.0
+    minGrade: 7
+    tier: 1
+  - tid: 30
+    color: 'Grey'
+    shape: 3
+    inheritanceRate: 30.0
+    minGrade: 7
+    tier: 1

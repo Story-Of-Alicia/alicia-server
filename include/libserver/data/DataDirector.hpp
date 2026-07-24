@@ -29,6 +29,9 @@
 namespace server
 {
 
+// Forward declaration
+class FileDataSource;
+
 class DataDirector
 {
 public:
@@ -46,6 +49,8 @@ public:
   using DailyQuestGroupStorage = DataStorage<data::Uid, data::DailyQuestGroup>;
   using MailStorage = DataStorage<data::Uid, data::Mail>;
   using QuestStorage = DataStorage<data::Uid, data::Quest>;
+  using StallionStorage = DataStorage<data::Uid, data::Stallion>;
+  using RewardStorage = DataStorage<data::Uid, data::Reward>;
 
   //! Default constructor.
   explicit DataDirector(const std::filesystem::path& basePath);
@@ -136,6 +141,15 @@ public:
   [[nodiscard]] Record<data::Quest> CreateQuest() noexcept;
   [[nodiscard]] QuestStorage& GetQuestCache();
 
+  [[nodiscard]] Record<data::Stallion> GetStallion(data::Uid stallionUid) noexcept;
+  [[nodiscard]] Record<data::Stallion> CreateStallion() noexcept;
+  [[nodiscard]] StallionStorage& GetStallionCache();
+  [[nodiscard]] std::vector<data::Uid> ListRegisteredStallions();
+
+  [[nodiscard]] Record<data::Reward> GetReward(data::Uid claimUid) noexcept;
+  [[nodiscard]] Record<data::Reward> CreateReward() noexcept;
+  [[nodiscard]] RewardStorage& GetRewardCache();
+
   [[nodiscard]] DataSource& GetDataSource() noexcept;
 
 private:
@@ -193,6 +207,10 @@ private:
   MailStorage _mailStorage;
   //! A quest storage.
   QuestStorage _questStorage;
+  //! A stallion storage.
+  StallionStorage _stallionStorage;
+  //! A reward storage.
+  RewardStorage _rewardStorage;
 };
 
 } // namespace server

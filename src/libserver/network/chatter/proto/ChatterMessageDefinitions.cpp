@@ -456,7 +456,7 @@ void server::protocol::ChatCmdLetterListAckOk::Write(
       {
         stream.Write(mail.uid)
           .Write(mail.type)
-          .Write(mail.origin)
+          .Write(mail.claimUid)
           .Write(mail.sender)
           .Write(mail.date);
 
@@ -635,7 +635,7 @@ void server::protocol::ChatCmdLetterArriveTrs::Write(
 {
   stream.Write(command.mailUid)
     .Write(command.mailType)
-    .Write(command.mailOrigin)
+    .Write(command.claimUid)
     .Write(command.sender)
     .Write(command.date)
     .Write(command.body);

@@ -1650,17 +1650,30 @@ void RaceNetworkHandler::HandleRaceResult(
   //  - mount emblem unlocked
   //  - implement mount fatigue
   protocol::AcCmdCRRaceResultOK response{};
+  protocol::AcCmdRCUpdateMountInfoNotify potentialNotify{
+    .characterUid = clientContext.characterUid,
+    .action = protocol::AcCmdRCUpdateMountInfoNotify::Action::ProgressHorsePotential};
+  bool potentialProgressed = false;
 
   characterRecord.Immutable(
-    [this, &response](const data::Character& character)
+    [this, &response, &potentialNotify, &potentialProgressed,
+      gainedClassProgress = command.gainedClassProgress](const data::Character& character)
     {
       response.currentCarrots = character.carrots();
 
-      GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Immutable(
-        [&response](const data::Horse& horse)
+      GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Mutable(
+        [this, &response, &potentialNotify, &potentialProgressed, gainedClassProgress](data::Horse& horse)
         {
           response.horseFatigue = static_cast<uint16_t>(
             horse.fatigue());
+
+          GetServerInstance().GetHorseRegistry().ApplyClassProgress(
+            horse, gainedClassProgress);
+
+          potentialProgressed =
+            GetServerInstance().GetHorseRegistry().ApplyPotentialGrowth(horse) > 0;
+          if (potentialProgressed)
+            protocol::BuildProtocolHorse(potentialNotify.horse, horse);
         });
     });
 
@@ -1670,6 +1683,16 @@ void RaceNetworkHandler::HandleRaceResult(
     {
       return response;
     });
+
+  if (potentialProgressed)
+  {
+    _commandServer.QueueCommand<decltype(potentialNotify)>(
+      clientId,
+      [potentialNotify]()
+      {
+        return potentialNotify;
+      });
+  }
 }
 
 void RaceNetworkHandler::HandleP2PRaceResult(

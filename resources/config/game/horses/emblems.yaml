@@ -1,0 +1,81 @@
+# Emblem definitions from EmblemInfo
+emblems:
+  - id: 1
+    odds: 1
+  - id: 2
+    odds: 1
+  - id: 3
+    odds: 1
+  - id: 4
+    odds: 1
+  - id: 5
+    odds: 1
+  - id: 6
+    odds: 1
+  - id: 7
+    odds: 1
+  - id: 8
+    odds: 1
+  - id: 9
+    odds: 1
+  - id: 10
+    odds: 1
+  - id: 11
+    odds: 1
+  - id: 12
+    odds: 1
+  - id: 13
+    odds: 1
+  - id: 14
+    odds: 1
+  - id: 15
+    odds: 1
+  - id: 16
+    odds: 2
+  - id: 17
+    odds: 2
+  - id: 18
+    odds: 2
+  - id: 19
+    odds: 2
+  - id: 20
+    odds: 2
+  - id: 21
+    odds: 2
+  - id: 22
+    odds: 2
+  - id: 23
+    odds: 2
+  - id: 24
+    odds: 2
+  - id: 25
+    odds: 2
+  - id: 26
+    odds: 3
+  - id: 27
+    odds: 3
+  - id: 28
+    odds: 3
+  - id: 29
+    odds: 3
+  - id: 30
+    odds: 3
+  - id: 31
+    odds: 3
+  - id: 32
+    odds: 3
+  - id: 33
+    odds: 3
+  - id: 34
+    odds: 3
+  - id: 35
+    odds: 3
+
+# Emblem odds ratios from EmblemRatioInfo
+emblemRatios:
+  - odds: 1
+    ratio: 77
+  - odds: 2
+    ratio: 13
+  - odds: 3
+    ratio: 2
