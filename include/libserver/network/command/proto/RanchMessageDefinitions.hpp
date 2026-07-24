@@ -544,6 +544,8 @@ struct AcCmdCRSearchStallion
     Endurance = 3,
     //! Also known as control.
     Courage = 4,
+    //! Sent when no stat filter is selected.
+    None = 0xFF,
   };
 
   //! A page number.

@@ -328,17 +328,68 @@ BreedingMarket::Snapshot BreedingMarket::CollectMarketSnapshot(
     if (not horseRecord)
       continue;
 
+    const auto& registry = _serverInstance.GetHorseRegistry();
+
     bool isMatch = true;
-    horseRecord.Immutable([&filter, &isMatch](const data::Horse& horse)
+    horseRecord.Immutable([&filter, &isMatch, &registry](const data::Horse& horse)
     {
       if (!filter.coats.empty() && !filter.coats.contains(horse.parts.skinTid()))
         isMatch = false;
-      if (!filter.manes.empty() && !filter.manes.contains(horse.parts.maneTid()))
+      // The mane and tail filters are keyed by shape, not by the mane/tail TID.
+      if (!filter.manes.empty()
+        && !filter.manes.contains(registry.GetMane(horse.parts.maneTid()).shape))
         isMatch = false;
-      if (!filter.tails.empty() && !filter.tails.contains(horse.parts.tailTid()))
+      if (!filter.tails.empty()
+        && !filter.tails.contains(registry.GetTail(horse.parts.tailTid()).shape))
         isMatch = false;
 
-      // todo: filter major stats
+      if (filter.firstPreferredStat != SnapshotFilter::Stat::None
+        || filter.secondPreferred != SnapshotFilter::Stat::None)
+      {
+        constexpr uint32_t RequiredSharePercentPerStat = 38u;
+
+        const uint32_t totalStats = horse.stats.agility()
+          + horse.stats.courage()
+          + horse.stats.rush()
+          + horse.stats.endurance()
+          + horse.stats.ambition();
+
+        const auto statValue = [&horse](const SnapshotFilter::Stat stat) -> uint32_t
+        {
+          switch (stat)
+          {
+            case SnapshotFilter::Stat::Agility: return horse.stats.agility();
+            case SnapshotFilter::Stat::Ambition: return horse.stats.ambition();
+            case SnapshotFilter::Stat::Rush: return horse.stats.rush();
+            case SnapshotFilter::Stat::Endurance: return horse.stats.endurance();
+            case SnapshotFilter::Stat::Courage: return horse.stats.courage();
+            default: return 0u;
+          }
+        };
+
+        // The required share for a stat accounts for both slots, so selecting
+        // the same stat twice doubles its threshold.
+        const auto requiredSharePercent = [&filter](const SnapshotFilter::Stat stat) -> uint32_t
+        {
+          uint32_t percent = 0u;
+          if (filter.firstPreferredStat == stat)
+            percent += RequiredSharePercentPerStat;
+          if (filter.secondPreferred == stat)
+            percent += RequiredSharePercentPerStat;
+          return percent;
+        };
+
+        const auto meetsShare = [&](const SnapshotFilter::Stat stat) -> bool
+        {
+          if (stat == SnapshotFilter::Stat::None)
+            return true;
+          return statValue(stat) * 100u >= requiredSharePercent(stat) * totalStats;
+        };
+
+        if (!meetsShare(filter.firstPreferredStat)
+          || !meetsShare(filter.secondPreferred))
+          isMatch = false;
+      }
     });
 
     if (isMatch)
@@ -447,8 +498,24 @@ BreedingMarket::Snapshot BreedingMarket::CollectMarketSnapshot(
       if (order == SnapshotOrder::PregnancyChanceAscending
         || order == SnapshotOrder::PregnancyChanceDescending)
       {
-        // todo: pregnancy chance
-        return std::less<data::Uid>()(firstRegistration.stallionUid, secondRegistration.stallionUid);
+        size_t firstBreedingCount{};
+        size_t secondBreedingCount{};
+
+        firstHorseRecord.Immutable([&firstBreedingCount](
+          const data::Horse& horse)
+        {
+          firstBreedingCount = horse.breedingCount();
+        });
+
+        secondHorseRecord.Immutable([&secondBreedingCount](
+          const data::Horse& horse)
+        {
+          secondBreedingCount = horse.breedingCount();
+        });
+
+        return order == SnapshotOrder::PregnancyChanceDescending
+          ? firstBreedingCount < secondBreedingCount
+          : firstBreedingCount > secondBreedingCount;
       }
 
       return true;

@@ -85,6 +85,27 @@ BreedingMarket::SnapshotOrder ConvertProtocolStallionOrderToSnapshotOrder(
   }
 }
 
+BreedingMarket::SnapshotFilter::Stat ConvertProtocolStallionStatToSnapshotStat(
+  const protocol::AcCmdCRSearchStallion::Stat stat)
+{
+  switch (stat)
+  {
+    case protocol::AcCmdCRSearchStallion::Stat::Agility:
+      return BreedingMarket::SnapshotFilter::Stat::Agility;
+    case protocol::AcCmdCRSearchStallion::Stat::Ambition:
+      return BreedingMarket::SnapshotFilter::Stat::Ambition;
+    case protocol::AcCmdCRSearchStallion::Stat::Rush:
+      return BreedingMarket::SnapshotFilter::Stat::Rush;
+    case protocol::AcCmdCRSearchStallion::Stat::Endurance:
+      return BreedingMarket::SnapshotFilter::Stat::Endurance;
+    case protocol::AcCmdCRSearchStallion::Stat::Courage:
+      return BreedingMarket::SnapshotFilter::Stat::Courage;
+    case protocol::AcCmdCRSearchStallion::Stat::None:
+    default:
+      return BreedingMarket::SnapshotFilter::Stat::None;
+  }
+}
+
 } // namespace anon
 
 RanchDirector::RanchDirector(ServerInstance& serverInstance)
@@ -1708,6 +1729,11 @@ void RanchDirector::HandleSearchStallion(
     // todo: verify mane
     snapshotFilter.tails.insert(tailUid);
   }
+
+  snapshotFilter.firstPreferredStat = ConvertProtocolStallionStatToSnapshotStat(
+    command.firstRequiredStat);
+  snapshotFilter.secondPreferred = ConvertProtocolStallionStatToSnapshotStat(
+    command.secondRequiredStat);
 
   const auto snapshotOrder = ConvertProtocolStallionOrderToSnapshotOrder(
     command.order);
