@@ -30,6 +30,7 @@ namespace
 // todo: configure me
 constexpr float RegistrationFee = 0.50f;
 constexpr float EarningTaxes = 0.20f;
+constexpr size_t MaxStallionsPerCharacter = 3;
 
 constexpr auto MarketDuration = std::chrono::hours(24);
 
@@ -88,6 +89,38 @@ void BreedingMarket::Tick()
   _scheduler.Tick();
 }
 
+bool BreedingMarket::CanRegisterStallion(data::Uid characterUid) const noexcept
+{
+  const std::shared_lock lock(_mutex);
+
+  // Enforce stallions per character limitation
+  // First get a list of all of the character's horses
+  std::vector<data::Uid> horseUids{};
+  _serverInstance.GetDataDirector().GetCharacter(characterUid).Immutable(
+    [&horseUids](const data::Character& character)
+    {
+      horseUids = character.horses();
+    });
+
+  // Check and count how many of these horses are registered as stallions
+  size_t characterStallionCount = 0;
+  for (data::Uid horseUid : horseUids)
+  {
+    // Check if this horse is registered
+    if (not _horseRegistrations.contains(horseUid))
+      continue;
+    
+      // Count and check if max is exceeded
+    ++characterStallionCount;
+    if (characterStallionCount >= MaxStallionsPerCharacter)
+      // Early return if character stallion count exceeds max
+      return false;
+  }
+
+  // Test and return if character can register a stallion
+  return characterStallionCount < MaxStallionsPerCharacter;
+}
+
 bool BreedingMarket::HandleRegisterStallion(
   const data::Uid characterUid,
   const data::Uid horseUid,
@@ -100,6 +133,9 @@ bool BreedingMarket::HandleRegisterStallion(
 
     // If the horse is a registered stallion do an early return.
     if (stallionIterator != _horseRegistrations.end())
+      return false;
+
+    if (not CanRegisterStallion(characterUid))
       return false;
   }
 
