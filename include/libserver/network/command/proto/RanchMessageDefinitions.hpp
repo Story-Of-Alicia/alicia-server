@@ -1187,8 +1187,14 @@ struct RanchCommandTryBreedingOK
 
 struct RanchCommandTryBreedingCancel
 {
-  //! 1 = soft success / consolation (failure-card) path, otherwise a hard cancel.
-  uint8_t resultCode{};
+  enum CancelReason : uint8_t
+  {
+    GenericError = 0,
+    ShowBreedingFailureCards = 1, // Causes the client to send breeding failure card command
+    InsufficientBalance = 2,
+    InsufficientHorseSlots = 3,
+    StallionNotFound = 4
+  } resultCode{};
   //! Character's carrot balance after the breeding fee (same role as TryBreedingOK).
   uint32_t carrots{};
   protocol::BreedingBonus breedingBonus{};

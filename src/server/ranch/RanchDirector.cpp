@@ -2100,10 +2100,12 @@ void RanchDirector::HandleTryBreeding(
 
   // Hard cancel (resultCode 0, i.e. not the consolation path) for validation failures,
   // so the client doesn't hang.
-  const auto sendBreedingCancel = [this, clientId]()
+  using CancelReason = protocol::RanchCommandTryBreedingCancel::CancelReason;
+  const auto sendBreedingCancel = [this, clientId](CancelReason reason)
   {
+    const protocol::RanchCommandTryBreedingCancel cancel{.resultCode = reason};
     _commandServer.QueueCommand<protocol::RanchCommandTryBreedingCancel>(
-      clientId, []() { return protocol::RanchCommandTryBreedingCancel{.resultCode = 0}; });
+      clientId, [cancel]() { return cancel; });
   };
 
   const auto mareRecord = dataDirector.GetHorseCache().Get(command.mareUid);
@@ -2112,7 +2114,7 @@ void RanchDirector::HandleTryBreeding(
   {
     spdlog::warn("TryBreeding: mare {} or stallion {} not found",
       command.mareUid, command.stallionUid);
-    sendBreedingCancel();
+    sendBreedingCancel(CancelReason::GenericError);
     return;
   }
 
@@ -2122,15 +2124,24 @@ void RanchDirector::HandleTryBreeding(
   {
     spdlog::warn("TryBreeding: stallion {} is not registered in the breeding market",
       command.stallionUid);
-    sendBreedingCancel();
+    sendBreedingCancel(CancelReason::StallionNotFound);
     return;
   }
 
   // Charge the breeding fee.
   const auto characterRecord = dataDirector.GetCharacter(clientContext.characterUid);
   bool charged = false;
-  characterRecord.Mutable([&charged, &stallionData](data::Character& character)
+  bool sufficientHorseSlots = false;
+  characterRecord.Mutable([&charged, &stallionData, &sufficientHorseSlots](data::Character& character)
   {
+    // Check if this character has enough space for a new horse
+    
+    // Horses in inventory + current mount
+    size_t currentHorseCount = character.horses().size() + 1;
+    if (currentHorseCount + 1 > character.horseSlotCount())
+      return;
+    sufficientHorseSlots = true;
+
     const auto fee = static_cast<int32_t>(stallionData->breedingCharge);
     if (character.carrots() < fee)
       return;
@@ -2138,11 +2149,19 @@ void RanchDirector::HandleTryBreeding(
     charged = true;
   });
 
+  if (not sufficientHorseSlots)
+  {
+    spdlog::warn("TryBreeding: character {} has insufficient horse slots",
+      clientContext.characterUid, stallionData->breedingCharge);
+    sendBreedingCancel(CancelReason::InsufficientHorseSlots);
+    return;
+  }
+
   if (not charged)
   {
     spdlog::warn("TryBreeding: character {} cannot afford breeding fee {}",
       clientContext.characterUid, stallionData->breedingCharge);
-    sendBreedingCancel();
+    sendBreedingCancel(CancelReason::InsufficientBalance);
     return;
   }
 
@@ -2225,7 +2244,7 @@ void RanchDirector::HandleTryBreeding(
   clientContext.pendingFailureCardSpend = stallionData->breedingCharge;
 
   protocol::RanchCommandTryBreedingCancel response{
-    .resultCode = 1};
+    .resultCode = CancelReason::ShowBreedingFailureCards};
   characterRecord.Immutable([&response](const data::Character& character)
   {
     response.carrots = character.carrots();
