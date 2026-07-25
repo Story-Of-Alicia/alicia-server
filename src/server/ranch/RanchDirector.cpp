@@ -58,6 +58,10 @@ constexpr data::Tid InstantGrowUpItemTid = 43001;
 //! How often the foal maturity sweep runs while players are on their ranch.
 constexpr auto FoalMaturityCheckInterval = std::chrono::seconds(60);
 
+//! How many times a deferred ranch entry is retried while waiting for horse
+//! records to load before giving up and cancelling the entry.
+constexpr uint32_t MaxEnterRanchDeferAttempts = 2;
+
 BreedingMarket::SnapshotOrder ConvertProtocolStallionOrderToSnapshotOrder(
   const protocol::AcCmdCRSearchStallion::StallionOrder order)
 {
@@ -116,11 +120,47 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
   {
     HandleMountFamilyTree(clientId, command);
   })
+  , _enterRanchDeferrer([this](const network::ClientId clientId, const protocol::AcCmdCREnterRanch& command)
+  {
+    // The deferrer erases the command after each tick, so re-queue it here to
+    // keep retrying until the required horse records have loaded. Give up after
+    // a few attempts and cancel the entry so the client isn't stuck forever.
+    const bool deferAgain = HandleEnterRanch(clientId, command);
+    auto& clientContext = GetClientContext(clientId, false);
+
+    if (not deferAgain)
+    {
+      clientContext.enterRanchDeferAttempts = 0;
+      return;
+    }
+
+    if (++clientContext.enterRanchDeferAttempts >= MaxEnterRanchDeferAttempts)
+    {
+      clientContext.enterRanchDeferAttempts = 0;
+
+      spdlog::warn(
+        "Ranch entry for client {} gave up after {} deferred attempts; horse records unavailable",
+        clientId,
+        MaxEnterRanchDeferAttempts);
+
+      protocol::RanchCommandEnterRanchCancel cancel{};
+      _commandServer.QueueCommand<decltype(cancel)>(
+        clientId,
+        [cancel]()
+        {
+          return cancel;
+        });
+      return;
+    }
+
+    _enterRanchDeferrer.Defer(clientId, command);
+  })
 {
   _commandServer.RegisterCommandHandler<protocol::AcCmdCREnterRanch>(
     [this](ClientId clientId, const auto& message)
     {
-      HandleEnterRanch(clientId, message);
+      if (HandleEnterRanch(clientId, message))
+        _enterRanchDeferrer.Defer(clientId, message);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRLeaveRanch>(
@@ -795,6 +835,7 @@ void RanchDirector::HandleNetworkTick()
   try
   {
     _mountFamilyTreeDeferrer.Tick();
+    _enterRanchDeferrer.Tick();
   }
   catch (const std::exception& x)
   {
@@ -1174,7 +1215,7 @@ RanchDirector::ClientContext& RanchDirector::GetClientContextByCharacterUid(
   throw std::runtime_error("Character not associated with any client");
 }
 
-void RanchDirector::HandleEnterRanch(
+bool RanchDirector::HandleEnterRanch(
   ClientId clientId,
   const protocol::AcCmdCREnterRanch& command)
 {
@@ -1186,8 +1227,11 @@ void RanchDirector::HandleEnterRanch(
     throw std::runtime_error(
       std::format("Rancher's character '{}' not available", command.rancherUid));
 
-  clientContext.isAuthenticated = GetServerInstance().GetOtpSystem().AuthorizeCode(
-    command.characterUid, command.otp);
+  if (not clientContext.isAuthenticated)
+  {
+    clientContext.isAuthenticated = GetServerInstance().GetOtpSystem().AuthorizeCode(
+      command.characterUid, command.otp);
+  }
 
   // Determine whether the ranch is locked.
   bool isRanchLocked = false;
@@ -1217,7 +1261,7 @@ void RanchDirector::HandleEnterRanch(
         return response;
       });
 
-    return;
+    return false;
   }
 
   clientContext.characterUid = command.characterUid;
@@ -1462,6 +1506,24 @@ void RanchDirector::HandleEnterRanch(
     }
   }
 
+  // Build the idle-mount notifies for every ranch horse
+  std::vector<protocol::AcCmdRCAddIdleMountInfoNotify> idleMountNotifies;
+  for (auto [horseUid, horseOid] : ranchInstance.tracker.GetHorses())
+  {
+    const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(horseUid);
+    if (not horseRecord)
+      return true;
+
+    protocol::AcCmdRCAddIdleMountInfoNotify notify{};
+    notify.horse.horseOid = horseOid;
+    horseRecord->Immutable([&notify](const data::Horse& horse)
+    {
+      protocol::BuildProtocolHorse(notify.horse.horse, horse);
+    });
+
+    idleMountNotifies.emplace_back(std::move(notify));
+  }
+
   // Todo: Roll the code for the connecting client.
   _commandServer.SetCode(clientId, {});
   _commandServer.QueueCommand<decltype(response)>(
@@ -1470,6 +1532,17 @@ void RanchDirector::HandleEnterRanch(
     {
       return response;
     });
+
+  // Send all the ranch horses with AddIdleMountInfoNotify to the entering player.
+  for (const auto& notify : idleMountNotifies)
+  {
+    _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
+      clientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
 
   // Notify to all other players of the entering player.
   protocol::RanchCommandEnterRanchNotify ranchJoinNotification{
@@ -1487,6 +1560,8 @@ void RanchDirector::HandleEnterRanch(
   }
 
   ranchInstance.clients.emplace(clientId);
+
+  return false;
 }
 
 void RanchDirector::HandleRanchLeave(ClientId clientId)

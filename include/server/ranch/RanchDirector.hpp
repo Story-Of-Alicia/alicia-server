@@ -149,6 +149,10 @@ private:
     //! is bred; the maturity sweep only looks at these, and only does a record
     //! lookup once an entry's deadline has passed.
     std::unordered_map<data::Uid, data::Clock::time_point> maturingFoals;
+
+    //! Number of times a deferred ranch entry has been retried while waiting
+    //! for horse records to load. Capped so the client isn't stuck forever.
+    uint32_t enterRanchDeferAttempts{0};
   };
 
   struct RanchInstance
@@ -178,7 +182,9 @@ private:
   //! Handles the ranch enter command.
   //! @param clientId ID of the client
   //! @param command Command
-  void HandleEnterRanch(
+  //! @returns True if the command should be deferred and retried (a required
+  //!          horse record was not yet available), false otherwise.
+  bool HandleEnterRanch(
     ClientId clientId,
     const protocol::AcCmdCREnterRanch& command);
 
@@ -598,6 +604,9 @@ private:
 
   //! A command deferrer for the `AcCmdCRMountFamilyTree` command.
   CommandDeferrer<protocol::AcCmdCRMountFamilyTree> _mountFamilyTreeDeferrer;
+
+  //! A command deferrer for the `AcCmdCREnterRanch` command.
+  CommandDeferrer<protocol::AcCmdCREnterRanch> _enterRanchDeferrer;
 
   //! Drives periodic ranch chores, such as the foal maturity sweep.
   Scheduler _scheduler;
