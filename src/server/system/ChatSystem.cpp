@@ -324,6 +324,11 @@ void ChatSystem::RegisterUserCommands()
     {
       // todo: development command, to be removed
 
+      // Horse manipulation is Admin-only.
+      const auto rank = GetStaffRank(characterUid);
+      if (not rank || *rank < data::Character::StaffRank::Admin)
+        return {"Only Admin-rank staff can use this command."};
+
       if (arguments.size() < 1)
         return {
           "Invalid command sub-literal.",
@@ -550,17 +555,9 @@ void ChatSystem::RegisterUserCommands()
 
       if (subLiteral == "item")
       {
-        // Only allow admins (character.role != User) to use this subcommand.
-        if (not characterRecord)
-          return {"Server error"};
-
-        bool isAdmin = false;
-        characterRecord.Immutable([&isAdmin](const data::Character& character)
-          {
-            isAdmin = character.role() != data::Character::Role::User;
-          });
-
-        if (not isAdmin)
+        // Any staff member.
+        const auto rank = GetStaffRank(characterUid);
+        if (not rank)
           return {"You don't have permission to use this command.",
             "Use shop to obtain items."};
 
@@ -647,6 +644,11 @@ void ChatSystem::RegisterUserCommands()
       }
       else if (subLiteral == "preset")
       {
+        // Admin-only.
+        const auto rank = GetStaffRank(characterUid);
+        if (not rank || *rank < data::Character::StaffRank::Admin)
+          return {"Only Admin-rank staff can use this command."};
+
         // //give preset <care> [<count>]
         if (arguments.size() < 2)
           return {
@@ -734,14 +736,10 @@ void ChatSystem::RegisterUserCommands()
       }
       else if (subLiteral == "horse")
       {
-        bool isAdmin = false;
-        characterRecord.Immutable([&isAdmin](const data::Character& character)
-          {
-            isAdmin = character.role() != data::Character::Role::User;
-          });
-
-        if (not isAdmin)
-          return {"You don't have permission to use this command.",
+        // Giving horses is Admin-only.
+        const auto rank = GetStaffRank(characterUid);
+        if (not rank || *rank < data::Character::StaffRank::Admin)
+          return {"Only Admin-rank staff can use this command.",
             "Go breed some horses!"};
 
         // Check if character has max amount of horses
@@ -865,17 +863,8 @@ void ChatSystem::RegisterAdminCommands()
       const std::span<const std::string>& arguments,
       data::Uid characterUid) -> std::vector<std::string>
     {
-      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
-      if (not invokerRecord)
-        return {"Server error"};
-
-      bool isAdmin = false;
-      invokerRecord.Immutable([&isAdmin](const data::Character& character)
-      {
-        isAdmin = character.role() != data::Character::Role::User;
-      });
-
-      if (not isAdmin)
+      const auto invokerRank = GetStaffRank(characterUid);
+      if (not invokerRank)
         return {};
 
       // todo: implement only local check
@@ -937,17 +926,8 @@ void ChatSystem::RegisterAdminCommands()
       const std::span<const std::string>& arguments,
       data::Uid characterUid) -> std::vector<std::string>
     {
-      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
-      if (not invokerRecord)
-        return {"Server error"};
-
-      bool isAdmin = false;
-      invokerRecord.Immutable([&isAdmin](const data::Character& character)
-      {
-        isAdmin = character.role() != data::Character::Role::User;
-      });
-
-      if (not isAdmin)
+      const auto invokerRank = GetStaffRank(characterUid);
+      if (not invokerRank)
         return {};
 
       if (arguments.size() < 2)
@@ -1497,17 +1477,8 @@ void ChatSystem::RegisterAdminCommands()
       const std::span<const std::string>& arguments,
       data::Uid characterUid) -> std::vector<std::string>
     {
-      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
-      if (not invokerRecord)
-        return {"Server error"};
-
-      bool isAdmin = false;
-      invokerRecord.Immutable([&isAdmin](const data::Character& character)
-      {
-        isAdmin = character.role() != data::Character::Role::User;
-      });
-
-      if (not isAdmin)
+      const auto invokerRank = GetStaffRank(characterUid);
+      if (not invokerRank)
         return {};
 
       if (arguments.empty())
@@ -1698,21 +1669,20 @@ void ChatSystem::RegisterAdminCommands()
       const std::span<const std::string>& arguments,
       data::Uid characterUid) -> std::vector<std::string>
     {
+      const auto invokerRank = GetStaffRank(characterUid);
+      if (not invokerRank)
+        return {};
+
       const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
       if (not invokerRecord)
         return {"Server error"};
 
-      bool isAdmin = false;
       std::string invokerCharacterName{};
-      invokerRecord.Immutable([&isAdmin, &invokerCharacterName](const data::Character& character)
+      invokerRecord.Immutable([&invokerCharacterName](const data::Character& character)
       {
-        isAdmin = character.role() != data::Character::Role::User;
         invokerCharacterName = character.name();
       });
       const auto invokerUserName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(characterUid).userName;
-
-      if (not isAdmin)
-        return {};
 
       if (arguments.empty())
         return {"mod",
