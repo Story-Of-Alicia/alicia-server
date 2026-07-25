@@ -188,7 +188,7 @@ bool BreedingMarket::HandleRegisterStallion(
   characterRecord.Mutable([&registrationFee, &canAffordRegistrationFee](
     data::Character& character)
     {
-      if (character.carrots() > registrationFee)
+      if (character.carrots() >= registrationFee)
       {
         canAffordRegistrationFee = true;
         character.carrots() -= registrationFee;
