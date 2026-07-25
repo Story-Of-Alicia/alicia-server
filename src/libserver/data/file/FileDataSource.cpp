@@ -295,10 +295,15 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.role = static_cast<data::Character::Role>(
     json.value("role", uint32_t{}));
 
-  // Records predating the staffRank field default to Admin so existing GMs
-  // keep full power until an Admin re-ranks them.
-  character.staffRank = static_cast<data::Character::StaffRank>(
-    json.value("staffRank", static_cast<uint32_t>(data::Character::StaffRank::Admin)));
+  if (character.role() == data::Character::Role::User)
+  {
+    character.staffRank = data::Character::StaffRank::None;
+  }
+  else
+  {
+    character.staffRank = static_cast<data::Character::StaffRank>(
+      json.value("staffRank", static_cast<uint32_t>(data::Character::StaffRank::None)));
+  }
 
   const auto& parts = json.value("parts", nlohmann::json::object());
   character.parts = data::Character::Parts{

@@ -1125,8 +1125,7 @@ void ChatSystem::RegisterAdminCommands()
       characterRecord.Mutable([&characterName](data::Character& character)
       {
         character.role() = data::Character::Role::User;
-        // Reset the rank so a later re-promotion starts from an explicit grant.
-        character.staffRank() = data::Character::StaffRank::Trial;
+        character.staffRank() = data::Character::StaffRank::None;
         characterName = character.name();
       });
 
