@@ -155,6 +155,15 @@ bool BreedingMarket::HandleRegisterStallion(
       canRegisterStallion = std::ranges::contains(character.horses(), horseUid);
     });
 
+  if (not canRegisterStallion)
+  {
+    spdlog::warn(
+      "Character '{}' tried to register another character's horse '{}' as a stallion",
+      characterUid,
+      horseUid);
+    return false;
+  }
+
   // Get the horse grade.
   uint32_t horseGrade = 0;
   horseRecord.Immutable([&horseGrade](const data::Horse& horse)
