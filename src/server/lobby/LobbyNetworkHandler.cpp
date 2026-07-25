@@ -1570,7 +1570,6 @@ void LobbyNetworkHandler::HandleCreateNickname(
         horse.tid() = requestedHorseTid;
         horse.dateOfBirth() = data::Clock::now();
         horse.mountCondition.stamina = 3500;
-        horse.growthPoints() = 150;
         horse.tendency() = 1;
         horse.clazz = 1;
         horse.grade = 1;
