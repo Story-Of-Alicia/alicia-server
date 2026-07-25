@@ -91,8 +91,6 @@ void BreedingMarket::Tick()
 
 bool BreedingMarket::CanRegisterStallion(data::Uid characterUid) const
 {
-  const std::shared_lock lock(_mutex);
-
   // Enforce stallions per character limitation
   // First get a list of all of the character's horses
   std::vector<data::Uid> horseUids{};
