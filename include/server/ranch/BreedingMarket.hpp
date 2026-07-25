@@ -176,7 +176,7 @@ private:
     data::Uid stallionUid) const noexcept;
   void ScheduleExpirationCheck() noexcept;
   void RunExpirationCheck() noexcept;
-  bool CanRegisterStallion(data::Uid characterUid) const noexcept;
+  bool CanRegisterStallion(data::Uid characterUid) const;
 
   //! Reference to the server instance
   ServerInstance& _serverInstance;

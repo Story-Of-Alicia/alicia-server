@@ -89,7 +89,7 @@ void BreedingMarket::Tick()
   _scheduler.Tick();
 }
 
-bool BreedingMarket::CanRegisterStallion(data::Uid characterUid) const noexcept
+bool BreedingMarket::CanRegisterStallion(data::Uid characterUid) const
 {
   const std::shared_lock lock(_mutex);
 
