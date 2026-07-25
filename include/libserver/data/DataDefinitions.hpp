@@ -267,6 +267,20 @@ struct Character
   };
   dao::Field<Role> role{};
 
+  //! Staff permission tier. Only meaningful when role != User.
+  //! Trial: mute and temporary bans (up to 30 days).
+  //! Moderator: mute and any type of ban.
+  //! Admin: any admin command, including carrots and promoting/demoting.
+  enum class StaffRank
+  {
+    Trial,
+    Moderator,
+    Admin
+  };
+  //! Defaults to Admin so pre-existing GMs (whose records predate this field)
+  //! retain full power until an Admin re-ranks them.
+  dao::Field<StaffRank> staffRank{StaffRank::Admin};
+
   struct Parts
   {
     //! An ID of the character model.

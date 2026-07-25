@@ -295,6 +295,11 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.role = static_cast<data::Character::Role>(
     json.value("role", uint32_t{}));
 
+  // Records predating the staffRank field default to Admin so existing GMs
+  // keep full power until an Admin re-ranks them.
+  character.staffRank = static_cast<data::Character::StaffRank>(
+    json.value("staffRank", static_cast<uint32_t>(data::Character::StaffRank::Admin)));
+
   const auto& parts = json.value("parts", nlohmann::json::object());
   character.parts = data::Character::Parts{
     .modelId = parts.value("modelId", data::Uid{}),
@@ -403,6 +408,7 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["cash"] = character.cash();
 
   json["role"] = character.role();
+  json["staffRank"] = character.staffRank();
 
   // Character parts
   nlohmann::json parts;

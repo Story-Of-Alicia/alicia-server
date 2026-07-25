@@ -5,6 +5,9 @@ server:
     brand: "dev"
     # The notice displayed to the player when they join the server.
     notice: "Players online: {players_online}"
+    # Passphrase required to use the //promote command. Acts as a second factor
+    # Leave empty to disable promotion entirely.
+    promotePassphrase: ""
   # Authentication configuration section
   authentication:
     # Type of authentication backend.
