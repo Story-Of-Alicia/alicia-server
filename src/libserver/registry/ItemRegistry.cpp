@@ -22,7 +22,9 @@
 #include <spdlog/spdlog.h>
 #include <yaml-cpp/yaml.h>
 
+#include <algorithm>
 #include <cassert>
+#include <ranges>
 
 namespace server::registry
 {
@@ -237,7 +239,39 @@ void ItemRegistry::ReadConfig(const std::filesystem::path& configDir)
     _packages.try_emplace(package.packageId, package);
   }
 
-  spdlog::info("Item registry loaded {} items and {} packages", _items.size() , _packages.size());
+  // Load mount-equipment set bonuses. Optional: absence leaves the feature inert.
+  _sets.clear();
+  const auto setsPath = configDir / "sets.yaml";
+  if (std::filesystem::exists(setsPath))
+  {
+    const auto setsRoot = YAML::LoadFile(setsPath.string());
+    const auto setsCollectionSection = setsRoot["collection"];
+    if (not setsCollectionSection)
+      throw std::runtime_error("Missing collection section in sets.yaml");
+
+    for (const auto& setSection : setsCollectionSection)
+    {
+      SetItemInfo set{
+        .setId = setSection["setId"].as<decltype(SetItemInfo::setId)>(0),
+        .name = setSection["name"].as<decltype(SetItemInfo::name)>(""),
+        .description = setSection["description"].as<decltype(SetItemInfo::description)>(""),
+        .itemTids = setSection["itemTids"].as<decltype(SetItemInfo::itemTids)>(
+          decltype(SetItemInfo::itemTids){}),
+        .equipEffect = static_cast<SetEquipEffect>(
+          setSection["equipEffect"].as<uint32_t>(0)),
+        .equipEffectValue = setSection["equipEffectValue"].as<
+          decltype(SetItemInfo::equipEffectValue)>(0)};
+
+      if (not set.itemTids.empty())
+        _sets.emplace_back(std::move(set));
+    }
+  }
+
+  spdlog::info(
+    "Item registry loaded {} items, {} packages and {} sets",
+    _items.size(),
+    _packages.size(),
+    _sets.size());
 }
 
 std::optional<Item> ItemRegistry::GetItem(uint32_t tid)
@@ -264,6 +298,25 @@ std::optional<Package> ItemRegistry::GetPackage(uint32_t packageId)
 std::unordered_map<uint32_t, Package> ItemRegistry::GetPackages()
 {
   return _packages;
+}
+
+std::vector<const SetItemInfo*> ItemRegistry::GetActiveSets(
+  const std::vector<uint32_t>& equippedTids) const
+{
+  std::vector<const SetItemInfo*> activeSets;
+  for (const auto& set : _sets)
+  {
+    const bool allEquipped = std::ranges::all_of(
+      set.itemTids,
+      [&equippedTids](uint32_t tid)
+      {
+        return std::ranges::contains(equippedTids, tid);
+      });
+
+    if (allEquipped)
+      activeSets.emplace_back(&set);
+  }
+  return activeSets;
 }
 
 } // namespace server::registry

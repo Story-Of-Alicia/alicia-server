@@ -139,6 +139,16 @@ void MagicRegistry::ReadConfig(const std::filesystem::path& configPath)
     _regenInfo.courageScaleBp = regenSection["courageScaleBp"].as<uint32_t>(_regenInfo.courageScaleBp);
   }
 
+  if (const auto setBonusSection = magicSection["setBonus"])
+  {
+    _setBonusInfo.critChanceBonusBp = setBonusSection["critChanceBonusBp"].as<uint32_t>(
+      _setBonusInfo.critChanceBonusBp);
+    _setBonusInfo.passiveGaugeScaleBp = setBonusSection["passiveGaugeScaleBp"].as<uint32_t>(
+      _setBonusInfo.passiveGaugeScaleBp);
+    _setBonusInfo.holdingGaugeScaleBp = setBonusSection["holdingGaugeScaleBp"].as<uint32_t>(
+      _setBonusInfo.holdingGaugeScaleBp);
+  }
+
   _baseCritChanceBp = magicSection["critChanceBp"].as<uint32_t>(_baseCritChanceBp);
 
   if (const auto scalingsSection = magicSection["statScalings"])
@@ -213,6 +223,11 @@ const std::vector<uint32_t>& MagicRegistry::GetTeamPool() const
 const Magic::RegenInfo& MagicRegistry::GetRegenInfo() const
 {
   return _regenInfo;
+}
+
+const Magic::SetBonusInfo& MagicRegistry::GetSetBonusInfo() const
+{
+  return _setBonusInfo;
 }
 
 uint32_t MagicRegistry::GetBaseCritChanceBp() const

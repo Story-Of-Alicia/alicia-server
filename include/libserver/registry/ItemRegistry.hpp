@@ -191,6 +191,32 @@ struct Package
   uint32_t tid{};
 };
 
+//! The effect granted by wearing a complete mount-equipment set.
+//! Mirrors the EquipEffect enum from the client SetItemInfo table.
+enum class SetEquipEffect : uint32_t
+{
+  None = 0,
+  //! Increased critical spell chance.
+  CriticalSpellChance = 1,
+  //! Passive magic gauge fills faster.
+  PassiveGaugeFaster = 2,
+  //! Magic gauge keeps filling while holding a spell.
+  GaugeWhileHolding = 3,
+};
+
+//! A mount-equipment set and the bonus its full set grants.
+struct SetItemInfo
+{
+  uint32_t setId{};
+  std::string name;
+  std::string description;
+  //! Template IDs whose simultaneous equipping activates the set.
+  std::vector<uint32_t> itemTids;
+  SetEquipEffect equipEffect{SetEquipEffect::None};
+  //! Currently unused
+  uint32_t equipEffectValue{};
+};
+
 class ItemRegistry
 {
 public:
@@ -200,9 +226,16 @@ public:
   [[nodiscard]] std::optional<Package> GetPackage(uint32_t packageId);
   [[nodiscard]] std::unordered_map<uint32_t, Package> GetPackages();
 
+  //! Returns the sets fully satisfied by the given equipped template IDs.
+  //! @param equippedTids Template IDs currently equipped by the racer.
+  //! @returns Pointers to the matching set definitions (empty if none).
+  [[nodiscard]] std::vector<const SetItemInfo*> GetActiveSets(
+    const std::vector<uint32_t>& equippedTids) const;
+
 private:
   std::unordered_map<uint32_t, Item> _items;
   std::unordered_map<uint32_t, Package> _packages;
+  std::vector<SetItemInfo> _sets;
 };
 
 } // namespace server::registry

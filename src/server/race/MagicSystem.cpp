@@ -127,6 +127,10 @@ const registry::Magic::SlotInfo& MagicSystem::RandomMagicItem(
       const uint32_t statValue = GetMountStatValue(racer.mountStats, scaling->stat);
       critChanceBp += scaling->critStepBp * (statValue / 10u);
     }
+
+    // Mount-equipment set bonus: increased critical spell chance.
+    if (racer.activeSetEffect == registry::SetEquipEffect::CriticalSpellChance)
+      critChanceBp += magicRegistry.GetSetBonusInfo().critChanceBonusBp;
   }
 
   if ((rand() % 10000) < static_cast<int>(critChanceBp))

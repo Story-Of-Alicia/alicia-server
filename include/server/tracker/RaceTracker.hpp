@@ -24,6 +24,7 @@
 
 #include <libserver/data/DataDefinitions.hpp>
 #include <libserver/network/command/proto/CommonStructureDefinitions.hpp>
+#include <libserver/registry/ItemRegistry.hpp>
 
 #include <array>
 #include <chrono>
@@ -116,6 +117,7 @@ public:
       uint32_t courage{};
     };
     MountStatsSnapshot mountStats{};
+    registry::SetEquipEffect activeSetEffect{registry::SetEquipEffect::None};
 
     struct MagicTargetInfo
     {

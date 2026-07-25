@@ -723,6 +723,12 @@ magic:
     intervalMs: 200
     courageScaleBp: 9
 
+  # Global magnitudes for the mount-equipment set bonuses (items/sets.yaml).
+  setBonus:
+    critChanceBonusBp: 1000     # effect 1: +10% crit spell chance while a crit set is worn
+    passiveGaugeScaleBp: 3300   # effect 2: +33% passive gauge regen while a passive set is worn
+    holdingGaugeScaleBp: 2000   # effect 3: gauge fills at 20% rate while holding a spell
+
   critChanceBp: 500
 
   statScalings:

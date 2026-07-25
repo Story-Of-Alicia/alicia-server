@@ -636,14 +636,29 @@ void RaceInstance::TickMagicGauge()
       {
         racer.lastGaugeUpdateTimePoint = now;
 
-        if (not isRacerHoldingItem and racer.starPointValue < _gameModeInfo.starPointsMax)
+        // Set bonus (effect 3) lets the gauge keep filling while holding a spell.
+        const bool canRegen = not isRacerHoldingItem
+          or racer.activeSetEffect == registry::SetEquipEffect::GaugeWhileHolding;
+
+        if (canRegen and racer.starPointValue < _gameModeInfo.starPointsMax)
         {
+          const auto& setBonusInfo =
+            _raceNetworkHandler.GetServerInstance().GetMagicRegistry().GetSetBonusInfo();
+
           uint32_t gainedPerTick = regenerationInfo.pointPerTick
             * (1000u + regenerationInfo.courageScaleBp * racer.mountStats.courage) / 1000u;
+
+          // Set bonus (effect 2): passive gauge fills faster.
+          if (racer.activeSetEffect == registry::SetEquipEffect::PassiveGaugeFaster)
+            gainedPerTick = gainedPerTick * (10000u + setBonusInfo.passiveGaugeScaleBp) / 10000u;
 
           // BufGauge buff doubles regen while active.
           if (racer.effects[20] or racer.effects[21])
             gainedPerTick *= 2;
+
+          // Set bonus (effect 3): while holding a spell, the gauge fills at a reduced rate.
+          if (isRacerHoldingItem)
+            gainedPerTick = gainedPerTick * setBonusInfo.holdingGaugeScaleBp / 10000u;
 
           const uint32_t totalGain = gainedPerTick * static_cast<uint32_t>(elapsedTickCount);
           racer.starPointValue = std::min(

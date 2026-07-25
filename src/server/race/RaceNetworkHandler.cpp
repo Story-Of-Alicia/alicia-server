@@ -1518,6 +1518,49 @@ void RaceNetworkHandler::HandleLoadingComplete(
             .courage = horse.stats.courage(),
           };
         });
+
+      auto& itemRegistry = GetServerInstance().GetItemRegistry();
+      const auto equipmentRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(
+        character.characterEquipment());
+
+      std::vector<uint32_t> equippedMountTids;
+      if (equipmentRecords)
+      {
+        for (const auto& equipmentRecord : *equipmentRecords)
+        {
+          data::Tid itemTid{data::InvalidTid};
+          equipmentRecord.Immutable([&itemTid](const data::Item& item)
+          {
+            itemTid = item.tid();
+          });
+
+          const auto itemTemplate = itemRegistry.GetItem(itemTid);
+          if (not itemTemplate.has_value()
+            || not itemTemplate->mountPartInfo.has_value())
+          {
+            continue;
+          }
+
+          equippedMountTids.emplace_back(itemTid);
+
+          if (itemTemplate->mountAbility.has_value())
+          {
+            const auto& ability = itemTemplate->mountAbility.value();
+            racer.mountStats.agility += ability.agility;
+            racer.mountStats.ambition += ability.ambition;
+            racer.mountStats.rush += ability.rush;
+            racer.mountStats.endurance += ability.endurance;
+            racer.mountStats.courage += ability.courage;
+          }
+        }
+      }
+
+      // A racer can only benefit from a single set bonus at a time, so the first
+      // fully-equipped set wins.
+      racer.activeSetEffect = registry::SetEquipEffect::None;
+      const auto activeSets = itemRegistry.GetActiveSets(equippedMountTids);
+      if (not activeSets.empty())
+        racer.activeSetEffect = activeSets.front()->equipEffect;
     });
 
   // Notify all clients in the room that this player's loading is complete
@@ -2456,6 +2499,12 @@ void RaceNetworkHandler::HandleUseMagicItem(
   if (command.characterOid != racer.oid)
   {
     spdlog::warn("Client tried to perform action on behalf of different racer");
+    return;
+  }
+
+  if (not racer.magicItem.has_value() || command.magicItemId == 0)
+  {
+    racer.magicItem.reset();
     return;
   }
 

@@ -103,6 +103,17 @@ struct Magic
     //! Fractional duration reduction per target stat point in bp. e.g. 5 → -0.5%/pt.
     uint32_t targetDurationReductionBp{};
   };
+
+  //! Global magnitudes for the mount-equipment set bonuses (SetItemInfo EquipEffect).
+  struct SetBonusInfo
+  {
+    //! Effect 1: flat crit chance added while a crit-chance set is worn, in bp. e.g. 1000 → +10%.
+    uint32_t critChanceBonusBp{1000};
+    //! Effect 2: extra passive gauge regen while a passive set is worn, in bp. e.g. 3300 → +33%.
+    uint32_t passiveGaugeScaleBp{3300};
+    //! Effect 3: fraction of the passive regen granted while holding a spell, in bp. e.g. 2000 → 20%.
+    uint32_t holdingGaugeScaleBp{2000};
+  };
 };
 
 class MagicRegistry
@@ -122,6 +133,8 @@ public:
   [[nodiscard]] const std::vector<uint32_t>& GetTeamPool() const;
 
   [[nodiscard]] const Magic::RegenInfo& GetRegenInfo() const;
+  //! Global magnitudes for the mount-equipment set bonuses.
+  [[nodiscard]] const Magic::SetBonusInfo& GetSetBonusInfo() const;
   //! Base magic crit chance in basis points (1bp = 0.01%).
   [[nodiscard]] uint32_t GetBaseCritChanceBp() const;
   //! Returns the stat scaling for a basicType, or nullptr if none applies.
@@ -136,6 +149,7 @@ private:
   std::vector<uint32_t> _soloPool{};
   std::vector<uint32_t> _teamPool{};
   Magic::RegenInfo _regenInfo{};
+  Magic::SetBonusInfo _setBonusInfo{};
   uint32_t _baseCritChanceBp{500};
   //! Keyed by basicType.
   std::unordered_map<uint32_t, Magic::StatScaling> _statScalings{};
