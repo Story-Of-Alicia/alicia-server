@@ -303,6 +303,33 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
   }
 }
 
+void HorseRegistry::BuildDefaultHorse(
+  data::Horse& horse,
+  data::Tid horseTid)
+{
+  constexpr uint32_t DefaultHorseStamina = 4000;
+  constexpr uint32_t DefaultHorseAppearanceValue = 5;
+
+  horse.tid() = horseTid;
+  horse.dateOfBirth() = data::Clock::now();
+  horse.mountCondition.stamina = DefaultHorseStamina;
+  horse.tendency() = 1;
+  horse.clazz = 1;
+  horse.grade = 1;
+
+  horse.appearance.scale() = DefaultHorseAppearanceValue;
+  horse.appearance.legLength() = DefaultHorseAppearanceValue;
+  horse.appearance.legVolume() = DefaultHorseAppearanceValue;
+  horse.appearance.bodyLength() = DefaultHorseAppearanceValue;
+  horse.appearance.bodyVolume() = DefaultHorseAppearanceValue;
+
+  // Default brown horse, as seen for TID 20001
+  horse.parts.skinTid() = 1;
+  horse.parts.faceTid() = 1;
+  horse.parts.maneTid() = 3;
+  horse.parts.tailTid() = 3;
+}
+
 void HorseRegistry::BuildRandomHorse(
   data::Horse::Parts& parts,
   data::Horse::Appearance& appearance)

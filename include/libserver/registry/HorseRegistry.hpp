@@ -193,6 +193,10 @@ public:
 
   void ReadConfig(const std::filesystem::path& configPath);
 
+  static void BuildDefaultHorse(
+    data::Horse& horse,
+    data::Tid horseTid);
+
   void BuildRandomHorse(
     data::Horse::Parts& parts,
     data::Horse::Appearance& appearance);

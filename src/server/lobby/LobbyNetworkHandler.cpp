@@ -1567,17 +1567,7 @@ void LobbyNetworkHandler::HandleCreateNickname(
       {
         // The TID of the horse specifies which body mesh is used for that horse.
         // Can be found in the `MountPartInfo` table.
-        horse.tid() = requestedHorseTid;
-        horse.dateOfBirth() = data::Clock::now();
-        horse.mountCondition.stamina = 3500;
-        horse.tendency() = 1;
-        horse.clazz = 1;
-        horse.grade = 1;
-
-        _serverInstance.GetHorseRegistry().BuildRandomHorse(
-          horse.parts,
-          horse.appearance);
-
+        registry::HorseRegistry::BuildDefaultHorse(horse, requestedHorseTid);
         mountUid = horse.uid();
       });
 
@@ -1598,10 +1588,10 @@ void LobbyNetworkHandler::HandleCreateNickname(
           character.name = command.nickname;
 
         // todo: default level configured
-        character.level = 30;
-        character.experience() = 254500;
+        character.level = 40;
+        character.experience() = 557300;
         // todo: default carrots configured
-        character.carrots = 10'000;
+        character.carrots = 200'000;
 
         character.mountUid() = mountUid;
 
