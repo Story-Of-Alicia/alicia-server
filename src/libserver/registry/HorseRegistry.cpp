@@ -38,7 +38,6 @@ constexpr uint32_t FigureScaleMax = 10;
 Color ParseColor(const std::string& str)
 {
   if (str == "White")      return Color::White;
-  if (str == "LightBrown") return Color::LightBrown;
   if (str == "Brown")      return Color::Brown;
   if (str == "DarkBrown")  return Color::DarkBrown;
   if (str == "Grey")       return Color::Grey;

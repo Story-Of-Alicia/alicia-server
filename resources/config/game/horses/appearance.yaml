@@ -173,13 +173,13 @@ faces:
 manes:
   # Shape 1 (Medium short)
   - tid: 1
-    color: 'White'
+    color: 'Black'
     shape: 1
     inheritanceRate: 30.0
     minGrade: 1
     tier: 1
   - tid: 2
-    color: 'LightBrown'
+    color: 'White'
     shape: 1
     inheritanceRate: 30.0
     minGrade: 1
@@ -204,13 +204,13 @@ manes:
     tier: 1
   # Shape 3 (Medium)
   - tid: 6
-    color: 'White'
+    color: 'Black'
     shape: 3
     inheritanceRate: 20.0
     minGrade: 6
     tier: 1
   - tid: 7
-    color: 'LightBrown'
+    color: 'White'
     shape: 3
     inheritanceRate: 20.0
     minGrade: 6
@@ -235,13 +235,13 @@ manes:
     tier: 1
   # Shape 4 (Shaved)
   - tid: 11
-    color: 'White'
+    color: 'Black'
     shape: 4
     inheritanceRate: 30.0
     minGrade: 1
     tier: 1
   - tid: 12
-    color: 'LightBrown'
+    color: 'White'
     shape: 4
     inheritanceRate: 30.0
     minGrade: 1
@@ -266,13 +266,13 @@ manes:
     tier: 1
   # Shape 5 (Short)
   - tid: 16
-    color: 'White'
+    color: 'Black'
     shape: 5
     inheritanceRate: 30.0
     minGrade: 1
     tier: 1
   - tid: 17
-    color: 'LightBrown'
+    color: 'White'
     shape: 5
     inheritanceRate: 30.0
     minGrade: 1
@@ -297,13 +297,13 @@ manes:
     tier: 1
   # Shape 6 (Extremely short)
   - tid: 21
-    color: 'White'
+    color: 'Black'
     shape: 6
     inheritanceRate: 30.0
     minGrade: 1
     tier: 1
   - tid: 22
-    color: 'LightBrown'
+    color: 'White'
     shape: 6
     inheritanceRate: 30.0
     minGrade: 1
@@ -328,13 +328,13 @@ manes:
     tier: 1
   # Shape 7 (Spiky)
   - tid: 26
-    color: 'White'
+    color: 'Black'
     shape: 7
     inheritanceRate: 30.0
     minGrade: 4
     tier: 2
   - tid: 27
-    color: 'LightBrown'
+    color: 'White'
     shape: 7
     inheritanceRate: 30.0
     minGrade: 4
@@ -359,13 +359,13 @@ manes:
     tier: 2
   # Shape 2 (Long)
   - tid: 31
-    color: 'White'
+    color: 'Black'
     shape: 2
     inheritanceRate: 15.0
     minGrade: 6
     tier: 2
   - tid: 32
-    color: 'LightBrown'
+    color: 'White'
     shape: 2
     inheritanceRate: 15.0
     minGrade: 6
@@ -390,13 +390,13 @@ manes:
     tier: 2
   # Shape 8 (Curly)
   - tid: 36
-    color: 'White'
+    color: 'Black'
     shape: 8
     inheritanceRate: 5.0
     minGrade: 7
     tier: 2
   - tid: 37
-    color: 'LightBrown'
+    color: 'White'
     shape: 8
     inheritanceRate: 5.0
     minGrade: 7
@@ -423,13 +423,13 @@ manes:
 tails:
   # Shape 1 (Medium)
   - tid: 1
-    color: 'White'
+    color: 'Black'
     shape: 1
     inheritanceRate: 30.0
     minGrade: 1
     tier: 1
   - tid: 2
-    color: 'LightBrown'
+    color: 'White'
     shape: 1
     inheritanceRate: 30.0
     minGrade: 1
@@ -454,13 +454,13 @@ tails:
     tier: 1
   # Shape 2 (Long Thick)
   - tid: 6
-    color: 'White'
+    color: 'Black'
     shape: 2
     inheritanceRate: 30.0
     minGrade: 1
     tier: 1
   - tid: 7
-    color: 'LightBrown'
+    color: 'White'
     shape: 2
     inheritanceRate: 30.0
     minGrade: 1
@@ -485,13 +485,13 @@ tails:
     tier: 1
   # Shape 4 (Cropped)
   - tid: 11
-    color: 'White'
+    color: 'Black'
     shape: 4
     inheritanceRate: 20.0
     minGrade: 1
     tier: 2
   - tid: 12
-    color: 'LightBrown'
+    color: 'White'
     shape: 4
     inheritanceRate: 20.0
     minGrade: 1
@@ -516,13 +516,13 @@ tails:
     tier: 2
   # Shape 5 (Long Thin)
   - tid: 16
-    color: 'White'
+    color: 'Black'
     shape: 5
     inheritanceRate: 30.0
     minGrade: 1
     tier: 1
   - tid: 17
-    color: 'LightBrown'
+    color: 'White'
     shape: 5
     inheritanceRate: 30.0
     minGrade: 1
@@ -547,13 +547,13 @@ tails:
     tier: 1
   # Shape 6 (Short Thin)
   - tid: 21
-    color: 'White'
+    color: 'Black'
     shape: 6
     inheritanceRate: 30.0
     minGrade: 1
     tier: 1
   - tid: 22
-    color: 'LightBrown'
+    color: 'White'
     shape: 6
     inheritanceRate: 30.0
     minGrade: 1
@@ -578,13 +578,13 @@ tails:
     tier: 1
   # Shape 3 (Long Curly)
   - tid: 26
-    color: 'White'
+    color: 'Black'
     shape: 3
     inheritanceRate: 30.0
     minGrade: 7
     tier: 1
   - tid: 27
-    color: 'LightBrown'
+    color: 'White'
     shape: 3
     inheritanceRate: 30.0
     minGrade: 7
