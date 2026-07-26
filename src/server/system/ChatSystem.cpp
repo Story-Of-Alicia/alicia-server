@@ -159,7 +159,8 @@ std::optional<data::Character::StaffRank> ChatSystem::GetStaffRank(
   characterRecord.Immutable([&rank](const data::Character& character)
   {
     // Only staff (any role other than User) carry a meaningful rank.
-    if (character.role() != data::Character::Role::User)
+    if (character.role() != data::Character::Role::User
+      && character.staffRank() != data::Character::StaffRank::None)
       rank = character.staffRank();
   });
 
