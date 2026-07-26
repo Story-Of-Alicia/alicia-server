@@ -2528,6 +2528,18 @@ void RaceNetworkHandler::HandleUseMagicItem(
   if (not racer.magicItem.has_value() || command.magicItemId == 0)
   {
     racer.magicItem.reset();
+
+    // Still acknowledge the (empty) usage so the client clears the held
+    // magic item indicator.
+    const protocol::AcCmdCRUseMagicItemOK response{
+      .characterOid = command.characterOid};
+
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]
+      {
+        return response;
+      });
     return;
   }
 
