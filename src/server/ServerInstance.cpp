@@ -88,22 +88,9 @@ void ServerInstance::Initialize()
 {
   _shouldRun.store(true, std::memory_order::release);
 
-  _config.LoadFromFile(_resourceDirectory / "config/server/config.yaml");
+
   _config.LoadFromEnvironment();
-
-  // Read configurations
-
-  _breedingRegistry.ReadConfig(_resourceDirectory / "config/game/breeding.yaml");
-  _characterRegistry.ReadConfig(_resourceDirectory / "config/game/character.yaml");
-  _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
-  _horseRegistry.ReadConfig(_resourceDirectory / "config/game/horses");
-  _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items");
-  _magicRegistry.ReadConfig(_resourceDirectory / "config/game/magic.yaml");
-  _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
-  _questRegistry.ReadConfig(_resourceDirectory / "config/game/quests.yaml");
-
-  _moderationSystem.ReadConfig(_resourceDirectory / "config/server/automod.yaml");
-  _systemContentRegistry.ReadConfig(_resourceDirectory / "config/server/system_content.yaml");
+  LoadConfigurations();
 
   // Initialize the directors and tick them on their own threads.
   // Directors will terminate their tick loop once `_shouldRun` flag is set to false.
@@ -291,6 +278,24 @@ void ServerInstance::Terminate()
 {
   _shouldRun.store(false, std::memory_order::relaxed);
   _breedingMarket.Terminate();
+}
+
+void ServerInstance::LoadConfigurations()
+{
+  // Read server configurations
+  _config.LoadFromFile(_resourceDirectory / "config/server/config.yaml");
+  _moderationSystem.ReadConfig(_resourceDirectory / "config/server/automod.yaml");
+  _systemContentRegistry.ReadConfig(_resourceDirectory / "config/server/system_content.yaml");
+
+  // Read game configurations
+  _breedingRegistry.ReadConfig(_resourceDirectory / "config/game/breeding.yaml");
+  _characterRegistry.ReadConfig(_resourceDirectory / "config/game/character.yaml");
+  _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
+  _horseRegistry.ReadConfig(_resourceDirectory / "config/game/horses");
+  _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items");
+  _magicRegistry.ReadConfig(_resourceDirectory / "config/game/magic.yaml");
+  _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
+  _questRegistry.ReadConfig(_resourceDirectory / "config/game/quests.yaml");
 }
 
 AuthenticationService& ServerInstance::GetAuthenticationService()

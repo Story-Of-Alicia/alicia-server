@@ -267,20 +267,21 @@ struct Character
   };
   dao::Field<Role> role{};
 
-  //! Staff permission tier.
+  //! Role privilege rank.
   //! None: regular user, no staff powers.
   //! Trial: mute and temporary bans (up to 30 days).
   //! Moderator: mute and any type of ban.
   //! Admin: any admin command, including carrots and promoting/demoting.
-  enum class StaffRank
+  enum class RoleRank
   {
     None,
     Trial,
     Moderator,
     Admin
   };
+
   //! Regular users are always None; a rank is only granted via promotion.
-  dao::Field<StaffRank> staffRank{StaffRank::None};
+  dao::Field<RoleRank> roleRank{RoleRank::None};
 
   struct Parts
   {

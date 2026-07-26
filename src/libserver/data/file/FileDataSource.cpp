@@ -299,12 +299,12 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
 
   if (character.role() == data::Character::Role::User)
   {
-    character.staffRank = data::Character::StaffRank::None;
+    character.roleRank = data::Character::RoleRank::None;
   }
   else
   {
-    character.staffRank = static_cast<data::Character::StaffRank>(
-      json.value("staffRank", static_cast<uint32_t>(data::Character::StaffRank::None)));
+    character.roleRank = static_cast<data::Character::RoleRank>(
+      json.value("staffRank", static_cast<uint32_t>(data::Character::RoleRank::None)));
   }
 
   const auto& parts = json.value("parts", nlohmann::json::object());
@@ -415,7 +415,7 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["cash"] = character.cash();
 
   json["role"] = character.role();
-  json["staffRank"] = character.staffRank();
+  json["staffRank"] = character.roleRank();
 
   // Character parts
   nlohmann::json parts;
