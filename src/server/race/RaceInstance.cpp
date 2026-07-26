@@ -132,6 +132,22 @@ void RaceInstance::Stop()
 
     score.experience = 420;
     score.carrots = 2500;
+
+    {
+      // Multiplier as a percentage (example 100%)
+      constexpr uint32_t CarrotExpMultiplierKey = 18;
+      constexpr float DefaultCarrotExpMultiplier = 1.0f;
+      const auto& carrotExpMultiplierOpt = _raceNetworkHandler.GetServerInstance()
+        .GetSystemContentRegistry()
+        .GetValue(CarrotExpMultiplierKey);
+
+      const float multiplier = carrotExpMultiplierOpt.has_value() ?
+          carrotExpMultiplierOpt.value() / 100.0f :
+          DefaultCarrotExpMultiplier;
+      score.carrots = static_cast<uint32_t>(
+        static_cast<float>(score.carrots) * multiplier);
+    }
+
     score.teamColor = racer.team;
     const auto characterRecord = _raceNetworkHandler.GetServerInstance().GetDataDirector().GetCharacter(
       characterUid);
