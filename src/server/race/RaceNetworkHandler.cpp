@@ -1268,21 +1268,27 @@ void RaceNetworkHandler::HandleStartRace(
     return;
   }
 
-  constexpr uint32_t GameCountdownKey = 17;
-  constexpr uint32_t DefaultCountdownMs = 5310;
+  uint32_t raceCountdownMs{0};
+  if (parameters.gameMode != protocol::GameMode::Mission)
+  {
+    constexpr uint32_t GameCountdownKey = 17;
+    constexpr uint32_t DefaultCountdownMs = 5310;
 
-  const auto& countdown = GetServerInstance()
-    .GetSystemContentRegistry()
-    .GetValue(GameCountdownKey);
+    const auto& countdown = GetServerInstance()
+      .GetSystemContentRegistry()
+      .GetValue(GameCountdownKey);
 
-  const protocol::AcCmdRCRoomCountdown roomCountdown{
-    .countdown = countdown.has_value()
-      ? countdown.value()
-      : DefaultCountdownMs,
-    .mapBlockId = static_cast<uint16_t>(raceInstance.GetMapBlockId())};
+    const protocol::AcCmdRCRoomCountdown roomCountdown{
+      .countdown = countdown.has_value()
+        ? countdown.value()
+        : DefaultCountdownMs,
+      .mapBlockId = static_cast<uint16_t>(raceInstance.GetMapBlockId())};
 
-  // Broadcast room countdown.
-  this->Broadcast(raceInstance, roomCountdown);
+    raceCountdownMs = roomCountdown.countdown;
+
+    // Broadcast room countdown.
+    this->Broadcast(raceInstance, roomCountdown);
+  }
 
   // Add the racers.
   _serverInstance.GetRoomSystem().GetRoom(
@@ -1455,7 +1461,7 @@ void RaceNetworkHandler::HandleStartRace(
           }
         });
     },
-    Scheduler::Clock::now() + std::chrono::milliseconds(roomCountdown.countdown));
+    Scheduler::Clock::now() + std::chrono::milliseconds(raceCountdownMs));
 }
 
 void RaceNetworkHandler::SendStartRaceCancel(
