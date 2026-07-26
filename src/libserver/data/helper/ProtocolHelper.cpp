@@ -4,11 +4,39 @@
 
 #include "libserver/data/helper/ProtocolHelper.hpp"
 
+#include "libserver/data/DataDefinitions.hpp"
+
 namespace server
 {
 
 namespace protocol
 {
+
+namespace
+{
+
+//! Converts horse type to protocol horse type.
+//! @param value Horse type.
+//! @return Protocol horse type. If un-mapped default of `Adult` is returned.
+Horse::HorseType HorseTypeToProtocolHorseType(
+  const data::Horse::Type value) noexcept
+{
+  switch (value)
+  {
+    case data::Horse::Type::Rent:
+      return Horse::HorseType::Rent;
+    case data::Horse::Type::Stallion:
+      return Horse::HorseType::Stallion;
+    case data::Horse::Type::Foal:
+      return Horse::HorseType::Foal;
+    case data::Horse::Type::Adult:
+    default:
+      static_assert(true && "Unmapped horse type");
+      return Horse::HorseType::Adult;
+  }
+}
+
+} // anon namespace
 
 void BuildProtocolCharacter(
   Character& protocolCharacter,
@@ -84,11 +112,11 @@ void BuildProtocolHorse(
   };
 
   protocolHorse.vals1 = {
-    .type = Horse::HorseType::Adult,
+    .type = HorseTypeToProtocolHorseType(horse.type()),
     .val1 = 0x00,
     .dateOfBirth = util::TimePointToAliciaTime(horse.dateOfBirth()),
     .tendency = static_cast<uint8_t>(horse.tendency()),
-    .spirit = 0x00,
+    .spirit = static_cast<uint8_t>(horse.spirit()),
     .classProgression = static_cast<uint32_t>(horse.clazzProgress()),
     .val5 = 0x00,
     .potentialLevel = static_cast<uint8_t>(horse.potential.level()),
@@ -112,6 +140,21 @@ void BuildProtocolHorseParts(
   Horse::Parts& protocolHorseParts,
   const data::Horse::Parts& parts)
 {
+  // Helper function to map adult TIDs to foal-safe color TIDs
+  // TODO: This is causing a UI mismatch on the horse appearance info window.
+  //       Figure out a way to render foals' mane and tail and display UI correctly without crashing the client.
+  auto MapToFoalColorTid = [](const data::Tid adultTid) -> uint8_t
+  {
+    // Foals can only display colors 1-5
+    // TIDs 1-5 map directly
+    if (adultTid >= 1 && adultTid <= 5)
+      return static_cast<uint8_t>(adultTid);
+
+    // TIDs 6+ map to their color equivalent (cycles every 5)
+    // Pattern: 6->1, 7->2, 8->3, 9->4, 10->5, 11->1, 12->2, etc.
+    return static_cast<uint8_t>(((adultTid - 1) % 5) + 1);
+  };
+
   protocolHorseParts = {
     .skinId = static_cast<uint8_t>(parts.skinTid()),
     .maneId = static_cast<uint8_t>(parts.maneTid()),

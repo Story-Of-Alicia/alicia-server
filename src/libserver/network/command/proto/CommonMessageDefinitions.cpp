@@ -151,5 +151,35 @@ void AcCmdRCUpdateQuestNotify::Write(
     .Write(command.objectiveProgress);
 }
 
+void AcCmdRCUpdateMountInfoNotify::Write(
+  const AcCmdRCUpdateMountInfoNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.action)
+    .Write(command.horse);
+}
+
+void AcCmdRCUpdateMountInfoNotify::Read(
+  AcCmdRCUpdateMountInfoNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdRCMobDead::Write(
+  const AcCmdRCMobDead& command,
+  SinkStream& stream)
+{
+  stream.Write(command.mobOid);
+}
+
+void AcCmdRCMobDead::Read(
+  AcCmdRCMobDead& command,
+  SourceStream& stream)
+{
+  stream.Read(command.mobOid);
+}
+
 } // namespace server::protocol
 

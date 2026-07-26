@@ -52,9 +52,13 @@ ServerInstance::ServerInstance(
   , _chatSystem(*this)
   , _infractionSystem(*this)
   , _itemSystem(*this)
+  , _horseSystem(*this)
   , _matchmakingSystem(*this)
   , _questSystem(*this)
+  , _rewardSystem(*this)
   , _telemetry(*this)
+  , _breedingMarket(*this)
+  , _genetics(*this)
 {
 }
 
@@ -89,8 +93,10 @@ void ServerInstance::Initialize()
 
   // Read configurations
 
+  _breedingRegistry.ReadConfig(_resourceDirectory / "config/game/breeding.yaml");
   _characterRegistry.ReadConfig(_resourceDirectory / "config/game/character.yaml");
   _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
+  _horseRegistry.ReadConfig(_resourceDirectory / "config/game/horses");
   _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items");
   _magicRegistry.ReadConfig(_resourceDirectory / "config/game/magic.yaml");
   _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
@@ -284,6 +290,7 @@ void ServerInstance::Initialize()
 void ServerInstance::Terminate()
 {
   _shouldRun.store(false, std::memory_order::relaxed);
+  _breedingMarket.Terminate();
 }
 
 AuthenticationService& ServerInstance::GetAuthenticationService()
@@ -366,6 +373,11 @@ registry::SystemContentRegistry& ServerInstance::GetSystemContentRegistry()
   return _systemContentRegistry;
 }
 
+registry::BreedingRegistry& ServerInstance::GetBreedingRegistry()
+{
+  return _breedingRegistry;
+}
+
 ChatSystem& ServerInstance::GetChatSystem()
 {
   return _chatSystem;
@@ -379,6 +391,11 @@ InfractionSystem& ServerInstance::GetInfractionSystem()
 ItemSystem& ServerInstance::GetItemSystem()
 {
   return _itemSystem;
+}
+
+HorseSystem& ServerInstance::GetHorseSystem()
+{
+  return _horseSystem;
 }
 
 ModerationSystem& ServerInstance::GetModerationSystem()
@@ -396,6 +413,11 @@ MatchmakingSystem& ServerInstance::GetMatchmakingSystem()
   return _matchmakingSystem;
 }
 
+RewardSystem& ServerInstance::GetRewardSystem()
+{
+  return _rewardSystem;
+}
+
 QuestSystem& ServerInstance::GetQuestSystem()
 {
   return _questSystem;
@@ -409,6 +431,16 @@ Telemetry& ServerInstance::GetTelemetry()
 OtpSystem& ServerInstance::GetOtpSystem()
 {
   return _otpSystem;
+}
+
+Genetics& ServerInstance::GetGenetics()
+{
+  return _genetics;
+}
+
+BreedingMarket& ServerInstance::GetBreedingMarket()
+{
+  return _breedingMarket;
 }
 
 Config& ServerInstance::GetSettings()

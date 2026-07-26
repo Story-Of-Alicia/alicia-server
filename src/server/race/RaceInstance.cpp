@@ -160,6 +160,7 @@ void RaceInstance::Stop()
         {
           score.mountName = horse.name();
           score.horseClass = static_cast<uint8_t>(horse.clazz());
+          score.horseClassProgress = horse.clazzProgress();
           score.growthPoints = static_cast<uint16_t>(horse.growthPoints());
         });
     });

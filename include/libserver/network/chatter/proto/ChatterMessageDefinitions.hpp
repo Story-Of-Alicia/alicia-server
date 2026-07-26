@@ -643,7 +643,7 @@ struct ChatCmdLetterListAckOk
     //! Mail UID.
     data::Uid uid{};
     data::Mail::MailType type{};
-    data::Mail::MailOrigin origin{};
+    data::Uid claimUid{};
 
     //! Who sent the mail.
     std::string sender{};
@@ -894,7 +894,7 @@ struct ChatCmdLetterArriveTrs
   // Note: almost identical to InboxMail with the extra std::string missing
   data::Uid mailUid{};
   data::Mail::MailType mailType{};
-  data::Mail::MailOrigin mailOrigin{};
+  data::Uid claimUid{};
 
   std::string sender{};
   std::string date{};

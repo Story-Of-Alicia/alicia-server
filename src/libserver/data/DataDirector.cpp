@@ -644,6 +644,96 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
         }
         return false;
       })
+  , _stallionStorage(
+      [&](const auto& key, auto& stallion)
+      {
+        try
+        {
+          _primaryDataSource->RetrieveStallion(key, stallion);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception retrieving stallion {} from the primary data source: {}", key, x.what());
+        }
+
+        return false;
+      },
+      [&](const auto& key, auto& stallion)
+      {
+        try
+        {
+          _primaryDataSource->StoreStallion(key, stallion);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception storing stallion {} on the primary data source: {}", key, x.what());
+        }
+
+        return false;
+      },
+      [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteStallion(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting stallion {} from the primary data source: {}", key, x.what());
+        }
+        return false;
+      }),
+  _rewardStorage(
+      [&](const auto& key, auto& reward)
+      {
+        try
+        {
+          _primaryDataSource->RetrieveReward(key, reward);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception retrieving reward {} from the primary data source: {}", key, x.what());
+        }
+
+        return false;
+      },
+      [&](const auto& key, auto& reward)
+      {
+        try
+        {
+          _primaryDataSource->StoreReward(key, reward);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception storing reward {} on the primary data source: {}", key, x.what());
+        }
+
+        return false;
+      },
+      [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteReward(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting reward {} from the primary data source: {}", key, x.what());
+        }
+        return false;
+      })
 {
   _primaryDataSource = std::make_unique<FileDataSource>();
   if (auto* fileDataSource = dynamic_cast<FileDataSource*>(_primaryDataSource.get()))
@@ -673,11 +763,13 @@ void DataDirector::Terminate()
     _eggStorage.Terminate();
     _petStorage.Terminate();
     _guildStorage.Terminate();
+    _stallionStorage.Terminate();
     _housingStorage.Terminate();
     _settingsStorage.Terminate();
     _dailyQuestGroupStorage.Terminate();
     _mailStorage.Terminate();
     _questStorage.Terminate();
+    _rewardStorage.Terminate();
   }
   catch (const std::exception& x)
   {
@@ -704,10 +796,12 @@ void DataDirector::Tick()
     _petStorage.Tick();
     _guildStorage.Tick();
     _housingStorage.Tick();
+    _stallionStorage.Tick();
     _settingsStorage.Tick();
     _dailyQuestGroupStorage.Tick();
     _mailStorage.Tick();
     _questStorage.Tick();
+    _rewardStorage.Tick();
   }
   catch (const std::exception& x)
   {
@@ -1185,9 +1279,78 @@ DataDirector::QuestStorage& DataDirector::GetQuestCache()
   return _questStorage;
 }
 
+Record<data::Stallion> DataDirector::GetStallion(data::Uid stallionUid) noexcept
+{
+  if (stallionUid == data::InvalidUid)
+    return {};
+  return _stallionStorage.Get(stallionUid).value_or(Record<data::Stallion>{});
+}
+
+Record<data::Stallion> DataDirector::CreateStallion() noexcept
+{
+  try
+  {
+    return _stallionStorage.Create(
+      [this]()
+      {
+        data::Stallion stallion;
+        _primaryDataSource->CreateStallion(stallion);
+
+        return std::make_pair(stallion.uid(), std::move(stallion));
+      });
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception while creating a stallion record on the primary data source: {}", x.what());
+    return {};
+  }
+}
+
+DataDirector::StallionStorage& DataDirector::GetStallionCache()
+{
+  return _stallionStorage;
+}
+
 DataSource& DataDirector::GetDataSource() noexcept
 {
   return *_primaryDataSource;
+}
+
+std::vector<data::Uid> DataDirector::ListRegisteredStallions()
+{
+  return _primaryDataSource->ListRegisteredStallions();
+}
+
+Record<data::Reward> DataDirector::GetReward(data::Uid claimUid) noexcept
+{
+  if (claimUid == data::InvalidUid)
+    return {};
+  return _rewardStorage.Get(claimUid).value_or(Record<data::Reward>{});
+}
+
+Record<data::Reward> DataDirector::CreateReward() noexcept
+{
+  try
+  {
+    return _rewardStorage.Create(
+      [this]()
+      {
+        data::Reward reward;
+        _primaryDataSource->CreateReward(reward);
+
+        return std::make_pair(reward.claimUid(), std::move(reward));
+      });
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception while creating a reward record on the primary data source: {}", x.what());
+    return {};
+  }
+}
+
+DataDirector::RewardStorage& DataDirector::GetRewardCache()
+{
+  return _rewardStorage;
 }
 
 void DataDirector::ScheduleUserLoad(
@@ -1487,20 +1650,22 @@ void DataDirector::ScheduleCharacterLoad(
     }
     else
     {
-      // Preload character records for character names in letter list
+      // Preload character records for character names in letter list and reward records for system mail
       std::unordered_set<data::Uid> mailCharacterUids{};
+      std::unordered_set<data::Uid> rewardUids{};
 
       // Process every mail belonging to the loading character
       for (const auto& mailRecord : mailRecords.value())
       {
-        // Get character uids from mail record
-        data::Uid mailUid, from, to;
+        // Get character uids and claim uid from mail record
+        data::Uid mailUid, from, to, claimUid;
         mailRecord.Immutable(
-          [&mailUid, &from, &to](const data::Mail& mail)
+          [&mailUid, &from, &to, &claimUid](const data::Mail& mail)
           {
             mailUid = mail.uid();
             from = mail.from();
             to = mail.to();
+            claimUid = mail.claimUid();
           });
 
         // Mail ownership logic
@@ -1509,11 +1674,12 @@ void DataDirector::ScheduleCharacterLoad(
         bool isSelfMail = from == characterUid && to == characterUid;
 
         bool isOwnedMail = isInboxMail || isSentMail || isSelfMail;
-        bool isAnyInvalid = from == data::InvalidUid || to == data::InvalidUid;
+        // System cannot send to system
+        bool isAnyInvalid = from == data::InvalidUid and to == data::InvalidUid;
 
         if (isAnyInvalid or not isOwnedMail)
         {
-          // Mail is in another mailbox instead of self-sender's, or one of the UIDs are invalid
+          // Mail is in another mailbox instead of self-sender's, or both of the UIDs are invalid
           userDataContext.debugMessage =
             std::format("Error processing mail {} - character {} from {} to {}",
               mailUid,
@@ -1523,8 +1689,12 @@ void DataDirector::ScheduleCharacterLoad(
           return;
         }
 
-        mailCharacterUids.emplace(from);
-        mailCharacterUids.emplace(to);
+        if (from != data::InvalidUid)
+          mailCharacterUids.emplace(from);
+        if (to != data::InvalidUid)
+          mailCharacterUids.emplace(to);
+        if (claimUid != data::InvalidUid)
+          rewardUids.emplace(claimUid);
       }
 
       // Preload characters from uids
@@ -1533,6 +1703,21 @@ void DataDirector::ScheduleCharacterLoad(
         std::vector<data::Uid>(
           mailCharacterUids.begin(),
           mailCharacterUids.end()));
+
+      // Preload rewards from claim uids
+      if (!rewardUids.empty())
+      {
+        const auto rewardRecords = GetRewardCache().Get(
+          std::vector<data::Uid>(
+            rewardUids.begin(),
+            rewardUids.end()));
+        if (not rewardRecords)
+        {
+          userDataContext.debugMessage = std::format(
+            "Reward records not available");
+          return;
+        }
+      }
     }
 
     // Require quest records.

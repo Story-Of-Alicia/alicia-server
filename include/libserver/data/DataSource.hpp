@@ -251,6 +251,39 @@ public:
   //! Deletes the quest from the data source.
   //! @param uid UID of the quest.
   virtual void DeleteQuest(data::Uid uid) = 0;
+
+  //! Creates the stallion in the data source.
+  //! @param stallion Stallion to create.
+  virtual void CreateStallion(data::Stallion& stallion) = 0;
+  //! Retrieves the stallion from the data source.
+  //! @param uid UID of the stallion.
+  //! @param stallion Stallion to retrieve.
+  virtual void RetrieveStallion(data::Uid uid, data::Stallion& stallion) = 0;
+  //! Stores the stallion on the data source.
+  //! @param uid UID of the stallion.
+  //! @param stallion Stallion to store.
+  virtual void StoreStallion(data::Uid uid, const data::Stallion& stallion) = 0;
+  //! Deletes the stallion from the data source.
+  //! @param uid UID of the stallion.
+  virtual void DeleteStallion(data::Uid uid) = 0;
+  //! Lists all registered stallion UIDs from the data source.
+  //! @returns Vector of stallion UIDs.
+  virtual std::vector<data::Uid> ListRegisteredStallions() = 0;
+
+  //! Creates the reward in the data source.
+  //! @param reward Reward to create.
+  virtual void CreateReward(data::Reward& reward) = 0;
+  //! Retrieves the reward from the data source.
+  //! @param claimUid Claim UID of the reward.
+  //! @param reward Reward to retrieve.
+  virtual void RetrieveReward(data::Uid claimUid, data::Reward& reward) = 0;
+  //! Stores the reward on the data source.
+  //! @param claimUid Claim UID of the reward.
+  //! @param reward Reward to store.
+  virtual void StoreReward(data::Uid claimUid, const data::Reward& reward) = 0;
+  //! Deletes the reward from the data source.
+  //! @param claimUid Claim UID of the reward.
+  virtual void DeleteReward(data::Uid claimUid) = 0;
 };
 
 } // namespace server

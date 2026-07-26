@@ -152,6 +152,7 @@ struct Item
   } type{Type::Permanent};
 
   uint32_t level{};
+  std::optional<uint8_t> prerequisiteLevel{};
 
   std::string name;
   std::vector<std::string> description;

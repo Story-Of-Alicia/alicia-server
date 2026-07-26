@@ -740,6 +740,11 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
 
   clientContext.characterUid = userCharacterUid;
 
+  // Promote any foals that matured while the player was offline before their
+  // horses are sent, so the client shows them as adults from the start rather
+  // than caching a foal it won't re-render on a later type change.
+  _serverInstance.GetHorseSystem().PromoteMaturedFoals(userCharacterUid);
+
   // Get the character record and fill the protocol data.
   // Also get the UID of the horse mounted by the character.
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
@@ -1562,17 +1567,7 @@ void LobbyNetworkHandler::HandleCreateNickname(
       {
         // The TID of the horse specifies which body mesh is used for that horse.
         // Can be found in the `MountPartInfo` table.
-        horse.tid() = requestedHorseTid;
-        horse.dateOfBirth() = data::Clock::now();
-        horse.mountCondition.stamina = 3500;
-        horse.growthPoints() = 150;
-        horse.tendency() = 1;
-        horse.clazz = 1;
-
-        _serverInstance.GetHorseRegistry().BuildRandomHorse(
-          horse.parts,
-          horse.appearance);
-
+        registry::HorseRegistry::BuildDefaultHorse(horse, requestedHorseTid);
         mountUid = horse.uid();
       });
 
@@ -1593,14 +1588,14 @@ void LobbyNetworkHandler::HandleCreateNickname(
           character.name = command.nickname;
 
         // todo: default level configured
-        character.level = 30;
-        character.experience() = 254500;
+        character.level = 40;
+        character.experience() = 557300;
         // todo: default carrots configured
-        character.carrots = 10'000;
+        character.carrots = 200'000;
 
         character.mountUid() = mountUid;
 
-        constexpr uint8_t StartingHorseSlotCount = 3; 
+        constexpr uint8_t StartingHorseSlotCount = 5; 
         character.horseSlotCount() = StartingHorseSlotCount;
 
         // Create the default friend group.
@@ -1710,10 +1705,29 @@ void LobbyNetworkHandler::HandleShowInventory(
       }
 
       // Create a separate response for horses
-      auto& horseResponse = responses.emplace_back();
+      // 0x0A (10) is the protocol max per response
+      constexpr uint32_t HorsesPerResponse = 10;
       const auto horseRecords = _serverInstance.GetDataDirector().GetHorseCache().Get(
         character.horses());
-      protocol::BuildProtocolHorses(horseResponse.horses, *horseRecords);
+
+      // Produce chunked responses, by HorsesPerResponse
+      const auto horseChunks = std::views::chunk(
+        *horseRecords,
+        HorsesPerResponse);
+
+      // Create a response per chunk
+      for (const auto& horseChunk : horseChunks)
+      {
+        auto& response = responses.emplace_back();
+        for (const auto& horse : horseChunk)
+        {
+          auto& protocolHorse = response.horses.emplace_back();
+          horse.Immutable([&protocolHorse](const auto& horse)
+          {
+            protocol::BuildProtocolHorse(protocolHorse, horse);
+          });
+        }
+      }
     });
 
   // If the character has no items or extra horses

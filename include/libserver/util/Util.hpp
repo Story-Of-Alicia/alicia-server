@@ -73,7 +73,7 @@ uint32_t DurationToAliciaTime(const Clock::duration& duration);
 /// @brief Converts Alicia shop timestamp to DateTime
 /// @param timestamp Alicia shop timestamp
 /// @return Date time representation
-DateTime AliciaShopTimeToDateTime(const std::array<uint32_t, 3> timestamp);
+DateTime AliciaShopTimeToDateTime(std::array<uint32_t, 3> timestamp);
 
 /// @brief Converts DateTime to Alicia shop timestamp
 /// @param dateTime Date time
