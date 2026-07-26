@@ -374,6 +374,19 @@ struct Character
     dao::Field<std::vector<Uid>> sent{};
   } mailbox{};
 
+  struct Mission
+  {
+    struct Progress
+    {
+      uint32_t id{};
+      uint32_t value{};
+    };
+
+    uint32_t id{};
+    std::vector<Progress> progress{};
+  };
+  dao::Field<std::vector<Mission>> missions{};
+
   dao::Field<std::vector<Uid>> quests{};
 };
 

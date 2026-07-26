@@ -821,6 +821,10 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
         response.character,
         character);
 
+      protocol::BuildProtocolMissions(
+        response.missions,
+        character.missions());
+
       if (character.guildUid() != data::InvalidUid)
       {
         const auto guildRecord = _serverInstance.GetDataDirector().GetGuild(

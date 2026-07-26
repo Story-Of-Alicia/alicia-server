@@ -388,6 +388,28 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.mailbox.inbox = mailbox.value("inbox", std::vector<data::Uid>{});
   character.mailbox.sent = mailbox.value("sent", std::vector<data::Uid>{});
 
+  std::vector<data::Character::Mission> missions;
+  if (json.contains("missions") && json["missions"].is_array())
+  {
+    for (const auto& missionJson : json["missions"])
+    {
+      data::Character::Mission mission;
+      mission.id = missionJson.value("id", uint32_t{});
+      if (missionJson.contains("progress") && missionJson["progress"].is_array())
+      {
+        for (const auto& progressJson : missionJson["progress"])
+        {
+          mission.progress.push_back({
+            .id = progressJson.value("id", uint32_t{}),
+            .value = progressJson.value("value", uint32_t{})
+          });
+        }
+      }
+      missions.push_back(std::move(mission));
+    }
+  }
+  character.missions = std::move(missions);
+
   character.quests = json.value("quests", std::vector<data::Uid>{});
 }
 
@@ -508,6 +530,24 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   mailbox["inbox"] = character.mailbox.inbox();
   mailbox["sent"] = character.mailbox.sent();
   json["mailbox"] = mailbox;
+
+  nlohmann::json missions = nlohmann::json::array();
+  for (const auto& mission : character.missions())
+  {
+    nlohmann::json missionJson;
+    missionJson["id"] = mission.id;
+    nlohmann::json progressArray = nlohmann::json::array();
+    for (const auto& progress : mission.progress)
+    {
+      nlohmann::json progressJson;
+      progressJson["id"] = progress.id;
+      progressJson["value"] = progress.value;
+      progressArray.push_back(progressJson);
+    }
+    missionJson["progress"] = progressArray;
+    missions.push_back(missionJson);
+  }
+  json["missions"] = missions;
 
   json["quests"] = character.quests();
 
