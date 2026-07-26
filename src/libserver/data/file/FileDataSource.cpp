@@ -19,6 +19,8 @@
 
 #include "libserver/data/file/FileDataSource.hpp"
 
+#include <algorithm>
+#include <cctype>
 #include <format>
 #include <fstream>
 #include <regex>
@@ -1184,9 +1186,15 @@ void server::FileDataSource::DeleteGuild(data::Uid uid)
 
 bool server::FileDataSource::IsGuildNameUnique(const std::string_view& name)
 {
-  const std::regex rg(
-    std::format("{}", name),
-    std::regex_constants::icase);
+  const auto equalsIgnoreCase = [](std::string_view lhs, std::string_view rhs)
+  {
+    return std::ranges::equal(
+      lhs, rhs,
+      [](unsigned char a, unsigned char b)
+      {
+        return std::tolower(a) == std::tolower(b);
+      });
+  };
 
   for (const auto& file : std::filesystem::directory_iterator(_guildDataPath))
   {
@@ -1197,11 +1205,19 @@ bool server::FileDataSource::IsGuildNameUnique(const std::string_view& name)
     if (not dataFile.is_open())
       continue;
 
-    const auto json = nlohmann::json::parse(dataFile);
-    const auto existingGuildName = json["name"].get<std::string>();
+    try
+    {
+      const auto json = nlohmann::json::parse(dataFile);
+      const auto existingGuildName = json.value("name", std::string{});
 
-    if (std::regex_match(existingGuildName, rg))
-      return false;
+      if (equalsIgnoreCase(existingGuildName, name))
+        return false;
+    }
+    catch (const std::exception&)
+    {
+      // Skip malformed guild files rather than aborting the uniqueness check.
+      continue;
+    }
   }
 
   return true;
