@@ -422,8 +422,11 @@ void RaceInstance::TickLoading()
 
   // Switch to the racing stage and set the timeout time point.
   _stage = Stage::Racing;
-  _stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(
-    mapBlockTemplate.timeLimit);
+  if (_parameters.teamMode == protocol::TeamMode::Single)
+    _stageTimeoutTimePoint = Clock::time_point::max();
+  else
+    _stageTimeoutTimePoint = std::chrono::steady_clock::now() + std::chrono::seconds(
+      mapBlockTemplate.timeLimit);
 
   // Set up the race start time point.
   const auto now = std::chrono::steady_clock::now();
