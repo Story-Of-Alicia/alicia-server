@@ -756,69 +756,6 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
     .lobbyTime = util::TimePointToFileTime(util::Clock::now()),
     // .member0 = 0xCA794,
     .val3 = 0x0,
-
-    .missions = {
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x18,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-          .id = 2,
-          .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x1F,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x23,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x29,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x2A,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x2B,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x2C,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x2D,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x2E,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x2F,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},},
-
     .ranchAddress = lobbyConfig.advertisement.ranch.address.to_uint(),
     .ranchPort = lobbyConfig.advertisement.ranch.port,
     .scramblingConstant = 0,
@@ -986,14 +923,6 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
   {
     response.notice = notice;
   }
-  protocol::LobbyCommandLoginOK::TrainingProgression::MapProgressInfo mapProgressInfo{
-    .mapBlockId= 1,
-    .gameMode = protocol::GameMode::Speed,
-    .clearStage = protocol::LobbyCommandLoginOK::TrainingProgression::MapProgressInfo::ClearStage::None,
-  };
-
-  response.trainingProgression.mapProggressInfos = {
-    mapProgressInfo};
 
   _commandServer.SetCode(clientId, {});
 

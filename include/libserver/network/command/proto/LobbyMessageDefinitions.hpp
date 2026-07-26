@@ -86,6 +86,8 @@ struct LobbyCommandLoginOK
   uint16_t level{};
   int32_t carrots{};
 
+  //! The level progress of the character.
+  //! This must be `0` for the prologue.
   uint32_t levelProgress{};
 
   enum class Role : uint32_t
