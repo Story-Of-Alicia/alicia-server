@@ -46,6 +46,8 @@ public:
   {
     std::string brand;
     std::string notice;
+    //! Passphrase required to use the //promote command.
+    std::string promotePassphrase;
   } general{};
 
   //!
