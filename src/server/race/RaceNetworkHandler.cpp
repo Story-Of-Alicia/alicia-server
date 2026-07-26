@@ -923,8 +923,8 @@ void RaceNetworkHandler::HandleChangeRoomOptions(
           case protocol::GameMode::Magic:
             roomDetails.gameMode = Room::GameMode::Magic;
             break;
-          case protocol::GameMode::Tutorial:
-            roomDetails.gameMode = Room::GameMode::Tutorial;
+          case protocol::GameMode::Mission:
+            roomDetails.gameMode = Room::GameMode::Mission;
             break;
           default:
             spdlog::error("Unknown game mode '{}'", static_cast<uint32_t>(command.gameMode));

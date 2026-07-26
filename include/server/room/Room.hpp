@@ -37,7 +37,7 @@ public:
     Speed = 1,
     Magic = 2,
     Guild,
-    Tutorial = 6
+    Mission = 6
   };
 
   enum class TeamMode

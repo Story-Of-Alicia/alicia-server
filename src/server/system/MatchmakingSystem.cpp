@@ -36,8 +36,8 @@ std::optional<Room::GameMode> ResolveRoomGameMode(
       return Room::GameMode::Speed;
     case protocol::GameMode::Magic:
       return Room::GameMode::Magic;
-    case protocol::GameMode::Tutorial:
-      return Room::GameMode::Tutorial;
+    case protocol::GameMode::Mission:
+      return Room::GameMode::Mission;
     default:
       return std::nullopt;
   }
