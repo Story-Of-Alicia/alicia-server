@@ -339,6 +339,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRGameCreateClientItem& command);
 
+  void HandleMissionEvent(
+    ClientId clientId,
+    const protocol::AcCmdRCMissionEvent& command);
+
   //! A scheduler instance.
   Scheduler _scheduler;
   //! A server instance.

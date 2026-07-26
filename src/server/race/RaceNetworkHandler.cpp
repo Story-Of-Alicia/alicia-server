@@ -274,6 +274,12 @@ RaceNetworkHandler::RaceNetworkHandler(ServerInstance& serverInstance)
     {
       HandleGameCreateClientItem(clientId, message);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdRCMissionEvent>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleMissionEvent(clientId, command);
+    });
 }
 
 void RaceNetworkHandler::Initialize()
@@ -3963,6 +3969,13 @@ void RaceNetworkHandler::HandleGameCreateClientItem(
   auto& item = raceInstance.GetTracker().AddEventItem(clientContext.characterUid);
   item.position = command.position;
   item.itemType = selectedEgg.deckItemId;
+}
+
+void RaceNetworkHandler::HandleMissionEvent(
+  [[maybe_unused]] ClientId clientId,
+  [[maybe_unused]] const protocol::AcCmdRCMissionEvent& command)
+{
+  [[maybe_unused]] const auto& clientContext = GetClientContext(clientId);
 }
 
 } // namespace server

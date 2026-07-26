@@ -181,5 +181,23 @@ void AcCmdRCMobDead::Read(
   stream.Read(command.mobOid);
 }
 
+void AcCmdRCMissionEvent::Write(
+  const AcCmdRCMissionEvent& command,
+  SinkStream& stream)
+{
+  stream.Write(command.event)
+    .Write(command.val1)
+    .Write(command.val2);
+}
+
+void AcCmdRCMissionEvent::Read(
+  AcCmdRCMissionEvent& command,
+  SourceStream& stream)
+{
+  stream.Read(command.event)
+    .Read(command.val1)
+    .Read(command.val2);
+}
+
 } // namespace server::protocol
 

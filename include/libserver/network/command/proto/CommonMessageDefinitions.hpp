@@ -354,6 +354,73 @@ struct AcCmdRCMobDead
     SourceStream& stream);
 };
 
+struct AcCmdRCMissionEvent
+{
+  enum class Event : uint32_t
+  {
+    EVENT_UI_CLOSE=1,
+    EVENT_PLAYER_INPUT=2,
+    EVENT_PLAYER_ACTION=3,
+    EVENT_ENTER_POSITION=4,
+    EVENT_GET_ITEM=5,
+    EVENT_USE_ITEM=6,
+    EVENT_TIMER=7,
+    EVENT_SCRIPT=8,
+    EVENT_TRIGGER=9,
+    EVENT_WAIT=10,
+    EVENT_RECORD=11,
+    EVENT_GAME=12,
+    EVENT_CAMERA_STOP=13,
+    EVENT_PATROL_END=14,
+    EVENT_PATROL_NEXT=15,
+    EVENT_HORSE_ACTION_END=16,
+    EVENT_UI=17,
+    EVENT_AREA_ENTER=18,
+    EVENT_AREA_LEAVE=19,
+    EVENT_NPC_CHAT=20,
+    EVENT_ACTIVE_CONTENT=21,
+    EVENT_PLAYER_COLLISION=22,
+    EVENT_CALL_NPC=23,
+    EVENT_ORDER_NPC=24,
+    EVENT_CALLED_NPC=25,
+    EVENT_CALL_NPC_RESULT=26,
+    EVENT_NPC_FOLLOWING_END=27,
+    EVENT_DEV_SET_MOUNT_CONDITION=28,
+    EVENT_NPC_FOLLOW_START=29,
+    EVENT_CHANGE_MOUNT=30,
+    EVENT_GAME_STEP=31,
+    EVENT_DEV_SET_GROUP_FORCE=32,
+    EVENT_FUN_KNOCKBACK=33,
+    EVENT_FUN_KNOCKBACK_INFO=34,
+    EVENT_SHEEP_COIN_DROP=35,
+    EVENT_WAVE_START=36,
+    EVENT_WAVE_END=37
+  };
+
+  Event event{};
+  uint32_t val1{};
+  uint32_t val2{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCMissionEvent;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCMissionEvent& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCMissionEvent& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // COMMON_MESSAGE_DEFINES_HPP

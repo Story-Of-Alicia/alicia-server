@@ -2086,23 +2086,6 @@ void AcCmdCRHousingRepairNotify::Read(
 {
   throw std::runtime_error("Not implemented");
 }
-void AcCmdRCMissionEvent::Write(
-  const AcCmdRCMissionEvent& command,
-  SinkStream& stream)
-{
-  stream.Write(command.event)
-    .Write(command.callerOid)
-    .Write(command.calledOid);
-}
-
-void AcCmdRCMissionEvent::Read(
-  AcCmdRCMissionEvent& command,
-  SourceStream& stream)
-{
-  stream.Read(command.event)
-    .Read(command.callerOid)
-    .Read(command.calledOid);
-}
 
 void RanchCommandKickRanch::Write(
   const RanchCommandKickRanch&,
