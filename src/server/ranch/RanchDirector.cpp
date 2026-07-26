@@ -3563,6 +3563,10 @@ void RanchDirector::HandleWithdrawGuild(
       character.guildUid() = data::InvalidUid;
     });
 
+  // On disband the guild no longer has any members, so delete its record.
+  if (command.option == WithdrawOption::Disband)
+    GetServerInstance().GetDataDirector().GetGuildCache().Delete(guildUid);
+
   const protocol::AcCmdCRWithdrawGuildMemberOK response{
     .option = command.option};
   _commandServer.QueueCommand<decltype(response)>(
