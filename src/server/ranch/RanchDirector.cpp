@@ -4620,7 +4620,14 @@ void RanchDirector::HandleUseItem(
 
   // Perform a mount update
   constexpr uint32_t HorseRenameItemTid = 45003;
-  if (usedItemTid == HorseRenameItemTid)
+  const bool refreshMountInfo =
+    usedItemTid == HorseRenameItemTid
+    || response.type == protocol::AcCmdCRUseItemOK::ActionType::Feed
+    || response.type == protocol::AcCmdCRUseItemOK::ActionType::Wash
+    || response.type == protocol::AcCmdCRUseItemOK::ActionType::Play
+    || response.type == protocol::AcCmdCRUseItemOK::ActionType::Cure;
+
+  if (refreshMountInfo)
   {
     protocol::AcCmdCRUpdateMountInfoOK mountOk{
       .action = protocol::AcCmdCRUpdateMountInfo::Action::Rename,};
