@@ -512,13 +512,13 @@ data::Horse::Appearance Genetics::CalculateFoalAppearance(
     _serverInstance.GetBreedingRegistry().GetBreedingParams().appearanceVariation) / 100.0f;
 
   // Each value is the parent average scaled by a random factor in [1-spread, 1+spread],
-  // clamped to the [1, 10] appearance range.
+  // clamped to the [0, 10] appearance range.
   const auto inherit = [&](uint32_t mareValue, uint32_t stallionValue) -> uint32_t
   {
     const float average = (static_cast<float>(mareValue) + static_cast<float>(stallionValue)) / 2.0f;
     std::uniform_real_distribution<float> variationDist(1.0f - spread, 1.0f + spread);
     const auto value = static_cast<int32_t>(std::lround(average * variationDist(_randomEngine)));
-    return static_cast<uint32_t>(std::clamp(value, 1, 10));
+    return static_cast<uint32_t>(std::clamp(value, 0, 10));
   };
 
   data::Horse::Appearance result;
