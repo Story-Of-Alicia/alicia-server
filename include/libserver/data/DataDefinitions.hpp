@@ -385,7 +385,7 @@ struct Character
     uint32_t id{};
     std::vector<Progress> progress{};
   };
-  dao::Field<std::vector<Mission>> missions{};
+  dao::Field<std::map<uint32_t, Mission>> missions{};
 
   dao::Field<std::vector<Uid>> quests{};
 };

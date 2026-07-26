@@ -446,11 +446,11 @@ void BuildProtocolMission(
 
 void BuildProtocolMissions(
   std::vector<LobbyCommandLoginOK::Mission>& protocolMissions,
-  const std::vector<data::Character::Mission>& missions)
+  const std::map<uint32_t, data::Character::Mission>& missions)
 {
   protocolMissions.clear();
   protocolMissions.reserve(missions.size());
-  for (const auto& mission : missions)
+  for (const auto& [missionId, mission] : missions)
   {
     auto& protocolMission = protocolMissions.emplace_back();
     BuildProtocolMission(protocolMission, mission);

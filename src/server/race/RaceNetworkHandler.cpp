@@ -3973,9 +3973,50 @@ void RaceNetworkHandler::HandleGameCreateClientItem(
 
 void RaceNetworkHandler::HandleMissionEvent(
   [[maybe_unused]] ClientId clientId,
-  [[maybe_unused]] const protocol::AcCmdRCMissionEvent& command)
+  const protocol::AcCmdRCMissionEvent& command)
 {
-  [[maybe_unused]] const auto& clientContext = GetClientContext(clientId);
+  static const auto& saveMissionRecord = [this](data::Uid characterUid, uint16_t missionId)
+  {
+    GetServerInstance().GetDataDirector().GetCharacter(characterUid).Mutable(
+      [missionId](data::Character& character)
+      {
+        const auto& [missionIter, inserted] = character.missions().try_emplace(
+          missionId,
+          data::Character::Mission{
+            .id = missionId,
+            .progress = {
+              data::Character::Mission::Progress{
+                .id = 2,
+                .value = 1
+              }
+            }
+          });
+      });
+  };
+
+  const auto& clientContext = GetClientContext(clientId);
+  const auto& raceInstance = GetRaceInstance(clientContext);
+  const auto& parameters = raceInstance.GetParameters();
+
+  // TODO: create a mission manager/system (MissionRaceInstance?)
+
+  using Event = protocol::AcCmdRCMissionEvent::Event;
+  switch (command.event)
+  {
+    case Event::EVENT_RECORD:
+    {
+      // Check for expected mission record values
+      if (command.val1 != 0 or command.val2 != 9999990)
+        return;
+      // Mission completed, record into character's missions
+      saveMissionRecord(clientContext.characterUid, parameters.missionId);
+      break;
+    }
+    default:
+    {
+      break;
+    }
+  }
 }
 
 } // namespace server

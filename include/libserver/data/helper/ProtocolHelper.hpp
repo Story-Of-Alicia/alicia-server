@@ -106,7 +106,7 @@ void BuildProtocolMission(
 
 void BuildProtocolMissions(
   std::vector<LobbyCommandLoginOK::Mission>& protocolMissions,
-  const std::vector<data::Character::Mission>& missions);
+  const std::map<uint32_t, data::Character::Mission>& missions);
 
 } // namespace protocol
 
