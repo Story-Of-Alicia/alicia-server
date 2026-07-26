@@ -207,7 +207,7 @@ void ChatSystem::RegisterUserCommands()
         " ",
         "Official admin command reference:",
         " //infraction - Infraction management",
-        " //incognito - Toggles incognito mode for GMs"
+        " //incognito - Toggles incognito mode for GMs",
         " //info - Info about users and characters",
         " //promote - Promotes user to staff (Admin only, needs passphrase)",
         " //demote - Demotes user to User role (Admin only)",
