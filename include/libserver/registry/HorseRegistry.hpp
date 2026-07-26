@@ -32,14 +32,14 @@
 namespace server::registry
 {
 
+// Values match ManeTailColor IDs (from MountColorGroupInfo).
 enum class Color
 {
-  White = 1,
-  LightBrown = 2,
+  Black = 1,
+  White = 2,
   Brown = 3,
   DarkBrown = 4,
-  Grey = 5,
-  Black = 6
+  Grey = 5
 };
 
 struct PotentialGrowth
