@@ -796,9 +796,6 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
       response.role = std::bit_cast<protocol::LobbyCommandLoginOK::Role>(
         character.role());
 
-      if (not justCreatedCharacter)
-        response.bitfield = protocol::LobbyCommandLoginOK::HasPlayedBefore;
-
       const auto equipmentItems = _serverInstance.GetDataDirector().GetItemCache().Get(
         character.characterEquipment());
       if (not equipmentItems)
