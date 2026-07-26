@@ -376,6 +376,8 @@ BreedingMarket::Snapshot BreedingMarket::CollectMarketSnapshot(
     bool isMatch = true;
     horseRecord.Immutable([&filter, &isMatch, &registry](const data::Horse& horse)
     {
+      if (filter.grade != 0 && static_cast<uint8_t>(horse.grade()) != filter.grade)
+        isMatch = false;
       if (!filter.coats.empty() && !filter.coats.contains(horse.parts.skinTid()))
         isMatch = false;
       // The mane and tail filters are keyed by shape, not by the mane/tail TID.

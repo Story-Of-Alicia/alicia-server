@@ -1824,7 +1824,8 @@ void RanchDirector::HandleSearchStallion(
   const auto& clientContext = GetClientContext(clientId);
   clientContext;
 
-  BreedingMarket::SnapshotFilter snapshotFilter{};
+  BreedingMarket::SnapshotFilter snapshotFilter{
+    .grade = command.grade};
 
   for (const auto coatUid : command.filterCoats)
   {
@@ -1857,7 +1858,7 @@ void RanchDirector::HandleSearchStallion(
     snapshotOrder,
     snapshotFilter);
 
-  constexpr size_t StallionsPerPage = 10;
+  constexpr size_t StallionsPerPage = 8;
   const auto pages = std::views::chunk(result.registrations, StallionsPerPage);
 
   // Client sends page number, convert that to an index and sanitize it within page bounds.
@@ -1880,18 +1881,7 @@ void RanchDirector::HandleSearchStallion(
       if (not horseRecord || not stallionRecord)
         continue;
 
-      // Filter by grade, only keep horses of the requested grade (4-8).
-      uint8_t horseGrade = 0;
-      horseRecord.Immutable([&horseGrade](const data::Horse& horse)
-      {
-        horseGrade = static_cast<uint8_t>(horse.grade());
-      });
-
-      if (horseGrade != command.filterMinimumGrade)
-        continue;
-
       auto& protocolStallion = response.stallions.emplace_back();
-
       horseRecord.Immutable([&protocolStallion](const data::Horse& horse)
       {
         protocolStallion.uid = horse.uid();

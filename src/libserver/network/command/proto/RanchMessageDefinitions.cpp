@@ -663,7 +663,7 @@ void AcCmdCRSearchStallion::Read(
   SourceStream& stream)
 {
   stream.Read(command.page)
-    .Read(command.filterMinimumGrade)
+    .Read(command.grade)
     .Read(command.order)
     .Read(command.unk3)
     .Read(command.unk4)

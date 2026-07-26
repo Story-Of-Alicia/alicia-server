@@ -550,8 +550,8 @@ struct AcCmdCRSearchStallion
 
   //! A page number.
   uint32_t page{};
-  //! A minimum required grade.
-  uint8_t filterMinimumGrade{};
+  //! The searched horse grade.
+  uint8_t grade{};
   //! A row sort parameter.
   StallionOrder order{};
   // 2

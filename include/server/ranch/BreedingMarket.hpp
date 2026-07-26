@@ -86,6 +86,7 @@ public:
       Courage,
     };
 
+    uint8_t grade;
     std::set<data::Tid> coats;
     std::set<data::Tid> manes;
     std::set<data::Tid> tails;
