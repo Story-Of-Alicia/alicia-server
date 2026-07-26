@@ -8773,9 +8773,9 @@ collection:
     grade: 7
     agility: 5
     ambition: 5
-    courage: 5
+    courage: 40
     endurance: 5
-    rush: 40
+    rush: 5
 - tid: 20104
   type: 0
   level: 4
@@ -8804,9 +8804,9 @@ collection:
     grade: 7
     agility: 5
     ambition: 5
-    courage: 40
+    courage: 5
     endurance: 5
-    rush: 5
+    rush: 40
 - tid: 20105
   type: 0
   level: 4
