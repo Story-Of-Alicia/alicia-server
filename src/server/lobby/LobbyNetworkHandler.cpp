@@ -1517,10 +1517,10 @@ void LobbyNetworkHandler::HandleCreateNickname(
           character.name = command.nickname;
 
         // todo: default level configured
-        character.level = 40;
-        character.experience() = 557300;
+        character.level = 1;
+        character.experience() = 0;
         // todo: default carrots configured
-        character.carrots = 200'000;
+        character.carrots = 5'000;
 
         character.mountUid() = mountUid;
 
