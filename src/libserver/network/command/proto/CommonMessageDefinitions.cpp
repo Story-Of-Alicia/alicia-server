@@ -199,5 +199,20 @@ void AcCmdRCMissionEvent::Read(
     .Read(command.val2);
 }
 
+void AcCmdCRAchievementUpdateProperty::Write(
+  const AcCmdCRAchievementUpdateProperty&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdCRAchievementUpdateProperty::Read(
+  AcCmdCRAchievementUpdateProperty& command,
+  SourceStream& stream)
+{
+  stream.Read(command.propertyKey)
+    .Read(command.propertyValue);
+}
+
 } // namespace server::protocol
 

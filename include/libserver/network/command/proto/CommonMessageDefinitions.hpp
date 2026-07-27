@@ -421,6 +421,31 @@ struct AcCmdRCMissionEvent
     SourceStream& stream);
 };
 
+struct AcCmdCRAchievementUpdateProperty
+{
+  uint16_t propertyKey{};
+  std::string propertyValue{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRAchievementUpdateProperty;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRAchievementUpdateProperty& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRAchievementUpdateProperty& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // COMMON_MESSAGE_DEFINES_HPP

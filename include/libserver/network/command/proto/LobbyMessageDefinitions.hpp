@@ -142,7 +142,8 @@ struct LobbyCommandLoginOK
 
   enum AvatarBitset : uint32_t
   {
-    HasPlayedBefore = 2,
+    NewPlayer = 0,
+    IntroCompleted = 2,
   };
   // std::bitset
   //! Bit 2: Has played before

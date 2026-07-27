@@ -1955,21 +1955,6 @@ void RanchCommandUserPetInfosOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
-void AcCmdCRAchievementUpdateProperty::Write(
-  const AcCmdCRAchievementUpdateProperty&,
-  SinkStream&)
-{
-  throw std::runtime_error("Not implemented");
-}
-
-void AcCmdCRAchievementUpdateProperty::Read(
-  AcCmdCRAchievementUpdateProperty& command,
-  SourceStream& stream)
-{
-  stream.Read(command.achievementEvent)
-    .Read(command.member2);
-}
-
 void AcCmdCRHousingBuild::Write(
   const AcCmdCRHousingBuild&,
   SinkStream&)

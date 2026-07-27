@@ -341,6 +341,7 @@ struct Character
   dao::Field<std::vector<Uid>> housing{};
 
   dao::Field<bool> isRanchLocked{};
+  dao::Field<bool> isIntroCompleted{false};
 
   dao::Field<Uid> settingsUid{InvalidUid};
 

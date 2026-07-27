@@ -795,6 +795,9 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
       response.carrots = character.carrots();
       response.role = std::bit_cast<protocol::LobbyCommandLoginOK::Role>(
         character.role());
+      response.bitfield = character.isIntroCompleted() ?
+        protocol::LobbyCommandLoginOK::AvatarBitset::IntroCompleted :
+        protocol::LobbyCommandLoginOK::AvatarBitset::NewPlayer;
 
       const auto equipmentItems = _serverInstance.GetDataDirector().GetItemCache().Get(
         character.characterEquipment());
