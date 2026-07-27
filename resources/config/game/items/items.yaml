@@ -199,9 +199,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 0
+    courage: 7
     endurance: 0
-    rush: 7
+    rush: 0
 - tid: 20009
   type: 1
   level: 1
@@ -225,9 +225,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 0
+    courage: 10
     endurance: 0
-    rush: 10
+    rush: 0
 - tid: 20007
   type: 1
   level: 1
@@ -277,9 +277,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 5
+    courage: 0
     endurance: 0
-    rush: 0
+    rush: 5
 - tid: 20010
   type: 1
   level: 1
@@ -303,9 +303,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 7
+    courage: 0
     endurance: 0
-    rush: 0
+    rush: 7
 - tid: 10002
   type: 0
   level: 5
@@ -477,9 +477,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 0
+    courage: 5
     endurance: 0
-    rush: 5
+    rush: 0
 - tid: 20014
   type: 1
   level: 1
@@ -503,9 +503,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 5
+    courage: 0
     endurance: 0
-    rush: 0
+    rush: 5
 - tid: 20015
   type: 1
   level: 1
@@ -555,9 +555,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 0
+    courage: 7
     endurance: 0
-    rush: 7
+    rush: 0
 - tid: 20018
   type: 1
   level: 1
@@ -607,9 +607,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 0
+    courage: 7
     endurance: 0
-    rush: 7
+    rush: 0
 - tid: 20020
   type: 1
   level: 1
@@ -633,9 +633,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 7
+    courage: 0
     endurance: 0
-    rush: 0
+    rush: 7
 - tid: 20021
   type: 1
   level: 1
@@ -1344,9 +1344,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 0
+    courage: 3
     endurance: 0
-    rush: 3
+    rush: 0
 - tid: 20030
   type: 1
   level: 1
@@ -1370,9 +1370,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 3
+    courage: 0
     endurance: 0
-    rush: 0
+    rush: 3
 - tid: 20031
   type: 1
   level: 1
@@ -1448,9 +1448,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 0
+    courage: 3
     endurance: 0
-    rush: 3
+    rush: 0
 - tid: 20034
   type: 1
   level: 1
@@ -1474,9 +1474,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 7
+    courage: 0
     endurance: 0
-    rush: 0
+    rush: 7
 - tid: 20035
   type: 1
   level: 1
@@ -5212,9 +5212,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 0
+    courage: 7
     endurance: 0
-    rush: 7
+    rush: 0
 - tid: 20070
   type: 1
   level: 1
@@ -5264,9 +5264,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 10
+    courage: 0
     endurance: 0
-    rush: 0
+    rush: 10
 - tid: 20072
   type: 1
   level: 1
@@ -5316,9 +5316,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 0
+    courage: 3
     endurance: 0
-    rush: 3
+    rush: 0
 - tid: 20074
   type: 1
   level: 1
@@ -5368,9 +5368,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 5
+    courage: 0
     endurance: 0
-    rush: 0
+    rush: 5
 - tid: 20076
   type: 1
   level: 1
@@ -5446,9 +5446,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 3
+    courage: 0
     endurance: 0
-    rush: 0
+    rush: 3
 - tid: 20079
   type: 1
   level: 1
@@ -5498,9 +5498,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 3
+    courage: 0
     endurance: 0
-    rush: 0
+    rush: 3
 - tid: 20081
   type: 1
   level: 1
@@ -5576,9 +5576,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 0
+    courage: 5
     endurance: 0
-    rush: 5
+    rush: 0
 - tid: 20084
   type: 1
   level: 1
@@ -5628,9 +5628,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 7
+    courage: 0
     endurance: 0
-    rush: 0
+    rush: 7
 - tid: 10077
   type: 0
   level: 25
@@ -6569,9 +6569,9 @@ collection:
     grade: 11
     agility: 0
     ambition: 0
-    courage: 100
+    courage: 0
     endurance: 0
-    rush: 0
+    rush: 100
 - tid: 29244
   type: 0
   level: 1
@@ -6631,9 +6631,9 @@ collection:
     grade: 11
     agility: 0
     ambition: 0
-    courage: 0
+    courage: 100
     endurance: 0
-    rush: 100
+    rush: 0
 - tid: 29246
   type: 0
   level: 1
@@ -6693,9 +6693,9 @@ collection:
     grade: 21
     agility: 70
     ambition: 0
-    courage: 30
+    courage: 0
     endurance: 0
-    rush: 0
+    rush: 30
 - tid: 29248
   type: 0
   level: 1
@@ -6755,9 +6755,9 @@ collection:
     grade: 10
     agility: 45
     ambition: 0
-    courage: 0
+    courage: 45
     endurance: 0
-    rush: 45
+    rush: 0
 - tid: 29250
   type: 0
   level: 1
@@ -6786,9 +6786,9 @@ collection:
     grade: 10
     agility: 0
     ambition: 70
-    courage: 30
+    courage: 0
     endurance: 0
-    rush: 0
+    rush: 30
 - tid: 29251
   type: 0
   level: 1
@@ -6848,9 +6848,9 @@ collection:
     grade: 10
     agility: 0
     ambition: 45
-    courage: 0
+    courage: 45
     endurance: 0
-    rush: 45
+    rush: 0
 - tid: 29253
   type: 0
   level: 1
@@ -6879,9 +6879,9 @@ collection:
     grade: 10
     agility: 0
     ambition: 0
-    courage: 30
+    courage: 0
     endurance: 70
-    rush: 0
+    rush: 30
 - tid: 29254
   type: 0
   level: 1
@@ -6941,9 +6941,9 @@ collection:
     grade: 10
     agility: 0
     ambition: 0
-    courage: 0
+    courage: 45
     endurance: 45
-    rush: 45
+    rush: 0
 - tid: 29256
   type: 0
   level: 1
@@ -6972,9 +6972,9 @@ collection:
     grade: 7
     agility: 0
     ambition: 0
-    courage: 10
+    courage: 0
     endurance: 50
-    rush: 0
+    rush: 10
 - tid: 29257
   type: 0
   level: 1
@@ -7846,9 +7846,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 7
+    courage: 0
     endurance: 0
-    rush: 0
+    rush: 7
 - tid: 10122
   type: 0
   level: 1
@@ -8340,8 +8340,8 @@ collection:
     agility: 1
     ambition: 1
     courage: 1
-    endurance: 26
-    rush: 1
+    endurance: 1
+    rush: 26
 - tid: 20090
   type: 0
   level: 4
@@ -9725,9 +9725,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 0
+    courage: 8
     endurance: 0
-    rush: 8
+    rush: 0
 - tid: 20109
   type: 1
   level: 1
@@ -9751,9 +9751,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 8
+    courage: 0
     endurance: 0
-    rush: 0
+    rush: 8
 - tid: 20110
   type: 1
   level: 1
@@ -11712,9 +11712,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 0
+    courage: 7
     endurance: 0
-    rush: 7
+    rush: 0
 - tid: 20121
   type: 0
   level: 1
@@ -11734,9 +11734,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 7
+    courage: 0
     endurance: 0
-    rush: 0
+    rush: 7
 - tid: 20122
   type: 0
   level: 1
@@ -12836,9 +12836,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 0
+    courage: 7
     endurance: 0
-    rush: 7
+    rush: 0
 - tid: 20125
   type: 1
   level: 1
@@ -12862,9 +12862,9 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 7
+    courage: 0
     endurance: 0
-    rush: 0
+    rush: 7
 - tid: 20126
   type: 1
   level: 1
@@ -13300,9 +13300,9 @@ collection:
     grade: 11
     agility: 0
     ambition: 0
-    courage: 30
+    courage: 0
     endurance: 70
-    rush: 0
+    rush: 30
 - tid: 28003
   type: 0
   level: 1
@@ -13331,9 +13331,9 @@ collection:
     grade: 7
     agility: 0
     ambition: 0
-    courage: 10
+    courage: 0
     endurance: 50
-    rush: 0
+    rush: 10
 - tid: 88889
   type: 2
   level: 1
