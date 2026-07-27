@@ -359,6 +359,11 @@ const RaceInstance::Parameters& RaceInstance::GetParameters() const
   return _parameters;
 }
 
+RaceInstance::Parameters& RaceInstance::GetParameters()
+{
+  return _parameters;
+}
+
 registry::GameModeId RaceInstance::GetGameModeId() const
 {
   return _gameModeId;

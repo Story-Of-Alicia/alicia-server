@@ -101,6 +101,7 @@ void ServerInstance::Initialize()
   _magicRegistry.ReadConfig(_resourceDirectory / "config/game/magic.yaml");
   _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
   _questRegistry.ReadConfig(_resourceDirectory / "config/game/quests.yaml");
+  _missionRegistry.ReadConfig(_resourceDirectory / "config/game/missions.yaml");
 
   _moderationSystem.ReadConfig(_resourceDirectory / "config/server/automod.yaml");
   _systemContentRegistry.ReadConfig(_resourceDirectory / "config/server/system_content.yaml");
@@ -361,6 +362,11 @@ registry::PetRegistry& ServerInstance::GetPetRegistry()
 registry::QuestRegistry& ServerInstance::GetQuestRegistry()
 {
   return _questRegistry;
+}
+
+registry::MissionRegistry& ServerInstance::GetMissionRegistry()
+{
+  return _missionRegistry;
 }
 
 registry::MagicRegistry& ServerInstance::GetMagicRegistry()

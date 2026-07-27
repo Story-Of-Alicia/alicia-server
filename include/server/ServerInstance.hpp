@@ -49,6 +49,7 @@
 #include <libserver/registry/HorseRegistry.hpp>
 #include <libserver/registry/ItemRegistry.hpp>
 #include <libserver/registry/MagicRegistry.hpp>
+#include <libserver/registry/MissionRegistry.hpp>
 #include <libserver/registry/PetRegistry.hpp>
 #include <libserver/registry/QuestRegistry.hpp>
 #include <libserver/registry/SystemContentRegistry.hpp>
@@ -126,6 +127,10 @@ public:
   //! Returns reference to the Quest registry.
   //! @returns Reference to the Quest registry.
   registry::QuestRegistry& GetQuestRegistry();
+
+  //! Returns reference to the Mission registry.
+  //! @returns Reference to the Mission registry.
+  registry::MissionRegistry& GetMissionRegistry();
 
   //! Returns reference to the Magic registry.
   //! @returns Reference to the Magic registry.
@@ -296,6 +301,8 @@ private:
   registry::PetRegistry _petRegistry;
   //! A registry of quests.
   registry::QuestRegistry _questRegistry;
+  //! A registry of missions.
+  registry::MissionRegistry _missionRegistry;
   //! The system content registry.
   registry::SystemContentRegistry _systemContentRegistry;
   //! A registry of breeding config data.

@@ -386,7 +386,7 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       protocol::AcCmdRCMissionEvent event
       {
-        .event = protocol::AcCmdRCMissionEvent::Event::EVENT_CALL_NPC_RESULT,
+        .event = protocol::AcCmdRCMissionEvent::MissionEvent::EVENT_CALL_NPC_RESULT,
         .val1 = command.val1,
         .val2 = 0x40'00'00'00,
       };

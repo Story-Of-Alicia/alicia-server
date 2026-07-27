@@ -356,7 +356,7 @@ struct AcCmdRCMobDead
 
 struct AcCmdRCMissionEvent
 {
-  enum class Event : uint32_t
+  enum class MissionEvent : uint32_t
   {
     EVENT_UI_CLOSE=1,
     EVENT_PLAYER_INPUT=2,
@@ -397,7 +397,27 @@ struct AcCmdRCMissionEvent
     EVENT_WAVE_END=37
   };
 
-  Event event{};
+  enum MissionEventValue : uint32_t
+  {
+    CS_EVENT_LOAD_COMPLETE		= 1001,
+    CS_EVENT_MISSION_START		= 1002,
+    SC_EVENT_MISSION_END_WAIT	= 1003,
+    SC_EVENT_MISSION_END		= 1004,
+    CS_EVENT_MISSION_RESULT		= 1005,
+    SC_EVENT_MISSION_START		= 1006,
+    SC_EVENT_MISSION_GOALIN		= 1007,
+    SC_EVENT_MISSION_RESULT		= 1008,
+    SC_EVENT_MISSION_PLAY_TIMER	= 1009,
+    CS_EVENT_OPENING_COMPLETE	= 1010,
+    SC_EVENT_OPENING_COMPLETE	= 1011,
+    SC_EVENT_MISSION_DEAD_WAIT	= 1012,
+    CS_EVENT_MISSION_RESURRECT	= 1013,
+    SC_EVENT_MISSION_DEAD_WAIT_CANCEL	= 1014,
+    CS_EVENT_MISSION_RETRY		= 1015,
+    CS_EVENT_MISSION_GO_NEXT	= 1016
+  };
+
+  MissionEvent event{};
   uint32_t val1{};
   uint32_t val2{};
 

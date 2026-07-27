@@ -73,6 +73,7 @@ add_library(alicia-libserver STATIC
         src/libserver/registry/HorseRegistry.cpp
         src/libserver/registry/ItemRegistry.cpp
         src/libserver/registry/MagicRegistry.cpp
+        src/libserver/registry/MissionRegistry.cpp
         src/libserver/registry/PetRegistry.cpp
         src/libserver/registry/QuestRegistry.cpp
         src/libserver/registry/SystemContentRegistry.cpp

@@ -3995,15 +3995,16 @@ void RaceNetworkHandler::HandleMissionEvent(
   };
 
   const auto& clientContext = GetClientContext(clientId);
-  const auto& raceInstance = GetRaceInstance(clientContext);
-  const auto& parameters = raceInstance.GetParameters();
+  auto& raceInstance = GetRaceInstance(clientContext);
+  auto& parameters = raceInstance.GetParameters();
 
   // TODO: create a mission manager/system (MissionRaceInstance?)
 
-  using Event = protocol::AcCmdRCMissionEvent::Event;
+  using MissionEvent = protocol::AcCmdRCMissionEvent::MissionEvent;
+  using MissionEventValue = protocol::AcCmdRCMissionEvent::MissionEventValue;
   switch (command.event)
   {
-    case Event::EVENT_RECORD:
+    case MissionEvent::EVENT_RECORD:
     {
       // Check for expected mission record values
       if (command.val1 != 0 or command.val2 != 9999990)
@@ -4011,6 +4012,46 @@ void RaceNetworkHandler::HandleMissionEvent(
       // Mission completed, record into character's missions
       saveMissionRecord(clientContext.characterUid, parameters.missionId);
       break;
+    }
+    case MissionEvent::EVENT_SCRIPT:
+    {
+      // val1 is the mission event type
+      switch (static_cast<MissionEventValue>(command.val1))
+      {
+        case MissionEventValue::CS_EVENT_MISSION_GO_NEXT:
+        {
+          // Client sends next missionId in val2
+          const uint16_t nextMissionId = static_cast<uint16_t>(command.val2);
+
+          // Get current mission record and find next mission, if any
+          const auto& missionRecord = GetServerInstance().GetMissionRegistry().GetMission(
+            nextMissionId);
+          if (not missionRecord.has_value() or missionRecord->id != nextMissionId)
+            return;
+
+          // Update parameters
+          parameters.missionId = missionRecord->id;
+          parameters.mapBlockId = missionRecord->mapId;
+
+          // Update room values
+          raceInstance.GetRoom([&missionRecord](Room& room)
+          {
+            auto& details = room.GetRoomDetails();
+            details.missionId = missionRecord->id;
+            details.courseId = missionRecord->mapId;
+          });
+
+          spdlog::info("Advanced room {} to next mission ID {} (map ID {})",
+            raceInstance.GetRoomUid(),
+            parameters.missionId,
+            parameters.mapBlockId);
+          break;
+        }
+        default:
+        {
+          break;
+        }
+      }
     }
     default:
     {

@@ -79,6 +79,7 @@ public:
   uint32_t GetRoomUid();
 
   const Parameters& GetParameters() const;
+  Parameters& GetParameters();
 
   [[nodiscard]] registry::GameModeId GetGameModeId() const;
   [[nodiscard]] registry::MapBlockId GetMapBlockId() const;
