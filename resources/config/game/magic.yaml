@@ -725,7 +725,7 @@ magic:
 
   # Global magnitudes for the mount-equipment set bonuses (items/sets.yaml).
   setBonus:
-    critChanceBonusBp: 1000     # effect 1: +10% crit spell chance while a crit set is worn
+    critChanceBonusBp: 2000     # effect 1: +20% crit spell chance while a crit set is worn
     passiveGaugeScaleBp: 3300   # effect 2: +33% passive gauge regen while a passive set is worn
     holdingGaugeScaleBp: 2000   # effect 3: gauge fills at 20% rate while holding a spell
 
@@ -735,19 +735,19 @@ magic:
     - basicType: 4   # WaterShield
       stat: agility
       durationScaleBp: 10
-      critStepBp: 250
+      critStepBp: 500
     - basicType: 6   # Booster
       stat: rush
       durationScaleBp: 10
-      critStepBp: 250
+      critStepBp: 750
     - basicType: 24  # BufSpeed (Magic Scroll)
       stat: rush
-      durationScaleBp: 7
-      critStepBp: 250
+      durationScaleBp: 10
+      critStepBp: 750
     - basicType: 8   # HotRodding
       stat: endurance
       durationScaleBp: 5
-      critStepBp: 250
+      critStepBp: 500
     - basicType: 10  # IceWall (target's ambition reduces shock duration)
       stat: ambition
       critStepBp: 250
