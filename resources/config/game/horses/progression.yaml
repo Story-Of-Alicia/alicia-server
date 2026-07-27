@@ -202,10 +202,10 @@ grades:
     pregnantValue: 70
   - grade: 7
     minStatSum: 60
-    pregnantValue: 63
+    pregnantValue: 68
   - grade: 8
     minStatSum: 70
-    pregnantValue: 56
+    pregnantValue: 63
   - grade: 9
     minStatSum: 80
     pregnantValue: 56

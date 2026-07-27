@@ -8308,9 +8308,9 @@ collection:
     grade: 4
     agility: 1
     ambition: 1
-    courage: 1
+    courage: 26
     endurance: 1
-    rush: 26
+    rush: 1
 - tid: 20089
   type: 0
   level: 4
@@ -8339,8 +8339,8 @@ collection:
     grade: 4
     agility: 1
     ambition: 1
-    courage: 26
-    endurance: 1
+    courage: 1
+    endurance: 26
     rush: 1
 - tid: 20090
   type: 0
@@ -8463,9 +8463,9 @@ collection:
     grade: 5
     agility: 2
     ambition: 2
-    courage: 2
+    courage: 32
     endurance: 2
-    rush: 32
+    rush: 2
 - tid: 20094
   type: 0
   level: 4
@@ -8494,9 +8494,9 @@ collection:
     grade: 5
     agility: 2
     ambition: 2
-    courage: 32
+    courage: 2
     endurance: 2
-    rush: 2
+    rush: 32
 - tid: 20095
   type: 0
   level: 4
@@ -8618,9 +8618,9 @@ collection:
     grade: 6
     agility: 3
     ambition: 3
-    courage: 3
+    courage: 38
     endurance: 3
-    rush: 38
+    rush: 3
 - tid: 20099
   type: 0
   level: 4
@@ -8649,9 +8649,9 @@ collection:
     grade: 6
     agility: 3
     ambition: 3
-    courage: 38
+    courage: 3
     endurance: 3
-    rush: 3
+    rush: 38
 - tid: 20100
   type: 0
   level: 4
