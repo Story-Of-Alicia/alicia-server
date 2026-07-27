@@ -6259,7 +6259,6 @@ void RanchDirector::HandleBuyOwnItem(
               horseUid = horse.uid();
             });
 
-          character.horseSlotCount() += 1;
           character.horses().emplace_back(horseUid);
 
           // Add to the buy response so the client registers the horse purchase
