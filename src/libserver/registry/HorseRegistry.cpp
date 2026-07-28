@@ -650,7 +650,7 @@ void HorseRegistry::ApplyClassProgress(data::Horse& horse, uint32_t gainedExp) c
     && horse.clazzProgress() >= GetCumulativeClassExp(level + 1))
   {
     level += 1;
-    horse.growthPoints() += 1;
+    horse.growthPoints() += level == MaxClass ? 2 : 1;
   }
 
   horse.clazz() = level;
