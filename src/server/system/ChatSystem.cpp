@@ -24,6 +24,8 @@
 
 #include <libserver/util/Util.hpp>
 
+#include <charconv>
+#include <limits>
 #include <regex>
 #include <format>
 
@@ -212,6 +214,7 @@ void ChatSystem::RegisterUserCommands()
         " //promote - Promotes user to staff (Admin only, needs passphrase)",
         " //demote - Demotes user to User role (Admin only)",
         " //notice - Sends notice to character",
+        " //set - Sets exp/carrots (Admin only)",
         " ",
         "More commands available over at: ",
         " https://bruhvrum.github.io/registertest/commands"};
@@ -2147,6 +2150,155 @@ void ChatSystem::RegisterAdminCommands()
       return {
         std::format("Nobody with the name '{}' is online.", visitingCharacterName),
         "Use //online to view online players."};
+    });
+
+  // set command
+  _commandManager.RegisterCommand(
+    "set",
+    [this](
+      const std::span<const std::string>& arguments,
+      data::Uid invokerCharacterUid) -> std::vector<std::string>
+    {
+      // Overwriting progression values is Admin-only.
+      const auto invokerRank = GetStaffRank(invokerCharacterUid);
+      if (not invokerRank)
+        return {};
+
+      if (*invokerRank < data::Character::StaffRank::Admin)
+        return {"Only Admin-rank staff can use this command."};
+
+      if (arguments.size() < 2)
+        return {"set",
+          "  exp [value] [optional: user name]",
+          "  carrots [value] [optional: user name]",
+          "Values are overwritten, not added.",
+          "Without a user name your own character is set."};
+
+      const std::string& subLiteral = arguments[0];
+
+      // Resolve the target character. Without a user name the invoker is targeted.
+      auto targetCharacterUid = invokerCharacterUid;
+      std::string targetUserName;
+
+      if (arguments.size() > 2)
+      {
+        targetUserName = arguments[2];
+
+        const auto userRecord = _serverInstance.GetDataDirector().GetUser(targetUserName);
+        if (not userRecord.IsAvailable())
+          return {
+            std::format("User '{}' does not exist or is currently unavailable", targetUserName)};
+
+        targetCharacterUid = data::InvalidUid;
+        userRecord.Immutable([&targetCharacterUid](const data::User& user)
+        {
+          targetCharacterUid = user.characterUid();
+        });
+
+        if (targetCharacterUid == data::InvalidUid)
+          return {std::format("User '{}' does not have a character", targetUserName)};
+      }
+
+      const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+        targetCharacterUid);
+      if (not characterRecord)
+        return {"Character unavailable", "Try again later."};
+
+      // Parse the value strictly, a typo must not silently set the value to zero.
+      const std::string& valueArgument = arguments[1];
+      int64_t value{};
+      {
+        const char* const begin = valueArgument.data();
+        const char* const end = begin + valueArgument.size();
+
+        const auto [parseEnd, errorCode] = std::from_chars(begin, end, value);
+        if (errorCode != std::errc{} || parseEnd != end)
+          return {std::format("'{}' is not a valid number", valueArgument)};
+      }
+
+      const auto invokerUserName =
+        _serverInstance.GetLobbyDirector().GetUserByCharacterUid(invokerCharacterUid).userName;
+
+      // Describes the character that was modified, for the response and the audit log.
+      std::string characterName;
+
+      if (subLiteral == "exp" || subLiteral == "experience")
+      {
+        constexpr int64_t MaxExperience = std::numeric_limits<uint32_t>::max();
+        if (value < 0 || value > MaxExperience)
+          return {std::format("Experience must be between 0 and {}", MaxExperience)};
+
+        const auto experience = static_cast<uint32_t>(value);
+        // The level always follows from the experience.
+        const uint32_t level = _serverInstance.GetCharacterRegistry().GetLevelForExp(experience);
+
+        uint32_t previousExperience{};
+        uint32_t previousLevel{};
+        characterRecord.Mutable(
+          [&characterName, &previousExperience, &previousLevel, experience, level](
+            data::Character& character)
+          {
+            previousExperience = character.experience();
+            previousLevel = character.level();
+
+            character.experience() = experience;
+            character.level() = level;
+
+            characterName = character.name();
+          });
+
+        spdlog::info("Admin {} set experience of '{}' ({}) from {} to {} (level {} to {})",
+          invokerUserName,
+          characterName,
+          targetCharacterUid,
+          previousExperience,
+          experience,
+          previousLevel,
+          level);
+
+        return {
+          std::format("Experience of '{}' set to {} (was {})",
+            characterName,
+            experience,
+            previousExperience),
+          std::format("Level is now {} (was {})", level, previousLevel),
+          "Restart the game for the changes to apply."};
+      }
+
+      if (subLiteral == "carrots")
+      {
+        constexpr int64_t MaxCarrots = std::numeric_limits<int32_t>::max();
+        if (value < 0 || value > MaxCarrots)
+          return {std::format("Carrots must be between 0 and {}", MaxCarrots)};
+
+        const auto carrots = static_cast<int32_t>(value);
+
+        int32_t previousCarrots{};
+        characterRecord.Mutable(
+          [&characterName, &previousCarrots, carrots](data::Character& character)
+          {
+            previousCarrots = character.carrots();
+            character.carrots() = carrots;
+
+            characterName = character.name();
+          });
+
+        spdlog::info("Admin {} set carrots of '{}' ({}) from {} to {}",
+          invokerUserName,
+          characterName,
+          targetCharacterUid,
+          previousCarrots,
+          carrots);
+
+        return {
+          std::format("Carrots of '{}' set to {} (was {})",
+            characterName,
+            carrots,
+            previousCarrots),
+          "Restart the game for the changes to apply."};
+      }
+
+      return {"Unknown sub-literal"};
     });
 }
 
