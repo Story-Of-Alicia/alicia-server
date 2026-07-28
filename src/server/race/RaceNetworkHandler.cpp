@@ -2653,10 +2653,17 @@ void RaceNetworkHandler::HandleUseMagicItem(
     case 10:
     case 11:
     {
+      const data::Uid roomUid = raceInstance.GetRoomUid();
       const uint16_t obstacleInstanceCount = static_cast<uint16_t>(command.targetList.size());
       _scheduler.Queue(
-        [this, effectInstanceId, obstacleInstanceCount, magicType = magicSlotInfo.type, &raceInstance]()
+        [this, roomUid, effectInstanceId, obstacleInstanceCount, magicType = magicSlotInfo.type]()
         {
+          std::scoped_lock raceInstanceLock(_raceInstancesMutex);
+          const auto raceInstanceIter = _raceInstances.find(roomUid);
+          if (raceInstanceIter == _raceInstances.cend())
+            return;
+
+          const auto& raceInstance = raceInstanceIter->second;
           for (uint16_t i = 0; i < obstacleInstanceCount; ++i)
           {
             this->Broadcast(
