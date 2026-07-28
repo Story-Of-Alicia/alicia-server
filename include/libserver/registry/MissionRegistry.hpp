@@ -32,6 +32,7 @@ namespace server::registry
 struct Mission
 {
   uint16_t id{};
+  uint8_t gameMode{};
   uint16_t preMissionId{};
   uint16_t nextMissionId{};
   uint16_t mapId{};

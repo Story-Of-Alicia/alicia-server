@@ -1,5 +1,6 @@
 missions:
 - id: 1
+  gameMode: 1
   nextMissionId: 0
   mapId: 65
   minLevel: 1
@@ -9,6 +10,7 @@ missions:
   reward: 0
   closed: true
 - id: 2
+  gameMode: 1
   nextMissionId: 0
   mapId: 65
   minLevel: 1
@@ -18,6 +20,7 @@ missions:
   reward: 0
   closed: true
 - id: 3
+  gameMode: 1
   nextMissionId: 0
   mapId: 67
   minLevel: 1
@@ -27,6 +30,7 @@ missions:
   reward: 0
   closed: true
 - id: 4
+  gameMode: 1
   nextMissionId: 0
   mapId: 66
   minLevel: 1
@@ -36,6 +40,7 @@ missions:
   reward: 0
   closed: true
 - id: 5
+  gameMode: 1
   nextMissionId: 0
   mapId: 66
   minLevel: 1
@@ -45,6 +50,7 @@ missions:
   reward: 0
   closed: true
 - id: 6
+  gameMode: 1
   nextMissionId: 0
   mapId: 68
   minLevel: 1
@@ -54,6 +60,7 @@ missions:
   reward: 0
   closed: true
 - id: 7
+  gameMode: 1
   nextMissionId: 0
   mapId: 1
   minLevel: 1
@@ -63,6 +70,7 @@ missions:
   reward: 0
   closed: true
 - id: 8
+  gameMode: 1
   nextMissionId: 0
   mapId: 9
   minLevel: 1
@@ -72,6 +80,7 @@ missions:
   reward: 0
   closed: true
 - id: 9
+  gameMode: 1
   nextMissionId: 0
   mapId: 102
   minLevel: 1
@@ -81,6 +90,7 @@ missions:
   reward: 0
   closed: true
 - id: 10
+  gameMode: 1
   nextMissionId: 0
   mapId: 50
   minLevel: 1
@@ -90,6 +100,7 @@ missions:
   reward: 0
   closed: true
 - id: 11
+  gameMode: 1
   nextMissionId: 0
   mapId: 101
   minLevel: 1
@@ -99,6 +110,7 @@ missions:
   reward: 0
   closed: true
 - id: 12
+  gameMode: 1
   nextMissionId: 0
   mapId: 102
   minLevel: 0
@@ -108,6 +120,7 @@ missions:
   reward: 0
   closed: true
 - id: 13
+  gameMode: 1
   nextMissionId: 0
   mapId: 102
   minLevel: 0
@@ -117,6 +130,7 @@ missions:
   reward: 0
   closed: true
 - id: 14
+  gameMode: 1
   nextMissionId: 0
   mapId: 102
   minLevel: 0
@@ -126,6 +140,7 @@ missions:
   reward: 0
   closed: true
 - id: 15
+  gameMode: 1
   nextMissionId: 0
   mapId: 102
   minLevel: 0
@@ -135,6 +150,7 @@ missions:
   reward: 0
   closed: true
 - id: 16
+  gameMode: 1
   nextMissionId: 0
   mapId: 2
   minLevel: 1
@@ -144,6 +160,7 @@ missions:
   reward: 0
   closed: true
 - id: 17
+  gameMode: 1
   nextMissionId: 0
   mapId: 72
   minLevel: 1
@@ -153,6 +170,7 @@ missions:
   reward: 0
   closed: true
 - id: 18
+  gameMode: 1
   nextMissionId: 0
   mapId: 74
   minLevel: 1
@@ -162,6 +180,7 @@ missions:
   reward: 0
   closed: true
 - id: 19
+  gameMode: 1
   nextMissionId: 0
   mapId: 75
   minLevel: 0
@@ -171,6 +190,7 @@ missions:
   reward: 0
   closed: true
 - id: 20
+  gameMode: 1
   nextMissionId: 0
   mapId: 35
   minLevel: 1
@@ -180,6 +200,7 @@ missions:
   reward: 0
   closed: true
 - id: 21
+  gameMode: 1
   nextMissionId: 0
   mapId: 1
   minLevel: 0
@@ -189,6 +210,7 @@ missions:
   reward: 0
   closed: true
 - id: 22
+  gameMode: 1
   nextMissionId: 0
   mapId: 76
   minLevel: 0
@@ -198,6 +220,7 @@ missions:
   reward: 0
   closed: true
 - id: 23
+  gameMode: 1
   nextMissionId: 0
   mapId: 75
   minLevel: 0
@@ -207,6 +230,7 @@ missions:
   reward: 0
   closed: true
 - id: 24
+  gameMode: 1
   nextMissionId: 0
   mapId: 20004
   minLevel: 1
@@ -216,6 +240,7 @@ missions:
   reward: 0
   closed: true
 - id: 25
+  gameMode: 1
   nextMissionId: 0
   mapId: 0
   minLevel: 0
@@ -225,6 +250,7 @@ missions:
   reward: 0
   closed: true
 - id: 26
+  gameMode: 1
   nextMissionId: 0
   mapId: 0
   minLevel: 0
@@ -234,6 +260,7 @@ missions:
   reward: 0
   closed: true
 - id: 27
+  gameMode: 1
   nextMissionId: 0
   mapId: 0
   minLevel: 0
@@ -243,6 +270,7 @@ missions:
   reward: 0
   closed: true
 - id: 28
+  gameMode: 1
   nextMissionId: 0
   mapId: 0
   minLevel: 0
@@ -252,6 +280,7 @@ missions:
   reward: 0
   closed: true
 - id: 29
+  gameMode: 1
   nextMissionId: 0
   mapId: 0
   minLevel: 0
@@ -261,6 +290,7 @@ missions:
   reward: 0
   closed: true
 - id: 30
+  gameMode: 1
   nextMissionId: 0
   mapId: 0
   minLevel: 0
@@ -270,6 +300,7 @@ missions:
   reward: 0
   closed: true
 - id: 31
+  gameMode: 1
   nextMissionId: 32
   mapId: 67
   minLevel: 1
@@ -279,6 +310,7 @@ missions:
   reward: 200
   closed: false
 - id: 32
+  gameMode: 1
   nextMissionId: 33
   mapId: 67
   minLevel: 1
@@ -288,6 +320,7 @@ missions:
   reward: 200
   closed: false
 - id: 33
+  gameMode: 1
   nextMissionId: 46
   mapId: 67
   minLevel: 1
@@ -297,6 +330,7 @@ missions:
   reward: 200
   closed: false
 - id: 34
+  gameMode: 1
   nextMissionId: 49
   mapId: 67
   minLevel: 1
@@ -306,6 +340,7 @@ missions:
   reward: 200
   closed: false
 - id: 35
+  gameMode: 1
   nextMissionId: 34
   mapId: 67
   minLevel: 1
@@ -315,6 +350,7 @@ missions:
   reward: 200
   closed: false
 - id: 39
+  gameMode: 1
   nextMissionId: 0
   mapId: 35
   minLevel: 1
@@ -324,6 +360,7 @@ missions:
   reward: 0
   closed: true
 - id: 40
+  gameMode: 1
   nextMissionId: 0
   mapId: 0
   minLevel: 0
@@ -333,6 +370,7 @@ missions:
   reward: 0
   closed: true
 - id: 41
+  gameMode: 2
   nextMissionId: 42
   mapId: 67
   minLevel: 1
@@ -342,6 +380,7 @@ missions:
   reward: 200
   closed: false
 - id: 42
+  gameMode: 2
   nextMissionId: 43
   mapId: 67
   minLevel: 1
@@ -351,6 +390,7 @@ missions:
   reward: 200
   closed: false
 - id: 43
+  gameMode: 2
   nextMissionId: 46
   mapId: 67
   minLevel: 1
@@ -360,6 +400,7 @@ missions:
   reward: 200
   closed: false
 - id: 44
+  gameMode: 2
   nextMissionId: 45
   mapId: 67
   minLevel: 1
@@ -369,6 +410,7 @@ missions:
   reward: 200
   closed: false
 - id: 45
+  gameMode: 2
   nextMissionId: 0
   mapId: 67
   minLevel: 1
@@ -378,6 +420,7 @@ missions:
   reward: 200
   closed: false
 - id: 46
+  gameMode: 1
   nextMissionId: 35
   mapId: 67
   minLevel: 1
@@ -387,6 +430,7 @@ missions:
   reward: 200
   closed: false
 - id: 49
+  gameMode: 1
   nextMissionId: 50
   mapId: 67
   minLevel: 1
@@ -396,6 +440,7 @@ missions:
   reward: 200
   closed: false
 - id: 50
+  gameMode: 1
   nextMissionId: 51
   mapId: 67
   minLevel: 1
@@ -405,6 +450,7 @@ missions:
   reward: 200
   closed: false
 - id: 51
+  gameMode: 1
   nextMissionId: 0
   mapId: 67
   minLevel: 1
@@ -414,6 +460,7 @@ missions:
   reward: 200
   closed: false
 - id: 100
+  gameMode: 1
   nextMissionId: 0
   mapId: 0
   minLevel: 0
@@ -423,6 +470,7 @@ missions:
   reward: 0
   closed: false
 - id: 101
+  gameMode: 1
   nextMissionId: 0
   mapId: 0
   minLevel: 0

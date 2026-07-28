@@ -30,50 +30,16 @@ namespace
 
 void ReadMission(Mission& mission, const YAML::Node& yaml)
 {
-  if (yaml["id"])
-    mission.id = yaml["id"].as<uint16_t>(0);
-  else if (yaml["MissionID"])
-    mission.id = yaml["MissionID"].as<uint16_t>(0);
-
-  if (yaml["preMissionId"])
-    mission.preMissionId = yaml["preMissionId"].as<uint16_t>(0);
-  else if (yaml["PreMissionID"])
-    mission.preMissionId = yaml["PreMissionID"].as<uint16_t>(0);
-
-  if (yaml["nextMissionId"])
-    mission.nextMissionId = yaml["nextMissionId"].as<uint16_t>(0);
-  else if (yaml["NextMissionID"])
-    mission.nextMissionId = yaml["NextMissionID"].as<uint16_t>(0);
-
-  if (yaml["mapId"])
-    mission.mapId = yaml["mapId"].as<uint16_t>(0);
-  else if (yaml["MapID"])
-    mission.mapId = yaml["MapID"].as<uint16_t>(0);
-
-  if (yaml["minLevel"])
-    mission.minLevel = yaml["minLevel"].as<uint32_t>(0);
-  else if (yaml["MinLevel"])
-    mission.minLevel = yaml["MinLevel"].as<uint32_t>(0);
-
-  if (yaml["maxLevel"])
-    mission.maxLevel = yaml["maxLevel"].as<uint32_t>(0);
-  else if (yaml["MaxLevel"])
-    mission.maxLevel = yaml["MaxLevel"].as<uint32_t>(0);
-
-  if (yaml["waitingTime"])
-    mission.waitingTime = yaml["waitingTime"].as<uint32_t>(0);
-  else if (yaml["WaitingTime"])
-    mission.waitingTime = yaml["WaitingTime"].as<uint32_t>(0);
-
-  if (yaml["reward"])
-    mission.reward = yaml["reward"].as<uint32_t>(0);
-  else if (yaml["Reward"])
-    mission.reward = yaml["Reward"].as<uint32_t>(0);
-
-  if (yaml["closed"])
-    mission.closed = yaml["closed"].as<bool>(false);
-  else if (yaml["Closed"])
-    mission.closed = (yaml["Closed"].as<uint32_t>(0) != 0);
+  mission.id = yaml["id"].as<uint16_t>();
+  mission.gameMode = yaml["gameMode"].as<uint8_t>();
+  mission.preMissionId = yaml["preMissionId"].as<uint16_t>();
+  mission.nextMissionId = yaml["nextMissionId"].as<uint16_t>();
+  mission.mapId = yaml["mapId"].as<uint16_t>();
+  mission.minLevel = yaml["minLevel"].as<uint32_t>();
+  mission.maxLevel = yaml["maxLevel"].as<uint32_t>();
+  mission.waitingTime = yaml["waitingTime"].as<uint32_t>();
+  mission.reward = yaml["reward"].as<uint32_t>();
+  mission.closed = yaml["closed"].as<bool>();
 }
 
 } // namespace

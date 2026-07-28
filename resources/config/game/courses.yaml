@@ -89,6 +89,21 @@ courses:
         perfectSpurCheckTime: 0
         spurConsumeStarPoints: 40000
         starPointsMax: 100000
+      # Mission game mode
+      - type: 6
+        goodJumpStarPoints: 0
+        itemSpawners:
+          collection: {}
+        mapPool:
+          collection: 
+            - mapBlockId: 67
+            - mapBlockId: 68
+        perfectJumpStarPoints: 0
+        perfectJumpUnitStarPoints: 0
+        perfectJumpMaxBonusCombo: 0
+        perfectSpurCheckTime: 0
+        spurConsumeStarPoints: 0
+        starPointsMax: 0
   # A deck represents a set of items spawnable on a track.
   # Originates from
   # This should be called `decks`
@@ -1405,113 +1420,6 @@ courses:
               position: [-4.770, 0.080, 17.310]
             - deckId: 201
               position: [223.410, 0.010, -17.350]
-      - id:  67
-        region: 0
-        name: 'ri_land01'
-        requiredLevel: 1000
-        podiumId: 0
-        offset: [60.05899811,26.11234179,7850.26699829]
-        trainingFee: 0
-        timeLimit: 300
-        waitTime: 5
-        deckItems:
-          collection:
-            - deckId: 2000
-              position: [-209.957, 5.425, -184.203]
-            - deckId: 2000
-              position: [-19.177, 1.933, -149.616]
-            - deckId: 2000
-              position: [-198.610, -0.466, -24.804]
-            - deckId: 2000
-              position: [-138.090, -7.115, -31.195]
-            - deckId: 2000
-              position: [-33.598, -6.246, 7.902]
-            - deckId: 2000
-              position: [23.376, 0.983, 70.308]
-            - deckId: 2000
-              position: [-24.463, 1.006, 74.496]
-            - deckId: 2000
-              position: [-28.156, -2.523, 160.978]
-            - deckId: 2000
-              position: [43.348, -7.696, 187.669]
-            - deckId: 2000
-              position: [154.464, -8.333, 149.767]
-            - deckId: 1003
-              position: [-1.550, 1.920, -145.750]
-            - deckId: 1002
-              position: [-12.580, 2.080, -144.550]
-            - deckId: 1002
-              position: [-38.950, 2.430, -142.710]
-            - deckId: 1002
-              position: [-24.600, 2.400, -155.820]
-            - deckId: 1002
-              position: [231.420, 3.340, -63.790]
-            - deckId: 1002
-              position: [217.880, 3.380, -57.480]
-            - deckId: 1002
-              position: [229.610, 4.270, -46.700]
-            - deckId: 1002
-              position: [62.150, 0.750, 61.370]
-            - deckId: 1002
-              position: [46.190, 1.190, 76.830]
-            - deckId: 1002
-              position: [50.300, 0.890, 64.420]
-            - deckId: 1002
-              position: [62.390, 1.260, 73.990]
-            - deckId: 1002
-              position: [-247.760, 5.730, -115.090]
-            - deckId: 1002
-              position: [-238.920, 3.710, -73.730]
-            - deckId: 1002
-              position: [-231.380, 4.130, -113.280]
-            - deckId: 1002
-              position: [-226.640, 3.380, -91.510]
-            - deckId: 1002
-              position: [-239.780, 4.400, -95.500]
-            - deckId: 1002
-              position: [21.540, -6.680, 189.920]
-            - deckId: 1002
-              position: [-9.260, -5.010, 181.200]
-            - deckId: 1002
-              position: [9.490, -6.230, 188.640]
-            - deckId: 1002
-              position: [13.000, -6.110, 176.320]
-            - deckId: 1002
-              position: [3.090, -5.190, 170.160]
-            - deckId: 1003
-              position: [-54.070, -6.400, 13.450]
-            - deckId: 1003
-              position: [118.250, -10.760, 171.370]
-            - deckId: 1003
-              position: [223.710, 4.010, -47.920]
-            - deckId: 1001
-              position: [34.370, 1.400, -142.330]
-            - deckId: 1001
-              position: [-231.850, 5.670, -171.980]
-            - deckId: 1001
-              position: [223.430, 0.000, -40.260]
-            - deckId: 1001
-              position: [167.370, -6.490, 141.860]
-            - deckId: 1001
-              position: [77.360, 0.000, 187.760]
-            - deckId: 1001
-              position: [-43.310, 0.090, 140.150]
-            - deckId: 1001
-              position: [0.000, 0.000, 4.000]
-            - deckId: 102
-              position: [-16.190, 0.880, 71.920]
-            - deckId: 102
-              position: [-43.350, 1.130, 94.570]
-            - deckId: 102
-              position: [-31.480, 1.060, 77.730]
-            - deckId: 102
-              position: [-34.850, 0.910, 93.690]
-            - deckId: 203
-              position: [-149.430, -5.390, -24.580]
-            - deckId: 202
-              position: [79.690, 1.050, 25.520]
-            - deckId: 201
-              position: [206.680, 2.160, 83.750]
       - id:  73
         region: 0
         name: 'ri_land08'
@@ -2540,17 +2448,118 @@ courses:
               position: [-230.530, -73.600, 97.450]
             - deckId: 101
               position: [-82.530, -59.590, 376.330]
-      - id:  68
+      - id: 67
         region: 0
-        name: 'tuto_03'
+        name: 'tuto_01'
         requiredLevel: 1000
         podiumId: 0
-        offset: [0, 0, 0]
+        offset: [-65.14, -105.33, -9092.50]
         trainingFee: 0
         timeLimit: 300
         waitTime: 5
         deckItems:
-          collection: {}
+          collection:
+            - deckId: 101
+              position: [-48.325, 19.420, 520.403]
+            - deckId: 102
+              position: [-48.880, 23.310, 183.950]
+            - deckId: 102
+              position: [-50.570, 23.310, 191.070]
+            - deckId: 102
+              position: [-50.640, 23.020, 283.070]
+            - deckId: 102
+              position: [-49.050, 23.020, 274.470]
+            - deckId: 102
+              position: [-51.380, 21.180, 318.410]
+            - deckId: 102
+              position: [-48.990, 21.180, 325.400]
+            - deckId: 402
+              position: [-50.000, 25.840, 158.790]
+            - deckId: 402
+              position: [-49.720, 23.830, 210.180]
+            - deckId: 402
+              position: [-50.120, 23.640, 293.130]
+            - deckId: 101
+              position: [-48.901, 19.440, 560.288]
+            - deckId: 101
+              position: [-46.780, 19.450, 578.500]
+            - deckId: 102
+              position: [-49.800, 23.370, 203.540]
+            - deckId: 102
+              position: [-49.890, 26.280, 258.700]
+            - deckId: 102
+              position: [-49.920, 21.240, 336.680]
+      - id: 68
+        region: 0
+        name: 'tuto_03'
+        requiredLevel: 1000
+        podiumId: 0
+        offset: [-65.14, 105.33, -9092.50]
+        trainingFee: 0
+        timeLimit: 300
+        waitTime: 5
+        deckItems:
+          collection:
+            - deckId: 401
+              position: [67.910, 19.560, 1011.280]
+            - deckId: 102
+              position: [-49.420, 19.390, 457.690]
+            - deckId: 102
+              position: [-48.830, 19.400, 498.820]
+            - deckId: 102
+              position: [-47.750, 19.460, 536.830]
+            - deckId: 102
+              position: [43.430, -0.080, -711.920]
+            - deckId: 102
+              position: [58.810, 0.030, -628.510]
+            - deckId: 102
+              position: [75.200, 0.110, -603.620]
+            - deckId: 102
+              position: [14.960, -0.180, -531.870]
+            - deckId: 102
+              position: [-48.100, 0.370, -434.450]
+            - deckId: 102
+              position: [-36.160, -0.590, -419.590]
+            - deckId: 102
+              position: [0.320, 0.210, -347.060]
+            - deckId: 102
+              position: [-50.140, 3.820, -238.370]
+            - deckId: 102
+              position: [-48.630, 19.380, 552.470]
+            - deckId: 102
+              position: [-47.730, 19.550, 581.350]
+            - deckId: 102
+              position: [-49.730, 19.400, 487.220]
+            - deckId: 102
+              position: [-48.520, 19.410, 569.320]
+            - deckId: 101
+              position: [-49.980, 25.410, 145.690]
+            - deckId: 101
+              position: [-49.800, 23.370, 196.510]
+            - deckId: 101
+              position: [-50.120, 26.280, 261.900]
+            - deckId: 101
+              position: [-49.810, 10.290, -135.600]
+            - deckId: 101
+              position: [-49.100, 8.010, -255.740]
+            - deckId: 102
+              position: [-50.140, 3.820, -225.860]
+            - deckId: 102
+              position: [-50.140, 10.350, -114.970]
+            - deckId: 102
+              position: [-50.140, 3.870, -159.100]
+            - deckId: 102
+              position: [-50.140, 20.560, -19.470]
+            - deckId: 102
+              position: [-50.140, 16.900, -29.880]
+            - deckId: 102
+              position: [-49.480, 19.390, 471.970]
+            - deckId: 101
+              position: [-49.810, 9.360, -201.840]
+            - deckId: 101
+              position: [-49.100, 30.790, 40.430]
+            - deckId: 101
+              position: [-49.990, 21.240, 333.380]
       - id:  23
         region: 1
         name: 'ri_land07'

@@ -1861,7 +1861,6 @@ void RaceNetworkHandler::HandleStarPointGet(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
-  const auto& parameters = raceInstance.GetParameters();
 
   auto& racer = raceInstance.GetTracker().GetRacer(
     clientContext.characterUid);
@@ -1874,7 +1873,7 @@ void RaceNetworkHandler::HandleStarPointGet(
   }
 
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(parameters.gameMode));
+    static_cast<uint8_t>(raceInstance.GetGameModeId()));
 
   uint32_t gainedStarPoints = command.gainedStarPoints;
   if (racer.effects[20] || racer.effects[21]) {
@@ -1909,7 +1908,6 @@ void RaceNetworkHandler::HandleRequestSpur(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
-  const auto& parameters = raceInstance.GetParameters();
 
   auto& racer = raceInstance.GetTracker().GetRacer(
     clientContext.characterUid);
@@ -1922,7 +1920,7 @@ void RaceNetworkHandler::HandleRequestSpur(
   }
 
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(parameters.gameMode));
+    static_cast<uint8_t>(raceInstance.GetGameModeId()));
 
   if (racer.starPointValue < gameModeTemplate.spurConsumeStarPoints)
     throw std::runtime_error("Client is dead ass cheating (or is really desynced)");
@@ -1964,7 +1962,6 @@ void RaceNetworkHandler::HandleHurdleClearResult(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
-  const auto& parameters = raceInstance.GetParameters();
 
   auto& racer = raceInstance.GetTracker().GetRacer(
     clientContext.characterUid);
@@ -1990,8 +1987,9 @@ void RaceNetworkHandler::HandleHurdleClearResult(
     .giveMagicItem = false
   };
 
+  const registry::GameModeId effectiveGameMode = raceInstance.GetGameModeId();
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(parameters.gameMode));
+    static_cast<uint8_t>(effectiveGameMode));
 
   switch (command.hurdleClearType)
   {
@@ -2002,7 +2000,7 @@ void RaceNetworkHandler::HandleHurdleClearResult(
         static_cast<uint32_t>(99),
         racer.jumpComboValue + 1);
 
-      if (parameters.gameMode == protocol::GameMode::Speed)
+      if (effectiveGameMode == static_cast<registry::GameModeId>(protocol::GameMode::Speed))
       {
         // Only send jump combo if it is a speed race
         response.jumpCombo = racer.jumpComboValue;
@@ -2063,7 +2061,7 @@ void RaceNetworkHandler::HandleHurdleClearResult(
   // Needs to be assigned after hurdle clear result calculations
   // Triggers magic item request when set to true (if gamemode is magic and magic gauge is max)
   starPointResponse.giveMagicItem =
-    parameters.gameMode == protocol::GameMode::Magic &&
+    effectiveGameMode == static_cast<registry::GameModeId>(protocol::GameMode::Magic) &&
     racer.starPointValue >= gameModeTemplate.starPointsMax &&
     not racer.magicItem.has_value() &&
     command.hurdleClearType == protocol::AcCmdCRHurdleClearResult::HurdleClearType::Perfect;
@@ -2103,7 +2101,6 @@ void RaceNetworkHandler::HandleStartingRate(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
-  const auto& parameters = raceInstance.GetParameters();
 
   auto& racer = raceInstance.GetTracker().GetRacer(
     clientContext.characterUid);
@@ -2116,7 +2113,7 @@ void RaceNetworkHandler::HandleStartingRate(
   }
 
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(parameters.gameMode));
+    static_cast<uint8_t>(raceInstance.GetGameModeId()));
 
   // TODO: validate boost gained against a table and determine good/perfect start
   racer.starPointValue = std::min(
@@ -2775,14 +2772,29 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
   deck.respawnTimePoint = now + deck.respawnTime;
 
   Room::GameMode gameMode;
-  registry::Course::GameModeInfo gameModeInfo;
-  _serverInstance.GetRoomSystem().GetRoom(clientContext.roomUid, [this, &gameMode, &gameModeInfo](const Room& room)
-  {
-    gameMode = room.GetRoomSnapshot().details.gameMode;
-    gameModeInfo = this->GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(static_cast<uint8_t>(gameMode));
-  });
+  uint16_t missionId{};
+  _serverInstance.GetRoomSystem().GetRoom(
+    clientContext.roomUid,
+    [&gameMode, &missionId](const Room& room)
+    {
+      gameMode = room.GetRoomSnapshot().details.gameMode;
+      missionId = room.GetRoomSnapshot().details.missionId;
+    });
 
-  switch(gameMode)
+  uint8_t effectiveGameMode = static_cast<uint8_t>(gameMode);
+  if (gameMode == Room::GameMode::Mission)
+  {
+    const auto missionOpt = _serverInstance.GetMissionRegistry().GetMission(missionId);
+    if (not missionOpt.has_value())
+    {
+      throw std::runtime_error(
+        std::format("Mission with id {} not found in MissionRegistry", missionId));
+    }
+    effectiveGameMode = missionOpt->gameMode;
+  }
+
+  const auto& gameModeInfo = _serverInstance.GetCourseRegistry().GetCourseGameModeInfo(effectiveGameMode);
+  switch (static_cast<Room::GameMode>(effectiveGameMode))
   {
     // TODO: Deduplicate from StarPointGet
     case Room::GameMode::Speed:
