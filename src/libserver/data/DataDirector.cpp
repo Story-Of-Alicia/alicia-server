@@ -1526,6 +1526,9 @@ void DataDirector::ScheduleCharacterLoad(
         // so that it is loaded with all the horses.
         horses.emplace_back(character.mountUid());
 
+        // Add breeding wishlist horses so that they are preloaded with character horses.
+        std::ranges::copy(character.breedingWishlist(), std::back_inserter(horses));
+
         // Mailbox
         std::ranges::copy(character.mailbox.inbox(), std::back_inserter(mailbox));
         std::ranges::copy(character.mailbox.sent(), std::back_inserter(mailbox));
