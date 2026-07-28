@@ -66,11 +66,23 @@ void BreedingMarket::Initialize()
     }
 
     auto horseUid = data::InvalidUid;
-
-    stallionRecord->Immutable([&horseUid](const data::Stallion& stallion)
+    auto ownerUid = data::InvalidUid;
+    stallionRecord->Immutable([&horseUid, &ownerUid](const data::Stallion& stallion)
     {
       horseUid = stallion.horseUid();
+      ownerUid = stallion.ownerUid();
     });
+
+    // Preload horse and character records
+    const auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(
+      horseUid);
+    const auto characterRecord = _serverInstance.GetDataDirector().GetCharacterCache().Get(
+      ownerUid);
+    if (not horseRecord || not characterRecord)
+    {
+      ++iterator;
+      continue;
+    }
 
     iterator = stallionUids.erase(iterator);
 
