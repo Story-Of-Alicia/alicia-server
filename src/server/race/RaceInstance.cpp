@@ -537,9 +537,12 @@ void RaceInstance::TickActiveRaceContent()
 {
   // Tick active race content
   this->TickItemSpawners();
-  if (this->GetGameModeId() == static_cast<registry::GameModeId>(protocol::GameMode::Magic))
+  if (_parameters.gameMode != protocol::GameMode::Mission and
+      this->GetGameModeId() == static_cast<registry::GameModeId>(protocol::GameMode::Magic))
+  {
     // Tick magic gauge
     this->TickMagicGauge();
+  }
 }
 
 void RaceInstance::TickItemSpawners()

@@ -2458,6 +2458,11 @@ void RaceNetworkHandler::HandleRequestMagicItem(
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
   const auto& parameters = raceInstance.GetParameters();
+  [[unlikely]] if (parameters.gameMode == protocol::GameMode::Mission)
+  {
+    return;
+  }
+
   auto& tracker = raceInstance.GetTracker();
   auto& racer = tracker.GetRacer(clientContext.characterUid);
 
