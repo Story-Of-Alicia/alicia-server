@@ -18,6 +18,7 @@
  **/
 
 #include "libserver/network/chatter/ChatterServer.hpp"
+#include "libserver/util/Deferred.hpp"
 #include "libserver/util/Stream.hpp"
 #include "libserver/util/Util.hpp"
 
@@ -109,14 +110,25 @@ size_t ChatterServer::OnClientData(
 
   while (commandStream.GetCursor() != commandStream.Size())
   {
-    const auto origin = commandStream.GetCursor();
-
     const auto bufferedDataSize = commandStream.Size() - commandStream.GetCursor();
 
     // If there's not enough buffered data to read the header,
     // break out of the loop.
     if (bufferedDataSize < sizeof(protocol::ChatterCommandHeader))
       break;
+
+    const auto streamOrigin = commandStream.GetCursor();
+    bool isCommandBufferedWhole = true;
+
+    const Deferred deferredResetCommandStreamCursor(
+      [streamOrigin, &commandStream, &isCommandBufferedWhole]()
+      {
+        // If the command was not buffered whole,
+        // reset the stream to the cursor before the command was read,
+        // so that it may be read when more data arrive.
+        if (not isCommandBufferedWhole)
+          commandStream.Seek(streamOrigin);
+      });
 
     // Read the header.
     protocol::ChatterCommandHeader header{};
@@ -127,34 +139,32 @@ size_t ChatterServer::OnClientData(
     header.length ^= *reinterpret_cast<const uint16_t*>(XorCode.data());
     header.commandId ^= *reinterpret_cast<const uint16_t*>(XorCode.data() + 2);
 
-    // If the the length of the command is notat least the size of the header
-    // or is more than 4KB discard the command.
-    if (header.length < sizeof(protocol::ChatterCommandHeader) ||  header.length > 4092)
+    // If the length of the command is not at least the size of the header
+    // or is more than 4KB, throw an exception to terminate corrupted connection.
+    if (header.length < sizeof(protocol::ChatterCommandHeader) || header.length > 4092)
     {
-      break;
+      throw std::runtime_error(
+        std::format("Invalid chatter header: Bad command data size '{}'", header.length));
     }
 
-    // todo: verify length, verify command, consume the rest of data even if handler does not exist.
-
-    // If there's not enough data to read the command
-    // restore the read cursor so the command may be processed later when more data arrive.
+    // If there's not enough data to read the full command payload,
+    // wait for more data to arrive.
     if (bufferedDataSize < header.length)
     {
-      commandStream.Seek(origin);
+      isCommandBufferedWhole = false;
       break;
     }
 
     const size_t commandDataLength = header.length - sizeof(protocol::ChatterCommandHeader);
     std::vector<std::byte> commandData(commandDataLength);
 
-    SinkStream commandDataSink({commandData.begin(), commandData.end()});
-
     // Read the command data from the command stream.
+    // XOR key index is relative to packet payload (idx % 4).
     for (size_t idx = 0; idx < commandDataLength; ++idx)
     {
       std::byte& val = commandData[idx];
       commandStream.Read(val);
-      val ^= XorCode[(commandStream.GetCursor() - 1) % 4];
+      val ^= XorCode[idx % 4];
     }
 
     SourceStream commandDataSource({commandData.begin(), commandData.end()});
@@ -202,6 +212,8 @@ size_t ChatterServer::OnClientData(
           header.commandId,
           ex.what());
       }
+
+      assert(commandDataSource.GetCursor() == commandDataSource.Size());
     }
   }
 
