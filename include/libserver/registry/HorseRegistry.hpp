@@ -256,6 +256,10 @@ public:
   //! Returns every configured coat TID (for weighted random coat selection).
   const std::vector<data::Tid>& GetPossibleCoats() const;
 
+  //! @param coatTid Coat template ID.
+  //! @returns Face TID, or InvalidTid if the coat's face type has no faces configured.
+  data::Tid GetRandomFaceForCoat(data::Tid coatTid);
+
   //! Returns one entry per distinct mane shape, ordered by shape, with the
   //! shape's lowest minGrade and a representative inheritance rate.
   std::vector<ShapeInheritance> GetManeShapeInheritance() const;
@@ -346,6 +350,7 @@ private:
 
   std::vector<data::Tid> _possibleCoats;
   std::vector<data::Tid> _possibleFaces;
+  std::unordered_map<int32_t, std::vector<data::Tid>> _facesByType;
   std::vector<data::Tid> _possibleManes;
   std::vector<data::Tid> _possibleTails;
 

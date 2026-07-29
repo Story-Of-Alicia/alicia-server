@@ -120,7 +120,6 @@ void Genetics::CreateFoal(
   struct ParentInfo
   {
     data::Tid tid{0};
-    data::Tid faceTid{0};
     uint8_t grade{0};
     uint32_t combo{0};
     uint32_t breedingCount{0};
@@ -136,7 +135,6 @@ void Genetics::CreateFoal(
       record.Immutable([&info](const data::Horse& horse)
       {
         info.tid = 28000;
-        info.faceTid = horse.parts.faceTid();
         info.grade = static_cast<uint8_t>(horse.grade());
         info.combo = horse.breedingCombo();
         info.breedingCount = horse.breedingCount();
@@ -191,9 +189,7 @@ void Genetics::CreateFoal(
     mareUid, stallionUid, foalGrade, mare.combo, stallion.combo, pregnancyChance);
   foal.parts.skinTid() = foalSkin;
 
-  // Face inherited from a random parent.
-  foal.parts.faceTid() = std::uniform_int_distribution<int>(0, 1)(_randomEngine) == 0
-    ? mare.faceTid : stallion.faceTid;
+  foal.parts.faceTid() = CalculateFoalFace(foalSkin);
 
   const auto maneTail = CalculateManeTailGenetics(mareUid, stallionUid, foalGrade, foalSkin);
   foal.parts.maneTid() = maneTail.maneTid;
@@ -390,6 +386,20 @@ Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
   }
 
   return result;
+}
+
+data::Tid Genetics::CalculateFoalFace(const data::Tid foalSkinTid)
+{
+  auto& registry = _serverInstance.GetHorseRegistry();
+
+  const data::Tid faceTid = registry.GetRandomFaceForCoat(foalSkinTid);
+  if (faceTid == data::InvalidTid)
+  {
+    spdlog::warn("Genetics: no face for coat {}, using fallback", foalSkinTid);
+    return 1; // First marking.
+  }
+
+  return faceTid;
 }
 
 uint8_t Genetics::CalculateFoalGrade(const uint8_t mareGrade, const uint8_t stallionGrade)

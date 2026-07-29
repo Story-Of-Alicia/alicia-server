@@ -169,6 +169,8 @@ faces:
     type: -1
   - tid: 7
     type: -1
+  - tid: 99
+    type: 0
 
 manes:
   # Shape 1 (Medium short)

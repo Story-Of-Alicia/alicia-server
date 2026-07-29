@@ -75,6 +75,10 @@ public:
     uint32_t stallionCombo = 0,
     uint32_t pregnancyChance = 30);
 
+  //! @param foalSkinTid Foal's skin TID (determines the wearable faces)
+  //! @returns Face TID for the foal
+  data::Tid CalculateFoalFace(data::Tid foalSkinTid);
+
   //! Calculates foal grade based on parent grades.
   //! @param mareGrade Mare's grade (1-8)
   //! @param stallionGrade Stallion's grade (1-8)

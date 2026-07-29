@@ -111,14 +111,17 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
 
   _faces.clear();
   _possibleFaces.clear();
+  _facesByType.clear();
   for (const auto& node : root["faces"])
   {
     const auto tid = node["tid"].as<data::Tid>();
+    const auto type = node["type"].as<int32_t>();
     _faces[tid] = Face{
       .tid = tid,
-      .type = node["type"].as<int32_t>(),
+      .type = type,
     };
     _possibleFaces.emplace_back(tid);
+    _facesByType[type].emplace_back(tid);
   }
 
   _manes.clear();
@@ -340,15 +343,9 @@ void HorseRegistry::BuildRandomHorse(
   const Coat& coat = _coats[_possibleCoats[coatRandomDist(_randomDevice)]];
   parts.skinTid = coat.tid;
 
-  // If the coat has a face available, pick a random face.
-  if (coat.faceType != 0)
-  {
-    std::uniform_int_distribution<size_t> faceRandomDist(
-      0, _possibleFaces.size() - 1);
-
-    const Face& face = _faces[_possibleFaces[faceRandomDist(_randomDevice)]];
-    parts.faceTid = face.tid;
-  }
+  // Pick a random face the coat may wear.
+  if (const data::Tid faceTid = GetRandomFaceForCoat(coat.tid); faceTid != data::InvalidTid)
+    parts.faceTid = faceTid;
 
   {
     // Pick a random mane.
@@ -513,6 +510,24 @@ const Tail& HorseRegistry::GetTail(data::Tid tid) const
 const std::vector<data::Tid>& HorseRegistry::GetPossibleCoats() const
 {
   return _possibleCoats;
+}
+
+data::Tid HorseRegistry::GetRandomFaceForCoat(data::Tid coatTid)
+{
+  // The coat's faceType selects which faces it may wear; faceType 0 resolves to the
+  // blank face, so a coat that carries no marking still gets a valid face.
+  const int32_t faceType = GetCoatInfo(coatTid).faceType;
+
+  auto it = _facesByType.find(faceType);
+  if (it == _facesByType.end() || it->second.empty())
+  {
+    spdlog::warn("No faces configured for face type {} (coat {})", faceType, coatTid);
+    return data::InvalidTid;
+  }
+
+  const auto& faces = it->second;
+  std::uniform_int_distribution<size_t> faceRandomDist(0, faces.size() - 1);
+  return faces[faceRandomDist(_randomEngine)];
 }
 
 namespace
