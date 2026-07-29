@@ -898,4 +898,33 @@ void BreedingBonus::Read(
     .Read(bonus.value);
 }
 
+void Mission::Write(
+  const Mission& mission,
+  SinkStream& stream)
+{
+  stream.Write(mission.id);
+  stream.Write(static_cast<uint8_t>(mission.progress.size()));
+  for (const auto& nestedVal : mission.progress)
+  {
+    stream.Write(nestedVal.id)
+      .Write(nestedVal.value);
+  }
+}
+
+void Mission::Read(
+  Mission& mission,
+  SourceStream& stream)
+{
+  stream.Read(mission.id);
+
+  uint8_t size;
+  stream.Read(size);
+  mission.progress.resize(size);
+  for (auto& nestedVal : mission.progress)
+  {
+    stream.Read(nestedVal.id)
+      .Read(nestedVal.value);
+  }
+}
+
 } // namespace server::protocol

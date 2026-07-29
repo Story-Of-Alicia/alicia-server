@@ -102,18 +102,6 @@ struct LobbyCommandLoginOK
 
   Settings settings{};
 
-  struct Mission
-  {
-    uint16_t id{};
-
-    struct Progress
-    {
-      uint32_t id{};
-      uint32_t value{};
-    };
-    std::vector<Progress> progress{};
-  };
-
   //! Max 17
   std::vector<Mission> missions{};
 
@@ -2611,6 +2599,31 @@ struct AcCmdCLEnterRoomQuickSuccess
   //! @param stream Source stream.
   static void Read(
     AcCmdCLEnterRoomQuickSuccess& command,
+    SourceStream& stream);
+};
+
+struct AcCmdLCMissionRecordUpdate
+{
+  uint16_t missionId{};
+  protocol::Mission mission{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCMissionRecordUpdate;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCMissionRecordUpdate& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCMissionRecordUpdate& command,
     SourceStream& stream);
 };
 

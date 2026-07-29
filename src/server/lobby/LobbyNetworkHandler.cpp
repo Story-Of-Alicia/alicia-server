@@ -544,6 +544,30 @@ void LobbyNetworkHandler::NotifyMatchmakeResult(
   }
 }
 
+void LobbyNetworkHandler::NotifyMissionRecordUpdate(
+  data::Uid characterUid,
+  const protocol::Mission& mission)
+{
+  try
+  {
+    const auto clientId = GetClientIdByCharacterUid(characterUid);
+
+    const protocol::AcCmdLCMissionRecordUpdate notify{
+      .missionId = mission.id,
+      .mission = mission};
+    _commandServer.QueueCommand<decltype(notify)>(
+      clientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
+  catch (const std::exception&)
+  {
+    // We really don't care if the user disconnected.
+  }
+}
+
 CommandServer& LobbyNetworkHandler::GetCommandServer() noexcept
 {
   return _commandServer;

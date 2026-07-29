@@ -829,6 +829,26 @@ struct BreedingBonus
     SourceStream& stream);
 };
 
+struct Mission
+{
+  uint16_t id{};
+
+  struct Progress
+  {
+    uint32_t id{};
+    uint32_t value{};
+  };
+  std::vector<Progress> progress{};
+
+  static void Write(
+    const Mission& mission,
+    SinkStream& stream);
+
+  static void Read(
+    Mission& mission,
+      SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif

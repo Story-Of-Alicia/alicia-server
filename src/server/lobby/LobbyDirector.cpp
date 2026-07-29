@@ -264,6 +264,15 @@ void LobbyDirector::NotifyMatchmakeResult(
     result);
 }
 
+void LobbyDirector::NotifyMissionRecordUpdate(
+  data::Uid characterUid,
+  const protocol::Mission& mission)
+{
+  _networkHandler->NotifyMissionRecordUpdate(
+    characterUid,
+    mission);
+}
+
 std::unordered_map<std::string, LobbyDirector::UserInstance>& LobbyDirector::GetUsers()
 {
   return _userInstances;

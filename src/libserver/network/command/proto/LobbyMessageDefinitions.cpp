@@ -110,16 +110,9 @@ void LobbyCommandLoginOK::Write(
 
   //
   stream.Write(static_cast<uint8_t>(command.missions.size()));
-  for (const auto& val : command.missions)
+  for (const auto& mission : command.missions)
   {
-    stream.Write(val.id);
-
-    stream.Write(static_cast<uint8_t>(val.progress.size()));
-    for (const auto& nestedVal : val.progress)
-    {
-      stream.Write(nestedVal.id)
-        .Write(nestedVal.value);
-    }
+    stream.Write(mission);
   }
 
   stream.Write(command.val6);
@@ -1675,6 +1668,21 @@ void AcCmdCLEnterRoomQuickSuccess::Write(
   SinkStream& stream)
 {
   stream.Write(command.result);
+}
+
+void AcCmdLCMissionRecordUpdate::Read(
+  AcCmdLCMissionRecordUpdate&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdLCMissionRecordUpdate::Write(
+  const AcCmdLCMissionRecordUpdate& command,
+  SinkStream& stream)
+{
+  stream.Write(command.missionId)
+    .Write(command.mission);
 }
 
 } // namespace server::protocol

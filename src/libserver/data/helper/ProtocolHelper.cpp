@@ -429,7 +429,7 @@ void BuildProtocolQuests(
 }
 
 void BuildProtocolMission(
-  LobbyCommandLoginOK::Mission& protocolMission,
+  protocol::Mission& protocolMission,
   const data::Character::Mission& mission)
 {
   protocolMission.id = static_cast<uint16_t>(mission.id);
@@ -437,7 +437,7 @@ void BuildProtocolMission(
   protocolMission.progress.reserve(mission.progress.size());
   for (const auto& progress : mission.progress)
   {
-    protocolMission.progress.emplace_back(protocol::LobbyCommandLoginOK::Mission::Progress{
+    protocolMission.progress.emplace_back(protocol::Mission::Progress{
       .id = progress.id,
       .value = progress.value
     });
@@ -445,7 +445,7 @@ void BuildProtocolMission(
 }
 
 void BuildProtocolMissions(
-  std::vector<LobbyCommandLoginOK::Mission>& protocolMissions,
+  std::vector<protocol::Mission>& protocolMissions,
   const std::map<uint32_t, data::Character::Mission>& missions)
 {
   protocolMissions.clear();

@@ -134,6 +134,10 @@ public:
     const data::Uid characterUid,
     const MatchmakingSystem::Result& result);
 
+  void NotifyMissionRecordUpdate(
+    data::Uid characterUid,
+    const protocol::Mission& mission);
+
   //! Get users
   //! @return Get users.
   [[nodiscard]] std::unordered_map<std::string, UserInstance>& GetUsers();

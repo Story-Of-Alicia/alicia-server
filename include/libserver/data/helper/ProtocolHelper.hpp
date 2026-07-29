@@ -101,11 +101,11 @@ void BuildProtocolQuests(
   const std::vector<Record<data::Quest>>& questRecords);
 
 void BuildProtocolMission(
-  LobbyCommandLoginOK::Mission& protocolMission,
+  protocol::Mission& protocolMission,
   const data::Character::Mission& mission);
 
 void BuildProtocolMissions(
-  std::vector<LobbyCommandLoginOK::Mission>& protocolMissions,
+  std::vector<protocol::Mission>& protocolMissions,
   const std::map<uint32_t, data::Character::Mission>& missions);
 
 } // namespace protocol
