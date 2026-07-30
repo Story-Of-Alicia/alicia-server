@@ -2894,6 +2894,30 @@ struct AcCmdRCObtainEgg
     SourceStream& stream);
 };
 
+struct AcCmdCRRestartRace
+{
+  // Empty
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRestartRace;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRestartRace& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRestartRace& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RACE_MESSAGE_DEFINES_HPP

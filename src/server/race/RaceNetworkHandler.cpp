@@ -280,6 +280,12 @@ RaceNetworkHandler::RaceNetworkHandler(ServerInstance& serverInstance)
     {
       HandleMissionEvent(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRestartRace>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleRestartRace(clientId, command);
+    });
 }
 
 void RaceNetworkHandler::Initialize()
@@ -4091,6 +4097,15 @@ void RaceNetworkHandler::HandleMissionEvent(
       break;
     }
   }
+}
+
+void RaceNetworkHandler::HandleRestartRace(
+  ClientId clientId,
+  const protocol::AcCmdCRRestartRace&)
+{
+  [[maybe_unused]] const auto& clientContext = GetClientContext(clientId);
+
+  HandleStartRace(clientId, protocol::AcCmdCRStartRace{});
 }
 
 } // namespace server

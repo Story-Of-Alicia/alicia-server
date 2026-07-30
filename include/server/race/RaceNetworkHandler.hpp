@@ -343,6 +343,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdRCMissionEvent& command);
 
+  void HandleRestartRace(
+    ClientId clientId,
+    const protocol::AcCmdCRRestartRace& command);
+
   //! A scheduler instance.
   Scheduler _scheduler;
   //! A server instance.
