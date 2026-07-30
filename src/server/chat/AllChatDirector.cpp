@@ -115,10 +115,10 @@ void AllChatDirector::HandleChatterEnterRoom(
   boost::hash_combine(identityHash, AllChatOtpConstant);
 
   // Authorise the code received in the command against the calculated identity hash
-  clientContext.isAuthenticated = _serverInstance.GetOtpSystem().AuthorizeCode(
+  clientContext.isAuthenticated = _serverInstance.GetOtpSystem().AuthorizeLtk(
     identityHash,
     command.code,
-    false);
+    _chatterServer.GetClientAddress(clientId).to_uint());
 
   if (not clientContext.isAuthenticated)
   {
