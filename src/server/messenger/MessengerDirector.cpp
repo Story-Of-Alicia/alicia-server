@@ -1186,24 +1186,27 @@ void MessengerDirector::HandleChatterLetterList(
       return isDeleted;
     });
 
-  // Get remaining items left in the array, from the mailUid (or beginning)
-  const auto remaining = std::distance(
-    startIter,
-    mailbox.end());
-
+  bool hasMoreMail = false;
   std::vector<data::Uid> filteredMails{};
+  if (not mailbox.empty())
+  {
+    // Get remaining items left in the array, from the mailUid (or beginning)
+    const auto remaining = std::distance(
+      startIter,
+      mailbox.end());
 
-  // Copy n amounts of mail as per request (max MaxMailsPerRequest)
-  constexpr size_t MaxMailsPerRequest = 10;
-  const auto& res = std::ranges::copy_n(
-    startIter,
-    std::min<size_t>(
-      std::min<size_t>(command.request.count, MaxMailsPerRequest),
-      remaining),
-    std::back_inserter(filteredMails));
+    // Copy n amounts of mail as per request (max MaxMailsPerRequest)
+    constexpr size_t MaxMailsPerRequest = 10;
+    const auto& res = std::ranges::copy_n(
+      startIter,
+      std::min<size_t>(
+        std::min<size_t>(command.request.count, MaxMailsPerRequest),
+        remaining),
+      std::back_inserter(filteredMails));
 
-  // Indicate that there are more mail after the current ending of response mail
-  const bool hasMoreMail = res.in != mailbox.cend();
+    // Indicate that there are more mail after the current ending of response mail
+    hasMoreMail = res.in != mailbox.cend();
+  }
 
   // Build response mailbox
   for (const data::Uid& mailUid : filteredMails)
