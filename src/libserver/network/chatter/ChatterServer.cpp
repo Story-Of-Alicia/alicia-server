@@ -220,9 +220,16 @@ size_t ChatterServer::OnClientData(
   return commandStream.GetCursor();
 }
 
-network::asio::ip::address_v4 ChatterServer::GetClientAddress(const network::ClientId clientId)
+network::asio::ip::address_v4 ChatterServer::GetClientAddress(
+  const network::ClientId clientId) noexcept
 {
   return _server.GetClient(clientId)->GetAddress();
+}
+
+uint16_t ChatterServer::GetClientPort(
+  const network::ClientId clientId) noexcept
+{
+  return _server.GetClient(clientId)->GetPort();
 }
 
 void ChatterServer::DisconnectClient(network::ClientId clientId)

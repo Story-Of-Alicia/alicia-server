@@ -46,7 +46,9 @@ Client::Client(
   , _socket(std::move(socket))
   , _networkEventHandler(networkEventHandler)
 {
-  _remoteAddress = _socket.remote_endpoint().address().to_v4();
+  const auto& endpoint = _socket.remote_endpoint();
+  _remoteAddress = endpoint.address().to_v4();
+  _remotePort = endpoint.port();
 }
 
 void Client::Begin()
@@ -96,6 +98,11 @@ void Client::QueueWrite(WriteSupplier writeSupplier)
 asio::ip::address_v4 Client::GetAddress() const noexcept
 {
   return _remoteAddress;
+}
+
+uint16_t Client::GetPort() const noexcept
+{
+  return _remotePort;
 }
 
 void Client::WriteLoop() noexcept

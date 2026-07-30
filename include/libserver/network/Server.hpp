@@ -87,6 +87,8 @@ public:
   void QueueWrite(WriteSupplier writeSupplier);
   //!
   asio::ip::address_v4 GetAddress() const noexcept;
+  //!
+  uint16_t GetPort() const noexcept;
 
 private:
   void WriteLoop() noexcept;
@@ -112,6 +114,8 @@ private:
   ClientId _clientId;
   //! Remote address of the client.
   asio::ip::address_v4 _remoteAddress;
+  //! Remote port of the client.
+  uint16_t _remotePort;
   //! A client socket.
   asio::ip::tcp::socket _socket;
   //! A network event handling interface
