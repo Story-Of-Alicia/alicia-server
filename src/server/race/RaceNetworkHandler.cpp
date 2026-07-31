@@ -1271,15 +1271,30 @@ void RaceNetworkHandler::HandleStartRace(
   constexpr uint32_t GameCountdownKey = 17;
   constexpr uint32_t DefaultCountdownMs = 5310;
 
-  const auto& countdown = GetServerInstance()
+  const auto countdown = GetServerInstance()
     .GetSystemContentRegistry()
     .GetValue(GameCountdownKey);
 
-  const protocol::AcCmdRCRoomCountdown roomCountdown{
+  protocol::AcCmdRCRoomCountdown roomCountdown{
     .countdown = countdown.has_value()
       ? countdown.value()
       : DefaultCountdownMs,
     .mapBlockId = static_cast<uint16_t>(raceInstance.GetMapBlockId())};
+
+  {
+    // Multiplier as a percentage (example 100%)
+    constexpr uint32_t CarrotExpMultiplierKey = 18;
+    const std::optional<uint32_t> carrotExpMultiplierOpt = GetServerInstance()
+      .GetSystemContentRegistry()
+      .GetValue(CarrotExpMultiplierKey);
+
+    if (carrotExpMultiplierOpt and *carrotExpMultiplierOpt > 100)
+    {
+      // TODO: differentiate between carrots and exp bonus from system content?
+      using BonusCourseType = protocol::AcCmdRCRoomCountdown::BonusCourseType;
+      roomCountdown.bonusCourseType = BonusCourseType::Carrots;
+    }
+  }
 
   // Broadcast room countdown.
   this->Broadcast(raceInstance, roomCountdown);

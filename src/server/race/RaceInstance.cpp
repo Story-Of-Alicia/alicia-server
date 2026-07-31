@@ -144,8 +144,10 @@ void RaceInstance::Stop()
       const float multiplier = carrotExpMultiplierOpt.has_value() ?
           carrotExpMultiplierOpt.value() / 100.0f :
           DefaultCarrotExpMultiplier;
-      score.carrots = static_cast<uint32_t>(
+      score.bonusCarrots = static_cast<uint32_t>(
         static_cast<float>(score.carrots) * multiplier);
+      score.bitset = static_cast<protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset>(
+        score.bitset | protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::EventBonusCarrots);
     }
 
     score.teamColor = racer.team;
@@ -154,7 +156,7 @@ void RaceInstance::Stop()
 
     characterRecord.Mutable([this, &score](data::Character& character)
     {
-      character.carrots() += score.carrots;
+      character.carrots() += score.carrots + score.bonusCarrots;
       character.experience() += score.experience;
 
       const uint32_t newLevel = _raceNetworkHandler.GetServerInstance().GetCharacterRegistry().GetLevelForExp(character.experience());
