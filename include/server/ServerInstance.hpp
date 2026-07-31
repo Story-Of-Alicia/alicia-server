@@ -71,6 +71,9 @@ public:
   //! Terminates the server instance.
   void Terminate();
 
+  //! Loads configurations.
+  void LoadConfigurations();
+
   //! Returns reference to the authentication service.
   //! @returns Reference to the authentication service.
   AuthenticationService& GetAuthenticationService();
