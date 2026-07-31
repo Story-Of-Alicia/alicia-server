@@ -88,9 +88,10 @@ void ServerInstance::Initialize()
 {
   _shouldRun.store(true, std::memory_order::release);
 
-
-  _config.LoadFromEnvironment();
+  // Load configurations from file system.
   LoadConfigurations();
+  // Load configurations from environment variables.
+  _config.LoadFromEnvironment();
 
   // Initialize the directors and tick them on their own threads.
   // Directors will terminate their tick loop once `_shouldRun` flag is set to false.
