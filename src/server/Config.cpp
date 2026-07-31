@@ -205,17 +205,17 @@ void Config::LoadFromFile(const std::filesystem::path& filePath)
       spdlog::error("Unhandled exception parsing the authentication config: {}", e.what());
     }
 
-    // Telemetry config
+    // Metrics config
     try
     {
-      const auto telemetryYaml = serverYaml["telemetry"];
+      const auto telemetryYaml = serverYaml["metrics"];
       telemetry.enabled = telemetryYaml["enabled"].as<bool>(false);
       telemetry.backend = telemetryYaml["backend"].as<std::string>("none");
       telemetry.postgres.connectionUri = telemetryYaml["postgres"]["connectionUri"].as<std::string>("");
     }
     catch (const std::exception& e)
     {
-      spdlog::error("Unhandled exception parsing the authentication config: {}", e.what());
+      spdlog::error("Unhandled exception parsing the metrics config: {}", e.what());
     }
 
     // Lobby config
