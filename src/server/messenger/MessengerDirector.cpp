@@ -1143,18 +1143,17 @@ void MessengerDirector::HandleChatterLetterList(
     return;
   }
 
-  // Start from the beginning of the mailbox (latest), or from specific mailUid as per request
-  auto startIter = mailbox.begin();
+  // Validate whether the mail by lastMailUid exists
   if (command.request.lastMailUid != data::InvalidUid)
   {
     // Last mail uid requested, find it
-    startIter = std::ranges::find(
-      mailbox.begin(),
-      mailbox.end(),
+    const auto iter = std::ranges::find(
+      mailbox.cbegin(),
+      mailbox.cend(),
       command.request.lastMailUid);
 
     // Safety mechanism, just in case no mail by that UID was found
-    if (startIter == mailbox.end())
+    if (iter == mailbox.cend())
     {
       spdlog::warn("Character {} tried to request mail after mail {} but that mail does not exist.",
         clientContext.characterUid,
@@ -1162,9 +1161,7 @@ void MessengerDirector::HandleChatterLetterList(
       errorCode.emplace(protocol::ChatterErrorCode::MailListInvalidUid);
       return;
     }
-
-    // Mail found, move onto next element to begin processing
-    startIter++;
+    // Mail found, move onto filtering
   }
 
   // Pre-process mailbox (filter out unavailable or soft deleted mails)
@@ -1188,12 +1185,24 @@ void MessengerDirector::HandleChatterLetterList(
 
   bool hasMoreMail = false;
   std::vector<data::Uid> filteredMails{};
-  if (not mailbox.empty())
+
   {
-    // Get remaining items left in the array, from the mailUid (or beginning)
+    // Start from the beginning of the pre-processed emails
+    // or from the requested last mail
+    auto startIter = mailbox.cbegin();
+    if (command.request.lastMailUid != data::InvalidUid)
+    {
+      // Find the mail by uid
+      const auto iter = std::ranges::find(mailbox, command.request.lastMailUid);
+      // If mail found, move onto the next one
+      if (iter != mailbox.cend())
+        startIter = iter + 1;
+    }
+
+    // Get remaining items left in the array, from the last mail uid (or beginning)
     const auto remaining = std::distance(
       startIter,
-      mailbox.end());
+      mailbox.cend());
 
     // Copy n amounts of mail as per request (max MaxMailsPerRequest)
     constexpr size_t MaxMailsPerRequest = 10;
