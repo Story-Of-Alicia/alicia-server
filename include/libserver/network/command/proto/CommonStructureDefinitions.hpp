@@ -616,6 +616,14 @@ enum class GameMode : uint8_t
   Tutorial = 6,
 };
 
+enum class BonusCourseType : uint16_t
+{
+  None = 0,
+  Carrots = 1,
+  Experience = 2,
+  CarrotsAndExperience = 3
+};
+
 struct SkillSet
 {
   //! ID of the set

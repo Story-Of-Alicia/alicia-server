@@ -1281,18 +1281,33 @@ void RaceNetworkHandler::HandleStartRace(
       : DefaultCountdownMs,
     .mapBlockId = static_cast<uint16_t>(raceInstance.GetMapBlockId())};
 
-  {
-    // Multiplier as a percentage (example 100%)
-    constexpr uint32_t CarrotExpMultiplierKey = 18;
-    const std::optional<uint32_t> carrotExpMultiplierOpt = GetServerInstance()
-      .GetSystemContentRegistry()
-      .GetValue(CarrotExpMultiplierKey);
+  // Start with bonus course set to none by default
+  raceInstance.SetBonusCourseType(protocol::BonusCourseType::None);
 
-    if (carrotExpMultiplierOpt and *carrotExpMultiplierOpt > 100)
+  // Randomly assign a bonus course if the room is full
+  {
+    bool isRoomFull = false;
+    _serverInstance.GetRoomSystem().GetRoom(
+      roomUid,
+      [&isRoomFull](const Room& room)
+      {
+        isRoomFull = room.IsRoomFull();
+      });
+
+    if (isRoomFull)
     {
-      // TODO: differentiate between carrots and exp bonus from system content?
-      using BonusCourseType = protocol::AcCmdRCRoomCountdown::BonusCourseType;
-      roomCountdown.bonusCourseType = BonusCourseType::Carrots;
+      static std::mt19937 gen(_randomDevice());
+      std::uniform_int_distribution<uint32_t> chanceDist(1, 100);
+
+      constexpr uint32_t BonusCourseChance = 25;
+      const bool isBonusCourse = chanceDist(gen) <= BonusCourseChance;
+      if (isBonusCourse)
+      {
+        std::uniform_int_distribution<uint32_t> typeDist(1, 3);
+        const auto selectedType = static_cast<protocol::BonusCourseType>(typeDist(gen));
+        roomCountdown.bonusCourseType = selectedType;
+        raceInstance.SetBonusCourseType(selectedType);
+      }
     }
   }
 

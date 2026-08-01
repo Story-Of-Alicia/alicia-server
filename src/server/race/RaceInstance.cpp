@@ -141,13 +141,41 @@ void RaceInstance::Stop()
         .GetSystemContentRegistry()
         .GetValue(CarrotExpMultiplierKey);
 
-      const float multiplier = carrotExpMultiplierOpt.has_value() ?
+      const float systemMultiplier = carrotExpMultiplierOpt.has_value() ?
           carrotExpMultiplierOpt.value() / 100.0f :
           DefaultCarrotExpMultiplier;
-      score.bonusCarrots = static_cast<uint32_t>(
-        static_cast<float>(score.carrots) * multiplier);
-      score.bitset = static_cast<protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset>(
-        score.bitset | protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::EventBonusCarrots);
+
+      using BonusCourseType = protocol::BonusCourseType;
+      using Bitset = protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset;
+
+      // Carrots/bonus carrots
+      if (_bonusCourseType == BonusCourseType::Carrots or _bonusCourseType == BonusCourseType::CarrotsAndExperience)
+      {
+        constexpr float EventMultiplier = 2.0f;
+        score.bonusCarrots = static_cast<uint32_t>(
+          static_cast<float>(score.carrots) * systemMultiplier * EventMultiplier);
+        score.bitset = static_cast<Bitset>(
+          score.bitset | Bitset::EventBonusCarrots);
+      }
+      else
+      {
+        score.bonusCarrots = static_cast<uint32_t>(
+          static_cast<float>(score.carrots) * systemMultiplier);
+      }
+
+      // Exp
+      if (_bonusCourseType == BonusCourseType::Experience or _bonusCourseType == BonusCourseType::CarrotsAndExperience)
+      {
+        constexpr float EventMultiplier = 2.0f;
+        score.experience = static_cast<uint32_t>(
+          static_cast<float>(score.experience) * EventMultiplier);
+        score.bitset = static_cast<Bitset>(
+          score.bitset | Bitset::EventBonusExperience);
+      }
+      else
+      {
+        // TODO: Apply bonus carrots only for now, do not touch exp
+      }
     }
 
     score.teamColor = racer.team;
@@ -399,6 +427,16 @@ tracker::RaceTracker& RaceInstance::GetTracker()
 const tracker::RaceTracker& RaceInstance::GetTracker() const
 {
   return _tracker;
+}
+
+protocol::BonusCourseType RaceInstance::GetBonusCourseType() const noexcept
+{
+  return _bonusCourseType;
+}
+
+void RaceInstance::SetBonusCourseType(const protocol::BonusCourseType type) noexcept
+{
+  _bonusCourseType = type;
 }
 
 void RaceInstance::TickLoading()

@@ -24,6 +24,7 @@
 
 #include <libserver/data/DataDefinitions.hpp>
 #include <libserver/network/NetworkDefinitions.hpp>
+#include <libserver/network/command/proto/CommonStructureDefinitions.hpp>
 #include <libserver/registry/CourseRegistry.hpp>
 
 #include <chrono>
@@ -92,6 +93,9 @@ public:
   [[nodiscard]] tracker::RaceTracker& GetTracker();
   [[nodiscard]] const tracker::RaceTracker& GetTracker() const;
 
+  [[nodiscard]] protocol::BonusCourseType GetBonusCourseType() const noexcept;
+  void SetBonusCourseType(protocol::BonusCourseType type) noexcept;
+
 private:
   void TickLoading();
   void TickRacing();
@@ -137,6 +141,9 @@ private:
 
   //! A race object tracker.
   tracker::RaceTracker _tracker;
+
+  protocol::BonusCourseType _bonusCourseType{
+    protocol::BonusCourseType::None};
 
   RaceNetworkHandler& _raceNetworkHandler;
 };
