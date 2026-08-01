@@ -183,10 +183,10 @@ void Genetics::CreateFoal(
     _serverInstance.GetHorseRegistry().GetGradeForStatSum(statSum), childGradeLimit));
   foal.grade() = foalGrade;
 
-  // Skin/coat, influenced by parent combos and the stallion's pregnancy chance.
+  // Skin/coat, influenced by the mare's combo and the stallion's pregnancy chance.
   const uint32_t pregnancyChance = std::min(stallion.breedingCount, kMaxPregnancyChance);
   const data::Tid foalSkin = CalculateFoalSkin(
-    mareUid, stallionUid, foalGrade, mare.combo, stallion.combo, pregnancyChance);
+    mareUid, stallionUid, foalGrade, mare.combo, pregnancyChance);
   foal.parts.skinTid() = foalSkin;
 
   foal.parts.faceTid() = CalculateFoalFace(foalSkin);
@@ -599,13 +599,13 @@ Genetics::PotentialResult Genetics::CalculateFoalPotential(
 
 float Genetics::StallionCoatBonusMultiplier(
   const uint32_t mareCombo,
-  const uint32_t stallionCombo,
   const uint32_t pregnancyChance,
   const uint32_t stallionLineage)
 {
-  // Bonuses all push the foal towards the stallion's coat.
+  // Bonuses all push the foal towards the stallion's coat. Only the mare's combo counts;
+  // the stallion does not contribute a streak of its own.
   const int32_t bonusUnit = _serverInstance.GetBreedingRegistry().GetBreedingParams().inheritanceRateBonusUnit;
-  const uint32_t comboBonus = (mareCombo + stallionCombo) * static_cast<uint32_t>(bonusUnit);
+  const uint32_t comboBonus = mareCombo * static_cast<uint32_t>(bonusUnit);
   const uint32_t pregnancyBonus = kMaxPregnancyChance - std::min(pregnancyChance, kMaxPregnancyChance);
   const uint32_t lineageBonus = (stallionLineage > 1) ? (stallionLineage - 1) : 0;
   const uint16_t totalBonus = static_cast<uint16_t>(
@@ -618,7 +618,6 @@ data::Tid Genetics::CalculateFoalSkin(
   const data::Uid stallionUid,
   const uint8_t foalGrade,
   const uint32_t mareCombo,
-  const uint32_t stallionCombo,
   const uint32_t pregnancyChance)
 {
   const auto& registry = _serverInstance.GetHorseRegistry();
@@ -637,7 +636,7 @@ data::Tid Genetics::CalculateFoalSkin(
     record.Immutable([&](const data::Horse& stallion) { stallionLineage = stallion.lineage(); });
 
   const float bonusMultiplier =
-    StallionCoatBonusMultiplier(mareCombo, stallionCombo, pregnancyChance, stallionLineage);
+    StallionCoatBonusMultiplier(mareCombo, pregnancyChance, stallionLineage);
 
   // Grandparent coats, in roll order (maternal then paternal).
   std::vector<data::Tid> gpSkins;

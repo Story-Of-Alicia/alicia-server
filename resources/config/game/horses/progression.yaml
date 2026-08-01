@@ -199,13 +199,13 @@ grades:
     pregnantValue: 77
   - grade: 6
     minStatSum: 50
-    pregnantValue: 70
+    pregnantValue: 74
   - grade: 7
     minStatSum: 60
-    pregnantValue: 68
+    pregnantValue: 72
   - grade: 8
     minStatSum: 70
-    pregnantValue: 63
+    pregnantValue: 69
   - grade: 9
     minStatSum: 80
     pregnantValue: 56

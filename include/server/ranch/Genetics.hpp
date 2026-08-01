@@ -64,7 +64,6 @@ public:
   //! @param stallionUid Stallion's UID
   //! @param foalGrade Foal's calculated grade (for minimum grade requirements)
   //! @param mareCombo Mare's consecutive breeding success count
-  //! @param stallionCombo Stallion's consecutive breeding success count
   //! @param pregnancyChance Stallion's pregnancy chance (0-30, lower = better)
   //! @returns Skin TID that the foal inherits
   data::Tid CalculateFoalSkin(
@@ -72,7 +71,6 @@ public:
     data::Uid stallionUid,
     uint8_t foalGrade,
     uint32_t mareCombo = 0,
-    uint32_t stallionCombo = 0,
     uint32_t pregnancyChance = 30);
 
   //! @param foalSkinTid Foal's skin TID (determines the wearable faces)
@@ -207,11 +205,9 @@ private:
   //! per the registry's per-shape minGrade data. Rerolls uniformly if out of range.
   void ValidateShape(int32_t& shape, uint8_t foalGrade, Part part);
 
-  //! Combines the combo, pregnancy and lineage bonuses into a multiplier (1.0-2.0)
-  //! that biases coat inheritance towards the stallion.
+  //! Combines the mare's combo and the stallion's pregnancy and lineage bonuses
   float StallionCoatBonusMultiplier(
     uint32_t mareCombo,
-    uint32_t stallionCombo,
     uint32_t pregnancyChance,
     uint32_t stallionLineage);
 };

@@ -695,12 +695,9 @@ void BreedingMarket::UnregisterStallion(
       x.what());
   }
 
-  // Update the horse status and statistics.
-  horseRecord->Mutable([timesMated = earnings.timesMated](
-    data::Horse& horse)
+  horseRecord->Mutable([](data::Horse& horse)
     {
       horse.type() = data::Horse::Type::Adult;
-      horse.breedingCount() += timesMated;
     });
 
   // Delete the stallion record.
