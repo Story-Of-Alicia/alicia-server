@@ -1284,17 +1284,18 @@ void RaceNetworkHandler::HandleStartRace(
   // Start with bonus course set to none by default
   raceInstance.SetBonusCourseType(protocol::BonusCourseType::None);
 
-  // Randomly assign a bonus course if the room is full
+  // Randomly assign a bonus course if the room has 8 players
   {
-    bool isRoomFull = false;
+    constexpr size_t RequiredPlayerCount = 8;
+    bool hasRequiredPlayerCount = false;
     _serverInstance.GetRoomSystem().GetRoom(
       roomUid,
-      [&isRoomFull](const Room& room)
+      [&hasRequiredPlayerCount](const Room& room)
       {
-        isRoomFull = room.IsRoomFull();
+        hasRequiredPlayerCount = room.GetPlayerCount() == RequiredPlayerCount;
       });
 
-    if (isRoomFull)
+    if (hasRequiredPlayerCount)
     {
       static std::mt19937 gen(_randomDevice());
       std::uniform_int_distribution<uint32_t> chanceDist(1, 100);
