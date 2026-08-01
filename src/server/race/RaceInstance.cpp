@@ -130,8 +130,11 @@ void RaceInstance::Stop()
       ? racer.courseTime
       : tracker::InvalidCourseTime;
 
-    score.experience = 420;
-    score.carrots = 2500;
+    static constexpr uint32_t BaseExpReward = 420;
+    static constexpr uint32_t BaseCarrotReward = 2500;
+
+    score.experience = BaseExpReward;
+    score.carrots = BaseCarrotReward;
 
     {
       // Multiplier as a percentage (example 100%)
@@ -148,33 +151,39 @@ void RaceInstance::Stop()
       using BonusCourseType = protocol::BonusCourseType;
       using Bitset = protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset;
 
-      // Carrots/bonus carrots
-      if (_bonusCourseType == BonusCourseType::Carrots or _bonusCourseType == BonusCourseType::CarrotsAndExperience)
+      // Apply rewards only if player has finished the race
+      if (racer.courseTime != tracker::InvalidCourseTime)
       {
-        constexpr float EventMultiplier = 2.0f;
-        score.bonusCarrots = static_cast<uint32_t>(
-          static_cast<float>(score.carrots) * systemMultiplier * EventMultiplier);
-        score.bitset = static_cast<Bitset>(
-          score.bitset | Bitset::EventBonusCarrots);
-      }
-      else
-      {
-        score.bonusCarrots = static_cast<uint32_t>(
-          static_cast<float>(score.carrots) * systemMultiplier);
-      }
+        // TODO: put these in the config
+        constexpr float EventCarrotMultiplier = 1.5f;
+        constexpr float EventExpMultiplier = 2.0f;
 
-      // Exp
-      if (_bonusCourseType == BonusCourseType::Experience or _bonusCourseType == BonusCourseType::CarrotsAndExperience)
-      {
-        constexpr float EventMultiplier = 2.0f;
-        score.experience = static_cast<uint32_t>(
-          static_cast<float>(score.experience) * EventMultiplier);
-        score.bitset = static_cast<Bitset>(
-          score.bitset | Bitset::EventBonusExperience);
-      }
-      else
-      {
-        // TODO: Apply bonus carrots only for now, do not touch exp
+        // Apply carrots
+        if (_bonusCourseType == BonusCourseType::Carrots || _bonusCourseType == BonusCourseType::CarrotsAndExperience)
+        {
+          score.carrots = static_cast<uint32_t>(
+            static_cast<float>(score.carrots) * systemMultiplier * EventCarrotMultiplier);
+          score.bitset = static_cast<Bitset>(
+            score.bitset | Bitset::EventBonusCarrots);
+        }
+        else
+        {
+          score.carrots = static_cast<uint32_t>(
+            static_cast<float>(score.carrots) * systemMultiplier);
+        }
+
+        // Apply experience/bonus experience
+        if (_bonusCourseType == BonusCourseType::Experience || _bonusCourseType == BonusCourseType::CarrotsAndExperience)
+        {
+          score.experience = static_cast<uint32_t>(
+            static_cast<float>(score.experience) * EventExpMultiplier);
+          score.bitset = static_cast<Bitset>(
+            score.bitset | Bitset::EventBonusExperience);
+        }
+        else
+        {
+          // TODO: Apply bonus carrots only for now, do not touch exp
+        }
       }
     }
 
@@ -184,7 +193,7 @@ void RaceInstance::Stop()
 
     characterRecord.Mutable([this, &score](data::Character& character)
     {
-      character.carrots() += score.carrots + score.bonusCarrots;
+      character.carrots() += score.carrots;
       character.experience() += score.experience;
 
       const uint32_t newLevel = _raceNetworkHandler.GetServerInstance().GetCharacterRegistry().GetLevelForExp(character.experience());
