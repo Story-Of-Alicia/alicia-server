@@ -432,7 +432,9 @@ struct Horse
   } mastery{};
 
   dao::Field<uint32_t> rating{0u};
+  //! A class.
   dao::Field<uint32_t> clazz{0u};
+  //! A class progress experience points.
   dao::Field<uint32_t> clazzProgress{0u};
   dao::Field<uint32_t> grade{0u};
   dao::Field<uint32_t> growthPoints{0u};
@@ -450,8 +452,13 @@ struct Horse
 
   struct Potential
   {
+    //! A type of potential.
     dao::Field<uint32_t> type{0u};
+    //! A potential level represents the growth progress
+    //! of the potential's value.
     dao::Field<uint32_t> level{0u};
+    //! A potential value represents the intensity of the
+    //! potential.
     dao::Field<uint32_t> value{0u};
   } potential{};
 

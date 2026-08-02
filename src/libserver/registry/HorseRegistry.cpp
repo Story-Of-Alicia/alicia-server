@@ -161,18 +161,20 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
   {
     const auto type = node["type"].as<uint32_t>();
     PotentialGrowth pg{ .type = type };
+
     const auto weightsNode = node["weights"];
     for (size_t i = 0; i < pg.weights.size(); ++i)
       pg.weights[i] = weightsNode[i].as<float>();
+
     _potentialGrowth[type] = pg;
   }
 
   _potentialLevels.clear();
   for (const auto& node : root["potentialLevels"])
   {
-    _potentialLevels.push_back(PotentialLevel{
+    _potentialLevels.emplace_back(PotentialLevel{
       .level = node["level"].as<uint32_t>(),
-      .exp = node["exp"].as<int32_t>(),
+      .requiredClassProgression = node["exp"].as<uint32_t>(),
     });
   }
 
@@ -683,41 +685,48 @@ uint32_t HorseRegistry::ApplyPotentialGrowth(data::Horse& horse) const
   uint32_t targetLevel = 1;
   for (const auto& potentialLevel : _potentialLevels)
   {
-    if (static_cast<int32_t>(horse.clazzProgress()) >= potentialLevel.exp)
+    if (horse.clazzProgress() >= potentialLevel.requiredClassProgression)
       targetLevel = std::max(targetLevel, potentialLevel.level);
   }
 
   uint32_t level = std::max<uint32_t>(horse.potential.level(), 1);
 
-  uint32_t gained = 0;
+  uint32_t gainedPoints = 0;
   while (level < targetLevel && level <= MaxTransitionLevel)
   {
     const size_t columnIndex = level - 1;
+
+    // We currently treat the growth type as the amount of points
+    // to add to the potential's value and weight is added based on the potential's level.
+    // This is not correct and needs to be revisited once we figure out what
+    // growth type actually is and how it affects the potential value on each potential level-up.
 
     std::vector<uint32_t> points;
     std::vector<float> weights;
     points.reserve(_potentialGrowth.size());
     weights.reserve(_potentialGrowth.size());
+
     for (const auto& [pointAmount, growth] : _potentialGrowth)
     {
       if (pointAmount > MaxPotentialPoints)
         continue;
+
       points.emplace_back(pointAmount);
       weights.emplace_back(growth.weights[columnIndex]);
     }
 
     std::discrete_distribution<size_t> raffle(weights.begin(), weights.end());
-    gained += points[raffle(_randomEngine)];
+    gainedPoints += points[raffle(_randomEngine)];
 
     level += 1;
   }
 
-  if (gained == 0)
+  if (gainedPoints == 0)
     return 0;
 
-  horse.potential.value() = std::min(horse.potential.value() + gained, MaxPotentialValue);
+  horse.potential.value() = std::min(horse.potential.value() + gainedPoints, MaxPotentialValue);
   horse.potential.level() = level;
-  return gained;
+  return gainedPoints;
 }
 
 const GradeInfo* HorseRegistry::GetGradeInfo(uint32_t grade) const

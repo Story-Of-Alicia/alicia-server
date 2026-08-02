@@ -50,8 +50,10 @@ struct PotentialGrowth
 
 struct PotentialLevel
 {
+  //! Level of the potential.
   uint32_t level{0};
-  int32_t exp{0};
+  //! Class progress (exp) required to reach this level.
+  uint32_t requiredClassProgression{0};
 };
 
 struct PotentialInfo
@@ -354,7 +356,9 @@ private:
   std::vector<data::Tid> _possibleManes;
   std::vector<data::Tid> _possibleTails;
 
+  //! Collection of potential growth.
   std::unordered_map<uint32_t, PotentialGrowth> _potentialGrowth;
+  //! Collection of potential levels.
   std::vector<PotentialLevel> _potentialLevels;
   std::unordered_map<uint32_t, PotentialInfo> _potentials;
   std::vector<uint32_t> _potentialTypes;
