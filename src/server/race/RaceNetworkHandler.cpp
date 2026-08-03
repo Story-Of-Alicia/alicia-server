@@ -2861,6 +2861,7 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
         magicItem = _serverInstance.GetCourseRegistry()
           .GetDeckItemInfo(magicItemType).magicSlot;
 
+        // Get the magic item's slot info and check if it gives positional magic
         const auto& slotInfo = _serverInstance.GetMagicRegistry().GetSlotInfo(magicItem);
         if (slotInfo.givePositionalMagic != 0)
         {
