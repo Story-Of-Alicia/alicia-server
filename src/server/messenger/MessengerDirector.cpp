@@ -422,17 +422,36 @@ void MessengerDirector::HandleChatterLogin(
   };
 
   // Client request could be logging in as another character
+  std::vector<data::Uid> inbox{};
   _serverInstance.GetDataDirector().GetCharacter(command.characterUid).Mutable(
-    [&clientContext](data::Character& character)
+    [&clientContext, &inbox](data::Character& character)
     {
       clientContext.characterUid = character.uid();
-
-      // TODO: implement unread mail mechanics
-
+      inbox = character.mailbox.inbox();
       character.mailbox.hasNewMail() = false;
     });
 
-  response.member1 = clientContext.characterUid;
+  // Check if inbox contains any unread mails, early return on the latest unread mail
+  for (const data::Uid mailUid : inbox)
+  {
+    const auto& mailRecord = _serverInstance.GetDataDirector().GetMail(mailUid);
+    if (not mailRecord)
+      continue;
+
+    mailRecord.Immutable([&response](const data::Mail& mail)
+    {
+      if (mail.isRead() or mail.isDeleted())
+        return;
+      
+      response.latestUnreadMailUid = mail.uid();
+      response.mailAlarm.status = protocol::ChatCmdLoginAckOK::MailAlarm::Status::NewMail;
+      response.mailAlarm.hasMail = true;
+    });
+    
+    // Early return
+    if (response.latestUnreadMailUid != data::InvalidUid)
+      break;
+  }
 
   // Load friends from character's stored friends list
   std::set<data::Uid> pendingFriends{};
@@ -1266,7 +1285,7 @@ void MessengerDirector::HandleChatterLetterList(
         else if (folder == protocol::MailboxFolder::Inbox)
         {
           // Compile sent mail and add to sent mail list
-          response.inboxMails.emplace_back(
+          auto& inboxMail = response.inboxMails.emplace_back(
             protocol::ChatCmdLetterListAckOk::InboxMail{
               .uid = mail.uid(),
               .type = mail.type(),
@@ -1277,6 +1296,9 @@ void MessengerDirector::HandleChatterLetterList(
                 .body = mail.body()
               }
             });
+
+          if (mail.isRead())
+            inboxMail.struct0.unk0 = "\x0F";
         }
       });
   }
