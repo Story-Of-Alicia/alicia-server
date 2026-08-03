@@ -147,6 +147,8 @@ courses:
         magicSlot: 4
       - id: 411
         magicSlot: 18
+      - id: 412
+        magicSlot: 26
   mapBlockInfo:
     collection:
       - id:  1

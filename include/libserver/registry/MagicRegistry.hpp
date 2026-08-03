@@ -70,6 +70,7 @@ struct Magic
 
     uint32_t affectByCriticalAura{};
     uint32_t criticalByDarkFire{};
+    uint32_t givePositionalMagic{};
     //! Weights for each position on the scoreboard.
     std::array<SlotWeight, 8> positionalWeights{};
   };
