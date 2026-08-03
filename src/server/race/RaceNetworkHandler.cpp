@@ -2777,7 +2777,6 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
 
   const auto now = std::chrono::steady_clock::now();
 
-  constexpr auto ItemDeckPickupCooldown = std::chrono::seconds(3);
   const auto deckCooldownIter = racer.deckCooldown.find(
     command.itemDeckId);
 
@@ -2800,7 +2799,7 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
     }
   }
 
-  racer.deckCooldown[command.itemDeckId] = now + ItemDeckPickupCooldown;
+  racer.deckCooldown[command.itemDeckId] = now + deck.respawnTime;
   deck.respawnTimePoint = now + deck.respawnTime;
 
   Room::GameMode gameMode;
