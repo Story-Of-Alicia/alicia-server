@@ -2169,7 +2169,7 @@ void RanchDirector::HandleTryBreeding(
     stallionGrade, stallionBreedingCount, bonus);
 
   std::uniform_int_distribution<uint32_t> successRoll(1, 100);
-  const bool success = successRoll(_randomDevice) <= successRate;
+  const bool success = successRoll(server::util::GetRandomEngine()) <= successRate;
 
   if (not success)
   {
@@ -2262,7 +2262,7 @@ protocol::BreedingBonus RanchDirector::RollBreedingBonus(const uint32_t stallion
   // Roll whether a bonus activates at all.
   const int32_t activationChance = isSmall ? smallBand.activationChance : bigBand.activationChance;
   std::uniform_int_distribution<int32_t> activationRoll(1, 100);
-  if (activationRoll(_randomDevice) > activationChance)
+  if (activationRoll(server::util::GetRandomEngine()) > activationChance)
     return {};
 
   // Build the selection weights for the active grade band.
@@ -2281,7 +2281,7 @@ protocol::BreedingBonus RanchDirector::RollBreedingBonus(const uint32_t stallion
     return {};
 
   std::discrete_distribution<size_t> bonusDist(weights.begin(), weights.end());
-  const auto& selected = entries[bonusDist(_randomDevice)];
+  const auto& selected = entries[bonusDist(server::util::GetRandomEngine())];
 
   spdlog::info("TryBreeding: rolled bonus id {} (type {}, value {}) for grade {} ({} band)",
     selected.id, selected.type, selected.value, stallionGrade, isSmall ? "small" : "big");
@@ -2561,7 +2561,7 @@ void RanchDirector::HandleBreedingFailureCard(
   // and remember it so the subsequent Choose draws from the matching reward table.
   const auto& params = GetServerInstance().GetBreedingRegistry().GetBreedingParams();
   std::uniform_int_distribution<int32_t> cardRoll(1, 100);
-  clientContext.pendingCardType = cardRoll(_randomDevice) <= params.chanceCardChance
+  clientContext.pendingCardType = cardRoll(server::util::GetRandomEngine()) <= params.chanceCardChance
     ? protocol::BreedingFailureCardType::Yellow
     : protocol::BreedingFailureCardType::Red;
 
@@ -2589,7 +2589,7 @@ void RanchDirector::HandleBreedingFailureCardChoose(
   const auto& probEntry = GetServerInstance().GetBreedingRegistry().GetFailureCardProb(moneySpent);
 
   std::uniform_int_distribution<int> gradeDist(1, 100);
-  int gradeRoll = gradeDist(_randomDevice);
+  int gradeRoll = gradeDist(server::util::GetRandomEngine());
 
   int rewardGrade = 0;
   if (gradeRoll <= probEntry.probA) {
@@ -2613,7 +2613,7 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     if (gradeRange)
     {
       std::uniform_int_distribution<uint32_t> chanceDist(gradeRange->minId, gradeRange->maxId);
-      rewardId = chanceDist(_randomDevice);
+      rewardId = chanceDist(server::util::GetRandomEngine());
       rewardData = breedingRegistry.GetChanceCardReward(rewardId);
     }
   } else {
@@ -2621,7 +2621,7 @@ void RanchDirector::HandleBreedingFailureCardChoose(
     if (gradeRange)
     {
       std::uniform_int_distribution<uint32_t> normalDist(gradeRange->minId, gradeRange->maxId);
-      rewardId = normalDist(_randomDevice);
+      rewardId = normalDist(server::util::GetRandomEngine());
       rewardData = breedingRegistry.GetNormalCardReward(rewardId);
     }
   }
@@ -4035,7 +4035,7 @@ void RanchDirector::HandleRequestPetBirth(
 
       const auto& hatchablePets = eggTemplate.hatchablePets;
       std::uniform_int_distribution<size_t> dist(0, hatchablePets.size() - 1);
-      petItemTid = hatchablePets[dist(_randomDevice)];
+      petItemTid = hatchablePets[dist(server::util::GetRandomEngine())];
 
       const registry::PetInfo petTemplate = _serverInstance.GetPetRegistry().GetPetInfo(
         petItemTid);
@@ -4366,7 +4366,7 @@ bool RanchDirector::HandleUsePlayItem(
 
   // TODO: Make critical chance configurable. Currently 0->1 is 50% chance.
   std::uniform_int_distribution<uint32_t> critRandomDist(0, 1);
-  auto crit = critRandomDist(_randomDevice);
+  auto crit = critRandomDist(server::util::GetRandomEngine());
 
   switch (successLevel)
   {
@@ -6810,15 +6810,14 @@ void RanchDirector::HandleOpenRandomBox(
 
   protocol::AcCmdCROpenRandomBoxOK response{};
 
-  std::random_device rd;
   std::uniform_int_distribution<uint32_t> booleanDistribution(0, 1);
 
-  const bool isPackageReward = booleanDistribution(rd);
+  const bool isPackageReward = booleanDistribution(server::util::GetRandomEngine());
 
   if (isPackageReward)
   {
     std::uniform_int_distribution<uint32_t> carrotAmountDistribution(20, 100);
-    const auto carrotAmount = carrotAmountDistribution(rd)*10;
+    const auto carrotAmount = carrotAmountDistribution(server::util::GetRandomEngine())*10;
 
     response = {
       .packageId = 0,
@@ -6842,7 +6841,7 @@ void RanchDirector::HandleOpenRandomBox(
     std::uniform_int_distribution<uint32_t> randomPackageDistribution(
       0,
       static_cast<uint32_t>(possiblePackages.size()) - 1);
-    const auto randomPackageIdx = randomPackageDistribution(rd);
+    const auto randomPackageIdx = randomPackageDistribution(server::util::GetRandomEngine());
 
     const data::Tid PackageTid = possiblePackages[randomPackageIdx];
 

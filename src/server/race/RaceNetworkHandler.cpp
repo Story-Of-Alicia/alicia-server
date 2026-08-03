@@ -23,6 +23,7 @@
 #include "server/ServerInstance.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
+#include <libserver/util/Util.hpp>
 
 #include <boost/container_hash/hash.hpp>
 #include <spdlog/spdlog.h>
@@ -33,13 +34,6 @@
 
 namespace server
 {
-
-namespace
-{
-
-std::random_device _randomDevice;
-
-}
 
 RaceNetworkHandler::RaceNetworkHandler(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
@@ -1297,7 +1291,7 @@ void RaceNetworkHandler::HandleStartRace(
 
     if (hasRequiredPlayerCount)
     {
-      static std::mt19937 gen(_randomDevice());
+      auto& gen = server::util::GetRandomEngine();
       std::uniform_int_distribution<uint32_t> chanceDist(1, 100);
 
       constexpr uint32_t BonusCourseChance = 25;
@@ -1473,7 +1467,7 @@ void RaceNetworkHandler::HandleStartRace(
                 0,
                 static_cast<uint32_t>(bonusSkillIds.size()) - 1);
 
-              const auto bonusSkillIdx = bonusSkillDist(_randomDevice);
+              const auto bonusSkillIdx = bonusSkillDist(server::util::GetRandomEngine());
               notify.racerActiveSkillSet.skills[2] = bonusSkillIds[bonusSkillIdx];
             }
 
@@ -1628,10 +1622,10 @@ void RaceNetworkHandler::HandleLoadingComplete(
   };
 
   // Randomness check
-  const auto& shouldEggSpawn = [this]() -> bool
+  const auto& shouldEggSpawn = []() -> bool
   {
     // TODO: verify if egg spawning probability is truly 50%
-    return _randomDevice() % 2 != 0;
+    return std::uniform_int_distribution<uint32_t>(0, 1)(server::util::GetRandomEngine()) != 0;
   };
 
   // Check gamemode eligibility
@@ -3969,7 +3963,7 @@ void RaceNetworkHandler::HandleGameCreateClientItem(
     weights.push_back(egg.obtainRatio);
 
   std::discrete_distribution<size_t> dist(weights.begin(), weights.end());
-  const auto& selectedEgg = regionEggs[dist(_randomDevice)];
+  const auto& selectedEgg = regionEggs[dist(server::util::GetRandomEngine())];
 
   // Check if the player already owns this egg.
   bool alreadyOwned = false;

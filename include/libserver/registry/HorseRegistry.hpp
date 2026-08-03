@@ -339,9 +339,6 @@ public:
   std::vector<uint32_t> GetEmblemsByOdds(uint32_t odds) const;
 
 private:
-  std::random_device _randomDevice;
-  mutable std::mt19937 _randomEngine;
-
   std::vector<std::vector<Color>> _colorGroups;
 
   std::unordered_map<data::Tid, Coat> _coats;
