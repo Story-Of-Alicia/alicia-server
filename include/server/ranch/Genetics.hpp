@@ -148,7 +148,6 @@ public:
 
 private:
   ServerInstance& _serverInstance;
-  std::mt19937 _randomEngine;
 
   //! Rolls a foal tendency weighted by horses.yaml -> tendencyRatios.breedingRatio.
   uint32_t RollTendency();

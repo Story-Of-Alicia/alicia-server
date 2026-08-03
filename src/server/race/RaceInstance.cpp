@@ -37,8 +37,6 @@ constexpr registry::MapBlockId AllMapsCourseId = 10000;
 constexpr registry::MapBlockId NewMapsCourseId = 10001;
 constexpr registry::MapBlockId HotMapsCourseId = 10002;
 
-std::random_device _randomDevice;
-
 } // anon namespace
 
 RaceInstance::RaceInstance(
@@ -804,7 +802,7 @@ void RaceInstance::PickRandomMapFromCourse()
     0,
     static_cast<int>(filtered.size() - 1));
 
-  _mapBlockId = filtered[distribution(_randomDevice)];
+  _mapBlockId = filtered[distribution(server::util::GetRandomEngine())];
 }
 
 void RaceInstance::PrepareMap()
@@ -856,7 +854,7 @@ void RaceInstance::PickRandomItemFromDeck(tracker::RaceTracker::ItemDeck& deck)
     return;
 
   std::uniform_int_distribution<size_t> distribution(0, deck.items.size() - 1);
-  deck.currentItem = deck.items[distribution(_randomDevice)];
+  deck.currentItem = deck.items[distribution(server::util::GetRandomEngine())];
 }
 
 void RaceInstance::PrepareItemDecks()

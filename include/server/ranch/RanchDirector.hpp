@@ -123,8 +123,6 @@ public:
   Config::Ranch& GetConfig();
 
 private:
-  std::random_device _randomDevice;
-
   struct ClientContext
   {
     //! User name.

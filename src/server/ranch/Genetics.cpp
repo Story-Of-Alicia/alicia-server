@@ -20,6 +20,8 @@
 #include "server/ranch/Genetics.hpp"
 #include "server/ServerInstance.hpp"
 
+#include <libserver/util/Util.hpp>
+
 #include <algorithm>
 #include <cmath>
 #include <vector>
@@ -58,14 +60,13 @@ T PickWeighted(
 } // namespace
 
 Genetics::Genetics(ServerInstance& serverInstance)
-  : _serverInstance(serverInstance),
-    _randomEngine(std::random_device{}())
+  : _serverInstance(serverInstance)
 {
 }
 
 int Genetics::RollPercent()
 {
-  return std::uniform_int_distribution<int>(0, 99)(_randomEngine);
+  return std::uniform_int_distribution<int>(0, 99)(server::util::GetRandomEngine());
 }
 
 uint32_t Genetics::RollTendency()
@@ -83,7 +84,7 @@ uint32_t Genetics::RollTendency()
     }
   }
 
-  return PickWeighted(_randomEngine, tendencies, weights, uint32_t{1});
+  return PickWeighted(server::util::GetRandomEngine(), tendencies, weights, uint32_t{1});
 }
 
 uint32_t Genetics::RollEmblem()
@@ -101,13 +102,13 @@ uint32_t Genetics::RollEmblem()
       ratios.push_back(ratio.ratio);
     }
   }
-  const uint32_t tier = PickWeighted(_randomEngine, tiers, ratios, uint32_t{1});
+  const uint32_t tier = PickWeighted(server::util::GetRandomEngine(), tiers, ratios, uint32_t{1});
 
   // Pick a uniform emblem within the chosen tier.
   const std::vector<uint32_t> emblems = horseRegistry.GetEmblemsByOdds(tier);
   if (emblems.empty())
     return 1;
-  return emblems[std::uniform_int_distribution<size_t>(0, emblems.size() - 1)(_randomEngine)];
+  return emblems[std::uniform_int_distribution<size_t>(0, emblems.size() - 1)(server::util::GetRandomEngine())];
 }
 
 void Genetics::CreateFoal(
@@ -313,7 +314,7 @@ void Genetics::ValidateShape(int32_t& shape, const uint8_t foalGrade, const Part
   }
 
   if (not inheritedIsValid)
-    shape = PickWeighted(_randomEngine, eligibleShapes, eligibleWeights, int32_t{0});
+    shape = PickWeighted(server::util::GetRandomEngine(), eligibleShapes, eligibleWeights, int32_t{0});
 }
 
 int32_t Genetics::InheritShape(const Ancestry& ancestry, const uint8_t foalGrade, const Part part)
@@ -344,7 +345,7 @@ int32_t Genetics::InheritShape(const Ancestry& ancestry, const uint8_t foalGrade
     }
   }
 
-  return PickWeighted(_randomEngine, shapes, weights, int32_t{0});
+  return PickWeighted(server::util::GetRandomEngine(), shapes, weights, int32_t{0});
 }
 
 Genetics::ManeTailResult Genetics::CalculateManeTailGenetics(
@@ -416,7 +417,7 @@ uint8_t Genetics::CalculateFoalGrade(const uint8_t mareGrade, const uint8_t stal
   std::vector<float> probabilities{row.minus3, row.minus2, row.minus1};
   probabilities.insert(probabilities.end(), row.plus.begin(), row.plus.end());
 
-  const float roll = std::uniform_real_distribution<float>(0.0f, 100.0f)(_randomEngine);
+  const float roll = std::uniform_real_distribution<float>(0.0f, 100.0f)(server::util::GetRandomEngine());
 
   int gradeOffset = -3;
   float cumulative = 0.0f;
@@ -445,7 +446,7 @@ data::Horse::Stats Genetics::CalculateFoalStats(
   const uint32_t maxTotal = targetGrade * 10 - 1;
 
   const uint32_t targetTotal =
-    std::uniform_int_distribution<uint32_t>(minTotal, maxTotal)(_randomEngine);
+    std::uniform_int_distribution<uint32_t>(minTotal, maxTotal)(server::util::GetRandomEngine());
 
   // Base each stat on the parent average. Very low averages get a small mutation bonus
   // so two weak parents can still produce a slightly better foal.
@@ -463,10 +464,10 @@ data::Horse::Stats Genetics::CalculateFoalStats(
       }};
       const auto& w = bonusWeights[avgStat];
       std::discrete_distribution<int> bonusDist(w.begin(), w.end());
-      return std::min<uint32_t>(avgStat + bonusDist(_randomEngine), 100);
+      return std::min<uint32_t>(avgStat + bonusDist(server::util::GetRandomEngine()), 100);
     }
 
-    const int32_t offset = std::uniform_int_distribution<int32_t>(-3, 3)(_randomEngine);
+    const int32_t offset = std::uniform_int_distribution<int32_t>(-3, 3)(server::util::GetRandomEngine());
     return static_cast<uint32_t>(std::clamp(static_cast<int32_t>(avgStat) + offset, 0, 100));
   };
 
@@ -527,7 +528,7 @@ data::Horse::Appearance Genetics::CalculateFoalAppearance(
   {
     const float average = (static_cast<float>(mareValue) + static_cast<float>(stallionValue)) / 2.0f;
     std::uniform_real_distribution<float> variationDist(1.0f - spread, 1.0f + spread);
-    const auto value = static_cast<int32_t>(std::lround(average * variationDist(_randomEngine)));
+    const auto value = static_cast<int32_t>(std::lround(average * variationDist(server::util::GetRandomEngine())));
     return static_cast<uint32_t>(std::clamp(value, 0, 10));
   };
 
@@ -591,7 +592,7 @@ Genetics::PotentialResult Genetics::CalculateFoalPotential(
     return result;
   }
   std::uniform_int_distribution<size_t> typeDist(0, potentialTypes.size() - 1);
-  result.type = static_cast<uint8_t>(potentialTypes[typeDist(_randomEngine)]);
+  result.type = static_cast<uint8_t>(potentialTypes[typeDist(server::util::GetRandomEngine())]);
   result.level = 1;
 
   return result;
@@ -660,7 +661,7 @@ data::Tid Genetics::CalculateFoalSkin(
         weights.push_back(coatInfo.inheritanceRate);
       }
     }
-    return PickWeighted(_randomEngine, tids, weights, data::Tid{1});
+    return PickWeighted(server::util::GetRandomEngine(), tids, weights, data::Tid{1});
   };
 
   // Keeps an inherited coat only if the foal's grade can wear it, else rolls random.
@@ -686,7 +687,7 @@ data::Tid Genetics::CalculateFoalSkin(
   candidates.push_back(data::InvalidTid);
   weights.push_back(std::max(30.0f, 60.0f - parentWeight * 0.2f));
 
-  const data::Tid chosen = PickWeighted(_randomEngine, candidates, weights, data::InvalidTid);
+  const data::Tid chosen = PickWeighted(server::util::GetRandomEngine(), candidates, weights, data::InvalidTid);
   return chosen == data::InvalidTid ? getRandomValidSkin() : getValidSkinOrRandom(chosen);
 }
 

@@ -22,6 +22,8 @@
 #include <spdlog/spdlog.h>
 #include <yaml-cpp/yaml.h>
 
+#include <libserver/util/Util.hpp>
+
 #include <filesystem>
 #include <map>
 #include <ranges>
@@ -63,7 +65,6 @@ Color ParseManeTailColorId(int id)
 } // anon namespace
 
 HorseRegistry::HorseRegistry()
-  : _randomEngine(_randomDevice())
 {
 }
 
@@ -342,7 +343,7 @@ void HorseRegistry::BuildRandomHorse(
   std::uniform_int_distribution<size_t> coatRandomDist(
     0, _possibleCoats.size() - 1);
 
-  const Coat& coat = _coats[_possibleCoats[coatRandomDist(_randomDevice)]];
+  const Coat& coat = _coats[_possibleCoats[coatRandomDist(server::util::GetRandomEngine())]];
   parts.skinTid = coat.tid;
 
   // Pick a random face the coat may wear.
@@ -354,7 +355,7 @@ void HorseRegistry::BuildRandomHorse(
     std::uniform_int_distribution<size_t> maneRandomDist(
       0, _possibleManes.size() - 1);
 
-    const Mane& mane = _manes[_possibleManes[maneRandomDist(_randomDevice)]];
+    const Mane& mane = _manes[_possibleManes[maneRandomDist(server::util::GetRandomEngine())]];
     parts.maneTid = mane.tid;
   }
 
@@ -363,12 +364,12 @@ void HorseRegistry::BuildRandomHorse(
     std::uniform_int_distribution<size_t> tailRandomDist(
       0, _possibleFaces.size() - 1);
 
-    const Tail& tail = _tails[_possibleFaces[tailRandomDist(_randomDevice)]];
+    const Tail& tail = _tails[_possibleFaces[tailRandomDist(server::util::GetRandomEngine())]];
     parts.tailTid = tail.tid;
   }
 
   std::uniform_int_distribution figureScaleDist(FigureScaleMin, FigureScaleMax);
-  const uint32_t scale = figureScaleDist(_randomDevice);
+  const uint32_t scale = figureScaleDist(server::util::GetRandomEngine());
   appearance.scale =  scale;
   appearance.legLength = scale;
   appearance.legVolume = scale;
@@ -381,9 +382,9 @@ void HorseRegistry::GiveHorseRandomPotential(
 {
   std::uniform_int_distribution<size_t> typeDist(0, _potentialTypes.size() - 1);
   std::uniform_int_distribution<uint32_t> randomDist(0, 255);
-  potential.type = _potentialTypes[typeDist(_randomDevice)];
-  potential.level = randomDist(_randomDevice);
-  potential.value = randomDist(_randomDevice);
+  potential.type = _potentialTypes[typeDist(server::util::GetRandomEngine())];
+  potential.level = randomDist(server::util::GetRandomEngine());
+  potential.value = randomDist(server::util::GetRandomEngine());
 }
 
 const Coat& HorseRegistry::GetCoatInfo(data::Tid coatTid) const
@@ -415,7 +416,7 @@ data::Tid HorseRegistry::GetRandomManeFromColorAndShape(int32_t colorGroupId, in
 
   const auto& candidates = shapeIt->second;
   std::uniform_int_distribution<size_t> dist(0, candidates.size() - 1);
-  return candidates[dist(_randomEngine)];
+  return candidates[dist(server::util::GetRandomEngine())];
 }
 
 data::Tid HorseRegistry::GetRandomTailByColorGroupAndShape(int32_t colorGroupId, int32_t shape)
@@ -434,7 +435,7 @@ data::Tid HorseRegistry::GetRandomTailByColorGroupAndShape(int32_t colorGroupId,
 
   const auto& candidates = shapeIt->second;
   std::uniform_int_distribution<size_t> dist(0, candidates.size() - 1);
-  return candidates[dist(_randomEngine)];
+  return candidates[dist(server::util::GetRandomEngine())];
 }
 
 int32_t HorseRegistry::GetManeColorGroupId(data::Tid maneTid) const
@@ -529,7 +530,7 @@ data::Tid HorseRegistry::GetRandomFaceForCoat(data::Tid coatTid)
 
   const auto& faces = it->second;
   std::uniform_int_distribution<size_t> faceRandomDist(0, faces.size() - 1);
-  return faces[faceRandomDist(_randomEngine)];
+  return faces[faceRandomDist(server::util::GetRandomEngine())];
 }
 
 namespace
@@ -716,7 +717,7 @@ uint32_t HorseRegistry::ApplyPotentialGrowth(data::Horse& horse) const
     }
 
     std::discrete_distribution<size_t> raffle(weights.begin(), weights.end());
-    gainedPoints += points[raffle(_randomEngine)];
+    gainedPoints += points[raffle(server::util::GetRandomEngine())];
 
     level += 1;
   }

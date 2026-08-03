@@ -20,17 +20,11 @@
 #include "server/race/MagicSystem.hpp"
 #include "server/tracker/RaceTracker.hpp"
 
+#include <libserver/util/Util.hpp>
+
 #include <algorithm>
 #include <random>
 #include <ranges>
-
-namespace
-{
-
-std::random_device _randomDevice;
-std::mt19937 mt(_randomDevice());
-
-} // namespace
 
 namespace server::race
 {
@@ -73,7 +67,7 @@ const registry::Magic::SlotInfo& MagicSystem::SelectMagicTypeByPosition(
 
   // Select a random index based on the distribution
   // and map the discrete index to the corresponding magic item
-  const uint32_t selectedIndex = dist(mt);
+  const uint32_t selectedIndex = dist(server::util::GetRandomEngine());
   return positionSlotInfoWeights[selectedIndex].second;
 }
 
@@ -133,7 +127,7 @@ const registry::Magic::SlotInfo& MagicSystem::RandomMagicItem(
       critChanceBp += magicRegistry.GetSetBonusInfo().critChanceBonusBp;
   }
 
-  if ((rand() % 10000) < static_cast<int>(critChanceBp))
+  if (std::uniform_int_distribution<int>(0, 9999)(server::util::GetRandomEngine()) < static_cast<int>(critChanceBp))
     return magicRegistry.GetSlotInfo(magicSlotInfo.criticalType);
 
   return magicSlotInfo;
