@@ -643,7 +643,13 @@ void RaceInstance::TickItemSpawners()
       auto& racer = this->GetTracker().GetRacer(characterUid);
       for (const auto& item : this->GetTracker().GetItemDecks() | std::views::values)
       {
-        if (std::chrono::steady_clock::now() < item.respawnTimePoint)
+        const auto now = std::chrono::steady_clock::now();
+        if (now < item.respawnTimePoint)
+          continue;
+
+        // Skip spawn for racer if spawner pickup cooldown is active
+        const auto cooldownIter = racer.deckCooldown.find(item.oid);
+        if (cooldownIter != racer.deckCooldown.end() && now < cooldownIter->second)
           continue;
 
         processItemSpawn(

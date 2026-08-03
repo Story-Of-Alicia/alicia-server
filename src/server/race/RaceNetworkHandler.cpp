@@ -2777,7 +2777,7 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
 
   const auto now = std::chrono::steady_clock::now();
 
-  constexpr auto ItemDeckPickupCooldown = std::chrono::seconds(10);
+  constexpr auto ItemDeckPickupCooldown = std::chrono::seconds(3);
   const auto deckCooldownIter = racer.deckCooldown.find(
     command.itemDeckId);
 
@@ -2789,6 +2789,15 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
     deck.respawnTimePoint = now + deck.respawnTime;
     racer.trackedDecks.erase(command.itemDeckId);
     return;
+  }
+
+  // Reset the cooldown for all other racers when an item is picked up from this spawner
+  for (auto& [otherUid, otherRacer] : raceInstance.GetTracker().GetRacers())
+  {
+    if (otherUid != clientContext.characterUid)
+    {
+      otherRacer.deckCooldown.erase(command.itemDeckId);
+    }
   }
 
   racer.deckCooldown[command.itemDeckId] = now + ItemDeckPickupCooldown;
