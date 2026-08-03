@@ -877,6 +877,17 @@ void RaceInstance::PrepareItemDecks()
       deck.items = deckInfo.items;
       deck.respawnTime = deckInfo.respawnTime;
 
+      // 50% chance for this item spawner to only spawn positional magic item 412
+      if (_parameters.gameMode == protocol::GameMode::Magic)
+      {
+        std::bernoulli_distribution positionalSpawnerChance(0.5);
+        if (positionalSpawnerChance(server::util::GetRandomEngine()))
+        {
+          static constexpr uint32_t positionalMagicItemDeckId = 412;
+          deck.items = {positionalMagicItemDeckId};
+        }
+      }
+      
       deck.position = deckInstance.position + offset;
 
       PickRandomItemFromDeck(deck);

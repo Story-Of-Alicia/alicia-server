@@ -2848,10 +2848,21 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
         // Get the item type of the picked up item (408, 409 etc)
         const uint32_t magicItemType = deck.currentItem;
 
-        // Get the magic slot index to indicate to the racer that they
-        // have the item (water shield, ice wall etc).
-        magicItem = _serverInstance.GetCourseRegistry()
-          .GetDeckItemInfo(magicItemType).magicSlot;
+        if (magicItemType == 412)
+        {
+          const auto& magicItemSlotInfo = race::MagicSystem::RandomMagicItem(
+            _serverInstance.GetMagicRegistry(),
+            raceInstance.GetTracker(),
+            clientContext.characterUid);
+          magicItem = magicItemSlotInfo.type;
+        }
+        else
+        {
+          // Get the magic slot index to indicate to the racer that they
+          // have the item (water shield, ice wall etc).
+          magicItem = _serverInstance.GetCourseRegistry()
+            .GetDeckItemInfo(magicItemType).magicSlot;
+        }
 
         // Response with OK to the client that they have a new item in hand
         protocol::AcCmdCRRequestMagicItemOK magicItemOk{
