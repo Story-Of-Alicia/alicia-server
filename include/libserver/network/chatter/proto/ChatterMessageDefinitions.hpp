@@ -644,8 +644,9 @@ struct ChatCmdLetterListAckOk
     data::Mail::MailType type{};
     data::Uid claimUid{};
 
-    //! Who sent the mail.
+    //! The name of the sender.
     //! If empty, uses libconfig `MessengerStrings`/`DefaultSenderName`.
+    //! Must remain empty to indicate that this is a system mail.
     std::string sender{};
     //! Date of the mail when it was sent, as a string.
     std::string date{};

@@ -41,7 +41,7 @@ const std::string GetSystemNameFromType(data::Mail::MailType type)
     case data::Mail::MailType::CarnivalReward:
       return "Carnival System";
     case data::Mail::MailType::NoReply:
-      return "System";
+      return ""; // System mail
     default:
       throw std::runtime_error(
         std::format(
@@ -1249,7 +1249,7 @@ void MessengerDirector::HandleChatterLetterList(
           correspondentUid = mail.from();
 
         // Get correspondent's name to render mail response
-        std::string correspondentName{"System"};
+        std::string correspondentName{};
         
         if (correspondentUid == data::InvalidUid)
         {
