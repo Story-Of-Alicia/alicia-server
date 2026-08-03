@@ -431,7 +431,7 @@ void MessengerDirector::HandleChatterLogin(
       character.mailbox.hasNewMail() = false;
     });
 
-  // Check if inbox contains any unread mails, early return on the latest unread mail
+  // Check if inbox contains any unread mails, count and populate response
   for (const data::Uid mailUid : inbox)
   {
     const auto& mailRecord = _serverInstance.GetDataDirector().GetMail(mailUid);
@@ -442,16 +442,14 @@ void MessengerDirector::HandleChatterLogin(
     {
       if (mail.isRead() or mail.isDeleted())
         return;
-      
-      response.latestUnreadMailUid = mail.uid();
-      response.mailAlarm.status = protocol::ChatCmdLoginAckOK::MailAlarm::Status::NewMail;
-      response.mailAlarm.hasMail = true;
+
+      // Increment unread mail counter
+      response.mailAlarm.unreadMailCount++;
     });
-    
-    // Early return
-    if (response.latestUnreadMailUid != data::InvalidUid)
-      break;
   }
+
+  if (response.mailAlarm.unreadMailCount != 0)
+    response.mailAlarm.hasMail = true;
 
   // Load friends from character's stored friends list
   std::set<data::Uid> pendingFriends{};

@@ -129,12 +129,8 @@ struct ChatCmdLoginAckOK
 
   struct MailAlarm
   {
-    // TODO: too big of a data type for it to be just a flag
-    enum class Status : uint32_t
-    {
-      NoNewMail = 0,
-      NewMail = 1
-    } status{Status::NoNewMail};
+    //! How many unread mails there are in the inbox.
+    uint32_t unreadMailCount{};
     bool hasMail{};
   } mailAlarm;
 

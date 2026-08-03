@@ -61,7 +61,7 @@ void server::protocol::ChatCmdLoginAckOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.latestUnreadMailUid)
-    .Write(command.mailAlarm.status)
+    .Write(command.mailAlarm.unreadMailCount)
     .Write(command.mailAlarm.hasMail);
 
   stream.Write(static_cast<uint32_t>(command.groups.size()));
