@@ -216,7 +216,7 @@ void CourseRegistry::ReadConfig(
 }
 
 const Course::GameModeInfo& CourseRegistry::GetCourseGameModeInfo(
-  const GameModeId type)
+  const GameModeId type) const
 {
   const auto gameModeInfo = _gameModeInfo.find(type);
   if (gameModeInfo == _gameModeInfo.cend())
@@ -225,7 +225,7 @@ const Course::GameModeInfo& CourseRegistry::GetCourseGameModeInfo(
 }
 
 const Course::MapBlockInfo& CourseRegistry::GetMapBlockInfo(
-  const MapBlockId id)
+  const MapBlockId id) const
 {
   const auto mapBlockInfo = _mapBlockInfo.find(id);
   if (mapBlockInfo == _mapBlockInfo.cend())
@@ -234,7 +234,7 @@ const Course::MapBlockInfo& CourseRegistry::GetMapBlockInfo(
 }
  
 const Course::DeckInfo& CourseRegistry::GetDeckInfo(
-  const DeckId deckId)
+  const DeckId deckId) const
 {
   const auto deckItemInfo = _itemDeckInfo.find(deckId);
   if (deckItemInfo == _itemDeckInfo.cend())
@@ -243,7 +243,7 @@ const Course::DeckInfo& CourseRegistry::GetDeckInfo(
 }
 
 const Course::ItemTypeInfo& CourseRegistry::GetDeckItemInfo(
-  const DeckItemId itemTypeId)
+  const DeckItemId itemTypeId) const
 {
   const auto itemTypeInfo = _deckItemInfo.find(itemTypeId);
   if (itemTypeInfo == _deckItemInfo.cend())

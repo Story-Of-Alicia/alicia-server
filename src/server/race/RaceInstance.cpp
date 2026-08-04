@@ -892,6 +892,21 @@ void RaceInstance::PrepareItemDecks()
           static constexpr uint32_t positionalMagicItemDeckId = 412;
           deck.items = {positionalMagicItemDeckId};
         }
+        else if (_parameters.teamMode != protocol::TeamMode::Team)
+        {
+          // Filter out team-only magic items
+          const auto& courseRegistry = _raceNetworkHandler.GetServerInstance().GetCourseRegistry();
+          const auto& magicRegistry = _raceNetworkHandler.GetServerInstance().GetMagicRegistry();
+
+          std::erase_if(
+            deck.items,
+            [&](uint32_t deckItemId)
+            {
+              const auto magicSlot = courseRegistry.GetDeckItemInfo(deckItemId).magicSlot;
+              const auto& slotInfo = magicRegistry.GetSlotInfo(magicSlot);
+              return slotInfo.teamMode != 0;
+            });
+        }
       }
       
       deck.position = deckInstance.position + offset;
