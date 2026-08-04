@@ -2671,8 +2671,15 @@ void RaceNetworkHandler::HandleUseMagicItem(
     {
       const uint16_t obstacleInstanceCount = static_cast<uint16_t>(command.targetList.size());
       _scheduler.Queue(
-        [this, effectInstanceId, obstacleInstanceCount, magicType = magicSlotInfo.type, &raceInstance]()
+        [this, effectInstanceId, obstacleInstanceCount, magicType = magicSlotInfo.type, roomUid = raceInstance.GetRoomUid()]()
         {
+          std::scoped_lock lock(_raceInstancesMutex);
+          const auto raceInstanceIter = _raceInstances.find(roomUid);
+          if (raceInstanceIter == _raceInstances.cend())
+            return;
+
+          const auto& raceInstance = raceInstanceIter->second;
+
           for (uint16_t i = 0; i < obstacleInstanceCount; ++i)
           {
             this->Broadcast(
