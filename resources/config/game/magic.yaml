@@ -742,7 +742,7 @@ magic:
         criticalByDarkFire: 0
         givePositionalMagic: 0
 
-      - type: 26              # Positional magic (???)
+      - type: 27              # Positional magic (???)
         basicType: 26
         criticalType: 27
         skillEffectId: 0
@@ -772,36 +772,6 @@ magic:
         criticalByDarkFire: 0
         givePositionalMagic: 1
         positionalWeights: [0, 0, 0, 0, 0, 0, 0, 0]
-
-      - type: 27              # Positional magic critical (???) non-operational
-        basicType: 26
-        criticalType: 0
-        skillEffectId: 0
-        attackValue: 0
-        defenseValue: 0
-        castingTime: 0.0
-        effectDelay: 0.0
-        effectDisappearDelay: 0.0
-        targetingDelay: 0.0
-        getStartDelay: 0.0
-        targetingType: 0
-        needTargeting: 0
-        noneTargetable: 0
-        noneSummonStick: 0
-        causeAttackRelease: 0
-        adjustMotionSpeed: 0
-        teamKill: 0
-        teamMode: 0
-        slidingReduce: 0
-        reflectable: 0
-        removeMagic: 0
-        removeHotRodding: 0
-        removeSummonTarget: 0
-        replaceEffect: 0
-        massEffect: 0
-        affectByCriticalAura: 0
-        criticalByDarkFire: 0
-        givePositionalMagic: 1
 
   regen:
     pointPerTick: 1000
