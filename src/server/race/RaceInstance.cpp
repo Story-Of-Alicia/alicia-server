@@ -643,7 +643,13 @@ void RaceInstance::TickItemSpawners()
       auto& racer = this->GetTracker().GetRacer(characterUid);
       for (const auto& item : this->GetTracker().GetItemDecks() | std::views::values)
       {
-        if (std::chrono::steady_clock::now() < item.respawnTimePoint)
+        const auto now = std::chrono::steady_clock::now();
+        if (now < item.respawnTimePoint)
+          continue;
+
+        // Skip spawn for racer if spawner pickup cooldown is active
+        const auto cooldownIter = racer.deckCooldown.find(item.oid);
+        if (cooldownIter != racer.deckCooldown.end() && now < cooldownIter->second)
           continue;
 
         processItemSpawn(
@@ -877,6 +883,32 @@ void RaceInstance::PrepareItemDecks()
       deck.items = deckInfo.items;
       deck.respawnTime = deckInfo.respawnTime;
 
+      // 50% chance for this item spawner to only spawn positional magic item 412
+      if (_parameters.gameMode == protocol::GameMode::Magic)
+      {
+        std::bernoulli_distribution positionalSpawnerChance(0.5);
+        if (positionalSpawnerChance(server::util::GetRandomEngine()))
+        {
+          static constexpr uint32_t positionalMagicItemDeckId = 412;
+          deck.items = {positionalMagicItemDeckId};
+        }
+        else if (_parameters.teamMode != protocol::TeamMode::Team)
+        {
+          // Filter out team-only magic items
+          const auto& courseRegistry = _raceNetworkHandler.GetServerInstance().GetCourseRegistry();
+          const auto& magicRegistry = _raceNetworkHandler.GetServerInstance().GetMagicRegistry();
+
+          std::erase_if(
+            deck.items,
+            [&](uint32_t deckItemId)
+            {
+              const auto magicSlot = courseRegistry.GetDeckItemInfo(deckItemId).magicSlot;
+              const auto& slotInfo = magicRegistry.GetSlotInfo(magicSlot);
+              return slotInfo.teamMode != 0;
+            });
+        }
+      }
+      
       deck.position = deckInstance.position + offset;
 
       PickRandomItemFromDeck(deck);

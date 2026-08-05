@@ -2777,7 +2777,6 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
 
   const auto now = std::chrono::steady_clock::now();
 
-  constexpr auto ItemDeckPickupCooldown = std::chrono::seconds(10);
   const auto deckCooldownIter = racer.deckCooldown.find(
     command.itemDeckId);
 
@@ -2791,7 +2790,16 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
     return;
   }
 
-  racer.deckCooldown[command.itemDeckId] = now + ItemDeckPickupCooldown;
+  // Reset the cooldown for all other racers when an item is picked up from this spawner
+  for (auto& [otherUid, otherRacer] : raceInstance.GetTracker().GetRacers())
+  {
+    if (otherUid != clientContext.characterUid)
+    {
+      otherRacer.deckCooldown.erase(command.itemDeckId);
+    }
+  }
+
+  racer.deckCooldown[command.itemDeckId] = now + deck.respawnTime;
   deck.respawnTimePoint = now + deck.respawnTime;
 
   Room::GameMode gameMode;
@@ -2852,6 +2860,17 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
         // have the item (water shield, ice wall etc).
         magicItem = _serverInstance.GetCourseRegistry()
           .GetDeckItemInfo(magicItemType).magicSlot;
+
+        // Get the magic item's slot info and check if it gives positional magic
+        const auto& slotInfo = _serverInstance.GetMagicRegistry().GetSlotInfo(magicItem);
+        if (slotInfo.givePositionalMagic != 0)
+        {
+          const auto& magicItemSlotInfo = race::MagicSystem::RandomMagicItem(
+            _serverInstance.GetMagicRegistry(),
+            raceInstance.GetTracker(),
+            clientContext.characterUid);
+          magicItem = magicItemSlotInfo.type;
+        }
 
         // Response with OK to the client that they have a new item in hand
         protocol::AcCmdCRRequestMagicItemOK magicItemOk{

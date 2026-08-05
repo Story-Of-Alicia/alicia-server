@@ -129,13 +129,13 @@ public:
   void ReadConfig(const std::filesystem::path& configPath);
 
   [[nodiscard]] const Course::GameModeInfo& GetCourseGameModeInfo(
-    GameModeId type);
+    GameModeId type) const;
   [[nodiscard]] const Course::MapBlockInfo& GetMapBlockInfo(
-    MapBlockId id);
+    MapBlockId id) const;
   [[nodiscard]] const Course::DeckInfo& GetDeckInfo(
-    DeckId deckId);
+    DeckId deckId) const;
   [[nodiscard]] const Course::ItemTypeInfo& GetDeckItemInfo(
-    DeckItemId itemTypeId);
+    DeckItemId itemTypeId) const;
 
 private:
   //! A collection of game mode infos.
