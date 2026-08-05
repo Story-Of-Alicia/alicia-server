@@ -151,6 +151,7 @@ private:
   ClientContext& GetClientContext(
     ClientId clientId,
     bool requireAuthorized = true);
+  std::optional<ClientId> FindClientIdByCharacterUid(data::Uid characterUid);
   ClientId GetClientIdByCharacterUid(data::Uid characterUid);
   ClientContext& GetClientContextByCharacterUid(data::Uid characterUid);
 
@@ -164,19 +165,66 @@ private:
     const registry::Magic::SlotInfo& magicSlotInfo,
     uint16_t effectInstanceId = 0);
 
-  //! Computes an effect's effective duration in milliseconds, applying any
-  //! caster-stat duration bonus and any target-stat duration reduction from
-  //! the spell's stat scaling (see magic.yaml statScalings).
-  uint32_t ComputeEffectDurationMs(
+  void QueueEffectExpiry(
+    RaceInstance& raceInstance,
+    data::Uid targetCharacterUid,
+    tracker::Oid targetOid,
+    uint32_t effectId,
     const registry::Magic::SlotInfo& magicSlotInfo,
-    tracker::Oid attackerOid,
-    const tracker::RaceTracker::Racer& targetRacer,
-    const tracker::RaceTracker::RacerObjectMap& racers) const;
+    uint32_t generation,
+    uint32_t effectDurationMs);
+
+  void StripEffectsOnAttack(
+    RaceInstance& raceInstance,
+    tracker::RaceTracker::Racer& targetRacer,
+    const registry::Magic::SlotInfo& magicSlotInfo);
+
+  void DrainGauge(
+    data::Uid targetCharacterUid,
+    tracker::RaceTracker::Racer& targetRacer);
 
   void RemoveEffect(
     RaceInstance& raceInstance,
     tracker::RaceTracker::Racer& racer,
     uint32_t effectId);
+
+  void AcknowledgeEmptyMagicUse(
+    ClientId clientId,
+    tracker::Oid characterOid);
+
+  const registry::Magic::SlotInfo& ConsumeCriticalAura(
+    RaceInstance& raceInstance,
+    tracker::RaceTracker::Racer& racer,
+    const registry::Magic::SlotInfo& magicSlotInfo);
+
+  std::vector<tracker::Oid> ResolveMagicTargets(
+    RaceInstance& raceInstance,
+    const registry::Magic::SlotInfo& magicSlotInfo,
+    const std::vector<tracker::Oid>& targetList);
+
+  void ApplyImmediateMagicEffects(
+    RaceInstance& raceInstance,
+    const tracker::RaceTracker::Racer& racer,
+    const registry::Magic::SlotInfo& magicSlotInfo,
+    uint16_t effectInstanceId,
+    uint16_t obstacleInstanceCount);
+
+  void QueueIceWallExpiry(
+    RaceInstance& raceInstance,
+    uint32_t magicType,
+    uint16_t firstObstacleInstanceId,
+    uint16_t obstacleInstanceCount);
+
+  void StripHeldMagicItem(
+    RaceInstance& raceInstance,
+    data::Uid targetCharacterUid,
+    tracker::RaceTracker::Racer& targetRacer,
+    tracker::Oid targetOid);
+
+  void QueueHeldMagicItemStrip(
+    RaceInstance& raceInstance,
+    data::Uid targetCharacterUid,
+    tracker::Oid targetOid);
 
   void HandleEnterRoom(
     ClientId clientId,

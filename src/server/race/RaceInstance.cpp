@@ -19,6 +19,7 @@
 
 #include "server/ServerInstance.hpp"
 
+#include "server/race/MagicSystem.hpp"
 #include "server/race/RaceInstance.hpp"
 #include "server/race/RaceNetworkHandler.hpp"
 
@@ -725,7 +726,7 @@ void RaceInstance::TickMagicGauge()
             gainedPerTick = gainedPerTick * (10000u + setBonusInfo.passiveGaugeScaleBp) / 10000u;
 
           // BufGauge buff doubles regen while active.
-          if (racer.effects[20] or racer.effects[21])
+          if (racer.effects[race::SkillEffect::BufGauge] or racer.effects[race::SkillEffect::BufGaugeCritical])
             gainedPerTick *= 2;
 
           // Set bonus (effect 3): while holding a spell, the gauge fills at a reduced rate.

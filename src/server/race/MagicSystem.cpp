@@ -44,6 +44,186 @@ uint32_t MagicSystem::GetMountStatValue(
   return 0;
 }
 
+tracker::RaceTracker::RacerObjectMap::iterator MagicSystem::FindRacerByOid(
+  tracker::RaceTracker::RacerObjectMap& racers,
+  const tracker::Oid oid)
+{
+  return std::ranges::find_if(
+    racers,
+    [oid](const auto& pair)
+    {
+      return pair.second.oid == oid;
+    });
+}
+
+bool MagicSystem::IsSelfCast(const uint32_t magicType)
+{
+  switch (magicType)
+  {
+    case MagicType::WaterShield:
+    case MagicType::WaterShieldCritical:
+    case MagicType::Booster:
+    case MagicType::BoosterCritical:
+    case MagicType::HotRodding:
+    case MagicType::HotRoddingCritical:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool MagicSystem::IsTeamBuff(const uint32_t magicType)
+{
+  switch (magicType)
+  {
+    case MagicType::BufPower:
+    case MagicType::BufPowerCritical:
+    case MagicType::BufGauge:
+    case MagicType::BufGaugeCritical:
+    case MagicType::BufSpeed:
+    case MagicType::BufSpeedCritical:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool MagicSystem::IsIceWall(const uint32_t magicType)
+{
+  return magicType == MagicType::IceWall || magicType == MagicType::IceWallCritical;
+}
+
+bool MagicSystem::IsValidSkillEffectId(const uint32_t skillEffectId)
+{
+  constexpr uint32_t ClientCrashingEffectId = 4;
+
+  return skillEffectId < tracker::RaceTracker::Racer::EffectCount
+    && skillEffectId != ClientCrashingEffectId;
+}
+
+bool MagicSystem::IsStrippedByAttack(
+  const registry::Magic::SlotInfo& attackSlotInfo,
+  const registry::Magic::SlotInfo& activeSlotInfo)
+{
+  switch (activeSlotInfo.skillEffectId)
+  {
+    case SkillEffect::HotRodding:
+    case SkillEffect::HotRoddingCritical:
+    case SkillEffect::BufPower:
+    case SkillEffect::BufPowerCritical:
+    case SkillEffect::BufGauge:
+    case SkillEffect::BufGaugeCritical:
+      return false;
+
+    case SkillEffect::JumpStun:
+    case SkillEffect::JumpStunCritical:
+    case SkillEffect::DarkFire:
+    case SkillEffect::DarkFireCritical:
+      return attackSlotInfo.removeMagic && attackSlotInfo.attackRank >= HeavyAttackRank;
+
+    case SkillEffect::Booster:
+    case SkillEffect::BufSpeed:
+    case SkillEffect::BufSpeedCritical:
+      return attackSlotInfo.removeMagic
+        || attackSlotInfo.basicType == MagicType::JumpStun;
+
+    case SkillEffect::WaterShield:
+      return attackSlotInfo.removeMagic
+        || attackSlotInfo.type == MagicType::JumpStunCritical
+        || attackSlotInfo.type == MagicType::DarkFireCritical;
+
+    default:
+      return attackSlotInfo.removeMagic
+        && activeSlotInfo.adjustMotionSpeed && activeSlotInfo.attackValue == 0;
+  }
+}
+
+bool MagicSystem::DrainsGaugeOnHit(const registry::Magic::SlotInfo& attackSlotInfo)
+{
+  switch (attackSlotInfo.type)
+  {
+    case MagicType::FireBallCritical:
+    case MagicType::SummonCritical:
+    case MagicType::Lightning:
+    case MagicType::LightningCritical:
+      return true;
+    default:
+      return false;
+  }
+}
+
+MagicSystem::EffectResolution MagicSystem::ResolveEffect(
+  const registry::MagicRegistry& magicRegistry,
+  const registry::Magic::SlotInfo& magicSlotInfo,
+  const tracker::RaceTracker::Racer& targetRacer)
+{
+  const bool isAttack = magicSlotInfo.attackValue > 0;
+
+  const bool hasCriticalShield = targetRacer.effects[SkillEffect::WaterShieldCritical];
+  const bool hasShield = hasCriticalShield || targetRacer.effects[SkillEffect::WaterShield];
+
+  const uint32_t shieldThreshold = hasCriticalShield ? 200u : hasShield ? 100u : 0u;
+
+  EffectResolution resolution{};
+  resolution.shieldBlocks = isAttack && magicSlotInfo.attackValue < shieldThreshold;
+
+  resolution.effectId = resolution.shieldBlocks
+    ? (hasCriticalShield ? SkillEffect::WaterShieldCritical : SkillEffect::WaterShield)
+    : magicSlotInfo.skillEffectId;
+
+  const bool isLightning = isAttack && magicSlotInfo.removeHotRodding;
+  const bool isCriticalLightning = isLightning && magicSlotInfo.criticalType == 0;
+
+  const bool hotRoddingBlocks = isAttack
+    && ((targetRacer.effects[SkillEffect::HotRodding] && not isLightning)
+      || (targetRacer.effects[SkillEffect::HotRoddingCritical] && not isCriticalLightning));
+
+  const uint32_t occupiedEffectId = magicSlotInfo.replaceEffect
+    ? magicSlotInfo.skillEffectId
+    : magicRegistry.GetSlotInfo(magicSlotInfo.basicType).skillEffectId;
+
+  resolution.isDuplicated = hotRoddingBlocks
+    || (isAttack && magicSlotInfo.attackRank < 2 && targetRacer.attackRank >= 2)
+    || (magicSlotInfo.attackRank > 0
+      ? targetRacer.attackRank >= magicSlotInfo.attackRank
+      : targetRacer.effects[occupiedEffectId] && (isAttack || not magicSlotInfo.replaceEffect));
+
+  return resolution;
+}
+
+uint32_t MagicSystem::ComputeEffectDurationMs(
+  const registry::MagicRegistry& magicRegistry,
+  const registry::Magic::SlotInfo& magicSlotInfo,
+  const tracker::RaceTracker::Racer* attackerRacer,
+  const tracker::RaceTracker::Racer& targetRacer)
+{
+  auto effectDurationMs = static_cast<uint32_t>(magicSlotInfo.effectDelay * 1000.0f);
+
+  const auto* scaling = magicRegistry.GetStatScaling(magicSlotInfo.basicType);
+  if (scaling == nullptr)
+    return effectDurationMs;
+
+  if (scaling->durationScaleBp > 0 && attackerRacer != nullptr)
+  {
+    constexpr uint32_t MaxDurationBonusBp = 1150;
+    const uint32_t statValue = GetMountStatValue(attackerRacer->mountStats, scaling->stat);
+    const uint32_t bonusBp = std::min(scaling->durationScaleBp * statValue, MaxDurationBonusBp);
+
+    effectDurationMs = effectDurationMs * (1000u + bonusBp) / 1000u;
+  }
+
+  if (scaling->targetDurationReductionBp > 0)
+  {
+    const uint32_t statValue = GetMountStatValue(targetRacer.mountStats, scaling->stat);
+    const uint32_t reductionBp = std::min<uint32_t>(
+      scaling->targetDurationReductionBp * statValue, 1000u);
+
+    effectDurationMs = effectDurationMs * (1000u - reductionBp) / 1000u;
+  }
+
+  return effectDurationMs;
+}
+
 // Function to select a random item based on position weights
 const registry::Magic::SlotInfo& MagicSystem::SelectMagicTypeByPosition(
   const registry::MagicRegistry& magicRegistry,
@@ -76,6 +256,11 @@ const registry::Magic::SlotInfo& MagicSystem::RandomMagicItem(
   tracker::RaceTracker& tracker,
   data::Uid racerUid)
 {
+  // TEMPORARY (testing): always hand out a dragon so the double-toss Cancel path can
+  // be reproduced on demand. Swap the type for FireBallCritical to go back to testing
+  // the gauge drain, or delete this line to restore the normal roll.
+  return magicRegistry.GetSlotInfo(MagicType::Summon);
+
   const auto& racer = tracker.GetRacer(racerUid);
 
   // Determine the racer's position (0 = 1st place)

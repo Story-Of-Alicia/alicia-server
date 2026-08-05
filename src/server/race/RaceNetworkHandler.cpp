@@ -495,7 +495,7 @@ RaceNetworkHandler::ClientContext& RaceNetworkHandler::GetClientContext(ClientId
   return clientContext;
 }
 
-ClientId RaceNetworkHandler::GetClientIdByCharacterUid(data::Uid characterUid)
+std::optional<ClientId> RaceNetworkHandler::FindClientIdByCharacterUid(data::Uid characterUid)
 {
   for (auto& [clientId, clientContext] : _clients)
   {
@@ -504,7 +504,16 @@ ClientId RaceNetworkHandler::GetClientIdByCharacterUid(data::Uid characterUid)
       return clientId;
   }
 
-  throw std::runtime_error("Character not associated with any client");
+  return std::nullopt;
+}
+
+ClientId RaceNetworkHandler::GetClientIdByCharacterUid(data::Uid characterUid)
+{
+  const auto clientId = FindClientIdByCharacterUid(characterUid);
+  if (not clientId)
+    throw std::runtime_error("Character not associated with any client");
+
+  return *clientId;
 }
 
 RaceNetworkHandler::ClientContext& RaceNetworkHandler::GetClientContextByCharacterUid(
@@ -1890,7 +1899,7 @@ void RaceNetworkHandler::HandleStarPointGet(
     static_cast<uint8_t>(parameters.gameMode));
 
   uint32_t gainedStarPoints = command.gainedStarPoints;
-  if (racer.effects[20] || racer.effects[21]) {
+  if (racer.effects[race::SkillEffect::BufGauge] || racer.effects[race::SkillEffect::BufGaugeCritical]) {
     // TODO: Something sensible, idk what the bonus does
     gainedStarPoints *= 2;
   }
@@ -2044,7 +2053,7 @@ void RaceNetworkHandler::HandleHurdleClearResult(
       response.jumpCombo = racer.jumpComboValue;
 
       uint32_t gainedStarPoints = gameModeTemplate.goodJumpStarPoints;
-      if (racer.effects[20] || racer.effects[21]) {
+      if (racer.effects[race::SkillEffect::BufGauge] || racer.effects[race::SkillEffect::BufGaugeCritical]) {
         // TODO: Something sensible, idk what the bonus does
         gainedStarPoints *= 2;
       }
@@ -2533,6 +2542,145 @@ void RaceNetworkHandler::HandleRequestMagicItem(
   this->BroadcastExceptCharacterUid(raceInstance, notify, clientContext.characterUid);
 }
 
+void RaceNetworkHandler::AcknowledgeEmptyMagicUse(
+  const ClientId clientId,
+  const tracker::Oid characterOid)
+{
+  const protocol::AcCmdCRUseMagicItemOK response{
+    .characterOid = characterOid};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]
+    {
+      return response;
+    });
+}
+
+const registry::Magic::SlotInfo& RaceNetworkHandler::ConsumeCriticalAura(
+  RaceInstance& raceInstance,
+  tracker::RaceTracker::Racer& racer,
+  const registry::Magic::SlotInfo& magicSlotInfo)
+{
+  constexpr std::array auraEffectIds{
+    race::SkillEffect::BufPower,
+    race::SkillEffect::BufPowerCritical};
+
+  const bool hasAura = std::ranges::any_of(
+    auraEffectIds,
+    [&racer](const uint32_t effectId)
+    {
+      return racer.effects[effectId];
+    });
+
+  // A spell with no critical variant leaves the aura in place for the next cast.
+  if (not hasAura || magicSlotInfo.criticalType == 0)
+    return magicSlotInfo;
+
+  for (const uint32_t effectId : auraEffectIds)
+  {
+    if (racer.effects[effectId])
+      RemoveEffect(raceInstance, racer, effectId);
+  }
+
+  return GetServerInstance().GetMagicRegistry().GetSlotInfo(magicSlotInfo.criticalType);
+}
+
+std::vector<tracker::Oid> RaceNetworkHandler::ResolveMagicTargets(
+  RaceInstance& raceInstance,
+  const registry::Magic::SlotInfo& magicSlotInfo,
+  const std::vector<tracker::Oid>& targetList)
+{
+  auto resolvedTargetList = targetList;
+  if (magicSlotInfo.type == race::MagicType::DarkFire)
+  {
+    resolvedTargetList.resize(1);
+    return resolvedTargetList;
+  }
+
+  if (magicSlotInfo.basicType == race::MagicType::Summon && not resolvedTargetList.empty())
+  {
+    auto& racers = raceInstance.GetTracker().GetRacers();
+    const auto targetIter = race::MagicSystem::FindRacerByOid(racers, resolvedTargetList.front());
+
+    if (targetIter == racers.end() || targetIter->second.pendingMagicTarget.has_value())
+      resolvedTargetList.clear();
+  }
+
+  return resolvedTargetList;
+}
+
+void RaceNetworkHandler::QueueIceWallExpiry(
+  RaceInstance& raceInstance,
+  const uint32_t magicType,
+  const uint16_t firstObstacleInstanceId,
+  const uint16_t obstacleInstanceCount)
+{
+  constexpr auto IceWallLifetime = std::chrono::seconds(4);
+
+  _scheduler.Queue(
+    [this, magicType, firstObstacleInstanceId, obstacleInstanceCount,
+      roomUid = raceInstance.GetRoomUid()]
+    {
+      std::scoped_lock lock(_raceInstancesMutex);
+      const auto raceInstanceIter = _raceInstances.find(roomUid);
+      if (raceInstanceIter == _raceInstances.cend())
+        return;
+
+      this->Broadcast(
+        raceInstanceIter->second,
+        protocol::AcCmdRCMagicExpire{
+          .magicType = magicType,
+          .firstObstacleInstanceId = static_cast<uint16_t>(firstObstacleInstanceId),
+          .obstacleInstanceCount = 3,
+          .breakdown = 0});
+    },
+    Scheduler::Clock::now() + IceWallLifetime);
+}
+
+void RaceNetworkHandler::ApplyImmediateMagicEffects(
+  RaceInstance& raceInstance,
+  const tracker::RaceTracker::Racer& racer,
+  const registry::Magic::SlotInfo& magicSlotInfo,
+  const uint16_t effectInstanceId,
+  const uint16_t obstacleInstanceCount)
+{
+  // Shield, Booster and HotRodding buff the caster themselves.
+  if (race::MagicSystem::IsSelfCast(magicSlotInfo.type))
+  {
+    this->ScheduleSkillEffect(raceInstance, racer.oid, racer.oid, magicSlotInfo, effectInstanceId);
+    return;
+  }
+
+  // An ice wall has no per-racer effect, only obstacles that expire on their own.
+  if (race::MagicSystem::IsIceWall(magicSlotInfo.type))
+  {
+    this->QueueIceWallExpiry(
+      raceInstance,
+      magicSlotInfo.type,
+      effectInstanceId,
+      obstacleInstanceCount);
+    return;
+  }
+
+  // BufPower, BufGauge and BufSpeed buff the caster and, in team modes, their team.
+  if (race::MagicSystem::IsTeamBuff(magicSlotInfo.type))
+  {
+    for (auto& otherRacer : raceInstance.GetTracker().GetRacers() | std::views::values)
+    {
+      const bool isSelf = racer.oid == otherRacer.oid;
+      const bool isTeamMate = racer.team != tracker::RaceTracker::Racer::Team::Solo
+        && racer.team == otherRacer.team;
+
+      if (isSelf || isTeamMate)
+      {
+        this->ScheduleSkillEffect(
+          raceInstance, racer.oid, otherRacer.oid, magicSlotInfo, effectInstanceId);
+      }
+    }
+  }
+}
+
 void RaceNetworkHandler::HandleUseMagicItem(
   const ClientId clientId,
   const protocol::AcCmdCRUseMagicItem& command)
@@ -2550,89 +2698,33 @@ void RaceNetworkHandler::HandleUseMagicItem(
     return;
   }
 
+  // Nothing to cast — acknowledge anyway so the client drops its held item indicator.
   if (not racer.magicItem.has_value() || command.magicItemId == 0)
   {
     racer.magicItem.reset();
-
-    // Still acknowledge the (empty) usage so the client clears the held
-    // magic item indicator.
-    const protocol::AcCmdCRUseMagicItemOK response{
-      .characterOid = command.characterOid};
-
-    _commandServer.QueueCommand<decltype(response)>(
-      clientId,
-      [response]
-      {
-        return response;
-      });
+    AcknowledgeEmptyMagicUse(clientId, command.characterOid);
     return;
   }
 
-  auto targetList = command.targetList;
+  const auto& magicSlotInfo = ConsumeCriticalAura(
+    raceInstance,
+    racer,
+    GetServerInstance().GetMagicRegistry().GetSlotInfo(command.magicItemId));
 
-  auto magicSlotInfo = GetServerInstance().GetMagicRegistry().GetSlotInfo(command.magicItemId);
+  const auto targetList = ResolveMagicTargets(raceInstance, magicSlotInfo, command.targetList);
 
-  if ((racer.effects[18] || racer.effects[19]) && (magicSlotInfo.criticalType != 0))
-  {
-    magicSlotInfo = GetServerInstance().GetMagicRegistry().GetSlotInfo(magicSlotInfo.criticalType);
-
-    // Consume the crit chance buff immediately
-    for (const uint32_t critEffectId : {18u, 19u})
-    {
-      if (racer.effects[critEffectId])
-        RemoveEffect(raceInstance, racer, critEffectId);
-    }
-  }
-
-  const bool isIceWall = magicSlotInfo.type == 10 || magicSlotInfo.type == 11;
+  // An ice wall claims one effect instance id per obstacle it places, everything else claims one.
+  const auto obstacleInstanceCount = static_cast<uint16_t>(command.targetList.size());
   const uint16_t effectInstanceId = raceInstance.GetTracker().GetNextEffectInstanceIdAndIncrementBy(
-    isIceWall ? static_cast<uint16_t>(command.targetList.size()) : 1u);
+    race::MagicSystem::IsIceWall(magicSlotInfo.type) ? obstacleInstanceCount : 1u);
 
-  // Darkfire should only affect one target
-  // Client sends all targets infront of them but we should only apply the effect to the targeted one (the arrow above their head)
-  if (magicSlotInfo.type == 14)
-    targetList.resize(1);
-
-  // Dragon handling
-  if (magicSlotInfo.basicType == 16)
-  {
-    if (!targetList.empty())
-    {
-      auto& racers = raceInstance.GetTracker().GetRacers();
-
-      const auto targetOid = targetList[0];
-      const auto targetIter = std::ranges::find_if(
-        racers,
-        [targetOid](const auto& entry)
-        {
-          return entry.second.oid == targetOid;
-        });
-
-      if (targetIter == racers.end())
-      {
-        targetList.clear();
-      }
-      else
-      {
-        auto& targetRacer = targetIter->second;
-
-        // If target has already a dragon, miss
-        if (targetRacer.pendingMagicTarget.has_value())
-        {
-          targetList.clear();
-        }
-      }
-    }
-  }
-
-  protocol::AcCmdCRUseMagicItemOK response{
+  const protocol::AcCmdCRUseMagicItemOK response{
     .characterOid = command.characterOid,
     .magicItemId = magicSlotInfo.type,
     .iceWallProperties = command.iceWallProperties,
     .targetList = targetList,
     .effectInstanceId = effectInstanceId,
-    .unk4 = magicSlotInfo.castingTime
-  };
+    .unk4 = magicSlotInfo.castingTime};
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -2641,8 +2733,8 @@ void RaceNetworkHandler::HandleUseMagicItem(
       return response;
     });
 
-  // Notify other players that this player used their magic item
-  protocol::AcCmdCRUseMagicItemNotify usageNotify{
+  // Notify the other racers that this racer used their magic item.
+  const protocol::AcCmdCRUseMagicItemNotify usageNotify{
     .characterOid = command.characterOid,
     .magicItemId = magicSlotInfo.type,
     .iceWallProperties = command.iceWallProperties,
@@ -2650,69 +2742,14 @@ void RaceNetworkHandler::HandleUseMagicItem(
     .effectInstanceId = effectInstanceId,
     .unk4 = magicSlotInfo.castingTime};
 
-  // Send usage notification to other players
   this->BroadcastExceptCharacterUid(raceInstance, usageNotify, clientContext.characterUid);
 
-  // Send effect for items that have instant effects
-  switch (magicSlotInfo.type)
-  {
-    // Shield, Booster, Phoenix
-    case 4:
-    case 5:
-    case 6:
-    case 7:
-    case 8:
-    case 9:
-      this->ScheduleSkillEffect(raceInstance, command.characterOid, racer.oid, magicSlotInfo, effectInstanceId);
-      break;
-    // IceWall
-    case 10:
-    case 11:
-    {
-      const uint16_t obstacleInstanceCount = static_cast<uint16_t>(command.targetList.size());
-      _scheduler.Queue(
-        [this, effectInstanceId, obstacleInstanceCount, magicType = magicSlotInfo.type, roomUid = raceInstance.GetRoomUid()]()
-        {
-          std::scoped_lock lock(_raceInstancesMutex);
-          const auto raceInstanceIter = _raceInstances.find(roomUid);
-          if (raceInstanceIter == _raceInstances.cend())
-            return;
-
-          const auto& raceInstance = raceInstanceIter->second;
-
-          for (uint16_t i = 0; i < obstacleInstanceCount; ++i)
-          {
-            this->Broadcast(
-              raceInstance,
-              protocol::AcCmdRCMagicExpire{
-                .magicType = magicType,
-                .firstObstacleInstanceId = static_cast<uint16_t>(effectInstanceId + i),
-                .obstacleInstanceCount = 1,
-                .breakdown = 0});
-          }
-        },
-        Scheduler::Clock::now() + std::chrono::seconds(4)); // TODO: Change to 4 seconds
-      break;
-    }
-    // BufPower, BufGauge, BufSpeed
-    case 20:
-    case 21:
-    case 22:
-    case 23:
-    case 24:
-    case 25:
-    {
-      for (auto& otherRacer : raceInstance.GetTracker().GetRacers() | std::views::values)
-      {
-        if (racer.oid == otherRacer.oid
-        || (racer.team != tracker::RaceTracker::Racer::Team::Solo && racer.team == otherRacer.team))
-        {
-          this->ScheduleSkillEffect(raceInstance, command.characterOid, otherRacer.oid, magicSlotInfo, effectInstanceId);
-        }
-      }
-      break;
-    }
-  }
+  ApplyImmediateMagicEffects(
+    raceInstance,
+    racer,
+    magicSlotInfo,
+    effectInstanceId,
+    obstacleInstanceCount);
 
   racer.magicItem.reset();
 }
@@ -2975,7 +3012,15 @@ void RaceNetworkHandler::HandleStartMagicTarget(
   auto& targetRacer = targetIter->second;
 
   if (targetRacer.pendingMagicTarget.has_value())
+  {
+    const protocol::AcCmdRCRemoveMagicTarget removeMagicTarget{
+      .effectInstanceId = command.effectInstanceId,
+      .casterOid = command.casterOid,
+      .targetOid = command.targetOid,
+      .targetOid2 = command.targetOid2};
+    this->Broadcast(raceInstance, removeMagicTarget);
     return;
+  }
 
   targetRacer.dragonReceivedAt = std::chrono::steady_clock::now();
   targetRacer.pendingMagicTarget = {command.casterOid, command.effectInstanceId};
@@ -3000,6 +3045,21 @@ void RaceNetworkHandler::HandleChangeMagicTarget(
   if (!racer.pendingMagicTarget.has_value())
   {
     spdlog::warn("Caster does not have dragon in HandleChangeMagicTarget");
+
+    // The client thinks it is carrying a dragon that the server does not know about.
+    // Cancel so it drops the phantom, instead of leaving it stuck holding one forever.
+    const protocol::AcCmdCRChangeMagicTargetCancel response{
+      .effectInstanceId = command.effectInstanceId,
+      .casterOid = command.casterOid,
+      .targetOid = command.targetOid,
+      .targetOid2 = command.targetOid2};
+
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]
+      {
+        return response;
+      });
     return;
   }
 
@@ -3080,6 +3140,62 @@ void RaceNetworkHandler::HandleChangeMagicTarget(
   this->Broadcast(raceInstance, targetNotify);
 }
 
+void RaceNetworkHandler::StripHeldMagicItem(
+  RaceInstance& raceInstance,
+  const data::Uid targetCharacterUid,
+  tracker::RaceTracker::Racer& targetRacer,
+  const tracker::Oid targetOid)
+{
+  if (const auto targetClientId = FindClientIdByCharacterUid(targetCharacterUid))
+  {
+    const protocol::AcCmdCRUseItemSlotOK response{
+      .magicItemId = 0,
+      .characterOid = targetOid};
+
+    _commandServer.QueueCommand<decltype(response)>(
+      *targetClientId,
+      [response]
+      {
+        return response;
+      });
+  }
+
+  const protocol::AcCmdCRUseItemSlotNotify notify{
+    .magicItemId = 0,
+    .characterOid = targetOid,
+    .unk = 1};
+  this->Broadcast(raceInstance, notify);
+
+  targetRacer.magicItem.reset();
+}
+
+void RaceNetworkHandler::QueueHeldMagicItemStrip(
+  RaceInstance& raceInstance,
+  const data::Uid targetCharacterUid,
+  const tracker::Oid targetOid)
+{
+  constexpr auto MagicItemStripDelay = std::chrono::milliseconds(500);
+
+  _scheduler.Queue(
+    [this, roomUid = raceInstance.GetRoomUid(), targetCharacterUid, targetOid]
+    {
+      std::scoped_lock raceInstanceLock(_raceInstancesMutex);
+      const auto raceInstanceIter = _raceInstances.find(roomUid);
+      if (raceInstanceIter == _raceInstances.cend())
+        return;
+      auto& raceInstance = raceInstanceIter->second;
+      if (not raceInstance.GetTracker().IsRacer(targetCharacterUid))
+        return;
+
+      auto& targetRacer = raceInstance.GetTracker().GetRacer(targetCharacterUid);
+      if (not targetRacer.magicItem.has_value())
+        return;
+
+      StripHeldMagicItem(raceInstance, targetCharacterUid, targetRacer, targetOid);
+    },
+    Scheduler::Clock::now() + MagicItemStripDelay);
+}
+
 void RaceNetworkHandler::HandleActivateSkillEffect(
   const ClientId clientId,
   const protocol::AcCmdCRActivateSkillEffect& command)
@@ -3091,60 +3207,60 @@ void RaceNetworkHandler::HandleActivateSkillEffect(
 
   auto& targetRacer = raceInstance.GetTracker().GetRacer(clientContext.characterUid);
 
-  auto magicSlotInfo = GetServerInstance().GetMagicRegistry().GetSlotInfoByEffectId(command.effectId);
-  // If the target has a DarkFire effect active and the magic crits by dark fire, use the critical type instead
-  if ((targetRacer.effects[12] || targetRacer.effects[13]) && magicSlotInfo.criticalByDarkFire)
+  // A racer reports the magic that landed on themselves. Everything below assumes the
+  // sender is the target, so reject any attempt to report a hit on somebody else.
+  // TODO: Revise this in NPC races
+  if (command.targetOid != targetRacer.oid)
   {
-    magicSlotInfo = GetServerInstance().GetMagicRegistry().GetSlotInfo(magicSlotInfo.criticalType);
+    spdlog::warn("Client tried to perform action on behalf of different racer");
+    return;
   }
 
-  // only send the magic expire for icewall. other magic cant do anything with it.
-  if (magicSlotInfo.type == 10 || magicSlotInfo.type == 11)
+  const auto& magicRegistry = GetServerInstance().GetMagicRegistry();
+  const auto* magicSlotInfo = &magicRegistry.GetSlotInfoByEffectId(command.effectId);
+
+  const bool isDarkFireBurning = targetRacer.effects[race::SkillEffect::DarkFire]
+    || targetRacer.effects[race::SkillEffect::DarkFireCritical];
+
+  if (isDarkFireBurning && magicSlotInfo->criticalByDarkFire)
+    magicSlotInfo = &magicRegistry.GetSlotInfo(magicSlotInfo->criticalType);
+
+  if (race::MagicSystem::IsIceWall(magicSlotInfo->type))
   {
-    const auto magicExpire = protocol::AcCmdRCMagicExpire{
-      .magicType = magicSlotInfo.type,
-      .firstObstacleInstanceId = command.effectInstanceId,
-      .obstacleInstanceCount = 1,
-      .breakdown = 1};
-    this->Broadcast(raceInstance, magicExpire);
+    this->Broadcast(
+      raceInstance,
+      protocol::AcCmdRCMagicExpire{
+        .magicType = magicSlotInfo->type,
+        .firstObstacleInstanceId = command.effectInstanceId,
+        .obstacleInstanceCount = 1,
+        .breakdown = 1});
   }
 
-  EffectVerdict verdict = this->ScheduleSkillEffect(raceInstance, command.attackerOid, command.targetOid, magicSlotInfo, command.effectInstanceId);
+  const EffectVerdict verdict = this->ScheduleSkillEffect(
+    raceInstance,
+    command.attackerOid,
+    command.targetOid,
+    *magicSlotInfo,
+    command.effectInstanceId);
 
-  if (verdict == EffectVerdict::Applied && magicSlotInfo.attackRank > 1 && targetRacer.pendingMagicTarget)
+  if (verdict == EffectVerdict::Applied)
   {
-    const protocol::AcCmdRCRemoveMagicTarget removeMagicTarget{
-      .effectInstanceId = targetRacer.pendingMagicTarget->effectInstanceId,
-      .casterOid = targetRacer.pendingMagicTarget->casterOid,
-      .targetOid = command.targetOid,
-      .targetOid2 = command.targetOid};
-    this->Broadcast(raceInstance, removeMagicTarget);
+    if (magicSlotInfo->attackRank > 1 && targetRacer.pendingMagicTarget)
+    {
+      const protocol::AcCmdRCRemoveMagicTarget removeMagicTarget{
+        .effectInstanceId = targetRacer.pendingMagicTarget->effectInstanceId,
+        .casterOid = targetRacer.pendingMagicTarget->casterOid,
+        .targetOid = command.targetOid,
+        .targetOid2 = command.targetOid};
+      this->Broadcast(raceInstance, removeMagicTarget);
+      targetRacer.pendingMagicTarget.reset();
+    }
+
+    // TODO:: Add a Conditional for the SystemContent that can enable/disable this behavior
+    if (magicSlotInfo->removeMagic == 1 && targetRacer.magicItem.has_value())
+      QueueHeldMagicItemStrip(raceInstance, clientContext.characterUid, command.targetOid);
   }
-
-  // TODO:: Add a Conditional for the SystemContent that can enable/disable this behavior
-  if (verdict == EffectVerdict::Applied && magicSlotInfo.removeMagic == 1 && targetRacer.magicItem.has_value())
-  {
-    protocol::AcCmdCRUseItemSlotOK response{
-      .magicItemId = 0,
-      .characterOid = command.targetOid};
-
-    _commandServer.QueueCommand<decltype(response)>(
-      clientId,
-      [response]()
-      {
-        return response;
-      });
-
-    const protocol::AcCmdCRUseItemSlotNotify notify{
-      .magicItemId = 0,
-      .characterOid = command.targetOid,
-      .unk = 1};
-    this->Broadcast(raceInstance, notify);
-
-    targetRacer.magicItem.reset();
-  }
-
-  if (magicSlotInfo.basicType == 16)
+  if (magicSlotInfo->basicType == race::MagicType::Summon)
     targetRacer.pendingMagicTarget.reset();
 }
 
@@ -3218,9 +3334,9 @@ void RaceNetworkHandler::RemoveEffect(
   tracker::RaceTracker::Racer& racer,
   uint32_t effectId)
 {
-  if (effectId >= tracker::RaceTracker::Racer::EffectCount)
+  if (not race::MagicSystem::IsValidSkillEffectId(effectId))
   {
-    spdlog::error("RemoveEffect: effectId {} out of range", effectId);
+    spdlog::error("RemoveEffect: effectId {} is not usable", effectId);
     return;
   }
   racer.effects[effectId] = false;
@@ -3234,54 +3350,92 @@ void RaceNetworkHandler::RemoveEffect(
   this->Broadcast(raceInstance, removeSkillEffect);
 }
 
-uint32_t RaceNetworkHandler::ComputeEffectDurationMs(
-  const registry::Magic::SlotInfo& magicSlotInfo,
-  tracker::Oid attackerOid,
-  const tracker::RaceTracker::Racer& targetRacer,
-  const tracker::RaceTracker::RacerObjectMap& racers) const
+void RaceNetworkHandler::StripEffectsOnAttack(
+  RaceInstance& raceInstance,
+  tracker::RaceTracker::Racer& targetRacer,
+  const registry::Magic::SlotInfo& magicSlotInfo)
 {
-  uint32_t effectDurationMs = static_cast<uint32_t>(magicSlotInfo.effectDelay * 1000.0f);
-
-  const auto* scaling = _serverInstance.GetMagicRegistry().GetStatScaling(
-    magicSlotInfo.basicType);
-  if (scaling == nullptr)
-    return effectDurationMs;
-
-  // Caster-side bonus, capped at +115% to prevent runaway durations on high stats.
-  if (scaling->durationScaleBp > 0)
+  for (const auto& slot : GetServerInstance().GetMagicRegistry().GetSlotInfoMap() | std::views::values)
   {
-    const auto attackerRacerIter = std::ranges::find_if(
-      racers, [attackerOid](const auto& pair) { return pair.second.oid == attackerOid; });
+    // Slots that carry no real effect (e.g. positional magic) have an unusable id.
+    if (not race::MagicSystem::IsValidSkillEffectId(slot.skillEffectId))
+      continue;
 
-    if (attackerRacerIter != racers.cend())
+    if (race::MagicSystem::IsStrippedByAttack(magicSlotInfo, slot)
+      && targetRacer.effects[slot.skillEffectId])
     {
-      const uint32_t statValue = race::MagicSystem::GetMountStatValue(
-        attackerRacerIter->second.mountStats,
-        scaling->stat);
-
-      constexpr uint32_t MaxDurationBonusBp = 1150;
-      const uint32_t bonusBp = std::min(
-        scaling->durationScaleBp * statValue,
-        MaxDurationBonusBp);
-
-      effectDurationMs = effectDurationMs * (1000u + bonusBp) / 1000u;
+      RemoveEffect(raceInstance, targetRacer, slot.skillEffectId);
     }
   }
+}
 
-  // Target-side reduction (e.g. IceWall shock mitigation), clamped to 100%.
-  if (scaling->targetDurationReductionBp > 0)
-  {
-    const uint32_t statValue = race::MagicSystem::GetMountStatValue(
-      targetRacer.mountStats,
-      scaling->stat);
+void RaceNetworkHandler::DrainGauge(
+  const data::Uid targetCharacterUid,
+  tracker::RaceTracker::Racer& targetRacer)
+{
+  targetRacer.starPointValue = 0;
 
-    const uint32_t reductionBp = std::min<uint32_t>(
-      scaling->targetDurationReductionBp * statValue, 1000u);
+  // The gauge is only ever reported to its own owner, who may have already left.
+  const auto targetClientId = FindClientIdByCharacterUid(targetCharacterUid);
 
-    effectDurationMs = effectDurationMs * (1000u - reductionBp) / 1000u;
-  }
+  if (not targetClientId)
+    return;
 
-  return effectDurationMs;
+  const protocol::AcCmdCRStarPointGetOK starPointResponse{
+    .characterOid = targetRacer.oid,
+    .starPointValue = targetRacer.starPointValue,
+    .giveMagicItem = false};
+
+  _commandServer.QueueCommand<decltype(starPointResponse)>(
+    *targetClientId,
+    [starPointResponse]
+    {
+      return starPointResponse;
+    });
+}
+
+void RaceNetworkHandler::QueueEffectExpiry(
+  RaceInstance& raceInstance,
+  const data::Uid targetCharacterUid,
+  const tracker::Oid targetOid,
+  const uint32_t effectId,
+  const registry::Magic::SlotInfo& magicSlotInfo,
+  const uint32_t generation,
+  const uint32_t effectDurationMs)
+{
+  _scheduler.Queue(
+    [this, roomUid = raceInstance.GetRoomUid(), targetCharacterUid, targetOid, effectId, generation,
+      attackRank = magicSlotInfo.attackRank]
+    {
+      std::scoped_lock raceInstanceLock(_raceInstancesMutex);
+      const auto raceInstanceIter = _raceInstances.find(roomUid);
+      if (raceInstanceIter == _raceInstances.cend())
+        return;
+
+      auto& raceInstance = raceInstanceIter->second;
+
+      if (not raceInstance.GetTracker().IsRacer(targetCharacterUid))
+        return;
+
+      auto& racer = raceInstance.GetTracker().GetRacer(targetCharacterUid);
+
+      // If the generation has changed, this effect was extended
+      if (racer.effectGenerations[effectId] != generation)
+        return;
+
+      racer.effects[effectId] = false;
+      // Only clear attackRank if a higher-rank attack hasn't replaced this one
+      if (attackRank > 0 && racer.attackRank == attackRank)
+        racer.attackRank = 0;
+
+      const protocol::AcCmdRCRemoveSkillEffect removeSkillEffect{
+        .characterOid = targetOid,
+        .effectId = effectId,
+        .targetOid = targetOid,
+        .unk1 = 0};
+      this->Broadcast(raceInstance, removeSkillEffect);
+    },
+    Scheduler::Clock::now() + std::chrono::milliseconds(effectDurationMs));
 }
 
 RaceNetworkHandler::EffectVerdict RaceNetworkHandler::ScheduleSkillEffect(
@@ -3291,18 +3445,18 @@ RaceNetworkHandler::EffectVerdict RaceNetworkHandler::ScheduleSkillEffect(
   const uint16_t effectInstanceId)
 {
   auto& racers = raceInstance.GetTracker().GetRacers();
-  const auto targetRacerIter = std::ranges::find_if(
-    racers, [targetOid](const auto& pair) { return pair.second.oid == targetOid; });
 
-  // Target racer not found
-  if (targetRacerIter == racers.cend())
+  const auto targetRacerIter = race::MagicSystem::FindRacerByOid(racers, targetOid);
+  if (targetRacerIter == racers.end())
     return EffectVerdict::Failed;
 
-  // Guard against misconfigured skillEffectId crashing the server
-  if (magicSlotInfo.skillEffectId >= tracker::RaceTracker::Racer::EffectCount)
+  // Guard against a misconfigured skillEffectId crashing the server, or every client in
+  // the room — the add/remove skill effect commands are broadcast to all of them.
+  if (not race::MagicSystem::IsValidSkillEffectId(magicSlotInfo.skillEffectId))
   {
     spdlog::error(
-      "ScheduleSkillEffect: skillEffectId {} out of range (max {})",
+      "ScheduleSkillEffect: magic type {} has unusable skillEffectId {} (max {}, 4 unused)",
+      magicSlotInfo.type,
       magicSlotInfo.skillEffectId,
       tracker::RaceTracker::Racer::EffectCount - 1);
     return EffectVerdict::Failed;
@@ -3311,130 +3465,61 @@ RaceNetworkHandler::EffectVerdict RaceNetworkHandler::ScheduleSkillEffect(
   const data::Uid targetCharacterUid = targetRacerIter->first;
   auto& targetRacer = targetRacerIter->second;
 
-  const bool isAttack = magicSlotInfo.attackValue > 0;
+  const auto& magicRegistry = GetServerInstance().GetMagicRegistry();
 
-  // Shield check: effectId 2 = WaterShield Normal (threshold 100), effectId 3 = WaterShield Critical (threshold 200)
-  const uint32_t shieldThreshold =
-    targetRacer.effects[3] ? 200u :
-    targetRacer.effects[2] ? 100u : 0u;
-  const bool shieldBlocks = isAttack && magicSlotInfo.attackValue < shieldThreshold;
+  const auto resolution = race::MagicSystem::ResolveEffect(
+    magicRegistry, magicSlotInfo, targetRacer);
 
-  // Any removeHotRodding attack is considered part of the lightning family.
-  // For the current registry, critical variants have criticalType == 0.
-  const bool isLightning = isAttack && magicSlotInfo.removeHotRodding;
-  const bool isCritLightning = isLightning && magicSlotInfo.criticalType == 0;
-
-  // Normal hotrodding (effectId 6): blocked by non-lightning attacks, canceled by any lightning.
-  // Crit hotrodding (effectId 7): blocks everything except crit lightning.
-  const bool hotroddingBlocks =
-    (targetRacer.effects[6] && isAttack && !isLightning) ||
-    (targetRacer.effects[7] && isAttack && !isCritLightning);
-
-  const uint32_t effectId = shieldBlocks
-    ? (targetRacer.effects[3] ? 3u : 2u)
-    : magicSlotInfo.skillEffectId;
-
-  // For removeMagic attacks: blocked if an equal-or-higher-rank attack is already active.
-  // For other attacks (attackValue > 0): blocked if the same effect is already active.
-  // For pure buffs: blocked only if already active and not replaceable (replaceEffect == 0 means no extension).
-  // Duplication is checked against the basic-type effect slot so crit variants share occupancy with their base,
-  // except for replaceEffect spells which track their own slot independently.
-  // Attacks with rank < 2 are blocked if a rank-2+ attack (fireball/lightning) is already active.
-  const uint32_t checkEffectId = magicSlotInfo.replaceEffect
-    ? magicSlotInfo.skillEffectId
-    : GetServerInstance().GetMagicRegistry().GetSlotInfo(magicSlotInfo.basicType).skillEffectId;
-  const bool isDuplicated = hotroddingBlocks
-    || (isAttack && magicSlotInfo.attackRank < 2 && targetRacer.attackRank >= 2)
-    || (magicSlotInfo.attackRank > 0
-      ? targetRacer.attackRank >= magicSlotInfo.attackRank
-      : targetRacer.effects[checkEffectId] && (isAttack || !magicSlotInfo.replaceEffect));
-
-  const uint32_t effectDurationMs = ComputeEffectDurationMs(
-    magicSlotInfo, attackerOid, targetRacer, racers);
-
+  const auto attackerRacerIter = race::MagicSystem::FindRacerByOid(racers, attackerOid);
+  const uint32_t effectDurationMs = race::MagicSystem::ComputeEffectDurationMs(
+    magicRegistry,
+    magicSlotInfo,
+    attackerRacerIter != racers.end() ? &attackerRacerIter->second : nullptr,
+    targetRacer);
   // TODO: Verify if characterOid and targetOid should be the same once we have NPCs
-  const protocol::AcCmdRCAddSkillEffect addSkillEffect{
-    .characterOid = targetOid,
-    .effectId = effectId,
-    .targetOid = targetOid,
-    .attackerOid = attackerOid,
-    .unk2 = effectInstanceId,
-    .unk3 = isDuplicated ? 1u : 0u,
-    .shieldEffect = protocol::AcCmdRCAddSkillEffect::ShieldEffect{
-      .unk0 = shieldBlocks ? 2u : 0u,
-      .unk1 = 0,
-    },
-    .boostEffectMs = effectDurationMs,
-  };
+  this->Broadcast(
+    raceInstance,
+    protocol::AcCmdRCAddSkillEffect{
+      .characterOid = targetOid,
+      .effectId = resolution.effectId,
+      .targetOid = targetOid,
+      .attackerOid = attackerOid,
+      .unk2 = effectInstanceId,
+      .unk3 = resolution.isDuplicated ? 1u : 0u,
+      .shieldEffect = protocol::AcCmdRCAddSkillEffect::ShieldEffect{
+        .unk0 = resolution.shieldBlocks ? 2u : 0u,
+        .unk1 = 0},
+      .boostEffectMs = effectDurationMs});
 
-  // Broadcast
-  this->Broadcast(raceInstance, addSkillEffect);
-
-  if (shieldBlocks)
+  if (resolution.shieldBlocks)
     return EffectVerdict::Shielded;
 
-  if (isDuplicated)
+  if (resolution.isDuplicated)
     return EffectVerdict::Duplicated;
 
-  targetRacer.effects[effectId] = true;
-  const uint32_t generation = ++targetRacer.effectGenerations[effectId];
+  targetRacer.effects[resolution.effectId] = true;
+  const uint32_t generation = ++targetRacer.effectGenerations[resolution.effectId];
   if (magicSlotInfo.attackRank > 0)
     targetRacer.attackRank = magicSlotInfo.attackRank;
 
-  // Cancel any active adjustMotionSpeed buffs only when a removeMagic attack lands.
-  // HotRodding (effectIds 6 and 7), crit chance buffs (18 and 19), and BufGauge buffs (20 and 21) are excluded.
-  if (isAttack && magicSlotInfo.removeMagic)
+  const bool isAttack = magicSlotInfo.attackValue > 0;
+  if (isAttack)
   {
-    for (const auto& [type, slot] : GetServerInstance().GetMagicRegistry().GetSlotInfoMap())
-    {
-      if (slot.adjustMotionSpeed && slot.attackValue == 0
-        && slot.skillEffectId != 6 && slot.skillEffectId != 7
-        && slot.skillEffectId != 18 && slot.skillEffectId != 19
-        && slot.skillEffectId != 20 && slot.skillEffectId != 21
-        && targetRacer.effects[slot.skillEffectId])
-      {
-        RemoveEffect(raceInstance, targetRacer, slot.skillEffectId);
-      }
-    }
+    StripEffectsOnAttack(raceInstance, targetRacer, magicSlotInfo);
+
+    if (race::MagicSystem::DrainsGaugeOnHit(magicSlotInfo))
+      DrainGauge(targetCharacterUid, targetRacer);
   }
 
-  _scheduler.Queue(
-    [this, roomUid = raceInstance.GetRoomUid(), targetOid, targetCharacterUid, effectId,
-      attackRank = magicSlotInfo.attackRank, generation,
-      clearMagicTarget = magicSlotInfo.attackRank > 1]()
-    {
-      std::scoped_lock raceInstanceLock(_raceInstancesMutex);
-      const auto raceInstanceIter = _raceInstances.find(roomUid);
-      if (raceInstanceIter == _raceInstances.cend())
-        return;
+  QueueEffectExpiry(
+    raceInstance,
+    targetCharacterUid,
+    targetOid,
+    resolution.effectId,
+    magicSlotInfo,
+    generation,
+    effectDurationMs);
 
-      auto& raceInstance = raceInstanceIter->second;
-
-      if (!raceInstance.GetTracker().IsRacer(targetCharacterUid))
-        return;
-
-      auto& racer = raceInstance.GetTracker().GetRacer(targetCharacterUid);
-
-      // If the generation has changed, this effect was extended — skip the removal
-      if (racer.effectGenerations[effectId] != generation)
-        return;
-
-      racer.effects[effectId] = false;
-      // Only clear attackRank if a higher-rank attack hasn't replaced this one
-      if (attackRank > 0 && racer.attackRank == attackRank)
-        racer.attackRank = 0;
-      if (clearMagicTarget)
-        racer.pendingMagicTarget.reset();
-
-      const protocol::AcCmdRCRemoveSkillEffect removeSkillEffect{
-        .characterOid = targetOid,
-        .effectId = effectId,
-        .targetOid = targetOid,
-        .unk1 = 0,
-      };
-      this->Broadcast(raceInstance, removeSkillEffect);
-    },
-    Scheduler::Clock::now() + std::chrono::milliseconds(effectDurationMs));
   return EffectVerdict::Applied;
 }
 
