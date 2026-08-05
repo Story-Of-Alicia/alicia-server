@@ -256,11 +256,6 @@ const registry::Magic::SlotInfo& MagicSystem::RandomMagicItem(
   tracker::RaceTracker& tracker,
   data::Uid racerUid)
 {
-  // TEMPORARY (testing): always hand out a dragon so the double-toss Cancel path can
-  // be reproduced on demand. Swap the type for FireBallCritical to go back to testing
-  // the gauge drain, or delete this line to restore the normal roll.
-  return magicRegistry.GetSlotInfo(MagicType::Summon);
-
   const auto& racer = tracker.GetRacer(racerUid);
 
   // Determine the racer's position (0 = 1st place)
