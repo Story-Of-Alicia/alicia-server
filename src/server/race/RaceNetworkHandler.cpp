@@ -2785,12 +2785,12 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
   {
     // Picker's client predictively hid the item on collision; untrack it
     // so processItemSpawn re-broadcasts the spawn for them next tick.
-    deck.respawnTimePoint = now + deck.respawnTime;
     racer.trackedDecks.erase(command.itemDeckId);
     return;
   }
 
-  // Reset the cooldown for all other racers when an item is picked up from this spawner
+  // On pickup, clear the spawner cooldown for all other racers
+  // so it remains available for them immediately
   for (auto& [otherUid, otherRacer] : raceInstance.GetTracker().GetRacers())
   {
     if (otherUid != clientContext.characterUid)
@@ -2799,8 +2799,8 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
     }
   }
 
+  // Set the pickup cooldown exclusively for the collecting racer
   racer.deckCooldown[command.itemDeckId] = now + deck.respawnTime;
-  deck.respawnTimePoint = now + deck.respawnTime;
 
   Room::GameMode gameMode;
   registry::Course::GameModeInfo gameModeInfo;
