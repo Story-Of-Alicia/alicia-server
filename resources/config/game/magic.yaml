@@ -743,9 +743,9 @@ magic:
         givePositionalMagic: 0
 
       - type: 27              # Positional magic (???)
-        basicType: 26
-        criticalType: 27
-        skillEffectId: 0
+        basicType: 27
+        criticalType: 0
+        skillEffectId: 99999
         attackValue: 0
         defenseValue: 0
         castingTime: 0.0
