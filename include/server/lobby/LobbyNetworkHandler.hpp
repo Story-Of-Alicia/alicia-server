@@ -295,6 +295,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCLEnterGuildParty& command);
 
+  void HandleLeaveGuildParty(
+    ClientId clientId,
+    const protocol::AcCmdCLLeaveGuildParty& command);
+
   //! A server instance.
   ServerInstance& _serverInstance;
   //! A command server.
