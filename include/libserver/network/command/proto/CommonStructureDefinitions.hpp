@@ -887,6 +887,25 @@ struct GuildPartyMember
     SourceStream& stream);
 };
 
+struct GuildPartyOptions
+{
+  enum class OptionBitset : uint8_t
+  {
+    GameMode = 1,
+    RoomName = 2
+  } bitset{};
+  uint32_t gameMode{};
+  std::string roomName{};
+
+  static void Write(
+    const GuildPartyOptions& options,
+    SinkStream& stream);
+
+  static void Read(
+    GuildPartyOptions& options,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif

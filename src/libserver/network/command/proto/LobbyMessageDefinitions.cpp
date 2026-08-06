@@ -1847,4 +1847,60 @@ void AcCmdCLLeaveGuildPartyNotify::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCLChangeGuildPartyOptions::Write(
+  const AcCmdCLChangeGuildPartyOptions&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLChangeGuildPartyOptions::Read(
+  AcCmdCLChangeGuildPartyOptions& command,
+  SourceStream& stream)
+{
+  stream.Read(command.options);
+}
+
+void AcCmdCLChangeGuildPartyOptionsCancel::Write(
+  const AcCmdCLChangeGuildPartyOptionsCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.error);
+}
+
+void AcCmdCLChangeGuildPartyOptionsCancel::Read(
+  AcCmdCLChangeGuildPartyOptionsCancel&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLChangeGuildPartyOptionsOK::Write(
+  const AcCmdCLChangeGuildPartyOptionsOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.options);
+}
+
+void AcCmdCLChangeGuildPartyOptionsOK::Read(
+  AcCmdCLChangeGuildPartyOptionsOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLChangeGuildPartyOptionsNotify::Write(
+  const AcCmdCLChangeGuildPartyOptionsNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.options);
+}
+
+void AcCmdCLChangeGuildPartyOptionsNotify::Read(
+  AcCmdCLChangeGuildPartyOptionsNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol

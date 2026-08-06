@@ -2881,6 +2881,106 @@ struct AcCmdCLLeaveGuildPartyNotify
     SourceStream& stream);
 };
 
+struct AcCmdCLChangeGuildPartyOptions
+{
+  GuildPartyOptions options{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLChangeGuildPartyOptions;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLChangeGuildPartyOptions& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLChangeGuildPartyOptions& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLChangeGuildPartyOptionsCancel
+{
+  GuildPartyError error{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLChangeGuildPartyOptionsCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLChangeGuildPartyOptionsCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLChangeGuildPartyOptionsCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLChangeGuildPartyOptionsOK
+{
+  // Identical to AcCmdCLChangeGuildPartyOptions
+
+  GuildPartyOptions options{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLChangeGuildPartyOptionsOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLChangeGuildPartyOptionsOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLChangeGuildPartyOptionsOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLChangeGuildPartyOptionsNotify
+{
+  // Identical to AcCmdCLChangeGuildPartyOptions
+
+  GuildPartyOptions options{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLChangeGuildPartyOptionsNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLChangeGuildPartyOptionsNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLChangeGuildPartyOptionsNotify& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // LOBBY_MESSAGE_DEFINES_HPP

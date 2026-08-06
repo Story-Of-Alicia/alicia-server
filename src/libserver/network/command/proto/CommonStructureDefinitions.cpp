@@ -944,4 +944,28 @@ void GuildPartyMember::Read(
     .Read(member.name);
 }
 
+void GuildPartyOptions::Write(
+  const GuildPartyOptions& options,
+  SinkStream& stream)
+{
+  stream.Write(options.bitset);
+  const uint8_t bitset = static_cast<uint8_t>(options.bitset);
+  if (bitset & static_cast<uint8_t>(GuildPartyOptions::OptionBitset::GameMode))
+    stream.Write(options.gameMode);
+  if (bitset & static_cast<uint8_t>(GuildPartyOptions::OptionBitset::RoomName))
+    stream.Write(options.roomName);
+}
+
+void GuildPartyOptions::Read(
+  GuildPartyOptions& options,
+  SourceStream& stream)
+{
+  stream.Read(options.bitset);
+  const uint8_t bitset = static_cast<uint8_t>(options.bitset);
+  if (bitset & static_cast<uint8_t>(GuildPartyOptions::OptionBitset::GameMode))
+    stream.Read(options.gameMode);
+  if (bitset & static_cast<uint8_t>(GuildPartyOptions::OptionBitset::RoomName))
+    stream.Read(options.roomName);
+}
+
 } // namespace server::protocol

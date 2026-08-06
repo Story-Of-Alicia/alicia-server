@@ -290,6 +290,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCLLeaveGuildParty& command);
 
+  void HandleChangeGuildPartyOptions(
+    ClientId clientId,
+    const protocol::AcCmdCLChangeGuildPartyOptions& command);
+
   //! A server instance.
   ServerInstance& _serverInstance;
   //! A command server.

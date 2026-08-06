@@ -287,6 +287,12 @@ LobbyNetworkHandler::LobbyNetworkHandler(
     {
       HandleLeaveGuildParty(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLChangeGuildPartyOptions>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleChangeGuildPartyOptions(clientId, command);
+    });
 }
 
 void LobbyNetworkHandler::Initialize()
@@ -3116,6 +3122,135 @@ void LobbyNetworkHandler::HandleGuildPartyList(
     [response]()
     {
       return response;
+    });
+}
+
+void LobbyNetworkHandler::HandleChangeGuildPartyOptions(
+  ClientId clientId,
+  const protocol::AcCmdCLChangeGuildPartyOptions& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  // Check if invoker is in a party
+  const data::Uid partyUid = _serverInstance.GetLobbyDirector().GetUser(clientContext.userName).roomUid;
+  if (partyUid == clientContext.characterUid or partyUid == data::InvalidUid)
+    return;
+
+  // Check if that party exists
+  if (not _serverInstance.GetGuildPartySystem().PartyExists(partyUid))
+    return;
+
+  // Check if invoker is the leader
+  bool isLeader{false};
+  _serverInstance.GetGuildPartySystem().GetParty(
+    partyUid,
+    [&isLeader, characterUid = clientContext.characterUid](const GuildParty& party)
+    {
+      isLeader = party.GetDetails().leaderUid == characterUid;
+    });
+
+  const protocol::AcCmdCLChangeGuildPartyOptionsCancel cancel{
+    .error = protocol::GuildPartyError::OperationFailed};
+  if (not isLeader)
+  {
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  const uint8_t bitset = static_cast<uint8_t>(command.options.bitset);
+
+  // Validate gamemode if gamemode option is specified
+  if (bitset & static_cast<uint8_t>(protocol::GuildPartyOptions::OptionBitset::GameMode))
+  {
+    const bool isSpeed = command.options.gameMode == static_cast<uint32_t>(GuildParty::GameMode::Speed);
+    const bool isMagic = command.options.gameMode == static_cast<uint32_t>(GuildParty::GameMode::Magic);
+    if (not isSpeed and not isMagic)
+    {
+      spdlog::warn(
+        "Character '{}' tried to change guild party room gamemode to invalid value '{}'",
+        clientContext.characterUid,
+        command.options.gameMode);
+      _commandServer.QueueCommand<decltype(cancel)>(
+        clientId,
+        [cancel]()
+        {
+          return cancel;
+        });
+      return;
+    }
+  }
+
+  // Moderate room name if room name option is specified
+  if (bitset & static_cast<uint8_t>(protocol::GuildPartyOptions::OptionBitset::RoomName))
+  {
+    const auto moderationVerdict = _serverInstance.GetModerationSystem().Moderate(
+      command.options.roomName);
+    if (moderationVerdict.isPrevented)
+    {
+      spdlog::warn(
+        "Character '{}' tried to change guild party room name to '{}' but moderation prevented it.",
+        clientContext.characterUid,
+        command.options.roomName);
+      _commandServer.QueueCommand<decltype(cancel)>(
+        clientId,
+        [cancel]()
+        {
+          return cancel;
+        });
+      return;
+    }
+  }
+
+  // Update party details
+  _serverInstance.GetGuildPartySystem().GetParty(
+    partyUid,
+    [&command, bitset](GuildParty& party)
+    {
+      auto& details = party.GetDetails();
+
+      if (bitset & static_cast<uint8_t>(protocol::GuildPartyOptions::OptionBitset::GameMode))
+        details.gameMode = static_cast<GuildParty::GameMode>(command.options.gameMode);
+
+      if (bitset & static_cast<uint8_t>(protocol::GuildPartyOptions::OptionBitset::RoomName))
+        details.name = command.options.roomName;
+    });
+
+  // Respond to invoker
+  const protocol::AcCmdCLChangeGuildPartyOptionsOK response{
+    .options = command.options};
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+
+  // Notify remaining party members
+  const protocol::AcCmdCLChangeGuildPartyOptionsNotify notify{
+    .options = command.options};
+  _serverInstance.GetGuildPartySystem().GetParty(
+    partyUid,
+    [this, &notify, characterUid = clientContext.characterUid](const GuildParty& party)
+    {
+      for (const auto& member : party.GetMembers())
+      {
+        // Skip invoker
+        if (member.characterUid == characterUid)
+          continue;
+
+        const auto memberClientId = GetClientIdByCharacterUid(member.characterUid);
+        _commandServer.QueueCommand<decltype(notify)>(
+          memberClientId,
+          [notify]()
+          {
+            return notify;
+          });
+      }
     });
 }
 
