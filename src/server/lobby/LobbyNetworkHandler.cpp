@@ -263,6 +263,24 @@ LobbyNetworkHandler::LobbyNetworkHandler(
     {
       HandleRequestSpecialEventList(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLGuildPartyList>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleGuildPartyList(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLMakeGuildParty>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleMakeGuildParty(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLEnterGuildParty>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleEnterGuildParty(clientId, command);
+    });
 }
 
 void LobbyNetworkHandler::Initialize()
@@ -2711,6 +2729,36 @@ void LobbyNetworkHandler::HandleRequestSpecialEventList(
     {
       return response;
     });
+}
+
+void LobbyNetworkHandler::HandleMakeGuildParty(
+  ClientId clientId,
+  [[maybe_unused]] const protocol::AcCmdCLMakeGuildParty& command)
+{
+  [[maybe_unused]] const auto& clientContext = GetClientContext(clientId);
+
+  // TODO: implement guild party creation
+}
+
+void LobbyNetworkHandler::HandleEnterGuildParty(
+  ClientId clientId,
+  [[maybe_unused]] const protocol::AcCmdCLEnterGuildParty& command)
+{
+  [[maybe_unused]] const auto& clientContext = GetClientContext(clientId);
+
+  // TODO: implement entering guild party
+}
+
+void LobbyNetworkHandler::HandleGuildPartyList(
+  ClientId clientId,
+  [[maybe_unused]] const protocol::AcCmdCLGuildPartyList& command)
+{
+  [[maybe_unused]] const auto& clientContext = GetClientContext(clientId);
+
+  // TODO: implement listing of guild parties (for invoker's guild)
+  // TODO: get invoking client's guild
+  // TODO: verify that the invoker is in a guild (of sufficient size of 4 members or more)
+  // TODO: get and return party list from (guild) matchmaking system
 }
 
 } // namespace server

@@ -274,6 +274,18 @@ private:
     ClientId clientId,
     const protocol::AcCmdCLRequestSpecialEventList& command);
 
+  void HandleGuildPartyList(
+    ClientId clientId,
+    const protocol::AcCmdCLGuildPartyList& command);
+
+  void HandleMakeGuildParty(
+    ClientId clientId,
+    const protocol::AcCmdCLMakeGuildParty& command);
+
+  void HandleEnterGuildParty(
+    ClientId clientId,
+    const protocol::AcCmdCLEnterGuildParty& command);
+
   //! A server instance.
   ServerInstance& _serverInstance;
   //! A command server.

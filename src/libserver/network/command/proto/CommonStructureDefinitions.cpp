@@ -898,4 +898,50 @@ void BreedingBonus::Read(
     .Read(bonus.value);
 }
 
+void GuildParty::Write(
+  const GuildParty& party,
+  SinkStream& stream)
+{
+  stream.Write(party.uid)
+    .Write(party.unk1)
+    .Write(party.name)
+    .Write(party.gameMode)
+    .Write(party.ranchUid)
+    .Write(party.unk5)
+    .Write(party.leaderUid)
+    .Write(party.playerCount)
+    .Write(party.unk8);
+}
+
+void GuildParty::Read(
+  GuildParty& party,
+  SourceStream& stream)
+{
+  stream.Read(party.uid)
+    .Read(party.unk1)
+    .Read(party.name)
+    .Read(party.gameMode)
+    .Read(party.ranchUid)
+    .Read(party.unk5)
+    .Read(party.leaderUid)
+    .Read(party.playerCount)
+    .Read(party.unk8);
+}
+
+void GuildPartyMember::Write(
+  const GuildPartyMember& member,
+  SinkStream& stream)
+{
+  stream.Write(member.characterUid)
+    .Write(member.name);
+}
+
+void GuildPartyMember::Read(
+  GuildPartyMember& member,
+  SourceStream& stream)
+{
+  stream.Read(member.characterUid)
+    .Read(member.name);
+}
+
 } // namespace server::protocol

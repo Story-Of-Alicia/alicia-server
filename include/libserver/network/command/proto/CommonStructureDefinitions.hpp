@@ -837,6 +837,56 @@ struct BreedingBonus
     SourceStream& stream);
 };
 
+enum class GuildPartyError : int32_t
+{
+  OperationFailed = -1,         // ERROR_FAIL_UNKNOWN
+  Unknown = 0,                  // ERROR_GPEC_ERROR
+  NotGuildMember = 1,           // ERROR_GPEC_NOT_GUILD_MEMBER
+  NoGuildParty = 2,             // ERROR_GPEC_NO_GUILD_PARTY
+  GuildPartyFull = 3,           // ERROR_GPEC_GUILD_PARTY_IS_FULL
+  AlreadyGuildPartyMember = 4,  // ERROR_GPEC_ALREADY_GUILD_PARTY_MEMBER
+  MorePartyMembersNeeded = 5,   // ERROR_GPEC_NOT_ENOUGH_MEMBER
+  GuildMatchUnavailable = 6,    // ERROR_GPEC_GUILD_MATCH_NOT_AVAILABLE
+  NotGuildMatchTime = 7,        // ERROR_GPEC_NOT_GUILD_MATCH_TIME
+};
+
+//! A guild party.
+struct GuildParty
+{
+  uint32_t uid{};
+  uint32_t unk1{};
+  std::string name{};
+  uint32_t gameMode{};
+  uint32_t ranchUid{};
+  uint32_t unk5{};
+  uint32_t leaderUid{};
+  uint8_t playerCount{};
+  uint32_t unk8{};
+
+  static void Write(
+    const GuildParty& party,
+    SinkStream& stream);
+
+  static void Read(
+    GuildParty& party,
+    SourceStream& stream);
+};
+
+//! A member of a guild party.
+struct GuildPartyMember
+{
+  uint32_t characterUid{};
+  std::string name{};
+
+  static void Write(
+    const GuildPartyMember& member,
+    SinkStream& stream);
+
+  static void Read(
+    GuildPartyMember& member,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif

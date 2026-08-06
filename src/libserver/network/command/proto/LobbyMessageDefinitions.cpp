@@ -1691,4 +1691,117 @@ void AcCmdLCGuildMatchAvailable::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCLGuildPartyList::Write(
+  const AcCmdCLGuildPartyList&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdCLGuildPartyList::Read(
+  AcCmdCLGuildPartyList&,
+  SourceStream&)
+{
+  // Empty
+}
+
+void AcCmdCLGuildPartyListOK::Write(
+  const AcCmdCLGuildPartyListOK& command,
+  SinkStream& stream)
+{
+  // Client takes at most 32 guild parties
+  assert(command.parties.size() <= 0x20);
+  stream.Write(static_cast<uint8_t>(command.parties.size()));
+  for (const auto& party : command.parties)
+  {
+    stream.Write(party);
+  }
+}
+
+void AcCmdCLGuildPartyListOK::Read(
+  AcCmdCLGuildPartyListOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLMakeGuildParty::Write(
+  const AcCmdCLMakeGuildParty&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLMakeGuildParty::Read(
+  AcCmdCLMakeGuildParty& command,
+  SourceStream& stream)
+{
+  stream.Read(command.name)
+    .Read(command.gamemode);
+}
+
+void AcCmdCLEnterGuildParty::Write(
+  const AcCmdCLEnterGuildParty&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLEnterGuildParty::Read(
+  AcCmdCLEnterGuildParty& command,
+  SourceStream& stream)
+{
+  stream.Read(command.partyUid);
+}
+
+void AcCmdCLEnterGuildPartyOK::Write(
+  const AcCmdCLEnterGuildPartyOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.party);
+
+  assert(command.partyMembers.size() <= 4);
+  stream.Write(static_cast<uint8_t>(command.partyMembers.size()));
+  for (const auto& member : command.partyMembers)
+  {
+    stream.Write(member.characterUid)
+      .Write(member.name);
+  }
+}
+
+void AcCmdCLEnterGuildPartyOK::Read(
+  AcCmdCLEnterGuildPartyOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLEnterGuildPartyNotify::Write(
+  const AcCmdCLEnterGuildPartyNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member);
+}
+
+void AcCmdCLEnterGuildPartyNotify::Read(
+  AcCmdCLEnterGuildPartyNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLEnterGuildPartyCancel::Write(
+  const AcCmdCLEnterGuildPartyCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.error);
+}
+
+void AcCmdCLEnterGuildPartyCancel::Read(
+  AcCmdCLEnterGuildPartyCancel&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
