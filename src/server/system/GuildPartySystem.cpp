@@ -185,6 +185,8 @@ std::vector<GuildParty::Snapshot> GuildPartySystem::GetPartiesSnapshot()
 
 void GuildPartySystem::DeleteParty(uint32_t uid)
 {
+  StopMatchmaking(uid);
+
   std::scoped_lock lock(_partiesLock);
 
   const auto iter = _parties.find(uid);
@@ -192,6 +194,42 @@ void GuildPartySystem::DeleteParty(uint32_t uid)
     throw std::runtime_error("Guild party does not exist");
 
   _parties.erase(iter);
+}
+
+void GuildPartySystem::StartMatchmaking(data::Uid partyUid, GuildParty::GameMode gameMode)
+{
+  std::scoped_lock lock(_matchmakingLock);
+
+  auto& queue = _matchmakingQueue[gameMode];
+  if (std::ranges::find(queue, partyUid) != queue.end())
+    return;
+
+  queue.push_back(partyUid);
+}
+
+void GuildPartySystem::StopMatchmaking(data::Uid partyUid)
+{
+  std::scoped_lock lock(_matchmakingLock);
+  for (auto& [mode, queue] : _matchmakingQueue)
+  {
+    std::erase(queue, partyUid);
+  }
+}
+
+std::optional<std::pair<data::Uid, data::Uid>> GuildPartySystem::TryMatchmake(GuildParty::GameMode gameMode)
+{
+  std::scoped_lock lock(_matchmakingLock);
+
+  auto& queue = _matchmakingQueue[gameMode];
+  if (queue.size() < 2)
+    return std::nullopt;
+
+  const auto partyA = queue.front();
+  queue.pop_front();
+  const auto partyB = queue.front();
+  queue.pop_front();
+
+  return std::make_pair(partyA, partyB);
 }
 
 } // namespace server
