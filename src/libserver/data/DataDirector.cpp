@@ -1580,6 +1580,19 @@ void DataDirector::ScheduleCharacterLoad(
         "Guild '{}' not available", guildUid);
       return;
     }
+    else if (guildRecord and guildUid != data::InvalidUid)
+    {
+      // Preload guild members too
+      std::vector<data::Uid> guildMembers{};
+      guildRecord.Immutable([&guildMembers, characterUid](const data::Guild& guild)
+      {
+        // Members contains all of the guild members, including officers and owner
+        for (const data::Uid member : guild.members())
+          if (member != characterUid)
+            guildMembers.emplace_back(member);  
+      });
+      const auto guildMemberRecords = GetCharacterCache().Get(guildMembers);
+    }
 
     // Only require pet if the UID is not invalid.
     if (not petRecord && petUid != data::InvalidUid)

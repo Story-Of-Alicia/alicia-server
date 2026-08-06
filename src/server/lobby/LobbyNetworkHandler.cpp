@@ -917,14 +917,6 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
           else
             throw std::runtime_error("Character is in a guild but not a member");
         });
-
-        // FIXME: a patch to preload characters in the guild to memory
-        // so the guild members list can compile and display fully
-        for (const auto& guildMember : guildMembers)
-        {
-          // Just get character and don't do anything with it
-          _serverInstance.GetDataDirector().GetCharacterCache().Get(guildMember, true);
-        }
       }
 
       if (character.petUid() != data::InvalidUid)
