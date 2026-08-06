@@ -2981,6 +2981,166 @@ struct AcCmdCLChangeGuildPartyOptionsNotify
     SourceStream& stream);
 };
 
+struct AcCmdCLStartGuildPartyMatch
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLStartGuildPartyMatch;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLStartGuildPartyMatch& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLStartGuildPartyMatch& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLStartGuildPartyMatchCancel
+{
+  GuildPartyError error{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLStartGuildPartyMatchCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLStartGuildPartyMatchCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLStartGuildPartyMatchCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLStartGuildPartyMatchOK
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLStartGuildPartyMatchOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLStartGuildPartyMatchOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLStartGuildPartyMatchOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLStopGuildPartyMatch
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLStopGuildPartyMatch;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLStopGuildPartyMatch& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLStopGuildPartyMatch& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLStopGuildPartyMatchCancel
+{
+  GuildPartyError error{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLStopGuildPartyMatchCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLStopGuildPartyMatchCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLStopGuildPartyMatchCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCLStopGuildPartyMatchOK
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCLStopGuildPartyMatchOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCLStopGuildPartyMatchOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCLStopGuildPartyMatchOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdLCGuildPartyMatchFound
+{
+  uint32_t roomUid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCGuildPartyMatchFound;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCGuildPartyMatchFound& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCGuildPartyMatchFound& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // LOBBY_MESSAGE_DEFINES_HPP

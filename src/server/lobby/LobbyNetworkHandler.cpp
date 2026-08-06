@@ -293,6 +293,18 @@ LobbyNetworkHandler::LobbyNetworkHandler(
     {
       HandleChangeGuildPartyOptions(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLStartGuildPartyMatch>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleStartGuildPartyMatch(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLStopGuildPartyMatch>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleStopGuildPartyMatch(clientId, command);
+    });
 }
 
 void LobbyNetworkHandler::Initialize()
@@ -3043,6 +3055,9 @@ void LobbyNetworkHandler::HandleLeaveGuildParty(
       _serverInstance.GetLobbyDirector().SetUserRoom(userName, characterUid);
     });
 
+  // Stop matchmaking if party was in queue
+  _serverInstance.GetGuildPartySystem().StopMatchmaking(partyUid);
+
   // Remove member from party & notify remaining members or delete party if empty
   bool deleteParty{false};
   data::Uid newLeaderUid{data::InvalidUid};
@@ -3249,6 +3264,161 @@ void LobbyNetworkHandler::HandleChangeGuildPartyOptions(
           [notify]()
           {
             return notify;
+          });
+      }
+    });
+}
+
+void LobbyNetworkHandler::HandleStartGuildPartyMatch(
+  ClientId clientId,
+  const protocol::AcCmdCLStartGuildPartyMatch&)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  // Check that the character is in a guild party
+  const data::Uid partyUid = _serverInstance.GetLobbyDirector().GetUser(clientContext.userName).roomUid;
+  if (partyUid == clientContext.characterUid or partyUid == data::InvalidUid)
+    return;
+
+  // Check that the guild party exists
+  if (not _serverInstance.GetGuildPartySystem().PartyExists(partyUid))
+    return;
+
+  // Broadcast to guild party members that matchmaking has started
+  _serverInstance.GetGuildPartySystem().GetParty(
+    partyUid,
+    [this](const GuildParty& party)
+    {
+      const protocol::AcCmdCLStartGuildPartyMatchOK response{};
+      for (const auto& member : party.GetMembers())
+      {
+        const auto memberClientId = GetClientIdByCharacterUid(member.characterUid);
+        _commandServer.QueueCommand<decltype(response)>(
+          memberClientId,
+          [response]()
+          {
+            return response;
+          });
+      }
+    });
+
+  // Start matchmaking in system
+  GuildParty::GameMode gameMode{GuildParty::GameMode::Speed};
+  _serverInstance.GetGuildPartySystem().GetParty(
+    partyUid,
+    [&gameMode](const GuildParty& party)
+    {
+      gameMode = party.GetDetails().gameMode;
+    });
+
+  _serverInstance.GetGuildPartySystem().StartMatchmaking(partyUid, gameMode);
+
+  // Attempt to match parties
+  const auto match = _serverInstance.GetGuildPartySystem().TryMatchmake(gameMode);
+  if (not match.has_value())
+    return;
+
+  const auto [partyAUid, partyBUid] = match.value();
+
+  // Collect details for the race room
+  std::string guildAName{};
+  _serverInstance.GetGuildPartySystem().GetParty(
+    partyAUid,
+    [&guildAName, &gameMode](const GuildParty& party)
+    {
+      guildAName = party.GetDetails().name;
+      gameMode = party.GetDetails().gameMode;
+    });
+
+  std::string guildBName{};
+  _serverInstance.GetGuildPartySystem().GetParty(
+    partyBUid,
+    [&guildBName](const GuildParty& party)
+    {
+      guildBName = party.GetDetails().name;
+    });
+
+  // Create race room
+  uint32_t createdRoomUid{data::InvalidUid};
+  _serverInstance.GetRoomSystem().CreateRoom(
+    [&createdRoomUid, &guildAName, &guildBName, gameMode](Room& room)
+    {
+      auto& roomDetails = room.GetRoomDetails();
+      roomDetails.name = std::format("{} vs {}", guildAName, guildBName);
+      roomDetails.password = "";
+      roomDetails.missionId = 0;
+      roomDetails.maxPlayerCount = 8;
+      roomDetails.gameMode = static_cast<Room::GameMode>(gameMode);
+      roomDetails.teamMode = Room::TeamMode::Team;
+      roomDetails.npcDifficulty = 0;
+      roomDetails.skillBracket = 0;
+      roomDetails.courseId = 10002;
+
+      createdRoomUid = room.GetUid();
+    });
+
+  const protocol::AcCmdLCGuildPartyMatchFound notify{
+    .roomUid = createdRoomUid};
+
+  // Preassign teams and notify all members from both parties about the match room
+  auto processParty = [this, createdRoomUid, &notify](data::Uid pUid, Room::Player::Team team)
+  {
+    _serverInstance.GetGuildPartySystem().GetParty(
+      pUid,
+      [this, createdRoomUid, &notify, team](const GuildParty& party)
+      {
+        for (const auto& member : party.GetMembers())
+        {
+          _serverInstance.GetRoomSystem().GetRoom(
+            createdRoomUid,
+            [characterUid = member.characterUid, team](Room& room)
+            {
+              room.SetPreassignedTeam(characterUid, team);
+            });
+
+          const auto memberClientId = GetClientIdByCharacterUid(member.characterUid);
+
+          _commandServer.QueueCommand<decltype(notify)>(
+            memberClientId,
+            [notify]()
+            {
+              return notify;
+            });
+        }
+      });
+  };
+
+  processParty(partyAUid, Room::Player::Team::Blue);
+  processParty(partyBUid, Room::Player::Team::Red);
+}
+
+void LobbyNetworkHandler::HandleStopGuildPartyMatch(
+  ClientId clientId,
+  [[maybe_unused]] const protocol::AcCmdCLStopGuildPartyMatch& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const data::Uid partyUid = _serverInstance.GetLobbyDirector().GetUser(clientContext.userName).roomUid;
+
+  if (partyUid == clientContext.characterUid or partyUid == data::InvalidUid)
+    return;
+
+  // Stop matchmaking in system
+  _serverInstance.GetGuildPartySystem().StopMatchmaking(partyUid);
+
+  // Broadcast to guild party members that matchmaking has stopped
+  _serverInstance.GetGuildPartySystem().GetParty(
+    partyUid,
+    [this](const GuildParty& party)
+    {
+      const protocol::AcCmdCLStopGuildPartyMatchOK response{};
+      for (const auto& member : party.GetMembers())
+      {
+        const auto memberClientId = GetClientIdByCharacterUid(member.characterUid);
+        _commandServer.QueueCommand<decltype(response)>(
+          memberClientId,
+          [response]()
+          {
+            return response;
           });
       }
     });

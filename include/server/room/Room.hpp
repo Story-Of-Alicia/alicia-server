@@ -111,6 +111,8 @@ public:
   [[nodiscard]] Player& GetPlayer(data::Uid characterUid);
   bool HasPlayer(data::Uid characterUid) const;
 
+  void SetPreassignedTeam(data::Uid characterUid, Player::Team team);
+
   PreventStartReason CanRoomStart();
   void SetRoomPlaying(bool isPlaying);
 
@@ -126,6 +128,7 @@ private:
   Details _details;
   uint32_t _uid{};
   std::unordered_set<data::Uid> _queuedPlayers;
+  std::unordered_map<data::Uid, Player::Team> _preassignedTeams;
   std::unordered_map<data::Uid, Player> _players;
   bool _roomIsPlaying{};
 };

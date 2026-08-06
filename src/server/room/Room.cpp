@@ -82,13 +82,23 @@ bool Room::DequeuePlayer(data::Uid characterUid)
   return _queuedPlayers.erase(characterUid) != 0;
 }
 
+void Room::SetPreassignedTeam(data::Uid characterUid, Player::Team team)
+{
+  _preassignedTeams[characterUid] = team;
+}
+
 bool Room::AddPlayer(network::ClientId clientId, data::Uid characterUid)
 {
   if (_players.size() >= _details.maxPlayerCount)
     return false;
 
   Player player{clientId};
-  if (_details.teamMode == TeamMode::Team)
+  if (const auto iter = _preassignedTeams.find(characterUid); iter != _preassignedTeams.end())
+  {
+    player.SetTeam(iter->second);
+    _preassignedTeams.erase(iter);
+  }
+  else if (_details.teamMode == TeamMode::Team)
   {
       size_t redTeamCount = 0;
       size_t blueTeamCount = 0;

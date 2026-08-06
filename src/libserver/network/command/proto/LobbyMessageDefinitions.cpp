@@ -1903,4 +1903,102 @@ void AcCmdCLChangeGuildPartyOptionsNotify::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCLStartGuildPartyMatch::Write(
+  const AcCmdCLStartGuildPartyMatch&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLStartGuildPartyMatch::Read(
+  AcCmdCLStartGuildPartyMatch&,
+  SourceStream&)
+{
+  // Empty
+}
+
+void AcCmdCLStartGuildPartyMatchCancel::Write(
+  const AcCmdCLStartGuildPartyMatchCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.error);
+}
+
+void AcCmdCLStartGuildPartyMatchCancel::Read(
+  AcCmdCLStartGuildPartyMatchCancel&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLStartGuildPartyMatchOK::Write(
+  const AcCmdCLStartGuildPartyMatchOK&,
+  SinkStream&)
+{
+  // Empty
+}
+
+void AcCmdCLStartGuildPartyMatchOK::Read(
+  AcCmdCLStartGuildPartyMatchOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLStopGuildPartyMatch::Write(
+  const AcCmdCLStopGuildPartyMatch&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLStopGuildPartyMatch::Read(
+  AcCmdCLStopGuildPartyMatch&,
+  SourceStream&)
+{
+  // Empty
+}
+
+void AcCmdCLStopGuildPartyMatchCancel::Write(
+  const AcCmdCLStopGuildPartyMatchCancel& command,
+  SinkStream& stream)
+{
+  stream.Write(command.error);
+}
+
+void AcCmdCLStopGuildPartyMatchCancel::Read(
+  AcCmdCLStopGuildPartyMatchCancel&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLStopGuildPartyMatchOK::Write(
+  const AcCmdCLStopGuildPartyMatchOK&,
+  SinkStream&)
+{
+  // Empty
+}
+
+void AcCmdCLStopGuildPartyMatchOK::Read(
+  AcCmdCLStopGuildPartyMatchOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdLCGuildPartyMatchFound::Write(
+  const AcCmdLCGuildPartyMatchFound& command,
+  SinkStream& stream)
+{
+  stream.Write(command.roomUid);
+}
+
+void AcCmdLCGuildPartyMatchFound::Read(
+  AcCmdLCGuildPartyMatchFound&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol

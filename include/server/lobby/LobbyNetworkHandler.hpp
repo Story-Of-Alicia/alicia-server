@@ -294,6 +294,14 @@ private:
     ClientId clientId,
     const protocol::AcCmdCLChangeGuildPartyOptions& command);
 
+  void HandleStartGuildPartyMatch(
+    ClientId clientId,
+    const protocol::AcCmdCLStartGuildPartyMatch& command);
+
+  void HandleStopGuildPartyMatch(
+    ClientId clientId,
+    const protocol::AcCmdCLStopGuildPartyMatch& command);
+
   //! A server instance.
   ServerInstance& _serverInstance;
   //! A command server.

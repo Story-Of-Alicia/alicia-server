@@ -29,6 +29,10 @@
 #include <unordered_map>
 #include <vector>
 
+#include <deque>
+#include <map>
+#include <optional>
+
 namespace server
 {
 
@@ -94,6 +98,10 @@ public:
 
   std::vector<GuildParty::Snapshot> GetPartiesSnapshot();
 
+  void StartMatchmaking(data::Uid partyUid, GuildParty::GameMode gameMode);
+  void StopMatchmaking(data::Uid partyUid);
+  [[nodiscard]] std::optional<std::pair<data::Uid, data::Uid>> TryMatchmake(GuildParty::GameMode gameMode);
+
 private:
   struct Entry
   {
@@ -104,6 +112,9 @@ private:
   uint32_t _sequencedId = 0;
   std::mutex _partiesLock;
   std::unordered_map<uint32_t, Entry> _parties;
+
+  std::mutex _matchmakingLock;
+  std::map<GuildParty::GameMode, std::deque<data::Uid>> _matchmakingQueue;
 };
 
 } // namespace server
