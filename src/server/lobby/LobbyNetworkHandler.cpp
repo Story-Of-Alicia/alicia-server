@@ -3349,7 +3349,7 @@ void LobbyNetworkHandler::HandleStartGuildPartyMatch(
       roomDetails.missionId = 0;
       roomDetails.maxPlayerCount = 8;
       roomDetails.gameMode = static_cast<Room::GameMode>(gameMode);
-      roomDetails.teamMode = Room::TeamMode::Team;
+      roomDetails.teamMode = Room::TeamMode::Guild;
       roomDetails.npcDifficulty = 0;
       roomDetails.skillBracket = 0;
       roomDetails.courseId = 10002;

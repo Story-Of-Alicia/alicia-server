@@ -1185,20 +1185,42 @@ void RaceNetworkHandler::HandleReadyRace(
   const auto& clientContext = GetClientContext(clientId);
 
   bool isPlayerReady = false;
+  bool isGuildMatchAllReady = false;
+
   _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid,
-    [&isPlayerReady, characterUid = clientContext.characterUid](Room& room)
+    [&isPlayerReady, &isGuildMatchAllReady, characterUid = clientContext.characterUid](Room& room)
     {
       isPlayerReady = room.GetPlayer(characterUid).ToggleReady();
+
+      if (room.GetRoomDetails().teamMode == Room::TeamMode::Guild)
+      {
+        const auto& players = room.GetPlayers();
+        if (players.size() == 8)
+        {
+          isGuildMatchAllReady = std::ranges::all_of(
+            players | std::views::values,
+            [](const Room::Player& player)
+            {
+              return player.IsReady();
+            });
+        }
+      }
     });
 
   const protocol::AcCmdCRReadyRaceNotify notify{
     .characterUid = clientContext.characterUid,
     .isReady = isPlayerReady};
 
-  std::scoped_lock lock(_raceInstancesMutex);
-  const auto& raceInstance = GetRaceInstance(clientContext, false);
-  this->Broadcast(raceInstance, notify);
+  {
+    std::scoped_lock lock(_raceInstancesMutex);
+    const auto& raceInstance = GetRaceInstance(clientContext, false);
+    this->Broadcast(raceInstance, notify);
+  }
+
+  // Auto start if guild match + all players are ready
+  if (isGuildMatchAllReady)
+    HandleStartRace(clientId, protocol::AcCmdCRStartRace{});
 }
 
 void RaceNetworkHandler::HandleStartRace(
@@ -1218,7 +1240,8 @@ void RaceNetworkHandler::HandleStartRace(
     [&preventStartReason, &roomMasterUid, invokerCharacterUid = clientContext.characterUid](Room& room)
     {
       roomMasterUid = room.GetRoomDetails().masterUid;
-      if (invokerCharacterUid != roomMasterUid)
+      const bool isGuildMatch = room.GetRoomDetails().teamMode == Room::TeamMode::Guild;
+      if (not isGuildMatch and invokerCharacterUid != roomMasterUid)
         throw std::runtime_error("Client tried to start the race even though they're not the master");
 
       preventStartReason = room.CanRoomStart();
