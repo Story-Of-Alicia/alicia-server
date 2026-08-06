@@ -1685,4 +1685,18 @@ void AcCmdLCMissionRecordUpdate::Write(
     .Write(command.mission);
 }
 
+void AcCmdLCGuildMatchAvailable::Write(
+  const AcCmdLCGuildMatchAvailable& command,
+  SinkStream& stream)
+{
+  stream.Write(command.isAvailable);
+}
+
+void AcCmdLCGuildMatchAvailable::Read(
+  AcCmdLCGuildMatchAvailable&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
