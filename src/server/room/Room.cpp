@@ -189,7 +189,8 @@ Room::PreventStartReason Room::CanRoomStart()
   }
 
   const bool isTeamModeTeams =
-    GetRoomDetails().teamMode == Room::TeamMode::Team;
+    GetRoomDetails().teamMode == Room::TeamMode::Team or
+    GetRoomDetails().teamMode == Room::TeamMode::Guild;
   if (isTeamModeTeams and redTeamCount != blueTeamCount)
     return PreventStartReason::TeamImbalance;
 

@@ -44,7 +44,8 @@ public:
   {
     FFA = 1,
     Team = 2,
-    Single = 3
+    Single = 3,
+    Guild = 4
   };
 
   class Player
