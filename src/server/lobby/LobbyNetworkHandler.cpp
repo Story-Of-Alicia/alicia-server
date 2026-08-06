@@ -2849,11 +2849,153 @@ void LobbyNetworkHandler::HandleMakeGuildParty(
 
 void LobbyNetworkHandler::HandleEnterGuildParty(
   ClientId clientId,
-  [[maybe_unused]] const protocol::AcCmdCLEnterGuildParty& command)
+  const protocol::AcCmdCLEnterGuildParty& command)
 {
-  [[maybe_unused]] const auto& clientContext = GetClientContext(clientId);
+  const auto& clientContext = GetClientContext(clientId);
 
-  // TODO: implement entering guild party
+  // Get and check if invoker is in a guild
+  data::Uid guildUid{data::InvalidUid};
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [&guildUid](const data::Character& character)
+    {
+      guildUid = character.guildUid();
+    });
+
+  protocol::AcCmdCLEnterGuildPartyCancel cancel{};
+  if (guildUid == data::InvalidUid)
+  {
+    cancel.error = protocol::GuildPartyError::NotGuildMember;
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  // Check if party exists
+  if (not _serverInstance.GetGuildPartySystem().PartyExists(command.partyUid))
+  {
+    cancel.error = protocol::GuildPartyError::NoGuildParty;
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  // Check if the joining character is part of the same guild as the party
+  // and then check if party is overcrowded by attempting to add player to the party
+  bool isOvercrowded{true};
+  bool isGuildMember{false};
+  _serverInstance.GetGuildPartySystem().GetParty(
+    command.partyUid,
+    [&isOvercrowded, &isGuildMember, guildUid, characterUid = clientContext.characterUid](GuildParty& party)
+    {
+      isGuildMember = party.GetDetails().guildUid == guildUid;
+      if (not isGuildMember)
+        return;
+
+      isOvercrowded = not party.AddMember(characterUid);
+    });
+
+  if (not isGuildMember)
+  {
+    cancel.error = protocol::GuildPartyError::NotGuildMember;
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+  
+  if (isOvercrowded)
+  {
+    cancel.error = protocol::GuildPartyError::GuildPartyFull;
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  // Set user's current room to party uid
+  _serverInstance.GetLobbyDirector().GetScheduler().Queue(
+    [this, userName = clientContext.userName, partyUid = command.partyUid]()
+    {
+      _serverInstance.GetLobbyDirector().SetUserRoom(userName, partyUid);
+    });
+
+  // Construct response for entering player
+  protocol::AcCmdCLEnterGuildPartyOK response{
+    .party = {
+      .uid = command.partyUid}};
+
+  _serverInstance.GetGuildPartySystem().GetParty(
+    command.partyUid,
+    [this, &response](const GuildParty& party)
+    {
+      const auto& details = party.GetDetails();
+
+      response.party.name = details.name;
+      response.party.gameMode = static_cast<uint32_t>(details.gameMode);
+      response.party.ranchUid = details.ranchUid;
+      response.party.leaderUid = details.leaderUid;
+      response.party.playerCount = static_cast<uint8_t>(party.GetMemberCount());
+
+      for (const auto& member : party.GetMembers())
+      {
+        auto& partyMember = response.partyMembers.emplace_back();
+        partyMember.characterUid = member.characterUid;
+        _serverInstance.GetDataDirector().GetCharacter(member.characterUid).Immutable(
+          [&partyMember](const data::Character& character)
+          {
+            partyMember.name = character.name();
+          });
+      }
+    });
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+
+  // Notify other existing party members
+  protocol::AcCmdCLEnterGuildPartyNotify notify{};
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [&notify](const data::Character& character)
+    {
+      notify.member.characterUid = character.uid();
+      notify.member.name = character.name();
+    });
+
+  _serverInstance.GetGuildPartySystem().GetParty(
+    command.partyUid,
+    [this, &notify, characterUid = clientContext.characterUid](const GuildParty& party)
+    {
+      for (const auto& member : party.GetMembers())
+      {
+        if (member.characterUid == characterUid)
+          continue;
+
+        const auto memberClientId = GetClientIdByCharacterUid(member.characterUid);
+        _commandServer.QueueCommand<decltype(notify)>(
+          memberClientId,
+          [notify]()
+          {
+            return notify;
+          });
+      }
+    });
 }
 
 void LobbyNetworkHandler::HandleGuildPartyList(
