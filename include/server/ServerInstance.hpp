@@ -31,6 +31,7 @@
 #include "server/ranch/Genetics.hpp"
 #include "server/ranch/RanchDirector.hpp"
 #include "server/system/ChatSystem.hpp"
+#include "server/system/GuildPartySystem.hpp"
 #include "server/system/HorseSystem.hpp"
 #include "server/system/InfractionSystem.hpp"
 #include "server/system/ItemSystem.hpp"
@@ -197,6 +198,10 @@ public:
   //! @returns Reference to the matchmaking system.
   MatchmakingSystem& GetMatchmakingSystem();
 
+  //! Returns reference to the guild party system.
+  //! @returns Reference to the guild party system.
+  GuildPartySystem& GetGuildPartySystem();
+
   //! Returns reference to the reward system.
   //! @returns Reference to the reward system.
   RewardSystem& GetRewardSystem();
@@ -349,6 +354,8 @@ private:
   RoomSystem _roomSystem;
   //! A matchmaking system.
   MatchmakingSystem _matchmakingSystem;
+  //! A guild party system.
+  GuildPartySystem _guildPartySystem;
   //! A reward system.
   RewardSystem _rewardSystem;
 
