@@ -690,6 +690,104 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
         }
         return false;
       }),
+  _festivalCycleStorage(
+      [&](const auto& key, auto& cycle)
+      {
+        try
+        {
+          _primaryDataSource->RetrieveFestivalCycle(key, cycle);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception retrieving festival cycle {} from the primary data source: {}",
+            key,
+            x.what());
+        }
+        return false;
+      },
+      [&](const auto& key, auto& cycle)
+      {
+        try
+        {
+          _primaryDataSource->StoreFestivalCycle(key, cycle);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception storing festival cycle {} on the primary data source: {}",
+            key,
+            x.what());
+        }
+        return false;
+      },
+      [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteFestivalCycle(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting festival cycle {} from the primary data source: {}",
+            key,
+            x.what());
+        }
+        return false;
+      }),
+  _festivalAdmissionStorage(
+      [&](const auto& key, auto& admission)
+      {
+        try
+        {
+          _primaryDataSource->RetrieveFestivalAdmission(key, admission);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception retrieving festival admission {} from the primary data source: {}",
+            key,
+            x.what());
+        }
+        return false;
+      },
+      [&](const auto& key, auto& admission)
+      {
+        try
+        {
+          _primaryDataSource->StoreFestivalAdmission(key, admission);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception storing festival admission {} on the primary data source: {}",
+            key,
+            x.what());
+        }
+        return false;
+      },
+      [&](const auto& key)
+      {
+        try
+        {
+          _primaryDataSource->DeleteFestivalAdmission(key);
+          return true;
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Exception deleting festival admission {} from the primary data source: {}",
+            key,
+            x.what());
+        }
+        return false;
+      }),
   _rewardStorage(
       [&](const auto& key, auto& reward)
       {
@@ -765,6 +863,8 @@ void DataDirector::Terminate()
     _petStorage.Terminate();
     _guildStorage.Terminate();
     _stallionStorage.Terminate();
+    _festivalCycleStorage.Terminate();
+    _festivalAdmissionStorage.Terminate();
     _housingStorage.Terminate();
     _settingsStorage.Terminate();
     _dailyQuestGroupStorage.Terminate();
@@ -798,6 +898,8 @@ void DataDirector::Tick()
     _guildStorage.Tick();
     _housingStorage.Tick();
     _stallionStorage.Tick();
+    _festivalCycleStorage.Tick();
+    _festivalAdmissionStorage.Tick();
     _settingsStorage.Tick();
     _dailyQuestGroupStorage.Tick();
     _mailStorage.Tick();
@@ -1243,6 +1345,21 @@ Record<data::Mail> DataDirector::CreateMail() noexcept
   }
 }
 
+data::Uid DataDirector::FindMailUid(
+  const data::Mail::MailType type,
+  const data::Uid sourceUid) noexcept
+{
+  try
+  {
+    return _primaryDataSource->FindMailUid(type, sourceUid);
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception while finding a mail record: {}", x.what());
+    return data::InvalidUid;
+  }
+}
+
 DataDirector::MailStorage& DataDirector::GetMailCache()
 {
   return _mailStorage;
@@ -1322,6 +1439,87 @@ std::vector<data::Uid> DataDirector::ListRegisteredStallions()
   return _primaryDataSource->ListRegisteredStallions();
 }
 
+Record<data::FestivalCycle> DataDirector::GetFestivalCycle(
+  const data::Uid cycleUid) noexcept
+{
+  if (cycleUid == data::InvalidUid)
+    return {};
+  return _festivalCycleStorage.Get(cycleUid).value_or(Record<data::FestivalCycle>{});
+}
+
+Record<data::FestivalCycle> DataDirector::CreateFestivalCycle() noexcept
+{
+  try
+  {
+    return _festivalCycleStorage.Create(
+      [this]()
+      {
+        data::FestivalCycle cycle;
+        _primaryDataSource->CreateFestivalCycle(cycle);
+
+        return std::make_pair(cycle.uid(), std::move(cycle));
+      });
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error(
+      "Exception while creating a festival cycle on the primary data source: {}",
+      x.what());
+    return {};
+  }
+}
+
+DataDirector::FestivalCycleStorage& DataDirector::GetFestivalCycleCache()
+{
+  return _festivalCycleStorage;
+}
+
+std::vector<data::Uid> DataDirector::ListFestivalCycles()
+{
+  return _primaryDataSource->ListFestivalCycles();
+}
+
+Record<data::FestivalAdmission> DataDirector::GetFestivalAdmission(
+  const data::Uid admissionUid) noexcept
+{
+  if (admissionUid == data::InvalidUid)
+    return {};
+  return _festivalAdmissionStorage.Get(admissionUid).value_or(
+    Record<data::FestivalAdmission>{});
+}
+
+Record<data::FestivalAdmission> DataDirector::CreateFestivalAdmission() noexcept
+{
+  try
+  {
+    return _festivalAdmissionStorage.Create(
+      [this]()
+      {
+        data::FestivalAdmission admission;
+        _primaryDataSource->CreateFestivalAdmission(admission);
+
+        return std::make_pair(admission.uid(), std::move(admission));
+      });
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error(
+      "Exception while creating a festival admission on the primary data source: {}",
+      x.what());
+    return {};
+  }
+}
+
+DataDirector::FestivalAdmissionStorage& DataDirector::GetFestivalAdmissionCache()
+{
+  return _festivalAdmissionStorage;
+}
+
+std::vector<data::Uid> DataDirector::ListFestivalAdmissions()
+{
+  return _primaryDataSource->ListFestivalAdmissions();
+}
+
 Record<data::Reward> DataDirector::GetReward(data::Uid claimUid) noexcept
 {
   if (claimUid == data::InvalidUid)
@@ -1331,21 +1529,65 @@ Record<data::Reward> DataDirector::GetReward(data::Uid claimUid) noexcept
 
 Record<data::Reward> DataDirector::CreateReward() noexcept
 {
+  return CreateReward(data::Reward{});
+}
+
+Record<data::Reward> DataDirector::CreateReward(data::Reward reward) noexcept
+{
+  const auto characterUid = reward.characterUid();
+  const auto sourceUid = reward.sourceUid();
+  const auto type = reward.type();
+  const auto carrots = reward.carrots();
+  const auto isClaimed = reward.isClaimed();
+  const auto createdAt = reward.createdAt();
+  const auto claimedAt = reward.claimedAt();
   try
   {
     return _rewardStorage.Create(
-      [this]()
+      [this,
+       characterUid,
+       sourceUid,
+       type,
+       carrots,
+       isClaimed,
+       createdAt,
+       claimedAt]()
       {
-        data::Reward reward;
-        _primaryDataSource->CreateReward(reward);
+        data::Reward storedReward;
+        storedReward.characterUid = characterUid;
+        storedReward.sourceUid = sourceUid;
+        storedReward.type = type;
+        storedReward.carrots = carrots;
+        storedReward.isClaimed = isClaimed;
+        storedReward.createdAt = createdAt;
+        storedReward.claimedAt = claimedAt;
+        _primaryDataSource->CreateReward(storedReward);
 
-        return std::make_pair(reward.claimUid(), std::move(reward));
+        return std::make_pair(storedReward.claimUid(), std::move(storedReward));
       });
   }
   catch (const std::exception& x)
   {
     spdlog::error("Exception while creating a reward record on the primary data source: {}", x.what());
     return {};
+  }
+}
+
+data::Uid DataDirector::FindRewardClaimUid(
+  const data::Reward::Type type,
+  const data::Uid sourceUid) noexcept
+{
+  try
+  {
+    return _primaryDataSource->FindRewardClaimUid(type, sourceUid);
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error(
+      "Exception while finding reward source '{}' on the primary data source: {}",
+      sourceUid,
+      x.what());
+    return data::InvalidUid;
   }
 }
 
@@ -1672,13 +1914,15 @@ void DataDirector::ScheduleCharacterLoad(
       {
         // Get character uids and claim uid from mail record
         data::Uid mailUid, from, to, claimUid;
+        bool isDeleted{};
         mailRecord.Immutable(
-          [&mailUid, &from, &to, &claimUid](const data::Mail& mail)
+          [&mailUid, &from, &to, &claimUid, &isDeleted](const data::Mail& mail)
           {
             mailUid = mail.uid();
             from = mail.from();
             to = mail.to();
             claimUid = mail.claimUid();
+            isDeleted = mail.isDeleted();
           });
 
         // Mail ownership logic
@@ -1706,7 +1950,7 @@ void DataDirector::ScheduleCharacterLoad(
           mailCharacterUids.emplace(from);
         if (to != data::InvalidUid)
           mailCharacterUids.emplace(to);
-        if (claimUid != data::InvalidUid)
+        if (claimUid != data::InvalidUid && not isDeleted)
           rewardUids.emplace(claimUid);
       }
 

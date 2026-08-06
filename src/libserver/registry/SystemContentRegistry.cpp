@@ -107,6 +107,11 @@ std::optional<int32_t> SystemContentRegistry::GetValue(uint32_t type) const
   return std::nullopt;
 }
 
+std::optional<int32_t> SystemContentRegistry::GetValue(const Key key) const
+{
+  return GetValue(static_cast<uint32_t>(key));
+}
+
 void SystemContentRegistry::SetValue(uint32_t type, int32_t value)
 {
   {

@@ -71,6 +71,7 @@ add_library(alicia-libserver STATIC
         src/libserver/registry/CharacterRegistry.cpp
         src/libserver/registry/CourseRegistry.cpp
         src/libserver/registry/BreedingRegistry.cpp
+        src/libserver/registry/FestivalRegistry.cpp
         src/libserver/registry/HorseRegistry.cpp
         src/libserver/registry/ItemRegistry.cpp
         src/libserver/registry/MagicRegistry.cpp
@@ -117,6 +118,7 @@ add_executable(alicia-server
         src/server/ranch/RanchDirector.cpp
         src/server/room/Room.cpp
         src/server/system/ChatSystem.cpp
+        src/server/system/FestivalSystem.cpp
         src/server/system/HorseSystem.cpp
         src/server/system/InfractionSystem.cpp
         src/server/system/ItemSystem.cpp

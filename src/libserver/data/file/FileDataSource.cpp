@@ -26,6 +26,7 @@
 #include <regex>
 
 #include <nlohmann/json.hpp>
+#include <spdlog/spdlog.h>
 
 namespace
 {
@@ -70,6 +71,8 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _mailDataPath = prepareDataPath("mails");
   _questDataPath = prepareDataPath("quests");
   _stallionDataPath = prepareDataPath("stallions");
+  _festivalCycleDataPath = prepareDataPath("festivalCycles");
+  _festivalAdmissionDataPath = prepareDataPath("festivalAdmissions");
   _rewardDataPath = prepareDataPath("rewards");
 
   // Read the meta-data file and parse the sequential UIDs.
@@ -95,6 +98,10 @@ void server::FileDataSource::Initialize(const std::filesystem::path& path)
   _mailSequentialId = meta.value("mailSequentialId", uint32_t{0});
   _questSequentialId = meta.value("questSequentialId", uint32_t{0});
   _stallionSequentialUid = meta.value("stallionSequentialUid", uint32_t{0});
+  _festivalCycleSequentialUid = meta.value("festivalCycleSequentialUid", uint32_t{0});
+  _festivalAdmissionSequentialUid = meta.value(
+    "festivalAdmissionSequentialUid",
+    uint32_t{0});
   _rewardSequentialUid = meta.value("rewardSequentialUid", uint32_t{0});
 }
 
@@ -132,6 +139,8 @@ void server::FileDataSource::SaveMetadata()
   meta["mailSequentialId"] = _mailSequentialId.load();
   meta["questSequentialId"] = _questSequentialId.load();
   meta["stallionSequentialUid"] = _stallionSequentialUid.load();
+  meta["festivalCycleSequentialUid"] = _festivalCycleSequentialUid.load();
+  meta["festivalAdmissionSequentialUid"] = _festivalAdmissionSequentialUid.load();
   meta["rewardSequentialUid"] = _rewardSequentialUid.load();
 
   metaFile << meta.dump(2);
@@ -389,6 +398,9 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.mailbox.sent = mailbox.value("sent", std::vector<data::Uid>{});
 
   character.quests = json.value("quests", std::vector<data::Uid>{});
+  character.pendingRewardClaimUids = json.value(
+    "pendingRewardClaimUids",
+    std::set<data::Uid>{});
 }
 
 void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
@@ -510,6 +522,7 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["mailbox"] = mailbox;
 
   json["quests"] = character.quests();
+  json["pendingRewardClaimUids"] = character.pendingRewardClaimUids();
 
   dataFile << json.dump(2);
 }
@@ -1465,6 +1478,7 @@ void server::FileDataSource::RetrieveMail(data::Uid uid, data::Mail& mail)
 
   mail.type = json.value("type", data::Mail::MailType{});
   mail.claimUid = json.value("claimUid", data::Uid{});
+  mail.sourceUid = json.value("sourceUid", data::InvalidUid);
 
   mail.createdAt = data::Clock::time_point(
     std::chrono::seconds(
@@ -1494,6 +1508,7 @@ void server::FileDataSource::StoreMail(data::Uid uid, const data::Mail& mail)
 
   json["type"] = mail.type();
   json["claimUid"] = mail.claimUid();
+  json["sourceUid"] = mail.sourceUid();
 
   json["createdAt"] = std::chrono::duration_cast<
     std::chrono::seconds>(
@@ -1655,6 +1670,229 @@ std::vector<server::data::Uid> server::FileDataSource::ListRegisteredStallions()
   return stallionUids;
 }
 
+void server::FileDataSource::CreateFestivalCycle(data::FestivalCycle& cycle)
+{
+  cycle.uid = ++_festivalCycleSequentialUid;
+  SaveMetadata();
+}
+
+void server::FileDataSource::RetrieveFestivalCycle(
+  const data::Uid uid,
+  data::FestivalCycle& cycle)
+{
+  const auto dataFilePath = ProduceDataFilePath(
+    _festivalCycleDataPath,
+    std::format("{}", uid));
+  std::ifstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+    throw std::runtime_error(std::format(
+      "Festival cycle file '{}' not accessible",
+      dataFilePath.string()));
+
+  const auto json = nlohmann::json::parse(dataFile);
+  cycle.uid() = json.value("uid", data::InvalidUid);
+  cycle.state() = static_cast<data::FestivalCycle::State>(
+    json.value("state", uint32_t{}));
+  cycle.createdAt() = data::Clock::time_point(
+    std::chrono::seconds(json.value("createdAt", int64_t{})));
+  cycle.endsAt() = data::Clock::time_point(
+    std::chrono::seconds(json.value("endsAt", int64_t{})));
+  cycle.resolvedAt() = data::Clock::time_point(
+    std::chrono::seconds(json.value("resolvedAt", int64_t{})));
+}
+
+void server::FileDataSource::StoreFestivalCycle(
+  const data::Uid uid,
+  const data::FestivalCycle& cycle)
+{
+  const auto dataFilePath = ProduceDataFilePath(
+    _festivalCycleDataPath,
+    std::format("{}", uid));
+  std::ofstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+    throw std::runtime_error(std::format(
+      "Festival cycle file '{}' not accessible",
+      dataFilePath.string()));
+
+  nlohmann::json json;
+  json["uid"] = cycle.uid();
+  json["state"] = static_cast<uint32_t>(cycle.state());
+  json["createdAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+    cycle.createdAt().time_since_epoch()).count();
+  json["endsAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+    cycle.endsAt().time_since_epoch()).count();
+  json["resolvedAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+    cycle.resolvedAt().time_since_epoch()).count();
+  dataFile << json.dump(2);
+}
+
+void server::FileDataSource::DeleteFestivalCycle(const data::Uid uid)
+{
+  const auto dataFilePath = ProduceDataFilePath(
+    _festivalCycleDataPath,
+    std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
+}
+
+std::vector<server::data::Uid> server::FileDataSource::ListFestivalCycles()
+{
+  std::vector<data::Uid> cycleUids;
+  for (const auto& entry : std::filesystem::directory_iterator(_festivalCycleDataPath))
+  {
+    if (not entry.is_regular_file() || entry.path().extension() != ".json")
+      continue;
+
+    try
+    {
+      cycleUids.push_back(std::stoul(entry.path().stem().string()));
+    }
+    catch (const std::exception&)
+    {
+    }
+  }
+  return cycleUids;
+}
+
+void server::FileDataSource::CreateFestivalAdmission(data::FestivalAdmission& admission)
+{
+  admission.uid = ++_festivalAdmissionSequentialUid;
+  SaveMetadata();
+}
+
+void server::FileDataSource::RetrieveFestivalAdmission(
+  const data::Uid uid,
+  data::FestivalAdmission& admission)
+{
+  const auto dataFilePath = ProduceDataFilePath(
+    _festivalAdmissionDataPath,
+    std::format("{}", uid));
+  std::ifstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+    throw std::runtime_error(std::format(
+      "Festival admission file '{}' not accessible",
+      dataFilePath.string()));
+
+  const auto json = nlohmann::json::parse(dataFile);
+  admission.uid() = json.value("uid", data::InvalidUid);
+  admission.cycleUid() = json.value("cycleUid", data::InvalidUid);
+  admission.groupIndex() = json.value("groupIndex", uint32_t{});
+  admission.slotIndex() = json.value("slotIndex", uint32_t{});
+  admission.characterUid() = json.value("characterUid", data::InvalidUid);
+  admission.characterName() = json.value("characterName", std::string{});
+  admission.horseUid() = json.value("horseUid", data::InvalidUid);
+  admission.horseName() = json.value("horseName", std::string{});
+  admission.horseGrade() = json.value("horseGrade", uint32_t{});
+  admission.participationMailUid() = json.value(
+    "participationMailUid",
+    data::InvalidUid);
+  admission.participationMailCreationPending() = json.value(
+    "participationMailCreationPending",
+    false);
+  admission.baseScore() = json.value("baseScore", uint64_t{});
+  admission.varianceBasisPoints() = json.value("varianceBasisPoints", uint32_t{});
+  admission.finalScore() = json.value("finalScore", uint64_t{});
+  admission.rank() = json.value("rank", uint32_t{});
+  admission.rewardCarrots() = json.value("rewardCarrots", uint32_t{});
+  admission.rewardClaimUid() = json.value("rewardClaimUid", data::InvalidUid);
+  admission.rewardCreationPending() = json.value("rewardCreationPending", false);
+  admission.resultMailUid() = json.value("resultMailUid", data::InvalidUid);
+  admission.resultMailCreationPending() = json.value(
+    "resultMailCreationPending",
+    false);
+  admission.admittedAt() = data::Clock::time_point(
+    std::chrono::seconds(json.value("admittedAt", int64_t{})));
+
+  const auto& grading = json.value("grading", nlohmann::json::object());
+  admission.grading.totalStats() = grading.value("totalStats", uint32_t{});
+  admission.grading.bodyDirtiness() = grading.value("bodyDirtiness", uint32_t{});
+  admission.grading.maneDirtiness() = grading.value("maneDirtiness", uint32_t{});
+  admission.grading.tailDirtiness() = grading.value("tailDirtiness", uint32_t{});
+  admission.grading.friendliness() = grading.value("friendliness", uint32_t{});
+  admission.grading.charm() = grading.value("charm", uint32_t{});
+  admission.grading.skinTier() = grading.value("skinTier", uint32_t{});
+  admission.grading.maneTier() = grading.value("maneTier", uint32_t{});
+  admission.grading.tailTier() = grading.value("tailTier", uint32_t{});
+}
+
+void server::FileDataSource::StoreFestivalAdmission(
+  const data::Uid uid,
+  const data::FestivalAdmission& admission)
+{
+  const auto dataFilePath = ProduceDataFilePath(
+    _festivalAdmissionDataPath,
+    std::format("{}", uid));
+  std::ofstream dataFile(dataFilePath);
+  if (not dataFile.is_open())
+    throw std::runtime_error(std::format(
+      "Festival admission file '{}' not accessible",
+      dataFilePath.string()));
+
+  nlohmann::json grading;
+  grading["totalStats"] = admission.grading.totalStats();
+  grading["bodyDirtiness"] = admission.grading.bodyDirtiness();
+  grading["maneDirtiness"] = admission.grading.maneDirtiness();
+  grading["tailDirtiness"] = admission.grading.tailDirtiness();
+  grading["friendliness"] = admission.grading.friendliness();
+  grading["charm"] = admission.grading.charm();
+  grading["skinTier"] = admission.grading.skinTier();
+  grading["maneTier"] = admission.grading.maneTier();
+  grading["tailTier"] = admission.grading.tailTier();
+
+  nlohmann::json json;
+  json["uid"] = admission.uid();
+  json["cycleUid"] = admission.cycleUid();
+  json["groupIndex"] = admission.groupIndex();
+  json["slotIndex"] = admission.slotIndex();
+  json["characterUid"] = admission.characterUid();
+  json["characterName"] = admission.characterName();
+  json["horseUid"] = admission.horseUid();
+  json["horseName"] = admission.horseName();
+  json["horseGrade"] = admission.horseGrade();
+  json["participationMailUid"] = admission.participationMailUid();
+  json["participationMailCreationPending"] =
+    admission.participationMailCreationPending();
+  json["baseScore"] = admission.baseScore();
+  json["varianceBasisPoints"] = admission.varianceBasisPoints();
+  json["finalScore"] = admission.finalScore();
+  json["rank"] = admission.rank();
+  json["rewardCarrots"] = admission.rewardCarrots();
+  json["rewardClaimUid"] = admission.rewardClaimUid();
+  json["rewardCreationPending"] = admission.rewardCreationPending();
+  json["resultMailUid"] = admission.resultMailUid();
+  json["resultMailCreationPending"] = admission.resultMailCreationPending();
+  json["admittedAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+    admission.admittedAt().time_since_epoch()).count();
+  json["grading"] = std::move(grading);
+  dataFile << json.dump(2);
+}
+
+void server::FileDataSource::DeleteFestivalAdmission(const data::Uid uid)
+{
+  const auto dataFilePath = ProduceDataFilePath(
+    _festivalAdmissionDataPath,
+    std::format("{}", uid));
+  std::filesystem::remove(dataFilePath);
+}
+
+std::vector<server::data::Uid> server::FileDataSource::ListFestivalAdmissions()
+{
+  std::vector<data::Uid> admissionUids;
+  for (const auto& entry : std::filesystem::directory_iterator(_festivalAdmissionDataPath))
+  {
+    if (not entry.is_regular_file() || entry.path().extension() != ".json")
+      continue;
+
+    try
+    {
+      admissionUids.push_back(std::stoul(entry.path().stem().string()));
+    }
+    catch (const std::exception&)
+    {
+    }
+  }
+  return admissionUids;
+}
+
 void server::FileDataSource::CreateReward(data::Reward& reward)
 {
   reward.claimUid = ++_rewardSequentialUid;
@@ -1676,6 +1914,7 @@ void server::FileDataSource::RetrieveReward(data::Uid claimUid, data::Reward& re
   const auto json = nlohmann::json::parse(dataFile);
   reward.claimUid() = json.value("claimUid", data::InvalidUid);
   reward.characterUid() = json.value("characterUid", data::InvalidUid);
+  reward.sourceUid() = json.value("sourceUid", data::InvalidUid);
   reward.type() = static_cast<data::Reward::Type>(json.value("type", uint32_t{0}));
   reward.carrots() = json.value("carrots", uint32_t{0});
   reward.isClaimed() = json.value("isClaimed", false);
@@ -1700,6 +1939,7 @@ void server::FileDataSource::StoreReward(data::Uid claimUid, const data::Reward&
   nlohmann::json json;
   json["claimUid"] = reward.claimUid();
   json["characterUid"] = reward.characterUid();
+  json["sourceUid"] = reward.sourceUid();
   json["type"] = static_cast<uint32_t>(reward.type());
   json["carrots"] = reward.carrots();
   json["isClaimed"] = reward.isClaimed();
@@ -1716,4 +1956,76 @@ void server::FileDataSource::DeleteReward(data::Uid claimUid)
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _rewardDataPath, std::format("{}", claimUid));
   std::filesystem::remove(dataFilePath);
+}
+
+server::data::Uid server::FileDataSource::FindMailUid(
+  const data::Mail::MailType type,
+  const data::Uid sourceUid)
+{
+  if (sourceUid == data::InvalidUid)
+    return data::InvalidUid;
+
+  for (const auto& entry : std::filesystem::directory_iterator(_mailDataPath))
+  {
+    if (not entry.is_regular_file() || entry.path().extension() != ".json")
+      continue;
+
+    try
+    {
+      std::ifstream dataFile(entry.path());
+      if (not dataFile.is_open())
+        continue;
+
+      const auto json = nlohmann::json::parse(dataFile);
+      if (json.value("sourceUid", data::InvalidUid) != sourceUid
+        || static_cast<data::Mail::MailType>(json.value("type", uint32_t{})) != type)
+      {
+        continue;
+      }
+      return json.value("uid", data::InvalidUid);
+    }
+    catch (const std::exception& x)
+    {
+      spdlog::warn("Skipping invalid mail record '{}': {}", entry.path().string(), x.what());
+    }
+  }
+  return data::InvalidUid;
+}
+
+server::data::Uid server::FileDataSource::FindRewardClaimUid(
+  const data::Reward::Type type,
+  const data::Uid sourceUid)
+{
+  if (sourceUid == data::InvalidUid)
+    return data::InvalidUid;
+
+  for (const auto& entry : std::filesystem::directory_iterator(_rewardDataPath))
+  {
+    if (not entry.is_regular_file() || entry.path().extension() != ".json")
+      continue;
+
+    try
+    {
+      std::ifstream dataFile(entry.path());
+      if (not dataFile.is_open())
+        continue;
+
+      const auto json = nlohmann::json::parse(dataFile);
+      if (json.value("sourceUid", data::InvalidUid) != sourceUid
+        || static_cast<data::Reward::Type>(json.value("type", uint32_t{})) != type)
+      {
+        continue;
+      }
+
+      return json.value("claimUid", data::InvalidUid);
+    }
+    catch (const std::exception& x)
+    {
+      spdlog::warn(
+        "Skipping invalid reward record '{}': {}",
+        entry.path().string(),
+        x.what());
+    }
+  }
+  return data::InvalidUid;
 }

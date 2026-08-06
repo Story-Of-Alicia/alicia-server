@@ -1713,7 +1713,7 @@ struct AcCmdCLFeatureCommand
 
 struct AcCmdCLRequestFestivalResult
 {
-  uint32_t member1{};
+  uint32_t claimUid{};
 
   static Command GetCommand()
   {
@@ -1737,7 +1737,31 @@ struct AcCmdCLRequestFestivalResult
 
 struct AcCmdCLRequestFestivalResultOK
 {
-  // todo: members
+  struct Entry
+  {
+    std::string characterName;
+    std::string horseName;
+    uint8_t horseGrade{};
+    uint32_t totalStats{};
+    uint32_t rewardCarrots{};
+    uint8_t rank{};
+  };
+
+  uint32_t date{};
+  uint32_t claimUid{};
+  uint8_t horseGrade{};
+  uint8_t unk0{};
+  uint32_t totalStats{};
+  uint32_t unk1{};
+  std::string characterName;
+  std::string horseName;
+  uint8_t startingGroup{};
+  uint8_t lastGroup{};
+  uint8_t lastRound{};
+  uint32_t rewardCarrots{};
+  uint8_t rewardAvailable{};
+  uint32_t unk2{};
+  std::vector<Entry> leaderboard;
 
   static Command GetCommand()
   {
@@ -2034,7 +2058,7 @@ struct AcCmdCLEnterRoomQuickStopCancel
 
 struct AcCmdCLRequestFestivalPrize
 {
-  uint32_t member1{};
+  uint32_t claimUid{};
 
   static Command GetCommand()
   {
@@ -2104,7 +2128,8 @@ struct AcCmdCLQueryServerTimeOK
 
 struct AcCmdCLRequestFestivalPrizeOK
 {
-  // todo: figure out fields
+  uint32_t carrotBalance{};
+  uint32_t rewardCarrots{};
 
   static Command GetCommand()
   {
@@ -2128,7 +2153,7 @@ struct AcCmdCLRequestFestivalPrizeOK
 
 struct AcCmdCLRequestFestivalPrizeCancel
 {
-  // todo: figure out fields
+  // Empty.
 
   static Command GetCommand()
   {

@@ -25,9 +25,10 @@
 #include <libserver/util/Util.hpp>
 
 #include <charconv>
+#include <chrono>
+#include <format>
 #include <limits>
 #include <regex>
-#include <format>
 
 namespace server
 {
@@ -204,6 +205,7 @@ void ChatSystem::RegisterUserCommands()
         "Official user command reference:",
         " //about - Information about the server",
         " //create - Sends you to the character creator",
+        " //festival - Time until the festival cycle resets",
         " //online - Count of players",
         " ",
         "Official admin command reference:",
@@ -253,6 +255,26 @@ void ChatSystem::RegisterUserCommands()
         userCount > 1 ? "players" : "player");
 
       return response;
+    });
+
+  // festival command
+  _commandManager.RegisterCommand(
+    "festival",
+    [this](
+      [[maybe_unused]] const std::span<const std::string>& arguments,
+      [[maybe_unused]] data::Uid characterUid) -> std::vector<std::string>
+    {
+      auto remaining = _serverInstance.GetFestivalSystem().GetCycleTimeRemaining();
+      const auto hours = std::chrono::duration_cast<std::chrono::hours>(remaining);
+      remaining -= hours;
+      const auto minutes = std::chrono::duration_cast<std::chrono::minutes>(remaining);
+      remaining -= minutes;
+
+      return {std::format(
+        "Festival cycle resets in {:02}h {:02}m {:02}s at midnight server time.",
+        hours.count(),
+        minutes.count(),
+        remaining.count())};
     });
 
   // emblem command

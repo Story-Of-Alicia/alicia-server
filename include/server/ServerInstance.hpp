@@ -31,6 +31,7 @@
 #include "server/ranch/Genetics.hpp"
 #include "server/ranch/RanchDirector.hpp"
 #include "server/system/ChatSystem.hpp"
+#include "server/system/FestivalSystem.hpp"
 #include "server/system/HorseSystem.hpp"
 #include "server/system/InfractionSystem.hpp"
 #include "server/system/ItemSystem.hpp"
@@ -46,6 +47,7 @@
 #include <libserver/registry/BreedingRegistry.hpp>
 #include <libserver/registry/CharacterRegistry.hpp>
 #include <libserver/registry/CourseRegistry.hpp>
+#include <libserver/registry/FestivalRegistry.hpp>
 #include <libserver/registry/HorseRegistry.hpp>
 #include <libserver/registry/ItemRegistry.hpp>
 #include <libserver/registry/MagicRegistry.hpp>
@@ -142,6 +144,10 @@ public:
   //! @returns Reference to the breeding registry.
   registry::BreedingRegistry& GetBreedingRegistry();
 
+  //! Returns reference to the festival registry.
+  //! @returns Reference to the festival registry.
+  registry::FestivalRegistry& GetFestivalRegistry();
+
   //! Returns reference to the chat system.
   //! @returns Reference to the chat system.
   ChatSystem& GetChatSystem();
@@ -181,6 +187,10 @@ public:
   //! Returns reference to the reward system.
   //! @returns Reference to the reward system.
   RewardSystem& GetRewardSystem();
+
+  //! Returns reference to the festival system.
+  //! @returns Reference to the festival system.
+  FestivalSystem& GetFestivalSystem();
 
   //! Returns reference to the telemetry.
   //! @returns Reference to the telemetry.
@@ -303,6 +313,8 @@ private:
   registry::SystemContentRegistry _systemContentRegistry;
   //! A registry of breeding config data.
   registry::BreedingRegistry _breedingRegistry;
+  //! A registry of festival config data.
+  registry::FestivalRegistry _festivalRegistry;
 
   //! A chat system.
   ChatSystem _chatSystem;
@@ -324,6 +336,8 @@ private:
   MatchmakingSystem _matchmakingSystem;
   //! A reward system.
   RewardSystem _rewardSystem;
+  //! A festival system.
+  FestivalSystem _festivalSystem;
 
   //! A thread for telemetry.
   std::thread _telemetryThread;

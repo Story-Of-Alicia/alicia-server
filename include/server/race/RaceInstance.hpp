@@ -26,9 +26,11 @@
 #include <libserver/network/NetworkDefinitions.hpp>
 #include <libserver/network/command/proto/CommonStructureDefinitions.hpp>
 #include <libserver/registry/CourseRegistry.hpp>
+#include <libserver/registry/FestivalRegistry.hpp>
 
 #include <chrono>
 #include <functional>
+#include <unordered_map>
 #include <unordered_set>
 
 namespace server
@@ -64,6 +66,17 @@ public:
     data::Uid masterUid{};
   };
 
+  struct FestivalState
+  {
+    uint32_t missionType{};
+    std::unordered_map<data::Uid, bool> qualification{};
+
+    [[nodiscard]] bool IsActive() const noexcept
+    {
+      return missionType != 0;
+    }
+  };
+
   explicit RaceInstance(
     RaceNetworkHandler& raceDirector,
     uint32_t roomUid);
@@ -80,6 +93,10 @@ public:
   uint32_t GetRoomUid();
 
   const Parameters& GetParameters() const;
+  [[nodiscard]] const FestivalState& GetFestivalState() const;
+  bool EvaluateFestivalMission(
+    data::Uid characterUid,
+    bool clientMissionResult);
 
   [[nodiscard]] registry::GameModeId GetGameModeId() const;
   [[nodiscard]] registry::MapBlockId GetMapBlockId() const;
@@ -108,6 +125,9 @@ private:
   void PrepareGameMode();
   void PickRandomMapFromCourse();
   void PrepareMap();
+  void PrepareFestival();
+  [[nodiscard]] bool IsFestivalMissionEligible(
+    const registry::FestivalMission& mission) const;
 
 public:
   // todo: this needs to be fixed
@@ -120,6 +140,7 @@ private:
 
   //! The race parameters.
   Parameters _parameters;
+  FestivalState _festivalState;
 
   registry::GameModeId _gameModeId{};
   registry::Course::GameModeInfo _gameModeInfo;

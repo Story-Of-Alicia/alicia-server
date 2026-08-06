@@ -24,8 +24,9 @@
 
 #include <libserver/util/Util.hpp>
 
-#include <tuple>
+#include <algorithm>
 #include <format>
+#include <tuple>
 
 namespace server
 {
@@ -71,6 +72,7 @@ bool RaceInstance::Start(
   {
     PrepareGameMode();
     PrepareMap();
+    PrepareFestival();
   }
   catch (const std::runtime_error& e)
   {
@@ -92,6 +94,13 @@ void RaceInstance::Stop()
 
   using Team = tracker::RaceTracker::Racer::Team;
   using State = tracker::RaceTracker::Racer::State;
+
+  const auto festivalMission = _festivalState.IsActive()
+    ? _raceNetworkHandler.GetServerInstance()
+      .GetFestivalRegistry()
+      .GetMission(_festivalState.missionType)
+    : nullptr;
+  std::vector<FestivalSystem::AuditionParticipant> qualifiedFestivalParticipants;
 
   // Determine winning team (team of the first finisher).
   // Solo/FFA leaves `winningTeam` as Solo.
@@ -121,6 +130,27 @@ void RaceInstance::Stop()
     if (racer.state != State::Disconnected)
     {
       score.bitset = protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::Connected;
+    }
+
+    bool festivalQualified = false;
+    if (_festivalState.IsActive())
+    {
+      if (festivalMission != nullptr && festivalMission->serverCheck)
+      {
+        festivalQualified = EvaluateFestivalMission(characterUid, false);
+      }
+      else
+      {
+        const auto qualification = _festivalState.qualification.find(characterUid);
+        festivalQualified = qualification != _festivalState.qualification.cend()
+          && qualification->second;
+      }
+    }
+
+    if (festivalQualified)
+    {
+      score.bitset = static_cast<protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset>(
+        score.bitset | protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::FestivalQualified);
     }
 
     // If the player has disconnected
@@ -189,7 +219,12 @@ void RaceInstance::Stop()
     const auto characterRecord = _raceNetworkHandler.GetServerInstance().GetDataDirector().GetCharacter(
       characterUid);
 
-    characterRecord.Mutable([this, &score](data::Character& character)
+    characterRecord.Mutable(
+      [this,
+       &score,
+       &qualifiedFestivalParticipants,
+       characterUid,
+       festivalQualified](data::Character& character)
     {
       character.carrots() += score.carrots;
       character.experience() += score.experience;
@@ -208,6 +243,14 @@ void RaceInstance::Stop()
       score.level = character.level();
       score.levelProgress = character.experience();
 
+      if (festivalQualified && character.mountUid() != data::InvalidUid)
+      {
+        qualifiedFestivalParticipants.push_back({
+          .characterUid = characterUid,
+          .horseUid = character.mountUid()
+        });
+      }
+
       _raceNetworkHandler.GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Immutable(
         [&score](const data::Horse& horse)
         {
@@ -217,6 +260,23 @@ void RaceInstance::Stop()
           score.growthPoints = static_cast<uint16_t>(horse.growthPoints());
         });
     });
+  }
+
+  const auto selectedFestivalParticipant = _raceNetworkHandler.GetServerInstance()
+    .GetFestivalSystem()
+    .SelectAuditionParticipant(qualifiedFestivalParticipants);
+  if (selectedFestivalParticipant != data::InvalidUid)
+  {
+    const auto selectedScore = std::ranges::find(
+      raceResult.scores,
+      selectedFestivalParticipant,
+      &protocol::AcCmdRCRaceResultNotify::ScoreInfo::uid);
+    if (selectedScore != raceResult.scores.end())
+    {
+      selectedScore->bitset = static_cast<protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset>(
+        selectedScore->bitset
+        | protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::FestivalSelected);
+    }
   }
 
   // Sort: winning team first, then by result state, then by courseTime ascending.
@@ -394,6 +454,40 @@ uint32_t RaceInstance::GetRoomUid()
 const RaceInstance::Parameters& RaceInstance::GetParameters() const
 {
   return _parameters;
+}
+
+const RaceInstance::FestivalState& RaceInstance::GetFestivalState() const
+{
+  return _festivalState;
+}
+
+bool RaceInstance::EvaluateFestivalMission(
+  const data::Uid characterUid,
+  const bool clientMissionResult)
+{
+  const auto mission = _raceNetworkHandler.GetServerInstance()
+    .GetFestivalRegistry()
+    .GetMission(_festivalState.missionType);
+  if (mission == nullptr)
+    throw std::runtime_error("Festival mission type does not exist");
+
+  bool qualified = false;
+  if (mission->serverCheck)
+  {
+    qualified = _raceNetworkHandler.GetServerInstance()
+      .GetFestivalSystem()
+      .EvaluateServerMission(
+        mission->type,
+        _tracker,
+        characterUid);
+  }
+  else if (mission->clientCheck)
+  {
+    qualified = clientMissionResult;
+  }
+
+  _festivalState.qualification.insert_or_assign(characterUid, qualified);
+  return qualified;
 }
 
 registry::GameModeId RaceInstance::GetGameModeId() const
@@ -851,6 +945,69 @@ void RaceInstance::PrepareMap()
         _mapBlockId,
         e.what()));
   }
+}
+
+void RaceInstance::PrepareFestival()
+{
+  _festivalState = {};
+
+  if (not _raceNetworkHandler.GetServerInstance().GetFestivalSystem().IsEnabled())
+    return;
+
+  const auto& festivalRegistry = _raceNetworkHandler.GetServerInstance()
+    .GetFestivalRegistry();
+  const auto& festivalSettings = festivalRegistry.GetSettings();
+  if (festivalSettings.triggerChance == 0)
+    return;
+
+  std::uniform_int_distribution<uint32_t> triggerRoll(1, 100);
+  if (triggerRoll(server::util::GetRandomEngine())
+    > std::min(festivalSettings.triggerChance, 100u))
+    return;
+
+  if (festivalSettings.forcedMissionType.has_value())
+  {
+    const auto mission = festivalRegistry.GetMission(*festivalSettings.forcedMissionType);
+    if (mission == nullptr)
+    {
+      spdlog::warn(
+        "Forced festival mission type {} does not exist",
+        *festivalSettings.forcedMissionType);
+      return;
+    }
+
+    if (IsFestivalMissionEligible(*mission))
+      _festivalState.missionType = mission->type;
+    return;
+  }
+
+  std::vector<uint32_t> eligibleMissionTypes;
+  for (const auto& [missionType, mission] : festivalRegistry.GetMissions())
+    if (IsFestivalMissionEligible(mission))
+      eligibleMissionTypes.push_back(missionType);
+
+  if (eligibleMissionTypes.empty())
+    return;
+
+  std::uniform_int_distribution<size_t> missionDistribution(
+    0,
+    eligibleMissionTypes.size() - 1);
+  _festivalState.missionType = eligibleMissionTypes[
+    missionDistribution(server::util::GetRandomEngine())];
+}
+
+bool RaceInstance::IsFestivalMissionEligible(
+  const registry::FestivalMission& mission) const
+{
+  const bool gameModeMatches = mission.gameMode == 0
+    || mission.gameMode == static_cast<uint32_t>(_parameters.gameMode);
+  const bool teamModeMatches = mission.teamMode == 0
+    || mission.teamMode == static_cast<uint32_t>(_parameters.teamMode);
+  const bool isMapExcluded = std::ranges::find(
+    mission.excludedMaps,
+    _mapBlockId) != mission.excludedMaps.cend();
+
+  return gameModeMatches && teamModeMatches && not isMapExcluded;
 }
 
 void RaceInstance::PickRandomItemFromDeck(tracker::RaceTracker::ItemDeck& deck)

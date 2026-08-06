@@ -50,6 +50,8 @@ public:
   using MailStorage = DataStorage<data::Uid, data::Mail>;
   using QuestStorage = DataStorage<data::Uid, data::Quest>;
   using StallionStorage = DataStorage<data::Uid, data::Stallion>;
+  using FestivalCycleStorage = DataStorage<data::Uid, data::FestivalCycle>;
+  using FestivalAdmissionStorage = DataStorage<data::Uid, data::FestivalAdmission>;
   using RewardStorage = DataStorage<data::Uid, data::Reward>;
 
   //! Default constructor.
@@ -135,6 +137,9 @@ public:
   
   [[nodiscard]] Record<data::Mail> GetMail(data::Uid mailUid) noexcept;
   [[nodiscard]] Record<data::Mail> CreateMail() noexcept;
+  [[nodiscard]] data::Uid FindMailUid(
+    data::Mail::MailType type,
+    data::Uid sourceUid) noexcept;
   [[nodiscard]] MailStorage& GetMailCache();
 
   [[nodiscard]] Record<data::Quest> GetQuest(data::Uid questUid) noexcept;
@@ -146,8 +151,23 @@ public:
   [[nodiscard]] StallionStorage& GetStallionCache();
   [[nodiscard]] std::vector<data::Uid> ListRegisteredStallions();
 
+  [[nodiscard]] Record<data::FestivalCycle> GetFestivalCycle(data::Uid cycleUid) noexcept;
+  [[nodiscard]] Record<data::FestivalCycle> CreateFestivalCycle() noexcept;
+  [[nodiscard]] FestivalCycleStorage& GetFestivalCycleCache();
+  [[nodiscard]] std::vector<data::Uid> ListFestivalCycles();
+
+  [[nodiscard]] Record<data::FestivalAdmission> GetFestivalAdmission(
+    data::Uid admissionUid) noexcept;
+  [[nodiscard]] Record<data::FestivalAdmission> CreateFestivalAdmission() noexcept;
+  [[nodiscard]] FestivalAdmissionStorage& GetFestivalAdmissionCache();
+  [[nodiscard]] std::vector<data::Uid> ListFestivalAdmissions();
+
   [[nodiscard]] Record<data::Reward> GetReward(data::Uid claimUid) noexcept;
   [[nodiscard]] Record<data::Reward> CreateReward() noexcept;
+  [[nodiscard]] Record<data::Reward> CreateReward(data::Reward reward) noexcept;
+  [[nodiscard]] data::Uid FindRewardClaimUid(
+    data::Reward::Type type,
+    data::Uid sourceUid) noexcept;
   [[nodiscard]] RewardStorage& GetRewardCache();
 
   [[nodiscard]] DataSource& GetDataSource() noexcept;
@@ -209,6 +229,8 @@ private:
   QuestStorage _questStorage;
   //! A stallion storage.
   StallionStorage _stallionStorage;
+  FestivalCycleStorage _festivalCycleStorage;
+  FestivalAdmissionStorage _festivalAdmissionStorage;
   //! A reward storage.
   RewardStorage _rewardStorage;
 };

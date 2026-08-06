@@ -19,6 +19,9 @@
 
 #include "libserver/network/command/proto/LobbyMessageDefinitions.hpp"
 
+#include <algorithm>
+#include <stdexcept>
+
 namespace server::protocol
 {
 
@@ -1095,31 +1098,88 @@ void AcCmdCLFeatureCommand::Read(
 }
 
 void AcCmdCLRequestFestivalResult::Write(
-  const AcCmdCLRequestFestivalResult&,
-  SinkStream&)
+  const AcCmdCLRequestFestivalResult& command,
+  SinkStream& stream)
 {
-  throw std::runtime_error("Not implemented");
+  stream.Write(command.claimUid);
 }
 
 void AcCmdCLRequestFestivalResult::Read(
   AcCmdCLRequestFestivalResult& command,
   SourceStream& stream)
 {
-  stream.Read(command.member1);
+  stream.Read(command.claimUid);
 }
 
 void AcCmdCLRequestFestivalResultOK::Write(
-  const AcCmdCLRequestFestivalResultOK&,
-  SinkStream&)
+  const AcCmdCLRequestFestivalResultOK& command,
+  SinkStream& stream)
 {
-  throw std::runtime_error("Command needs to be discovered");
+  stream.Write(command.date)
+    .Write(command.claimUid)
+    .Write(command.horseGrade)
+    .Write(command.unk0)
+    .Write(command.totalStats)
+    .Write(command.unk1)
+    .Write(command.characterName)
+    .Write(command.horseName)
+    .Write(command.startingGroup)
+    .Write(command.lastGroup)
+    .Write(command.lastRound)
+    .Write(command.rewardCarrots)
+    .Write(command.rewardAvailable)
+    .Write(command.unk2);
+
+  const uint8_t count = static_cast<uint8_t>(std::min<size_t>(
+    command.leaderboard.size(),
+    8));
+  stream.Write(count);
+  for (size_t index = 0; index < count; ++index)
+  {
+    const auto& entry = command.leaderboard[index];
+    stream.Write(entry.characterName)
+      .Write(entry.horseName)
+      .Write(entry.horseGrade)
+      .Write(entry.totalStats)
+      .Write(entry.rewardCarrots)
+      .Write(entry.rank);
+  }
 }
 
 void AcCmdCLRequestFestivalResultOK::Read(
-  AcCmdCLRequestFestivalResultOK&,
-  SourceStream&)
+  AcCmdCLRequestFestivalResultOK& command,
+  SourceStream& stream)
 {
-  throw std::runtime_error("Not implemented");
+  stream.Read(command.date)
+    .Read(command.claimUid)
+    .Read(command.horseGrade)
+    .Read(command.unk0)
+    .Read(command.totalStats)
+    .Read(command.unk1)
+    .Read(command.characterName)
+    .Read(command.horseName)
+    .Read(command.startingGroup)
+    .Read(command.lastGroup)
+    .Read(command.lastRound)
+    .Read(command.rewardCarrots)
+    .Read(command.rewardAvailable)
+    .Read(command.unk2);
+
+  uint8_t count{};
+  stream.Read(count);
+  if (count > 8)
+    throw std::runtime_error("Festival leaderboard exceeds its capacity");
+
+  command.leaderboard.resize(count);
+  for (auto& entry : command.leaderboard)
+  {
+    stream.Read(entry.characterName)
+      .Read(entry.horseName)
+      .Read(entry.horseGrade)
+      .Read(entry.totalStats)
+      .Read(entry.rewardCarrots)
+      .Read(entry.rank);
+  }
 }
 
 void AcCmdCLRequestPersonalInfo::Write(
@@ -1346,47 +1406,47 @@ void AcCmdCLEnterRoomQuickStopCancel::Read(
 }
 
 void AcCmdCLRequestFestivalPrize::Write(
-  const AcCmdCLRequestFestivalPrize&,
-  SinkStream&)
+  const AcCmdCLRequestFestivalPrize& command,
+  SinkStream& stream)
 {
-  throw std::runtime_error("Not implemented");
+  stream.Write(command.claimUid);
 }
 
 void AcCmdCLRequestFestivalPrize::Read(
   AcCmdCLRequestFestivalPrize& command,
   SourceStream& stream)
 {
-  stream.Read(command.member1);
+  stream.Read(command.claimUid);
 }
 
 void AcCmdCLRequestFestivalPrizeOK::Write(
-  const AcCmdCLRequestFestivalPrizeOK&,
-  SinkStream&)
+  const AcCmdCLRequestFestivalPrizeOK& command,
+  SinkStream& stream)
 {
-  // todo: discover
-  throw std::runtime_error("Not implemented");
+  stream.Write(command.carrotBalance)
+    .Write(command.rewardCarrots);
 }
 
 void AcCmdCLRequestFestivalPrizeOK::Read(
-  AcCmdCLRequestFestivalPrizeOK&,
-  SourceStream&)
+  AcCmdCLRequestFestivalPrizeOK& command,
+  SourceStream& stream)
 {
-  throw std::runtime_error("Not implemented");
+  stream.Read(command.carrotBalance)
+    .Read(command.rewardCarrots);
 }
 
 void AcCmdCLRequestFestivalPrizeCancel::Write(
   const AcCmdCLRequestFestivalPrizeCancel&,
   SinkStream&)
 {
-  // todo: discover
-  throw std::runtime_error("Not implemented");
+  // Empty.
 }
 
 void AcCmdCLRequestFestivalPrizeCancel::Read(
   AcCmdCLRequestFestivalPrizeCancel&,
   SourceStream&)
 {
-  throw std::runtime_error("Not implemented");
+  // Empty.
 }
 
 void AcCmdCLQueryServerTime::Write(

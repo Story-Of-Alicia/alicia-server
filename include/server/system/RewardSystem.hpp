@@ -23,6 +23,8 @@
 #include <libserver/data/DataDefinitions.hpp>
 #include <libserver/data/Record.hpp>
 
+#include <mutex>
+
 namespace server
 {
 
@@ -42,7 +44,8 @@ public:
   data::Uid CreateReward(
     data::Uid characterUid,
     data::Reward::Type type,
-    uint32_t carrots);
+    uint32_t carrots,
+    data::Uid sourceUid = data::InvalidUid);
 
   //! Claims a redeemable reward for a character.
   //! Validates characterUid against the stored characterUid in the reward record and checks that the reward has not been claimed.
@@ -55,6 +58,7 @@ public:
 
 private:
   ServerInstance& _serverInstance;
+  std::mutex _claimMutex;
 };
 
 } // namespace server

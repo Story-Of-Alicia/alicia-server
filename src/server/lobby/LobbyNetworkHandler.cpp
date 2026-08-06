@@ -2146,10 +2146,52 @@ void LobbyNetworkHandler::HandleFeatureCommand(
 }
 
 void LobbyNetworkHandler::HandleRequestFestivalResult(
-  const ClientId,
-  const protocol::AcCmdCLRequestFestivalResult&)
+  const ClientId clientId,
+  const protocol::AcCmdCLRequestFestivalResult& command)
 {
-  // todo: implement festival
+  const auto& clientContext = GetClientContext(clientId);
+  const auto result = _serverInstance.GetFestivalSystem().GetResult(
+    command.claimUid,
+    clientContext.characterUid);
+  if (not result.has_value())
+  {
+    spdlog::warn(
+      "Character '{}' requested unavailable festival result '{}'",
+      clientContext.characterUid,
+      command.claimUid);
+    return;
+  }
+
+  protocol::AcCmdCLRequestFestivalResultOK response{
+    .date = result->date,
+    .claimUid = result->claimUid,
+    .horseGrade = result->horseGrade,
+    .totalStats = result->totalStats,
+    .characterName = result->characterName,
+    .horseName = result->horseName,
+    .startingGroup = result->group,
+    .lastGroup = result->group,
+    .lastRound = result->round,
+    .rewardCarrots = result->rewardCarrots,
+    .rewardAvailable = static_cast<uint8_t>(result->rewardAvailable)};
+  response.leaderboard.reserve(result->leaderboard.size());
+  for (const auto& entry : result->leaderboard)
+  {
+    response.leaderboard.push_back({
+      .characterName = entry.characterName,
+      .horseName = entry.horseName,
+      .horseGrade = entry.horseGrade,
+      .totalStats = entry.totalStats,
+      .rewardCarrots = entry.rewardCarrots,
+      .rank = entry.rank});
+  }
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 void LobbyNetworkHandler::HandleSetIntroduction(
@@ -2301,10 +2343,38 @@ void LobbyNetworkHandler::HandleEnterRoomQuickStop(
 }
 
 void LobbyNetworkHandler::HandleRequestFestivalPrize(
-  const ClientId,
-  const protocol::AcCmdCLRequestFestivalPrize&)
+  const ClientId clientId,
+  const protocol::AcCmdCLRequestFestivalPrize& command)
 {
-  // todo: implement festivals
+  const auto& clientContext = GetClientContext(clientId);
+  const auto rewardCarrots = _serverInstance.GetFestivalSystem().ClaimPrize(
+    command.claimUid,
+    clientContext.characterUid);
+  if (not rewardCarrots)
+  {
+    const protocol::AcCmdCLRequestFestivalPrizeCancel cancel{};
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  protocol::AcCmdCLRequestFestivalPrizeOK response{};
+  response.rewardCarrots = *rewardCarrots;
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [&response](const data::Character& character)
+    {
+      response.carrotBalance = character.carrots();
+    });
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 void LobbyNetworkHandler::HandleQueryServerTime(

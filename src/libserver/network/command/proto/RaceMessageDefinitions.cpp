@@ -490,7 +490,7 @@ void AcCmdCRStartRaceNotify::Write(
     .Write(command.racerActiveSkillSet);
 
   stream.Write(command.isHorseInjuryEnabled)
-    .Write(command.carnivalType)
+    .Write(command.festivalMissionType)
     .Write(command.weatherType)
     .Write(command.unk17);
 
@@ -733,7 +733,7 @@ void AcCmdCRRaceResult::Read(
       .Read(lapRecord.sector3Ms);
   }
 
-  stream.Read(command.member11)
+  stream.Read(command.festivalMissionResult)
     .Read(command.member12)
     .Read(command.member13)
     .Read(command.member14);
@@ -923,6 +923,20 @@ void AcCmdCRAwardEndNotify::Read(
   SourceStream&)
 {
   throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCFestivalMissionReport::Write(
+  const AcCmdRCFestivalMissionReport& command,
+  SinkStream& stream)
+{
+  stream.Write(command.result);
+}
+
+void AcCmdRCFestivalMissionReport::Read(
+  AcCmdRCFestivalMissionReport& command,
+  SourceStream& stream)
+{
+  stream.Read(command.result);
 }
 
 void AcCmdCRStarPointGet::Write(

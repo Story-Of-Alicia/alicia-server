@@ -104,6 +104,9 @@ public:
   void RetrieveMail(data::Uid uid, data::Mail& mail) override;
   void StoreMail(data::Uid uid, const data::Mail& mail) override;
   void DeleteMail(data::Uid uid) override;
+  data::Uid FindMailUid(
+    data::Mail::MailType type,
+    data::Uid sourceUid) override;
 
   void CreateQuest(data::Quest& quest) override;
   void RetrieveQuest(data::Uid uid, data::Quest& quest) override;
@@ -116,10 +119,29 @@ public:
   void DeleteStallion(data::Uid uid) override;
   std::vector<data::Uid> ListRegisteredStallions() override;
 
+  void CreateFestivalCycle(data::FestivalCycle& cycle) override;
+  void RetrieveFestivalCycle(data::Uid uid, data::FestivalCycle& cycle) override;
+  void StoreFestivalCycle(data::Uid uid, const data::FestivalCycle& cycle) override;
+  void DeleteFestivalCycle(data::Uid uid) override;
+  std::vector<data::Uid> ListFestivalCycles() override;
+
+  void CreateFestivalAdmission(data::FestivalAdmission& admission) override;
+  void RetrieveFestivalAdmission(
+    data::Uid uid,
+    data::FestivalAdmission& admission) override;
+  void StoreFestivalAdmission(
+    data::Uid uid,
+    const data::FestivalAdmission& admission) override;
+  void DeleteFestivalAdmission(data::Uid uid) override;
+  std::vector<data::Uid> ListFestivalAdmissions() override;
+
   void CreateReward(data::Reward& reward) override;
   void RetrieveReward(data::Uid claimUid, data::Reward& reward) override;
   void StoreReward(data::Uid claimUid, const data::Reward& reward) override;
   void DeleteReward(data::Uid claimUid) override;
+  data::Uid FindRewardClaimUid(
+    data::Reward::Type type,
+    data::Uid sourceUid) override;
 
 private:
   //! A root data path.
@@ -155,6 +177,8 @@ private:
   std::filesystem::path _questDataPath;
   //! A path to the stallion data files.
   std::filesystem::path _stallionDataPath;
+  std::filesystem::path _festivalCycleDataPath;
+  std::filesystem::path _festivalAdmissionDataPath;
   //! A path to the reward data files.
   std::filesystem::path _rewardDataPath;
 
@@ -188,6 +212,8 @@ private:
   std::atomic_uint32_t _questSequentialId = 0;
   //! Sequential UID for stallions.
   std::atomic_uint32_t _stallionSequentialUid = 0;
+  std::atomic_uint32_t _festivalCycleSequentialUid = 0;
+  std::atomic_uint32_t _festivalAdmissionSequentialUid = 0;
   //! Sequential UID for rewards.
   std::atomic_uint32_t _rewardSequentialUid = 0;
 };

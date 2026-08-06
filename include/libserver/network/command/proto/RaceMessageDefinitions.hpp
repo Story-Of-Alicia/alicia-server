@@ -572,8 +572,8 @@ struct AcCmdCRStartRaceNotify
 
   //! Sets if horses can be injured in this race.
   bool isHorseInjuryEnabled{false};
-  //! Carnival (FestivalMissionInfo)
-  uint32_t carnivalType{};
+  //! FestivalMissionInfo type.
+  uint32_t festivalMissionType{};
   //! Weather (MapWeatherInfo)
   //! Snow has snow, rain only has cloudy weather
   uint32_t weatherType{};
@@ -935,7 +935,8 @@ struct AcCmdCRRaceResult
   //! Max (underlying protocol) count is 32 (0x20) values.
   //! Max lap count is 10 laps.
   std::vector<protocol::AcCmdCRStartRaceNotify::RaceRecord::LapRecord> lapRecords{};
-  uint8_t member11{};
+  //! Client-evaluated festival mission result.
+  uint8_t festivalMissionResult{};
   uint32_t member12{};
   uint16_t member13{};
   uint8_t member14{};
@@ -1026,6 +1027,8 @@ struct AcCmdRCRaceResultNotify
     {
       LevelUp = 1 << 1,
       NewRecord = 1 << 2,
+      FestivalQualified = 1 << 3,
+      FestivalSelected = 1 << 4,
       Connected = 1 << 6,
       LevelUpBonusCarrots = 1 << 7,
       RankingBonusCarrotsAndExperience = 1 << 8,
@@ -1255,6 +1258,30 @@ struct AcCmdCRAwardEndNotify
   //! @param stream Source stream.
   static void Read(
     AcCmdCRAwardEndNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCFestivalMissionReport
+{
+  enum class Result : uint8_t
+  {
+    Failed = 0,
+    Qualified = 1
+  };
+
+  Result result{Result::Failed};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCFestivalMissionReport;
+  }
+
+  static void Write(
+    const AcCmdRCFestivalMissionReport& command,
+    SinkStream& stream);
+
+  static void Read(
+    AcCmdRCFestivalMissionReport& command,
     SourceStream& stream);
 };
 

@@ -260,6 +260,19 @@ public:
     RequestStore(key);
   }
 
+  bool StoreNow(const Key& key)
+  {
+    std::unique_lock entriesLock(_entriesMutex);
+    const auto iterator = _entries.find(key);
+    if (iterator == _entries.cend() || not iterator->second.available)
+      return false;
+
+    auto& entry = iterator->second;
+    entriesLock.unlock();
+    std::shared_lock entryLock(entry.mutex);
+    return _dataSourceStoreListener(key, entry.value);
+  }
+
   void Tick()
   {
     ProcessRetrieveQueue();

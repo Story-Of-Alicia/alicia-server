@@ -56,6 +56,7 @@ ServerInstance::ServerInstance(
   , _matchmakingSystem(*this)
   , _questSystem(*this)
   , _rewardSystem(*this)
+  , _festivalSystem(*this)
   , _telemetry(*this)
   , _breedingMarket(*this)
   , _genetics(*this)
@@ -292,6 +293,7 @@ void ServerInstance::LoadConfigurations()
   _breedingRegistry.ReadConfig(_resourceDirectory / "config/game/breeding.yaml");
   _characterRegistry.ReadConfig(_resourceDirectory / "config/game/character.yaml");
   _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
+  _festivalRegistry.ReadConfig(_resourceDirectory / "config/game/festival.yaml");
   _horseRegistry.ReadConfig(_resourceDirectory / "config/game/horses");
   _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items");
   _magicRegistry.ReadConfig(_resourceDirectory / "config/game/magic.yaml");
@@ -384,6 +386,11 @@ registry::BreedingRegistry& ServerInstance::GetBreedingRegistry()
   return _breedingRegistry;
 }
 
+registry::FestivalRegistry& ServerInstance::GetFestivalRegistry()
+{
+  return _festivalRegistry;
+}
+
 ChatSystem& ServerInstance::GetChatSystem()
 {
   return _chatSystem;
@@ -422,6 +429,11 @@ MatchmakingSystem& ServerInstance::GetMatchmakingSystem()
 RewardSystem& ServerInstance::GetRewardSystem()
 {
   return _rewardSystem;
+}
+
+FestivalSystem& ServerInstance::GetFestivalSystem()
+{
+  return _festivalSystem;
 }
 
 QuestSystem& ServerInstance::GetQuestSystem()

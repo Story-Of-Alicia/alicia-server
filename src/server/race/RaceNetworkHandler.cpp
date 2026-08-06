@@ -1361,7 +1361,8 @@ void RaceNetworkHandler::HandleStartRace(
         .raceMapBlockId = static_cast<uint16_t>(raceInstance.GetMapBlockId()),
         .p2pRelayAddress = lobbyConfig.advertisement.udpRaceRelay.address.to_uint(),
         .p2pRelayPort = lobbyConfig.advertisement.udpRaceRelay.port,
-        .raceMissionId = parameters.missionId,};
+        .raceMissionId = parameters.missionId,
+        .festivalMissionType = raceInstance.GetFestivalState().missionType};
 
       // Build the racers.
       for (const auto& [characterUid, racer] : raceInstance.GetTracker().GetRacers())
@@ -1722,6 +1723,22 @@ void RaceNetworkHandler::HandleRaceResult(
     .characterUid = clientContext.characterUid,
     .action = protocol::AcCmdRCUpdateMountInfoNotify::Action::ProgressHorsePotential};
   bool potentialProgressed = false;
+  std::optional<protocol::AcCmdRCFestivalMissionReport> festivalReport;
+
+  {
+    std::scoped_lock lock(_raceInstancesMutex);
+    auto& raceInstance = GetRaceInstance(clientContext);
+    if (raceInstance.GetFestivalState().IsActive())
+    {
+      const bool qualified = raceInstance.EvaluateFestivalMission(
+        clientContext.characterUid,
+        command.festivalMissionResult != 0);
+      festivalReport = protocol::AcCmdRCFestivalMissionReport{
+        .result = qualified
+          ? protocol::AcCmdRCFestivalMissionReport::Result::Qualified
+          : protocol::AcCmdRCFestivalMissionReport::Result::Failed};
+    }
+  }
 
   characterRecord.Immutable(
     [this, &response, &potentialNotify, &potentialProgressed,
@@ -1751,6 +1768,16 @@ void RaceNetworkHandler::HandleRaceResult(
     {
       return response;
     });
+
+  if (festivalReport.has_value())
+  {
+    _commandServer.QueueCommand<protocol::AcCmdRCFestivalMissionReport>(
+      clientId,
+      [report = *festivalReport]()
+      {
+        return report;
+      });
+  }
 
   if (potentialProgressed)
   {

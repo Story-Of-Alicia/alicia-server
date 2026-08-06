@@ -58,6 +58,15 @@ public:
 
   [[nodiscard]] std::optional<Client> GetClientByCharacterUid(const data::Uid characterUid) const;
   [[nodiscard]] bool IsCharacterOnline(const data::Uid characterUid) const;
+  [[nodiscard]] data::Uid SendFestivalParticipation(
+    data::Uid characterUid,
+    const std::string& horseName,
+    data::Uid admissionUid);
+  [[nodiscard]] data::Uid SendFestivalResult(
+    data::Uid characterUid,
+    const std::string& horseName,
+    data::Uid claimUid,
+    data::Uid admissionUid);
   void SendStallionReward(
     data::Uid characterUid,
     data::Uid horseUid,
@@ -66,6 +75,13 @@ public:
   void Tick();
 
 private:
+  [[nodiscard]] data::Uid SendSystemMail(
+    data::Uid characterUid,
+    data::Mail::MailType type,
+    data::Uid claimUid,
+    data::Uid sourceUid,
+    const std::string& body);
+
   void HandleClientConnected(network::ClientId clientId) override;
   void HandleClientDisconnected(network::ClientId clientId) override;
 

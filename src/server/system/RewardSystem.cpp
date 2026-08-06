@@ -23,6 +23,8 @@
 
 #include <spdlog/spdlog.h>
 
+#include <limits>
+
 namespace server
 {
 
@@ -32,11 +34,22 @@ RewardSystem::RewardSystem(ServerInstance& serverInstance)
 }
 
 data::Uid RewardSystem::CreateReward(
-  data::Uid characterUid,
-  data::Reward::Type type,
-  uint32_t carrots)
+  const data::Uid characterUid,
+  const data::Reward::Type type,
+  const uint32_t carrots,
+  const data::Uid sourceUid)
 {
-  auto rewardRecord = _serverInstance.GetDataDirector().CreateReward();
+  const auto now = data::Clock::now();
+  data::Reward reward;
+  reward.characterUid = characterUid;
+  reward.sourceUid = sourceUid;
+  reward.type = type;
+  reward.carrots = carrots;
+  reward.isClaimed = false;
+  reward.createdAt = now;
+  reward.claimedAt = data::Clock::time_point{};
+
+  auto rewardRecord = _serverInstance.GetDataDirector().CreateReward(std::move(reward));
   if (not rewardRecord)
   {
     spdlog::error("Failed to create reward record in for character {}", characterUid);
@@ -44,19 +57,10 @@ data::Uid RewardSystem::CreateReward(
   }
 
   data::Uid claimUid{data::InvalidUid};
-  const auto now = data::Clock::now();
-
-  rewardRecord.Mutable(
-    [characterUid, type, carrots, now, &claimUid](data::Reward& reward)
+  rewardRecord.Immutable(
+    [&claimUid](const data::Reward& storedReward)
     {
-      reward.characterUid() = characterUid;
-      reward.type() = type;
-      reward.carrots() = carrots;
-      reward.isClaimed() = false;
-      reward.createdAt() = now;
-      reward.claimedAt() = data::Clock::time_point{};
-
-      claimUid = reward.claimUid();
+      claimUid = storedReward.claimUid();
     });
 
   spdlog::debug(
@@ -67,9 +71,11 @@ data::Uid RewardSystem::CreateReward(
 }
 
 bool RewardSystem::ClaimReward(
-  data::Uid claimUid,
-  data::Uid characterUid)
+  const data::Uid claimUid,
+  const data::Uid characterUid)
 {
+  std::scoped_lock claimLock(_claimMutex);
+
   if (claimUid == data::InvalidUid || characterUid == data::InvalidUid)
   {
     spdlog::warn("Invalid claimUid {} or characterUid {}", claimUid, characterUid);
@@ -95,12 +101,6 @@ bool RewardSystem::ClaimReward(
       carrotsToGrant = reward.carrots();
     });
 
-  if (isAlreadyClaimed)
-  {
-    spdlog::warn("Reward record {} was already claimed", claimUid);
-    return false;
-  }
-
   if (targetCharacterUid != characterUid)
   {
     spdlog::warn(
@@ -109,26 +109,87 @@ bool RewardSystem::ClaimReward(
     return false;
   }
 
-  // Grant carrots to the character record if carrots > 0
-  if (carrotsToGrant > 0)
+  if (isAlreadyClaimed)
   {
-    auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+    const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
     if (characterRecord)
     {
-      characterRecord.Mutable(
-        [carrotsToGrant](data::Character& character)
-        {
-          character.carrots() += carrotsToGrant;
-        });
+      bool removedMarker = false;
+      characterRecord.Mutable([claimUid, &removedMarker](data::Character& character)
+      {
+        removedMarker = character.pendingRewardClaimUids().erase(claimUid) != 0;
+      });
+      if (removedMarker)
+      {
+        _serverInstance.GetDataDirector().GetCharacterCache().StoreNow(characterUid);
+      }
     }
-    else
+
+    spdlog::warn("Reward record {} was already claimed", claimUid);
+    return false;
+  }
+
+  auto& dataDirector = _serverInstance.GetDataDirector();
+  const auto characterRecord = dataDirector.GetCharacter(characterUid);
+  if (not characterRecord)
+  {
+    spdlog::error("Failed to fetch character record for UID {} to grant reward carrots", characterUid);
+    return false;
+  }
+
+  bool appliedNow = false;
+  bool amountValid = true;
+  int32_t originalCarrots{};
+  if (carrotsToGrant > 0)
+  {
+    characterRecord.Mutable(
+      [claimUid,
+       carrotsToGrant,
+       &appliedNow,
+       &amountValid,
+       &originalCarrots](data::Character& character)
+      {
+        if (character.pendingRewardClaimUids().contains(claimUid))
+          return;
+
+        originalCarrots = character.carrots();
+        const int64_t updatedCarrots = static_cast<int64_t>(character.carrots())
+          + carrotsToGrant;
+        if (updatedCarrots > std::numeric_limits<int32_t>::max())
+        {
+          amountValid = false;
+          return;
+        }
+
+        character.carrots() = static_cast<int32_t>(updatedCarrots);
+        character.pendingRewardClaimUids().insert(claimUid);
+        appliedNow = true;
+      });
+
+    if (not amountValid)
     {
-      spdlog::error("Failed to fetch character record for UID {} to grant reward carrots", characterUid);
+      spdlog::error(
+        "Reward {} would overflow the carrot balance of character {}",
+        claimUid,
+        characterUid);
+      return false;
+    }
+
+    if (appliedNow && not dataDirector.GetCharacterCache().StoreNow(characterUid))
+    {
+      characterRecord.Mutable([claimUid, originalCarrots](data::Character& character)
+      {
+        if (character.pendingRewardClaimUids().erase(claimUid) != 0)
+          character.carrots() = originalCarrots;
+      });
+      spdlog::error(
+        "Failed to persist reward {} for character {}",
+        claimUid,
+        characterUid);
       return false;
     }
   }
 
-  // Update reward record status
   const auto now = data::Clock::now();
   rewardRecord.Mutable(
     [now](data::Reward& reward)
@@ -136,6 +197,32 @@ bool RewardSystem::ClaimReward(
       reward.isClaimed() = true;
       reward.claimedAt() = now;
     });
+
+  if (not dataDirector.GetRewardCache().StoreNow(claimUid))
+  {
+    rewardRecord.Mutable([](data::Reward& reward)
+    {
+      reward.isClaimed() = false;
+      reward.claimedAt() = data::Clock::time_point{};
+    });
+    spdlog::error("Failed to persist claimed reward {}", claimUid);
+    return false;
+  }
+
+  if (carrotsToGrant > 0)
+  {
+    characterRecord.Mutable([claimUid](data::Character& character)
+    {
+      character.pendingRewardClaimUids().erase(claimUid);
+    });
+    if (not dataDirector.GetCharacterCache().StoreNow(characterUid))
+    {
+      spdlog::warn(
+        "Failed to clear applied reward marker {} for character {}",
+        claimUid,
+        characterUid);
+    }
+  }
 
   spdlog::debug(
     "Successfully claimed reward {} for character UID {} (carrots granted: {})",

@@ -41,12 +41,14 @@ RaceDirector::~RaceDirector()
 
 void RaceDirector::Initialize()
 {
+  _serverInstance.GetFestivalSystem().Initialize();
   GetNetworkHandler().Initialize();
 }
 
 void RaceDirector::Terminate()
 {
   GetNetworkHandler().Terminate();
+  _serverInstance.GetFestivalSystem().Terminate();
 }
 
 void RaceDirector::Tick()
@@ -59,6 +61,8 @@ void RaceDirector::Tick()
   {
     spdlog::error("Exception ticking a race scheduler: {}", x.what());
   }
+
+  _serverInstance.GetFestivalSystem().Tick();
 
   // todo: temporarily also tick network handler until everything is migrated
   GetNetworkHandler().Tick();

@@ -376,6 +376,7 @@ struct Character
   } mailbox{};
 
   dao::Field<std::vector<Uid>> quests{};
+  dao::Field<std::set<Uid>> pendingRewardClaimUids{};
 };
 
 struct Horse
@@ -598,6 +599,8 @@ struct Mail
   //! The UID of either breeding or carnival reward.
   //! Non-zero values indicate system mail.
   dao::Field<uint32_t> claimUid{};
+  //! Internal source identifier used to make generated system mail idempotent.
+  dao::Field<Uid> sourceUid{InvalidUid};
 
   dao::Field<Clock::time_point> createdAt{};
   dao::Field<std::string> body{};
@@ -614,6 +617,60 @@ struct Stallion
   dao::Field<Clock::time_point> expiresAt{};
 };
 
+struct FestivalCycle
+{
+  enum class State : uint32_t
+  {
+    Collecting = 0,
+    AwaitingResults = 1,
+    Resolved = 2
+  };
+
+  dao::Field<Uid> uid{InvalidUid};
+  dao::Field<State> state{State::Collecting};
+  dao::Field<Clock::time_point> createdAt{};
+  dao::Field<Clock::time_point> endsAt{};
+  dao::Field<Clock::time_point> resolvedAt{};
+};
+
+struct FestivalAdmission
+{
+  struct GradingSnapshot
+  {
+    dao::Field<uint32_t> totalStats{};
+    dao::Field<uint32_t> bodyDirtiness{};
+    dao::Field<uint32_t> maneDirtiness{};
+    dao::Field<uint32_t> tailDirtiness{};
+    dao::Field<uint32_t> friendliness{};
+    dao::Field<uint32_t> charm{};
+    dao::Field<uint32_t> skinTier{};
+    dao::Field<uint32_t> maneTier{};
+    dao::Field<uint32_t> tailTier{};
+  } grading{};
+
+  dao::Field<Uid> uid{InvalidUid};
+  dao::Field<Uid> cycleUid{InvalidUid};
+  dao::Field<uint32_t> groupIndex{};
+  dao::Field<uint32_t> slotIndex{};
+  dao::Field<Uid> characterUid{InvalidUid};
+  dao::Field<std::string> characterName{};
+  dao::Field<Uid> horseUid{InvalidUid};
+  dao::Field<std::string> horseName{};
+  dao::Field<uint32_t> horseGrade{};
+  dao::Field<Uid> participationMailUid{InvalidUid};
+  dao::Field<bool> participationMailCreationPending{false};
+  dao::Field<uint64_t> baseScore{};
+  dao::Field<uint32_t> varianceBasisPoints{};
+  dao::Field<uint64_t> finalScore{};
+  dao::Field<uint32_t> rank{};
+  dao::Field<uint32_t> rewardCarrots{};
+  dao::Field<Uid> rewardClaimUid{InvalidUid};
+  dao::Field<bool> rewardCreationPending{false};
+  dao::Field<Uid> resultMailUid{InvalidUid};
+  dao::Field<bool> resultMailCreationPending{false};
+  dao::Field<Clock::time_point> admittedAt{};
+};
+
 struct Reward
 {
   enum class Type : uint32_t
@@ -624,6 +681,7 @@ struct Reward
 
   dao::Field<Uid> claimUid{InvalidUid};
   dao::Field<Uid> characterUid{InvalidUid};
+  dao::Field<Uid> sourceUid{InvalidUid};
   dao::Field<Type> type{Type::Breeding};
   dao::Field<uint32_t> carrots{0u};
   dao::Field<bool> isClaimed{false};

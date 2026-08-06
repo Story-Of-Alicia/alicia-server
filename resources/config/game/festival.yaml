@@ -1,0 +1,188 @@
+festival:
+  settings:
+    # Percentage chance that a race will hold a festival.
+    # Set to 100 for testing. Lower this for production.
+    triggerChance: 100
+    # Forces a festival mission for protocol testing. Remove this key to disable the override.
+    forcedMissionType: 3
+  missions:
+    - type: 1
+      name: "Perform a Good Start or better!"
+      option: ""
+      clientCheck: true
+      serverCheck: false
+      clientFailCheckTime: 3.0
+      playEvent: 1
+      eventValue: "TRUE"
+      eventCompare: 1
+      gameMode: 0
+      teamMode: 0
+      excludedMaps: [2, 3, 13, 14, 19, 7, 40, 11, 8, 6, 20, 46]
+    - type: 3
+      name: "Finish on time!"
+      option: ""
+      clientCheck: false
+      serverCheck: true
+      clientFailCheckTime: 0.0
+      playEvent: 0
+      eventValue: "0"
+      eventCompare: 6
+      gameMode: 0
+      teamMode: 0
+      excludedMaps: []
+    - type: 4
+      name: "Finish within 5 seconds of the race ending."
+      option: "5"
+      clientCheck: false
+      serverCheck: true
+      clientFailCheckTime: 0.0
+      playEvent: 0
+      eventValue: ""
+      eventCompare: 7
+      gameMode: 1
+      teamMode: 0
+      excludedMaps: []
+    - type: 5
+      name: "Perform at least 5 Perfect Jumps in a row!"
+      option: ""
+      clientCheck: true
+      serverCheck: false
+      clientFailCheckTime: 0.0
+      playEvent: 10
+      eventValue: "5"
+      eventCompare: 5
+      gameMode: 1
+      teamMode: 0
+      excludedMaps: []
+    - type: 6
+      name: "Achieve a Perfect Jump success rate of at least 70%."
+      option: "70"
+      clientCheck: true
+      serverCheck: false
+      clientFailCheckTime: 0.0
+      playEvent: 0
+      eventValue: ""
+      eventCompare: 7
+      gameMode: 1
+      teamMode: 0
+      excludedMaps: []
+    - type: 7
+      name: "Pick up Field Magic!"
+      option: ""
+      clientCheck: false
+      serverCheck: true
+      clientFailCheckTime: 0.0
+      playEvent: 0
+      eventValue: "1"
+      eventCompare: 5
+      gameMode: 2
+      teamMode: 0
+      excludedMaps: []
+    - type: 9
+      name: "Cross the finish line while holding Magic!"
+      option: ""
+      clientCheck: false
+      serverCheck: true
+      clientFailCheckTime: 0.0
+      playEvent: 0
+      eventValue: "TRUE"
+      eventCompare: 1
+      gameMode: 2
+      teamMode: 0
+      excludedMaps: []
+    - type: 10
+      name: "Use a Spur 3 times in a row."
+      option: ""
+      clientCheck: true
+      serverCheck: false
+      clientFailCheckTime: 0.0
+      playEvent: 6
+      eventValue: "1"
+      eventCompare: 5
+      gameMode: 1
+      teamMode: 0
+      excludedMaps: []
+    - type: 11
+      name: "Slide for at least 2 seconds!"
+      option: ""
+      clientCheck: true
+      serverCheck: false
+      clientFailCheckTime: 0.0
+      playEvent: 7
+      eventValue: "2.0"
+      eventCompare: 5
+      gameMode: 1
+      teamMode: 0
+      excludedMaps: [1]
+    - type: 12
+      name: "Dash while using a Spur!"
+      option: ""
+      clientCheck: true
+      serverCheck: false
+      clientFailCheckTime: 0.0
+      playEvent: 18
+      eventValue: "1"
+      eventCompare: 5
+      gameMode: 1
+      teamMode: 0
+      excludedMaps: []
+    - type: 13
+      name: "Glide for at least 3 seconds!"
+      option: ""
+      clientCheck: true
+      serverCheck: false
+      clientFailCheckTime: 0.0
+      playEvent: 8
+      eventValue: "2.0"
+      eventCompare: 5
+      gameMode: 1
+      teamMode: 0
+      excludedMaps: [1, 3, 13, 41, 42, 21, 46]
+    - type: 14
+      name: "Cross the finish line while holding a Spur!"
+      option: ""
+      clientCheck: true
+      serverCheck: false
+      clientFailCheckTime: 0.0
+      playEvent: 9
+      eventValue: "1"
+      eventCompare: 5
+      gameMode: 1
+      teamMode: 0
+      excludedMaps: []
+    - type: 15
+      name: "Your team must win!"
+      option: ""
+      clientCheck: false
+      serverCheck: true
+      clientFailCheckTime: 0.0
+      playEvent: 0
+      eventValue: ""
+      eventCompare: 7
+      gameMode: 0
+      teamMode: 2
+      excludedMaps: []
+    - type: 16
+      name: "[All] Everybody must finish on time!"
+      option: ""
+      clientCheck: false
+      serverCheck: true
+      clientFailCheckTime: 0.0
+      playEvent: 0
+      eventValue: ""
+      eventCompare: 7
+      gameMode: 0
+      teamMode: 0
+      excludedMaps: []
+    - type: 17
+      name: "[All] Everybody must stay on the course!"
+      option: ""
+      clientCheck: true
+      serverCheck: true
+      clientFailCheckTime: 0.0
+      playEvent: 14
+      eventValue: "0"
+      eventCompare: 1
+      gameMode: 0
+      teamMode: 0
+      excludedMaps: [1, 2, 3, 13, 14, 41, 42]

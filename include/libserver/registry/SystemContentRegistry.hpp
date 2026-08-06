@@ -32,6 +32,11 @@ namespace server::registry
 class SystemContentRegistry
 {
 public:
+  enum class Key : uint32_t
+  {
+    FestivalActivation = 14
+  };
+
   struct SystemEntry
   {
     uint32_t type{};
@@ -57,6 +62,7 @@ public:
    * @return The current value, if any.
    */
   [[nodiscard]] std::optional<int32_t> GetValue(uint32_t type) const;
+  [[nodiscard]] std::optional<int32_t> GetValue(Key key) const;
 
   /**
    * Sets the value for a specific system type and persists the change.

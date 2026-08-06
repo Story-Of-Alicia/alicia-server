@@ -236,6 +236,10 @@ public:
   //! Deletes the mail from the data source.
   //! @param uid UID of the mail.
   virtual void DeleteMail(data::Uid uid) = 0;
+  //! Finds generated mail for an application-specific source record.
+  virtual data::Uid FindMailUid(
+    data::Mail::MailType type,
+    data::Uid sourceUid) = 0;
 
   //! Creates the quest in the data source.
   //! @param quest Quest to create.
@@ -270,6 +274,22 @@ public:
   //! @returns Vector of stallion UIDs.
   virtual std::vector<data::Uid> ListRegisteredStallions() = 0;
 
+  virtual void CreateFestivalCycle(data::FestivalCycle& cycle) = 0;
+  virtual void RetrieveFestivalCycle(data::Uid uid, data::FestivalCycle& cycle) = 0;
+  virtual void StoreFestivalCycle(data::Uid uid, const data::FestivalCycle& cycle) = 0;
+  virtual void DeleteFestivalCycle(data::Uid uid) = 0;
+  virtual std::vector<data::Uid> ListFestivalCycles() = 0;
+
+  virtual void CreateFestivalAdmission(data::FestivalAdmission& admission) = 0;
+  virtual void RetrieveFestivalAdmission(
+    data::Uid uid,
+    data::FestivalAdmission& admission) = 0;
+  virtual void StoreFestivalAdmission(
+    data::Uid uid,
+    const data::FestivalAdmission& admission) = 0;
+  virtual void DeleteFestivalAdmission(data::Uid uid) = 0;
+  virtual std::vector<data::Uid> ListFestivalAdmissions() = 0;
+
   //! Creates the reward in the data source.
   //! @param reward Reward to create.
   virtual void CreateReward(data::Reward& reward) = 0;
@@ -284,6 +304,10 @@ public:
   //! Deletes the reward from the data source.
   //! @param claimUid Claim UID of the reward.
   virtual void DeleteReward(data::Uid claimUid) = 0;
+  //! Finds a reward created for an application-specific source record.
+  virtual data::Uid FindRewardClaimUid(
+    data::Reward::Type type,
+    data::Uid sourceUid) = 0;
 };
 
 } // namespace server

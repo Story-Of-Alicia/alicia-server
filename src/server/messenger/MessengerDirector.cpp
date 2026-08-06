@@ -39,7 +39,7 @@ const std::string GetSystemNameFromType(data::Mail::MailType type)
     case data::Mail::MailType::BreedingReward:
       return "Breeding System";
     case data::Mail::MailType::CarnivalReward:
-      return "Carnival System";
+      return "Festival System";
     case data::Mail::MailType::NoReply:
       return ""; // System mail
     default:
@@ -217,6 +217,120 @@ std::optional<MessengerDirector::Client> MessengerDirector::GetClientByCharacter
 bool MessengerDirector::IsCharacterOnline(const data::Uid characterUid) const
 {
   return GetClientByCharacterUid(characterUid).has_value();
+}
+
+data::Uid MessengerDirector::SendFestivalParticipation(
+  const data::Uid characterUid,
+  const std::string& horseName,
+  const data::Uid admissionUid)
+{
+  const std::string mailBody = std::format(
+    "Hello~ This is Festival Stato.\n\n"
+    "Your horse ({}) is scheduled to participate in\n"
+    "the Festival taking place tonight.\n"
+    "We will inform you of the Festival results in a letter\n"
+    "tomorrow, so please look forward to it.",
+    horseName);
+
+  return SendSystemMail(
+    characterUid,
+    data::Mail::MailType::NoReply,
+    data::InvalidUid,
+    admissionUid,
+    mailBody);
+}
+
+data::Uid MessengerDirector::SendFestivalResult(
+  const data::Uid characterUid,
+  const std::string& horseName,
+  const data::Uid claimUid,
+  const data::Uid admissionUid)
+{
+  if (claimUid == data::InvalidUid)
+    return data::InvalidUid;
+
+  const std::string mailBody = std::format(
+    "Hello! The Festival results are in.\n\n"
+    "Last night's Festival has come to a successful close.\n\n"
+    "Check the Festival Report to see the results\n"
+    "for your horse ({})\n"
+    "and claim your prize!",
+    horseName);
+
+  return SendSystemMail(
+    characterUid,
+    data::Mail::MailType::CarnivalReward,
+    claimUid,
+    admissionUid,
+    mailBody);
+}
+
+data::Uid MessengerDirector::SendSystemMail(
+  const data::Uid characterUid,
+  const data::Mail::MailType type,
+  const data::Uid claimUid,
+  const data::Uid sourceUid,
+  const std::string& body)
+{
+  auto& dataDirector = _serverInstance.GetDataDirector();
+  const auto characterRecord = dataDirector.GetCharacter(characterUid);
+  if (not characterRecord)
+    return data::InvalidUid;
+
+  const auto utcNow = std::chrono::floor<std::chrono::seconds>(util::Clock::now());
+  const auto formattedDt = std::format(DateTimeFormat, utcNow);
+  auto mailRecord = dataDirector.CreateMail();
+  if (not mailRecord)
+    return data::InvalidUid;
+
+  data::Uid mailUid{data::InvalidUid};
+  mailRecord.Mutable([&](data::Mail& mail)
+  {
+    mail.from() = data::InvalidUid;
+    mail.to() = characterUid;
+    mail.type() = type;
+    mail.claimUid() = claimUid;
+    mail.sourceUid() = sourceUid;
+    mail.createdAt() = utcNow;
+    mail.body() = body;
+    mailUid = mail.uid();
+  });
+  if (not dataDirector.GetMailCache().StoreNow(mailUid))
+    return data::InvalidUid;
+
+  characterRecord.Mutable(
+    [mailUid](data::Character& character)
+    {
+      character.mailbox.inbox().insert(
+        character.mailbox.inbox().begin(),
+        mailUid);
+      character.mailbox.hasNewMail() = true;
+    });
+  if (not dataDirector.GetCharacterCache().StoreNow(characterUid))
+    return data::InvalidUid;
+
+  const auto client = std::ranges::find_if(
+    _clients,
+    [characterUid](const std::pair<network::ClientId, ClientContext>& client)
+    {
+      return client.second.characterUid == characterUid;
+    });
+
+  if (client == _clients.cend())
+    return mailUid;
+
+  const protocol::ChatCmdLetterArriveTrs notify{
+    .mailUid = mailUid,
+    .mailType = type,
+    .claimUid = claimUid,
+    .sender = GetSystemNameFromType(type),
+    .date = formattedDt,
+    .body = body
+  };
+
+  const network::ClientId recipientClientId = client->first;
+  _chatterServer.QueueCommand<decltype(notify)>(recipientClientId, [notify](){ return notify; });
+  return mailUid;
 }
 
 void MessengerDirector::SendStallionReward(
@@ -1603,6 +1717,14 @@ void MessengerDirector::HandleChatterLetterDelete(
     {
       mail.isDeleted() = true;
     });
+
+  bool isFestivalResult{};
+  mailRecord.Immutable([&isFestivalResult](const data::Mail& mail)
+  {
+    isFestivalResult = mail.type() == data::Mail::MailType::CarnivalReward;
+  });
+  if (isFestivalResult)
+    _serverInstance.GetFestivalSystem().HandleResultMailDeleted(command.mailUid);
   
   protocol::ChatCmdLetterDeleteAckOk response{
     .folder = command.folder,
