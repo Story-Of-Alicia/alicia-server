@@ -281,6 +281,12 @@ LobbyNetworkHandler::LobbyNetworkHandler(
     {
       HandleEnterGuildParty(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCLLeaveGuildParty>(
+    [this](const ClientId clientId, const auto& command)
+    {
+      HandleLeaveGuildParty(clientId, command);
+    });
 }
 
 void LobbyNetworkHandler::Initialize()
@@ -2996,6 +3002,72 @@ void LobbyNetworkHandler::HandleEnterGuildParty(
           });
       }
     });
+}
+
+void LobbyNetworkHandler::HandleLeaveGuildParty(
+  ClientId clientId,
+  const protocol::AcCmdCLLeaveGuildParty&)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  const data::Uid partyUid = _serverInstance.GetLobbyDirector().GetUser(clientContext.userName).roomUid;
+  if (partyUid == clientContext.characterUid or partyUid == data::InvalidUid)
+    return;
+
+  if (not _serverInstance.GetGuildPartySystem().PartyExists(partyUid))
+    return;
+
+  // Respond to invoker
+  protocol::AcCmdCLLeaveGuildPartyOK response{};
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+
+  // Return character to their ranch
+  _serverInstance.GetLobbyDirector().GetScheduler().Queue(
+    [this, userName = clientContext.userName, characterUid = clientContext.characterUid]()
+    {
+      _serverInstance.GetLobbyDirector().SetUserRoom(userName, characterUid);
+    });
+
+  // Remove member from party & notify remaining members or delete party if empty
+  bool deleteParty{false};
+  data::Uid newLeaderUid{data::InvalidUid};
+  _serverInstance.GetGuildPartySystem().GetParty(
+    partyUid,
+    [this, &deleteParty, &newLeaderUid, characterUid = clientContext.characterUid](GuildParty& party)
+    {
+      party.RemoveMember(characterUid);
+      if (party.GetMemberCount() == 0)
+      {
+        deleteParty = true;
+        return;
+      }
+
+      newLeaderUid = party.GetDetails().leaderUid;
+      protocol::AcCmdCLLeaveGuildPartyNotify notify{
+        .leaverCharacterUid = characterUid,
+        .leaderCharacterUid = newLeaderUid};
+
+      for (const auto& member : party.GetMembers())
+      {
+        const auto memberClientId = GetClientIdByCharacterUid(member.characterUid);
+        _commandServer.QueueCommand<decltype(notify)>(
+          memberClientId,
+          [notify]()
+          {
+            return notify;
+          });
+      }
+    });
+
+  if (deleteParty)
+  {
+    _serverInstance.GetGuildPartySystem().DeleteParty(partyUid);
+  }
 }
 
 void LobbyNetworkHandler::HandleGuildPartyList(

@@ -1804,4 +1804,47 @@ void AcCmdCLEnterGuildPartyCancel::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCLLeaveGuildParty::Write(
+  const AcCmdCLLeaveGuildParty&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLLeaveGuildParty::Read(
+  AcCmdCLLeaveGuildParty&,
+  SourceStream&)
+{
+  // Empty
+}
+
+void AcCmdCLLeaveGuildPartyOK::Write(
+  const AcCmdCLLeaveGuildPartyOK&,
+  SinkStream&)
+{
+  // Empty
+}
+
+void AcCmdCLLeaveGuildPartyOK::Read(
+  AcCmdCLLeaveGuildPartyOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCLLeaveGuildPartyNotify::Write(
+  const AcCmdCLLeaveGuildPartyNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.leaverCharacterUid)
+    .Write(command.leaderCharacterUid);
+}
+
+void AcCmdCLLeaveGuildPartyNotify::Read(
+  AcCmdCLLeaveGuildPartyNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
