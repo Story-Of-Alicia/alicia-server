@@ -1029,6 +1029,28 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
     {
       return skillPresetListResponse;
     });
+
+  if (response.guild.uid != data::InvalidUid)
+  {
+    size_t memberCount = 0;
+    _serverInstance.GetDataDirector().GetGuild(response.guild.uid).Immutable(
+      [&memberCount](const data::Guild& guild)
+      {
+        // Get guild size (members, officers and owner)
+        memberCount = guild.members().size();
+      });
+
+    //! Game client only shows 4 players as an option
+    constexpr size_t MinimumGuildPartyCount = 4;
+    const protocol::AcCmdLCGuildMatchAvailable guildMatchesAvailable{
+      .isAvailable = memberCount >= MinimumGuildPartyCount};
+    _commandServer.QueueCommand<decltype(guildMatchesAvailable)>(
+      clientId,
+      [guildMatchesAvailable]()
+      {
+        return guildMatchesAvailable;
+      });
+  }
 }
 
 void LobbyNetworkHandler::SendLoginCancel(

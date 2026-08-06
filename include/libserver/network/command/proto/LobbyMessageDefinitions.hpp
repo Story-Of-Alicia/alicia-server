@@ -2611,6 +2611,29 @@ struct AcCmdCLEnterRoomQuickSuccess
     SourceStream& stream);
 };
 
+struct AcCmdLCGuildMatchAvailable
+{
+  bool isAvailable{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCGuildMatchAvailable;
+  }
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCGuildMatchAvailable& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCGuildMatchAvailable& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // LOBBY_MESSAGE_DEFINES_HPP

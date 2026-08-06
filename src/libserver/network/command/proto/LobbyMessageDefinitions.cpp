@@ -1677,4 +1677,18 @@ void AcCmdCLEnterRoomQuickSuccess::Write(
   stream.Write(command.result);
 }
 
+void AcCmdLCGuildMatchAvailable::Write(
+  const AcCmdLCGuildMatchAvailable& command,
+  SinkStream& stream)
+{
+  stream.Write(command.isAvailable);
+}
+
+void AcCmdLCGuildMatchAvailable::Read(
+  AcCmdLCGuildMatchAvailable&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
