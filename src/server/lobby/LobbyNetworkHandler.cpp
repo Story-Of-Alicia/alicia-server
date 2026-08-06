@@ -683,6 +683,8 @@ void LobbyNetworkHandler::HandleClientConnected(
 
 void LobbyNetworkHandler::HandleClientDisconnected(ClientId clientId)
 {
+  HandleLeaveGuildParty(clientId, protocol::AcCmdCLLeaveGuildParty{});
+  
     const auto& clientContext = GetClientContext(clientId, false);
 
     _serverInstance.GetLobbyDirector().GetScheduler().Queue(
@@ -3008,7 +3010,9 @@ void LobbyNetworkHandler::HandleLeaveGuildParty(
   ClientId clientId,
   const protocol::AcCmdCLLeaveGuildParty&)
 {
-  const auto& clientContext = GetClientContext(clientId);
+  const auto& clientContext = GetClientContext(clientId, false);
+  if (not clientContext.isAuthenticated)
+    return;
 
   const data::Uid partyUid = _serverInstance.GetLobbyDirector().GetUser(clientContext.userName).roomUid;
   if (partyUid == clientContext.characterUid or partyUid == data::InvalidUid)
