@@ -2860,12 +2860,45 @@ void LobbyNetworkHandler::HandleGuildPartyList(
   ClientId clientId,
   [[maybe_unused]] const protocol::AcCmdCLGuildPartyList& command)
 {
-  [[maybe_unused]] const auto& clientContext = GetClientContext(clientId);
+  const auto& clientContext = GetClientContext(clientId);
 
-  // TODO: implement listing of guild parties (for invoker's guild)
-  // TODO: get invoking client's guild
-  // TODO: verify that the invoker is in a guild (of sufficient size of 4 members or more)
-  // TODO: get and return party list from (guild) matchmaking system
+  data::Uid guildUid{data::InvalidUid};
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [&guildUid](const data::Character& character)
+    {
+      guildUid = character.guildUid();
+    });
+
+  if (guildUid == data::InvalidUid)
+    // No corresponding cancel, just return
+    return;
+
+  protocol::AcCmdCLGuildPartyListOK response{};
+  const auto& partiesSnapshot = _serverInstance.GetGuildPartySystem().GetPartiesSnapshot();
+  for (const auto& party : partiesSnapshot)
+  {
+    if (party.details.guildUid != guildUid)
+      continue;
+
+    response.parties.emplace_back(protocol::GuildParty{
+      .uid = party.uid,
+      .unk1 = 0,
+      .name = party.details.name,
+      .gameMode = static_cast<uint32_t>(party.details.gameMode),
+      .ranchUid = party.details.ranchUid,
+      .unk5 = 0,
+      .leaderUid = party.details.leaderUid,
+      .playerCount = static_cast<uint8_t>(party.memberCount),
+      .unk8 = 0
+    });
+  }
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 } // namespace server
