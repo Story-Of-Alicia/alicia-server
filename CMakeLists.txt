@@ -125,6 +125,7 @@ add_executable(alicia-server
         src/server/system/PotentialSystem.cpp
         src/server/system/QuestSystem.cpp
         src/server/system/RoomSystem.cpp
+        src/server/system/GuildPartySystem.cpp
         src/server/system/MatchmakingSystem.cpp
         src/server/system/RewardSystem.cpp
         src/server/telemetry/Telemetry.cpp

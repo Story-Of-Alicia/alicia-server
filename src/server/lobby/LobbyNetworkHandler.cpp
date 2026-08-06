@@ -2733,11 +2733,118 @@ void LobbyNetworkHandler::HandleRequestSpecialEventList(
 
 void LobbyNetworkHandler::HandleMakeGuildParty(
   ClientId clientId,
-  [[maybe_unused]] const protocol::AcCmdCLMakeGuildParty& command)
+  const protocol::AcCmdCLMakeGuildParty& command)
 {
-  [[maybe_unused]] const auto& clientContext = GetClientContext(clientId);
+  const auto& clientContext = GetClientContext(clientId);
 
-  // TODO: implement guild party creation
+  // Moderate room name
+  const auto moderationVerdict = _serverInstance.GetModerationSystem().Moderate(
+    command.name);
+  if (moderationVerdict.isPrevented)
+  {
+    spdlog::warn("Character '{}' tried to create a guild party with blocked name '{}'",
+      clientContext.characterUid, command.name);
+    return;
+  }
+
+  // Check if character is in a guild
+  data::Uid guildUid{data::InvalidUid};
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [&guildUid](const data::Character& character)
+    {
+      guildUid = character.guildUid();
+    });
+
+  protocol::AcCmdCLEnterGuildPartyCancel cancel{};
+  if (guildUid == data::InvalidUid)
+  {
+    // Invoker is not in a guild
+    cancel.error = protocol::GuildPartyError::NotGuildMember;
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  // Create the party
+  uint32_t createdPartyUid{data::InvalidUid};
+  _serverInstance.GetGuildPartySystem().CreateParty(
+    [&createdPartyUid, &command, &clientContext, guildUid](GuildParty& party)
+    {
+      auto& details = party.GetDetails();
+
+      details.name = command.name;
+      details.gameMode = static_cast<GuildParty::GameMode>(command.gamemode);
+      details.guildUid = guildUid;
+      details.leaderUid = clientContext.characterUid;
+      details.ranchUid = clientContext.characterUid;
+
+      // Add the creator as the first member (leader)
+      party.AddMember(clientContext.characterUid);
+      createdPartyUid = party.GetUid();
+    });
+
+  if (createdPartyUid == data::InvalidUid)
+  {
+    spdlog::warn(
+      "Character '{}' tried to create a guild party but new party uid is invalid.",
+      clientContext.characterUid);
+    cancel.error = protocol::GuildPartyError::OperationFailed;
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  // Dynamically resolve character name when building response
+  protocol::GuildPartyMember partyMember{};
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [&partyMember](const data::Character& character)
+    {
+      partyMember.characterUid = character.uid();
+      partyMember.name = character.name();
+    });
+
+  spdlog::info("Guild party {} created by '{}' with the name '{}'",
+    createdPartyUid,
+    clientContext.userName,
+    command.name);
+
+  // Set user's current room to party uid in LobbyDirector
+  _serverInstance.GetLobbyDirector().GetScheduler().Queue(
+    [this, userName = clientContext.userName, partyUid = createdPartyUid]()
+    {
+      _serverInstance.GetLobbyDirector().SetUserRoom(userName, partyUid);
+    });
+
+  // Construct response for creator
+  const protocol::AcCmdCLEnterGuildPartyOK response{
+    .party = {
+      .uid = createdPartyUid,
+      .unk1 = 0,
+      .name = command.name,
+      .gameMode = command.gamemode,
+      .ranchUid = clientContext.characterUid,
+      .unk5 = 0,
+      .leaderUid = clientContext.characterUid,
+      .playerCount = 1,
+      .unk8 = 0
+    },
+    .partyMembers = {partyMember}
+  };
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 void LobbyNetworkHandler::HandleEnterGuildParty(

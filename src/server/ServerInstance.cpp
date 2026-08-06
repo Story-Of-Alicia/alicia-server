@@ -419,6 +419,11 @@ MatchmakingSystem& ServerInstance::GetMatchmakingSystem()
   return _matchmakingSystem;
 }
 
+GuildPartySystem& ServerInstance::GetGuildPartySystem()
+{
+  return _guildPartySystem;
+}
+
 RewardSystem& ServerInstance::GetRewardSystem()
 {
   return _rewardSystem;
