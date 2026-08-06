@@ -19,6 +19,7 @@
 
 #include "libserver/data/DataDirector.hpp"
 
+#include "libserver/data/DataRepair.hpp"
 #include "libserver/data/file/FileDataSource.hpp"
 #include "libserver/util/Deferred.hpp"
 
@@ -1396,6 +1397,10 @@ void DataDirector::ScheduleUserLoad(
     });
 
 
+    // Drop the references to infractions which are missing or damaged in the data source,
+    // they would otherwise keep the user from ever loading again.
+    repair::CleanseUserReferences(*this, userName);
+
     std::vector<data::Uid> infractions;
     userRecord.Immutable([&infractions](const data::User& user)
     {
@@ -1473,6 +1478,11 @@ void DataDirector::ScheduleCharacterLoad(
         characterUid);
       return;
     }
+
+    // Data which are missing or damaged in the data source never become available,
+    // which would keep the character from ever loading again.
+    // Drop the references to them so that the load can complete.
+    repair::CleanseCharacterReferences(*this, characterUid);
 
     auto guildUid = data::InvalidUid;
     auto petUid = data::InvalidUid;

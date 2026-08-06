@@ -52,6 +52,7 @@ endif()
 # alicia-libserver target
 add_library(alicia-libserver STATIC
         src/libserver/data/DataDirector.cpp
+        src/libserver/data/DataRepair.cpp
         src/libserver/data/helper/ProtocolHelper.cpp
         src/libserver/data/file/FileDataSource.cpp
         #src/libserver/data/pq/PqDataSource.cpp
