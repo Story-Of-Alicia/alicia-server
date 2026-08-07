@@ -1196,7 +1196,8 @@ void RaceNetworkHandler::HandleReadyRace(
       if (room.GetRoomDetails().teamMode == Room::TeamMode::Guild)
       {
         const auto& players = room.GetPlayers();
-        if (players.size() == 8)
+        const auto maxPlayerCount = room.GetRoomDetails().maxPlayerCount;
+        if (players.size() == maxPlayerCount)
         {
           isGuildMatchAllReady = std::ranges::all_of(
             players | std::views::values,

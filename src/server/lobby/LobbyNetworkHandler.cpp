@@ -1084,10 +1084,14 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
         memberCount = guild.members().size();
       });
 
-    //! Game client only shows 4 players as an option
-    constexpr size_t MinimumGuildPartyCount = 4;
+    constexpr uint32_t MinimumGuildMatchPeopleKey = 58u;
+    constexpr size_t DefaultMinimumGuildMatchPeople = 4u;
+    const auto minimumGuildMatchPeople = static_cast<size_t>(
+      _serverInstance.GetSystemContentRegistry()
+        .GetValue(MinimumGuildMatchPeopleKey)
+        .value_or(DefaultMinimumGuildMatchPeople));
     const protocol::AcCmdLCGuildMatchAvailable guildMatchesAvailable{
-      .isAvailable = memberCount >= MinimumGuildPartyCount};
+      .isAvailable = memberCount >= minimumGuildMatchPeople};
     _commandServer.QueueCommand<decltype(guildMatchesAvailable)>(
       clientId,
       [guildMatchesAvailable]()
@@ -3322,32 +3326,38 @@ void LobbyNetworkHandler::HandleStartGuildPartyMatch(
 
   // Collect details for the race room
   std::string guildAName{};
+  size_t partyAMemberCount{};
   _serverInstance.GetGuildPartySystem().GetParty(
     partyAUid,
-    [&guildAName, &gameMode](const GuildParty& party)
+    [&guildAName, &gameMode, &partyAMemberCount](const GuildParty& party)
     {
       guildAName = party.GetDetails().name;
       gameMode = party.GetDetails().gameMode;
+      partyAMemberCount = party.GetMemberCount();
     });
 
   std::string guildBName{};
+  size_t partyBMemberCount{};
   _serverInstance.GetGuildPartySystem().GetParty(
     partyBUid,
-    [&guildBName](const GuildParty& party)
+    [&guildBName, &partyBMemberCount](const GuildParty& party)
     {
       guildBName = party.GetDetails().name;
+      partyBMemberCount = party.GetMemberCount();
     });
+
+  const auto maxPlayerCount = static_cast<uint32_t>(partyAMemberCount + partyBMemberCount);
 
   // Create race room
   uint32_t createdRoomUid{data::InvalidUid};
   _serverInstance.GetRoomSystem().CreateRoom(
-    [&createdRoomUid, &guildAName, &guildBName, gameMode](Room& room)
+    [&createdRoomUid, &guildAName, &guildBName, gameMode, maxPlayerCount](Room& room)
     {
       auto& roomDetails = room.GetRoomDetails();
       roomDetails.name = std::format("{} vs {}", guildAName, guildBName);
       roomDetails.password = "";
       roomDetails.missionId = 0;
-      roomDetails.maxPlayerCount = 8;
+      roomDetails.maxPlayerCount = maxPlayerCount;
       roomDetails.gameMode = static_cast<Room::GameMode>(gameMode);
       roomDetails.teamMode = Room::TeamMode::Guild;
       roomDetails.npcDifficulty = 0;
