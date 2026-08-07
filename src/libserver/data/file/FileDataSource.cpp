@@ -1693,8 +1693,6 @@ void server::FileDataSource::RetrieveFestivalCycle(
   cycle.uid() = json.value("uid", data::InvalidUid);
   cycle.state() = static_cast<data::FestivalCycle::State>(
     json.value("state", uint32_t{}));
-  cycle.createdAt() = data::Clock::time_point(
-    std::chrono::seconds(json.value("createdAt", int64_t{})));
   cycle.endsAt() = data::Clock::time_point(
     std::chrono::seconds(json.value("endsAt", int64_t{})));
   cycle.resolvedAt() = data::Clock::time_point(
@@ -1717,8 +1715,6 @@ void server::FileDataSource::StoreFestivalCycle(
   nlohmann::json json;
   json["uid"] = cycle.uid();
   json["state"] = static_cast<uint32_t>(cycle.state());
-  json["createdAt"] = std::chrono::duration_cast<std::chrono::seconds>(
-    cycle.createdAt().time_since_epoch()).count();
   json["endsAt"] = std::chrono::duration_cast<std::chrono::seconds>(
     cycle.endsAt().time_since_epoch()).count();
   json["resolvedAt"] = std::chrono::duration_cast<std::chrono::seconds>(
@@ -1799,8 +1795,6 @@ void server::FileDataSource::RetrieveFestivalAdmission(
   admission.resultMailCreationPending() = json.value(
     "resultMailCreationPending",
     false);
-  admission.admittedAt() = data::Clock::time_point(
-    std::chrono::seconds(json.value("admittedAt", int64_t{})));
 
   const auto& grading = json.value("grading", nlohmann::json::object());
   admission.grading.totalStats() = grading.value("totalStats", uint32_t{});
@@ -1860,8 +1854,6 @@ void server::FileDataSource::StoreFestivalAdmission(
   json["rewardCreationPending"] = admission.rewardCreationPending();
   json["resultMailUid"] = admission.resultMailUid();
   json["resultMailCreationPending"] = admission.resultMailCreationPending();
-  json["admittedAt"] = std::chrono::duration_cast<std::chrono::seconds>(
-    admission.admittedAt().time_since_epoch()).count();
   json["grading"] = std::move(grading);
   dataFile << json.dump(2);
 }

@@ -613,7 +613,6 @@ data::Uid FestivalSystem::SelectAuditionParticipant(
         admission.grading.skinTier() = grading.skinTier();
         admission.grading.maneTier() = grading.maneTier();
         admission.grading.tailTier() = grading.tailTier();
-        admission.admittedAt() = data::Clock::now();
       });
 
     _admissionsByCycle[_activeCycleUid].push_back(admissionUid);
@@ -671,10 +670,9 @@ void FestivalSystem::CreateCycle(const Clock::time_point now)
     throw std::runtime_error("Failed to create the active festival cycle");
 
   _cycleEndsAt = GetCycleEnd(now);
-  cycleRecord.Mutable([this, now](data::FestivalCycle& cycle)
+  cycleRecord.Mutable([this](data::FestivalCycle& cycle)
   {
     cycle.state() = data::FestivalCycle::State::Collecting;
-    cycle.createdAt() = now;
     cycle.endsAt() = _cycleEndsAt;
     _activeCycleUid = cycle.uid();
   });

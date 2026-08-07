@@ -628,7 +628,6 @@ struct FestivalCycle
 
   dao::Field<Uid> uid{InvalidUid};
   dao::Field<State> state{State::Collecting};
-  dao::Field<Clock::time_point> createdAt{};
   dao::Field<Clock::time_point> endsAt{};
   dao::Field<Clock::time_point> resolvedAt{};
 };
@@ -668,7 +667,6 @@ struct FestivalAdmission
   dao::Field<bool> rewardCreationPending{false};
   dao::Field<Uid> resultMailUid{InvalidUid};
   dao::Field<bool> resultMailCreationPending{false};
-  dao::Field<Clock::time_point> admittedAt{};
 };
 
 struct Reward
