@@ -133,6 +133,9 @@ public:
     data::Uid mareUid,
     data::Uid stallionUid);
 
+  [[nodiscard]] bool IsAncestryResident(data::Uid mareUid, data::Uid stallionUid);
+  [[nodiscard]] uint32_t RecalculateLineage(data::Uid horseUid);
+
   //! Fully initialises a newborn foal record bred from the two parents: administrative
   //! defaults plus every genetic attribute (breed, grade, coat, mane/tail, stats,
   //! appearance, potential, ancestry and lineage). Does not touch any protocol response.

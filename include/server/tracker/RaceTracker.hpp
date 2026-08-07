@@ -236,7 +236,7 @@ private:
   //! It's important these persist across races in a room as the client does not clear assignments internally. 
   std::unordered_map<data::Uid, Oid> _characterOids;
   //! Next OID for new character entities (100+).
-  Oid _nextCharacterOid = 100;
+  Oid _nextCharacterOid = 1;
   //! Next OID for item entities (1–99, reset each race).
   Oid _nextItemDeckOid = 1;
   //! Racer entities.

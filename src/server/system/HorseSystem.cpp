@@ -21,6 +21,8 @@
 
 #include "server/ServerInstance.hpp"
 
+#include <spdlog/spdlog.h>
+
 #include <vector>
 
 namespace server
@@ -78,6 +80,56 @@ std::unordered_map<data::Uid, data::Clock::time_point> HorseSystem::PromoteMatur
   }
 
   return maturingFoals;
+}
+
+uint32_t HorseSystem::RepairLineages(const data::Uid characterUid)
+{
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+  if (not characterRecord)
+    return 0;
+
+  std::vector<data::Uid> horseUids;
+  characterRecord.Immutable([&horseUids](const data::Character& character)
+  {
+    horseUids = character.horses();
+    horseUids.emplace_back(character.mountUid());
+  });
+
+  auto& genetics = _serverInstance.GetGenetics();
+
+  uint32_t repairedCount = 0;
+  for (const auto& horseUid : horseUids)
+  {
+    const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(horseUid);
+    if (not horseRecord)
+      continue;
+
+    const uint32_t recalculated = genetics.RecalculateLineage(horseUid);
+
+    uint32_t storedLineage = 0;
+    horseRecord.Immutable([&storedLineage](const data::Horse& horse)
+    {
+      storedLineage = horse.lineage();
+    });
+
+    if (recalculated <= storedLineage)
+      continue;
+
+    horseRecord.Mutable([recalculated](data::Horse& horse)
+    {
+      horse.lineage() = recalculated;
+    });
+    ++repairedCount;
+
+    spdlog::info(
+      "Repaired the lineage of horse {} of character {}: {} -> {}",
+      horseUid,
+      characterUid,
+      storedLineage,
+      recalculated);
+  }
+
+  return repairedCount;
 }
 
 } // namespace server

@@ -111,6 +111,49 @@ uint32_t Genetics::RollEmblem()
   return emblems[std::uniform_int_distribution<size_t>(0, emblems.size() - 1)(server::util::GetRandomEngine())];
 }
 
+bool Genetics::IsAncestryResident(const data::Uid mareUid, const data::Uid stallionUid)
+{
+  auto& dataDirector = _serverInstance.GetDataDirector();
+
+  bool resident = true;
+  const auto touch = [&](const data::Uid horseUid)
+  {
+    if (horseUid == data::InvalidUid)
+      return;
+    if (not dataDirector.GetHorse(horseUid))
+      resident = false;
+  };
+
+  touch(mareUid);
+  touch(stallionUid);
+
+  const Ancestry ancestry = BuildAncestry(mareUid, stallionUid);
+  for (const data::Uid grandparentUid : ancestry.grandparents)
+    touch(grandparentUid);
+
+  return resident;
+}
+
+uint32_t Genetics::RecalculateLineage(const data::Uid horseUid)
+{
+  const auto record = _serverInstance.GetDataDirector().GetHorse(horseUid);
+  if (not record)
+    return 0;
+
+  data::Tid skinTid = 0;
+  data::Horse::Ancestors parents{};
+  record.Immutable([&skinTid, &parents](const data::Horse& horse)
+  {
+    skinTid = horse.parts.skinTid();
+    parents = horse.ancestors;
+  });
+
+  // Queue whatever part of the tree is still missing, so a later call scores higher.
+  static_cast<void>(IsAncestryResident(parents.mother, parents.father));
+
+  return CalculateLineage(skinTid, parents.mother, parents.father);
+}
+
 void Genetics::CreateFoal(
   data::Horse& foal,
   const data::Uid mareUid,

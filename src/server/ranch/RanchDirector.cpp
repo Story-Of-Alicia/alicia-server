@@ -61,6 +61,7 @@ constexpr auto FoalMaturityCheckInterval = std::chrono::seconds(60);
 //! How many times a deferred ranch entry is retried while waiting for horse
 //! records to load before giving up and cancelling the entry.
 constexpr uint32_t MaxEnterRanchDeferAttempts = 2;
+constexpr uint32_t MaxTryBreedingDeferAttempts = 4;
 
 BreedingMarket::SnapshotOrder ConvertProtocolStallionOrderToSnapshotOrder(
   const protocol::AcCmdCRSearchStallion::StallionOrder order)
@@ -155,6 +156,11 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
 
     _enterRanchDeferrer.Defer(clientId, command);
   })
+  , _tryBreedingDeferrer([this](const network::ClientId clientId, const protocol::AcCmdCRTryBreeding& command)
+  {
+    if (HandleTryBreeding(clientId, command))
+      _tryBreedingDeferrer.Defer(clientId, command);
+  })
 {
   _commandServer.RegisterCommandHandler<protocol::AcCmdCREnterRanch>(
     [this](ClientId clientId, const auto& message)
@@ -226,7 +232,8 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRTryBreeding>(
     [this](ClientId clientId, auto& command)
     {
-      HandleTryBreeding(clientId, command);
+      if (HandleTryBreeding(clientId, command))
+        _tryBreedingDeferrer.Defer(clientId, command);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRBreedingAbandon>(
@@ -785,7 +792,7 @@ void RanchDirector::ReturnHorseToNature(
   data::Uid characterUid,
   data::Uid horseUid,
   std::string userName,
-  bool breedingAbandon)
+  [[maybe_unused]] bool breedingAbandon)
 {
   bool isHorseValid = false;
   GetServerInstance().GetDataDirector().GetCharacter(characterUid).Mutable(
@@ -806,14 +813,27 @@ void RanchDirector::ReturnHorseToNature(
 
   // Remove horse from ranch tracker
   auto& ranchInstance = _ranches[characterUid];
+  const auto horseOid = ranchInstance.tracker.GetHorseOid(horseUid);
   ranchInstance.tracker.RemoveHorse(horseUid);
+  if (horseOid != tracker::InvalidEntityOid)
+  {
+    const protocol::AcCmdRCMobDead mobDead{.mobOid = horseOid};
+    for (const ClientId& ranchClientId : ranchInstance.clients)
+    {
+      _commandServer.QueueCommand<protocol::AcCmdRCMobDead>(
+        ranchClientId,
+        [mobDead]()
+        {
+          return mobDead;
+        });
+    }
+  }
 
   // Keep horse record in cache for the family tree
 
-  spdlog::info("User {} returned horse {} to nature (breeding abandon: {})",
+  spdlog::info("User {} returned horse {} to nature",
     userName,
-    horseUid,
-    breedingAbandon);
+    horseUid);
 }
 
 std::vector<data::Uid> RanchDirector::GetOnlineCharacters()
@@ -836,6 +856,7 @@ void RanchDirector::HandleNetworkTick()
   {
     _mountFamilyTreeDeferrer.Tick();
     _enterRanchDeferrer.Tick();
+    _tryBreedingDeferrer.Tick();
   }
   catch (const std::exception& x)
   {
@@ -1271,7 +1292,10 @@ bool RanchDirector::HandleEnterRanch(
     clientContext.characterUid).userName;
 
   if (command.characterUid == command.rancherUid)
+  {
     RefreshMaturingFoals(command.characterUid, clientContext);
+    GetServerInstance().GetHorseSystem().RepairLineages(command.characterUid);
+  }
 
   protocol::AcCmdCREnterRanchOK response{
     .rancherUid = command.rancherUid,
@@ -1757,6 +1781,11 @@ void RanchDirector::HandleEnterBreedingMarket(
   const protocol::AcCmdCREnterBreedingMarket&)
 {
   const auto& clientContext = GetClientContext(clientId);
+
+  // The breeding market is where a short lineage is visible, so correct the listed
+  // horses before building the response.
+  GetServerInstance().GetHorseSystem().RepairLineages(clientContext.characterUid);
+
   const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
@@ -2081,7 +2110,7 @@ void RanchDirector::HandleCheckStallionCharge(
     });
 }
 
-void RanchDirector::HandleTryBreeding(
+bool RanchDirector::HandleTryBreeding(
   const ClientId clientId,
   const protocol::AcCmdCRTryBreeding& command)
 {
@@ -2105,8 +2134,22 @@ void RanchDirector::HandleTryBreeding(
     spdlog::warn("TryBreeding: mare {} or stallion {} not found",
       command.mareUid, command.stallionUid);
     sendBreedingCancel(CancelReason::GenericError);
-    return;
+    clientContext.tryBreedingDeferAttempts = 0;
+    return false;
   }
+
+  if (not GetServerInstance().GetGenetics().IsAncestryResident(
+    command.mareUid, command.stallionUid))
+  {
+    if (++clientContext.tryBreedingDeferAttempts < MaxTryBreedingDeferAttempts)
+      return true;
+
+    spdlog::warn(
+      "TryBreeding: ancestry of mare {} and stallion {} still incomplete after {} attempts, "
+      "breeding with the records at hand",
+      command.mareUid, command.stallionUid, MaxTryBreedingDeferAttempts);
+  }
+  clientContext.tryBreedingDeferAttempts = 0;
 
   // The stallion must be registered in the breeding market.
   const auto stallionData = _breedingMarket.GetStallionData(command.stallionUid);
@@ -2115,7 +2158,7 @@ void RanchDirector::HandleTryBreeding(
     spdlog::warn("TryBreeding: stallion {} is not registered in the breeding market",
       command.stallionUid);
     sendBreedingCancel(CancelReason::StallionNotFound);
-    return;
+    return false;
   }
 
   // Charge the breeding fee.
@@ -2144,7 +2187,7 @@ void RanchDirector::HandleTryBreeding(
     spdlog::warn("TryBreeding: character {} has insufficient horse slots",
       clientContext.characterUid, stallionData->breedingCharge);
     sendBreedingCancel(CancelReason::InsufficientHorseSlots);
-    return;
+    return false;
   }
 
   if (not charged)
@@ -2152,7 +2195,7 @@ void RanchDirector::HandleTryBreeding(
     spdlog::warn("TryBreeding: character {} cannot afford breeding fee {}",
       clientContext.characterUid, stallionData->breedingCharge);
     sendBreedingCancel(CancelReason::InsufficientBalance);
-    return;
+    return false;
   }
 
   // Read the stallion grade and breeding count needed for the success roll.
@@ -2225,7 +2268,7 @@ void RanchDirector::HandleTryBreeding(
     _commandServer.QueueCommand<decltype(response)>(
       clientId,
       [response]() { return response; });
-    return;
+    return false;
   }
 
   applyBreedingAttemptUpdates();
@@ -2246,6 +2289,8 @@ void RanchDirector::HandleTryBreeding(
     {
       return response;
     });
+
+  return false;
 }
 
 protocol::BreedingBonus RanchDirector::RollBreedingBonus(const uint32_t stallionGrade)

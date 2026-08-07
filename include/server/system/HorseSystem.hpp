@@ -44,6 +44,10 @@ public:
   std::unordered_map<data::Uid, data::Clock::time_point> PromoteMaturedFoals(
     data::Uid characterUid);
 
+  //! @param characterUid UID of the owning character.
+  //! @returns The number of horses whose lineage was raised.
+  uint32_t RepairLineages(data::Uid characterUid);
+
 private:
   ServerInstance& _serverInstance;
 };

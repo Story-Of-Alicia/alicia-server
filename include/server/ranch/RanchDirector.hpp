@@ -151,6 +151,9 @@ private:
     //! Number of times a deferred ranch entry has been retried while waiting
     //! for horse records to load. Capped so the client isn't stuck forever.
     uint32_t enterRanchDeferAttempts{0};
+
+    //! Number of times a deferred breeding attempt has been retried 
+    uint32_t tryBreedingDeferAttempts{0};
   };
 
   struct RanchInstance
@@ -260,7 +263,11 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRCheckStallionCharge& command);
 
-  void HandleTryBreeding(
+  //! Handles the breeding attempt command.
+  //! @param clientId ID of the client.
+  //! @param command Command.
+  //! @returns True if the command should be deferred and retried
+  bool HandleTryBreeding(
     ClientId clientId,
     const protocol::AcCmdCRTryBreeding& command);
 
@@ -605,6 +612,9 @@ private:
 
   //! A command deferrer for the `AcCmdCREnterRanch` command.
   CommandDeferrer<protocol::AcCmdCREnterRanch> _enterRanchDeferrer;
+
+  //! A command deferrer for the `AcCmdCRTryBreeding` command.
+  CommandDeferrer<protocol::AcCmdCRTryBreeding> _tryBreedingDeferrer;
 
   //! Drives periodic ranch chores, such as the foal maturity sweep.
   Scheduler _scheduler;
