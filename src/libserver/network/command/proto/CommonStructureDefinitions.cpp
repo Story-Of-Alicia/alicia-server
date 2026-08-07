@@ -903,7 +903,7 @@ void GuildParty::Write(
   SinkStream& stream)
 {
   stream.Write(party.uid)
-    .Write(party.unk1)
+    .Write(party.guildUid)
     .Write(party.name)
     .Write(party.gameMode)
     .Write(party.ranchUid)
@@ -918,7 +918,7 @@ void GuildParty::Read(
   SourceStream& stream)
 {
   stream.Read(party.uid)
-    .Read(party.unk1)
+    .Read(party.guildUid)
     .Read(party.name)
     .Read(party.gameMode)
     .Read(party.ranchUid)

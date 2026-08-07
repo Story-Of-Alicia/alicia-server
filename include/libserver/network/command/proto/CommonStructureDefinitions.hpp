@@ -855,7 +855,7 @@ enum class GuildPartyError : int32_t
 struct GuildParty
 {
   uint32_t uid{};
-  uint32_t unk1{};
+  uint32_t guildUid{};
   std::string name{};
   uint32_t gameMode{};
   uint32_t ranchUid{};

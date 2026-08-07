@@ -2857,7 +2857,7 @@ void LobbyNetworkHandler::HandleMakeGuildParty(
   const protocol::AcCmdCLEnterGuildPartyOK response{
     .party = {
       .uid = createdPartyUid,
-      .unk1 = 0,
+      .guildUid = guildUid,
       .name = command.name,
       .gameMode = command.gamemode,
       .ranchUid = clientContext.characterUid,
@@ -2974,6 +2974,7 @@ void LobbyNetworkHandler::HandleEnterGuildParty(
     {
       const auto& details = party.GetDetails();
 
+      response.party.guildUid = details.guildUid;
       response.party.name = details.name;
       response.party.gameMode = static_cast<uint32_t>(details.gameMode);
       response.party.ranchUid = details.ranchUid;
@@ -3125,7 +3126,7 @@ void LobbyNetworkHandler::HandleGuildPartyList(
 
     response.parties.emplace_back(protocol::GuildParty{
       .uid = party.uid,
-      .unk1 = 0,
+      .guildUid = party.details.guildUid,
       .name = party.details.name,
       .gameMode = static_cast<uint32_t>(party.details.gameMode),
       .ranchUid = party.details.ranchUid,
