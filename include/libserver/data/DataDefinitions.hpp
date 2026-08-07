@@ -223,6 +223,7 @@ struct Guild
   dao::Field<uint32_t> totalLosses{};
   dao::Field<uint32_t> seasonalWins{};
   dao::Field<uint32_t> seasonalLosses{};
+  dao::Field<Uid> emblemUid{};
 };
 
 //! Settings

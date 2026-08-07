@@ -5701,6 +5701,105 @@ struct AcCmdCRBreedingWishlistDelOK
     SourceStream& stream);
 };
 
+struct AcCmdCRModifyGuildEmblem
+{
+  // Empty
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRModifyGuildEmblem;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRModifyGuildEmblem& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRModifyGuildEmblem& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRModifyGuildEmblemCancel
+{
+  // Empty
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRModifyGuildEmblemCancel;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRModifyGuildEmblemCancel& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRModifyGuildEmblemCancel& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRModifyGuildEmblemOK
+{
+  uint32_t unk0{};
+  //! The guild emblem voucher item;
+  Item item{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRModifyGuildEmblemOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRModifyGuildEmblemOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRModifyGuildEmblemOK& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCModifyGuildEmblemNotify
+{
+  uint32_t unk0{};
+  uint32_t emblemUid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCModifyGuildEmblemNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCModifyGuildEmblemNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCModifyGuildEmblemNotify& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RANCH_MESSAGE_DEFINES_HPP

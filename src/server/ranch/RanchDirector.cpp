@@ -626,6 +626,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       HandleBreedingWishlistDelete(clientId, command);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRModifyGuildEmblem>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleModifyGuildEmblem(clientId, command);
+    });
 }
 
 void RanchDirector::Initialize()
@@ -7435,6 +7441,114 @@ void RanchDirector::HandleBreedingWishlistDelete(
     [response]()
     {
       return response;
+    });
+}
+
+void RanchDirector::HandleModifyGuildEmblem(
+  ClientId clientId,
+  const protocol::AcCmdCRModifyGuildEmblem&)
+{
+  static constexpr data::Tid GuildEmblemVoucherTid = 46012;
+
+  const auto& clientContext = GetClientContext(clientId);
+
+  // Check that the character is in a guild
+  data::Uid guildUid{data::InvalidUid};
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [&guildUid](const data::Character& character)
+    {
+      guildUid = character.guildUid();
+    });
+
+  if (guildUid == data::InvalidUid)
+  {
+    const protocol::AcCmdCRModifyGuildEmblemCancel cancel{};
+    _commandServer.QueueCommand<protocol::AcCmdCRModifyGuildEmblemCancel>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  protocol::AcCmdCRModifyGuildEmblemOK response{};
+
+  bool success = false;
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
+    [this, &response, &success](data::Character& character)
+    {
+      // Consume guild emblem voucher
+      const auto verdict = GetServerInstance().GetItemSystem().ConsumeItem(
+        character,
+        GuildEmblemVoucherTid,
+        1);
+
+      if (not verdict.itemConsumed)
+        return;
+
+      success = true;
+
+      // Build protocol response for the consumed item
+      GetServerInstance().GetDataDirector().GetItem(verdict.itemUid).Immutable(
+        [&response](const data::Item& item)
+        {
+          protocol::BuildProtocolItem(response.item, item);
+        });
+    });
+
+  if (not success)
+  {
+    const protocol::AcCmdCRModifyGuildEmblemCancel cancel{};
+    _commandServer.QueueCommand<protocol::AcCmdCRModifyGuildEmblemCancel>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  _commandServer.QueueCommand<protocol::AcCmdCRModifyGuildEmblemOK>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+
+  // Update guild emblem UID and notify online members
+  uint32_t emblemUid{};
+  GetServerInstance().GetDataDirector().GetGuild(guildUid).Mutable(
+    [&emblemUid](data::Guild& guild)
+    {
+      emblemUid = ++guild.emblemUid();
+    });
+
+  const protocol::AcCmdRCModifyGuildEmblemNotify notify{
+    .unk0 = 0x72688267,
+    .emblemUid = emblemUid};
+
+  GetServerInstance().GetDataDirector().GetGuild(guildUid).Immutable(
+    [this, &notify](const data::Guild& guild)
+    {
+      for (const auto& guildMember : guild.members())
+      {
+        for (auto& [cId, context] : _clients)
+        {
+          if (not context.isAuthenticated)
+            continue;
+
+          if (context.characterUid != guildMember)
+            continue;
+        
+          _commandServer.QueueCommand<decltype(notify)>(
+            cId,
+            [notify]()
+            {
+              return notify;
+            });
+        }
+      }
     });
 }
 

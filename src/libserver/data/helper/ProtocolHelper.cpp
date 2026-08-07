@@ -285,6 +285,7 @@ void BuildProtocolGuild(Guild& protocolGuild, const data::Guild& guildRecord)
 {
   protocolGuild.name = guildRecord.name();
   protocolGuild.uid = guildRecord.uid();
+  protocolGuild.val2 = guildRecord.emblemUid();
 }
 
 void BuildProtocolPet(Pet& protocolPet, const data::Pet& petRecord)

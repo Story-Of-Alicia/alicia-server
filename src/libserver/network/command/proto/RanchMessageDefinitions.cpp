@@ -3627,5 +3627,63 @@ void AcCmdCRBreedingWishlistDelOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRModifyGuildEmblem::Write(
+  const AcCmdCRModifyGuildEmblem&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRModifyGuildEmblem::Read(
+  AcCmdCRModifyGuildEmblem&,
+  SourceStream&)
+{
+  // Empty
+}
+
+void AcCmdCRModifyGuildEmblemCancel::Write(
+  const AcCmdCRModifyGuildEmblemCancel&,
+  SinkStream&)
+{
+  // Empty
+}
+
+void AcCmdCRModifyGuildEmblemCancel::Read(
+  AcCmdCRModifyGuildEmblemCancel&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRModifyGuildEmblemOK::Write(
+  const AcCmdCRModifyGuildEmblemOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.item);
+}
+
+void AcCmdCRModifyGuildEmblemOK::Read(
+  AcCmdCRModifyGuildEmblemOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCModifyGuildEmblemNotify::Write(
+  const AcCmdRCModifyGuildEmblemNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.emblemUid);
+}
+
+void AcCmdRCModifyGuildEmblemNotify::Read(
+  AcCmdRCModifyGuildEmblemNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
 
