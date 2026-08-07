@@ -224,12 +224,40 @@ std::optional<std::pair<data::Uid, data::Uid>> GuildPartySystem::TryMatchmake(Gu
   if (queue.size() < 2)
     return std::nullopt;
 
-  const auto partyA = queue.front();
-  queue.pop_front();
-  const auto partyB = queue.front();
-  queue.pop_front();
+  for (auto iterA = queue.begin(); iterA != queue.end(); ++iterA)
+  {
+    const auto partyAUid = *iterA;
+    size_t partyASize = 0;
+    {
+      std::scoped_lock partiesLock(_partiesLock);
+      const auto partyIterA = _parties.find(partyAUid);
+      if (partyIterA == _parties.end())
+        continue;
+      partyASize = partyIterA->second.party.GetMemberCount();
+    }
 
-  return std::make_pair(partyA, partyB);
+    for (auto iterB = std::next(iterA); iterB != queue.end(); ++iterB)
+    {
+      const auto partyBUid = *iterB;
+      size_t partyBSize = 0;
+      {
+        std::scoped_lock partiesLock(_partiesLock);
+        const auto partyIterB = _parties.find(partyBUid);
+        if (partyIterB == _parties.end())
+          continue;
+        partyBSize = partyIterB->second.party.GetMemberCount();
+      }
+
+      if (partyASize == partyBSize && partyASize > 0)
+      {
+        queue.erase(iterB);
+        queue.erase(iterA);
+        return std::make_pair(partyAUid, partyBUid);
+      }
+    }
+  }
+
+  return std::nullopt;
 }
 
 } // namespace server
