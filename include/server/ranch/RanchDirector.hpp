@@ -616,6 +616,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRAchievementUpdateProperty& command);
 
+  void HandleModifyGuildEmblem(
+    ClientId clientId,
+    const protocol::AcCmdCRModifyGuildEmblem& command);
+
   //!
   ServerInstance& _serverInstance;
   //!
