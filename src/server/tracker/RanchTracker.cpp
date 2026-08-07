@@ -53,6 +53,9 @@ Oid RanchTracker::GetCharacterOid(data::Uid character) const
 
 Oid RanchTracker::AddHorse(data::Uid horse)
 {
+  if (_horses.contains(horse))
+    return _horses.at(horse);
+
   _horses[horse] = _nextObjectId;
   return _nextObjectId++;
 }

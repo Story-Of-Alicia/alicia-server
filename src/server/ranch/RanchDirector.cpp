@@ -1265,8 +1265,7 @@ bool RanchDirector::HandleEnterRanch(
       });
   }
 
-  const auto [ranchIter, ranchCreated] = _ranches.try_emplace(command.rancherUid);
-  auto& ranchInstance = ranchIter->second;
+  auto& ranchInstance = _ranches[command.rancherUid];
 
   const bool isRanchFull = ranchInstance.clients.size() > MaxRanchCharacterCount;
 
@@ -1304,7 +1303,7 @@ bool RanchDirector::HandleEnterRanch(
       .rankingPercentile = 50}};
 
   rancherRecord->Immutable(
-    [this, &response, &ranchInstance, ranchCreated](
+    [this, &response, &ranchInstance](
       const data::Character& rancher) mutable
     {
       const auto& rancherName = rancher.name();
@@ -1315,13 +1314,9 @@ bool RanchDirector::HandleEnterRanch(
       response.ranchName = std::format("{}{} ranch", rancherName, possessiveSuffix);
       response.horseSlots = static_cast<uint8_t>(rancher.horseSlotCount());
 
-      // If the ranch was just created add the horses to the world tracker.
-      if (ranchCreated)
+      for (const auto& horseUid : rancher.horses())
       {
-        for (const auto& horseUid : rancher.horses())
-        {
-          ranchInstance.tracker.AddHorse(horseUid);
-        }
+        ranchInstance.tracker.AddHorse(horseUid);
       }
 
       // Fill the housing info.
