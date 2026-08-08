@@ -2081,9 +2081,10 @@ struct AcCmdCRUseItemSlotOK
 
 struct AcCmdCRUseItemSlotNotify 
 {
-  uint32_t magicItemId;   
+  uint32_t magicItemId;
+  // Suspected effectInstanceId (pattern matches with other UseItem command)   
+  uint16_t unk1;
   uint16_t characterOid;
-  uint16_t unk;
 
   static Command GetCommand()
   {

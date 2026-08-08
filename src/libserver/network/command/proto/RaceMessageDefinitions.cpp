@@ -1610,8 +1610,8 @@ void AcCmdCRUseItemSlotNotify::Write(
   SinkStream& stream)
 {
   stream.Write(command.magicItemId)
-    .Write(command.characterOid)
-    .Write(command.unk);
+    .Write(command.unk1)
+    .Write(command.characterOid);
 }
 
 void AcCmdGameRaceItemSpawn::Write(

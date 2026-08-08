@@ -217,14 +217,11 @@ private:
 
   void StripHeldMagicItem(
     RaceInstance& raceInstance,
-    data::Uid targetCharacterUid,
-    tracker::RaceTracker::Racer& targetRacer,
-    tracker::Oid targetOid);
+    tracker::RaceTracker::Racer& targetRacer);
 
   void QueueHeldMagicItemStrip(
     RaceInstance& raceInstance,
-    data::Uid targetCharacterUid,
-    tracker::Oid targetOid);
+    data::Uid targetCharacterUid);
 
   void HandleEnterRoom(
     ClientId clientId,

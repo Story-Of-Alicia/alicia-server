@@ -3142,42 +3142,25 @@ void RaceNetworkHandler::HandleChangeMagicTarget(
 
 void RaceNetworkHandler::StripHeldMagicItem(
   RaceInstance& raceInstance,
-  const data::Uid targetCharacterUid,
-  tracker::RaceTracker::Racer& targetRacer,
-  const tracker::Oid targetOid)
+  tracker::RaceTracker::Racer& targetRacer)
 {
-  if (const auto targetClientId = FindClientIdByCharacterUid(targetCharacterUid))
-  {
-    const protocol::AcCmdCRUseItemSlotOK response{
-      .magicItemId = 0,
-      .characterOid = targetOid};
-
-    _commandServer.QueueCommand<decltype(response)>(
-      *targetClientId,
-      [response]
-      {
-        return response;
-      });
-  }
+  targetRacer.magicItem.reset();
 
   const protocol::AcCmdCRUseItemSlotNotify notify{
     .magicItemId = 0,
-    .characterOid = targetOid,
-    .unk = 1};
+    .unk1 = 0,
+    .characterOid = targetRacer.oid};
   this->Broadcast(raceInstance, notify);
-
-  targetRacer.magicItem.reset();
 }
 
 void RaceNetworkHandler::QueueHeldMagicItemStrip(
   RaceInstance& raceInstance,
-  const data::Uid targetCharacterUid,
-  const tracker::Oid targetOid)
+  const data::Uid targetCharacterUid)
 {
   constexpr auto MagicItemStripDelay = std::chrono::milliseconds(500);
 
   _scheduler.Queue(
-    [this, roomUid = raceInstance.GetRoomUid(), targetCharacterUid, targetOid]
+    [this, roomUid = raceInstance.GetRoomUid(), targetCharacterUid]
     {
       std::scoped_lock raceInstanceLock(_raceInstancesMutex);
       const auto raceInstanceIter = _raceInstances.find(roomUid);
@@ -3191,7 +3174,7 @@ void RaceNetworkHandler::QueueHeldMagicItemStrip(
       if (not targetRacer.magicItem.has_value())
         return;
 
-      StripHeldMagicItem(raceInstance, targetCharacterUid, targetRacer, targetOid);
+      StripHeldMagicItem(raceInstance, targetRacer);
     },
     Scheduler::Clock::now() + MagicItemStripDelay);
 }
@@ -3258,7 +3241,7 @@ void RaceNetworkHandler::HandleActivateSkillEffect(
 
     // TODO:: Add a Conditional for the SystemContent that can enable/disable this behavior
     if (magicSlotInfo->removeMagic == 1 && targetRacer.magicItem.has_value())
-      QueueHeldMagicItemStrip(raceInstance, clientContext.characterUid, command.targetOid);
+      QueueHeldMagicItemStrip(raceInstance, clientContext.characterUid);
   }
   if (magicSlotInfo->basicType == race::MagicType::Summon)
     targetRacer.pendingMagicTarget.reset();
