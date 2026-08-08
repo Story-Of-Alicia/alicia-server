@@ -2427,6 +2427,14 @@ data::Uid RanchDirector::CreateBredFoal(
       {
         return addNotify;
       });
+
+    const protocol::AcCmdRCMobDead mobDead{.mobOid = addNotify.horse.horseOid};
+    _commandServer.QueueCommand<protocol::AcCmdRCMobDead>(
+      clientId,
+      [mobDead]()
+      {
+        return mobDead;
+      });
   }
 
   return foalUid;
