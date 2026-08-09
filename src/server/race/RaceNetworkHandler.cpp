@@ -2509,6 +2509,7 @@ void RaceNetworkHandler::HandleRequestMagicItem(
     tracker,
     clientContext.characterUid);
   racer.magicItem.emplace(magicItemSlotInfo.type);
+  ++racer.magicItemGeneration;
   racer.starPointValue = 0;
 
   protocol::AcCmdCRStarPointGetOK starPointResponse{
@@ -2603,7 +2604,9 @@ std::vector<tracker::Oid> RaceNetworkHandler::ResolveMagicTargets(
     auto& racers = raceInstance.GetTracker().GetRacers();
     const auto targetIter = race::MagicSystem::FindRacerByOid(racers, resolvedTargetList.front());
 
-    if (targetIter == racers.end() || targetIter->second.pendingMagicTarget.has_value())
+    if (targetIter == racers.end()
+      || targetIter->second.pendingMagicTarget.has_value()
+      || race::MagicSystem::IsDowned(targetIter->second))
       resolvedTargetList.clear();
   }
 
@@ -2914,6 +2917,7 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
           .characterOid = command.characterOid,
           .magicItemId = racer.magicItem.emplace(magicItem),
           .member3 = 0};
+        ++racer.magicItemGeneration;
 
         _commandServer.QueueCommand<decltype(magicItemOk)>(
           clientId,
@@ -3011,7 +3015,8 @@ void RaceNetworkHandler::HandleStartMagicTarget(
 
   auto& targetRacer = targetIter->second;
 
-  if (targetRacer.pendingMagicTarget.has_value())
+  if (targetRacer.pendingMagicTarget.has_value()
+    || race::MagicSystem::IsDowned(targetRacer))
   {
     const protocol::AcCmdRCRemoveMagicTarget removeMagicTarget{
       .effectInstanceId = command.effectInstanceId,
@@ -3097,8 +3102,8 @@ void RaceNetworkHandler::HandleChangeMagicTarget(
     return;
   }
 
-  // Send Cancel if the target already has dragon, otherwise send OK and update the target's dragon status
-  if (targetRacer.pendingMagicTarget.has_value())
+  if (targetRacer.pendingMagicTarget.has_value()
+    || race::MagicSystem::IsDowned(targetRacer))
   {
     // Send Cancel response
     protocol::AcCmdCRChangeMagicTargetCancel response{
@@ -3155,12 +3160,13 @@ void RaceNetworkHandler::StripHeldMagicItem(
 
 void RaceNetworkHandler::QueueHeldMagicItemStrip(
   RaceInstance& raceInstance,
-  const data::Uid targetCharacterUid)
+  const data::Uid targetCharacterUid,
+  const uint32_t generation)
 {
   constexpr auto MagicItemStripDelay = std::chrono::milliseconds(500);
 
   _scheduler.Queue(
-    [this, roomUid = raceInstance.GetRoomUid(), targetCharacterUid]
+    [this, roomUid = raceInstance.GetRoomUid(), targetCharacterUid, generation]
     {
       std::scoped_lock raceInstanceLock(_raceInstancesMutex);
       const auto raceInstanceIter = _raceInstances.find(roomUid);
@@ -3172,6 +3178,9 @@ void RaceNetworkHandler::QueueHeldMagicItemStrip(
 
       auto& targetRacer = raceInstance.GetTracker().GetRacer(targetCharacterUid);
       if (not targetRacer.magicItem.has_value())
+        return;
+
+      if (targetRacer.magicItemGeneration != generation)
         return;
 
       StripHeldMagicItem(raceInstance, targetRacer);
@@ -3241,7 +3250,8 @@ void RaceNetworkHandler::HandleActivateSkillEffect(
 
     // TODO:: Add a Conditional for the SystemContent that can enable/disable this behavior
     if (magicSlotInfo->removeMagic == 1 && targetRacer.magicItem.has_value())
-      QueueHeldMagicItemStrip(raceInstance, clientContext.characterUid);
+      QueueHeldMagicItemStrip(
+        raceInstance, clientContext.characterUid, targetRacer.magicItemGeneration);
   }
   if (magicSlotInfo->basicType == race::MagicType::Summon)
     targetRacer.pendingMagicTarget.reset();

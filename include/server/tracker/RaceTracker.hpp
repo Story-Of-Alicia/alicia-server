@@ -79,6 +79,7 @@ public:
     uint32_t jumpComboValue{};
     uint32_t courseTime{InvalidCourseTime};
     std::optional<uint32_t> magicItem{};
+    uint32_t magicItemGeneration{};
     //! The racer's progress on the race track.
     //! Normalised by the client to: 0.0f <= x <= 1.0f
     float raceProgress{};
@@ -236,7 +237,7 @@ private:
   //! It's important these persist across races in a room as the client does not clear assignments internally. 
   std::unordered_map<data::Uid, Oid> _characterOids;
   //! Next OID for new character entities (100+).
-  Oid _nextCharacterOid = 1;
+  Oid _nextCharacterOid = 100;
   //! Next OID for item entities (1–99, reset each race).
   Oid _nextItemDeckOid = 1;
   //! Racer entities.

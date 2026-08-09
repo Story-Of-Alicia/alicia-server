@@ -115,6 +115,8 @@ public:
 
   static constexpr uint32_t HeavyAttackRank = 2;
 
+  static bool IsDowned(const tracker::RaceTracker::Racer& racer);
+
   //! @param attackSlotInfo The attack that just landed on the target.
   //! @param activeSlotInfo The spell whose effect the target currently has.
   static bool IsStrippedByAttack(

@@ -101,6 +101,11 @@ bool MagicSystem::IsValidSkillEffectId(const uint32_t skillEffectId)
     && skillEffectId != ClientCrashingEffectId;
 }
 
+bool MagicSystem::IsDowned(const tracker::RaceTracker::Racer& racer)
+{
+  return racer.attackRank >= HeavyAttackRank;
+}
+
 bool MagicSystem::IsStrippedByAttack(
   const registry::Magic::SlotInfo& attackSlotInfo,
   const registry::Magic::SlotInfo& activeSlotInfo)
@@ -182,7 +187,20 @@ MagicSystem::EffectResolution MagicSystem::ResolveEffect(
     ? magicSlotInfo.skillEffectId
     : magicRegistry.GetSlotInfo(magicSlotInfo.basicType).skillEffectId;
 
+  bool criticalEffectActive = false;
+  if (isAttack)
+  {
+    const uint32_t criticalType = magicRegistry.GetSlotInfo(magicSlotInfo.basicType).criticalType;
+    if (criticalType != 0)
+    {
+      const uint32_t criticalEffectId = magicRegistry.GetSlotInfo(criticalType).skillEffectId;
+      criticalEffectActive = IsValidSkillEffectId(criticalEffectId)
+        && targetRacer.effects[criticalEffectId];
+    }
+  }
+
   resolution.isDuplicated = hotRoddingBlocks
+    || criticalEffectActive
     || (isAttack && magicSlotInfo.attackRank < 2 && targetRacer.attackRank >= 2)
     || (magicSlotInfo.attackRank > 0
       ? targetRacer.attackRank >= magicSlotInfo.attackRank

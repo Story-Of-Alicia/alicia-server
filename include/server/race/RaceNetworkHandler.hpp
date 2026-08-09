@@ -221,7 +221,8 @@ private:
 
   void QueueHeldMagicItemStrip(
     RaceInstance& raceInstance,
-    data::Uid targetCharacterUid);
+    data::Uid targetCharacterUid,
+    uint32_t generation);
 
   void HandleEnterRoom(
     ClientId clientId,
