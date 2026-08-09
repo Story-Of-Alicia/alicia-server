@@ -87,6 +87,8 @@ potentialLevels:
     exp: 247500
 
 # Potential types from MountPotentialInfo. Type 12 does not exist.
+# `chanceBp` and `durationBonusMs` are the magnitudes at potential value 100;
+# both scale linearly with the value the mount has actually grown to.
 potentials:
   - type: 1
     name: 'Natural Talent'
@@ -94,10 +96,12 @@ potentials:
     name: 'Speed Addict'
   - type: 3
     name: 'Lucky Charm'
+    chanceBp: 8000        # 80% chance to keep the held magic item when attacked
   - type: 4
     name: 'Iron Heart'
   - type: 5
     name: 'One Plus One'
+    chanceBp: 5000        # 50% chance for an extra magic
   - type: 6
     name: 'Superior Reward'
   - type: 7
@@ -106,8 +110,10 @@ potentials:
     name: 'Sniper'
   - type: 9
     name: 'Iron Wall'
+    durationBonusMs: 2000 # +2s on 100 value
   - type: 10
     name: 'Opportunity'
+    durationBonusMs: 2000 # +2s on 100 value
   - type: 11
     name: 'Fearless'
   - type: 13

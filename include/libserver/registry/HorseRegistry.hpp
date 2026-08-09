@@ -60,6 +60,8 @@ struct PotentialInfo
 {
   uint32_t type{0};
   std::string name;
+  uint32_t chanceBp{0};
+  uint32_t durationBonusMs{0};
 };
 
 struct MasteryParams

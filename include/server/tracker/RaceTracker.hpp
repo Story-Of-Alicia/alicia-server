@@ -118,6 +118,14 @@ public:
       uint32_t courage{};
     };
     MountStatsSnapshot mountStats{};
+
+    struct PotentialSnapshot
+    {
+      uint32_t type{};
+      uint32_t value{};
+    };
+    PotentialSnapshot potential{};
+
     registry::SetEquipEffect activeSetEffect{registry::SetEquipEffect::None};
 
     struct MagicTargetInfo

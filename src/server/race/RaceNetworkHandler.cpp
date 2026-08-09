@@ -19,6 +19,7 @@
 
 #include "server/race/MagicSystem.hpp"
 #include "server/race/RaceNetworkHandler.hpp"
+#include "server/system/PotentialSystem.hpp"
 
 #include "server/ServerInstance.hpp"
 
@@ -1551,6 +1552,11 @@ void RaceNetworkHandler::HandleLoadingComplete(
             .endurance = horse.stats.endurance(),
             .courage = horse.stats.courage(),
           };
+
+          racer.potential = {
+            .type = horse.potential.type(),
+            .value = horse.potential.value(),
+          };
         });
 
       auto& itemRegistry = GetServerInstance().GetItemRegistry();
@@ -2504,12 +2510,6 @@ void RaceNetworkHandler::HandleRequestMagicItem(
     return;
   }
 
-  const auto& magicItemSlotInfo = race::MagicSystem::RandomMagicItem(
-    _serverInstance.GetMagicRegistry(),
-    tracker,
-    clientContext.characterUid);
-  racer.magicItem.emplace(magicItemSlotInfo.type);
-  ++racer.magicItemGeneration;
   racer.starPointValue = 0;
 
   protocol::AcCmdCRStarPointGetOK starPointResponse{
@@ -2524,8 +2524,24 @@ void RaceNetworkHandler::HandleRequestMagicItem(
       return starPointResponse;
     });
 
-  protocol::AcCmdCRRequestMagicItemOK response{
-    .characterOid = command.characterOid,
+  GrantMagicItem(raceInstance, clientId, clientContext.characterUid, racer);
+}
+
+void RaceNetworkHandler::GrantMagicItem(
+  RaceInstance& raceInstance,
+  const ClientId clientId,
+  const data::Uid characterUid,
+  tracker::RaceTracker::Racer& racer)
+{
+  const auto& magicItemSlotInfo = race::MagicSystem::RandomMagicItem(
+    _serverInstance.GetMagicRegistry(),
+    raceInstance.GetTracker(),
+    characterUid);
+  racer.magicItem.emplace(magicItemSlotInfo.type);
+  ++racer.magicItemGeneration;
+
+  const protocol::AcCmdCRRequestMagicItemOK response{
+    .characterOid = racer.oid,
     .magicItemId = racer.magicItem.value(),
     .member3 = 0};
 
@@ -2540,7 +2556,34 @@ void RaceNetworkHandler::HandleRequestMagicItem(
   const protocol::AcCmdCRRequestMagicItemNotify notify{
     .magicItemId = response.magicItemId,
     .characterOid = response.characterOid};
-  this->BroadcastExceptCharacterUid(raceInstance, notify, clientContext.characterUid);
+  this->BroadcastExceptCharacterUid(raceInstance, notify, characterUid);
+}
+
+void RaceNetworkHandler::GrantOnePlusOneMagicItem(
+  RaceInstance& raceInstance,
+  const tracker::Oid attackerOid)
+{
+  auto& racers = raceInstance.GetTracker().GetRacers();
+  const auto attackerIter = race::MagicSystem::FindRacerByOid(racers, attackerOid);
+  if (attackerIter == racers.end())
+    return;
+
+  auto& attackerRacer = attackerIter->second;
+
+  if (attackerRacer.magicItem.has_value())
+    return;
+
+  if (not PotentialSystem::GrantsExtraMagicItem(
+    GetServerInstance().GetHorseRegistry(), attackerRacer.potential))
+  {
+    return;
+  }
+
+  const auto attackerClientId = FindClientIdByCharacterUid(attackerIter->first);
+  if (not attackerClientId)
+    return;
+
+  GrantMagicItem(raceInstance, *attackerClientId, attackerIter->first, attackerRacer);
 }
 
 void RaceNetworkHandler::AcknowledgeEmptyMagicUse(
@@ -3249,9 +3292,16 @@ void RaceNetworkHandler::HandleActivateSkillEffect(
     }
 
     // TODO:: Add a Conditional for the SystemContent that can enable/disable this behavior
-    if (magicSlotInfo->removeMagic == 1 && targetRacer.magicItem.has_value())
+    if (magicSlotInfo->removeMagic == 1 && targetRacer.magicItem.has_value()
+      && not PotentialSystem::PreventsMagicItemLoss(
+        GetServerInstance().GetHorseRegistry(), targetRacer.potential))
+    {
       QueueHeldMagicItemStrip(
         raceInstance, clientContext.characterUid, targetRacer.magicItemGeneration);
+    }
+
+    if (magicSlotInfo->basicType == race::MagicType::FireBall)
+      GrantOnePlusOneMagicItem(raceInstance, command.attackerOid);
   }
   if (magicSlotInfo->basicType == race::MagicType::Summon)
     targetRacer.pendingMagicTarget.reset();
@@ -3466,6 +3516,7 @@ RaceNetworkHandler::EffectVerdict RaceNetworkHandler::ScheduleSkillEffect(
   const auto attackerRacerIter = race::MagicSystem::FindRacerByOid(racers, attackerOid);
   const uint32_t effectDurationMs = race::MagicSystem::ComputeEffectDurationMs(
     magicRegistry,
+    GetServerInstance().GetHorseRegistry(),
     magicSlotInfo,
     attackerRacerIter != racers.end() ? &attackerRacerIter->second : nullptr,
     targetRacer);

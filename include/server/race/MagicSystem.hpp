@@ -23,6 +23,7 @@
 #include "server/tracker/RaceTracker.hpp"
 
 #include <libserver/data/DataDefinitions.hpp>
+#include <libserver/registry/HorseRegistry.hpp>
 #include <libserver/registry/MagicRegistry.hpp>
 
 #include <cstdint>
@@ -132,6 +133,7 @@ public:
 
   static uint32_t ComputeEffectDurationMs(
     const registry::MagicRegistry& magicRegistry,
+    const registry::HorseRegistry& horseRegistry,
     const registry::Magic::SlotInfo& magicSlotInfo,
     const tracker::RaceTracker::Racer* attackerRacer,
     const tracker::RaceTracker::Racer& targetRacer);

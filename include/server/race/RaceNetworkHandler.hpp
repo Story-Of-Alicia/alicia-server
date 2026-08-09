@@ -215,6 +215,20 @@ private:
     uint16_t firstObstacleInstanceId,
     uint16_t obstacleInstanceCount);
 
+  //! Rolls the racer a new magic item and tells the room they are holding it.
+  //! The magic gauge is left untouched.
+  void GrantMagicItem(
+    RaceInstance& raceInstance,
+    ClientId clientId,
+    data::Uid characterUid,
+    tracker::RaceTracker::Racer& racer);
+
+  //! Hands the attacker a bonus magic item for the hit they just landed,
+  //! if their One Plus One potential rolls for it.
+  void GrantOnePlusOneMagicItem(
+    RaceInstance& raceInstance,
+    tracker::Oid attackerOid);
+
   void StripHeldMagicItem(
     RaceInstance& raceInstance,
     tracker::RaceTracker::Racer& targetRacer);

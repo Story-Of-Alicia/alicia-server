@@ -187,6 +187,8 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     _potentials[type] = PotentialInfo{
       .type = type,
       .name = node["name"].as<std::string>(),
+      .chanceBp = node["chanceBp"].as<uint32_t>(0),
+      .durationBonusMs = node["durationBonusMs"].as<uint32_t>(0),
     };
     _potentialTypes.push_back(type);
   }

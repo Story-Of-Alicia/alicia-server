@@ -18,6 +18,7 @@
  **/
 
 #include "server/race/MagicSystem.hpp"
+#include "server/system/PotentialSystem.hpp"
 #include "server/tracker/RaceTracker.hpp"
 
 #include <libserver/util/Util.hpp>
@@ -211,32 +212,46 @@ MagicSystem::EffectResolution MagicSystem::ResolveEffect(
 
 uint32_t MagicSystem::ComputeEffectDurationMs(
   const registry::MagicRegistry& magicRegistry,
+  const registry::HorseRegistry& horseRegistry,
   const registry::Magic::SlotInfo& magicSlotInfo,
   const tracker::RaceTracker::Racer* attackerRacer,
   const tracker::RaceTracker::Racer& targetRacer)
 {
   auto effectDurationMs = static_cast<uint32_t>(magicSlotInfo.effectDelay * 1000.0f);
 
-  const auto* scaling = magicRegistry.GetStatScaling(magicSlotInfo.basicType);
-  if (scaling == nullptr)
-    return effectDurationMs;
-
-  if (scaling->durationScaleBp > 0 && attackerRacer != nullptr)
+  if (const auto* scaling = magicRegistry.GetStatScaling(magicSlotInfo.basicType))
   {
-    constexpr uint32_t MaxDurationBonusBp = 1150;
-    const uint32_t statValue = GetMountStatValue(attackerRacer->mountStats, scaling->stat);
-    const uint32_t bonusBp = std::min(scaling->durationScaleBp * statValue, MaxDurationBonusBp);
+    if (scaling->durationScaleBp > 0 && attackerRacer != nullptr)
+    {
+      constexpr uint32_t MaxDurationBonusBp = 1150;
+      const uint32_t statValue = GetMountStatValue(attackerRacer->mountStats, scaling->stat);
+      const uint32_t bonusBp = std::min(scaling->durationScaleBp * statValue, MaxDurationBonusBp);
 
-    effectDurationMs = effectDurationMs * (1000u + bonusBp) / 1000u;
+      effectDurationMs = effectDurationMs * (1000u + bonusBp) / 1000u;
+    }
+
+    if (scaling->targetDurationReductionBp > 0)
+    {
+      const uint32_t statValue = GetMountStatValue(targetRacer.mountStats, scaling->stat);
+      const uint32_t reductionBp = std::min<uint32_t>(
+        scaling->targetDurationReductionBp * statValue, 1000u);
+
+      effectDurationMs = effectDurationMs * (1000u - reductionBp) / 1000u;
+    }
   }
 
-  if (scaling->targetDurationReductionBp > 0)
+  if (attackerRacer != nullptr)
   {
-    const uint32_t statValue = GetMountStatValue(targetRacer.mountStats, scaling->stat);
-    const uint32_t reductionBp = std::min<uint32_t>(
-      scaling->targetDurationReductionBp * statValue, 1000u);
-
-    effectDurationMs = effectDurationMs * (1000u - reductionBp) / 1000u;
+    if (magicSlotInfo.basicType == MagicType::WaterShield)
+    {
+      effectDurationMs += PotentialSystem::GetShieldDurationBonusMs(
+        horseRegistry, attackerRacer->potential);
+    }
+    else if (magicSlotInfo.basicType == MagicType::JumpStun)
+    {
+      effectDurationMs += PotentialSystem::GetShackleDurationBonusMs(
+        horseRegistry, attackerRacer->potential);
+    }
   }
 
   return effectDurationMs;
