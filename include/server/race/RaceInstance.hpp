@@ -97,6 +97,14 @@ public:
   void SetBonusCourseType(protocol::BonusCourseType type) noexcept;
 
 private:
+  //! Accumulates the per-race riding records of every participant into their
+  //! persistent horse and character records.
+  //! @param rankedCharacterUids Character UIDs ordered by their final rank.
+  //! @param winningTeam The team which won, or Solo in non-team modes.
+  void UpdateRidingStats(
+    const std::vector<data::Uid>& rankedCharacterUids,
+    tracker::RaceTracker::Racer::Team winningTeam);
+
   void TickLoading();
   void TickRacing();
   void TickFinishing();
