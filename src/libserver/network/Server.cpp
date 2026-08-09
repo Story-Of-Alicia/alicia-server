@@ -399,76 +399,82 @@ void Server::OnThrottleDisconnect(const asio::ip::address& address) noexcept
   }
 }
 
+void Server::HandleAcceptProcedure(
+  asio::ip::tcp::socket&& clientSocket)
+{
+  // Get the remote endpoint of the client.
+  asio::ip::tcp::endpoint clientEndpoint;
+  try
+  {
+    clientEndpoint = clientSocket.remote_endpoint();
+  }
+  catch (const std::exception&)
+  {
+    // The connection was broken too early.
+    return;
+  }
+
+  // Get the address of the endpoint.
+  const auto clientAddress = clientEndpoint.address();
+
+  // If the address is not going over IPv4 reject it.
+  // The client does not support IPv6.
+  if (not clientAddress.is_v4())
+  {
+    spdlog::warn("Connection rejected from {} because it is not coming through IPv4",
+      clientAddress.to_string());
+    return;
+  }
+
+  if (IsConnectionThrottled(clientAddress))
+  {
+    spdlog::warn(
+      "Connection rejected from {} because it is throttled",
+      clientAddress.to_string());
+    clientSocket.close();
+    return;
+  }
+
+  // Get the next sequential client ID.
+  const ClientId clientId = _client_id++;
+
+  // Create the client.
+  const auto [itr, emplaced] = _clients.try_emplace(
+    clientId,
+    std::make_shared<Client>(
+      clientId,
+      clientEndpoint,
+      std::move(clientSocket),
+      *this));
+  // ID is sequential so emplacement should never fail.
+  assert(emplaced);
+
+  const auto client = itr->second;
+  client->Begin();
+}
+
 void Server::AcceptLoop() noexcept
 {
   _acceptor.async_accept(
     [&](const boost::system::error_code& error, asio::ip::tcp::socket clientSocket)
     {
+      if (error)
+      {
+        spdlog::error(
+          "Unhandled generic network exception in the accept loop: 0x{} ({})",
+          error.value(),
+          error.message());
+        return;
+      }
+
       try
       {
-        if (error)
-        {
-          throw std::runtime_error(
-            fmt::format("Network exception 0x{}", error.value()));
-        }
-
-        // Get the remote endpoint of the client.
-        asio::ip::tcp::endpoint clientEndpoint;
-        try
-        {
-          clientEndpoint = clientSocket.remote_endpoint();
-        }
-        catch (const std::exception&)
-        {
-          // The connection was broken too early.
-          // Continue the accept loop.
-          AcceptLoop();
-          return;
-        }
-
-        // Get the address of the endpoint.
-        const auto clientAddress = clientEndpoint.address();
-
-        // If the address is not going over IPv4 reject it.
-        // The client does not support IPv6.
-        if (not clientAddress.is_v4())
-        {
-          spdlog::warn("Connection rejected from {} because it is not coming through IPv4",
-            clientAddress.to_string());
-          return;
-        }
-
-        if (IsConnectionThrottled(clientAddress))
-        {
-          spdlog::warn(
-            "Connection rejected from {} because it is throttled",
-            clientAddress.to_string());
-          clientSocket.close();
-          AcceptLoop();
-          return;
-        }
-
-        // Sequential Id.
-        const ClientId clientId = _client_id++;
-
-        // Create the client.
-        const auto [itr, emplaced] = _clients.try_emplace(
-          clientId,
-          std::make_shared<Client>(
-            clientId,
-            clientEndpoint,
-            std::move(clientSocket),
-            *this));
-
-        // Id is sequential so emplacement should never fail.
-        assert(emplaced);
-
-        itr->second->Begin();
+        HandleAcceptProcedure(std::move(clientSocket));
       }
       catch (const std::exception& x)
       {
         spdlog::error(
-          "Error in the server accept loop: {}",
+          "Unhandled exception in the client accept procedure: {}",
           x.what());
       }
 
