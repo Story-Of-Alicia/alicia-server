@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <cmath>
 #include <ctime>
+#include <numeric>
 #include <ranges>
 
 #include <spdlog/spdlog.h>
@@ -54,6 +55,9 @@ constexpr uint16_t MaxPlenitude = 1200;
 //! The item template ID of the instant grow-up item,
 //! which matures a foal into an adult horse.
 constexpr data::Tid InstantGrowUpItemTid = 43001;
+
+//! The highest emblem ID in the EmblemInfo table, which is one based.
+constexpr uint16_t MaxEmblemId = 35;
 
 //! How often the foal maturity sweep runs while players are on their ranch.
 constexpr auto FoalMaturityCheckInterval = std::chrono::seconds(60);
@@ -505,6 +509,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& command)
     {
       HandleGetEmblemList(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRSetKeyEmblem>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleSetKeyEmblem(clientId, command);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRChangeNickname>(
@@ -1001,6 +1011,48 @@ void RanchDirector::SendStorageNotification(
   }
   catch (const std::exception&)
   {
+  }
+}
+
+void RanchDirector::BroadcastEmblemNotify(
+  const data::Uid characterUid,
+  const uint16_t emblemId)
+{
+  try
+  {
+    const auto& clientContext = GetClientContextByCharacterUid(characterUid);
+
+    // Send twice - the client's overhead handler reads from a cache
+    // that is updated by a later subscriber in the signal chain.
+    protocol::AcCmdCRSetKeyEmblemNotify notify{
+      .characterUid = static_cast<uint32_t>(characterUid),
+      .emblemId = emblemId};
+
+    for (const ClientId ranchClientId : _ranches[clientContext.visitingRancherUid].clients)
+    {
+      const auto& ranchClientContext = GetClientContext(ranchClientId);
+
+      // Prevent broadcast to self.
+      if (ranchClientContext.characterUid == characterUid)
+        continue;
+
+      _commandServer.QueueCommand<decltype(notify)>(
+        ranchClientId,
+        [notify]()
+        {
+          return notify;
+        });
+      _commandServer.QueueCommand<decltype(notify)>(
+        ranchClientId,
+        [notify]()
+        {
+          return notify;
+        });
+    }
+  }
+  catch (const std::exception&)
+  {
+    // Empty.
   }
 }
 
@@ -5679,12 +5731,10 @@ void RanchDirector::HandleGetEmblemList(
   }
 
   protocol::AcCmdCREmblemListOK response{};
-  GetServerInstance().GetDataDirector().GetGuild(guildUid).Immutable(
-    [](const data::Guild&)
-    {
-      // TODO: compile emblem list
-    });
-  
+
+  response.unk0.resize(MaxEmblemId);
+  std::iota(response.unk0.begin(), response.unk0.end(), static_cast<uint16_t>(1));
+
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
@@ -5692,6 +5742,48 @@ void RanchDirector::HandleGetEmblemList(
       return response;
     });
 };
+
+void RanchDirector::HandleSetKeyEmblem(
+  ClientId clientId,
+  const protocol::AcCmdCRSetKeyEmblem& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  if (command.emblemId == 0 or command.emblemId > MaxEmblemId)
+  {
+    spdlog::warn(
+      "Client {} tried to set invalid emblem ID {}",
+      clientId,
+      command.emblemId);
+
+    protocol::AcCmdCRSetKeyEmblemCancel cancel{};
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+  characterRecord.Mutable(
+    [&command](data::Character& character)
+    {
+      character.appearance.emblemId = command.emblemId;
+    });
+
+  protocol::AcCmdCRSetKeyEmblemOK ok{};
+  _commandServer.QueueCommand<decltype(ok)>(
+    clientId,
+    [ok]()
+    {
+      return ok;
+    });
+
+  BroadcastEmblemNotify(clientContext.characterUid, command.emblemId);
+}
 
 void RanchDirector::HandleChangeNickname(
   ClientId clientId,

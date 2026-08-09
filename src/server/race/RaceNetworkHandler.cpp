@@ -35,6 +35,25 @@
 namespace server
 {
 
+namespace
+{
+
+//! Discard position deltas larger than this (teleport protection).
+constexpr float TeleportDistanceThreshold = 500.0f;
+
+//! Magic item IDs (normal/critical variants).
+//! See AcCmdCRUseMagicItem - even = normal, odd = critical.
+constexpr uint32_t MagicItemFireBall = 2;
+constexpr uint32_t MagicItemFireBallCrit = 3;
+constexpr uint32_t MagicItemIceWall = 10;
+constexpr uint32_t MagicItemIceWallCrit = 11;
+constexpr uint32_t MagicItemDarkFire = 14;
+constexpr uint32_t MagicItemDarkFireCrit = 15;
+constexpr uint32_t MagicItemSummon = 16;
+constexpr uint32_t MagicItemSummonCrit = 17;
+
+} // anon namespace
+
 RaceNetworkHandler::RaceNetworkHandler(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
   , _commandServer(*this)
@@ -1951,6 +1970,11 @@ void RaceNetworkHandler::HandleRequestSpur(
 
   racer.starPointValue -= gameModeTemplate.spurConsumeStarPoints;
 
+  if (command.comboBreak)
+    racer.boostComboValue = 1;
+  else
+    racer.boostComboValue++;
+
   protocol::AcCmdCRRequestSpurOK response{
     .characterOid = command.characterOid,
     .activeBoosters = command.activeBoosters,
@@ -1998,6 +2022,9 @@ void RaceNetworkHandler::HandleHurdleClearResult(
       "Client tried to perform action on behalf of different racer");
   }
 
+  const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
   protocol::AcCmdCRHurdleClearResultOK response{
     .characterOid = command.characterOid,
     .hurdleClearType = command.hurdleClearType,
@@ -2041,6 +2068,38 @@ void RaceNetworkHandler::HandleHurdleClearResult(
         racer.starPointValue + gameModeTemplate.perfectJumpStarPoints + gainedStarPointsFromCombo,
         gameModeTemplate.starPointsMax);
 
+      characterRecord.Immutable(
+        [this, &racer](const data::Character& character)
+        {
+          if (character.mountUid() == data::InvalidUid)
+            return;
+
+          const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(
+            character.mountUid());
+          horseRecord.Mutable(
+            [&racer](data::Horse& horse)
+            {
+              horse.mountInfo.totalJumps = horse.mountInfo.totalJumps() + 1;
+              horse.mountInfo.successfulJumps = horse.mountInfo.successfulJumps() + 1;
+              horse.mountInfo.perfectJumps = horse.mountInfo.perfectJumps() + 1;
+
+              if (racer.jumpComboValue > horse.mountInfo.bestJumpCombo())
+                horse.mountInfo.bestJumpCombo = racer.jumpComboValue;
+            });
+        });
+
+      characterRecord.Mutable(
+        [&racer](data::Character& character)
+        {
+          auto& stats = character.ridingStats;
+          stats.totalJumps = stats.totalJumps() + 1;
+          stats.successfulJumps = stats.successfulJumps() + 1;
+          stats.perfectJumps = stats.perfectJumps() + 1;
+
+          if (racer.jumpComboValue > stats.bestJumpCombo())
+            stats.bestJumpCombo = racer.jumpComboValue;
+        });
+
       // Update boost gauge
       starPointResponse.starPointValue = racer.starPointValue;
       break;
@@ -2063,6 +2122,30 @@ void RaceNetworkHandler::HandleHurdleClearResult(
         racer.starPointValue + gainedStarPoints,
         gameModeTemplate.starPointsMax);
 
+      characterRecord.Immutable(
+        [this](const data::Character& character)
+        {
+          if (character.mountUid() == data::InvalidUid)
+            return;
+
+          const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(
+            character.mountUid());
+          horseRecord.Mutable(
+            [](data::Horse& horse)
+            {
+              horse.mountInfo.totalJumps = horse.mountInfo.totalJumps() + 1;
+              horse.mountInfo.successfulJumps = horse.mountInfo.successfulJumps() + 1;
+            });
+        });
+
+      characterRecord.Mutable(
+        [](data::Character& character)
+        {
+          auto& stats = character.ridingStats;
+          stats.totalJumps = stats.totalJumps() + 1;
+          stats.successfulJumps = stats.successfulJumps() + 1;
+        });
+
       // Update boost gauge
       starPointResponse.starPointValue = racer.starPointValue;
       break;
@@ -2072,6 +2155,27 @@ void RaceNetworkHandler::HandleHurdleClearResult(
       // A collision with hurdle, reset the jump combo.
       racer.jumpComboValue = 0;
       response.jumpCombo = racer.jumpComboValue;
+
+      characterRecord.Immutable(
+        [this](const data::Character& character)
+        {
+          if (character.mountUid() == data::InvalidUid)
+            return;
+
+          const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(
+            character.mountUid());
+          horseRecord.Mutable(
+            [](data::Horse& horse)
+            {
+              horse.mountInfo.totalJumps = horse.mountInfo.totalJumps() + 1;
+            });
+        });
+
+      characterRecord.Mutable(
+        [](data::Character& character)
+        {
+          character.ridingStats.totalJumps = character.ridingStats.totalJumps() + 1;
+        });
       break;
     }
     default:
@@ -2179,6 +2283,43 @@ void RaceNetworkHandler::HandleRaceUserPos(
   }
 
   // TODO: player position anticheat
+
+  // Accumulate the session distance, top speed and glide records.
+  if (racer.previousPosition.has_value())
+  {
+    const float delta = (command.position - racer.previousPosition.value()).Length();
+    const bool isAirborne = command.airborne > 0;
+
+    if (delta < TeleportDistanceThreshold)
+    {
+      racer.sessionDistance += delta;
+
+      if (isAirborne)
+      {
+        racer.currentGlideDistance += delta;
+      }
+      else if (racer.previousAirborne)
+      {
+        // Just landed - finalize glide segment
+        if (racer.currentGlideDistance > racer.sessionLongestGlide)
+          racer.sessionLongestGlide = racer.currentGlideDistance;
+        racer.currentGlideDistance = 0.0f;
+      }
+    }
+    else
+    {
+      // Teleport - finalize any in-progress glide
+      if (racer.currentGlideDistance > racer.sessionLongestGlide)
+        racer.sessionLongestGlide = racer.currentGlideDistance;
+      racer.currentGlideDistance = 0.0f;
+    }
+
+    racer.previousAirborne = isAirborne;
+  }
+  racer.previousPosition = command.position;
+
+  if (command.speed > racer.sessionMaxSpeed)
+    racer.sessionMaxSpeed = command.speed;
 
   racer.worldPosition = command.position;
   racer.raceProgress = command.progress;
@@ -2709,6 +2850,26 @@ void RaceNetworkHandler::HandleUseMagicItem(
     return;
   }
 
+  switch (command.magicItemId)
+  {
+    case MagicItemFireBall:
+    case MagicItemFireBallCrit:
+    case MagicItemDarkFire:
+    case MagicItemDarkFireCrit:
+      racer.magicBallUses++;
+      break;
+    case MagicItemIceWall:
+    case MagicItemIceWallCrit:
+      racer.iceWallUses++;
+      break;
+    case MagicItemSummon:
+    case MagicItemSummonCrit:
+      racer.fireSpiritUses++;
+      break;
+    default:
+      break;
+  }
+
   const auto& magicSlotInfo = ConsumeCriticalAura(
     raceInstance,
     racer,
@@ -3234,6 +3395,44 @@ void RaceNetworkHandler::HandleActivateSkillEffect(
     command.targetOid,
     *magicSlotInfo,
     command.effectInstanceId);
+
+  // This command is relayed by the target client, so the defender is
+  // `clientContext.characterUid` and not the attacker.
+  if (verdict == EffectVerdict::Shielded)
+  {
+    targetRacer.magicDefenseComboValue++;
+
+    const auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+      clientContext.characterUid);
+
+    characterRecord.Immutable(
+      [this, &targetRacer](const data::Character& character)
+      {
+        if (character.mountUid() == data::InvalidUid)
+          return;
+
+        const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(
+          character.mountUid());
+        horseRecord.Mutable(
+          [&targetRacer](data::Horse& horse)
+          {
+            const auto combo = targetRacer.magicDefenseComboValue;
+            if (combo > horse.mountInfo.bestMagicDefenseCombo())
+              horse.mountInfo.bestMagicDefenseCombo = combo;
+          });
+      });
+
+    characterRecord.Mutable(
+      [&targetRacer](data::Character& character)
+      {
+        if (targetRacer.magicDefenseComboValue > character.ridingStats.bestMagicDefenseCombo())
+          character.ridingStats.bestMagicDefenseCombo = targetRacer.magicDefenseComboValue;
+      });
+  }
+  else if (verdict == EffectVerdict::Applied)
+  {
+    targetRacer.magicDefenseComboValue = 0;
+  }
 
   if (verdict == EffectVerdict::Applied)
   {

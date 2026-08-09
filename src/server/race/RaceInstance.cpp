@@ -38,6 +38,94 @@ constexpr registry::MapBlockId AllMapsCourseId = 10000;
 constexpr registry::MapBlockId NewMapsCourseId = 10001;
 constexpr registry::MapBlockId HotMapsCourseId = 10002;
 
+//! Speeds and distances are persisted with one decimal of precision.
+constexpr float RidingRecordPrecisionScale = 10.0f;
+
+//! What a single racer contributed to their riding records in one race.
+struct RaceContribution
+{
+  //! The final rank of the racer, starting at one.
+  uint32_t rank{};
+  protocol::GameMode gameMode{};
+  //! Whether the race was played in a non-team mode.
+  bool isSolo{};
+  bool isWinner{};
+  //! Whether the racer completed the course.
+  bool finished{};
+  uint32_t topSpeed{};
+  uint32_t longestGlideDistance{};
+  uint32_t distance{};
+  uint32_t boostsInARow{};
+  uint32_t magicBallUses{};
+  uint32_t iceWallUses{};
+  uint32_t fireSpiritUses{};
+};
+
+//! Accumulates a race contribution into a set of riding records.
+//! Accepts both `data::Horse::MountInfo` and `data::Character::RidingStats`,
+//! which declare every record touched here under the same name.
+template <typename Records>
+void ApplyRaceContribution(Records& records, const RaceContribution& contribution)
+{
+  records.totalRaces = records.totalRaces() + 1;
+
+  if (contribution.finished)
+  {
+    records.totalFinished = records.totalFinished() + 1;
+    records.cumulativeRank = records.cumulativeRank() + contribution.rank;
+  }
+
+  records.magicBallUses = records.magicBallUses() + contribution.magicBallUses;
+  records.iceWallUses = records.iceWallUses() + contribution.iceWallUses;
+  records.fireSpiritUses = records.fireSpiritUses() + contribution.fireSpiritUses;
+
+  records.totalDistance = records.totalDistance() + contribution.distance;
+
+  if (contribution.topSpeed > records.topSpeed())
+    records.topSpeed = contribution.topSpeed;
+
+  if (contribution.longestGlideDistance > records.longestGlideDistance())
+    records.longestGlideDistance = contribution.longestGlideDistance;
+
+  if (contribution.boostsInARow > records.boostsInARow())
+    records.boostsInARow = contribution.boostsInARow;
+
+  // Solo modes track a win streak which resets on a loss,
+  // team modes only ever count the wins up.
+  if (contribution.gameMode == protocol::GameMode::Speed)
+  {
+    if (not contribution.isSolo)
+    {
+      if (contribution.isWinner)
+        records.winsSpeedTeam = records.winsSpeedTeam() + 1;
+    }
+    else if (contribution.isWinner)
+    {
+      records.winsSpeedSingle = records.winsSpeedSingle() + 1;
+    }
+    else
+    {
+      records.winsSpeedSingle = 0;
+    }
+  }
+  else if (contribution.gameMode == protocol::GameMode::Magic)
+  {
+    if (not contribution.isSolo)
+    {
+      if (contribution.isWinner)
+        records.winsMagicTeam = records.winsMagicTeam() + 1;
+    }
+    else if (contribution.isWinner)
+    {
+      records.winsMagicSingle = records.winsMagicSingle() + 1;
+    }
+    else
+    {
+      records.winsMagicSingle = 0;
+    }
+  }
+}
+
 } // anon namespace
 
 RaceInstance::RaceInstance(
@@ -244,6 +332,15 @@ void RaceInstance::Stop()
     return priority(a) < priority(b);
   });
 
+  std::vector<data::Uid> rankedCharacterUids;
+  rankedCharacterUids.reserve(raceResult.scores.size());
+  for (const auto& score : raceResult.scores)
+  {
+    rankedCharacterUids.emplace_back(score.uid);
+  }
+
+  UpdateRidingStats(rankedCharacterUids, winningTeam);
+
   // Broadcast the race result
   _raceNetworkHandler.Broadcast(*this, raceResult);
 
@@ -333,6 +430,76 @@ void RaceInstance::Stop()
           });
       }
     });
+}
+
+void RaceInstance::UpdateRidingStats(
+  const std::vector<data::Uid>& rankedCharacterUids,
+  const tracker::RaceTracker::Racer::Team winningTeam)
+{
+  using State = tracker::RaceTracker::Racer::State;
+
+  auto& dataDirector = _raceNetworkHandler.GetServerInstance().GetDataDirector();
+  const bool isSolo = _parameters.teamMode != protocol::TeamMode::Team;
+
+  uint32_t rank = 0;
+  for (const data::Uid characterUid : rankedCharacterUids)
+  {
+    ++rank;
+
+    const auto characterRecord = dataDirector.GetCharacter(characterUid);
+    if (not characterRecord.IsAvailable())
+      continue;
+
+    const auto& racer = _tracker.GetRacer(characterUid);
+    const bool isConnected = racer.state != State::Disconnected;
+
+    // A glide which was still in progress when the race ended is not
+    // finalized by the position handler, so consider it here.
+    const float longestGlide = std::max(
+      racer.sessionLongestGlide, racer.currentGlideDistance);
+
+    RaceContribution contribution{
+      .rank = rank,
+      .gameMode = _parameters.gameMode,
+      .isSolo = isSolo,
+      .finished = isConnected and racer.courseTime != tracker::InvalidCourseTime,
+      .topSpeed = static_cast<uint32_t>(racer.sessionMaxSpeed * RidingRecordPrecisionScale),
+      .longestGlideDistance = static_cast<uint32_t>(longestGlide * RidingRecordPrecisionScale),
+      .distance = static_cast<uint32_t>(racer.sessionDistance),
+      .boostsInARow = racer.boostComboValue,
+      .magicBallUses = racer.magicBallUses,
+      .iceWallUses = racer.iceWallUses,
+      .fireSpiritUses = racer.fireSpiritUses};
+
+    // In a team mode the whole winning team wins,
+    // in a solo mode only the first place does.
+    if (isSolo)
+      contribution.isWinner = isConnected and rank == 1;
+    else
+      contribution.isWinner = isConnected and racer.team == winningTeam;
+
+    // Accumulate into the records of the horse the racer rode.
+    characterRecord.Immutable(
+      [&dataDirector, &contribution](const data::Character& character)
+      {
+        if (character.mountUid() == data::InvalidUid)
+          return;
+
+        const auto horseRecord = dataDirector.GetHorse(character.mountUid());
+        horseRecord.Mutable(
+          [&contribution](data::Horse& horse)
+          {
+            ApplyRaceContribution(horse.mountInfo, contribution);
+          });
+      });
+
+    // Accumulate into the lifetime records of the character.
+    characterRecord.Mutable(
+      [&contribution](data::Character& character)
+      {
+        ApplyRaceContribution(character.ridingStats, contribution);
+      });
+  }
 }
 
 void RaceInstance::Tick()
