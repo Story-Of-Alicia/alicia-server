@@ -113,6 +113,9 @@ void server::FileDataSource::SaveMetadata()
     _metaFilePath, "meta");
 
   std::ofstream metaFile(metaFilePath);
+  metaFile.exceptions(
+    std::ios_base::badbit | std::ios_base::failbit);
+
   if (not metaFile.is_open())
   {
     return;
@@ -173,6 +176,9 @@ void server::FileDataSource::StoreUser(const std::string_view&, const data::User
     _userDataPath, user.name());
 
   std::ofstream dataFile(dataFilePath);
+  dataFile.exceptions(
+    std::ios_base::badbit | std::ios_base::failbit);
+
   if (not dataFile.is_open())
   {
     throw std::runtime_error(
@@ -240,6 +246,9 @@ void server::FileDataSource::StoreInfraction(data::Uid uid, const data::Infracti
     _infractionDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
+  dataFile.exceptions(
+    std::ios_base::badbit | std::ios_base::failbit);
+
   if (not dataFile.is_open())
   {
     throw std::runtime_error(
@@ -397,6 +406,9 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
     _characterDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
+  dataFile.exceptions(
+    std::ios_base::badbit | std::ios_base::failbit);
+
   if (not dataFile.is_open())
   {
     throw std::runtime_error(
@@ -674,6 +686,9 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
     _horseDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
+  dataFile.exceptions(
+    std::ios_base::badbit | std::ios_base::failbit);
+
   if (not dataFile.is_open())
   {
     throw std::runtime_error(
@@ -823,6 +838,9 @@ void server::FileDataSource::StoreItem(data::Uid uid, const data::Item& item)
     _itemDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
+  dataFile.exceptions(
+    std::ios_base::badbit | std::ios_base::failbit);
+
   if (not dataFile.is_open())
   {
     throw std::runtime_error(
@@ -898,6 +916,9 @@ void server::FileDataSource::StoreStorageItem(data::Uid uid, const data::Storage
     _storageItemPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
+  dataFile.exceptions(
+    std::ios_base::badbit | std::ios_base::failbit);
+
   if (not dataFile.is_open())
   {
     throw std::runtime_error(
@@ -977,6 +998,9 @@ void server::FileDataSource::StoreEgg(data::Uid uid, const data::Egg& egg)
     _eggDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
+  dataFile.exceptions(
+    std::ios_base::badbit | std::ios_base::failbit);
+
   if (not dataFile.is_open())
   {
     throw std::runtime_error(
@@ -1035,6 +1059,9 @@ void server::FileDataSource::StorePet(data::Uid uid, const data::Pet& pet)
     _petDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
+  dataFile.exceptions(
+    std::ios_base::badbit | std::ios_base::failbit);
+
   if (not dataFile.is_open())
   {
     throw std::runtime_error(
@@ -1091,6 +1118,9 @@ void server::FileDataSource::StoreHousing(data::Uid uid, const data::Housing& ho
     _housingDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
+  dataFile.exceptions(
+    std::ios_base::badbit | std::ios_base::failbit);
+
   if (not dataFile.is_open())
   {
     throw std::runtime_error(
@@ -1154,6 +1184,9 @@ void server::FileDataSource::StoreGuild(data::Uid uid, const data::Guild& guild)
     _guildDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
+  dataFile.exceptions(
+    std::ios_base::badbit | std::ios_base::failbit);
+
   if (not dataFile.is_open())
   {
     throw std::runtime_error(
@@ -1298,6 +1331,9 @@ void server::FileDataSource::StoreSettings(data::Uid uid, const data::Settings& 
     _settingsDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
+  dataFile.exceptions(
+    std::ios_base::badbit | std::ios_base::failbit);
+
   if (!dataFile.is_open())
   {
     throw std::runtime_error(
@@ -1405,6 +1441,9 @@ void server::FileDataSource::StoreDailyQuestGroup(data::Uid uid, const data::Dai
     _dailyQuestGroupDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
+  dataFile.exceptions(
+    std::ios_base::badbit | std::ios_base::failbit);
+
   if (not dataFile.is_open())
   {
     throw std::runtime_error(
@@ -1478,6 +1517,9 @@ void server::FileDataSource::StoreMail(data::Uid uid, const data::Mail& mail)
     _mailDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
+  dataFile.exceptions(
+    std::ios_base::badbit | std::ios_base::failbit);
+
   if (!dataFile.is_open())
   {
     throw std::runtime_error(
@@ -1541,6 +1583,9 @@ void server::FileDataSource::StoreQuest(data::Uid uid, const data::Quest& quest)
     _questDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
+  dataFile.exceptions(
+    std::ios_base::badbit | std::ios_base::failbit);
+
   if (not dataFile.is_open())
   {
     throw std::runtime_error(
@@ -1599,6 +1644,9 @@ void server::FileDataSource::StoreStallion(data::Uid uid, const data::Stallion& 
     _stallionDataPath, std::format("{}", uid));
 
   std::ofstream dataFile(dataFilePath);
+  dataFile.exceptions(
+    std::ios_base::badbit | std::ios_base::failbit);
+
   if (not dataFile.is_open())
   {
     throw std::runtime_error(
@@ -1691,6 +1739,9 @@ void server::FileDataSource::StoreReward(data::Uid claimUid, const data::Reward&
     _rewardDataPath, std::format("{}", claimUid));
 
   std::ofstream dataFile(dataFilePath);
+  dataFile.exceptions(
+    std::ios_base::badbit | std::ios_base::failbit);
+
   if (not dataFile.is_open())
   {
     throw std::runtime_error(
