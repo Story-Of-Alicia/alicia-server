@@ -118,7 +118,7 @@ void AllChatDirector::HandleChatterEnterRoom(
   clientContext.isAuthenticated = _serverInstance.GetOtpSystem().AuthorizeLtk(
     identityHash,
     command.code,
-    _chatterServer.GetClientAddress(clientId).to_uint());
+    _chatterServer.GetClientAddress(clientId).to_v4().to_uint());
 
   if (not clientContext.isAuthenticated)
   {

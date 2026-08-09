@@ -1906,7 +1906,7 @@ void MessengerDirector::HandleChatterChannelInfo(
   boost::hash_combine(identityHash, AllChatOtpConstant);
   const uint32_t code = _serverInstance.GetOtpSystem().GrantLtk(
     identityHash,
-    _chatterServer.GetClientAddress(clientId).to_uint());
+    _chatterServer.GetClientAddress(clientId).to_v4().to_uint());
 
   // Send response for all chat
   protocol::ChatCmdChannelInfoAckOk response{
