@@ -1,5 +1,4 @@
-# Git repository history
-.git/
+# Git
 .gitignore
 
 # Build output directories
