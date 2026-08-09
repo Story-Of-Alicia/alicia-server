@@ -399,7 +399,7 @@ void Server::OnThrottleDisconnect(const asio::ip::address& address) noexcept
   }
 }
 
-void Server::HandleAcceptProcedure(
+bool Server::HandleAcceptProcedure(
   asio::ip::tcp::socket&& clientSocket)
 {
   // Get the remote endpoint of the client.
@@ -411,28 +411,28 @@ void Server::HandleAcceptProcedure(
   catch (const std::exception&)
   {
     // The connection was broken too early.
-    return;
+    // This is not even worth logging.
+    return false;
   }
 
   // Get the address of the endpoint.
   const auto clientAddress = clientEndpoint.address();
 
-  // If the address is not going over IPv4 reject it.
-  // The client does not support IPv6.
+  // If the connection is not going over IPv4 refuse to accept it.
   if (not clientAddress.is_v4())
   {
     spdlog::warn("Connection rejected from {} because it is not coming through IPv4",
       clientAddress.to_string());
-    return;
+    return false;
   }
 
+  // If the connection is throttled refuse to accept it.
   if (IsConnectionThrottled(clientAddress))
   {
     spdlog::warn(
       "Connection rejected from {} because it is throttled",
       clientAddress.to_string());
-    clientSocket.close();
-    return;
+    return false;
   }
 
   // Get the next sequential client ID.
@@ -450,7 +450,10 @@ void Server::HandleAcceptProcedure(
   assert(emplaced);
 
   const auto client = itr->second;
+  // Begin the client instance.
   client->Begin();
+
+  return true;
 }
 
 void Server::AcceptLoop() noexcept
@@ -469,7 +472,9 @@ void Server::AcceptLoop() noexcept
 
       try
       {
-        HandleAcceptProcedure(std::move(clientSocket));
+        const bool wasAccepted = HandleAcceptProcedure(std::move(clientSocket));
+        if (not wasAccepted)
+          clientSocket.close();
       }
       catch (const std::exception& x)
       {

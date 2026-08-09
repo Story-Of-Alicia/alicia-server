@@ -167,7 +167,8 @@ private:
     std::deque<std::chrono::steady_clock::time_point> connectionTimestamps;
   };
 
-  void HandleAcceptProcedure(asio::ip::tcp::socket&& clientSocket);
+  bool HandleAcceptProcedure(asio::ip::tcp::socket&& clientSocket);
+
   void AcceptLoop() noexcept;
   void TickLoop() noexcept;
   bool IsConnectionThrottled(const asio::ip::address& address) noexcept;
