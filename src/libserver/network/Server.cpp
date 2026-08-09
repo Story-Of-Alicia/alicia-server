@@ -463,6 +463,9 @@ void Server::AcceptLoop() noexcept
     {
       if (error)
       {
+        if (error == boost::system::errc::operation_canceled)
+          return;
+
         spdlog::error(
           "Unhandled generic network exception in the accept loop: 0x{} ({})",
           error.value(),
