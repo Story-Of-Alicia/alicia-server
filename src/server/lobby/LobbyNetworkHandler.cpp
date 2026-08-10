@@ -3215,7 +3215,7 @@ void LobbyNetworkHandler::HandleLeaveGuildParty(
 
 void LobbyNetworkHandler::HandleGuildPartyList(
   ClientId clientId,
-  [[maybe_unused]] const protocol::AcCmdCLGuildPartyList& command)
+  const protocol::AcCmdCLGuildPartyList&)
 {
   const auto& clientContext = GetClientContext(clientId);
 
@@ -3520,7 +3520,7 @@ void LobbyNetworkHandler::HandleStartGuildPartyMatch(
 
 void LobbyNetworkHandler::HandleStopGuildPartyMatch(
   ClientId clientId,
-  [[maybe_unused]] const protocol::AcCmdCLStopGuildPartyMatch& command)
+  const protocol::AcCmdCLStopGuildPartyMatch&)
 {
   const auto& clientContext = GetClientContext(clientId);
 
