@@ -1674,7 +1674,7 @@ void RaceNetworkHandler::HandleUserRaceFinal(
   //       we should track the race track progress and make sure it's linear
   //       and was done within reasonable timespan.
 
-  const bool didNotFinish = command.raceTrackProgress > 0;
+  const bool didNotFinish = command.raceTrackProgress >= 0.f;
 
   // debug
   {
