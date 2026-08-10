@@ -167,7 +167,7 @@ public:
 
     struct Postgres
     {
-
+      std::string connectionUri;
     } postgres{};
   } data{};
 

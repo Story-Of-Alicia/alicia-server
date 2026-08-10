@@ -18,3 +18,9 @@ Testing/
 
 # Secrets
 .env
+
+# Local development Postgres cluster
+.pgdata/
+
+# Local database dumps
+.pgbackups/

@@ -128,13 +128,12 @@ struct User
 {
   //! A name of the user.
   dao::Field<std::string> name{};
-  //! An authorization token of the user.
-  dao::Field<std::string> token{};
   //! Infractions.
   dao::Field<std::vector<Uid>> infractions{};
   //! A character UID of the user.
   dao::Field<Uid> characterUid{InvalidUid};
-  //! The last time the user was seen online. 1 means currently online.
+  //! The last time the user was seen online, stamped on both login and logout.
+  //! A default-constructed time point means the user has never been seen.
   dao::Field<Clock::time_point> lastSeenOnline{};
 };
 

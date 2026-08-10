@@ -19,6 +19,38 @@ configure_file(
         include/server/Version.hpp.in
         generated/Version.hpp)
 
+# Generated schema header. The sql file stays the single source of truth; it is
+# embedded so that the server can create the schema on start-up without needing
+# the file to be deployed alongside it.
+#
+# The schema is emitted as several raw string literals which are joined at
+# run time, because MSVC rejects a single string literal beyond roughly 16k
+# and the schema is larger than that.
+file(READ ${CMAKE_SOURCE_DIR}/scripts/schema/001_initial.sql AliciaDataSchemaRaw)
+set(AliciaSchemaChunkSize 8000)
+set(AliciaDataSchemaSql "")
+string(LENGTH "${AliciaDataSchemaRaw}" AliciaSchemaLength)
+set(AliciaSchemaOffset 0)
+while (AliciaSchemaOffset LESS AliciaSchemaLength)
+    math(EXPR AliciaSchemaRemaining "${AliciaSchemaLength} - ${AliciaSchemaOffset}")
+    if (AliciaSchemaRemaining GREATER ${AliciaSchemaChunkSize})
+        set(AliciaSchemaTake ${AliciaSchemaChunkSize})
+    else ()
+        set(AliciaSchemaTake ${AliciaSchemaRemaining})
+    endif ()
+    string(SUBSTRING "${AliciaDataSchemaRaw}"
+            ${AliciaSchemaOffset} ${AliciaSchemaTake} AliciaSchemaChunk)
+    string(APPEND AliciaDataSchemaSql
+            "  R\"ALICIA_SCHEMA(${AliciaSchemaChunk})ALICIA_SCHEMA\",\n")
+    math(EXPR AliciaSchemaOffset "${AliciaSchemaOffset} + ${AliciaSchemaTake}")
+endwhile ()
+configure_file(
+        include/libserver/data/pq/PqSchema.hpp.in
+        generated/PqSchema.hpp
+        @ONLY)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+        ${CMAKE_SOURCE_DIR}/scripts/schema/001_initial.sql)
+
 # Project properties interface library
 add_library(project-properties INTERFACE)
 target_compile_features(project-properties
@@ -55,7 +87,7 @@ add_library(alicia-libserver STATIC
         src/libserver/data/DataRepair.cpp
         src/libserver/data/helper/ProtocolHelper.cpp
         src/libserver/data/file/FileDataSource.cpp
-        #src/libserver/data/pq/PqDataSource.cpp
+        src/libserver/data/pq/PqDataSource.cpp
         src/libserver/network/Server.cpp
         src/libserver/network/chatter/proto/ChatterMessageDefinitions.cpp
         src/libserver/network/chatter/ChatterProtocol.cpp
@@ -83,7 +115,8 @@ add_library(alicia-libserver STATIC
         src/libserver/util/Util.cpp
         src/libserver/util/Profiler.cpp)
 target_include_directories(alicia-libserver PUBLIC
-        include/)
+        include/
+        "${PROJECT_BINARY_DIR}/generated")
 target_link_libraries(alicia-libserver PRIVATE
         project-properties
         platform-properties)
@@ -93,7 +126,8 @@ target_link_libraries(alicia-libserver PUBLIC
         nlohmann_json::nlohmann_json
         yaml-cpp::yaml-cpp
         zlibstatic
-        tinyxml2)
+        tinyxml2
+        libpqxx::pqxx)
 
 # alicia-server target
 add_executable(alicia-server
@@ -140,6 +174,17 @@ target_link_libraries(alicia-server PRIVATE
         libpqxx::pqxx)
 target_include_directories(alicia-server PUBLIC
         "${PROJECT_BINARY_DIR}/generated")
+
+# alicia-migrate target
+# Copies a file data source into a postgres data source.
+add_executable(alicia-migrate
+        src/tools/Migrate.cpp)
+target_include_directories(alicia-migrate
+        PRIVATE include/)
+target_link_libraries(alicia-migrate PRIVATE
+        project-properties
+        platform-properties
+        alicia-libserver)
 
 if (BUILD_TESTS)
     enable_testing()

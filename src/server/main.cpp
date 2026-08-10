@@ -168,7 +168,15 @@ int main(int argc, char** argv)
     spdlog::info("Base directory is the working directory");
 
   server::ServerInstance serverInstance(baseDirectory);
-  serverInstance.Initialize();
+  try
+  {
+    serverInstance.Initialize();
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::critical("Failed to start the server: {}", x.what());
+    return 1;
+  }
 
   spdlog::info(
     "Server started up in {}ms",

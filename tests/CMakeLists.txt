@@ -42,6 +42,15 @@ target_sources(race_test_p2did_pool PRIVATE
 target_link_libraries(race_test_p2did_pool
         PRIVATE project-properties alicia-libserver)
 
+# Round-trips records through a real Postgres data source. Reports a skip and
+# succeeds when no database is reachable, so it does not fail a build on a
+# machine without one.
+add_executable(data_test_pq_data_source)
+target_sources(data_test_pq_data_source PRIVATE
+        src/data/TestPqDataSource.cpp)
+target_link_libraries(data_test_pq_data_source
+        PRIVATE project-properties platform-properties alicia-libserver)
+
 add_test(NAME ProtocolTestMagic COMMAND protocol_test_magic)
 add_test(NAME UtilTestStream COMMAND util_test_stream)
 add_test(NAME UtilTestScheduler COMMAND util_test_scheduler)
@@ -49,4 +58,5 @@ add_test(NAME UtilTestLocale COMMAND util_test_locale)
 add_test(NAME UtilTestAliciaShopTime COMMAND util_test_alicia_shop_time)
 add_test(NAME UtilTestProfiler COMMAND util_test_profiler)
 add_test(NAME RaceTestP2dIdPool COMMAND race_test_p2did_pool)
+add_test(NAME DataTestPqDataSource COMMAND data_test_pq_data_source)
 

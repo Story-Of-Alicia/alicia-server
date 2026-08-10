@@ -157,6 +157,11 @@ server:
       # Additionally configurable through environment variable UDP_RACE_RELAY_SERVER_PORT.
       port: 10500
   data:
+    # The data source the server stores its data in, either "file" or "postgres".
     source: file
     file:
+      # Resolved relative to the resource directory. An absolute path is used as-is.
       basePath: "./data"
+    postgres:
+      # Apply scripts/schema/001_initial.sql before starting with this source.
+      connectionUri: "postgresql://storyofalicia:dev@localhost:5432/storyofalicia"

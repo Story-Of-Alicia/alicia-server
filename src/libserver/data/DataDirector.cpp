@@ -21,12 +21,14 @@
 
 #include "libserver/data/DataRepair.hpp"
 #include "libserver/data/file/FileDataSource.hpp"
+#include "libserver/data/pq/PqDataSource.hpp"
 #include "libserver/util/Deferred.hpp"
 
 #include <spdlog/spdlog.h>
 
 namespace server
 {
+
 
 DataDirector::DataDirector(const std::filesystem::path& basePath)
   : _userStorage(
@@ -736,19 +738,44 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
         return false;
       })
 {
-  _primaryDataSource = std::make_unique<FileDataSource>();
-  if (auto* fileDataSource = dynamic_cast<FileDataSource*>(_primaryDataSource.get()))
-  {
-    fileDataSource->Initialize(basePath);
-  }
+  _basePath = basePath;
 }
 
 DataDirector::~DataDirector()
 {
 }
 
-void DataDirector::Initialize()
+void DataDirector::Initialize(const Config::Data& config)
 {
+  switch (config.source)
+  {
+    case Config::Data::Source::File:
+    {
+      // A relative configured path is resolved against the base path
+      const auto dataPath = _basePath / config.file.basePath;
+
+      auto fileDataSource = std::make_unique<FileDataSource>();
+      fileDataSource->Initialize(dataPath);
+      _primaryDataSource = std::move(fileDataSource);
+
+      spdlog::info("Data director is using the file data source at '{}'", dataPath.string());
+      break;
+    }
+
+    case Config::Data::Source::Postgres:
+    {
+      auto pqDataSource = std::make_unique<PqDataSource>();
+      pqDataSource->Initialize(config.postgres.connectionUri);
+      _primaryDataSource = std::move(pqDataSource);
+
+      spdlog::info("Data director is using the postgres data source");
+      break;
+    }
+
+    default:
+      throw std::runtime_error("Unsupported data source selected in the config");
+  }
+
 }
 
 void DataDirector::Terminate()
@@ -780,6 +807,10 @@ void DataDirector::Terminate()
   if (auto* fileDataSource = dynamic_cast<FileDataSource*>(_primaryDataSource.get()))
   {
     fileDataSource->Terminate();
+  }
+  else if (auto* pqDataSource = dynamic_cast<PqDataSource*>(_primaryDataSource.get()))
+  {
+    pqDataSource->Terminate();
   }
 }
 

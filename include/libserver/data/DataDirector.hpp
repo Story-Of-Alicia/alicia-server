@@ -57,8 +57,9 @@ public:
   //! Default destructor.
   ~DataDirector();
 
-  //! Initializes the director.
-  void Initialize();
+  //! Initializes the director
+  //! @param config Data configuration.
+  void Initialize(const Config::Data& config);
   //!  Terminates the director.
   void Terminate();
 
@@ -153,6 +154,8 @@ public:
   [[nodiscard]] DataSource& GetDataSource() noexcept;
 
 private:
+  //! A base path against which a relative configured data path is resolved.
+  std::filesystem::path _basePath;
   //! An underlying data source of the data director.
   std::unique_ptr<DataSource> _primaryDataSource;
 

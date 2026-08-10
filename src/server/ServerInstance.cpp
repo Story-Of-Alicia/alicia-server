@@ -42,7 +42,7 @@ ServerInstance::ServerInstance(
   const std::filesystem::path& resourceDirectory)
   : _resourceDirectory(resourceDirectory)
   , _authenticationService(*this)
-  , _dataDirector(resourceDirectory / "data")
+  , _dataDirector(resourceDirectory)
   , _lobbyDirector(*this)
   , _messengerDirector(*this)
   , _allChatDirector(*this)
@@ -93,6 +93,11 @@ void ServerInstance::Initialize()
   // Load configurations from environment variables.
   _config.LoadFromEnvironment();
 
+  // Create the data source before any director thread starts. The directors
+  // reach for it as soon as they are running, so a failure here has to abort
+  // the startup rather than leave them with no data source.
+  _dataDirector.Initialize(_config.data);
+
   // Initialize the directors and tick them on their own threads.
   // Directors will terminate their tick loop once `_shouldRun` flag is set to false.
 
@@ -119,7 +124,6 @@ void ServerInstance::Initialize()
   {
     try
     {
-      _dataDirector.Initialize();
       RunDirectorTaskLoop(_dataDirector);
       _dataDirector.Terminate();
     }

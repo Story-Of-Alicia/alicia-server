@@ -318,8 +318,17 @@ void Config::LoadFromFile(const std::filesystem::path& filePath)
       const auto dataSourceName = dataYaml["source"].as<std::string>();
       if (dataSourceName == "file")
       {
+        data.source = Data::Source::File;
+
         const auto fileYaml = dataYaml["file"];
         data.file.basePath = fileYaml["basePath"].as<std::string>();
+      }
+      else if (dataSourceName == "postgres")
+      {
+        data.source = Data::Source::Postgres;
+
+        const auto postgresYaml = dataYaml["postgres"];
+        data.postgres.connectionUri = postgresYaml["connectionUri"].as<std::string>();
       }
       else
       {

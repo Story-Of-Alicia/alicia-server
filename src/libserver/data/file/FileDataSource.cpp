@@ -26,6 +26,7 @@
 #include <regex>
 
 #include <nlohmann/json.hpp>
+#include <spdlog/spdlog.h>
 
 namespace
 {
@@ -163,7 +164,6 @@ void server::FileDataSource::RetrieveUser(const std::string_view& name, data::Us
 
   const auto json = nlohmann::json::parse(dataFile);
   user.name = json.value("name", std::string{});
-  user.token = json.value("token", std::string{});
   user.characterUid = json.value("characterUid", data::Uid{});
   user.infractions = json.value("infractions", std::vector<data::Uid>{});
   user.lastSeenOnline = data::Clock::time_point(std::chrono::seconds(
@@ -187,7 +187,6 @@ void server::FileDataSource::StoreUser(const std::string_view&, const data::User
 
   nlohmann::json json;
   json["name"] = user.name();
-  json["token"] = user.token();
   json["characterUid"] = user.characterUid();
   json["infractions"] = user.infractions();
   json["lastSeenOnline"] = std::chrono::ceil<std::chrono::seconds>(
