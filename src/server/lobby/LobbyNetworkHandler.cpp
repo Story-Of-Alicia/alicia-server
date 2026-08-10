@@ -745,12 +745,23 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
   // than caching a foal it won't re-render on a later type change.
   _serverInstance.GetHorseSystem().PromoteMaturedFoals(userCharacterUid);
 
+  // Collection of items expired while the character aws offline.
+  std::vector<data::Item> expiredItems;
+
   // Get the character record and fill the protocol data.
   // Also get the UID of the horse mounted by the character.
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     userCharacterUid);
   if (not characterRecord)
     throw std::runtime_error("Character record unavailable");
+
+  // Collect the expired items so we can inform the user about
+  // the items that have expired since they were offline.
+  characterRecord.Mutable([this, &expiredItems](data::Character& character)
+  {
+    expiredItems = _serverInstance.GetItemSystem()
+      .CollectAndEraseExpiredItems(character);
+  });
 
   protocol::LobbyCommandLoginOK response{
     .lobbyTime = util::TimePointToFileTime(util::Clock::now()),
@@ -840,7 +851,7 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
     data::InvalidUid};
 
   characterRecord.Immutable(
-    [this, justCreatedCharacter = clientContext.justCreatedCharacter, &response, &characterMountUid](const data::Character& character)
+    [this, justCreatedCharacter = clientContext.justCreatedCharacter, &response, &characterMountUid, &expiredItems](const data::Character& character)
     {
       response.uid = character.uid();
       response.name = character.name();
@@ -871,14 +882,11 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
         response.equipmentItems,
         *equipmentItems);
 
-      const auto expiredItems = _serverInstance.GetDataDirector().GetItemCache().Get(
-        character.expiredEquipment());
-      if (not expiredItems)
-        throw std::runtime_error("Expired items unavailable");
-
-      protocol::BuildProtocolItems(
-        response.expiredItems,
-        *expiredItems);
+      for (const auto& expiredItem : expiredItems)
+      {
+        auto& protocolItem = response.expiredItems.emplace_back();
+        protocol::BuildProtocolItem(protocolItem, expiredItem);
+      }
 
       protocol::BuildProtocolCharacter(
         response.character,

@@ -6577,17 +6577,22 @@ void RanchDirector::HandleSendGift(
       (data::Character& character)
     {
       data::Uid itemUid{data::InvalidUid};
+
       // If expirable item, add with duration, else with count
       if (registryItem.type == registry::Item::Type::Temporary)
+      {
         itemUid = GetServerInstance().GetItemSystem().AddItem(
           character,
           registryItem.tid,
           std::chrono::hours(priceRange));
+      }
       else
+      {
         itemUid = GetServerInstance().GetItemSystem().AddItem(
           character,
           registryItem.tid,
           priceRange);
+      }
 
       // Create storage item and populate with gift details
       data::Uid storageItemUid{data::InvalidUid};

@@ -253,12 +253,13 @@ Server::Server(EventHandlerInterface& networkEventHandler) noexcept
 
 void Server::Begin(const asio::ip::address& address, uint16_t port)
 {
-  const asio::ip::tcp::endpoint server_endpoint(address, port);
+  const asio::ip::tcp::endpoint serverEndpoint(address, port);
 
   try
   {
-    _acceptor.open(server_endpoint.protocol());
-    _acceptor.bind(server_endpoint);
+    _acceptor.open(serverEndpoint.protocol());
+    _acceptor.set_option(asio::socket_base::reuse_address(true));
+    _acceptor.bind(serverEndpoint);
     _acceptor.listen();
   }
   catch (const std::exception& x)

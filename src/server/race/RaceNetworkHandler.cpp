@@ -789,12 +789,6 @@ void RaceNetworkHandler::HandleEnterRoom(
           *_serverInstance.GetDataDirector().GetItemCache().Get(
             character.characterEquipment()));
 
-        // Build the mount equipment.
-        protocol::BuildProtocolItems(
-          protocolRacer.avatar->equipment,
-          *_serverInstance.GetDataDirector().GetItemCache().Get(
-            character.expiredEquipment()));
-
         const auto mountRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
           character.mountUid());
         mountRecord->Immutable(

@@ -138,7 +138,6 @@ void VisitCharacterReferences(
 {
   handler(dataDirector.GetItemCache(), "inventory item", character.inventory());
   handler(dataDirector.GetItemCache(), "equipped item", character.characterEquipment());
-  handler(dataDirector.GetItemCache(), "expired item", character.expiredEquipment());
 
   handler(dataDirector.GetHorseCache(), "horse", character.horses());
   handler(dataDirector.GetHorseCache(), "wishlisted horse", character.breedingWishlist());

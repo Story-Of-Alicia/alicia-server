@@ -43,6 +43,34 @@ const std::regex MinutePattern(R"((\d+)m)");
 const std::regex HourPattern(R"((\d+)h)");
 const std::regex DayPattern(R"((\d+)d)");
 
+std::chrono::seconds ExtractDuration(const std::string& argument)
+{
+  auto duration = std::chrono::seconds::zero();
+
+  if (argument == "forever" || argument == "f")
+  {
+    duration = std::chrono::seconds::max();
+  }
+  else
+  {
+    std::smatch match;
+    if (std::regex_search(argument, match, MinutePattern))
+    {
+      duration += std::chrono::minutes(std::stoi(match[1].str()));
+    }
+    if (std::regex_search(argument, match, HourPattern))
+    {
+      duration += std::chrono::hours(std::stoi(match[1].str()));
+    }
+    if (std::regex_search(argument, match, DayPattern))
+    {
+      duration += std::chrono::days(std::stoi(match[1].str()));
+    }
+  }
+
+  return duration;
+}
+
 } // anon namespace
 
 void CommandManager::RegisterCommand(
@@ -558,22 +586,23 @@ void ChatSystem::RegisterUserCommands()
         // Any staff member.
         const auto rank = GetRoleRank(characterUid);
         if (not rank)
-          return {"You don't have permission to use this command.",
-            "Use shop to obtain items."};
-
-        if (arguments.size() < 3)
-          return {
-            "Invalid command arguments.",
-            "(//give item <count> <tid>)"};
-
-        // todo: item duration
-        const int32_t itemCount = std::atoi(arguments[1].c_str());
-        if (itemCount < 1)
         {
-          return {"Invalid item count"};
+          return {
+            "You don't have permission to use this command.",
+            "Use shop to obtain items."};
         }
 
-        const data::Uid itemTid = std::atoi(arguments[2].c_str());
+        if (arguments.size() < 3)
+        {
+          return {
+            "give item",
+            "  <tid>",
+            "  <count or duration>",
+            "    - Optional parameter.",
+            "    - Duration as XXmXXhXXd or (f)orever.",};
+        }
+
+        const data::Uid itemTid = std::atoi(arguments[1].c_str());
 
         const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(itemTid);
         if (not itemTemplate)
@@ -586,9 +615,23 @@ void ChatSystem::RegisterUserCommands()
           return {"Please give yourself eggs to hatch pets."};
         }
 
-        if (itemTid >= 20000 && itemTid <= 29999)
+        int32_t itemCount = 1;
+        std::chrono::seconds itemDuration = std::chrono::seconds::zero();
+
+        if (arguments.size() > 2)
         {
-          return {"Please use the shop to obtain horse armor."};
+          if (itemTemplate->type == registry::Item::Type::Temporary)
+          {
+            itemDuration = ExtractDuration(arguments[2]);
+          }
+          else
+          {
+            itemCount = std::atoi(arguments[2].c_str());
+            if (itemCount < 1)
+            {
+              return {"Invalid item count"};
+            }
+          }
         }
 
         size_t inventoryItemCount{0};
@@ -615,12 +658,12 @@ void ChatSystem::RegisterUserCommands()
         }
 
         storedItem.Mutable(
-          [&itemTemplate, &giftUid, itemCount, itemTid](data::StorageItem& storageItem)
+          [&itemTemplate, &giftUid, itemCount, itemDuration, itemTid](data::StorageItem& storageItem)
           {
             storageItem.items().emplace_back(data::StorageItem::Item{
               .tid = itemTid,
               .count = static_cast<uint32_t>(itemCount),
-              .duration = std::chrono::days(10)});
+              .duration = itemDuration});
             storageItem.sender() = "System";
 
             storageItem.message() = std::format("{}x Item '{}'", itemCount, itemTemplate->name);
@@ -1176,28 +1219,7 @@ void ChatSystem::RegisterAdminCommands()
 
       // Get the infraction duration argument.
       const std::string& durationArgument = arguments[3];
-      auto duration = std::chrono::seconds::zero();
-
-      if (durationArgument == "forever" || durationArgument == "f")
-      {
-        duration = std::chrono::seconds::max();
-      }
-      else
-      {
-        std::smatch match;
-        if (std::regex_search(durationArgument, match, MinutePattern))
-        {
-          duration += std::chrono::minutes(std::stoi(match[1].str()));
-        }
-        if (std::regex_search(durationArgument, match, HourPattern))
-        {
-          duration += std::chrono::hours(std::stoi(match[1].str()));
-        }
-        if (std::regex_search(durationArgument, match, DayPattern))
-        {
-          duration += std::chrono::days(std::stoi(match[1].str()));
-        }
-      }
+      auto duration = ExtractDuration(durationArgument);
 
       if (duration == data::Clock::duration::zero())
       {
@@ -2324,7 +2346,7 @@ void ChatSystem::RegisterAdminCommands()
       }
 
       return {
-        "Game and server configs"
+        "Game and server configs",
         "were reloaded"};
     });
 }
