@@ -5823,9 +5823,7 @@ void RanchDirector::HandleRequestGuildMatchInfo(
     .unk3 = 3,
     .unk4 = 4,
     .unk5 = 5,
-    .unk8 = 8,
-    .unk10 = 10
-  };
+    .unk8 = 8};
 
   guildRecord.Immutable([&response](const data::Guild& guild)
   {
@@ -5836,6 +5834,7 @@ void RanchDirector::HandleRequestGuildMatchInfo(
     response.totalLosses = guild.totalLosses();
     response.seasonalWins = guild.seasonalWins();
     response.seasonalLosses = guild.seasonalLosses();
+    response.emblemUid = guild.emblemUid();
   });
 
   _commandServer.QueueCommand<decltype(response)>(

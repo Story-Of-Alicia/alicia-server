@@ -413,6 +413,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRRestartRace& command);
 
+  void HandleRequestGuildMatchInfo(
+    ClientId clientId,
+    const protocol::AcCmdCRRequestGuildMatchInfo& command);
+
   //! A scheduler instance.
   Scheduler _scheduler;
   //! A server instance.
