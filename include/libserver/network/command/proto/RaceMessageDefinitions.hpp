@@ -2889,6 +2889,61 @@ struct AcCmdRCObtainEgg
     SourceStream& stream);
 };
 
+struct AcCmdRCGuildRaceInfo
+{
+  uint32_t unk0{};
+  uint32_t unk1{};
+  uint32_t unk2{};
+  uint32_t unk3{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCGuildRaceInfo;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCGuildRaceInfo& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCGuildRaceInfo& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCGuildRaceResult
+{
+  //! The UID of the winning guild party.
+  uint32_t winnerPartyUid{};
+  uint32_t unk1{};
+  uint32_t unk2{};
+  uint32_t unk3{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCGuildRaceResult;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCGuildRaceResult& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCGuildRaceResult& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
 #endif // RACE_MESSAGE_DEFINES_HPP

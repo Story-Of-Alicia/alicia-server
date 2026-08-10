@@ -399,6 +399,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRGameCreateClientItem& command);
 
+  void HandleRequestGuildMatchInfo(
+    ClientId clientId,
+    const protocol::AcCmdCRRequestGuildMatchInfo& command);
+
   //! A scheduler instance.
   Scheduler _scheduler;
   //! A server instance.

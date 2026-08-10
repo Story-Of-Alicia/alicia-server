@@ -2196,4 +2196,38 @@ void AcCmdRCObtainEgg::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdRCGuildRaceInfo::Write(
+  const AcCmdRCGuildRaceInfo& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.unk1)
+    .Write(command.unk2)
+    .Write(command.unk3);
+}
+
+void AcCmdRCGuildRaceInfo::Read(
+  AcCmdRCGuildRaceInfo&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCGuildRaceResult::Write(
+  const AcCmdRCGuildRaceResult& command,
+  SinkStream& stream)
+{
+  stream.Write(command.winnerPartyUid)
+    .Write(command.unk1)
+    .Write(command.unk2)
+    .Write(command.unk3);
+}
+
+void AcCmdRCGuildRaceResult::Read(
+  AcCmdRCGuildRaceResult&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol

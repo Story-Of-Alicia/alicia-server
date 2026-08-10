@@ -269,6 +269,12 @@ RaceNetworkHandler::RaceNetworkHandler(ServerInstance& serverInstance)
     {
       HandleGameCreateClientItem(clientId, message);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRequestGuildMatchInfo>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleRequestGuildMatchInfo(clientId, message);
+    });
 }
 
 void RaceNetworkHandler::Initialize()
@@ -4152,6 +4158,55 @@ void RaceNetworkHandler::HandleGameCreateClientItem(
   auto& item = raceInstance.GetTracker().AddEventItem(clientContext.characterUid);
   item.position = command.position;
   item.itemType = selectedEgg.deckItemId;
+}
+
+void RaceNetworkHandler::HandleRequestGuildMatchInfo(
+  ClientId clientId,
+  const protocol::AcCmdCRRequestGuildMatchInfo& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto& guildRecord = GetServerInstance().GetDataDirector().GetGuild(command.guildUid);
+  if (not guildRecord.IsAvailable())
+  {
+    spdlog::warn(
+      "[Race] Character {} tried to request guild match info for guild {} that does not exist",
+      clientContext.characterUid, command.guildUid);
+
+    const protocol::AcCmdCRRequestGuildMatchInfoCancel cancelResponse{};
+    _commandServer.QueueCommand<decltype(cancelResponse)>(
+      clientId,
+      [cancelResponse]()
+      {
+        return cancelResponse;
+      });
+    return;
+  }
+
+  protocol::AcCmdCRRequestGuildMatchInfoOK response{
+    .unk2 = 2,
+    .unk3 = 3,
+    .unk4 = 4,
+    .unk5 = 5,
+    .unk8 = 8};
+
+  guildRecord.Immutable([&response](const data::Guild& guild)
+  {
+    response.guildUid = guild.uid();
+    response.name = guild.name(); 
+    response.rank = guild.rank();
+    response.totalWins = guild.totalWins();
+    response.totalLosses = guild.totalLosses();
+    response.seasonalWins = guild.seasonalWins();
+    response.seasonalLosses = guild.seasonalLosses();
+    response.emblemUid = guild.emblemUid();
+  });
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
 }
 
 } // namespace server
