@@ -2979,13 +2979,6 @@ void LobbyNetworkHandler::HandleMakeGuildParty(
     clientContext.userName,
     command.name);
 
-  // Set user's current room to party uid in LobbyDirector
-  _serverInstance.GetLobbyDirector().GetScheduler().Queue(
-    [this, userName = clientContext.userName, partyUid = createdPartyUid]()
-    {
-      _serverInstance.GetLobbyDirector().SetUserRoom(userName, partyUid);
-    });
-
   // Construct response for creator
   const protocol::AcCmdCLEnterGuildPartyOK response{
     .party = {
@@ -3089,13 +3082,6 @@ void LobbyNetworkHandler::HandleEnterGuildParty(
     return;
   }
 
-  // Set user's current room to party uid
-  _serverInstance.GetLobbyDirector().GetScheduler().Queue(
-    [this, userName = clientContext.userName, partyUid = command.partyUid]()
-    {
-      _serverInstance.GetLobbyDirector().SetUserRoom(userName, partyUid);
-    });
-
   // Construct response for entering player
   protocol::AcCmdCLEnterGuildPartyOK response{
     .party = {
@@ -3170,8 +3156,9 @@ void LobbyNetworkHandler::HandleLeaveGuildParty(
   if (not clientContext.isAuthenticated)
     return;
 
-  const data::Uid partyUid = _serverInstance.GetLobbyDirector().GetUser(clientContext.userName).roomUid;
-  if (partyUid == clientContext.characterUid or partyUid == data::InvalidUid)
+  const data::Uid partyUid = _serverInstance.GetGuildPartySystem().GetPartyUidByCharacterUid(
+    clientContext.characterUid);
+  if (partyUid == data::InvalidUid)
     return;
 
   if (not _serverInstance.GetGuildPartySystem().PartyExists(partyUid))
@@ -3184,13 +3171,6 @@ void LobbyNetworkHandler::HandleLeaveGuildParty(
     [response]()
     {
       return response;
-    });
-
-  // Return character to their ranch
-  _serverInstance.GetLobbyDirector().GetScheduler().Queue(
-    [this, userName = clientContext.userName, characterUid = clientContext.characterUid]()
-    {
-      _serverInstance.GetLobbyDirector().SetUserRoom(userName, characterUid);
     });
 
   // Stop matchmaking if party was in queue
@@ -3285,8 +3265,9 @@ void LobbyNetworkHandler::HandleChangeGuildPartyOptions(
   const auto& clientContext = GetClientContext(clientId);
 
   // Check if invoker is in a party
-  const data::Uid partyUid = _serverInstance.GetLobbyDirector().GetUser(clientContext.userName).roomUid;
-  if (partyUid == clientContext.characterUid or partyUid == data::InvalidUid)
+  const data::Uid partyUid = _serverInstance.GetGuildPartySystem().GetPartyUidByCharacterUid(
+    clientContext.characterUid);
+  if (partyUid == data::InvalidUid)
     return;
 
   // Check if that party exists
@@ -3414,8 +3395,9 @@ void LobbyNetworkHandler::HandleStartGuildPartyMatch(
   const auto& clientContext = GetClientContext(clientId);
 
   // Check that the character is in a guild party
-  const data::Uid partyUid = _serverInstance.GetLobbyDirector().GetUser(clientContext.userName).roomUid;
-  if (partyUid == clientContext.characterUid or partyUid == data::InvalidUid)
+  const data::Uid partyUid = _serverInstance.GetGuildPartySystem().GetPartyUidByCharacterUid(
+    clientContext.characterUid);
+  if (partyUid == data::InvalidUid)
     return;
 
   // Check that the guild party exists
@@ -3541,9 +3523,10 @@ void LobbyNetworkHandler::HandleStopGuildPartyMatch(
   [[maybe_unused]] const protocol::AcCmdCLStopGuildPartyMatch& command)
 {
   const auto& clientContext = GetClientContext(clientId);
-  const data::Uid partyUid = _serverInstance.GetLobbyDirector().GetUser(clientContext.userName).roomUid;
 
-  if (partyUid == clientContext.characterUid or partyUid == data::InvalidUid)
+  const data::Uid partyUid = _serverInstance.GetGuildPartySystem().GetPartyUidByCharacterUid(
+    clientContext.characterUid);
+  if (partyUid == data::InvalidUid)
     return;
 
   // Stop matchmaking in system
