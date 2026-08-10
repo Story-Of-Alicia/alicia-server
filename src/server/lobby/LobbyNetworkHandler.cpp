@@ -2201,8 +2201,10 @@ void LobbyNetworkHandler::HandleGetMessengerInfo(
   size_t identityHash = std::hash<uint32_t>()(clientContext.characterUid);
   boost::hash_combine(identityHash, MessengerOtpConstant);
 
-  // Grant otp code to character
-  const uint32_t code = _serverInstance.GetOtpSystem().GrantCode(identityHash);
+  // Grant ltk code to character
+  const uint32_t code = _serverInstance.GetOtpSystem().GrantLtk(
+    identityHash,
+    GetCommandServer().GetClientAddress(clientId).to_v4().to_uint());
 
   protocol::AcCmdCLGetMessengerInfoOK response{
     .code = code,

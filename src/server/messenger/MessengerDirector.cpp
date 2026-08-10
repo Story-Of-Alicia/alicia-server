@@ -385,10 +385,11 @@ void MessengerDirector::HandleChatterLogin(
   size_t identityHash = std::hash<uint32_t>()(command.characterUid);
   boost::hash_combine(identityHash, MessengerOtpConstant);
 
-  // Authorise the code received in the command against the calculated identity hash
-  clientContext.isAuthenticated = _serverInstance.GetOtpSystem().AuthorizeCode(
+  // Authorise the ltk received in the command against the calculated identity hash
+  clientContext.isAuthenticated = _serverInstance.GetOtpSystem().AuthorizeLtk(
     identityHash,
-    command.code);
+    command.code,
+    _chatterServer.GetClientAddress(clientId).to_v4().to_uint());
 
   if (not clientContext.isAuthenticated)
   {
