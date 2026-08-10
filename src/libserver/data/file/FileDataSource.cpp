@@ -354,8 +354,6 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
 
   character.inventory = json.value("inventory", std::vector<data::Uid>{});
   character.characterEquipment = json.value("characterEquipment", std::vector<data::Uid>{});
-  // todo: rename after larger refactor
-  character.expiredEquipment = json.value("horseEquipment", std::vector<data::Uid>{});
 
   character.horses = json.value("horses", std::vector<data::Uid>{});
   character.horseSlotCount = json.value("horseSlotCount", uint8_t{});
@@ -472,7 +470,6 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
 
   json["inventory"] = character.inventory();
   json["characterEquipment"] = character.characterEquipment();
-  json["horseEquipment"] = character.expiredEquipment();
 
   json["horses"] = character.horses();
   json["horseSlotCount"] = character.horseSlotCount();

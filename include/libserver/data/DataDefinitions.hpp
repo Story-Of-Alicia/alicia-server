@@ -163,7 +163,8 @@ struct Item
   //! An amount of an item.
   dao::Field<uint32_t> count{};
   //! A duration of an item.
-  dao::Field<std::chrono::seconds> duration{};
+  dao::Field<std::chrono::seconds> duration{
+    std::chrono::seconds::zero()};
   //! A time point of when the item was created.
   dao::Field<Clock::time_point> createdAt{};
 };
@@ -326,7 +327,6 @@ struct Character
   
   dao::Field<std::vector<Uid>> inventory{};
   dao::Field<std::vector<Uid>> characterEquipment{};
-  dao::Field<std::vector<Uid>> expiredEquipment{};
   
   dao::Field<std::vector<Uid>> horses{};
   dao::Field<uint8_t> horseSlotCount{0u};
