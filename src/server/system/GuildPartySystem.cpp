@@ -168,6 +168,31 @@ bool GuildPartySystem::PartyExists(uint32_t uid)
   return _parties.contains(uid);
 }
 
+data::Uid GuildPartySystem::GetPartyUidByCharacterUid(data::Uid characterUid)
+{
+  std::scoped_lock partiesLock(_partiesLock);
+
+  const auto iter = std::ranges::find_if(
+    _parties,
+    [characterUid](auto& entry)
+    {
+      std::scoped_lock partyLock(entry.second.mutex);
+      const auto& members = entry.second.party.GetMembers();
+      return std::ranges::find_if(
+        members,
+        [characterUid](const auto& member)
+        {
+          return member.characterUid == characterUid;
+        }) != members.cend();
+    }
+  );
+
+  if (iter != _parties.cend())
+    return iter->first;
+
+  return data::InvalidUid;
+}
+
 std::vector<GuildParty::Snapshot> GuildPartySystem::GetPartiesSnapshot()
 {
   std::scoped_lock partiesLock(_partiesLock);

@@ -94,6 +94,7 @@ public:
   void CreateParty(const std::function<void(GuildParty&)>& consumer);
   void GetParty(uint32_t uid, const std::function<void(GuildParty&)>& consumer);
   bool PartyExists(uint32_t uid);
+  [[nodiscard]] data::Uid GetPartyUidByCharacterUid(data::Uid characterUid);
   void DeleteParty(uint32_t uid);
 
   std::vector<GuildParty::Snapshot> GetPartiesSnapshot();
