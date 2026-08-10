@@ -31,24 +31,26 @@ namespace server::network
 namespace
 {
 
+//! Max connections that can come from the same address.
 constexpr std::size_t MaxConnectionsPerAddress = 10;
-constexpr std::size_t MaxTotalConnections = 1024;
+//! Max connection rate that can come from the same address.
 constexpr std::size_t MaxConnectRatePerAddress = 10;
-constexpr auto RateWindow = std::chrono::seconds(30);
+//! Duration after which a connection moves out of the rate window.
+constexpr auto ConnectionRateWindow = std::chrono::seconds(30);
 
-} // namespace
+} // anon namespace
 
 Client::Client(
-  ClientId clientId,
+  const ClientId clientId,
+  const asio::ip::tcp::endpoint& endpoint,
   asio::ip::tcp::socket&& socket,
   EventHandlerInterface& networkEventHandler) noexcept
   : _clientId(clientId)
+  , _remoteAddress(endpoint.address())
+  , _remotePort(endpoint.port())
   , _socket(std::move(socket))
   , _networkEventHandler(networkEventHandler)
 {
-  const auto& endpoint = _socket.remote_endpoint();
-  _remoteAddress = endpoint.address().to_v4();
-  _remotePort = endpoint.port();
 }
 
 void Client::Begin()
@@ -95,7 +97,7 @@ void Client::QueueWrite(WriteSupplier writeSupplier)
   WriteLoop();
 }
 
-asio::ip::address_v4 Client::GetAddress() const noexcept
+asio::ip::address Client::GetAddress() const noexcept
 {
   return _remoteAddress;
 }
@@ -346,7 +348,7 @@ size_t Server::OnClientData(
   return _networkEventHandler.OnClientData(clientId, data);
 }
 
-bool Server::IsConnectionThrottled(const asio::ip::address_v4& address) noexcept
+bool Server::IsConnectionThrottled(const asio::ip::address& address) noexcept
 {
   auto& state = _addressStates[address];
   // If there are more active connections than allowed by `MaxConnectionsPerAddress`
@@ -360,7 +362,7 @@ bool Server::IsConnectionThrottled(const asio::ip::address_v4& address) noexcept
   while (not state.connectionTimestamps.empty())
   {
     const auto timeSinceConnection = now - state.connectionTimestamps.front();
-    if (timeSinceConnection < RateWindow)
+    if (timeSinceConnection < ConnectionRateWindow)
       break;
 
     state.connectionTimestamps.pop_front();
@@ -377,7 +379,7 @@ bool Server::IsConnectionThrottled(const asio::ip::address_v4& address) noexcept
   return false;
 }
 
-void Server::OnThrottleDisconnect(const asio::ip::address_v4& address) noexcept
+void Server::OnThrottleDisconnect(const asio::ip::address& address) noexcept
 {
   const auto it = _addressStates.find(address);
   if (it == _addressStates.end())
@@ -397,66 +399,95 @@ void Server::OnThrottleDisconnect(const asio::ip::address_v4& address) noexcept
   }
 }
 
+bool Server::HandleAcceptProcedure(
+  asio::ip::tcp::socket&& clientSocket)
+{
+  // Get the remote endpoint of the client.
+  asio::ip::tcp::endpoint clientEndpoint;
+  try
+  {
+    clientEndpoint = clientSocket.remote_endpoint();
+  }
+  catch (const std::exception&)
+  {
+    // The connection was broken too early.
+    // This is not even worth logging.
+    return false;
+  }
+
+  // Get the address of the endpoint.
+  const auto clientAddress = clientEndpoint.address();
+
+  // If the connection is not going over IPv4 refuse to accept it.
+  if (not clientAddress.is_v4())
+  {
+    spdlog::warn("Connection rejected from {} because it is not coming through IPv4",
+      clientAddress.to_string());
+    return false;
+  }
+
+  // If the connection is throttled refuse to accept it.
+  if (IsConnectionThrottled(clientAddress))
+  {
+    spdlog::warn(
+      "Connection rejected from {} because it is throttled",
+      clientAddress.to_string());
+    return false;
+  }
+
+  // Get the next sequential client ID.
+  const ClientId clientId = _client_id++;
+
+  // Create the client.
+  const auto [itr, emplaced] = _clients.try_emplace(
+    clientId,
+    std::make_shared<Client>(
+      clientId,
+      clientEndpoint,
+      std::move(clientSocket),
+      *this));
+  // ID is sequential so emplacement should never fail.
+  assert(emplaced);
+
+  const auto client = itr->second;
+  // Begin the client instance.
+  client->Begin();
+
+  return true;
+}
+
 void Server::AcceptLoop() noexcept
 {
   _acceptor.async_accept(
-    [&](const boost::system::error_code& error, asio::ip::tcp::socket client_socket)
+    [&](const boost::system::error_code& error, asio::ip::tcp::socket clientSocket)
     {
+      if (error)
+      {
+        if (error == boost::system::errc::operation_canceled)
+          return;
+
+        spdlog::error(
+          "Unhandled generic network exception in the accept loop: 0x{} ({})",
+          error.value(),
+          error.message());
+        return;
+      }
+
       try
       {
-        if (error)
-        {
-          throw std::runtime_error(
-            fmt::format("Network exception 0x{}", error.value()));
-        }
-
-        asio::ip::address_v4 remoteAddress;
-        try
-        {
-          remoteAddress = client_socket.remote_endpoint().address().to_v4();
-        }
-        catch (const std::exception&)
-        {
-          // The connection was broken too early.
-          // Continue the accept loop.
-          AcceptLoop();
-          return;
-        }
-
-        if (IsConnectionThrottled(remoteAddress))
-        {
-          spdlog::warn(
-            "Connection rejected from {} (throttled)",
-            remoteAddress.to_string());
-          client_socket.close();
-          AcceptLoop();
-          return;
-        }
-
-        // Sequential Id.
-        const ClientId clientId = _client_id++;
-
-        // Create the client.
-        const auto [itr, emplaced] = _clients.try_emplace(
-          clientId,
-          std::make_shared<Client>(clientId,
-            std::move(client_socket),
-            *this));
-
-        // Id is sequential so emplacement should never fail.
-        assert(emplaced);
-
-        itr->second->Begin();
-
-        // Continue the accept loop.
-        AcceptLoop();
+        const bool wasAccepted = HandleAcceptProcedure(std::move(clientSocket));
+        if (not wasAccepted)
+          clientSocket.close();
       }
       catch (const std::exception& x)
       {
         spdlog::error(
-          "Error in the server accept loop: {}",
+          "Unhandled exception in the client accept procedure: {}",
           x.what());
       }
+
+      // Continue the accept loop.
+      AcceptLoop();
     });
 }
 

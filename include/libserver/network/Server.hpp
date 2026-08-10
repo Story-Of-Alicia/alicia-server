@@ -73,9 +73,13 @@ class Client : public std::enable_shared_from_this<Client>
 {
 public:
   //! Default constructor.
-  //! @param socket Underlying socket (remote address is read from it).
+  //! @param clientId Identifier of the client.
+  //! @param endpoint Remote endpoint of the client.
+  //! @param socket Underlying client socket.
+  //! @param networkEventHandler Network event handler of this client.
   explicit Client(
     ClientId clientId,
+    const asio::ip::tcp::endpoint& endpoint,
     asio::ip::tcp::socket&& socket,
     EventHandlerInterface& networkEventHandler) noexcept;
 
@@ -86,7 +90,7 @@ public:
   //! Queues a write.
   void QueueWrite(WriteSupplier writeSupplier);
   //!
-  asio::ip::address_v4 GetAddress() const noexcept;
+  asio::ip::address GetAddress() const noexcept;
   //!
   uint16_t GetPort() const noexcept;
 
@@ -113,7 +117,7 @@ private:
   //! A unique-identifier of the client.
   ClientId _clientId;
   //! Remote address of the client.
-  asio::ip::address_v4 _remoteAddress;
+  asio::ip::address _remoteAddress;
   //! Remote port of the client.
   uint16_t _remotePort;
   //! A client socket.
@@ -163,10 +167,12 @@ private:
     std::deque<std::chrono::steady_clock::time_point> connectionTimestamps;
   };
 
+  bool HandleAcceptProcedure(asio::ip::tcp::socket&& clientSocket);
+
   void AcceptLoop() noexcept;
   void TickLoop() noexcept;
-  bool IsConnectionThrottled(const asio::ip::address_v4& address) noexcept;
-  void OnThrottleDisconnect(const asio::ip::address_v4& address) noexcept;
+  bool IsConnectionThrottled(const asio::ip::address& address) noexcept;
+  void OnThrottleDisconnect(const asio::ip::address& address) noexcept;
 
   asio::io_context _io_ctx;
   asio::ip::tcp::acceptor _acceptor;
@@ -177,7 +183,7 @@ private:
   //! Map of clients.
   std::unordered_map<ClientId, std::shared_ptr<Client>> _clients;
   //! Per-address state for connection throttling.
-  std::unordered_map<asio::ip::address_v4, AddressState> _addressStates;
+  std::unordered_map<asio::ip::address, AddressState> _addressStates;
 
   //! A network event handler.
   EventHandlerInterface& _networkEventHandler;

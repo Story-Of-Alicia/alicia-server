@@ -149,7 +149,7 @@ void CommandServer::EndHost()
   _serverThread.join();
 }
 
-asio::ip::address_v4 CommandServer::GetClientAddress(
+asio::ip::address CommandServer::GetClientAddress(
   const ClientId clientId)
 {
   return _server.GetClient(clientId)->GetAddress();
