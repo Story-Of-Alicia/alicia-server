@@ -9,9 +9,11 @@ colorGroups:
   - id: 1
     colorIds: [5, 1, 2]
   - id: 2
-    colorIds: [3, 4, 1]
+    colorIds: [3, 4, 1, 2]
   - id: 3
-    colorIds: [4, 1, 1]
+    colorIds: [4, 1, 1, 2]
+  - id: 4
+    colorIds: [5, 1, 2, 3, 4]
 
 coats:
   # 1 Star Coats
@@ -35,7 +37,7 @@ coats:
     minGrade: 1
     tier: 1
     inheritanceRate: 30.0
-    allowedColorGroups: 1
+    allowedColorGroups: 4
   - tid: 4
     name: 'Chestnut Stockings'
     faceType: 0
@@ -56,7 +58,7 @@ coats:
     minGrade: 3
     tier: 1
     inheritanceRate: 21.0
-    allowedColorGroups: 1
+    allowedColorGroups: 4
   - tid: 7
     name: 'Leopard Appaloosa'
     faceType: 0
