@@ -3872,11 +3872,13 @@ void RaceNetworkHandler::HandleTeamGauge(const ClientId clientId)
   auto& raceInstance = GetRaceInstance(clientContext);
   const auto& parameters = raceInstance.GetParameters();
 
-  // If race teammode is not team then we are done here.
+  // If race teammode is not team/guild then we are done here.
   // This is necessary to ensure no team-related logic is handled when spur logic is handled.
   // Sanity check for speed gamemode
-  bool isTeamMode = parameters.teamMode == protocol::TeamMode::Team;
-  bool isSpeedGameMode = parameters.gameMode == protocol::GameMode::Speed;
+  const bool isTeamMode =
+    parameters.teamMode == protocol::TeamMode::Team or
+    parameters.teamMode == protocol::TeamMode::Guild;
+  const bool isSpeedGameMode = parameters.gameMode == protocol::GameMode::Speed;
   if (not isTeamMode or not isSpeedGameMode)
     return;
 
