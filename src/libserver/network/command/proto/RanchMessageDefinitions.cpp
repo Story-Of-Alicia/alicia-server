@@ -1967,7 +1967,7 @@ void AcCmdCRAchievementUpdateProperty::Read(
   SourceStream& stream)
 {
   stream.Read(command.achievementEvent)
-    .Read(command.member2);
+    .Read(command.propertyValue);
 }
 
 void AcCmdCRHousingBuild::Write(
@@ -3648,9 +3648,9 @@ void AcCmdCRAchievementDetailOK::Write(
 {
   stream.Write(command.characterUid)
     .Write(command.achievementTid);
-  for (const auto& progress : command.tierProgress)
+  for (const auto& earnedDate : command.tierEarnedDates)
   {
-    stream.Write(progress);
+    stream.Write(earnedDate);
   }
 }
 
@@ -3670,6 +3670,51 @@ void AcCmdCRAchievementDetailCancel::Write(
 
 void AcCmdCRAchievementDetailCancel::Read(
   AcCmdCRAchievementDetailCancel&,
+  SourceStream&)
+{
+  // Empty.
+}
+
+void AcCmdCRAchievementBookReward::Write(
+  const AcCmdCRAchievementBookReward&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRAchievementBookReward::Read(
+  AcCmdCRAchievementBookReward& command,
+  SourceStream& stream)
+{
+  stream.Read(command.bookType)
+    .Read(command.grade);
+}
+
+void AcCmdCRAchievementBookRewardOK::Write(
+  const AcCmdCRAchievementBookRewardOK& command,
+  SinkStream& stream)
+{
+  stream.Write(command.bookType)
+    .Write(command.grade)
+    .Write(command.item);
+}
+
+void AcCmdCRAchievementBookRewardOK::Read(
+  AcCmdCRAchievementBookRewardOK&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRAchievementBookRewardCancel::Write(
+  const AcCmdCRAchievementBookRewardCancel&,
+  SinkStream&)
+{
+  // Empty.
+}
+
+void AcCmdCRAchievementBookRewardCancel::Read(
+  AcCmdCRAchievementBookRewardCancel&,
   SourceStream&)
 {
   // Empty.

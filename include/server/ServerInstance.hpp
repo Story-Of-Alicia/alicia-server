@@ -30,6 +30,7 @@
 #include "server/ranch/BreedingMarket.hpp"
 #include "server/ranch/Genetics.hpp"
 #include "server/ranch/RanchDirector.hpp"
+#include "server/system/AchievementSystem.hpp"
 #include "server/system/ChatSystem.hpp"
 #include "server/system/HorseSystem.hpp"
 #include "server/system/InfractionSystem.hpp"
@@ -187,6 +188,10 @@ public:
   //! @returns Reference to the reward system.
   RewardSystem& GetRewardSystem();
 
+  //! Returns reference to the achievement system.
+  //! @returns Reference to the achievement system.
+  AchievementSystem& GetAchievementSystem();
+
   //! Returns reference to the telemetry.
   //! @returns Reference to the telemetry.
   Telemetry& GetTelemetry();
@@ -331,6 +336,8 @@ private:
   MatchmakingSystem _matchmakingSystem;
   //! A reward system.
   RewardSystem _rewardSystem;
+  //! An achievement system.
+  AchievementSystem _achievementSystem;
 
   //! A thread for telemetry.
   std::thread _telemetryThread;

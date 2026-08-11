@@ -21,6 +21,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <format>
 #include <fstream>
 #include <regex>
@@ -383,9 +384,24 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
     std::vector<data::Character::AchievementEntry> entries;
     for (const auto& entry : json["achievements"])
     {
-      entries.push_back({.tid = entry["tid"].get<uint16_t>(),
-        .completed = entry.value("completed", false),
-        .progress = entry.value("progress", 0u)});
+      data::Character::AchievementEntry achievement{
+        .tid = entry["tid"].get<uint16_t>(),
+        .progress = entry.value("progress", 0u)};
+
+      if (entry.contains("tierEarnedAt"))
+      {
+        const auto seconds = entry["tierEarnedAt"].get<std::array<int64_t, 4>>();
+        for (size_t tier = 0; tier < seconds.size(); ++tier)
+        {
+          if (seconds[tier] != 0)
+          {
+            achievement.tierEarnedAt[tier] =
+              data::Clock::time_point{std::chrono::seconds{seconds[tier]}};
+          }
+        }
+      }
+
+      entries.push_back(achievement);
     }
     character.achievements = std::move(entries);
   }
@@ -396,9 +412,8 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
     for (const auto& entry : json["achievementBooks"])
     {
       books.push_back({.bookId = entry["bookId"].get<uint8_t>(),
-        .grade = entry.value("grade", static_cast<uint8_t>(0)),
-        .tierProgress = entry.value(
-          "tierProgress", std::array<uint32_t, 4>{})});
+        .tierRewardClaimed = entry.value(
+          "tierRewardClaimed", std::array<uint32_t, 4>{})});
     }
     character.achievementBooks = std::move(books);
   }
@@ -526,9 +541,16 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
     auto achievementsJson = nlohmann::json::array();
     for (const auto& entry : character.achievements())
     {
+      std::array<int64_t, 4> tierEarnedAt{};
+      for (size_t tier = 0; tier < tierEarnedAt.size(); ++tier)
+      {
+        tierEarnedAt[tier] = std::chrono::duration_cast<std::chrono::seconds>(
+          entry.tierEarnedAt[tier].time_since_epoch()).count();
+      }
+
       achievementsJson.push_back({{"tid", entry.tid},
-        {"completed", entry.completed},
-        {"progress", entry.progress}});
+        {"progress", entry.progress},
+        {"tierEarnedAt", tierEarnedAt}});
     }
     json["achievements"] = std::move(achievementsJson);
   }
@@ -538,8 +560,7 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
     for (const auto& entry : character.achievementBooks())
     {
       booksJson.push_back({{"bookId", entry.bookId},
-        {"grade", entry.grade},
-        {"tierProgress", entry.tierProgress}});
+        {"tierRewardClaimed", entry.tierRewardClaimed}});
     }
     json["achievementBooks"] = std::move(booksJson);
   }

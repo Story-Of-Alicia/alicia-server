@@ -531,6 +531,10 @@ struct AcCmdCLAchievementCompleteList
     SourceStream& stream);
 };
 
+//! Count of achievement books the client accepts. It rejects the whole command
+//! when the list is longer, leaving the achievements page empty.
+constexpr size_t MaxAchievementBooks = 9;
+
 //! Clientbound achievement complete list response.
 //! Contains individual achievement progress AND per-book grade data.
 struct AcCmdCLAchievementCompleteListOK
@@ -541,13 +545,21 @@ struct AcCmdCLAchievementCompleteListOK
   //! Per-book achievement data. Drives the achievements page display.
   struct BookEntry
   {
-    //! Book/category ID (0-8). References libconfig `AchievementBook` table.
+    //! Book index in an interval <0, 8>.
     uint8_t bookId{};
-    //! Current grade/tier for this book.
+    //! Grade of the book, Bronze to Platinum in an interval <0, 3>. The client
+    //! takes it as given and indexes its four grade icons with it without
+    //! checking the bound, so anything outside the interval leaves the book
+    //! without an icon. There is no value standing for "no grade".
     uint8_t grade{};
-    //! Per-tier progress data (one per tier: Bronze/Silver/Gold/Platinum).
-    std::array<uint32_t, 4> tierProgress{};
+    //! Zero while the reward of that tier has not been collected. Only zero
+    //! versus non zero carries meaning. It is a precondition of the claim
+    //! button, not the whole of it: the client also requires every achievement
+    //! of the book to have reached the tier.
+    std::array<uint32_t, 4> tierRewardClaimed{};
   };
+  //! At most MaxAchievementBooks entries. The client drops the whole command
+  //! when there are more.
   std::vector<BookEntry> books{};
 
   static Command GetCommand()
@@ -1827,8 +1839,9 @@ struct AcCmdLCPersonalInfo
     float completionRate{};
     float member12{};
     uint32_t highestCarnivalPrize{};
-    //! Ceremony achievement showcase slot TIDs.
-    //! Set via AcCmdCRSetKeyAchievement, displayed on the profile.
+    //! The 3 key achievement TIDs, 0 for an empty slot. Set via
+    //! AcCmdCRSetKeyAchievement, shown as name and emblem on the challenge page
+    //! without any progress or tier of their own.
     std::array<uint16_t, 3> keyAchievements{};
     std::string introduction{};
     uint32_t level{0};

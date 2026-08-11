@@ -1,0 +1,181 @@
+# How the condition of an achievement is read.
+#
+# This file is written by hand and is NOT generated, unlike achievements.yaml
+# next to it. The client loads none of the condition columns, so their meaning
+# is the server's to define, and for a handful of achievements the bar exists
+# only in the Korean description rather than in a column. Every entry here
+# therefore carries the description it was taken from.
+#
+# An achievement not listed here is a plain counter: the reported value is the
+# progress, which is what the thresholds count.
+#
+# kind:
+#   never    the condition can never be satisfied
+#   atLeast  the measured value has to reach the bar, and the thresholds count
+#            how often it did rather than the value itself
+#   atMost   the same, with the value having to stay below the bar
+#
+# bar:
+#   omitted  the bar is the functionValue of the achievement
+#   given    the bar only exists in the description, quoted as the reason
+#
+# measuredEvent:
+#   omitted  the achievement is measured by the event that triggers it
+#   given    the achievement is triggered by one event but measured by another.
+#            This is an inference, not a fact, and it is used for exactly two
+#            achievements where the trigger cannot deliver what the description
+#            asks for while another event carries a matching value that nothing
+#            else references. It is not a general rule.
+# Reported values that do not arrive in the unit their thresholds are written
+# in. The client never holds the two against each other, so the conversion is
+# ours, and it belongs here with the rest of what the client does not define.
+scales:
+
+  # The client measures the speed in metres per second, while the thresholds of
+  # 110 to 125 only make sense as kilometres per hour: the description of the
+  # achievement reads "reach a driving speed of #@succ# km/h", the client
+  # refuses to report the event below 22.22, which is exactly 80 kilometres per
+  # hour, and as metres per second the thresholds would be four times the
+  # fastest horse.
+  - event: 38
+    factor: 3.6
+
+# Thresholds that exist only in the description, with no SuccessValue column
+# carrying them. Without the entry the achievement counts as reached on the
+# first event, because no threshold at all means a single step is enough.
+#
+# The count is ours to define without contradicting the screen: every one of
+# these carries a SuccessType of zero, and the client then draws a plain earned
+# or not earned bar instead of showing a progress against a threshold.
+#
+# Only counts of races belong here. Where a number in a description is a time
+# ("2분 30초") or something counted within a single race, as Sliding20 and
+# UseSpur40 do, the achievement is earned once and needs no threshold.
+thresholds:
+
+  # "게임 플레이 판수 20회" twenty games played.
+  - tid: 10012
+    successValues: [20]
+
+  # "모드에 상관 없이 2회 연속 패배" two losses in a row, any mode.
+  - tid: 10004
+    successValues: [2]
+
+  # "[마법모드]개인전 풀방 3연속 1등하기" three magic wins in a row.
+  - tid: 10027
+    successValues: [3]
+
+  # "8인 풀방에서 #연속 1위" wins in a row in a full room of eight.
+  - tid: 10056
+    successValues: [5]
+  - tid: 10057
+    successValues: [10]
+  - tid: 10058
+    successValues: [20]
+  - tid: 10059
+    successValues: [30]
+
+  # "8인 풀방에서 #연속 팀전 승리" team wins in a row in a full room of eight.
+  - tid: 10062
+    successValues: [5]
+  - tid: 10063
+    successValues: [10]
+  - tid: 10064
+    successValues: [20]
+  - tid: 10065
+    successValues: [30]
+
+  # "연속해서 리타이어 #회 당했을 때" retiring several times in a row.
+  - tid: 10070
+    successValues: [3]
+  - tid: 10071
+    successValues: [5]
+
+  # "연속 완주하기 #" races finished in a row.
+  - tid: 10075
+    successValues: [50]
+  - tid: 10076
+    successValues: [100]
+
+  # "한 번 접속해서 연속 30게임 완주" thirty finished in a row within one login.
+  - tid: 10079
+    successValues: [30]
+
+  # "자신보다 낮은 레벨의 유저가 1위하는 경기 10번 플레이하기" ten races won by
+  # someone of a lower level.
+  - tid: 10111
+    successValues: [10]
+
+conditions:
+
+  # "시스템 도전과제 북 완료 방지 용도로 절대 달성 불가 과제"
+  # A task deliberately made unreachable so the system book never completes.
+  - function: "False"
+    kind: never
+
+  # Perfect jumps in a row. The trigger counts single jumps, the run length is
+  # what event 32 measures, and no achievement references that event directly.
+  - function: "MaxPerfectJumpCombo"
+    kind: atLeast
+    measuredEvent: 32
+    bars:
+      # "퍼펙트점프 연속 5회 성공" five perfect jumps in a row
+      - tid: 10066
+        bar: 5
+      # "퍼펙트점프 연속 10회 성공" ten perfect jumps in a row
+      - tid: 10067
+        bar: 10
+      # "퍼펙트 점프 #@func#연속 성공하기", the bar is in the column
+      - tid: 10229
+
+  # Holding a glide. The trigger counts glides, the duration is event 34.
+  # "[스피드모드]글라이딩 5초 동안 유지" hold a glide for five seconds
+  - function: "FloatInTheAir"
+    kind: atLeast
+    measuredEvent: 34
+    bars:
+      - tid: 10007
+        bar: 5
+
+  # "슬라이딩 2초 이상 유지하기" hold a slide for at least two seconds
+  - function: "MaxSlidingTime"
+    kind: atLeast
+    bars:
+      - tid: 10113
+        bar: 2
+
+  # "슬라이딩 #@func#초이상 유지", the same bar, taken from the column
+  - function: "SlidingTime"
+    kind: atLeast
+
+  # "폭주마법 사용중에 3명 앞지르기" overtake three while hot rodding
+  - function: "HotRoddingReversalCount"
+    kind: atLeast
+    bars:
+      - tid: 10123
+        bar: 3
+      # "폭주마법 사용중에 #@func#명 앞지르기", the bar is in the column
+      - tid: 10194
+
+  # "퍼펙트 박차 #@func#회 이상 연속 성공하기" a run of perfect spurs
+  - function: "PerfectSpurCombo"
+    kind: atLeast
+
+  # The dialog level a conversation has to reach, one achievement per level.
+  # Without the bar all five complete on the first conversation.
+  - function: "DialogLevelCheck"
+    kind: atLeast
+
+  # Finishing the balloon quest inside a time, so a lower value is the better
+  # one and the thresholds count how often it was managed.
+  - function: "BalloonLapTime"
+    kind: atMost
+    bars:
+      # "풍선 퀘스트를 50초 안에 완료하기" finish within fifty seconds
+      - tid: 10152
+        bar: 50
+      # "풍선 퀘스트를 30초 안에 완료하기" finish within thirty seconds
+      - tid: 10153
+        bar: 30
+      # 10233 is not listed: "#@succ#초 이내 풍선게임 성공하기" compares the
+      # lap time against the threshold itself, which is the plain Minimum rule.

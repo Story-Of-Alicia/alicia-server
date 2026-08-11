@@ -20,6 +20,7 @@
 #include "server/ranch/RanchDirector.hpp"
 
 #include "server/ServerInstance.hpp"
+#include "server/system/AchievementSystem.hpp"
 #include "server/system/ItemSystem.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
@@ -30,6 +31,7 @@
 #include <algorithm>
 #include <cmath>
 #include <ctime>
+#include <optional>
 #include <ranges>
 
 #include <spdlog/spdlog.h>
@@ -63,6 +65,13 @@ constexpr auto FoalMaturityCheckInterval = std::chrono::seconds(60);
 //! records to load before giving up and cancelling the entry.
 constexpr uint32_t MaxEnterRanchDeferAttempts = 2;
 constexpr uint32_t MaxTryBreedingDeferAttempts = 4;
+
+//! Achievement TID standing for an empty key achievement slot.
+constexpr uint16_t UnusedKeyAchievementSlot = 0;
+
+//! Marks the reward of a book grade as claimed. The client only tests the
+//! value against zero, so any non zero value would do.
+constexpr uint32_t ClaimedBookReward = 1;
 
 BreedingMarket::SnapshotOrder ConvertProtocolStallionOrderToSnapshotOrder(
   const protocol::AcCmdCRSearchStallion::StallionOrder order)
@@ -638,6 +647,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& command)
     {
       HandleAchievementDetail(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRAchievementBookReward>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleAchievementBookReward(clientId, command);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRSetKeyAchievement>(
@@ -7462,14 +7477,195 @@ void RanchDirector::HandleAchievementDetail(
   response.characterUid = command.characterUid;
   response.achievementTid = command.achievementTid;
 
-  // TODO: Load actual per-tier progress from persistent data.
-  // For now, send test data so the achievements page renders.
-  response.tierProgress = {10, 5, 2, 0};
+  // The details belong to the profile being looked at, which is not necessarily
+  // the requesting character.
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    command.characterUid);
+
+  if (characterRecord.IsAvailable())
+  {
+    characterRecord.Immutable(
+      [&response, tid = command.achievementTid](const data::Character& character)
+      {
+        const auto& achievements = character.achievements();
+        const auto entry = std::ranges::find(
+          achievements, tid, &data::Character::AchievementEntry::tid);
+
+        if (entry == achievements.end())
+          return;
+
+        // Leaving the dates at zero is meaningful: the client reads a year of
+        // zero as "tier not earned" and shows its placeholder instead of a date.
+        for (size_t tier = 0; tier < response.tierEarnedDates.size(); ++tier)
+        {
+          response.tierEarnedDates[tier] =
+            protocol::BuildProtocolAchievementDate(entry->tierEarnedAt[tier]);
+        }
+      });
+  }
+  else
+  {
+    spdlog::warn(
+      "Achievement detail requested for unavailable character '{}'",
+      command.characterUid);
+  }
 
   spdlog::debug(
-    "Achievement detail requested by '{}' for TID {}",
+    "Achievement detail requested by '{}' for character '{}' TID {}",
     clientContext.characterUid,
+    command.characterUid,
     command.achievementTid);
+
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId, [response]()
+    {
+      return response;
+    });
+}
+
+void RanchDirector::HandleAchievementBookReward(
+  ClientId clientId,
+  const protocol::AcCmdCRAchievementBookReward& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto characterUid = clientContext.characterUid;
+
+  const auto cancel = [this, clientId]()
+  {
+    protocol::AcCmdCRAchievementBookRewardCancel response{};
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId, [response]()
+      {
+        return response;
+      });
+  };
+
+  if (command.bookType < 0
+    or command.bookType >= static_cast<int8_t>(registry::AchievementBookTypeCount))
+  {
+    spdlog::warn(
+      "Character '{}' claimed book reward for out of range book {}",
+      characterUid,
+      command.bookType);
+    cancel();
+    return;
+  }
+
+  if (command.grade < 0
+    or command.grade >= static_cast<int8_t>(registry::AchievementTierCount))
+  {
+    spdlog::warn(
+      "Character '{}' claimed book reward for out of range grade {}",
+      characterUid,
+      command.grade);
+    cancel();
+    return;
+  }
+
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    characterUid);
+
+  if (not characterRecord.IsAvailable())
+  {
+    cancel();
+    return;
+  }
+
+  const auto grade = static_cast<size_t>(command.grade);
+  const auto& achievementRegistry = _serverInstance.GetAchievementRegistry();
+
+  data::Tid rewardItemTid = data::InvalidTid;
+  auto rewardItemUid = data::InvalidUid;
+
+  characterRecord.Mutable(
+    [&](data::Character& character)
+    {
+      auto& books = character.achievementBooks();
+      auto book = std::ranges::find(
+        books,
+        static_cast<uint8_t>(command.bookType),
+        &data::Character::AchievementBookEntry::bookId);
+
+      // Only the claim state is stored, so the entry appears with the first
+      // claim of a book.
+      if (book == books.end())
+      {
+        books.push_back({.bookId = static_cast<uint8_t>(command.bookType)});
+        book = std::prev(books.end());
+      }
+
+      // The client only offers grades it believes are reached and unclaimed,
+      // but it is the server that decides. The reward of a grade is earned once
+      // every achievement of the book has reached the tier of that grade.
+      const auto completedTiers =
+        _serverInstance.GetAchievementSystem().GetBookCompletedTierCount(
+          character, command.bookType);
+
+      if (command.grade >= static_cast<int8_t>(completedTiers))
+      {
+        spdlog::warn(
+          "Character '{}' claimed grade {} of book {} with {} tiers completed",
+          characterUid,
+          command.grade,
+          command.bookType,
+          completedTiers);
+        return;
+      }
+
+      if (book->tierRewardClaimed[grade] != 0)
+      {
+        spdlog::warn(
+          "Character '{}' claimed grade {} of book {} twice",
+          characterUid,
+          command.grade,
+          command.bookType);
+        return;
+      }
+
+      const auto* const reward = achievementRegistry.GetBookReward(
+        command.bookType,
+        static_cast<uint8_t>(character.parts.modelId()));
+
+      if (reward == nullptr)
+      {
+        spdlog::warn(
+          "No book reward for book {} and character model {}",
+          command.bookType,
+          character.parts.modelId());
+        return;
+      }
+
+      rewardItemTid = reward->itemTids[grade];
+      if (rewardItemTid == data::InvalidTid)
+        return;
+
+      rewardItemUid = _serverInstance.GetItemSystem().AddItem(
+        character, rewardItemTid, 1);
+      if (rewardItemUid == data::InvalidUid)
+        return;
+
+      book->tierRewardClaimed[grade] = ClaimedBookReward;
+    });
+
+  if (rewardItemUid == data::InvalidUid)
+  {
+    cancel();
+    return;
+  }
+
+  protocol::AcCmdCRAchievementBookRewardOK response{};
+  response.bookType = command.bookType;
+  response.grade = command.grade;
+  response.item.uid = rewardItemUid;
+  response.item.tid = rewardItemTid;
+  response.item.count = 1;
+
+  spdlog::info(
+    "Character '{}' claimed grade {} of achievement book {}, item {}",
+    characterUid,
+    command.grade,
+    command.bookType,
+    rewardItemTid);
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId, [response]()
@@ -7508,10 +7704,32 @@ void RanchDirector::HandleSetKeyAchievement(
     return;
   }
 
+  // The slots are freely chosen and need not be earned, and the same
+  // achievement may sit in several of them. The client enforces neither rule,
+  // it only drops a slot whose achievement does not exist, so that is the one
+  // check worth repeating here against a manipulated client.
+  const auto& achievementRegistry = _serverInstance.GetAchievementRegistry();
+  auto keyAchievements = command.keyAchievements;
+
+  for (auto& tid : keyAchievements)
+  {
+    if (tid == UnusedKeyAchievementSlot)
+      continue;
+
+    if (achievementRegistry.GetAchievement(tid) != nullptr)
+      continue;
+
+    spdlog::warn(
+      "Character '{}' set unknown achievement {} as a key achievement",
+      clientContext.characterUid,
+      tid);
+    tid = UnusedKeyAchievementSlot;
+  }
+
   characterRecord.Mutable(
-    [&command](data::Character& character)
+    [&keyAchievements](data::Character& character)
     {
-      character.keyAchievements = command.keyAchievements;
+      character.keyAchievements = keyAchievements;
     });
 
   protocol::AcCmdCRSetKeyAchievementOK response{};
@@ -7527,91 +7745,23 @@ void RanchDirector::HandleAchievementUpdateProperty(
   const protocol::AcCmdCRAchievementUpdateProperty& command)
 {
   const auto& clientContext = GetClientContext(clientId);
-  const auto characterUid = clientContext.characterUid;
 
-  const auto& achievementRegistry =
-    _serverInstance.GetAchievementRegistry();
+  const auto updates = _serverInstance.GetAchievementSystem()
+    .ApplyReportedProperty(
+      clientContext.characterUid,
+      command.achievementEvent,
+      command.propertyValue);
 
-  const auto matchingAchievements =
-    achievementRegistry.GetAchievementsByEvent(command.achievementEvent);
-
-  if (matchingAchievements.empty())
+  for (const auto& update : updates)
   {
-    spdlog::debug(
-      "No achievements registered for event {}",
-      command.achievementEvent);
-    return;
-  }
+    const auto notify = AchievementSystem::BuildUpdateNotify(update);
 
-  const auto characterRecord =
-    _serverInstance.GetDataDirector().GetCharacter(characterUid);
-
-  if (not characterRecord.IsAvailable())
-    return;
-
-  characterRecord.Mutable(
-    [&](data::Character& character)
-    {
-      for (const auto* achievementInfo : matchingAchievements)
+    _commandServer.QueueCommand<decltype(notify)>(
+      clientId, [notify]()
       {
-        // Find or create the achievement entry.
-        data::Character::AchievementEntry* entry = nullptr;
-        for (auto& existing : character.achievements())
-        {
-          if (existing.tid == achievementInfo->tid)
-          {
-            entry = &existing;
-            break;
-          }
-        }
-
-        if (entry == nullptr)
-        {
-          character.achievements().push_back({.tid = achievementInfo->tid,
-            .completed = false,
-            .progress = 0});
-          entry = &character.achievements().back();
-        }
-
-        if (entry->completed)
-          continue;
-
-        // For "TRUE" function achievements, any matching event increments progress.
-        // For specific functions, the client sends the event only when the condition
-        // is met on client side, so we trust the event and increment.
-        entry->progress++;
-
-        if (entry->progress >= achievementInfo->successValue)
-        {
-          entry->completed = true;
-
-          // Award carrots.
-          character.carrots() +=
-            static_cast<int32_t>(achievementInfo->reward);
-
-          spdlog::info(
-            "Achievement {} completed by character '{}' (+{} carrots)",
-            achievementInfo->tid,
-            characterUid,
-            achievementInfo->reward);
-        }
-
-        // Notify the client of the progress update.
-        protocol::AcCmdRCAchievementUpdateNotify notify{};
-        notify.achievementTid = achievementInfo->tid;
-        notify.objectiveProgress.isCompleted = entry->completed;
-        notify.objectiveProgress.progress = entry->progress;
-        notify.objectiveProgress.achievementTier =
-          protocol::ObjectiveProgress::AchievementTier::None;
-        notify.carrotBalance = character.carrots();
-
-        _commandServer.QueueCommand<decltype(notify)>(
-          clientId, [notify]()
-          {
-            return notify;
-          });
-      }
-    });
+        return notify;
+      });
+  }
 }
 
 } // namespace server

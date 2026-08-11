@@ -1,570 +1,2831 @@
+# Generated from the Achievements, AchievementBook,
+# AchievementBookReward and AchievementBookRewardSub tables of the
+# client's libconfig_c.dat. Do not edit by hand, regenerate when the
+# client data changes.
+#
+# successValues holds the four tier thresholds and rewards the carrots
+# granted for reaching the tier of the same index. A threshold of zero
+# marks the tier as unused.
+#
+# function, functionValue, gameModeFlag, compareType and numPlayer are
+# the condition. The client loads none of them, so the server alone
+# decides whether an event counts for an achievement.
 achievements:
   collection:
-    # BookType 1 - Consecutive Experience
-    - tid: 10155
-      eventId: 43
-      function: GlidingDistance
-      successValue: 1
-      bookType: 1
-      reward: 400
-      points: 1
-    - tid: 10156
-      eventId: 17
-      function: TRUE
-      successValue: 1
-      bookType: 1
-      reward: 400
-      points: 1
-    - tid: 10157
-      eventId: 27
-      function: GlidingSpur
-      successValue: 1
-      bookType: 1
-      reward: 400
-      points: 1
-    - tid: 10158
-      eventId: 3
-      function: BuyItem
-      successValue: 500
-      bookType: 1
-      reward: 400
-      points: 1
-    - tid: 10159
-      eventId: 28
-      function: PerfectStart
-      successValue: 1
-      bookType: 1
-      reward: 400
-      points: 1
-    - tid: 10160
-      eventId: 29
-      function: PerfectJump
-      successValue: 5
-      bookType: 1
-      reward: 400
-      points: 1
-    - tid: 10161
-      eventId: 2
-      function: GoalIn
-      successValue: 3
-      bookType: 1
-      reward: 400
-      points: 1
-    - tid: 10162
-      eventId: 2
-      function: GoalIn
-      successValue: 2
-      bookType: 1
-      reward: 400
-      points: 1
-    - tid: 10163
-      eventId: 2
-      function: GoalIn_8h_13h
-      successValue: 2
-      bookType: 1
-      reward: 400
-      points: 1
-    - tid: 10164
-      eventId: 2
-      function: GoalIn_16h_18h
-      successValue: 2
-      bookType: 1
-      reward: 400
-      points: 1
-    - tid: 10165
-      eventId: 2
-      function: GoalIn_19h_22h
-      successValue: 2
-      bookType: 1
-      reward: 400
-      points: 1
-    - tid: 10166
-      eventId: 68
-      function: TRUE
-      successValue: 1
-      bookType: 1
-      reward: 400
-      points: 1
-    # BookType 2 - Horse Experience
-    - tid: 10167
-      eventId: 51
-      function: TRUE
-      successValue: 3
-      bookType: 2
-      reward: 400
-      points: 1
-    - tid: 10168
-      eventId: 50
-      function: TRUE
-      successValue: 3
-      bookType: 2
-      reward: 400
-      points: 1
-    - tid: 10169
-      eventId: 52
-      function: TRUE
-      successValue: 3
-      bookType: 2
-      reward: 400
-      points: 1
-    - tid: 10170
-      eventId: 53
-      function: ForciblyFeeding
-      successValue: 3
-      bookType: 2
-      reward: 400
-      points: 1
-    - tid: 10171
-      eventId: 53
-      function: FavoriteFoodsFeeding
-      successValue: 3
-      bookType: 2
-      reward: 400
-      points: 1
-    - tid: 10172
-      eventId: 53
-      function: Stuffed
-      successValue: 3
-      bookType: 2
-      reward: 400
-      points: 1
-    - tid: 10173
-      eventId: 55
-      function: TRUE
-      successValue: 1
-      bookType: 2
-      reward: 400
-      points: 1
-    - tid: 10174
-      eventId: 69
-      function: TRUE
-      successValue: 1
-      bookType: 2
-      reward: 400
-      points: 1
-    - tid: 10175
-      eventId: 71
-      function: TRUE
-      successValue: 1
-      bookType: 2
-      reward: 400
-      points: 1
-    - tid: 10176
-      eventId: 49
-      function: PolishUp
-      successValue: 1
-      bookType: 2
-      reward: 400
-      points: 1
-    - tid: 10177
-      eventId: 54
-      function: TraningSuccess
-      successValue: 1
-      bookType: 2
-      reward: 400
-      points: 1
-    # BookType 3 - Breeding Experience
-    - tid: 10178
-      eventId: 10
-      function: TRUE
-      successValue: 1
-      bookType: 3
-      reward: 400
-      points: 1
-    - tid: 10179
-      eventId: 11
-      function: TRUE
-      successValue: 1
-      bookType: 3
-      reward: 400
-      points: 1
-    - tid: 10180
-      eventId: 12
-      function: TRUE
-      successValue: 1
-      bookType: 3
-      reward: 400
-      points: 1
-    - tid: 10181
-      eventId: 13
-      function: TRUE
-      successValue: 1
-      bookType: 3
-      reward: 400
-      points: 1
-    - tid: 10182
-      eventId: 11
-      function: PotentialCapacities
-      successValue: 1
-      bookType: 3
-      reward: 400
-      points: 1
-    - tid: 10183
-      eventId: 11
-      function: BreedingSuccessCombo
-      successValue: 1
-      bookType: 3
-      reward: 400
-      points: 1
-    - tid: 10184
-      eventId: 10
-      function: TRUE
-      successValue: 2
-      bookType: 3
-      reward: 400
-      points: 1
-    - tid: 10185
-      eventId: 14
-      function: MaleHorseCombo
-      successValue: 1
-      bookType: 3
-      reward: 400
-      points: 1
-    - tid: 10186
-      eventId: 56
-      function: PotentialCapacitiesGrow
-      successValue: 1
-      bookType: 3
-      reward: 400
-      points: 1
-    - tid: 10187
-      eventId: 11
-      function: GradeCompare
-      successValue: 1
-      bookType: 3
-      reward: 400
-      points: 1
-    # BookType 4 - Fun Experience
-    - tid: 10188
-      eventId: 2
-      function: GoalInRanking
-      successValue: 5
-      bookType: 4
-      reward: 400
-      points: 1
-    - tid: 10189
-      eventId: 42
-      function: UseAllMagic
-      successValue: 5
-      bookType: 4
-      reward: 400
-      points: 1
-    - tid: 10190
-      eventId: 24
-      function: Cliff
-      successValue: 1
-      bookType: 4
-      reward: 400
-      points: 1
-    - tid: 10191
-      eventId: 2
-      function: ReversalWinner
-      successValue: 5
-      bookType: 4
-      reward: 400
-      points: 1
-    - tid: 10192
-      eventId: 2
-      function: CarnivalSuccess
-      successValue: 5
-      bookType: 4
-      reward: 400
-      points: 1
-    - tid: 10193
-      eventId: 42
-      function: JumpParalysis
-      successValue: 5
-      bookType: 4
-      reward: 400
-      points: 1
-    - tid: 10194
-      eventId: 35
-      function: HotRoddingReversalCount
-      successValue: 3
-      bookType: 4
-      reward: 400
-      points: 1
-    - tid: 10195
-      eventId: 57
-      function: TRUE
-      successValue: 20
-      bookType: 4
-      reward: 400
-      points: 1
-    - tid: 10196
-      eventId: 58
-      function: TRUE
-      successValue: 20
-      bookType: 4
-      reward: 400
-      points: 1
-    - tid: 10197
-      eventId: 59
-      function: TRUE
-      successValue: 20
-      bookType: 4
-      reward: 400
-      points: 1
-    # BookType 5 - Unique Experience
-    - tid: 10198
-      eventId: 23
-      function: TRUE
-      successValue: 5
-      bookType: 5
-      reward: 400
-      points: 1
-    - tid: 10199
-      eventId: 2
-      function: TeamWinTheLast
-      successValue: 5
-      bookType: 5
-      reward: 400
-      points: 1
-    - tid: 10200
-      eventId: 72
-      function: TRUE
-      successValue: 1
-      bookType: 5
-      reward: 400
-      points: 1
-    - tid: 10201
-      eventId: 57
-      function: Spur3thGoalIn
-      successValue: 1
-      bookType: 5
-      reward: 400
-      points: 1
-    - tid: 10202
-      eventId: 60
-      function: TRUE
-      successValue: 1
-      bookType: 5
-      reward: 400
-      points: 1
-    - tid: 10203
-      eventId: 70
-      function: TRUE
-      successValue: 1
-      bookType: 5
-      reward: 400
-      points: 1
-    - tid: 10204
-      eventId: 11
-      function: PoorHorse
-      successValue: 1
-      bookType: 5
-      reward: 400
-      points: 1
-    - tid: 10205
-      eventId: 11
-      function: GoodHorse
-      successValue: 1
-      bookType: 5
-      reward: 400
-      points: 1
-    # BookType 6 - Thrilling Experience
-    - tid: 10207
-      eventId: 62
-      function: TRUE
-      successValue: 5
-      bookType: 6
-      reward: 400
-      points: 1
-    - tid: 10208
-      eventId: 42
-      function: CriticalFireballAttack
-      successValue: 5
-      bookType: 6
-      reward: 400
-      points: 1
-    - tid: 10209
-      eventId: 42
-      function: RevengeAttackWithFireball
-      successValue: 5
-      bookType: 6
-      reward: 400
-      points: 1
-    - tid: 10210
-      eventId: 42
-      function: ComboAttackSuccessWithFireball
-      successValue: 5
-      bookType: 6
-      reward: 400
-      points: 1
-    - tid: 10211
-      eventId: 42
-      function: ShieldEndAttackWithFireball
-      successValue: 5
-      bookType: 6
-      reward: 400
-      points: 1
-    - tid: 10212
-      eventId: 74
-      function: TRUE
-      successValue: 5
-      bookType: 6
-      reward: 400
-      points: 1
-    - tid: 10213
-      eventId: 2
-      function: Revenge
-      successValue: 3
-      bookType: 6
-      reward: 400
-      points: 1
-    - tid: 10214
-      eventId: 42
-      function: FireBallSuccess
-      successValue: 3
-      bookType: 6
-      reward: 400
-      points: 1
-    # BookType 7 - Victory Experience
-    - tid: 10216
-      eventId: 2
-      function: WinAI
-      successValue: 1
-      bookType: 7
-      reward: 400
-      points: 1
-    - tid: 10217
-      eventId: 2
-      function: WinAI
-      successValue: 1
-      bookType: 7
-      reward: 400
-      points: 1
-    - tid: 10218
-      eventId: 11
-      function: GoodChild
-      successValue: 1
-      bookType: 7
-      reward: 400
-      points: 1
-    - tid: 10219
-      eventId: 42
-      function: LastSpurtAttack
-      successValue: 5
-      bookType: 7
-      reward: 400
-      points: 1
-    - tid: 10220
-      eventId: 61
-      function: PerfectSpurMaster
-      successValue: 3
-      bookType: 7
-      reward: 400
-      points: 1
-    - tid: 10221
-      eventId: 54
-      function: TrainingCombo
-      successValue: 3
-      bookType: 7
-      reward: 400
-      points: 1
-    - tid: 10222
-      eventId: 2
-      function: TeamPerfectWinNew
-      successValue: 3
-      bookType: 7
-      reward: 400
-      points: 1
-    - tid: 10223
-      eventId: 61
-      function: PerfectSpurCombo
-      successValue: 3
-      bookType: 7
-      reward: 400
-      points: 1
-    - tid: 10224
-      eventId: 54
-      function: TrainingCritical
-      successValue: 3
-      bookType: 7
-      reward: 400
-      points: 1
-    # BookType 8 - Skill Experience
-    - tid: 10225
-      eventId: 2
-      function: Win
-      successValue: 1
-      bookType: 8
-      reward: 400
-      points: 1
-    - tid: 10226
-      eventId: 2
-      function: Win
-      successValue: 1
-      bookType: 8
-      reward: 400
-      points: 1
-    - tid: 10227
-      eventId: 2
-      function: TeamWin
-      successValue: 1
-      bookType: 8
-      reward: 400
-      points: 1
-    - tid: 10228
-      eventId: 2
-      function: TeamWin
-      successValue: 1
-      bookType: 8
-      reward: 400
-      points: 1
-    - tid: 10229
-      eventId: 29
-      function: MaxPerfectJumpCombo
-      successValue: 30
-      bookType: 8
-      reward: 400
-      points: 1
-    - tid: 10230
-      eventId: 33
-      function: SlidingTime
-      successValue: 20
-      bookType: 8
-      reward: 400
-      points: 1
-    - tid: 10231
-      eventId: 17
-      function: MaxSpurCount
-      successValue: 4
-      bookType: 8
-      reward: 400
-      points: 1
-    - tid: 10232
-      eventId: 38
-      function: GetMaxSpeed
-      successValue: 110
-      bookType: 8
-      reward: 400
-      points: 1
-    - tid: 10233
-      eventId: 46
-      function: BalloonLapTime
-      successValue: 31
-      bookType: 8
-      reward: 400
-      points: 1
-    - tid: 10234
-      eventId: 2
-      function: MaxWinStop
-      successValue: 3
-      bookType: 8
-      reward: 400
-      points: 1
-    - tid: 10235
-      eventId: 61
-      function: TRUE
-      successValue: 1
-      bookType: 8
-      reward: 400
-      points: 1
-    - tid: 10236
-      eventId: 2
-      function: MaxWinStop
-      successValue: 3
-      bookType: 8
-      reward: 400
-      points: 1
+      # 모든 박차 사용
+      - tid: 10001
+        eventId: 17
+        function: "ConsumeSpur"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 3
+        numPlayer: 0
+        bookType: -2
+      # 성공적인 첫 점프
+      - tid: 10002
+        eventId: 18
+        function: "OneJump"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 3
+        numPlayer: 0
+        bookType: -2
+      # 감격의 첫 달리기 승리
+      - tid: 10003
+        eventId: 2
+        function: "MyFirstWin"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 3
+        numPlayer: 0
+        bookType: -2
+      # 계속된 패배의 아픔
+      - tid: 10004
+        eventId: 2
+        function: "PainOfLosses"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 15
+        numPlayer: 0
+        bookType: -2
+      # 리비안 마을 2:30
+      - tid: 10005
+        eventId: 2
+        function: "RiLand03Mastery"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 15
+        numPlayer: 0
+        bookType: -2
+      # 성공적인 첫 대쉬
+      - tid: 10006
+        eventId: 19
+        function: "LearnDash"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 3
+        numPlayer: 0
+        bookType: -2
+      # 저 멀리 상공을 향해
+      - tid: 10007
+        eventId: 25
+        function: "FloatInTheAir"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 3
+        numPlayer: 0
+        bookType: -2
+      # 완벽한 승리
+      - tid: 10008
+        eventId: 2
+        function: "PerfectWin"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 15
+        numPlayer: 0
+        bookType: -2
+      # 그랜토 협곡 2:40
+      - tid: 10009
+        eventId: 2
+        function: "RiFore02Mastery"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 15
+        numPlayer: 0
+        bookType: -2
+      # 울렌 숲 2:20
+      - tid: 10010
+        eventId: 2
+        function: "RiFore01Mastery"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 15
+        numPlayer: 0
+        bookType: -2
+      # 포베아 들판 01
+      - tid: 10011
+        eventId: 2
+        function: "land02Mastery"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 15
+        numPlayer: 0
+        bookType: -2
+      # 노련한 플레이어
+      - tid: 10012
+        eventId: 2
+        function: "Playing20Races"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 15
+        numPlayer: 0
+        bookType: -2
+      # 실력 입증
+      - tid: 10013
+        eventId: 2
+        function: "SerialWin"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 15
+        numPlayer: 1
+        bookType: -2
+      # 붉은도르프상회 2:30
+      - tid: 10014
+        eventId: 2
+        function: "RiDorf04Mastery"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 15
+        numPlayer: 0
+        bookType: -2
+      # 저 멀리 상공을 향해
+      - tid: 10015
+        eventId: 0
+        function: "Gliding50M"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 15
+        numPlayer: 0
+        bookType: -2
+      # 포베아 들판 2:20
+      - tid: 10016
+        eventId: 2
+        function: "RiLand02Mastery"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 15
+        numPlayer: 0
+        bookType: -2
+      # 실프 언덕 2:10
+      - tid: 10017
+        eventId: 2
+        function: "RiLand04Mastery"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 15
+        numPlayer: 0
+        bookType: -2
+      # 스타토 목장 2:20
+      - tid: 10018
+        eventId: 2
+        function: "RiLand01Mastery"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 15
+        numPlayer: 0
+        bookType: -2
+      # 슬라이딩이 뭔가요?
+      - tid: 10019
+        eventId: 2
+        function: "NoSlidingWin"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 3
+        numPlayer: 0
+        bookType: -2
+      # 슬라이딩 플레이
+      - tid: 10020
+        eventId: 2
+        function: "Sliding20"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 3
+        numPlayer: 0
+        bookType: -2
+      # 박차! 박차! 박차!
+      - tid: 10021
+        eventId: 2
+        function: "UseSpur40"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 3
+        numPlayer: 0
+        bookType: -2
+      # 말의 기본은 달리기!
+      - tid: 10022
+        eventId: 2
+        function: "NoJumpWin"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 3
+        numPlayer: 0
+        bookType: -2
+      # 환상의 팀원
+      - tid: 10023
+        eventId: 2
+        function: "TeamPerfectWin"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 3
+        numPlayer: 0
+        bookType: -2
+      # 1단 점프 마스터
+      - tid: 10024
+        eventId: 2
+        function: "Mission_Movejump01_01"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 16
+        numPlayer: 0
+        bookType: -2
+      # 2단 점프 마스터
+      - tid: 10025
+        eventId: 2
+        function: "Mission_Movejump01_02"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 16
+        numPlayer: 0
+        bookType: -2
+      # 글라이딩 마스터
+      - tid: 10026
+        eventId: 2
+        function: "Mission_Moveglide01_01"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 16
+        numPlayer: 0
+        bookType: -2
+      # 기사단 마법사
+      - tid: 10027
+        eventId: 2
+        function: "Magic_TripleWin"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 4
+        numPlayer: 0
+        bookType: -2
+      # 파괴의 지옥꽃 생성자
+      - tid: 10028
+        eventId: 21
+        function: "Magic_NiceFlower"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 12
+        numPlayer: 0
+        bookType: -2
+      # 아이스 스톰!
+      - tid: 10029
+        eventId: 22
+        function: "Magic_NiceRange"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 12
+        numPlayer: 0
+        bookType: -2
+      # 격추!
+      - tid: 10030
+        eventId: 22
+        function: "Magic_CutHotRodding"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 12
+        numPlayer: 0
+        bookType: -2
+      # 신나는 박차
+      - tid: 10032
+        eventId: 17
+        function: "OneSpur"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 3
+        numPlayer: 0
+        bookType: -2
+      # 두근두근 슬라이딩
+      - tid: 10033
+        eventId: 26
+        function: "OneSliding"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 상쾌한 글라이딩
+      - tid: 10034
+        eventId: 25
+        function: "OneGliding"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 첫 번째 1등으로 골인
+      - tid: 10035
+        eventId: 2
+        function: "GoalInRanking"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 아까운 리타이어
+      - tid: 10036
+        eventId: 2
+        function: "Retire"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 설레이는 구매
+      - tid: 10037
+        eventId: 3
+        function: "BuyItemCount"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 소중한 내 성장
+      - tid: 10038
+        eventId: 5
+        function: "Level"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 소중한 말 성장
+      - tid: 10039
+        eventId: 6
+        function: "HorseLevel"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 교배로 말 획득하기
+      - tid: 10040
+        eventId: 19
+        function: "BreedSuccessCount"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 첫 번째 축제 참가하기
+      - tid: 10041
+        eventId: 19
+        function: "FestivalJoinCount"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 첫 번째 쪽지보내기
+      - tid: 10042
+        eventId: 19
+        function: "MessageSend"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 처음으로 친구 만들기
+      - tid: 10043
+        eventId: 19
+        function: "FriendCount"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 친구와 함께 게임하기
+      - tid: 10044
+        eventId: 19
+        function: "InGameFriendsCount"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 기분 나쁜 경험
+      - tid: 10045
+        eventId: 16
+        function: "Kicked"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 길드에 가입하기
+      - tid: 10046
+        eventId: 19
+        function: "GuildJoin"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 선물하기
+      - tid: 10047
+        eventId: 19
+        function: "GiftSendCount"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 첫 번째 리셋당하기
+      - tid: 10048
+        eventId: 19
+        function: "ResetCount"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 슈퍼맨이 된 듯한 경험
+      - tid: 10049
+        eventId: 27
+        function: "OneGlidingSpur"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 첫 번째 스크린샷 찍기
+      - tid: 10050
+        eventId: 19
+        function: "OneScreenShot"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 출발이 좋은 경험
+      - tid: 10051
+        eventId: 28
+        function: "PerfectStart"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 첫 번째 대쉬 풀 게이지 획득
+      - tid: 10052
+        eventId: 19
+        function: "DashFullGauge"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 따라 올테면 따라와 봐
+      - tid: 10053
+        eventId: 2
+        function: "OtherRetirePlayerCount"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 1
+        bookType: -2
+      # 애송이 탈출
+      - tid: 10054
+        eventId: 2
+        function: "Win"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 5
+        numPlayer: 8
+        bookType: -2
+      # 위풍당당
+      - tid: 10055
+        eventId: 2
+        function: "Win"
+        functionValue: 0
+        successValues: [3, 4, 5, 6]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 5
+        numPlayer: 8
+        bookType: -2
+        resetFunction: "Lose"
+        resetEventId: 2
+      # 파죽지세
+      - tid: 10056
+        eventId: 2
+        function: "Win"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 1
+        bookType: -2
+        resetFunction: "NotWin"
+        resetEventId: 0
+      # 위풍당당
+      - tid: 10057
+        eventId: 2
+        function: "Win"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 5
+        numPlayer: 8
+        bookType: -2
+        resetFunction: "NotWin"
+        resetEventId: 2
+      # 천하무적
+      - tid: 10058
+        eventId: 2
+        function: "Win"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 1
+        bookType: -2
+        resetFunction: "NotWin"
+        resetEventId: 0
+      # 내가 바로 NO.1
+      - tid: 10059
+        eventId: 2
+        function: "Win"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 1
+        bookType: -2
+        resetFunction: "NotWin"
+        resetEventId: 0
+      # 팀원 잘 만났네!?
+      - tid: 10060
+        eventId: 2
+        function: "TeamWin"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 10
+        numPlayer: 8
+        bookType: -2
+      # 우리는 일심동체
+      - tid: 10061
+        eventId: 2
+        function: "TeamWin"
+        functionValue: 0
+        successValues: [3, 4, 5, 6]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 10
+        numPlayer: 8
+        bookType: -2
+        resetFunction: "TeamLose"
+        resetEventId: 2
+      # 우리는 일심동체
+      - tid: 10062
+        eventId: 2
+        function: "Win"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [100, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 10
+        numPlayer: 8
+        bookType: -2
+        resetFunction: "NotTeamWin"
+        resetEventId: 2
+      # 환상의 팀워크
+      - tid: 10063
+        eventId: 2
+        function: "TeamWin"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 10
+        numPlayer: 1
+        bookType: -2
+        resetFunction: "NotTeamWin"
+        resetEventId: 0
+      # 누구든 와라
+      - tid: 10064
+        eventId: 2
+        function: "TeamWin"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 10
+        numPlayer: 1
+        bookType: -2
+        resetFunction: "NotTeamWin"
+        resetEventId: 0
+      # 전설의 팀
+      - tid: 10065
+        eventId: 2
+        function: "TeamWin"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 10
+        numPlayer: 1
+        bookType: -2
+        resetFunction: "NotTeamWin"
+        resetEventId: 0
+      # 점프의 달인
+      - tid: 10066
+        eventId: 29
+        function: "MaxPerfectJumpCombo"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 3
+        numPlayer: 0
+        bookType: -2
+      # 점프의 대가
+      - tid: 10067
+        eventId: 29
+        function: "MaxPerfectJumpCombo"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 3
+        numPlayer: 0
+        bookType: -2
+      # 점프 매니아
+      - tid: 10068
+        eventId: 18
+        function: "PerfectJump"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+        resetFunction: "NotPerfectJump"
+        resetEventId: 0
+      # 점프 마스터
+      - tid: 10069
+        eventId: 18
+        function: "PerfectJump"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+        resetFunction: "NotPerfectJump"
+        resetEventId: 0
+      # 힘내세요
+      - tid: 10070
+        eventId: 2
+        function: "Retire"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+        resetFunction: "GoalIn"
+        resetEventId: 0
+      # 눈물 나는구먼
+      - tid: 10071
+        eventId: 2
+        function: "Retire"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+        resetFunction: "GoalIn"
+        resetEventId: 0
+      # 수고합니다
+      - tid: 10072
+        eventId: 2
+        function: "GoalIn"
+        functionValue: 0
+        successValues: [3, 4, 5, 6]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+        resetFunction: "Retire"
+        resetEventId: 2
+      # 훌륭합니다
+      - tid: 10073
+        eventId: 2
+        function: "GoalIn"
+        functionValue: 0
+        successValues: [5, 6, 7, 8]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+        resetFunction: "Retire"
+        resetEventId: 2
+      # 대단합니다
+      - tid: 10074
+        eventId: 2
+        function: "GoalIn"
+        functionValue: 0
+        successValues: [7, 8, 9, 10]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+        resetFunction: "Retire"
+        resetEventId: 2
+      # 놀랍습니다
+      - tid: 10075
+        eventId: 2
+        function: "GoalIn"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+        resetFunction: "Retire"
+        resetEventId: 0
+      # 그냥 재미있어서 했을 뿐..!!
+      - tid: 10076
+        eventId: 2
+        function: "GoalIn"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+        resetFunction: "Retire"
+        resetEventId: 0
+      # 손을 뗄 수가 없어
+      - tid: 10077
+        eventId: 2
+        function: "GoalIn"
+        functionValue: 0
+        successValues: [10, 11, 12, 13]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+        resetFunction: "TRUE"
+        resetEventId: 4
+      # 황홀경
+      - tid: 10078
+        eventId: 2
+        function: "GoalIn"
+        functionValue: 0
+        successValues: [20, 21, 22, 23]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+        resetFunction: "TRUE"
+        resetEventId: 4
+      # 무아지경
+      - tid: 10079
+        eventId: 2
+        function: "GoalIn"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+        resetFunction: "RetireOrDisconnect"
+        resetEventId: 0
+      # 퍼펙트 점프 1000번 달성
+      - tid: 10080
+        eventId: 18
+        function: "PerfectJump"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 3
+        numPlayer: 0
+        bookType: -2
+      # 퍼펙트 점프 2000번 달성
+      - tid: 10081
+        eventId: 18
+        function: "PerfectJump"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 3
+        numPlayer: 0
+        bookType: -2
+      # 퍼펙트 점프 3000번 달성
+      - tid: 10082
+        eventId: 18
+        function: "PerfectJump"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 3
+        numPlayer: 0
+        bookType: -2
+      # 퍼펙트 점프 4000번 달성
+      - tid: 10083
+        eventId: 18
+        function: "PerfectJump"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 3
+        numPlayer: 0
+        bookType: -2
+      # 퍼펙트 점프 5000번 달성
+      - tid: 10084
+        eventId: 18
+        function: "PerfectJump"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 3
+        numPlayer: 0
+        bookType: -2
+      # 이제는 나도 성인
+      - tid: 10085
+        eventId: 19
+        function: "BreedTry"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 첫사랑
+      - tid: 10086
+        eventId: 19
+        function: "BreedSuccess"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 시련의 아픔
+      - tid: 10087
+        eventId: 19
+        function: "BreedFail"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 풋내기 사랑
+      - tid: 10088
+        eventId: 0
+        function: "BreedTry"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 이것이 사랑..?
+      - tid: 10089
+        eventId: 0
+        function: "BreedTry"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 사랑에 못마른 그대
+      - tid: 10090
+        eventId: 0
+        function: "BreedTry"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 살랑은 언제나 목마르다
+      - tid: 10091
+        eventId: 0
+        function: "BreedTry"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 인생의 쓴맛
+      - tid: 10092
+        eventId: 0
+        function: "BreedFail"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 사랑! 두려움?
+      - tid: 10093
+        eventId: 0
+        function: "BreedFail"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 이 한몸 받쳐
+      - tid: 10094
+        eventId: 0
+        function: "BreedRegister"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 나는야 인기 스타
+      - tid: 10095
+        eventId: 0
+        function: "BreedHorse"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+        resetFunction: "BreedOtherHorse"
+        resetEventId: 0
+      # 나는야 기러기
+      - tid: 10096
+        eventId: 0
+        function: "BreedHorse"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+        resetFunction: "BreedOtherHorse"
+        resetEventId: 0
+      # 내 종자는 우수해
+      - tid: 10097
+        eventId: 0
+        function: "BreedSuccess"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+        resetFunction: "BreedFail"
+        resetEventId: 0
+      # 사랑에 집착하는 그대
+      - tid: 10098
+        eventId: 0
+        function: "BreedSuccess"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+        resetFunction: "BreedFail"
+        resetEventId: 0
+      # 내 자식은 영재
+      - tid: 10099
+        eventId: 0
+        function: "ChildGrade10_15"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 내 자식은 천재
+      - tid: 10100
+        eventId: 0
+        function: "ChildGrade16over"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 운수대통
+      - tid: 10101
+        eventId: 0
+        function: "FestivalReward"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 나는야 백만장자
+      - tid: 10102
+        eventId: 0
+        function: "FestivalReward"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 한탕주의자
+      - tid: 10103
+        eventId: 0
+        function: "FestivalReward"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 축제 매니아
+      - tid: 10104
+        eventId: 0
+        function: "FestivalJoin"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 7명의 친구와 함께 플레이하기
+      - tid: 10105
+        eventId: 0
+        function: "InGameFriendsCount"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 노블리스 오블리제
+      - tid: 10106
+        eventId: 19
+        function: "SlipStreamMinorSupplyTime"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 양보의 미덕
+      - tid: 10107
+        eventId: 2
+        function: "NoSpurRanking"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 언터처블
+      - tid: 10108
+        eventId: 2
+        function: "NoPlayerCollisionRanking"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 동물애호가
+      - tid: 10109
+        eventId: 2
+        function: "NoNPCCollision"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 너만은 밀어준다
+      - tid: 10110
+        eventId: 19
+        function: "CollisionPush"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 꼴찌들의 왕
+      - tid: 10111
+        eventId: 2
+        function: "KingOfLosers"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 그럼에도 불구하고
+      - tid: 10112
+        eventId: 2
+        function: "NoJumpRanking"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 그러다 넘어질라
+      - tid: 10113
+        eventId: 33
+        function: "MaxSlidingTime"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 처음부터 끝까지 1등으로 경기 끝내기
+      - tid: 10114
+        eventId: 2
+        function: "StartingWinner"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 10초이상 글라이딩 유지하기
+      - tid: 10115
+        eventId: 0
+        function: "GlidingTime"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 한번도 충돌하지 않고 완주하기
+      - tid: 10116
+        eventId: 2
+        function: "NoCollisionGoalIn"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 한번도 점프하지 않고 완주하기
+      - tid: 10117
+        eventId: 2
+        function: "NoJumpGoalIn"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 포기하지마
+      - tid: 10118
+        eventId: 2
+        function: "GoalInRanking"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 8
+        bookType: -2
+      # 레벨 10 달성하기
+      - tid: 10119
+        eventId: 5
+        function: "Level"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 말 최대 레벨까지 성장시키기
+      - tid: 10120
+        eventId: 5
+        function: "HorseLevel"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 나는야 부자
+      - tid: 10121
+        eventId: 0
+        function: "Money"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 지름신 강림
+      - tid: 10122
+        eventId: 0
+        function: "BuyMoneyTotal"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 한 때는 폭주족
+      - tid: 10123
+        eventId: 35
+        function: "HotRoddingReversalCount"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 12
+        numPlayer: 0
+        bookType: -2
+      # 카메라 마법으로 상대방 리셋시키기
+      - tid: 10124
+        eventId: 0
+        function: "TwistCauseReset"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 12
+        numPlayer: 0
+        bookType: -2
+      # 글라이딩 중인 상대에게 공격마법 성공시키기
+      - tid: 10125
+        eventId: 0
+        function: "MagicCauseFalling"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 12
+        numPlayer: 0
+        bookType: -2
+      # 말 체력을 완전히 소진시키기
+      - tid: 10126
+        eventId: 0
+        function: "HorseKnockdown"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 다른 사람과 같은 말이름 짓기
+      - tid: 10127
+        eventId: 0
+        function: "HorseSameName"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 공격한 상대에게 복수하기
+      - tid: 10128
+        eventId: 0
+        function: "MagicRevenge"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 12
+        numPlayer: 0
+        bookType: -2
+      # 관리스킬 5레벨 달성하기
+      - tid: 10129
+        eventId: 0
+        function: "TakecareLevel"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 나는야 마법사
+      - tid: 10130
+        eventId: 42
+        function: "UseAllMagic"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 12
+        numPlayer: 0
+        bookType: -2
+      # 포토제닉1
+      - tid: 10131
+        eventId: 2
+        function: "GoalInWithSpur"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 포토제닉2
+      - tid: 10132
+        eventId: 2
+        function: "GoalInWithSliding"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 포토제닉3
+      - tid: 10133
+        eventId: 2
+        function: "GoalInWithGliding"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 정복자
+      - tid: 10134
+        eventId: 2
+        function: "GoalInAllMap"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 세계 제패
+      - tid: 10135
+        eventId: 2
+        function: "WinAllMap"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 거침없는 질주
+      - tid: 10136
+        eventId: 17
+        function: "MaxVelocity"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 초광속 폭주
+      - tid: 10137
+        eventId: 0
+        function: "MaxVelocity"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 속도의 중독자
+      - tid: 10138
+        eventId: 0
+        function: "MaxVelocity"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 폭주 기관차
+      - tid: 10139
+        eventId: 2
+        function: "ReversalWinner"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 4단 박차 사용
+      - tid: 10140
+        eventId: 17
+        function: "SpurLevel"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 5단 박차 사용
+      - tid: 10141
+        eventId: 17
+        function: "SpurLevel"
+        functionValue: 0
+        successValues: [0, 0, 0, 0]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 아슬아슬 퍼펙트 점프
+      - tid: 10142
+        eventId: 29
+        function: "PerfectJump"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 3
+        numPlayer: 0
+        bookType: -2
+      # 점프의 깨달음1
+      - tid: 10143
+        eventId: 29
+        function: "PerfectJump"
+        functionValue: 0
+        successValues: [30, 31, 32, 33]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 3
+        numPlayer: 0
+        bookType: -2
+      # 점프의 깨달음2
+      - tid: 10144
+        eventId: 29
+        function: "PerfectJump"
+        functionValue: 0
+        successValues: [50, 51, 52, 53]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 3
+        numPlayer: 0
+        bookType: -2
+      # 한가하면 한 게임?
+      - tid: 10145
+        eventId: 2
+        function: "GoalIn_14h_16h"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 학교 끝나면 앨리샤지!
+      - tid: 10146
+        eventId: 2
+        function: "GoalIn_16h_18h"
+        functionValue: 0
+        successValues: [30, 31, 32, 33]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 저녁형 인간
+      - tid: 10147
+        eventId: 2
+        function: "GoalIn_19h_22h"
+        functionValue: 0
+        successValues: [30, 31, 32, 33]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: -2
+      # 첫 이름 지어주기
+      - tid: 10148
+        eventId: 47
+        function: "TRUE"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 기본 지식을 익히다
+      - tid: 10149
+        eventId: 45
+        function: "TRUE"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 방문하기
+      - tid: 10150
+        eventId: 48
+        function: "TRUE"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [10, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 풍선 터뜨리기 완료
+      - tid: 10151
+        eventId: 46
+        function: "TRUE"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [10, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 풍선 터뜨리기 재밌다!
+      - tid: 10152
+        eventId: 46
+        function: "BalloonLapTime"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [10, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 풍선 터뜨리기 달인
+      - tid: 10153
+        eventId: 46
+        function: "BalloonLapTime"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [10, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 말 관리 자격증 획득
+      - tid: 10154
+        eventId: 5
+        function: "Level"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: -2
+      # 상쾌한 글라이딩
+      - tid: 10155
+        eventId: 43
+        function: "GlidingDistance"
+        functionValue: 0
+        successValues: [1, 100, 500, 1800]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 127
+        numPlayer: 0
+        bookType: 1
+      # 신나는 박차
+      - tid: 10156
+        eventId: 17
+        function: "TRUE"
+        functionValue: 0
+        successValues: [1, 100, 2000, 6000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 35
+        numPlayer: 0
+        bookType: 1
+      # 슈퍼맨이 된 듯한 경험
+      - tid: 10157
+        eventId: 27
+        function: "GlidingSpur"
+        functionValue: 0
+        successValues: [1, 100, 200, 6000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 35
+        numPlayer: 0
+        bookType: 1
+      # 설레이는 구매
+      - tid: 10158
+        eventId: 3
+        function: "BuyItem"
+        functionValue: 0
+        successValues: [500, 10000, 50000, 200000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 3
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 1
+      # 출발이 좋은 경험
+      - tid: 10159
+        eventId: 28
+        function: "PerfectStart"
+        functionValue: 0
+        successValues: [1, 150, 300, 1500]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 127
+        numPlayer: 0
+        bookType: 1
+      # 점프의 깨달음
+      - tid: 10160
+        eventId: 29
+        function: "PerfectJump"
+        functionValue: 0
+        successValues: [5, 500, 2500, 10000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 35
+        numPlayer: 0
+        bookType: 1
+      # 수고합니다
+      - tid: 10161
+        eventId: 2
+        function: "GoalIn"
+        functionValue: 0
+        successValues: [3, 6, 10, 15]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 127
+        numPlayer: 0
+        bookType: 1
+        resetFunction: "Retire"
+        resetEventId: 2
+      # 손을 뗄 수가 없어
+      - tid: 10162
+        eventId: 2
+        function: "GoalIn"
+        functionValue: 0
+        successValues: [2, 5, 10, 20]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 127
+        numPlayer: 0
+        bookType: 1
+        resetFunction: "TRUE"
+        resetEventId: 4
+      # 아침형 인간
+      - tid: 10163
+        eventId: 2
+        function: "GoalIn_8h_13h"
+        functionValue: 0
+        successValues: [2, 20, 100, 500]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 127
+        numPlayer: 0
+        bookType: 1
+      # 학교 끝나면 앨리샤지!
+      - tid: 10164
+        eventId: 2
+        function: "GoalIn_16h_18h"
+        functionValue: 0
+        successValues: [2, 20, 100, 500]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 127
+        numPlayer: 0
+        bookType: 1
+      # 저녁형 인간
+      - tid: 10165
+        eventId: 2
+        function: "GoalIn_19h_22h"
+        functionValue: 0
+        successValues: [2, 20, 100, 500]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 127
+        numPlayer: 0
+        bookType: 1
+      # 숙련된 말
+      - tid: 10166
+        eventId: 68
+        function: "TRUE"
+        functionValue: 0
+        successValues: [1, 2, 5, 15]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 127
+        numPlayer: 0
+        bookType: 1
+      # 갈기를 깨끗이
+      - tid: 10167
+        eventId: 51
+        function: "TRUE"
+        functionValue: 0
+        successValues: [3, 70, 500, 5000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 2
+      # 몸을 깨끗이
+      - tid: 10168
+        eventId: 50
+        function: "TRUE"
+        functionValue: 0
+        successValues: [3, 70, 500, 5000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 2
+      # 꼬리를 깨끗이
+      - tid: 10169
+        eventId: 52
+        function: "TRUE"
+        functionValue: 0
+        successValues: [3, 70, 500, 5000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 2
+      # 골고루 먹이기
+      - tid: 10170
+        eventId: 53
+        function: "ForciblyFeeding"
+        functionValue: 0
+        successValues: [3, 10, 30, 40]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 2
+      # 좋아하는 것만 먹이기
+      - tid: 10171
+        eventId: 53
+        function: "FavoriteFoodsFeeding"
+        functionValue: 0
+        successValues: [3, 50, 500, 10000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 2
+      # 든든하게 먹이기
+      - tid: 10172
+        eventId: 53
+        function: "Stuffed"
+        functionValue: 0
+        successValues: [3, 50, 300, 2000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 2
+      # 나중에 다시 만나자
+      - tid: 10173
+        eventId: 55
+        function: "TRUE"
+        functionValue: 0
+        successValues: [1, 3, 5, 20]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 2
+      # 나 때문에 너가
+      - tid: 10174
+        eventId: 69
+        function: "TRUE"
+        functionValue: 0
+        successValues: [1, 5, 30, 200]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: 2
+      # 경상쯤은! 자연치료!
+      - tid: 10175
+        eventId: 71
+        function: "TRUE"
+        functionValue: 0
+        successValues: [1, 3, 5, 50]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 2
+      # 엘레강스한 자태
+      - tid: 10176
+        eventId: 49
+        function: "PolishUp"
+        functionValue: 0
+        successValues: [1, 10, 150, 1000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 2
+      # 나도 이제 조련사
+      - tid: 10177
+        eventId: 54
+        function: "TraningSuccess"
+        functionValue: 0
+        successValues: [1, 20, 300, 1000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 2
+      # 사랑에 목마른 그대
+      - tid: 10178
+        eventId: 10
+        function: "TRUE"
+        functionValue: 0
+        successValues: [1, 5, 30, 100]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 3
+      # 연애박사
+      - tid: 10179
+        eventId: 11
+        function: "TRUE"
+        functionValue: 0
+        successValues: [1, 5, 10, 50]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 3
+      # 인생의 쓴맛
+      - tid: 10180
+        eventId: 12
+        function: "TRUE"
+        functionValue: 0
+        successValues: [1, 10, 30, 50]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 3
+      # 이 한 몸 바쳐
+      - tid: 10181
+        eventId: 13
+        function: "TRUE"
+        functionValue: 0
+        successValues: [1, 10, 100, 250]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 3
+      # 잠재능력!
+      - tid: 10182
+        eventId: 11
+        function: "PotentialCapacities"
+        functionValue: 0
+        successValues: [1, 3, 5, 25]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 3
+      # 내 종자는 우수해
+      - tid: 10183
+        eventId: 11
+        function: "BreedingSuccessCombo"
+        functionValue: 2
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 3
+      # 사랑에 집착하는 그대
+      - tid: 10184
+        eventId: 10
+        function: "TRUE"
+        functionValue: 0
+        successValues: [2, 3, 4, 5]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 3
+        resetFunction: "TRUE"
+        resetEventId: 8
+      # 너만을 믿는다
+      - tid: 10185
+        eventId: 14
+        function: "MaleHorseCombo"
+        functionValue: 3
+        successValues: [1, 3, 5, 8]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 3
+      # 이제 능력만 발휘하면 돼
+      - tid: 10186
+        eventId: 56
+        function: "PotentialCapacitiesGrow"
+        functionValue: 0
+        successValues: [1, 3, 5, 25]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 3
+      # 미운 오리새끼
+      - tid: 10187
+        eventId: 11
+        function: "GradeCompare"
+        functionValue: 0
+        successValues: [1, 3, 10, 50]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 3
+      # 포기하지마
+      - tid: 10188
+        eventId: 2
+        function: "GoalInRanking"
+        functionValue: 8
+        successValues: [5, 30, 150, 600]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 127
+        numPlayer: 8
+        bookType: 4
+      # 나는야 마법사
+      - tid: 10189
+        eventId: 42
+        function: "UseAllMagic"
+        functionValue: 3
+        successValues: [5, 50, 500, 2000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 76
+        numPlayer: 0
+        bookType: 4
+      # 과속은 위험해
+      - tid: 10190
+        eventId: 24
+        function: "Cliff"
+        functionValue: 0
+        successValues: [1, 3, 5, 30]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 127
+        numPlayer: 0
+        bookType: 4
+      # 폭주 기관차
+      - tid: 10191
+        eventId: 2
+        function: "ReversalWinner"
+        functionValue: 0
+        successValues: [5, 50, 100, 500]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 127
+        numPlayer: 2
+        bookType: 4
+      # 두근두근 축제 경험
+      - tid: 10192
+        eventId: 2
+        function: "CarnivalSuccess"
+        functionValue: 0
+        successValues: [5, 30, 150, 400]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 31
+        numPlayer: 0
+        bookType: 4
+      # 작전 성공
+      - tid: 10193
+        eventId: 42
+        function: "JumpParalysis"
+        functionValue: 3
+        successValues: [5, 30, 150, 400]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 76
+        numPlayer: 0
+        bookType: 4
+      # 한 때는 폭주족
+      - tid: 10194
+        eventId: 35
+        function: "HotRoddingReversalCount"
+        functionValue: 3
+        successValues: [3, 10, 50, 150]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 76
+        numPlayer: 0
+        bookType: 4
+      # 포토제닉1
+      - tid: 10195
+        eventId: 57
+        function: "TRUE"
+        functionValue: 0
+        successValues: [20, 100, 300, 2000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 35
+        numPlayer: 0
+        bookType: 4
+      # 포토제닉2
+      - tid: 10196
+        eventId: 58
+        function: "TRUE"
+        functionValue: 0
+        successValues: [20, 100, 300, 2000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 127
+        numPlayer: 0
+        bookType: 4
+      # 포토제닉3
+      - tid: 10197
+        eventId: 59
+        function: "TRUE"
+        functionValue: 0
+        successValues: [20, 100, 300, 2000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 127
+        numPlayer: 0
+        bookType: 4
+      # 수사반장
+      - tid: 10198
+        eventId: 23
+        function: "TRUE"
+        functionValue: 0
+        successValues: [5, 20, 50, 500]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 5
+      # 팀원 잘 만났네
+      - tid: 10199
+        eventId: 2
+        function: "TeamWinTheLast"
+        functionValue: 0
+        successValues: [5, 30, 100, 200]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 10
+        numPlayer: 8
+        bookType: 5
+      # 어쩌다 보니
+      - tid: 10200
+        eventId: 72
+        function: "TRUE"
+        functionValue: 0
+        successValues: [1, 100, 250, 500]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 76
+        numPlayer: 0
+        bookType: 5
+      # 내 말은 추입마
+      - tid: 10201
+        eventId: 57
+        function: "Spur3thGoalIn"
+        functionValue: 0
+        successValues: [1, 50, 150, 300]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 35
+        numPlayer: 0
+        bookType: 5
+      # 폼생폼사
+      - tid: 10202
+        eventId: 60
+        function: "TRUE"
+        functionValue: 0
+        successValues: [1, 300, 700, 1500]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 35
+        numPlayer: 0
+        bookType: 5
+      # 다치지마렴
+      - tid: 10203
+        eventId: 70
+        function: "TRUE"
+        functionValue: 0
+        successValues: [1, 20, 50, 200]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 5
+      # 미숙마의 경험
+      - tid: 10204
+        eventId: 11
+        function: "PoorHorse"
+        functionValue: 400
+        successValues: [1, 2, 3, 5]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 5
+      # 우량마의 경험
+      - tid: 10205
+        eventId: 11
+        function: "GoodHorse"
+        functionValue: 500
+        successValues: [1, 2, 3, 5]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 5
+      # 이것 받으세요
+      - tid: 10207
+        eventId: 62
+        function: "TRUE"
+        functionValue: 0
+        successValues: [5, 30, 100, 800]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 76
+        numPlayer: 0
+        bookType: 6
+      # 그냥은 안 때려!
+      - tid: 10208
+        eventId: 42
+        function: "CriticalFireballAttack"
+        functionValue: 0
+        successValues: [5, 30, 200, 1000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 76
+        numPlayer: 0
+        bookType: 6
+      # 그냥은 안 보내!
+      - tid: 10209
+        eventId: 42
+        function: "RevengeAttackWithFireball"
+        functionValue: 0
+        successValues: [5, 10, 25, 70]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 12
+        numPlayer: 0
+        bookType: 6
+      # 너만을 노린다
+      - tid: 10210
+        eventId: 42
+        function: "ComboAttackSuccessWithFireball"
+        functionValue: 3
+        successValues: [5, 10, 25, 50]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 76
+        numPlayer: 0
+        bookType: 6
+      # 이때를 기다렸다
+      - tid: 10211
+        eventId: 42
+        function: "ShieldEndAttackWithFireball"
+        functionValue: 3
+        successValues: [5, 10, 25, 100]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 76
+        numPlayer: 0
+        bookType: 6
+      # 쾌감 절정
+      - tid: 10212
+        eventId: 74
+        function: "TRUE"
+        functionValue: 0
+        successValues: [5, 10, 25, 50]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 76
+        numPlayer: 0
+        bookType: 6
+      # 복수 혈전
+      - tid: 10213
+        eventId: 2
+        function: "Revenge"
+        functionValue: 0
+        successValues: [3, 10, 25, 50]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 15
+        numPlayer: 0
+        bookType: 6
+      # 그렇게는 안되지
+      - tid: 10214
+        eventId: 42
+        function: "FireBallSuccess"
+        functionValue: 0
+        successValues: [3, 15, 70, 400]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 76
+        numPlayer: 0
+        bookType: 6
+      # 견습기사단정도는 1
+      - tid: 10216
+        eventId: 2
+        function: "WinAI"
+        functionValue: 0
+        successValues: [1, 5, 10, 20]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 32
+        numPlayer: 0
+        bookType: 7
+      # 견습기사단정도는 2
+      - tid: 10217
+        eventId: 2
+        function: "WinAI"
+        functionValue: 0
+        successValues: [1, 5, 10, 20]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 64
+        numPlayer: 0
+        bookType: 7
+      # 운수대통
+      - tid: 10218
+        eventId: 11
+        function: "GoodChild"
+        functionValue: 0
+        successValues: [1, 2, 3, 4]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 7
+      # 고추가루
+      - tid: 10219
+        eventId: 42
+        function: "LastSpurtAttack"
+        functionValue: 0
+        successValues: [5, 30, 50, 300]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 76
+        numPlayer: 0
+        bookType: 7
+      # 어떤 상황에서도
+      - tid: 10220
+        eventId: 61
+        function: "PerfectSpurMaster"
+        functionValue: 0
+        successValues: [3, 50, 500, 2000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 35
+        numPlayer: 0
+        bookType: 7
+      # 타이밍의 마스터
+      - tid: 10221
+        eventId: 54
+        function: "TrainingCombo"
+        functionValue: 3
+        successValues: [3, 50, 200, 400]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 7
+      # 완벽하다
+      - tid: 10222
+        eventId: 2
+        function: "TeamPerfectWinNew"
+        functionValue: 0
+        successValues: [3, 20, 50, 150]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 10
+        numPlayer: 4
+        bookType: 7
+      # 박차 마스터
+      - tid: 10223
+        eventId: 61
+        function: "PerfectSpurCombo"
+        functionValue: 3
+        successValues: [3, 100, 300, 1000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 35
+        numPlayer: 0
+        bookType: 7
+      # 운 좋은 날
+      - tid: 10224
+        eventId: 54
+        function: "TrainingCritical"
+        functionValue: 0
+        successValues: [3, 70, 300, 1000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 7
+      # 위풍당당
+      - tid: 10225
+        eventId: 2
+        function: "Win"
+        functionValue: 0
+        successValues: [1, 10, 50, 100]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 1
+        numPlayer: 4
+        bookType: 8
+      # 천하무적
+      - tid: 10226
+        eventId: 2
+        function: "Win"
+        functionValue: 0
+        successValues: [1, 10, 50, 100]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 4
+        numPlayer: 4
+        bookType: 8
+      # 우리는 일심동체
+      - tid: 10227
+        eventId: 2
+        function: "TeamWin"
+        functionValue: 0
+        successValues: [1, 10, 50, 300]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 2
+        numPlayer: 4
+        bookType: 8
+      # 누구든 와라
+      - tid: 10228
+        eventId: 2
+        function: "TeamWin"
+        functionValue: 0
+        successValues: [1, 10, 50, 300]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 8
+        numPlayer: 4
+        bookType: 8
+      # 점프의 달인
+      - tid: 10229
+        eventId: 29
+        function: "MaxPerfectJumpCombo"
+        functionValue: 10
+        successValues: [30, 200, 500, 2000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 35
+        numPlayer: 0
+        bookType: 8
+      # 그러다 넘어질라
+      - tid: 10230
+        eventId: 33
+        function: "SlidingTime"
+        functionValue: 2
+        successValues: [20, 300, 700, 3000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 127
+        numPlayer: 0
+        bookType: 8
+      # 한계 돌파
+      - tid: 10231
+        eventId: 17
+        function: "MaxSpurCount"
+        functionValue: 3
+        successValues: [4, 5, 7, 10]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 2
+        gameModeFlag: 35
+        numPlayer: 0
+        bookType: 8
+      # 거침없는 질주
+      - tid: 10232
+        eventId: 38
+        function: "GetMaxSpeed"
+        functionValue: 0
+        successValues: [110, 120, 123, 125]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 2
+        gameModeFlag: 127
+        numPlayer: 0
+        bookType: 8
+      # 풍선 매니아
+      - tid: 10233
+        eventId: 46
+        function: "BalloonLapTime"
+        functionValue: 0
+        successValues: [31, 30, 29, 28]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 1
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 8
+      # 할 만큼 했네?
+      - tid: 10234
+        eventId: 2
+        function: "MaxWinStop"
+        functionValue: 0
+        successValues: [3, 15, 30, 70]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 5
+        numPlayer: 0
+        bookType: 8
+      # 완벽주의자
+      - tid: 10235
+        eventId: 61
+        function: "TRUE"
+        functionValue: 0
+        successValues: [1, 100, 1000, 5000]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 35
+        numPlayer: 0
+        bookType: 8
+      # 최강팀 등극!
+      - tid: 10236
+        eventId: 2
+        function: "MaxWinStop"
+        functionValue: 0
+        successValues: [3, 15, 30, 70]
+        rewards: [400, 800, 1200, 2000]
+        compareType: 0
+        gameModeFlag: 10
+        numPlayer: 0
+        bookType: 8
+      # 첫 상점 진입
+      - tid: 20001
+        eventId: 65
+        function: "True"
+        functionValue: 0
+        successValues: [1, 1, 1, 1]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 0
+      # 첫 내 장비 진입
+      - tid: 20002
+        eventId: 66
+        function: "True"
+        functionValue: 0
+        successValues: [1, 1, 1, 1]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 0
+      # 첫 말 관리 진입
+      - tid: 20003
+        eventId: 67
+        function: "True"
+        functionValue: 0
+        successValues: [1, 1, 1, 1]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 0
+      # 첫 말 이름 짓기
+      - tid: 20004
+        eventId: 47
+        function: "True"
+        functionValue: 0
+        successValues: [1, 1, 1, 1]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 0
+      # 인트로 완료
+      - tid: 20005
+        eventId: 45
+        function: "True"
+        functionValue: 0
+        successValues: [1, 1, 1, 1]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 0
+      # 시스템 예약 항목
+      - tid: 20000
+        eventId: 45
+        function: "False"
+        functionValue: 0
+        successValues: [1, 1, 1, 1]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 0
+      # 레벨 2
+      - tid: 20006
+        eventId: 5
+        function: "LevelCheck"
+        functionValue: 2
+        successValues: [1, 1, 1, 1]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 0
+      # 레벨 3
+      - tid: 20007
+        eventId: 5
+        function: "LevelCheck"
+        functionValue: 3
+        successValues: [1, 1, 1, 1]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 0
+      # 레벨2 NPC 대화
+      - tid: 20008
+        eventId: 75
+        function: "DialogLevelCheck"
+        functionValue: 2
+        successValues: [1, 1, 1, 1]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 0
+      # 레벨5 NPC 대화
+      - tid: 20009
+        eventId: 75
+        function: "DialogLevelCheck"
+        functionValue: 5
+        successValues: [1, 1, 1, 1]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 0
+      # 레벨12 NPC 대화
+      - tid: 20010
+        eventId: 75
+        function: "DialogLevelCheck"
+        functionValue: 12
+        successValues: [1, 1, 1, 1]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 0
+      # 레벨8 NPC 대화
+      - tid: 20011
+        eventId: 75
+        function: "DialogLevelCheck"
+        functionValue: 8
+        successValues: [1, 1, 1, 1]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 0
+      # 레벨10 NPC 대화
+      - tid: 20012
+        eventId: 75
+        function: "DialogLevelCheck"
+        functionValue: 10
+        successValues: [1, 1, 1, 1]
+        rewards: [0, 0, 0, 0]
+        compareType: 0
+        gameModeFlag: 0
+        numPlayer: 0
+        bookType: 0
+  # Reward item of each book grade, from the AchievementBookReward and
+  # AchievementBookRewardSub tables. Every combination grants exactly one
+  # item and no money, so the shipped data collapses to four item ids.
+  # characterModelId is 10 for the boy and 20 for the girl.
+  bookRewards:
+      - bookType: 1
+        characterModelId: 10
+        itemTids: [30076, 30083, 30075, 30087]
+      - bookType: 1
+        characterModelId: 20
+        itemTids: [10080, 10090, 10085, 10095]
+      - bookType: 2
+        characterModelId: 10
+        itemTids: [30094, 30095, 30070, 30085]
+      - bookType: 2
+        characterModelId: 20
+        itemTids: [10100, 10101, 10089, 10092]
+      - bookType: 3
+        characterModelId: 10
+        itemTids: [30069, 30084, 30068, 30088]
+      - bookType: 3
+        characterModelId: 20
+        itemTids: [10073, 10074, 10083, 10097]
+      - bookType: 4
+        characterModelId: 10
+        itemTids: [30057, 30058, 30079, 30091]
+      - bookType: 4
+        characterModelId: 20
+        itemTids: [10075, 10076, 10084, 10096]
+      - bookType: 5
+        characterModelId: 10
+        itemTids: [30078, 30045, 30077, 30086]
+      - bookType: 5
+        characterModelId: 20
+        itemTids: [10079, 10060, 10086, 10093]
+      - bookType: 6
+        characterModelId: 10
+        itemTids: [30081, 30036, 30080, 30089]
+      - bookType: 6
+        characterModelId: 20
+        itemTids: [10078, 10032, 10087, 10099]
+      - bookType: 7
+        characterModelId: 10
+        itemTids: [30054, 30055, 30072, 30090]
+      - bookType: 7
+        characterModelId: 20
+        itemTids: [10070, 10071, 10082, 10094]
+      - bookType: 8
+        characterModelId: 10
+        itemTids: [30096, 30093, 30073, 30092]
+      - bookType: 8
+        characterModelId: 20
+        itemTids: [10025, 10029, 10081, 10098]

@@ -19,6 +19,8 @@
 
 #include "libserver/network/command/proto/LobbyMessageDefinitions.hpp"
 
+#include <cassert>
+
 namespace server::protocol
 {
 
@@ -390,14 +392,17 @@ void AcCmdCLAchievementCompleteListOK::Write(
     stream.Write(achievement);
   }
 
+  if (command.books.size() > MaxAchievementBooks)
+    throw std::runtime_error("Achievement book count is over the limit");
+
   stream.Write(static_cast<uint8_t>(command.books.size()));
   for (const auto& book : command.books)
   {
     stream.Write(book.bookId)
       .Write(book.grade);
-    for (const auto& progress : book.tierProgress)
+    for (const auto& claimed : book.tierRewardClaimed)
     {
-      stream.Write(progress);
+      stream.Write(claimed);
     }
   }
 }

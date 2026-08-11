@@ -117,6 +117,7 @@ add_executable(alicia-server
         src/server/ranch/Genetics.cpp
         src/server/ranch/RanchDirector.cpp
         src/server/room/Room.cpp
+        src/server/system/AchievementSystem.cpp
         src/server/system/ChatSystem.cpp
         src/server/system/HorseSystem.cpp
         src/server/system/InfractionSystem.cpp

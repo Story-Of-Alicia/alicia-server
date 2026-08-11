@@ -776,7 +776,7 @@ void AcCmdRCRaceResultNotify::Write(
       .Write(score.teamColor)
       .Write(score.member10)
       .Write(score.member11)
-      .Write(score.member12)
+      .Write(score.points)
       .Write(score.recordTimeDifference)
       .Write(score.levelProgress)
       .Write(score.horseClassProgress)

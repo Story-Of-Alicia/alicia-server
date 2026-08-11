@@ -56,6 +56,7 @@ ServerInstance::ServerInstance(
   , _matchmakingSystem(*this)
   , _questSystem(*this)
   , _rewardSystem(*this)
+  , _achievementSystem(*this)
   , _telemetry(*this)
   , _breedingMarket(*this)
   , _genetics(*this)
@@ -290,6 +291,8 @@ void ServerInstance::LoadConfigurations()
 
   // Read game configurations
   _achievementRegistry.ReadConfig(_resourceDirectory / "config/game/achievements.yaml");
+  _achievementRegistry.ReadConditions(
+    _resourceDirectory / "config/game/achievement-conditions.yaml");
   _breedingRegistry.ReadConfig(_resourceDirectory / "config/game/breeding.yaml");
   _characterRegistry.ReadConfig(_resourceDirectory / "config/game/character.yaml");
   _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
@@ -428,6 +431,11 @@ MatchmakingSystem& ServerInstance::GetMatchmakingSystem()
 RewardSystem& ServerInstance::GetRewardSystem()
 {
   return _rewardSystem;
+}
+
+AchievementSystem& ServerInstance::GetAchievementSystem()
+{
+  return _achievementSystem;
 }
 
 QuestSystem& ServerInstance::GetQuestSystem()

@@ -577,6 +577,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRAchievementUpdateProperty& command);
 
+  void HandleAchievementBookReward(
+    ClientId clientId,
+    const protocol::AcCmdCRAchievementBookReward& command);
+
   void HandleSetKeyAchievement(
     ClientId clientId,
     const protocol::AcCmdCRSetKeyAchievement& command);

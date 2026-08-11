@@ -399,6 +399,23 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRGameCreateClientItem& command);
 
+  //! Handles the achievement progress the client reports during a race. The
+  //! ranch connection is closed for the duration of a race, so the reports
+  //! arrive here rather than at the ranch.
+  void HandleAchievementUpdateProperty(
+    ClientId clientId,
+    const protocol::AcCmdCRAchievementUpdateProperty& command);
+
+  //! Applies a finished race to the achievements that wait on the result. The
+  //! client reports none of them, so the server describes the race itself.
+  //! @param clientId ID of the racer's client.
+  //! @param raceInstance The race that just ended for them.
+  //! @param finished Whether they reached the goal rather than giving up.
+  void AwardRaceAchievements(
+    ClientId clientId,
+    RaceInstance& raceInstance,
+    bool finished);
+
   //! A scheduler instance.
   Scheduler _scheduler;
   //! A server instance.
