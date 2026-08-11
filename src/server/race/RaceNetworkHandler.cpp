@@ -3895,32 +3895,29 @@ void RaceNetworkHandler::HandleTeamGauge(const ClientId clientId)
   }
   const auto teamSize = std::max(redTeamCount, blueTeamCount);
 
+  // boostCount was incremented above; 1st boost should correspond to index 0 (FillRate_1).
   const auto fillRateIndex = std::min(
-    team.boostCount,
+    team.boostCount - 1,
     static_cast<uint32_t>(baseFillRates.size() - 1));
   protocol::AcCmdRCTeamSpurGauge spur{
     .team = racer.team,
-    .markerSpeed = baseFillRates[fillRateIndex] * teamSize, // Base fill rate * boost count * team size
+    .markerSpeed = baseFillRates[fillRateIndex] * teamSize, // Base fill rate * team size
     .unk5 = 0 // TODO: identify use
   };
 
-  //! Base point for a successful boost.
-  constexpr uint32_t BaseBoostPoints = 50;
-  //! Base point difference per team member in a team.
-  constexpr uint32_t BoostPointsDiffBase = 20;
+  //! Base points per boost per team member in 1/10th scale
+  //! (Point_1 in TeamSpurGaugeInfo is 3.5 per team member = 35 internal points)
+  constexpr uint32_t BaseBoostPointsPerMember = 35;
+  const uint32_t pointsPerBoost = BaseBoostPointsPerMember * teamSize;
 
-  //! Scale points per boost, based on team size.
-  //! Scale = team size - 1 for the formula.
-  const auto scale = teamSize - 1;
-  //! Final points per boost = base boost + additional boost points.
-  const auto additionalBoostPoints = (BoostPointsDiffBase * scale) + (10 * scale);
-
-  //! Base max points.
-  constexpr uint32_t BaseMaxPoints = 250;
-  //! Max points difference per team member.
-  constexpr uint32_t MaxPointsDiffBase = 150;
-  //! Final max points for team size.
-  const uint32_t maxPoints = BaseMaxPoints + (MaxPointsDiffBase * scale);
+  //! Max team spur points based on team size (1v1, 2v2, 3v3, 4v4)
+  //! from libconfig `TeamSpurGaugeInfo` (`TeamSpurMax` * 10)
+  static constexpr std::array<uint32_t, 4> MaxTeamSpurPoints{250, 400, 650, 1000};
+  const uint32_t teamSizeIndex = std::clamp(
+    teamSize,
+    1u,
+    static_cast<uint32_t>(MaxTeamSpurPoints.size())) - 1;
+  const uint32_t maxPoints = MaxTeamSpurPoints[teamSizeIndex];
 
   auto& blueTeamPoints = blueTeam.points;
   auto& redTeamPoints = redTeam.points;
@@ -3936,7 +3933,7 @@ void RaceNetworkHandler::HandleTeamGauge(const ClientId clientId)
   spur.currentPoints = teamPoints / 10.0f;
   teamPoints = std::min(
     maxPoints,
-    teamPoints + BaseBoostPoints + additionalBoostPoints);
+    teamPoints + pointsPerBoost);
   spur.newPoints = teamPoints / 10.0f;
 
   // If any of the teams got max points to spur, reset points and broadcast team spur
