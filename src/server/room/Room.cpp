@@ -226,4 +226,9 @@ const std::unordered_map<data::Uid, Room::Player>& Room::GetPlayers() const
   return _players;
 }
 
+Room::WinStreak& Room::GetWinStreak()
+{
+  return _winStreak;
+}
+
 } // namespace server

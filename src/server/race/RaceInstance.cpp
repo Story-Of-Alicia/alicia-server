@@ -27,6 +27,7 @@
 
 #include <tuple>
 #include <format>
+#include <limits>
 
 namespace server
 {
@@ -252,6 +253,51 @@ void RaceInstance::Stop()
   {
     data::Uid newMasterUid = raceResult.scores[0].uid;
     std::string newMasterName = raceResult.scores[0].name;
+
+    const data::Uid winnerUid = raceResult.scores[0].uid;
+    const bool isTeamRace = _parameters.teamMode == protocol::TeamMode::Team;
+    const Room::Player::Team winnerTeam =
+      winningTeam == Team::Red ? Room::Player::Team::Red
+      : winningTeam == Team::Blue ? Room::Player::Team::Blue
+      : Room::Player::Team::Solo;
+    const bool raceHadWinner =
+      raceResult.scores[0].courseTime != tracker::InvalidCourseTime
+      && (not isTeamRace || winnerTeam != Room::Player::Team::Solo);
+
+    if (raceHadWinner)
+    {
+      this->GetRoom(
+        [winnerUid, winnerTeam, isTeamRace](Room& room)
+        {
+          // Winning a race you were alone in does not build a streak.
+          if (room.GetPlayerCount() < 2)
+            return;
+
+          const auto extend = [](const uint16_t count)
+          {
+            return count < std::numeric_limits<uint16_t>::max()
+              ? static_cast<uint16_t>(count + 1)
+              : count;
+          };
+
+          auto& winStreak = room.GetWinStreak();
+          if (isTeamRace)
+          {
+            winStreak.teamWins = winStreak.team == winnerTeam
+              ? extend(winStreak.teamWins)
+              : 1;
+            winStreak.team = winnerTeam;
+          }
+          else
+          {
+            winStreak.characterWins = winStreak.characterUid == winnerUid
+              ? extend(winStreak.characterWins)
+              : 1;
+            winStreak.characterUid = winnerUid;
+          }
+        });
+    }
+
     this->GetRoom(
       [&newMasterUid, &newMasterName, scores = raceResult.scores](Room& room)
       {

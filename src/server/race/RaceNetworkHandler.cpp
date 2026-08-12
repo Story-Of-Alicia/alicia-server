@@ -686,6 +686,30 @@ void RaceNetworkHandler::HandleEnterRoom(
           .missionId = roomDetails.missionId,
           .unk6 = roomDetails.npcDifficulty,
           .skillBracket = roomDetails.skillBracket};
+
+        const auto& winStreak = room.GetWinStreak();
+        if (roomDetails.teamMode == Room::TeamMode::Team)
+        {
+          response.teamWinStreak.teamColor =
+            winStreak.team == Room::Player::Team::Red ? protocol::TeamColor::Red
+            : winStreak.team == Room::Player::Team::Blue ? protocol::TeamColor::Blue
+            : protocol::TeamColor::None;
+          response.teamWinStreak.winStreakCount = winStreak.teamWins;
+
+          if (winStreak.teamWins > 0)
+          {
+            for (const auto& [characterUid, player] : room.GetPlayers())
+            {
+              if (player.GetTeam() == winStreak.team)
+                response.teamWinStreak.characterUids.emplace_back(characterUid);
+            }
+          }
+        }
+        else
+        {
+          response.ffaWinStreak.characterUid = winStreak.characterUid;
+          response.ffaWinStreak.winStreakCount = winStreak.characterWins;
+        }
       });
   }
   catch (const std::exception&)
