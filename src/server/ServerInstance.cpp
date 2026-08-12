@@ -297,6 +297,7 @@ void ServerInstance::LoadConfigurations()
   _magicRegistry.ReadConfig(_resourceDirectory / "config/game/magic.yaml");
   _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
   _questRegistry.ReadConfig(_resourceDirectory / "config/game/quests.yaml");
+  _speedRegistry.ReadConfig(_resourceDirectory / "config/game/speed.yaml");
 }
 
 AuthenticationService& ServerInstance::GetAuthenticationService()
@@ -382,6 +383,11 @@ registry::SystemContentRegistry& ServerInstance::GetSystemContentRegistry()
 registry::BreedingRegistry& ServerInstance::GetBreedingRegistry()
 {
   return _breedingRegistry;
+}
+
+registry::SpeedRegistry& ServerInstance::GetSpeedRegistry()
+{
+  return _speedRegistry;
 }
 
 ChatSystem& ServerInstance::GetChatSystem()

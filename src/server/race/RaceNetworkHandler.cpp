@@ -3868,20 +3868,6 @@ void RaceNetworkHandler::HandleTeamGauge(const ClientId clientId)
   if (team.gaugeLocked)
     return;
 
-  // Track team boost count for gauge fill rate calculation.
-  team.boostCount += 1;
-
-  //! Boost fill rates, scaled with team count, iterated with boost count.
-  //! Reference: `TeamSpurGaugeInfo` in libconfig
-  // TODO: put this in the config somewhere
-  const std::vector<float> baseFillRates{
-    1.25f,
-    2.50f,
-    3.00f,
-    3.75f,
-    5.50f,
-    6.50f};
-
   // Get team size from the racer tracker (immutable for the race duration).
   // Use the max of the two team sizes to handle potentially unbalanced teams.
   uint32_t redTeamCount = 0;
@@ -3895,29 +3881,46 @@ void RaceNetworkHandler::HandleTeamGauge(const ClientId clientId)
   }
   const auto teamSize = std::max(redTeamCount, blueTeamCount);
 
-  // boostCount was incremented above; 1st boost should correspond to index 0 (FillRate_1).
+  // Fetch team spur info for the current team size
+  const auto& spurGaugeInfo = GetServerInstance().GetSpeedRegistry().GetTeamSpurGaugeInfo(teamSize);
+
+  // Check boost combo timing (GoodTiming)
+  const auto now = std::chrono::steady_clock::now();
+  const auto timeSinceLastBoost = std::chrono::duration_cast<std::chrono::milliseconds>(
+    now - team.lastBoostTimePoint);
+  if (timeSinceLastBoost <= std::chrono::milliseconds(spurGaugeInfo.goodTiming))
+  {
+    team.boostCount += 1;
+  }
+  else
+  {
+    team.boostCount = 1;
+  }
+  team.lastBoostTimePoint = now;
+
+  const float maxPoints = spurGaugeInfo.teamSpurMax;
+  const float winConsumeRate = spurGaugeInfo.winTeamSpurConsumeRate;
+  const float loseConsumeRate = spurGaugeInfo.loseTeamSpurConsumeRate;
+
+  const uint32_t boostIndex = team.boostCount - 1;
+
+  // Fill rate calculation based on boost count
   const auto fillRateIndex = std::min(
-    team.boostCount - 1,
-    static_cast<uint32_t>(baseFillRates.size() - 1));
+    boostIndex,
+    static_cast<uint32_t>(spurGaugeInfo.fillRates.size() - 1));
+  const float markerSpeed = spurGaugeInfo.fillRates[fillRateIndex];
+
+  // Points per boost calculation based on boost count
+  const auto pointIndex = std::min(
+    boostIndex,
+    static_cast<uint32_t>(spurGaugeInfo.points.size() - 1));
+  const float pointsGained = spurGaugeInfo.points[pointIndex];
+
   protocol::AcCmdRCTeamSpurGauge spur{
     .team = racer.team,
-    .markerSpeed = baseFillRates[fillRateIndex] * teamSize, // Base fill rate * team size
-    .unk5 = 0 // TODO: identify use
+    .markerSpeed = markerSpeed,
+    .unk5 = 0
   };
-
-  //! Base points per boost per team member in 1/10th scale
-  //! (Point_1 in TeamSpurGaugeInfo is 3.5 per team member = 35 internal points)
-  constexpr uint32_t BaseBoostPointsPerMember = 35;
-  const uint32_t pointsPerBoost = BaseBoostPointsPerMember * teamSize;
-
-  //! Max team spur points based on team size (1v1, 2v2, 3v3, 4v4)
-  //! from libconfig `TeamSpurGaugeInfo` (`TeamSpurMax` * 10)
-  static constexpr std::array<uint32_t, 4> MaxTeamSpurPoints{250, 400, 650, 1000};
-  const uint32_t teamSizeIndex = std::clamp(
-    teamSize,
-    1u,
-    static_cast<uint32_t>(MaxTeamSpurPoints.size())) - 1;
-  const uint32_t maxPoints = MaxTeamSpurPoints[teamSizeIndex];
 
   auto& blueTeamPoints = blueTeam.points;
   auto& redTeamPoints = redTeam.points;
@@ -3930,11 +3933,11 @@ void RaceNetworkHandler::HandleTeamGauge(const ClientId clientId)
         clientContext.characterUid,
         static_cast<uint32_t>(racer.team)));
 
-  spur.currentPoints = teamPoints / 10.0f;
+  spur.currentPoints = teamPoints;
   teamPoints = std::min(
     maxPoints,
-    teamPoints + pointsPerBoost);
-  spur.newPoints = teamPoints / 10.0f;
+    teamPoints + pointsGained);
+  spur.newPoints = teamPoints;
 
   // If any of the teams got max points to spur, reset points and broadcast team spur
   bool isTeamRed = racer.team == tracker::RaceTracker::Racer::Team::Red;
@@ -3951,16 +3954,18 @@ void RaceNetworkHandler::HandleTeamGauge(const ClientId clientId)
       (isTeamBlue and blueTeamPoints >= maxPoints);
 
     // Reset points
-    redTeamPoints = 0;
-    blueTeamPoints = 0;
+    redTeamPoints = 0.0f;
+    blueTeamPoints = 0.0f;
   }
 
   // If any of the teams can spur, schedule a spur/reset event.
   if (isTeamSpur)
   {
-    // Reset team boost counters
+    // Reset team boost counters and combo timings
     redTeam.boostCount = 0;
     blueTeam.boostCount = 0;
+    redTeam.lastBoostTimePoint = std::chrono::steady_clock::time_point::min();
+    blueTeam.lastBoostTimePoint = std::chrono::steady_clock::time_point::min();
 
     // Lock the spurring team's gauge so it cannot fill during the spur.
     auto& spurringTeamInfo =
@@ -3972,13 +3977,11 @@ void RaceNetworkHandler::HandleTeamGauge(const ClientId clientId)
           static_cast<uint32_t>(racer.team)));
     spurringTeamInfo.gaugeLocked = true;
 
-    // TODO: put this into the config somewhere
     // When to begin the spur/reset event.
-    // Reference: `TeamSpurGaugeInfo`/`ReduceWaitTime` in libconfig
-    constexpr auto SpurStartDelay = std::chrono::milliseconds(1500);
+    const auto spurStartDelay = std::chrono::milliseconds(spurGaugeInfo.reduceWaitTime);
 
     _scheduler.Queue(
-      [this, roomUid = raceInstance.GetRoomUid(), &racer, &spurringTeamInfo, maxPoints, teamSize]()
+      [this, roomUid = raceInstance.GetRoomUid(), &racer, &spurringTeamInfo, maxPoints, winConsumeRate, loseConsumeRate]()
       {
         std::scoped_lock lock(_raceInstancesMutex);
         const auto raceInstanceIter = _raceInstances.find(roomUid);;
@@ -3986,9 +3989,6 @@ void RaceNetworkHandler::HandleTeamGauge(const ClientId clientId)
           return;
 
         const auto& raceInstance = raceInstanceIter->second;
-
-        const float BaseLoseTeamSpurConsumeRate = -10.0f;
-        const float BaseWinTeamSpurConsumeRate = -2.5f;
 
         // Reset boost gauge for the team that lost it.
         protocol::AcCmdRCTeamSpurGauge beatenSpur{
@@ -4002,23 +4002,22 @@ void RaceNetworkHandler::HandleTeamGauge(const ClientId clientId)
                 static_cast<uint32_t>(racer.team))),
           .currentPoints = 0.0f,
           .newPoints = 0.0f,
-          .markerSpeed = BaseLoseTeamSpurConsumeRate * teamSize, // Scales with `LoseTeamSpurConsumeRate`
+          .markerSpeed = loseConsumeRate,
           .unk5 = 3 // Reset gauge and markers.
         };
 
         // Trigger spur for the team that has won it.
         protocol::AcCmdRCTeamSpurGauge successfulSpur{
           .team = racer.team,
-          .currentPoints = maxPoints / 10.0f,
+          .currentPoints = maxPoints,
           .newPoints = 0.0f,
-          .markerSpeed = BaseWinTeamSpurConsumeRate * teamSize, // Scales with `WinTeamSpurConsumeRate`
+          .markerSpeed = winConsumeRate,
           .unk5 = 0
         };
 
-        // Spur duration = (maxPoints / 10.0f) / (abs(consumeRate) * teamSize)
-        // For example: 25.0f / (2.5f * 1) = 10s for a team of 1.
+        // Spur duration = maxPoints / abs(winConsumeRate)
         const float spurDurationSeconds =
-          (maxPoints / 10.0f) / (std::abs(BaseWinTeamSpurConsumeRate) * teamSize);
+          winConsumeRate != 0.0f ? (maxPoints / std::abs(winConsumeRate)) : 10.0f;
 
         // Schedule unlock of the spurring team's gauge after the spur completes.
         _scheduler.Queue(
@@ -4034,7 +4033,7 @@ void RaceNetworkHandler::HandleTeamGauge(const ClientId clientId)
         // Broadcast winning team's gauge status
         this->Broadcast(raceInstance, successfulSpur);
       },
-      Scheduler::Clock::now() + SpurStartDelay);
+      Scheduler::Clock::now() + spurStartDelay);
   }
 
   // Broadcast invoker's team gauge status

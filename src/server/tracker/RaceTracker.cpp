@@ -171,6 +171,8 @@ void RaceTracker::Clear()
   _events.clear();
   _nextItemDeckOid = 1;
   firstPassItemSpawn = true;
+  blueTeam = TeamInfo{};
+  redTeam = TeamInfo{};
 }
 
 } // namespace server::tracker

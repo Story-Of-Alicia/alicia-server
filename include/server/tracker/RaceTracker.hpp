@@ -162,9 +162,11 @@ public:
 
   struct TeamInfo
   {
-    uint32_t points{0};
+    float points{0.0f};
     uint32_t boostCount{0};
     bool gaugeLocked{false};
+    std::chrono::steady_clock::time_point lastBoostTimePoint{
+      std::chrono::steady_clock::time_point::min()};
   };
 
   TeamInfo blueTeam{};

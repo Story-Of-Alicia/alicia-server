@@ -51,6 +51,7 @@
 #include <libserver/registry/MagicRegistry.hpp>
 #include <libserver/registry/PetRegistry.hpp>
 #include <libserver/registry/QuestRegistry.hpp>
+#include <libserver/registry/SpeedRegistry.hpp>
 #include <libserver/registry/SystemContentRegistry.hpp>
 
 #include <spdlog/spdlog.h>
@@ -141,6 +142,10 @@ public:
   //! Returns reference to the breeding registry.
   //! @returns Reference to the breeding registry.
   registry::BreedingRegistry& GetBreedingRegistry();
+
+  //! Returns reference to the speed registry.
+  //! @returns Reference to the speed registry.
+  registry::SpeedRegistry& GetSpeedRegistry();
 
   //! Returns reference to the chat system.
   //! @returns Reference to the chat system.
@@ -303,6 +308,8 @@ private:
   registry::SystemContentRegistry _systemContentRegistry;
   //! A registry of breeding config data.
   registry::BreedingRegistry _breedingRegistry;
+  //! A registry of speed config data.
+  registry::SpeedRegistry _speedRegistry;
 
   //! A chat system.
   ChatSystem _chatSystem;
