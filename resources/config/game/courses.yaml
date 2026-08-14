@@ -105,15 +105,15 @@ courses:
       # ID 201: Magic (Initial/Early)
       - deckId: 201
         respawnTime: 3000
-        itemTypes: [401, 402, 405, 406, 407, 408, 409, 404]
+        itemTypes: [401, 402, 404, 405, 406, 407, 408, 409, 410]
       # ID 202: Magic (Midway)
       - deckId: 202
         respawnTime: 3000
-        itemTypes: [401, 405, 406, 407, 408]
+        itemTypes: [401, 402, 404, 405, 406, 407, 408, 409, 410]
       # ID 203: Magic (Final/End)
       - deckId: 203
         respawnTime: 3000
-        itemTypes: [401, 405, 406, 407, 408]
+        itemTypes: [401, 402, 404, 405, 406, 407, 408, 409, 410]
   # A deck item parameters.
   # Originates from the `ItemDeckList` table in the client.
   # This should be called `deckItems`
