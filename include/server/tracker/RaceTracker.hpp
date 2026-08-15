@@ -97,6 +97,8 @@ public:
     std::array<bool, EffectCount> effects{};
     //! Per-effect generation counter, incremented on each apply, used to invalidate stale removal timers.
     std::array<uint32_t, EffectCount> effectGenerations{};
+    //! When each effect was last applied.
+    std::array<std::chrono::steady_clock::time_point, EffectCount> effectAppliedAt{};
 
     //! Rank of the currently active removeMagic attack (0 = none active).
     uint32_t attackRank{};

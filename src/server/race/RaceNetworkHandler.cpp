@@ -2770,6 +2770,13 @@ void RaceNetworkHandler::HandleUseMagicItem(
     return;
   }
 
+  if (not GetServerInstance().GetMagicRegistry().GetSlotInfoMap().contains(command.magicItemId))
+  {
+    spdlog::warn("Racer {} tried to use unknown magic item id {}",
+      racer.oid, command.magicItemId);
+    return;
+  }
+
   const auto& magicSlotInfo = ConsumeCriticalAura(
     raceInstance,
     racer,
@@ -3416,17 +3423,25 @@ void RaceNetworkHandler::StripEffectsOnAttack(
   tracker::RaceTracker::Racer& targetRacer,
   const registry::Magic::SlotInfo& magicSlotInfo)
 {
+  constexpr auto SimultaneousActivationWindow = std::chrono::milliseconds(500);
+  const auto now = std::chrono::steady_clock::now();
+
   for (const auto& slot : GetServerInstance().GetMagicRegistry().GetSlotInfoMap() | std::views::values)
   {
     // Slots that carry no real effect (e.g. positional magic) have an unusable id.
     if (not race::MagicSystem::IsValidSkillEffectId(slot.skillEffectId))
       continue;
 
-    if (race::MagicSystem::IsStrippedByAttack(magicSlotInfo, slot)
-      && targetRacer.effects[slot.skillEffectId])
+    if (not race::MagicSystem::IsStrippedByAttack(magicSlotInfo, slot)
+      || not targetRacer.effects[slot.skillEffectId])
     {
-      RemoveEffect(raceInstance, targetRacer, slot.skillEffectId);
+      continue;
     }
+
+    if (now - targetRacer.effectAppliedAt[slot.skillEffectId] < SimultaneousActivationWindow)
+      continue;
+
+    RemoveEffect(raceInstance, targetRacer, slot.skillEffectId);
   }
 }
 
@@ -3560,6 +3575,7 @@ RaceNetworkHandler::EffectVerdict RaceNetworkHandler::ScheduleSkillEffect(
     return EffectVerdict::Duplicated;
 
   targetRacer.effects[resolution.effectId] = true;
+  targetRacer.effectAppliedAt[resolution.effectId] = std::chrono::steady_clock::now();
   const uint32_t generation = ++targetRacer.effectGenerations[resolution.effectId];
   if (magicSlotInfo.attackRank > 0)
     targetRacer.attackRank = magicSlotInfo.attackRank;
