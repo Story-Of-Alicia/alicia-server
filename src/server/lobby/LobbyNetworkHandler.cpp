@@ -27,6 +27,7 @@
 #include <spdlog/spdlog.h>
 #include <zlib.h>
 
+#include <algorithm>
 #include <random>
 
 namespace server
@@ -1718,22 +1719,64 @@ void LobbyNetworkHandler::HandleShowInventory(
       const auto horseRecords = _serverInstance.GetDataDirector().GetHorseCache().Get(
         character.horses());
 
-      // Produce chunked responses, by HorsesPerResponse
-      const auto horseChunks = std::views::chunk(
-        *horseRecords,
-        HorsesPerResponse);
-
-      // Create a response per chunk
-      for (const auto& horseChunk : horseChunks)
+      if (horseRecords && not horseRecords->empty())
       {
-        auto& response = responses.emplace_back();
-        for (const auto& horse : horseChunk)
+        // Sort horse inventory by grade and lineage.
+        struct HorseEntry
         {
-          auto& protocolHorse = response.horses.emplace_back();
-          horse.Immutable([&protocolHorse](const auto& horse)
+          protocol::Horse protocolHorse{};
+          uint32_t grade{};
+          uint32_t lineage{};
+        };
+
+        std::vector<HorseEntry> horses;
+        horses.reserve(horseRecords->size());
+        for (const auto& horseRecord : *horseRecords)
+        {
+          HorseEntry entry{};
+          horseRecord.Immutable([&entry](const data::Horse& horse)
           {
-            protocol::BuildProtocolHorse(protocolHorse, horse);
+            protocol::BuildProtocolHorse(entry.protocolHorse, horse);
+            entry.grade = horse.grade();
+            entry.lineage = horse.lineage();
           });
+          horses.emplace_back(std::move(entry));
+        }
+
+        std::stable_sort(
+          horses.begin(),
+          horses.end(),
+          [](const HorseEntry& a, const HorseEntry& b)
+          {
+            // Grade descending (highest grade first)
+            if (a.grade != b.grade)
+              return a.grade > b.grade;
+
+            // Lineage descending (highest lineage first)
+            if (a.lineage != b.lineage)
+              return a.lineage > b.lineage;
+
+            // Name ascending
+            if (a.protocolHorse.name != b.protocolHorse.name)
+              return a.protocolHorse.name < b.protocolHorse.name;
+
+            // UID ascending
+            return a.protocolHorse.uid < b.protocolHorse.uid;
+          });
+
+        // Chunk the horses
+        const auto horseChunks = std::views::chunk(
+          horses,
+          HorsesPerResponse);
+
+        // Create a response per chunk
+        for (const auto& horseChunk : horseChunks)
+        {
+          auto& response = responses.emplace_back();
+          for (const auto& entry : horseChunk)
+          {
+            response.horses.emplace_back(entry.protocolHorse);
+          }
         }
       }
     });
