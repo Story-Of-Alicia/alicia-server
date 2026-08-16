@@ -293,6 +293,7 @@ void ServerInstance::LoadConfigurations()
   _characterRegistry.ReadConfig(_resourceDirectory / "config/game/character.yaml");
   _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
   _horseRegistry.ReadConfig(_resourceDirectory / "config/game/horses");
+  _housingRegistry.ReadConfig(_resourceDirectory / "config/game/housing.yaml");
   _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items");
   _magicRegistry.ReadConfig(_resourceDirectory / "config/game/magic.yaml");
   _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
@@ -353,6 +354,11 @@ registry::CourseRegistry& ServerInstance::GetCourseRegistry()
 registry::HorseRegistry& ServerInstance::GetHorseRegistry()
 {
   return _horseRegistry;
+}
+
+registry::HousingRegistry& ServerInstance::GetHousingRegistry()
+{
+  return _housingRegistry;
 }
 
 registry::ItemRegistry& ServerInstance::GetItemRegistry()

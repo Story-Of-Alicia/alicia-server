@@ -1878,8 +1878,11 @@ void AcCmdCRIncubateEggOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.incubatorSlot)
-    .Write(command.egg)
-    .Write(command.member3);
+    .Write(command.egg);
+
+  // Only a double incubator reports its remaining uses
+  if (command.remainingIncubatorUses.has_value())
+    stream.Write(command.remainingIncubatorUses.value());
 }
 
 void AcCmdCRIncubateEggOK::Read(

@@ -266,6 +266,28 @@ ItemSystem::ConsumeVerdict ItemSystem::ConsumeItem(
   return {};
 }
 
+uint32_t ItemSystem::CountItem(
+  const data::Character& character,
+  const data::Tid itemTid) const noexcept
+{
+  const auto itemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(
+    character.inventory());
+  if (not itemRecords)
+    return 0;
+
+  uint32_t total = 0;
+  for (const auto& itemRecord : *itemRecords)
+  {
+    itemRecord.Immutable([&total, &itemTid](const data::Item& item)
+    {
+      if (item.tid() == itemTid)
+        total += item.count();
+    });
+  }
+
+  return total;
+}
+
 bool ItemSystem::HasItem(
   const data::Character& character,
   const data::Tid itemTid) const noexcept

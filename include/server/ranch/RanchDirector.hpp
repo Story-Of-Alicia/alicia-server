@@ -463,7 +463,15 @@ private:
   void HandleHousingRepair(
     ClientId clientId,
     const protocol::AcCmdCRHousingRepair& command);
-  
+
+  //! Spends one use of the character's incubator, deleting it once it is
+  //! exhausted.
+  //! @param character Character, already held mutable by the caller.
+  //! @returns The uses left afterwards, or nullopt when there is nothing to
+  //!          spend - no incubator built, or one that never runs out.
+  std::optional<uint32_t> ConsumeIncubatorUse(data::Character& character);
+
+
   void HandleOpCmd(ClientId clientId,
     const protocol::AcCmdCROpCmd& command);
 

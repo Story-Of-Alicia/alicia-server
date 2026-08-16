@@ -1,0 +1,1104 @@
+# Housing definitions from HousingInfo.
+#
+# category is the ranch slot the housing occupies; a ranch holds one housing per
+# category, 13 in total (0-12). Observed from the client mesh names:
+#   0 house  1 stable  2 fence  3 ground  4-5 small deco  6 medium deco
+#   7 large deco  8-10 yard deco  11 tree/rock  12 incubator
+#
+# property is the owning faction, from HousingPropertyInfo:
+#   0 none  1 Crystal Knights  2 Stato Trading Company  3 Alicia Riding Club
+#
+# lifetime is the client's Life column: 28800 for everything buildable, 0 for the
+# defaults and incubators. The unit is unconfirmed - 8 hours if it is seconds,
+# but it may be a decaying durability instead. Nothing reads it yet; the build
+# handler still uses its own 20 day expiry.
+# value/value2/value3 are only used by the incubators (id 51, 52):
+#   value  - egg slots the incubator provides
+#   value2 - hatches granted per build; 0 means it never runs out, which is how
+#            the level 1 incubator (id 51) works
+#   value3 - the most uses it can hold; rebuilding tops up by value2 and stops
+#            here, so the double incubator caps at 20
+# Incubators never expire - they are spent by hatching instead.
+housing:
+  - id: 1
+    # ran_la01_h_01
+    category: 0
+    property: 0
+    isDefault: true
+    isBasic: false
+    minLevel: 1
+    lifetime: 0
+    buildResources: []
+    buildExp: 0
+    regularExp: 0
+    regularMoney: 0
+  - id: 2
+    # ran_la01_s_01
+    category: 1
+    property: 0
+    isDefault: true
+    isBasic: false
+    minLevel: 1
+    lifetime: 0
+    buildResources: []
+    buildExp: 0
+    regularExp: 0
+    regularMoney: 0
+  - id: 3
+    # ran_la01_f_01
+    category: 2
+    property: 0
+    isDefault: true
+    isBasic: false
+    minLevel: 1
+    lifetime: 0
+    buildResources: []
+    buildExp: 0
+    regularExp: 0
+    regularMoney: 0
+  - id: 4
+    # ran_la01_g_01
+    category: 3
+    property: 0
+    isDefault: true
+    isBasic: false
+    minLevel: 1
+    lifetime: 0
+    buildResources: []
+    buildExp: 0
+    regularExp: 0
+    regularMoney: 0
+  - id: 5
+    # ran_ba01_d1_01
+    category: 4
+    property: 2
+    isDefault: false
+    isBasic: false
+    minLevel: 1
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 1
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 10
+    regularExp: 18
+    regularMoney: 45
+  - id: 6
+    # ran_ba01_d1_01
+    category: 5
+    property: 2
+    isDefault: false
+    isBasic: false
+    minLevel: 1
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 1
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 10
+    regularExp: 18
+    regularMoney: 45
+  - id: 7
+    # ran_ba01_d1_02
+    category: 4
+    property: 3
+    isDefault: false
+    isBasic: false
+    minLevel: 1
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 1
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 10
+    regularExp: 18
+    regularMoney: 45
+  - id: 8
+    # ran_ba01_d1_02
+    category: 5
+    property: 3
+    isDefault: false
+    isBasic: false
+    minLevel: 1
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 1
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 10
+    regularExp: 18
+    regularMoney: 45
+  - id: 9
+    # ran_ba01_d2_01
+    category: 6
+    property: 1
+    isDefault: false
+    isBasic: false
+    minLevel: 1
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 3
+    repairResource:
+      itemTid: 45001
+      quantity: 2
+    buildExp: 30
+    regularExp: 52
+    regularMoney: 135
+  - id: 10
+    # ran_ba01_d2_02
+    category: 6
+    property: 2
+    isDefault: false
+    isBasic: false
+    minLevel: 1
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 3
+    repairResource:
+      itemTid: 45001
+      quantity: 2
+    buildExp: 30
+    regularExp: 52
+    regularMoney: 135
+  - id: 11
+    # ran_ba01_d4_01
+    category: 8
+    property: 2
+    isDefault: false
+    isBasic: false
+    minLevel: 5
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 2
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 20
+    regularExp: 35
+    regularMoney: 90
+  - id: 12
+    # ran_ba01_d4_01
+    category: 9
+    property: 2
+    isDefault: false
+    isBasic: false
+    minLevel: 5
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 2
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 20
+    regularExp: 35
+    regularMoney: 90
+  - id: 13
+    # ran_ba01_d4_01
+    category: 10
+    property: 2
+    isDefault: false
+    isBasic: false
+    minLevel: 5
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 2
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 20
+    regularExp: 35
+    regularMoney: 90
+  - id: 14
+    # ran_ba01_d4_02
+    category: 8
+    property: 3
+    isDefault: false
+    isBasic: false
+    minLevel: 1
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 2
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 20
+    regularExp: 35
+    regularMoney: 90
+  - id: 15
+    # ran_ba01_d4_02
+    category: 9
+    property: 3
+    isDefault: false
+    isBasic: false
+    minLevel: 1
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 2
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 20
+    regularExp: 35
+    regularMoney: 90
+  - id: 16
+    # ran_ba01_d4_02
+    category: 10
+    property: 3
+    isDefault: false
+    isBasic: false
+    minLevel: 1
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 2
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 20
+    regularExp: 35
+    regularMoney: 90
+  - id: 17
+    # ran_ba01_d4_03
+    category: 8
+    property: 1
+    isDefault: false
+    isBasic: false
+    minLevel: 1
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 1
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 10
+    regularExp: 18
+    regularMoney: 45
+  - id: 18
+    # ran_ba01_d4_03
+    category: 9
+    property: 1
+    isDefault: false
+    isBasic: false
+    minLevel: 1
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 1
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 10
+    regularExp: 18
+    regularMoney: 45
+  - id: 19
+    # ran_ba01_d4_03
+    category: 10
+    property: 1
+    isDefault: false
+    isBasic: false
+    minLevel: 1
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 1
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 10
+    regularExp: 18
+    regularMoney: 45
+  - id: 20
+    # ri_j_tree01
+    category: 11
+    property: 0
+    isDefault: true
+    isBasic: false
+    minLevel: 1
+    lifetime: 0
+    buildResources: []
+    buildExp: 0
+    regularExp: 0
+    regularMoney: 0
+  - id: 21
+    # ran_la02_h_01
+    category: 0
+    property: 2
+    isDefault: false
+    isBasic: false
+    minLevel: 1
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 4
+    repairResource:
+      itemTid: 45001
+      quantity: 3
+    buildExp: 45
+    regularExp: 70
+    regularMoney: 180
+  - id: 22
+    # ran_la02_s_01
+    category: 1
+    property: 3
+    isDefault: false
+    isBasic: false
+    minLevel: 1
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 4
+    repairResource:
+      itemTid: 45001
+      quantity: 3
+    buildExp: 45
+    regularExp: 70
+    regularMoney: 180
+  - id: 23
+    # ran_la02_d1_01
+    category: 4
+    property: 2
+    isDefault: false
+    isBasic: false
+    minLevel: 8
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 2
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 20
+    regularExp: 35
+    regularMoney: 90
+  - id: 24
+    # ran_la02_d1_02
+    category: 5
+    property: 1
+    isDefault: false
+    isBasic: false
+    minLevel: 8
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 2
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 20
+    regularExp: 35
+    regularMoney: 90
+  - id: 25
+    # ran_la02_d2_01
+    category: 6
+    property: 1
+    isDefault: false
+    isBasic: false
+    minLevel: 10
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 3
+    repairResource:
+      itemTid: 45001
+      quantity: 2
+    buildExp: 30
+    regularExp: 52
+    regularMoney: 135
+  - id: 26
+    # ran_la02_d3_01
+    category: 7
+    property: 1
+    isDefault: false
+    isBasic: false
+    minLevel: 7
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 3
+    repairResource:
+      itemTid: 45001
+      quantity: 2
+    buildExp: 30
+    regularExp: 52
+    regularMoney: 135
+  - id: 27
+    # ran_la02_d4_01
+    category: 8
+    property: 3
+    isDefault: false
+    isBasic: false
+    minLevel: 5
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 2
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 20
+    regularExp: 35
+    regularMoney: 90
+  - id: 28
+    # ran_la02_d4_01
+    category: 9
+    property: 3
+    isDefault: false
+    isBasic: false
+    minLevel: 5
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 2
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 20
+    regularExp: 35
+    regularMoney: 90
+  - id: 29
+    # ran_la02_d4_01
+    category: 10
+    property: 3
+    isDefault: false
+    isBasic: false
+    minLevel: 5
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 2
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 20
+    regularExp: 35
+    regularMoney: 90
+  - id: 30
+    # ri_j_land_tree02
+    category: 11
+    property: 1
+    isDefault: false
+    isBasic: false
+    minLevel: 3
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 1
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 10
+    regularExp: 18
+    regularMoney: 45
+  - id: 31
+    # ran_fo01_h_01
+    category: 0
+    property: 2
+    isDefault: false
+    isBasic: false
+    minLevel: 18
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 5
+    repairResource:
+      itemTid: 45001
+      quantity: 4
+    buildExp: 50
+    regularExp: 90
+    regularMoney: 225
+  - id: 32
+    # ran_fo01_s_01
+    category: 1
+    property: 1
+    isDefault: false
+    isBasic: false
+    minLevel: 20
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 5
+    repairResource:
+      itemTid: 45001
+      quantity: 4
+    buildExp: 50
+    regularExp: 90
+    regularMoney: 225
+  - id: 33
+    # ran_fo01_d1_01
+    category: 4
+    property: 3
+    isDefault: false
+    isBasic: false
+    minLevel: 16
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 2
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 20
+    regularExp: 35
+    regularMoney: 90
+  - id: 34
+    # ran_fo01_d1_02
+    category: 5
+    property: 1
+    isDefault: false
+    isBasic: false
+    minLevel: 16
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 2
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 20
+    regularExp: 35
+    regularMoney: 90
+  - id: 35
+    # ran_fo01_d2_01
+    category: 6
+    property: 3
+    isDefault: false
+    isBasic: false
+    minLevel: 18
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 4
+    repairResource:
+      itemTid: 45001
+      quantity: 3
+    buildExp: 45
+    regularExp: 70
+    regularMoney: 180
+  - id: 36
+    # ran_fo01_d3_01
+    category: 7
+    property: 1
+    isDefault: false
+    isBasic: false
+    minLevel: 14
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 3
+    repairResource:
+      itemTid: 45001
+      quantity: 2
+    buildExp: 30
+    regularExp: 52
+    regularMoney: 135
+  - id: 37
+    # ran_fo01_d4_01
+    category: 8
+    property: 2
+    isDefault: false
+    isBasic: false
+    minLevel: 12
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 2
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 20
+    regularExp: 35
+    regularMoney: 90
+  - id: 38
+    # ran_fo01_d4_01
+    category: 9
+    property: 2
+    isDefault: false
+    isBasic: false
+    minLevel: 12
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 2
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 20
+    regularExp: 35
+    regularMoney: 90
+  - id: 39
+    # ran_fo01_d4_01
+    category: 10
+    property: 2
+    isDefault: false
+    isBasic: false
+    minLevel: 12
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 2
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 20
+    regularExp: 35
+    regularMoney: 90
+  - id: 40
+    # ri_j_fore_stone01
+    category: 11
+    property: 3
+    isDefault: false
+    isBasic: false
+    minLevel: 10
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 1
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 10
+    regularExp: 18
+    regularMoney: 45
+  - id: 41
+    # ran_do01_h_01
+    category: 0
+    property: 2
+    isDefault: false
+    isBasic: false
+    minLevel: 12
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 5
+    repairResource:
+      itemTid: 45001
+      quantity: 4
+    buildExp: 50
+    regularExp: 80
+    regularMoney: 200
+  - id: 42
+    # ran_do01_s_01
+    category: 1
+    property: 3
+    isDefault: false
+    isBasic: false
+    minLevel: 8
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 5
+    repairResource:
+      itemTid: 45001
+      quantity: 4
+    buildExp: 50
+    regularExp: 80
+    regularMoney: 200
+  - id: 43
+    # ran_do01_d1_01
+    category: 4
+    property: 3
+    isDefault: false
+    isBasic: false
+    minLevel: 10
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 3
+    repairResource:
+      itemTid: 45001
+      quantity: 2
+    buildExp: 25
+    regularExp: 40
+    regularMoney: 110
+  - id: 44
+    # ran_do01_d1_02
+    category: 5
+    property: 3
+    isDefault: false
+    isBasic: false
+    minLevel: 10
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 3
+    repairResource:
+      itemTid: 45001
+      quantity: 2
+    buildExp: 25
+    regularExp: 40
+    regularMoney: 110
+  - id: 45
+    # ran_do01_d2_01
+    category: 6
+    property: 2
+    isDefault: false
+    isBasic: false
+    minLevel: 16
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 4
+    repairResource:
+      itemTid: 45001
+      quantity: 3
+    buildExp: 40
+    regularExp: 60
+    regularMoney: 155
+  - id: 46
+    # ran_do01_d3_01
+    category: 7
+    property: 2
+    isDefault: false
+    isBasic: false
+    minLevel: 18
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 4
+    repairResource:
+      itemTid: 45001
+      quantity: 3
+    buildExp: 40
+    regularExp: 65
+    regularMoney: 170
+  - id: 47
+    # ran_do01_d4_01
+    category: 8
+    property: 1
+    isDefault: false
+    isBasic: false
+    minLevel: 14
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 2
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 20
+    regularExp: 35
+    regularMoney: 90
+  - id: 48
+    # ran_do01_d4_01
+    category: 9
+    property: 1
+    isDefault: false
+    isBasic: false
+    minLevel: 14
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 2
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 20
+    regularExp: 35
+    regularMoney: 90
+  - id: 49
+    # ran_do01_d4_01
+    category: 10
+    property: 1
+    isDefault: false
+    isBasic: false
+    minLevel: 14
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 2
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 20
+    regularExp: 35
+    regularMoney: 90
+  - id: 50
+    # ri_j_dorf_tree01
+    category: 11
+    property: 1
+    isDefault: false
+    isBasic: false
+    minLevel: 7
+    lifetime: 28800
+    buildResources:
+      - itemTid: 45001
+        quantity: 1
+    repairResource:
+      itemTid: 45001
+      quantity: 1
+    buildExp: 10
+    regularExp: 18
+    regularMoney: 45
+  - id: 51
+    # ran_p_hatch01
+    category: 12
+    property: 0
+    isDefault: false
+    isBasic: true
+    minLevel: 1
+    lifetime: 0
+    buildResources:
+      - itemTid: 45001
+        quantity: 4
+      - itemTid: 46018
+        quantity: 4
+    buildExp: 0
+    regularExp: 0
+    regularMoney: 0
+    value: 1
+    value2: 0
+    value3: 0
+  - id: 52
+    # ran_p_hatch02
+    category: 12
+    property: 0
+    isDefault: false
+    isBasic: true
+    minLevel: 1
+    lifetime: 0
+    buildResources:
+      - itemTid: 45004
+        quantity: 9
+    buildExp: 0
+    regularExp: 0
+    regularMoney: 0
+    value: 2
+    value2: 10
+    value3: 20
+
+# Housing sets from HousingSetInfo. Owning every housing in a set grants the set
+# bonus. The client's set description states a 50% increase to the ranch regular
+# bonus; there is no dedicated field for it, so the rate is configured here.
+housingSets:
+  - id: 1
+    regularBonusPercent: 50
+    housingIds: [21, 22, 23, 24, 25, 26, 27, 28, 29]
+  - id: 2
+    regularBonusPercent: 50
+    housingIds: [31, 32, 33, 34, 35, 36, 37, 38, 39]
+  - id: 3
+    regularBonusPercent: 50
+    housingIds: [41, 42, 43, 44, 45, 46, 47, 48, 49]
+
+# Ranch level progression from RanchLevelInfo. expRequired is the cumulative
+# ranch experience needed to reach the level, so level 1 sits at 0.
+# Ranch experience comes from the buildExp and regularExp above.
+# The table also carries a Korean display alias per level, which the client
+# renders itself, so it is not mirrored here.
+ranchLevels:
+  - level: 1
+    expRequired: 0
+  - level: 2
+    expRequired: 120
+  - level: 3
+    expRequired: 610
+  - level: 4
+    expRequired: 1590
+  - level: 5
+    expRequired: 3060
+  - level: 6
+    expRequired: 4530
+  - level: 7
+    expRequired: 6490
+  - level: 8
+    expRequired: 8450
+  - level: 9
+    expRequired: 10410
+  - level: 10
+    expRequired: 12860
+  - level: 11
+    expRequired: 15310
+  - level: 12
+    expRequired: 17760
+  - level: 13
+    expRequired: 20700
+  - level: 14
+    expRequired: 23640
+  - level: 15
+    expRequired: 26580
+  - level: 16
+    expRequired: 29520
+  - level: 17
+    expRequired: 32950
+  - level: 18
+    expRequired: 36380
+  - level: 19
+    expRequired: 39810
+  - level: 20
+    expRequired: 43240
+  - level: 21
+    expRequired: 47160
+  - level: 22
+    expRequired: 51080
+  - level: 23
+    expRequired: 55000
+  - level: 24
+    expRequired: 58920
+  - level: 25
+    expRequired: 62840
+  - level: 26
+    expRequired: 67250
+  - level: 27
+    expRequired: 71660
+  - level: 28
+    expRequired: 76070
+  - level: 29
+    expRequired: 80480
+  - level: 30
+    expRequired: 84890
+  - level: 31
+    expRequired: 89790
+  - level: 32
+    expRequired: 94690
+  - level: 33
+    expRequired: 99590
+  - level: 34
+    expRequired: 104490
+  - level: 35
+    expRequired: 109390
+  - level: 36
+    expRequired: 114780
+  - level: 37
+    expRequired: 120170
+  - level: 38
+    expRequired: 125560
+  - level: 39
+    expRequired: 130950
+  - level: 40
+    expRequired: 136340
+  - level: 41
+    expRequired: 141730
+  - level: 42
+    expRequired: 147610
+  - level: 43
+    expRequired: 153490
+  - level: 44
+    expRequired: 159370
+  - level: 45
+    expRequired: 165250
+  - level: 46
+    expRequired: 171130
+  - level: 47
+    expRequired: 177010
+  - level: 48
+    expRequired: 183380
+  - level: 49
+    expRequired: 189750
+  - level: 50
+    expRequired: 196120
+  - level: 51
+    expRequired: 202490
+  - level: 52
+    expRequired: 208860
+  - level: 53
+    expRequired: 215230
+  - level: 54
+    expRequired: 222090
+  - level: 55
+    expRequired: 228950
+  - level: 56
+    expRequired: 235810
+  - level: 57
+    expRequired: 242670
+  - level: 58
+    expRequired: 249530
+  - level: 59
+    expRequired: 256390
+  - level: 60
+    expRequired: 263740
+  - level: 61
+    expRequired: 271090
+  - level: 62
+    expRequired: 278440
+  - level: 63
+    expRequired: 285790
+  - level: 64
+    expRequired: 293140
+  - level: 65
+    expRequired: 300490
+  - level: 66
+    expRequired: 308330
+  - level: 67
+    expRequired: 316170
+  - level: 68
+    expRequired: 324010
+  - level: 69
+    expRequired: 331850
+  - level: 70
+    expRequired: 339690
+  - level: 71
+    expRequired: 347530
+  - level: 72
+    expRequired: 355860
+  - level: 73
+    expRequired: 364190
+  - level: 74
+    expRequired: 372520
+  - level: 75
+    expRequired: 380850
+  - level: 76
+    expRequired: 389180
+  - level: 77
+    expRequired: 397510
+  - level: 78
+    expRequired: 406330
+  - level: 79
+    expRequired: 415150
+  - level: 80
+    expRequired: 423970
+  - level: 81
+    expRequired: 432790
+  - level: 82
+    expRequired: 441610
+  - level: 83
+    expRequired: 450430
+  - level: 84
+    expRequired: 459740
+  - level: 85
+    expRequired: 469050
+  - level: 86
+    expRequired: 478360
+  - level: 87
+    expRequired: 487670
+  - level: 88
+    expRequired: 496980
+  - level: 89
+    expRequired: 506290
+  - level: 90
+    expRequired: 516090
+  - level: 91
+    expRequired: 525890
+  - level: 92
+    expRequired: 535690
+  - level: 93
+    expRequired: 545490
+  - level: 94
+    expRequired: 555290
+  - level: 95
+    expRequired: 565090
+  - level: 96
+    expRequired: 574890
+  - level: 97
+    expRequired: 584690
+  - level: 98
+    expRequired: 594490
+  - level: 99
+    expRequired: 604290
+  - level: 100
+    expRequired: 614090

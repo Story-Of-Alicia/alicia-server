@@ -47,6 +47,7 @@
 #include <libserver/registry/CharacterRegistry.hpp>
 #include <libserver/registry/CourseRegistry.hpp>
 #include <libserver/registry/HorseRegistry.hpp>
+#include <libserver/registry/HousingRegistry.hpp>
 #include <libserver/registry/ItemRegistry.hpp>
 #include <libserver/registry/MagicRegistry.hpp>
 #include <libserver/registry/PetRegistry.hpp>
@@ -118,6 +119,10 @@ public:
   //! Returns reference to the Horse registry.
   //! @returns Reference to the Horse registry.
   registry::HorseRegistry& GetHorseRegistry();
+
+  //! Returns reference to the Housing registry.
+  //! @returns Reference to the Housing registry.
+  registry::HousingRegistry& GetHousingRegistry();
 
   //! Returns reference to the Item registry.
   //! @returns Reference to the Item registry.
@@ -296,6 +301,8 @@ private:
   registry::CourseRegistry _courseRegistry;
   //! A registry of horses.
   registry::HorseRegistry _horseRegistry;
+  //! A registry of housing.
+  registry::HousingRegistry _housingRegistry;
   //! A registry of items.
   registry::ItemRegistry _itemRegistry;
   //! A registry of magic slots.

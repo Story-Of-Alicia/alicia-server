@@ -96,6 +96,15 @@ public:
     data::Tid itemTid,
     uint32_t count = 1) const noexcept;
 
+  //! Counts how many of an item the character holds in their inventory.
+  //! Equipment is not counted, since only inventory items can be consumed.
+  //! @param character Character.
+  //! @param itemTid TID of the item.
+  //! @returns The total count across every stack of that item.
+  [[nodiscard]] uint32_t CountItem(
+    const data::Character& character,
+    data::Tid itemTid) const noexcept;
+
   //! Checks whether an item is present in character's inventory or equipment.
   //! @param character Character.
   //! @param itemTid TID of the item.

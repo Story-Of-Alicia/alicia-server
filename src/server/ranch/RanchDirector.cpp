@@ -43,9 +43,6 @@ constexpr size_t MaxRanchHorseCount = 10;
 constexpr size_t MaxRanchCharacterCount = 20;
 constexpr size_t MaxRanchHousingCount = 13;
 
-constexpr int16_t DoubleIncubatorId = 52;
-constexpr int16_t SingleIncubatorId = 51;
-
 constexpr uint16_t MaxCharm = 1000;
 constexpr uint16_t MaxFriendliness = 1000;
 constexpr uint16_t MaxAttachment = 1000;
@@ -1324,19 +1321,24 @@ bool RanchDirector::HandleEnterRanch(
         rancher.housing());
       if (housingRecords)
       {
+        const auto& housingRegistry = GetServerInstance().GetHousingRegistry();
+
         for (const auto& housingRecord : *housingRecords)
         {
-          housingRecord.Immutable([&response](const data::Housing& housing){
+          housingRecord.Immutable([&response, &housingRegistry](const data::Housing& housing){
 
-            // Certain types of housing have durability instead of expiration time.
-            const bool hasDurability = (housing.housingId() == SingleIncubatorId || housing.housingId() == DoubleIncubatorId);
-            if (hasDurability) 
+            const auto* housingInfo = housingRegistry.GetHousing(housing.housingId());
+
+            const bool isIncubator = housingInfo
+              && housingInfo->category == registry::IncubatorCategory;
+
+            if (isIncubator)
             {
               response.incubatorUseCount = housing.durability();
-              response.incubatorSlots = housing.housingId() == DoubleIncubatorId ? 2 : 1;
+              response.incubatorSlots = static_cast<uint8_t>(housingInfo->value);
             }
 
-            protocol::BuildProtocolHousing(response.housing.emplace_back(), housing, hasDurability);
+            protocol::BuildProtocolHousing(response.housing.emplace_back(), housing, isIncubator);
           });
         }
       }
@@ -3846,8 +3848,10 @@ void RanchDirector::HandleIncubateEgg(
     response.incubatorSlot = command.incubatorSlot,
   };
 
+  bool isIncubated = false;
+
   characterRecord.Mutable(
-    [this, &clientContext, &command, &response, clientId](data::Character& character)
+    [this, &clientContext, &command, &response, &isIncubated, clientId](data::Character& character)
     {
       const std::optional<registry::EggInfo> eggTemplate = _serverInstance.GetPetRegistry().GetEggInfo(
         command.itemTid);
@@ -3891,7 +3895,13 @@ void RanchDirector::HandleIncubateEgg(
           // Fill the response with egg information.
           protocol::BuildProtocolEgg(response.egg, egg, eggTemplate.value().hatchDuration);
         });
+      response.remainingIncubatorUses = ConsumeIncubatorUse(character);
+
+      isIncubated = true;
     });
+
+  if (not isIncubated)
+    return;
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -4058,8 +4068,6 @@ void RanchDirector::HandleRequestPetBirth(
             };
           });
       }
-
-      // TODO: reduce the incubator durability (if it is a double incubator)
 
       // Remove the hatched egg from the incubator and from the character's inventory.
       if (auto it = std::ranges::find(character.eggs(), hatchingEggUid);
@@ -4703,15 +4711,105 @@ void RanchDirector::HandleHousingBuild(
   ClientId clientId,
   const protocol::AcCmdCRHousingBuild& command)
 {
-  //! The double incubator does not utilize the HousingRepair,
-  //! instead it just creates a new double incubator
-  //! TODO: make the check if the incubator already exists and set the durability back to 10
-
   const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  // todo: catalogue housing uids and handle transaction
+  const auto& housingRegistry = GetServerInstance().GetHousingRegistry();
+  const auto* housingInfo = housingRegistry.GetHousing(command.housingTid);
+
+  const auto rejectBuild = [this, clientId](const std::string_view reason)
+  {
+    spdlog::warn("Housing build rejected: {}", reason);
+
+    // todo: the meaning of the status byte is not known, 1 is a generic failure
+    constexpr protocol::AcCmdCRHousingBuildCancel cancel{.status = 1};
+    _commandServer.QueueCommand<protocol::AcCmdCRHousingBuildCancel>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+  };
+
+  if (not housingInfo)
+  {
+    rejectBuild(std::format(
+      "player {} requested unknown housing {}",
+      clientContext.userName,
+      command.housingTid));
+    return;
+  }
+
+  bool meetsLevel = false;
+  bool canAfford = true;
+  const auto& itemSystem = GetServerInstance().GetItemSystem();
+
+  characterRecord.Immutable(
+    [&meetsLevel, &canAfford, &itemSystem, housingInfo](const data::Character& character)
+    {
+      meetsLevel = character.level() >= housingInfo->minLevel;
+
+      for (const auto& resource : housingInfo->buildResources)
+      {
+        if (itemSystem.CountItem(character, resource.itemTid) < resource.quantity)
+        {
+          canAfford = false;
+          return;
+        }
+      }
+    });
+
+  if (not meetsLevel)
+  {
+    rejectBuild(std::format(
+      "User {} is below level {} required by housing {}",
+      clientContext.userName,
+      housingInfo->minLevel,
+      housingInfo->id));
+    return;
+  }
+
+  if (not canAfford)
+  {
+    rejectBuild(std::format(
+      "User {} cannot afford housing {}",
+      clientContext.userName,
+      housingInfo->id));
+    return;
+  }
+
+  const bool isIncubator = housingInfo->category == registry::IncubatorCategory;
+
+  std::vector<data::Uid> replacedHousingUids;
+  auto toppedUpHousingUid = data::InvalidUid;
+
+  characterRecord.Immutable(
+    [this, &replacedHousingUids, &toppedUpHousingUid, &housingRegistry, housingInfo, isIncubator](
+      const data::Character& character)
+    {
+      const auto housingRecords = GetServerInstance().GetDataDirector().GetHousingCache().Get(
+        character.housing());
+      if (not housingRecords)
+        return;
+
+      for (const auto& housingRecord : *housingRecords)
+      {
+        housingRecord.Immutable(
+          [&replacedHousingUids, &toppedUpHousingUid, &housingRegistry, housingInfo, isIncubator](
+            const data::Housing& housing)
+          {
+            const auto* placedInfo = housingRegistry.GetHousing(housing.housingId());
+            if (not placedInfo || placedInfo->category != housingInfo->category)
+              return;
+
+            if (isIncubator && placedInfo->id == housingInfo->id)
+              toppedUpHousingUid = housing.uid();
+            else
+              replacedHousingUids.emplace_back(housing.uid());
+          });
+      }
+    });
 
   protocol::AcCmdCRHousingBuildOK response{
     .member1 = clientContext.characterUid,
@@ -4728,29 +4826,61 @@ void RanchDirector::HandleHousingBuild(
 
   auto housingUid = data::InvalidUid;
 
-  // TODO: add a duplication check for double incubator, since rebuilding triggers HousingBuild and not HousingRepair
-  const auto housingRecord = GetServerInstance().GetDataDirector().CreateHousing();
-  if (not housingRecord)
+  if (toppedUpHousingUid != data::InvalidUid)
   {
-    throw std::runtime_error(
-      std::format("Failed to create housing for user {}", clientContext.userName));
+    GetServerInstance().GetDataDirector().GetHousingCache().Get(toppedUpHousingUid)->Mutable(
+      [housingInfo](data::Housing& housing)
+      {
+        const uint32_t toppedUp = housing.durability() + housingInfo->value2;
+        housing.durability() = housingInfo->value3 > 0
+          ? std::min(toppedUp, housingInfo->value3)
+          : toppedUp;
+      });
+  }
+  else
+  {
+    const auto housingRecord = GetServerInstance().GetDataDirector().CreateHousing();
+    if (not housingRecord)
+    {
+      throw std::runtime_error(
+        std::format("Failed to create housing for user {}", clientContext.userName));
+    }
+
+    housingRecord.Mutable([housingInfo, isIncubator, &housingUid](data::Housing& housing)
+    {
+      housing.housingId = housingInfo->id;
+      housingUid = housing.uid();
+
+      // Incubators never expire. They are spent by hatching instead, and a
+      // `value2` of zero means this one is never spent at all.
+      if (isIncubator)
+        housing.durability = housingInfo->value2;
+      else
+        housing.expiresAt = std::chrono::system_clock::now() + std::chrono::days(20);
+    });
   }
 
-  housingRecord.Mutable([housingId = command.housingTid, &housingUid](data::Housing& housing)
-  {
-    housing.housingId = housingId;
-    housingUid = housing.uid();
+  characterRecord.Mutable(
+    [&housingUid, &replacedHousingUids, &itemSystem, housingInfo](data::Character& character)
+    {
+      for (const auto& resource : housingInfo->buildResources)
+      {
+        std::ignore = itemSystem.ConsumeItem(
+          character, resource.itemTid, resource.quantity);
+      }
 
-    if (housingId == DoubleIncubatorId)
-      housing.durability = 10;
-    else
-      housing.expiresAt = std::chrono::system_clock::now() + std::chrono::days(20);
-  });
+      for (const data::Uid replacedUid : replacedHousingUids)
+      {
+        const auto range = std::ranges::remove(character.housing(), replacedUid);
+        character.housing().erase(range.begin(), range.end());
+      }
 
-  characterRecord.Mutable([&housingUid](data::Character& character)
-  {
-    character.housing().emplace_back(housingUid);
-  });
+      if (housingUid != data::InvalidUid)
+        character.housing().emplace_back(housingUid);
+    });
+
+  for (const data::Uid replacedUid : replacedHousingUids)
+    GetServerInstance().GetDataDirector().GetHousingCache().Delete(replacedUid);
 
   assert(clientContext.visitingRancherUid == clientContext.characterUid);
 
@@ -4776,6 +4906,49 @@ void RanchDirector::HandleHousingBuild(
   }
 }
 
+std::optional<uint32_t> RanchDirector::ConsumeIncubatorUse(data::Character& character)
+{
+  const auto& housingRegistry = GetServerInstance().GetHousingRegistry();
+
+  const auto housingRecords = GetServerInstance().GetDataDirector().GetHousingCache().Get(
+    character.housing());
+  if (not housingRecords)
+    return std::nullopt;
+
+  std::optional<uint32_t> remainingUses;
+  auto exhaustedHousingUid = data::InvalidUid;
+
+  for (const auto& housingRecord : *housingRecords)
+  {
+    housingRecord.Mutable(
+      [&housingRegistry, &remainingUses, &exhaustedHousingUid](data::Housing& housing)
+      {
+        const auto* housingInfo = housingRegistry.GetHousing(housing.housingId());
+        if (not housingInfo || housingInfo->category != registry::IncubatorCategory)
+          return;
+
+        if (housingInfo->value2 == 0 || housing.durability() == 0)
+          return;
+
+        housing.durability() = housing.durability() - 1;
+        remainingUses = housing.durability();
+
+        if (housing.durability() == 0)
+          exhaustedHousingUid = housing.uid();
+      });
+  }
+
+  if (exhaustedHousingUid != data::InvalidUid)
+  {
+    const auto range = std::ranges::remove(character.housing(), exhaustedHousingUid);
+    character.housing().erase(range.begin(), range.end());
+
+    GetServerInstance().GetDataDirector().GetHousingCache().Delete(exhaustedHousingUid);
+  }
+
+  return remainingUses;
+}
+
 void RanchDirector::HandleHousingRepair(
   ClientId clientId,
   const protocol::AcCmdCRHousingRepair& command)
@@ -4783,17 +4956,92 @@ void RanchDirector::HandleHousingRepair(
   const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.characterUid);
-  
-  uint16_t housingId;
+
+  const auto rejectRepair = [this, clientId](const std::string_view reason)
+  {
+    spdlog::warn("Housing repair rejected: {}", reason);
+
+    // todo: the meaning of the status byte is not known, 1 is a generic failure
+    constexpr protocol::AcCmdCRHousingRepairCancel cancel{.status = 1};
+    _commandServer.QueueCommand<protocol::AcCmdCRHousingRepairCancel>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+  };
+
+  bool ownsHousing = false;
+  characterRecord.Immutable(
+    [&ownsHousing, &command](const data::Character& character)
+    {
+      ownsHousing = std::ranges::contains(character.housing(), command.housingUid);
+    });
+
+  if (not ownsHousing)
+  {
+    rejectRepair(std::format(
+      "player {} does not own housing {}",
+      clientContext.userName,
+      command.housingUid));
+    return;
+  }
+
+  uint16_t housingId = 0;
   const auto housingRecord = GetServerInstance().GetDataDirector().GetHousingCache(
     command.housingUid);
 
-  housingRecord.Mutable([&housingId](data::Housing& housing){
-    housing.expiresAt = std::chrono::system_clock::now() + std::chrono::days(20);
+  housingRecord.Immutable([&housingId](const data::Housing& housing)
+  {
     housingId = static_cast<uint16_t>(housing.housingId());
   });
 
-  // todo: implement transaction for the repair
+  const auto* housingInfo = GetServerInstance().GetHousingRegistry().GetHousing(housingId);
+  if (not housingInfo)
+  {
+    rejectRepair(std::format("housing {} has unknown housing id {}",
+      command.housingUid, housingId));
+    return;
+  }
+
+  if (housingInfo->repairResource.quantity == 0)
+  {
+    rejectRepair(std::format("housing {} is not repairable", housingInfo->id));
+    return;
+  }
+
+  const auto& itemSystem = GetServerInstance().GetItemSystem();
+
+  bool canAfford = false;
+  characterRecord.Immutable(
+    [&canAfford, &itemSystem, housingInfo](const data::Character& character)
+    {
+      canAfford = itemSystem.CountItem(character, housingInfo->repairResource.itemTid)
+        >= housingInfo->repairResource.quantity;
+    });
+
+  if (not canAfford)
+  {
+    rejectRepair(std::format(
+      "User {} cannot afford to repair housing {}",
+      clientContext.userName,
+      housingInfo->id));
+    return;
+  }
+
+  characterRecord.Mutable(
+    [&itemSystem, housingInfo](data::Character& character)
+    {
+      std::ignore = itemSystem.ConsumeItem(
+        character,
+        housingInfo->repairResource.itemTid,
+        housingInfo->repairResource.quantity);
+    });
+
+  housingRecord.Mutable([](data::Housing& housing)
+  {
+    housing.expiresAt = std::chrono::system_clock::now() + std::chrono::days(20);
+  });
 
   protocol::AcCmdCRHousingRepairOK response{
     .housingUid = command.housingUid,

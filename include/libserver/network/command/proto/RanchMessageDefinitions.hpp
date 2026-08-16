@@ -2789,8 +2789,7 @@ struct AcCmdCRIncubateEggOK
 {
   uint32_t incubatorSlot{};
   Egg egg{};
-  // optional
-  uint32_t member3{};
+  std::optional<uint32_t> remainingIncubatorUses{};
 
   static Command GetCommand()
   {
