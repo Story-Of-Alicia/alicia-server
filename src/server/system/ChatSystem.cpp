@@ -113,7 +113,7 @@ ChatSystem::~ChatSystem()
 
 ChatSystem::ChatVerdict ChatSystem::ProcessChatMessage(
   data::Uid characterUid,
-  const std::string& message) noexcept
+  const std::string& message)
 {
   ChatVerdict verdict;
 
