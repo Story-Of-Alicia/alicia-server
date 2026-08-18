@@ -39,6 +39,10 @@ public:
   //! How many races are needed for the ranch bonus to pay out.
   static constexpr uint32_t RacesPerPayout = 20;
 
+  //! Temporary multiplier applied to what a single payout awards.
+  //! Set back to 1 to pay the plain housing values.
+  static constexpr uint32_t PayoutMultiplier = 10;
+
   //! What a single payout awarded.
   struct Payout
   {

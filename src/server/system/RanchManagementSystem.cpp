@@ -23,6 +23,8 @@
 
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
+#include <limits>
 #include <unordered_set>
 
 namespace server
@@ -89,6 +91,18 @@ RanchManagementSystem::Payout RanchManagementSystem::CalculatePayout(
     payout.ranchExperience = applyBonus(payout.ranchExperience);
     payout.carrots = applyBonus(payout.carrots);
   }
+
+  // Temporary boost to what the ranch bonus is worth.
+  const auto applyMultiplier = [](const uint32_t value)
+  {
+    return static_cast<uint32_t>(
+      std::min<uint64_t>(
+        static_cast<uint64_t>(value) * PayoutMultiplier,
+        std::numeric_limits<uint32_t>::max()));
+  };
+
+  payout.ranchExperience = applyMultiplier(payout.ranchExperience);
+  payout.carrots = applyMultiplier(payout.carrots);
 
   return payout;
 }
