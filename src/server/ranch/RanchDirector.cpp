@@ -1310,6 +1310,7 @@ bool RanchDirector::HandleEnterRanch(
       response.rancherName = rancherName;
       response.ranchName = std::format("{}{} ranch", rancherName, possessiveSuffix);
       response.horseSlots = static_cast<uint8_t>(rancher.horseSlotCount());
+      response.ranchProgress = rancher.ranchManagement.ranchExperience();
 
       for (const auto& horseUid : rancher.horses())
       {

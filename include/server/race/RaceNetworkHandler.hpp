@@ -73,6 +73,12 @@ public:
     uint32_t unk2,
     uint32_t mountExp);
 
+  //! Sends the recurring ranch bonus payout to a character, if connected.
+  void SendRanchBonusNotify(
+    data::Uid characterUid,
+    uint32_t ranchProgress,
+    uint32_t carrotsGained);
+
   void HandleClientConnected(ClientId clientId) override;
   void HandleClientDisconnected(ClientId clientId) override;
 

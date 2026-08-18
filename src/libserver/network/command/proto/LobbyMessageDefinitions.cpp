@@ -185,7 +185,7 @@ void LobbyCommandLoginOK::Write(
     .Write(struct6.val1)
     .Write(struct6.val2);
 
-  stream.Write(command.val18)
+  stream.Write(command.ranchBonusRaceCount)
     .Write(command.val19)
     .Write(command.val20);
 

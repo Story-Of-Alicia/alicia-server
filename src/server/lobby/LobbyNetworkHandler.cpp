@@ -868,6 +868,8 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
       response.level = static_cast<uint16_t>(character.level());
       response.levelProgress = character.experience();
       response.carrots = character.carrots();
+
+      response.ranchBonusRaceCount = character.ranchManagement.totalRaces();
       response.role = std::bit_cast<protocol::LobbyCommandLoginOK::Role>(
         character.role());
 

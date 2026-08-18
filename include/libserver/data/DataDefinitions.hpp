@@ -341,6 +341,16 @@ struct Character
 
   dao::Field<std::vector<Uid>> housing{};
 
+  //! Progress of the ranch the character manages.
+  struct RanchManagement
+  {
+    //! Ranch experience earned so far, which the ranch level is derived from.
+    dao::Field<uint32_t> ranchExperience{0u};
+    //! Lifetime count of races finished. It only ever counts up; the recurring
+    //! ranch bonus pays out on every twentieth race.
+    dao::Field<uint32_t> totalRaces{0u};
+  } ranchManagement{};
+
   dao::Field<bool> isRanchLocked{};
 
   dao::Field<Uid> settingsUid{InvalidUid};

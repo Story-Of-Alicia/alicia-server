@@ -365,6 +365,27 @@ void RaceNetworkHandler::NotifyRoomNameChanged(
     });
 }
 
+void RaceNetworkHandler::SendRanchBonusNotify(
+  const data::Uid characterUid,
+  const uint32_t ranchProgress,
+  const uint32_t carrotsGained)
+{
+  const auto clientId = FindClientIdByCharacterUid(characterUid);
+  if (not clientId)
+    return;
+
+  const protocol::AcCmdCRUpdateRanchLevelNotify notify{
+    .ranchProgress = ranchProgress,
+    .carrotsGained = carrotsGained};
+
+  _commandServer.QueueCommand<decltype(notify)>(
+    *clientId,
+    [notify]()
+    {
+      return notify;
+    });
+}
+
 void RaceNetworkHandler::SendDailyQuestNotificationToCharacter(
   uint32_t characterUid,
   uint16_t questId,

@@ -20,6 +20,7 @@
 #include "server/ServerInstance.hpp"
 
 #include "server/system/QuestSystem.hpp"
+#include "server/system/RanchManagementSystem.hpp"
 
 #include <stacktrace>
 
@@ -55,6 +56,7 @@ ServerInstance::ServerInstance(
   , _horseSystem(*this)
   , _matchmakingSystem(*this)
   , _questSystem(*this)
+  , _ranchManagementSystem(*this)
   , _rewardSystem(*this)
   , _telemetry(*this)
   , _breedingMarket(*this)
@@ -439,6 +441,11 @@ RewardSystem& ServerInstance::GetRewardSystem()
 QuestSystem& ServerInstance::GetQuestSystem()
 {
   return _questSystem;
+}
+
+RanchManagementSystem& ServerInstance::GetRanchManagementSystem()
+{
+  return _ranchManagementSystem;
 }
 
 Telemetry& ServerInstance::GetTelemetry()

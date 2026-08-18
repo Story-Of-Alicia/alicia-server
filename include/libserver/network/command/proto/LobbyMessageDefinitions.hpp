@@ -202,8 +202,8 @@ struct LobbyCommandLoginOK
   // Something with rental horse
   Rent val17{};
 
-  //! Housing bonus progression counter
-  uint32_t val18{};
+  //! Running count of races that have gone towards the ranch bonus, sent as-is.
+  uint32_t ranchBonusRaceCount{};
   uint32_t val19{};
   uint32_t val20{};
 

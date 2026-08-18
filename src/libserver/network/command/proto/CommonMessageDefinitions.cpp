@@ -181,5 +181,21 @@ void AcCmdRCMobDead::Read(
   stream.Read(command.mobOid);
 }
 
+void AcCmdCRUpdateRanchLevelNotify::Write(
+  const AcCmdCRUpdateRanchLevelNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.ranchProgress)
+    .Write(command.carrotsGained);
+}
+
+void AcCmdCRUpdateRanchLevelNotify::Read(
+  AcCmdCRUpdateRanchLevelNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
 

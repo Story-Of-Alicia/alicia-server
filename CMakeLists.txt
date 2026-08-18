@@ -126,6 +126,7 @@ add_executable(alicia-server
         src/server/system/OtpSystem.cpp
         src/server/system/PotentialSystem.cpp
         src/server/system/QuestSystem.cpp
+        src/server/system/RanchManagementSystem.cpp
         src/server/system/RoomSystem.cpp
         src/server/system/MatchmakingSystem.cpp
         src/server/system/RewardSystem.cpp

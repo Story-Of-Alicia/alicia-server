@@ -248,6 +248,29 @@ void RaceInstance::Stop()
   // Broadcast the race result
   _raceNetworkHandler.Broadcast(*this, raceResult);
 
+  // The race counts towards every racer's ranch bonus, which pays out on each
+  // twentieth race. The client expects the update to follow the race result.
+  auto& ranchManagementSystem = _raceNetworkHandler.GetServerInstance()
+    .GetRanchManagementSystem();
+
+  for (const data::Uid characterUid : _tracker.GetRacers() | std::views::keys)
+  {
+    const auto payout = ranchManagementSystem.RecordRaceCompletion(characterUid);
+    if (not payout)
+      continue;
+
+    uint32_t ranchProgress = 0;
+    _raceNetworkHandler.GetServerInstance().GetDataDirector().GetCharacter(
+      characterUid).Immutable(
+        [&ranchProgress](const data::Character& character)
+        {
+          ranchProgress = character.ranchManagement.ranchExperience();
+        });
+
+    _raceNetworkHandler.SendRanchBonusNotify(
+      characterUid, ranchProgress, payout->carrots);
+  }
+
   // Assign room master to the first-place finisher.
   if (not raceResult.scores.empty())
   {

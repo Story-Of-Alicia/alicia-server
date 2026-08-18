@@ -331,6 +331,11 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
     .legVolume = appearance.value("legVolume", uint32_t{}),
     .emblemId = appearance.value("emblemId", uint32_t{})};
 
+  const auto& ranchManagement = json.value("ranchManagement", nlohmann::json::object());
+  character.ranchManagement = data::Character::RanchManagement{
+    .ranchExperience = ranchManagement.value("ranchExperience", uint32_t{}),
+    .totalRaces = ranchManagement.value("totalRaces", uint32_t{})};
+
   character.guildUid = json.value("guildUid", data::Uid{});
 
   const auto& contacts = json.value("contacts", nlohmann::json::object());
@@ -443,6 +448,12 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   appearance["legVolume"] = character.appearance.legVolume();
   appearance["emblemId"] = character.appearance.emblemId();
   json["appearance"] = appearance;
+
+  // Ranch management
+  nlohmann::json ranchManagement;
+  ranchManagement["ranchExperience"] = character.ranchManagement.ranchExperience();
+  ranchManagement["totalRaces"] = character.ranchManagement.totalRaces();
+  json["ranchManagement"] = ranchManagement;
 
   json["guildUid"] = character.guildUid();
 

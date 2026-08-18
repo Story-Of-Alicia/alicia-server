@@ -38,6 +38,7 @@
 #include "server/system/ModerationSystem.hpp"
 #include "server/system/OtpSystem.hpp"
 #include "server/system/QuestSystem.hpp"
+#include "server/system/RanchManagementSystem.hpp"
 #include "server/system/RewardSystem.hpp"
 #include "server/system/RoomSystem.hpp"
 #include "server/telemetry/Telemetry.hpp"
@@ -183,6 +184,9 @@ public:
   //! Returns reference to the quest system.
   //! @returns Reference to the quest system.
   QuestSystem& GetQuestSystem();
+
+  //! Returns reference to the ranch management system.
+  RanchManagementSystem& GetRanchManagementSystem();
 
   //! Returns reference to the matchmaking system.
   //! @returns Reference to the matchmaking system.
@@ -332,6 +336,8 @@ private:
   ModerationSystem _moderationSystem;
   //! A quest system.
   QuestSystem _questSystem;
+  //! A ranch management system.
+  RanchManagementSystem _ranchManagementSystem;
   //! A room system.
   RoomSystem _roomSystem;
   //! A matchmaking system.
