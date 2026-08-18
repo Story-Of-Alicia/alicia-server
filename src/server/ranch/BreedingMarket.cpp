@@ -414,7 +414,7 @@ BreedingMarket::Snapshot BreedingMarket::CollectMarketSnapshot(
       if (filter.firstPreferredStat != SnapshotFilter::Stat::None
         || filter.secondPreferred != SnapshotFilter::Stat::None)
       {
-        constexpr uint32_t RequiredSharePercentPerStat = 38u;
+        constexpr uint32_t RequiredSharePercentPerStat = 34u;
 
         const uint32_t totalStats = horse.stats.agility()
           + horse.stats.courage()
