@@ -2469,7 +2469,18 @@ void LobbyNetworkHandler::HandleAcceptInviteToGuild(
   const auto& clientContext = GetClientContext(clientId);
 
   // Pending invites for guild
-  auto& pendingGuildInvites = _serverInstance.GetLobbyDirector().GetGuilds()[command.guild.uid].invites;
+  auto& guildInstances = _serverInstance.GetLobbyDirector().GetGuilds();
+  const auto guildInstanceIter = guildInstances.find(command.guild.uid);
+
+  if (guildInstanceIter == guildInstances.end())
+  {
+    // Character tried to join guild but has no pending (online) invite
+    spdlog::warn("Character {} tried to join a guild {} but does not have a valid invite",
+      clientContext.characterUid, command.guild.uid);
+    return;
+  }
+
+  auto& pendingGuildInvites = guildInstanceIter->second.invites;
 
   // Check if the guild has outstanding character invite.
   const auto& guildInvite = std::ranges::find(
@@ -2499,7 +2510,7 @@ void LobbyNetworkHandler::HandleAcceptInviteToGuild(
 
   bool guildAddSuccess = false;
   _serverInstance.GetDataDirector().GetGuild(command.guild.uid).Mutable(
-    [&guildAddSuccess, inviteeCharacterUid = command.characterUid](data::Guild& guild)
+    [&guildAddSuccess, inviteeCharacterUid = clientContext.characterUid](data::Guild& guild)
     {
       // Check if invitee who accepted is in the guild
       if (std::ranges::contains(guild.members(), inviteeCharacterUid) ||
@@ -2523,18 +2534,28 @@ void LobbyNetworkHandler::HandleAcceptInviteToGuild(
 
   _serverInstance.GetRanchDirector().SendGuildInviteAccepted(
     command.guild.uid,
-    command.characterUid,
+    clientContext.characterUid,
     inviteeCharacterName
   );
 }
 
 void LobbyNetworkHandler::HandleDeclineInviteToGuild(
-  const ClientId,
+  const ClientId clientId,
   const protocol::AcCmdLCInviteGuildJoinCancel& command)
 {
   // TODO: command data check
+  const auto& clientContext = GetClientContext(clientId);
+
+  // Drop the pending invite, it would otherwise remain valid indefinitely.
+  auto& guildInstances = _serverInstance.GetLobbyDirector().GetGuilds();
+  const auto guildInstanceIter = guildInstances.find(command.guild.uid);
+  if (guildInstanceIter != guildInstances.end())
+  {
+    std::erase(guildInstanceIter->second.invites, clientContext.characterUid);
+  }
+
   _serverInstance.GetRanchDirector().SendGuildInviteDeclined(
-    command.characterUid,
+    clientContext.characterUid,
     command.inviterCharacterUid,
     command.inviterCharacterName,
     command.guild.uid

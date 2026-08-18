@@ -5846,7 +5846,12 @@ void RanchDirector::HandleInviteToGuild(
   auto inviteeGuildUid = data::InvalidUid;
   for (const auto& userInstance : _serverInstance.GetLobbyDirector().GetUsers() | std::views::values)
   {
-    _serverInstance.GetDataDirector().GetCharacter(userInstance.characterUid).Immutable(
+    const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+      userInstance.characterUid);
+    if (not characterRecord)
+      continue;
+
+    characterRecord.Immutable(
       [invitedCharacterName = command.characterName, &inviteeCharacterUid, &inviteeGuildUid](const data::Character& character)
       {
         if (character.name() != invitedCharacterName)
@@ -5896,10 +5901,19 @@ void RanchDirector::HandleInviteToGuild(
   }
 
   // Character is found, is not in (a) guild and is online
-  GetServerInstance().GetLobbyDirector().InviteCharacterToGuild(
+  if (not GetServerInstance().GetLobbyDirector().InviteCharacterToGuild(
     inviteeCharacterUid,
     inviterGuildUid,
-    clientContext.characterUid);
+    clientContext.characterUid))
+  {
+    // The invitee became unavailable while the invitation was being prepared.
+    const protocol::AcCmdCRInviteGuildJoinCancel response{
+      .error = protocol::GuildError::NoUserOrOffline};
+    _commandServer.QueueCommand<decltype(response)>(clientId, [response]()
+    {
+      return response;
+    });
+  }
 }
 
 void RanchDirector::HandleGetEmblemList(

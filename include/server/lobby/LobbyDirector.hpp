@@ -109,7 +109,13 @@ public:
   [[nodiscard]] bool IsCharacterForcedIntoCreator(
     data::Uid characterUid) const;
 
-  void InviteCharacterToGuild(
+  //! Invite a character to a guild.
+  //! @param inviteeCharacterUid Uid of the invited character.
+  //! @param guildUid Uid of the guild.
+  //! @param inviterCharacterUid Uid of the inviting character.
+  //! @retval `true` if the invitation was delivered.
+  //! @retval `false` if the invitee is not available.
+  [[nodiscard]] bool InviteCharacterToGuild(
     data::Uid inviteeCharacterUid,
     data::Uid guildUid,
     data::Uid inviterCharacterUid);
