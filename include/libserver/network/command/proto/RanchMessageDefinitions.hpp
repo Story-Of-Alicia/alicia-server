@@ -114,7 +114,10 @@ struct AcCmdCREnterRanchOK
   std::vector<Housing> housing{};
 
   uint8_t horseSlots{};
-  uint32_t member11{};
+  //! Timepoint of last growth/care spirit change.
+  //! Disables the button during cooldown.
+  //! Value is module 61.
+  uint32_t spiritCooldownExpiry{};
 
   enum class Bitset : uint32_t
   {

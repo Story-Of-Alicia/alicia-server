@@ -199,7 +199,7 @@ void AcCmdCREnterRanchOK::Write(
   }
 
   stream.Write(command.horseSlots)
-    .Write(command.member11)
+    .Write(command.spiritCooldownExpiry)
     .Write(command.bitset)
     .Write(command.incubatorSlots)
     .Write(command.incubatorUseCount);
