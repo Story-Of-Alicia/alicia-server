@@ -2215,10 +2215,8 @@ void AcCmdRCGuildRaceInfo::Write(
   const AcCmdRCGuildRaceInfo& command,
   SinkStream& stream)
 {
-  stream.Write(command.unk0)
-    .Write(command.unk1)
-    .Write(command.unk2)
-    .Write(command.unk3);
+  stream.Write(command.redTeam)
+    .Write(command.blueTeam);
 }
 
 void AcCmdRCGuildRaceInfo::Read(
@@ -2226,6 +2224,22 @@ void AcCmdRCGuildRaceInfo::Read(
   SourceStream&)
 {
   throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCGuildRaceInfo::GuildTeam::Write(
+  const GuildTeam& team,
+  SinkStream& stream)
+{
+  stream.Write(team.guildUid)
+    .Write(team.partyUid);
+}
+
+void AcCmdRCGuildRaceInfo::GuildTeam::Read(
+  GuildTeam& team,
+  SourceStream& stream)
+{
+  stream.Read(team.guildUid)
+    .Read(team.partyUid);
 }
 
 void AcCmdRCGuildRaceResult::Write(

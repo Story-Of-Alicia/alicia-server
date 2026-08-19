@@ -2924,10 +2924,24 @@ struct AcCmdCRRestartRace
 
 struct AcCmdRCGuildRaceInfo
 {
-  uint32_t unk0{};
-  uint32_t unk1{};
-  uint32_t unk2{};
-  uint32_t unk3{};
+  struct GuildTeam
+  {
+    //! The UID of team's guild.
+    uint32_t guildUid{};
+    //! The UID of team's party.
+    uint32_t partyUid{};
+
+    static void Write(
+      const GuildTeam& team,
+      SinkStream& stream);
+
+    static void Read(
+      GuildTeam& team,
+      SourceStream& stream);
+  };
+
+  GuildTeam redTeam{};
+  GuildTeam blueTeam{};
 
   static Command GetCommand()
   {
