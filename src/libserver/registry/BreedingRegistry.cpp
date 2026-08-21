@@ -52,11 +52,30 @@ void ReadFailureCardTable(const YAML::Node& node, FailureCardTable& table)
 
 } // anon namespace
 
+void BreedingRegistry::Clear()
+{
+  _failureCardProbs.clear();
+  _normalCard = {};
+  _chanceCard = {};
+  _params = {};
+  _gradeProbabilities.clear();
+  _smallGradeBand = {};
+  _bigGradeBand = {};
+  _bonusEntries.clear();
+}
+
 void BreedingRegistry::ReadConfig(const std::filesystem::path& configPath)
 {
   const auto root = YAML::LoadFile(configPath.string());
   const auto breeding = root["breeding"];
+  if (not breeding)
+    throw std::runtime_error("Missing breeding section");
+
   const auto failureCards = breeding["failureCards"];
+  if (not failureCards)
+    throw std::runtime_error("Missing failureCards section");
+
+  Clear();
 
   for (const auto& probNode : failureCards["probabilities"])
   {

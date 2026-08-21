@@ -20,6 +20,8 @@
 #ifndef ITEMREGISTRY_HPP
 #define ITEMREGISTRY_HPP
 
+#include <libserver/registry/Registry.hpp>
+
 #include <cstdint>
 #include <filesystem>
 #include <optional>
@@ -218,10 +220,12 @@ struct SetItemInfo
   uint32_t equipEffectValue{};
 };
 
-class ItemRegistry
+class ItemRegistry : public Registry
 {
 public:
-  void ReadConfig(const std::filesystem::path& configPath);
+  void ReadConfig(const std::filesystem::path& configPath) override;
+  void Clear() override;
+
   [[nodiscard]] std::optional<Item> GetItem(uint32_t tid);
   [[nodiscard]] std::unordered_map<uint32_t, Item> GetItems();
   [[nodiscard]] std::optional<Package> GetPackage(uint32_t packageId);

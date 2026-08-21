@@ -21,6 +21,7 @@
 #define COURSEREGISTRY_HPP
 
 #include "libserver/network/command/proto/CommonStructureDefinitions.hpp"
+#include "libserver/registry/Registry.hpp"
 #include "libserver/registry/RegistryDefinitions.hpp"
 
 #include <array>
@@ -121,12 +122,13 @@ struct Course
 
 };
 
-class CourseRegistry
+class CourseRegistry : public Registry
 {
 public:
   CourseRegistry();
 
-  void ReadConfig(const std::filesystem::path& configPath);
+  void ReadConfig(const std::filesystem::path& configPath) override;
+  void Clear() override;
 
   [[nodiscard]] const Course::GameModeInfo& GetCourseGameModeInfo(
     GameModeId type) const;

@@ -148,6 +148,13 @@ void ReadShopInfo(
 
 } // anon namespace
 
+void ItemRegistry::Clear()
+{
+  _items.clear();
+  _packages.clear();
+  _sets.clear();
+}
+
 void ItemRegistry::ReadConfig(const std::filesystem::path& configDir)
 {
   const auto itemsRoot = YAML::LoadFile((configDir / "items.yaml").string());
@@ -161,7 +168,7 @@ void ItemRegistry::ReadConfig(const std::filesystem::path& configDir)
   if (not packagesCollectionSection)
     throw std::runtime_error("Missing collection section in packages.yaml");
 
-  _items.clear();
+  Clear();
 
   for (const auto& itemSection : collectionSection)
   {
@@ -243,7 +250,6 @@ void ItemRegistry::ReadConfig(const std::filesystem::path& configDir)
   }
 
   // Load mount-equipment set bonuses. Optional: absence leaves the feature inert.
-  _sets.clear();
   const auto setsPath = configDir / "sets.yaml";
   if (std::filesystem::exists(setsPath))
   {

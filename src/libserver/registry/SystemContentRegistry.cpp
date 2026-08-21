@@ -26,23 +26,28 @@
 namespace server::registry
 {
 
+void SystemContentRegistry::Clear()
+{
+  std::scoped_lock lock(_mutex);
+  _configPath.clear();
+  _entries.clear();
+}
+
 void SystemContentRegistry::ReadConfig(const std::filesystem::path& configPath)
 {
+  if (not std::filesystem::exists(configPath))
+    return;
+
+  const auto root = YAML::LoadFile(configPath.string());
+  if (not root.IsSequence())
+    return;
+
+  Clear();
+
+  std::scoped_lock lock(_mutex);
   _configPath = configPath;
 
-  if (not std::filesystem::exists(_configPath))
-  {
-    return;
-  }
-
-  const auto root = YAML::LoadFile(_configPath.string());
-  
-  std::scoped_lock lock(_mutex);
-  _entries.clear();
-
-  if (root.IsSequence())
-  {
-    for (const auto& node : root)
+  for (const auto& node : root)
     {
       SystemEntry entry;
       entry.type = node["type"].as<uint32_t>();
@@ -60,7 +65,6 @@ void SystemContentRegistry::ReadConfig(const std::filesystem::path& configPath)
       
       _entries.push_back(entry);
     }
-  }
 
   spdlog::info("System content registry loaded {} parameters", _entries.size());
 }

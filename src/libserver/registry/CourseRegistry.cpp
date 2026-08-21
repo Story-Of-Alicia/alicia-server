@@ -126,6 +126,14 @@ CourseRegistry::CourseRegistry()
 {
 }
 
+void CourseRegistry::Clear()
+{
+  _gameModeInfo.clear();
+  _mapBlockInfo.clear();
+  _itemDeckInfo.clear();
+  _deckItemInfo.clear();
+}
+
 void CourseRegistry::ReadConfig(
   const std::filesystem::path& configPath)
 {
@@ -135,40 +143,38 @@ void CourseRegistry::ReadConfig(
   if (not coursesSection)
     throw std::runtime_error("Missing courses section");
 
+  const auto gameModeInfosSection = coursesSection["gameModeInfo"];
+  if (not gameModeInfosSection)
+    throw std::runtime_error("Missing gameModes section");
+
+  const auto gameModesCollection = gameModeInfosSection["collection"];
+  if (not gameModesCollection)
+    throw std::runtime_error("Missing collection section");
+
+  const auto mapBlockInfosSection = coursesSection["mapBlockInfo"];
+  if (not mapBlockInfosSection)
+    throw std::runtime_error("Missing gameModes section");
+
+  const auto mapBlocksCollection = mapBlockInfosSection["collection"];
+  if (not mapBlocksCollection)
+    throw std::runtime_error("Missing collection section");
+
+  Clear();
+
   // Game modes
+  for (const auto& gameModeInfoSection : gameModesCollection)
   {
-    const auto gameModeInfosSection = coursesSection["gameModeInfo"];
-    if (not gameModeInfosSection)
-      throw std::runtime_error("Missing gameModes section");
-
-    const auto collection = gameModeInfosSection["collection"];
-    if (not collection)
-      throw std::runtime_error("Missing collection section");
-
-    for (const auto& gameModeInfoSection : collection)
-    {
-      Course::GameModeInfo gameMode;
-      const auto type = ReadGameModeInfo(gameModeInfoSection, gameMode);
-      _gameModeInfo.emplace(type, gameMode);
-    }
+    Course::GameModeInfo gameMode;
+    const auto type = ReadGameModeInfo(gameModeInfoSection, gameMode);
+    _gameModeInfo.emplace(type, gameMode);
   }
 
   // Map blocks
+  for (const auto& mapBlockInfoSection : mapBlocksCollection)
   {
-    const auto mapBlockInfosSection = coursesSection["mapBlockInfo"];
-    if (not mapBlockInfosSection)
-      throw std::runtime_error("Missing gameModes section");
-
-    const auto collection = mapBlockInfosSection["collection"];
-    if (not collection)
-      throw std::runtime_error("Missing collection section");
-
-    for (const auto& mapBlockInfoSection : collection)
-    {
-      Course::MapBlockInfo mapBlock;
-      const auto id = ReadMapBlockInfo(mapBlockInfoSection, mapBlock);
-      _mapBlockInfo.emplace(id, mapBlock);
-    }
+    Course::MapBlockInfo mapBlock;
+    const auto id = ReadMapBlockInfo(mapBlockInfoSection, mapBlock);
+    _mapBlockInfo.emplace(id, mapBlock);
   }
 
   // Deck items
