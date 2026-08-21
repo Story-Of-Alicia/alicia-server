@@ -20,6 +20,8 @@
 #ifndef SPEEDREGISTRY_HPP
 #define SPEEDREGISTRY_HPP
 
+#include <libserver/registry/Registry.hpp>
+
 #include <cstdint>
 #include <filesystem>
 #include <unordered_map>
@@ -42,10 +44,11 @@ struct TeamSpurGaugeInfo
   uint32_t goodTiming{};
 };
 
-class SpeedRegistry
+class SpeedRegistry : public Registry
 {
 public:
-  void ReadConfig(const std::filesystem::path& configPath);
+  void ReadConfig(const std::filesystem::path& configPath) override;
+  void Clear() override;
 
   //! Returns the TeamSpurGaugeInfo for a given racer count.
   //! @throws std::runtime_error if racerCount is not found in the registry.

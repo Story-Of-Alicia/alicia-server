@@ -21,6 +21,7 @@
 #define HOUSINGREGISTRY_HPP
 
 #include "libserver/data/DataDefinitions.hpp"
+#include "libserver/registry/Registry.hpp"
 
 #include <chrono>
 #include <filesystem>
@@ -119,10 +120,11 @@ struct HousingSetInfo
   uint32_t regularBonusPercent{};
 };
 
-class HousingRegistry final
+class HousingRegistry final : public Registry
 {
 public:
-  void ReadConfig(const std::filesystem::path& configPath);
+  void ReadConfig(const std::filesystem::path& configPath) override;
+  void Clear() override;
 
   //! @param housingId Housing ID.
   //! @returns The housing, or nullptr if no such ID is configured.
