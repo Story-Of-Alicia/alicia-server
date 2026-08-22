@@ -1324,9 +1324,35 @@ bool RanchDirector::HandleEnterRanch(
       {
         const auto& housingRegistry = GetServerInstance().GetHousingRegistry();
 
+        auto activeIncubatorUid = data::InvalidUid;
+        uint32_t activeIncubatorPriority = 0;
+
         for (const auto& housingRecord : *housingRecords)
         {
-          housingRecord.Immutable([&response, &housingRegistry](const data::Housing& housing){
+          housingRecord.Immutable(
+            [&housingRegistry, &activeIncubatorUid, &activeIncubatorPriority](
+              const data::Housing& housing)
+            {
+              const auto* housingInfo = housingRegistry.GetHousing(housing.housingId());
+              if (not housingInfo || housingInfo->category != registry::IncubatorCategory)
+                return;
+
+              const uint32_t priority = housingInfo->value2 > 0 && housing.durability() > 0
+                ? 2u
+                : 1u;
+
+              if (priority > activeIncubatorPriority)
+              {
+                activeIncubatorPriority = priority;
+                activeIncubatorUid = housing.uid();
+              }
+            });
+        }
+
+        for (const auto& housingRecord : *housingRecords)
+        {
+          housingRecord.Immutable([&response, &housingRegistry, activeIncubatorUid](
+            const data::Housing& housing){
 
             const auto* housingInfo = housingRegistry.GetHousing(housing.housingId());
 
@@ -1335,6 +1361,9 @@ bool RanchDirector::HandleEnterRanch(
 
             if (isIncubator)
             {
+              if (housing.uid() != activeIncubatorUid)
+                return;
+
               response.incubatorUseCount = housing.durability();
               response.incubatorSlots = static_cast<uint8_t>(housingInfo->value);
             }
@@ -4804,10 +4833,15 @@ void RanchDirector::HandleHousingBuild(
             if (not placedInfo || placedInfo->category != housingInfo->category)
               return;
 
-            if (isIncubator && placedInfo->id == housingInfo->id)
-              toppedUpHousingUid = housing.uid();
+            if (isIncubator)
+            {
+              if (placedInfo->id == housingInfo->id)
+                toppedUpHousingUid = housing.uid();
+            }
             else
+            {
               replacedHousingUids.emplace_back(housing.uid());
+            }
           });
       }
     });
@@ -4916,35 +4950,58 @@ std::optional<uint32_t> RanchDirector::ConsumeIncubatorUse(data::Character& char
   if (not housingRecords)
     return std::nullopt;
 
-  std::optional<uint32_t> remainingUses;
-  auto exhaustedHousingUid = data::InvalidUid;
+  auto spendableHousingUid = data::InvalidUid;
+  auto permanentHousingUid = data::InvalidUid;
 
   for (const auto& housingRecord : *housingRecords)
   {
-    housingRecord.Mutable(
-      [&housingRegistry, &remainingUses, &exhaustedHousingUid](data::Housing& housing)
+    housingRecord.Immutable(
+      [&housingRegistry, &spendableHousingUid, &permanentHousingUid](const data::Housing& housing)
       {
         const auto* housingInfo = housingRegistry.GetHousing(housing.housingId());
         if (not housingInfo || housingInfo->category != registry::IncubatorCategory)
           return;
 
-        if (housingInfo->value2 == 0 || housing.durability() == 0)
-          return;
-
-        housing.durability() = housing.durability() - 1;
-        remainingUses = housing.durability();
-
-        if (housing.durability() == 0)
-          exhaustedHousingUid = housing.uid();
+        if (housingInfo->value2 == 0)
+          permanentHousingUid = housing.uid();
+        else if (housing.durability() > 0)
+          spendableHousingUid = housing.uid();
       });
   }
 
-  if (exhaustedHousingUid != data::InvalidUid)
+  // Nothing to spend, the ranch is hatching on the permanent incubator.
+  if (spendableHousingUid == data::InvalidUid)
+    return std::nullopt;
+
+  const auto spendableRecord = GetServerInstance().GetDataDirector().GetHousingCache().Get(
+    spendableHousingUid);
+  if (not spendableRecord)
+    return std::nullopt;
+
+  std::optional<uint32_t> remainingUses;
+  bool isExhausted = false;
+
+  spendableRecord->Mutable(
+    [&remainingUses, &isExhausted](data::Housing& housing)
+    {
+      housing.durability() = housing.durability() - 1;
+      remainingUses = housing.durability();
+      isExhausted = housing.durability() == 0;
+    });
+
+  if (isExhausted)
   {
-    const auto range = std::ranges::remove(character.housing(), exhaustedHousingUid);
+    const auto range = std::ranges::remove(character.housing(), spendableHousingUid);
     character.housing().erase(range.begin(), range.end());
 
-    GetServerInstance().GetDataDirector().GetHousingCache().Delete(exhaustedHousingUid);
+    GetServerInstance().GetDataDirector().GetHousingCache().Delete(spendableHousingUid);
+
+    if (permanentHousingUid == data::InvalidUid)
+    {
+      spdlog::warn(
+        "Character {} spent their incubator and has no permanent one to fall back on",
+        character.uid());
+    }
   }
 
   return remainingUses;
