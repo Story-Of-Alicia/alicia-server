@@ -503,6 +503,26 @@ struct PetBirthInfo
 };
 
 //!
+struct League
+{
+  enum class Type : uint8_t
+  {
+    None = 0,
+    Bronze = 1,
+    Silver = 2,
+    Gold = 3,
+    Platinum = 4
+  };
+
+  Type type{};
+  //! League rank percentile expressed as a whole number in an interval <0, 100>.
+  uint8_t rankingPercentile{};
+
+  static void Write(const League& value, SinkStream& stream);
+  static void Read(League& value, SourceStream& stream);
+};
+
+//!
 struct RanchHorse
 {
   uint16_t horseOid{};
@@ -545,8 +565,7 @@ struct RanchCharacter
   Rent rent{};
   Pet pet{};
 
-  uint8_t unk4{0};
-  uint8_t unk5{0};
+  League league{};
 
   static void Write(const RanchCharacter& ranchCharacter, SinkStream& stream);
   static void Read(RanchCharacter& value, SourceStream& stream);
@@ -579,26 +598,6 @@ struct Housing
 
   static void Write(const Housing& value, SinkStream& stream);
   static void Read(Housing& value, SourceStream& stream);
-};
-
-//!
-struct League
-{
-  enum class Type : uint8_t
-  {
-    None = 0,
-    Bronze = 1,
-    Silver = 2,
-    Gold = 3,
-    Platinum = 4
-  };
-
-  Type type{};
-  //! League rank percentile expressed as a whole number in an interval <0, 100>.
-  uint8_t rankingPercentile{};
-
-  static void Write(const League& value, SinkStream& stream);
-  static void Read(League& value, SourceStream& stream);
 };
 
 enum class TeamMode : uint8_t

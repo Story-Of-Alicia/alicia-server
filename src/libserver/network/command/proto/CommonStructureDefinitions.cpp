@@ -667,8 +667,7 @@ void RanchCharacter::Write(const RanchCharacter& ranchCharacter, SinkStream& str
 
   // Pet
   stream.Write(ranchCharacter.pet)
-    .Write(ranchCharacter.unk4)
-    .Write(ranchCharacter.unk5);
+    .Write(ranchCharacter.league);
 }
 
 void RanchCharacter::Read(RanchCharacter& value, SourceStream& stream)
@@ -697,10 +696,8 @@ void RanchCharacter::Read(RanchCharacter& value, SourceStream& stream)
     .Read(value.unk3);
 
   stream.Read(value.rent)
-    .Read(value.pet);
-
-  stream.Read(value.unk4)
-    .Read(value.unk5);
+    .Read(value.pet)
+    .Read(value.league);
 }
 
 void Quest::Write(const Quest& value, SinkStream& stream)
