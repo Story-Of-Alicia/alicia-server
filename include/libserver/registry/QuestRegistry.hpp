@@ -20,6 +20,8 @@
 #ifndef QUEST_REGISTRY_HPP
 #define QUEST_REGISTRY_HPP
 
+#include <libserver/registry/Registry.hpp>
+
 #include <cstdint>
 #include <filesystem>
 #include <optional>
@@ -153,10 +155,12 @@ struct Quest
   uint32_t rewardPoint{};
 };
 
-class QuestRegistry
+class QuestRegistry : public Registry
 {
 public:
-  void ReadConfig(const std::filesystem::path& configPath);
+  void ReadConfig(const std::filesystem::path& configPath) override;
+  void Clear() override;
+
   [[nodiscard]] std::optional<Quest> GetQuest(uint32_t tid) const;
   [[nodiscard]] std::optional<QuestReward> GetQuestReward(uint32_t id) const;
   [[nodiscard]] std::optional<QuestRewardPoint> GetQuestRewardPoint(uint32_t point) const;

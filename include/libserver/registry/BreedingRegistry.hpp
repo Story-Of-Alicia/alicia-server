@@ -20,6 +20,8 @@
 #ifndef BREEDINGREGISTRY_HPP
 #define BREEDINGREGISTRY_HPP
 
+#include <libserver/registry/Registry.hpp>
+
 #include <cstdint>
 #include <filesystem>
 #include <unordered_map>
@@ -109,10 +111,11 @@ struct BreedingBonusEntry
   int32_t ratioBig{0};
 };
 
-class BreedingRegistry
+class BreedingRegistry : public Registry
 {
 public:
-  void ReadConfig(const std::filesystem::path& configPath);
+  void ReadConfig(const std::filesystem::path& configPath) override;
+  void Clear() override;
 
   //! Returns the probability entry for the given cumulative money spent.
   //! Finds the first entry whose moneySpent >= the given value, or the last entry.

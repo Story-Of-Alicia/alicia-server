@@ -20,6 +20,8 @@
 #ifndef HORSEREGISTRY_HPP
 #define HORSEREGISTRY_HPP
 
+#include <libserver/registry/Registry.hpp>
+
 #include <array>
 #include <filesystem>
 #include <random>
@@ -190,12 +192,13 @@ struct ShapeInheritance
 };
 
 
-class HorseRegistry
+class HorseRegistry : public Registry
 {
 public:
   HorseRegistry();
 
-  void ReadConfig(const std::filesystem::path& configPath);
+  void ReadConfig(const std::filesystem::path& configPath) override;
+  void Clear() override;
 
   static void BuildDefaultHorse(
     data::Horse& horse,

@@ -20,6 +20,8 @@
 #ifndef MAGICREGISTRY_HPP
 #define MAGICREGISTRY_HPP
 
+#include <libserver/registry/Registry.hpp>
+
 #include <array>
 #include <cstdint>
 #include <filesystem>
@@ -117,12 +119,13 @@ struct Magic
   };
 };
 
-class MagicRegistry
+class MagicRegistry : public Registry
 {
 public:
   MagicRegistry() = default;
 
-  void ReadConfig(const std::filesystem::path& configPath);
+  void ReadConfig(const std::filesystem::path& configPath) override;
+  void Clear() override;
 
   [[nodiscard]] const Magic::SlotInfo& GetSlotInfo(uint32_t type) const;
   [[nodiscard]] const Magic::SlotInfo& GetSlotInfoByEffectId(uint32_t effectId) const;

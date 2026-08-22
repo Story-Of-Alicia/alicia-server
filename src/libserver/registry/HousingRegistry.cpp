@@ -76,16 +76,25 @@ void ReadHousingSetInfo(const YAML::Node& node, HousingSetInfo& info)
 
 } // anon namespace
 
-void HousingRegistry::ReadConfig(const std::filesystem::path& configPath)
+void HousingRegistry::Clear()
 {
-  const auto root = YAML::LoadFile(configPath.string());
-
   _housing.clear();
   _housingById.clear();
   _sets.clear();
   _ranchLevels.clear();
+}
 
-  for (const auto& node : root["housing"])
+void HousingRegistry::ReadConfig(const std::filesystem::path& configPath)
+{
+  const auto root = YAML::LoadFile(configPath.string());
+
+  const auto housingSection = root["housing"];
+  if (not housingSection)
+    throw std::runtime_error("Missing housing section");
+
+  Clear();
+
+  for (const auto& node : housingSection)
   {
     HousingInfo info;
     ReadHousingInfo(node, info);

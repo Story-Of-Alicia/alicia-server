@@ -68,6 +68,35 @@ HorseRegistry::HorseRegistry()
 {
 }
 
+void HorseRegistry::Clear()
+{
+  _colorGroups.clear();
+  _coats.clear();
+  _faces.clear();
+  _manes.clear();
+  _tails.clear();
+  _possibleCoats.clear();
+  _possibleFaces.clear();
+  _facesByType.clear();
+  _possibleManes.clear();
+  _possibleTails.clear();
+  _potentialGrowth.clear();
+  _potentialLevels.clear();
+  _potentials.clear();
+  _potentialTypes.clear();
+  _masteryParams = {};
+  _masteryRewards.clear();
+  _tendencies.clear();
+  _groupForces.clear();
+  _levelUpPoints = {};
+  _grades.clear();
+  _emblems.clear();
+  _emblemRatios.clear();
+  maneTailColorGroups.clear();
+  _manesByColorAndShape.clear();
+  _tailsByColorAndShape.clear();
+}
+
 void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
 {
   // Horse tables are split across category files under the config directory.
@@ -81,7 +110,8 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
       root[entry.first.as<std::string>()] = entry.second;
   }
 
-  _colorGroups.clear();
+  Clear();
+
   for (const auto& node : root["colorGroups"])
   {
     std::vector<Color> colors;
@@ -94,8 +124,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     _colorGroups.push_back(std::move(colors));
   }
 
-  _coats.clear();
-  _possibleCoats.clear();
   for (const auto& node : root["coats"])
   {
     const auto tid = node["tid"].as<data::Tid>();
@@ -110,9 +138,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     _possibleCoats.emplace_back(tid);
   }
 
-  _faces.clear();
-  _possibleFaces.clear();
-  _facesByType.clear();
   for (const auto& node : root["faces"])
   {
     const auto tid = node["tid"].as<data::Tid>();
@@ -125,8 +150,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     _facesByType[type].emplace_back(tid);
   }
 
-  _manes.clear();
-  _possibleManes.clear();
   for (const auto& node : root["manes"])
   {
     const auto tid = node["tid"].as<data::Tid>();
@@ -141,8 +164,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     _possibleManes.emplace_back(tid);
   }
 
-  _tails.clear();
-  _possibleTails.clear();
   for (const auto& node : root["tails"])
   {
     const auto tid = node["tid"].as<data::Tid>();
@@ -157,7 +178,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     _possibleTails.emplace_back(tid);
   }
 
-  _potentialGrowth.clear();
   for (const auto& node : root["potentialGrowth"])
   {
     const auto type = node["type"].as<uint32_t>();
@@ -170,7 +190,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     _potentialGrowth[type] = pg;
   }
 
-  _potentialLevels.clear();
   for (const auto& node : root["potentialLevels"])
   {
     _potentialLevels.emplace_back(PotentialLevel{
@@ -179,8 +198,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     });
   }
 
-  _potentials.clear();
-  _potentialTypes.clear();
   for (const auto& node : root["potentials"])
   {
     const auto type = node["type"].as<uint32_t>();
@@ -203,7 +220,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     };
   }
 
-  _masteryRewards.clear();
   for (const auto& node : root["mastery"]["rewards"])
   {
     _masteryRewards.push_back(MasteryReward{
@@ -213,7 +229,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     });
   }
 
-  _tendencies.clear();
   for (const auto& node : root["tendencies"])
   {
     const auto tendency = node["tendency"].as<uint32_t>();
@@ -224,7 +239,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     };
   }
 
-  _groupForces.clear();
   for (const auto& node : root["groupForces"])
   {
     const auto id = node["id"].as<uint32_t>();
@@ -255,7 +269,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     };
   }
 
-  _grades.clear();
   for (const auto& node : root["grades"])
   {
     const auto grade = node["grade"].as<uint32_t>();
@@ -266,7 +279,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     };
   }
 
-  _emblems.clear();
   for (const auto& node : root["emblems"])
   {
     const auto id = node["id"].as<uint32_t>();
@@ -276,7 +288,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     };
   }
 
-  _emblemRatios.clear();
   for (const auto& node : root["emblemRatios"])
   {
     const auto odds = node["odds"].as<uint32_t>();
@@ -285,9 +296,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
       .ratio = node["ratio"].as<int32_t>(),
     };
   }
-
-  _manesByColorAndShape.clear();
-  _tailsByColorAndShape.clear();
 
   for (const auto& [tid, mane] : _manes)
   {

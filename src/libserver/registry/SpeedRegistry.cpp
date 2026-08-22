@@ -28,6 +28,11 @@
 namespace server::registry
 {
 
+void SpeedRegistry::Clear()
+{
+  _teamSpurGaugeInfoMap.clear();
+}
+
 void SpeedRegistry::ReadConfig(const std::filesystem::path& configPath)
 {
   const auto root = YAML::LoadFile(configPath.string());
@@ -40,7 +45,7 @@ void SpeedRegistry::ReadConfig(const std::filesystem::path& configPath)
   if (not teamSpurGaugeInfoSection)
     throw std::runtime_error("Missing teamSpurGaugeInfo section in speed.yaml");
 
-  _teamSpurGaugeInfoMap.clear();
+  Clear();
 
   for (const auto& entry : teamSpurGaugeInfoSection)
   {
