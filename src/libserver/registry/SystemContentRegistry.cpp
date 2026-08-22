@@ -28,7 +28,6 @@ namespace server::registry
 
 void SystemContentRegistry::Clear()
 {
-  std::scoped_lock lock(_mutex);
   _configPath.clear();
   _entries.clear();
 }
@@ -42,9 +41,8 @@ void SystemContentRegistry::ReadConfig(const std::filesystem::path& configPath)
   if (not root.IsSequence())
     return;
 
-  Clear();
-
   std::scoped_lock lock(_mutex);
+  Clear();
   _configPath = configPath;
 
   for (const auto& node : root)
