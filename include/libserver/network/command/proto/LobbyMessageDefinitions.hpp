@@ -1845,10 +1845,10 @@ struct AcCmdLCPersonalInfo
     struct Course
     {
       uint16_t courseId{};
-      //! Measured in milliseconds
-      uint32_t recordTime{};
       //! Unclear if times raced or times won, needs confirming/fact checking
       uint32_t timesRaced{};
+      //! Measured in milliseconds
+      uint32_t recordTime{};
       std::array<std::byte, 12> member4{};
     };
     // max 255
