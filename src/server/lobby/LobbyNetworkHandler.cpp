@@ -1324,7 +1324,7 @@ void LobbyNetworkHandler::HandleEnterRoom(
           isAuthorized = true;
 
         isRoomFull = room.IsRoomFull();
-        if (isRoomFull)
+        if (not isAuthorized or isRoomFull)
           return;
 
         room.QueuePlayer(characterUid);
