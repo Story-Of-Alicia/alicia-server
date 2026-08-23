@@ -24,6 +24,7 @@
 #include <libserver/util/Util.hpp>
 
 #include <algorithm>
+#include <iostream>
 #include <numeric>
 #include <random>
 #include <ranges>
@@ -314,8 +315,16 @@ const registry::Magic::SlotInfo& MagicSystem::SelectMagicTypeByPosition(
           attackTypes.push_back(type);
           subWeights.push_back(w);
         }
-        std::discrete_distribution<size_t> attackDist(subWeights.begin(), subWeights.end());
-        basicType = attackTypes[attackDist(server::util::GetRandomEngine())];
+        const uint32_t attackSum = std::accumulate(subWeights.begin(), subWeights.end(), 0u);
+        if (attackSum > 0)
+        {
+          std::discrete_distribution<size_t> attackDist(subWeights.begin(), subWeights.end());
+          basicType = attackTypes[attackDist(server::util::GetRandomEngine())];
+        }
+        else
+        {
+          basicType = MagicType::FireBall;
+        }
       }
       else
       {
@@ -346,8 +355,16 @@ const registry::Magic::SlotInfo& MagicSystem::SelectMagicTypeByPosition(
             assistTypes.push_back(type);
             subWeights.push_back(w);
           }
-          std::discrete_distribution<size_t> assistDist(subWeights.begin(), subWeights.end());
-          basicType = assistTypes[assistDist(server::util::GetRandomEngine())];
+          const uint32_t assistSum = std::accumulate(subWeights.begin(), subWeights.end(), 0u);
+          if (assistSum > 0)
+          {
+            std::discrete_distribution<size_t> assistDist(subWeights.begin(), subWeights.end());
+            basicType = assistTypes[assistDist(server::util::GetRandomEngine())];
+          }
+          else
+          {
+            basicType = MagicType::BufSpeed;
+          }
         }
         else
         {
@@ -448,7 +465,7 @@ const registry::Magic::SlotInfo& MagicSystem::RandomMagicItem(
         finalWeight += magicRegistry.GetGroupTeamModifier(groupId, teamIsLeading, opponentsAhead);
       }
       groupIds.push_back(groupId);
-      adjustedWeights.push_back(std::max<uint32_t>(0, finalWeight));
+      adjustedWeights.push_back(finalWeight > 0 ? static_cast<uint32_t>(finalWeight) : 0u);
     }
 
     // If all adjusted weights sum to 0, fallback to raw base weights
@@ -477,8 +494,16 @@ const registry::Magic::SlotInfo& MagicSystem::RandomMagicItem(
             attackTypes.push_back(type);
             subWeights.push_back(w);
           }
-          std::discrete_distribution<size_t> attackDist(subWeights.begin(), subWeights.end());
-          chosenBasicType = attackTypes[attackDist(server::util::GetRandomEngine())];
+          const uint32_t attackSum = std::accumulate(subWeights.begin(), subWeights.end(), 0u);
+          if (attackSum > 0)
+          {
+            std::discrete_distribution<size_t> attackDist(subWeights.begin(), subWeights.end());
+            chosenBasicType = attackTypes[attackDist(server::util::GetRandomEngine())];
+          }
+          else
+          {
+            chosenBasicType = MagicType::FireBall;
+          }
         }
         else
         {
@@ -510,7 +535,7 @@ const registry::Magic::SlotInfo& MagicSystem::RandomMagicItem(
               if (opponentsAhead > 0)
                 finalW += magicRegistry.GetSlotTeamModifier(type, teamIsLeading, opponentsAhead);
               assistTypes.push_back(type);
-              subWeights.push_back(std::max<uint32_t>(0, finalW));
+              subWeights.push_back(finalW > 0 ? static_cast<uint32_t>(finalW) : 0u);
             }
 
             const uint32_t subSum = std::accumulate(subWeights.begin(), subWeights.end(), 0u);
@@ -521,8 +546,16 @@ const registry::Magic::SlotInfo& MagicSystem::RandomMagicItem(
                 subWeights.push_back(baseW);
             }
 
-            std::discrete_distribution<size_t> assistDist(subWeights.begin(), subWeights.end());
-            chosenBasicType = assistTypes[assistDist(server::util::GetRandomEngine())];
+            const uint32_t finalSum = std::accumulate(subWeights.begin(), subWeights.end(), 0u);
+            if (finalSum > 0)
+            {
+              std::discrete_distribution<size_t> assistDist(subWeights.begin(), subWeights.end());
+              chosenBasicType = assistTypes[assistDist(server::util::GetRandomEngine())];
+            }
+            else
+            {
+              chosenBasicType = MagicType::BufSpeed;
+            }
           }
           else
           {
