@@ -87,8 +87,21 @@ void MagicRegistry::Clear()
     weights.clear();
   for (auto& weights : _teamPositionWeights)
     weights.clear();
+  for (auto& weights : _soloGroupWeights)
+    weights.clear();
+  for (auto& weights : _teamGroupWeights)
+    weights.clear();
+  for (auto& weights : _attackGroupWeights)
+    weights.clear();
+  for (auto& weights : _teamAssistanceWeights)
+    weights.clear();
+  _groupTeamModifiers.clear();
+  _slotTeamModifiers.clear();
+  for (auto& conv : _rankingConversion)
+    conv.clear();
   _regenInfo = {};
   _setBonusInfo = {};
+  _config = {};
   _baseCritChanceBp = 500;
 }
 
@@ -196,6 +209,100 @@ void MagicRegistry::ReadConfig(const std::filesystem::path& configPath)
     }
   }
 
+  // Parse groupRatio (Solo)
+  if (const auto groupRatioSection = magicSection["groupRatio"])
+  {
+    for (const auto& entry : groupRatioSection)
+    {
+      const auto groupId = entry["group"].as<uint32_t>();
+      const auto ranks = entry["ranks"].as<std::array<uint32_t, 8>>();
+      for (size_t r = 0; r < 8; ++r)
+        _soloGroupWeights[r].emplace_back(groupId, ranks[r]);
+    }
+  }
+
+  // Parse groupTeamRatio (Team)
+  if (const auto groupTeamRatioSection = magicSection["groupTeamRatio"])
+  {
+    for (const auto& entry : groupTeamRatioSection)
+    {
+      const auto groupId = entry["group"].as<uint32_t>();
+      const auto ranks = entry["ranks"].as<std::array<uint32_t, 8>>();
+      for (size_t r = 0; r < 8; ++r)
+        _teamGroupWeights[r].emplace_back(groupId, ranks[r]);
+    }
+  }
+
+  // Parse groupAttackRatio (Attacks)
+  if (const auto groupAttackRatioSection = magicSection["groupAttackRatio"])
+  {
+    for (const auto& entry : groupAttackRatioSection)
+    {
+      const auto basicType = entry["basicType"].as<uint32_t>();
+      const auto ranks = entry["ranks"].as<std::array<uint32_t, 8>>();
+      for (size_t r = 0; r < 8; ++r)
+        _attackGroupWeights[r].emplace_back(basicType, ranks[r]);
+    }
+  }
+
+  // Parse groupTeamAssistanceRatio (Team Assistance)
+  if (const auto groupTeamAssistanceRatioSection = magicSection["groupTeamAssistanceRatio"])
+  {
+    for (const auto& entry : groupTeamAssistanceRatioSection)
+    {
+      const auto basicType = entry["basicType"].as<uint32_t>();
+      const auto ranks = entry["ranks"].as<std::array<uint32_t, 8>>();
+      for (size_t r = 0; r < 8; ++r)
+        _teamAssistanceWeights[r].emplace_back(basicType, ranks[r]);
+    }
+  }
+
+  // Parse groupTeamModifier
+  if (const auto groupTeamModifierSection = magicSection["groupTeamModifier"])
+  {
+    for (const auto& entry : groupTeamModifierSection)
+    {
+      Magic::TeamModifier mod{};
+      mod.targetId = entry["group"].as<uint32_t>();
+      mod.lead = entry["lead"].as<uint32_t>();
+      mod.aheadOffsets = entry["aheadOffsets"].as<std::array<int32_t, 4>>();
+      _groupTeamModifiers.push_back(mod);
+    }
+  }
+
+  // Parse slotTeamModifier
+  if (const auto slotTeamModifierSection = magicSection["slotTeamModifier"])
+  {
+    for (const auto& entry : slotTeamModifierSection)
+    {
+      Magic::TeamModifier mod{};
+      mod.targetId = entry["basicType"].as<uint32_t>();
+      mod.lead = entry["lead"].as<uint32_t>();
+      mod.aheadOffsets = entry["aheadOffsets"].as<std::array<int32_t, 4>>();
+      _slotTeamModifiers.push_back(mod);
+    }
+  }
+
+  // Parse rankingConversion
+  if (const auto rankingConversionSection = magicSection["rankingConversion"])
+  {
+    for (const auto& entry : rankingConversionSection)
+    {
+      const auto playerCount = entry["playerCount"].as<size_t>();
+      if (playerCount >= 1 && playerCount <= 8)
+      {
+        _rankingConversion[playerCount - 1] = entry["canonicalRanks"].as<std::vector<uint32_t>>();
+      }
+    }
+  }
+
+  // Parse general config
+  if (const auto configSection = magicSection["config"])
+  {
+    _config.lastSpurtCritBonusBp = configSection["lastSpurtCritBonusBp"].as<uint32_t>(_config.lastSpurtCritBonusBp);
+    _config.lastSpurtProgressThreshold = configSection["lastSpurtProgressThreshold"].as<float>(_config.lastSpurtProgressThreshold);
+  }
+
   spdlog::info(
     "Magic registry loaded {} slot(s) ({} solo, {} team)",
     _slotInfo.size(),
@@ -265,6 +372,77 @@ const std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>& MagicRegistry:
 const std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>& MagicRegistry::GetTeamPositionWeights(uint32_t position) const
 {
   return _teamPositionWeights.at(position);
+}
+
+uint32_t MagicRegistry::GetCanonicalRank(size_t totalRacers, size_t racerRank) const
+{
+  if (totalRacers == 0 || racerRank == 0)
+    return 1;
+
+  const size_t pIdx = std::clamp(totalRacers, size_t{1}, size_t{8}) - 1;
+  const auto& table = _rankingConversion[pIdx];
+  if (table.empty())
+    return std::clamp<uint32_t>(static_cast<uint32_t>(racerRank), 1, 8);
+
+  const size_t rIdx = std::clamp(racerRank, size_t{1}, table.size()) - 1;
+  return table[rIdx];
+}
+
+const std::vector<std::pair<uint32_t, uint32_t>>& MagicRegistry::GetSoloGroupWeights(uint32_t canonicalRank) const
+{
+  const size_t idx = std::clamp<uint32_t>(canonicalRank, 1, 8) - 1;
+  return _soloGroupWeights[idx];
+}
+
+const std::vector<std::pair<uint32_t, uint32_t>>& MagicRegistry::GetTeamGroupWeights(uint32_t canonicalRank) const
+{
+  const size_t idx = std::clamp<uint32_t>(canonicalRank, 1, 8) - 1;
+  return _teamGroupWeights[idx];
+}
+
+const std::vector<std::pair<uint32_t, uint32_t>>& MagicRegistry::GetAttackGroupWeights(uint32_t canonicalRank) const
+{
+  const size_t idx = std::clamp<uint32_t>(canonicalRank, 1, 8) - 1;
+  return _attackGroupWeights[idx];
+}
+
+const std::vector<std::pair<uint32_t, uint32_t>>& MagicRegistry::GetTeamAssistanceWeights(uint32_t canonicalRank) const
+{
+  const size_t idx = std::clamp<uint32_t>(canonicalRank, 1, 8) - 1;
+  return _teamAssistanceWeights[idx];
+}
+
+int32_t MagicRegistry::GetGroupTeamModifier(uint32_t groupId, bool isLead, uint32_t aheadCount) const
+{
+  const uint32_t leadVal = isLead ? 1 : 0;
+  for (const auto& mod : _groupTeamModifiers)
+  {
+    if (mod.targetId == groupId && mod.lead == leadVal)
+    {
+      const size_t aheadIdx = std::clamp<uint32_t>(aheadCount, 1, 4) - 1;
+      return mod.aheadOffsets[aheadIdx];
+    }
+  }
+  return 0;
+}
+
+int32_t MagicRegistry::GetSlotTeamModifier(uint32_t basicType, bool isLead, uint32_t aheadCount) const
+{
+  const uint32_t leadVal = isLead ? 1 : 0;
+  for (const auto& mod : _slotTeamModifiers)
+  {
+    if (mod.targetId == basicType && mod.lead == leadVal)
+    {
+      const size_t aheadIdx = std::clamp<uint32_t>(aheadCount, 1, 4) - 1;
+      return mod.aheadOffsets[aheadIdx];
+    }
+  }
+  return 0;
+}
+
+const Magic::Config& MagicRegistry::GetConfig() const
+{
+  return _config;
 }
 
 } // namespace server::registry

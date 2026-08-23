@@ -24,6 +24,7 @@
 #include <libserver/util/Util.hpp>
 
 #include <algorithm>
+#include <numeric>
 #include <random>
 #include <ranges>
 
@@ -263,25 +264,114 @@ const registry::Magic::SlotInfo& MagicSystem::SelectMagicTypeByPosition(
   uint32_t position,
   bool isTeam)
 {
-  // Validate position
+  // Validate position (0..7)
   if (position > 7)
     throw std::out_of_range("Position must be between 0 and 7");
 
-  // Get the weights for the specified position
-  const auto& positionSlotInfoWeights = isTeam ? magicRegistry.GetTeamPositionWeights(position) : magicRegistry.GetSoloPositionWeights(position);
+  const uint32_t canonicalRank = position + 1;
+  const auto& groupWeights = isTeam
+    ? magicRegistry.GetTeamGroupWeights(canonicalRank)
+    : magicRegistry.GetSoloGroupWeights(canonicalRank);
 
-  // Keep reference to weights only for the discrete distribution
-  const auto& positionWeights = positionSlotInfoWeights | std::views::keys;
+  if (groupWeights.empty())
+  {
+    // Fallback to legacy position weights if group weights not configured
+    const auto& legacyWeights = isTeam
+      ? magicRegistry.GetTeamPositionWeights(position)
+      : magicRegistry.GetSoloPositionWeights(position);
 
-  // Create a discrete distribution based on the weights
-  std::discrete_distribution<uint32_t> dist(
-    positionWeights.cbegin(),
-    positionWeights.cend());
+    const auto& weights = legacyWeights | std::views::keys;
+    std::discrete_distribution<uint32_t> dist(weights.cbegin(), weights.cend());
+    return legacyWeights[dist(server::util::GetRandomEngine())].second;
+  }
 
-  // Select a random index based on the distribution
-  // and map the discrete index to the corresponding magic item
-  const uint32_t selectedIndex = dist(server::util::GetRandomEngine());
-  return positionSlotInfoWeights[selectedIndex].second;
+  std::vector<uint32_t> groupIds;
+  std::vector<uint32_t> weights;
+  groupIds.reserve(groupWeights.size());
+  weights.reserve(groupWeights.size());
+
+  for (const auto& [groupId, weight] : groupWeights)
+  {
+    groupIds.push_back(groupId);
+    weights.push_back(weight);
+  }
+
+  std::discrete_distribution<size_t> dist(weights.begin(), weights.end());
+  const uint32_t selectedGroup = groupIds[dist(server::util::GetRandomEngine())];
+
+  uint32_t basicType = MagicType::WaterShield;
+  switch (selectedGroup)
+  {
+    case 1: // Attack Group
+    {
+      const auto& attackWeights = magicRegistry.GetAttackGroupWeights(canonicalRank);
+      if (not attackWeights.empty())
+      {
+        std::vector<uint32_t> attackTypes;
+        std::vector<uint32_t> subWeights;
+        for (const auto& [type, w] : attackWeights)
+        {
+          attackTypes.push_back(type);
+          subWeights.push_back(w);
+        }
+        std::discrete_distribution<size_t> attackDist(subWeights.begin(), subWeights.end());
+        basicType = attackTypes[attackDist(server::util::GetRandomEngine())];
+      }
+      else
+      {
+        basicType = MagicType::FireBall;
+      }
+      break;
+    }
+    case 2: // Defense
+      basicType = MagicType::WaterShield;
+      break;
+    case 3: // Booster
+      basicType = MagicType::Booster;
+      break;
+    case 4: // Rear hazard
+      basicType = MagicType::IceWall;
+      break;
+    case 5: // Team Assistance
+    {
+      if (isTeam)
+      {
+        const auto& assistWeights = magicRegistry.GetTeamAssistanceWeights(canonicalRank);
+        if (not assistWeights.empty())
+        {
+          std::vector<uint32_t> assistTypes;
+          std::vector<uint32_t> subWeights;
+          for (const auto& [type, w] : assistWeights)
+          {
+            assistTypes.push_back(type);
+            subWeights.push_back(w);
+          }
+          std::discrete_distribution<size_t> assistDist(subWeights.begin(), subWeights.end());
+          basicType = assistTypes[assistDist(server::util::GetRandomEngine())];
+        }
+        else
+        {
+          basicType = MagicType::BufSpeed;
+        }
+      }
+      else
+      {
+        basicType = MagicType::WaterShield;
+      }
+      break;
+    }
+    case 6: // HotRodding
+      basicType = MagicType::HotRodding;
+      break;
+    case 7: // Team Acceleration
+      basicType = isTeam ? MagicType::BufSpeed : MagicType::Booster;
+      break;
+    default:
+      basicType = MagicType::WaterShield;
+      break;
+  }
+
+  return magicRegistry.GetSlotInfo(basicType);
 }
 
 const registry::Magic::SlotInfo& MagicSystem::RandomMagicItem(
@@ -290,42 +380,185 @@ const registry::Magic::SlotInfo& MagicSystem::RandomMagicItem(
   data::Uid racerUid)
 {
   const auto& racer = tracker.GetRacer(racerUid);
+  const bool isTeam =
+    racer.team == protocol::TeamColor::Red or
+    racer.team == protocol::TeamColor::Blue;
 
-  // Determine the racer's position (0 = 1st place)
-  uint32_t racerPosition = 0;
+  // Determine the racer's actual rank (1-indexed: 1 = 1st place)
+  // and count how many opponents are ahead for team modifiers.
+  uint32_t racerRank = 1;
+  uint32_t opponentsAhead = 0;
+  bool teamIsLeading = true;
+  float bestProgress = racer.raceProgress;
+  protocol::TeamColor leaderTeam = racer.team;
+
   const auto& allRacers = tracker.GetRacers();
-  size_t totalRacers = allRacers.size();
+  const size_t totalRacers = allRacers.size();
 
   for (const auto& [uid, instanceRacer] : allRacers)
   {
+    if (instanceRacer.raceProgress > bestProgress)
+    {
+      bestProgress = instanceRacer.raceProgress;
+      leaderTeam = instanceRacer.team;
+    }
+
     if (uid == racerUid)
       continue;
 
-    // TODO: do we ignore disconnected racers too?
-
-    // Check if instance racer is ahead of the racer requesting item
     if (instanceRacer.raceProgress > racer.raceProgress)
-      racerPosition++;
+    {
+      racerRank++;
+      if (isTeam && instanceRacer.team != racer.team)
+      {
+        opponentsAhead++;
+      }
+    }
   }
 
-  // Map the actual position to one of the 8 weight slots [0, 7] via linear interpolation.
-  // This ensures last place in a small race gets "last-place" item weights.
-  uint32_t effectivePosition = racerPosition;
-  if (totalRacers > 1)
+  if (isTeam)
   {
-    effectivePosition = static_cast<uint32_t>(
-      static_cast<float>(racerPosition) * 7.0f /
-      static_cast<float>(totalRacers - 1));
+    teamIsLeading = (leaderTeam == racer.team);
   }
 
-  // Clamp effective position to [0, 7] for safety
-  effectivePosition = std::clamp(effectivePosition, 0u, 7u);
+  // Canonical rank (1..8) from RankingConversionInfo
+  const uint32_t canonicalRank = magicRegistry.GetCanonicalRank(
+    totalRacers,
+    racerRank);
 
-  const registry::Magic::SlotInfo& magicSlotInfo = SelectMagicTypeByPosition(
-    magicRegistry,
-    effectivePosition,
-    racer.team == protocol::TeamColor::Red or racer.team == protocol::TeamColor::Blue);
+  // Fetch base group distribution
+  const auto& baseGroupWeights = isTeam
+    ? magicRegistry.GetTeamGroupWeights(canonicalRank)
+    : magicRegistry.GetSoloGroupWeights(canonicalRank);
 
+  uint32_t chosenBasicType = MagicType::WaterShield;
+
+  if (not baseGroupWeights.empty())
+  {
+    std::vector<uint32_t> groupIds;
+    std::vector<uint32_t> adjustedWeights;
+    groupIds.reserve(baseGroupWeights.size());
+    adjustedWeights.reserve(baseGroupWeights.size());
+
+    for (const auto& [groupId, baseWeight] : baseGroupWeights)
+    {
+      int32_t finalWeight = static_cast<int32_t>(baseWeight);
+      if (isTeam && opponentsAhead > 0)
+      {
+        finalWeight += magicRegistry.GetGroupTeamModifier(groupId, teamIsLeading, opponentsAhead);
+      }
+      groupIds.push_back(groupId);
+      adjustedWeights.push_back(std::max<uint32_t>(0, finalWeight));
+    }
+
+    // If all adjusted weights sum to 0, fallback to raw base weights
+    const uint32_t weightSum = std::accumulate(adjustedWeights.begin(), adjustedWeights.end(), 0u);
+    if (weightSum == 0)
+    {
+      adjustedWeights.clear();
+      for (const auto& [groupId, baseWeight] : baseGroupWeights)
+        adjustedWeights.push_back(baseWeight);
+    }
+
+    std::discrete_distribution<size_t> groupDist(adjustedWeights.begin(), adjustedWeights.end());
+    const uint32_t selectedGroup = groupIds[groupDist(server::util::GetRandomEngine())];
+
+    switch (selectedGroup)
+    {
+      case 1: // Attacks
+      {
+        const auto& attackWeights = magicRegistry.GetAttackGroupWeights(canonicalRank);
+        if (not attackWeights.empty())
+        {
+          std::vector<uint32_t> attackTypes;
+          std::vector<uint32_t> subWeights;
+          for (const auto& [type, w] : attackWeights)
+          {
+            attackTypes.push_back(type);
+            subWeights.push_back(w);
+          }
+          std::discrete_distribution<size_t> attackDist(subWeights.begin(), subWeights.end());
+          chosenBasicType = attackTypes[attackDist(server::util::GetRandomEngine())];
+        }
+        else
+        {
+          chosenBasicType = MagicType::FireBall;
+        }
+        break;
+      }
+      case 2: // Defense
+        chosenBasicType = MagicType::WaterShield;
+        break;
+      case 3: // Speed / Booster
+        chosenBasicType = MagicType::Booster;
+        break;
+      case 4: // Rear Hazard
+        chosenBasicType = MagicType::IceWall;
+        break;
+      case 5: // Team Assistance / Buffs
+      {
+        if (isTeam)
+        {
+          const auto& assistWeights = magicRegistry.GetTeamAssistanceWeights(canonicalRank);
+          if (not assistWeights.empty())
+          {
+            std::vector<uint32_t> assistTypes;
+            std::vector<uint32_t> subWeights;
+            for (const auto& [type, baseW] : assistWeights)
+            {
+              int32_t finalW = static_cast<int32_t>(baseW);
+              if (opponentsAhead > 0)
+                finalW += magicRegistry.GetSlotTeamModifier(type, teamIsLeading, opponentsAhead);
+              assistTypes.push_back(type);
+              subWeights.push_back(std::max<uint32_t>(0, finalW));
+            }
+
+            const uint32_t subSum = std::accumulate(subWeights.begin(), subWeights.end(), 0u);
+            if (subSum == 0)
+            {
+              subWeights.clear();
+              for (const auto& [type, baseW] : assistWeights)
+                subWeights.push_back(baseW);
+            }
+
+            std::discrete_distribution<size_t> assistDist(subWeights.begin(), subWeights.end());
+            chosenBasicType = assistTypes[assistDist(server::util::GetRandomEngine())];
+          }
+          else
+          {
+            chosenBasicType = MagicType::BufSpeed;
+          }
+        }
+        else
+        {
+          chosenBasicType = MagicType::WaterShield;
+        }
+        break;
+      }
+      case 6: // HotRodding
+        chosenBasicType = MagicType::HotRodding;
+        break;
+      case 7: // Team Acceleration / BufSpeed
+        chosenBasicType = isTeam ? MagicType::BufSpeed : MagicType::Booster;
+        break;
+      default:
+        chosenBasicType = MagicType::WaterShield;
+        break;
+    }
+  }
+  else
+  {
+    // Fallback if group tables were empty
+    const registry::Magic::SlotInfo& fallbackSlot = SelectMagicTypeByPosition(
+      magicRegistry,
+      std::clamp<uint32_t>(canonicalRank - 1, 0u, 7u),
+      isTeam);
+    chosenBasicType = fallbackSlot.basicType;
+  }
+
+  const registry::Magic::SlotInfo& magicSlotInfo = magicRegistry.GetSlotInfo(chosenBasicType);
+
+  // Roll critical upgrade
   uint32_t critChanceBp = magicRegistry.GetBaseCritChanceBp();
   if (magicSlotInfo.criticalType != 0)
   {
@@ -338,6 +571,10 @@ const registry::Magic::SlotInfo& MagicSystem::RandomMagicItem(
     // Mount-equipment set bonus: increased critical spell chance.
     if (racer.activeSetEffect == registry::SetEquipEffect::CriticalSpellChance)
       critChanceBp += magicRegistry.GetSetBonusInfo().critChanceBonusBp;
+
+    // LastSpurt bonus (progress threshold from config)
+    if (racer.raceProgress >= magicRegistry.GetConfig().lastSpurtProgressThreshold)
+      critChanceBp += magicRegistry.GetConfig().lastSpurtCritBonusBp;
   }
 
   if (std::uniform_int_distribution<int>(0, 9999)(server::util::GetRandomEngine()) < static_cast<int>(critChanceBp))
@@ -347,3 +584,4 @@ const registry::Magic::SlotInfo& MagicSystem::RandomMagicItem(
 }
 
 } // namespace server::race
+

@@ -807,3 +807,112 @@ magic:
       stat: ambition
       critStepBp: 250
       targetDurationReductionBp: 5
+
+  # Group Distribution Ratios (MagicGroupRatio) for Solo mode by rank (1..8)
+  # Groups: 1=Attack, 2=WaterShield, 3=Booster, 4=IceWall, 5=TeamAssist, 6=HotRodding, 7=BufSpeed
+  groupRatio:
+    - group: 1
+      ranks: [0, 45, 60, 65, 65, 60, 44, 11]
+    - group: 2
+      ranks: [60, 15, 0, 0, 0, 0, 0, 0]
+    - group: 3
+      ranks: [5, 40, 30, 25, 40, 35, 44, 82]
+    - group: 4
+      ranks: [35, 0, 0, 0, 0, 0, 0, 0]
+    - group: 5
+      ranks: [0, 0, 5, 3, 3, 3, 0, 0]
+    - group: 6
+      ranks: [0, 0, 0, 0, 0, 0, 4, 11]
+    - group: 7
+      ranks: [0, 0, 0, 0, 0, 0, 22, 22]
+
+  # Group Distribution Ratios (MagicGroupTeamRatio) for Team mode by rank (1..8)
+  groupTeamRatio:
+    - group: 1
+      ranks: [0, 45, 50, 65, 65, 60, 44, 11]
+    - group: 2
+      ranks: [60, 15, 0, 0, 0, 0, 0, 0]
+    - group: 3
+      ranks: [5, 40, 30, 25, 40, 35, 44, 82]
+    - group: 4
+      ranks: [35, 0, 0, 0, 0, 0, 0, 0]
+    - group: 5
+      ranks: [0, 0, 5, 3, 3, 3, 0, 0]
+    - group: 6
+      ranks: [0, 0, 0, 0, 0, 0, 4, 11]
+    - group: 7
+      ranks: [0, 0, 0, 0, 0, 0, 22, 22]
+
+  # Sub-distribution within Group 1 (Attacks) by rank (1..8) (MagicGroupAttackRatio)
+  groupAttackRatio:
+    - basicType: 2   # FireBall
+      ranks: [0, 15, 15, 10, 10, 25, 5, 10]
+    - basicType: 14  # DarkFire
+      ranks: [0, 20, 17, 10, 10, 15, 10, 10]
+    - basicType: 16  # Summon
+      ranks: [0, 5, 15, 15, 15, 10, 10, 5]
+    - basicType: 12  # JumpStun
+      ranks: [0, 0, 0, 0, 5, 5, 0, 0]
+
+  # Sub-distribution within Group 5 (Team Assistance) by rank (1..8) (MagicGroupTeamAssistanceRatio)
+  groupTeamAssistanceRatio:
+    - basicType: 20  # BufPower
+      ranks: [0, 0, 0, 0, 0, 0, 20, 20]
+    - basicType: 22  # BufGauge
+      ranks: [0, 0, 0, 0, 0, 0, 0, 0]
+    - basicType: 24  # BufSpeed
+      ranks: [0, 0, 0, 0, 0, 0, 80, 80]
+
+  # Team Mode Group Modifiers (MagicGroupTeamModifier)
+  # Ahead count represents how many opponents are ahead (1..4)
+  groupTeamModifier:
+    - group: 1
+      lead: 0
+      aheadOffsets: [10, 10, 10, 10]
+    - group: 1
+      lead: 1
+      aheadOffsets: [-10, -10, -10, -10]
+    - group: 2
+      lead: 1
+      aheadOffsets: [10, 5, 0, 0]
+    - group: 5
+      lead: 1
+      aheadOffsets: [-100, -100, -100, -100]
+    - group: 7
+      lead: 1
+      aheadOffsets: [-10, -10, -20, -20]
+
+  # Team Mode Slot Modifiers (MagicSlotTeamModifier)
+  slotTeamModifier:
+    - basicType: 24  # BufSpeed
+      lead: 0
+      aheadOffsets: [10, 20, 30, 40]
+    - basicType: 20  # BufPower
+      lead: 0
+      aheadOffsets: [10, 20, 30, 40]
+
+  # Ranking Conversion Table (RankingConversionInfo)
+  # Maps actual placement in a race of N players to canonical rank (1..8)
+  rankingConversion:
+    - playerCount: 1
+      canonicalRanks: [1]
+    - playerCount: 2
+      canonicalRanks: [1, 2]
+    - playerCount: 3
+      canonicalRanks: [1, 2, 8]
+    - playerCount: 4
+      canonicalRanks: [1, 2, 4, 8]
+    - playerCount: 5
+      canonicalRanks: [1, 2, 4, 5, 8]
+    - playerCount: 6
+      canonicalRanks: [1, 2, 4, 5, 7, 8]
+    - playerCount: 7
+      canonicalRanks: [1, 2, 3, 4, 5, 7, 8]
+    - playerCount: 8
+      canonicalRanks: [1, 2, 3, 4, 5, 6, 7, 8]
+
+  # Client-matching MagicConfig settings
+  config:
+    lastSpurtCritBonusBp: 1000   # +10% crit bonus during LastSpurt
+    lastSpurtProgressThreshold: 0.85 # Race progress >= 85% triggers LastSpurt bonus
+
