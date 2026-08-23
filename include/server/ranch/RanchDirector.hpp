@@ -134,7 +134,6 @@ private:
     //! Unique ID of the owner of the ranch the client is visiting.
     data::Uid visitingRancherUid{data::InvalidUid};
 
-    uint8_t busyState{0};
     //! Whether there's a pending breeding failure card waiting to be claimed
     bool hasPendingFailureCard{false};
     //! Current breeding failure card type.

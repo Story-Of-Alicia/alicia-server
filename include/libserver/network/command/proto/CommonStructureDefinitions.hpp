@@ -559,7 +559,7 @@ struct RanchCharacter
 
   //! Unique ranch object identifier.
   uint16_t oid{};
-  uint8_t isBusy{0};
+  uint8_t busyState{0};
   uint8_t unk3{0};
 
   Rent rent{};

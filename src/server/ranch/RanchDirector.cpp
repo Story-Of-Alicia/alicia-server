@@ -1430,10 +1430,11 @@ bool RanchDirector::HandleEnterRanch(
   }
 
   // Add the ranch characters.
-  for (auto [characterUid, characterOid] : ranchInstance.tracker.GetCharacters())
+  for (const auto& [characterUid, trackedCharacter] : ranchInstance.tracker.GetCharacters())
   {
     auto& protocolCharacter = response.characters.emplace_back();
-    protocolCharacter.oid = characterOid;
+    protocolCharacter.oid = trackedCharacter.oid;
+    protocolCharacter.busyState = trackedCharacter.busyState;
 
     auto characterRecord = GetServerInstance().GetDataDirector().GetCharacter(characterUid);
     if (not characterRecord)
@@ -1765,8 +1766,8 @@ void RanchDirector::HandleSnapshot(
   const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
 
   protocol::RanchCommandRanchSnapshotNotify notify{
-    .ranchIndex = ranchInstance.tracker.GetCharacterOid(
-      clientContext.characterUid),
+    .ranchIndex = ranchInstance.tracker.GetCharacter(
+      clientContext.characterUid).oid,
     .type = command.type,
   };
 
@@ -2805,14 +2806,13 @@ void RanchDirector::HandleUpdateBusyState(
   ClientId clientId,
   const protocol::RanchCommandUpdateBusyState& command)
 {
-  auto& clientContext = GetClientContext(clientId);
+  const auto& clientContext = GetClientContext(clientId);
   auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+  auto& ranchCharacter = ranchInstance.tracker.GetCharacter(clientContext.characterUid);
 
-  protocol::RanchCommandUpdateBusyStateNotify response {
+  const protocol::RanchCommandUpdateBusyStateNotify response {
     .characterUid = clientContext.characterUid,
-    .busyState = command.busyState};
-
-  clientContext.busyState = command.busyState;
+    .busyState = ranchCharacter.busyState = command.busyState};
 
   for (auto ranchClientId : ranchInstance.clients)
   {

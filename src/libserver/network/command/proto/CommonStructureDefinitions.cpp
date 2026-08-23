@@ -656,7 +656,7 @@ void RanchCharacter::Write(const RanchCharacter& ranchCharacter, SinkStream& str
     .Write(struct5.val6);
 
   stream.Write(ranchCharacter.oid)
-    .Write(ranchCharacter.isBusy)
+    .Write(ranchCharacter.busyState)
     .Write(ranchCharacter.unk3);
 
   // Rent
@@ -692,7 +692,7 @@ void RanchCharacter::Read(RanchCharacter& value, SourceStream& stream)
   stream.Read(value.guild);
 
   stream.Read(value.oid)
-    .Read(value.isBusy)
+    .Read(value.busyState)
     .Read(value.unk3);
 
   stream.Read(value.rent)
