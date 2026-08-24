@@ -291,6 +291,7 @@ void ServerInstance::LoadConfigurations()
   _systemContentRegistry.ReadConfig(_resourceDirectory / "config/server/system_content.yaml");
 
   // Read game configurations
+  _aiRiderRegistry.ReadConfig(_resourceDirectory / "config/game/aipresets.yaml");
   _breedingRegistry.ReadConfig(_resourceDirectory / "config/game/breeding.yaml");
   _characterRegistry.ReadConfig(_resourceDirectory / "config/game/character.yaml");
   _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
@@ -381,6 +382,11 @@ registry::QuestRegistry& ServerInstance::GetQuestRegistry()
 registry::MagicRegistry& ServerInstance::GetMagicRegistry()
 {
   return _magicRegistry;
+}
+
+registry::AiRiderRegistry& ServerInstance::GetAiRiderRegistry()
+{
+  return _aiRiderRegistry;
 }
 
 registry::SystemContentRegistry& ServerInstance::GetSystemContentRegistry()
