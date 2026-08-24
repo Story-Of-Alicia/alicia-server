@@ -35,8 +35,7 @@ struct AiRiderPreset
 {
   uint32_t id{};
   std::string name;
-  //! AIParam.Type — determines AI racing behavior on the client.
-  uint32_t aiType{5};
+  uint32_t aiType{};
 };
 
 class AiRiderRegistry : public Registry
@@ -48,11 +47,10 @@ public:
   void ReadConfig(const std::filesystem::path& configPath) override;
   void Clear() override;
 
-  //! Returns the preset pool for the given difficulty level, or nullptr if none.
-  [[nodiscard]] const std::vector<AiRiderPreset>* GetPresetsForDifficulty(uint32_t difficulty) const;
+  //! Returns the preset pool for the given difficulty level.
+  [[nodiscard]] const std::vector<AiRiderPreset>& GetPresetsForDifficulty(uint8_t difficulty) const;
 
 private:
-  //! Presets keyed by difficultyLevel (1=easy, 2=normal, 3=hard, 4=expert).
   std::unordered_map<uint32_t, std::vector<AiRiderPreset>> _presets;
 };
 
