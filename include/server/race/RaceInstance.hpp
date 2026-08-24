@@ -112,6 +112,8 @@ private:
 public:
   // todo: this needs to be fixed
   void PickRandomItemFromDeck(tracker::RaceTracker::ItemDeck& deck);
+  void PrepareBots(uint8_t difficulty);
+  bool IsTraining() const;
 
 private:
   void PrepareItemDecks();

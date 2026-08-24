@@ -985,4 +985,59 @@ void RaceInstance::PrepareItemDecks()
   }
 }
 
+void RaceInstance::PrepareBots(uint8_t difficulty)
+{
+  static constexpr size_t MaxBotsPerRace = 7;
+  auto botPresets = _raceNetworkHandler
+    .GetServerInstance()
+    .GetAiRiderRegistry()
+    .GetPresetsForDifficulty(difficulty);
+
+  std::ranges::sort(
+    botPresets,
+    [](const auto& a, const auto& b)
+    {
+      return a.aiType > b.aiType;
+    });
+
+  auto& gen = server::util::GetRandomEngine();
+  std::uniform_int_distribution<uint32_t> uidDist(
+    1,
+    std::numeric_limits<uint32_t>::max() - 1);
+
+  const size_t count = std::min(botPresets.size(), MaxBotsPerRace);
+
+  // TODO: check if room needs to spawn bots (time attack etc)
+
+  for (size_t i = 0; i < count; ++i)
+  {
+    const auto& preset = botPresets[i];
+    data::Uid botUid{};
+    do
+    {
+      botUid = static_cast<data::Uid>(uidDist(gen));
+    } while (_tracker.IsRacer(botUid));
+
+    auto& racer = _tracker.AddRacer(botUid);
+    racer.state = tracker::RaceTracker::Racer::State::Loading;
+    racer.team = tracker::RaceTracker::Racer::Team::Solo;
+    racer.botConfig = tracker::RaceTracker::Racer::BotConfig{
+      .presetId = preset.id,
+      .aiDifficulty = difficulty,
+      .aiType = preset.aiType};
+  }
+}
+
+bool RaceInstance::IsTraining() const
+{
+  // Check if race is a single speed/magic race
+  const auto& parameters = this->GetParameters();
+  const protocol::GameMode gameMode = parameters.gameMode;
+  const protocol::TeamMode teamMode = parameters.teamMode;
+
+  return
+    teamMode == protocol::TeamMode::Single and
+    (gameMode == protocol::GameMode::Speed or gameMode == protocol::GameMode::Magic);
+}
+
 } // namespace server

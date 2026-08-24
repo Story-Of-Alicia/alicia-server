@@ -28,6 +28,7 @@ namespace server::registry
 void AiRiderRegistry::Clear()
 {
   _presets.clear();
+  _presetsById.clear();
 }
 
 void AiRiderRegistry::ReadConfig(const std::filesystem::path& configPath)
@@ -44,11 +45,15 @@ void AiRiderRegistry::ReadConfig(const std::filesystem::path& configPath)
     const uint8_t diff = entry["difficultyLevel"].as<uint8_t>();
     if (diff == 0)
       continue;
-    _presets[diff].push_back(AiRiderPreset{
+
+    AiRiderPreset preset{
       .id = entry["id"].as<uint32_t>(),
       .name = entry["name"].as<std::string>(),
       .aiType = entry["aiType"].as<uint8_t>(),
-    });
+    };
+
+    _presetsById.emplace(preset.id, preset);
+    _presets[diff].push_back(std::move(preset));
   }
 
   uint32_t total = 0;
@@ -64,6 +69,15 @@ const std::vector<AiRiderPreset>& AiRiderRegistry::GetPresetsForDifficulty(
   if (it == _presets.cend())
     throw std::runtime_error(
       std::format("AI presets not found for difficulty: {}", difficulty));
+  return it->second;
+}
+
+const AiRiderPreset& AiRiderRegistry::GetPresetById(uint32_t presetId) const
+{
+  const auto it = _presetsById.find(presetId);
+  if (it == _presetsById.cend())
+    throw std::runtime_error(
+      std::format("AI preset not found for preset ID: {}", presetId));
   return it->second;
 }
 

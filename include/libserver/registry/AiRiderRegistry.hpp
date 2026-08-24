@@ -50,8 +50,12 @@ public:
   //! Returns the preset pool for the given difficulty level.
   [[nodiscard]] const std::vector<AiRiderPreset>& GetPresetsForDifficulty(uint8_t difficulty) const;
 
+  //! Returns the preset info for the given preset ID.
+  [[nodiscard]] const AiRiderPreset& GetPresetById(uint32_t presetId) const;
+
 private:
-  std::unordered_map<uint32_t, std::vector<AiRiderPreset>> _presets;
+  std::unordered_map<uint8_t, std::vector<AiRiderPreset>> _presets;
+  std::unordered_map<uint32_t, AiRiderPreset> _presetsById;
 };
 
 } // namespace server::registry

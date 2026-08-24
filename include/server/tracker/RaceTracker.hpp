@@ -136,6 +136,16 @@ public:
       uint16_t effectInstanceId;
     };
     std::optional<MagicTargetInfo> pendingMagicTarget{};
+
+    struct BotConfig
+    {
+      uint32_t presetId{};
+      uint32_t aiDifficulty{};
+      uint32_t aiType{};
+    };
+    std::optional<BotConfig> botConfig{};
+
+    [[nodiscard]] bool IsBot() const noexcept { return botConfig.has_value(); }
   };
 
   //! An item deck.

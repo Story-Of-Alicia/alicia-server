@@ -940,7 +940,7 @@ void RaceNetworkHandler::HandleChangeRoomOptions(
   // Change the room options.
   _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid,
-    [&options, &command](Room& room)
+    [this, &options, &command, clientContext](Room& room)
     {
       auto& roomDetails = room.GetRoomDetails();
 
@@ -979,7 +979,93 @@ void RaceNetworkHandler::HandleChangeRoomOptions(
       }
       if (options.test(5))
       {
-        roomDetails.npcDifficulty = command.npcDifficulty;
+        static constexpr uint8_t MinDifficulty = 1;
+        static constexpr uint8_t MaxDifficulty = 4;
+        roomDetails.npcDifficulty = std::clamp(
+          command.npcDifficulty,
+          MinDifficulty,
+          MaxDifficulty);
+
+        std::scoped_lock lock(_raceInstancesMutex);
+        auto& raceInstance = GetRaceInstance(clientContext, false);
+
+        // TODO: room must be in the waiting state
+
+        auto& tracker = raceInstance.GetTracker();
+
+        // Remove existing bots
+        std::erase_if(
+          tracker.GetRacers(),
+          [this, &room](const auto& pair)
+          {
+            const auto& [botUid, racer] = pair;
+            if (not racer.IsBot())
+              return false;
+
+            const protocol::AcCmdCRLeaveRoomNotify leaveNotify{
+              .characterId = botUid};
+            for (const auto& player : room.GetPlayers() | std::views::values)
+            {
+              _commandServer.QueueCommand<decltype(leaveNotify)>(
+                player.GetClientId(),
+                [leaveNotify]()
+                {
+                  return leaveNotify;
+                });
+            }
+
+            return true;
+          });
+
+        // Validate gamemode
+        switch (roomDetails.gameMode)
+        {
+          case Room::GameMode::Speed:
+          case Room::GameMode::Magic:
+            break;
+          default:
+            return;
+        }
+
+        // Validate teammode
+        if (roomDetails.teamMode != Room::TeamMode::Single)
+          return;
+
+        raceInstance.PrepareBots(roomDetails.npcDifficulty);
+
+        for (const auto& [botUid, racer] : raceInstance.GetTracker().GetRacers())
+        {
+          if (not racer.IsBot())
+            continue;
+
+          const auto& preset = GetServerInstance()
+            .GetAiRiderRegistry()
+            .GetPresetById(racer.botConfig->presetId);
+
+          const protocol::Racer aiRacerProto{
+            .level = 1,
+            .oid = racer.oid,
+            .uid = botUid,
+            .name = preset.name,
+            .teamColor = protocol::TeamColor::None,
+            .isHidden = true,
+            .isNPC = true,
+            .npcTid = racer.botConfig->presetId};
+
+          const protocol::AcCmdCREnterRoomNotify aiNotify{
+            .racer = aiRacerProto,
+            .averageTimeRecord = 0};
+
+          for (const auto& player : room.GetPlayers() | std::views::values)
+          {
+            _commandServer.QueueCommand<decltype(aiNotify)>(
+              player.GetClientId(),
+              [aiNotify]()
+              {
+                return aiNotify;
+              });
+          }
+        }
       }
     });
 
@@ -1381,6 +1467,29 @@ void RaceNetworkHandler::HandleStartRace(
             break;
         }
       }
+
+      const auto& details = room.GetRoomDetails();
+      switch (details.teamMode)
+      {
+        // Spawn bots for single player races
+        case Room::TeamMode::Single:
+        {
+          switch (details.gameMode)
+          {
+            case Room::GameMode::Speed:
+            case Room::GameMode::Magic:
+            {
+              raceInstance.PrepareBots(details.npcDifficulty);
+              break;
+            }
+            default:
+              break;
+          }
+          break;
+        }
+        default:
+          break;
+      }
     });
 
   _serverInstance.GetRoomSystem().GetRoom(
@@ -1412,27 +1521,52 @@ void RaceNetworkHandler::HandleStartRace(
         .p2pRelayPort = lobbyConfig.advertisement.udpRaceRelay.port,
         .raceMissionId = parameters.missionId,};
 
+      // Find the human racer's OID to assign as controller/simulator for AI racers
+      tracker::Oid humanRacerOid = 0;
+      for (const auto& [characterUid, racer] : raceInstance.GetTracker().GetRacers())
+      {
+        if (racer.IsBot())
+          continue;
+
+        if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
+        {
+          humanRacerOid = racer.oid;
+          break;
+        }
+      }
+
       // Build the racers.
       for (const auto& [characterUid, racer] : raceInstance.GetTracker().GetRacers())
       {
         if (racer.state == tracker::RaceTracker::Racer::State::Disconnected)
           continue;
 
-        std::string characterName;
-        GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
-          [&characterName](const data::Character& character)
-          {
-            characterName = character.name();
-          });
-
         auto& protocolRacer = notify.racers.emplace_back(
           protocol::AcCmdCRStartRaceNotify::Player{
-            .oid = racer.oid,
-            .name = characterName});
+            .oid = racer.oid});
 
-        // Assign the racer P2dId
-        const ClientId racerClientId = GetClientIdByCharacterUid(characterUid);
-        protocolRacer.p2dId = GetOrCreateP2dId(racerClientId);
+        if (racer.IsBot())
+        {
+          const auto& preset = GetServerInstance()
+            .GetAiRiderRegistry()
+            .GetPresetById(racer.botConfig->presetId);
+
+          protocolRacer.name = preset.name;
+          protocolRacer.controllerOid = humanRacerOid;
+          protocolRacer.aiType = racer.botConfig->aiType;
+        }
+        else
+        {
+          protocolRacer.controllerOid = 0;
+          GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
+            [&protocolRacer](const data::Character& character)
+            {
+              protocolRacer.name = character.name();
+            });
+
+          const ClientId racerClientId = GetClientIdByCharacterUid(characterUid);
+          protocolRacer.p2dId = GetOrCreateP2dId(racerClientId);
+        }
 
         switch (racer.team)
         {
@@ -1571,7 +1705,8 @@ void RaceNetworkHandler::HandleLoadingComplete(
   auto& raceInstance = GetRaceInstance(clientContext);
   const auto& parameters = raceInstance.GetParameters();
 
-  auto& racer = raceInstance.GetTracker().GetRacer(
+  auto& tracker = raceInstance.GetTracker();
+  auto& racer = tracker.GetRacer(
     clientContext.characterUid);
 
   // Switch the racer to the racing state.
@@ -1646,6 +1781,21 @@ void RaceNetworkHandler::HandleLoadingComplete(
   const protocol::AcCmdCRLoadingCompleteNotify notify{
     .oid = racer.oid};
   this->Broadcast(raceInstance, notify);
+
+  // Auto-complete loading for bots
+  for (auto& [_, trackedRacer] : tracker.GetRacers())
+  {
+    if (not trackedRacer.IsBot())
+      continue;
+
+    if (trackedRacer.state != tracker::RaceTracker::Racer::State::Loading)
+      continue;
+
+    trackedRacer.state = tracker::RaceTracker::Racer::State::Racing;
+    const protocol::AcCmdCRLoadingCompleteNotify trackedRacerLoadedNotify{
+      .oid = trackedRacer.oid};
+    this->Broadcast(raceInstance, trackedRacerLoadedNotify);
+  }
 
   // Egg spawning mechanism
 
