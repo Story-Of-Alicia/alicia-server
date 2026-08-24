@@ -476,8 +476,12 @@ struct AcCmdCRStartRaceNotify
     uint8_t unk3{};
     uint16_t p2dId{};
     TeamColor teamColor{};
-    uint16_t unk6{}; // Index?
-    uint32_t unk7{};
+    //! The OID of the peer responsible for simulating
+    //! this AI racer (0 for human racers).
+    uint16_t controllerOid{};
+    //! The behavior type of the AI.
+    //! See AIParam table index.
+    uint32_t aiType{};
   };
   std::vector<Player> racers{};
 
