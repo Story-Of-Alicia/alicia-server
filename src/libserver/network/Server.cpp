@@ -218,59 +218,83 @@ void Client::ReadLoop() noexcept
   if (not _shouldRun.load(std::memory_order::acquire))
     return;
 
-  _readProfiler.Start();
-  _socket.async_read_some(
-    _readBuffer.prepare(1024),
-    [clientPtr = this->shared_from_this()](boost::system::error_code error, std::size_t size)
+  //! Waiting for the socket to become readable is idle time, not receive I/O time.
+  _socket.async_wait(
+    asio::ip::tcp::socket::wait_read,
+    [clientPtr = this->shared_from_this()](const boost::system::error_code& waitError)
     {
-      try
+      if (waitError)
       {
-        if (error)
+        if (waitError != asio::error::operation_aborted)
         {
-          switch (error.value())
-          {
-            case asio::error::operation_aborted:
-              throw std::runtime_error("Connection aborted by the server");
-            case asio::error::misc_errors::eof:
-            case asio::error::connection_reset:
-              throw std::runtime_error("Connection reset by the client");
-            default:
-              throw std::runtime_error(
-                std::format("Generic network error {}", error.message()));
-          }
+          spdlog::debug(
+            "Client {} is disconnecting because of read readiness exception: {}",
+            clientPtr->_clientId,
+            waitError.message());
         }
-
-        clientPtr->_readBuffer.commit(size);
-
-        const std::span receivedData{
-          static_cast<const std::byte*>(clientPtr->_readBuffer.data().data()),
-          clientPtr->_readBuffer.data().size()};
-
-        const auto consumedBytes = clientPtr->_networkEventHandler.OnClientData(
-          clientPtr->_clientId,
-          receivedData);
-
-        clientPtr->_readBuffer.consume(consumedBytes);
-
-        clientPtr->_readProfiler.Stop();
-        if (const auto result = clientPtr->_readProfiler.Result())
-        {
-          clientPtr->_receiveTimeStatistics.Collect(
-            std::chrono::duration_cast<std::chrono::microseconds>(*result).count());
-        }
-
-        // Continue the read loop.
-        clientPtr->ReadLoop();
-      }
-      catch (const std::exception& x)
-      {
-        spdlog::debug(
-          "Client {} is disconnecting because of read loop exception: {}",
-          clientPtr->_clientId,
-          x.what());
 
         clientPtr->End();
+        return;
       }
+
+      if (not clientPtr->_shouldRun.load(std::memory_order::acquire))
+        return;
+
+      //! Start timing only after data is available, then stop before protocol processing.
+      clientPtr->_readProfiler.Start();
+      clientPtr->_socket.async_read_some(
+        clientPtr->_readBuffer.prepare(1024),
+        [clientPtr](boost::system::error_code error, std::size_t size)
+        {
+          try
+          {
+            if (error)
+            {
+              switch (error.value())
+              {
+                case asio::error::operation_aborted:
+                  throw std::runtime_error("Connection aborted by the server");
+                case asio::error::misc_errors::eof:
+                case asio::error::connection_reset:
+                  throw std::runtime_error("Connection reset by the client");
+                default:
+                  throw std::runtime_error(
+                    std::format("Generic network error {}", error.message()));
+              }
+            }
+
+            clientPtr->_readProfiler.Stop();
+            if (const auto result = clientPtr->_readProfiler.Result())
+            {
+              clientPtr->_receiveTimeStatistics.Collect(
+                std::chrono::duration_cast<std::chrono::microseconds>(*result).count());
+            }
+
+            clientPtr->_readBuffer.commit(size);
+
+            const std::span receivedData{
+              static_cast<const std::byte*>(clientPtr->_readBuffer.data().data()),
+              clientPtr->_readBuffer.data().size()};
+
+            const auto consumedBytes = clientPtr->_networkEventHandler.OnClientData(
+              clientPtr->_clientId,
+              receivedData);
+
+            clientPtr->_readBuffer.consume(consumedBytes);
+
+            // Continue the read loop.
+            clientPtr->ReadLoop();
+          }
+          catch (const std::exception& x)
+          {
+            spdlog::debug(
+              "Client {} is disconnecting because of read loop exception: {}",
+              clientPtr->_clientId,
+              x.what());
+
+            clientPtr->End();
+          }
+        });
     });
 }
 
