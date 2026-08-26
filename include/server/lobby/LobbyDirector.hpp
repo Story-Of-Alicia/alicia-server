@@ -51,8 +51,8 @@ public:
     data::Uid characterUid{data::InvalidUid};
     data::Uid roomUid{data::InvalidUid};
 
-    //! Only until the messenger is not implemented.
-    [[deprecated]] data::Uid visitPreference{data::InvalidUid};
+    //! Track the user's visit preference for the visit command.
+    data::Uid visitPreference{data::InvalidUid};
   };
 
   struct GuildInstance
@@ -109,13 +109,18 @@ public:
   [[nodiscard]] bool IsCharacterForcedIntoCreator(
     data::Uid characterUid) const;
 
-  void InviteCharacterToGuild(
+  //! Invite a character to a guild.
+  //! @param inviteeCharacterUid Uid of the invited character.
+  //! @param guildUid Uid of the guild.
+  //! @param inviterCharacterUid Uid of the inviting character.
+  //! @retval `true` if the invitation was delivered.
+  //! @retval `false` if the invitee is not available.
+  [[nodiscard]] bool InviteCharacterToGuild(
     data::Uid inviteeCharacterUid,
     data::Uid guildUid,
     data::Uid inviterCharacterUid);
 
-  // prototype function
-  [[deprecated]] void SetCharacterVisitPreference(
+  void SetCharacterVisitPreference(
     data::Uid characterUid,
     data::Uid rancherUid);
 

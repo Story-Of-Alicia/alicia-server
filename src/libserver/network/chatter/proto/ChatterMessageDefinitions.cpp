@@ -60,9 +60,8 @@ void server::protocol::ChatCmdLoginAckOK::Write(
   const ChatCmdLoginAckOK& command,
   SinkStream& stream)
 {
-  stream.Write(command.member1);
-
-  stream.Write(command.mailAlarm.status)
+  stream.Write(command.latestUnreadMailUid)
+    .Write(command.mailAlarm.unreadMailCount)
     .Write(command.mailAlarm.hasMail);
 
   stream.Write(static_cast<uint32_t>(command.groups.size()));
@@ -456,7 +455,7 @@ void server::protocol::ChatCmdLetterListAckOk::Write(
       {
         stream.Write(mail.uid)
           .Write(mail.type)
-          .Write(mail.origin)
+          .Write(mail.claimUid)
           .Write(mail.sender)
           .Write(mail.date);
 
@@ -635,7 +634,7 @@ void server::protocol::ChatCmdLetterArriveTrs::Write(
 {
   stream.Write(command.mailUid)
     .Write(command.mailType)
-    .Write(command.mailOrigin)
+    .Write(command.claimUid)
     .Write(command.sender)
     .Write(command.date)
     .Write(command.body);
@@ -696,7 +695,7 @@ void server::protocol::ChatCmdChatInvite::Read(
   stream.Read(length);
 
   command.chatParticipantUids.resize(length);
-  stream.Read(command.chatParticipantUids.data(), length);
+  stream.Read(command.chatParticipantUids.data(), sizeof(data::Uid) * length);
 }
 
 void server::protocol::ChatCmdChatInvitationTrs::Write(

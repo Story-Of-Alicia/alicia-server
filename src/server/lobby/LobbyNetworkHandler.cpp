@@ -1,6 +1,21 @@
-//
-// Created by maros.prejsa on 14/10/2025.
-//
+/**
+ * Alicia Server - dedicated server software
+ * Copyright (C) 2025-2026 Story Of Alicia
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ **/
 
 #include "server/lobby/LobbyNetworkHandler.hpp"
 
@@ -12,6 +27,7 @@
 #include <spdlog/spdlog.h>
 #include <zlib.h>
 
+#include <algorithm>
 #include <random>
 
 namespace server
@@ -351,7 +367,7 @@ void LobbyNetworkHandler::SendCharacterGuildInvitation(
   const ClientId inviteeClientId = GetClientIdByCharacterUid(inviteeUid);
 
   std::string inviterName;
-  _serverInstance.GetDataDirector().GetCharacter(inviteeUid).Immutable(
+  _serverInstance.GetDataDirector().GetCharacter(inviterUid).Immutable(
     [&inviterName](const data::Character& character)
     {
       inviterName = character.name();
@@ -529,6 +545,11 @@ void LobbyNetworkHandler::NotifyMatchmakeResult(
   }
 }
 
+CommandServer& LobbyNetworkHandler::GetCommandServer() noexcept
+{
+  return _commandServer;
+}
+
 ClientId LobbyNetworkHandler::GetClientIdByUserName(
   const std::string& userName,
   const bool requiresAuthorization)
@@ -619,7 +640,8 @@ void LobbyNetworkHandler::HandleNetworkTick()
   }
 }
 
-void LobbyNetworkHandler::HandleClientConnected(ClientId clientId)
+void LobbyNetworkHandler::HandleClientConnected(
+  const ClientId clientId)
 {
   const auto iter = _clients.try_emplace(clientId).first;
   iter->second.lastHeartbeat = std::chrono::steady_clock::now();
@@ -719,12 +741,28 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
 
   clientContext.characterUid = userCharacterUid;
 
+  // Promote any foals that matured while the player was offline before their
+  // horses are sent, so the client shows them as adults from the start rather
+  // than caching a foal it won't re-render on a later type change.
+  _serverInstance.GetHorseSystem().PromoteMaturedFoals(userCharacterUid);
+
+  // Collection of items expired while the character aws offline.
+  std::vector<data::Item> expiredItems;
+
   // Get the character record and fill the protocol data.
   // Also get the UID of the horse mounted by the character.
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     userCharacterUid);
   if (not characterRecord)
     throw std::runtime_error("Character record unavailable");
+
+  // Collect the expired items so we can inform the user about
+  // the items that have expired since they were offline.
+  characterRecord.Mutable([this, &expiredItems](data::Character& character)
+  {
+    expiredItems = _serverInstance.GetItemSystem()
+      .CollectAndEraseExpiredItems(character);
+  });
 
   protocol::LobbyCommandLoginOK response{
     .lobbyTime = util::TimePointToFileTime(util::Clock::now()),
@@ -814,7 +852,7 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
     data::InvalidUid};
 
   characterRecord.Immutable(
-    [this, justCreatedCharacter = clientContext.justCreatedCharacter, &response, &characterMountUid](const data::Character& character)
+    [this, justCreatedCharacter = clientContext.justCreatedCharacter, &response, &characterMountUid, &expiredItems](const data::Character& character)
     {
       response.uid = character.uid();
       response.name = character.name();
@@ -830,6 +868,8 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
       response.level = static_cast<uint16_t>(character.level());
       response.levelProgress = character.experience();
       response.carrots = character.carrots();
+
+      response.ranchBonusRaceCount = character.ranchManagement.totalRaces();
       response.role = std::bit_cast<protocol::LobbyCommandLoginOK::Role>(
         character.role());
 
@@ -845,14 +885,11 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
         response.equipmentItems,
         *equipmentItems);
 
-      const auto expiredItems = _serverInstance.GetDataDirector().GetItemCache().Get(
-        character.expiredEquipment());
-      if (not expiredItems)
-        throw std::runtime_error("Expired items unavailable");
-
-      protocol::BuildProtocolItems(
-        response.expiredItems,
-        *expiredItems);
+      for (const auto& expiredItem : expiredItems)
+      {
+        auto& protocolItem = response.expiredItems.emplace_back();
+        protocol::BuildProtocolItem(protocolItem, expiredItem);
+      }
 
       protocol::BuildProtocolCharacter(
         response.character,
@@ -1287,7 +1324,7 @@ void LobbyNetworkHandler::HandleEnterRoom(
           isAuthorized = true;
 
         isRoomFull = room.IsRoomFull();
-        if (isRoomFull)
+        if (not isAuthorized or isRoomFull)
           return;
 
         room.QueuePlayer(characterUid);
@@ -1316,8 +1353,25 @@ void LobbyNetworkHandler::HandleEnterRoom(
 
   if (not isAuthorized)
   {
-    protocol::AcCmdCLEnterRoomCancel response{
-      .status = protocol::AcCmdCLEnterRoomCancel::Status::CR_BAD_PASSWORD};
+    protocol::AcCmdCLEnterRoomCancel response{};
+
+    switch (command.enterRoomType)
+    {
+      case protocol::AcCmdCLEnterRoom::EnterRoomType::RoomList:
+        // Respond with a cancel indicating bad password
+        response.status = protocol::AcCmdCLEnterRoomCancel::Status::CR_BAD_PASSWORD;
+        break;
+      case protocol::AcCmdCLEnterRoom::EnterRoomType::TournamentInvite:
+      case protocol::AcCmdCLEnterRoom::EnterRoomType::RoomCode:
+        // Indicates to the player that the room is locked and shows the password popup
+        response.status = protocol::AcCmdCLEnterRoomCancel::Status::ShowRoomPassword;
+        break;
+      default:
+        spdlog::warn(
+          "Unknown AcCmdCLEnterRoom::EnterRoomType type '{}'",
+          static_cast<uint32_t>(command.enterRoomType));
+        break;
+    }
 
     _commandServer.QueueCommand<decltype(response)>(
       clientId,
@@ -1524,17 +1578,7 @@ void LobbyNetworkHandler::HandleCreateNickname(
       {
         // The TID of the horse specifies which body mesh is used for that horse.
         // Can be found in the `MountPartInfo` table.
-        horse.tid() = requestedHorseTid;
-        horse.dateOfBirth() = data::Clock::now();
-        horse.mountCondition.stamina = 3500;
-        horse.growthPoints() = 150;
-        horse.tendency() = 1;
-        horse.clazz = 1;
-
-        _serverInstance.GetHorseRegistry().BuildRandomHorse(
-          horse.parts,
-          horse.appearance);
-
+        registry::HorseRegistry::BuildDefaultHorse(horse, requestedHorseTid);
         mountUid = horse.uid();
       });
 
@@ -1555,14 +1599,14 @@ void LobbyNetworkHandler::HandleCreateNickname(
           character.name = command.nickname;
 
         // todo: default level configured
-        character.level = 30;
-        character.experience() = 254500;
+        character.level = 40;
+        character.experience() = 557300;
         // todo: default carrots configured
-        character.carrots = 10'000;
+        character.carrots = 200'000;
 
         character.mountUid() = mountUid;
 
-        constexpr uint8_t StartingHorseSlotCount = 3; 
+        constexpr uint8_t StartingHorseSlotCount = 5; 
         character.horseSlotCount() = StartingHorseSlotCount;
 
         // Create the default friend group.
@@ -1672,10 +1716,71 @@ void LobbyNetworkHandler::HandleShowInventory(
       }
 
       // Create a separate response for horses
-      auto& horseResponse = responses.emplace_back();
+      // 0x0A (10) is the protocol max per response
+      constexpr uint32_t HorsesPerResponse = 10;
       const auto horseRecords = _serverInstance.GetDataDirector().GetHorseCache().Get(
         character.horses());
-      protocol::BuildProtocolHorses(horseResponse.horses, *horseRecords);
+
+      if (horseRecords && not horseRecords->empty())
+      {
+        // Sort horse inventory by grade and lineage.
+        struct HorseEntry
+        {
+          protocol::Horse protocolHorse{};
+          uint32_t grade{};
+          uint32_t lineage{};
+        };
+
+        std::vector<HorseEntry> horses;
+        horses.reserve(horseRecords->size());
+        for (const auto& horseRecord : *horseRecords)
+        {
+          HorseEntry entry{};
+          horseRecord.Immutable([&entry](const data::Horse& horse)
+          {
+            protocol::BuildProtocolHorse(entry.protocolHorse, horse);
+            entry.grade = horse.grade();
+            entry.lineage = horse.lineage();
+          });
+          horses.emplace_back(std::move(entry));
+        }
+
+        std::stable_sort(
+          horses.begin(),
+          horses.end(),
+          [](const HorseEntry& a, const HorseEntry& b)
+          {
+            // Grade descending (highest grade first)
+            if (a.grade != b.grade)
+              return a.grade > b.grade;
+
+            // Lineage descending (highest lineage first)
+            if (a.lineage != b.lineage)
+              return a.lineage > b.lineage;
+
+            // Name ascending
+            if (a.protocolHorse.name != b.protocolHorse.name)
+              return a.protocolHorse.name < b.protocolHorse.name;
+
+            // UID ascending
+            return a.protocolHorse.uid < b.protocolHorse.uid;
+          });
+
+        // Chunk the horses
+        const auto horseChunks = std::views::chunk(
+          horses,
+          HorsesPerResponse);
+
+        // Create a response per chunk
+        for (const auto& horseChunk : horseChunks)
+        {
+          auto& response = responses.emplace_back();
+          for (const auto& entry : horseChunk)
+          {
+            response.horses.emplace_back(entry.protocolHorse);
+          }
+        }
+      }
     });
 
   // If the character has no items or extra horses
@@ -2141,8 +2246,10 @@ void LobbyNetworkHandler::HandleGetMessengerInfo(
   size_t identityHash = std::hash<uint32_t>()(clientContext.characterUid);
   boost::hash_combine(identityHash, MessengerOtpConstant);
 
-  // Grant otp code to character
-  const uint32_t code = _serverInstance.GetOtpSystem().GrantCode(identityHash);
+  // Grant ltk code to character
+  const uint32_t code = _serverInstance.GetOtpSystem().GrantLtk(
+    identityHash,
+    GetCommandServer().GetClientAddress(clientId).to_v4().to_uint());
 
   protocol::AcCmdCLGetMessengerInfoOK response{
     .code = code,
@@ -2362,7 +2469,18 @@ void LobbyNetworkHandler::HandleAcceptInviteToGuild(
   const auto& clientContext = GetClientContext(clientId);
 
   // Pending invites for guild
-  auto& pendingGuildInvites = _serverInstance.GetLobbyDirector().GetGuilds()[command.guild.uid].invites;
+  auto& guildInstances = _serverInstance.GetLobbyDirector().GetGuilds();
+  const auto guildInstanceIter = guildInstances.find(command.guild.uid);
+
+  if (guildInstanceIter == guildInstances.end())
+  {
+    // Character tried to join guild but has no pending (online) invite
+    spdlog::warn("Character {} tried to join a guild {} but does not have a valid invite",
+      clientContext.characterUid, command.guild.uid);
+    return;
+  }
+
+  auto& pendingGuildInvites = guildInstanceIter->second.invites;
 
   // Check if the guild has outstanding character invite.
   const auto& guildInvite = std::ranges::find(
@@ -2392,7 +2510,7 @@ void LobbyNetworkHandler::HandleAcceptInviteToGuild(
 
   bool guildAddSuccess = false;
   _serverInstance.GetDataDirector().GetGuild(command.guild.uid).Mutable(
-    [&guildAddSuccess, inviteeCharacterUid = command.characterUid](data::Guild& guild)
+    [&guildAddSuccess, inviteeCharacterUid = clientContext.characterUid](data::Guild& guild)
     {
       // Check if invitee who accepted is in the guild
       if (std::ranges::contains(guild.members(), inviteeCharacterUid) ||
@@ -2416,18 +2534,28 @@ void LobbyNetworkHandler::HandleAcceptInviteToGuild(
 
   _serverInstance.GetRanchDirector().SendGuildInviteAccepted(
     command.guild.uid,
-    command.characterUid,
+    clientContext.characterUid,
     inviteeCharacterName
   );
 }
 
 void LobbyNetworkHandler::HandleDeclineInviteToGuild(
-  const ClientId,
+  const ClientId clientId,
   const protocol::AcCmdLCInviteGuildJoinCancel& command)
 {
   // TODO: command data check
+  const auto& clientContext = GetClientContext(clientId);
+
+  // Drop the pending invite, it would otherwise remain valid indefinitely.
+  auto& guildInstances = _serverInstance.GetLobbyDirector().GetGuilds();
+  const auto guildInstanceIter = guildInstances.find(command.guild.uid);
+  if (guildInstanceIter != guildInstances.end())
+  {
+    std::erase(guildInstanceIter->second.invites, clientContext.characterUid);
+  }
+
   _serverInstance.GetRanchDirector().SendGuildInviteDeclined(
-    command.characterUid,
+    clientContext.characterUid,
     command.inviterCharacterUid,
     command.inviterCharacterName,
     command.guild.uid
@@ -2474,56 +2602,100 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
   const auto& clientContext = GetClientContext(clientId);
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     clientContext.characterUid);
-  std::vector<uint32_t> dailyQuestIds = {0,0,0};
 
   protocol::AcCmdCLRequestDailyQuestListOK response{};
-  
-  characterRecord.Immutable(
-    [&response, &dailyQuestIds](const data::Character& character)
-    {
-      if (character.dailyQuests().size() == 3)
-      {
-        dailyQuestIds = character.dailyQuests();
-        response.unk[0] = {100, 0, 1, 0, 0, 0};
-      } else
-      {
-        response.unk[0] = {0, 0, 2, 0, 0, 0};
-      }
-      
-      response.val0 = character.uid();
-      
-      for (int i = 4; i < 10; i++)
-      { //filler unk entries
-        response.unk[i] = {0, 0, 2, 0, 0, 0};
-      }
-    });
-  for (int i = 0; i < 3; i++)
-    {
-      if (dailyQuestIds != std::vector<uint32_t>{0, 0, 0})
-      {
-        const auto questRecord = _serverInstance.GetDataDirector().GetDailyQuest(dailyQuestIds[i]);
-        questRecord.Immutable(
-          [&response, &i](const data::DailyQuest& quest)
-          {
-            response.dailyQuests[i].questId = static_cast<uint16_t>(quest.unk_0());
-            response.dailyQuests[i].unk_1 = static_cast<uint32_t>(quest.unk_1());
-            response.dailyQuests[i].unk_2 = static_cast<uint8_t>(quest.unk_2());
-            response.dailyQuests[i].unk_3 = static_cast<uint8_t>(quest.unk_3());
-            response.unk[i+1] = {static_cast<uint16_t>(quest.unk_0()), 1, 0, 2, 1, 1};
-          });
-      }
-      else
-      {
-        response.unk[i + 1] = {0, 0, 2, 0, 0, 0};
-      }
-    }
+  data::Uid groupUid = data::InvalidUid;
 
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [response]()
+  characterRecord.Immutable(
+    [&response, &groupUid](const data::Character& character)
     {
-      return response;
+      response.characterUid = character.uid();
+      groupUid = character.dailyQuestGroupUid();
     });
+
+  // Default all unk slots to 2 (not defined in enum, but used as a default/inactive state).
+  for (auto& q : response.unk)
+    q.status = static_cast<protocol::Quest::Status>(2);
+
+  // Only populate quest data if the character has an assigned daily quest group.
+  if (groupUid == data::InvalidUid)
+  {
+    _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
+    return;
+  }
+
+  const auto groupRecord = _serverInstance.GetDataDirector().GetDailyQuestGroup(groupUid);
+  if (not groupRecord)
+  {
+    _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
+    return;
+  }
+
+  // Collect both Repeatable quest TIDs (TID 100 and 101) sorted ascending.
+  std::vector<uint16_t> repeatableTids;
+  for (const auto& [tid, quest] : _serverInstance.GetQuestRegistry().GetQuests())
+  {
+    if (quest.type == registry::Quest::Type::Repeatable)
+      repeatableTids.push_back(static_cast<uint16_t>(tid));
+  }
+  std::sort(repeatableTids.begin(), repeatableTids.end());
+
+  bool hasQuests = false;
+  int completedCount = 0;
+  bool carrotsClaimed = false;
+
+  groupRecord.Immutable([&](const data::DailyQuestGroup& group)
+  {
+    carrotsClaimed = group.carrotsClaimed();
+
+    const auto rewardId   = static_cast<uint8_t>(group.rewardId());
+    const auto rewardType = static_cast<uint8_t>(group.rewardType());
+    const auto& quests    = group.quests();
+
+    // Only populate daily quest slots if there are actual quests assigned.
+    for (size_t i = 0; i < 3; ++i)
+    {
+      if (quests[i].questId == 0)
+        continue;
+
+      hasQuests = true;
+
+      const auto questId  = quests[i].questId;
+      const auto progress = quests[i].progress;
+
+      const auto questTemplate = _serverInstance.GetQuestRegistry().GetQuest(questId);
+      const uint32_t successValue = questTemplate ? questTemplate->successValue : 0;
+      const bool isDone = successValue > 0 && progress >= successValue;
+
+      if (isDone)
+        ++completedCount;
+
+      response.dailyQuests[i] = protocol::DailyQuest{questId, progress, rewardType, rewardId};
+      // Daily quests go into unk[2..4] (slots 0 and 1 are the two Repeatable quests).
+      response.unk[i + 2] = protocol::Quest{
+        /*tid=*/questId,
+        /*member0=*/0,
+        isDone ? protocol::Quest::Status::ReadyToClaim : protocol::Quest::Status::InProgress,
+        /*progress=*/progress,
+        /*member3=*/0,
+        /*member4=*/0};
+    }
+  });
+
+  // unk[0] = TID 100 (intro/activate) InProgress if carrots not yet claimed, ReadyToClaim if they have been.
+  if (repeatableTids.size() >= 1)
+    response.unk[0] = protocol::Quest{repeatableTids[0], 0,
+      carrotsClaimed ? protocol::Quest::Status::ReadyToClaim : protocol::Quest::Status::InProgress,
+      0, 0, 0};
+
+  // unk[1] = TID 101 (collect reward) only shown when quests are present;
+  // InProgress if not all done, ReadyToClaim if the quest rewards have been claimed (not indicated in the save data yet)
+  if (hasQuests && repeatableTids.size() >= 2)
+    response.unk[1] = protocol::Quest{repeatableTids[1], 0,
+      protocol::Quest::Status::InProgress,
+      0, 0, 0};
+
+  _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
 }
 
 void LobbyNetworkHandler::HandleRequestLeagueInfo(
@@ -2553,9 +2725,16 @@ void LobbyNetworkHandler::HandleRequestQuestList(
   protocol::AcCmdCLRequestQuestListOK response{};
 
   characterRecord.Immutable(
-    [&response](const data::Character& character)
+    [this, &response](const data::Character& character)
     {
       response.unk0 = character.uid();
+
+      const auto questRecords = _serverInstance.GetDataDirector().GetQuestCache().Get(
+        character.quests());
+      if (not questRecords)
+        return;
+
+      protocol::BuildProtocolQuests(response.quests, *questRecords);
     });
 
   _commandServer.QueueCommand<decltype(response)>(

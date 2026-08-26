@@ -24,6 +24,11 @@
 namespace server
 {
 
+void ModerationSystem::Clear()
+{
+  _words.clear();
+}
+
 void ModerationSystem::ReadConfig(
   const std::filesystem::path& configPath)
 {
@@ -36,6 +41,8 @@ void ModerationSystem::ReadConfig(
   const auto wordsCollectionSection = wordsSection["collection"];
   if (not wordsCollectionSection)
     throw std::runtime_error("Missing words collection section");
+
+  Clear();
 
   for (const auto& wordSection : wordsCollectionSection)
   {
@@ -57,7 +64,7 @@ ModerationSystem::Verdict ModerationSystem::Moderate(
   for (const auto& word : _words)
   {
     // Check if any part of the input matches the word.
-    if (!std::regex_match(input, word.regex))
+    if (!std::regex_search(input, word.regex))
       continue;
 
     // Check if the word is prevented or just censored.

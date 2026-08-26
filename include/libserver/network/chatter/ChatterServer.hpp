@@ -69,7 +69,10 @@ public:
   void BeginHost(network::asio::ip::address_v4 address, uint16_t port);
   void EndHost();
 
-  network::asio::ip::address_v4 GetClientAddress(const network::ClientId clientId);
+  [[nodiscard]] network::asio::ip::address GetClientAddress(
+    network::ClientId clientId) noexcept;
+  [[nodiscard]] uint16_t GetClientPort(
+    network::ClientId clientId) noexcept;
   void DisconnectClient(network::ClientId clientId);
 
   //! Registers a command handler.

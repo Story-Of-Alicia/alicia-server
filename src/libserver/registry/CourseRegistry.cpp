@@ -46,7 +46,7 @@ uint8_t ReadGameModeInfo(
   {
     for (const auto& itemSpawnerSection : itemSpawnersSection)
     {
-      gameMode.usedDeckItemIds.emplace_back(
+      gameMode.usedDeckIds.emplace_back(
         itemSpawnerSection["deckId"].as<uint32_t>());
     }
   }
@@ -56,7 +56,7 @@ uint8_t ReadGameModeInfo(
   {
     for (const auto& mapBlockId : mapPoolSection)
     {
-      gameMode.mapPool.emplace_back(mapBlockId["mapBlockId"].as<uint32_t>());
+      gameMode.mapBlockPool.emplace_back(mapBlockId["mapBlockId"].as<uint32_t>());
     }
   }
 
@@ -82,7 +82,7 @@ uint32_t ReadMapBlockInfo(
   const auto deckItemCollectionSection = section["deckItems"]["collection"];
   for (const auto& deckItemSection : deckItemCollectionSection)
   {
-    auto& deckItem = mapBlock.deckItems.emplace_back();
+    auto& deckItem = mapBlock.itemDecks.emplace_back();
     deckItem.deckId = deckItemSection["deckId"].as<decltype(Course::MapBlockInfo::DeckItemInstance::deckId)>();
     deckItem.position = {
       deckItemSection["position"][0].as<float>(),
@@ -95,14 +95,17 @@ uint32_t ReadMapBlockInfo(
  
 uint32_t ReadDeckItemInfo(
   const YAML::Node& section,
-  Course::DeckItemInfo& deckItem)
+  Course::DeckInfo& deckItem)
 {
+  deckItem.respawnTime = std::chrono::milliseconds(
+    section["respawnTime"].as<int64_t>(0));
+
   const auto itemTypesSection = section["itemTypes"];
   if (itemTypesSection)
   {
     for (const auto& itemType : itemTypesSection)
     {
-      deckItem.itemTypes.emplace_back(itemType.as<uint32_t>());
+      deckItem.items.emplace_back(itemType.as<uint32_t>());
     }
   }
  
@@ -123,6 +126,14 @@ CourseRegistry::CourseRegistry()
 {
 }
 
+void CourseRegistry::Clear()
+{
+  _gameModeInfo.clear();
+  _mapBlockInfo.clear();
+  _itemDeckInfo.clear();
+  _deckItemInfo.clear();
+}
+
 void CourseRegistry::ReadConfig(
   const std::filesystem::path& configPath)
 {
@@ -132,40 +143,38 @@ void CourseRegistry::ReadConfig(
   if (not coursesSection)
     throw std::runtime_error("Missing courses section");
 
+  const auto gameModeInfosSection = coursesSection["gameModeInfo"];
+  if (not gameModeInfosSection)
+    throw std::runtime_error("Missing gameModes section");
+
+  const auto gameModesCollection = gameModeInfosSection["collection"];
+  if (not gameModesCollection)
+    throw std::runtime_error("Missing collection section");
+
+  const auto mapBlockInfosSection = coursesSection["mapBlockInfo"];
+  if (not mapBlockInfosSection)
+    throw std::runtime_error("Missing gameModes section");
+
+  const auto mapBlocksCollection = mapBlockInfosSection["collection"];
+  if (not mapBlocksCollection)
+    throw std::runtime_error("Missing collection section");
+
+  Clear();
+
   // Game modes
+  for (const auto& gameModeInfoSection : gameModesCollection)
   {
-    const auto gameModeInfosSection = coursesSection["gameModeInfo"];
-    if (not gameModeInfosSection)
-      throw std::runtime_error("Missing gameModes section");
-
-    const auto collection = gameModeInfosSection["collection"];
-    if (not collection)
-      throw std::runtime_error("Missing collection section");
-
-    for (const auto& gameModeInfoSection : collection)
-    {
-      Course::GameModeInfo gameMode;
-      const auto type = ReadGameModeInfo(gameModeInfoSection, gameMode);
-      _gameModeInfo.emplace(type, gameMode);
-    }
+    Course::GameModeInfo gameMode;
+    const auto type = ReadGameModeInfo(gameModeInfoSection, gameMode);
+    _gameModeInfo.emplace(type, gameMode);
   }
 
   // Map blocks
+  for (const auto& mapBlockInfoSection : mapBlocksCollection)
   {
-    const auto mapBlockInfosSection = coursesSection["mapBlockInfo"];
-    if (not mapBlockInfosSection)
-      throw std::runtime_error("Missing gameModes section");
-
-    const auto collection = mapBlockInfosSection["collection"];
-    if (not collection)
-      throw std::runtime_error("Missing collection section");
-
-    for (const auto& mapBlockInfoSection : collection)
-    {
-      Course::MapBlockInfo mapBlock;
-      const auto id = ReadMapBlockInfo(mapBlockInfoSection, mapBlock);
-      _mapBlockInfo.emplace(id, mapBlock);
-    }
+    Course::MapBlockInfo mapBlock;
+    const auto id = ReadMapBlockInfo(mapBlockInfoSection, mapBlock);
+    _mapBlockInfo.emplace(id, mapBlock);
   }
 
   // Deck items
@@ -178,9 +187,9 @@ void CourseRegistry::ReadConfig(
       {
         for (const auto& deckItemInfoSection : collection)
         {
-          Course::DeckItemInfo deckItem;
+          Course::DeckInfo deckItem;
           const auto id = ReadDeckItemInfo(deckItemInfoSection, deckItem);
-          _deckItemInfo.emplace(id, deckItem);
+          _itemDeckInfo.emplace(id, deckItem);
         }
       }
     }
@@ -198,7 +207,7 @@ void CourseRegistry::ReadConfig(
         {
           Course::ItemTypeInfo itemType;
           const auto id = ReadItemTypeInfo(itemTypeInfoSection, itemType);
-          _itemTypeInfo.emplace(id, itemType);
+          _deckItemInfo.emplace(id, itemType);
         }
       }
     }
@@ -208,12 +217,12 @@ void CourseRegistry::ReadConfig(
     "Course registry loaded {} game modes, {} maps, {} deck items and {} item types",
     _gameModeInfo.size(),
     _mapBlockInfo.size(),
-    _deckItemInfo.size(),
-    _itemTypeInfo.size());
+    _itemDeckInfo.size(),
+    _deckItemInfo.size());
 }
 
 const Course::GameModeInfo& CourseRegistry::GetCourseGameModeInfo(
-  uint8_t type)
+  const GameModeId type) const
 {
   const auto gameModeInfo = _gameModeInfo.find(type);
   if (gameModeInfo == _gameModeInfo.cend())
@@ -221,7 +230,8 @@ const Course::GameModeInfo& CourseRegistry::GetCourseGameModeInfo(
   return gameModeInfo->second;
 }
 
-const Course::MapBlockInfo& CourseRegistry::GetMapBlockInfo(uint32_t id)
+const Course::MapBlockInfo& CourseRegistry::GetMapBlockInfo(
+  const MapBlockId id) const
 {
   const auto mapBlockInfo = _mapBlockInfo.find(id);
   if (mapBlockInfo == _mapBlockInfo.cend())
@@ -229,18 +239,20 @@ const Course::MapBlockInfo& CourseRegistry::GetMapBlockInfo(uint32_t id)
   return mapBlockInfo->second;
 }
  
-const Course::DeckItemInfo& CourseRegistry::GetDeckItemInfo(uint32_t deckId)
+const Course::DeckInfo& CourseRegistry::GetDeckInfo(
+  const DeckId deckId) const
 {
-  const auto deckItemInfo = _deckItemInfo.find(deckId);
-  if (deckItemInfo == _deckItemInfo.cend())
+  const auto deckItemInfo = _itemDeckInfo.find(deckId);
+  if (deckItemInfo == _itemDeckInfo.cend())
     throw std::runtime_error("Invalid deck item ID");
   return deckItemInfo->second;
 }
 
-const Course::ItemTypeInfo& CourseRegistry::GetItemTypeInfo(uint32_t itemTypeId)
+const Course::ItemTypeInfo& CourseRegistry::GetDeckItemInfo(
+  const DeckItemId itemTypeId) const
 {
-  const auto itemTypeInfo = _itemTypeInfo.find(itemTypeId);
-  if (itemTypeInfo == _itemTypeInfo.cend())
+  const auto itemTypeInfo = _deckItemInfo.find(itemTypeId);
+  if (itemTypeInfo == _deckItemInfo.cend())
     throw std::runtime_error("Invalid item type ID");
   return itemTypeInfo->second;
 }

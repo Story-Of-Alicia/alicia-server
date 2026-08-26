@@ -1,0 +1,2143 @@
+quests:
+  rewards:
+    - id: 102
+      desc: '주나의 첫 보상'
+      carrots: 0
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 20026
+          count: 36
+    - id: 103
+      desc: '에이프릴의 첫 보상'
+      carrots: 0
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 20027
+          count: 36
+    - id: 104
+      desc: '나이트 편자'
+      carrots: 0
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 20030
+          count: 36
+    - id: 105
+      desc: '나이트 보호구'
+      carrots: 0
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 20029
+          count: 36
+    - id: 106
+      desc: '난이도 1 보상'
+      carrots: 0
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 41008
+          count: 3
+        - tid: 40002
+          count: 3
+        - tid: 41009
+          count: 3
+    - id: 107
+      desc: '난이도 2 보상'
+      carrots: 0
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 41005
+          count: 5
+        - tid: 41004
+          count: 5
+        - tid: 41003
+          count: 5
+    - id: 108
+      desc: '난이도 3 보상'
+      carrots: 0
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 42001
+          count: 5
+        - tid: 42002
+          count: 5
+    - id: 109
+      desc: '옷갈아입히기 보상 테스트용'
+      carrots: 1000
+      exp: 0
+      keyNpcDress: 2
+      items: []
+    - id: 110
+      desc: '11030 토마스의 이야기'
+      carrots: 0
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 20027
+          count: 72
+    - id: 111
+      desc: '11031'
+      carrots: 300
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 20029
+          count: 72
+    - id: 112
+      desc: '11032'
+      carrots: 0
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 20031
+          count: 72
+    - id: 113
+      desc: '11033'
+      carrots: 0
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 20028
+          count: 72
+    - id: 114
+      desc: '11034'
+      carrots: 300
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 20034
+          count: 72
+    - id: 115
+      desc: '11035'
+      carrots: 1500
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 116
+      desc: '11036'
+      carrots: 300
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 44005
+          count: 3
+    - id: 117
+      desc: '11037'
+      carrots: 450
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 119
+      desc: '11039'
+      carrots: 0
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 45005
+          count: 72
+    - id: 120
+      desc: '11040'
+      carrots: 500
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 43001
+          count: 1
+    - id: 121
+      desc: '11041'
+      carrots: 400
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 20022
+          count: 72
+    - id: 123
+      desc: '11043'
+      carrots: 0
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 46018
+          count: 2
+    - id: 124
+      desc: '11044'
+      carrots: 750
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 125
+      desc: '12010'
+      carrots: 0
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 20030
+          count: 72
+    - id: 126
+      desc: '12011'
+      carrots: 400
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 127
+      desc: '12012'
+      carrots: 700
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 128
+      desc: '12013'
+      carrots: 750
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 129
+      desc: '12014'
+      carrots: 300
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 44003
+          count: 3
+    - id: 130
+      desc: '12015'
+      carrots: 900
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 131
+      desc: '12016'
+      carrots: 300
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 132
+      desc: '12017'
+      carrots: 750
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 133
+      desc: '12018'
+      carrots: 500
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 20035
+          count: 72
+    - id: 136
+      desc: '12021'
+      carrots: 500
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 20032
+          count: 72
+    - id: 137
+      desc: '13010'
+      carrots: 300
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 41004
+          count: 2
+    - id: 138
+      desc: '13011'
+      carrots: 750
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 139
+      desc: '13012'
+      carrots: 900
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 140
+      desc: '13013'
+      carrots: 450
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 142
+      desc: '14010'
+      carrots: 400
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 143
+      desc: '14011'
+      carrots: 0
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 41008
+          count: 1
+        - tid: 41009
+          count: 1
+        - tid: 40002
+          count: 1
+    - id: 144
+      desc: '14012'
+      carrots: 0
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 42001
+          count: 3
+    - id: 145
+      desc: '14013'
+      carrots: 500
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 146
+      desc: '14014'
+      carrots: 400
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 147
+      desc: '14015'
+      carrots: 500
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 148
+      desc: '14016'
+      carrots: 500
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 149
+      desc: '14017'
+      carrots: 750
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 151
+      desc: '14019'
+      carrots: 450
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 46018
+          count: 1
+    - id: 152
+      desc: '14020'
+      carrots: 450
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 46018
+          count: 1
+    - id: 153
+      desc: '14021'
+      carrots: 300
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 155
+      desc: '14023'
+      carrots: 0
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 45001
+          count: 4
+    - id: 156
+      desc: '14024'
+      carrots: 300
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 20033
+          count: 72
+    - id: 157
+      desc: '14025'
+      carrots: 1500
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 159
+      desc: '12022'
+      carrots: 0
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 45004
+          count: 1
+    - id: 160
+      desc: '1040, 1041'
+      carrots: 0
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 50005
+          count: 1
+    - id: 161
+      desc: '14027'
+      carrots: 0
+      exp: 0
+      keyNpcDress: 0
+      items:
+        - tid: 46018
+          count: 2
+    - id: 162
+      desc: '13015'
+      carrots: 750
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 163
+      desc: '옷갈아입히기'
+      carrots: 100
+      exp: 0
+      keyNpcDress: 3
+      items: []
+    - id: 164
+      desc: '원래 옷으로 돌리기'
+      carrots: 0
+      exp: 0
+      keyNpcDress: 4
+      items: []
+    - id: 165
+      desc: '11045'
+      carrots: 300
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 166
+      desc: '14028'
+      carrots: 750
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 167
+      desc: '14029'
+      carrots: 300
+      exp: 0
+      keyNpcDress: 6
+      items: []
+    - id: 168
+      desc: '14030'
+      carrots: 750
+      exp: 0
+      keyNpcDress: 0
+      items: []
+    - id: 169
+      desc: '14031'
+      carrots: 300
+      exp: 0
+      keyNpcDress: 7
+      items: []
+    - id: 1000
+      desc: '트리 모양 바꾸기 테스트'
+      carrots: 100
+      exp: 0
+      keyNpcDress: 5
+      items: []
+    - id: 1001
+      desc: '트리 모양 바꾸기 테스트'
+      carrots: 100
+      exp: 0
+      keyNpcDress: 0
+      items: []
+
+  collection:
+    # --- Daily / Repeatable quests ---
+    - tid: 100
+      name: '할아버지 대화'
+      desc: '할아버지 대화'
+      groupType: 1
+      difficult: 1
+      level: 2
+      gameModeFlag: 0
+      startNpcId: 1
+      endNpcId: 1
+      preceding: []
+      successType: 0
+      successValue: 1
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 0
+      rewardGameMoney: 1000
+      rewardPoint: 0
+    - tid: 101
+      name: '오늘의 일일 퀘스트 보상 받기'
+      desc: '선택한 오늘의 일일 퀘스트 완료 후 보상 받아 버리기'
+      groupType: 1
+      difficult: 1
+      level: 2
+      gameModeFlag: 0
+      startNpcId: 1
+      endNpcId: 1
+      preceding:
+        - 100
+      successType: 0
+      successValue: 1
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+
+    # --- Daily quests (GroupType 2) ---
+    - tid: 1000
+      name: '스피드전에서 좋은 성적을 내자'
+      desc: '스피드 개인전 5회 입상'
+      groupType: 2
+      difficult: 3
+      level: 2
+      gameModeFlag: 33
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 5
+      function: 'PrizeWinnerForLowLevel'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 5000
+      rewardGameMoney: 1000
+      rewardPoint: 300
+    - tid: 1001
+      name: '마법전에서 좋은 성적을 내자'
+      desc: '마법 개인전 5회 입상'
+      groupType: 2
+      difficult: 3
+      level: 2
+      gameModeFlag: 68
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 5
+      function: 'PrizeWinnerForLowLevel'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 5000
+      rewardGameMoney: 1000
+      rewardPoint: 300
+    - tid: 1002
+      name: '충분히 많은 경기를 경험하자'
+      desc: '총 게임 진행 수 12회 달성'
+      groupType: 2
+      difficult: 2
+      level: 2
+      gameModeFlag: 111
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 12
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 4000
+      rewardGameMoney: 800
+      rewardPoint: 250
+    - tid: 1003
+      name: '말에게 먹이를 주자'
+      desc: '말 먹이 주기 5회 진행'
+      groupType: 2
+      difficult: 1
+      level: 2
+      gameModeFlag: 0
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 5
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 1000
+      rewardGameMoney: 300
+      rewardPoint: 100
+    - tid: 1004
+      name: '말을 깨끗하게 해주자'
+      desc: '말 씻겨주기 4회 진행'
+      groupType: 2
+      difficult: 1
+      level: 2
+      gameModeFlag: 0
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 4
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 1000
+      rewardGameMoney: 500
+      rewardPoint: 100
+    - tid: 1005
+      name: '경기에서 정확한 점프를 하자'
+      desc: '퍼펙트 점프 횟수 100회 달성'
+      groupType: 2
+      difficult: 2
+      level: 2
+      gameModeFlag: 35
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 100
+      function: 'PerfectJump'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 3000
+      rewardGameMoney: 700
+      rewardPoint: 200
+    - tid: 1006
+      name: '쏜살같은 박차를 보여주자'
+      desc: '스피드 경기에서 박차 40회 사용'
+      groupType: 2
+      difficult: 2
+      level: 2
+      gameModeFlag: 35
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 40
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 3000
+      rewardGameMoney: 700
+      rewardPoint: 200
+    - tid: 1007
+      name: '상쾌하게 날아보자'
+      desc: '글라이딩한 거리 1000미터 달성'
+      groupType: 2
+      difficult: 2
+      level: 2
+      gameModeFlag: 111
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 0
+      successValue: 1000
+      function: 'GlidingDistanceValue'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 3000
+      rewardGameMoney: 700
+      rewardPoint: 200
+    - tid: 1008
+      name: '좋은 마법 콘트롤을 보여주자'
+      desc: '마법구 명중 횟수 20회 달성'
+      groupType: 2
+      difficult: 2
+      level: 2
+      gameModeFlag: 76
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 20
+      function: 'FireballAttack'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 3000
+      rewardGameMoney: 700
+      rewardPoint: 200
+    - tid: 1009
+      name: '마법 팀전에서 승리를 노리자'
+      desc: '4인 이상 마법 팀전 5회 승리'
+      groupType: 2
+      difficult: 3
+      level: 8
+      gameModeFlag: 8
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 5
+      function: 'TeamWin'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 6000
+      rewardGameMoney: 1300
+      rewardPoint: 350
+    - tid: 1010
+      name: '스피드 팀전에서 승리를 노리자'
+      desc: '4인 이상 스피드 팀전 5회 승리'
+      groupType: 2
+      difficult: 3
+      level: 8
+      gameModeFlag: 2
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 5
+      function: 'TeamWin'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 6000
+      rewardGameMoney: 1300
+      rewardPoint: 350
+    - tid: 1011
+      name: '좀 더! 스피드전에서 좋은 성적을 내자'
+      desc: '스피드 개인전 12회 입상'
+      groupType: 2
+      difficult: 4
+      level: 10
+      gameModeFlag: 33
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 12
+      function: 'PrizeWinnerForLowLevel'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 10000
+      rewardGameMoney: 2200
+      rewardPoint: 400
+    - tid: 1012
+      name: '좀 더! 마법전에서 좋은 성적을 내자'
+      desc: '마법 개인전 12회 입상'
+      groupType: 2
+      difficult: 4
+      level: 10
+      gameModeFlag: 68
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 12
+      function: 'PrizeWinnerForLowLevel'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 10000
+      rewardGameMoney: 2200
+      rewardPoint: 400
+    - tid: 1013
+      name: '좀 더! 충분히 많은 경기를 경험하자'
+      desc: '총 게임 진행 수 25회 달성'
+      groupType: 2
+      difficult: 3
+      level: 10
+      gameModeFlag: 111
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 25
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 8000
+      rewardGameMoney: 1800
+      rewardPoint: 350
+    - tid: 1014
+      name: '좀 더! 말에게 먹이를 주자'
+      desc: '말 먹이 주기 10회 진행'
+      groupType: 2
+      difficult: 2
+      level: 10
+      gameModeFlag: 0
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 10
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 2000
+      rewardGameMoney: 400
+      rewardPoint: 200
+    - tid: 1015
+      name: '좀 더! 말을 깨끗하게 해주자'
+      desc: '말 씻겨주기 9회 진행'
+      groupType: 2
+      difficult: 2
+      level: 10
+      gameModeFlag: 0
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 9
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 2000
+      rewardGameMoney: 1000
+      rewardPoint: 200
+    - tid: 1016
+      name: '좀 더! 경기에서 정확한 점프를 하자'
+      desc: '퍼펙트 점프 횟수 250회 달성'
+      groupType: 2
+      difficult: 3
+      level: 10
+      gameModeFlag: 35
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 250
+      function: 'PerfectJump'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 7000
+      rewardGameMoney: 1600
+      rewardPoint: 300
+    - tid: 1017
+      name: '좀 더! 쏜살같은 박차를 보여주자'
+      desc: '스피드 경기에서 박차 90회 사용'
+      groupType: 2
+      difficult: 3
+      level: 10
+      gameModeFlag: 35
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 90
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 7000
+      rewardGameMoney: 1600
+      rewardPoint: 300
+    - tid: 1018
+      name: '좀 더! 상쾌하게 날아보자'
+      desc: '글라이딩한 거리 2500미터 달성'
+      groupType: 2
+      difficult: 3
+      level: 10
+      gameModeFlag: 111
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 0
+      successValue: 2500
+      function: 'GlidingDistanceValue'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 7000
+      rewardGameMoney: 1600
+      rewardPoint: 300
+    - tid: 1019
+      name: '좀 더! 좋은 마법 콘트롤을 보여주자'
+      desc: '마법구 명중 횟수 50회 달성'
+      groupType: 2
+      difficult: 3
+      level: 10
+      gameModeFlag: 76
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 50
+      function: 'FireballAttack'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 7000
+      rewardGameMoney: 1600
+      rewardPoint: 300
+    - tid: 1020
+      name: '좀 더! 마법 팀전에서 승리를 노리자'
+      desc: '4인 이상 마법 팀전 12회 승리'
+      groupType: 2
+      difficult: 4
+      level: 12
+      gameModeFlag: 8
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 12
+      function: 'TeamWin'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 11000
+      rewardGameMoney: 2500
+      rewardPoint: 450
+    - tid: 1021
+      name: '좀 더! 스피드 팀전에서 승리를 노리자'
+      desc: '4인 이상 스피드 팀전 12회 승리'
+      groupType: 2
+      difficult: 4
+      level: 12
+      gameModeFlag: 2
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 12
+      function: 'TeamWin'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 11000
+      rewardGameMoney: 2500
+      rewardPoint: 450
+    - tid: 1022
+      name: '오늘은 의욕이 없는걸 …'
+      desc: '말한테 밥이나 한 번 주자'
+      groupType: 2
+      difficult: 1
+      level: 2
+      gameModeFlag: 0
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 1
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 500
+      rewardGameMoney: 100
+      rewardPoint: 0
+    - tid: 1023
+      name: "귀찮아 … 'ㅅ' =3"
+      desc: '말이나 한 번 닦아 줘야겠다'
+      groupType: 2
+      difficult: 1
+      level: 2
+      gameModeFlag: 0
+      startNpcId: 0
+      endNpcId: 0
+      preceding:
+        - 100
+      successType: 1
+      successValue: 1
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 0
+      rewardExp: 500
+      rewardGameMoney: 100
+      rewardPoint: 0
+
+    # --- Seasonal / event quests ---
+    - tid: 1035
+      name: '추석 이벤트용 송편 재료 모으기 1'
+      desc: '송편 재료인 멥쌀가루를 모으자'
+      groupType: 7
+      difficult: 1
+      level: 1
+      gameModeFlag: 111
+      startNpcId: 0
+      endNpcId: 0
+      preceding: []
+      successType: 1
+      successValue: 1
+      function: 'CollectDropItem'
+      functionValue: 9
+      rewardId: 0
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 1036
+      name: '추석 이벤트용 송편 재료 모으기 2'
+      desc: '송편 재료인 쑥을 모으자'
+      groupType: 7
+      difficult: 1
+      level: 1
+      gameModeFlag: 111
+      startNpcId: 0
+      endNpcId: 0
+      preceding: []
+      successType: 1
+      successValue: 1
+      function: 'CollectDropItem'
+      functionValue: 10
+      rewardId: 0
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 1037
+      name: '추석 이벤트용 송편 재료 모으기 3'
+      desc: '송편 재료인 풋콩을 모으자'
+      groupType: 7
+      difficult: 1
+      level: 1
+      gameModeFlag: 111
+      startNpcId: 0
+      endNpcId: 0
+      preceding: []
+      successType: 1
+      successValue: 1
+      function: 'CollectDropItem'
+      functionValue: 11
+      rewardId: 0
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 1038
+      name: '추석 이벤트용 송편 재료 모으기 4'
+      desc: '송편 재료인 깨와 설탕을 모으자'
+      groupType: 7
+      difficult: 1
+      level: 1
+      gameModeFlag: 111
+      startNpcId: 0
+      endNpcId: 0
+      preceding: []
+      successType: 1
+      successValue: 1
+      function: 'CollectDropItem'
+      functionValue: 12
+      rewardId: 0
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 1039
+      name: '추석 이벤트용 송편 재료 모으기 5'
+      desc: '송편 재료인 솔잎을 모으자'
+      groupType: 7
+      difficult: 1
+      level: 1
+      gameModeFlag: 111
+      startNpcId: 0
+      endNpcId: 0
+      preceding: []
+      successType: 1
+      successValue: 1
+      function: 'CollectDropItem'
+      functionValue: 13
+      rewardId: 0
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+
+    # --- Main story quests (GroupType 0) ---
+    - tid: 11030
+      name: '토마스의 이야기'
+      desc: '토마스와 대화 후 주나와 대화'
+      groupType: 0
+      difficult: 1
+      level: 1
+      gameModeFlag: 0
+      startNpcId: 1
+      endNpcId: 4
+      preceding: []
+      successType: 0
+      successValue: 1
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 110
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 11031
+      name: '경기 경험을 얻자'
+      desc: '모드 구분 없이 경기 진행 5회'
+      groupType: 0
+      difficult: 2
+      level: 1
+      gameModeFlag: 111
+      startNpcId: 1
+      endNpcId: 1
+      preceding:
+        - 12010
+      successType: 1
+      successValue: 5
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 111
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 11032
+      name: '기본 스피드전 훈련하기'
+      desc: '스피드전 훈련>기본1 점프와 박차 완료'
+      groupType: 0
+      difficult: 1
+      level: 1
+      gameModeFlag: 16
+      startNpcId: 1
+      endNpcId: 1
+      preceding:
+        - 11031
+      successType: 0
+      successValue: 1
+      function: 'ClearMission'
+      functionValue: 31
+      rewardId: 112
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 11033
+      name: '글라이딩 훈련'
+      desc: '2단계 훈련>공통3 글라이딩 훈련 완료'
+      groupType: 0
+      difficult: 1
+      level: 2
+      gameModeFlag: 16
+      startNpcId: 1
+      endNpcId: 1
+      preceding:
+        - 14014
+      successType: 0
+      successValue: 1
+      function: 'ClearMission'
+      functionValue: 34
+      rewardId: 113
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 11034
+      name: '완벽한 훈련!'
+      desc: '스피드전훈련>고급6 3단 슬라이딩과 대쉬'
+      groupType: 0
+      difficult: 1
+      level: 13
+      gameModeFlag: 16
+      startNpcId: 1
+      endNpcId: 1
+      preceding:
+        - 11044
+      successType: 0
+      successValue: 1
+      function: 'ClearMission'
+      functionValue: 51
+      rewardId: 114
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 11035
+      name: '새로운 도전'
+      desc: '모드 구분 없이 경기 진행 10회'
+      groupType: 0
+      difficult: 3
+      level: 4
+      gameModeFlag: 111
+      startNpcId: 1
+      endNpcId: 1
+      preceding:
+        - 11030
+      successType: 1
+      successValue: 10
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 115
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 11036
+      name: '박차와 주행 스킬'
+      desc: '스피드 경기에서 박차 30회 사용'
+      groupType: 0
+      difficult: 1
+      level: 5
+      gameModeFlag: 35
+      startNpcId: 1
+      endNpcId: 1
+      preceding:
+        - 11030
+      successType: 1
+      successValue: 30
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 116
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 11037
+      name: '세코린 폭포의 물보라'
+      desc: '세코린 폭포 경기 3회 진행'
+      groupType: 0
+      difficult: 2
+      level: 5
+      gameModeFlag: 111
+      startNpcId: 1
+      endNpcId: 1
+      preceding:
+        - 14017
+        - 12013
+      successType: 1
+      successValue: 3
+      function: 'RunMap'
+      functionValue: 19
+      rewardId: 117
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 11039
+      name: '관리스킬과 친밀도'
+      desc: '말에게 먹이 주기 10회'
+      groupType: 0
+      difficult: 1
+      level: 8
+      gameModeFlag: 0
+      startNpcId: 1
+      endNpcId: 1
+      preceding:
+        - 11030
+      successType: 1
+      successValue: 10
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 119
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 11040
+      name: '말의 매력도와 교배'
+      desc: '얼룩용 마른 헝겊으로 말 씻겨주기 10회'
+      groupType: 0
+      difficult: 2
+      level: 10
+      gameModeFlag: 0
+      startNpcId: 1
+      endNpcId: 1
+      preceding:
+        - 11030
+      successType: 1
+      successValue: 10
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 120
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 11041
+      name: '그랜토 협곡 일주'
+      desc: '그랜토 협곡 경기 3회 진행 (ADV제외)'
+      groupType: 0
+      difficult: 2
+      level: 11
+      gameModeFlag: 111
+      startNpcId: 1
+      endNpcId: 1
+      preceding:
+        - 12017
+      successType: 1
+      successValue: 3
+      function: 'RunMap'
+      functionValue: 16
+      rewardId: 121
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 11043
+      name: '부화 장치'
+      desc: '토마스와 대화 후 주나와 대화'
+      groupType: 0
+      difficult: 1
+      level: 12
+      gameModeFlag: 0
+      startNpcId: 1
+      endNpcId: 4
+      preceding:
+        - 14020
+      successType: 0
+      successValue: 1
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 123
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 11044
+      name: '목장 관리와 정기 보너스'
+      desc: '모드 구분 없이 경기 5회 진행'
+      groupType: 0
+      difficult: 3
+      level: 12
+      gameModeFlag: 111
+      startNpcId: 1
+      endNpcId: 1
+      preceding:
+        - 14023
+      successType: 1
+      successValue: 5
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 124
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 11045
+      name: '[겨울 이벤트] 목장의 겨울'
+      desc: '토마스와 대화 후 주나와 대화'
+      groupType: 0
+      difficult: 1
+      level: 1
+      gameModeFlag: 0
+      startNpcId: 1
+      endNpcId: 4
+      preceding:
+        - 11030
+        - 12010
+      successType: 0
+      successValue: 1
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 165
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 12010
+      name: '스타토의 이야기'
+      desc: '스타토와 대화 후 에이프릴과 대화'
+      groupType: 0
+      difficult: 1
+      level: 1
+      gameModeFlag: 0
+      startNpcId: 2
+      endNpcId: 3
+      preceding:
+        - 11030
+      successType: 0
+      successValue: 1
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 125
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 12011
+      name: '스타트 대쉬에 관해'
+      desc: '2단계 훈련>공통1 스타트 대쉬 훈련 완료'
+      groupType: 0
+      difficult: 1
+      level: 1
+      gameModeFlag: 16
+      startNpcId: 2
+      endNpcId: 2
+      preceding:
+        - 11031
+      successType: 1
+      successValue: 1
+      function: 'ClearMission'
+      functionValue: 46
+      rewardId: 126
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 12012
+      name: '상금을 받는 기분'
+      desc: '모드 구분 없이 경기 입상 3회'
+      groupType: 0
+      difficult: 2
+      level: 2
+      gameModeFlag: 111
+      startNpcId: 2
+      endNpcId: 2
+      preceding:
+        - 11032
+      successType: 1
+      successValue: 3
+      function: 'PrizeWinnerForLowLevel'
+      functionValue: 0
+      rewardId: 127
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 12013
+      name: '스타토의 거상 야망Ⅰ(야자열매)'
+      desc: '아킨즈 사막 야자열매 20개 획득'
+      groupType: 0
+      difficult: 3
+      level: 5
+      gameModeFlag: 111
+      startNpcId: 2
+      endNpcId: 2
+      preceding:
+        - 14016
+      successType: 1
+      successValue: 20
+      function: 'CollectDropItem'
+      functionValue: 5
+      rewardId: 128
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 12014
+      name: '스타토의 거상 야망 Ⅱ (야자열매)'
+      desc: '클라에스 시장길에서 야자열매 10개 획득'
+      groupType: 0
+      difficult: 2
+      level: 8
+      gameModeFlag: 111
+      startNpcId: 2
+      endNpcId: 2
+      preceding:
+        - 11037
+      successType: 1
+      successValue: 10
+      function: 'CollectDropItem'
+      functionValue: 5
+      rewardId: 129
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 12015
+      name: '스타토의 양 디스'
+      desc: '양이 있는 코스에서 양털 뭉치 20개 획득'
+      groupType: 0
+      difficult: 2
+      level: 8
+      gameModeFlag: 111
+      startNpcId: 2
+      endNpcId: 2
+      preceding:
+        - 14020
+      successType: 1
+      successValue: 20
+      function: 'CollectDropItem'
+      functionValue: 6
+      rewardId: 130
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 12016
+      name: '리비안 마을의 상처'
+      desc: '리비안 마을에서 시드 크리스털 3개 획득'
+      groupType: 0
+      difficult: 2
+      level: 10
+      gameModeFlag: 111
+      startNpcId: 2
+      endNpcId: 2
+      preceding:
+        - 12014
+        - 12015
+      successType: 1
+      successValue: 3
+      function: 'CollectDropItem'
+      functionValue: 3
+      rewardId: 131
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 12017
+      name: '스타토의 거상 야망 Ⅲ (전단지)'
+      desc: '도르프 무역항에서 홍보 전단 20장 수거'
+      groupType: 0
+      difficult: 3
+      level: 11
+      gameModeFlag: 111
+      startNpcId: 2
+      endNpcId: 2
+      preceding:
+        - 14021
+      successType: 1
+      successValue: 20
+      function: 'CollectDropItem'
+      functionValue: 8
+      rewardId: 132
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 12018
+      name: '스타토의 거상 야망 Ⅳ (상점홍보)'
+      desc: '모드 구분 없이 경기 5회 입상'
+      groupType: 0
+      difficult: 3
+      level: 13
+      gameModeFlag: 111
+      startNpcId: 2
+      endNpcId: 2
+      preceding:
+        - 12017
+        - 14024
+      successType: 1
+      successValue: 5
+      function: 'PrizeWinnerForLowLevel'
+      functionValue: 0
+      rewardId: 133
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 12021
+      name: '스타토의 거상 야망 Ⅴ (상점홍보)'
+      desc: '모드 구분 없이 경기 10회 진행'
+      groupType: 0
+      difficult: 3
+      level: 13
+      gameModeFlag: 111
+      startNpcId: 2
+      endNpcId: 2
+      preceding:
+        - 12018
+      successType: 1
+      successValue: 10
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 136
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 12022
+      name: '스타토의 거상 야망 끝 (스타토의 우울)'
+      desc: '스타토와 대화 후 에이프릴과 대화'
+      groupType: 0
+      difficult: 1
+      level: 13
+      gameModeFlag: 0
+      startNpcId: 2
+      endNpcId: 3
+      preceding:
+        - 12021
+      successType: 0
+      successValue: 1
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 159
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 13010
+      name: '완벽한 점프'
+      desc: '스피드전에서 퍼펙트 점프 20회 달성'
+      groupType: 0
+      difficult: 1
+      level: 1
+      gameModeFlag: 35
+      startNpcId: 3
+      endNpcId: 3
+      preceding:
+        - 11032
+      successType: 1
+      successValue: 20
+      function: 'PerfectJump'
+      functionValue: 0
+      rewardId: 137
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 13011
+      name: '하늘을 날자'
+      desc: '글라이딩 800 미터 달성'
+      groupType: 0
+      difficult: 2
+      level: 3
+      gameModeFlag: 111
+      startNpcId: 3
+      endNpcId: 3
+      preceding:
+        - 14014
+      successType: 0
+      successValue: 800
+      function: 'GlidingDistanceValue'
+      functionValue: 0
+      rewardId: 138
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 13012
+      name: '하늘을 날자 Ⅱ'
+      desc: '글라이딩 1000미터 달성'
+      groupType: 0
+      difficult: 3
+      level: 7
+      gameModeFlag: 111
+      startNpcId: 3
+      endNpcId: 3
+      preceding:
+        - 13011
+      successType: 0
+      successValue: 1000
+      function: 'GlidingDistanceValue'
+      functionValue: 0
+      rewardId: 139
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 13013
+      name: '세코린 폭포 감상'
+      desc: '세코린 폭포 경기 3회 진행'
+      groupType: 0
+      difficult: 2
+      level: 10
+      gameModeFlag: 111
+      startNpcId: 3
+      endNpcId: 3
+      preceding:
+        - 13012
+        - 12015
+      successType: 1
+      successValue: 3
+      function: 'RunMap'
+      functionValue: 19
+      rewardId: 140
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 13015
+      name: '절벽을 날아 올라가는 기분'
+      desc: '실프 비탈길 경기 5회 진행 (ADV제외)'
+      groupType: 0
+      difficult: 2
+      level: 11
+      gameModeFlag: 111
+      startNpcId: 3
+      endNpcId: 3
+      preceding:
+        - 12010
+      successType: 1
+      successValue: 5
+      function: 'RunMap'
+      functionValue: 25
+      rewardId: 162
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14010
+      name: '프롤라 가도의 이상한 기운'
+      desc: '프롤라 가도에서 의문의 조각 1개 획득'
+      groupType: 0
+      difficult: 1
+      level: 1
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 11030
+      successType: 1
+      successValue: 1
+      function: 'CollectDropItem'
+      functionValue: 1
+      rewardId: 142
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14011
+      name: '말이 좋아하는 먹이'
+      desc: '말에게 먹이 주기 2회 진행'
+      groupType: 0
+      difficult: 1
+      level: 2
+      gameModeFlag: 0
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 11030
+      successType: 1
+      successValue: 2
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 143
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14012
+      name: '말을 잘 씻겨주자'
+      desc: '말 씻겨주기 3회 진행'
+      groupType: 0
+      difficult: 1
+      level: 2
+      gameModeFlag: 0
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 14011
+      successType: 1
+      successValue: 3
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 144
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14013
+      name: '흔한 애마인의 산책'
+      desc: '프롤라 가도 경기 3회 진행'
+      groupType: 0
+      difficult: 2
+      level: 2
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 14012
+      successType: 1
+      successValue: 3
+      function: 'RunMap'
+      functionValue: 1
+      rewardId: 145
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14014
+      name: '리비안 마을의 이상한 기운'
+      desc: '리비안 마을에서 시드 크리스털 2개 획득'
+      groupType: 0
+      difficult: 1
+      level: 2
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 14010
+        - 12012
+      successType: 1
+      successValue: 2
+      function: 'CollectDropItem'
+      functionValue: 3
+      rewardId: 146
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14015
+      name: '각자의 과제'
+      desc: '모드 구분 없이 경기 입상 3회'
+      groupType: 0
+      difficult: 2
+      level: 3
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 14014
+      successType: 1
+      successValue: 3
+      function: 'PrizeWinnerForLowLevel'
+      functionValue: 0
+      rewardId: 147
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14016
+      name: '상업도시 아미스에서 실력 발휘'
+      desc: '상업도시 아미스 입상 3회'
+      groupType: 0
+      difficult: 2
+      level: 3
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 14015
+      successType: 1
+      successValue: 3
+      function: 'PrizeWinnerInMapForLowLevel'
+      functionValue: 40
+      rewardId: 148
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14017
+      name: '아킨즈 사막의 특별 훈련'
+      desc: '아킨즈 사막 5회 진행(ADV제외)'
+      groupType: 0
+      difficult: 3
+      level: 3
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 11035
+      successType: 1
+      successValue: 5
+      function: 'RunMap'
+      functionValue: 41
+      rewardId: 149
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14019
+      name: '칼리드 마을 수색'
+      desc: '칼리드 마을에서 시드 크리스털 5개 획득'
+      groupType: 0
+      difficult: 2
+      level: 8
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 14014
+      successType: 1
+      successValue: 5
+      function: 'CollectDropItem'
+      functionValue: 3
+      rewardId: 151
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14020
+      name: '도르프 상회 수색'
+      desc: '도르프 상회에서 시드 크리스털 5개 획득'
+      groupType: 0
+      difficult: 2
+      level: 8
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 14019
+      successType: 1
+      successValue: 5
+      function: 'CollectDropItem'
+      functionValue: 3
+      rewardId: 152
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14021
+      name: '실프 언덕의 상처'
+      desc: '실프 언덕에서 시드 크리스털 3개 획득'
+      groupType: 0
+      difficult: 2
+      level: 10
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 12016
+      successType: 1
+      successValue: 3
+      function: 'CollectDropItem'
+      functionValue: 3
+      rewardId: 153
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14023
+      name: '토마스 할아버지에게 무슨 일이?'
+      desc: '모드 구분 없이 경기 3회 진행'
+      groupType: 0
+      difficult: 2
+      level: 12
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 11043
+      successType: 1
+      successValue: 3
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 155
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14024
+      name: '스타토에게 무슨 일이?'
+      desc: '양이 있는 코스에서 양털 뭉치 10개 획득'
+      groupType: 0
+      difficult: 2
+      level: 13
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 2
+      preceding:
+        - 11044
+      successType: 1
+      successValue: 10
+      function: 'CollectDropItem'
+      functionValue: 6
+      rewardId: 156
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14025
+      name: '특등 기수로의 길'
+      desc: '모드 구분 없이 10경기 진행'
+      groupType: 0
+      difficult: 3
+      level: 13
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 11030
+      successType: 1
+      successValue: 10
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 157
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14027
+      name: '실프 비탈길 질주'
+      desc: '실프 비탈길 경기 입상 3회 (ADV제외)'
+      groupType: 0
+      difficult: 3
+      level: 12
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 14021
+        - 11043
+      successType: 1
+      successValue: 3
+      function: 'PrizeWinnerInMapForLowLevel'
+      functionValue: 25
+      rewardId: 161
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14028
+      name: '[겨울 이벤트] 목장 식구들의 겨울 의상 Ⅰ'
+      desc: '양이 있는 코스에서 양털 뭉치 20개 획득'
+      groupType: 0
+      difficult: 3
+      level: 1
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 11045
+      successType: 1
+      successValue: 20
+      function: 'CollectDropItem'
+      functionValue: 6
+      rewardId: 166
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14029
+      name: '[겨울 이벤트] 목장 식구들의 겨울 의상 Ⅱ'
+      desc: '주나와 대화 후 토마스와 대화'
+      groupType: 0
+      difficult: 1
+      level: 1
+      gameModeFlag: 0
+      startNpcId: 4
+      endNpcId: 1
+      preceding:
+        - 14028
+      successType: 0
+      successValue: 1
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 167
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14030
+      name: '[겨울 이벤트] 목장 식구들의 겨울 의상 Ⅲ'
+      desc: '모드 구분 없이 경기 8회 진행'
+      groupType: 0
+      difficult: 2
+      level: 1
+      gameModeFlag: 111
+      startNpcId: 4
+      endNpcId: 4
+      preceding:
+        - 14029
+      successType: 1
+      successValue: 8
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 168
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14031
+      name: '[겨울 이벤트] 목장 식구들의 겨울 의상 Ⅳ'
+      desc: '주나와 대화 후 에이프릴과 대화'
+      groupType: 0
+      difficult: 1
+      level: 1
+      gameModeFlag: 0
+      startNpcId: 4
+      endNpcId: 3
+      preceding:
+        - 14030
+      successType: 0
+      successValue: 1
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 169
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+    - tid: 14032
+      name: '[겨울 이벤트] 목장 식구들의 겨울 의상 Ⅴ'
+      desc: '주나와 대화 후 스타토와 대화'
+      groupType: 0
+      difficult: 1
+      level: 1
+      gameModeFlag: 0
+      startNpcId: 4
+      endNpcId: 2
+      preceding:
+        - 14031
+      successType: 0
+      successValue: 1
+      function: 'TRUE'
+      functionValue: 0
+      rewardId: 170
+      rewardExp: 0
+      rewardGameMoney: 0
+      rewardPoint: 0
+
+  # QuestRewardPoint table from libconfig_c.dat
+  # Each entry defines the items granted when the player's accumulated quest
+  # reward points reach the corresponding threshold.
+  rewardPoints:
+    - point: 0
+      name: '얼룩용마른헝겊'  # Spotted dry cloth
+      items:
+        - tid: 41008
+          count: 4
+        - tid: 46011
+          count: 1
+    - point: 200
+      name: '꼬리용 브러시'  # Tail brush
+      items:
+        - tid: 40002
+          count: 4
+        - tid: 46011
+          count: 1
+    - point: 400
+      name: '갈기용 브러시'  # Mane brush
+      items:
+        - tid: 41009
+          count: 3
+        - tid: 46011
+          count: 1
+    - point: 500
+      name: '당근낚시대'  # Carrot fishing rod
+      items:
+        - tid: 42001
+          count: 3
+        - tid: 46011
+          count: 1
+    - point: 600
+      name: '화살'  # Arrow
+      items:
+        - tid: 42002
+          count: 3
+        - tid: 46011
+          count: 1
+    - point: 700
+      name: '성장의 비약'  # Growth potion
+      items:
+        - tid: 43001
+          count: 1
+        - tid: 46011
+          count: 1
+    - point: 800
+      name: '재료용크리스털'  # Material crystal
+      items:
+        - tid: 45001
+          count: 1
+        - tid: 46011
+          count: 1
+    - point: 900
+      name: '그린리브 보호구 (36시간)'  # Greenleaf protector (36h)
+      items:
+        - tid: 20072
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 1000
+      name: '레드실버 보호구 (36시간)'  # Red Silver protector (36h)
+      items:
+        - tid: 20068
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 1100
+      name: '블루드래곤 보호구 (36시간)'  # Blue Dragon protector (36h)
+      items:
+        - tid: 20018
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 1200
+      name: '포레스트 보호구 (36시간)'  # Forest protector (36h)
+      items:
+        - tid: 20008
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 1300
+      name: '유령기사의 보호구 (36시간)'  # Ghost Knight protector (36h)
+      items:
+        - tid: 20015
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 1400
+      name: '유령기사의 보호구 (36시간)'  # Ghost Knight protector (36h)
+      items:
+        - tid: 20015
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 1500
+      name: '유령기사의 보호구 (36시간)'  # Ghost Knight protector (36h)
+      items:
+        - tid: 20015
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 1600
+      name: '유령기사의 보호구 (36시간)'  # Ghost Knight protector (36h)
+      items:
+        - tid: 20015
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 1700
+      name: '유령기사의 보호구 (36시간)'  # Ghost Knight protector (36h)
+      items:
+        - tid: 20015
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 1800
+      name: '유령기사의 보호구 (36시간)'  # Ghost Knight protector (36h)
+      items:
+        - tid: 20015
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 1900
+      name: '유령기사의 보호구 (36시간)'  # Ghost Knight protector (36h)
+      items:
+        - tid: 20015
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 2000
+      name: '유령기사의 보호구 (36시간)'  # Ghost Knight protector (36h)
+      items:
+        - tid: 20015
+          count: 36
+        - tid: 46011
+          count: 1
+    - point: 2100
+      name: '유령기사의 보호구 (36시간)'  # Ghost Knight protector (36h)
+      items:
+        - tid: 20015
+          count: 36
+        - tid: 46011
+          count: 1

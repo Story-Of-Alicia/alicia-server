@@ -24,6 +24,8 @@
 
 #include <libserver/util/Util.hpp>
 
+#include <charconv>
+#include <limits>
 #include <regex>
 #include <format>
 
@@ -33,13 +35,41 @@ namespace server
 namespace
 {
 
-constexpr std::string_view UserLine        = "  - user: '{}'";
-constexpr std::string_view CharacterLine   = "    <font color=\"#AAAAAA\">(uid:{}) '{}', level {}</font>";
+constexpr std::string_view UserLine = "  - user: '{}'";
+constexpr std::string_view CharacterLine = "    <font color=\"#AAAAAA\">(uid:{}) '{}', level {}</font>";
 constexpr std::string_view NoCharacterLine = "    <font color=\"#FF0000\">no character</font>";
 
 const std::regex MinutePattern(R"((\d+)m)");
 const std::regex HourPattern(R"((\d+)h)");
 const std::regex DayPattern(R"((\d+)d)");
+
+std::chrono::seconds ExtractDuration(const std::string& argument)
+{
+  auto duration = std::chrono::seconds::zero();
+
+  if (argument == "forever" || argument == "f")
+  {
+    duration = std::chrono::seconds::max();
+  }
+  else
+  {
+    std::smatch match;
+    if (std::regex_search(argument, match, MinutePattern))
+    {
+      duration += std::chrono::minutes(std::stoi(match[1].str()));
+    }
+    if (std::regex_search(argument, match, HourPattern))
+    {
+      duration += std::chrono::hours(std::stoi(match[1].str()));
+    }
+    if (std::regex_search(argument, match, DayPattern))
+    {
+      duration += std::chrono::days(std::stoi(match[1].str()));
+    }
+  }
+
+  return duration;
+}
 
 } // anon namespace
 
@@ -83,7 +113,7 @@ ChatSystem::~ChatSystem()
 
 ChatSystem::ChatVerdict ChatSystem::ProcessChatMessage(
   data::Uid characterUid,
-  const std::string& message) noexcept
+  const std::string& message)
 {
   ChatVerdict verdict;
 
@@ -120,9 +150,9 @@ ChatSystem::ChatVerdict ChatSystem::ProcessChatMessage(
   // Check  if the moderation verdict prevented the message.
   if (moderationVerdict.isPrevented)
   {
-    verdict.isMuted     = true;
+    verdict.isMuted = true;
     verdict.isPrevented = true;
-    verdict.message     = "Your message contains blocked words.";
+    verdict.message = "Your message contains blocked words.";
     return verdict;
   }
 
@@ -145,6 +175,25 @@ ChatSystem::CommandVerdict ChatSystem::ProcessCommandMessage(
     std::span(command.begin() + 1, command.end()));
 
   return verdict;
+}
+
+std::optional<data::Character::RoleRank> ChatSystem::GetRoleRank(
+  const data::Uid characterUid)
+{
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+    characterUid);
+  if (not characterRecord)
+    return std::nullopt;
+
+  std::optional<data::Character::RoleRank> rank;
+  characterRecord.Immutable([&rank](const data::Character& character)
+    {
+      // Only staff (any role other than User) carry a meaningful rank.
+      if (character.role() != data::Character::Role::User && character.roleRank() != data::Character::RoleRank::None)
+        rank = character.roleRank();
+    });
+
+  return rank;
 }
 
 void ChatSystem::RegisterUserCommands()
@@ -171,7 +220,7 @@ void ChatSystem::RegisterUserCommands()
   // help command
   _commandManager.RegisterCommand(
     "help",
-    [this](
+    [](
       const std::span<const std::string>&,
       [[maybe_unused]] data::Uid characterUid) -> std::vector<std::string>
     {
@@ -187,11 +236,13 @@ void ChatSystem::RegisterUserCommands()
         " ",
         "Official admin command reference:",
         " //infraction - Infraction management",
-        " //incognito - Toggles incognito mode for GMs"
+        " //incognito - Toggles incognito mode for GMs",
         " //info - Info about users and characters",
-        " //promote - Promotes user to Game Master role",
-        " //demote - Demotes user to User role",
+        " //mod  - Moderation management",
+        " //promote - Promotes user to staff (Admin only, needs passphrase)",
+        " //demote - Demotes user to User role (Admin only)",
         " //notice - Sends notice to character",
+        " //set - Sets exp/carrots (Admin only)",
         " ",
         "More commands available over at: ",
         " https://bruhvrum.github.io/registertest/commands"};
@@ -286,10 +337,11 @@ void ChatSystem::RegisterUserCommands()
           if (character.parts.modelId() != 20)
           {
             character.appearance.voiceId() = voiceId;
-          } else
+          }
+          else
           {
             // female modelId has voiceIds 4,5,6 so add 3
-            character.appearance.voiceId() = voiceId+3;
+            character.appearance.voiceId() = voiceId + 3;
           }
         });
 
@@ -304,6 +356,11 @@ void ChatSystem::RegisterUserCommands()
       data::Uid characterUid) -> std::vector<std::string>
     {
       // todo: development command, to be removed
+
+      // Horse manipulation is Admin-only.
+      const auto rank = GetRoleRank(characterUid);
+      if (not rank || *rank < data::Character::RoleRank::Admin)
+        return {"Only Admin-rank staff can use this command."};
 
       if (arguments.size() < 1)
         return {
@@ -400,8 +457,7 @@ void ChatSystem::RegisterUserCommands()
           characterRecord.Immutable(
             [this](const data::Character& character)
             {
-              _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Mutable(
-                [this](data::Horse& horse)
+              _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Mutable([this](data::Horse& horse)
                 {
                   _serverInstance.GetHorseRegistry().GiveHorseRandomPotential(
                     horse.potential);
@@ -424,8 +480,7 @@ void ChatSystem::RegisterUserCommands()
             [this, &type, &level, &value](
               const data::Character& character)
             {
-              _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Mutable(
-                [&type, &level, &value](data::Horse& horse)
+              _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Mutable([&type, &level, &value](data::Horse& horse)
                 {
                   horse.potential.type = type;
                   horse.potential.level = level;
@@ -449,8 +504,7 @@ void ChatSystem::RegisterUserCommands()
       {
         characterRecord.Immutable([this, &mountUid](const data::Character& character)
           {
-            _serverInstance.GetDataDirector().GetHorseCache().Get(character.mountUid())->Mutable(
-              [this](data::Horse& horse)
+            _serverInstance.GetDataDirector().GetHorseCache().Get(character.mountUid())->Mutable([this](data::Horse& horse)
               {
                 _serverInstance.GetHorseRegistry().BuildRandomHorse(
                   horse.parts, horse.appearance);
@@ -467,8 +521,7 @@ void ChatSystem::RegisterUserCommands()
       {
         characterRecord.Immutable([this](const data::Character& character)
           {
-            _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Mutable(
-              [](data::Horse& horse)
+            _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Mutable([](data::Horse& horse)
               {
                 horse.stats.agility() = 0;
                 horse.stats.ambition() = 0;
@@ -499,8 +552,7 @@ void ChatSystem::RegisterUserCommands()
 
         characterRecord.Immutable([this, &tendencyValue](const data::Character& character)
           {
-            _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Mutable(
-              [&tendencyValue](data::Horse& horse)
+            _serverInstance.GetDataDirector().GetHorse(character.mountUid()).Mutable([&tendencyValue](data::Horse& horse)
               {
                 horse.tendency() = tendencyValue;
               });
@@ -523,7 +575,7 @@ void ChatSystem::RegisterUserCommands()
       if (arguments.size() < 1)
         return {
           "Invalid command sub-literal.",
-          " (//give <item/horse/preset/carrots>)"};
+          " (//give <item/preset/carrots>)"};
 
       const auto& subLiteral = arguments[0];
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
@@ -531,32 +583,26 @@ void ChatSystem::RegisterUserCommands()
 
       if (subLiteral == "item")
       {
-        // Only allow admins (character.role != User) to use this subcommand.
-        if (not characterRecord)
-          return {"Server error"};
-
-        bool isAdmin = false;
-        characterRecord.Immutable([&isAdmin](const data::Character& character)
-          {
-            isAdmin = character.role() != data::Character::Role::User;
-          });
-
-        if (not isAdmin)
-          return {"You don't have permission to use this command."};
-
-        if (arguments.size() < 3)
-          return {
-            "Invalid command arguments.",
-            "(//give item <count> <tid>)"};
-
-        // todo: item duration
-        const int32_t itemCount = std::atoi(arguments[1].c_str());
-        if (itemCount < 1)
+        // Any staff member.
+        const auto rank = GetRoleRank(characterUid);
+        if (not rank)
         {
-          return {"Invalid item count"};
+          return {
+            "You don't have permission to use this command.",
+            "Use shop to obtain items."};
         }
 
-        const data::Uid itemTid = std::atoi(arguments[2].c_str());
+        if (arguments.size() < 3)
+        {
+          return {
+            "give item",
+            "  <tid>",
+            "  <count or duration>",
+            "    - Optional parameter.",
+            "    - Duration as XXmXXhXXd or (f)orever.",};
+        }
+
+        const data::Uid itemTid = std::atoi(arguments[1].c_str());
 
         const auto itemTemplate = _serverInstance.GetItemRegistry().GetItem(itemTid);
         if (not itemTemplate)
@@ -569,9 +615,23 @@ void ChatSystem::RegisterUserCommands()
           return {"Please give yourself eggs to hatch pets."};
         }
 
-        if (itemTid >= 20000 && itemTid <= 29999)
+        int32_t itemCount = 1;
+        std::chrono::seconds itemDuration = std::chrono::seconds::zero();
+
+        if (arguments.size() > 2)
         {
-          return {"Please use the shop to obtain horse armor."};
+          if (itemTemplate->type == registry::Item::Type::Temporary)
+          {
+            itemDuration = ExtractDuration(arguments[2]);
+          }
+          else
+          {
+            itemCount = std::atoi(arguments[2].c_str());
+            if (itemCount < 1)
+            {
+              return {"Invalid item count"};
+            }
+          }
         }
 
         size_t inventoryItemCount{0};
@@ -598,12 +658,12 @@ void ChatSystem::RegisterUserCommands()
         }
 
         storedItem.Mutable(
-          [&itemTemplate, &giftUid, itemCount, itemTid](data::StorageItem& storageItem)
+          [&itemTemplate, &giftUid, itemCount, itemDuration, itemTid](data::StorageItem& storageItem)
           {
             storageItem.items().emplace_back(data::StorageItem::Item{
               .tid = itemTid,
               .count = static_cast<uint32_t>(itemCount),
-              .duration = std::chrono::days(10)});
+              .duration = itemDuration});
             storageItem.sender() = "System";
 
             storageItem.message() = std::format("{}x Item '{}'", itemCount, itemTemplate->name);
@@ -614,9 +674,9 @@ void ChatSystem::RegisterUserCommands()
 
         // Add the stored item as a gift.
         characterRecord.Mutable([giftUid](data::Character& character)
-        {
-          character.gifts().emplace_back(giftUid);
-        });
+          {
+            character.gifts().emplace_back(giftUid);
+          });
 
         _serverInstance.GetRanchDirector().SendStorageNotification(
           characterUid, protocol::AcCmdCRRequestStorage::Category::Gifts);
@@ -627,6 +687,11 @@ void ChatSystem::RegisterUserCommands()
       }
       else if (subLiteral == "preset")
       {
+        // Admin-only.
+        const auto rank = GetRoleRank(characterUid);
+        if (not rank || *rank < data::Character::RoleRank::Admin)
+          return {"Only Admin-rank staff can use this command."};
+
         // //give preset <care> [<count>]
         if (arguments.size() < 2)
           return {
@@ -704,9 +769,9 @@ void ChatSystem::RegisterUserCommands()
 
         // Add the stored item as a gift.
         characterRecord.Mutable([giftUid](data::Character& character)
-        {
-          character.gifts().emplace_back(giftUid);
-        });
+          {
+            character.gifts().emplace_back(giftUid);
+          });
 
         return {
           "Preset stored in your gift storage.",
@@ -714,6 +779,12 @@ void ChatSystem::RegisterUserCommands()
       }
       else if (subLiteral == "horse")
       {
+        // Giving horses is Admin-only.
+        const auto rank = GetRoleRank(characterUid);
+        if (not rank || *rank < data::Character::RoleRank::Admin)
+          return {"Only Admin-rank staff can use this command.",
+            "Go breed some horses!"};
+
         // Check if character has max amount of horses
         auto horseCount = 0;
         auto horseSlotCount = 0;
@@ -747,6 +818,7 @@ void ChatSystem::RegisterUserCommands()
             horse.growthPoints() = 150;
             horse.clazz = 1;
             horse.tendency() = 1;
+            horse.grade = 1;
 
             // Give horse random parts and appearance
             _serverInstance.GetHorseRegistry().BuildRandomHorse(
@@ -773,19 +845,13 @@ void ChatSystem::RegisterUserCommands()
       }
       else if (subLiteral == "carrots")
       {
-        // Only allow admins (character.role != User) to use this subcommand.
-        const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
-        if (not invokerRecord)
-          return {"Server error"};
-
-        bool isAdmin = false;
-        invokerRecord.Immutable([&isAdmin](const data::Character& character)
-          {
-            isAdmin = character.role() != data::Character::Role::User;
-          });
-
-        if (not isAdmin)
+        // Only allow Admin-rank staff to use this subcommand.
+        const auto rank = GetRoleRank(characterUid);
+        if (not rank)
           return {"You don't have permission to use this command."};
+
+        if (*rank < data::Character::RoleRank::Admin)
+          return {"Only Admin-rank staff can use this command."};
 
         if (arguments.size() < 2)
           return {
@@ -815,9 +881,9 @@ void ChatSystem::RegisterUserCommands()
 
         // Add the stored item as a gift.
         characterRecord.Mutable([giftUid](data::Character& character)
-        {
-          character.gifts().emplace_back(giftUid);
-        });
+          {
+            character.gifts().emplace_back(giftUid);
+          });
 
         _serverInstance.GetRanchDirector().SendStorageNotification(
           characterUid, protocol::AcCmdCRRequestStorage::Category::Gifts);
@@ -840,17 +906,8 @@ void ChatSystem::RegisterAdminCommands()
       const std::span<const std::string>& arguments,
       data::Uid characterUid) -> std::vector<std::string>
     {
-      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
-      if (not invokerRecord)
-        return {"Server error"};
-
-      bool isAdmin = false;
-      invokerRecord.Immutable([&isAdmin](const data::Character& character)
-      {
-        isAdmin = character.role() != data::Character::Role::User;
-      });
-
-      if (not isAdmin)
+      const auto invokerRank = GetRoleRank(characterUid);
+      if (not invokerRank)
         return {};
 
       // todo: implement only local check
@@ -877,22 +934,22 @@ void ChatSystem::RegisterAdminCommands()
         {
           auto onlineCharacterUid{data::InvalidUid};
           userRecord.Immutable([&onlineCharacterUid](const data::User& user)
-          {
-            onlineCharacterUid = user.characterUid();
-          });
+            {
+              onlineCharacterUid = user.characterUid();
+            });
 
           const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
             onlineCharacterUid);
           if (characterRecord)
           {
             characterRecord.Immutable([&userList](const data::Character& character)
-            {
-              userList.emplace_back(std::format(
-                CharacterLine,
-                character.uid(),
-                character.name(),
-                character.level()));
-            });
+              {
+                userList.emplace_back(std::format(
+                  CharacterLine,
+                  character.uid(),
+                  character.name(),
+                  character.level()));
+              });
           }
           else
           {
@@ -912,25 +969,16 @@ void ChatSystem::RegisterAdminCommands()
       const std::span<const std::string>& arguments,
       data::Uid characterUid) -> std::vector<std::string>
     {
-      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
-      if (not invokerRecord)
-        return {"Server error"};
-
-      bool isAdmin = false;
-      invokerRecord.Immutable([&isAdmin](const data::Character& character)
-      {
-        isAdmin = character.role() != data::Character::Role::User;
-      });
-
-      if (not isAdmin)
+      const auto invokerRank = GetRoleRank(characterUid);
+      if (not invokerRank)
         return {};
 
       if (arguments.size() < 2)
       {
         return {"notice",
-        "  [character UID]",
-        "  - Specify 0 to send to all"
-        "  [message]"};
+          "  [character UID]",
+          "  - Specify 0 to send to all"
+          "  [message]"};
       }
 
       std::string message;
@@ -968,24 +1016,41 @@ void ChatSystem::RegisterAdminCommands()
       const std::span<const std::string>& arguments,
       data::Uid invokerCharacterUid) -> std::vector<std::string>
     {
-      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(
-        invokerCharacterUid);
-      if (not invokerRecord)
-        return {"Server error"};
-
-      bool isAdmin = false;
-      invokerRecord.Immutable([&isAdmin](const data::Character& character)
-      {
-        isAdmin = character.role() != data::Character::Role::User;
-      });
-
-      if (not isAdmin)
+      // Only Admin-rank staff may promote, and only with the configured passphrase.
+      const auto invokerRank = GetRoleRank(invokerCharacterUid);
+      if (not invokerRank)
         return {};
 
-      if (arguments.empty())
-        return {"Specify user name"};
+      if (*invokerRank < data::Character::RoleRank::Admin)
+        return {"Only Admin-rank staff can promote users."};
+
+      if (arguments.size() < 3)
+        return {
+          "//promote [user name] [trial/mod/admin] [passphrase]"};
 
       const auto& userName = arguments[0];
+      const auto& rankArgument = arguments[1];
+      const auto& passphrase = arguments[2];
+
+      // The passphrase is a second factor: a compromised admin account cannot
+      // promote without also knowing the server-side passphrase.
+      const std::string& configuredPassphrase =
+        _serverInstance.GetSettings().general.promotePassphrase;
+      if (configuredPassphrase.empty())
+        return {"Promotion is disabled: no passphrase is configured on the server."};
+
+      if (passphrase != configuredPassphrase)
+        return {"Incorrect passphrase."};
+
+      data::Character::RoleRank grantedRank;
+      if (rankArgument == "trial" || rankArgument == "t")
+        grantedRank = data::Character::RoleRank::Trial;
+      else if (rankArgument == "mod" || rankArgument == "moderator" || rankArgument == "m")
+        grantedRank = data::Character::RoleRank::Moderator;
+      else if (rankArgument == "admin" || rankArgument == "a")
+        grantedRank = data::Character::RoleRank::Admin;
+      else
+        return {"Invalid rank. Use one of: trial, mod, admin"};
 
       const auto userRecord = _serverInstance.GetDataDirector().GetUser(
         userName);
@@ -1000,9 +1065,9 @@ void ChatSystem::RegisterAdminCommands()
       auto characterUid = data::InvalidUid;
 
       userRecord.Immutable([&characterUid](const data::User& user)
-      {
-        characterUid = user.characterUid();
-      });
+        {
+          characterUid = user.characterUid();
+        });
 
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
         characterUid);
@@ -1012,13 +1077,27 @@ void ChatSystem::RegisterAdminCommands()
       }
 
       std::string characterName;
-      characterRecord.Mutable([&characterName](data::Character& character)
-      {
-        character.role() = data::Character::Role::GameMaster;
-        characterName = character.name();
-      });
+      characterRecord.Mutable([&characterName, grantedRank](data::Character& character)
+        {
+          character.role() = data::Character::Role::GameMaster;
+          character.roleRank() = grantedRank;
+          characterName = character.name();
+        });
 
-      return {std::format("User '{}' ({}) promoted to GM", userName, characterName)};
+      const auto rankName =
+        grantedRank == data::Character::RoleRank::Trial       ? "Trial"
+        : grantedRank == data::Character::RoleRank::Moderator ? "Moderator"
+                                                              : "Admin";
+
+      const auto invokerUserName =
+        _serverInstance.GetLobbyDirector().GetUserByCharacterUid(invokerCharacterUid).userName;
+      spdlog::info("Admin {} promoted user '{}' ({}) to {} staff",
+        invokerUserName,
+        userName,
+        characterName,
+        rankName);
+
+      return {std::format("User '{}' ({}) promoted to {} staff", userName, characterName, rankName)};
     });
 
   // demote command
@@ -1028,19 +1107,13 @@ void ChatSystem::RegisterAdminCommands()
       const std::span<const std::string>& arguments,
       data::Uid invokerCharacterUid) -> std::vector<std::string>
     {
-      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(
-        invokerCharacterUid);
-      if (not invokerRecord)
-        return {"Server error"};
-
-      bool isAdmin = false;
-      invokerRecord.Immutable([&isAdmin](const data::Character& character)
-      {
-        isAdmin = character.role() != data::Character::Role::User;
-      });
-
-      if (not isAdmin)
+      // Only Admin-rank staff may demote.
+      const auto invokerRank = GetRoleRank(invokerCharacterUid);
+      if (not invokerRank)
         return {};
+
+      if (*invokerRank < data::Character::RoleRank::Admin)
+        return {"Only Admin-rank staff can demote users."};
 
       if (arguments.empty())
         return {"Specify user name"};
@@ -1060,9 +1133,9 @@ void ChatSystem::RegisterAdminCommands()
       auto characterUid = data::InvalidUid;
 
       userRecord.Immutable([&characterUid](const data::User& user)
-      {
-        characterUid = user.characterUid();
-      });
+        {
+          characterUid = user.characterUid();
+        });
 
       const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
         characterUid);
@@ -1073,195 +1146,182 @@ void ChatSystem::RegisterAdminCommands()
 
       std::string characterName;
       characterRecord.Mutable([&characterName](data::Character& character)
-      {
-        character.role() = data::Character::Role::User;
-        characterName = character.name();
-      });
+        {
+          character.role() = data::Character::Role::User;
+          character.roleRank() = data::Character::RoleRank::None;
+          characterName = character.name();
+        });
 
       return {std::format("User '{}' ({}) demoted to user", userName, characterName)};
     });
 
   // infraction command
   const auto infractionHandler = [this](
-      const std::span<const std::string>& arguments,
-      data::Uid characterUid) -> std::vector<std::string>
+                                   const std::span<const std::string>& arguments,
+                                   data::Uid characterUid) -> std::vector<std::string>
+  {
+    const auto invokerRank = GetRoleRank(characterUid);
+    if (not invokerRank)
+      return {};
+
+    if (arguments.empty())
+      return {"(i)nfraction",
+        "  [(a)dd/(r)emove/(l)ist]"};
+
+    const std::string& subLiteral = arguments[0];
+
+    if (subLiteral == "add" || subLiteral == "a")
     {
-      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
-      if (not invokerRecord)
-        return {"Server error"};
-
-      bool isAdmin = false;
-      invokerRecord.Immutable([&isAdmin](const data::Character& character)
+      if (arguments.size() < 4)
       {
-        isAdmin = character.role() != data::Character::Role::User;
-      });
+        return {
+          "infraction add",
+          "  [user name]",
+          "  [none/(m)ute/(b)an]",
+          "  [duration (XXmXXhXXd or forever)]",
+          "  [optional: description]"};
+      }
 
-      if (not isAdmin)
-        return {};
+      // Get the user name argument.
+      const std::string userName = arguments[1];
 
-      if (arguments.empty())
-        return {"(i)nfraction",
-          "  [(a)dd/(r)emove/(l)ist]"};
-
-      const std::string& subLiteral = arguments[0];
-
-      if (subLiteral == "add" || subLiteral == "a")
+      // Validate that the user exists.
+      if (_serverInstance.GetDataDirector().GetDataSource().IsUserNameUnique(
+            userName))
       {
-        if (arguments.size() < 4)
+        return {
+          std::format(
+            "User '{}' does not exist",
+            userName)};
+      }
+
+      // Get the user record.
+      const auto userRecord = _serverInstance.GetDataDirector().GetUserCache().Get(
+        userName);
+      if (not userRecord)
+      {
+        return {
+          std::format(
+            "User '{}' not momentarily unavailable",
+            userName),
+          "Try again later."};
+      }
+
+      // Get the infraction type argument.
+      const std::string& typeArgument = arguments[2];
+      data::Infraction::Punishment punishmentType;
+      if (typeArgument == "mute" || typeArgument == "m")
+        punishmentType = data::Infraction::Punishment::Mute;
+      else if (typeArgument == "ban" || typeArgument == "b")
+        punishmentType = data::Infraction::Punishment::Ban;
+      else
+        punishmentType = data::Infraction::Punishment::None;
+
+      // Get the infraction duration argument.
+      const std::string& durationArgument = arguments[3];
+      auto duration = ExtractDuration(durationArgument);
+
+      if (duration == data::Clock::duration::zero())
+      {
+        return {"Invalid duration, format example: 20m10h1d or forever"};
+      }
+
+      // Trial staff may only issue temporary bans of up to 30 days.
+      // Mutes and "none" records are unrestricted for all ranks.
+      if (punishmentType == data::Infraction::Punishment::Ban && *invokerRank < data::Character::RoleRank::Moderator)
+      {
+        constexpr auto MaxTrialBan = std::chrono::days(30);
+        if (duration == std::chrono::seconds::max() || duration > MaxTrialBan)
         {
           return {
-            "infraction add",
-            "  [user name]",
-            "  [none/(m)ute/(b)an]",
-            "  [duration (XXmXXhXXd or forever)]",
-            "  [optional: description]"};
+            "Trial staff can only issue temporary bans up to 30 days.",
+            "Ask a Moderator or Admin for longer bans."};
         }
+      }
 
-        // Get the user name argument.
-        const std::string userName = arguments[1];
-
-        // Validate that the user exists.
-        if (_serverInstance.GetDataDirector().GetDataSource().IsUserNameUnique(
-          userName))
+      std::string description;
+      if (arguments.size() > 4)
+      {
+        for (const std::string& word : arguments.subspan(4))
         {
-          return {
-            std::format(
-              "User '{}' does not exist",
-              userName)};
+          description += word;
+          description += " ";
         }
+      }
 
-        // Get the user record.
-        const auto userRecord = _serverInstance.GetDataDirector().GetUserCache().Get(
-          userName);
-        if (not userRecord)
+      auto infractionUid{data::InvalidUid};
+      const auto infractionRecord = _serverInstance.GetDataDirector().CreateInfraction();
+      infractionRecord.Mutable(
+        [&infractionUid, punishmentType, duration, description](
+          data::Infraction& infraction)
         {
-          return {
-            std::format(
-              "User '{}' not momentarily unavailable",
-              userName),
-            "Try again later."};
-        }
+          infraction.punishment = punishmentType;
+          infraction.duration = duration;
+          infraction.description = description;
+          infraction.createdAt = data::Clock::now();
 
-        // Get the infraction type argument.
-        const std::string& typeArgument = arguments[2];
-        data::Infraction::Punishment punishmentType;
-        if (typeArgument == "mute" || typeArgument == "m")
-          punishmentType = data::Infraction::Punishment::Mute;
-        else if (typeArgument == "ban" || typeArgument == "b")
-          punishmentType = data::Infraction::Punishment::Ban;
-        else
-          punishmentType = data::Infraction::Punishment::None;
+          infractionUid = infraction.uid();
+        });
 
-        // Get the infraction duration argument.
-        const std::string& durationArgument = arguments[3];
-        auto duration = std::chrono::seconds::zero();
-
-        if (durationArgument == "forever" || durationArgument == "f")
-        {
-          duration = std::chrono::seconds::max();
-        }
-        else
-        {
-          std::smatch match;
-          if (std::regex_search(durationArgument, match, MinutePattern)) {
-            duration += std::chrono::minutes(std::stoi(match[1].str()));
-          }
-          if (std::regex_search(durationArgument, match, HourPattern)) {
-            duration += std::chrono::hours(std::stoi(match[1].str()));
-          }
-          if (std::regex_search(durationArgument, match, DayPattern)) {
-            duration += std::chrono::days(std::stoi(match[1].str()));
-          }
-        }
-
-        if (duration == data::Clock::duration::zero())
-        {
-          return {"Invalid duration, format example: 20m10h1d or forever"};
-        }
-
-        std::string description;
-        if (arguments.size() > 4)
-        {
-          for (const std::string& word : arguments.subspan(4))
-          {
-            description += word;
-            description += " ";
-          }
-        }
-
-        auto infractionUid{data::InvalidUid};
-        const auto infractionRecord = _serverInstance.GetDataDirector().CreateInfraction();
-        infractionRecord.Mutable(
-          [&infractionUid, punishmentType, duration, description](
-            data::Infraction& infraction)
-          {
-            infraction.punishment = punishmentType;
-            infraction.duration = duration;
-            infraction.description = description;
-            infraction.createdAt = data::Clock::now();
-
-            infractionUid = infraction.uid();
-          });
-
-        auto userCharacterUid{data::InvalidUid};
-        userRecord->Mutable([infractionUid, &userCharacterUid](data::User& user)
+      auto userCharacterUid{data::InvalidUid};
+      userRecord->Mutable([infractionUid, &userCharacterUid](data::User& user)
         {
           user.infractions().emplace_back(infractionUid);
 
           userCharacterUid = user.characterUid();
         });
 
-        if (punishmentType == data::Infraction::Punishment::Ban)
-        {
-          _serverInstance.GetLobbyDirector().DisconnectCharacter(userCharacterUid);
-          _serverInstance.GetRanchDirector().Disconnect(userCharacterUid);
-          _serverInstance.GetRaceDirector().DisconnectCharacter(userCharacterUid);
-        }
-        else if (punishmentType == data::Infraction::Punishment::Mute)
-        {
-          _serverInstance.GetLobbyDirector().MuteCharacter(userCharacterUid, data::Clock::now() + duration);
-        }
-
-        return {std::format("Infraction added to '{}'", userName)};
-      }
-      else if (subLiteral == "remove" || subLiteral == "r")
+      if (punishmentType == data::Infraction::Punishment::Ban)
       {
-        if (arguments.size() < 3)
-        {
-          return {"infraction remove",
-            "  [user name]",
-            "  [infraction UID]"};
-        }
+        _serverInstance.GetLobbyDirector().DisconnectCharacter(userCharacterUid);
+        _serverInstance.GetRanchDirector().Disconnect(userCharacterUid);
+        _serverInstance.GetRaceDirector().DisconnectCharacter(userCharacterUid);
+      }
+      else if (punishmentType == data::Infraction::Punishment::Mute)
+      {
+        _serverInstance.GetLobbyDirector().MuteCharacter(userCharacterUid, data::Clock::now() + duration);
+      }
 
-        // Get the user name argument.
-        const std::string& userName = arguments[1];
+      return {std::format("Infraction added to '{}'", userName)};
+    }
+    else if (subLiteral == "remove" || subLiteral == "r")
+    {
+      if (arguments.size() < 3)
+      {
+        return {"infraction remove",
+          "  [user name]",
+          "  [infraction UID]"};
+      }
 
-        // Validate that the user exists.
-        if (_serverInstance.GetDataDirector().GetDataSource().IsUserNameUnique(
-          userName))
-        {
-          return {
-            std::format(
-              "User '{}' does not exist",
-              userName)};
-        }
+      // Get the user name argument.
+      const std::string& userName = arguments[1];
 
-        // Get the user record.
-        const auto userRecord = _serverInstance.GetDataDirector().GetUserCache().Get(
-          userName);
-        if (not userRecord)
-        {
-          return {
-            std::format(
-              "User '{}' not momentarily unavailable",
-              userName),
-            "Try again later."};
-        }
+      // Validate that the user exists.
+      if (_serverInstance.GetDataDirector().GetDataSource().IsUserNameUnique(
+            userName))
+      {
+        return {
+          std::format(
+            "User '{}' does not exist",
+            userName)};
+      }
 
-        const data::Uid infractionUid = std::atol(arguments[2].c_str());
-        bool hasInfraction = false;
+      // Get the user record.
+      const auto userRecord = _serverInstance.GetDataDirector().GetUserCache().Get(
+        userName);
+      if (not userRecord)
+      {
+        return {
+          std::format(
+            "User '{}' not momentarily unavailable",
+            userName),
+          "Try again later."};
+      }
 
-        userRecord->Mutable([infractionUid, &hasInfraction](data::User& user)
+      const data::Uid infractionUid = std::atol(arguments[2].c_str());
+      bool hasInfraction = false;
+
+      userRecord->Mutable([infractionUid, &hasInfraction](data::User& user)
         {
           hasInfraction = std::ranges::contains(user.infractions(), infractionUid);
 
@@ -1272,48 +1332,48 @@ void ChatSystem::RegisterAdminCommands()
           }
         });
 
-        if (not hasInfraction)
-          return {std::format("No such infraction for user '{}'", userName)};
+      if (not hasInfraction)
+        return {std::format("No such infraction for user '{}'", userName)};
 
-        return {std::format("Infraction removed from '{}'", userName)};
-      }
-      else if (subLiteral == "list" || subLiteral == "l")
+      return {std::format("Infraction removed from '{}'", userName)};
+    }
+    else if (subLiteral == "list" || subLiteral == "l")
+    {
+      if (arguments.size() < 2)
       {
-        if (arguments.size() < 2)
-        {
-          return {"infraction list",
-            "  [user name]"};
-        }
+        return {"infraction list",
+          "  [user name]"};
+      }
 
-        // Get the user name argument.
-        const std::string& userName = arguments[1];
+      // Get the user name argument.
+      const std::string& userName = arguments[1];
 
-        // Validate that the user exists.
-        if (_serverInstance.GetDataDirector().GetDataSource().IsUserNameUnique(
-          userName))
-        {
-          return {
-            std::format(
-              "User '{}' does not exist",
-              userName)};
-        }
+      // Validate that the user exists.
+      if (_serverInstance.GetDataDirector().GetDataSource().IsUserNameUnique(
+            userName))
+      {
+        return {
+          std::format(
+            "User '{}' does not exist",
+            userName)};
+      }
 
-        // Get the user record.
-        const auto userRecord = _serverInstance.GetDataDirector().GetUserCache().Get(
-          userName);
-        if (not userRecord)
-        {
-          return {
-            std::format(
-              "User '{}' not momentarily unavailable",
-              userName),
-            "Try again later."};
-        }
+      // Get the user record.
+      const auto userRecord = _serverInstance.GetDataDirector().GetUserCache().Get(
+        userName);
+      if (not userRecord)
+      {
+        return {
+          std::format(
+            "User '{}' not momentarily unavailable",
+            userName),
+          "Try again later."};
+      }
 
-        std::vector<std::string> list;
-        list.emplace_back(std::format("Infractions of '{}':", userName));
+      std::vector<std::string> list;
+      list.emplace_back(std::format("Infractions of '{}':", userName));
 
-        userRecord->Immutable([this, &list](const data::User& user)
+      userRecord->Immutable([this, &list](const data::User& user)
         {
           const auto infractionRecords = _serverInstance.GetDataDirector().GetInfractionCache().Get(
             user.infractions());
@@ -1326,67 +1386,67 @@ void ChatSystem::RegisterAdminCommands()
           for (const auto& infractionRecord : *infractionRecords)
           {
             infractionRecord.Immutable([&list](const data::Infraction& infraction)
-            {
-              list.emplace_back(std::format(
-                " - UID: #{} - {}", infraction.uid(), infraction.description()));
-
-              std::string type;
-              if (infraction.punishment() == data::Infraction::Punishment::None)
-                type = "none";
-              else if (infraction.punishment() == data::Infraction::Punishment::Mute)
-                type = "<font color=\"#FF0000\">mute</font>";
-              else if (infraction.punishment() == data::Infraction::Punishment::Ban)
-                type = "<font color=\"#FF0000\">ban</font>";
-
-              list.emplace_back(std::format(
-                "   punishment: {}", type));
-
-              const bool isForever = infraction.duration() == std::chrono::seconds::max();
-              if (isForever)
               {
-                list.emplace_back("   expires: <font color=\"#FF0000\">never</font>");
-              }
-              else
-              {
-                const auto expires = infraction.createdAt() + infraction.duration();
+                list.emplace_back(std::format(
+                  " - UID: #{} - {}", infraction.uid(), infraction.description()));
 
-                const std::chrono::year_month_day date{
-                  std::chrono::floor<std::chrono::days>(expires)};
-                const std::chrono::hh_mm_ss time{
-                  expires - std::chrono::floor<std::chrono::days>(expires)};
+                std::string type;
+                if (infraction.punishment() == data::Infraction::Punishment::None)
+                  type = "none";
+                else if (infraction.punishment() == data::Infraction::Punishment::Mute)
+                  type = "<font color=\"#FF0000\">mute</font>";
+                else if (infraction.punishment() == data::Infraction::Punishment::Ban)
+                  type = "<font color=\"#FF0000\">ban</font>";
 
                 list.emplace_back(std::format(
-                  "   expires: {}/{}/{} - {:02}:{:02} (UTC)",
-                  date.day(),
-                  date.month(),
-                  date.year(),
-                  time.hours().count(),
-                  time.minutes().count()));
-              }
+                  "   punishment: {}", type));
 
-              {
-                const std::chrono::year_month_day date{std::chrono::floor<std::chrono::days>(
-                  infraction.createdAt())};
-                const std::chrono::hh_mm_ss time{
-                  infraction.createdAt() - std::chrono::floor<std::chrono::days>(infraction.createdAt())};
+                const bool isForever = infraction.duration() == std::chrono::seconds::max();
+                if (isForever)
+                {
+                  list.emplace_back("   expires: <font color=\"#FF0000\">never</font>");
+                }
+                else
+                {
+                  const auto expires = infraction.createdAt() + infraction.duration();
 
-                list.emplace_back(std::format(
-                  "   created: {}/{}/{} - {:02}:{:02} (UTC)",
-                  date.day(),
-                  date.month(),
-                  date.year(),
-                  time.hours().count(),
-                  time.minutes().count()));
-              }
-            });
+                  const std::chrono::year_month_day date{
+                    std::chrono::floor<std::chrono::days>(expires)};
+                  const std::chrono::hh_mm_ss time{
+                    expires - std::chrono::floor<std::chrono::days>(expires)};
+
+                  list.emplace_back(std::format(
+                    "   expires: {}/{}/{} - {:02}:{:02} (UTC)",
+                    date.day(),
+                    date.month(),
+                    date.year(),
+                    time.hours().count(),
+                    time.minutes().count()));
+                }
+
+                {
+                  const std::chrono::year_month_day date{std::chrono::floor<std::chrono::days>(
+                    infraction.createdAt())};
+                  const std::chrono::hh_mm_ss time{
+                    infraction.createdAt() - std::chrono::floor<std::chrono::days>(infraction.createdAt())};
+
+                  list.emplace_back(std::format(
+                    "   created: {}/{}/{} - {:02}:{:02} (UTC)",
+                    date.day(),
+                    date.month(),
+                    date.year(),
+                    time.hours().count(),
+                    time.minutes().count()));
+                }
+              });
           }
         });
 
-        return list;
-      }
+      return list;
+    }
 
-      return {"Unknown sub literal"};
-    };
+    return {"Unknown sub literal"};
+  };
 
   _commandManager.RegisterCommand("infraction", infractionHandler);
   _commandManager.RegisterCommand("i", infractionHandler);
@@ -1404,27 +1464,27 @@ void ChatSystem::RegisterAdminCommands()
 
       bool isAdmin = false;
       invokerRecord.Immutable([&isAdmin](const data::Character& character)
-      {
-        isAdmin = character.role() != data::Character::Role::User;
-      });
+        {
+          isAdmin = character.role() != data::Character::Role::User;
+        });
 
       if (not isAdmin)
         return {};
 
       bool wasIncognito = false;
       invokerRecord.Mutable([&wasIncognito](data::Character& character)
-      {
-        wasIncognito = character.role() == data::Character::Role::Op;
+        {
+          wasIncognito = character.role() == data::Character::Role::Op;
 
-        if (wasIncognito)
-        {
-          character.role() = data::Character::Role::GameMaster;
-        }
-        else
-        {
-          character.role() = data::Character::Role::Op;
-        }
-      });
+          if (wasIncognito)
+          {
+            character.role() = data::Character::Role::GameMaster;
+          }
+          else
+          {
+            character.role() = data::Character::Role::Op;
+          }
+        });
 
       if (wasIncognito)
       {
@@ -1441,17 +1501,8 @@ void ChatSystem::RegisterAdminCommands()
       const std::span<const std::string>& arguments,
       data::Uid characterUid) -> std::vector<std::string>
     {
-      const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
-      if (not invokerRecord)
-        return {"Server error"};
-
-      bool isAdmin = false;
-      invokerRecord.Immutable([&isAdmin](const data::Character& character)
-      {
-        isAdmin = character.role() != data::Character::Role::User;
-      });
-
-      if (not isAdmin)
+      const auto invokerRank = GetRoleRank(characterUid);
+      if (not invokerRank)
         return {};
 
       if (arguments.empty())
@@ -1475,30 +1526,30 @@ void ChatSystem::RegisterAdminCommands()
           if (guildRecord)
           {
             guildRecord.Immutable([&response, characterUid = character.uid()](
-              const data::Guild& guild)
-            {
-              if (guild.owner() == characterUid)
+                                    const data::Guild& guild)
               {
-                response.emplace_back(std::format(
-                  "Owner of a guild '{}' ({})",
-                  guild.name(),
-                  guild.uid()));
-              }
-              else if (std::ranges::contains(guild.officers(), characterUid))
-              {
-                response.emplace_back(std::format(
-                  "Officer of a guild '{}' ({})",
-                  guild.name(),
-                  guild.uid()));
-              }
-              else
-              {
-                response.emplace_back(std::format(
-                  "Member of a guild '{}' ({})",
-                  guild.name(),
-                  guild.uid()));
-              }
-            });
+                if (guild.owner() == characterUid)
+                {
+                  response.emplace_back(std::format(
+                    "Owner of a guild '{}' ({})",
+                    guild.name(),
+                    guild.uid()));
+                }
+                else if (std::ranges::contains(guild.officers(), characterUid))
+                {
+                  response.emplace_back(std::format(
+                    "Officer of a guild '{}' ({})",
+                    guild.name(),
+                    guild.uid()));
+                }
+                else
+                {
+                  response.emplace_back(std::format(
+                    "Member of a guild '{}' ({})",
+                    guild.name(),
+                    guild.uid()));
+                }
+              });
           }
           else
           {
@@ -1517,9 +1568,9 @@ void ChatSystem::RegisterAdminCommands()
         if (mountRecord)
         {
           mountRecord.Immutable([&response](const data::Horse& horse)
-          {
-            response.emplace_back(std::format(" > '{}' ({})", horse.name(), horse.uid()));
-          });
+            {
+              response.emplace_back(std::format(" > '{}' ({})", horse.name(), horse.uid()));
+            });
         }
         else
         {
@@ -1534,9 +1585,9 @@ void ChatSystem::RegisterAdminCommands()
           for (const auto& horseRecord : *horseRecords)
           {
             horseRecord.Immutable([&response](const data::Horse& horse)
-            {
-              response.emplace_back(std::format(" - {} ({})", horse.name(), horse.uid()));
-            });
+              {
+                response.emplace_back(std::format(" - {} ({})", horse.name(), horse.uid()));
+              });
           }
         }
         else
@@ -1552,9 +1603,9 @@ void ChatSystem::RegisterAdminCommands()
           for (const auto& petRecord : *petRecords)
           {
             petRecord.Immutable([&response](const data::Pet& pet)
-            {
-              response.emplace_back(std::format(" - {} ({})", pet.name(), pet.uid()));
-            });
+              {
+                response.emplace_back(std::format(" - {} ({})", pet.name(), pet.uid()));
+              });
           }
         }
         else
@@ -1582,18 +1633,18 @@ void ChatSystem::RegisterAdminCommands()
 
           std::string characterName;
           characterRecord.Immutable([&characterName](const data::Character& character)
-          {
-            characterName = character.name();
-          });
+            {
+              characterName = character.name();
+            });
 
           if (characterName != name)
             continue;
 
           std::vector<std::string> response;
           characterRecord.Immutable([&response, &dumpCharacterInfo](const data::Character& character)
-          {
-            response = dumpCharacterInfo(character);
-          });
+            {
+              response = dumpCharacterInfo(character);
+            });
 
           return response;
         }
@@ -1624,10 +1675,10 @@ void ChatSystem::RegisterAdminCommands()
 
         std::vector<std::string> response;
         characterRecord.Immutable([&response, &dumpCharacterInfo](
-          const data::Character& character)
-        {
-          response = dumpCharacterInfo(character);
-        });
+                                    const data::Character& character)
+          {
+            response = dumpCharacterInfo(character);
+          });
 
         return response;
       }
@@ -1635,33 +1686,33 @@ void ChatSystem::RegisterAdminCommands()
       return {"Unknown sub-literal"};
     });
 
-    // mod command
+  // mod command
   _commandManager.RegisterCommand(
     "mod",
     [this](
       const std::span<const std::string>& arguments,
       data::Uid characterUid) -> std::vector<std::string>
     {
+      const auto invokerRank = GetRoleRank(characterUid);
+      if (not invokerRank)
+        return {};
+
       const auto invokerRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
       if (not invokerRecord)
         return {"Server error"};
 
-      bool isAdmin = false;
       std::string invokerCharacterName{};
-      invokerRecord.Immutable([&isAdmin, &invokerCharacterName](const data::Character& character)
-      {
-        isAdmin = character.role() != data::Character::Role::User;
-        invokerCharacterName = character.name();
-      });
+      invokerRecord.Immutable([&invokerCharacterName](const data::Character& character)
+        {
+          invokerCharacterName = character.name();
+        });
       const auto invokerUserName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(characterUid).userName;
-
-      if (not isAdmin)
-        return {};
 
       if (arguments.empty())
         return {"mod",
           " reset user [name]",
-          " rename [horse/pet/guild/room] [uid] [name]"};
+          " rename [horse/pet/guild/room] [uid] [name]",
+          " transfer guild [guildUid] [newOwnerUsername]"};
 
       const auto& subcommand = arguments[0];
       if (subcommand == "reset")
@@ -1689,10 +1740,10 @@ void ChatSystem::RegisterAdminCommands()
           // Character UID before the reset
           data::Uid targetCharacterUid{data::InvalidUid};
           userRecord.Mutable([&targetCharacterUid](data::User& user)
-          {
-            targetCharacterUid = user.characterUid();
-            user.characterUid() = data::InvalidUid;
-          });
+            {
+              targetCharacterUid = user.characterUid();
+              user.characterUid() = data::InvalidUid;
+            });
 
           if (targetCharacterUid == data::InvalidUid)
             return {
@@ -1728,8 +1779,8 @@ void ChatSystem::RegisterAdminCommands()
             "  [macro] [username]"};
 
         const auto& concatString = [](
-          const std::span<const std::string>& arguments,
-          std::string separator = " ") -> const std::string
+                                     const std::span<const std::string>& arguments,
+                                     std::string separator = " ") -> const std::string
         {
           std::string str{};
           for (size_t i = 0; i < arguments.size(); ++i)
@@ -1767,10 +1818,10 @@ void ChatSystem::RegisterAdminCommands()
           // Join remaining arguments to form new name
           std::string newName = concatString(arguments.subspan(3));
           horseRecord.Mutable([&previousName, newName](data::Horse& horse)
-          {
-            previousName = horse.name();
-            horse.name() = newName;
-          });
+            {
+              previousName = horse.name();
+              horse.name() = newName;
+            });
 
           spdlog::info("GM {} ({}) has renamed horse '{}' from '{}' to '{}'",
             invokerUserName,
@@ -1810,10 +1861,10 @@ void ChatSystem::RegisterAdminCommands()
           // Join remaining arguments to form new name
           std::string newName = concatString(arguments.subspan(3));
           petRecord.Mutable([&previousName, newName](data::Pet& pet)
-          {
-            previousName = pet.name();
-            pet.name() = newName;
-          });
+            {
+              previousName = pet.name();
+              pet.name() = newName;
+            });
 
           spdlog::info("GM {} ({}) has renamed pet '{}' from '{}' to '{}'",
             invokerUserName,
@@ -1853,10 +1904,10 @@ void ChatSystem::RegisterAdminCommands()
           // Join remaining arguments to form new name
           std::string newName = concatString(arguments.subspan(3));
           guildRecord.Mutable([&previousName, newName](data::Guild& guild)
-          {
-            previousName = guild.name();
-            guild.name() = newName;
-          });
+            {
+              previousName = guild.name();
+              guild.name() = newName;
+            });
 
           spdlog::info("GM {} ({}) has renamed guild '{}' from '{}' to '{}'",
             invokerUserName,
@@ -1902,10 +1953,7 @@ void ChatSystem::RegisterAdminCommands()
               room.GetRoomDetails().name = newName;
             });
 
-          protocol::AcCmdCRChangeRoomOptionsNotify notify{
-            .optionsBitfield = protocol::RoomOptionType::Name,
-            .name = newName};
-          _serverInstance.GetRaceDirector().BroadcastChangeRoomOptions(roomUid, notify);
+          _serverInstance.GetRaceDirector().NotifyRoomNameChanged(roomUid);
 
           spdlog::info("GM {} ({}) has renamed room '{}' from '{}' to '{}'",
             invokerUserName,
@@ -1936,9 +1984,9 @@ void ChatSystem::RegisterAdminCommands()
 
           data::Uid targetCharacterUid{data::InvalidUid};
           userRecord.Immutable([&targetCharacterUid](const data::User& user)
-          {
-            targetCharacterUid = user.characterUid();
-          });
+            {
+              targetCharacterUid = user.characterUid();
+            });
 
           if (targetCharacterUid == data::InvalidUid)
             return {std::format("User '{}' does not have a character", targetUserName)};
@@ -1949,9 +1997,9 @@ void ChatSystem::RegisterAdminCommands()
 
           data::Uid settingsUid{data::InvalidUid};
           characterRecord.Immutable([&settingsUid](const data::Character& character)
-          {
-            settingsUid = character.settingsUid();
-          });
+            {
+              settingsUid = character.settingsUid();
+            });
 
           if (settingsUid == data::InvalidUid)
             return {std::format("User '{}' does not have a settings record", targetUserName)};
@@ -1975,10 +2023,91 @@ void ChatSystem::RegisterAdminCommands()
         }
       }
 
+      else if (subcommand == "transfer")
+      {
+        if (arguments.size() < 2)
+          return {
+            "mod transfer",
+            "  guild [guildUid] [newOwnerUsername]"};
+
+        const auto& subject = arguments[1];
+        if (subject == "guild")
+        {
+          if (arguments.size() < 3)
+            return {
+              "mod transfer guild",
+              "   [guildUid] [newOwnerUsername]"};
+
+          const auto guildUid = std::atoi(arguments[2].c_str());
+          if (guildUid == data::InvalidUid)
+            return {"Invalid guild UID"};
+
+          const auto& guildRecord = _serverInstance.GetDataDirector().GetGuild(guildUid);
+          if (not guildRecord.IsAvailable())
+            return {
+              std::format("Guild '{}' does not exist or is currently unavailable", guildUid)};
+
+          if (arguments.size() < 4)
+            return {
+              std::format("mod transfer guild {}", guildUid),
+              "    [newOwnerUsername]"};
+
+          const std::string& newOwnerUserName = arguments[3];
+          const auto newOwnerUserRecord = _serverInstance.GetDataDirector().GetUser(newOwnerUserName);
+          if (not newOwnerUserRecord.IsAvailable())
+            return {std::format("User '{}' does not exist or is currently unavailable", newOwnerUserName)};
+
+          data::Uid newOwnerCharacterUid{data::InvalidUid};
+          newOwnerUserRecord.Immutable([&newOwnerCharacterUid](const data::User& user)
+            {
+              newOwnerCharacterUid = user.characterUid();
+            });
+
+          if (newOwnerCharacterUid == data::InvalidUid)
+            return {std::format("User '{}' does not have a character", newOwnerUserName)};
+
+          bool isMember = false;
+          guildRecord.Immutable([&isMember, newOwnerCharacterUid](const data::Guild& guild)
+            {
+              const auto& members = guild.members();
+              isMember = std::find(members.begin(), members.end(), newOwnerCharacterUid) != members.end();
+            });
+
+          if (not isMember)
+            return {std::format("User '{}' is not a member of guild '{}'", newOwnerUserName, guildUid)};
+
+          std::string guildName{};
+          data::Uid previousOwnerUid{data::InvalidUid};
+          guildRecord.Mutable([&guildName, &previousOwnerUid, newOwnerCharacterUid](data::Guild& guild)
+            {
+              guildName = guild.name();
+              previousOwnerUid = guild.owner();
+              guild.owner() = newOwnerCharacterUid;
+              // Remove new owner from officers if they were one, and ensure
+              // old owner is not lingering in the officers list.
+              auto& officers = guild.officers();
+              std::erase(officers, newOwnerCharacterUid);
+              std::erase(officers, previousOwnerUid);
+            });
+
+          spdlog::info("GM {} ({}) transferred ownership of guild '{}' ({}) from uid {} to {} ({})",
+            invokerUserName,
+            invokerCharacterName,
+            guildName,
+            guildUid,
+            previousOwnerUid,
+            newOwnerCharacterUid,
+            newOwnerUserName);
+
+          return {
+            std::format("Guild '{}' ownership transferred to '{}'", guildName, newOwnerUserName)};
+        }
+      }
+
       return {"Unknown sub-command"};
     });
 
-   // visit command
+  // visit command
   _commandManager.RegisterCommand(
     "visit",
     [this](
@@ -2041,6 +2170,184 @@ void ChatSystem::RegisterAdminCommands()
       return {
         std::format("Nobody with the name '{}' is online.", visitingCharacterName),
         "Use //online to view online players."};
+    });
+
+  // set command
+  _commandManager.RegisterCommand(
+    "set",
+    [this](
+      const std::span<const std::string>& arguments,
+      data::Uid invokerCharacterUid) -> std::vector<std::string>
+    {
+      // Overwriting progression values is Admin-only.
+      const auto invokerRank = GetRoleRank(invokerCharacterUid);
+      if (not invokerRank)
+        return {};
+
+      if (*invokerRank < data::Character::RoleRank::Admin)
+        return {"Only Admin-rank staff can use this command."};
+
+      if (arguments.size() < 2)
+        return {"set",
+          "  exp [value] [optional: user name]",
+          "  carrots [value] [optional: user name]",
+          "Values are overwritten, not added.",
+          "Without a user name your own character is set."};
+
+      const std::string& subLiteral = arguments[0];
+
+      // Resolve the target character. Without a user name the invoker is targeted.
+      auto targetCharacterUid = invokerCharacterUid;
+      std::string targetUserName;
+
+      if (arguments.size() > 2)
+      {
+        targetUserName = arguments[2];
+
+        const auto userRecord = _serverInstance.GetDataDirector().GetUser(targetUserName);
+        if (not userRecord.IsAvailable())
+          return {
+            std::format("User '{}' does not exist or is currently unavailable", targetUserName)};
+
+        targetCharacterUid = data::InvalidUid;
+        userRecord.Immutable([&targetCharacterUid](const data::User& user)
+        {
+          targetCharacterUid = user.characterUid();
+        });
+
+        if (targetCharacterUid == data::InvalidUid)
+          return {std::format("User '{}' does not have a character", targetUserName)};
+      }
+
+      const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+        targetCharacterUid);
+      if (not characterRecord)
+        return {"Character unavailable", "Try again later."};
+
+      // Parse the value strictly, a typo must not silently set the value to zero.
+      const std::string& valueArgument = arguments[1];
+      int64_t value{};
+      {
+        const char* const begin = valueArgument.data();
+        const char* const end = begin + valueArgument.size();
+
+        const auto [parseEnd, errorCode] = std::from_chars(begin, end, value);
+        if (errorCode != std::errc{} || parseEnd != end)
+          return {std::format("'{}' is not a valid number", valueArgument)};
+      }
+
+      const auto invokerUserName =
+        _serverInstance.GetLobbyDirector().GetUserByCharacterUid(invokerCharacterUid).userName;
+
+      // Describes the character that was modified, for the response and the audit log.
+      std::string characterName;
+
+      if (subLiteral == "exp" || subLiteral == "experience")
+      {
+        constexpr int64_t MaxExperience = std::numeric_limits<uint32_t>::max();
+        if (value < 0 || value > MaxExperience)
+          return {std::format("Experience must be between 0 and {}", MaxExperience)};
+
+        const auto experience = static_cast<uint32_t>(value);
+        // The level always follows from the experience.
+        const uint32_t level = _serverInstance.GetCharacterRegistry().GetLevelForExp(experience);
+
+        uint32_t previousExperience{};
+        uint32_t previousLevel{};
+        characterRecord.Mutable(
+          [&characterName, &previousExperience, &previousLevel, experience, level](
+            data::Character& character)
+          {
+            previousExperience = character.experience();
+            previousLevel = character.level();
+
+            character.experience() = experience;
+            character.level() = level;
+
+            characterName = character.name();
+          });
+
+        spdlog::info("Admin {} set experience of '{}' ({}) from {} to {} (level {} to {})",
+          invokerUserName,
+          characterName,
+          targetCharacterUid,
+          previousExperience,
+          experience,
+          previousLevel,
+          level);
+
+        return {
+          std::format("Experience of '{}' set to {} (was {})",
+            characterName,
+            experience,
+            previousExperience),
+          std::format("Level is now {} (was {})", level, previousLevel),
+          "Restart the game for the changes to apply."};
+      }
+
+      if (subLiteral == "carrots")
+      {
+        constexpr int64_t MaxCarrots = std::numeric_limits<int32_t>::max();
+        if (value < 0 || value > MaxCarrots)
+          return {std::format("Carrots must be between 0 and {}", MaxCarrots)};
+
+        const auto carrots = static_cast<int32_t>(value);
+
+        int32_t previousCarrots{};
+        characterRecord.Mutable(
+          [&characterName, &previousCarrots, carrots](data::Character& character)
+          {
+            previousCarrots = character.carrots();
+            character.carrots() = carrots;
+
+            characterName = character.name();
+          });
+
+        spdlog::info("Admin {} set carrots of '{}' ({}) from {} to {}",
+          invokerUserName,
+          characterName,
+          targetCharacterUid,
+          previousCarrots,
+          carrots);
+
+        return {
+          std::format("Carrots of '{}' set to {} (was {})",
+            characterName,
+            carrots,
+            previousCarrots),
+          "Restart the game for the changes to apply."};
+      }
+
+      return {"Unknown sub-literal"};
+    });
+
+  // reload command
+  _commandManager.RegisterCommand(
+    "reload",
+    [this](
+      [[maybe_unused]] const std::span<const std::string>& arguments,
+      [[maybe_unused]] data::Uid characterUid) -> std::vector<std::string>
+    {
+      const auto invokerRank = GetRoleRank(characterUid);
+      if (not invokerRank || *invokerRank != data::Character::RoleRank::Admin)
+        return {};
+
+      try
+      {
+        _serverInstance.LoadConfigurations();
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error("Failed to load configurations: {}", x.what());
+        return {
+          "Error trying to load game"
+          "and server configs."
+          "See the server console."};
+      }
+
+      return {
+        "Game and server configs",
+        "were reloaded"};
     });
 }
 

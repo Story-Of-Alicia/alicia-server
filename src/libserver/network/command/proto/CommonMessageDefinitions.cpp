@@ -135,5 +135,67 @@ void AcCmdRCRequestUser::Write(
     .Write(command.ranchUid);
 }
 
+void AcCmdRCUpdateQuestNotify::Read(
+  AcCmdRCUpdateQuestNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCUpdateQuestNotify::Write(
+  const AcCmdRCUpdateQuestNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.questTid)
+    .Write(command.objectiveProgress);
+}
+
+void AcCmdRCUpdateMountInfoNotify::Write(
+  const AcCmdRCUpdateMountInfoNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid)
+    .Write(command.action)
+    .Write(command.horse);
+}
+
+void AcCmdRCUpdateMountInfoNotify::Read(
+  AcCmdRCUpdateMountInfoNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdRCMobDead::Write(
+  const AcCmdRCMobDead& command,
+  SinkStream& stream)
+{
+  stream.Write(command.mobOid);
+}
+
+void AcCmdRCMobDead::Read(
+  AcCmdRCMobDead& command,
+  SourceStream& stream)
+{
+  stream.Read(command.mobOid);
+}
+
+void AcCmdCRUpdateRanchLevelNotify::Write(
+  const AcCmdCRUpdateRanchLevelNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0)
+    .Write(command.ranchProgress)
+    .Write(command.carrotsGained);
+}
+
+void AcCmdCRUpdateRanchLevelNotify::Read(
+  AcCmdCRUpdateRanchLevelNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
 } // namespace server::protocol
 

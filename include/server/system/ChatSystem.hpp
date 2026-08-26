@@ -23,6 +23,7 @@
 #include "libserver/data/DataDefinitions.hpp"
 
 #include <functional>
+#include <optional>
 #include <string>
 #include <span>
 #include <unordered_map>
@@ -79,7 +80,7 @@ public:
   //! @param message Message that was sent.
   [[nodiscard]] ChatVerdict ProcessChatMessage(
     data::Uid characterUid,
-    const std::string& message) noexcept;
+    const std::string& message);
 
   [[nodiscard]] CommandVerdict ProcessCommandMessage(
     data::Uid characterUid,
@@ -88,6 +89,13 @@ public:
 private:
   void RegisterUserCommands();
   void RegisterAdminCommands();
+
+  //! Gets t
+  //! @param characterUid UID of the character.
+  //! @returns The staff rank if the character exists and is staff
+  //!          (role != User); std::nullopt otherwise.
+  [[nodiscard]] std::optional<data::Character::RoleRank> GetRoleRank(
+    data::Uid characterUid);
 
   //! A server instance.
   ServerInstance& _serverInstance;

@@ -57,19 +57,19 @@ public:
   explicit MatchmakingSystem(ServerInstance& serverInstance);
   ~MatchmakingSystem() = default;
 
-  const bool Queue(
-    const data::Uid characterUid,
-    const protocol::GameMode gameMode,
-    const protocol::TeamMode teamMode);
-  const bool Dequeue(const data::Uid characterUid);
+  bool Queue(
+    data::Uid characterUid,
+    protocol::GameMode gameMode,
+    protocol::TeamMode teamMode);
+  bool Dequeue(data::Uid characterUid);
 
 private:
   std::optional<data::Uid> Matchmake(const Entry& entry);
 
-  const void Search(
-    const data::Uid characterUid,
-    const protocol::GameMode gameMode,
-    const protocol::TeamMode teamMode);
+  void Search(
+    data::Uid characterUid,
+    protocol::GameMode gameMode,
+    protocol::TeamMode teamMode);
 
   std::mutex _matchmakingQueueMutex;
   std::unordered_map<data::Uid, Entry> _matchmakingQueue;

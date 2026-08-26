@@ -23,6 +23,7 @@
 #include "libserver/data/Record.hpp"
 
 #include <atomic>
+#include <chrono>
 #include <functional>
 #include <ranges>
 #include <shared_mutex>
@@ -91,6 +92,45 @@ public:
     if (iterator == _entries.cend())
       return false;
     return iterator->second.available;
+  }
+
+  //! Returns how many times in a row the retrieval of a datum from the data source failed.
+  //! A datum is never retrieved again on its own once a retrieval failed.
+  //! @param key Key of the datum.
+  //! @returns The count of consecutive failed retrievals.
+  uint32_t GetRetrieveFailureCount(const Key& key)
+  {
+    std::scoped_lock lock(_entriesMutex);
+    const auto iterator = _entries.find(key);
+    if (iterator == _entries.cend())
+      return 0;
+    return iterator->second.retrieveFailureCount.load(std::memory_order::relaxed);
+  }
+  //! @param key Key of the datum.
+  //! @param duration Duration the retrievals have to have been failing for.
+  //! @returns `true` if the retrievals have been failing for at least the duration.
+  bool HasRetrieveFailedFor(
+    const Key& key,
+    const std::chrono::steady_clock::duration duration)
+  {
+    std::scoped_lock lock(_entriesMutex);
+    const auto iterator = _entries.find(key);
+    if (iterator == _entries.cend())
+      return false;
+
+    const auto& entry = iterator->second;
+    if (entry.retrieveFailureCount.load(std::memory_order::relaxed) == 0)
+      return false;
+
+    const auto firstFailure = entry.firstRetrieveFailure.load(std::memory_order::relaxed);
+    return std::chrono::steady_clock::now() - firstFailure >= duration;
+  }
+
+  //! Queues another retrieval attempt of a datum which previously failed to retrieve.
+  //! @param key Key of the datum.
+  void RetryRetrieve(const Key& key)
+  {
+    RequestRetrieve(key);
   }
 
   //! Whether data records are available.
@@ -262,7 +302,18 @@ private:
       lock.unlock();
 
       if (_dataSourceRetrieveListener(key, entry.value))
+      {
         entry.available.store(true, std::memory_order::relaxed);
+        entry.retrieveFailureCount.store(0, std::memory_order::relaxed);
+      }
+      else
+      {
+        if (entry.retrieveFailureCount.fetch_add(1, std::memory_order::relaxed) == 0)
+        {
+          entry.firstRetrieveFailure.store(
+            std::chrono::steady_clock::now(), std::memory_order::relaxed);
+        }
+      }
     }
     _retrieveQueue.data.clear();
   }
@@ -308,6 +359,10 @@ private:
   {
     std::atomic_bool available{false};
     std::atomic_bool dirty{false};
+    //! A count of consecutive failed retrievals of the datum from the data source.
+    std::atomic_uint32_t retrieveFailureCount{0};
+    //! A time point of the first of the consecutive failed retrievals.
+    std::atomic<std::chrono::steady_clock::time_point> firstRetrieveFailure{};
     Record<Data>::PatchListener listener;
     std::shared_mutex mutex{};
     Data value;

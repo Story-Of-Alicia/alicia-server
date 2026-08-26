@@ -163,7 +163,8 @@ struct Item
   //! An amount of an item.
   dao::Field<uint32_t> count{};
   //! A duration of an item.
-  dao::Field<std::chrono::seconds> duration{};
+  dao::Field<std::chrono::seconds> duration{
+    std::chrono::seconds::zero()};
   //! A time point of when the item was created.
   dao::Field<Clock::time_point> createdAt{};
 };
@@ -267,6 +268,22 @@ struct Character
   };
   dao::Field<Role> role{};
 
+  //! Role privilege rank.
+  //! None: regular user, no staff powers.
+  //! Trial: mute and temporary bans (up to 30 days).
+  //! Moderator: mute and any type of ban.
+  //! Admin: any admin command, including carrots and promoting/demoting.
+  enum class RoleRank
+  {
+    None,
+    Trial,
+    Moderator,
+    Admin
+  };
+
+  //! Regular users are always None; a rank is only granted via promotion.
+  dao::Field<RoleRank> roleRank{RoleRank::None};
+
   struct Parts
   {
     //! An ID of the character model.
@@ -310,10 +327,11 @@ struct Character
   
   dao::Field<std::vector<Uid>> inventory{};
   dao::Field<std::vector<Uid>> characterEquipment{};
-  dao::Field<std::vector<Uid>> expiredEquipment{};
   
   dao::Field<std::vector<Uid>> horses{};
-  dao::Field<uint32_t> horseSlotCount{0u};
+  dao::Field<uint8_t> horseSlotCount{0u};
+
+  dao::Field<std::set<Uid>> breedingWishlist{};
 
   dao::Field<std::vector<Uid>> pets{};
   dao::Field<Uid> mountUid{InvalidUid};
@@ -322,6 +340,16 @@ struct Character
   dao::Field<std::vector<Uid>> eggs{};
 
   dao::Field<std::vector<Uid>> housing{};
+
+  //! Progress of the ranch the character manages.
+  struct RanchManagement
+  {
+    //! Ranch experience earned so far, which the ranch level is derived from.
+    dao::Field<uint32_t> ranchExperience{0u};
+    //! Lifetime count of races finished. It only ever counts up; the recurring
+    //! ranch bonus pays out on every twentieth race.
+    dao::Field<uint32_t> totalRaces{0u};
+  } ranchManagement{};
 
   dao::Field<bool> isRanchLocked{};
 
@@ -349,17 +377,32 @@ struct Character
     dao::Field<Sets> magic{};
   } skills{};
 
-    dao::Field<std::vector<Uid>> dailyQuests{};
+    dao::Field<Uid> dailyQuestGroupUid{InvalidUid};
   struct Mailbox
   {
     dao::Field<bool> hasNewMail{false};
     dao::Field<std::vector<Uid>> inbox{};
     dao::Field<std::vector<Uid>> sent{};
   } mailbox{};
+
+  dao::Field<std::vector<Uid>> quests{};
 };
 
 struct Horse
 {
+  //! A horse type.
+  enum class Type
+  {
+    //! An adult horse.
+    Adult,
+    //! A horse foal.
+    Foal,
+    //! An adult horse which is registered in the breeding market.
+    Stallion,
+    //! An adult horse which is rented.
+    Rent
+  };
+
   dao::Field<Uid> uid{InvalidUid};
   dao::Field<Tid> tid{InvalidTid};
   dao::Field<std::string> name{};
@@ -399,22 +442,39 @@ struct Horse
   } mastery{};
 
   dao::Field<uint32_t> rating{0u};
+  //! A class.
   dao::Field<uint32_t> clazz{0u};
+  //! A class progress experience points.
   dao::Field<uint32_t> clazzProgress{0u};
   dao::Field<uint32_t> grade{0u};
   dao::Field<uint32_t> growthPoints{0u};
 
+  //! A count of how many times the horse was bred.
+  dao::Field<uint32_t> breedingCount{0u};
+  //! A count of successful consecutive breeds.
+  dao::Field<uint32_t> breedingCombo{0u};
+
+  dao::Field<Type> type{Type::Adult};
+  dao::Field<Clock::time_point> dateOfBirth{};
+
+  dao::Field<uint32_t> tendency{0u};
+  dao::Field<uint32_t> spirit{0u};
+
   struct Potential
   {
+    //! A type of potential.
     dao::Field<uint32_t> type{0u};
+    //! A potential level represents the growth progress
+    //! of the potential's value.
     dao::Field<uint32_t> level{0u};
+    //! A potential value represents the intensity of the
+    //! potential.
     dao::Field<uint32_t> value{0u};
   } potential{};
 
   dao::Field<uint32_t> luckState{0u};
   dao::Field<uint32_t> fatigue{0u};
   dao::Field<uint32_t> emblemUid{0u};
-  dao::Field<Clock::time_point> dateOfBirth{};
 
   struct MountCondition
   {
@@ -433,8 +493,6 @@ struct Horse
     dao::Field<uint32_t> boredom{};
     dao::Field<uint32_t> stopAmendsPoint{};
   } mountCondition{};
-
-  dao::Field<uint32_t> tendency{0u};
 
   struct MountInfo
   {
@@ -456,6 +514,19 @@ struct Horse
     dao::Field<uint32_t> cumulativePrize{};
     dao::Field<uint32_t> biggestPrize{};
   } mountInfo{};
+
+  struct Ancestors
+  {
+    Uid father{InvalidUid};
+    Uid mother{InvalidUid};
+  } ancestors{};
+
+  //! A value in an interval of <1, 9>.
+  //! Basically a weighted score of number of ancestors that share the same coat as the horse.
+  //! Ancestors of the first generation add two points to the lineage,
+  //! ancestors of the second generation add one point to the lineage
+  //! while the horse itself adds 1.
+  dao::Field<uint32_t> lineage{1u};
 };
 
 struct Housing
@@ -476,15 +547,44 @@ struct Egg
   dao::Field<uint32_t> boostsUsed;
 };
 
-struct DailyQuest
+struct DailyQuestEntry
+{
+  //! Template ID of the quest.
+  uint16_t questId{};
+  //! Current progress toward the quest's successValue.
+  uint32_t progress{};
+};
+
+struct DailyQuestGroup
 {
   dao::Field<Uid> uid{InvalidUid};
-  dao::Field<uint16_t> unk_0{};
-  dao::Field<uint32_t> unk_1{};
-  dao::Field<uint8_t> unk_2{};
-  dao::Field<uint8_t> unk_3{};
+  //! Reward entry ID shared by all 3 quests, references quests.rewards in quests.yaml.
+  dao::Field<uint8_t> rewardId{};
+  //! Reward type shared by all 3 quests: 1 = carrots, 2 = exp.
+  dao::Field<uint8_t> rewardType{};
+  //! Accumulated quest reward points. References QuestRewardPoint thresholds in quests.yaml.
+  dao::Field<uint32_t> rewardPoints{};
+  //! Whether the daily quest carrot reward has been claimed today.
+  dao::Field<bool> carrotsClaimed{false};
+  //! The 3 daily quest slots.
+  dao::Field<std::array<DailyQuestEntry, 3>> quests{};
 };
-  
+
+struct Quest
+{
+  enum class Status : uint32_t
+  {
+    InProgress = 0,
+    ReadyToClaim = 1,
+    Completed = 3
+  };
+
+  dao::Field<Uid> uid{InvalidUid};
+  dao::Field<uint32_t> questId{};
+  dao::Field<Status> isCompleted{Status::InProgress};
+  dao::Field<uint32_t> progress{};
+};
+
 struct Mail
 {
   //! Mail type.
@@ -497,14 +597,6 @@ struct Mail
     BreedingReward = 3, //! Requests AcCmdCRBreedingTakeMoney
   };
 
-  //! Flags whether the mail is a system or a character mail.
-  //! The game client uses this to filter for system mails only.
-  enum class MailOrigin : uint32_t
-  {
-    Character = 0,
-    System = 1
-  };
-
   dao::Field<Uid> uid{InvalidUid};
   dao::Field<Uid> from{InvalidUid};
   dao::Field<Uid> to{InvalidUid};
@@ -513,10 +605,40 @@ struct Mail
   dao::Field<bool> isDeleted{false};
 
   dao::Field<MailType> type{};
-  dao::Field<MailOrigin> origin{};
+  //! The UID of either breeding or carnival reward.
+  //! Non-zero values indicate system mail.
+  dao::Field<uint32_t> claimUid{};
 
   dao::Field<Clock::time_point> createdAt{};
   dao::Field<std::string> body{};
+};
+
+struct Stallion
+{
+  dao::Field<Uid> uid{InvalidUid};
+  dao::Field<Uid> horseUid{InvalidUid};     // The horse being registered as stallion
+  dao::Field<Uid> ownerUid{InvalidUid};     // Owner of the stallion
+  dao::Field<uint32_t> breedingCharge{};    // Price in carrots to breed with this stallion
+  dao::Field<uint32_t> timesMated{0u};      // Times bred during current registration
+  dao::Field<Clock::time_point> registeredAt{};
+  dao::Field<Clock::time_point> expiresAt{};
+};
+
+struct Reward
+{
+  enum class Type : uint32_t
+  {
+    Breeding = 0,
+    Carnival = 1
+  };
+
+  dao::Field<Uid> claimUid{InvalidUid};
+  dao::Field<Uid> characterUid{InvalidUid};
+  dao::Field<Type> type{Type::Breeding};
+  dao::Field<uint32_t> carrots{0u};
+  dao::Field<bool> isClaimed{false};
+  dao::Field<Clock::time_point> createdAt{};
+  dao::Field<Clock::time_point> claimedAt{};
 };
 
 } // namespace data

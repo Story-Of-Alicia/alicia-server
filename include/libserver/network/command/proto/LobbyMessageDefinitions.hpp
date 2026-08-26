@@ -202,8 +202,8 @@ struct LobbyCommandLoginOK
   // Something with rental horse
   Rent val17{};
 
-  //! Housing bonus progression counter
-  uint32_t val18{};
+  //! Running count of races that have gone towards the ranch bonus, sent as-is.
+  uint32_t ranchBonusRaceCount{};
   uint32_t val19{};
   uint32_t val20{};
 
@@ -292,7 +292,9 @@ struct AcCmdCLShowInventory
 //! Clientbound show inventory response.
 struct LobbyCommandShowInventoryOK
 {
+  //! Max 0xFA (250) characters.
   std::vector<Item> items{};
+  //! Max 0x0A (10) horses.
   std::vector<Horse> horses{};
 
   static Command GetCommand()
@@ -869,7 +871,13 @@ struct AcCmdCLEnterRoom
 {
   uint32_t roomUid{};
   std::string password{};
-  uint32_t member3{};
+
+  enum class EnterRoomType : uint32_t
+  {
+    RoomList = 0,
+    TournamentInvite = 3, // GM window invite
+    RoomCode = 5          // Room code via the room list
+  } enterRoomType{};
 
   static Command GetCommand()
   {
@@ -940,6 +948,7 @@ struct AcCmdCLEnterRoomCancel
     CR_PRACTICE_ROOM2 = 14,
     CR_PRACTICE_ROOM_SPEEDTEAM = 15,
     CR_PRACTICE_ROOM_MAGICTEAM = 16,
+    ShowRoomPassword = 17
   } status{};
 
   static Command GetCommand()
@@ -1035,6 +1044,7 @@ struct AcCmdCLRequestQuestList
 struct AcCmdCLRequestQuestListOK
 {
   uint32_t unk0{};
+  // Max 1000 
   std::vector<Quest> quests;
 
   static Command GetCommand()
@@ -1083,7 +1093,7 @@ struct AcCmdCLRequestDailyQuestList
 
 struct AcCmdCLRequestDailyQuestListOK
 {
-  uint32_t val0;
+  uint32_t characterUid{};
   
   std::array<Quest, 10> unk;
   std::array<DailyQuest, 3> dailyQuests;
@@ -1835,10 +1845,10 @@ struct AcCmdLCPersonalInfo
     struct Course
     {
       uint16_t courseId{};
-      //! Measured in milliseconds
-      uint32_t recordTime{};
       //! Unclear if times raced or times won, needs confirming/fact checking
       uint32_t timesRaced{};
+      //! Measured in milliseconds
+      uint32_t recordTime{};
       std::array<std::byte, 12> member4{};
     };
     // max 255

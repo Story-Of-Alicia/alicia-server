@@ -82,7 +82,7 @@ enum class ChatterErrorCode : uint32_t
 
 struct Presence
 {
-  Status status{protocol::Status::Offline};
+  Status status{Status::Offline};
   enum class Scene : uint32_t
   {
     Ranch = 0,
@@ -123,16 +123,15 @@ struct ChatCmdLogin
 
 struct ChatCmdLoginAckOK
 {
-  uint32_t member1 = 0;
+  //! The UID of the most recent unread mail.
+  //! Directly related to `MailAlarm`
+  uint32_t latestUnreadMailUid{data::InvalidUid};
 
   struct MailAlarm
   {
-    enum class Status : uint32_t
-    {
-      NoNewMail = 0,
-      NewMail = 1
-    } status{Status::NoNewMail};
-    uint8_t hasMail{};
+    //! How many unread mails there are in the inbox.
+    uint32_t unreadMailCount{};
+    bool hasMail{};
   } mailAlarm;
 
   struct Group
@@ -278,9 +277,10 @@ struct ChatCmdBuddyAddRequestTrs
 //! Serverbound command containing the response by the character for a friend request.
 struct ChatCmdBuddyAddReply
 {
-  //! The uid of the requesting character.
+  //! The uid of the character that requested the friend request.
   data::Uid requestingCharacterUid{};
-  //! Indicates whether the replying character has accepted the friend request.
+  //! Indicates whether the character replying to the friend request
+  //! has accepted the invite.
   bool requestAccepted{};
 
   static ChatterCommand GetCommand()
@@ -642,17 +642,20 @@ struct ChatCmdLetterListAckOk
     //! Mail UID.
     data::Uid uid{};
     data::Mail::MailType type{};
-    data::Mail::MailOrigin origin{};
+    data::Uid claimUid{};
 
-    //! Who sent the mail.
+    //! The name of the sender.
+    //! If empty, uses libconfig `MessengerStrings`/`DefaultSenderName`.
+    //! Must remain empty to indicate that this is a system mail.
     std::string sender{};
     //! Date of the mail when it was sent, as a string.
     std::string date{};
 
     struct Struct0
     {
-      //! Unknown, left for discovery later.
-      std::string unk0{"struct0.unk0"};
+      //! Exact usage unknown but critical for unread mail.
+      //! Must contain at least one byte to count as read.
+      std::string unk0{};
       //! Mail body.
       std::string body{};
     } struct0{};
@@ -893,7 +896,7 @@ struct ChatCmdLetterArriveTrs
   // Note: almost identical to InboxMail with the extra std::string missing
   data::Uid mailUid{};
   data::Mail::MailType mailType{};
-  data::Mail::MailOrigin mailOrigin{};
+  data::Uid claimUid{};
 
   std::string sender{};
   std::string date{};

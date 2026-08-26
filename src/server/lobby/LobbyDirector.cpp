@@ -209,17 +209,35 @@ bool LobbyDirector::IsCharacterForcedIntoCreator(
   return _charactersForcedIntoCreator.contains(characterUid);
 }
 
-void LobbyDirector::InviteCharacterToGuild(
+bool LobbyDirector::InviteCharacterToGuild(
   const data::Uid inviteeCharacterUid,
   const data::Uid guildUid,
   const data::Uid inviterCharacterUid)
 {
-  _guildInstances[guildUid].invites.emplace_back(inviteeCharacterUid);
+  try
+  {
+    _networkHandler->SendCharacterGuildInvitation(
+      inviteeCharacterUid,
+      guildUid,
+      inviterCharacterUid);
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::warn(
+      "Failed to invite character {} to guild {}: {}",
+      inviteeCharacterUid,
+      guildUid,
+      x.what());
+    return false;
+  }
 
-  _networkHandler->SendCharacterGuildInvitation(
-    inviteeCharacterUid,
-    guildUid,
-    inviterCharacterUid);
+  // Record the pending invite only once the invitation was delivered,
+  // otherwise the invite would linger indefinitely.
+  auto& pendingGuildInvites = _guildInstances[guildUid].invites;
+  if (not std::ranges::contains(pendingGuildInvites, inviteeCharacterUid))
+    pendingGuildInvites.emplace_back(inviteeCharacterUid);
+
+  return true;
 }
 
 void LobbyDirector::SetCharacterVisitPreference(
@@ -455,7 +473,11 @@ void LobbyDirector::ProcesLoginResponse()
   auto& userInstance = iter->second;
   userInstance.userName = loginContext.userName;
   userInstance.characterUid = characterUid;
-  spdlog::info("User '{}' (client {}) logged in", loginContext.userName, clientId);
+  spdlog::info(
+    "User '{}' (client {}) logged in from {}",
+    loginContext.userName,
+    clientId,
+    _networkHandler->GetCommandServer().GetClientAddress(clientId).to_string());
 
   userRecord.Mutable([](data::User& user)
   {

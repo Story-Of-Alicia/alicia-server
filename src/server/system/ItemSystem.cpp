@@ -19,12 +19,13 @@
 
 #include "server/system/ItemSystem.hpp"
 
-#include <spdlog/spdlog.h>
-
 #include "server/ServerInstance.hpp"
-#include "libserver/data/DataDirector.hpp"
-#include "libserver/registry/ItemRegistry.hpp"
 
+#include <libserver/data/DataDirector.hpp>
+
+#include <ranges>
+
+#include <spdlog/spdlog.h>
 
 namespace server
 {
@@ -38,7 +39,7 @@ data::Uid ItemSystem::GetItem(
   data::Character& character,
   data::Tid itemTid) const noexcept
 {
-  const auto searchItems = [this, &itemTid](const std::vector<data::Uid>& itemUids) -> data::Uid
+  const auto searchItemCollection = [this, &itemTid](const std::vector<data::Uid>& itemUids) -> data::Uid
   {
     const auto itemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(itemUids);
     if (not itemRecords)
@@ -62,11 +63,14 @@ data::Uid ItemSystem::GetItem(
     return data::InvalidUid;
   };
 
-  auto foundUid = searchItems(character.inventory());
+  // Search the character's inventory.
+  const auto foundUid = searchItemCollection(
+    character.inventory());
   if (foundUid != data::InvalidUid)
     return foundUid;
 
-  return searchItems(character.characterEquipment());
+  // Otherwise search the character's equipment.
+  return searchItemCollection(character.characterEquipment());
 }
 
 data::Uid ItemSystem::AddItem(
@@ -161,7 +165,20 @@ data::Uid ItemSystem::AddItem(
   itemRecord->Mutable(
     [&duration](data::Item& item)
     {
-      item.duration() += duration;
+      const auto now = data::Clock::now();
+      const auto expiresAt = item.createdAt() + item.duration();
+
+      if (expiresAt <= now)
+      {
+        // The item is already expired, restart its lifetime from now
+        // instead of extending an expired duration.
+        item.createdAt() = now;
+        item.duration() = duration;
+      }
+      else
+      {
+        item.duration() += duration;
+      }
     });
 
   return itemUid;
@@ -249,11 +266,33 @@ ItemSystem::ConsumeVerdict ItemSystem::ConsumeItem(
   return {};
 }
 
+uint32_t ItemSystem::CountItem(
+  const data::Character& character,
+  const data::Tid itemTid) const noexcept
+{
+  const auto itemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(
+    character.inventory());
+  if (not itemRecords)
+    return 0;
+
+  uint32_t total = 0;
+  for (const auto& itemRecord : *itemRecords)
+  {
+    itemRecord.Immutable([&total, &itemTid](const data::Item& item)
+    {
+      if (item.tid() == itemTid)
+        total += item.count();
+    });
+  }
+
+  return total;
+}
+
 bool ItemSystem::HasItem(
   const data::Character& character,
   const data::Tid itemTid) const noexcept
 {
-  const auto HasItemWithTid = [this, &itemTid](const std::vector<data::Uid>& itemUids)
+  const auto searchItemCollection = [this, &itemTid](const std::vector<data::Uid>& itemUids)
   {
     const auto itemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(itemUids);
     if (not itemRecords)
@@ -274,10 +313,10 @@ bool ItemSystem::HasItem(
     return false;
   };
 
-  if (HasItemWithTid(character.inventory()))
+  if (searchItemCollection(character.inventory()))
     return true;
 
-  if (HasItemWithTid(character.characterEquipment()))
+  if (searchItemCollection(character.characterEquipment()))
     return true;
 
   return false;
@@ -294,6 +333,76 @@ bool ItemSystem::HasItemInstance(
     return true;
 
   return false;
+}
+
+std::vector<data::Item> ItemSystem::CollectAndEraseExpiredItems(
+  data::Character& character) const noexcept
+{
+  const auto inventoryItemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(
+    character.inventory());
+  const auto equipmentItemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(
+    character.characterEquipment());
+
+  // todo: c++26's std::views::concat
+
+  std::vector<data::Item> expiredItems;
+
+  const auto collectExpiredItems = [&expiredItems](const std::vector<Record<data::Item>>& itemRecords)
+  {
+    for (auto& itemRecord : itemRecords)
+    {
+      if (not itemRecord.IsAvailable())
+        continue;
+
+      itemRecord.Mutable([&expiredItems](data::Item& item)
+      {
+        // If duration is set to zero, the item is permanent,
+        // and we should skip the item.
+        if (item.duration() == std::chrono::seconds::zero())
+          return;
+
+        const auto expiresAt = item.createdAt() + item.duration();
+        // If expiration time point is in the future,
+        // we should skip the item.
+        if (expiresAt > data::Clock::now())
+          return;
+
+        expiredItems.emplace_back(std::move(item));
+      });
+    }
+  };
+
+  const auto eraseFromInventoryOrEquipment = [&character](const data::Uid itemUid)
+  {
+    const auto toEraseFromInventory = std::ranges::remove(character.inventory(), itemUid);
+    const auto toEraseFromEquipment = std::ranges::remove(character.characterEquipment(), itemUid);
+
+    if (not toEraseFromInventory.empty())
+    {
+      character.inventory().erase(
+        toEraseFromInventory.begin(),
+        toEraseFromInventory.end());
+    }
+
+    if (not toEraseFromEquipment.empty())
+    {
+      character.characterEquipment().erase(
+        toEraseFromEquipment.begin(),
+        toEraseFromEquipment.end());
+    }
+  };
+
+  collectExpiredItems(*inventoryItemRecords);
+  collectExpiredItems(*equipmentItemRecords);
+
+  for (const auto& expiredItem : expiredItems)
+  {
+    eraseFromInventoryOrEquipment(expiredItem.uid());
+    _serverInstance.GetDataDirector().GetItemCache().Delete(
+      expiredItem.uid());
+  }
+
+  return expiredItems;
 }
 
 } // namespace server

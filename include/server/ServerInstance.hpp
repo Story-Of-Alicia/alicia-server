@@ -27,23 +27,33 @@
 #include "server/lobby/LobbyDirector.hpp"
 #include "server/messenger/MessengerDirector.hpp"
 #include "server/race/RaceDirector.hpp"
+#include "server/ranch/BreedingMarket.hpp"
+#include "server/ranch/Genetics.hpp"
 #include "server/ranch/RanchDirector.hpp"
 #include "server/system/ChatSystem.hpp"
+#include "server/system/HorseSystem.hpp"
 #include "server/system/InfractionSystem.hpp"
 #include "server/system/ItemSystem.hpp"
 #include "server/system/MatchmakingSystem.hpp"
 #include "server/system/ModerationSystem.hpp"
 #include "server/system/OtpSystem.hpp"
+#include "server/system/QuestSystem.hpp"
+#include "server/system/RanchManagementSystem.hpp"
+#include "server/system/RewardSystem.hpp"
 #include "server/system/RoomSystem.hpp"
 #include "server/telemetry/Telemetry.hpp"
 
 #include <libserver/data/DataDirector.hpp>
+#include <libserver/registry/BreedingRegistry.hpp>
 #include <libserver/registry/CharacterRegistry.hpp>
 #include <libserver/registry/CourseRegistry.hpp>
 #include <libserver/registry/HorseRegistry.hpp>
+#include <libserver/registry/HousingRegistry.hpp>
 #include <libserver/registry/ItemRegistry.hpp>
 #include <libserver/registry/MagicRegistry.hpp>
 #include <libserver/registry/PetRegistry.hpp>
+#include <libserver/registry/QuestRegistry.hpp>
+#include <libserver/registry/SpeedRegistry.hpp>
 #include <libserver/registry/SystemContentRegistry.hpp>
 
 #include <spdlog/spdlog.h>
@@ -63,6 +73,9 @@ public:
   void Initialize();
   //! Terminates the server instance.
   void Terminate();
+
+  //! Loads configurations.
+  void LoadConfigurations();
 
   //! Returns reference to the authentication service.
   //! @returns Reference to the authentication service.
@@ -108,6 +121,10 @@ public:
   //! @returns Reference to the Horse registry.
   registry::HorseRegistry& GetHorseRegistry();
 
+  //! Returns reference to the Housing registry.
+  //! @returns Reference to the Housing registry.
+  registry::HousingRegistry& GetHousingRegistry();
+
   //! Returns reference to the Item registry.
   //! @returns Reference to the Item registry.
   registry::ItemRegistry& GetItemRegistry();
@@ -116,6 +133,10 @@ public:
   //! @returns Reference to the Pet registry.
   registry::PetRegistry& GetPetRegistry();
 
+  //! Returns reference to the Quest registry.
+  //! @returns Reference to the Quest registry.
+  registry::QuestRegistry& GetQuestRegistry();
+
   //! Returns reference to the Magic registry.
   //! @returns Reference to the Magic registry.
   registry::MagicRegistry& GetMagicRegistry();
@@ -123,6 +144,14 @@ public:
   //! Returns reference to the system content registry.
   //! @returns Reference to the system content registry.
   registry::SystemContentRegistry& GetSystemContentRegistry();
+
+  //! Returns reference to the breeding registry.
+  //! @returns Reference to the breeding registry.
+  registry::BreedingRegistry& GetBreedingRegistry();
+
+  //! Returns reference to the speed registry.
+  //! @returns Reference to the speed registry.
+  registry::SpeedRegistry& GetSpeedRegistry();
 
   //! Returns reference to the chat system.
   //! @returns Reference to the chat system.
@@ -136,6 +165,10 @@ public:
   //! @returns Reference to the item system.
   ItemSystem& GetItemSystem();
 
+  //! Returns reference to the horse system.
+  //! @returns Reference to the horse system.
+  HorseSystem& GetHorseSystem();
+
   //! Returns reference to the moderation system.
   //! @return Reference to the moderation system.
   ModerationSystem& GetModerationSystem();
@@ -148,13 +181,32 @@ public:
   //! @returns Reference to the room system.
   RoomSystem& GetRoomSystem();
 
+  //! Returns reference to the quest system.
+  //! @returns Reference to the quest system.
+  QuestSystem& GetQuestSystem();
+
+  //! Returns reference to the ranch management system.
+  RanchManagementSystem& GetRanchManagementSystem();
+
   //! Returns reference to the matchmaking system.
   //! @returns Reference to the matchmaking system.
   MatchmakingSystem& GetMatchmakingSystem();
 
+  //! Returns reference to the reward system.
+  //! @returns Reference to the reward system.
+  RewardSystem& GetRewardSystem();
+
   //! Returns reference to the telemetry.
   //! @returns Reference to the telemetry.
   Telemetry& GetTelemetry();
+
+  //! Returns reference to the genetics system.
+  //! @returns Reference to the genetics system.
+  Genetics& GetGenetics();
+
+  //! Returns reference to the breeding market.
+  //! @returns Reference to the breeding market.
+  BreedingMarket& GetBreedingMarket();
 
   //! Returns reference to the settings.
   //! @returns Reference to the settings.
@@ -253,14 +305,22 @@ private:
   registry::CourseRegistry _courseRegistry;
   //! A registry of horses.
   registry::HorseRegistry _horseRegistry;
+  //! A registry of housing.
+  registry::HousingRegistry _housingRegistry;
   //! A registry of items.
   registry::ItemRegistry _itemRegistry;
   //! A registry of magic slots.
   registry::MagicRegistry _magicRegistry;
   //! A registry of pets.
   registry::PetRegistry _petRegistry;
+  //! A registry of quests.
+  registry::QuestRegistry _questRegistry;
   //! The system content registry.
   registry::SystemContentRegistry _systemContentRegistry;
+  //! A registry of breeding config data.
+  registry::BreedingRegistry _breedingRegistry;
+  //! A registry of speed config data.
+  registry::SpeedRegistry _speedRegistry;
 
   //! A chat system.
   ChatSystem _chatSystem;
@@ -268,19 +328,32 @@ private:
   InfractionSystem _infractionSystem;
   //! An item system.
   ItemSystem _itemSystem;
+  //! A horse system.
+  HorseSystem _horseSystem;
   //! An OTP system.
   OtpSystem _otpSystem;
   //! A moderation system
   ModerationSystem _moderationSystem;
+  //! A quest system.
+  QuestSystem _questSystem;
+  //! A ranch management system.
+  RanchManagementSystem _ranchManagementSystem;
   //! A room system.
   RoomSystem _roomSystem;
   //! A matchmaking system.
   MatchmakingSystem _matchmakingSystem;
+  //! A reward system.
+  RewardSystem _rewardSystem;
 
   //! A thread for telemetry.
   std::thread _telemetryThread;
   //! Telemetry.
   Telemetry _telemetry;
+
+  //! The genetics calculation system.
+  Genetics _genetics;
+  //! The breeding market system.
+  BreedingMarket _breedingMarket;
 };
 
 } // namespace server

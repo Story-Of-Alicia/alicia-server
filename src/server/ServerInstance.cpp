@@ -19,6 +19,9 @@
 
 #include "server/ServerInstance.hpp"
 
+#include "server/system/QuestSystem.hpp"
+#include "server/system/RanchManagementSystem.hpp"
+
 #include <stacktrace>
 
 namespace server
@@ -50,8 +53,14 @@ ServerInstance::ServerInstance(
   , _chatSystem(*this)
   , _infractionSystem(*this)
   , _itemSystem(*this)
+  , _horseSystem(*this)
   , _matchmakingSystem(*this)
+  , _questSystem(*this)
+  , _ranchManagementSystem(*this)
+  , _rewardSystem(*this)
   , _telemetry(*this)
+  , _breedingMarket(*this)
+  , _genetics(*this)
 {
 }
 
@@ -81,19 +90,10 @@ void ServerInstance::Initialize()
 {
   _shouldRun.store(true, std::memory_order::release);
 
-  _config.LoadFromFile(_resourceDirectory / "config/server/config.yaml");
+  // Load configurations from file system.
+  LoadConfigurations();
+  // Load configurations from environment variables.
   _config.LoadFromEnvironment();
-
-  // Read configurations
-
-  _characterRegistry.ReadConfig(_resourceDirectory / "config/game/character.yaml");
-  _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
-  _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items.yaml");
-  _magicRegistry.ReadConfig(_resourceDirectory / "config/game/magic.yaml");
-  _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
-
-  _moderationSystem.ReadConfig(_resourceDirectory / "config/server/automod.yaml");
-  _systemContentRegistry.ReadConfig(_resourceDirectory / "config/server/system_content.yaml");
 
   // Initialize the directors and tick them on their own threads.
   // Directors will terminate their tick loop once `_shouldRun` flag is set to false.
@@ -280,6 +280,27 @@ void ServerInstance::Initialize()
 void ServerInstance::Terminate()
 {
   _shouldRun.store(false, std::memory_order::relaxed);
+  _breedingMarket.Terminate();
+}
+
+void ServerInstance::LoadConfigurations()
+{
+  // Read server configurations
+  _config.LoadFromFile(_resourceDirectory / "config/server/config.yaml");
+  _moderationSystem.ReadConfig(_resourceDirectory / "config/server/automod.yaml");
+  _systemContentRegistry.ReadConfig(_resourceDirectory / "config/server/system_content.yaml");
+
+  // Read game configurations
+  _breedingRegistry.ReadConfig(_resourceDirectory / "config/game/breeding.yaml");
+  _characterRegistry.ReadConfig(_resourceDirectory / "config/game/character.yaml");
+  _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
+  _horseRegistry.ReadConfig(_resourceDirectory / "config/game/horses");
+  _housingRegistry.ReadConfig(_resourceDirectory / "config/game/housing.yaml");
+  _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items");
+  _magicRegistry.ReadConfig(_resourceDirectory / "config/game/magic.yaml");
+  _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
+  _questRegistry.ReadConfig(_resourceDirectory / "config/game/quests.yaml");
+  _speedRegistry.ReadConfig(_resourceDirectory / "config/game/speed.yaml");
 }
 
 AuthenticationService& ServerInstance::GetAuthenticationService()
@@ -337,6 +358,11 @@ registry::HorseRegistry& ServerInstance::GetHorseRegistry()
   return _horseRegistry;
 }
 
+registry::HousingRegistry& ServerInstance::GetHousingRegistry()
+{
+  return _housingRegistry;
+}
+
 registry::ItemRegistry& ServerInstance::GetItemRegistry()
 {
   return _itemRegistry;
@@ -347,6 +373,11 @@ registry::PetRegistry& ServerInstance::GetPetRegistry()
   return _petRegistry;
 }
 
+registry::QuestRegistry& ServerInstance::GetQuestRegistry()
+{
+  return _questRegistry;
+}
+
 registry::MagicRegistry& ServerInstance::GetMagicRegistry()
 {
   return _magicRegistry;
@@ -355,6 +386,16 @@ registry::MagicRegistry& ServerInstance::GetMagicRegistry()
 registry::SystemContentRegistry& ServerInstance::GetSystemContentRegistry()
 {
   return _systemContentRegistry;
+}
+
+registry::BreedingRegistry& ServerInstance::GetBreedingRegistry()
+{
+  return _breedingRegistry;
+}
+
+registry::SpeedRegistry& ServerInstance::GetSpeedRegistry()
+{
+  return _speedRegistry;
 }
 
 ChatSystem& ServerInstance::GetChatSystem()
@@ -372,6 +413,11 @@ ItemSystem& ServerInstance::GetItemSystem()
   return _itemSystem;
 }
 
+HorseSystem& ServerInstance::GetHorseSystem()
+{
+  return _horseSystem;
+}
+
 ModerationSystem& ServerInstance::GetModerationSystem()
 {
   return _moderationSystem;
@@ -387,6 +433,21 @@ MatchmakingSystem& ServerInstance::GetMatchmakingSystem()
   return _matchmakingSystem;
 }
 
+RewardSystem& ServerInstance::GetRewardSystem()
+{
+  return _rewardSystem;
+}
+
+QuestSystem& ServerInstance::GetQuestSystem()
+{
+  return _questSystem;
+}
+
+RanchManagementSystem& ServerInstance::GetRanchManagementSystem()
+{
+  return _ranchManagementSystem;
+}
+
 Telemetry& ServerInstance::GetTelemetry()
 {
   return _telemetry;
@@ -395,6 +456,16 @@ Telemetry& ServerInstance::GetTelemetry()
 OtpSystem& ServerInstance::GetOtpSystem()
 {
   return _otpSystem;
+}
+
+Genetics& ServerInstance::GetGenetics()
+{
+  return _genetics;
+}
+
+BreedingMarket& ServerInstance::GetBreedingMarket()
+{
+  return _breedingMarket;
 }
 
 Config& ServerInstance::GetSettings()

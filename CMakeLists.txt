@@ -52,6 +52,7 @@ endif()
 # alicia-libserver target
 add_library(alicia-libserver STATIC
         src/libserver/data/DataDirector.cpp
+        src/libserver/data/DataRepair.cpp
         src/libserver/data/helper/ProtocolHelper.cpp
         src/libserver/data/file/FileDataSource.cpp
         #src/libserver/data/pq/PqDataSource.cpp
@@ -69,10 +70,14 @@ add_library(alicia-libserver STATIC
         src/libserver/network/http/WebSocket.cpp
         src/libserver/registry/CharacterRegistry.cpp
         src/libserver/registry/CourseRegistry.cpp
+        src/libserver/registry/BreedingRegistry.cpp
         src/libserver/registry/HorseRegistry.cpp
+        src/libserver/registry/HousingRegistry.cpp
         src/libserver/registry/ItemRegistry.cpp
         src/libserver/registry/MagicRegistry.cpp
         src/libserver/registry/PetRegistry.cpp
+        src/libserver/registry/QuestRegistry.cpp
+        src/libserver/registry/SpeedRegistry.cpp
         src/libserver/registry/SystemContentRegistry.cpp
         src/libserver/util/Locale.cpp
         src/libserver/util/Scheduler.cpp
@@ -106,18 +111,29 @@ add_executable(alicia-server
         src/server/chat/AllChatDirector.cpp
         src/server/chat/PrivateChatDirector.cpp
         src/server/messenger/MessengerDirector.cpp
-        src/server/race/RaceDirector.cpp
+        src/server/race/MagicSystem.cpp
+        src/server/race/RaceInstance.cpp
+        src/server/race/RaceNetworkHandler.cpp
+        src/server/ranch/BreedingMarket.cpp
+        src/server/ranch/Genetics.cpp
         src/server/ranch/RanchDirector.cpp
+        src/server/room/Room.cpp
         src/server/system/ChatSystem.cpp
+        src/server/system/HorseSystem.cpp
         src/server/system/InfractionSystem.cpp
         src/server/system/ItemSystem.cpp
         src/server/system/ModerationSystem.cpp
         src/server/system/OtpSystem.cpp
+        src/server/system/PotentialSystem.cpp
+        src/server/system/QuestSystem.cpp
+        src/server/system/RanchManagementSystem.cpp
         src/server/system/RoomSystem.cpp
         src/server/system/MatchmakingSystem.cpp
+        src/server/system/RewardSystem.cpp
         src/server/telemetry/Telemetry.cpp
         src/server/tracker/RaceTracker.cpp
-        src/server/tracker/RanchTracker.cpp)
+        src/server/tracker/RanchTracker.cpp
+        src/server/race/RaceDirector.cpp)
 target_include_directories(alicia-server
         PRIVATE include/)
 target_link_libraries(alicia-server PRIVATE

@@ -7,6 +7,8 @@
 #include "libserver/registry/ItemRegistry.hpp"
 
 #include <tinyxml2.h>
+#include <algorithm>
+#include <vector>
 
 namespace server
 {
@@ -79,108 +81,70 @@ std::string ShopListToXmlString(const ShopList& shopList)
   return locale::FromUtf8(printer.CStr());
 }
 
-}
+} // namespace
 
 void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
 {
   uint32_t goodsSequenceId = 0;
   uint32_t recommendNoId = 0;
 
-  for (const auto& [tid, item] : itemRegistry.GetItems())
+  auto items = itemRegistry.GetItems();
+  std::vector<std::pair<uint32_t, registry::Item>> sortedItems(items.begin(), items.end());
+  // Sort by unlock level ascending, then by TID as a tiebreaker.
+  std::sort(sortedItems.begin(), sortedItems.end(),
+    [](const auto& first, const auto& second)
+    {
+      const auto& [firstTid, firstItem] = first;
+      const auto& [secondTid, secondItem] = second;
+      if (firstItem.level != secondItem.level)
+        return firstItem.level < secondItem.level;
+      return firstTid < secondTid;
+    });
+
+  for (const auto& [tid, item] : sortedItems)
   {
     ++goodsSequenceId;
 
-
-    if (not item.isPurchasable)
+    if (not item.shopInfo || not item.shopInfo->isPurchasable)
       continue;
 
-    if (item.type == registry::Item::Type::Permanent || item.type == registry::Item::Type::Consumable)
-    {
-      // Item is permanent or consumable
-      ShopList::Goods goods{
-          .goodsSq = goodsSequenceId,
-          .setType = 0,
-          .moneyType = ShopList::Goods::MoneyType::Carrots,
-          .goodsType = ShopList::Goods::GoodsType::Default,
-          .recommendType = 0,
-          .recommendNo = 0,
-          .giftType = ShopList::Goods::GiftType::NoGifting,
-          .salesRank = 0,
-          .bonusGameMoney = 0,
-          .goodsNm = item.name,
-          .goodsDesc = "",
-          .itemCapacityDesc = "Item Capacity Description Something",
-          .sellSt = 1,
-          .itemUid = tid};
+    // Pets (3/6) and eggs (3/7) must not appear in the shop
+    if (item.itemIndex.category == 3 && (item.itemIndex.subcategory == 6 || item.itemIndex.subcategory == 7))
+      continue;
 
-      if (item.characterPartInfo)
-      {
-        // Allow gifting
-        goods.giftType = ShopList::Goods::GiftType::CanGift;
-      
-        // Permanent character item only has one price
-        goods.items = {
-          ShopList::Goods::Item{
-            .priceId = 1,
-            .priceRange = 1,
-            .goodsPrice = 1}};
-      }
-      else
-      {
-        // Any other item can have a range of prices
-        goods.items = {
-          ShopList::Goods::Item{
-            .priceId = 1,
-            .priceRange = 1,
-            .goodsPrice = 1},
-          ShopList::Goods::Item{
-            .priceId = 2,
-            .priceRange = 10,
-            .goodsPrice = 10},
-          ShopList::Goods::Item{
-            .priceId = 3,
-            .priceRange = 100,
-            .goodsPrice = 100}};
-      }
+    const auto& shopInfo = item.shopInfo.value();
+    const bool isTemporary = item.type == registry::Item::Type::Temporary;
+    const uint32_t recommendNo = isTemporary ? ++recommendNoId : 0u;
 
-      _shopList.goodsList.emplace(
-        goodsSequenceId,
-        goods);
-    }
-    else if (item.type == registry::Item::Type::Temporary)
+    ShopList::Goods goods{
+      .goodsSq = goodsSequenceId,
+      .setType = 0,
+      .moneyType = static_cast<ShopList::Goods::MoneyType>(
+        static_cast<uint32_t>(shopInfo.moneyType)),
+      .goodsType = ShopList::Goods::GoodsType::Default,
+      .recommendType = isTemporary ? 1u : 0u,
+      .recommendNo = recommendNo,
+      .giftType = item.characterPartInfo
+                    ? ShopList::Goods::GiftType::CanGift
+                    : ShopList::Goods::GiftType::NoGifting,
+      .salesRank = 0,
+      .bonusGameMoney = 0,
+      .goodsNm = item.name,
+      .goodsDesc = "",
+      .itemCapacityDesc = "Item Capacity Description Something",
+      .sellSt = 1,
+      .itemUid = tid};
+
+    uint32_t priceId = 0;
+    for (const auto& priceRange : shopInfo.priceRanges)
     {
-      // Expirable items, can have a range of prices (preferable and max 3, can be less)
-      _shopList.goodsList.emplace(
-        goodsSequenceId,
-        ShopList::Goods{
-          .goodsSq = goodsSequenceId,
-          .setType = 0,
-          .moneyType = ShopList::Goods::MoneyType::Carrots,
-          .goodsType = ShopList::Goods::GoodsType::Default,
-          .recommendType = 1,
-          .recommendNo = ++recommendNoId,
-          .giftType = ShopList::Goods::GiftType::NoGifting,
-          .salesRank = 0,
-          .bonusGameMoney = 0,
-          .goodsNm = item.name,
-          .goodsDesc = "",
-          .itemCapacityDesc = "Item Capacity Description Something",
-          .sellSt = 1,
-          .itemUid = tid,
-          .items = {
-            ShopList::Goods::Item{
-              .priceId = 1,
-              .priceRange = 24,
-              .goodsPrice = 1},
-            ShopList::Goods::Item{
-              .priceId = 2,
-              .priceRange = 168,
-              .goodsPrice = 2},
-            ShopList::Goods::Item{
-              .priceId = 3,
-              .priceRange = 720,
-              .goodsPrice = 3}}});
+      goods.items.push_back(ShopList::Goods::Item{
+        .priceId = ++priceId,
+        .priceRange = priceRange.range,
+        .goodsPrice = priceRange.price});
     }
+
+    _shopList.goodsList.emplace(goodsSequenceId, goods);
   }
 }
 

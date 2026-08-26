@@ -656,7 +656,7 @@ void RanchCharacter::Write(const RanchCharacter& ranchCharacter, SinkStream& str
     .Write(struct5.val6);
 
   stream.Write(ranchCharacter.oid)
-    .Write(ranchCharacter.isBusy)
+    .Write(ranchCharacter.busyState)
     .Write(ranchCharacter.unk3);
 
   // Rent
@@ -667,8 +667,7 @@ void RanchCharacter::Write(const RanchCharacter& ranchCharacter, SinkStream& str
 
   // Pet
   stream.Write(ranchCharacter.pet)
-    .Write(ranchCharacter.unk4)
-    .Write(ranchCharacter.unk5);
+    .Write(ranchCharacter.league);
 }
 
 void RanchCharacter::Read(RanchCharacter& value, SourceStream& stream)
@@ -693,22 +692,20 @@ void RanchCharacter::Read(RanchCharacter& value, SourceStream& stream)
   stream.Read(value.guild);
 
   stream.Read(value.oid)
-    .Read(value.isBusy)
+    .Read(value.busyState)
     .Read(value.unk3);
 
   stream.Read(value.rent)
-    .Read(value.pet);
-
-  stream.Read(value.unk4)
-    .Read(value.unk5);
+    .Read(value.pet)
+    .Read(value.league);
 }
 
 void Quest::Write(const Quest& value, SinkStream& stream)
 {
   stream.Write(value.tid)
     .Write(value.member0)
-    .Write(value.member1)
-    .Write(value.member2)
+    .Write(value.status)
+    .Write(value.progress)
     .Write(value.member3)
     .Write(value.member4);
 }
@@ -717,8 +714,8 @@ void Quest::Read(Quest& value, SourceStream& stream)
 {
   stream.Read(value.tid)
     .Read(value.member0)
-    .Read(value.member1)
-    .Read(value.member2)
+    .Read(reinterpret_cast<uint8_t&>(value.status))
+    .Read(value.progress)
     .Read(value.member3)
     .Read(value.member4);
 }
@@ -794,17 +791,17 @@ void SkillSet::Read(SkillSet& value, SourceStream& stream)
 void DailyQuest::Write(const DailyQuest& value, SinkStream& stream)
 {
   stream.Write(value.questId)
-    .Write(value.unk_1)
-    .Write(value.unk_2)
-    .Write(value.unk_3);
+    .Write(value.progress)
+    .Write(value.rewardType)
+    .Write(value.rewardId);
 }
 
 void DailyQuest::Read(DailyQuest& value, SourceStream& stream)
 {
   stream.Read(value.questId)
-    .Read(value.unk_1)
-    .Read(value.unk_2)
-    .Read(value.unk_3);
+    .Read(value.progress)
+    .Read(value.rewardType)
+    .Read(value.rewardId);
 }
 void ShopOrder::Write(
   const ShopOrder& order,
@@ -860,6 +857,42 @@ void ObjectiveProgress::Read(
   stream.Read(objectiveProgress.isCompleted)
     .Read(objectiveProgress.progress)
     .Read(objectiveProgress.achievementTier);
+}
+
+void Vector3::Write(
+  const Vector3& vector,
+  SinkStream& stream)
+{
+  stream.Write(vector.x)
+    .Write(vector.y)
+    .Write(vector.z);
+}
+
+void Vector3::Read(
+  Vector3& vector,
+  SourceStream& stream)
+{
+  stream.Read(vector.x)
+    .Read(vector.y)
+    .Read(vector.z);
+}
+
+void BreedingBonus::Write(
+  const BreedingBonus& bonus,
+  SinkStream& stream)
+{
+  stream.Write(bonus.id)
+    .Write(bonus.type)
+    .Write(bonus.value);
+}
+
+void BreedingBonus::Read(
+  BreedingBonus& bonus,
+  SourceStream& stream)
+{
+  stream.Read(bonus.id)
+    .Read(bonus.type)
+    .Read(bonus.value);
 }
 
 } // namespace server::protocol

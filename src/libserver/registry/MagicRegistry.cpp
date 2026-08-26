@@ -65,12 +65,32 @@ uint32_t ReadSlotInfo(const YAML::Node& section, Magic::SlotInfo& slot)
 
   slot.affectByCriticalAura = section["affectByCriticalAura"].as<uint32_t>();
   slot.criticalByDarkFire = section["criticalByDarkFire"].as<uint32_t>();
+  slot.givePositionalMagic = section["givePositionalMagic"].as<uint32_t>();
   slot.attackRank = section["attackRank"].as<uint32_t>(0);
+
+  // Crit items do not need the positional weights defined, base items carry that info
+  if (slot.type == slot.basicType)
+    slot.positionalWeights = section["positionalWeights"].as<std::array<uint32_t, 8>>();
 
   return slot.type;
 }
 
 } // anonymous namespace
+
+void MagicRegistry::Clear()
+{
+  _slotInfo.clear();
+  _soloPool.clear();
+  _teamPool.clear();
+  _statScalings.clear();
+  for (auto& weights : _soloPositionWeights)
+    weights.clear();
+  for (auto& weights : _teamPositionWeights)
+    weights.clear();
+  _regenInfo = {};
+  _setBonusInfo = {};
+  _baseCritChanceBp = 500;
+}
 
 void MagicRegistry::ReadConfig(const std::filesystem::path& configPath)
 {
@@ -80,25 +100,25 @@ void MagicRegistry::ReadConfig(const std::filesystem::path& configPath)
   if (not magicSection)
     throw std::runtime_error("Missing magic section");
 
+  const auto slotSection = magicSection["slotInfo"];
+  if (not slotSection)
+    throw std::runtime_error("Missing magic slotInfo section");
+
+  const auto collection = slotSection["collection"];
+  if (not collection)
+    throw std::runtime_error("Missing magic slotInfo collection");
+
+  Clear();
+
   // Slot info
+  for (const auto& entry : collection)
   {
-    const auto slotSection = magicSection["slotInfo"];
-    if (not slotSection)
-      throw std::runtime_error("Missing magic slotInfo section");
-
-    const auto collection = slotSection["collection"];
-    if (not collection)
-      throw std::runtime_error("Missing magic slotInfo collection");
-
-    for (const auto& entry : collection)
-    {
-      Magic::SlotInfo slot;
-      const auto type = ReadSlotInfo(entry, slot);
-      _slotInfo.emplace(type, std::move(slot));
-    }
+    Magic::SlotInfo slot;
+    const auto type = ReadSlotInfo(entry, slot);
+    _slotInfo.emplace(type, std::move(slot));
   }
 
-  // Pre-build the pick pools so RandomMagicItem never has to filter at runtime.
+  // Pre-build the pick pools and positional weights so RandomMagicItem never has to filter at runtime.
   for (const auto& [type, slot] : _slotInfo)
   {
     if (slot.basicType != type)
@@ -106,6 +126,26 @@ void MagicRegistry::ReadConfig(const std::filesystem::path& configPath)
     _teamPool.push_back(type);
     if (slot.teamMode == 0)
       _soloPool.push_back(type);
+
+    // Only compile weights from base type
+    if (slot.type != slot.basicType)
+      continue;
+
+    for (size_t i = 0; i < slot.positionalWeights.size(); ++i)
+    {
+      const auto& pair = std::make_pair(
+        slot.positionalWeights[i],
+        slot);
+
+      // Add to team magic item weights since team is a superset of solo
+      _teamPositionWeights[i].emplace_back(pair);
+
+      // Do not add to solo position weights if team item
+      if (slot.teamMode != 0)
+        continue;
+
+      _soloPositionWeights[i].emplace_back(pair);
+    }
   }
 
   if (const auto regenSection = magicSection["regen"])
@@ -113,6 +153,16 @@ void MagicRegistry::ReadConfig(const std::filesystem::path& configPath)
     _regenInfo.pointPerTick = regenSection["pointPerTick"].as<uint32_t>(_regenInfo.pointPerTick);
     _regenInfo.intervalMs = regenSection["intervalMs"].as<uint32_t>(_regenInfo.intervalMs);
     _regenInfo.courageScaleBp = regenSection["courageScaleBp"].as<uint32_t>(_regenInfo.courageScaleBp);
+  }
+
+  if (const auto setBonusSection = magicSection["setBonus"])
+  {
+    _setBonusInfo.critChanceBonusBp = setBonusSection["critChanceBonusBp"].as<uint32_t>(
+      _setBonusInfo.critChanceBonusBp);
+    _setBonusInfo.passiveGaugeScaleBp = setBonusSection["passiveGaugeScaleBp"].as<uint32_t>(
+      _setBonusInfo.passiveGaugeScaleBp);
+    _setBonusInfo.holdingGaugeScaleBp = setBonusSection["holdingGaugeScaleBp"].as<uint32_t>(
+      _setBonusInfo.holdingGaugeScaleBp);
   }
 
   _baseCritChanceBp = magicSection["critChanceBp"].as<uint32_t>(_baseCritChanceBp);
@@ -191,6 +241,11 @@ const Magic::RegenInfo& MagicRegistry::GetRegenInfo() const
   return _regenInfo;
 }
 
+const Magic::SetBonusInfo& MagicRegistry::GetSetBonusInfo() const
+{
+  return _setBonusInfo;
+}
+
 uint32_t MagicRegistry::GetBaseCritChanceBp() const
 {
   return _baseCritChanceBp;
@@ -200,6 +255,16 @@ const Magic::StatScaling* MagicRegistry::GetStatScaling(uint32_t basicType) cons
 {
   const auto it = _statScalings.find(basicType);
   return it == _statScalings.cend() ? nullptr : &it->second;
+}
+
+const std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>& MagicRegistry::GetSoloPositionWeights(uint32_t position) const
+{
+  return _soloPositionWeights.at(position);
+}
+
+const std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>& MagicRegistry::GetTeamPositionWeights(uint32_t position) const
+{
+  return _teamPositionWeights.at(position);
 }
 
 } // namespace server::registry

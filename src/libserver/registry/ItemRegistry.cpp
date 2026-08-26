@@ -22,7 +22,9 @@
 #include <spdlog/spdlog.h>
 #include <yaml-cpp/yaml.h>
 
+#include <algorithm>
 #include <cassert>
+#include <ranges>
 
 namespace server::registry
 {
@@ -125,29 +127,48 @@ void ReadPlayParameters(
     Item::PlayParameters::maxAttachment)>();
 }
 
+void ReadShopInfo(
+  Item::ShopInfo& shopInfo,
+  const YAML::Node& yaml)
+{
+  shopInfo.isPurchasable = yaml["isPurchasable"].as<bool>(true);
+  shopInfo.moneyType = static_cast<Item::ShopInfo::MoneyType>(
+    yaml["moneyType"].as<uint32_t>(0));
+
+  if (const auto priceRangesNode = yaml["priceRanges"])
+  {
+    for (const auto& node : priceRangesNode)
+    {
+      shopInfo.priceRanges.push_back({
+        .range = node["range"].as<uint32_t>(),
+        .price = node["price"].as<int32_t>()});
+    }
+  }
+}
+
 } // anon namespace
 
-void ItemRegistry::ReadConfig(const std::filesystem::path& configPath)
+void ItemRegistry::Clear()
 {
-  const auto root = YAML::LoadFile(configPath.string());
-
-  const auto itemsSection = root["items"];
-  if (not itemsSection)
-    throw std::runtime_error("Missing items section");
-
-  const auto collectionSection = itemsSection["collection"];
-  if (not collectionSection)
-    throw std::runtime_error("Missing collection section");
-
-  const auto packagesSection = root["packages"];
-  if (not packagesSection)
-    throw std::runtime_error("Missing packages section");
-
-  const auto packagesCollectionSection = packagesSection["collection"];
-  if (not packagesCollectionSection)
-    throw std::runtime_error("Missing packages collection section");
-
   _items.clear();
+  _packages.clear();
+  _sets.clear();
+}
+
+void ItemRegistry::ReadConfig(const std::filesystem::path& configDir)
+{
+  const auto itemsRoot = YAML::LoadFile((configDir / "items.yaml").string());
+  const auto packagesRoot = YAML::LoadFile((configDir / "packages.yaml").string());
+
+  const auto collectionSection = itemsRoot["collection"];
+  if (not collectionSection)
+    throw std::runtime_error("Missing collection section in items.yaml");
+
+  const auto packagesCollectionSection = packagesRoot["collection"];
+  if (not packagesCollectionSection)
+    throw std::runtime_error("Missing collection section in packages.yaml");
+
+  Clear();
 
   for (const auto& itemSection : collectionSection)
   {
@@ -157,8 +178,10 @@ void ItemRegistry::ReadConfig(const std::filesystem::path& configPath)
         itemSection["type"].as<uint32_t>()),
       .level = itemSection["level"].as<decltype(Item::level)>(0),
       .name = itemSection["name"].as<decltype(Item::name)>(""),
-      .description = itemSection["description"].as<decltype(Item::description)>(),
-      .isPurchasable = itemSection["isPurchasable"].as<bool>()};
+      .description = itemSection["description"].as<decltype(Item::description)>(decltype(Item::description){})};
+
+    if (const auto prerequisiteLevelNode = itemSection["prerequisiteLevel"])
+      item.prerequisiteLevel = prerequisiteLevelNode.as<uint8_t>();
 
     // Read ItemPartInfo
 
@@ -187,6 +210,29 @@ void ItemRegistry::ReadConfig(const std::filesystem::path& configPath)
     else if (const auto playParametersSection = itemSection["playParameters"])
       ReadPlayParameters(item.playParameters.emplace(), playParametersSection);
 
+    // Read ItemIndex
+    if (const auto itemIndexSection = itemSection["itemIndex"])
+    {
+      item.itemIndex.category = itemIndexSection["category"].as<uint32_t>(0);
+      item.itemIndex.subcategory = itemIndexSection["subcategory"].as<uint32_t>(0);
+    }
+
+    // Read ShopInfo
+    if (const auto shopInfoSection = itemSection["shopInfo"])
+      ReadShopInfo(item.shopInfo.emplace(), shopInfoSection);
+
+    // Read MountAbility
+    if (const auto mountAbilitySection = itemSection["mountAbility"])
+    {
+      auto& ma = item.mountAbility.emplace();
+      ma.grade     = mountAbilitySection["grade"].as<uint32_t>(0);
+      ma.agility   = mountAbilitySection["agility"].as<uint32_t>(0);
+      ma.ambition  = mountAbilitySection["ambition"].as<uint32_t>(0);
+      ma.courage   = mountAbilitySection["courage"].as<uint32_t>(0);
+      ma.endurance = mountAbilitySection["endurance"].as<uint32_t>(0);
+      ma.rush      = mountAbilitySection["rush"].as<uint32_t>(0);
+    }
+
     _items.try_emplace(item.tid, item);
   }
 
@@ -203,7 +249,38 @@ void ItemRegistry::ReadConfig(const std::filesystem::path& configPath)
     _packages.try_emplace(package.packageId, package);
   }
 
-  spdlog::info("Item registry loaded {} items and {} packages", _items.size() , _packages.size());
+  // Load mount-equipment set bonuses. Optional: absence leaves the feature inert.
+  const auto setsPath = configDir / "sets.yaml";
+  if (std::filesystem::exists(setsPath))
+  {
+    const auto setsRoot = YAML::LoadFile(setsPath.string());
+    const auto setsCollectionSection = setsRoot["collection"];
+    if (not setsCollectionSection)
+      throw std::runtime_error("Missing collection section in sets.yaml");
+
+    for (const auto& setSection : setsCollectionSection)
+    {
+      SetItemInfo set{
+        .setId = setSection["setId"].as<decltype(SetItemInfo::setId)>(0),
+        .name = setSection["name"].as<decltype(SetItemInfo::name)>(""),
+        .description = setSection["description"].as<decltype(SetItemInfo::description)>(""),
+        .itemTids = setSection["itemTids"].as<decltype(SetItemInfo::itemTids)>(
+          decltype(SetItemInfo::itemTids){}),
+        .equipEffect = static_cast<SetEquipEffect>(
+          setSection["equipEffect"].as<uint32_t>(0)),
+        .equipEffectValue = setSection["equipEffectValue"].as<
+          decltype(SetItemInfo::equipEffectValue)>(0)};
+
+      if (not set.itemTids.empty())
+        _sets.emplace_back(std::move(set));
+    }
+  }
+
+  spdlog::info(
+    "Item registry loaded {} items, {} packages and {} sets",
+    _items.size(),
+    _packages.size(),
+    _sets.size());
 }
 
 std::optional<Item> ItemRegistry::GetItem(uint32_t tid)
@@ -230,6 +307,25 @@ std::optional<Package> ItemRegistry::GetPackage(uint32_t packageId)
 std::unordered_map<uint32_t, Package> ItemRegistry::GetPackages()
 {
   return _packages;
+}
+
+std::vector<const SetItemInfo*> ItemRegistry::GetActiveSets(
+  const std::vector<uint32_t>& equippedTids) const
+{
+  std::vector<const SetItemInfo*> activeSets;
+  for (const auto& set : _sets)
+  {
+    const bool allEquipped = std::ranges::all_of(
+      set.itemTids,
+      [&equippedTids](uint32_t tid)
+      {
+        return std::ranges::contains(equippedTids, tid);
+      });
+
+    if (allEquipped)
+      activeSets.emplace_back(&set);
+  }
+  return activeSets;
 }
 
 } // namespace server::registry

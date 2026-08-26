@@ -21,6 +21,7 @@
 #define COMMON_MESSAGE_DEFINES_HPP
 
 #include "libserver/network/command/CommandProtocol.hpp"
+#include "libserver/network/command/proto/CommonStructureDefinitions.hpp"
 #include <libserver/util/Stream.hpp>
 
 #include <string>
@@ -200,6 +201,185 @@ struct AcCmdRCRequestUser : AcCmdCRRequestUser
     SourceStream& stream);
 };
 
+//! Server-initiated, clientbound notification indicating to the client
+//! progression of a quest.
+//! Can be used in either ranch or race.
+struct AcCmdRCUpdateQuestNotify
+{
+  uint32_t characterUid{};
+  uint16_t questTid{};
+  ObjectiveProgress objectiveProgress{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCUpdateQuestNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCUpdateQuestNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCUpdateQuestNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCUpdateDailyQuestNotify
+{   
+  uint32_t characterUid;
+  uint16_t questId;
+  ObjectiveProgress objectiveProgress;
+  uint32_t carrotsReward; //used when rewardType is Carrots
+  QuestRewardType rewardType{QuestRewardType::None};
+  uint32_t unk2;
+  uint32_t mountExp; //used when rewardType is Exp
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCUpdateDailyQuestNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCUpdateDailyQuestNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCUpdateDailyQuestNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCROpCmd
+{
+  std::string command{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCROpCmd;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCROpCmd& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCROpCmd& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCUpdateMountInfoNotify
+{
+  // TODO: confirm these values
+  enum class Action : uint8_t
+  {
+    // Takes horse name + type (type foal interacts with graze)
+    Default = 0,
+    // Has gMsgSetMountInfo/RanchCare_ResetAmends//Ranch_UpdateMountName
+    // [Ranch_UpdateMountName] characterUid = 0
+    // This appears to do the horse change animation
+    MaybeRentHorseOrReturnToNature = 4,
+    // Has gMsgSetMountState/Breed_SuccessData_MountSeed
+    // [Breed_SuccessData_MountSeed] seed? = 0
+    PutHorseInRentOrBreedingSystem = 5,
+    // Takes potentialLevel and potentialValue
+    ProgressHorsePotential = 9,
+    // Just takes luck.
+    SomethingWithHorseLuck = 10,
+    UpdateInjuryState = 11,
+    SomethingWithInjuryAndLuck = 12
+  };
+
+  uint32_t characterUid{};
+  Action action{Action::Default};
+  Horse horse{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCUpdateMountInfoNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCUpdateMountInfoNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCUpdateMountInfoNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCMobDead
+{
+  uint16_t mobOid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCMobDead;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdRCMobDead& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdRCMobDead& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUpdateRanchLevelNotify
+{
+  uint32_t unk0{};
+  uint32_t ranchProgress{};
+  uint32_t carrotsGained{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdateRanchLevelNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUpdateRanchLevelNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUpdateRanchLevelNotify& command,
+    SourceStream& stream);
+};
+
 } // namespace server::protocol
 
-#endif // LOBBY_MESSAGE_DEFINES_HPP
+#endif // COMMON_MESSAGE_DEFINES_HPP

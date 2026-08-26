@@ -24,6 +24,7 @@
 
 #include <array>
 #include <bitset>
+#include <cmath>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -225,7 +226,7 @@ struct Horse
     Adult = 0,
     Foal = 1,
     Stallion = 2,
-    Rented = 3
+    Rent = 3
   };
 
   //!
@@ -502,6 +503,26 @@ struct PetBirthInfo
 };
 
 //!
+struct League
+{
+  enum class Type : uint8_t
+  {
+    None = 0,
+    Bronze = 1,
+    Silver = 2,
+    Gold = 3,
+    Platinum = 4
+  };
+
+  Type type{};
+  //! League rank percentile expressed as a whole number in an interval <0, 100>.
+  uint8_t rankingPercentile{};
+
+  static void Write(const League& value, SinkStream& stream);
+  static void Read(League& value, SourceStream& stream);
+};
+
+//!
 struct RanchHorse
 {
   uint16_t horseOid{};
@@ -538,14 +559,13 @@ struct RanchCharacter
 
   //! Unique ranch object identifier.
   uint16_t oid{};
-  uint8_t isBusy{0};
+  uint8_t busyState{0};
   uint8_t unk3{0};
 
   Rent rent{};
   Pet pet{};
 
-  uint8_t unk4{0};
-  uint8_t unk5{0};
+  League league{};
 
   static void Write(const RanchCharacter& ranchCharacter, SinkStream& stream);
   static void Read(RanchCharacter& value, SourceStream& stream);
@@ -555,10 +575,14 @@ struct RanchCharacter
 struct Quest
 {
   uint16_t tid{}; //questid
-  uint32_t member0{};
-  uint8_t member1{}; //can only be 0 or 1, 0 is in progress, 1 is completed
-  uint32_t member2{}; //progress
-  uint8_t member3{};
+  uint32_t member0{};          //maybe turnInNPC? used if the quest is ready to claim
+  enum Status : uint8_t{
+    InProgress = 0,            // Quest started, objectives not yet met
+    ReadyToClaim = 1,          // Objectives met, reward can be claimed
+    Finished = 3               // Reward claimed / quest finished
+  }status{};
+  uint32_t progress{};         // used if the quest is in progress, otherwise unused
+  uint8_t member3{}; 
   uint8_t member4{};
 
   static void Write(const Quest& value, SinkStream& stream);
@@ -576,26 +600,6 @@ struct Housing
   static void Read(Housing& value, SourceStream& stream);
 };
 
-//!
-struct League
-{
-  enum class Type : uint8_t
-  {
-    None = 0,
-    Bronze = 1,
-    Silver = 2,
-    Gold = 3,
-    Platinum = 4
-  };
-
-  Type type{};
-  //! League rank percentile expressed as a whole number in an interval <0, 100>.
-  uint8_t rankingPercentile{};
-
-  static void Write(const League& value, SinkStream& stream);
-  static void Read(League& value, SourceStream& stream);
-};
-
 enum class TeamMode : uint8_t
 {
   FFA = 1,
@@ -609,6 +613,14 @@ enum class GameMode : uint8_t
   Magic = 2,
   Unk4 = 4,
   Tutorial = 6,
+};
+
+enum class BonusCourseType : uint16_t
+{
+  None = 0,
+  Carrots = 1,
+  Experience = 2,
+  CarrotsAndExperience = 3
 };
 
 struct SkillSet
@@ -660,10 +672,14 @@ enum class ChangeNicknameError : uint8_t
 
 struct DailyQuest
 {
-  uint16_t questId;
-  uint32_t unk_1;
-  uint8_t unk_2; // type of reward: 1 = carrots, 2 = exp
-  uint8_t unk_3;
+  //! Template ID of the quest.
+  uint16_t questId{};
+  //! Current progress toward the quest's successValue.
+  uint32_t progress{};
+  //! Reward type: 1 = carrots, 2 = exp.
+  uint8_t rewardType{};
+  //! Reward entry ID, references quests.rewards in quests.yaml.
+  uint8_t rewardId{};
 
   static void Write(const DailyQuest& value, SinkStream& stream);
   static void Read(DailyQuest& value, SourceStream& stream);
@@ -728,6 +744,13 @@ struct PackedVector3
     SourceStream& stream);
 };
 
+enum class QuestRewardType : uint8_t
+{
+  None = 0,
+  Carrots = 1,
+  Exp = 2
+};
+
 //! A common struct used by achievements and quests.
 struct ObjectiveProgress
 {
@@ -761,6 +784,55 @@ struct ObjectiveProgress
   //! @param stream Source stream.
   static void Read(
     ObjectiveProgress& command,
+    SourceStream& stream);
+};
+
+struct Vector3
+{
+  float x{};
+  float y{};
+  float z{};
+
+  Vector3 operator+(const Vector3& other) const
+  {
+    return Vector3(x + other.x, y + other.y, z + other.z);
+  }
+
+  Vector3 operator-(const Vector3& other) const
+  {
+    return Vector3(x - other.x, y - other.y, z - other.z);
+  }
+
+  float Length() const
+  {
+    return std::sqrt(x * x + y * y + z * z);
+  }
+
+  static void Write(
+    const Vector3& vector,
+    SinkStream& stream);
+
+  static void Read(
+    Vector3& vector,
+    SourceStream& stream);
+};
+
+//! A breeding bonus rolled from the BonusProbInfo table.
+struct BreedingBonus
+{
+  //! Entry id (0 = no bonus).
+  uint8_t id{0};
+  //! 0 = pregnancy success % increase, 1 = fertility peak level.
+  uint8_t type{0};
+  //! Bonus value (success % for type 0, fertility peak level for type 1).
+  uint8_t value{0};
+
+  static void Write(
+    const BreedingBonus& bonus,
+    SinkStream& stream);
+
+  static void Read(
+  BreedingBonus& bonus,
     SourceStream& stream);
 };
 

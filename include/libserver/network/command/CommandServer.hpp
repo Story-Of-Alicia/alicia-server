@@ -75,6 +75,7 @@ class CommandServer final
 public:
   using TimeStatistics = TimeSeriesData<int64_t, 3600>;
 
+  //! Command server event handler interface.
   class EventHandlerInterface
   {
   public:
@@ -84,24 +85,34 @@ public:
     virtual void HandleClientDisconnected(ClientId clientId) = 0;
   };
 
-  //! Default constructor;
-  explicit CommandServer(
-    EventHandlerInterface& events);
-  ~CommandServer();
+  //! Constructor.
+  //! @param eventHandlerInterface Instance of event handler.
+  CommandServer(
+    EventHandlerInterface& eventHandlerInterface);
 
-  //! Begins the server.
+  //! Default destructor.
+  ~CommandServer() = default;
+
+  CommandServer(const CommandServer&) = delete;
+  CommandServer& operator=(const CommandServer&) = delete;
+
+  CommandServer(CommandServer&&) = delete;
+  CommandServer& operator=(CommandServer&&) = delete;
+
+  //! Begins the command server.
   //! @param address Address.
   //! @param port Port.
   void BeginHost(const asio::ip::address& address, uint16_t port);
 
-  //! Ends the server.
+  //! Ends the command server.
   void EndHost();
 
-  asio::ip::address_v4 GetClientAddress(ClientId);
+  asio::ip::address GetClientAddress(ClientId);
   void DisconnectClient(ClientId clientId);
 
+  void SetCode(ClientId client, protocol::XorCode code);
+
   //! Registers a command handler.
-  //! @param commandId ID of the command to register the handler for.
   //! @param handler Handler of the command.
   template <ReadableCommandStruct C>
   void RegisterCommandHandler(
@@ -117,7 +128,6 @@ public:
 
   //! Queues a command for sending.
   //! @param clientId ID of the client to send the command to.
-  //! @param commandId ID of the command.
   //! @param supplier Supplier of the command.
   template <WritableStruct C>
   void QueueCommand(
@@ -128,8 +138,6 @@ public:
       C::Write(supplier(), sink);
     });
   }
-
-  void SetCode(ClientId client, protocol::XorCode code);
 
   //! Returns the underlying network server.
   network::Server& GetServer();

@@ -20,6 +20,8 @@
 #ifndef ITEMREGISTRY_HPP
 #define ITEMREGISTRY_HPP
 
+#include <libserver/registry/Registry.hpp>
+
 #include <cstdint>
 #include <filesystem>
 #include <optional>
@@ -112,6 +114,36 @@ struct Item
     uint32_t maxAttachment{};
   };
 
+  //! Classification from libconfig itemIndex (category/subcategory, e.g. 1/2, 2/3, 3/1)
+  struct ItemIndex
+  {
+    //! 1=character part, 2=mount part, 3=item
+    uint32_t category{};
+    //! category-dependent slot/kind
+    uint32_t subcategory{};
+  };
+
+  //! Server-side shop configuration (not in client libconfig)
+  struct ShopInfo
+  {
+    bool isPurchasable{true};
+
+    enum class MoneyType
+    {
+      Carrots = 0,
+      Cash = 1,
+    } moneyType{MoneyType::Carrots};
+
+    struct PriceRange
+    {
+      //! item count, or duration in hours for temporary items
+      uint32_t range{};
+      int32_t price{};
+    };
+
+    std::vector<PriceRange> priceRanges{};
+  };
+
   uint32_t tid{};
 
   enum class Type
@@ -122,14 +154,30 @@ struct Item
   } type{Type::Permanent};
 
   uint32_t level{};
+  std::optional<uint8_t> prerequisiteLevel{};
 
   std::string name;
   std::vector<std::string> description;
-  bool isPurchasable{false};
+  ItemIndex itemIndex{};
+  std::optional<ShopInfo> shopInfo{};
+
+  //! Stats and grade from the libconfig MountMultiAbility table.
+  struct MountAbility
+  {
+    uint32_t grade{};
+    uint32_t agility{};
+    //! "Ambitious" in libconfig
+    uint32_t ambition{};
+    //! "Inherent" in libconfig
+    uint32_t courage{};
+    uint32_t endurance{};
+    uint32_t rush{};
+  };
 
   std::optional<CharacterPartInfo> characterPartInfo{};
   std::optional<MountPartInfo> mountPartInfo{};
   std::optional<MountPartSetInfo> mountPartSetInfo{};
+  std::optional<MountAbility> mountAbility{};
 
   std::optional<CareParameters> careParameters{};
   std::optional<CureParameters> cureParameters{};
@@ -146,20 +194,55 @@ struct Package
   uint32_t tid{};
 };
 
-class ItemRegistry
+//! The effect granted by wearing a complete mount-equipment set.
+//! Mirrors the EquipEffect enum from the client SetItemInfo table.
+enum class SetEquipEffect : uint32_t
+{
+  None = 0,
+  //! Increased critical spell chance.
+  CriticalSpellChance = 1,
+  //! Passive magic gauge fills faster.
+  PassiveGaugeFaster = 2,
+  //! Magic gauge keeps filling while holding a spell.
+  GaugeWhileHolding = 3,
+};
+
+//! A mount-equipment set and the bonus its full set grants.
+struct SetItemInfo
+{
+  uint32_t setId{};
+  std::string name;
+  std::string description;
+  //! Template IDs whose simultaneous equipping activates the set.
+  std::vector<uint32_t> itemTids;
+  SetEquipEffect equipEffect{SetEquipEffect::None};
+  //! Currently unused
+  uint32_t equipEffectValue{};
+};
+
+class ItemRegistry : public Registry
 {
 public:
-  void ReadConfig(const std::filesystem::path& configPath);
+  void ReadConfig(const std::filesystem::path& configPath) override;
+  void Clear() override;
+
   [[nodiscard]] std::optional<Item> GetItem(uint32_t tid);
   [[nodiscard]] std::unordered_map<uint32_t, Item> GetItems();
   [[nodiscard]] std::optional<Package> GetPackage(uint32_t packageId);
   [[nodiscard]] std::unordered_map<uint32_t, Package> GetPackages();
 
+  //! Returns the sets fully satisfied by the given equipped template IDs.
+  //! @param equippedTids Template IDs currently equipped by the racer.
+  //! @returns Pointers to the matching set definitions (empty if none).
+  [[nodiscard]] std::vector<const SetItemInfo*> GetActiveSets(
+    const std::vector<uint32_t>& equippedTids) const;
+
 private:
   std::unordered_map<uint32_t, Item> _items;
   std::unordered_map<uint32_t, Package> _packages;
+  std::vector<SetItemInfo> _sets;
 };
 
 } // namespace server::registry
 
-#endif //ITEMREGISTRY_HPP
+#endif // ITEMREGISTRY_HPP

@@ -22,6 +22,10 @@
 #include <spdlog/spdlog.h>
 #include <yaml-cpp/yaml.h>
 
+#include <libserver/util/Util.hpp>
+
+#include <filesystem>
+#include <map>
 #include <ranges>
 
 namespace server::registry
@@ -33,147 +37,312 @@ namespace
 constexpr uint32_t FigureScaleMin = 2;
 constexpr uint32_t FigureScaleMax = 10;
 
+Color ParseColor(const std::string& str)
+{
+  if (str == "White")      return Color::White;
+  if (str == "Brown")      return Color::Brown;
+  if (str == "DarkBrown")  return Color::DarkBrown;
+  if (str == "Grey")       return Color::Grey;
+  if (str == "Black")      return Color::Black;
+  throw std::runtime_error("Unknown color: " + str);
+}
+
+// Maps ManeTailColor IDs (from MountColorGroupInfo) to Color enum.
+// 1=Black, 2=White, 3=Brown, 4=DarkBrown, 5=Grey
+Color ParseManeTailColorId(int id)
+{
+  switch (id)
+  {
+    case 1: return Color::Black;
+    case 2: return Color::White;
+    case 3: return Color::Brown;
+    case 4: return Color::DarkBrown;
+    case 5: return Color::Grey;
+    default: throw std::runtime_error("Unknown ManeTailColor ID: " + std::to_string(id));
+  }
+}
+
 } // anon namespace
 
 HorseRegistry::HorseRegistry()
 {
-  _coats = {
-    {1, Coat{.tid = 1, .faceType = 0}},
-    {2, Coat{.tid = 2, .faceType = -1}},
-    {3, Coat{.tid = 3, .faceType = 0}},
-    {4, Coat{.tid = 4, .faceType = 0}},
-    {5, Coat{.tid = 5, .faceType = -1}},
-    {6, Coat{.tid = 6, .faceType = 0}},
-    {7, Coat{.tid = 7, .faceType = 0}},
-    {8, Coat{.tid = 8, .faceType = -1}},
-    {9, Coat{.tid = 9, .faceType = 0}},
-    {10, Coat{.tid = 10, .faceType = 0}},
-    {11, Coat{.tid = 11, .faceType = -1}},
-    {12, Coat{.tid = 12, .faceType = 0}},
-    {13, Coat{.tid = 13, .faceType = 0}},
-    {14, Coat{.tid = 14, .faceType = 0}},
-    {15, Coat{.tid = 15, .faceType = -1}},
-    {16, Coat{.tid = 16, .faceType = 0}},
-    {17, Coat{.tid = 17, .faceType = 0}},
-    {18, Coat{.tid = 18, .faceType = 0}},
-    {19, Coat{.tid = 19, .faceType = -1}},
-    {20, Coat{.tid = 20, .faceType = 0}},
-  };
+}
 
-  for (const auto& coatTid : _coats | std::views::keys)
+void HorseRegistry::Clear()
+{
+  _colorGroups.clear();
+  _coats.clear();
+  _faces.clear();
+  _manes.clear();
+  _tails.clear();
+  _possibleCoats.clear();
+  _possibleFaces.clear();
+  _facesByType.clear();
+  _possibleManes.clear();
+  _possibleTails.clear();
+  _potentialGrowth.clear();
+  _potentialLevels.clear();
+  _potentials.clear();
+  _potentialTypes.clear();
+  _masteryParams = {};
+  _masteryRewards.clear();
+  _tendencies.clear();
+  _groupForces.clear();
+  _levelUpPoints = {};
+  _grades.clear();
+  _emblems.clear();
+  _emblemRatios.clear();
+  maneTailColorGroups.clear();
+  _manesByColorAndShape.clear();
+  _tailsByColorAndShape.clear();
+}
+
+void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
+{
+  // Horse tables are split across category files under the config directory.
+  // Merge their top-level sections into a single node so the parsing below
+  // stays uniform regardless of which file a section lives in.
+  YAML::Node root;
+  for (const auto* file : {"appearance.yaml", "potential.yaml", "progression.yaml", "emblems.yaml"})
   {
-    _possibleCoats.emplace_back(coatTid);
+    const auto node = YAML::LoadFile((configPath / file).string());
+    for (const auto& entry : node)
+      root[entry.first.as<std::string>()] = entry.second;
   }
 
-  _faces = {
-    {1, Face{.tid = 1, .type = -1}},
-    {2, Face{.tid = 2, .type = -1}},
-    {3, Face{.tid = 3, .type = -1}},
-    {5, Face{.tid = 5, .type = -1}},
-    {7, Face{.tid = 7, .type = -1}},
-  };
+  Clear();
 
-  for (const auto& faceTid : _faces | std::views::keys)
+  for (const auto& node : root["colorGroups"])
   {
-    _possibleFaces.emplace_back(faceTid);
+    std::vector<Color> colors;
+    for (const auto& idNode : node["colorIds"])
+    {
+      const Color c = ParseManeTailColorId(idNode.as<int32_t>());
+      if (std::find(colors.begin(), colors.end(), c) == colors.end())
+        colors.push_back(c);
+    }
+    _colorGroups.push_back(std::move(colors));
   }
 
-  _manes = {
-    {1, Mane{.tid = 1, .colorGroup = 1}},
-    {2, Mane{.tid = 2, .colorGroup = 2}},
-    {3, Mane{.tid = 3, .colorGroup = 3}},
-    {4, Mane{.tid = 4, .colorGroup = 4}},
-    {5, Mane{.tid = 5, .colorGroup = 5}},
-    {6, Mane{.tid = 6, .colorGroup = 1}},
-    {7, Mane{.tid = 7, .colorGroup = 2}},
-    {8, Mane{.tid = 8, .colorGroup = 3}},
-    {9, Mane{.tid = 9, .colorGroup = 4}},
-    {10, Mane{.tid = 10, .colorGroup = 5}},
-    {11, Mane{.tid = 11, .colorGroup = 1}},
-    {12, Mane{.tid = 12, .colorGroup = 2}},
-    {13, Mane{.tid = 13, .colorGroup = 3}},
-    {14, Mane{.tid = 14, .colorGroup = 4}},
-    {15, Mane{.tid = 15, .colorGroup = 5}},
-    {16, Mane{.tid = 16, .colorGroup = 1}},
-    {17, Mane{.tid = 17, .colorGroup = 2}},
-    {18, Mane{.tid = 18, .colorGroup = 3}},
-    {19, Mane{.tid = 19, .colorGroup = 4}},
-    {20, Mane{.tid = 20, .colorGroup = 5}},
-    {21, Mane{.tid = 21, .colorGroup = 1}},
-    {22, Mane{.tid = 22, .colorGroup = 2}},
-    {23, Mane{.tid = 23, .colorGroup = 3}},
-    {24, Mane{.tid = 24, .colorGroup = 4}},
-    {25, Mane{.tid = 25, .colorGroup = 5}},
-    {26, Mane{.tid = 26, .colorGroup = 1}},
-    {27, Mane{.tid = 27, .colorGroup = 2}},
-    {28, Mane{.tid = 28, .colorGroup = 3}},
-    {29, Mane{.tid = 29, .colorGroup = 4}},
-    {30, Mane{.tid = 30, .colorGroup = 5}},
-    {31, Mane{.tid = 31, .colorGroup = 1}},
-    {32, Mane{.tid = 32, .colorGroup = 2}},
-    {33, Mane{.tid = 33, .colorGroup = 3}},
-    {34, Mane{.tid = 34, .colorGroup = 4}},
-    {35, Mane{.tid = 35, .colorGroup = 5}},
-    {36, Mane{.tid = 36, .colorGroup = 1}},
-    {37, Mane{.tid = 37, .colorGroup = 2}},
-    {38, Mane{.tid = 38, .colorGroup = 3}},
-    {39, Mane{.tid = 39, .colorGroup = 4}},
-    {40, Mane{.tid = 40, .colorGroup = 5}},
-  };
-
-  for (const auto& maneTid : _manes | std::views::keys)
+  for (const auto& node : root["coats"])
   {
-    _possibleManes.emplace_back(maneTid);
+    const auto tid = node["tid"].as<data::Tid>();
+    _coats[tid] = Coat{
+      .tid = tid,
+      .faceType = node["faceType"].as<int32_t>(),
+      .minGrade = node["minGrade"].as<int32_t>(),
+      .tier = static_cast<Coat::Tier>(node["tier"].as<int32_t>()),
+      .inheritanceRate = node["inheritanceRate"].as<float>(),
+      .allowedColorGroups = node["allowedColorGroups"].as<int32_t>(),
+    };
+    _possibleCoats.emplace_back(tid);
   }
 
-  _tails = {
-    {1, Tail{.tid = 1, .colorGroup = 1}},
-    {2, Tail{.tid = 2, .colorGroup = 2}},
-    {3, Tail{.tid = 3, .colorGroup = 3}},
-    {4, Tail{.tid = 4, .colorGroup = 4}},
-    {5, Tail{.tid = 5, .colorGroup = 5}},
-    {6, Tail{.tid = 6, .colorGroup = 1}},
-    {7, Tail{.tid = 7, .colorGroup = 2}},
-    {8, Tail{.tid = 8, .colorGroup = 3}},
-    {9, Tail{.tid = 9, .colorGroup = 4}},
-    {10, Tail{.tid = 10, .colorGroup = 5}},
-    {11, Tail{.tid = 11, .colorGroup = 1}},
-    {12, Tail{.tid = 12, .colorGroup = 2}},
-    {13, Tail{.tid = 13, .colorGroup = 3}},
-    {14, Tail{.tid = 14, .colorGroup = 4}},
-    {15, Tail{.tid = 15, .colorGroup = 5}},
-    {16, Tail{.tid = 16, .colorGroup = 1}},
-    {17, Tail{.tid = 17, .colorGroup = 2}},
-    {18, Tail{.tid = 18, .colorGroup = 3}},
-    {19, Tail{.tid = 19, .colorGroup = 4}},
-    {20, Tail{.tid = 20, .colorGroup = 5}},
-    {21, Tail{.tid = 21, .colorGroup = 1}},
-    {22, Tail{.tid = 22, .colorGroup = 2}},
-    {23, Tail{.tid = 23, .colorGroup = 3}},
-    {24, Tail{.tid = 24, .colorGroup = 4}},
-    {25, Tail{.tid = 25, .colorGroup = 5}},
-    {26, Tail{.tid = 26, .colorGroup = 1}},
-    {27, Tail{.tid = 27, .colorGroup = 2}},
-    {28, Tail{.tid = 28, .colorGroup = 3}},
-    {29, Tail{.tid = 29, .colorGroup = 4}},
-    {30, Tail{.tid = 30, .colorGroup = 5}},
-  };
-
-  for (const auto& tailTid : _tails | std::views::keys)
+  for (const auto& node : root["faces"])
   {
-    _possibleTails.emplace_back(tailTid);
+    const auto tid = node["tid"].as<data::Tid>();
+    const auto type = node["type"].as<int32_t>();
+    _faces[tid] = Face{
+      .tid = tid,
+      .type = type,
+    };
+    _possibleFaces.emplace_back(tid);
+    _facesByType[type].emplace_back(tid);
+  }
+
+  for (const auto& node : root["manes"])
+  {
+    const auto tid = node["tid"].as<data::Tid>();
+    _manes[tid] = Mane{
+      .tid = tid,
+      .color = ParseColor(node["color"].as<std::string>()),
+      .shape = node["shape"].as<int32_t>(),
+      .inheritanceRate = node["inheritanceRate"].as<float>(),
+      .minGrade = node["minGrade"].as<int32_t>(),
+      .tier = node["tier"].as<int32_t>(),
+    };
+    _possibleManes.emplace_back(tid);
+  }
+
+  for (const auto& node : root["tails"])
+  {
+    const auto tid = node["tid"].as<data::Tid>();
+    _tails[tid] = Tail{
+      .tid = tid,
+      .color = ParseColor(node["color"].as<std::string>()),
+      .shape = node["shape"].as<int32_t>(),
+      .inheritanceRate = node["inheritanceRate"].as<float>(),
+      .minGrade = node["minGrade"].as<int32_t>(),
+      .tier = node["tier"].as<int32_t>(),
+    };
+    _possibleTails.emplace_back(tid);
+  }
+
+  for (const auto& node : root["potentialGrowth"])
+  {
+    const auto type = node["type"].as<uint32_t>();
+    PotentialGrowth pg{ .type = type };
+
+    const auto weightsNode = node["weights"];
+    for (size_t i = 0; i < pg.weights.size(); ++i)
+      pg.weights[i] = weightsNode[i].as<float>();
+
+    _potentialGrowth[type] = pg;
+  }
+
+  for (const auto& node : root["potentialLevels"])
+  {
+    _potentialLevels.emplace_back(PotentialLevel{
+      .level = node["level"].as<uint32_t>(),
+      .requiredClassProgression = node["exp"].as<uint32_t>(),
+    });
+  }
+
+  for (const auto& node : root["potentials"])
+  {
+    const auto type = node["type"].as<uint32_t>();
+    _potentials[type] = PotentialInfo{
+      .type = type,
+      .name = node["name"].as<std::string>(),
+      .chanceBp = node["chanceBp"].as<uint32_t>(0),
+      .durationBonusMs = node["durationBonusMs"].as<uint32_t>(0),
+    };
+    _potentialTypes.push_back(type);
+  }
+
+  {
+    const auto& params = root["mastery"]["params"];
+    _masteryParams = MasteryParams{
+      .spurMagicCount = params["spurMagicCount"].as<uint32_t>(),
+      .jumpCount = params["jumpCount"].as<uint32_t>(),
+      .slidingTime = params["slidingTime"].as<uint32_t>(),
+      .glidingDistance = params["glidingDistance"].as<uint32_t>(),
+    };
+  }
+
+  for (const auto& node : root["mastery"]["rewards"])
+  {
+    _masteryRewards.push_back(MasteryReward{
+      .percent = node["percent"].as<uint32_t>(),
+      .userExpAdd = node["userExpAdd"].as<uint32_t>(),
+      .gameMoneyAdd = node["gameMoneyAdd"].as<uint32_t>(),
+    });
+  }
+
+  for (const auto& node : root["tendencies"])
+  {
+    const auto tendency = node["tendency"].as<uint32_t>();
+    _tendencies[tendency] = TendencyRatio{
+      .tendency = tendency,
+      .buyRatio = node["buyRatio"].as<int32_t>(),
+      .breedingRatio = node["breedingRatio"].as<int32_t>(),
+    };
+  }
+
+  for (const auto& node : root["groupForces"])
+  {
+    const auto id = node["id"].as<uint32_t>();
+    GroupForce gf{
+      .id = id,
+      .affectToAll = node["affectToAll"].as<bool>(),
+      .action = node["action"].as<int32_t>(),
+    };
+    for (const auto& cNode : node["conditions"])
+      gf.conditions.push_back({
+        .tendency = cNode["tendency"].as<int32_t>(),
+        .count = cNode["count"].as<int32_t>(),
+      });
+    for (const auto& eNode : node["effects"])
+      gf.effects.push_back({
+        .effect = eNode["effect"].as<int32_t>(),
+        .param = eNode["param"].as<std::string>(),
+      });
+    _groupForces[id] = std::move(gf);
+  }
+
+  {
+    const auto& lup = root["levelUpPoints"];
+    _levelUpPoints = LevelUpPoints{
+      .base = lup["base"].as<int32_t>(),
+      .exp10 = lup["exp10"].as<int32_t>(),
+      .exp20 = lup["exp20"].as<int32_t>(),
+    };
+  }
+
+  for (const auto& node : root["grades"])
+  {
+    const auto grade = node["grade"].as<uint32_t>();
+    _grades[grade] = GradeInfo{
+      .grade = grade,
+      .minStatSum = node["minStatSum"].as<int32_t>(),
+      .pregnantValue = node["pregnantValue"].as<int32_t>(),
+    };
+  }
+
+  for (const auto& node : root["emblems"])
+  {
+    const auto id = node["id"].as<uint32_t>();
+    _emblems[id] = EmblemInfo{
+      .id = id,
+      .odds = node["odds"].as<uint32_t>(),
+    };
+  }
+
+  for (const auto& node : root["emblemRatios"])
+  {
+    const auto odds = node["odds"].as<uint32_t>();
+    _emblemRatios[odds] = EmblemRatio{
+      .odds = odds,
+      .ratio = node["ratio"].as<int32_t>(),
+    };
+  }
+
+  for (const auto& [tid, mane] : _manes)
+  {
+    for (int32_t groupId = 0; groupId < static_cast<int32_t>(_colorGroups.size()); ++groupId)
+    {
+      const auto& colors = _colorGroups[groupId];
+      if (std::find(colors.begin(), colors.end(), mane.color) != colors.end())
+        _manesByColorAndShape[groupId][mane.shape].push_back(tid);
+    }
+  }
+
+  for (const auto& [tid, tail] : _tails)
+  {
+    for (int32_t groupId = 0; groupId < static_cast<int32_t>(_colorGroups.size()); ++groupId)
+    {
+      const auto& colors = _colorGroups[groupId];
+      if (std::find(colors.begin(), colors.end(), tail.color) != colors.end())
+        _tailsByColorAndShape[groupId][tail.shape].push_back(tid);
+    }
   }
 }
 
-void HorseRegistry::ReadConfig()
+void HorseRegistry::BuildDefaultHorse(
+  data::Horse& horse,
+  data::Tid horseTid)
 {
-  const YAML::Node config = YAML::Load("./config/game/horses.yaml");
-  const auto root = config["horses"];
+  constexpr uint32_t DefaultHorseStamina = 4000;
+  constexpr uint32_t DefaultHorseAppearanceValue = 5;
 
-  const auto facesConfig = root["faces"];
-  const auto coatsConfig = root["coats"];
-  const auto manesConfig = root["manes"];
-  const auto tailsConfig = root["tails"];
+  horse.tid() = horseTid;
+  horse.dateOfBirth() = data::Clock::now();
+  horse.mountCondition.stamina = DefaultHorseStamina;
+  horse.tendency() = 1;
+  horse.clazz = 1;
+  horse.grade = 1;
+
+  horse.appearance.scale() = DefaultHorseAppearanceValue;
+  horse.appearance.legLength() = DefaultHorseAppearanceValue;
+  horse.appearance.legVolume() = DefaultHorseAppearanceValue;
+  horse.appearance.bodyLength() = DefaultHorseAppearanceValue;
+  horse.appearance.bodyVolume() = DefaultHorseAppearanceValue;
+
+  // Default brown horse, as seen for TID 20001
+  horse.parts.skinTid() = 1;
+  horse.parts.faceTid() = 1;
+  horse.parts.maneTid() = 3;
+  horse.parts.tailTid() = 3;
 }
 
 void HorseRegistry::BuildRandomHorse(
@@ -184,25 +353,19 @@ void HorseRegistry::BuildRandomHorse(
   std::uniform_int_distribution<size_t> coatRandomDist(
     0, _possibleCoats.size() - 1);
 
-  const Coat& coat = _coats[_possibleCoats[coatRandomDist(_randomDevice)]];
+  const Coat& coat = _coats[_possibleCoats[coatRandomDist(server::util::GetRandomEngine())]];
   parts.skinTid = coat.tid;
 
-  // If the coat has a face available, pick a random face.
-  if (coat.faceType != 0)
-  {
-    std::uniform_int_distribution<size_t> faceRandomDist(
-      0, _possibleFaces.size() - 1);
-
-    const Face& face = _faces[_possibleFaces[faceRandomDist(_randomDevice)]];
-    parts.faceTid = face.tid;
-  }
+  // Pick a random face the coat may wear.
+  if (const data::Tid faceTid = GetRandomFaceForCoat(coat.tid); faceTid != data::InvalidTid)
+    parts.faceTid = faceTid;
 
   {
     // Pick a random mane.
     std::uniform_int_distribution<size_t> maneRandomDist(
       0, _possibleManes.size() - 1);
 
-    const Mane& mane = _manes[_possibleManes[maneRandomDist(_randomDevice)]];
+    const Mane& mane = _manes[_possibleManes[maneRandomDist(server::util::GetRandomEngine())]];
     parts.maneTid = mane.tid;
   }
 
@@ -211,12 +374,12 @@ void HorseRegistry::BuildRandomHorse(
     std::uniform_int_distribution<size_t> tailRandomDist(
       0, _possibleFaces.size() - 1);
 
-    const Tail& tail = _tails[_possibleFaces[tailRandomDist(_randomDevice)]];
+    const Tail& tail = _tails[_possibleFaces[tailRandomDist(server::util::GetRandomEngine())]];
     parts.tailTid = tail.tid;
   }
 
   std::uniform_int_distribution figureScaleDist(FigureScaleMin, FigureScaleMax);
-  const uint32_t scale = figureScaleDist(_randomDevice);
+  const uint32_t scale = figureScaleDist(server::util::GetRandomEngine());
   appearance.scale =  scale;
   appearance.legLength = scale;
   appearance.legVolume = scale;
@@ -227,19 +390,404 @@ void HorseRegistry::BuildRandomHorse(
 void HorseRegistry::GiveHorseRandomPotential(
   data::Horse::Potential& potential)
 {
-  uint32_t type;
-  std::uniform_int_distribution<uint32_t> typeDist(1, 15);
-
-  // Horse type cannot be 12 as it does not exist in original Alicia
-  do
-  {
-    type = typeDist(_randomDevice);
-  } while (type == 12);
-
+  std::uniform_int_distribution<size_t> typeDist(0, _potentialTypes.size() - 1);
   std::uniform_int_distribution<uint32_t> randomDist(0, 255);
-  potential.type = type;
-  potential.level = randomDist(_randomDevice);
-  potential.value = randomDist(_randomDevice);
+  potential.type = _potentialTypes[typeDist(server::util::GetRandomEngine())];
+  potential.level = randomDist(server::util::GetRandomEngine());
+  potential.value = randomDist(server::util::GetRandomEngine());
+}
+
+const Coat& HorseRegistry::GetCoatInfo(data::Tid coatTid) const
+{
+  auto it = _coats.find(coatTid);
+  if (it != _coats.end())
+  {
+    return it->second;
+  }
+  
+  // Fallback to Chestnut (coat 1) if not found
+  static const Coat invalidCoat{.tid = 1, .faceType = 0, .minGrade = 1, .tier = Coat::Tier::Common, .allowedColorGroups = 0};
+  return invalidCoat;
+}
+
+data::Tid HorseRegistry::GetRandomManeFromColorAndShape(int32_t colorGroupId, int32_t shape)
+{
+  auto groupIt = _manesByColorAndShape.find(colorGroupId);
+  if (groupIt == _manesByColorAndShape.end())
+  {
+    return data::InvalidTid;
+  }
+
+  auto shapeIt = groupIt->second.find(shape);
+  if (shapeIt == groupIt->second.end() || shapeIt->second.empty())
+  {
+    return data::InvalidTid;
+  }
+
+  const auto& candidates = shapeIt->second;
+  std::uniform_int_distribution<size_t> dist(0, candidates.size() - 1);
+  return candidates[dist(server::util::GetRandomEngine())];
+}
+
+data::Tid HorseRegistry::GetRandomTailByColorGroupAndShape(int32_t colorGroupId, int32_t shape)
+{
+  auto groupIt = _tailsByColorAndShape.find(colorGroupId);
+  if (groupIt == _tailsByColorAndShape.end())
+  {
+    return data::InvalidTid;
+  }
+
+  auto shapeIt = groupIt->second.find(shape);
+  if (shapeIt == groupIt->second.end() || shapeIt->second.empty())
+  {
+    return data::InvalidTid;
+  }
+
+  const auto& candidates = shapeIt->second;
+  std::uniform_int_distribution<size_t> dist(0, candidates.size() - 1);
+  return candidates[dist(server::util::GetRandomEngine())];
+}
+
+int32_t HorseRegistry::GetManeColorGroupId(data::Tid maneTid) const
+{
+  auto it = _manes.find(maneTid);
+  if (it == _manes.end())
+    return -1;
+
+  const Color maneColor = it->second.color;
+  for (int32_t groupId = 0; groupId < static_cast<int32_t>(_colorGroups.size()); ++groupId)
+  {
+    const auto& colors = _colorGroups[groupId];
+    if (std::find(colors.begin(), colors.end(), maneColor) != colors.end())
+      return groupId;
+  }
+
+  return -1;
+}
+
+int32_t HorseRegistry::GetTailColorGroupId(data::Tid tailTid) const
+{
+  auto it = _tails.find(tailTid);
+  if (it == _tails.end())
+    return -1;
+
+  const Color tailColor = it->second.color;
+  for (int32_t groupId = 0; groupId < static_cast<int32_t>(_colorGroups.size()); ++groupId)
+  {
+    const auto& colors = _colorGroups[groupId];
+    if (std::find(colors.begin(), colors.end(), tailColor) != colors.end())
+      return groupId;
+  }
+
+  return -1;
+}
+
+data::Tid HorseRegistry::FindTailByColorAndShape(Color color, int32_t shape) const
+{
+  for (const auto& [tailTid, tailInfo] : _tails)
+  {
+    if (tailInfo.color == color && tailInfo.shape == shape)
+    {
+      return tailTid;
+    }
+  }
+  return data::InvalidTid;
+}
+
+const Mane& HorseRegistry::GetMane(data::Tid tid) const
+{
+  auto it = _manes.find(tid);
+  if (it != _manes.end())
+  {
+    return it->second;
+  }
+  
+  // Fallback to white short mane (TID 1) if not found
+  static const Mane invalidMane{.tid = 1, .color = Color::White, .shape = 1, .inheritanceRate = 30.0f, .minGrade = 1, .tier = 1};
+  return invalidMane;
+}
+
+const Tail& HorseRegistry::GetTail(data::Tid tid) const
+{
+  auto it = _tails.find(tid);
+  if (it != _tails.end())
+  {
+    return it->second;
+  }
+  
+  // Fallback to white medium tail (TID 1) if not found
+  static const Tail invalidTail{.tid = 1, .color = Color::White, .shape = 1, .inheritanceRate = 30.0f, .minGrade = 1, .tier = 1};
+  return invalidTail;
+}
+
+const std::vector<data::Tid>& HorseRegistry::GetPossibleCoats() const
+{
+  return _possibleCoats;
+}
+
+data::Tid HorseRegistry::GetRandomFaceForCoat(data::Tid coatTid)
+{
+  // The coat's faceType selects which faces it may wear; faceType 0 resolves to the
+  // blank face, so a coat that carries no marking still gets a valid face.
+  const int32_t faceType = GetCoatInfo(coatTid).faceType;
+
+  auto it = _facesByType.find(faceType);
+  if (it == _facesByType.end() || it->second.empty())
+  {
+    spdlog::warn("No faces configured for face type {} (coat {})", faceType, coatTid);
+    return data::InvalidTid;
+  }
+
+  const auto& faces = it->second;
+  std::uniform_int_distribution<size_t> faceRandomDist(0, faces.size() - 1);
+  return faces[faceRandomDist(server::util::GetRandomEngine())];
+}
+
+namespace
+{
+
+template <typename PartMap>
+std::vector<ShapeInheritance> AggregateShapeInheritance(const PartMap& parts)
+{
+  struct Aggregate
+  {
+    data::Tid representativeTid{data::InvalidTid};
+    int32_t minGrade{0};
+    float inheritanceRate{0.0f};
+  };
+
+  std::map<int32_t, Aggregate> byShape;
+  for (const auto& [tid, part] : parts)
+  {
+    auto [it, inserted] = byShape.try_emplace(
+      part.shape, Aggregate{tid, part.minGrade, part.inheritanceRate});
+    if (inserted)
+      continue;
+
+    it->second.minGrade = std::min(it->second.minGrade, part.minGrade);
+    if (tid < it->second.representativeTid)
+    {
+      it->second.representativeTid = tid;
+      it->second.inheritanceRate = part.inheritanceRate;
+    }
+  }
+
+  std::vector<ShapeInheritance> result;
+  result.reserve(byShape.size());
+  for (const auto& [shape, aggregate] : byShape)
+    result.push_back({shape, aggregate.minGrade, aggregate.inheritanceRate});
+  return result;
+}
+
+} // namespace
+
+std::vector<ShapeInheritance> HorseRegistry::GetManeShapeInheritance() const
+{
+  return AggregateShapeInheritance(_manes);
+}
+
+std::vector<ShapeInheritance> HorseRegistry::GetTailShapeInheritance() const
+{
+  return AggregateShapeInheritance(_tails);
+}
+
+const PotentialInfo* HorseRegistry::GetPotentialInfo(uint32_t type) const
+{
+  auto it = _potentials.find(type);
+  return it != _potentials.end() ? &it->second : nullptr;
+}
+
+const std::vector<uint32_t>& HorseRegistry::GetPotentialTypes() const
+{
+  return _potentialTypes;
+}
+
+const PotentialGrowth* HorseRegistry::GetPotentialGrowth(uint32_t type) const
+{
+  auto it = _potentialGrowth.find(type);
+  return it != _potentialGrowth.end() ? &it->second : nullptr;
+}
+
+const std::vector<PotentialLevel>& HorseRegistry::GetPotentialLevels() const
+{
+  return _potentialLevels;
+}
+
+const MasteryParams& HorseRegistry::GetMasteryParams() const
+{
+  return _masteryParams;
+}
+
+const std::vector<MasteryReward>& HorseRegistry::GetMasteryRewards() const
+{
+  return _masteryRewards;
+}
+
+const TendencyRatio* HorseRegistry::GetTendencyRatio(uint32_t tendency) const
+{
+  auto it = _tendencies.find(tendency);
+  return it != _tendencies.end() ? &it->second : nullptr;
+}
+
+const GroupForce* HorseRegistry::GetGroupForce(uint32_t id) const
+{
+  auto it = _groupForces.find(id);
+  return it != _groupForces.end() ? &it->second : nullptr;
+}
+
+const LevelUpPoints& HorseRegistry::GetLevelUpPoints() const
+{
+  return _levelUpPoints;
+}
+
+uint32_t HorseRegistry::GetCumulativeClassExp(uint32_t level) const
+{
+  if (level <= 1)
+    return 0;
+
+  const auto base = static_cast<uint32_t>(_levelUpPoints.base);
+  const auto exp10 = static_cast<uint32_t>(_levelUpPoints.exp10);
+  const auto exp20 = static_cast<uint32_t>(_levelUpPoints.exp20);
+
+  // Number of level-ups needed to reach `level` from level 1.
+  const uint32_t transitions = level - 1;
+
+  // Levels 1-10 cost `base`, 11-20 cost `exp10`, 21-30 cost `exp20`.
+  uint32_t total = std::min<uint32_t>(transitions, 10) * base;
+  if (transitions > 10)
+    total += std::min<uint32_t>(transitions - 10, 10) * exp10;
+  if (transitions > 20)
+    total += (transitions - 20) * exp20;
+
+  return total;
+}
+
+void HorseRegistry::ApplyClassProgress(data::Horse& horse, uint32_t gainedExp) const
+{
+  constexpr uint32_t MaxClass = 30;
+
+  uint32_t level = std::max<uint32_t>(horse.clazz(), 1);
+  if (level >= MaxClass)
+    return;
+
+  // clazzProgress is the lifetime total; advance the cached class while the
+  // next level's cumulative requirement is met.
+  horse.clazzProgress() += gainedExp;
+
+  while (level < MaxClass
+    && horse.clazzProgress() >= GetCumulativeClassExp(level + 1))
+  {
+    level += 1;
+    horse.growthPoints() += level == MaxClass ? 2 : 1;
+  }
+
+  horse.clazz() = level;
+}
+
+uint32_t HorseRegistry::ApplyPotentialGrowth(data::Horse& horse) const
+{
+  constexpr uint32_t MaxTransitionLevel = 10;
+  constexpr uint32_t MaxPotentialValue = 100;
+  constexpr uint32_t MaxPotentialPoints = 15;
+
+  if (horse.potential.type() == 0)
+    return 0;
+
+  uint32_t targetLevel = 1;
+  for (const auto& potentialLevel : _potentialLevels)
+  {
+    if (horse.clazzProgress() >= potentialLevel.requiredClassProgression)
+      targetLevel = std::max(targetLevel, potentialLevel.level);
+  }
+
+  uint32_t level = std::max<uint32_t>(horse.potential.level(), 1);
+
+  uint32_t gainedPoints = 0;
+  while (level < targetLevel && level <= MaxTransitionLevel)
+  {
+    const size_t columnIndex = level - 1;
+
+    // We currently treat the growth type as the amount of points
+    // to add to the potential's value and weight is added based on the potential's level.
+    // This is not correct and needs to be revisited once we figure out what
+    // growth type actually is and how it affects the potential value on each potential level-up.
+
+    std::vector<uint32_t> points;
+    std::vector<float> weights;
+    points.reserve(_potentialGrowth.size());
+    weights.reserve(_potentialGrowth.size());
+
+    for (const auto& [pointAmount, growth] : _potentialGrowth)
+    {
+      if (pointAmount > MaxPotentialPoints)
+        continue;
+
+      points.emplace_back(pointAmount);
+      weights.emplace_back(growth.weights[columnIndex]);
+    }
+
+    std::discrete_distribution<size_t> raffle(weights.begin(), weights.end());
+    gainedPoints += points[raffle(server::util::GetRandomEngine())];
+
+    level += 1;
+  }
+
+  if (gainedPoints == 0)
+    return 0;
+
+  horse.potential.value() = std::min(horse.potential.value() + gainedPoints, MaxPotentialValue);
+  horse.potential.level() = level;
+  return gainedPoints;
+}
+
+const GradeInfo* HorseRegistry::GetGradeInfo(uint32_t grade) const
+{
+  auto it = _grades.find(grade);
+  return it != _grades.end() ? &it->second : nullptr;
+}
+
+uint32_t HorseRegistry::GetGradeForStatSum(int32_t statSum) const
+{
+  // The highest grade whose minStatSum the stat sum reaches; never below 1.
+  uint32_t result = 1;
+  for (const auto& [grade, info] : _grades)
+  {
+    if (statSum >= info.minStatSum && grade > result)
+      result = grade;
+  }
+  return result;
+}
+
+const EmblemInfo* HorseRegistry::GetEmblemInfo(uint32_t id) const
+{
+  auto it = _emblems.find(id);
+  return it != _emblems.end() ? &it->second : nullptr;
+}
+
+const EmblemRatio* HorseRegistry::GetEmblemRatio(uint32_t odds) const
+{
+  auto it = _emblemRatios.find(odds);
+  return it != _emblemRatios.end() ? &it->second : nullptr;
+}
+
+std::vector<EmblemRatio> HorseRegistry::GetEmblemRatios() const
+{
+  std::vector<EmblemRatio> result;
+  result.reserve(_emblemRatios.size());
+  for (const auto& [odds, ratio] : _emblemRatios)
+    result.push_back(ratio);
+  return result;
+}
+
+std::vector<uint32_t> HorseRegistry::GetEmblemsByOdds(uint32_t odds) const
+{
+  std::vector<uint32_t> result;
+  for (const auto& [id, emblem] : _emblems)
+  {
+    if (emblem.odds == odds)
+      result.push_back(id);
+  }
+  return result;
 }
 
 } // namespace server

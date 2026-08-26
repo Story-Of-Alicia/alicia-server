@@ -18,3 +18,7 @@ Testing/
 
 # Secrets
 .env
+
+# postgres
+.pgbackups/
+.pgdata/

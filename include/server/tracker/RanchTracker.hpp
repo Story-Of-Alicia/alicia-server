@@ -33,8 +33,17 @@ namespace server::tracker
 class RanchTracker
 {
 public:
+  //! Structure representing tracked character info in a ranch.
+  struct Character
+  {
+    Oid oid{InvalidEntityOid};
+    uint8_t busyState{0};
+  };
+
   //! An object map.
   using ObjectMap = std::map<data::Uid, uint16_t>;
+  //! A character map.
+  using CharacterMap = std::map<data::Uid, Character>;
 
   //! Adds a character for tracking.
   //! @param character Character UID.
@@ -43,9 +52,14 @@ public:
   //! Removes a character from tracking.
   //! @param character Character UID.
   void RemoveCharacter(data::Uid character);
-  //! Returns the tracker OID assigned to the specified character.
-  //! @returns The OID assigned to the character.
-  [[nodiscard]] Oid GetCharacterOid(data::Uid character) const;
+  //! Returns the tracker character assigned to the specified character UID.
+  //! @param character Character UID.
+  //! @returns The character record.
+  [[nodiscard]] Character& GetCharacter(data::Uid character);
+  //! Returns the tracker character assigned to the specified character UID.
+  //! @param character Character UID.
+  //! @returns The character record.
+  [[nodiscard]] const Character& GetCharacter(data::Uid character) const;
 
   //! Adds a horse for tracking.
   //! @param horse Horse UID.
@@ -60,7 +74,7 @@ public:
 
   //! Returns tracked characters.
   //! @return Tracked characters.
-  [[nodiscard]] const ObjectMap& GetCharacters() const;
+  [[nodiscard]] const CharacterMap& GetCharacters() const;
   //! Returns tracked horses.
   //! @return Tracked horses.
   [[nodiscard]] const ObjectMap& GetHorses() const;
@@ -69,7 +83,7 @@ private:
   //! The next entity ID.
   Oid _nextObjectId = 1;
   //! Character entities in the ranch.
-  ObjectMap _characters;
+  CharacterMap _characters;
   //! Horse entities in the ranch.
   ObjectMap _horses;
 };
