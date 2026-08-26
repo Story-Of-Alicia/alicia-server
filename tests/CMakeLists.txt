@@ -36,6 +36,12 @@ target_sources(util_test_profiler PRIVATE
 target_link_libraries(util_test_profiler
         PRIVATE project-properties alicia-libserver)
 
+add_executable(util_test_time_series_data)
+target_sources(util_test_time_series_data PRIVATE
+        src/util/TestTimeSeriesData.cpp)
+target_link_libraries(util_test_time_series_data
+        PRIVATE project-properties alicia-libserver)
+
 add_executable(race_test_p2did_pool)
 target_sources(race_test_p2did_pool PRIVATE
         src/race/TestP2dIdPool.cpp)
@@ -48,5 +54,6 @@ add_test(NAME UtilTestScheduler COMMAND util_test_scheduler)
 add_test(NAME UtilTestLocale COMMAND util_test_locale)
 add_test(NAME UtilTestAliciaShopTime COMMAND util_test_alicia_shop_time)
 add_test(NAME UtilTestProfiler COMMAND util_test_profiler)
+add_test(NAME UtilTestTimeSeriesData COMMAND util_test_time_series_data)
 add_test(NAME RaceTestP2dIdPool COMMAND race_test_p2did_pool)
 

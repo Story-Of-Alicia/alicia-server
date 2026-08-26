@@ -20,6 +20,8 @@
 #ifndef ALICIA_SERVER_RACEDIRECTOR_HPP
 #define ALICIA_SERVER_RACEDIRECTOR_HPP
 
+#include "libserver/network/command/CommandServer.hpp"
+
 #include <libserver/data/DataDefinitions.hpp>
 #include <libserver/network/command/proto/CommonStructureDefinitions.hpp>
 #include <libserver/util/Scheduler.hpp>
@@ -64,6 +66,9 @@ public:
     uint32_t mountExp);
 
   [[nodiscard]] RaceNetworkHandler& GetNetworkHandler();
+
+  //! Returns the command server.
+  CommandServer& GetCommandServer();
 
 private:
   //! A server instance reference.

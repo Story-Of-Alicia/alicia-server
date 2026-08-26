@@ -24,6 +24,7 @@
 #include "libserver/util/Stream.hpp"
 #include "libserver/Constants.hpp"
 #include "libserver/util/Util.hpp"
+#include "libserver/util/TimeSeriesData.hpp"
 
 #include "proto/ChatterMessageDefinitions.hpp"
 
@@ -161,6 +162,11 @@ public:
     });
   }
 
+  //! Returns the underlying network server.
+  network::Server& GetServer();
+  //! Returns the command-processing time statistics.
+  TimeStatistics& GetProcessingTimeStatistics();
+
 private:
   void HandleNetworkTick() override;
   void OnClientConnected(network::ClientId clientId) override;
@@ -177,6 +183,9 @@ private:
   bool debugIncomingCommandData = constants::DebugCommands;
   bool debugOutgoingCommandData = constants::DebugCommands;
   bool debugCommands = constants::DebugCommands;
+
+  //! Statistics for command handler processing durations.
+  TimeStatistics _processingTimeStatistics;
 };
 
 } // namespace server

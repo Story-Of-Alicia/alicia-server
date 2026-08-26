@@ -22,7 +22,9 @@
 
 #include <array>
 #include <chrono>
+#include <cstdint>
 #include <functional>
+#include <mutex>
 #include <shared_mutex>
 
 namespace server
@@ -65,6 +67,24 @@ public:
       _dataIndex = 0;
   }
 
+  [[nodiscard]] Data GetAndClearData()
+  {
+    //! Copy and reset under one lock so collectors can immediately continue
+    //! writing while telemetry processes the returned snapshot independently.
+    std::scoped_lock lock(_mutex);
+
+    Data data = _data;
+    _dataIndex = 0;
+
+    for (auto& datum : _data)
+    {
+      datum.timePoint = Clock::time_point::min();
+      datum.value = T{};
+    }
+
+    return data;
+  }
+
   void GetAndClearData(const std::function<void(Data& data)>& access)
   {
     std::scoped_lock lock(_mutex);
@@ -86,6 +106,9 @@ private:
   Data _data{};
 };
 
+//! Timing statistics for network and command processing durations.
+//! Values are microseconds. It retains the most recent 3600 samples.
+using TimeStatistics = TimeSeriesData<int64_t, 3600>;
 }
 
 #endif // ALICIA_SERVER_TIMESERIESDATA_HPP

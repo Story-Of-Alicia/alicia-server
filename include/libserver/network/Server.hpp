@@ -21,15 +21,18 @@
 #define SERVER_HPP
 
 #include "libserver/util/Profiler.hpp"
+#include "libserver/util/TimeSeriesData.hpp"
 #include "NetworkDefinitions.hpp"
 
 #include <chrono>
 #include <cstdint>
 #include <deque>
 #include <functional>
+#include <mutex>
 #include <queue>
 #include <span>
 #include <unordered_map>
+#include <vector>
 
 #include <boost/asio.hpp>
 
@@ -94,6 +97,11 @@ public:
   //!
   uint16_t GetPort() const noexcept;
 
+  //! Returns and clears this client's send time statistics.
+  [[nodiscard]] TimeStatistics::Data GetSendTimeStatistics();
+  //! Returns and clears this client's receive time statistics.
+  [[nodiscard]] TimeStatistics::Data GetReceiveTimeStatistics();
+
 private:
   void WriteLoop() noexcept;
   //! Read loop.
@@ -129,6 +137,11 @@ private:
   Profiler _writeProfiler;
   //! Profiler for monitoring async read operations.
   Profiler _readProfiler;
+
+  //! Statistics for this client's network send durations.
+  TimeStatistics _sendTimeStatistics;
+  //! Statistics for this client's network receive durations.
+  TimeStatistics _receiveTimeStatistics;
 };
 
 //! Server with event-driven acceptor, reads and writes.
@@ -160,6 +173,13 @@ public:
   void OnClientDisconnected(ClientId clientId) override;
   size_t OnClientData(ClientId clientId, const std::span<const std::byte>& data) override;
 
+  using ClientTimeStatistics = std::vector<TimeStatistics::Data>;
+
+  //! Returns and clears send time statistics collected by all clients.
+  [[nodiscard]] ClientTimeStatistics GetSendTimeStatistics();
+  //! Returns and clears receive time statistics collected by all clients.
+  [[nodiscard]] ClientTimeStatistics GetReceiveTimeStatistics();
+
 private:
   struct AddressState
   {
@@ -182,6 +202,8 @@ private:
   ClientId _client_id = 0;
   //! Map of clients.
   std::unordered_map<ClientId, std::shared_ptr<Client>> _clients;
+  //! Protects the client map while clients are accepted, disconnected, or snapshotted.
+  std::mutex _clientsMutex;
   //! Per-address state for connection throttling.
   std::unordered_map<asio::ip::address, AddressState> _addressStates;
 

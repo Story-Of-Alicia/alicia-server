@@ -196,8 +196,14 @@ size_t ChatterServer::OnClientData(
       const auto& handler = handlerIter->second;
       try
       {
+        //! Measure only time spent in the command handler. As in the original
+        //! metrics implementation, only handlers that return successfully produce a sample.
+        const auto processingStart = std::chrono::steady_clock::now();
         handler(clientId, commandDataSource);
-        
+        const auto processingTime = std::chrono::steady_clock::now() - processingStart;
+        _processingTimeStatistics.Collect(
+          std::chrono::duration_cast<std::chrono::microseconds>(processingTime).count());
+
         if (debugCommands)
         {
           spdlog::debug("Handled chatter command: {} ({:#x})", 
@@ -235,6 +241,16 @@ uint16_t ChatterServer::GetClientPort(
 void ChatterServer::DisconnectClient(network::ClientId clientId)
 {
   _server.GetClient(clientId)->End();
+}
+
+network::Server& ChatterServer::GetServer()
+{
+  return _server;
+}
+
+TimeStatistics& ChatterServer::GetProcessingTimeStatistics()
+{
+  return _processingTimeStatistics;
 }
 
 } // namespace server

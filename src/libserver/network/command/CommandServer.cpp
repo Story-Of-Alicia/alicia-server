@@ -357,8 +357,16 @@ size_t CommandServer::NetworkEventHandler::OnClientData(
 
       try
       {
+        //! Measure only time spent in the command handler. As in the original
+        //! metrics implementation, only handlers that return successfully produce a sample.
+        const auto processingStart = std::chrono::steady_clock::now();
+
         // Call the handler.
         handler(clientId, commandDataStream);
+
+        const auto processingTime = std::chrono::steady_clock::now() - processingStart;
+        _commandServer._processingTimeStatistics.Collect(
+          std::chrono::duration_cast<std::chrono::microseconds>(processingTime).count());
       }
       catch (const std::exception& x)
       {
@@ -454,6 +462,16 @@ void CommandServer::SendCommand(
   {
     // the client disconnected, todo dont use client ids, or dont
   }
+}
+
+network::Server& CommandServer::GetServer()
+{
+  return _server;
+}
+
+TimeStatistics& CommandServer::GetProcessingTimeStatistics()
+{
+  return _processingTimeStatistics;
 }
 
 } // namespace server
