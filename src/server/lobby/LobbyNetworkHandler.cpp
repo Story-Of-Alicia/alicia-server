@@ -1723,12 +1723,11 @@ void LobbyNetworkHandler::HandleShowInventory(
 
       if (horseRecords && not horseRecords->empty())
       {
-        // Sort horse inventory by grade and lineage.
+        // Sort horse inventory only by date of birth (oldest to youngest)
         struct HorseEntry
         {
           protocol::Horse protocolHorse{};
-          uint32_t grade{};
-          uint32_t lineage{};
+          data::Clock::time_point dateOfBirth{};
         };
 
         std::vector<HorseEntry> horses;
@@ -1739,8 +1738,7 @@ void LobbyNetworkHandler::HandleShowInventory(
           horseRecord.Immutable([&entry](const data::Horse& horse)
           {
             protocol::BuildProtocolHorse(entry.protocolHorse, horse);
-            entry.grade = horse.grade();
-            entry.lineage = horse.lineage();
+            entry.dateOfBirth = horse.dateOfBirth();
           });
           horses.emplace_back(std::move(entry));
         }
@@ -1750,19 +1748,11 @@ void LobbyNetworkHandler::HandleShowInventory(
           horses.end(),
           [](const HorseEntry& a, const HorseEntry& b)
           {
-            // Grade descending (highest grade first)
-            if (a.grade != b.grade)
-              return a.grade > b.grade;
+            // Date of birth ascending (oldest first)
+            if (a.dateOfBirth != b.dateOfBirth)
+              return a.dateOfBirth < b.dateOfBirth;
 
-            // Lineage descending (highest lineage first)
-            if (a.lineage != b.lineage)
-              return a.lineage > b.lineage;
-
-            // Name ascending
-            if (a.protocolHorse.name != b.protocolHorse.name)
-              return a.protocolHorse.name < b.protocolHorse.name;
-
-            // UID ascending
+            // UID ascending as tiebreaker
             return a.protocolHorse.uid < b.protocolHorse.uid;
           });
 
