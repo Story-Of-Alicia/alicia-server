@@ -245,6 +245,25 @@ public:
     RequestDelete(key);
   }
 
+  //! Evicts an entry from memory cache without deleting from data source.
+  //! @param key Key of the datum.
+  void Evict(const Key& key)
+  {
+    std::scoped_lock lock(_entriesMutex);
+    _entries.erase(key);
+  }
+
+  //! Evicts multiple entries from memory cache without deleting from data source.
+  //! @param keys Keys of the data.
+  void Evict(KeySpan keys)
+  {
+    std::scoped_lock lock(_entriesMutex);
+    for (const auto& key : keys)
+    {
+      _entries.erase(key);
+    }
+  }
+
   std::vector<Key> GetKeys()
   {
     std::vector<Key> keys;
