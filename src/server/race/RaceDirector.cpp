@@ -117,9 +117,4 @@ RaceNetworkHandler& RaceDirector::GetNetworkHandler()
   return *_networkHandler;
 }
 
-  CommandServer& RaceDirector::GetCommandServer()
-{
-  return GetNetworkHandler().GetCommandServer();
-}
-
 } // namespace server

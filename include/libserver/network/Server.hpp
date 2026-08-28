@@ -202,7 +202,7 @@ private:
   ClientId _client_id = 0;
   //! Map of clients.
   std::unordered_map<ClientId, std::shared_ptr<Client>> _clients;
-  //! Protects the client map while clients are accepted, disconnected, or snapshotted.
+  //! Mutex for `_clients` collection.
   std::mutex _clientsMutex;
   //! Per-address state for connection throttling.
   std::unordered_map<asio::ip::address, AddressState> _addressStates;

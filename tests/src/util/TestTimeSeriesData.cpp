@@ -27,11 +27,10 @@
 
 namespace
 {
-
+  //! Strip the unused slots before checking the returned samples.
 template <typename Series>
 std::vector<typename Series::Datum> ValidData(const typename Series::Data& data)
 {
-  //! TimeSeriesData uses the minimum time point to mark unused array slots.
   std::vector<typename Series::Datum> result;
 
   for (const auto& datum : data)
@@ -43,9 +42,9 @@ std::vector<typename Series::Datum> ValidData(const typename Series::Data& data)
   return result;
 }
 
-void TestGetAndClearReturnsCopy()
+  //! Add two samples, pull them once, then make sure the next pull is empty.
+  void TestGetAndClearReturnsDataOnce()
 {
-  //! A pull returns collected values once and leaves the live series empty.
   using Series = server::TimeSeriesData<int, 4>;
 
   Series series;
@@ -61,9 +60,9 @@ void TestGetAndClearReturnsCopy()
   assert(second.empty());
 }
 
+  //! Push five samples into a four-slot buffer and make sure the oldest one gets replaced.
 void TestHistoryWraps()
 {
-  //! The fixed-size ring retains the newest samples after capacity is exceeded.
   using Series = server::TimeSeriesData<int, 4>;
 
   Series series;
@@ -75,14 +74,17 @@ void TestHistoryWraps()
 
   std::array<int, 4> values{};
   std::ranges::transform(data, values.begin(), &Series::Datum::value);
+  //! Only the retained values matter here, not their slot order.
   std::ranges::sort(values);
 
   assert((values == std::array{2, 3, 4, 5}));
 }
 
+  //! Collect 100 samples from four threads at once, similar to several handlers
+  //! writing timing data in parallel, and make sure all 400 samples are kept.
 void TestConcurrentCollection()
 {
-  //! Multiple network threads may collect while telemetry performs periodic pulls.
+  //! Keep the buffer above 400 so wrapping doesn't affect this test.
   using Series = server::TimeSeriesData<int, 512>;
 
   Series series;
@@ -109,7 +111,7 @@ void TestConcurrentCollection()
 
 int main()
 {
-  TestGetAndClearReturnsCopy();
+  TestGetAndClearReturnsDataOnce();
   TestHistoryWraps();
   TestConcurrentCollection();
 }

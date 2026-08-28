@@ -23,10 +23,10 @@
 
 #include "server/ServerInstance.hpp"
 
-#include <algorithm>
 #include <chrono>
 #include <format>
 #include <vector>
+#include <map>
 
 namespace server
 {
@@ -64,7 +64,7 @@ void PrepareTables(pqxx::connection& connection)
   tx.commit();
 }
 
-//! Deletes metric rows older than 30 days. Run once on startup.
+  //! Remove metrics older than 30 days on startup
 void CleanOldData(pqxx::connection& connection)
 {
   pqxx::work tx(connection);
@@ -99,56 +99,64 @@ void CleanOldData(pqxx::connection& connection)
   tx.commit();
 }
 
-std::vector<TimeStatistics::Datum> MergeClientTimeStatistics(
-  const std::vector<TimeStatistics::Data>& clientStatistics)
+  //! Group samples from the same second and write their average as one row.
+  template <typename Range>
+  void WriteTimingStatistics(
+    pqxx::work& tx,
+    const char* tableName,
+    const Range& statistics)
 {
-  //! Server returns one fixed-size snapshot per client. Flatten only populated
-  //! samples so PostgreSQL receives a single chronological stream per server.
-  std::vector<TimeStatistics::Datum> mergedStatistics;
-
-  for (const auto& statistics : clientStatistics)
-  {
-    for (const auto& datum : statistics)
-    {
-      if (datum.timePoint == TimeStatistics::Clock::time_point::min())
-        continue;
-
-      mergedStatistics.emplace_back(datum);
-    }
-  }
-
-  std::ranges::sort(
-    mergedStatistics,
-    {},
-    &TimeStatistics::Datum::timePoint);
-
-  return mergedStatistics;
-}
-
-template <typename Range>
-void WriteTimingStatistics(
-  pqxx::work& tx,
-  const char* tableName,
-  const Range& statistics)
-{
-  //! Timing tables deliberately allow duplicate second-level timestamps because
-  //! many network operations and command handlers can complete in one second.
-  auto stream = pqxx::stream_to::raw_table(tx, tableName);
+  std::map<int64_t, std::pair<int64_t, size_t>> buckets;
 
   for (const auto& [timePoint, value] : statistics)
   {
     if (timePoint == TimeStatistics::Clock::time_point::min())
       continue;
 
-    stream.write_values(
-      std::chrono::duration_cast<std::chrono::seconds>(timePoint.time_since_epoch()).count(),
-      value);
+    const auto second =
+      std::chrono::duration_cast<std::chrono::seconds>(
+        timePoint.time_since_epoch()).count();
+
+    auto& [sum, count] = buckets[second];
+    sum += value;
+    ++count;
+  }
+
+  auto stream = pqxx::stream_to::raw_table(tx, tableName);
+
+  for (const auto& [second, bucket] : buckets)
+  {
+    const auto& [sum, count] = bucket;
+    stream.write_values(second, sum / static_cast<int64_t>(count));
   }
 
   stream.complete();
 }
 
 } // anon namespace
+
+  namespace
+{
+  //! Flatten the populated samples from each client's buffer into one batch.
+  std::vector<TimeStatistics::Datum> MergeClientTimeStatistics(
+    const std::vector<TimeStatistics::Data>& clientStatistics)
+  {
+    std::vector<TimeStatistics::Datum> mergedStatistics;
+
+    for (const auto& statistics : clientStatistics)
+    {
+      for (const auto& datum : statistics)
+      {
+        if (datum.timePoint == TimeStatistics::Clock::time_point::min())
+          continue;
+
+        mergedStatistics.emplace_back(datum);
+      }
+    }
+
+    return mergedStatistics;
+  }
+}
 
 Telemetry::Telemetry(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
@@ -272,7 +280,7 @@ void Telemetry::SynchronizeData()
       {
         for (const auto& [timePoint, value] : data)
         {
-          if (timePoint == decltype(_playerCountMetric)::Clock::time_point::min())
+          if (timePoint == decltype(_roomCountMetric)::Clock::time_point::min())
             continue;
 
           roomCountStream.write_values(
@@ -282,8 +290,7 @@ void Telemetry::SynchronizeData()
       });
     roomCountStream.complete();
 
-    //! Resolve each owning server once, then drain the network buffers from its
-    //! clients and the processing buffer from its command/chatter dispatcher.
+    //! Pull each server once before collecting its metrics.
     auto& lobbyCommandServer = _serverInstance.GetLobbyDirector().GetNetworkHandler().GetCommandServer();
     auto& ranchCommandServer = _serverInstance.GetRanchDirector().GetCommandServer();
     auto& raceCommandServer = _serverInstance.GetRaceDirector().GetNetworkHandler().GetCommandServer();
