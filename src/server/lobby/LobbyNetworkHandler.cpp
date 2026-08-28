@@ -1693,11 +1693,12 @@ void LobbyNetworkHandler::HandleShowInventory(
     {
       // 0xFA (250) is the protocol max per response
       constexpr uint32_t ItemsPerResponse = 250;
+
       const auto itemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(
         character.inventory());
 
-      // A single unavailable item makes the whole batch unavailable.
-      // Dereferencing it regardless would build the response from garbage.
+      // If item records are not available log the issue
+      // and proceed with no items.
       if (not itemRecords)
       {
         spdlog::error(
@@ -1707,12 +1708,13 @@ void LobbyNetworkHandler::HandleShowInventory(
       }
       else
       {
-        // Produce chunked responses, by ItemsPerResponse
+        // Chunk the item records by `ItemsPerResponse`.
         const auto itemChunks = std::views::chunk(
           *itemRecords,
           ItemsPerResponse);
 
-        // Create a response per chunk
+        // Create response for each chunk and 
+        // fill it with protcol items for that chunk.
         for (const auto& chunk : itemChunks)
         {
           auto& response = responses.emplace_back();
