@@ -327,9 +327,14 @@ private:
     for (const auto& key : _storeQueue.data)
     {
       std::unique_lock lock(_entriesMutex);
-      auto& entry = _entries[key];
+      const auto entryIter = _entries.find(key);
+      const bool hasEntry = entryIter != _entries.end();
       lock.unlock();
 
+      if (not hasEntry)
+        continue;
+
+      auto& entry = entryIter->second;
       if (entry.available)
         _dataSourceStoreListener(key, entry.value);
     }
@@ -345,9 +350,14 @@ private:
     for (const auto& key : _deleteQueue.data)
     {
       std::unique_lock lock(_entriesMutex);
-      auto& entry = _entries[key];
+      const auto entryIter = _entries.find(key);
+      const bool hasEntry = entryIter != _entries.end();
       lock.unlock();
 
+      if (not hasEntry)
+        continue;
+
+      auto& entry = entryIter->second;
       if (entry.available)
         if (_dataSourceDeleteListener(key))
           entry.available.store(false, std::memory_order::relaxed);

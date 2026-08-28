@@ -1696,22 +1696,34 @@ void LobbyNetworkHandler::HandleShowInventory(
       const auto itemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(
         character.inventory());
 
-      // Produce chunked responses, by ItemsPerResponse
-      const auto itemChunks = std::views::chunk(
-        *itemRecords,
-        ItemsPerResponse);
-      
-      // Create a response per chunk
-      for (const auto& chunk : itemChunks)
+      // A single unavailable item makes the whole batch unavailable.
+      // Dereferencing it regardless would build the response from garbage.
+      if (not itemRecords)
       {
-        auto& response = responses.emplace_back();
-        for (const auto& item : chunk)
+        spdlog::error(
+          "Not sending the items of character {}, some of its {} inventory items are unavailable",
+          character.uid(),
+          character.inventory().size());
+      }
+      else
+      {
+        // Produce chunked responses, by ItemsPerResponse
+        const auto itemChunks = std::views::chunk(
+          *itemRecords,
+          ItemsPerResponse);
+
+        // Create a response per chunk
+        for (const auto& chunk : itemChunks)
         {
-          auto& protocolItem = response.items.emplace_back();
-          item.Immutable([&protocolItem](const auto& item)
+          auto& response = responses.emplace_back();
+          for (const auto& item : chunk)
           {
-            protocol::BuildProtocolItem(protocolItem, item);
-          });
+            auto& protocolItem = response.items.emplace_back();
+            item.Immutable([&protocolItem](const auto& item)
+            {
+              protocol::BuildProtocolItem(protocolItem, item);
+            });
+          }
         }
       }
 
