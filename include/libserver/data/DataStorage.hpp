@@ -245,6 +245,38 @@ public:
     RequestDelete(key);
   }
 
+  //! Evicts an entry from memory cache without deleting from data source.
+  //! @param key Key of the datum.
+  void Evict(const Key& key)
+  {
+    {
+      std::scoped_lock lock(_storeQueue.mutex);
+      _storeQueue.data.erase(key);
+    }
+    {
+      std::scoped_lock lock(_retrieveQueue.mutex);
+      _retrieveQueue.data.erase(key);
+    }
+    {
+      std::scoped_lock lock(_deleteQueue.mutex);
+      _deleteQueue.data.erase(key);
+    }
+    {
+      std::scoped_lock lock(_entriesMutex);
+      _entries.erase(key);
+    }
+  }
+
+  //! Evicts multiple entries from memory cache without deleting from data source.
+  //! @param keys Keys of the data.
+  void Evict(KeySpan keys)
+  {
+    for (const auto& key : keys)
+    {
+      Evict(key);
+    }
+  }
+
   std::vector<Key> GetKeys()
   {
     std::vector<Key> keys;
@@ -298,9 +330,14 @@ private:
     for (const auto& key : _retrieveQueue.data)
     {
       std::unique_lock lock(_entriesMutex);
-      auto& entry = _entries[key];
+      const auto entryIter = _entries.find(key);
+      const bool hasEntry = entryIter != _entries.cend();
       lock.unlock();
 
+      if (not hasEntry)
+        continue;
+
+      auto& entry = entryIter->second;
       if (_dataSourceRetrieveListener(key, entry.value))
       {
         entry.available.store(true, std::memory_order::relaxed);
@@ -327,9 +364,14 @@ private:
     for (const auto& key : _storeQueue.data)
     {
       std::unique_lock lock(_entriesMutex);
-      auto& entry = _entries[key];
+      const auto entryIter = _entries.find(key);
+      const bool hasEntry = entryIter != _entries.cend();
       lock.unlock();
 
+      if (not hasEntry)
+        continue;
+
+      auto& entry = entryIter->second;
       if (entry.available)
         _dataSourceStoreListener(key, entry.value);
     }
@@ -345,9 +387,14 @@ private:
     for (const auto& key : _deleteQueue.data)
     {
       std::unique_lock lock(_entriesMutex);
-      auto& entry = _entries[key];
+      const auto entryIter = _entries.find(key);
+      const bool hasEntry = entryIter != _entries.cend();
       lock.unlock();
 
+      if (not hasEntry)
+        continue;
+
+      auto& entry = entryIter->second;
       if (entry.available)
         if (_dataSourceDeleteListener(key))
           entry.available.store(false, std::memory_order::relaxed);
