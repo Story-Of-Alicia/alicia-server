@@ -249,18 +249,31 @@ public:
   //! @param key Key of the datum.
   void Evict(const Key& key)
   {
-    std::scoped_lock lock(_entriesMutex);
-    _entries.erase(key);
+    {
+      std::scoped_lock lock(_storeQueue.mutex);
+      _storeQueue.data.erase(key);
+    }
+    {
+      std::scoped_lock lock(_retrieveQueue.mutex);
+      _retrieveQueue.data.erase(key);
+    }
+    {
+      std::scoped_lock lock(_deleteQueue.mutex);
+      _deleteQueue.data.erase(key);
+    }
+    {
+      std::scoped_lock lock(_entriesMutex);
+      _entries.erase(key);
+    }
   }
 
   //! Evicts multiple entries from memory cache without deleting from data source.
   //! @param keys Keys of the data.
   void Evict(KeySpan keys)
   {
-    std::scoped_lock lock(_entriesMutex);
     for (const auto& key : keys)
     {
-      _entries.erase(key);
+      Evict(key);
     }
   }
 
