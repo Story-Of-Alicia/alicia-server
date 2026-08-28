@@ -317,9 +317,14 @@ private:
     for (const auto& key : _retrieveQueue.data)
     {
       std::unique_lock lock(_entriesMutex);
-      auto& entry = _entries[key];
+      const auto entryIter = _entries.find(key);
+      const bool hasEntry = entryIter != _entries.cend();
       lock.unlock();
 
+      if (not hasEntry)
+        continue;
+
+      auto& entry = entryIter->second;
       if (_dataSourceRetrieveListener(key, entry.value))
       {
         entry.available.store(true, std::memory_order::relaxed);
@@ -347,7 +352,7 @@ private:
     {
       std::unique_lock lock(_entriesMutex);
       const auto entryIter = _entries.find(key);
-      const bool hasEntry = entryIter != _entries.end();
+      const bool hasEntry = entryIter != _entries.cend();
       lock.unlock();
 
       if (not hasEntry)
@@ -370,7 +375,7 @@ private:
     {
       std::unique_lock lock(_entriesMutex);
       const auto entryIter = _entries.find(key);
-      const bool hasEntry = entryIter != _entries.end();
+      const bool hasEntry = entryIter != _entries.cend();
       lock.unlock();
 
       if (not hasEntry)
