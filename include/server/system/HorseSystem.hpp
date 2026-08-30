@@ -55,9 +55,49 @@ public:
     uint16_t plenitude,
     uint32_t preferenceType);
 
+  //! Applies post-race condition debuffs to the specified horse.
+  //! Deducts charm, friendliness, and plenitude, accumulates dirtiness,
+  //! and resets polish.
+  //! @param horse Horse record to modify.
+  //! @param characterLevel Level of the character that raced the horse.
+  void ApplyPostRaceHorseConditionDebuffs(
+    data::Horse& horse,
+    uint32_t characterLevel);
+
   static constexpr uint16_t MaxPlenitude = 1'000;
   static constexpr uint16_t MaxDirtiness = 1'000;
   static constexpr uint16_t MaxPolish = 1'000;
+  static constexpr uint16_t MaxFriendliness = 1'000;
+  static constexpr uint16_t MaxCharm = 1'000;
+  static constexpr uint16_t MaxAttachment = 1'000;
+  static constexpr uint16_t MaxBoredom = 21;
+  static constexpr uint16_t MaxStamina = 4'000;
+  //! Maximum fatigue limit before horse experience gain is suppressed
+  //! See libconfig: FatigueParam->FatigueLimit
+  static constexpr uint32_t MaxFatigue = 1'500;
+
+  //! Post-race charm point deduction.
+  //! This is hardcoded in the client.
+  static constexpr uint32_t PostRaceCharmDeduction = 10;
+  //! Post-race friendliness/intimacy deduction.
+  //! This is hardcoded in the client.
+  static constexpr uint32_t PostRaceFriendlinessDeduction = 20;
+  //! Post-race plenitude deduction.
+  //! This is hardcoded in the client.
+  static constexpr uint32_t PostRacePlenitudeDeduction = 50;
+
+  //! Post-race dirtiness increase per body part
+  //! See libconfig: MountGradeInfo->CleanPointSub
+  static constexpr uint32_t PostRaceDirtinessIncrease = 5;
+  //! Default post-race fatigue penalty
+  //! See libconfig: FatigueParam->FatigueDefaultIncrease
+  static constexpr uint32_t PostRaceFatigueDeductionDefault = 30;
+  //! Low-level post-race fatigue penalty
+  //! See libconfig: FatigueParam->FatigueLowLevelIncrease
+  static constexpr uint32_t PostRaceFatigueDeductionLowLevel = 10;
+  //! Character level threshold for beginner fatigue protection
+  //! See libconfig: FatigueParam->FatigueLowLevelLimit
+  static constexpr uint32_t LowLevelThreshold = 15;
 
 private:
   ServerInstance& _serverInstance;

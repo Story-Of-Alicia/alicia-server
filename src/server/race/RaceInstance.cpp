@@ -191,7 +191,7 @@ void RaceInstance::Stop()
     const auto characterRecord = _raceNetworkHandler.GetServerInstance().GetDataDirector().GetCharacter(
       characterUid);
 
-    characterRecord.Mutable([this, &score](data::Character& character)
+    characterRecord.Mutable([this, &score, &racer](data::Character& character)
     {
       character.carrots() += score.carrots;
       character.experience() += score.experience;
@@ -210,13 +210,21 @@ void RaceInstance::Stop()
       score.level = character.level();
       score.levelProgress = character.experience();
 
-      _raceNetworkHandler.GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Immutable(
-        [&score](const data::Horse& horse)
+      _raceNetworkHandler.GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Mutable(
+        [this, &score, &racer, characterLevel = character.level()](data::Horse& horse)
         {
           score.mountName = horse.name();
           score.horseClass = static_cast<uint8_t>(horse.clazz());
           score.horseClassProgress = horse.clazzProgress();
           score.growthPoints = static_cast<uint16_t>(horse.growthPoints());
+
+          if (racer.state == State::Disconnected)
+            return;
+
+          // Racer is not disconnected, apply race condition reductions
+          _raceNetworkHandler.GetServerInstance().GetHorseSystem().ApplyPostRaceHorseConditionDebuffs(
+            horse,
+            characterLevel);
         });
     });
   }

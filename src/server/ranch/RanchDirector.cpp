@@ -43,10 +43,6 @@ constexpr size_t MaxRanchHorseCount = 10;
 constexpr size_t MaxRanchCharacterCount = 20;
 constexpr size_t MaxRanchHousingCount = 13;
 
-constexpr uint16_t MaxCharm = 1000;
-constexpr uint16_t MaxFriendliness = 1000;
-constexpr uint16_t MaxAttachment = 1000;
-
 //! The item template ID of the instant grow-up item,
 //! which matures a foal into an adult horse.
 constexpr data::Tid InstantGrowUpItemTid = 43001;
@@ -4360,7 +4356,7 @@ bool RanchDirector::HandleUseFoodItem(
       static_cast<uint16_t>(
         horse.mountCondition.friendliness() +
         itemTemplate->foodParameters->friendlinessPoints),
-      MaxFriendliness);
+      HorseSystem::MaxFriendliness);
 
     // TODO: confirm this behaviour
     // Rationale: friendliness/charm max = 1000, play activities unlock after ~111 and ~501
@@ -4368,7 +4364,7 @@ bool RanchDirector::HandleUseFoodItem(
     horse.mountCondition.attachment() = std::min(
       static_cast<uint16_t>(
         horse.mountCondition.attachment() + itemTemplate->foodParameters->friendlinessPoints),
-      MaxAttachment);
+      HorseSystem::MaxAttachment);
   });
 
   // `Bad` == 0 (false), indicates feed accept
@@ -4446,7 +4442,7 @@ bool RanchDirector::HandleUseCleanItem(
     horse.mountCondition.charm() = std::min(
       static_cast<uint16_t>(
         horse.mountCondition.charm() + itemTemplate->careParameters->cleanPoints),
-      MaxCharm
+      HorseSystem::MaxCharm
     );
 
     // TODO: confirm this behaviour
@@ -4456,7 +4452,7 @@ bool RanchDirector::HandleUseCleanItem(
     horse.mountCondition.attachment() = std::min(
       static_cast<uint16_t>(
         horse.mountCondition.attachment() + itemTemplate->careParameters->cleanPoints),
-      MaxAttachment
+      HorseSystem::MaxAttachment
     );
   });
 
@@ -4518,7 +4514,7 @@ bool RanchDirector::HandleUsePlayItem(
     // Set friendliness (intimacy) to incremented value or max
     horse.mountCondition.friendliness() = std::min(
       newFriendlinessValue,
-      MaxFriendliness);
+      HorseSystem::MaxFriendliness);
 
     // TODO: implement boredom mechanism
   });
@@ -5267,13 +5263,11 @@ void RanchDirector::HandleRecoverMount(
     horseValid = true;
     horseRecord.Mutable([&character, &response](data::Horse& horse)
     {
-      // Seems to always be 4000.
-      constexpr uint16_t MaxHorseStamina = 4'000;
       // Each stamina point costs one carrot.
       constexpr double StaminaPointPrice = 1.0;
       
       // The stamina points the horse needs to recover to reach maximum stamina.
-      const int32_t recoverableStamina = MaxHorseStamina - horse.mountCondition.stamina();
+      const int32_t recoverableStamina = HorseSystem::MaxStamina - horse.mountCondition.stamina();
       
       // Recover as much required stamina as the user can afford with
       // the threshold being the max recoverable stamina.

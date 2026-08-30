@@ -162,4 +162,63 @@ uint16_t HorseSystem::CanHorseEat(
   return (mask & preferenceType) != 0;
 }
 
+void HorseSystem::ApplyPostRaceHorseConditionDebuffs(
+  data::Horse& horse,
+  [[maybe_unused]] const uint32_t characterLevel)
+{
+  // Charm point reduction
+  if (horse.mountCondition.charm() >= PostRaceCharmDeduction)
+    horse.mountCondition.charm() -= PostRaceCharmDeduction;
+  else
+    horse.mountCondition.charm() = 0;
+
+  // Friendliness reduction
+  if (horse.mountCondition.friendliness() >= PostRaceFriendlinessDeduction)
+    horse.mountCondition.friendliness() -= PostRaceFriendlinessDeduction;
+  else
+    horse.mountCondition.friendliness() = 0;
+
+  // Plenitude reduction
+  if (horse.mountCondition.plenitude() >= PostRacePlenitudeDeduction)
+    horse.mountCondition.plenitude() -= PostRacePlenitudeDeduction;
+  else
+    horse.mountCondition.plenitude() = 0;
+
+  // Dirtiness accumulation
+  horse.mountCondition.bodyDirtiness() = std::min(
+    static_cast<uint32_t>(MaxDirtiness),
+    horse.mountCondition.bodyDirtiness() + PostRaceDirtinessIncrease);
+
+  horse.mountCondition.maneDirtiness() = std::min(
+    static_cast<uint32_t>(MaxDirtiness),
+    horse.mountCondition.maneDirtiness() + PostRaceDirtinessIncrease);
+
+  horse.mountCondition.tailDirtiness() = std::min(
+    static_cast<uint32_t>(MaxDirtiness),
+    horse.mountCondition.tailDirtiness() + PostRaceDirtinessIncrease);
+
+  // Polish suppression (reset to 0 when dirtiness is accumulated)
+  // TODO: is this behaviour correct? Do we immediately reset the polish after a race?
+  horse.mountCondition.bodyPolish() = 0;
+  horse.mountCondition.manePolish() = 0;
+  horse.mountCondition.tailPolish() = 0;
+
+  // TODO: Implement post-race stamina and fatigue updates:
+  // - Deduct stamina and accumulate horse fatigue based on characterLevel
+  //   (< LowLevelThreshold ? PostRaceFatigueDeductionLowLevel : PostRaceFatigueDeductionDefault)
+  // - Clamp horse.fatigue() to MaxFatigue
+  // - Handle daily fatigue reset (ResetFatiguePoint) and EXP gain suppression when at max fatigue
+
+  spdlog::debug(
+    "Applied post-race condition debuffs to horse {}: "
+      "Charm={}, Friendly={}, Plenitude={}, Dirtiness=({},{},{})",
+    horse.uid(),
+    horse.mountCondition.charm(),
+    horse.mountCondition.friendliness(),
+    horse.mountCondition.plenitude(),
+    horse.mountCondition.bodyDirtiness(),
+    horse.mountCondition.maneDirtiness(),
+    horse.mountCondition.tailDirtiness());
+}
+
 } // namespace server
