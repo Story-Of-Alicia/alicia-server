@@ -48,6 +48,15 @@ public:
   //! @returns The number of horses whose lineage was raised.
   uint32_t RepairLineages(data::Uid characterUid);
 
+  //! Computes and checks if the horse can eat based on
+  //! dynamic food preference as used by the game client.
+  static uint16_t CanHorseEat(
+    data::Uid horseUid,
+    uint16_t plenitude,
+    uint32_t preferenceType);
+
+  static constexpr uint16_t MaxPlenitude = 1'000;
+
 private:
   ServerInstance& _serverInstance;
 };

@@ -132,4 +132,34 @@ uint32_t HorseSystem::RepairLineages(const data::Uid characterUid)
   return repairedCount;
 }
 
+uint16_t HorseSystem::CanHorseEat(
+  data::Uid horseUid,
+  uint16_t plenitude,
+  uint32_t preferenceType)
+{
+  // Hungry (< 710)
+  // Slightly full (710..999)
+  static constexpr uint32_t MinSlightlyFullPlenitude = 710;
+
+  // If horse is full (>= 1000), it has no food preference (cannot eat)
+  if (plenitude >= MaxPlenitude)
+    return 0;
+
+  // Hungry:        mode = 15 (0x0F)
+  // Slightly full: mode = 16 (0x10)
+  const uint32_t mode = plenitude < MinSlightlyFullPlenitude
+    ? 0x0F
+    : 0x10;
+
+  // Cast horseUid to uint32_t for posterity
+  uint32_t seed = static_cast<uint32_t>(horseUid) + mode;
+  seed = (seed * 0x343FD) - 0x1613D;
+  seed = (seed * 0x343FD) - 0x1613D;
+  const uint32_t bitIndex = (seed >> 16) & 7;
+
+  // Calculate the horse's preference bitmask
+  const uint16_t mask = static_cast<uint16_t>(1 << bitIndex);
+  return (mask & preferenceType) != 0;
+}
+
 } // namespace server

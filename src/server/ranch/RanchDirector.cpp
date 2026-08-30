@@ -46,7 +46,6 @@ constexpr size_t MaxRanchHousingCount = 13;
 constexpr uint16_t MaxCharm = 1000;
 constexpr uint16_t MaxFriendliness = 1000;
 constexpr uint16_t MaxAttachment = 1000;
-constexpr uint16_t MaxPlenitude = 1200;
 
 //! The item template ID of the instant grow-up item,
 //! which matures a foal into an adult horse.
@@ -4329,22 +4328,39 @@ bool RanchDirector::HandleUseFoodItem(
     usedItemTid);
   assert(itemTemplate && itemTemplate->foodParameters);
 
-  // Update plenitude and friendliness points according to the item used.
-  mountRecord.Mutable([&itemTemplate](data::Horse& horse)
-  {
-    // TODO: there's a ranch skill which gives bonus to these points
+  bool canEat{false};
 
+  // Update plenitude and friendliness points according to the item used and preference.
+  mountRecord.Mutable([&itemTemplate, &canEat](data::Horse& horse)
+  {
+    // The horse refuses food it is plenitude is full
+    // The horse can still eat even if friendliness (intimacy) is maxed out
+    if (horse.mountCondition.plenitude() >= HorseSystem::MaxPlenitude)
+      return;
+
+    canEat = HorseSystem::CanHorseEat(
+      horse.uid(),
+      static_cast<uint16_t>(horse.mountCondition.plenitude()),
+      itemTemplate->foodParameters->preferenceType);
+
+    // If the horse dislikes the food, it refuses to eat and
+    // drops/ignores it, so we are done here
+    if (not canEat)
+      return;
+
+    // Update horse plenitude
     horse.mountCondition.plenitude() = std::min(
       static_cast<uint16_t>(
-        horse.mountCondition.plenitude() + itemTemplate->foodParameters->plenitudePoints),
-      MaxPlenitude
-    );
-    
+        horse.mountCondition.plenitude() +
+        itemTemplate->foodParameters->plenitudePoints),
+      HorseSystem::MaxPlenitude);
+
+    // Update horse friendliness
     horse.mountCondition.friendliness() = std::min(
       static_cast<uint16_t>(
-        horse.mountCondition.friendliness() + itemTemplate->foodParameters->friendlinessPoints),
-      MaxFriendliness
-    );
+        horse.mountCondition.friendliness() +
+        itemTemplate->foodParameters->friendlinessPoints),
+      MaxFriendliness);
 
     // TODO: confirm this behaviour
     // Rationale: friendliness/charm max = 1000, play activities unlock after ~111 and ~501
@@ -4352,16 +4368,17 @@ bool RanchDirector::HandleUseFoodItem(
     horse.mountCondition.attachment() = std::min(
       static_cast<uint16_t>(
         horse.mountCondition.attachment() + itemTemplate->foodParameters->friendlinessPoints),
-      MaxAttachment
-    );
+      MaxAttachment);
   });
 
-  // TODO: determine values
-  response.experiencePoints = 1;
-  response.playSuccessLevel = protocol::AcCmdCRUseItemOK::PlaySuccessLevel::Bad;
+  // `Bad` == 0 (false), indicates feed accept
+  // `Good` == 1 (true), indicates feed reject
+  response.playSuccessLevel =
+    static_cast<protocol::AcCmdCRUseItemOK::PlaySuccessLevel>(canEat ? false : true);
 
   // todo: award experiences gained
-  // todo: client-side update of plenitude and friendliness stats
+  static constexpr uint8_t ExperiencePoints = 1;
+  response.experiencePoints = canEat ? ExperiencePoints : 0;
 
   return true;
 }
