@@ -30,13 +30,52 @@
 namespace
 {
 
-std::filesystem::path ProduceDataFilePath(
+//! Produces a data file path and may create the
+//! root directory if it does not exist.
+//! @param root Path to the data file root.
+//! @param name Data file name.
+[[nodiscard]] std::filesystem::path ProduceDataFilePath(
   const std::filesystem::path& root,
-  const std::string& filename)
+  const std::string& name)
 {
   if (not std::filesystem::exists(root))
     std::filesystem::create_directories(root);
-  return root / (filename + ".json");
+  return root / (name + ".json");
+}
+
+//! Stores JSON data in a specified file.
+//! Does so by writing to an intermediate "holding" file and then
+//! moving the holding file in place of the original data file.
+//! @param json JSON data.
+//! @param filePath Data file path.
+void StoreJsonData(
+  const nlohmann::json& json,
+  const std::filesystem::path& filePath)
+{
+  // Create path for the intermediate holding data file.
+  std::filesystem::path dataFilePath = filePath;
+  dataFilePath += ".hold";
+
+  std::ofstream dataFile;
+  // Throw exceptions when `badbit` and `failbit` error
+  // flags are raised.
+  dataFile.exceptions(
+    std::ios_base::badbit | std::ios_base::failbit);
+
+  try
+  {
+    dataFile.open(dataFilePath);
+    dataFile << json.dump(2);
+    
+    std::filesystem::rename(dataFilePath, filePath);
+  }
+  catch (const std::exception& x)
+  {
+    throw std::runtime_error(std::format(
+      "Exception while storing JSON data in a file '{}': {}", 
+      filePath.c_str(),
+      x.what()));
+  }
 }
 
 } // anon namespace
@@ -175,16 +214,6 @@ void server::FileDataSource::StoreUser(const std::string_view&, const data::User
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _userDataPath, user.name());
 
-  std::ofstream dataFile(dataFilePath);
-  dataFile.exceptions(
-    std::ios_base::badbit | std::ios_base::failbit);
-
-  if (not dataFile.is_open())
-  {
-    throw std::runtime_error(
-      std::format("User file '{}' not accessible", dataFilePath.string()));
-  }
-
   nlohmann::json json;
   json["name"] = user.name();
   json["token"] = user.token();
@@ -193,7 +222,7 @@ void server::FileDataSource::StoreUser(const std::string_view&, const data::User
   json["lastSeenOnline"] = std::chrono::ceil<std::chrono::seconds>(
     user.lastSeenOnline().time_since_epoch()).count();
 
-  dataFile << json.dump(2);
+  StoreJsonData(json, dataFilePath);
 }
 
 bool server::FileDataSource::IsUserNameUnique(const std::string_view& name)
@@ -244,17 +273,7 @@ void server::FileDataSource::StoreInfraction(data::Uid uid, const data::Infracti
 {
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _infractionDataPath, std::format("{}", uid));
-
-  std::ofstream dataFile(dataFilePath);
-  dataFile.exceptions(
-    std::ios_base::badbit | std::ios_base::failbit);
-
-  if (not dataFile.is_open())
-  {
-    throw std::runtime_error(
-      std::format("Infraction file '{}' not accessible", dataFilePath.string()));
-  }
-
+  
   nlohmann::json json;
   json["uid"] = infraction.uid();
   json["description"] = infraction.description();
@@ -263,7 +282,7 @@ void server::FileDataSource::StoreInfraction(data::Uid uid, const data::Infracti
   json["createdAt"] = std::chrono::duration_cast<std::chrono::seconds>(
     infraction.createdAt().time_since_epoch()).count();
 
-  dataFile << json.dump(2);
+  StoreJsonData(json, dataFilePath);
 }
 
 void server::FileDataSource::DeleteInfraction(data::Uid uid)
@@ -407,17 +426,7 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
 {
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _characterDataPath, std::format("{}", uid));
-
-  std::ofstream dataFile(dataFilePath);
-  dataFile.exceptions(
-    std::ios_base::badbit | std::ios_base::failbit);
-
-  if (not dataFile.is_open())
-  {
-    throw std::runtime_error(
-      std::format("Character file '{}' not accessible", dataFilePath.string()));
-  }
-
+  
   nlohmann::json json;
   json["uid"] = character.uid();
   json["name"] = character.name();
@@ -531,7 +540,7 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
 
   json["quests"] = character.quests();
 
-  dataFile << json.dump(2);
+  StoreJsonData(json, dataFilePath);
 }
 
 void server::FileDataSource::DeleteCharacter(data::Uid uid)
@@ -693,16 +702,6 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _horseDataPath, std::format("{}", uid));
 
-  std::ofstream dataFile(dataFilePath);
-  dataFile.exceptions(
-    std::ios_base::badbit | std::ios_base::failbit);
-
-  if (not dataFile.is_open())
-  {
-    throw std::runtime_error(
-      std::format("Horse file '{}' not accessible", dataFilePath.string()));
-  }
-
   nlohmann::json json;
   json["uid"] = horse.uid();
   json["tid"] = horse.tid();
@@ -802,7 +801,7 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
 
   json["lineage"] = horse.lineage();
 
-  dataFile << json.dump(2);
+  StoreJsonData(json, dataFilePath);
 }
 
 void server::FileDataSource::DeleteHorse(data::Uid uid)
@@ -843,17 +842,7 @@ void server::FileDataSource::RetrieveItem(data::Uid uid, data::Item& item)
 void server::FileDataSource::StoreItem(data::Uid uid, const data::Item& item)
 {
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
-    _itemDataPath, std::format("{}", uid));
-
-  std::ofstream dataFile(dataFilePath);
-  dataFile.exceptions(
-    std::ios_base::badbit | std::ios_base::failbit);
-
-  if (not dataFile.is_open())
-  {
-    throw std::runtime_error(
-      std::format("Item file '{}' not accessible", dataFilePath.string()));
-  }
+   _itemDataPath, std::format("{}", uid));
 
   nlohmann::json json;
   json["uid"] = item.uid();
@@ -863,7 +852,7 @@ void server::FileDataSource::StoreItem(data::Uid uid, const data::Item& item)
   json["createdAt"] = std::chrono::ceil<std::chrono::seconds>(
     item.createdAt().time_since_epoch()).count();
 
-  dataFile << json.dump(2);
+  StoreJsonData(json, dataFilePath);
 }
 
 void server::FileDataSource::DeleteItem(data::Uid uid)
@@ -923,16 +912,6 @@ void server::FileDataSource::StoreStorageItem(data::Uid uid, const data::Storage
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _storageItemPath, std::format("{}", uid));
 
-  std::ofstream dataFile(dataFilePath);
-  dataFile.exceptions(
-    std::ios_base::badbit | std::ios_base::failbit);
-
-  if (not dataFile.is_open())
-  {
-    throw std::runtime_error(
-      std::format("Storage item file '{}' not accessible", dataFilePath.string()));
-  }
-
   nlohmann::json json;
   json["uid"] = storageItem.uid();
   json["sender"] = storageItem.sender();
@@ -959,7 +938,7 @@ void server::FileDataSource::StoreStorageItem(data::Uid uid, const data::Storage
   json["goodsSq"] = storageItem.goodsSq();
   json["priceId"] = storageItem.priceId();
 
-  dataFile << json.dump(2);
+  StoreJsonData(json, dataFilePath);
 }
 
 void server::FileDataSource::DeleteStorageItem(data::Uid uid)
@@ -1005,16 +984,6 @@ void server::FileDataSource::StoreEgg(data::Uid uid, const data::Egg& egg)
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _eggDataPath, std::format("{}", uid));
 
-  std::ofstream dataFile(dataFilePath);
-  dataFile.exceptions(
-    std::ios_base::badbit | std::ios_base::failbit);
-
-  if (not dataFile.is_open())
-  {
-    throw std::runtime_error(
-      std::format("Egg file '{}' not accessible", dataFilePath.string()));
-  }
-
   nlohmann::json json;
   json["uid"] = egg.uid();
   json["itemUid"] = egg.itemUid();
@@ -1023,7 +992,8 @@ void server::FileDataSource::StoreEgg(data::Uid uid, const data::Egg& egg)
     egg.incubatedAt().time_since_epoch()).count();
   json["incubatorSlot"] = egg.incubatorSlot();
   json["boostsUsed"] = egg.boostsUsed();
-  dataFile << json.dump(2);
+
+  StoreJsonData(json, dataFilePath);
 }
 
 void server::FileDataSource::DeleteEgg(data::Uid uid)
@@ -1066,16 +1036,6 @@ void server::FileDataSource::StorePet(data::Uid uid, const data::Pet& pet)
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _petDataPath, std::format("{}", uid));
 
-  std::ofstream dataFile(dataFilePath);
-  dataFile.exceptions(
-    std::ios_base::badbit | std::ios_base::failbit);
-
-  if (not dataFile.is_open())
-  {
-    throw std::runtime_error(
-      std::format("Pet file '{}' not accessible", dataFilePath.string()));
-  }
-
   nlohmann::json json;
   json["uid"] = pet.uid();
   json["itemUid"] = pet.itemUid();
@@ -1084,7 +1044,7 @@ void server::FileDataSource::StorePet(data::Uid uid, const data::Pet& pet)
   json["birthDate"] = std::chrono::duration_cast<std::chrono::seconds>(
     pet.birthDate().time_since_epoch()).count();
 
-  dataFile << json.dump(2);
+  StoreJsonData(json, dataFilePath);
 }
 
 void server::FileDataSource::DeletePet(data::Uid uid)
@@ -1125,16 +1085,6 @@ void server::FileDataSource::StoreHousing(data::Uid uid, const data::Housing& ho
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _housingDataPath, std::format("{}", uid));
 
-  std::ofstream dataFile(dataFilePath);
-  dataFile.exceptions(
-    std::ios_base::badbit | std::ios_base::failbit);
-
-  if (not dataFile.is_open())
-  {
-    throw std::runtime_error(
-      std::format("Housing file '{}' not accessible", dataFilePath.string()));
-  }
-
   nlohmann::json json;
   json["uid"] = housing.uid();
   json["housingId"] = housing.housingId();
@@ -1142,7 +1092,7 @@ void server::FileDataSource::StoreHousing(data::Uid uid, const data::Housing& ho
     housing.expiresAt().time_since_epoch()).count();
   json["durability"] = housing.durability();
 
-  dataFile << json.dump(2);
+  StoreJsonData(json, dataFilePath);
 }
 
 void server::FileDataSource::DeleteHousing(data::Uid uid)
@@ -1191,16 +1141,6 @@ void server::FileDataSource::StoreGuild(data::Uid uid, const data::Guild& guild)
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _guildDataPath, std::format("{}", uid));
 
-  std::ofstream dataFile(dataFilePath);
-  dataFile.exceptions(
-    std::ios_base::badbit | std::ios_base::failbit);
-
-  if (not dataFile.is_open())
-  {
-    throw std::runtime_error(
-      std::format("Guild file '{}' not accessible", dataFilePath.string()));
-  }
-
   nlohmann::json json;
   json["uid"] = guild.uid();
   json["name"] = guild.name();
@@ -1215,7 +1155,7 @@ void server::FileDataSource::StoreGuild(data::Uid uid, const data::Guild& guild)
   json["seasonalWins"] = guild.seasonalWins();
   json["seasonalLosses"] = guild.seasonalLosses();
 
-  dataFile << json.dump(2);
+  StoreJsonData(json, dataFilePath);
 }
 
 void server::FileDataSource::DeleteGuild(data::Uid uid)
@@ -1338,16 +1278,6 @@ void server::FileDataSource::StoreSettings(data::Uid uid, const data::Settings& 
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _settingsDataPath, std::format("{}", uid));
 
-  std::ofstream dataFile(dataFilePath);
-  dataFile.exceptions(
-    std::ios_base::badbit | std::ios_base::failbit);
-
-  if (!dataFile.is_open())
-  {
-    throw std::runtime_error(
-      std::format("Settings file '{}' not accessible", dataFilePath.string()));
-  }
-
   nlohmann::json json;
   json["uid"] = settings.uid();
 
@@ -1394,7 +1324,7 @@ void server::FileDataSource::StoreSettings(data::Uid uid, const data::Settings& 
     json["macros"] = settings.macros().value();
   }
 
-  dataFile << json.dump(2);
+  StoreJsonData(json, dataFilePath);
 }
 
 void server::FileDataSource::DeleteSettings(data::Uid uid)
@@ -1448,16 +1378,6 @@ void server::FileDataSource::StoreDailyQuestGroup(data::Uid uid, const data::Dai
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _dailyQuestGroupDataPath, std::format("{}", uid));
 
-  std::ofstream dataFile(dataFilePath);
-  dataFile.exceptions(
-    std::ios_base::badbit | std::ios_base::failbit);
-
-  if (not dataFile.is_open())
-  {
-    throw std::runtime_error(
-      std::format("Daily quest group file '{}' not accessible", dataFilePath.string()));
-  }
-
   nlohmann::json json;
   json["uid"]          = group.uid();
   json["rewardId"]     = group.rewardId();
@@ -1474,7 +1394,8 @@ void server::FileDataSource::StoreDailyQuestGroup(data::Uid uid, const data::Dai
     });
   }
   json["quests"] = questsJson;
-  dataFile << json.dump(2);
+
+  StoreJsonData(json, dataFilePath);
 }
 
 void server::FileDataSource::DeleteDailyQuestGroup(data::Uid uid)
@@ -1524,16 +1445,6 @@ void server::FileDataSource::StoreMail(data::Uid uid, const data::Mail& mail)
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _mailDataPath, std::format("{}", uid));
 
-  std::ofstream dataFile(dataFilePath);
-  dataFile.exceptions(
-    std::ios_base::badbit | std::ios_base::failbit);
-
-  if (!dataFile.is_open())
-  {
-    throw std::runtime_error(
-      std::format("Mail file '{}' not accessible", dataFilePath.string()));
-  }
-
   nlohmann::json json;
   json["uid"] = mail.uid();
   json["from"] = mail.from();
@@ -1550,7 +1461,7 @@ void server::FileDataSource::StoreMail(data::Uid uid, const data::Mail& mail)
       mail.createdAt().time_since_epoch()).count();
   json["body"] = mail.body();
 
-  dataFile << json.dump(2);
+  StoreJsonData(json, dataFilePath);
 }
 
 void server::FileDataSource::DeleteMail(data::Uid uid)
@@ -1590,23 +1501,13 @@ void server::FileDataSource::StoreQuest(data::Uid uid, const data::Quest& quest)
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _questDataPath, std::format("{}", uid));
 
-  std::ofstream dataFile(dataFilePath);
-  dataFile.exceptions(
-    std::ios_base::badbit | std::ios_base::failbit);
-
-  if (not dataFile.is_open())
-  {
-    throw std::runtime_error(
-      std::format("Quest file '{}' not accessible", dataFilePath.string()));
-  }
-
   nlohmann::json json;
   json["uid"]         = quest.uid();
   json["questId"]     = quest.questId();
   json["isCompleted"] = static_cast<uint32_t>(quest.isCompleted());
   json["progress"]    = quest.progress();
 
-  dataFile << json.dump(2);
+  StoreJsonData(json, dataFilePath);
 }
 
 void server::FileDataSource::DeleteQuest(data::Uid uid)
@@ -1651,16 +1552,6 @@ void server::FileDataSource::StoreStallion(data::Uid uid, const data::Stallion& 
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _stallionDataPath, std::format("{}", uid));
 
-  std::ofstream dataFile(dataFilePath);
-  dataFile.exceptions(
-    std::ios_base::badbit | std::ios_base::failbit);
-
-  if (not dataFile.is_open())
-  {
-    throw std::runtime_error(
-      std::format("Stallion file '{}' not accessible", dataFilePath.string()));
-  }
-
   nlohmann::json json;
   json["uid"] = stallion.uid();
   json["horseUid"] = stallion.horseUid();
@@ -1672,7 +1563,7 @@ void server::FileDataSource::StoreStallion(data::Uid uid, const data::Stallion& 
   json["expiresAt"] = std::chrono::duration_cast<std::chrono::seconds>(
     stallion.expiresAt().time_since_epoch()).count();
 
-  dataFile << json.dump(2);
+  StoreJsonData(json, dataFilePath);
 }
 
 void server::FileDataSource::DeleteStallion(data::Uid uid)
@@ -1746,16 +1637,6 @@ void server::FileDataSource::StoreReward(data::Uid claimUid, const data::Reward&
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _rewardDataPath, std::format("{}", claimUid));
 
-  std::ofstream dataFile(dataFilePath);
-  dataFile.exceptions(
-    std::ios_base::badbit | std::ios_base::failbit);
-
-  if (not dataFile.is_open())
-  {
-    throw std::runtime_error(
-      std::format("Reward file '{}' not accessible", dataFilePath.string()));
-  }
-
   nlohmann::json json;
   json["claimUid"] = reward.claimUid();
   json["characterUid"] = reward.characterUid();
@@ -1767,7 +1648,7 @@ void server::FileDataSource::StoreReward(data::Uid claimUid, const data::Reward&
   json["claimedAt"] = std::chrono::duration_cast<std::chrono::seconds>(
     reward.claimedAt().time_since_epoch()).count();
 
-  dataFile << json.dump(2);
+  StoreJsonData(json, dataFilePath);
 }
 
 void server::FileDataSource::DeleteReward(data::Uid claimUid)
