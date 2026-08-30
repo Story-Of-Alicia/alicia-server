@@ -76,9 +76,50 @@ void BuildProtocolHorse(
   protocolHorse.grade = static_cast<uint8_t>(horse.grade());
   protocolHorse.growthPoints = static_cast<uint16_t>(horse.growthPoints());
 
-  protocolHorse.val16 = 0xb8a167e4,
-  protocolHorse.visualCleanlinessBitset = 
-    Horse::VisualCleanlinessBitset::AllLightSparkles;
+  protocolHorse.val16 = 0xb8a167e4;
+
+  // Visual cleanliness bitset evaluated by the client
+  // TODO: polish (sparkles) requires care skill 4 (Stylist, Lv 13+) to accumulate
+  // polish points when brushing clean horses
+  // TODO: add even more sparkles
+  uint32_t cleanlinessBits = static_cast<uint32_t>(
+    Horse::VisualCleanlinessBitset::Default);
+
+  // Body visual cleanliness
+  if (horse.mountCondition.bodyDirtiness() >= 1000)
+    cleanlinessBits |= static_cast<uint32_t>(
+      Horse::VisualCleanlinessBitset::BodyVeryDirty);
+  else if (horse.mountCondition.bodyDirtiness() >= 600)
+    cleanlinessBits |= static_cast<uint32_t>(
+      Horse::VisualCleanlinessBitset::BodySlightlyDirty);
+  else if (horse.mountCondition.bodyPolish() >= 100)
+    cleanlinessBits |= static_cast<uint32_t>(
+      Horse::VisualCleanlinessBitset::BodyLightSparkles);
+
+  // Mane visual cleanliness
+  if (horse.mountCondition.maneDirtiness() >= 1000)
+    cleanlinessBits |= static_cast<uint32_t>(
+      Horse::VisualCleanlinessBitset::ManeVeryDirty);
+  else if (horse.mountCondition.maneDirtiness() >= 600)
+    cleanlinessBits |= static_cast<uint32_t>(
+      Horse::VisualCleanlinessBitset::ManeSlightlyDirty);
+  else if (horse.mountCondition.manePolish() >= 100)
+    cleanlinessBits |= static_cast<uint32_t>(
+      Horse::VisualCleanlinessBitset::ManeLightSparkles);
+
+  // Tail visual cleanliness
+  if (horse.mountCondition.tailDirtiness() >= 1000)
+    cleanlinessBits |= static_cast<uint32_t>(
+      Horse::VisualCleanlinessBitset::TailVeryDirty);
+  else if (horse.mountCondition.tailDirtiness() >= 600)
+    cleanlinessBits |= static_cast<uint32_t>(
+      Horse::VisualCleanlinessBitset::TailSlightlyDirty);
+  else if (horse.mountCondition.tailPolish() >= 100)
+    cleanlinessBits |= static_cast<uint32_t>(
+      Horse::VisualCleanlinessBitset::TailLightSparkles);
+
+  protocolHorse.visualCleanlinessBitset =
+    static_cast<Horse::VisualCleanlinessBitset>(cleanlinessBits);
 
   protocolHorse.mountCondition = {
     .stamina = static_cast<uint16_t>(

@@ -4402,23 +4402,42 @@ bool RanchDirector::HandleUseCleanItem(
   // Update clean and polish points according to the item used.
   mountRecord.Mutable([&itemTemplate](data::Horse& horse)
   {
-    // todo: there's a ranch skill which gives bonus to these points
+    // NOTE: Base wash items have `polishPoints == 0`
+    // In original gameplay, care skill 4 (Stylist, Lv 13+/Lv 24+) seems to control
+    // the horse's shine and sparkle when repeatedly washed
+    // Special wash items provide 1000 `polishPoints` directly
+    // TODO: Add ranch skill bonus calculation for Stylist (SkillId = 4).
 
     switch (itemTemplate->careParameters->parts)
     {
       case registry::Item::CareParameters::Part::Body:
       {
         horse.mountCondition.bodyDirtiness() = 0;
+        horse.mountCondition.bodyPolish() = std::min(
+          static_cast<uint16_t>(
+            horse.mountCondition.bodyPolish() +
+            itemTemplate->careParameters->polishPoints),
+          HorseSystem::MaxPolish);
         break;
       }
       case registry::Item::CareParameters::Part::Mane:
       {
         horse.mountCondition.maneDirtiness() = 0;
+        horse.mountCondition.manePolish() = std::min(
+          static_cast<uint16_t>(
+            horse.mountCondition.manePolish() +
+            itemTemplate->careParameters->polishPoints),
+          HorseSystem::MaxPolish);
         break;
       }
       case registry::Item::CareParameters::Part::Tail:
       {
         horse.mountCondition.tailDirtiness() = 0;
+        horse.mountCondition.tailPolish() = std::min(
+          static_cast<uint16_t>(
+            horse.mountCondition.tailPolish() +
+            itemTemplate->careParameters->polishPoints),
+          HorseSystem::MaxPolish);
         break;
       }
     }

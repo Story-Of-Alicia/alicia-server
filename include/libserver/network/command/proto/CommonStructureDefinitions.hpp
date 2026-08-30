@@ -297,10 +297,10 @@ struct Horse
     uint16_t injuryPoint{};
 
     //! A plenitude value in a range of <0, 1000>.
-    //! <710 is a hungry, 710-999 is slightly full, 1000 is full
+    //! <710 is hungry, 710-999 is slightly full, 1000 is full
     uint16_t plenitude{};
-    //! A dirty value in a range of <0, 1200>. for all body parts.
-    //! 1200 is fully dirty, 0 is clean.
+    //! A dirty value in a range of <0, 1000> for all body parts.
+    //! <600 is clean, 600-999 is slightly dirty, >=1000 is fully dirty
     uint16_t bodyDirtiness{};
     //! Referred to as `ManeTwisted` by the client.
     uint16_t maneDirtiness{};

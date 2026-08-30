@@ -56,6 +56,8 @@ public:
     uint32_t preferenceType);
 
   static constexpr uint16_t MaxPlenitude = 1'000;
+  static constexpr uint16_t MaxDirtiness = 1'000;
+  static constexpr uint16_t MaxPolish = 1'000;
 
 private:
   ServerInstance& _serverInstance;
