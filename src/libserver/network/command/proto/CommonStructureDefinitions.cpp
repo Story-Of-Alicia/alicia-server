@@ -703,20 +703,20 @@ void RanchCharacter::Read(RanchCharacter& value, SourceStream& stream)
 void Quest::Write(const Quest& value, SinkStream& stream)
 {
   stream.Write(value.tid)
-    .Write(value.member0)
+    .Write(value.completedAt)
     .Write(value.status)
     .Write(value.progress)
-    .Write(value.member3)
+    .Write(value.tier)
     .Write(value.member4);
 }
 
 void Quest::Read(Quest& value, SourceStream& stream)
 {
   stream.Read(value.tid)
-    .Read(value.member0)
+    .Read(value.completedAt)
     .Read(reinterpret_cast<uint8_t&>(value.status))
     .Read(value.progress)
-    .Read(value.member3)
+    .Read(value.tier)
     .Read(value.member4);
 }
 

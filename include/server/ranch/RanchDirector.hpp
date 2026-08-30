@@ -576,6 +576,22 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRPasswordAuth command);
 
+  void HandleAchievementDetail(
+    ClientId clientId,
+    const protocol::AcCmdCRAchievementDetail& command);
+
+  void HandleAchievementUpdateProperty(
+    ClientId clientId,
+    const protocol::AcCmdCRAchievementUpdateProperty& command);
+
+  void HandleAchievementBookReward(
+    ClientId clientId,
+    const protocol::AcCmdCRAchievementBookReward& command);
+
+  void HandleSetKeyAchievement(
+    ClientId clientId,
+    const protocol::AcCmdCRSetKeyAchievement& command);
+
   //! Ranch clients can only invite characters in other ranches.
   void HandleInviteUser(
     ClientId clientId,

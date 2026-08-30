@@ -21,6 +21,7 @@
 
 #include "server/lobby/LobbyNetworkHandler.hpp"
 #include "server/ServerInstance.hpp"
+#include "server/system/AchievementSystem.hpp"
 
 namespace server
 {
@@ -144,6 +145,19 @@ void LobbyDirector::QueueClientLogout(
     {
       user.lastSeenOnline() = data::Clock::now();
     });
+  }
+
+  const auto userIter = _userInstances.find(userName);
+  if (userIter != _userInstances.cend())
+  {
+    // The reported achievement values have to survive the switch between the
+    // ranch and the race connection, so they are only dropped once the
+    // character leaves the game entirely.
+    _serverInstance.GetAchievementSystem().ForgetReportedValues(
+      userIter->second.characterUid);
+
+    _serverInstance.GetAchievementSystem().ApplySessionEnd(
+      userIter->second.characterUid);
   }
 
   _userInstances.erase(userName);

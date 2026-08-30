@@ -575,14 +575,24 @@ struct RanchCharacter
 struct Quest
 {
   uint16_t tid{}; //questid
-  uint32_t member0{};          //maybe turnInNPC? used if the quest is ready to claim
+  //! Date of completion, packed as year | month << 12 in the low word and
+  //! day | hour << 5 | minute << 10 in the high word. The client only takes it
+  //! over when the status below is ReadyToClaim.
+  uint32_t completedAt{};
   enum Status : uint8_t{
     InProgress = 0,            // Quest started, objectives not yet met
     ReadyToClaim = 1,          // Objectives met, reward can be claimed
     Finished = 3               // Reward claimed / quest finished
   }status{};
   uint32_t progress{};         // used if the quest is in progress, otherwise unused
-  uint8_t member3{}; 
+  //! In the achievement list this is the tier index, counted from zero, and
+  //! 0xFF stands for no tier reached: the client sign-extends the byte and
+  //! treats -1 as "none". It selects which of the four per-tier slots the
+  //! progress above is stored in, and how many tiers get marked as earned.
+  //! Its meaning for quests is unknown, they leave it at zero.
+  uint8_t tier{};
+  //! The client parses this byte and never reads it again, on neither the
+  //! achievement nor the quest path. Its meaning is unknown.
   uint8_t member4{};
 
   static void Write(const Quest& value, SinkStream& stream);

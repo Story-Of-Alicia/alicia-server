@@ -20,6 +20,7 @@
 #include "server/lobby/LobbyNetworkHandler.hpp"
 
 #include "server/ServerInstance.hpp"
+#include "server/system/AchievementSystem.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
 
@@ -38,6 +39,11 @@ namespace
 
 //! A random device for random number generation.
 std::random_device rd;
+
+//! Tier index that tells the client no tier of an achievement was reached.
+//! The client sign-extends the byte, so this arrives as -1, which is the value
+//! it checks for before marking any tier as earned.
+constexpr uint8_t NoAchievementTier = 0xFFu;
 
 } // anon namespace
 
@@ -2012,17 +2018,58 @@ void LobbyNetworkHandler::HandleAchievementCompleteList(
   protocol::AcCmdCLAchievementCompleteListOK response{};
 
   characterRecord.Immutable(
-    [&response](const data::Character& character)
+    [this, &response](const data::Character& character)
     {
-      response.unk0 = character.uid();
-    });
+      response.characterUid = character.uid();
 
-  // These are the level-up achievements from the `Achievement` table with the event id 75.
-  response.achievements.emplace_back().tid = 20008;
-  response.achievements.emplace_back().tid = 20009;
-  response.achievements.emplace_back().tid = 20010;
-  response.achievements.emplace_back().tid = 20011;
-  response.achievements.emplace_back().tid = 20012;
+      for (const auto& entry : character.achievements())
+      {
+        const auto earnedTiers = AchievementSystem::GetEarnedTierCount(entry);
+
+        auto& quest = response.achievements.emplace_back();
+        quest.tid = entry.tid;
+        // The client tests for exactly 1 and marks the earned tiers on it. Any
+        // other value falls into a path that only marks a tier when the
+        // progress happens to match the threshold the client has compiled in.
+        quest.status = earnedTiers > 0
+          ? protocol::Quest::ReadyToClaim
+          : protocol::Quest::InProgress;
+        quest.progress = entry.progress;
+        // Highest earned tier, or 0xFF which the client reads as -1 for none.
+        quest.tier = earnedTiers > 0
+          ? static_cast<uint8_t>(earnedTiers - 1)
+          : NoAchievementTier;
+        // The client only takes the date over on the status above, which is
+        // exactly when a tier has been earned.
+        if (earnedTiers > 0)
+          quest.completedAt = protocol::BuildProtocolAchievementDate(
+            entry.tierEarnedAt[earnedTiers - 1]);
+      }
+
+      // One entry per book the client renders, which is exactly the limit it
+      // accepts. A longer list makes it drop the whole command.
+      static_assert(
+        protocol::MaxAchievementBooks == registry::AchievementBookTypeCount);
+
+      const auto& achievementSystem = _serverInstance.GetAchievementSystem();
+      const auto& books = character.achievementBooks();
+
+      for (uint8_t bookType = 0;
+           bookType < registry::AchievementBookTypeCount;
+           ++bookType)
+      {
+        auto& bookEntry = response.books.emplace_back();
+        bookEntry.bookId = bookType;
+        bookEntry.grade = achievementSystem.GetBookGrade(
+          character, static_cast<int8_t>(bookType));
+
+        const auto storedBook = std::ranges::find(
+          books, bookType, &data::Character::AchievementBookEntry::bookId);
+
+        if (storedBook != books.end())
+          bookEntry.tierRewardClaimed = storedBook->tierRewardClaimed;
+      }
+    });
 
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -2062,6 +2109,7 @@ void LobbyNetworkHandler::HandleRequestPersonalInfo(
         response.basic.introduction = character.introduction();
         response.basic.level = character.level();
         response.basic.levelProgress = character.experience();
+        response.basic.keyAchievements = character.keyAchievements();
         // TODO: implement other stats
         break;
       }
@@ -2678,10 +2726,10 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
       // Daily quests go into unk[2..4] (slots 0 and 1 are the two Repeatable quests).
       response.unk[i + 2] = protocol::Quest{
         /*tid=*/questId,
-        /*member0=*/0,
+        /*completedAt=*/0,
         isDone ? protocol::Quest::Status::ReadyToClaim : protocol::Quest::Status::InProgress,
         /*progress=*/progress,
-        /*member3=*/0,
+        /*tier=*/0,
         /*member4=*/0};
     }
   });

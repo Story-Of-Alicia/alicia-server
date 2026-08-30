@@ -38,6 +38,22 @@ Horse::HorseType HorseTypeToProtocolHorseType(
 
 } // anon namespace
 
+uint32_t BuildProtocolAchievementDate(const data::Clock::time_point timePoint)
+{
+  if (timePoint == data::Clock::time_point{})
+    return 0;
+
+  const auto localTime = std::chrono::current_zone()->to_local(timePoint);
+  const std::chrono::year_month_day date{
+    std::chrono::floor<std::chrono::days>(localTime)};
+
+  const auto year = static_cast<uint32_t>(static_cast<int32_t>(date.year()));
+  const auto month = static_cast<uint32_t>(static_cast<unsigned>(date.month()));
+  const auto day = static_cast<uint32_t>(static_cast<unsigned>(date.day()));
+
+  return (year & 0xFFF) | ((month & 0xF) << 12) | ((day & 0x1F) << 16);
+}
+
 void BuildProtocolCharacter(
   Character& protocolCharacter,
   const data::Character& character)
@@ -406,12 +422,12 @@ void BuildProtocolQuest(
   Quest& protocolQuest,
   const data::Quest& quest)
 {
-  protocolQuest.tid      = static_cast<uint16_t>(quest.questId());
-  protocolQuest.member0  = 0;
-  protocolQuest.status   = static_cast<Quest::Status>(quest.isCompleted());
-  protocolQuest.progress = quest.progress();
-  protocolQuest.member3  = 0;
-  protocolQuest.member4  = 0;
+  protocolQuest.tid         = static_cast<uint16_t>(quest.questId());
+  protocolQuest.completedAt = 0;
+  protocolQuest.status      = static_cast<Quest::Status>(quest.isCompleted());
+  protocolQuest.progress    = quest.progress();
+  protocolQuest.tier        = 0;
+  protocolQuest.member4     = 0;
 }
 
 void BuildProtocolQuests(

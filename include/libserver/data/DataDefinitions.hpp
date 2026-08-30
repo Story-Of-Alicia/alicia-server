@@ -353,6 +353,38 @@ struct Character
 
   dao::Field<bool> isRanchLocked{};
 
+  //! The 3 key achievement TIDs, 0 for an empty slot. They need not be earned
+  //! and may repeat, which is how the client treats them.
+  dao::Field<std::array<uint16_t, 3>> keyAchievements{};
+
+  //! Individual achievement completion data.
+  struct AchievementEntry
+  {
+    //! Achievement TID. References libconfig `Achievements` table.
+    uint16_t tid{};
+    //! Accumulated progress towards the tier thresholds.
+    uint32_t progress{};
+    //! The moment each of the four tiers was earned, the epoch while a tier is
+    //! not earned, so the count of set entries is the tier the player has
+    //! reached. Held as the absolute instant; the date the client displays is
+    //! derived from it when the page is built.
+    std::array<Clock::time_point, 4> tierEarnedAt{};
+  };
+  dao::Field<std::vector<AchievementEntry>> achievements{};
+
+  //! State of the four tier rewards of an achievement book. The grade of the
+  //! book is not stored, it follows from the achievements of that book.
+  struct AchievementBookEntry
+  {
+    //! Book type the entry belongs to, in an interval <0, 8>.
+    uint8_t bookId{};
+    //! Zero while the reward of that tier has not been collected. Only zero
+    //! versus non zero carries meaning, so what a collected entry holds beyond
+    //! that is open.
+    std::array<uint32_t, 4> tierRewardClaimed{};
+  };
+  dao::Field<std::vector<AchievementBookEntry>> achievementBooks{};
+
   dao::Field<Uid> settingsUid{InvalidUid};
 
   struct Skills

@@ -19,6 +19,7 @@
 
 #include "server/race/MagicSystem.hpp"
 #include "server/race/RaceNetworkHandler.hpp"
+#include "server/system/AchievementSystem.hpp"
 #include "server/system/PotentialSystem.hpp"
 
 #include "server/ServerInstance.hpp"
@@ -44,6 +45,12 @@ RaceNetworkHandler::RaceNetworkHandler(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& message)
     {
       HandleEnterRoom(clientId, message);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRAchievementUpdateProperty>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleAchievementUpdateProperty(clientId, message);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRChangeRoomOptions>(
@@ -1418,6 +1425,11 @@ void RaceNetworkHandler::HandleStartRace(
         if (racer.state == tracker::RaceTracker::Racer::State::Disconnected)
           continue;
 
+        // The client counts within a race and starts over in the next one, so
+        // the previous race must not carry over. This also makes what arrives
+        // from here on the statistic the result conditions read.
+        _serverInstance.GetAchievementSystem().ForgetReportedValues(characterUid);
+
         std::string characterName;
         GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
           [&characterName](const data::Character& character)
@@ -1757,6 +1769,55 @@ void RaceNetworkHandler::HandleUserRaceFinal(
     .courseTime = racer.courseTime};
 
   this->Broadcast(raceInstance, notify);
+
+  AwardRaceAchievements(clientId, raceInstance, not didNotFinish);
+}
+
+void RaceNetworkHandler::AwardRaceAchievements(
+  const ClientId clientId,
+  RaceInstance& raceInstance,
+  const bool finished)
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto& racers = raceInstance.GetTracker().GetRacers();
+
+  // The place is how many racers already reached the goal, plus this one. The
+  // racer's own state is set before this runs, so they are counted too.
+  uint8_t finisherCount = 0;
+  for (const auto& other : racers | std::views::values)
+  {
+    if (other.courseTime != tracker::InvalidCourseTime)
+      ++finisherCount;
+  }
+
+  const auto localNow = std::chrono::current_zone()->to_local(
+    data::Clock::now());
+  const std::chrono::hh_mm_ss timeOfDay{
+    localNow - std::chrono::floor<std::chrono::days>(localNow)};
+
+  const AchievementSystem::RaceOutcome outcome{
+    .mode = registry::ToGameModeFlag(
+      raceInstance.GetParameters().gameMode == protocol::GameMode::Magic,
+      raceInstance.GetParameters().teamMode == protocol::TeamMode::Team,
+      raceInstance.GetParameters().missionId != 0),
+    .racerCount = static_cast<uint8_t>(racers.size()),
+    .placement = finished ? finisherCount : uint8_t{0},
+    .finished = finished,
+    .hourOfDay = static_cast<uint8_t>(timeOfDay.hours().count())};
+
+  const auto updates = _serverInstance.GetAchievementSystem().ApplyRaceOutcome(
+    clientContext.characterUid, outcome);
+
+  for (const auto& update : updates)
+  {
+    const auto notify = AchievementSystem::BuildUpdateNotify(update);
+
+    _commandServer.QueueCommand<decltype(notify)>(
+      clientId, [notify]()
+      {
+        return notify;
+      });
+  }
 }
 
 void RaceNetworkHandler::HandleRaceResult(
@@ -4188,6 +4249,30 @@ void RaceNetworkHandler::HandleGameCreateClientItem(
   auto& item = raceInstance.GetTracker().AddEventItem(clientContext.characterUid);
   item.position = command.position;
   item.itemType = selectedEgg.deckItemId;
+}
+
+void RaceNetworkHandler::HandleAchievementUpdateProperty(
+  const ClientId clientId,
+  const protocol::AcCmdCRAchievementUpdateProperty& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  const auto updates = _serverInstance.GetAchievementSystem()
+    .ApplyReportedProperty(
+      clientContext.characterUid,
+      command.achievementEvent,
+      command.propertyValue);
+
+  for (const auto& update : updates)
+  {
+    const auto notify = AchievementSystem::BuildUpdateNotify(update);
+
+    _commandServer.QueueCommand<decltype(notify)>(
+      clientId, [notify]()
+      {
+        return notify;
+      });
+  }
 }
 
 } // namespace server

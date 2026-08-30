@@ -21,6 +21,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <format>
 #include <fstream>
 #include <regex>
@@ -394,6 +395,51 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
 
   character.isRanchLocked = json.value("isRanchLocked", bool{});
 
+  if (json.contains("keyAchievements"))
+  {
+    character.keyAchievements =
+      json["keyAchievements"].get<std::array<uint16_t, 3>>();
+  }
+
+  if (json.contains("achievements"))
+  {
+    std::vector<data::Character::AchievementEntry> entries;
+    for (const auto& entry : json["achievements"])
+    {
+      data::Character::AchievementEntry achievement{
+        .tid = entry["tid"].get<uint16_t>(),
+        .progress = entry.value("progress", 0u)};
+
+      if (entry.contains("tierEarnedAt"))
+      {
+        const auto seconds = entry["tierEarnedAt"].get<std::array<int64_t, 4>>();
+        for (size_t tier = 0; tier < seconds.size(); ++tier)
+        {
+          if (seconds[tier] != 0)
+          {
+            achievement.tierEarnedAt[tier] =
+              data::Clock::time_point{std::chrono::seconds{seconds[tier]}};
+          }
+        }
+      }
+
+      entries.push_back(achievement);
+    }
+    character.achievements = std::move(entries);
+  }
+
+  if (json.contains("achievementBooks"))
+  {
+    std::vector<data::Character::AchievementBookEntry> books;
+    for (const auto& entry : json["achievementBooks"])
+    {
+      books.push_back({.bookId = entry["bookId"].get<uint8_t>(),
+        .tierRewardClaimed = entry.value(
+          "tierRewardClaimed", std::array<uint32_t, 4>{})});
+    }
+    character.achievementBooks = std::move(books);
+  }
+
   character.settingsUid = json.value("settingsUid", data::Uid{});
 
   const auto readSkills = [](data::Character::Skills::Sets& sets, const nlohmann::json& json)
@@ -505,6 +551,36 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["housing"] = character.housing();
 
   json["isRanchLocked"] = character.isRanchLocked();
+
+  json["keyAchievements"] = character.keyAchievements();
+
+  {
+    auto achievementsJson = nlohmann::json::array();
+    for (const auto& entry : character.achievements())
+    {
+      std::array<int64_t, 4> tierEarnedAt{};
+      for (size_t tier = 0; tier < tierEarnedAt.size(); ++tier)
+      {
+        tierEarnedAt[tier] = std::chrono::duration_cast<std::chrono::seconds>(
+          entry.tierEarnedAt[tier].time_since_epoch()).count();
+      }
+
+      achievementsJson.push_back({{"tid", entry.tid},
+        {"progress", entry.progress},
+        {"tierEarnedAt", tierEarnedAt}});
+    }
+    json["achievements"] = std::move(achievementsJson);
+  }
+
+  {
+    auto booksJson = nlohmann::json::array();
+    for (const auto& entry : character.achievementBooks())
+    {
+      booksJson.push_back({{"bookId", entry.bookId},
+        {"tierRewardClaimed", entry.tierRewardClaimed}});
+    }
+    json["achievementBooks"] = std::move(booksJson);
+  }
 
   json["settingsUid"] = character.settingsUid();
 

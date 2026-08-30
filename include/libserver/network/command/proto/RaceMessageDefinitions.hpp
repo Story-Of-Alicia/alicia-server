@@ -1020,11 +1020,16 @@ struct AcCmdRCRaceResultNotify
     uint32_t member6{};
     uint32_t carrots{};
     uint32_t level{};
-    // this is copied as memcpy
+    //! Team the racer rode for, two for red and three for blue. The client
+    //! pairs it with the points below to work out which team won.
     TeamColor teamColor{};
     uint32_t member10{};
     uint16_t member11{};
-    uint16_t member12{};
+    //! Points of this racer. The client adds them up per team and shows the
+    //! team with the higher sum as the winner, falling back to the team of the
+    //! first racer in this list when the sums are equal. The server leaves the
+    //! points at zero, so today that fallback decides every team race.
+    uint16_t points{};
     //! Time in milliseconds.
     uint32_t recordTimeDifference{};
     uint32_t levelProgress{};
