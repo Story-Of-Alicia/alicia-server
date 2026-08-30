@@ -117,6 +117,21 @@ struct Magic
     //! Effect 3: fraction of the passive regen granted while holding a spell, in bp. e.g. 2000 → 20%.
     uint32_t holdingGaugeScaleBp{2000};
   };
+
+  //! Team modifier offset entry.
+  struct TeamModifier
+  {
+    uint32_t targetId{}; // group ID or basicType
+    uint32_t lead{};     // 1 if team leads, 0 if team trails
+    std::array<int32_t, 4> aheadOffsets{}; // offsets for ahead_1..ahead_4
+  };
+
+  //! Client-matching general magic config parameters.
+  struct Config
+  {
+    uint32_t lastSpurtCritBonusBp{1000};
+    float lastSpurtProgressThreshold{0.85f};
+  };
 };
 
 class MagicRegistry : public Registry
@@ -144,9 +159,20 @@ public:
   //! Returns the stat scaling for a basicType, or nullptr if none applies.
   [[nodiscard]] const Magic::StatScaling* GetStatScaling(uint32_t basicType) const;
 
-  //! Returns the position weights for use in random magic selection.
+  //! Returns the position weights for use in random magic selection (legacy fallback).
   [[nodiscard]] const std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>& GetSoloPositionWeights(uint32_t position) const;
   [[nodiscard]] const std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>& GetTeamPositionWeights(uint32_t position) const;
+
+  //! Game client distribution tables:
+  [[nodiscard]] uint32_t GetCanonicalRank(size_t totalRacers, size_t racerRank) const;
+  [[nodiscard]] const std::vector<std::pair<uint32_t, uint32_t>>& GetSoloGroupWeights(uint32_t canonicalRank) const;
+  [[nodiscard]] const std::vector<std::pair<uint32_t, uint32_t>>& GetTeamGroupWeights(uint32_t canonicalRank) const;
+  [[nodiscard]] const std::vector<std::pair<uint32_t, uint32_t>>& GetAttackGroupWeights(uint32_t canonicalRank) const;
+  [[nodiscard]] const std::vector<std::pair<uint32_t, uint32_t>>& GetTeamAssistanceWeights(uint32_t canonicalRank) const;
+
+  [[nodiscard]] int32_t GetGroupTeamModifier(uint32_t groupId, bool isLead, uint32_t aheadCount) const;
+  [[nodiscard]] int32_t GetSlotTeamModifier(uint32_t basicType, bool isLead, uint32_t aheadCount) const;
+  [[nodiscard]] const Magic::Config& GetConfig() const;
 
 private:
   std::unordered_map<uint32_t, Magic::SlotInfo> _slotInfo{};
@@ -154,12 +180,26 @@ private:
   std::vector<uint32_t> _teamPool{};
   Magic::RegenInfo _regenInfo{};
   Magic::SetBonusInfo _setBonusInfo{};
+  Magic::Config _config{};
   uint32_t _baseCritChanceBp{500};
   //! Keyed by basicType.
   std::unordered_map<uint32_t, Magic::StatScaling> _statScalings{};
-  //! Position weights for use in random magic selection.
-  std::array<std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>, 8> _soloPositionWeights;
-  std::array<std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>, 8> _teamPositionWeights;
+  //! Position weights for legacy fallback.
+  std::array<std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>, 8> _soloPositionWeights{};
+  std::array<std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>, 8> _teamPositionWeights{};
+
+  //! Client distribution tables (indexed by canonicalRank - 1, 0..7)
+  std::array<std::vector<std::pair<uint32_t, uint32_t>>, 8> _soloGroupWeights{};
+  std::array<std::vector<std::pair<uint32_t, uint32_t>>, 8> _teamGroupWeights{};
+  std::array<std::vector<std::pair<uint32_t, uint32_t>>, 8> _attackGroupWeights{};
+  std::array<std::vector<std::pair<uint32_t, uint32_t>>, 8> _teamAssistanceWeights{};
+
+  //! Team modifiers
+  std::vector<Magic::TeamModifier> _groupTeamModifiers{};
+  std::vector<Magic::TeamModifier> _slotTeamModifiers{};
+
+  //! Ranking conversion table [playerCount - 1][racerRank - 1] -> canonicalRank (1..8)
+  std::array<std::vector<uint32_t>, 8> _rankingConversion{};
 };
 
 } // namespace server::registry
