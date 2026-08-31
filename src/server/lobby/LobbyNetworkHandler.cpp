@@ -37,6 +37,11 @@ namespace server
 namespace
 {
 
+//! Mission id of the prologue, as defined in the client's `Mission` table.
+constexpr uint16_t PrologueMissionId = 24;
+//! The progress id the client reads as "mission cleared".
+constexpr uint32_t MissionClearedProgressId = 2;
+
 //! A random device for random number generation.
 std::random_device rd;
 constexpr auto RanchLeaveSettleDelay = std::chrono::milliseconds(150);
@@ -654,7 +659,7 @@ void LobbyNetworkHandler::HandleNetworkTick()
 
     clientsToDisconnect.emplace_back(clientId);
 
-    _serverInstance.GetRanchDirector().Disconnect(
+    _serverInstance.GetRanchDirector().DisconnectCharacter(
       clientContext.characterUid);
     _serverInstance.GetRaceDirector().DisconnectCharacter(
       clientContext.characterUid);
@@ -745,16 +750,6 @@ void LobbyNetworkHandler::HandleLogin(
     });
 }
 
-namespace
-{
-
-//! Mission id of the prologue, as defined in the client's `Mission` table.
-constexpr uint16_t PrologueMissionId = 24;
-//! The progress id the client reads as "mission cleared".
-constexpr uint32_t MissionClearedProgressId = 2;
-
-} // anonymous namespace
-
 void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
 {
   auto& clientContext = GetClientContext(clientId);
@@ -777,10 +772,6 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
 
   clientContext.characterUid = userCharacterUid;
 
-  // Apply the things that should happen to the character while they were offline.
-  _serverInstance.GetHorseSystem().PromoteMaturedFoals(userCharacterUid);
-  _serverInstance.GetHorseSystem().ApplyDailyCareTick(userCharacterUid);
-
   // Collection of items expired while the character aws offline.
   std::vector<data::Item> expiredItems;
 
@@ -791,12 +782,14 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
   if (not characterRecord)
     throw std::runtime_error("Character record unavailable");
 
-  // Collect the expired items so we can inform the user about
-  // the items that have expired since they were offline.
   characterRecord.Mutable([this, &expiredItems](data::Character& character)
   {
+    // Collect the expired items so we can inform the user about
+    // the items that have expired since they were offline.
     expiredItems = _serverInstance.GetItemSystem()
       .CollectAndEraseExpiredItems(character);
+
+    _serverInstance.GetHorseSystem().ApplyDailyCareTick(character.uid());
   });
 
   protocol::LobbyCommandLoginOK response{
@@ -2287,7 +2280,8 @@ void LobbyNetworkHandler::HandleSetIntroduction(
     });
 
   _serverInstance.GetRanchDirector().BroadcastSetIntroductionNotify(
-    clientContext.characterUid, command.introduction);
+    clientContext.characterUid,
+    command.introduction);
 }
 
 void LobbyNetworkHandler::HandleGetMessengerInfo(

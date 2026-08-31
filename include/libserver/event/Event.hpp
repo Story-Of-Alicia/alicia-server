@@ -18,10 +18,10 @@ public:
   using Listener = std::function<void(T...)>;
   using ListenerList = std::list<Listener>;
   using ListenerHandle = ListenerList::iterator;
-;
-  [[nodiscard]] ListenerHandle Subscribe(Listener& listener) noexcept
+
+  ListenerHandle Subscribe(Listener listener) noexcept
   {
-    return _listeners.emplace(_listeners.back(), listener);
+    return _listeners.emplace(_listeners.end(), std::move(listener));
   }
 
   void Unsubscribe(ListenerHandle handle) noexcept
