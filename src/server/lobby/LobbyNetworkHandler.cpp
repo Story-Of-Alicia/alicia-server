@@ -628,7 +628,7 @@ void LobbyNetworkHandler::HandleNetworkTick()
 
     clientsToDisconnect.emplace_back(clientId);
 
-    _serverInstance.GetRanchDirector().Disconnect(
+    _serverInstance.GetRanchDirector().DisconnectCharacter(
       clientContext.characterUid);
     _serverInstance.GetRaceDirector().DisconnectCharacter(
       clientContext.characterUid);
@@ -741,11 +741,6 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
 
   clientContext.characterUid = userCharacterUid;
 
-  // Promote any foals that matured while the player was offline before their
-  // horses are sent, so the client shows them as adults from the start rather
-  // than caching a foal it won't re-render on a later type change.
-  _serverInstance.GetHorseSystem().PromoteMaturedFoals(userCharacterUid);
-
   // Collection of items expired while the character aws offline.
   std::vector<data::Item> expiredItems;
 
@@ -756,12 +751,16 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
   if (not characterRecord)
     throw std::runtime_error("Character record unavailable");
 
-  // Collect the expired items so we can inform the user about
-  // the items that have expired since they were offline.
   characterRecord.Mutable([this, &expiredItems](data::Character& character)
   {
+    // Collect the expired items so we can inform the user about
+    // the items that have expired since they were offline.
     expiredItems = _serverInstance.GetItemSystem()
       .CollectAndEraseExpiredItems(character);
+
+    // Promote any foals that matured while the player was offline.
+    _serverInstance.GetHorseSystem()
+      .MatureCharacterFoals(character);
   });
 
   protocol::LobbyCommandLoginOK response{
@@ -2224,7 +2223,8 @@ void LobbyNetworkHandler::HandleSetIntroduction(
     });
 
   _serverInstance.GetRanchDirector().BroadcastSetIntroductionNotify(
-    clientContext.characterUid, command.introduction);
+    clientContext.characterUid,
+    command.introduction);
 }
 
 void LobbyNetworkHandler::HandleGetMessengerInfo(

@@ -39,10 +39,15 @@ public:
   //! The duration a foal must age before it matures into an adult horse.
   static constexpr std::chrono::hours FoalGrowUpDuration{1};
 
-  //! @param characterUid UID of the owning character.
-  //! @returns The still-maturing foals mapped to the time each becomes an adult.
-  std::unordered_map<data::Uid, data::Clock::time_point> PromoteMaturedFoals(
-    data::Uid characterUid);
+  //! Matures character's foals.
+  //! @param character Character.
+  void MatureCharacterFoals(const data::Character& character);
+
+  //! Collects character's immature foals.
+  //! @param character Character.
+  //! @returns Collection of immature foals.
+  [[nodiscard]] std::vector<data::Uid> CollectCharacterFoals(
+    const data::Character& character) const noexcept;
 
   //! @param characterUid UID of the owning character.
   //! @returns The number of horses whose lineage was raised.

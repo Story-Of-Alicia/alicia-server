@@ -68,7 +68,7 @@ public:
   void NotifyAchievementReward(
     data::Uid characterUid);
   void NotifyMatchmakeResult(
-    const data::Uid characterUid,
+    data::Uid characterUid,
     const MatchmakingSystem::Result& result);
 
   [[nodiscard]] CommandServer& GetCommandServer() noexcept;

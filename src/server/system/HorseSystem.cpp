@@ -33,23 +33,10 @@ HorseSystem::HorseSystem(ServerInstance& serverInstance)
 {
 }
 
-std::unordered_map<data::Uid, data::Clock::time_point> HorseSystem::PromoteMaturedFoals(
-  const data::Uid characterUid)
+void HorseSystem::MatureCharacterFoals(const data::Character& character)
 {
-  std::unordered_map<data::Uid, data::Clock::time_point> maturingFoals;
-
-  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
-  if (not characterRecord)
-    return maturingFoals;
-
-  std::vector<data::Uid> horseUids;
-  characterRecord.Immutable([&horseUids](const data::Character& character)
-  {
-    horseUids = character.horses();
-  });
-
   const auto now = data::Clock::now();
-  for (const auto& horseUid : horseUids)
+  for (const auto& horseUid : character.horses())
   {
     const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(horseUid);
     if (not horseRecord)
@@ -57,7 +44,9 @@ std::unordered_map<data::Uid, data::Clock::time_point> HorseSystem::PromoteMatur
 
     bool isFoal = false;
     data::Clock::time_point dateOfBirth;
-    horseRecord.Immutable([&isFoal, &dateOfBirth](const data::Horse& horse)
+
+    horseRecord.Immutable([&isFoal, &dateOfBirth](
+      const data::Horse& horse)
     {
       isFoal = horse.type() == data::Horse::Type::Foal;
       dateOfBirth = horse.dateOfBirth();
@@ -73,10 +62,30 @@ std::unordered_map<data::Uid, data::Clock::time_point> HorseSystem::PromoteMatur
         horse.type() = data::Horse::Type::Adult;
       });
     }
-    else
+  }
+}
+
+std::vector<data::Uid> HorseSystem::CollectCharacterFoals(
+  const data::Character& character) const noexcept
+{
+  std::vector<data::Uid> maturingFoals;
+
+  for (const auto& horseUid : character.horses())
+  {
+    const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(horseUid);
+    if (not horseRecord)
+      continue;
+
+    bool isFoal = false;
+    horseRecord.Immutable([&isFoal](const data::Horse& horse)
     {
-      maturingFoals.emplace(horseUid, dateOfBirth + FoalGrowUpDuration);
-    }
+      isFoal = horse.type() == data::Horse::Type::Foal;
+    });
+
+    if (not isFoal)
+      continue;
+
+    maturingFoals.emplace_back(horseUid);
   }
 
   return maturingFoals;
