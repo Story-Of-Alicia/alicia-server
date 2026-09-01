@@ -39,10 +39,6 @@ public:
   //! The duration a foal must age before it matures into an adult horse.
   static constexpr std::chrono::hours FoalGrowUpDuration{1};
 
-  //! Matures character's foals.
-  //! @param character Character.
-  void MatureCharacterFoals(const data::Character& character);
-
   //! Collects character's immature foals.
   //! @param character Character.
   //! @returns Collection of immature foals.

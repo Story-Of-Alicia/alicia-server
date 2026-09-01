@@ -21,7 +21,7 @@ public:
 
   ListenerHandle Subscribe(Listener listener) noexcept
   {
-    return _listeners.emplace(_listeners.back(), listener);
+    return _listeners.emplace(_listeners.end(), std::move(listener));
   }
 
   void Unsubscribe(ListenerHandle handle) noexcept

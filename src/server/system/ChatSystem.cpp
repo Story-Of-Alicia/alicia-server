@@ -908,19 +908,12 @@ void ChatSystem::RegisterAdminCommands()
   _commandManager.RegisterCommand(
     "users",
     [this](
-      const std::span<const std::string>& arguments,
-      data::Uid characterUid) -> std::vector<std::string>
+      [[maybe_unused]] const std::span<const std::string>& arguments,
+      const data::Uid characterUid) -> std::vector<std::string>
     {
       const auto invokerRank = GetRoleRank(characterUid);
       if (not invokerRank)
         return {};
-
-      // todo: implement only local check
-      bool onlyLocal = false;
-      if (arguments.size() > 0)
-      {
-        onlyLocal = arguments[0] == "local";
-      }
 
       std::vector<std::string> userList;
 
@@ -1760,7 +1753,7 @@ void ChatSystem::RegisterAdminCommands()
 
           // Disconnect from all directors
           _serverInstance.GetRaceDirector().DisconnectCharacter(targetCharacterUid);
-          _serverInstance.GetRanchDirector().Disconnect(targetCharacterUid);
+          _serverInstance.GetRanchDirector().DisconnectCharacter(targetCharacterUid);
           _serverInstance.GetLobbyDirector().DisconnectCharacter(targetCharacterUid);
 
           spdlog::info("GM {} ({}) has reset user '{}' whose character uid was '{}'",

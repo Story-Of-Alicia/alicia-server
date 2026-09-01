@@ -91,6 +91,14 @@ public:
     data::Uid characterUid,
     protocol::AcCmdCRRequestStorage::Category category);
 
+  //! Announces that a foal grew up to an adult to the owning client and the
+  //! visitors of its ranch.
+  //! @param characterUid UID of the owning character.
+  //! @param horseUid UID of the horse that grew up.
+  void SendFoalGrowUp(
+    data::Uid characterUid,
+    data::Uid horseUid);
+
   void BroadcastChangeAgeNotify(
     data::Uid characterUid,
     data::Uid rancherUid,
@@ -194,16 +202,6 @@ private:
 
   void HandleRanchLeave(
     ClientId clientId);
-
-  //! Announces that a foal grew up to an adult to the owning client and the
-  //! visitors of its ranch.
-  //! @param clientId ID of the owning client.
-  //! @param characterUid UID of the owning character.
-  //! @param horseUid UID of the horse that grew up.
-  void AnnounceFoalGrewUp(
-    ClientId clientId,
-    data::Uid characterUid,
-    data::Uid horseUid);
 
   void ReturnHorseToNature(
     data::Uid characterUid,

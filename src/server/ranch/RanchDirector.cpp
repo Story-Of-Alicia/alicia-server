@@ -49,9 +49,10 @@ void RanchDirector::Initialize()
 {
   _breedingMarket.Initialize();
 
-  ScheduleFoalMatureCheck();
+  ScheduleFoalMaturityCheck();
 
   _networkHandler->Initialize();
+
   _networkHandler->GetCharacterConnectEvent().Subscribe(
     [this](const data::Uid characterUid)
     {
@@ -67,9 +68,9 @@ void RanchDirector::Initialize()
       {
         characterInstance.foals = _serverInstance.GetHorseSystem().CollectCharacterFoals(
           character);
+        // todo: item expiration
         //characterInstance.items = _serverInstance.GetItemSystem().CollectPerishableItems();
       });
-
     });
 
   _networkHandler->GetCharacterDisconnectEvent().Subscribe(
@@ -169,13 +170,13 @@ BreedingMarket& RanchDirector::GetBreedingMarket() noexcept
   return _breedingMarket;
 }
 
-void RanchDirector::ScheduleFoalMatureCheck() noexcept
+void RanchDirector::ScheduleFoalMaturityCheck() noexcept
 {
   _scheduler.Queue(
     [this]()
     {
       RunFoalMaturityCheck();
-      ScheduleFoalMatureCheck();
+      ScheduleFoalMaturityCheck();
     },
     Scheduler::Clock::now() + FoalMaturityCheckInterval);
 }
@@ -184,54 +185,40 @@ void RanchDirector::RunFoalMaturityCheck()
 {
   const auto now = data::Clock::now();
 
-  for (const data::Uid characterUid : _characterInstances)
+  for (const auto& [characterUid, characterInstance] : _characterInstances)
   {
-
-  }
-
-  for (auto& [clientId, clientContext] : _clients)
-  {
-    if (not clientContext.isAuthenticated
-      || clientContext.maturingFoals.empty())
-    {
+    if (characterInstance.foals.empty())
       continue;
-    }
 
-    for (auto foalIter = clientContext.maturingFoals.begin();
-      foalIter != clientContext.maturingFoals.end();)
+    // Iterate over character's foals and mature them.
+    for (const data::Uid& foalUid : characterInstance.foals)
     {
-      if (now < foalIter->second)
-      {
-        ++foalIter;
+      const auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(
+        foalUid);
+
+      if (not horseRecord)
         continue;
-      }
 
-      const auto horseUid = foalIter->first;
-      const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(horseUid);
+      data::Clock::time_point birthTimePoint;
 
-      bool isFoal = false;
-      if (horseRecord)
+      horseRecord->Immutable([&birthTimePoint](
+        const data::Horse& horse)
       {
-        horseRecord->Immutable([&isFoal](const data::Horse& horse)
-          {
-            isFoal = horse.type() == data::Horse::Type::Foal;
-          });
-      }
+        birthTimePoint = horse.dateOfBirth();
+      });
 
-      if (isFoal)
+      const bool hasMatured = now >= birthTimePoint + HorseSystem::FoalGrowUpDuration;
+      if (not hasMatured)
+        continue;
+
+      horseRecord->Mutable([](data::Horse& horse)
       {
-        horseRecord->Mutable([](data::Horse& horse)
-          {
-            horse.type() = data::Horse::Type::Adult;
-          });
+        horse.type() = data::Horse::Type::Adult;
+      });
 
-        AnnounceFoalGrewUp(
-          clientId,
-          clientContext.characterUid,
-          horseUid);
-      }
-
-      foalIter = clientContext.maturingFoals.erase(foalIter);
+      GetNetworkHandler().SendFoalGrowUp(
+        characterUid,
+        foalUid);
     }
   }
 }

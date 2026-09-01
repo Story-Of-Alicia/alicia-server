@@ -33,38 +33,6 @@ HorseSystem::HorseSystem(ServerInstance& serverInstance)
 {
 }
 
-void HorseSystem::MatureCharacterFoals(const data::Character& character)
-{
-  const auto now = data::Clock::now();
-  for (const auto& horseUid : character.horses())
-  {
-    const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(horseUid);
-    if (not horseRecord)
-      continue;
-
-    bool isFoal = false;
-    data::Clock::time_point dateOfBirth;
-
-    horseRecord.Immutable([&isFoal, &dateOfBirth](
-      const data::Horse& horse)
-    {
-      isFoal = horse.type() == data::Horse::Type::Foal;
-      dateOfBirth = horse.dateOfBirth();
-    });
-
-    if (not isFoal)
-      continue;
-
-    if (now >= dateOfBirth + FoalGrowUpDuration)
-    {
-      horseRecord.Mutable([](data::Horse& horse)
-      {
-        horse.type() = data::Horse::Type::Adult;
-      });
-    }
-  }
-}
-
 std::vector<data::Uid> HorseSystem::CollectCharacterFoals(
   const data::Character& character) const noexcept
 {

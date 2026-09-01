@@ -642,71 +642,6 @@ void RanchNetworkHandler::Tick()
   _scheduler.Tick();
 }
 
-void RanchNetworkHandler::AnnounceFoalGrewUp(
-  const ClientId clientId,
-  const data::Uid characterUid,
-  const data::Uid horseUid)
-{
-  const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(horseUid);
-  if (not horseRecord)
-    return;
-
-  protocol::AcCmdRCUpdateMountInfoNotify growUp{
-    .characterUid = characterUid,
-    .action = protocol::AcCmdRCUpdateMountInfoNotify::Action::PutHorseInRentOrBreedingSystem};
-  horseRecord->Immutable([&growUp](const data::Horse& horse)
-  {
-    protocol::BuildProtocolHorse(growUp.horse, horse);
-  });
-
-  _commandServer.QueueCommand<decltype(growUp)>(
-    clientId,
-    [growUp]()
-    {
-      return growUp;
-    });
-
-  protocol::AcCmdRCAddIdleMountInfoNotify addNotify{};
-  addNotify.horse.horseOid = _ranches[characterUid].tracker.GetHorseOid(horseUid);
-  horseRecord->Immutable([&addNotify](const data::Horse& horse)
-  {
-    protocol::BuildProtocolHorse(addNotify.horse.horse, horse);
-  });
-
-  const auto& clientContext = GetClientContext(clientId);
-  if (clientContext.visitingRancherUid == characterUid)
-  {
-    // The owner is on their own ranch; broadcast the new idle mount to everyone there.
-    for (const ClientId& ranchClientId : _ranches[characterUid].clients)
-    {
-      _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
-        ranchClientId,
-        [addNotify]()
-        {
-          return addNotify;
-        });
-    }
-  }
-  else
-  {
-    _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
-      clientId,
-      [addNotify]()
-      {
-        return addNotify;
-      });
-
-    protocol::AcCmdRCMobDead mobDead{
-      .mobOid = addNotify.horse.horseOid};
-    _commandServer.QueueCommand<protocol::AcCmdRCMobDead>(
-      clientId,
-      [mobDead]()
-      {
-        return mobDead;
-      });
-  }
-}
-
 void RanchNetworkHandler::ReturnHorseToNature(
   data::Uid characterUid,
   data::Uid horseUid,
@@ -924,6 +859,75 @@ void RanchNetworkHandler::SendStorageNotification(
   {
   }
 }
+
+void RanchNetworkHandler::SendFoalGrowUp(
+  const data::Uid characterUid,
+  const data::Uid horseUid)
+{
+  const auto clientId = GetClientIdByCharacterUid(
+    characterUid);
+  const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(
+    horseUid);
+
+  if (not horseRecord)
+    return;
+
+  protocol::AcCmdRCUpdateMountInfoNotify growUp{
+    .characterUid = characterUid,
+    .action = protocol::AcCmdRCUpdateMountInfoNotify::Action::PutHorseInRentOrBreedingSystem};
+  horseRecord->Immutable([&growUp](const data::Horse& horse)
+  {
+    protocol::BuildProtocolHorse(growUp.horse, horse);
+  });
+
+  _commandServer.QueueCommand<decltype(growUp)>(
+    clientId,
+    [growUp]()
+    {
+      return growUp;
+    });
+
+  protocol::AcCmdRCAddIdleMountInfoNotify addNotify{};
+  addNotify.horse.horseOid = _ranches[characterUid].tracker.GetHorseOid(horseUid);
+  horseRecord->Immutable([&addNotify](const data::Horse& horse)
+  {
+    protocol::BuildProtocolHorse(addNotify.horse.horse, horse);
+  });
+
+  const auto& clientContext = GetClientContext(clientId);
+  if (clientContext.visitingRancherUid == characterUid)
+  {
+    // The owner is on their own ranch; broadcast the new idle mount to everyone there.
+    for (const ClientId& ranchClientId : _ranches[characterUid].clients)
+    {
+      _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
+        ranchClientId,
+        [addNotify]()
+        {
+          return addNotify;
+        });
+    }
+  }
+  else
+  {
+    _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
+      clientId,
+      [addNotify]()
+      {
+        return addNotify;
+      });
+
+    protocol::AcCmdRCMobDead mobDead{
+      .mobOid = addNotify.horse.horseOid};
+    _commandServer.QueueCommand<protocol::AcCmdRCMobDead>(
+      clientId,
+      [mobDead]()
+      {
+        return mobDead;
+      });
+  }
+}
+
 
 void RanchNetworkHandler::BroadcastChangeAgeNotify(
   const data::Uid characterUid,

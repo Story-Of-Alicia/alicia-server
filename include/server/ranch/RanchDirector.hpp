@@ -102,7 +102,7 @@ private:
 
   //! Queues the next foal maturity check on the scheduler, re-scheduling
   //! itself so the sweep runs on a fixed interval.
-  void ScheduleFoalMatureCheck() noexcept;
+  void ScheduleFoalMaturityCheck() noexcept;
 
   //! A server instance reference.
   ServerInstance& _serverInstance;

@@ -757,10 +757,6 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
     // the items that have expired since they were offline.
     expiredItems = _serverInstance.GetItemSystem()
       .CollectAndEraseExpiredItems(character);
-
-    // Promote any foals that matured while the player was offline.
-    _serverInstance.GetHorseSystem()
-      .MatureCharacterFoals(character);
   });
 
   protocol::LobbyCommandLoginOK response{
