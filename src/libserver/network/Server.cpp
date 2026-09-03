@@ -107,6 +107,16 @@ uint16_t Client::GetPort() const noexcept
   return _remotePort;
 }
 
+TimeStatistics::Data Client::GetSendTimeStatistics()
+{
+  return _sendTimeStatistics.GetAndClearData();
+}
+
+TimeStatistics::Data Client::GetReceiveTimeStatistics()
+{
+  return _receiveTimeStatistics.GetAndClearData();
+}
+
 void Client::WriteLoop() noexcept
 {
   // todo: forgive me for this, its not clean, its not pretty and i'm pretty sure there some side effects
@@ -151,6 +161,8 @@ void Client::WriteLoop() noexcept
     _writeBuffer.data(),
     [clientPtr = this->shared_from_this()](const boost::system::error_code& error, const std::size_t size)
     {
+      //! Only successful socket writes are recorded as send-time samples.
+      bool sendSucceeded = false;
       try
       {
         if (error)
@@ -172,6 +184,8 @@ void Client::WriteLoop() noexcept
           std::scoped_lock lock(clientPtr->_writeMutex);
           clientPtr->_writeBuffer.consume(size);
         }
+
+        sendSucceeded = true;
       }
       catch (const std::exception& x)
       {
@@ -184,7 +198,17 @@ void Client::WriteLoop() noexcept
       }
 
       clientPtr->_isSending.store(false, std::memory_order::release);
+
       clientPtr->_writeProfiler.Stop();
+      if (sendSucceeded)
+      {
+        if (const auto result = clientPtr->_writeProfiler.Result())
+        {
+          clientPtr->_sendTimeStatistics.Collect(
+            std::chrono::duration_cast<std::chrono::microseconds>(*result).count());
+        }
+      }
+
       clientPtr->WriteLoop();
     });
 }
@@ -194,53 +218,83 @@ void Client::ReadLoop() noexcept
   if (not _shouldRun.load(std::memory_order::acquire))
     return;
 
-  _readProfiler.Start();
-  _socket.async_read_some(
-    _readBuffer.prepare(1024),
-    [clientPtr = this->shared_from_this()](boost::system::error_code error, std::size_t size)
+  //! Waiting for the socket to become readable is idle time, not receive I/O time.
+  _socket.async_wait(
+    asio::ip::tcp::socket::wait_read,
+    [clientPtr = this->shared_from_this()](const boost::system::error_code& waitError)
     {
-      try
+      if (waitError)
       {
-        if (error)
+        if (waitError != asio::error::operation_aborted)
         {
-          switch (error.value())
-          {
-            case asio::error::operation_aborted:
-              throw std::runtime_error("Connection aborted by the server");
-            case asio::error::misc_errors::eof:
-            case asio::error::connection_reset:
-              throw std::runtime_error("Connection reset by the client");
-            default:
-              throw std::runtime_error(
-                std::format("Generic network error {}", error.message()));
-          }
+          spdlog::debug(
+            "Client {} is disconnecting because of read readiness exception: {}",
+            clientPtr->_clientId,
+            waitError.message());
         }
 
-        clientPtr->_readBuffer.commit(size);
-
-        const std::span receivedData{
-          static_cast<const std::byte*>(clientPtr->_readBuffer.data().data()),
-          clientPtr->_readBuffer.data().size()};
-
-        const auto consumedBytes = clientPtr->_networkEventHandler.OnClientData(
-          clientPtr->_clientId,
-          receivedData);
-
-        clientPtr->_readBuffer.consume(consumedBytes);
-
-        // Continue the read loop.
-        clientPtr->_readProfiler.Stop();
-        clientPtr->ReadLoop();
-      }
-      catch (const std::exception& x)
-      {
-        spdlog::debug(
-          "Client {} is disconnecting because of read loop exception: {}",
-          clientPtr->_clientId,
-          x.what());
-
         clientPtr->End();
+        return;
       }
+
+      if (not clientPtr->_shouldRun.load(std::memory_order::acquire))
+        return;
+
+      //! Start timing only after data is available, then stop before protocol processing.
+      clientPtr->_readProfiler.Start();
+      clientPtr->_socket.async_read_some(
+        clientPtr->_readBuffer.prepare(1024),
+        [clientPtr](boost::system::error_code error, std::size_t size)
+        {
+          try
+          {
+            if (error)
+            {
+              switch (error.value())
+              {
+                case asio::error::operation_aborted:
+                  throw std::runtime_error("Connection aborted by the server");
+                case asio::error::misc_errors::eof:
+                case asio::error::connection_reset:
+                  throw std::runtime_error("Connection reset by the client");
+                default:
+                  throw std::runtime_error(
+                    std::format("Generic network error {}", error.message()));
+              }
+            }
+
+            clientPtr->_readProfiler.Stop();
+            if (const auto result = clientPtr->_readProfiler.Result())
+            {
+              clientPtr->_receiveTimeStatistics.Collect(
+                std::chrono::duration_cast<std::chrono::microseconds>(*result).count());
+            }
+
+            clientPtr->_readBuffer.commit(size);
+
+            const std::span receivedData{
+              static_cast<const std::byte*>(clientPtr->_readBuffer.data().data()),
+              clientPtr->_readBuffer.data().size()};
+
+            const auto consumedBytes = clientPtr->_networkEventHandler.OnClientData(
+              clientPtr->_clientId,
+              receivedData);
+
+            clientPtr->_readBuffer.consume(consumedBytes);
+
+            // Continue the read loop.
+            clientPtr->ReadLoop();
+          }
+          catch (const std::exception& x)
+          {
+            spdlog::debug(
+              "Client {} is disconnecting because of read loop exception: {}",
+              clientPtr->_clientId,
+              x.what());
+
+            clientPtr->End();
+          }
+        });
     });
 }
 
@@ -309,6 +363,9 @@ void Server::End()
 
 std::shared_ptr<Client> Server::GetClient(ClientId clientId)
 {
+  //! Metrics snapshots can read clients while network callbacks access the same map.
+  std::scoped_lock lock(_clientsMutex);
+
   const auto clientItr = _clients.find(clientId);
   if (clientItr == _clients.end())
   {
@@ -331,15 +388,26 @@ void Server::OnClientConnected(
 void Server::OnClientDisconnected(
   ClientId clientId)
 {
-  const auto clientIt = _clients.find(clientId);
-  assert(clientIt != _clients.end());
+  //! Copy the shared pointer while holding the map lock, then release the lock
+  //! before invoking callbacks to avoid extending the critical section.
+  std::shared_ptr<Client> client;
+  {
+    std::scoped_lock lock(_clientsMutex);
+    const auto clientIt = _clients.find(clientId);
+    assert(clientIt != _clients.end());
 
-  const auto address = clientIt->second->GetAddress();
-  OnThrottleDisconnect(address);
+    client = clientIt->second;
+  }
 
+  OnThrottleDisconnect(client->GetAddress());
   _networkEventHandler.OnClientDisconnected(clientId);
 
-  _clients.erase(clientIt);
+  {
+    std::scoped_lock lock(_clientsMutex);
+    const auto clientIt = _clients.find(clientId);
+    assert(clientIt != _clients.end());
+    _clients.erase(clientIt);
+  }
 }
 
 size_t Server::OnClientData(
@@ -439,18 +507,22 @@ bool Server::HandleAcceptProcedure(
   // Get the next sequential client ID.
   const ClientId clientId = _client_id++;
 
-  // Create the client.
-  const auto [itr, emplaced] = _clients.try_emplace(
-    clientId,
-    std::make_shared<Client>(
+  //! Register the client under the same lock used by metrics snapshots.
+  std::shared_ptr<Client> client;
+  {
+    std::scoped_lock lock(_clientsMutex);
+    const auto [itr, emplaced] = _clients.try_emplace(
       clientId,
-      clientEndpoint,
-      std::move(clientSocket),
-      *this));
-  // ID is sequential so emplacement should never fail.
-  assert(emplaced);
+      std::make_shared<Client>(
+        clientId,
+        clientEndpoint,
+        std::move(clientSocket),
+        *this));
+    // ID is sequential so emplacement should never fail.
+    assert(emplaced);
+    client = itr->second;
+  }
 
-  const auto client = itr->second;
   // Begin the client instance.
   client->Begin();
 
@@ -504,6 +576,48 @@ void Server::TickLoop() noexcept
 
       TickLoop();
     });
+}
+
+Server::ClientTimeStatistics Server::GetSendTimeStatistics()
+{
+  ClientTimeStatistics statistics;
+  std::vector<std::shared_ptr<Client>> clients;
+
+  //! Snapshot shared pointers first so the client map lock is not held while
+  //! each client's TimeSeriesData takes its own lock and clears its buffer.
+  {
+    std::scoped_lock lock(_clientsMutex);
+    clients.reserve(_clients.size());
+    for (const auto& client : _clients | std::views::values)
+      clients.emplace_back(client);
+  }
+
+  statistics.reserve(clients.size());
+  for (const auto& client : clients)
+    statistics.emplace_back(client->GetSendTimeStatistics());
+
+  return statistics;
+}
+
+Server::ClientTimeStatistics Server::GetReceiveTimeStatistics()
+{
+  ClientTimeStatistics statistics;
+  std::vector<std::shared_ptr<Client>> clients;
+
+  //! Keep clients alive for the duration of the pull without blocking accepts
+  //! or disconnects while individual receive buffers are drained.
+  {
+    std::scoped_lock lock(_clientsMutex);
+    clients.reserve(_clients.size());
+    for (const auto& client : _clients | std::views::values)
+      clients.emplace_back(client);
+  }
+
+  statistics.reserve(clients.size());
+  for (const auto& client : clients)
+    statistics.emplace_back(client->GetReceiveTimeStatistics());
+
+  return statistics;
 }
 
 } // namespace server::network

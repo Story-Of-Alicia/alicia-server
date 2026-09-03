@@ -7759,4 +7759,9 @@ void RanchDirector::HandleBreedingWishlistDelete(
     });
 }
 
+CommandServer& RanchDirector::GetCommandServer()
+{
+  return _commandServer;
+}
+
 } // namespace server

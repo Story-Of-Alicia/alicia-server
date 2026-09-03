@@ -122,6 +122,9 @@ public:
   ServerInstance& GetServerInstance();
   Config::Ranch& GetConfig();
 
+  //! Returns the command server.
+  CommandServer& GetCommandServer();
+
 private:
   struct ClientContext
   {

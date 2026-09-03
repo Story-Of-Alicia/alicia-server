@@ -279,4 +279,9 @@ void PrivateChatDirector::HandleChatterInputState(
   }
 }
 
+ChatterServer& PrivateChatDirector::GetChatterServer()
+{
+  return _chatterServer;
+}
+
 } // namespace server
