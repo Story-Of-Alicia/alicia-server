@@ -1691,44 +1691,6 @@ void LobbyNetworkHandler::HandleShowInventory(
   characterRecord.Immutable(
     [this, &responses](const data::Character& character)
     {
-      // 0xFA (250) is the protocol max per response
-      constexpr uint32_t ItemsPerResponse = 250;
-
-      const auto itemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(
-        character.inventory());
-
-      // If item records are not available log the issue
-      // and proceed with no items.
-      if (not itemRecords)
-      {
-        spdlog::error(
-          "Not sending the items of character {}, some of its {} inventory items are unavailable",
-          character.uid(),
-          character.inventory().size());
-      }
-      else
-      {
-        // Chunk the item records by `ItemsPerResponse`.
-        const auto itemChunks = std::views::chunk(
-          *itemRecords,
-          ItemsPerResponse);
-
-        // Create response for each chunk and 
-        // fill it with protcol items for that chunk.
-        for (const auto& chunk : itemChunks)
-        {
-          auto& response = responses.emplace_back();
-          for (const auto& item : chunk)
-          {
-            auto& protocolItem = response.items.emplace_back();
-            item.Immutable([&protocolItem](const auto& item)
-            {
-              protocol::BuildProtocolItem(protocolItem, item);
-            });
-          }
-        }
-      }
-
       // Create a separate response for horses
       // 0x0A (10) is the protocol max per response
       constexpr uint32_t HorsesPerResponse = 10;
@@ -1782,6 +1744,44 @@ void LobbyNetworkHandler::HandleShowInventory(
           for (const auto& entry : horseChunk)
           {
             response.horses.emplace_back(entry.protocolHorse);
+          }
+        }
+      }
+
+      // 0xFA (250) is the protocol max per response
+      constexpr uint32_t ItemsPerResponse = 250;
+
+      const auto itemRecords = _serverInstance.GetDataDirector().GetItemCache().Get(
+        character.inventory());
+
+      // If item records are not available log the issue
+      // and proceed with no items.
+      if (not itemRecords)
+      {
+        spdlog::error(
+          "Not sending the items of character {}, some of its {} inventory items are unavailable",
+          character.uid(),
+          character.inventory().size());
+      }
+      else
+      {
+        // Chunk the item records by `ItemsPerResponse`.
+        const auto itemChunks = std::views::chunk(
+          *itemRecords,
+          ItemsPerResponse);
+
+        // Create response for each chunk and
+        // fill it with protcol items for that chunk.
+        for (const auto& chunk : itemChunks)
+        {
+          auto& response = responses.emplace_back();
+          for (const auto& item : chunk)
+          {
+            auto& protocolItem = response.items.emplace_back();
+            item.Immutable([&protocolItem](const auto& item)
+            {
+              protocol::BuildProtocolItem(protocolItem, item);
+            });
           }
         }
       }
