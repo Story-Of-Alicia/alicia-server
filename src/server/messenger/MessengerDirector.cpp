@@ -627,7 +627,7 @@ void MessengerDirector::HandleChatterBuddyAdd(
   if (targetClient != clientsSnapshot.cend())
   {
     // Target is online, send friend request to recipient
-    const ClientId targetClientId = targetClient->first;
+    const network::ClientId targetClientId = targetClient->first;
     protocol::ChatCmdBuddyAddRequestTrs notify{
       .requestingCharacterUid = clientContext.characterUid,
       .requestingCharacterName = invokerCharacterName};
@@ -733,7 +733,7 @@ void MessengerDirector::HandleChatterBuddyAddReply(
     if (requestingClient != clientsSnapshot.cend())
     {
       // Requesting character is online
-      const ClientId requestingClientId = requestingClient->first;
+      const network::ClientId requestingClientId = requestingClient->first;
 
       const ClientContext& requestingClientContext = requestingClient->second;
       requestingCharacterPresence.emplace(requestingClientContext.presence);
@@ -852,7 +852,7 @@ void MessengerDirector::HandleChatterBuddyDelete(
   // If target character is online then send
   if (targetClient != clientsSnapshot.cend())
   {
-    const ClientId targetClientId = targetClient->first;
+    const network::ClientId targetClientId = targetClient->first;
     // Invoking character's uid to be used for indicating friend delete to target character
     response.characterUid = clientContext.characterUid;
     _chatterServer.QueueCommand<decltype(response)>(targetClientId, [response](){ return response; });
@@ -1872,7 +1872,7 @@ void MessengerDirector::HandleChatterGameInvite(
   protocol::ChatCmdGameInviteTrs notify{
     .unk0 = clientContext.characterUid};
 
-  const ClientId recipientClientId = recipientClient.value().clientId;
+  const network::ClientId recipientClientId = recipientClient.value().clientId;
   _chatterServer.QueueCommand<decltype(notify)>(recipientClientId, [notify](){ return notify; });
 
   protocol::ChatCmdGameInviteAck response{

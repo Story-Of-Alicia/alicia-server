@@ -33,50 +33,27 @@ HorseSystem::HorseSystem(ServerInstance& serverInstance)
 {
 }
 
-std::unordered_map<data::Uid, data::Clock::time_point> HorseSystem::PromoteMaturedFoals(
-  const data::Uid characterUid)
+std::vector<data::Uid> HorseSystem::CollectCharacterFoals(
+  const data::Character& character) const noexcept
 {
-  std::unordered_map<data::Uid, data::Clock::time_point> maturingFoals;
+  std::vector<data::Uid> maturingFoals;
 
-  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
-  if (not characterRecord)
-    return maturingFoals;
-
-  std::vector<data::Uid> horseUids;
-  characterRecord.Immutable([&horseUids](const data::Character& character)
-  {
-    horseUids = character.horses();
-  });
-
-  const auto now = data::Clock::now();
-  for (const auto& horseUid : horseUids)
+  for (const auto& horseUid : character.horses())
   {
     const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(horseUid);
     if (not horseRecord)
       continue;
 
     bool isFoal = false;
-    data::Clock::time_point dateOfBirth;
-    horseRecord.Immutable([&isFoal, &dateOfBirth](const data::Horse& horse)
+    horseRecord.Immutable([&isFoal](const data::Horse& horse)
     {
       isFoal = horse.type() == data::Horse::Type::Foal;
-      dateOfBirth = horse.dateOfBirth();
     });
 
     if (not isFoal)
       continue;
 
-    if (now >= dateOfBirth + FoalGrowUpDuration)
-    {
-      horseRecord.Mutable([](data::Horse& horse)
-      {
-        horse.type() = data::Horse::Type::Adult;
-      });
-    }
-    else
-    {
-      maturingFoals.emplace(horseUid, dateOfBirth + FoalGrowUpDuration);
-    }
+    maturingFoals.emplace_back(horseUid);
   }
 
   return maturingFoals;

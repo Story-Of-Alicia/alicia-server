@@ -384,7 +384,7 @@ BreedingMarket::Snapshot BreedingMarket::CollectMarketSnapshot(
   Snapshot snapshot{};
 
   // Filter the horse registrations.
-  for (const auto [horseUid, registration] : _horseRegistrations)
+  for (const auto& [horseUid, registration] : _horseRegistrations)
   {
     const auto stallionRecord = _serverInstance.GetDataDirector().GetStallion(registration.stallionUid);
     if (not stallionRecord)

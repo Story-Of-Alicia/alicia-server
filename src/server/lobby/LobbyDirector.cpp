@@ -39,12 +39,12 @@ LobbyDirector::~LobbyDirector()
 void LobbyDirector::Initialize()
 {
   _shopManager.GenerateShopList(_serverInstance.GetItemRegistry());
-  _networkHandler->Initialize();
+  GetNetworkHandler().Initialize();
 }
 
 void LobbyDirector::Terminate()
 {
-  _networkHandler->Terminate();
+  GetNetworkHandler().Terminate();
 }
 
 void LobbyDirector::Tick()
@@ -216,7 +216,7 @@ bool LobbyDirector::InviteCharacterToGuild(
 {
   try
   {
-    _networkHandler->SendCharacterGuildInvitation(
+    GetNetworkHandler().SendCharacterGuildInvitation(
       inviteeCharacterUid,
       guildUid,
       inviterCharacterUid);
@@ -244,40 +244,40 @@ void LobbyDirector::SetCharacterVisitPreference(
   const data::Uid characterUid,
   const data::Uid rancherUid)
 {
-  _networkHandler->SetCharacterVisitPreference(characterUid, rancherUid);
+  GetNetworkHandler().SetCharacterVisitPreference(characterUid, rancherUid);
 }
 
 void LobbyDirector::DisconnectCharacter(
   const data::Uid characterUid)
 {
-  _networkHandler->DisconnectCharacter(characterUid);
+  GetNetworkHandler().DisconnectCharacter(characterUid);
 }
 
 void LobbyDirector::MuteCharacter(
   const data::Uid characterUid,
   const data::Clock::time_point expiration)
 {
-  _networkHandler->MuteCharacter(characterUid, expiration);
+  GetNetworkHandler().MuteCharacter(characterUid, expiration);
 }
 
 void LobbyDirector::NotifyCharacter(
   const data::Uid characterUid,
   const std::string& message)
 {
-  _networkHandler->NotifyCharacter(characterUid, message);
+  GetNetworkHandler().NotifyCharacter(characterUid, message);
 }
 
 void LobbyDirector::NotifyAchievementReward(
   const data::Uid characterUid)
 {
-  _networkHandler->NotifyAchievementReward(characterUid);
+  GetNetworkHandler().NotifyAchievementReward(characterUid);
 }
 
 void LobbyDirector::NotifyMatchmakeResult(
   const data::Uid characterUid,
   const MatchmakingSystem::Result& result)
 {
-  _networkHandler->NotifyMatchmakeResult(
+  GetNetworkHandler().NotifyMatchmakeResult(
     characterUid,
     result);
 }
@@ -314,6 +314,8 @@ ShopManager& LobbyDirector::GetShopManager()
 
 LobbyNetworkHandler& LobbyDirector::GetNetworkHandler()
 {
+  if (_networkHandler == nullptr)
+    throw std::runtime_error("Lobby network handler not available");
   return *_networkHandler;
 }
 
@@ -340,7 +342,7 @@ void LobbyDirector::ProcessLoginRequest()
   if (not loginContext.isAuthenticated.value())
   {
     spdlog::info("User '{}' failed authentication", loginContext.userName);
-    _networkHandler->RejectLogin(
+    GetNetworkHandler().RejectLogin(
       clientId,
       protocol::AcCmdCLLoginCancel::Reason::InvalidUser);
     _loginRequestQueue.pop_front();
@@ -367,7 +369,7 @@ void LobbyDirector::ProcessLoginRequest()
   if (not _serverInstance.GetDataDirector().AreUserDataLoaded(loginContext.userName))
   {
     spdlog::error("User data for '{}' are not available", loginContext.userName);
-    _networkHandler->RejectLogin(
+    GetNetworkHandler().RejectLogin(
       clientId,
       protocol::AcCmdCLLoginCancel::Reason::Generic);
     spdlog::warn("Rejected login of user '{}' because of a server error", loginContext.userName);
@@ -384,7 +386,7 @@ void LobbyDirector::ProcessLoginRequest()
 
   if (infractionVerdict.preventServerJoining)
   {
-    _networkHandler->RejectLogin(
+    GetNetworkHandler().RejectLogin(
       clientId,
       protocol::AcCmdCLLoginCancel::Reason::DisconnectYourself);
     spdlog::info("Rejected login of user '{}' because of an infraction", loginContext.userName);
@@ -445,7 +447,7 @@ void LobbyDirector::ProcesLoginResponse()
     loginContext.userName))
   {
     spdlog::error("User character data for '{}' not available", clientId);
-    _networkHandler->RejectLogin(
+    GetNetworkHandler().RejectLogin(
       clientId,
       protocol::AcCmdCLLoginCancel::Reason::Generic);
     spdlog::warn("Rejected login of user '{}' because of a server error", loginContext.userName);
@@ -456,7 +458,7 @@ void LobbyDirector::ProcesLoginResponse()
     loginContext.userName);
   if (not inserted)
   {
-    _networkHandler->RejectLogin(
+    GetNetworkHandler().RejectLogin(
       clientId,
       protocol::AcCmdCLLoginCancel::Reason::Duplicated);
     spdlog::warn(
@@ -468,7 +470,7 @@ void LobbyDirector::ProcesLoginResponse()
   const bool requiresCharacterCreator = _charactersForcedIntoCreator.erase(characterUid) > 0
     || characterUid == data::InvalidUid;
 
-  _networkHandler->AcceptLogin(clientId, requiresCharacterCreator);
+  GetNetworkHandler().AcceptLogin(clientId, requiresCharacterCreator);
 
   auto& userInstance = iter->second;
   userInstance.userName = loginContext.userName;
@@ -477,7 +479,7 @@ void LobbyDirector::ProcesLoginResponse()
     "User '{}' (client {}) logged in from {}",
     loginContext.userName,
     clientId,
-    _networkHandler->GetCommandServer().GetClientAddress(clientId).to_string());
+    GetNetworkHandler().GetCommandServer().GetClientAddress(clientId).to_string());
 
   userRecord.Mutable([](data::User& user)
   {

@@ -19,6 +19,7 @@
 
 #include "server/system/ChatSystem.hpp"
 
+#include "server/ranch/RanchNetworkHandler.hpp"
 #include "server/ServerInstance.hpp"
 #include "Version.hpp"
 
@@ -678,8 +679,9 @@ void ChatSystem::RegisterUserCommands()
             character.gifts().emplace_back(giftUid);
           });
 
-        _serverInstance.GetRanchDirector().SendStorageNotification(
-          characterUid, protocol::AcCmdCRRequestStorage::Category::Gifts);
+        _serverInstance.GetRanchDirector().GetNetworkHandler().SendStorageNotification(
+          characterUid,
+          protocol::AcCmdCRRequestStorage::Category::Gifts);
 
         return {
           "Item stored in your gift storage.",
@@ -839,7 +841,9 @@ void ChatSystem::RegisterUserCommands()
             character.horses().emplace_back(horseUid);
           });
 
-        _serverInstance.GetRanchDirector().AddRanchHorse(characterUid, horseUid);
+        _serverInstance.GetRanchDirector().GetNetworkHandler().AddRanchHorse(
+          characterUid,
+          horseUid);
 
         return {"A new horse has been added to your inventory.", "Restart your game for the changes to apply."};
       }
@@ -885,8 +889,9 @@ void ChatSystem::RegisterUserCommands()
             character.gifts().emplace_back(giftUid);
           });
 
-        _serverInstance.GetRanchDirector().SendStorageNotification(
-          characterUid, protocol::AcCmdCRRequestStorage::Category::Gifts);
+        _serverInstance.GetRanchDirector().GetNetworkHandler().SendStorageNotification(
+          characterUid,
+          protocol::AcCmdCRRequestStorage::Category::Gifts);
 
         return {
           "Carrots stored in your gift storage.",
@@ -903,19 +908,12 @@ void ChatSystem::RegisterAdminCommands()
   _commandManager.RegisterCommand(
     "users",
     [this](
-      const std::span<const std::string>& arguments,
-      data::Uid characterUid) -> std::vector<std::string>
+      [[maybe_unused]] const std::span<const std::string>& arguments,
+      const data::Uid characterUid) -> std::vector<std::string>
     {
       const auto invokerRank = GetRoleRank(characterUid);
       if (not invokerRank)
         return {};
-
-      // todo: implement only local check
-      bool onlyLocal = false;
-      if (arguments.size() > 0)
-      {
-        onlyLocal = arguments[0] == "local";
-      }
 
       std::vector<std::string> userList;
 
@@ -1274,7 +1272,7 @@ void ChatSystem::RegisterAdminCommands()
       if (punishmentType == data::Infraction::Punishment::Ban)
       {
         _serverInstance.GetLobbyDirector().DisconnectCharacter(userCharacterUid);
-        _serverInstance.GetRanchDirector().Disconnect(userCharacterUid);
+        _serverInstance.GetRanchDirector().DisconnectCharacter(userCharacterUid);
         _serverInstance.GetRaceDirector().DisconnectCharacter(userCharacterUid);
       }
       else if (punishmentType == data::Infraction::Punishment::Mute)
@@ -1755,7 +1753,7 @@ void ChatSystem::RegisterAdminCommands()
 
           // Disconnect from all directors
           _serverInstance.GetRaceDirector().DisconnectCharacter(targetCharacterUid);
-          _serverInstance.GetRanchDirector().Disconnect(targetCharacterUid);
+          _serverInstance.GetRanchDirector().DisconnectCharacter(targetCharacterUid);
           _serverInstance.GetLobbyDirector().DisconnectCharacter(targetCharacterUid);
 
           spdlog::info("GM {} ({}) has reset user '{}' whose character uid was '{}'",
@@ -2125,7 +2123,7 @@ void ChatSystem::RegisterAdminCommands()
       auto visitingCharacterUid = data::InvalidUid;
       bool visitingRanchLocked = true;
 
-      const auto onlineCharacters = _serverInstance.GetRanchDirector().GetOnlineCharacters();
+      const auto onlineCharacters = _serverInstance.GetRanchDirector().GetNetworkHandler().GetOnlineCharacters();
 
       for (const data::Uid onlineCharacterUid : onlineCharacters)
       {
