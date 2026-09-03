@@ -65,15 +65,16 @@ void StoreJsonData(
   try
   {
     dataFile.open(dataFilePath);
-    dataFile << json.dump(2);
+      dataFile << json.dump(2);
+    dataFile.close();
     
     std::filesystem::rename(dataFilePath, filePath);
   }
   catch (const std::exception& x)
   {
     throw std::runtime_error(std::format(
-      "Exception while storing JSON data in a file '{}': {}", 
-      filePath.c_str(),
+      "Exception while storing JSON data in a file '{}': {}",
+      filePath.string(),
       x.what()));
   }
 }
