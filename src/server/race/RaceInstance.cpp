@@ -28,6 +28,7 @@
 #include <tuple>
 #include <format>
 #include <limits>
+#include <stdexcept>
 
 namespace server
 {
@@ -90,318 +91,51 @@ bool RaceInstance::Start(
 
 void RaceInstance::Stop()
 {
-  protocol::AcCmdRCRaceResultNotify raceResult{};
+  const auto outcome = DetermineRaceOutcome();
+  auto scoreboard = CreateScoreboard(outcome);
+  EndRace(outcome, scoreboard);
+}
 
-  using Team = tracker::RaceTracker::Racer::Team;
-  using State = tracker::RaceTracker::Racer::State;
+// Debug-only command support for `//race finish`.
+bool RaceInstance::ForceFinish(const data::Uid winnerUid)
+{
+  if (_stage != Stage::Racing && _stage != Stage::Finishing)
+    return false;
 
-  // Determine winning team (team of the first finisher).
-  // Solo/FFA leaves `winningTeam` as Solo.
-  Team winningTeam = Team::Solo;
-  if (_parameters.teamMode == protocol::TeamMode::Team)
+  if (not _tracker.IsRacer(winnerUid))
+    return false;
+
+  const auto now = Clock::now();
+  const auto elapsed = now > _raceStartTimePoint
+    ? std::chrono::duration_cast<std::chrono::milliseconds>(
+        now - _raceStartTimePoint).count()
+    : 0;
+  const auto winnerCourseTime = static_cast<uint32_t>(
+    std::min<int64_t>(elapsed, std::numeric_limits<uint32_t>::max() - 1));
+
+  uint32_t trailingCourseTime = winnerCourseTime;
+  for (auto& [characterUid, racer] : _tracker.GetRacers())
   {
-    uint32_t best = tracker::InvalidCourseTime;
-    for (const auto& racer : _tracker.GetRacers() | std::views::values)
-    {
-      if (racer.state != State::Disconnected
-        && racer.courseTime != tracker::InvalidCourseTime
-        && racer.courseTime < best)
-      {
-        best = racer.courseTime;
-        winningTeam = racer.team;
-      }
-    }
-  }
-
-  // Build the score board.
-  for (const auto& [characterUid, racer] : _tracker.GetRacers())
-  {
-    auto& score = raceResult.scores.emplace_back();
-
-    // todo: figure out the other bit set values
-
-    if (racer.state != State::Disconnected)
-    {
-      score.bitset = protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::Connected;
-    }
-
-    // If the player has disconnected
-    score.courseTime = racer.state != State::Disconnected
-      ? racer.courseTime
-      : tracker::InvalidCourseTime;
-
-    static constexpr uint32_t BaseExpReward = 420;
-    static constexpr uint32_t BaseCarrotReward = 2500;
-
-    score.experience = BaseExpReward;
-    score.carrots = BaseCarrotReward;
-
-    {
-      // Multiplier as a percentage (example 100%)
-      constexpr uint32_t CarrotExpMultiplierKey = 18;
-      constexpr float DefaultCarrotExpMultiplier = 1.0f;
-      const auto& carrotExpMultiplierOpt = _raceNetworkHandler.GetServerInstance()
-        .GetSystemContentRegistry()
-        .GetValue(CarrotExpMultiplierKey);
-
-      const float systemMultiplier = carrotExpMultiplierOpt.has_value() ?
-          carrotExpMultiplierOpt.value() / 100.0f :
-          DefaultCarrotExpMultiplier;
-
-      using BonusCourseType = protocol::BonusCourseType;
-      using Bitset = protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset;
-
-      // Apply rewards only if player has finished the race
-      if (racer.courseTime != tracker::InvalidCourseTime)
-      {
-        // TODO: put these in the config
-        constexpr float EventCarrotMultiplier = 1.5f;
-        constexpr float EventExpMultiplier = 2.0f;
-
-        // Apply carrots
-        if (_bonusCourseType == BonusCourseType::Carrots || _bonusCourseType == BonusCourseType::CarrotsAndExperience)
-        {
-          score.carrots = static_cast<uint32_t>(
-            static_cast<float>(score.carrots) * systemMultiplier * EventCarrotMultiplier);
-          score.bitset = static_cast<Bitset>(
-            score.bitset | Bitset::EventBonusCarrots);
-        }
-        else
-        {
-          score.carrots = static_cast<uint32_t>(
-            static_cast<float>(score.carrots) * systemMultiplier);
-        }
-
-        // Apply experience/bonus experience
-        if (_bonusCourseType == BonusCourseType::Experience || _bonusCourseType == BonusCourseType::CarrotsAndExperience)
-        {
-          score.experience = static_cast<uint32_t>(
-            static_cast<float>(score.experience) * EventExpMultiplier);
-          score.bitset = static_cast<Bitset>(
-            score.bitset | Bitset::EventBonusExperience);
-        }
-        else
-        {
-          // TODO: Apply bonus carrots only for now, do not touch exp
-        }
-      }
-    }
-
-    score.teamColor = racer.team;
-    const auto characterRecord = _raceNetworkHandler.GetServerInstance().GetDataDirector().GetCharacter(
-      characterUid);
-
-    characterRecord.Mutable([this, &score](data::Character& character)
-    {
-      character.carrots() += score.carrots;
-      character.experience() += score.experience;
-
-      const uint32_t newLevel = _raceNetworkHandler.GetServerInstance().GetCharacterRegistry().GetLevelForExp(character.experience());
-      if (newLevel > character.level())
-      {
-        character.level() = newLevel;
-        score.bitset = static_cast<protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset>(
-          score.bitset | protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::LevelUp);
-      }
-
-      //populate the score info with the character data
-      score.uid = character.uid();
-      score.name = character.name();
-      score.level = character.level();
-      score.levelProgress = character.experience();
-
-      _raceNetworkHandler.GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Immutable(
-        [&score](const data::Horse& horse)
-        {
-          score.mountName = horse.name();
-          score.horseClass = static_cast<uint8_t>(horse.clazz());
-          score.horseClassProgress = horse.clazzProgress();
-          score.growthPoints = static_cast<uint16_t>(horse.growthPoints());
-        });
-    });
-  }
-
-  // Sort: winning team first, then by result state, then by courseTime ascending.
-  std::ranges::sort(raceResult.scores, [winningTeam](const auto& a, const auto& b)
-  {
-    auto priority = [winningTeam](const auto& score)
-    {
-      using ScoreInfo = protocol::AcCmdRCRaceResultNotify::ScoreInfo;
-
-      const uint32_t bitset = static_cast<uint32_t>(score.bitset);
-      const bool isConnected = (bitset & static_cast<uint32_t>(
-        ScoreInfo::Bitset::Connected)) != 0;
-      const bool hasValidTime = score.courseTime < tracker::InvalidCourseTime;
-
-      // Connected racers with no valid finish time are time-over/DNF and should rank
-      // below timed finishers but above disconnected racers.
-      const auto resultRank = not isConnected ? 2 : hasValidTime ? 0 : 1;
-
-      return std::make_tuple(
-        score.teamColor != winningTeam ? 1 : 0,
-        resultRank,
-        score.courseTime);
-    };
-    return priority(a) < priority(b);
-  });
-
-  // Broadcast the race result
-  _raceNetworkHandler.Broadcast(*this, raceResult);
-
-  // The race counts towards every racer's ranch bonus, which pays out on each
-  // twentieth race. The client expects the update to follow the race result.
-  auto& ranchManagementSystem = _raceNetworkHandler.GetServerInstance()
-    .GetRanchManagementSystem();
-
-  for (const data::Uid characterUid : _tracker.GetRacers() | std::views::keys)
-  {
-    const auto payout = ranchManagementSystem.RecordRaceCompletion(characterUid);
-    if (not payout)
+    if (racer.state == tracker::RaceTracker::Racer::State::Disconnected)
       continue;
 
-    uint32_t ranchProgress = 0;
-    _raceNetworkHandler.GetServerInstance().GetDataDirector().GetCharacter(
-      characterUid).Immutable(
-        [&ranchProgress](const data::Character& character)
-        {
-          ranchProgress = character.ranchManagement.ranchExperience();
-        });
-
-    _raceNetworkHandler.SendRanchBonusNotify(
-      characterUid, ranchProgress, payout->carrots);
-  }
-
-  // Assign room master to the first-place finisher.
-  if (not raceResult.scores.empty())
-  {
-    data::Uid newMasterUid = raceResult.scores[0].uid;
-    std::string newMasterName = raceResult.scores[0].name;
-
-    const data::Uid winnerUid = raceResult.scores[0].uid;
-    const bool isTeamRace = _parameters.teamMode == protocol::TeamMode::Team;
-    const Room::Player::Team winnerTeam =
-      winningTeam == Team::Red ? Room::Player::Team::Red
-      : winningTeam == Team::Blue ? Room::Player::Team::Blue
-      : Room::Player::Team::Solo;
-    const bool raceHadWinner =
-      raceResult.scores[0].courseTime != tracker::InvalidCourseTime
-      && (not isTeamRace || winnerTeam != Room::Player::Team::Solo);
-
-    if (raceHadWinner)
+    racer.state = tracker::RaceTracker::Racer::State::Finishing;
+    if (characterUid == winnerUid)
     {
-      this->GetRoom(
-        [winnerUid, winnerTeam, isTeamRace](Room& room)
-        {
-          // Winning a race you were alone in does not build a streak.
-          if (room.GetPlayerCount() < 2)
-            return;
-
-          const auto extend = [](const uint16_t count)
-          {
-            return count < std::numeric_limits<uint16_t>::max()
-              ? static_cast<uint16_t>(count + 1)
-              : count;
-          };
-
-          auto& winStreak = room.GetWinStreak();
-          if (isTeamRace)
-          {
-            winStreak.teamWins = winStreak.team == winnerTeam
-              ? extend(winStreak.teamWins)
-              : 1;
-            winStreak.team = winnerTeam;
-          }
-          else
-          {
-            winStreak.characterWins = winStreak.characterUid == winnerUid
-              ? extend(winStreak.characterWins)
-              : 1;
-            winStreak.characterUid = winnerUid;
-          }
-        });
+      racer.courseTime = winnerCourseTime;
     }
-
-    this->GetRoom(
-      [&newMasterUid, &newMasterName, scores = raceResult.scores](Room& room)
-      {
-        // Check if room even has players
-        if (room.GetPlayerCount() < 1)
-        {
-          // TODO: mark room for delete
-          newMasterUid = data::InvalidUid;
-          return;
-        }
-
-        // Get room details to update
-        auto& details = room.GetRoomDetails();
-
-        // Check if room has this player
-        if (room.HasPlayer(newMasterUid))
-        {
-          // New master exists in room
-          details.masterUid = newMasterUid;
-          return;
-        }
-
-        // New master left, proceed with the scores list
-        // and assign until none found
-        for (const auto& score : scores)
-        {
-          // Check that this next best player is in room
-          if (not room.HasPlayer(score.uid))
-            continue;
-
-          // Character is in room, set room master to new uid
-          newMasterUid = details.masterUid = score.uid;
-          newMasterName = score.name;
-          return;
-        }
-
-        // No characters available for room master (how?)
-        newMasterUid = data::InvalidUid;
-      });
-
-    if (newMasterUid != data::InvalidUid)
+    else
     {
-      const auto userName = _raceNetworkHandler.GetServerInstance().GetLobbyDirector().GetUserByCharacterUid(
-        newMasterUid).userName;
-      spdlog::info("Player {} ({}) has won the match and is now master of [Room {}]",
-        userName,
-        newMasterName,
-        this->GetRoomUid());
-
-      const protocol::AcCmdCRChangeMasterNotify masterNotify{
-        .masterUid = newMasterUid};
-      _raceNetworkHandler.Broadcast(*this, masterNotify);
+      trailingCourseTime = static_cast<uint32_t>(std::min<uint64_t>(
+        static_cast<uint64_t>(trailingCourseTime) + 1000,
+        tracker::InvalidCourseTime - 1));
+      racer.courseTime = trailingCourseTime;
     }
   }
 
-  // Clear the ready state of all of the players and update their balances.
-  this->GetRoom(
-    [this](Room& room)
-    {
-      room.SetRoomPlaying(false);
-      for (auto& [uid, player] : room.GetPlayers())
-      {
-        // Set racer's ready state to false
-        room.GetPlayer(uid).SetReady(false);
-
-        // Update this racer's carrot balance
-        protocol::AcCmdRCUpdateGameMoney updateGameMoney{};
-        _raceNetworkHandler.GetServerInstance().GetDataDirector().GetCharacter(uid).Immutable(
-          [&updateGameMoney](const data::Character& character)
-          {
-            updateGameMoney.carrotBalance = character.carrots();
-          });
-
-        _raceNetworkHandler.GetCommandServer().QueueCommand<protocol::AcCmdRCUpdateGameMoney>(
-          player.GetClientId(),
-          [updateGameMoney]()
-          {
-            return updateGameMoney;
-          });
-      }
-    });
+  _stage = Stage::Finishing;
+  _stageTimeoutTimePoint = Clock::time_point::max();
+  return true;
 }
 
 void RaceInstance::Tick()
@@ -641,8 +375,17 @@ void RaceInstance::TickFinishing()
       this->GetRoomUid());
   }
 
-  Stop();
- _stage = Stage::Waiting;
+  try
+  {
+    Stop();
+  }
+  catch (...)
+  {
+    _stage = Stage::Waiting;
+    throw;
+  }
+
+  _stage = Stage::Waiting;
 }
 
 void RaceInstance::TickActiveRaceContent()
@@ -982,6 +725,458 @@ void RaceInstance::PrepareItemDecks()
 
       PickRandomItemFromDeck(deck);
     }
+  }
+}
+
+RaceInstance::RaceOutcome RaceInstance::DetermineRaceOutcome()
+{
+  using Team = tracker::RaceTracker::Racer::Team;
+  using State = tracker::RaceTracker::Racer::State;
+
+  RaceOutcome outcome{};
+
+  // Determine winning team (team of the first finisher).
+  // Solo/FFA leaves `winningTeam` as Solo.
+  if (_parameters.teamMode == protocol::TeamMode::Single)
+  {
+    outcome.winningTeam = Team::Solo;
+    return outcome;
+  }
+
+  uint32_t bestCourseTime = tracker::InvalidCourseTime;
+
+  for (const auto& racer : _tracker.GetRacers() | std::views::values)
+  {
+    if (racer.state == State::Disconnected)
+      continue;
+
+    if (racer.courseTime == tracker::InvalidCourseTime)
+      continue;
+
+    if (racer.courseTime >= bestCourseTime)
+      continue;
+
+    bestCourseTime = racer.courseTime;
+    outcome.winningTeam = racer.team;
+  }
+
+  return outcome;
+}
+
+RaceInstance::RaceResult RaceInstance::CreateScoreboard(
+  const RaceOutcome& outcome)
+{
+  using State = tracker::RaceTracker::Racer::State;
+  using ScoreInfo = RaceResult::ScoreInfo;
+
+  RaceResult result{};
+
+  // Build the score board.
+  for (const auto& [characterUid, racer] : _tracker.GetRacers())
+  {
+    auto& score = result.scores.emplace_back();
+
+    // todo: figure out the other bit set values
+    if (racer.state != State::Disconnected)
+      score.bitset = ScoreInfo::Bitset::Connected;
+
+    // If the player has disconnected
+    score.courseTime =
+      racer.state != State::Disconnected
+        ? racer.courseTime
+        : tracker::InvalidCourseTime;
+
+    score.teamColor = racer.team;
+
+    const auto characterRecord = _raceNetworkHandler
+      .GetServerInstance()
+      .GetDataDirector()
+      .GetCharacter(characterUid);
+
+    characterRecord.Immutable(
+      [this, &score](const data::Character& character)
+      {
+        //populate the score info with the character data
+        score.uid = character.uid();
+        score.name = character.name();
+        score.level = character.level();
+        score.levelProgress = character.experience();
+
+        _raceNetworkHandler
+          .GetServerInstance()
+          .GetDataDirector()
+          .GetHorse(character.mountUid())
+          .Immutable(
+            [&score](const data::Horse& horse)
+            {
+              score.mountName = horse.name();
+              score.horseClass = static_cast<uint8_t>(horse.clazz());
+              score.horseClassProgress = horse.clazzProgress();
+              score.growthPoints =
+                static_cast<uint16_t>(horse.growthPoints());
+            });
+      });
+  }
+
+  // Sort: winning team first, then by result state, then by courseTime ascending.
+  std::ranges::sort(
+    result.scores,
+    [&outcome](const auto& left, const auto& right)
+    {
+      const auto priority = [&outcome](const auto& score)
+      {
+        const uint32_t bitset =
+          static_cast<uint32_t>(score.bitset);
+
+        const bool isConnected =
+          (bitset & static_cast<uint32_t>(
+            ScoreInfo::Bitset::Connected)) != 0;
+
+        const bool hasValidTime =
+          score.courseTime < tracker::InvalidCourseTime;
+
+        // Connected racers with no valid finish time are time-over/DNF and should rank
+        // below timed finishers but above disconnected racers.
+        const auto resultRank =
+          not isConnected ? 2
+          : hasValidTime ? 0
+          : 1;
+
+        return std::make_tuple(
+          score.teamColor != outcome.winningTeam ? 1 : 0,
+          resultRank,
+          score.courseTime);
+      };
+
+      return priority(left) < priority(right);
+    });
+
+  return result;
+}
+
+void RaceInstance::EndRace(
+  const RaceOutcome& outcome,
+  RaceResult& result)
+{
+  using Bitset = RaceResult::ScoreInfo::Bitset;
+  using BonusCourseType = protocol::BonusCourseType;
+
+  constexpr uint32_t BaseExpReward = 420;
+  constexpr uint32_t BaseCarrotReward = 2500;
+
+  // Multiplier as a percentage (example 100%)
+  constexpr uint32_t CarrotExpMultiplierKey = 18;
+  constexpr float DefaultCarrotExpMultiplier = 1.0f;
+  constexpr float EventCarrotMultiplier = 1.5f;
+  constexpr float EventExpMultiplier = 2.0f;
+
+  const auto multiplierValue = _raceNetworkHandler
+    .GetServerInstance()
+    .GetSystemContentRegistry()
+    .GetValue(CarrotExpMultiplierKey);
+
+  const float systemMultiplier = multiplierValue.has_value()
+    ? multiplierValue.value() / 100.0f
+    : DefaultCarrotExpMultiplier;
+
+  for (auto& score : result.scores)
+  {
+    score.experience = BaseExpReward;
+    score.carrots = BaseCarrotReward;
+
+    const bool finished =
+      score.courseTime != tracker::InvalidCourseTime;
+
+    // Apply rewards only if player has finished the race
+    if (finished)
+    {
+      // TODO: put these in the config
+      // Apply carrots
+      if (_bonusCourseType == BonusCourseType::Carrots
+        || _bonusCourseType == BonusCourseType::CarrotsAndExperience)
+      {
+        score.carrots = static_cast<uint32_t>(
+          static_cast<float>(score.carrots)
+          * systemMultiplier
+          * EventCarrotMultiplier);
+
+        score.bitset = static_cast<Bitset>(
+          score.bitset | Bitset::EventBonusCarrots);
+      }
+      else
+      {
+        score.carrots = static_cast<uint32_t>(
+          static_cast<float>(score.carrots) * systemMultiplier);
+      }
+
+      // Apply experience/bonus experience
+      if (_bonusCourseType == BonusCourseType::Experience
+        || _bonusCourseType == BonusCourseType::CarrotsAndExperience)
+      {
+        score.experience = static_cast<uint32_t>(
+          static_cast<float>(score.experience)
+          * EventExpMultiplier);
+
+        score.bitset = static_cast<Bitset>(
+          score.bitset | Bitset::EventBonusExperience);
+      }
+      else
+      {
+        // TODO: Apply bonus carrots only for now, do not touch exp
+      }
+    }
+
+    try
+    {
+      _raceNetworkHandler
+        .GetServerInstance()
+        .GetDataDirector()
+        .GetCharacter(score.uid)
+        .Mutable(
+          [this, &score](data::Character& character)
+          {
+            const uint32_t rewardedExperience =
+              character.experience() + score.experience;
+            const uint32_t newLevel = _raceNetworkHandler
+              .GetServerInstance()
+              .GetCharacterRegistry()
+              .GetLevelForExp(rewardedExperience);
+
+            character.carrots() += score.carrots;
+            character.experience() = rewardedExperience;
+
+            if (newLevel > character.level())
+            {
+              character.level() = newLevel;
+              score.bitset = static_cast<Bitset>(
+                score.bitset | Bitset::LevelUp);
+            }
+
+            score.level = character.level();
+            score.levelProgress = character.experience();
+          });
+    }
+    catch (const std::exception& exception)
+    {
+      spdlog::error(
+        "Failed to award character {} after race in room {}: {}",
+        score.uid,
+        GetRoomUid(),
+        exception.what());
+    }
+  }
+
+  // Broadcast the race result
+  try
+  {
+    _raceNetworkHandler.Broadcast(*this, result);
+  }
+  catch (const std::exception& exception)
+  {
+    spdlog::error(
+      "Failed to broadcast race result in room {}: {}",
+      GetRoomUid(),
+      exception.what());
+  }
+
+  // The race counts towards every racer's ranch bonus, which pays out on each
+  // twentieth race. The client expects the update to follow the race result.
+  auto& ranchManagementSystem = _raceNetworkHandler.GetServerInstance()
+    .GetRanchManagementSystem();
+
+  for (const data::Uid characterUid : _tracker.GetRacers() | std::views::keys)
+  {
+    try
+    {
+      const auto payout = ranchManagementSystem.RecordRaceCompletion(characterUid);
+      if (not payout)
+        continue;
+
+      uint32_t ranchProgress = 0;
+      _raceNetworkHandler.GetServerInstance().GetDataDirector().GetCharacter(
+        characterUid).Immutable(
+          [&ranchProgress](const data::Character& character)
+          {
+            ranchProgress = character.ranchManagement.ranchExperience();
+          });
+
+      _raceNetworkHandler.SendRanchBonusNotify(
+        characterUid, ranchProgress, payout->carrots);
+    }
+    catch (const std::exception& exception)
+    {
+      spdlog::error(
+        "Failed to record ranch completion for character {} in room {}: {}",
+        characterUid,
+        GetRoomUid(),
+        exception.what());
+    }
+  }
+
+  // Assign room master to the first-place finisher.
+  try
+  {
+    if (not result.scores.empty())
+    {
+      data::Uid newMasterUid = result.scores[0].uid;
+      std::string newMasterName = result.scores[0].name;
+
+      const data::Uid winnerUid = result.scores[0].uid;
+      const bool isTeamRace = _parameters.teamMode == protocol::TeamMode::Team;
+      const Room::Player::Team winnerTeam =
+        outcome.winningTeam == Team::Red ? Room::Player::Team::Red
+        : outcome.winningTeam == Team::Blue ? Room::Player::Team::Blue
+        : Room::Player::Team::Solo;
+      const bool raceHadWinner =
+        result.scores[0].courseTime != tracker::InvalidCourseTime
+        && (not isTeamRace || winnerTeam != Room::Player::Team::Solo);
+
+      if (raceHadWinner)
+      {
+        this->GetRoom(
+          [winnerUid, winnerTeam, isTeamRace](Room& room)
+          {
+            // Winning a race you were alone in does not build a streak.
+            if (room.GetPlayerCount() < 2)
+              return;
+
+            const auto extend = [](const uint16_t count)
+            {
+              return count < std::numeric_limits<uint16_t>::max()
+                ? static_cast<uint16_t>(count + 1)
+                : count;
+            };
+
+            auto& winStreak = room.GetWinStreak();
+            if (isTeamRace)
+            {
+              winStreak.teamWins = winStreak.team == winnerTeam
+                ? extend(winStreak.teamWins)
+                : 1;
+              winStreak.team = winnerTeam;
+            }
+            else
+            {
+              winStreak.characterWins = winStreak.characterUid == winnerUid
+                ? extend(winStreak.characterWins)
+                : 1;
+              winStreak.characterUid = winnerUid;
+            }
+          });
+      }
+
+      this->GetRoom(
+        [&newMasterUid, &newMasterName, scores = result.scores](Room& room)
+        {
+          // Check if room even has players
+          if (room.GetPlayerCount() < 1)
+          {
+            // TODO: mark room for delete
+            newMasterUid = data::InvalidUid;
+            return;
+          }
+
+          // Get room details to update
+          auto& details = room.GetRoomDetails();
+          // Check if room has this player
+          if (room.HasPlayer(newMasterUid))
+          {
+            // New master exists in room
+            details.masterUid = newMasterUid;
+            return;
+          }
+
+          // New master left, proceed with the scores list
+          // and assign until none found
+          for (const auto& score : scores)
+          {
+            // Check that this next best player is in room
+            if (not room.HasPlayer(score.uid))
+              continue;
+
+            // Character is in room, set room master to new uid
+            newMasterUid = details.masterUid = score.uid;
+            newMasterName = score.name;
+            return;
+          }
+
+          // No characters available for room master (how?)
+          newMasterUid = data::InvalidUid;
+        });
+
+      if (newMasterUid != data::InvalidUid)
+      {
+        const auto userName = _raceNetworkHandler.GetServerInstance()
+          .GetLobbyDirector()
+          .GetUserByCharacterUid(newMasterUid).userName;
+        spdlog::info(
+          "Player {} ({}) has won the match and is now master of [Room {}]",
+          userName,
+          newMasterName,
+          GetRoomUid());
+
+        const protocol::AcCmdCRChangeMasterNotify masterNotify{
+          .masterUid = newMasterUid};
+        _raceNetworkHandler.Broadcast(*this, masterNotify);
+      }
+    }
+  }
+  catch (const std::exception& exception)
+  {
+    spdlog::error(
+      "Failed to update winner state in room {}: {}",
+      GetRoomUid(),
+      exception.what());
+  }
+
+  // Clear the ready state of all of the players and update their balances.
+  try
+  {
+    this->GetRoom(
+      [this](Room& room)
+      {
+        room.SetRoomPlaying(false);
+        for (auto& [uid, player] : room.GetPlayers())
+        {
+          try
+          {
+            // Set racer's ready state to false
+            room.GetPlayer(uid).SetReady(false);
+
+            // Update this racer's carrot balance
+            protocol::AcCmdRCUpdateGameMoney updateGameMoney{};
+            _raceNetworkHandler.GetServerInstance().GetDataDirector()
+              .GetCharacter(uid).Immutable(
+                [&updateGameMoney](const data::Character& character)
+                {
+                  updateGameMoney.carrotBalance = character.carrots();
+                });
+
+            _raceNetworkHandler.GetCommandServer()
+              .QueueCommand<protocol::AcCmdRCUpdateGameMoney>(
+                player.GetClientId(),
+                [updateGameMoney]()
+                {
+                  return updateGameMoney;
+                });
+          }
+          catch (const std::exception& exception)
+          {
+            spdlog::error(
+              "Failed to reset character {} after race in room {}: {}",
+              uid,
+              GetRoomUid(),
+              exception.what());
+          }
+        }
+      });
+  }
+  catch (const std::exception& exception)
+  {
+    spdlog::error(
+      "Failed to reset room {} after race: {}",
+      GetRoomUid(),
+      exception.what());
   }
 }
 
