@@ -96,48 +96,6 @@ void RaceInstance::Stop()
   EndRace(outcome, scoreboard);
 }
 
-// Debug-only command support for `//race finish`.
-bool RaceInstance::ForceFinish(const data::Uid winnerUid)
-{
-  if (_stage != Stage::Racing && _stage != Stage::Finishing)
-    return false;
-
-  if (not _tracker.IsRacer(winnerUid))
-    return false;
-
-  const auto now = Clock::now();
-  const auto elapsed = now > _raceStartTimePoint
-    ? std::chrono::duration_cast<std::chrono::milliseconds>(
-        now - _raceStartTimePoint).count()
-    : 0;
-  const auto winnerCourseTime = static_cast<uint32_t>(
-    std::min<int64_t>(elapsed, std::numeric_limits<uint32_t>::max() - 1));
-
-  uint32_t trailingCourseTime = winnerCourseTime;
-  for (auto& [characterUid, racer] : _tracker.GetRacers())
-  {
-    if (racer.state == tracker::RaceTracker::Racer::State::Disconnected)
-      continue;
-
-    racer.state = tracker::RaceTracker::Racer::State::Finishing;
-    if (characterUid == winnerUid)
-    {
-      racer.courseTime = winnerCourseTime;
-    }
-    else
-    {
-      trailingCourseTime = static_cast<uint32_t>(std::min<uint64_t>(
-        static_cast<uint64_t>(trailingCourseTime) + 1000,
-        tracker::InvalidCourseTime - 1));
-      racer.courseTime = trailingCourseTime;
-    }
-  }
-
-  _stage = Stage::Finishing;
-  _stageTimeoutTimePoint = Clock::time_point::max();
-  return true;
-}
-
 void RaceInstance::Tick()
 {
   try

@@ -82,8 +82,6 @@ public:
 
   bool Start(const Parameters& parameters);
   void Stop();
-  // Debug-only command support for `//race finish`.
-  bool ForceFinish(data::Uid winnerUid);
 
   void Tick();
 
