@@ -23,8 +23,9 @@
 #include "server/tracker/RaceTracker.hpp"
 
 #include <libserver/data/DataDefinitions.hpp>
-#include <libserver/network/NetworkDefinitions.hpp>
 #include <libserver/network/command/proto/CommonStructureDefinitions.hpp>
+#include <libserver/network/command/proto/RaceMessageDefinitions.hpp>
+#include <libserver/network/NetworkDefinitions.hpp>
 #include <libserver/registry/CourseRegistry.hpp>
 
 #include <chrono>
@@ -41,7 +42,9 @@ class RaceInstance
 {
 public:
   using Clock = std::chrono::steady_clock;
-  
+  using RaceResult = protocol::AcCmdRCRaceResultNotify;
+  using Team = tracker::RaceTracker::Racer::Team;
+
   enum class Stage
   {
     Waiting,
@@ -62,6 +65,11 @@ public:
     uint16_t missionId{};
     //! A UID of the master.
     data::Uid masterUid{};
+  };
+
+  struct RaceOutcome
+  {
+    Team winningTeam{Team::Solo};
   };
 
   explicit RaceInstance(
@@ -116,6 +124,10 @@ public:
 private:
   void PrepareItemDecks();
 
+  RaceOutcome DetermineRaceOutcome();
+  RaceResult CreateScoreboard(const RaceOutcome& outcome);
+  void EndRace(const RaceOutcome& outcome, RaceResult& scoreboard);
+
   const uint32_t _roomUid{};
 
   //! The race parameters.
@@ -125,7 +137,7 @@ private:
   registry::Course::GameModeInfo _gameModeInfo;
   registry::MapBlockId _mapBlockId{};
   registry::Course::MapBlockInfo _mapBlockInfo;
-  
+
   //! A time point of when the race started loading.
   Clock::time_point _loadingStartTimePoint{
     Clock::time_point::max()};
