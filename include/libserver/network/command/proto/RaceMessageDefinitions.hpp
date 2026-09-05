@@ -944,9 +944,9 @@ struct AcCmdCRRaceResult
   //! Max lap count is 10 laps.
   std::vector<protocol::AcCmdCRStartRaceNotify::RaceRecord::LapRecord> lapRecords{};
   uint8_t member11{};
-  uint32_t member12{};
+  uint32_t revengeResult{};
   uint16_t member13{};
-  uint8_t member14{};
+  uint8_t revengeSuccessLevel{};
 
   static Command GetCommand()
   {
@@ -1045,9 +1045,8 @@ struct AcCmdRCRaceResultNotify
     std::string mountName{};
     uint16_t growthPoints{};
     uint8_t horseClass{};
-    uint32_t bonusCarrots{};
-    // ! Revenge something
-    uint32_t member22{};
+    uint32_t revengeCarrots{};
+    uint32_t revengeHorseExperience{};
     AcCmdCRStartRaceNotify::RaceRecord raceRecord{};
     //! The reward given to the racer upon successfully beating the speed/magic training.
     //! Relates to `AcCmdCRStartRaceNotify::Struct1::clearedDifficulty`
@@ -1081,6 +1080,46 @@ struct AcCmdRCRaceResultNotify
   //! @param stream Source stream.
   static void Read(
     AcCmdRCRaceResultNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdRCRevengeTargetNotify
+{
+  // Still figuring these fields out
+  uint16_t member1{};
+  uint32_t member2{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdRCRevengeTargetNotify;
+  }
+
+  static void Write(
+    const AcCmdRCRevengeTargetNotify& command,
+    SinkStream& stream);
+
+  static void Read(
+    AcCmdRCRevengeTargetNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRevengeAssign
+{
+  //! The meaning of individual values is not known yet
+  uint32_t caseNum{};
+  data::Uid targetUid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRevengeAssign;
+  }
+
+  static void Write(
+    const AcCmdCRRevengeAssign& command,
+    SinkStream& stream);
+
+  static void Read(
+    AcCmdCRRevengeAssign& command,
     SourceStream& stream);
 };
 

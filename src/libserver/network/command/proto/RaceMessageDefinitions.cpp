@@ -735,9 +735,9 @@ void AcCmdCRRaceResult::Read(
   }
 
   stream.Read(command.member11)
-    .Read(command.member12)
+    .Read(command.revengeResult)
     .Read(command.member13)
-    .Read(command.member14);
+    .Read(command.revengeSuccessLevel);
 }
 
 void AcCmdCRRaceResultOK::Write(
@@ -786,8 +786,8 @@ void AcCmdRCRaceResultNotify::Write(
       .Write(score.mountName)
       .Write(score.growthPoints)
       .Write(score.horseClass)
-      .Write(score.bonusCarrots)
-      .Write(score.member22)
+      .Write(score.revengeCarrots)
+      .Write(score.revengeHorseExperience)
       .Write(score.raceRecord)
       .Write(score.trainingCarrotReward)
       .Write(score.member25)
@@ -806,6 +806,36 @@ void AcCmdRCRaceResultNotify::Read(
   SourceStream&)
 {
   throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCRevengeTargetNotify::Write(
+  const AcCmdRCRevengeTargetNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.member1)
+    .Write(command.member2);
+}
+
+void AcCmdRCRevengeTargetNotify::Read(
+  AcCmdRCRevengeTargetNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRevengeAssign::Write(
+  const AcCmdCRRevengeAssign&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRevengeAssign::Read(
+  AcCmdCRRevengeAssign& command,
+  SourceStream& stream)
+{
+  stream.Read(command.caseNum)
+    .Read(command.targetUid);
 }
 
 void AcCmdCRP2PResult::Write(

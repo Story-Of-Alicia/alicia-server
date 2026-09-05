@@ -287,6 +287,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRRaceResult& command);
 
+  void HandleRevengeAssign(
+  ClientId clientId,
+  const protocol::AcCmdCRRevengeAssign& command);
+
   void HandleP2PRaceResult(
     ClientId clientId,
     const protocol::AcCmdCRP2PResult& command);

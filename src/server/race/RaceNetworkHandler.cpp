@@ -100,6 +100,18 @@ RaceNetworkHandler::RaceNetworkHandler(ServerInstance& serverInstance)
       HandleRaceResult(clientId, message);
     });
 
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRaceResult>(
+  [this](ClientId clientId, const auto& message)
+  {
+    HandleRaceResult(clientId, message);
+  });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRevengeAssign>(
+  [this](ClientId clientId, const auto& message)
+  {
+    HandleRevengeAssign(clientId, message);
+  });
+
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRP2PResult>(
     [this](ClientId clientId, const auto& message)
     {
@@ -1815,6 +1827,19 @@ void RaceNetworkHandler::HandleRaceResult(
         return potentialNotify;
       });
   }
+}
+
+void RaceNetworkHandler::HandleRevengeAssign(
+  const ClientId clientId,
+  const protocol::AcCmdCRRevengeAssign& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  spdlog::info(
+    "Character {} assigned revenge target {} with case {}",
+    clientContext.characterUid,
+    command.targetUid,
+    command.caseNum);
 }
 
 void RaceNetworkHandler::HandleP2PRaceResult(
