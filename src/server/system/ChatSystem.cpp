@@ -2325,29 +2325,67 @@ void ChatSystem::RegisterAdminCommands()
   _commandManager.RegisterCommand(
     "reload",
     [this](
-      [[maybe_unused]] const std::span<const std::string>& arguments,
-      [[maybe_unused]] data::Uid characterUid) -> std::vector<std::string>
+      const std::span<const std::string>& arguments,
+      data::Uid characterUid) -> std::vector<std::string>
     {
       const auto invokerRank = GetRoleRank(characterUid);
       if (not invokerRank || *invokerRank != data::Character::RoleRank::Admin)
         return {};
 
-      try
+      if (arguments.empty())
       {
-        _serverInstance.LoadConfigurations();
-      }
-      catch (const std::exception& x)
-      {
-        spdlog::error("Failed to load configurations: {}", x.what());
         return {
-          "Error trying to load game"
-          "and server configs."
-          "See the server console."};
+          "reload",
+          "  config",
+          "  character [username]"};
+      }
+
+      if (arguments[0] == "config")
+      {
+        try
+        {
+          _serverInstance.LoadConfigurations();
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error("Failed to load configurations: {}", x.what());
+          return {
+            "Error trying to load game"
+            "and server configs."
+            "See the server console."};
+        }
+
+        return {
+          "Game and server configs",
+          "were reloaded"};
+      }
+
+      if (arguments[0] == "character")
+      {
+        if (arguments.size() < 2)
+          return {"reload character [username]"};
+
+        const std::string& targetUserName = arguments[1];
+        try
+        {
+          _serverInstance.GetDataDirector().ExpireCharacterData(targetUserName);
+        }
+        catch (const std::exception& x)
+        {
+          spdlog::error(
+            "Failed to reload character for user '{}' from data source: {}",
+            targetUserName,
+            x.what());
+          return {std::format("Failed to reload character: {}", x.what())};
+        }
+
+        return {std::format("Character for user '{}' reloaded", targetUserName)};
       }
 
       return {
-        "Game and server configs",
-        "were reloaded"};
+        "reload",
+        "  config",
+        "  character [username]"};
     });
 }
 

@@ -3354,13 +3354,14 @@ void RanchDirector::HandleRemoveEquipment(
     // You can't really unequip a horse. You can only switch to a different one.
     // At least in Alicia 1.0.
 
-    if (characterEquipmentItemIter != character.characterEquipment().cend())
-    {
-      const auto range = std::ranges::remove(
-        character.characterEquipment(), command.itemUid);
-      character.characterEquipment().erase(range.begin(), range.end());
-    }
-    // If not found in characterEquipment, treat as not equipped (no-op).
+    // If not found in characterEquipment the item is not equipped.
+    // The UID is unvalidated client input, so it must not reach the inventory.
+    if (characterEquipmentItemIter == character.characterEquipment().cend())
+      return;
+
+    const auto range = std::ranges::remove(
+      character.characterEquipment(), command.itemUid);
+    character.characterEquipment().erase(range.begin(), range.end());
 
     character.inventory().emplace_back(command.itemUid);
   });

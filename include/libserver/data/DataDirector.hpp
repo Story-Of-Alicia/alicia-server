@@ -72,6 +72,9 @@ public:
   //! @param userName Name of the user.
   //! @param characterUid UID of the character.
   void RequestLoadCharacterData(const std::string& userName, data::Uid characterUid);
+  //! Expires character data and associated sub records from cache and requests a reload.
+  //! @param userName Name of the user.
+  void ExpireCharacterData(const std::string& userName);
 
   //! Returns whether the data of a user (either user data or character data) are being loaded.
   //! @param userName name of the user.

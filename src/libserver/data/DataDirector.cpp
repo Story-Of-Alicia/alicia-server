@@ -864,6 +864,71 @@ void DataDirector::RequestLoadCharacterData(
   ScheduleCharacterLoad(userDataContext, characterUid);
 }
 
+void DataDirector::ExpireCharacterData(
+  const std::string& userName)
+{
+  const auto userRecord = GetUser(userName);
+  if (not userRecord)
+    return;
+
+  data::Uid characterUid = data::InvalidUid;
+  userRecord.Immutable([&characterUid](const data::User& user)
+  {
+    characterUid = user.characterUid();
+  });
+
+  if (characterUid == data::InvalidUid)
+    return;
+
+  // Individually evict every cached sub-record from the character record
+  if (const auto characterRecord = _characterStorage.Get(characterUid, false))
+  {
+    characterRecord->Immutable([this](const data::Character& character)
+    {
+      if (character.settingsUid() != data::InvalidUid)
+        _settingsStorage.Evict(character.settingsUid());
+
+      if (character.dailyQuestGroupUid() != data::InvalidUid)
+        _dailyQuestGroupStorage.Evict(character.dailyQuestGroupUid());
+
+      _horseStorage.Evict(character.horses());
+      if (character.mountUid() != data::InvalidUid)
+        _horseStorage.Evict(character.mountUid());
+      for (const auto horseUid : character.breedingWishlist())
+        _horseStorage.Evict(horseUid);
+
+      _itemStorage.Evict(character.inventory());
+      _itemStorage.Evict(character.characterEquipment());
+
+      _storageItemStorage.Evict(character.gifts());
+      _storageItemStorage.Evict(character.purchases());
+
+      _eggStorage.Evict(character.eggs());
+      _petStorage.Evict(character.pets());
+      if (character.petUid() != data::InvalidUid)
+        _petStorage.Evict(character.petUid());
+
+      _housingStorage.Evict(character.housing());
+
+      _mailStorage.Evict(character.mailbox.inbox());
+      _mailStorage.Evict(character.mailbox.sent());
+
+      _questStorage.Evict(character.quests());
+    });
+  }
+
+  // Evict the character itself
+  _characterStorage.Evict(characterUid);
+
+  // Reset loaded status for the user context and trigger a fresh load
+  auto& userDataContext = _userDataContext[userName];
+  userDataContext.isCharacterDataLoaded.store(false, std::memory_order::relaxed);
+  userDataContext.isBeingLoaded.store(false, std::memory_order::relaxed);
+
+  // Immediately request a load of the character data
+  RequestLoadCharacterData(userName, characterUid);
+}
+
 bool DataDirector::AreDataBeingLoaded(const std::string& userName)
 {
   const auto& userDataContext = _userDataContext[userName];
