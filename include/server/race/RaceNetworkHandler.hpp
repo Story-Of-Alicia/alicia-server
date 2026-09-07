@@ -93,6 +93,8 @@ public:
   ServerInstance& GetServerInstance();
   CommandServer& GetCommandServer();
 
+  std::optional<ClientId> FindClientIdByCharacterUid(data::Uid characterUid);
+
   template <WritableStruct C>
   void Broadcast(
     const RaceInstance& raceInstance,
@@ -157,13 +159,14 @@ private:
   ClientContext& GetClientContext(
     ClientId clientId,
     bool requireAuthorized = true);
-  std::optional<ClientId> FindClientIdByCharacterUid(data::Uid characterUid);
   ClientId GetClientIdByCharacterUid(data::Uid characterUid);
   ClientContext& GetClientContextByCharacterUid(data::Uid characterUid);
 
   RaceInstance& GetRaceInstance(
     const ClientContext& clientContext,
     bool checkRacer = true);
+
+  static constexpr float MaxIceWallHitDistance = 6.0f;
 
   EffectVerdict ScheduleSkillEffect(
     RaceInstance& raceInstance,
@@ -226,7 +229,8 @@ private:
   void GrantMagicItem(
     RaceInstance& raceInstance,
     ClientId clientId,
-    data::Uid characterUid,
+    data::Uid racerUid,
+    data::Uid senderCharacterUid,
     tracker::RaceTracker::Racer& racer);
 
   //! Hands the attacker a bonus magic item for the hit they just landed,

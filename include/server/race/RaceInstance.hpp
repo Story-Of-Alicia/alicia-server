@@ -96,6 +96,8 @@ public:
   [[nodiscard]] protocol::BonusCourseType GetBonusCourseType() const noexcept;
   void SetBonusCourseType(protocol::BonusCourseType type) noexcept;
 
+  [[nodiscard]] data::Uid GetBotControllerUid() const noexcept;
+
 private:
   void TickLoading();
   void TickRacing();
@@ -146,6 +148,8 @@ private:
 
   protocol::BonusCourseType _bonusCourseType{
     protocol::BonusCourseType::None};
+
+  data::Uid _botControllerUid{data::InvalidUid};
 
   RaceNetworkHandler& _raceNetworkHandler;
 };

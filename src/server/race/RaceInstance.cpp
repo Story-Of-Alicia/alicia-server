@@ -28,6 +28,7 @@
 #include <tuple>
 #include <format>
 #include <limits>
+#include <optional>
 
 namespace server
 {
@@ -130,6 +131,20 @@ void RaceInstance::Stop()
       ? racer.courseTime
       : tracker::InvalidCourseTime;
 
+    score.teamColor = racer.team;
+
+    if (racer.IsBot())
+    {
+      const auto& preset = _raceNetworkHandler.GetServerInstance()
+        .GetAiRiderRegistry()
+        .GetPresetById(racer.botConfig->presetId);
+
+      score.uid = characterUid;
+      score.name = preset.name;
+      score.level = 1;
+      continue;
+    }
+
     static constexpr uint32_t BaseExpReward = 420;
     static constexpr uint32_t BaseCarrotReward = 2500;
 
@@ -187,7 +202,6 @@ void RaceInstance::Stop()
       }
     }
 
-    score.teamColor = racer.team;
     const auto characterRecord = _raceNetworkHandler.GetServerInstance().GetDataDirector().GetCharacter(
       characterUid);
 
@@ -253,8 +267,12 @@ void RaceInstance::Stop()
   auto& ranchManagementSystem = _raceNetworkHandler.GetServerInstance()
     .GetRanchManagementSystem();
 
-  for (const data::Uid characterUid : _tracker.GetRacers() | std::views::keys)
+  for (const auto& [characterUid, racer] : _tracker.GetRacers())
   {
+    // skip bots
+    if (racer.IsBot())
+      continue;
+
     const auto payout = ranchManagementSystem.RecordRaceCompletion(characterUid);
     if (not payout)
       continue;
@@ -516,6 +534,11 @@ void RaceInstance::SetBonusCourseType(const protocol::BonusCourseType type) noex
   _bonusCourseType = type;
 }
 
+data::Uid RaceInstance::GetBotControllerUid() const noexcept
+{
+  return _botControllerUid;
+}
+
 void RaceInstance::TickLoading()
 {
   // Determine whether all racers have started racing.
@@ -701,16 +724,32 @@ void RaceInstance::TickItemSpawners()
       });
   };
 
-  // Loop through each player in the room
-  this->GetRoom([this, &processItemSpawn](const Room& room)
-  {
-    for (const auto& [characterUid, player] : room.GetPlayers())
-    {
-      // Check if this player is an active racer
-      if (not this->GetTracker().IsRacer(characterUid))
-        continue;
+  std::optional<ClientId> botControllerClientId;
+  if (this->GetBotControllerUid() != data::InvalidUid)
+    botControllerClientId = _raceNetworkHandler.FindClientIdByCharacterUid(
+      this->GetBotControllerUid());
 
-      auto& racer = this->GetTracker().GetRacer(characterUid);
+  // Loop through each player in the room
+  this->GetRoom([this, &processItemSpawn, &botControllerClientId](Room& room)
+  {
+    for (auto& [characterUid, racer] : this->GetTracker().GetRacers())
+    {
+      ClientId clientId;
+      if (racer.IsBot())
+      {
+        if (not botControllerClientId.has_value())
+          continue;
+
+        clientId = *botControllerClientId;
+      }
+      else
+      {
+        if (not room.HasPlayer(characterUid))
+          continue;
+
+        clientId = room.GetPlayer(characterUid).GetClientId();
+      }
+
       for (const auto& item : this->GetTracker().GetItemDecks() | std::views::values)
       {
         const auto now = std::chrono::steady_clock::now();
@@ -722,7 +761,7 @@ void RaceInstance::TickItemSpawners()
           continue;
 
         processItemSpawn(
-          player.GetClientId(),
+          clientId,
           racer,
           item.oid,
           item.currentItem,
@@ -731,7 +770,7 @@ void RaceInstance::TickItemSpawners()
 
       for (const auto& eventItem : racer.eventItems)
         processItemSpawn(
-          player.GetClientId(),
+          clientId,
           racer,
           eventItem.oid,
           eventItem.itemType,
@@ -752,18 +791,34 @@ void RaceInstance::TickMagicGauge()
   if (now <= this->GetRaceStartTimePoint())
     return;
 
-  this->GetRoom([this, &now](const Room& room)
+  std::optional<ClientId> botControllerClientId;
+  if (this->GetBotControllerUid() != data::InvalidUid)
+    botControllerClientId = _raceNetworkHandler.FindClientIdByCharacterUid(
+      this->GetBotControllerUid());
+
+  this->GetRoom([this, &now, &botControllerClientId](Room& room)
   {
     const auto& regenerationInfo = _raceNetworkHandler.GetServerInstance().GetMagicRegistry().GetRegenInfo();
     const auto tickInterval = std::chrono::milliseconds(regenerationInfo.intervalMs);
 
-    for (const auto& [characterUid, player] : room.GetPlayers())
+    for (auto& [characterUid, racer] : this->GetTracker().GetRacers())
     {
-      // Check if this player is an active racer
-      if (not this->GetTracker().IsRacer(characterUid))
-        continue;
+      ClientId clientId;
+      if (racer.IsBot())
+      {
+        if (not botControllerClientId.has_value())
+          continue;
 
-      auto& racer = this->GetTracker().GetRacer(characterUid);
+        clientId = *botControllerClientId;
+      }
+      else
+      {
+        if (not room.HasPlayer(characterUid))
+          continue;
+
+        clientId = room.GetPlayer(characterUid).GetClientId();
+      }
+
       const bool isRacerHoldingItem = racer.magicItem.has_value();
 
       // Anchor at race start so fill time is consistent regardless of when the first pos-update arrives.
@@ -819,7 +874,7 @@ void RaceInstance::TickMagicGauge()
         .giveMagicItem = shouldGiveItem};
 
       _raceNetworkHandler.GetCommandServer().QueueCommand<decltype(starPointResponse)>(
-        player.GetClientId(),
+        clientId,
         [starPointResponse]
         {
           return starPointResponse;
@@ -987,6 +1042,19 @@ void RaceInstance::PrepareItemDecks()
 
 void RaceInstance::PrepareBots(uint8_t difficulty)
 {
+  _botControllerUid = data::InvalidUid;
+  for (const auto& [characterUid, racer] : _tracker.GetRacers())
+  {
+    if (racer.IsBot())
+      continue;
+
+    if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
+    {
+      _botControllerUid = characterUid;
+      break;
+    }
+  }
+
   static constexpr size_t MaxBotsPerRace = 7;
   auto botPresets = _raceNetworkHandler
     .GetServerInstance()
@@ -1000,10 +1068,7 @@ void RaceInstance::PrepareBots(uint8_t difficulty)
       return a.aiType > b.aiType;
     });
 
-  auto& gen = server::util::GetRandomEngine();
-  std::uniform_int_distribution<uint32_t> uidDist(
-    1,
-    std::numeric_limits<uint32_t>::max() - 1);
+  static constexpr data::Uid BotUidBase = 0xF0000000u;
 
   const size_t count = std::min(botPresets.size(), MaxBotsPerRace);
 
@@ -1012,11 +1077,11 @@ void RaceInstance::PrepareBots(uint8_t difficulty)
   for (size_t i = 0; i < count; ++i)
   {
     const auto& preset = botPresets[i];
-    data::Uid botUid{};
-    do
-    {
-      botUid = static_cast<data::Uid>(uidDist(gen));
-    } while (_tracker.IsRacer(botUid));
+    const data::Uid botUid = BotUidBase + preset.id;
+
+    // Already tracked (bots were prepared and not torn down) - leave it alone.
+    if (_tracker.IsRacer(botUid))
+      continue;
 
     auto& racer = _tracker.AddRacer(botUid);
     racer.state = tracker::RaceTracker::Racer::State::Loading;
