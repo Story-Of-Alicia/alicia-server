@@ -27,8 +27,8 @@ namespace server::registry
 
 void AiRiderRegistry::Clear()
 {
-  _presets.clear();
   _presetsById.clear();
+  _clearRewardCarrots.clear();
 }
 
 void AiRiderRegistry::ReadConfig(const std::filesystem::path& configPath)
@@ -42,34 +42,27 @@ void AiRiderRegistry::ReadConfig(const std::filesystem::path& configPath)
 
   for (const auto& entry : presets)
   {
-    const uint8_t diff = entry["difficultyLevel"].as<uint8_t>();
-    if (diff == 0)
-      continue;
-
     AiRiderPreset preset{
       .id = entry["id"].as<uint32_t>(),
       .name = entry["name"].as<std::string>(),
       .aiType = entry["aiType"].as<uint8_t>(),
+      .equipmentTids = entry["equipmentTids"].as<std::vector<uint32_t>>(std::vector<uint32_t>{}),
     };
 
     _presetsById.emplace(preset.id, preset);
-    _presets[diff].push_back(std::move(preset));
   }
 
-  uint32_t total = 0;
-  for (const auto& [d, v] : _presets)
-    total += static_cast<uint32_t>(v.size());
-  spdlog::info("Loaded {} AI presets across {} difficulty levels", total, _presets.size());
-}
+  spdlog::info("Loaded {} AI presets", _presetsById.size());
 
-const std::vector<AiRiderPreset>& AiRiderRegistry::GetPresetsForDifficulty(
-  uint8_t difficulty) const
-{
-  const auto it = _presets.find(difficulty);
-  if (it == _presets.cend())
-    throw std::runtime_error(
-      std::format("AI presets not found for difficulty: {}", difficulty));
-  return it->second;
+  if (const auto clearRewards = root["clearRewards"])
+  {
+    for (const auto& entry : clearRewards)
+    {
+      _clearRewardCarrots.emplace(
+        entry["difficultyLevel"].as<uint8_t>(),
+        entry["carrots"].as<uint32_t>());
+    }
+  }
 }
 
 const AiRiderPreset& AiRiderRegistry::GetPresetById(uint32_t presetId) const
@@ -78,6 +71,15 @@ const AiRiderPreset& AiRiderRegistry::GetPresetById(uint32_t presetId) const
   if (it == _presetsById.cend())
     throw std::runtime_error(
       std::format("AI preset not found for preset ID: {}", presetId));
+  return it->second;
+}
+
+uint32_t AiRiderRegistry::GetClearRewardCarrots(uint8_t difficultyLevel) const
+{
+  const auto it = _clearRewardCarrots.find(difficultyLevel);
+  if (it == _clearRewardCarrots.cend())
+    throw std::runtime_error(
+      std::format("AI clear reward not found for difficulty level: {}", difficultyLevel));
   return it->second;
 }
 

@@ -29,6 +29,7 @@
 
 #include <chrono>
 #include <functional>
+#include <optional>
 #include <unordered_set>
 
 namespace server
@@ -98,6 +99,14 @@ public:
 
   [[nodiscard]] data::Uid GetBotControllerUid() const noexcept;
 
+  struct PendingDifficultyAdvance
+  {
+    uint8_t nextDifficulty{};
+    uint16_t mapBlockId{};
+  };
+  //! Returns and clears the pending difficulty advance, if any.
+  [[nodiscard]] std::optional<PendingDifficultyAdvance> TakePendingDifficultyAdvance() noexcept;
+
 private:
   void TickLoading();
   void TickRacing();
@@ -150,6 +159,8 @@ private:
     protocol::BonusCourseType::None};
 
   data::Uid _botControllerUid{data::InvalidUid};
+
+  std::optional<PendingDifficultyAdvance> _pendingDifficultyAdvance{};
 
   RaceNetworkHandler& _raceNetworkHandler;
 };

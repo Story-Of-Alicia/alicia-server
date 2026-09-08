@@ -31,86 +31,107 @@ presets:
     name: "쿠키"
     difficultyLevel: 1
     aiType: 6
+    equipmentTids: [20036, 20079, 20080]
   - id: 9
     name: "제이크"
     difficultyLevel: 1
     aiType: 7
+    equipmentTids: [20036, 20079, 20080]
   - id: 10
     name: "제이드"
     difficultyLevel: 1
     aiType: 8
+    equipmentTids: [20036, 20079, 20080]
   - id: 11
     name: "앤"
     difficultyLevel: 1
     aiType: 9
+    equipmentTids: [20036, 20079, 20080]
   - id: 12
     name: "세인트"
     difficultyLevel: 1
     aiType: 10
+    equipmentTids: [20036, 20079, 20080]
   - id: 13
     name: "제니스"
     difficultyLevel: 1
     aiType: 11
+    equipmentTids: [20036, 20079, 20080]
   - id: 14
     name: "캐시"
     difficultyLevel: 1
     aiType: 12
+    equipmentTids: [20036, 20079, 20080]
   - id: 15
     name: "카림"
     difficultyLevel: 2
     aiType: 13
+    equipmentTids: [20003, 20028, 20029, 20031, 20030]
   - id: 16
     name: "이든"
     difficultyLevel: 2
     aiType: 14
+    equipmentTids: [20003, 20028, 20029, 20031, 20030]
   - id: 17
     name: "워렌"
     difficultyLevel: 2
     aiType: 15
+    equipmentTids: [20003, 20028, 20029, 20031, 20030]
   - id: 18
     name: "티엔"
     difficultyLevel: 2
     aiType: 16
+    equipmentTids: [20003, 20028, 20029, 20031, 20030]
   - id: 19
     name: "데인즈"
     difficultyLevel: 2
     aiType: 17
+    equipmentTids: [20003, 20028, 20029, 20031, 20030]
   - id: 20
     name: "글렌"
     difficultyLevel: 2
     aiType: 18
+    equipmentTids: [20003, 20028, 20029, 20031, 20030]
   - id: 21
     name: "메이린"
     difficultyLevel: 2
     aiType: 19
+    equipmentTids: [20003, 20028, 20029, 20031, 20030]
   - id: 22
     name: "멀린"
     difficultyLevel: 3
     aiType: 20
+    equipmentTids: [20087, 20004, 20005, 20006, 20007]
   - id: 23
     name: "델타"
     difficultyLevel: 3
     aiType: 21
+    equipmentTids: [20087, 20004, 20005, 20006, 20007]
   - id: 24
     name: "엔쥬"
     difficultyLevel: 3
     aiType: 22
+    equipmentTids: [20087, 20004, 20005, 20006, 20007]
   - id: 25
     name: "크리스틴"
     difficultyLevel: 3
     aiType: 23
+    equipmentTids: [20087, 20004, 20005, 20006, 20007]
   - id: 26
     name: "라이라"
     difficultyLevel: 3
     aiType: 24
+    equipmentTids: [20087, 20004, 20005, 20006, 20007]
   - id: 27
     name: "해피"
     difficultyLevel: 3
     aiType: 25
+    equipmentTids: [20087, 20004, 20005, 20006, 20007]
   - id: 28
     name: "페퍼"
     difficultyLevel: 3
     aiType: 26
+    equipmentTids: [20087, 20004, 20005, 20006, 20007]
   - id: 29
     name: "4등급_AI고수A"
     difficultyLevel: 0
@@ -875,30 +896,37 @@ presets:
     name: "데이브"
     difficultyLevel: 4
     aiType: 28
+    equipmentTids: [20002, 20008, 20009, 20011, 20010]
   - id: 220
     name: "앤디"
     difficultyLevel: 4
     aiType: 29
+    equipmentTids: [20002, 20008, 20009, 20011, 20010]
   - id: 221
     name: "레드"
     difficultyLevel: 4
     aiType: 30
+    equipmentTids: [20002, 20008, 20009, 20011, 20010]
   - id: 222
     name: "메이"
     difficultyLevel: 4
     aiType: 31
+    equipmentTids: [20002, 20008, 20009, 20011, 20010]
   - id: 223
     name: "아그네스"
     difficultyLevel: 4
     aiType: 32
+    equipmentTids: [20002, 20008, 20009, 20011, 20010]
   - id: 224
     name: "미아"
     difficultyLevel: 4
     aiType: 33
+    equipmentTids: [20002, 20008, 20009, 20011, 20010]
   - id: 225
     name: "매를린"
     difficultyLevel: 4
     aiType: 34
+    equipmentTids: [20002, 20008, 20009, 20011, 20010]
   - id: 226
     name: "오힌근"
     difficultyLevel: 1
@@ -1287,3 +1315,15 @@ presets:
     name: "훈련교관"
     difficultyLevel: 1
     aiType: 1
+
+# libconfig AIClearRewardInfo table - base carrot reward (GameMoney) for
+# clearing training at each difficulty level.
+clearRewards:
+  - difficultyLevel: 1
+    carrots: 500
+  - difficultyLevel: 2
+    carrots: 1000
+  - difficultyLevel: 3
+    carrots: 2000
+  - difficultyLevel: 4
+    carrots: 5000

@@ -962,6 +962,16 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
       }
 
       characterMountUid = character.mountUid();
+
+      for (const auto& record : character.trainingRecords())
+      {
+        response.trainingProgression.mapProggressInfos.emplace_back(
+          protocol::LobbyCommandLoginOK::TrainingProgression::MapProgressInfo{
+            .mapBlockId = static_cast<uint16_t>(record.mapBlockId),
+            .gameMode = static_cast<protocol::GameMode>(record.gameMode),
+            .clearStage = static_cast<protocol::LobbyCommandLoginOK::TrainingProgression::MapProgressInfo::ClearStage>(
+              record.clearedDifficulty)});
+      }
     });
 
   // Get the mounted horse record and fill the protocol data.
@@ -997,14 +1007,6 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
   {
     response.notice = notice;
   }
-  protocol::LobbyCommandLoginOK::TrainingProgression::MapProgressInfo mapProgressInfo{
-    .mapBlockId= 1,
-    .gameMode = protocol::GameMode::Speed,
-    .clearStage = protocol::LobbyCommandLoginOK::TrainingProgression::MapProgressInfo::ClearStage::None,
-  };
-
-  response.trainingProgression.mapProggressInfos = {
-    mapProgressInfo};
 
   _commandServer.SetCode(clientId, {});
 
@@ -1240,8 +1242,9 @@ void LobbyNetworkHandler::HandleMakeRoom(
 
       room.GetRoomDetails().npcDifficulty = command.unk3;
       room.GetRoomDetails().skillBracket = command.unk4;
-      // default to all courses
-      room.GetRoomDetails().courseId = 10002;
+      // Training always starts on the first map rather than a pool
+      // selection, so the waiting room doesn't show "All" for it.
+      room.GetRoomDetails().courseId = isTraining ? 1 : 10002;
 
       // Queue the master as a player.
       room.QueuePlayer(characterUid);

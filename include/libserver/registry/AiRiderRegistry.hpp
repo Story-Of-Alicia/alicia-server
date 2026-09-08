@@ -36,6 +36,8 @@ struct AiRiderPreset
   uint32_t id{};
   std::string name;
   uint32_t aiType{};
+
+  std::vector<uint32_t> equipmentTids;
 };
 
 class AiRiderRegistry : public Registry
@@ -47,15 +49,15 @@ public:
   void ReadConfig(const std::filesystem::path& configPath) override;
   void Clear() override;
 
-  //! Returns the preset pool for the given difficulty level.
-  [[nodiscard]] const std::vector<AiRiderPreset>& GetPresetsForDifficulty(uint8_t difficulty) const;
-
   //! Returns the preset info for the given preset ID.
   [[nodiscard]] const AiRiderPreset& GetPresetById(uint32_t presetId) const;
 
+  //! Returns the number of carrots rewarded for clearing a training difficulty level.
+  [[nodiscard]] uint32_t GetClearRewardCarrots(uint8_t difficultyLevel) const;
+
 private:
-  std::unordered_map<uint8_t, std::vector<AiRiderPreset>> _presets;
   std::unordered_map<uint32_t, AiRiderPreset> _presetsById;
+  std::unordered_map<uint8_t, uint32_t> _clearRewardCarrots;
 };
 
 } // namespace server::registry

@@ -95,6 +95,15 @@ public:
 
   std::optional<ClientId> FindClientIdByCharacterUid(data::Uid characterUid);
 
+  void ApplyMountEquipmentStats(
+    tracker::RaceTracker::Racer& racer,
+    const std::vector<uint32_t>& equippedTids);
+
+  void RefreshBotsForDifficulty(
+    RaceInstance& raceInstance,
+    Room& room,
+    uint8_t difficulty);
+
   template <WritableStruct C>
   void Broadcast(
     const RaceInstance& raceInstance,

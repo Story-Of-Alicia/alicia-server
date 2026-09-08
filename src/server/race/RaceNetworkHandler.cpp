@@ -538,6 +538,127 @@ ClientId RaceNetworkHandler::GetClientIdByCharacterUid(data::Uid characterUid)
   return *clientId;
 }
 
+void RaceNetworkHandler::ApplyMountEquipmentStats(
+  tracker::RaceTracker::Racer& racer,
+  const std::vector<data::Tid>& equippedTids)
+{
+  auto& itemRegistry = GetServerInstance().GetItemRegistry();
+
+  std::vector<uint32_t> validTids;
+  for (const auto tid : equippedTids)
+  {
+    if (tid == data::InvalidTid)
+      continue;
+
+    const auto itemTemplate = itemRegistry.GetItem(tid);
+    if (not itemTemplate.has_value())
+      continue;
+
+    validTids.emplace_back(tid);
+
+    if (itemTemplate->mountAbility.has_value())
+    {
+      const auto& ability = itemTemplate->mountAbility.value();
+      racer.mountStats.agility += ability.agility;
+      racer.mountStats.ambition += ability.ambition;
+      racer.mountStats.rush += ability.rush;
+      racer.mountStats.endurance += ability.endurance;
+      racer.mountStats.courage += ability.courage;
+    }
+  }
+
+  // A racer can only benefit from a single set bonus at a time, so the first
+  // fully-equipped set wins.
+  racer.activeSetEffect = registry::SetEquipEffect::None;
+  const auto activeSets = itemRegistry.GetActiveSets(validTids);
+  if (not activeSets.empty())
+    racer.activeSetEffect = activeSets.front()->equipEffect;
+}
+
+void RaceNetworkHandler::RefreshBotsForDifficulty(
+  RaceInstance& raceInstance,
+  Room& room,
+  const uint8_t difficulty)
+{
+  auto& tracker = raceInstance.GetTracker();
+
+  // Remove existing bots.
+  std::erase_if(
+    tracker.GetRacers(),
+    [this, &room](const auto& pair)
+    {
+      const auto& [botUid, racer] = pair;
+      if (not racer.IsBot())
+        return false;
+
+      const protocol::AcCmdCRLeaveRoomNotify leaveNotify{
+        .characterId = botUid};
+      for (const auto& player : room.GetPlayers() | std::views::values)
+      {
+        _commandServer.QueueCommand<decltype(leaveNotify)>(
+          player.GetClientId(),
+          [leaveNotify]()
+          {
+            return leaveNotify;
+          });
+      }
+
+      return true;
+    });
+
+  const auto& roomDetails = room.GetRoomDetails();
+
+  // Validate gamemode.
+  switch (roomDetails.gameMode)
+  {
+    case Room::GameMode::Speed:
+    case Room::GameMode::Magic:
+      break;
+    default:
+      return;
+  }
+
+  // Validate teammode.
+  if (roomDetails.teamMode != Room::TeamMode::Single)
+    return;
+
+  raceInstance.PrepareBots(difficulty);
+
+  for (const auto& [botUid, racer] : raceInstance.GetTracker().GetRacers())
+  {
+    if (not racer.IsBot())
+      continue;
+
+    const auto& preset = GetServerInstance()
+      .GetAiRiderRegistry()
+      .GetPresetById(racer.botConfig->presetId);
+
+    const protocol::Racer aiRacerProto{
+      .level = 1,
+      .oid = racer.oid,
+      .uid = botUid,
+      .name = preset.name,
+      .teamColor = protocol::TeamColor::None,
+      .isHidden = false,
+      .isNPC = true,
+      .npcTid = racer.botConfig->presetId};
+
+    const protocol::AcCmdCREnterRoomNotify aiNotify{
+      .racer = aiRacerProto,
+      .averageTimeRecord = 0};
+
+    for (const auto& player : room.GetPlayers() | std::views::values)
+    {
+      _commandServer.QueueCommand<decltype(aiNotify)>(
+        player.GetClientId(),
+        [aiNotify]()
+        {
+          return aiNotify;
+        });
+    }
+  }
+}
+
 RaceNetworkHandler::ClientContext& RaceNetworkHandler::GetClientContextByCharacterUid(
   const data::Uid characterUid)
 {
@@ -938,9 +1059,10 @@ void RaceNetworkHandler::HandleChangeRoomOptions(
   }
 
   // Change the room options.
+  Room::Details updatedRoomDetails{};
   _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid,
-    [this, &options, &command, clientContext](Room& room)
+    [this, &options, &command, clientContext, &updatedRoomDetails](Room& room)
     {
       auto& roomDetails = room.GetRoomDetails();
 
@@ -985,98 +1107,26 @@ void RaceNetworkHandler::HandleChangeRoomOptions(
           command.npcDifficulty,
           MinDifficulty,
           MaxDifficulty);
+        updatedRoomDetails = roomDetails;
 
         std::scoped_lock lock(_raceInstancesMutex);
         auto& raceInstance = GetRaceInstance(clientContext, false);
 
         // TODO: room must be in the waiting state
 
-        auto& tracker = raceInstance.GetTracker();
-
-        // Remove existing bots
-        std::erase_if(
-          tracker.GetRacers(),
-          [this, &room](const auto& pair)
-          {
-            const auto& [botUid, racer] = pair;
-            if (not racer.IsBot())
-              return false;
-
-            const protocol::AcCmdCRLeaveRoomNotify leaveNotify{
-              .characterId = botUid};
-            for (const auto& player : room.GetPlayers() | std::views::values)
-            {
-              _commandServer.QueueCommand<decltype(leaveNotify)>(
-                player.GetClientId(),
-                [leaveNotify]()
-                {
-                  return leaveNotify;
-                });
-            }
-
-            return true;
-          });
-
-        // Validate gamemode
-        switch (roomDetails.gameMode)
-        {
-          case Room::GameMode::Speed:
-          case Room::GameMode::Magic:
-            break;
-          default:
-            return;
-        }
-
-        // Validate teammode
-        if (roomDetails.teamMode != Room::TeamMode::Single)
-          return;
-
-        raceInstance.PrepareBots(roomDetails.npcDifficulty);
-
-        for (const auto& [botUid, racer] : raceInstance.GetTracker().GetRacers())
-        {
-          if (not racer.IsBot())
-            continue;
-
-          const auto& preset = GetServerInstance()
-            .GetAiRiderRegistry()
-            .GetPresetById(racer.botConfig->presetId);
-
-          const protocol::Racer aiRacerProto{
-            .level = 1,
-            .oid = racer.oid,
-            .uid = botUid,
-            .name = preset.name,
-            .teamColor = protocol::TeamColor::None,
-            .isHidden = false,
-            .isNPC = true,
-            .npcTid = racer.botConfig->presetId};
-
-          const protocol::AcCmdCREnterRoomNotify aiNotify{
-            .racer = aiRacerProto,
-            .averageTimeRecord = 0};
-
-          for (const auto& player : room.GetPlayers() | std::views::values)
-          {
-            _commandServer.QueueCommand<decltype(aiNotify)>(
-              player.GetClientId(),
-              [aiNotify]()
-              {
-                return aiNotify;
-              });
-          }
-        }
+        RefreshBotsForDifficulty(raceInstance, room, roomDetails.npcDifficulty);
       }
+      updatedRoomDetails = roomDetails;
     });
 
   const protocol::AcCmdCRChangeRoomOptionsNotify notify{
     .optionsBitfield = command.optionsBitfield,
-    .name = command.name,
-    .playerCount = command.playerCount,
-    .password = command.password,
-    .gameMode = command.gameMode,
-    .mapBlockId = command.mapBlockId,
-    .npcDifficulty = command.npcDifficulty};
+    .name = updatedRoomDetails.name,
+    .playerCount = static_cast<uint8_t>(updatedRoomDetails.maxPlayerCount),
+    .password = updatedRoomDetails.password,
+    .gameMode = static_cast<protocol::GameMode>(updatedRoomDetails.gameMode),
+    .mapBlockId = updatedRoomDetails.courseId,
+    .npcDifficulty = updatedRoomDetails.npcDifficulty};
 
   _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid,
@@ -1725,11 +1775,10 @@ void RaceNetworkHandler::HandleLoadingComplete(
           };
         });
 
-      auto& itemRegistry = GetServerInstance().GetItemRegistry();
       const auto equipmentRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(
         character.characterEquipment());
 
-      std::vector<uint32_t> equippedMountTids;
+      std::vector<data::Tid> equippedTids;
       if (equipmentRecords)
       {
         for (const auto& equipmentRecord : *equipmentRecords)
@@ -1739,34 +1788,11 @@ void RaceNetworkHandler::HandleLoadingComplete(
           {
             itemTid = item.tid();
           });
-
-          const auto itemTemplate = itemRegistry.GetItem(itemTid);
-          if (not itemTemplate.has_value()
-            || not itemTemplate->mountPartInfo.has_value())
-          {
-            continue;
-          }
-
-          equippedMountTids.emplace_back(itemTid);
-
-          if (itemTemplate->mountAbility.has_value())
-          {
-            const auto& ability = itemTemplate->mountAbility.value();
-            racer.mountStats.agility += ability.agility;
-            racer.mountStats.ambition += ability.ambition;
-            racer.mountStats.rush += ability.rush;
-            racer.mountStats.endurance += ability.endurance;
-            racer.mountStats.courage += ability.courage;
-          }
+          equippedTids.emplace_back(itemTid);
         }
       }
 
-      // A racer can only benefit from a single set bonus at a time, so the first
-      // fully-equipped set wins.
-      racer.activeSetEffect = registry::SetEquipEffect::None;
-      const auto activeSets = itemRegistry.GetActiveSets(equippedMountTids);
-      if (not activeSets.empty())
-        racer.activeSetEffect = activeSets.front()->equipEffect;
+      ApplyMountEquipmentStats(racer, equippedTids);
     });
 
   // Notify all clients in the room that this player's loading is complete
@@ -2030,40 +2056,37 @@ void RaceNetworkHandler::HandleAwardStart(
 }
 
 void RaceNetworkHandler::HandleAwardEnd(
-  ClientId,
+  ClientId clientId,
   const protocol::AcCmdCRAwardEnd&)
 {
-  // todo: this always crashes everyone
+  // The client is done showing the award/result screen - apply any training
+  // difficulty tier unlocked by the race that just ended.
+  const auto& clientContext = GetClientContext(clientId);
 
-  // const auto& clientContext = GetClientContext(clientId);
-  // auto& raceInstance = GetRaceInstance(clientContext);
-  //
-  // protocol::AcCmdCRAwardEndNotify notify{};
-  //
-  // // Send to clients not participating in races.
-  // for (const auto raceClientId : raceInstance.clients)
-  // {
-  //   const auto& roomClientContext = _clients[raceClientId];
-  //
-  //   // Whether the client is a participating racer that did not disconnect.
-  //   bool isParticipatingRacer = false;
-  //   if (raceInstance.GetTracker().IsRacer(roomClientContext.characterUid))
-  //   {
-  //     auto& racer = raceInstance.GetTracker().GetRacer(
-  //       roomClientContext.characterUid);
-  //     isParticipatingRacer = racer.state != tracker::RaceTracker::Racer::State::Disconnected;
-  //   }
-  //
-  //   if (isParticipatingRacer)
-  //     continue;
-  //
-  //   _commandServer.QueueCommand<decltype(notify)>(
-  //     raceClientId,
-  //     [notify]()
-  //     {
-  //       return notify;
-  //     });
-  // }
+  std::scoped_lock lock(_raceInstancesMutex);
+  auto& raceInstance = GetRaceInstance(clientContext);
+
+  const auto pendingAdvance = raceInstance.TakePendingDifficultyAdvance();
+  if (not pendingAdvance)
+    return;
+
+  raceInstance.GetRoom(
+    [this, &raceInstance, &pendingAdvance](Room& room)
+    {
+      auto& roomDetails = room.GetRoomDetails();
+      roomDetails.npcDifficulty = pendingAdvance->nextDifficulty;
+      roomDetails.courseId = pendingAdvance->mapBlockId;
+
+      RefreshBotsForDifficulty(raceInstance, room, pendingAdvance->nextDifficulty);
+    });
+
+  const protocol::AcCmdCRChangeRoomOptionsNotify notify{
+    .optionsBitfield = static_cast<protocol::RoomOptionType>(
+      static_cast<uint16_t>(protocol::RoomOptionType::MapBlockId)
+      | static_cast<uint16_t>(protocol::RoomOptionType::NpcDifficulty)),
+    .mapBlockId = pendingAdvance->mapBlockId,
+    .npcDifficulty = pendingAdvance->nextDifficulty};
+  Broadcast(raceInstance, notify);
 }
 
 void RaceNetworkHandler::HandleStarPointGet(

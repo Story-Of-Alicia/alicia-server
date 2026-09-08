@@ -386,6 +386,14 @@ struct Character
   } mailbox{};
 
   dao::Field<std::vector<Uid>> quests{};
+
+  struct TrainingRecord
+  {
+    uint32_t mapBlockId{};
+    uint8_t gameMode{};
+    uint8_t clearedDifficulty{};
+  };
+  dao::Field<std::vector<TrainingRecord>> trainingRecords{};
 };
 
 struct Horse

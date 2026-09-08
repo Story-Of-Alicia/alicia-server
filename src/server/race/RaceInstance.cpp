@@ -25,10 +25,12 @@
 
 #include <libserver/util/Util.hpp>
 
+#include <array>
 #include <tuple>
 #include <format>
 #include <limits>
 #include <optional>
+#include <utility>
 
 namespace server
 {
@@ -114,6 +116,26 @@ void RaceInstance::Stop()
     }
   }
 
+  uint8_t npcDifficulty = 0;
+  uint32_t bestTrainingCourseTime = tracker::InvalidCourseTime;
+  bool unlockedNewDifficulty = false;
+  if (this->IsTraining())
+  {
+    this->GetRoom([&npcDifficulty](const Room& room)
+    {
+      npcDifficulty = room.GetRoomSnapshot().details.npcDifficulty;
+    });
+
+    for (const auto& racer : _tracker.GetRacers() | std::views::values)
+    {
+      if (racer.state != State::Disconnected
+        && racer.courseTime < bestTrainingCourseTime)
+      {
+        bestTrainingCourseTime = racer.courseTime;
+      }
+    }
+  }
+
   // Build the score board.
   for (const auto& [characterUid, racer] : _tracker.GetRacers())
   {
@@ -143,6 +165,22 @@ void RaceInstance::Stop()
       score.name = preset.name;
       score.level = 1;
       continue;
+    }
+
+    if (this->IsTraining())
+    {
+      score.raceRecord.mapBlockId = static_cast<uint16_t>(this->GetMapBlockId());
+      score.raceRecord.gameMode = _parameters.gameMode;
+      score.raceRecord.teamMode = _parameters.teamMode;
+
+      if (racer.courseTime != tracker::InvalidCourseTime
+        && racer.courseTime == bestTrainingCourseTime)
+      {
+        score.raceRecord.trainingRecord.clearedDifficulty = npcDifficulty;
+        score.trainingCarrotReward = _raceNetworkHandler.GetServerInstance()
+          .GetAiRiderRegistry()
+          .GetClearRewardCarrots(npcDifficulty);
+      }
     }
 
     static constexpr uint32_t BaseExpReward = 420;
@@ -205,10 +243,40 @@ void RaceInstance::Stop()
     const auto characterRecord = _raceNetworkHandler.GetServerInstance().GetDataDirector().GetCharacter(
       characterUid);
 
-    characterRecord.Mutable([this, &score](data::Character& character)
+    characterRecord.Mutable([this, &score, &racer, npcDifficulty, bestTrainingCourseTime, &unlockedNewDifficulty](data::Character& character)
     {
       character.carrots() += score.carrots;
       character.experience() += score.experience;
+
+      if (this->IsTraining()
+        && racer.courseTime != tracker::InvalidCourseTime
+        && racer.courseTime == bestTrainingCourseTime)
+      {
+        const auto mapBlockId = static_cast<uint32_t>(this->GetMapBlockId());
+        const auto gameMode = static_cast<uint8_t>(_parameters.gameMode);
+
+        auto& trainingRecords = character.trainingRecords();
+        const auto recordIter = std::ranges::find_if(
+          trainingRecords,
+          [mapBlockId, gameMode](const auto& record)
+          {
+            return record.mapBlockId == mapBlockId && record.gameMode == gameMode;
+          });
+
+        if (recordIter == trainingRecords.end())
+        {
+          trainingRecords.push_back(data::Character::TrainingRecord{
+            .mapBlockId = mapBlockId,
+            .gameMode = gameMode,
+            .clearedDifficulty = npcDifficulty});
+          unlockedNewDifficulty = true;
+        }
+        else if (npcDifficulty > recordIter->clearedDifficulty)
+        {
+          recordIter->clearedDifficulty = npcDifficulty;
+          unlockedNewDifficulty = true;
+        }
+      }
 
       const uint32_t newLevel = _raceNetworkHandler.GetServerInstance().GetCharacterRegistry().GetLevelForExp(character.experience());
       if (newLevel > character.level())
@@ -261,6 +329,13 @@ void RaceInstance::Stop()
 
   // Broadcast the race result
   _raceNetworkHandler.Broadcast(*this, raceResult);
+
+  if (unlockedNewDifficulty && npcDifficulty < 4)
+  {
+    _pendingDifficultyAdvance = PendingDifficultyAdvance{
+      .nextDifficulty = static_cast<uint8_t>(npcDifficulty + 1),
+      .mapBlockId = static_cast<uint16_t>(this->GetMapBlockId())};
+  }
 
   // The race counts towards every racer's ranch bonus, which pays out on each
   // twentieth race. The client expects the update to follow the race result.
@@ -537,6 +612,13 @@ void RaceInstance::SetBonusCourseType(const protocol::BonusCourseType type) noex
 data::Uid RaceInstance::GetBotControllerUid() const noexcept
 {
   return _botControllerUid;
+}
+
+std::optional<RaceInstance::PendingDifficultyAdvance> RaceInstance::TakePendingDifficultyAdvance() noexcept
+{
+  const auto pending = _pendingDifficultyAdvance;
+  _pendingDifficultyAdvance.reset();
+  return pending;
 }
 
 void RaceInstance::TickLoading()
@@ -945,8 +1027,12 @@ void RaceInstance::PrepareMap()
         _gameModeId));
   }
 
+  if (_parameters.mapBlockId == AllMapsCourseId && this->IsTraining())
+  {
+    _mapBlockId = 1;
+  }
   // If the map is set to a course pick a random map.
-  if (_parameters.mapBlockId == AllMapsCourseId
+  else if (_parameters.mapBlockId == AllMapsCourseId
     || _parameters.mapBlockId == NewMapsCourseId
     || _parameters.mapBlockId == HotMapsCourseId)
   {
@@ -1056,17 +1142,24 @@ void RaceInstance::PrepareBots(uint8_t difficulty)
   }
 
   static constexpr size_t MaxBotsPerRace = 7;
-  auto botPresets = _raceNetworkHandler
-    .GetServerInstance()
-    .GetAiRiderRegistry()
-    .GetPresetsForDifficulty(difficulty);
 
-  std::ranges::sort(
-    botPresets,
-    [](const auto& a, const auto& b)
-    {
-      return a.aiType > b.aiType;
-    });
+  static constexpr std::array<std::pair<uint32_t, uint32_t>, 4> DifficultyPresetIdRanges{{
+    {8, 14},
+    {15, 21},
+    {22, 28},
+    {219, 225},
+  }};
+
+  if (difficulty < 1 || difficulty > DifficultyPresetIdRanges.size())
+    throw std::runtime_error(
+      std::format("No AI preset range configured for difficulty {}", difficulty));
+
+  const auto& [firstPresetId, lastPresetId] = DifficultyPresetIdRanges[difficulty - 1];
+
+  auto& aiRiderRegistry = _raceNetworkHandler.GetServerInstance().GetAiRiderRegistry();
+  std::vector<registry::AiRiderPreset> botPresets;
+  for (uint32_t presetId = firstPresetId; presetId <= lastPresetId; ++presetId)
+    botPresets.push_back(aiRiderRegistry.GetPresetById(presetId));
 
   static constexpr data::Uid BotUidBase = 0xF0000000u;
 
@@ -1090,6 +1183,8 @@ void RaceInstance::PrepareBots(uint8_t difficulty)
       .presetId = preset.id,
       .aiDifficulty = difficulty,
       .aiType = preset.aiType};
+
+    _raceNetworkHandler.ApplyMountEquipmentStats(racer, preset.equipmentTids);
   }
 }
 
