@@ -19,6 +19,7 @@
 
 #include "server/ranch/RanchDirector.hpp"
 
+#include "server/event/GameEvent.hpp"
 #include "server/ServerInstance.hpp"
 #include "server/system/ItemSystem.hpp"
 
@@ -4576,6 +4577,14 @@ void RanchDirector::HandleUseItem(
       horseUid,
       usedItemTid,
       response);
+
+    if (consumeItem)
+    {
+      GetServerInstance().GetGameEventBus().Fire({
+        .kind = GameEvent::Kind::FeedHorse,
+        .origin = GameEvent::Origin::Ranch,
+        .characterUid = clientContext.characterUid});
+    }
   }
   else if (itemTemplate->careParameters)
   {
@@ -4584,6 +4593,14 @@ void RanchDirector::HandleUseItem(
       horseUid,
       usedItemTid,
       response);
+
+    if (consumeItem)
+    {
+      GetServerInstance().GetGameEventBus().Fire({
+        .kind = GameEvent::Kind::WashHorse,
+        .origin = GameEvent::Origin::Ranch,
+        .characterUid = clientContext.characterUid});
+    }
   }
   else if (itemTemplate->playParameters)
   {
@@ -7536,6 +7553,12 @@ void RanchDirector::SendDailyQuestNotificationToCharacter(
       return;
     }
   }
+
+  spdlog::warn(
+    "RanchDirector::SendDailyQuestNotificationToCharacter: character {} not found among {} connected ranch clients, notify for quest {} dropped",
+    characterUid,
+    _clients.size(),
+    updateNotify.questId);
 }
 
 void RanchDirector::HandleBreedingTakeMoney(

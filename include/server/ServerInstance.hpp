@@ -24,6 +24,7 @@
 #include "server/chat/AllChatDirector.hpp"
 #include "server/chat/PrivateChatDirector.hpp"
 #include "server/Config.hpp"
+#include "server/event/GameEvent.hpp"
 #include "server/lobby/LobbyDirector.hpp"
 #include "server/messenger/MessengerDirector.hpp"
 #include "server/race/RaceDirector.hpp"
@@ -152,6 +153,10 @@ public:
   //! Returns reference to the speed registry.
   //! @returns Reference to the speed registry.
   registry::SpeedRegistry& GetSpeedRegistry();
+
+  //! Returns reference to the game event bus.
+  //! @returns Reference to the game event bus.
+  GameEventBus& GetGameEventBus();
 
   //! Returns reference to the chat system.
   //! @returns Reference to the chat system.
@@ -321,6 +326,9 @@ private:
   registry::BreedingRegistry _breedingRegistry;
   //! A registry of speed config data.
   registry::SpeedRegistry _speedRegistry;
+
+  //! The game event bus.
+  GameEventBus _gameEventBus;
 
   //! A chat system.
   ChatSystem _chatSystem;

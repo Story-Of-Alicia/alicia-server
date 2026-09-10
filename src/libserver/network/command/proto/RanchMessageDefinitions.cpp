@@ -2922,26 +2922,6 @@ void AcCmdCRUpdateMountInfoOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
-void AcCmdRCUpdateDailyQuestNotify::Write(
-  const AcCmdRCUpdateDailyQuestNotify& command,
-  SinkStream& stream)
-{
-  stream.Write(command.characterUid);
-  stream.Write(command.questId);
-  stream.Write(command.objectiveProgress);
-  stream.Write(command.carrotsReward);
-  stream.Write(command.rewardType);
-  stream.Write(command.unk2);
-  stream.Write(command.mountExp);
-}
-
-void AcCmdRCUpdateDailyQuestNotify::Read(
-  AcCmdRCUpdateDailyQuestNotify&,
-  SourceStream&)
-{
-  throw std::runtime_error("Not implemented.");
-}
-
 void AcCmdCRRequestDailyQuestReward::Write(
   const AcCmdCRRequestDailyQuestReward&,
   SinkStream&)

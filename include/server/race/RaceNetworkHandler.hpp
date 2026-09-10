@@ -65,12 +65,11 @@ public:
     uint32_t ranchUid) noexcept;
 
   void SendDailyQuestNotificationToCharacter(
-    uint32_t characterUid,
+    data::Uid characterUid,
     uint16_t questId,
     const protocol::ObjectiveProgress& objectiveProgress,
     uint32_t carrotsReward,
     protocol::QuestRewardType rewardType,
-    uint32_t unk2,
     uint32_t mountExp);
 
   //! Sends the recurring ranch bonus payout to a character, if connected.

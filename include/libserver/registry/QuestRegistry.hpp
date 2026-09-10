@@ -145,6 +145,8 @@ struct Quest
   Function function{};
   //! Parameter value for the function (e.g. map ID, count, etc.).
   uint32_t functionValue{};
+  //! Client-side achievement event category (UserAchvEvent in libconfig).
+  uint32_t userAchvEvent{};
   //! Linked reward ID (references a QuestReward).
   uint32_t rewardId{};
   //! horse Exp reward.

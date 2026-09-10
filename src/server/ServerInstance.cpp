@@ -398,6 +398,11 @@ registry::SpeedRegistry& ServerInstance::GetSpeedRegistry()
   return _speedRegistry;
 }
 
+GameEventBus& ServerInstance::GetGameEventBus()
+{
+  return _gameEventBus;
+}
+
 ChatSystem& ServerInstance::GetChatSystem()
 {
   return _chatSystem;

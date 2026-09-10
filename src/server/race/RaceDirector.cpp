@@ -91,13 +91,12 @@ void RaceDirector::NotifyRoomNameChanged(const uint32_t roomUid) noexcept
 }
 
 void RaceDirector::SendDailyQuestNotificationToCharacter(
-  uint32_t characterUid,
-  uint16_t questId,
+  const data::Uid characterUid,
+  const uint16_t questId,
   const protocol::ObjectiveProgress& objectiveProgress,
-  uint32_t carrotsReward,
-  protocol::QuestRewardType rewardType,
-  uint32_t unk2,
-  uint32_t mountExp)
+  const uint32_t carrotsReward,
+  const protocol::QuestRewardType rewardType,
+  const uint32_t mountExp)
 {
   GetNetworkHandler().SendDailyQuestNotificationToCharacter(
     characterUid,
@@ -105,7 +104,6 @@ void RaceDirector::SendDailyQuestNotificationToCharacter(
     objectiveProgress,
     carrotsReward,
     rewardType,
-    unk2,
     mountExp);
 }
 

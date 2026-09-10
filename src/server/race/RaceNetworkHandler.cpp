@@ -17,9 +17,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
+#include "server/event/GameEvent.hpp"
 #include "server/race/MagicSystem.hpp"
 #include "server/race/RaceNetworkHandler.hpp"
 #include "server/system/PotentialSystem.hpp"
+#include "server/system/QuestSystem.hpp"
 
 #include "server/ServerInstance.hpp"
 
@@ -387,37 +389,32 @@ void RaceNetworkHandler::SendRanchBonusNotify(
 }
 
 void RaceNetworkHandler::SendDailyQuestNotificationToCharacter(
-  uint32_t characterUid,
-  uint16_t questId,
+  const data::Uid characterUid,
+  const uint16_t questId,
   const protocol::ObjectiveProgress& objectiveProgress,
-  uint32_t carrotsReward,
-  protocol::QuestRewardType rewardType,
-  uint32_t unk2,
-  uint32_t mountExp)
+  const uint32_t carrotsReward,
+  const protocol::QuestRewardType rewardType,
+  const uint32_t mountExp)
 {
+  const auto clientId = FindClientIdByCharacterUid(characterUid);
+  if (not clientId)
+    return;
+
   const protocol::AcCmdRCUpdateDailyQuestNotify updateNotify{
-    .characterUid = characterUid,
+    .characterUid = static_cast<uint32_t>(characterUid),
     .questId = questId,
     .objectiveProgress = objectiveProgress,
     .carrotsReward = carrotsReward,
     .rewardType = rewardType,
-    .unk2 = unk2,
+    .unk2 = 0,
     .mountExp = mountExp};
 
-  try
-  {
-    const ClientId clientId = GetClientIdByCharacterUid(characterUid);
-    _commandServer.QueueCommand<protocol::AcCmdRCUpdateDailyQuestNotify>(
-      clientId,
-      [updateNotify]()
-      {
-        return updateNotify;
-      });
-  }
-  catch (const std::exception&)
-  {
-    // Ignore
-  }
+  _commandServer.QueueCommand<protocol::AcCmdRCUpdateDailyQuestNotify>(
+    *clientId,
+    [updateNotify]()
+    {
+      return updateNotify;
+    });
 }
 
 void RaceNetworkHandler::HandleClientConnected(ClientId clientId)
@@ -1996,6 +1993,12 @@ void RaceNetworkHandler::HandleRequestSpur(
 
   racer.starPointValue -= gameModeTemplate.spurConsumeStarPoints;
 
+  GetServerInstance().GetGameEventBus().Fire({
+    .kind = GameEvent::Kind::BoostUsed,
+    .origin = GameEvent::Origin::Race,
+    .characterUid = clientContext.characterUid,
+    .gameMode = QuestSystem::ToGameModeFlag(parameters.gameMode, parameters.teamMode)});
+
   protocol::AcCmdCRRequestSpurOK response{
     .characterOid = command.characterOid,
     .activeBoosters = command.activeBoosters,
@@ -2088,6 +2091,13 @@ void RaceNetworkHandler::HandleHurdleClearResult(
 
       // Update boost gauge
       starPointResponse.starPointValue = racer.starPointValue;
+
+      GetServerInstance().GetGameEventBus().Fire({
+        .kind = GameEvent::Kind::PerfectJump,
+        .origin = GameEvent::Origin::Race,
+        .characterUid = clientContext.characterUid,
+        .gameMode = QuestSystem::ToGameModeFlag(parameters.gameMode, parameters.teamMode)});
+
       break;
     }
     case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Good:
@@ -3347,7 +3357,21 @@ void RaceNetworkHandler::HandleActivateSkillEffect(
     }
 
     if (magicSlotInfo->basicType == race::MagicType::FireBall)
+    {
       GrantOnePlusOneMagicItem(raceInstance, command.attackerOid);
+
+      auto& racers = raceInstance.GetTracker().GetRacers();
+      const auto attackerIter = race::MagicSystem::FindRacerByOid(racers, command.attackerOid);
+      if (attackerIter != racers.end())
+      {
+        const auto& parameters = raceInstance.GetParameters();
+        GetServerInstance().GetGameEventBus().Fire({
+          .kind = GameEvent::Kind::FireballAttack,
+          .origin = GameEvent::Origin::Race,
+          .characterUid = attackerIter->first,
+          .gameMode = QuestSystem::ToGameModeFlag(parameters.gameMode, parameters.teamMode)});
+      }
+    }
   }
   if (magicSlotInfo->basicType == race::MagicType::Summon)
     targetRacer.pendingMagicTarget.reset();

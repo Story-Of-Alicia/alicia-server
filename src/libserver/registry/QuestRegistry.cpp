@@ -81,6 +81,7 @@ void ReadQuest(Quest& quest, const YAML::Node& yaml)
   else                                                   quest.function = Quest::Function::Unknown;
 
   quest.functionValue = yaml["functionValue"].as<decltype(Quest::functionValue)>(0);
+  quest.userAchvEvent = yaml["userAchvEvent"].as<decltype(Quest::userAchvEvent)>(0);
   quest.rewardId = yaml["rewardId"].as<decltype(Quest::rewardId)>(0);
   quest.rewardExp = yaml["rewardExp"].as<decltype(Quest::rewardExp)>(0);
   quest.rewardGameMoney = yaml["rewardGameMoney"].as<decltype(Quest::rewardGameMoney)>(0);

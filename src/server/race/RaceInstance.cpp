@@ -19,9 +19,11 @@
 
 #include "server/ServerInstance.hpp"
 
+#include "server/event/GameEvent.hpp"
 #include "server/race/MagicSystem.hpp"
 #include "server/race/RaceInstance.hpp"
 #include "server/race/RaceNetworkHandler.hpp"
+#include "server/system/QuestSystem.hpp"
 
 #include <libserver/util/Util.hpp>
 
@@ -247,6 +249,55 @@ void RaceInstance::Stop()
 
   // Broadcast the race result
   _raceNetworkHandler.Broadcast(*this, raceResult);
+
+  // Fire game events for progress-tracking systems (quests, achievements, ...)
+  // subscribed to the game event bus.
+  {
+    auto& gameEventBus = _raceNetworkHandler.GetServerInstance().GetGameEventBus();
+    const auto gameModeFlag = QuestSystem::ToGameModeFlag(_parameters.gameMode, _parameters.teamMode);
+
+    for (std::size_t index = 0; index < raceResult.scores.size(); ++index)
+    {
+      const auto& score = raceResult.scores[index];
+      // Did not finish (disconnected or timed out).
+      if (score.courseTime == tracker::InvalidCourseTime)
+        continue;
+
+      const data::Uid characterUid = score.uid;
+
+      gameEventBus.Fire({
+        .kind = GameEvent::Kind::Any,
+        .origin = GameEvent::Origin::Race,
+        .characterUid = characterUid,
+        .gameMode = gameModeFlag});
+
+      gameEventBus.Fire({
+        .kind = GameEvent::Kind::RunMap,
+        .origin = GameEvent::Origin::Race,
+        .characterUid = characterUid,
+        .gameMode = gameModeFlag,
+        .value = _parameters.mapBlockId});
+
+      // Top 3 finishers, by placement order already established by the sort above.
+      if (index < 3)
+      {
+        gameEventBus.Fire({
+          .kind = GameEvent::Kind::PrizeWinner,
+          .origin = GameEvent::Origin::Race,
+          .characterUid = characterUid,
+          .gameMode = QuestSystem::ToWinGameModeFlag(_parameters.gameMode, _parameters.teamMode)});
+      }
+
+      if (_parameters.teamMode == protocol::TeamMode::Team && score.teamColor == winningTeam)
+      {
+        gameEventBus.Fire({
+          .kind = GameEvent::Kind::TeamWin,
+          .origin = GameEvent::Origin::Race,
+          .characterUid = characterUid,
+          .gameMode = gameModeFlag});
+      }
+    }
+  }
 
   // The race counts towards every racer's ranch bonus, which pays out on each
   // twentieth race. The client expects the update to follow the race result.
