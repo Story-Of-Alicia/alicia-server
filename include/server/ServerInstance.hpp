@@ -55,6 +55,7 @@
 #include <libserver/registry/ItemRegistry.hpp>
 #include <libserver/registry/MagicRegistry.hpp>
 #include <libserver/registry/PetRegistry.hpp>
+#include <libserver/registry/QuestItemRegistry.hpp>
 #include <libserver/registry/QuestRegistry.hpp>
 #include <libserver/registry/SpeedRegistry.hpp>
 #include <libserver/registry/SystemContentRegistry.hpp>
@@ -143,6 +144,10 @@ public:
   //! Returns reference to the Quest registry.
   //! @returns Reference to the Quest registry.
   registry::QuestRegistry& GetQuestRegistry();
+
+  //! Returns reference to the Quest item registry.
+  //! @returns Reference to the Quest item registry.
+  registry::QuestItemRegistry& GetQuestItemRegistry();
 
   //! Returns reference to the Magic registry.
   //! @returns Reference to the Magic registry.
@@ -332,6 +337,8 @@ private:
   registry::PetRegistry _petRegistry;
   //! A registry of quests.
   registry::QuestRegistry _questRegistry;
+  //! A registry of quest item spawn decks.
+  registry::QuestItemRegistry _questItemRegistry;
   //! The system content registry.
   registry::SystemContentRegistry _systemContentRegistry;
   //! A registry of breeding config data.

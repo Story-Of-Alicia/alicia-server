@@ -366,6 +366,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdUserRaceItemGet& command);
 
+  void HandleGameQuestItemGet(
+    ClientId clientId,
+    const protocol::AcCmdGameQuestItemGet& command);
+
   // Magic Targeting Commands for Bolt System
   void HandleStartMagicTarget(
     ClientId clientId,

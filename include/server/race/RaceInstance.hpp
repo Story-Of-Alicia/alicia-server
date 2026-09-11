@@ -29,7 +29,10 @@
 
 #include <chrono>
 #include <functional>
+#include <unordered_map>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace server
 {
@@ -96,6 +99,8 @@ public:
   [[nodiscard]] protocol::BonusCourseType GetBonusCourseType() const noexcept;
   void SetBonusCourseType(protocol::BonusCourseType type) noexcept;
 
+  void AssignQuestItemsToRacers();
+
 private:
   void TickLoading();
   void TickRacing();
@@ -115,8 +120,12 @@ public:
 
 private:
   void PrepareItemDecks();
+  void PrepareQuestItems();
 
   const uint32_t _roomUid{};
+
+  std::unordered_map<uint32_t, std::pair<registry::DeckId, std::vector<protocol::Vector3>>>
+    _questItemPools{};
 
   //! The race parameters.
   Parameters _parameters;

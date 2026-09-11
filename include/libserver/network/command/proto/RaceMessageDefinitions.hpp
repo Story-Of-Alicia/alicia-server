@@ -2196,6 +2196,64 @@ struct AcCmdGameRaceItemGet
     SourceStream& stream);
 };
 
+struct AcCmdGameQuestItemSpawn
+{
+  uint32_t itemId{};
+  uint32_t questItemId{};
+  uint32_t itemType{};
+  std::array<float, 3> position;
+  std::array<float, 4> orientation;
+  uint8_t sizeLevel{};
+  //! Delay before removal in milliseconds.
+  uint32_t removeDelay{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdGameQuestItemSpawn;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdGameQuestItemSpawn& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdGameQuestItemSpawn& command,
+    SourceStream& stream);
+};
+
+struct AcCmdGameQuestItemGet
+{
+  uint16_t characterOid{};
+  uint32_t itemId{};
+  uint32_t questItemId{};
+  uint32_t itemType{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdGameQuestItemGet;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdGameQuestItemGet& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdGameQuestItemGet& command,
+    SourceStream& stream);
+};
+
 // Magic Targeting Commands for Bolt System
 struct AcCmdCRStartMagicTarget
 {

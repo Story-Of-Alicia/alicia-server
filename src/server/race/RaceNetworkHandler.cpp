@@ -217,6 +217,12 @@ RaceNetworkHandler::RaceNetworkHandler(ServerInstance& serverInstance)
       HandleUserRaceItemGet(clientId, message);
     });
 
+  _commandServer.RegisterCommandHandler<protocol::AcCmdGameQuestItemGet>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleGameQuestItemGet(clientId, message);
+    });
+
   // Magic Targeting Commands for Bolt System
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRStartMagicTarget>(
     [this](ClientId clientId, const auto& message)
@@ -1438,6 +1444,8 @@ void RaceNetworkHandler::HandleStartRace(
         }
       }
     });
+
+  raceInstance.AssignQuestItemsToRacers();
 
   _serverInstance.GetRoomSystem().GetRoom(
     roomUid,
@@ -4274,6 +4282,67 @@ void RaceNetworkHandler::HandleGameCreateClientItem(
   auto& item = raceInstance.GetTracker().AddEventItem(clientContext.characterUid);
   item.position = command.position;
   item.itemType = selectedEgg.deckItemId;
+}
+
+void RaceNetworkHandler::HandleGameQuestItemGet(
+  const ClientId clientId,
+  const protocol::AcCmdGameQuestItemGet& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  std::scoped_lock lock(_raceInstancesMutex);
+
+  auto& raceInstance = GetRaceInstance(clientContext);
+  auto& racer = raceInstance.GetTracker().GetRacer(clientContext.characterUid);
+
+  const auto requestedItemId = static_cast<tracker::Oid>(command.itemId);
+
+  const auto itemOid = raceInstance.GetTracker().FindEventItem(
+    clientContext.characterUid,
+    requestedItemId);
+
+  if (itemOid == tracker::InvalidEntityOid)
+  {
+    spdlog::warn(
+      "RaceNetworkHandler::HandleGameQuestItemGet: character {} picked up untracked "
+      "quest item {}",
+      clientContext.characterUid,
+      requestedItemId);
+    return;
+  }
+
+  auto& item = raceInstance.GetTracker().GetEventItem(clientContext.characterUid, itemOid);
+  if (not item.qTemId.has_value())
+  {
+    spdlog::warn(
+      "RaceNetworkHandler::HandleGameQuestItemGet: character {} picked up event item {} "
+      "that isn't a quest item",
+      clientContext.characterUid,
+      requestedItemId);
+    return;
+  }
+
+  const auto qTemId = *item.qTemId;
+  const auto itemType = item.itemType;
+
+  raceInstance.GetTracker().RemoveEventItem(clientContext.characterUid, requestedItemId);
+  racer.trackedDecks.erase(requestedItemId);
+
+  const protocol::AcCmdGameQuestItemGet questItemGet{
+    .characterOid = command.characterOid,
+    .itemId = requestedItemId,
+    .questItemId = qTemId,
+    .itemType = itemType};
+  this->Broadcast(raceInstance, questItemGet);
+
+  const auto& parameters = raceInstance.GetParameters();
+  GetServerInstance().GetGameEventBus().Fire({
+    .userAchvEvent = registry::UserAchvEvent::CollectDropItem,
+    .function = registry::Function::CollectDropItem,
+    .origin = GameEvent::Origin::Race,
+    .characterUid = clientContext.characterUid,
+    .gameMode = GameEventSystem::ToGameModeFlag(parameters.gameMode, parameters.teamMode),
+    .value = qTemId});
 }
 
 } // namespace server
