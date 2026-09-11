@@ -249,12 +249,77 @@ std::vector<protocol::AcCmdRCUpdateDailyQuestNotify> QuestSystem::OnQuestEvent(
   return notifies;
 }
 
+std::vector<protocol::AcCmdRCUpdateQuestNotify> QuestSystem::OnRegularQuestEvent(
+  const data::Uid characterUid,
+  const GameEvent& event)
+{
+  auto& dataDirector = _serverInstance.GetDataDirector();
+  const auto& questRegistry = _serverInstance.GetQuestRegistry();
+
+  const auto characterRecord = dataDirector.GetCharacter(characterUid);
+  if (!characterRecord)
+    return {};
+
+  std::vector<data::Uid> questUids;
+  characterRecord.Immutable([&questUids](const data::Character& character)
+  {
+    questUids = character.quests();
+  });
+
+  std::vector<protocol::AcCmdRCUpdateQuestNotify> notifies;
+
+  for (const data::Uid questUid : questUids)
+  {
+    auto questRecord = dataDirector.GetQuest(questUid);
+    if (!questRecord)
+      continue;
+
+    questRecord.Mutable([&](data::Quest& quest)
+    {
+      // Only in-progress quests can advance.
+      if (quest.isCompleted() != data::Quest::Status::InProgress)
+        return;
+
+      const auto questDef = questRegistry.GetQuest(quest.questId());
+      if (!questDef)
+      {
+        spdlog::warn(
+          "QuestSystem::OnRegularQuestEvent: quest {} not found in registry",
+          quest.questId());
+        return;
+      }
+
+      if (not Matches(*questDef, event))
+        return;
+
+      // Advance progress by 1 (all quest functions are count-based)
+      quest.progress() = std::min(quest.progress() + 1, questDef->successValue);
+
+      const bool completed = quest.progress() >= questDef->successValue;
+      if (completed)
+        quest.isCompleted() = data::Quest::Status::ReadyToClaim;
+
+      notifies.push_back({
+        .characterUid = static_cast<uint32_t>(characterUid),
+        .questTid = static_cast<uint16_t>(quest.questId()),
+        .objectiveProgress = {
+          .isCompleted = completed,
+          .progress = quest.progress(),
+        },
+      });
+    });
+  }
+
+  return notifies;
+}
+
 void QuestSystem::HandleGameEvent(const GameEvent& event)
 {
   if (event.userAchvEvent == registry::UserAchvEvent::None)
     return;
 
   const auto notifies = OnQuestEvent(event.characterUid, event);
+  const auto regularNotifies = OnRegularQuestEvent(event.characterUid, event);
 
   // Send the notify packets to the appropriate director based on the event origin
   switch (event.origin)
@@ -264,6 +329,8 @@ void QuestSystem::HandleGameEvent(const GameEvent& event)
       auto& ranchDirector = _serverInstance.GetRanchDirector();
       for (const auto& notify : notifies)
         ranchDirector.SendDailyQuestNotificationToCharacter(event.characterUid, notify);
+      for (const auto& notify : regularNotifies)
+        ranchDirector.SendQuestNotificationToCharacter(event.characterUid, notify);
       break;
     }
     case GameEvent::Origin::Race:
@@ -278,6 +345,13 @@ void QuestSystem::HandleGameEvent(const GameEvent& event)
           notify.carrotsReward,
           notify.rewardType,
           notify.mountExp);
+      }
+      for (const auto& notify : regularNotifies)
+      {
+        raceDirector.SendQuestNotificationToCharacter(
+          event.characterUid,
+          notify.questTid,
+          notify.objectiveProgress);
       }
       break;
     }

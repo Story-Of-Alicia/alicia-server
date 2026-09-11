@@ -48,6 +48,13 @@ public:
     data::Uid characterUid,
     const GameEvent& event);
 
+  //! @param characterUid UID of the character.
+  //! @param event The event that occurred.
+  //! @returns Notify packets for the caller to send to the character.
+  [[nodiscard]] std::vector<protocol::AcCmdRCUpdateQuestNotify> OnRegularQuestEvent(
+    data::Uid characterUid,
+    const GameEvent& event);
+
   //! Tests whether an event satisfies a quest's completion condition.
   //! @param quest Quest definition.
   //! @param event The event that occurred.

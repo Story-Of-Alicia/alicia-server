@@ -72,6 +72,10 @@ public:
     protocol::QuestRewardType rewardType,
     uint32_t mountExp);
 
+  void SendQuestNotificationToCharacter(
+    data::Uid characterUid,
+    const protocol::AcCmdRCUpdateQuestNotify& updateNotify);
+
   //! Sends the recurring ranch bonus payout to a character, if connected.
   void SendRanchBonusNotify(
     data::Uid characterUid,

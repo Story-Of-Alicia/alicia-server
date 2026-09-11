@@ -2617,7 +2617,7 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
       groupUid = character.dailyQuestGroupUid();
     });
 
-  // No daily quest group assigned yet (never registered) — nothing to report.
+  // No daily quest group assigned yet
   if (groupUid == data::InvalidUid)
     return;
 
@@ -2684,9 +2684,7 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
     }
   });
 
-  // No daily quests registered for today yet (e.g. never registered, or the
-  // 6AM reset just cleared the group) — nothing to report until the client
-  // registers a new batch.
+  // No daily quests registered for today yet
   if (not hasQuests)
     return;
 
@@ -2728,6 +2726,12 @@ void LobbyNetworkHandler::HandleRequestQuestList(
   const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     clientContext.characterUid);
+
+  _serverInstance.GetGameEventBus().Fire({
+    .userAchvEvent = registry::UserAchvEvent::NPCDialogLevel,
+    .function = registry::Function::True,
+    .origin = GameEvent::Origin::Ranch,
+    .characterUid = clientContext.characterUid});
 
   protocol::AcCmdCLRequestQuestListOK response{};
 

@@ -107,6 +107,19 @@ void RaceDirector::SendDailyQuestNotificationToCharacter(
     mountExp);
 }
 
+void RaceDirector::SendQuestNotificationToCharacter(
+  const data::Uid characterUid,
+  const uint16_t questTid,
+  const protocol::ObjectiveProgress& objectiveProgress)
+{
+  const protocol::AcCmdRCUpdateQuestNotify updateNotify{
+    .characterUid = static_cast<uint32_t>(characterUid),
+    .questTid = questTid,
+    .objectiveProgress = objectiveProgress};
+
+  GetNetworkHandler().SendQuestNotificationToCharacter(characterUid, updateNotify);
+}
+
 RaceNetworkHandler& RaceDirector::GetNetworkHandler()
 {
   if (_networkHandler == nullptr)

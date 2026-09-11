@@ -423,6 +423,22 @@ void RaceNetworkHandler::SendDailyQuestNotificationToCharacter(
     });
 }
 
+void RaceNetworkHandler::SendQuestNotificationToCharacter(
+  const data::Uid characterUid,
+  const protocol::AcCmdRCUpdateQuestNotify& updateNotify)
+{
+  const auto clientId = FindClientIdByCharacterUid(characterUid);
+  if (not clientId)
+    return;
+
+  _commandServer.QueueCommand<protocol::AcCmdRCUpdateQuestNotify>(
+    *clientId,
+    [updateNotify]()
+    {
+      return updateNotify;
+    });
+}
+
 void RaceNetworkHandler::HandleClientConnected(ClientId clientId)
 {
   _clients.try_emplace(clientId);

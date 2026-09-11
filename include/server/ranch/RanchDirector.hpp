@@ -104,6 +104,10 @@ public:
     data::Uid characterUid,
     const protocol::AcCmdRCUpdateDailyQuestNotify& updateNotify);
 
+  void SendQuestNotificationToCharacter(
+    data::Uid characterUid,
+    const protocol::AcCmdRCUpdateQuestNotify& updateNotify);
+
   void SendGuildInviteDeclined(
     data::Uid characterUid,
     data::Uid inviterCharacterUid,

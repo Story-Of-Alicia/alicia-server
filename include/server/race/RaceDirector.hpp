@@ -61,6 +61,10 @@ public:
     uint32_t carrotsReward,
     protocol::QuestRewardType rewardType,
     uint32_t mountExp);
+  void SendQuestNotificationToCharacter(
+    data::Uid characterUid,
+    uint16_t questTid,
+    const protocol::ObjectiveProgress& objectiveProgress);
 
   [[nodiscard]] RaceNetworkHandler& GetNetworkHandler();
 
