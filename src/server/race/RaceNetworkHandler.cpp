@@ -20,8 +20,8 @@
 #include "server/event/GameEvent.hpp"
 #include "server/race/MagicSystem.hpp"
 #include "server/race/RaceNetworkHandler.hpp"
+#include "server/system/GameEventSystem.hpp"
 #include "server/system/PotentialSystem.hpp"
-#include "server/system/QuestSystem.hpp"
 
 #include "server/ServerInstance.hpp"
 
@@ -70,6 +70,12 @@ RaceNetworkHandler::RaceNetworkHandler(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& message)
     {
       HandleStartRace(clientId, message);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRAchievementUpdateProperty>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleAchievementUpdateProperty(clientId, message);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceTimer>(
@@ -1066,6 +1072,43 @@ void RaceNetworkHandler::HandleChangeTeam(
     clientContext.characterUid);
 }
 
+void RaceNetworkHandler::HandleAchievementUpdateProperty(
+  const ClientId clientId,
+  const protocol::AcCmdCRAchievementUpdateProperty& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  spdlog::debug(
+    "Character {} reported achievement property {} = '{}'",
+    clientContext.characterUid,
+    static_cast<uint16_t>(command.achievementEvent),
+    command.achievementValue);
+
+  const auto userAchvEvent =
+    static_cast<registry::UserAchvEvent>(command.achievementEvent);
+
+  auto gameMode = registry::Quest::GameModeFlag::None;
+  {
+    std::scoped_lock lock(_raceInstancesMutex);
+    try
+    {
+      const auto& parameters = GetRaceInstance(clientContext, false).GetParameters();
+      gameMode = GameEventSystem::ToGameModeFlag(parameters.gameMode, parameters.teamMode);
+    }
+    catch (const std::exception&)
+    {
+      // No live race instance for this client.
+    }
+  }
+
+  GetServerInstance().GetGameEventSystem().ReportAchievement(
+    clientContext.characterUid,
+    GameEvent::Origin::Race,
+    userAchvEvent,
+    command.achievementValue,
+    gameMode);
+}
+
 void RaceNetworkHandler::HandleLeaveRoom(ClientId clientId)
 {
   protocol::AcCmdCRLeaveRoomOK response{};
@@ -1994,10 +2037,11 @@ void RaceNetworkHandler::HandleRequestSpur(
   racer.starPointValue -= gameModeTemplate.spurConsumeStarPoints;
 
   GetServerInstance().GetGameEventBus().Fire({
-    .kind = GameEvent::Kind::BoostUsed,
+    .userAchvEvent = registry::UserAchvEvent::SpurUsed,
+    .function = registry::Function::True,
     .origin = GameEvent::Origin::Race,
     .characterUid = clientContext.characterUid,
-    .gameMode = QuestSystem::ToGameModeFlag(parameters.gameMode, parameters.teamMode)});
+    .gameMode = GameEventSystem::ToGameModeFlag(parameters.gameMode, parameters.teamMode)});
 
   protocol::AcCmdCRRequestSpurOK response{
     .characterOid = command.characterOid,
@@ -2093,10 +2137,11 @@ void RaceNetworkHandler::HandleHurdleClearResult(
       starPointResponse.starPointValue = racer.starPointValue;
 
       GetServerInstance().GetGameEventBus().Fire({
-        .kind = GameEvent::Kind::PerfectJump,
+        .userAchvEvent = registry::UserAchvEvent::PerfectJumpCount,
+        .function = registry::Function::PerfectJump,
         .origin = GameEvent::Origin::Race,
         .characterUid = clientContext.characterUid,
-        .gameMode = QuestSystem::ToGameModeFlag(parameters.gameMode, parameters.teamMode)});
+        .gameMode = GameEventSystem::ToGameModeFlag(parameters.gameMode, parameters.teamMode)});
 
       break;
     }
@@ -3366,10 +3411,11 @@ void RaceNetworkHandler::HandleActivateSkillEffect(
       {
         const auto& parameters = raceInstance.GetParameters();
         GetServerInstance().GetGameEventBus().Fire({
-          .kind = GameEvent::Kind::FireballAttack,
+          .userAchvEvent = registry::UserAchvEvent::FireballAttack,
+          .function = registry::Function::FireballAttack,
           .origin = GameEvent::Origin::Race,
           .characterUid = attackerIter->first,
-          .gameMode = QuestSystem::ToGameModeFlag(parameters.gameMode, parameters.teamMode)});
+          .gameMode = GameEventSystem::ToGameModeFlag(parameters.gameMode, parameters.teamMode)});
       }
     }
   }

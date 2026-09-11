@@ -261,6 +261,32 @@ struct AcCmdRCUpdateDailyQuestNotify
     SourceStream& stream);
 };
 
+struct AcCmdCRAchievementUpdateProperty
+{
+  uint16_t achievementEvent{};
+  // Sent as a string, but can represent numeric values.
+  std::string achievementValue{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRAchievementUpdateProperty;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRAchievementUpdateProperty& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRAchievementUpdateProperty& command,
+    SourceStream& stream);
+};
+
 struct AcCmdCROpCmd
 {
   std::string command{};

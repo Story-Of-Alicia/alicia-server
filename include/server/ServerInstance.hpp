@@ -32,6 +32,7 @@
 #include "server/ranch/Genetics.hpp"
 #include "server/ranch/RanchDirector.hpp"
 #include "server/system/ChatSystem.hpp"
+#include "server/system/GameEventSystem.hpp"
 #include "server/system/HorseSystem.hpp"
 #include "server/system/InfractionSystem.hpp"
 #include "server/system/ItemSystem.hpp"
@@ -157,6 +158,10 @@ public:
   //! Returns reference to the game event bus.
   //! @returns Reference to the game event bus.
   GameEventBus& GetGameEventBus();
+
+  //! Returns reference to the game event system.
+  //! @returns Reference to the game event system.
+  GameEventSystem& GetGameEventSystem();
 
   //! Returns reference to the chat system.
   //! @returns Reference to the chat system.
@@ -332,6 +337,8 @@ private:
 
   //! A chat system.
   ChatSystem _chatSystem;
+  //! The game event system.
+  GameEventSystem _gameEventSystem;
   //! An infraction system.
   InfractionSystem _infractionSystem;
   //! An item system.

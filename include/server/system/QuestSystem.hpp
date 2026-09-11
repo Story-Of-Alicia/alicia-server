@@ -27,7 +27,6 @@
 #include <libserver/network/command/proto/CommonStructureDefinitions.hpp>
 #include <libserver/registry/QuestRegistry.hpp>
 
-#include <optional>
 #include <vector>
 
 namespace server
@@ -40,82 +39,28 @@ class QuestSystem
 public:
   explicit QuestSystem(ServerInstance& serverInstance);
 
-  //! Events that can advance daily quest objectives.
-  enum class QuestEvent
-  {
-    //! Any race was completed (UserAchvEvent 2, used by "complete N races"
-    Any,
-    //! Finished in a placing position (1st–3rd) (UserAchvEvent 2).
-    PrizeWinner,
-    //! Achieved a perfect jump over a hurdle (UserAchvEvent 29).
-    PerfectJump,
-    //! Used a fireball / magic attack (UserAchvEvent 42).
-    FireballAttack,
-    //! Completed a specific map (value = map block ID) (UserAchvEvent 2).
-    RunMap,
-    //! Won a team race (UserAchvEvent 2).
-    TeamWin,
-    //! Accumulated gliding distance (value = distance units) (UserAchvEvent 43).
-    GlidingDistance,
-    //! Collected a drop item during a race (UserAchvEvent 20).
-    CollectDropItem,
-    //! Consumed a boost/spur charge in a race (UserAchvEvent 17).
-    BoostUsed,
-    //! Fed a horse a food item (UserAchvEvent 53).
-    FeedHorse,
-    //! Washed/groomed a horse (UserAchvEvent 49).
-    WashHorse,
-  };
-
-  //! Evaluates all active daily quests for a character against the given event
-  //! and advances progress on any matching quests.
+  //! Evaluates the character's active daily quests against an event and
+  //! advances any that it satisfies.
   //! @param characterUid UID of the character.
   //! @param event The event that occurred.
-  //! @param gameMode The game mode in which the event occurred.
-  //! @param value Optional scalar value for the event (e.g. map ID, distance).
-  //! @returns A list of notify packets to be sent to the character by the caller.
+  //! @returns Notify packets for the caller to send to the character.
   [[nodiscard]] std::vector<protocol::AcCmdRCUpdateDailyQuestNotify> OnQuestEvent(
     data::Uid characterUid,
-    QuestEvent event,
-    registry::Quest::GameModeFlag gameMode,
-    uint32_t value = 0);
+    const GameEvent& event);
 
-  //! Converts a protocol GameMode + TeamMode pair to the matching GameModeFlag
-  //! used by the quest registry for mode-based filtering.
-  //! @param gameMode Speed or Magic.
-  //! @param teamMode Team or Solo.
-  //! @returns The corresponding GameModeFlag value.
-  static registry::Quest::GameModeFlag ToGameModeFlag(
-    protocol::GameMode gameMode,
-    protocol::TeamMode teamMode);
-
-  // Converts a protocol GameMode + TeamMode pair to the matching GameModeFlag
-  //! @param gameMode Speed or Magic.
-  //! @param teamMode Team or Solo.
-  //! @returns The corresponding GameModeFlag value.
-  static registry::Quest::GameModeFlag ToWinGameModeFlag(
-    protocol::GameMode gameMode,
-    protocol::TeamMode teamMode);
+  //! Tests whether an event satisfies a quest's completion condition.
+  //! @param quest Quest definition.
+  //! @param event The event that occurred.
+  //! @returns True when the event advances the quest.
+  [[nodiscard]] static bool Matches(
+    const registry::Quest& quest,
+    const GameEvent& event);
 
 private:
   //! Returns true if the quest's gameModeFlag is compatible with the given mode.
   static bool IsModeMatch(
     registry::Quest::GameModeFlag questFlag,
     registry::Quest::GameModeFlag eventMode);
-
-  //! Returns the client UserAchvEvent category corresponding to a QuestEvent.
-  static uint32_t ToUserAchvEvent(QuestEvent event);
-
-  //! Returns true if the quest matches the given event.
-  static bool IsEventMatch(
-    uint32_t questUserAchvEvent,
-    registry::Quest::Function function,
-    QuestEvent event,
-    uint32_t questFunctionValue,
-    uint32_t eventValue);
-
-  //! Translates a GameEvent::Kind to the matching QuestEvent.
-  static std::optional<QuestEvent> ToQuestEvent(GameEvent::Kind kind);
 
   //! Listener for the server's game event bus.
   void HandleGameEvent(const GameEvent& event);

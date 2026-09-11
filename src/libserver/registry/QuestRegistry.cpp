@@ -68,17 +68,17 @@ void ReadQuest(Quest& quest, const YAML::Node& yaml)
   quest.successValue = yaml["successValue"].as<decltype(Quest::successValue)>(0);
 
   const auto functionStr = yaml["function"].as<std::string>("");
-  if      (functionStr == "TRUE")                        quest.function = Quest::Function::True;
-  else if (functionStr == "RunMap")                      quest.function = Quest::Function::RunMap;
-  else if (functionStr == "TeamWin")                     quest.function = Quest::Function::TeamWin;
-  else if (functionStr == "PerfectJump")                 quest.function = Quest::Function::PerfectJump;
-  else if (functionStr == "FireballAttack")              quest.function = Quest::Function::FireballAttack;
-  else if (functionStr == "CollectDropItem")             quest.function = Quest::Function::CollectDropItem;
-  else if (functionStr == "GlidingDistanceValue")        quest.function = Quest::Function::GlidingDistanceValue;
-  else if (functionStr == "ClearMission")                quest.function = Quest::Function::ClearMission;
-  else if (functionStr == "PrizeWinnerForLowLevel")      quest.function = Quest::Function::PrizeWinnerForLowLevel;
-  else if (functionStr == "PrizeWinnerInMapForLowLevel") quest.function = Quest::Function::PrizeWinnerInMapForLowLevel;
-  else                                                   quest.function = Quest::Function::Unknown;
+  if      (functionStr == "TRUE")                        quest.function = Function::True;
+  else if (functionStr == "RunMap")                      quest.function = Function::RunMap;
+  else if (functionStr == "TeamWin")                     quest.function = Function::TeamWin;
+  else if (functionStr == "PerfectJump")                 quest.function = Function::PerfectJump;
+  else if (functionStr == "FireballAttack")              quest.function = Function::FireballAttack;
+  else if (functionStr == "CollectDropItem")             quest.function = Function::CollectDropItem;
+  else if (functionStr == "GlidingDistanceValue")        quest.function = Function::GlidingDistanceValue;
+  else if (functionStr == "ClearMission")                quest.function = Function::ClearMission;
+  else if (functionStr == "PrizeWinnerForLowLevel")      quest.function = Function::PrizeWinnerForLowLevel;
+  else if (functionStr == "PrizeWinnerInMapForLowLevel") quest.function = Function::PrizeWinnerInMapForLowLevel;
+  else                                                   quest.function = Function::Unknown;
 
   quest.functionValue = yaml["functionValue"].as<decltype(Quest::functionValue)>(0);
   quest.userAchvEvent = yaml["userAchvEvent"].as<decltype(Quest::userAchvEvent)>(0);

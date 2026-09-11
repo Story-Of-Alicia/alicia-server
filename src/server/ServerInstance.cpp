@@ -51,6 +51,7 @@ ServerInstance::ServerInstance(
   , _ranchDirector(*this)
   , _raceDirector(*this)
   , _chatSystem(*this)
+  , _gameEventSystem(*this)
   , _infractionSystem(*this)
   , _itemSystem(*this)
   , _horseSystem(*this)
@@ -401,6 +402,11 @@ registry::SpeedRegistry& ServerInstance::GetSpeedRegistry()
 GameEventBus& ServerInstance::GetGameEventBus()
 {
   return _gameEventBus;
+}
+
+GameEventSystem& ServerInstance::GetGameEventSystem()
+{
+  return _gameEventSystem;
 }
 
 ChatSystem& ServerInstance::GetChatSystem()

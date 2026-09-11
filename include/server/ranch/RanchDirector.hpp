@@ -329,6 +329,10 @@ private:
     ClientId clientId,
     const protocol::RanchCommandRanchStuff& command);
 
+  void HandleAchievementUpdateProperty(
+    ClientId clientId,
+    const protocol::AcCmdCRAchievementUpdateProperty& command);
+
   //!
   void HandleUpdateBusyState(
     ClientId clientId,

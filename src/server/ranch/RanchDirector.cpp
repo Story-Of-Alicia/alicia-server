@@ -21,6 +21,7 @@
 
 #include "server/event/GameEvent.hpp"
 #include "server/ServerInstance.hpp"
+#include "server/system/GameEventSystem.hpp"
 #include "server/system/ItemSystem.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
@@ -177,6 +178,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& command)
     {
       HandleChat(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRAchievementUpdateProperty>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleAchievementUpdateProperty(clientId, command);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRRanchSnapshot>(
@@ -4581,7 +4588,8 @@ void RanchDirector::HandleUseItem(
     if (consumeItem)
     {
       GetServerInstance().GetGameEventBus().Fire({
-        .kind = GameEvent::Kind::FeedHorse,
+        .userAchvEvent = registry::UserAchvEvent::Feeding,
+        .function = registry::Function::True,
         .origin = GameEvent::Origin::Ranch,
         .characterUid = clientContext.characterUid});
     }
@@ -4597,7 +4605,8 @@ void RanchDirector::HandleUseItem(
     if (consumeItem)
     {
       GetServerInstance().GetGameEventBus().Fire({
-        .kind = GameEvent::Kind::WashHorse,
+        .userAchvEvent = registry::UserAchvEvent::Grooming,
+        .function = registry::Function::True,
         .origin = GameEvent::Origin::Ranch,
         .characterUid = clientContext.characterUid});
     }
@@ -7537,6 +7546,29 @@ void RanchDirector::HandleRequestUser(
   response.ranchUid = command.ranchUid;
 
   _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
+}
+
+void RanchDirector::HandleAchievementUpdateProperty(
+  const ClientId clientId,
+  const protocol::AcCmdCRAchievementUpdateProperty& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  spdlog::debug(
+    "Character {} reported achievement property {} = '{}'",
+    clientContext.characterUid,
+    static_cast<uint16_t>(command.achievementEvent),
+    command.achievementValue);
+
+  // Fire-and-forget; the client expects no response.
+  const auto userAchvEvent =
+    static_cast<registry::UserAchvEvent>(command.achievementEvent);
+
+  GetServerInstance().GetGameEventSystem().ReportAchievement(
+    clientContext.characterUid,
+    GameEvent::Origin::Ranch,
+    userAchvEvent,
+    command.achievementValue);
 }
 
 void RanchDirector::SendDailyQuestNotificationToCharacter(

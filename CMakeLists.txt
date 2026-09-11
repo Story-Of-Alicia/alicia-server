@@ -119,6 +119,7 @@ add_executable(alicia-server
         src/server/ranch/RanchDirector.cpp
         src/server/room/Room.cpp
         src/server/system/ChatSystem.cpp
+        src/server/system/GameEventSystem.cpp
         src/server/system/HorseSystem.cpp
         src/server/system/InfractionSystem.cpp
         src/server/system/ItemSystem.cpp

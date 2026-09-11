@@ -21,6 +21,7 @@
 #define QUEST_REGISTRY_HPP
 
 #include <libserver/registry/Registry.hpp>
+#include <libserver/registry/RegistryDefinitions.hpp>
 
 #include <cstdint>
 #include <filesystem>
@@ -125,22 +126,6 @@ struct Quest
   uint32_t successType{};
   //! Success condition value.
   uint32_t successValue{};
-  //! Quest completion function / condition type.
-  enum class Function
-  {
-    Unknown,
-    True,                    //!< Used by "complete N races" quests.
-    RunMap,                  //!< Complete a specific map (matched against functionValue).
-    TeamWin,                 //!< Win a team race.
-    PerfectJump,             //!< Land a perfect jump over a hurdle.
-    FireballAttack,          //!< Hit an opponent with a fireball.
-    CollectDropItem,         //!< Collect a drop item during a race.
-    GlidingDistanceValue,    //!< Accumulate gliding distance.
-    ClearMission,            //!< Clear a mission stage.
-    PrizeWinnerForLowLevel,          //!< Place in the top 3 (low-level variant).
-    PrizeWinnerInMapForLowLevel,     //!< Place in the top 3 on a specific map.
-  };
-
   //! Quest completion function / condition type.
   Function function{};
   //! Parameter value for the function (e.g. map ID, count, etc.).

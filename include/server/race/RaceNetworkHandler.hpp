@@ -266,6 +266,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRStartRace& command);
 
+  void HandleAchievementUpdateProperty(
+    ClientId clientId,
+    const protocol::AcCmdCRAchievementUpdateProperty& command);
+
   void SendStartRaceCancel(
     ClientId clientId,
     protocol::AcCmdCRStartRaceCancel::Reason reason);

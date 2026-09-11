@@ -23,45 +23,22 @@
 #include <libserver/data/DataDefinitions.hpp>
 #include <libserver/event/Event.hpp>
 #include <libserver/registry/QuestRegistry.hpp>
+#include <libserver/registry/RegistryDefinitions.hpp>
 
 namespace server
 {
 
 struct GameEvent
 {
-  enum class Kind
-  {
-    //! A race was completed (used by "complete N races" style quests).
-    Any,
-    //! Finished in a placing position (1st-3rd).
-    PrizeWinner,
-    //! Landed a perfect jump over a hurdle.
-    PerfectJump,
-    //! Hit an opponent with a fireball(bolt)).
-    FireballAttack,
-    //! Completed a specific map (value = map block ID).
-    RunMap,
-    //! Won a team race.
-    TeamWin,
-    //! Accumulated gliding distance.
-    GlidingDistance,
-    //! Collected a certain deckItem during the race
-    CollectDropItem,
-    //! Consumed a boost/spur charge in a race. (Speed only)
-    BoostUsed,
-    //! Fed a horse a food item.
-    FeedHorse,
-    //! Washed/groomed a horse.
-    WashHorse,
-  };
-
   enum class Origin
   {
     Ranch,
     Race,
   };
 
-  Kind kind{};
+  registry::UserAchvEvent userAchvEvent{registry::UserAchvEvent::None};
+  registry::Function function{registry::Function::Unknown};
+
   Origin origin{Origin::Ranch};
   //! Character the event happened to/for.
   data::Uid characterUid{data::InvalidUid};

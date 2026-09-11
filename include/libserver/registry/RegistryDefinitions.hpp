@@ -35,6 +35,69 @@ enum class Region : uint32_t
   Ice = 5
 };
 
+enum class UserAchvEvent : uint32_t
+{
+  None = 0,
+
+  //! A race ended. Covers goal-in, placing and team results.
+  RaceCompleted = 2,
+  //! A spur/boost charge was consumed.
+  SpurUsed = 17,
+  //! A deckItem was collected.
+  CollectDropItem = 20,
+  ScreenCapture = 23,
+  CourseOut = 24,
+  GlidingCount = 25,
+  SlidingCount = 26,
+  GlidingSpurCount = 27,
+  PerfectStart = 28,
+  PerfectJumpCount = 29,
+  GoodJumpCount = 30,
+  JumpFailCount = 31,
+  MaxPerfectJumpCombo = 32,
+  MaxSlidingTime = 33,
+  MaxGlidingTime = 34,
+  HotRoddingReversalCount = 35,
+  MaxVelocity = 38,
+  //! A successful fireball/bolt attack.
+  FireballAttack = 42,
+  GlidingDistance = 43,
+  MaxGlidingDistance = 44,
+  IntroEnd = 45,
+  BalloonLapTime = 46,
+  //! A horse was groomed (any part).
+  Grooming = 49,
+  //! A horse's body was washed.
+  BodyWash = 50,
+  //! A horse was fed.
+  Feeding = 53,
+  GoalInUseSpur = 57,
+  GoalInUseSliding = 58,
+  GoalInUseGliding = 59,
+  GetSpurOnGliding = 60,
+  PerfectSpurCombo = 61,
+  MidairAttackCount = 63,
+  GoalInUseBooster = 72,
+  MidairAttackFireballCount = 74,
+  NPCDialogLevel = 75,
+};
+
+//! Completion condition type.
+enum class Function
+{
+  Unknown,
+  True,                    //!< Used by "complete N races" quests.
+  RunMap,                  //!< Complete a specific map (matched against functionValue).
+  TeamWin,                 //!< Win a team race.
+  PerfectJump,             //!< Land a perfect jump over a hurdle.
+  FireballAttack,          //!< Hit an opponent with a fireball.
+  CollectDropItem,         //!< Collect a drop item during a race.
+  GlidingDistanceValue,    //!< Accumulate gliding distance.
+  ClearMission,            //!< Clear a mission stage.
+  PrizeWinnerForLowLevel,          //!< Place in the top 3 (low-level variant).
+  PrizeWinnerInMapForLowLevel,     //!< Place in the top 3 on a specific map.
+};
+
 } // namespace server::registry
 
 #endif // REGISTRYDEFINITIONS_HPP

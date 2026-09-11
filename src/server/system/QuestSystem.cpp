@@ -52,115 +52,25 @@ bool QuestSystem::IsModeMatch(
   return questFlag == eventMode;
 }
 
-registry::Quest::GameModeFlag QuestSystem::ToGameModeFlag(
-  const protocol::GameMode gameMode,
-  const protocol::TeamMode teamMode)
+bool QuestSystem::Matches(
+  const registry::Quest& quest,
+  const GameEvent& event)
 {
-  using GameModeFlag = registry::Quest::GameModeFlag;
-  const bool isTeam = teamMode == protocol::TeamMode::Team;
-
-  switch (gameMode)
-  {
-    case protocol::GameMode::Speed:
-      return isTeam ? GameModeFlag::SpeedTeam : GameModeFlag::SpeedSoloAction;
-    case protocol::GameMode::Magic:
-      return isTeam ? GameModeFlag::MagicTeam : GameModeFlag::MagicSoloAction;
-    default:
-      return GameModeFlag::None;
-  }
-}
-
-registry::Quest::GameModeFlag QuestSystem::ToWinGameModeFlag(
-  const protocol::GameMode gameMode,
-  const protocol::TeamMode teamMode)
-{
-  using GameModeFlag = registry::Quest::GameModeFlag;
-
-  if (teamMode == protocol::TeamMode::Team)
-    return ToGameModeFlag(gameMode, teamMode);
-
-  switch (gameMode)
-  {
-    case protocol::GameMode::Speed:
-      return GameModeFlag::WinSpeedSolo;
-    case protocol::GameMode::Magic:
-      return GameModeFlag::WinMagicSolo;
-    default:
-      return GameModeFlag::None;
-  }
-}
-
-uint32_t QuestSystem::ToUserAchvEvent(const QuestEvent event)
-{
-  switch (event)
-  {
-    case QuestEvent::Any:
-    case QuestEvent::PrizeWinner:
-    case QuestEvent::RunMap:
-    case QuestEvent::TeamWin:
-      return 2;
-    case QuestEvent::PerfectJump:
-      return 29;
-    case QuestEvent::FireballAttack:
-      return 42;
-    case QuestEvent::GlidingDistance:
-      return 43;
-    case QuestEvent::CollectDropItem:
-      return 20;
-    case QuestEvent::BoostUsed:
-      return 17;
-    case QuestEvent::FeedHorse:
-      return 53;
-    case QuestEvent::WashHorse:
-      return 49;
-    default:
-      return 0;
-  }
-}
-
-bool QuestSystem::IsEventMatch(
-  const uint32_t questUserAchvEvent,
-  const registry::Quest::Function function,
-  const QuestEvent event,
-  const uint32_t questFunctionValue,
-  const uint32_t eventValue)
-{
-  if (questUserAchvEvent != ToUserAchvEvent(event))
+  if (quest.userAchvEvent != static_cast<uint32_t>(event.userAchvEvent))
     return false;
 
-  switch (event)
-  {
-    case QuestEvent::Any:
-      return function == registry::Quest::Function::True;
-    case QuestEvent::PrizeWinner:
-      return function == registry::Quest::Function::PrizeWinnerForLowLevel ||
-             function == registry::Quest::Function::PrizeWinnerInMapForLowLevel;
-    case QuestEvent::PerfectJump:
-      return function == registry::Quest::Function::PerfectJump;
-    case QuestEvent::FireballAttack:
-      return function == registry::Quest::Function::FireballAttack;
-    case QuestEvent::RunMap:
-      return function == registry::Quest::Function::RunMap && questFunctionValue == eventValue;
-    case QuestEvent::TeamWin:
-      return function == registry::Quest::Function::TeamWin;
-    case QuestEvent::GlidingDistance:
-      return function == registry::Quest::Function::GlidingDistanceValue;
-    case QuestEvent::CollectDropItem:
-      return function == registry::Quest::Function::CollectDropItem;
-    case QuestEvent::BoostUsed:
-    case QuestEvent::FeedHorse:
-    case QuestEvent::WashHorse:
-      return function == registry::Quest::Function::True;
-    default:
-      return false;
-  }
+  if (quest.function != event.function)
+    return false;
+
+  if (not IsModeMatch(quest.gameModeFlag, event.gameMode))
+    return false;
+
+  return quest.functionValue == 0 || quest.functionValue == event.value;
 }
 
 std::vector<protocol::AcCmdRCUpdateDailyQuestNotify> QuestSystem::OnQuestEvent(
   const data::Uid characterUid,
-  const QuestEvent event,
-  const registry::Quest::GameModeFlag gameMode,
-  const uint32_t value)
+  const GameEvent& event)
 {
   auto& dataDirector = _serverInstance.GetDataDirector();
   const auto& questRegistry = _serverInstance.GetQuestRegistry();
@@ -223,23 +133,20 @@ std::vector<protocol::AcCmdRCUpdateDailyQuestNotify> QuestSystem::OnQuestEvent(
       if (entry.progress >= questDef->successValue)
         continue;
 
-      // Check game mode and function match
-      if (!IsModeMatch(questDef->gameModeFlag, gameMode))
+      if (not Matches(*questDef, event))
       {
         spdlog::debug(
-          "QuestSystem::OnQuestEvent: quest {} mode mismatch (quest flag {}, event mode {})",
-          entry.questId,
-          static_cast<uint32_t>(questDef->gameModeFlag),
-          static_cast<uint32_t>(gameMode));
-        continue;
-      }
-      if (!IsEventMatch(questDef->userAchvEvent, questDef->function, event, questDef->functionValue, value))
-      {
-        spdlog::debug(
-          "QuestSystem::OnQuestEvent: quest {} event mismatch (quest uae {}, event uae {})",
+          "QuestSystem::OnQuestEvent: quest {} does not match event "
+          "(quest uae {} fn {} fnValue {} mode {}; event uae {} fn {} value {} mode {})",
           entry.questId,
           questDef->userAchvEvent,
-          ToUserAchvEvent(event));
+          static_cast<uint32_t>(questDef->function),
+          questDef->functionValue,
+          static_cast<uint32_t>(questDef->gameModeFlag),
+          static_cast<uint32_t>(event.userAchvEvent),
+          static_cast<uint32_t>(event.function),
+          event.value,
+          static_cast<uint32_t>(event.gameMode));
         continue;
       }
 
@@ -311,48 +218,12 @@ std::vector<protocol::AcCmdRCUpdateDailyQuestNotify> QuestSystem::OnQuestEvent(
   return notifies;
 }
 
-std::optional<QuestSystem::QuestEvent> QuestSystem::ToQuestEvent(const GameEvent::Kind kind)
-{
-  switch (kind)
-  {
-    case GameEvent::Kind::Any:
-      return QuestEvent::Any;
-    case GameEvent::Kind::PrizeWinner:
-      return QuestEvent::PrizeWinner;
-    case GameEvent::Kind::PerfectJump:
-      return QuestEvent::PerfectJump;
-    case GameEvent::Kind::FireballAttack:
-      return QuestEvent::FireballAttack;
-    case GameEvent::Kind::RunMap:
-      return QuestEvent::RunMap;
-    case GameEvent::Kind::TeamWin:
-      return QuestEvent::TeamWin;
-    case GameEvent::Kind::GlidingDistance:
-      return QuestEvent::GlidingDistance;
-    case GameEvent::Kind::CollectDropItem:
-      return QuestEvent::CollectDropItem;
-    case GameEvent::Kind::BoostUsed:
-      return QuestEvent::BoostUsed;
-    case GameEvent::Kind::FeedHorse:
-      return QuestEvent::FeedHorse;
-    case GameEvent::Kind::WashHorse:
-      return QuestEvent::WashHorse;
-    default:
-      return std::nullopt;
-  }
-}
-
 void QuestSystem::HandleGameEvent(const GameEvent& event)
 {
-  const auto questEvent = ToQuestEvent(event.kind);
-  if (!questEvent)
+  if (event.userAchvEvent == registry::UserAchvEvent::None)
     return;
 
-  const auto notifies = OnQuestEvent(
-    event.characterUid,
-    *questEvent,
-    event.gameMode,
-    event.value);
+  const auto notifies = OnQuestEvent(event.characterUid, event);
 
   // Send the notify packets to the appropriate director based on the event origin
   switch (event.origin)

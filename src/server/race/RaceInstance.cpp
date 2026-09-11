@@ -23,7 +23,7 @@
 #include "server/race/MagicSystem.hpp"
 #include "server/race/RaceInstance.hpp"
 #include "server/race/RaceNetworkHandler.hpp"
-#include "server/system/QuestSystem.hpp"
+#include "server/system/GameEventSystem.hpp"
 
 #include <libserver/util/Util.hpp>
 
@@ -254,7 +254,7 @@ void RaceInstance::Stop()
   // subscribed to the game event bus.
   {
     auto& gameEventBus = _raceNetworkHandler.GetServerInstance().GetGameEventBus();
-    const auto gameModeFlag = QuestSystem::ToGameModeFlag(_parameters.gameMode, _parameters.teamMode);
+    const auto gameModeFlag = GameEventSystem::ToGameModeFlag(_parameters.gameMode, _parameters.teamMode);
 
     for (std::size_t index = 0; index < raceResult.scores.size(); ++index)
     {
@@ -266,13 +266,15 @@ void RaceInstance::Stop()
       const data::Uid characterUid = score.uid;
 
       gameEventBus.Fire({
-        .kind = GameEvent::Kind::Any,
+        .userAchvEvent = registry::UserAchvEvent::RaceCompleted,
+        .function = registry::Function::True,
         .origin = GameEvent::Origin::Race,
         .characterUid = characterUid,
         .gameMode = gameModeFlag});
 
       gameEventBus.Fire({
-        .kind = GameEvent::Kind::RunMap,
+        .userAchvEvent = registry::UserAchvEvent::RaceCompleted,
+        .function = registry::Function::RunMap,
         .origin = GameEvent::Origin::Race,
         .characterUid = characterUid,
         .gameMode = gameModeFlag,
@@ -281,17 +283,29 @@ void RaceInstance::Stop()
       // Top 3 finishers, by placement order already established by the sort above.
       if (index < 3)
       {
+        const auto winGameModeFlag = GameEventSystem::ToWinGameModeFlag(_parameters.gameMode, _parameters.teamMode);
+
         gameEventBus.Fire({
-          .kind = GameEvent::Kind::PrizeWinner,
+          .userAchvEvent = registry::UserAchvEvent::RaceCompleted,
+          .function = registry::Function::PrizeWinnerForLowLevel,
           .origin = GameEvent::Origin::Race,
           .characterUid = characterUid,
-          .gameMode = QuestSystem::ToWinGameModeFlag(_parameters.gameMode, _parameters.teamMode)});
+          .gameMode = winGameModeFlag});
+
+        gameEventBus.Fire({
+          .userAchvEvent = registry::UserAchvEvent::RaceCompleted,
+          .function = registry::Function::PrizeWinnerInMapForLowLevel,
+          .origin = GameEvent::Origin::Race,
+          .characterUid = characterUid,
+          .gameMode = winGameModeFlag,
+          .value = _parameters.mapBlockId});
       }
 
       if (_parameters.teamMode == protocol::TeamMode::Team && score.teamColor == winningTeam)
       {
         gameEventBus.Fire({
-          .kind = GameEvent::Kind::TeamWin,
+          .userAchvEvent = registry::UserAchvEvent::RaceCompleted,
+          .function = registry::Function::TeamWin,
           .origin = GameEvent::Origin::Race,
           .characterUid = characterUid,
           .gameMode = gameModeFlag});
