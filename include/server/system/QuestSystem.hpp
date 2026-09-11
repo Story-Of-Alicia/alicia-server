@@ -59,8 +59,8 @@ public:
 private:
   //! Returns true if the quest's gameModeFlag is compatible with the given mode.
   static bool IsModeMatch(
-    registry::Quest::GameModeFlag questFlag,
-    registry::Quest::GameModeFlag eventMode);
+    registry::GameModeFlag questFlag,
+    registry::GameModeFlag eventMode);
 
   //! Listener for the server's game event bus.
   void HandleGameEvent(const GameEvent& event);

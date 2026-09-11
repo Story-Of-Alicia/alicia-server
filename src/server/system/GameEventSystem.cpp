@@ -90,7 +90,7 @@ void GameEventSystem::ReportAchievement(
   const GameEvent::Origin origin,
   const registry::UserAchvEvent achievementEvent,
   const std::string_view achievementValue,
-  const registry::Quest::GameModeFlag gameMode)
+  const registry::GameModeFlag gameMode)
 {
   if (IsReportedNatively(achievementEvent))
     return;
@@ -104,11 +104,11 @@ void GameEventSystem::ReportAchievement(
     .value = ParseAchievementPropertyValue(achievementValue)});
 }
 
-registry::Quest::GameModeFlag GameEventSystem::ToGameModeFlag(
+registry::GameModeFlag GameEventSystem::ToGameModeFlag(
   const protocol::GameMode gameMode,
   const protocol::TeamMode teamMode)
 {
-  using GameModeFlag = registry::Quest::GameModeFlag;
+  using GameModeFlag = registry::GameModeFlag;
   const bool isTeam = teamMode == protocol::TeamMode::Team;
 
   switch (gameMode)
@@ -122,11 +122,11 @@ registry::Quest::GameModeFlag GameEventSystem::ToGameModeFlag(
   }
 }
 
-registry::Quest::GameModeFlag GameEventSystem::ToWinGameModeFlag(
+registry::GameModeFlag GameEventSystem::ToWinGameModeFlag(
   const protocol::GameMode gameMode,
   const protocol::TeamMode teamMode)
 {
-  using GameModeFlag = registry::Quest::GameModeFlag;
+  using GameModeFlag = registry::GameModeFlag;
 
   if (teamMode == protocol::TeamMode::Team)
     return ToGameModeFlag(gameMode, teamMode);

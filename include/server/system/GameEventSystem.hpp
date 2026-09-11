@@ -60,13 +60,13 @@ public:
     GameEvent::Origin origin,
     registry::UserAchvEvent achievementEvent,
     std::string_view achievementValue,
-    registry::Quest::GameModeFlag gameMode = registry::Quest::GameModeFlag::None);
+    registry::GameModeFlag gameMode = registry::GameModeFlag::None);
 
   //! Converts a protocol GameMode + TeamMode pair to the matching GameModeFlag
   //! @param gameMode Speed or Magic.
   //! @param teamMode Team or Solo.
   //! @returns The corresponding GameModeFlag value.
-  [[nodiscard]] static registry::Quest::GameModeFlag ToGameModeFlag(
+  [[nodiscard]] static registry::GameModeFlag ToGameModeFlag(
     protocol::GameMode gameMode,
     protocol::TeamMode teamMode);
 
@@ -75,7 +75,7 @@ public:
   //! @param gameMode Speed or Magic.
   //! @param teamMode Team or Solo.
   //! @returns The corresponding GameModeFlag value.
-  [[nodiscard]] static registry::Quest::GameModeFlag ToWinGameModeFlag(
+  [[nodiscard]] static registry::GameModeFlag ToWinGameModeFlag(
     protocol::GameMode gameMode,
     protocol::TeamMode teamMode);
 

@@ -1087,7 +1087,7 @@ void RaceNetworkHandler::HandleAchievementUpdateProperty(
   const auto userAchvEvent =
     static_cast<registry::UserAchvEvent>(command.achievementEvent);
 
-  auto gameMode = registry::Quest::GameModeFlag::None;
+  auto gameMode = registry::GameModeFlag::None;
   {
     std::scoped_lock lock(_raceInstancesMutex);
     try

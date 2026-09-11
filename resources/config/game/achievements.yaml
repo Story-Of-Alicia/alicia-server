@@ -1,0 +1,1397 @@
+achievements:
+  collection:
+    # Look mom, I can fly !
+    - tid: 10155
+      numPlayer: 0
+      gameModeFlag: 127
+      successType: 1
+      compareType: 0
+      successValues: [1, 100, 500, 1800]
+      userAchvEvent: 43
+      function: 'GlidingDistance'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # You're a wizard!
+    - tid: 10156
+      numPlayer: 0
+      gameModeFlag: 35
+      successType: 1
+      compareType: 0
+      successValues: [1, 100, 2000, 6000]
+      userAchvEvent: 17
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # Just like Superman
+    - tid: 10157
+      numPlayer: 0
+      gameModeFlag: 35
+      successType: 1
+      compareType: 0
+      successValues: [1, 100, 200, 6000]
+      userAchvEvent: 27
+      function: 'GlidingSpur'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # Shopaholic
+    - tid: 10158
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 0
+      compareType: 3
+      successValues: [500, 10000, 50000, 200000]
+      userAchvEvent: 3
+      function: 'BuyItem'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # Rocketman
+    - tid: 10159
+      numPlayer: 0
+      gameModeFlag: 127
+      successType: 1
+      compareType: 0
+      successValues: [1, 150, 300, 1500]
+      userAchvEvent: 28
+      function: 'PerfectStart'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # Jump King
+    - tid: 10160
+      numPlayer: 0
+      gameModeFlag: 35
+      successType: 1
+      compareType: 0
+      successValues: [5, 500, 2500, 10000]
+      userAchvEvent: 29
+      function: 'PerfectJump'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # Best of the best
+    - tid: 10161
+      numPlayer: 0
+      gameModeFlag: 127
+      successType: 1
+      compareType: 0
+      successValues: [3, 6, 10, 15]
+      userAchvEvent: 2
+      function: 'GoalIn'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 2
+      resetFunction: 'Retire'
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # Just one more
+    - tid: 10162
+      numPlayer: 0
+      gameModeFlag: 127
+      successType: 1
+      compareType: 0
+      successValues: [2, 5, 10, 20]
+      userAchvEvent: 2
+      function: 'GoalIn'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 4
+      resetFunction: 'TRUE'
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # Morning bird
+    - tid: 10163
+      numPlayer: 0
+      gameModeFlag: 127
+      successType: 1
+      compareType: 0
+      successValues: [2, 20, 100, 500]
+      userAchvEvent: 2
+      function: 'GoalIn_8h_13h'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # Afternoon gamer
+    - tid: 10164
+      numPlayer: 0
+      gameModeFlag: 127
+      successType: 1
+      compareType: 0
+      successValues: [2, 20, 100, 500]
+      userAchvEvent: 2
+      function: 'GoalIn_16h_18h'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # Star of the night
+    - tid: 10165
+      numPlayer: 0
+      gameModeFlag: 127
+      successType: 1
+      compareType: 0
+      successValues: [2, 20, 100, 500]
+      userAchvEvent: 2
+      function: 'GoalIn_19h_22h'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # Experienced horse
+    - tid: 10166
+      numPlayer: 0
+      gameModeFlag: 127
+      successType: 1
+      compareType: 0
+      successValues: [1, 2, 5, 15]
+      userAchvEvent: 68
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # Brush, brush, brush
+    - tid: 10167
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [3, 70, 500, 5000]
+      userAchvEvent: 51
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # Clean body, clean mind
+    - tid: 10168
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [3, 70, 500, 5000]
+      userAchvEvent: 50
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # Tail detailing
+    - tid: 10169
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [3, 70, 500, 5000]
+      userAchvEvent: 52
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # A balanced diet
+    - tid: 10170
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [3, 10, 30, 40]
+      userAchvEvent: 53
+      function: 'ForciblyFeeding'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # Im lovin it
+    - tid: 10171
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [3, 50, 500, 10000]
+      userAchvEvent: 53
+      function: 'FavoriteFoodsFeeding'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # What a feast
+    - tid: 10172
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [3, 50, 300, 2000]
+      userAchvEvent: 53
+      function: 'Stuffed'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # Goodbye, friend..
+    - tid: 10173
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 3, 5, 20]
+      userAchvEvent: 55
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # It's all your fault
+    - tid: 10174
+      numPlayer: 0
+      gameModeFlag: 31
+      successType: 1
+      compareType: 0
+      successValues: [1, 5, 30, 200]
+      userAchvEvent: 69
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # Time heals everything
+    - tid: 10175
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 3, 5, 50]
+      userAchvEvent: 71
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # Rise and shine
+    - tid: 10176
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 10, 150, 1000]
+      userAchvEvent: 49
+      function: 'PolishUp'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # Playtime
+    - tid: 10177
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 20, 300, 1000]
+      userAchvEvent: 54
+      function: 'TraningSuccess'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 사랑에 목마른 그대
+    - tid: 10178
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 5, 30, 100]
+      userAchvEvent: 10
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 연애박사
+    - tid: 10179
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 5, 10, 50]
+      userAchvEvent: 11
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 인생의 쓴맛
+    - tid: 10180
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 10, 30, 50]
+      userAchvEvent: 12
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 이 한 몸 바쳐
+    - tid: 10181
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 10, 100, 250]
+      userAchvEvent: 13
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 잠재능력!
+    - tid: 10182
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 3, 5, 25]
+      userAchvEvent: 11
+      function: 'PotentialCapacities'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 내 종자는 우수해
+    - tid: 10183
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 2, 3, 4]
+      userAchvEvent: 11
+      function: 'BreedingSuccessCombo'
+      functionValues: [2, 2, 2, 2]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 사랑에 집착하는 그대
+    - tid: 10184
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 0
+      compareType: 0
+      successValues: [2, 3, 4, 5]
+      userAchvEvent: 10
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 8
+      resetFunction: 'TRUE'
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 너만을 믿는다
+    - tid: 10185
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 3, 5, 8]
+      userAchvEvent: 14
+      function: 'MaleHorseCombo'
+      functionValues: [3, 3, 3, 3]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 이제 능력만 발휘하면 돼
+    - tid: 10186
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 3, 5, 25]
+      userAchvEvent: 56
+      function: 'PotentialCapacitiesGrow'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 미운 오리새끼
+    - tid: 10187
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 3, 10, 50]
+      userAchvEvent: 11
+      function: 'GradeCompare'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 포기하지마
+    - tid: 10188
+      numPlayer: 8
+      gameModeFlag: 127
+      successType: 1
+      compareType: 0
+      successValues: [5, 30, 150, 600]
+      userAchvEvent: 2
+      function: 'GoalInRanking'
+      functionValues: [8, 8, 8, 8]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 나는야 마법사
+    - tid: 10189
+      numPlayer: 0
+      gameModeFlag: 76
+      successType: 1
+      compareType: 0
+      successValues: [5, 50, 500, 2000]
+      userAchvEvent: 42
+      function: 'UseAllMagic'
+      functionValues: [3, 3, 3, 3]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 과속은 위험해
+    - tid: 10190
+      numPlayer: 0
+      gameModeFlag: 127
+      successType: 1
+      compareType: 0
+      successValues: [1, 3, 5, 30]
+      userAchvEvent: 24
+      function: 'Cliff'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 폭주 기관차
+    - tid: 10191
+      numPlayer: 2
+      gameModeFlag: 127
+      successType: 1
+      compareType: 0
+      successValues: [5, 50, 100, 500]
+      userAchvEvent: 2
+      function: 'ReversalWinner'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 두근두근 축제 경험
+    - tid: 10192
+      numPlayer: 0
+      gameModeFlag: 31
+      successType: 1
+      compareType: 0
+      successValues: [5, 30, 150, 400]
+      userAchvEvent: 2
+      function: 'CarnivalSuccess'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 작전 성공
+    - tid: 10193
+      numPlayer: 0
+      gameModeFlag: 76
+      successType: 1
+      compareType: 0
+      successValues: [5, 30, 150, 400]
+      userAchvEvent: 42
+      function: 'JumpParalysis'
+      functionValues: [3, 3, 3, 3]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 한 때는 폭주족
+    - tid: 10194
+      numPlayer: 0
+      gameModeFlag: 76
+      successType: 1
+      compareType: 0
+      successValues: [3, 10, 50, 150]
+      userAchvEvent: 35
+      function: 'HotRoddingReversalCount'
+      functionValues: [3, 3, 3, 3]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 포토제닉1
+    - tid: 10195
+      numPlayer: 0
+      gameModeFlag: 35
+      successType: 1
+      compareType: 0
+      successValues: [20, 100, 300, 2000]
+      userAchvEvent: 57
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 포토제닉2
+    - tid: 10196
+      numPlayer: 0
+      gameModeFlag: 127
+      successType: 1
+      compareType: 0
+      successValues: [20, 100, 300, 2000]
+      userAchvEvent: 58
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 포토제닉3
+    - tid: 10197
+      numPlayer: 0
+      gameModeFlag: 127
+      successType: 1
+      compareType: 0
+      successValues: [20, 100, 300, 2000]
+      userAchvEvent: 59
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 수사반장
+    - tid: 10198
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [5, 20, 50, 500]
+      userAchvEvent: 23
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 팀원 잘 만났네
+    - tid: 10199
+      numPlayer: 8
+      gameModeFlag: 10
+      successType: 1
+      compareType: 0
+      successValues: [5, 30, 100, 200]
+      userAchvEvent: 2
+      function: 'TeamWinTheLast'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 어쩌다 보니
+    - tid: 10200
+      numPlayer: 0
+      gameModeFlag: 76
+      successType: 1
+      compareType: 0
+      successValues: [1, 100, 250, 500]
+      userAchvEvent: 72
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 내 말은 추입마
+    - tid: 10201
+      numPlayer: 0
+      gameModeFlag: 35
+      successType: 1
+      compareType: 0
+      successValues: [1, 50, 150, 300]
+      userAchvEvent: 57
+      function: 'Spur3thGoalIn'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 폼생폼사
+    - tid: 10202
+      numPlayer: 0
+      gameModeFlag: 35
+      successType: 1
+      compareType: 0
+      successValues: [1, 300, 700, 1500]
+      userAchvEvent: 60
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 다치지마렴
+    - tid: 10203
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 20, 50, 200]
+      userAchvEvent: 70
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 미숙마의 경험
+    - tid: 10204
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 2, 3, 5]
+      userAchvEvent: 11
+      function: 'PoorHorse'
+      functionValues: [400, 400, 400, 400]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 우량마의 경험
+    - tid: 10205
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 2, 3, 5]
+      userAchvEvent: 11
+      function: 'GoodHorse'
+      functionValues: [500, 500, 500, 500]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 이것 받으세요
+    - tid: 10207
+      numPlayer: 0
+      gameModeFlag: 76
+      successType: 1
+      compareType: 0
+      successValues: [5, 30, 100, 800]
+      userAchvEvent: 62
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 그냥은 안 때려!
+    - tid: 10208
+      numPlayer: 0
+      gameModeFlag: 76
+      successType: 1
+      compareType: 0
+      successValues: [5, 30, 200, 1000]
+      userAchvEvent: 42
+      function: 'CriticalFireballAttack'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 그냥은 안 보내!
+    - tid: 10209
+      numPlayer: 0
+      gameModeFlag: 12
+      successType: 1
+      compareType: 0
+      successValues: [5, 10, 25, 70]
+      userAchvEvent: 42
+      function: 'RevengeAttackWithFireball'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 너만을 노린다
+    - tid: 10210
+      numPlayer: 0
+      gameModeFlag: 76
+      successType: 1
+      compareType: 0
+      successValues: [5, 10, 25, 50]
+      userAchvEvent: 42
+      function: 'ComboAttackSuccessWithFireball'
+      functionValues: [3, 3, 3, 3]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 이때를 기다렸다
+    - tid: 10211
+      numPlayer: 0
+      gameModeFlag: 76
+      successType: 1
+      compareType: 0
+      successValues: [5, 10, 25, 100]
+      userAchvEvent: 42
+      function: 'ShieldEndAttackWithFireball'
+      functionValues: [3, 3, 3, 3]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 쾌감 절정
+    - tid: 10212
+      numPlayer: 0
+      gameModeFlag: 76
+      successType: 1
+      compareType: 0
+      successValues: [5, 10, 25, 50]
+      userAchvEvent: 74
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 복수 혈전
+    - tid: 10213
+      numPlayer: 0
+      gameModeFlag: 15
+      successType: 1
+      compareType: 0
+      successValues: [3, 10, 25, 50]
+      userAchvEvent: 2
+      function: 'Revenge'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 그렇게는 안되지
+    - tid: 10214
+      numPlayer: 0
+      gameModeFlag: 76
+      successType: 1
+      compareType: 0
+      successValues: [3, 15, 70, 400]
+      userAchvEvent: 42
+      function: 'FireBallSuccess'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 견습기사단정도는 1
+    - tid: 10216
+      numPlayer: 0
+      gameModeFlag: 32
+      successType: 1
+      compareType: 0
+      successValues: [1, 5, 10, 20]
+      userAchvEvent: 2
+      function: 'WinAI'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 견습기사단정도는 2
+    - tid: 10217
+      numPlayer: 0
+      gameModeFlag: 64
+      successType: 1
+      compareType: 0
+      successValues: [1, 5, 10, 20]
+      userAchvEvent: 2
+      function: 'WinAI'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 운수대통
+    - tid: 10218
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 2, 3, 4]
+      userAchvEvent: 11
+      function: 'GoodChild'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 고추가루
+    - tid: 10219
+      numPlayer: 0
+      gameModeFlag: 76
+      successType: 1
+      compareType: 0
+      successValues: [5, 30, 50, 300]
+      userAchvEvent: 42
+      function: 'LastSpurtAttack'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 어떤 상황에서도
+    - tid: 10220
+      numPlayer: 0
+      gameModeFlag: 35
+      successType: 1
+      compareType: 0
+      successValues: [3, 50, 500, 2000]
+      userAchvEvent: 61
+      function: 'PerfectSpurMaster'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 타이밍의 마스터
+    - tid: 10221
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [3, 50, 200, 400]
+      userAchvEvent: 54
+      function: 'TrainingCombo'
+      functionValues: [3, 3, 3, 3]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 완벽하다
+    - tid: 10222
+      numPlayer: 4
+      gameModeFlag: 10
+      successType: 1
+      compareType: 0
+      successValues: [3, 20, 50, 150]
+      userAchvEvent: 2
+      function: 'TeamPerfectWinNew'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 박차 마스터
+    - tid: 10223
+      numPlayer: 0
+      gameModeFlag: 35
+      successType: 1
+      compareType: 0
+      successValues: [3, 100, 300, 1000]
+      userAchvEvent: 61
+      function: 'PerfectSpurCombo'
+      functionValues: [3, 3, 3, 3]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 운 좋은 날
+    - tid: 10224
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [3, 70, 300, 1000]
+      userAchvEvent: 54
+      function: 'TrainingCritical'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 위풍당당
+    - tid: 10225
+      numPlayer: 4
+      gameModeFlag: 1
+      successType: 1
+      compareType: 0
+      successValues: [1, 10, 50, 100]
+      userAchvEvent: 2
+      function: 'Win'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 천하무적
+    - tid: 10226
+      numPlayer: 4
+      gameModeFlag: 4
+      successType: 1
+      compareType: 0
+      successValues: [1, 10, 50, 100]
+      userAchvEvent: 2
+      function: 'Win'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 우리는 일심동체
+    - tid: 10227
+      numPlayer: 4
+      gameModeFlag: 2
+      successType: 1
+      compareType: 0
+      successValues: [1, 10, 50, 300]
+      userAchvEvent: 2
+      function: 'TeamWin'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 누구든 와라
+    - tid: 10228
+      numPlayer: 4
+      gameModeFlag: 8
+      successType: 1
+      compareType: 0
+      successValues: [1, 10, 50, 300]
+      userAchvEvent: 2
+      function: 'TeamWin'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 점프의 달인
+    - tid: 10229
+      numPlayer: 0
+      gameModeFlag: 35
+      successType: 1
+      compareType: 0
+      successValues: [30, 200, 500, 2000]
+      userAchvEvent: 29
+      function: 'MaxPerfectJumpCombo'
+      functionValues: [10, 10, 10, 10]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 그러다 넘어질라
+    - tid: 10230
+      numPlayer: 0
+      gameModeFlag: 127
+      successType: 1
+      compareType: 0
+      successValues: [20, 300, 700, 3000]
+      userAchvEvent: 33
+      function: 'SlidingTime'
+      functionValues: [2, 2, 2, 2]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 한계 돌파
+    - tid: 10231
+      numPlayer: 0
+      gameModeFlag: 35
+      successType: 0
+      compareType: 2
+      successValues: [4, 5, 7, 10]
+      userAchvEvent: 17
+      function: 'MaxSpurCount'
+      functionValues: [3, 3, 3, 3]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 거침없는 질주
+    - tid: 10232
+      numPlayer: 0
+      gameModeFlag: 127
+      successType: 0
+      compareType: 2
+      successValues: [110, 120, 123, 125]
+      userAchvEvent: 38
+      function: 'GetMaxSpeed'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 풍선 매니아
+    - tid: 10233
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 0
+      compareType: 1
+      successValues: [31, 30, 29, 28]
+      userAchvEvent: 46
+      function: 'BalloonLapTime'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 할 만큼 했네?
+    - tid: 10234
+      numPlayer: 0
+      gameModeFlag: 5
+      successType: 1
+      compareType: 0
+      successValues: [3, 15, 30, 70]
+      userAchvEvent: 2
+      function: 'MaxWinStop'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 완벽주의자
+    - tid: 10235
+      numPlayer: 0
+      gameModeFlag: 35
+      successType: 1
+      compareType: 0
+      successValues: [1, 100, 1000, 5000]
+      userAchvEvent: 61
+      function: 'TRUE'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 최강팀 등극!
+    - tid: 10236
+      numPlayer: 0
+      gameModeFlag: 10
+      successType: 1
+      compareType: 0
+      successValues: [3, 15, 30, 70]
+      userAchvEvent: 2
+      function: 'MaxWinStop'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [400, 800, 1200, 2000]
+      achvPoint: 1
+    # 시스템 예약 항목
+    - tid: 20000
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 1, 1, 1]
+      userAchvEvent: 45
+      function: 'False'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [0, 0, 0, 0]
+      achvPoint: 0
+    # 첫 상점 진입
+    - tid: 20001
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 1, 1, 1]
+      userAchvEvent: 65
+      function: 'True'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [0, 0, 0, 0]
+      achvPoint: 0
+    # 첫 내 장비 진입
+    - tid: 20002
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 1, 1, 1]
+      userAchvEvent: 66
+      function: 'True'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [0, 0, 0, 0]
+      achvPoint: 0
+    # 첫 말 관리 진입
+    - tid: 20003
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 1, 1, 1]
+      userAchvEvent: 67
+      function: 'True'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [0, 0, 0, 0]
+      achvPoint: 0
+    # 첫 말 이름 짓기
+    - tid: 20004
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 1, 1, 1]
+      userAchvEvent: 47
+      function: 'True'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [0, 0, 0, 0]
+      achvPoint: 0
+    # 인트로 완료
+    - tid: 20005
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 1, 1, 1]
+      userAchvEvent: 45
+      function: 'True'
+      functionValues: [0, 0, 0, 0]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [0, 0, 0, 0]
+      achvPoint: 0
+    # 레벨 2
+    - tid: 20006
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 1, 1, 1]
+      userAchvEvent: 5
+      function: 'LevelCheck'
+      functionValues: [2, 2, 2, 2]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [0, 0, 0, 0]
+      achvPoint: 0
+    # 레벨 3
+    - tid: 20007
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 1, 1, 1]
+      userAchvEvent: 5
+      function: 'LevelCheck'
+      functionValues: [3, 3, 3, 3]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [0, 0, 0, 0]
+      achvPoint: 0
+    # 레벨2 NPC 대화
+    - tid: 20008
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 1, 1, 1]
+      userAchvEvent: 75
+      function: 'DialogLevelCheck'
+      functionValues: [2, 2, 2, 2]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [0, 0, 0, 0]
+      achvPoint: 0
+    # 레벨5 NPC 대화
+    - tid: 20009
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 1, 1, 1]
+      userAchvEvent: 75
+      function: 'DialogLevelCheck'
+      functionValues: [5, 5, 5, 5]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [0, 0, 0, 0]
+      achvPoint: 0
+    # 레벨12 NPC 대화
+    - tid: 20010
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 1, 1, 1]
+      userAchvEvent: 75
+      function: 'DialogLevelCheck'
+      functionValues: [12, 12, 12, 12]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [0, 0, 0, 0]
+      achvPoint: 0
+    # 레벨8 NPC 대화
+    - tid: 20011
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 1, 1, 1]
+      userAchvEvent: 75
+      function: 'DialogLevelCheck'
+      functionValues: [8, 8, 8, 8]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [0, 0, 0, 0]
+      achvPoint: 0
+    # 레벨10 NPC 대화
+    - tid: 20012
+      numPlayer: 0
+      gameModeFlag: 0
+      successType: 1
+      compareType: 0
+      successValues: [1, 1, 1, 1]
+      userAchvEvent: 75
+      function: 'DialogLevelCheck'
+      functionValues: [10, 10, 10, 10]
+      resetUserAchvEvent: 0
+      resetFunction: ''
+      resetFunctionValue: 0
+      gameMoney: [0, 0, 0, 0]
+      achvPoint: 0

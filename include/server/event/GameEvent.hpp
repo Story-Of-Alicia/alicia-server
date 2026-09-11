@@ -43,7 +43,7 @@ struct GameEvent
   //! Character the event happened to/for.
   data::Uid characterUid{data::InvalidUid};
   //! Game mode the event occurred in, if applicable.
-  registry::Quest::GameModeFlag gameMode{registry::Quest::GameModeFlag::None};
+  registry::GameModeFlag gameMode{registry::GameModeFlag::None};
   //! Optional scalar payload (map ID, distance. etc...).
   uint32_t value{};
 };

@@ -40,14 +40,14 @@ QuestSystem::QuestSystem(ServerInstance& serverInstance)
 }
 
 bool QuestSystem::IsModeMatch(
-  const registry::Quest::GameModeFlag questFlag,
-  const registry::Quest::GameModeFlag eventMode)
+  const registry::GameModeFlag questFlag,
+  const registry::GameModeFlag eventMode)
 {
   // Flag None (0): no mode restriction
-  if (questFlag == registry::Quest::GameModeFlag::None)
+  if (questFlag == registry::GameModeFlag::None)
     return true;
   // Flag Any (111): explicitly matches all race modes
-  if (questFlag == registry::Quest::GameModeFlag::Any)
+  if (questFlag == registry::GameModeFlag::Any)
     return true;
   return questFlag == eventMode;
 }

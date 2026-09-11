@@ -100,20 +100,6 @@ struct Quest
   uint32_t difficult{};
   //! Required player level.
   uint32_t level{};
-  //! Game mode flag (bitmask of applicable race modes for this quest)
-  //! Matches DailyQuestInfo::Type values.
-  enum class GameModeFlag : uint32_t
-  {
-    None           = 0,
-    SpeedTeam      = 2,
-    MagicTeam      = 8,
-    WinSpeedSolo   = 33,
-    SpeedSoloAction = 35,  //!< Perfect jumps, boosts
-    WinMagicSolo   = 68,
-    MagicSoloAction = 76,  //!< Bolt attack
-    Any            = 111,
-  };
-
   //! Game mode flag (bitmask of applicable race modes for this quest).
   GameModeFlag gameModeFlag{};
   //! NPC ID that starts the quest.
