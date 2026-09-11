@@ -56,6 +56,11 @@ public:
     const registry::Quest& quest,
     const GameEvent& event);
 
+  //! Resets a daily quest group at the new day
+  //! @param group Daily quest group to check and reset in place.
+  //! @returns True if the group was reset.
+  static bool EnsureDailyQuestGroupFresh(data::DailyQuestGroup& group);
+
 private:
   //! Returns true if the quest's gameModeFlag is compatible with the given mode.
   static bool IsModeMatch(

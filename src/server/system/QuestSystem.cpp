@@ -26,8 +26,17 @@
 
 #include <spdlog/spdlog.h>
 
+#include <chrono>
+
 namespace server
 {
+
+namespace
+{
+//! Daily quest reset hour (6AM server time)
+constexpr std::chrono::hours DailyResetHour{6};
+
+} // anonymous namespace
 
 QuestSystem::QuestSystem(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
@@ -66,6 +75,28 @@ bool QuestSystem::Matches(
     return false;
 
   return quest.functionValue == 0 || quest.functionValue == event.value;
+}
+
+bool QuestSystem::EnsureDailyQuestGroupFresh(data::DailyQuestGroup& group)
+{
+  using namespace std::chrono;
+
+  const auto now = data::Clock::now();
+  const auto currentDay = floor<days>(now - DailyResetHour);
+  const auto lastResetDay = floor<days>(group.lastResetAt() - DailyResetHour);
+
+  if (lastResetDay >= currentDay)
+    return false;
+
+  group.rewardId = 0;
+  group.rewardType = 0;
+  group.rewardPoints = 0;
+  group.carrotsClaimed = false;
+  group.rewardClaimed = false;
+  group.quests = std::array<data::DailyQuestEntry, 3>{};
+  group.lastResetAt = now;
+
+  return true;
 }
 
 std::vector<protocol::AcCmdRCUpdateDailyQuestNotify> QuestSystem::OnQuestEvent(

@@ -1364,6 +1364,15 @@ void server::FileDataSource::RetrieveDailyQuestGroup(data::Uid uid, data::DailyQ
   else
     group.carrotsClaimed = false;
 
+  if (const auto it = json.find("rewardClaimed"); it != json.end())
+    group.rewardClaimed = it->is_boolean() ? it->get<bool>() : (it->get<int>() != 0);
+  else
+    group.rewardClaimed = false;
+
+  group.lastResetAt = data::Clock::time_point(
+    std::chrono::seconds(
+      json.value("lastResetAt", uint64_t{})));
+
   std::array<data::DailyQuestEntry, 3> quests{};
   const auto& questsJson = json.value("quests", nlohmann::json::array());
   for (size_t i = 0; i < questsJson.size() && i < 3; ++i)
@@ -1385,6 +1394,9 @@ void server::FileDataSource::StoreDailyQuestGroup(data::Uid uid, const data::Dai
   json["rewardType"]   = group.rewardType();
   json["rewardPoints"] = group.rewardPoints();
   json["carrotsClaimed"] = static_cast<bool>(group.carrotsClaimed());
+  json["rewardClaimed"] = static_cast<bool>(group.rewardClaimed());
+  json["lastResetAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+    group.lastResetAt().time_since_epoch()).count();
 
   nlohmann::json questsJson = nlohmann::json::array();
   for (const auto& entry : group.quests())

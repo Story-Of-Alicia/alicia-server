@@ -6222,6 +6222,8 @@ void RanchDirector::HandleUpdateDailyQuest(
           });
       }
 
+      QuestSystem::EnsureDailyQuestGroupFresh(group);
+
       // Update quest progress.
       auto quests = group.quests();
       for (auto& entry : quests)
@@ -6287,6 +6289,8 @@ void RanchDirector::HandleRegisterDailyQuestGroup(
   // Fills a group's fields from the command and calculates total possible rewardPoints.
   const auto fillGroup = [&command, &questRegistry](data::DailyQuestGroup& group)
   {
+    QuestSystem::EnsureDailyQuestGroupFresh(group);
+
     if (!command.dailyQuests.empty())
     {
       group.rewardId   = command.dailyQuests[0].rewardId;
@@ -7025,11 +7029,16 @@ void RanchDirector::HandleRequestDailyQuestReward(
     return;
   }
 
-  // Check if the command rewardPoints match the accumulated points in the group
+  // Check if the command rewardPoints match the accumulated points in the group,
+  // and that the group reward hasn't already been claimed today.
   bool pointsMatch = false;
-  groupRecord.Immutable([&pointsMatch, commandPoints = command.rewardPoints](const data::DailyQuestGroup& group)
+  bool alreadyClaimed = false;
+  groupRecord.Mutable([&pointsMatch, &alreadyClaimed, commandPoints = command.rewardPoints](data::DailyQuestGroup& group)
   {
+    QuestSystem::EnsureDailyQuestGroupFresh(group);
+
     pointsMatch = (group.rewardPoints() >= commandPoints);
+    alreadyClaimed = group.rewardClaimed();
   });
 
   if (!pointsMatch)
@@ -7061,6 +7070,11 @@ void RanchDirector::HandleRequestDailyQuestReward(
   }
 
   const auto& rewardPoint = bestReward.value();
+
+  groupRecord.Mutable([](data::DailyQuestGroup& group)
+  {
+    group.rewardClaimed = true;
+  });
 
   // Award the items to the character
   characterRecord.Mutable([this, &response, &rewardPoint](data::Character& character)

@@ -566,6 +566,11 @@ struct DailyQuestGroup
   dao::Field<uint32_t> rewardPoints{};
   //! Whether the daily quest carrot reward has been claimed today.
   dao::Field<bool> carrotsClaimed{false};
+  //! Whether the group-completion reward (TID 101) has been claimed today.
+  dao::Field<bool> rewardClaimed{false};
+  //! When this group's daily state was last reset. Compared against the
+  //! 6AM server-time day boundary to detect a new day.
+  dao::Field<Clock::time_point> lastResetAt{};
   //! The 3 daily quest slots.
   dao::Field<std::array<DailyQuestEntry, 3>> quests{};
 };
