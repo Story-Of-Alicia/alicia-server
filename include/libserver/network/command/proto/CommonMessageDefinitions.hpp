@@ -237,6 +237,7 @@ struct AcCmdRCUpdateDailyQuestNotify
   ObjectiveProgress objectiveProgress;
   uint32_t carrotsReward; //used when rewardType is Carrots
   QuestRewardType rewardType{QuestRewardType::None};
+  //! Never read by the client.
   uint32_t unk2;
   uint32_t mountExp; //used when rewardType is Exp
 

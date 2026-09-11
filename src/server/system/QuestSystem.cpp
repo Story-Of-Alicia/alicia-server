@@ -261,11 +261,14 @@ std::vector<protocol::AcCmdRCUpdateDailyQuestNotify> QuestSystem::OnQuestEvent(
           ? questDef->rewardExp
           : 0;
 
+      uint32_t carrotsTotal = 0;
+
       if (carrotsReward > 0)
       {
-        characterRecord.Mutable([carrotsReward](data::Character& character)
+        characterRecord.Mutable([carrotsReward, &carrotsTotal](data::Character& character)
         {
           character.carrots() += carrotsReward;
+          carrotsTotal = static_cast<uint32_t>(character.carrots());
         });
       }
 
@@ -294,7 +297,7 @@ std::vector<protocol::AcCmdRCUpdateDailyQuestNotify> QuestSystem::OnQuestEvent(
           .isCompleted = completed,
           .progress = entry.progress,
         },
-        .carrotsReward = carrotsReward,
+        .carrotsReward = carrotsTotal,
         .rewardType = rewardType,
         .unk2 = 0,
         .mountExp = mountExp,
