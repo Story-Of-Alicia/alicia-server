@@ -2638,7 +2638,6 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
   }
   std::sort(repeatableTids.begin(), repeatableTids.end());
 
-  bool hasQuests = false;
   int completedCount = 0;
   bool carrotsClaimed = false;
   bool rewardClaimed = false;
@@ -2659,8 +2658,6 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
     {
       if (quests[i].questId == 0)
         continue;
-
-      hasQuests = true;
 
       const auto questId  = quests[i].questId;
       const auto progress = quests[i].progress;
@@ -2684,8 +2681,7 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
     }
   });
 
-  // No daily quests registered for today yet
-  if (not hasQuests)
+  if (not carrotsClaimed)
     return;
 
   // unk[0] = TID 100 (intro/activate) InProgress if carrots not yet claimed, ReadyToClaim if they have been.

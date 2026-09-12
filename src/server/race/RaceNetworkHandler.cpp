@@ -2944,6 +2944,34 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
   if (eventItemOid != tracker::InvalidEntityOid)
   {
     auto& eventItem = raceInstance.GetTracker().GetEventItem(clientContext.characterUid, eventItemOid);
+
+    if (eventItem.qTemId.has_value())
+    {
+      const auto qTemId = *eventItem.qTemId;
+      const auto itemType = eventItem.itemType;
+
+      raceInstance.GetTracker().RemoveEventItem(clientContext.characterUid, command.itemDeckId);
+      racer.trackedDecks.erase(command.itemDeckId);
+
+      const protocol::AcCmdGameQuestItemGet questItemGet{
+        .characterOid = command.characterOid,
+        .itemId = command.itemDeckId,
+        .questItemId = qTemId,
+        .itemType = itemType};
+      this->Broadcast(raceInstance, questItemGet);
+
+      const auto& parameters = raceInstance.GetParameters();
+      GetServerInstance().GetGameEventBus().Fire({
+        .userAchvEvent = registry::UserAchvEvent::CollectDropItem,
+        .function = registry::Function::CollectDropItem,
+        .origin = GameEvent::Origin::Race,
+        .characterUid = clientContext.characterUid,
+        .gameMode = GameEventSystem::ToGameModeFlag(parameters.gameMode, parameters.teamMode),
+        .value = qTemId});
+
+      return;
+    }
+
     const auto eggInfo = _serverInstance.GetPetRegistry().GetEggInfoByDeckId(eventItem.itemType);
     auto itemUid = data::InvalidUid;
     const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
