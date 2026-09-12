@@ -6575,13 +6575,27 @@ void RanchDirector::HandleBuyOwnItem(
 
   // Get current shop list
   const auto& shopList = GetServerInstance().GetLobbyDirector().GetShopManager().GetShopList();
+  bool transactionFailed = false;
+  std::vector<std::function<void()>> rollbackActions{};
+  std::vector<GameEvent> pendingGameEvents{};
 
   std::vector<data::Uid> newEquipmentUids{};
   std::vector<std::pair<data::Uid, protocol::Horse>> newHorseUids{};
   std::vector<std::pair<uint8_t, data::Uid>> expandMountSlotItems{};
   GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
-    [this, &shopList, &command, &response, &newEquipmentUids, &newHorseUids, &expandMountSlotItems](data::Character& character)
+    [this, &shopList, &command, &response, &newEquipmentUids, &newHorseUids, &expandMountSlotItems, &transactionFailed, &rollbackActions, &pendingGameEvents](data::Character& character)
     {
+      const uint32_t originalCarrots = character.carrots();
+      const uint32_t originalCash = character.cash();
+
+      const auto rollBackTransaction = [&rollbackActions, &character, originalCarrots, originalCash]()
+      {
+        for (auto& rollbackAction : rollbackActions | std::views::reverse)
+          rollbackAction();
+        character.carrots() = originalCarrots;
+        character.cash() = originalCash;
+      };
+
       for (const auto& order : command.orders)
       {
         // Create an order result entry in the response
@@ -6651,9 +6665,27 @@ void RanchDirector::HandleBuyOwnItem(
         const bool hasSufficientCash = character.cash() >= cost;
         const bool canPurchaseCashItem = isCashItem and hasSufficientCash;
 
-        const bool hasItem = GetServerInstance().GetItemSystem().HasItem(
-          character, 
+        const data::Uid existingItemUid = GetServerInstance().GetItemSystem().GetItem(
+          character,
           itemRegistryRecord.value().tid);
+        const bool hasItem = existingItemUid != data::InvalidUid;
+
+        struct ExistingItemSnapshot
+        {
+          uint32_t count{};
+          std::chrono::seconds duration{};
+          data::Clock::time_point createdAt{};
+        };
+        std::optional<ExistingItemSnapshot> existingItemSnapshot{};
+        if (hasItem)
+        {
+          GetServerInstance().GetDataDirector().GetItem(existingItemUid).Immutable(
+            [&existingItemSnapshot](const data::Item& item)
+            {
+              existingItemSnapshot = ExistingItemSnapshot{
+                item.count(), item.duration(), item.createdAt()};
+            });
+        }
 
         if (not canPurchaseCarrotItem and not canPurchaseCashItem)
         {
@@ -6669,7 +6701,7 @@ void RanchDirector::HandleBuyOwnItem(
         else
           character.carrots() -= cost;
 
-        GetServerInstance().GetGameEventBus().Fire({
+        pendingGameEvents.push_back({
           .userAchvEvent = registry::UserAchvEvent::ItemPurchase,
           .function = registry::Function::True,
           .origin = GameEvent::Origin::Ranch,
@@ -6682,13 +6714,9 @@ void RanchDirector::HandleBuyOwnItem(
           const auto& horseRecord = GetServerInstance().GetDataDirector().CreateHorse();
           if (not horseRecord)
           {
-            // Refund and report error
-            if (isCashItem)
-              character.cash() += cost;
-            else
-              character.carrots() += cost;
-            orderResult.result = OrderResult::Result::UnknownError;
-            continue;
+            rollBackTransaction();
+            transactionFailed = true;
+            break;
           }
 
           data::Uid horseUid{data::InvalidUid};
@@ -6730,6 +6758,15 @@ void RanchDirector::HandleBuyOwnItem(
 
           character.horses().emplace_back(horseUid);
 
+          rollbackActions.emplace_back(
+            [this, horseUid, &character]()
+            {
+              GetServerInstance().GetDataDirector().GetHorseCache().Delete(horseUid);
+              auto& horses = character.horses();
+              const auto range = std::ranges::remove(horses, horseUid);
+              horses.erase(range.begin(), range.end());
+            });
+
           // Add to the buy response so the client registers the horse purchase
           // (triggers horse naming dialog and stable update)
           auto& purchase = response.purchases.emplace_back(
@@ -6764,6 +6801,39 @@ void RanchDirector::HandleBuyOwnItem(
             priceRange);
         }
 
+        if (itemUid == data::InvalidUid)
+        {
+          rollBackTransaction();
+          transactionFailed = true;
+          break;
+        }
+
+        if (existingItemSnapshot.has_value())
+        {
+          rollbackActions.emplace_back(
+            [this, itemUid, snapshot = *existingItemSnapshot]()
+            {
+              GetServerInstance().GetDataDirector().GetItem(itemUid).Mutable(
+                [&snapshot](data::Item& item)
+                {
+                  item.count() = snapshot.count;
+                  item.duration() = snapshot.duration;
+                  item.createdAt() = snapshot.createdAt;
+                });
+            });
+        }
+        else
+        {
+          rollbackActions.emplace_back(
+            [this, itemUid, &character]()
+            {
+              GetServerInstance().GetDataDirector().GetItemCache().Delete(itemUid);
+              auto& inventory = character.inventory();
+              const auto range = std::ranges::remove(inventory, itemUid);
+              inventory.erase(range.begin(), range.end());
+            });
+        }
+
         // Append the purchase result into the response
         GetServerInstance().GetDataDirector().GetItem(itemUid).Immutable(
           [&order, &response](const data::Item& item)
@@ -6792,6 +6862,17 @@ void RanchDirector::HandleBuyOwnItem(
       response.newCarrots = character.carrots();
       response.newCash = character.cash();
     });
+
+  if (transactionFailed)
+  {
+    const protocol::AcCmdCRBuyOwnItemCancel cancel{
+      .error = protocol::AcCmdCRBuyOwnItemCancel::Error::GeneralError};
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  for (const auto& event : pendingGameEvents)
+    GetServerInstance().GetGameEventBus().Fire(event);
 
   // All checks are completed and transaction can go ahead
   _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
