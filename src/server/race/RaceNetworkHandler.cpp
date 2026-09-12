@@ -3568,11 +3568,14 @@ RaceNetworkHandler::EffectVerdict RaceNetworkHandler::ScheduleSkillEffect(
     magicRegistry, magicSlotInfo, targetRacer);
 
   const auto attackerRacerIter = race::MagicSystem::FindRacerByOid(racers, attackerOid);
+  const tracker::RaceTracker::Racer* durationStatRacer = race::MagicSystem::IsTeamBuff(magicSlotInfo.type)
+    ? &targetRacer
+    : (attackerRacerIter != racers.end() ? &attackerRacerIter->second : nullptr);
   const uint32_t effectDurationMs = race::MagicSystem::ComputeEffectDurationMs(
     magicRegistry,
     GetServerInstance().GetHorseRegistry(),
     magicSlotInfo,
-    attackerRacerIter != racers.end() ? &attackerRacerIter->second : nullptr,
+    durationStatRacer,
     targetRacer);
   // TODO: Verify if characterOid and targetOid should be the same once we have NPCs
   this->Broadcast(

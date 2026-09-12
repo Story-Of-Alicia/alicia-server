@@ -1364,7 +1364,7 @@ bool RanchDirector::HandleEnterRanch(
               if (housing.uid() != activeIncubatorUid)
                 return;
 
-              response.incubatorUseCount = housing.durability();
+              response.incubatorUseCount = std::max<uint32_t>(housing.durability(), 1);
               response.incubatorSlots = static_cast<uint8_t>(housingInfo->value);
             }
 
