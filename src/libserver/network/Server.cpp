@@ -51,6 +51,12 @@ Client::Client(
   , _socket(std::move(socket))
   , _networkEventHandler(networkEventHandler)
 {
+  boost::system::error_code ec;
+  _socket.set_option(asio::ip::tcp::no_delay(true), ec);
+  if (ec)
+  {
+    spdlog::warn("Failed to set TCP_NODELAY for client {}: {}", _clientId, ec.message());
+  }
 }
 
 void Client::Begin()
